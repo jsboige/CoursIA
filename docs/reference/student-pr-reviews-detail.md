@@ -1,6 +1,6 @@
 # Reviews PR etudiantes — detail
 
-Detail de [.claude/rules/student-pr-reviews.md](../.claude/rules/student-pr-reviews.md). Voir aussi [exercise-example-labeling.md](../.claude/rules/exercise-example-labeling.md), [pr-review-discipline.md](../.claude/rules/pr-review-discipline.md), [ece-grading.md](ece-grading.md).
+Detail de [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-reviews.md). Voir aussi [exercise-example-labeling.md](../../.claude/rules/exercise-example-labeling.md), [pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md), [ece-grading.md](ece-grading.md).
 
 ## Incident fondateur (2026-05-17)
 
@@ -36,7 +36,7 @@ Signaler factuellement un manque (sans question) : "Le notebook 03 n'est pas fin
 ## Cooperation reviewers (HARD)
 
 - Une **seule** review publique breve par PR. Pas de double review (incident 2026-05-17).
-- `@clusterManager-Myia` : reviewer principal, review bienveillante uniquement, ne PAS appliquer criteres A-G de [pr-review-discipline.md](../.claude/rules/pr-review-discipline.md).
+- `@clusterManager-Myia` : reviewer principal, review bienveillante uniquement, ne PAS appliquer criteres A-G de [pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md).
 - `@jsboige self-bot` : COMMENTED, ne duplique pas.
 - Coordination dashboard workspace CoursIA **avant** de commenter en cas de doute.
 

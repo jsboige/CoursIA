@@ -17,7 +17,7 @@ Les scripts `scripts/fix_*.py` / `scripts/recycle_*.py` à la racine sont des on
 ### Exécution
 | Script | Usage |
 |--------|-------|
-| `wsl_papermill.py` | **Papermill INSIDE WSL** pour kernels GameTheory/Lean Python (`execute` / `batch` / `check-env`) — cf [.claude/rules/wsl-kernels.md](../.claude/rules/wsl-kernels.md) |
+| `wsl_papermill.py` | **Papermill INSIDE WSL** pour kernels GameTheory/Lean Python (`execute` / `batch` / `check-env`) — cf [.claude/rules/wsl-kernels.md](../../.claude/rules/wsl-kernels.md) |
 | `batch_reexecute.py` | Re-exécution Papermill en lot |
 | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py` | Exécution .NET Interactive (cell-by-cell, kernel persistant) |
 | `execute_qcpy_docker.py`, `qc_quantbook_execute.py` | Exécution QuantConnect (Quantbooks via Docker/QC Cloud) |
@@ -134,4 +134,4 @@ Modules genai-stack non testes (intentionnellement) : commands/docker.py (subpro
 - [docs/common-commands.md](common-commands.md) — setup env, validation notebooks, slash commands
 - [docs/kernels-runtime.md](kernels-runtime.md) — .NET / Python / WSL kernels, conda envs
 - [docs/genai-services.md](genai-services.md) — scripts genai-stack, mappings notebooks
-- [.claude/rules/wsl-kernels.md](../.claude/rules/wsl-kernels.md) — Papermill WSL
+- [.claude/rules/wsl-kernels.md](../../.claude/rules/wsl-kernels.md) — Papermill WSL

@@ -1,10 +1,10 @@
 # Sous-agents spécialistes — référence + mandat d'usage side-tracks
 
-Les 21 sous-agents définis dans [.claude/agents/](../.claude/agents/) sont des **spécialistes** invoquables via l'outil `Agent` (`subagent_type: "<nom>"`). Plusieurs sont **orientés side-tracks long-cours** : ils peuvent être lancés en **asynchrone** (`run_in_background: true`) pour faire avancer une Epic side-track pendant que le worker interactif tient sa track principale sur wakeup horaire.
+Les 21 sous-agents définis dans [.claude/agents/](../../.claude/agents/) sont des **spécialistes** invoquables via l'outil `Agent` (`subagent_type: "<nom>"`). Plusieurs sont **orientés side-tracks long-cours** : ils peuvent être lancés en **asynchrone** (`run_in_background: true`) pour faire avancer une Epic side-track pendant que le worker interactif tient sa track principale sur wakeup horaire.
 
 **3 spécialistes side-track créés 2026-05-23** (corollaire du mandat Epics) : `prover-forensic` (#1453, comble le GAP prover), `training-specialist` + skill `train-model` (#1454), `genai-iterator` + skill `genai-iterate` (#1385). Chacun encode les artefacts réels du dépôt (pipeline, CLI, configs) — voir leur fiche.
 
-**Mandat (mandat user 2026-05-23)** : les Epics side-tracks DOIVENT déléguer aux sous-agents spécialistes async quand un specialist existe. Ne pas refaire à la main ce qu'un specialist fait mieux. Voir [.claude/rules/proactive-coordination.md](../.claude/rules/proactive-coordination.md).
+**Mandat (mandat user 2026-05-23)** : les Epics side-tracks DOIVENT déléguer aux sous-agents spécialistes async quand un specialist existe. Ne pas refaire à la main ce qu'un specialist fait mieux. Voir [.claude/rules/proactive-coordination.md](../../.claude/rules/proactive-coordination.md).
 
 ## Orchestrateurs persistants — idéaux pour side-tracks async
 
@@ -32,7 +32,7 @@ Distinction : `series-improver` = grain **série** (batch + resume) ; `notebook-
 
 ### #1455 TP EPITA → exemples guidés + nouveaux exercices (po-2025) + modernisation #999
 - `series-improver` (batch + resume sur la série), `notebook-cleaner` (markdown pédagogique : dédup, hiérarchie), `notebook-enricher` (interprétations/transitions), `notebook-designer` (nouveaux exercices à la suite), `notebook-cell-iterator` (correction ciblée d'une cellule), `notebook-validator` (vérif finale).
-- Respecter [.claude/rules/exercise-example-labeling.md](../.claude/rules/exercise-example-labeling.md) (content-based, jamais de find-replace aveugle).
+- Respecter [.claude/rules/exercise-example-labeling.md](../../.claude/rules/exercise-example-labeling.md) (content-based, jamais de find-replace aveugle).
 
 ### #1453 Prover harness co-evolution (po-2026 ⇄ ai-01)
 - **`prover-forensic`** (créé 2026-05-23, comble l'ancien GAP) : forensic **read-only** des traces (`agent_tests/prover/traces/*_result.json`, `baselines/traces/*.spans.jsonl`) → macro-signal + pathologie ancre + cause racine + deltas ROI-rankés bornés par les traces. Aucune édition `.lean`/harness. Lancer en async pendant les BG iter prover ; la proposition P1 est implémentée par po-2026 sur sa main track, ai-01 valide via re-run.
@@ -84,10 +84,10 @@ Le message final du sous-agent revient en notification. Les sous-agents read-onl
 | `notebook-helpers` | Référence `notebook_helpers.py` / `notebook_tools.py` (manipulation, structure) |
 | `notebook-patterns` | Patterns pédagogiques d'enrichissement (modèle GameTheory) |
 
-**`/review-student-prs` = canal canonique du recyclage TP** : il applique déjà la convention exercice→exemple ([.claude/rules/exercise-example-labeling.md](../.claude/rules/exercise-example-labeling.md)) + la review bienveillante + bypass CI/template ([.claude/rules/student-pr-reviews.md](../.claude/rules/student-pr-reviews.md)). Ne pas réécrire ce workflow à la main.
+**`/review-student-prs` = canal canonique du recyclage TP** : il applique déjà la convention exercice→exemple ([.claude/rules/exercise-example-labeling.md](../../.claude/rules/exercise-example-labeling.md)) + la review bienveillante + bypass CI/template ([.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-reviews.md)). Ne pas réécrire ce workflow à la main.
 
 ## Voir aussi
 
-- [.claude/rules/proactive-coordination.md](../.claude/rules/proactive-coordination.md) — modèle 1 PR/wakeup + main/side-track + délégation async
+- [.claude/rules/proactive-coordination.md](../../.claude/rules/proactive-coordination.md) — modèle 1 PR/wakeup + main/side-track + délégation async
 - [docs/scripts-reference.md](scripts-reference.md) — scripts du dépôt (maintenance, exécution, catalogue)
 - [docs/claude-code-config.md](claude-code-config.md) — agents, skills, rules, model selection

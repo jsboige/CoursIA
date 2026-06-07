@@ -1,6 +1,6 @@
 # Procédures récurrentes — CoursIA
 
-Détail des workflows référencés dans [CLAUDE.md](../CLAUDE.md) section "PROCEDURES RECURRENTES".
+Détail des workflows référencés dans [CLAUDE.md](../../CLAUDE.md) section "PROCEDURES RECURRENTES".
 
 ## Workflow PR
 
@@ -71,7 +71,7 @@ git diff <base>..<pr-branch> -- '*.ipynb' | grep -E "^[-+].*Solution|^[-+].*pass
 # 4. Cross-check historique : si fichier mentionne en memoire/dashboard recemment, contenu probablement intentionnel
 ```
 
-Patterns red-flag complets : [.claude/rules/anti-regression.md](../.claude/rules/anti-regression.md).
+Patterns red-flag complets : [.claude/rules/anti-regression.md](../../.claude/rules/anti-regression.md).
 
 ## Exécution Quantbooks (règle user 2026-04-29)
 

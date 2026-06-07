@@ -85,11 +85,11 @@ Sous-dossiers types :
 
 ## Reviews PR etudiantes - regle critique
 
-Voir [.claude/rules/student-pr-reviews.md](../.claude/rules/student-pr-reviews.md). Rappel : les commentaires de PR sur depot etudiant sont **visibles par les etudiants**, donc jamais de questions de soutenance / grille / briefing jury en commentaire public avant l'epreuve. Incident 2026-05-17 documente.
+Voir [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-reviews.md). Rappel : les commentaires de PR sur depot etudiant sont **visibles par les etudiants**, donc jamais de questions de soutenance / grille / briefing jury en commentaire public avant l'epreuve. Incident 2026-05-17 documente.
 
 ## Pointeurs cross-doc
 
 - Pipeline notation et bonus CC : [docs/ece-grading.md](ece-grading.md)
 - Mapping cluster machines (au-dela enseignement) : [docs/cluster-agents.md](cluster-agents.md)
-- Slides Slidev EPITA : `MyIA.AI.Notebooks/SymbolicAI/<serie>/slides/` (workflow Slidev verify, cf [.claude/rules/](../.claude/rules/))
+- Slides Slidev EPITA : `MyIA.AI.Notebooks/SymbolicAI/<serie>/slides/` (workflow Slidev verify, cf [.claude/rules/](../../.claude/rules/))
 - QuantConnect (partenaire) : [docs/quantconnect.md](quantconnect.md)

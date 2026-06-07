@@ -1,6 +1,6 @@
 # Reviews PR etudiantes — anti-fuite questions soutenance
 
-S'applique a **toute review humaine ou bot sur depots etudiants** : `jsboigeECE/*`, `jsboigeEpita/*`, `jsboigeEPF/*`, et `jsboige/CoursIA` quand la PR vient d'un etudiant (cas EPITA-IS qui forke). Scope + format + workflow detaille : [docs/student-pr-reviews-detail.md](../../docs/student-pr-reviews-detail.md).
+S'applique a **toute review humaine ou bot sur depots etudiants** : `jsboigeECE/*`, `jsboigeEpita/*`, `jsboigeEPF/*`, et `jsboige/CoursIA` quand la PR vient d'un etudiant (cas EPITA-IS qui forke). Scope + format + workflow detaille : [docs/student-pr-reviews-detail.md](../../docs/reference/student-pr-reviews-detail.md).
 
 ## Regle HARD — pas de fuite jury
 
@@ -16,7 +16,7 @@ S'applique a **toute review humaine ou bot sur depots etudiants** : `jsboigeECE/
 
 ## Regle HARD — review bienveillante (mandat 2026-05-20)
 
-Sur PR etudiante : review **breve et bienveillante**, points forts uniquement. NE PAS appliquer les criteres CHANGES_REQUESTED A-G de [pr-review-discipline.md](pr-review-discipline.md) (ils visent les contributeurs internes). CHANGES_REQUESTED reserve aux VRAIS problemes (code qui ne tourne pas du tout, TP hors-sujet, fichier essentiel manquant). Template vide + CI rouges = OK. Merge admin via `gh auth switch -u jsboige`. Format public + bypass + workflow : cf [detail](../../docs/student-pr-reviews-detail.md).
+Sur PR etudiante : review **breve et bienveillante**, points forts uniquement. NE PAS appliquer les criteres CHANGES_REQUESTED A-G de [pr-review-discipline.md](pr-review-discipline.md) (ils visent les contributeurs internes). CHANGES_REQUESTED reserve aux VRAIS problemes (code qui ne tourne pas du tout, TP hors-sujet, fichier essentiel manquant). Template vide + CI rouges = OK. Merge admin via `gh auth switch -u jsboige`. Format public + bypass + workflow : cf [detail](../../docs/reference/student-pr-reviews-detail.md).
 
 ## Regle HARD — un seul reviewer public
 
@@ -28,7 +28,7 @@ Sur PR etudiante : review **breve et bienveillante**, points forts uniquement. N
 
 ## Voir aussi
 
-- [docs/student-pr-reviews-detail.md](../../docs/student-pr-reviews-detail.md) — incident, format public, briefings internes, cooperation reviewers, bypass CI, anti-patterns, precedents
+- [docs/student-pr-reviews-detail.md](../../docs/reference/student-pr-reviews-detail.md) — incident, format public, briefings internes, cooperation reviewers, bypass CI, anti-patterns, precedents
 - [exercise-example-labeling.md](exercise-example-labeling.md) — workflow exercices → exemples
 - [pr-review-discipline.md](pr-review-discipline.md) — NE PAS appliquer criteres A-G a PR etudiante
-- [docs/ece-grading.md](../../docs/ece-grading.md) — pipeline GradeBookApp
+- [docs/ece-grading.md](../../docs/reference/ece-grading.md) — pipeline GradeBookApp

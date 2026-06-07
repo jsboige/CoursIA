@@ -1,6 +1,6 @@
 # PR Review Discipline — Contexte, incident, anti-patterns
 
-Document de référence détaillant les seuils auto-loaded de [.claude/rules/pr-review-discipline.md](../.claude/rules/pr-review-discipline.md).
+Document de référence détaillant les seuils auto-loaded de [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md).
 
 ## Contexte (incident 2026-05-08)
 
@@ -47,8 +47,8 @@ PRs micro qui inflate le compteur "PRs livrées" sans valeur réelle (#806 +2 li
 
 ### Liens internes
 
-- Criteres multi-seed (ML) : cf [.claude/rules/pr-review-discipline.md](../.claude/rules/pr-review-discipline.md) section C
-- Bot reviews pour dispatch : cf [.claude/rules/pr-review-discipline.md](../.claude/rules/pr-review-discipline.md) section G
-- Review state filter : cf [.claude/rules/verify-before-claiming.md](../.claude/rules/verify-before-claiming.md)
-- [.claude/rules/anti-regression.md](../.claude/rules/anti-regression.md)
+- Criteres multi-seed (ML) : cf [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) section C
+- Bot reviews pour dispatch : cf [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) section G
+- Review state filter : cf [.claude/rules/verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md)
+- [.claude/rules/anti-regression.md](../../.claude/rules/anti-regression.md)
 - CLAUDE.md section B (Reviews PR 5 points obligatoires)

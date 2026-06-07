@@ -8,19 +8,19 @@ Le repo contient deja plusieurs documents canoniques. **Ne pas dupliquer ici** c
 
 | Document | Role | Source canonique de |
 |----------|------|---------------------|
-| [MyIA.AI.Notebooks/QuantConnect/README.md](../MyIA.AI.Notebooks/QuantConnect/README.md) | Entree serie pedagogique | Catalog des 27+ notebooks Python, structure series |
-| [MyIA.AI.Notebooks/QuantConnect/GETTING-STARTED.md](../MyIA.AI.Notebooks/QuantConnect/GETTING-STARTED.md) | Setup utilisateur | Premiere prise en main QC + LEAN |
-| [MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md](../MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md) | Mapping livre Jared | 63 exemples / 71 deliverables HandsOnAITradingBook -> nos notebooks/projects |
-| [MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md](../MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md) | Mapping detaille Ch06 | 22 strategies ML du livre |
-| [MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_DATA_REQUIREMENTS.md](../MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_DATA_REQUIREMENTS.md) | Besoins datasets livre | Datasets requis par exemple |
-| [MyIA.AI.Notebooks/QuantConnect/docs/PAPER_TRADING_ARCHITECTURE.md](../MyIA.AI.Notebooks/QuantConnect/docs/PAPER_TRADING_ARCHITECTURE.md) | Pedagogie paper trading | Architecture paper -> live, brokers IBKR/Binance |
-| [MyIA.AI.Notebooks/QuantConnect/docs/PAPER_TO_LIVE_TRANSITION.md](../MyIA.AI.Notebooks/QuantConnect/docs/PAPER_TO_LIVE_TRANSITION.md) | Procedure transition | Checklist paper -> live |
-| [MyIA.AI.Notebooks/QuantConnect/docs/PROCEDURE_DEPLOIEMENT.md](../MyIA.AI.Notebooks/QuantConnect/docs/PROCEDURE_DEPLOIEMENT.md) | Procedure deploiement | Workflow deploiement strategies |
-| [MyIA.AI.Notebooks/QuantConnect/docs/qc_strategies_catalog.md](../MyIA.AI.Notebooks/QuantConnect/docs/qc_strategies_catalog.md) | Catalog strategies live | 96 ALIVE projects, Sharpe top 15, IDs QC Cloud (regenere depuis API) |
-| [MyIA.AI.Notebooks/QuantConnect/docs/audits/](../MyIA.AI.Notebooks/QuantConnect/docs/audits/) | Audits historiques | AUDIT_QC_CLOUD, AUDIT_QC_ORG_2026-04, AUDIT_RAPPORT_2026-03-22, VALIDATION-REPORT |
-| [MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md](../MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md) | Registry training | 70+ checkpoints, stages -1/0/1/2, Anti-Bias |
+| [MyIA.AI.Notebooks/QuantConnect/README.md](../../MyIA.AI.Notebooks/QuantConnect/README.md) | Entree serie pedagogique | Catalog des 27+ notebooks Python, structure series |
+| [MyIA.AI.Notebooks/QuantConnect/GETTING-STARTED.md](../../MyIA.AI.Notebooks/QuantConnect/GETTING-STARTED.md) | Setup utilisateur | Premiere prise en main QC + LEAN |
+| [MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md](../../MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md) | Mapping livre Jared | 63 exemples / 71 deliverables HandsOnAITradingBook -> nos notebooks/projects |
+| [MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md](../../MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md) | Mapping detaille Ch06 | 22 strategies ML du livre |
+| [MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_DATA_REQUIREMENTS.md](../../MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_DATA_REQUIREMENTS.md) | Besoins datasets livre | Datasets requis par exemple |
+| [MyIA.AI.Notebooks/QuantConnect/docs/PAPER_TRADING_ARCHITECTURE.md](../../MyIA.AI.Notebooks/QuantConnect/docs/PAPER_TRADING_ARCHITECTURE.md) | Pedagogie paper trading | Architecture paper -> live, brokers IBKR/Binance |
+| [MyIA.AI.Notebooks/QuantConnect/docs/PAPER_TO_LIVE_TRANSITION.md](../../MyIA.AI.Notebooks/QuantConnect/docs/PAPER_TO_LIVE_TRANSITION.md) | Procedure transition | Checklist paper -> live |
+| [MyIA.AI.Notebooks/QuantConnect/docs/PROCEDURE_DEPLOIEMENT.md](../../MyIA.AI.Notebooks/QuantConnect/docs/PROCEDURE_DEPLOIEMENT.md) | Procedure deploiement | Workflow deploiement strategies |
+| [MyIA.AI.Notebooks/QuantConnect/docs/qc_strategies_catalog.md](../../MyIA.AI.Notebooks/QuantConnect/docs/qc_strategies_catalog.md) | Catalog strategies live | 96 ALIVE projects, Sharpe top 15, IDs QC Cloud (regenere depuis API) |
+| [MyIA.AI.Notebooks/QuantConnect/docs/audits/](../../MyIA.AI.Notebooks/QuantConnect/docs/audits/) | Audits historiques | AUDIT_QC_CLOUD, AUDIT_QC_ORG_2026-04, AUDIT_RAPPORT_2026-03-22, VALIDATION-REPORT |
+| [MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md](../../MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md) | Registry training | 70+ checkpoints, stages -1/0/1/2, Anti-Bias |
 | [docs/ml-trading-state.md](ml-trading-state.md) | Lecons ML trading | Pattern central vol vs direction, 7 disciplines, anti-FAANG |
-| [MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md](../MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md) | Assistants QC Cloud | 8 assistants, protocole couts QCC, matrice delegation |
+| [MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md](../../MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md) | Assistants QC Cloud | 8 assistants, protocole couts QCC, matrice delegation |
 
 **Regle de coherence** : pour les performances par strategie (Sharpe, CAGR) -> `qc_strategies_catalog.md`. Pour les patterns reutilisables -> ce fichier. Pour les lecons ML trans-iteration -> `ml-trading-state.md`. Pour le mapping livre -> `BOOK_MAPPING.md` (racine, pas doublon `docs/`).
 
@@ -90,7 +90,7 @@ Config `.mcp.json` (remplace l'entree Docker `qc-mcp` ; secrets dans `.env` giti
 }
 ```
 
-Verification rapide : `python -c "from server import list_projects; print(list_projects())"` depuis `scripts/qc-mcp-lite/`. Procedure complete (setup `.env`, retour au MCP Docker complet) : [`scripts/qc-mcp-lite/README.md`](../scripts/qc-mcp-lite/README.md).
+Verification rapide : `python -c "from server import list_projects; print(list_projects())"` depuis `scripts/qc-mcp-lite/`. Procedure complete (setup `.env`, retour au MCP Docker complet) : [`scripts/qc-mcp-lite/README.md`](../../scripts/qc-mcp-lite/README.md).
 
 ### Rate limiting strict
 
@@ -170,7 +170,7 @@ https://www.quantconnect.com/organization/<org_id>/assistants
 
 ### Limites et precautions
 
-- **Validation cluster obligatoire post-deployment** : meme si Research Assistant claim "Sharpe 3.50", refaire en local par walk-forward 5-fold + multi-seed >=4 + transaction costs avant tout claim BEATS. Cf [.claude/rules/pr-review-discipline.md](../.claude/rules/pr-review-discipline.md) section C.
+- **Validation cluster obligatoire post-deployment** : meme si Research Assistant claim "Sharpe 3.50", refaire en local par walk-forward 5-fold + multi-seed >=4 + transaction costs avant tout claim BEATS. Cf [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) section C.
 - **Cout QC tokens** : ne pas lancer 50 deployments en parallele sans verifier le burn rate
 - **Eviter chevauchement agents** sur meme deployment (tokens dupliques) : coordination via dashboard avant lancement
 - **Notebook output download** : Playwright snapshot ou API download artifact (workflow exact a documenter par usage)

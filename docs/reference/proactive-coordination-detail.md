@@ -1,6 +1,6 @@
 # Coordination proactive — detail
 
-Detail de [.claude/rules/proactive-coordination.md](../.claude/rules/proactive-coordination.md). Voir aussi [subagents-reference.md](subagents-reference.md), [scripts-reference.md](scripts-reference.md).
+Detail de [.claude/rules/proactive-coordination.md](../../.claude/rules/proactive-coordination.md). Voir aussi [subagents-reference.md](subagents-reference.md), [scripts-reference.md](scripts-reference.md).
 
 ## Backlog pickup — sources autorisees (ordre de priorite decroissant)
 
@@ -14,7 +14,7 @@ Wakeup vide : prendre la **premiere source non-vide**, **un seul item**, produir
 | 4 | PRs languishing > 3 jours sans reponse (siennes ou domaine) | Re-iter ou cloturer | Hygiene cluster |
 | 5 | Issues `priority-medium` du domaine | Self-assign + 1 PR | Travail cataloguable |
 | 6 | Low-priority Epics stockees (#1646 Grothendieck, #1647 Conway Phase 2, #1650 Translation, #1651 Conway Phase 3 FWT) | 1 phase / 1 pilier, 1 PR partielle | Stock activable "fenetres calmes" |
-| 7 | Audit findings non traites (NanoClaw #488 etc.) | 1 reassessment + 1 PR si CONFIRMED (cf [audit-reassessment.md](../.claude/rules/audit-reassessment.md)) | Backlog d'enquete |
+| 7 | Audit findings non traites (NanoClaw #488 etc.) | 1 reassessment + 1 PR si CONFIRMED (cf [audit-reassessment.md](../../.claude/rules/audit-reassessment.md)) | Backlog d'enquete |
 | 8 | Consolidation/documentation de son domaine | 1 PR docs | Wiki Karpathy / SDDD documentaire |
 
 ## Anti-patterns wakeup vide (interdits)
