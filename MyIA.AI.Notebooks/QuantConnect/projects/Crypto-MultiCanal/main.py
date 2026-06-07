@@ -205,7 +205,10 @@ class CryptoMultiChannelAlgorithm(QCAlgorithm):
         self.set_cash(10000)
         self.btc = self.add_crypto("BTCUSDT", Resolution.DAILY, Market.BINANCE).symbol
         self.set_benchmark(self.btc)
-        self.set_brokerage_model(BrokerageName.BINANCE, AccountType.CASH)
+        # Configurable brokerage for fee sweep (default: binance with real fees)
+        self._brokerage_mode = self.get_parameter("brokerage", "binance")
+        if self._brokerage_mode != "none":
+            self.set_brokerage_model(BrokerageName.BINANCE, AccountType.CASH)
 
         # --- Strategy parameters (v17: v15 base + trail 3%) ---
         self.zigzag_threshold = 0.05
