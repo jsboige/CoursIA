@@ -52,7 +52,10 @@ class AllWeatherPortfolio(QCAlgorithm):
         self.set_cash(100000)
 
         # Brokerage: US ETFs (SPY/IEF/GLD/XLP) traded via IBKR margin account
-        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
+        # Configurable brokerage for fee sweep (default: IBKR margin with real fees)
+        self._brokerage_mode = self.get_parameter("brokerage", "ibkr")
+        if self._brokerage_mode != "none":
+            self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         # v5.0: IEF reduced 40%->30%, GLD raised 20%->30%
         # Rationale: IEF returned only 1.47% annualized (2015-2026) due to rate hike drag.
