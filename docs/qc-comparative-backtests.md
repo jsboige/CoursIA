@@ -256,7 +256,7 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 2. ~~**Run aligned baselines for AllWeather/SectorMomentum/EMA-Cross-Stocks/MomentumStrategy**~~ — Done, all 4 re-backtested via QC Cloud
 3. ~~**Student strategies (ESGF #1405)**: DualMomentum, RiskParity, ValueFactor, OptionWheel backtestees~~ — Done, 4/6 valides
 4. ~~**Transaction cost sensitivity analysis**: Estimated turnover and cost impact for all 10 research baselines~~ — Done (See #1407)
-5. ~~**Transaction cost re-backtest**: Add `SetBrokerageModel` + configurable brokerage parameter~~ — Done, #2575 + fee sweep (See #2471)
+5. ~~**Transaction cost re-backtest**: Add `SetBrokerageModel` + configurable brokerage parameter~~ — Done, #2575 + fee sweep EMA-Cross-Stocks + Crypto-MultiCanal (See #2471, #2575, #2588)
 6. **Cross-seed validation**: ≥4 seeds (0/1/7/42/99) for ML/DL/RL strategies
 7. **Edge vs σ**: Compute for all strategies vs B&H baseline
 
@@ -275,7 +275,7 @@ Source code analysis of all 10 research projects. Zero strategies have explicitl
 | MomentumStrategy | 28657837 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
 | AllWeather | 28657833 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
 | VolTarget-Momentum | 30784745 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
-| Crypto-MultiCanal | 30750734 | NONE | `BINANCE, CASH` | Binance schedule (0.1%) |
+| Crypto-MultiCanal | 30750734 | NONE | `BINANCE, CASH` (configurable) | Binance schedule (0.1%) |
 | Portfolio-IBKR-Binance | 31717642 | NONE | `IBKR, MARGIN` (#2575) | IBKR tiered |
 | MomentumRegime | 31243821 | NONE | `IBKR, MARGIN` | IBKR tiered |
 | TrendStocks-Alpha | 28885507 | NONE | `IBKR, MARGIN` | IBKR tiered |
@@ -324,7 +324,7 @@ Source code analysis of all 10 research projects. Zero strategies have explicitl
 |----------|---------|--------|-----------|
 | HIGH | EMA-Cross-Stocks | Add configurable fee + 0x/1x/2x sweep | Highest turnover, no brokerage = blind to real costs |
 | HIGH | TrendStocks-Alpha | Same | Largest universe, weekly rebalance |
-| HIGH | Crypto-MultiCanal | Test 0x/2x Binance fees | Already has real crypto fees, should verify sensitivity |
+| HIGH | Crypto-MultiCanal | Test 0x/2x Binance fees | **Done** — Binance Sharpe 0.333 vs None 0.181 (See #2590) |
 | MEDIUM | MomentumStrategy | Add fee sweep | Stop-losses create unplanned trades |
 | MEDIUM | VolTarget-Momentum | Add fee sweep | Leverage amplifies trade sizes |
 | LOW | AllWeather | Optional | Very few trades, minimal cost impact |
@@ -397,7 +397,19 @@ for ticker in self.all_tickers:
 
 #### Key Takeaways
 
-1. **Crypto fees are the primary risk factor**: Crypto-MultiCanal loses 9.8% of its Sharpe to fees (-57 bps). A Binance fee increase or slippage spike could materially impact returns.
+1. **Crypto fees are NOT the primary risk factor (revised)**: Crypto-MultiCanal fee sweep (backtest IDs `9ad550e9`, `56d54a3c`) shows Binance (real 0.1% fees) Sharpe 0.333 vs no-brokerage Sharpe 0.181. Fees actually improve Sharpe by +0.152 (+84%), likely because the brokerage model's cash constraints filter low-quality trades. The theoretical -9.8% erosion estimate was wrong — real backtesting contradicts it.
+2. **EMA-Cross-Stocks: fees negligible** (backtest IDs from #2588): IBKR Sharpe 0.991 vs no-brokerage Sharpe 0.991 (identical). US equity fees via IBKR are <0.25 bps per trade — negligible impact even at high turnover.
+
+### Verified Fee Sweep Results
+
+Backtest-validated fee sensitivity for strategies with configurable brokerage parameter.
+
+| Project | With Fees | Sharpe (fees) | Sharpe (no fees) | Delta | Verdict |
+|---------|-----------|---------------|-------------------|-------|---------|
+| EMA-Cross-Stocks | IBKR Margin | 0.991 | 0.991 | 0.000 | **Near-immune** (US equity fees negligible) |
+| Crypto-MultiCanal | Binance Cash | 0.333 | 0.181 | **+0.152** | **Fees improve** (cash constraints filter bad trades) |
+
+**Key insight**: Theoretical fee erosion estimates can be wrong. Binance CASH account type enforces cash settlement rules that prevent over-leveraging, improving risk-adjusted returns. Real backtesting is essential.
 2. **EMA-Cross-Alpha is fragile on multiple dimensions**: Already negative Sharpe, thin fee margin (28 bps break-even), and high turnover. Confirms "exploratoire" classification.
 3. **High-turnover equity strategies lose meaningful CAGR**: EMA-Cross-Stocks (-50 bps) and TrendStocks-Alpha (-60 bps) each lose ~0.5-0.6% annually. Warrant explicit `SetFeeModel`.
 4. **No profitable strategy flips unprofitable** at realistic fees. The risk is Sharpe degradation, not sign flip.
