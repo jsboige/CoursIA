@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: GenAI-Video
 pedagogical_count: 16
-breakdown: Video=16
-maturity: PRODUCTION=9, ALPHA=3, BETA=2, DRAFT=2
+breakdown: Foundation=5, Advanced=4, Orchestration=3, Applications=4
+maturity: BETA=9, ALPHA=3, PRODUCTION=2, DRAFT=2
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
