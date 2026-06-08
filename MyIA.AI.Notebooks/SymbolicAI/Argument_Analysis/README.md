@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: SymbolicAI-Argument_Analysis
 pedagogical_count: 6
-breakdown: Argument_Analysis=6
-maturity: PRODUCTION=5, ALPHA=1
+breakdown: Pipeline=5, UI=1
+maturity: PRODUCTION=5, BETA=1
 -->
 
 Pipeline complet d'analyse argumentative combinant Semantic Kernel, TweetyProject et programmation logique pour l'identification et l'evaluation d'arguments dans des textes.
