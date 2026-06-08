@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: GenAI-00-GenAI-Environment
 pedagogical_count: 6
-breakdown: Environment-Setup=1, Docker-Services=1, API-Endpoints=1, Environment-Validation=1, ComfyUI-Test=1, Local-Docker=1
-maturity: BETA=5, PRODUCTION=1
+breakdown: 00-GenAI-Environment=6
+maturity: BETA=4, PRODUCTION=2
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Docker Services](00-2-Docker-Services-Management.ipynb)
