@@ -4,7 +4,7 @@
 series: SymbolicAI-SmartContracts
 pedagogical_count: 27
 breakdown: SmartContracts=27
-maturity: PRODUCTION=24, ALPHA=2, BETA=1
+maturity: PRODUCTION=27
 -->
 
 Serie de notebooks educatifs couvrant les fondements cryptographiques, le developpement Solidity, les tests, la cryptographie avancee (ZKP, HE, vote verifiable), et les blockchains alternatives.
