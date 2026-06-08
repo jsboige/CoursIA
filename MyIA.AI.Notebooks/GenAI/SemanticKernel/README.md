@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: GenAI-SemanticKernel
 pedagogical_count: 20
-breakdown: Fundamentals=1, Advanced=1, Agents=1, Filters=1, VectorStores=1, ProcessFramework=1, MultiModal=1, MCP=1, CLR=1, NotebookMaker=3, CaseStudies=5, AutoInteractive=1, Templates=2
-maturity: PRODUCTION=8, BETA=7, TEMPLATE=3, ALPHA=1, DRAFT=1
+breakdown: SemanticKernel=20
+maturity: PRODUCTION=12, BETA=3, TEMPLATE=3, ALPHA=2
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Text Generation](../Texte/README.md)
