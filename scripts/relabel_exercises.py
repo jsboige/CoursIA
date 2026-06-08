@@ -19,10 +19,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 
 # (cell_idx, current_num, target_num)
+# NOTE: 11_Quantization excluded — per-section numbering (body [1,2,3] + practicals [1..5])
+# is NOT scrambled, just separate exercise blocks within the same notebook.
 RELABEL_MAP = {
-    "MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb": [
-        (38, 1, 4),
-    ],
     "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb": [
         (16, 3, 1), (26, 4, 3),
     ],
