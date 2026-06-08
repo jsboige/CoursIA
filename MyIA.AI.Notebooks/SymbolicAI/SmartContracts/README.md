@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: SymbolicAI-SmartContracts
 pedagogical_count: 27
-breakdown: 00-Foundations=3, 01-Solidity-Foundation=4, 02-Solidity-Advanced=5, 03-Foundry-Testing=3, 04-Privacy-Cryptography=3, 05-Alternative-Chains=5, 06-Real-World=4
-maturity: PRODUCTION=11, BETA=16
+breakdown: SmartContracts=27
+maturity: PRODUCTION=24, ALPHA=2, BETA=1
 -->
 
 Serie de notebooks educatifs couvrant les fondements cryptographiques, le developpement Solidity, les tests, la cryptographie avancee (ZKP, HE, vote verifiable), et les blockchains alternatives.
