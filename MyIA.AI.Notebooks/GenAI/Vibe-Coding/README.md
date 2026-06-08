@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: GenAI-Vibe-Coding
 pedagogical_count: 5
-breakdown: Claude-CLI-Bases=1, Claude-CLI-Sessions=1, Claude-CLI-References=1, Claude-CLI-Agents=1, Claude-CLI-Automatisation=1
-maturity: BETA=5
+breakdown: Vibe-Coding=5
+maturity: PRODUCTION=4, BETA=1
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Claude Discovery](Claude-Code/01-decouverte/README.md)
