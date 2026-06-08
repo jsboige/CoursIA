@@ -78,7 +78,7 @@ Les notebooks utilisent principalement **Python 3.10+** (PyTorch, OR-Tools, PyMC
 
 ## Ponts conceptuels inter-series
 
-Au-dela des parcours lineaires, le depot tisse des liens profonds entre ses series. La cle de lecture [La mer qui monte](grothendieckian-lens.md) developpe cette vision d'ensemble ; les ponts ci-dessous en donnent les passages les plus directs.
+Au-dela des parcours lineaires, le depot tisse des liens profonds entre ses series. La cle de lecture [La mer qui monte](../grothendieckian-lens.md) developpe cette vision d'ensemble ; les ponts ci-dessous en donnent les passages les plus directs.
 
 ### La dualite simulation / preuve
 
@@ -104,7 +104,7 @@ Plusieurs series du depot pratiquent le meme geste : prendre la sortie incertain
 - **SC-11** : un contrat assiste par LLM relu a l'aune de sa verification formelle.
 - **Search/CSP** : un meme Sudoku resolu par recherche, par contraintes, ou par SAT — trois representations, trois couts.
 
-Ce mouvement est developpe dans la cle de lecture [La mer qui monte](grothendieckian-lens.md) : l'IA digne de confiance sera celle qui sait trouver le cadre ou l'affirmation devient controlable.
+Ce mouvement est developpe dans la cle de lecture [La mer qui monte](../grothendieckian-lens.md) : l'IA digne de confiance sera celle qui sait trouver le cadre ou l'affirmation devient controlable.
 
 ### Du local au global
 
@@ -185,4 +185,4 @@ Un second fil relie les series : une regle purement locale engendre une structur
 
 ---
 
-**Navigation** : [CLAUDE.md](../CLAUDE.md) | [docs/README.md](README.md) | [Index notebooks](../MyIA.AI.Notebooks/README.md) | [La mer qui monte](grothendieckian-lens.md)
+**Navigation** : [CLAUDE.md](../CLAUDE.md) | [docs/README.md](README.md) | [Index notebooks](../MyIA.AI.Notebooks/README.md) | [La mer qui monte](../grothendieckian-lens.md)

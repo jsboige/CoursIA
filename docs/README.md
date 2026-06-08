@@ -77,13 +77,18 @@ Guides pedagogiques et parcours d'apprentissage.
 | [curriculum/genai.md](curriculum/genai.md) | GenAI |
 | [curriculum/stage5_mamba_ssm.md](curriculum/stage5_mamba_ssm.md) | Stage 5 Mamba/SSM |
 
+## Lecture transversale
+
+| Fichier | Description |
+|---------|-------------|
+| [grothendieckian-lens.md](grothendieckian-lens.md) | Cle de lecture grothendieckienne du depot (changement de representation, certification A/B/C) |
+
 ## Archive (docs/archive/)
 
 Documents conserves pour reference mais inactifs. Index complet : [archive/INDEX.md](archive/INDEX.md).
 
 | Fichier | Description |
 |---------|-------------|
-| [archive/grothendieckian-lens.md](archive/grothendieckian-lens.md) | Cle de lecture grothendieckienne |
 | [archive/ml-trading-state.md](archive/ml-trading-state.md) | Etat ML trading (historique) |
 | [archive/qc-comparative-backtests.md](archive/qc-comparative-backtests.md) | Analyse comparative backtests |
 | [archive/visitor-navigation-guide.md](archive/visitor-navigation-guide.md) | Carte du visiteur |
@@ -105,6 +110,7 @@ docs/
   qc/                QuantConnect reference
   lean/              Prover iteration + endpoints
   curriculum/        Parcours pedagogiques + stages
+  grothendieckian-lens.md  Cle de lecture transversale du depot
   archive/           Documents inactifs (ex-_archives)
 ```
 
