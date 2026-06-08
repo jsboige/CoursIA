@@ -97,7 +97,7 @@ theorem cover_inf_iff {C : Type*} [Category C] {J : GrothendieckTopology C}
     This is the fundamental stability property: if S covers X and
     f : Y ⟶ X, then Sieve.pullback f S covers Y.
     Uses `GrothendieckTopology.pullback_stable`. -/
-theorem pullback_cover {C : Type*} [Category C]
+theorem cover_pullback_stable {C : Type*} [Category C]
     {J : GrothendieckTopology C} {X Y : C} {S : Sieve X}
     (hS : S ∈ J X) (f : Y ⟶ X) :
     Sieve.pullback f S ∈ J Y :=
