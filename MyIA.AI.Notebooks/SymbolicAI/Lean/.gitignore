@@ -1,6 +1,9 @@
 # Environment files with secrets
 .env
 
+# Golly screenshots (accessed via webapp)
+golly_*.png
+
 # Python cache
 __pycache__/
 *.py[cod]
