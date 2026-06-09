@@ -96,7 +96,7 @@ Commandes :
 
 ## Voir aussi
 
-- [docs/genai-services.md](../../docs/genai-services.md) — architectures Qwen/Lumina, scripts genai-stack, mappings
+- [docs/genai/genai-services.md](../../docs/genai/genai-services.md) — architectures Qwen/Lumina, scripts genai-stack, mappings
 - [.claude/rules/genai-config.md](../rules/genai-config.md) — GenAI Docker config, GPU, .env
 - [.claude/rules/secrets-hygiene.md](../rules/secrets-hygiene.md) — secrets content-based
 - [.claude/skills/genai-iterate/SKILL.md](../skills/genai-iterate/SKILL.md) + [.claude/skills/validate-genai/SKILL.md](../skills/validate-genai/SKILL.md)

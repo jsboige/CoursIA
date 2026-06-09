@@ -92,4 +92,4 @@ Voir [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-review
 - Pipeline notation et bonus CC : [docs/ece-grading.md](ece-grading.md)
 - Mapping cluster machines (au-dela enseignement) : [docs/cluster-agents.md](cluster-agents.md)
 - Slides Slidev EPITA : `MyIA.AI.Notebooks/SymbolicAI/<serie>/slides/` (workflow Slidev verify, cf [.claude/rules/](../../.claude/rules/))
-- QuantConnect (partenaire) : [docs/quantconnect.md](quantconnect.md)
+- QuantConnect (partenaire) : [docs/qc/quantconnect.md](../qc/quantconnect.md)

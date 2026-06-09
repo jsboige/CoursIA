@@ -246,7 +246,7 @@ Each notebook in the QC tree falls into one of four types:
 | **(c)** | standalone research | Local (yfinance/sklearn) | 24 |
 | **(d)** | pedagogical placeholder | Read-only / copy-paste | 33 |
 
-See [docs/_archives/qc-strategies-status.md](../../docs/_archives/qc-strategies-status.md) for the exhaustive classification.
+See [docs/archive/qc-strategies-status.md](../../docs/archive/qc-strategies-status.md) for the exhaustive classification.
 
 ## Cours partenaire — Exemples de Recherche
 
@@ -456,7 +456,7 @@ Après completion de cette série, vous maîtriserez :
 
 ## Stratégies Vérifiées — Baselines Comparatives
 
-Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes standardisées via QC Cloud API. Le tableau ci-dessous présente les **meilleures performances vérifiées** (Sharpe, CAGR, MaxDD, PSR) : [catalogue complet](../../docs/qc-comparative-backtests.md).
+Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes standardisées via QC Cloud API. Le tableau ci-dessous présente les **meilleures performances vérifiées** (Sharpe, CAGR, MaxDD, PSR) : [catalogue complet](../../docs/archive/qc-comparative-backtests.md).
 
 ### Top 5 stratégies (Sharpe aligned, 2018-2025)
 
@@ -476,7 +476,7 @@ Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes s
 - **Composites < single-strategies** : MomentumRegime (combinaison SectorMom + Regime) obtient seulement 0.185, confirmant le problème de "double-defense".
 - **Crypto = diversification stable** : MaxDD maitrisé (~17%), rendement modéré.
 
-> Voir [docs/qc-comparative-backtests.md](../../docs/qc-comparative-backtests.md) pour les 17 baselines vérifiées, les comparaisons best-vs-aligned, et les diagnostics détaillés (See #1630).
+> Voir [docs/archive/qc-comparative-backtests.md](../../docs/archive/qc-comparative-backtests.md) pour les 17 baselines vérifiées, les comparaisons best-vs-aligned, et les diagnostics détaillés (See #1630).
 
 ---
 

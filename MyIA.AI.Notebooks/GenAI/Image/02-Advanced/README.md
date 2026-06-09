@@ -81,4 +81,4 @@ pip install -r requirements-comfyui.txt
 
 - [Documentation Image principale](../README.md)
 - [Guide ComfyUI](../../00-GenAI-Environment/README.md)
-- [Architecture ComfyUI](../../../../docs/genai-services.md)
+- [Architecture ComfyUI](../../../../docs/genai/genai-services.md)

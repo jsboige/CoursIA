@@ -19,10 +19,10 @@ Le repo contient deja plusieurs documents canoniques. **Ne pas dupliquer ici** c
 | [MyIA.AI.Notebooks/QuantConnect/docs/qc_strategies_catalog.md](../../MyIA.AI.Notebooks/QuantConnect/docs/qc_strategies_catalog.md) | Catalog strategies live | 96 ALIVE projects, Sharpe top 15, IDs QC Cloud (regenere depuis API) |
 | [MyIA.AI.Notebooks/QuantConnect/docs/audits/](../../MyIA.AI.Notebooks/QuantConnect/docs/audits/) | Audits historiques | AUDIT_QC_CLOUD, AUDIT_QC_ORG_2026-04, AUDIT_RAPPORT_2026-03-22, VALIDATION-REPORT |
 | [MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md](../../MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md) | Registry training | 70+ checkpoints, stages -1/0/1/2, Anti-Bias |
-| [docs/ml-trading-state.md](ml-trading-state.md) | Lecons ML trading | Pattern central vol vs direction, 7 disciplines, anti-FAANG |
+| [docs/archive/ml-trading-state.md](../archive/ml-trading-state.md) | Lecons ML trading | Pattern central vol vs direction, 7 disciplines, anti-FAANG |
 | [MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md](../../MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md) | Assistants QC Cloud | 8 assistants, protocole couts QCC, matrice delegation |
 
-**Regle de coherence** : pour les performances par strategie (Sharpe, CAGR) -> `qc_strategies_catalog.md`. Pour les patterns reutilisables -> ce fichier. Pour les lecons ML trans-iteration -> `ml-trading-state.md`. Pour le mapping livre -> `BOOK_MAPPING.md` (racine, pas doublon `docs/`).
+**Regle de coherence** : pour les performances par strategie (Sharpe, CAGR) -> `qc_strategies_catalog.md`. Pour les patterns reutilisables -> ce fichier. Pour les lecons ML trans-iteration -> `docs/archive/ml-trading-state.md`. Pour le mapping livre -> `BOOK_MAPPING.md` (racine, pas doublon `docs/`).
 
 ## Backtests obligatoires
 
@@ -280,9 +280,9 @@ Toute l'historique des trainings ML/QC est preservee dans le depot et accessible
 | `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/docs/Curriculum_V2_Meta_Analysis.md` | Meta-analyse curriculum V2 |
 | `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/results/*/checkpoint.jsonl` + `train.log` | 27 runs avec etat par combo et logs unbuffered (local, gitignored) |
 | QC Cloud (MCP `list_projects` + `list_backtests` + `read_backtest`) | Sharpe/CAGR/MaxDD live de chaque iteration |
-| [docs/ml-trading-state.md](ml-trading-state.md) | Lecons consolidees (vol vs direction, parcimonie, transaction costs, recommandations datasets) |
+| [docs/archive/ml-trading-state.md](../archive/ml-trading-state.md) | Lecons consolidees (vol vs direction, parcimonie, transaction costs, recommandations datasets) |
 
-**Regle** : pas de duplication. Si tu veux ajouter une note sur une iteration training, vise `ML-Training-Pipeline/docs/M<N>_*.md` ou QC Cloud notes, pas un memo coordinateur. Pour une lecon trans-iteration : `docs/ml-trading-state.md`.
+**Regle** : pas de duplication. Si tu veux ajouter une note sur une iteration training, vise `ML-Training-Pipeline/docs/M<N>_*.md` ou QC Cloud notes, pas un memo coordinateur. Pour une lecon trans-iteration : `docs/archive/ml-trading-state.md`.
 
 ## Livre de reference
 

@@ -219,7 +219,7 @@ Les deux sous-series sont independantes et peuvent etre suivies dans n'importe q
 | Probleme | Solution |
 | -------- | -------- |
 | `dotnet-interactive` non trouve | `dotnet tool install -g Microsoft.dotnet-interactive` puis `dotnet interactive jupyter install` |
-| Kernel `.net-csharp` absent | Verifier avec `jupyter kernelspec list`. Reinstaller si necessaire (cf. [docs/kernels-runtime.md](../../docs/kernels-runtime.md)) |
+| Kernel `.net-csharp` absent | Verifier avec `jupyter kernelspec list`. Reinstaller si necessaire (cf. [docs/reference/kernels-runtime.md](../../docs/reference/kernels-runtime.md)) |
 | ML.NET : erreur `IDataView` au chargement | Verifier le chemin du CSV (utilisez `Path.Combine` plutot qu'un chemin absolu) |
 | `OPENAI_API_KEY` manquant (Labs 2-3) | Creer un fichier `.env` a la racine avec `OPENAI_API_KEY=sk-...` |
 | PyTorch lent sur CPU | Normal pour les Labs 8+. Le GPU est recommande mais pas obligatoire |

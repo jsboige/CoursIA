@@ -1,37 +1,6 @@
 {
-  "broken_links": [
-    {
-      "source": "docker-configurations/services/comfyui-qwen/ComfyUI/custom_nodes/ComfyUI-QwenImageWanBridge/README.md",
-      "target": "nodes/docs/prompt_cookbook.md",
-      "line": 168,
-      "text": "Prompt Cookbook"
-    },
-    {
-      "source": "docker-configurations/services/comfyui-qwen/ComfyUI/custom_nodes/ComfyUI_QwenImageWanBridge/README.md",
-      "target": "ADVANCED_ENCODER_TEST_GUIDE.md",
-      "line": 157,
-      "text": "ADVANCED_ENCODER_TEST_GUIDE.md"
-    },
-    {
-      "source": "docker-configurations/services/comfyui-qwen/workspace/custom_nodes/ComfyUI-nunchaku/README.md",
-      "target": "example_workflows/nunchaku-flux.1-dev-controlnet-union-pro.json",
-      "line": 40,
-      "text": "**ControlNet**"
-    },
-    {
-      "source": "docker-configurations/services/comfyui-qwen/workspace/custom_nodes/ComfyUI-nunchaku/README.md",
-      "target": "examples/flux.1-dev-turing.py",
-      "line": 40,
-      "text": "**20-series GPU**"
-    },
-    {
-      "source": "docker-configurations/services/comfyui-qwen/workspace/custom_nodes/ComfyUI_QwenImageWanBridge/README.md",
-      "target": "ADVANCED_ENCODER_TEST_GUIDE.md",
-      "line": 157,
-      "text": "ADVANCED_ENCODER_TEST_GUIDE.md"
-    }
-  ],
+  "broken_links": [],
   "orphans": [],
-  "scanned_files": 532,
-  "total_links": 2074
+  "scanned_files": 453,
+  "total_links": 2020
 }

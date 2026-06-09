@@ -41,7 +41,7 @@ SCAN_SCOPES = [
 # Directories to skip when scanning and resolving
 SKIP_DIRS = {
     ".lake", "node_modules", ".git", "venv", "__pycache__",
-    "_archives", "_output", ".ipynb_checkpoints", "worktrees",
+    "_archives", "archive", "_output", ".ipynb_checkpoints", "worktrees",
     ".mypy_cache", ".pytest_cache", ".ruff_cache",
     "custom_nodes",  # Third-party ComfyUI plugins, not ours to fix
 }

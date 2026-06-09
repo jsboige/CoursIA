@@ -38,7 +38,8 @@ MyIA.AI.Notebooks/
   cross-series/    -> Applications transverses (matching-cv : data science multi-domaines)
 ```
 
-Pour un guide complet des parcours d'apprentissage, voir [docs/parcours/](docs/parcours/).
+<!-- TODO: link target docs/parcours/ does not exist - uncomment when created -->
+<!-- Pour un guide complet des parcours d'apprentissage, voir docs/parcours/. -->
 
 ---
 

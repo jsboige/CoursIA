@@ -105,4 +105,4 @@ Texte litteraire -> Benchmark voix (P0)
 
 - [Documentation Audio principale](../README.md)
 - [Live Coding Guide](04-5-LiveCoding-LLM-Music.ipynb)
-- [GenAI Services Documentation](../../../../docs/genai-services.md)
+- [GenAI Services Documentation](../../../../docs/genai/genai-services.md)
