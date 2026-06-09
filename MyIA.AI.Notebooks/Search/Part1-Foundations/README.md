@@ -6,6 +6,12 @@ Vous commencerez par formaliser des problemes sous forme d'espaces d'etats (Sear
 
 **11 notebooks** | **~12h30** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `z3-solver`)
 
+## Pourquoi cette sous-serie
+
+La recherche est le pilier de l'IA classique : tout probleme peut se ramener a l'exploration d'un espace d'etats. Cette partie couvre les **trois grands paradigmes** (systematique, locale, evolutive) avec une progression qui va de la theorie (formalisation) a la pratique (benchmarks reels). Le fil rouge est la reduction progressive de l'espace de recherche : comment passer d'une enumeration aveugle a une exploration intelligemment guidee.
+
+Ces fondamentaux sont le prerequis de [Partie 2 (CSP)](../Part2-CSP/README.md) et des [Applications](../Applications/README.md) — maitriser les algorithmes de cette partie est essentiel avant de passer aux contraintes et aux projets.
+
 ## Objectifs d'apprentissage
 
 A l'issue de cette partie, vous serez capable de :
@@ -89,6 +95,17 @@ Search-9 (LinearProgramming) - independant
 Search-10 (SymbolicAutomata) - liens avec SymbolicAI
 ```
 
-## Retour
+## Ponts inter-series
 
-[<- Retour a la serie Search](../README.md)
+| Serie | Lien | Relation |
+| ------- | ------ | ---------- |
+| [Partie 2 : CSP](../Part2-CSP/README.md) | Programmation par contraintes | Suite naturelle : recherche declarative |
+| [Applications](../Applications/README.md) | 21 notebooks d'application | Mise en pratique des algorithmes |
+| [Search (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global |
+| [Sudoku](../../Sudoku/) | Resolution par contraintes | Application DLX et CSP |
+| [SymbolicAI/Z3](../../SymbolicAI/) | Search-10 (SymbolicAutomata) | Automates + solveur SMT |
+| [GameTheory](../../GameTheory/) | Jeux combinatoires | MCTS et theorie des jeux |
+
+## Navigation
+
+[<- Retour a la serie Search](../README.md) | [Partie 2 : CSP ->](../Part2-CSP/README.md) | [Applications ->](../Applications/README.md)

@@ -2,6 +2,28 @@
 
 Serie de **21 notebooks** couvrant la programmation probabiliste avec Microsoft Infer.NET, des fondamentaux aux modeles relationnels avances, incluant une section complete sur la theorie de la decision et des preuves formelles Lean 4.
 
+**21 notebooks** | **C# / .NET 9.0** | **~20h** | **.NET Interactive**
+
+**A qui s'adresse cette serie** : etudiants en IA, developpeurs .NET souhaitant maitriser l'inference probabiliste exacte, et data scientists interesses par les graphes de facteurs. Les notebooks C# requierent .NET 9.0 + dotnet-interactive. Aucun prerequis en probabilites avancees : les concepts sont introduits progressivement.
+
+## Pourquoi cette sous-serie
+
+Infer.NET est le seul framework d'inference probabiliste natif dans l'ecosysteme .NET. Il implemente l'inference exacte par **message passing** sur des graphes de facteurs, une approche deterministe et rapide qui contraste avec l'echantillonnage MCMC de PyMC. Cette serie couvre les 20 modeles classiques de la programmation probabiliste (reseaux bayesiens, TrueSkill, LDA, HMM) plus la theorie de la decision bayesienne complete (utilite esperee, diagrammes d'influence, EVPI, MDPs) et une preuve formelle Lean 4 de l'indice de Gittins.
+
+**Double approche** : Cette serie est le versant C#/.NET de la programmation probabiliste. Le versant Python (PyMC) couvre les memes modeles avec un moteur d'inference different. Voir [PyMC/](../PyMC/) pour la comparaison.
+
+**Applications reelles couvertes** : TrueSkill (Xbox Live, 100M+ joueurs), Item Response Theory (GMAT/GRE), LDA (Google News), systemes de recommandation, diagnostic medical.
+
+## Objectifs d'apprentissage
+
+A l'issue de cette serie, vous serez capable de :
+
+1. **Construire** un modele probabiliste en Infer.NET (definition, inference, validation)
+2. **Interpreter** les distributions posterieures (moyenne, variance, intervalles de credibilite)
+3. **Lire** un graphe de facteurs et comprendre le flux de messages
+4. **Appliquer** la theorie de la decision bayesienne (utilite esperee, EVPI, MDPs)
+5. **Comparer** l'inference exacte (Infer.NET) et approchee (PyMC) sur les memes modeles
+
 ## Vue d'ensemble
 
 | # | Notebook | Duree | Concepts |
@@ -1009,6 +1031,32 @@ Cette ligne est **obligatoire** pour les notebooks .NET Interactive.
 ### Glossaire
 
 Consultez le [Glossaire](Infer-Glossary.md) pour les definitions des termes techniques (EP, VMP, Factor Graph, EVPI, MDP, etc.)
+
+---
+
+## FAQ / Troubleshooting
+
+| Probleme | Solution |
+| --- | --- |
+| `The type 'Variable' does not contain a definition for...` | Verifier que le namespace `MicrosoftResearch.Infer` est importe. Le notebook 1 (Setup) couvre la configuration |
+| `Inference exception: Improper distribution` | Le modele contient une boucle causale ou une observation contradictoire. Le notebook 13 (Debugging) detaille les strategies de diagnostic |
+| `Algorithm compilation failed` | Infer.NET compile un algorithme d'inference par reflection. Verifier que le modele est dans une famille supportee (conjugue). Modeles non-conjugues necessitent EP ou VMP |
+| Performance lente sur les grands modeles | Utiliser `InferenceEngine.Compiler.ShowGeneratedSource = true` pour inspecter le code genere. Le notebook 13 compare les algorithmes EP/VMP/Gibbs |
+| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
+
+## Ponts inter-series
+
+| Serie | Lien | Relation |
+| --- | --- | --- |
+| [PyMC](../PyMC/) | Meme 20 modeles en Python/NUTS | Comparaison inference exacte vs MCMC |
+| [Probas (parent)](../README.md) | Vue d'ensemble Probas | Contexte et parcours |
+| [ML.NET](../../ML/ML.Net/) | TP prevision de ventes | Combine ML.NET + Infer.NET |
+| [Search/CSP](../../Search/Part2-CSP/) | CSP-5 (Optimization) | Programmation par contraintes et probabilites |
+| [SymbolicAI/Lean](../../SymbolicAI/Lean/) | Infer-20b (Gittins) | Preuves formelles Lean 4 |
+
+## Navigation
+
+[<- Retour a la serie Probas](../README.md) | [PyMC (Python) ->](../PyMC/README.md) | [ML.NET (C#) ->](../../ML/ML.Net/README.md)
 
 ---
 

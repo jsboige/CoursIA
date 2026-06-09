@@ -222,3 +222,26 @@ Ce port Python est le pendant de la serie [Infer.NET](../Infer/) (C# / .NET Inte
 ---
 
 [Retour au README Probas](../README.md)
+
+## FAQ rapide
+
+| Probleme | Solution |
+|----------|----------|
+| `ModuleNotFoundError: pymc` | `pip install pymc arviz` -- PyMC 5.x et ArviZ pour les diagnostics |
+| Echantillonnage tres lent (>5 min par modele) | Verifier qu'un compilateur C est disponible (PyMC utilise PyTensor avec compilation C). Sinon, reduire `draws` et `tune` (ex: 500/500 au lieu de 1000/1000) |
+| Convergence non atteinte (R-hat > 1.05) | Augmenter le nombre de `tune` steps. Le notebook 13 (Debugging) detaille les strategies de diagnostic |
+| Divergences dans l'echantillonnage | Re-parametrer le modele (centered vs non-centered). Voir notebook 2 (Gaussian Mixtures) et 13 (Debugging) |
+| `SamplingError: Initial evaluation failed` | Les priors sont incompatibles avec les observations. Verifier les distributions a priori et les valeurs initiales |
+
+## Ponts inter-series
+
+| Serie | Lien | Relation |
+|-------|------|----------|
+| [Infer.NET](../Infer/) | Meme 20 modeles en C# / message passing | Comparaison MCMC vs inference exacte |
+| [Probas (parent)](../README.md) | Vue d'ensemble Probas | Contexte et parcours |
+| [ML](../../ML/) | Pipeline ML classique | PyMC comme alternative bayesienne |
+| [QuantConnect](../../QuantConnect/) | Strategies de trading | Modeles bayesiens appliques au trading |
+
+## Navigation
+
+[<- Retour a la serie Probas](../README.md) \| [Infer.NET (C#) ->](../Infer/README.md)
