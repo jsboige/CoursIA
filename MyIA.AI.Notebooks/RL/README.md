@@ -26,16 +26,16 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 
 | # | Notebook | Contenu | Duree |
 |---|----------|---------|-------|
-| 1 | [stable_baseline_1_intro_cartpole](stable_baseline_1_intro_cartpole.ipynb) | Introduction PPO, CartPole | 25-30 min |
-| 2 | [stable_baseline_2_wrappers_sauvegarde_callbacks](stable_baseline_2_wrappers_sauvegarde_callbacks.ipynb) | Wrappers, sauvegarde, callbacks | 35-40 min |
-| 3 | [stable_baseline_3_experience_replay_dqn](stable_baseline_3_experience_replay_dqn.ipynb) | HER, goal-conditioned RL | 40-45 min |
-| 4 | [rl_3_multi_armed_bandits](rl_3_multi_armed_bandits.ipynb) | Bandits manchots, exploration vs exploitation, Thompson Sampling | 30-35 min |
-| 5 | [rl_4_mdp_dp_qlearning](rl_4_mdp_dp_qlearning.ipynb) | MDP, Value/Policy Iteration, Q-Learning tabulaire | 45-50 min |
-| 6 | [rl_5_dqn_policy_gradient](rl_5_dqn_policy_gradient.ipynb) | DQN depuis zero, REINFORCE | 50-55 min |
-| 6b | [rl_5b_actor_critic](rl_5b_actor_critic.ipynb) | Actor-Critic (A2C) depuis zero, advantage, entropy bonus | 45-50 min |
-| 6c | [rl_5c_ppo_from_scratch](rl_5c_ppo_from_scratch.ipynb) | PPO depuis zero, clipped surrogate, GAE, comparaison A2C vs PPO | 45-50 min |
-| 6d | [rl_5d_sac_from_scratch](rl_5d_sac_from_scratch.ipynb) | SAC depuis zero, maximum entropy RL, twin Q-networks, auto-temperature | 45-50 min |
-| 7 | [rl_6_multi_agent_rl](rl_6_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
+| 1 | [rl_1_intro_cartpole](rl_1_intro_cartpole.ipynb) | Introduction PPO, CartPole | 25-30 min |
+| 2 | [rl_2_wrappers_sauvegarde_callbacks](rl_2_wrappers_sauvegarde_callbacks.ipynb) | Wrappers, sauvegarde, callbacks | 35-40 min |
+| 3 | [rl_3_experience_replay_dqn](rl_3_experience_replay_dqn.ipynb) | HER, goal-conditioned RL | 40-45 min |
+| 4 | [rl_4_multi_armed_bandits](rl_4_multi_armed_bandits.ipynb) | Bandits manchots, exploration vs exploitation, Thompson Sampling | 30-35 min |
+| 5 | [rl_5_mdp_dp_qlearning](rl_5_mdp_dp_qlearning.ipynb) | MDP, Value/Policy Iteration, Q-Learning tabulaire | 45-50 min |
+| 6 | [rl_6_dqn_policy_gradient](rl_6_dqn_policy_gradient.ipynb) | DQN depuis zero, REINFORCE | 50-55 min |
+| 6b | [rl_6b_actor_critic](rl_6b_actor_critic.ipynb) | Actor-Critic (A2C) depuis zero, advantage, entropy bonus | 45-50 min |
+| 6c | [rl_6c_ppo_from_scratch](rl_6c_ppo_from_scratch.ipynb) | PPO depuis zero, clipped surrogate, GAE, comparaison A2C vs PPO | 45-50 min |
+| 6d | [rl_6d_sac_from_scratch](rl_6d_sac_from_scratch.ipynb) | SAC depuis zero, maximum entropy RL, twin Q-networks, auto-temperature | 45-50 min |
+| 7 | [rl_7_multi_agent_rl](rl_7_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
 
 ## Contenu detaille
 
@@ -346,16 +346,16 @@ L'experience replay (notebook 6) stocke les transitions (etat, action, reward, e
 
 ```
 RL/
-├── stable_baseline_1_intro_cartpole.ipynb
-├── stable_baseline_2_wrappers_sauvegarde_callbacks.ipynb
-├── stable_baseline_3_experience_replay_dqn.ipynb
-├── rl_3_multi_armed_bandits.ipynb
-├── rl_4_mdp_dp_qlearning.ipynb
-├── rl_5_dqn_policy_gradient.ipynb
-├── rl_5b_actor_critic.ipynb
-├── rl_5c_ppo_from_scratch.ipynb
-├── rl_5d_sac_from_scratch.ipynb
-├── rl_6_multi_agent_rl.ipynb
+├── rl_1_intro_cartpole.ipynb
+├── rl_2_wrappers_sauvegarde_callbacks.ipynb
+├── rl_3_experience_replay_dqn.ipynb
+├── rl_4_multi_armed_bandits.ipynb
+├── rl_5_mdp_dp_qlearning.ipynb
+├── rl_6_dqn_policy_gradient.ipynb
+├── rl_6b_actor_critic.ipynb
+├── rl_6c_ppo_from_scratch.ipynb
+├── rl_6d_sac_from_scratch.ipynb
+├── rl_7_multi_agent_rl.ipynb
 └── README.md
 ```
 
