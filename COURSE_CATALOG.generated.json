@@ -4205,7 +4205,7 @@
     "serie": "ML",
     "sous_serie": "ML.Net",
     "kernel": ".NET (C#)",
-    "status": "BROKEN",
+    "status": "READY",
     "maturity": "PRODUCTION",
     "duree_estimee": "45min",
     "owner_logique": "po-2023",
