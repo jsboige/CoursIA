@@ -29,3 +29,4 @@ import Grothendieck.SieveOps
 import Grothendieck.CoverageGen
 import Grothendieck.CanonicalProps
 import Grothendieck.SieveGenerate
+import Grothendieck.DenseTopology
