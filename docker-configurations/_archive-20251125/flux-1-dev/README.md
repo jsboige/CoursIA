@@ -151,4 +151,4 @@ docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
 
 - [ComfyUI GitHub](https://github.com/comfyanonymous/ComfyUI)
 - [FLUX.1 Hugging Face](https://huggingface.co/black-forest-labs/FLUX.1-dev)
-- [Documentation Workflows](../../../docs/genai-services.md)
+- [Documentation Workflows](../../../docs/genai/genai-services.md)

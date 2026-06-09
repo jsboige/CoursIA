@@ -44,6 +44,7 @@ SKIP_DIRS = {
     "_archives", "_output", ".ipynb_checkpoints", "worktrees",
     ".mypy_cache", ".pytest_cache", ".ruff_cache",
     "custom_nodes",  # Third-party ComfyUI plugins, not ours to fix
+    "archive",  # Historical docs, links intentionally stale
 }
 
 # Baseline file location

@@ -85,7 +85,7 @@ Toute PR claim "BEATS"/"improvement" DOIT inclure : WF 5-fold (pas single split)
 
 ## Voir aussi
 
-- [docs/ml-trading-state.md](../../docs/ml-trading-state.md) — anti-FAANG, multi-seed, walk-forward
+- [docs/ml-trading-state.md](../../docs/archive/ml-trading-state.md) — anti-FAANG, multi-seed, walk-forward
 - [.claude/skills/train-model/SKILL.md](../skills/train-model/SKILL.md) — slash-command d'entrainement
 - [.claude/rules/proactive-coordination.md](../rules/proactive-coordination.md) — modele side-track async
-- [docs/quantconnect.md](../../docs/quantconnect.md) — contexte trading QC
+- [docs/quantconnect.md](../../docs/qc/quantconnect.md) — contexte trading QC

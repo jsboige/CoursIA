@@ -157,6 +157,6 @@ Voir [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-review
 
 - [docs/ece-grading.md](ece-grading.md) - Pattern ECE Finance Ing4 (3 groupes, 2 projets, bonus CC)
 - [docs/teaching-context.md](teaching-context.md) - Calendrier toutes ecoles, scope par cohorte
-- [docs/quantconnect.md](quantconnect.md) - Org QC Trading-Firm-ESGF, MCP qc-mcp, baselines
+- [docs/quantconnect.md](../qc/quantconnect.md) - Org QC Trading-Firm-ESGF, MCP qc-mcp, baselines
 - [GradeBookApp/README.md](../../GradeBookApp/README.md) - Moteur generique
 - [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-reviews.md) - Anti-fuite jury (HARD)

@@ -292,7 +292,7 @@ Verifiez que Docker Desktop est en cours d'execution et que les conteneurs sont 
 python scripts/genai-stack/genai.py docker status
 ```
 
-Si les services sont DOWN, relancez avec `genai.py docker start`. Details : [docs/genai-services.md](../../docs/genai-services.md).
+Si les services sont DOWN, relancez avec `genai.py docker start`. Details : [docs/genai-services.md](../../docs/genai/genai-services.md).
 
 ### Erreur `torch.cuda.OutOfMemoryError` sur les notebooks locaux
 

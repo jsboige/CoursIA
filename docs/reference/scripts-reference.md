@@ -101,7 +101,7 @@ python scripts/notebook_tools/notebook_tools.py execute SmartContracts --scrub-k
 | `scripts/lean/smoke_test_epita_is.py` | Smoke-test kernels Lean EPITA-IS |
 | `scripts/mcp-maintenance/` | Maintenance MCP (config, docs, scripts) — cf `README_MCP_MAINTENANCE.md` |
 | `scripts/validation/dispatch.py` + `matrix.yml` | Matrice de validation / dispatch |
-| `scripts/genai-stack/genai.py` | GenAI Docker (ComfyUI + Qwen) + validation — cf [docs/genai-services.md](genai-services.md) |
+| `scripts/genai-stack/genai.py` | GenAI Docker (ComfyUI + Qwen) + validation — cf [docs/genai-services.md](../genai/genai-services.md) |
 | `scripts/repair_genai_notebooks.py`, `scripts/audit_genai_corruption.py` | Réparation / audit corruption GenAI |
 | `scripts/fix_robust_dotenv.py` | Robustesse chargement `.env` |
 | `scripts/scan_student_forks.py` | Scan des forks étudiants |
@@ -133,5 +133,5 @@ Modules genai-stack non testes (intentionnellement) : commands/docker.py (subpro
 
 - [docs/common-commands.md](common-commands.md) — setup env, validation notebooks, slash commands
 - [docs/kernels-runtime.md](kernels-runtime.md) — .NET / Python / WSL kernels, conda envs
-- [docs/genai-services.md](genai-services.md) — scripts genai-stack, mappings notebooks
+- [docs/genai-services.md](../genai/genai-services.md) — scripts genai-stack, mappings notebooks
 - [.claude/rules/wsl-kernels.md](../../.claude/rules/wsl-kernels.md) — Papermill WSL

@@ -66,5 +66,5 @@ python -c "from gpu_training import batch_thermal_check, get_gpu_temp; print('te
 ## Voir aussi
 
 - [.claude/agents/training-specialist.md](../../agents/training-specialist.md) — orchestrateur async
-- [docs/ml-trading-state.md](../../../docs/ml-trading-state.md) — anti-FAANG, multi-seed, walk-forward
+- [docs/ml-trading-state.md](../../../docs/archive/ml-trading-state.md) — anti-FAANG, multi-seed, walk-forward
 - [.claude/rules/pr-review-discipline.md](../../rules/pr-review-discipline.md) C — gate ML PR

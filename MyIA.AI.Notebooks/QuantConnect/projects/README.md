@@ -80,7 +80,7 @@ MonProjet/
 ## Ressources
 
 - [Descriptions détaillées](STRATEGIES_DETAIL.md) — Toutes les stratégies par catégorie
-- [Leçons et patterns](../../../docs/quantconnect.md) — 20 patterns confirmés + anti-patterns
+- [Leçons et patterns](../../../docs/qc/quantconnect.md) — 20 patterns confirmés + anti-patterns
 - [Catalogue QC Cloud](../docs/qc_strategies_catalog.md) — Métriques par stratégie avec Cloud IDs
 - [Quick Tour](../QUICK_TOUR.md) — Vue d'ensemble en 2 minutes
 - [QuantConnect Lab](https://www.quantconnect.com/terminal) · [Documentation](https://www.quantconnect.com/docs) · [Forum](https://www.quantconnect.com/forum)

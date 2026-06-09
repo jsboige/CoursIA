@@ -110,7 +110,7 @@ L'audit du 2026-05-09 a revele un pattern systemique : 988 notebooks repo, dont 
 - **P3** (2 semaines) : workflow GitHub Actions `notebook-execution-required.yml` qui execute via Papermill toute notebook touchee dans une PR. Failure → merge bloque. Runner = Docker compose (.NET + Python + Lean + WSL bypass)
 - **P4** (continu) : `STABLE_SNAPSHOT.md` regenere mensuel, gravant `sha + date + matrice exec_status` → point de reference factuel quand quelqu'un dit "X est valide"
 
-Cf [docs/_archives/STABLE_SNAPSHOT.md](_archives/STABLE_SNAPSHOT.md).
+Cf [docs/archive/STABLE_SNAPSHOT.md](../archive/STABLE_SNAPSHOT.md).
 
 ---
 
@@ -120,4 +120,4 @@ Cf [docs/_archives/STABLE_SNAPSHOT.md](_archives/STABLE_SNAPSHOT.md).
 - [docs/regles-vigilance-detail.md](regles-vigilance-detail.md) — Regles G.1-G.9 anti-complaisance
 - [docs/env-python-reparation.md](env-python-reparation.md) — Reparation env Python (regle F)
 - [docs/kernels-runtime.md](kernels-runtime.md) — Inventaire kernels par machine
-- [docs/STABLE_SNAPSHOT.md](_archives/STABLE_SNAPSHOT.md) — Matrice exec_status des notebooks
+- [docs/STABLE_SNAPSHOT.md](../archive/STABLE_SNAPSHOT.md) — Matrice exec_status des notebooks
