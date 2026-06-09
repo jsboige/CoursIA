@@ -326,7 +326,9 @@ def main():
             return
 
         if args.check:
+            import sys as _sys
             baseline = load_baseline()
+            print(f"[DEBUG] scan: {result.scanned_files} files, {result.total_links} links, {len(result.broken)} broken", file=_sys.stderr)
             if baseline is None:
                 if not args.quiet:
                     print("No baseline found. Run with --baseline first.")
@@ -338,6 +340,9 @@ def main():
                 sys.exit(0)
 
             new_broken = check_regression(result, baseline)
+            print(f"[DEBUG] baseline broken: {len(baseline.get('broken_links', []))}, new_broken: {len(new_broken)}", file=_sys.stderr)
+            for nb in new_broken[:5]:
+                print(f"[DEBUG] NEW BROKEN: {nb.source}:{nb.line} -> {nb.target}", file=_sys.stderr)
             if new_broken:
                 if not args.quiet:
                     print(f"REGRESSION: {len(new_broken)} new broken link(s):")
