@@ -4,7 +4,7 @@
 series: ML-ML.Net
 pedagogical_count: 8
 breakdown: ML.Net=8
-maturity: ALPHA=8
+maturity: PRODUCTION=7, ALPHA=1
 -->
 
 Serie de notebooks couvrant ML.NET, la bibliotheque open-source de Microsoft pour le Machine Learning dans l'ecosysteme .NET.
