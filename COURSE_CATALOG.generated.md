@@ -1,21 +1,21 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-08 05:12
+Generated: 2026-06-09 04:59
 Total notebooks: 516
 
 ## Status Summary
 
-- **READY**: 373
+- **READY**: 374
 - **DEMO**: 140
 - **RESEARCH**: 0
-- **BROKEN**: 3
+- **BROKEN**: 2
 
 ## Maturity Summary
 
 - **PRODUCTION**: 414
-- **BETA**: 44
+- **BETA**: 45
 - **TEMPLATE**: 4
-- **ALPHA**: 50
+- **ALPHA**: 49
 - **DRAFT**: 4
 
 ## By Series
@@ -146,7 +146,7 @@ Total notebooks: 516
 | 120 | Pipeline Video de Production | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 121 | GenAI E2E Quant Validation | Python 3 | READY | BETA | 30min | po-2025 |
 
-### Search (46 notebooks) — BROKEN:1, READY:45 | ALPHA:2, BETA:1, PRODUCTION:43
+### Search (46 notebooks) — READY:46 | BETA:1, PRODUCTION:45
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -168,12 +168,12 @@ Total notebooks: 516
 | 16 | App-17 : Vehicle Routing Problem (VRP) | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 17 | App-18: Optimisation d'Hyperparametres - Approches | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 18 | App-9 : Detection de bords par algorithmes genetiq | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 19 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | READY | ALPHA | 45min | po-2025 |
+| 19 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
 | 20 | App-12 : Puissance 4 -- Comparaison d'algorithmes  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 21 | App-14 - Connect Four : Benchmark Adversarial Sear | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 22 | Introduction a la programmation par contrainte | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 23 | Recherche non informee et informee | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 24 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | BROKEN | ALPHA | 45min | po-2025 |
+| 24 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
 | 25 | Search-1 : Espaces d'etats et formulation de probl | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 26 | Search-12 : Automates Symboliques avec Z3 | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 27 | Search-11-Metaheuristiques : Optimisation avec MEA | Python 3 | READY | PRODUCTION | 45min | po-2025 |
@@ -185,7 +185,7 @@ Total notebooks: 516
 | 33 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 34 | Search-8-DancingLinks : L'algorithme X et Dancing  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 35 | Search-9-LinearProgramming : Programmation Lineair | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 36 | CSP-1 : Fondamentaux des CSP | Python 3 | READY | PRODUCTION | 1h | po-2025 |
+| 36 | CSP-1 : Fondamentaux des CSP | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 37 | CSP-2 : Propagation de Contraintes et Consistance | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 38 | CSP-3 : CSP Avance - Contraintes globales, OR-Tool | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 39 | CSP-4-Scheduling : Problèmes d'Ordonnancement | Python 3 | READY | PRODUCTION | 45min | po-2025 |
@@ -229,7 +229,7 @@ Total notebooks: 516
 | 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | ALPHA | 45min | po-2023 |
 | 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | ALPHA | 30min | po-2023 |
 
-### SymbolicAI (104 notebooks) — DEMO:3, READY:101 | ALPHA:2, BETA:1, PRODUCTION:101
+### SymbolicAI (104 notebooks) — DEMO:3, READY:101 | ALPHA:3, BETA:2, PRODUCTION:99
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -248,14 +248,14 @@ Total notebooks: 516
 | 13 | Lean-13b : Grothendieck en Lean -- Atelier pratiqu | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 14 | Lean-14a - Conway, l'homme et l'oeuvre | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
 | 15 | Lean-14b : Hommage a John Conway — Game of Life as | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
-| 16 | Lean-14c - Conway Game of Life : les 3 piliers, en | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 16 | Lean-14c - Conway Game of Life : les 3 piliers, en | Python 3 | READY | BETA | 45min | po-2024 |
 | 17 | Lean-15 : Le Theoreme de Kochen-Specker (Cabello 1 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 18 | Lean-16 : Le Theoreme du Libre Arbitre (Conway-Koc | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 19 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 20 | Lean 3 - Propositions et Preuves | Lean 4 | READY | PRODUCTION | 45min | po-2024 |
 | 21 | Lean 4 - Quantificateurs et Logique du Premier Ord | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 22 | Lean 5 - Mode Tactique | Lean 4 | READY | PRODUCTION | 1h | po-2024 |
-| 23 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | Lean 4 | READY | PRODUCTION | 45min | po-2024 |
+| 23 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | Lean 4 | READY | ALPHA | 45min | po-2024 |
 | 24 | Lean 7 - Integration des LLMs pour l'Assistance au | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 25 | Lean 7b - Exemples Progressifs et Benchmarks | Python 3 (WSL) | READY | PRODUCTION | 30min | po-2024 |
 | 26 | Lean 8 - Agents Autonomes pour Demonstration de Th | Python 3 | READY | PRODUCTION | 30min | po-2024 |
@@ -263,7 +263,7 @@ Total notebooks: 516
 | 28 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | BETA | 30min | po-2024 |
 | 29 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | ALPHA | 45min | po-2024 |
 | 30 | Planners-0-Setup | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 31 | Planners-1-Introduction a la Planification Automat | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 31 | Planners-1-Introduction a la Planification Automat | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 32 | Planners-2-PDDL-Basics | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 33 | Planners-3-State-Space - Recherche dans l'Espace d | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 34 | Planners-4-Fast-Downward - Planificateur Classique | Python 3 | READY | PRODUCTION | 45min | po-2024 |
