@@ -1,33 +1,28 @@
 name: Catalog Drift Check
 
-# Purpose: keep COURSE_CATALOG.generated.json and the README CATALOG-STATUS
-# markers in sync with the notebooks, WITHOUT blocking notebook PRs.
+# Purpose: DETECT (non-blocking, read-only) when COURSE_CATALOG.generated.json
+# and the README CATALOG-STATUS markers drift out of sync with the notebooks.
 #
-# Root cause this workflow addresses (see #2433):
-#   The catalog embeds git-derived fields (last_validation, issue_pr_associee)
-#   and a maturity heuristic that evolve as commits land on main. A clean
-#   regeneration therefore differs from the committed JSON even when a PR did
-#   not touch the catalog at all. The old job ran `expand_catalog_markers.py
-#   --check` and exited 1 on that benign drift, so EVERY notebook PR failed
-#   this check regardless of its content. This jammed the merge queue and
-#   spawned recurring "catalog resync" PRs.
+# IMPORTANT — read-only since #2744 (2026-06-09):
+#   This workflow DETECTS drift and reports it as a notice annotation, but it
+#   NO LONGER COMMITS anything back to PR branches. The earlier design
+#   auto-committed a regenerated catalog onto every PR matching **/*.ipynb or
+#   **/README.md. Because those commits were bot-authored, catalog-guard.yml
+#   exempted them — so they landed even when they mass-reverted curated git
+#   fields (issue_pr_associee, last_validation) via the branch git-history
+#   heuristic. That is the stale-catalog-silent-revert pattern (513 poisoned
+#   entries observed on branches, 0 on main — source-verified by po-2025,
+#   see #2744). It poisoned EVERY notebook/README PR and created a worker
+#   treadmill (strip -> bot re-commits on the next synchronize).
 #
-# Fix:
-#   For same-repo PRs (where CI has write access) AUTO-REGENERATE the catalog
-#   + README markers and COMMIT the result back to the PR branch with a bot
-#   commit ([skip ci] so it does not loop). The author no longer has to
-#   remember to regenerate. The #2433 generator already preserves curated
-#   git-fields (last_validation / last_validator / issue_pr_associee) for
-#   unchanged entries, so this auto-commit cannot blank another entry's
-#   curated data.
+#   Per decision #2632 (catalog cron-only, off-branch), the ONLY legitimate
+#   catalog writer is catalog-cron.yml on main (daily regen + push HEAD:main).
+#   catalog-guard.yml still FAILS any human/agent PR that touches the catalog
+#   files. This workflow stays as a read-only detector so reviewers see drift,
+#   without ever writing to a branch.
 #
-#   For fork PRs (student / external contributors, no write token) the job
-#   degrades to an INFORMATIONAL, NON-BLOCKING report (annotation only) and
-#   always exits 0, so fork PRs are never blocked by drift.
-#
-# This job is intentionally NON-BLOCKING. The REQUIRED notebook gate remains
-# "Static validation (H.1/H.3/C.1)" in notebook-execution-required.yml, which
-# this workflow does not touch.
+# This job is intentionally NON-BLOCKING and READ-ONLY. The REQUIRED notebook
+# gate remains "Static validation (H.1/H.3/C.1)" in notebook-execution-required.yml.
 
 on:
   pull_request:
@@ -41,45 +36,19 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   catalog-drift:
-    name: "Notebook catalog drift"
+    name: "Notebook catalog drift (read-only)"
     runs-on: ubuntu-latest
 
     steps:
-      # For same-repo PRs we check out the actual PR head branch (not the
-      # detached merge ref) so we can commit + push back to it. For forks we
-      # check out the merge ref read-only; the push step is skipped anyway.
-      - name: Determine PR origin
-        id: origin
-        env:
-          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          THIS_REPO: ${{ github.repository }}
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
-        run: |
-          if [ "$HEAD_REPO" = "$THIS_REPO" ] && [ -n "$HEAD_REF" ]; then
-            echo "is_fork=false" >> "$GITHUB_OUTPUT"
-            echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
-            echo "Same-repo PR on branch '$HEAD_REF' - auto-commit mode enabled."
-          else
-            echo "is_fork=true" >> "$GITHUB_OUTPUT"
-            echo "head_ref=" >> "$GITHUB_OUTPUT"
-            echo "Fork or manual dispatch - informational (non-blocking) mode."
-          fi
-
-      - name: Checkout PR head (same-repo)
-        if: steps.origin.outputs.is_fork == 'false'
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.origin.outputs.head_ref }}
-          fetch-depth: 0
-          persist-credentials: true
-
-      - name: Checkout (fork / dispatch, read-only)
-        if: steps.origin.outputs.is_fork == 'true'
+      # Read-only checkout of the PR merge ref. We only generate the catalog and
+      # diff it against the committed copy to detect drift; we never commit or
+      # push back to a branch (see #2744). The default merge-ref checkout works
+      # for both same-repo and fork PRs.
+      - name: Checkout PR
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -89,10 +58,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Canonical regeneration: generate the catalog JSON (git-tracked notebooks
-      # only, for CI determinism) then expand the README CATALOG-STATUS markers
-      # from it. The generator preserves curated git-fields from origin/main
-      # (#2433), so unchanged entries are not blanked.
+      # Canonical regeneration (local to the runner only — nothing is written
+      # back to the branch). git-tracked notebooks only, for CI determinism.
       - name: Regenerate catalog + README markers
         run: |
           git fetch origin main --depth=1 || true
@@ -111,34 +78,11 @@ jobs:
             echo "drift=true" >> "$GITHUB_OUTPUT"
             echo "Catalog drift detected in:"
             git diff --cached --name-only | sed 's/^/  - /'
-            echo "::notice title=Catalog drift::The catalog/README markers were out of sync with the notebooks and have been (or would be) regenerated."
+            echo "::notice title=Catalog drift (informational)::The catalog/README markers are out of sync with the notebooks. This does NOT block the PR. The catalog is regenerated daily on main by catalog-cron.yml; no manual action is required on this branch."
           fi
 
-      # Same-repo PR: commit the regenerated catalog + markers back to the PR
-      # branch. [skip ci] prevents a re-trigger loop. GITHUB_TOKEN pushes do
-      # not re-fire pull_request workflows, but [skip ci] is belt-and-braces.
-      - name: Commit regenerated catalog to PR branch
-        if: steps.origin.outputs.is_fork == 'false' && steps.diff.outputs.drift == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore(catalog): auto-regenerate catalog + README markers [skip ci]" \
-                     -m "Keeps COURSE_CATALOG.generated.json and CATALOG-STATUS markers in sync. See #2433." \
-                     -m "Co-Authored-By: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
-          if git push origin "HEAD:${{ steps.origin.outputs.head_ref }}"; then
-            echo "::notice title=Catalog auto-synced::Regenerated catalog committed to PR branch '${{ steps.origin.outputs.head_ref }}'."
-          else
-            echo "::warning title=Catalog auto-sync skipped::Could not push the regenerated catalog (branch protection or permissions). Drift is informational only; this check does not block the PR. Run 'python scripts/notebook_tools/generate_catalog.py --json-only --git-tracked-only && python scripts/notebook_tools/expand_catalog_markers.py' locally and commit if desired."
-          fi
-
-      # Fork / external PR: cannot push. Report as a non-blocking warning so the
-      # PR is never blocked by drift.
-      - name: Informational drift warning (fork)
-        if: steps.origin.outputs.is_fork == 'true' && steps.diff.outputs.drift == 'true'
-        run: |
-          echo "::warning title=Catalog drift (informational)::This PR's notebooks are not yet reflected in COURSE_CATALOG.generated.json. This is expected for external/fork PRs and does NOT block the PR - a maintainer regenerates the catalog periodically."
-
-      # This job is always green. Drift is handled by auto-commit (same-repo) or
-      # surfaced as an annotation (fork). It never blocks notebook PRs.
-      - name: Done (non-blocking)
-        run: echo "Catalog drift check complete (non-blocking)."
+      # This job is always green. Drift is surfaced as a notice annotation only.
+      # catalog-cron.yml (main) is the sole writer; catalog-guard.yml blocks any
+      # human/agent catalog commit on PRs (see #2632, #2744).
+      - name: Done (non-blocking, read-only)
+        run: echo "Catalog drift check complete (non-blocking, read-only)."
