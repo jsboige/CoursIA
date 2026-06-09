@@ -4,7 +4,7 @@
 series: SymbolicAI-Lean
 pedagogical_count: 21
 breakdown: Lean=21
-maturity: PRODUCTION=19, ALPHA=1, BETA=1
+maturity: PRODUCTION=20, ALPHA=1
 -->
 
 Cette serie de **21 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves, la verification formelle de reseaux de neurones, le port de theoremes phares (theoreme de Kochen-Specker, 18 vecteurs Cabello ; theoreme du libre arbitre de Conway-Kochen), et des hommages aux mathematiciens (Grothendieck, langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre).
