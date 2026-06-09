@@ -8,6 +8,10 @@ Le parcours va des fondamentaux du modele (X, D, C) et du backtracking (CSP-1) a
 
 **9 notebooks** | **~9h** | Python 3.10+ (`ortools`)
 
+## Pourquoi cette sous-serie
+
+La programmation par contraintes represente un **changement de paradigme** fondamental : au lieu de concevoir un algorithme d'exploration, on declare les contraintes du probleme et le solveur trouve les solutions. Ce modele declaratif est au coeur des outils industriels (ordonnancement, logistique, verification) et s'applique naturellement aux problemes NP-difficiles. Cette sous-serie fait le pont entre les algorithmes de recherche (Partie 1) et l'IA symbolique (SymbolicAI), avec des notebooks couvrant les applications industrielles et les frontieres de la recherche.
+
 ## Objectifs d'apprentissage
 
 A l'issue de cette partie, vous serez capable de :
@@ -96,6 +100,17 @@ CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
 | Constraint logic | Tweety (Formal Logic) |
 | Temporal CSP | Temporal Planning, STP |
 
-## Retour
+## Ponts inter-series
 
-[<- Retour a la serie Search](../README.md)
+| Serie | Lien | Relation |
+| ------- | ------ | ---------- |
+| [Partie 1 : Search](../Part1-Foundations/README.md) | Fondamentaux | Prerequis : backtracking, heuristiques |
+| [Applications](../Applications/README.md) | 21 notebooks d'application | Mise en pratique des CSP |
+| [Search (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global |
+| [Sudoku](../../Sudoku/) | Resolution par contraintes | Application directe des CSP |
+| [SymbolicAI/Z3](../../SymbolicAI/) | Solveur SMT | CSP-6 (LCG) et automates symboliques |
+| [Probas/Infer](../../Probas/Infer/) | Infer.NET | Modeles graphiques et contraintes |
+
+## Navigation
+
+[<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour a la serie Search](../README.md) | [Applications ->](../Applications/README.md)

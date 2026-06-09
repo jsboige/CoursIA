@@ -23,6 +23,16 @@ Le parcours va du premier pipeline (ML-1) jusqu'a une application complete : pre
 | Kernel | .NET C# |
 | Duree estimee | ~5-6h |
 
+## Objectifs d'apprentissage
+
+A l'issue de cette serie, vous serez capable de :
+
+1. **Construire** un pipeline ML complet en C# (chargement, features, entrainement, prediction)
+2. **Evaluer** rigoureusement un modele (cross-validation, metriques, Permutation Feature Importance)
+3. **Appliquer** le feature engineering adapte au probleme (encodage, normalisation, selection)
+4. **Deployer** un modele en production via ONNX (import/export, interop Python/.NET)
+5. **Integrer** ML.NET avec Infer.NET pour la regression bayesienne
+
 ## Notebooks
 
 ### Fondamentaux (ML-1 à ML-4)
@@ -264,6 +274,14 @@ ML-7-Recommendation (systèmes de recommandation)
 
 ## FAQ / Troubleshooting
 
+| Probleme | Solution |
+|----------|----------|
+| `The type 'MLContext' could not be found` | Verifier que ML.NET est installe via `#r "nuget: Microsoft.ML"` dans le notebook. Le notebook 1 (Introduction) couvre la configuration |
+| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
+| `IDataView` performance sur grands datasets | Utiliser `TextLoader` avec le schema explicite plutot que le chargement dynamique. ML.NET est optimise pour les charges batch |
+| ONNX export echoue | Tous les trainers ML.NET ne supportent pas l'export ONNX. Verifier la compatibilite dans le notebook 6 (ONNX) |
+| Modele ML.NET en dehors de Jupyter | Utiliser `mlContext.Model.Save()` pour serialiser le modele .zip, puis le charger dans une application console ou web |
+
 ### .NET Interactive ne s'installe pas ou le kernel n'apparait pas
 
 ```bash
@@ -355,5 +373,4 @@ Voir la licence du repository principal.
 
 ## Navigation
 
-- [<- Notebooks ML](../README.md)
-- [DataScienceWithAgents ->](../DataScienceWithAgents/README.md)
+- [<- Retour a la serie ML](../README.md) | [Probas/Infer.NET ->](../../Probas/Infer/README.md) | [DataScienceWithAgents ->](../DataScienceWithAgents/README.md)

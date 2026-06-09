@@ -6,6 +6,10 @@ Les applications sont organisees en trois categories : **Search pur** (jeux comb
 
 Sous-serie de **21 notebooks** | **~14h05** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `minizinc`, `optuna`)
 
+## Pourquoi cette sous-serie
+
+Les notebooks d'application sont le laboratoire pratique de la serie Search : chaque probleme reel (N-Queens, ordonnancement, VRP, TSP, detection de contours) combine une ou plusieurs techniques des Parties 1-2 et montre comment elles se comportent sur des instances concretes issues de projets etudiants. La diversite des approches (backtracking, CP-SAT, metaheuristiques, GA, hybridation) permet de comparer les methodes sur un meme probleme et de developper le sens critique pour choisir l'algorithme adapte.
+
 ## Objectifs d'apprentissage
 
 A l'issue de cette sous-serie, vous serez capable de :
@@ -123,6 +127,17 @@ La plupart des notebooks d'application sont adaptes de projets etudiants realise
 
 ---
 
-## Retour
+## Ponts inter-series
 
-[<- Retour a la serie Search](../README.md)
+| Serie | Lien | Relation |
+| ------- | ------ | ---------- |
+| [Partie 1 : Search](../Part1-Foundations/README.md) | Fondamentaux | Source des algorithmes utilises |
+| [Partie 2 : CSP](../Part2-CSP/README.md) | Programmation par contraintes | Solveurs CP-SAT, MiniZinc |
+| [Search (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global |
+| [ML/ML.Net](../../ML/ML.Net/) | App-18 (HyperparameterTuning) | Optimisation bayesienne + GA |
+| [Sudoku](../../Sudoku/) | App-11 (Picross), App-1 (NQueens) | Problemes combinatoires similaires |
+| [GameTheory](../../GameTheory/) | App-12/14 (ConnectFour) | Jeux a deux joueurs, MCTS |
+
+## Navigation
+
+[<- Partie 1 : Search](../Part1-Foundations/README.md) | [Partie 2 : CSP](../Part2-CSP/README.md) | [Retour a la serie Search](../README.md)
