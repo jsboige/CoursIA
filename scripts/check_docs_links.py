@@ -311,6 +311,11 @@ def main():
     args = parser.parse_args()
 
     try:
+        import sys as _sys
+        if args.check:
+            print(f"[DEBUG] Python {_sys.version}", file=_sys.stderr)
+            print(f"[DEBUG] CWD={_sys.path[0]}", file=_sys.stderr)
+            print(f"[DEBUG] Baseline exists: {BASELINE_PATH.exists()}", file=_sys.stderr)
         result = run_scan(report_orphans=args.orphans)
 
         if args.baseline:
