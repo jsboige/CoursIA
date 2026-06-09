@@ -118,7 +118,7 @@ Tokens API QC configures dans `.mcp.json` sur les 2 machines (Docker MCP server 
 
 ### Lean / Mathlib -> po-2026
 
-Specialisation `*.lean`, port social_choice, Lake build, reecriture preuves structurelles. ai-01 = secours (env Lean a installer si manquant). Cf [docs/lean/prover_iteration_history.md](lean/prover_iteration_history.md).
+Specialisation `*.lean`, port social_choice, Lake build, reecriture preuves structurelles. ai-01 = secours (env Lean a installer si manquant). Cf [docs/lean/prover_iteration_history.md](../lean/prover_iteration_history.md).
 
 ### Whisper API host -> po-2023
 
@@ -170,5 +170,5 @@ Pour tout sprint / curriculum >= 3 etapes, creer **Epic GitHub** + sub-issues nu
 - Regles de coordination Git + dashboard : [CLAUDE.md](../../CLAUDE.md) section A
 - Calendrier enseignement + scope ecoles : [docs/teaching-context.md](teaching-context.md)
 - Wrapper training BG avec checkpoints : `scripts/training/train_with_checkpoints.py`
-- QC backtest + MCP Docker : [docs/quantconnect.md](quantconnect.md)
-- Lean prover BG forensic protocol : [docs/lean/prover_iteration_history.md](lean/prover_iteration_history.md)
+- QC backtest + MCP Docker : [docs/qc/quantconnect.md](../qc/quantconnect.md)
+- Lean prover BG forensic protocol : [docs/lean/prover_iteration_history.md](../lean/prover_iteration_history.md)

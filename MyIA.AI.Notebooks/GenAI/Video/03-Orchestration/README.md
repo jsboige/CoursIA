@@ -74,4 +74,4 @@ Input → Model Router → Processing → Output
 
 - [Documentation Video principale](../README.md)
 - [Guide ComfyUI](../../00-GenAI-Environment/README.md)
-- [GenAI Services](../../../../docs/genai-services.md)
+- [GenAI Services](../../../../docs/genai/genai-services.md)

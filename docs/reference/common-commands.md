@@ -19,7 +19,7 @@ python scripts/genai-stack/genai.py docker start all # Demarrer tous les service
 python scripts/genai-stack/genai.py docker stop all  # Arreter tous les services
 ```
 
-Cf [genai-services.md](./genai-services.md) pour le detail des services et notebooks.
+Cf [genai-services.md](../genai/genai-services.md) pour le detail des services et notebooks.
 
 ## Validation & Testing
 

@@ -17,15 +17,15 @@ Ce dossier contient tous les documents relatifs Ã  l'organisation de l'Ã©vÃ
 
 ## Documents principaux
 
-- [Agenda](.\03-Programme\agenda.md)
-- [Liste des participants](.\06-Participants\liste-participants.md)
-- [Budget prÃ©visionnel](.\05-Budget\budget-previsionnel.md)
-- [Tableau de bord](.\tableau-de-bord.md)
+- [Agenda](./03-Programme/agenda.md)
+- [Liste des participants](./06-Participants/liste-participants.md)
+- [Budget prÃ©visionnel](./05-Budget/budget-previsionnel.md)
+- [Tableau de bord](./tableau-de-bord.md)
 
 ## IntÃ©gration
 
-- [Fichier calendrier ICS](.\04-Communication\evenement.ics)
-- [ModÃ¨le d'email d'invitation](.\04-Communication\modele-invitation.md)
+- [Fichier calendrier ICS](./04-Communication/evenement.ics)
+- [ModÃ¨le d'email d'invitation](./04-Communication/modele-invitation.md)
 
 ## Prochaines Ã©tapes
 
