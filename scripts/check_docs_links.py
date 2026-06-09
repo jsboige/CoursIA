@@ -311,11 +311,6 @@ def main():
     args = parser.parse_args()
 
     try:
-        import sys as _sys
-        if args.check:
-            print(f"[DEBUG] Python {_sys.version}", file=_sys.stderr)
-            print(f"[DEBUG] CWD={_sys.path[0]}", file=_sys.stderr)
-            print(f"[DEBUG] Baseline exists: {BASELINE_PATH.exists()}", file=_sys.stderr)
         result = run_scan(report_orphans=args.orphans)
 
         if args.baseline:
@@ -326,9 +321,7 @@ def main():
             return
 
         if args.check:
-            import sys as _sys
             baseline = load_baseline()
-            print(f"[DEBUG] scan: {result.scanned_files} files, {result.total_links} links, {len(result.broken)} broken", file=_sys.stderr)
             if baseline is None:
                 if not args.quiet:
                     print("No baseline found. Run with --baseline first.")
@@ -340,9 +333,6 @@ def main():
                 sys.exit(0)
 
             new_broken = check_regression(result, baseline)
-            print(f"[DEBUG] baseline broken: {len(baseline.get('broken_links', []))}, new_broken: {len(new_broken)}", file=_sys.stderr)
-            for nb in new_broken[:5]:
-                print(f"[DEBUG] NEW BROKEN: {nb.source}:{nb.line} -> {nb.target}", file=_sys.stderr)
             if new_broken:
                 if not args.quiet:
                     print(f"REGRESSION: {len(new_broken)} new broken link(s):")
