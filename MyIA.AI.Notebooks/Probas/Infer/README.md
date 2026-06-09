@@ -8,7 +8,13 @@ Serie de **21 notebooks** couvrant la programmation probabiliste avec Microsoft 
 
 ## Pourquoi cette sous-serie
 
-Infer.NET est le seul framework d'inference probabiliste natif dans l'ecosysteme .NET. Il implemente l'inference exacte par **message passing** sur des graphes de facteurs, une approche deterministe et rapide qui contraste avec l'echantillonnage MCMC de PyMC. Cette serie couvre les 20 modeles classiques de la programmation probabiliste (reseaux bayesiens, TrueSkill, LDA, HMM) plus la theorie de la decision bayesienne complete (utilite esperee, diagrammes d'influence, EVPI, MDPs) et une preuve formelle Lean 4 de l'indice de Gittins.
+Infer.NET est le seul framework d'inference probabiliste natif dans l'ecosysteme .NET. Il compile un modele probabiliste declaratif en un **algorithme d'inference specialise** via reflection et compilation Roslyn, offrant trois moteurs complementaires : **Expectation Propagation (EP)** pour les modeles continus et mixtes (defaut, rapide mais approximatif), **Variational Message Passing (VMP)** pour les modeles a composantes comme LDA (stable, sous-estime l'incertitude), et **Gibbs Sampling** pour la validation sur petits modeles (exact asymptotiquement, lent). Cette approche compilee contraste avec l'echantillonnage MCMC generique de PyMC et permet des infences en millisecondes plutot qu'en minutes. Cette serie couvre les 20 modeles classiques de la programmation probabiliste (reseaux bayesiens, TrueSkill, LDA, HMM) plus la theorie de la decision bayesienne complete (utilite esperee, diagrammes d'influence, EVPI, MDPs) et une preuve formelle Lean 4 de l'indice de Gittins.
+
+| Algorithme | Force | Limite | Cas d'usage |
+| ---------- | ----- | ------ | ---------- |
+| **EP** | Rapide, bon pour gaussiennes | Approximatif, peut diverger | Modeles continus, facteurs mixtes |
+| **VMP** | Stable, bon pour discret | Sous-estime l'incertitude | LDA, modeles a composantes |
+| **Gibbs** | Exact asymptotiquement | Lent, convergence difficile | Validation, petits modeles |
 
 **Double approche** : Cette serie est le versant C#/.NET de la programmation probabiliste. Le versant Python (PyMC) couvre les memes modeles avec un moteur d'inference different. Voir [PyMC/](../PyMC/) pour la comparaison.
 
