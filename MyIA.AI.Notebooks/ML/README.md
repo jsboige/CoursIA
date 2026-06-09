@@ -4,7 +4,7 @@
 series: ML
 pedagogical_count: 27
 breakdown: DataScienceWithAgents=19, ML.Net=8
-maturity: PRODUCTION=16, ALPHA=8, BETA=3
+maturity: PRODUCTION=19, ALPHA=5, BETA=3
 -->
 
 Le monde regorge de donnees, mais les transformer en decisions eclairees demande plus qu'un tableur. Le Machine Learning offre un cadre systematique pour construire des modeles predictifs a partir de donnees, en allant de la regression lineaire aux reseaux de neurones en passant par les systemes de recommandation. Cette serie vous forme au ML pratique avec deux stack complementaires : **ML.NET** pour l'ecosysteme .NET/C# (8 notebooks, ~6h) et **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs (19 notebooks, ~17h).
