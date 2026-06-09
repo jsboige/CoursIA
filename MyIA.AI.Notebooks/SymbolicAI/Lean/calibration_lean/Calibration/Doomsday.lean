@@ -111,7 +111,6 @@ theorem leap_year_2024 : isLeapYear 2024 = true := by
 theorem conway_death_day : dayOfWeek 2020 4 11 = DayOfWeek.saturday := by
   unfold dayOfWeek doomsdayDate doomsday centuryAnchor DayOfWeek.add DayOfWeek.sub
   simp [DayOfWeek.toFin, DayOfWeek.ofFin]
-  decide
 
 /-- Target F.2 (P2): September 11, 2001 was a Tuesday.
     Second historical date validation, exercises same path as F.
@@ -119,7 +118,6 @@ theorem conway_death_day : dayOfWeek 2020 4 11 = DayOfWeek.saturday := by
 theorem sep11_day : dayOfWeek 2001 9 11 = DayOfWeek.tuesday := by
   unfold dayOfWeek doomsdayDate doomsday centuryAnchor DayOfWeek.add DayOfWeek.sub
   simp [DayOfWeek.toFin, DayOfWeek.ofFin]
-  decide
 
 /-- Target I (P1 core): Adding 7 days returns to the same day of week.
     This exercises modular arithmetic reasoning.

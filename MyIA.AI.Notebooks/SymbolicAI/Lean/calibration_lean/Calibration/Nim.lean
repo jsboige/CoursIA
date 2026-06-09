@@ -11,7 +11,7 @@
     Exercises Director's ability to pivot from generic simp to specific lemma.
   - Target D (nimSum_single): P1 — requires Nat.xor_zero, non-trivial but bounded.
 -/
-import Mathlib.Data.Nat.Bitwise.Basic
+import Mathlib.Data.Nat.Bitwise
 import Mathlib.Tactic
 
 /-! ## Nim Definitions (self-contained, mirrors Combinatorial.lean) -/
@@ -35,7 +35,6 @@ def isWinningNim (pos : NimPosition) : Bool :=
 theorem nim_winning_345 : isWinningNim [3, 4, 5] = true := by
   unfold isWinningNim nimSum
   simp [List.foldl]
-  decide
 
 /-- Target D (P1): nimSum of a single heap equals the heap size.
     Requires Nat.xor_zero — the prover must discover this specific lemma.
@@ -44,7 +43,6 @@ theorem nim_winning_345 : isWinningNim [3, 4, 5] = true := by
 theorem nimSum_single (n : Nat) : nimSum [n] = n := by
   unfold nimSum
   simp [List.foldl_cons, List.foldl_nil]
-  exact Nat.xor_zero n
 
 /-- Target H (P1 core): Two identical heaps cancel out (nimSum = 0).
     This is the heart of Nim theory: xor is self-canceling.
@@ -54,7 +52,6 @@ theorem nimSum_single (n : Nat) : nimSum [n] = n := by
 theorem nimSum_self_cancel (n : Nat) : nimSum [n, n] = 0 := by
   unfold nimSum
   simp [List.foldl_cons, List.foldl_nil, List.foldl_cons]
-  exact Nat.xor_self n
 
 /-- Target H+ (P1 extended): Three heaps where two cancel.
     Combines nimSum_single and nimSum_self_cancel.
@@ -62,7 +59,6 @@ theorem nimSum_self_cancel (n : Nat) : nimSum [n, n] = 0 := by
 theorem nimSum_cancel_pair (n m : Nat) : nimSum [n, m, m] = n := by
   unfold nimSum
   simp [List.foldl_cons, List.foldl_nil, List.foldl_cons, List.foldl_cons]
-  rw [Nat.xor_self, Nat.xor_zero]
 
 /-- Target A+ (P1 validation): Empty position is losing (nimSum = 0).
     Trivial but ensures edge case coverage. -/
