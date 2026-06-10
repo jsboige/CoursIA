@@ -170,7 +170,7 @@ PT-06 documente le pipeline d'evaluation complet et produit un tableau comparati
 
 | Serie | Connection | Details |
 |-------|------------|---------|
-| **[RL](../../RL/)** | RL classique fondamentaux | Les notebooks RL (`rl_4_mdp_dp_qlearning`, `stable_baseline_*`) etablissent l'intuition policy/value que PPO/GRPO reutilisent. Recommande comme prerequis pour PT-04. |
+| **[RL](../../RL/)** | RL classique fondamentaux | Les notebooks RL ([rl_5 MDP/Q-Learning](../../RL/rl_5_mdp_dp_qlearning.ipynb) et [rl_6c PPO from scratch](../../RL/rl_6c_ppo_from_scratch.ipynb)) etablissent l'intuition policy/value que PPO/GRPO reutilisent. Recommandes comme prerequis pour PT-04. |
 | **[GenAI/Texte](../Texte/)** | Usage des LMs aligned | Les notebooks GenAI consomment des modeles deja post-trained. Cette serie explique comment ces modeles arrivent dans cet etat. |
 | **[GenAI/FineTuning](../FineTuning/)** | Boite a outils fine-tuning | Serie soeur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique sur 5 notebooks. PostTraining = profondeur methodologique, FineTuning = recettes executables. |
 | **[ML](../../ML/)** | Tutoriels ML.NET | Pont conceptuel : ML.NET = inference de modeles deja entraines ; PostTraining = production de ces modeles. |
