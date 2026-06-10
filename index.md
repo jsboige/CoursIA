@@ -60,7 +60,7 @@ Ce document fournit un index organisé de tous les notebooks disponibles dans le
 
 | Notebook | Description | Difficulté | Tags |
 |----------|-------------|------------|------|
-| [Linq2Z3.ipynb](MyIA.AI.Notebooks/SymbolicAI/Linq2Z3.ipynb) | Utilisation du solveur Z3 avec LINQ | 🔴 Avancé | `Z3`, `LINQ`, `Constraint Solving` |
+| [01_Linq2Z3_Intro.ipynb](MyIA.AI.Notebooks/SymbolicAI/Z3/01_Linq2Z3_Intro.ipynb) | Utilisation du solveur Z3 avec LINQ | 🔴 Avancé | `Z3`, `LINQ`, `Constraint Solving` |
 | [OR-tools-Stiegler.ipynb](MyIA.AI.Notebooks/SymbolicAI/OR-tools-Stiegler.ipynb) | Résolution de problèmes avec OR-Tools | 🟠 Intermédiaire | `OR-Tools`, `Optimization`, `Constraint Programming` |
 | [RDF.Net/RDF.Net.ipynb](MyIA.AI.Notebooks/SymbolicAI/RDF.Net/RDF.Net.ipynb) | Utilisation de RDF avec .NET | 🟠 Intermédiaire | `RDF`, `Semantic Web`, `.NET` |
 

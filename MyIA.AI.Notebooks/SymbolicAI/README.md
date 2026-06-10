@@ -295,7 +295,7 @@ Documentation complete : [SymbolicLearning/README.md](SymbolicLearning/README.md
 | Notebook | Kernel | Contenu | Exercices |
 |----------|--------|---------|-----------|
 | [OR-tools-Stiegler](OR-tools-Stiegler.ipynb) | .NET C# | Probleme de Stigler, programmation lineaire avec OR-Tools | 2 |
-| [Linq2Z3](Linq2Z3.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 1 |
+| [Linq2Z3](Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
 
 ---
 
@@ -348,8 +348,10 @@ SymbolicAI/
 │   ├── SL-1-LogicalLearning.ipynb ... SL-7-LLM-SymbolicLearning.ipynb
 │   └── README.md
 │
+├── Z3/                        # Serie Z3.Linq (SMT declaratif)
+│   ├── 01_Linq2Z3_Intro.ipynb
+│   └── README.md
 ├── OR-tools-Stiegler.ipynb    # Optimisation LP
-├── Linq2Z3.ipynb              # SMT LINQ
 │
 ├── scripts/                   # Scripts utilitaires
 ├── archive/                   # Versions historiques
@@ -481,7 +483,7 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 | **PySAT** | Solveurs SAT natifs | Tweety |
 | **Clingo** | Answer Set Programming | Tweety |
 | **SPASS / EProver** | Prouveurs de theoremes | Tweety |
-| **Z3** | SMT solver | Tweety, Linq2Z3 |
+| **Z3** | SMT solver | Tweety, Z3 |
 | **elan / Lean 4** | Proof assistant | Lean |
 | **Mathlib4** | Bibliotheque maths Lean | Lean |
 | **Semantic Kernel** | Orchestration LLM | Argument Analysis, Lean |

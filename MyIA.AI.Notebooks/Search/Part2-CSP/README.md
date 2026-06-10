@@ -95,7 +95,7 @@ CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
 
 | CSP Concept | SymbolicAI Counterpart |
 |-------------|------------------------|
-| OR-Tools CP-SAT | Linq2Z3 (SMT solving) |
+| OR-Tools CP-SAT | Z3/01_Linq2Z3_Intro (SMT solving) |
 | Scheduling/Planning | Planners (PDDL, HTN) |
 | Constraint logic | Tweety (Formal Logic) |
 | Temporal CSP | Temporal Planning, STP |
