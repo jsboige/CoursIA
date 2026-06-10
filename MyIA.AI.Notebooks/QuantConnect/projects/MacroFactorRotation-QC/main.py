@@ -19,6 +19,7 @@ class AIStocksBondsRotationAlgorithm(QCAlgorithm):
         self.set_start_date(self.end_date - timedelta(10*365))
         self.settings.daily_precise_end_time = False
         self.settings.seed_initial_prices = True
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         # Add securities
         self._bitcoin = self.add_crypto("BTCUSD", market=Market.BITFINEX, leverage=2).symbol
         self._equities = [self.add_equity(ticker).symbol for ticker in ['SPY', 'GLD', 'BND']]

@@ -18,6 +18,7 @@ class CommodityTermStructureAlgorithm(QCAlgorithm):
     def initialize(self):
         self.set_start_date(self.end_date - timedelta(15*365))
         self.set_cash(1000000)
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         self.settings.seed_initial_prices = True
         tickers = [
             Futures.Softs.COCOA,

@@ -7,6 +7,7 @@ class GainStrategy(QCAlgorithm):
         self.SetStartDate(2015, 1, 1)
         self.set_end_date(2024, 12, 31)
         self.SetCash(50_000)
+        self.SetBrokerageModel(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         self.SetBenchmark("VGT")
         self.days_to_expiry = int(self.GetParameter("days_to_expiry", 30))
         self.otm_threshold = float(self.GetParameter("otm_threshold", 0.05))

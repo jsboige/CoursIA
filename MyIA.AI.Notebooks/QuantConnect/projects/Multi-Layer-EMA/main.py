@@ -6,6 +6,7 @@ class OptimizedCryptoAlgorithm(QCAlgorithm):
         self.SetStartDate(2015, 1, 1)
         self.set_end_date(2024, 12, 31)
         self.SetCash(100000)
+        self.SetBrokerageModel(BrokerageName.COINBASE_BROKERAGE, AccountType.CASH)
         self.symbols = [
             self.AddCrypto("BTCUSD", Resolution.HOUR).Symbol,
             self.AddCrypto("ETHUSD", Resolution.HOUR).Symbol,
