@@ -2,6 +2,7 @@
 
 **Issue** : See #1630
 **Generated** : 2026-06-04 (automated catalog, pending live backtests)
+**Updated** : 2026-06-10 — +4 Tier-1 aligned baselines (PuppiesOfTheDow, LeveragedETFMomentum, Framework_Composite_TrendWeather, HighBookToMarketFScore)
 **Methodology** : Period common 2018-01-01 → 2024-12-31 (US equities/multi-asset), 2020-01-01 → 2024-12-31 (crypto). Metrics from `projects/catalog.json` + prior backtest runs. Pending: standardized re-backtest via MCP qc-mcp.
 
 ---
@@ -198,6 +199,10 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 | MomentumRegime | 31243821 | 2018-2025 | 0.185 | 4.7 | 11.5 | 13.0 | `033834d8` | Double-defense |
 | ForexCarry | 28657908 | 2015-2025* | -1.108 | -0.5 | 19.2 | — | `c3afe374` | *Cannot restrict to 2018+ |
 | RL-Q-Learning | 32057969 | 2020-2021* | 0.584 | 18.2 | 33.2 | — | `fb1a6366` | *Hardcoded dates |
+| PuppiesOfTheDow-QC | 32732704 | 2018-2025 | 0.302 | 9.613 | 28.8 | 3.5 | `37266daa` | Collapse vs catalog 1.99 (period overfitting) |
+| LeveragedETFMomentum-QC | 32732756 | 2018-2025 | **1.779** | 126.388 | 53.3 | **79.8** | `2addf467` | Confirms catalog 1.80. Lev ETF: extreme CAGR, MaxDD 53% |
+| Framework_Composite_TrendWeather | 28825740 | 2018-2025 | 0.948 | 24.603 | 27.5 | 56.6 | `cd84c50b` | Close to catalog 1.16, best composite |
+| HighBookToMarketFScore-QC | 32732820 | 2018-2025 | 0.411 | 14.513 | 60.4 | 4.5 | `5ef58b0d` | Collapse vs catalog 2.09, MaxDD 60% |
 
 ### Student strategies (ESGF 5BD1 cohort, See #1405)
 
@@ -234,6 +239,10 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 12. **Student RiskParity: performance honnete**: Sharpe 0.514, CAGR 9.3%, MaxDD 20.7%. Inverse-vol simple mais efficace. PSR 16.3% (non significatif mais respectable).
 13. **Student OptionWheel: catastrophe pedagogique**: Sharpe -0.51, MaxDD 103.5%. Parfait comme etude de cas du "win-rate paradoxe".
 14. **Student ValueFactor: alpha negatif confirmee**: Sharpe 0.227, PSR 0.8%. Decennie growth-dominée = facteur value sous-performant.
+15. **LeveragedETFMomentum: confirme et significatif**: Sharpe 1.779 sur 2018-2025, PSR 79.8% (2e PSR significatif apres TrendFollowing). Mais MaxDD 53.3% et CAGR 126% typiques d'un levier 3x — profil risque extreme, pas comparable aux strategies non-leveragees.
+16. **PuppiesOfTheDow et HighBookToMarketFScore: effondrement sur periode alignee**: Sharpe catalog 1.99 et 2.09 (obtenus sur leur fenetre glissante par defaut `end_date - 12 ans`) tombent a 0.302 (PSR 3.5%) et 0.411 (PSR 4.5%, MaxDD 60.4%) sur 2018-2025. Les deux meilleures lignes ML/IND du Tier 1 ne sont pas reproductibles sur la fenetre standardisee.
+17. **TrendWeather: le composite qui tient**: Sharpe 0.948 (PSR 56.6%), proche du catalog 1.16. Contraste fort avec MomentumRegime (0.185) — toutes les architectures composites ne se valent pas.
+18. **Caveat reproductibilite Trend-Following**: le code du repo backteste sur 2018-2024 donne Sharpe 0.365 / MaxDD 13.8% (backtest `3748cb62`), loin du 1.072 publie ci-dessus (`7792ae0a`, 2018-2025, etat du code cloud anterieur). Periodes differentes (2025 inclus ou non) ET drift possible repo vs cloud — a investiguer avant de citer 1.072 comme reference du code versionne.
 
 ## Comparison: Best-vs-Aligned
 
@@ -247,6 +256,10 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 | TrendFollowing | ~0.8 | 1.072 | +0.272 | Ameliore sur longue periode |
 | Crypto-MultiCanal | ~0.6 | 0.581 | ~0 | Performance confirmee |
 | VolTarget-Momentum | ~0.65 | 0.648 | ~0 | Performance confirmee |
+| PuppiesOfTheDow-QC | 1.99 | 0.302 | -1.688 | Period overfitting severe (catalog = fenetre glissante 12 ans) |
+| LeveragedETFMomentum-QC | 1.80 | 1.779 | -0.021 | Performance confirmee (mais MaxDD 53%) |
+| Framework_Composite_TrendWeather | 1.16 | 0.948 | -0.212 | Legere degradation, composite robuste |
+| HighBookToMarketFScore-QC | 2.09 | 0.411 | -1.679 | Period overfitting severe + MaxDD 60% |
 
 ---
 
@@ -259,6 +272,7 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 5. ~~**Transaction cost re-backtest**: Add `SetBrokerageModel` + configurable brokerage parameter~~ — Done, #2575 + fee sweep EMA-Cross-Stocks + Crypto-MultiCanal (See #2471, #2575, #2588)
 6. **Cross-seed validation**: ≥4 seeds (0/1/7/42/99) for ML/DL/RL strategies
 7. **Edge vs σ**: Compute for all strategies vs B&H baseline
+8. **Trend-Following repo/cloud drift**: repo code gives Sharpe 0.365 on 2018-2024 vs published 1.072 (2018-2025, prior cloud state) — identify which code version produced 1.072 and align repo (see Key finding 18)
 
 ---
 
