@@ -51,6 +51,7 @@ Documentation detailee de l'infrastructure GenAI (ComfyUI, Docker, modeles locau
 | Fichier | Description |
 |---------|-------------|
 | [qc/quantconnect.md](qc/quantconnect.md) | Backtests, structure, livre reference |
+| [qc/qc-comparative-backtests.md](qc/qc-comparative-backtests.md) | Baselines alignees + analyse comparative backtests (#1630) |
 
 ## Lean (docs/lean/)
 
@@ -90,7 +91,6 @@ Documents conserves pour reference mais inactifs. Index complet : [archive/INDEX
 | Fichier | Description |
 |---------|-------------|
 | [archive/ml-trading-state.md](archive/ml-trading-state.md) | Etat ML trading (historique) |
-| [archive/qc-comparative-backtests.md](archive/qc-comparative-backtests.md) | Analyse comparative backtests |
 | [archive/visitor-navigation-guide.md](archive/visitor-navigation-guide.md) | Carte du visiteur |
 | [archive/research/dl_predictability_finance_2026.md](archive/research/dl_predictability_finance_2026.md) | Predictibilite DL finance 2026 |
 | [archive/analysis/qc-notebooks-exec-classification.md](archive/analysis/qc-notebooks-exec-classification.md) | Classification execution notebooks QC |

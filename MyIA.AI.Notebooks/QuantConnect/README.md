@@ -456,27 +456,28 @@ Après completion de cette série, vous maîtriserez :
 
 ## Stratégies Vérifiées — Baselines Comparatives
 
-Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes standardisées via QC Cloud API. Le tableau ci-dessous présente les **meilleures performances vérifiées** (Sharpe, CAGR, MaxDD, PSR) : [catalogue complet](../../docs/archive/qc-comparative-backtests.md).
+Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes standardisées via QC Cloud API. Le tableau ci-dessous présente les **meilleures performances vérifiées** (Sharpe, CAGR, MaxDD, PSR) : [catalogue complet](../../docs/qc/qc-comparative-backtests.md).
 
 ### Top 5 stratégies (Sharpe aligned, 2018-2025)
 
 | # | Stratégie | Type | Sharpe | CAGR% | MaxDD% | PSR% |
 |---|-----------|------|--------|-------|--------|------|
-| 1 | TrendFollowing | IND | **1.072** | 23.2 | 9.3 | 81.8 |
-| 2 | EMA-Cross-Stocks | IND | **0.891** | 26.2 | 35.7 | 40.5 |
-| 3 | VolTarget-Momentum | COMP | 0.648 | 14.7 | 21.2 | 22.3 |
-| 4 | AllWeather | RISK | 0.631 | 9.0 | 16.4 | 31.2 |
-| 5 | Crypto-MultiCanal | IND | 0.581 | 8.2 | 17.0 | 37.6 |
+| 1 | LeveragedETFMomentum* | IND | **1.779** | 126.4 | 53.3 | 79.8 |
+| 2 | TrendFollowing | IND | **1.072** | 23.2 | 9.3 | 81.8 |
+| 3 | Framework_Composite_TrendWeather | COMP | 0.948 | 24.6 | 27.5 | 56.6 |
+| 4 | EMA-Cross-Stocks | IND | **0.891** | 26.2 | 35.7 | 40.5 |
+| 5 | VolTarget-Momentum | COMP | 0.648 | 14.7 | 21.2 | 22.3 |
 
-**Lecture** : PSR (Probabilistic Sharpe Ratio) > 50% = statistiquement significatif. TrendFollowing est le seul leader confirmé (PSR 81.8%).
+**Lecture** : PSR (Probabilistic Sharpe Ratio) > 50% = statistiquement significatif. *LeveragedETFMomentum utilise des ETF à levier 3x : profil de risque extrême (MaxDD 53%), non comparable aux stratégies non-leveragées. TrendFollowing reste la référence risque-ajusté (PSR 81.8%, MaxDD 9.3%).
 
 **Enseignements clés** :
 - **TrendFollowing** domine : Sharpe 1.072 avec MaxDD 9.3% seulement. La tendance persiste sur longue période.
 - **EMA-Cross-Alpha** : Sharpe -0.010 en aligned (vs 0.996 en backtest court) = overfitting sever. Démonstration pédagogique du danger des backtests courts.
-- **Composites < single-strategies** : MomentumRegime (combinaison SectorMom + Regime) obtient seulement 0.185, confirmant le problème de "double-defense".
+- **Composites : tout dépend de l'architecture** : Framework_Composite_TrendWeather tient (0.948, PSR 56.6%) là où MomentumRegime (combinaison SectorMom + Regime) obtient seulement 0.185 ("double-defense").
+- **Les stars du catalogue ne survivent pas toutes à l'alignement** : PuppiesOfTheDow (1.99 → 0.302) et HighBookToMarketFScore (2.09 → 0.411) s'effondrent sur 2018-2025 — leurs Sharpe catalogue venaient d'une fenêtre glissante non standardisée.
 - **Crypto = diversification stable** : MaxDD maitrisé (~17%), rendement modéré.
 
-> Voir [docs/archive/qc-comparative-backtests.md](../../docs/archive/qc-comparative-backtests.md) pour les 17 baselines vérifiées, les comparaisons best-vs-aligned, et les diagnostics détaillés (See #1630).
+> Voir [docs/qc/qc-comparative-backtests.md](../../docs/qc/qc-comparative-backtests.md) pour les 21 baselines vérifiées, les comparaisons best-vs-aligned, et les diagnostics détaillés (See #1630).
 
 ---
 
