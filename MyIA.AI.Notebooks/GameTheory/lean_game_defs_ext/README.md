@@ -15,6 +15,7 @@ l'epic #2610.
 | `Bayesian/BNE.lean` | `isBNE` (équilibre de Nash bayésien interim, **décidable**), principe de déviation unique (interim ⇒ ex-ante), invariance par rescaling du prior (`isBNE_scaleW`) |
 | `Bayesian/Examples.lean` | Bataille des sexes à information incomplète (Harsanyi) : BNE du manuel certifié par `decide` |
 | `Bayesian/Auction.lean` | Enchère au premier prix sous pli scellé (discrète, 2 enchérisseurs, prior uniforme) : enchérir sa valeur rapporte exactement 0 (théorème général en `n`), le *bid shading* `b(v) = v/2` est un BNE certifié par `decide` (n = 2, 3), enchérir sa valeur n'est PAS un BNE (phase 2) |
+| `Bayesian/Vickrey.lean` | Enchère au second prix (Vickrey) : enchérir sa valeur **domine faiblement** toute autre enchère (argument pointwise classique), donc BNE sincère **pour tout `n`** (théorème général, sans `decide`) ; rente d'information strictement positive du type haut, en contraste avec le premier prix (phase 3) |
 
 ## Choix de conception
 
@@ -42,6 +43,7 @@ standalone-tactic).
 
 `lean_game_defs/` (jeux sous forme normale, Nash, social choice,
 Kuhn poker — cf #2748 / PR #2752) reste le socle « phase 0 ». Ce
-projet-ci accueille les extensions de l'epic #2610 (phase 2 livrée :
-enchères au premier prix discret) ; phases suivantes prévues : valeur
-de l'information, jeux de réputation simplifiés.
+projet-ci accueille les extensions de l'epic #2610 (phases livrées :
+2 — enchère au premier prix discret, 3 — enchère de Vickrey et
+dominance faible) ; phases suivantes prévues : valeur de
+l'information, jeux de réputation simplifiés.
