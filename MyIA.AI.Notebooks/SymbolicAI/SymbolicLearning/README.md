@@ -140,7 +140,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | 3 | [SL-3 - Apprentissage Base sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des determinations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |
 | 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, resolution inverse, clauses Horn, knowledge graphs | 55 min |
 | 5 | [SL-5 - Integration Neuro-Symbolique](SL-5-NeuroSymbolic.ipynb) | T-norms, predicats neuronaux, LTN, DeepProbLog | 55 min |
-| 6 | [SL-6 - ILP Moderne et Knowledge Graphs](SL-6-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, completion KG | 55 min |
+| 6 | [SL-6 - ILP Moderne et Knowledge Graphs](SL-6-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, completion KG, ASP avec clingo | 55 min |
 | 7 | [SL-7 - LLMs et Apprentissage Symbolique](SL-7-LLM-SymbolicLearning.ipynb) | Prompting, extraction de regles, verification symbolique (Gemini 3.5 Flash optionnel) | 50 min |
 | 8 | [SL-8 - Apprentissage Actif d'Automates](SL-8-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requetes MQ/EQ, Myhill-Nerode | 60 min |
 | 9 | [SL-9 - Resolution Inverse et Progol](SL-9-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 60 min |
@@ -210,6 +210,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | Knowledge Graphs | Construction avec rdflib |
 | AMIE rule mining | Decouverte de regles de Horn sur KG |
 | Completion | Inference de nouveaux triples |
+| ASP avec clingo | Validation croisee de la completion, recursion (`ancestorOf`), contraintes d'integrite (pont serie Tweety) |
 
 ### SL-7-LLM-SymbolicLearning.ipynb
 
@@ -299,7 +300,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 
 ### Environnement Python
 
-Aucune dependance externe pour SL-1, SL-2, SL-4, SL-5, SL-8 et SL-9 (bibliotheque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-6 utilise `rdflib`. SL-7 et SL-10 utilisent `python-dotenv` et `openai` pour les appels LLM optionnels via OpenRouter (Gemini 3.5 Flash) : copiez `.env.example` vers `.env` et renseignez `OPENROUTER_API_KEY` ; sans cle, un simulateur deterministe prend le relais et le notebook s'execute integralement.
+Aucune dependance externe pour SL-1, SL-2, SL-4, SL-5, SL-8 et SL-9 (bibliotheque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-6 utilise `rdflib` et `clingo` (module Python officiel Potassco, installe silencieusement par le notebook — meme moteur ASP que le binaire utilise par la serie Tweety via `scripts/install_clingo.py`). SL-7 et SL-10 utilisent `python-dotenv` et `openai` pour les appels LLM optionnels via OpenRouter (Gemini 3.5 Flash) : copiez `.env.example` vers `.env` et renseignez `OPENROUTER_API_KEY` ; sans cle, un simulateur deterministe prend le relais et le notebook s'execute integralement.
 
 ## FAQ / Troubleshooting
 
