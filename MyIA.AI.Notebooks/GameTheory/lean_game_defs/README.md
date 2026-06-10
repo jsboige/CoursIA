@@ -7,8 +7,10 @@ Shared Lean 4 type definitions used by multiple GameTheory Lean projects. **NOT*
 - **Type:** Code snippets (no `lakefile.lean`, no toolchain pin)
 - **Files:** 6 `.lean`
 - **`sorry` count:** 0 (definitions only, no proofs)
+- **Mathlib dependency:** None — all files use core Lean 4 only
 - **Buildable in isolation:** No — meant to be imported by Lake projects
 - **Last sorry audit:** 2026-05-29
+- **Last compilation fix:** 2026-06-10 (See #2748)
 
 ## Files
 
