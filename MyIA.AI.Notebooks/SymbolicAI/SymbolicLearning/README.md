@@ -60,7 +60,7 @@ La deuxieme phase introduit l'idee centrale que **la connaissance accelere l'app
 
 ### Phase 3 : Programmation logique inductive (SL-4, ~55 min)
 
-SL-4 fait le pont entre apprentissage automatique et intelligence artificielle symbolique classique en couvrant l'ILP : apprentissage de programmes logiques (clauses Horn) a partir d'exemples. L'algorithme FOIL (top-down) et la resolution inverse (bottom-up) sont implémentes de zero, puis appliques aux knowledge graphs — avec extraction de regles AMIE et requetes SPARQL CONSTRUCT.
+SL-4 fait le pont entre apprentissage automatique et intelligence artificielle symbolique classique en couvrant l'ILP : apprentissage de programmes logiques (clauses Horn) a partir d'exemples. L'algorithme FOIL (top-down) et la resolution inverse (bottom-up) sont implémentes de zero, puis appliques aux knowledge graphs — avec extraction de regles AMIE et requetes SPARQL CONSTRUCT. La section finale confronte le FOIL artisanal a l'ILP moderne : **Popper** (Learning From Failures) retrouve le programme recursif `ancestor` optimal sur les memes donnees, demontre l'apport de la recursion par ablation, et le programme appris est verifie independamment en SWI-Prolog.
 
 ### Phase 4 : Integration neuro-symbolique (SL-5 a SL-7, ~160 min)
 
@@ -138,7 +138,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | 1 | [SL-1 - Apprentissage Logique](SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 50 min |
 | 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (determinations) | 45 min |
 | 3 | [SL-3 - Apprentissage Base sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des determinations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |
-| 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, resolution inverse, clauses Horn, knowledge graphs | 55 min |
+| 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, resolution inverse, clauses Horn, knowledge graphs, Popper (LFF) | 55 min |
 | 5 | [SL-5 - Integration Neuro-Symbolique](SL-5-NeuroSymbolic.ipynb) | T-norms, predicats neuronaux, LTN, DeepProbLog | 55 min |
 | 6 | [SL-6 - ILP Moderne et Knowledge Graphs](SL-6-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, completion KG, ASP avec clingo | 55 min |
 | 7 | [SL-7 - LLMs et Apprentissage Symbolique](SL-7-LLM-SymbolicLearning.ipynb) | Prompting, extraction de regles, verification symbolique (Gemini 3.5 Flash optionnel) | 50 min |
@@ -191,6 +191,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | FOIL pas-a-pas | Trace detaillee sur le probleme ancestor |
 | Resolution inverse | Operateurs V (absorption) et W (identification) |
 | Knowledge Graphs | Regles AMIE, triples RDF, SPARQL CONSTRUCT |
+| Popper (Learning From Failures) | Programme recursif optimal, ablation sans recursion, verification SWI-Prolog (kernel Linux/WSL) |
 | Exercices | sibling, operateur W, regles sur KG |
 
 ### SL-5-NeuroSymbolic.ipynb
@@ -274,6 +275,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | **Clause Horn** | Regle logique avec au plus un litteral positif | SL-4 |
 | **Unification** | Trouve une substitution rendant deux termes egaux | SL-4 |
 | **ILP** | Apprentissage de programmes logiques a partir d'exemples | SL-4 |
+| **Learning From Failures (Popper)** | ILP moderne : recherche de programme optimal par contraintes (clingo + Prolog) | SL-4 |
 | **T-norm** | Generalisation differentiable de AND | SL-5 |
 | **DeepProbLog** | Programmation logique probabiliste + predicats neuronaux | SL-5 |
 | **Knowledge Graph** | Graphe oriente de triples (sujet, predicat, objet) | SL-6 |
@@ -300,7 +302,9 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 
 ### Environnement Python
 
-Aucune dependance externe pour SL-1, SL-2, SL-4, SL-5, SL-8 et SL-9 (bibliotheque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-6 utilise `rdflib` et `clingo` (module Python officiel Potassco, installe silencieusement par le notebook — meme moteur ASP que le binaire utilise par la serie Tweety via `scripts/install_clingo.py`). SL-7 et SL-10 utilisent `python-dotenv` et `openai` pour les appels LLM optionnels via OpenRouter (Gemini 3.5 Flash) : copiez `.env.example` vers `.env` et renseignez `OPENROUTER_API_KEY` ; sans cle, un simulateur deterministe prend le relais et le notebook s'execute integralement.
+Aucune dependance externe pour SL-1, SL-2, SL-5, SL-8 et SL-9 (bibliotheque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-6 utilise `rdflib` et `clingo` (module Python officiel Potassco, installe silencieusement par le notebook — meme moteur ASP que le binaire utilise par la serie Tweety via `scripts/install_clingo.py`). SL-7 et SL-10 utilisent `python-dotenv` et `openai` pour les appels LLM optionnels via OpenRouter (Gemini 3.5 Flash) : copiez `.env.example` vers `.env` et renseignez `OPENROUTER_API_KEY` ; sans cle, un simulateur deterministe prend le relais et le notebook s'execute integralement.
+
+SL-4 est en bibliotheque standard pour l'essentiel, mais sa section finale **Popper** requiert un environnement Unix : Popper utilise `signal.SIGALRM`, absent de Windows — le notebook s'execute donc sur un kernel Python **Linux** (kernel `python3-wsl` via WSL sous Windows, kernel natif sous Linux/macOS). Dependances de la section (installees silencieusement par le notebook) : SWI-Prolog >= 9.1.12 (`ppa:swi-prolog/stable`), `popper-ilp` epingle a **v4.4.0** (la 5.0 exige Python >= 3.14), `janus_swi`, `clingo`, `setuptools < 81`. Si Popper est indisponible, les cellules de la section l'indiquent et se sautent proprement — le reste du notebook tourne sur n'importe quel kernel Python.
 
 ## FAQ / Troubleshooting
 
