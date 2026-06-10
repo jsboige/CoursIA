@@ -1,0 +1,6 @@
+{"version": "1.2.0",
+ "packagesDir": ".lake/packages",
+ "packages": [],
+ "name": "lean_game_defs_ext",
+ "lakeDir": ".lake",
+ "fixedToolchain": false}

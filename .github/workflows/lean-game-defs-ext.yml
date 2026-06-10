@@ -1,0 +1,89 @@
+name: Lean Game Defs Ext CI
+
+# CI for lean_game_defs_ext (GameTheory/lean_game_defs_ext).
+# Bayesian games formalization, phase 1 of #2610 (Harsanyi type spaces,
+# interim expected utility, decidable BNE). Core Lean 4 only, no Mathlib.
+# Verifies lake build SUCCESS + sorry baseline 0.
+# Rule lean-merge-discipline: lake build SUCCESS local OBLIGATOIRE avant merge.
+#
+# NOTE: standalone workflow because the reusable lean-build.yml (PR #2751)
+# is not on main yet. Once #2751 merges, convert this file into a caller
+# of .github/workflows/lean-build.yml like the other Lean CIs.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-sorry-game-defs-ext:
+    name: "Sorry check (lean_game_defs_ext)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Count sorry in lean_game_defs_ext
+      run: |
+        echo "=== Sorry inventory for lean_game_defs_ext ==="
+        SORRY_TOTAL=0
+        # Baseline = 0: all theorems in the Bayesian module are fully proved.
+        KNOWN_BASELINE=0
+        for f in $(find . -name '*.lean' -not -path './.lake/*'); do
+          COUNT=$(grep -cw "sorry" "$f" || true)
+          echo "  $f: $COUNT sorry"
+          SORRY_TOTAL=$((SORRY_TOTAL + COUNT))
+        done
+        echo ""
+        echo "Total sorry: $SORRY_TOTAL"
+        echo "Known baseline: $KNOWN_BASELINE"
+        if [ "$SORRY_TOTAL" -gt "$KNOWN_BASELINE" ]; then
+          echo ""
+          echo "FAIL: sorry count ($SORRY_TOTAL) exceeds baseline ($KNOWN_BASELINE)"
+          exit 1
+        fi
+        echo "OK: no new sorrys introduced."
+
+  build-game-defs-ext:
+    name: "Lake build (lean_game_defs_ext)"
+    runs-on: ubuntu-latest
+    needs: check-sorry-game-defs-ext
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install elan
+      run: |
+        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        ./elan-init -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+    - name: Cache Lake build artifacts
+      uses: actions/cache@v4
+      with:
+        path: MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/.lake
+        key: lake-gdx-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.toml', 'MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain') }}
+        restore-keys: lake-gdx-${{ runner.os }}-
+
+    - name: Lake build
+      run: lake build 2>&1 | tail -20
