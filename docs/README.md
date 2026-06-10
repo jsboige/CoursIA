@@ -12,7 +12,7 @@ Documentation vivante, active et liee depuis CLAUDE.md / `.claude/rules/`.
 | [reference/procedures-recurrentes.md](reference/procedures-recurrentes.md) | Workflow PR, dispatch, validation, pre-commit |
 | [reference/architecture_mcp_roo.md](reference/architecture_mcp_roo.md) | Architecture des 34 outils MCP roo-state-manager |
 | [reference/kernels-runtime.md](reference/kernels-runtime.md) | .NET, Python, WSL, conda envs |
-| [reference/env-python-reparation.md](reference/env-python-reparation.md) | RepARATION environnements Python |
+| [reference/env-python-reparation.md](reference/env-python-reparation.md) | Reparation environnements Python |
 | [reference/claude-code-config.md](reference/claude-code-config.md) | Agents, skills, rules, model selection |
 | [reference/cluster-agents.md](reference/cluster-agents.md) | Machines cluster, GPU topology |
 | [reference/teaching-context.md](reference/teaching-context.md) | Calendrier, scope EPITA-IS, agents par ecole |
@@ -40,7 +40,7 @@ Documentation vivante, active et liee depuis CLAUDE.md / `.claude/rules/`.
 
 ## GenAI (docs/genai/)
 
-Documentation detailee de l'infrastructure GenAI (ComfyUI, Docker, modeles locaux).
+Documentation detaillee de l'infrastructure GenAI (ComfyUI, Docker, modeles locaux).
 
 | Fichier | Description |
 |---------|-------------|

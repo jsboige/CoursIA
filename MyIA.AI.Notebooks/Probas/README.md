@@ -9,7 +9,7 @@ maturity: PRODUCTION=44
 
 Le monde reel est incertain. Un diagnostic medical n'est jamais sur a 100%, un classement sportif depend de performances intrinsequement variables, et les donnees que nous collectons sont toujours bruitees ou incompletes. La programmation probabiliste offre un cadre rigoureux pour modeliser cette incertitude : plutot que de calculer une seule reponse, on obtient une **distribution de probabilites** qui quantifie notre confiance dans chaque resultat possible.
 
-Cette serie couvre trois stack complementaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inference exacte par message passing, **PyMC** (Python) pour l'echantillonnage MCMC moderne, et des **applications standalone** (RSA, HMM trading). Les 21 notebooks Infer.NET couvrent les fondements mathematiques (distributions, graphs de facteurs), les modeles classiques (reseaux bayesiens, TrueSkill, LDA, HMM), puis la theorie de la decision bayesienne. Les 20 notebooks PyMC reprennent l'integralite des modeles Infer.NET en Python avec l'echantillonnage NUTS, offrant un pont naturel vers l'ecosysteme data science : fondations 1-3, modeles classiques 4-13, et theorie de la decision 14-20.
+Cette serie couvre trois stack complementaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inference exacte par message passing, **PyMC** (Python) pour l'echantillonnage MCMC moderne, et des **applications standalone** (RSA, HMM trading). Les 21 notebooks Infer.NET couvrent les fondements mathematiques (distributions, graphs de facteurs), les modeles classiques (reseaux bayesiens, TrueSkill, LDA, HMM), puis la theorie de la decision bayesienne — jusqu'a un compagnon **Lean 4** (Infer-20b, adosse au projet Lake `gittins_lean`) qui demontre formellement les identites d'escompte de l'indice de Gittins. Les 20 notebooks PyMC reprennent l'integralite des modeles Infer.NET en Python avec l'echantillonnage NUTS, offrant un pont naturel vers l'ecosysteme data science : fondations 1-3, modeles classiques 4-13, et theorie de la decision 14-20.
 
 **44 notebooks** | **3 stack** | **~40h**
 
@@ -54,8 +54,8 @@ A l'issue de cette serie, vous serez capable de :
 |-------------|--------|
 | Notebooks | 44 (21 Infer.NET + 20 PyMC + 3 standalone) |
 | Duree totale | ~40h |
-| Langages | C# (.NET), Python |
-| Kernels | .NET Interactive, Python 3 |
+| Langages | C# (.NET), Python, Lean 4 |
+| Kernels | .NET Interactive, Python 3, Lean 4 (WSL) |
 | Algorithmes | EP, VMP, Gibbs (Infer.NET) ; NUTS (PyMC) |
 
 ## Parcours d'apprentissage
@@ -70,7 +70,7 @@ Les notebooks 4 a 13 construisent des modeles de complexite croissante, chacun i
 
 ### Phase 3 : Decision bayesienne (Notebooks 14-20, ~7h)
 
-La seconde moitie de la serie passe de l'inference a la decision : comment choisir une action quand on ne connait que des probabilites ? Les notebooks 14-16 posent les fondations (axiomes de l'utilite, fonctions d'utilite mono- et multi-attributs). Les notebooks 17-20 appliquent ces concepts aux reseaux de decision, a la valeur de l'information parfaite et d'echantillon, aux systemes experts robustes, et aux processus decisionnels de Markov (MDPs) — qui relient cette serie a la serie [RL](../RL/).
+La seconde moitie de la serie passe de l'inference a la decision : comment choisir une action quand on ne connait que des probabilites ? Les notebooks 14-16 posent les fondations (axiomes de l'utilite, fonctions d'utilite mono- et multi-attributs). Les notebooks 17-20 appliquent ces concepts aux reseaux de decision, a la valeur de l'information parfaite et d'echantillon, aux systemes experts robustes, et aux processus decisionnels de Markov (MDPs) — qui relient cette serie a la serie [RL](../RL/). Le compagnon Infer-20b (kernel Lean 4 via WSL) clot la phase en formalisant les identites d'escompte geometrique de l'indice de Gittins dans le projet Lake [`gittins_lean`](Infer/gittins_lean/) ; le theoreme d'optimalite y est enonce, sa preuve complete exigeant une formalisation des MDP qui manque encore a Mathlib.
 
 ### Parcours alternatives
 
@@ -111,6 +111,7 @@ Pour les etudiants en recherche operationnelle ou finance :
 5. **Value of information** (18) : EVPI, EVSI — quand un test est-il rentable ?
 6. **Expert systems** (19) : Minimax, Minimax Regret, robustesse
 7. **Sequential** (20) : MDPs, bandits, POMDPs — passerelle vers le RL
+8. **Gittins en Lean** (20b) : identites d'escompte demontrees, theoreme d'optimalite enonce — pont vers [SymbolicAI/Lean](../SymbolicAI/Lean/README.md)
 
 #### Parcours rapide Python (standalone, ~2h)
 
@@ -156,8 +157,10 @@ Probas/
 ├── PyMC/                # Port PyMC complet des modeles Infer.NET (20 notebooks)
 │   ├── PyMC-1-Setup.ipynb ... PyMC-20-Decision-Sequential.ipynb
 │   └── (port en cours d'enrichissement)
-└── Infer/                       # Serie complete Infer.NET (20 notebooks)
+└── Infer/                       # Serie complete Infer.NET (21 notebooks)
     ├── Infer-1-Setup.ipynb ... Infer-20-Decision-Sequential.ipynb
+    ├── Infer-20b-Lean-Gittins.ipynb   # Compagnon Lean 4 (kernel WSL)
+    ├── gittins_lean/            # Projet Lake : identites d'escompte, theoreme de Gittins
     ├── README.md                # Documentation detaillee de la serie
     └── scripts/
 ```
@@ -190,6 +193,7 @@ Chaque notebook introduit un concept ou modele specifique. Le tableau ci-dessous
 | 18 | Decision Value-Info | EVPI, EVSI, valeur de l'information, when-to-test |
 | 19 | Decision Expert-Systems | Minimax, Minimax Regret, robustesse face a l'incertitude |
 | 20 | Decision Sequential | MDPs, iteration valeur/politique, bandits, POMDPs |
+| 20b | Lean Gittins | Formalisation Lean 4 : identites d'escompte prouvees, optimalite de Gittins enoncee |
 
 ### Serie PyMC
 
@@ -239,7 +243,7 @@ Application avancee a la linguistique pragmatique :
 - Modelisation des hyperboles (prix, excitation)
 - Question Under Discussion (QUD)
 
-## Serie Infer.NET (20 notebooks)
+## Serie Infer.NET (21 notebooks)
 
 La serie complete est documentee dans [Infer/README.md](Infer/README.md), qui fournit des descriptions detaillees de chaque notebook, les patterns Infer.NET avances, et des exercices corriges.
 
@@ -249,7 +253,7 @@ La serie complete est documentee dans [Infer/README.md](Infer/README.md), qui fo
 |--------|-----------|-------|-------|
 | **Fondations** | 1-3 | Setup, distributions, factor graphs | 2h |
 | **Modeles classiques** | 4-13 | Bayesian networks, IRT, TrueSkill, LDA, HMM | 8h |
-| **Decision** | 14-20 | Theorie de la decision bayesienne | 7h |
+| **Decision** | 14-20, 20b | Theorie de la decision bayesienne + preuve Lean de Gittins | 8h |
 
 ### Vue d'ensemble des notebooks
 
@@ -269,6 +273,7 @@ La serie complete est documentee dans [Infer/README.md](Infer/README.md), qui fo
 | 12 | Recommenders | Factorisation matricielle, Click Model |
 | 13 | Debugging | EP vs VMP, diagnostic erreurs |
 | 14-20 | Decision Theory | Utilite, MAUT, influence diagrams, MDPs |
+| 20b | Lean Gittins | Preuves formelles Lean 4 de l'indice de Gittins (projet Lake `gittins_lean`) |
 
 ## Serie PyMC (20 notebooks, Python)
 
@@ -505,4 +510,5 @@ Voir la licence du repository principal.
 | [Search](../Search/README.md) | Optimisation bayesienne | La selection de modeles (PyMC-8) utilise les memes techniques que l'optimisation bayesienne |
 | [RL](../RL/README.md) | MDPs | Les MDPs de PyMC-20 (Decision Sequential) sont la passerelle vers le reinforcement learning |
 | [SmartContracts](../SymbolicAI/SmartContracts/README.md) | Decision robust | Minimax Regret (PyMC-19) s'applique aux smart contracts pour la gestion des incertitudes on-chain |
+| [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) | gittins_lean | Le compagnon Infer-20b prouve en Lean 4 les identites d'escompte de l'indice de Gittins |
 | Lecture transversale | [La mer qui monte](../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de representation, certification A/B/C |

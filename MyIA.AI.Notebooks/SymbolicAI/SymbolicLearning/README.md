@@ -9,7 +9,7 @@ maturity: PRODUCTION=7
 
 Comment un agent peut-il apprendre a partir de connaissances existantes plutot que de donnees brutes ? Cette serie explore l'apprentissage symbolique tel que decrit dans le chapitre 19 d'AIMA (Russell & Norvig), depuis l'apprentissage inductif pur (CBH, Version Space) jusqu'aux methodes guidees par la connaissance (EBL, RBL).
 
-Le premier notebook pose les bases : representation d'hypotheses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accelere l'apprentissage : l'apprentissage base sur les explications (EBL) compile les theories en heuristiques operationnelles, et l'apprentissage base sur la pertinence (RBL) identifie les attributs determinant via les determinations. Le troisieme notebook approfondit le RBL avec le treillis des determinations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrieme notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), la resolution inverse (bottom-up) et la connexion avec les knowledge graphs. Les trois derniers notebooks ouvrent vers des methodes contemporaines : SL-5 introduit le neuro-symbolique (T-norms differentiables, Logic Tensor Networks, DeepProbLog) ; SL-6 outille la decouverte de regles sur knowledge graphs reels avec rdflib et AMIE rule mining ; SL-7 boucle LLM et verification symbolique pour fiabiliser le raisonnement formel guide par modeles de langage. Trois notebooks etendent la serie : SL-8 change de paradigme avec l'apprentissage *actif* (l'algorithme L* d'Angluin interroge un oracle au lieu de subir un echantillon, et apprend des automates finis avec garanties de minimalite) ; SL-9 complete l'ILP de SL-4 par la voie bottom-up aboutie (LGG de Plotkin, theta-subsomption, clause bottom et recherche a la Progol) ; SL-10 est le capstone qui assemble toute la serie en un pipeline neuro-symbolique de bout en bout — du texte brut aux faits decouverts, avec un LLM reel (Gemini 3.5 Flash) aux deux extremites et le symbolique comme colonne vertebrale.
+Le premier notebook pose les bases : representation d'hypotheses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accelere l'apprentissage : l'apprentissage base sur les explications (EBL) compile les theories en heuristiques operationnelles, et l'apprentissage base sur la pertinence (RBL) identifie les attributs determinant via les determinations. Le troisieme notebook approfondit le RBL avec le treillis des determinations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrieme notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), la resolution inverse (bottom-up) et la connexion avec les knowledge graphs. Les notebooks SL-5 a SL-7 ouvrent vers des methodes contemporaines : SL-5 introduit le neuro-symbolique (T-norms differentiables, Logic Tensor Networks, DeepProbLog) ; SL-6 outille la decouverte de regles sur knowledge graphs reels avec rdflib et AMIE rule mining ; SL-7 boucle LLM et verification symbolique pour fiabiliser le raisonnement formel guide par modeles de langage. Trois notebooks etendent la serie : SL-8 change de paradigme avec l'apprentissage *actif* (l'algorithme L* d'Angluin interroge un oracle au lieu de subir un echantillon, et apprend des automates finis avec garanties de minimalite) ; SL-9 complete l'ILP de SL-4 par la voie bottom-up aboutie (LGG de Plotkin, theta-subsomption, clause bottom et recherche a la Progol) ; SL-10 est le capstone qui assemble toute la serie en un pipeline neuro-symbolique de bout en bout — du texte brut aux faits decouverts, avec un LLM reel (Gemini 3.5 Flash) aux deux extremites et le symbolique comme colonne vertebrale.
 
 **A qui s'adresse cette serie** : etudiants en IA, informaticiens interesses par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques. Les notebooks (~9h30 total) ne necessitent que Python 3.10+ standard library, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle) et SL-6 (rdflib pour les knowledge graphs) ; SL-7 et SL-10 acceptent une cle OpenRouter optionnelle (fichier `.env`) pour des appels LLM reels, avec un simulateur deterministe en repli. Une familiarite avec la logique propositionnelle suffit pour SL-1 a SL-4, SL-8 et SL-9 ; SL-5, SL-7 et SL-10 supposent une intuition des reseaux de neurones et des LLMs. Ils constituent un complement theorique aux series [Tweety](../Tweety/README.md) (argumentation computationnelle), [SemanticWeb](../SemanticWeb/README.md) (representation de connaissances) et [ML](../../ML/README.md) (apprentissage statistique - contraste avec l'inductif symbolique).
 
@@ -17,9 +17,9 @@ Le premier notebook pose les bases : representation d'hypotheses comme conjoncti
 
 L'apprentissage symbolique represente la contrepartie theorique du machine learning statistique. Tandis que les methodes modernes (deep learning, ensembles d'arbres) excellent a extraire des patterns de grandes masses de donnees, elles souffrent de trois limites fondamentales que l'approche symbolique adresse directement :
 
-- **Peu de donnees disponibles** : les methodes symboliques comme Candidate Elimination ou FOIL apprennent a partir de quelques exemples,voire d'un seul (EBL). Quand la collecte de donnees est couteuse ou impossible (diagnostic medical rare, validation formelle), l'induction pure ne fonctionne pas.
-- **Interpretabilité requise** : une regle logique `IF temperature > 38 AND toux THEN infection` est comprehensible par un humain. Un reseau de neurones de 100M de parametres ne l'est pas. Pour les applications critique ou reglementees (medecine, finance, justice), l'interpretabilité n'est pas un luxe — c'est une exigence.
-- **Integration avec la connaissance existante** : les methodes symboliques combinent examples ET theorie du domaine. EBL compile un exemple prouve en une regle operationnelle generale ; RBL identifie les attributs determinant via des contraintes formelles. Aucune methode statistique ne peut exploiter cette connaissance a priori de la meme facon.
+- **Peu de donnees disponibles** : les methodes symboliques comme Candidate Elimination ou FOIL apprennent a partir de quelques exemples, voire d'un seul (EBL). Quand la collecte de donnees est couteuse ou impossible (diagnostic medical rare, validation formelle), l'induction pure ne fonctionne pas.
+- **Interpretabilité requise** : une regle logique `IF temperature > 38 AND toux THEN infection` est comprehensible par un humain. Un reseau de neurones de 100M de parametres ne l'est pas. Pour les applications critiques ou reglementees (medecine, finance, justice), l'interpretabilité n'est pas un luxe — c'est une exigence.
+- **Integration avec la connaissance existante** : les methodes symboliques combinent examples ET theorie du domaine. EBL compile un exemple prouve en une regle operationnelle generale ; RBL identifie les attributs determinants via des contraintes formelles. Aucune methode statistique ne peut exploiter cette connaissance a priori de la meme facon.
 
 Cette serie montre que les deux approches ne s'opposent pas — elles se **complementent**. La phase finale (SL-5 a SL-7) explore explicitement cette integration : T-norms differentiables pour rendre la logique compatible avec l'entrainement neuronal, rule mining sur knowledge graphs reels, et boucles de verification symbolique pour fiabiliser les sorties LLM.
 
@@ -28,9 +28,9 @@ Cette serie montre que les deux approches ne s'opposent pas — elles se **compl
 A l'issue de cette serie, vous serez capable de :
 
 1. **Implémenter** les algorithmes d'apprentissage inductif de base (CBH, Candidate Elimination, Version Space)
-2. **Compiler** des preuves en heuristiques operationnelles via EBL, et **identifier** les attributs pertinents via RBL et les determinations
+2. **Compiler** des preuves en heuristiques operationnelles via EBL, et **identifier** les attributs determinants via RBL et les determinations
 3. **Construire** le treillis des determinations et appliquer MINIMAL-CONSISTENT-DET pour la selection guidee d'attributs
-4. **Apprendre** des regles logiques ( clauses Horn ) a partir d'exemples avec FOIL et la resolution inverse
+4. **Apprendre** des regles logiques (clauses Horn) a partir d'exemples avec FOIL et la resolution inverse
 5. **Intégrer** logique et apprentissage neuronal via T-norms, Logique Tensorielle, et DeepProbLog
 6. **Extraire** des regles de knowledge graphs reels avec rdflib et AMIE, et **effectuer** la completion de graphes
 7. **Concevoir** une boucle LLM-symbolique : extraction de regles IF-THEN depuis du texte, verification de coherence formelle, feedback pour l'amelioration
@@ -46,7 +46,7 @@ A l'issue de cette serie, vous serez capable de :
 | Exercices (table de pioche) | 40 |
 | Kernel | Python 3 |
 | Duree estimee | ~570 min |
-| prerequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-6, cle OpenRouter optionnelle pour SL-7/SL-10) |
+| Prerequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-6, cle OpenRouter optionnelle pour SL-7/SL-10) |
 
 ## Parcours d'apprentissage
 
@@ -56,7 +56,7 @@ Le parcours commence par l'apprentissage inductif pur : un agent doit decouvrir 
 
 ### Phase 2 : Apprentissage base sur la connaissance (SL-2 a SL-3, ~95 min)
 
-La deuxieme phase introduit l'idee centrale que **la connaissance accelere l'apprentissage**. EBL (SL-2) montre comment compiler un exemple prouve en une regle operationnelle generale, en quatre etapes : expliquer, variabiliser, extraire, simplifier. RBL (introduit en SL-2, approfondi en SL-3) explore une autre facette : identifier les attributs qui determinant vraiment la cible via le formalisme des determinations et le treillis des sous-ensembles d'attributs. La comparaison avec sklearn (information mutuelle) montre quand la connaissance du domaine bat la statistique brute.
+La deuxieme phase introduit l'idee centrale que **la connaissance accelere l'apprentissage**. EBL (SL-2) montre comment compiler un exemple prouve en une regle operationnelle generale, en quatre etapes : expliquer, variabiliser, extraire, simplifier. RBL (introduit en SL-2, approfondi en SL-3) explore une autre facette : identifier les attributs qui determinent vraiment la cible via le formalisme des determinations et le treillis des sous-ensembles d'attributs. La comparaison avec sklearn (information mutuelle) montre quand la connaissance du domaine bat la statistique brute.
 
 ### Phase 3 : Programmation logique inductive (SL-4, ~55 min)
 
@@ -70,7 +70,7 @@ La phase finale explore les methodes contemporaines a l'intersection du symboliq
 
 Trois extensions concluent la serie. SL-8 inverse le rapport de l'apprenant aux donnees : au lieu de subir un echantillon, L* d'Angluin *choisit* ses questions (requetes d'appartenance et d'equivalence a un oracle MAT) et apprend des automates finis deterministes prouvablement minimaux — le cadre theorique (Myhill-Nerode, fermeture et coherence de la table d'observation) est implemente et verifie de zero. SL-9 reprend la promesse bottom-up esquissee en SL-4 et la mene a terme : LGG de Plotkin, theta-subsomption, clause bottom par entailment inverse, et recherche de clause a la Progol qui retrouve la definition de `grandfather/2` parmi 56 candidats. SL-10 est le capstone : un pipeline neuro-symbolique en 6 etages (extraction LLM -> oracle de validation -> knowledge graph -> mining de regles -> chainage avant avec provenance -> confrontation LLM vs KG) execute avec de vrais appels Gemini 3.5 Flash, ou chaque etage mobilise un notebook anterieur de la serie — y compris une lecon d'architecture decouverte dans les sorties reelles : le chainage avant peut violer les contraintes que l'oracle impose en amont.
 
-### Parcours alternatives
+### Parcours alternatifs
 
 #### Parcours rapide (SL-1 + SL-5 + SL-7 + SL-10, ~4h)
 
@@ -298,7 +298,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | **Provenance** | Trace de derivation attachee a chaque fait infere | SL-10 |
 | **Pipeline neuro-symbolique** | LLM aux extremites, validation et inference symboliques au centre | SL-10 |
 
-## prerequis
+## Prerequis
 
 ### Connaissances requises
 
@@ -324,14 +324,6 @@ pip install rdflib
 
 Si rdflib plante avec une erreur de compilateur C sur les parsers RDF/XML : installez `lxml` comme fallback `pip install lxml`, ou utilisez un environnement conda (`conda install -c conda-forge rdflib`).
 
-### JPype / Java : erreurs courantes avec les bindings
-
-Certains algorithmes de cette serie (surtout SL-5 pour les Logics Tensor Networks et SL-6 pour certains benchmarks AMIE) peuvent necessiter JPype pour interagir avec du code Java. Erreurs frequentes :
-
-- **`java.lang.NoClassDefFoundError`** : `JAVA_HOME` n'est pas defini. Verifiez `echo $JAVA_HOME` (PowerShell: `$env:JAVA_HOME`) et ajoutez-le au PATH.
-- **`UnsatisfiedLinkError`** : version Java incompatible. JPype necessite Java 8 ou 11. Evitez Java 17+ pour les anciennes versions de JPype.
-- **`ModuleNotFoundError: jpype1`** : `pip install jpype1` ou `pip install jpype1-python` (version moderne).
-
 ### `scikit-learn` : version incompatible avec Python 3.10+
 
 SL-3 utilise `scikit-learn` pour la comparaison information mutuelle vs determinations. Si vous avez une erreur lors de l'import :
@@ -349,13 +341,6 @@ Le treillis des determinations croit exponentiellement avec le nombre d'attribut
 - Limitez l'analyse aux 20-30 attributs les plus informatifs en premier
 - Utilisez `check_determination()` pour filtrer avant de construire le treillis complet
 - Le notebook inclut un parametre `max_attributes` pour controler cette taille
-
-### Erreurs de compilation Lean dans les preuves references
-
-Bien que cette serie soit en Python, certaines fonctions sont comparees avec des preuves Lean dans les notes de reference. Si `lake build` echoue :
-
-- Verifiez la version de Lean 4 : `lake --version` (minimum 4.9.0)
-- Si les imports Mathlib échouent : `lake exe cache get` pour rafraichir les dependances
 
 ### Jupyter / kernels Python
 
