@@ -43,7 +43,7 @@ A l'issue de cette serie, vous serez capable de :
 | Statistique | Valeur |
 |-------------|--------|
 | Notebooks | 10 |
-| Exercices (table de pioche) | 34 |
+| Exercices (table de pioche) | 40 |
 | Kernel | Python 3 |
 | Duree estimee | ~570 min |
 | prerequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-6, cle OpenRouter optionnelle pour SL-7/SL-10) |
@@ -60,7 +60,7 @@ La deuxieme phase introduit l'idee centrale que **la connaissance accelere l'app
 
 ### Phase 3 : Programmation logique inductive (SL-4, ~55 min)
 
-SL-4 fait le pont entre apprentissage automatique et intelligence artificielle symbolique classique en couvrant l'ILP : apprentissage de programmes logiques (clauses Horn) a partir d'exemples. L'algorithme FOIL (top-down) et la resolution inverse (bottom-up) sont implémentes de zero, puis appliques aux knowledge graphs — avec extraction de regles AMIE et requetes SPARQL CONSTRUCT.
+SL-4 fait le pont entre apprentissage automatique et intelligence artificielle symbolique classique en couvrant l'ILP : apprentissage de programmes logiques (clauses Horn) a partir d'exemples. L'algorithme FOIL (top-down) et la resolution inverse (bottom-up) sont implémentes de zero, puis appliques aux knowledge graphs — avec extraction de regles AMIE et requetes SPARQL CONSTRUCT. La section finale confronte le FOIL artisanal a l'ILP moderne : **Popper** (Learning From Failures) retrouve le programme recursif `ancestor` optimal sur les memes donnees, demontre l'apport de la recursion par ablation, et le programme appris est verifie independamment en SWI-Prolog.
 
 ### Phase 4 : Integration neuro-symbolique (SL-5 a SL-7, ~160 min)
 
@@ -88,7 +88,7 @@ Pour les etudiants en informatique theorique : le cadre inductif general (SL-1),
 
 Pour les professionnels du web semantique et des donnees structurees : EBL, RBL, FOIL sur clauses Horn, puis application directe sur des knowledge graphs reels avec rdflib et AMIE. Presuppose une familiarite avec RDF/SPARQL.
 
-## Seance du 17 juin : la table de pioche (34 exercices)
+## Seance du 17 juin : la table de pioche (40 exercices)
 
 Modalite de la seance : chaque groupe choisit **un exercice** dans la table ci-dessous, le prepare, et le presente en seance. Resoudre l'exercice est le minimum attendu ; chaque exercice est assorti d'une **question-twist** (detaillee dans la cellule « Defi presentation » du notebook correspondant) qui fait partie integrante de la presentation. Premier arrive, premier servi : annoncez votre choix pour eviter les doublons.
 
@@ -98,38 +98,44 @@ Modalite de la seance : chaque groupe choisit **un exercice** dans la table ci-d
 | 2 | [SL-1](SL-1-LogicalLearning.ipynb) | Ex. 2 — Version Space sur sous-ensemble | Qu'est-ce qui rend un exemple *informatif* (frontieres S et G) ? |
 | 3 | [SL-1](SL-1-LogicalLearning.ipynb) | Ex. 3 — Regles avec couverture | Compacite vs hypothese AIMA : quel biais (rasoir d'Occam) prefere l'une a l'autre ? |
 | 4 | [SL-1](SL-1-LogicalLearning.ipynb) | Ex. 4 — Reflexion sur le biais conjonctif | Un domaine ou ce biais est ideal, un ou il est catastrophique (no free lunch) |
-| 5 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 1 — EBL differentiation symbolique | Exhiber une variabilisation trop agressive qui produit une regle compilee fausse |
-| 6 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 2 — Filtrage des regles (operationnalite) | Deux distributions de requetes qui inversent le classement d'utilite des regles |
-| 7 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 3 — Speedup EBL | Le *utility problem* (Minton 1990) : pourquoi apprendre plus finit par ralentir |
-| 8 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 1 — Determinations meteo | Une observation bruitee : quelle determination minimale survit ? |
-| 9 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 2 — RBL vs selection aleatoire | Trouver le point de croisement ou la selection statistique bat le RBL |
-| 10 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 3 — Selecteur hybride | Quelles garanties votre hybride herite-t-il vraiment ? Contre-exemple construit |
-| 11 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 1 — `sibling` avec FOIL | Le role du biais de langage : que se passe-t-il sans le litteral `X != Y` ? |
-| 12 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 2 — Operateur W | Generalisation consistante mais fausse : pourquoi le bottom-up y est expose |
-| 13 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 3 — Regles sur mini-KG | Monde clos vs PCA (cf SL-6) : quelle confiance est la bonne pour VOTRE KG ? |
-| 14 | [SL-5](SL-5-NeuroSymbolic.ipynb) | Ex. 2 — LTN frere/oncle | Retirer les axiomes negatifs : pourquoi une LTN a besoin de negatifs explicites |
-| 15 | [SL-5](SL-5-NeuroSymbolic.ipynb) | Ex. 3 — Regle transitive `ancestor` | Le modele trivial « vrai partout » sature la regle : qu'est-ce qui l'evite ? |
-| 16 | [SL-5](SL-5-NeuroSymbolic.ipynb) | Ex. 4 — T-norm de Lukasiewicz | Gradients exactement nuls : qu'est-ce qu'une semantique floue *apprenable* ? |
-| 17 | [SL-6](SL-6-KnowledgeGraphs-ILP.ipynb) | Ex. 1 — Nouvelle relation au KG | Regles redondantes (meme extension, syntaxe differente) : comment AMIE les evite |
-| 18 | [SL-6](SL-6-KnowledgeGraphs-ILP.ipynb) | Ex. 2 — PCA confidence | Construire un mini-KG ou la PCA confidence est trompeuse |
-| 19 | [SL-6](SL-6-KnowledgeGraphs-ILP.ipynb) | Ex. 3 — Regles a 3 atomes | Explosion combinatoire : pourquoi AMIE impose des regles fermees, a quel prix |
-| 20 | [SL-7](SL-7-LLM-SymbolicLearning.ipynb) | Ex. 1 — Prompt personnalise | Changer de modele LLM : que garantit vraiment l'oracle symbolique ? |
-| 21 | [SL-7](SL-7-LLM-SymbolicLearning.ipynb) | Ex. 2 — Prompt direct vs CoT | Validation oracle vs plausibilite du texte : les deux metriques peuvent diverger |
-| 22 | [SL-7](SL-7-LLM-SymbolicLearning.ipynb) | Ex. 3 — Detection d'hallucinations | Le detecteur suppose un monde clos : que devient-il en monde ouvert (cf SL-6) ? |
-| 23 | [SL-8](SL-8-ActiveAutomataLearning.ipynb) | Ex. 1 — Le langage « contient abb » | Certificat de minimalite : un suffixe distinguant pour chaque paire d'etats (Myhill-Nerode) |
-| 24 | [SL-8](SL-8-ActiveAutomataLearning.ipynb) | Ex. 2 — Fiabilite de l'EQ echantillonnee | Relier le taux de reussite empirique a la borne PAC ; construire une distribution adverse |
-| 25 | [SL-8](SL-8-ActiveAutomataLearning.ipynb) | Ex. 3 — Contre-exemples : prefixes vs suffixes | Le pire cas qui fait exploser la table d'observation (Rivest-Schapire) |
-| 26 | [SL-8](SL-8-ActiveAutomataLearning.ipynb) | Ex. 4 — Oracle bruite | Reparer L* par vote majoritaire : surcout en requetes et probabilite residuelle d'erreur |
-| 27 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 1 — Apprendre `grandmother/2` | Pourquoi `grandparent/2` (sans sexe) est *plus facile* — role des negatifs |
-| 28 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 2 — Profondeur de la clause bottom | Croissance de la clause bottom avec la profondeur ; la cible reste-t-elle dans le treillis ? |
-| 29 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 3 — Tolerance au bruit | Le score `p - n - L` comme argument MDL : quand prefere-t-il une clause imparfaite ? |
-| 30 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 4 — Reduction de Plotkin | Subsomption vs implication : le cas des clauses recursives ou elles divergent |
-| 31 | [SL-10](SL-10-Capstone-NeuroSymbolic.ipynb) | Ex. 1 — Etendre le schema (`marie_avec`) | Le mineur redecouvre la symetrie injectee par l'oracle : regle ou tautologie ? |
-| 32 | [SL-10](SL-10-Capstone-NeuroSymbolic.ipynb) | Ex. 2 — Politique de conflit a sources | *Truth discovery* : estimer la fiabilite des sources en meme temps que les faits |
-| 33 | [SL-10](SL-10-Capstone-NeuroSymbolic.ipynb) | Ex. 3 — Le bon seuil n'existe pas | Vraie et fausse regle a confiance egale (0.67) : quel signal au-dela du seuil ? |
-| 34 | [SL-10](SL-10-Capstone-NeuroSymbolic.ipynb) | Ex. 4 — Empoisonnement bout-en-bout | Classer les defenses par etage du pipeline ; ou s'arrete la provenance ? |
+| 5 | [SL-1](SL-1-LogicalLearning.ipynb) | Ex. 5 — La consistance sans Occam (aima) | Echantillonner les graines ne prouve pas la minimalite : quel algorithme exact le ferait ? |
+| 6 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 1 — EBL differentiation symbolique | Exhiber une variabilisation trop agressive qui produit une regle compilee fausse |
+| 7 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 2 — Filtrage des regles (operationnalite) | Deux distributions de requetes qui inversent le classement d'utilite des regles |
+| 8 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 3 — Speedup EBL | Le *utility problem* (Minton 1990) : pourquoi apprendre plus finit par ralentir |
+| 9 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 1 — Determinations meteo | Une observation bruitee : quelle determination minimale survit ? |
+| 10 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 2 — RBL vs selection aleatoire | Trouver le point de croisement ou la selection statistique bat le RBL |
+| 11 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 3 — Selecteur hybride | Quelles garanties votre hybride herite-t-il vraiment ? Contre-exemple construit |
+| 12 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 1 — `sibling` avec FOIL | Le role du biais de langage : que se passe-t-il sans le litteral `X != Y` ? |
+| 13 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 2 — Operateur W | Generalisation consistante mais fausse : pourquoi le bottom-up y est expose |
+| 14 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 3 — Regles sur mini-KG | Monde clos vs PCA (cf SL-6) : quelle confiance est la bonne pour VOTRE KG ? |
+| 15 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 4 — `grandparent` avec Popper | Sans negatif arriere-grand-parent, quel programme plus court devient consistant ? |
+| 16 | [SL-5](SL-5-NeuroSymbolic.ipynb) | Ex. 2 — LTN frere/oncle | Retirer les axiomes negatifs : pourquoi une LTN a besoin de negatifs explicites |
+| 17 | [SL-5](SL-5-NeuroSymbolic.ipynb) | Ex. 3 — Regle transitive `ancestor` | Le modele trivial « vrai partout » sature la regle : qu'est-ce qui l'evite ? |
+| 18 | [SL-5](SL-5-NeuroSymbolic.ipynb) | Ex. 4 — T-norm de Lukasiewicz | Gradients exactement nuls : qu'est-ce qu'une semantique floue *apprenable* ? |
+| 19 | [SL-5](SL-5-NeuroSymbolic.ipynb) | Ex. 5 — Ablation de l'axiome 4 (LTNtorch) | Le negatif difficile (Marie, Pierre) est-il indispensable ? Contraste avec clingo (SL-6) |
+| 20 | [SL-6](SL-6-KnowledgeGraphs-ILP.ipynb) | Ex. 1 — Nouvelle relation au KG | Regles redondantes (meme extension, syntaxe differente) : comment AMIE les evite |
+| 21 | [SL-6](SL-6-KnowledgeGraphs-ILP.ipynb) | Ex. 2 — PCA confidence | Construire un mini-KG ou la PCA confidence est trompeuse |
+| 22 | [SL-6](SL-6-KnowledgeGraphs-ILP.ipynb) | Ex. 3 — Regles a 3 atomes | Explosion combinatoire : pourquoi AMIE impose des regles fermees, a quel prix |
+| 23 | [SL-6](SL-6-KnowledgeGraphs-ILP.ipynb) | Ex. 4 — Reparation minimale (clingo) | Les reparations optimales sont ex-aequo : departager par des poids de confiance |
+| 24 | [SL-7](SL-7-LLM-SymbolicLearning.ipynb) | Ex. 1 — Prompt personnalise | Changer de modele LLM : que garantit vraiment l'oracle symbolique ? |
+| 25 | [SL-7](SL-7-LLM-SymbolicLearning.ipynb) | Ex. 2 — Prompt direct vs CoT | Validation oracle vs plausibilite du texte : les deux metriques peuvent diverger |
+| 26 | [SL-7](SL-7-LLM-SymbolicLearning.ipynb) | Ex. 3 — Detection d'hallucinations | Le detecteur suppose un monde clos : que devient-il en monde ouvert (cf SL-6) ? |
+| 27 | [SL-7](SL-7-LLM-SymbolicLearning.ipynb) | Ex. 4 — Taux d'hallucination du vrai LLM | Maximiser le taux de validation ou le nombre de regles validees par appel ? |
+| 28 | [SL-8](SL-8-ActiveAutomataLearning.ipynb) | Ex. 1 — Le langage « contient abb » | Certificat de minimalite : un suffixe distinguant pour chaque paire d'etats (Myhill-Nerode) |
+| 29 | [SL-8](SL-8-ActiveAutomataLearning.ipynb) | Ex. 2 — Fiabilite de l'EQ echantillonnee | Relier le taux de reussite empirique a la borne PAC ; construire une distribution adverse |
+| 30 | [SL-8](SL-8-ActiveAutomataLearning.ipynb) | Ex. 3 — Contre-exemples : prefixes vs suffixes | Le pire cas qui fait exploser la table d'observation (Rivest-Schapire) |
+| 31 | [SL-8](SL-8-ActiveAutomataLearning.ipynb) | Ex. 4 — Oracle bruite | Reparer L* par vote majoritaire : surcout en requetes et probabilite residuelle d'erreur |
+| 32 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 1 — Apprendre `grandmother/2` | Pourquoi `grandparent/2` (sans sexe) est *plus facile* — role des negatifs |
+| 33 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 2 — Profondeur de la clause bottom | Croissance de la clause bottom avec la profondeur ; la cible reste-t-elle dans le treillis ? |
+| 34 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 3 — Tolerance au bruit | Le score `p - n - L` comme argument MDL : quand prefere-t-il une clause imparfaite ? |
+| 35 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 4 — Reduction de Plotkin | Subsomption vs implication : le cas des clauses recursives ou elles divergent |
+| 36 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 5 — Aleph face au bruit | Memoriser l'exception, sur-generaliser ou payer L dans f : trois frontieres face au meme bruit |
+| 37 | [SL-10](SL-10-Capstone-NeuroSymbolic.ipynb) | Ex. 1 — Etendre le schema (`marie_avec`) | Le mineur redecouvre la symetrie injectee par l'oracle : regle ou tautologie ? |
+| 38 | [SL-10](SL-10-Capstone-NeuroSymbolic.ipynb) | Ex. 2 — Politique de conflit a sources | *Truth discovery* : estimer la fiabilite des sources en meme temps que les faits |
+| 39 | [SL-10](SL-10-Capstone-NeuroSymbolic.ipynb) | Ex. 3 — Le bon seuil n'existe pas | Vraie et fausse regle a confiance egale (0.67) : quel signal au-dela du seuil ? |
+| 40 | [SL-10](SL-10-Capstone-NeuroSymbolic.ipynb) | Ex. 4 — Empoisonnement bout-en-bout | Classer les defenses par etage du pipeline ; ou s'arrete la provenance ? |
 
-Note : dans SL-5, le premier exercice de la numerotation interne est un exemple guide ; les exercices a piocher sont Ex. 2 a Ex. 4.
+Note : dans SL-5, le premier exercice de la numerotation interne est un exemple guide ; les exercices a piocher sont Ex. 2 a Ex. 5.
 
 ## Notebooks
 
@@ -138,7 +144,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | 1 | [SL-1 - Apprentissage Logique](SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 50 min |
 | 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (determinations) | 45 min |
 | 3 | [SL-3 - Apprentissage Base sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des determinations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |
-| 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, resolution inverse, clauses Horn, knowledge graphs | 55 min |
+| 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, resolution inverse, clauses Horn, knowledge graphs, Popper (LFF) | 55 min |
 | 5 | [SL-5 - Integration Neuro-Symbolique](SL-5-NeuroSymbolic.ipynb) | T-norms, predicats neuronaux, LTN, DeepProbLog | 55 min |
 | 6 | [SL-6 - ILP Moderne et Knowledge Graphs](SL-6-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, completion KG, ASP avec clingo | 55 min |
 | 7 | [SL-7 - LLMs et Apprentissage Symbolique](SL-7-LLM-SymbolicLearning.ipynb) | Prompting, extraction de regles, verification symbolique (Gemini 3.5 Flash optionnel) | 50 min |
@@ -191,6 +197,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | FOIL pas-a-pas | Trace detaillee sur le probleme ancestor |
 | Resolution inverse | Operateurs V (absorption) et W (identification) |
 | Knowledge Graphs | Regles AMIE, triples RDF, SPARQL CONSTRUCT |
+| Popper (Learning From Failures) | Programme recursif optimal, ablation sans recursion, verification SWI-Prolog (kernel Linux/WSL) |
 | Exercices | sibling, operateur W, regles sur KG |
 
 ### SL-5-NeuroSymbolic.ipynb
@@ -274,6 +281,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | **Clause Horn** | Regle logique avec au plus un litteral positif | SL-4 |
 | **Unification** | Trouve une substitution rendant deux termes egaux | SL-4 |
 | **ILP** | Apprentissage de programmes logiques a partir d'exemples | SL-4 |
+| **Learning From Failures (Popper)** | ILP moderne : recherche de programme optimal par contraintes (clingo + Prolog) | SL-4 |
 | **T-norm** | Generalisation differentiable de AND | SL-5 |
 | **DeepProbLog** | Programmation logique probabiliste + predicats neuronaux | SL-5 |
 | **Knowledge Graph** | Graphe oriente de triples (sujet, predicat, objet) | SL-6 |
@@ -300,7 +308,9 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 
 ### Environnement Python
 
-Aucune dependance externe pour SL-1, SL-2, SL-4, SL-5, SL-8 et SL-9 (bibliotheque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-6 utilise `rdflib` et `clingo` (module Python officiel Potassco, installe silencieusement par le notebook — meme moteur ASP que le binaire utilise par la serie Tweety via `scripts/install_clingo.py`). SL-7 et SL-10 utilisent `python-dotenv` et `openai` pour les appels LLM optionnels via OpenRouter (Gemini 3.5 Flash) : copiez `.env.example` vers `.env` et renseignez `OPENROUTER_API_KEY` ; sans cle, un simulateur deterministe prend le relais et le notebook s'execute integralement.
+Aucune dependance externe pour SL-1, SL-2, SL-5, SL-8 et SL-9 (bibliotheque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-6 utilise `rdflib` et `clingo` (module Python officiel Potassco, installe silencieusement par le notebook — meme moteur ASP que le binaire utilise par la serie Tweety via `scripts/install_clingo.py`). SL-7 et SL-10 utilisent `python-dotenv` et `openai` pour les appels LLM optionnels via OpenRouter (Gemini 3.5 Flash) : copiez `.env.example` vers `.env` et renseignez `OPENROUTER_API_KEY` ; sans cle, un simulateur deterministe prend le relais et le notebook s'execute integralement.
+
+SL-4 est en bibliotheque standard pour l'essentiel, mais sa section finale **Popper** requiert un environnement Unix : Popper utilise `signal.SIGALRM`, absent de Windows — le notebook s'execute donc sur un kernel Python **Linux** (kernel `python3-wsl` via WSL sous Windows, kernel natif sous Linux/macOS). Dependances de la section (installees silencieusement par le notebook) : SWI-Prolog >= 9.1.12 (`ppa:swi-prolog/stable`), `popper-ilp` epingle a **v4.4.0** (la 5.0 exige Python >= 3.14), `janus_swi`, `clingo`, `setuptools < 81`. Si Popper est indisponible, les cellules de la section l'indiquent et se sautent proprement — le reste du notebook tourne sur n'importe quel kernel Python.
 
 ## FAQ / Troubleshooting
 
