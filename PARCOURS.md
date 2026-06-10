@@ -1,17 +1,17 @@
 # Parcours Pedagogiques CoursIA
 
-Cinq parcours de formation en intelligence artificielle, du fondamentaux aux sujets avances.
+Cinq parcours de formation en intelligence artificielle, des fondamentaux aux sujets avances.
 Chaque parcours reference des notebooks tries par serie et maturite.
 
 | # | Parcours | Notebooks | Focus |
 |---|----------|-----------|-------|
-| 1 | [IA Classique](docs/parcours/ia-classique.md) | 13 | Recherche, CSP, Sudoku |
-| 2 | [IA Symbolique](docs/parcours/ia-symbolique.md) | 82 | Lean, Tweety, SemanticWeb, Planning |
-| 3 | [GenAI Multimodale](docs/parcours/genai.md) | 68 | Image, Audio, Video, Texte |
-| 4 | [Trading Algoritmique](docs/parcours/trading.md) | 56 | QuantConnect, ML, Probas |
-| 5 | [Recherche Avancee](docs/parcours/recherche.md) | 51 | Infer.NET, Pyro, IIT, RL, GameTheory |
+| 1 | [IA Classique](docs/curriculum/ia-classique.md) | 13 | Recherche, CSP, Sudoku |
+| 2 | [IA Symbolique](docs/curriculum/ia-symbolique.md) | 82 | Lean, Tweety, SemanticWeb, Planning |
+| 3 | [GenAI Multimodale](docs/curriculum/genai.md) | 68 | Image, Audio, Video, Texte |
+| 4 | [Trading Algorithmique](docs/curriculum/trading.md) | 56 | QuantConnect, ML, Probas |
+| 5 | [Recherche Avancee](docs/curriculum/recherche.md) | 51 | Infer.NET, Pyro, IIT, RL, GameTheory |
 
-## Legend Maturite
+## Legende maturite
 
 | Statut | Description |
 |--------|-------------|

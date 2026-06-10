@@ -2,7 +2,7 @@
 """Generate student learning paths (parcours) from the notebook catalog.
 
 Reads COURSE_CATALOG.generated.json and filters notebooks into 5 pedagogical
-paths, outputting structured markdown pages under docs/parcours/.
+paths, outputting structured markdown pages under docs/curriculum/.
 
 Usage:
     python generate_parcours.py                       # Generate all parcours
@@ -25,7 +25,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CATALOG_PATH = REPO_ROOT / "COURSE_CATALOG.generated.json"
-PARCOURS_DIR = REPO_ROOT / "docs" / "parcours"
+PARCOURS_DIR = REPO_ROOT / "docs" / "curriculum"
 
 PARCOURS = {
     "ia-classique": {
