@@ -19,6 +19,15 @@
 
 import GameTheory.lean_game_defs.Basic
 
+/-! ## Utility (avoids Mathlib dependency) -/
+
+/-- Update a dependent function at a given index.
+    Equivalent to Mathlib's `Function.update` but self-contained.
+    Uses `Fin` decidable equality for comparison. -/
+def funUpdate {n : Nat} {β : Fin n → Type} (f : (i : Fin n) → β i)
+    (i : Fin n) (x : β i) : (j : Fin n) → β j :=
+  fun j => if h : j = i then h ▸ x else f j
+
 /-! ## Type Spaces and Beliefs -/
 
 /-- A type space for a player: the set of possible private types -/
@@ -93,7 +102,7 @@ def isBayesianNashEquilibrium (g : BayesianGame α)
     (types : Fin g.numPlayers → α) : Prop :=
   ∀ (i : Fin g.numPlayers) (altStrategy : TypeStrategy g i),
     let curr := expectedPayoffBayesian g profile types i
-    let dev  := expectedPayoffBayesian g (Function.update profile i altStrategy) types i
+    let dev  := expectedPayoffBayesian g (funUpdate profile i altStrategy) types i
     curr >= dev
 
 /-! ## Information Sets (Imperfect Information) -/

@@ -47,11 +47,22 @@ def nimSum (pos : NimPosition) : Nat :=
 def isWinningNim (pos : NimPosition) : Bool :=
   nimSum pos != 0
 
+/-- Helper: enumerate a list with indices (avoids Mathlib dependency) -/
+def listEnum {α : Type} (l : List α) : List (Nat × α) :=
+  (List.range l.length).zip l
+
+/-- Helper: update element at index (avoids Mathlib dependency) -/
+def listSet {α : Type} (l : List α) (i : Nat) (x : α) : List α :=
+  (List.range l.length).map fun j =>
+    match l.get? j with
+    | some a => if j == i then x else a
+    | none => a
+
 /-- Get all valid moves from a Nim position -/
 def nimMoves (pos : NimPosition) : List NimPosition :=
-  pos.enum.bind fun (i, heap) =>
+  (listEnum pos).flatMap fun (i, heap) =>
     (List.range heap).map fun newSize =>
-      pos.set i newSize
+      listSet pos i newSize
 
 /-! ## Two-Player Perfect Information Game -/
 
@@ -97,10 +108,8 @@ def nimGame : TwoPlayerGame NimPosition := {
 
 /-- Minimum excludant (mex) of a set of naturals -/
 def mex (s : List Nat) : Nat :=
-  let sorted := s.eraseDups.mergeSort (· < ·)
-  match sorted.find? fun n => !sorted.contains n with
-  | some n => n
-  | none => sorted.length
+  -- Find the smallest natural not in the list
+  (List.range (s.length + 1)).find? (fun n => !s.contains n) |>.getD (s.length + 1)
 
 /-- Compute Grundy value for a simple game -/
 -- grundy(terminal) = 0
