@@ -9,9 +9,9 @@ maturity: PRODUCTION=102, ALPHA=1, BETA=1
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.
 
-Vous y découvrirez six domaines complémentaires. Le **Web Sémantique** (RDF, SPARQL, OWL) montre comment structurer les connaissances du web pour les rendre exploitables par les machines. La **vérification formelle** avec Lean 4 vous apprend à écrire des preuves mathématiques vérifiées par un ordinateur. L'**argumentation computationnelle** (TweetyProject) modélise le débat et la délibération. La **planification automatique** résout des problèmes concrets de logistique et d'ordonnancement. Les **smart contracts** relient la cryptographie et la logique formelle aux blockchains. Et l'**analyse argumentative** avec les LLMs ponte l'IA symbolique et l'IA neuronale. Chaque sous-série est autonome, mais ensemble elles dessinent une vision cohérente de l'IA symbolique moderne.
+Vous y découvrirez sept domaines complémentaires. Le **Web Sémantique** (RDF, SPARQL, OWL) montre comment structurer les connaissances du web pour les rendre exploitables par les machines. La **vérification formelle** avec Lean 4 vous apprend à écrire des preuves mathématiques vérifiées par un ordinateur. L'**argumentation computationnelle** (TweetyProject) modélise le débat et la délibération. La **planification automatique** résout des problèmes concrets de logistique et d'ordonnancement. Les **smart contracts** relient la cryptographie et la logique formelle aux blockchains. L'**analyse argumentative** avec les LLMs jette un pont entre l'IA symbolique et l'IA neuronale. Et l'**apprentissage symbolique** (AIMA ch. 19) montre comment un agent apprend à partir de connaissances existantes plutôt que de données brutes, jusqu'aux pipelines neuro-symboliques couplés aux LLMs. Chaque sous-série est autonome, mais ensemble elles dessinent une vision cohérente de l'IA symbolique moderne.
 
-**À qui s'adresse cette série** : étudiants en IA, ingénieurs logiciel curieux de logique formelle, et chercheurs souhaitant aller au-delà du machine learning. Les notebooks Python (Tweety, Planners, SmartContracts, SemanticWeb Python) ne nécessitent que Python 3.10+. Les notebooks .NET C# (SemanticWeb, optimisation) requièrent .NET 9.0 + dotnet-interactive. Les notebooks Lean nécessitent WSL + elan. Aucun prérequis en logique avancée : chaque série introduit ses concepts progressivement depuis les fondements.
+**À qui s'adresse cette série** : étudiants en IA, ingénieurs logiciel curieux de logique formelle, et chercheurs souhaitant aller au-delà du machine learning. Les notebooks Python (Tweety, Planners, SmartContracts, SemanticWeb Python, SymbolicLearning) ne nécessitent que Python 3.10+. Les notebooks .NET C# (SemanticWeb, optimisation) requièrent .NET 9.0 + dotnet-interactive. Les notebooks Lean nécessitent WSL + elan. Aucun prérequis en logique avancée : chaque série introduit ses concepts progressivement depuis les fondements.
 
 ## Parcours d'apprentissage
 
@@ -35,20 +35,24 @@ Deux séries applicatives indépendantes exploitent les formalismes des phases p
 
 Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (6 notebooks) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
 
+### Parcours alternatif : Apprentissage symbolique (SymbolicLearning, ~9h30)
+
+La série SymbolicLearning (10 notebooks) suit le chapitre 19 d'AIMA : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), apprentissage actif d'automates (L* d'Angluin), puis intégration neuro-symbolique jusqu'à un capstone LLM + knowledge graph. Elle ne requiert que Python standard pour l'essentiel et peut être suivie indépendamment des autres phases.
+
 ## Vue d'ensemble
 
 | Serie | Notebooks | Exercices | Environnement | Theme | Duree |
 |-------|-----------|-----------|---------------|-------|-------|
 | [SemanticWeb](#semanticweb---web-semantique) | 18 | 16 (89%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~13h |
 | [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~22h |
-| [Lean](#lean---verification-formelle) | 21 | 19 (90%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs, Conway, Kochen-Specker | ~14h |
+| [Lean](#lean---verification-formelle) | 21 | 20 (95%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs, Conway, Kochen-Specker | ~16h |
 | [Planners](#planners---planification-automatique) | 13 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~7h |
 | [Tweety](#tweety---tweetyproject) | 10 | 10 (100%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
-| [SymbolicLearning](#symboliclearning---apprentissage-symbolique) | 7 | 7 (100%) | Python | ILP, neuro-symbolique, KG-LLM | ~6h |
+| [SymbolicLearning](#symboliclearning---apprentissage-symbolique) | 10 | 10 (100%) | Python | ILP, neuro-symbolique, KG-LLM, automates (L*) | ~9h30 |
 | [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~4h |
 | [Autres notebooks](#autres-notebooks) | 2 | 2 (100%) | .NET C# | Z3, OR-Tools | ~1h30 |
 
-**Total** : 104 notebooks actifs, ~70h de contenu
+**Total** : 107 notebooks actifs, ~80h de contenu
 
 ---
 
@@ -63,6 +67,7 @@ Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série A
 | **SemanticWeb** | `SemanticWeb/SW-1-CSharp-Setup.ipynb` (.NET) ou `SW-2b-Python-RDFBasics.ipynb` (Python) | `pip install rdflib pySHACL` |
 | **Planners** | `Planners/00-Environment/Planners-0-Setup.ipynb` | `pip install ortools unified_planning` |
 | **SmartContracts** | `SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb` | `pip install py-solc-x web3` |
+| **SymbolicLearning** | `SymbolicLearning/SL-1-LogicalLearning.ipynb` | Python 3.10+ standard library, aucune installation |
 | **Argument Analysis** | `Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb` | `pip install semantic-kernel jpype1` + `.env` |
 
 **Pour commencer sans rien installer** : les notebooks Python (Tweety, Planners, SemanticWeb Python, SmartContracts) ne necessitent que `pip install jupyter ipykernel` + les packages listes ci-dessus.
@@ -78,6 +83,7 @@ Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série A
 | **SemanticWeb** | .NET C# / Python | Node.js (certains) | dotNetRDF, rdflib, pySHACL | Non |
 | **Planners** | Python | WSL ou Docker (Fast-Downward) | ortools, unified_planning | Non |
 | **SmartContracts** | Python | Solidity/solc, Foundry | py-solc-x, web3 | OPENAI_API_KEY (8b) |
+| **SymbolicLearning** | Python | Aucun (WSL pour la section Popper de SL-4) | sklearn, rdflib, clingo (optionnels) | OPENROUTER_API_KEY optionnelle (SL-7/SL-10) |
 | **Argument Analysis** | Python | Java/JPype | semantic-kernel | OPENAI_API_KEY |
 | **Autres** | .NET C# | Aucun | Google.OrTools, Z3.Linq | Non |
 
@@ -146,13 +152,19 @@ Serie de **21 notebooks** sur **Lean 4**, proof assistant base sur la theorie de
 | 11 | [Lean-11-TorchLean](Lean/Lean-11-TorchLean.ipynb) | Lean 4 | Verification formelle de reseaux de neurones | 2 |
 | 11py | [Lean-11-TorchLean-Python](Lean/Lean-11-TorchLean-Python.ipynb) | Python | IBP, certificats de robustesse, verification | 7 |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean/Lean-12-Sensitivity-Theorem.ipynb) | Lean 4 | Port Lean du theoreme de sensibilite de Huang (2019), hypercube, signing matrix | 4 |
+| **Hommages et theoremes** |
 | 13 | [Lean-13-Grothendieck-Tribute](Lean/Lean-13-Grothendieck-Tribute.ipynb) | Lean 4 | Hommage a Grothendieck : tour Mathlib, micro-formalisations | 3 |
+| 13b | [Lean-13b-Lean-Grothendieck](Lean/Lean-13b-Lean-Grothendieck.ipynb) | Python WSL | Grothendieck en Lean, atelier pratique : sources `grothendieck_lean/`, snippets via WSL | 3 |
+| 14a | [Lean-14a-Conway-Man-and-Work](Lean/Lean-14a-Conway-Man-and-Work.ipynb) | Python WSL | Conway, l'homme et l'oeuvre : panorama des grands resultats, premieres formalisations executees depuis `conway_lean` | 3 |
+| 14b | [Lean-14b-Conway-Game-of-Life-Lean](Lean/Lean-14b-Conway-Game-of-Life-Lean.ipynb) | Python WSL | Game of Life as Computation : Doomsday, FRACTRAN, Look-and-Say, Nim, Angel | 4 |
+| 14c | [Lean-14c-Conway-Game-of-Life-Golly](Lean/Lean-14c-Conway-Game-of-Life-Golly.ipynb) | Python | Game of Life en images : les 3 piliers, compagnon Golly | 4 |
 | 15 | [Lean-15-Kochen-Specker](Lean/Lean-15-Kochen-Specker.ipynb) | Lean 4 | Theoreme de Kochen-Specker (1967), 18 vecteurs Cabello-Estebaranz-Garcia-Alcaine, contextuality quantique | 5 |
+| 16 | [Lean-16-Conway-Free-Will-Theorem](Lean/Lean-16-Conway-Free-Will-Theorem.ipynb) | Python WSL | Theoreme du libre arbitre (Conway-Kochen) : axiomes SPIN/TWIN/MIN, port formel adosse a `FreeWillTheorem.lean` | 2 |
 
 ### Kernels requis
 
-- **Lean 4 (WSL)** : Notebooks 2-6, 11, 12, 15 (preuves Lean natives)
-- **Python 3 (WSL)** : Notebooks 1, 7-10, 11py (setup, LLM, LeanDojo)
+- **Lean 4 (WSL)** : Notebooks 2-6, 11, 12, 13, 15 (preuves Lean natives)
+- **Python 3 (WSL)** : Notebooks 1, 7-10, 11py, 13b, 14a-14c, 16 (setup, LLM, LeanDojo, hommages)
 
 > Note : Les kernels Windows ne fonctionnent pas (signal.SIGPIPE, problemes chemins)
 
@@ -270,19 +282,24 @@ Documentation complete : [Argument_Analysis/README.md](Argument_Analysis/README.
 
 ## SymbolicLearning - Apprentissage Symbolique
 
-Serie de **7 notebooks** Python qui explorent l'apprentissage automatique symbolique : ILP, programmation logique inductive, neuro-symbolique, et graphes de connaissances couples aux LLMs.
+Serie de **10 notebooks** Python sur l'apprentissage symbolique (AIMA ch. 19) : induction pure (Version Space), apprentissage guide par la connaissance (EBL, RBL), programmation logique inductive (FOIL, resolution inverse, Progol), apprentissage actif d'automates (L* d'Angluin), et integration neuro-symbolique jusqu'au capstone LLM + knowledge graph.
 
 ### Structure detaillee
 
 | # | Notebook | Contenu | Exercices | Prerequis |
 |---|----------|---------|-----------|-----------|
-| 1 | [SL-1-LogicalLearning](SymbolicLearning/SL-1-LogicalLearning.ipynb) | Concepts de l'apprentissage logique, version spaces | 1 | Python |
-| 2 | [SL-2-KnowledgeBasedLearning](SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb) | Apprentissage base sur la connaissance, EBL | 1 | SL-1 |
-| 3 | [SL-3-RelevanceLearning](SymbolicLearning/SL-3-RelevanceLearning.ipynb) | Determinations, relevance based learning | 1 | SL-1 |
-| 4 | [SL-4-InductiveLogicProgramming](SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) | ILP, FOIL, generalisation/specialisation | 1 | SL-1, Prolog |
-| 5 | [SL-5-NeuroSymbolic](SymbolicLearning/SL-5-NeuroSymbolic.ipynb) | Couplage reseaux de neurones et raisonnement symbolique | 1 | SL-1, PyTorch |
-| 6 | [SL-6-KnowledgeGraphs-ILP](SymbolicLearning/SL-6-KnowledgeGraphs-ILP.ipynb) | KG + ILP, link prediction, completion | 1 | SL-4 |
-| 7 | [SL-7-LLM-SymbolicLearning](SymbolicLearning/SL-7-LLM-SymbolicLearning.ipynb) | LLMs comme apprenants symboliques, prompt engineering | 1 | SL-1 |
+| 1 | [SL-1-LogicalLearning](SymbolicLearning/SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 5 | Python |
+| 2 | [SL-2-KnowledgeBasedLearning](SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (determinations) | 3 | SL-1 |
+| 3 | [SL-3-RelevanceLearning](SymbolicLearning/SL-3-RelevanceLearning.ipynb) | Treillis des determinations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 3 | SL-2 |
+| 4 | [SL-4-InductiveLogicProgramming](SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) | FOIL, resolution inverse, knowledge graphs, Popper (LFF) | 4 | SL-1 |
+| 5 | [SL-5-NeuroSymbolic](SymbolicLearning/SL-5-NeuroSymbolic.ipynb) | T-norms, predicats neuronaux, LTN, DeepProbLog | 4 | SL-1 |
+| 6 | [SL-6-KnowledgeGraphs-ILP](SymbolicLearning/SL-6-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, completion KG, ASP avec clingo | 4 | SL-4 |
+| 7 | [SL-7-LLM-SymbolicLearning](SymbolicLearning/SL-7-LLM-SymbolicLearning.ipynb) | Extraction de regles LLM, verification symbolique (Gemini optionnel) | 4 | SL-1 |
+| 8 | [SL-8-ActiveAutomataLearning](SymbolicLearning/SL-8-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requetes MQ/EQ, Myhill-Nerode | 4 | SL-1 |
+| 9 | [SL-9-InverseResolution](SymbolicLearning/SL-9-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 5 | SL-4 |
+| 10 | [SL-10-Capstone-NeuroSymbolic](SymbolicLearning/SL-10-Capstone-NeuroSymbolic.ipynb) | Pipeline neuro-symbolique 6 etages, LLM reel aux deux extremites | 4 | SL-5 a SL-7 |
+
+> 10/10 notebooks ont des exercices — 40 au total, organises en table de pioche pour la seance de restitution (chaque exercice est assorti d'une question-twist).
 
 Documentation complete : [SymbolicLearning/README.md](SymbolicLearning/README.md)
 
@@ -295,7 +312,9 @@ Documentation complete : [SymbolicLearning/README.md](SymbolicLearning/README.md
 | Notebook | Kernel | Contenu | Exercices |
 |----------|--------|---------|-----------|
 | [OR-tools-Stiegler](OR-tools-Stiegler.ipynb) | .NET C# | Probleme de Stigler, programmation lineaire avec OR-Tools | 2 |
-| [Linq2Z3](Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
+| [01_Linq2Z3_Intro](Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
+
+Le notebook Z3 inaugure la serie [Z3/](Z3/README.md) (SMT declaratif via Z3.Linq), appelee a s'etendre.
 
 ---
 
@@ -311,7 +330,7 @@ SymbolicAI/
 │   └── README.md
 │
 ├── Lean/                      # Serie Lean 4 (21 notebooks)
-│   ├── Lean-1-Setup.ipynb ... Lean-12-Sensitivity-Theorem.ipynb
+│   ├── Lean-1-Setup.ipynb ... Lean-16-Conway-Free-Will-Theorem.ipynb
 │   ├── lean_runner.py         # Backend Python multi-mode
 │   ├── scripts/               # Installation, validation WSL
 │   └── README.md
@@ -344,8 +363,9 @@ SymbolicAI/
 │   ├── Argument_Analysis_Agentic-0-init.ipynb ... UI_configuration.ipynb
 │   └── README.md
 │
-├── SymbolicLearning/          # Apprentissage symbolique (7 notebooks)
-│   ├── SL-1-LogicalLearning.ipynb ... SL-7-LLM-SymbolicLearning.ipynb
+├── SymbolicLearning/          # Apprentissage symbolique (10 notebooks)
+│   ├── SL-1-LogicalLearning.ipynb ... SL-10-Capstone-NeuroSymbolic.ipynb
+│   ├── reference/             # Notes AIMA ch. 19
 │   └── README.md
 │
 ├── Z3/                        # Serie Z3.Linq (SMT declaratif)
@@ -455,7 +475,7 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 
 ### Lean
 
-**Status execution : NON TESTE (WSL kernel timeout)**
+**Status execution : valide via papermill sur les kernels WSL (`lean4`, `python3-wsl`)**
 
 1. **WSL obligatoire** : Les notebooks Lean ne fonctionnent pas sous Windows natif (SIGPIPE, problemes de chemins)
 2. **Installation** : Executer `Lean-1-Setup.ipynb` sous WSL (installe elan + Lean 4 + lean4_jupyter)
@@ -499,19 +519,19 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 
 ## Audit Qualite (mars 2026)
 
-### Couverture exercices (audit 7 juin 2026)
+### Couverture exercices (mise a jour 11 juin 2026)
 
 | Serie | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
 | SmartContracts | 27 | 27 (100%) | 0 | Complet |
 | SemanticWeb | 18 | 16 (89%) | 2 (Setup + Legacy) | Complet |
-| Lean | 21 | 19 (90%) | 2 (Setup, Grothendieck) | Complet |
+| Lean | 21 | 20 (95%) | 1 (Setup) | Complet |
 | Planners | 13 | 12 (92%) | 1 (Setup) | Complet |
 | Tweety | 10 | 10 (100%) | 0 | Complet |
-| SymbolicLearning | 7 | 7 (100%) | 0 | Complet |
+| SymbolicLearning | 10 | 10 (100%) | 0 | Complet |
 | Argument Analysis | 6 | 0 (0%) | 6 (demo) | N/A |
 
-**Total** : 91/102 notebooks de contenu avec exercices (89%). Les notebooks sans exercices sont les notebooks de setup/configuration (SW-1, Planners-0, Lean-1), le notebook legacy (RDF.Net), le tribute Grothendieck (Lean-13), et la serie demo Argument Analysis (6 notebooks).
+**Total** : 95/105 notebooks de contenu avec exercices (90%). Les notebooks sans exercices sont les notebooks de setup/configuration (SW-1, Planners-0, Lean-1), le notebook legacy (RDF.Net), et la serie demo Argument Analysis (6 notebooks).
 
 ### Problemes restants
 
@@ -528,15 +548,15 @@ Ces connexions entre series sont exploitees dans le curriculum IA Symbolique.
 
 | Concept Lean | Concept GameTheory | Notebooks |
 |-------------|-------------------|-----------|
-| Theoreme d'Arrow (preuve formelle) | Theorie du vote / Choix social | `Lean/social_choice_lean/Arrow.lean` <-> `GameTheory/16b-Social-Choice.ipynb` |
-| Theoreme de Sen (preuve formelle) | Impossibilite Pareto liberal | `Lean/social_choice_lean/Sen.lean` <-> `GameTheory/16c-Sen.ipynb` |
-| Valeur de Shapley (preuve formelle) | Coalitions, jeux cooperatifs | `Lean/social_choice_lean/Shapley.lean` <-> `GameTheory/16d-Shapley.ipynb` |
+| Theoreme d'Arrow (preuve formelle) | Theorie du vote / Choix social | `GameTheory/social_choice_lean/SocialChoice/Arrow.lean` <-> `GameTheory/GameTheory-16-MechanismDesign.ipynb` |
+| Theoreme de Sen (preuve formelle) | Impossibilite du paretien liberal | `GameTheory/social_choice_lean/SocialChoice/Sen.lean` <-> `GameTheory/GameTheory-16-MechanismDesign.ipynb` |
+| Valeur de Shapley | Coalitions, jeux cooperatifs | `GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb` <-> `GameTheory/GameTheory-15-CooperativeGames.ipynb` |
 
 ### Lean <-> SmartContracts (Verification formelle)
 
 | Concept | Pont | Notebooks |
 |---------|------|-----------|
-| Theorie des types dependants | Verification formelle de contrats | `Lean/Lean-1-Setup.ipynb` (types) <-> `SmartContracts/04-Privacy-Cryptography/SC-14-Formal-Verification.ipynb` |
+| Theorie des types dependants | Verification formelle de contrats | `Lean/Lean-1-Setup.ipynb` (types) <-> `SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb` |
 | Preuves LLM-assistees | Contrats LLM-assistes | `Lean/Lean-8-Agentic-Proving.ipynb` <-> `SmartContracts/02-Solidity-Advanced/SC-11-LLM-Assisted.ipynb` |
 | `sorry` = axiome non prouve | Bugs de contrats non detectes | Concepts paralleles d'incompletude |
 
@@ -545,23 +565,23 @@ Ces connexions entre series sont exploitees dans le curriculum IA Symbolique.
 | Concept Tweety | Concept Argument_Analysis | Notebooks |
 |---------------|--------------------------|-----------|
 | Frameworks de Dung | Argumentation multi-agents | `Tweety/Tweety-5-Abstract-Argumentation.ipynb` <-> `Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb` |
-| ASPIC+ (argumentation structuree) | Analyse LLM d'arguments | `Tweety/Tweety-6-Structured-Argumentation.ipynb` <-> `Argument_Analysis/Argument_Analysis_3-Frameworks.ipynb` |
-| Dialogues d'agents | Debate multi-agent | `Tweety/Tweety-8-Agent-Dialogues.ipynb` <-> `Argument_Analysis/Argument_Analysis_4-MultiAgent.ipynb` |
+| ASPIC+ (argumentation structuree) | Analyse LLM d'arguments | `Tweety/Tweety-6-Structured-Argumentation.ipynb` <-> `Argument_Analysis/Argument_Analysis_Agentic-3-orchestration.ipynb` |
+| Dialogues d'agents | Debat multi-agent | `Tweety/Tweety-8-Agent-Dialogues.ipynb` <-> `Argument_Analysis/Argument_Analysis_Executor.ipynb` |
 
 ### SemanticWeb <-> SmartContracts (Decentralisation)
 
 | Concept | Pont | Notebooks |
 |---------|------|-----------|
-| Ontologies RDF/OWL | Gouvernance DAO (etat canonique) | `SemanticWeb/SW-6-OWL.ipynb` <-> `SmartContracts/01-Solidity-Foundation/SC-9-DAO-Governance.ipynb` |
-| GraphRAG | Indexation on-chain | `SemanticWeb/SW-12-GraphRAG.ipynb` <-> SmartContracts DeFi indexing |
-| SHACL (validation) | Smart contract verification | `SemanticWeb/SW-9-SHACL.ipynb` <-> `SmartContracts/04-Privacy-Cryptography/SC-14-Formal-Verification.ipynb` |
+| Ontologies RDF/OWL | Gouvernance DAO (etat canonique) | `SemanticWeb/SW-7-CSharp-OWL.ipynb` <-> `SmartContracts/02-Solidity-Advanced/SC-9-DAO-Governance.ipynb` |
+| GraphRAG | Indexation on-chain | `SemanticWeb/SW-12-Python-GraphRAG.ipynb` <-> SmartContracts DeFi indexing |
+| SHACL (validation) | Smart contract verification | `SemanticWeb/SW-8-Python-SHACL.ipynb` <-> `SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb` |
 
 ### Planners <-> SmartContracts (Coordination)
 
 | Concept | Pont | Notebooks |
 |---------|------|-----------|
 | Planification multi-agent | MEV / auctions cross-chain | `Planners/03-Advanced/Planners-9-HTN.ipynb` <-> SmartContracts MEV |
-| CP-SAT (OR-Tools) | Optimisation gas/fees | `Planners/03-Advanced/Planners-7-OR-Tools.ipynb` <-> `SmartContracts/01-Solidity-Foundation/SC-8-Gas-Optimization.ipynb` |
+| CP-SAT (OR-Tools) | Optimisation sous contraintes (DeFi) | `Planners/03-Advanced/Planners-7-OR-Tools.ipynb` <-> `SmartContracts/02-Solidity-Advanced/SC-8-DeFi-Primitives.ipynb` |
 
 ---
 
@@ -648,4 +668,4 @@ Voir LICENSE a la racine du depot pour details.
 
 ---
 
-**Derniere mise a jour** : 2026-06-03
+**Derniere mise a jour** : 2026-06-11
