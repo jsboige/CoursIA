@@ -69,4 +69,49 @@ Pour le setup complet, voir le [README de la serie Search](../README.md).
 
 ## Ponts vers SymbolicAI
 
-La programmation par contraintes est le passage naturel vers l'IA symbolique : OR-Tools CP-SAT rejoint Z3 (SMT solving) dans la serie [SymbolicAI](../../SymbolicAI/README.md), l'ordonnancement mene a la planification PDDL (SymbolicAI/Planners), et les contraintes temporelles (CSP-8) se retrouvent dans le planning temporel. Le notebook CSP-6 (LCG) detaille ces passerelles.
+Les notebooks CSP nécessitent une compréhension préalable de :
+- **[Search-1 (StateSpace)](../Part1-Foundations/Search-1-StateSpace.ipynb)** : formalisation des problèmes
+- **[Search-2 (Uninformed)](../Part1-Foundations/Search-2-Uninformed.ipynb)** : backtracking = DFS avec retour arrière
+
+## Progression recommandée
+
+```text
+CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
+                                                    │
+                                    ┌───────────────┼───────────────┐
+                                    │               │               │
+                              CSP-4           CSP-5           CSP-6
+                            (Scheduling)   (Optimization)  (Hybridization)
+                                    │               │
+                                    └───────────────┘
+                                            │
+                              ┌─────────────┼─────────────┐
+                              │             │             │
+                         CSP-7         CSP-8         CSP-9
+                         (Soft)      (Temporal)   (Distributed)
+```
+
+## Transition vers SymbolicAI
+
+| CSP Concept | SymbolicAI Counterpart |
+|-------------|------------------------|
+| OR-Tools CP-SAT | Z3/01_Linq2Z3_Intro (SMT solving) |
+| Scheduling/Planning | Planners (PDDL, HTN) |
+| Constraint logic | Tweety (Formal Logic) |
+| Temporal CSP | Temporal Planning, STP |
+
+## Ponts inter-series
+
+| Serie | Lien | Relation |
+| ------- | ------ | ---------- |
+| [Partie 1 : Search](../Part1-Foundations/README.md) | Fondamentaux | Prerequis : backtracking, heuristiques |
+| [Applications](../Applications/README.md) | 21 notebooks d'application | Mise en pratique des CSP |
+| [Search (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global |
+| [Sudoku](../../Sudoku/) | Resolution par contraintes | Application directe des CSP |
+| [SymbolicAI/Z3](../../SymbolicAI/) | Solveur SMT | CSP-6 (LCG) et automates symboliques |
+| [Probas/Infer](../../Probas/Infer/) | Infer.NET | Modeles graphiques et contraintes |
+
+## Navigation
+
+[<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour a la serie Search](../README.md) | [Applications ->](../Applications/README.md)
+>>>>>>> 466b5f29 (feat(symbolic-ai): create Z3 series with intro notebook, fork MyIntelligenceAgency/Z3.Linq (See #1206))
