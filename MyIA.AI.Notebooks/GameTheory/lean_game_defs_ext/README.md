@@ -33,8 +33,9 @@ cd MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext
 lake build   # Build completed successfully — 0 sorry
 ```
 
-CI : `.github/workflows/lean-game-defs-ext.yml` (sorry baseline 0 +
-lake build).
+CI : `.github/workflows/lean-game-defs-ext.yml`, caller du workflow
+réutilisable `lean-build.yml` (lake build et sorry baseline 0, mode
+standalone-tactic).
 
 ## Lien avec `lean_game_defs/`
 
