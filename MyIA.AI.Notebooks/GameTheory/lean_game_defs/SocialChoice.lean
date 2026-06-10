@@ -67,12 +67,15 @@ There is no social welfare function with ≥3 alternatives that satisfies:
 1. Weak Pareto
 2. Independence of Irrelevant Alternatives
 3. Non-dictatorship
+
+Note: Stated with explicit `Fin n` types instead of generic `Fintype`
+to avoid Mathlib dependency. The theorem's mathematical content is identical.
 -/
 -- Full proof requires extensive machinery; we state it as an axiom
-axiom arrow_impossibility {I A : Type} [Fintype I] [Fintype A]
-    (hI : Fintype.card I ≥ 2)
-    (hA : Fintype.card A ≥ 3)
-    (swf : SocialWelfareFunction I A)
+axiom arrow_impossibility {nI nA : Nat}
+    (hI : nI ≥ 2)
+    (hA : nA ≥ 3)
+    (swf : SocialWelfareFunction (Fin nI) (Fin nA))
     (h_pareto : WeakPareto swf)
     (h_iia : IIA swf) :
     ¬NonDictatorial swf
@@ -103,13 +106,11 @@ def MinimalLiberalism {I A : Type} (swf : SocialWelfareFunction I A) : Prop :=
     ∀ prefs : I → Preference A,
       StrictPref (prefs i) x y → StrictPref (swf.aggregate prefs) x y
 
-/--
-Sen's Impossibility Theorem (Statement):
-No SWF can satisfy both Weak Pareto and Minimal Liberalism
-under certain preference configurations.
--/
--- This is a weaker statement than the full theorem
--- The full theorem requires constructing specific preference profiles
+/- Sen's Impossibility Theorem (Statement):
+   No SWF can satisfy both Weak Pareto and Minimal Liberalism
+   under certain preference configurations.
+   (Weaker statement — the full theorem requires constructing
+   specific preference profiles.) -/
 
 /-! ## Utility Representations -/
 

@@ -14,8 +14,8 @@
   require measure theory and convergence proofs (not attempted here).
 -/
 
-import GameTheory.lean_game_defs.Basic
-import GameTheory.lean_game_defs.Bayesian
+import Basic
+import Bayesian
 
 /-! ## Regret Concepts -/
 
@@ -119,11 +119,13 @@ def initCFRState : CFRState where
 def epsilonNash (ε : Float) (externalReg : Float) : Prop :=
   externalReg <= ε
 
-/-- No-regret learning: average external regret goes to zero -/
-def noRegret (T : Nat) (payoffs : Fin T → (Fin n → Float))
-    (played : Fin T → Fin n) : Prop :=
+/-- No-regret learning: average external regret goes to zero.
+    Payoffs and plays are indexed by `Nat` (infinite horizon); the regret
+    at horizon `t` is computed on the prefix of the first `t` rounds. -/
+def noRegret (payoffs : Nat → (Fin n → Float))
+    (played : Nat → Fin n) : Prop :=
   ∀ ε > 0, ∃ T0, ∀ t ≥ T0,
-    externalRegret t payoffs (fun i => played i) / t.toFloat < ε
+    externalRegret t (fun s => payoffs s.val) (fun s => played s.val) / t.toFloat < ε
 
 /-! ## Fictitious Play (from GT-17 Section 3) -/
 
@@ -140,17 +142,17 @@ structure FictitiousPlayState (n : Nat) where
   actionCounts : Fin n → (Fin m → Nat)
   /-- Number of rounds played -/
   rounds : Nat
-  deriving Repr
+  -- no deriving Repr: `actionCounts` is a function type, not derivable
 
 /-- Best response to empirical distribution of opponent.
 
     Conceptually: argmax_a Σ_{a_{-i}} empiricalDist(a_{-i}) · u_i(a, a_{-i}).
     In a full formalization this would use Mathlib's argmax.
 -/
-def isBestResponseToEmpirical {n m : Nat}
-    (payoff : Fin n → (Fin n → Fin m) → Float)
-    (empiricalDist : Fin n → (Fin m → Float))
-    (player : Fin n) (action : Fin m) : Prop :=
+def isBestResponseToEmpirical {m : Nat}
+    (payoff : Fin 2 → (Fin 2 → Fin m) → Float)
+    (empiricalDist : Fin 2 → (Fin m → Float))
+    (player : Fin 2) (action : Fin m) : Prop :=
   ∀ other : Fin m,
     let expected := fun a =>
       (List.finRange m).foldl
