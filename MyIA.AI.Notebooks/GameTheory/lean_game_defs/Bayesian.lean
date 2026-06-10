@@ -60,7 +60,7 @@ structure BayesianGame (PlayerType : Type) where
   /-- Payoff depends on type profile AND action profile -/
   payoff : (i : Fin numPlayers) →
            (types : Fin numPlayers → PlayerType) →
-           (actions : Fin numPlayers → Fin (numActions i)) → Int
+           (actions : (j : Fin numPlayers) → Fin (numActions j)) → Int
   /-- Common prior probability over type profiles (simplified) -/
   priorProb : (types : Fin numPlayers → PlayerType) → Float
 
@@ -84,9 +84,9 @@ def TypeStrategyProfile (g : BayesianGame α) :=
 -/
 def expectedPayoffBayesian (g : BayesianGame α)
     (profile : TypeStrategyProfile g)
-    (types : Fin g.numPlayers → α) :
-    (i : Fin g.numPlayers) → Int :=
-  fun i => g.payoff i types (fun j => profile j (types j))
+    (types : Fin g.numPlayers → α)
+    (i : Fin g.numPlayers) : Int :=
+  g.payoff i types (fun j => profile j (types j))
 
 /-! ## Bayesian Nash Equilibrium -/
 
@@ -101,9 +101,8 @@ def isBayesianNashEquilibrium (g : BayesianGame α)
     (profile : TypeStrategyProfile g)
     (types : Fin g.numPlayers → α) : Prop :=
   ∀ (i : Fin g.numPlayers) (altStrategy : TypeStrategy g i),
-    let curr := expectedPayoffBayesian g profile types i
-    let dev  := expectedPayoffBayesian g (funUpdate profile i altStrategy) types i
-    curr >= dev
+    expectedPayoffBayesian g profile types i >=
+    expectedPayoffBayesian g (funUpdate profile i altStrategy) types i
 
 /-! ## Information Sets (Imperfect Information) -/
 
@@ -148,10 +147,10 @@ structure SignalingGame (MessageType : Type) (ActionResult : Type) where
   typePrior : MessageType → Float
 
 /-- A sender strategy: type → message -/
-def SenderStrategy (g : SignalingGame α β) := α → α
+def SenderStrategy (_g : SignalingGame α β) := α → α
 
 /-- A receiver strategy: message → action -/
-def ReceiverStrategy (g : SignalingGame α β) := α → β
+def ReceiverStrategy (_g : SignalingGame α β) := α → β
 
 /-! ## First-Price Auction (from GT-11 Section 5) -/
 
@@ -170,22 +169,24 @@ structure FirstPriceAuction where
   /-- Check if bid is valid (0 ≤ bid ≤ maxValue) -/
   validBid : (bid : Nat) → Bool := fun bid => bid <= maxValue
 
-/-- Determine winner of auction given bids -/
-def auctionWinner (bids : Fin n → Nat) : Fin n :=
+/-- Determine winner of auction given bids.
+    Returns the index of the first bidder with the maximum bid.
+    Requires n ≥ 1 (at least one bidder). -/
+def auctionWinner {n : Nat} (h_n : n ≥ 1) (bids : Fin n → Nat) : Fin n :=
   let maxBid := (List.finRange n).foldl (fun acc i => max acc (bids i)) 0
   -- First player who bid the maximum wins (tie-breaking)
   match (List.finRange n).find? (fun i => bids i = maxBid) with
   | some i => i
-  | none => 0  -- should not happen with n > 0
+  | none => ⟨0, by omega⟩
 
 /-- Revenue for the auctioneer -/
-def auctionRevenue (bids : Fin n → Nat) : Nat :=
-  bids (auctionWinner bids)
+def auctionRevenue {n : Nat} (h_n : n ≥ 1) (bids : Fin n → Nat) : Nat :=
+  bids (auctionWinner h_n bids)
 
 /-! ## Kuhn Poker (from GT-13 Section 2) -/
 
 /-- A card in Kuhn poker (simplified: Jack=0, Queen=1, King=2) -/
-def KuhnCard := Fin 3
+abbrev KuhnCard := Fin 3
 
 /-- History of actions in a Kuhn poker round -/
 inductive KuhnAction where
@@ -195,13 +196,25 @@ inductive KuhnAction where
   | call : KuhnAction
   deriving Repr, BEq
 
+instance : ToString KuhnAction where
+  toString a := match a with
+    | .check => "check"
+    | .bet => "bet"
+    | .fold => "fold"
+    | .call => "call"
+
 /-- A Kuhn poker game state -/
 structure KuhnState where
   /-- Cards dealt to each player -/
   cards : Fin 2 → KuhnCard
   /-- Action history -/
   history : List KuhnAction
-  deriving Repr
+
+instance : Repr KuhnState where
+  reprPrec s _ :=
+    let c0 := toString (s.cards ⟨0, by omega⟩)
+    let c1 := toString (s.cards ⟨1, by omega⟩)
+    s!"KuhnState({c0}, {c1}, {toString s.history})"
 
 /-- Check if a Kuhn poker game has reached a terminal state -/
 def KuhnIsTerminal (history : List KuhnAction) : Bool :=

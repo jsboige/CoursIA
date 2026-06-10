@@ -106,13 +106,11 @@ def MinimalLiberalism {I A : Type} (swf : SocialWelfareFunction I A) : Prop :=
     ∀ prefs : I → Preference A,
       StrictPref (prefs i) x y → StrictPref (swf.aggregate prefs) x y
 
-/--
-Sen's Impossibility Theorem (Statement):
-No SWF can satisfy both Weak Pareto and Minimal Liberalism
-under certain preference configurations.
--/
--- This is a weaker statement than the full theorem
--- The full theorem requires constructing specific preference profiles
+/- Sen's Impossibility Theorem (Statement):
+   No SWF can satisfy both Weak Pareto and Minimal Liberalism
+   under certain preference configurations.
+   (Weaker statement — the full theorem requires constructing
+   specific preference profiles.) -/
 
 /-! ## Utility Representations -/
 
