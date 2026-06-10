@@ -42,7 +42,7 @@ class TradeCostEstimationAlgorithm(QCAlgorithm):
         self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 1, 1)
         self.set_cash('USDC', 10_000_000)
-        self.set_brokerage_model(BrokerageName.BINANCE_BROKERAGE, AccountType.CASH)
+        self.set_brokerage_model(BrokerageName.BINANCE, AccountType.CASH)
 
         self.settings.minimum_order_margin_portfolio_percentage = 0
 
