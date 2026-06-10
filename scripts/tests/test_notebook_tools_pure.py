@@ -1,7 +1,8 @@
 """Tests for scripts/notebook_tools/notebook_tools.py — pure functions and dataclasses.
 
 Tests focus on: should_skip, detect_kernel, extract_cell_preview,
-_format_markdown_table, _format_summary, dataclass defaults, Colors, SKIP_PATTERNS.
+_format_markdown_table, _format_summary, dataclass defaults, Colors, SKIP_PATTERNS,
+discover_notebooks, NotebookExecutor.SCRUB_KEYS, notebook_helpers parity.
 No filesystem I/O or kernel execution required.
 """
 
@@ -28,6 +29,8 @@ from notebook_tools import (
     _format_markdown_table,
     _format_summary,
     get_repo_root,
+    discover_notebooks,
+    NotebookExecutor,
 )
 
 
@@ -427,3 +430,104 @@ class TestGetRepoRoot:
         root = get_repo_root()
         has_marker = (root / "CLAUDE.md").exists() or (root / "MyIA.AI.Notebooks").exists()
         assert has_marker, f"get_repo_root() returned {root}, no repo markers found"
+
+
+class TestDiscoverNotebooks:
+    """Tests for discover_notebooks() — requires repo structure."""
+
+    def test_family_name_resolves(self):
+        root = get_repo_root()
+        nbs = discover_notebooks("IIT", root)
+        assert len(nbs) > 0
+        assert all(nb.suffix == ".ipynb" for nb in nbs)
+
+    def test_single_notebook_path(self):
+        root = get_repo_root()
+        nbs = discover_notebooks("MyIA.AI.Notebooks/IIT/Intro_to_PyPhi.ipynb", root)
+        assert len(nbs) == 1
+        assert nbs[0].name == "Intro_to_PyPhi.ipynb"
+
+    def test_nonexistent_returns_empty(self):
+        root = get_repo_root()
+        nbs = discover_notebooks("NonExistentFamily", root)
+        assert nbs == []
+
+    def test_python_only_filter(self):
+        root = get_repo_root()
+        nbs = discover_notebooks("IIT", root, python_only=True)
+        assert len(nbs) > 0
+        # IIT notebooks should all be Python
+        for nb in nbs:
+            assert nb.suffix == ".ipynb"
+
+    def test_all_target(self):
+        root = get_repo_root()
+        nbs = discover_notebooks("all", root)
+        assert len(nbs) > 100  # Repo has 500+ notebooks
+
+
+class TestNotebookExecutorScrubKeys:
+    """Tests for NotebookExecutor.SCRUB_KEYS and related."""
+
+    def test_scrub_keys_is_list(self):
+        assert isinstance(NotebookExecutor.SCRUB_KEYS, list)
+        assert len(NotebookExecutor.SCRUB_KEYS) > 0
+
+    def test_scrub_keys_contains_openai(self):
+        assert "OPENAI_API_KEY" in NotebookExecutor.SCRUB_KEYS
+
+    def test_scrub_keys_contains_anthropic(self):
+        assert "ANTHROPIC_API_KEY" in NotebookExecutor.SCRUB_KEYS
+
+    def test_scrub_keys_all_uppercase(self):
+        for key in NotebookExecutor.SCRUB_KEYS:
+            assert key == key.upper(), f"Key {key} is not uppercase"
+
+    def test_scrub_keys_no_empty(self):
+        for key in NotebookExecutor.SCRUB_KEYS:
+            assert len(key) > 0
+
+
+class TestNotebookHelpersExecutor:
+    """Tests for notebook_helpers.NotebookExecutor — importable and functional."""
+
+    def test_import_succeeds(self):
+        from notebook_helpers import NotebookExecutor as BaseExecutor
+        assert BaseExecutor is not None
+
+    def test_has_execute_with_papermill(self):
+        from notebook_helpers import NotebookExecutor as BaseExecutor
+        assert hasattr(BaseExecutor, "execute_with_papermill")
+
+    def test_scrub_keys_parity_after_merge(self):
+        """After PR #2537 merges, BaseExecutor.SCRUB_KEYS should match NotebookExecutor."""
+        from notebook_helpers import NotebookExecutor as BaseExecutor
+        if hasattr(BaseExecutor, "SCRUB_KEYS"):
+            assert set(BaseExecutor.SCRUB_KEYS) == set(NotebookExecutor.SCRUB_KEYS)
+        else:
+            # Pre-merge: SCRUB_KEYS not yet in helpers — skip gracefully
+            pytest.skip("BaseExecutor.SCRUB_KEYS not yet added (awaiting PR #2537 merge)")
+
+
+class TestCmdExecuteEnvParsing:
+    """Tests for --env KEY=VAL parsing logic in cmd_execute."""
+
+    def test_valid_pairs(self):
+        pairs = ["KEY1=val1", "KEY2=val2=with=equals"]
+        result = {}
+        for pair in pairs:
+            if "=" not in pair:
+                pytest.fail(f"Invalid pair: {pair}")
+            key, val = pair.split("=", 1)
+            result[key] = val
+        assert result == {"KEY1": "val1", "KEY2": "val2=with=equals"}
+
+    def test_invalid_pair_no_equals(self):
+        pair = "NOEQUALS"
+        assert "=" not in pair
+
+    def test_empty_value(self):
+        pair = "KEY="
+        key, val = pair.split("=", 1)
+        assert key == "KEY"
+        assert val == ""

@@ -32,7 +32,7 @@
 2. **Images sous copyright** : Slides SVM (autour du 60) affichent "Copyright 2001, 2003" - nécessite remplacement ou attribution formelle
 3. **Taille excessive** : 9.84 MB - la plus lourde des 3 decks analysés, peut causer problèmes de chargement
 4. **Densité variable** : Certaines slides trop chargées (>250 mots), d'autres trop légères
-5. **Manque de liens notebooks** : Cross-références absentes vers `ML/ML.Net/` (5 notebooks) et `RL/stable_baseline_*.ipynb`
+5. **Manque de liens notebooks** : Cross-références absentes vers `ML/ML.Net/` (5 notebooks) et `RL/rl_*.ipynb`
 6. **Absence d'architectures modernes** : Pas de Transformers, diffusion models, LLMs dans partie supervisée
 7. **Section RL datée** : Pas de mention RLHF, PPO moderne, InstructGPT/ChatGPT
 
@@ -161,7 +161,7 @@
 |-----------|---------|-----------|
 | 101-110 | MDP, Q-learning classique | `GameTheory/GameTheory-14b-RL-Basics.ipynb` |
 | 111-115 | Value iteration, policy iteration | `Probas/Infer/Infer-12-Decision.ipynb` |
-| 116-120 | Deep RL (DQN, PPO) | `RL/stable_baseline_cartpole.ipynb`, `RL/stable_baseline_dqn.ipynb` |
+| 116-120 | Deep RL (DQN, PPO) | `RL/rl_1_intro_cartpole.ipynb`, `RL/rl_6_dqn_policy_gradient.ipynb` |
 | 121-125 | RLHF, LLMs | `GenAI/llm-finetuning.ipynb` (si disponible, sinon créer démo) |
 | 126 | Multi-agent RL | `GameTheory/GameTheory-15b-Multi-Agent-RL.ipynb` |
 
@@ -182,7 +182,7 @@
 | 81-95 | EM, HMM learning, Bayes nets | `Probas/Infer/Infer-9-Learning.ipynb`, `Infer-10-Structure-Learning.ipynb` |
 | 96-100 | Modèles génératifs (VAE, GANs) | `GenAI/vae-*.ipynb`, `GenAI/diffusion-models.ipynb` |
 | 101-115 | RL classique (Q-learning, MDP) | `GameTheory/GameTheory-14b-RL-Basics.ipynb` |
-| 116-120 | Deep RL (DQN, PPO, SAC) | `RL/stable_baseline_cartpole.ipynb`, `RL/stable_baseline_dqn.ipynb` |
+| 116-120 | Deep RL (DQN, PPO, SAC) | `RL/rl_1_intro_cartpole.ipynb`, `RL/rl_6_dqn_policy_gradient.ipynb` |
 | 121-125 | RLHF et LLMs | `GenAI/llm-finetuning.ipynb` (créer si absent) |
 | 126 | Multi-agent RL | `GameTheory/GameTheory-15b-Multi-Agent-RL.ipynb` |
 

@@ -1,0 +1,31 @@
+name: Lean CI (sensitivity_lean)
+
+# CI for sensitivity_lean (SymbolicAI/Lean/sensitivity_lean).
+# Sensitivity / one-step lookahead demo. 0 sorry (raw=0, verified).
+# Consolidated per ai-01 DRY decision (option 2: matrix). See lean-build.yml.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lean-toolchain'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean
+      display-name: sensitivity_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: standalone-tactic

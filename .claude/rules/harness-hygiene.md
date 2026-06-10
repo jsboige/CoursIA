@@ -28,4 +28,4 @@ S'applique à **tous les agents** du cluster CoursIA (workers `po-*` + coordinat
 - CLAUDE.md global — « Knowledge Preservation » + « Consolider != Archiver »
 - [proactive-coordination.md](proactive-coordination.md) — reporting dashboard
 - [coordinator-discipline.md](coordinator-discipline.md) — rapports coord = dashboard, pas repo
-- [../../docs/procedures-recurrentes.md](../../docs/procedures-recurrentes.md) — procédures + leçons cycle merge consolidées
+- [../../docs/reference/procedures-recurrentes.md](../../docs/reference/procedures-recurrentes.md) — procédures + leçons cycle merge consolidées

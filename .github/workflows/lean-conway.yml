@@ -1,0 +1,46 @@
+name: Lean Conway CI
+
+# CI for conway_lean (SymbolicAI/Lean/conway_lean).
+# Conway's Game of Life formalization (Hashlife, Kochen-Specker, Free Will).
+# Rule lean-merge-discipline: lake build SUCCESS local OBLIGATOIRE avant merge.
+#
+# Consolidated per ai-01 DRY decision (option 2: matrix). Supersedes the inline
+# version in PR #2747 (same standalone-tactic mode, same baseline 8, now via the
+# shared lean-build.yml reusable workflow).
+#
+# Sorry profile (verified 2026-06-10, standalone-tactic mode, baseline=8):
+# conway has 8 real tactic sorries + many PROSE mentions in block comments
+# ("Each sorry is a target", "Left as sorry", "remain sorry-gated"). The
+# grothendieck prose-header filter OVERCOUNTS here (reads the prose), so we use
+# standalone-tactic (sorry as sole token on its line) to distinguish tactic vs
+# prose. Breakdown of the 8:
+#   - HashlifeCorrectness.lean: 2 (intractable P4/P5 — central correctness + main theorem)
+#   - HashlifeMemo.lean:        2 (scaffolding, Phase 3c)
+#   - Pillars.lean:             4 (scaffolding witnesses, Phase 3c)
+# Raising this baseline requires a documented justification in the PR body.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      display-name: conway_lean
+      sorry-baseline: "8"
+      sorry-filter-mode: standalone-tactic

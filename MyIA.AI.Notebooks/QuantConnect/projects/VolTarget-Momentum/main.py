@@ -22,6 +22,12 @@ class VolTargetMomentum(QCAlgorithm):
         self.set_cash(100_000)
         self.set_benchmark("SPY")
 
+        # Brokerage: multi-asset ETFs traded via IBKR margin account
+        # Configurable brokerage for fee sweep (default: IBKR margin with real fees)
+        self._brokerage_mode = self.get_parameter("brokerage", "ibkr")
+        if self._brokerage_mode != "none":
+            self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
+
         self.risky_tickers = ["SPY", "EFA", "EEM", "TLT", "GLD", "DBC"]
         self.safe_ticker = "BND"
         self.all_tickers = self.risky_tickers + [self.safe_ticker]

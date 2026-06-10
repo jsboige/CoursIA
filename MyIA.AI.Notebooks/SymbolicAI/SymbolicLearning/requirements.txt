@@ -1,13 +1,23 @@
 # SymbolicLearning - Python Dependencies
 # Install: pip install -r requirements.txt
 #
-# SL-1, SL-2, SL-4, SL-5, SL-7: standard library only (no external deps)
+# SL-1, SL-2, SL-4: standard library only (no external deps)
 # SL-3: numpy + scikit-learn (RBL vs sklearn comparison)
+# SL-5: numpy (sections 1-6) + torch/LTNtorch (section 7, vraie librairie LTN)
 # SL-6: rdflib (Knowledge Graph construction)
+# SL-7: openai + python-dotenv (section 7, integration LLM reelle via .env)
 
-# Scientific computing (SL-3)
+# Scientific computing (SL-3, SL-5)
 numpy>=1.24
 scikit-learn>=1.2              # Information mutual comparison (SL-3)
 
 # Knowledge Graphs (SL-6)
 rdflib>=7.0                    # RDF graph manipulation, AMIE rule mining
+
+# Neuro-symbolique (SL-5 section 7)
+torch>=2.0                     # CPU suffit pour les demos
+LTNtorch>=1.0                  # ATTENTION : pas "pip install ltn" (homonyme TensorFlow)
+
+# Integration LLM (SL-7 section 7)
+openai>=1.0                    # client pour tout endpoint OpenAI-compatible
+python-dotenv>=1.0             # chargement du .env (cf. .env.example)

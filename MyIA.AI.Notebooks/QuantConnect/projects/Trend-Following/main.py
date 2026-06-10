@@ -21,6 +21,12 @@ class TrendFollowingAQR(QCAlgorithm):
         self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 12, 31)
         self.set_cash(100_000)
+
+        # Configurable brokerage for fee sweep (default: IBKR margin with real fees)
+        self._brokerage_mode = self.get_parameter("brokerage", "ibkr")
+        if self._brokerage_mode != "none":
+            self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
+
         self.set_benchmark("SPY")
 
         self.risky_tickers = ["SPY", "EFA", "EEM", "TLT", "GLD", "DBC"]

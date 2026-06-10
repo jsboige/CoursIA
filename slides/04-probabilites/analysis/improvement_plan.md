@@ -104,7 +104,7 @@
 | 36-50 | Inférence probabiliste | `Probas/Infer/Infer-5-Inference.ipynb`, `Infer-7-Variable-Elimination.ipynb` |
 | 51-70 | HMM et chaînes de Markov | `Probas/Infer/Infer-6-HMM.ipynb`, `Infer-8-Temporal.ipynb` |
 | 71-90 | MDP et décision | `GameTheory/GameTheory-2b-MDP.ipynb`, `Probas/Infer/Infer-12-Decision.ipynb` |
-| 91-98 | Applications RL | `RL/stable_baseline_cartpole.ipynb`, `GameTheory/GameTheory-14b-RL-Basics.ipynb` |
+| 91-98 | Applications RL | `RL/rl_1_intro_cartpole.ipynb`, `GameTheory/GameTheory-14b-RL-Basics.ipynb` |
 
 **Action** : Ajouter QR codes ou liens courts vers notebooks dans les slides de transition.
 

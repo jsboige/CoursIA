@@ -39,6 +39,25 @@ NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 MARKER_RE = re.compile(r"<!--\s*CATALOG:(\w+):([^>]+?)\s*-->")
 
 
+def _filter_by_series(entries: list[dict], serie: str) -> list[dict]:
+    """Filter entries by serie name, supporting 'Serie-SousSerie' format.
+
+    README CATALOG-STATUS markers use 'Serie-SousSerie' (e.g. 'SymbolicAI-Lean')
+    while the catalog JSON stores serie='SymbolicAI' and sous_serie='Lean'.
+    This function tries exact match first, then falls back to serie+sous_serie.
+    """
+    # Exact match (e.g. serie='ML', serie='Probas')
+    filtered = [e for e in entries if e.get("serie") == serie]
+    if filtered:
+        return filtered
+    # Fallback: parse 'Serie-SousSerie' format (e.g. 'SymbolicAI-Lean')
+    if "-" in serie:
+        parent, child = serie.split("-", 1)
+        return [e for e in entries
+                if e.get("serie") == parent and e.get("sous_serie") == child]
+    return []
+
+
 def _to_lf(text: str) -> str:
     """Normalize CRLF/CR line endings to LF so byte-level comparison is
     platform-independent (Windows authors with CRLF working tree vs Linux CI)."""
@@ -57,7 +76,7 @@ def compute_counter(entries: list[dict], params: dict) -> str:
     """Compute a count based on filter params."""
     filtered = entries
     if "serie" in params:
-        filtered = [e for e in filtered if e.get("serie") == params["serie"]]
+        filtered = _filter_by_series(filtered, params["serie"])
     if "status" in params:
         filtered = [e for e in filtered if e.get("status") == params["status"]]
     if "maturity" in params:
@@ -74,23 +93,19 @@ def _sorted_counter(c: Counter) -> dict[str, int]:
 
 def compute_breakdown(entries: list[dict], serie: str) -> dict[str, int]:
     """Compute breakdown by sous_serie for a given serie. Entries without sous_serie group as 'root'."""
-    serie_entries = [e for e in entries if e.get("serie") == serie]
+    serie_entries = _filter_by_series(entries, serie)
     return _sorted_counter(Counter((e.get("sous_serie") or "root") for e in serie_entries))
 
 
 def compute_maturity_distribution(entries: list[dict], serie: str | None = None) -> dict[str, int]:
     """Compute maturity distribution for a serie or all."""
-    filtered = entries
-    if serie:
-        filtered = [e for e in filtered if e.get("serie") == serie]
+    filtered = _filter_by_series(entries, serie) if serie else entries
     return _sorted_counter(Counter(e.get("maturity", "UNKNOWN") for e in filtered))
 
 
 def compute_status_distribution(entries: list[dict], serie: str | None = None) -> dict[str, int]:
     """Compute status distribution for a serie or all."""
-    filtered = entries
-    if serie:
-        filtered = [e for e in filtered if e.get("serie") == serie]
+    filtered = _filter_by_series(entries, serie) if serie else entries
     return _sorted_counter(Counter(e.get("status", "UNKNOWN") for e in filtered))
 
 
@@ -111,7 +126,7 @@ def format_catalog_status_block(entries: list[dict], serie: str) -> str:
             f"-->"
         )
 
-    serie_entries = [e for e in entries if e.get("serie") == serie]
+    serie_entries = _filter_by_series(entries, serie)
     count = len(serie_entries)
     breakdown = compute_breakdown(entries, serie)
     bd_str = ", ".join(f"{k}={v}" for k, v in breakdown.items())
@@ -214,9 +229,10 @@ def find_readme_targets(target_file: str | None = None) -> list[Path]:
     if root_readme.exists():
         targets.append(root_readme)
 
-    # Series READMEs
-    for readme in NOTEBOOKS_DIR.glob("*/README.md"):
-        targets.append(readme)
+    # Series and sub-series READMEs (recursive to catch GenAI/Image/, SymbolicAI/Lean/, etc.)
+    for readme in NOTEBOOKS_DIR.rglob("README.md"):
+        if readme != root_readme:
+            targets.append(readme)
 
     return targets
 

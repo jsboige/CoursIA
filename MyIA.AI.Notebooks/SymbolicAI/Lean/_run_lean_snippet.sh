@@ -12,7 +12,23 @@ if [ -z "$SNIPPET" ]; then
   exit 2
 fi
 
-CW="${LEAN_BACKING_PROJECT:-/mnt/c/dev/CoursIA/MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean}"
+# Resolve backing project dynamically: search upward from script location
+_script_dir="$(cd "$(dirname "$0")" && pwd)"
+_default_project=""
+
+# Walk up from script dir to find sensitivity_lean
+_search="$_script_dir"
+for _ in $(seq 1 12); do
+  _candidate="$_search/sensitivity_lean"
+  if [ -d "$_candidate" ] && [ -f "$_candidate/lakefile.lean" ]; then
+    _default_project="$_candidate"
+    break
+  fi
+  _search="$(dirname "$_search")"
+  [ "$_search" = "/" ] && break
+done
+
+CW="${LEAN_BACKING_PROJECT:-${_default_project:-/mnt/c/dev/CoursIA/MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean}}"
 cd "$CW" || exit 3
 
 # Build LEAN_PATH from cached oleans (deps first, mathlib last)

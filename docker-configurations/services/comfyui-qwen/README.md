@@ -352,8 +352,6 @@ docker-compose restart
 
 ### Documentation
 
-- [Checkpoint Sémantique 1](../../docs/genai-suivis/2025-10-13_11_checkpoint-semantique-1-comfyui-base.md)
-- [Checkpoint Sémantique 2](../../docs/genai-suivis/2025-10-13_11_checkpoint-semantique-2-standalone-validation.md)
 - [ComfyUI Official](https://github.com/comfyanonymous/ComfyUI)
 - [Qwen Image-Edit](https://huggingface.co/Qwen/Qwen-Image-Edit-2509)
 

@@ -5,8 +5,8 @@
 <!-- CATALOG-STATUS
 series: GenAI-PostTraining
 pedagogical_count: 6
-breakdown: Introduction=1, SFT=1, DPO=1, GRPO=1, RLVR=1, Evaluation=1
-maturity: BETA
+breakdown: PostTraining=6
+maturity: BETA=3, PRODUCTION=3
 -->
 
 > **Place dans GenAI** : cette serie est le pendant *theorique et SOTA 2024-2025* de la serie [FineTuning](../FineTuning/README.md). FineTuning couvre la boite a outils pratique (LoRA, QLoRA, SFT, DPO, model merging) sur 5 notebooks executes ; PostTraining remonte la chaine conceptuelle complete SFT → RLHF → DPO → GRPO → RLVR et reproduit les techniques recentes (Deepseek-R1) sur petits modeles. Les deux se complementent : commencer par FineTuning pour la pratique, PostTraining pour la profondeur methodologique.
@@ -170,7 +170,7 @@ PT-06 documente le pipeline d'evaluation complet et produit un tableau comparati
 
 | Serie | Connection | Details |
 |-------|------------|---------|
-| **[RL](../../RL/)** | RL classique fondamentaux | Les notebooks RL (`rl_4_mdp_dp_qlearning`, `stable_baseline_*`) etablissent l'intuition policy/value que PPO/GRPO reutilisent. Recommande comme prerequis pour PT-04. |
+| **[RL](../../RL/)** | RL classique fondamentaux | Les notebooks RL ([rl_5 MDP/Q-Learning](../../RL/rl_5_mdp_dp_qlearning.ipynb) et [rl_6c PPO from scratch](../../RL/rl_6c_ppo_from_scratch.ipynb)) etablissent l'intuition policy/value que PPO/GRPO reutilisent. Recommandes comme prerequis pour PT-04. |
 | **[GenAI/Texte](../Texte/)** | Usage des LMs aligned | Les notebooks GenAI consomment des modeles deja post-trained. Cette serie explique comment ces modeles arrivent dans cet etat. |
 | **[GenAI/FineTuning](../FineTuning/)** | Boite a outils fine-tuning | Serie soeur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique sur 5 notebooks. PostTraining = profondeur methodologique, FineTuning = recettes executables. |
 | **[ML](../../ML/)** | Tutoriels ML.NET | Pont conceptuel : ML.NET = inference de modeles deja entraines ; PostTraining = production de ces modeles. |
@@ -229,6 +229,70 @@ Pour les apprenants disposant de plus de VRAM (RTX 4090 24Go, A100 40Go), la ser
 PRODUCTION — 6/6 notebooks livres (Epic #1742 COMPLETE). Tous executes avec outputs reels, C.1/C.2 conformes.
 
 Suivi : [Issue #1742](https://github.com/jsboige/CoursIA/issues/1742) (CLOSED).
+
+## FAQ
+
+### OOM CUDA pendant GRPO ou DPO
+
+Les notebooks PT-03 a PT-05 sont concus pour RTX 3070 (8 Go) avec Qwen2.5-0.5B, mais OOM reste possible si l'environnement n'est pas optimal. Strategies :
+
+- Verifier que `bitsandbytes` est installe et que la quantization 4-bit est active (`load_in_4bit=True`).
+- Reduire `per_device_train_batch_size` a 1 et augmenter `gradient_accumulation_steps` pour garder un batch effectif correct.
+- Le parametre N (nombre de completions par prompt) dans GRPO est le principal consommateur VRAM : utiliser `N=4` ou `N=8` plutot que `N=16` sur GPU limite.
+- Fermer tous les autres processus GPU avant l'entrainement (`nvidia-smi` pour verifier).
+
+Si votre GPU a 4 Go ou moins, passer `LOAD_MODEL_AND_TRAIN=False` dans les notebooks pour executer en mode demo (chargement des outputs pre-calcules sans entrainement reel).
+
+### Quelle serie faire en premier : FineTuning ou PostTraining ?
+
+Les deux series sont complementaires :
+
+- **FineTuning d'abord** si vous voulez rapidement fine-tuner un modele pour votre cas d'usage (LoRA, SFT pratique, DPO pratique). Approche "boite a outils".
+- **PostTraining d'abord** si vous voulez comprendre la theorie derriere les techniques avant de les appliquer. Approche "fondamentaux".
+
+Le parcours optimal est FineTuning (pratique) puis PostTraining (profondeur), mais l'inverse fonctionne aussi pour les profils theoriens.
+
+### DPO vs GRPO : quand utiliser quoi ?
+
+| Critere | DPO | GRPO |
+|---------|-----|------|
+| **Donnees requises** | Paires de preferences (choisi/rejete) | Prompts + fonction de reward |
+| **Reward Model** | Non (implicitement elimine) | Non (baseline intra-groupe) |
+| **Critic** | Non | Non |
+| **VRAM** | Plus faible (1 modele) | Plus eleve (N completions en memoire) |
+| **Taches cibles** | Preferences subjectives, style, ton | Math, code, taches verifiables |
+| **Stabilite** | Bonne (BTL assumption) | Variable (sensible a N et a la reward) |
+| **Data annotation** | Necessaire (preferences humaines) | Optionnelle (reward verifiable) |
+
+En pratique : DPO pour l'alignement conversationnel, GRPO+RLVR pour le raisonnement mathematique et code.
+
+### Les metriques d'evaluation ne s'amelorent pas apres training
+
+Si SFT, DPO ou GRPO ne produisent pas d'amelioration mesurable sur GSM8K ou MMLU :
+
+- Verifier que le dataset d'evaluation est bien separé du dataset d'entrainement (`seed=42` pour le split, pas de fuite).
+- S'assurer que le nombre de steps d'entrainement est suffisant (minimum 100 steps pour observer un signal sur 0.5B).
+- Un seul seed ne suffit pas : les resultats sont bruites. Utiliser au minimum 4 seeds (`{0, 1, 7, 42}`) et verifier que l'ecart est >= 2 sigma (cf regle multi-seed CoursIA).
+- Le notebook PT-06 (`PT_06_eval_comparative.ipynb`) automatise cette comparaison avec verdict BEATS/NO BEATS/INCONCLUSIVE.
+
+### ImportError avec trl, peft ou bitsandbytes
+
+L'environnement `coursia-ml-training` doit contenir les dependances post-training :
+
+```bash
+conda activate coursia-ml-training
+pip install --upgrade transformers trl peft accelerate datasets bitsandbytes
+
+# Verifier
+python -c "import trl; print(f'TRL {trl.__version__}')"
+python -c "import bitsandbytes; print('bitsandbytes OK')"
+```
+
+Sur Windows, `bitsandbytes` peut necessiter CUDA 12.x. Si erreur DLL not found, verifier que `CUDA_HOME` pointe vers le bon toolkit et que `bitsandbytes` est a jour (`>= 0.45`).
+
+### Peut-on reproduire Deepseek-R1 avec cette serie ?
+
+Non directement, mais les briques conceptuelles sont les memes. Deepseek-R1 utilise GRPO + RLVR sur des modeles 671B (architecture MoE) avec une infrastructure de distribuee massive. Cette serie reproduit les memes techniques sur Qwen2.5-0.5B/1.5B pour rendre les concepts accessibles sur GPU 8 Go. Les formules de loss, les mecanismes de reward, et les strategies d'evaluation sont identiques — seul l'echelle change. PT-04 (GRPO) et PT-05 (RLVR) reproduisent fidelement le pipeline Deepseek-R1 en miniature.
 
 ## Licence
 

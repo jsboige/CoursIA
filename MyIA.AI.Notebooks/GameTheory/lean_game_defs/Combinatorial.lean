@@ -47,11 +47,21 @@ def nimSum (pos : NimPosition) : Nat :=
 def isWinningNim (pos : NimPosition) : Bool :=
   nimSum pos != 0
 
+/-- Helper: enumerate a list with indices (avoids Mathlib dependency) -/
+def listEnum {α : Type} (l : List α) : List (Nat × α) :=
+  (List.range l.length).zip l
+
+/-- Helper: update element at index (avoids Mathlib dependency).
+    Uses listEnum for indexed traversal. -/
+def listSet {α : Type} (l : List α) (i : Nat) (x : α) : List α :=
+  (listEnum l).map fun (j, a) =>
+    if j == i then x else a
+
 /-- Get all valid moves from a Nim position -/
 def nimMoves (pos : NimPosition) : List NimPosition :=
-  pos.enum.bind fun (i, heap) =>
+  (listEnum pos).flatMap fun (i, heap) =>
     (List.range heap).map fun newSize =>
-      pos.set i newSize
+      listSet pos i newSize
 
 /-! ## Two-Player Perfect Information Game -/
 
@@ -91,20 +101,16 @@ def nimGame : TwoPlayerGame NimPosition := {
 
 /-! ## Sprague-Grundy Theorem (Statement) -/
 
-/-- The Sprague-Grundy value of a game position -/
--- For impartial games, every position is equivalent to a Nim heap of some size
--- This is a simplified version; full implementation requires more machinery
+-- For impartial games, every position is equivalent to a Nim heap of some size.
+-- This is a simplified version; full implementation requires more machinery.
 
-/-- Minimum excludant (mex) of a set of naturals -/
+/-- Minimum excludant (mex) of a set of naturals.
+    The Sprague-Grundy value of a game position is defined via mex:
+    grundy(terminal) = 0, grundy(pos) = mex { grundy(pos') : pos' in moves(pos) }. -/
 def mex (s : List Nat) : Nat :=
-  let sorted := s.eraseDups.mergeSort (· < ·)
-  match sorted.find? fun n => !sorted.contains n with
-  | some n => n
-  | none => sorted.length
+  (List.range (s.length + 1)).find? (fun n => !s.contains n) |>.getD (s.length + 1)
 
-/-- Compute Grundy value for a simple game -/
--- grundy(terminal) = 0
--- grundy(pos) = mex { grundy(pos') : pos' in moves(pos) }
+/-- Compute Grundy value for a simple game (partial: no memoization). -/
 partial def grundyValue {State : Type} [BEq State] [Hashable State]
     (moves : State → List State) (isTerminal : State → Bool) (state : State) : Nat :=
   if isTerminal state then 0

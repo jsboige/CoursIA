@@ -9,3 +9,5 @@
   Target difficulty: 3-10 prover iterations (Goldilocks zone).
 -/
 import Calibration.Nash
+import Calibration.Nim
+import Calibration.Doomsday

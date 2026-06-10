@@ -156,6 +156,139 @@ pip install -r requirements.txt
 
 Dependances principales : numpy, pandas, matplotlib, seaborn, z3-solver, pyro-ppl, ortools
 
+## FAQ
+
+### Faut-il avoir suivi toutes les series avant de commencer les etudes de cas ?
+
+Non, mais les prerequis varient par projet. Le **Diagnostic Medical** necessite d'avoir vu Search Part 1 (recherche informee) et Search Part 2 (CSP/Z3). L'**Oncology Planning** necessite Probas (inference bayesienne) et ideallement Planners (CP-SAT). Chaque projet indique les prerequis specifiques dans sa section. Commencez par le projet dont vous maitrisez les prerequis.
+
+### Qu'est-ce qu'un jumeau numerique patient ?
+
+Un **jumeau numerique** est un modele computationnel qui simule le comportement d'un patient virtuel face a un traitement. Dans OncoPlan, le modele probabiliste (Pyro) estime la reponse tumorale en fonction des parametres patient (age, stade, biomarqueurs) et du protocole propose. Le jumeau permet de tester des scenarios de traitement sans risque pour le patient reel.
+
+### Les donnees medicales sont-elles reelles ?
+
+Les notebooks utilisent des **donnees synthetiques** (generees pour etre pedagogiquement realistes) ou des **donnees publiques anonymisees** (quand disponibles). Aucune donnee patient reelle n'est incluse. Les modeles sont simplifies pour rester comprehensible — un modele clinique reel aurait des dizaines de variables supplementaires.
+
+### Peut-on appliquer ces techniques a d'autres domaines que le medical ?
+
+Absolument. Les patterns (architecture hybride, jumeau numerique, contraintes + incertitude) sont transposables : logistique (jumeau de flotte + planification + previsions), finance (jumeau de marche + contraintes reglementaires), maintenance predictive (jumeau equipement + Bayesien). Le domaine medical est choisi pour sa richesse en contraintes formelles et en incertitude.
+
+### Quels packages Python sont necessaires ?
+
+`pip install -r requirements.txt` installe tout : numpy, pandas, matplotlib, seaborn, z3-solver, pyro-ppl, ortools. Aucune dependance externe (API, Docker, GPU) n'est requise.
+
+### Quelle est la difference entre diagnostic medical et planification oncologique ?
+
+Le **Diagnostic Medical** resout un probleme de classification : etant donne des symptomes, identifier la maladie (recherche dans un espace d'etats + contraintes Z3). L'**Oncology Planning** resout un probleme d'optimisation : etant donne un diagnostic, planifier le meilleur protocole de traitement sous contraintes de toxicite et delais (CP-SAT + modele probabiliste). Ce sont deux paradigmes distincts couverts par des series differentes.
+
+### Peut-on etendre ces projets en projets de fin d'etude ?
+
+Oui, c'est l'objectif. Les sections "Extensions possibles" de chaque projet proposent des pistes : ajouter de nouvelles pathologies au diagnostic, integrer des donnees genomiques au modele oncologique, deployer une interface web avec SemanticKernel. Ces extensions mobilisent les competences de plusieurs series simultanement.
+
+### Pourquoi combiner plusieurs paradigmes IA plutot que d'en choisir un seul ?
+
+Chaque paradigme a des forces et des limites distinctes. Les **regles symboliques** sont deterministes et explicables mais incapables de gerer l'incertitude. Les **modeles probabilistes** quantifient l'incertitude mais ne garantissent pas les contraintes dures (doses maximales, delais de securite). Les **algorithmes de recherche** explorent efficacement un espace d'etats mais manquent de flexibilite pour les problemes mal definis. L'architecture hybride compose ces paradigmes en cascade : filtrage symbolique → modelisation probabiliste → optimisation combinatoire → validation par contraintes. Un seul paradigme ne peut pas couvrir cette chaine complete.
+
+### Quelle est la difference entre le template etudiant et la solution ?
+
+Le template etudiant (`student/`) contient le squelette du projet : classes avec methodes `pass` ou `return None` (`# TODO etudiant`), structures de donnees pre-remplies, et tests unitaires pour valider chaque composant. La solution (`solution/`) implemente chaque methode completement. La pedagogie recommande un parcours en 3 phases : (1) comprendre la solution de reference, (2) implementer le template en s'appuyant sur les tests, (3) etendre avec des variantes personnelles. Le template est executable end-to-end grace aux stubs conformes (pas de `raise NotImplementedError`).
+
+### Comment adapter ces projets a un autre domaine que le medical ?
+
+L'architecture hybride est **domaine-agnostique**. Les 5 couches (connaissances, contraintes, incertitude, optimisation, decision) s'appliquent a tout domaine avec des regles strictes ET de l'incertitude. Pour la **finance** : ontologie des instruments financiers, contraintes reglementaires (Bale III), modeles de volatilite stochastique, optimisation de portefeuille. Pour la **logistique** : ontologie des vehicules/depots, contraintes de capacite et fenetres horaires, modeles de demande probabilistes, routage optimal. Pour la **maintenance predictive** : ontologie des equipements, contraintes de securite, modeles de degradation (Weibull), planification des interventions. Les notebooks utilisent le domaine medical comme cas d'etude concret, mais les patterns architecturaux sont transferables directement.
+
+### Le package z3-solver ne s'installe pas ou echoue a l'import
+
+Le solveur Z3 (utilise dans le Diagnostic Medical) requiert un compilateur C sur certaines plateformes :
+
+```bash
+# Option 1 : installer via pip (version precompilee)
+pip install z3-solver
+
+# Option 2 : si echec, installer via conda
+conda install -c conda-forge z3-solver
+
+# Verification
+python -c "from z3 import Solver; print('Z3 OK')"
+```
+
+Sur Windows, si l'erreur `Microsoft Visual C++ 14.0 is required` apparait, installer les [Build Tools Visual Studio](https://visualstudio.microsoft.com/visual-cpp-build-tools/) avec le workload "Desktop development with C++".
+
+### Pyro renvoie des erreurs de shape ou de type dans le modele oncologique
+
+Le modele probabiliste Pyro (OncoPlan) est sensible aux dimensions des tensors. Verifier :
+
+1. **Shape mismatch** : les variables observees doivent avoir la meme dimension que le prior. Afficher avec `print(tensor.shape)` avant chaque `pyro.sample`.
+2. **Type mismatch** : Pyro requiert des `torch.float32`. Convertir avec `tensor.float()` si les donnees sont en `float64`.
+3. **Contraintes de support** : une distribution `Gamma` n'accepte pas de valeurs negatives. Verifier que les parametres sont strictement positifs : `torch.clamp(param, min=1e-6)`.
+
+### OR-Tools CP-SAT met trop de temps ou ne converge pas
+
+Le solveur CP-SAT (Oncology Planning) peut etre lent sur des instances complexes. Configurer les parametres :
+
+```python
+from ortools.sat.python import cp_model
+
+solver = cp_model.CpSolver()
+solver.parameters.max_time_in_seconds = 30.0  # Timeout 30s
+solver.parameters.num_workers = 4             # Parallelisation
+solver.parameters.log_search_progress = True  # Debug
+
+status = solver.Solve(model)
+if status == cp_model.OPTIMAL:
+    print("Solution optimale")
+elif status == cp_model.FEASIBLE:
+    print("Solution sous-optimale (augmenter max_time)")
+else:
+    print("Aucune solution : relacher des contraintes")
+```
+
+Si le solveur ne trouve rien, relayer les contraintes les plus strictes (par exemple, elargir les fenetres temporelles ou reduire le nombre de medicaments simultanes).
+
+### Les fichiers de donnees patient sont introuvables
+
+Les notebooks referencent des fichiers CSV dans le dossier `data/` de chaque projet :
+
+```text
+CaseStudies/
+├── MedicalDiagnosis/data/    # Symptomes, maladies
+└── OncoPlan/data/            # Parametres patient, protocoles
+```
+
+Verifier le chemin dans le notebook :
+
+```python
+import os
+data_dir = os.path.join(os.path.dirname("__file__"), "data")
+assert os.path.exists(data_dir), f"Dossier introuvable : {data_dir}"
+```
+
+Si les fichiers sont absents, les generer depuis les cellules de generation de donnees synthetiques (fournies dans chaque notebook).
+
+### Comment adapter les modeles a un autre domaine medical ?
+
+Les modeles du Diagnostic Medical et de l'Oncology Planning sont parametrables :
+
+1. **Diagnostic Medical** : modifier la base de connaissances dans `data/symptoms_db.csv` pour changer les maladies et symptomes. L'espace d'etats et les contraintes Z3 s'adaptent automatiquement.
+2. **Oncology Planning** : ajuster les parametres du modele Pyro (distributions prior, nombre de cycles, seuils de toxicite) dans la section de configuration du notebook. L'ontologie medicale (OWL) peut etre etendue avec de nouveaux medicaments et interactions.
+
+Le diagramme de dependencies (aussi bien pour le diagnostic que pour la planification) reste valide quel que soit le domaine tant que la structure du probleme (classification ou optimisation sous contraintes) est preservee.
+
+### Comment passer de Pyro a Infer.NET pour les modeles probabilistes ?
+
+Les modeles Pyro de l'Oncology Planning peuvent etre reimplantements en Infer.NET (C#) pour un deploiement dans l'ecosysteme .NET :
+
+| Concept Pyro | Equivalent Infer.NET |
+| ------------- | --------------------- |
+| `pyro.sample("x", dist.Normal(...))` | `Variable.GaussianFromMeanAndVariance(mean, var)` |
+| `pyro.condition(model, data=...)` | `Variable.Observe(value)` |
+| `AutoDelta` guide | `InferenceEngine` avec point estimates |
+| `SVI(loss=Trace_ELBO())` | `InferenceEngine(InferenceScheme=...)` |
+| `Predictive` | `InferenceEngine.Infer<DistributionType>` |
+
+La serie [Probas/Infer](../Probas/Infer/README.md) couvre Infer.NET en detail avec les memes concepts fondamentaux.
+
 ## Connections cross-series
 
 Les etudes de cas de cette serie sont des projets interdisciplinaires qui combinent les techniques de plusieurs series du cursus.

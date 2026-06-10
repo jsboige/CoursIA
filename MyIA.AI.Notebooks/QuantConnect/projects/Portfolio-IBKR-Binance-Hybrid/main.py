@@ -14,6 +14,12 @@ class PortfolioHybridIBKRBinance(QCAlgorithm):
         self.set_end_date(2025, 6, 1)
         self.set_cash(100000)
 
+        # Brokerage: dual IBKR (equities) + Binance (crypto) model
+        # Configurable brokerage for fee sweep (default: IBKR margin with real fees)
+        self._brokerage_mode = self.get_parameter("brokerage", "ibkr")
+        if self._brokerage_mode != "none":
+            self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
+
         # Rebalancing
         self.rebalance_freq = 30  # monthly
         self.days_since_rebalance = 0

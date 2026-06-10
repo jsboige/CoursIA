@@ -3,8 +3,8 @@
 <!-- CATALOG-STATUS
 series: SymbolicAI-Argument_Analysis
 pedagogical_count: 6
-breakdown: Pipeline=5, UI=1
-maturity: PRODUCTION=5, BETA=1
+breakdown: Argument_Analysis=6
+maturity: PRODUCTION=5, ALPHA=1
 -->
 
 Pipeline complet d'analyse argumentative combinant Semantic Kernel, TweetyProject et programmation logique pour l'identification et l'evaluation d'arguments dans des textes.
@@ -38,6 +38,51 @@ Le contexte de recherche actuel rend cette competence particulierement pertinent
 | 3 | [Agentic-3-orchestration](Argument_Analysis_Agentic-3-orchestration.ipynb) | Orchestration multi-agents | Coordination |
 | UI | [UI_configuration](Argument_Analysis_UI_configuration.ipynb) | Interface utilisateur widgets | Interaction |
 | Exec | [Executor](Argument_Analysis_Executor.ipynb) | Orchestrateur principal | Execution |
+
+## Objectifs d'apprentissage
+
+A l'issue de cette serie, vous serez capable de :
+
+1. **Extraire le tissu argumentatif** d'un texte en identifiant premisses, conclusions et transitions a l'aide d'un agent LLM (Semantic Kernel)
+2. **Formaliser des arguments** en logique propositionnelle et verifier leur coherence avec un solveur SAT (TweetyProject)
+3. **Detecter les sophismes** courants (homme de paille, faux dilemme, ad hominem, appel a l'autorite) de maniere systematique
+4. **Orchestrer un pipeline multi-agents** combinant extraction informelle, formalisation logique et validation formelle
+5. **Comparer les approches** LLM-only vs hybride (LLM + solveur formel) et comprendre les limites de chaque couche
+
+## Ce que chaque notebook apporte
+
+| Notebook | Competence clee | Temps |
+|----------|----------------|-------|
+| **0-init** | Configurer l'environnement Python + Java, charger les cles API, verifier la connexion Tweety/JVM | 30 min |
+| **1-informal_agent** | Construire un agent LLM qui identifie et annote les arguments dans un texte naturel | 60 min |
+| **2-pl_agent** | Convertir les arguments informels en formules propositionnelles et les verifier via SAT | 60 min |
+| **3-orchestration** | Composer les agents precedents en pipeline coordonne avec rapport de sortie structure | 50 min |
+| **UI_configuration** | Creer une interface interactive (ipywidgets) pour piloter le pipeline en mode exploratoire | 30 min |
+| **Executor** | Executer le pipeline complet en mode batch (Papermill/MCP) avec configuration .env | 20 min |
+
+## FAQ / Troubleshooting
+
+| Probleme | Solution |
+|----------|----------|
+| **`ModuleNotFoundError: semantic_kernel`** | `pip install semantic-kernel`. Verifier le kernel Jupyter actif (`jupyter kernelspec list`). |
+| **`OPENAI_API_KEY not set`** | Copier `.env.example` en `.env` et renseigner la cle. Verifier que le notebook 0 charge bien le `.env`. |
+| **`JVM not found`** au demarrage | JDK 17+ requis. Executer `python install_jdk_portable.py` dans le repertoire. |
+| **`FileNotFoundException` sur un JAR Tweety** | Les JARs doivent etre dans `libs/`. Re-executer le notebook 0 qui les telecharge. |
+| **`BATCH_MODE` ignore** | Verifier que `.env` contient `BATCH_MODE="true"` (avec guillemets) et que le fichier est au meme niveau que les notebooks. |
+| **Erreur `dotnet` ou `.NET`** | Cette serie est 100% Python. Seul Semantic Kernel (package Python) est utilise, pas le SDK .NET. |
+| **Sortie `PARTIAL_VALIDATED`** | Le pipeline n'a pas convergé. Verifier les logs de l'agent PL (formalisation incomplete). Relancer avec un texte plus court. |
+| **`OutOfMemoryError` JVM** | Augmenter le heap dans la cellule de demarrage : ajouter `-Xmx2g` aux arguments JPype. |
+
+## Quel parcours choisir ?
+
+| Profil | Parcours recommande | Notebooks |
+|--------|-------------------|-----------|
+| **Decouvreur de l'analyse argumentative** | Pipeline complet en ordre | 0 → 1 → 2 → 3 (~3h) |
+| **Enseignant en pensee critique** | Extraction + detection sophismes | 0 → 1 → UI_configuration (~1h30) |
+| **Ingenieur ML/LLM** | Architecture multi-agents | 0 → 3 → Executor (~1h30) |
+| **Chercheur en logique formelle** | Formalisation + verification SAT | 0 → 2 (~1h) |
+
+---
 
 ## Architecture
 

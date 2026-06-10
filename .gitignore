@@ -586,8 +586,7 @@ $null
 *_model.pt
 **/checkpoints/**/*.pt
 **/checkpoints/**/*.pth
-# EXCEPTION: Sudoku validated checkpoints
-!sudoku_models/checkpoints/
+# Sudoku checkpoints live in MyIA.AI.Notebooks/Sudoku/sudoku_models/checkpoints/ only
 
 # PyTorch extended model formats
 **/checkpoints/**/*.ckpt
@@ -800,7 +799,6 @@ scripts/whisper_comparison_results.json
 !MyIA.AI.Notebooks/QuantConnect/Python/best_ppo_model.pt
 !MyIA.AI.Notebooks/QuantConnect/Python/best_dqn_model.pt
 !MyIA.AI.Notebooks/QuantConnect/Python/lstm_attention_sp50.pt
-!RL/stable_baseline_3_experience_replay_dqn/her_sac_parking_replay_buffer.pkl
 .playwright-mcp/
 
 # Claude Code worktrees
@@ -850,3 +848,12 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/data/temp_*.owl
 
 # Stray root-level analytique output dir (should live under v4/outputs/ if persisted)
 /output_analytique/
+
+# Root-level artifacts from notebooks/scripts run with wrong CWD (canonical copies live in series dirs)
+/sudoku_models/
+/data/pizza_test.owl
+/results/
+/tmp_*.py
+
+# Shared Mathlib checkout cache (NTFS junctions, scripts/lean/setup_shared_mathlib.ps1, #2611)
+/.mathlib-cache/

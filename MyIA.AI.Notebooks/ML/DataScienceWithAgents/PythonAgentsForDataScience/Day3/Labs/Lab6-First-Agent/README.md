@@ -30,4 +30,4 @@ A la fin de ce lab, vous saurez :
 
 ## Navigation
 
-[<- Index Python Agents](../../README.md) | [Lab 5 <<](../Lab5-Viz-ML/README.md) | [>> Lab 7](../Lab7-Data-Analysis-Agent/README.md)
+[<- Index Python Agents](../../../../README.md) | [Lab 5 <<](../Lab5-Viz-ML/README.md) | [>> Lab 7](../Lab7-Data-Analysis-Agent/README.md)

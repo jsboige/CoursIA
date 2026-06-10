@@ -228,7 +228,8 @@ class TestGetAuthHeaders:
 
     def test_no_auth_without_env(self):
         """Without env vars or files, no Authorization header."""
-        with patch.dict("os.environ", {}, clear=True):
+        with patch.dict("os.environ", {}, clear=True), \
+             patch.object(Path, "exists", return_value=False):
             result = _get_auth_headers()
             assert "Authorization" not in result
 

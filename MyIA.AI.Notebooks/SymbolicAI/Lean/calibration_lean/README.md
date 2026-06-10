@@ -26,4 +26,4 @@ Prover calibration targets for benchmarking the multi-agent Lean prover.
 
 - This module benchmarks the multi-agent Lean prover's ability to close textbook-style proofs
 - All targets now closed; module is retained as a permanent regression suite for prover changes
-- Verification: `grep -nE '^[^/]*\bsorry\b' Calibration/Nash.lean` returns 0 production hits (cf [LEAN_INVENTORY.md](../LEAN_INVENTORY.md))
+- Verification: `grep -nE '^[^/]*\bsorry\b' Calibration/Nash.lean` returns 0 production hits (cf [Lean README](../Lean-1-Setup.ipynb))

@@ -16,6 +16,22 @@ Ce repertoire contient les scripts de configuration de l'environnement pour la s
   wsl -d Ubuntu -- bash /mnt/d/CoursIA/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/scripts/setup.sh
   ```
 
+### Setup alternatif (Python)
+
+- `setup_env.py` (niveau parent) — Orchestrateur Python cross-plateforme. Detecte l'OS, installe les dependances, gere le cycle de vie anvil (natif sur Mac/Linux, via WSL sur Windows).
+
+  ```bash
+  # Verification complete de l'environnement
+  python setup_env.py --check
+
+  # Setup complet (Mac/Linux natif, Windows via WSL)
+  python setup_env.py --setup
+
+  # Demarrer/Arreter anvil
+  python setup_env.py --start-anvil
+  python setup_env.py --stop-anvil
+  ```
+
 ### Setup WSL (Windows uniquement)
 
 - [setup_wsl_smartcontracts.sh](setup_wsl_smartcontracts.sh) — Variante WSL-only de `setup.sh` : installe Foundry, le venv Python avec les paquets Linux-only, et le wrapper de kernel `~/.smartcontracts-kernel-wrapper.sh` qui gere la conversion des chemins Windows -> WSL (workaround pour le bug Jupyter qui mange les backslashes).

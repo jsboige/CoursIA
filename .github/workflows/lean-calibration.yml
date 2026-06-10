@@ -1,0 +1,41 @@
+name: Lean Calibration CI
+
+# CI for calibration_lean (SymbolicAI/Lean/calibration_lean).
+# Calibration targets for the multi-agent Lean prover (Epic #1452 / #1453).
+# Rule lean-merge-discipline: lake build SUCCESS local OBLIGATOIRE avant merge.
+#
+# Migrated to the reusable lean-build.yml per ai-01 DRY decision (option 2: matrix).
+# Behavior is identical to the former inline check-sorry + build jobs.
+#
+# Sorry profile (verified 2026-06-10, raw mode, baseline=4): the 4 raw "sorry"
+# mentions in Nash.lean are 2 INTENTIONAL P4 tactic targets (L95/L96 — the
+# sorry-increase case the harness must NOT revert) + 2 prose mentions (L89/L97
+# describing them). raw mode + baseline 4 preserves the exact prior enforcement:
+# any new sorry-as-tactic raises the raw count >4 and fails. (standalone-tactic
+# would read 0 here because the P4 sorries carry a leading `·` and inline comment.)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lean-toolchain'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean
+      display-name: calibration_lean
+      sorry-baseline: "4"
+      sorry-filter-mode: raw

@@ -1,0 +1,41 @@
+name: Lean Grothendieck CI
+
+# CI for grothendieck_lean (SymbolicAI/Lean/grothendieck_lean).
+# Grothendieck tribute — Mathlib tour of Grothendieck's mathematical language.
+# Rule lean-merge-discipline: lake build SUCCESS local OBLIGATOIRE avant merge.
+#
+# Migrated to the reusable lean-build.yml per ai-01 DRY decision (option 2: matrix).
+# Behavior is identical to the former inline check-sorry + build jobs.
+#
+# Sorry profile (verified 2026-06-10, prose-header mode, baseline=0): every
+# Grothendieck module carries the boilerplate header comment "All `sorry`s
+# eliminated at creation". The raw count therefore equals the number of .lean
+# files (one header each) and is NOT a real sorry. prose-header mode filters
+# out the prose forms (`sorries`, `sorry's`) so the count reflects only
+# sorry-as-tactic. Known false-positive pattern documented in MEMORY.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lean-toolchain'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean
+      display-name: grothendieck_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: prose-header

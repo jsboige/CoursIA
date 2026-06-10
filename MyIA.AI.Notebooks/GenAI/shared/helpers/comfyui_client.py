@@ -791,6 +791,74 @@ class ComfyUIClient:
 
         return result
 
+    def generate_bonsai(
+        self,
+        prompt: str,
+        width: int = 1024,
+        height: int = 1024,
+        steps: int = 4,
+        guidance: float = 1.0,
+        seed: Optional[int] = None,
+        model_type: str = "Bonsai-4B (2-Bit Ternary)",
+        save_prefix: str = "bonsai_t2i",
+        timeout: int = 300,
+    ) -> Dict[str, Any]:
+        """
+        Genere une image via le custom node BonsaiTernaryNode (Bonsai-Image 4B).
+
+        Utilise le modele ternaire 1.58-bit (ou binaire 1-bit) charge dans ComfyUI.
+        Le custom node ComfyUI-Bonsai-4B-2Bit doit etre installe dans l'instance
+        ComfyUI cible. Les modeles sont auto-telecharges depuis HuggingFace.
+
+        Modeles auto-telecharges:
+          - prism-ml/bonsai-image-ternary-4B-gemlite-2bit (~4.3 GB)
+
+        Args:
+            prompt: Prompt textuel
+            width: Largeur de l'image (defaut: 1024, min 256, max 1536)
+            height: Hauteur de l'image (defaut: 1024, min 256, max 1536)
+            steps: Nombre de steps de diffusion (defaut: 4)
+            guidance: Guidance scale (defaut: 1.0)
+            seed: Seed aleatoire (None = aleatoire)
+            model_type: Type de modele ("Bonsai-4B (2-Bit Ternary)" ou
+                        "Bonsai-4B (1-Bit Binary)")
+            save_prefix: Prefixe pour le fichier de sortie
+            timeout: Timeout en secondes (defaut: 300s, premier run plus long)
+
+        Returns:
+            Resultat de la generation (historique ComfyUI)
+        """
+        if seed is None:
+            seed = random.randint(0, 2**32 - 1)
+
+        workflow = {
+            "1": {
+                "class_type": "BonsaiTernaryNode",
+                "inputs": {
+                    "model_type": model_type,
+                    "prompt": prompt,
+                    "width": width,
+                    "height": height,
+                    "steps": steps,
+                    "guidance": guidance,
+                    "seed": seed,
+                    "model_folder_path": "/workspace/ComfyUI/models",
+                },
+            },
+            "2": {
+                "class_type": "SaveImage",
+                "inputs": {
+                    "images": ["1", 0],
+                    "filename_prefix": save_prefix,
+                },
+            },
+        }
+
+        prompt_id = self.queue_prompt(workflow)
+        result = self.wait_for_completion(prompt_id, timeout=timeout)
+
+        return result
+
 
 def load_from_env(env_path: Optional[Path] = None) -> ComfyUIClient:
     """

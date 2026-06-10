@@ -1,4 +1,8 @@
-"""Tests for forensic_scan.py — notebook execution state categorization."""
+"""Tests for scripts/notebook_tools/forensic_scan.py — notebook forensic scanner.
+
+Tests focus on pure functions: categorize_notebook, is_excluded, get_series.
+Filesystem methods use tmp_path for isolation.
+"""
 
 import json
 import sys
@@ -6,274 +10,204 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from forensic_scan import (
+    EXCLUDE_DIRS,
+    RULE_C2_DATE,
     categorize_notebook,
     get_series,
     is_excluded,
 )
 
 
-def _nb(cells: list[dict], **meta) -> dict:
-    """Build a minimal notebook dict."""
-    return {
-        "cells": cells,
-        "metadata": {
-            "kernelspec": {"display_name": "Python 3", "name": "python3"},
-            **meta,
-        },
-        "nbformat": 4,
-        "nbformat_minor": 5,
-    }
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _write_nb(path: Path, cells: list[dict], metadata: dict | None = None) -> Path:
+    """Write a minimal .ipynb file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    nb = {"cells": cells, "metadata": metadata or {}, "nbformat": 4, "nbformat_minor": 5}
+    path.write_text(json.dumps(nb), encoding="utf-8")
+    return path
 
 
-def _code(
-    source: str,
-    execution_count: int | None = 1,
-    outputs: list | None = None,
-    has_error: bool = False,
-) -> dict:
-    """Build a code cell."""
-    if outputs is None:
-        outs = [{"output_type": "execute_result", "data": {"text/plain": ["ok"]}}]
-    else:
-        outs = outputs
-    if has_error:
-        outs = [{"output_type": "error", "ename": "RuntimeError", "evalue": "boom"}]
+def _code(source: str, exec_count: int | None = None, outputs: list | None = None) -> dict:
     return {
         "cell_type": "code",
         "source": [source],
-        "execution_count": execution_count,
-        "outputs": outs,
+        "execution_count": exec_count,
+        "outputs": outputs or [],
         "metadata": {},
     }
 
 
 def _md(source: str) -> dict:
-    """Build a markdown cell."""
     return {"cell_type": "markdown", "source": [source], "metadata": {}}
 
 
-def _write_nb(tmp_path: Path, name: str, nb: dict) -> Path:
-    """Write a notebook dict to disk and return the path."""
-    p = tmp_path / name
-    p.write_text(json.dumps(nb), encoding="utf-8")
-    return p
+# ---------------------------------------------------------------------------
+# categorize_notebook
+# ---------------------------------------------------------------------------
 
-
-# --- categorize_notebook ---
-
-
-class TestCategorizeAllExecOk:
-    """Category A: all code cells executed, 0 errors."""
-
-    def test_single_cell_executed(self, tmp_path):
-        nb = _nb([_code("x = 1", execution_count=1)])
-        p = _write_nb(tmp_path, "ok.ipynb", nb)
-        result = categorize_notebook(p)
+class TestCategorizeNotebook:
+    def test_all_exec_ok(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "a.ipynb", [
+            _code("x = 1", exec_count=1),
+            _code("y = 2", exec_count=2),
+        ])
+        result = categorize_notebook(nb_path)
         assert result["category"] == "A_ALL_EXEC_OK"
-        assert result["n_code"] == 1
-        assert result["n_exec"] == 1
+        assert result["n_code"] == 2
+        assert result["n_exec"] == 2
         assert result["n_err"] == 0
 
-    def test_multiple_cells_all_executed(self, tmp_path):
-        nb = _nb([
-            _code("x = 1", execution_count=1),
-            _code("y = 2", execution_count=2),
-            _code("print(x + y)", execution_count=3),
+    def test_partial_exec(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "a.ipynb", [
+            _code("x = 1", exec_count=1),
+            _code("y = 2"),
         ])
-        p = _write_nb(tmp_path, "ok.ipynb", nb)
-        result = categorize_notebook(p)
-        assert result["category"] == "A_ALL_EXEC_OK"
-        assert result["n_code"] == 3
-
-    def test_mixed_code_and_markdown(self, tmp_path):
-        nb = _nb([
-            _md("# Title"),
-            _code("x = 1", execution_count=1),
-            _md("## Section"),
-            _code("y = 2", execution_count=2),
-        ])
-        p = _write_nb(tmp_path, "ok.ipynb", nb)
-        result = categorize_notebook(p)
-        assert result["category"] == "A_ALL_EXEC_OK"
-        assert result["n_code"] == 2
-
-
-class TestCategorizePartialExec:
-    """Category B: some cells executed, some not."""
-
-    def test_mixed_exec_counts(self, tmp_path):
-        nb = _nb([
-            _code("x = 1", execution_count=1),
-            _code("y = 2", execution_count=None),
-        ])
-        p = _write_nb(tmp_path, "partial.ipynb", nb)
-        result = categorize_notebook(p)
+        result = categorize_notebook(nb_path)
         assert result["category"] == "B_PARTIAL_EXEC"
-        assert result["n_code"] == 2
         assert result["n_exec"] == 1
 
-    def test_mostly_executed(self, tmp_path):
-        nb = _nb([
-            _code("a = 1", execution_count=1),
-            _code("b = 2", execution_count=2),
-            _code("c = 3", execution_count=3),
-            _code("d = 4", execution_count=None),
+    def test_never_executed(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "a.ipynb", [
+            _code("x = 1"),
+            _code("y = 2"),
         ])
-        p = _write_nb(tmp_path, "partial.ipynb", nb)
-        result = categorize_notebook(p)
-        assert result["category"] == "B_PARTIAL_EXEC"
-        assert result["n_exec"] == 3
-        assert result["n_code"] == 4
-
-
-class TestCategorizeNeverExecuted:
-    """Category C: all code cells have null execution_count."""
-
-    def test_all_null_exec(self, tmp_path):
-        nb = _nb([
-            _code("x = 1", execution_count=None, outputs=[]),
-            _code("y = 2", execution_count=None, outputs=[]),
-        ])
-        p = _write_nb(tmp_path, "never.ipynb", nb)
-        result = categorize_notebook(p)
+        result = categorize_notebook(nb_path)
         assert result["category"] == "C_NEVER_EXECUTED"
         assert result["n_exec"] == 0
 
-    def test_single_unexecuted_cell(self, tmp_path):
-        nb = _nb([_code("pass", execution_count=None, outputs=[])])
-        p = _write_nb(tmp_path, "never.ipynb", nb)
-        result = categorize_notebook(p)
-        assert result["category"] == "C_NEVER_EXECUTED"
-
-
-class TestCategorizeHasErrors:
-    """Category D: at least one cell with error output."""
-
-    def test_single_error(self, tmp_path):
-        nb = _nb([
-            _code("x = 1", execution_count=1),
-            _code("1/0", execution_count=2, has_error=True),
+    def test_has_errors(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "a.ipynb", [
+            _code("x = 1", exec_count=1, outputs=[{"output_type": "error", "ename": "Err"}]),
         ])
-        p = _write_nb(tmp_path, "error.ipynb", nb)
-        result = categorize_notebook(p)
+        result = categorize_notebook(nb_path)
         assert result["category"] == "D_HAS_ERRORS"
         assert result["n_err"] == 1
 
-    def test_all_errors(self, tmp_path):
-        nb = _nb([
-            _code("x = 1", execution_count=1, has_error=True),
-            _code("y = 2", execution_count=2, has_error=True),
+    def test_error_takes_priority(self, tmp_path):
+        """Error takes priority over partial execution."""
+        nb_path = _write_nb(tmp_path / "a.ipynb", [
+            _code("x = 1", exec_count=1),
+            _code("y = 2", exec_count=2, outputs=[{"output_type": "error"}]),
         ])
-        p = _write_nb(tmp_path, "all_errors.ipynb", nb)
-        result = categorize_notebook(p)
+        result = categorize_notebook(nb_path)
         assert result["category"] == "D_HAS_ERRORS"
-        assert result["n_err"] == 2
-
-    def test_error_takes_precedence_over_partial(self, tmp_path):
-        """Error category should override partial execution."""
-        nb = _nb([
-            _code("x = 1", execution_count=1),
-            _code("y = 2", execution_count=None, outputs=[], has_error=True),
-        ])
-        p = _write_nb(tmp_path, "mixed.ipynb", nb)
-        result = categorize_notebook(p)
-        assert result["category"] == "D_HAS_ERRORS"
-
-
-class TestCategorizeSpecialCases:
-    """Edge cases: no code cells, QC reference, parse errors."""
 
     def test_no_code_cells(self, tmp_path):
-        nb = _nb([_md("# Title"), _md("Some text")])
-        p = _write_nb(tmp_path, "no_code.ipynb", nb)
-        result = categorize_notebook(p)
+        nb_path = _write_nb(tmp_path / "a.ipynb", [_md("# Title")])
+        result = categorize_notebook(nb_path)
         assert result["category"] == "NO_CODE"
         assert result["n_code"] == 0
 
-    def test_qc_reference_notebook(self, tmp_path):
-        nb = _nb(
-            [_code("x = 1", execution_count=None, outputs=[])],
-            qc_reference=True,
-        )
-        p = _write_nb(tmp_path, "ref.ipynb", nb)
-        result = categorize_notebook(p)
+    def test_reference_notebook(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "a.ipynb", [_code("x = 1")],
+                             metadata={"qc_reference": True})
+        result = categorize_notebook(nb_path)
         assert result["category"] == "REFERENCE"
-        assert result["n_code"] == 0
 
-    def test_invalid_json(self, tmp_path):
-        p = tmp_path / "bad.ipynb"
-        p.write_text("not valid json{{{", encoding="utf-8")
-        result = categorize_notebook(p)
+    def test_parse_error(self, tmp_path):
+        bad = tmp_path / "bad.ipynb"
+        bad.write_text("{invalid json!!!", encoding="utf-8")
+        result = categorize_notebook(bad)
         assert result["category"] == "PARSE_ERROR"
         assert "error" in result
 
-    def test_empty_notebook(self, tmp_path):
-        nb = _nb([])
-        p = _write_nb(tmp_path, "empty.ipynb", nb)
-        result = categorize_notebook(p)
-        assert result["category"] == "NO_CODE"
+    def test_missing_file(self, tmp_path):
+        result = categorize_notebook(tmp_path / "missing.ipynb")
+        assert result["category"] == "PARSE_ERROR"
 
-    def test_n_outputs_count(self, tmp_path):
-        """n_outputs counts cells with truthy (non-empty) outputs."""
-        nb = _nb([
-            _code("x = 1", execution_count=1),
-            _code("y = 2", execution_count=2, outputs=[]),
+    def test_outputs_count(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "a.ipynb", [
+            _code("x = 1", exec_count=1, outputs=[{"output_type": "execute_result"}]),
+            _code("y = 2"),
         ])
-        p = _write_nb(tmp_path, "outputs.ipynb", nb)
-        result = categorize_notebook(p)
-        # Cell 1 has outputs=[execute_result] (truthy), cell 2 has outputs=[] (falsy)
+        result = categorize_notebook(nb_path)
         assert result["n_outputs"] == 1
 
+    def test_empty_cells_list(self, tmp_path):
+        nb_path = _write_nb(tmp_path / "a.ipynb", [])
+        result = categorize_notebook(nb_path)
+        assert result["category"] == "NO_CODE"
 
-# --- is_excluded ---
 
+# ---------------------------------------------------------------------------
+# is_excluded
+# ---------------------------------------------------------------------------
 
 class TestIsExcluded:
-    def test_normal_notebook_not_excluded(self):
-        p = Path("MyIA.AI.Notebooks/Search/App-1.ipynb")
-        assert is_excluded(p) is False
+    def test_normal_notebook(self):
+        assert is_excluded(Path("MyIA.AI.Notebooks/GenAI/nb.ipynb")) is False
 
-    def test_archive_excluded(self):
-        p = Path("MyIA.AI.Notebooks/SomeSeries/_archives/old.ipynb")
-        assert is_excluded(p) is True
+    def test_archive_dir(self):
+        assert is_excluded(Path("_archives/old.ipynb")) is True
 
-    def test_output_artifact_excluded(self):
-        p = Path("MyIA.AI.Notebooks/Search/App-1_output.ipynb")
-        assert is_excluded(p) is True
+    def test_archive_obsoletes(self):
+        assert is_excluded(Path("_archive_obsoletes/x.ipynb")) is True
 
-    def test_checkpoint_excluded(self):
-        p = Path("MyIA.AI.Notebooks/.ipynb_checkpoints/nb.ipynb")
-        assert is_excluded(p) is True
+    def test_trashbin(self):
+        assert is_excluded(Path("TrashBin/x.ipynb")) is True
 
-    def test_pending_execution_excluded(self):
-        p = Path("MyIA.AI.Notebooks/QC/_pending_execution/nb.ipynb")
-        assert is_excluded(p) is True
+    def test_checkpoints(self):
+        assert is_excluded(Path(".ipynb_checkpoints/nb.ipynb")) is True
 
-    def test_node_modules_excluded(self):
-        p = Path("MyIA.AI.Notebooks/node_modules/nb.ipynb")
-        assert is_excluded(p) is True
+    def test_node_modules(self):
+        assert is_excluded(Path("node_modules/ext/nb.ipynb")) is True
 
-    def test_trashbin_excluded(self):
-        p = Path("MyIA.AI.Notebooks/TrashBin/old.ipynb")
-        assert is_excluded(p) is True
+    def test_output_artifact(self):
+        assert is_excluded(Path("series/nb_output.ipynb")) is True
+
+    def test_pending_execution(self):
+        assert is_excluded(Path("series/_pending_execution/nb.ipynb")) is True
+
+    def test_normal_name_not_excluded(self):
+        assert is_excluded(Path("series/nb.ipynb")) is False
+
+    def test_old_dir(self):
+        assert is_excluded(Path("_old/legacy.ipynb")) is True
 
 
-# --- get_series ---
-
+# ---------------------------------------------------------------------------
+# get_series
+# ---------------------------------------------------------------------------
 
 class TestGetSeries:
-    def test_single_level_under_root(self):
-        p = Path("MyIA.AI.Notebooks/README.md")
-        # relative_to gives "README.md" -> parts = ("README.md",) -> len < 2 -> TOP
-        rel = p.relative_to(Path("MyIA.AI.Notebooks"))
-        assert get_series(p, Path("MyIA.AI.Notebooks")) == "TOP"
+    def test_nested_path(self):
+        root = Path("MyIA.AI.Notebooks")
+        path = Path("MyIA.AI.Notebooks/GenAI/Image/nb.ipynb")
+        assert get_series(path, root) == "GenAI"
 
-    def test_two_levels(self):
-        p = Path("MyIA.AI.Notebooks/Search/App-1.ipynb")
-        assert get_series(p, Path("MyIA.AI.Notebooks")) == "Search"
+    def test_direct_child(self):
+        root = Path("MyIA.AI.Notebooks")
+        path = Path("MyIA.AI.Notebooks/Search/nb.ipynb")
+        assert get_series(path, root) == "Search"
 
-    def test_deep_path(self):
-        p = Path("MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-1.ipynb")
-        assert get_series(p, Path("MyIA.AI.Notebooks")) == "SymbolicAI"
+    def test_top_level_notebook(self):
+        root = Path("MyIA.AI.Notebooks")
+        path = Path("MyIA.AI.Notebooks/lonely.ipynb")
+        assert get_series(path, root) == "TOP"
+
+    def test_root_path(self):
+        """Edge case: path == root (should not happen in practice)."""
+        root = Path("MyIA.AI.Notebooks")
+        # Simulate by making path relative to itself
+        assert get_series(root, root) == "ROOT"
+
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+class TestConstants:
+    def test_rule_c2_date(self):
+        assert RULE_C2_DATE.year == 2026
+        assert RULE_C2_DATE.month == 4
+        assert RULE_C2_DATE.day == 26
+
+    def test_exclude_dirs_has_expected(self):
+        assert "_archives" in EXCLUDE_DIRS
+        assert ".ipynb_checkpoints" in EXCLUDE_DIRS
+        assert "node_modules" in EXCLUDE_DIRS

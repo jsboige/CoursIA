@@ -5,8 +5,8 @@
 <!-- CATALOG-STATUS
 series: GenAI-FineTuning
 pedagogical_count: 5
-breakdown: Introduction=1, QLoRA=1, SFT=1, RLHF-DPO=1, ModelMerging=1
-maturity: BETA
+breakdown: FineTuning=5
+maturity: PRODUCTION=4, BETA=1
 -->
 
 Serie progressive sur le fine-tuning des modeles de langue : des bases LoRA a la fusion de modeles, en passant par la quantization, l'instruction-following et l'alignement par preferences humaines.
@@ -100,6 +100,79 @@ Combine plusieurs adaptateurs LoRA fine-tunes sur des taches differentes en un s
 - **QLoRA paper** : https://arxiv.org/abs/2305.14314
 - **DPO paper** : https://arxiv.org/abs/2305.18290
 - **MergeKit** : https://github.com/arcee-ai/mergekit
+
+## FAQ
+
+### OOM pendant FT-04 (DPO) ou FT-05 (Model Merging)
+
+DPO (FT-04) charge **deux modeles** en memoire (policy + reference), ce qui double la consommation VRAM. Strategies :
+
+- Utiliser QLoRA 4-bit (`load_in_4bit=True`) pour reduire chaque modele a ~25% de sa taille FP16.
+- Reduire `per_device_train_batch_size` a 1 et compenser avec `gradient_accumulation_steps`.
+- Pour FT-05 (merge), les modeles sont charges sequentiellement, pas en parallele — 16 GB suffisent si vous mergez un modele a la fois.
+
+FT-01 a FT-03 sont accessibles sur GPU 8-12 GB (T4, RTX 3060). FT-04 et FT-05 preferent 24 GB (RTX 3090/4090).
+
+### Quelle difference entre cette serie et PostTraining ?
+
+| Aspect | FineTuning (cette serie) | PostTraining |
+|--------|-------------------------|--------------|
+| **Focus** | Boite a outils pratique | Profondeur methodologique |
+| **Approche** | "Comment faire" | "Pourquoi ca marche" |
+| **Modeles** | 0.5B a 7B, variés | Qwen2.5-0.5B/1.5B uniquement |
+| **Techniques** | LoRA, QLoRA, SFT, DPO, merging | SFT, DPO, GRPO, RLVR |
+| **GPU cible** | T4/V100 (4-8 GB min) | RTX 3070 (8 GB) |
+| **Math du loss** | Non detaillee | Expliquee avant le code |
+
+Recommandation : faire FineTuning d'abord pour la pratique, puis PostTraining pour comprendre les fondamentaux.
+
+### LoRA rank : comment choisir r ?
+
+Le rang `r` de LoRA controle le compromis parametres/qualite :
+
+- **r=4-8** : bon pour des taches simples (classification, formatage). ~0.1% parametres entrainables.
+- **r=16** (defaut) : bon compromis pour instruction-following et DPO. ~0.5% parametres.
+- **r=32-64** : taches complexes (raisonnement, code). Plus de parametres mais plus de VRAM.
+- **r=128+** : rarement necessaire — a ce stade, un full fine-tuning partiel est souvent plus efficace.
+
+Le notebook [FT-01](FT-01-Introduction-FineTuning.ipynb) compare r=4 vs r=16 vs r=64 sur DistilBERT pour rendre ce compromis visible.
+
+### bitsandbytes ne s'installe pas sur Windows
+
+`bitsandbytes` (requis pour QLoRA, FT-02 a FT-04) depend de CUDA. Sur Windows :
+
+```bash
+# Verifier CUDA
+python -c "import torch; print(torch.version.cuda)"
+
+# Installer bitsandbytes compatible Windows
+pip install bitsandbytes>=0.45
+
+# Si erreur DLL non trouvee
+# Verifier que CUDA_HOME est configure
+set CUDA_HOME=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.4
+```
+
+Alternative : utiliser Google Colab (GPU T4 gratuit) pour les notebooks FT-02 a FT-04 si votre machine n'a pas de GPU.
+
+### Peut-on fine-tuner sans GPU ?
+
+Partiellement. FT-01 fonctionne en mode CPU (DistilBERT, petit modele). Pour les notebooks FT-02 a FT-05 :
+
+- **Google Colab** (GPU T4 gratuit) : FT-01 a FT-03 executables.
+- **Kaggle Kernels** (GPU P100 gratuit, 30h/semaine) : FT-01 a FT-04.
+- **Unsloth** (optimisation memoire) : reduit la VRAM requise de ~40%, permet QLoRA 7B sur T4.
+
+Les notebooks sont concus pour tourner avec `LOAD_MODEL_AND_TRAIN=False` en mode demo (outputs pre-calcules visibles sans GPU).
+
+### MergeKit produit un modele degradé
+
+Si le modele merge (FT-05) perd en qualite par rapport aux adaptateurs individuels :
+
+- Verifier que les adaptateurs ont ete fine-tunes sur des taches **suffisamment differentes** (merger des adaptateurs trop similaires ne produit pas de gain).
+- L'algorithme TIES est plus robuste que SLERP pour les merges multi-taches.
+- DARE (Drop And Rescale) elimine les poids redondants — essayer si TIES ne converge pas.
+- Le routage MoE (Mixture of Experts) est une alternative au merge statique : chaque token est route vers l'adaptateur le plus competent. FT-05 couvre cette approche.
 
 ## Liens
 

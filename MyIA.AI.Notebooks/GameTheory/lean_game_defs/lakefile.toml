@@ -1,0 +1,11 @@
+name = "lean_game_defs"
+defaultTargets = ["LeanGameDefs"]
+
+# Self-contained lake project (core Lean only, zero dependency).
+# Added per ai-01 review on PR #2752: these shared definitions were shipped
+# in #2673 without any build harness, so compilation errors were invisible.
+# `lake build` here is the verification path (locally and in CI).
+
+[[lean_lib]]
+name = "LeanGameDefs"
+roots = ["Basic", "Nash", "Bayesian", "Combinatorial", "SocialChoice", "Regret"]

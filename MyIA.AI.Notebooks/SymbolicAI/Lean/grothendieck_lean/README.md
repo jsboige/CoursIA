@@ -9,6 +9,9 @@ language already lives in Mathlib 4. It is **not** an attempt to formalize EGA/S
 
 The goal is to give learners a curated entry point into:
 - Categories, sieves, and Grothendieck topologies
+- Sheaves, separated presheaves, subcanonical topologies
+- Coverage generation and sheaf characterization
+- The canonical topology and subcanonical sites
 - Schemes (locally ringed spaces locally Spec R)
 - The Zariski site
 - What Mathlib has and what it doesn't (yet)
@@ -31,11 +34,36 @@ The goal is to give learners a curated entry point into:
 |------|---------|-------|
 | `Grothendieck/SieveLattice.lean` | Sieve pullback identities: `pullback_id`, `pullback_pullback` (contravariant composition), `pullback_bot`, `pullback_monotone` | ~90 |
 
+### Phase 3 (Sheaf Basics) — `0 sorry` (Issue #2159, Epic #2162)
+
+| File | Content | Lines |
+|------|---------|-------|
+| `Grothendieck/SheafBasics.lean` | Sheaf/separated basics, subcanonical topologies, sheaf transfer along J₁ ≤ J₂ | ~128 |
+
+### Phase 4 (Topology Ordering) — `0 sorry` (Issue #2159, PR #2675)
+
+| File | Content | Lines |
+|------|---------|-------|
+| `Grothendieck/SieveOps.lean` | Topology ordering, covering closure, sieve composition properties | ~124 |
+
+### Phase 5 (Coverage Generation) — `0 sorry` (Issue #2159, PR #2675)
+
+| File | Content | Lines |
+|------|---------|-------|
+| `Grothendieck/CoverageGen.lean` | Coverage-to-topology, sheaf characterization for generated topology, sup of coverages | ~148 |
+
+### Phase 6 (Canonical Topology) — `0 sorry` (Issue #2159, PR #2675)
+
+| File | Content | Lines |
+|------|---------|-------|
+| `Grothendieck/CanonicalProps.lean` | Canonical topology, subcanonicity, representable sheaves, finest topology | ~134 |
+
 ## Build
 
 ```bash
 # From this directory (WSL required)
 lake build Grothendieck
+# Builds all 10 modules (~912 jobs, ~2 min cached)
 ```
 
 ## Sorry count
@@ -49,6 +77,8 @@ Aligned with other SymbolicAI/Lean projects: `leanprover/lean4:v4.30.0-rc2`
 ## See also
 
 - Epic #1646 (Grothendieck tribute)
+- Issue #2159 (Grothendieck formalization depth)
+- PR #2675 (Phases 4-6: SieveOps + CoverageGen + CanonicalProps)
 - Epic #1453 (prover harness calibration)
 - Conway tribute workspace (`../conway_lean/`)
 - Lean notebook series (`../README.md`)

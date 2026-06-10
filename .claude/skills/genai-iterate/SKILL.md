@@ -60,5 +60,5 @@ python genai.py quant summary # bonne quant chargee ?
 ## Voir aussi
 - [.claude/agents/genai-iterator.md](../../agents/genai-iterator.md) — orchestrateur async
 - [.claude/skills/validate-genai/SKILL.md](../validate-genai/SKILL.md) — validation stack
-- [docs/genai-services.md](../../../docs/genai-services.md) — architectures, scripts, mappings
+- [docs/genai/genai-services.md](../../../docs/genai/genai-services.md) — architectures, scripts, mappings
 - [.claude/rules/genai-config.md](../../rules/genai-config.md) — Docker config, GPU, .env

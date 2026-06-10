@@ -1,4 +1,9 @@
-"""Tests for audit_solution_leaks.py — solution leak pattern detection."""
+"""Tests for scripts/notebook_tools/audit_solution_leaks.py — solution leak detector.
+
+Tests focus on pure functions: detect_function_body_leak, detect_commented_solution_leak,
+detect_preresolved_cells, get_cells_after_exercice_md, and audit_notebook (via tmp_path).
+No filesystem I/O on production files.
+"""
 
 import json
 import sys
@@ -6,376 +11,557 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from audit_solution_leaks import (
-    detect_function_body_leak,
+    audit_notebook,
     detect_commented_solution_leak,
+    detect_function_body_leak,
     detect_preresolved_cells,
     get_cells_after_exercice_md,
-    audit_notebook,
 )
 
 
-def _code(source: str) -> dict:
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _code_cell(source, cell_index=0):
     """Build a code cell."""
-    lines = source.split("\n")
-    elements = [line + "\n" for line in lines[:-1]] + [lines[-1]]
     return {
         "cell_type": "code",
-        "source": elements,
+        "source": [source] if isinstance(source, str) else source,
         "execution_count": 1,
         "outputs": [],
         "metadata": {},
     }
 
 
-def _md(source: str) -> dict:
+def _md_cell(source):
     """Build a markdown cell."""
-    lines = source.split("\n")
-    elements = [line + "\n" for line in lines[:-1]] + [lines[-1]]
     return {
         "cell_type": "markdown",
-        "source": elements,
+        "source": [source] if isinstance(source, str) else source,
         "metadata": {},
     }
 
 
-def _nb(cells: list[dict]) -> dict:
-    """Build a minimal notebook dict."""
-    return {
-        "cells": cells,
-        "metadata": {
-            "kernelspec": {"display_name": "Python 3", "name": "python3"},
-        },
-        "nbformat": 4,
-        "nbformat_minor": 5,
-    }
-
-
-def _write_nb(tmp_path: Path, name: str, nb: dict) -> str:
-    """Write a notebook to disk and return the path string."""
+def _write_nb(tmp_path, nb_dict, name="test.ipynb"):
+    """Write notebook dict to temp file and return path."""
     p = tmp_path / name
-    p.write_text(json.dumps(nb), encoding="utf-8")
+    p.write_text(json.dumps(nb_dict), encoding="utf-8")
     return str(p)
 
 
-# --- detect_function_body_leak ---
-
+# ---------------------------------------------------------------------------
+# detect_function_body_leak
+# ---------------------------------------------------------------------------
 
 class TestDetectFunctionBodyLeak:
-    def test_stub_pass_no_leak(self):
-        lines = ["def f(x):", "    pass"]
+    def test_no_function(self):
+        lines = ["x = 1", "y = 2", "print(x + y)"]
         assert detect_function_body_leak(lines) == []
 
-    def test_stub_return_none_no_leak(self):
-        lines = ["def f(x):", "    return None"]
+    def test_stub_pass_not_leak(self):
+        """Function with 'pass' is not a leak."""
+        lines = ["def exercise():", "    pass"]
         assert detect_function_body_leak(lines) == []
 
-    def test_stub_return_none_todo_no_leak(self):
-        lines = ["def f(x):", "    return None  # TODO etudiant"]
+    def test_stub_return_none_not_leak(self):
+        """Function with 'return None' is not a leak."""
+        lines = ["def exercise():", "    return None"]
         assert detect_function_body_leak(lines) == []
 
-    def test_stub_print_no_leak(self):
-        lines = ["def f(x):", '    print("Exercice a completer")']
+    def test_stub_print_not_leak(self):
+        """Function with print stub is not a leak."""
+        lines = ["def exercise():", '    print("Exercice a completer")']
         assert detect_function_body_leak(lines) == []
 
-    def test_stub_return_empty_no_leak(self):
-        lines = ["def f(x):", "    return []"]
-        assert detect_function_body_leak(lines) == []
+    def test_stub_return_empty_not_leak(self):
+        """Functions returning empty collections are stubs."""
+        for ret in ["return []", "return {}", 'return ""', "return 0",
+                     "return False", "return True"]:
+            lines = ["def exercise():", f"    {ret}"]
+            assert detect_function_body_leak(lines) == [], f"Failed for {ret}"
 
-    def test_function_with_4_logic_lines_is_leak(self):
-        """4 logic lines > 3 => MEDIUM leak."""
+    def test_real_solution_detected(self):
+        """Function with >3 logic lines is a leak."""
         lines = [
-            "def solve(data):",
-            "    a = data[0]",
-            "    b = data[1]",
-            "    c = a + b",
-            "    return c * 2",
+            "def exercise():",
+            "    total = 0",
+            "    for x in data:",
+            "        total += x * 2",
+            "        if total > threshold:",
+            "            total = threshold",
+            "    return total",
         ]
         leaks = detect_function_body_leak(lines)
         assert len(leaks) == 1
         assert leaks[0]["type"] == "function_body_leak"
-        assert leaks[0]["func_name"] == "solve"
-        assert leaks[0]["logic_lines"] == 4
-        assert leaks[0]["severity"] == "MEDIUM"
+        assert leaks[0]["func_name"] == "exercise"
+        assert leaks[0]["severity"] == "HIGH"
 
-    def test_function_with_6_logic_lines_is_high(self):
-        """6 logic lines > 5 => HIGH severity."""
+    def test_exactly_4_logic_lines_medium(self):
+        """Function with exactly 4 logic lines = MEDIUM severity."""
         lines = [
-            "def compute(arr):",
+            "def exercise():",
+            "    x = compute(a)",
+            "    y = compute(b)",
+            "    z = compute(c)",
+            "    return x + y + z",
+        ]
+        leaks = detect_function_body_leak(lines)
+        assert len(leaks) == 1
+        assert leaks[0]["severity"] == "MEDIUM"
+        assert leaks[0]["logic_lines"] == 4
+
+    def test_exactly_3_logic_lines_not_leak(self):
+        """Function with <=3 logic lines is not a leak."""
+        lines = [
+            "def exercise():",
+            "    x = 1",
+            "    y = 2",
+            "    return x + y",
+        ]
+        assert detect_function_body_leak(lines) == []
+
+    def test_two_functions_one_leak(self):
+        """Only the function with >3 logic lines should be flagged."""
+        lines = [
+            "def helper():",
+            "    pass",
+            "",
+            "def solution():",
             "    total = 0",
-            "    for x in arr:",
-            "        total += x ** 2",
-            "    mean = total / len(arr)",
-            "    result = mean * 2",
-            "    return result",
+            "    for x in data:",
+            "        total += process(x)",
+            "        if total > max_val:",
+            "            break",
+            "    return total",
+        ]
+        leaks = detect_function_body_leak(lines)
+        assert len(leaks) == 1
+        assert leaks[0]["func_name"] == "solution"
+
+    def test_comments_not_counted(self):
+        """Comment lines don't count as logic."""
+        lines = [
+            "def exercise():",
+            "    # This is a comment",
+            '    """Docstring"""',
+            "    x = 1",
+            "    return x",
+        ]
+        assert detect_function_body_leak(lines) == []
+
+    def test_return_with_todo_not_leak(self):
+        """'return ... TODO' is not a leak."""
+        lines = ["def exercise():", "    return None  # TODO: implement"]
+        assert detect_function_body_leak(lines) == []
+
+    def test_nested_function(self):
+        """Nested function with >3 lines is detected."""
+        lines = [
+            "def outer():",
+            "    def inner():",
+            "        x = compute()",
+            "        y = transform(x)",
+            "        z = validate(y)",
+            "        return z",
+            "    return inner()",
+        ]
+        leaks = detect_function_body_leak(lines)
+        assert len(leaks) >= 1
+
+    def test_6_logic_lines_high(self):
+        """Function with >5 logic lines is HIGH severity."""
+        lines = [
+            "def exercise():",
+            "    x = step1()",
+            "    y = step2(x)",
+            "    z = step3(y)",
+            "    w = step4(z)",
+            "    v = step5(w)",
+            "    return step6(v)",
         ]
         leaks = detect_function_body_leak(lines)
         assert len(leaks) == 1
         assert leaks[0]["severity"] == "HIGH"
-
-    def test_two_functions_one_leak(self):
-        lines = [
-            "def clean(x):",
-            "    pass",
-            "",
-            "def solve(data):",
-            "    a = data[0]",
-            "    b = data[1]",
-            "    c = a + b",
-            "    return c * 2",
-        ]
-        leaks = detect_function_body_leak(lines)
-        assert len(leaks) == 1
-        assert leaks[0]["func_name"] == "solve"
-
-    def test_3_logic_lines_not_leak(self):
-        """Exactly 3 logic lines is NOT a leak (threshold is >3)."""
-        lines = [
-            "def f(x):",
-            "    a = x + 1",
-            "    b = a * 2",
-            "    return b",
-        ]
-        assert detect_function_body_leak(lines) == []
-
-    def test_comment_lines_not_counted(self):
-        lines = [
-            "def f(x):",
-            "    # step 1",
-            "    # step 2",
-            "    # step 3",
-            "    # step 4",
-            "    a = x + 1",
-            "    b = a * 2",
-            "    return b",
-        ]
-        # 3 logic lines (a=, b=, return b) => NOT a leak
-        assert detect_function_body_leak(lines) == []
-
-    def test_docstring_not_counted(self):
-        lines = [
-            "def f(x):",
-            '    """Long docstring."""',
-            "    a = x + 1",
-            "    b = a * 2",
-            "    return b",
-        ]
-        assert detect_function_body_leak(lines) == []
+        assert leaks[0]["logic_lines"] == 6
 
 
-# --- detect_commented_solution_leak ---
-
+# ---------------------------------------------------------------------------
+# detect_commented_solution_leak
+# ---------------------------------------------------------------------------
 
 class TestDetectCommentedSolutionLeak:
-    def test_no_comments_no_leak(self):
+    def test_no_comments(self):
         lines = ["x = 1", "y = 2"]
         assert detect_commented_solution_leak(lines) == []
 
-    def test_short_comment_block_no_leak(self):
-        """<=3 comment lines with code-like content => no leak."""
+    def test_short_comment_block_not_leak(self):
+        """Comment block <=3 lines is not a leak."""
         lines = [
-            "# result = 1",
-            "# expected = 2",
-            "# answer = 3",
+            "# result = compute()",
+            "# expected = [1, 2, 3]",
+            "# answer = 42",
         ]
         assert detect_commented_solution_leak(lines) == []
 
-    def test_long_comment_block_with_code_is_leak(self):
-        """>3 comment lines with code-like content => MEDIUM leak."""
+    def test_long_commented_code_block_leak(self):
+        """Comment block >3 lines with code patterns is a leak."""
         lines = [
-            "# result = 1",
-            "# expected = 2",
-            "# answer = 3",
-            "# correct = 4",
+            "# result = compute(input_data)",
+            "# expected = [1, 2, 3, 4, 5]",
+            "# for item in expected:",
+            "#     if item > threshold:",
+            "#         result.append(item)",
         ]
         leaks = detect_commented_solution_leak(lines)
         assert len(leaks) == 1
         assert leaks[0]["type"] == "commented_solution_leak"
-        assert leaks[0]["lines"] == 4
         assert leaks[0]["severity"] == "MEDIUM"
 
-    def test_control_flow_comments_are_leak(self):
-        """Mix of control flow + assignment comments => leak when >3 match."""
+    def test_normal_comments_not_leak(self):
+        """Comments that don't look like code are not detected."""
         lines = [
-            "# for i in range(10):",
-            "#     if data[i] > 0:",
-            "#         total += data[i]",
-            "# return result",
-            "# expected = total",
+            "# This section explains the algorithm",
+            "# We use a greedy approach",
+            "# The complexity is O(n log n)",
+            "# See reference for details",
         ]
-        leaks = detect_commented_solution_leak(lines)
-        # 3 lines match control flow (for, if, return) + 1 matches result/expected
-        # Actually: line 5 "# expected = total" matches m1 (expected=)
-        # Lines 1,2,4 match m3 (for/if/return). Line 3 does not match any pattern.
-        # So 4 out of 5 match => block of 4 matching lines > 3 => leak
-        assert len(leaks) >= 1
-
-    def test_non_code_comments_not_leak(self):
-        lines = [
-            "# This is a note",
-            "# Another note",
-            "# Yet another",
-            "# And one more",
-        ]
-        # These don't match code-like patterns
         assert detect_commented_solution_leak(lines) == []
 
     def test_shebang_not_counted(self):
-        lines = [
-            "#!/usr/bin/env python3",
-            "# result = 1",
-            "# expected = 2",
-            "# answer = 3",
-        ]
-        # Only 3 code-like comments (shebang excluded) => no leak
+        """Shebang lines are not counted."""
+        lines = ["#!/usr/bin/env python3"]
         assert detect_commented_solution_leak(lines) == []
 
+    def test_magic_comment_not_counted(self):
+        """IPython magic comments (# @) are not counted."""
+        lines = ["# @markdown Input parameter"]
+        assert detect_commented_solution_leak(lines) == []
 
-# --- detect_preresolved_cells ---
+    def test_solution_keyword_in_comments(self):
+        """Comments with 'solution' keyword are flagged even in short blocks if >3."""
+        lines = [
+            "# solution = algorithm(data)",
+            "# solution = optimize(solution)",
+            "# solution = validate(solution)",
+            "# solution = final_answer(solution)",
+        ]
+        leaks = detect_commented_solution_leak(lines)
+        assert len(leaks) == 1
 
+    def test_two_separate_blocks(self):
+        """Two separate comment blocks produce separate leaks."""
+        lines = [
+            "# prof_result = compute(a)",
+            "# prof_expected = [1, 2]",
+            "# prof_answer = 42",
+            "# prof_check = validate()",
+            "x = 1",  # separator
+            "# result = process(b)",
+            "# expected = [3, 4]",
+            "# answer = 99",
+            "# correct = True",
+        ]
+        leaks = detect_commented_solution_leak(lines)
+        assert len(leaks) == 2
+
+
+# ---------------------------------------------------------------------------
+# detect_preresolved_cells
+# ---------------------------------------------------------------------------
 
 class TestDetectPreresolvedCells:
-    def test_no_solution_marker_no_leak(self):
-        cells = [_code("x = 1\ny = 2")]
+    def test_no_preresolved(self):
+        cells = [_code_cell("x = 1"), _md_cell("# Title")]
         assert detect_preresolved_cells(cells) == []
 
-    def test_solution_marker_short_code_no_leak(self):
-        """# Solution with <=3 code lines => no leak."""
-        cells = [_code("# Solution\nx = 1\ny = 2")]
-        assert detect_preresolved_cells(cells) == []
-
-    def test_solution_marker_long_code_is_leak(self):
-        """# Solution with >3 code lines => LOW leak."""
-        cells = [_code(
+    def test_solution_cell_with_code(self):
+        """Code cell starting with # Solution and >3 code lines is preresolved."""
+        source = (
             "# Solution\n"
-            "a = 10\n"
-            "b = 20\n"
-            "c = 30\n"
-            "result = a + b + c\n"
-        )]
+            "x = compute(data)\n"
+            "y = transform(x)\n"
+            "z = validate(y)\n"
+            "result = aggregate(x, y, z)\n"
+        )
+        cells = [_code_cell(source)]
         leaks = detect_preresolved_cells(cells)
         assert len(leaks) == 1
         assert leaks[0]["type"] == "preresolved_cell"
         assert leaks[0]["severity"] == "LOW"
+        assert leaks[0]["cell_index"] == 0
 
-    def test_exemple_resolu_is_detected(self):
-        cells = [_code(
+    def test_exemple_resolu_detected(self):
+        """# Exemple resolu header with >3 code lines is detected."""
+        source = (
             "# Exemple resolu\n"
-            "a = 10\n"
-            "b = 20\n"
-            "c = 30\n"
-            "result = a + b + c\n"
-        )]
+            "data = load()\n"
+            "processed = clean(data)\n"
+            "result = analyze(processed)\n"
+            "output = format(result)\n"
+        )
+        cells = [_code_cell(source)]
         leaks = detect_preresolved_cells(cells)
         assert len(leaks) == 1
 
-    def test_markdown_cells_skipped(self):
-        cells = [_md("# Solution\nComplete answer here")]
+    def test_solution_short_not_detected(self):
+        """# Solution cell with <=3 code lines is not flagged."""
+        source = "# Solution\nx = 1\ny = 2\n"
+        cells = [_code_cell(source)]
+        assert detect_preresolved_cells(cells) == []
+
+    def test_solution_only_comments_not_detected(self):
+        """# Solution cell with only comment lines is not flagged."""
+        source = "# Solution\n# Step 1\n# Step 2\n# Step 3\n# Step 4\n"
+        cells = [_code_cell(source)]
+        assert detect_preresolved_cells(cells) == []
+
+    def test_markdown_cells_ignored(self):
+        """Markdown cells are not checked for preresolved."""
+        cells = [_md_cell("# Solution complete\n## Full answer")]
+        assert detect_preresolved_cells(cells) == []
+
+    def test_reponse_marker(self):
+        """# Reponse: header is detected."""
+        source = (
+            "# Reponse: exercice 3\n"
+            "def solve():\n"
+            "    a = 1\n"
+            "    b = 2\n"
+            "    return a + b\n"
+        )
+        cells = [_code_cell(source)]
+        leaks = detect_preresolved_cells(cells)
+        assert len(leaks) == 1
+
+    def test_solution_not_first_line(self):
+        """Solution marker must be on the first line to be detected."""
+        source = (
+            "x = 1\n"
+            "# Solution\n"
+            "y = 2\n"
+            "z = 3\n"
+            "w = 4\n"
+        )
+        cells = [_code_cell(source)]
+        # First line is 'x = 1', not '# Solution'
         assert detect_preresolved_cells(cells) == []
 
 
-# --- get_cells_after_exercice_md ---
-
+# ---------------------------------------------------------------------------
+# get_cells_after_exercice_md
+# ---------------------------------------------------------------------------
 
 class TestGetCellsAfterExerciceMd:
-    def test_code_cell_following_md(self):
+    def test_code_cells_following_md(self):
+        """Returns code cells after exercice markdown header.
+        Note: plain markdown text (no heading) does NOT stop the scan —
+        only markdown headings (lines starting with #) break the sequence."""
         cells = [
-            _md("## Exercice 1\nSolve it."),
-            _code("x = 1"),
-            _code("y = 2"),
+            _md_cell("## Exercice 1"),
+            _code_cell("x = 1"),
+            _md_cell("Some explanation"),  # NOT a heading, so doesn't stop
+            _code_cell("y = 2"),
         ]
         result = get_cells_after_exercice_md(cells, 0)
+        # Both code cells are within range (no heading to stop)
         assert len(result) == 2
         assert result[0][0] == 1
-        assert result[1][0] == 2
+        assert result[1][0] == 3
 
-    def test_stops_at_next_exercice_header(self):
+    def test_stops_at_next_heading(self):
+        """Stops when hitting another markdown heading."""
         cells = [
-            _md("## Exercice 1\nSolve it."),
-            _code("x = 1"),
-            _md("## Exercice 2\nAnother."),
-            _code("y = 2"),
+            _md_cell("## Exercice 1"),
+            _code_cell("x = 1"),
+            _md_cell("# New Section"),
+            _code_cell("y = 2"),
         ]
         result = get_cells_after_exercice_md(cells, 0)
         assert len(result) == 1
 
-    def test_stops_at_markdown_heading(self):
+    def test_stops_at_next_exercice(self):
+        """Stops when hitting another exercice header."""
         cells = [
-            _md("## Exercice 1\nSolve it."),
-            _code("x = 1"),
-            _md("# Section Title"),
-            _code("y = 2"),
+            _md_cell("## Exercice 1"),
+            _code_cell("x = 1"),
+            _md_cell("## Exercice 2"),
+            _code_cell("y = 2"),
         ]
         result = get_cells_after_exercice_md(cells, 0)
         assert len(result) == 1
-
-    def test_max_4_cells_checked(self):
-        cells = [
-            _md("## Exercice 1\nSolve it."),
-            _code("a = 1"),
-            _code("b = 2"),
-            _code("c = 3"),
-            _code("d = 4"),
-            _code("e = 5"),
-        ]
-        result = get_cells_after_exercice_md(cells, 0)
-        # range(start+1, min(start+5, len)) => range(1, 5) => indices 1,2,3,4
-        assert len(result) == 4
 
     def test_no_code_cells(self):
+        """No code cells following = empty result."""
         cells = [
-            _md("## Exercice 1\nSolve it."),
-            _md("Some hint"),
-            _md("Another hint"),
+            _md_cell("## Exercice 1"),
+            _md_cell("Explanation"),
+            _md_cell("# Next section"),
         ]
         result = get_cells_after_exercice_md(cells, 0)
-        assert len(result) == 0
+        assert result == []
+
+    def test_max_range(self):
+        """Only checks up to 5 cells after start."""
+        cells = [
+            _md_cell("## Exercice 1"),
+            _code_cell("a = 1"),
+            _code_cell("b = 2"),
+            _code_cell("c = 3"),
+            _code_cell("d = 4"),
+            _code_cell("e = 5"),  # beyond range
+        ]
+        result = get_cells_after_exercice_md(cells, 0)
+        assert len(result) == 4  # only indices 1-4
+
+    def test_at_end_of_notebook(self):
+        """Works when exercice is last cell."""
+        cells = [
+            _md_cell("## Exercice 1"),
+        ]
+        result = get_cells_after_exercice_md(cells, 0)
+        assert result == []
+
+    def test_middle_of_notebook(self):
+        """Works when exercice is in the middle."""
+        cells = [
+            _md_cell("# Introduction"),
+            _code_cell("setup = True"),
+            _md_cell("## Exercice 1"),
+            _code_cell("answer = 42"),
+            _md_cell("## Conclusion"),
+        ]
+        result = get_cells_after_exercice_md(cells, 2)
+        assert len(result) == 1
+        assert result[0][0] == 3
 
 
-# --- audit_notebook ---
-
+# ---------------------------------------------------------------------------
+# audit_notebook (integration via tmp_path)
+# ---------------------------------------------------------------------------
 
 class TestAuditNotebook:
-    def test_clean_notebook_no_leaks(self, tmp_path):
-        nb = _nb([
-            _md("## Exercice 1\nSolve it."),
-            _code("pass"),
-        ])
-        p = _write_nb(tmp_path, "clean.ipynb", nb)
-        assert audit_notebook(p) == []
+    def test_clean_notebook(self, tmp_path):
+        """Clean notebook with no leaks."""
+        nb = {
+            "cells": [
+                _md_cell("# Introduction"),
+                _code_cell("x = 1\nprint(x)"),
+                _md_cell("# Conclusion"),
+            ],
+            "metadata": {},
+        }
+        path = _write_nb(tmp_path, nb)
+        assert audit_notebook(path) == []
 
-    def test_function_body_leak_in_exercice(self, tmp_path):
-        nb = _nb([
-            _md("## Exercice 1\nSolve it."),
-            _code("# Exercice 1\ndef solve(data):\n    a = data[0]\n    b = data[1]\n    c = a + b\n    return c * 2"),
-        ])
-        p = _write_nb(tmp_path, "leak.ipynb", nb)
-        leaks = audit_notebook(p)
+    def test_function_body_leak_under_exercice(self, tmp_path):
+        """Function body leak detected under # Exercice marker."""
+        nb = {
+            "cells": [
+                _code_cell("# Exercice 1\ndef solve():\n    x = compute(a)\n    y = transform(x)\n    z = validate(y)\n    return aggregate(x, y, z)"),
+            ],
+            "metadata": {},
+        }
+        path = _write_nb(tmp_path, nb)
+        leaks = audit_notebook(path)
         function_leaks = [l for l in leaks if l["type"] == "function_body_leak"]
         assert len(function_leaks) >= 1
 
-    def test_invalid_json_returns_empty(self, tmp_path):
-        p = tmp_path / "bad.ipynb"
-        p.write_text("not valid json{{{", encoding="utf-8")
-        assert audit_notebook(str(p)) == []
-
-    def test_preresolved_detected(self, tmp_path):
-        nb = _nb([
-            _code("# Solution\na = 10\nb = 20\nc = 30\nresult = a + b + c\n"),
-        ])
-        p = _write_nb(tmp_path, "resolved.ipynb", nb)
-        leaks = audit_notebook(p)
+    def test_preresolved_cell(self, tmp_path):
+        """Preresolved cell detected."""
+        nb = {
+            "cells": [
+                _code_cell("# Solution\nx = compute()\ny = transform(x)\nz = validate(y)\nresult = aggregate(x, y, z)"),
+            ],
+            "metadata": {},
+        }
+        path = _write_nb(tmp_path, nb)
+        leaks = audit_notebook(path)
         preresolved = [l for l in leaks if l["type"] == "preresolved_cell"]
         assert len(preresolved) == 1
 
-    def test_exemple_resolu_skipped_in_exercice_context(self, tmp_path):
-        """# Exemple resolu should be skipped from function body leak checks."""
-        nb = _nb([
-            _md("## Exercice 1\nSolve it."),
-            _code("# Exemple resolu\ndef example(data):\n    a = data[0]\n    b = data[1]\n    c = a + b\n    return c * 2"),
-        ])
-        p = _write_nb(tmp_path, "exemple.ipynb", nb)
-        leaks = audit_notebook(p)
+    def test_stub_exercice_not_leak(self, tmp_path):
+        """Exercise stubs are NOT leaks."""
+        nb = {
+            "cells": [
+                _code_cell("# Exercice 1\ndef solve():\n    pass"),
+            ],
+            "metadata": {},
+        }
+        path = _write_nb(tmp_path, nb)
+        leaks = audit_notebook(path)
         function_leaks = [l for l in leaks if l["type"] == "function_body_leak"]
-        assert len(function_leaks) == 0
+        assert function_leaks == []
+
+    def test_exercice_md_with_leak(self, tmp_path):
+        """Leak detected in code cell after ## Exercice markdown."""
+        nb = {
+            "cells": [
+                _md_cell("## Exercice 1"),
+                _code_cell("def solve():\n    x = compute(a)\n    y = transform(x)\n    z = validate(y)\n    return aggregate(x, y, z)"),
+            ],
+            "metadata": {},
+        }
+        path = _write_nb(tmp_path, nb)
+        leaks = audit_notebook(path)
+        function_leaks = [l for l in leaks if l["type"] == "function_body_leak"]
+        assert len(function_leaks) >= 1
+
+    def test_example_resolu_not_leak(self, tmp_path):
+        """# Exemple resolu cells are not flagged as function body leaks."""
+        nb = {
+            "cells": [
+                _code_cell("# Exemple resolu\ndef demo():\n    x = compute(a)\n    y = transform(x)\n    z = validate(y)\n    return aggregate(x, y, z)"),
+            ],
+            "metadata": {},
+        }
+        path = _write_nb(tmp_path, nb)
+        leaks = audit_notebook(path)
+        # Should NOT have function_body_leak (Exemple resolu is legitimate)
+        function_leaks = [l for l in leaks if l["type"] == "function_body_leak"]
+        assert function_leaks == []
+
+    def test_invalid_json(self, tmp_path):
+        """Invalid JSON returns empty list (no crash)."""
+        p = tmp_path / "bad.ipynb"
+        p.write_text("not valid json {{{", encoding="utf-8")
+        assert audit_notebook(str(p)) == []
+
+    def test_empty_notebook(self, tmp_path):
+        """Empty notebook has no leaks."""
+        nb = {"cells": [], "metadata": {}}
+        path = _write_nb(tmp_path, nb)
+        assert audit_notebook(path) == []
+
+    def test_commented_solution_leak_in_exercice(self, tmp_path):
+        """Commented solution leak detected under # Exercice marker."""
+        source = (
+            "# Exercice 1\n"
+            "# prof_result = compute(data)\n"
+            "# prof_expected = [1, 2, 3]\n"
+            "# prof_answer = validate(result)\n"
+            "# prof_correct = check(answer)\n"
+        )
+        nb = {"cells": [_code_cell(source)], "metadata": {}}
+        path = _write_nb(tmp_path, nb)
+        leaks = audit_notebook(path)
+        comment_leaks = [l for l in leaks if l["type"] == "commented_solution_leak"]
+        assert len(comment_leaks) == 1
+
+    def test_multiple_leaks_in_notebook(self, tmp_path):
+        """Multiple leak types in one notebook are all detected."""
+        nb = {
+            "cells": [
+                _code_cell("# Exercice 1\ndef solve():\n    x = compute(a)\n    y = transform(x)\n    z = validate(y)\n    return aggregate(x, y, z)"),
+                _code_cell("# Solution\nx = compute(data)\ny = transform(x)\nz = validate(y)\nresult = aggregate(x, y, z)"),
+            ],
+            "metadata": {},
+        }
+        path = _write_nb(tmp_path, nb)
+        leaks = audit_notebook(path)
+        types = {l["type"] for l in leaks}
+        assert "function_body_leak" in types
+        assert "preresolved_cell" in types

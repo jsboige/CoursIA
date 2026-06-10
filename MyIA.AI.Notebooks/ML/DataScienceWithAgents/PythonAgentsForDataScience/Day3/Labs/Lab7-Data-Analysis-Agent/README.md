@@ -30,4 +30,4 @@ Le Lab 7 termine la sous-serie **Python Agents for Data Science**. La suite logi
 
 ## Navigation
 
-[<- Index Python Agents](../../README.md) | [Lab 6 <<](../Lab6-First-Agent/README.md) | [>> AgenticDataScience](../../../../AgenticDataScience/README.md)
+[<- Index Python Agents](../../../../README.md) | [Lab 6 <<](../Lab6-First-Agent/README.md) | [>> AgenticDataScience](../../../../AgenticDataScience/README.md)

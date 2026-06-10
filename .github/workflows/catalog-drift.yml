@@ -1,5 +1,29 @@
 name: Catalog Drift Check
 
+# Purpose: DETECT (non-blocking, read-only) when COURSE_CATALOG.generated.json
+# and the README CATALOG-STATUS markers drift out of sync with the notebooks.
+#
+# IMPORTANT — read-only since #2744 (2026-06-09):
+#   This workflow DETECTS drift and reports it as a notice annotation, but it
+#   NO LONGER COMMITS anything back to PR branches. The earlier design
+#   auto-committed a regenerated catalog onto every PR matching **/*.ipynb or
+#   **/README.md. Because those commits were bot-authored, catalog-guard.yml
+#   exempted them — so they landed even when they mass-reverted curated git
+#   fields (issue_pr_associee, last_validation) via the branch git-history
+#   heuristic. That is the stale-catalog-silent-revert pattern (513 poisoned
+#   entries observed on branches, 0 on main — source-verified by po-2025,
+#   see #2744). It poisoned EVERY notebook/README PR and created a worker
+#   treadmill (strip -> bot re-commits on the next synchronize).
+#
+#   Per decision #2632 (catalog cron-only, off-branch), the ONLY legitimate
+#   catalog writer is catalog-cron.yml on main (daily regen + push HEAD:main).
+#   catalog-guard.yml still FAILS any human/agent PR that touches the catalog
+#   files. This workflow stays as a read-only detector so reviewers see drift,
+#   without ever writing to a branch.
+#
+# This job is intentionally NON-BLOCKING and READ-ONLY. The REQUIRED notebook
+# gate remains "Static validation (H.1/H.3/C.1)" in notebook-execution-required.yml.
+
 on:
   pull_request:
     branches: [ main ]
@@ -11,82 +35,54 @@ on:
       - 'COURSE_CATALOG.generated.json'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  check-drift:
-    name: "Notebook catalog drift"
+  catalog-drift:
+    name: "Notebook catalog drift (read-only)"
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      # Read-only checkout of the PR merge ref. We only generate the catalog and
+      # diff it against the committed copy to detect drift; we never commit or
+      # push back to a branch (see #2744). The default merge-ref checkout works
+      # for both same-repo and fork PRs.
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Generate catalog (prerequisite)
-      run: python3 scripts/notebook_tools/generate_catalog.py --json-only --git-tracked-only
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Check CATALOG-STATUS marker drift
-      run: python3 scripts/notebook_tools/expand_catalog_markers.py --check
+      # Canonical regeneration (local to the runner only — nothing is written
+      # back to the branch). git-tracked notebooks only, for CI determinism.
+      - name: Regenerate catalog + README markers
+        run: |
+          git fetch origin main --depth=1 || true
+          python scripts/notebook_tools/generate_catalog.py --json-only --git-tracked-only
+          python scripts/notebook_tools/expand_catalog_markers.py
 
-    - name: Check notebook catalog drift
-      run: |
-        python3 scripts/notebook_tools/verify_catalog_readme.py 2>/dev/null || python3 -c "
-        import os, re, sys
+      - name: Detect drift
+        id: diff
+        run: |
+          # Only the catalog JSON and the README marker files are in scope.
+          git add COURSE_CATALOG.generated.json MyIA.AI.Notebooks/README.md 'MyIA.AI.Notebooks/*/README.md' 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            echo "Catalog and README markers are already in sync. No drift."
+          else
+            echo "drift=true" >> "$GITHUB_OUTPUT"
+            echo "Catalog drift detected in:"
+            git diff --cached --name-only | sed 's/^/  - /'
+            echo "::notice title=Catalog drift (informational)::The catalog/README markers are out of sync with the notebooks. This does NOT block the PR. The catalog is regenerated daily on main by catalog-cron.yml; no manual action is required on this branch."
+          fi
 
-        # Fallback if verify_catalog_readme.py is not available
-        ERRORS = 0
-        WARNINGS = 0
-
-        base = 'MyIA.AI.Notebooks'
-        EXCLUDE_ALWAYS = {'.ipynb_checkpoints', 'obj', 'bin', '__pycache__', '.git'}
-        EXCLUDE_PED = {'research', 'archive', '_output', 'partner-course', 'examples'}
-        CATALOG_RE = re.compile(r'<!--\s*CATALOG-STATUS\s*\n(.*?)\n\s*-->', re.DOTALL)
-
-        for series in sorted(os.listdir(base)):
-            series_path = os.path.join(base, series)
-            readme_path = os.path.join(series_path, 'README.md')
-            if not os.path.isdir(series_path) or not os.path.isfile(readme_path):
-                continue
-
-            # Count actual pedagogical notebooks
-            actual = 0
-            for root, dirs, files in os.walk(series_path):
-                dirs[:] = [d for d in dirs if d not in EXCLUDE_ALWAYS]
-                rel = os.path.relpath(root, series_path)
-                if any(exc in rel for exc in EXCLUDE_PED):
-                    continue
-                for f in files:
-                    if f.endswith('.ipynb'):
-                        actual += 1
-
-            if actual == 0:
-                continue
-
-            # Parse CATALOG-STATUS marker
-            with open(readme_path, 'r', encoding='utf-8') as f:
-                text = f.read()
-            m = CATALOG_RE.search(text)
-            if not m:
-                print(f'WARN: {series} has no CATALOG-STATUS marker ({actual} notebooks)')
-                WARNINGS += 1
-                continue
-
-            declared = None
-            for line in m.group(1).strip().splitlines():
-                key, _, val = line.partition(':')
-                if key.strip() == 'pedagogical_count':
-                    declared = int(val.strip())
-
-            if declared is None:
-                print(f'WARN: {series} CATALOG-STATUS missing pedagogical_count')
-                WARNINGS += 1
-                continue
-
-            if declared != actual:
-                print(f'ERROR: {series} declared={declared} actual={actual} (drift={actual - declared:+d})')
-                ERRORS += 1
-            else:
-                print(f'OK: {series} {declared} notebooks')
-
-        print()
-        print(f'Catalog drift check: {WARNINGS} warning(s), {ERRORS} error(s)')
-        if ERRORS > 0:
-            sys.exit(1)
-        "
+      # This job is always green. Drift is surfaced as a notice annotation only.
+      # catalog-cron.yml (main) is the sole writer; catalog-guard.yml blocks any
+      # human/agent catalog commit on PRs (see #2632, #2744).
+      - name: Done (non-blocking, read-only)
+        run: echo "Catalog drift check complete (non-blocking, read-only)."
