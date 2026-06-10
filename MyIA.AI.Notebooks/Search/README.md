@@ -249,7 +249,7 @@ Search-10 Symbolic Automata ─>  Sudoku-12 Automates symboliques
 
 ```text
 Part2-CSP                      SymbolicAI/
-CSP-3  Advanced (OR-Tools) ───> Linq2Z3 (SMT solving)
+CSP-3  Advanced (OR-Tools) ───> Z3/01_Linq2Z3_Intro (SMT solving)
 CSP-4  Scheduling          ───> Planners (PDDL, HTN, Temporal)
 CSP-6  Hybridization       ───> LLM+CSP, Tweety (Formal Logic)
 CSP-8  Temporal            ───> Temporal Planning, STP
