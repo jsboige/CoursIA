@@ -11,7 +11,7 @@
   Based on GameTheory-16-Lean-Definitions.ipynb
 -/
 
-import GameTheory.lean_game_defs.Basic
+import Basic
 
 /-! ## Best Response -/
 

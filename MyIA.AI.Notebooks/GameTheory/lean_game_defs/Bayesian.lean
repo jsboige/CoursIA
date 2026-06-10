@@ -17,7 +17,7 @@
   and measurable spaces from Mathlib.
 -/
 
-import GameTheory.lean_game_defs.Basic
+import Basic
 
 /-! ## Utility (avoids Mathlib dependency) -/
 
@@ -185,7 +185,8 @@ def auctionRevenue {n : Nat} (h_n : n ≥ 1) (bids : Fin n → Nat) : Nat :=
 
 /-! ## Kuhn Poker (from GT-13 Section 2) -/
 
-/-- A card in Kuhn poker (simplified: Jack=0, Queen=1, King=2) -/
+/-- A card in Kuhn poker (simplified: Jack=0, Queen=1, King=2).
+    `abbrev` (not `def`) so `Fin 3` instances (`LT`, `DecidableEq`, ...) propagate. -/
 abbrev KuhnCard := Fin 3
 
 /-- History of actions in a Kuhn poker round -/
@@ -210,6 +211,7 @@ structure KuhnState where
   /-- Action history -/
   history : List KuhnAction
 
+-- no deriving Repr: `cards` is a function type, not derivable. Manual instance:
 instance : Repr KuhnState where
   reprPrec s _ :=
     let c0 := toString (s.cards ⟨0, by omega⟩)
