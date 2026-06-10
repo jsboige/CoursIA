@@ -2,9 +2,9 @@
 
 CoursIA est un curriculum d'intelligence artificielle pensé comme un parcours continu, des fondations jusqu'aux frontières de la recherche. Plutôt qu'une collection d'exemples isolés, il tisse un même fil conducteur à travers onze domaines : on y apprend autant à **faire** — générer des images et de l'audio, entraîner et déployer des modèles, backtester des stratégies de trading, résoudre des problèmes de contraintes — qu'à **comprendre et prouver** : formaliser un théorème en Lean 4, raisonner sur l'incertitude, vérifier qu'un smart contract ou un algorithme se comporte comme attendu.
 
-Deux partis pris structurent l'ensemble. D'abord une **double culture technique** : Python (PyTorch, Diffusers, PyMC, OpenSpiel) et .NET / C# (Semantic Kernel, Infer.NET, ML.NET) cohabitent au sein de notebooks exécutables, parce que l'IA appliquée se pratique dans les deux écosystèmes. Ensuite une **dualité simulation / preuve** : un concept est d'abord illustré numériquement, puis — quand c'est possible — formalisé et vérifié mécaniquement (Lean 4, Z3, vérification formelle). Chaque notebook est rédigé en français, exécutable de bout en bout, et accompagné d'exercices corrigés pour un apprentissage en autonomie.
+Deux partis pris structurent l'ensemble. D'abord une **double culture technique** : Python (PyTorch, Diffusers, PyMC, OpenSpiel) et .NET / C# (Semantic Kernel, Infer.NET, ML.NET) cohabitent au sein de notebooks exécutables, parce que l'IA appliquée se pratique dans les deux écosystèmes. Ensuite une **dualité simulation / preuve** : un concept est d'abord illustré numériquement, puis — quand c'est possible — formalisé et vérifié mécaniquement (Lean 4, Z3, vérification formelle). Chaque notebook est rédigé en français, exécutable de bout en bout, et accompagné d'exemples guidés et d'exercices pour un apprentissage en autonomie.
 
-Le catalogue rassemble près de 500 notebooks répartis sur les onze domaines ci-dessous (le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue). Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
+Le catalogue rassemble plus de 500 notebooks répartis sur les onze domaines ci-dessous (le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue). Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
 
 <!-- CATALOG-STATUS
 series: ALL
@@ -13,7 +13,7 @@ breakdown: GenAI=121, SymbolicAI=104, QuantConnect=101, Search=46, Probas=44, Su
 maturity: PRODUCTION=427, BETA=41, ALPHA=40, DRAFT=4, TEMPLATE=4
 -->
 
-Dernière mise à jour : 2026-05-28
+Dernière mise à jour : 2026-06-11
 
 ## Vue d'ensemble
 
@@ -21,7 +21,7 @@ Dernière mise à jour : 2026-05-28
 |---------|-------------|
 | **GenAI** | Generation d'images (SDXL, Flux, Qwen-VL), audio (FishAudio S2-Pro, STT/TTS), video, LLMs, RAG, fine-tuning LoRA, orchestration via Semantic Kernel |
 | **QuantConnect** | Trading algorithmique progressif : cours Python pas-a-pas, 49 strategies backtestees (GARCH, Kelly, ensemble), pipeline ML thermal-safe |
-| **SymbolicAI** | Preuve formelle Lean 4 (theoremes d'Arrow, Conway, Kochen-Specker), logiques argumentaires (Tweety), SmartContracts Solidity, Web semantique RDF/SPARQL |
+| **SymbolicAI** | Preuve formelle Lean 4 (theoremes d'Arrow, Conway, Kochen-Specker), logiques argumentaires (Tweety), SmartContracts Solidity, Web semantique RDF/SPARQL, apprentissage symbolique (ILP, neuro-symbolique, automates) |
 | **Search** | Satisfaction de contraintes (CSP), recherche operationnelle, metaheuristiques (recuit, genetiques), planification PDDL avec Fast-Downward |
 | **Probas** | Programmation probabiliste : modeles graphiques en Infer.NET (.NET C#) + inference bayesienne en PyMC (Python) |
 | **Sudoku** | Resolution de contraintes en .NET C# : backtracking, propagation, modeles CNN/MLP, etude comparative d'architectures |
@@ -53,10 +53,10 @@ QuantConnect
 SymbolicAI
 ├── SmartContracts/ - Solidity, Web3, blockchain
 ├── SemanticWeb/ - RDF, SPARQL, OWL, C# + Python
-├── Lean/ - Theorem proving, LeanDojo, social choice
+├── Lean/ - Theorem proving, LeanDojo, hommages (Grothendieck, Conway, FWT)
 ├── Planners/ - PDDL, Fast-Downward, OR-Tools, LLM planning
 ├── Tweety/ - Logiques classiques, argumentation
-├── SymbolicLearning/ - ILP, NeuroSymbolic, KG-ILP, LLM-Symbolic
+├── SymbolicLearning/ - ILP, neuro-symbolique, KG-LLM, automates (L*)
 └── Argument_Analysis/ - Analyse d'arguments
 ```
 
@@ -73,7 +73,7 @@ SymbolicAI
 - **LEAN Engine**: Backtesting, live trading, optimisation
 - **sklearn / XGBoost / PyTorch**: Modeles ML financiers
 - **QuantConnect Cloud**: 95 projets, backtests cloud
-- **Hands-On AI Trading**: 18/19 exemples implementes (issue #143)
+- **Hands-On AI Trading**: 18/19 exemples du livre implementes
 
 ### Infrastructure
 - **Docker**: ComfyUI (29GB VRAM), services GenAI
