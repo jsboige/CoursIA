@@ -36,6 +36,7 @@ class SVMWaveletForecastingAlgorithm(QCAlgorithm):
         self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 1, 1)
         self.set_cash(1_000_000)
+        self.set_brokerage_model(BrokerageName.OANDA_BROKERAGE, AccountType.MARGIN)
 
         period = self.get_parameter("period", 152)
         self._leverage = self.get_parameter("leverage", 20)

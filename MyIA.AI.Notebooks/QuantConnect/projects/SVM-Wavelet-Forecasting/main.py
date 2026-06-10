@@ -41,6 +41,7 @@ class SVMWaveletForecasting(QCAlgorithm):
         self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 1, 1)
         self.set_cash(100_000)
+        self.set_brokerage_model(BrokerageName.OANDA_BROKERAGE, AccountType.MARGIN)
 
         # FX pair for prediction
         self._eurusd = self.add_forex("EURUSD", Resolution.DAILY, Market.OANDA).symbol

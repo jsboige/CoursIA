@@ -83,6 +83,7 @@ class CNNPatternDetectionAlgorithm(QCAlgorithm):
         self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 1, 1)
         self.set_cash(100_000)
+        self.set_brokerage_model(BrokerageName.OANDA_BROKERAGE, AccountType.MARGIN)
 
         self._security = self.add_forex("USDCAD", Resolution.DAILY)
         self._symbol = self._security.symbol
