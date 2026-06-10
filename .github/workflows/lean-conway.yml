@@ -1,15 +1,23 @@
 name: Lean Conway CI
 
 # CI for conway_lean (SymbolicAI/Lean/conway_lean).
-# Conway homage — accessible formalizations of lesser-known results by
-# John Horton Conway (Game of Life, FRACTRAN, Look-and-Say, Doomsday,
-# Free Will Theorem, Kochen-Specker, Angel, Collatz-like, Nim).
-# Verifies lake build SUCCESS + guards the sorry baseline in Conway modules.
+# Conway's Game of Life formalization (Hashlife, Kochen-Specker, Free Will).
 # Rule lean-merge-discipline: lake build SUCCESS local OBLIGATOIRE avant merge.
-# This CI is the canonical verification path since local builds may be blocked
-# (e.g. WDAC policy blocking native linker on some machines).
 #
-# Mirrors lean-grothendieck.yml (#2743) and lean-calibration.yml (#2741).
+# Consolidated per ai-01 DRY decision (option 2: matrix). Supersedes the inline
+# version in PR #2747 (same standalone-tactic mode, same baseline 8, now via the
+# shared lean-build.yml reusable workflow).
+#
+# Sorry profile (verified 2026-06-10, standalone-tactic mode, baseline=8):
+# conway has 8 real tactic sorries + many PROSE mentions in block comments
+# ("Each sorry is a target", "Left as sorry", "remain sorry-gated"). The
+# grothendieck prose-header filter OVERCOUNTS here (reads the prose), so we use
+# standalone-tactic (sorry as sole token on its line) to distinguish tactic vs
+# prose. Breakdown of the 8:
+#   - HashlifeCorrectness.lean: 2 (intractable P4/P5 — central correctness + main theorem)
+#   - HashlifeMemo.lean:        2 (scaffolding, Phase 3c)
+#   - Pillars.lean:             4 (scaffolding witnesses, Phase 3c)
+# Raising this baseline requires a documented justification in the PR body.
 
 on:
   push:
@@ -28,87 +36,11 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pull-requests: write
-
 jobs:
-  check-sorry-conway:
-    name: "Sorry check (conway_lean)"
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Count sorry in conway_lean
-      run: |
-        echo "=== Sorry inventory for conway_lean ==="
-        # Unlike grothendieck (0 real sorry, only header-comment prose),
-        # conway_lean has 8 documented real tactic sorries AND many PROSE
-        # mentions of "sorry" in block comments (e.g. "Each `sorry` is a
-        # target", "Left as sorry", "remain `sorry`-gated", "Originally
-        # left as `sorry`"). Those prose mentions are NOT real sorries.
-        #
-        # A real sorry-as-tactic is the SOLE token on its line (optionally
-        # indented). We match ^\s*sorry\s*$ to distinguish tactic from prose.
-        #
-        # Known baseline = 8, all documented + intentional:
-        #   - HashlifeCorrectness.lean : 2  (intractable P4 central / P5 main theorem)
-        #   - HashlifeMemo.lean        : 2  (scaffolding, Phase 3c roadmap)
-        #   - Pillars.lean             : 4  (scaffolding: otca/unitcell/gemini/cpu)
-        # CI FAILs if a 9th sorry-as-tactic is introduced.
-        SORRY_TOTAL=0
-        KNOWN_BASELINE=8
-        for f in $(find Conway -name '*.lean'); do
-          if [ -f "$f" ]; then
-            REAL=$(grep -cE "^\s*sorry\s*$" "$f" || true)
-            if [ "$REAL" -gt 0 ]; then
-              echo "  $f: $REAL real sorry (standalone tactic)"
-              SORRY_TOTAL=$((SORRY_TOTAL + REAL))
-            fi
-          fi
-        done
-        echo ""
-        echo "Real sorry (standalone tactic): $SORRY_TOTAL"
-        echo "Known baseline: $KNOWN_BASELINE"
-        if [ "$SORRY_TOTAL" -gt "$KNOWN_BASELINE" ]; then
-          echo ""
-          echo "FAIL: real sorry count ($SORRY_TOTAL) exceeds baseline ($KNOWN_BASELINE)"
-          echo "A sorry-as-tactic was introduced. If intentional (new intractable/"
-          echo "scaffolding target), raise KNOWN_BASELINE in this workflow WITH a"
-          echo "documented justification in the PR body."
-          exit 1
-        fi
-        echo "OK: sorry count at or below baseline ($SORRY_TOTAL <= $KNOWN_BASELINE)."
-
-  build-conway:
-    name: "Lake build (conway_lean)"
-    runs-on: ubuntu-latest
-    needs: check-sorry-conway
-    defaults:
-      run:
-        working-directory: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install elan
-      run: |
-        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
-        ./elan-init -y --default-toolchain none
-        echo "$HOME/.elan/bin" >> $GITHUB_PATH
-
-    - name: Cache Lake build artifacts
-      uses: actions/cache@v4
-      with:
-        path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/.lake
-        key: lake-conway-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean', 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain') }}
-        restore-keys: lake-conway-${{ runner.os }}-
-
-    - name: Lake build
-      run: |
-        lake exe cache get || true
-        lake -R build 2>&1 | tail -20
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      display-name: conway_lean
+      sorry-baseline: "8"
+      sorry-filter-mode: standalone-tactic
