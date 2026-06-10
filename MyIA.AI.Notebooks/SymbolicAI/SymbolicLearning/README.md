@@ -88,7 +88,7 @@ Pour les etudiants en informatique theorique : le cadre inductif general (SL-1),
 
 Pour les professionnels du web semantique et des donnees structurees : EBL, RBL, FOIL sur clauses Horn, puis application directe sur des knowledge graphs reels avec rdflib et AMIE. Presuppose une familiarite avec RDF/SPARQL.
 
-## Seance du 17 juin : la table de pioche (40 exercices)
+## Seance de restitution : la table de pioche (40 exercices)
 
 Modalite de la seance : chaque groupe choisit **un exercice** dans la table ci-dessous, le prepare, et le presente en seance. Resoudre l'exercice est le minimum attendu ; chaque exercice est assorti d'une **question-twist** (detaillee dans la cellule « Defi presentation » du notebook correspondant) qui fait partie integrante de la presentation. Premier arrive, premier servi : annoncez votre choix pour eviter les doublons.
 
