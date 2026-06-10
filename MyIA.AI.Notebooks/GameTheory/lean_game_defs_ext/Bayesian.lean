@@ -18,8 +18,16 @@
                           certified by `decide` (phase 2)
   - `Bayesian.Vickrey`  — second-price auction: truthful bidding weakly
                           dominant, BNE for every `n` (phase 3)
+  - `Bayesian.Max`      — finite maxima over `Fin (n + 1)`, max-of-sum
+                          vs sum-of-maxima (phase 4)
+  - `Bayesian.Information` — value of information for a single decision
+                          maker: signals as partitions, Blackwell
+                          monotonicity, no-info ≤ signal ≤ perfect (phase 4)
+  - `Bayesian.InfoGames` — counterexample: in a *game*, more information
+                          can strictly hurt the informed player (unique
+                          BNE payoffs 3 < 5, kernel-checked) (phase 4)
 
-  See #2610 (GT-Lean formalization, phases 1-3: Bayesian games).
+  See #2610 (GT-Lean formalization, phases 1-4: Bayesian games).
 -/
 
 import Bayesian.Sum
@@ -28,3 +36,6 @@ import Bayesian.BNE
 import Bayesian.Examples
 import Bayesian.Auction
 import Bayesian.Vickrey
+import Bayesian.Max
+import Bayesian.Information
+import Bayesian.InfoGames
