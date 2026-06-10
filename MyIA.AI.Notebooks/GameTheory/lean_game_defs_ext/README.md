@@ -19,6 +19,7 @@ l'epic #2610.
 | `Bayesian/Max.lean` | Maxima finis sur `Fin (n + 1)` (`maxFin`) : bornes `le_maxFin`/`maxFin_le`, et le lemme maître `maxFin_sumFin_le` (max d'une somme ≤ somme des maxima par groupe) (phase 4) |
 | `Bayesian/Information.lean` | Valeur de l'information pour un décideur seul : signaux déterministes = partitions des états, `valueNoInfo ≤ valueSignal ≤ valuePerfect`, **monotonie de Blackwell** (`valueSignal_mono` : un signal plus fin vaut toujours au moins autant, via factorisation σ = h ∘ τ), exemple parapluie chiffré par `decide` (phase 4) |
 | `Bayesian/InfoGames.lean` | **L'information peut nuire dans un jeu** : contre-exemple 2 états / 2×2 où le BNE est unique dans chaque scénario (certifié `decide` + eta-expansion des stratégies) et le joueur informé gagne strictement moins (3 < 5) que s'il ne voyait rien — contraste kernel-checked avec la monotonie à un joueur (phase 4) |
+| `Bayesian/Reputation.lean` | **Réputation et dissuasion d'entrée** (chain-store à 2 périodes, forme stratégique réduite) : incumbent à 2 types (rationnel / *tough*), raffinement décidable de crédibilité (rationalité séquentielle en dernière période), BNE crédible **unique** dans chaque scénario — avec incertitude le type rationnel *poole* (il combat alors que combattre est myopiquement dominé) et dissuade l'entrée (paiement 5) ; en information complète l'entrée a lieu (paiement 4) : `reputation_pays` 5 > 4 (phase 5) |
 
 ## Choix de conception
 
@@ -49,5 +50,6 @@ Kuhn poker — cf #2748 / PR #2752) reste le socle « phase 0 ». Ce
 projet-ci accueille les extensions de l'epic #2610 (phases livrées :
 2 — enchère au premier prix discret, 3 — enchère de Vickrey et
 dominance faible, 4 — valeur de l'information : monotonie de Blackwell
-à un joueur + contre-exemple « l'information nuit » en jeu) ; phases
-suivantes prévues : jeux de réputation simplifiés.
+à un joueur + contre-exemple « l'information nuit » en jeu,
+5 — réputation et dissuasion d'entrée, BNE crédible unique et
+`reputation_pays`).

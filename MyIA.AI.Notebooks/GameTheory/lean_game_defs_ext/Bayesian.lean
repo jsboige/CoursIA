@@ -26,8 +26,11 @@
   - `Bayesian.InfoGames` — counterexample: in a *game*, more information
                           can strictly hurt the informed player (unique
                           BNE payoffs 3 < 5, kernel-checked) (phase 4)
+  - `Bayesian.Reputation` — entry deterrence / chain-store reputation:
+                          unique credible BNE with and without type
+                          uncertainty, reputation pays 5 > 4 (phase 5)
 
-  See #2610 (GT-Lean formalization, phases 1-4: Bayesian games).
+  See #2610 (GT-Lean formalization, phases 1-5: Bayesian games).
 -/
 
 import Bayesian.Sum
@@ -39,3 +42,4 @@ import Bayesian.Vickrey
 import Bayesian.Max
 import Bayesian.Information
 import Bayesian.InfoGames
+import Bayesian.Reputation
