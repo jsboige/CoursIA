@@ -23,7 +23,7 @@ Dernière mise à jour : 2026-06-11
 | **QuantConnect** | Trading algorithmique progressif : cours Python pas-a-pas, 49 strategies backtestees (GARCH, Kelly, ensemble), pipeline ML thermal-safe |
 | **SymbolicAI** | Preuve formelle Lean 4 (theoremes d'Arrow, Conway, Kochen-Specker), logiques argumentaires (Tweety), SmartContracts Solidity, Web semantique RDF/SPARQL, apprentissage symbolique (ILP, neuro-symbolique, automates) |
 | **Search** | Satisfaction de contraintes (CSP), recherche operationnelle, metaheuristiques (recuit, genetiques), planification PDDL avec Fast-Downward |
-| **Probas** | Programmation probabiliste : modeles graphiques en Infer.NET (.NET C#) + inference bayesienne en PyMC (Python) |
+| **Probas** | Programmation probabiliste : modeles graphiques en Infer.NET (.NET C#), inference bayesienne en PyMC (Python), volet Lean 4 (indice de Gittins) |
 | **Sudoku** | Resolution de contraintes en .NET C# : backtracking, propagation, modeles CNN/MLP, etude comparative d'architectures |
 | **GameTheory** | Theorie des jeux combinatoire (OpenSpiel), choix social formel (theoremes d'Arrow, Sen, Shapley portes en Lean 4), von Neumann |
 | **ML** | Machine Learning .NET (ML.NET) + Python Agents for Data Science : classification, regression, clustering, pipelines |
