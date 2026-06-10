@@ -21,6 +21,13 @@ def sumFin : (n : Nat) → (Fin n → Int) → Int
 @[simp] theorem sumFin_succ (n : Nat) (f : Fin (n + 1) → Int) :
     sumFin (n + 1) f = f 0 + sumFin n (fun i => f i.succ) := rfl
 
+/-- The sum of the zero function vanishes. -/
+@[simp] theorem sumFin_zero_fun (n : Nat) :
+    sumFin n (fun _ => (0 : Int)) = 0 := by
+  induction n with
+  | zero => simp
+  | succ n ih => simp [ih]
+
 /-- Pointwise dominance transfers to the sums. -/
 theorem sumFin_mono {n : Nat} {f g : Fin n → Int} (h : ∀ i, f i ≤ g i) :
     sumFin n f ≤ sumFin n g := by
