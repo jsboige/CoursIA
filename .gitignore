@@ -854,3 +854,6 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/data/temp_*.owl
 /data/pizza_test.owl
 /results/
 /tmp_*.py
+
+# Shared Mathlib checkout cache (NTFS junctions, scripts/lean/setup_shared_mathlib.ps1, #2611)
+/.mathlib-cache/

@@ -99,6 +99,7 @@ python scripts/notebook_tools/notebook_tools.py execute SmartContracts --scrub-k
 | `scripts/lean/setup_lean4_all.py` | **Point d'entrée unique** setup kernel Lean 4 : `--wsl-only` / `--register` / `--validate` / `--check-wrapper` (orchestre WSL install + registration Windows + validation) — cf [docs/wsl-kernels-detail.md](wsl-kernels-detail.md) |
 | `scripts/lean/lean_kernel_check.py` | Détection canonique régression wrapper kernel.json (#1618) : `inspect_kernel_wrapper` (partagé par les 2 validateurs + l'orchestrateur) |
 | `scripts/lean/smoke_test_epita_is.py` | Smoke-test kernels Lean EPITA-IS |
+| `scripts/lean/setup_shared_mathlib.ps1` | Mutualisation checkouts Mathlib via junctions NTFS (#2611) : `-Mode Scan` (inventaire groupes), `Apply` (cache `.mathlib-cache/` + junctions, `-Build` vérifie, `-RemoveBackups` libère l'espace), `Rollback` (restaure les checkouts physiques). Précondition : lake-manifest.json identique sur TOUTES les deps transitives + même lean-toolchain. Ne jamais `lake update` un projet junctionné |
 | `scripts/mcp-maintenance/` | Maintenance MCP (config, docs, scripts) — cf `README_MCP_MAINTENANCE.md` |
 | `scripts/validation/dispatch.py` + `matrix.yml` | Matrice de validation / dispatch |
 | `scripts/genai-stack/genai.py` | GenAI Docker (ComfyUI + Qwen) + validation — cf [docs/genai/genai-services.md](../genai/genai-services.md) |
