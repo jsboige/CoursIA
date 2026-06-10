@@ -1,26 +1,26 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-09 04:59
+Generated: 2026-06-10 05:06
 Total notebooks: 516
 
 ## Status Summary
 
-- **READY**: 374
+- **READY**: 373
 - **DEMO**: 140
 - **RESEARCH**: 0
-- **BROKEN**: 2
+- **BROKEN**: 3
 
 ## Maturity Summary
 
-- **PRODUCTION**: 414
-- **BETA**: 45
+- **PRODUCTION**: 427
+- **BETA**: 41
 - **TEMPLATE**: 4
-- **ALPHA**: 49
+- **ALPHA**: 40
 - **DRAFT**: 4
 
 ## By Series
 
-### GenAI (121 notebooks) — BROKEN:1, DEMO:79, READY:41 | ALPHA:5, BETA:26, DRAFT:2, PRODUCTION:85, TEMPLATE:3
+### GenAI (121 notebooks) — BROKEN:2, DEMO:79, READY:40 | ALPHA:5, BETA:26, DRAFT:2, PRODUCTION:85, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -109,7 +109,7 @@ Total notebooks: 516
 | 83 | Notebook de travail | Python 3 | BROKEN | TEMPLATE | 15min | po-2025 |
 | 84 | Notebook de conception de Notebook | .NET (C#) | DEMO | ALPHA | 45min | po-2025 |
 | 85 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
-| 86 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
+| 86 | Notebook de travail | .NET (C#) | BROKEN | TEMPLATE | 30min | po-2025 |
 | 87 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | DEMO | ALPHA | 30min | po-2025 |
 | 88 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 89 | 10. Hébergement Local de Modèles Génératifs | Python 3 | READY | PRODUCTION | 45min | po-2025 |
@@ -197,7 +197,7 @@ Total notebooks: 516
 | 45 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
 | 46 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 
-### ML (27 notebooks) — DEMO:3, READY:24 | ALPHA:8, BETA:3, PRODUCTION:16
+### ML (27 notebooks) — DEMO:3, READY:24 | ALPHA:1, BETA:3, PRODUCTION:23
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -220,16 +220,16 @@ Total notebooks: 516
 | 17 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | BETA | 30min | po-2023 |
 | 18 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | BETA | 30min | po-2023 |
 | 19 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 20 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 21 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 22 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | ALPHA | 30min | po-2023 |
+| 20 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 21 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 22 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 | 23 | ML-4 : Evaluation des modèles | .NET (C#) | READY | ALPHA | 2h+ | po-2023 |
-| 24 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 25 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | ALPHA | 45min | po-2023 |
-| 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | ALPHA | 30min | po-2023 |
+| 24 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 25 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 
-### SymbolicAI (104 notebooks) — DEMO:3, READY:101 | ALPHA:3, BETA:2, PRODUCTION:99
+### SymbolicAI (104 notebooks) — DEMO:3, READY:101 | ALPHA:1, BETA:1, PRODUCTION:102
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -248,20 +248,20 @@ Total notebooks: 516
 | 13 | Lean-13b : Grothendieck en Lean -- Atelier pratiqu | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 14 | Lean-14a - Conway, l'homme et l'oeuvre | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
 | 15 | Lean-14b : Hommage a John Conway — Game of Life as | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
-| 16 | Lean-14c - Conway Game of Life : les 3 piliers, en | Python 3 | READY | BETA | 45min | po-2024 |
+| 16 | Lean-14c - Conway Game of Life : les 3 piliers, en | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 17 | Lean-15 : Le Theoreme de Kochen-Specker (Cabello 1 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 18 | Lean-16 : Le Theoreme du Libre Arbitre (Conway-Koc | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 19 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 20 | Lean 3 - Propositions et Preuves | Lean 4 | READY | PRODUCTION | 45min | po-2024 |
 | 21 | Lean 4 - Quantificateurs et Logique du Premier Ord | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 22 | Lean 5 - Mode Tactique | Lean 4 | READY | PRODUCTION | 1h | po-2024 |
-| 23 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | Lean 4 | READY | ALPHA | 45min | po-2024 |
+| 23 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | Lean 4 | READY | PRODUCTION | 45min | po-2024 |
 | 24 | Lean 7 - Integration des LLMs pour l'Assistance au | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 25 | Lean 7b - Exemples Progressifs et Benchmarks | Python 3 (WSL) | READY | PRODUCTION | 30min | po-2024 |
 | 26 | Lean 8 - Agents Autonomes pour Demonstration de Th | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 27 | Description du notebook | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 28 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 29 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | ALPHA | 45min | po-2024 |
+| 29 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
 | 30 | Planners-0-Setup | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 31 | Planners-1-Introduction a la Planification Automat | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 32 | Planners-2-PDDL-Basics | Python 3 | READY | PRODUCTION | 30min | po-2024 |
@@ -269,7 +269,7 @@ Total notebooks: 516
 | 34 | Planners-4-Fast-Downward - Planificateur Classique | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 35 | Planners-5-Heuristiques en Planification | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 36 | Planners-6-Domains - Domaines Classiques de Planif | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 37 | Planners-7-OR-Tools - Programmation par Contrainte | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 37 | Planners-7-OR-Tools - Programmation par Contrainte | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 38 | Planners-8-Temporal - Planification Temporelle | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 39 | Planners-9-HTN - Planification Hierarchique | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 40 | Planners-10: LLMs pour la Planification | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
@@ -511,12 +511,12 @@ Total notebooks: 516
 | 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 32 | Sudoku-9-GraphColoring-Python : Coloration de Grap | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 
-### Probas (44 notebooks) — READY:44 | BETA:3, PRODUCTION:41
+### Probas (44 notebooks) — READY:44 | PRODUCTION:44
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | Infer-101 : Introduction a Infer.NET | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 2 | Infer-1-Setup : Introduction et Installation | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 2 | Infer-1-Setup : Introduction et Installation | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 3 | Infer-10-Crowdsourcing : Agregation de Labels et F | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 4 | Infer-11-Sequences : Hidden Markov Models et Serie | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
 | 5 | Infer-12-Recommenders : Systemes de Recommandation | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
@@ -524,7 +524,7 @@ Total notebooks: 516
 | 7 | Infer-14-Decision-Utility-Foundations : Axiomes et | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 8 | Infer-15-Decision-Utility-Money : Utilite de l'Arg | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
 | 9 | Infer-16-Decision-Multi-Attribute : Utilite Multi- | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 10 | Infer-17-Decision-Networks : Reseaux de Decision | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 10 | Infer-17-Decision-Networks : Reseaux de Decision | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 11 | Infer-18-Decision-Value-Information : Valeur de l' | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 12 | Infer-19-Decision-Expert-Systems : Decisions Robus | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 13 | Infer-2-Gaussian-Mixtures : Distributions Gaussien | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
@@ -533,7 +533,7 @@ Total notebooks: 516
 | 16 | Infer-3-Factor-Graphs : Graphes de Facteurs et Inf | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 17 | Infer-4-Bayesian-Networks : Reseaux Bayesiens Clas | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
 | 18 | Infer-5-Skills-IRT : Evaluation de Competences et  | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
-| 19 | Infer-6-TrueSkill : Systeme de Classement et Appre | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 19 | Infer-6-TrueSkill : Systeme de Classement et Appre | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 20 | Infer-7-Classification : Classification Bayesienne | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 21 | Infer-8-Model-Selection : Selection et Comparaison | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 22 | Infer-9-Topic-Models : Latent Dirichlet Allocation | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
@@ -571,16 +571,16 @@ Total notebooks: 516
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
-| 1 | RL-3 : Bandits Manchots et le Compromis Exploratio | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 2 | RL-4 : MDP, Programmation Dynamique et Q-Learning  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 3 | RL-5 : Deep Q-Network (DQN) et Policy Gradient | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 4 | RL-5b - Actor-Critic : unir valeur et politique | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 5 | PPO (Proximal Policy Optimization) depuis zero | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 6 | SAC (Soft Actor-Critic) depuis zero | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 7 | RL-6 : Introduction a l'Apprentissage Multi-Agent | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 8 | Tutoriel Stable Baselines3 - Premiers pas | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 9 | Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,  | Python 3 | READY | BETA | 30min | po-2025 |
-| 10 | Notebook 3 – Hindsight Experience Replay (HER) et  | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 1 | Tutoriel Stable Baselines3 - Premiers pas | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 2 | Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,  | Python 3 | READY | BETA | 30min | po-2025 |
+| 3 | Notebook 3 – Hindsight Experience Replay (HER) et  | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 4 | RL-3 : Bandits Manchots et le Compromis Exploratio | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 5 | RL-4 : MDP, Programmation Dynamique et Q-Learning  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 6 | RL-5 : Deep Q-Network (DQN) et Policy Gradient | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 7 | RL-5b - Actor-Critic : unir valeur et politique | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 8 | PPO (Proximal Policy Optimization) depuis zero | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 9 | SAC (Soft Actor-Critic) depuis zero | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 10 | RL-6 : Introduction a l'Apprentissage Multi-Agent | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 
 
 ## Requirements
