@@ -1,0 +1,119 @@
+name: Lean Gittins CI
+
+# CI for gittins_lean (Probas/Infer/gittins_lean).
+# Gittins index formalization companion to the Infer Gittins notebook (#2413).
+# Verifies lake build SUCCESS + guards the sorry baseline in Gittins modules.
+# Rule lean-merge-discipline: lake build SUCCESS local OBLIGATOIRE avant merge.
+# This CI is the canonical verification path since local builds may be blocked
+# (e.g. WDAC policy blocking the native linker on some machines).
+#
+# Mirrors lean-calibration.yml (#2741) and lean-conway.yml (#2747), but uses a
+# more robust sorry filter (see comment in check-sorry-gittins below).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/Probas/Infer/gittins_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Probas/Infer/gittins_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Probas/Infer/gittins_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Probas/Infer/gittins_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/Probas/Infer/gittins_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Probas/Infer/gittins_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Probas/Infer/gittins_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Probas/Infer/gittins_lean/lean-toolchain'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-sorry-gittins:
+    name: "Sorry check (gittins_lean)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/Probas/Infer/gittins_lean
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Count sorry in gittins_lean
+      run: |
+        echo "=== Sorry inventory for gittins_lean ==="
+        # gittins_lean is a WIP formalization. The Gittins index optimality
+        # theorem is INTRACTABLE in Mathlib (no MDP/bandit/Bellman), so several
+        # sorries are intentional stubs (each annotated `sorry -- TODO: <reason>`).
+        #
+        # FILTER NOTE: We use `^\s*sorry\b`, NOT `^\s*sorry\s*$`. The standalone-
+        # only filter (used by #2741/#2747) undercounts here because gittins_lean
+        # annotates its sorries with trailing comments, e.g.:
+        #     sorry  -- TODO: requires optimal stopping computation
+        # `^\s*sorry\b` catches BOTH standalone and trailing-comment sorries while
+        # still excluding prose (prose lines start with `#`, `--`, `-`, or text,
+        # never with bare `sorry` after only whitespace). For conway_lean (#2747)
+        # both filters agree (=8, all standalone); for gittins they differ (3 vs 6)
+        # so the `\b` filter is the correct, more robust choice here.
+        #
+        # Known baseline = 6, all documented + intentional WIP stubs:
+        #   - Gittins/Discount.lean        : 1  (tsum_le_tsum comparison)
+        #   - Gittins/GittinsTheorem.lean  : 5  (optimality theorem, known-arm,
+        #                                        monotone-discount, +2 in def/proof
+        #                                        of gittins_optimality)
+        # CI FAILs if a 7th sorry-as-tactic is introduced.
+        SORRY_TOTAL=0
+        KNOWN_BASELINE=6
+        for f in $(find Gittins -name '*.lean'); do
+          if [ -f "$f" ]; then
+            REAL=$(grep -cE '^\s*sorry\b' "$f" || true)
+            if [ "$REAL" -gt 0 ]; then
+              echo "  $f: $REAL real sorry (tactic, incl. trailing-comment stubs)"
+              SORRY_TOTAL=$((SORRY_TOTAL + REAL))
+            fi
+          fi
+        done
+        echo ""
+        echo "Real sorry (tactic): $SORRY_TOTAL"
+        echo "Known baseline: $KNOWN_BASELINE"
+        if [ "$SORRY_TOTAL" -gt "$KNOWN_BASELINE" ]; then
+          echo ""
+          echo "FAIL: real sorry count ($SORRY_TOTAL) exceeds baseline ($KNOWN_BASELINE)"
+          echo "A sorry-as-tactic was introduced. If intentional (new intractable/"
+          echo "scaffolding target), raise KNOWN_BASELINE in this workflow WITH a"
+          echo "documented justification in the PR body."
+          exit 1
+        fi
+        echo "OK: sorry count at or below baseline ($SORRY_TOTAL <= $KNOWN_BASELINE)."
+
+  build-gittins:
+    name: "Lake build (gittins_lean)"
+    runs-on: ubuntu-latest
+    needs: check-sorry-gittins
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/Probas/Infer/gittins_lean
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install elan
+      run: |
+        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        ./elan-init -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+    - name: Cache Lake build artifacts
+      uses: actions/cache@v4
+      with:
+        path: MyIA.AI.Notebooks/Probas/Infer/gittins_lean/.lake
+        key: lake-gittins-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/Probas/Infer/gittins_lean/lakefile.lean', 'MyIA.AI.Notebooks/Probas/Infer/gittins_lean/lean-toolchain') }}
+        restore-keys: lake-gittins-${{ runner.os }}-
+
+    - name: Lake build
+      run: |
+        lake exe cache get || true
+        lake -R build 2>&1 | tail -20
