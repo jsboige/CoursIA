@@ -41,7 +41,7 @@ A l'issue de cette serie, vous serez capable de :
 |-------------|--------|
 | Notebooks | 7 |
 | Kernel | Python 3 |
-| Duree estimee | ~370 min |
+| Duree estimee | ~360 min |
 | prerequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-6) |
 
 ## Parcours d'apprentissage
@@ -50,9 +50,9 @@ A l'issue de cette serie, vous serez capable de :
 
 Le parcours commence par l'apprentissage inductif pur : un agent doit decouvrir une regle cachee a partir d'exemples. SL-1 presente les algorithmes fondamentaux — Current-Best-Hypothesis (ajuste une seule hypothese incrementalement) et Candidate Elimination (maintient l'ensemble complet des hypotheses consistantes, le "Version Space"). Vous experimentez leurs limites face au bruit et aux concepts disjonctifs, ce qui motive naturellement les approches plus riches introduites ensuite.
 
-### Phase 2 : Apprentissage base sur la connaissance (SL-2 a SL-3, ~105 min)
+### Phase 2 : Apprentissage base sur la connaissance (SL-2 a SL-3, ~95 min)
 
-La deuxieme phase introduit l'idee centrale que **la connaissance accelere l'apprentissage**. EBL (SL-2) montre comment compiler un exemple prouve en une regle operationnelle generale, en quatre etapes : expliquer, variabiliser, extraire, simplifier. RBL (SL-2 + SL-3) explore une autre facette : identifier les attributs qui determinant vraiment la cible via le formalisme des determinations et le treillis des sous-ensembles d'attributs. La comparaison avec sklearn (information mutuelle) montre quand la connaissance du domaine bat la statistique brute.
+La deuxieme phase introduit l'idee centrale que **la connaissance accelere l'apprentissage**. EBL (SL-2) montre comment compiler un exemple prouve en une regle operationnelle generale, en quatre etapes : expliquer, variabiliser, extraire, simplifier. RBL (introduit en SL-2, approfondi en SL-3) explore une autre facette : identifier les attributs qui determinant vraiment la cible via le formalisme des determinations et le treillis des sous-ensembles d'attributs. La comparaison avec sklearn (information mutuelle) montre quand la connaissance du domaine bat la statistique brute.
 
 ### Phase 3 : Programmation logique inductive (SL-4, ~55 min)
 
@@ -81,7 +81,7 @@ Pour les professionnels du web semantique et des donnees structurees : EBL, RBL,
 | # | Notebook | Contenu | Duree |
 |---|----------|---------|-------|
 | 1 | [SL-1 - Apprentissage Logique](SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 50 min |
-| 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, RBL, determinations | 55 min |
+| 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (determinations) | 45 min |
 | 3 | [SL-3 - Apprentissage Base sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des determinations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |
 | 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, resolution inverse, clauses Horn, knowledge graphs | 55 min |
 | 5 | [SL-5 - Integration Neuro-Symbolique](SL-5-NeuroSymbolic.ipynb) | T-norms, predicats neuronaux, LTN, DeepProbLog | 55 min |
@@ -111,9 +111,7 @@ Pour les professionnels du web semantique et des donnees structurees : EBL, RBL,
 | EBL - Arithmetique | Simplification d'expressions, arbre de preuve |
 | EBL - Implementation | Classe ArithmeticEBL complete |
 | EBL - Efficacite | Operationalite vs generalite, proliferation de regles |
-| RBL - Determinations | Verification fonctionnelle, reduction d'espace |
-| RBL - MINIMAL-CONSISTENT-DET | Algorithme AIMA 19.4 |
-| RBL - Impact quantitatif | Reduction exponentielle de l'espace des hypotheses |
+| RBL - Introduction | Determinations, verification fonctionnelle, reduction d'espace (approfondi dans SL-3) |
 
 ### SL-3-RelevanceLearning.ipynb
 
@@ -121,7 +119,7 @@ Pour les professionnels du web semantique et des donnees structurees : EBL, RBL,
 |---------|---------|
 | Determinations | Formalisme, monotonie, minimalite, `check_determination()` |
 | Treillis des determinations | `build_determination_lattice()`, visualisation ASCII, up-set |
-| MINIMAL-CONSISTENT-DET | Implementation detaillee, donnees moleculaires |
+| MINIMAL-CONSISTENT-DET | Implementation detaillee, donnees moleculaires, cas d'echec disjonctif (restaurant) |
 | Selection guidee | RBL vs sklearn (information mutuelle), comparaison |
 | Analyse PAC | Reduction exponentielle, bornes d'echantillonnage |
 | Web Semantique | Parallel RBL <-> OWL (FunctionalProperty, hasKey) |
