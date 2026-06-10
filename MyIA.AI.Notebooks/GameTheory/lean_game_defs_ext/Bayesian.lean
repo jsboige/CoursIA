@@ -13,11 +13,15 @@
                           prior-rescaling invariance
   - `Bayesian.Examples` — Battle of the Sexes with incomplete information,
                           equilibrium certified by `decide`
+  - `Bayesian.Auction`  — first-price sealed-bid auction: truthful bidding
+                          earns zero (general theorem), bid-shading BNE
+                          certified by `decide` (phase 2)
 
-  See #2610 (GT-Lean formalization, phase 1: Bayesian games).
+  See #2610 (GT-Lean formalization, phases 1-2: Bayesian games).
 -/
 
 import Bayesian.Sum
 import Bayesian.Types
 import Bayesian.BNE
 import Bayesian.Examples
+import Bayesian.Auction

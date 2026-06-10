@@ -56,7 +56,7 @@ def Strategy2 (g : BayesGame2) := Fin g.nT2 → Fin g.nA2
 
     (With unnormalized weights this is the conditional expectation
     scaled by the positive constant `Σ_{t2} w t1 t2` — maximizers are
-    unaffected, see `Beliefs.lean`.) -/
+    unaffected, see `BNE.lean`.) -/
 def interimU1 (g : BayesGame2) (t1 : Fin g.nT1) (a : Fin g.nA1)
     (s2 : Strategy2 g) : Int :=
   sumFin g.nT2 (fun t2 => (g.w t1 t2 : Int) * g.u1 t1 t2 a (s2 t2))
