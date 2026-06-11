@@ -136,9 +136,9 @@ class CryptoLSTMPredictionAlgorithm(QCAlgorithm):
     MIN_CONFIDENCE = 0.3      # Seuil de confiance minimum
 
     # Paramètres de training
-    TRAIN_START = datetime(2020, 1, 1)
+    TRAIN_START = datetime(2017, 1, 1)
     TRAIN_END = datetime(2023, 12, 31)
-    BACKTEST_START = datetime(2024, 1, 1)
+    BACKTEST_START = datetime(2019, 1, 1)
     BACKTEST_END = datetime(2026, 3, 1)
 
     RETRAIN_DAYS = 90  # Retrainer tous les 90 jours
