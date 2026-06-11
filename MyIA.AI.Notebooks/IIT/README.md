@@ -227,3 +227,5 @@ Voir la licence du repository principal.
 | [GameTheory](../GameTheory/README.md) | OpenSpiel / Nashpy | Interactions strategiques multi-agents eclairent la complexite des systemes distribues |
 | [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) | Preuves formelles | Formalisation Arrow/Sen montre comment prouver des proprietes structurelles impossibles |
 | [RL](../RL/README.md) | Stable Baselines3 | La distinction feed-forward vs recurrent (Phi = 0 vs > 0) eclaire le choix d'architecture RL |
+
+[La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot — Phi comme certificat ouvert : PyPhi le *calcule* sur de petits systemes sans pretendre le *demontrer*.
