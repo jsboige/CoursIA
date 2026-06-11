@@ -17,6 +17,7 @@ class AIStocksBondsRotationAlgorithm(QCAlgorithm):
 
     def initialize(self):
         self.set_start_date(self.end_date - timedelta(10*365))
+        self.set_end_date(2025, 1, 1)  # Fixed end date for reproducibility
         self.settings.daily_precise_end_time = False
         self.settings.seed_initial_prices = True
         # Multi-asset strategy (equities + crypto): no single brokerage supports both.

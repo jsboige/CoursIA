@@ -169,6 +169,7 @@ namespace QuantConnect
             // Extended to cover 2017 bull, 2018 bear, 2019 recovery, COVID crash,
             // 2020-2021 bull, 2022 bear, 2023-2025 recovery + AI bull
             SetStartDate(2017, 10, 1);
+            SetEndDate(2025, 1, 1); // Fixed end date for reproducibility
         }
     }
 }
