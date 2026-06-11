@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 104
-breakdown: SmartContracts=27, Lean=21, SemanticWeb=18, Planners=13, Tweety=10, SymbolicLearning=7, Argument_Analysis=6, root=2
-maturity: PRODUCTION=102, ALPHA=1, BETA=1
+pedagogical_count: 107
+breakdown: SmartContracts=27, Lean=21, SemanticWeb=18, Planners=13, SymbolicLearning=10, Tweety=10, Argument_Analysis=6, Z3=1, root=1
+maturity: PRODUCTION=105, ALPHA=1, BETA=1
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.

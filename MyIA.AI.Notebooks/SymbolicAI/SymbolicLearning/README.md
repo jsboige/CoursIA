@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SymbolicLearning
-pedagogical_count: 7
-breakdown: SymbolicLearning=7
-maturity: PRODUCTION=7
+pedagogical_count: 10
+breakdown: SymbolicLearning=10
+maturity: PRODUCTION=10
 -->
 
 Comment un agent peut-il apprendre a partir de connaissances existantes plutot que de donnees brutes ? Cette serie explore l'apprentissage symbolique tel que decrit dans le chapitre 19 d'AIMA (Russell & Norvig), depuis l'apprentissage inductif pur (CBH, Version Space) jusqu'aux methodes guidees par la connaissance (EBL, RBL).

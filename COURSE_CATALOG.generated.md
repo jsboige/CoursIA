@@ -1,18 +1,18 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-10 05:06
-Total notebooks: 516
+Generated: 2026-06-11 05:11
+Total notebooks: 522
 
 ## Status Summary
 
-- **READY**: 373
-- **DEMO**: 140
+- **READY**: 379
+- **DEMO**: 141
 - **RESEARCH**: 0
-- **BROKEN**: 3
+- **BROKEN**: 2
 
 ## Maturity Summary
 
-- **PRODUCTION**: 427
+- **PRODUCTION**: 433
 - **BETA**: 41
 - **TEMPLATE**: 4
 - **ALPHA**: 40
@@ -229,7 +229,7 @@ Total notebooks: 516
 | 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 
-### SymbolicAI (104 notebooks) — DEMO:3, READY:101 | ALPHA:1, BETA:1, PRODUCTION:102
+### SymbolicAI (107 notebooks) — DEMO:3, READY:104 | ALPHA:1, BETA:1, PRODUCTION:105
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -260,85 +260,88 @@ Total notebooks: 516
 | 25 | Lean 7b - Exemples Progressifs et Benchmarks | Python 3 (WSL) | READY | PRODUCTION | 30min | po-2024 |
 | 26 | Lean 8 - Agents Autonomes pour Demonstration de Th | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 27 | Description du notebook | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 28 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 29 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 30 | Planners-0-Setup | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 31 | Planners-1-Introduction a la Planification Automat | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 32 | Planners-2-PDDL-Basics | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 33 | Planners-3-State-Space - Recherche dans l'Espace d | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 34 | Planners-4-Fast-Downward - Planificateur Classique | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 35 | Planners-5-Heuristiques en Planification | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 36 | Planners-6-Domains - Domaines Classiques de Planif | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 37 | Planners-7-OR-Tools - Programmation par Contrainte | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 38 | Planners-8-Temporal - Planification Temporelle | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 39 | Planners-9-HTN - Planification Hierarchique | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 40 | Planners-10: LLMs pour la Planification | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
-| 41 | Planners-11: Unified Planning | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 42 | Planners-12: Learning to Plan avec LOOP | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 43 | Introduction au web sémantique avec RDF.Net | .NET (C#) | READY | PRODUCTION | 2h+ | po-2024 |
-| 44 | SW-1-Setup | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
-| 45 | SW-10-Python-RDFStar | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 46 | SW-11-Python-KnowledgeGraphs | Python 3 | READY | PRODUCTION | 1h | po-2024 |
-| 47 | SW-12-Python-GraphRAG | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 48 | SW-14-Reasoners | Python 3 | READY | PRODUCTION | 1h | po-2024 |
-| 49 | SW-2-RDFBasics | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 50 | SW-2b-Python-RDFBasics | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 51 | SW-3-GraphOperations | .NET (C#) | READY | PRODUCTION | 1h | po-2024 |
-| 52 | SW-4-SPARQL | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 53 | SW-4b-Python-SPARQL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 54 | SW-5-LinkedData | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 55 | SW-5b-Python-LinkedData | .venv (3.12.3) | READY | PRODUCTION | 45min | po-2024 |
-| 56 | SW-6-RDFS | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 57 | SW-7-OWL | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 58 | SW-7b-Python-OWL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 59 | SW-8-Python-SHACL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 60 | SW-9-Python-JSONLD | Python 3 | READY | PRODUCTION | 1h | po-2024 |
-| 61 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 62 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python 3 | READY | PRODUCTION | 15min | po-2024 |
-| 63 | SC-2-Setup-Web3py - Python et la Blockchain | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 64 | SC-3-Solidity-Basics - Fondements de Solidity | .venv | READY | PRODUCTION | 45min | po-2024 |
-| 65 | SC-4-Functions-State - Fonctions et Etat | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 66 | SC-5-Inheritance - Heritage et Interfaces | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 67 | SC-6-Errors-Events - Erreurs et Evenements | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 68 | SC-10-Account-Abstraction - ERC-4337 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 69 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
-| 70 | SC-7-Token-Standards - Standards de Tokens | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 71 | SC-8-DeFi-Primitives - Primitives DeFi | Python (CoursIA SemanticWeb) | READY | PRODUCTION | 30min | po-2024 |
-| 72 | SC-9-DAO-Governance - Gouvernance DAO | cours-ia | READY | PRODUCTION | 30min | po-2024 |
-| 73 | SC-12-Foundry-Testing - Tests avec Foundry | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 74 | SC-13-Fuzz-Invariants - Fuzz Testing | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 75 | SC-14-Formal-Verification - Verification Formelle | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 76 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgatio | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 77 | SC-16-Homomorphic-Encryption - Chiffrement Homomor | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 78 | SC-17-E2E-Verifiable-Voting - Vote Electronique Ve | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 79 | SC-18-Vyper - Smart Contracts en Python-like | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 80 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 81 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | .venv | READY | PRODUCTION | 30min | po-2024 |
-| 82 | SC-21-Move-Sui - Move sur Sui | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 83 | SC-22-Solana-Anchor - Solana avec Anchor | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 84 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 85 | SC-24 : Deploiement sur Testnets | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 86 | SC-25 : Deploiement Mainnet (L2) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 87 | SC-26 : Projet Final - DApp Complete | Python 3 | READY | PRODUCTION | 15min | po-2024 |
-| 88 | SL-1 - Apprentissage Logique : CBH Search et Versi | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 89 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 28 | OR-Tools : Résolution du Problème du Régime de Sti | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 29 | Planners-0-Setup | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 30 | Planners-1-Introduction a la Planification Automat | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 31 | Planners-2-PDDL-Basics | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 32 | Planners-3-State-Space - Recherche dans l'Espace d | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 33 | Planners-4-Fast-Downward - Planificateur Classique | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 34 | Planners-5-Heuristiques en Planification | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 35 | Planners-6-Domains - Domaines Classiques de Planif | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 36 | Planners-7-OR-Tools - Programmation par Contrainte | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 37 | Planners-8-Temporal - Planification Temporelle | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 38 | Planners-9-HTN - Planification Hierarchique | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 39 | Planners-10: LLMs pour la Planification | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
+| 40 | Planners-11: Unified Planning | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 41 | Planners-12: Learning to Plan avec LOOP | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 42 | Introduction au web sémantique avec RDF.Net | .NET (C#) | READY | PRODUCTION | 2h+ | po-2024 |
+| 43 | SW-1-Setup | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
+| 44 | SW-10-Python-RDFStar | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 45 | SW-11-Python-KnowledgeGraphs | Python 3 | READY | PRODUCTION | 1h | po-2024 |
+| 46 | SW-12-Python-GraphRAG | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 47 | SW-14-Reasoners | Python 3 | READY | PRODUCTION | 1h | po-2024 |
+| 48 | SW-2-RDFBasics | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 49 | SW-2b-Python-RDFBasics | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 50 | SW-3-GraphOperations | .NET (C#) | READY | PRODUCTION | 1h | po-2024 |
+| 51 | SW-4-SPARQL | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 52 | SW-4b-Python-SPARQL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 53 | SW-5-LinkedData | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 54 | SW-5b-Python-LinkedData | .venv (3.12.3) | READY | PRODUCTION | 45min | po-2024 |
+| 55 | SW-6-RDFS | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 56 | SW-7-OWL | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 57 | SW-7b-Python-OWL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 58 | SW-8-Python-SHACL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 59 | SW-9-Python-JSONLD | Python 3 | READY | PRODUCTION | 1h | po-2024 |
+| 60 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 61 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 62 | SC-2-Setup-Web3py - Python et la Blockchain | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 63 | SC-3-Solidity-Basics - Fondements de Solidity | .venv | READY | PRODUCTION | 45min | po-2024 |
+| 64 | SC-4-Functions-State - Fonctions et Etat | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 65 | SC-5-Inheritance - Heritage et Interfaces | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 66 | SC-6-Errors-Events - Erreurs et Evenements | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 67 | SC-10-Account-Abstraction - ERC-4337 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 68 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
+| 69 | SC-7-Token-Standards - Standards de Tokens | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 70 | SC-8-DeFi-Primitives - Primitives DeFi | Python (CoursIA SemanticWeb) | READY | PRODUCTION | 30min | po-2024 |
+| 71 | SC-9-DAO-Governance - Gouvernance DAO | cours-ia | READY | PRODUCTION | 30min | po-2024 |
+| 72 | SC-12-Foundry-Testing - Tests avec Foundry | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 73 | SC-13-Fuzz-Invariants - Fuzz Testing | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 74 | SC-14-Formal-Verification - Verification Formelle | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 75 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgatio | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 76 | SC-16-Homomorphic-Encryption - Chiffrement Homomor | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 77 | SC-17-E2E-Verifiable-Voting - Vote Electronique Ve | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 78 | SC-18-Vyper - Smart Contracts en Python-like | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 79 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 80 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | .venv | READY | PRODUCTION | 30min | po-2024 |
+| 81 | SC-21-Move-Sui - Move sur Sui | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 82 | SC-22-Solana-Anchor - Solana avec Anchor | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 83 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 84 | SC-24 : Deploiement sur Testnets | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 85 | SC-25 : Deploiement Mainnet (L2) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 86 | SC-26 : Projet Final - DApp Complete | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 87 | SL-1 - Apprentissage Logique : CBH Search et Versi | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 88 | SL-10 --- Capstone : un pipeline neuro-symbolique  | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 89 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 90 | SL-3 --- Apprentissage Base sur la Pertinence (RBL | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 91 | SL-4 --- Programmation Logique Inductive (ILP) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 92 | SL-5 : Integration Neuro-Symbolique | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 93 | SL-6 - ILP Moderne et Knowledge Graphs | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 91 | SL-4 --- Programmation Logique Inductive (ILP) | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
+| 92 | SL-5 : Integration Neuro-Symbolique | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 93 | SL-6 - ILP Moderne et Knowledge Graphs | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 94 | SL-7 - LLMs et Apprentissage Symbolique : Generati | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 95 | Configuration et Installation TweetyProject | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 96 | Logiques de Base - Propositionnelle et Premier Ord | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 97 | Logiques Avancees - DL, Modale, QBF, Conditional | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 98 | Révision de Croyances et Incohérence | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 99 | Argumentation Abstraite (Dung) | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 100 | Argumentation Structuree | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 101 | Frameworks d'Argumentation Étendus | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 102 | Sémantiques de Classement et Argumentation Probabi | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 103 | Dialogues Multi-Agents Argumentatifs | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 104 | Préférences et Théorie du Vote | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 95 | SL-8 --- Apprentissage Actif d'Automates (L* d'Ang | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 96 | SL-9 --- Resolution Inverse et Progol (ILP bottom- | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 97 | Configuration et Installation TweetyProject | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 98 | Logiques de Base - Propositionnelle et Premier Ord | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 99 | Logiques Avancees - DL, Modale, QBF, Conditional | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 100 | Révision de Croyances et Incohérence | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 101 | Argumentation Abstraite (Dung) | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 102 | Argumentation Structuree | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 103 | Frameworks d'Argumentation Étendus | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 104 | Sémantiques de Classement et Argumentation Probabi | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 105 | Dialogues Multi-Agents Argumentatifs | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 106 | Préférences et Théorie du Vote | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 107 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | BETA | 30min | po-2024 |
 
-### QuantConnect (101 notebooks) — BROKEN:1, DEMO:54, READY:46 | ALPHA:33, BETA:6, DRAFT:2, PRODUCTION:59, TEMPLATE:1
+### QuantConnect (101 notebooks) — DEMO:55, READY:46 | ALPHA:33, BETA:6, DRAFT:2, PRODUCTION:59, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -347,7 +350,7 @@ Total notebooks: 516
 | 3 | QC-Py-01 : Configuration et Premier Backtest Quant | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 4 | QC-Py-02 : QuantConnect Platform Fundamentals - QC | Python 3 | DEMO | ALPHA | 30min | po-2026 |
 | 5 | QC-Py-03 - Data Management in QuantConnect | Python 3 | DEMO | ALPHA | 45min | po-2026 |
-| 6 | QC-Py-04 - Research Workflow with QuantBook | Python 3 | BROKEN | PRODUCTION | 1h | po-2026 |
+| 6 | QC-Py-04 - Research Workflow with QuantBook | Python 3 | DEMO | PRODUCTION | 1h | po-2026 |
 | 7 | QC-Py-05 - Universe Selection dans QuantConnect | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 8 | QC-Py-06 : Options Trading dans QuantConnect | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 9 | QC-Py-07 : Futures et Forex Trading dans QuantConn | Python 3 | DEMO | PRODUCTION | 45min | po-2026 |
@@ -567,26 +570,29 @@ Total notebooks: 516
 | 1 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 45min | po-2025 |
 | 2 | IIT - Introduction à PyPhi et Integrated Informati | pyphi | READY | PRODUCTION | 30min | po-2025 |
 
-### RL (10 notebooks) — READY:10 | BETA:1, PRODUCTION:9
+### RL (13 notebooks) — READY:13 | BETA:1, PRODUCTION:12
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
-| 1 | Tutoriel Stable Baselines3 - Premiers pas | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 2 | Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,  | Python 3 | READY | BETA | 30min | po-2025 |
-| 3 | Notebook 3 – Hindsight Experience Replay (HER) et  | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 4 | RL-3 : Bandits Manchots et le Compromis Exploratio | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 5 | RL-4 : MDP, Programmation Dynamique et Q-Learning  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 6 | RL-5 : Deep Q-Network (DQN) et Policy Gradient | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 7 | RL-5b - Actor-Critic : unir valeur et politique | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 8 | PPO (Proximal Policy Optimization) depuis zero | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 9 | SAC (Soft Actor-Critic) depuis zero | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 10 | RL-6 : Introduction a l'Apprentissage Multi-Agent | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 1 | RL-10 : Reward Shaping et Curriculum Learning | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 2 | Tutoriel Stable Baselines3 - Premiers pas | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 3 | Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,  | Python 3 | READY | BETA | 30min | po-2025 |
+| 4 | Notebook 3 – Hindsight Experience Replay (HER) et  | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 5 | RL-4 : Bandits Manchots et le Compromis Exploratio | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 6 | RL-5 : MDP, Programmation Dynamique et Q-Learning  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 7 | RL-6 : Deep Q-Network (DQN) et Policy Gradient | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 8 | RL-6b - Actor-Critic : unir valeur et politique | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 9 | PPO (Proximal Policy Optimization) depuis zero | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 10 | SAC (Soft Actor-Critic) depuis zero | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 11 | RL-7 : Introduction a l'Apprentissage Multi-Agent | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 12 | RL-8 : Model-Based RL — Dyna-Q et planification | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
+| 13 | RL-9 : RL offline — Behavior Cloning et erreur d'e | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
 
 
 ## Requirements
 
-- **API**: 117 notebooks
-- **GPU**: 79 notebooks
+- **API**: 118 notebooks
+- **GPU**: 80 notebooks
 - **Cloud**: 101 notebooks
-- **WSL**: 29 notebooks
-- **Local**: 250 notebooks
+- **WSL**: 30 notebooks
+- **Local**: 253 notebooks
