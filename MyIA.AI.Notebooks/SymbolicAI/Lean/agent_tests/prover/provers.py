@@ -211,7 +211,7 @@ class MultiAgentSorryProver:
     with CriticAgent routing back to any agent based on error analysis.
     """
 
-    def __init__(self, trace: TraceLogger, provider: str = "zai",
+    def __init__(self, trace: TraceLogger, provider: str = "openrouter",
                  local_provider: str = "local",
                  director_provider: Optional[str] = None,
                  coordinator_provider: Optional[str] = None,
@@ -453,6 +453,7 @@ class MultiAgentSorryProver:
             diagnosis_agent=diagnosis_agent,
             concurrent_search_count=concurrent_search_count,
             extra_search_agents=extra_search_agents if extra_search_agents else None,
+            tactic_tools=tactic_tools,
         )
         workflow = workflow_builder.build()
 
@@ -502,7 +503,12 @@ class MultiAgentSorryProver:
             # Reasoning models can spend ~5-10 min/iteration on hard goals.
             # 600s/iter * max_iterations gives the agents room without
             # capping a productive run mid-thinking.
-            workflow_timeout_s = max_iterations * 600
+            iteration_cap = max_iterations * 600
+            # P2 (#1453 forensic): per-sorry wall-clock cap. Prevents burning
+            # hours on delta=0 runs (zai avg 59 min/run, 0 success; openrouter
+            # avg success 8.3 min). 10 min/sorry, minimum 10 min.
+            sorry_cap = max(original_sorry_count * 600, 600)
+            workflow_timeout_s = min(iteration_cap, sorry_cap)
         session_start = time.time()
         self.trace.start_session_span(demo["name"], "multi")
         proof_found = False

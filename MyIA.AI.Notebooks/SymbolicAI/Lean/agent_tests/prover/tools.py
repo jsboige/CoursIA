@@ -639,6 +639,12 @@ class TacticTools:
         self._min_compile_sorry_count: Optional[int] = None
         self._consecutive_delta0: int = 0
         self._stagnation_threshold: int = 3
+        # P3 (#1453 forensic): oscillation detector. Tracks consecutive
+        # compiles where sorry count REGRESSED (above the session minimum).
+        # When the regression count hits the cap, compile emits a REGRESSION
+        # directive and auto-restores best_content if available.
+        self._consecutive_regressions: int = 0
+        self._regression_cap: int = 2
         self._original_file_size: int = 0
         self._original_content: Optional[str] = None
         # Decomposition budget: how many new sorries the agents may introduce
@@ -956,20 +962,40 @@ class TacticTools:
                     )
         return None
 
+    def reset_stagnation(self):
+        """Reset the delta0 stagnation and regression counters (VerifyExecutor on proof_found).
+
+        Forensic #1453 P1+P3: the verify step can find progress (proof_found=True)
+        without going through compile's _record_sorry_count(). Without this reset,
+        the stagnation counter keeps counting pre-verify compiles and may trigger
+        premature stagnation on the next tactic loop. Mirrors into shared state.
+        """
+        self._consecutive_delta0 = 0
+        self._consecutive_regressions = 0  # P3: proof found resets regression
+        if self._state is not None:
+            self._state.consecutive_delta0_compiles = 0
+
     def _record_sorry_count(self, sorry_count: int):
         """Shared delta0 tracking used by both compile() and _build_check_or_revert().
 
         Records the sorry count after a successful build-check, updates the
-        consecutive delta0 streak, and mirrors into shared state. Callers
-        must pass the already-computed sorry count to avoid redundant file reads.
+        consecutive delta0 streak, and mirrors into shared state. Also tracks
+        P3 oscillation: consecutive compiles where sorry regressed above the
+        session minimum.
         """
         if self._min_compile_sorry_count is None:
             self._min_compile_sorry_count = sorry_count
         elif sorry_count < self._min_compile_sorry_count:
             self._min_compile_sorry_count = sorry_count
             self._consecutive_delta0 = 0
+            self._consecutive_regressions = 0  # P3: new low resets regression
         else:
             self._consecutive_delta0 += 1
+            # P3 oscillation detection: sorry above session minimum = regression
+            if sorry_count > self._min_compile_sorry_count:
+                self._consecutive_regressions += 1
+            else:
+                self._consecutive_regressions = 0  # same as min, not a regression
         if self._state is not None:
             self._state.consecutive_delta0_compiles = self._consecutive_delta0
 
@@ -1759,11 +1785,34 @@ class TacticTools:
         # discharged) resets the streak. Build failures are a different pathology
         # (handled by F1 consecutive_build_fails) and leave the streak unchanged.
         stagnation = False
+        regression = False
         directive = None
         if success:
             self._record_sorry_count(sorry_count)
             stagnation = self._consecutive_delta0 >= self._stagnation_threshold
-            if stagnation:
+            # P3 (#1453 forensic): oscillation detection. When sorry count
+            # regresses above the session minimum for N consecutive compiles,
+            # emit a directive and auto-restore best_content. Forensic: 10
+            # traces show oscillation (e.g. 5->3->6->5), burning ~300s each.
+            regression = self._consecutive_regressions >= self._regression_cap
+            if regression and self._best_content and sorry_count > self._best_sorry_count:
+                # Auto-restore the best known state to break the oscillation
+                Path(self._filepath).write_text(self._best_content, encoding="utf-8")
+                restored_sorry = self._best_sorry_count
+                directive = (
+                    f"REGRESSION: sorry oscillated to {sorry_count} (session min "
+                    f"{self._min_compile_sorry_count}). Auto-restored best snapshot "
+                    f"({restored_sorry} sorry). Do NOT re-introduce the regressed "
+                    f"edit — try a different decomposition or tactic."
+                )
+                if self._trace:
+                    self._trace.log(
+                        agent="TacticTools", role="regression_restore",
+                        content=(f"P3 REGRESSION auto-restore: {sorry_count} -> "
+                                 f"{restored_sorry} sorry (cap={self._regression_cap})"),
+                        duration_s=0.01,
+                    )
+            elif stagnation:
                 directive = (
                     f"STAGNATION: {self._consecutive_delta0} consecutive successful "
                     f"compiles without lowering sorry_count (still {sorry_count}). "
@@ -1790,11 +1839,18 @@ class TacticTools:
         overall = level_1 and level_2 and (level_3 if level_3 is not None else True)
 
         if self._trace:
+            _tags = []
+            if stagnation:
+                _tags.append("STAGNATION")
+            if regression:
+                _tags.append(f"REGRESSION({self._consecutive_regressions})")
+            _tag_str = " ".join(_tags)
             self._trace.log(
                 agent="TacticAgent", role="compile",
                 content=f"compile: L1={level_1} L2={level_2}(Δ{sorry_delta}) L3={level_3} "
                         f"| {sorry_count} sorry (text={text_sorry_count},implicit={implicit_sorry}) "
-                        f"| Δ0streak={self._consecutive_delta0}{' STAGNATION' if stagnation else ''} "
+                        f"| Δ0streak={self._consecutive_delta0}"
+                        f"{' ' + _tag_str if _tag_str else ''} "
                         f"| {'CACHED' if cached else 'fresh'}",
                 duration_s=duration, tool_name="compile",
                 tool_result=raw_output[:500],
@@ -1812,6 +1868,8 @@ class TacticTools:
             "original_sorry_count": self._original_sorry_count,
             "consecutive_delta0": self._consecutive_delta0,
             "stagnation": stagnation,
+            "regression": regression,
+            "consecutive_regressions": self._consecutive_regressions,
             "directive": directive,
             "error_count": len(errors), "errors": errors[:10],
             "compile_time_s": round(duration, 1),
