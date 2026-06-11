@@ -51,6 +51,7 @@
     - Voir #2611 pour l'inventaire des groupes et le plan d'alignement des
       manifests (etape 2) qui elargira les groupes mutualisables.
 #>
+#Requires -Version 7.0
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
@@ -189,6 +190,23 @@ function Invoke-Scan {
 
 # --- Apply ---
 
+function Remove-DirRobust([string]$Path) {
+    # Remove-Item echoue sur les artefacts Mathlib (chemins > 260 chars) meme avec
+    # le prefixe \\?\ (incident 2026-06-11, purge mathlib.bak-2611 de calibration_lean).
+    # Fallback : robocopy /MIR depuis un dossier vide (gere les long paths nativement).
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+    try { Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop } catch {}
+    if (Test-Path -LiteralPath $Path) {
+        $empty = New-Item -ItemType Directory -Force -Path (Join-Path $env:TEMP "empty-2611")
+        robocopy $empty.FullName $Path /MIR /NFL /NDL /NJH /NJS /NP /R:2 /W:1 | Out-Null
+        cmd /c "rd /s /q `"$Path`"" 2>$null
+        Remove-Item $empty.FullName -Force -ErrorAction SilentlyContinue
+    }
+    if (Test-Path -LiteralPath $Path) {
+        throw "Suppression impossible : $Path"
+    }
+}
+
 function Restore-Member([object]$Member) {
     # Retire la junction (lien seul) et restaure le backup physique si present.
     if (Test-IsJunction $Member.MathlibDir) {
@@ -239,28 +257,44 @@ function Invoke-Apply {
         }
 
         # 2. Junctions pour tous les membres (donneur inclus, son dossier vient d'etre deplace).
+        # Les membres deja junctionnes sont re-traites aussi (re-enregistrement dans
+        # share-state.json + re-verification -Build + liberation -RemoveBackups) : un
+        # Apply interrompu entre la junction et la persistance de l'etat se repare en
+        # relancant le meme Apply (incident 2026-06-11, abort PS5.1 sur utf8NoBOM).
+        $statePath = Get-ShareStatePath $groupId
+        $existing = if (Test-Path -LiteralPath $statePath) {
+            @((Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json).members)
+        } else { @() }
         $stateMembers = @()
-        foreach ($m in $members) {
-            if ((Test-Path -LiteralPath $m.MathlibDir) -and -not (Test-IsJunction $m.MathlibDir)) {
-                $bak = "$($m.MathlibDir)$BackupSuffix"
-                if (Test-Path -LiteralPath $bak) {
-                    Write-Warning "$($m.RelPath) : backup deja present ($bak), skip ce membre."
-                    continue
-                }
-                Move-Item -LiteralPath $m.MathlibDir -Destination $bak
-                $hadBackup = $true
+        foreach ($m in @($g.Group)) {
+            if ($m.IsJunction) {
+                $hadBackup = Test-Path -LiteralPath "$($m.MathlibDir)$BackupSuffix"
+                $prev = $existing | Where-Object { $_.relPath -eq $m.RelPath }
+                $isDonor = [bool]($prev -and $prev.isDonor)
+                Write-Host "  junction existante : $($m.RelPath) $(if ($hadBackup) { '(backup conserve)' })"
             } else {
-                $hadBackup = $false
+                if (Test-Path -LiteralPath $m.MathlibDir) {
+                    $bak = "$($m.MathlibDir)$BackupSuffix"
+                    if (Test-Path -LiteralPath $bak) {
+                        Write-Warning "$($m.RelPath) : backup deja present ($bak), skip ce membre."
+                        continue
+                    }
+                    Move-Item -LiteralPath $m.MathlibDir -Destination $bak
+                    $hadBackup = $true
+                } else {
+                    $hadBackup = $false
+                }
+                $parent = Split-Path $m.MathlibDir -Parent
+                New-Item -ItemType Directory -Force -Path $parent | Out-Null
+                New-Item -ItemType Junction -Path $m.MathlibDir -Target $cacheMathlib | Out-Null
+                $isDonor = ($null -ne $donorRelPath -and $m.RelPath -eq $donorRelPath)
+                Write-Host "  junction : $($m.RelPath) -> $groupId $(if ($hadBackup) { '(backup conserve)' })"
             }
-            $parent = Split-Path $m.MathlibDir -Parent
-            New-Item -ItemType Directory -Force -Path $parent | Out-Null
-            New-Item -ItemType Junction -Path $m.MathlibDir -Target $cacheMathlib | Out-Null
-            Write-Host "  junction : $($m.RelPath) -> $groupId $(if ($hadBackup) { '(backup conserve)' })"
             $stateMembers += [ordered]@{
                 relPath    = $m.RelPath
                 mathlibDir = $m.MathlibDir
                 hadBackup  = $hadBackup
-                isDonor    = ($null -ne $donorRelPath -and $m.RelPath -eq $donorRelPath)
+                isDonor    = $isDonor
             }
 
             # 3. Verification optionnelle : lake build a travers la junction.
@@ -274,7 +308,7 @@ function Invoke-Apply {
                 if ($ok) {
                     Write-Host " SUCCESS"
                     if ($RemoveBackups -and $hadBackup) {
-                        Remove-Item -LiteralPath "$($m.MathlibDir)$BackupSuffix" -Recurse -Force
+                        Remove-DirRobust "$($m.MathlibDir)$BackupSuffix"
                         Write-Host "  backup supprime (espace recupere)."
                         ($stateMembers[-1]).hadBackup = $false
                     }
@@ -287,11 +321,7 @@ function Invoke-Apply {
             }
         }
 
-        # 4. Persistance de l'etat pour Rollback.
-        $statePath = Get-ShareStatePath $groupId
-        $existing = if (Test-Path -LiteralPath $statePath) {
-            (Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json).members
-        } else { @() }
+        # 4. Persistance de l'etat pour Rollback ($statePath/$existing charges avant la boucle).
         $merged = @($existing) + @($stateMembers) |
             Group-Object { $_.relPath } | ForEach-Object { $_.Group[-1] }
         [ordered]@{
