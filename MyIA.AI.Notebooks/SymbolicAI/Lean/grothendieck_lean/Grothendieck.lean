@@ -33,3 +33,5 @@ import Grothendieck.DenseTopology
 import Grothendieck.Sheafification
 import Grothendieck.LeftExact
 import Grothendieck.Subcanonical
+import Grothendieck.SitePoints
+import Grothendieck.SheafHom
