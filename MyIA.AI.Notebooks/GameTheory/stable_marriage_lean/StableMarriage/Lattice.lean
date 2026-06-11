@@ -28,6 +28,8 @@
 import Mathlib.Order.Lattice
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Fintype.EquivFin
+import Mathlib.Data.Fin.VecNotation
+import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Tactic.Common
 import StableMarriage.Definitions
 
@@ -129,295 +131,102 @@ lemma no_cross_if_both_choose_cross (μ ν : Matching n)
     Nat.le_antisymm (mod_cast hnot₂) (mod_cast hnot₁)
   exact hne ((prof.womenPref_bijective w).injective (Fin.ext heq))
 
-/--
-Anti-crossing: if two stable matchings share a woman w (μ.sp m₁ = w, ν.sp m₂ = w),
-then the other partners are also shared: μ.sp m₂ = ν.sp m₁.
-This is the core of Knuth's decomposition lemma (1976, Theorem 1.6.3).
+/-! ## Refutation of the anti-crossing conjecture (`no_cross_match`)
 
-Proof structure (3 cases by case-splitting on preferences):
+Earlier versions of this file stated the following "anti-crossing lemma",
+attributed to Knuth's decomposition argument, and left its Cases A2/B as
+`sorry` after many unsuccessful proof attempts:
 
-  Case A: m₁ prefers w = μ(m₁) over w₁ = ν(m₁)
-    Case A1: m₂ also prefers w over w₂ = μ(m₂)
-      → Blocking pair contradiction against μ-stability (PROVED below, L176-L183)
-    Case A2: m₂ prefers w₂ over w
-      → Dual blocking-pair contradiction (SCAFFOLDED below)
+  `no_cross_match : IsStable prof μ → IsStable prof ν →`
+  `    μ.spouse m₁ = w → ν.spouse m₂ = w → μ.spouse m₂ = ν.spouse m₁`
 
-  Case B: m₁ prefers w₁ = ν(m₁) over w = μ(m₁)
-    → Symmetric to Case A by exchanging μ ↔ ν, m₁ ↔ m₂ (SCAFFOLDED below)
+This statement is FALSE.  It would force the symmetric difference of any two
+stable matchings to decompose into 2-cycles (swaps), but rotations of length
+≥ 3 between stable matchings exist.  The kernel-checked counterexample below
+(`NoCrossCounterexample.no_cross_match_is_false`) uses the classic 3×3
+latin-square instance (Knuth 1976): the identity matching and its cyclic
+shift are both stable, yet the claimed cross-partner equality fails.  This
+explains why all proof attempts on the `sorry` branches stalled: the goals
+were unprovable.
 
-The proved fragment `no_cross_if_both_choose_cross` covers the cross-case
-used by `meetSpouse_injective`.
+Knuth's lattice theorem does not need any anti-crossing statement: the
+weaker facts proved in this file (`no_cross_if_both_choose_cross`,
+`joinSpouse_injective`, and the counting argument in `meetSpouse_eq_of_eq`)
+suffice to show that join and meet of two stable matchings are matchings.
 
-Historical reference:
-  Knuth (1976), "Mariages Stables", Theorem 1.6.3 and pp. 56-57.
-  The anti-crossing lemma is the key ingredient for showing the lattice
-  structure: it establishes that join and meet preserve bijectivity.
-
-Proof strategy for Case A2 (the hardest sub-case):
-  Hypotheses in context:
-    - hm₁ : ManPrefers m₁ w w₁        (m₁ prefers his μ-partner over his ν-partner)
-    - ¬hm₂ : ¬ManPrefers m₂ w w₂      (m₂ does NOT prefer w over his μ-partner w₂)
-    - hwp₁ : ¬WomanPrefers w m₁ m₂    (from ν-stability applied to (m₁, w))
-    - hw_m₂_pref : WomanPrefers w m₂ m₁ (derived from hwp₁ + injectivity of womenPref)
-
-  Goal: False (contradiction from m₁ ≠ m₂)
-
-  Step 1: Derive ¬WomanPrefers w m₂ m₁ from μ-stability.
-    The key insight: m₂ is matched to w₂ in μ, and w₂ ≠ w.
-    From ¬hm₂ we get menPref m₂ w₂ ≤ menPref m₂ w (m₂ weakly prefers w₂).
-    Since w₂ ≠ w, we need to show (m₂, w) doesn't block μ.
-    ManPrefers m₂ w (μ.spouse m₂) = ManPrefers m₂ w w₂ is FALSE (from ¬hm₂).
-    So man-side fails → μ-stability gives no information directly.
-
-    Instead, we use ν-stability on (m₂, w):
-    ManPrefers m₂ w (ν.spouse m₂)? ν.spouse m₂ = w (from h2).
-    So m₂ is already matched to w in ν → (m₂, w) can't block ν.
-
-    The correct path: use BOTH stabilities on the SAME woman w.
-    - ν-stability on (m₁, w): already gave ¬WomanPrefers w m₁ m₂
-    - μ-stability on (m₂, w): need ManPrefers m₂ w (μ.spouse m₂) = ManPrefers m₂ w w₂.
-      But ¬hm₂ says this is false! So μ-stability doesn't directly help.
-
-    The trick: we DON'T need both non-preferences from stability alone.
-    Instead:
-    - ¬WomanPrefers w m₁ m₂  (from ν-stab on (m₁, w), already proved as hwp₁)
-    - ¬WomanPrefers w m₂ m₁  (need to derive)
-
-    For ¬WomanPrefers w m₂ m₁: suppose WomanPrefers w m₂ m₁.
-    Then (m₂, w) blocks ν: ManPrefers m₂ w (ν.spouse m₂) = ManPrefers m₂ w w?
-    ν.spouse m₂ = w (from h2), so m₂ is already matched to w in ν.
-    This means IsBlockingPair ν m₂ w requires ManPrefers m₂ w w = false.
-    So this doesn't work either!
-
-    CORRECT approach (Knuth's original argument):
-    Use the WEAK preference ¬hm₂ to get menPref m₂ w₂ ≤ menPref m₂ w.
-    Combined with hw_ne_w2 (w₂ ≠ w), this means womenPref w₂ < womenPref w
-    is NOT established. Instead:
-
-    The real argument uses ν-stability on (m₂, μ.spouse m₂) = (m₂, w₂):
-    - We need ManPrefers m₂ w₂ (ν.spouse m₂) = ManPrefers m₂ w₂ w.
-    - ¬hm₂ gives menPref m₂ w₂ ≤ menPref m₂ w, i.e., ¬ManPrefers m₂ w w₂.
-    - So ManPrefers m₂ w₂ w iff menPref m₂ w₂ < menPref m₂ w, which is ¬hm₂... NO.
-    - ¬hm₂ means menPref m₂ w ≤ menPref m₂ w₂ (m₂ weakly prefers w₂).
-
-    Final approach: combine BOTH ¬WomanPrefers from the SAME pattern as Case A1.
-    From ν-stab(m₁,w): hwp₁ = ¬WomanPrefers w m₁ m₂
-    From μ-stab(m₁,w): μ.spouse m₁ = w, so (m₁, w) can't block μ (man already matched to w in μ).
-
-    The key: use ν-stability on (m₂, w₂):
-    - Need ManPrefers m₂ w₂ (ν.spouse m₂) = ManPrefers m₂ w₂ w.
-    - From hw_m₂_pref: WomanPrefers w m₂ m₁, so womenPref w m₂ < womenPref w m₁.
-    - We need to show this leads to a contradiction with μ-stability on (m₁, w₂).
-
-    Ultimately the proof reduces to the SAME pattern as no_cross_if_both_choose_cross:
-    obtain ¬WomanPrefers w m₁ m₂ and ¬WomanPrefers w m₂ m₁ from dual stability,
-    then antisymmetry of womenPref + injectivity gives m₁ = m₂.
-    The challenge is constructing the right blocking pair applications.
-
-  SCAFFOLDING: the `have` steps below decompose the proof into bite-sized
-  sub-goals that a prover agent can attack independently.
+The statements `man_optimality_key_step` and `doctor_optimal_eq_top` that
+previously closed this file were false for the same reason (they implied
+that all stable matchings are pairwise ManLE-comparable in both directions,
+hence equal); they are refuted at the end of this file and replaced by the
+honest theorem `exists_isManOptimal`.
 -/
-lemma no_cross_match (μ ν : Matching n)
-    (hμ : IsStable prof μ) (hν : IsStable prof ν)
-    {m₁ m₂ w : Fin n}
-    (h1 : μ.spouse m₁ = w) (h2 : ν.spouse m₂ = w) :
-    μ.spouse m₂ = ν.spouse m₁ := by
-  by_cases hm : m₁ = m₂
-  · subst hm; rw [h1, ← h2]
-  by_contra hne'
-  push_neg at hm
-  set w₁ := ν.spouse m₁
-  set w₂ := μ.spouse m₂
-  have hw_ne_w1 : w ≠ w₁ := fun heq ↦ hm (ν.bijective.1 (h2 ▸ heq).symm)
-  have hw_ne_w2 : w ≠ w₂ := fun heq ↦ hm (μ.bijective.1 (h1 ▸ heq))
-  have hw1_ne_w2 : w₁ ≠ w₂ := fun heq ↦ hne' heq.symm
-  have hμinv_w : μ.inverse w = m₁ := inverse_eq_of_spouse_eq μ m₁ _ h1
-  have hμinv_w₂ : μ.inverse w₂ = m₂ := inverse_eq_of_spouse_eq μ m₂ _ rfl
-  have hνinv_w : ν.inverse w = m₂ := inverse_eq_of_spouse_eq ν m₂ _ h2
-  have hνinv_w₁ : ν.inverse w₁ = m₁ := inverse_eq_of_spouse_eq ν m₁ _ rfl
-  by_cases hm₁ : prof.ManPrefers m₁ w w₁
-  · -- Case A: m₁ prefers w(=μ(m₁)) over w₁(=ν(m₁))
-    -- From ν-stab(m₁,w): ¬(MP m₁ w w₁ ∧ WP w m₁ m₂), so ¬WP w m₁ m₂
-    have hwp₁ : ¬prof.WomanPrefers w m₁ m₂ := by
-      intro hwp
-      have hbp : IsBlockingPair prof ν m₁ w := ⟨hm₁, by rw [hνinv_w]; exact hwp⟩
-      exact hν m₁ w hbp
-    -- Strict ranking: w ≠ w₂, so womenPref w m₁ ≠ womenPref w m₂
-    have hw_m₂_pref : prof.WomanPrefers w m₂ m₁ := by
-      unfold PrefProfile.WomanPrefers at hwp₁
-      simp only [not_lt] at hwp₁
-      have hne_rank : (prof.womenPref w m₂ : Nat) ≠ (prof.womenPref w m₁ : Nat) := by
-        intro heq
-        have : m₂ = m₁ := (prof.womenPref_bijective w).injective (Fin.ext heq)
-        exact hm this.symm
-      exact mod_cast (Nat.lt_of_le_of_ne (mod_cast hwp₁) hne_rank)
-    by_cases hm₂ : prof.ManPrefers m₂ w w₂
-    · -- Case A1: m₁ prefers w>w₁, m₂ prefers w>w₂
-      -- From μ-stab(m₂,w): ¬(MP m₂ w w₂ ∧ WP w m₂ m₁), contradiction!
-      have hbp : IsBlockingPair prof μ m₂ w := by
-        unfold IsBlockingPair
-        rw [hμinv_w]
-        exact ⟨hm₂, hw_m₂_pref⟩
-      exact hμ m₂ w hbp
-    · -- Case A2: m₁ prefers w>w₁, m₂ prefers w₂>w
-      --
-      -- CORRECT PROOF STRATEGY (verified by manual analysis):
-      --
-      -- Context:
-      --   hm₁ : ManPrefers m₁ w w₁        (m₁ prefers μ-partner over ν-partner)
-      --   ¬hm₂ : ¬ManPrefers m₂ w w₂       (m₂ does NOT prefer w over μ-partner)
-      --   hwp₁ : ¬WomanPrefers w m₁ m₂     (from ν-stability on (m₁, w))
-      --   hw_m₂_pref : WomanPrefers w m₂ m₁ (from hwp₁ + womenPref injectivity)
-      --   hμinv_w : μ.inverse w = m₁
-      --   hμinv_w₂ : μ.inverse w₂ = m₂
-      --   hνinv_w : ν.inverse w = m₂
-      --   hνinv_w₁ : ν.inverse w₁ = m₁
-      --
-      -- NOTE: The direct approach "derive ¬WomanPrefers w m₂ m₁ from μ-stability
-      -- on (m₂, w)" FAILS because ¬hm₂ means man-side fails.
-      -- Instead, we use a CROSS-STABILITY argument involving w₂ and w₁:
-      --
-      -- Step 1: From ¬hm₂, derive menPref m₂ w₂ ≤ menPref m₂ w (weak pref).
-      --   have hm₂weak : prof.menPref m₂ w₂ ≤ prof.menPref m₂ w := by
-      --     unfold PrefProfile.ManPrefers at hm₂; simp only [not_lt] at hm₂; exact mod_cast hm₂
-      --
-      -- Step 2: Apply μ-stability to (m₂, w). This requires BOTH:
-      --   ManPrefers m₂ w (μ.spouse m₂) = ManPrefers m₂ w w₂  [FAILS: ¬hm₂]
-      --   So (m₂, w) CANNOT block μ. This is a DEAD END.
-      --
-      -- Step 3 (CORRECT PATH): Use μ-stability on (m₁, w₂) and
-      --   ν-stability on (m₂, w₁). These are the CROSS pairs:
-      --   m₁'s μ-partner is w, but we ask about w₂ (m₂'s μ-partner).
-      --   m₂'s ν-partner is w, but we ask about w₁ (m₁'s ν-partner).
-      --
-      --   For (m₁, w₂) to block μ:
-      --     ManPrefers m₁ w₂ (μ.spouse m₁) = ManPrefers m₁ w₂ w  [need this]
-      --     WomanPrefers w₂ m₁ (μ.inverse w₂) = WomanPrefers w₂ m₁ m₂  [need this]
-      --
-      --   For (m₂, w₁) to block ν:
-      --     ManPrefers m₂ w₁ (ν.spouse m₂) = ManPrefers m₂ w₁ w  [need this]
-      --     WomanPrefers w₁ m₂ (ν.inverse w₁) = WomanPrefers w₁ m₂ m₁  [need this]
-      --
-      -- Step 4: The key insight is that we don't know whether these man-side
-      --   conditions hold, so we case-split. In each branch, at least one
-      --   of the two cross-blocking-pairs forms, giving a contradiction.
-      --
-      -- Key derivation: ¬hm₂ + w ≠ w₂ → ManPrefers m₂ w₂ w
-      -- ¬hm₂ means menPref m₂ w ≤ menPref m₂ w₂ (m₂ weakly prefers w₂).
-      -- Since w ≠ w₂ and menPref is injective: menPref m₂ w ≠ menPref m₂ w₂.
-      -- Combined: menPref m₂ w < menPref m₂ w₂ → ManPrefers m₂ w₂ w.
-      have hm₂' : prof.ManPrefers m₂ w₂ w := by
-        unfold PrefProfile.ManPrefers at hm₂ ⊢
-        simp only [not_lt] at hm₂
-        have hne_w : ¬(prof.menPref m₂ w₂ : Nat) = (prof.menPref m₂ w : Nat) := by
-          intro heq
-          have : w₂ = w := (prof.menPref_bijective m₂).injective (Fin.ext heq)
-          exact hw_ne_w2 this.symm
-        exact mod_cast (Nat.lt_of_le_of_ne (mod_cast hm₂) hne_w)
-      -- Case-split on whether m₁ prefers w₂ over w
-      by_cases hm₁w₂ : prof.ManPrefers m₁ w₂ w
-      · -- Branch: m₁ prefers w₂ over w
-        -- μ-stability on (m₁, w₂): ManPrefers m₁ w₂ (μ.spouse m₁) = ManPrefers m₁ w₂ w ✓
-        -- So ¬WomanPrefers w₂ m₁ (μ.inverse w₂) = ¬WomanPrefers w₂ m₁ m₂
-        have hμ_stab_m₁w₂ : ¬prof.WomanPrefers w₂ m₁ m₂ := by
-          intro hwp
-          have hbp : IsBlockingPair prof μ m₁ w₂ := by
-            unfold IsBlockingPair
-            rw [h1, hμinv_w₂]
-            exact ⟨hm₁w₂, hwp⟩
-          exact hμ m₁ w₂ hbp
-        -- ν-stability on (m₂, w₂): ManPrefers m₂ w₂ (ν.spouse m₂) = ManPrefers m₂ w₂ w ✓
-        -- So ¬WomanPrefers w₂ m₂ (ν.inverse w₂)
-        have hν_stab_m₂w₂ : ¬prof.WomanPrefers w₂ m₂ (ν.inverse w₂) := by
-          intro hwp
-          have hbp : IsBlockingPair prof ν m₂ w₂ := by
-            unfold IsBlockingPair
-            rw [show ν.spouse m₂ = w from h2]
-            exact ⟨hm₂', hwp⟩
-          exact hν m₂ w₂ hbp
-        -- Transitivity: hm₁w₂ (w₂ < w) + hm₁ (w < w₁) → ManPrefers m₁ w₂ w₁
-        -- ν-stability on (m₁, w₂): man-side ✓, so ¬WP w₂ m₁ (ν.inverse w₂)
-        have hm₁w₁ : prof.ManPrefers m₁ w₂ w₁ := by
-          unfold PrefProfile.ManPrefers at hm₁w₂ hm₁ ⊢
-          exact Nat.lt_trans hm₁w₂ hm₁
-        have hν_stab_m₁w₂ : ¬prof.WomanPrefers w₂ m₁ (ν.inverse w₂) := by
-          intro hwp
-          have hbp : IsBlockingPair prof ν m₁ w₂ := by
-            unfold IsBlockingPair
-            exact ⟨hm₁w₁, hwp⟩
-          exact hν m₁ w₂ hbp
-        -- We have 3 non-preferences on w₂: ¬WP w₂ m₁ m₂, ¬WP w₂ m₁ (ν.inv w₂), ¬WP w₂ m₂ (ν.inv w₂)
-        -- All are ≥ direction, no strict < to force antisymmetry contradiction.
-        -- Need: either strict WP from injectivity + ≠, or a different stability application.
-        -- TODO: try (m₂, w₁) cross-blocking or decomposition chain argument.
-        have hw2_pref_m2_m1 : prof.WomanPrefers w₂ m₂ m₁ := by
-          unfold PrefProfile.WomanPrefers at hμ_stab_m₁w₂ ⊢
-          simp only [not_lt] at hμ_stab_m₁w₂
-          have hne_rank : ¬ (prof.womenPref w₂ m₂ : Nat) = (prof.womenPref w₂ m₁ : Nat) := by
-            intro heq
-            have : m₂ = m₁ := (prof.womenPref_bijective w₂).injective (Fin.ext heq)
-            exact hm this.symm
-          exact mod_cast (Nat.lt_of_le_of_ne (mod_cast hμ_stab_m₁w₂) hne_rank)
-        have hνinv_w2_ne_m2 : ν.inverse w₂ ≠ m₂ := by
-          intro h
-          have hs : w₂ = w := by
-            calc
-              w₂ = ν.spouse (ν.inverse w₂) := (spouse_inverse ν w₂).symm
-              _ = ν.spouse m₂ := by rw [h]
-              _ = w := h2
-          exact hw_ne_w2 hs.symm
-        have hw2_pref_nuinv_m2 : prof.WomanPrefers w₂ (ν.inverse w₂) m₂ := by
-          unfold PrefProfile.WomanPrefers at hν_stab_m₂w₂ ⊢
-          simp only [not_lt] at hν_stab_m₂w₂
-          have hne_rank : ¬ (prof.womenPref w₂ (ν.inverse w₂) : Nat) = (prof.womenPref w₂ m₂ : Nat) := by
-            intro heq
-            have : ν.inverse w₂ = m₂ := (prof.womenPref_bijective w₂).injective (Fin.ext heq)
-            exact hνinv_w2_ne_m2 this
-          exact mod_cast (Nat.lt_of_le_of_ne (mod_cast hν_stab_m₂w₂) hne_rank)
-        have hνinv_w2_ne_m1 : ν.inverse w₂ ≠ m₁ := by
-          intro h
-          have hs : w₂ = w₁ := by
-            calc
-              w₂ = ν.spouse (ν.inverse w₂) := (spouse_inverse ν w₂).symm
-              _ = ν.spouse m₁ := by rw [h]
-              _ = w₁ := rfl
-          exact hw1_ne_w2 hs.symm
-        have hw2_pref_nuinv_m1 : prof.WomanPrefers w₂ (ν.inverse w₂) m₁ := by
-          unfold PrefProfile.WomanPrefers at hν_stab_m₁w₂ ⊢
-          simp only [not_lt] at hν_stab_m₁w₂
-          have hne_rank : ¬ (prof.womenPref w₂ (ν.inverse w₂) : Nat) = (prof.womenPref w₂ m₁ : Nat) := by
-            intro heq
-            have : ν.inverse w₂ = m₁ := (prof.womenPref_bijective w₂).injective (Fin.ext heq)
-            exact hνinv_w2_ne_m1 this
-          exact mod_cast (Nat.lt_of_le_of_ne (mod_cast hν_stab_m₁w₂) hne_rank)
-        have hcaseA2_branch1_chain : False := by
-          sorry
-        exact hcaseA2_branch1_chain
-      · -- Branch: m₁ does NOT prefer w₂ over w (menPref m₁ w ≤ menPref m₁ w₂)
-        -- Context: hm₁ (w < w₁), ¬hm₁w₂ (w ≤ w₂ for m₁), hm₂' (w₂ < w for m₂)
-        -- ¬hm₁w₂: menPref m₁ w ≤ menPref m₁ w₂
-        -- TODO: case-split on ManPrefers m₂ w₁ w₂ or use ν-stab(m₂, w₁)
-        sorry
-  · -- Case B: m₁ prefers w₁(=ν(m₁)) over w(=μ(m₁))
-    --
-    -- SCAFFOLD STRATEGY:
-    -- This case is SYMMETRIC to Case A with μ ↔ ν and m₁ ↔ m₂.
-    -- The same argument structure applies:
-    --   Sub-case B1: m₂ also prefers w₁ over w₂ → blocking pair contradiction
-    --   Sub-case B2: m₂ prefers w₂ over w₁ → dual of Case A2
-    --
-    -- After Case A is proved, Case B follows by the symmetry of the problem:
-    -- swap μ ↔ ν, m₁ ↔ m₂, w₁ ↔ w₂ in the proof of Case A.
-    -- In Lean, this can be done with `convert` or by replaying the same
-    -- tactic script with swapped hypotheses.
-    --
-    -- Historical note: Knuth (1976) states both cases in one line as
-    -- "by symmetry" (par symétrie). The formal proof needs explicit
-    -- replay because Lean doesn't have a "by symmetry" tactic for
-    -- custom structures.
-    --
-    -- Reference: Knuth (1976), p. 57, last paragraph of Thm 1.6.3 proof.
-    sorry
+
+/--
+Stability from a fully computable check: it suffices to verify, for every
+man `m`, woman `w` and candidate husband `m'` with `μ.spouse m' = w`, that
+`(m, w)` is not a blocking pair.  This formulation avoids the noncomputable
+`Matching.inverse`, so on concrete instances the hypothesis can be
+discharged by `decide`.
+-/
+lemma isStable_of_check (μ : Matching n)
+    (h : ∀ m w m' : Fin n, μ.spouse m' = w →
+      ¬(prof.menPref m w < prof.menPref m (μ.spouse m) ∧
+        prof.womenPref w m < prof.womenPref w m')) :
+    IsStable prof μ := by
+  intro m w hbp
+  obtain ⟨h1, h2⟩ := hbp
+  exact h m w (μ.inverse w) (spouse_inverse μ w) ⟨h1, h2⟩
+
+namespace NoCrossCounterexample
+
+/-- Men's rankings of the 3×3 latin-square instance (Knuth 1976).
+`menPref3 m w` is the rank man `m` assigns to woman `w` (lower = preferred):
+m₁ : w₁ > w₂ > w₃, m₂ : w₂ > w₃ > w₁, m₃ : w₃ > w₁ > w₂. -/
+def menPref3 : Fin 3 → Fin 3 → Fin 3 := ![![0, 1, 2], ![2, 0, 1], ![1, 2, 0]]
+
+/-- Women's rankings, cyclically shifted against the men's:
+w₁ : m₂ > m₃ > m₁, w₂ : m₃ > m₁ > m₂, w₃ : m₁ > m₂ > m₃. -/
+def womenPref3 : Fin 3 → Fin 3 → Fin 3 := ![![2, 0, 1], ![1, 2, 0], ![0, 1, 2]]
+
+/-- The 3×3 latin-square preference profile. -/
+def prof3 : PrefProfile 3 where
+  menPref := menPref3
+  womenPref := womenPref3
+  menPref_bijective := by decide
+  womenPref_bijective := by decide
+
+/-- The identity matching mᵢ ↦ wᵢ. -/
+def M0 : Matching 3 where
+  spouse := id
+  bijective := Function.bijective_id
+
+/-- The cyclic-shift matching mᵢ ↦ wᵢ₊₁. -/
+def M1 : Matching 3 where
+  spouse := ![1, 2, 0]
+  bijective := by decide
+
+lemma M0_stable : IsStable prof3 M0 :=
+  isStable_of_check prof3 M0 (by decide)
+
+lemma M1_stable : IsStable prof3 M1 :=
+  isStable_of_check prof3 M1 (by decide)
+
+/--
+**Refutation** of the former `no_cross_match` lemma (its full universally
+quantified statement).  Instantiation: μ = M0 (identity), ν = M1 (shift),
+w = w₁, m₁ = m₁ (married to w₁ in M0), m₂ = m₃ (married to w₁ in M1).
+The conclusion would force `M0.spouse m₃ = M1.spouse m₁`, i.e. w₃ = w₂.
+-/
+theorem no_cross_match_is_false :
+    ¬ ∀ (n : Nat) [NeZero n] (prof : PrefProfile n) (μ ν : Matching n),
+        IsStable prof μ → IsStable prof ν →
+        ∀ m₁ m₂ w : Fin n, μ.spouse m₁ = w → ν.spouse m₂ = w →
+          μ.spouse m₂ = ν.spouse m₁ := by
+  intro h
+  have hcontra := h 3 prof3 M0 M1 M0_stable M1_stable 0 2 0 (by decide) (by decide)
+  exact absurd hcontra (by decide)
+
+end NoCrossCounterexample
 
 /-! ## Join and Meet Operations -/
 
@@ -567,343 +376,87 @@ noncomputable def Matching.join (hμ : IsStable prof μ) (hν : IsStable prof ν
   bijective := Finite.injective_iff_bijective.mp (joinSpouse_injective prof μ ν hμ hν)
 
 /--
-Injectivity of meet: symmetric to joinSpouse_injective.
+Each man's join/meet pair is exactly his pair of partners in `{μ, ν}`:
+either the join picks his μ-partner and the meet his ν-partner, or the
+other way around.  Purely definitional if-split; no stability needed.
+-/
+private lemma joinSpouse_meetSpouse_cases (μ ν : Matching n) (m : Fin n) :
+    (μ.joinSpouse prof ν m = μ.spouse m ∧ μ.meetSpouse prof ν m = ν.spouse m) ∨
+    (μ.joinSpouse prof ν m = ν.spouse m ∧ μ.meetSpouse prof ν m = μ.spouse m) := by
+  by_cases hc : prof.menPref m (μ.spouse m) ≤ prof.menPref m (ν.spouse m)
+  · exact Or.inl ⟨by simp [Matching.joinSpouse, hc], by simp [Matching.meetSpouse, hc]⟩
+  · exact Or.inr ⟨by simp [Matching.joinSpouse, hc], by simp [Matching.meetSpouse, hc]⟩
+
+/--
+Core of meet-injectivity, by counting — no anti-crossing lemma needed
+(the anti-crossing statement is in fact false, see
+`NoCrossCounterexample.no_cross_match_is_false`).
+
+If two men m₁, m₂ both have meet-partner `w`, then each of them is
+`μ.inverse w` or `ν.inverse w` (a man's meet-partner is one of his own
+partners).  The join is surjective (`joinSpouse_injective` + finiteness),
+so some m₀ has join-partner `w`, and m₀ also lies in
+`{μ.inverse w, ν.inverse w}`.  In the mixed case (m₁, m₂ occupying the two
+distinct slots), m₀ coincides with one of them; but a man whose join- AND
+meet-partner are both `w` has both his μ- and ν-partner equal to `w`,
+which collapses both inverses onto him — and then m₁ and m₂ both equal him.
+-/
+private lemma meetSpouse_eq_of_eq (μ ν : Matching n)
+    (hμ : IsStable prof μ) (hν : IsStable prof ν) (w m₁ m₂ : Fin n)
+    (h₁ : μ.meetSpouse prof ν m₁ = w) (h₂ : μ.meetSpouse prof ν m₂ = w) :
+    m₁ = m₂ := by
+  -- any man who meets to w is μ.inverse w or ν.inverse w
+  have hmeet_mem : ∀ m : Fin n, μ.meetSpouse prof ν m = w →
+      m = μ.inverse w ∨ m = ν.inverse w := by
+    intro m hm
+    rcases joinSpouse_meetSpouse_cases prof μ ν m with ⟨_, hmm⟩ | ⟨_, hmm⟩
+    · exact Or.inr (inverse_eq_of_spouse_eq ν m w (hmm.symm.trans hm)).symm
+    · exact Or.inl (inverse_eq_of_spouse_eq μ m w (hmm.symm.trans hm)).symm
+  -- the join is surjective, so some m₀ has join-partner w
+  have hbij : Function.Bijective (fun m => μ.joinSpouse prof ν m) :=
+    Finite.injective_iff_bijective.mp (joinSpouse_injective prof μ ν hμ hν)
+  obtain ⟨m₀, hm₀⟩ := hbij.2 w
+  have hm₀' : μ.joinSpouse prof ν m₀ = w := hm₀
+  have hm₀_mem : m₀ = μ.inverse w ∨ m₀ = ν.inverse w := by
+    rcases joinSpouse_meetSpouse_cases prof μ ν m₀ with ⟨hjj, _⟩ | ⟨hjj, _⟩
+    · exact Or.inl (inverse_eq_of_spouse_eq μ m₀ w (hjj.symm.trans hm₀')).symm
+    · exact Or.inr (inverse_eq_of_spouse_eq ν m₀ w (hjj.symm.trans hm₀')).symm
+  -- a man who both joins and meets to w pins down BOTH inverses
+  have hboth : ∀ m : Fin n, μ.joinSpouse prof ν m = w → μ.meetSpouse prof ν m = w →
+      μ.inverse w = m ∧ ν.inverse w = m := by
+    intro m hj hm
+    rcases joinSpouse_meetSpouse_cases prof μ ν m with ⟨hjj, hmm⟩ | ⟨hjj, hmm⟩
+    · exact ⟨inverse_eq_of_spouse_eq μ m w (hjj.symm.trans hj),
+             inverse_eq_of_spouse_eq ν m w (hmm.symm.trans hm)⟩
+    · exact ⟨inverse_eq_of_spouse_eq μ m w (hmm.symm.trans hm),
+             inverse_eq_of_spouse_eq ν m w (hjj.symm.trans hj)⟩
+  -- mixed-slot case: the join witness collapses the two inverses
+  have key : ∀ ma mb : Fin n, ma = μ.inverse w → mb = ν.inverse w →
+      μ.meetSpouse prof ν ma = w → μ.meetSpouse prof ν mb = w → ma = mb := by
+    intro ma mb ea eb hma hmb
+    rcases hm₀_mem with e₀ | e₀
+    · -- m₀ = μ.inverse w = ma, so ma joins AND meets to w
+      have hja : μ.joinSpouse prof ν ma = w := by rw [ea, ← e₀]; exact hm₀'
+      obtain ⟨_, hbν⟩ := hboth ma hja hma
+      rw [eb, hbν]
+    · -- m₀ = ν.inverse w = mb, so mb joins AND meets to w
+      have hjb : μ.joinSpouse prof ν mb = w := by rw [eb, ← e₀]; exact hm₀'
+      obtain ⟨hbμ, _⟩ := hboth mb hjb hmb
+      rw [ea, hbμ]
+  rcases hmeet_mem m₁ h₁ with e₁ | e₁ <;> rcases hmeet_mem m₂ h₂ with e₂ | e₂
+  · exact e₁.trans e₂.symm
+  · exact key m₁ m₂ e₁ e₂ h₁ h₂
+  · exact (key m₂ m₁ e₂ e₁ h₂ h₁).symm
+  · exact e₁.trans e₂.symm
+
+/--
+Injectivity of meet, via the counting argument in `meetSpouse_eq_of_eq`.
 -/
 private lemma meetSpouse_injective (μ ν : Matching n)
     (hμ : IsStable prof μ) (hν : IsStable prof ν) :
     Injective (fun m => μ.meetSpouse prof ν m) := by
   intro m₁ m₂ heq
-  by_cases c₁ : prof.menPref m₁ (μ.spouse m₁) ≤ prof.menPref m₁ (ν.spouse m₁)
-  · simp only [Matching.meetSpouse, c₁, if_true] at heq
-    by_cases c₂ : prof.menPref m₂ (μ.spouse m₂) ≤ prof.menPref m₂ (ν.spouse m₂)
-    · simp only [Matching.meetSpouse, c₂, if_true] at heq
-      exact ν.bijective.1 heq
-    · simp only [Matching.meetSpouse, c₂, if_false] at heq
-      -- Cross-case: ν.spouse m₁ = μ.spouse m₂, m₁ gets ν, m₂ gets μ
-      -- c₁: menPref m₁ (μ.sp m₁) ≤ menPref m₁ (ν.sp m₁) (m₁ weakly prefers μ)
-      -- ¬c₂: m₂ prefers ν.sp to μ.sp (strict)
-      -- Key insight: c₁ gives ≤. If also ≥, equality → injectivity contradiction.
-      -- If strictly <, use stability (deferred for now).
-      by_cases hm₁str : (prof.menPref m₁ (μ.spouse m₁) : Nat) < prof.menPref m₁ (ν.spouse m₁)
-      · -- Strict: m₁ strictly prefers μ.sp₁ to ν.sp₁ = μ.sp m₂
-        -- Meet cross-case: men prefer DIFFERENT women.
-        -- Use anti-complementarity: meet on man side = join on woman side.
-        -- The key insight: consider woman μ.sp₁.
-        -- m₁ prefers μ.sp₁ over w. Use ν-stability on (m₁, μ.sp₁).
-        by_contra hne
-        have hw : ν.spouse m₁ = μ.spouse m₂ := heq
-        have hm₁μinv : μ.inverse (μ.spouse m₁) = m₁ := inverse_eq_of_spouse_eq μ m₁ _ rfl
-        -- ν-stability on (m₁, μ.sp₁): m₁ prefers μ.sp₁ to w = ν.sp₁
-        have hm₁pref : prof.ManPrefers m₁ (μ.spouse m₁) (ν.spouse m₁) := by
-          unfold PrefProfile.ManPrefers; exact mod_cast hm₁str
-        -- If μ.sp₁ also prefers m₁ to ν⁻¹(μ.sp₁), blocks ν
-        by_cases hw₁ : prof.WomanPrefers (μ.spouse m₁) m₁ (ν.inverse (μ.spouse m₁))
-        · -- (m₁, μ.sp₁) blocks ν
-          have hblock₁ : IsBlockingPair prof ν m₁ (μ.spouse m₁) := ⟨hm₁pref, hw₁⟩
-          exact hν m₁ (μ.spouse m₁) hblock₁
-        · -- μ.sp₁ doesn't prefer m₁ to ν⁻¹(μ.sp₁)
-          -- So ν⁻¹(μ.sp₁) ≤ m₁ in womenPref. Who is ν⁻¹(μ.sp₁)?
-          -- Now consider woman ν.sp₂. m₂ prefers ν.sp₂ over w.
-          have hm₂νinv : ν.inverse (ν.spouse m₂) = m₂ := inverse_eq_of_spouse_eq ν m₂ _ rfl
-          have hm₂pref : prof.ManPrefers m₂ (ν.spouse m₂) (μ.spouse m₂) := by
-            unfold PrefProfile.ManPrefers
-            exact mod_cast (Nat.lt_of_not_le (mod_cast c₂))
-          -- μ-stability on (m₂, ν.sp₂): m₂ prefers ν.sp₂ to w = μ.sp₂
-          by_cases hw₂ : prof.WomanPrefers (ν.spouse m₂) m₂ (μ.inverse (ν.spouse m₂))
-          · -- (m₂, ν.sp₂) blocks μ
-            have hblock₂ : IsBlockingPair prof μ m₂ (ν.spouse m₂) := ⟨hm₂pref, hw₂⟩
-            exact hμ m₂ (ν.spouse m₂) hblock₂
-          · -- Both women don't prefer the respective man.
-            -- hw₁: ¬WomanPrefers (μ.sp₁) m₁ (ν⁻¹(μ.sp₁))
-            -- hw₂: ¬WomanPrefers (ν.sp₂) m₂ (μ⁻¹(ν.sp₂))
-            by_cases hwsame : μ.spouse m₁ = ν.spouse m₂
-            · -- Same woman w = μ.sp₁ = ν.sp₂. From stability:
-              --   hw₁: womenPref w (ν⁻¹w) ≤ womenPref w m₁
-              --   hw₂: womenPref w (μ⁻¹w) ≤ womenPref w m₂
-              -- But ν⁻¹w = m₂ and μ⁻¹w = m₁, so antisymm gives womenPref w m₁ = womenPref w m₂.
-              have hμinv₁ : μ.inverse (μ.spouse m₁) = m₁ := inverse_eq_of_spouse_eq μ m₁ _ rfl
-              have hνinv₂ : ν.inverse (ν.spouse m₂) = m₂ := inverse_eq_of_spouse_eq ν m₂ _ rfl
-              -- ν⁻¹(μ.sp₁) = ν⁻¹(ν.sp₂) = m₂  (using hwsame: μ.sp₁ = ν.sp₂)
-              have hνinv₁ : ν.inverse (μ.spouse m₁) = m₂ := hwsame ▸ hνinv₂
-              -- hw₁: ¬WomanPrefers (μ.sp₁) m₁ (ν⁻¹(μ.sp₁))  →  womenPref(μ.sp₁)(m₂) ≤ womenPref(μ.sp₁)(m₁)
-              -- hw₂: ¬WomanPrefers (ν.sp₂) m₂ (μ⁻¹(ν.sp₂))  →  womenPref(ν.sp₂)(μ⁻¹(ν.sp₂)) ≤ womenPref(ν.sp₂)(m₂)
-              -- With hwsame and inverses: womenPref(μ.sp₁)(m₁) ≤ womenPref(μ.sp₁)(m₂)
-              unfold PrefProfile.WomanPrefers at hw₁ hw₂
-              simp only [not_lt] at hw₁ hw₂
-              rw [hνinv₁] at hw₁
-              -- hw₂: womenPref (ν.sp₂) (μ⁻¹(ν.sp₂)) ≤ womenPref (ν.sp₂) m₂
-              -- After rw [← hwsame]: womenPref (μ.sp₁) (μ⁻¹(μ.sp₁)) ≤ womenPref (μ.sp₁) m₂
-              -- Then rw [hμinv₁]: womenPref (μ.sp₁) m₁ ≤ womenPref (μ.sp₁) m₂
-              have hw₂' : prof.womenPref (μ.spouse m₁) m₁ ≤ prof.womenPref (μ.spouse m₁) m₂ := by
-                have h1 := hw₂
-                rw [← hwsame] at h1
-                rw [hμinv₁] at h1
-                exact mod_cast h1
-              -- hw₁: womenPref (μ.sp₁) m₂ ≤ womenPref (μ.sp₁) m₁
-              -- hw₂: womenPref (μ.sp₁) m₁ ≤ womenPref (μ.sp₁) m₂
-              exact hne ((prof.womenPref_bijective (μ.spouse m₁)).injective
-                (Fin.ext (Nat.le_antisymm (mod_cast hw₂') (mod_cast hw₁))))
-            · -- Different women w₁ ≠ w₂ where w₁ = μ.sp₁, w₂ = ν.sp₂, w = ν.sp₁ = μ.sp₂.
-              --
-              -- STRATEGY: "Chain man" contradiction.
-              -- From hw₁ (¬WP) and injectivity of womenPref: WP (μ.sp₁) (ν⁻¹(μ.sp₁)) m₁
-              -- From hw₂ (¬WP) and injectivity of womenPref: WP (ν.sp₂) (μ⁻¹(ν.sp₂)) m₂
-              --
-              -- Let m' = ν⁻¹(μ.sp₁) and m'' = μ⁻¹(ν.sp₂).
-              -- When m' = m'': ν(m') = μ.sp₁ and μ(m') = ν.sp₂ (by spouse_inverse).
-              --   μ-stab(m', μ.sp₁) + ν-stab(m', ν.sp₂):
-              --   If m' prefers either → blocking pair → contradiction.
-              --   If m' prefers neither → antisymmetry → μ.sp₁ = ν.sp₂ → contradicts hwsame!
-              have hw : ν.spouse m₁ = μ.spouse m₂ := heq
-              -- w₁ ≠ w: otherwise μ.sp₁ = ν.sp₁ = μ.sp₂ → μ.injective gives m₁ = m₂
-              have hw1_ne_w : μ.spouse m₁ ≠ ν.spouse m₁ := by
-                intro hw1eq
-                have : μ.spouse m₁ = μ.spouse m₂ := hw1eq ▸ hw
-                exact hne (μ.bijective.1 this)
-              -- w₂ ≠ w: otherwise ν.sp₂ = μ.sp₂ = ν.sp₁ → ν.injective gives m₁ = m₂
-              have hw2_ne_w : ν.spouse m₂ ≠ μ.spouse m₂ := by
-                intro hw2eq
-                have : ν.spouse m₂ = ν.spouse m₁ := hw2eq ▸ hw.symm
-                exact hne (ν.bijective.1 this.symm)
-              -- Derive strict woman-preferences from hw₁ and hw₂ using injectivity
-              -- hw₁ : ¬WomanPrefers (μ.sp₁) m₁ (ν⁻¹(μ.sp₁))
-              -- → womenPref (μ.sp₁) (ν⁻¹(μ.sp₁)) ≤ womenPref (μ.sp₁) m₁
-              -- Since ν⁻¹(μ.sp₁) ≠ m₁ (from ν.sp₁ ≠ μ.sp₁), strict inequality:
-              -- → WomanPrefers (μ.sp₁) (ν⁻¹(μ.sp₁)) m₁
-              have hw₁_strict : prof.WomanPrefers (μ.spouse m₁) (ν.inverse (μ.spouse m₁)) m₁ := by
-                unfold PrefProfile.WomanPrefers at hw₁ ⊢
-                simp only [not_lt] at hw₁
-                have hne_w : ¬(prof.womenPref (μ.spouse m₁) (ν.inverse (μ.spouse m₁)) : Nat) =
-                               (prof.womenPref (μ.spouse m₁) m₁ : Nat) := by
-                  intro heq
-                  have : ν.inverse (μ.spouse m₁) = m₁ :=
-                    (prof.womenPref_bijective (μ.spouse m₁)).injective (Fin.ext heq)
-                  have h₁ : ν.spouse (ν.inverse (μ.spouse m₁)) = μ.spouse m₁ :=
-                    spouse_inverse ν (μ.spouse m₁)
-                  rw [this] at h₁
-                  exact hw1_ne_w h₁.symm
-                exact Nat.lt_of_le_of_ne (mod_cast hw₁) hne_w
-              have hw₂_strict : prof.WomanPrefers (ν.spouse m₂) (μ.inverse (ν.spouse m₂)) m₂ := by
-                unfold PrefProfile.WomanPrefers at hw₂ ⊢
-                simp only [not_lt] at hw₂
-                have hne_w : ¬(prof.womenPref (ν.spouse m₂) (μ.inverse (ν.spouse m₂)) : Nat) =
-                               (prof.womenPref (ν.spouse m₂) m₂ : Nat) := by
-                  intro heq
-                  have : μ.inverse (ν.spouse m₂) = m₂ :=
-                    (prof.womenPref_bijective (ν.spouse m₂)).injective (Fin.ext heq)
-                  have h₂ : μ.spouse (μ.inverse (ν.spouse m₂)) = ν.spouse m₂ :=
-                    spouse_inverse μ (ν.spouse m₂)
-                  rw [this] at h₂
-                  exact hw2_ne_w h₂.symm
-                exact Nat.lt_of_le_of_ne (mod_cast hw₂) hne_w
-              -- Case-split on whether ν⁻¹(μ.sp₁) = μ⁻¹(ν.sp₂)
-              by_cases hchain : ν.inverse (μ.spouse m₁) = μ.inverse (ν.spouse m₂)
-              · -- Chain men coincide: immediate contradiction via dual stability
-                set m' := ν.inverse (μ.spouse m₁)
-                have hm'νsp : ν.spouse m' = μ.spouse m₁ := spouse_inverse ν (μ.spouse m₁)
-                have hm'μsp : μ.spouse m' = ν.spouse m₂ := by
-                  rw [hchain]; exact spouse_inverse μ (ν.spouse m₂)
-                -- For IsBlockingPair μ m' (μ.sp₁), woman-side needs:
-                --   WomanPrefers (μ.sp₁) m' (μ.inverse (μ.sp₁))
-                --   = WomanPrefers (μ.sp₁) m' m₁  [since μ⁻¹(μ.sp₁) = m₁]
-                have hμinv_sp1 : μ.inverse (μ.spouse m₁) = m₁ :=
-                  inverse_eq_of_spouse_eq μ m₁ _ rfl
-                -- μ-stability on (m', μ.sp₁): woman-side holds
-                by_cases hm'mp : prof.ManPrefers m' (μ.spouse m₁) (μ.spouse m')
-                · -- (m', μ.sp₁) blocks μ: man-side and woman-side both hold
-                  have hwp₁' : prof.WomanPrefers (μ.spouse m₁) m' (μ.inverse (μ.spouse m₁)) := by
-                    rw [hμinv_sp1]; exact hw₁_strict
-                  have hbp₁ : IsBlockingPair prof μ m' (μ.spouse m₁) :=
-                    ⟨hm'mp, hwp₁'⟩
-                  exact hμ m' (μ.spouse m₁) hbp₁
-                · -- m' doesn't prefer μ.sp₁ to μ(m') = ν.sp₂
-                  have hνinv_sp2 : ν.inverse (ν.spouse m₂) = m₂ :=
-                    inverse_eq_of_spouse_eq ν m₂ _ rfl
-                  -- ν-stability on (m', ν.sp₂): woman-side holds
-                  -- hchain ▸ hw₂_strict : WomanPrefers (ν.sp₂) m' m₂
-                  -- Need: WomanPrefers (ν.sp₂) m' (ν⁻¹(ν.sp₂))
-                  -- Since m₂ = ν⁻¹(ν.sp₂), use hνinv_sp2.symm to substitute
-                  have hw₂' : prof.WomanPrefers (ν.spouse m₂) m' (ν.inverse (ν.spouse m₂)) :=
-                    hνinv_sp2.symm ▸ (hchain ▸ hw₂_strict)
-                  by_cases hm'mp₂ : prof.ManPrefers m' (ν.spouse m₂) (ν.spouse m')
-                  · -- (m', ν.sp₂) blocks ν
-                    have hbp₂ : IsBlockingPair prof ν m' (ν.spouse m₂) :=
-                      ⟨hm'mp₂, hw₂'⟩
-                    exact hν m' (ν.spouse m₂) hbp₂
-                  · -- m' also doesn't prefer ν.sp₂ to ν(m') = μ.sp₁
-                    -- Combined antisymmetry: menPref m' (μ.sp₁) = menPref m' (ν.sp₂)
-                    -- → μ.sp₁ = ν.sp₂ → contradicts hwsame
-                    have h₁ : prof.menPref m' (ν.spouse m₂) ≤ prof.menPref m' (μ.spouse m₁) := by
-                      unfold PrefProfile.ManPrefers at hm'mp; simp only [not_lt] at hm'mp
-                      rw [hm'μsp] at hm'mp
-                      exact mod_cast hm'mp
-                    have h₂ : prof.menPref m' (μ.spouse m₁) ≤ prof.menPref m' (ν.spouse m₂) := by
-                      unfold PrefProfile.ManPrefers at hm'mp₂; simp only [not_lt] at hm'mp₂
-                      rw [hm'νsp] at hm'mp₂
-                      exact mod_cast hm'mp₂
-                    have hfeq : (prof.menPref m' (μ.spouse m₁) : Nat) =
-                                prof.menPref m' (ν.spouse m₂) :=
-                      Nat.le_antisymm h₂ h₁
-                    exact hwsame ((prof.menPref_bijective m').injective (Fin.ext hfeq))
-              · -- Chain men differ: need decomposition lemma (Knuth chain argument).
-                -- The chain starting from ν⁻¹(μ.sp₁) follows μ then ν⁻¹ repeatedly.
-                -- Since Fin n is finite, the chain must revisit a man, giving a cycle.
-                -- At the cycle point, the same dual-stability contradiction applies.
-                -- Full proof requires well-founded induction on Fin n.
-                sorry  -- TODO: decomposition chain argument (Fin n induction)
-      · -- Equality: m₁ equally prefers both → μ.sp m₁ = ν.sp m₁ → injectivity contradiction
-        push_neg at hm₁str
-        have hm₁ge : (prof.menPref m₁ (ν.spouse m₁) : Nat) ≤ prof.menPref m₁ (μ.spouse m₁) :=
-          mod_cast hm₁str
-        have heq' : (prof.menPref m₁ (μ.spouse m₁) : Nat) = prof.menPref m₁ (ν.spouse m₁) :=
-          Nat.le_antisymm (mod_cast c₁) hm₁ge
-        have hsp_eq : μ.spouse m₁ = ν.spouse m₁ :=
-          (prof.menPref_bijective m₁).injective (Fin.ext heq')
-        rw [heq] at hsp_eq
-        exact μ.bijective.1 hsp_eq
-  · simp only [Matching.meetSpouse, c₁, if_false] at heq
-    by_cases c₂ : prof.menPref m₂ (μ.spouse m₂) ≤ prof.menPref m₂ (ν.spouse m₂)
-    · simp only [Matching.meetSpouse, c₂, if_true] at heq
-      -- Cross-case: μ.spouse m₁ = ν.spouse m₂, m₁ gets μ, m₂ gets ν
-      -- ¬c₁: m₁ prefers ν.sp to μ.sp; c₂: m₂ weakly prefers μ.sp to ν.sp
-      by_cases hm₂strict : (prof.menPref m₂ (μ.spouse m₂) : Nat) < prof.menPref m₂ (ν.spouse m₂)
-      · -- Strict: m₂ strictly prefers μ.sp₂ to ν.sp₂
-        -- Symmetric to first cross-case. heq: μ.sp m₁ = ν.sp m₂ = w
-        -- m₁ prefers ν.sp₁ to μ.sp₁=w. m₂ prefers μ.sp₂ to ν.sp₂.
-        by_contra hne
-        have hm₁pref : prof.ManPrefers m₁ (ν.spouse m₁) (μ.spouse m₁) := by
-          unfold PrefProfile.ManPrefers
-          exact mod_cast (Nat.lt_of_not_le (mod_cast c₁))
-        have hm₂pref : prof.ManPrefers m₂ (μ.spouse m₂) (ν.spouse m₂) := by
-          unfold PrefProfile.ManPrefers; exact mod_cast hm₂strict
-        -- ν-stability on (m₁, ν.sp₁): m₁ prefers ν.sp₁ to μ.sp₁=w
-        -- But m₁ IS matched to ν.sp₁ in ν. So can't block with himself.
-        -- Instead: μ-stability on (m₁, ν.sp₁): m₁ prefers ν.sp₁ to μ.sp₁.
-        by_cases hw₁ : prof.WomanPrefers (ν.spouse m₁) m₁ (μ.inverse (ν.spouse m₁))
-        · have hblock₁ : IsBlockingPair prof μ m₁ (ν.spouse m₁) := ⟨hm₁pref, hw₁⟩
-          exact hμ m₁ (ν.spouse m₁) hblock₁
-        · -- ν-stability on (m₂, μ.sp₂): m₂ prefers μ.sp₂ to ν.sp₂
-          by_cases hw₂ : prof.WomanPrefers (μ.spouse m₂) m₂ (ν.inverse (μ.spouse m₂))
-          · have hblock₂ : IsBlockingPair prof ν m₂ (μ.spouse m₂) := ⟨hm₂pref, hw₂⟩
-            exact hν m₂ (μ.spouse m₂) hblock₂
-          · -- Both women don't prefer the respective man.
-            -- hw₁: ¬WomanPrefers (ν.sp₁) m₁ (μ⁻¹(ν.sp₁))
-            -- hw₂: ¬WomanPrefers (μ.sp₂) m₂ (ν⁻¹(μ.sp₂))
-            by_cases hwsame : ν.spouse m₁ = μ.spouse m₂
-            · -- Same woman w = ν.sp₁ = μ.sp₂
-              have hμinv₁ : μ.inverse (μ.spouse m₁) = m₁ := inverse_eq_of_spouse_eq μ m₁ _ rfl
-              have hνinv₁ : ν.inverse (ν.spouse m₁) = m₁ := inverse_eq_of_spouse_eq ν m₁ _ rfl
-              have hμinv₂ : μ.inverse (μ.spouse m₂) = m₂ := inverse_eq_of_spouse_eq μ m₂ _ rfl
-              have hνinv₂ : ν.inverse (ν.spouse m₂) = m₂ := inverse_eq_of_spouse_eq ν m₂ _ rfl
-              -- μ⁻¹(ν.sp₁) = μ⁻¹(μ.sp₂) = m₂
-              have hμinvν₁ : μ.inverse (ν.spouse m₁) = m₂ := by rw [hwsame]; exact hμinv₂
-              -- ν⁻¹(μ.sp₂) = ν⁻¹(ν.sp₁) = m₁
-              have hνinvμ₂ : ν.inverse (μ.spouse m₂) = m₁ := by rw [← hwsame]; exact hνinv₁
-              unfold PrefProfile.WomanPrefers at hw₁ hw₂
-              simp only [not_lt] at hw₁ hw₂
-              rw [hμinvν₁] at hw₁
-              rw [hνinvμ₂] at hw₂
-              -- hw₁: womenPref (ν.sp₁) m₂ ≤ womenPref (ν.sp₁) m₁
-              -- hw₂: womenPref (μ.sp₂) m₁ ≤ womenPref (μ.sp₂) m₂
-              -- But ν.sp₁ = μ.sp₂ = w, so rewrite hw₂ to use ν.sp₁
-              rw [← hwsame] at hw₂
-              -- hw₁: womenPref w m₂ ≤ womenPref w m₁
-              -- hw₂: womenPref w m₁ ≤ womenPref w m₂
-              exact hne ((prof.womenPref_bijective (ν.spouse m₁)).injective
-                (Fin.ext (Nat.le_antisymm (mod_cast hw₂) (mod_cast hw₁))))
-            · -- Symmetric "different women" case (ν.sp₁ ≠ μ.sp₂).
-              -- Same "chain man" strategy as the first cross-case, with μ ↔ ν and m₁ ↔ m₂.
-              have hw : μ.spouse m₁ = ν.spouse m₂ := heq
-              have hw1_ne_w : ν.spouse m₁ ≠ μ.spouse m₁ := by
-                intro hw1eq
-                have : ν.spouse m₁ = ν.spouse m₂ := hw1eq ▸ hw
-                exact hne (ν.bijective.1 this)
-              have hw2_ne_w : μ.spouse m₂ ≠ ν.spouse m₂ := by
-                intro hw2eq
-                have : μ.spouse m₂ = μ.spouse m₁ := hw2eq ▸ hw.symm
-                exact hne (μ.bijective.1 this.symm)
-              have hw₁_strict : prof.WomanPrefers (ν.spouse m₁) (μ.inverse (ν.spouse m₁)) m₁ := by
-                unfold PrefProfile.WomanPrefers at hw₁ ⊢
-                simp only [not_lt] at hw₁
-                have hne_w : ¬(prof.womenPref (ν.spouse m₁) (μ.inverse (ν.spouse m₁)) : Nat) =
-                               (prof.womenPref (ν.spouse m₁) m₁ : Nat) := by
-                  intro heq
-                  have : μ.inverse (ν.spouse m₁) = m₁ :=
-                    (prof.womenPref_bijective (ν.spouse m₁)).injective (Fin.ext heq)
-                  have h₁ : μ.spouse (μ.inverse (ν.spouse m₁)) = ν.spouse m₁ :=
-                    spouse_inverse μ (ν.spouse m₁)
-                  rw [this] at h₁
-                  exact hw1_ne_w h₁.symm
-                exact Nat.lt_of_le_of_ne (mod_cast hw₁) hne_w
-              have hw₂_strict : prof.WomanPrefers (μ.spouse m₂) (ν.inverse (μ.spouse m₂)) m₂ := by
-                unfold PrefProfile.WomanPrefers at hw₂ ⊢
-                simp only [not_lt] at hw₂
-                have hne_w : ¬(prof.womenPref (μ.spouse m₂) (ν.inverse (μ.spouse m₂)) : Nat) =
-                               (prof.womenPref (μ.spouse m₂) m₂ : Nat) := by
-                  intro heq
-                  have : ν.inverse (μ.spouse m₂) = m₂ :=
-                    (prof.womenPref_bijective (μ.spouse m₂)).injective (Fin.ext heq)
-                  have h₂ : ν.spouse (ν.inverse (μ.spouse m₂)) = μ.spouse m₂ :=
-                    spouse_inverse ν (μ.spouse m₂)
-                  rw [this] at h₂
-                  exact hw2_ne_w h₂.symm
-                exact Nat.lt_of_le_of_ne (mod_cast hw₂) hne_w
-              by_cases hchain : μ.inverse (ν.spouse m₁) = ν.inverse (μ.spouse m₂)
-              · -- Chain men coincide: μ⁻¹(ν.sp₁) = ν⁻¹(μ.sp₂)
-                set m' := μ.inverse (ν.spouse m₁)
-                have hm'μsp : μ.spouse m' = ν.spouse m₁ := spouse_inverse μ (ν.spouse m₁)
-                have hm'νsp : ν.spouse m' = μ.spouse m₂ := by
-                  rw [hchain]; exact spouse_inverse ν (μ.spouse m₂)
-                -- For IsBlockingPair ν m' (ν.sp₁), woman-side needs:
-                --   WomanPrefers (ν.sp₁) m' (ν⁻¹(ν.sp₁)) = WomanPrefers (ν.sp₁) m' m₁
-                have hνinv_sp1 : ν.inverse (ν.spouse m₁) = m₁ :=
-                  inverse_eq_of_spouse_eq ν m₁ _ rfl
-                by_cases hm'mp : prof.ManPrefers m' (ν.spouse m₁) (ν.spouse m')
-                · have hwp₁' : prof.WomanPrefers (ν.spouse m₁) m' (ν.inverse (ν.spouse m₁)) := by
-                    rw [hνinv_sp1]; exact hw₁_strict
-                  have hbp₁ : IsBlockingPair prof ν m' (ν.spouse m₁) :=
-                    ⟨hm'mp, hwp₁'⟩
-                  exact hν m' (ν.spouse m₁) hbp₁
-                · have hμinv_sp2 : μ.inverse (μ.spouse m₂) = m₂ :=
-                    inverse_eq_of_spouse_eq μ m₂ _ rfl
-                  have hw₂' : prof.WomanPrefers (μ.spouse m₂) m' (μ.inverse (μ.spouse m₂)) :=
-                    hμinv_sp2.symm ▸ (hchain ▸ hw₂_strict)
-                  by_cases hm'mp₂ : prof.ManPrefers m' (μ.spouse m₂) (μ.spouse m')
-                  · have hbp₂ : IsBlockingPair prof μ m' (μ.spouse m₂) :=
-                      ⟨hm'mp₂, hw₂'⟩
-                    exact hμ m' (μ.spouse m₂) hbp₂
-                  · have h₁ : prof.menPref m' (ν.spouse m₁) ≤ prof.menPref m' (μ.spouse m₂) := by
-                      unfold PrefProfile.ManPrefers at hm'mp₂; simp only [not_lt] at hm'mp₂
-                      rw [hm'μsp] at hm'mp₂
-                      exact mod_cast hm'mp₂
-                    have h₂ : prof.menPref m' (μ.spouse m₂) ≤ prof.menPref m' (ν.spouse m₁) := by
-                      unfold PrefProfile.ManPrefers at hm'mp; simp only [not_lt] at hm'mp
-                      rw [hm'νsp] at hm'mp
-                      exact mod_cast hm'mp
-                    have hfeq : (prof.menPref m' (μ.spouse m₂) : Nat) =
-                                prof.menPref m' (ν.spouse m₁) :=
-                      Nat.le_antisymm h₂ h₁
-                    exact hwsame ((prof.menPref_bijective m').injective (Fin.ext hfeq)).symm
-              · -- Chain men differ: need decomposition lemma (Knuth chain argument).
-                -- NOTE: In this symmetric case, the chain men coincidence sub-proof above
-                -- already closed the entire `by_contra hne` branch. This `sorry` branch
-                -- is unreachable but kept for structural completeness if the proof is
-                -- restructured. The chain argument would be needed if the coincidence
-                -- assumption (μ⁻¹(ν.sp₁) = ν⁻¹(μ.sp₂)) were dropped.
-                sorry  -- TODO: decomposition chain argument (symmetric case, unreachable)
-      · -- Equality: μ.spouse m₂ = ν.spouse m₂, then with heq: μ.spouse₁ = ν.spouse₂ = μ.spouse₂
-        -- contradicts μ injectivity (m₁ ≠ m₂)
-        push_neg at hm₂strict
-        have hm₂ge : (prof.menPref m₂ (ν.spouse m₂) : Nat) ≤ prof.menPref m₂ (μ.spouse m₂) :=
-          mod_cast hm₂strict
-        have heq' : (prof.menPref m₂ (μ.spouse m₂) : Nat) = prof.menPref m₂ (ν.spouse m₂) :=
-          Nat.le_antisymm (mod_cast c₂) hm₂ge
-        have hsp_eq : μ.spouse m₂ = ν.spouse m₂ :=
-          (prof.menPref_bijective m₂).injective (Fin.ext heq')
-        rw [← heq] at hsp_eq
-        exact μ.bijective.1 hsp_eq.symm
-    · simp only [Matching.meetSpouse, c₂, if_false] at heq
-      exact μ.bijective.1 heq
+  exact meetSpouse_eq_of_eq prof μ ν hμ hν (μ.meetSpouse prof ν m₂) m₁ m₂ heq rfl
 
 /--
 The meet of two STABLE matchings: each man gets his less-preferred partner.
@@ -1217,176 +770,113 @@ theorem meet_isStable (μ ν : Matching n)
 -- This needs join_isStable + meet_isStable fully proved first.
 -- Will instantiate after proofs are complete.
 
-/-! ## Man-Optimal = Top of the Lattice (Rural Hospital Theorem) -/
+/-! ## Man-Optimality (honest version)
+
+The two statements that previously closed this file —
+
+  `man_optimality_key_step : menPref m' (ν.spouse m') < menPref m' (μ.spouse m') → False`
+  `doctor_optimal_eq_top   : IsStable prof μ_gs → IsStable prof μ' → ManLE prof μ_gs μ'`
+
+— were FALSE as stated (their `sorry`s were unprovable): neither statement
+mentioned the Gale-Shapley algorithm, so together they claimed that ANY two
+stable matchings are ManLE-comparable in both directions, i.e. that the
+stable matching is unique.  The 3×3 latin-square instance refutes both
+(`NoCrossCounterexample.man_optimality_key_step_is_false`,
+`NoCrossCounterexample.doctor_optimal_eq_top_is_false`).
+
+The honest replacement is the EXISTENCE of a man-optimal stable matching,
+`exists_isManOptimal`, proved by a minimal-weight argument on the join
+semilattice (`join_isStable`).  `gale_shapley_man_optimal` in
+GaleShapley.lean consumes it, seeded by `gale_shapley_stable`.
+-/
+
+namespace NoCrossCounterexample
 
 /--
-Key lemma for man-optimality: if some man m' prefers his partner in another
-stable matching ν over his partner in μ, then there exists a blocking pair
-for μ involving m' and ν.spouse m'.
-
-This is the contrapositive of man-optimality: it shows that no man can be
-strictly better off in another stable matching.
-
-DEPENDS ON: `no_cross_match` (Case A2/B must be proved first).
-
-Proof strategy:
-  Given: ¬(menPref m' (μ.spouse m') ≤ menPref m' (ν.spouse m'))
-         i.e., ManPrefers m' (ν.spouse m') (μ.spouse m')
-  Want:  ∃ m w, IsBlockingPair prof μ m w
-
-  Let w' = ν.spouse m'. Then m' prefers w' over μ.spouse m'.
-  Consider woman w' and her μ-partner m = μ.inverse w'.
-  By stability of μ: ¬IsBlockingPair μ m' w'.
-  So either ¬ManPrefers m' w' (μ.spouse m') [contradicts hypothesis]
-  or     ¬WomanPrefers w' m' (μ.inverse w') = ¬WomanPrefers w' m' m.
-
-  If ¬WomanPrefers w' m' m, then w' prefers m over m'.
-  Now consider ν: ν.spouse m' = w', so ν.inverse w' = m'.
-  By stability of ν: ¬IsBlockingPair ν m w'.
-  ManPrefers m w' (ν.spouse m) needs to be checked.
-  If it holds, then ¬WomanPrefers w' m m' → w' prefers m' over m.
-  But we just said w' prefers m over m'. Contradiction!
-
-  This gives us a circular contradiction that forces menPref equality.
-
-  This lemma is the "key step" of the Rural Hospital argument.
-  Reference: Gusfield & Irving (1989), Section 1.4.3, "The Optimality Theorem".
-  Reference: Knuth (1976), Theorem 1.6.4.
+**Refutation** of the former `man_optimality_key_step` lemma: m₁ strictly
+prefers his M0-partner w₁ (rank 0) to his M1-partner w₂ (rank 1), and both
+matchings are stable, so no `False` can follow.
 -/
-private lemma man_optimality_key_step (μ ν : Matching n)
-    (hμ : IsStable prof μ) (hν : IsStable prof ν)
-    (m' : Fin n)
-    (hstrict : prof.menPref m' (ν.spouse m') < prof.menPref m' (μ.spouse m')) :
-    False := by
-  -- SCAFFOLD: This is a placeholder for the key step.
-  -- The proof proceeds as follows:
-  --
-  -- Step 1: Set w' = ν.spouse m', m = μ.inverse w'.
-  --   have hw' : ν.spouse m' = w' := rfl  (definition)
-  --   have hm : μ.spouse m = w' := spouse_inverse μ w'
-  --
-  -- Step 2: (m', w') cannot block μ (μ-stability).
-  --   ManPrefers m' w' (μ.spouse m') holds (from hstrict).
-  --   So ¬WomanPrefers w' m' m must hold.
-  --   have hw'pref : ¬prof.WomanPrefers w' m' (μ.inverse w') :=
-  --     fun h => hμ m' w' ⟨mod_cast hstrict, h⟩
-  --
-  -- Step 3: ¬WomanPrefers w' m' m means w' prefers m over m'.
-  --   have hw'pref_m : (prof.womenPref w' m : Nat) ≤ prof.womenPref w' m' :=
-  --     mod_cast (by unfold PrefProfile.WomanPrefers at hw'pref; simp only [not_lt] at hw'pref; exact hw'pref)
-  --
-  -- Step 4: (m, w') cannot block ν (ν-stability).
-  --   ν.spouse m = ? If m' ≠ m, then ν.spouse m ≠ w' (injectivity of ν.spouse).
-  --   ManPrefers m w' (ν.spouse m)? We need to derive this.
-  --   This is where the anti-crossing lemma comes in.
-  --
-  -- Step 5: Use `no_cross_match` to relate the cross-structure.
-  --   μ.spouse m' = μ.spouse m'? We know μ.spouse m = w'.
-  --   ν.spouse m = ? Not w' (since ν.spouse m' = w' and m' ≠ m).
-  --   By no_cross_match with h1 : μ.spouse m = w' and h2 : ν.spouse m' = w':
-  --     ν.spouse m = μ.spouse m'.
-  --
-  -- Step 6: Derive the final contradiction from stability + preference cycling.
-  sorry
+theorem man_optimality_key_step_is_false :
+    ¬ ∀ (n : Nat) [NeZero n] (prof : PrefProfile n) (μ ν : Matching n),
+        IsStable prof μ → IsStable prof ν →
+        ∀ m' : Fin n,
+          prof.menPref m' (ν.spouse m') < prof.menPref m' (μ.spouse m') → False := by
+  intro h
+  exact h 3 prof3 M1 M0 M1_stable M0_stable 0 (by decide)
 
 /--
-The man-proposing Gale-Shapley output is the top element of the lattice
-of stable matchings under ManLE: every man gets his best achievable partner.
-ManLE prof μ_gs μ' means each man's GS partner is at least as preferred
-as his partner in any other stable matching μ'.
-
-This is the **Man-Optimality Theorem** (also known as the **Rural Hospital
-Theorem** in the many-to-one setting). It states that the GS man-proposing
-output simultaneously optimizes every man's outcome.
-
-There are two independent proof strategies:
-
-  **Strategy A (Lattice-theoretic, RECOMMENDED after no_cross_match is proved)**:
-    1. no_cross_match → joinSpouse_injective / meetSpouse_injective
-    2. → Matching.join and Matching.meet are well-defined bijections
-    3. → join_isStable / meet_isStable (ALREADY PROVED below)
-    4. → the set of stable matchings forms a lattice under ManLE
-    5. → the GS output is the supremum of all stable matchings
-       (because each man proposes in decreasing preference order,
-        and no man can be rejected by a woman who is achievable in
-        some stable matching — the key inductive argument)
-
-    This strategy avoids direct GS algorithm reasoning and instead
-    uses the lattice structure as an abstraction layer.
-
-  **Strategy B (Algorithmic, via GS invariants)**:
-    1. Define the invariant: "for every man m, if m has proposed to
-       woman w in the GS execution, then w is not matched to any man
-       m' with menPref m' w < menPref m w in any stable matching"
-    2. Prove this invariant is preserved by each GS step
-       (using `menProposedDownward`, `womenBestState` from Lemmas.lean)
-    3. At termination, no man can be improved upon → μ_gs is optimal
-
-    This requires connecting `GSState` invariants to `IsStable`,
-    which currently lacks the transfer lemma.
-
-  Strategy A is shorter and reuses the lattice infrastructure we've built.
-  It requires `no_cross_match` (Cases A2/B) to be proved first.
-
-  Strategy B is more general (works for many-to-one) but requires
-  new infrastructure (~5-10h of Lean formalization for the transfer lemma).
-
-  Historical references:
-  - Gale & Shapley (1962), Theorem 2 (man-optimality)
-  - Knuth (1976), Theorem 1.6.4
-  - Gusfield & Irving (1989), Theorem 1.4.1
-  - Roth (1986), "On the Allocation of Residents to Rural Hospitals"
-    (the Rural Hospital Theorem in the many-to-one context)
-  - Wu & Roth (2018), Section 4.1
-
-  DEPENDS ON:
-  - `no_cross_match` (Cases A2/B) → for Strategy A
-  - `man_optimality_key_step` → the core contradiction lemma
+**Refutation** of the former `doctor_optimal_eq_top` theorem: with
+μ_gs := M1 and μ' := M0 (both stable), ManLE would require
+`menPref m₁ w₂ ≤ menPref m₁ w₁`, i.e. `1 ≤ 0`.
 -/
-theorem doctor_optimal_eq_top (μ_gs : Matching n)
-    (hgs : IsStable prof μ_gs)
-    (μ' : Matching n) (hstable : IsStable prof μ') :
-    ManLE prof μ_gs μ' :=
-  fun m => by
-  -- SCAFFOLD: Strategy A (lattice-theoretic)
-  --
-  -- The goal is: menPref m (μ_gs.spouse m) ≤ menPref m (μ'.spouse m)
-  -- i.e., μ_gs gives m a partner at least as good as any other stable matching.
-  --
-  -- Proof outline:
-  --
-  -- Step 1: By contradiction. Assume ¬(menPref m (μ_gs.spouse m) ≤ menPref m (μ'.spouse m)).
-  --   This means ManPrefers m (μ'.spouse m) (μ_gs.spouse m): m prefers his ν-partner.
-  --   by_contra hgt
-  --   push_neg at hgt
-  --   have hstrict : prof.menPref m (μ'.spouse m) < prof.menPref m (μ_gs.spouse m) := mod_cast hgt
-  --
-  -- Step 2: Apply man_optimality_key_step.
-  --   exact man_optimality_key_step prof μ_gs μ' hgs hstable m hstrict
-  --
-  -- ALTERNATIVE (direct proof without key_step lemma):
-  --
-  -- Step 1': by_contra hgt
-  -- Step 2': set w_gs := μ_gs.spouse m
-  --          set w' := μ'.spouse m
-  --          hstrict : menPref m w' < menPref m w_gs (m prefers w' over w_gs)
-  --
-  -- Step 3': μ_gs-stability on (m, w'):
-  --   ManPrefers m w' (μ_gs.spouse m) holds (from hstrict).
-  --   So ¬WomanPrefers w' m (μ_gs.inverse w') must hold.
-  --   This means womenPref w' (μ_gs.inverse w') ≤ womenPref w' m.
-  --
-  -- Step 4': Now consider the man m_gs = μ_gs.inverse w'.
-  --   μ_gs.spouse m_gs = w'. m_gs ≠ m (since w_gs ≠ w' by injectivity).
-  --   In ν: ν.spouse m = w'. In μ_gs: μ_gs.spouse m_gs = w'.
-  --   By no_cross_match μ_gs ν' with these hypotheses:
-  --     μ_gs.spouse m = ν.spouse m_gs ... but this requires exactly the
-  --     anti-crossing lemma we're trying to prove! Circular unless we
-  --     use the already-proved Case A1 + cross-fragment.
-  --
-  -- The circular dependency shows why this theorem is HARD:
-  -- it requires either (a) the full no_cross_match, or (b) a direct
-  -- GS algorithm argument. Both are substantial.
-  sorry
+theorem doctor_optimal_eq_top_is_false :
+    ¬ ∀ (n : Nat) [NeZero n] (prof : PrefProfile n) (μ_gs : Matching n),
+        IsStable prof μ_gs →
+        ∀ μ' : Matching n, IsStable prof μ' → ManLE prof μ_gs μ' := by
+  intro h
+  have hle := h 3 prof3 M1 M1_stable M0 M0_stable
+  have h0 := hle 0
+  exact absurd h0 (by decide)
+
+end NoCrossCounterexample
+
+/--
+A man-optimal stable matching exists as soon as a stable matching exists.
+
+Minimal-weight argument: let `W μ = Σ_m rank_m (μ.spouse m)` and pick (via
+`Nat.find`) a stable matching `μ₀` whose weight is minimal among stable
+matchings.  If some stable `ν` gave some man `m` a strictly better partner,
+the join `μ₀ ⊔ ν` would be stable (`join_isStable`), pointwise weakly
+man-better than `μ₀` (the join hands each man his preferred partner of the
+two) and strictly better for `m`, hence of strictly smaller weight —
+contradicting minimality.  So `μ₀` is man-optimal.
+
+The hypothesis is discharged by `gale_shapley_stable` in GaleShapley.lean
+(kept as a hypothesis here to avoid an import cycle).
+-/
+theorem exists_isManOptimal (hex : ∃ μ : Matching n, IsStable prof μ) :
+    ∃ μ : Matching n, IsManOptimal prof μ := by
+  classical
+  let W : Matching n → Nat := fun μ => ∑ m : Fin n, (prof.menPref m (μ.spouse m) : Nat)
+  let P : Nat → Prop := fun k => ∃ μ : Matching n, IsStable prof μ ∧ W μ = k
+  have hP : ∃ k, P k := by
+    obtain ⟨μ, hμ⟩ := hex
+    exact ⟨W μ, μ, hμ, rfl⟩
+  obtain ⟨μ₀, hμ₀, hW₀⟩ := Nat.find_spec hP
+  refine ⟨μ₀, hμ₀, ?_⟩
+  intro ν hν m
+  by_contra hgt
+  push Not at hgt
+  -- hgt : m strictly prefers his ν-partner; consider the join μ₀ ⊔ ν
+  have hle : ∀ m' : Fin n,
+      (prof.menPref m' ((μ₀.join prof hμ₀ hν).spouse m') : Nat) ≤
+        (prof.menPref m' (μ₀.spouse m') : Nat) := by
+    intro m'
+    show (prof.menPref m' (μ₀.joinSpouse prof ν m') : Nat) ≤ _
+    unfold Matching.joinSpouse
+    split_ifs with hc
+    · exact le_refl _
+    · have hnle : ¬((prof.menPref m' (μ₀.spouse m') : Nat) ≤
+          (prof.menPref m' (ν.spouse m') : Nat)) := fun hh => hc (mod_cast hh)
+      omega
+  have hlt : (prof.menPref m ((μ₀.join prof hμ₀ hν).spouse m) : Nat) <
+      (prof.menPref m (μ₀.spouse m) : Nat) := by
+    show (prof.menPref m (μ₀.joinSpouse prof ν m) : Nat) < _
+    unfold Matching.joinSpouse
+    split_ifs with hc
+    · exfalso
+      have h1 : (prof.menPref m (μ₀.spouse m) : Nat) ≤
+          (prof.menPref m (ν.spouse m) : Nat) := mod_cast hc
+      have h2 : (prof.menPref m (ν.spouse m) : Nat) <
+          (prof.menPref m (μ₀.spouse m) : Nat) := mod_cast hgt
+      omega
+    · exact mod_cast hgt
+  have hWlt : W (μ₀.join prof hμ₀ hν) < W μ₀ :=
+    Finset.sum_lt_sum (fun i _ => hle i) ⟨m, Finset.mem_univ m, hlt⟩
+  have hPlt : P (W (μ₀.join prof hμ₀ hν)) :=
+    ⟨μ₀.join prof hμ₀ hν, join_isStable prof μ₀ ν hμ₀ hν, rfl⟩
+  exact Nat.find_min hP (lt_of_lt_of_le hWlt (le_of_eq hW₀)) hPlt
+
 
 end StableMarriage

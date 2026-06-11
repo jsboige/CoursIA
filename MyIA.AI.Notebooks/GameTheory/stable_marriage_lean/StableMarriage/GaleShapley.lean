@@ -7,10 +7,10 @@
   Status of the main results:
   - `gale_shapley_stable` is **constructively proved** via the deferred-acceptance
     state machine (`gsRunSteps` / `gsFinalMatching` / `gsNoBlockingPairs`).
-  - `gale_shapley_man_optimal` / `gale_shapley_woman_pessimal` reduce to the
-    lattice-of-stable-matchings optimality lemmas in `Lattice.lean`, which remain
-    unproved placeholders (Knuth lattice theory / rural-hospitals theorem). These
-    are kept honestly intractable rather than axiomatized.
+  - `gale_shapley_man_optimal` is proved via `exists_isManOptimal` in
+    `Lattice.lean` (minimal-weight argument on the join semilattice of stable
+    matchings), seeded by `gale_shapley_stable`.
+  - `gale_shapley_woman_pessimal` is proved from man-optimality.
 
   Algorithm sketch (man-proposing version):
   1. Each free man proposes to his most-preferred woman he hasn't proposed to yet
@@ -96,9 +96,8 @@ partner he could obtain in any stable matching.
 This is the optimality theorem for the proposing side.
 -/
 theorem gale_shapley_man_optimal (prof : PrefProfile n) :
-    ∃ μ : Matching n, IsManOptimal prof μ := by
-  obtain ⟨μ_gs, hgs⟩ := gale_shapley_stable prof
-  exact ⟨μ_gs, hgs, doctor_optimal_eq_top prof μ_gs hgs⟩
+    ∃ μ : Matching n, IsManOptimal prof μ :=
+  exists_isManOptimal prof (gale_shapley_stable prof)
 
 /--
 Existence of a stable matching (corollary of Gale-Shapley).

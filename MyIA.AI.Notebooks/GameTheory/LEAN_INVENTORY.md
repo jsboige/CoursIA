@@ -6,11 +6,11 @@ Cross-directory inventory of all Lean 4 formalization projects under `GameTheory
 
 | Directory | Toolchain | Production sorry | Modules | Status |
 |-----------|-----------|-----------------|---------|--------|
-| `stable_marriage_lean` | v4.30.0-rc2 | 3 | 5 files | Active proving |
+| `stable_marriage_lean` | v4.30.0-rc2 | 0 | 5 files | COMPLETE |
 | `cooperative_games_lean` | v4.30.0-rc2 | 1 | 2 files | Active proving |
 | `social_choice_lean` | v4.30.0-rc2 | 0 | 7 files | COMPLETE |
 | `social_choice_lean_peters` | v4.27.0-rc1 | 0 | 1 file | Reference only |
-| **Total** | — | **4** | **15 files** | — |
+| **Total** | — | **1** | **15 files** | — |
 
 Note: `_GoalExtract.lean` (former prover test file) has been removed from the repo. `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogical example, not production.
 
@@ -30,22 +30,23 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 | File | sorry | Description |
 |------|-------|-------------|
-| `StableMarriage/GaleShapley.lean` | 0 (body) | GS algorithm, termination, stability, man_optimal, woman_pessimal — `gale_shapley_man_optimal` transitively depends on `doctor_optimal_eq_top` (Lattice L836 sorry) |
+| `StableMarriage/GaleShapley.lean` | 0 | GS algorithm, termination, stability, man_optimal (via `exists_isManOptimal`), woman_pessimal |
 | `StableMarriage/GSState.lean` | 0 | GS state machine, gsChooseMax |
 | `StableMarriage/Lemmas.lean` | 0 | Helper lemmas (gsFinalMatching, gsAllWomenMatched, gsNoBlockingPairs) |
 | `StableMarriage/Definitions.lean` | 0 | Core type definitions |
-| `StableMarriage/Lattice.lean` | 3 | Knuth rotation lattice (`no_cross_match` Case A2 L185, Case B L187, `doctor_optimal_eq_top` L836) |
+| `StableMarriage/Lattice.lean` | 0 | Knuth lattice, `exists_isManOptimal`, refutations of former false statements |
 
-**Build**: `lake build StableMarriage` — SUCCESS (688 jobs)
+**Build**: `lake build StableMarriage` — SUCCESS (755 jobs)
 
-**Prover targets**: Lattice.lean 3 sorry — all INTRACTABLE by current LLM (Knuth rotation sub-cases). `doctor_optimal_eq_top` (Lattice L836) body remains `sorry`, with all upstream consumers (`gale_shapley_man_optimal`, `woman_pessimal` in GaleShapley.lean) transitively dependent. `meetSpouse_injective` body proved (PR #1522). `gale_shapley_man_optimal` body proved (PR #1521) but transitively depends on `doctor_optimal_eq_top`.
+**COMPLETE: 0 sorry.** The former `no_cross_match`, `man_optimality_key_step`, and `doctor_optimal_eq_top` statements were **false** (refuted by a 3x3 latin-square counterexample, kernel-checked). They have been replaced by: honest `exists_isManOptimal` (minimal-weight argument on join semilattice), `meetSpouse_injective` (counting/pigeonhole), and three refutation theorems.
 
 **Key proofs**:
 - `gale_shapley_stable` — PR #1194
-- `gale_shapley_man_optimal` — PR #1521 (GPT-5.5 prover)
-- `woman_pessimal` — PR #1521
-- `meetSpouse_injective` — PR #1522 (GPT-5.5 prover)
-- `no_cross_match` Case A1 — PR #1406 (manual)
+- `gale_shapley_man_optimal` — `exists_isManOptimal` + `gale_shapley_stable` (no false-lemma dependency)
+- `woman_pessimal` — PR #1521 (constructive, from man-optimality)
+- `meetSpouse_injective` — counting/pigeonhole argument (no anti-crossing needed)
+- `joinSpouse_injective` — PR #1522
+- `no_cross_match_is_false` / `doctor_optimal_eq_top_is_false` — kernel-checked refutations
 
 ---
 
@@ -109,18 +110,13 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 | Priority | Target                       | Dir                    | sorry | Feasibility                        |
 |----------|------------------------------|------------------------|-------|------------------------------------|
-| P1       | Lattice.lean L185 Case A2    | stable_marriage_lean   | 1     | Very Low (Knuth rotations)         |
-| P2       | Lattice.lean L187 Case B     | stable_marriage_lean   | 1     | Very Low (Knuth rotations)         |
-| P3       | Lattice.lean L836 doc_opt    | stable_marriage_lean   | 1     | Low (depends on no_cross_match)    |
-| P4       | Basic.lean L309 hCore        | cooperative_games_lean | 1     | Very Low (Hahn-Banach separation)  |
-
-Note: After PRs #1521-#1525 merge, Lattice.lean will have **0 sorry, 1 axiom** (`no_cross_match`). The 3 sorry listed above are on current main.
+| P1       | Basic.lean L309 hCore        | cooperative_games_lean | 1     | Very Low (Hahn-Banach separation)  |
 
 ## GO/NO-GO per Project (for BG iter cycles)
 
 | Project                | Decision | Reasoning                                                      |
 |------------------------|----------|----------------------------------------------------------------|
-| stable_marriage_lean   | NO-GO    | All 3 sorry INTRACTABLE (Knuth rotations). man_optimal body proved. |
+| stable_marriage_lean   | COMPLETE | 0 sorry. Former false statements refuted, honest `exists_isManOptimal` proved. |
 | cooperative_games_lean | NO-GO    | hCore requires Hahn-Banach / hyperplane separation.           |
 | social_choice_lean     | N/A      | COMPLETE (0 sorry). MechanismDesign added (#1469).             |
 | social_choice_lean_peters | N/A   | Reference only (pinned v4.27.0-rc1).                           |

@@ -12,11 +12,9 @@ The Stable Marriage Problem: given n men and n women, each with a strict prefere
 | `StableMarriage/Lemmas.lean` | Helper lemmas (`gsFinalMatching`, `gsAllWomenMatched`, `gsNoBlockingPairs`) | 0 |
 | `StableMarriage/GSState.lean` | GS state machine, `gsChooseMax` | 0 |
 | `StableMarriage/GaleShapley.lean` | Termination, stability, `man_optimal`, `woman_pessimal` | 0 |
-| `StableMarriage/Lattice.lean` | Knuth rotation lattice (Case A2, Case B, `doctor_optimal_eq_top` conditional) | 3 |
+| `StableMarriage/Lattice.lean` | Knuth lattice, refutations, `exists_isManOptimal` | 0 |
 
-**Total**: 3 production sorry, all in `Lattice.lean` (Knuth rotation sub-cases). `lake build StableMarriage` SUCCESS. Toolchain `v4.30.0-rc2`.
-
-Le prover test harness `_GoalExtract.lean` contient 2 sorry de scaffolding (non-production).
+**Total**: 0 production sorry. `lake build StableMarriage` SUCCESS. Toolchain `v4.30.0-rc2`.
 
 ## Theorems (status)
 
@@ -25,14 +23,21 @@ Le prover test harness `_GoalExtract.lean` contient 2 sorry de scaffolding (non-
 | `gale_shapley_terminates` | Algorithm terminates in at most n^2 steps | 0 | CLOSED (`trivial`) |
 | `gale_shapley_produces_matching` | Output is a valid bijection | 0 | CLOSED (identity witness) |
 | `gale_shapley_stable` | No blocking pair exists | 0 | **CLOSED via PR #1194** (port mmaaz-git upstream) |
-| `gale_shapley_man_optimal` | Proposers get best achievable partners | 0 (body) | **CLOSED via PR #1521** body, BUT transitively depends on `doctor_optimal_eq_top` (L836 sorry) — see note below |
-| `gale_shapley_woman_pessimal` | Receivers get worst achievable partners | 0 (body) | **CLOSED via PR #1521** body, BUT same transitive dependency on L836 |
-| `meetSpouse_injective` | Spouse map is injective | 0 | **CLOSED via PR #1522** (multi-agent prover GPT-5.5) |
-| `Lattice.no_cross_match` Case A2 (L185) | Knuth rotation Case A2 | 1 | INTRACTABLE (Knuth 1976 sub-case, user mandate "stays as sorry" per PR #1530) |
-| `Lattice.no_cross_match` Case B (L187) | Knuth rotation Case B | 1 | INTRACTABLE (Knuth 1976 sub-case, same mandate) |
-| `doctor_optimal_eq_top` (L836) | Doctor-optimal = top of stable lattice | 1 | Transitively conditional on `no_cross_match` (L185/L187 sorry, **NOT axiom**) |
+| `gale_shapley_man_optimal` | Proposers get best achievable partners | 0 | **CLOSED** (via `exists_isManOptimal`, minimal-weight argument on join semilattice) |
+| `gale_shapley_woman_pessimal` | Receivers get worst achievable partners | 0 | **CLOSED via PR #1521** (constructive, from man-optimality) |
+| `joinSpouse_injective` | Join spouse map is injective | 0 | CLOSED (PR #1522) |
+| `meetSpouse_injective` | Meet spouse map is injective | 0 | **CLOSED** (counting/pigeonhole argument, no anti-crossing needed) |
+| `join_isStable` | Join of two stable matchings is stable | 0 | CLOSED |
+| `meet_isStable` | Meet of two stable matchings is stable | 0 | CLOSED |
+| `exists_isManOptimal` | Man-optimal stable matching exists | 0 | **CLOSED** (minimal weight + `Nat.find` + `join_isStable`) |
+| `no_cross_match_is_false` | Former anti-crossing lemma is refutable | 0 | **REFUTED** (3x3 latin-square counterexample, kernel-checked) |
+| `doctor_optimal_eq_top_is_false` | Former optimality claim is refutable | 0 | **REFUTED** (same counterexample) |
 
-**Important — transitive dependency** : les theoremes `gale_shapley_man_optimal` et `gale_shapley_woman_pessimal` ont 0 sorry **dans leur corps** mais appellent `doctor_optimal_eq_top` (L836) qui contient 1 sorry. Le claim "CLOSED via PR #1521" est correct au sens mecanique (corps des theoremes principaux fermes) mais **incomplet au sens transitif**. Les 3 sorrys restants vivent dans `Lattice.lean` et representent la machinerie complete du lattice de matchings stables (Knuth 1976, Wu-Roth 2018) qui n'existe pas encore dans Mathlib4. `no_cross_match` est un `lemma ... := by sorry` (PAS un `axiom`), per mandate user PR #1530. Tous **INTRACTABLE** par le prover LLM courant (4 traces 2026-05-23/24 sur A2/B/L836 = 0 sorry-delta net, cf `agent_tests/prover/traces/*Lattice*.json` et [LEAN_INVENTORY.md](../LEAN_INVENTORY.md) GO/NO-GO per project).
+### Historical note
+
+The former statements `no_cross_match`, `man_optimality_key_step`, and `doctor_optimal_eq_top` were **false as stated** and have been removed. Their `sorry` placeholders were unprovable because the goals were in fact contradictory — the 3x3 latin-square instance (Knuth 1976) with the identity and cyclic-shift matchings refutes all three simultaneously. This explains why 30+ prover harness iterations made zero progress: the targets were mathematically impossible.
+
+The honest replacement is `exists_isManOptimal`, which proves existence (not constructive extraction) of a man-optimal stable matching via a minimal-weight argument on the join semilattice, without needing the anti-crossing lemma.
 
 ## Quick Start
 
@@ -48,8 +53,9 @@ grep -c sorry StableMarriage/*.lean
 ## References
 
 - Gale, D. & Shapley, L.S., "College Admissions and the Stability of Marriage" (American Mathematical Monthly, 1962)
+- Knuth, D.E., "Marriages Stables" (1976) — lattice structure, latin-square instances
 - Gusfield, D. & Irving, R.W., *The Stable Marriage Problem: Structure and Algorithms* (1989)
-- Roth, A.E., "The Economics of Matching: Stability and Incentives" (1982)
+- Wu, Q. & Roth, A.E., "Lattice Structures in Stable Matching" (2018)
 - Reference Lean 4 port: https://github.com/mmaaz-git/stable-marriage-lean
 
 ## Cross-series connections
