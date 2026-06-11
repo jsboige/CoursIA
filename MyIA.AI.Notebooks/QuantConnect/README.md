@@ -492,6 +492,8 @@ Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes s
 | [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparametres de strategies (grid search, bayesienne) rejoint les techniques de recherche |
 | [ML](../ML/ML.Net/README.md) | Series temporelles ML.NET | L'analyse technique (QC-4 a QC-7) partage les memes fondements que le forecasting par SSA (ML-5) |
 
+[La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot — le backtest hors-echantillon comme certificat ouvert : Sharpe, CAGR et drawdown reportes sans fard, sans pretendre a la preuve.
+
 ---
 
 **Bon trading algorithmique avec QuantConnect + CoursIA !**

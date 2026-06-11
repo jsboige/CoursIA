@@ -234,6 +234,8 @@ Le pipeline genere un rapport JSON dans `output/analysis_report.json` :
 | **[Lean](../Lean/)** | Preuves formelles | La formalisation logique des arguments (Agentic-2) suit le meme paradigme que les tactiques Lean. La verification de coherence via SAT est analogue aux proof checkers. |
 | **[Tweety-9](../Tweety/Tweety-9-Preferences.ipynb)** | Preferences et vote | L'analyse d'arguments de valeur croise les modeles de preference et la theorie du choix social (GameTheory/social_choice_lean/). |
 
+[La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot — l'analyse d'argumentation comme changement de representation vers le verifiable : du langage naturel aux semantiques formelles qu'on peut interroger.
+
 > **Note** : Cette serie est en statut DRAFT — les notebooks definissent l'architecture mais n'ont pas encore d'execution complete. Voir [RECONSTRUCTION_PLAN.md](RECONSTRUCTION_PLAN.md) pour le statut.
 
 ## Ressources

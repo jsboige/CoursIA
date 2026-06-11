@@ -268,6 +268,8 @@ Voir la licence du repository principal.
 | [Probas](../Probas/README.md) | Programmation probabiliste | L'evaluation bayesienne des modeles (TP-prevision-ventes) est une application directe de la serie Probas |
 | [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparametres ML rejoint les techniques de recherche (grille, bayesienne) |
 
+[La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot — le modele entraine comme certificat ouvert, juge par une evaluation declaree comme telle.
+
 ---
 
 ## Navigation

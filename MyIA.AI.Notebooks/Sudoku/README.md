@@ -432,6 +432,8 @@ Sudoku-0-Csharp (Environment - comprendre les structures)
 | [GameTheory](../GameTheory/README.md) | Theorie des jeux | Minimax et MCTS (Niveau 3) sont partages avec les jeux combinatoires ; les arbres de recherche sont structures semblablement |
 | [ML](../ML/README.md) | Machine Learning | Les solveurs neuronaux (Niveau 6) et l'evaluation LLM (Niveau 7) prolongent les techniques ML/DL pour la resolution de puzzles |
 
+[La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot — le Sudoku comme cas d'ecole du changement de representation : contraintes, SAT ou recherche pure, trois langues pour une meme grille.
+
 ## Prerequis
 
 ### C# (.NET Interactive)
