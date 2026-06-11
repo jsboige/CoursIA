@@ -17,9 +17,9 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 11 |
+| Notebooks | 12 |
 | Kernel | Python 3 |
-| Duree totale | ~450-520 min |
+| Duree totale | ~500-575 min |
 | Version | Stable Baselines3 2.0.0+ |
 
 ## Notebooks
@@ -37,6 +37,7 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | 6d | [rl_6d_sac_from_scratch](rl_6d_sac_from_scratch.ipynb) | SAC depuis zero, maximum entropy RL, twin Q-networks, auto-temperature | 45-50 min |
 | 7 | [rl_7_multi_agent_rl](rl_7_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
 | 8 | [rl_8_model_based_dyna_q](rl_8_model_based_dyna_q.ipynb) | Model-based RL : Dyna-Q, Dyna-Q+, planification, rollouts | 45-50 min |
+| 9 | [rl_9_offline_rl](rl_9_offline_rl.ipynb) | RL offline : Behavior Cloning, erreur d'extrapolation, BCQ-lite | 50-55 min |
 
 ## Contenu detaille
 
@@ -150,6 +151,18 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | Decision-time planning | Rollouts, pont vers MCTS / AlphaZero / MuZero |
 | Exercices | Shortcut Maze, prioritized sweeping, sensibilite de kappa |
 
+### Notebook 9 - RL offline : apprendre sans interagir
+
+| Section | Contenu |
+|---------|---------|
+| Online vs offline | Apprendre d'un dataset fige de transitions (logs), sans interaction |
+| Datasets | Trois politiques de comportement (expert/medium/random), couverture vs qualite |
+| Behavior Cloning | Imitation tabulaire par action majoritaire, plafond de la politique de comportement |
+| Erreur d'extrapolation | Q-learning naif sur dataset fige : bootstrap sur actions fantomes (Fujimoto 2019) |
+| BCQ-lite | Contrainte de support du dataset, stitching de trajectoires mediocres |
+| Pont RLHF/DPO | SFT = BC, contrainte KL = contrainte de support, DPO = preference learning offline |
+| Exercices | Ablation taille dataset, penalite CQL-lite, sensibilite au nombre de passes |
+
 ## Algorithmes couverts
 
 | Algorithme | Type | Notebook | Utilisation |
@@ -168,6 +181,8 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | **Dyna-Q** | Model-based | 8 | Planification sur modele appris, sample efficiency |
 | **Dyna-Q+** | Model-based | 8 | Environnements non-stationnaires, bonus d'exploration |
 | **Rollout planning** | Decision-time | 8 | Simulation vers l'avant, porte vers MCTS |
+| **Behavior Cloning** | Offline (imitation) | 9 | Demonstrations expertes, baseline offline |
+| **BCQ-lite** | Offline (value-based) | 9 | Q-learning contraint au support du dataset |
 | **DQN** | Off-policy (deep) | 6 | Espaces continus |
 | **REINFORCE** | Policy gradient | 6 | Politique directe |
 | **IQL** | Multi-agent | 7 | Apprentissage independant |
@@ -183,7 +198,7 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | FrozenLake-v1 | Grille discrete, stochastique | 5 |
 | CliffWalking-v1 | Grille, compromis risque/recompense | 5 |
 | TicTacToe-v3 | Jeu a somme nulle | 7 |
-| Dyna Maze / Blocking Maze | Grilles deterministes et changeantes (numpy pur) | 8 |
+| Dyna Maze / Blocking Maze | Grilles deterministes et changeantes (numpy pur) | 8, 9 |
 
 ## Prerequisites
 
@@ -269,7 +284,7 @@ Le notebook 4 pose la question fondatrice du RL : comment choisir entre explorer
 
 **Phase 4 : Les maths sous le capot (~4.5h, notebooks 5-7)**
 
-Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depuis zero. Le notebook 5 formalise le probleme RL (MDP, equation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe a l'echelle avec les reseaux de neurones : DQN et REINFORCE implementes en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mecanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanement, cooperent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modele du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero.
+Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depuis zero. Le notebook 5 formalise le probleme RL (MDP, equation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe a l'echelle avec les reseaux de neurones : DQN et REINFORCE implementes en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mecanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanement, cooperent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modele du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset fige (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naif, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO.
 
 ## Concepts cles
 
@@ -301,6 +316,9 @@ Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depui
 | **Dyna** | Entrelacement apprentissage direct / planification | 8 |
 | **Sample efficiency** | Echanger du calcul contre de l'experience reelle | 8 |
 | **Decision-time planning** | Rollouts et MCTS depuis l'etat courant | 8 |
+| **RL offline** | Apprendre d'un dataset fige, sans interaction | 9 |
+| **Erreur d'extrapolation** | Bootstrap sur actions hors du support des donnees | 9 |
+| **Stitching** | Recoudre un chemin optimal a partir de trajectoires mediocres | 9 |
 
 ## Caracteristiques
 
@@ -377,6 +395,7 @@ RL/
 ├── rl_6d_sac_from_scratch.ipynb
 ├── rl_7_multi_agent_rl.ipynb
 ├── rl_8_model_based_dyna_q.ipynb
+├── rl_9_offline_rl.ipynb
 └── README.md
 ```
 
