@@ -29,6 +29,7 @@ class StoplossVolatilityMLAlgorithm(QCAlgorithm):
         self.set_start_date(2015, 1, 1)
         self.set_end_date(2026, 3, 1)
         self.set_cash(100_000)
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         self._security = self.add_equity(
             "KO", data_normalization_mode=DataNormalizationMode.RAW

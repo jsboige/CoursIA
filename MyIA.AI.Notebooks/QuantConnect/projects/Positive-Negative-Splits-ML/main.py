@@ -26,6 +26,7 @@ class SplitEventsAlgorithm(QCAlgorithm):
         self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 4, 1)
         self.set_cash(100_000)
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         self.universe_settings.resolution = Resolution.HOUR
         self.universe_settings.fill_forward = False

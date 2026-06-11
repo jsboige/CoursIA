@@ -16,6 +16,7 @@ from sklearn.preprocessing import StandardScaler
 class AIStocksBondsRotationAlgorithm(QCAlgorithm):
 
     def initialize(self):
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         self.set_start_date(self.end_date - timedelta(10*365))
         self.settings.daily_precise_end_time = False
         self.settings.seed_initial_prices = True
