@@ -7,9 +7,7 @@ breakdown: Audio=30, SemanticKernel=20, Image=17, Video=16, Texte=11, 00-GenAI-E
 maturity: PRODUCTION=85, BETA=26, ALPHA=5, TEMPLATE=3, DRAFT=2
 -->
 
-Ce parcours vous forme a la maitrise de l'IA generative dans toute sa diversite : generer des images, synthetiser la voix, composer de la musique, produire des videos, orchestrer des agents autonomes, et deployer des applications en production. Chaque modalite suit une progression en quatre niveaux, du premier pas avec une API jusqu'aux pipelines multi-modeles de production.
-
-**120 notebooks** | **11 sous-domaines** | **~90-100h** | **95%+ valides**
+Ce parcours vous forme a la maitrise de l'IA generative dans toute sa diversite : generer des images, synthetiser la voix, composer de la musique, produire des videos, orchestrer des agents autonomes, et deployer des applications en production. Chaque modalite suit une progression en quatre niveaux, du premier pas avec une API jusqu'aux pipelines multi-modeles de production. Les decomptes par sous-domaine et la maturite de chaque notebook se lisent dans le marqueur `CATALOG-STATUS` en tete de ce fichier.
 
 ## Pourquoi ce parcours ?
 
@@ -56,7 +54,7 @@ On commence par les fondamentaux : appeler DALL-E 3 et GPT-5 pour generer des im
 
 ### Audio - Parler, ecouter, composer
 
-L'audio est souvent le parent pauvre des parcours IA, pourtant c'est l'une des modalites les plus accessibles et les plus impressionnantes. Cette serie couvre le spectre complet : reconnaissance vocale (Whisper V3, OpenAI API), synthese vocale (Kokoro, OpenAI TTS, Chatterbox), clonage de voix (XTTS v2), generation musicale (MusicGen, YuE), separation de sources (Demucs), et pipelines complets (podcast automatique, transcription batch, synchronisation audio-video).
+Cette serie couvre le spectre complet de l'audio IA : reconnaissance vocale (Whisper V3, OpenAI API), synthese vocale (Kokoro, OpenAI TTS, Chatterbox), clonage de voix (XTTS v2), generation musicale (MusicGen, YuE), separation de sources (Demucs), et pipelines complets (podcast automatique, transcription batch, synchronisation audio-video). Le detail de chaque niveau et les services utilises se trouve dans le [README Audio](Audio/README.md).
 
 **Fil rouge** : produire un podcast automatique avec voix synthetique personnalisee et fond musical genere.
 
@@ -227,31 +225,35 @@ C'est ce parcours d'integration qui differencie une demonstration jouet d'un pro
 
 ### Faut-il un GPU pour cette serie ?
 
-Non. Les notebooks Image utilisent ComfyUI heberge sur un serveur distant (RTX 3090 dediee, accessible via API). Les notebooks Texte utilisent les API cloud (OpenAI, Anthropic). Les notebooks Audio et Video peuvent tourner en CPU pour les demos (avec une latence plus elevee). Seul le sous-domaine Vibe-Coding et les tests Playwright sont entierement CPU. Si vous avez un GPU local, les notebooks Image montrent aussi comment l'utiliser.
+Non. Les notebooks Image utilisent ComfyUI heberge sur un serveur distant (RTX 3090 dediee, accessible via API). Les notebooks Texte utilisent les API cloud (OpenAI, Anthropic). Les notebooks Audio et Video peuvent tourner en CPU pour les demos (avec une latence plus elevee). Si vous avez un GPU local, les notebooks montrent aussi comment l'utiliser.
 
 ### Quels sont les couts API attendus ?
 
-La serie est concue pour minimiser les couts. Les notebooks Texte utilisent principalement GPT-4o-mini (~0.15$/1M input tokens) et GPT-4o (~2.50$/1M input tokens). Les notebooks Image utilisent DALL-E 3 uniquement pour les exercices (les exemples utilisent ComfyUI/Qwen gratuit). Budget estimé : **5-15$ total** pour l'ensemble de la serie, sauf si vous faites des appels iteratifs intensifs dans les exercices.
+La serie est concue pour minimiser les couts. Les notebooks Texte utilisent principalement GPT-4o-mini (~0.15$/1M input tokens) et GPT-4o (~2.50$/1M input tokens). Les notebooks Image utilisent DALL-E 3 uniquement pour les exercices (les exemples utilisent ComfyUI/Qwen gratuit). Budget estime : **5-15$ total** pour l'ensemble de la serie, sauf appels iteratifs intensifs.
 
 ### Quelle est la difference entre ComfyUI et DALL-E ?
 
 **ComfyUI** est un serveur open-source heberge localement qui execute des modeles open-source (FLUX, SD 3.5, Qwen Image Edit). Avantages : gratuit, controle total sur les parametres (seed, steps, CFG), pipelines personnalisables. **DALL-E 3** est l'API cloud d'OpenAI. Avantages : qualite elevee par defaut, simplicite d'usage (un appel API = une image). La serie montre les deux et vous apprend a choisir selon le contexte.
 
-### Comment sont valides les notebooks GenAI ?
-
-Les notebooks sont valides par Papermill (execution automatique) + un script de validation `scripts/genai-stack/genai.py validate --full` qui verifie : acces aux services (ComfyUI, SD Forge), variables d'environnement configurees, et outputs coherents. Le CI GitHub (catalog-drift + H.3) tourne sur chaque PR. Les notebooks qui necessitent un GPU ou des API payantes sont marques avec des guards (`try/except` sur les imports) pour ne pas bloquer l'execution en local.
-
 ### Peut-on suivre cette serie en parallele d'une autre ?
 
-Oui. Chaque sous-domaine (Image, Audio, Video, Texte, SemanticKernel) est independant. Le parcours recommande est de commencer par **Texte** (necessaire pour comprendre les prompts utilisees partout) puis de choisir un sous-domaine selon votre projet. Les Cross-series Bridges indiquent les connexions avec les autres series (QuantConnect pour le trading par LLM, RL pour les agents, Probas pour l'inférence bayesienne).
+Oui. Chaque sous-domaine (Image, Audio, Video, Texte, SemanticKernel) est independant. Le parcours recommande est de commencer par **Texte** (necessaire pour comprendre les prompts utilises partout) puis de choisir un sous-domaine selon votre projet.
 
-## Statut
+### Erreur ComfyUI 401 Unauthorized
 
-Toutes les sous-series sont actuellement en etat **BETA ou PRODUCTION**, avec validation Papermill > 90% (CI catalog-drift active). Les details par sous-serie (validation %, maturity par notebook) sont dans chaque README enfant, et le compte canonique se lit dans le marqueur `CATALOG-STATUS` en tete de ce fichier.
+Verifiez que `COMFYUI_BEARER_TOKEN` est configure dans `.env`. Le token est disponible aupres de l'enseignant. Sans token, les notebooks basculent en mode cloud (DALL-E/OpenAI) si `OPENAI_API_KEY` est present.
 
----
+### Docker services ne demarrent pas
 
-Architecture SDDD | Compatible MCP | Derniere mise a jour : 2026-05-28
+Verifiez que Docker Desktop est en cours d'execution et que les conteneurs sont actifs :
+
+```bash
+python scripts/genai-stack/genai.py docker status
+```
+
+Si les services sont DOWN, relancez avec `genai.py docker start`. Details : [docs/genai/genai-services.md](../../docs/genai/genai-services.md).
+
+Pour le troubleshooting avance (timeout Papermill, OOM GPU, .NET), consultez le README de chaque sous-domaine.
 
 ## Concepts cles
 
@@ -274,45 +276,6 @@ Architecture SDDD | Compatible MCP | Derniere mise a jour : 2026-05-28
 | **ComfyUI** | Interface visuelle pour chainer les modeaux generatifs en workflows | Image, Video |
 | **Playwright** | Framework de test E2E pour applications web GenAI | Playwright-OWUI |
 
-## FAQ / Troubleshooting
-
-### Le notebook Image/Video met une erreur ComfyUI 401 Unauthorized
-
-Verifiez que `COMFYUI_BEARER_TOKEN` est configure dans `.env`. Le token est disponible aupres de l'enseignant. Sans token, les notebooks basculent en mode cloud (DALL-E/OpenAI) si `OPENAI_API_KEY` est present — c'est le mecanisme de graceful degradation.
-
-### Papermill timeout sur les notebooks GenAI
-
-Les notebooks GenAI qui appellent des modeaux de generation (image, video, audio) peuvent etre lents selon la charge GPU. Utilisez `--execution-timeout 600` (10 min) au lieu du timeout par defaut. Pour les notebooks Video qui generent des clips, `--execution-timeout 1200` peut etre necessaire.
-
-### Docker services ne demarrent pas
-
-Verifiez que Docker Desktop est en cours d'execution et que les conteneurs sont actifs :
-
-```bash
-python scripts/genai-stack/genai.py docker status
-```
-
-Si les services sont DOWN, relancez avec `genai.py docker start`. Details : [docs/genai/genai-services.md](../../docs/genai/genai-services.md).
-
-### Erreur `torch.cuda.OutOfMemoryError` sur les notebooks locaux
-
-Les modeaux de generation (FLUX, SD 3.5, Qwen-Image, MusicGen) requierent une GPU avec suffisamment de VRAM. Sur une RTX 3090 (24 GB), la plupart des modeaux tournent en FP16. Si OOM persiste :
-
-- Fermez les autres conteneurs GPU (`genai.py docker stop <service>`)
-- Utilisez les variantes quantizees (INT4, FP8) si disponibles
-- Baissez la resolution de generation
-
-### Les notebooks SemanticKernel echouent avec une erreur .NET
-
-Verifiez que .NET SDK 9.0+ est installe (`dotnet --version`) et que le kernel `.net-csharp` est enregistre (`jupyter kernelspec list`). Les notebooks SemanticKernel utilisent .NET Interactive et le package `Microsoft.SemanticKernel`.
-
-### open_spiel ou torch ne s'installe pas
-
-Certains packages (torch avec CUDA, open_spiel) requierent un compilateur C ou CUDA toolkit. Sur Windows :
-
-- PyTorch : utilisez les wheels pre-compilees (`pip install torch --index-url https://download.pytorch.org/whl/cu121`)
-- OpenSpiel : non supporte nativement Windows, necessite WSL (kernel `gametheory-wsl`)
-
 ## Cross-series Bridges
 
 ### Interne GenAI
@@ -328,10 +291,8 @@ Certains packages (torch avec CUDA, open_spiel) requierent un compilateur C ou C
 
 | Serie | Lien | Connection |
 |-------|------|-------------|
-| [ML](../ML/README.md) | Pipelines ML, evaluation | Les modeles generatifs s'evaluent avec les memes metriques (precision, FID, WER) et s'integrent dans des pipelines ML |
-| [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | L'analyse de sentiment par LLM (Texte/8_Reasoning_Models) alimente les strategies de trading |
-| [RL](../RL/README.md) | Apprentissage par renforcement | Les agents RL peuvent utiliser des modeles generatifs comme recompenses (images, texte) |
-| [Probas](../Probas/README.md) | Modeles probabilistes | Les VAE, diffusion models et Bayesian neural networks partagent les memes fondements probabilistes |
+| [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | L'analyse de sentiment par LLM (Texte/8_Reasoning_Models) alimente les strategies de trading du notebook QC-13 |
+| [Probas](../Probas/README.md) | Modeles probabilistes | Les VAE et diffusion models (Image/02-Advanced, Video/02-Advanced) partagent les fondements probabilistes couverts dans Probas/Infer |
 
 ### Lecture transversale
 
