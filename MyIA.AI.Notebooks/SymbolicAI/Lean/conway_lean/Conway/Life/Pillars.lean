@@ -174,7 +174,7 @@ for the corresponding pillar. The proof is intended to be a single
     Phase 3c : `by native_decide` with memoized Hashlife. -/
 theorem otca_metapixel_witness :
     evolveHashlifeFastMemo otcaGens otcaInitial = otcaTarget := by
-  sorry
+  rfl
 
 /-- **UnitCell witness** — Nicolay Beluchenko 2011.
 
@@ -187,7 +187,7 @@ theorem otca_metapixel_witness :
     Phase 3c : `by native_decide` with memoized Hashlife. -/
 theorem unitcell_witness :
     evolveHashlifeFastMemo unitcellGens unitcellInitial = unitcellTarget := by
-  sorry
+  rfl
 
 /-- **Gemini witness** — Andrew Wade 2010.
 
@@ -202,7 +202,7 @@ theorem unitcell_witness :
     Phase 3c : `by native_decide` with memoized Hashlife. -/
 theorem gemini_witness :
     evolveHashlifeFastMemo geminiGens geminiInitial = geminiTarget := by
-  sorry
+  rfl
 
 /-- **Digital CPU witness** — Beluchenko / Andy Stearns 2016.
 
@@ -216,7 +216,7 @@ theorem gemini_witness :
     Phase 3c : `by native_decide` with memoized Hashlife. -/
 theorem cpu_witness :
     evolveHashlifeFastMemo cpuGens cpuInitial = cpuTarget := by
-  sorry
+  rfl
 
 end Pillars
 end Life
