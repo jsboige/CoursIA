@@ -135,10 +135,12 @@ class CryptoLSTMPredictionAlgorithm(QCAlgorithm):
     MAX_POSITION_SIZE = 1.0   # 100% max
     MIN_CONFIDENCE = 0.3      # Seuil de confiance minimum
 
-    # Paramètres de training
+    # Paramètres de training (walk-forward: retrain every 90 days)
+    # Training: 2017-2020 (4 ans, retrained periodically in backtest)
+    # Backtest: 2021-2026 (out-of-sample, >= 5 ans, no overlap with initial training)
     TRAIN_START = datetime(2017, 1, 1)
-    TRAIN_END = datetime(2023, 12, 31)
-    BACKTEST_START = datetime(2019, 1, 1)
+    TRAIN_END = datetime(2020, 12, 31)
+    BACKTEST_START = datetime(2021, 1, 1)
     BACKTEST_END = datetime(2026, 3, 1)
 
     RETRAIN_DAYS = 90  # Retrainer tous les 90 jours

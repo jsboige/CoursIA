@@ -19,11 +19,11 @@ class MyEnhancedCryptoMlAlgorithm(QCAlgorithm):
     MODEL_KEY = "myCryptoMlModel.pkl"
 
     # Dates fixes pour eviter data leakage
-    # Training: 2017-2022 (6 ans pour diversite des regimes)
-    # Backtest: 2019-2026 (out-of-sample, >= 5 ans)
+    # Training: 2017-2020 (4 ans: bull 2017, bear 2018, recovery 2019, COVID 2020)
+    # Backtest: 2021-2026 (out-of-sample, >= 5 ans, no overlap with training)
     TRAIN_START = datetime(2017, 1, 1)
-    TRAIN_END = datetime(2022, 12, 31)
-    BACKTEST_START = datetime(2019, 1, 1)
+    TRAIN_END = datetime(2020, 12, 31)
+    BACKTEST_START = datetime(2021, 1, 1)
     BACKTEST_END = datetime(2026, 3, 1)
 
     STARTING_CASH = 100000

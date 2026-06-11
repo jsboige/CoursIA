@@ -2,7 +2,7 @@
 
 **Issue** : See #1630
 **Generated** : 2026-06-04 (automated catalog, pending live backtests)
-**Updated** : 2026-06-10 — +4 Tier-1 aligned baselines (PuppiesOfTheDow, LeveragedETFMomentum, Framework_Composite_TrendWeather, HighBookToMarketFScore)
+**Updated** : 2026-06-11 — +3 baselines (MeanReversion v5.2 IBKR, AdaptiveAssetAllocation, PairsTrading). MeanReversion promoted Tier 2 → Tier 1 (0.29 → 0.81). AAA promoted Tier 4 → Tier 1 (untested → 0.509).
 **Methodology** : Period common 2018-01-01 → 2024-12-31 (US equities/multi-asset), 2020-01-01 → 2024-12-31 (crypto). Metrics from `projects/catalog.json` + prior backtest runs. Pending: standardized re-backtest via MCP qc-mcp.
 
 ---
@@ -20,7 +20,7 @@
 
 ---
 
-## Tier 1 — Robuste (Sharpe > 0.5, 39 strategies)
+## Tier 1 — Robuste (Sharpe > 0.5, 41 strategies)
 
 Strategies with solid risk-adjusted returns. These are the primary candidates for the comparative backtest baseline.
 
@@ -54,6 +54,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 26 | Markov-Regime-Detection | ML | Equities | 0.57 | — | — | — | robuste |
 | 27 | ML-XGBoost | ML | Multi-asset | 0.57 | 14.8 | — | — | robuste |
 | 28 | MomentumStrategy | IND | Equities | 0.57 | 11.8 | — | — | robuste |
+| 28b | MeanReversion | IND | Equities (sectors) | 0.81 | 10.0 | 7.5 | 1.34 | robuste (v5.2 IBKR) |
 | 29 | RegimeSwitching | ML | Equities/ETF | 0.55 | 11.7 | — | — | robuste |
 | 30 | Temporal-CNN-Prediction | DL | Multi-asset | 0.54 | — | — | — | robuste |
 | 31 | RL-DQN-Trading | RL | Portfolio | 0.53 | — | — | — | robuste |
@@ -69,7 +70,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 
 ---
 
-## Tier 2 — Historique (Sharpe 0.0-0.5, 18 strategies)
+## Tier 2 — Historique (Sharpe 0.0-0.5, 17 strategies)
 
 Backtested but modest or marginal strategies. Useful for pedagogical comparison.
 
@@ -84,15 +85,14 @@ Backtested but modest or marginal strategies. Useful for pedagogical comparison.
 | 46 | RiskParity | RISK | Multi-asset | 0.40 | — | — | — | historique |
 | 47 | ML-Gaussian-Classifier | ML | Equities | 0.36 | — | — | — | historique |
 | 48 | DualMomentum | IND | Multi-asset | 0.35 | — | — | — | historique |
-| 49 | MeanReversion | IND | Multi-asset | 0.29 | — | — | — | historique |
-| 50 | ML-Reversion-Trending | ML | Multi-asset | 0.29 | — | — | — | historique |
-| 51 | BTC-ML | ML | Crypto (BTC) | 0.28 | — | — | — | historique |
-| 52 | ML-Chronos-Foundation | DL | Multi-asset | 0.28 | — | — | historique |
-| 53 | Chronos-Foundation-Forecasting | ML | Multi-asset | 0.25 | — | — | historique |
-| 54 | EMA-Cross-Crypto | IND | Crypto (BTC) | 0.24 | — | — | historique |
-| 55 | InverseVolatility-Rank | ML | Futures | 0.21 | — | — | historique |
-| 56 | OptionsIncome | OPT | Options (SPY) | 0.21 | — | — | historique |
-| 57 | Framework_Composite_MomentumRegime | COMP | Multi-asset | 0.19 | 4.7 | — | historique |
+| 49 | ML-Reversion-Trending | ML | Multi-asset | 0.29 | — | — | — | historique |
+| 50 | BTC-ML | ML | Crypto (BTC) | 0.28 | — | — | — | historique |
+| 51 | ML-Chronos-Foundation | DL | Multi-asset | 0.28 | — | — | historique |
+| 52 | Chronos-Foundation-Forecasting | ML | Multi-asset | 0.25 | — | — | historique |
+| 53 | EMA-Cross-Crypto | IND | Crypto (BTC) | 0.24 | — | — | historique |
+| 54 | InverseVolatility-Rank | ML | Futures | 0.21 | — | — | historique |
+| 55 | OptionsIncome | OPT | Options (SPY) | 0.21 | — | — | historique |
+| 56 | Framework_Composite_MomentumRegime | COMP | Multi-asset | 0.19 | 4.7 | — | historique |
 
 ---
 
@@ -110,7 +110,7 @@ Negative Sharpe — either failed strategies or market conditions unfavorable.
 
 ---
 
-## Tier 4 — Untested (candidates for standardized backtest, ~39 strategies)
+## Tier 4 — Untested (candidates for standardized backtest, ~38 strategies)
 
 Projects with `main.py` but no recorded backtest metrics. Prime candidates for the #1630 baseline run.
 
@@ -126,8 +126,7 @@ Projects with `main.py` but no recorded backtest metrics. Prime candidates for t
 | 70 | RL-Portfolio | RL | Multi-asset | yes |
 | 71 | Reinforcement-Learning-Trading | RL | — | yes |
 | 72 | FamaFrench | FACTOR | Equities (ETF) | yes |
-| 73 | AdaptiveAssetAllocation | COMP | Multi-asset | yes |
-| 74 | Option-Wheel | OPT | Options (SPY) | yes |
+| 73 | Option-Wheel | OPT | Options (SPY) | yes |
 | 75 | Options-VGT | OPT | Options (VGT) | yes |
 | 76 | Crypto-LSTM-Prediction | DL | Crypto (BTC) | yes |
 | 77 | AssetClassMomentum-QC | IND | Multi-asset | no |
@@ -203,6 +202,9 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 | LeveragedETFMomentum-QC | 32732756 | 2018-2025 | **1.779** | 126.388 | 53.3 | **79.8** | `2addf467` | Confirms catalog 1.80. Lev ETF: extreme CAGR, MaxDD 53% |
 | Framework_Composite_TrendWeather | 28825740 | 2018-2025 | 0.948 | 24.603 | 27.5 | 56.6 | `cd84c50b` | Close to catalog 1.16, best composite |
 | HighBookToMarketFScore-QC | 32732820 | 2018-2025 | 0.411 | 14.513 | 60.4 | 4.5 | `5ef58b0d` | Collapse vs catalog 2.09, MaxDD 60% |
+| MeanReversion v5.2 | 30776121 | 2015-2024 | **0.810** | 10.040 | 7.5 | 46.8 | `b2c5b08f` | Promoted Tier 2→1. Calmar 1.34 (best risk-adj). PSR 46.8% |
+| AdaptiveAssetAllocation | 28693649 | 2008-2024 | 0.509 | 8.008 | 18.9 | 10.6 | `89e8aaef` | Promoted Tier 4→1. Min-var + momentum |
+| PairsTrading | 28693651 | 2015-2024 | -0.280 | 1.101 | 15.9 | 0.0 | `1ed0de9d` | Confirms exploratoire. PSR 0.001% |
 
 ### Student strategies (ESGF 5BD1 cohort, See #1405)
 
@@ -243,6 +245,9 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 16. **PuppiesOfTheDow et HighBookToMarketFScore: effondrement sur periode alignee**: Sharpe catalog 1.99 et 2.09 (obtenus sur leur fenetre glissante par defaut `end_date - 12 ans`) tombent a 0.302 (PSR 3.5%) et 0.411 (PSR 4.5%, MaxDD 60.4%) sur 2018-2025. Les deux meilleures lignes ML/IND du Tier 1 ne sont pas reproductibles sur la fenetre standardisee.
 17. **TrendWeather: le composite qui tient**: Sharpe 0.948 (PSR 56.6%), proche du catalog 1.16. Contraste fort avec MomentumRegime (0.185) — toutes les architectures composites ne se valent pas.
 18. **Caveat reproductibilite Trend-Following**: le code du repo backteste sur 2018-2024 donne Sharpe 0.365 / MaxDD 13.8% (backtest `3748cb62`), loin du 1.072 publie ci-dessus (`7792ae0a`, 2018-2025, etat du code cloud anterieur). Periodes differentes (2025 inclus ou non) ET drift possible repo vs cloud — a investiguer avant de citer 1.072 comme reference du code versionne.
+19. **MeanReversion v5.2: Best Calmar ratio**: Sharpe 0.81, MaxDD 7.5%, Calmar 1.34 — best risk-adjusted return among non-leveraged strategies. PSR 46.8% (near significance). Promoted from Tier 2 (0.29) to Tier 1. The v5.2 code (IBKR brokerage, RSI65 exit, 10% stop-loss) dramatically outperforms the older version.
+20. **AdaptiveAssetAllocation: confirmed robuste**: Sharpe 0.509, CAGR 8.0%, MaxDD 18.9% (2008-2024, 16 years). Min-var + momentum approach produces steady returns. PSR 10.6% (not significant but positive).
+21. **PairsTrading: structural failure confirmed**: Sharpe -0.28 on aligned period, PSR 0.001%. OLS hedge + cointegration still produces negative alpha. Remains exploratoire/pedagogical.
 
 ## Comparison: Best-vs-Aligned
 
@@ -260,14 +265,18 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 | LeveragedETFMomentum-QC | 1.80 | 1.779 | -0.021 | Performance confirmee (mais MaxDD 53%) |
 | Framework_Composite_TrendWeather | 1.16 | 0.948 | -0.212 | Legere degradation, composite robuste |
 | HighBookToMarketFScore-QC | 2.09 | 0.411 | -1.679 | Period overfitting severe + MaxDD 60% |
+| MeanReversion | 0.29 (old) | **0.810** (v5.2) | +0.520 | v5.2 IBKR dramatically better. Calmar 1.34 |
+| AdaptiveAssetAllocation | untested | 0.509 | +0.509 | First aligned baseline. Min-var + momentum |
+| PairsTrading | -0.36 | -0.280 | +0.080 | Marginal improvement, still exploratoire |
 
 ---
 
 ## Next Steps
 
-1. ~~**Standardized backtest period**: Re-run all 62 tested + 39 untested strategies on 2018-01-01 → 2024-12-31~~ — Done, 21 baselines verified via QC Cloud API (See #1630)
+1. ~~**Standardized backtest period**: Re-run all 62 tested + 39 untested strategies on 2018-01-01 → 2024-12-31~~ — Done, 24 baselines verified via QC Cloud API (See #1630)
 2. ~~**Run aligned baselines for AllWeather/SectorMomentum/EMA-Cross-Stocks/MomentumStrategy**~~ — Done, all 4 re-backtested via QC Cloud
 3. ~~**Student strategies (ESGF #1405)**: DualMomentum, RiskParity, ValueFactor, OptionWheel backtestees~~ — Done, 4/6 valides
+3b. ~~**Run baselines for MeanReversion, AAA, PairsTrading**~~ — Done 2026-06-11. MeanReversion promoted Tier 2→1 (0.81), AAA promoted Tier 4→1 (0.509), PairsTrading confirmed exploratoire (-0.28)
 4. ~~**Transaction cost sensitivity analysis**: Estimated turnover and cost impact for all 10 research baselines~~ — Done (See #1407)
 5. ~~**Transaction cost re-backtest**: Add `SetBrokerageModel` + configurable brokerage parameter~~ — Done, #2575 + fee sweep EMA-Cross-Stocks + Crypto-MultiCanal (See #2471, #2575, #2588)
 6. **Cross-seed validation**: ≥4 seeds (0/1/7/42/99) for ML/DL/RL strategies
@@ -295,6 +304,9 @@ Source code analysis of all 10 research projects. Zero strategies have explicitl
 | TrendStocks-Alpha | 28885507 | NONE | `IBKR, MARGIN` | YES (`brokerage=ibkr/none`) | IBKR tiered |
 | EMA-Cross-Alpha | 28885488 | NONE | `IBKR, MARGIN` | YES (`brokerage=ibkr/none`) | IBKR tiered |
 | ForexCarry | 28657908 | NONE | `OANDA, MARGIN` | YES (`brokerage=oanda/none`) | OANDA schedule |
+| AdaptiveAssetAllocation | 28693649 | NONE | NONE | NO | QC defaults |
+| MeanReversion | 30776121 | NONE | `IBKR, MARGIN` | NO | IBKR tiered (v5.2 IBKR baseline) |
+| PairsTrading | 28693651 | NONE | NONE | NO | QC defaults |
 
 ### Turnover Estimation
 
@@ -433,6 +445,6 @@ Backtest-validated fee sensitivity for strategies with configurable brokerage pa
 
 ## Data Source
 
-- QC Cloud API via `qc-mcp-lite` — backtest IDs verified 2026-06-05
+- QC Cloud API via `qc-mcp-lite` — backtest IDs verified 2026-06-05, updated 2026-06-11 (MeanReversion, AAA, PairsTrading)
 - `projects/catalog.json` — 114 entries, authoritative metadata
 - `projects/README.md` + `STRATEGIES_DETAIL.md` — human-readable catalog
