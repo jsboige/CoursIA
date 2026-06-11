@@ -7,42 +7,39 @@ breakdown: 00-GenAI-Environment=6
 maturity: BETA=4, PRODUCTION=2
 -->
 
-[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Docker Services](00-2-Docker-Services-Management.ipynb)
+[← GenAI](../README.md) | [↑ ..](../README.md) | [→ Image](../Image/README.md)
 
-## Introduction : Pourquoi cet setup est crucial
+Ce module configure l'environnement technique avant toute exploration GenAI. Les notebooks couvrent le setup Python, la gestion des conteneurs Docker (ComfyUI, Whisper, MusicGen), la configuration des endpoints API, et un test complet de validation.
 
-Avant de plonger dans l'univers des modèles de génération IA, prenez un moment pour comprendre pourquoi une configuration rigoureuse évite 80% des problèmes techniques. Les notebooks GenAI font appel à des services externes, des conteneurs Docker et des modèles complexes – une seule variable d'environnement manquante peut bloquer toute votre exploration. Ce module vous guide pas à pas pour créer une base solide, vous permettant de vous concentrer sur l'essentiel : apprendre et expérimenter avec l'IA.
+## Objectifs d'apprentissage
 
-## Vue d'Ensemble
-[GREEN] Setup et Configuration
+A l'issue de ce module, vous serez capable de :
 
-**Validation: 100% (6/6 notebooks)**
+1. **Configurer** un environnement Python complet pour le developpement GenAI (dependances, variables d'environnement, services Docker)
+2. **Gerer** des services Docker conteneurises (ComfyUI, modeles de langue) avec demarrage, arret et monitoring
+3. **Parametrer** les endpoints API pour les services IA (OpenAI, Anthropic, OpenRouter, services locaux)
+4. **Valider** que chaque composant fonctionne correctement via les scripts de diagnostic
+5. **Deployer** localement l'infrastructure GenAI complete sur un poste de travail
 
-## Notebooks du Module
+## Notebooks
 
-| # | Notebook | Description | Validation |
-|---|----------|-------------|------------|
-| 1 | [00-1-Environment-Setup](00-1-Environment-Setup.ipynb) | Configuration environnement complet | OK |
-| 2 | [00-2-Docker-Services-Management](00-2-Docker-Services-Management.ipynb) | Gestion services conteneurises | OK |
-| 3 | [00-3-API-Endpoints-Configuration](00-3-API-Endpoints-Configuration.ipynb) | Configuration endpoints API | OK |
-| 4 | [00-4-Environment-Validation](00-4-Environment-Validation.ipynb) | Tests et validation setup | OK |
-| 5 | [00-5-ComfyUI-Local-Test](00-5-ComfyUI-Local-Test.ipynb) | Test local des services ComfyUI | OK |
-| 6 | [00-6-Local-Docker-Deployment](00-6-Local-Docker-Deployment.ipynb) | Deploiement Docker local complet | OK |
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| 1 | [00-1-Environment-Setup](00-1-Environment-Setup.ipynb) | Configuration environnement complet | 30 min |
+| 2 | [00-2-Docker-Services-Management](00-2-Docker-Services-Management.ipynb) | Gestion services conteneurises | 40 min |
+| 3 | [00-3-API-Endpoints-Configuration](00-3-API-Endpoints-Configuration.ipynb) | Configuration endpoints API | 25 min |
+| 4 | [00-4-Environment-Validation](00-4-Environment-Validation.ipynb) | Tests et validation setup | 30 min |
+| 5 | [00-5-ComfyUI-Local-Test](00-5-ComfyUI-Local-Test.ipynb) | Test local des services ComfyUI | 25 min |
+| 6 | [00-6-Local-Docker-Deployment](00-6-Local-Docker-Deployment.ipynb) | Deploiement Docker local complet | 45 min |
 
-## Prérequis
-- Configuration .env avec clés API
-- Python 3.11+ avec dépendances
-- Variables d'environnement OpenRouter
+## Prerequis & environnement
 
-## Ce que vous saurez faire
-
-À l'issue de ce module, vous serez capable de :
-- Configurer un environnement Python complet pour le développement GenAI
-- Gérer des services Docker conteneurisés (ComfyUI, modèles de langue)
-- Paramétrer les endpoints API pour les services IA
-- Valifier que chaque composant fonctionne correctement
-- Déployer localement l'ensemble de l'infrastructure GenAI
-- Résoudre les problèmes courants de configuration
+| Besoin | Detail |
+|--------|--------|
+| Python | 3.10+ avec dependances (`pip install -r requirements.txt`) |
+| Docker Desktop | v29.5+ recommande pour les notebooks GPU |
+| Cles API | `.env` dans `GenAI/` : `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_BEARER_TOKEN` |
+| GPU | Optionnel pour ce module, requis pour les sous-domaines Image/Audio/Video |
 
 ## FAQ
 

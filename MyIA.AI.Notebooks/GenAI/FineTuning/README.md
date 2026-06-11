@@ -1,7 +1,5 @@
 # FineTuning - Adapter les LLMs a vos taches
 
-[← Documentation GenAI](../README.md)
-
 <!-- CATALOG-STATUS
 series: GenAI-FineTuning
 pedagogical_count: 5
@@ -9,9 +7,18 @@ breakdown: FineTuning=5
 maturity: PRODUCTION=4, BETA=1
 -->
 
-Serie progressive sur le fine-tuning des modeles de langue : des bases LoRA a la fusion de modeles, en passant par la quantization, l'instruction-following et l'alignement par preferences humaines.
+[← GenAI](../README.md) | [↑ ..](../README.md) | [→ PostTraining](../PostTraining/README.md)
 
-**5 notebooks** | **~2-3h** | **GPU recommande** (T4/V100 suffisent pour la plupart des exercices)
+Serie progressive sur le fine-tuning des modeles de langue : des bases LoRA a la fusion de modeles, en passant par la quantization, l'instruction-following et l'alignement par preferences humaines. GPU recommande (T4/V100 suffisent pour la plupart des exercices).
+
+## Objectifs d'apprentissage
+
+A l'issue de cette serie, vous serez capable de :
+
+1. **Appliquer** LoRA et QLoRA pour fine-tuner des modeles 7B sur un GPU consumer
+2. **Transformer** un base model en instruct model via SFT (format ChatML)
+3. **Aligner** les modeles sur les preferences humaines avec DPO
+4. **Fusionner** plusieurs adaptateurs fine-tunes en un seul modele unifie (TIES, DARE, MoE)
 
 ## Structure
 
@@ -94,13 +101,6 @@ Combine plusieurs adaptateurs LoRA fine-tunes sur des taches differentes en un s
 ### Avance (3-4h)
 1. FT-01 a FT-05 dans l'ordre + experimenter mergekit recipes
 
-## Ressources externes
-
-- **Hugging Face PEFT** : https://huggingface.co/docs/peft
-- **QLoRA paper** : https://arxiv.org/abs/2305.14314
-- **DPO paper** : https://arxiv.org/abs/2305.18290
-- **MergeKit** : https://github.com/arcee-ai/mergekit
-
 ## FAQ
 
 ### OOM pendant FT-04 (DPO) ou FT-05 (Model Merging)
@@ -174,8 +174,9 @@ Si le modele merge (FT-05) perd en qualite par rapport aux adaptateurs individue
 - DARE (Drop And Rescale) elimine les poids redondants — essayer si TIES ne converge pas.
 - Le routage MoE (Mixture of Experts) est une alternative au merge statique : chaque token est route vers l'adaptateur le plus competent. FT-05 couvre cette approche.
 
-## Liens
+## References
 
-- [← GenAI README](../README.md) - Vue d'ensemble GenAI
-- [SemanticKernel](../SemanticKernel/README.md) - Integration .NET pour LLMs fine-tunes
-- [Texte](../Texte/README.md) - Notebooks LLMs generaux
+- **Hugging Face PEFT** : https://huggingface.co/docs/peft
+- **QLoRA paper** : https://arxiv.org/abs/2305.14314
+- **DPO paper** : https://arxiv.org/abs/2305.18290
+- **MergeKit** : https://github.com/arcee-ai/mergekit
