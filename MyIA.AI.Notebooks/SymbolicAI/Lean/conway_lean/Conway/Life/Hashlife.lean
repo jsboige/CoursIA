@@ -160,9 +160,9 @@ Recursive case (`k >= 3`):
     performs one Hashlife step, recursing with `fuel - 1`.
     Terminates because `fuel` is a `Nat` that strictly decreases.
 
-    The `partial def` wrapper `hashlifeResult` calls this with
-    `fuel = c.level`, which is a structural upper bound on recursion
-    depth (level strictly decreases at each step of the algorithm). -/
+    The wrapper `hashlifeResult` calls this with `fuel = c.level`,
+    which is a structural upper bound on recursion depth (level
+    strictly decreases at each step of the algorithm). -/
 def hashlifeResultAux : Nat → MacroCell → MacroCell
   | 0, _ => deadLeaf  -- fuel exhausted: return default
   | fuel + 1, c@(node (node nw_nw nw_ne nw_sw nw_se)
@@ -211,10 +211,11 @@ def hashlifeResultAux : Nat → MacroCell → MacroCell
     which is a structural upper bound on the recursion depth
     (the level strictly decreases at each recursive call).
 
-    This is a `partial def` wrapper. The `def`-level termination
-    guarantee comes from `hashlifeResultAux`'s structural recursion
-    on `fuel`. -/
-partial def hashlifeResult (c : MacroCell) : MacroCell :=
+    This wrapper is not itself recursive: termination comes from
+    `hashlifeResultAux`'s structural recursion on `fuel`, so the
+    wrapper is a plain `def` (kept transparent for the correctness
+    proofs in `Conway.Life.HashlifeMemo`). -/
+def hashlifeResult (c : MacroCell) : MacroCell :=
   hashlifeResultAux c.level c
 
 /-! ## Centering / padding helpers -/
