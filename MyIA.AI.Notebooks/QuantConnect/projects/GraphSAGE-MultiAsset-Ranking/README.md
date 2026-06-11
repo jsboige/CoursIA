@@ -1,5 +1,7 @@
 # GraphSAGE-MultiAsset-Ranking
 
+**Type:** Research (no deployable algorithm, research-only notebook)
+
 **Asset class:** Equities (large-cap US stocks)
 
 **Cloud project ID:** N/A (research-only, no deployable algorithm)
