@@ -56,7 +56,10 @@ namespace Life
 inductive MacroCell where
   | leaf (alive : Bool)
   | node (nw ne sw se : MacroCell)
-  deriving BEq, Repr, Inhabited
+  -- `DecidableEq` (rather than a derived `BEq`) so that the `BEq`
+  -- instance is lawful (`instLawfulBEq`), which the memoization cache
+  -- proofs in `Conway.Life.HashlifeMemo` rely on.
+  deriving DecidableEq, Repr, Inhabited
 
 namespace MacroCell
 

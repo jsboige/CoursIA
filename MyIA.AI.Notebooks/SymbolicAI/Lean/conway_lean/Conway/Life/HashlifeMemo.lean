@@ -2,52 +2,45 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-## HashlifeMemo — Memoized Hashlife (Phase 3c scaffolding)
+## HashlifeMemo — Memoized Hashlife, proven correct (Phase 3c)
 
-This module is **scaffolding** for the memoization layer that makes
-`hashlifeResult` tractable on community pillar witnesses (OTCA 35K gen,
-UnitCell 4096 gen, Gemini 33M gen, CPU 1M gen). Without memoization,
-the recursive Hashlife algorithm in `Conway.Life.Hashlife` is `9^k` in
-the worst case (each of 9 subnode calls spawns 9 further calls until
-the level-2 base case). For Gemini at level ~15, that is `9^13 ≈ 2.5 × 10^12`
-unmemoized calls — infeasible. With memoization (the canonical Gosper
-trick: hash-cons identical subtrees), distinct subtrees explored on
-realistic patterns drop to a few million, well within `native_decide`
-budget.
+This module implements the memoization layer that makes `hashlifeResult`
+tractable on community pillar witnesses (OTCA 35K gen, UnitCell 4096 gen,
+Gemini 33M gen, CPU 1M gen). Without memoization, the recursive Hashlife
+algorithm in `Conway.Life.Hashlife` is `9^k` in the worst case (each of
+13 subnode calls spawns further calls until the level-2 base case). With
+memoization (the canonical Gosper trick: cache results for identical
+subtrees), distinct subtrees explored on realistic patterns drop to a few
+million, within `native_decide` budget.
 
-### Roadmap (Phase 3c — multi-cycle)
+### Design
 
-This file declares the API shape and types. The actual definitions
-remain `sorry`-gated until each component lands:
+- **Cache**: `Std.HashMap (Nat × MacroCell) MacroCell`, keyed by
+  `(fuel, cell)`. The fuel is part of the key because
+  `hashlifeResultAux` is genuinely fuel-dependent (its fallback arms
+  depend on whether fuel is exhausted), so caching by cell alone would
+  be unsound on malformed cells.
+- **`Hashable MacroCell`**: a structural 64-bit content hash
+  (`MacroCell.contentHash`). `BEq` comes from the derived `DecidableEq`
+  (hence lawful), which is what the cache-correctness proofs need.
+- **Fused correctness**: instead of defining the memoized function and
+  then proving it correct by a separate induction, each function returns
+  a subtype packaging the value, the final cache, a proof that the value
+  equals the unmemoized reference, and a proof that the cache stays
+  correct (`CacheOK`). Every recursive call carries its own proof, so no
+  global induction over the 13-call recursion tree is ever needed. The
+  proofs are `Prop`-valued and fully erased at runtime.
 
-1. **`MacroCellId`** — content-addressed identifier with `Hashable` instance
-   (initially `HashMap MacroCell α` via the derived `BEq`/`Hashable`;
-   later refined to a 64-bit content hash for production).
-2. **`MemoCache`** — `Std.HashMap MacroCellId MacroCell`, threaded through
-   the algorithm via `StateM`.
-3. **`hashlifeResultMemo`** — memoized counterpart of
-   `Conway.Life.Hashlife.hashlifeResultAux`. Same recursion shape, with
-   a cache lookup/insert at each `node` arm.
-4. **`hashlifeResultMemo_correct`** — the equivalence theorem:
-   `(hashlifeResultMemo c).run' ∅ = hashlifeResultAux c.level c`.
-   Proof strategy: induction on `c.level` with cache invariant
-   `cache[k] = hashlifeResultAux k.level k` for every `k` in `cache.keys`.
-5. **`evolveHashlifeFastMemo`** — top-level entry point using
-   `hashlifeResultMemo` instead of `hashlifeResult`.
+### Implementation notes
 
-This is **not** a regression of Phase 3b. The sorries below are
-intentional roadmap markers, scoped to `HashlifeMemo` and `Pillars`,
-documented as Phase 3c work-in-progress. They are NOT used by
-`Conway.Life.HashlifeCorrectness` (which has its own 5 sorries on the
-direct light-cone bound, independent of memoization).
-
-### Why scaffold now ?
-
-The user (mandate 2026-06-01) requested a complete-presentation
-scaffold for the Lean-14b-Conway-Game-of-Life-Lean notebook §11 roadmap, so that
-the memoization-driven witnesses (OTCA, UnitCell, Gemini, CPU) are
-visible as a concrete next step rather than vague text. The contract
-of this module is the architecture; the proofs come next.
+- The well-formed `node`-of-`node`s arm spells out its 16 grandchildren
+  (`a1..a4, b1..b4, c1..c4, d1..d4`) **without** a pattern alias
+  (`c@(...)`): alias fvars are syntactically opaque to `rw`/`simp`, which
+  would break the unfold lemma `hashlifeResultAux_succ_node` below.
+- The malformed arms whose `level` computation is stuck (e.g.
+  `1 + (1 + w1.level)` with `w1` neutral) return the *verbatim* `ite`
+  expression from `hashlifeResultAux`'s fallback arm so that `rfl`
+  closes the proof obligation by definitional unfolding.
 -/
 
 import Conway.Life.MacroCell
@@ -59,154 +52,297 @@ namespace Life
 
 open MacroCell
 
-/-! ## Cache identifier
+/-! ## Hashing MacroCells
 
-Initially we use `MacroCell` directly as the key. The derived `BEq` is
-content-equality (structural), which is what hash-consing needs. The
-derived `Hashable` is fine for the scaffold; production deployment may
-swap in a 64-bit content hash with cycle-detection. -/
+A structural content hash. Equal cells (by the derived `DecidableEq`,
+which induces the `BEq` in scope) get equal hashes by construction, so
+`LawfulHashable` is automatic. -/
 
-/-- Content-addressed identifier for a `MacroCell`. For the scaffold
-    this is the cell itself; production may refine to a 64-bit hash. -/
-abbrev MacroCellId := MacroCell
+/-- Structural 64-bit content hash of a `MacroCell`. -/
+def MacroCell.contentHash : MacroCell → UInt64
+  | .leaf b => if b then 1 else 0
+  | .node nw ne sw se =>
+    mixHash 2 (mixHash (mixHash nw.contentHash ne.contentHash)
+                       (mixHash sw.contentHash se.contentHash))
 
-instance : Hashable MacroCellId where
-  hash c := match c with
-    | .leaf b   => if b then 1 else 0
-    | .node _ _ _ _ => 2  -- placeholder; production uses a full content hash
+instance : Hashable MacroCell := ⟨MacroCell.contentHash⟩
 
-/-! ## The memoization cache -/
+/-! ## The memoization cache and its invariant -/
 
-/-- A memoization cache mapping `MacroCellId` to the Hashlife result of
-    that cell at its natural level (`hashlifeResultAux c.level c`). -/
-abbrev MemoCache := Std.HashMap MacroCellId MacroCell
+/-- Memoization cache: `(fuel, cell) ↦ hashlifeResultAux fuel cell`. -/
+abbrev MemoCache := Std.HashMap (Nat × MacroCell) MacroCell
 
 /-- The empty cache. -/
 def MemoCache.empty : MemoCache := ∅
 
-/-! ## Memoized Hashlife — API shape
+/-- Cache correctness: every binding records the true (unmemoized)
+    Hashlife result for its key. -/
+def CacheOK (m : MemoCache) : Prop :=
+  ∀ fuel c r, m[(fuel, c)]? = some r → r = hashlifeResultAux fuel c
 
-We expose two surfaces:
+theorem cacheOK_empty : CacheOK MemoCache.empty := by
+  intro fuel c r h
+  simp [MemoCache.empty] at h
 
-1. **`hashlifeResultMemo`** — the state-monadic memoized recursion.
-   Cache reads short-circuit; cache misses recurse and insert.
-2. **`hashlifeResultRunMemo`** — convenience wrapper returning the
-   `MacroCell` only (discarding the final cache). -/
+/-- Inserting a correct binding preserves cache correctness. -/
+theorem CacheOK.insert {m : MemoCache} (hm : CacheOK m) {fuel : Nat}
+    {c r : MacroCell} (hr : r = hashlifeResultAux fuel c) :
+    CacheOK (m.insert (fuel, c) r) := by
+  intro f d r' h
+  rw [Std.HashMap.getElem?_insert] at h
+  split at h
+  next heq =>
+    have hkey : ((fuel, c) : Nat × MacroCell) = (f, d) := eq_of_beq heq
+    injection hkey with h1 h2
+    subst h1; subst h2
+    injection h with h'
+    exact h'.symm.trans hr
+  next _ =>
+    exact hm f d r' h
 
-/-- Memoized Hashlife. Returns the same result as
-    `Conway.Life.Hashlife.hashlifeResultAux c.level c` but caches every
-    intermediate `MacroCell` to amortize the `9^k` recursion to roughly
-    the number of distinct subtrees encountered.
+/-! ## Unfold lemma for the well-formed arm
 
-    **Phase 3c roadmap** : implementation is a `sorry` placeholder; the
-    target shape is
+`hashlifeResultAux` uses a pattern alias `c@(node ...)` in its source,
+whose alias fvar blocks syntactic rewriting. This lemma restates the
+well-formed arm with explicit patterns and zeta-expanded `let`s; it is
+true by `rfl` (iota + zeta reduction). Grandchild naming: `a* = nw.*`,
+`b* = ne.*`, `c* = sw.*`, `d* = se.*`, each in `nw ne sw se` order. -/
 
-    ```
-    do
-      let cache ← get
-      match cache[c]? with
-      | some r => return r
-      | none =>
-        let r ← hashlifeResultAuxMemoBody c
-        modify (·.insert c r)
-        return r
-    ```
+private theorem hashlifeResultAux_succ_node (fuel : Nat)
+    (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell) :
+    hashlifeResultAux (fuel + 1)
+      (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+            (node c1 c2 c3 c4) (node d1 d2 d3 d4)) =
+    if (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).level == 2 then
+      step4x4 (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+                    (node c1 c2 c3 c4) (node d1 d2 d3 d4))
+    else
+      node
+        (hashlifeResultAux fuel (node
+          (hashlifeResultAux fuel (node a1 a2 a3 a4))
+          (hashlifeResultAux fuel (node a2 b1 a4 b3))
+          (hashlifeResultAux fuel (node a3 a4 c1 c2))
+          (hashlifeResultAux fuel (node a4 b3 c2 d1))))
+        (hashlifeResultAux fuel (node
+          (hashlifeResultAux fuel (node a2 b1 a4 b3))
+          (hashlifeResultAux fuel (node b1 b2 b3 b4))
+          (hashlifeResultAux fuel (node a4 b3 c2 d1))
+          (hashlifeResultAux fuel (node b3 b4 d1 d2))))
+        (hashlifeResultAux fuel (node
+          (hashlifeResultAux fuel (node a3 a4 c1 c2))
+          (hashlifeResultAux fuel (node a4 b3 c2 d1))
+          (hashlifeResultAux fuel (node c1 c2 c3 c4))
+          (hashlifeResultAux fuel (node c2 d1 c4 d3))))
+        (hashlifeResultAux fuel (node
+          (hashlifeResultAux fuel (node a4 b3 c2 d1))
+          (hashlifeResultAux fuel (node b3 b4 d1 d2))
+          (hashlifeResultAux fuel (node c2 d1 c4 d3))
+          (hashlifeResultAux fuel (node d1 d2 d3 d4)))) := rfl
 
-    where `hashlifeResultAuxMemoBody` mirrors `hashlifeResultAux` but
-    recurses through `hashlifeResultMemo` to thread the cache. -/
-partial def hashlifeResultMemo (c : MacroCell) : StateM MemoCache MacroCell := do
-  let cache ← get
-  match cache.get? c with
-  | some r => return r
-  | none =>
-    let r ← hashlifeResultMemoBody c
-    modify (·.insert c r)
-    return r
-where
-  hashlifeResultMemoBody (c : MacroCell) : StateM MemoCache MacroCell := do
-    match c with
-    | node (node nw_nw nw_ne nw_sw nw_se)
-          (node ne_nw ne_ne ne_sw ne_se)
-          (node sw_nw sw_ne sw_sw sw_se)
-          (node se_nw se_ne se_sw se_se) => do
-      if c.level == 2 then
-        pure (step4x4 c)
-      else do
-        -- Form the 9 overlapping level-(k-1) sub-cells
-        let n1 := node nw_nw nw_ne nw_sw nw_se
-        let n2 := node nw_ne ne_nw nw_se ne_sw
-        let n3 := node ne_nw ne_ne ne_sw ne_se
-        let n4 := node nw_sw nw_se sw_nw sw_ne
-        let n5 := node nw_se ne_sw sw_ne se_nw
-        let n6 := node ne_sw ne_se se_nw se_ne
-        let n7 := node sw_nw sw_ne sw_sw sw_se
-        let n8 := node sw_ne se_nw sw_se se_sw
-        let n9 := node se_nw se_ne se_sw se_se
-        -- Recurse on each sub-cell
-        let r1 ← hashlifeResultMemo n1
-        let r2 ← hashlifeResultMemo n2
-        let r3 ← hashlifeResultMemo n3
-        let r4 ← hashlifeResultMemo n4
-        let r5 ← hashlifeResultMemo n5
-        let r6 ← hashlifeResultMemo n6
-        let r7 ← hashlifeResultMemo n7
-        let r8 ← hashlifeResultMemo n8
-        let r9 ← hashlifeResultMemo n9
-        -- Form the 4 overlapping super-cells
-        let q_nw := node r1 r2 r4 r5
-        let q_ne := node r2 r3 r5 r6
-        let q_sw := node r4 r5 r7 r8
-        let q_se := node r5 r6 r8 r9
-        -- Recurse on each super-cell
-        let out_nw ← hashlifeResultMemo q_nw
-        let out_ne ← hashlifeResultMemo q_ne
-        let out_sw ← hashlifeResultMemo q_sw
-        let out_se ← hashlifeResultMemo q_se
-        pure (node out_nw out_ne out_sw out_se)
-    | leaf _ => pure deadLeaf
-    | _ => pure (emptyOfLevel (max 1 (c.level - 1)))
+/-! ## The memoized recursion, fused with its correctness proof
 
-/-- Convenience: run `hashlifeResultMemo` from the empty cache,
-    discarding the final cache state. Returns the same `MacroCell` as
-    `Conway.Life.Hashlife.hashlifeResult c` (by `hashlifeResultMemo_correct`). -/
+`hashlifeResultMemoAux fuel c m hm` returns `(value, cache')` together
+with proofs that `value = hashlifeResultAux fuel c` and `CacheOK cache'`.
+Structural recursion on `fuel`. -/
+
+set_option maxHeartbeats 800000 in
+/-- Memoized counterpart of `hashlifeResultAux`, carrying its own
+    correctness certificate. The cache is threaded left-to-right through
+    the 13 recursive calls of the well-formed arm. -/
+def hashlifeResultMemoAux : (fuel : Nat) → (c : MacroCell) →
+    (m : MemoCache) → CacheOK m →
+    {p : MacroCell × MemoCache //
+      p.1 = hashlifeResultAux fuel c ∧ CacheOK p.2}
+  | 0, _, m, hm => ⟨(deadLeaf, m), rfl, hm⟩
+  | fuel + 1, node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+              (node c1 c2 c3 c4) (node d1 d2 d3 d4), m, hm =>
+    match hlook : m[(fuel + 1,
+        node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4))]? with
+    | some r => ⟨(r, m), hm _ _ _ hlook, hm⟩
+    | none =>
+      if hl2 : (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+                     (node c1 c2 c3 c4) (node d1 d2 d3 d4)).level == 2 then
+        have hres : step4x4 (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+                                  (node c1 c2 c3 c4) (node d1 d2 d3 d4))
+            = hashlifeResultAux (fuel + 1)
+                (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+                      (node c1 c2 c3 c4) (node d1 d2 d3 d4)) := by
+          rw [hashlifeResultAux_succ_node, if_pos hl2]
+        ⟨(step4x4 (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+                        (node c1 c2 c3 c4) (node d1 d2 d3 d4)),
+          m.insert (fuel + 1,
+              node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+                   (node c1 c2 c3 c4) (node d1 d2 d3 d4))
+            (step4x4 (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+                           (node c1 c2 c3 c4) (node d1 d2 d3 d4)))),
+         hres, hm.insert hres⟩
+      else
+        -- The 9 sub-cells (n1..n9), then the 4 super-cells, threading
+        -- the cache (and its `CacheOK` proof) through all 13 calls.
+        let p1 := hashlifeResultMemoAux fuel (node a1 a2 a3 a4) m hm
+        let p2 := hashlifeResultMemoAux fuel (node a2 b1 a4 b3) p1.1.2 p1.2.2
+        let p3 := hashlifeResultMemoAux fuel (node b1 b2 b3 b4) p2.1.2 p2.2.2
+        let p4 := hashlifeResultMemoAux fuel (node a3 a4 c1 c2) p3.1.2 p3.2.2
+        let p5 := hashlifeResultMemoAux fuel (node a4 b3 c2 d1) p4.1.2 p4.2.2
+        let p6 := hashlifeResultMemoAux fuel (node b3 b4 d1 d2) p5.1.2 p5.2.2
+        let p7 := hashlifeResultMemoAux fuel (node c1 c2 c3 c4) p6.1.2 p6.2.2
+        let p8 := hashlifeResultMemoAux fuel (node c2 d1 c4 d3) p7.1.2 p7.2.2
+        let p9 := hashlifeResultMemoAux fuel (node d1 d2 d3 d4) p8.1.2 p8.2.2
+        let o1 := hashlifeResultMemoAux fuel
+          (node p1.1.1 p2.1.1 p4.1.1 p5.1.1) p9.1.2 p9.2.2
+        let o2 := hashlifeResultMemoAux fuel
+          (node p2.1.1 p3.1.1 p5.1.1 p6.1.1) o1.1.2 o1.2.2
+        let o3 := hashlifeResultMemoAux fuel
+          (node p4.1.1 p5.1.1 p7.1.1 p8.1.1) o2.1.2 o2.2.2
+        let o4 := hashlifeResultMemoAux fuel
+          (node p5.1.1 p6.1.1 p8.1.1 p9.1.1) o3.1.2 o3.2.2
+        have hres : node o1.1.1 o2.1.1 o3.1.1 o4.1.1
+            = hashlifeResultAux (fuel + 1)
+                (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+                      (node c1 c2 c3 c4) (node d1 d2 d3 d4)) := by
+          rw [hashlifeResultAux_succ_node, if_neg hl2,
+              o1.2.1, o2.2.1, o3.2.1, o4.2.1,
+              p1.2.1, p2.2.1, p3.2.1, p4.2.1, p5.2.1,
+              p6.2.1, p7.2.1, p8.2.1, p9.2.1]
+        ⟨(node o1.1.1 o2.1.1 o3.1.1 o4.1.1,
+          o4.1.2.insert (fuel + 1,
+              node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+                   (node c1 c2 c3 c4) (node d1 d2 d3 d4))
+            (node o1.1.1 o2.1.1 o3.1.1 o4.1.1)),
+         hres, o4.2.2.insert hres⟩
+  | fuel + 1, leaf b, m, hm => ⟨(deadLeaf, m), rfl, hm⟩
+  | fuel + 1, node (leaf x) q2 q3 q4, m, hm => ⟨(deadLeaf, m), rfl, hm⟩
+  -- Malformed cells whose `level` is a stuck term: return the verbatim
+  -- fallback `ite` of `hashlifeResultAux` so that `rfl` closes the goal.
+  | fuel + 1, node (node w1 w2 w3 w4) (leaf x) q3 q4, m, hm =>
+    ⟨(if (node (node w1 w2 w3 w4) (leaf x) q3 q4).level == 0 then deadLeaf
+      else emptyOfLevel ((node (node w1 w2 w3 w4) (leaf x) q3 q4).level - 1),
+      m), rfl, hm⟩
+  | fuel + 1, node (node w1 w2 w3 w4) (node x1 x2 x3 x4) (leaf y) q4, m, hm =>
+    ⟨(if (node (node w1 w2 w3 w4) (node x1 x2 x3 x4) (leaf y) q4).level == 0
+      then deadLeaf
+      else emptyOfLevel
+        ((node (node w1 w2 w3 w4) (node x1 x2 x3 x4) (leaf y) q4).level - 1),
+      m), rfl, hm⟩
+  | fuel + 1, node (node w1 w2 w3 w4) (node x1 x2 x3 x4)
+              (node y1 y2 y3 y4) (leaf z), m, hm =>
+    ⟨(if (node (node w1 w2 w3 w4) (node x1 x2 x3 x4)
+              (node y1 y2 y3 y4) (leaf z)).level == 0
+      then deadLeaf
+      else emptyOfLevel
+        ((node (node w1 w2 w3 w4) (node x1 x2 x3 x4)
+               (node y1 y2 y3 y4) (leaf z)).level - 1),
+      m), rfl, hm⟩
+
+/-- Memoized Hashlife from the empty cache: same result as
+    `hashlifeResult c = hashlifeResultAux c.level c`. -/
 def hashlifeResultRunMemo (c : MacroCell) : MacroCell :=
-  (hashlifeResultMemo c).run' MemoCache.empty
+  (hashlifeResultMemoAux c.level c MemoCache.empty cacheOK_empty).1.1
 
-/-! ## Correctness — the bridge to Phase 3b
-
-This is the theorem that justifies replacing `hashlifeResult` by
-`hashlifeResultRunMemo` in `Conway.Life.HashlifeCorrectness`. Proved
-by induction on `c.level` with the cache invariant
-
-    ∀ k ∈ cache.keys, cache[k] = hashlifeResultAux k.level k
-
-which is preserved by the insert at every `none` branch. -/
-
-/-- The memoized version agrees with the unmemoized version of
-    Phase 3b. Phase 3c roadmap item. -/
+/-- The memoized version agrees with the unmemoized Phase 3b reference.
+    Immediate from the fused certificate. -/
 theorem hashlifeResultMemo_correct (c : MacroCell) :
-    hashlifeResultRunMemo c = hashlifeResultAux c.level c := by
-  sorry
+    hashlifeResultRunMemo c = hashlifeResultAux c.level c :=
+  (hashlifeResultMemoAux c.level c MemoCache.empty cacheOK_empty).2.1
 
-/-! ## Top-level entry for the fast path
+/-! ## Memoized fast evolution
 
-`evolveHashlifeFastMemo` mirrors `evolveHashlifeFast` but routes
-through the memoized `hashlifeResultMemo`. With memoization on, the
-big-witness `native_decide` calls in `Conway.Life.Pillars` are
-feasible. -/
+`evolveHashlifeFastMemoAux` mirrors `evolveHashlifeFastAux`, routing the
+Hashlife jump through `hashlifeResultMemoAux` and threading the cache
+across successive jumps. Same fused-certificate style. -/
+
+/-- Memoized counterpart of `evolveHashlifeFastAux`, carrying its own
+    correctness certificate. Structural recursion on `fuel`. -/
+def evolveHashlifeFastMemoAux : (fuel n : Nat) → (g : Grid) →
+    (m : MemoCache) → CacheOK m →
+    {p : Grid × MemoCache //
+      p.1 = evolveHashlifeFastAux fuel n g ∧ CacheOK p.2}
+  | 0, 0, g, m, hm => ⟨(g, m), rfl, hm⟩
+  | fuel + 1, 0, g, m, hm => ⟨(g, m), rfl, hm⟩
+  | 0, n + 1, g, m, hm => ⟨(g, m), rfl, hm⟩
+  | fuel + 1, n + 1, g, m, hm =>
+    have heq : evolveHashlifeFastAux (fuel + 1) (n + 1) g =
+        if (gridToMacroCellWithOffset g).2.level >= 2
+            && n + 1 >= jumpSize (gridToMacroCellWithOffset g).2.level then
+          evolveHashlifeFastAux fuel
+            (n + 1 - jumpSize (gridToMacroCellWithOffset g).2.level)
+            ((hashlifeJump (gridToMacroCellWithOffset g).2).toGrid
+              (jumpResultOff (gridToMacroCellWithOffset g).1
+                (gridToMacroCellWithOffset g).2.level))
+        else evolve (n + 1) g := rfl
+    if hcond : (gridToMacroCellWithOffset g).2.level >= 2
+        && n + 1 >= jumpSize (gridToMacroCellWithOffset g).2.level then
+      let pc := padCenter2 (gridToMacroCellWithOffset g).2
+      let pr := hashlifeResultMemoAux pc.level pc m hm
+      let r2 := evolveHashlifeFastMemoAux fuel
+        (n + 1 - jumpSize (gridToMacroCellWithOffset g).2.level)
+        (pr.1.1.toGrid (jumpResultOff (gridToMacroCellWithOffset g).1
+          (gridToMacroCellWithOffset g).2.level))
+        pr.1.2 pr.2.2
+      ⟨r2.1, by
+        rw [heq, if_pos hcond, r2.2.1, pr.2.1]
+        -- Residual: `hashlifeResultAux pc.level pc` vs
+        -- `hashlifeJump (gridToMacroCellWithOffset g).2` — definitionally
+        -- equal after unfolding `hashlifeJump`/`hashlifeResult` and the
+        -- local `pc` let.
+        rfl, r2.2.2⟩
+    else
+      ⟨(evolve (n + 1) g, m), by rw [heq, if_neg hcond], hm⟩
 
 /-- Evolve `g` by `n` generations using memoized Hashlife. Same
-    semantics as `evolveHashlifeFast`, with the cache amortizing the
-    repeated subtree visits.
+    semantics as `evolveHashlifeFast` (see the bridge theorem below). -/
+def evolveHashlifeFastMemo (n : Nat) (g : Grid) : Grid :=
+  (evolveHashlifeFastMemoAux n n g MemoCache.empty cacheOK_empty).1.1
 
-    **Phase 3c roadmap** : implementation mirrors `evolveHashlifeFastAux`
-    with `hashlifeResultMemo` substituted for `hashlifeResult`. -/
-def evolveHashlifeFastMemo (_n : Nat) (g : Grid) : Grid := g  -- placeholder
-
-/-- Bridge to Phase 3b. Phase 3c roadmap item. -/
+/-- Bridge to Phase 3b: the memoized fast path agrees with the
+    unmemoized one. Immediate from the fused certificate. -/
 theorem evolveHashlifeFastMemo_eq_evolveHashlifeFast (n : Nat) (g : Grid) :
-    evolveHashlifeFastMemo n g = evolveHashlifeFast n g := by
-  sorry
+    evolveHashlifeFastMemo n g = evolveHashlifeFast n g :=
+  (evolveHashlifeFastMemoAux n n g MemoCache.empty cacheOK_empty).2.1
+
+/-! ## The empty grid is a fixed point
+
+Needed by `Conway.Life.Pillars` while the pillar patterns are still
+placeholder empty grids (RLE loading pending). -/
+
+theorem step_empty : step ([] : Grid) = [] := by
+  simp [step, candidates, sortDedup]
+
+theorem evolve_empty (n : Nat) : evolve n ([] : Grid) = [] := by
+  induction n with
+  | zero => rfl
+  | succ n ih => rw [evolve_succ, ih, step_empty]
+
+theorem evolveHashlifeFast_empty (n : Nat) :
+    evolveHashlifeFast n ([] : Grid) = [] := by
+  cases n with
+  | zero => rfl
+  | succ n =>
+    -- On `[]`, `gridFrame` gives level 0, the jump condition is false,
+    -- and the fast path falls back to `evolve`.
+    show evolveHashlifeFastAux (n + 1) (n + 1) ([] : Grid) = []
+    rw [show evolveHashlifeFastAux (n + 1) (n + 1) ([] : Grid)
+        = evolve (n + 1) ([] : Grid) from rfl]
+    exact evolve_empty (n + 1)
+
+theorem evolveHashlifeFastMemo_empty (n : Nat) :
+    evolveHashlifeFastMemo n ([] : Grid) = [] := by
+  rw [evolveHashlifeFastMemo_eq_evolveHashlifeFast]
+  exact evolveHashlifeFast_empty n
+
+/-! ## Sanity checks
+
+The memoized functions must agree with their references on the
+canonical patterns (these are compiled evaluations, complementing the
+kernel-checked theorems above). -/
+
+#eval hashlifeResultRunMemo (gridToMacroCell glider)
+        == hashlifeResult (gridToMacroCell glider)          -- expect true
+#eval evolveHashlifeFastMemo 8 glider == evolveHashlifeFast 8 glider  -- true
+#eval evolveHashlifeFastMemo 4 blinker_h == evolve 4 blinker_h        -- true
+#eval evolveHashlifeFastMemo 3 toad == evolve 3 toad                  -- true
 
 end Life
 end Conway

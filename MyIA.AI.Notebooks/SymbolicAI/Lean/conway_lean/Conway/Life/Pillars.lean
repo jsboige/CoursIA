@@ -27,15 +27,22 @@ the published Gemini self-replication completes in 33 699 586).
 
 - **Phase 3b** : `hashlifeResultAux` proven structurally recursive,
   light-cone bound `mem_lightCone_of_manhattan_le` closed (PR #2173).
-  Remaining 5 sorries in `Conway.Life.HashlifeCorrectness` are
+  Remaining sorries in `Conway.Life.HashlifeCorrectness` are
   level-2/step containment lemmas, independent of this file.
-- **Phase 3c** (this file) : witness theorems are declared with their
-  intended types. Their proofs are `sorry` until
-  `Conway.Life.HashlifeMemo.hashlifeResultMemo` is implemented and
-  the RLE patterns are loaded as concrete `Grid` values.
-- **Future** : once the memoized fast-evolve is in place, each
-  theorem becomes a single `by native_decide` (gated by an
-  appropriate `set_option native_decide.maxBudget` raise).
+- **Phase 3c memoization** : DONE. `Conway.Life.HashlifeMemo` now
+  provides a real fuel-keyed memoized Hashlife
+  (`evolveHashlifeFastMemo`) proven equal to the Phase 3b reference
+  (`evolveHashlifeFastMemo_eq_evolveHashlifeFast`, no sorry).
+- **Phase 3c patterns** (this file) : the four pillar patterns are
+  still *placeholder empty grids* (RLE files too large for Lean
+  string literals — they await a file-IO or pre-processing loading
+  step). The witness theorems below are therefore **vacuously true**
+  (empty grid is a fixed point, `evolveHashlifeFastMemo_empty`); they
+  pin down the intended statements and will gain real content when
+  the RLE-decoded grids replace the placeholders.
+- **Future** : with real patterns loaded, each witness becomes a
+  single `by native_decide` (gated by an appropriate budget raise),
+  now made tractable by the memoization layer.
 
 ### Why a separate file ?
 
@@ -171,10 +178,11 @@ for the corresponding pillar. The proof is intended to be a single
     Public demo: one full ON→OFF→ON cycle completes in 35 328 gens.
     RLE source: conwaylife.com/wiki/OTCA_metapixel (70 KB).
 
-    Phase 3c : `by native_decide` with memoized Hashlife. -/
+    Phase 3c : `by native_decide` with memoized Hashlife.
+    Currently vacuous (placeholder empty grids, see Status above). -/
 theorem otca_metapixel_witness :
-    evolveHashlifeFastMemo otcaGens otcaInitial = otcaTarget := by
-  rfl
+    evolveHashlifeFastMemo otcaGens otcaInitial = otcaTarget :=
+  evolveHashlifeFastMemo_empty otcaGens
 
 /-- **UnitCell witness** — Nicolay Beluchenko 2011.
 
@@ -184,10 +192,11 @@ theorem otca_metapixel_witness :
     place. The pattern uses a different internal architecture (p5760
     core) making it complementary to OTCA.
 
-    Phase 3c : `by native_decide` with memoized Hashlife. -/
+    Phase 3c : `by native_decide` with memoized Hashlife.
+    Currently vacuous (placeholder empty grids, see Status above). -/
 theorem unitcell_witness :
-    evolveHashlifeFastMemo unitcellGens unitcellInitial = unitcellTarget := by
-  rfl
+    evolveHashlifeFastMemo unitcellGens unitcellInitial = unitcellTarget :=
+  evolveHashlifeFastMemo_empty unitcellGens
 
 /-- **Gemini witness** — Andrew Wade 2010.
 
@@ -199,10 +208,11 @@ theorem unitcell_witness :
     constellation (twins).
 
     This is the hardest target: level-14 quadtree + 33M generations.
-    Phase 3c : `by native_decide` with memoized Hashlife. -/
+    Phase 3c : `by native_decide` with memoized Hashlife.
+    Currently vacuous (placeholder empty grids, see Status above). -/
 theorem gemini_witness :
-    evolveHashlifeFastMemo geminiGens geminiInitial = geminiTarget := by
-  rfl
+    evolveHashlifeFastMemo geminiGens geminiInitial = geminiTarget :=
+  evolveHashlifeFastMemo_empty geminiGens
 
 /-- **Digital CPU witness** — Beluchenko / Andy Stearns 2016.
 
@@ -213,10 +223,11 @@ theorem gemini_witness :
     Detailed in Adam P. Goucher's 2016 analysis on the conwaylife.com
     forum.
 
-    Phase 3c : `by native_decide` with memoized Hashlife. -/
+    Phase 3c : `by native_decide` with memoized Hashlife.
+    Currently vacuous (placeholder empty grids, see Status above). -/
 theorem cpu_witness :
-    evolveHashlifeFastMemo cpuGens cpuInitial = cpuTarget := by
-  rfl
+    evolveHashlifeFastMemo cpuGens cpuInitial = cpuTarget :=
+  evolveHashlifeFastMemo_empty cpuGens
 
 end Pillars
 end Life
