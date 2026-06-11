@@ -316,7 +316,10 @@ function Invoke-Apply {
                     Write-Host " FAILED — rollback de ce membre"
                     ($out | Select-Object -Last 15) | ForEach-Object { Write-Host "    $_" }
                     Restore-Member $m
-                    $stateMembers = $stateMembers | Where-Object { $_.relPath -ne $m.RelPath }
+                    # @(...) obligatoire : un pipeline a 0/1 element degraderait $stateMembers
+                    # en $null/scalaire, et `+= [ordered]@{}` sur un dictionnaire fusionne les
+                    # cles au lieu d'appender -> "Item has already been added: 'relPath'".
+                    $stateMembers = @($stateMembers | Where-Object { $_.relPath -ne $m.RelPath })
                 }
             }
         }
