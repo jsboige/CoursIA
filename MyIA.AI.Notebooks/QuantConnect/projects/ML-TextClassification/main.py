@@ -18,6 +18,7 @@ class MLTextClassificationAlgorithm(QCAlgorithm):
         self.SetStartDate(2015, 1, 1)
         self.set_end_date(2024, 12, 31)
         self.SetCash(100000)
+        self.SetBrokerageModel(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         # Assets
         self.tickers = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA"]

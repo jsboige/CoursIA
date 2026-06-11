@@ -66,6 +66,7 @@ class TurnOfMonthEffect(QCAlgorithm):
         self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         self.spy = self.add_equity("SPY", Resolution.DAILY).symbol
         self.qqq = self.add_equity("QQQ", Resolution.DAILY).symbol

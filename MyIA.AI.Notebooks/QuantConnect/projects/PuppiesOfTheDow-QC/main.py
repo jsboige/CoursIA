@@ -12,7 +12,9 @@ class PuppiesOfTheDow(QCAlgorithm):
 
     def initialize(self):
         self.set_start_date(self.end_date - timedelta(12*365))
+        self.set_end_date(2025, 1, 1)  # Fixed end date for reproducibility
         self.set_cash(100_000)
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         self._portfolio_size = 5
         self.universe_settings.schedule.on(self.date_rules.year_start("SPY"))
         self.settings.seed_initial_prices = True

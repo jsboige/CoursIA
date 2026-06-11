@@ -21,6 +21,7 @@ class ResearchExecutor(QCAlgorithm):
         self.set_start_date(2024, 1, 2)
         self.set_end_date(2024, 1, 3)
         self.set_cash(100000)
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         for t in ['SPY', 'EFA', 'BND', 'VNQ', 'GSG', 'TLT', 'GLD', 'BIL',
                    'QQQ', 'TQQQ', 'UVXY', 'TECL', 'SPXL', 'SQQQ', 'TECS', 'BSV', 'DIA']:

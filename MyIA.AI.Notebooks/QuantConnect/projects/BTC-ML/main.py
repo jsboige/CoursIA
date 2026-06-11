@@ -19,11 +19,11 @@ class MyEnhancedCryptoMlAlgorithm(QCAlgorithm):
     MODEL_KEY = "myCryptoMlModel.pkl"
 
     # Dates fixes pour eviter data leakage
-    # Training: 2019-2022 (4 ans pour diversite des regimes)
-    # Backtest: 2023-2026 (out-of-sample)
-    TRAIN_START = datetime(2019, 1, 1)
+    # Training: 2017-2022 (6 ans pour diversite des regimes)
+    # Backtest: 2019-2026 (out-of-sample, >= 5 ans)
+    TRAIN_START = datetime(2017, 1, 1)
     TRAIN_END = datetime(2022, 12, 31)
-    BACKTEST_START = datetime(2023, 1, 1)
+    BACKTEST_START = datetime(2019, 1, 1)
     BACKTEST_END = datetime(2026, 3, 1)
 
     STARTING_CASH = 100000
@@ -43,9 +43,6 @@ class MyEnhancedCryptoMlAlgorithm(QCAlgorithm):
     # Position sizing probabiliste - optimized thresholds
     CONFIDENCE_LONG_THRESHOLD = 0.56   # Si proba > 0.56: long (relaxed from 0.58 for more trades)
     CONFIDENCE_EXIT_THRESHOLD = 0.40   # Si proba < 0.40: liquidation (relaxed from 0.42)
-
-    # Transaction costs
-    TRANSACTION_FEE = 0.001  # 0.1% per trade (Binance fee)
 
     # Retraining periodique
     RETRAIN_INTERVAL_DAYS = 60  # Increased from 30 for more stable model
@@ -351,7 +348,7 @@ class MyEnhancedCryptoMlAlgorithm(QCAlgorithm):
 
             if not self.Portfolio[self.symbol].Invested:
                 # Account for transaction fees
-                self.SetHoldings(self.symbol, position_size * (1 - self.TRANSACTION_FEE))
+                self.SetHoldings(self.symbol, position_size)
                 self.entry_price = current_price
                 self.Debug(f"{self.Time} => LONG @ {current_price:.2f} | Confidence: {confidence_up:.2%} | Size: {position_size:.2%}")
             else:

@@ -23,6 +23,7 @@ class MLXGBoostAlgorithm(QCAlgorithm):
         self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         # Universe: Top 15 liquid stocks
         self.tickers = [

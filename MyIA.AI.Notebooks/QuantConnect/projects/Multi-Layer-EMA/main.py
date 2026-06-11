@@ -34,7 +34,6 @@ class OptimizedCryptoAlgorithm(QCAlgorithm):
         self.trailing_stop_pct = 0.92  # Optimized from 0.90
         self.fixed_stop_pct = 0.88     # Optimized from 0.85
         self.take_profit_pct = 1.25    # Optimized from 1.30
-        self.transaction_fee = 0.001   # 0.1% transaction fee
 
     def OnData(self, data):
         # Volatility filter: skip trading if BTC volatility > 60%

@@ -1,5 +1,7 @@
 # Ensemble-DLinear-TFT
 
+**Type:** Research (no deployable algorithm, research-only notebook)
+
 **Asset class:** Crypto (BTC-USD, ETH-USD)
 
 **Cloud project ID:** N/A (research-only, no deployable algorithm)
