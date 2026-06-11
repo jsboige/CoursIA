@@ -206,6 +206,52 @@ def thermal_wait(max_temp: int = 82, cool_sleep: int = 20) -> int:
     return temp
 
 
+def thermal_backoff(
+    target_temp: int = 72,
+    max_temp: int = 80,
+    base_sleep: float = 3.0,
+    max_sleep: float = 30.0,
+) -> int:
+    """Adaptive thermal pause between TTS generations.
+
+    Strategy (similar to QC training thermal management):
+      - Below *target_temp*: minimal pause (base_sleep) to maintain airflow.
+      - Between *target_temp* and *max_temp*: progressive backoff,
+        scaling from base_sleep to max_sleep linearly with temperature.
+      - Above *max_temp*: full max_sleep cooldown and re-check.
+
+    Returns current GPU temperature after the pause.
+    """
+    temp = get_gpu_temp()
+    if temp == 0:
+        # nvidia-smi unavailable (unlikely on this machine) — no pause
+        return 0
+
+    if temp <= target_temp:
+        # Light pause — keeps GPU from heat-soaking between bursts
+        time.sleep(base_sleep)
+    elif temp <= max_temp:
+        # Progressive backoff: scale sleep from base_sleep to max_sleep
+        ratio = (temp - target_temp) / (max_temp - target_temp)
+        sleep_time = base_sleep + ratio * (max_sleep - base_sleep)
+        logger.info(
+            "GPU %dC (warm), throttling %.1fs (ratio %.0f%%)...",
+            temp, sleep_time, ratio * 100,
+        )
+        time.sleep(sleep_time)
+    else:
+        # Over threshold — full cooldown until temperature drops
+        while temp > target_temp:
+            logger.info(
+                "GPU %dC > %dC, cooling %ds...",
+                temp, max_temp, int(max_sleep),
+            )
+            time.sleep(max_sleep)
+            temp = get_gpu_temp()
+
+    return temp
+
+
 # ---------------------------------------------------------------------------
 # Audio duration estimate
 # ---------------------------------------------------------------------------

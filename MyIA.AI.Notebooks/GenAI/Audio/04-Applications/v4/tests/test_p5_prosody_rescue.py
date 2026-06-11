@@ -86,31 +86,38 @@ def test_f2_official_english_substring_still_wins():
 
 
 def test_f3_dramatic_prompt_branched_into_compose():
-    """F3: seg.dramatic_prompt is consumed by _compose_tts_text."""
+    """F3: seg.dramatic_prompt is consumed by _compose_tts_text.
+
+    F5 update: dramatic prompts are now translated to short English
+    instructions.  Using a French prompt (as P4 actually produces) that
+    matches the "tendu" keyword, producing "tense, voice tight".
+    """
     from v4.p5_tts import _compose_tts_text
 
     seg = _build_seg(
         annotated_text="Boule de Suif baissa la tête.",
-        dramatic_prompt="[tense whisper]",
+        dramatic_prompt="La tension est palpable, voix tendue et nerveuse.",
         tension=8,
     )
     composed = _compose_tts_text(seg)
-    assert "[tense whisper]" in composed, composed
+    # F5: French "tendu" → keyword match → "tense, voice tight"
+    assert "tense" in composed, composed
 
 
 def test_f3_dramatic_prompt_and_prefix_merge_no_dup():
-    """F3: prefix tags merge with dramatic_prompt without duplicating."""
+    """F3: translated dramatic prompt + prefix tags coexist."""
     from v4.p5_tts import _compose_tts_text
 
     seg = _build_seg(
         annotated_text="Elle se tut.",
-        dramatic_prompt="[tense whisper]",
-        tts_context_prefix="[tense whisper]",
+        dramatic_prompt="La tension monte, voix basse et tendue.",
+        tts_context_prefix="[whispering]",
         tension=6,
     )
     composed = _compose_tts_text(seg)
-    # tag appears at most once before any narrative text
-    assert composed.count("[tense whisper]") == 1, composed
+    # F5: "tendu" keyword → "tense, voice tight" + official [whispering] from prefix
+    assert "tense" in composed, composed
+    assert "[whispering]" in composed, composed
 
 
 def test_f4_temperature_modulated_by_tension():
@@ -313,7 +320,12 @@ def test_f4_temperature_clamped_low():
 
 
 def test_compose_all_parts():
-    """End-to-end: dramatic_prompt + prefix + annotated text all present."""
+    """End-to-end: translated dramatic_prompt + prefix + annotated text all present.
+
+    F5: dramatic prompt "excited" is now translated via keyword to
+    "excited, quickening pace".  tts_context_prefix "whispering" matches
+    the official tag.  Both appear before the narrative text.
+    """
     from v4.p5_tts import _compose_tts_text
 
     seg = _build_seg(
@@ -323,7 +335,8 @@ def test_compose_all_parts():
         tension=7,
     )
     composed = _compose_tts_text(seg)
-    assert "[excited]" in composed, composed
+    # F5: "excited" keyword → "excited, quickening pace"
+    assert "excited" in composed, composed
     assert "[whispering]" in composed, composed
     assert "Elle partit en courant." in composed, composed
 
@@ -336,6 +349,83 @@ def test_compose_truncation():
     seg = _build_seg(annotated_text=long_text)
     composed = _compose_tts_text(seg)
     assert len(composed) <= _MAX_TTS_CHARS + 10, f"Composed text too long: {len(composed)}"
+
+
+# --- Vocal reinforcement tests ---
+
+
+def test_vocal_reinforcement_sad_gets_whispering():
+    """Vocal reinforcement: 'sad' instruction → [whispering] tag added."""
+    from v4.p5_tts import _compose_tts_text
+
+    seg = _build_seg(
+        annotated_text="Elle baissa les yeux.",
+        dramatic_prompt="La tristesse envahit la scene.",
+        tension=4,
+    )
+    composed = _compose_tts_text(seg)
+    # "sad, voice dropping" instruction + [whispering] reinforcement
+    assert "[whispering]" in composed, composed
+
+
+def test_vocal_reinforcement_angry_gets_loud_voice():
+    """Vocal reinforcement: 'angry' instruction -> [loud voice] tag added."""
+    from v4.p5_tts import _compose_tts_text
+
+    seg = _build_seg(
+        annotated_text="Sortez d'ici!",
+        dramatic_prompt="La rage explose, colere furieuse.",
+        tension=9,
+    )
+    composed = _compose_tts_text(seg)
+    # "furious, barely contained" or "angry, voice rising" instruction + [loud voice] reinforcement
+    assert "[loud voice]" in composed, composed
+
+
+def test_vocal_reinforcement_no_duplicate():
+    """Vocal reinforcement does not duplicate if prefix already has same tag."""
+    from v4.p5_tts import _compose_tts_text
+
+    seg = _build_seg(
+        annotated_text="Chuchotement.",
+        dramatic_prompt="Murmulle conspiratorial dans l'ombre.",
+        tts_context_prefix="whispering",
+        tension=5,
+    )
+    composed = _compose_tts_text(seg)
+    # Count [whispering] occurrences — should be exactly 1 (no duplicate)
+    assert composed.count("[whispering]") == 1, composed
+
+
+def test_vocal_reinforcement_neutral_no_extra_tag():
+    """Vocal reinforcement: neutral/calm instruction → no extra tag."""
+    from v4.p5_tts import _compose_tts_text
+
+    seg = _build_seg(
+        annotated_text="Texte neutre.",
+        dramatic_prompt="Posé, sobre, sans emotion particuliere.",
+        tension=3,
+    )
+    composed = _compose_tts_text(seg)
+    # "composed and neutral" has no reinforcement match — just instruction + text
+    assert "[composed and neutral, even pace]" in composed
+    # Should NOT have [whispering] or [loud voice] or [shouting]
+    assert "[whispering]" not in composed, composed
+    assert "[loud voice]" not in composed, composed
+    assert "[shouting]" not in composed, composed
+
+
+def test_vocal_reinforcement_menacing_gets_low_voice():
+    """Vocal reinforcement: 'menacing' instruction → [low voice] tag."""
+    from v4.p5_tts import _compose_tts_text
+
+    seg = _build_seg(
+        annotated_text="Les Prussiens allaient entrer.",
+        dramatic_prompt="Menace sourde, voix sombre et basse.",
+        tension=7,
+    )
+    composed = _compose_tts_text(seg)
+    assert "[low voice]" in composed, composed
 
 
 if __name__ == "__main__":
