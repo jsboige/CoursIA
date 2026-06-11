@@ -31,3 +31,4 @@ import Grothendieck.CanonicalProps
 import Grothendieck.SieveGenerate
 import Grothendieck.DenseTopology
 import Grothendieck.Sheafification
+import Grothendieck.LeftExact
