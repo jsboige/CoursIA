@@ -77,6 +77,7 @@ class DLLSTMAlgorithm(QCAlgorithm):
         self.SetStartDate(2015, 1, 1)
         self.SetEndDate(2025, 1, 1)
         self.SetCash(100000)
+        self.SetBrokerageModel(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         # Ajouter le symbole
         self.symbol = self.AddEquity(self.SYMBOL, Resolution.Daily).Symbol

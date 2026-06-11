@@ -14,6 +14,7 @@ class PiotroskiScoreAlgorithm(QCAlgorithm):
 
     def initialize(self):
         self.set_cash(10_000_000)
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         self.set_start_date(self.end_date - timedelta(12*365))
         # Configure settings to rebalance monthly.
         rebalance_date = self.date_rules.month_start('SPY')

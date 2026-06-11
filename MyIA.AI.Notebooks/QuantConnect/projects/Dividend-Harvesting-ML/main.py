@@ -24,6 +24,7 @@ class DividendHarvestingAlgorithm(QCAlgorithm):
         self.set_start_date(2015, 1, 1)
         self.set_end_date(2026, 3, 1)
         self.set_cash(1_000_000)
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         self.set_security_initializer(
             BrokerageModelSecurityInitializer(
                 self.brokerage_model,

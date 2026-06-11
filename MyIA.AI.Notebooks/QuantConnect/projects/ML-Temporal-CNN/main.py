@@ -37,6 +37,7 @@ class TemporalCNNPredictionAlgorithm(QCAlgorithm):
         self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 1, 1)
         self.set_cash(100_000)
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         self._training_samples = self.get_parameter(
             "training_samples", 500
