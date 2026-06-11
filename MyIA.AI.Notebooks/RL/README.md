@@ -19,7 +19,7 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 |-------------|--------|
 | Notebooks | 13 |
 | Kernel | Python 3 |
-| Duree totale | ~550-625 min |
+| Duree totale | ~595-675 min |
 | Version | Stable Baselines3 2.0.0+ |
 
 ## Notebooks
@@ -39,6 +39,7 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | 8 | [rl_8_model_based_dyna_q](rl_8_model_based_dyna_q.ipynb) | Model-based RL : Dyna-Q, Dyna-Q+, planification, rollouts | 45-50 min |
 | 9 | [rl_9_offline_rl](rl_9_offline_rl.ipynb) | RL offline : Behavior Cloning, erreur d'extrapolation, BCQ-lite | 50-55 min |
 | 10 | [rl_10_reward_shaping](rl_10_reward_shaping.ipynb) | Reward Shaping (Ng 1999), curriculum learning, pont RLHF | 45-50 min |
+| 11 | [rl_11_pomdp](rl_11_pomdp.ipynb) | POMDP, Tiger Problem, belief tracking, Q-MDP | 45-50 min |
 
 ## Contenu detaille
 
@@ -176,6 +177,18 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | Pont RLHF | Reward model appris, contrainte KL, DPO, inverse RL |
 | Exercices | Ablation potentiels, phases curriculum, biais du shaping naif |
 
+### Notebook 11 - POMDP : Partial Observability et Belief Tracking
+
+| Section | Contenu |
+|---------|---------|
+| Tiger Problem | POMDP classique (Cassandra 1994), 2 etats, 3 actions, observations bruitees a 85% |
+| Politiques baselines | Random, open immediately, listen N fois puis ouvre, vote majoritaire |
+| Belief tracking | Filtre bayesien sur P(tiger-left), mise a jour apres observation |
+| Q-MDP approximation | Q-learning sur etats vrais, selection via expected Q sous belief |
+| Belief-state Q-learning | Discretisation du belief en 20 bins, Q-learning dans l'espace des croyances |
+| Comparaison | 5 seeds, impact de la precision d'observation, pont DRQN/PPO+LSTM |
+| Exercices | Impact precision, nombre optimal d'ecoutes, Tiger 3 portes |
+
 ## Algorithmes couverts
 
 | Algorithme | Type | Notebook | Utilisation |
@@ -198,6 +211,8 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | **BCQ-lite** | Offline (value-based) | 9 | Q-learning contraint au support du dataset |
 | **Potential-based shaping** | Reward shaping | 10 | Acceleration convergence sans biais (Ng 1999) |
 | **Curriculum learning** | Training strategy | 10 | Difficulte progressive, generalisation |
+| **Q-MDP** | POMDP approximation | 11 | Q-learning sur etats vrais, action via belief |
+| **Belief-state Q-learning** | POMDP | 11 | Discretisation du belief, Q-table dans l'espace des croyances |
 | **DQN** | Off-policy (deep) | 6 | Espaces continus |
 | **REINFORCE** | Policy gradient | 6 | Politique directe |
 | **IQL** | Multi-agent | 7 | Apprentissage independant |
@@ -281,7 +296,7 @@ Notebook 3 (Goal-conditioned RL)                                                
 | Exploration et bandits | 4 uniquement |
 | Fondations SB3 | 1 + 2 + 3 |
 | Fondements theoriques | 4 + 5 + 6 + 7 + 8 |
-| Maitrise complete | 1 a 8 |
+| Maitrise complete | 1 a 11 |
 
 ### Parcours d'apprentissage
 
@@ -299,7 +314,7 @@ Le notebook 4 pose la question fondatrice du RL : comment choisir entre explorer
 
 **Phase 4 : Les maths sous le capot (~4.5h, notebooks 5-7)**
 
-Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depuis zero. Le notebook 5 formalise le probleme RL (MDP, equation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe a l'echelle avec les reseaux de neurones : DQN et REINFORCE implementes en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mecanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanement, cooperent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modele du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset fige (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naif, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au probleme du reward sparse : comment guider l'agent quand la recompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accelere la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulte progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatise.
+Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depuis zero. Le notebook 5 formalise le probleme RL (MDP, equation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe a l'echelle avec les reseaux de neurones : DQN et REINFORCE implementes en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mecanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanement, cooperent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modele du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset fige (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naif, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au probleme du reward sparse : comment guider l'agent quand la recompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accelere la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulte progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatise. Le notebook 11 aborde la partial observability : l'agent ne voit plus l'etat vrai mais une observation bruitee. Le Tiger Problem (Cassandra 1994) illustre le POMDP, le belief tracking (filtre bayesien) maintient une estimation de l'etat cache, et le Q-MDP approximation montre les limites de l'approche tabulaire.
 
 ## Concepts cles
 
@@ -337,6 +352,9 @@ Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depui
 | **Reward shaping** | Modifier le signal de recompense pour guider l'apprentissage | 10 |
 | **Potential-based shaping** | Shaping garantissant l'invariance de la politique optimale (Ng 1999) | 10 |
 | **Curriculum learning** | Presenter les taches par difficulte croissante | 10 |
+| **POMDP** | MDP avec observations partielles et bruitees | 11 |
+| **Belief state** | Distribution de probabilite sur les etats caches | 11 |
+| **Belief tracking** | Filtre bayesien pour mettre a jour le belief | 11 |
 
 ## Caracteristiques
 
@@ -415,6 +433,7 @@ RL/
 ├── rl_8_model_based_dyna_q.ipynb
 ├── rl_9_offline_rl.ipynb
 ├── rl_10_reward_shaping.ipynb
+├── rl_11_pomdp.ipynb
 └── README.md
 ```
 
