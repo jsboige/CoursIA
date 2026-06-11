@@ -5,8 +5,8 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 ## Status
 
 - **Toolchain**: v4.30.0-rc2
-- **Sorry count**: 0 production sorry (grep hits in comments only)
-- **Build**: `lake build Conway` -- SUCCESS
+- **Sorry count**: 2 (HashlifeCorrectness P4/P5 — prover targets, Epic #2162)
+- **Build**: `lake build Conway` -- SUCCESS (3352 jobs)
 - **Dependencies**: Mathlib4
 
 ## Modules
@@ -22,25 +22,30 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 | `Conway/LookAndSayLemmas.lean` | 0 | Lemmas for the Look-and-Say sequence |
 | `Conway/Nim.lean` | 0 | Nim game theory |
 | `Conway/Angel.lean` | 0 | Angel problem |
+| `Conway/CollatzLike.lean` | 0 | Collatz-like functions and undecidability (`native_decide`) |
 
 ### Phase 2 — Game of Life (Epic #1647, IN PROGRESS)
 
 | File | sorry | Description |
 |------|-------|-------------|
 | `Conway/Life.lean` | 0 | B3/S23 rules, grid operations, step/evolve, `native_decide` proofs |
-| `Conway/Life.Spaceships` | 0 | LWSS/MWSS/HWSS (period 4, displacement (0,2)), 3 `native_decide` proofs |
-| `Conway/Life.Oscillators` | 0 | 5 still-lifes + pulsar (p3) + pentadecathlon (p15), 7 `native_decide` |
-| `Conway/Life.RLE` | 0 | RLE pattern parser + glider/LWSS/pulsar/Gosper gun, 8 `native_decide` proofs |
-| `Conway/Life.MacroCell` | 0 | Quadtree datatype + `toGrid`/`buildFromGrid` round-trip |
-| `Conway/Life.Hashlife` | 0 | `step4x4` + `hashlifeResult` recursive + `padCenter2` + `hashlifeJump` + `evolveHashlifeFast` |
-| `Conway/Life.Computation` | 0 | Hashlife cross-validation (6 + 6 fast), eater1 still-life (1), glider composition (5) |
+| `Conway/Life/Spaceships.lean` | 0 | LWSS/MWSS/HWSS (period 4, displacement (0,2)), 3 `native_decide` proofs |
+| `Conway/Life/Oscillators.lean` | 0 | 5 still-lifes + pulsar (p3) + pentadecathlon (p15), 7 `native_decide` |
+| `Conway/Life/RLE.lean` | 0 | RLE pattern parser + glider/LWSS/pulsar/Gosper gun, 8 `native_decide` proofs |
+| `Conway/Life/MacroCell.lean` | 0 | Quadtree datatype + `toGrid`/`buildFromGrid` round-trip + `wf` predicate |
+| `Conway/Life/Hashlife.lean` | 0 | `step4x4` + `hashlifeResult` recursive + `padCenter2` + `hashlifeJump` + `evolveHashlifeFast` |
+| `Conway/Life/GridCanonical.lean` | 0 | `sortDedup` canonical forms, lex-sorted uniqueness, grid equality via canonical form |
+| `Conway/Life/Computation.lean` | 0 | Hashlife cross-validation (6 + 6 fast), eater1 still-life (1), glider composition (5) |
+| `Conway/Life/HashlifeMemo.lean` | 0 | Memoized Hashlife for community pillar witnesses (OTCA 35K, UnitCell 4096, Gemini 33M) |
+| `Conway/Life/Pillars.lean` | 0 | Community-witness theorem scaffolding (4 pillars) |
+| `Conway/Life/HashlifeCorrectness.lean` | 2 | Bounded correctness theorem, prover targets P4/P5 (Epic #1453, #2162) |
 
-### Phase 3 — Free Will Theorem (Epic #1651, IN PROGRESS)
+### Phase 3 — Free Will Theorem (Epic #1651, COMPLETE)
 
-| File                          | sorry | Description                                              |
-|-------------------------------|-------|----------------------------------------------------------|
-| `Conway/KochenSpecker.lean`   | 0     | KS 18-vec Cabello proof (parity argument, Pilier 1)      |
-| `Conway/FreeWillTheorem.lean` | 0     | Conway-Kochen FWT (SPIN + TWIN + MIN, Pilier 2)          |
+| File | sorry | Description |
+|------|-------|-------------|
+| `Conway/KochenSpecker.lean` | 0 | KS 18-vec Cabello proof (parity argument) |
+| `Conway/FreeWillTheorem.lean` | 0 | Conway-Kochen FWT (SPIN + TWIN + MIN) |
 
 ## Key Results
 
@@ -51,6 +56,7 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 - Look-and-Say sequence properties
 - Nim game strategy
 - Angel problem formalization
+- Collatz-like undecidability (`native_decide` on finite instances)
 
 ### Game of Life (Phase 2)
 
@@ -60,14 +66,21 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
   - Gosper Glider Gun (36 live cells, period 30) parsed and verified
 - **Spaceships**: LWSS, MWSS, HWSS with period-4 displacement proofs
 - **Oscillators**: Blinker (p2), toad (p2), beacon (p2), pulsar (p3), pentadecathlon (p15)
+- **MacroCell well-formedness**: `MacroCell.wf` predicate (PR #2795), grid-side constructors produce wf cells
+- **Grid canonical forms**: `sortDedup` outputs are lex-sorted and unique (PR #2797)
 - **Hashlife**: Quadtree MacroCell + recursive hashlife algorithm with exponential speedup
   - `step4x4`: level-2 base case (B3/S23 direct)
-  - `hashlifeResult`: recursive level-k → level-(k-1), `2^(k-2)` generations
+  - `hashlifeResult`: recursive level-k to level-(k-1), `2^(k-2)` generations
   - `padCenter2`: proper centered padding (+2 levels, single copy)
   - `hashlifeJump` + `evolveHashlifeFast`: exponential-speedup API
   - Cross-validated against list-based reference on 12 patterns (6 + 6 fast path)
   - Eater 1 (fishhook) still-life proved by `native_decide`
   - Multi-period glider composition theorems
+- **Memoized Hashlife**: Community pillar witnesses (OTCA 35K gen, UnitCell 4096 gen, Gemini 33M gen)
+- **HashlifeCorrectness**: Central theorem `hashlifeResult_central_correct` with 5 sub-goals
+  - P1-P3 proven (base case k=0 in full generality via `2^16 native_decide`, PR #2810)
+  - P4: well-formedness membership (sorry kept, now provable after wf-fix PR #2795)
+  - P5: highest-level inductive step (sorry, plausibly true)
 
 ### Kochen-Specker + Free Will Theorem (Phase 3, PROVED)
 
@@ -91,6 +104,7 @@ Kochen-Specker contradiction.
 - Companion notebook: `Lean-14b-Conway-Game-of-Life-Lean.ipynb`
 - Cross-link: Epic #1647 Conway Phase 2 (Life-as-Computation)
 - Cross-link: Epic #1651 Conway Phase 3 (Free Will Theorem)
+- Cross-link: Epic #2162 Conway depth (HashlifeCorrectness P4/P5)
 
 ## Conway.Life Design
 
@@ -100,3 +114,4 @@ Kochen-Specker contradiction.
 - Hashlife: partial def (no termination proof) with recursive MacroCell decomposition
 - `evolveHashlifeFast`: exponential speedup via `padCenter2` + `hashlifeResult`, validated by `native_decide`
 - MacroCell round-trip verified by `#eval` and `native_decide` theorem
+- HashlifeMemo: memoization layer for pillar witnesses, `9^k` worst case reduced to tractable
