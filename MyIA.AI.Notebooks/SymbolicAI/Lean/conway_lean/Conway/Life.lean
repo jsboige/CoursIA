@@ -94,9 +94,31 @@ def aliveNext (g : Grid) (p : Int × Int) : Bool :=
 def candidates (g : Grid) : List (Int × Int) :=
   g ++ g.flatMap mooreNeighbors
 
-/-- Sort a list lexicographically and remove duplicates. -/
+/-- Reflexive closure of `lexLt`: a **total** comparator for `mergeSort`.
+    On distinct pairs it decides exactly like `lexLt`; on equal pairs it is
+    `true`. Totality is what `List.pairwise_mergeSort` needs to certify that
+    the output is sorted (see `Conway.Life.GridCanonical`). -/
+def lexLe (a b : Int × Int) : Bool :=
+  lexLt a b || a == b
+
+/-- Sort a list lexicographically and remove duplicates.
+
+    The comparator is the total `lexLe` and deduplication uses Mathlib's
+    `List.dedup`, so the canonical-form lemmas (`sortedness`, `Nodup`,
+    membership, extensionality) are all derivable — see
+    `Conway.Life.GridCanonical`. The output is the same as with the strict
+    comparator + `eraseDups`: the comparators agree on all distinct pairs,
+    ties are *equal values* (so any tie-breaking yields the same list), and
+    on a sorted list both dedup flavours collapse each run of equal values
+    to a single copy. -/
 def sortDedup (l : List (Int × Int)) : List (Int × Int) :=
-  (l.mergeSort (fun a b => lexLt a b = true)).eraseDups
+  (l.mergeSort lexLe).dedup
+
+/-- `sortDedup` preserves membership. -/
+theorem mem_sortDedup {p : Int × Int} {l : List (Int × Int)} :
+    p ∈ sortDedup l ↔ p ∈ l := by
+  unfold sortDedup
+  rw [List.mem_dedup, List.mem_mergeSort]
 
 /-- One step of Conway's Game of Life (B3/S23 rule). -/
 def step (g : Grid) : Grid :=
