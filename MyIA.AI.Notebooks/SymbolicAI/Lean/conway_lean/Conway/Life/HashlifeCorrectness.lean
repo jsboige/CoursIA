@@ -66,6 +66,7 @@ See `agent_tests/prover/RUNBOOK.md` for iteration protocol.
 -/
 
 import Conway.Life
+import Conway.Life.GridCanonical
 import Conway.Life.MacroCell
 import Conway.Life.Hashlife
 
@@ -487,8 +488,8 @@ theorem isAlive_step_eq_aliveNext (g : Grid) (p : Int × Int) :
   by_cases h : aliveNext g p = true
   · -- aliveNext g p = true case: must have p ∈ step g.
     rw [h]
-    unfold isAlive step sortDedup
-    rw [List.elem_iff, List.mem_eraseDups, List.mem_mergeSort, List.mem_filter]
+    unfold isAlive step
+    rw [List.elem_iff, mem_sortDedup, List.mem_filter]
     exact ⟨aliveNext_true_mem_candidates g p h, h⟩
   · -- aliveNext g p = false case: p ∉ filter, hence p ∉ step g.
     have h_false : aliveNext g p = false := by
@@ -496,15 +497,13 @@ theorem isAlive_step_eq_aliveNext (g : Grid) (p : Int × Int) :
       · rfl
       · exact absurd h_iA h
     rw [h_false]
-    unfold isAlive step sortDedup
+    unfold isAlive step
     -- Need: (sortDedup ...).elem p = false. Show p ∉ sortDedup, then elem = false.
-    have h_ne : p ∉ (((candidates g).filter (aliveNext g)).mergeSort
-                      (fun a b => lexLt a b = true)).eraseDups := by
-      rw [List.mem_eraseDups, List.mem_mergeSort, List.mem_filter]
+    have h_ne : p ∉ sortDedup ((candidates g).filter (aliveNext g)) := by
+      rw [mem_sortDedup, List.mem_filter]
       rintro ⟨_, h_alive⟩
       exact h h_alive
-    cases h_e : ((((candidates g).filter (aliveNext g)).mergeSort
-                    (fun a b => lexLt a b = true)).eraseDups).elem p
+    cases h_e : (sortDedup ((candidates g).filter (aliveNext g))).elem p
     · rfl
     · exact absurd (List.elem_iff.mp h_e) h_ne
 
@@ -780,6 +779,46 @@ theorem p4_unrestricted_counterexample :
             (2 ^ 0 : Int) (2 ^ (0 + 1))) := by
   native_decide
 
+/-! ## Canonical-form bridge: P4 list equality ⇔ pointwise membership
+
+Both sides of the P4 statement are **canonical** grids
+(`Conway.Life.GridCanonical`): the LHS is a `toGrid` (a `sortDedup` image),
+the RHS a `filter` of `evolve (2^k)` with `2^k ≥ 1` (a `step` image). By
+rigidity of canonical grids (`Canonical.ext`), proving the list equality is
+equivalent to proving membership pointwise — which is where the light-cone
+(P2) and double-nine decomposition arguments actually live. -/
+
+/-- `toGrid` images are canonical grids. -/
+theorem canonical_toGrid (offset : Int × Int) (c : MacroCell) :
+    Canonical (c.toGrid offset) := by
+  unfold MacroCell.toGrid
+  exact canonical_sortDedup _
+
+/-- Membership in a `toGrid` image, unfolded to the raw cell emission. -/
+theorem mem_toGrid {c : MacroCell} {offset : Int × Int} {p : Int × Int} :
+    p ∈ c.toGrid offset ↔ p ∈ c.toCellsAux offset.1 offset.2 := by
+  unfold MacroCell.toGrid
+  exact mem_sortDedup
+
+/-- Membership in a restricted grid: in the grid and inside the window. -/
+theorem mem_restrictGridTo {g : Grid} {lo : Int} {size : Nat} {p : Int × Int} :
+    p ∈ restrictGridTo g lo size ↔
+      p ∈ g ∧ lo ≤ p.1 ∧ p.1 < lo + (size : Int) ∧
+        lo ≤ p.2 ∧ p.2 < lo + (size : Int) := by
+  simp [restrictGridTo, List.mem_filter, and_assoc]
+
+/-- **The P4 ext bridge**: pointwise membership suffices for the P4 goal.
+    Reduces the list-equality statement of `hashlifeResult_central_correct`
+    to a per-cell biconditional. -/
+theorem p4_ext_bridge (c : MacroCell) (k : Nat)
+    (h : ∀ p, p ∈ (hashlifeResultAux (k + 2) c).toGrid ((2^k : Nat), (2^k : Nat)) ↔
+        p ∈ restrictGridTo (evolve (2^k) (c.toGrid (0, 0))) (2^k : Int) (2^(k+1))) :
+    (hashlifeResultAux (k + 2) c).toGrid ((2^k : Nat), (2^k : Nat)) =
+      restrictGridTo (evolve (2^k) (c.toGrid (0, 0))) (2^k : Int) (2^(k+1)) := by
+  apply Canonical.ext (canonical_toGrid _ _) _ h
+  unfold restrictGridTo
+  exact (canonical_evolve_of_pos (Nat.two_pow_pos k) _).filter _
+
 /-- For a level-`k` MacroCell `c` with `k ≥ 2`, the centered region of
     `hashlifeResultAux (k+2) c` (viewed at offset `(2^k, 2^k)`) equals
     `evolve (2^k)` applied to `c.toGrid (0, 0)` and restricted to the
@@ -803,8 +842,11 @@ theorem hashlifeResult_central_correct (c : MacroCell) (k : Nat)
     let resultGrid := result.toGrid ((2^k : Nat), (2^k : Nat))
     let expected := evolve (2^k) (c.toGrid (0, 0))
     resultGrid = restrictGridTo expected (2^k : Int) (2^(k+1)) := by
-  -- P4 TARGET: central Hashlife correctness, by induction on level
-  sorry
+  -- P4 TARGET: central Hashlife correctness, by induction on level.
+  -- `p4_ext_bridge` has discharged the canonical-list bookkeeping: the
+  -- remaining goal is the pointwise membership biconditional, where the
+  -- light-cone (P2) and double-nine decomposition arguments live.
+  exact p4_ext_bridge c k (fun p => by sorry)
 
 /-! ## P4 witnesses: base case k=0 (native_decide)
 
