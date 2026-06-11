@@ -1,6 +1,6 @@
 # PostTraining - Techniques de post-training des Language Models (SOTA 2024-2025)
 
-[← Documentation GenAI](../README.md) · [Serie FineTuning (LoRA/QLoRA/SFT/DPO pratique)](../FineTuning/README.md)
+[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ SemanticKernel](../SemanticKernel/README.md)
 
 <!-- CATALOG-STATUS
 series: GenAI-PostTraining
@@ -22,16 +22,6 @@ En janvier 2025, Deepseek-R1 a publiquement valide cette progression en montrant
 L'angle pedagogique est d'expliquer la **math du loss** avant le code pour chaque technique. Trop de tutoriels existants montrent une cellule `trainer.train()` qui converge sans donner l'intuition de pourquoi DPO marche, pourquoi GRPO economise la memoire, ou pourquoi RLVR contourne le besoin d'un Reward Model. Cette serie inverse l'ordre : d'abord la formule, puis l'intuition, puis l'implementation TRL/HuggingFace, puis les outputs reels d'entrainement.
 
 **A qui s'adresse cette serie** : ingenieurs ML curieux de comprendre la chaine post-training au-dela des annonces de presse, etudiants en NLP voulant reproduire les techniques Deepseek-R1 sans cluster H100, et formateurs ayant besoin de notebooks pedagogiques sur des modeles que leurs etudiants peuvent reellement faire tourner. Prerequis : Python intermediate, PyTorch elementaire, familiarite avec `transformers`, intuition de la backprop et de la cross-entropy. Le notebook PT-01 etablit le contexte theorique sans code execute ; PT-02 reprend les bases SFT ; les notebooks PT-03 a PT-06 ajoutent une technique par etape.
-
-## Vue d'ensemble
-
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | **6 livres (PT-01 a PT-06) — serie COMPLETE** |
-| Kernel | Python 3 |
-| Duree estimee | ~8-12h total |
-| GPU cible | RTX 3070 8 Go (LOAD_MODEL_AND_TRAIN=False pour demo CPU) |
-| Statut | **PRODUCTION** (Epic #1742 clos) |
 
 ## Notebooks
 
@@ -155,16 +145,14 @@ Comparer SFT vs DPO vs GRPO vs RLVR de facon honnete requiert une discipline exp
 
 PT-06 documente le pipeline d'evaluation complet et produit un tableau comparatif final reproductible.
 
-## Conformite regles CoursIA
+## Qualite pedagogique
 
-| Regle | Application |
-|-------|-------------|
-| **C.1** (no NotImplementedError) | Stubs etudiants : `pass`, `print("Exercice a completer")`, `return None` |
-| **C.2** (outputs committed) | Tous les notebooks executes avec outputs reels avant commit |
-| **C.3** (scope strict re-exec) | Ne commit que les notebooks modifies, pas de re-exec massives |
-| **E** (no emojis) | Naming professionnel |
-| **F** (env reparer) | `coursia-ml-training` doit avoir TRL + bitsandbytes + datasets installes |
-| **Multi-seed ≥ 4** | Pour toute claim "GRPO outperforms DPO" → 4 seeds + ecart ≥ 2σ |
+| Aspect | Application |
+|--------|-------------|
+| Exercices | Stubs sans erreur (`pass`, `print(...)`, `return None`) : le notebook s'execute de bout en bout meme exercices non completes |
+| Outputs | Tous les notebooks committes avec outputs reels d'execution |
+| Environnement | `coursia-ml-training` requis (TRL + bitsandbytes + datasets) |
+| Methodologie | Toute claim comparative ("GRPO > DPO") verifiee sur >= 4 seeds avec ecart >= 2 sigma |
 
 ## Ponts avec les autres series
 
@@ -226,9 +214,9 @@ Pour les apprenants disposant de plus de VRAM (RTX 4090 24Go, A100 40Go), la ser
 
 ## Statut
 
-PRODUCTION — 6/6 notebooks livres (Epic #1742 COMPLETE). Tous executes avec outputs reels, C.1/C.2 conformes.
+Serie complete : 6 notebooks, tous executes avec outputs reels.
 
-Suivi : [Issue #1742](https://github.com/jsboige/CoursIA/issues/1742) (CLOSED).
+Suivi : [Issue #1742](https://github.com/jsboige/CoursIA/issues/1742).
 
 ## FAQ
 

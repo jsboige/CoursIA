@@ -1,20 +1,10 @@
 # Playwright-OWUI - Tests E2E pedagogiques pour Open WebUI
 
-[← Retour GenAI](../README.md)
+[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Vibe-Coding](../Vibe-Coding/README.md)
 
 Serie pedagogique complete pour apprendre **Playwright** (framework de tests E2E) en testant une application reelle : **Open WebUI**, une plateforme de chat IA generative.
 
 > **Format particulier** : Contrairement aux autres sous-domaines GenAI qui utilisent des Jupyter Notebooks (.ipynb), cette serie utilise des **fichiers TypeScript (.spec.ts)** executes par Playwright. Chaque module contient un `README.md` avec la theorie et les explications, et un fichier `.spec.ts` avec les tests commentes qui servent d'exercices pratiques. Les tests sont auto-documentes : chaque test contient des commentaires pedagogiques expliquant les concepts, et des exercices supplementaires a completer par l'etudiant.
-
-## Vue d'ensemble
-
-| Statistique | Valeur |
-|-------------|--------|
-| Modules | 5 |
-| Tests | 30+ |
-| Duree totale | ~13-16h |
-| Technologies | Playwright, TypeScript, Open WebUI |
-| Niveau | Debutant a Expert |
 
 ## Pourquoi cette serie ?
 
@@ -258,23 +248,6 @@ test('...', async ({ request }) => {
 **Probleme** : Certaines APIs (knowledge bases, functions) retournent du HTML au lieu de JSON quand le reverse proxy intercepte la requete ou la redirige.
 
 **Solution** : Verifier le Content-Type avant de parser, et utiliser `test.skip()` si l'API n'est pas disponible en JSON.
-
-## Resultats de validation
-
-Derniere execution : Mars 2026 (suite complete, OWUI v0.8.8)
-
-| Module | Pass | Skip | Fail | Temps |
-|--------|------|------|------|-------|
-| 01 - Decouverte | 5 | 0 | 0 | 11s |
-| 02 - Navigation | 9 | 0 | 0 | 14s |
-| 03 - Chat & Streaming | 7 | 1 | 0 | 42s |
-| 04 - RAG, MCP, Channels | 3 | 5 | 0 | 23s |
-| 05 - Multi-tenant & API | 6 | 3 | 0 | 8s |
-| **Total** | **30** | **9** | **0** | **~2 min** |
-
-Les 9 skips sont attendus : modele local indisponible (1), KBs/MCP non configures (5), APIs HTML (3).
-
-> **Compatibilite OWUI v0.9.1** (avril 2026) : la suite fonctionne sans modification sur OWUI v0.9.1. Les selecteurs CSS, l'editeur TipTap, l'auth et le rate-limit n'ont pas change. Les nouvelles surfaces v0.9.1 (Calendar, Automations, Desktop app) ne sont pas encore couvertes par les modules 01-05 mais peuvent etre utilisees comme exercices bonus. Voir `WHATS-NEW-v0.9.1.md`.
 
 ## Liens utiles
 
