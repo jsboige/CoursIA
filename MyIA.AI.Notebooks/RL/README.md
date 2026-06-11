@@ -447,6 +447,8 @@ RL/
 | [Probas](../Probas/README.md) | Decision bayesienne (notebooks 17-20) | Les MDP du RL generalisent les processus decisionnels de Markov de la serie Probas |
 | [Search](../Search/README.md) | Optimisation combinatoire | La planification RL (value/policy iteration) ressemble a la recherche dans un espace d'etats |
 
+[La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot — la politique apprise comme certificat ouvert, dont la seule caution est le rendement mesure sur des episodes, declare comme tel.
+
 ## Licence
 
 Voir la licence du repository principal.
