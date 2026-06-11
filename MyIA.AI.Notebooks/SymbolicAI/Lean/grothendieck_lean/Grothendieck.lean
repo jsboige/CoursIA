@@ -32,3 +32,4 @@ import Grothendieck.SieveGenerate
 import Grothendieck.DenseTopology
 import Grothendieck.Sheafification
 import Grothendieck.LeftExact
+import Grothendieck.Subcanonical
