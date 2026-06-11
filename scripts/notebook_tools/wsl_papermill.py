@@ -61,8 +61,10 @@ def win_to_wsl_path(win_path: str) -> str:
 
 def run_wsl(cmd: str, timeout: int = 300) -> tuple[int, str, str]:
     """Run a command in WSL and return (exit_code, stdout, stderr)."""
+    # Login shell (-l) so ~/.profile is sourced: kernels that shell out to
+    # lake/lean (lean_dojo tracing, Lean-10) need ~/.elan/bin on PATH.
     result = subprocess.run(
-        ["wsl", "-e", "bash", "-c", cmd],
+        ["wsl", "-e", "bash", "-lc", cmd],
         capture_output=True, text=True, timeout=timeout
     )
     return result.returncode, result.stdout, result.stderr
