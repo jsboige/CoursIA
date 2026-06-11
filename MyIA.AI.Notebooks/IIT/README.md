@@ -7,6 +7,8 @@ breakdown: root=2
 maturity: PRODUCTION=2
 -->
 
+[← Notebooks](../README.md) | [↑ ..](../README.md) | [→ Probas](../Probas/README.md)
+
 La conscience est-elle mesurable ? La Theorie de l'Information Integree (IIT), proposee par Giulio Tononi, repond oui : un systeme est conscient dans la mesure ou il integre de l'information de maniere non reductible. Plus formellement, la quantite de conscience d'un systeme correspond a la valeur **Phi** (big Phi), qui mesure le degre d'integration causale irreductible. Cette serie vous apprend a calculer cette mesure avec **PyPhi**, la bibliotheque de reference du laboratoire Tononi, et a explorer la geometrie informationnelle des systemes complexes.
 
 Le premier notebook couvre le spectre fondamental : construction de graphes causaux binaires, calcul des Transition Probability Matrices (TPM), definition des sous-systemes, extraction des Cause-Effect Structures (CES), et exploration des macro-subsystemes. Le second approfondit les aspects avances : partitionnement MIP, repertoires cause-effet, MICE, comparaison big Phi vs small phi, reseaux elargis a 4+ noeuds, coarse-graining et apercu IIT 4.0.
@@ -24,15 +26,6 @@ A l'issue de cette serie, vous serez capable de :
 5. **Differencier big Phi et small phi** et comprendre leur roles respectifs dans la theorie
 6. **Evaluer les limites computationnelles** de l'IIT et les strategies de coarse-graining
 7. **Discuter les implications philosophiques** de l'IIT pour la conscience artificielle
-
-## Vue d'ensemble
-
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | 2 |
-| Kernel | Python 3 (PyPhi/IIT) |
-| Duree estimee | ~120-180 min |
-| Version | PyPhi 1.2.0+ |
 
 ## Notebooks
 
@@ -219,13 +212,6 @@ IIT/
 
 Voir la licence du repository principal.
 
-## Cross-series Bridges
+---
 
-| Serie | Lien | Connection |
-|-------|------|-------------|
-| [Probas](../Probas/README.md) | Infer.NET / PyMC | Modeles probabilistes et inference bayesienne partagent les fondements de la mesure d'integration |
-| [GameTheory](../GameTheory/README.md) | OpenSpiel / Nashpy | Interactions strategiques multi-agents eclairent la complexite des systemes distribues |
-| [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) | Preuves formelles | Formalisation Arrow/Sen montre comment prouver des proprietes structurelles impossibles |
-| [RL](../RL/README.md) | Stable Baselines3 | La distinction feed-forward vs recurrent (Phi = 0 vs > 0) eclaire le choix d'architecture RL |
-
-[La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot — Phi comme certificat ouvert : PyPhi le *calcule* sur de petits systemes sans pretendre le *demontrer*.
+*Version 1.1.0 — Juin 2026*

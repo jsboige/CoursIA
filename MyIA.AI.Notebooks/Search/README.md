@@ -7,11 +7,11 @@ breakdown: Applications=21, Part1-Foundations=11, Part2-CSP=9, root=5
 maturity: PRODUCTION=45, BETA=1
 -->
 
+[← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
+
 Tout problème d'IA, du plus simple jeu de plateau à la planification logistique industrielle, se réduit à un même défi : explorer un espace de solutions possibles pour trouver la meilleure. Cette série vous apprend à maîtriser cette exploration, depuis les algorithmes classiques (BFS, A*, Minimax) jusqu'aux techniques avancées (CSP, métaheuristiques, hybridation LLM). Le fil rouge est la **réduction de l'espace de recherche** : comment passer d'une exploration aveugle exponentielle à une résolution intelligemment guidée.
 
 Le parcours couvre quatre grands piliers. Les **fondements** formalisent les espaces d'états et couvrent les algorithmes de recherche non informée, informée, locale, génétique, adversariale et MCTS. La **programmation par contraintes** (CSP) introduit un changement de paradigme : au lieu d'explorer, on réduit les domaines par propagation. Les **applications** (20 notebooks) illustrent chaque concept sur des problèmes réels adaptés de projets étudiants. Enfin, les **métaheuristiques et l'hybridation** relient la recherche à l'optimisation continue et aux LLMs.
-
-**46 notebooks** | **4 piliers** | **~38h**
 
 **A qui s'adresse cette serie** : etudiants en informatique (L3-M2), ingenieurs logiciel confrontes a des problemes d'optimisation, et candidats a des entretiens techniques. Les notebooks Python ne necessitent que Python 3.10+ avec `ortools` et `deap`. Les side tracks C# (edge detection, portefeuille) requierent .NET 9.0 + dotnet-interactive. Aucun prerequis en algorithmique avancee : les concepts sont introduits depuis les espaces d'etats.
 
@@ -61,21 +61,6 @@ La Phase 2 change de paradigme : au lieu d'explorer un espace, on le réduit. CS
 ### Phase 3 : Applications et frontieres (Applications + notebooks avances, ~18h)
 
 Les 20 notebooks d'applications illustrent chaque concept sur des cas réels : planification d'infirmiers (CSP-4), ordonnancement d'atelier (CSP-4), optimisation de portefeuille (métaheuristiques), TSP et VRP (routing), démineur et Wordle (CSP + théorie de l'information), Picross (couverture exacte). Les notebooks avancés de la Part 1 (programmation linéaire Search-9, automates symboliques Search-10, métaheuristiques Search-11) et de la Part 2 (contraintes souples CSP-7, temporelles CSP-8, distribuées CSP-9) complètent le panorama. L'ensemble est enrichi par des ponts vers les autres séries : Sudoku (DLX, automates), SymbolicAI (Z3, planification), GameTheory (Minimax, MCTS), et RL (MCTS + DQN).
-
-## Vue d'ensemble
-
-| Partie | Notebooks | Duree |
-| -------- | --------- | ----- |
-| Partie 1: Search Fondamental | 11 | ~12h30 |
-| Partie 2: Programmation par Contraintes | 9 | ~9h |
-| Applications | 20 | ~13h20 |
-| Heritage (racine) | 5 | ~3h |
-| **Total** | **45** | **~38h** |
-
-| Statistique | Valeur |
-|-------------|--------|
-| Langages | Python (principal), C# (side tracks) |
-| Niveau | Debutant a avance |
 
 ## Ce que chaque notebook apporte
 
@@ -257,18 +242,6 @@ CSP-8  Temporal            ───> Temporal Planning, STP
 
 ---
 
-## Liens avec les autres series
-
-| Serie | Lien |
-|-------|------|
-| [Sudoku](../Sudoku/README.md) | Application complete des CSP (17 solveurs dont DLX et automates symboliques) |
-| [SymbolicAI](../SymbolicAI/README.md) | Z3 SMT, OR-Tools, planification PDDL, automates symboliques |
-| [GameTheory](../GameTheory/README.md) | Minimax, MCTS (jeux a information parfaite) |
-| [Probas/Infer](../Probas/README.md) | Approches probabilistes des CSP |
-| [GenAI](../GenAI/README.md) | Optimisation d'hyperparametres avec metaheuristiques |
-
----
-
 ## Prerequis
 
 ### Python
@@ -428,21 +401,6 @@ Search/
 
 > Le parcours detaille avec prerequis et enchainements logiques est decrit dans la section [Parcours d'apprentissage](#parcours-dapprentissage) ci-dessus.
 
----
-
-## Cross-series Bridges
-
-| Serie | Lien | Connection |
-|-------|------|-------------|
-| [Sudoku](../Sudoku/README.md) | Resolution de puzzles | Les solveurs Sudoku (DLX, automates symboliques, CSP) sont des applications directes des techniques de cette serie |
-| [SymbolicAI](../SymbolicAI/README.md) | IA symbolique | Z3 (SMT solving), planification PDDL et logique formelle prolongent les CSP vers la verification formelle |
-| [GameTheory](../GameTheory/README.md) | Theorie des jeux | Minimax et MCTS (Search-6/7) sont aussi les algorithmes fondamentaux de la serie GameTheory |
-| [Probas](../Probas/README.md) | Programmation probabiliste | Les approches probabilistes (MCTS, simulated annealing) partagent les memes fondements que les modeles probabilistes de la serie Probas |
-| [RL](../RL/README.md) | Apprentissage par renforcement | MCTS (Search-7) et l'optimisation d'hyperparametres (App-18) relient la recherche au RL |
-| [ML](../ML/README.md) | Machine Learning | L'optimisation bayesienne d'hyperparametres (App-18) applique les metaheuristiques de cette serie au ML |
-| [GenAI](../GenAI/README.md) | IA generative | Les LLMs peuvent etre utilises comme heuristiques pour la resolution CSP (CSP-6 Hybridization) |
-| Lecture transversale | [La mer qui monte](../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de representation, certification A/B/C |
-
 ## FAQ / Troubleshooting
 
 ### OR-Tools ne s'installe pas
@@ -510,3 +468,7 @@ Allez directement aux applications qui correspondent a votre domaine : **App-3/A
 ## Licence
 
 Voir la licence du repository principal.
+
+---
+
+*Version 1.1.0 — Juin 2026*
