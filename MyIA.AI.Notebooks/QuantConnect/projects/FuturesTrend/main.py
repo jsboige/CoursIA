@@ -43,6 +43,7 @@ class FuturesTrendFollowing(QCAlgorithm):
         self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 12, 31)  # Extended from 2018: +3 years for robustness validation (includes 2017-2019 bull pre-COVID)
         self.set_cash(100000)
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         # Improved universe: XLE (energy) replaces TLT (destroyed by rate hikes 2022)
         # SPY=equities, GLD=gold, EFA=international, VNQ=realestate, DBC=commodities, XLE=energy

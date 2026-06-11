@@ -35,6 +35,7 @@ class PCAStatArbitrageAlgorithm(QCAlgorithm):
         self.set_start_date(2015, 1, 1)
         self.set_end_date(2024, 1, 1)
         self.set_cash(1_000_000)
+        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         self.settings.minimum_order_margin_portfolio_percentage = 0
 
         self._num_components = self.get_parameter("num_components", 3)
