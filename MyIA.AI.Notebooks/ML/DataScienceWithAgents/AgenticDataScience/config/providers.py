@@ -47,7 +47,7 @@ class ProviderConfig(BaseModel):
             "base_url": "https://openrouter.ai/api/v1"
         },
         ProviderType.VLLM: {
-            "model": "qwen3.5-35b-a3b",
+            "model": "qwen3.6-35b-a3b",
             "base_url": "http://localhost:8000/v1"
         },
         ProviderType.LMSTUDIO: {
@@ -84,7 +84,7 @@ class Settings(BaseSettings):
 
     # vLLM (reverse proxy)
     vllm_base_url: Optional[str] = None
-    vllm_model: str = "qwen3.5-35b-a3b"
+    vllm_model: str = "qwen3.6-35b-a3b"
     vllm_api_key: Optional[str] = None
 
     # LM Studio
