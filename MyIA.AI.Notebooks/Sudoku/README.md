@@ -9,7 +9,7 @@ maturity: PRODUCTION=32
 
 Cette serie de **32 notebooks** (16 C#, 16 Python) explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux etudiants de choisir leur langage.
 
-**32 notebooks** | **7 niveaux** | **~8h** | **16 C# + 16 Python**
+[← Notebooks](../README.md) | [↑ ..](../README.md) | [→ Search](../Search/README.md)
 
 **A qui s'adresse cette serie** : etudiants en informatique (L2-M2) decouvrant les paradigmes algorithmiques, candidats a des entretiens techniques, et enseignants cherchant un fil rouge pedagogique. Les notebooks Python ne necessitent que Python 3.10+. Les notebooks C# requierent .NET 9.0 + dotnet-interactive. Aucun prerequis en IA : les concepts sont introduits depuis le backtracking.
 
@@ -55,17 +55,6 @@ La resolution du Sudoku permet de comprendre **l'evolution historique de l'IA** 
 4. **IA connexionniste** (annnees 2010-present) : reseaux de neurones, LLM
 
 Chaque approche reflete une philosophie differente de la resolution de problemes et offre des compromis uniques entre garantie de solution, performance et generalisabilite.
-
----
-
-## Vue d'ensemble
-
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | 32 (16 C#, 16 Python) |
-| Duree estimee | ~8h |
-| Niveau | Debutant a avance |
-| Langages | C# (.NET Interactive), Python |
 
 ---
 
@@ -422,18 +411,6 @@ Sudoku-0-Csharp (Environment - comprendre les structures)
     +---> Niveau 7 : Sudoku-18-Comparison-Python
 ```
 
-## Cross-series Bridges
-
-| Serie | Lien | Connection |
-|-------|------|------------|
-| [Search](../Search/README.md) | Recherche et optimisation | Backtracking, metaheuristiques et DLX (Niveaux 1-3) sont les fondements memes de la serie Search ; CSP (Niveau 4) approfondit AC-3 et CP-SAT |
-| [SymbolicAI](../SymbolicAI/README.md) | IA symbolique | Z3 SMT solver (Niveau 5) est l'approfondissement naturel des solveurs constraint-based ; OR-Tools partage les memes techniques |
-| [Probas](../Probas/README.md) | Programmation probabiliste | Infer.NET (Niveau 5) illustre comment les modeles probabilistes completent les approches deterministes |
-| [GameTheory](../GameTheory/README.md) | Theorie des jeux | Minimax et MCTS (Niveau 3) sont partages avec les jeux combinatoires ; les arbres de recherche sont structures semblablement |
-| [ML](../ML/README.md) | Machine Learning | Les solveurs neuronaux (Niveau 6) et l'evaluation LLM (Niveau 7) prolongent les techniques ML/DL pour la resolution de puzzles |
-
-[La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot — le Sudoku comme cas d'ecole du changement de representation : contraintes, SAT ou recherche pure, trois langues pour une meme grille.
-
 ## Prerequis
 
 ### C# (.NET Interactive)
@@ -672,3 +649,7 @@ Les notebooks Python (suffixe `-Python`) couvrent 16 solveurs avec PyGAD, OR-Too
 ## Licence
 
 Voir la licence du repository principal.
+
+---
+
+*Version 1.1.0 — Juin 2026*

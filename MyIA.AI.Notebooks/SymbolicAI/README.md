@@ -1,5 +1,7 @@
 # SymbolicAI - Intelligence Artificielle Symbolique
 
+[← Notebooks](../README.md) | [↑ ..](../README.md) | [→ Sudoku](../Sudoku/README.md)
+
 <!-- CATALOG-STATUS
 series: SymbolicAI
 pedagogical_count: 107
@@ -38,21 +40,6 @@ Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série A
 ### Parcours alternatif : Apprentissage symbolique (SymbolicLearning, ~9h30)
 
 La série SymbolicLearning (10 notebooks) suit le chapitre 19 d'AIMA : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), apprentissage actif d'automates (L* d'Angluin), puis intégration neuro-symbolique jusqu'à un capstone LLM + knowledge graph. Elle ne requiert que Python standard pour l'essentiel et peut être suivie indépendamment des autres phases.
-
-## Vue d'ensemble
-
-| Serie | Notebooks | Exercices | Environnement | Theme | Duree |
-|-------|-----------|-----------|---------------|-------|-------|
-| [SemanticWeb](#semanticweb---web-semantique) | 18 | 16 (89%) | .NET C# + Python | RDF, SPARQL, OWL, SHACL, GraphRAG | ~13h |
-| [SmartContracts](#smartcontracts---blockchain-et-contrats-intelligents) | 27 | 27 (100%) | Python + Solidity/Foundry | Solidity, DeFi, DAO, ZK, Multi-chain | ~22h |
-| [Lean](#lean---verification-formelle) | 21 | 20 (95%) | Lean 4 (WSL) + Python | Proof assistant, Types dependants, LLMs, Conway, Kochen-Specker | ~16h |
-| [Planners](#planners---planification-automatique) | 13 | 12 (92%) | Python + Fast-Downward (WSL/Docker) | PDDL, CP-SAT, VRP, HTN, LLM | ~7h |
-| [Tweety](#tweety---tweetyproject) | 10 | 10 (100%) | Python + Java/JPype | Logiques formelles, Argumentation | ~7h |
-| [SymbolicLearning](#symboliclearning---apprentissage-symbolique) | 10 | 10 (100%) | Python | ILP, neuro-symbolique, KG-LLM, automates (L*) | ~9h30 |
-| [Argument Analysis](#argument-analysis---analyse-argumentative-llm) | 6 | 0 (demo) | Python + Java/JPype + API | Analyse argumentative multi-agents | ~4h |
-| [Autres notebooks](#autres-notebooks) | 2 | 2 (100%) | .NET C# | Z3, OR-Tools | ~1h30 |
-
-**Total** : 107 notebooks actifs, ~80h de contenu
 
 ---
 
@@ -665,6 +652,10 @@ Oui, c'est l'approche pedagogique de la serie. **Anvil** (Foundry) fournit un si
 
 Les notebooks sont distribues sous licence MIT.
 Voir LICENSE a la racine du depot pour details.
+
+---
+
+*Version 1.1.0 — Juin 2026*
 
 ---
 

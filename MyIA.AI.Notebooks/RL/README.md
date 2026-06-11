@@ -1,5 +1,7 @@
 # RL - Reinforcement Learning
 
+[← Notebooks](../README.md) | [↑ ..](../README.md) | [→ GameTheory](../GameTheory/README.md)
+
 <!-- CATALOG-STATUS
 series: RL
 pedagogical_count: 13
@@ -12,15 +14,6 @@ Le Reinforcement Learning (apprentissage par renforcement) est la branche de l'I
 Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bellman, Q-Learning), les **algorithmes avec reseaux de neurones** (DQN, Policy Gradient, PPO) et les **frameworks de production** (Stable Baselines3). Vous commencerez par entrainer un agent en quelques lignes avec un framework industriel, puis vous implementerez les memes algorithmes depuis zero pour comprendre ce qui se cache sous le capot.
 
 **A qui s'adresse cette serie** : etudiants en IA, developpeurs souhaitant ajouter des capacites decisionnelles a leurs applications, et chercheurs en automatique ou robotique. Prerequis : Python intermediaire et bases en calculus (gradients). Aucune experience RL prealable necessaire pour le notebook 1.
-
-## Vue d'ensemble
-
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | 13 |
-| Kernel | Python 3 |
-| Duree totale | ~595-675 min |
-| Version | Stable Baselines3 2.0.0+ |
 
 ## Notebooks
 
@@ -437,18 +430,10 @@ RL/
 └── README.md
 ```
 
-## Cross-series Bridges
-
-| Serie | Lien | Connection |
-|-------|------|-------------|
-| [GameTheory](../GameTheory/README.md) | Jeux bayesiens, equilibre de Nash | Le RL multi-agent (notebook 7) formalise les memes interactions que la theorie des jeux, mais avec apprentissage |
-| [ML](../ML/README.md) | Pipelines ML | Le RL s'appuie sur les memes outils (PyTorch, numpy) et suppose la familiarite avec l'entrainement de modeles |
-| [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | Les strategies de trading se modelisent comme des problemes RL (actions = acheter/vendre, reward = PnL) |
-| [Probas](../Probas/README.md) | Decision bayesienne (notebooks 17-20) | Les MDP du RL generalisent les processus decisionnels de Markov de la serie Probas |
-| [Search](../Search/README.md) | Optimisation combinatoire | La planification RL (value/policy iteration) ressemble a la recherche dans un espace d'etats |
-
-[La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot — la politique apprise comme certificat ouvert, dont la seule caution est le rendement mesure sur des episodes, declare comme tel.
-
 ## Licence
 
 Voir la licence du repository principal.
+
+---
+
+*Version 1.1.0 — Juin 2026*

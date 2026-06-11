@@ -7,6 +7,8 @@ breakdown: Python=51, projects=48, ML-Training-Pipeline=2
 maturity: PRODUCTION=59, ALPHA=33, BETA=6, DRAFT=2, TEMPLATE=1
 -->
 
+[← Notebooks](../README.md) | [↑ ..](../README.md) | [→ CaseStudies](../CaseStudies/README.md)
+
 Le trading algorithmique transforme les marchés financiers : aujourd'hui, plus de 60% des volumes aux États-Unis sont générés par des algorithmes. Cette série vous apprend à construire, tester et déployer vos propres stratégies de trading automatisées sur la plateforme **QuantConnect LEAN** — un framework open-source utilisé par des milliers de quants professionnels. Le parcours va des fondements (lifecycle d'un algorithme, gestion des données) aux frontières de l'IA (Transformers, RL, LLMs pour signaux de trading).
 
 La série couvre huit phases progressives. Les **fondements** (phases 1-4) maîtrisent l'écosystème QuantConnect : architecture LEAN, universe selection, options/futures, risk management, et l'Algorithm Framework modulaire. La **préparation ML** (phase 5) intègre les données alternatives et le feature engineering. Le **machine learning** (phases 6-7) applique les modèles classiques (Random Forest, XGBoost) puis le deep learning (LSTM, Transformers, autoencoders) aux séries temporelles financières. La **production** (phase 8) couvre le RL, les LLMs pour le trading, et le déploiement live. Chaque notebook est exécutable sur le cloud QuantConnect (free tier) sans installation locale.
@@ -27,28 +29,6 @@ La série couvre huit phases progressives. Les **fondements** (phases 1-4) maît
 **Temps estimé** : 5-10 minutes
 
 > **Note** : Les notebooks QC-Py-XX sont des supports de cours à lire sur GitHub, pas à uploader dans QC Lab.
-
----
-
-## Vue d'Ensemble
-
-Cette série est une formation complète sur le **trading algorithmique** avec la plateforme **QuantConnect LEAN**, inspirée du livre *"Hands-On AI Trading"* (2025).
-
-### Objectifs
-
-- **Pédagogique** : Progression de débutant à expert (30h de contenu)
-- **IA-first** : Focus important sur ML/DL/RL/LLM pour stratégies de trading
-- **Cloud-native** : Exécution principale sur QuantConnect cloud (free tier)
-- **Production-ready** : De la recherche au déploiement live
-
-### Contenu
-
-De la **mécanique d'un backtest** (lifecycle d'un algorithme, gestion des données, types d'ordres, risk management) jusqu'aux **modèles de pointe appliqués à la finance** — Random Forest et XGBoost, puis LSTM, Transformers et State-Space Models, jusqu'au reinforcement learning et aux LLMs employés comme générateurs de signaux — la série couvre toute la chaîne, le bloc **fondations** consolidant l'écosystème LEAN (universe selection, classes d'actifs, Algorithm Framework) avant toute approche ML.
-
-- **51 notebooks Python** (28 cours QC-Py-01..28 + 3 training QC-Py-30..32 + 3 RL avance QC-Py-33..35 + 2 paper-trading QC-Py-40..41 + 13 Cloud-ready QC-Py-Cloud-01..07 + 1 dataset workflow + 1 research interne)
-- **18 notebooks sur fondations** avant ML (Universe, Asset Classes, Risk, Framework)
-- **9+ notebooks ML/DL/AI** (Supervised Learning, Deep Learning, Transformers, SSM, RL, LLM, Foundation Models)
-- **Free tier compatible** avec workarounds pour fonctionnalités payantes
 
 ---
 
@@ -492,10 +472,6 @@ Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes s
 | [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparametres de strategies (grid search, bayesienne) rejoint les techniques de recherche |
 | [ML](../ML/ML.Net/README.md) | Series temporelles ML.NET | L'analyse technique (QC-4 a QC-7) partage les memes fondements que le forecasting par SSA (ML-5) |
 
-[La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot — le backtest hors-echantillon comme certificat ouvert : Sharpe, CAGR et drawdown reportes sans fard, sans pretendre a la preuve.
-
 ---
 
-**Bon trading algorithmique avec QuantConnect + CoursIA !**
-
-*Créé par CoursIA | Inspiré par "Hands-On AI Trading" (Jared Broad, 2025) | Cloud-first Architecture*
+*Version 1.1.0 - Juin 2026*
