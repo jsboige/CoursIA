@@ -699,6 +699,42 @@ theorem padCenter2_correct_block_level1 :
     (padCenter2 c).toCellsAux (-3 : Int) (-3 : Int) = c.toCellsAux 0 0 := by
   native_decide
 
+/-! ## Well-formedness of MacroCells
+
+`MacroCell.level` only walks the `nw` spine, so `c.level = k + 2` does
+**not** constrain the `ne`/`sw`/`se` subtrees. `hashlifeResultAux` sends
+such malformed cells to its defensive arm (`emptyOfLevel (c.level - 1)`),
+while `toGrid`/`evolve` still see the live cells of the misplaced
+subtrees — so the unrestricted P4 statement is **false**
+(`p4_unrestricted_counterexample` below).
+
+`wf` formalizes the convention stated on the `MacroCell` type ("all
+required, by convention but not enforced by the type, to have the same
+level"). It is the missing hypothesis of P4. Candidate for promotion to
+`Conway.Life.MacroCell` once the P4/P5 proofs land. -/
+
+/-- Well-formed `MacroCell`: every `node` has four well-formed subtrees
+    of equal level. Boolean-valued so concrete instances are decidable
+    by `decide`/`native_decide`. -/
+def MacroCell.wf : MacroCell → Bool
+  | .leaf _ => true
+  | .node nw ne sw se =>
+    nw.wf && ne.wf && sw.wf && se.wf
+      && (ne.level == nw.level) && (sw.level == nw.level)
+      && (se.level == nw.level)
+
+/-- A malformed level-2 cell: `nw` is a level-1 node but `ne`/`sw`/`se`
+    are bare leaves. `level` only inspects `nw`, so
+    `malformedLevel2.level = 2` satisfies the unrestricted P4 hypothesis
+    with `k = 0`. Live cells (via `toCellsAux`, which offsets `ne`/`sw`
+    by `2^nw.level = 2`): `(1,1)`, `(0,2)`, `(2,0)`. -/
+private def malformedLevel2 : MacroCell :=
+  .node (.node (leaf false) (leaf false) (leaf false) (leaf true))
+        (leaf true) (leaf true) (leaf false)
+
+example : malformedLevel2.level = 2 := rfl
+example : malformedLevel2.wf = false := rfl
+
 /-! ## P4. Hashlife central result (decompose-compose)
 
 On a level-`k` MacroCell `c` with adequate padding, `hashlifeResult c`
@@ -713,13 +749,36 @@ by memoized recomposition gives the same answer as the flat iteration.
 2^(k+1)` region of the level-`(k+2)` input. The center starts at position
 `(2^k, 2^k)` in the input's coordinate system. So `result.toGrid (2^k,
 2^k)` covers `[2^k, 2^k + 2^(k+1)) × [2^k, 2^k + 2^(k+1))`, which is
-exactly the centered region. -/
+exactly the centered region.
+
+**Statement correction (2026-06-11)**: added the `c.wf = true` hypothesis.
+Without it the statement is **false**: `c.level = k + 2` only constrains
+the `nw` spine, and on malformed cells `hashlifeResultAux` answers
+`emptyOfLevel (c.level - 1)` while `evolve` still sees the misplaced live
+cells. Certified counterexample: `p4_unrestricted_counterexample`. The
+corrected statement is proven in the base case `k = 0` for **all**
+well-formed cells (`hashlifeResult_central_correct_base`, 2^16 instances)
+and witnessed in the recursive arms at `k = 1` and `k = 2`. -/
 
 /-- Restrict a Grid to the centered region `[lo, lo + size) × [lo, lo + size)`. -/
 def restrictGridTo (g : Grid) (lo : Int) (size : Nat) : Grid :=
   g.filter fun p =>
     lo ≤ p.1 && p.1 < lo + (size : Int) &&
     lo ≤ p.2 && p.2 < lo + (size : Int)
+
+/-- **The unrestricted P4 statement is false.** On `malformedLevel2`
+    (which satisfies `c.level = 0 + 2`), `hashlifeResultAux` takes its
+    defensive malformed arm and returns the empty level-1 cell (LHS
+    `= []`), while the reference evolution keeps cell `(1,1)` alive —
+    it has exactly two diagonal neighbours, `(0,2)` and `(2,0)`, coming
+    from the misplaced leaf subtrees (RHS `= [(1,1)]`). Hence the
+    `c.wf` hypothesis in `hashlifeResult_central_correct` is necessary. -/
+theorem p4_unrestricted_counterexample :
+    ¬ ((hashlifeResultAux (0 + 2) malformedLevel2).toGrid
+          ((2 ^ 0 : Nat), (2 ^ 0 : Nat))
+        = restrictGridTo (evolve (2 ^ 0) (malformedLevel2.toGrid (0, 0)))
+            (2 ^ 0 : Int) (2 ^ (0 + 1))) := by
+  native_decide
 
 /-- For a level-`k` MacroCell `c` with `k ≥ 2`, the centered region of
     `hashlifeResultAux (k+2) c` (viewed at offset `(2^k, 2^k)`) equals
@@ -739,7 +798,7 @@ def restrictGridTo (g : Grid) (lo : Int) (size : Nat) : Grid :=
       matches `step^[2^(k+1)]` by the light-cone lemma P2 applied 2^(k-1)
       times (once per "half-step" in the double-nine decomposition). -/
 theorem hashlifeResult_central_correct (c : MacroCell) (k : Nat)
-    (hk : c.level = k + 2) :
+    (hwf : c.wf = true) (hk : c.level = k + 2) :
     let result := hashlifeResultAux (k + 2) c
     let resultGrid := result.toGrid ((2^k : Nat), (2^k : Nat))
     let expected := evolve (2^k) (c.toGrid (0, 0))
@@ -802,6 +861,131 @@ theorem p4_base_glider :
 theorem p4_base_blinker :
     (hashlifeResultAux 2 blinkerHCell).toGrid (1, 1)
     = restrictGridTo (evolve 1 (blinkerHCell.toGrid (0, 0))) 1 2 := by
+  native_decide
+
+/-! ## P4 base case, proven in general
+
+The base case `k = 0` of the (corrected) P4 statement, proven for **all**
+well-formed level-2 cells — not just the witnesses above. The shape
+lemmas reduce a well-formed level-2 cell to its 16 leaf booleans; the
+exhaustive lemma then checks all `2^16` configurations by
+`native_decide`. This certifies that the corrected statement is
+*provable* (at least in the base case), not merely satisfiable. -/
+
+/-- A level-0 cell is a leaf (regardless of well-formedness). -/
+private theorem shape_of_level_zero :
+    ∀ c : MacroCell, c.level = 0 → ∃ b, c = leaf b
+  | leaf b, _ => ⟨b, rfl⟩
+  | node _ _ _ _, h => by exfalso; simp only [MacroCell.level] at h; omega
+
+/-- A level-`(n+1)` cell is a node whose `nw` has level `n`. -/
+private theorem shape_of_level_succ :
+    ∀ (c : MacroCell) (n : Nat), c.level = n + 1 →
+      ∃ nw ne sw se, c = node nw ne sw se ∧ nw.level = n
+  | leaf _, _, h => by exfalso; simp only [MacroCell.level] at h; omega
+  | node nw ne sw se, n, h =>
+    ⟨nw, ne, sw, se, rfl, by simp only [MacroCell.level] at h; omega⟩
+
+/-- Unpack the well-formedness of a node: four well-formed subtrees of
+    equal level. -/
+private theorem wf_node_elim {nw ne sw se : MacroCell}
+    (h : (node nw ne sw se).wf = true) :
+    nw.wf = true ∧ ne.wf = true ∧ sw.wf = true ∧ se.wf = true
+      ∧ ne.level = nw.level ∧ sw.level = nw.level ∧ se.level = nw.level := by
+  simp only [MacroCell.wf, Bool.and_eq_true, beq_iff_eq] at h
+  tauto
+
+/-- Exhaustive check of the P4 base case over the 16 leaf booleans of a
+    (fully explicit) level-2 cell: `2^16` instances by `native_decide`. -/
+private theorem p4_base_exhaustive :
+    ∀ v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14 v15 v16 : Bool,
+      (hashlifeResultAux 2
+          (node (node (leaf v1) (leaf v2) (leaf v3) (leaf v4))
+                (node (leaf v5) (leaf v6) (leaf v7) (leaf v8))
+                (node (leaf v9) (leaf v10) (leaf v11) (leaf v12))
+                (node (leaf v13) (leaf v14) (leaf v15) (leaf v16)))).toGrid
+        ((1 : Int), (1 : Int))
+      = restrictGridTo
+          (evolve 1
+            ((node (node (leaf v1) (leaf v2) (leaf v3) (leaf v4))
+                   (node (leaf v5) (leaf v6) (leaf v7) (leaf v8))
+                   (node (leaf v9) (leaf v10) (leaf v11) (leaf v12))
+                   (node (leaf v13) (leaf v14) (leaf v15) (leaf v16))).toGrid
+              (0, 0)))
+          1 2 := by
+  native_decide
+
+/-- **P4 base case (k = 0), in general**: the corrected statement holds
+    for every well-formed level-2 cell. -/
+theorem hashlifeResult_central_correct_base (c : MacroCell)
+    (hwf : c.wf = true) (hk : c.level = 2) :
+    (hashlifeResultAux 2 c).toGrid ((1 : Int), (1 : Int))
+    = restrictGridTo (evolve 1 (c.toGrid (0, 0))) 1 2 := by
+  obtain ⟨a, b, d, e, rfl, ha⟩ := shape_of_level_succ c 1 hk
+  obtain ⟨hwa, hwb, hwd, hwe, hlb, hld, hle⟩ := wf_node_elim hwf
+  rw [ha] at hlb hld hle
+  obtain ⟨a1, a2, a3, a4, rfl, ha1⟩ := shape_of_level_succ a 0 ha
+  obtain ⟨b1, b2, b3, b4, rfl, hb1⟩ := shape_of_level_succ b 0 hlb
+  obtain ⟨d1, d2, d3, d4, rfl, hd1⟩ := shape_of_level_succ d 0 hld
+  obtain ⟨e1, e2, e3, e4, rfl, he1⟩ := shape_of_level_succ e 0 hle
+  obtain ⟨_, _, _, _, hla2, hla3, hla4⟩ := wf_node_elim hwa
+  obtain ⟨_, _, _, _, hlb2, hlb3, hlb4⟩ := wf_node_elim hwb
+  obtain ⟨_, _, _, _, hld2, hld3, hld4⟩ := wf_node_elim hwd
+  obtain ⟨_, _, _, _, hle2, hle3, hle4⟩ := wf_node_elim hwe
+  rw [ha1] at hla2 hla3 hla4
+  rw [hb1] at hlb2 hlb3 hlb4
+  rw [hd1] at hld2 hld3 hld4
+  rw [he1] at hle2 hle3 hle4
+  obtain ⟨v1, rfl⟩ := shape_of_level_zero a1 ha1
+  obtain ⟨v2, rfl⟩ := shape_of_level_zero a2 hla2
+  obtain ⟨v3, rfl⟩ := shape_of_level_zero a3 hla3
+  obtain ⟨v4, rfl⟩ := shape_of_level_zero a4 hla4
+  obtain ⟨v5, rfl⟩ := shape_of_level_zero b1 hb1
+  obtain ⟨v6, rfl⟩ := shape_of_level_zero b2 hlb2
+  obtain ⟨v7, rfl⟩ := shape_of_level_zero b3 hlb3
+  obtain ⟨v8, rfl⟩ := shape_of_level_zero b4 hlb4
+  obtain ⟨v9, rfl⟩ := shape_of_level_zero d1 hd1
+  obtain ⟨v10, rfl⟩ := shape_of_level_zero d2 hld2
+  obtain ⟨v11, rfl⟩ := shape_of_level_zero d3 hld3
+  obtain ⟨v12, rfl⟩ := shape_of_level_zero d4 hld4
+  obtain ⟨v13, rfl⟩ := shape_of_level_zero e1 he1
+  obtain ⟨v14, rfl⟩ := shape_of_level_zero e2 hle2
+  obtain ⟨v15, rfl⟩ := shape_of_level_zero e3 hle3
+  obtain ⟨v16, rfl⟩ := shape_of_level_zero e4 hle4
+  exact p4_base_exhaustive v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14
+    v15 v16
+
+/-! ## P4 witnesses: recursive arms (k = 1, k = 2)
+
+Concrete well-formed instances of the corrected statement exercising the
+double-nine recursion (one layer at `k = 1`, two layers at `k = 2`). -/
+
+/-- P4 witness at k = 1 (level-3, one recursion layer): a block (still
+    life) centered in an 8×8 cell, 2 generations. -/
+theorem p4_wf_witness_k1 :
+    (centerInLevelPlus2 (node aliveLeaf aliveLeaf aliveLeaf aliveLeaf)).wf
+        = true
+    ∧ (hashlifeResultAux 3
+          (centerInLevelPlus2
+            (node aliveLeaf aliveLeaf aliveLeaf aliveLeaf))).toGrid
+        ((2 : Int), (2 : Int))
+      = restrictGridTo
+          (evolve 2
+            ((centerInLevelPlus2
+              (node aliveLeaf aliveLeaf aliveLeaf aliveLeaf)).toGrid (0, 0)))
+          2 4 := by
+  native_decide
+
+/-- P4 witness at k = 2 (level-4, two recursion layers): a glider
+    centered in a 16×16 cell, 4 generations (the glider translates by
+    `(+1, +1)`, staying inside the centered 8×8 window). -/
+theorem p4_wf_witness_k2 :
+    (centerInLevelPlus2 gliderCell).wf = true
+    ∧ (hashlifeResultAux 4 (centerInLevelPlus2 gliderCell)).toGrid
+        ((4 : Int), (4 : Int))
+      = restrictGridTo
+          (evolve 4 ((centerInLevelPlus2 gliderCell).toGrid (0, 0)))
+          4 8 := by
   native_decide
 
 /-! ## P5. Main theorem: bounded correctness
