@@ -1,5 +1,7 @@
 # RL Options Hedging (Ch07-01)
 
+**Type:** Stub (planned exercise, code files not yet created)
+
 **Hands-On AI Trading**, Chapter 7-01 — Deep Hedging with Reinforcement Learning
 
 ## Objective
