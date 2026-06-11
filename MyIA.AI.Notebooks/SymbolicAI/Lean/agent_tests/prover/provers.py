@@ -211,7 +211,7 @@ class MultiAgentSorryProver:
     with CriticAgent routing back to any agent based on error analysis.
     """
 
-    def __init__(self, trace: TraceLogger, provider: str = "zai",
+    def __init__(self, trace: TraceLogger, provider: str = "openrouter",
                  local_provider: str = "local",
                  director_provider: Optional[str] = None,
                  coordinator_provider: Optional[str] = None,

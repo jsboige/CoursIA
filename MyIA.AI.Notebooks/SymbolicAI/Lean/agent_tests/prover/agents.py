@@ -60,7 +60,7 @@ def create_search_agent(tools: SearchTools, provider: str = "local",
     )
 
 
-def create_tactic_agent(tools: TacticTools, provider: str = "zai",
+def create_tactic_agent(tools: TacticTools, provider: str = "openrouter",
                         goal: str = "") -> Agent:
     """TacticAgent: generates tactics + decomposition. Uses reasoning model."""
     client = create_client(provider, model_key="reasoning")
@@ -85,7 +85,7 @@ def create_tactic_agent(tools: TacticTools, provider: str = "zai",
     )
 
 
-def create_critic_agent(tools: CriticTools, provider: str = "zai") -> Agent:
+def create_critic_agent(tools: CriticTools, provider: str = "openrouter") -> Agent:
     """CriticAgent: analyzes failures, decides routing. Uses fast model."""
     client = create_client(provider, model_key="fast")
     return Agent(
@@ -101,7 +101,7 @@ def create_critic_agent(tools: CriticTools, provider: str = "zai") -> Agent:
     )
 
 
-def create_coordinator_agent(tools: CoordinatorTools, provider: str = "zai") -> Agent:
+def create_coordinator_agent(tools: CoordinatorTools, provider: str = "openrouter") -> Agent:
     """CoordinatorAgent: strategic escalation. Uses reasoning model."""
     client = create_client(provider, model_key="reasoning")
     return Agent(
