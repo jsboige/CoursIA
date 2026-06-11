@@ -625,11 +625,13 @@ class VerifyExecutor(Executor):
     def __init__(self, sorry_context: SorryContext, imports: str,
                  trace: TraceLogger = None, kb: Optional[ProofKnowledgeBase] = None,
                  escalation_threshold: int = 5, has_director: bool = False,
-                 director_max_calls: int = 3, **kwargs):
+                 director_max_calls: int = 3, tactic_tools=None, **kwargs):
         super().__init__(id="verify_executor", **kwargs)
         self._sorry_ctx = sorry_context
         self._imports = imports
         self._trace = trace
+        # P1 (#1453 forensic): reference to TacticTools for stagnation reset.
+        self._tactic_tools = tactic_tools
         # B.1 ProofKnowledgeBase: record successful tactics so future sessions
         # can warm-start. Same JSON file that SearchTools reads.
         self._kb = kb or ProofKnowledgeBase()
@@ -807,6 +809,9 @@ class VerifyExecutor(Executor):
                     self._consecutive_build_fails = 0
                     self._consecutive_sorry_rejections = 0
                     self._consecutive_noprogress = 0
+                    # P1 (#1453 forensic): reset compile stagnation counter
+                    if self._tactic_tools is not None:
+                        self._tactic_tools.reset_stagnation()
                     if self._trace:
                         self._trace.log(
                             agent="VerifyExecutor", role="verify",
@@ -846,6 +851,9 @@ class VerifyExecutor(Executor):
             self._consecutive_build_fails = 0
             self._consecutive_sorry_rejections = 0
             self._consecutive_noprogress = 0  # P1: real progress
+            # P1 (#1453 forensic): reset compile stagnation counter
+            if self._tactic_tools is not None:
+                self._tactic_tools.reset_stagnation()
             if self._trace:
                 self._trace.log(
                     agent="VerifyExecutor", role="verify",
@@ -1252,7 +1260,8 @@ class ProofWorkflowBuilder:
                  director_agent: Optional[Agent] = None,
                  diagnosis_agent: Optional[Agent] = None,
                  concurrent_search_count: int = 0,
-                 extra_search_agents: Optional[list] = None):
+                 extra_search_agents: Optional[list] = None,
+                 tactic_tools=None):
         self._search = AgentExecutor(search_agent, trace=trace, state=state)
         # B.7: additional SearchAgents for parallel lemma discovery.
         # When concurrent_search_count > 0, extra_search_agents provides
@@ -1286,6 +1295,7 @@ class ProofWorkflowBuilder:
             sorry_context, imports, trace, kb=kb,
             has_director=bool(self._director),
             director_max_calls=self._director_max_calls,
+            tactic_tools=tactic_tools,
         )
         # Feature 3: DiagnosisAgent replaces VerifyExecutor when provided.
         # DiagnosisExecutor wraps the LLM agent with mechanical fallback.

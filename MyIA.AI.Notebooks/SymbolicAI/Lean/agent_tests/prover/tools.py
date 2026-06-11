@@ -956,6 +956,18 @@ class TacticTools:
                     )
         return None
 
+    def reset_stagnation(self):
+        """Reset the delta0 stagnation counter (called by VerifyExecutor on proof_found).
+
+        Forensic #1453 P1: the verify step can find progress (proof_found=True)
+        without going through compile's _record_sorry_count(). Without this reset,
+        the stagnation counter keeps counting pre-verify compiles and may trigger
+        premature stagnation on the next tactic loop. Mirrors into shared state.
+        """
+        self._consecutive_delta0 = 0
+        if self._state is not None:
+            self._state.consecutive_delta0_compiles = 0
+
     def _record_sorry_count(self, sorry_count: int):
         """Shared delta0 tracking used by both compile() and _build_check_or_revert().
 
