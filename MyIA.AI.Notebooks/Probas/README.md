@@ -7,13 +7,11 @@ breakdown: Infer=21, PyMC=20, root=3
 maturity: PRODUCTION=44
 -->
 
+[← Notebooks](../README.md) | [↑ ..](../README.md) | [→ GameTheory](../GameTheory/README.md)]
+
 Le monde reel est incertain. Un diagnostic medical n'est jamais sur a 100%, un classement sportif depend de performances intrinsequement variables, et les donnees que nous collectons sont toujours bruitees ou incompletes. La programmation probabiliste offre un cadre rigoureux pour modeliser cette incertitude : plutot que de calculer une seule reponse, on obtient une **distribution de probabilites** qui quantifie notre confiance dans chaque resultat possible.
 
 Cette serie couvre trois stack complementaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inference exacte par message passing, **PyMC** (Python) pour l'echantillonnage MCMC moderne, et des **applications standalone** (RSA, HMM trading). Les 21 notebooks Infer.NET couvrent les fondements mathematiques (distributions, graphs de facteurs), les modeles classiques (reseaux bayesiens, TrueSkill, LDA, HMM), puis la theorie de la decision bayesienne — jusqu'a un compagnon **Lean 4** (Infer-20b, adosse au projet Lake `gittins_lean`) qui demontre formellement les identites d'escompte de l'indice de Gittins. Les 20 notebooks PyMC reprennent l'integralite des modeles Infer.NET en Python avec l'echantillonnage NUTS, offrant un pont naturel vers l'ecosysteme data science : fondations 1-3, modeles classiques 4-13, et theorie de la decision 14-20.
-
-**44 notebooks** | **3 stack** | **~40h**
-
-**A qui s'adresse cette serie** : etudiants en IA, data scientists, et developpeurs souhaitant aller au-dela des modeles deterministes. Aucun prerequis en probabilites avancees : les concepts sont introduits progressivement.
 
 ## Pourquoi cette serie
 
@@ -47,16 +45,6 @@ A l'issue de cette serie, vous serez capable de :
 3. **Comparer** message passing vs MCMC sur le meme modele
 4. **Decaler** d'un probleme real vers sa formulation probabiliste (variables, facteurs, observations)
 5. **Integrer** inference probabiliste et theorie de la decision (maximisation d'utilite esperee)
-
-## Vue d'ensemble
-
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | 44 (21 Infer.NET + 20 PyMC + 3 standalone) |
-| Duree totale | ~40h |
-| Langages | C# (.NET), Python, Lean 4 |
-| Kernels | .NET Interactive, Python 3, Lean 4 (WSL) |
-| Algorithmes | EP, VMP, Gibbs (Infer.NET) ; NUTS (PyMC) |
 
 ## Parcours d'apprentissage
 
@@ -499,16 +487,6 @@ Le notebook `Infer-101.ipynb` est le seul a melanger les deux kernels. Il utilis
 
 Voir la licence du repository principal.
 
-## Cross-series Bridges
+---
 
-| Serie | Lien | Connection |
-| ------- | ------ | ----------- |
-| [IIT](../IIT/README.md) | PyPhi | L'integration informationnelle (phi) repose sur les memes fondements probabilistes |
-| [SymbolicAI/SemanticWeb](../SymbolicAI/SemanticWeb/README.md) | OWL reasoning | Les ontologies OWL utilisent la logique probabiliste pour le raisonnement incertain |
-| [GameTheory](../GameTheory/README.md) | Bayesian games | Les jeux bayesiens combinent probabilites et theorie des jeux |
-| [QuantConnect](../QuantConnect/README.md) | HMM trading | PyMC-HMM-Trading-Alpha applique les modeles probabilistes aux signaux de trading |
-| [Search](../Search/README.md) | Optimisation bayesienne | La selection de modeles (PyMC-8) utilise les memes techniques que l'optimisation bayesienne |
-| [RL](../RL/README.md) | MDPs | Les MDPs de PyMC-20 (Decision Sequential) sont la passerelle vers le reinforcement learning |
-| [SmartContracts](../SymbolicAI/SmartContracts/README.md) | Decision robust | Minimax Regret (PyMC-19) s'applique aux smart contracts pour la gestion des incertitudes on-chain |
-| [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) | gittins_lean | Le compagnon Infer-20b prouve en Lean 4 les identites d'escompte de l'indice de Gittins |
-| Lecture transversale | [La mer qui monte](../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de representation, certification A/B/C |
+*Version 1.1.0 — Juin 2026*

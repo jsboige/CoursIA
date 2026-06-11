@@ -7,9 +7,9 @@ breakdown: DataScienceWithAgents=19, ML.Net=8
 maturity: PRODUCTION=23, BETA=3, ALPHA=1
 -->
 
-Le monde regorge de donnees, mais les transformer en decisions eclairees demande plus qu'un tableur. Le Machine Learning offre un cadre systematique pour construire des modeles predictifs a partir de donnees, en allant de la regression lineaire aux reseaux de neurones en passant par les systemes de recommandation. Cette serie vous forme au ML pratique avec deux stack complementaires : **ML.NET** pour l'ecosysteme .NET/C# (8 notebooks, ~6h) et **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs (19 notebooks, ~17h).
+[← Notebooks](../README.md) | [↑ ..](../README.md) | [→ GenAI](../GenAI/README.md)
 
-**27 notebooks** | **2 sous-domaines** | **~23h** | **.NET Interactive + Python**
+Le monde regorge de donnees, mais les transformer en decisions eclairees demande plus qu'un tableur. Le Machine Learning offre un cadre systematique pour construire des modeles predictifs a partir de donnees, en allant de la regression lineaire aux reseaux de neurones en passant par les systemes de recommandation. Cette serie vous forme au ML pratique avec deux stack complementaires : **ML.NET** pour l'ecosysteme .NET/C# et **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs.
 
 ## Pourquoi cette serie
 
@@ -258,21 +258,5 @@ Voir la licence du repository principal.
 
 ---
 
-## Cross-series Bridges
-
-| Serie | Lien | Connection |
-|-------|------|-------------|
-| [RL](../RL/README.md) | Apprentissage par renforcement | Le RL s'appuie sur les memes fondamentaux ML (gradients, reseaux de neurones, evaluation) |
-| [GenAI](../GenAI/README.md) | IA generative | Les agents IA du track DataScienceWithAgents utilisent les LLMs couverts dans GenAI/Texte |
-| [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | Les modeles de prediction ML (regression, classification) s'appliquent directement aux strategies de trading |
-| [Probas](../Probas/README.md) | Programmation probabiliste | L'evaluation bayesienne des modeles (TP-prevision-ventes) est une application directe de la serie Probas |
-| [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparametres ML rejoint les techniques de recherche (grille, bayesienne) |
-
-[La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot — le modele entraine comme certificat ouvert, juge par une evaluation declaree comme telle.
-
----
-
-## Navigation
-
-- [<- Notebooks racine](../) | [GenAI ->](../GenAI/)
-- [ML.NET ->](ML.Net/README.md) | [DataScienceWithAgents ->](DataScienceWithAgents/README.md) | [RL ->](../RL/)
+- [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ GenAI](../GenAI/README.md)
+- [ML.NET →](ML.Net/README.md) | [DataScienceWithAgents →](DataScienceWithAgents/README.md) | [RL →](../RL/)
