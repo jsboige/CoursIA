@@ -114,4 +114,3 @@ CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
 ## Navigation
 
 [<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour a la serie Search](../README.md) | [Applications ->](../Applications/README.md)
->>>>>>> 466b5f29 (feat(symbolic-ai): create Z3 series with intro notebook, fork MyIntelligenceAgency/Z3.Linq (See #1206))
