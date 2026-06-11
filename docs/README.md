@@ -20,9 +20,10 @@ Documentation vivante, active et liee depuis CLAUDE.md / `.claude/rules/`.
 | [reference/subagents-reference.md](reference/subagents-reference.md) | Roster 21 agents + 15 skills |
 | [reference/ece-grading.md](reference/ece-grading.md) | Pipeline GradeBookApp (EPITA-ECE) |
 | [reference/esgf-grading.md](reference/esgf-grading.md) | Pipeline ESGF (cohorte ESGF, calibration) |
-| [reference/catalog_markers.md](reference/catalog_markers.md) | Catalog markers |
-| [reference/audit-reassessment-findings.md](reference/audit-reassessment-findings.md) | Findings reassessment |
+| [reference/catalog_markers.md](reference/catalog_markers.md) | Marqueurs CATALOG-STATUS des READMEs (expansion + verification CI) |
+| [reference/audit-reassessment-findings.md](reference/audit-reassessment-findings.md) | Items d'audit automatise deja reclasses (protocole reassessment) |
 | [reference/student-pr-template.md](reference/student-pr-template.md) | Template PR etudiante |
+| [reference/readme-series-gabarit.md](reference/readme-series-gabarit.md) | Gabarit de reference des READMEs de series (#2651) |
 
 ### Regles detaillees (docs/reference/)
 
@@ -59,11 +60,11 @@ Iteration history prover, intractable diagnosis, LLM endpoints.
 
 | Fichier | Description |
 |---------|-------------|
-| [lean/coordinator-workflow.md](lean/coordinator-workflow.md) | Workflow coordinateur |
-| [lean/llm-endpoints.md](lean/llm-endpoints.md) | Endpoints LLM |
+| [lean/coordinator-workflow.md](lean/coordinator-workflow.md) | Disciplines coordinateur Lean (build pre-merge, iteration prover) |
+| [lean/llm-endpoints.md](lean/llm-endpoints.md) | Providers LLM du prover multi-agent (configuration, sans cles) |
 | [lean/prover_iteration_history.md](lean/prover_iteration_history.md) | Historique iteration prover |
-| [lean/sota-2026-analysis.md](lean/sota-2026-analysis.md) | Analyse SOTA 2026 |
-| [lean/stable_marriage_intractable_diagnosis.md](lean/stable_marriage_intractable_diagnosis.md) | Diagnosis intractable stable marriage |
+| [lean/sota-2026-analysis.md](lean/sota-2026-analysis.md) | Etat de l'art preuve automatique Lean 4 (mai 2026) |
+| [lean/stable_marriage_intractable_diagnosis.md](lean/stable_marriage_intractable_diagnosis.md) | Diagnostic des preuves stable-marriage intractables |
 
 ## Curriculum (docs/curriculum/)
 
@@ -71,12 +72,12 @@ Guides pedagogiques et parcours d'apprentissage.
 
 | Fichier | Description |
 |---------|-------------|
-| [curriculum/ia-classique.md](curriculum/ia-classique.md) | IA classique |
-| [curriculum/ia-symbolique.md](curriculum/ia-symbolique.md) | IA symbolique |
-| [curriculum/recherche.md](curriculum/recherche.md) | Recherche |
-| [curriculum/trading.md](curriculum/trading.md) | Trading |
-| [curriculum/genai.md](curriculum/genai.md) | GenAI |
-| [curriculum/stage5_mamba_ssm.md](curriculum/stage5_mamba_ssm.md) | Stage 5 Mamba/SSM |
+| [curriculum/ia-classique.md](curriculum/ia-classique.md) | Parcours IA classique (recherche, CSP, Sudoku) |
+| [curriculum/ia-symbolique.md](curriculum/ia-symbolique.md) | Parcours IA symbolique (Lean, Tweety, SemanticWeb, Planning) |
+| [curriculum/recherche.md](curriculum/recherche.md) | Parcours recherche avancee (Infer.NET, Pyro, IIT, RL, GameTheory) |
+| [curriculum/trading.md](curriculum/trading.md) | Parcours trading algorithmique (QuantConnect, ML, Probas) |
+| [curriculum/genai.md](curriculum/genai.md) | Parcours GenAI multimodale (Image, Audio, Video, Texte) |
+| [curriculum/stage5_mamba_ssm.md](curriculum/stage5_mamba_ssm.md) | Note d'exploration Mamba/SSM pour le forecasting financier |
 
 ## Lecture transversale
 
@@ -114,4 +115,4 @@ docs/
   archive/           Documents inactifs (ex-_archives)
 ```
 
-Pour la documentation principale du projet, voir [CLAUDE.md](../CLAUDE.md).
+Pour la vue d'ensemble pedagogique du depot, voir le [README principal](../README.md) ; pour les instructions de travail des agents, [CLAUDE.md](../CLAUDE.md).
