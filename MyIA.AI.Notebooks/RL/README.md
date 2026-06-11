@@ -17,9 +17,9 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 12 |
+| Notebooks | 13 |
 | Kernel | Python 3 |
-| Duree totale | ~500-575 min |
+| Duree totale | ~550-625 min |
 | Version | Stable Baselines3 2.0.0+ |
 
 ## Notebooks
@@ -38,6 +38,7 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | 7 | [rl_7_multi_agent_rl](rl_7_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
 | 8 | [rl_8_model_based_dyna_q](rl_8_model_based_dyna_q.ipynb) | Model-based RL : Dyna-Q, Dyna-Q+, planification, rollouts | 45-50 min |
 | 9 | [rl_9_offline_rl](rl_9_offline_rl.ipynb) | RL offline : Behavior Cloning, erreur d'extrapolation, BCQ-lite | 50-55 min |
+| 10 | [rl_10_reward_shaping](rl_10_reward_shaping.ipynb) | Reward Shaping (Ng 1999), curriculum learning, pont RLHF | 45-50 min |
 
 ## Contenu detaille
 
@@ -163,6 +164,18 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | Pont RLHF/DPO | SFT = BC, contrainte KL = contrainte de support, DPO = preference learning offline |
 | Exercices | Ablation taille dataset, penalite CQL-lite, sensibilite au nombre de passes |
 
+### Notebook 10 - Reward Shaping et Curriculum Learning
+
+| Section | Contenu |
+|---------|---------|
+| Labyrinthe sparse | Maze 8x8, reward -1/pas et 0 au but, distance Manhattan = 14 |
+| Potential-based shaping | Theoreme Ng et al. 1999, $F(s,s') = \gamma\Phi(s') - \Phi(s)$, politique invariante |
+| Heuristic shaping | Bonus naif pour se rapprocher du but, sans garantie theorique |
+| Curriculum learning | Phases de difficulte croissante, start de plus en plus eloigne |
+| Comparaison | Vitesse de convergence (potential : ep 50, curriculum : ep 122, baseline : ep 190) |
+| Pont RLHF | Reward model appris, contrainte KL, DPO, inverse RL |
+| Exercices | Ablation potentiels, phases curriculum, biais du shaping naif |
+
 ## Algorithmes couverts
 
 | Algorithme | Type | Notebook | Utilisation |
@@ -183,6 +196,8 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | **Rollout planning** | Decision-time | 8 | Simulation vers l'avant, porte vers MCTS |
 | **Behavior Cloning** | Offline (imitation) | 9 | Demonstrations expertes, baseline offline |
 | **BCQ-lite** | Offline (value-based) | 9 | Q-learning contraint au support du dataset |
+| **Potential-based shaping** | Reward shaping | 10 | Acceleration convergence sans biais (Ng 1999) |
+| **Curriculum learning** | Training strategy | 10 | Difficulte progressive, generalisation |
 | **DQN** | Off-policy (deep) | 6 | Espaces continus |
 | **REINFORCE** | Policy gradient | 6 | Politique directe |
 | **IQL** | Multi-agent | 7 | Apprentissage independant |
@@ -284,7 +299,7 @@ Le notebook 4 pose la question fondatrice du RL : comment choisir entre explorer
 
 **Phase 4 : Les maths sous le capot (~4.5h, notebooks 5-7)**
 
-Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depuis zero. Le notebook 5 formalise le probleme RL (MDP, equation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe a l'echelle avec les reseaux de neurones : DQN et REINFORCE implementes en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mecanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanement, cooperent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modele du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset fige (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naif, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO.
+Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depuis zero. Le notebook 5 formalise le probleme RL (MDP, equation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe a l'echelle avec les reseaux de neurones : DQN et REINFORCE implementes en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mecanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanement, cooperent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modele du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset fige (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naif, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au probleme du reward sparse : comment guider l'agent quand la recompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accelere la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulte progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatise.
 
 ## Concepts cles
 
@@ -319,6 +334,9 @@ Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depui
 | **RL offline** | Apprendre d'un dataset fige, sans interaction | 9 |
 | **Erreur d'extrapolation** | Bootstrap sur actions hors du support des donnees | 9 |
 | **Stitching** | Recoudre un chemin optimal a partir de trajectoires mediocres | 9 |
+| **Reward shaping** | Modifier le signal de recompense pour guider l'apprentissage | 10 |
+| **Potential-based shaping** | Shaping garantissant l'invariance de la politique optimale (Ng 1999) | 10 |
+| **Curriculum learning** | Presenter les taches par difficulte croissante | 10 |
 
 ## Caracteristiques
 
@@ -396,6 +414,7 @@ RL/
 ├── rl_7_multi_agent_rl.ipynb
 ├── rl_8_model_based_dyna_q.ipynb
 ├── rl_9_offline_rl.ipynb
+├── rl_10_reward_shaping.ipynb
 └── README.md
 ```
 
