@@ -9,7 +9,7 @@ maturity: PRODUCTION=4, BETA=1
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Claude Discovery](Claude-Code/01-decouverte/README.md)
 
-Bienvenue dans l'ère du **vibe-coding** - la compétence la plus demandée de 2026 ! Imaginez : vous décrivez ce que vous voulez construire en langage naturel, et l'IA écrit le code pour vous. Plus besoin de semaines de développement, mais des minutes pour transformer une idée en fonctionnalité réelle. Le vibe-coding révolutionne la programmation en rendant la barrière technique quasi invisible : votre seule limite est votre imagination.
+Cette serie couvre les ateliers de **vibe-coding** : decrire ce que vous voulez construire en langage naturel, et l'IA ecrit le code. Deux assistants majeurs sont couverts (Claude Code et Roo Code), avec des exercices progressifs allant de la decouverte a l'automatisation avancee, plus un module d'agents autonomes (Claw Systems).
 
 ## Structure du repertoire
 
@@ -121,22 +121,6 @@ Le repertoire `docs/` contient :
 - `INSTALLATION-ROO.md` - Guide d'installation
 - `ROO-GUIDED-PATH.md` - Parcours d'apprentissage guide
 
-## Comparaison Claude Code vs Roo Code
-
-| Aspect | Claude Code | Roo Code |
-|--------|-------------|----------|
-| **Interface** | CLI + VS Code | VS Code uniquement |
-| **Agents parallèles** | Jusqu'à 10 | Séquentiel |
-| **MCP** | Support complet | Partiel |
-| **Skills/Commands** | Écosystème standardisé | Configuration manuelle |
-| **Courbe d'apprentissage** | Moyenne | Facile |
-| **Idéal pour** | Projets complexes | Débutants |
-
-**Recommandation :**
-- **Debutants complets** : Commencer avec Roo Code
-- **Developpeurs** : Claude Code offre plus de puissance
-- **Les deux peuvent coexister** dans le meme environnement VS Code
-
 ## Prerequis techniques
 
 - **VS Code** 1.60.0+
@@ -144,17 +128,14 @@ Le repertoire `docs/` contient :
 - Un compte **OpenRouter** avec une cle API
 - Connaissances de base en programmation
 
-## Origine
+## Objectifs d'apprentissage
 
-## Ce que vous saurez faire
+A l'issue de cette serie, vous serez capable de :
 
-À travers ces ateliers pratiques, vous acquerrez la capacité de :
-
-- **Décrire vos projets** en langage naturel et voir l'IA les transformer en code fonctionnel
-- **Écrire, tester, debugger et déployer** des applications complètes grâce à l'assistance IA
-- **Orchestrer des workflows complexes** en multipliant les agents intelligents
-- **Générer automatiquement** la documentation, les tests et les configurations
-- **Automatiser des tâches complexes** allant du simple script au déploiement en production
+1. **Decrire** un projet en langage naturel et obtenir du code fonctionnel via l'IA
+2. **Orchestrer** des workflows multi-agents (recherche, planification, execution)
+3. **Automatiser** les taches courantes du developpeur (tests, documentation, deploiement)
+4. **Configurer** des agents autonomes conteneurises (Claw Systems)
 
 ## FAQ
 
