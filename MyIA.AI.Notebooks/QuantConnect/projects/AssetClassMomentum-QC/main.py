@@ -13,6 +13,7 @@ class AssetClassMomentumAlgorithm(QCAlgorithm):
 
     def initialize(self):
         self.set_start_date(self.end_date - timedelta(17*365))
+        self.set_end_date(2025, 1, 1)  # Fixed end date for reproducibility
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         self.settings.automatic_indicator_warm_up = True
