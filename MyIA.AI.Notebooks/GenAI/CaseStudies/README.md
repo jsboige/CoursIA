@@ -13,6 +13,20 @@ Quatre projets complets, bout en bout, illustrent la diversite des applications 
 
 Ces notebooks sont le point d'entree ideal pour decouvrir les capacites de l'IA generative avant d'approfondir dans les series thematiques ([Texte](../Texte/README.md), [SemanticKernel](../SemanticKernel/README.md), [Image](../Image/README.md)).
 
+## Pourquoi ces projets
+
+Les séries thématiques de GenAI démontent chaque composant ; ces quatre projets montrent les composants remontés. Adaptés de réalisations étudiantes, ils ont la taille exacte d'un bon projet de fin de module : assez complets pour exiger une vraie architecture — des rôles, une orchestration, des conditions d'arrêt —, assez courts pour être lus en entier. Lire un système complet apprend ce qu'aucun tutoriel ne montre : où placer la logique métier, comment empêcher deux agents de tourner en rond, quand arrêter une conversation. C'est aussi ce qui en fait de bons sujets d'extension, chaque projet se concluant par trois exercices qui ajoutent une contrainte, un agent ou une stratégie.
+
+## Les quatre projets
+
+**[Fort-Boyard](Fort-Boyard/README.md)** est le meilleur point de départ : un Père Fouras qui fait deviner, un candidat qui propose, et l'API OpenAI sans couche d'orchestration. C'est l'occasion de comprendre les stratégies de terminaison à nu — comment décider qu'un dialogue entre deux LLM est terminé — avant de les retrouver enrobées dans Semantic Kernel.
+
+**[Barbie-Schreck](Barbie-Schreck/README.md)** est le plus visuel : deux personnages que tout oppose sont forcés de débattre sous contraintes, pendant que DALL-E illustre la joute. Sous le jeu, la mécanique est sérieuse : c'est un vrai dialogue multi-agent Semantic Kernel, avec ses prompts système rivaux et l'intégration image-dans-conversation.
+
+**[Recipe-Maker](Recipe-Maker/README.md)** fait collaborer plusieurs agents pour produire une recette personnalisée et l'exporter en PDF. Son intérêt est la chaîne complète : de la conversation entre agents jusqu'au livrable final, en passant par la division du travail entre rôles.
+
+**[Medical-Chatbot](Medical-Chatbot/README.md)** est le plus proche d'un système de production : ses plugins de vérification, de journalisation et de terminaison intelligente montrent comment on encadre un LLM dans un domaine sensible. La leçon dépasse le cas médical — la valeur n'est pas dans la réponse du modèle, mais dans les garde-fous qui l'entourent.
+
 ## Objectifs d'apprentissage
 
 A l'issue de ces projets, vous serez capable de :

@@ -17,19 +17,27 @@ Dernière mise à jour : 2026-06-11
 
 ## Vue d'ensemble
 
-| Domaine | Description |
-|---------|-------------|
-| **GenAI** | Generation d'images (SDXL, Flux, Qwen-VL), audio (FishAudio S2-Pro, STT/TTS), video, LLMs, RAG, fine-tuning LoRA, orchestration via Semantic Kernel |
-| **QuantConnect** | Trading algorithmique progressif : cours Python pas-a-pas, 49 strategies backtestees (GARCH, Kelly, ensemble), pipeline ML thermal-safe |
-| **SymbolicAI** | Preuve formelle Lean 4 (theoremes d'Arrow, Conway, Kochen-Specker), logiques argumentaires (Tweety), SmartContracts Solidity, Web semantique RDF/SPARQL, apprentissage symbolique (ILP, neuro-symbolique, automates) |
-| **Search** | Satisfaction de contraintes (CSP), recherche operationnelle, metaheuristiques (recuit, genetiques), planification PDDL avec Fast-Downward |
-| **Probas** | Programmation probabiliste : modeles graphiques en Infer.NET (.NET C#), inference bayesienne en PyMC (Python), volet Lean 4 (indice de Gittins) |
-| **Sudoku** | Resolution de contraintes en .NET C# : backtracking, propagation, modeles CNN/MLP, etude comparative d'architectures |
-| **GameTheory** | Theorie des jeux combinatoire (OpenSpiel), choix social formel (theoremes d'Arrow, Sen, Shapley portes en Lean 4), von Neumann |
-| **ML** | Machine Learning .NET (ML.NET) + Python Agents for Data Science : classification, regression, clustering, pipelines |
-| **RL** | Reinforcement Learning avec Stable-Baselines3 : environnements OpenAI Gym, PPO, SAC, evaluation de politiques |
-| **CaseStudies** | Etudes de cas interdisciplinaires : diagnostic medical par LLM, planification oncologique, analyse de sentiments |
-| **IIT** | Integrated Information Theory : mesures Phi avec PyPhi, neurones logiques, conscience et complexite |
+**[GenAI](GenAI/README.md)** — Tout ce qui se génère : images (SDXL, Flux, Qwen), audio — du TTS au pipeline complet d'audiobook —, vidéo, et le travail des LLMs (RAG, raisonnement, fine-tuning LoRA). La série a un parti pris d'atelier : on ne se contente pas d'appeler des APIs, on héberge les modèles soi-même sur une stack Docker dédiée ([00-GenAI-Environment](GenAI/00-GenAI-Environment/README.md)), ce qui change tout à ce qu'on comprend de leurs coûts et de leurs limites. Elle culmine avec l'orchestration Semantic Kernel, quatre études de cas étudiantes et les ateliers de vibe-coding (Claude Code, Roo Code).
+
+**[QuantConnect](QuantConnect/README.md)** — Le ML appliqué à un domaine qui ne pardonne pas : les marchés. Un cours Python progressif mène du premier backtest à un portefeuille de 49 stratégies (GARCH, Kelly, ensembles), implémentant 18 des 19 exemples du livre *Hands-On AI Trading*. La leçon transversale vaut bien au-delà de la finance : une discipline de validation — walk-forward, multi-seed, coûts de transaction — sans laquelle tout résultat de ML est une illusion d'optique.
+
+**[SymbolicAI](SymbolicAI/README.md)** — Le pôle « comprendre et prouver » du dépôt, et sa série la plus vaste : preuves formelles Lean 4 (théorème d'Arrow, Kochen-Specker, hommages à Grothendieck et Conway), smart contracts Solidity testés et déployés sur testnet, Web sémantique RDF/SPARQL, logiques d'argumentation (Tweety), planification PDDL et apprentissage symbolique (ILP, automates, neuro-symbolique). C'est ici que la dualité simulation / preuve prend sa forme la plus aboutie : ce que les autres séries calculent, celle-ci cherche à le certifier.
+
+**[Search](Search/README.md)** — Comment trouver une aiguille dans une botte de foin exponentielle ? Des algorithmes classiques (BFS, A*, Minimax, MCTS) à la programmation par contraintes (CP-SAT) et aux métaheuristiques, la série déroule un fil unique — réduire l'espace de recherche — et le confronte à 21 applications réelles adaptées de projets étudiants, de la planification d'infirmiers à la génération procédurale de niveaux.
+
+**[Probas](Probas/README.md)** — Raisonner avec l'incertitude plutôt que contre elle. La série a une particularité unique dans le dépôt : les mêmes modèles probabilistes y vivent deux fois, en Infer.NET (graphes de facteurs, C#) et en PyMC (MCMC, Python) — deux langues pour une même théorie bayésienne, dont la comparaison est elle-même instructive. Un volet Lean 4 (indice de Gittins) pousse jusqu'à la preuve.
+
+**[Sudoku](Sudoku/README.md)** — Et si l'on prenait un seul problème et qu'on lui appliquait toutes les méthodes ? Backtracking, propagation de contraintes, Dancing Links, jusqu'aux réseaux de neurones (CNN et MLP comparés à budget de paramètres comparable) : le Sudoku sert de banc d'essai contrôlé où approches symboliques et neuronales se mesurent sur exactement le même terrain.
+
+**[GameTheory](GameTheory/README.md)** — Que devient l'optimisation quand les autres aussi optimisent ? Jeux combinatoires avec OpenSpiel, équilibres à la von Neumann, et un volet formel singulier : les théorèmes du choix social (Arrow, Sen, la valeur de Shapley) portés en Lean 4 — démontrés mécaniquement, pas seulement énoncés.
+
+**[ML](ML/README.md)** — Le machine learning classique, sans folklore : tutoriels ML.NET (classification, régression, clustering) côté C#, agents Python pour la data science côté Python. C'est le socle de méthode sur lequel GenAI et QuantConnect construisent.
+
+**[RL](RL/README.md)** — Apprendre en agissant : Stable-Baselines3, environnements Gym, PPO et SAC — et l'évaluation honnête de ce que valent réellement les politiques apprises.
+
+**[CaseStudies](CaseStudies/README.md)** — Des études de cas interdisciplinaires où plusieurs séries convergent sur un même problème : diagnostic médical assisté par LLM, planification oncologique, analyse de sentiments.
+
+**[IIT](IIT/README.md)** — La plus spéculative : la théorie de l'information intégrée et la mesure Phi (PyPhi) appliquées à des réseaux logiques — où l'on calcule, littéralement, des candidats quantitatifs à une mesure de la conscience.
 
 ### Progression pedagogique
 
@@ -88,22 +96,6 @@ SymbolicAI
 - **Symbolic**: RDF, Z3 SMT, Lean 4, SmartContracts
 - **Optimization**: CSP, metaheuristiques, recherche operationnelle
 
-## Liens vers les sous-domaines
-
-| Domaine | Lien |
-|---------|------|
-| **GenAI** | [GenAI/](GenAI/README.md) |
-| **QuantConnect** | [QuantConnect/](QuantConnect/README.md) |
-| **SymbolicAI** | [SymbolicAI/](SymbolicAI/README.md) |
-| **Search** | [Search/](Search/README.md) |
-| **Probas** | [Probas/](Probas/README.md) |
-| **Sudoku** | [Sudoku/](Sudoku/README.md) |
-| **GameTheory** | [GameTheory/](GameTheory/README.md) |
-| **ML** | [ML/](ML/README.md) |
-| **RL** | [RL/](RL/README.md) |
-| **CaseStudies** | [CaseStudies/](CaseStudies/README.md) |
-| **IIT** | [IIT/](IIT/README.md) |
-
 ## Configuration requise
 
 ### Environnement
@@ -133,18 +125,27 @@ docker-compose up -d
 ## Parcours recommande
 
 ### Debutant (30h)
+
+L'objectif de ces premières heures n'est pas l'exhaustivité mais le déclic : produire ses premières images et ses premiers backtests, et installer une bonne fois l'environnement qui resservira partout.
+
 1. **GenAI/00-Environment** - Setup complet
 2. **GenAI/Image/01-Foundation** - Bases images
 3. **GenAI/Audio/01-Foundation** - Bases audio
 4. **QuantConnect/Python/** - Cours QC-Py-01 a 10
 
 ### Intermediaire (60h)
+
+On élargit le spectre : tous les médias génératifs, le ML classique des deux côtés (.NET et Python), les premiers pas symboliques — c'est le moment où les ponts entre séries commencent à apparaître.
+
 1. **GenAI** - Toutes les series sauf Orchestration
 2. **ML** - Tutoriels .NET + Python Agents
 3. **SymbolicAI** - SmartContracts, SemanticWeb
 4. **QuantConnect/partner-course-quant-trading/** - Exercices trading
 
 ### Expert (120h+)
+
+Le cœur formel et les stratégies avancées : les notebooks les plus exigeants, mais ceux où le dépôt dit ce qu'il a de plus singulier — prouver ce qu'on a calculé, et valider sans complaisance ce qu'on a appris.
+
 1. **GenAI/03-Orchestration** + **04-Applications**
 2. **SymbolicAI** - Lean, Planners, Tweety avance
 3. **Search**, **GameTheory**, **Probas** - Domaines avances

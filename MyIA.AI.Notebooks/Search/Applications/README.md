@@ -1,14 +1,12 @@
 # Search - Applications
 
-Les 21 notebooks d'application illustrent chaque concept de la serie Search sur des **problemes reels** adaptes de projets etudiants. Chaque application combine une ou plusieurs techniques abordees dans les Parties 1-2 et montre comment elles se comportent sur des instances concretes.
-
-Les applications sont organisees en trois categories : **Search pur** (jeux combinatoires), **CSP** (problemes de satisfaction de contraintes : N-Queens, ordonnancement, demineur, mots croises, generation procedurale), et **Hybride** (metaheuristiques et GA : detection de contours, optimisation de portefeuille, TSP, VRP). La plupart des notebooks sont autonomes et pointent vers les pre-requis pertinents.
+C'est ici que la série Search se confronte au réel. Les 21 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (métaheuristiques et algorithmes génétiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents.
 
 Sous-serie de **21 notebooks** | **~14h05** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `minizinc`, `optuna`)
 
 ## Pourquoi cette sous-serie
 
-Les notebooks d'application sont le laboratoire pratique de la serie Search : chaque probleme reel (N-Queens, ordonnancement, VRP, TSP, detection de contours) combine une ou plusieurs techniques des Parties 1-2 et montre comment elles se comportent sur des instances concretes issues de projets etudiants. La diversite des approches (backtracking, CP-SAT, metaheuristiques, GA, hybridation) permet de comparer les methodes sur un meme probleme et de developper le sens critique pour choisir l'algorithme adapte.
+Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtrisé. Les applications servent trois apprentissages que les parties théoriques ne peuvent pas donner. D'abord la confrontation des méthodes : le même problème y est régulièrement résolu plusieurs fois — N-Queens en backtracking, en Min-Conflicts et en OR-Tools ; le TSP en recuit simulé, en génétique, en colonies de fourmis et en solveur de routage — et la comparaison chiffrée vaut tous les discours. Ensuite l'ordre de grandeur : voir un solveur de Picross gagner un facteur de plusieurs millions en passant au CP-SAT imprime durablement ce que « propagation » veut dire. Enfin la modélisation, qui est souvent toute la difficulté : le démineur devient un CSP doublé de probabilités, Wordle un problème de théorie de l'information, la génération procédurale de niveaux un Wave Function Collapse encodé en contraintes — autant de cas où trouver la bonne formulation est l'essentiel du travail.
 
 ## Objectifs d'apprentissage
 
@@ -41,6 +39,8 @@ Applications/
 
 ## Applications Search (`Search/`)
 
+Deux notebooks autour du Puissance 4, le banc d'essai idéal de la recherche adversariale : assez simple pour être résolu, assez riche pour départager les approches. Le premier construit les joueurs (Minimax, MCTS, et un agent DQN appris), le second les fait s'affronter en benchmark systématique.
+
 | # | Notebook | Duree | Contenu | Source |
 |---|----------|-------|---------|--------|
 | 1 | [App-12-ConnectFour](Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : Minimax, MCTS, DQN-RL | Projet etudiant |
@@ -49,6 +49,8 @@ Applications/
 ---
 
 ## Applications CSP (`CSP/`)
+
+Le gros de la sous-série, et un panorama de ce que la programmation par contraintes sait faire dès qu'on sort du manuel : des classiques fondateurs (N-Queens, coloration de graphes) aux problèmes d'ordonnancement réalistes (infirmiers, job-shop, emplois du temps, calendriers sportifs), en passant par des terrains plus inattendus — le démineur qui mêle contraintes et probabilités, Wordle lu comme un problème d'information, le Picross qui sert de leçon de vitesse, et la génération procédurale de niveaux par Wave Function Collapse.
 
 | # | Notebook | Duree | Contenu | Source |
 |---|----------|-------|---------|--------|
@@ -68,6 +70,8 @@ Applications/
 ---
 
 ## Applications Hybrid / Metaheuristiques (`Hybrid/`)
+
+Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes exactes, place aux métaheuristiques : détection de contours et optimisation de portefeuille par algorithmes génétiques (avec leurs doublons C#/GeneticSharp en side-track .NET), TSP et VRP attaqués par quatre méthodes concurrentes, et le réglage d'hyperparamètres ML — où la boucle se referme : on optimise l'optimiseur.
 
 | # | Notebook | Duree | Contenu | Source |
 |---|----------|-------|---------|--------|
