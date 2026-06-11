@@ -1,5 +1,7 @@
 # Research-Executor
 
+**Type:** Utility (research execution harness, not a trading strategy)
+
 **Asset class:** Multi-asset (research execution harness)
 
 **Cloud project ID:** N/A

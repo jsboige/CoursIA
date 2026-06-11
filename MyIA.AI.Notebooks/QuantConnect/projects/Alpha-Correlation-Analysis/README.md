@@ -1,5 +1,7 @@
 # Alpha Correlation Analysis
 
+**Type:** Research (analytical notebook, no trading algorithm)
+
 ## Objectif
 
 Identifier les combinaisons d'alpha reellement complementaires pour les strategies composites QuantConnect.

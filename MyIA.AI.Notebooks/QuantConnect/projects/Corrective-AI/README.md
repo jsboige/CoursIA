@@ -1,5 +1,7 @@
 # Corrective AI / Meta-Labeling (Ch08-02)
 
+**Type:** Stub (planned exercise, code files not yet created)
+
 **Hands-On AI Trading**, Chapter 8-02 — Meta-Labeling with Corrective AI
 
 ## Objective
