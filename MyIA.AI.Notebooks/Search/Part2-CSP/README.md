@@ -4,7 +4,15 @@
 
 Au lieu de concevoir un algorithme d'exploration, que se passe-t-il si l'on declare les contraintes du probleme et que l'on laisse le solveur trouver les solutions ? La programmation par contraintes (CSP) represente ce changement de paradigme : on ne cherche plus, on contraint. Ce modele declaratif est au coeur des outils industriels (ordonnancement, logistique, verification) et s'applique naturellement aux problemes NP-difficiles.
 
-Le parcours va des fondamentaux du modele (X, D, C) et du backtracking (CSP-1) a la propagation de contraintes (AC-3, MAC en CSP-2), puis aux extensions avancees : contraintes globales (CSP-3), ordonnancement industriel (CSP-4), optimisation combinatoire (CSP-5), hybridation avec SAT/ML/LLM (CSP-6). Les trois derniers notebooks explorent les frontieres : contraintes souples, temporelles et distribuees.
+Les deux premiers notebooks installent le socle. CSP-1 pose le modèle (X, D, C) — variables, domaines, contraintes — et montre que le backtracking de la Partie 1, enrichi de deux heuristiques de bon sens (choisir d'abord la variable la plus contrainte, essayer d'abord la valeur la moins contraignante), résout déjà des problèmes non triviaux. CSP-2 introduit l'idée qui fait la puissance du paradigme : la propagation. Plutôt que de découvrir une impasse en s'y enfonçant, AC-3 et MAC élaguent les valeurs impossibles avant même de les essayer — l'espace de recherche se réduit de lui-même, par simple déduction locale.
+
+La montée en puissance occupe les quatre notebooks suivants. CSP-3 passe aux contraintes globales (AllDifferent, Cumulative, Circuit), ces contraintes de haut niveau pour lesquelles les solveurs embarquent des propagateurs spécialisés — c'est là que CP-SAT se met à résoudre en quelques millisecondes ce qu'un backtracking naïf mettrait des heures à parcourir. CSP-4 et CSP-5 appliquent l'arsenal aux deux grands classiques industriels : l'ordonnancement (Job-Shop, RCPSP, planification d'infirmiers) et l'optimisation combinatoire (Bin Packing, Knapsack, portefeuille). CSP-6, le notebook le plus avancé, ouvre le capot : la Lazy Clause Generation explique pourquoi CP-SAT s'appelle ainsi — un solveur CP qui apprend des clauses SAT en cours de route — et les hybridations CP+ML et LLM+CSP esquissent ce que devient la discipline à l'ère des grands modèles : le langage naturel comme interface de modélisation, le solveur comme garant.
+
+Les trois derniers notebooks desserrent chacun une hypothèse du cadre classique : et si toutes les contraintes n'avaient pas le même poids (CSP-7, contraintes souples) ? Et si les variables étaient des intervalles de temps (CSP-8, algèbre d'Allen) ? Et si personne ne détenait le problème en entier (CSP-9, résolution distribuée et préservation de la vie privée) ?
+
+## Pourquoi cette partie
+
+Si la Partie 1 enseigne à chercher, celle-ci enseigne à modéliser — et c'est un art plus subtil qu'il n'y paraît. Le même problème, déclaré avec des contraintes binaires ou avec une contrainte globale équivalente, peut passer de plusieurs heures de calcul à quelques millisecondes : le solveur n'a pas changé, seule la formulation a changé. Cette sensibilité à la modélisation est la compétence centrale du praticien, et la raison pour laquelle ces techniques équipent les outils d'ordonnancement, de logistique et de vérification utilisés en production. C'est aussi le premier contact de la série avec le raisonnement déclaratif — celui qu'approfondissent Z3 et la planification PDDL côté SymbolicAI.
 
 ## Objectifs d'apprentissage
 
@@ -32,7 +40,7 @@ A l'issue de cette partie, vous serez capable de :
 
 ## Progression
 
-CSP-1 et CSP-2 forment le socle (modele + propagation). A partir de CSP-3, le parcours se divise :
+CSP-1 et CSP-2 sont incontournables : tout le paradigme — un modèle déclaratif, une propagation qui élague — tient dans ces deux notebooks. Au-delà, trois chemins s'offrent selon votre objectif :
 
 - **Applications industrielles** : CSP-3 puis CSP-4 (Scheduling) et/ou CSP-5 (Optimization)
 - **Frontieres** : CSP-6 (Hybridization, le notebook le plus avance), puis CSP-7/8/9 (Soft/Temporal/Distributed)
@@ -61,4 +69,4 @@ Pour le setup complet, voir le [README de la serie Search](../README.md).
 
 ## Ponts vers SymbolicAI
 
-La programmation par contraintes est le passage naturel vers l'IA symbolique : OR-Tools CP-SAT rejoint Z3 (SMT solving) dans la serie [SymbolicAI](../../SymbolicAI/README.md), l'ordonnancement mene a la planification PDDL (SymbolicAI/Planning), et les contraintes temporelles (CSP-8) se retrouvent dans le planning temporel. Le notebook CSP-6 (LCG) detaille ces passerelles.
+La programmation par contraintes est le passage naturel vers l'IA symbolique : OR-Tools CP-SAT rejoint Z3 (SMT solving) dans la serie [SymbolicAI](../../SymbolicAI/README.md), l'ordonnancement mene a la planification PDDL (SymbolicAI/Planners), et les contraintes temporelles (CSP-8) se retrouvent dans le planning temporel. Le notebook CSP-6 (LCG) detaille ces passerelles.
