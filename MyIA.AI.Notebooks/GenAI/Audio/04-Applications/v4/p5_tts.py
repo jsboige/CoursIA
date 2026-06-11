@@ -25,6 +25,7 @@ from .p1_voice_cloning import SPEAKER_TO_VOICE, FIGURANT_RAW_VOICE_OVERRIDE
 from .fishaudio_client import (
     fishaudio_tts,
     thermal_wait,
+    thermal_backoff,
     audio_duration_mp3,
     OUTPUT_DIR,
 )
@@ -52,13 +53,254 @@ def _text_hash(text: str) -> str:
     return hashlib.md5(text.encode()).hexdigest()[:12]
 
 
+# ---------------------------------------------------------------------------
+# F5 — Dramatic prompt translation (prosody regression fix)
+# ---------------------------------------------------------------------------
+# P4 produces rich French dramatic prompts (avg 186 chars) like:
+#   "Le récit s'ouvre sobrement... Installez une voix posée, sans émotion"
+# S2-Pro vocalizes French text in brackets (WER #1277/#1485). We translate
+# these prompts to short English instructions S2-Pro interprets rather than
+# reads aloud.
+#
+# Two strategies:
+#   1. LLM batch translation (preferred, cached in dramatic_translations.json)
+#   2. Keyword-based heuristic fallback (no LLM cost, deterministic)
+
+# Global cache: seg_index → English instruction string
+_dramatic_translations: dict[int, str] = {}
+
+# LLM batch size for translation (gpt-4o-mini, cheap)
+_TRANSLATION_BATCH_SIZE = 40
+
+_DRAMATIC_KEYWORD_MAP: list[tuple[list[str], str]] = [
+    # (French keywords, English S2-Pro instruction)
+    # Order matters: first match wins. More specific patterns first.
+    (["ironie", "ironique", "sarcast"], "ironic and dry, with a smirk"),
+    (["murmur", "chuchot"], "whispering, conspiratorial"),
+    (["suspen", "attente", "retenue"], "building suspense, slow and tense"),
+    (["menace", "menaç", "violent", "sauvage"], "dark and menacing, low and slow"),
+    (["colère", "courrouc", "furieux", "rage"], "angry, voice rising"),
+    (["peur", "terrif", "effroi", "angoiss", "panique"], "fearful, voice trembling"),
+    (["triste", "tristess", "désol", "chagrin", "mélancol"], "sad, voice dropping"),
+    (["douleur", "souffran", "déchir"], "pained, voice breaking"),
+    (["amer", "amertume", "rancun", "rancœur"], "bitter and resentful"),
+    (["rage", "fureur"], "furious, barely contained"),
+    (["tendu", "tension", "nerf"], "tense, voice tight"),
+    (["froid", "glac", "glacé"], "cold and detached, clinical"),
+    (["calme", "serein", "paisib", "apais"], "calm and measured, steady pace"),
+    (["lent", "lenteur", "ralenti"], "slow and deliberate, weighing each word"),
+    (["douc", "tendre", "affectueux"], "soft and gentle, warm tone"),
+    (["fort", "puissant", "violemment"], "loud and forceful, commanding"),
+    (["posée", "sobriété", " sobre"], "composed and neutral, even pace"),
+    (["fatigu", "épuis", "las", "lass"], "weary, voice trailing off"),
+    (["résign", "abandon", "défait"], "resigned, quiet acceptance"),
+    (["excit", "vif", "animé", "exalt"], "excited, quickening pace"),
+    (["sec", "sèchement", "coupant"], "dry and clipped, no warmth"),
+    (["chaud", "chaleureux", "bonhom"], "warm and friendly, inviting"),
+    (["lourd", "pesant", "accabl"], "heavy and oppressive, slow rhythm"),
+    (["emphat", "solennel"], "emphatic and deliberate, each word clear"),
+    (["moqueur", "railleur", "dédain", "mépris"], "mocking and contemptuous"),
+    (["souffl", "essouffl"], "breathless, hurried"),
+    (["brave", "courage", "héroï"], "brave and determined, steady voice"),
+    (["souri", "joie", "riant", "gaieté"], "light and cheerful, smiling tone"),
+    (["contemplat", "rêverie", "lointain"], "contemplative, dreamy and distant"),
+    (["pressé", "urgent", "précipit"], "urgent, speaking fast"),
+    (["ferme", "détermin", "résolu"], "firm and resolute, unwavering"),
+]
+
+# Vocal reinforcement map: adds an official S2-Pro tag alongside the
+# dramatic instruction to amplify the prosody effect.  Based on
+# spectrographic A/B testing (session 31/05/2026):
+#   - [sad] alone: +22% ZCR (subtle)
+#   - [sad] + [whispering]: -47% RMS (clearly audible)
+#   - [angry] + [shouting]: +702% RMS (massive)
+# Maps dramatic instruction substrings → official tag to inject.
+_VOCAL_REINFORCEMENT_MAP: list[tuple[list[str], str]] = [
+    # (substrings of translated instruction, official S2-Pro tag)
+    (["sad", "dropping", "sorrow"], "whispering"),
+    (["angry", "furious", "rage"], "loud voice"),
+    (["fearful", "trembling", "afraid"], "whispering"),
+    (["excited", "quickening"], "emphasis"),
+    (["whispering", "conspiratorial"], "whispering"),
+    (["shouting", "forceful", "commanding"], "shouting"),
+    (["sobbing", "crying", "break"], "sigh"),
+    (["menacing", "dark", "low"], "low voice"),
+    (["cold", "detached", "clinical"], "low voice"),
+    (["ironic", "smirk", "mocking", "contemptuous"], "emphasis"),
+    (["weary", "trailing", "resigned"], "sigh"),
+    (["breathless", "hurried"], "panting"),
+    (["emphatic", "deliberate"], "emphasis"),
+    (["gentle", "warm", "soft"], "soft voice"),
+]
+
+
+def _translate_dramatic_prompt(prompt: str) -> str | None:
+    """Translate a French dramatic prompt to a short English S2-Pro instruction.
+
+    Returns a string of ≤60 chars suitable for use inside [brackets], or None
+    if no matching pattern is found.  The translation is keyword-based (no LLM
+    call) and deterministic — same prompt always produces the same instruction.
+    """
+    if not prompt:
+        return None
+    lower = prompt.lower()
+    for keywords, instruction in _DRAMATIC_KEYWORD_MAP:
+        for kw in keywords:
+            if kw in lower:
+                return instruction
+    return None
+
+
+def _get_dramatic_instruction(seg_index: int, prompt: str) -> str | None:
+    """Get the translated dramatic instruction for a segment.
+
+    Checks the LLM cache first, falls back to keyword matching.
+    """
+    if seg_index in _dramatic_translations:
+        return _dramatic_translations[seg_index]
+    return _translate_dramatic_prompt(prompt)
+
+
+def _get_vocal_reinforcement(instruction: str) -> str | None:
+    """Return an official S2-Pro tag that reinforces a dramatic instruction.
+
+    Based on spectrographic A/B testing: combining an emotion instruction
+    with a vocal-style tag amplifies the prosody effect.  For example,
+    "sad, voice dropping" → [whispering] produces -47% RMS (vs -16% for
+    [sad] alone on the same cloned voice).
+
+    Returns the tag name (e.g. "whispering") or None if no reinforcement
+    matches.
+    """
+    if not instruction:
+        return None
+    lower = instruction.lower()
+    for substrings, tag in _VOCAL_REINFORCEMENT_MAP:
+        for sub in substrings:
+            if sub in lower:
+                return tag
+    return None
+
+
+def _translate_prompts_batch(
+    segments: list[AnnotatedSegment],
+) -> dict[int, str]:
+    """Translate all dramatic prompts via LLM (gpt-4o-mini) in batches.
+
+    Returns {seg_index: english_instruction} mapping.  Results are cached
+    to ``outputs/dramatic_translations.json`` — subsequent runs skip the LLM.
+    """
+    cache_path = BASE_DIR / "outputs" / "dramatic_translations.json"
+    if cache_path.exists():
+        try:
+            cached = json.loads(cache_path.read_text(encoding="utf-8"))
+            logger.info("Loaded %d cached dramatic translations", len(cached))
+            return {int(k): v for k, v in cached.items()}
+        except (json.JSONDecodeError, ValueError):
+            logger.warning("Corrupt translations cache, regenerating")
+
+    translations: dict[int, str] = {}
+    prompts_to_translate: list[tuple[int, str]] = []
+    for seg in segments:
+        if seg.dramatic_prompt:
+            prompts_to_translate.append((seg.seg_index, seg.dramatic_prompt))
+
+    if not prompts_to_translate:
+        return translations
+
+    try:
+        from openai import OpenAI
+        import os
+
+        client = OpenAI()  # Uses OPENAI_API_KEY from env
+        model = os.getenv("TRANSLATION_MODEL", "gpt-4o-mini")
+
+        system_msg = (
+            "You are a voice direction translator. Convert French dramatic "
+            "prompts for audiobook narration into SHORT English voice "
+            "instructions for TTS. Each instruction must be ≤60 characters, "
+            "in plain English (no brackets), describing HOW the narrator "
+            "should sound. Examples:\n"
+            "- 'calm and measured, steady pace'\n"
+            "- 'building suspense, slow and tense'\n"
+            "- 'ironic and dry, with a smirk'\n"
+            "- 'cold and detached, clinical'\n"
+            "- 'weary, voice trailing off'\n\n"
+            "Return a JSON object mapping segment index to instruction. "
+            "Example: {\"0\": \"composed and neutral, even pace\", \"1\": ...}"
+        )
+
+        total_batches = (
+            len(prompts_to_translate) + _TRANSLATION_BATCH_SIZE - 1
+        ) // _TRANSLATION_BATCH_SIZE
+        print(
+            f"  [P5] Translating {len(prompts_to_translate)} dramatic prompts "
+            f"via {model} ({total_batches} batches)..."
+        )
+
+        for batch_idx in range(total_batches):
+            start = batch_idx * _TRANSLATION_BATCH_SIZE
+            end = min(start + _TRANSLATION_BATCH_SIZE, len(prompts_to_translate))
+            batch_items = prompts_to_translate[start:end]
+
+            user_msg = "Translate these dramatic prompts:\n"
+            for idx, prompt in batch_items:
+                user_msg += f'\n{idx}: "{prompt}"'
+
+            try:
+                resp = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_msg},
+                        {"role": "user", "content": user_msg},
+                    ],
+                    temperature=0.3,
+                    response_format={"type": "json_object"},
+                )
+                batch_result = json.loads(resp.choices[0].message.content)
+                for k, v in batch_result.items():
+                    idx = int(k)
+                    instruction = str(v).strip()
+                    if instruction and len(instruction) <= 80:
+                        translations[idx] = instruction
+                    elif instruction:
+                        # Truncate to 60 chars at word boundary
+                        truncated = instruction[:60].rsplit(" ", 1)[0]
+                        translations[idx] = truncated
+                print(
+                    f"    Batch {batch_idx + 1}/{total_batches}: "
+                    f"{len(batch_result)} translations"
+                )
+            except Exception as exc:
+                logger.error(
+                    "LLM translation batch %d failed: %s", batch_idx + 1, exc
+                )
+                # Fall back to keyword matching for this batch
+                for idx, prompt in batch_items:
+                    kw = _translate_dramatic_prompt(prompt)
+                    if kw:
+                        translations[idx] = kw
+
+    except ImportError:
+        logger.warning("openai not available, using keyword fallback")
+        for idx, prompt in prompts_to_translate:
+            kw = _translate_dramatic_prompt(prompt)
+            if kw:
+                translations[idx] = kw
+
+    # Cache results
+    cache_path.parent.mkdir(exist_ok=True, parents=True)
+    cache_path.write_text(
+        json.dumps(translations, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    print(f"  [P5] Cached {len(translations)} dramatic translations")
+
+    return translations
+
+
 def _extract_prefix_tags(prefix: str) -> list[str]:
     """Extract prosody tags from a natural-language prefix for S2-Pro.
-
-    F2 (Issue #1600): S2-Pro accepts free-form natural language in [brackets]
-    (per fish.audio blog — "speaking slowly, almost hesitant" etc.). The prior
-    behaviour dropped any French / multi-word prefix, eliminating ~70 percent
-    of the prosody signal that P4 wrote.
 
     Strategy:
       1. If any official English tag substring is present → use those (up to 3).
@@ -81,11 +323,6 @@ def _extract_prefix_tags(prefix: str) -> list[str]:
     # (per fish.audio blog examples: "speaking slowly, almost hesitant" ~50 chars).
     # Longer instructions risk being vocalized literally rather than interpreted.
     cleaned = lower.rstrip(".,:; ").strip()
-    if len(cleaned) > 80:
-        logger.warning(
-            "F2: dropping free-form prefix >80 chars (%d chars): %.60s...",
-            len(cleaned), cleaned,
-        )
     if 0 < len(cleaned) <= 80:
         return [cleaned]
     return []
@@ -113,46 +350,59 @@ def _extract_official_tags(prefix: str) -> list[str]:
 def _compose_tts_text(seg: AnnotatedSegment) -> str:
     """Compose the final TTS text for S2-Pro.
 
-    F3 (Issue #1600): the prior implementation read ONLY ``tts_context_prefix``
-    and never consulted ``seg.dramatic_prompt`` written by P4 from the P3
-    dramatic context. Result: tension / scene / narrative-position information
-    never reached S2-Pro. We now prepend dramatic_prompt first, then the prefix.
+    F5 (prosody regression fix): dramatic_prompt (French, ~186 chars avg) cannot
+    go in brackets directly — S2-Pro vocalizes French text (WER #1277/#1485).
+    Instead, we translate the dramatic intent to a short English instruction
+    that S2-Pro interprets as a voice direction.
 
     Composition order:
-    1. dramatic_prompt (P4 + P3 context, e.g. "[tense whisper], [short pause]")
-    2. tts_context_prefix tags (legacy, may add official or free-form)
-    3. The annotated text with all tags preserved (official + free-form)
+    1. Translated dramatic_prompt → short English [instruction]
+    2. Vocal reinforcement tag (official S2-Pro tag that amplifies the emotion)
+    3. Official tags from tts_context_prefix (if any)
+    4. The annotated text with normalized inline tags
     """
-    parts: list[str] = []
-    seen_tags: set[str] = set()
+    prefix_parts: list[str] = []
+    seen_tags: set[str] = set()  # Track tags already added to avoid duplicates
 
-    def _emit(raw: str) -> None:
-        raw = raw.strip()
-        if not raw:
-            return
-        if raw.startswith("[") and raw.endswith("]"):
-            raw = raw[1:-1].strip()
-        for tag in _extract_prefix_tags(raw):
-            key = tag.lower()
-            if key in seen_tags:
-                continue
-            seen_tags.add(key)
-            parts.append(f"[{tag}]")
-            if len(seen_tags) >= _MAX_PREFIX_TAGS:
-                return
-
+    # F5: translate dramatic prompt to short English instruction
+    translated: str | None = None
     if seg.dramatic_prompt:
-        _emit(seg.dramatic_prompt)
-    if seg.tts_context_prefix and len(seen_tags) < _MAX_PREFIX_TAGS:
-        _emit(seg.tts_context_prefix)
+        translated = _get_dramatic_instruction(seg.seg_index, seg.dramatic_prompt)
+        if translated:
+            prefix_parts.append(f"[{translated}]")
 
-    prefix_block = " ".join(parts)
+    # Vocal reinforcement: add an official S2-Pro tag that amplifies
+    # the dramatic instruction's effect on cloned voices.
+    if translated:
+        vocal_tag = _get_vocal_reinforcement(translated)
+        if vocal_tag:
+            seen_tags.add(vocal_tag)
+            prefix_parts.append(f"[{vocal_tag}]")
+
+    # Add official tags from tts_context_prefix (if any)
+    if seg.tts_context_prefix:
+        for tag in _extract_prefix_tags(seg.tts_context_prefix):
+            if tag not in seen_tags:
+                prefix_parts.append(f"[{tag}]")
+                seen_tags.add(tag)
+            if len(prefix_parts) >= _MAX_PREFIX_TAGS:
+                break
+
+    prefix_block = " ".join(prefix_parts)
     if prefix_block:
         prefix_block = prefix_block + " "
-    parts = [prefix_block] if prefix_block else []
+    result_parts = [prefix_block] if prefix_block else []
 
     base_text = seg.fishaudio_text or seg.annotated_text or seg.text
     base_text = _normalize_tags(base_text)
+
+    # Remove duplicate official tags from base text that are already in prefix.
+    # S2-Pro processes tags sequentially; duplicate tags are redundant and waste
+    # the prefix slot budget (_MAX_PREFIX_TAGS).
+    from .schemas import ALL_PROSODY_TAGS as _ALL_TAGS
+    for tag in seen_tags:
+        if tag in _ALL_TAGS:
+            base_text = base_text.replace(f"[{tag}] ", "", 1)
 
     # Inject mid-segment prosody tags for long texts (>200 chars)
     # S2-Pro tags affect what follows them, so inserting at punctuation
@@ -160,8 +410,8 @@ def _compose_tts_text(seg: AnnotatedSegment) -> str:
     if len(base_text) > 200:
         base_text = _inject_mid_segment_tags(base_text)
 
-    parts.append(base_text)
-    result = " ".join(parts)
+    result_parts.append(base_text)
+    result = " ".join(result_parts)
 
     # CRITICAL: ensure space after every ] — S2-Pro ignores tags without trailing space
     result = re.sub(r"\](?=\S)", "] ", result)
@@ -485,6 +735,10 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
             "timeout": 300,
         })
 
+    # Thermal backoff: pause between segments to prevent GPU overheating.
+    # target 72C = light 3s pause, up to 30s pause at 80C+, full cooldown above.
+    thermal_backoff(target_temp=72, max_temp=80, base_sleep=3.0, max_sleep=30.0)
+
     # If single chunk, use direct call
     if len(tts_requests) == 1:
         audio = fishaudio_tts(**tts_requests[0])
@@ -646,6 +900,13 @@ def run(force: bool = False) -> Path:
         annotated_path.read_text(encoding="utf-8")
     )
     print(f"  Loaded {len(batch.segments)} annotated segments")
+
+    # F5: Pre-translate dramatic prompts to short English instructions.
+    # Cached in outputs/dramatic_translations.json — only calls LLM once.
+    global _dramatic_translations
+    _dramatic_translations = _translate_prompts_batch(batch.segments)
+    translated_count = len(_dramatic_translations)
+    print(f"  Dramatic translations: {translated_count}/{len(batch.segments)}")
 
     results: list[TTSResult] = []
     generated = 0
