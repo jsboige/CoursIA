@@ -422,21 +422,26 @@ Dry-run results (CPU, Python 3.13, torch 2.11.0+cpu):
 
 Note: dry-run uses synthetic random data. FAILS baseline is expected with random walks. Real-data results are in `results/` and on the cluster dashboard.
 
-## Ladder #1409 — Action vs Forecast (2026-05-27)
+## Ladder #1409 — Final Verdicts (2026-06-12, COMPLETE)
 
-Systematic evaluation of trading signal generation approaches on 25-26 crypto+ETF symbols, walk-forward 5-fold, 4+ seeds. B&H SPY 2015-2025 Sharpe = 1.15 baseline.
+Systematic evaluation of trading signal generation approaches, 7 hard disciplines (walk-forward 5-fold expanding, multi-seed >= 4, anti-FAANG universe, explicit tx costs + 50bps stress, deflated Sharpe, honest verdict).
 
-| Ladder | Model | Approach | Verdict | Signal/Total | Median AUC | Combos | Time |
-|--------|-------|----------|---------|-------------|------------|--------|------|
-| L1 | TSMOM | Time-series momentum | NO BEATS | 0/25 | — | — | 1s |
-| L2 | CS+DM | Carry+DualMomentum | NO BEATS | 0/25 | — | 252d best | 27s |
-| L3 | Trend | Regime+trend long-horizon | NO BEATS | 0/75 | 0.509 | 300 | 874s |
-| **L4** | **Decision Transformer** | **Action-based (buy/hold/sell)** | **BEATS** | **24/26** | **0.558** | **104** | **3714s** |
-| L5 | PatchTST | Forecast-based (return prediction) | NO BEATS | 0/26 | 0.501 | 104 | 2844s |
+| Rung | Model | Approach | Verdict | Key metric | Doc |
+|------|-------|----------|---------|------------|-----|
+| L1 | TSMOM | Time-series momentum | NO BEATS | net Sharpe -2.26 to -2.56 (costs kill the signal) | `docs/L1_tsmom.md` |
+| L2 | CS+DM | Carry + dual momentum | NO BEATS | best CS 252d delta -0.153 | `docs/L2_dual_momentum.md` |
+| L3 | Trend | Regime + trend long-horizon | NO BEATS | 0/75 signal, median AUC 0.509, 300 combos | `results/l3_trend_long_horizon/` |
+| **L4** | **Decision Transformer** | **Action-based (buy/hold/sell)** | **BEATS** | **24/26, median AUC 0.558** | `docs/STAGE7_DECISION_TRANSFORMER.md` |
+| L5 | Vol-targeted composite | Trend filter + 10% vol-targeting on S7 composite | NO BEATS | delta -0.236 vs S4 v2 (t=-2.49), DSR 0.074 | `docs/L5_vol_targeted_composite.md` |
+| (side) | PatchTST | Forecast-based (return prediction) — mislabeled "L5" before 2026-06-12 | NO BEATS | 0/26, median AUC 0.501 | `results/l5_patchtst/` |
 
-**Key finding**: Action-based models (DT classifies buy/hold/sell) massively outperform forecast-based models (PatchTST predicts return magnitude). Forecasting returns is necessary but not sufficient — the portfolio translation layer (forecast -> position) destroys the signal via transaction costs and discretization errors.
+**Key findings**:
 
-Results: `scripts/results/{l1_tsmom,l2_dual_momentum,l3_trend_long_horizon,l4_decision_transformer,l5_patchtst}/results.json`
+1. **Action-based >> forecast-based**: DT (classifies buy/hold/sell) massively outperforms PatchTST (predicts return magnitude). The portfolio translation layer (forecast -> position) destroys forecast signal via transaction costs and discretization errors.
+2. **Trend overlays are systematically destructive** on this universe/period: L1, L2, L3 all NO BEATS, and the L5 ablation isolates the 12-1 TSMOM filter as the cause of its deficit (-0.260 alone vs -0.025 for vol-targeting alone).
+3. **Vol-targeting is a risk tool, not alpha**: L5's 10% vol-target hits its risk objective (realised vol 10.3% vs 16.6%, reduced MaxDD) at ~zero Sharpe cost. Keep it as a risk overlay on production candidates (S3 + S4 v2 KEEPERS), not as a signal.
+
+Results: `scripts/results/{l1_tsmom,l2_dual_momentum,l3_trend_long_horizon,l4_decision_transformer,l5_vol_targeted,l5_patchtst}/results.json`. Next: L4 DT extended multi-seed (ai-01 BG run), then QC Cloud migration.
 
 ## Reproducibility
 
