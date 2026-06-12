@@ -38,3 +38,4 @@ import Grothendieck.SheafHom
 import Grothendieck.ConstantSheaf
 import Grothendieck.Conservative
 import Grothendieck.SheafCohomology.Basic
+import Grothendieck.MayerVietorisSquare
