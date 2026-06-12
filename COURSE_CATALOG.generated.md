@@ -1,18 +1,18 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-11 05:11
-Total notebooks: 522
+Generated: 2026-06-12 05:13
+Total notebooks: 526
 
 ## Status Summary
 
-- **READY**: 379
-- **DEMO**: 141
+- **READY**: 381
+- **DEMO**: 143
 - **RESEARCH**: 0
 - **BROKEN**: 2
 
 ## Maturity Summary
 
-- **PRODUCTION**: 433
+- **PRODUCTION**: 437
 - **BETA**: 41
 - **TEMPLATE**: 4
 - **ALPHA**: 40
@@ -20,7 +20,7 @@ Total notebooks: 522
 
 ## By Series
 
-### GenAI (121 notebooks) — BROKEN:2, DEMO:79, READY:40 | ALPHA:5, BETA:26, DRAFT:2, PRODUCTION:85, TEMPLATE:3
+### GenAI (121 notebooks) — BROKEN:2, DEMO:83, READY:36 | ALPHA:5, BETA:26, DRAFT:2, PRODUCTION:85, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -116,11 +116,11 @@ Total notebooks: 522
 | 90 | 11. Quantization des LLMs | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 91 | 1. Introduction a l'IA generative avec l'API OpenA | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 92 | Prompt Engineering : Advanced Prompting avec OpenA | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 93 | Structured Outputs : Sorties JSON Garanties avec O | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 93 | Structured Outputs : Sorties JSON Garanties avec O | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 94 | Function Calling : Connecter les LLMs au Monde Rée | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
-| 95 | 5. RAG Modern - Retrieval Augmented Generation | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 96 | PDF et Web Search : Sources Documentaires avec Ope | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 97 | Code Interpreter : Exécution de Code avec OpenAI | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 95 | 5. RAG Modern - Retrieval Augmented Generation | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
+| 96 | PDF et Web Search : Sources Documentaires avec Ope | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
+| 97 | Code Interpreter : Exécution de Code avec OpenAI | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 98 | Modèles de Raisonnement : gpt-5-mini | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 99 | Patterns de Production : APIs Avancées OpenAI | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 100 | Claude CLI - Les Bases | Python 3 | READY | PRODUCTION | 45min | po-2025 |
@@ -229,7 +229,7 @@ Total notebooks: 522
 | 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 
-### SymbolicAI (107 notebooks) — DEMO:3, READY:104 | ALPHA:1, BETA:1, PRODUCTION:105
+### SymbolicAI (110 notebooks) — DEMO:3, READY:107 | ALPHA:1, BETA:1, PRODUCTION:108
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -340,8 +340,11 @@ Total notebooks: 522
 | 105 | Dialogues Multi-Agents Argumentatifs | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 106 | Préférences et Théorie du Vote | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 107 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 108 | Sudoku : Theoreme Explicite vs Modele Implicite pa | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 109 | Théorie des Tableaux Z3 — Select, Store et Switchi | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 110 | Tableaux Imbriqués et Grilles 2D en Z3 | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
 
-### QuantConnect (101 notebooks) — DEMO:55, READY:46 | ALPHA:33, BETA:6, DRAFT:2, PRODUCTION:59, TEMPLATE:1
+### QuantConnect (101 notebooks) — DEMO:53, READY:48 | ALPHA:33, BETA:6, DRAFT:2, PRODUCTION:59, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -388,8 +391,8 @@ Total notebooks: 522
 | 41 | QC-Py-Cloud-01 — Risk Parity Composite Multi-Asset | Python 3 | DEMO | ALPHA | 15min | po-2026 |
 | 42 | QC-Py-Cloud-02 : Classification de Texte et Sentim | Python 3 | DEMO | PRODUCTION | 30min | po-2026 |
 | 43 | QC-Py-Cloud-02 — Sector Rotation & Multi-Asset Mom | Python 3 | DEMO | ALPHA | 15min | po-2026 |
-| 44 | QC-Py-Cloud-03 — Dual Momentum : Asset Selection M | Python 3 | DEMO | ALPHA | 15min | po-2026 |
-| 45 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | Python 3 | DEMO | PRODUCTION | 30min | po-2026 |
+| 44 | QC-Py-Cloud-03 — Dual Momentum : Asset Selection M | Python 3 | READY | ALPHA | 15min | po-2026 |
+| 45 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | Python 3 | READY | PRODUCTION | 30min | po-2026 |
 | 46 | QC-Py-Cloud-04 — Mean Reversion on Sector ETFs | Python 3 | DEMO | ALPHA | 15min | po-2026 |
 | 47 | QC-Py-Cloud-04 : Reinforcement Learning - DQN Trad | Python 3 | DEMO | PRODUCTION | 30min | po-2026 |
 | 48 | QC-Py-Cloud-05 : Prevision par Reseau de Neurones  | Python 3 | DEMO | PRODUCTION | 30min | po-2026 |
@@ -570,23 +573,24 @@ Total notebooks: 522
 | 1 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | PRODUCTION | 45min | po-2025 |
 | 2 | IIT - Introduction à PyPhi et Integrated Informati | pyphi | READY | PRODUCTION | 30min | po-2025 |
 
-### RL (13 notebooks) — READY:13 | BETA:1, PRODUCTION:12
+### RL (14 notebooks) — READY:14 | BETA:1, PRODUCTION:13
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | RL-10 : Reward Shaping et Curriculum Learning | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 2 | Tutoriel Stable Baselines3 - Premiers pas | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 3 | Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,  | Python 3 | READY | BETA | 30min | po-2025 |
-| 4 | Notebook 3 – Hindsight Experience Replay (HER) et  | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 5 | RL-4 : Bandits Manchots et le Compromis Exploratio | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 6 | RL-5 : MDP, Programmation Dynamique et Q-Learning  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 7 | RL-6 : Deep Q-Network (DQN) et Policy Gradient | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 8 | RL-6b - Actor-Critic : unir valeur et politique | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 9 | PPO (Proximal Policy Optimization) depuis zero | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 10 | SAC (Soft Actor-Critic) depuis zero | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 11 | RL-7 : Introduction a l'Apprentissage Multi-Agent | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 12 | RL-8 : Model-Based RL — Dyna-Q et planification | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
-| 13 | RL-9 : RL offline — Behavior Cloning et erreur d'e | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
+| 2 | RL-11 : POMDP - Partial Observability et Belief Tr | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 3 | Tutoriel Stable Baselines3 - Premiers pas | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 4 | Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,  | Python 3 | READY | BETA | 30min | po-2025 |
+| 5 | Notebook 3 – Hindsight Experience Replay (HER) et  | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 6 | RL-4 : Bandits Manchots et le Compromis Exploratio | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 7 | RL-5 : MDP, Programmation Dynamique et Q-Learning  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 8 | RL-6 : Deep Q-Network (DQN) et Policy Gradient | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 9 | RL-6b - Actor-Critic : unir valeur et politique | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 10 | PPO (Proximal Policy Optimization) depuis zero | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 11 | SAC (Soft Actor-Critic) depuis zero | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 12 | RL-7 : Introduction a l'Apprentissage Multi-Agent | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 13 | RL-8 : Model-Based RL — Dyna-Q et planification | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
+| 14 | RL-9 : RL offline — Behavior Cloning et erreur d'e | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2025 |
 
 
 ## Requirements
@@ -595,4 +599,4 @@ Total notebooks: 522
 - **GPU**: 80 notebooks
 - **Cloud**: 101 notebooks
 - **WSL**: 30 notebooks
-- **Local**: 253 notebooks
+- **Local**: 257 notebooks
