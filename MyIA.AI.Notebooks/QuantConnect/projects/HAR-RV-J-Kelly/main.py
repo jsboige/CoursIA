@@ -24,6 +24,7 @@ class HarrvjKellyAlgorithm(QCAlgorithm):
         self.set_start_date(2020, 1, 1)
         self.set_end_date(2025, 6, 1)
         self.set_cash(100000)
+        self.set_account_currency("USDT")
         self.set_brokerage_model(BrokerageName.BINANCE, AccountType.CASH)
 
         # Parameter: 1 = HAR-RV-J (6 features), 0 = HAR Classic (3 features)

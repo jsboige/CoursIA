@@ -41,12 +41,23 @@ MSE excellent en regression. DirAcc inferieur a la baseline majoritaire. Le mode
 
 **A abandonner** : ajouter d'autres architectures sequence-to-one log-RV pour la direction (DLinear, NLinear, PatchTST variants...). Le pattern est sature.
 
-**A poursuivre** :
-- Vol forecast pour position sizing (pas direction) : GARCH(1,1), HAR(1,5,22), HAR-RV-Kelly
-- Vol-targeting strategy : target vol annualisee (e.g. 15%), scale exposure inversely to forecast vol
-- Regime detection HMM : binary state (calm/volatile), gate les positions selon etat
-- Multi-asset universe : pas juste BTC/ETH univariate. Inclure SPY/EFA/EEM/TLT/GLD/DBC
-- Risk parity / vol parity : equiponderer en risque, pas en capital
+**Resultats V3 — ladder #1409 (2026-06, toutes les pistes "A poursuivre" testees)** :
+
+| Piste (V2) | Test V3 | Verdict |
+|------------|---------|---------|
+| Vol forecast pour sizing | M12 HAR-RV-J + M15 LSTM h=32 (Curriculum V2) | **KEEPERS** (p=7.9e-7 / p=0.0188) |
+| Regime detection HMM | S3 HMM 2-state daily | **KEEPER** (+0.669 Sharpe, 4/4 seeds, hardening 12/12) |
+| Risk parity / vol parity | S4 v2 inverse-vol Ridge + HMM | **KEEPER** (+0.325 Sharpe, 4/4 seeds) |
+| Vol-targeting strategy | L5 composite vol-targeted 10% (PR #2862) | **NO BEATS comme alpha** (delta -0.236 vs S4 v2, t=-2.49). Mais atteint sa cible de risque (vol realisee 10.3% vs 16.6%, MaxDD reduit) a cout Sharpe nul (-0.025 ablation VT-only) → **garder comme overlay de RISQUE, pas comme source d'alpha** |
+| Multi-asset universe | Panier anti-FAANG 11-26 symboles utilise partout (L1-L5, S1-S8) | **Acquis** (discipline 6) |
+
+Ladder #1409 complet : L1 TSMOM, L2 carry+dual-momentum, L3 trend long-horizon, L5 vol-targeted composite = **tous NO BEATS** ; **L4 Decision Transformer (action-based buy/hold/sell) = seul BEATS** (24/26). PatchTST forecast-based (mislabele "L5" un temps) = NO BEATS (0/26).
+
+**Conclusion V3** : sur cet univers/periode, l'alpha vient des **politiques d'action apprises** (L4), pas des overlays de trend ni du conditionnement vol par-dessus une allocation risk-based. Les overlays trend (12-1 TSMOM) sont systematiquement destructeurs (-0.260 en ablation L5) ; le vol-targeting est un outil de gestion du risque legitime mais Sharpe-neutre. Detail : `ML-Training-Pipeline/docs/L1_tsmom.md`, `L2_dual_momentum.md`, `L5_vol_targeted_composite.md`, `STAGE7_DECISION_TRANSFORMER.md`.
+
+**A poursuivre (post-ladder)** :
+- Industrialiser L4 DT : multi-seed etendu (run BG ai-01 en cours), puis migration QC Cloud
+- Production candidate = S3+S4 v2 (KEEPERS) avec vol-targeting 10% en overlay de risque
 
 ## Les 7 disciplines obligatoires (audit PR ML/trading)
 

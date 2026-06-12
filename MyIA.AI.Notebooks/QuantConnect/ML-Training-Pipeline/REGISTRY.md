@@ -2,8 +2,29 @@
 
 Auto-generated: 2026-05-03 22:29
 Updated: 2026-05-06 — Stage -1 Panier baselines: 18 BEATS, 32 FAILS across 50 experiments (26 symbols x 2 models)
+Updated: 2026-06-12 — Ladder #1409 verdicts consolidated; legacy SPY-single checkpoints marked ARCHIVED
 
-Total checkpoints: 70 (20 legacy + 50 panier baselines)
+Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
+
+## Ladder #1409 — Final Verdicts (2026-06-12)
+
+Systematic signal-generation ladder, 7 hard disciplines (walk-forward 5-fold expanding,
+multi-seed >= 4, anti-FAANG universe, explicit tx costs + 50bps stress, deflated Sharpe,
+honest verdict). Full method + results per rung: `docs/L<n>_*.md` + `scripts/results/`.
+
+| Rung | Strategy | Verdict | Key metric | Doc |
+|------|----------|---------|------------|-----|
+| L1 | TSMOM multi-asset | NO BEATS | net Sharpe -2.26 to -2.56 (costs kill) | `docs/L1_tsmom.md` |
+| L2 | Carry + dual momentum | NO BEATS | best CS 252d delta -0.153 | `docs/L2_dual_momentum.md` |
+| L3 | Trend long-horizon | NO BEATS | 0/75 signal, median AUC 0.509 | `results/l3_trend_long_horizon/` |
+| **L4** | **Decision Transformer (action-based)** | **BEATS** | **24/26, median AUC 0.558** | `docs/STAGE7_DECISION_TRANSFORMER.md` |
+| L5 | Vol-targeted trend composite | NO BEATS | delta -0.236 vs S4 v2, t=-2.49, DSR 0.074 | `docs/L5_vol_targeted_composite.md` |
+| (side) | PatchTST forecast-based (mislabeled "L5" before 2026-06-12) | NO BEATS | 0/26, median AUC 0.501 | `results/l5_patchtst/` |
+
+Conclusion: alpha on this universe comes from learned action policies (L4), not trend
+overlays or vol conditioning on risk-based allocation. Vol-targeting achieves its 10%
+risk target at ~zero Sharpe cost — keep as a *risk* overlay on production candidates
+(S3 HMM + S4 v2 Ridge KEEPERS), not as an alpha source.
 
 ## Anti-Bias Audit (2026-05-04)
 
@@ -240,7 +261,16 @@ SPY majority class baseline = **54.59%**. Values will be populated by `python ev
 | Panier anti-bias | `datasets/panier/` (26 symbols) | 2015-2026 | Available for Stage 0+ |
 | Forex FXCM/Oanda | `datasets/forex/` (10 pairs) | 2002-2025 | Available for Stage 1+ |
 
-## dqn
+## ARCHIVED — Legacy SPY-single checkpoints (2026-06-12)
+
+The 20 checkpoints below (dqn / lstm / rf / transformer, all `[SPY-ONLY]`) are **ARCHIVED /
+OBSOLETE** per #1409 cleanup. POST-FIX verdict above (0 BEATS, 14 FAILS) plus the anti-bias
+audit (SPY pathological, majority 54.6-58.7% up days) make them invalid as baselines and
+forbidden as production models. They are retained on disk under `checkpoints/` for forensic
+reproducibility only — do NOT load them for new work. Valid starting points are the
+Curriculum V2 KEEPERS (M12, M15, S3, S4 v2 — see README) and the L4 Decision Transformer.
+
+## dqn [ARCHIVED]
 
 Checkpoints: 5
 
@@ -288,7 +318,7 @@ Marked `[INVALID-NO-SPLIT]` until re-trained with `--test-ratio 0.2`.
 - Config: device=cpu, hidden_size=256, num_episodes=10, symbol=SPY
 - Files: metadata.json, model.pt
 
-## lstm
+## lstm [ARCHIVED]
 
 Checkpoints: 5
 
@@ -332,7 +362,7 @@ Checkpoints: 5
 - Config: device=cpu, epochs=2, hidden_size=128, num_layers=2, symbol=SPY
 - Files: metadata.json, model.pt
 
-## rf
+## rf [ARCHIVED]
 
 Checkpoints: 5
 
@@ -371,7 +401,7 @@ Checkpoints: 5
 - Config: symbol=SPY
 - Files: metadata.json, model.joblib
 
-## transformer
+## transformer [ARCHIVED]
 
 Checkpoints: 5
 
