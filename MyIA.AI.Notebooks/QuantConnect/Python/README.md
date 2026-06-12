@@ -78,12 +78,14 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-Cloud-06-VolTargeting | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-06-PCA-StatArb | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-Cloud-07-TemporalCNN | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-08-ValueFactor-ZScore | doc cloud | markdown-only — backtest sur QC Cloud |
+| QC-Py-Cloud-09-OptionWheel | doc cloud | markdown-only — backtest sur QC Cloud |
 | QC-Py-33-RL-PPO-Trading | EXÉCUTÉ | 12/12 cellules avec outputs |
 | QC-Py-34-RL-SAC-A2C-Trading | EXÉCUTÉ | 11/11 cellules avec outputs |
 | QC-Py-35-RL-Portfolio-Construction | EXÉCUTÉ | 5/5 cellules avec outputs |
 | QC-Py-Dataset-Workflow | NON EXÉCUTÉ | 11 cellules code, 0 output |
 
-**Récapitulatif** : 51 notebooks total — 17 exécutés, 26 non exécutés, 8 doc cloud.
+**Récapitulatif** : 53 notebooks total — 17 exécutés, 26 non exécutés, 10 doc cloud.
 
 **Politique** : un notebook NON EXÉCUTÉ avec du code réel est préférable à un notebook avec des outputs théâtraux (print de métadonnées prétendant être une exécution). Les patterns théâtraux suivants sont désormais détectés comme erreur par [`scripts/validate_qc_notebooks.py`](../scripts/validate_qc_notebooks.py) :
 - `print("Algorithme charge : {len(qc_code)} caracteres")` — métadonnée d'une string, pas une exécution
@@ -189,6 +191,8 @@ Notebooks de recherche et strategies executees sur QuantConnect Cloud.
 | [QC-Py-Cloud-06-VolTargeting](QC-Py-Cloud-06-VolTargeting.ipynb) | Volatility Targeting |
 | [QC-Py-Cloud-06-PCA-StatArb](QC-Py-Cloud-06-PCA-StatArb.ipynb) | PCA Statistical Arbitrage |
 | [QC-Py-Cloud-07-TemporalCNN](QC-Py-Cloud-07-TemporalCNN.ipynb) | Temporal CNN |
+| [QC-Py-Cloud-08-ValueFactor-ZScore](QC-Py-Cloud-08-ValueFactor-ZScore.ipynb) | Value Factor Z-Score |
+| [QC-Py-Cloud-09-OptionWheel](QC-Py-Cloud-09-OptionWheel.ipynb) | Option Wheel (risk education) |
 
 ## Utilitaires
 
