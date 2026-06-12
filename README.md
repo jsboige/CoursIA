@@ -24,16 +24,16 @@ Vous avez clone le depot et vous ne savez pas par ou commencer ?
 
 ```
 MyIA.AI.Notebooks/
-  Search/          -> Algorithmes de recherche (BFS, A*, CSP) -- point d'entree ideal pour debutants
-  Sudoku/          -> Resolution multi-paradigme -- plusieurs approches pour un seul probleme
+  Search/          -> Algorithmes de recherche (BFS, A*, Métaheuristiques, CSPs) -- point d'entree ideal pour debutants
+  Sudoku/          -> Resolution multi-paradigme -- plusieurs approches pour un seul probleme (C#, Python)
   ML/              -> Machine Learning (ML.NET, agents ADK)
   RL/              -> Reinforcement Learning (PPO, DQN, Stable Baselines3)
-  Probas/          -> Programmation probabiliste (Infer.NET, Pyro)
-  GameTheory/      -> Theorie des jeux, equilibres de Nash, mechanism design
+  Probas/          -> Programmation probabiliste (Infer.NET,PyMC, Pyro)
+  GameTheory/      -> Theorie des jeux, equilibres de Nash, mechanism design, social choice
   IIT/             -> Theorie de l'information integree (Tononi, PyPhi)
   CaseStudies/     -> Etudes de cas interdisciplinaires
   SymbolicAI/      -> Raisonnement formel (Lean 4, Tweety, Semantic Web, Smart Contracts, Planners, Symbolic Learning)
-  GenAI/           -> IA generative (Image, Audio, Video, Texte, Semantic Kernel) -- la plus grande serie
+  GenAI/           -> IA generative (Image, Audio, Video, Texte, Semantic Kernel, Vibe Coding) -- la plus grande serie
   QuantConnect/    -> Trading algorithmique (notebooks pedagogiques + strategies backtestees + pipeline ML)
   cross-series/    -> Applications transverses (matching-cv : data science multi-domaines)
 ```
