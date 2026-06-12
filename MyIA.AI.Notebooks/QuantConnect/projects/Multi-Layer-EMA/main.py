@@ -3,14 +3,16 @@ from AlgorithmImports import *
 class OptimizedCryptoAlgorithm(QCAlgorithm):
     def Initialize(self):
         # Extended: covers COVID crash (Mar 2020), bull 2020-2021, bear 2022, recovery 2023-2025
-        self.SetStartDate(2015, 1, 1)
+        # Start date 2018: Binance BTCUSDT data available on QC Cloud from ~2017
+        self.SetStartDate(2018, 1, 1)
         self.SetEndDate(2024, 12, 31)
         self.SetCash(100000)
+        self.SetAccountCurrency("USDT")
         self.SetBrokerageModel(BrokerageName.Binance, AccountType.Cash)
         self.symbols = [
-            self.AddCrypto("BTCUSDT", Resolution.HOUR, Market.BINANCE).Symbol,
-            self.AddCrypto("ETHUSDT", Resolution.HOUR, Market.BINANCE).Symbol,
-            self.AddCrypto("LTCUSDT", Resolution.HOUR, Market.BINANCE).Symbol
+            self.AddCrypto("BTCUSDT", Resolution.DAILY, Market.BINANCE).Symbol,
+            self.AddCrypto("ETHUSDT", Resolution.DAILY, Market.BINANCE).Symbol,
+            self.AddCrypto("LTCUSDT", Resolution.DAILY, Market.BINANCE).Symbol
         ]
         self.SetBenchmark("BTCUSDT")
         self.fastPeriod = self.GetParameter("fastPeriod", 10)
@@ -18,15 +20,15 @@ class OptimizedCryptoAlgorithm(QCAlgorithm):
 
         # Volatility filter (60% threshold = optimal Sharpe based on research)
         self.volatility_threshold = 0.60
-        self.btc_atr = self.ATR(self.symbols[0], 14, MovingAverageType.Simple, Resolution.HOUR)
+        self.btc_atr = self.ATR(self.symbols[0], 14, MovingAverageType.Simple, Resolution.DAILY)
 
         self.indicators = {}
         for symbol in self.symbols:
             self.indicators[symbol] = {
-                "ema10": self.EMA(symbol, self.fastPeriod, Resolution.HOUR),
-                "ema50": self.EMA(symbol, self.slowPeriod, Resolution.HOUR),
-                "rsi": self.RSI(symbol, 14, MovingAverageType.Wilders, Resolution.HOUR),
-                "bollinger": self.BB(symbol, 20, 2, MovingAverageType.Simple, Resolution.HOUR),
+                "ema10": self.EMA(symbol, self.fastPeriod, Resolution.DAILY),
+                "ema50": self.EMA(symbol, self.slowPeriod, Resolution.DAILY),
+                "rsi": self.RSI(symbol, 14, MovingAverageType.Wilders, Resolution.DAILY),
+                "bollinger": self.BB(symbol, 20, 2, MovingAverageType.Simple, Resolution.DAILY),
                 "entry_price": None,
                 "stop_loss": None
             }
@@ -40,7 +42,7 @@ class OptimizedCryptoAlgorithm(QCAlgorithm):
         if self.btc_atr.IsReady:
             btc_price = data[self.symbols[0]].Close if data.ContainsKey(self.symbols[0]) else None
             if btc_price and btc_price > 0:
-                current_vol = (self.btc_atr.Current.Value / btc_price) * (365 * 24) ** 0.5  # Annualized hourly
+                current_vol = (self.btc_atr.Current.Value / btc_price) * (252) ** 0.5  # Annualized daily
                 if current_vol > self.volatility_threshold:
                     return  # Skip all trading during high volatility
 

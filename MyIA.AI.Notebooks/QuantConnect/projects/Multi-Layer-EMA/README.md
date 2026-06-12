@@ -1,7 +1,7 @@
 # Multi-Layer-EMA
 
-**Asset class:** Crypto (BTCUSD, ETHUSD, LTCUSD on Coinbase)
-**Resolution:** Hourly
+**Asset class:** Crypto (BTCUSDT, ETHUSDT, LTCUSDT on Binance)
+**Resolution:** Daily
 **Cloud project ID:** 28433748
 
 ## Description
@@ -14,10 +14,10 @@ Multi-indicator crypto strategy combining EMA trend, RSI, Bollinger Bands, and A
 
 | Component | Parameters | Role |
 |-----------|------------|------|
-| EMA crossover | Fast 10 / Slow 50 (hourly) | Trend direction |
+| EMA crossover | Fast 10 / Slow 50 (daily) | Trend direction |
 | RSI | 14-period Wilders | Overbought/oversold filter |
 | Bollinger Bands | 20-period, 2σ | Mean reversion context |
-| ATR volatility filter | 14-period, 60% threshold | Skip high-vol regimes |
+| ATR volatility filter | 14-period, 60% threshold (annualized daily) | Skip high-vol regimes |
 | Trailing stop | 92% | Lock profits |
 | Fixed stop | 88% | Capital protection |
 | Take profit | 125% | Exit target |
@@ -32,8 +32,8 @@ Multi-indicator crypto strategy combining EMA trend, RSI, Bollinger Bands, and A
 
 | Metric | Value |
 |--------|-------|
-| Assets | BTCUSD, ETHUSD, LTCUSD |
-| Resolution | Hourly |
+| Assets | BTCUSDT, ETHUSDT, LTCUSDT (Binance) |
+| Resolution | Daily |
 | Max positions | 3 |
 | Stop loss | Trailing 92%, Fixed 88% |
 | Take profit | 125% |

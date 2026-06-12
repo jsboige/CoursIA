@@ -1,6 +1,6 @@
 # HAR-RV-J-Kelly
 
-**Asset class:** Crypto (BTC, ETH, LTC, BCH)
+**Asset class:** Crypto (BTCUSDT, ETHUSDT, LTCUSDT, BCHUSDT on Binance)
 
 **Cloud project ID:** 31650567
 
@@ -19,7 +19,7 @@ Open cloud project 31650567, compile and run a backtest.
 
 | Variant | Sharpe | CAGR | Max DD | Trades |
 |---------|--------|------|--------|--------|
-| HAR-RV-J Kelly v2 (Coinbase) | **0.645** | 27.1% | 41.1% | 513 |
+| HAR-RV-J Kelly v2 (Binance, USDT) | **0.645** | 27.1% | 41.1% | 513 |
 | HAR Classic Baseline (use_jumps=0) | 0.642 | 27.0% | 41.1% | 513 |
 
 ## Files
