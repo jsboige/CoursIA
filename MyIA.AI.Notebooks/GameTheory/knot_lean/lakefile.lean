@@ -5,7 +5,7 @@ package «knot_lean» where
   leanOptions := #[⟨`autoImplicit, false⟩]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "master"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.31.0-rc1"
 
 -- shua/leanknot (Lean 4 branch) — bricks/walls, Reidemeister, tangles, links, braids
 -- Repository: https://github.com/shua/leanknot
@@ -15,4 +15,4 @@ require mathlib from git
 
 @[default_target]
 lean_lib «Knots» where
-  globs := #[.submodules "Knots"]
+  globs := #[.submodules `Knots]

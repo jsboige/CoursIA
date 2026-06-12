@@ -49,7 +49,7 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
 ## Notebook pédagogique
 
-`Lean-14d-Conway-Knots-and-Proofs.ipynb` (dans `SymbolicAI/Lean/`) :
+`Lean-17-Knots-a-Conway-and-Proofs.ipynb` (dans `SymbolicAI/Lean/`) :
 - Visualisations Python des nœuds (trèfle, Conway, Kinoshita-Terasaka)
 - Histoire de la preuve Piccirillo (doctorante, 1 semaine, 50 ans d'attente)
 - Résultat Lidman comme cas d'étude « preuve courte mais profonde »
