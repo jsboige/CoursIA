@@ -35,3 +35,4 @@ import Grothendieck.LeftExact
 import Grothendieck.Subcanonical
 import Grothendieck.SitePoints
 import Grothendieck.SheafHom
+import Grothendieck.ConstantSheaf
