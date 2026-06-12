@@ -7,3 +7,6 @@
 [submodule "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/foundry-lib/lib/account-abstraction"]
 	path = MyIA.AI.Notebooks/SymbolicAI/SmartContracts/foundry-lib/lib/account-abstraction
 	url = https://github.com/eth-infinitism/account-abstraction
+[submodule "MyIA.AI.Notebooks/Search/MetaGeneticSharp"]
+	path = MyIA.AI.Notebooks/Search/MetaGeneticSharp
+	url = https://github.com/jsboige/MetaGeneticSharp
