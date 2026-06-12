@@ -1,3 +1,40 @@
+# ARCHIVED 2026-06-12 — closed dead-end, no successor (PR #1498, See #1409)
+#
+# Verdict: NO BEATS — local results/l3_regime_trend/results.json (gitignored),
+# overall_verdict "NO BEATS", run 2026-05-23T21:45. Since results/ is gitignored
+# and no verdict.md/doc was written, THIS HEADER is the durable record of that
+# verdict. The regime-conditioned TSMOM hypothesis (S3 HMM x L1 trend) did not
+# beat B&H and was not pursued; the L3 ladder rung was redesigned as trend
+# long-horizon (s8_trend_long_horizon.py, PR #1576 — README.md ladder table row
+# "L3 | Trend | NO BEATS | 0/75 | 0.509" refers to THAT script, not this one).
+# No doc in docs/*.md, README.md or REGISTRY.md references this file; no script
+# imports it (grep 2026-06-12).
+#
+# Function disposition (line -> outcome):
+#   load_panier (95)            -> SUPERSEDED by shared module panier_loader
+#                                  .load_panier_closes (panier_loader.py:207)
+#   sharpe (101)                -> SUPERSEDED by shared module baselines
+#                                  .sharpe_from_returns (baselines.py:261)
+#   max_drawdown (110)          -> ABANDONED with the dead-end (ladder finals use
+#                                  net-Sharpe-only verdicts)
+#   fit_simple_hmm (117)        -> SUPERSEDED: the surviving HMM-regime
+#                                  implementation is fit_hmm_regime in
+#                                  s4_inverse_vol_ridge_v2.py:108 (S4v2 KEEPER
+#                                  +0.325) and the S3 HMM keeper line
+#   compute_simple_regimes (143) -> SUPERSEDED (same: regime assignment lives in
+#                                  s4_inverse_vol_ridge_v2.py:189
+#                                  regime_conditional_weights)
+#   run_regime_filter (157)     -> ABANDONED (dead-end hypothesis: regime-gated
+#                                  TSMOM, NO BEATS)
+#   run_regime_scale (288)      -> ABANDONED (dead-end variant: regime-scaled
+#                                  position sizing, NO BEATS)
+#   run_regime_rotate (408)     -> ABANDONED (dead-end variant: regime-based
+#                                  asset rotation, NO BEATS)
+#   run_all (554)               -> ABANDONED with the dead-end
+#
+# Kept on disk for forensic reproducibility of the recorded verdict only.
+# Do NOT use for new work — regime alpha lives in S3 HMM / s4_inverse_vol_ridge_v2.py.
+
 """L3 Regime-Conditioned Trend — S3 HMM keeper + L1 TSMOM on 26-symbol panier.
 
 Reference
