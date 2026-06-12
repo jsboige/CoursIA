@@ -17,10 +17,16 @@ Open cloud project 31650567, compile and run a backtest.
 
 ## Backtest Metrics
 
-| Variant | Sharpe | CAGR | Max DD | Trades |
-|---------|--------|------|--------|--------|
-| HAR-RV-J Kelly v2 (Binance, USDT) | **0.645** | 27.1% | 41.1% | 513 |
-| HAR Classic Baseline (use_jumps=0) | 0.642 | 27.0% | 41.1% | 513 |
+Verified on QC Cloud (project 31650567, 2020-01-01 to 2025-06-01, Binance USDT DAILY):
+
+| Variant | Sharpe | CAGR | Max DD | PSR |
+|---------|--------|------|--------|-----|
+| HAR-RV-J Kelly v2 (use_jumps=1) | **0.746** | 23.03% | 48.30% | 24.0% |
+| HAR Classic Baseline (use_jumps=0) | 0.642 | 27.0% | 41.1% | 15.8% |
+
+The HAR-RV-J v2 row is verified under the current Binance USDT DAILY configuration (2026-06-12, backtest `verify-har-rv-j-real-metrics`). The HAR Classic baseline retains its 2026-05-14 measurement (pre-Binance configuration); a fresh `use_jumps=0` run under the current configuration is pending for an apples-to-apples delta.
+
+> **Note:** The trade-count column was removed because the `read_backtest` MCP method does not parse the `totalOrders` field (always reports 0). The strategy trades actively — a 23% CAGR and 48% drawdown cannot arise from an all-cash book. The real order count is read from the QC Cloud web UI (*Backtests Results* treegrid, "Orders" column). See the Multi-Layer-EMA README for the full diagnostic of this MCP phantom (resolved as part of #2801 Lot 2).
 
 ## Files
 
