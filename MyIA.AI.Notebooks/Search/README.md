@@ -319,6 +319,7 @@ dotnet --version
 - [automata-lib](https://pypi.org/project/automata-lib/) - Automates finis
 - [MiniZinc](https://www.minizinc.org/) - Modelisation declarative
 - [GeneticSharp](https://github.com/giacomelli/GeneticSharp) - GA en C#
+- [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) - Couche metaheuristiques composables au-dessus de GeneticSharp (sous-module `MetaGeneticSharp/`, projet enfant ravivant giacomelli/GeneticSharp#87)
 - [OpenSpiel](https://github.com/deepmind/open_spiel) - Framework de jeux et RL
 
 ### Projets etudiants sources
@@ -386,6 +387,8 @@ Search/
 │       ├── App-13-TSP-Metaheuristics.ipynb
 │       ├── App-17-VRP-Logistics.ipynb
 │       └── App-18-HyperparameterTuning.ipynb
+│
+├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
 │
 ├── Foundations/                           # (deprecated) Ancien repertoire
 │   └── README.md
