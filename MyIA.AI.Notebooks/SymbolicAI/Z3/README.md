@@ -14,7 +14,7 @@ Cette serie explore **Z3.Linq**, un binding LINQ pour le solveur SMT Z3 (Microso
 | 02 | [Sudoku Theorem vs Array](02_Sudoku_Theorem_vs_Array.ipynb) | Sudoku explicite (81 proprietes) vs implicite (`List<int>` + lambdas/closures) | PRODUCTION |
 | 03 | [Array Theory](03_Array_Theory.ipynb) | Z3 array theory avec switching dynamique | BETA |
 | 04 | [Nested Arrays 2D](04_Nested_Arrays_2D.ipynb) | Tableaux imbriqués, grilles 2D, Sudoku 4x4, carré magique | BETA |
-| 05 | 05_Meal_Planner_Hierarchical | Planificateur de repas : data fusion LINQ + theoreme hierarchique | A venir |
+| 05 | [Meal Planner Hierarchical](05_Meal_Planner_Hierarchical.ipynb) | Planificateur de repas : data fusion LINQ + theoreme hierarchique | BETA |
 
 ## Prerequis
 
