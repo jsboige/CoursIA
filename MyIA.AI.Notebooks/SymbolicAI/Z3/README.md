@@ -1,12 +1,5 @@
 # Serie Z3 - Programmation Declarative avec Z3.Linq
 
-<!-- CATALOG-STATUS
-series: SymbolicAI-Z3
-pedagogical_count: 5
-breakdown: Z3=5
-maturity: PRODUCTION=2,BETA=2,BETA=1
--->
-
 **Navigation** : [Index SymbolicAI](../README.md) | [Index general](../../README.md)
 
 ## Serie en quelques mots
