@@ -1,3 +1,24 @@
+# ARCHIVED 2026-06-12 — superseded by scripts/s2_v2_vol_ensemble_dm.py (See #1409)
+#
+# Verdict: NO BEATS (0/84 combos) — results/s2_vol_ensemble_dm/verdict.md,
+# docs/RECAP_KEEPERS_V2.md ("S2 DM Ensemble | NO BEATS | -0.068 | 0/4").
+# No doc in docs/*.md, README.md or REGISTRY.md references this file; no script
+# imports it (grep 2026-06-12).
+#
+# Function disposition (v1 line -> v2 line in s2_v2_vol_ensemble_dm.py):
+#   _sharpe_ann (81)                    -> SUPERSEDED v2:92 (identical role)
+#   _dm_weights (89)                    -> SUPERSEDED v2:100 (v2 adds per-coin/per-horizon weighting)
+#   _evaluate_sharpe_from_forecasts (122) -> SUPERSEDED by shared-module path: v2 imports
+#                                          _kelly_weights_and_returns from m11g_fee_aware_kelly
+#                                          (v2:54-56) and evaluates Sharpe inline (v2:382-414)
+#   run_one_combo (177)                 -> SUPERSEDED v2:242 (v2 adds MLP 4th model + h=22)
+#   main (391)                          -> SUPERSEDED v2:437
+#   _avg_weights (536)                  -> SUPERSEDED v2:429
+# v2 additions (no v1 counterpart): walk_forward_mlp (v2:126), _build_mlp_features (v2:213).
+#
+# Kept on disk for forensic reproducibility of the recorded verdict only.
+# Do NOT use for new work — run s2_v2_vol_ensemble_dm.py instead.
+
 """S2 Vol Ensemble DM-weighted — Diebold-Mariano per-coin forecast combination.
 
 Question

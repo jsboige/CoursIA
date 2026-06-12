@@ -1,3 +1,15 @@
+# ARCHIVED 2026-06-12 — closed dead-end experiment, no successor (See #1409)
+#
+# Verdict: NO BEATS — docs/RECAP_KEEPERS_V2.md ("S2 GSP Cross-Asset | NO BEATS | — | — |
+# MSE -12% but no Sharpe translation"). GSP low-pass filtering of cross-asset log-RV
+# improved forecast MSE but did not translate into Sharpe after Kelly sizing + fees;
+# the line of work was closed (no v2). No doc in docs/*.md, README.md or REGISTRY.md
+# references this file; no script imports it (grep 2026-06-12). Its graph-Laplacian
+# logic exists nowhere else in scripts/ (unique to this experiment, deliberately
+# not carried forward).
+#
+# Kept on disk for forensic reproducibility of the recorded verdict only.
+
 """S2 GSP Cross-Asset Volatility — Graph Signal Processing on crypto-7.
 
 Question

@@ -1,3 +1,45 @@
+# ARCHIVED 2026-06-12 — superseded by scripts/L1_tsmom.py (PR #1730, See #1409)
+#
+# Verdict: NO BEATS — local results/l1_tsmom/results.json (gitignored),
+# overall_verdict "NO BEATS", run 2026-05-23T16:11. The L1 ladder rung's final
+# recorded verdict comes from the successor L1_tsmom.py (PR #1574: NO BEATS,
+# net Sharpe -2.26 to -2.56, README.md ladder table). No doc in docs/*.md,
+# README.md or REGISTRY.md references this file; no script imports it
+# (grep 2026-06-12).
+#
+# Output-path note: this precursor wrote results/l1_tsmom/; the successor
+# writes checkpoints/L1_tsmom_results.json (L1_tsmom.py:441), consumed by
+# L2_dual_momentum.py:32 for ladder chaining.
+#
+# Function disposition (v1 line -> successor):
+#   load_panier (85)          -> SUPERSEDED by shared module: L1_tsmom.py:420 uses
+#                                panier_loader.load_panier_closes (panier_loader.py:207)
+#   compute_tsmom_signal (94) -> SUPERSEDED L1_tsmom.py:74 (same name)
+#   vol_scale (104)           -> SUPERSEDED compute_vol_scale L1_tsmom.py:80
+#   compute_regimes (112)     -> ABANDONED: final L1 verdict methodology = net Sharpe
+#                                vs B&H only (compute_verdict L1_tsmom.py:269); the
+#                                regime-conditioning line of work lived on in
+#                                l3_regime_trend.py (also archived, dead-end) and the
+#                                S3/S4v2 keepers (s4_inverse_vol_ridge_v2.py:108)
+#   sharpe (135)              -> SUPERSEDED by shared module baselines.sharpe_from_returns
+#                                (baselines.py:261)
+#   deflated_sharpe (149)     -> ABANDONED in L1 final (DSR dropped from verdict; DSR
+#                                methodology survives in m11c_sharpe_test.py shared module)
+#   apply_tx_costs (165)      -> SUPERSEDED by shared module transaction_costs
+#                                .TransactionCostModel (transaction_costs.py:28) via
+#                                get_cost_model L1_tsmom.py:66
+#   run_tsmom_single (173)    -> SUPERSEDED run_tsmom_single_lookback L1_tsmom.py:89
+#   _max_drawdown (310)       -> ABANDONED (MaxDD dropped from final L1 verdict)
+#   _count_trades (318)       -> SUPERSEDED by inline trades_per_day detection
+#                                L1_tsmom.py:158-191
+#   run_all (327)             -> SUPERSEDED main L1_tsmom.py:344 + compute_verdict (269)
+#                                + print_results_table (307)
+# Successor additions (no v1 counterpart): run_buyhold_baseline (L1_tsmom.py:220),
+# compare_gross_vs_net reporting (transaction_costs.py:108).
+#
+# Kept on disk for forensic reproducibility of the recorded verdict only.
+# Do NOT use for new work — run L1_tsmom.py instead.
+
 """L1 TSMOM Baseline — Time-Series Momentum on 26-symbol anti-bias panier.
 
 Reference

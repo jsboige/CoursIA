@@ -1,3 +1,36 @@
+# ARCHIVED 2026-06-12 — superseded by scripts/L2_dual_momentum.py (PR #1730, See #1409)
+#
+# Verdict: NO BEATS — local results/l2_dual_momentum/results.json (gitignored),
+# overall_verdict "NO BEATS", run 2026-05-23T16:14. The L2 ladder rung's final
+# recorded verdict comes from the successor L2_dual_momentum.py (PR #1575:
+# NO BEATS, best CS 252d net Sharpe 0.997, delta -0.153 vs B&H, README.md
+# ladder table). No doc in docs/*.md, README.md or REGISTRY.md references this
+# file; no script imports it (grep 2026-06-12).
+#
+# Output-path note: this precursor wrote results/l2_dual_momentum/; the
+# successor writes checkpoints/L2_dual_momentum_results.json
+# (L2_dual_momentum.py:487) and chains on L1's checkpoint (L2_dual_momentum.py:32).
+#
+# Function disposition (v1 line -> successor):
+#   load_panier (69)         -> SUPERSEDED by shared module: panier_loader
+#                               .load_panier_closes (panier_loader.py:207)
+#   sharpe (76)              -> SUPERSEDED by shared module baselines
+#                               .sharpe_from_returns (baselines.py:261)
+#   max_drawdown (85)        -> ABANDONED: final L2 verdict methodology = net Sharpe
+#                               vs B&H only (compute_verdict L2_dual_momentum.py:291)
+#   compute_regimes (92)     -> ABANDONED (same reason; regime work lived on in
+#                               l3_regime_trend.py — also archived — and S3/S4v2 keepers)
+#   run_cross_sectional (106) -> SUPERSEDED L2_dual_momentum.py:63 (same name,
+#                               TransactionCostModel-based costs)
+#   run_dual_momentum (220)  -> SUPERSEDED L2_dual_momentum.py:166 (same name)
+#   run_all (337)            -> SUPERSEDED main L2_dual_momentum.py:396
+#                               + compute_verdict (291) + print_comparison_table (347)
+# Successor additions (no v1 counterpart): run_buyhold_baseline
+# (L2_dual_momentum.py:322), L1-checkpoint chaining (L2_dual_momentum.py:32).
+#
+# Kept on disk for forensic reproducibility of the recorded verdict only.
+# Do NOT use for new work — run L2_dual_momentum.py instead.
+
 """L2 Cross-Sectional + Dual Momentum — Antonacci (2014) on 26-symbol panier.
 
 Reference

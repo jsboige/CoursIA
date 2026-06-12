@@ -1,3 +1,33 @@
+# ARCHIVED 2026-06-12 — superseded by scripts/s4_inverse_vol_ridge_v2.py (KEEPER) (See #1409)
+#
+# Verdict: NO BEATS — docs/RECAP_KEEPERS_V2.md ("S4 v1 Ridge (no regime) | NO BEATS |
+# +0.022 | 4/4 | MaxDD -82.4%, no edge"). The v2 docstring records the supersession
+# explicitly: "The v1 (crypto-7) failed: delta +0.022 (gate +0.10)" (v2:8-9).
+# V2 changed universe (crypto-7 -> SPY/TLT/sectors) and added HMM regime conditioning
+# (S3 insight); it is the Curriculum V2 KEEPER (+0.325). No doc references this file;
+# no script imports it (grep 2026-06-12).
+#
+# Function disposition (v1 line -> v2 line in s4_inverse_vol_ridge_v2.py):
+#   load_crypto_returns (54)   -> SUPERSEDED load_data v2:72 (universe change crypto-7 -> ETFs)
+#   inv_vol_weights (78)       -> SUPERSEDED v2:173 (identical role)
+#   inv_var_weights (85)       -> ABANDONED (v2 keeps inverse-vol only; inv-var baseline
+#                                 showed no edge in v1, RECAP S4 v1 row)
+#   ridge_inv_vol_weights (92) -> SUPERSEDED regime_conditional_weights v2:189 (Ridge now
+#                                 applied inside regime conditioning)
+#   equal_weights (109)        -> SUPERSEDED v2:217
+#   _project_simplex (114)     -> SUPERSEDED v2:179
+#   walk_forward_portfolio (127) -> SUPERSEDED walk_forward v2:223 (adds regime features)
+#   _sharpe (247)              -> SUPERSEDED v2:397
+#   _max_drawdown (253)        -> SUPERSEDED v2:403
+#   run_experiment (262)       -> SUPERSEDED v2:412
+#   write_verdict (336)        -> SUPERSEDED v2:486
+#   main (376)                 -> SUPERSEDED v2:528
+# v2 additions (no v1 counterpart): block_bootstrap (v2:95), fit_hmm_regime (v2:108),
+# jitter_regime (v2:155).
+#
+# Kept on disk for forensic reproducibility of the recorded verdict only.
+# Do NOT use for new work — run s4_inverse_vol_ridge_v2.py instead.
+
 """S4 Inverse Volatility Ridge — Portfolio weighting with L2 regularisation.
 
 Question
