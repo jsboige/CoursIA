@@ -17,23 +17,23 @@ class HarrvjKellyAlgorithm(QCAlgorithm):
     use_jumps=0 for HAR Classic (3 features).
 
     Kelly 1/4 fraction for position sizing.
-    Assets: BTCUSD, ETHUSD, LTCUSD, BCHUSD (crypto, Coinbase).
+    Assets: BTCUSDT, ETHUSDT, LTCUSDT, BCHUSDT (crypto, Binance).
     """
 
     def initialize(self):
         self.set_start_date(2020, 1, 1)
         self.set_end_date(2025, 6, 1)
         self.set_cash(100000)
-        self.set_brokerage_model(BrokerageName.COINBASE_BROKERAGE, AccountType.CASH)
+        self.set_brokerage_model(BrokerageName.BINANCE, AccountType.CASH)
 
         # Parameter: 1 = HAR-RV-J (6 features), 0 = HAR Classic (3 features)
         self.use_jumps = self.get_parameter("use_jumps", "1") == "1"
 
-        # Crypto tickers (Coinbase-provided)
-        self.tickers = ["BTCUSD", "ETHUSD", "LTCUSD", "BCHUSD"]
+        # Crypto tickers (Binance-provided)
+        self.tickers = ["BTCUSDT", "ETHUSDT", "LTCUSDT", "BCHUSDT"]
         self.symbols = {}
         for ticker in self.tickers:
-            crypto = self.add_crypto(ticker, Resolution.DAILY, Market.COINBASE)
+            crypto = self.add_crypto(ticker, Resolution.DAILY, Market.BINANCE)
             self.symbols[ticker] = crypto.symbol
 
         # Model parameters

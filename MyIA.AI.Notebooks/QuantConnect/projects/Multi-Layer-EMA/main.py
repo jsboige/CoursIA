@@ -6,13 +6,13 @@ class OptimizedCryptoAlgorithm(QCAlgorithm):
         self.SetStartDate(2015, 1, 1)
         self.SetEndDate(2024, 12, 31)
         self.SetCash(100000)
-        self.SetBrokerageModel(BrokerageName.COINBASE_BROKERAGE, AccountType.CASH)
+        self.SetBrokerageModel(BrokerageName.Binance, AccountType.Cash)
         self.symbols = [
-            self.AddCrypto("BTCUSD", Resolution.HOUR).Symbol,
-            self.AddCrypto("ETHUSD", Resolution.HOUR).Symbol,
-            self.AddCrypto("LTCUSD", Resolution.HOUR).Symbol
+            self.AddCrypto("BTCUSDT", Resolution.HOUR, Market.BINANCE).Symbol,
+            self.AddCrypto("ETHUSDT", Resolution.HOUR, Market.BINANCE).Symbol,
+            self.AddCrypto("LTCUSDT", Resolution.HOUR, Market.BINANCE).Symbol
         ]
-        self.SetBenchmark("BTCUSD")
+        self.SetBenchmark("BTCUSDT")
         self.fastPeriod = self.GetParameter("fastPeriod", 10)
         self.slowPeriod = self.GetParameter("slowPeriod", 50)
 
