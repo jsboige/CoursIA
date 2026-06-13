@@ -354,44 +354,44 @@ python -m ipykernel install --user --name=quantconnect --display-name "Python (Q
 
 ## FAQ
 
-### Peut-on trade avec de l'argent reel directement ?
+### Peut-on trade avec de l'argent réel directement ?
 
-Techniquement oui (QC supporte les brokers live : IBKR, Binance, etc.), mais **pas dans le cadre de cette serie**. Tous les notebooks et projets sont conçus pour le backtest et le paper trading. Le passage en live necessite un compte broker, du capital, et une discipline de validation stricte (walk-forward, multi-seed, OOS).
+Techniquement oui (QC supporte les brokers live : IBKR, Binance, etc.), mais **pas dans le cadre de cette série**. Tous les notebooks et projets sont conçus pour le backtest et le paper trading. Le passage en live nécessite un compte broker, du capital, et une discipline de validation stricte (walk-forward, multi-seed, OOS).
 
-### Comment choisir une premiere strategie ?
+### Comment choisir une première stratégie ?
 
-Pour debuter : **EMA-Cross-Stocks** (Sharpe 0.872, debutant) ou **AllWeather** (Sharpe 0.667, debutant). Ces strategies sont simples, robustes, et pedagogiques. Les strategies avancees (BTC-ML, Framework_Composite) ont des Sharpes plus eleves mais requierent une comprehension plus profonde des risques.
+Pour débuter : **EMA-Cross-Stocks** (Sharpe 0.872, débutant) ou **AllWeather** (Sharpe 0.667, débutant). Ces stratégies sont simples, robustes, et pédagogiques. Les stratégies avancées (BTC-ML, Framework_Composite) ont des Sharpes plus élevés mais requièrent une compréhension plus profonde des risques.
 
-### Quelle est la difference entre Sharpe et CAGR ?
+### Quelle est la différence entre Sharpe et CAGR ?
 
-Le **CAGR** (Compound Annual Growth Rate) mesure le rendement annualise. Le **Sharpe ratio** mesure le rendement ajuste au risque : Sharpe = (Rendement - Taux_sans_risque) / Volatilite. Un CAGR eleve avec un Sharpe faible signifie une strategie volatile (gros gains, grosses pertes). Un Sharpe > 0.5 est considere robuste dans cette serie.
+Le **CAGR** (Compound Annual Growth Rate) mesure le rendement annualisé. Le **Sharpe ratio** mesure le rendement ajusté au risque : Sharpe = (Rendement - Taux_sans_risque) / Volatilité. Un CAGR élevé avec un Sharpe faible signifie une stratégie volatile (gros gains, grosses pertes). Un Sharpe > 0.5 est considéré robuste dans cette série.
 
-### Les performances backtestees sont-elles realistes en live ?
+### Les performances backtestées sont-elles réalistes en live ?
 
-Non, ou avec une discount significative (20-30% en moins). Les backtests souffrent de biais connus : look-ahead, survivorship, overfitting, et ignorent le slippage et le market impact reels. Les Sharpes annonces sont in-sample. La serie inclut des notebooks sur le walk-forward et les couts de transaction pour evaluer la robustesse hors-echantillon.
+Non, ou avec une discount significative (20-30% en moins). Les backtests souffrent de biais connus : look-ahead, survivorship, overfitting, et ignorent le slippage et le market impact réels. Les Sharpes annoncés sont in-sample. La série inclut des notebooks sur le walk-forward et les coûts de transaction pour évaluer la robustesse hors-échantillon.
 
-### Peut-on executer les notebooks localement sans compte QuantConnect ?
+### Peut-on exécuter les notebooks localement sans compte QuantConnect ?
 
-Non. Les notebooks Python de cette serie utilisent `QuantBook()` qui necessite une connexion au cloud QuantConnect. Les notebooks C# (.NET) executent du code LEAN en local mais n'ont pas acces aux donnees de marche sans connexion QC. Creez un compte gratuit sur [quantconnect.com](https://www.quantconnect.com/) pour obtenir votre token API (variable `QC_API_TOKEN` dans `.env`).
+Non. Les notebooks Python de cette série utilisent `QuantBook()` qui nécessite une connexion au cloud QuantConnect. Les notebooks C# (.NET) exécutent du code LEAN en local mais n'ont pas accès aux données de marché sans connexion QC. Créez un compte gratuit sur [quantconnect.com](https://www.quantconnect.com/) pour obtenir votre token API (variable `QC_API_TOKEN` dans `.env`).
 
-### Quelle est la difference entre un notebook Python et un projet C# ?
+### Quelle est la différence entre un notebook Python et un projet C# ?
 
-Les **notebooks Python** (QC-Py-01 a QC-28) sont des explorations interactives avec `QuantBook()` : chargement de donnees, analyses, visualisations, prototypage rapide. Les **projets C#** sont des algorithmes complets (`QCAlgorithm`) destines au backtesting production dans l'IDE QuantConnect. Le workflow standard est : explorer en notebook Python -> implementer en C# ou Python projet.
+Les **notebooks Python** (QC-Py-01 à QC-28) sont des explorations interactives avec `QuantBook()` : chargement de données, analyses, visualisations, prototypage rapide. Les **projets C#** sont des algorithmes complets (`QCAlgorithm`) destinés au backtesting production dans l'IDE QuantConnect. Le workflow standard est : explorer en notebook Python -> implémenter en C# ou Python projet.
 
-### Comment limiter le cout en heures de calcul ?
+### Comment limiter le coût en heures de calcul ?
 
-- **Backtesting** : limiter la periode historique (2-3 ans suffit pour un prototype) et la frequence (Daily plutot que Minute)
-- **Notebooks** : utiliser `qb.history()` avec des dates precises plutot que charger l'historique complet
+- **Backtesting** : limiter la période historique (2-3 ans suffit pour un prototype) et la fréquence (Daily plutôt que Minute)
+- **Notebooks** : utiliser `qb.history()` avec des dates précises plutôt que charger l'historique complet
 - **Deep Learning** : les notebooks QC-22/23/24 sont CPU-optimized pour le free tier
 - **Rate limiting** : max 10 appels API/min entre tous les agents du cluster
 
-### Pourquoi utiliser LEAN plutot qu'un framework comme Backtrader ?
+### Pourquoi utiliser LEAN plutôt qu'un framework comme Backtrader ?
 
-LEAN est le moteur de production de QuantConnect : il gere les donnees corporates (splits, dividends, spinoffs), le slippage, les frais reels, le margin, et le live trading. Backtrader et Zipline sont d'excellents outils pedagogiques mais ne gerent pas ces aspects en production. Cette serie enseigne LEAN pour que les competences soient directement transferables au trading reel.
+LEAN est le moteur de production de QuantConnect : il gère les données corporates (splits, dividends, spinoffs), le slippage, les frais réels, le margin, et le live trading. Backtrader et Zipline sont d'excellents outils pédagogiques mais ne gèrent pas ces aspects en production. Cette série enseigne LEAN pour que les compétences soient directement transférables au trading réel.
 
-### Qu'est-ce qu'un QuantBook et comment se differencie-t-il d'un algorithme ?
+### Qu'est-ce qu'un QuantBook et comment se différencie-t-il d'un algorithme ?
 
-`QuantBook` est l'API interactive de QuantConnect pour les notebooks Jupyter. Elle permet de charger des donnees, calculer des indicateurs, et analyser des resultats sans ecrire un algorithme complet. Un `QCAlgorithm` est la version production avec des callbacks (`OnData`, `OnEndOfDay`), un portefeuille, et un moteur d'execution. Les notebooks de cette serie utilisent `QuantBook` pour l'exploration ; les projets utilisent `QCAlgorithm` pour le backtesting.
+`QuantBook` est l'API interactive de QuantConnect pour les notebooks Jupyter. Elle permet de charger des données, calculer des indicateurs, et analyser des résultats sans écrire un algorithme complet. Un `QCAlgorithm` est la version production avec des callbacks (`OnData`, `OnEndOfDay`), un portefeuille, et un moteur d'exécution. Les notebooks de cette série utilisent `QuantBook` pour l'exploration ; les projets utilisent `QCAlgorithm` pour le backtesting.
 
 ## Free Tier vs Paid
 
@@ -465,12 +465,12 @@ Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes s
 
 | Serie | Lien | Connection |
 |-------|------|------------|
-| [ML](../ML/README.md) | Machine Learning | Les modeles de prediction ML (regression, classification, XGBoost) s'appliquent directement aux strategies de trading (QC-13 a QC-16) |
-| [GenAI](../GenAI/README.md) | IA generative | L'analyse de sentiment par LLM (QC-17) et les agents semantiques (QC-18) utilisent les LLMs couverts dans GenAI/Texte |
-| [RL](../RL/README.md) | Apprentissage par renforcement | Les strategies RL (QC-22 PPO, QC-23 DRL, QC-24 Crypto RL) prolongent les fondamentaux RL de cette serie |
-| [Probas](../Probas/README.md) | Programmation probabiliste | La modelisation bayesienne des rendements et la gestion du risque s'appuient sur les modeles probabilistes de la serie Probas |
-| [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparametres de strategies (grid search, bayesienne) rejoint les techniques de recherche |
-| [ML](../ML/ML.Net/README.md) | Series temporelles ML.NET | L'analyse technique (QC-4 a QC-7) partage les memes fondements que le forecasting par SSA (ML-5) |
+| [ML](../ML/README.md) | Machine Learning | Les modèles de prédiction ML (régression, classification, XGBoost) s'appliquent directement aux stratégies de trading (QC-13 à QC-16) |
+| [GenAI](../GenAI/README.md) | IA générative | L'analyse de sentiment par LLM (QC-17) et les agents sémantiques (QC-18) utilisent les LLMs couverts dans GenAI/Texte |
+| [RL](../RL/README.md) | Apprentissage par renforcement | Les stratégies RL (QC-22 PPO, QC-23 DRL, QC-24 Crypto RL) prolongent les fondamentaux RL de cette série |
+| [Probas](../Probas/README.md) | Programmation probabiliste | La modélisation bayésienne des rendements et la gestion du risque s'appuient sur les modèles probabilistes de la série Probas |
+| [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparamètres de stratégies (grid search, bayésienne) rejoint les techniques de recherche |
+| [ML](../ML/ML.Net/README.md) | Séries temporelles ML.NET | L'analyse technique (QC-4 à QC-7) partage les mêmes fondements que le forecasting par SSA (ML-5) |
 
 ---
 
