@@ -47,7 +47,7 @@ Les trois premiers notebooks forment le socle commun — on y apprend à poser u
 - **Recherche locale et évolutive** : Search-4 (LocalSearch) puis Search-5 (GeneticAlgorithms) puis Search-11 (Metaheuristics)
 - **Recherche dans les jeux** : Search-3 puis Search-6 (AdversarialSearch) puis Search-7 (MCTS)
 - **Couverture exacte** : Search-2 puis Search-8 (DancingLinks)
-- **Indépendants** : Search-9 (LinearProgramming, algèbre linéaire requise) et Search-10 (SymbolicAutomata, liens avec SymbolicAI/Z3)
+- **Indépendants** : Search-9 (LinearProgramming, algèbre linéaire requise) et Search-10 (SymbolicAutomata, liens avec SymbolicAI/SMT/Z3)
 
 Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) sont le prérequis de la [Partie 2 (CSP)](../Part2-CSP/README.md).
 
