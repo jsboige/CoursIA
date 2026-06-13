@@ -45,9 +45,24 @@ theorem present_value_constant {γ r : ℝ} (hγ₁ : 0 < γ) (hγ₂ : γ < 1) 
   ring
 
 /-- Discount factor closer to 1 gives higher present value.
-    If γ₁ ≤ γ₂, then Σ γ₁^n ≤ Σ γ₂^n. -/
+    If γ₁ ≤ γ₂, then Σ γ₁^n ≤ Σ γ₂^n.
+
+    **Proof strategy**: rewrite both tsums via the closed-form geometric
+    identity `∑' n, γ^n = 1/(1-γ)` (`geometric_series_converges`), then reduce
+    the goal to `1/(1-γ₁) ≤ 1/(1-γ₂)`. Since `γ₁ ≤ γ₂` we have
+    `1-γ₂ ≤ 1-γ₁`, and both denominators are positive (`γ₂ < 1`), so
+    `one_div_le_one_div_of_le` closes the goal. This sidesteps the missing
+    `tsum_le_tsum` on `ℝ` (not available in Mathlib v4.30.0-rc2 for bare `ℝ`
+    series) by exploiting the closed form. -/
 theorem discount_monotone {γ₁ γ₂ : ℝ} (h₁ : 0 ≤ γ₁) (h₂ : γ₁ ≤ γ₂) (h₃ : γ₂ < 1) :
     ∑' n : ℕ, γ₁ ^ n ≤ ∑' n : ℕ, γ₂ ^ n := by
-  sorry  -- TODO: requires tsum_le_tsum with termwise comparison
+  have hγ₁_lt : γ₁ < 1 := lt_of_le_of_lt h₂ h₃
+  have hγ₂_nn : 0 ≤ γ₂ := le_trans h₁ h₂
+  rw [geometric_series_converges h₁ hγ₁_lt, geometric_series_converges hγ₂_nn h₃]
+  -- Goal: 1 / (1 - γ₁) ≤ 1 / (1 - γ₂)
+  -- Since γ₁ ≤ γ₂, we have 1 - γ₂ ≤ 1 - γ₁; both denominators are positive.
+  apply one_div_le_one_div_of_le
+  · exact sub_pos.mpr (by linarith)  -- 0 < 1 - γ₂
+  · linarith                        -- 1 - γ₂ ≤ 1 - γ₁
 
 end Gittins
