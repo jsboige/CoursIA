@@ -163,6 +163,103 @@ def buildFromGrid (g : Grid) (r0 c0 : Int) : Nat -> MacroCell
     let se := buildFromGrid g (r0 + half) (c0 + half) n
     node nw ne sw se
 
+/-- The level of a `MacroCell` built by `buildFromGrid g r0 c0 lvl` is `lvl`. -/
+theorem level_buildFromGrid (g : Grid) (r0 c0 : Int) (lvl : Nat) :
+    (buildFromGrid g r0 c0 lvl).level = lvl := by
+  induction lvl with
+  | zero => rfl
+  | succ n ih =>
+    simp only [buildFromGrid]
+    rw [level, ih]
+    omega
+
+/-- A cell `p` lies inside the level-`lvl` square anchored at `(r0, c0)`:
+    `[r0, r0 + 2^lvl) x [c0, c0 + 2^lvl)`.
+
+    NOTE: `cases`/`rcases`/`rintro` on a disjunction whose branches mention
+    `inRegion` (which unfolds to `Int.le`/`Int.lt`) triggers a Lean
+    dependent-elimination failure on the Int subtraction match. The proof
+    below uses `match` (which elaborates differently and succeeds) to split
+    the 4-way quadrant disjunction. -/
+def inRegion (p : Int × Int) (r0 c0 : Int) (lvl : Nat) : Prop :=
+  r0 ≤ p.1 ∧ p.1 < r0 + (2 ^ lvl : Nat) ∧
+    c0 ≤ p.2 ∧ p.2 < c0 + (2 ^ lvl : Nat)
+
+/-- **Round-trip core lemma**: a cell `p` appears in the `toCellsAux`
+    enumeration of `buildFromGrid g r0 c0 lvl` iff `p` lies inside the
+    covered square AND `p ∈ g`. Proved by induction on `lvl`,
+    generalizing the offsets so the IH applies at shifted quadrant origins. -/
+theorem mem_toCellsAux_buildFromGrid (g : Grid) (lvl : Nat) (r0 c0 : Int)
+    (p : Int × Int) :
+    p ∈ (buildFromGrid g r0 c0 lvl).toCellsAux r0 c0 ↔
+      inRegion p r0 c0 lvl ∧ p ∈ g := by
+  induction lvl generalizing r0 c0 p with
+  | zero =>
+    cases h : g.elem (r0, c0) with
+    | true =>
+      unfold inRegion
+      simp only [buildFromGrid, toCellsAux, h, pow_zero, Nat.cast_one,
+                 List.mem_singleton]
+      constructor
+      · rintro rfl
+        refine ⟨⟨rfl.le, by omega, rfl.le, by omega⟩, ?_⟩
+        exact List.elem_iff.mp h
+      · rintro ⟨⟨h1, h2, h3, h4⟩, _⟩
+        ext <;> omega
+    | false =>
+      simp only [buildFromGrid, toCellsAux, h, List.not_mem_nil, false_iff]
+      rintro ⟨hreg, hpg⟩
+      unfold inRegion at hreg
+      obtain ⟨h1, h2, h3, h4⟩ := hreg
+      have hp : p = (r0, c0) := by ext <;> omega
+      subst hp
+      have hne : (r0, c0) ∉ g := by
+        intro hm
+        exact absurd (List.elem_iff.mpr hm) (Bool.eq_false_iff.mp h)
+      exact absurd hpg hne
+  | succ n ih =>
+    simp only [buildFromGrid, toCellsAux, level_buildFromGrid] at *
+    simp only [List.mem_append] at *
+    have ihn := ih r0 c0 p
+    have ihne := ih r0 (c0 + (2 ^ n : Nat)) p
+    have ihsw := ih (r0 + (2 ^ n : Nat)) c0 p
+    have ihse := ih (r0 + (2 ^ n : Nat)) (c0 + (2 ^ n : Nat)) p
+    rw [ihn, ihne, ihsw, ihse]
+    constructor
+    · -- Forward: `match` (not rcases) splits the Or — rcases/rintro trigger a
+      -- Lean dependent-elimination failure on the Int.le in branch types.
+      -- Left-nested `((A ∨ B) ∨ C) ∨ D`:
+      --   nw = inl (inl (inl _)), ne = inl (inl (inr _)),
+      --   sw = inl (inr _),       se = inr _.
+      intro h
+      match h with
+      | Or.inl (Or.inl (Or.inl ⟨hreg, hm⟩)) =>
+        unfold inRegion at hreg
+        refine ⟨?_, hm⟩
+        unfold inRegion; simp only [Nat.pow_succ, Nat.cast_mul]; omega
+      | Or.inl (Or.inl (Or.inr ⟨hreg, hm⟩)) =>
+        unfold inRegion at hreg
+        refine ⟨?_, hm⟩
+        unfold inRegion; simp only [Nat.pow_succ, Nat.cast_mul]; omega
+      | Or.inl (Or.inr ⟨hreg, hm⟩) =>
+        unfold inRegion at hreg
+        refine ⟨?_, hm⟩
+        unfold inRegion; simp only [Nat.pow_succ, Nat.cast_mul]; omega
+      | Or.inr ⟨hreg, hm⟩ =>
+        unfold inRegion at hreg
+        refine ⟨?_, hm⟩
+        unfold inRegion; simp only [Nat.pow_succ, Nat.cast_mul]; omega
+    · rintro ⟨hreg, hpg⟩
+      unfold inRegion at hreg
+      simp only [Nat.pow_succ, Nat.cast_mul] at hreg
+      by_cases hr : p.1 < r0 + (2 ^ n : Nat)
+      · by_cases hc : p.2 < c0 + (2 ^ n : Nat)
+        · left; left; left; unfold inRegion; refine ⟨⟨?_, ?_, ?_, ?_⟩, hpg⟩ <;> omega
+        · left; left; right; unfold inRegion; refine ⟨⟨?_, ?_, ?_, ?_⟩, hpg⟩ <;> omega
+      · by_cases hc : p.2 < c0 + (2 ^ n : Nat)
+        · left; right; unfold inRegion; refine ⟨⟨?_, ?_, ?_, ?_⟩, hpg⟩ <;> omega
+        · right; unfold inRegion; refine ⟨⟨?_, ?_, ?_, ?_⟩, hpg⟩ <;> omega
+
 end MacroCell
 
 /-! ## High-level Grid -> MacroCell
