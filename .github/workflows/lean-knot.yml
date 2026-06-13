@@ -1,0 +1,55 @@
+name: Lean Knot CI
+
+# CI for knot_lean (SymbolicAI/Lean/knot_lean).
+# Knot theory formalization (PD-codes, Reidemeister moves, tricolorability,
+# Conway knot, Lidman unknotting number). Epic #2874.
+# Rule lean-merge-discipline: lake build SUCCESS local OBLIGATOIRE avant merge.
+#
+# Follows the "Pattern identique aux projets existants" (conway_lean,
+# social_choice_lean, ...) documented in Epic #2874. knot_lean was the only
+# Lean project without a dispatcher — this closes that gap so future Knots
+# PRs (Phase 5 re-modeling and beyond) are CI-gated like the other 13.
+#
+# Uses the shared lean-build.yml reusable workflow.
+#
+# Sorry profile (verified 2026-06-14, prose-header mode, baseline=25):
+# knot_lean's real sorries are INLINE (`exact sorry`, `:= sorry`,
+# `sorry -- comment`), never bare `sorry` on its own line. The standalone-tactic
+# filter (`^\s*sorry\s*$`) counts 0 here and would catch no regression, so we
+# use prose-header (excludes only "sorries"/"sorry's"), which captures every
+# real sorry and fails on any addition. Breakdown of the 25:
+#   - Basic.lean:                1 (prose: TODO comment on well-formedness)
+#   - Reidemeister.lean:         2 (reidemeister_theorem ×2 — PL topology, OOS)
+#   - Invariant.lean:            4 (tricolorable_invariant, trefoil_not_unknot,
+#                                  unknottingNumber + prose)
+#   - Conway.lean:              11 (Conway knot 11n34, Kinoshita-Terasaka,
+#                                  mutation — scaffolding)
+#   - Lidman.lean:               5 (11n102 unknotting number = 2 — Heegaard-Floer)
+#   - MathlibPrerequisites.lean: 2 (prose: index of missing Mathlib)
+# Raising this baseline requires a documented justification in the PR body.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lean-toolchain'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
+      display-name: knot_lean
+      sorry-baseline: "25"
+      sorry-filter-mode: prose-header
