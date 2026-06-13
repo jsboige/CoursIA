@@ -4,7 +4,7 @@
 
 ## Serie en quelques mots
 
-**3 notebooks (en cours) | 1 kernel | z3-solver (Python) | matplotlib**
+**4 notebooks (en cours) | 1 kernel | z3-solver (Python) | matplotlib**
 
 **A qui s'adresse cette serie** : etudiants en IA, developpeurs Python souhaitant decouvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un probleme non pas comme un algorithme de resolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prerequis en logique formelle n'est suppose : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modelisation de problemes combinatoires.
 
@@ -43,7 +43,7 @@ Une serie sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basee sur le b
 | 01 | [Introduction](Z3-Python-01-Introduction.ipynb) | `Solver`, `Int`/`Bool`/`Real`, sat/unsat, `Optimize` | ~30 min | PRODUCTION |
 | 02 | [Sudoku](Z3-Python-02-Sudoku.ipynb) | Sudoku comme CSP, `Distinct`, visualisation matplotlib | ~25 min | PRODUCTION |
 | 03 | [Tactiques et theories](Z3-Python-03-Tactics.ipynb) | `Tactic`, `BitVec`, `Array` | ~35 min | PRODUCTION |
-| 04 | *(a venir)* Chaines et expressions regulieres | `String`, `Re` (theorie des chaines Z3) | — | Planifie |
+| 04 | [Chaines et expressions regulieres](Z3-Python-04-Strings-Regex.ipynb) | `String`, `Re` (theorie des chaines Z3) | ~30 min | PRODUCTION |
 | 05 | *(a venir)* Quantificateurs et preuves | `ForAll`, `Exists`, proofs, modele checking | — | Planifie |
 | 06 | *(a venir)* Optimisation avancee | Pareto, objectifs multiples, `Optimize` hierarchique | — | Planifie |
 
@@ -52,7 +52,8 @@ Une serie sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basee sur le b
 1. **Notebook 01** pose les bases : le patron `Solver()`, les types de base (`Int`, `Bool`, `Real`), les reponses `sat`/`unsat`/`unknown`, et l'optimisation avec `Optimize`
 2. **Notebook 02** applique l'approche declarative au Sudoku : modelisation par `Distinct`, resolution et visualisation (donne en noir / resolu en bleu)
 3. **Notebook 03** explore les tactiques (`simplify`, `Then`, `OrElse`), les theories `BitVec` (arithmetique modulaire) et `Array` (tableaux symboliques)
-4. **Notebooks suivants (planifies)** : theories de chaines, quantificateurs et optimisation avancee
+4. **Notebook 04** introduit la theorie des chaines : `String`, `Contains`, `IndexOf`, `Replace`, et les expressions regulieres (`Re`, `Star`, `Range`, `InRe`)
+5. **Notebooks suivants (planifies)** : quantificateurs et optimisation avancee
 
 ## Prerequis
 
