@@ -1,4 +1,4 @@
-# Lean - Solveur Mathematique et Verification Formelle
+# Lean - Solveur mathématique et Verification Formelle
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
@@ -7,7 +7,7 @@ breakdown: Lean=21
 maturity: PRODUCTION=21
 -->
 
-Cette serie de **21 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves, la verification formelle de reseaux de neurones, le port de theoremes phares (theoreme de Kochen-Specker, 18 vecteurs Cabello ; theoreme du libre arbitre de Conway-Kochen), et des hommages aux mathematiciens (Grothendieck, langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre).
+Cette serie de **21 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves, la verification formelle de reseaux de neurones, le port de théorèmes phares (théorème de Kochen-Specker, 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen), et des hommages aux mathematiciens (Grothendieck, langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre).
 
 ## Navigation
 
@@ -20,9 +20,9 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | **Fondations** | 1-5 | ~3h | Base theorique complete (types, logique, tactiques) |
 | **Avec Mathlib** | 1-6 | ~3h45 | Ajoute les tactiques Mathlib |
 | **Integration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
-| **Complet** | 1-12 | ~11h | Toutes les fonctionnalites incluant LeanDojo et theoreme de sensibilite |
+| **Complet** | 1-12 | ~11h | Toutes les fonctionnalites incluant LeanDojo et théorème de sensibilite |
 | **Avec Pilier 1.B** | 1-12, 15 | ~12h | Inclut le port Kochen-Specker (Cabello 18-vecteurs) - contextuality quantique |
-| **Avec hommages** | 1-12, 13, 14a, 14b, 14c, 15, 16 | ~16h | Ajoute Lean-13 (Grothendieck), Lean-14a (Conway, l'homme et l'oeuvre), Lean-14b (Conway, Game of Life) et Lean-16 (Conway, theoreme du libre arbitre - adosse a Lean-15) |
+| **Avec hommages** | 1-12, 13, 14a, 14b, 14c, 15, 16 | ~16h | Ajoute Lean-13 (Grothendieck), Lean-14a (Conway, l'homme et l'oeuvre), Lean-14b (Conway, Game of Life) et Lean-16 (Conway, théorème du libre arbitre - adosse a Lean-15) |
 
 ## Structure
 
@@ -43,27 +43,27 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 6 | [Lean-6-Mathlib-Essentials](Lean-6-Mathlib-Essentials.ipynb) | Mathlib4, tactiques ring/linarith/omega, recherche | 45 min |
 | 7 | [Lean-7-LLM-Integration](Lean-7-LLM-Integration.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
 | 7b | [Lean-7b-Examples](Lean-7b-Examples.ipynb) | Exemples progressifs, benchmarks, cas pratiques | 40 min |
-| 8 | [Lean-8-Agentic-Proving](Lean-8-Agentic-Proving.ipynb) | Agents autonomes, APOLLO, problemes Erdos | 55 min |
+| 8 | [Lean-8-Agentic-Proving](Lean-8-Agentic-Proving.ipynb) | Agents autonomes, APOLLO, problèmes Erdos | 55 min |
 | 9 | [Lean-9-SK-Multi-Agents](Lean-9-SK-Multi-Agents.ipynb) | Agent Framework (Microsoft), orchestration multi-agents | 45 min |
 | 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: reseaux de neurones verifies, IBP, CROWN | 1h30-2h |
 | 11a | [Lean-11-TorchLean-Python](Lean-11-TorchLean-Python.ipynb) | Implementation Python des algorithmes de verification (IBP, CROWN) | 1h30-2h |
-| 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | Theoreme de sensibilite (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
+| 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | théorème de sensibilite (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
 
-### Partie 3 : Theoremes phares (ports complets)
+### Partie 3 : théorèmes phares (ports complets)
 
 | # | Notebook | Contenu | Duree |
 |---|----------|---------|-------|
-| 15 | [Lean-15-Kochen-Specker](Lean-15-Kochen-Specker.ipynb) | Theoreme de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parite, contextuality quantique - Pilier 1.B Epic #1651 | 60 min |
+| 15 | [Lean-15-Kochen-Specker](Lean-15-Kochen-Specker.ipynb) | théorème de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parite, contextuality quantique - Pilier 1.B Epic #1651 | 60 min |
 
 ### Partie 4 : Hommages mathematiciens
 
 | # | Notebook | Contenu | Duree |
 |---|----------|---------|-------|
 | 13 | [Lean-13-Grothendieck-Tribute](Lean-13-Grothendieck-Tribute.ipynb) | Langage grothendieckien dans Mathlib 4 : categories/foncteurs, cribles et topologies de Grothendieck, faisceaux, schemas, site de Zariski, morphismes etales/lisses - Epic #1646 | 45 min |
-| 14a | [Lean-14a-Conway-Man-and-Work](Lean-14a-Conway-Man-and-Work.ipynb) | Conway, l'homme et l'oeuvre : biographie et style singulier (le jeu comme methode) ; panorama des grands resultats (nombres surreels, groupes de Conway & Monstrous Moonshine, reseau de Leech, polynome de Conway, Doomsday, Look-and-Say, FRACTRAN, probleme de l'Ange, Sprouts, theoreme du libre arbitre) ; premieres noix crackees executees depuis conway_lean (Doomsday, Look-and-Say, Nim, Angel, Life - 0 sorry) - Epic #1647 / #2154 | 50 min |
+| 14a | [Lean-14a-Conway-Man-and-Work](Lean-14a-Conway-Man-and-Work.ipynb) | Conway, l'homme et l'oeuvre : biographie et style singulier (le jeu comme méthode) ; panorama des grands resultats (nombres surreels, groupes de Conway & Monstrous Moonshine, reseau de Leech, polynome de Conway, Doomsday, Look-and-Say, FRACTRAN, problème de l'Ange, Sprouts, théorème du libre arbitre) ; premieres noix crackees executees depuis conway_lean (Doomsday, Look-and-Say, Nim, Angel, Life - 0 sorry) - Epic #1647 / #2154 | 50 min |
 | 14b | [Lean-14b-Conway-Game-of-Life-Lean](Lean-14b-Conway-Game-of-Life-Lean.ipynb) | Hommage a John Conway : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel - Epic #1647 | 60 min |
-| 16 | [Lean-16-Conway-Free-Will-Theorem](Lean-16-Conway-Free-Will-Theorem.ipynb) | Theoreme du libre arbitre (Conway-Kochen) : les trois axiomes SPIN/TWIN/MIN en profondeur, argument en deux temps (1 particule via Kochen-Specker, puis 2 particules via TWIN), ce que le theoreme dit et NE dit PAS, port formel adosse a `FreeWillTheorem.lean` (chaine de reduction `free_will_theorem -> fwt_single_particle -> kochen_specker`, 0 sorry), registre d'extensibilite - Epic #2162 / #2156 | 40 min |
+| 16 | [Lean-16-Conway-Free-Will-Theorem](Lean-16-Conway-Free-Will-Theorem.ipynb) | théorème du libre arbitre (Conway-Kochen) : les trois axiomes SPIN/TWIN/MIN en profondeur, argument en deux temps (1 particule via Kochen-Specker, puis 2 particules via TWIN), ce que le théorème dit et NE dit PAS, port formel adosse a `FreeWillTheorem.lean` (chaine de reduction `free_will_theorem -> fwt_single_particle -> kochen_specker`, 0 sorry), registre d'extensibilite - Epic #2162 / #2156 | 40 min |
 
 **Duree totale** : ~16h
 
@@ -71,15 +71,15 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 
 A l'issue de la serie, vous saurez :
 
-- **Modeliser** un raisonnement mathematique dans le Calcul des Constructions : types dependants, univers, propositions comme types (Curry-Howard). Notebooks 2-3 ancrent ces objets sur des exemples concrets (Vector, propositions logiques) plutot que sur de l'abstraction nue.
-- **Prouver** un theoreme en mode tactique avec les briques Mathlib : `intro`/`apply`/`exact`/`rfl` pour la structure, `ring`/`linarith`/`omega`/`simp` pour l'arithmetique et la simplification, `induction`/`cases`/`rcases` pour l'analyse de cas. Notebooks 4-6.
+- **Modeliser** un raisonnement mathématique dans le Calcul des Constructions : types dependants, univers, propositions comme types (Curry-Howard). Notebooks 2-3 ancrent ces objets sur des exemples concrets (Vector, propositions logiques) plutot que sur de l'abstraction nue.
+- **Prouver** un théorème en mode tactique avec les briques Mathlib : `intro`/`apply`/`exact`/`rfl` pour la structure, `ring`/`linarith`/`omega`/`simp` pour l'arithmetique et la simplification, `induction`/`cases`/`rcases` pour l'analyse de cas. Notebooks 4-6.
 - **Integrer un LLM** au workflow de preuve : patterns LeanCopilot et AlphaProof (n-best, MCTS), prompts goal-aware, comparaison ND-search vs CoT, agents APOLLO/Erdos. Notebooks 7-9.
 - **Tracer et explorer** une base de preuves a grande echelle : LeanDojo (parsing AST, theorem extraction, interaction Dojo), reseaux de neurones verifies via IBP/CROWN (TorchLean). Notebooks 10-11.
-- **Porter** un theoreme de recherche en Lean 4 : theoreme de sensibilite (Huang 2019, hypercube et signing matrix), theoreme de Kochen-Specker (Cabello 18 vecteurs, argument de parite, contextuality quantique). Notebooks 12, 15.
+- **Porter** un théorème de recherche en Lean 4 : théorème de sensibilite (Huang 2019, hypercube et signing matrix), théorème de Kochen-Specker (Cabello 18 vecteurs, argument de parite, contextuality quantique). Notebooks 12, 15.
 - **Lire le langage grothendieckien** dans Mathlib 4 : categories et foncteurs, cribles et topologies de Grothendieck, faisceaux, schemas et sites, morphismes etales/lisses — comme entree vers la geometrie algebrique formalisee. Notebook 13.
-- **Situer l'oeuvre de Conway** dans sa largeur : des nombres surreels au Monstrous Moonshine, du reseau de Leech au theoreme du libre arbitre, en executant les premieres noix formalisees (Doomsday, Look-and-Say, Nim, Angel, Life) directement depuis le projet conway_lean (0 sorry). Notebook 14a.
+- **Situer l'oeuvre de Conway** dans sa largeur : des nombres surreels au Monstrous Moonshine, du reseau de Leech au théorème du libre arbitre, en executant les premieres noix formalisees (Doomsday, Look-and-Say, Nim, Angel, Life) directement depuis le projet conway_lean (0 sorry). Notebook 14a.
 - **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de resultats combinatoires iconiques. Notebook 14.
-- **Comprendre le theoreme du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui reduit le cas a deux particules au theoreme de Kochen-Specker (Notebook 15), et la lecture honnete de sa portee (ce qu'il dit et ne dit pas) — adosse a `FreeWillTheorem.lean` (0 sorry). Notebook 16.
+- **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui reduit le cas a deux particules au théorème de Kochen-Specker (Notebook 15), et la lecture honnete de sa portee (ce qu'il dit et ne dit pas) — adosse a `FreeWillTheorem.lean` (0 sorry). Notebook 16.
 
 Pour l'etat formel detaille des modules support (preuves resolues vs `sorry` residuels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md), le [README du projet conway_lean](conway_lean/README.md), et le [README du projet grothendieck_lean](grothendieck_lean/README.md).
 
@@ -120,7 +120,7 @@ Tous les notebooks incluent :
 curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
 elan default leanprover/lean4:stable
 
-# 2. Verifier l'installation
+# 2. vérifier l'installation
 lean --version    # Lean 4.x.x
 elan show         # toolchain active
 
@@ -134,7 +134,7 @@ Pour les notebooks 7-10 (LLM), configurer `.env` avec `OPENAI_API_KEY`. Pour le 
 
 ## Prerequisites
 
-- Connaissances de base en logique mathematique
+- Connaissances de base en logique mathématique
 - Familiarite avec la programmation fonctionnelle (utile mais non obligatoire)
 - Pour notebooks 7-8 : compte OpenAI/Anthropic pour APIs LLM (optionnel)
 
@@ -166,7 +166,7 @@ conda activate lean4-jupyter
 # Installer lean4_jupyter
 pip install lean4_jupyter
 
-# Verifier l'installation
+# vérifier l'installation
 jupyter kernelspec list
 ```
 
@@ -215,7 +215,7 @@ cp .env.example .env
 
 | Reference | Couverture |
 |-----------|------------|
-| de Moura & Ullrich, "The Lean 4 Theorem Prover and Programming Language" (2021) | Systeme Lean 4 |
+| de Moura & Ullrich, "The Lean 4 Theorem Prover and Programming Language" (2021) | système Lean 4 |
 | The Mathlib Community, "The Mathlib Library" (2020), arXiv:1910.09436 | Mathlib4 |
 | Avigad, "Mathematics and Programming" (2024) — *Mathematics in Lean* | Fondations notebooks 1-5 |
 | Jiang et al., "LeanDojo: Theorem Proving with Retrieval-Augmented Language Models" (NeurIPS 2023) | LeanDojo, notebooks 10 |
@@ -232,21 +232,21 @@ cp .env.example .env
 ## Validation
 
 ```bash
-# Verifier la structure des notebooks
+# vérifier la structure des notebooks
 python scripts/verify_notebooks.py MyIA.AI.Notebooks/SymbolicAI/Lean --quick
 
-# Verifier l'installation Lean
+# vérifier l'installation Lean
 lean --version
 elan show
 ```
 
 ## Percees recentes (2024-2026)
 
-| Systeme | Accomplissement |
+| système | Accomplissement |
 |---------|-----------------|
 | **AlphaProof** (DeepMind) | Medaille d'argent IMO 2024 |
 | **Harmonic Aristotle** | Resolution Erdos #124 variant (~30 ans ouvert) en 6h |
-| **DeepSeek-Prover** | Resolution de problemes Erdos 379, 987, 730, 198 |
+| **DeepSeek-Prover** | Resolution de problèmes Erdos 379, 987, 730, 198 |
 | **Mathlib4** v4.27.0-rc1 | 4M+ lignes, utilise par Terry Tao |
 
 ## Notes techniques
@@ -276,8 +276,8 @@ Lean/
 ├── Lean-13-Grothendieck-Tribute.ipynb # Python kernel - hommage Grothendieck (langage grothendieckien Mathlib)
 ├── Lean-14a-Conway-Man-and-Work.ipynb # Python kernel - hommage Conway (l'homme et l'oeuvre, noix executees depuis conway_lean)
 ├── Lean-14b-Conway-Game-of-Life-Lean.ipynb   # Python kernel - hommage Conway (Game of Life as Computation)
-├── Lean-15-Kochen-Specker.ipynb    # Lean4 kernel - theoreme de Kochen-Specker (Pilier 1.B)
-├── Lean-16-Conway-Free-Will-Theorem.ipynb # Python kernel - hommage Conway (theoreme du libre arbitre, adosse a FreeWillTheorem.lean)
+├── Lean-15-Kochen-Specker.ipynb    # Lean4 kernel - théorème de Kochen-Specker (Pilier 1.B)
+├── Lean-16-Conway-Free-Will-Theorem.ipynb # Python kernel - hommage Conway (théorème du libre arbitre, adosse a FreeWillTheorem.lean)
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
@@ -298,7 +298,7 @@ Lean/
 │       ├── instructions.py         # Agent system prompts
 │       ├── lean_utils.py           # Sorry extraction, goal state, verification
 │       ├── trace.py                # Conversation trace logger
-│       └── verifier.py             # Lean verification backend
+│       └── vérifier.py             # Lean verification backend
 ├── examples/
 │   ├── basic_logic.lean
 │   ├── quantifiers.lean
@@ -317,7 +317,7 @@ Le package `agent_tests/prover/` implemente un prouveur autonome Lean 4 utilisan
 
 ### Architecture
 
-4 agents specialises dans un workflow conditionnel :
+4 agents spécialisés dans un workflow conditionnel :
 
 1. **SearchAgent** : analyse le contexte, detecte les sorry, identifie les helpers
 2. **TacticAgent** : genere des tactiques de preuve (avec outils de compilation)
@@ -333,7 +333,7 @@ python agent_tests/multi_agent_proof.py --lean path/to/File.lean --sorry-line 12
 # Mode autonome (1 agent avec tous les outils)
 python agent_tests/multi_agent_proof.py --lean path/to/File.lean --mode autonomous
 
-# Mode multi-agent (4 agents specialises)
+# Mode multi-agent (4 agents spécialisés)
 python agent_tests/multi_agent_proof.py --lean path/to/File.lean --mode multi
 
 # Batch sur des demos
@@ -357,11 +357,11 @@ Les notebooks GameTheory side tracks (16b-16f) formalisent en Lean 4 des resulta
 
 | resultat | Fichier Lean | Notebook GameTheory | Statut |
 |----------|-------------|---------------------|--------|
-| Theoreme d'Arrow (impossibilite) | `social_choice_lean/SocialChoice/Arrow.lean` | 16d | 0 sorry (Geanakoplos 2005) |
-| Theoreme de Sen (liberalisme) | `social_choice_lean/SocialChoice/Sen.lean` | 16e | 0 sorry (bidirectionnel) |
+| théorème d'Arrow (impossibilite) | `social_choice_lean/SocialChoice/Arrow.lean` | 16d | 0 sorry (Geanakoplos 2005) |
+| théorème de Sen (liberalisme) | `social_choice_lean/SocialChoice/Sen.lean` | 16e | 0 sorry (bidirectionnel) |
 | Valeur de Shapley | `cooperative_games_lean/CooperativeGames/Shapley.lean` | 16b | 1 sorry (en cours) |
 | Modeles de vote (Banks, STV) | `social_choice_lean/SocialChoice/Voting.lean` | 16f | 4 sorry (open problems) |
-| Gale-Shapley (stable marriage) | `stable_marriage_lean/StableMarriage/GaleShapley.lean` | (pas de notebook dedie) | 2 sorry / 5 theoremes. `gale_shapley_stable` CLOSED via mmaaz upstream (PR #1181). `man_optimal` + `woman_pessimal` OPEN (Knuth 1976 lattice, Wu-Roth 2018 — ~5-8j Mathlib). |
+| Gale-Shapley (stable marriage) | `stable_marriage_lean/StableMarriage/GaleShapley.lean` | (pas de notebook dedie) | 2 sorry / 5 théorèmes. `gale_shapley_stable` CLOSED via mmaaz upstream (PR #1181). `man_optimal` + `woman_pessimal` OPEN (Knuth 1976 lattice, Wu-Roth 2018 — ~5-8j Mathlib). |
 
 Le notebook Lean-5 (tactiques) et Lean-6 (Mathlib) sont des prerequis directs pour les side tracks Lean de GameTheory.
 
@@ -369,9 +369,9 @@ Le notebook Lean-5 (tactiques) et Lean-6 (Mathlib) sont des prerequis directs po
 
 La verification formelle en Lean (type theory, Curry-Howard) est conceptuellement liee a la verification formelle des smart contracts :
 
-- **SC-14 Formal Verification** : Certora/SMTChecker vs. Lean -- la meme idee de preuve mathematique de correction, mais sur des cibles differentes (Solidity vs. mathematiques). Les methodes different : SMT solving (automatique, borne) vs. tactiques interactives (expressif, guidable).
+- **SC-14 Formal Verification** : Certora/SMTChecker vs. Lean -- la meme idee de preuve mathématique de correction, mais sur des cibles differentes (Solidity vs. mathematiques). Les methodes différent : SMT solving (automatique, borne) vs. tactiques interactives (expressif, guidable).
 - **SC-11 LLM-Assisted Contracts** : Le meme paradigme d'assistance LLM que les notebooks Lean-7/8/9, applique a la generation de smart contracts au lieu de preuves.
-- **SC-17 E2E Verifiable Voting** : Les resultats de `Voting.lean` (theoreme du median voter, proprietes Banks/STV) eclairent les proprietes theoriques des systemes de vote verifiable.
+- **SC-17 E2E Verifiable Voting** : Les resultats de `Voting.lean` (théorème du median voter, proprietes Banks/STV) eclairent les proprietes theoriques des systemes de vote verifiable.
 
 ### Lecture transversale
 
@@ -381,7 +381,7 @@ La verification formelle en Lean (type theory, Curry-Howard) est conceptuellemen
 
 ### Le kernel lean4-wsl ne demarre pas (timeout apres 60s)
 
-**Cause** : le wrapper Python (`~/.lean4-kernel-wrapper.py`) ne trouve pas le venv Lean ou le REPL. Verifier :
+**Cause** : le wrapper Python (`~/.lean4-kernel-wrapper.py`) ne trouve pas le venv Lean ou le REPL. vérifier :
 
 ```bash
 # Dans WSL
@@ -392,15 +392,15 @@ test -d ~/lean-projects/notebook_context && echo "context OK" || echo "context M
 
 Si un element manque, relancer le setup : `bash MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh`. Si le kernel.json pointe vers l'ancien wrapper bash (`~/lean4-jupyter-wrapper.sh`), le mettre a jour pour pointer vers `~/.lean4-kernel-wrapper.py` (incident 2026-05-27).
 
-### `lake build` echoue avec des erreurs Mathlib inattendues
+### `lake build` échoue avec des erreurs Mathlib inattendues
 
-**Cause frequente** : la toolchain Lean locale est desynchronisee du `lean-toolchain` du projet. Lean 4 evolue rapidement et Mathlib suit.
+**Cause frequente** : la toolchain Lean locale est désynchronisée du `lean-toolchain` du projet. Lean 4 evolue rapidement et Mathlib suit.
 
 ```bash
-# Verifier la toolchain requise par le projet
+# vérifier la toolchain requise par le projet
 cat lean-toolchain    # ex: leanprover/lean4:v4.x.0
 
-# Verifier la toolchain installee
+# vérifier la toolchain installee
 elan show
 
 # Forcer la reinstallation de la bonne version
@@ -422,15 +422,15 @@ Le notebook [Lean-1-Setup](Lean-1-Setup.ipynb) guide l'installation complete et 
 
 ### Mes preuves passent en mode terme mais pas en mode tactique
 
-C'est un pattern courant en Lean 4. Le mode terme (style `theorem foo : X := by exact h`) et le mode tactique utilisent parfois des mecanismes de synthese differents. En general :
+C'est un pattern courant en Lean 4. Le mode terme (style `theorem foo : X := by exact h`) et le mode tactique utilisent parfois des mecanismes de synthèse differents. En général :
 
 - Le mode tactique offre plus de controle (`rw`, `simp`, `ring`) et des messages d'erreur plus lisibles.
-- Si une preuve terme echoue, essayer le mode tactique avec les memes etapes decomposees.
+- Si une preuve terme échoue, essayer le mode tactique avec les memes étapes decomposees.
 - `simp?` suggere les lemmes que `simp` utilise — utile pour comprendre pourquoi `simp` seul ne passe pas.
 
 ### Comment lire les erreurs `type mismatch` ?
 
-Lean 4 signale `type mismatch` quand le type attendu et le type fourni ne coincident pas. Les causes les plus frequentes :
+Lean 4 signale `type mismatch` quand le type attendu et le type fourni ne coïncident pas. Les causes les plus frequentes :
 
 - **Universe level** : `Type u` vs `Type` — ajouter `universe u` ou utiliser `Sort _`.
 - **Implicit arguments** : Lean ne peut pas inferrer un argument implicite. Essayer `@nom_fonction` pour rendre tous les arguments explicites.
@@ -450,10 +450,10 @@ Voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) pour l'etat detaill
 
 Les LLMs (GPT-4o, Claude, DeepSeek) sont capables de generer des tactiques Lean 4 pour des preuves de niveau undergraduate, mais :
 
-- **Preuves longues** (> 20 etapes) : le taux de succes chute significativement.
+- **Preuves longues** (> 20 étapes) : le taux de succes chute significativement.
 - **Mathlib avancee** : les LLMs ne connaissent pas toujours les lemmes disponibles — LeanCopilot et la recherche semantique (Loogle/Moogle) compensent.
 - **Agents autonomes** (APOLLO, AlphaProof) : prometteurs pour les competitions (IMO, Erdos) mais pas encore fiables pour des preuves de recherche originales sans supervision.
-- **Bon usage pedagogique** : utiliser les LLMs comme assistant (suggestions, exploration), pas comme oracle (accepter sans verifier). Les notebooks 7-9 illustrent ce workflow.
+- **Bon usage pedagogique** : utiliser les LLMs comme assistant (suggestions, exploration), pas comme oracle (accepter sans vérifier). Les notebooks 7-9 illustrent ce workflow.
 
 ## Licence
 
