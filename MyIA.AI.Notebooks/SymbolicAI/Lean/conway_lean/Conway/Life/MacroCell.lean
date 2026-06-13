@@ -154,13 +154,13 @@ def ceilLog2 (k : Nat) : Nat :=
 /-- `ceilLog2 k` is large enough that `2 ^ ceilLog2 k >= k`. This is the
     arithmetic heart of the `gridFrame` containment lemma. -/
 theorem ceilLog2_spec (k : Nat) : 2 ^ ceilLog2 k >= k := by
-  induction k using Nat.strongInductionOn with
-  | ind k ih =>
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
     match k with
     | 0 => simp [ceilLog2]
     | 1 => simp [ceilLog2]
     | m + 2 =>
-      show 2 ^ (1 + ceilLog2 ((m + 2 + 1) / 2)) >= m + 2
+      simp only [ceilLog2]
       have h : 2 ^ ceilLog2 ((m + 2 + 1) / 2) >= (m + 2 + 1) / 2 :=
         ih ((m + 2 + 1) / 2) (by omega)
       have h2 : 2 * 2 ^ ceilLog2 ((m + 2 + 1) / 2) >= m + 2 := by omega
