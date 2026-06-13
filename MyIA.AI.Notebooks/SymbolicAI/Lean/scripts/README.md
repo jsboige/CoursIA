@@ -1,6 +1,6 @@
 # Scripts Lean
 
-Ce repertoire contient les scripts de configuration, validation et maintenance pour les notebooks Lean.
+Ce répertoire contient les scripts de configuration, validation et maintenance pour les notebooks Lean.
 
 ## Structure
 
@@ -33,11 +33,11 @@ python scripts/validate_lean_setup.py
 python scripts/validate_lean_setup.py --wsl
 ```
 
-**Verifie** : Python, elan, Lean 4, Lake, packages (lean4-jupyter, openai, anthropic), kernels Jupyter, .env, lean_runner.py
+**Vérifie** : Python, elan, Lean 4, Lake, packages (lean4-jupyter, openai, anthropic), kernels Jupyter, .env, lean_runner.py
 
 ### verify_lean.py
 
-Verification complete avec execution de notebooks.
+Vérification complète avec exécution de notebooks.
 
 ```bash
 # Verification rapide (structure uniquement)
@@ -85,7 +85,7 @@ python scripts/notebook_utils.py get-output ../Lean-9-SK-Multi-Agents.ipynb 39
 
 ### demo_manager.py
 
-Gestion centralisee des demonstrations Lean-9.
+Gestion centralisée des démonstrations Lean-9.
 
 ```bash
 # Afficher la configuration actuelle
@@ -101,7 +101,7 @@ python scripts/demo_manager.py update --dry-run
 python scripts/demo_manager.py reorder 2 3
 ```
 
-**Pour modifier les DEMOs** : Editer `DEFAULT_DEMOS` dans `demo_manager.py`, puis executer `update`.
+**Pour modifier les DEMOs** : Éditer `DEFAULT_DEMOS` dans `demo_manager.py`, puis exécuter `update`.
 
 ### setup_wsl_python.sh
 
@@ -115,11 +115,11 @@ bash scripts/setup_wsl_python.sh
 
 ### lean4-kernel-wrapper.py
 
-Wrapper pour le kernel Lean4 via WSL. Utilise automatiquement par Jupyter.
+Wrapper pour le kernel Lean4 via WSL. Utilisé automatiquement par Jupyter.
 
 ## Utilisation Typique
 
-### Premiere Installation
+### Première Installation
 
 ```bash
 # 1. Ouvrir et executer Lean-1-Setup.ipynb (toutes les cellules)
@@ -134,7 +134,7 @@ bash scripts/setup_wsl_python.sh
 python scripts/validate_lean_setup.py --wsl
 ```
 
-### Verification Quotidienne
+### Vérification Quotidienne
 
 ```bash
 # Verifier que tout est OK avant de lancer les notebooks
@@ -171,14 +171,14 @@ python -m pytest scripts/tests/test_leandojo_basic.py
 
 ## Archive
 
-Le dossier `archive/` contient 32 scripts temporaires utilises pendant le developpement :
+Le dossier `archive/` contient 32 scripts temporaires utilisés pendant le développement :
 
 - `fix_*.py` - Corrections ponctuelles
 - `update_demos_*.py` - Anciennes versions de demo_manager
 - `test_*.py` - Tests ponctuels
 - Autres scripts one-shot
 
-Ces scripts sont conserves pour reference mais ne sont plus necessaires.
+Ces scripts sont conservés pour référence mais ne sont plus nécessaires.
 
 ## Structure du Projet
 
@@ -195,10 +195,10 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/
 ├── Lean-9-SK-Multi-Agents.ipynb    # Python WSL requis
 ├── lean_runner.py                  # Backend Python pour Lean
 ├── .env                            # Configuration API
-└── scripts/                        # CE REPERTOIRE
+└── scripts/                        # CE RÉPERTOIRE
 ```
 
-## Dependances Python
+## Dépendances Python
 
 ### Windows (kernel Python standard)
 
@@ -209,7 +209,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/
 
 ### WSL (kernel Python 3 WSL)
 
-- Installees dans `~/.python3-wsl-venv/`
+- Installées dans `~/.python3-wsl-venv/`
 - `ipykernel` - Kernel Jupyter
 - `python-dotenv` - Chargement .env
 - `openai` - API OpenAI
@@ -238,7 +238,7 @@ Tous les composants OK (12/12)
 
 ## Troubleshooting
 
-### anthropic non installe
+### anthropic non installé
 
 ```bash
 pip install anthropic
@@ -251,7 +251,7 @@ rm -rf ~/.python3-wsl-venv
 bash scripts/setup_wsl_python.sh
 ```
 
-### Kernel Python 3 (WSL) ne demarre pas
+### Kernel Python 3 (WSL) ne démarre pas
 
 ```bash
 # Verifier les logs wrapper
@@ -261,7 +261,7 @@ wsl cat ~/.python3-wrapper.log
 python scripts/validate_lean_setup.py
 ```
 
-### .env non charge dans notebooks 7-9
+### .env non chargé dans notebooks 7-9
 
 ```bash
 wsl ~/.python3-wsl-venv/bin/python3 -c "import dotenv; print(dotenv.__version__)"

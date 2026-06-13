@@ -7,20 +7,20 @@ breakdown: Planners=13
 maturity: PRODUCTION=13
 -->
 
-Cette série de notebooks introduit la **Planification Automatique**, une branche fondamentale de l'IA qui génère des sequences d'actions pour atteindre des objectifs.
+Cette série de notebooks introduit la **Planification Automatique**, une branche fondamentale de l'IA qui génère des séquences d'actions pour atteindre des objectifs.
 
-La planification répond a une question differente de celle de l'apprentissage : non pas « que predire ? » mais « **que faire ?** ». A partir d'un modele du monde — un etat initial, des actions avec leurs preconditions et effets, un but — un planificateur cherche automatiquement une suite d'actions qui mene au but. C'est une technologie éprouvée : elle pilote des robots (manipulation, navigation), optimise la logistique et l'ordonnancement, et a dirige des engins spatiaux autonomes (Remote Agent sur Deep Space 1, planification d'activites des rovers martiens). Le langage **PDDL** a standardise la maniere de décrire ces problemes, donnant naissance a tout un ecosysteme de solveurs comparables. La planification connaît aujourd'hui un regain d'intérêt avec les LLMs, comme moyen de doter les modeles de langage d'une capacite d'action verifiable et orientee vers un but.
+La planification répond à une question différente de celle de l'apprentissage : non pas « que prédire ? » mais « **que faire ?** ». À partir d'un modèle du monde — un état initial, des actions avec leurs préconditions et effets, un but — un planificateur cherche automatiquement une suite d'actions qui mène au but. C'est une technologie éprouvée : elle pilote des robots (manipulation, navigation), optimise la logistique et l'ordonnancement, et a dirigé des engins spatiaux autonomes (Remote Agent sur Deep Space 1, planification d'activités des rovers martiens). Le langage **PDDL** a standardisé la manière de décrire ces problèmes, donnant naissance à tout un écosystème de solveurs comparables. La planification connaît aujourd'hui un regain d'intérêt avec les LLMs, comme moyen de doter les modèles de langage d'une capacité d'action vérifiable et orientée vers un but.
 
 **13 notebooks** | **5 parties** | **~8h**
 
-**A qui s'adresse cette série** : étudiants en IA, ingenieurs en robotique et logistique, développeurs souhaitant intégrer la planification symbolique dans leurs applications. Aucun prerequis en planification : les concepts sont introduits progressivement depuis les fondements STRIPS jusqu'aux approches neuro-symboliques modernes.
+**À qui s'adresse cette série** : étudiants en IA, ingénieurs en robotique et logistique, développeurs souhaitant intégrer la planification symbolique dans leurs applications. Aucun prérequis en planification : les concepts sont introduits progressivement depuis les fondements STRIPS jusqu'aux approches neuro-symboliques modernes.
 
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
 | Notebooks | 13 (1 setup + 3 foundation + 3 classical + 3 advanced + 3 neuro-symbolic) |
-| Duree totale | ~8h |
+| Durée totale | ~8h |
 | Langage | Python 3.9+ |
 | Kernel | Python 3 |
 | Solveurs | Fast Downward, OR-Tools CP-SAT, unified-planning |
@@ -30,31 +30,31 @@ La planification répond a une question differente de celle de l'apprentissage :
 
 ### Phase 1 : Fondations (Notebooks 1-3, ~2h)
 
-La série débute par le notebook Setup (0) qui configure automatiquement l'environnement : installation de `unified-planning`, OR-Tools, verification de Docker et lancement du conteneur Fast Downward. Le notebook 1 (Introduction) présente le triptyque fondamental Etat-Action-But, le modele STRIPS (1971) avec ses hypotheses — statique, deterministe, observable, discret, instantane — et le contexte historique depuis Fikes & Nilsson jusqu'aux LLMs modernes. Le notebook 2 (PDDL-Basics) plonge dans la syntaxe PDDL : domaines, problemes, types, predicats, actions, preconditions et effets. Le notebook 3 (State-Space) explore l'explosion combinatoire ($O(2^n)$ predicats) et la necessite des heuristiques pour guider la recherche dans l'espace d'etats. A l'issue de cette phase, vous savez modeliser un probleme en PDDL et comprendre pourquoi la recherche aveugle ne suffit pas.
+La série débute par le notebook Setup (0) qui configure automatiquement l'environnement : installation de `unified-planning`, OR-Tools, vérification de Docker et lancement du conteneur Fast Downward. Le notebook 1 (Introduction) présente le triptyque fondamental État-Action-But, le modèle STRIPS (1971) avec ses hypothèses — statique, déterministe, observable, discret, instantané — et le contexte historique depuis Fikes & Nilsson jusqu'aux LLMs modernes. Le notebook 2 (PDDL-Basics) plonge dans la syntaxe PDDL : domaines, problèmes, types, prédicats, actions, préconditions et effets. Le notebook 3 (State-Space) explore l'explosion combinatoire ($O(2^n)$ prédicats) et la nécessité des heuristiques pour guider la recherche dans l'espace d'états. À l'issue de cette phase, vous savez modéliser un problème en PDDL et comprendre pourquoi la recherche aveugle ne suffit pas.
 
 ### Phase 2 : Planification Classique (Notebooks 4-6, ~3h)
 
-Les notebooks 4 a 6 constituent le coeur technique de la série. Le notebook 4 (Fast-Downward) présente l'architecture en trois étapes de Fast Downward (translator PDDL→SAS+, preprocessor C++, search C++) et montre comment l'executer via Docker et unified-planning. Les algorithmes de recherche (A*, Greedy, EHC) y sont testes sur Blocks World et Logistics. Le notebook 5 (Heuristics) approfondit la theorie : classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), comparaison expérimentale des heuristiques sur le nombre de noeuds expanses, et guide de selection. Le notebook 6 (Domains) couvre les domaines standards de l'IPC (Blocks World, Logistics, Gripper, Satellite) avec des problemes de complexite croissante. A l'issue, vous pouvez configurer un planificateur optimal, choisir l'heuristique adequat, et modeliser n'importe quel domaine IPC.
+Les notebooks 4 à 6 constituent le cœur technique de la série. Le notebook 4 (Fast-Downward) présente l'architecture en trois étapes de Fast Downward (translator PDDL→SAS+, preprocessor C++, search C++) et montre comment l'exécuter via Docker et unified-planning. Les algorithmes de recherche (A*, Greedy, EHC) y sont testés sur Blocks World et Logistics. Le notebook 5 (Heuristics) approfondit la théorie : classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), comparaison expérimentale des heuristiques sur le nombre de nœuds expansés, et guide de sélection. Le notebook 6 (Domains) couvre les domaines standards de l'IPC (Blocks World, Logistics, Gripper, Satellite) avec des problèmes de complexité croissante. À l'issue, vous pouvez configurer un planificateur optimal, choisir l'heuristique adéquate, et modéliser n'importe quel domaine IPC.
 
 ### Phase 3 : Approches Avancees (Notebooks 7-9, ~3h)
 
-La planification classique epuise ses limites des que les problemes deviennent trop grands pour l'exploration d'etats. Les notebooks 7 a 6 proposent des alternatives. Le notebook 7 (OR-Tools) introduce la programmation par contraintes avec CP-SAT de Google OR-Tools : modelisation de contraintes (all-different, cumulative, table), scheduling, et optimisation multi-objectif. Le notebook 8 (Temporal) etend au domaine temporel avec PDDL 2.1 : durées d'actions, parallelisme, contraintes temporelles simples et denses, ordonnancement de taches. Le notebook 9 (HTN) présente la planification hierarchique (Task Networks) : taches primitives vs abstraites, méthodes de decomposition, langage HDDL, solveur inspire de SHOP2, et comparaison avec STRIPS. A l'issue, vous disposez de trois paradigmes complementaires pour les problemes qui depassent la planification classique.
+La planification classique épuise ses limites dès que les problèmes deviennent trop grands pour l'exploration d'états. Les notebooks 7 à 9 proposent des alternatives. Le notebook 7 (OR-Tools) introduit la programmation par contraintes avec CP-SAT de Google OR-Tools : modélisation de contraintes (all-different, cumulative, table), scheduling, et optimisation multi-objectif. Le notebook 8 (Temporal) étend au domaine temporel avec PDDL 2.1 : durées d'actions, parallélisme, contraintes temporelles simples et denses, ordonnancement de tâches. Le notebook 9 (HTN) présente la planification hiérarchique (Task Networks) : tâches primitives vs abstraites, méthodes de décomposition, langage HDDL, solveur inspiré de SHOP2, et comparaison avec STRIPS. À l'issue, vous disposez de trois paradigmes complémentaires pour les problèmes qui dépassent la planification classique.
 
 ### Phase 4 : Neuro-Symbolique (Notebooks 10-12, ~3h)
 
-La dernière partie explore la frontier entre IA symbolique et apprentissage profond. Le notebook 10 (LLM-Planning) montre comment les Large Language Models peuvent genérer des plans a partir de descriptions en langage naturel, le prompting pour la planification, et le plan repair. Le notebook 11 (Unified-Planning) detaille l'interface unifiee `unified-planning` : connection a plusieurs solveurs en quelques lignes, comparaison croisée des performances, et portabilité du modele PDDL entre moteurs. Le notebook 12 (LOOP) introduit le paradigme **Learning to Plan** : architecture LOOP (state encoder, policy network, value network), encodage PDDL en tenseurs (one-hot, GNN), entraînement par imitation et renforcement, résultats sur benchmarks IPC (85.8% coverage), et comparison avec KRCL. Ce notebook conclut la série avec les tendances futures : foundation models, meta-learning, inverse reinforcement learning.
+La dernière partie explore la frontière entre IA symbolique et apprentissage profond. Le notebook 10 (LLM-Planning) montre comment les Large Language Models peuvent générer des plans à partir de descriptions en langage naturel, le prompting pour la planification, et le plan repair. Le notebook 11 (Unified-Planning) détaille l'interface unifiée `unified-planning` : connexion à plusieurs solveurs en quelques lignes, comparaison croisée des performances, et portabilité du modèle PDDL entre moteurs. Le notebook 12 (LOOP) introduit le paradigme **Learning to Plan** : architecture LOOP (state encoder, policy network, value network), encodage PDDL en tenseurs (one-hot, GNN), entraînement par imitation et renforcement, résultats sur benchmarks IPC (85.8% coverage), et comparaison avec KRCL. Ce notebook conclut la série avec les tendances futures : foundation models, meta-learning, inverse reinforcement learning.
 
 ### Parcours alternatifs
 
 #### Parcours rapide (4h, minimum viable)
 Pour découvrir l'essentiel rapidement :
-1. `0-Setup` (20 min) : installer et verifier l'environnement
+1. `0-Setup` (20 min) : installer et vérifier l'environnement
 2. `1-Introduction` (30 min) : comprendre les concepts
-3. `4-Fast-Downward` (45 min) : executer un vrai planificateur
+3. `4-Fast-Downward` (45 min) : exécuter un vrai planificateur
 4. `11-Unified-Planning` (40 min) : comparer les solveurs
 
-#### Parcours classique (5h, optimalite)
-Pour maitriser les planificateurs optimaux :
+#### Parcours classique (5h, optimalité)
+Pour maîtriser les planificateurs optimaux :
 1. `0-Setup` → `1-Introduction` → `2-PDDL-Basics` → `3-State-Space`
 2. `4-Fast-Downward` → `5-Heuristics` → `6-Domains`
 
@@ -64,31 +64,31 @@ Pour les applications de planification par contraintes et temporelles :
 2. `7-OR-Tools` → `8-Temporal` → `9-HTN`
 
 #### Parcours neuro-symbolique (5h, recherche)
-Pour les approches combinees apprentissage profond + symbolique :
+Pour les approches combinées apprentissage profond + symbolique :
 1. `0-Setup` → `1-Introduction` → `4-Fast-Downward`
 2. `10-LLM-Planning` → `11-Unified-Planning` → `12-LOOP`
 
 ## Quel parcours choisir ?
 
 ### Si vous débutez en planification
-**Commencez par les fondations.** Le notebook 1 (Introduction) pose le vocabulaire (etat, action, but, STRIPS) et le contexte historique. Le notebook 2 (PDDL-Basics) apprend la syntaxe standard du domaine. Sans ces bases, les notebooks suivants seront difficiles a suivre.
+**Commencez par les fondations.** Le notebook 1 (Introduction) pose le vocabulaire (état, action, but, STRIPS) et le contexte historique. Le notebook 2 (PDDL-Basics) apprend la syntaxe standard du domaine. Sans ces bases, les notebooks suivants seront difficiles à suivre.
 
-**Passez a la planification classique quand :** vous avez un domaine PDDL defini et voulez trouver un plan optimal rapidement. Fast Downward + LM-cut est le choix par défaut.
+**Passez à la planification classique quand :** vous avez un domaine PDDL défini et voulez trouver un plan optimal rapidement. Fast Downward + LM-cut est le choix par défaut.
 
 ### Si vous venez de la recherche opérationnelle
-**Commencez par OR-Tools (notebook 7).** Le CP-SAT est familier aux optimiseurs : modelisation par contraintes, fonctions objectif, solveur commercial (ou open-source). La transition vers la planification est naturelle.
+**Commencez par OR-Tools (notebook 7).** Le CP-SAT est familier aux optimiseurs : modélisation par contraintes, fonctions objectif, solveur commercial (ou open-source). La transition vers la planification est naturelle.
 
-**Passez a PDDL quand :** vous avez besoin de la portabilité du modele (même domaine, solveurs multiples) ou que vous voulez exploiter les heuristiques specialisees de Fast Downward.
+**Passez à PDDL quand :** vous avez besoin de la portabilité du modèle (même domaine, solveurs multiples) ou que vous voulez exploiter les heuristiques spécialisées de Fast Downward.
 
 ### Si vous ne savez pas quoi choisir
 
-| Critere | Recommandation |
+| Critère | Recommandation |
 |---------|----------------|
 | Juste découvrir la planification | **Planners-0-Setup** + **Planners-1-Introduction** |
 | Un premier planificateur qui marche | **Planners-4-Fast-Downward** (Docker + Blocks World) |
 | Optimisation de scheduling | **Planners-7-OR-Tools** |
-| Planification hierarchique | **Planners-9-HTN** (SHOP2, decomposition) |
-| Frontier LLM + IA | **Planners-10-LLM-Planning** |
+| Planification hiérarchique | **Planners-9-HTN** (SHOP2, decomposition) |
+| Frontière LLM + IA | **Planners-10-LLM-Planning** |
 | Approche neuro-symbolique avancée | **Planners-12-LOOP** (85.8% IPC coverage) |
 | Comparer tous les solveurs | **Planners-11-Unified-Planning** |
 
@@ -102,7 +102,7 @@ SymbolicAI/Planners/
 ├── 01-Foundation/
 │   ├── Planners-1-Introduction.ipynb    # Concepts, STRIPS
 │   ├── Planners-2-PDDL-Basics.ipynb     # Syntaxe PDDL
-│   └── Planners-3-State-Space.ipynb     # Espaces d'etats
+│   └── Planners-3-State-Space.ipynb     # Espaces d'états
 ├── 02-Classical/
 │   ├── Planners-4-Fast-Downward.ipynb   # A*, heuristiques
 │   ├── Planners-5-Heuristics.ipynb      # h-add, h-max, h-FF
@@ -110,25 +110,25 @@ SymbolicAI/Planners/
 ├── 03-Advanced/
 │   ├── Planners-7-OR-Tools.ipynb        # CP-SAT
 │   ├── Planners-8-Temporal.ipynb        # Planification temporelle
-│   └── Planners-9-HTN.ipynb             # Planification hierarchique
+│   └── Planners-9-HTN.ipynb             # Planification hiérarchique
 ├── 04-NeuroSymbolic/
 │   ├── Planners-10-LLM-Planning.ipynb   # LLM + Planning
-│   ├── Planners-11-Unified-Planning.ipynb # Interface unifiee
+│   ├── Planners-11-Unified-Planning.ipynb # Interface unifiée
 │   └── Planners-12-LOOP.ipynb           # Learning to Plan
 └── archive/
-    └── Fast-Downward-Legacy.ipynb       # Version archivee
+    └── Fast-Downward-Legacy.ipynb       # Version archivée
 ```
 
 ## Objectifs d'apprentissage
 
 A l'issue de cette série, vous saurez :
 
-1. **Modeliser** des problemes de planification en PDDL (Planning Domain Definition Language)
+1. **Modéliser** des problèmes de planification en PDDL (Planning Domain Definition Language)
 2. **Utiliser** les planificateurs modernes (Fast Downward, OR-Tools, unified-planning)
 3. **Comprendre** les heuristiques de recherche ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut)
-4. **Etendre** la planification au temporel, hierarchique et neuro-symbolique
+4. **Étendre** la planification au temporel, hiérarchique et neuro-symbolique
 
-## Niveaux de difficulte
+## Niveaux de difficulté
 
 | Niveau | Description | Notebooks |
 |--------|-------------|-----------|
@@ -138,22 +138,22 @@ A l'issue de cette série, vous saurez :
 
 ## Contenu detaille des notebooks
 
-Chaque notebook introduit un concept ou modele spécifique. Le tableau ci-dessous resume en une ligne l'apport pédagogique de chacun — au-dela du titre, c'est le **concept cle** qu'il enseigne.
+Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — au-delà du titre, c'est le **concept clé** qu'il enseigne.
 
 | # | Notebook | Apport pédagogique |
 |---|----------|-------------------|
-| 0 | Setup | Boucle environnement : verification Python → installation packages → Docker → premier PDDL |
-| 1 | Introduction | Triptyque Etat-Action-But, hypotheses STRIPS (1971), taxonomie des paradigmes |
-| 2 | PDDL-Basics | Syntaxe PDDL : domaines, problemes, types, predicats, actions, preconditions, effets |
-| 3 | State-Space | Explosion combinatoire $O(2^n)$, necessite des heuristiques, graphe d'etats |
+| 0 | Setup | Boucle environnement : vérification Python → installation packages → Docker → premier PDDL |
+| 1 | Introduction | Triptyque État-Action-But, hypothèses STRIPS (1971), taxonomie des paradigmes |
+| 2 | PDDL-Basics | Syntaxe PDDL : domaines, problèmes, types, prédicats, actions, préconditions, effets |
+| 3 | State-Space | Explosion combinatoire $O(2^n)$, nécessité des heuristiques, graphe d'états |
 | 4 | Fast-Downward | Architecture 3 étapes (translator/preprocessor/search), A* vs Greedy vs EHC via Docker |
-| 5 | Heuristics | Classification admissible/non-admissible : $h^{add}$, $h^{max}$, $h^{FF}$, LM-cut, comparison expériméntale |
+| 5 | Heuristics | Classification admissible/non-admissible : $h^{add}$, $h^{max}$, $h^{FF}$, LM-cut, comparaison expérimentale |
 | 6 | Domains | Domaines IPC standards (Blocks, Logistics, Gripper, Satellite), complexité croissante |
-| 7 | OR-Tools | CP-SAT, programmation par contraintes, modelisation de scheduling, contraintes alldifferent |
-| 8 | Temporal | PDDL 2.1, durations d'actions, parallelisme, contraintes temporelles, ordonnancement |
-| 9 | HTN | Planification hierarchique : taches primitives/abstraites, méthodes, HDDL, SHOP2 |
+| 7 | OR-Tools | CP-SAT, programmation par contraintes, modélisation de scheduling, contraintes alldifferent |
+| 8 | Temporal | PDDL 2.1, durées d'actions, parallélisme, contraintes temporelles, ordonnancement |
+| 9 | HTN | Planification hiérarchique : tâches primitives/abstraites, méthodes, HDDL, SHOP2 |
 | 10 | LLM-Planning | Planification avec LLMs, prompting, plan repair, limites et avantages |
-| 11 | Unified-Planning | Interface multi-solveurs, comparaison croisée, portabilité du modele |
+| 11 | Unified-Planning | Interface multi-solveurs, comparaison croisée, portabilité du modèle |
 | 12 | LOOP | Learning to Plan : state encoder, policy network, value network, 85.8% IPC coverage |
 
 ---
@@ -162,41 +162,41 @@ Chaque notebook introduit un concept ou modele spécifique. Le tableau ci-dessou
 
 ### Partie 0 : Environnement (00-Environment/)
 
-| # | Notebook | Kernel | Contenu | Duree |
+| # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 0 | [Planners-0-Setup](00-Environment/Planners-0-Setup.ipynb) | Python | Installation unified-planning, OR-Tools, Docker Fast Downward | 20 min |
 
 ### Partie 1 : Fondations (01-Foundation/)
 
-| # | Notebook | Kernel | Contenu | Duree |
+| # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
-| 1 | [Planners-1-Introduction](01-Foundation/Planners-1-Introduction.ipynb) | Python | Concepts, modele STRIPS, triptyque Etat-Action-But | 30 min |
-| 2 | [Planners-2-PDDL-Basics](01-Foundation/Planners-2-PDDL-Basics.ipynb) | Python | Syntaxe PDDL, domaines, problemes, predicats, actions | 40 min |
-| 3 | [Planners-3-State-Space](01-Foundation/Planners-3-State-Space.ipynb) | Python | Espaces d'etats, graphes de recherche, explosion combinatoire | 35 min |
+| 1 | [Planners-1-Introduction](01-Foundation/Planners-1-Introduction.ipynb) | Python | Concepts, modèle STRIPS, triptyque État-Action-But | 30 min |
+| 2 | [Planners-2-PDDL-Basics](01-Foundation/Planners-2-PDDL-Basics.ipynb) | Python | Syntaxe PDDL, domaines, problèmes, prédicats, actions | 40 min |
+| 3 | [Planners-3-State-Space](01-Foundation/Planners-3-State-Space.ipynb) | Python | Espaces d'états, graphes de recherche, explosion combinatoire | 35 min |
 
 ### Partie 2 : Planification Classique (02-Classical/)
 
-| # | Notebook | Kernel | Contenu | Duree |
+| # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 4 | [Planners-4-Fast-Downward](02-Classical/Planners-4-Fast-Downward.ipynb) | Python | Architecture FD, Docker, A*, GBFS, EHC, heuristiques | 45 min |
 | 5 | [Planners-5-Heuristics](02-Classical/Planners-5-Heuristics.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min |
 | 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
 
-### Partie 3 : Approches Avancees (03-Advanced/)
+### Partie 3 : Approches Avancées (03-Advanced/)
 
-| # | Notebook | Kernel | Contenu | Duree |
+| # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 7 | [Planners-7-OR-Tools](03-Advanced/Planners-7-OR-Tools.ipynb) | Python | CP-SAT, programmation par contraintes, scheduling | 45 min |
-| 8 | [Planners-8-Temporal](03-Advanced/Planners-8-Temporal.ipynb) | Python | PDDL 2.1, durées, parallelisme, ordonnancement | 40 min |
-| 9 | [Planners-9-HTN](03-Advanced/Planners-9-HTN.ipynb) | Python | Hierarchical Task Networks, méthodes, decomposition | 45 min |
+| 8 | [Planners-8-Temporal](03-Advanced/Planners-8-Temporal.ipynb) | Python | PDDL 2.1, durées, parallélisme, ordonnancement | 40 min |
+| 9 | [Planners-9-HTN](03-Advanced/Planners-9-HTN.ipynb) | Python | Hierarchical Task Networks, méthodes, décomposition | 45 min |
 
 ### Partie 4 : Neuro-Symbolique (04-NeuroSymbolic/)
 
-| # | Notebook | Kernel | Contenu | Duree |
+| # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 10 | [Planners-10-LLM-Planning](04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) | Python | LLMs pour la planification, prompting, plan repair | 50 min |
-| 11 | [Planners-11-Unified-Planning](04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Python | Interface unifiee, multi-solveurs, comparaisons | 40 min |
-| 12 | [Planners-12-LOOP](04-NeuroSymbolic/Planners-12-LOOP.ipynb) | Python | Learning to Plan, modeles neuronaux pour heuristiques | 45 min |
+| 11 | [Planners-11-Unified-Planning](04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Python | Interface unifiée, multi-solveurs, comparaisons | 40 min |
+| 12 | [Planners-12-LOOP](04-NeuroSymbolic/Planners-12-LOOP.ipynb) | Python | Learning to Plan, modèles neuronaux pour heuristiques | 45 min |
 
 ---
 
@@ -204,19 +204,19 @@ Chaque notebook introduit un concept ou modele spécifique. Le tableau ci-dessou
 
 | Aspect | Description |
 |--------|-------------|
-| **Entree** | Etat initial + modele du domaine + condition but |
-| **Sortie** | Sequence d'actions (plan) executable |
-| **Hypothese** | Deterministe, observable, discret (STRIPS classique) |
-| **Complexite** | NP-complet en général ($O(2^n)$ etats possibles) |
+| **Entrée** | État initial + modèle du domaine + condition but |
+| **Sortie** | Séquence d'actions (plan) exécutable |
+| **Hypothèse** | Déterministe, observable, discret (STRIPS classique) |
+| **Complexité** | NP-complet en général ($O(2^n)$ états possibles) |
 | **Garantie** | Optimal si heuristique admissible (A*) |
 
-## Prerequis
+## Prérequis
 
 ### Connaissances requises
 
-- **Python 3.9+** : programmation orientee objet, types, dataclasses
+- **Python 3.9+** : programmation orientée objet, types, dataclasses
 - **Algorithmique de base** : graphes (BFS, DFS, A*), recherche
-- **Logique propositionnelle** : predicats, connecteurs logiques, quantificateurs
+- **Logique propositionnelle** : prédicats, connecteurs logiques, quantificateurs
 
 ### Pour les notebooks avancés
 
@@ -226,37 +226,37 @@ Chaque notebook introduit un concept ou modele spécifique. Le tableau ci-dessou
 
 ### Pour les notebooks pratiques
 
-- **Docker** (notebooks 4-6) : execution du conteneur Fast Downward sur le port 8200
-- **OR-Tools** (notebook 7) : modelisation de contraintes, solveur CP-SAT
+- **Docker** (notebooks 4-6) : exécution du conteneur Fast Downward sur le port 8200
+- **OR-Tools** (notebook 7) : modélisation de contraintes, solveur CP-SAT
 
-## Prerequis techniques
+## Prérequis techniques
 
 ### 1. Environnement Python
 
 ```bash
-# Creer un environnement virtuel
+# Créer un environnement virtuel
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
 # ou venv\Scripts\activate  # Windows
 
-# Installer les dependances
+# Installer les dépendances
 pip install unified-planning ortools numpy matplotlib networkx
 ```
 
-### 2. Docker pour Fast Downward (recommande)
+### 2. Docker pour Fast Downward (recommandé)
 
 ```bash
-# Telecharger l'image Docker Fast Downward (serveur HTTP port 8200)
+# Télécharger l'image Docker Fast Downward (serveur HTTP port 8200)
 docker pull jsboige/coursia-fast-downward:latest
 ```
 
 L'image fournit un serveur API HTTP sur le port 8200. Les notebooks appellent l'endpoint `/plan` avec un payload JSON `{domain, problem, search}` et reçoivent le plan optimal.
 
-### 3. Verification
+### 3. Vérification
 
 ```bash
 python -c "import unified_planning; from ortools.sat.python import cp_model; print('OK')"
-# Verifier le serveur Fast Downward (port 8200)
+# Vérifier le serveur Fast Downward (port 8200)
 curl -s http://localhost:8200/health
 ```
 
@@ -264,30 +264,30 @@ curl -s http://localhost:8200/health
 
 | Outil | Description | Notebooks |
 |-------|-------------|-----------|
-| **unified-planning** | Interface Python unifiee pour planificateurs PDDL | Tous |
+| **unified-planning** | Interface Python unifiée pour planificateurs PDDL | Tous |
 | **Fast Downward** | Planificateur optimal IPC winner (A*, LM-cut) | 4, 5, 6 |
 | **OR-Tools CP-SAT** | Solveur de contraintes Google (scheduling) | 7 |
 | **PDDL** | Planning Domain Definition Language (standard IPC) | 2-9 |
 | **HDDL** | Hierarchical Domain Definition Language (HTN) | 9 |
 | **OpenAI/Anthropic API** | LLMs pour génération de plans | 10 |
-| **PyTorch** | Reseaux de neurones pour heuristiques (LOOP) | 12 |
+| **PyTorch** | Réseaux de neurones pour heuristiques (LOOP) | 12 |
 
 ## Domaines PDDL classiques
 
 Les notebooks utilisent les domaines standards de l'IPC (International Planning Competition) :
 
-| Domaine | Description | Complexite | Notebooks |
+| Domaine | Description | Complexité | Notebooks |
 |---------|-------------|------------|-----------|
 | **Blocks World** | Empiler des blocs pour une tour | Simple | 1, 2, 4, 5, 6 |
-| **Gripper** | Robot avec pinces deplace des balles | Simple | 4, 6, 12 |
-| **Logistics** | Transport de colis entre lieux avec vehicules | Moyen | 4, 6, 8, 9 |
-| **Depots** | Gestion d'entrepot avec grues | Moyen | 6 |
+| **Gripper** | Robot avec pinces déplace des balles | Simple | 4, 6, 12 |
+| **Logistics** | Transport de colis entre lieux avec véhicules | Moyen | 4, 6, 8, 9 |
+| **Depots** | Gestion d'entrepôt avec grues | Moyen | 6 |
 | **Satellite** | Planification d'observations spatiales | Complexe | 6 |
-| **Hanoi** | Tour de Hanoi (recursivite naturelle) | Moyen | 6 |
+| **Hanoi** | Tour de Hanoi (récursivité naturelle) | Moyen | 6 |
 
 ## PDDL - Planning Domain Definition Language
 
-PDDL est le langage standard pour décrire des problemes de planification.
+PDDL est le langage standard pour décrire des problèmes de planification.
 
 ### Domaine (domain.pddl)
 
@@ -309,7 +309,7 @@ PDDL est le langage standard pour décrire des problemes de planification.
 )
 ```
 
-### Probleme (problem.pddl)
+### Problème (problem.pddl)
 
 ```lisp
 (define (problem blocks-tower)
@@ -326,25 +326,25 @@ PDDL est le langage standard pour décrire des problemes de planification.
 
 ## Comparaison des approches
 
-| Approche | Optimalite | Vitesse | Expressivite |
+| Approche | Optimalité | Vitesse | Expressivité |
 |----------|------------|---------|--------------|
 | **A* + LM-cut** | Admissible | Rapide | STRIPS |
-| **A* + FF** | Non garanti | Tres rapide | STRIPS+ |
-| **GBFS + FF** | Non | Tres rapide | STRIPS+ |
+| **A* + FF** | Non garanti | Très rapide | STRIPS+ |
+| **GBFS + FF** | Non | Très rapide | STRIPS+ |
 | **CP-SAT** | Optimal | Variable | Contraintes |
-| **HTN** | Variable | Rapide | Hierarchique |
-| **LOOP** | Non | Variable | Generalise |
+| **HTN** | Variable | Rapide | Hiérarchique |
+| **LOOP** | Non | Variable | Généralisé |
 
 ## Fast Downward
 
-Planificateur optimal développe a l'Universite de Bale :
+Planificateur optimal développé à l'Université de Bâle :
 
-| Caracteristique | Description |
+| Caractéristique | Description |
 |-----------------|-------------|
 | **Architectures** | Translator (PDDL→SAS+) → Preprocessor → Search |
 | **Algorithmes** | A*, GBFS (eager/lazy), EHC, LAMA |
 | **Heuristiques** | FF, add, hmax, LM-cut, merge-and-shrink |
-| **Performance** | Gagnant IPC multiple fois |
+| **Performance** | Gagnant IPC plusieurs fois |
 
 ### Utilisation via Docker (serveur HTTP)
 
@@ -352,7 +352,7 @@ Planificateur optimal développe a l'Universite de Bale :
 # Lancer le conteneur Fast Downward (port 8200)
 docker run -d --name coursia-fast-downward -p 8200:8200 jsboige/coursia-fast-downward:latest
 
-# Soumettre un probleme via l'API HTTP
+# Soumettre un problème via l'API HTTP
 curl -X POST http://localhost:8200/plan \
   -H "Content-Type: application/json" \
   -d '{"domain": "<domain.pddl>", "problem": "<problem.pddl>", "search": "astar(lmcut())"}'
@@ -364,84 +364,84 @@ curl -X POST http://localhost:8200/plan \
 from unified_planning.shortcuts import *
 from up_fast_downward import FastDownwardPDDLPlanner
 
-# Definir le probleme avec unified-planning
+# Définir le problème avec unified-planning
 problem = Problem('my-problem')
-# ... (voir notebooks pour details)
+# ... (voir notebooks pour détails)
 
-# Resoudre avec Fast Downward
+# Résoudre avec Fast Downward
 planner = FastDownwardPDDLPlanner()
 result = planner.solve(problem)
 ```
 
-## HTN - Planification Hierarchique
+## HTN - Planification Hiérarchique
 
-La planification HTN (Hierarchical Task Network) structure la recherche par decomposition de taches :
+La planification HTN (Hierarchical Task Network) structure la recherche par décomposition de tâches :
 
-| Concept | Definition |
+| Concept | Définition |
 |---------|------------|
-| **Tache primitive** | Action directement executable (ex: `drive(truck, A, B)`) |
-| **Tache abstraite** | Tache a decomposer (ex: `deliver(pkg, A, B)`) |
-| **Methode** | Regle de decomposition avec preconditions et sous-taches |
+| **Tâche primitive** | Action directement exécutable (ex: `drive(truck, A, B)`) |
+| **Tâche abstraite** | Tâche à décomposer (ex: `deliver(pkg, A, B)`) |
+| **Méthode** | Règle de décomposition avec préconditions et sous-tâches |
 | **HDDL** | Langage standard pour domaines HTN (extension de PDDL) |
 
 ### Algorithme SHOP2
 
-SHOP2 (Simple Hierarchical Ordered Planner 2) utilise la decomposition ordonnee :
+SHOP2 (Simple Hierarchical Ordered Planner 2) utilise la décomposition ordonnée :
 
-1. Traiter la première tache de la liste
-2. Si primitive : verifier preconditions, appliquer, passer a la suivante
-3. Si abstraite : choisir une méthode applicable, remplacer par sous-taches
-4. Backtracking : essayer la méthode suivante si echec
+1. Traiter la première tâche de la liste
+2. Si primitive : vérifier préconditions, appliquer, passer à la suivante
+3. Si abstraite : choisir une méthode applicable, remplacer par sous-tâches
+4. Backtracking : essayer la méthode suivante si échec
 
-## Concepts cles
+## Concepts clés
 
-| Concept | Definition |
+| Concept | Définition |
 |---------|------------|
-| **STRIPS** | Modele de planification avec preconditions/add/delete (1971) |
+| **STRIPS** | Modèle de planification avec préconditions/add/delete (1971) |
 | **PDDL** | Planning Domain Definition Language - standard IPC depuis 1998 |
 | **Heuristique** | Fonction estimant le coût pour atteindre le but |
 | **A*** | Algorithme de recherche optimale avec heuristique admissible |
-| **Landmark** | Fait qui doit être vrai a un moment du plan |
-| **HTN** | Hierarchical Task Network - decomposition de taches |
-| **LM-cut** | Heuristique admissible basee sur les landmarks |
+| **Landmark** | Fait qui doit être vrai à un moment du plan |
+| **HTN** | Hierarchical Task Network - décomposition de tâches |
+| **LM-cut** | Heuristique admissible basée sur les landmarks |
 | **CP-SAT** | Constraint Programming-Satisfiability (OR-Tools) |
-| **Learning to Plan** | Apprentissage de heuristiques par réseaux de neurones |
+| **Learning to Plan** | Apprentissage d'heuristiques par réseaux de neurones |
 | **LOOP** | Framework neuro-symbolique, 85.8% coverage IPC |
 
-## Caracteristiques de la série
+## Caractéristiques de la série
 
-| Caracteristique | Description |
+| Caractéristique | Description |
 |-----------------|-------------|
-| **Progression** | Fondations → Classique → Avance → Neuro-symbolique |
-| **Pratique** | Chaque notebook contient des exemples executes et des exercices |
+| **Progression** | Fondations → Classique → Avancé → Neuro-symbolique |
+| **Pratique** | Chaque notebook contient des exemples exécutés et des exercices |
 | **Outils réels** | Fast Downward (IPC winner), OR-Tools (Google), unified-planning |
-| **Domaines IPC** | Blocks World, Logistics, Gripper — les mêmes que les competitions |
-| **Output verify** | Tous les notebooks sont executes avec outputs inclus |
+| **Domaines IPC** | Blocks World, Logistics, Gripper — les mêmes que les compétitions |
+| **Output verify** | Tous les notebooks sont exécutés avec outputs inclus |
 | **Navigation** | Headers avec liens précédent/suivant dans chaque notebook |
 
 ## Quick Start
 
 ```bash
-# 1. Installer les dependances Python
+# 1. Installer les dépendances Python
 pip install unified-planning ortools numpy matplotlib networkx
 
-# 2. Verifier l'installation
+# 2. Vérifier l'installation
 python -c "import unified_planning; from ortools.sat.python import cp_model; print('OK')"
 
 # 3. Premier notebook (introduction aux concepts)
 jupyter notebook 01-Foundation/Planners-1-Introduction.ipynb
 ```
 
-Pour les notebooks 4-6 (Fast Downward), l'image Docker `jsboige/coursia-fast-downward` fournit un serveur API HTTP sur le port 8200 : `docker pull jsboige/coursia-fast-downward:latest`. Les notebooks théoriques (1-3, 7-12) ne necessitent que Python.
+Pour les notebooks 4-6 (Fast Downward), l'image Docker `jsboige/coursia-fast-downward` fournit un serveur API HTTP sur le port 8200 : `docker pull jsboige/coursia-fast-downward:latest`. Les notebooks théoriques (1-3, 7-12) ne nécessitent que Python.
 
 ## Navigation guide
 
-### Progression recommandee
+### Progression recommandée
 
-1. **Debutants** : Commencer par `00-Environment/Planners-0-Setup.ipynb`
+1. **Débutants** : Commencer par `00-Environment/Planners-0-Setup.ipynb`
 2. **Fondations** : Suivre `01-Foundation/` dans l'ordre
 3. **Pratique** : Explorer `02-Classical/` pour les outils
-4. **Avance** : `03-Advanced/` et `04-NeuroSymbolic/` selon intérêts
+4. **Avancé** : `03-Advanced/` et `04-NeuroSymbolic/` selon intérêts
 
 ### Liens de navigation
 
@@ -453,7 +453,7 @@ Chaque notebook contient :
 ## Tests et validation
 
 ```bash
-# Verifier la structure des notebooks
+# Vérifier la structure des notebooks
 python scripts/notebook_tools/notebook_tools.py validate MyIA.AI.Notebooks/SymbolicAI/Planners --quick
 
 # Execution complete (mode batch)
@@ -464,23 +464,23 @@ BATCH_MODE=true python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.
 
 ### Documentation
 
-- [unified-planning](https://github.com/aiplan4eu/unified-planning) - Bibliotheque Python
+- [unified-planning](https://github.com/aiplan4eu/unified-planning) - Bibliothèque Python
 - [Fast Downward](https://www.fast-downward.org/) - Planificateur de référence
 - [PDDL Reference](https://planning.wiki/) - Documentation PDDL complète
 - [OR-Tools CP-SAT](https://developers.google.com/optimization/cp/cp_sat) - Documentation Google
 
-### Cours et tutorials
+### Cours et tutoriels
 
 - [AI Planning - University of Edinburgh](https://www.coursera.org/learn/ai-planning)
 - [Classical Planning - Stanford](https://www.youtube.com/watch?v=WEDagb6TsK8)
-- [IPC Benchmarks](https://github.com/aibasel/downward-benchmarks) - Problemes standards
+- [IPC Benchmarks](https://github.com/aibasel/downward-benchmarks) - Problèmes standards
 
 ### Publications
 
-| Reference | Couverture |
+| Référence | Couverture |
 |-----------|------------|
 | Ghallab, Nau & Traverso, *Automated Planning: Theory and Practice* (2004) | Textbook de référence, toute la série |
-| Russell & Norvig, *AIMA* 4e ed., ch. 10-11 | Cadre général planification |
+| Russell & Norvig, *AIMA* 4e éd., ch. 10-11 | Cadre général planification |
 | Helmert, "The Fast Downward Planning System" (2006) | Notebooks 4-6 |
 | Hoffmann & Nebel, "The FF Planning System" (2001) | Heuristique h-FF, notebook 5 |
 | Richter & Westphal, "LAMA: Planner" (2010) | Landmarks, notebook 5 |
@@ -492,51 +492,51 @@ BATCH_MODE=true python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.
 
 La planification automatique est une branche de l'IA symbolique :
 
-- Raisonnement sur actions et etats
-- Recherche dans espace d'etats
-- Heuristiques admissibles pour optimalite
+- Raisonnement sur actions et états
+- Recherche dans espace d'états
+- Heuristiques admissibles pour optimalité
 
 ### Ponts avec les autres séries
 
-| Serie | Connection | Details |
+| Série | Connection | Détails |
 | ----- | ---------- | ------- |
-| **[Tweety](../Tweety/)** | Logique et argumentation | Les solveurs SAT/CSP de Tweety complementent les planificateurs PDDL. Les dialogues argumentatifs (Tweety-8) sont des instances de planification multi-agents. |
-| **[Lean](../Lean/)** | Verification formelle | Les plans generes peuvent être verifies formellement. Les heuristiques d'admissibilite (h-max, LM-cut) reposent sur des preuves de correction similaires aux tactiques Lean. |
-| **[SmartContracts](../SmartContracts/)** | Execution planifiee | Les smart contracts DeFi (liquidations, arbitrage) sont des problemes de planification sous contraintes temporelles et de gaz. Le notebook SC-14 (verification formelle) croise OR-Tools (Planners-7). |
-| **[GameTheory](../../GameTheory/)** | Jeux sequentiels | La recherche adversariale (A*, minimax) est commune a la planification classique et a la theorie des jeux. Les jeux cooperatifs (Shapley) sont des problemes d'allocation de taches planifiables. |
-| **[Search](../../Search/)** | Fondements communs | La série Search couvre les algorithmes de base (BFS, DFS, A*) utilises dans les planificateurs. CSP (Search Part2) correspond a OR-Tools CP-SAT (Planners-7). |
-| Lecture transversale | [La mer qui monte](../../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de representation, certification A/B/C |
+| **[Tweety](../Tweety/)** | Logique et argumentation | Les solveurs SAT/CSP de Tweety complètent les planificateurs PDDL. Les dialogues argumentatifs (Tweety-8) sont des instances de planification multi-agents. |
+| **[Lean](../Lean/)** | Vérification formelle | Les plans générés peuvent être vérifiés formellement. Les heuristiques d'admissibilité (h-max, LM-cut) reposent sur des preuves de correction similaires aux tactiques Lean. |
+| **[SmartContracts](../SmartContracts/)** | Exécution planifiée | Les smart contracts DeFi (liquidations, arbitrage) sont des problèmes de planification sous contraintes temporelles et de gaz. Le notebook SC-14 (vérification formelle) croise OR-Tools (Planners-7). |
+| **[GameTheory](../../GameTheory/)** | Jeux séquentiels | La recherche adversariale (A*, minimax) est commune à la planification classique et à la théorie des jeux. Les jeux coopératifs (Shapley) sont des problèmes d'allocation de tâches planifiables. |
+| **[Search](../../Search/)** | Fondements communs | La série Search couvre les algorithmes de base (BFS, DFS, A*) utilisés dans les planificateurs. CSP (Search Part2) correspond à OR-Tools CP-SAT (Planners-7). |
+| Lecture transversale | [La mer qui monte](../../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du dépôt : changement de représentation, certification A/B/C |
 
 ## Cross-séries Bridges
 
-| Serie | Lien | Connection |
+| Série | Lien | Connection |
 | ------- | ------ | ----------- |
-| [Lean](../Lean/README.md) | Verification formelle | Les plans PDDL generes peuvent être verifies formellement dans Lean |
-| [Tweety](../Tweety/README.md) | Logique et argumentation | Les solveurs SAT de Tweety peuvent resoudre des sous-problemes de planification |
-| [SmartContracts](../SmartContracts/README.md) | Ordonnancement | Les liquidations DeFi sont des problemes de planification temporelle (notebook 8) |
-| [GameTheory](../../GameTheory/README.md) | Recherche sequentielle | A* en planification et minimax en jeux partagent la même structure de graphe |
+| [Lean](../Lean/README.md) | Vérification formelle | Les plans PDDL générés peuvent être vérifiés formellement dans Lean |
+| [Tweety](../Tweety/README.md) | Logique et argumentation | Les solveurs SAT de Tweety peuvent résoudre des sous-problèmes de planification |
+| [SmartContracts](../SmartContracts/README.md) | Ordonnancement | Les liquidations DeFi sont des problèmes de planification temporelle (notebook 8) |
+| [GameTheory](../../GameTheory/README.md) | Recherche séquentielle | A* en planification et minimax en jeux partagent la même structure de graphe |
 | [Search](../../Search/README.md) | Fondations algorithmiques | A*, BFS, DFS de Search sont les bases des planificateurs classiques |
 
 ## FAQ / Troubleshooting
 
 ### 1. Le conteneur Docker Fast Downward ne répond pas sur le port 8200
 
-**Symptome** : `ConnectionRefusedError` ou timeout dans les notebooks 4-6.
+**Symptôme** : `ConnectionRefusedError` ou timeout dans les notebooks 4-6.
 
 **Causes et solutions** :
 
 ```bash
-# Verifier que le conteneur tourne
+# Vérifier que le conteneur tourne
 docker ps | grep coursia-fast-downward
 
-# S'il n'apparait pas, le lancer
+# S'il n'apparaît pas, le lancer
 docker run -d --name coursia-fast-downward -p 8200:8200 jsboige/coursia-fast-downward:latest
 
-# Verifier que le port est accessible
+# Vérifier que le port est accessible
 curl -s http://localhost:8200/health
 ```
 
-Si le port 8200 est déjà pris par un autre service, utiliser un port different :
+Si le port 8200 est déjà pris par un autre service, utiliser un port différent :
 ```bash
 docker run -d --name coursia-fast-downward -p 8201:8200 jsboige/coursia-fast-downward:latest
 ```
@@ -544,11 +544,11 @@ Dans ce cas, adapter l'URL dans les notebooks de `localhost:8200` vers `localhos
 
 ### 2. unified-planning ne détecte pas Fast Downward
 
-**Symptome** : `up_fast_downward` importe mais `FastDownwardPDDLPlanner()` echoue avec une erreur de chemin.
+**Symptôme** : `up_fast_downward` importé mais `FastDownwardPDDLPlanner()` échoue avec une erreur de chemin.
 
-**Cause** : `unified-planning` attend l'executable `downward` dans le PATH ou dans le repertoire configure. Avec Docker, ce n'est pas necessaire — les notebooks utilisent l'API HTTP a la place.
+**Cause** : `unified-planning` attend l'exécutable `downward` dans le PATH ou dans le répertoire configuré. Avec Docker, ce n'est pas nécessaire — les notebooks utilisent l'API HTTP à la place.
 
-**Solution** : Les notebooks 4-6 utilisent le serveur Docker (endpoint `/plan`), pas l'executable local. Verifier que les appels HTTP fonctionnent :
+**Solution** : Les notebooks 4-6 utilisent le serveur Docker (endpoint `/plan`), pas l'exécutable local. Vérifier que les appels HTTP fonctionnent :
 ```python
 import requests
 resp = requests.post("http://localhost:8200/plan",
@@ -558,64 +558,64 @@ print(resp.status_code, resp.json())
 
 ### 3. Erreurs PDDL "undeclared variable" ou "type mismatch"
 
-**Symptome** : Le solveur rejette le domaine ou le probleme PDDL avec une erreur de parsing.
+**Symptôme** : Le solveur rejette le domaine ou le problème PDDL avec une erreur de parsing.
 
 **Causes fréquentes** :
 
 | Erreur | Cause | Correction |
 | ------ | ----- | ---------- |
-| `undeclared variable '?x'` | Parametre non declare dans `:parameters` | Ajouter `?x - type` dans la signature de l'action |
-| `type mismatch` | Type de parametre incorrect | Verifier que le type existe dans `:types` |
-| `unsupported requirement` | Requirement non supporte par le solveur | Retirer `:adl`, `:quantified-preconditions` ou utiliser un solveur compatible |
-| `precondition false` | Conjonction vide ou variable non initialisee | Verifier les noms de predicats dans `:predicates` |
+| `undeclared variable '?x'` | Paramètre non déclaré dans `:parameters` | Ajouter `?x - type` dans la signature de l'action |
+| `type mismatch` | Type de paramètre incorrect | Vérifier que le type existe dans `:types` |
+| `unsupported requirement` | Requirement non supporté par le solveur | Retirer `:adl`, `:quantified-preconditions` ou utiliser un solveur compatible |
+| `precondition false` | Conjonction vide ou variable non initialisée | Vérifier les noms de prédicats dans `:predicates` |
 
 **Astuce** : Valider le PDDL avec [planning.wiki](https://planning.wiki/) avant de le soumettre au solveur. Le notebook 2 (PDDL-Basics) couvre la syntaxe complète.
 
-### 4. OR-Tools CP-SAT : "model is infeasible" sur un probleme simple
+### 4. OR-Tools CP-SAT : "model is infeasible" sur un problème simple
 
-**Symptome** : Le solveur CP-SAT retourne `INFEASIBLE` alors que le probleme devrait avoir une solution.
+**Symptôme** : Le solveur CP-SAT retourne `INFEASIBLE` alors que le problème devrait avoir une solution.
 
 **Causes** :
 
 1. **Contradiction entre contraintes** : deux contraintes `model.Add(x == 1)` et `model.Add(x == 2)` sur la même variable.
 2. **Domaine vide** : `model.NewIntVar(5, 3, "x")` (borne inférieure > supérieure).
-3. **Contraintes cumulatives** : la capacite cumulee est inférieure a la demande totale.
+3. **Contraintes cumulatives** : la capacité cumulée est inférieure à la demande totale.
 
 **Diagnostic** :
 ```python
-# Activer le log du solveur pour comprendre l'infeasibilite
+# Activer le log du solveur pour comprendre l'infeasibilité
 solver = cp_model.CpSolver()
 solver.parameters.max_time_in_seconds = 30.0
 status = solver.Solve(model)
 if status == cp_model.INFEASIBLE:
-    # Verifier les contraintes une par une en les desactivant
+    # Vérifier les contraintes une par une en les désactivant
     for i, ct in enumerate(model.proto.constraint):
         print(f"Constraint {i}: {ct}")
 ```
 
-### 5. Explication combinatoire : le solveur ne termine pas
+### 5. Explosion combinatoire : le solveur ne termine pas
 
-**Symptome** : Le planificateur tourne indefiniment sur un probleme de taille moyenne.
+**Symptôme** : Le planificateur tourne indéfiniment sur un problème de taille moyenne.
 
-**Cause** : L'espace d'etats explose ($O(2^n)$ pour $n$ predicats). Les domaines comme Logistics ou Satellite avec beaucoup d'objets sont particulierement sensibles.
+**Cause** : L'espace d'états explose ($O(2^n)$ pour $n$ prédicats). Les domaines comme Logistics ou Satellite avec beaucoup d'objets sont particulièrement sensibles.
 
 **Solutions** :
 
-| Strategie | Configuration | Quand l'utiliser |
+| Stratégie | Configuration | Quand l'utiliser |
 | --------- | ------------- | ---------------- |
-| **Limiter le temps** | `solver.parameters.max_time_in_seconds = 60` | Probleme trop grand |
-| **Heuristique rapide** | Utiliser `eager_greedy([ff()])` au lieu de `astar(lmcut())` | Solution rapide, pas forcement optimale |
-| **Reduire le probleme** | Moins d'objets dans `:objects` | Prototypage, validation du modele |
-| **Sous-optimal** | `astar(ff())` avec weight > 1 | Bon compromis qualite/temps |
+| **Limiter le temps** | `solver.parameters.max_time_in_seconds = 60` | Problème trop grand |
+| **Heuristique rapide** | Utiliser `eager_greedy([ff()])` au lieu de `astar(lmcut())` | Solution rapide, pas forcément optimale |
+| **Réduire le problème** | Moins d'objets dans `:objects` | Prototypage, validation du modèle |
+| **Sous-optimal** | `astar(ff())` avec weight > 1 | Bon compromis qualité/temps |
 
 ### 6. Docker sur Windows : "permission denied" ou "daemon not running"
 
-**Symptome** : Les commandes `docker` echouent sur Windows.
+**Symptôme** : Les commandes `docker` échouent sur Windows.
 
 **Solutions** :
 
-1. Verifier que Docker Desktop est lance (icone dans la barre de taches).
-2. Sur Windows, utiliser PowerShell en mode Administrateur si necessaire.
+1. Vérifier que Docker Desktop est lancé (icône dans la barre des tâches).
+2. Sur Windows, utiliser PowerShell en mode Administrateur si nécessaire.
 3. Alternative sans Docker : installer Fast Downward nativement (Linux/WSL uniquement) :
    ```bash
    # Dans WSL
@@ -624,14 +624,14 @@ if status == cp_model.INFEASIBLE:
    # Puis pointer unified-planning vers le binaire
    ```
 
-Les notebooks théoriques (1-3, 7-12) ne necessitent **pas** Docker et fonctionnent avec uniquement `pip install unified-planning ortools`.
+Les notebooks théoriques (1-3, 7-12) ne nécessitent **pas** Docker et fonctionnent avec uniquement `pip install unified-planning ortools`.
 
 ## Contribution
 
-Pour contribuer a cette série :
+Pour contribuer à cette série :
 
 1. Suivre les conventions de [CLAUDE.md](../../../CLAUDE.md)
-2. Respecter la structure pédagogique (header, objectifs, interpretations)
+2. Respecter la structure pédagogique (header, objectifs, interprétations)
 3. Utiliser `scripts/notebook_tools/notebook_helpers.py` pour la manipulation
 4. Tester avec `python scripts/notebook_tools/notebook_tools.py validate`
 
