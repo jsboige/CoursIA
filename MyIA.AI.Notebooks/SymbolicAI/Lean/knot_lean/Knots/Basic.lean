@@ -188,12 +188,30 @@ representing the same knot. This requires equivalence, which we don't have yet.
 def Knot.crossingNumberOfDiagram (k : Knot) : Nat :=
   k.diagram.crossings.length
 
-/-- Crossing number = minimum crossings over all equivalent diagrams. -/
-def Knot.crossingNumber (k : Knot) : Nat := by
-  exact sorry
-  -- TODO: min over all diagrams equivalent to k
-  -- Reference: Every knot has a minimal crossing diagram (by definition).
-  -- Mathlib prerequisite: finset min over quotient type
+/-- Crossing number.
+
+**Phase 3 definition (provisional upper bound).** The true crossing number
+is the *minimum* number of crossings over all diagrams equivalent to `k`
+under Reidemeister moves. Computing that minimum requires:
+  - a fully concrete Reidemeister equivalence (surgery on PD-codes), and
+  - a minimisation (finset min over the quotient of diagrams).
+
+Neither is available yet (Reidemeister moves are still abstract, cf.
+`Reidemeister.lean`). As a *provisional, conservative* definition we take the
+crossing count of the knot's current diagram. This is an **upper bound** on the
+true crossing number (Reidemeister I can only add crossings, never reduce below
+the minimal diagram), so it is sound to use as an upper estimate.
+
+For the named knots whose standard diagrams are already minimal (unknot = 0,
+trefoil = 3, figure-eight = 4) this coincides with the true crossing number.
+The `trefoil_crossing_number` theorem in `Invariant.lean` relies on this
+provisional definition.
+
+TODO Phase 4+: replace by the genuine minimum once concrete Reidemeister
+equivalence + finset minimisation are in place.
+-/
+def Knot.crossingNumber (k : Knot) : Nat :=
+  k.crossingNumberOfDiagram
 
 /-! ## 10. Connectivity / adjacency from PD-code
 

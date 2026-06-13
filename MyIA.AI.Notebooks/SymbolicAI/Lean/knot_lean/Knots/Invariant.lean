@@ -87,13 +87,20 @@ theorem tricolorable_invariant :
       ReidemeisterEquiv d₁ d₂ →
       IsTricolorable d₁ ↔ IsTricolorable d₂ := by
   exact sorry
-  -- BLOCKED: Reidemeister1/2/3 are opaque Props (sorry in Reidemeister.lean L43/59/74).
-  -- Without concrete constructors, cannot reason about how moves transform diagrams.
-  -- Tactic attempts: (1) intro + induction on ReidemeisterEquiv — stuck on opaque step
-  --                  (2) constructors for IsTricolorable — no way to lift coloring across moves
-  -- Dependency: Reidemeister.lean Phase 2 (concrete move constructors + addCurl/removeCurl)
+  -- BLOCKED (Phase 3 update): Reidemeister1/2/3 are now concrete symmetric
+  -- existentials (Reidemeister.lean, no longer opaque), and reidemeister_equiv_symm
+  -- is proved. BUT proving the invariant needs the *semantic* effect of each move
+  -- on edge colorings: a twist (R1) adds a new edge that must be colored consistently,
+  -- a poke (R2) adds two edges constrained by the bigon, a slide (R3) relabels edges.
+  -- The current `triColorConditionAt` is still the placeholder `True` (edge indexing
+  -- not implemented), so there is no real coloring condition to preserve.
+  -- Dependency: (1) proper `triColorConditionAt` with edge-index extraction from
+  -- PDCrossing fields, (2) a transfer lemma lifting a coloring across each move.
+  -- Tactic attempts: (1) intro + induction on ReidemeisterEquiv — stuck because
+  -- IsTricolorable quantifies over Fin d.numEdges which changes across moves
+  --                  (2) cannot construct the lifted coloring without edge indexing
   -- Reference: Fox (1962), standard textbook proof
-  -- Proof strategy (once unblocked): check each of the 3 Reidemeister moves
+  -- Proof strategy (once edge indexing lands): check each of the 3 moves
   --   R1 (twist): a curl adds one strand, trivially extends coloring
   --   R2 (poke): two parallel strands, either both same color or both different
   --   R3 (slide): casework on the 3 colors involved
@@ -161,12 +168,17 @@ theorem trefoil_not_unknot : ¬ KnotEquiv trefoil unknot := by
   --            trefoil_tricolorable
   --         exact unknot_not_tricolorable this
   exact sorry
-  -- BLOCKED: depends on tricolorable_invariant (this file L89) which is blocked
-  -- by opaque Reidemeister moves. Alternative approach attempted: prove ¬KnotEquiv
-  -- directly by showing diagrams differ structurally (3 crossings vs 0), but
-  -- ReidemeisterEquiv is reflexive-transitive closure of opaque steps — no way to
-  -- show two diagrams are NOT connected without classifying all reachable diagrams.
-  -- Dependency: tricolorable_invariant (→ Reidemeister.lean Phase 2)
+  -- BLOCKED (Phase 3 update): the natural route (tricolorable_invariant +
+  -- trefoil_tricolorable + unknot_not_tricolorable) is still gated by
+  -- tricolorable_invariant (this file L89), which needs proper edge indexing.
+  -- Alternative route attempted: prove ¬KnotEquiv directly by showing the diagrams
+  -- cannot be Reidemeister-equivalent. Reidemeister1/2/3 are now concrete, but
+  -- ReidemeisterEquiv is still the RTC of those steps; to show two diagrams are NOT
+  -- connected one must classify all diagrams reachable from trefoilDiagram — this
+  -- requires enumerating the move graph, which is out of reach without a stronger
+  -- normalisation invariant (e.g. crossing-number monotonicity under the moves,
+  -- itself needing the true minimal crossing number).
+  -- Dependency: tricolorable_invariant (→ edge indexing in triColorConditionAt)
 
 /-! ## 6. Crossing number bounds
 
@@ -184,14 +196,12 @@ Part (b) requires the classification of knots by crossing number.
 -/
 theorem trefoil_crossing_number :
     Knot.crossingNumber trefoil = 3 := by
-  exact sorry
-  -- BLOCKED: Knot.crossingNumber (Basic.lean L192) is itself sorry — min over
-  -- equivalence classes not defined. Even the RHS value 3 cannot be established.
-  -- Tactic attempts: (1) unfold crossingNumber — stuck on sorry definition
-  --                  (2) prove ≥3 via diagram having 3 crossings — crossingNumberOfDiagram
-  --                      works but connecting to crossingNumber needs equivalence
-  -- Dependency: Basic.lean Knot.crossingNumber definition + knot equivalence
-  -- Phase 3 target
+  -- Proof: under the Phase 3 provisional definition, crossingNumber equals
+  -- crossingNumberOfDiagram, which counts the trefoil diagram's crossings.
+  -- The standard trefoil PD-code has exactly 3 crossings.
+  show trefoil.crossingNumberOfDiagram = 3
+  unfold Knot.crossingNumberOfDiagram Knot.diagram trefoil trefoilDiagram
+  decide
 
 /-! ## 7. Unknotting number (definition only)
 

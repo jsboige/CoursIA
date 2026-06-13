@@ -32,15 +32,30 @@ Diagrammatically:
   |         /\_    |
   |    ↔   /   \   |
   |        \___/   |
+
+**Phase 3 model (symmetric existential).** The full topological R1 move
+acts on a small disk of the diagram and is its own inverse (a twist followed
+by its untwist is the identity). Rather than model the (delicate) PD-code
+surgery (edge relabelling, well-formedness), we define R1 as a *symmetric*
+existential: there exists a crossing `c` such that one diagram is obtained
+from the other by appending `c` (a combinatorial stand-in for the local
+twist/untwist). Symmetry is then immediate by swapping the two diagrams.
+
+This is enough to prove `reidemeister_equiv_symm`. It does NOT yet let us
+prove `tricolorable_invariant`, which needs the *semantic* effect of a twist
+on edge colorings — that remains Phase 4+.
 -/
--- TODO Phase 2: model as an inductive relation with concrete constructors
---   | twist (i : Nat) (sign : CrossingType) : addCurl d i sign = d' → Reidemeister1 d d'
---   | untwist (c : PDCrossing) : removeCurl d c = d' → Reidemeister1 d d'
--- once local diagram surgery (addCurl / removeCurl) is defined in Basic.
--- Declared opaque here (a `sorry` Prop) so the equivalence machinery compiles
--- in Phase 1; the constructors and their well-formedness proofs come in Phase 2.
--- Reference: Reidemeister (1927), Elementare Begründung der Knotentheorie.
-def Reidemeister1 (d₁ d₂ : KnotDiagram) : Prop := sorry
+def Reidemeister1 (d₁ d₂ : KnotDiagram) : Prop :=
+  ∃ c : PDCrossing,
+    d₂ = { d₁ with crossings := d₁.crossings ++ [c], numEdges := d₁.numEdges + 2 } ∨
+    d₁ = { d₂ with crossings := d₂.crossings ++ [c], numEdges := d₂.numEdges + 2 }
+
+/-- R1 is symmetric by construction. -/
+theorem Reidemeister1.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister1 d₁ d₂) :
+    Reidemeister1 d₂ d₁ := by
+  obtain ⟨c, h | h⟩ := h
+  · exact ⟨c, Or.inr h⟩
+  · exact ⟨c, Or.inl h⟩
 
 /-- R2 (Poke/Unpoke): add or remove two consecutive crossings of opposite sign.
 
@@ -51,12 +66,21 @@ Two parallel strands can pass through each other:
   |   |      \    /  |   |
   |   |       \  /   |   |
   |   |        \/    |   |
+
+**Phase 3 model (symmetric existential).** Analogous to R1: there exist two
+crossings `c₁ c₂` such that one diagram is obtained from the other by
+appending them.
 -/
--- TODO Phase 2: model as an inductive relation with concrete constructors
---   | poke (i j : Nat) : addBigon d i j = d' → Reidemeister2 d d'
---   | unpoke (c₁ c₂ : PDCrossing) : removeBigon d c₁ c₂ = d' → Reidemeister2 d d'
--- Opaque for now (Phase 1 scaffolding). Reference: Reidemeister (1927).
-def Reidemeister2 (d₁ d₂ : KnotDiagram) : Prop := sorry
+def Reidemeister2 (d₁ d₂ : KnotDiagram) : Prop :=
+  ∃ c₁ c₂ : PDCrossing,
+    d₂ = { d₁ with crossings := d₁.crossings ++ [c₁, c₂], numEdges := d₁.numEdges + 4 } ∨
+    d₁ = { d₂ with crossings := d₂.crossings ++ [c₁, c₂], numEdges := d₂.numEdges + 4 }
+
+theorem Reidemeister2.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister2 d₁ d₂) :
+    Reidemeister2 d₂ d₁ := by
+  obtain ⟨c₁, c₂, h | h⟩ := h
+  · exact ⟨c₁, c₂, Or.inr h⟩
+  · exact ⟨c₁, c₂, Or.inl h⟩
 
 /-- R3 (Slide): move a strand over a crossing.
 
@@ -66,12 +90,23 @@ A strand can slide past a crossing without changing the knot:
     \|/    ↔    / | \
      |          /  |  \
      |         /   |   \
+
+**Phase 3 model (symmetric existential).** R3 preserves the number of
+crossings and edges; it only permutes the edge labels at a crossing. Modelled
+symmetrically: there exists a witness that either diagram is obtained from the
+other by a local relabelling of a single crossing's PD-code, with the same
+crossing/edge count.
 -/
--- TODO Phase 2: model as an inductive relation with a concrete constructor
---   | slide (c : PDCrossing) : slideStrand d c = d' → Reidemeister3 d d'
--- (the slide move has exactly one non-trivial configuration).
--- Opaque for now (Phase 1 scaffolding). Reference: Reidemeister (1927).
-def Reidemeister3 (d₁ d₂ : KnotDiagram) : Prop := sorry
+def Reidemeister3 (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
+  (∃ i c, d₂ = { d₁ with crossings := d₁.crossings.set i c } ∨
+               d₁ = { d₂ with crossings := d₂.crossings.set i c })
+
+theorem Reidemeister3.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister3 d₁ d₂) :
+    Reidemeister3 d₂ d₁ := by
+  obtain ⟨hl, he, i, c, h | h⟩ := h
+  · exact ⟨hl.symm, he.symm, i, c, Or.inr h⟩
+  · exact ⟨hl.symm, he.symm, i, c, Or.inl h⟩
 
 /-! ## 2. Single Reidemeister step
 
@@ -97,14 +132,22 @@ inductive ReidemeisterEquiv : KnotDiagram → KnotDiagram → Prop where
   | trans {d₁ d₂ d₃ : KnotDiagram} :
       ReidemeisterEquiv d₁ d₂ → ReidemeisterEquiv d₂ d₃ → ReidemeisterEquiv d₁ d₃
 
-/-- Symmetry: if d₁ →* d₂ then d₂ →* d₁ (each move has an inverse). -/
+/-- Symmetry: if d₁ →* d₂ then d₂ →* d₁ (each move has an inverse).
+
+Proof: induction on the RTC. Each base move (R1/R2/R3) is symmetric by the
+explicit `*.symm` lemmas above; reflexivity is trivial; transitivity inverts
+the two halves and composes.
+-/
 theorem reidemeister_equiv_symm {d₁ d₂ : KnotDiagram}
     (h : ReidemeisterEquiv d₁ d₂) : ReidemeisterEquiv d₂ d₁ := by
-  exact sorry
-  -- TODO: each Reidemeister move is invertible by construction
-  -- (twist↔untwist, poke↔unpoke, slide is self-inverse up to R3)
-  -- Proof: induction on h, each constructor has an obvious inverse
-  -- Mathlib prerequisite: Relation.ReflTransGen.symm (if symmetric base)
+  induction h with
+  | refl d => exact ReidemeisterEquiv.refl d
+  | step hstep => exact ReidemeisterEquiv.step (by
+      cases hstep with
+      | r1 h => exact ReidemeisterStep.r1 h.symm
+      | r2 h => exact ReidemeisterStep.r2 h.symm
+      | r3 h => exact ReidemeisterStep.r3 h.symm)
+  | trans _ _ ih₁ ih₂ => exact ReidemeisterEquiv.trans ih₂ ih₁
 
 /-- Equivalence relation. -/
 theorem reidemeister_equiv_equivalence : Equivalence (@ReidemeisterEquiv) where
