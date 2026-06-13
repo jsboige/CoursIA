@@ -10,3 +10,6 @@
 [submodule "MyIA.AI.Notebooks/Search/MetaGeneticSharp"]
 	path = MyIA.AI.Notebooks/Search/MetaGeneticSharp
 	url = https://github.com/jsboige/MetaGeneticSharp
+[submodule "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq"]
+	path = MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq
+	url = https://github.com/MyIntelligenceAgency/Z3.Linq.git
