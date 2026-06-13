@@ -1034,6 +1034,29 @@ theorem p4_wf_witness_k2 :
           4 8 := by
   native_decide
 
+/-! ## P5. Fuel-exhaustion invariant (Gap 1)
+
+A definitional building block toward the full P5 theorem. The auxiliary
+`evolveHashlifeFastAux` has a defensive branch `| 0, _, g => g` (fuel exhausted,
+return the grid unchanged) which is only sound when `n = 0` has also been
+reached. The lemma below discharges the relevant case directly: when `n = 0`,
+the **first** pattern (`| _, 0, g => g`) fires regardless of the fuel value,
+so the result is `g` independently of the fuel-exhaustion arm.
+
+This is the first half of the Gap-1 invariant (the `n = 0` guard takes
+priority over the fuel guard); the second half — proving the fuel-exhaustion
+arm is unreachable on the real `evolveHashlifeFast n g = evolveHashlifeFastAux n n g`
+call path when `n > 0` — remains open and is documented in `hashlife_correct`. -/
+
+/-- When `n = 0`, `evolveHashlifeFastAux` returns `g` independently of the fuel
+    value: the `n = 0` pattern (`| _, 0, g => g`) is matched before the
+    fuel-exhaustion pattern (`| 0, _, g => g`). This discharges the fuel arm
+    in the trivial case and is a prerequisite for reasoning about the
+    fuel-invariant behaviour of `evolveHashlifeFast`. -/
+theorem evolveHashlifeFastAux_zero_n (fuel : Nat) (g : Grid) :
+    evolveHashlifeFastAux fuel 0 g = g := by
+  rfl
+
 /-! ## P5. Main theorem: bounded correctness
 
 The top-level theorem composing P2, P3, P4. -/
