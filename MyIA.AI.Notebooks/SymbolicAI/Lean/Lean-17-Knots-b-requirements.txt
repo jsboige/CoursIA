@@ -1,0 +1,23 @@
+# Lean-17 Knots series — Python dependencies
+# Install: pip install -r Lean-17-Knots-b-requirements.txt
+#
+# These tools cover all knot invariant computations used in the
+# Lean-17b companion notebook, replacing Mathematica + KnotTheory`.
+
+# SnapPy — 3-manifold topology, hyperbolic volume, PD/DT code access
+# Native C++ core, no SageMath needed for volume computation
+snappy>=3.2
+
+# Numerical + plotting
+numpy>=1.24
+matplotlib>=3.7
+
+# Optional (commented out — require compilation or SageMath):
+#
+# SageMath — for Alexander/Jones/HOMFLY-PT/Kauffman polynomials
+# Install SageMath separately: https://doc.sagemath.org/html/en/installation/
+# Inside Sage: Link.alexander_polynomial(), Link.jones_polynomial()
+#
+# pyknotid — knot identification via invariants
+# May require planarity C extension (fails on some Windows setups)
+# pyknotid>=0.3
