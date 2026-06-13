@@ -284,6 +284,7 @@ Lean/
 ├── .env.example
 ├── conway_lean/                    # Conway tribute workspace (0 sorry, Lake build)
 ├── grothendieck_lean/              # Grothendieck tribute workspace (0 sorry, Lake build)
+├── knot_lean/                      # Knot theory workspace (theorie des noeuds, companion Lean-17a/b, sorries residuels documentes, Lake build)
 ├── agent_tests/                    # Prover daemon (autonomous Lean proof)
 │   ├── multi_agent_proof.py        # CLI principal
 │   ├── lean_server.py              # Serveur Lean LSP
