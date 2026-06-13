@@ -1,4 +1,4 @@
-# MyIA.AI.Notebooks - Ecosysteme de Notebooks CoursIA
+# MyIA.AI.Notebooks - Écosystème de Notebooks CoursIA
 
 CoursIA est un curriculum d'intelligence artificielle pensé comme un parcours continu, des fondations jusqu'aux frontières de la recherche. Plutôt qu'une collection d'exemples isolés, il tisse un même fil conducteur à travers onze domaines : on y apprend autant à **faire** — générer des images et de l'audio, entraîner et déployer des modèles, backtester des stratégies de trading, résoudre des problèmes de contraintes — qu'à **comprendre et prouver** : formaliser un théorème en Lean 4, raisonner sur l'incertitude, vérifier qu'un smart contract ou un algorithme se comporte comme attendu.
 
@@ -7,7 +7,7 @@ Deux partis pris structurent l'ensemble. D'abord une **double culture technique*
 Le catalogue rassemble plus de 500 notebooks répartis sur les onze domaines ci-dessous (le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue). Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
 
 <!-- CATALOG-STATUS
-series: ALL
+séries: ALL
 total: 526
 breakdown: GenAI=121, SymbolicAI=110, QuantConnect=101, Search=46, Probas=44, Sudoku=32, ML=27, GameTheory=25, RL=14, CaseStudies=4, IIT=2
 maturity: PRODUCTION=437, BETA=41, ALPHA=40, DRAFT=4, TEMPLATE=4
@@ -39,7 +39,7 @@ Dernière mise à jour : 2026-06-11
 
 **[IIT](IIT/README.md)** — La plus spéculative : la théorie de l'information intégrée et la mesure Phi (PyPhi) appliquées à des réseaux logiques — où l'on calcule, littéralement, des candidats quantitatifs à une mesure de la conscience.
 
-### Progression pedagogique
+### Progression pédagogique
 
 ```text
 GenAI
@@ -124,7 +124,7 @@ docker-compose up -d
 
 ## Parcours recommande
 
-### Debutant (30h)
+### Débutant (30h)
 
 L'objectif de ces premières heures n'est pas l'exhaustivité mais le déclic : produire ses premières images et ses premiers backtests, et installer une bonne fois l'environnement qui resservira partout.
 
@@ -133,11 +133,11 @@ L'objectif de ces premières heures n'est pas l'exhaustivité mais le déclic : 
 3. **GenAI/Audio/01-Foundation** - Bases audio
 4. **QuantConnect/Python/** - Cours QC-Py-01 a 10
 
-### Intermediaire (60h)
+### Intermédiaire (60h)
 
 On élargit le spectre : tous les médias génératifs, le ML classique des deux côtés (.NET et Python), les premiers pas symboliques — c'est le moment où les ponts entre séries commencent à apparaître.
 
-1. **GenAI** - Toutes les series sauf Orchestration
+1. **GenAI** - Toutes les séries sauf Orchestration
 2. **ML** - Tutoriels .NET + Python Agents
 3. **SymbolicAI** - SmartContracts, SemanticWeb
 4. **QuantConnect/partner-course-quant-trading/** - Exercices trading
@@ -149,13 +149,13 @@ Le cœur formel et les stratégies avancées : les notebooks les plus exigeants,
 1. **GenAI/03-Orchestration** + **04-Applications**
 2. **SymbolicAI** - Lean, Planners, Tweety avance
 3. **Search**, **GameTheory**, **Probas** - Domaines avances
-4. **QuantConnect/projects/** - Strategies ML avancees
+4. **QuantConnect/projects/** - Strategies ML avancées
 
 ## Ressources
 
 ### Documentation
 - [CLAUDE.md](../CLAUDE.md) - Configuration projet
-- [GenAI Documentation](GenAI/README.md) - IA Generative
+- [GenAI Documentation](GenAI/README.md) - IA Générative
 - [QuantConnect Documentation](QuantConnect/README.md) - Trading algorithmique
 - [Scripts](../scripts/) - Outils d'automatisation
 
