@@ -9,69 +9,69 @@ maturity: PRODUCTION=2
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ Probas](../Probas/README.md)
 
-La conscience est-elle mesurable ? La Theorie de l'Information Integree (IIT), proposee par Giulio Tononi, repond oui : un systeme est conscient dans la mesure ou il integre de l'information de maniere non reductible. Plus formellement, la quantite de conscience d'un systeme correspond a la valeur **Phi** (big Phi), qui mesure le degre d'integration causale irreductible. Cette serie vous apprend a calculer cette mesure avec **PyPhi**, la bibliotheque de reference du laboratoire Tononi, et a explorer la geometrie informationnelle des systemes complexes.
+La conscience est-elle mesurable ? La Théorie de l'Information Intégrée (IIT), proposée par Giulio Tononi, répond oui : un système est conscient dans la mesure où il intègre de l'information de manière non réductible. Plus formellement, la quantité de conscience d'un système correspond à la valeur **Phi** (big Phi), qui mesure le degré d'intégration causale irréductible. Cette série vous apprend à calculer cette mesure avec **PyPhi**, la bibliothèque de référence du laboratoire Tononi, et à explorer la géométrie informationnelle des systèmes complexes.
 
-Le premier notebook couvre le spectre fondamental : construction de graphes causaux binaires, calcul des Transition Probability Matrices (TPM), definition des sous-systemes, extraction des Cause-Effect Structures (CES), et exploration des macro-subsystemes. Le second approfondit les aspects avances : partitionnement MIP, repertoires cause-effet, MICE, comparaison big Phi vs small phi, reseaux elargis a 4+ noeuds, coarse-graining et apercu IIT 4.0.
+Le premier notebook couvre le spectre fondamental : construction de graphes causaux binaires, calcul des Transition Probability Matrices (TPM), définition des sous-systèmes, extraction des Cause-Effect Structures (CES), et exploration des macro-sous-systèmes. Le second approfondit les aspects avancés : partitionnement MIP, répertoires cause-effet, MICE, comparaison big Phi vs small phi, réseaux élargis à 4+ nœuds, coarse-graining et aperçu IIT 4.0.
 
-**A qui s'adresse cette serie** : etudiants en sciences cognitives, neuroscience computationnelle, et philosophie de l'esprit. Les notebooks (~60-90 min chacun) necessitent Python 3.9 avec `pyphi` (installe via conda env dedie). Une familiarite avec les graphes et la logique booleenne suffit. Il constitue un complement theorique aux series [Probas](../Probas/README.md) (modeles probabilistes) et [GameTheory](../GameTheory/README.md) (systemes multi-agents), avec lesquelles il partage les concepts de causalite et d'interaction.
+**À qui s'adresse cette série** : étudiants en sciences cognitives, neuroscience computationnelle, et philosophie de l'esprit. Les notebooks (~60-90 min chacun) nécessitent Python 3.9 avec `pyphi` (installé via conda env dédié). Une familiarité avec les graphes et la logique booléenne suffit. Il constitue un complément théorique aux séries [Probas](../Probas/README.md) (modèles probabilistes) et [GameTheory](../GameTheory/README.md) (systèmes multi-agents), avec lesquelles il partage les concepts de causalité et d'interaction.
 
 ## Objectifs d'apprentissage
 
-A l'issue de cette serie, vous serez capable de :
+À l'issue de cette série, vous serez capable de :
 
-1. **Construire et manipuler des reseaux causaux** binaires avec PyPhi (TPM, noeuds, connexions)
-2. **Calculer Phi** pour un sous-systeme et interpreter sa valeur (integration vs separabilite)
-3. **Analyser une Cause-Effect Structure (CES)** : identifier les concepts, mecanismes et purviews
-4. **Appliquer le partitionnement MIP** pour localiser le "maillon faible" d'un systeme
-5. **Differencier big Phi et small phi** et comprendre leur roles respectifs dans la theorie
-6. **Evaluer les limites computationnelles** de l'IIT et les strategies de coarse-graining
+1. **Construire et manipuler des réseaux causaux** binaires avec PyPhi (TPM, nœuds, connexions)
+2. **Calculer Phi** pour un sous-système et interpréter sa valeur (intégration vs séparabilité)
+3. **Analyser une Cause-Effect Structure (CES)** : identifier les concepts, mécanismes et purviews
+4. **Appliquer le partitionnement MIP** pour localiser le "maillon faible" d'un système
+5. **Différencier big Phi et small phi** et comprendre leur rôles respectifs dans la théorie
+6. **Évaluer les limites computationnelles** de l'IIT et les stratégies de coarse-graining
 7. **Discuter les implications philosophiques** de l'IIT pour la conscience artificielle
 
 ## Notebooks
 
-| # | Notebook | Contenu | Duree |
+| # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [Intro_to_PyPhi](Intro_to_PyPhi.ipynb) | Introduction complete a PyPhi et IIT | 60-90 min |
-| 2 | [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) | Partitionnement MIP, repertoires, MICE, reseaux elargis | 60-90 min |
+| 1 | [Intro_to_PyPhi](Intro_to_PyPhi.ipynb) | Introduction complète à PyPhi et IIT | 60-90 min |
+| 2 | [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) | Partitionnement MIP, répertoires, MICE, réseaux élargis | 60-90 min |
 
-## Parcours recommandes
+## Parcours recommandés
 
 ```
 Notebook 1 (Fondements)
     |
     v
-Notebook 2 (Sujets avances)
+Notebook 2 (Sujets avancés)
 ```
 
 | Objectif | Parcours |
 |----------|----------|
-| Decouverte rapide | Notebook 1 seul |
-| Maitrise complete | Notebook 1 puis 2 |
-| Focus philosophie | Notebook 1 (sections CES + debats) + Notebook 2 (section IIT 4.0) |
+| Découverte rapide | Notebook 1 seul |
+| Maîtrise complète | Notebook 1 puis 2 |
+| Focus philosophie | Notebook 1 (sections CES + débats) + Notebook 2 (section IIT 4.0) |
 
 ### Parcours d'apprentissage
 
 **Phase 1 : Fondements (~90 min, notebook 1)**
 
-Vous installez PyPhi dans un environnement conda dedie (Python 3.9 obligatoire), puis construisez votre premier reseau causal binaire. Le calcul de Phi sur un reseau XOR a 3 noeuds illustre concretement la notion d'integration irreductible. L'exploration de la CES revele comment un systeme "specifie" sa propre geometrie informationnelle. Les 4 exercices vous font varier les sous-systemes, les topologies de reseau et les parametres pour developper une intuition sur ce qui fait monter ou baisser Phi.
+Vous installez PyPhi dans un environnement conda dédié (Python 3.9 obligatoire), puis construisez votre premier réseau causal binaire. Le calcul de Phi sur un réseau XOR à 3 nœuds illustre concrètement la notion d'intégration irréductible. L'exploration de la CES révèle comment un système "spécifie" sa propre géométrie informationnelle. Les 4 exercices vous font varier les sous-systèmes, les topologies de réseau et les paramètres pour développer une intuition sur ce qui fait monter ou baisser Phi.
 
 **Phase 2 : Approfondissement (~90 min, notebook 2)**
 
-Le deuxieme notebook deconstruit le calcul de Phi : vous manipulez les bipartitions (MIP), les repertoires cause-effet, et les MICE (Maximally Irreducible Cause or Effect). La comparaison big Phi vs small phi clarifie les deux niveaux d'analyse. L'extension a des reseaux a 4+ noeuds montre l'explosion combinatoire et justifie le coarse-graining. L'apercu IIT 4.0 ouvre sur les evolutions recentes de la theorie. Les 3 exercices testent votre comprehension des repertoires, du Phi multi-etats et des reseaux feed-forward (Phi = 0 attendu).
+Le deuxième notebook déconstruit le calcul de Phi : vous manipulez les bipartitions (MIP), les répertoires cause-effet, et les MICE (Maximally Irreducible Cause or Effect). La comparaison big Phi vs small phi clarifie les deux niveaux d'analyse. L'extension à des réseaux à 4+ nœuds montre l'explosion combinatoire et justifie le coarse-graining. L'aperçu IIT 4.0 ouvre sur les évolutions récentes de la théorie. Les 3 exercices testent votre compréhension des répertoires, du Phi multi-états et des réseaux feed-forward (Phi = 0 attendu).
 
-## Contenu detaille
+## Contenu détaillé
 
 ### Intro_to_PyPhi.ipynb
 
 | Section | Contenu |
 |---------|---------|
 | Installation | Configuration PyPhi, environnement conda |
-| Reseaux | Creation de circuits/graphes, noeuds binaires |
-| TPM | Transition Probability Matrices, regles d'evolution |
-| Subsystemes | Definition, calcul de Phi |
-| CES | Cause-Effect Structures, mecanismes |
-| Causation actuelle | Liens causaux entre elements |
-| Macro-subsystemes | Coarse-graining, blackboxing |
+| Réseaux | Création de circuits/graphes, nœuds binaires |
+| TPM | Transition Probability Matrices, règles d'évolution |
+| Sous-systèmes | Définition, calcul de Phi |
+| CES | Cause-Effect Structures, mécanismes |
+| Causation actuelle | Liens causaux entre éléments |
+| Macro-sous-systèmes | Coarse-graining, blackboxing |
 
 ### IIT-2-AdvancedTopics.ipynb
 
@@ -79,33 +79,33 @@ Le deuxieme notebook deconstruit le calcul de Phi : vous manipulez les bipartiti
 |---------|---------|
 | Rappels | Reprise des concepts du notebook 1 |
 | Partitionnement MIP | Coupes minimales d'information, bipartitions |
-| Repertoires cause-effet | Distributions cause, effet, non-perturbees |
-| MICE et concepts | Mechanismes maximalement irreductibles |
-| Big Phi vs Small Phi | Comparaison niveau systeme vs mecanisme |
-| Reseaux elargis | Systemes 4+ noeuds, interpretation |
-| Performance | Coarse-graining, timing, complexite |
-| IIT 4.0 | Concept-style, evolutions recentes, debats |
+| Répertoires cause-effet | Distributions cause, effet, non-perturbées |
+| MICE et concepts | Mécanismes maximalement irréductibles |
+| Big Phi vs Small Phi | Comparaison niveau système vs mécanisme |
+| Réseaux élargis | Systèmes 4+ nœuds, interprétation |
+| Performance | Coarse-graining, timing, complexité |
+| IIT 4.0 | Concept-style, évolutions récentes, débats |
 
-## Concepts cles
+## Concepts clés
 
 | Concept | Explication | Analogie |
 |---------|-------------|----------|
-| **TPM** | Regles d'evolution du systeme | Lois de la physique |
-| **Etat** | Configuration binaire des noeuds (0 ou 1) | Instantane cerebral |
-| **Phi (Big Phi)** | Niveau d'integration du systeme | Force d'un noeud de corde |
-| **Small phi** | Integration d'un mecanisme individuel | Tension d'un fil du noeud |
-| **MIP** | Point faible du systeme (Minimum Information Partition) | Maillon le plus faible |
-| **CES** | Geometrie informationnelle (Cause-Effect Structure) | Forme d'une pensee |
-| **MICE** | Mechanisme maximalement irreductible | Brique elementaire de conscience |
-| **Purview** | Ensemble de noeuds sur lesquels un mecanisme specifie de l'information | Champ d'influence |
+| **TPM** | Règles d'évolution du système | Lois de la physique |
+| **État** | Configuration binaire des nœuds (0 ou 1) | Instantané cérébral |
+| **Phi (Big Phi)** | Niveau d'intégration du système | Force d'un nœud de corde |
+| **Small phi** | Intégration d'un mécanisme individuel | Tension d'un fil du nœud |
+| **MIP** | Point faible du système (Minimum Information Partition) | Maillon le plus faible |
+| **CES** | Géométrie informationnelle (Cause-Effect Structure) | Forme d'une pensée |
+| **MICE** | Mécanisme maximalement irréductible | Brique élémentaire de conscience |
+| **Purview** | Ensemble de nœuds sur lesquels un mécanisme spécifie de l'information | Champ d'influence |
 
-## Prerequis
+## Prérequis
 
 ### Connaissances requises
 
 - Python de base (imports, fonctions, tableaux)
-- Logique booleenne (etats binaires 0, 1)
-- Notions de theorie des graphes (noeuds, connexions)
+- Logique booléenne (états binaires 0, 1)
+- Notions de théorie des graphes (nœuds, connexions)
 
 ### Environnement Python
 
@@ -120,68 +120,68 @@ pip install pyphi==1.2.0 numpy scipy ipykernel
 python -m ipykernel install --user --name pyphi --display-name "Python 3 (PyPhi/IIT)"
 ```
 
-### Dependances
+### Dépendances
 
 | Package | Version | Utilisation |
 |---------|---------|-------------|
 | pyphi | 1.2.0+ | Calculs IIT |
-| numpy | 1.21.6+ | Calcul numerique |
+| numpy | 1.21.6+ | Calcul numérique |
 | scipy | 0.13.3+ | Fonctions scientifiques |
 
 ## Limitations connues
 
-| Probleme | Cause | Solution |
+| Problème | Cause | Solution |
 |----------|-------|----------|
-| `ImportError: cannot import name 'Iterable'` | PyPhi 1.2.0 utilise `collections.Iterable` (supprime Python 3.10+) | Utiliser Python 3.9 (`conda create -n pyphi python=3.9`) |
-| StateUnreachableError | Etats inaccessibles | Configuration `VALIDATE_SUBSYSTEM_STATES` |
-| Performance | Phi calcul intensif pour grands reseaux | Limiter taille des reseaux |
+| `ImportError: cannot import name 'Iterable'` | PyPhi 1.2.0 utilise `collections.Iterable` (supprimé Python 3.10+) | Utiliser Python 3.9 (`conda create -n pyphi python=3.9`) |
+| StateUnreachableError | États inaccessibles | Configuration `VALIDATE_SUBSYSTEM_STATES` |
+| Performance | Phi calcul intensif pour grands réseaux | Limiter taille des réseaux |
 
-## Theorie IIT
+## Théorie IIT
 
-La Theorie de l'Information Integree (IIT) propose une approche mathematique de la conscience :
+La Théorie de l'Information Intégrée (IIT) propose une approche mathématique de la conscience :
 
-1. **Information** : Un systeme conscient doit specifier un grand nombre d'etats possibles
-2. **Integration** : L'information doit etre integree (non decomposable)
-3. **Exclusion** : Un seul niveau de Phi domine a tout moment
+1. **Information** : Un système conscient doit spécifier un grand nombre d'états possibles
+2. **Intégration** : L'information doit être intégrée (non décomposable)
+3. **Exclusion** : Un seul niveau de Phi domine à tout moment
 
-**Phi** mesure le degre d'integration informationnelle d'un systeme. Un Phi > 0 indique une integration irreductible, suggerant une forme de conscience.
+**Phi** mesure le degré d'intégration informationnelle d'un système. Un Phi > 0 indique une intégration irréductible, suggérant une forme de conscience.
 
-## Portee scientifique et debats
+## Portée scientifique et débats
 
-L'IIT n'est pas qu'une speculation philosophique : elle a engendre des outils utilises en clinique et alimente l'un des debats les plus vifs des neurosciences.
+L'IIT n'est pas qu'une spéculation philosophique : elle a engendré des outils utilisés en clinique et alimente l'un des débats les plus vifs des neurosciences.
 
-- **Mesure clinique de la conscience.** Le *Perturbational Complexity Index* (PCI), inspire des principes de l'IIT, est utilise pour evaluer la conscience chez des patients non communicants (coma, etat vegetatif, anesthesie). Le protocole "zap-and-zip" (stimulation TMS + EEG, compression de la reponse) distingue empiriquement les etats conscients des etats inconscients — une retombee concrete et reproductible d'une theorie de la conscience.
-- **Une theorie concurrente.** L'IIT s'oppose frontalement aux theories de type *Global Workspace* (Dehaene, Baars), qui font de la conscience une diffusion globale de l'information plutot qu'une integration causale locale. Des programmes de tests adversariaux (collaboration Templeton) confrontent leurs predictions sur des donnees reelles.
-- **Enjeu pour l'IA.** L'IIT predit qu'un reseau purement *feed-forward* (comme l'inference d'un LLM classique) a un Phi nul : il calcule sans "etre" conscient, faute de boucles causales integrees. Cette these est centrale dans les discussions sur la conscience artificielle.
-- **Controverse.** Le calcul exact de Phi est computationnellement intractable au-dela de petits reseaux (d'ou le coarse-graining du notebook), et la theorie a fait l'objet d'une critique publique retentissante (lettre ouverte de 2023 la qualifiant de "pseudoscience") — un cas d'ecole pour discuter des criteres de scientificite d'une theorie de l'esprit.
+- **Mesure clinique de la conscience.** Le *Perturbational Complexity Index* (PCI), inspiré des principes de l'IIT, est utilisé pour évaluer la conscience chez des patients non communicants (coma, état végétatif, anesthésie). Le protocole "zap-and-zip" (stimulation TMS + EEG, compression de la réponse) distingue empiriquement les états conscients des états inconscients — une retombée concrète et reproductible d'une théorie de la conscience.
+- **Une théorie concurrente.** L'IIT s'oppose frontalement aux théories de type *Global Workspace* (Dehaene, Baars), qui font de la conscience une diffusion globale de l'information plutôt qu'une intégration causale locale. Des programmes de tests adversariaux (collaboration Templeton) confrontent leurs prédictions sur des données réelles.
+- **Enjeu pour l'IA.** L'IIT prédit qu'un réseau purement *feed-forward* (comme l'inférence d'un LLM classique) a un Phi nul : il calcule sans "être" conscient, faute de boucles causales intégrées. Cette thèse est centrale dans les discussions sur la conscience artificielle.
+- **Controverse.** Le calcul exact de Phi est computationnellement intractable au-delà de petits réseaux (d'où le coarse-graining du notebook), et la théorie a fait l'objet d'une critique publique retentissante (lettre ouverte de 2023 la qualifiant de "pseudoscience") — un cas d'école pour discuter des critères de scientificité d'une théorie de l'esprit.
 
-Ces tensions font de l'IIT un excellent terrain pour exercer l'esprit critique : on y manipule un formalisme precis (calculable avec PyPhi) tout en gardant a l'esprit les limites de son interpretation.
+Ces tensions font de l'IIT un excellent terrain pour exercer l'esprit critique : on y manipule un formalisme précis (calculable avec PyPhi) tout en gardant à l'esprit les limites de son interprétation.
 
 ## FAQ
 
 ### Pourquoi Python 3.9 est-il obligatoire ?
 
-PyPhi 1.2.0 utilise `collections.Iterable`, qui a ete supprime dans Python 3.10 (PEP 585). Tenter d'installer PyPhi sur Python 3.10+ provoque une `ImportError` des le `import pyphi`. L'environnement conda dedie isole cette contrainte sans affecter vos autres projets.
+PyPhi 1.2.0 utilise `collections.Iterable`, qui a été supprimé dans Python 3.10 (PEP 585). Tenter d'installer PyPhi sur Python 3.10+ provoque une `ImportError` dès le `import pyphi`. L'environnement conda dédié isole cette contrainte sans affecter vos autres projets.
 
-### L'IIT est-elle acceptee par la communaute scientifique ?
+### L'IIT est-elle acceptée par la communauté scientifique ?
 
-L'IIT est une theorie **controversée**. Elle a des retombees cliniques reelles (PCI pour mesurer la conscience chez les patients comateux) mais reste debattue : certains chercheurs la considerent comme le meilleur cadre theorique existant, d'autres la critiquent comme pseudoscience. Les notebooks presentent le formalisme et ses outils sans prendre position — c'est un excellent terrain pour exercer l'esprit critique.
+L'IIT est une théorie **controversée**. Elle a des retombées cliniques réelles (PCI pour mesurer la conscience chez les patients comateux) mais reste débattue : certains chercheurs la considèrent comme le meilleur cadre théorique existant, d'autres la critiquent comme pseudoscience. Les notebooks présentent le formalisme et ses outils sans prendre position — c'est un excellent terrain pour exercer l'esprit critique.
 
-### Quelle est la difference entre big Phi et small phi ?
+### Quelle est la différence entre big Phi et small phi ?
 
-**Big Phi** ($\Phi$) mesure l'integration au niveau du systeme complet : il quantifie a quel point le systeme est "plus que la somme de ses parties". **Small phi** ($\varphi$) mesure l'integration d'un mecanisme individuel (un sous-ensemble de noeuds) : chaque concept dans la CES a son propre small phi. La CES est l'ensemble des concepts dont le small phi > 0, et le big Phi aggrege ces contributions.
+**Big Phi** ($\Phi$) mesure l'intégration au niveau du système complet : il quantifie à quel point le système est "plus que la somme de ses parties". **Small phi** ($\varphi$) mesure l'intégration d'un mécanisme individuel (un sous-ensemble de nœuds) : chaque concept dans la CES a son propre small phi. La CES est l'ensemble des concepts dont le small phi > 0, et le big Phi agrège ces contributions.
 
-### Un reseau feed-forward peut-il etre conscient selon l'IIT ?
+### Un réseau feed-forward peut-il être conscient selon l'IIT ?
 
-Non. L'IIT predit qu'un reseau purement feed-forward (A -> B -> C, sans boucle de retroaction) a un Phi de zero. L'information transite mais n'est pas "integree" — il n'y a pas de causalite bidirectionnelle. C'est un resultat fondamental pour le debat sur la conscience des LLMs, dont l'inference est essentiellement feed-forward.
+Non. L'IIT prédit qu'un réseau purement feed-forward (A -> B -> C, sans boucle de rétroaction) a un Phi de zéro. L'information transite mais n'est pas "intégrée" — il n'y a pas de causalité bidirectionnelle. C'est un résultat fondamental pour le débat sur la conscience des LLMs, dont l'inférence est essentiellement feed-forward.
 
 ### Le calcul de Phi est-il tractable en pratique ?
 
-Pas au-dela de ~5-7 noeuds en pratique. Le nombre de bipartitions a evaluer croit super-exponentiellement avec la taille du systeme. Le notebook 2 (section 7) demontre cette explosion et introduit le coarse-graining comme strategie d'approximation. Pour les systemes reels (cerveau humain : ~86 milliards de neurones), seul le PCI (mesure clinique indirecte) est applicable.
+Pas au-delà de ~5-7 nœuds en pratique. Le nombre de bipartitions à évaluer croît super-exponentiellement avec la taille du système. Le notebook 2 (section 7) démontre cette explosion et introduit le coarse-graining comme stratégie d'approximation. Pour les systèmes réels (cerveau humain : ~86 milliards de neurones), seul le PCI (mesure clinique indirecte) est applicable.
 
 ### Peut-on utiliser PyPhi pour un projet de recherche ?
 
-Oui, mais avec caveats. PyPhi est la reference pour IIT 3.0, mais IIT 4.0 (2024+) introduit des changements fondamentaux dans le calcul de Phi. Pour un projet de recherche, verifier la version de la theorie que vous suivez et consulter la [documentation PyPhi](https://pyphi.readthedocs.io/en/stable/) pour les limitations actuelles.
+Oui, mais avec caveats. PyPhi est la référence pour IIT 3.0, mais IIT 4.0 (2024+) introduit des changements fondamentaux dans le calcul de Phi. Pour un projet de recherche, vérifier la version de la théorie que vous suivez et consulter la [documentation PyPhi](https://pyphi.readthedocs.io/en/stable/) pour les limitations actuelles.
 
 ## Ressources
 
