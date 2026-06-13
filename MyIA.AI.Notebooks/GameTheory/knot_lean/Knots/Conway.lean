@@ -45,7 +45,6 @@ structure ConwaySphere where
   -- The 4 intersection points on the knot
   points : Fin 4 → Nat
   -- TODO: proper geometric definition
-  deriving Repr
 
 /-- Two knots are mutants if related by a Conway mutation. -/
 def AreMutants (k₁ k₂ : Knot) : Prop := sorry
@@ -77,7 +76,7 @@ def conwayKnotDiagram : KnotDiagram where
     ⟨21, 22, 22, 21⟩
   ]
   numEdges := 22
-  hwell := by rfl  -- TODO: proper well-formedness check
+  hwell := by trivial  -- TODO: proper well-formedness check
 
 def conwayKnot : Knot where
   diagram := conwayKnotDiagram
@@ -104,7 +103,7 @@ def kinoshitaTerasakaDiagram : KnotDiagram where
     ⟨21, 12, 22, 21⟩
   ]
   numEdges := 22
-  hwell := by rfl  -- TODO: proper well-formedness check
+  hwell := by trivial  -- TODO: proper well-formedness check
 
 def kinoshitaTerasakaKnot : Knot where
   diagram := kinoshitaTerasakaDiagram
@@ -116,8 +115,18 @@ This is why sliceness was so hard to determine — the Alexander
 polynomial cannot distinguish them from the unknot.
 -/
 
-/-- Alexander polynomial (definition placeholder). -/
-def alexanderPolynomial (k : Knot) : Polynomial ℤ := sorry
+/-- Alexander polynomial (definition placeholder).
+
+The Alexander polynomial Δ_K(t) is a knot invariant taking values in ℤ[t, t⁻¹].
+Phase 4 target: proper definition via Seifert matrix or Burau representation.
+For now, represented as an opaque function returning a placeholder type.
+Reference: Alexander (1928), Topological invariants of knots and links.
+-/
+-- TODO Phase 4: import Mathlib.Algebra.Polynomial and use Polynomial ℤ
+-- Opaque placeholder for Phase 1 scaffolding.
+abbrev AlexanderPoly := Nat  -- placeholder; Phase 4 replaces with Polynomial ℤ
+
+def alexanderPolynomial (k : Knot) : AlexanderPoly := sorry
   -- Definition: via Seifert matrix, or alternatively via Burau representation
   -- Reference: Alexander (1928), Topological invariants of knots and links
   -- Mathlib prerequisites:
@@ -128,13 +137,13 @@ def alexanderPolynomial (k : Knot) : Polynomial ℤ := sorry
 theorem conway_trivial_alexander :
     alexanderPolynomial conwayKnot = 1 := by
   exact sorry
-  -- Reference: standard computation
+  -- Reference: standard computation. Δ_{11n34}(t) = 1.
   -- Phase 4+ target
 
 theorem KT_trivial_alexander :
     alexanderPolynomial kinoshitaTerasakaKnot = 1 := by
   exact sorry
-  -- Reference: standard computation
+  -- Reference: standard computation. Δ_{11n42}(t) = 1.
   -- Phase 4+ target
 
 /-! ## 5. Slice knots

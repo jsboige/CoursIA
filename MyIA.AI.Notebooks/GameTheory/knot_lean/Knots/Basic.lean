@@ -77,13 +77,12 @@ structure PDCrossing where
 structure KnotDiagram where
   crossings : List PDCrossing
   numEdges : Nat
-  -- Well-formedness: each edge appears exactly twice across all crossings
-  hwell : sorry = sorry  -- TODO: well-formedness predicate
+  -- TODO Phase 2: well-formedness predicate.
+  -- Each edge label 0..numEdges-1 appears exactly twice across all crossings.
+  -- Reference: Doll & Hoste (1991), A tabulation of oriented links.
+  -- Placeholder `True` until the predicate is formalised; do NOT read as "well-formed".
+  hwell : True
   deriving Repr
-
--- TODO: well-formedness predicate
--- Each edge label 0..numEdges-1 appears exactly twice across all crossings.
--- Reference: Doll & Hoste (1991), A tabulation of oriented links.
 
 /-! ## 5. Knot
 
@@ -123,7 +122,7 @@ The simplest knot: the unknot (no crossings).
 def unknotDiagram : KnotDiagram where
   crossings := []
   numEdges := 1
-  hwell := by rfl
+  hwell := by trivial
 
 def unknot : Knot where
   diagram := unknotDiagram
@@ -140,7 +139,7 @@ def trefoilDiagram : KnotDiagram where
     ⟨5, 2, 6, 3⟩   -- crossing 3
   ]
   numEdges := 6
-  hwell := by rfl  -- TODO: proper well-formedness check
+  hwell := by trivial  -- TODO: proper well-formedness check
 
 def trefoil : Knot where
   diagram := trefoilDiagram
@@ -157,7 +156,7 @@ def figureEightDiagram : KnotDiagram where
     ⟨7, 3, 8, 6⟩
   ]
   numEdges := 8
-  hwell := by rfl  -- TODO: proper well-formedness check
+  hwell := by trivial  -- TODO: proper well-formedness check
 
 def figureEight : Knot where
   diagram := figureEightDiagram

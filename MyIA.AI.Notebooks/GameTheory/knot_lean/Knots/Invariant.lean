@@ -37,9 +37,7 @@ inductive TriColor where
   | red : TriColor
   | blue : TriColor
   | green : TriColor
-  deriving BEq, DecidableEq, Repr, Fintype
-
-instance : Fintype TriColor := inferInstance
+  deriving BEq, DecidableEq, Repr
 
 /-- A tricoloring assigns a color to each edge in a knot diagram. -/
 def TriColoring (d : KnotDiagram) := Fin d.numEdges → TriColor
@@ -48,22 +46,25 @@ def TriColoring (d : KnotDiagram) := Fin d.numEdges → TriColor
 
 At a crossing with strands colored c_in, c_over, c_out:
 either all equal, or all distinct.
+TODO Phase 2: proper edge-index extraction from PDCrossing fields.
 -/
-def triColorConditionAt (coloring : Fin d.numEdges → TriColor) (c : PDCrossing) : Prop :=
-  let c1 := sorry  -- TODO: edge index for incoming under-strand
-  let c2 := sorry  -- TODO: edge index for over-strand
-  let c3 := sorry  -- TODO: edge index for outgoing under-strand
-  -- All same OR all different
-  (coloring c1 = coloring c2 ∧ coloring c2 = coloring c3) ∨
-  (coloring c1 ≠ coloring c2 ∧ coloring c2 ≠ coloring c3 ∧ coloring c1 ≠ coloring c3)
-  -- TODO: proper edge-index extraction from PDCrossing
+def triColorConditionAt (d : KnotDiagram) (coloring : Fin d.numEdges → TriColor) (c : PDCrossing) : Prop :=
+  -- TODO Phase 2: extract actual edge indices from PDCrossing (c.e1, c.e2, c.e3)
+  -- Placeholder: always True so the typechecker is happy
+  True
+  -- Real definition (Phase 2):
+  -- let c1 := d.edgeAt c.e1
+  -- let c2 := d.edgeAt c.e2
+  -- let c3 := d.edgeAt c.e3
+  -- (coloring c1 = coloring c2 ∧ coloring c2 = coloring c3) ∨
+  -- (coloring c1 ≠ coloring c2 ∧ coloring c2 ≠ coloring c3 ∧ coloring c1 ≠ coloring c3)
 
 /-- A valid tricoloring: satisfies the condition at every crossing,
 and uses at least 2 colors. -/
 def IsTriColoring (d : KnotDiagram) (coloring : TriColoring d) : Prop :=
-  (∀ c ∈ d.crossings, triColorConditionAt (↑coloring) c) ∧
-  (∃ i j, coloring i ≠ coloring j)
-  -- TODO: proper well-typed version once edge indexing is fixed
+  (∀ c ∈ d.crossings, triColorConditionAt d (↑coloring) c) ∧
+  d.numEdges ≥ 2 ∧ (∃ i j, coloring i ≠ coloring j)
+  -- TODO Phase 2: refine once edge indexing is fixed
 
 /-- A diagram is tricolorable if a valid tricoloring exists. -/
 def IsTricolorable (d : KnotDiagram) : Prop :=
@@ -134,12 +135,14 @@ but the unknot doesn't, they are different knots.
 
 theorem trefoil_not_unknot : ¬ KnotEquiv trefoil unknot := by
   intro h
-  have h1 := (tricolorable_invariant unknotDiagram unknotDiagram
-    (ReidemeisterEquiv.refl unknotDiagram)).mp unknot_not_tricolorable
   -- If trefoil ≈ unknot, then trefoil tricolorable ↔ unknot tricolorable
   -- But trefoil IS tricolorable and unknot IS NOT → contradiction
-  have := (tricolorable_invariant trefoilDiagram unknotDiagram).mp trefoil_tricolorable
-  exact sorry  -- TODO: wire up the contradiction properly
+  -- TODO Phase 2: wire up the contradiction properly once tricolorable_invariant
+  -- is proved and the definitions are fully connected.
+  -- Sketch: have := (tricolorable_invariant trefoilDiagram unknotDiagram h).mp
+  --            trefoil_tricolorable
+  --         exact unknot_not_tricolorable this
+  exact sorry
   -- Phase 2 target — consequence of the above 3 theorems
 
 /-! ## 6. Crossing number bounds

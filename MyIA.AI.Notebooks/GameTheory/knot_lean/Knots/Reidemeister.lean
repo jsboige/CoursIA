@@ -33,16 +33,14 @@ Diagrammatically:
   |    ↔   /   \   |
   |        \___/   |
 -/
-inductive Reidemeister1 (d : KnotDiagram) : KnotDiagram → Prop where
-  | twist (i : Nat) (sign : CrossingType) :
-      -- Add a curl at edge i
-      -- Result diagram has one more crossing
-      sorry → Reidemeister1 d (sorry : KnotDiagram)
-  | untwist (c : PDCrossing) :
-      -- Remove a curl crossing c
-      -- Precondition: c is a crossing where the same strand crosses itself
-      sorry → Reidemeister1 d (sorry : KnotDiagram)
-      -- Reference: Reidemeister (1927), Elementare Begründung der Knotentheorie
+-- TODO Phase 2: model as an inductive relation with concrete constructors
+--   | twist (i : Nat) (sign : CrossingType) : addCurl d i sign = d' → Reidemeister1 d d'
+--   | untwist (c : PDCrossing) : removeCurl d c = d' → Reidemeister1 d d'
+-- once local diagram surgery (addCurl / removeCurl) is defined in Basic.
+-- Declared opaque here (a `sorry` Prop) so the equivalence machinery compiles
+-- in Phase 1; the constructors and their well-formedness proofs come in Phase 2.
+-- Reference: Reidemeister (1927), Elementare Begründung der Knotentheorie.
+def Reidemeister1 (d₁ d₂ : KnotDiagram) : Prop := sorry
 
 /-- R2 (Poke/Unpoke): add or remove two consecutive crossings of opposite sign.
 
@@ -54,14 +52,11 @@ Two parallel strands can pass through each other:
   |   |       \  /   |   |
   |   |        \/    |   |
 -/
-inductive Reidemeister2 (d : KnotDiagram) : KnotDiagram → Prop where
-  | poke (i j : Nat) :
-      -- Add two crossings of opposite sign at edges i, j
-      sorry → Reidemeister2 d (sorry : KnotDiagram)
-  | unpoke (c₁ c₂ : PDCrossing) :
-      -- Remove two consecutive opposite-sign crossings
-      sorry → Reidemeister2 d (sorry : KnotDiagram)
-      -- Reference: Reidemeister (1927)
+-- TODO Phase 2: model as an inductive relation with concrete constructors
+--   | poke (i j : Nat) : addBigon d i j = d' → Reidemeister2 d d'
+--   | unpoke (c₁ c₂ : PDCrossing) : removeBigon d c₁ c₂ = d' → Reidemeister2 d d'
+-- Opaque for now (Phase 1 scaffolding). Reference: Reidemeister (1927).
+def Reidemeister2 (d₁ d₂ : KnotDiagram) : Prop := sorry
 
 /-- R3 (Slide): move a strand over a crossing.
 
@@ -72,12 +67,11 @@ A strand can slide past a crossing without changing the knot:
      |          /  |  \
      |         /   |   \
 -/
-inductive Reidemeister3 (d : KnotDiagram) : KnotDiagram → Prop where
-  | slide (c : PDCrossing) :
-      -- Slide a strand over crossing c
-      sorry → Reidemeister3 d (sorry : KnotDiagram)
-      -- Reference: Reidemeister (1927)
-      -- The slide move has exactly one non-trivial configuration
+-- TODO Phase 2: model as an inductive relation with a concrete constructor
+--   | slide (c : PDCrossing) : slideStrand d c = d' → Reidemeister3 d d'
+-- (the slide move has exactly one non-trivial configuration).
+-- Opaque for now (Phase 1 scaffolding). Reference: Reidemeister (1927).
+def Reidemeister3 (d₁ d₂ : KnotDiagram) : Prop := sorry
 
 /-! ## 2. Single Reidemeister step
 
