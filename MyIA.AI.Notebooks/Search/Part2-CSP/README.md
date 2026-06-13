@@ -1,8 +1,8 @@
 # Partie 2 : Programmation par Contraintes
 
-[← Partie 1 : Search](../Part1-Foundations/README.md) | [↑ Serie Search](../README.md) | [Applications →](../Applications/README.md)
+[← Partie 1 : Search](../Part1-Foundations/README.md) | [↑ Série Search](../README.md) | [Applications →](../Applications/README.md)
 
-Au lieu de concevoir un algorithme d'exploration, que se passe-t-il si l'on declare les contraintes du probleme et que l'on laisse le solveur trouver les solutions ? La programmation par contraintes (CSP) represente ce changement de paradigme : on ne cherche plus, on contraint. Ce modele declaratif est au coeur des outils industriels (ordonnancement, logistique, verification) et s'applique naturellement aux problemes NP-difficiles.
+Au lieu de concevoir un algorithme d'exploration, que se passe-t-il si l'on déclare les contraintes du problème et que l'on laisse le solveur trouver les solutions ? La programmation par contraintes (CSP) représente ce changement de paradigme : on ne cherche plus, on contraint. Ce modèle déclaratif est au coeur des outils industriels (ordonnancement, logistique, vérification) et s'applique naturellement aux problèmes NP-difficiles.
 
 Les deux premiers notebooks installent le socle. CSP-1 pose le modèle (X, D, C) — variables, domaines, contraintes — et montre que le backtracking de la Partie 1, enrichi de deux heuristiques de bon sens (choisir d'abord la variable la plus contrainte, essayer d'abord la valeur la moins contraignante), résout déjà des problèmes non triviaux. CSP-2 introduit l'idée qui fait la puissance du paradigme : la propagation. Plutôt que de découvrir une impasse en s'y enfonçant, AC-3 et MAC élaguent les valeurs impossibles avant même de les essayer — l'espace de recherche se réduit de lui-même, par simple déduction locale.
 
@@ -16,26 +16,26 @@ Si la Partie 1 enseigne à chercher, celle-ci enseigne à modéliser — et c'es
 
 ## Objectifs d'apprentissage
 
-A l'issue de cette partie, vous serez capable de :
+À l'issue de cette partie, vous serez capable de :
 
-1. **Modeliser** un probleme NP-difficile comme un CSP (variables, domaines, contraintes) et le resoudre avec OR-Tools CP-SAT
-2. **Maitriser** les techniques de propagation (AC-3, Forward Checking, MAC) pour reduire l'espace de recherche
-3. **Exploiter** les contraintes globales (AllDifferent, Cumulative, Circuit) pour les problemes industriels
+1. **Modéliser** un problème NP-difficile comme un CSP (variables, domaines, contraintes) et le résoudre avec OR-Tools CP-SAT
+2. **Maîtriser** les techniques de propagation (AC-3, Forward Checking, MAC) pour réduire l'espace de recherche
+3. **Exploiter** les contraintes globales (AllDifferent, Cumulative, Circuit) pour les problèmes industriels
 4. **Composer** CSP avec SAT, ML et LLM pour des solutions hybrides (LCG, CP+ML, LLM+CSP)
-5. **Etendre** le cadre classique aux contraintes souples, temporelles et distribuees
+5. **Étendre** le cadre classique aux contraintes souples, temporelles et distribuées
 
 ## Notebooks
 
-| # | Notebook | Kernel | Contenu | Duree |
+| # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
-| 1 | [CSP-1-Fundamentals](CSP-1-Fundamentals.ipynb) | Python 3 | Modele CSP (X, D, C), backtracking, heuristiques MRV et LCV | ~50 min |
+| 1 | [CSP-1-Fundamentals](CSP-1-Fundamentals.ipynb) | Python 3 | Modèle CSP (X, D, C), backtracking, heuristiques MRV et LCV | ~50 min |
 | 2 | [CSP-2-Consistency](CSP-2-Consistency.ipynb) | Python 3 | AC-3, Forward Checking, MAC : propagation de contraintes | ~45 min |
 | 3 | [CSP-3-Advanced](CSP-3-Advanced.ipynb) | Python 3 | Contraintes globales OR-Tools : AllDifferent, Cumulative, Circuit, LNS | ~50 min |
 | 4 | [CSP-4-Scheduling](CSP-4-Scheduling.ipynb) | Python 3 | Job-Shop (JSSP), RCPSP, Nurse Scheduling, IntervalVar, NoOverlap | ~1h |
 | 5 | [CSP-5-Optimization](CSP-5-Optimization.ipynb) | Python 3 | Bin Packing, Knapsack, Cutting Stock, Portfolio Optimization | ~1h |
 | 6 | [CSP-6-Hybridization](CSP-6-Hybridization.ipynb) | Python 3 | Lazy Clause Generation (LCG), CP+SAT, CP+ML, LLM+CSP | ~1h30 |
 | 7 | [CSP-7-Soft](CSP-7-Soft.ipynb) | Python 3 | Contraintes souples : Fuzzy CSP, Weighted CSP, Semiring-based CSP | ~1h |
-| 8 | [CSP-8-Temporal](CSP-8-Temporal.ipynb) | Python 3 | Algebre d'intervalles d'Allen, Simple Temporal Problems (STP), TCSP | ~1h |
+| 8 | [CSP-8-Temporal](CSP-8-Temporal.ipynb) | Python 3 | Algèbre d'intervalles d'Allen, Simple Temporal Problems (STP), TCSP | ~1h |
 | 9 | [CSP-9-Distributed](CSP-9-Distributed.ipynb) | Python 3 | Asynchronous Backtracking (ABT), AWC, Privacy-preserving CSP | ~1h30 |
 
 ## Progression
@@ -43,29 +43,29 @@ A l'issue de cette partie, vous serez capable de :
 CSP-1 et CSP-2 sont incontournables : tout le paradigme — un modèle déclaratif, une propagation qui élague — tient dans ces deux notebooks. Au-delà, trois chemins s'offrent selon votre objectif :
 
 - **Applications industrielles** : CSP-3 puis CSP-4 (Scheduling) et/ou CSP-5 (Optimization)
-- **Frontieres** : CSP-6 (Hybridization, le notebook le plus avance), puis CSP-7/8/9 (Soft/Temporal/Distributed)
-- **Independants** : CSP-7, CSP-8 et CSP-9 sont accessibles apres CSP-1 + CSP-2
+- **Frontières** : CSP-6 (Hybridization, le notebook le plus avancé), puis CSP-7/8/9 (Soft/Temporal/Distributed)
+- **Indépendants** : CSP-7, CSP-8 et CSP-9 sont accessibles après CSP-1 + CSP-2
 
-Les notebooks CSP presupposent les bases de la Partie 1 : formalisation en espace d'etats ([Search-1](../Part1-Foundations/Search-1-StateSpace.ipynb)) et backtracking ([Search-2](../Part1-Foundations/Search-2-Uninformed.ipynb)).
+Les notebooks CSP présupposent les bases de la Partie 1 : formalisation en espace d'états ([Search-1](../Part1-Foundations/Search-1-StateSpace.ipynb)) et backtracking ([Search-2](../Part1-Foundations/Search-2-Uninformed.ipynb)).
 
-## Prerequis & environnement
+## Prérequis & environnement
 
-| Besoin | Detail |
+| Besoin | Détail |
 |--------|--------|
-| Python | 3.10+, environnement virtuel recommande |
-| `ortools` | Dependence principale de toute la serie (CP-SAT) |
-| Cle API (optionnel) | CSP-6, section LLM+CSP uniquement ; le reste du notebook fonctionne sans |
+| Python | 3.10+, environnement virtuel recommandé |
+| `ortools` | Dépendance principale de toute la série (CP-SAT) |
+| Clé API (optionnel) | CSP-6, section LLM+CSP uniquement ; le reste du notebook fonctionne sans |
 
-Pour le setup complet, voir le [README de la serie Search](../README.md).
+Pour le setup complet, voir le [README de la série Search](../README.md).
 
 ## FAQ
 
-| Probleme | Solution |
+| Problème | Solution |
 |----------|----------|
-| Solveur CP-SAT trop lent sur les grandes instances | Preferer les contraintes globales (AllDifferent, Cumulative) aux contraintes binaires equivalentes ; utiliser LNS (CSP-3) |
-| Comment choisir entre CP-SAT et un solveur SAT ? | CP-SAT pour les contraintes globales et l'optimisation (objectif), SAT pour la decision pure ; CSP-6 detaille les compromis |
-| CSP-9 : les algorithmes distribues ne convergent pas | Verifier que le reseau de contraintes est un arbre, ou utiliser AWC (Weak-Commitment) au lieu d'ABT |
-| Ou sont les applications concretes ? | Voir [Applications](../Applications/README.md) : 21 notebooks (N-Queens, Nurse Scheduling, VRP, TSP...) |
+| Solveur CP-SAT trop lent sur les grandes instances | Préférer les contraintes globales (AllDifferent, Cumulative) aux contraintes binaires équivalentes ; utiliser LNS (CSP-3) |
+| Comment choisir entre CP-SAT et un solveur SAT ? | CP-SAT pour les contraintes globales et l'optimisation (objectif), SAT pour la décision pure ; CSP-6 détaille les compromis |
+| CSP-9 : les algorithmes distribués ne convergent pas | Vérifier que le réseau de contraintes est un arbre, ou utiliser AWC (Weak-Commitment) au lieu d'ABT |
+| Où sont les applications concrètes ? | Voir [Applications](../Applications/README.md) : 21 notebooks (N-Queens, Nurse Scheduling, VRP, TSP...) |
 
 ## Ponts vers SymbolicAI
 
@@ -100,17 +100,17 @@ CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
 | Constraint logic | Tweety (Formal Logic) |
 | Temporal CSP | Temporal Planning, STP |
 
-## Ponts inter-series
+## Ponts inter-séries
 
-| Serie | Lien | Relation |
+| Série | Lien | Relation |
 | ------- | ------ | ---------- |
-| [Partie 1 : Search](../Part1-Foundations/README.md) | Fondamentaux | Prerequis : backtracking, heuristiques |
+| [Partie 1 : Search](../Part1-Foundations/README.md) | Fondamentaux | Prérequis : backtracking, heuristiques |
 | [Applications](../Applications/README.md) | 21 notebooks d'application | Mise en pratique des CSP |
 | [Search (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global |
-| [Sudoku](../../Sudoku/) | Resolution par contraintes | Application directe des CSP |
+| [Sudoku](../../Sudoku/) | Résolution par contraintes | Application directe des CSP |
 | [SymbolicAI/Z3](../../SymbolicAI/) | Solveur SMT | CSP-6 (LCG) et automates symboliques |
-| [Probas/Infer](../../Probas/Infer/) | Infer.NET | Modeles graphiques et contraintes |
+| [Probas/Infer](../../Probas/Infer/) | Infer.NET | Modèles graphiques et contraintes |
 
 ## Navigation
 
-[<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour a la serie Search](../README.md) | [Applications ->](../Applications/README.md)
+[<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour à la série Search](../README.md) | [Applications ->](../Applications/README.md)
