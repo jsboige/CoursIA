@@ -15,7 +15,7 @@ Ce répertoire contient les formalisations mathématiques de la théorie du choi
 
 ## Théorèmes formalisés
 
-### 0. DominikPeters/SocialChoiceLean (reference externe)
+### 0. DominikPeters/SocialChoiceLean (référence externe)
 
 Un dépôt de référence majeur pour la formalisation du choix social en Lean 4 :
 
@@ -103,7 +103,7 @@ Notre framework utilise des **préférences faibles** (`PrefOrder α` : réflexi
 
 ### Dictateur directionnel
 
-La définition de `is_dictatorship` dans `Arrow.lean` utilise un **dictateur directionnel** : un individu `d` tel que pour toute paire `(x, y)`, si `d` préfère strictement `x` à `y`, la société préfère strictement `x` à `y`. C'est suffisant dans le contexte d'une SWF qui produit une préférence totale — un dictateur directionnel est automatiquement un dictateur complet. Ce formulation simplifie la preuve d'extension (étape 4 de Geanakoplos 2005) par rapport à une définition exigerait la coïncidence exacte entre préférences individuelles et sociales.
+La définition de `is_dictatorship` dans `Arrow.lean` utilise un **dictateur directionnel** : un individu `d` tel que pour toute paire `(x, y)`, si `d` préfère strictement `x` à `y`, la société préfère strictement `x` à `y`. C'est suffisant dans le contexte d'une SWF qui produit une préférence totale — un dictateur directionnel est automatiquement un dictateur complet. Ce formulation simplifie la preuve d'extension (étape 4 de Geanakoplos 2005) par rapport à une définition qui exigerait la coïncidence exacte entre préférences individuelles et sociales.
 
 ### Décisivité bidirectionnelle dans Sen
 
