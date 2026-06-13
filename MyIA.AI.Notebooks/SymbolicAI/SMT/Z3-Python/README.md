@@ -1,6 +1,6 @@
 # Serie Z3-Python - Resolution de contraintes SMT en Python
 
-**Navigation** : [Index SymbolicAI](../README.md) | [Serie Z3 C# (Z3.Linq)](../Z3/README.md) | [Index general](../../README.md)
+**Navigation** : [Index SMT](../README.md) | [Index SymbolicAI](../../README.md) | [Serie Z3 C# (Z3.Linq)](../Z3/README.md) | [Index general](../../../README.md)
 
 ## Serie en quelques mots
 
@@ -93,4 +93,4 @@ A l'issue de cette serie, l'etudiant sera capable de :
 - [Z3 Python API](https://z3prover.github.io/api/html/namespacez3py.html) — reference de l'API z3-py
 - [PyPI : z3-solver](https://pypi.org/project/z3-solver/) — package pip
 - [Serie Z3 C# (Z3.Linq)](../Z3/README.md) — serie sœur en .NET 9
-- [Serie Sudoku](../../Sudoku/README.md) — compare Z3 a 10 autres approches algorithmiques
+- [Serie Sudoku](../../../Sudoku/README.md) — compare Z3 a 10 autres approches algorithmiques

@@ -299,9 +299,9 @@ Documentation complete : [SymbolicLearning/README.md](SymbolicLearning/README.md
 | Notebook | Kernel | Contenu | Exercices |
 |----------|--------|---------|-----------|
 | [OR-tools-Stiegler](OR-tools-Stiegler.ipynb) | .NET C# | Probleme de Stigler, programmation lineaire avec OR-Tools | 2 |
-| [01_Linq2Z3_Intro](Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
+| [01_Linq2Z3_Intro](SMT/Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
 
-Le notebook Z3 inaugure la serie [Z3/](Z3/README.md) (SMT declaratif via Z3.Linq), appelee a s'etendre.
+Le notebook Z3 inaugure la serie [SMT/Z3/](SMT/Z3/README.md) (SMT declaratif via Z3.Linq), regroupee avec la serie Python [SMT/Z3-Python/](SMT/Z3-Python/README.md) sous le chapeau [SMT/](SMT/README.md) (Satisfiability Modulo Theories).
 
 ---
 
@@ -355,9 +355,14 @@ SymbolicAI/
 │   ├── reference/             # Notes AIMA ch. 19
 │   └── README.md
 │
-├── Z3/                        # Serie Z3.Linq (SMT declaratif)
-│   ├── 01_Linq2Z3_Intro.ipynb
-│   └── README.md
+├── SMT/                       # Solveurs SMT (Satisfiability Modulo Theories)
+│   ├── Z3/                     # Serie Z3.Linq C# (SMT declaratif via LINQ)
+│   │   ├── 01_Linq2Z3_Intro.ipynb ... 05_Meal_Planner_Hierarchical.ipynb
+│   │   └── README.md
+│   ├── Z3-Python/              # Serie z3-py (API complete imperative)
+│   │   ├── Z3-Python-01-Introduction.ipynb ... Z3-Python-03-Tactics.ipynb
+│   │   └── README.md
+│   └── README.md              # Chapeau SMT
 ├── OR-tools-Stiegler.ipynb    # Optimisation LP
 │
 ├── scripts/                   # Scripts utilitaires

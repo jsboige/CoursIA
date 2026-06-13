@@ -1,6 +1,6 @@
 # Serie Z3 - Programmation Declarative avec Z3.Linq
 
-**Navigation** : [Index SymbolicAI](../README.md) | [Index general](../../README.md)
+**Navigation** : [Index SMT](../README.md) | [Index SymbolicAI](../../README.md) | [Index general](../../../README.md)
 
 ## Serie en quelques mots
 
