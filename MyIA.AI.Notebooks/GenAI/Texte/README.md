@@ -13,7 +13,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 
 ## Ce que vous apprendrez
 
-À travers ces 11 notebooks pratiques, vous acquerrez une expertise complète :
+À travers ces 12 notebooks pratiques, vous acquerrez une expertise complète :
 - **Art du prompt engineering** : du zéro-shot au chain-of-thought
 - **Structuration des réponses** : JSON Schema, Pydantic, extraction de données
 - **Intelligence augmentée** : function calling, RAG moderne, code interpreter
@@ -53,6 +53,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 | 9 | `9_Production_Patterns.ipynb` | Conversations API, background mode, retry, batch processing | 70 min |
 | 10 | `10_LocalLlama.ipynb` | vLLM, Qwen3.5-35B-A3B, ZwZ-8B, multi-endpoints, benchmarking | 60 min |
 | 11 | `11_Quantization.ipynb` | AWQ, GPTQ, llmcompressor, modeles vision, deploiement vLLM | 60 min |
+| 12 | `12_Test_Time_Scaling.ipynb` | Best-of-N, Tree-of-Thoughts (BFS/DFS), Reflexion, routeur adaptatif (cf ICR) | 60 min |
 
 ## Prerequis
 
