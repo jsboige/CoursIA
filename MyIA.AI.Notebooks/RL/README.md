@@ -9,58 +9,58 @@ breakdown: root=14
 maturity: PRODUCTION=13, BETA=1
 -->
 
-Le Reinforcement Learning (apprentissage par renforcement) est la branche de l'IA qui apprend a un agent a prendre des decisions optimales par l'essai et l'erreur, en recevant des recompenses ou des penalites de son environnement. C'est la technologie derriere AlphaGo, les robots de Boston Dynamics, les systemes de recommendation de Netflix, et les voitures autonomes. La ou l'apprentissage supervise predit a partir d'exemples etiquetes et l'apprentissage non supervise decouvre des structures, le RL **agit** : il choisit des actions, observe leurs consequences, et s'ameliore iterativement.
+Le Reinforcement Learning (apprentissage par renforcement) est la branche de l'IA qui apprend à un agent à prendre des décisions optimales par l'essai et l'erreur, en recevant des récompenses ou des pénalités de son environnement. C'est la technologie derrière AlphaGo, les robots de Boston Dynamics, les systèmes de recommandation de Netflix, et les voitures autonomes. Là où l'apprentissage supervisé prédit à partir d'exemples étiquetés et l'apprentissage non supervisé découvre des structures, le RL **agit** : il choisit des actions, observe leurs conséquences, et s'améliore itérativement.
 
-Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bellman, Q-Learning), les **algorithmes avec reseaux de neurones** (DQN, Policy Gradient, PPO) et les **frameworks de production** (Stable Baselines3). Vous commencerez par entrainer un agent en quelques lignes avec un framework industriel, puis vous implementerez les memes algorithmes depuis zero pour comprendre ce qui se cache sous le capot.
+Cette série couvre les **fondements théoriques** (bandits, MDP, équation de Bellman, Q-Learning), les **algorithmes avec réseaux de neurones** (DQN, Policy Gradient, PPO) et les **frameworks de production** (Stable Baselines3). Vous commencerez par entraîner un agent en quelques lignes avec un framework industriel, puis vous implémenterez les mêmes algorithmes depuis zéro pour comprendre ce qui se cache sous le capot.
 
-**A qui s'adresse cette serie** : etudiants en IA, developpeurs souhaitant ajouter des capacites decisionnelles a leurs applications, et chercheurs en automatique ou robotique. Prerequis : Python intermediaire et bases en calculus (gradients). Aucune experience RL prealable necessaire pour le notebook 1.
+**À qui s'adresse cette série** : étudiants en IA, développeurs souhaitant ajouter des capacités décisionnelles à leurs applications, et chercheurs en automatique ou robotique. Prérequis : Python intermédiaire et bases en calculus (gradients). Aucune expérience RL préalable nécessaire pour le notebook 1.
 
 ## Notebooks
 
-| # | Notebook | Contenu | Duree |
+| # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 1 | [rl_1_intro_cartpole](rl_1_intro_cartpole.ipynb) | Introduction PPO, CartPole | 25-30 min |
 | 2 | [rl_2_wrappers_sauvegarde_callbacks](rl_2_wrappers_sauvegarde_callbacks.ipynb) | Wrappers, sauvegarde, callbacks | 35-40 min |
 | 3 | [rl_3_experience_replay_dqn](rl_3_experience_replay_dqn.ipynb) | HER, goal-conditioned RL | 40-45 min |
 | 4 | [rl_4_multi_armed_bandits](rl_4_multi_armed_bandits.ipynb) | Bandits manchots, exploration vs exploitation, Thompson Sampling | 30-35 min |
 | 5 | [rl_5_mdp_dp_qlearning](rl_5_mdp_dp_qlearning.ipynb) | MDP, Value/Policy Iteration, Q-Learning tabulaire | 45-50 min |
-| 6 | [rl_6_dqn_policy_gradient](rl_6_dqn_policy_gradient.ipynb) | DQN depuis zero, REINFORCE | 50-55 min |
-| 6b | [rl_6b_actor_critic](rl_6b_actor_critic.ipynb) | Actor-Critic (A2C) depuis zero, advantage, entropy bonus | 45-50 min |
-| 6c | [rl_6c_ppo_from_scratch](rl_6c_ppo_from_scratch.ipynb) | PPO depuis zero, clipped surrogate, GAE, comparaison A2C vs PPO | 45-50 min |
-| 6d | [rl_6d_sac_from_scratch](rl_6d_sac_from_scratch.ipynb) | SAC depuis zero, maximum entropy RL, twin Q-networks, auto-temperature | 45-50 min |
+| 6 | [rl_6_dqn_policy_gradient](rl_6_dqn_policy_gradient.ipynb) | DQN depuis zéro, REINFORCE | 50-55 min |
+| 6b | [rl_6b_actor_critic](rl_6b_actor_critic.ipynb) | Actor-Critic (A2C) depuis zéro, advantage, entropy bonus | 45-50 min |
+| 6c | [rl_6c_ppo_from_scratch](rl_6c_ppo_from_scratch.ipynb) | PPO depuis zéro, clipped surrogate, GAE, comparaison A2C vs PPO | 45-50 min |
+| 6d | [rl_6d_sac_from_scratch](rl_6d_sac_from_scratch.ipynb) | SAC depuis zéro, maximum entropy RL, twin Q-networks, auto-température | 45-50 min |
 | 7 | [rl_7_multi_agent_rl](rl_7_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
 | 8 | [rl_8_model_based_dyna_q](rl_8_model_based_dyna_q.ipynb) | Model-based RL : Dyna-Q, Dyna-Q+, planification, rollouts | 45-50 min |
 | 9 | [rl_9_offline_rl](rl_9_offline_rl.ipynb) | RL offline : Behavior Cloning, erreur d'extrapolation, BCQ-lite | 50-55 min |
 | 10 | [rl_10_reward_shaping](rl_10_reward_shaping.ipynb) | Reward Shaping (Ng 1999), curriculum learning, pont RLHF | 45-50 min |
 | 11 | [rl_11_pomdp](rl_11_pomdp.ipynb) | POMDP, Tiger Problem, belief tracking, Q-MDP | 45-50 min |
 
-## Contenu detaille
+## Contenu détaillé
 
 ### Notebook 1 - Introduction avec PPO et CartPole
 
 | Section | Contenu |
 |---------|---------|
 | Stable Baselines3 | Installation, API de base |
-| CartPole-v1 | Environnement classique, actions discretes |
+| CartPole-v1 | Environnement classique, actions discrètes |
 | PPO | Proximal Policy Optimization |
-| Workflow | Training, Evaluation, Video recording |
+| Workflow | Training, Évaluation, Video recording |
 
-### Notebook 2 - Fonctionnalites avancees
+### Notebook 2 - Fonctionnalités avancées
 
 | Section | Contenu |
 |---------|---------|
 | Wrappers Gym | Modification d'environnements |
-| Sauvegarde | Save/Load de modeles |
+| Sauvegarde | Save/Load de modèles |
 | Multiprocessing | DummyVecEnv, SubprocVecEnv |
 | Callbacks | Monitoring, checkpoints automatiques |
-| Environnements custom | Creation et validation (check_env) |
+| Environnements custom | Création et validation (check_env) |
 
 ### Notebook 3 - Experience Replay et HER
 
 | Section | Contenu |
 |---------|---------|
 | HER | Hindsight Experience Replay |
-| Goal-conditioned RL | Taches avec objectifs |
+| Goal-conditioned RL | Tâches avec objectifs |
 | Parking-v0 | Environnement highway-env |
 | SAC / DDPG | Algorithmes off-policy avec HER |
 | Replay buffers | Sauvegarde et chargement |
@@ -69,9 +69,9 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 
 | Section | Contenu |
 |---------|---------|
-| Multi-armed bandit | Probleme fondamental exploration vs exploitation |
-| Strategies naives | Aléatoire, greedy, epsilon-greedy |
-| Strategies intelligentes | Decaying epsilon-greedy, Thompson Sampling |
+| Multi-armed bandit | Problème fondamental exploration vs exploitation |
+| Stratégies naïves | Aléatoire, greedy, epsilon-greedy |
+| Stratégies intelligentes | Decaying epsilon-greedy, Thompson Sampling |
 | Analyse | Comparaison regret, visualisation des estimations |
 
 ### Notebook 5 - MDP, Programmation Dynamique et Q-Learning
@@ -79,8 +79,8 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | Section | Contenu |
 |---------|---------|
 | MDP | Formalisation $(S, A, P, R, \gamma)$, transitions |
-| Value Iteration | Equation de Bellman, convergence |
-| Policy Iteration | Evaluation + amelioration de politique |
+| Value Iteration | Équation de Bellman, convergence |
+| Policy Iteration | Évaluation + amélioration de politique |
 | Q-Learning tabulaire | Apprentissage model-free, $\varepsilon$-greedy |
 | FrozenLake / CliffWalking | Environnements discrets |
 
@@ -88,8 +88,8 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 
 | Section | Contenu |
 |---------|---------|
-| Q-Network | Approximation par reseau de neurones |
-| Replay Buffer | Experience replay, decorrelation |
+| Q-Network | Approximation par réseau de neurones |
+| Replay Buffer | Experience replay, décorrélation |
 | Target Network | Stabilisation de l'apprentissage |
 | REINFORCE | Gradient de politique, baseline |
 | Comparaison | Value-based vs policy-based |
@@ -99,137 +99,137 @@ Cette serie couvre les **fondements theoriques** (bandits, MDP, equation de Bell
 | Section | Contenu |
 |---------|---------|
 | Actor-Critic | Paradigme combinant value-based et policy-based |
-| CriticNetwork | Reseau de valeur V(s) |
-| ActorNetwork | Politique parametree pi(a\|s) |
+| CriticNetwork | Réseau de valeur V(s) |
+| ActorNetwork | Politique paramétrée pi(a\|s) |
 | A2C | Advantage Actor-Critic, calcul de l'avantage |
 | Entropy bonus | Exploration via maximisation d'entropie |
-| Comparaison | A2C vs REINFORCE (reduction de variance) |
+| Comparaison | A2C vs REINFORCE (réduction de variance) |
 
-### Notebook 6c - PPO depuis zero
+### Notebook 6c - PPO depuis zéro
 
 | Section | Contenu |
 |---------|---------|
-| Clipped surrogate | Ratio de probabilite, objectif clippe, visualisation |
-| PPO Agent | Implementation complete avec mini-lots et epochs |
+| Clipped surrogate | Ratio de probabilité, objectif clippé, visualisation |
+| PPO Agent | Implémentation complète avec mini-lots et epochs |
 | GAE | Generalized Advantage Estimation (lambda=0.95) |
-| Comparaison | PPO vs A2C (stabilite, efficacite d'echantillonnage) |
+| Comparaison | PPO vs A2C (stabilité, efficacité d'échantillonnage) |
 
-### Notebook 6d - SAC depuis zero
+### Notebook 6d - SAC depuis zéro
 
 | Section | Contenu |
 |---------|---------|
 | Maximum Entropy RL | Objectif avec bonus d'entropie, exploration automatique |
 | Gaussian Policy | Politique stochastique avec tanh squashing |
-| Twin Q-Networks | Double critique pour reduire la surestimation |
-| Auto-temperature | Temperature alpha apprise automatiquement |
+| Twin Q-Networks | Double critique pour réduire la surestimation |
+| Auto-température | Température alpha apprise automatiquement |
 | Reparameterization | Trick pour gradient dans l'action |
-| Pendulum-v1 | Environnement continu de reference |
+| Pendulum-v1 | Environnement continu de référence |
 
 ### Notebook 7 - Apprentissage Multi-Agent
 
 | Section | Contenu |
 |---------|---------|
-| Multi-Agent RL | Paradigmes (cooperatif, competitif, mixte) |
+| Multi-Agent RL | Paradigmes (coopératif, compétitif, mixte) |
 | PettingZoo | API AEC, environnements multi-agent |
 | IQL | Independent Q-Learning |
-| TicTacToe | Jeu a somme nulle, equilibre |
-| Self-play | Entrainement agent contre agent |
+| TicTacToe | Jeu à somme nulle, équilibre |
+| Self-play | Entraînement agent contre agent |
 
 ### Notebook 8 - Model-Based RL : Dyna-Q et planification
 
 | Section | Contenu |
 |---------|---------|
-| Model-free vs model-based | Compromis calcul vs experience, sample efficiency |
-| Modele du monde | Apprentissage tabulaire des transitions (s,a) -> (r,s') |
-| Dyna-Q | Q-Learning + planification sur experience simulee (Sutton & Barto ch. 8) |
+| Model-free vs model-based | Compromis calcul vs expérience, sample efficiency |
+| Modèle du monde | Apprentissage tabulaire des transitions (s,a) -> (r,s') |
+| Dyna-Q | Q-Learning + planification sur expérience simulée (Sutton & Barto ch. 8) |
 | Blocking Maze / Dyna-Q+ | Environnement changeant, bonus d'exploration kappa*sqrt(tau) |
 | Decision-time planning | Rollouts, pont vers MCTS / AlphaZero / MuZero |
-| Exercices | Shortcut Maze, prioritized sweeping, sensibilite de kappa |
+| Exercices | Shortcut Maze, prioritized sweeping, sensibilité de kappa |
 
 ### Notebook 9 - RL offline : apprendre sans interagir
 
 | Section | Contenu |
 |---------|---------|
-| Online vs offline | Apprendre d'un dataset fige de transitions (logs), sans interaction |
-| Datasets | Trois politiques de comportement (expert/medium/random), couverture vs qualite |
+| Online vs offline | Apprendre d'un dataset figé de transitions (logs), sans interaction |
+| Datasets | Trois politiques de comportement (expert/medium/random), couverture vs qualité |
 | Behavior Cloning | Imitation tabulaire par action majoritaire, plafond de la politique de comportement |
-| Erreur d'extrapolation | Q-learning naif sur dataset fige : bootstrap sur actions fantomes (Fujimoto 2019) |
-| BCQ-lite | Contrainte de support du dataset, stitching de trajectoires mediocres |
+| Erreur d'extrapolation | Q-learning naïf sur dataset figé : bootstrap sur actions fantômes (Fujimoto 2019) |
+| BCQ-lite | Contrainte de support du dataset, stitching de trajectoires médiocres |
 | Pont RLHF/DPO | SFT = BC, contrainte KL = contrainte de support, DPO = preference learning offline |
-| Exercices | Ablation taille dataset, penalite CQL-lite, sensibilite au nombre de passes |
+| Exercices | Ablation taille dataset, pénalité CQL-lite, sensibilité au nombre de passes |
 
 ### Notebook 10 - Reward Shaping et Curriculum Learning
 
 | Section | Contenu |
 |---------|---------|
 | Labyrinthe sparse | Maze 8x8, reward -1/pas et 0 au but, distance Manhattan = 14 |
-| Potential-based shaping | Theoreme Ng et al. 1999, $F(s,s') = \gamma\Phi(s') - \Phi(s)$, politique invariante |
-| Heuristic shaping | Bonus naif pour se rapprocher du but, sans garantie theorique |
-| Curriculum learning | Phases de difficulte croissante, start de plus en plus eloigne |
+| Potential-based shaping | Théorème Ng et al. 1999, $F(s,s') = \gamma\Phi(s') - \Phi(s)$, politique invariante |
+| Heuristic shaping | Bonus naïf pour se rapprocher du but, sans garantie théorique |
+| Curriculum learning | Phases de difficulté croissante, start de plus en plus éloigné |
 | Comparaison | Vitesse de convergence (potential : ep 50, curriculum : ep 122, baseline : ep 190) |
 | Pont RLHF | Reward model appris, contrainte KL, DPO, inverse RL |
-| Exercices | Ablation potentiels, phases curriculum, biais du shaping naif |
+| Exercices | Ablation potentiels, phases curriculum, biais du shaping naïf |
 
 ### Notebook 11 - POMDP : Partial Observability et Belief Tracking
 
 | Section | Contenu |
 |---------|---------|
-| Tiger Problem | POMDP classique (Cassandra 1994), 2 etats, 3 actions, observations bruitees a 85% |
+| Tiger Problem | POMDP classique (Cassandra 1994), 2 états, 3 actions, observations bruitées à 85% |
 | Politiques baselines | Random, open immediately, listen N fois puis ouvre, vote majoritaire |
-| Belief tracking | Filtre bayesien sur P(tiger-left), mise a jour apres observation |
-| Q-MDP approximation | Q-learning sur etats vrais, selection via expected Q sous belief |
-| Belief-state Q-learning | Discretisation du belief en 20 bins, Q-learning dans l'espace des croyances |
-| Comparaison | 5 seeds, impact de la precision d'observation, pont DRQN/PPO+LSTM |
-| Exercices | Impact precision, nombre optimal d'ecoutes, Tiger 3 portes |
+| Belief tracking | Filtre bayésien sur P(tiger-left), mise à jour après observation |
+| Q-MDP approximation | Q-learning sur états vrais, sélection via expected Q sous belief |
+| Belief-state Q-learning | Discrétisation du belief en 20 bins, Q-learning dans l'espace des croyances |
+| Comparaison | 5 seeds, impact de la précision d'observation, pont DRQN/PPO+LSTM |
+| Exercices | Impact précision, nombre optimal d'écoutes, Tiger 3 portes |
 
 ## Algorithmes couverts
 
 | Algorithme | Type | Notebook | Utilisation |
 |------------|------|----------|-------------|
-| **PPO** | On-policy | 1, 2, 6c | Controle general, robuste |
-| **A2C** | On-policy | 2, 6b | Actor-Critic depuis zero et via SB3 |
+| **PPO** | On-policy | 1, 2, 6c | Contrôle général, robuste |
+| **A2C** | On-policy | 2, 6b | Actor-Critic depuis zéro et via SB3 |
 | **GAE** | Advantage | 6c | Generalized Advantage Estimation |
 | **SAC** | Off-policy | 3, 6d | Actions continues, maximum entropy |
 | **DDPG** | Off-policy | 3 | Actions continues |
 | **HER** | Replay strategy | 3 | Goal-conditioned tasks |
-| **Epsilon-greedy** | Exploration | 4 | Strategie d'exploration basique |
-| **Thompson Sampling** | Exploration | 4 | Exploration bayesienne |
-| **Value Iteration** | Model-based | 5 | Resolution exacte de MDP |
-| **Policy Iteration** | Model-based | 5 | Resolution exacte de MDP |
+| **Epsilon-greedy** | Exploration | 4 | Stratégie d'exploration basique |
+| **Thompson Sampling** | Exploration | 4 | Exploration bayésienne |
+| **Value Iteration** | Model-based | 5 | Résolution exacte de MDP |
+| **Policy Iteration** | Model-based | 5 | Résolution exacte de MDP |
 | **Q-Learning** | Model-free (tabulaire) | 5 | Espaces discrets |
-| **Dyna-Q** | Model-based | 8 | Planification sur modele appris, sample efficiency |
+| **Dyna-Q** | Model-based | 8 | Planification sur modèle appris, sample efficiency |
 | **Dyna-Q+** | Model-based | 8 | Environnements non-stationnaires, bonus d'exploration |
 | **Rollout planning** | Decision-time | 8 | Simulation vers l'avant, porte vers MCTS |
-| **Behavior Cloning** | Offline (imitation) | 9 | Demonstrations expertes, baseline offline |
+| **Behavior Cloning** | Offline (imitation) | 9 | Démonstrations expertes, baseline offline |
 | **BCQ-lite** | Offline (value-based) | 9 | Q-learning contraint au support du dataset |
-| **Potential-based shaping** | Reward shaping | 10 | Acceleration convergence sans biais (Ng 1999) |
-| **Curriculum learning** | Training strategy | 10 | Difficulte progressive, generalisation |
-| **Q-MDP** | POMDP approximation | 11 | Q-learning sur etats vrais, action via belief |
-| **Belief-state Q-learning** | POMDP | 11 | Discretisation du belief, Q-table dans l'espace des croyances |
+| **Potential-based shaping** | Reward shaping | 10 | Accélération convergence sans biais (Ng 1999) |
+| **Curriculum learning** | Training strategy | 10 | Difficulté progressive, généralisation |
+| **Q-MDP** | POMDP approximation | 11 | Q-learning sur états vrais, action via belief |
+| **Belief-state Q-learning** | POMDP | 11 | Discrétisation du belief, Q-table dans l'espace des croyances |
 | **DQN** | Off-policy (deep) | 6 | Espaces continus |
 | **REINFORCE** | Policy gradient | 6 | Politique directe |
-| **IQL** | Multi-agent | 7 | Apprentissage independant |
+| **IQL** | Multi-agent | 7 | Apprentissage indépendant |
 
 ## Environnements
 
 | Environnement | Type | Notebook |
 |---------------|------|----------|
-| CartPole-v1 | Controle classique, discret | 1, 6, 6b, 6c |
-| Pendulum-v1 | Controle continu | 2, 6d |
+| CartPole-v1 | Contrôle classique, discret | 1, 6, 6b, 6c |
+| Pendulum-v1 | Contrôle continu | 2, 6d |
 | Parking-v0 | Goal-conditioned, continu | 3 |
 | GaussianBandit | Bandit stochastique | 4 |
-| FrozenLake-v1 | Grille discrete, stochastique | 5 |
-| CliffWalking-v1 | Grille, compromis risque/recompense | 5 |
-| TicTacToe-v3 | Jeu a somme nulle | 7 |
-| Dyna Maze / Blocking Maze | Grilles deterministes et changeantes (numpy pur) | 8, 9 |
+| FrozenLake-v1 | Grille discrète, stochastique | 5 |
+| CliffWalking-v1 | Grille, compromis risque/récompense | 5 |
+| TicTacToe-v3 | Jeu à somme nulle | 7 |
+| Dyna Maze / Blocking Maze | Grilles déterministes et changeantes (numpy pur) | 8, 9 |
 
 ## Prerequisites
 
 ### Connaissances requises
 
-- Python intermediaire (classes, numpy)
+- Python intermédiaire (classes, numpy)
 - Concepts RL de base (agent, environnement, reward)
-- Pas d'experience RL prealable necessaire pour le notebook 1
+- Pas d'expérience RL préalable nécessaire pour le notebook 1
 - Bases PyTorch pour les notebooks 6, 6b, 6c, 6d (tenseurs, autograd, Module)
 
 ### Installation
@@ -254,21 +254,21 @@ pip install torch
 pip install "pettingzoo[classic]>=1.24.0"
 ```
 
-### Dependances
+### Dépendances
 
 | Package | Version | Utilisation |
 |---------|---------|-------------|
 | stable-baselines3 | >=2.0.0a4 | Algorithmes RL (notebooks 1-3) |
 | gymnasium | latest | Interface environnements |
-| numpy | latest | Calcul numerique |
-| pandas | >=2.0 | Tableaux de resultats (notebook 5) |
+| numpy | latest | Calcul numérique |
+| pandas | >=2.0 | Tableaux de résultats (notebook 5) |
 | matplotlib | latest | Visualisation |
-| torch | latest | Reseaux de neurones (notebooks 6, 6b, 6c, 6d) |
+| torch | latest | Réseaux de neurones (notebooks 6, 6b, 6c, 6d) |
 | pettingzoo | >=1.24.0 | Multi-agent (notebook 7) |
 | highway-env | latest | Parking-v0 (notebook 3) |
-| moviepy | latest | Enregistrement video |
+| moviepy | latest | Enregistrement vidéo |
 
-## Parcours recommande
+## Parcours recommandé
 
 ```
 Notebook 1 (Bases SB3)
@@ -285,114 +285,114 @@ Notebook 3 (Goal-conditioned RL)                                                
 
 | Objectif | Notebooks |
 |----------|-----------|
-| Decouverte rapide | 1 uniquement |
+| Découverte rapide | 1 uniquement |
 | Exploration et bandits | 4 uniquement |
 | Fondations SB3 | 1 + 2 + 3 |
-| Fondements theoriques | 4 + 5 + 6 + 7 + 8 |
-| Maitrise complete | 1 a 11 |
+| Fondements théoriques | 4 + 5 + 6 + 7 + 8 |
+| Maîtrise complète | 1 à 11 |
 
 ### Parcours d'apprentissage
 
 **Phase 1 : Prise en main production (~1h, notebooks 1-2)**
 
-Le notebook 1 pose les bases : vous installez Stable Baselines3, creez votre premier agent PPO sur CartPole, et visualisez ses performances. En 30 minutes, vous avez un agent entraine qui equilibre un baton. Le notebook 2 enrichit cette base avec les outils de production : wrappers pour modifier les environnements, callbacks pour monitorer l'entrainement, et multiprocessing pour accelerer les experiences.
+Le notebook 1 pose les bases : vous installez Stable Baselines3, créez votre premier agent PPO sur CartPole, et visualisez ses performances. En 30 minutes, vous avez un agent entraîné qui équilibre un bâton. Le notebook 2 enrichit cette base avec les outils de production : wrappers pour modifier les environnements, callbacks pour monitorer l'entraînement, et multiprocessing pour accélérer les expériences.
 
-**Phase 2 : Problemes avances (~1.5h, notebook 3)**
+**Phase 2 : Problèmes avancés (~1.5h, notebook 3)**
 
-Le notebook 3 introduit les taches a objectifs (goal-conditioned RL) avec l'algorithme HER (Hindsight Experience Replay). Vous resoudrez un probleme de parking autonome ou l'agent doit atteindre une position cible. C'est le passage de "equilibrer un baton" a "garer une voiture" — un saut qualitatif qui montre la puissance du RL.
+Le notebook 3 introduit les tâches à objectifs (goal-conditioned RL) avec l'algorithme HER (Hindsight Experience Replay). Vous résoudrez un problème de parking autonome où l'agent doit atteindre une position cible. C'est le passage de "équilibrer un bâton" à "garer une voiture" — un saut qualitatif qui montre la puissance du RL.
 
 **Phase 3 : Exploration et bandits (~30min, notebook 4)**
 
-Le notebook 4 pose la question fondatrice du RL : comment choisir entre explorer de nouvelles options et exploiter ce qui fonctionne deja ? Vous implementerez des strategies d'exploration (epsilon-greedy, decaying epsilon, Thompson Sampling) sur un probleme de bandits manchots et comparerez leur regret cumule.
+Le notebook 4 pose la question fondatrice du RL : comment choisir entre explorer de nouvelles options et exploiter ce qui fonctionne déjà ? Vous implémenterez des stratégies d'exploration (epsilon-greedy, decaying epsilon, Thompson Sampling) sur un problème de bandits manchots et comparerez leur regret cumulé.
 
 **Phase 4 : Les maths sous le capot (~4.5h, notebooks 5-7)**
 
-Les notebooks 5 a 7 quittent le framework pour implementer les algorithmes depuis zero. Le notebook 5 formalise le probleme RL (MDP, equation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe a l'echelle avec les reseaux de neurones : DQN et REINFORCE implementes en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mecanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanement, cooperent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modele du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset fige (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naif, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au probleme du reward sparse : comment guider l'agent quand la recompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accelere la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulte progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatise. Le notebook 11 aborde la partial observability : l'agent ne voit plus l'etat vrai mais une observation bruitee. Le Tiger Problem (Cassandra 1994) illustre le POMDP, le belief tracking (filtre bayesien) maintient une estimation de l'etat cache, et le Q-MDP approximation montre les limites de l'approche tabulaire.
+Les notebooks 5 à 7 quittent le framework pour implémenter les algorithmes depuis zéro. Le notebook 5 formalise le problème RL (MDP, équation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe à l'échelle avec les réseaux de neurones : DQN et REINFORCE implémentés en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mécanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanément, coopèrent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modèle du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset figé (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naïf, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au problème du reward sparse : comment guider l'agent quand la récompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accélère la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulté progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatisé. Le notebook 11 aborde la partial observability : l'agent ne voit plus l'état vrai mais une observation bruitée. Le Tiger Problem (Cassandra 1994) illustre le POMDP, le belief tracking (filtre bayésien) maintient une estimation de l'état caché, et le Q-MDP approximation montre les limites de l'approche tabulaire.
 
-## Concepts cles
+## Concepts clés
 
 | Concept | Description | Notebook |
 |---------|-------------|----------|
-| **Agent** | Entite qui apprend et prend des decisions | 1 |
+| **Agent** | Entité qui apprend et prend des décisions | 1 |
 | **Environnement** | Monde avec lequel l'agent interagit | 1 |
 | **Reward** | Signal de feedback pour l'apprentissage | 1 |
-| **Policy** | Strategie de l'agent (state vers action) | 1 |
+| **Policy** | Stratégie de l'agent (state vers action) | 1 |
 | **Value function** | Estimation des rewards futurs | 5 |
-| **MDP** | Formalisation mathematique du probleme RL | 5 |
-| **Bellman equation** | Relation de recurrence pour V et Q | 5 |
+| **MDP** | Formalisation mathématique du problème RL | 5 |
+| **Bellman equation** | Relation de récurrence pour V et Q | 5 |
 | **Exploration vs exploitation** | Compromis entre tester et exploiter | 4 |
 | **Regret** | Mesure de performance cumulative en bandit | 4 |
-| **Thompson Sampling** | Exploration bayesienne optimale | 4 |
-| **Experience replay** | Reutilisation des experiences passees | 3, 6 |
-| **Clipped surrogate** | Mecanisme central de PPO | 6c |
+| **Thompson Sampling** | Exploration bayésienne optimale | 4 |
+| **Experience replay** | Réutilisation des expériences passées | 3, 6 |
+| **Clipped surrogate** | Mécanisme central de PPO | 6c |
 | **GAE** | Compromis biais-variance pour l'avantage | 6c |
-| **HER** | Reinterpretation d'echecs comme succes | 3 |
+| **HER** | Réinterprétation d'échecs comme succès | 3 |
 | **DQN** | Q-Learning avec approximation neurale | 6 |
 | **Actor-Critic** | Combinaison politique + valeur | 6b |
-| **Advantage** | Reduction de variance A_t = R_t - V(s) | 6b |
-| **Maximum entropy RL** | Maximisation recompense + entropie | 6d |
+| **Advantage** | Réduction de variance A_t = R_t - V(s) | 6b |
+| **Maximum entropy RL** | Maximisation récompense + entropie | 6d |
 | **SAC** | Soft Actor-Critic, off-policy continu | 6d |
 | **Twin Q-networks** | Double critique anti-surestimation | 6d |
 | **Policy gradient** | Optimisation directe de la politique | 6 |
-| **Multi-agent** | Plusieurs agents apprenant simultanement | 7 |
-| **Model-based RL** | Apprendre un modele du monde et planifier dessus | 8 |
+| **Multi-agent** | Plusieurs agents apprenant simultanément | 7 |
+| **Model-based RL** | Apprendre un modèle du monde et planifier dessus | 8 |
 | **Dyna** | Entrelacement apprentissage direct / planification | 8 |
-| **Sample efficiency** | Echanger du calcul contre de l'experience reelle | 8 |
-| **Decision-time planning** | Rollouts et MCTS depuis l'etat courant | 8 |
-| **RL offline** | Apprendre d'un dataset fige, sans interaction | 9 |
-| **Erreur d'extrapolation** | Bootstrap sur actions hors du support des donnees | 9 |
-| **Stitching** | Recoudre un chemin optimal a partir de trajectoires mediocres | 9 |
-| **Reward shaping** | Modifier le signal de recompense pour guider l'apprentissage | 10 |
+| **Sample efficiency** | Échanger du calcul contre de l'expérience réelle | 8 |
+| **Decision-time planning** | Rollouts et MCTS depuis l'état courant | 8 |
+| **RL offline** | Apprendre d'un dataset figé, sans interaction | 9 |
+| **Erreur d'extrapolation** | Bootstrap sur actions hors du support des données | 9 |
+| **Stitching** | Recoudre un chemin optimal à partir de trajectoires médiocres | 9 |
+| **Reward shaping** | Modifier le signal de récompense pour guider l'apprentissage | 10 |
 | **Potential-based shaping** | Shaping garantissant l'invariance de la politique optimale (Ng 1999) | 10 |
-| **Curriculum learning** | Presenter les taches par difficulte croissante | 10 |
-| **POMDP** | MDP avec observations partielles et bruitees | 11 |
-| **Belief state** | Distribution de probabilite sur les etats caches | 11 |
-| **Belief tracking** | Filtre bayesien pour mettre a jour le belief | 11 |
+| **Curriculum learning** | Présenter les tâches par difficulté croissante | 10 |
+| **POMDP** | MDP avec observations partielles et bruitées | 11 |
+| **Belief state** | Distribution de probabilité sur les états cachés | 11 |
+| **Belief tracking** | Filtre bayésien pour mettre à jour le belief | 11 |
 
-## Caracteristiques
+## Caractéristiques
 
-- **Compatible Windows** : Pas de dependance xvfb
-- **Debutant-friendly** : Progression pedagogique
+- **Compatible Windows** : Pas de dépendance xvfb
+- **Débutant-friendly** : Progression pédagogique
 - **Production-ready** : Checkpointing, monitoring (notebooks 1-3)
-- **From scratch** : Implementations sans framework (notebooks 4-7)
+- **From scratch** : Implémentations sans framework (notebooks 4-7)
 - **Exercices** : Manipulations et explorations dans chaque notebook
 
 ## FAQ
 
-### Quelle est la difference entre RL et apprentissage supervise ?
+### Quelle est la différence entre RL et apprentissage supervisé ?
 
-L'apprentissage **supervise** apprend a partir de donnees etiquetees (entree -> sortie correcte). Le RL apprend par **interaction** : l'agent prend des actions, recoit des recompenses/penalites, et ajuste sa strategie. Il n'y a pas de "bonne reponse" fournie — l'agent doit decouvrir quelles actions maximisent la recompense cumulee. Le RL est pertinent quand le probleme est sequentiel (une action affecte les futures observations).
+L'apprentissage **supervisé** apprend à partir de données étiquetées (entrée -> sortie correcte). Le RL apprend par **interaction** : l'agent prend des actions, reçoit des récompenses/pénalités, et ajuste sa stratégie. Il n'y a pas de "bonne réponse" fournie — l'agent doit découvrir quelles actions maximisent la récompense cumulée. Le RL est pertinent quand le problème est séquentiel (une action affecte les futures observations).
 
 ### Faut-il un GPU pour les notebooks ?
 
-Non. Les notebooks 1-4 (SB3 intro, wrappers, bandits, DQN from scratch) et 7-8 (multi-agent, curriculum) tournent sur CPU avec les environnements simples (CartPole, MountainCar). Les notebooks 5-6 (Policy Gradient, PPO from scratch) beneficient d'un GPU pour les reseaux plus profonds mais restent executables en CPU (plus lent). Environnements Atari (optionnel) : GPU recommande.
+Non. Les notebooks 1-4 (SB3 intro, wrappers, bandits, DQN from scratch) et 7-8 (multi-agent, curriculum) tournent sur CPU avec les environnements simples (CartPole, MountainCar). Les notebooks 5-6 (Policy Gradient, PPO from scratch) bénéficient d'un GPU pour les réseaux plus profonds mais restent exécutables en CPU (plus lent). Environnements Atari (optionnel) : GPU recommandé.
 
 ### Qu'est-ce qu'un MDP et pourquoi est-ce central ?
 
-Un **MDP** (Markov Decision Process) est le modele mathematique du RL : un ensemble d'etats S, d'actions A, de transitions T(s'|s,a), de recompenses R(s,a), et d'un facteur d'actualisation gamma. Tout probleme de RL se formalise comme un MDP. L'equation de Bellman (notebook 3) definit recursivement la valeur optimale. Si vous avez fait la serie Probas, les MDP generalisent les chaines de Markov avec des decisions.
+Un **MDP** (Markov Decision Process) est le modèle mathématique du RL : un ensemble d'états S, d'actions A, de transitions T(s'|s,a), de récompenses R(s,a), et d'un facteur d'actualisation gamma. Tout problème de RL se formalise comme un MDP. L'équation de Bellman (notebook 3) définit récursivement la valeur optimale. Si vous avez fait la série Probas, les MDP généralisent les chaînes de Markov avec des décisions.
 
 ### Quelle est la difference entre on-policy et off-policy ?
 
-**On-policy** (PPO, A2C, REINFORCE) : l'apprentissage utilise uniquement les donnees collectees par la politique courante. Plus stable mais moins sample-efficient. **Off-policy** (DQN, SAC, DDPG) : l'apprentissage peut reutiliser des donnees passees stockees dans un replay buffer. Plus sample-efficient mais potentiellement moins stable. Le notebook 6 compare DQN (off-policy) et REINFORCE (on-policy) sur le meme environnement.
+**On-policy** (PPO, A2C, REINFORCE) : l'apprentissage utilise uniquement les données collectées par la politique courante. Plus stable mais moins sample-efficient. **Off-policy** (DQN, SAC, DDPG) : l'apprentissage peut réutiliser des données passées stockées dans un replay buffer. Plus sample-efficient mais potentiellement moins stable. Le notebook 6 compare DQN (off-policy) et REINFORCE (on-policy) sur le même environnement.
 
-### Pourquoi commencer par Stable Baselines3 plutot que par les algorithmes from scratch ?
+### Pourquoi commencer par Stable Baselines3 plutôt que par les algorithmes from scratch ?
 
-Stable Baselines3 permet de resoudre un probleme reel en quelques lignes, ce qui donne une intuition concreten avant d'etudier la theorie. L'approche "framework d'abord, maths ensuite" evite le piege de la theorie abstraite sans application. Les notebooks 4-7 deconstruisent ensuite les memes algorithmes pour comprendre ce qui se passe sous le capot.
+Stable Baselines3 permet de résoudre un problème réel en quelques lignes, ce qui donne une intuition concreten avant d'étudier la théorie. L'approche "framework d'abord, maths ensuite" évite le piège de la théorie abstraite sans application. Les notebooks 4-7 déconstruisent ensuite les mêmes algorithmes pour comprendre ce qui se passe sous le capot.
 
 ### Quelle est la difference entre value-based et policy-based ?
 
-**Value-based** (Q-Learning, DQN) : on apprend a estimer la valeur de chaque action dans chaque etat, puis on choisit l'action avec la plus haute valeur. Adapté aux espaces d'actions discrets. **Policy-based** (REINFORCE, PPO) : on optimise directement la politique (probabilite de choisir chaque action). Adapté aux espaces continus et aux politiques stochastiques. **Actor-Critic** (A2C, SAC) combine les deux : l'acteur choisit l'action, le critique estime la valeur.
+**Value-based** (Q-Learning, DQN) : on apprend à estimer la valeur de chaque action dans chaque état, puis on choisit l'action avec la plus haute valeur. Adapté aux espaces d'actions discrets. **Policy-based** (REINFORCE, PPO) : on optimise directement la politique (probabilité de choisir chaque action). Adapté aux espaces continus et aux politiques stochastiques. **Actor-Critic** (A2C, SAC) combine les deux : l'acteur choisit l'action, le critique estime la valeur.
 
 ### Qu'est-ce que l'experience replay et pourquoi est-ce important ?
 
-L'experience replay (notebook 6) stocke les transitions (etat, action, reward, etat_suivant) dans un buffer et re-echantillonne aleatoirement pendant l'apprentissage. Cela casse les correlations temporelles entre experiences consecutives et ameliore l'efficacite en reutilisant chaque experience plusieurs fois. Sans replay buffer, les agents off-policy comme DQN seraient instables. HER (notebook 3) etend ce concept en re-interpretant les echecs comme des succes par changement d'objectif.
+L'experience replay (notebook 6) stocke les transitions (état, action, reward, état_suivant) dans un buffer et ré-échantillonne aléatoirement pendant l'apprentissage. Cela casse les corrélations temporelles entre expériences consécutives et améliore l'efficacité en réutilisant chaque expérience plusieurs fois. Sans replay buffer, les agents off-policy comme DQN seraient instables. HER (notebook 3) étend ce concept en ré-interprétant les échecs comme des succès par changement d'objectif.
 
-### Comment choisir entre DQN et PPO pour un nouveau probleme ?
+### Comment choisir entre DQN et PPO pour un nouveau problème ?
 
 - **Espace d'actions discret** et petit : DQN est simple et efficace (notebooks 5-6)
 - **Espace d'actions continu** : PPO ou SAC (notebooks 1-2, 3)
-- **Stabilite prioritaire** : PPO est le choix par defaut dans l'industrie (clipping prevents large policy updates)
-- **Sample efficiency** : SAC (off-policy) apprend plus vite en nombre d'interactions, mais PPO (on-policy) est souvent plus robuste en hyperparametres
+- **Stabilité prioritaire** : PPO est le choix par défaut dans l'industrie (clipping prevents large policy updates)
+- **Sample efficiency** : SAC (off-policy) apprend plus vite en nombre d'interactions, mais PPO (on-policy) est souvent plus robuste en hyperparamètres
 
 ## Ressources
 
@@ -403,7 +403,7 @@ L'experience replay (notebook 6) stocke les transitions (etat, action, reward, e
 - [Highway-env Docs](https://highway-env.readthedocs.io/)
 - [PettingZoo Docs](https://pettingzoo.farama.org/)
 
-### Theorie RL
+### Théorie RL
 
 - Sutton & Barto - *Reinforcement Learning: An Introduction* (2nd ed.)
 - [Spinning Up in Deep RL](https://spinningup.openai.com/)
