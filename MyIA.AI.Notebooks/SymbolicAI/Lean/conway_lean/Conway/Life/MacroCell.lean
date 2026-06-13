@@ -495,6 +495,40 @@ def gridFrame (g : Grid) : (Int × Int) × Nat :=
     let lvl    := MacroCell.ceilLog2 side
     ((r0, c0), lvl)
 
+/-- For every live cell `p ∈ g`, the frame chosen by `gridFrame g` contains `p`:
+    `inRegion p r0 c0 lvl` where `((r0, c0), lvl) = gridFrame g`. This is the
+    containment bridge for the Grid↔MacroCell round trip (issue #2162, Gap 2). -/
+theorem gridFrame_contains_g (g : Grid) (p : Int × Int) (hp : p ∈ g) :
+    let ((r0, c0), lvl) := gridFrame g
+    MacroCell.inRegion p r0 c0 lvl := by
+  cases g with
+  | nil => simp at hp
+  | cons p₀ ps =>
+    have hrMin : gridRowMin (p₀ :: ps) ≤ p.1 := gridRowMin_le_of_mem _ _ hp
+    have hrMax : p.1 ≤ gridRowMax (p₀ :: ps) := le_gridRowMax_of_mem _ _ hp
+    have hcMin : gridColMin (p₀ :: ps) ≤ p.2 := gridColMin_le_of_mem _ _ hp
+    have hcMax : p.2 ≤ gridColMax (p₀ :: ps) := le_gridColMax_of_mem _ _ hp
+    have hrnn : gridRowMin (p₀ :: ps) ≤ gridRowMax (p₀ :: ps) :=
+      gridRowMin_le_gridRowMax _ (List.cons_ne_nil _ _)
+    have hcnn : gridColMin (p₀ :: ps) ≤ gridColMax (p₀ :: ps) :=
+      gridColMin_le_gridColMax _ (List.cons_ne_nil _ _)
+    simp only [gridFrame]
+    set rMin := gridRowMin (p₀ :: ps)
+    set rMax := gridRowMax (p₀ :: ps)
+    set cMin := gridColMin (p₀ :: ps)
+    set cMax := gridColMax (p₀ :: ps)
+    set height := (rMax - rMin + 5).toNat
+    set width := (cMax - cMin + 5).toNat
+    set side := max height width
+    set lvl := MacroCell.ceilLog2 side
+    have hspec : (2 ^ lvl : Nat) ≥ side := MacroCell.ceilLog2_spec side
+    have hh : height ≤ side := Nat.le_max_left _ _
+    have hw : width ≤ side := Nat.le_max_right _ _
+    have hnn_r : 0 ≤ rMax - rMin + 5 := by omega
+    have hnn_c : 0 ≤ cMax - cMin + 5 := by omega
+    unfold MacroCell.inRegion
+    refine ⟨?_, ?_, ?_, ?_⟩ <;> omega
+
 /-- Convert a `Grid` to a `MacroCell`, returning the chosen offset so that
     `MacroCell.toGrid offset (gridToMacroCell g) = g`. -/
 def gridToMacroCellWithOffset (g : Grid) : (Int × Int) × MacroCell :=
