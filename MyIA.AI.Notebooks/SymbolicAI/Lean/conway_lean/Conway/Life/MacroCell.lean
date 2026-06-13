@@ -292,6 +292,172 @@ def gridColMax (g : Grid) : Int :=
   | []      => 0
   | p :: ps => ps.foldl (fun m q => max m q.2) p.2
 
+/-! ## Bounding-box membership lemmas
+
+These relate `gridRowMin` / `gridRowMax` / `gridColMin` / `gridColMax` to list
+membership: every live cell of `g` lies inside its bounding box. They form the
+arithmetic bridge for `gridFrame_contains_g` (P5 correctness, issue #2162,
+Gap 2 — the Grid↔MacroCell round trip).
+
+The four bounding-box helpers are `foldl`s over a coordinate projection, so we
+factor the reasoning through generic `proj`-parameterised lemmas and
+instantiate them for rows (`(·.1)`) and columns (`(·.2)`). We split
+`p ∈ head :: tail` via `by_cases` rather than `cases`/`subst` to avoid the
+direction-dependent substitution (which side gets eliminated) when both
+operands are local variables. -/
+
+/-- Generic helper: a `foldl` of `min` (via a projection `proj`) never exceeds
+    its seed accumulator. -/
+theorem foldl_proj_min_le_seed (ps : Grid) (proj : Int × Int → Int) (acc : Int) :
+    ps.foldl (fun m q => min m (proj q)) acc ≤ acc := by
+  induction ps generalizing acc with
+  | nil => simp
+  | cons q qs ih =>
+    simp only [List.foldl_cons]
+    have h := ih (min acc (proj q))
+    omega
+
+/-- Generic helper: a `foldl` of `min` (via `proj`) never exceeds the projected
+    coordinate of any cell in the list. -/
+theorem foldl_proj_min_le_of_mem (ps : Grid) (proj : Int × Int → Int) (acc : Int)
+    (p : Int × Int) (hp : p ∈ ps) :
+    ps.foldl (fun m q => min m (proj q)) acc ≤ proj p := by
+  induction ps generalizing acc p with
+  | nil => simp at hp
+  | cons q qs ih =>
+    simp only [List.foldl_cons]
+    by_cases heq : p = q
+    · rw [heq]
+      have h := foldl_proj_min_le_seed qs proj (min acc (proj q))
+      omega
+    · have hps : p ∈ qs := by
+        rcases List.mem_cons.mp hp with hhead | hps
+        · exact absurd hhead heq
+        · exact hps
+      exact ih (min acc (proj q)) p hps
+
+/-- Generic helper: a `foldl` of `max` (via a projection `proj`) is never below
+    its seed accumulator. -/
+theorem le_foldl_proj_max_seed (ps : Grid) (proj : Int × Int → Int) (acc : Int) :
+    acc ≤ ps.foldl (fun m q => max m (proj q)) acc := by
+  induction ps generalizing acc with
+  | nil => simp
+  | cons q qs ih =>
+    simp only [List.foldl_cons]
+    have h := ih (max acc (proj q))
+    omega
+
+/-- Generic helper: a `foldl` of `max` (via `proj`) is never below the projected
+    coordinate of any cell in the list. -/
+theorem le_foldl_proj_max_of_mem (ps : Grid) (proj : Int × Int → Int) (acc : Int)
+    (p : Int × Int) (hp : p ∈ ps) :
+    proj p ≤ ps.foldl (fun m q => max m (proj q)) acc := by
+  induction ps generalizing acc p with
+  | nil => simp at hp
+  | cons q qs ih =>
+    simp only [List.foldl_cons]
+    by_cases heq : p = q
+    · rw [heq]
+      have h := le_foldl_proj_max_seed qs proj (max acc (proj q))
+      omega
+    · have hps : p ∈ qs := by
+        rcases List.mem_cons.mp hp with hhead | hps
+        · exact absurd hhead heq
+        · exact hps
+      exact ih (max acc (proj q)) p hps
+
+/-- Every cell of `g` has row coordinate at least `gridRowMin g`. -/
+theorem gridRowMin_le_of_mem (g : Grid) (p : Int × Int) (hp : p ∈ g) :
+    gridRowMin g ≤ p.1 := by
+  cases g with
+  | nil => simp at hp
+  | cons p₀ ps =>
+    simp only [gridRowMin]
+    by_cases heq : p = p₀
+    · rw [heq]
+      exact foldl_proj_min_le_seed ps (·.1) p₀.1
+    · have hps : p ∈ ps := by
+        rcases List.mem_cons.mp hp with hhead | hps
+        · exact absurd hhead heq
+        · exact hps
+      exact foldl_proj_min_le_of_mem ps (·.1) p₀.1 p hps
+
+/-- Every cell of `g` has row coordinate at most `gridRowMax g`. -/
+theorem le_gridRowMax_of_mem (g : Grid) (p : Int × Int) (hp : p ∈ g) :
+    p.1 ≤ gridRowMax g := by
+  cases g with
+  | nil => simp at hp
+  | cons p₀ ps =>
+    simp only [gridRowMax]
+    by_cases heq : p = p₀
+    · rw [heq]
+      exact le_foldl_proj_max_seed ps (·.1) p₀.1
+    · have hps : p ∈ ps := by
+        rcases List.mem_cons.mp hp with hhead | hps
+        · exact absurd hhead heq
+        · exact hps
+      exact le_foldl_proj_max_of_mem ps (·.1) p₀.1 p hps
+
+/-- Every cell of `g` has column coordinate at least `gridColMin g`. -/
+theorem gridColMin_le_of_mem (g : Grid) (p : Int × Int) (hp : p ∈ g) :
+    gridColMin g ≤ p.2 := by
+  cases g with
+  | nil => simp at hp
+  | cons p₀ ps =>
+    simp only [gridColMin]
+    by_cases heq : p = p₀
+    · rw [heq]
+      exact foldl_proj_min_le_seed ps (·.2) p₀.2
+    · have hps : p ∈ ps := by
+        rcases List.mem_cons.mp hp with hhead | hps
+        · exact absurd hhead heq
+        · exact hps
+      exact foldl_proj_min_le_of_mem ps (·.2) p₀.2 p hps
+
+/-- Every cell of `g` has column coordinate at most `gridColMax g`. -/
+theorem le_gridColMax_of_mem (g : Grid) (p : Int × Int) (hp : p ∈ g) :
+    p.2 ≤ gridColMax g := by
+  cases g with
+  | nil => simp at hp
+  | cons p₀ ps =>
+    simp only [gridColMax]
+    by_cases heq : p = p₀
+    · rw [heq]
+      exact le_foldl_proj_max_seed ps (·.2) p₀.2
+    · have hps : p ∈ ps := by
+        rcases List.mem_cons.mp hp with hhead | hps
+        · exact absurd hhead heq
+        · exact hps
+      exact le_foldl_proj_max_of_mem ps (·.2) p₀.2 p hps
+
+/-- For any non-empty grid, the row bounding box is well-formed:
+    `gridRowMin g ≤ gridRowMax g`. -/
+theorem gridRowMin_le_gridRowMax (g : Grid) (hg : g ≠ []) :
+    gridRowMin g ≤ gridRowMax g := by
+  obtain ⟨p₀, ps, rfl⟩ : ∃ p₀ ps, g = p₀ :: ps := by
+    cases g with
+    | nil => exact absurd rfl hg
+    | cons p₀ ps => exact ⟨p₀, ps, rfl⟩
+  have hmin : gridRowMin (p₀ :: ps) ≤ p₀.1 :=
+    gridRowMin_le_of_mem _ _ (by simp)
+  have hmax : p₀.1 ≤ gridRowMax (p₀ :: ps) :=
+    le_gridRowMax_of_mem _ _ (by simp)
+  omega
+
+/-- For any non-empty grid, the column bounding box is well-formed:
+    `gridColMin g ≤ gridColMax g`. -/
+theorem gridColMin_le_gridColMax (g : Grid) (hg : g ≠ []) :
+    gridColMin g ≤ gridColMax g := by
+  obtain ⟨p₀, ps, rfl⟩ : ∃ p₀ ps, g = p₀ :: ps := by
+    cases g with
+    | nil => exact absurd rfl hg
+    | cons p₀ ps => exact ⟨p₀, ps, rfl⟩
+  have hmin : gridColMin (p₀ :: ps) ≤ p₀.2 :=
+    gridColMin_le_of_mem _ _ (by simp)
+  have hmax : p₀.2 ≤ gridColMax (p₀ :: ps) :=
+    le_gridColMax_of_mem _ _ (by simp)
+  omega
+
 /-- Compute a suitable `(offset, level)` so that the square of side
     `2 ^ level` placed at `offset` strictly contains the bounding box of
     `g` plus a 2-cell padding on each side. Returns `((0, 0), 0)` for the
