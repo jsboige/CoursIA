@@ -80,8 +80,11 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
 
 ## État
 
-- **Phase 1** : initiation, skeleton créé 13/05/2026 (epic en cours)
-- Issue tracker : (à lier dès création)
+- **Phase 1** : livrée — `research.ipynb` (sleeve crypto seul, PR #1179) puis `quantbook.ipynb`
+  (portefeuille complet 8 sous-stratégies : sleeve IBKR + matrice de corrélation mensuelle 8×8
+  + blend net de coûts, exécuté via lean research container avec données QC réelles)
+- **Phase 2** : à faire — backtest unifié 2018-2025 via framework QC (MultiAlphaModel, cf `main.py`)
+- Issue tracker : [#1027](https://github.com/jsboige/CoursIA/issues/1027)
 
 ## Liens
 
