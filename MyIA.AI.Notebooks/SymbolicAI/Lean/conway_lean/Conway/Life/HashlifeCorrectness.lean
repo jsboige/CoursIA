@@ -1038,6 +1038,23 @@ theorem p4_wf_witness_k2 :
 
 The top-level theorem composing P2, P3, P4. -/
 
+
+/-! ### P5 base case (n = 0)
+
+The trivial case `n = 0`: both `evolveHashlifeFast` and `evolve` return the
+grid unchanged. This is the first proven building block toward the full P5
+theorem. The remaining work is the inductive step (small `n` fallback + large
+`n` jump), documented in `hashlife_correct` below. -/
+
+/-- Base case `n = 0` of `hashlife_correct`: no evolution means no change on
+    either side. Both `evolveHashlifeFast 0 g` (via `evolveHashlifeFastAux 0 0 g`)
+    and `evolve 0 g` reduce to `g` definitionally. -/
+theorem hashlife_correct_base_zero (g : Grid) :
+    evolveHashlifeFast 0 g = evolve 0 g := by
+  -- evolveHashlifeFast 0 g = evolveHashlifeFastAux 0 0 g = g  (second pattern: 0, _, g => g)
+  -- evolve 0 g = g                                           (evolve_zero : rfl)
+  rfl
+
 /-- **Hashlife correctness (bounded)**: under the padding hypothesis
     `box_assez_grand g n`, the exponential-speedup Hashlife implementation
     `evolveHashlifeFast n g` agrees with the reference `evolve n g`.
@@ -1051,10 +1068,17 @@ The top-level theorem composing P2, P3, P4. -/
       of the MacroCell doesn't interfere with the live region during the
       jump. The padding hypothesis `box_assez_grand` is preserved through
       the recursion because the jump preserves bounding box up to light-cone
-      expansion. -/
+      expansion.
+
+    **Status (2026-06-13)**: base case `n = 0` proven above
+    (`hashlife_correct_base_zero`). The inductive step remains open (the
+    `sorry` below). See `hashlife_correct_implies_block_4` /
+    `hashlife_correct_implies_glider_8` for sanity witnesses. -/
 theorem hashlife_correct (n : Nat) (g : Grid) (h : BoxAssezGrand g n) :
     evolveHashlifeFast n g = evolve n g := by
   -- P5 TARGET: main theorem, composition of P2-P4
+  -- Base case n = 0: see hashlife_correct_base_zero.
+  -- Inductive step (fallback + jump): open.
   sorry
 
 /-! ## Sanity witnesses (native_decide)
