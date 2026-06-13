@@ -1,10 +1,10 @@
 # Mon Premier Projet Foundry — Counter
 
-Projet Foundry cree dans le cadre du notebook [SC-1-Setup-Foundry](../00-Foundations/SC-1-Setup-Foundry.ipynb). Premier contrat Solidity avec tests unitaires.
+Projet Foundry créé dans le cadre du notebook [SC-1-Setup-Foundry](../00-Foundations/SC-1-Setup-Foundry.ipynb). Premier contrat Solidity avec tests unitaires.
 
 ## Contrat : Counter.sol
 
-Compteur simple en Solidity 0.8.28 avec protection contre le underflow.
+Compteur simple en Solidity 0.8.28 avec protection contre l'underflow.
 
 | Fonction | Type | Description |
 |----------|------|-------------|
@@ -13,7 +13,7 @@ Compteur simple en Solidity 0.8.28 avec protection contre le underflow.
 | `getCount()` | `public view` | Retourne la valeur de `count` |
 | `count()` | `public view` | Getter automatique (variable `public`) |
 
-**Protection underflow** : `require(count > 0, "Cannot decrement below zero")` empêche le decrement en dessous de zero. Solidity 0.8+ a des checks natifs pour l'underflow arithmetique, mais le require explicite fournit un message d'erreur clair.
+**Protection underflow** : `require(count > 0, "Cannot decrement below zero")` empêche le décrément en dessous de zéro. Solidity 0.8+ a des checks natifs pour l'underflow arithmétique, mais le require explicite fournit un message d'erreur clair.
 
 ## Tests : Counter.t.sol
 
@@ -21,10 +21,10 @@ Compteur simple en Solidity 0.8.28 avec protection contre le underflow.
 
 | Test | Cas de test |
 |------|-------------|
-| `testIncrement` | Incrementation successive (0 -> 1 -> 2) |
-| `testDecrement` | Decrementation (2 -> 1) |
+| `testIncrement` | Incrémentation successive (0 -> 1 -> 2) |
+| `testDecrement` | Décrémentation (2 -> 1) |
 | `testDecrementZero` | Revert attendu quand `count == 0` |
-| `testPublicGetter` | Coherence entre `count()` (auto) et `getCount()` (explicite) |
+| `testPublicGetter` | Cohérence entre `count()` (auto) et `getCount()` (explicite) |
 
 ## Utilisation
 
@@ -48,7 +48,7 @@ mon-premier-projet/
 ├── test/
 │   └── Counter.t.sol        # Tests Foundry
 ├── script/
-│   └── Counter.s.sol        # Script de deploiement
+│   └── Counter.s.sol        # Script de déploiement
 ├── foundry.toml              # Configuration Foundry
 └── README.md
 ```

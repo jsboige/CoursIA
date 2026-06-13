@@ -1,4 +1,4 @@
-# Web Semantique - Semantic Web
+# Web Sémantique - Semantic Web
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SemanticWeb
@@ -7,35 +7,35 @@ breakdown: SemanticWeb=18
 maturity: PRODUCTION=18
 -->
 
-Le Web Semantique est la promesse d'un Web ou les machines comprennent la signification des donnees, pas seulement leur syntaxe. RDF, SPARQL, OWL, SHACL : ces standards du W3C definissent un langage commun pour decrire, interroger, valider et raisonner sur des graphes de connaissances. Cette serie vous mene des fondations (.NET C# avec dotNetRDF) aux applications modernes (Python avec rdflib, pySHACL, GraphRAG), en passant par les ontologies, les donnees liees et les standards emergents (RDF 1.2, JSON-LD 1.1).
+Le Web Sémantique est la promesse d'un Web où les machines comprennent la signification des données, pas seulement leur syntaxe. RDF, SPARQL, OWL, SHACL : ces standards du W3C définissent un langage commun pour décrire, interroger, valider et raisonner sur des graphes de connaissances. Cette série vous mène des fondations (.NET C# avec dotNetRDF) aux applications modernes (Python avec rdflib, pySHACL, GraphRAG), en passant par les ontologies, les données liées et les standards émergents (RDF 1.2, JSON-LD 1.1).
 
 **18 notebooks** | **2 langages** | **~10h**
 
-**A qui s'adresse cette serie** : developpeurs web curieux du sens cache dans leurs donnees, data scientists voulant structurer leurs pipelines, et etudiants en IA souhaitant comprendre comment les graphes de connaissances ancrent les LLMs. Aucun prerequis en logique formelle.
+**À qui s'adresse cette série** : développeurs web curieux du sens caché dans leurs données, data scientists voulant structurer leurs pipelines, et étudiants en IA souhaitant comprendre comment les graphes de connaissances ancrent les LLMs. Aucun prérequis en logique formelle.
 
-## Pourquoi cette serie
+## Pourquoi cette série
 
-Le Web Semantique a traverse des cycles de hype et de desillusion. En 2001, Tim Berners-Lee en faisait la couverture de *Scientific American*. En 2010, les donnees liees semblaient une niche academique. En 2024, GraphRAG (Microsoft) a montre que les graphes de connaissances RDF pouvaient ancrer les LLMs sur des faits verifiables : le Web Semantique devenait un garde-fou pour l'IA generative.
+Le Web Sémantique a traversé des cycles de hype et de désillusion. En 2001, Tim Berners-Lee en faisait la couverture de *Scientific American*. En 2010, les données liées semblaient une niche académique. En 2024, GraphRAG (Microsoft) a montré que les graphes de connaissances RDF pouvaient ancrer les LLMs sur des faits vérifiables : le Web Sémantique devenait un garde-fou pour l'IA générative.
 
-Cette serie couvre le spectre complet parce que les briques s'articulent : RDF definit les donnees, SPARQL les interroge, RDFS/OWL structurent le raisonnement, SHACL valide la qualite, JSON-LD ponte vers le Web, RDF-Star ajoute la provenance, et les KG+LLMs ferment la boucle. Chaque standard est une couche qui s'appuie sur les precedentes.
+Cette série couvre le spectre complet parce que les briques s'articulent : RDF définit les données, SPARQL les interroge, RDFS/OWL structurent le raisonnement, SHACL valide la qualité, JSON-LD ponte vers le Web, RDF-Star ajoute la provenance, et les KG+LLMs ferment la boucle. Chaque standard est une couche qui s'appuie sur les précédentes.
 
-La serie propose deliberement deux stacks : **.NET C#** (SW-1 a SW-7) pour les fondations avec dotNetRDF (typed, performant, integre a l'ecosysteme CoursIA), et **Python** (SW-8 a SW-13) pour les standards modernes et l'IA. Les sidetracks Python (SW-2b, 4b, 5b, 7b) offrent un miroir des notebooks C# en Python.
+La série propose délibérément deux stacks : **.NET C#** (SW-1 à SW-7) pour les fondations avec dotNetRDF (typed, performant, intégré à l'écosystème CoursIA), et **Python** (SW-8 à SW-13) pour les standards modernes et l'IA. Les sidetracks Python (SW-2b, 4b, 5b, 7b) offrent un miroir des notebooks C# en Python.
 
-## Concepts cles
+## Concepts clés
 
 | Concept | En une phrase | Notebook |
 |---------|---------------|----------|
-| **Triplet RDF** | Un fait elementaire : sujet-predicat-objet (comme une phrase simple) | SW-2 |
-| **Graphe RDF** | Un ensemble de triplets formant un reseau semantique | SW-3 |
-| **SPARQL** | Le SQL du Web Semantique : interroger des graphes avec des patterns | SW-4 |
-| **Linked Data** | Des donnees publiees sur le Web avec des URIs resolvables | SW-5 |
-| **RDFS** | Un vocabulaire pour definir des hierarchies de classes et proprietes | SW-6 |
+| **Triplet RDF** | Un fait élémentaire : sujet-prédicat-objet (comme une phrase simple) | SW-2 |
+| **Graphe RDF** | Un ensemble de triplets formant un réseau sémantique | SW-3 |
+| **SPARQL** | Le SQL du Web Sémantique : interroger des graphes avec des patterns | SW-4 |
+| **Linked Data** | Des données publiées sur le Web avec des URIs résolvables | SW-5 |
+| **RDFS** | Un vocabulaire pour définir des hiérarchies de classes et propriétés | SW-6 |
 | **OWL** | Une logique de description pour le raisonnement automatique | SW-7 |
-| **SHACL** | Des contraintes de validation sur les graphes (comme des schemas JSON) | SW-8 |
-| **JSON-LD** | Du JSON avec un contexte semantique (le pont Web classique ↔ Web Semantique) | SW-9 |
-| **RDF-Star** | Des metadonnees sur les triplets (provenance, confiance, annotations) | SW-10 |
-| **Graphe de connaissances** | Un RDF riche, visualisable, requetable, ancre dans une ontologie | SW-11 |
-| **GraphRAG** | Un KG ancre dans un LLM pour du RAG structure (anti-hallucination) | SW-12 |
+| **SHACL** | Des contraintes de validation sur les graphes (comme des schémas JSON) | SW-8 |
+| **JSON-LD** | Du JSON avec un contexte sémantique (le pont Web classique ↔ Web Sémantique) | SW-9 |
+| **RDF-Star** | Des métadonnées sur les triplets (provenance, confiance, annotations) | SW-10 |
+| **Graphe de connaissances** | Un RDF riche, visualisable, requêtable, ancré dans une ontologie | SW-11 |
+| **GraphRAG** | Un KG ancré dans un LLM pour du RAG structuré (anti-hallucination) | SW-12 |
 
 ## Vue d'ensemble
 
@@ -43,11 +43,11 @@ La serie propose deliberement deux stacks : **.NET C#** (SW-1 a SW-7) pour les f
 |-------------|--------|
 | Notebooks principaux | 12 + 1 bonus |
 | Sidetracks Python | 4 optionnels |
-| Duree totale | ~10h + 45min (bonus) |
+| Durée totale | ~10h + 45min (bonus) |
 | Langages | .NET C# (1-7), Python (8-13) |
-| Niveau | Debutant a avance |
+| Niveau | Débutant à avancé |
 
-> **Nouvelle convention** : Tous les noms de notebooks incluent explicitement le langage (`CSharp` ou `Python`) pour une identification immediate.
+> **Nouvelle convention** : Tous les noms de notebooks incluent explicitement le langage (`CSharp` ou `Python`) pour une identification immédiate.
 
 ---
 
@@ -60,24 +60,24 @@ pip install rdflib pySHACL owlready2 kglab SPARQLWrapper
 # .NET (notebooks SW-1 a SW-7)
 dotnet restore
 
-# Premier notebook recommande (Python) :
+# Premier notebook recommandé (Python) :
 jupyter notebook SW-2b-Python-RDFBasics.ipynb
 
 # Ou en .NET :
 jupyter notebook SW-1-CSharp-Setup.ipynb
 ```
 
-Aucune API key requise pour les notebooks fondamentaux (SW-1 a SW-11). SW-12 (GraphRAG) necessite une cle LLM.
+Aucune API key requise pour les notebooks fondamentaux (SW-1 à SW-11). SW-12 (GraphRAG) nécessite une clé LLM.
 
 ---
 
-## Progression recommandee
+## Progression recommandée
 
 ### Parcours principal
-Suivez les notebooks **SW-1 a SW-12** dans l'ordre numerique pour une progression logique des concepts.
+Suivez les notebooks **SW-1 à SW-12** dans l'ordre numérique pour une progression logique des concepts.
 
 ### Sidetracks Python (optionnels)
-Les sidetracks marques `b-Python` sont des notebooks complementaires qui presentent l'equivalent Python des concepts .NET. Ils sont **optionnels** mais recommandes si vous souhaitez travailler avec Python plutot qu'avec .NET.
+Les sidetracks marqués `b-Python` sont des notebooks complémentaires qui présentent l'équivalent Python des concepts .NET. Ils sont **optionnels** mais recommandés si vous souhaitez travailler avec Python plutôt qu'avec .NET.
 
 | Sidetrack | Notebook principal | Contenu |
 |-----------|-------------------|---------|
@@ -88,57 +88,57 @@ Les sidetracks marques `b-Python` sont des notebooks complementaires qui present
 
 ---
 
-## Structure detaillee des notebooks
+## Structure détaillée des notebooks
 
 ### Partie 1 : Fondations RDF (.NET C#)
 
-Cette partie pose les fondations du Web Semantique en utilisant l'ecosysteme .NET avec la bibliotheque **dotNetRDF**.
+Cette partie pose les fondations du Web Sémantique en utilisant l'écosystème .NET avec la bibliothèque **dotNetRDF**.
 
-| # | Notebook | Duree | Sidetrack Python |
+| # | Notebook | Durée | Sidetrack Python |
 |---|----------|-------|------------------|
 | 1 | **SW-1-CSharp-Setup** | 20 min | - |
 | 2 | **SW-2-CSharp-RDFBasics** | 45 min | SW-2b-Python-RDFBasics |
 | 3 | **SW-3-CSharp-GraphOperations** | 50 min | - |
 | 4 | **SW-4-CSharp-SPARQL** | 45 min | SW-4b-Python-SPARQL |
 
-#### SW-1-CSharp-Setup : Premier pas dans le Web Semantique (20 min)
+#### SW-1-CSharp-Setup : Premier pas dans le Web Sémantique (20 min)
 
-Ce notebook d'introduction vous guide a travers l'installation de dotNetRDF et decouvre la vision historique du Web Semantique. Vous creerez votre premier graphe RDF "Hello World" et comprendrez l'architecture en couches du W3C.
+Ce notebook d'introduction vous guide à travers l'installation de dotNetRDF et découvre la vision historique du Web Sémantique. Vous créerez votre premier graphe RDF "Hello World" et comprendrez l'architecture en couches du W3C.
 
-**Points cles appris** :
+**Points clés appris** :
 - La pile technologique W3C : Unicode → URI → RDF → RDFS → OWL → SPARQL
 - Installation de dotNetRDF via NuGet dans .NET Interactive
-- Creation d'un graphe et assertion de triplets (sujet-predicat-objet)
-- Les differents types de noeuds : URI, blank nodes, litteraux
+- Création d'un graphe et assertion de triplets (sujet-prédicat-objet)
+- Les différents types de nœuds : URI, blank nodes, littéraux
 
-#### SW-2-CSharp-RDFBasics : Triples, Noeuds et Serialisation (45 min)
+#### SW-2-CSharp-RDFBasics : Triples, Nœuds et Sérialisation (45 min)
 
-Dans ce notebook, vous approfondirez votre comprehension du modele de donnees RDF. Vous manipulerez les differents types de noeuds et decouvrirez les principaux formats de serialisation.
+Dans ce notebook, vous approfondirez votre compréhension du modèle de données RDF. Vous manipulerez les différents types de nœuds et découvrirez les principaux formats de sérialisation.
 
-**Points cles appris** :
-- Structure d'un triplet RDF : sujet (URI/blank), predicat (URI), objet (URI/blank/literal)
-- Litteraux typés (xsd:integer, xsd:dateTime) et avec tags de langue ("Bonjour"@fr)
-- Formats de serialisation : Turtle, N-Triples, RDF/XML
-- Creation de namespaces pour simplifier l'ecriture
+**Points clés appris** :
+- Structure d'un triplet RDF : sujet (URI/blank), prédicat (URI), objet (URI/blank/literal)
+- Littéraux typés (xsd:integer, xsd:dateTime) et avec tags de langue ("Bonjour"@fr)
+- Formats de sérialisation : Turtle, N-Triples, RDF/XML
+- Création de namespaces pour simplifier l'écriture
 
 > **Sidetrack Python disponible** : [SW-2b-Python-RDFBasics](SW-2b-Python-RDFBasics.ipynb) - Equivalent Python avec rdflib
 
-#### SW-3-CSharp-GraphOperations : Manipulation Avancee de Graphes (50 min)
+#### SW-3-CSharp-GraphOperations : Manipulation Avancée de Graphes (50 min)
 
-Ce notebook couvre les operations quotidiennes sur les graphes RDF : lecture/ecriture, fusion, et selection avancee avec LINQ.
+Ce notebook couvre les opérations quotidiennes sur les graphes RDF : lecture/écriture, fusion, et sélection avancée avec LINQ.
 
-**Points cles appris** :
+**Points clés appris** :
 - Parsers (`TurtleParser`, `NTriplesParser`) et Writers (`CompressingTurtleWriter`, `RdfXmlWriter`)
-- Fusion de graphes avec `Merge()` : deduplication automatique, renommage des blank nodes
-- Methodes `GetTriplesWithXxx()` pour la selection pattern-based
-- Utilisation de LINQ pour des requetes complexes sur les triplets
+- Fusion de graphes avec `Merge()` : déduplication automatique, renommage des blank nodes
+- Méthodes `GetTriplesWithXxx()` pour la sélection pattern-based
+- Utilisation de LINQ pour des requêtes complexes sur les triplets
 - Listes RDF : `AssertList()`, `GetListItems()`, `AddToList()`
 
-#### SW-4-CSharp-SPARQL : Le Langage de Requete (45 min)
+#### SW-4-CSharp-SPARQL : Le Langage de Requête (45 min)
 
-SPARQL est au RDF ce que SQL est aux bases de donnees relationnelles. Ce notebook vous apprendra a interroger vos graphes avec le Query Builder de dotNetRDF.
+SPARQL est au RDF ce que SQL est aux bases de données relationnelles. Ce notebook vous apprendra à interroger vos graphes avec le Query Builder de dotNetRDF.
 
-**Points cles appris** :
+**Points clés appris** :
 - SELECT SPARQL : projections, patterns de base
 - Filtrage : `FILTER`, comparaisons, regex, tests d'existence
 - Jointures implicites et `OPTIONAL` (LEFT JOIN semantics)
@@ -149,46 +149,46 @@ SPARQL est au RDF ce que SQL est aux bases de donnees relationnelles. Ce noteboo
 
 ---
 
-### Partie 2 : Donnees Liees et Ontologies (.NET C#)
+### Partie 2 : Données Liées et Ontologies (.NET C#)
 
-Cette partie etend vos competences aux donnees du Web ouvert et aux ontologies qui permettent le raisonnement automatique.
+Cette partie étend vos compétences aux données du Web ouvert et aux ontologies qui permettent le raisonnement automatique.
 
-| # | Notebook | Duree | Sidetrack Python |
+| # | Notebook | Durée | Sidetrack Python |
 |---|----------|-------|------------------|
 | 5 | **SW-5-CSharp-LinkedData** | 50 min | SW-5b-Python-LinkedData |
 | 6 | **SW-6-CSharp-RDFS** | 40 min | - |
 | 7 | **SW-7-CSharp-OWL** | 50 min | SW-7b-Python-OWL |
 
-#### SW-5-CSharp-LinkedData : DBpedia, Wikidata et Requetes Federees (50 min)
+#### SW-5-CSharp-LinkedData : DBpedia, Wikidata et Requêtes Fédérées (50 min)
 
-Decouvrez le Web de donnees liees en interrogeant des endpoints publics comme DBpedia et Wikidata.
+Découvrez le Web de données liées en interrogeant des endpoints publics comme DBpedia et Wikidata.
 
-**Points cles appris** :
+**Points clés appris** :
 - Endpoint SPARQL public vs. graphe local
-- `SparqlRemoteEndpoint` pour executer des requetes distantes
-- Requetes federees avec `SERVICE` : interroger plusieurs endpoints simultanement
-- Exploration de DBpedia : sujets, categories, liens inter-langues
+- `SparqlRemoteEndpoint` pour exécuter des requêtes distantes
+- Requêtes fédérées avec `SERVICE` : interroger plusieurs endpoints simultanément
+- Exploration de DBpedia : sujets, catégories, liens inter-langues
 - Wikidata et ses Q-items/P-properties
 
 > **Sidetrack Python disponible** : [SW-5b-Python-LinkedData](SW-5b-Python-LinkedData.ipynb) - DBpedia/Wikidata avec SPARQLWrapper
 
-#### SW-6-CSharp-RDFS : Schema et Inference (40 min)
+#### SW-6-CSharp-RDFS : Schema et Inférence (40 min)
 
-RDFS (RDF Schema) est la couche vocabulaire du Web Semantique. Ce notebook vous montre comment definir des classes, des proprietes et comment l'inference fonctionne.
+RDFS (RDF Schema) est la couche vocabulaire du Web Sémantique. Ce notebook vous montre comment définir des classes, des propriétés et comment l'inférence fonctionne.
 
-**Points cles appris** :
+**Points clés appris** :
 - Vocabulaire RDFS : `rdfs:Class`, `rdfs:subClassOf`, `rdfs:domain`, `rdfs:range`
-- Hierarchies de classes et transitivite de `subClassOf`
-- Inference RDFS : deduction automatique de types et de relations
-- `OntologyGraph` de dotNetRDF pour activer l'inference
+- Hiérarchies de classes et transitivité de `subClassOf`
+- Inférence RDFS : déduction automatique de types et de relations
+- `OntologyGraph` de dotNetRDF pour activer l'inférence
 
-#### SW-7-CSharp-OWL : Ontologies et Raisonnement Avance (50 min)
+#### SW-7-CSharp-OWL : Ontologies et Raisonnement Avancé (50 min)
 
-OWL (Web Ontology Language) etend RDFS avec des constructeurs logiques puissants. Ce notebook presente les profils OWL 2 et le raisonnement.
+OWL (Web Ontology Language) étend RDFS avec des constructeurs logiques puissants. Ce notebook présente les profils OWL 2 et le raisonnement.
 
-**Points cles appris** :
-- OWL 2 vs. RDFS : expressivite accrue (restrictions, cardinalites, disjonction)
-- Profils OWL 2 : EL (grandes ontologies), QL (query rewriting), RL (regles)
+**Points clés appris** :
+- OWL 2 vs. RDFS : expressivité accrue (restrictions, cardinalités, disjonction)
+- Profils OWL 2 : EL (grandes ontologies), QL (query rewriting), RL (règles)
 - Constructeurs clés : `owl:equivalentClass`, `owl:unionOf`, `owl:intersectionOf`
 - Restrictions : `owl:someValuesFrom` (∃), `owl:allValuesFrom` (∀)
 - Raisonnement avec `OntologyGraph`
@@ -199,41 +199,41 @@ OWL (Web Ontology Language) etend RDFS avec des constructeurs logiques puissants
 
 ### Partie 3 : Standards Modernes (Python uniquement)
 
-Cette partie couvre les standards modernes du Web Semantique, exclusivement en Python (ecosystem dominant pour l'IA).
+Cette partie couvre les standards modernes du Web Sémantique, exclusivement en Python (écosystème dominant pour l'IA).
 
-| # | Notebook | Duree | Contenu |
+| # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
-| 8 | **SW-8-Python-SHACL** | 45 min | Validation de donnees avec pySHACL |
-| 9 | **SW-9-Python-JSONLD** | 40 min | Donnees structurees pour le web |
+| 8 | **SW-8-Python-SHACL** | 45 min | Validation de données avec pySHACL |
+| 9 | **SW-9-Python-JSONLD** | 40 min | Données structurées pour le web |
 | 10 | **SW-10-Python-RDFStar** | 40 min | RDF 1.2, annotations et provenance |
 
-#### SW-8-Python-SHACL : Validation de Qualite des Donnees (45 min)
+#### SW-8-Python-SHACL : Validation de Qualité des Données (45 min)
 
-SHACL (Shapes Constraint Language) est le standard W3C pour valider la conformite des donnees RDF. Ce notebook utilise pySHACL pour definir des shapes et valider des graphes.
+SHACL (Shapes Constraint Language) est le standard W3C pour valider la conformité des données RDF. Ce notebook utilise pySHACL pour définir des shapes et valider des graphes.
 
-**Points cles appris** :
+**Points clés appris** :
 - Concepts SHACL : `NodeShape`, `PropertyShape`, contraintes
 - Contraintes communes : `sh:minCount`, `sh:maxCount`, `sh:datatype`, `sh:nodeKind`
-- `sh:property` pour valider les proprietes d'un noeud
+- `sh:property` pour valider les propriétés d'un nœud
 - `sh:pattern` (regex), `sh:in` (enum), `sh:class` (type checking)
 - Validation avec pySHACL : `Validate(graph, data_graph)`
 
-#### SW-9-Python-JSONLD : Donnees Structurees pour le Web (40 min)
+#### SW-9-Python-JSONLD : Données Structurées pour le Web (40 min)
 
-JSON-LD est le pont entre le monde JSON des developpeurs web et le Web Semantique. Ce notebook montre comment utiliser JSON-LD avec Schema.org pour le SEO.
+JSON-LD est le pont entre le monde JSON des développeurs web et le Web Sémantique. Ce notebook montre comment utiliser JSON-LD avec Schema.org pour le SEO.
 
-**Points cles appris** :
+**Points clés appris** :
 - Format JSON-LD : `@context`, `@id`, `@type` pour mapper JSON vers RDF
-- Integration Schema.org (vocabulaire Google, Bing, Yahoo)
+- Intégration Schema.org (vocabulaire Google, Bing, Yahoo)
 - Compactage et expansion JSON-LD avec `jsonld` Python
-- Rich snippets Google : 73% des resultats utilisent des donnees structurees
+- Rich snippets Google : 73% des résultats utilisent des données structurées
 - Cas d'usage : e-commerce (Produit), articles (Article), organisations (Organization)
 
 #### SW-10-Python-RDFStar : Annotations et Provenance (40 min)
 
-RDF-Star (RDF 1.2) permet d'exprimer des statements a propos de statements, essentiel pour les annotations, la provenance et la confiance.
+RDF-Star (RDF 1.2) permet d'exprimer des statements à propos de statements, essentiel pour les annotations, la provenance et la confiance.
 
-**Points cles appris** :
+**Points clés appris** :
 - Quoted triples : `<<<:s :p :o>>> :confidence 0.9`
 - Use cases : annotations, provenance, confiance, probabilites
 - Syntaxe Turtle-Star et N-Triples-Star
@@ -244,9 +244,9 @@ RDF-Star (RDF 1.2) permet d'exprimer des statements a propos de statements, esse
 
 ### Partie 4 : Graphes de Connaissances et IA (Python)
 
-Cette partie connecte le Web Semantique avec l'IA moderne, notamment les LLMs et les graphes de connaissances.
+Cette partie connecte le Web Sémantique avec l'IA moderne, notamment les LLMs et les graphes de connaissances.
 
-| # | Notebook | Duree | Contenu |
+| # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 11 | **SW-11-Python-KnowledgeGraphs** | 55 min | Construction et visualisation de KGs |
 | 12 | **SW-12-Python-GraphRAG** | 50 min | KG + LLMs pour le RAG |
@@ -254,50 +254,50 @@ Cette partie connecte le Web Semantique avec l'IA moderne, notamment les LLMs et
 
 #### SW-11-Python-KnowledgeGraphs : Construction et Visualisation (55 min)
 
-Ce notebook pratique vous guide dans la construction d'un graphe de connaissances complet, depuis des donnees brutes jusqu'a la visualisation interactive.
+Ce notebook pratique vous guide dans la construction d'un graphe de connaissances complet, depuis des données brutes jusqu'à la visualisation interactive.
 
-**Points cles appris** :
+**Points clés appris** :
 - kglab : abstraction haut niveau pour les KGs (Pandas + NetworkX + rdflib)
 - Import depuis CSV/JSON vers RDF
 - OWLReady2 : manipulation d'ontologies Python, raisonnement HermiT
 - Visualisation avec NetworkX et pyvis : graphes interactifs HTML
-- Patterns de modelling : entites, relations, attributs
+- Patterns de modélisation : entités, relations, attributs
 
 #### SW-12-Python-GraphRAG : KG + LLMs pour le RAG (50 min)
 
-GraphRAG combine les graphes de connaissances avec les LLMs pour un Retrieval-Augmented Generation structure. Ce notebook presente l'approche de Microsoft GraphRAG.
+GraphRAG combine les graphes de connaissances avec les LLMs pour un Retrieval-Augmented Generation structuré. Ce notebook présente l'approche de Microsoft GraphRAG.
 
-**Points cles appris** :
+**Points clés appris** :
 - RAP (Retrieval-Augmented Generation) : limiter les hallucinations LLM
-- GraphRAG Microsoft : extraction d'entites, construction de communautes
+- GraphRAG Microsoft : extraction d'entités, construction de communautés
 - LeMay-Huan framework : KG + LLM pour question answering
-- Implementation avec OpenAI/Anthropic APIs
-- Comparaison RAP vectoriel vs. RAP structure (GraphRAG)
+- Implémentation avec OpenAI/Anthropic APIs
+- Comparaison RAP vectoriel vs. RAP structuré (GraphRAG)
 
 #### SW-13-Python-Reasoners (Bonus) : Benchmarks et Performances (45 min)
 
-Ce notebook bonus compare differents raisonneurs OWL (owlrl, HermiT, reasonable, Growl) sur des criteres de performance et de facilite d'integration.
+Ce notebook bonus compare différents raisonneurs OWL (owlrl, HermiT, reasonable, Growl) sur des critères de performance et de facilité d'intégration.
 
-**Points cles appris** :
-- owlrl : Python pur, OWL 2 RL, facile a installer
+**Points clés appris** :
+- owlrl : Python pur, OWL 2 RL, facile à installer
 - OWLReady2 + HermiT : Java bridge, OWL 2 DL complet
 - reasonable : Rust + Python bindings, OWL 2 RL, performance native
-- Growl : C (verifie Z3), OWL 2 RL, installation manuelle
-- Benchmark temps d'execution : Python vs. compile
+- Growl : C (vérifié Z3), OWL 2 RL, installation manuelle
+- Benchmark temps d'exécution : Python vs. compilé
 
 ---
 
 ## Acquis d'apprentissage
 
-A l'issue de cette serie, l'apprenant est capable de :
+À l'issue de cette série, l'apprenant est capable de :
 
-- **Modeliser un domaine en RDF** (triplets, IRIs, litteraux typees, namespaces) et manipuler des graphes en C# avec dotNetRDF (`SW-2-CSharp-RDFBasics.ipynb`, `SW-3-CSharp-GraphOperations.ipynb`) ou en Python avec rdflib (`SW-2b-Python-RDFBasics.ipynb`).
-- **Interroger un graphe en SPARQL 1.1** (SELECT, CONSTRUCT, ASK, DESCRIBE, federations via SERVICE) cote .NET (`SW-4-CSharp-SPARQL.ipynb`) et Python (`SW-4b-Python-SPARQL.ipynb`), puis publier des donnees Linked Data resolvables (`SW-5-CSharp-LinkedData.ipynb`, `SW-5b-Python-LinkedData.ipynb`).
-- **Formaliser une ontologie en RDFS puis OWL** (classes, proprietes, restrictions, hierarchies) et tirer parti d'un raisonneur pour materialiser les inferences (`SW-6-CSharp-RDFS.ipynb`, `SW-7-CSharp-OWL.ipynb`, `SW-7b-Python-OWL.ipynb`, `SW-13-Python-Reasoners.ipynb`).
-- **Valider la conformite d'un graphe** avec SHACL (NodeShapes/PropertyShapes, contraintes de cardinalite et de type, rapport de validation) via pySHACL (`SW-8-Python-SHACL.ipynb`).
-- **Serialiser et echanger des donnees RDF en JSON-LD** (`@context`, framing, compaction/expansion) pour interoperer avec les APIs Web modernes (`SW-9-Python-JSONLD.ipynb`).
-- **Annoter des assertions avec RDF-Star / SPARQL-Star** (citations de triplets, provenance, niveau de confiance) pour modeliser metadonnees et reification compacte (`SW-10-Python-RDFStar.ipynb`).
-- **Construire et exploiter un graphe de connaissances integre a un LLM** (extraction de triplets, embeddings, GraphRAG) pour ancrer les reponses generatives sur des donnees structurees (`SW-11-Python-KnowledgeGraphs.ipynb`, `SW-12-Python-GraphRAG.ipynb`).
+- **Modéliser un domaine en RDF** (triplets, IRIs, littéraux typés, namespaces) et manipuler des graphes en C# avec dotNetRDF (`SW-2-CSharp-RDFBasics.ipynb`, `SW-3-CSharp-GraphOperations.ipynb`) ou en Python avec rdflib (`SW-2b-Python-RDFBasics.ipynb`).
+- **Interroger un graphe en SPARQL 1.1** (SELECT, CONSTRUCT, ASK, DESCRIBE, federations via SERVICE) côté .NET (`SW-4-CSharp-SPARQL.ipynb`) et Python (`SW-4b-Python-SPARQL.ipynb`), puis publier des données Linked Data résolvables (`SW-5-CSharp-LinkedData.ipynb`, `SW-5b-Python-LinkedData.ipynb`).
+- **Formaliser une ontologie en RDFS puis OWL** (classes, propriétés, restrictions, hiérarchies) et tirer parti d'un raisonneur pour matérialiser les inférences (`SW-6-CSharp-RDFS.ipynb`, `SW-7-CSharp-OWL.ipynb`, `SW-7b-Python-OWL.ipynb`, `SW-13-Python-Reasoners.ipynb`).
+- **Valider la conformité d'un graphe** avec SHACL (NodeShapes/PropertyShapes, contraintes de cardinalité et de type, rapport de validation) via pySHACL (`SW-8-Python-SHACL.ipynb`).
+- **Sérialiser et échanger des données RDF en JSON-LD** (`@context`, framing, compaction/expansion) pour interopérer avec les APIs Web modernes (`SW-9-Python-JSONLD.ipynb`).
+- **Annoter des assertions avec RDF-Star / SPARQL-Star** (citations de triplets, provenance, niveau de confiance) pour modéliser métadonnées et réification compacte (`SW-10-Python-RDFStar.ipynb`).
+- **Construire et exploiter un graphe de connaissances intégré à un LLM** (extraction de triplets, embeddings, GraphRAG) pour ancrer les réponses génératives sur des données structurées (`SW-11-Python-KnowledgeGraphs.ipynb`, `SW-12-Python-GraphRAG.ipynb`).
 
 ---
 
@@ -314,47 +314,47 @@ Si vous n'avez pas d'environnement .NET, vous pouvez suivre uniquement les noteb
 
 Pour les praticiens qui veulent aller vite :
 
-1. **SW-2b** (RDF en 5 min) → **SW-4b** (SPARQL) → **SW-8** (SHACL : valider vos donnees) → **SW-9** (JSON-LD : exposer en API) → **SW-12** (GraphRAG : connecter aux LLMs).
+1. **SW-2b** (RDF en 5 min) → **SW-4b** (SPARQL) → **SW-8** (SHACL : valider vos données) → **SW-9** (JSON-LD : exposer en API) → **SW-12** (GraphRAG : connecter aux LLMs).
 
 ### Parcours ontologue (~4h)
 
-Pour les personnes creant des ontologies et des vocabulaires :
+Pour les personnes créant des ontologies et des vocabulaires :
 
-1. **SW-6** (RDFS) → **SW-7** (OWL) → **SW-7b** (OWL Python) → **SW-8** (SHACL : contraintes sur les donnees) → **SW-13** (comparaison raisonneurs).
+1. **SW-6** (RDFS) → **SW-7** (OWL) → **SW-7b** (OWL Python) → **SW-8** (SHACL : contraintes sur les données) → **SW-13** (comparaison raisonneurs).
 
 ## FAQ / Troubleshooting
 
-| Probleme | Solution |
+| Problème | Solution |
 |----------|----------|
-| `dotNetRDF` NuGet restore echoue | Verifier .NET SDK 9.0+ (`dotnet --version`). Relancer la cellule d'import. |
-| Endpoint DBpedia/Wikidata timeout | Les endpoints publics ont des limites. Ajouter `LIMIT 100` aux requetes. Reessayer hors heures de pointe. |
-| pySHACL validation vide | Verifier que les prefixes du graphe de donnees correspondent aux shapes (meme `ex:` namespace). |
+| `dotNetRDF` NuGet restore échoue | Vérifier .NET SDK 9.0+ (`dotnet --version`). Relancer la cellule d'import. |
+| Endpoint DBpedia/Wikidata timeout | Les endpoints publics ont des limites. Ajouter `LIMIT 100` aux requêtes. Réessayer hors heures de pointe. |
+| pySHACL validation vide | Vérifier que les préfixes du graphe de données correspondent aux shapes (même `ex:` namespace). |
 | OWLReady2 Java bridge error | Installer JDK 11+ (OWlReady2 utilise HermiT en Java). Sur Windows : `winget install EclipseAdoptium.Temurin.11.JDK`. |
-| RDF-Star syntax non reconnue | rdflib 7.x supporte RDF-Star en mode experimental. Verifier `rdflib.__version__ >= 7.0`. |
-| GraphRAG : `OPENAI_API_KEY` manquant | SW-12 requiert une cle LLM (OpenAI ou Anthropic). Configurer `.env` (voir `.env.example`). Les notebooks SW-1 a SW-11 n'ont pas besoin de cle. |
+| RDF-Star syntax non reconnue | rdflib 7.x supporte RDF-Star en mode expérimental. Vérifier `rdflib.__version__ >= 7.0`. |
+| GraphRAG : `OPENAI_API_KEY` manquant | SW-12 requiert une clé LLM (OpenAI ou Anthropic). Configurer `.env` (voir `.env.example`). Les notebooks SW-1 à SW-11 n'ont pas besoin de clé. |
 
 ## Lecture transversale
 
-La serie SemanticWeb illustre un mouvement profond du depot CoursIA : **prendre des donnees non-structurees et les re-representer dans un cadre verifiable**. RDF donne un sens formel a du JSON, OWL ajoute le raisonnement, SHACL ajoute la validation, GraphRAG ancre les LLMs sur des faits. Ce geste — trouver la representation ou le probleme se dissout — traverse toutes les series du depot, des CSP (Search) aux preuves Lean (SymbolicAI). La cle de lecture [La mer qui monte](../../../docs/grothendieckian-lens.md) developpe ce fil conducteur.
+La série SemanticWeb illustre un mouvement profond du dépôt CoursIA : **prendre des données non-structurées et les re-représenter dans un cadre vérifiable**. RDF donne un sens formel à du JSON, OWL ajoute le raisonnement, SHACL ajoute la validation, GraphRAG ancre les LLMs sur des faits. Ce geste — trouver la représentation où le problème se dissout — traverse toutes les séries du dépôt, des CSP (Search) aux preuves Lean (SymbolicAI). La clé de lecture [La mer qui monte](../../../docs/grothendieckian-lens.md) développe ce fil conducteur.
 
 ---
 
 ## Prerequisites
 
-### Pour les notebooks .NET (SW-1 a SW-7)
+### Pour les notebooks .NET (SW-1 à SW-7)
 
 - .NET SDK 9.0+
 - .NET Interactive (Jupyter kernel)
-- VS Code avec Polyglot Notebooks (recommande)
+- VS Code avec Polyglot Notebooks (recommandé)
 
-### Pour les notebooks Python (SW-8 a SW-13 et sidetracks)
+### Pour les notebooks Python (SW-8 à SW-13 et sidetracks)
 
 - Python 3.10+
 - pip install -r requirements.txt
 
 ### Pour le notebook 12 (GraphRAG)
 
-- Cle API OpenAI ou Anthropic (voir `.env.example`)
+- Clé API OpenAI ou Anthropic (voir `.env.example`)
 
 ## Installation
 
@@ -377,18 +377,18 @@ pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-# Editer .env avec vos cles API
+# Éditer .env avec vos clés API
 ```
 
 ## Technologies et versions
 
 | Technologie | Version | Notebooks | Role |
 |-------------|---------|-----------|------|
-| dotNetRDF | 3.4.1 | SW-1 a SW-7 | Core RDF/SPARQL en .NET |
-| rdflib | 7.5.0 | Sidetracks, SW-8 a SW-12 | Core RDF/SPARQL en Python |
+| dotNetRDF | 3.4.1 | SW-1 à SW-7 | Core RDF/SPARQL en .NET |
+| rdflib | 7.5.0 | Sidetracks, SW-8 à SW-12 | Core RDF/SPARQL en Python |
 | pySHACL | 0.27.0 | SW-8 | Validation SHACL |
 | OWLReady2 | 0.50+ | SW-7b, SW-11 | Manipulation ontologies |
-| SPARQLWrapper | 2.0+ | SW-5b | Requetes endpoints distants |
+| SPARQLWrapper | 2.0+ | SW-5b | Requêtes endpoints distants |
 | kglab | 0.6.1+ | SW-11 | Abstraction graphes de connaissances |
 | owlrl | 6.0+ | SW-13 | Raisonneur OWL 2 RL Python pur |
 | reasonable | 0.1+ | SW-13 | Raisonneur OWL 2 RL Rust |
@@ -413,10 +413,10 @@ SemanticWeb/
 ├── .env.example
 ├── data/
 │   ├── Example.ttl          # Exemple Turtle
-│   ├── animals.ttl          # Hierarchie RDFS
+│   ├── animals.ttl          # Hiérarchie RDFS
 │   ├── university.owl       # Ontologie OWL 2
 │   ├── person-shape.ttl     # Shapes SHACL
-│   ├── person-data.ttl      # Donnees test (avec erreurs)
+│   ├── person-data.ttl      # Données test (avec erreurs)
 │   └── movies.csv           # Dataset pour KG
 ├── SW-1-CSharp-Setup.ipynb
 ├── SW-2-CSharp-RDFBasics.ipynb
@@ -436,27 +436,27 @@ SemanticWeb/
 ├── SW-12-Python-GraphRAG.ipynb
 ├── SW-13-Python-Reasoners.ipynb     # Bonus
 ├── movie_kg_interactive.html        # Livrable interactif SW-11 (pyvis)
-└── RDF.Net-Legacy/                  # Archive C# RDF.NET (pre-migration Python)
+└── RDF.Net-Legacy/                  # Archive C# RDF.NET (pré-migration Python)
     ├── RDF.Net.ipynb                # Notebook .NET historique
-    ├── Example.ttl                  # Donnees Turtle
-    ├── example.srj                  # Resultats SPARQL JSON
-    └── example.srx                  # Resultats SPARQL XML
+    ├── Example.ttl                  # Données Turtle
+    ├── example.srj                  # Résultats SPARQL JSON
+    └── example.srx                  # Résultats SPARQL XML
 ```
 
 > **Note** — `RDF.Net-Legacy/` conserve l'ancien notebook C# (kernel .NET Interactive)
-> avant la bascule pedagogique vers Python (`SW-2b-Python-RDFBasics.ipynb` et suivants).
-> Archive de reference, non maintenue. Pour le RDF actuel, voir SW-2 / SW-2b.
+> avant la bascule pédagogique vers Python (`SW-2b-Python-RDFBasics.ipynb` et suivants).
+> Archive de référence, non maintenue. Pour le RDF actuel, voir SW-2 / SW-2b.
 
 ## Ressources
 
-### References academiques
+### Références académiques
 
-| Reference | Couverture |
+| Référence | Couverture |
 |-----------|------------|
 | Berners-Lee, Hendler & Lassila, "The Semantic Web", *Scientific American* (2001) | Vision originale, introduction |
-| Russell & Norvig, *AIMA* 4e ed., ch. 12 "Knowledge Representation" | Cadre general IA symbolique |
+| Russell & Norvig, *AIMA* 4e ed., ch. 12 "Knowledge Representation" | Cadre général IA symbolique |
 | Hitzler et al., *Foundations of Semantic Web Technologies* (2010) | OWL, RDF, raisonnement |
-| Allemang & Hendler, *Semantic Web for the Working Ontologist* (2011) | Modelisation OWL/RDFS |
+| Allemang & Hendler, *Semantic Web for the Working Ontologist* (2011) | Modélisation OWL/RDFS |
 | Harris & Seaborne, "SPARQL 1.1 Query Language", W3C Rec. (2013) | Standard SPARQL |
 | Cyganiak, Wood & Lanthaler, "RDF 1.1 Concepts", W3C Rec. (2014) | Standard RDF |
 | Knublauch et al., "SHACL Shapes Constraint Language", W3C Rec. (2017) | Standard SHACL |
@@ -464,47 +464,47 @@ SemanticWeb/
 
 ### Ressources en ligne
 
-- [dotNetRDF](https://dotnetrdf.org/) - Bibliotheque .NET pour RDF
-- [rdflib](https://rdflib.readthedocs.io/) - Bibliotheque Python pour RDF
+- [dotNetRDF](https://dotnetrdf.org/) - Bibliothèque .NET pour RDF
+- [rdflib](https://rdflib.readthedocs.io/) - Bibliothèque Python pour RDF
 - [W3C RDF](https://www.w3.org/RDF/) - Standard RDF
 - [W3C SPARQL](https://www.w3.org/TR/sparql11-overview/) - Standard SPARQL
 - [W3C OWL](https://www.w3.org/OWL/) - Standard OWL
 - [W3C SHACL](https://www.w3.org/TR/shacl/) - Standard SHACL
-- [JSON-LD](https://json-ld.org/) - JSON pour les donnees liees
-- [DBpedia](https://dbpedia.org/) - Donnees structurees de Wikipedia
+- [JSON-LD](https://json-ld.org/) - JSON pour les données liées
+- [DBpedia](https://dbpedia.org/) - Données structurées de Wikipedia
 - [Wikidata](https://www.wikidata.org/) - Base de connaissances libre
 
 ## Connections cross-series
 
 ### SemanticWeb et Planners (Planification Automatique)
 
-Les graphes de connaissances RDF/OWL (SW-1 a SW-6) fournissent des representations riches du monde que les planificateurs PDDL (Planners-2 a Planners-9) peuvent exploiter :
+Les graphes de connaissances RDF/OWL (SW-1 à SW-6) fournissent des représentations riches du monde que les planificateurs PDDL (Planners-2 à Planners-9) peuvent exploiter :
 
-- **Ontologies OWL (SW-4/5) et domaines PDDL (Planners-6)** : les ontologies definissent les types et relations du domaine ; les fichiers PDDL definissent les actions et contraintes. Les deux formalisent la semantique d'un domaine pour le raisonnement automatique.
-- **SPARQL (SW-3) + planification** : les requetes SPARQL sur un graphe de connaissances peuvent generer les etats initiaux et buts d'un probleme de planification.
-- **GraphRAG (SW-12) + LLM Planning (Planners-10)** : le RAG base sur les graphes de connaissances ameliore la generation de plans par les LLMs en fournissant un contexte structure.
+- **Ontologies OWL (SW-4/5) et domaines PDDL (Planners-6)** : les ontologies définissent les types et relations du domaine ; les fichiers PDDL définissent les actions et contraintes. Les deux formalisent la sémantique d'un domaine pour le raisonnement automatique.
+- **SPARQL (SW-3) + planification** : les requêtes SPARQL sur un graphe de connaissances peuvent générer les états initiaux et buts d'un problème de planification.
+- **GraphRAG (SW-12) + LLM Planning (Planners-10)** : le RAG basé sur les graphes de connaissances améliore la génération de plans par les LLMs en fournissant un contexte structuré.
 
 ### SemanticWeb et Tweety (Logique et Argumentation)
 
 Les logiques de description (OWL) et les logiques classiques (Tweety) partagent des fondements communs :
 
-- **OWL-DL (SW-4/5) et logique propositionnelle/FOL (Tweety-2/3)** : OWL-DL est une logique de description decidable, fragment de la logique du premier ordre. Les SAT solvers de Tweety completent les raisonneurs OWL (HermiT, Pellet).
-- **SHACL (SW-7) et validation** : les contraintes SHACL sur les graphes RDF sont analogues aux contraintes logiques de Tweety. Les deux approches valident la coherence de bases de connaissances.
-- **Raisonnement monotone (OWL) vs non-monotone (Tweety-6/7)** : les ontologies OWL font du raisonnement monotone (ajout de faits ne retracte rien) ; Tweety explore le raisonnement non-monotone (defeasible, priorite).
+- **OWL-DL (SW-4/5) et logique propositionnelle/FOL (Tweety-2/3)** : OWL-DL est une logique de description décidable, fragment de la logique du premier ordre. Les SAT solvers de Tweety complètent les raisonneurs OWL (HermiT, Pellet).
+- **SHACL (SW-7) et validation** : les contraintes SHACL sur les graphes RDF sont analogues aux contraintes logiques de Tweety. Les deux approches valident la cohérence de bases de connaissances.
+- **Raisonnement monotone (OWL) vs non-monotone (Tweety-6/7)** : les ontologies OWL font du raisonnement monotone (ajout de faits ne rétracte rien) ; Tweety explore le raisonnement non-monotone (defeasible, priorité).
 
-### SemanticWeb et Lean (Verification Formelle)
+### SemanticWeb et Lean (Vérification Formelle)
 
-La verification de coherence des ontologies OWL est une forme de verification formelle :
+La vérification de cohérence des ontologies OWL est une forme de vérification formelle :
 
-- **OWL consistency checking** : les raisonneurs OWL prouvent la coherence d'une ontologie, similaire aux preuves Lean de correction de programmes.
-- **SHACL shapes** : les shapes SHACL sont des invariants sur les donnees RDF, analogues aux types dependants Lean comme specifications.
+- **OWL consistency checking** : les raisonneurs OWL prouvent la cohérence d'une ontologie, similaire aux preuves Lean de correction de programmes.
+- **SHACL shapes** : les shapes SHACL sont des invariants sur les données RDF, analogues aux types dépendants Lean comme spécifications.
 
 ### SemanticWeb et SmartContracts
 
-Les smart contracts et le web semantique convergent dans les donnees decentralisees :
+Les smart contracts et le web sémantique convergent dans les données décentralisées :
 
-- **Graphes de connaissances on-chain** : les NFTs ERC-721 (SC-7) avec metadonnees JSON-LD (SW-8) creent des graphes de connaissances decentraux. Les DID (Decentralized Identifiers) utilisent RDF pour l'identite auto-souveraine.
-- **Oracle data integration** : les oracles blockchain (SC-8 DeFi) peuvent servir de sources RDF pour enrichir les graphes de connaissances en temps reel.
+- **Graphes de connaissances on-chain** : les NFTs ERC-721 (SC-7) avec métadonnées JSON-LD (SW-8) créent des graphes de connaissances décentralisés. Les DID (Decentralized Identifiers) utilisent RDF pour l'identité auto-souveraine.
+- **Oracle data integration** : les oracles blockchain (SC-8 DeFi) peuvent servir de sources RDF pour enrichir les graphes de connaissances en temps réel.
 
 ---
 
