@@ -1,4 +1,4 @@
-# Sudoku - Resolution par Differentes Approches Algorithmiques
+# Sudoku - Résolution par Différentes Approches Algorithmiques
 
 <!-- CATALOG-STATUS
 series: Sudoku
@@ -7,66 +7,66 @@ breakdown: root=32
 maturity: PRODUCTION=32
 -->
 
-Cette serie de **32 notebooks** (16 C#, 16 Python) explore differentes techniques de resolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux etudiants de choisir leur langage.
+Cette série de **32 notebooks** (16 C#, 16 Python) explore différentes techniques de résolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux étudiants de choisir leur langage.
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ Search](../Search/README.md)
 
-**A qui s'adresse cette serie** : etudiants en informatique (L2-M2) decouvrant les paradigmes algorithmiques, candidats a des entretiens techniques, et enseignants cherchant un fil rouge pedagogique. Les notebooks Python ne necessitent que Python 3.10+. Les notebooks C# requierent .NET 9.0 + dotnet-interactive. Aucun prerequis en IA : les concepts sont introduits depuis le backtracking.
+**A qui s'adresse cette série** : étudiants en informatique (L2-M2) découvrant les paradigmes algorithmiques, candidats a des entretiens techniques, et enseignants cherchant un fil rouge pédagogique. Les notebooks Python ne nécessitent que Python 3.10+. Les notebooks C# requierent .NET 9.0 + dotnet-interactive. Aucun prérequis en IA : les concepts sont introduits depuis le backtracking.
 
 ## Objectifs d'apprentissage
 
-A l'issue de cette serie, vous serez capable de :
+A l'issue de cette série, vous serez capable de :
 
 1. **Implementer** un solveur de backtracking avec heuristiques (MRV, Forward Checking) et comprendre sa complexite
-2. **Comparer** 7 paradigmes algorithmiques (exhaustif, metaheuristique, CP, SMT, neuronal, LLM) sur un meme probleme NP-complet
+2. **Comparer** 7 paradigmes algorithmiques (exhaustif, metaheuristique, CP, SMT, neuronal, LLM) sur un même problème NP-complet
 3. **Modeliser** le Sudoku comme un CSP (variables, domaines, contraintes) et utiliser des solveurs industriels (OR-Tools, Choco)
-4. **Evaluer** les compromis garantie vs performance vs generalisation pour choisir une strategie de resolution
-5. **Mesurer** empiriquement les performances de chaque approche (temps, taux de succes, echelle de difficulte)
+4. **Evaluer** les compromis garantie vs performance vs generalisation pour choisir une strategie de résolution
+5. **Mesurer** empiriquement les performances de chaque approche (temps, taux de succès, echelle de difficulte)
 
 ## Pourquoi etudier le Sudoku en IA ?
 
-Le Sudoku est bien plus qu'un simple jeu de grilles : c'est un **paradigme fondamental** de l'informatique et de l'intelligence artificielle. Son etude revele des concepts essentiels qui s'appliquent a de nombreux problemes reels.
+Le Sudoku est bien plus qu'un simple jeu de grilles : c'est un **paradigme fondamental** de l'informatique et de l'intelligence artificielle. Son etude revele des concepts essentiels qui s'appliquent a de nombreux problèmes reels.
 
-### Contexte historique et theorie de la complexite
+### Contexte historique et théorie de la complexite
 
-Le Sudoku generalise (n x n) est un probleme **NP-complet**, ce qui signifie qu'il n'existe pas d'algorithme polynomial connu pour le resoudre dans tous les cas. Cette proprietee le place dans la meme classe de complexite que le probleme du voyageur de commerce ou la satisfaction de contraintes boolennes (SAT).
+Le Sudoku generalise (n x n) est un problème **NP-complet**, ce qui signifie qu'il n'existe pas d'algorithme polynomial connu pour le resoudre dans tous les cas. Cette proprietee le place dans la même classe de complexite que le problème du voyageur de commerce ou la satisfaction de contraintes boolennes (SAT).
 
-Cette caracteristique fait du Sudoku un excellent banc d'essai pour comparer differentes strategies algorithmiques : comment des approches tres differentes (enumeration, metaheuristiques, contraintes, apprentissage) se comportent-elles face a un meme probleme computationnel ?
+Cette caracteristique fait du Sudoku un excellent banc d'essai pour comparer différentes strategies algorithmiques : comment des approches très différentes (enumeration, metaheuristiques, contraintes, apprentissage) se comportent-elles face a un même problème computationnel ?
 
 ### Concepts fondamentaux enseignes
 
 | Concept | Illustration dans le Sudoku | Application reelle |
 |---------|----------------------------|-------------------|
 | **Recherche dans un espace d'etats** | Chaque grille est un etat, les mouvements legaux definissent les transitions | Planification robotique, jeux |
-| **Propagation de contraintes** | Eliminer les candidats impossibles reduit l'espace de recherche | Calibration de capteurs, ordonnancement |
+| **Propagation de contraintes** | Eliminer les candidats impossibles réduit l'espace de recherche | Calibration de capteurs, ordonnancement |
 | **Heuristiques de choix** | MRV (Minimum Remaining Values) guide vers les decisions les plus contraignantes | Diagnostic medical, detection de fraudes |
 | **Metaheuristiques d'optimisation** | Recuit simule, algorithmes genetiques pour explorer intelligemment | Logistique, conception de circuits |
-| **Programmation par contraintes** | Declarer les regles plutot que l'algorithme de resolution | Emploi du temps, configuration produit |
-| **Satisfiabilite modulaire (SMT)** | Combinaison de theorie des ensembles et d'arithmetique | Verification de programmes, preuve de theoremes |
+| **Programmation par contraintes** | Declarer les regles plutot que l'algorithme de résolution | Emploi du temps, configuration produit |
+| **Satisfiabilite modulaire (SMT)** | Combinaison de théorie des ensembles et d'arithmetique | Verification de programmes, preuve de theoremes |
 | **Apprentissage automatique** | Entrainement sur des millions de grilles pour apprendre des patterns | Vision par ordinateur, traduction |
 
-### Pourquoi ce parcours pedagogique ?
+### Pourquoi ce parcours pédagogique ?
 
-La resolution du Sudoku permet de comprendre **l'evolution historique de l'IA** :
+La résolution du Sudoku permet de comprendre **l'évolution historique de l'IA** :
 
 1. **IA symbolique classique** (annnees 1960-1990) : backtracking, propagation, CSP
 2. **Metaheuristiques** (annnees 1980-2000) : algorithmes inspires de la nature
 3. **Solveurs SMT/CP modernes** (annnees 2000-present) : outils industriels puissants
-4. **IA connexionniste** (annnees 2010-present) : reseaux de neurones, LLM
+4. **IA connexionniste** (annnees 2010-present) : réseaux de neurones, LLM
 
-Chaque approche reflete une philosophie differente de la resolution de problemes et offre des compromis uniques entre garantie de solution, performance et generalisabilite.
+Chaque approche reflete une philosophie differente de la résolution de problèmes et offre des compromis uniques entre garantie de solution, performance et generalisabilite.
 
 ---
 
-## Progression Pedagogique
+## Progression Pédagogique
 
-La serie suit une **progression de complexite des approches IA** en 7 niveaux :
+La série suit une **progression de complexite des approches IA** en 7 niveaux :
 
 ```
 Niveau 1 : Recherche Exhaustive
     └── Backtracking (DFS simple, garanti)
 
-Niveau 2 : Exploration Optimisee
+Niveau 2 : Exploration Optimisée
     └── Dancing Links (couverture exacte, optimisation du backtracking)
 
 Niveau 3 : Metaheuristiques (exploration non exhaustive)
@@ -89,7 +89,7 @@ Niveau 5 : IA Symbolique (SMT, Automates)
 
 Niveau 6 : IA Moderne / Data-Driven
     ├── Infer.NET (probabiliste)
-    ├── Reseau de Neurones (CNN)
+    ├── Réseau de Neurones (CNN)
     └── LLM Solver
 
 Niveau 7 : Synthese
@@ -100,15 +100,15 @@ Niveau 7 : Synthese
 
 **Niveau 1 - Recherche Exhaustive** : Comprendre l'espace de recherche. Le backtracking est l'algorithme fondamental qui enumere systematiquement toutes les possibilites. Il garantit de trouver une solution si elle existe, mais peut etre exponentiel dans le pire cas.
 
-**Niveau 2 - Optimisation Structurelle** : Dancing Links (Knuth, 2000) montre comment une representation de donnees intelligente (listes doublement chainees) peut transformer radicalement les performances. Ce n'est pas un nouvel algorithme, mais une implementation optimisee du backtracking.
+**Niveau 2 - Optimisation Structurelle** : Dancing Links (Knuth, 2000) montre comment une representation de donnees intelligente (listes doublement chainees) peut transformer radicalement les performances. Ce n'est pas un nouvel algorithme, mais une implementation optimisée du backtracking.
 
-**Niveau 3 - Metaheuristiques** : Abandonner la garantie pour l'efficacite pratique. Ces algorithmes s'inspirent de la nature (evolution, physique, essaimage) pour explorer intelligemment l'espace de recherche sans garantir l'optimalite.
+**Niveau 3 - Metaheuristiques** : Abandonner la garantie pour l'efficacite pratique. Ces algorithmes s'inspirent de la nature (évolution, physique, essaimage) pour explorer intelligemment l'espace de recherche sans garantir l'optimalite.
 
 **Niveau 4 - Programmation par Contraintes** : Declarer le "quoi" plutot que le "comment". On specifie les contraintes (ligne, colonne, bloc uniques) et le solveur trouve la solution. Approche declarative et industrielle.
 
-**Niveau 5 - IA Symbolique Avancee** : Utiliser des outils formels (SMT, BDD) qui combinent raisonnement logique et efficacite computationnelle. Ces techniques sont utilisees en verification de logiciels et en preuve de theoremes.
+**Niveau 5 - IA Symbolique Avancée** : Utiliser des outils formels (SMT, BDD) qui combinent raisonnement logique et efficacite computationnelle. Ces techniques sont utilisees en verification de logiciels et en preuve de theoremes.
 
-**Niveau 6 - IA Data-Driven** : Apprendre a resoudre plutot que programmer la resolution. Les reseaux de neurones apprennent des patterns dans les donnees, tandis que les LLM utilisent des connaissances linguistiques.
+**Niveau 6 - IA Data-Driven** : Apprendre a resoudre plutot que programmer la résolution. Les réseaux de neurones apprennent des patterns dans les donnees, tandis que les LLM utilisent des connaissances linguistiques.
 
 ---
 
@@ -116,12 +116,12 @@ Niveau 7 : Synthese
 
 ### Approches exhaustives vs heuristiques
 
-| Critere | Approches Exhaustives | Approches Heuristiques |
+| Critère | Approches Exhaustives | Approches Heuristiques |
 |---------|----------------------|------------------------|
 | **Garantie de solution** | Oui (si solution existe) | Non (peut echouer) |
 | **Complexite pire cas** | Exponentielle | Souvent polynomiale |
 | **Performance pratique** | Variable selon instance | Plus previsible |
-| **Problemes adressables** | Tous | Grands espaces, approximations acceptables |
+| **Problèmes adressables** | Tous | Grands espaces, approximations acceptables |
 
 ### Arbitrages fondamentaux
 
@@ -135,36 +135,36 @@ Niveau 7 : Synthese
 
 | Technique | Applications industrielles |
 |-----------|---------------------------|
-| **Backtracking** | Analysis syntaxique, resolution de puzzles, generation de combinaisons |
-| **Dancing Links** | Problemes de couverture exacte, planification |
+| **Backtracking** | Analysis syntaxique, résolution de puzzles, generation de combinaisons |
+| **Dancing Links** | Problèmes de couverture exacte, planification |
 | **Algorithmes genetiques** | Conception de circuits, optimisation de portefeuilles, design de molecules |
 | **Recuit simule** | Routage de circuits, ordonnancement de production |
-| **PSO** | Optimisation de reseaux, calibration de modeles |
+| **PSO** | Optimisation de réseaux, calibration de modeles |
 | **OR-Tools/CP** | Emplois du temps, logistique, allocation de ressources |
 | **Z3/SMT** | Verification de programmes, analyse de securite, preuve de theoremes |
-| **BDD/MDD** | Verification de circuits, compilation de requetes |
-| **Reseaux de neurones** | Reconnaissance d'images, traduction, jeux |
+| **BDD/MDD** | Verification de circuits, compilation de requêtes |
+| **Réseaux de neurones** | Reconnaissance d'images, traduction, jeux |
 
 ### Quand choisir quelle approche ?
 
-- **Probleme petit, garantie requise** : Backtracking, Dancing Links
-- **Probleme NP-difficile, solution rapide** : Metaheuristiques
+- **Problème petit, garantie requise** : Backtracking, Dancing Links
+- **Problème NP-difficile, solution rapide** : Metaheuristiques
 - **Contraintes complexes, besoin de flexibilite** : Programmation par contraintes (OR-Tools, Choco)
 - **Raisonnement formel requis** : Z3, SMT
-- **Donnees abondantes, generalisation souhaitee** : Reseau de neurones
+- **Donnees abondantes, generalisation souhaitée** : Réseau de neurones
 - **Pas d'algorithme connu, intuition humaine** : LLM
 
 ---
 
 ## Parcours d'Apprentissage Recommandes
 
-### Parcours Debutant : Comprendre les Fondamentaux
+### Parcours Débutant : Comprendre les Fondamentaux
 
 **Objectif** : Maitriser la recherche exhaustive et comprendre pourquoi elle est insuffisante.
 
 **Notebooks recommandes** :
 1. `Sudoku-0-Environment-Csharp` ou comprendre la structure des donnees
-2. `Sudoku-1-Backtracking-Csharp` (ou Python) : Premier algorithme de resolution
+2. `Sudoku-1-Backtracking-Csharp` (ou Python) : Premier algorithme de résolution
 3. `Sudoku-7-Norvig-Csharp` : Voir comment la propagation accelere drastiquement
 
 **Pourquoi cet ordre ?**
@@ -175,25 +175,25 @@ Niveau 7 : Synthese
 **Cles de comprehension** :
 - L'espace de recherche du Sudoku est immense : 9^81 configurations possibles
 - Le backtracking explore cet espace intelligemment mais peut encore etre lent
-- La propagation de contraintes reduit l'espace avant meme de chercher
+- La propagation de contraintes réduit l'espace avant même de chercher
 
-### Parcours Intermediaire : Explorer les Paradigmes
+### Parcours Intermédiaire : Explorer les Paradigmes
 
-**Objectif** : Comprendre que differentes philosophies de resolution existent et ont chacune leurs forces.
+**Objectif** : Comprendre que différentes philosophies de résolution existent et ont chacune leurs forces.
 
 **Notebooks recommandes** :
 1. `Sudoku-3-Genetic-Csharp` (ou Python) : Decouvrir les metaheuristiques
-2. `Sudoku-9-GraphColoring-Csharp` (ou Python) : Voir le Sudoku comme un probleme de graphe
+2. `Sudoku-9-GraphColoring-Csharp` (ou Python) : Voir le Sudoku comme un problème de graphe
 3. `Sudoku-10-ORTools-Csharp` (ou Python) : Utiliser un outil industriel
 
 **Pourquoi cet ordre ?**
 - Le notebook 3 montre qu'on peut "abandonner" la garantie pour la vitesse
-- Le notebook 9 change completement de perspective (theorie des graphes)
+- Le notebook 9 change completement de perspective (théorie des graphes)
 - Le notebook 10 introduit l'approche declarative moderne
 
 **Cles de comprehension** :
 - Les metaheuristiques sont puissantes mais non deterministes
-- Reformuler un probleme peut reveler des algorithmes optimaux
+- Reformuler un problème peut reveler des algorithmes optimaux
 - Les outils industriels encapsulent des decennies de recherche
 
 ### Parcours Avance : Maitriser l'IA Symbolique et Data-Driven
@@ -207,14 +207,14 @@ Niveau 7 : Synthese
 4. `Sudoku-18-Comparison-Python` : Benchmark comparatif final
 
 **Pourquoi cet ordre ?**
-- Le notebook 12 montre l'apogee de l'IA symbolique (outils de verification formelle)
+- Le notebook 12 montre l'apogée de l'IA symbolique (outils de verification formelle)
 - Le notebook 16 introduit l'apprentissage : le modele apprend a resoudre
-- Le notebook 17 teste les limites des LLM sur un probleme logique pur
+- Le notebook 17 teste les limites des LLM sur un problème logique pur
 - Le notebook 18 synthetise toutes les approches
 
 **Cles de comprehension** :
 - Z3 represente des decennies d'optimisation en raisonnement automatique
-- Les reseaux de neurones peuvent apprendre des heuristiques mais ne garantissent rien
+- Les réseaux de neurones peuvent apprendre des heuristiques mais ne garantissent rien
 - Les LLM sont surprenants : ils peuvent resoudre des Sudokus sans algorithme explicite
 - Le choix de l'approche depend du contexte : garantie vs vitesse vs generalisation
 
@@ -238,7 +238,7 @@ Niveau 7 : Synthese
 
 **A retenir** :
 - Ces algorithmes s'inspirent de processus naturels
-- Ils ne garantissent pas la solution mais sont souvent tres efficaces
+- Ils ne garantissent pas la solution mais sont souvent très efficaces
 - Le parametrage (taux de mutation, temperature, etc.) est crucial et delicat
 
 **Pieges courants** :
@@ -250,7 +250,7 @@ Niveau 7 : Synthese
 
 **A retenir** :
 - On declare les contraintes, le solveur fait le reste
-- OR-Tools et Choco sont des outils industriels tres optimises
+- OR-Tools et Choco sont des outils industriels très optimises
 - La propagation de contraintes est la cle de l'efficacite
 
 **Pieges courants** :
@@ -261,24 +261,24 @@ Niveau 7 : Synthese
 ### Niveau 5 : IA Symbolique
 
 **A retenir** :
-- Z3 combine theorie des ensembles, arithmetique et logique
+- Z3 combine théorie des ensembles, arithmetique et logique
 - Les BDD representent compactement des ensembles de solutions
 - Ces outils sont utilises en verification de logiciels critiques
 
 **Pieges courants** :
 - Ecrire des contraintes inefficaces pour le solveur
-- Ignorer les theories integrees (arithmetique lineaire vs non-lineaire)
-- Sous-estimer la puissance de la resolution SAT/SMT moderne
+- Ignorer les théories integrees (arithmetique lineaire vs non-lineaire)
+- Sous-estimer la puissance de la résolution SAT/SMT moderne
 
 ### Niveau 6 : IA Data-Driven
 
 **A retenir** :
-- Les reseaux de neurones apprennent des patterns mais sans garantie
+- Les réseaux de neurones apprennent des patterns mais sans garantie
 - Les LLM utilisent des connaissances implicites du web
-- Ces approches sont complementaires, non concurrentes, des methodes symboliques
+- Ces approches sont complementaires, non concurrentes, des méthodes symboliques
 
 **Pieges courants** :
-- Attendre 100% de succes des modeles appris
+- Attendre 100% de succès des modeles appris
 - Ignorer le besoin de donnees d'entrainement massives
 - Confondre performance sur donnees connues vs inconnues
 
@@ -286,9 +286,9 @@ Niveau 7 : Synthese
 
 ## Ce que chaque notebook apporte
 
-Chaque notebook introduit une technique de resolution specifique. Le tableau ci-dessous resume en une ligne l'apport pedagogique de chacun — au-dela du titre, c'est le **concept cle** qu'il enseigne.
+Chaque notebook introduit une technique de résolution spécifique. Le tableau ci-dessous resume en une ligne l'apport pédagogique de chacun — au-dela du titre, c'est le **concept cle** qu'il enseigne.
 
-| # | Notebook | Apport pedagogique |
+| # | Notebook | Apport pédagogique |
 |---|----------|-------------------|
 | 0 | Environment | Structures de donnees Sudoku : grille, candidats, propagation de base |
 | 1 | Backtracking | DFS avec retour arriere : l'algorithme fondamental, garantie de solution |
@@ -302,12 +302,12 @@ Chaque notebook introduit une technique de resolution specifique. Le tableau ci-
 | 9 | Graph Coloring | Formulation graphe : nx.sudoku_graph(), coloration DSATUR |
 | 10 | OR-Tools | CP-SAT industriel : modele declaratif, contraintes globales, parallelisme |
 | 11 | Choco | Solveur Java via JPype : API CP alternative, propagateurs custom |
-| 12 | Z3 | SMT solving : assertions logiques, theories combinees, garantie formelle |
+| 12 | Z3 | SMT solving : assertions logiques, théories combinees, garantie formelle |
 | 13 | Symbolic Automata | Automates finis + Z3 : alphabets symboliques, transitions prediques |
 | 14 | BDD/MDD | Diagrammes de decision binaires : representation compacte d'espaces de solutions |
 | 15 | Infer/NumPyro | Inference probabiliste : distribution a posteriori sur les cases |
 | 16 | Neural Network | CNN PyTorch : apprentissage de patterns visuels sur grilles |
-| 17 | LLM | LLM Solver : prompt engineering pour resolution logique, limites |
+| 17 | LLM | LLM Solver : prompt engineering pour résolution logique, limites |
 | 18 | Comparison | Benchmark comparatif : toutes les approches sur Easy/Medium/Hard/Expert |
 
 ---
@@ -342,12 +342,12 @@ Chaque notebook introduit une technique de resolution specifique. Le tableau ci-
 
 Les notebooks suivants sont disponibles dans les deux langages pour comparaison directe :
 
-| # | Sujet | C# | Python | Interet pedagogique |
+| # | Sujet | C# | Python | Intérêt pédagogique |
 |---|-------|----|----|-------------------|
 | 1 | Backtracking | [Sudoku-1-Backtracking-Csharp](Sudoku-1-Backtracking-Csharp.ipynb) | [Sudoku-1-Backtracking-Python](Sudoku-1-Backtracking-Python.ipynb) | Algorithme de base |
 | 2 | Dancing Links | [Sudoku-2-DancingLinks-Csharp](Sudoku-2-DancingLinks-Csharp.ipynb) | [Sudoku-2-DancingLinks-Python](Sudoku-2-DancingLinks-Python.ipynb) | Couverture exacte |
 | 3 | Genetic | [Sudoku-3-Genetic-Csharp](Sudoku-3-Genetic-Csharp.ipynb) | [Sudoku-3-Genetic-Python](Sudoku-3-Genetic-Python.ipynb) | GeneticSharp vs PyGAD |
-| 9 | Graph Coloring | [Sudoku-9-GraphColoring-Csharp](Sudoku-9-GraphColoring-Csharp.ipynb) | [Sudoku-9-GraphColoring-Python](Sudoku-9-GraphColoring-Python.ipynb) | Theorie des graphes |
+| 9 | Graph Coloring | [Sudoku-9-GraphColoring-Csharp](Sudoku-9-GraphColoring-Csharp.ipynb) | [Sudoku-9-GraphColoring-Python](Sudoku-9-GraphColoring-Python.ipynb) | Théorie des graphes |
 | 10 | OR-Tools | [Sudoku-10-ORTools-Csharp](Sudoku-10-ORTools-Csharp.ipynb) | [Sudoku-10-ORTools-Python](Sudoku-10-ORTools-Python.ipynb) | CP-SAT solveur |
 | 12 | Z3 | [Sudoku-12-Z3-Csharp](Sudoku-12-Z3-Csharp.ipynb) | [Sudoku-12-Z3-Python](Sudoku-12-Z3-Python.ipynb) | SMT solveur |
 
@@ -361,19 +361,19 @@ Les notebooks suivants sont disponibles dans les deux langages pour comparaison 
 | **Recuit Simule** | Recherche locale | Variable | Non garanti | 4 | 4 |
 | **PSO** | Swarm Intelligence | Variable | Non garanti | 5 | 5 |
 | **AIMA CSP** | Contraintes academique | Rapide | Garantie | 6 | 6 |
-| **Norvig Propagation** | Propagation | Tres rapide | Garantie | 7 | 7 |
+| **Norvig Propagation** | Propagation | Très rapide | Garantie | 7 | 7 |
 | **Strategies Humaines** | Deduction logique | Variable | Partielle | 8 | 8 |
-| **Graph Coloring** | Theorie des graphes | Moyen | Garantie | 9 | 9 |
-| **OR-Tools CP-SAT** | CP industrielle | Tres rapide | Garantie | 10 | 10 |
+| **Graph Coloring** | Théorie des graphes | Moyen | Garantie | 9 | 9 |
+| **OR-Tools CP-SAT** | CP industrielle | Très rapide | Garantie | 10 | 10 |
 | **Choco Solver** | CP industrielle | Rapide | Garantie | 11 | 11 |
 | **Z3 SMT** | Satisfiabilite | Rapide | Garantie | 12 | 12 |
 | **Symbolic Automata** | Automates + SMT | Rapide | Garantie | 13 | - |
 | **BDD/MDD** | Diagrammes decision | Moyen | Garantie | 14 | - |
 | **Infer.NET/NumPyro** | Inference probabiliste | Experimental | Variable | 15 | 15 |
-| **Reseau de Neurones** | Deep Learning | Rapide (inference) | Approx. | - | 16 |
+| **Réseau de Neurones** | Deep Learning | Rapide (inference) | Approx. | - | 16 |
 | **LLM Solver** | LLM | Variable | ~10-30% | - | 17 |
 
-## Progression Recommandee
+## Progression Recommandée
 
 ### Parcours C# (Complet)
 ```
@@ -411,7 +411,7 @@ Sudoku-0-Csharp (Environment - comprendre les structures)
     +---> Niveau 7 : Sudoku-18-Comparison-Python
 ```
 
-## Prerequis
+## Prérequis
 
 ### C# (.NET Interactive)
 
@@ -457,16 +457,16 @@ pip install numpy matplotlib ortools z3-solver pygad torch networkx mealpy siman
 | Choco | <5ms | <10ms | <20ms | <100ms |
 | Graph Coloring | ~10ms | ~50ms | ~100ms | Variable |
 | Neural Network | ~10ms | ~50ms | ~100ms | Approx. |
-| LLM | Variable | Variable | ~10-30% succes | ~10-30% succes |
+| LLM | Variable | Variable | ~10-30% succès | ~10-30% succès |
 | Infer.NET | ~1s | ~5s | Variable | Variable |
 
-### Resultats d'Entrainement RRN (Recurrent Relational Network)
+### Résultats d'Entrainement RRN (Recurrent Relational Network)
 
-Les experiences suivantes ont ete conduites sur GPU (RTX 3070 Laptop 8GB et RTX 4090 24GB) pour tester differentes architectures de RRN sur la resolution de Sudoku. Le modele RRN (Palm et al., 2018) utilise un graphe de contraintes avec passage de messages iteratifs entre les cellules de la grille.
+Les experiences suivantes ont ete conduites sur GPU (RTX 3070 Laptop 8GB et RTX 4090 24GB) pour tester différentes architectures de RRN sur la résolution de Sudoku. Le modele RRN (Palm et al., 2018) utilise un graphe de contraintes avec passage de messages iteratifs entre les cellules de la grille.
 
 #### Architecture sweep (diverse_200k, 106K puzzles, RTX 3070)
 
-| Architecture | Hidden | Steps | Parametres | Cell Acc | Grid Acc | Test Grids | Temps |
+| Architecture | Hidden | Steps | Paramètres | Cell Acc | Grid Acc | Test Grids | Temps |
 | ------------- | ------ | ----- | ---------- | -------- | -------- | ---------- | ----- |
 | h128_s16 | 128 | 16 | 162K | 62.5% | 33.5% | 5,351/15,974 | 2.3h |
 | h192_s16 | 192 | 16 | 353K | 62.5% | 33.5% | 5,352/15,974 | 3.2h |
@@ -474,7 +474,7 @@ Les experiences suivantes ont ete conduites sur GPU (RTX 3070 Laptop 8GB et RTX 
 | h128_s24 | 128 | 24 | 162K | 62.5% | 33.5% | 5,352/15,974 | 6.4h |
 | h192_s24 | 192 | 24 | 353K | - | OOM | - | - |
 
-**Constat** : Avec 106K puzzles d'entrainement, toutes les architectures plafonnent a ~33.5% de grilles completes. Augmenter la taille du modele n'apporte pas de gain -- le goulot d'etranglement est le volume de donnees.
+**Constat** : Avec 106K puzzles d'entrainement, toutes les architectures plafonnent a ~33.5% de grilles complètes. Augmenter la taille du modele n'apporte pas de gain -- le goulot d'etranglement est le volume de donnees.
 
 #### Fine-tuning avec dataset augmente (400K puzzles, RTX 3070)
 
@@ -486,7 +486,7 @@ A partir des modeles pre-entraines sur diverse_200k, fine-tuning avec un dataset
 | h256_s16 | sweep_h256_s16 | 17 (ES) | 89.8% | 83.5% | 50,084/60,000 |
 | h192_s24 | - | OOM | - | - | - |
 
-**Meilleur modele** : h192_s16 fine-tune atteint **83.5% de grilles completes** (50,087/60,000) sur le jeu de test. Le h256_s16 obtient des resultats quasi-identiques (83.5%) pour 75% de parametres en plus -- h192_s16 est le meilleur compromis taille/performance.
+**Meilleur modele** : h192_s16 fine-tune atteint **83.5% de grilles complètes** (50,087/60,000) sur le jeu de test. Le h256_s16 obtient des résultats quasi-identiques (83.5%) pour 75% de paramètres en plus -- h192_s16 est le meilleur compromis taille/performance.
 
 #### Entrainement complet RTX 4090 (24GB VRAM)
 
@@ -496,31 +496,31 @@ A partir des modeles pre-entraines sur diverse_200k, fine-tuning avec un dataset
 | curriculum_h256_s24 | curriculum 400K | 14/80 | 53.8% | Stagne, oscillations de loss |
 
 **Constats cles** :
-- Avec suffisamment de donnees (1M+ puzzles) et un grand modele (h256, 24 steps) sur RTX 4090, le RRN atteint **99.7% de grilles completes** en seulement 2 epochs (val_loss=0.001)
+- Avec suffisamment de donnees (1M+ puzzles) et un grand modele (h256, 24 steps) sur RTX 4090, le RRN atteint **99.7% de grilles complètes** en seulement 2 epochs (val_loss=0.001)
 - L'approche curriculum sur un dataset plus petit stagne a ~54% : le volume de donnees reste le facteur determinant
 - Le modele final `sudoku_solver_final.h5` (format Keras) atteint un niveau quasi-optimal en inference
 
-#### Enseignements pedagogiques
+#### Enseignements pédagogiques
 
-1. **Volume de donnees > taille du modele** : Passer de 106K a 400K puzzles fait sauter la precision de 33.5% a 83.5%, alors qu'augmenter les parametres de 162K a 619K n'apporte rien sur petit dataset
+1. **Volume de donnees > taille du modele** : Passer de 106K a 400K puzzles fait sauter la precision de 33.5% a 83.5%, alors qu'augmenter les paramètres de 162K a 619K n'apporte rien sur petit dataset
 2. **Curriculum learning** : Pas de benefice demontre ici. La strategie progressive ralentit l'apprentissage et provoque des oscillations
-3. **RRN vs solveurs classiques** : Meme a 99.7% de succes, le RRN reste un approximateur -- les solveurs exacts (OR-Tools, Norvig) garantissent 100% et sont plus rapides en inference
+3. **RRN vs solveurs classiques** : Même a 99.7% de succès, le RRN reste un approximateur -- les solveurs exacts (OR-Tools, Norvig) garantissent 100% et sont plus rapides en inference
 
-## Sources des Projets Etudiants
+## Sources des Projets Étudiants
 
-Les notebooks sont adaptes de projets etudiants :
+Les notebooks sont adaptes de projets étudiants :
 
 | Technique | Contenu | Repertoire |
 |-----------|---------|------------|
 | **Norvig** | Solveur Norvig + variante BitArray | `Sudoku.Norvig` + `Sudoku.NorvigBitArray` |
 | **Simulated Annealing** | Recuit simule | `Sudoku.SimulatedAnnealing` |
 | **Human Strategies** | Strategies humaines | `Sudoku.Human` (23 fichiers, 13 techniques) |
-| **Neural Network** | 4 architectures de reseaux de neurones | `Sudoku.NeuralNetwork` |
+| **Neural Network** | 4 architectures de réseaux de neurones | `Sudoku.NeuralNetwork` |
 | **PSO** | Optimisation par essaim de particules | `Sudoku.PSO` (7 fichiers) |
 | **AIMA CSP** | CSP inspire de AIMA | `Sudoku.CspAima` |
 | **Graph Coloring** | Coloration de graphe | `Sodoku.GraphColoring` (11 fichiers) |
 | **Choco** | 5 implementations Choco | `Sudoku.ChocoSolvers` |
-| **LLM** | Resolution par LLM | `Sudoku.LLM-ChatGPTenzin` |
+| **LLM** | Résolution par LLM | `Sudoku.LLM-ChatGPTenzin` |
 
 ## Structure des Fichiers
 
@@ -556,7 +556,7 @@ Sudoku/
 ├── Sudoku-14-BDD-Csharp.ipynb             # BDD/MDD C#
 ├── Sudoku-15-Infer-Csharp.ipynb           # Infer.NET C#
 ├── Sudoku-15-Infer-Python.ipynb           # NumPyro Python
-├── Sudoku-16-NeuralNetwork-Python.ipynb   # Reseau de neurones Python
+├── Sudoku-16-NeuralNetwork-Python.ipynb   # Réseau de neurones Python
 ├── Sudoku-17-LLM-Python.ipynb             # LLM Solver Python
 ├── Sudoku-18-Comparison-Python.ipynb      # Benchmark comparatif Python
 └── Puzzles/                               # Fichiers de puzzles
@@ -609,7 +609,7 @@ Choco est un solveur Java appele via JPype :
 - Installez JPype : `pip install jpype1`
 - Le JAR Choco est telecharge automatiquement par le notebook
 
-### L'entrainement du reseau de neurones (notebook 16) est lent
+### L'entrainement du réseau de neurones (notebook 16) est lent
 
 - Sans GPU : reduisez `num_epochs` et `hidden_size` dans les cellules de configuration
 - Avec GPU CUDA : verifiez `torch.cuda.is_available()` avant l'entrainement
@@ -617,7 +617,7 @@ Choco est un solveur Java appele via JPype :
 
 ### Le LLM Solver (notebook 17) echoue souvent
 
-- C'est un comportement attendu : les LLM atteignent generalement 10-30% de succes sur les Sudokus
+- C'est un comportement attendu : les LLM atteignent generalement 10-30% de succès sur les Sudokus
 - Le notebook illustre les **limites** des modeles de langage sur le raisonnement logique pur
 - Augmentez le nombre de tentatives pour observer la variabilite
 
@@ -626,7 +626,7 @@ Choco est un solveur Java appele via JPype :
 - **Easy** : 36-45 indices donnes — tous les solveurs reussissent
 - **Medium** : 30-35 indices — les metaheuristiques commencent a peiner
 - **Hard** : 25-29 indices — seuls les solveurs exacts (DLX, Norvig, CP-SAT, Z3) garantissent la solution
-- **Expert** : 17-24 indices — benchmark extreme, certaines instances sontNP-difficiles
+- **Expert** : 17-24 indices — benchmark extrême, certaines instances sontNP-difficiles
 
 ## Quel parcours choisir ?
 
