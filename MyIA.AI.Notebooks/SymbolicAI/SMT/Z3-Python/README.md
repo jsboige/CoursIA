@@ -4,7 +4,7 @@
 
 ## Série en quelques mots
 
-**4 notebooks (en cours) | 1 kernel | z3-solver (Python) | matplotlib**
+**6 notebooks (série complète) | 1 kernel | z3-solver (Python) | matplotlib**
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
 
@@ -44,8 +44,8 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 | 02 | [Sudoku](Z3-Python-02-Sudoku.ipynb) | Sudoku comme CSP, `Distinct`, visualisation matplotlib | ~25 min | PRODUCTION |
 | 03 | [Tactiques et théories](Z3-Python-03-Tactics.ipynb) | `Tactic`, `BitVec`, `Array` | ~35 min | PRODUCTION |
 | 04 | [Chaînes et expressions régulières](Z3-Python-04-Strings-Regex.ipynb) | `String`, `Re` (théorie des chaînes Z3) | ~30 min | PRODUCTION |
-| 05 | *(à venir)* Quantificateurs et preuves | `ForAll`, `Exists`, proofs, model checking | — | Planifié |
-| 06 | *(à venir)* Optimisation avancée | Pareto, objectifs multiples, `Optimize` hiérarchique | — | Planifié |
+| 05 | [Quantificateurs et preuves](Z3-Python-05-Quantifiers-Proofs.ipynb) | `ForAll`, `Exists`, preuves par réfutation, `unknown` | ~35 min | PRODUCTION |
+| 06 | [Optimisation avancée](Z3-Python-06-Advanced-Optimization.ipynb) | Pareto, objectifs multiples, `Optimize` hiérarchique, MaxSAT | ~40 min | PRODUCTION |
 
 ### Fil pédagogique
 
@@ -53,7 +53,8 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 2. **Notebook 02** applique l'approche déclarative au Sudoku : modélisation par `Distinct`, résolution et visualisation (donné en noir / résolu en bleu)
 3. **Notebook 03** explore les tactiques (`simplify`, `Then`, `OrElse`), les théories `BitVec` (arithmétique modulaire) et `Array` (tableaux symboliques)
 4. **Notebook 04** introduit la théorie des chaînes : `String`, `Contains`, `IndexOf`, `Replace`, et les expressions régulières (`Re`, `Star`, `Range`, `InRe`)
-5. **Notebooks suivants (planifiés)** : quantificateurs et optimisation avancée
+5. **Notebook 05** aborde les quantificateurs (`ForAll`, `Exists`) et la notion de preuve formelle par réfutation (une formule est valide si sa négation est insatisfiable), avec le cas honnête `unknown`
+6. **Notebook 06** explore l'optimisation avancée : contraintes hiérarchiques pondérées, objectifs multiples, front de Pareto et MaxSAT (contraintes souples)
 
 ## Prérequis
 
