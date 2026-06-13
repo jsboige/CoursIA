@@ -226,4 +226,57 @@ def KnotDiagram.edges (d : KnotDiagram) : List Nat :=
 def KnotDiagram.numCrossings (d : KnotDiagram) : Nat :=
   d.crossings.length
 
+/-! ## 11. Well-formedness predicate (Phase 5)
+
+A PD-code is well-formed when (a) every edge label is in `[1, numEdges]`, and
+(b) every label that occurs occurs exactly twice — each arc has two endpoints,
+one at each crossing it meets (Doll & Hoste, 1991). A degenerate diagram with
+no crossings has an empty edge list, so both conditions hold vacuously.
+
+This is a *Bool-valued standalone predicate* (not a `KnotDiagram` field),
+modelled on `MacroCell.wf` in `conway_lean` (HashlifeCorrectness.lean). It is
+threaded as a hypothesis `(hwf : d.wf = true)` on the re-modeled Reidemeister
+moves (see `Reidemeister.lean`), which is what excludes the malformed witnesses
+that refuted `tricolorable_invariant` under the Phase 3 symmetric-existential
+model (see the diagnostic on `tricolorable_invariant` in `Invariant.lean`).
+-/
+
+/-- Well-formedness for a PD-code (Bool-valued, mirrored on `MacroCell.wf`).
+
+A genuine PD-code satisfies the **parity condition**: every edge label in
+`[1, numEdges]` appears exactly twice among the crossing endpoints — each arc
+has two endpoints, one at each crossing it meets (so `2 * numEdges = 4 *
+numCrossings`, i.e. `numEdges = 2 * numCrossings` for non-degenerate diagrams).
+
+A degenerate diagram with no crossings has no edge endpoints; its edge list is
+empty, and the parity condition holds vacuously for any `numEdges ≤ 1` (the
+unknot is represented with one arc, `numEdges := 1`).
+
+The predicate is threaded as `(hwf : d.wf = true)` on the re-modeled
+Reidemeister moves (`Reidemeister.lean`), excluding the malformed witnesses that
+refuted `tricolorable_invariant` under the Phase 3 symmetric-existential model
+(the witness `⟨7,8,9,10⟩` has labels out of `[1, numEdges]`; a dangling-edge
+diagram has a label in `[1, numEdges]` that never occurs). See the diagnostic on
+`tricolorable_invariant` in `Invariant.lean`. -/
+def KnotDiagram.wf (d : KnotDiagram) : Bool :=
+  if d.crossings = [] then
+    decide (d.numEdges ≤ 1)
+  else
+    -- (a) every label occurring in a crossing is in [1, numEdges]
+    d.edges.all (fun l => decide (1 ≤ l ∧ l ≤ d.numEdges)) &&
+    -- (b) every label in [1, numEdges] occurs exactly twice (parity)
+    (List.range d.numEdges).all (fun i => decide (d.edges.count (i + 1) = 2))
+
+theorem unknot_wf : unknotDiagram.wf = true := by
+  -- 0 crossings → degenerate branch: numEdges = 1 ≤ 1.
+  decide
+
+theorem trefoil_wf : trefoilDiagram.wf = true := by
+  -- 3 crossings, labels {1,..,6} each appearing exactly twice.
+  decide
+
+theorem figureEight_wf : figureEightDiagram.wf = true := by
+  -- 4 crossings, labels {1,..,8} each appearing exactly twice.
+  decide
+
 end Knots

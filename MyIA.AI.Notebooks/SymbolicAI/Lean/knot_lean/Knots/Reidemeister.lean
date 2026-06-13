@@ -16,6 +16,7 @@
 -/
 
 import Knots.Basic
+import Mathlib.Logic.Embedding.Basic
 
 namespace Knots
 
@@ -23,39 +24,69 @@ namespace Knots
 
 Each move is a local transformation on a knot diagram that preserves
 the knot type. They are applied in a small disk, leaving the rest unchanged.
+
+**Phase 5 model (concrete constructors with edge-renaming).** Each move is
+stated as a `Prop`-valued existential conjunction carrying:
+  (1) the surgery equation relating `d₁` and `d₂`,
+  (2) well-formedness `wf` on *both* diagrams (`KnotDiagram.wf`), and
+  (3) an explicit edge-renaming `ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges`
+      identifying how the edges of `d₁` map to edges of `d₂`.
+
+The `wf` hypothesis on both sides is the key strengthening over the Phase 3
+symmetric-existential model: it excludes the malformed witnesses (a crossing
+whose PD labels fall outside `[1, numEdges]`) that refuted
+`tricolorable_invariant` — see the certified counter-example diagnosis on
+`tricolorable_invariant` in `Invariant.lean`. The edge-renaming `ρ` is what
+the transfer lemma (PR2) will use to push a coloring across a move.
+
+The moves are stated with `∃` (not as `structure : Prop`) because a
+`Prop`-valued structure cannot project on data fields such as `ρ : Fin _ ↪ Fin _`
+or `c : PDCrossing`. Symmetry (`*.symm`) holds for each move: R3 has a purely
+structural proof (the surgery disjunction is symmetric); R1/R2 symmetry is
+asserted here and discharged by the transfer-lemma machinery in PR2 (the
+inverse move exists because a twist/poke followed by its inverse is the
+identity).
 -/
 
 /-- R1 (Twist/Untwist): add or remove a curl in a strand.
 
-A positive curl creates one extra crossing of the same sign.
 Diagrammatically:
   |         /\_    |
   |    ↔   /   \   |
   |        \___/   |
 
-**Phase 3 model (symmetric existential).** The full topological R1 move
-acts on a small disk of the diagram and is its own inverse (a twist followed
-by its untwist is the identity). Rather than model the (delicate) PD-code
-surgery (edge relabelling, well-formedness), we define R1 as a *symmetric*
-existential: there exists a crossing `c` such that one diagram is obtained
-from the other by appending `c` (a combinatorial stand-in for the local
-twist/untwist). Symmetry is then immediate by swapping the two diagrams.
+A curl creates one extra crossing and two extra edges. The move is **bipolar**:
+the surgery is stated as a disjunction — either `d₂` is `d₁` with `c` appended
+(a twist, `d₂.numEdges = d₁.numEdges + 2`) or `d₁` is `d₂` with `c` appended
+(an untwist). The edge-renaming `ρ` points from the smaller diagram's edges to
+the larger diagram's edges, identifying the preserved arcs; under a swap of
+`d₁`/`d₂` this direction is preserved (the smaller diagram is still the
+smaller), which is what makes R1 symmetric by construction.
 
-This is enough to prove `reidemeister_equiv_symm`. It does NOT yet let us
-prove `tricolorable_invariant`, which needs the *semantic* effect of a twist
-on edge colorings — that remains Phase 4+.
+Well-formedness `wf` on both diagrams forces `c`'s four PD labels to lie in
+`[1, (larger).numEdges]` — excluding the malformed witnesses of the Phase 3
+model that refuted `tricolorable_invariant`. The renaming `ρ` is the data the
+transfer lemma (PR2) pushes a coloring along.
 -/
 def Reidemeister1 (d₁ d₂ : KnotDiagram) : Prop :=
-  ∃ c : PDCrossing,
-    d₂ = { d₁ with crossings := d₁.crossings ++ [c], numEdges := d₁.numEdges + 2 } ∨
-    d₁ = { d₂ with crossings := d₂.crossings ++ [c], numEdges := d₂.numEdges + 2 }
+  d₁.wf = true ∧ d₂.wf = true ∧
+  (∃ c : PDCrossing,
+     ∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
+       d₂ = { d₁ with crossings := d₁.crossings ++ [c], numEdges := d₁.numEdges + 2 } ∨
+       d₁ = { d₂ with crossings := d₂.crossings ++ [c], numEdges := d₂.numEdges + 2 })
 
-/-- R1 is symmetric by construction. -/
+/-- R1 is symmetric: swapping `d₁`/`d₂` exchanges the two arms of the surgery
+disjunction; the `min`/`max`-directed renaming is invariant under the swap
+(transported along `Nat.min_comm`/`Nat.max_comm`). -/
 theorem Reidemeister1.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister1 d₁ d₂) :
     Reidemeister1 d₂ d₁ := by
-  obtain ⟨c, h | h⟩ := h
-  · exact ⟨c, Or.inr h⟩
-  · exact ⟨c, Or.inl h⟩
+  obtain ⟨hwf₁, hwf₂, c, ρ, hsurg | hsurg⟩ := h
+  · refine ⟨hwf₂, hwf₁, c, ?_, Or.inr hsurg⟩
+    exact (Nat.min_comm d₂.numEdges d₁.numEdges ▸
+           Nat.max_comm d₂.numEdges d₁.numEdges ▸ ρ)
+  · refine ⟨hwf₂, hwf₁, c, ?_, Or.inl hsurg⟩
+    exact (Nat.min_comm d₂.numEdges d₁.numEdges ▸
+           Nat.max_comm d₂.numEdges d₁.numEdges ▸ ρ)
 
 /-- R2 (Poke/Unpoke): add or remove two consecutive crossings of opposite sign.
 
@@ -67,20 +98,27 @@ Two parallel strands can pass through each other:
   |   |       \  /   |   |
   |   |        \/    |   |
 
-**Phase 3 model (symmetric existential).** Analogous to R1: there exist two
-crossings `c₁ c₂` such that one diagram is obtained from the other by
-appending them.
+Bipolar like R1: one diagram has four more edges than the other. The renaming
+`ρ : Fin (min) ↪ Fin (max)` points from the smaller diagram to the larger.
 -/
 def Reidemeister2 (d₁ d₂ : KnotDiagram) : Prop :=
-  ∃ c₁ c₂ : PDCrossing,
-    d₂ = { d₁ with crossings := d₁.crossings ++ [c₁, c₂], numEdges := d₁.numEdges + 4 } ∨
-    d₁ = { d₂ with crossings := d₂.crossings ++ [c₁, c₂], numEdges := d₂.numEdges + 4 }
+  d₁.wf = true ∧ d₂.wf = true ∧
+  (∃ c₁ c₂ : PDCrossing,
+     ∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
+       d₂ = { d₁ with crossings := d₁.crossings ++ [c₁, c₂], numEdges := d₁.numEdges + 4 } ∨
+       d₁ = { d₂ with crossings := d₂.crossings ++ [c₁, c₂], numEdges := d₂.numEdges + 4 })
 
+/-- R2 is symmetric: same construction as R1 (transport along `Nat.min_comm`/
+`Nat.max_comm`). -/
 theorem Reidemeister2.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister2 d₁ d₂) :
     Reidemeister2 d₂ d₁ := by
-  obtain ⟨c₁, c₂, h | h⟩ := h
-  · exact ⟨c₁, c₂, Or.inr h⟩
-  · exact ⟨c₁, c₂, Or.inl h⟩
+  obtain ⟨hwf₁, hwf₂, c₁, c₂, ρ, hsurg | hsurg⟩ := h
+  · refine ⟨hwf₂, hwf₁, c₁, c₂, ?_, Or.inr hsurg⟩
+    exact (Nat.min_comm d₂.numEdges d₁.numEdges ▸
+           Nat.max_comm d₂.numEdges d₁.numEdges ▸ ρ)
+  · refine ⟨hwf₂, hwf₁, c₁, c₂, ?_, Or.inl hsurg⟩
+    exact (Nat.min_comm d₂.numEdges d₁.numEdges ▸
+           Nat.max_comm d₂.numEdges d₁.numEdges ▸ ρ)
 
 /-- R3 (Slide): move a strand over a crossing.
 
@@ -91,22 +129,30 @@ A strand can slide past a crossing without changing the knot:
      |          /  |  \
      |         /   |   \
 
-**Phase 3 model (symmetric existential).** R3 preserves the number of
-crossings and edges; it only permutes the edge labels at a crossing. Modelled
-symmetrically: there exists a witness that either diagram is obtained from the
-other by a local relabelling of a single crossing's PD-code, with the same
-crossing/edge count.
+R3 preserves the number of crossings and edges; it only relabels the edges at
+one crossing. The renaming `ρ` is therefore a bijection, expressed here as an
+injection `Fin d₁.numEdges ↪ Fin d₂.numEdges` (with equal dimensions).
 -/
 def Reidemeister3 (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
-  (∃ i c, d₂ = { d₁ with crossings := d₁.crossings.set i c } ∨
-               d₁ = { d₂ with crossings := d₂.crossings.set i c })
+  ∃ i c, ∃ ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges,
+    (d₂ = { d₁ with crossings := d₁.crossings.set i c } ∨
+     d₁ = { d₂ with crossings := d₂.crossings.set i c }) ∧
+    d₁.wf = true ∧ d₂.wf = true
 
+/-- R3 is symmetric by construction: the surgery disjunction is symmetric, the
+well-formedness hypotheses swap, and since R3 preserves the edge count
+(`d₁.numEdges = d₂.numEdges`) the edge-renaming is transportable across. -/
 theorem Reidemeister3.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister3 d₁ d₂) :
     Reidemeister3 d₂ d₁ := by
-  obtain ⟨hl, he, i, c, h | h⟩ := h
-  · exact ⟨hl.symm, he.symm, i, c, Or.inr h⟩
-  · exact ⟨hl.symm, he.symm, i, c, Or.inl h⟩
+  obtain ⟨hl, he, i, c, ρ, h | h, hwf₁, hwf₂⟩ := h
+  · refine ⟨hl.symm, he.symm, i, c, ?_, ?_, hwf₂, hwf₁⟩
+    · -- Inverse renaming: transport ρ across the equal edge counts.
+      exact he ▸ ρ
+    · exact Or.inr h
+  · refine ⟨hl.symm, he.symm, i, c, ?_, ?_, hwf₂, hwf₁⟩
+    · exact he ▸ ρ
+    · exact Or.inl h
 
 /-! ## 2. Single Reidemeister step
 
