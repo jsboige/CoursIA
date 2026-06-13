@@ -45,7 +45,7 @@ La série SymbolicLearning (10 notebooks) suit le chapitre 19 d'AIMA : induction
 
 ## Quick Start
 
-**Premier notebook recommande par serie :**
+**Premier notebook recommande par série :**
 
 | Serie | Premier notebook | Commande rapide |
 |-------|-----------------|-----------------|
@@ -61,7 +61,7 @@ La série SymbolicLearning (10 notebooks) suit le chapitre 19 d'AIMA : induction
 
 ---
 
-## Prerequis par serie
+## Prerequis par série
 
 | Serie | Kernel | Environnement special | Packages principaux | API Keys |
 |-------|--------|----------------------|---------------------|----------|
@@ -97,9 +97,9 @@ Serie de **10 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibli
 | 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking semantics, argumentation probabiliste | 2 | Java/JPype |
 | **Applications** |
 | 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
-| 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de preference, theorie du vote (Borda, Copeland) | 1 | Java/JPype |
+| 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de préférence, theorie du vote (Borda, Copeland) | 1 | Java/JPype |
 
-> 10/10 notebooks ont des exercices. La configuration de Tweety-1-Setup constitue l'exercice setup de la serie.
+> 10/10 notebooks ont des exercices. La configuration de Tweety-1-Setup constitue l'exercice setup de la série.
 
 ### Technologies
 
@@ -111,13 +111,13 @@ Serie de **10 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibli
 | **SPASS** | Prouveur de theoremes pour logique modale |
 | **EProver** | Prouveur FOL haute performance |
 
-Documentation complete : [Tweety/README.md](Tweety/README.md)
+Documentation complète : [Tweety/README.md](Tweety/README.md)
 
 ---
 
 ## Lean - Verification Formelle
 
-Serie de **21 notebooks** sur **Lean 4**, proof assistant base sur la theorie des types dependants. Couvre des fondations theoriques jusqu'a l'integration des LLMs pour l'assistance automatique aux preuves, un tribut a Grothendieck (Lean-13/13b), les jeux de Conway (Lean-14a/14b/14c), et les theoremes de Kochen-Specker (Lean-15) et du Libre Arbitre (Lean-16).
+Serie de **21 notebooks** sur **Lean 4**, proof assistant base sur la theorie des types dependants. Couvre des fondations théoriques jusqu'a l'intégration des LLMs pour l'assistance automatique aux preuves, un tribut a Grothendieck (Lean-13/13b), les jeux de Conway (Lean-14a/14b/14c), et les theoremes de Kochen-Specker (Lean-15) et du Libre Arbitre (Lean-16).
 
 ### Structure detaillee
 
@@ -134,15 +134,15 @@ Serie de **21 notebooks** sur **Lean 4**, proof assistant base sur la theorie de
 | 7 | [Lean-7-LLM-Integration](Lean/Lean-7-LLM-Integration.ipynb) | Python WSL | AlphaProof, LeanCopilot, collaboration humain-LLM-Lean | 2 |
 | 7b | [Lean-7b-Examples](Lean/Lean-7b-Examples.ipynb) | Python WSL | Exemples progressifs, comparaison OpenAI vs Anthropic, Erdos | 8 |
 | 8 | [Lean-8-Agentic-Proving](Lean/Lean-8-Agentic-Proving.ipynb) | Python WSL | Agents autonomes, Harmonic Aristotle, Erdos #124 | 7 |
-| 9 | [Lean-9-SK-Multi-Agents](Lean/Lean-9-SK-Multi-Agents.ipynb) | Python WSL | Semantic Kernel, 5 agents specialises, ProofState | 2 |
+| 9 | [Lean-9-SK-Multi-Agents](Lean/Lean-9-SK-Multi-Agents.ipynb) | Python WSL | Semantic Kernel, 5 agents spécialisés, ProofState | 2 |
 | 10 | [Lean-10-LeanDojo](Lean/Lean-10-LeanDojo.ipynb) | Python WSL | LeanDojo, tracing, extraction theoremes, ML pour theorem proving | 2 |
-| 11 | [Lean-11-TorchLean](Lean/Lean-11-TorchLean.ipynb) | Lean 4 | Verification formelle de reseaux de neurones | 2 |
+| 11 | [Lean-11-TorchLean](Lean/Lean-11-TorchLean.ipynb) | Lean 4 | Verification formelle de réseaux de neurones | 2 |
 | 11py | [Lean-11-TorchLean-Python](Lean/Lean-11-TorchLean-Python.ipynb) | Python | IBP, certificats de robustesse, verification | 7 |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean/Lean-12-Sensitivity-Theorem.ipynb) | Lean 4 | Port Lean du theoreme de sensibilite de Huang (2019), hypercube, signing matrix | 4 |
 | **Hommages et theoremes** |
 | 13 | [Lean-13-Grothendieck-Tribute](Lean/Lean-13-Grothendieck-Tribute.ipynb) | Lean 4 | Hommage a Grothendieck : tour Mathlib, micro-formalisations | 3 |
 | 13b | [Lean-13b-Lean-Grothendieck](Lean/Lean-13b-Lean-Grothendieck.ipynb) | Python WSL | Grothendieck en Lean, atelier pratique : sources `grothendieck_lean/`, snippets via WSL | 3 |
-| 14a | [Lean-14a-Conway-Man-and-Work](Lean/Lean-14a-Conway-Man-and-Work.ipynb) | Python WSL | Conway, l'homme et l'oeuvre : panorama des grands resultats, premieres formalisations executees depuis `conway_lean` | 3 |
+| 14a | [Lean-14a-Conway-Man-and-Work](Lean/Lean-14a-Conway-Man-and-Work.ipynb) | Python WSL | Conway, l'homme et l'oeuvre : panorama des grands résultats, premières formalisations executees depuis `conway_lean` | 3 |
 | 14b | [Lean-14b-Conway-Game-of-Life-Lean](Lean/Lean-14b-Conway-Game-of-Life-Lean.ipynb) | Python WSL | Game of Life as Computation : Doomsday, FRACTRAN, Look-and-Say, Nim, Angel | 4 |
 | 14c | [Lean-14c-Conway-Game-of-Life-Golly](Lean/Lean-14c-Conway-Game-of-Life-Golly.ipynb) | Python | Game of Life en images : les 3 piliers, compagnon Golly | 4 |
 | 15 | [Lean-15-Kochen-Specker](Lean/Lean-15-Kochen-Specker.ipynb) | Lean 4 | Theoreme de Kochen-Specker (1967), 18 vecteurs Cabello-Estebaranz-Garcia-Alcaine, contextuality quantique | 5 |
@@ -155,7 +155,7 @@ Serie de **21 notebooks** sur **Lean 4**, proof assistant base sur la theorie de
 
 > Note : Les kernels Windows ne fonctionnent pas (signal.SIGPIPE, problemes chemins)
 
-Documentation complete : [Lean/README.md](Lean/README.md)
+Documentation complète : [Lean/README.md](Lean/README.md)
 
 ---
 
@@ -175,7 +175,7 @@ Serie de **18 notebooks** sur le Web Semantique (dont 1 legacy deprecie), combin
 | 4 | [SW-4-CSharp-SPARQL](SemanticWeb/SW-4-CSharp-SPARQL.ipynb) | .NET C# | Query Builder, SELECT/FILTER, OPTIONAL, UNION | 7 |
 | 4b | [SW-4b-Python-SPARQL](SemanticWeb/SW-4b-Python-SPARQL.ipynb) | Python | Equivalent Python avec SPARQLWrapper | 5 |
 | **Partie 2 : Donnees Liees et Ontologies** |
-| 5 | [SW-5-CSharp-LinkedData](SemanticWeb/SW-5-CSharp-LinkedData.ipynb) | .NET C# | DBpedia, Wikidata, requetes federees SERVICE | 6 |
+| 5 | [SW-5-CSharp-LinkedData](SemanticWeb/SW-5-CSharp-LinkedData.ipynb) | .NET C# | DBpedia, Wikidata, requêtes federees SERVICE | 6 |
 | 5b | [SW-5b-Python-LinkedData](SemanticWeb/SW-5b-Python-LinkedData.ipynb) | Python | Equivalent Python | 5 |
 | 6 | [SW-6-CSharp-RDFS](SemanticWeb/SW-6-CSharp-RDFS.ipynb) | .NET C# | RDFS, inference automatique, OntologyGraph | 4 |
 | 7 | [SW-7-CSharp-OWL](SemanticWeb/SW-7-CSharp-OWL.ipynb) | .NET C# | OWL 2, profils (EL/QL/RL), restrictions | 5 |
@@ -189,13 +189,13 @@ Serie de **18 notebooks** sur le Web Semantique (dont 1 legacy deprecie), combin
 | 12 | [SW-12-Python-GraphRAG](SemanticWeb/SW-12-Python-GraphRAG.ipynb) | Python | GraphRAG, extraction entites LLM | 6 |
 | **Bonus** | [SW-13-Python-Reasoners](SemanticWeb/SW-13-Python-Reasoners.ipynb) | Python | Comparaison raisonneurs OWL (owlrl, HermiT, reasonable) | 3 (faible) |
 
-Documentation complete : [SemanticWeb/README.md](SemanticWeb/README.md)
+Documentation complète : [SemanticWeb/README.md](SemanticWeb/README.md)
 
 ---
 
 ## Planners - Planification Automatique
 
-Serie de **13 notebooks** sur la planification automatique, couvrant PDDL classique, CP-SAT (OR-Tools), VRP, planification temporelle, HTN, et integration LLM.
+Serie de **13 notebooks** sur la planification automatique, couvrant PDDL classique, CP-SAT (OR-Tools), VRP, planification temporelle, HTN, et intégration LLM.
 
 ### Structure detaillee
 
@@ -222,7 +222,7 @@ Serie de **13 notebooks** sur la planification automatique, couvrant PDDL classi
 
 > 12/13 notebooks ont des exercices. Seul Planners-0-Setup (configuration) n'en a pas.
 
-Documentation complete : [Planners/README.md](Planners/README.md)
+Documentation complète : [Planners/README.md](Planners/README.md)
 
 ---
 
@@ -242,34 +242,34 @@ Serie de **27 notebooks** sur les smart contracts et la blockchain, organisee en
 | **05-Alternative-Chains** | SC-18 (Vyper), SC-19 (Ripple), SC-20 (Bitcoin), SC-21 (Move/Sui), SC-22 (Solana) | Ecosystemes alternatifs |
 | **06-Real-World** | SC-23 (Cross-Chain), SC-24 (Testnet), SC-25 (Mainnet), SC-26 (Final Project) | Deploiement, interoperabilite, projet final |
 
-Documentation complete : [SmartContracts/README.md](SmartContracts/README.md)
+Documentation complète : [SmartContracts/README.md](SmartContracts/README.md)
 
 ---
 
 ## Argument Analysis - Analyse Argumentative LLM
 
-Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. Combine detection de sophismes, formalisation logique, et validation par TweetyProject.
+Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. Combine détection de sophismes, formalisation logique, et validation par TweetyProject.
 
-> **Note** : Cette serie est un projet/demo, pas un cours. Aucun exercice etudiant. Non adaptee en l'etat pour un cours structure.
+> **Note** : Cette série est un projet/demo, pas un cours. Aucun exercice étudiant. Non adaptee en l'etat pour un cours structure.
 
 ### Structure detaillee
 
 | # | Notebook | Role |
 |---|----------|------|
 | 0 | [Agentic-0-init](Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb) | Configuration LLM, JPype/Tweety, ProjectManagerAgent |
-| 1 | [Agentic-1-informal_agent](Argument_Analysis/Argument_Analysis_Agentic-1-informal_agent.ipynb) | InformalAnalysisAgent, detection sophismes |
+| 1 | [Agentic-1-informal_agent](Argument_Analysis/Argument_Analysis_Agentic-1-informal_agent.ipynb) | InformalAnalysisAgent, détection sophismes |
 | 2 | [Agentic-2-pl_agent](Argument_Analysis/Argument_Analysis_Agentic-2-pl_agent.ipynb) | PropositionalLogicAgent, formalisation PL |
 | 3 | [Agentic-3-orchestration](Argument_Analysis/Argument_Analysis_Agentic-3-orchestration.ipynb) | Orchestration multi-agents |
 | 4 | [Executor](Argument_Analysis/Argument_Analysis_Executor.ipynb) | Pipeline complet, rapport JSON |
 | 5 | [UI_configuration](Argument_Analysis/Argument_Analysis_UI_configuration.ipynb) | Interface widgets ipywidgets |
 
-Documentation complete : [Argument_Analysis/README.md](Argument_Analysis/README.md)
+Documentation complète : [Argument_Analysis/README.md](Argument_Analysis/README.md)
 
 ---
 
 ## SymbolicLearning - Apprentissage Symbolique
 
-Serie de **10 notebooks** Python sur l'apprentissage symbolique (AIMA ch. 19) : induction pure (Version Space), apprentissage guide par la connaissance (EBL, RBL), programmation logique inductive (FOIL, resolution inverse, Progol), apprentissage actif d'automates (L* d'Angluin), et integration neuro-symbolique jusqu'au capstone LLM + knowledge graph.
+Serie de **10 notebooks** Python sur l'apprentissage symbolique (AIMA ch. 19) : induction pure (Version Space), apprentissage guide par la connaissance (EBL, RBL), programmation logique inductive (FOIL, resolution inverse, Progol), apprentissage actif d'automates (L* d'Angluin), et intégration neuro-symbolique jusqu'au capstone LLM + knowledge graph.
 
 ### Structure detaillee
 
@@ -281,14 +281,14 @@ Serie de **10 notebooks** Python sur l'apprentissage symbolique (AIMA ch. 19) : 
 | 4 | [SL-4-InductiveLogicProgramming](SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) | FOIL, resolution inverse, knowledge graphs, Popper (LFF) | 4 | SL-1 |
 | 5 | [SL-5-NeuroSymbolic](SymbolicLearning/SL-5-NeuroSymbolic.ipynb) | T-norms, predicats neuronaux, LTN, DeepProbLog | 4 | SL-1 |
 | 6 | [SL-6-KnowledgeGraphs-ILP](SymbolicLearning/SL-6-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, completion KG, ASP avec clingo | 4 | SL-4 |
-| 7 | [SL-7-LLM-SymbolicLearning](SymbolicLearning/SL-7-LLM-SymbolicLearning.ipynb) | Extraction de regles LLM, verification symbolique (Gemini optionnel) | 4 | SL-1 |
-| 8 | [SL-8-ActiveAutomataLearning](SymbolicLearning/SL-8-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requetes MQ/EQ, Myhill-Nerode | 4 | SL-1 |
+| 7 | [SL-7-LLM-SymbolicLearning](SymbolicLearning/SL-7-LLM-SymbolicLearning.ipynb) | Extraction de règles LLM, verification symbolique (Gemini optionnel) | 4 | SL-1 |
+| 8 | [SL-8-ActiveAutomataLearning](SymbolicLearning/SL-8-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 4 | SL-1 |
 | 9 | [SL-9-InverseResolution](SymbolicLearning/SL-9-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 5 | SL-4 |
-| 10 | [SL-10-Capstone-NeuroSymbolic](SymbolicLearning/SL-10-Capstone-NeuroSymbolic.ipynb) | Pipeline neuro-symbolique 6 etages, LLM reel aux deux extremites | 4 | SL-5 a SL-7 |
+| 10 | [SL-10-Capstone-NeuroSymbolic](SymbolicLearning/SL-10-Capstone-NeuroSymbolic.ipynb) | Pipeline neuro-symbolique 6 etages, LLM réel aux deux extremites | 4 | SL-5 a SL-7 |
 
 > 10/10 notebooks ont des exercices — 40 au total, organises en table de pioche pour la seance de restitution (chaque exercice est assorti d'une question-twist).
 
-Documentation complete : [SymbolicLearning/README.md](SymbolicLearning/README.md)
+Documentation complète : [SymbolicLearning/README.md](SymbolicLearning/README.md)
 
 ---
 
@@ -301,7 +301,7 @@ Documentation complete : [SymbolicLearning/README.md](SymbolicLearning/README.md
 | [OR-tools-Stiegler](OR-tools-Stiegler.ipynb) | .NET C# | Probleme de Stigler, programmation lineaire avec OR-Tools | 2 |
 | [01_Linq2Z3_Intro](SMT/Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
 
-Le notebook Z3 inaugure la serie [SMT/Z3/](SMT/Z3/README.md) (SMT declaratif via Z3.Linq), regroupee avec la serie Python [SMT/Z3-Python/](SMT/Z3-Python/README.md) sous le chapeau [SMT/](SMT/README.md) (Satisfiability Modulo Theories).
+Le notebook Z3 inaugure la série [SMT/Z3/](SMT/Z3/README.md) (SMT declaratif via Z3.Linq), regroupee avec la série Python [SMT/Z3-Python/](SMT/Z3-Python/README.md) sous le chapeau [SMT/](SMT/README.md) (Satisfiability Modulo Theories).
 
 ---
 
@@ -396,15 +396,15 @@ dotnet interactive jupyter install
 
 **Status execution : 10/10 SUCCESS**
 
-Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
+Le setup est entierement automatisé via `Tweety-1-Setup.ipynb` :
 
-1. **JDK 17 portable** : Auto-telecharge dans `Tweety/jdk-17-portable/` (Azul Zulu, ~180MB). Aucune installation systeme requise, pas de UAC.
-2. **JARs TweetyProject** : Auto-telecharges dans `Tweety/libs/` depuis Maven Central (35 modules, ~50MB total).
+1. **JDK 17 portable** : Auto-télécharge dans `Tweety/jdk-17-portable/` (Azul Zulu, ~180MB). Aucune installation système requise, pas de UAC.
+2. **JARs TweetyProject** : Auto-télécharges dans `Tweety/libs/` depuis Maven Central (35 modules, ~50MB total).
 3. **Outils externes** : Clingo, SPASS, EProver dans `Tweety/ext_tools/` (inclus dans le depot).
 
 **Problemes connus :**
 - `asp-1.30.jar` et `rpcl-1.30.jar` : Modules absents de Maven Central pour la version 1.30. Non bloquant -- les notebooks gerent l'absence avec try/except.
-- Si un JAR fait 0 bytes ou ~554 bytes : re-telecharger manuellement depuis `https://repo1.maven.org/maven2/org/tweetyproject/`.
+- Si un JAR fait 0 bytes ou ~554 bytes : re-télécharger manuellement depuis `https://repo1.maven.org/maven2/org/tweetyproject/`.
 
 ### Planners
 
@@ -414,7 +414,7 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 2. **Fast-Downward** (requis pour notebooks 2-6, 12) : Installer via WSL ou Docker
    - WSL : `sudo apt install fast-downward` ou compiler depuis source
    - Docker : Image `aiblazor/fast-downward` disponible
-3. **Notebooks theoriques** (7-11) : Ne necessitent que Python + les packages ci-dessus
+3. **Notebooks théoriques** (7-11) : Ne necessitent que Python + les packages ci-dessus
 
 ### SmartContracts
 
@@ -438,22 +438,22 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
    # Dans un terminal WSL
    anvil --host 0.0.0.0
    ```
-   Ou en arriere-plan : `wsl -d Ubuntu -- bash -c 'anvil --host 0.0.0.0 &'`
+   Ou en arrière-plan : `wsl -d Ubuntu -- bash -c 'anvil --host 0.0.0.0 &'`
 5. **Fichier `.env`** : Configurer dans `SmartContracts/.env` :
    - `ANVIL_RPC=http://127.0.0.1:8545` (local)
    - `LLM_API_KEY` pour SC-11 (via OpenRouter)
-   - `DEPLOYER_PRIVATE_KEY` : Mettre une cle de testnet reelle pour SC-24/25, ou laisser le placeholder (ces notebooks echoueront)
+   - `DEPLOYER_PRIVATE_KEY` : Mettre une cle de testnet réelle pour SC-24/25, ou laisser le placeholder (ces notebooks echoueront)
 
 **Problemes connus :**
 - **SC-3 a SC-10** : Echouent si anvil n'est pas lance sur le port 8545. Solution : lancer `anvil` avant l'execution.
-- **SC-15 Zero-Knowledge-Proofs** : SyntaxError f-string imbriquee (`{"CONVAINCU" if ...}`) -- incompatible Python 3.11. Fix : utiliser des parentheses ou une variable intermediaire.
+- **SC-15 Zero-Knowledge-Proofs** : SyntaxError f-string imbriquee (`{"CONVAINCU" if ...}`) -- incompatible Python 3.11. Fix : utiliser des parentheses ou une variable intermédiaire.
 - **SC-24/25** : `hexstr_to_bytes` erreur si `DEPLOYER_PRIVATE_KEY` contient un placeholder non-hex.
 
 ### Argument_Analysis
 
-**Status execution : 3/5 (demo, pas cours etudiant)**
+**Status execution : 3/5 (demo, pas cours étudiant)**
 
-1. **JDK 17 portable** : Partage avec Tweety (meme `jdk-17-portable/` si configure)
+1. **JDK 17 portable** : Partage avec Tweety (même `jdk-17-portable/` si configure)
 2. **Fichier `.env`** : Configurer dans `Argument_Analysis/.env` :
    - `OPENAI_API_KEY` (via OpenRouter : `sk-or-v1-...`)
    - `OPENAI_BASE_URL=https://openrouter.ai/api/v1`
@@ -462,7 +462,7 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 3. **Packages** : `pip install semantic-kernel jpype1`
 
 **Problemes connus :**
-- **AA-3 orchestration** : Papermill ne preserve pas l'etat entre notebooks. Les definitions de AA-0/1/2 ne sont pas disponibles. Ce notebook doit etre execute manuellement apres les 3 precedents.
+- **AA-3 orchestration** : Papermill ne preserve pas l'etat entre notebooks. Les définitions de AA-0/1/2 ne sont pas disponibles. Ce notebook doit être execute manuellement après les 3 précédents.
 - **AA Executor** : Timeout a 300s (pipeline multi-agents long).
 
 ### Lean
@@ -523,7 +523,7 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 | SymbolicLearning | 10 | 10 (100%) | 0 | Complet |
 | Argument Analysis | 6 | 0 (0%) | 6 (demo) | N/A |
 
-**Total** : 95/105 notebooks de contenu avec exercices (90%). Les notebooks sans exercices sont les notebooks de setup/configuration (SW-1, Planners-0, Lean-1), le notebook legacy (RDF.Net), et la serie demo Argument Analysis (6 notebooks).
+**Total** : 95/105 notebooks de contenu avec exercices (90%). Les notebooks sans exercices sont les notebooks de setup/configuration (SW-1, Planners-0, Lean-1), le notebook legacy (RDF.Net), et la série demo Argument Analysis (6 notebooks).
 
 ### Problemes restants
 
@@ -532,9 +532,9 @@ Le setup est entierement automatise via `Tweety-1-Setup.ipynb` :
 
 ---
 
-## Ponts cross-series
+## Ponts cross-séries
 
-Ces connexions entre series sont exploitees dans le curriculum IA Symbolique.
+Ces connexions entre séries sont exploitees dans le curriculum IA Symbolique.
 
 ### Lean <-> GameTheory (Choix social)
 
@@ -583,7 +583,7 @@ Ces connexions entre series sont exploitees dans le curriculum IA Symbolique.
 
 | Domaine | Reference | Couverture |
 |---------|-----------|------------|
-| IA Symbolique (general) | Russell & Norvig, *AIMA* 4e ed., ch. 7-12 | Recherche, logique, planification |
+| IA Symbolique (général) | Russell & Norvig, *AIMA* 4e ed., ch. 7-12 | Recherche, logique, planification |
 | Theorie des jeux / choix social | Osborne & Rubinstein, *A Course in Game Theory* (1994) | GameTheory, Lean social choice |
 | Logiques formelles | Enderton, *A Mathematical Introduction to Logic* (2001) | Tweety, Lean |
 | Argumentation | Dung, "On the Acceptability of Arguments" (1995) | Tweety-5, Argument Analysis |
@@ -619,37 +619,37 @@ Ces connexions entre series sont exploitees dans le curriculum IA Symbolique.
 
 ## FAQ
 
-### Qu'est-ce que l'IA symbolique et pourquoi l'etudier a l'ere des LLMs ?
+### Qu'est-ce que l'IA symbolique et pourquoi l'étudier a l'ere des LLMs ?
 
-L'IA symbolique repose sur la **manipulation explicite de symboles et de regles** (logique, ontologies, planification, contrats) plutot que sur l'apprentissage statistique. Les LLMs sont puissants mais opaques : ils ne garantissent pas la correction logique, ne peuvent pas verifier formellement un resultat, et hallucinent. L'IA symbolique apporte ce que les modeles statistiques ne fournissent pas : raisonnement **verifiable, explicable et certifie**. Les deux paradigmes sont complementaires — l'avenir est neuro-symbolique.
+L'IA symbolique repose sur la **manipulation explicite de symboles et de règles** (logique, ontologies, planification, contrats) plutot que sur l'apprentissage statistique. Les LLMs sont puissants mais opaques : ils ne garantissent pas la correction logique, ne peuvent pas verifier formellement un résultat, et hallucinent. L'IA symbolique apporte ce que les modeles statistiques ne fournissent pas : raisonnement **verifiable, explicable et certifie**. Les deux paradigmes sont complementaires — l'avenir est neuro-symbolique.
 
 ### Quelle est la difference entre Tweety et Z3 ?
 
-**TweetyProject** est une bibliotheque Java pour la logique formelle (propositionnelle, FOL, modale, argumentation, revision de croyances). Elle est utilisee via JPype en Python. **Z3** (Microsoft Research) est un solveur SMT (Satisfiability Modulo Theories) qui automatise la resolution de problemes logiques complexes. Tweety est oriente enseignement (comprendre les semantiques), Z3 est oriente resolution (prouver/infirmer des proprietes). Les deux apparaissent dans GameTheory (Arrow/SAT) et Search (CSP).
+**TweetyProject** est une bibliotheque Java pour la logique formelle (propositionnelle, FOL, modale, argumentation, revision de croyances). Elle est utilisee via JPype en Python. **Z3** (Microsoft Research) est un solveur SMT (Satisfiability Modulo Theories) qui automatisé la resolution de problemes logiques complexes. Tweety est oriente enseignement (comprendre les semantiques), Z3 est oriente resolution (prouver/infirmer des proprietes). Les deux apparaissent dans GameTheory (Arrow/SAT) et Search (CSP).
 
 ### Comment installer l'environnement Tweety ?
 
-Ouvrez le notebook `Tweety-1-Setup.ipynb` : il telecharge automatiquement JDK 17 et les 35 JARs TweetyProject. Vous pouvez aussi lancer `python scripts/download_tweety_tools.py --all` en ligne de commande. Les dependances Python sont `jpype1 requests tqdm clingo z3-solver python-sat`.
+Ouvrez le notebook `Tweety-1-Setup.ipynb` : il télécharge automatiquement JDK 17 et les 35 JARs TweetyProject. Vous pouvez aussi lancer `python scripts/download_tweety_tools.py --all` en ligne de commande. Les dependances Python sont `jpype1 requests tqdm clingo z3-solver python-sat`.
 
-### Par quelle sous-serie commencer si je n'ai pas de JDK installe ?
+### Par quelle sous-série commencer si je n'ai pas de JDK installe ?
 
-Les series **SemanticWeb** (notebooks Python), **Planners** (notebooks theoriques 7-11) et **Lean** (notebooks Python 1, 7-10) ne necessitent aucun JDK. **Tweety** et **Argument Analysis** utilisent JPype (bridge Java/Python) avec un JDK 17 portable auto-telecharge par le notebook de setup (pas d'installation systeme, pas de UAC). Si vous evitez les notebooks C# (qui requierent dotnet-interactive), vous pouvez travailler entierement en Python avec uniquement `pip install rdflib ortools unified_planning`.
+Les séries **SemanticWeb** (notebooks Python), **Planners** (notebooks théoriques 7-11) et **Lean** (notebooks Python 1, 7-10) ne necessitent aucun JDK. **Tweety** et **Argument Analysis** utilisent JPype (bridge Java/Python) avec un JDK 17 portable auto-télécharge par le notebook de setup (pas d'installation système, pas de UAC). Si vous evitez les notebooks C# (qui requierent dotnet-interactive), vous pouvez travailler entierement en Python avec uniquement `pip install rdflib ortools unified_planning`.
 
-### Pourquoi Tweety utilise-t-il JPype plutot que des implementations Python natives ?
+### Pourquoi Tweety utilise-t-il JPype plutot que des implémentations Python natives ?
 
-TweetyProject est la bibliotheque de reference pour l'IA symbolique formelle (argumentation de Dung, ASPIC+, revision de croyances, logiques modales). Elle couvre des domaines ou il n'existe pas d'equivalent Python mature : solveurs d'argumentation structures, frameworks d'agent dialogues, logiques epistemiques. JPype permet d'appeler directement les JARs Java depuis Python sans reimplementation. Les notebooks gerent la bridge de maniere transparente via `tweety_init.py`.
+TweetyProject est la bibliotheque de référence pour l'IA symbolique formelle (argumentation de Dung, ASPIC+, revision de croyances, logiques modales). Elle couvre des domaines ou il n'existe pas d'equivalent Python mature : solveurs d'argumentation structures, frameworks d'agent dialogues, logiques epistemiques. JPype permet d'appeler directement les JARs Java depuis Python sans reimplementation. Les notebooks gerent la bridge de maniere transparente via `tweety_init.py`.
 
 ### Quelle est la difference entre les notebooks C# et Python de SemanticWeb ?
 
-Les **notebooks Python** (SW-8 a SW-13) utilisent `rdflib`, `pySHACL`, `owlready2` et `kglab` — 10/10 s'executent sans probleme. Les **notebooks C#** (SW-1 a SW-7) utilisent `dotNetRDF` via .NET Interactive et peuvent echouer sous Windows si la policy d'execution bloque `dotnet-interactive.exe` (Win32Exception 4551). Les memes concepts (RDF, SPARQL, OWL, SHACL) sont couverts dans les deux stacks. Si vous n'avez pas besoin specifiquement de .NET, les notebooks Python suffisent pour le parcours complet.
+Les **notebooks Python** (SW-8 a SW-13) utilisent `rdflib`, `pySHACL`, `owlready2` et `kglab` — 10/10 s'executent sans probleme. Les **notebooks C#** (SW-1 a SW-7) utilisent `dotNetRDF` via .NET Interactive et peuvent echouer sous Windows si la policy d'execution bloque `dotnet-interactive.exe` (Win32Exception 4551). Les mêmes concepts (RDF, SPARQL, OWL, SHACL) sont couverts dans les deux stacks. Si vous n'avez pas besoin specifiquement de .NET, les notebooks Python suffisent pour le parcours complet.
 
-### Comment executer les notebooks Lean sans GPU ni installation systeme ?
+### Comment executer les notebooks Lean sans GPU ni installation système ?
 
-Les notebooks Lean utilisent **WSL (Windows Subsystem for Linux)** comme runtime — pas de GPU necessaire. Le notebook `Lean-1-Setup.ipynb` installe automatiquement `elan` (gestionnaire de toolchains Lean) et `lean4_jupyter` dans WSL. Les notebooks de preuves (2-6, 11) tournent sur le kernel `Lean 4 (WSL)` natif. Les notebooks LLM/prover (7-10) tournent sur `Python 3 (WSL)` et necessitent une cle API OpenRouter. Si WSL n'est pas disponible, les notebooks Python du meme domaine (1, 7-10) peuvent etre executes en Python natif.
+Les notebooks Lean utilisent **WSL (Windows Subsystem for Linux)** comme runtime — pas de GPU necessaire. Le notebook `Lean-1-Setup.ipynb` installe automatiquement `elan` (gestionnaire de toolchains Lean) et `lean4_jupyter` dans WSL. Les notebooks de preuves (2-6, 11) tournent sur le kernel `Lean 4 (WSL)` natif. Les notebooks LLM/prover (7-10) tournent sur `Python 3 (WSL)` et necessitent une cle API OpenRouter. Si WSL n'est pas disponible, les notebooks Python du même domaine (1, 7-10) peuvent être executes en Python natif.
 
-### Peut-on etudier les SmartContracts sans blockchain reelle ?
+### Peut-on étudier les SmartContracts sans blockchain réelle ?
 
-Oui, c'est l'approche pedagogique de la serie. **Anvil** (Foundry) fournit un simulateur Ethereum local qui tourne en une commande (`anvil --host 0.0.0.0`) sous WSL. Les notebooks SC-3 a SC-10 deploient et testent des contrats sur cette chaine locale — aucun ether reel, aucun testnet. Les notebooks theoriques (SC-0 a SC-2, SC-15 a SC-26) explorent les concepts (ZK proofs, DeFi, DAO, cross-chain) principalement via code Python/Solidity sans deploiement. Seuls SC-24 et SC-25 (deploiement reel) necessitent une cle testnet.
+Oui, c'est l'approche pédagogique de la série. **Anvil** (Foundry) fournit un simulateur Ethereum local qui tourne en une commande (`anvil --host 0.0.0.0`) sous WSL. Les notebooks SC-3 a SC-10 deploient et testent des contrats sur cette chaine locale — aucun ether réel, aucun testnet. Les notebooks théoriques (SC-0 a SC-2, SC-15 a SC-26) explorent les concepts (ZK proofs, DeFi, DAO, cross-chain) principalement via code Python/Solidity sans déploiement. Seuls SC-24 et SC-25 (déploiement réel) necessitent une cle testnet.
 
 ---
 
