@@ -4,7 +4,7 @@ Formalisation des jeux bayésiens finis à deux joueurs (espaces de types
 de Harsanyi) en Lean 4 **sans Mathlib** (toolchain `v4.30.0-rc2`, core
 uniquement — évite la mutualisation des checkouts Mathlib, cf #2611).
 Compagnon formel de `GameTheory-11-BayesianGames.ipynb`. Phase 1 de
-l'epic #2610.
+l'Epic #2610.
 
 ## Contenu
 
@@ -47,7 +47,7 @@ standalone-tactic).
 
 `lean_game_defs/` (jeux sous forme normale, Nash, social choice,
 Kuhn poker — cf #2748 / PR #2752) reste le socle « phase 0 ». Ce
-projet-ci accueille les extensions de l'epic #2610 (phases livrées :
+projet-ci accueille les extensions de l'Epic #2610 (phases livrées :
 2 — enchère au premier prix discret, 3 — enchère de Vickrey et
 dominance faible, 4 — valeur de l'information : monotonie de Blackwell
 à un joueur + contre-exemple « l'information nuit » en jeu,
