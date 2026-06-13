@@ -151,6 +151,22 @@ def ceilLog2 (k : Nat) : Nat :=
   | 1     => 0
   | k + 2 => 1 + ceilLog2 ((k + 2 + 1) / 2)
 
+/-- `ceilLog2 k` is large enough that `2 ^ ceilLog2 k >= k`. This is the
+    arithmetic heart of the `gridFrame` containment lemma. -/
+theorem ceilLog2_spec (k : Nat) : 2 ^ ceilLog2 k >= k := by
+  induction k using Nat.strongInductionOn with
+  | ind k ih =>
+    match k with
+    | 0 => simp [ceilLog2]
+    | 1 => simp [ceilLog2]
+    | m + 2 =>
+      show 2 ^ (1 + ceilLog2 ((m + 2 + 1) / 2)) >= m + 2
+      have h : 2 ^ ceilLog2 ((m + 2 + 1) / 2) >= (m + 2 + 1) / 2 :=
+        ih ((m + 2 + 1) / 2) (by omega)
+      have h2 : 2 * 2 ^ ceilLog2 ((m + 2 + 1) / 2) >= m + 2 := by omega
+      rw [Nat.pow_add, Nat.pow_one]
+      exact h2
+
 /-- Build a `MacroCell` of level `n` covering the square `[r0, r0 + 2^n) x
     [c0, c0 + 2^n)`, with live cells given by membership test in `g`. -/
 def buildFromGrid (g : Grid) (r0 c0 : Int) : Nat -> MacroCell
