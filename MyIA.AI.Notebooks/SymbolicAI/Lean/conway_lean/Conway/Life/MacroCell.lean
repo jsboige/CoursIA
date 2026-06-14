@@ -276,6 +276,44 @@ theorem mem_toCellsAux_buildFromGrid (g : Grid) (lvl : Nat) (r0 c0 : Int)
         · left; right; unfold inRegion; refine ⟨⟨?_, ?_, ?_, ?_⟩, hpg⟩ <;> omega
         · right; unfold inRegion; refine ⟨⟨?_, ?_, ?_, ?_⟩, hpg⟩ <;> omega
 
+/-- **Offset-shift identity for `toCellsAux`**: enumerating `c`'s live cells
+    with the top-left corner anchored at `(r0, c0)` equals the
+    origin-anchored enumeration `(c.toCellsAux 0 0)` translated pointwise by
+    `(r0, c0)`. Pure structural induction on `MacroCell` — no Hashlife, no
+    `evolve`, no light-cone. This is the bookkeeping bridge that will align an
+    offset-`(r0, c0)` `toCellsAux` / `toGrid` membership goal with an
+    origin-anchored induction hypothesis in the eventual P4
+    central-correctness assembly (`hashlifeResult_central_correct`). -/
+theorem toCellsAux_shift (c : MacroCell) (r0 c0 : Int) :
+    c.toCellsAux r0 c0 =
+      (c.toCellsAux 0 0).map (fun p => (p.1 + r0, p.2 + c0)) := by
+  induction c generalizing r0 c0 with
+  | leaf b =>
+    -- `toCellsAux r0 c0 (leaf b)` reduces to `[(r0, c0)]` / `[]`, but
+    -- `List.map f [(0, 0)] = [(0 + r0, 0 + c0)]` is NOT defeq to `[(r0, c0)]`
+    -- (`Int.add 0 _` does not reduce definitionally), so `rfl` fails — close
+    -- by `zero_add` instead.
+    cases b
+    · simp only [toCellsAux, List.map_nil]
+    · simp only [toCellsAux, List.map_singleton, zero_add]
+  | node nw ne sw se ihw ine isw ise =>
+    simp only [toCellsAux]
+    -- Apply the IH to each LHS quadrant, anchoring at the origin:
+    rw [ihw r0 c0, ine r0 (c0 + (2 ^ nw.level : Nat)),
+        isw (r0 + (2 ^ nw.level : Nat)) c0,
+        ise (r0 + (2 ^ nw.level : Nat)) (c0 + (2 ^ nw.level : Nat))]
+    -- Distribute the RHS map over the concatenation, then fold the
+    -- origin-anchored quadrants back through the IH (forward) so each RHS
+    -- segment becomes a composition of two shifts; `map_map` flattens it.
+    simp only [List.map_append, zero_add]
+    rw [ine 0 (2 ^ nw.level : Nat), isw (2 ^ nw.level : Nat) 0,
+        ise (2 ^ nw.level : Nat) (2 ^ nw.level : Nat)]
+    simp only [List.map_map, zero_add]
+    -- Both sides are now concatenations of `map (shift_i) (toCellsAux 0 0 sub_i)`,
+    -- differing only by AC rearrangements of addition; normalise and close.
+    simp only [add_zero, add_assoc, add_comm, add_left_comm]
+    rfl
+
 end MacroCell
 
 /-! ## High-level Grid -> MacroCell
