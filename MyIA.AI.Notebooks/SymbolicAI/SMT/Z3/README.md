@@ -52,20 +52,19 @@ L'intérêt pédagogique : au lieu d'écrire un algorithme de backtracking pour 
 | **.NET Interactive** | `dotnet tool install --global Microsoft.dotnet-interactive` |
 | **Kernel Jupyter** | `.net-csharp` (installe automatiquement par .NET Interactive) |
 | **Package NuGet** | `Z3.Linq` (NB-01, 02 : charge automatiquement via `#r nuget:...`) |
-| **NB-02b, 03, 04, 05 — fork** | Les notebooks 02b, 03, 04 et 05 utilisent le fork [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq) : NB-04 pour le support `int[][]` (absent du NuGet public endjin), NB-02b, NB-03 et NB-05 pour la feature `CollectionHandling` (mode `Constants` ressuscité, câblée le 14/06/2026). Exécuter **une fois** : [`scripts/environment/z3-build-deploy.ps1`](../../../../scripts/environment/z3-build-deploy.ps1) (Windows) ou [`.sh`](../../../../scripts/environment/z3-build-deploy.sh) (Linux/macOS) — compile uniquement le wrapper (~1,5 s) et rassemble les 4 DLL dans `.deploy/`. |
+| **Tous les notebooks — fork** | La série entière utilise le fork [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq) : NB-04 pour le support `int[][]` (absent du NuGet public endjin), NB-02b, NB-03 et NB-05 pour la feature `CollectionHandling` (mode `Constants` ressuscité, câblée le 14/06/2026), NB-01 et NB-02 pour l'homogénéité de la série (toute la série sur la même build fork, cohérence pédagogique). Exécuter **une fois** : [`scripts/environment/z3-build-deploy.ps1`](../../../../scripts/environment/z3-build-deploy.ps1) (Windows) ou [`.sh`](../../../../scripts/environment/z3-build-deploy.sh) (Linux/macOS) — compile uniquement le wrapper (~1,5 s) et rassemble les 4 DLL dans `.deploy/`. |
 
-> Les notebooks sont autonomes : le restore NuGet et l'initialisation du contexte Z3 sont inclus dans les cellules de setup de chaque notebook. **Exception** : les notebooks 02b, 03, 04 et 05 chargent le fork via `#r "../Z3.Linq/.deploy/..."`, d'où le pré-requis du script de build ci-dessus (décision ai-01 [DECISION COORD] 2026-06-13, option (b), étendue à 02b/03/05 le 14/06/2026 pour `CollectionHandling`).
+> Les notebooks sont autonomes : le chargement du fork Z3.Linq et l'initialisation du contexte sont inclus dans les cellules de setup de chaque notebook via `#r "../Z3.Linq/.deploy/..."`, d'où le pré-requis du script de build ci-dessus (décision ai-01 [DECISION COORD] 2026-06-13, option (b), étendue à 02b/03/05 le 14/06/2026 pour `CollectionHandling`, puis à 01/02 le 15/06/2026 pour l'homogénéité de la série).
 
-### Configuration : NuGet public vs fork
+### Configuration : fork unique pour toute la série
 
-La série suit une stratégie à deux volets selon le besoin en tableaux imbriqués (`int[][]`) :
+Toute la série Z3 charge le **même fork** [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq) via `.deploy/`, ce qui garantit la cohérence pédagogique (tous les notebooks partagent la même build, incluant la feature `CollectionHandling` ressuscitée) :
 
-| Notebooks      | Source                 | Chargement                    | Pré-requis      |
-|----------------|------------------------|-------------------------------|-----------------|
-| 01, 02         | NuGet public `Z3.Linq` | `#r nuget:Z3.Linq,...`        | Aucun (auto)    |
-| 02b, 03, 04, 05| Fork (voir ci-dessus)  | `#r "../Z3.Linq/.deploy/..."` | Script de build |
+| Notebooks                   | Source                | Chargement                    | Pré-requis      |
+|-----------------------------|-----------------------|-------------------------------|-----------------|
+| 01, 02, 02b, 03, 04, 05     | Fork (voir ci-dessus) | `#r "../Z3.Linq/.deploy/..."` | Script de build |
 
-**Pourquoi un fork pour le notebook 04 ?** Le support des tableaux imbriqués `int[][]` (construction de sort Z3 `Array Int (Array Int Int)`, extraction récursive `ExtractCollection`) provient de [Z3.LinqBinding@EPFdevelopment](https://github.com/MyIntelligenceAgency/Z3.LinqBinding/tree/EPFdevelopment) et n'existe pas dans le NuGet public endjin (`Z3.Linq` 2.0.1, qui ne gère qu'un seul niveau de collection). Publier un NuGet forké n'est pas possible (nous ne sommes pas propriétaires du *package-id*), d'où le script qui compile **uniquement** le wrapper fin et rassemble le solveur natif + les dépendances managées depuis le cache NuGet.
+**Pourquoi un fork ?** Trois raisons : (1) le support des tableaux imbriqués `int[][]` (construction de sort Z3 `Array Int (Array Int Int)`, extraction récursive `ExtractCollection`) provient de [Z3.LinqBinding@EPFdevelopment](https://github.com/MyIntelligenceAgency/Z3.LinqBinding/tree/EPFdevelopment) et n'existe pas dans le NuGet public endjin (`Z3.Linq` 2.0.1, qui ne gère qu'un seul niveau de collection) ; (2) la feature `CollectionHandling` (mode `Constants`, un constant Z3 par élément) a été ressuscitée et câblée le 14/06/2026 ; (3) l'homogénéité de la série (NB-01 et NB-02 basculés sur le fork le 15/06/2026). Publier un NuGet forké n'est pas possible (nous ne sommes pas propriétaires du *package-id*), d'où le script qui compile **uniquement** le wrapper fin et rassemble le solveur natif + les dépendances managées depuis le cache NuGet.
 
 ## Objectifs d'apprentissage
 
@@ -92,6 +91,30 @@ La série suit une stratégie à deux volets selon le besoin en tableaux imbriqu
 | 2018-2023 | jsboige | Arrays, hierarchical objects, nested arrays, meal planner |
 | 2022-2023 | endjin | Modernisation .NET, CI, structure professionnelle |
 | 2026 | MyIntelligenceAgency | Réintégration EPFdevelopment + série pédagogique |
+
+## Pour aller plus loin : regex symbolique, reconnaissance vs résolution
+
+Cette série (LINQ → SMT) est l'une des deux faces d'une même idée — **décrire des contraintes haut-niveau, laisser le solveur témoigner**. L'autre face est l'histoire des **expressions régulières symboliques**, où la contrainte est un motif de chaîne plutôt qu'un système d'entiers. Deux ressources voisines l'explorent et complètent directement cette série :
+
+| Ressource | Langage | Ce qu'elle enseigne | Lien |
+|-----------|---------|---------------------|------|
+| **Z3-Python-04 — Chaînes et regex** | Python (z3-py) | La théorie **native** des chaînes Z3 : `Re`, `InRe`, `Star`, `Range`. Z3 ne se contente pas de vérifier — il **génère un témoin** (une chaîne satisfaisant le regex). Extraction d'extension, détection d'insatisfiabilité. | [Z3-Python/04](../Z3-Python/Z3-Python-04-Strings-Regex.ipynb) |
+| **Sudoku-13 — Automates symboliques** | C# (.NET) | L'échelle en trois barreaux : Conway (PCRE folklore) → BREX/Rex 2020 (murs documentés) → RE# 2025. RE# **reconnaît** une grille remplie en temps linéaire ; Z3 **résout** et produit la grille. Le Sudoku donne à voir la distinction. | [Sudoku/13](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) |
+
+### Reconnaître ≠ Résoudre
+
+La distinction centrale, que le Sudoku met en scène de façon frappante :
+
+| Critère | Reconnaissance (RE#, Z3 `InRe` en vérification) | Résolution (Z3 en production de témoin) |
+|---------|--------------------------------------------------|------------------------------------------|
+| **Question** | « Cette chaîne/grille satisfait-elle le motif ? » | « Trouve une chaîne/grille satisfaisant le motif » |
+| **Complexité** | Linéaire, non-backtracking | NP-dur en général (recherche dans l'espace des solutions) |
+| **Rôle** | Vérificateur (certifie) | Producteur (témoigne) |
+| **Dans cette série** | — (Z3.Linq cible la résolution d'entiers/arrays) | Cœur de la série : `Theorem<T>.Solve()` / `.Optimize()` |
+
+> **Leçon** : un vérificateur rapide (RE# valide une ligne Sudoku en ~18 ms) peut être **plus rapide qu'un résolveur** (Z3 produit la grille en ~27 ms) — il certifie ce qu'il ne peut produire. Les notebooks de cette série enseignent le côté *résolution* ; Z3-Python-04 et Sudoku-13 enseignent le côté *reconnaissance* et le pont entre les deux.
+
+Ces ressources relèvent de l'Epic **#2978** (le Sudoku comme regex symbolique) et sont les compagnons naturels de cette série.
 
 ### Liens
 
