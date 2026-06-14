@@ -2,18 +2,18 @@
 
 [← Image Foundation](../01-Foundation/) | [↑ Image](../README.md) | [→ Image Orchestration](../03-Orchestration/)
 
-Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5, et Z-Image/Lumina.
+Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5, Z-Image/Lumina, et la quantification extrême (Bonsai ternaire 1.58-bit).
 
-**Dans le cadre du fil rouge contenu visuel educatif** : un visuel de qualite demande des outils precis. [02-1](02-1-Qwen-Image-Edit-2509.ipynb) edite une image existante pour corriger ou enrichir un diagramme. [02-2](02-2-FLUX-1-Advanced-Generation.ipynb) genere des images haute qualite. [02-4](02-4-Z-Image-Lumina2.ipynb) offre une generation rapide pour le prototypage iteratif.
+**Dans le cadre du fil rouge contenu visuel educatif** : un visuel de qualite demande des outils precis. [02-1](02-1-Qwen-Image-Edit-2509.ipynb) edite une image existante pour corriger ou enrichir un diagramme. [02-2](02-2-FLUX-1-Advanced-Generation.ipynb) genere des images haute qualite. [02-4](02-4-Z-Image-Lumina2.ipynb) offre une generation rapide pour le prototypage iteratif. [02-5](02-5-Bonsai-Image-Ternary.ipynb) aborde la quantification ternaire 1.58-bit : un modèle 4B compressé à ~4 GB qui se genere en ~2s, parfait pour deployer la generation d'images sur du materiel modeste (formation, demos) sans sacrifier la qualite.
 
 ## Vue d'overview
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 4 |
+| Notebooks | 5 |
 | Kernel | Python 3 |
-| Duree estimee | ~4-6h |
-| GPU requis | 10-29GB |
+| Duree estimee | ~5-7h |
+| GPU requis | 5-29GB |
 
 ## Notebooks
 
@@ -23,6 +23,7 @@ Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5
 | 2 | [02-2-FLUX-1-Advanced-Generation](02-2-FLUX-1-Advanced-Generation.ipynb) | Génération FLUX | ComfyUI | Variable |
 | 3 | [02-3-Stable-Diffusion-3-5](02-3-Stable-Diffusion-3-5.ipynb) | SD 3.5 | ComfyUI | Variable |
 | 4 | [02-4-Z-Image-Lumina2](02-4-Z-Image-Lumina2.ipynb) | Z-Image/Lumina | ComfyUI | ~10GB |
+| 5 | [02-5-Bonsai-Image-Ternary](02-5-Bonsai-Image-Ternary.ipynb) | Quantification ternaire 1.58-bit (BitNet), custom node | ComfyUI (custom node) | ~5GB |
 
 ## Prérequis
 
@@ -45,6 +46,7 @@ pip install -r requirements-comfyui.txt
 2. **02-2-FLUX-1-Advanced-Generation** - Génération de haute qualité
 3. **02-3-Stable-Diffusion-3.5** - SD 3.5 pour contrôle fin
 4. **02-4-Z-Image-Lumina2** - Modèle léger et rapide
+5. **02-5-Bonsai-Image-Ternary** - Quantification extrême pour déploiement sobre en VRAM
 
 ## Technologies clés
 
@@ -68,6 +70,12 @@ pip install -r requirements-comfyui.txt
 - **Points forts** : Vitesse, qualité légère
 - **VRAM** : ~10GB
 
+### Bonsai-Image 4B (Ternary 1.58-bit)
+- **Architecture** : Transformer 4B quantifié ternaire (BitNet b1.58), Gemlite INT2 + HQQ 4-bit text encoder
+- **Points forts** : Modèle 4B compressé à ~4 GB (vs ~32 GB en FP16), génération ~2s en 4 steps, déploiable sur GPU d'entrée de gamme
+- **VRAM** : ~5GB
+- **Accès** : custom node ComfyUI `BonsaiTernaryNode` (modèle auto-téléchargé depuis HuggingFace au premier run)
+
 ## Comparatif
 
 | Modèle | Spécialité | VRAM | Qualité | Vitesse |
@@ -76,6 +84,7 @@ pip install -r requirements-comfyui.txt
 | FLUX | Génération | Variable | Exceptionnel | Moyen |
 | SD 3.5 | Polyvalent | Variable | Bon | Rapide |
 | Z-Image | Léger | ~10GB | Bon | Très rapide |
+| Bonsai | Quantifié (1.58-bit) | ~5GB | Bon | Très rapide |
 
 ## Ressources
 
