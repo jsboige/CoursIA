@@ -3,6 +3,12 @@
 **Issue** : See #1630
 **Generated** : 2026-06-04 (automated catalog, pending live backtests)
 **Updated** : 2026-06-11 — +3 baselines (MeanReversion v5.2 IBKR, AdaptiveAssetAllocation, PairsTrading). MeanReversion promoted Tier 2 → Tier 1 (0.29 → 0.81). AAA promoted Tier 4 → Tier 1 (untested → 0.509).
+**Post-#2801 verification** : 2026-06-14 — campaign started. The remediation #2801 (brokerage
+model on 52 strategies via Lot 1 #2812, real fees via Lot 2 #2823/#2864, fixed end-dates via
+Lot 3 #2813, OOS splits via Lot 5 #2824) **invalidates pre-remediation Sharpes** when the
+brokerage/fee model was previously the negligible default. Entries marked
+`✓post-#2801` in the **Verified** column are re-run live via MCP qc-mcp; all others remain
+pre-remediation catalog values and need re-backtest before comparative conclusions.
 **Methodology** : Period common 2018-01-01 → 2024-12-31 (US equities/multi-asset), 2020-01-01 → 2024-12-31 (crypto). Metrics from `projects/catalog.json` + prior backtest runs. Pending: standardized re-backtest via MCP qc-mcp.
 
 ---
@@ -34,10 +40,10 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 6 | DynamicVIXSpyRegime-QC | ML | Equities/VIX | 1.72 | 29.8 | — | — | robuste |
 | 7 | MacroFactorRotation-QC | ML | Multi-asset | 1.23 | 33.5 | — | — | robuste |
 | 8 | Framework_Composite_TrendWeather | COMP | Equities | 1.16 | 27.4 | — | — | robuste |
-| 9 | Trend-Following | IND | Equities | 1.07 | 23.2 | — | — | robuste |
+| 9 | Trend-Following | IND | Equities | ~~1.07~~ → **0.41** ✓post-#2801 | 7.9 | 14.6 | 0.54 | **historique** (downgraded: real IBKR fees) |
 | 10 | Multi-Layer-EMA | IND | Crypto (BTC) | 0.93 | — | — | — | robuste |
 | 11 | Portfolio-Optimization-ML | ML | Multi-asset | 0.90 | 27.6 | — | — | robuste |
-| 12 | EMA-Cross-Stocks | IND | Equities | 0.87 | 25.7 | — | — | robuste |
+| 12 | EMA-Cross-Stocks | IND | Equities | ~~0.87~~ → **0.99** ✓post-#2801 | 29.2 | 35.7 | 0.82 | robuste (PSR 49.7%, borderline significant) |
 | 13 | CausalEventAlpha | ML | Equities | 0.78 | 16.8 | — | — | robuste |
 | 14 | Gaussian-Direction-Classifier | ML | Equities | 0.76 | — | — | — | robuste |
 | 15 | ML-Temporal-CNN | DL | Equities (QQQ) | 0.73 | 20.5 | — | — | robuste |
@@ -67,6 +73,28 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 37 | composite-c1-multiasset | COMP | Multi-asset | — | — | — | — | robuste |
 | 38 | composite-c2-equityfactor | COMP | Equities | — | — | — | — | robuste |
 | 39 | HAR-RV-Kelly | RISK | Multi-asset | — | — | — | — | robuste |
+
+### Post-#2801 verification — initial findings (2026-06-14)
+
+Two Tier-1 entries re-run live via MCP qc-mcp (project native period 2015-2024, IBKR margin
+brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog values:
+
+| Strategy | Catalog Sharpe | **Verified Sharpe** | Delta | Real status |
+|----------|---------------|---------------------|-------|-------------|
+| Trend-Following (QC 28797562) | 1.07 | **0.41** | -62% | **historique** (was robuste) |
+| EMA-Cross-Stocks (QC 28789946) | 0.87 | **0.99** | +14% | robuste (confirmed, PSR 49.7%) |
+
+**Finding (methodological)** : the remediation impact is **not uniform**. Trend-Following
+degrades sharply (real IBKR fees vs the previously-negligible default) and drops out of
+Tier 1; EMA-Cross-Stocks holds and slightly improves. This confirms the catalog's own
+"pending live backtests" caveat: **pre-remediation Sharpes are not reliable for comparative
+conclusions**. The full Tier-1 list (39 remaining strategies) needs systematic re-backtest
+before the comparative table can be trusted end-to-end. Entries marked `✓post-#2801` are
+verified; all others are provisional.
+
+Backtests: `1630-baseline-TrendFollowing-post2801` (Sharpe 0.407, CAGR 7.89%, MaxDD 14.6%,
+PSR 8.7%), `1630-baseline-EMACrossStocks-post2801` (Sharpe 0.991, CAGR 29.2%, MaxDD 35.7%,
+PSR 49.7%).
 
 ---
 
