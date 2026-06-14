@@ -51,6 +51,15 @@ Stratégie composite multi-broker associant un sleeve actions/ETFs (IBKR compte 
 - Connexion paper IBKR + Binance testnet
 - Logging quotidien : fills réels vs backtest, slippage, market impact
 - Comparison live drift vs expected returns/vol
+- **Contrainte architecturale (leçon Phase 2)** : `set_brokerage_model(IBKR)` REJETTE
+  le type Crypto ("Unsupported security type") → un backtest unifié 2-broker n'est pas
+  transposable tel quel en live unified. Deux approches pour Phase 4 :
+  1. **Binance-first** (recommandé, un seul nœud) : paper trader le sleeve crypto seul
+     sur Binance testnet (sleeve IBKR en backtest parallèle, agrégation manuelle) ;
+  2. **2 algorithms séparés** (Phase 5) : un algorithm IBKR (equities) + un algorithm
+     Binance (crypto), chacun sur son nœud QC Cloud, agrégation des P&L hors-pipeline.
+- **Gate** : credentials IBKR paper prêts côté user (mdp reset 12/06, cf #1199) ;
+  reste MAJ `.env` + test login IB Gateway avant exécution.
 
 ### Phase 5 — Live nodes QC (S4+)
 - Déploiement sur 2 nœuds QC Cloud (1 par broker)
