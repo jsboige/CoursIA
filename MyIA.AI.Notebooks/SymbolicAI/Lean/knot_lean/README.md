@@ -48,7 +48,8 @@ sauf justification documentée dans le body PR.
 ### Scaffolding (sorry, cible formelle)
 
 - [ ] `tricolorable_invariant` — la 3-colorabilité est invariante par Reidemeister
-  (**GATED sur PR1.5**, cf. § Phase 5)
+  (**FAUX sous le modèle append+wf courant** : kink disjoint change la
+  3-colorabilité = #2938. GATED sur la décision C/X du coordinateur, cf. § Phase 5)
 - [ ] `trefoil_not_unknot` — corollaire : le trèfle n'est pas l'unknot (dépend de
   `tricolorable_invariant`)
 - [ ] `unknottingNumber` — définition + calcul (nécessite minimisation sur classes
@@ -81,13 +82,42 @@ de prouver, vérifier que l'énoncé est *vrai* sous le modèle courant.
    ex nihilo (témoin `d₁={[⟨1,2,1,2⟩],2}` non-tricolorable ↔
    `d₂={[⟨1,2,1,2⟩,⟨3,4,3,4⟩],4}` tricolorable, connectés par un twist R1).
 
-**PR1.5 (prochain, cible).** Renforcer les constructeurs de move pour que `ρ`
-*DÉTERMINE* les labels de `c` — un vrai curl R1 sur l'arc `a` attache le nouveau
-crossing à l'arc existant `a` (pas seulement aux edges fraîches), dont la
-condition Fox lie les nouveaux edges à `color a`. C'est ce qui rend le lemme de
-transfert (PR2) prouvable. La géométrie PD-code du curl (relabelling/split de
-l'arc sous la parité `wf`) nécessite un soin justifié (conventions Adams "The
-Knot Book" / shua/leanknot) — non trivial, cible multi-cycle.
+**PR1.5 (#2956, MERGED) — ρ-determiné.** Renforce les constructeurs de move
+pour que `ρ` *DÉTERMINE* les labels de `c` : un curl R1 sur l'arc `a` attache le
+nouveau crossing `⟨a, a, n+1, n+2⟩`. **PR1.5b (#2966, MERGED)** a livré la preuve
+d'exclusion `pr1_counterexample_excluded_under_rho_determined` (gate 1 : le
+re-model exclut le témoin #2938, prouvé).
+
+**Défaut structurel découvert (2026-06-14, G.1).** Le modèle append+`wf` est
+*trop faible* : un argument de parité (airtight, + 3 probes empiriques) montre
+que TOUTE surgery append `d₂ = d₁ ++ [c]` avec `d₁.wf ∧ d₂.wf` force `c` à ne
+référencer que les labels frais `{n+1, n+2}` (sinon un label de `d₁` dépasse
+2×) → `c = ⟨n+1,n+1,n+2,n+2⟩` = un **kink disjoint** (composante unknot
+séparée, 0 arête partagée avec `d₁`). Conséquences :
+
+1. `Reidemeister1` (free-ρ, #2929) n'admet QUE des kinks disjoints — AUCUN R1
+   connecté représentable. Le témoin #2938 est précisément un kink disjoint.
+2. `Reidemeister1'` (#2956) force `c = ⟨a,a,n+1,n+2⟩` → l'arc `a` apparaît 4× →
+   **`d₂.wf` insatisfiable → la def est VACUOUS**. La preuve d'exclusion #2966
+   est trivialement vraie (la prémisse n'est jamais satisfaite).
+3. R2 : idem (composantes 2-crossings disjointes). Seul **R3** (préserve
+   `numEdges`, relabel un crossing) est connecté sous ce modèle.
+4. `ReidemeisterEquiv` ≈ refl + kinks disjoints R1/R2 + R3 connecté. Trop faible
+   pour dénouer un trèfle. `tricolorable_invariant` est FAUX (un kink disjoint
+   change la 3-colorabilité = #2938).
+
+**Option C — fix connecté, PR1.5c (#2980, EN VOL).** La surgery connectée
+correcte est NON-append : modifier un endpoint crossing `Y` de l'arc `a`
+(rename un slot `a`→`b = n+1`) ET append `C = ⟨a, b, c, c⟩` avec
+`c = n+2` (monogon du kink, apparaît 2× dans `C` seul). Parité préservée :
+`a` = X+C (2×), `b` = Y+C (2×), `c` = C+C (2×). `def Reidemeister1Connected`
+(Reidemeister.lean) implémente cette surgery ; `reidemeister1Connected_satisfiable`
+prouve un témoin concret `wf = true` des deux côtés (`d₁={[⟨1,2,3,4⟩,⟨1,2,3,4⟩],4}`
+→ `d₂={[⟨1,2,3,4⟩,⟨5,2,3,4⟩,⟨1,5,6,6⟩],6}`). **ADDITIF** : ne modifie pas les
+moves merged (#2929/#2956 coexistent). Option C prouvée feasible (non-vacuous) ;
+PR2 transfer lemma peut être bâti dessus si le coordinateur valide (C).
+Décision coordinateur en attente : (C) migration vers surgery connectée vs
+(X) accepter #2938 comme résultat certifié et reframer le marquee.
 
 Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Book*.
 
