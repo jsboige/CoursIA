@@ -138,6 +138,76 @@ theorem Reidemeister1'.implies_reidemeister1 {d₁ d₂ : KnotDiagram}
   · exact ⟨hwf₁, hwf₂, ⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩, ρ, Or.inl hsurg⟩
   · exact ⟨hwf₁, hwf₂, ⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩, ρ, Or.inr hsurg⟩
 
+/-! ## R1 (option C, connected surgery) — Phase 5 PR1.5c
+
+`Reidemeister1'` (PR1.5 #2956) is **vacuous**: its `d₂.wf = true` premise is
+unsatisfiable for non-degenerate twists, because the append-only surgery
+`d₂ = d₁ ++ [⟨a, a, n+1, n+2⟩]` introduces two fresh singleton labels `n+1`,
+`n+2` that violate the `wf` parity condition (each label must appear exactly
+twice). A parity argument shows that ANY append-only R1/R2 surgery with `wf`
+on both sides forces the new crossing to be a **disjoint kink**
+`⟨n+1, n+1, n+2, n+2⟩` — a separate unknot component sharing no edge with
+`d₁`. Only R3 (which preserves `numEdges` and relabels a single crossing) is
+genuinely connected under the append+`wf` model. See the certified
+counter-example `tricolorable_invariant_fails_under_pr1_model` (`Invariant.lean`)
+and the structural diagnosis posted to the coordinator (2026-06-14).
+
+`Reidemeister1Connected` is the **option-C fix**: a NON-append surgery that
+splices into an existing arc `a` of `d₁`. It modifies one endpoint crossing
+`Y = d₁.crossings[i]` (renaming one occurrence of `a` to a fresh label
+`b = d₁.numEdges + 1`) and appends a new crossing
+`C = ⟨a, b, d₁.numEdges + 2, d₁.numEdges + 2⟩`. Parity is preserved:
+- `a`: loses one occurrence (renamed in `Y`) and gains one (in `C.e1`) → 2×;
+- `b = n+1`: one in `Y` (renamed slot) + one in `C.e2` → 2×;
+- `c = n+2`: two in `C` (`e3`, `e4`) → 2×;
+- all other labels unchanged.
+This is ADDITIVE (does not modify `Reidemeister1` / `Reidemeister1'`); it is
+the concrete, `wf`-satisfiable artifact de-risking option C for the
+coordinator's C/X modeling decision (See #2874). It does NOT replace the
+merged moves (#2956) — both coexist so prior results stay valid.
+-/
+
+/-- **Reidemeister1Connected (option C)**: a CONNECTED R1 twist on arc `a`.
+    The surgery modifies endpoint crossing `Y = d₁.crossings[i]` (one slot `a`
+    renamed to `b = d₁.numEdges + 1`, materialised as the supplied `Y'`) and
+    appends `⟨a, b, c, c⟩` with `c = d₁.numEdges + 2`. Unlike `Reidemeister1'`,
+    the `d₂.wf = true` premise is **satisfiable** — see
+    `reidemeister1Connected_satisfiable`. The hypothesis `a ∈ d₁.edges` forces
+    the move to be genuinely connected (arc `a` is a real edge of `d₁`), so the
+    new crossing shares an edge with `d₁` rather than being a disjoint kink. -/
+def Reidemeister1Connected (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.wf = true ∧ d₂.wf = true ∧
+  (∃ (i : Fin d₁.crossings.length) (a : Nat) (Y' : PDCrossing)
+     (ρ : Fin d₁.numEdges ↪ Fin (d₁.numEdges + 2)),
+     1 ≤ a ∧ a ≤ d₁.numEdges ∧
+     a ∈ d₁.edges ∧
+     d₂ = { d₁ with crossings := d₁.crossings.set i.val Y' ++
+                       [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩],
+                    numEdges := d₁.numEdges + 2 })
+
+/-- `Reidemeister1Connected` is NOT vacuous (contrast with `Reidemeister1'`):
+    a concrete connected twist `d₁ → d₂` with `wf = true` on both sides.
+
+    Witness: `d₁ = {[⟨1,2,3,4⟩, ⟨1,2,3,4⟩], 4}` (arc `a = 1` appears at `e1` of
+    both crossings). The twist modifies crossing 1 (`⟨1,2,3,4⟩ → ⟨5,2,3,4⟩`,
+    slot `e1`: `1 → 5 = b`) and appends `C = ⟨1,5,6,6⟩`. The result
+    `d₂ = {[⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], 6}` is well-formed
+    (`wf = true`, verified empirically by `#eval` during de-risking and here by
+    `decide`). This is the headline property distinguishing option C from the
+    vacuous PR1.5 model. -/
+theorem reidemeister1Connected_satisfiable :
+    Reidemeister1Connected
+      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4, hwell := by trivial }
+      { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6, hwell := by trivial } := by
+  refine ⟨by decide, by decide, ⟨1, by decide⟩, 1, ⟨5,2,3,4⟩, ?_, ?_⟩
+  · -- ρ : Fin 4 ↪ Fin 6 (trivial embedding, first 4 → first 4 of 6).
+    exact { toFun := fun j => ⟨j.val, by omega⟩,
+            inj' := fun x y h => by injection h with hv; exact Fin.ext hv }
+  · -- body: 1 ≤ a, a ≤ numEdges, a ∈ d₁.edges, and the surgery equation.
+    -- `decide` (kernel reduction) handles the struct projections / flatMap
+    -- that `omega` cannot see; `rfl` closes the definitional surgery equation.
+    exact ⟨by decide, by decide, by decide, rfl⟩
+
 /-- R2 (Poke/Unpoke): add or remove two consecutive crossings of opposite sign.
 
 Two parallel strands can pass through each other:
