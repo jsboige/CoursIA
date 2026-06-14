@@ -208,6 +208,43 @@ theorem reidemeister1Connected_satisfiable :
     -- that `omega` cannot see; `rfl` closes the definitional surgery equation.
     exact ⟨by decide, by decide, by decide, rfl⟩
 
+/-! ### API lemmas for `Reidemeister1Connected` (option C infrastructure for PR2)
+
+These projection-style lemmas expose the surgery's combinatorial shape, which the
+transfer lemma (PR2) consumes when pushing a tricoloring across a connected R1
+twist: the edge count grows by exactly 2 (same magnitude as the disjoint-kink
+append model, but reached by a connected splice), and the crossing count grows
+by exactly 1. They mirror the `trefoil_wf` / `unknot_wf` projection-API style of
+`Basic.lean`.
+-/
+
+/-- A connected R1 twist adds exactly two edges (the kink monogon `c` and the
+    renamed arc endpoint `b`), same magnitude as the disjoint-kink model but via
+    a connected splice. -/
+theorem Reidemeister1Connected.numEdges_succ {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) : d₂.numEdges = d₁.numEdges + 2 := by
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, hsurg⟩ := h
+  have hne := congrArg (·.numEdges) hsurg
+  simpa using hne
+
+/-- A connected R1 twist adds exactly one crossing (the curl `C`); the existing
+    endpoint crossing `Y` is relabelled in place (`List.set` preserves length),
+    not duplicated. -/
+theorem Reidemeister1Connected.numCrossings_succ {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) : d₂.crossings.length = d₁.crossings.length + 1 := by
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, hsurg⟩ := h
+  have hcl := congrArg (fun d => d.crossings.length) hsurg
+  simpa [List.length_set, List.length_append] using hcl
+
+/-- The arc `a` receiving the twist is a genuine edge of `d₁` (connectivity
+    hypothesis): the new crossing `C = ⟨a, b, c, c⟩` shares edge `a` with `d₁`,
+    which is what distinguishes a connected twist from a disjoint kink
+    `⟨n+1,n+1,n+2,n+2⟩` (which shares no edge with `d₁`). -/
+theorem Reidemeister1Connected.shares_edge {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) : ∃ a : Nat, a ∈ d₁.edges ∧ 1 ≤ a ∧ a ≤ d₁.numEdges := by
+  obtain ⟨_hwf₁, _hwf₂, _i, a, _Y', _ρ, hr1, hr2, hmem, _hsurg⟩ := h
+  exact ⟨a, hmem, hr1, hr2⟩
+
 /-- R2 (Poke/Unpoke): add or remove two consecutive crossings of opposite sign.
 
 Two parallel strands can pass through each other:
