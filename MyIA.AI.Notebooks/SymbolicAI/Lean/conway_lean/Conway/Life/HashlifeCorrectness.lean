@@ -851,6 +851,69 @@ private theorem wf_node_elim {nw ne sw se : MacroCell}
   simp only [MacroCell.wf, Bool.and_eq_true, beq_iff_eq] at h
   tauto
 
+/-! ## P3/P4 structural input: empty + padding level/wf preservation
+
+`emptyOfLevel`, `padToLevelPlus1`, `padCenter2`, and `centerInLevelPlus2`
+build larger well-formed cells from smaller ones, used by P3 (frame
+correctness) and P4 (centering before the Hashlife result). The level and
+well-formedness of these results are structural inputs to both pillars:
+P3's frame lemma and P4's centering both presuppose the padded cell is
+well-formed at the expected level. The `emptyOfLevel_wf` and
+`padToLevelPlus1` level+wf facts below are the foundational steps;
+`padCenter2`/`centerInLevelPlus2` lift by composition. -/
+
+/-- `(emptyOfLevel n)` is well-formed — induction over `n`. The base case
+    `n = 0` is `deadLeaf.wf = true` (a leaf). The successor case: four
+    equal-level wf subtrees (each `emptyOfLevel n`, wf by IH, same level by
+    `emptyOfLevel_level`), so the node's `wf` conjunction holds. -/
+private theorem emptyOfLevel_wf (n : Nat) : (MacroCell.emptyOfLevel n).wf = true := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    show (MacroCell.node (MacroCell.emptyOfLevel n) (MacroCell.emptyOfLevel n)
+              (MacroCell.emptyOfLevel n) (MacroCell.emptyOfLevel n)).wf = true
+    simp only [MacroCell.wf, Bool.and_eq_true, beq_iff_eq, ih, emptyOfLevel_level]
+    trivial
+
+/-- `padToLevelPlus1 (node nw ne sw se)` has level `1 + nw.level + 1`: its
+    `nw` sub-cell `(node e e e nw)` has level `1 + e.level = 1 + nw.level`
+    (since `e = emptyOfLevel nw.level`), so the outer node has level
+    `1 + (1 + nw.level)`. -/
+private theorem level_padToLevelPlus1 {nw ne sw se : MacroCell} :
+    (padToLevelPlus1 (node nw ne sw se)).level = 1 + nw.level + 1 := by
+  simp only [padToLevelPlus1, MacroCell.level, emptyOfLevel_level]
+  omega
+
+/-- `padToLevelPlus1` preserves well-formedness: from a well-formed node it
+    produces a well-formed node one level higher. Each of the four sub-cells
+    `(node e e e nw)` etc. is well-formed (three wf equal-level empties plus
+    one original subtree) at the same level `1 + nw.level`, so the outer
+    node's `wf` conjunction holds. -/
+private theorem wf_padToLevelPlus1 {nw ne sw se : MacroCell}
+    (h : (node nw ne sw se).wf = true) :
+    (padToLevelPlus1 (node nw ne sw se)).wf = true := by
+  obtain ⟨hwa, hwb, hwd, hwe, hla, hlb, hld⟩ := wf_node_elim h
+  -- emptyOfLevel nw.level : wf, level = nw.level
+  have he_wf : (MacroCell.emptyOfLevel nw.level).wf = true := emptyOfLevel_wf nw.level
+  have he_lvl : (MacroCell.emptyOfLevel nw.level).level = nw.level := emptyOfLevel_level nw.level
+  -- The 4 outer sub-cells are all (node e e e nw) etc. Each has level 1+nw.level
+  -- and is wf (3 empties + 1 original, all wf, all equal-level). Build wf directly.
+  show (MacroCell.node
+          (MacroCell.node (MacroCell.emptyOfLevel nw.level) (MacroCell.emptyOfLevel nw.level)
+                          (MacroCell.emptyOfLevel nw.level) nw)
+          (MacroCell.node (MacroCell.emptyOfLevel nw.level) (MacroCell.emptyOfLevel nw.level)
+                          ne (MacroCell.emptyOfLevel nw.level))
+          (MacroCell.node (MacroCell.emptyOfLevel nw.level) sw
+                          (MacroCell.emptyOfLevel nw.level) (MacroCell.emptyOfLevel nw.level))
+          (MacroCell.node se (MacroCell.emptyOfLevel nw.level)
+                          (MacroCell.emptyOfLevel nw.level) (MacroCell.emptyOfLevel nw.level))).wf = true
+  simp only [MacroCell.wf, Bool.and_eq_true, beq_iff_eq]
+  -- each inner node's wf: 3 empties (wf, same level) + 1 original (wf by hwa/etc.)
+  -- and inner level equality (1 + nw.level everywhere)
+  simp only [MacroCell.wf, Bool.and_eq_true, beq_iff_eq, he_wf, hwa, hwb, hwd, hwe,
+             MacroCell.level, he_lvl, hla, hlb, hld]
+  decide
+
 /-! ## P4 structural input: level preservation (level-2 base)
 
 `hashlifeResult` on a well-formed level-`k` cell is documented to return a
