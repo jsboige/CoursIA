@@ -1393,13 +1393,32 @@ are ready.
 See `agent_tests/prover/RUNBOOK.md` for the iteration protocol. -/
 
 /-- **P5.1** (definitional, no P4 dependency): when the number of generations
-    `n` is smaller than `2^(k-2)` (the Hashlife jump size for a level-`k`
-    cell), `evolveHashlifeFast` does not make a recursive Hashlife jump — it
-    falls back to the reference `evolve`. This is pure definitional unfolding
-    of `evolveHashlifeFastAux`'s small-n arm. Difficulty: P5.1 (independent of
-    P4; provable now). -/
-theorem p5_small_n_fallback (n : Nat) (g : Grid) (h : BoxAssezGrand g n) : True := by
-  sorry
+    `n` is smaller than `jumpSize lvl` (the Hashlife jump size for the grid's
+    MacroCell level `lvl`), `evolveHashlifeFast` does not make a recursive
+    Hashlife jump — it falls back to the reference `evolve`. This is pure
+    definitional unfolding of `evolveHashlifeFastAux`'s small-n arm.
+
+    **PROVEN** (eliminates 1 sorry from the scaffolding). The `zero` case is
+    definitional (`evolve 0 g = g`). The `succ k` case splits the guard
+    `lvl ≥ 2 && (k+1) ≥ jumpSize lvl`: the guard-true branch contradicts the
+    hypothesis `k+1 < jumpSize lvl`, the guard-false branch is the `evolve`
+    fallback (definitional equality). -/
+theorem p5_small_n_fallback (n : Nat) (g : Grid)
+    (h : n < jumpSize (gridToMacroCellWithOffset g).2.level) :
+    evolveHashlifeFast n g = evolve n g := by
+  show evolveHashlifeFastAux n n g = evolve n g
+  cases n with
+  | zero => rfl
+  | succ k =>
+    simp only [evolveHashlifeFastAux]
+    split_ifs with hcond
+    · -- guard true (jump branch): impossible under h : k+1 < js
+      exfalso
+      obtain ⟨_hlvl, hnjs⟩ : (gridToMacroCellWithOffset g).2.level ≥ 2 ∧ k + 1 ≥
+          jumpSize (gridToMacroCellWithOffset g).2.level := by
+        simpa using hcond
+      exact absurd hnjs (Nat.not_le_of_lt h)
+    · rfl
 
 /-- **P5.2** (compositional, blocked on P4): when `n ≥ 2^(k-2)`,
     `evolveHashlifeFast n g` makes one Hashlife jump of `2^(k-2)` generations
@@ -1417,9 +1436,10 @@ theorem p5_large_n_jump (n : Nat) (g : Grid) (h : BoxAssezGrand g n) : True := b
     sub-lemmas are proven. -/
 theorem p5_inductive_step (n : Nat) (g : Grid) (h : BoxAssezGrand g n) :
     evolveHashlifeFast n g = evolve n g := by
-  have _h1 := p5_small_n_fallback n g h
-  have _h2 := p5_large_n_jump n g h
-  sorry
+  by_cases hsmall : n < jumpSize (gridToMacroCellWithOffset g).2.level
+  · exact p5_small_n_fallback n g hsmall
+  · sorry
+
 
 /-- **Hashlife correctness (bounded)**: under the padding hypothesis
     `box_assez_grand g n`, the exponential-speedup Hashlife implementation
