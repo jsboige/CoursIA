@@ -17,7 +17,7 @@ Un solveur **SAT** décide si une formule booléenne est satisfiable. Un solveur
 | Série | Langage / Binding | Style | Notebooks | Statut |
 |-------|-------------------|-------|-----------|--------|
 | [**Z3/**](Z3/README.md) | C# .NET 9 / **Z3.Linq** | Déclaratif borné : on traduit des expressions LINQ en formules SMT | 5 (`01` -> `05`) | PRODUCTION / BETA |
-| [**Z3-Python/**](Z3-Python/README.md) | Python / **z3-py** | Impératif complet : accès à l'API intégrale du solveur | 3 (`01` -> `03`, en cours) | PRODUCTION |
+| [**Z3-Python/**](Z3-Python/README.md) | Python / **z3-py** | Impératif complet : accès à l'API intégrale du solveur | 6 (`01` -> `06`, série complète) | PRODUCTION |
 
 ### Z3.Linq (C#) — la porte d'entrée déclarative
 
