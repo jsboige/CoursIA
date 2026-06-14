@@ -283,6 +283,76 @@ theorem tricolorable_invariant_fails_under_pr1_model :
     · -- ≥2 colours: edge index 0 = red ≠ blue = edge index 2.
       exact ⟨⟨0, by decide⟩, ⟨2, by decide⟩, by decide⟩
 
+/-! ## 3c. Non-regression gate (PR1.5): the #2938 witness is EXCLUDED under `Reidemeister1'`
+
+`Reidemeister1'` (Reidemeister.lean, PR1.5 #2956) is the ρ-determined strengthening
+of the R1 move: the new crossing is forced to the shape `⟨a, a, n+1, n+2⟩` — one
+strand is the existing arc `a`. This couples the two fresh edges to `color(a)` via
+the Fox condition, which is what the PR1 free-`ρ` model lacked.
+
+The certified counter-example `tricolorable_invariant_fails_under_pr1_model`
+above (§3b) refutes the biconditional *under the PR1 model* by exhibiting a
+specific witness pair `(d₁, d₂)` connected by a PR1 R1-step. **This theorem proves
+that very witness pair is NOT connected by a `Reidemeister1'` step** — i.e. the
+ρ-determined refinement excludes the counter-example by construction. This is the
+non-regression test ai-01 required (PR1.5 gate 1, dashboard 11:35Z): the re-model
+must EXCLUDE #2938, and here we prove it explicitly.
+
+Witness pair (same as §3b):
+  d₁ = { crossings := [⟨1,2,1,2⟩], numEdges := 2 }
+  d₂ = { crossings := [⟨1,2,1,2⟩, ⟨3,4,3,4⟩], numEdges := 4 }
+
+Why `Reidemeister1' d₁ d₂` fails:
+  - Twist arm forces `d₂.crossings = [⟨1,2,1,2⟩] ++ [⟨a, a, 3, 4⟩]`, i.e. the
+    second crossing must be `⟨a, a, 3, 4⟩`. But `d₂`'s second crossing is
+    `⟨3, 4, 3, 4⟩`, so list equality forces `⟨3,4,3,4⟩ = ⟨a,a,3,4⟩`, giving
+    `a = 3` (from e1) and `a = 4` (from e2) — contradiction.
+  - Untwist arm forces `d₁.crossings` to equal `d₂.crossings ++ [⟨a,a,_,_⟩]`,
+    a 3-element list, but `d₁.crossings` has 1 element — length contradiction.
+-/
+
+/-- The #2938 witness pair is NOT connected by a ρ-determined R1 move
+(`Reidemeister1'`). This is the PR1.5 non-regression gate: the re-model excludes
+the counter-example by construction. -/
+theorem pr1_counterexample_excluded_under_rho_determined :
+    ¬ Reidemeister1'
+        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial } := by
+  -- Unfold Reidemeister1': wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, surgery ∨ surgery)).
+  rintro ⟨_hwf₁, _hwf₂, a, _hrange₁, _hrange₂, _ρ, hsurg⟩
+  rcases hsurg with ht | ht
+  · -- TWIST arm: d₂ = { d₁ with crossings := d₁.crossings ++ [⟨a,a,3,4⟩], numEdges := 4 }.
+    -- d₁.numEdges = 2, so the appended crossing is ⟨a, a, 3, 4⟩.
+    -- Project .crossings off the record equality ht by congruence, then the RHS
+    -- ({ d₁ with crossings := X }).crossings reduces to X = d₁.crossings ++ [⟨a,a,3,4⟩].
+    have hfield :
+        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+          : KnotDiagram).crossings =
+        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+          : KnotDiagram).crossings ++ [⟨a, a, 3, 4⟩] :=
+      congrArg (·.crossings) ht
+    -- The RHS reduces to [⟨1,2,1,2⟩] ++ [⟨a,a,3,4⟩]; second elements: ⟨3,4,3,4⟩ = ⟨a,a,3,4⟩.
+    have h2nd : (⟨3, 4, 3, 4⟩ : PDCrossing) = ⟨a, a, 3, 4⟩ := by
+      simpa [List.append] using hfield
+    -- Injectivity of PDCrossing (4 fields): e1 gives 3 = a, e2 gives 4 = a.
+    injection h2nd with h_e1 h_e2 h_e3 h_e4
+    omega
+  · -- UNTWIST arm: d₁ = { d₂ with crossings := d₂.crossings ++ [⟨a,a,5,6⟩], numEdges := 6 }.
+    -- d₂.numEdges = 4, so appended crossing = ⟨a, a, 5, 6⟩.
+    -- Project .crossings off the record equality by congruence (term-mode, robust
+    -- against literal-form mismatch that blocks `subst`/`rw`).
+    have hfield :
+        ({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+          : KnotDiagram).crossings =
+        ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+          : KnotDiagram).crossings ++ [⟨a, a, 5, 6⟩] :=
+      congrArg (·.crossings) ht
+    -- Length contradiction: LHS has length 1, RHS has length 3.
+    -- `simp at h` reduces the list lengths to concrete numbers (`1` and `3`),
+    -- then closes the goal by deriving `False` from the contradiction `1 = 3`.
+    have h := congrArg List.length hfield
+    simp at h
+
 /-! ## 4. The unknot is NOT tricolorable
 
 The unknot has a diagram with no crossings. Any coloring uses only
