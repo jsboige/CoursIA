@@ -914,6 +914,31 @@ private theorem wf_padToLevelPlus1 {nw ne sw se : MacroCell}
              MacroCell.level, he_lvl, hla, hlb, hld]
   decide
 
+/-! ## P4 structural input: step4x4 shape
+
+`step4x4` is the Hashlife base case (level-2 input -> one generation). It
+always returns a level-1 cell, unconditionally: in the `level == 2` arm it
+returns `node (leaf _) (leaf _) (leaf _) (leaf _)`, and in the `else` arm it
+returns `emptyOfLevel 1`. This level-1 shape is a structural input to the
+`hashlifeResult` level-preservation invariant (the level-2 base of
+`level_hashlifeResult_of_level_two`). The well-formedness is unconditional
+too: four equal-level (level-0) leaves form a wf node, and `emptyOfLevel 1` is
+wf (a node of four level-0 empty leaves). -/
+
+private theorem level_step4x4 (c : MacroCell) : (step4x4 c).level = 1 := by
+  by_cases h : c.level == 2
+  · simp only [step4x4, if_pos h, MacroCell.level]
+  · simp only [step4x4, if_neg h, emptyOfLevel_level]
+
+private theorem wf_step4x4 (c : MacroCell) : (step4x4 c).wf = true := by
+  by_cases h : c.level == 2
+  · -- level-2 arm: node (leaf _) (leaf _) (leaf _) (leaf _). Four leaves are
+    -- all wf (= true) and all level 0, so the wf conjunction is trivially true.
+    simp only [step4x4, if_pos h, MacroCell.wf, MacroCell.level]
+    decide
+  · simp only [step4x4, if_neg h]
+    exact emptyOfLevel_wf 1
+
 /-! ## P4 structural input: level preservation (level-2 base)
 
 `hashlifeResult` on a well-formed level-`k` cell is documented to return a
