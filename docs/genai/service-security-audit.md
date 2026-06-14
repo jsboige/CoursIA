@@ -142,6 +142,12 @@ avant flip (impacte `tts-multi.myia.io`).
   chaque machine. **Décision cluster (ai-01)**, pas worker.
 - `claudish-proxy` : proxy cluster → idem, coordination obligatoire.
 
+> **Runbook opérationnel (P2)** : la procédure de flip détaillée, vérifiée contre
+> le code source des 2 services, est dans [auth-flip-runbook.md](auth-flip-runbook.md).
+> Greenlight ai-01 2026-06-14 : Claudish d'abord (auth déjà codée, blast contenu),
+> puis Qdrant (blast cluster-wide, exige propagation `QDRANT_API_KEY` client avant
+> le flip serveur).
+
 ### P3 — Défense en profondeur (priorité basse)
 
 - Services image (`comfyui-qwen`, `comfyui-video`, `forge-turbo`, `sdnext`) : **aucun
