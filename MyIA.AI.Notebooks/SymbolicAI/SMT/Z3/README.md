@@ -4,7 +4,7 @@
 
 ## Série en quelques mots
 
-**5 notebooks** | **1 kernel** | **~4h de travail** | **Z3.Linq (.NET 9)**
+**6 notebooks** | **1 kernel** | **~4h30 de travail** | **Z3.Linq (.NET 9)**
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs C# souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de théorèmes linéaires simples pour monter progressivement vers les théories de tableaux et l'optimisation hiérarchique.
 
@@ -30,6 +30,7 @@ L'intérêt pédagogique : au lieu d'écrire un algorithme de backtracking pour 
 |---|----------|-------|------|--------|
 | 01 | [Linq2Z3 Intro](01_Linq2Z3_Intro.ipynb) | Théorèmes linéaires, Missionnaires-Cannibales, optimisation | ~45 min | PRODUCTION |
 | 02 | [Sudoku Theorem vs Array](02_Sudoku_Theorem_vs_Array.ipynb) | Sudoku explicite (81 propriétés) vs implicite (`List<int>` + lambdas/closures) | ~50 min | PRODUCTION |
+| 02b | [Sudoku Modes Comparison](02b_Sudoku_Modes_Comparison.ipynb) | **`CollectionHandling`** ressuscité : même Sudoku 4x4 résolu en mode `Array` vs `Constants` | ~25 min | BETA |
 | 03 | [Array Theory](03_Array_Theory.ipynb) | Z3 array theory : Select/Store, switching dynamique | ~45 min | BETA |
 | 04 | [Nested Arrays 2D](04_Nested_Arrays_2D.ipynb) | Tableaux imbriqués, grilles 2D, Sudoku 4x4, carré magique | ~40 min | BETA |
 | 05 | [Meal Planner Hierarchical](05_Meal_Planner_Hierarchical.ipynb) | Planificateur de repas : data fusion LINQ + théorème hiérarchique | ~50 min | BETA |
@@ -38,9 +39,10 @@ L'intérêt pédagogique : au lieu d'écrire un algorithme de backtracking pour 
 
 1. **Notebook 01** pose les bases : le patron `Theorem<T>` de Z3.Linq, les théorèmes linéaires, la recherche de plus court chemin, et le classique Missionnaires-Cannibales
 2. **Notebook 02** compare deux approches du Sudoku : 81 propriétés explicites vs modélisation implicite via arrays et lambdas
-3. **Notebook 03** plonge dans la théorie des tableaux Z3 (Select/Store), avec switching dynamique entre représentations
-4. **Notebook 04** généralise aux tableaux imbriqués (2D) : grilles, carrés magiques, Sudoku 4x4
-5. **Notebook 05** intègre tout : data fusion LINQ + théorème hiérarchique multi-niveaux pour un planificateur de repas réaliste
+3. **Notebook 02b** démontre la feature ressuscitée `CollectionHandling` (mode `Array` vs `Constants`) sur un même Sudoku 4x4, preuve directe que l'enum précédemment morte est désormais câblée bout-en-bout
+4. **Notebook 03** plonge dans la théorie des tableaux Z3 (Select/Store), avec switching dynamique entre représentations
+5. **Notebook 04** généralise aux tableaux imbriqués (2D) : grilles, carrés magiques, Sudoku 4x4
+6. **Notebook 05** intègre tout : data fusion LINQ + théorème hiérarchique multi-niveaux pour un planificateur de repas réaliste, et démontre le mode `CollectionHandling.Constants` (feature ressuscitée du fork)
 
 ## Prérequis
 
@@ -49,19 +51,19 @@ L'intérêt pédagogique : au lieu d'écrire un algorithme de backtracking pour 
 | **.NET 9.0 SDK** | [Download](https://dotnet.microsoft.com/download/dotnet/9.0) |
 | **.NET Interactive** | `dotnet tool install --global Microsoft.dotnet-interactive` |
 | **Kernel Jupyter** | `.net-csharp` (installe automatiquement par .NET Interactive) |
-| **Package NuGet** | `Z3.Linq` (NB-01, 02, 03, 05 : charge automatiquement via `#r nuget:...`) |
-| **NB-04 — fork `int[][]`** | Le notebook 04 utilise le fork [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq) (support `int[][]` absent du NuGet public endjin). Exécuter **une fois** : [`scripts/environment/z3-build-deploy.ps1`](../../../../scripts/environment/z3-build-deploy.ps1) (Windows) ou [`.sh`](../../../../scripts/environment/z3-build-deploy.sh) (Linux/macOS) — compile uniquement le wrapper (~1,5 s) et rassemble les 4 DLL dans `.deploy/`. |
+| **Package NuGet** | `Z3.Linq` (NB-01, 02, 03 : charge automatiquement via `#r nuget:...`) |
+| **NB-02b, 04, 05 — fork** | Les notebooks 02b, 04 et 05 utilisent le fork [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq) : NB-04 pour le support `int[][]` (absent du NuGet public endjin), NB-02b et NB-05 pour la feature `CollectionHandling` (mode `Constants` ressuscité, câblée le 14/06/2026). Exécuter **une fois** : [`scripts/environment/z3-build-deploy.ps1`](../../../../scripts/environment/z3-build-deploy.ps1) (Windows) ou [`.sh`](../../../../scripts/environment/z3-build-deploy.sh) (Linux/macOS) — compile uniquement le wrapper (~1,5 s) et rassemble les 4 DLL dans `.deploy/`. |
 
-> Les notebooks sont autonomes : le restore NuGet et l'initialisation du contexte Z3 sont inclus dans les cellules de setup de chaque notebook. **Exception** : le notebook 04 (tableaux imbriqués 2D) charge le fork via `#r "../Z3.Linq/.deploy/..."`, d'où le pré-requis du script de build ci-dessus (décision ai-01 [DECISION COORD] 2026-06-13, option (b)).
+> Les notebooks sont autonomes : le restore NuGet et l'initialisation du contexte Z3 sont inclus dans les cellules de setup de chaque notebook. **Exception** : les notebooks 02b, 04 et 05 chargent le fork via `#r "../Z3.Linq/.deploy/..."`, d'où le pré-requis du script de build ci-dessus (décision ai-01 [DECISION COORD] 2026-06-13, option (b), étendue à 02b/05 le 14/06/2026 pour `CollectionHandling`).
 
 ### Configuration : NuGet public vs fork
 
 La série suit une stratégie à deux volets selon le besoin en tableaux imbriqués (`int[][]`) :
 
-| Notebooks      | Source                      | Chargement                    | Pré-requis        |
-|----------------|-----------------------------|-------------------------------|-------------------|
-| 01, 02, 03, 05 | NuGet public `Z3.Linq`      | `#r nuget:Z3.Linq,...`        | Aucun (auto)      |
-| 04 (tableaux)  | Fork (voir ci-dessus)       | `#r "../Z3.Linq/.deploy/..."` | Script de build   |
+| Notebooks      | Source                 | Chargement                    | Pré-requis      |
+|----------------|------------------------|-------------------------------|-----------------|
+| 01, 02, 03     | NuGet public `Z3.Linq` | `#r nuget:Z3.Linq,...`        | Aucun (auto)    |
+| 02b, 04, 05    | Fork (voir ci-dessus)  | `#r "../Z3.Linq/.deploy/..."` | Script de build |
 
 **Pourquoi un fork pour le notebook 04 ?** Le support des tableaux imbriqués `int[][]` (construction de sort Z3 `Array Int (Array Int Int)`, extraction récursive `ExtractCollection`) provient de [Z3.LinqBinding@EPFdevelopment](https://github.com/MyIntelligenceAgency/Z3.LinqBinding/tree/EPFdevelopment) et n'existe pas dans le NuGet public endjin (`Z3.Linq` 2.0.1, qui ne gère qu'un seul niveau de collection). Publier un NuGet forké n'est pas possible (nous ne sommes pas propriétaires du *package-id*), d'où le script qui compile **uniquement** le wrapper fin et rassemble le solveur natif + les dépendances managées depuis le cache NuGet.
 
