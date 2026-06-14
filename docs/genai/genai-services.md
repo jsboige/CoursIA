@@ -200,6 +200,28 @@ BATCH_MODE=false
 - `vllm-zimage`, `tts-fishaudio` — `service_idle_monitor.py` (stops container)
 - `sd-forge-main` — `service_idle_monitor.py` with HTTP Basic Auth (Caddy reverse proxy)
 
+**Wake-on-demand** (`shared/service_wake.py`): a stopped container has no
+listener, so a notebook hitting an idle-stopped service gets HTTP 502 until a
+manual `docker start` + warm-up. `service_wake.py` is the demand-side counterpart
+to `service_idle_monitor.py` — it probes `/health` and, if down, issues
+`docker start <container>` then polls until healthy:
+
+```bash
+python docker-configurations/services/shared/service_wake.py musicgen-api \
+  --health-url http://localhost:8192/health -v
+```
+
+```python
+from service_wake import ensure_service_up
+if ensure_service_up("musicgen-api", "http://localhost:8192/health"):
+    # safe to call POST /v1/generate (transparent warm-up done)
+    ...
+```
+
+VRAM economy is preserved: the idle monitor still re-stops the service after
+`idle_timeout`. See issue #2982 for the A/B/C/D decision rationale (caller-side
+wake chosen over reverse-proxy / always-on / native-sleep).
+
 **No idle handling (low VRAM or always-on):**
 - `tts-kokoro` (~1-2 GB), `forge-turbo` (~6-10 GB), `whisper-webui` (varies)
 
