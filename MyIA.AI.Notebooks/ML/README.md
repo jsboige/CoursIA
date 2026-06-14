@@ -15,7 +15,7 @@ Le monde regorge de données, mais les transformer en décisions éclairées dem
 
 Le Machine Learning est partout : recommandations Netflix, détection de spam, prévisions de vente, diagnostic médical. Mais passer de la théorie à la pratique reste un saut difficile. Cette série comble ce gap en proposant une **double approche** :
 
-- **ML.NET (C#/.NET)** : Pour les développeurs déjà familiers avec l'écosystème .NET, ML.NET offre un pipeline ML natif en C#. Pas besoin d'apprendre Python pour faire du ML en enterprise. Les notebooks couvrent le pipeline complet, de `IDataView` au déploiement ONNX, avec une évaluation rigoureuse par cross-validation.
+- **ML.NET (C#/.NET)** : Pour les développeurs déjà familiers avec l'écosystème .NET, ML.NET offre un pipeline ML natif en C#. Pas besoin d'apprendre Python pour faire du ML en entreprise. Les notebooks couvrent le pipeline complet, de `IDataView` au déploiement ONNX, avec une évaluation rigoureuse par cross-validation.
 - **Python + AI Agents** : Pour les data scientists et praticiens IA, le track Python combine les fondamentaux (NumPy, Pandas, scikit-learn) avec les agents LLM (LangChain, Google ADK). C'est le futur du data science workflow : l'automatisation par des agents capables de nettoyer, analyser et modéliser des données.
 
 Avoir les deux approches permet de comprendre que le ML n'est pas lié à un langage : les concepts (features, entraînement, évaluation, généralisation) sont universels, seuls les outils différent.
@@ -24,11 +24,11 @@ Avoir les deux approches permet de comprendre que le ML n'est pas lié à un lan
 
 ## Objectifs d'apprentissage
 
-A l'issue de cette série, vous serez capable de :
+À l'issue de cette série, vous serez capable de :
 
 1. **Construire** un pipeline ML complet (chargement, features, entraînement, évaluation) en C# ou Python
 2. **Évaluer** rigoureusement un modèle (cross-validation, métriques, Permutation Feature Importance, surapprentissage)
-3. **Appliquer** le feature engineering adapte au problème (encodage, normalisation, sélection de variables)
+3. **Appliquer** le feature engineering adapté au problème (encodage, normalisation, sélection de variables)
 4. **Intégrer** des agents LLM dans un workflow data science (analyse automatisée, parsing, recommandation)
 5. **Déployer** un modèle en production (export ONNX, interop Python/.NET, BigQuery ML)
 
@@ -71,18 +71,18 @@ ML/
 
 ## ML.NET (C# / .NET Interactive)
 
-Serie de 8 notebooks couvrant ML.NET de l'introduction à l'évaluation avancée. Vous apprendrez à construire un pipeline ML complet en C#, du chargement de données au déploiement ONNX, en passant par l'entraînement, l'AutoML, et l'évaluation rigoureuse.
+Série de 8 notebooks couvrant ML.NET de l'introduction à l'évaluation avancée. Vous apprendrez à construire un pipeline ML complet en C#, du chargement de données au déploiement ONNX, en passant par l'entraînement, l'AutoML, et l'évaluation rigoureuse.
 
 | # | Notebook | Contenu | Focus |
 |---|----------|---------|-------|
 | 1 | [ML-1-Introduction](ML.Net/ML-1-Introduction.ipynb) | Hello ML.NET World, pipeline de base | Fondamentaux |
-| 2 | [ML-2-Data&Features](ML.Net/ML-2-Data&Features.ipynb) | IDataView, TextLoader, encodage | Preparation données |
-| 3 | [ML-3-Entrainement&AutoML](ML.Net/ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML | Entrainement |
-| 4 | [ML-4-Evaluation](ML.Net/ML-4-Evaluation.ipynb) | Cross-validation, métriques, PFI | Evaluation |
-| 5 | [ML-5-TimeSeries](ML.Net/ML-5-TimeSeries.ipynb) | Forecasts temporelles, windowing | Series temporelles |
-| 6 | [ML-6-ONNX](ML.Net/ML-6-ONNX.ipynb) | Export ONNX, inférence en production | Deployement |
+| 2 | [ML-2-Data&Features](ML.Net/ML-2-Data&Features.ipynb) | IDataView, TextLoader, encodage | Préparation données |
+| 3 | [ML-3-Entrainement&AutoML](ML.Net/ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML | Entraînement |
+| 4 | [ML-4-Evaluation](ML.Net/ML-4-Evaluation.ipynb) | Cross-validation, métriques, PFI | Évaluation |
+| 5 | [ML-5-TimeSeries](ML.Net/ML-5-TimeSeries.ipynb) | Forecasts temporelles, windowing | Séries temporelles |
+| 6 | [ML-6-ONNX](ML.Net/ML-6-ONNX.ipynb) | Export ONNX, inférence en production | Déploiement |
 | 7 | [ML-7-Recommendation](ML.Net/ML-7-Recommendation.ipynb) | Système de recommandation | Recommandations |
-| 8 | [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) | Regression bayésienne (Infer.NET) | Application pratique |
+| 8 | [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) | Régression bayésienne (Infer.NET) | Application pratique |
 
 ### Installation ML.NET
 
@@ -91,7 +91,7 @@ Serie de 8 notebooks couvrant ML.NET de l'introduction à l'évaluation avancée
 dotnet tool install -g Microsoft.dotnet-interactive
 dotnet interactive jupyter install
 
-# Verification
+# Vérification
 jupyter kernelspec list  # doit montrer .net-csharp
 ```
 
@@ -112,7 +112,7 @@ Formation complète en Data Science Python enrichie d'agents IA. Vous commencere
 
 | Jour | Lab | Nom | Objectif |
 |------|-----|-----|----------|
-| **Day 1** | 1 | Python for Data Science | Revision Pandas, Matplotlib, Scikit-Learn |
+| **Day 1** | 1 | Python for Data Science | Révision Pandas, Matplotlib, Scikit-Learn |
 | **Day 2** | 2 | RFP Analysis | Parser des appels d'offres avec agents LLM |
 | **Day 2** | 3 | CV Screening | Scoring CV avec agents IA |
 | **Day 3** | 4 | Data Wrangling | Nettoyage et transformation de données |
@@ -133,9 +133,9 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 | **Day 5** | 12 | DS-Star Workshop | Application complète DS-STAR |
 | **Day 6** | 13 | Web Search SOTA | Recherche de modèles SOTA |
 | **Day 6** | 14 | Ablation Refinement | Optimisation ciblée par ablation |
-| **Day 6** | 15 | Kaggle Challenge | Competition Kaggle avec MLE-STAR |
+| **Day 6** | 15 | Kaggle Challenge | Compétition Kaggle avec MLE-STAR |
 | **Day 7** | 16 | Data Science Agent | Agent BigQuery/BQML |
-| **Day 7** | 17 | Final Project | Projet integre |
+| **Day 7** | 17 | Final Project | Projet intégré |
 
 Documentation complète : [DataScienceWithAgents/AgenticDataScience/README.md](DataScienceWithAgents/AgenticDataScience/README.md)
 
@@ -143,7 +143,7 @@ Documentation complète : [DataScienceWithAgents/AgenticDataScience/README.md](D
 
 ```bash
 pip install pandas numpy matplotlib seaborn scikit-learn ipywidgets
-# Labs 2-3 et 6-7 necessitent aussi :
+# Labs 2-3 et 6-7 nécessitent aussi :
 pip install langchain langchain-openai langchain-experimental
 # + variable d'environnement OPENAI_API_KEY dans un fichier .env
 ```
@@ -152,16 +152,16 @@ pip install langchain langchain-openai langchain-experimental
 
 ```bash
 pip install -r MyIA.AI.Notebooks/ML/DataScienceWithAgents/AgenticDataScience/requirements.txt
-cp .env.example .env  # puis configurer les cles API
+cp .env.example .env  # puis configurer les clés API
 ```
 
-Providers LLM supportes (Labs 8+) : Google Gemini (recommandé), OpenAI, OpenRouter, vLLM local, LM Studio.
+Providers LLM supportés (Labs 8+) : Google Gemini (recommandé), OpenAI, OpenRouter, vLLM local, LM Studio.
 
 Documentation complète : [DataScienceWithAgents/README.md](DataScienceWithAgents/README.md)
 
 ## Public cible
 
-| Section | Audience | Prerequis |
+| Section | Audience | Prérequis |
 |---------|----------|-----------|
 | **ML.NET** | Developpeurs C#/.NET, environnements enterprise | C# base, .NET SDK 9.0+ |
 | **Python Data Science (Days 1-3)** | Analystes, data scientists, débutants-intermédiaires | Python base, Jupyter |
@@ -193,7 +193,7 @@ Documentation complète : [DataScienceWithAgents/README.md](DataScienceWithAgent
 
 | Profil | Parcours recommandé | Duree |
 | ------ | ------------------- | ----- |
-| Developpeur C#/.NET en enterprise | Track A : ML.NET (ML-1 à ML-4 + TP) | ~6h |
+| Développeur C#/.NET en entreprise | Track A : ML.NET (ML-1 à ML-4 + TP) | ~6h |
 | Data scientist débutant | Track B (Days 1-3) : Python + scikit-learn | ~8h |
 | Praticien IA souhaitant automatiser | Track B complet : Python + Agents (Days 1-7) | ~17h |
 | Curieux voulant comparer les approches | ML.NET (ML-1 à ML-4) + Python (Labs 1-5) | ~10h |
@@ -206,17 +206,17 @@ Documentation complète : [DataScienceWithAgents/README.md](DataScienceWithAgent
 
 ### Faut-il connaître le C# pour les notebooks ML.NET ?
 
-Oui, les notebooks ML.NET utilisent .NET Interactive (C#). Les concepts ML sont introduits depuis zero, mais la syntaxe C# de base (variables, LINQ, classes) est supposee. Si vous ne connaissez pas C#, les notebooks Python (DataScienceWithAgents) couvrent des concepts similaires sans prérequis C#.
+Oui, les notebooks ML.NET utilisent .NET Interactive (C#). Les concepts ML sont introduits depuis zéro, mais la syntaxe C# de base (variables, LINQ, classes) est supposée. Si vous ne connaissez pas C#, les notebooks Python (DataScienceWithAgents) couvrent des concepts similaires sans prérequis C#.
 
 ### Quelle est la progression recommandée ?
 
-1. **ML.NET** (notebooks 1-5) : comprendre les bases du ML supervise/non supervis
+1. **ML.NET** (notebooks 1-5) : comprendre les bases du ML supervisé/non supervisé
 2. **DataScienceWithAgents** (Day 1-7) : découvrir les agents IA et le RAG
 3. **AgenticDataScience** (Day 4-7) : agents avancés avec Google ADK
 
-Les deux sous-séries sont indépendantes et peuvent etre suivies dans n'importe quel ordre.
+Les deux sous-séries sont indépendantes et peuvent être suivies dans n'importe quel ordre.
 
-| Probleme | Solution |
+| Problème | Solution |
 | -------- | -------- |
 | `dotnet-interactive` non trouvé | `dotnet tool install -g Microsoft.dotnet-interactive` puis `dotnet interactive jupyter install` |
 | Kernel `.net-csharp` absent | Vérifier avec `jupyter kernelspec list`. Réinstaller si nécessaire (cf. [docs/reference/kernels-runtime.md](../../docs/reference/kernels-runtime.md)) |
@@ -224,7 +224,7 @@ Les deux sous-séries sont indépendantes et peuvent etre suivies dans n'importe
 | `OPENAI_API_KEY` manquant (Labs 2-3) | Créer un fichier `.env` à la racine avec `OPENAI_API_KEY=sk-...` |
 | PyTorch lent sur CPU | Normal pour les Labs 8+. Le GPU est recommandé mais pas obligatoire |
 | `langchain` import error | `pip install langchain langchain-openai langchain-experimental` (versions compatibles) |
-| erreur `No module named 'google.adk'` | Installer le track AgenticDataScience : `pip install -r requirements.txt` dans le bon repertoire |
+| erreur `No module named 'google.adk'` | Installer le track AgenticDataScience : `pip install -r requirements.txt` dans le bon répertoire |
 | Plots ne s'affichent pas | Vérifier `ipywidgets` installé + extension Jupyter activée |
 
 ## Concepts clés
