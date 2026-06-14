@@ -82,7 +82,11 @@ def _api_post(path: str, data: Optional[dict] = None) -> dict:
 
 def _extract_stats(bt: dict) -> dict:
     stats = bt.get("statistics", {}) or {}
-    return {
+    # Surface runtime errors so a failed backtest is diagnosable without a
+    # separate raw dump (QC returns 'error' + 'stacktrace' on Runtime Error).
+    error = bt.get("error") or ""
+    stacktrace = bt.get("stacktrace") or ""
+    result = {
         "backtestId": bt.get("backtestId", ""),
         "name": bt.get("name", ""),
         "status": bt.get("status", ""),
@@ -102,6 +106,11 @@ def _extract_stats(bt: dict) -> dict:
         },
         "progress": bt.get("progress", 0),
     }
+    if error or stacktrace:
+        # 'error' and 'stacktrace' are often identical; keep both but cap size.
+        result["error"] = error[:1200]
+        result["stacktrace"] = stacktrace[:1200]
+    return result
 
 
 # ─── Compile ──────────────────────────────────────────────────────────
