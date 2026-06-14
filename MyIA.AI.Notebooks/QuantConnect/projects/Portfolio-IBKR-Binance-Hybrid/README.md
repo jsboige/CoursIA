@@ -83,7 +83,21 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
 - **Phase 1** : livrée — `research.ipynb` (sleeve crypto seul, PR #1179) puis `quantbook.ipynb`
   (portefeuille complet 8 sous-stratégies : sleeve IBKR + matrice de corrélation mensuelle 8×8
   + blend net de coûts, exécuté via lean research container avec données QC réelles)
-- **Phase 2** : à faire — backtest unifié 2018-2025 via framework QC (MultiAlphaModel, cf `main.py`)
+- **Phase 2** : livrée (v1) — backtest unifié 2018-2025 (`main.py`, rebalance composite direct
+  des 8 sous-stratégies). Backtest QC Cloud `Phase2-DirectComposite-v7` : **Sharpe 0.916,
+  CAGR 29.2%, MaxDD -38.7%** (PSR 43.6%). Verdict : **NO BEATS** — Sharpe sous le target 1.0-1.3
+  et MaxDD au-delà du target -22% (mais dans la fourchette -35-40% anticipée, cf Caveats).
+  CAGR élevé tiré par le sleeve crypto 50%. Coûts explicites 5bps equity/10bps crypto + 5bps
+  slippage. Phase 3 = walk-forward annual + multi-seed HAR-RV-J + sweep allocation.
+- **Phase 3 (OOS)** : livrée — `main.py` paramétré (`ibkr_alloc`, `start`/`end`) pour sweep
+  sans duplication de code. **OOS strict 2023-2025** (params catalog frozen, jamais tunés sur
+  la fenêtre) : Sharpe **1.321**, CAGR 42.8%, MaxDD -16.4%, PSR 78%. Sweep allocation OOS :
+  60/40 → Sharpe 1.283 / MaxDD -15.2% ; 50/50 → 1.321 / -16.4% ; 40/60 → 1.347 / -18.8%.
+  **Verdict : INCONCLUSIVE (regime-dependent).** L'OOS BEATS le target, mais la fenêtre
+  2023-2025 est un bull crypto+equity sans crash ; le stress-inclusive IS (incluant l'hiver
+  crypto 2022) reste à Sharpe 0.916. L'allocation ne change que ~5% le Sharpe OOS — le levier
+  dominant est le régime, pas le mix. Multi-seed HAR-RV-J (passer du proxy au vrai modèle
+  seedé M12) reste à faire pour durcir le verdict.
 - Issue tracker : [#1027](https://github.com/jsboige/CoursIA/issues/1027)
 
 ## Liens
