@@ -314,6 +314,27 @@ theorem toCellsAux_shift (c : MacroCell) (r0 c0 : Int) :
     simp only [add_zero, add_assoc, add_comm, add_left_comm]
     rfl
 
+/-- **Membership form of the offset-shift identity**: `p` lies in the
+    offset-`(r0, c0)` enumeration of `c` iff `p` translated back to the origin
+    `(p.1 - r0, p.2 - c0)` lies in the origin-anchored enumeration. This is the
+    form directly usable inside membership biconditionals (e.g. the P4
+    central-correctness goal `p ∈ (hashlifeResultAux …).toGrid off ↔ …`), where
+    the list-equality `toCellsAux_shift` is less convenient. -/
+theorem mem_toCellsAux_shift {c : MacroCell} {r0 c0 : Int} {p : Int × Int} :
+    p ∈ c.toCellsAux r0 c0 ↔ (p.1 - r0, p.2 - c0) ∈ c.toCellsAux 0 0 := by
+  rw [toCellsAux_shift, List.mem_map]
+  constructor
+  · rintro ⟨q, hqmem, hpq⟩
+    -- `q` is a free variable, so we rewrite the membership to speak of `q`
+    -- directly (cannot `subst` on `q.1`/`q.2`, which are field accesses).
+    have hqeq : q = (p.1 - r0, p.2 - c0) := by
+      rw [Prod.ext_iff] at hpq; ext <;> omega
+    rw [hqeq] at hqmem
+    exact hqmem
+  · intro hq
+    refine ⟨(p.1 - r0, p.2 - c0), hq, ?_⟩
+    ext <;> omega
+
 end MacroCell
 
 /-! ## High-level Grid -> MacroCell
