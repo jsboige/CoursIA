@@ -37,6 +37,43 @@ def _resolve_crypto(algorithm, ticker):
 
 
 # ---------------------------------------------------------------------------
+# Reality models: explicit transaction costs (README Phase 2 cost basis).
+# The default brokerage (used because IBKR rejects Crypto) applies no
+# meaningful fee model, so the first backtest (Sharpe 0.765) was OPTIMISTIC.
+# These models apply the cost basis the README commits to:
+#   5bps equity commission + 10bps crypto commission + 5bps slippage.
+# Mirrors the repo's SpreadSlippageModel idiom (TradingCosts-Optimization).
+# ---------------------------------------------------------------------------
+
+class PercentFeeModel(FeeModel):
+    """Charges a fixed percent of the order notional value as commission."""
+
+    def __init__(self, percent: float):
+        super().__init__()
+        self.percent = percent
+
+    def get_order_fee(self, parameters):
+        security = parameters.security
+        order = parameters.order
+        notional = abs(order.quantity) * float(security.price)
+        return OrderFee(CashAmount(self.percent * notional, security.quote_currency.symbol))
+
+
+class PercentSlippageModel:
+    """Constant percent slippage on fill price (market-impact approximation).
+
+    Duck-typed (no base class) to match the repo's SpreadSlippageModel style;
+    QC accepts any object exposing get_slippage_approximation(asset, order).
+    """
+
+    def __init__(self, percent: float):
+        self.percent = percent
+
+    def get_slippage_approximation(self, asset, order):
+        return self.percent * float(asset.price)
+
+
+# ---------------------------------------------------------------------------
 # Sub-strategy AlphaModels (equity sleeve)
 # ---------------------------------------------------------------------------
 
@@ -481,10 +518,18 @@ class PortfolioHybridIBKRBinance(QCAlgorithm):
         # framework needs the universe subscribed from the start; adding securities
         # lazily inside AlphaModel.Update() is unreliable (data may never feed),
         # which produced 0 tradeable dates / 0 orders in the first backtest run.
+        # Apply the README Phase 2 cost basis explicitly: 5bps equity commission +
+        # 5bps slippage, 10bps crypto commission + 5bps slippage. The default
+        # brokerage (no set_brokerage_model, because IBKR rejects Crypto) applies
+        # no meaningful fee, so without these models the Sharpe is optimistic.
         for t in trend_tickers + sector_tickers:
-            self.add_equity(t, Resolution.DAILY)
+            sec = self.add_equity(t, Resolution.DAILY)
+            sec.set_fee_model(PercentFeeModel(0.0005))
+            sec.set_slippage_model(PercentSlippageModel(0.0005))
         for t in crypto_tickers:
-            self.add_crypto(t, Resolution.DAILY, Market.BINANCE)
+            sec = self.add_crypto(t, Resolution.DAILY, Market.BINANCE)
+            sec.set_fee_model(PercentFeeModel(0.001))
+            sec.set_slippage_model(PercentSlippageModel(0.0005))
 
         # Build alpha models
         self.trend_stocks = TrendStocksAlphaModel(trend_tickers)
@@ -522,9 +567,9 @@ class PortfolioHybridIBKRBinance(QCAlgorithm):
         }
         self.set_portfolio_construction(HybridPortfolioPCM(alpha_weights))
 
-        # Phase 2 uses brokerage-default costs (IBKR fees for equities, Binance
-        # fees for crypto). Explicit 5bps/10bps equity/crypto + 5bps slippage
-        # modeling is deferred to Phase 3 (walk-forward), documented in README.
+        # Transaction costs applied above via PercentFeeModel + PercentSlippageModel
+        # (5bps equity / 10bps crypto commission + 5bps slippage), matching the
+        # README Phase 2 cost basis. Walk-forward + multi-seed is Phase 3.
 
     def on_data(self, data):
         pass

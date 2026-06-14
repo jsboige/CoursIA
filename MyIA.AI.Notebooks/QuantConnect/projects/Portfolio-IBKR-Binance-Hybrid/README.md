@@ -41,39 +41,46 @@ Stratégie composite multi-broker associant un sleeve actions/ETFs (IBKR compte 
 - Métriques : Sharpe net (après costs), CAGR, MaxDD, Calmar, Sortino, Beta SPY/BTC
 - Comparaison à benchmarks : SPY B&H, 60/40 SPY/TLT, BTC B&H
 
-#### Résultats v5 (livré, `main.py`)
+#### Résultats v6 (livré, `main.py`) — coûts réalistes 5/10/5 bps
 
-Backtest `715fb722` sur QC Cloud project 31717642, 2018-01-01 → 2025-12-01
-(2892 tradeable dates, status Completed, 0 runtime error).
+Backtest `19ea0d6c` sur QC Cloud project 31717642, 2018-01-01 → 2025-12-01
+(2892 tradeable dates, status Completed, 0 runtime error). Coût explicite via
+`PercentFeeModel` + `PercentSlippageModel` : 5bps commission equities, 10bps
+commission crypto, 5bps slippage (base de coûts énoncée ci-dessus).
 
-| Métrique | v5 | Cible #1027 | Verdict |
-|----------|----|-------------|---------|
-| Sharpe Ratio | **0.765** | 1.0-1.3 net | **MISS** (sous le seuil) |
-| CAGR | **17.27 %** | ~14 % | **BEATS** |
-| Max Drawdown | **-21.5 %** | ~-22 % | **MEETS** |
-| Probabilistic Sharpe | **43.4 %** | >50 % | sous le seuil de signification |
-| Alpha / Beta (vs SPY) | 0.08 / 0.186 | — | corrélation faible (diversification OK) |
-| Annual Std Dev | 12.4 % | — | — |
-| Win Rate | 64 % | — | — |
-| Total Fees | ₮1549.08 (USDT) | — | confirme currency USDT + trading actif |
+| Métrique | v5 (brokerage défaut) | **v6 (5/10/5 bps)** | Cible #1027 |
+|----------|----------------------|---------------------|-------------|
+| Sharpe Ratio | 0.765 | **0.551** | 1.0-1.3 net → **MISS** |
+| CAGR | 17.27 % | **13.28 %** | ~14 % → ~MEETS |
+| Max Drawdown | -21.5 % | **-22.0 %** | ~-22 % → MEETS |
+| Probabilistic Sharpe | 43.4 % | **21.1 %** | >50 % → **très sous le seuil** |
+| Information Ratio | +0.078 | **-0.071** | >0 → **négatif (sous-performe benchmark)** |
+| Sortino | — | 0.597 | — |
+| Annual Std Dev | 12.4 % | 12.4 % | — |
+| Win Rate | 64 % | 62 % | — |
+| Total Fees | ₮1549 | **₮32279** | ×20 (les coûts comptent massivement) |
 
-**Verdict honnête : INCONCLUSIVE (partial).** Le framework unifié tourne de bout
-en bout sur 8 ans sans erreur (jalon technique Phase 2 atteint), le CAGR dépasse
-la cible et le drawdown est contrôlé. **Mais le Sharpe (0.765) reste sous la
-cible nette 1.0-1.3 et le PSR (43.4 %) sous le seuil de signification** → l'edge
-n'est pas statistiquement robuste dans cette configuration single-pass. Pas de
-BEATS sans walk-forward + multi-seed (Phase 3).
+**Verdict honnête : NO BEATS (coût-ajusté).** Les coûts réalistes confirment et
+aggravent le caveat de v5 : le Sharpe tombe à **0.551** (-28 %), le **PSR
+s'effondre à 21.1 %** (très sous le seuil de signification 50 %), et l'
+**information ratio devient négatif** (-0.071) — la stratégie sous-performe son
+benchmark après coûts. L'edge borderline de v5 était en majeure partie
+artificiel (coûts sous-modélisés : ₮1549 → ₮32279, ×20). Le framework fonctionne
+techniquement (8 ans sans erreur, CAGR 13.3 % ~ cible, drawdown -22 % contrôlé),
+**mais ne génère pas de rendements ajustés au risque statistiquement robustes
+après coûts réalistes dans cette configuration single-pass.**
 
 Caveats honnêtes :
-- **Brokerage par défaut** (IBKR retiré : `Unsupported security type: Crypto`).
-  Le modèle 2-broker réel (IBKR + Binance sur nœuds séparés) est Phase 5. Le
-  cost model est celui du brokerage par défaut, **moins strict** que 5bps IBKR +
-  10bps Binance + 5bps slippage → Sharpe 0.765 vraisemblablement optimiste.
 - **Crypto strats = proxys simplifiés** (MultiCanalProxy, HarrvjKellyProxy), pas
   les vrais M12 HAR-RV-J / MultiCanal du ML-Training-Pipeline. La contribution du
-  sleeve crypto est un placeholder.
-- Single backtest, single seed. `totalOrders=0` au top-level = gap connu QC API
-  (phantom-orders) ; trading actif confirmé par les fees ₮1549 + win rate 64 %.
+  sleeve crypto est un placeholder — les vrais modèles ML pourraient changer le
+  verdict, mais exigeraient walk-forward + multi-seed (Phase 3).
+- **Single backtest, single seed.** Une validation walk-forward + multi-seed ≥4
+  (Phase 3) reste nécessaire pour confirmer le NO BEATS ou le renverser ; ce
+  verdict est la lecture honnête de cette configuration unique.
+- `totalOrders=0` au top-level = gap connu QC API (phantom-orders) ; trading
+  actif confirmé par les fees ₮32279 + win rate 62 %.
+- Le 2-broker réel (IBKR + Binance sur nœuds séparés) reste Phase 5.
 
 ### Phase 3 — Walk-forward + multi-seed (S2-S3)
 - Walk-forward annual : train 5 ans → OOS 1 an, roll forward
@@ -117,9 +124,12 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
 - **Phase 1** : livrée — `research.ipynb` (sleeve crypto seul, PR #1179) puis `quantbook.ipynb`
   (portefeuille complet 8 sous-stratégies : sleeve IBKR + matrice de corrélation mensuelle 8×8
   + blend net de coûts, exécuté via lean research container avec données QC réelles)
-- **Phase 2** : livrée (jalon technique) — `main.py` framework MultiAlphaModel unifié,
-  backtest QC Cloud 2018-2025 Completed. Sharpe 0.765 / CAGR 17.3 % / MaxDD -21.5 %.
-  Verdict INCONCLUSIVE (Sharpe sous cible nette, single-pass) → Phase 3 requise.
+- **Phase 2** : livrée (jalon technique, verdict honnête) — `main.py` framework
+  MultiAlphaModel unifié, backtest QC Cloud 2018-2025 Completed. Après coûts
+  réalistes (5/10/5 bps) : Sharpe **0.551** / CAGR **13.3 %** / MaxDD **-22 %** /
+  PSR **21.1 %** / IR **-0.071**. **Verdict NO BEATS coût-ajusté** (PSR très sous
+  seuil, IR négatif, single-pass) → la validation walk-forward + multi-seed
+  Phase 3 est requise pour confirmer ou renverser ce verdict.
 - Issue tracker : [#1027](https://github.com/jsboige/CoursIA/issues/1027)
 
 ## Liens
