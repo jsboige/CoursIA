@@ -107,6 +107,16 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
   crypto 2022) reste à Sharpe 0.916. L'allocation ne change que ~5% le Sharpe OOS — le levier
   dominant est le régime, pas le mix. Multi-seed HAR-RV-J (passer du proxy au vrai modèle
   seedé M12) reste à faire pour durcir le verdict.
+- **Phase 4 (prep) — sleeve crypto Binance standalone** : backtest de validation de la voie
+  Binance-first (`ibkr_alloc=0.0`, 3 sous-strats crypto seuls, 2018-2025) :
+  **Sharpe 0.99, CAGR 47.0%, MaxDD -57.0%, PSR 36.9%** (`Phase4-BinanceSleeve-Standalone-100pct`).
+  Verdict sleeve crypto seul : **NO BEATS standalone** — l'alpha crypto est réel (Sharpe ~1.0,
+  CAGR 47%) mais la volatilité est destructrice (MaxDD -57%, crash crypto 2022) et le PSR < 50%
+  (non significatif). C'est précisément ce que la diversification IBKR 50% corrige : le MaxDD
+  passe de -57% (crypto seul) à -38.7% (IS 50/50) puis -16.4% (OOS 50/50). **Implication Phase 4** :
+  le sleeve crypto SEUL reste valable pour valider le plumbing paper-trading Binance testnet
+  (capital fictif), mais le déploiement live capital DOIT rester le portefeuille diversifié —
+  le sleeve crypto pur n'est pas investissable tel quel.
 - Issue tracker : [#1027](https://github.com/jsboige/CoursIA/issues/1027)
 
 ## Liens
