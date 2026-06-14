@@ -185,6 +185,15 @@ def PDCrossing.isRenameOf (Y' c : PDCrossing) (a b : Nat) : Prop :=
   (Y'.e3 = c.e3 ∨ (Y'.e3 = b ∧ c.e3 = a)) ∧
   (Y'.e4 = c.e4 ∨ (Y'.e4 = b ∧ c.e4 = a))
 
+/-- A crossing `c` "has edge `a`" if `a` occurs in one of its four PD slots.
+    Used to state that the arc `a` receiving a connected R1 twist is a PROPER
+    arc — one that is shared between two distinct crossings of `d₁` (not a
+    degenerate monogon-loop confined to a single crossing). The fields are `Nat`
+    with decidable equality, so this Prop is decidable and discharges by
+    `decide` after `unfold`. -/
+def PDCrossing.hasEdge (c : PDCrossing) (a : Nat) : Prop :=
+  c.e1 = a ∨ c.e2 = a ∨ c.e3 = a ∨ c.e4 = a
+
 /-- **Reidemeister1Connected (option C)**: a CONNECTED R1 twist on arc `a`.
     The surgery modifies endpoint crossing `Y = d₁.crossings[i]` (one slot `a`
     renamed to `b = d₁.numEdges + 1`, materialised as the supplied `Y'`) and
@@ -199,13 +208,26 @@ def PDCrossing.isRenameOf (Y' c : PDCrossing) (a b : Nat) : Prop :=
     replaces — it is that crossing with `a`-occurrences renamed to `b`, nothing
     else. This is what the PR2 transfer lemma needs to push a tricoloring across
     the move (the modified crossing's Fox condition is preserved under
-    `col₂ b = col₁ a`). -/
+    `col₂ b = col₁ a`).
+
+    **Proper-arc hypothesis (this PR, fix for the backward-transfer defect
+    certified by the brute-force search behind #3002):** arc `a` is shared with
+    another crossing `j ≠ i` of `d₁`. Without this, the def admits a twist on a
+    degenerate monogon-loop arc (`a` appearing twice at the single endpoint
+    crossing `i`), under which the BACKWARD tricolorability transfer is FALSE —
+    a connected kink can CREATE tricolorability from a non-tricolorable
+    double-monogon `d₁`. Requiring `a` to be a proper arc (spanning two distinct
+    crossings) eliminates all such counter-examples (validated by exhaustive
+    brute-force over 2526 well-formed diagrams, 20184 valid twists: 24 backward
+    failures, all monogon-loops, all excluded by this hypothesis). The FORWARD
+    direction (#3000) is unaffected — it is unconditional. -/
 def Reidemeister1Connected (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
   (∃ (i : Fin d₁.crossings.length) (a : Nat) (Y' : PDCrossing)
      (ρ : Fin d₁.numEdges ↪ Fin (d₁.numEdges + 2)),
      1 ≤ a ∧ a ≤ d₁.numEdges ∧
      a ∈ d₁.edges ∧
+     (∃ (j : Fin d₁.crossings.length), j ≠ i ∧ (d₁.crossings.get j).hasEdge a) ∧
      Y'.isRenameOf (d₁.crossings.get i) a (d₁.numEdges + 1) ∧
      d₂ = { d₁ with crossings := d₁.crossings.set i.val Y' ++
                        [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩],
@@ -229,13 +251,17 @@ theorem reidemeister1Connected_satisfiable :
   · -- ρ : Fin 4 ↪ Fin 6 (trivial embedding, first 4 → first 4 of 6).
     exact { toFun := fun j => ⟨j.val, by omega⟩,
             inj' := fun x y h => by injection h with hv; exact Fin.ext hv }
-  · -- body: 1 ≤ a, a ≤ numEdges, a ∈ d₁.edges, Y' isRenameOf (rename 1→5 at e1),
-    --   and the surgery equation. `decide` (kernel reduction) handles the struct
+  · -- body: 1 ≤ a, a ≤ numEdges, a ∈ d₁.edges, proper-arc (arc 1 shared with
+    --   crossing j=0: ⟨1,2,3,4⟩.e1 = 1), Y' isRenameOf (rename 1→5 at e1), and
+    --   the surgery equation. `decide` (kernel reduction) handles the struct
     --   projections / flatMap that `omega` cannot see; `rfl` closes the
     --   definitional surgery equation. The isRenameOf holds: e1 renamed (1→5),
     --   e2=e3=e4 unchanged. isRenameOf must be unfolded first — as a raw `def`
     --   it has no `Decidable` instance, but the unfolded `∧∨=` on `Nat` does.
+    --   The proper-arc conjunct: arc a=1 appears at crossing j=⟨0⟩ (e1=1) with
+    --   j=0 ≠ i=1, witnessed explicitly; `hasEdge` unfolded + `decide`.
     exact ⟨by decide, by decide, by decide,
+           ⟨⟨0, by decide⟩, by decide, by unfold PDCrossing.hasEdge; decide⟩,
            by unfold PDCrossing.isRenameOf; decide, rfl⟩
 
 /-! ### API lemmas for `Reidemeister1Connected` (option C infrastructure for PR2)
@@ -253,7 +279,7 @@ by exactly 1. They mirror the `trefoil_wf` / `unknot_wf` projection-API style of
     a connected splice. -/
 theorem Reidemeister1Connected.numEdges_succ {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) : d₂.numEdges = d₁.numEdges + 2 := by
-  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hrename, hsurg⟩ := h
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, hsurg⟩ := h
   have hne := congrArg (·.numEdges) hsurg
   simpa using hne
 
@@ -262,7 +288,7 @@ theorem Reidemeister1Connected.numEdges_succ {d₁ d₂ : KnotDiagram}
     not duplicated. -/
 theorem Reidemeister1Connected.numCrossings_succ {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) : d₂.crossings.length = d₁.crossings.length + 1 := by
-  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hrename, hsurg⟩ := h
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, hsurg⟩ := h
   have hcl := congrArg (fun d => d.crossings.length) hsurg
   simpa [List.length_set, List.length_append] using hcl
 
@@ -272,7 +298,7 @@ theorem Reidemeister1Connected.numCrossings_succ {d₁ d₂ : KnotDiagram}
     `⟨n+1,n+1,n+2,n+2⟩` (which shares no edge with `d₁`). -/
 theorem Reidemeister1Connected.shares_edge {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) : ∃ a : Nat, a ∈ d₁.edges ∧ 1 ≤ a ∧ a ≤ d₁.numEdges := by
-  obtain ⟨_hwf₁, _hwf₂, _i, a, _Y', _ρ, hr1, hr2, hmem, _hrename, _hsurg⟩ := h
+  obtain ⟨_hwf₁, _hwf₂, _i, a, _Y', _ρ, hr1, hr2, hmem, _hproper, _hrename, _hsurg⟩ := h
   exact ⟨a, hmem, hr1, hr2⟩
 
 /-- The surgery equation on crossings in directly-usable form: `d₂.crossings`
@@ -289,7 +315,7 @@ theorem Reidemeister1Connected.crossings_eq {d₁ d₂ : KnotDiagram}
       i < d₁.crossings.length ∧
       d₂.crossings = d₁.crossings.set i Y' ++
         [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] := by
-  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, _hr1, _hr2, _hmem, _hrename, hsurg⟩ := h
+  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, hsurg⟩ := h
   refine ⟨i.val, Y', a, i.isLt, ?_⟩
   simpa using congrArg (·.crossings) hsurg
 
