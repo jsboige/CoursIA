@@ -232,6 +232,35 @@ class TestExtractStats:
         result = _extract_stats({"totalOrders": None})
         assert result["totalOrders"] == 0
 
+    def test_surfaces_runtime_error(self):
+        """A failed backtest must surface error/stacktrace for diagnosis."""
+        bt = {
+            "backtestId": "fail1",
+            "status": "Runtime Error",
+            "error": "Unsupported security type: Crypto",
+            "stacktrace": "  at PythonException.cs:line 52",
+        }
+        result = _extract_stats(bt)
+        assert result["error"] == "Unsupported security type: Crypto"
+        assert result["stacktrace"] == "  at PythonException.cs:line 52"
+
+    def test_no_error_field_when_clean(self):
+        """A clean backtest should not carry empty error/stacktrace keys."""
+        result = _extract_stats({"backtestId": "ok", "status": "Completed"})
+        assert "error" not in result
+        assert "stacktrace" not in result
+
+    def test_error_capped_to_1200_chars(self):
+        """Oversized error/stacktrace must be capped to bound response size."""
+        bt = {
+            "backtestId": "big",
+            "error": "E" * 5000,
+            "stacktrace": "S" * 5000,
+        }
+        result = _extract_stats(bt)
+        assert len(result["error"]) == 1200
+        assert len(result["stacktrace"]) == 1200
+
 
 # --- _api_post ---
 
