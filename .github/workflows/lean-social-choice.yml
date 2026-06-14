@@ -91,5 +91,6 @@ jobs:
 
     - name: Lake build
       run: |
+        set -o pipefail   # propagate lake's exit code through `| tail` (see lean-build.yml fix, 2026-06-14)
         lake exe cache get || true
         lake -R build 2>&1 | tail -20
