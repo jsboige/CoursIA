@@ -275,6 +275,24 @@ theorem Reidemeister1Connected.shares_edge {d₁ d₂ : KnotDiagram}
   obtain ⟨_hwf₁, _hwf₂, _i, a, _Y', _ρ, hr1, hr2, hmem, _hrename, _hsurg⟩ := h
   exact ⟨a, hmem, hr1, hr2⟩
 
+/-- The surgery equation on crossings in directly-usable form: `d₂.crossings`
+    is `d₁.crossings` with the endpoint crossing at index `i` rewritten to `Y'`
+    (via `List.set`), then the monogon kink
+    `⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩` appended. The PR2
+    transfer lemma rewrites with this equation to analyse the Fox condition at
+    exactly the two crossings touched by the move (the relabelled `Y'` at
+    index `i`, and the appended kink `C` whose `e3 = e4 = c` self-loop means
+    arc `c` is a closed strand). -/
+theorem Reidemeister1Connected.crossings_eq {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) :
+    ∃ (i : ℕ) (Y' : PDCrossing) (a : Nat),
+      i < d₁.crossings.length ∧
+      d₂.crossings = d₁.crossings.set i Y' ++
+        [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] := by
+  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, _hr1, _hr2, _hmem, _hrename, hsurg⟩ := h
+  refine ⟨i.val, Y', a, i.isLt, ?_⟩
+  simpa using congrArg (·.crossings) hsurg
+
 /-- R2 (Poke/Unpoke): add or remove two consecutive crossings of opposite sign.
 
 Two parallel strands can pass through each other:
