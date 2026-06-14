@@ -92,6 +92,30 @@ Toute la série Z3 charge le **même fork** [MyIntelligenceAgency/Z3.Linq](https
 | 2022-2023 | endjin | Modernisation .NET, CI, structure professionnelle |
 | 2026 | MyIntelligenceAgency | Réintégration EPFdevelopment + série pédagogique |
 
+## Pour aller plus loin : regex symbolique, reconnaissance vs résolution
+
+Cette série (LINQ → SMT) est l'une des deux faces d'une même idée — **décrire des contraintes haut-niveau, laisser le solveur témoigner**. L'autre face est l'histoire des **expressions régulières symboliques**, où la contrainte est un motif de chaîne plutôt qu'un système d'entiers. Deux ressources voisines l'explorent et complètent directement cette série :
+
+| Ressource | Langage | Ce qu'elle enseigne | Lien |
+|-----------|---------|---------------------|------|
+| **Z3-Python-04 — Chaînes et regex** | Python (z3-py) | La théorie **native** des chaînes Z3 : `Re`, `InRe`, `Star`, `Range`. Z3 ne se contente pas de vérifier — il **génère un témoin** (une chaîne satisfaisant le regex). Extraction d'extension, détection d'insatisfiabilité. | [Z3-Python/04](../Z3-Python/Z3-Python-04-Strings-Regex.ipynb) |
+| **Sudoku-13 — Automates symboliques** | C# (.NET) | L'échelle en trois barreaux : Conway (PCRE folklore) → BREX/Rex 2020 (murs documentés) → RE# 2025. RE# **reconnaît** une grille remplie en temps linéaire ; Z3 **résout** et produit la grille. Le Sudoku donne à voir la distinction. | [Sudoku/13](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) |
+
+### Reconnaître ≠ Résoudre
+
+La distinction centrale, que le Sudoku met en scène de façon frappante :
+
+| Critère | Reconnaissance (RE#, Z3 `InRe` en vérification) | Résolution (Z3 en production de témoin) |
+|---------|--------------------------------------------------|------------------------------------------|
+| **Question** | « Cette chaîne/grille satisfait-elle le motif ? » | « Trouve une chaîne/grille satisfaisant le motif » |
+| **Complexité** | Linéaire, non-backtracking | NP-dur en général (recherche dans l'espace des solutions) |
+| **Rôle** | Vérificateur (certifie) | Producteur (témoigne) |
+| **Dans cette série** | — (Z3.Linq cible la résolution d'entiers/arrays) | Cœur de la série : `Theorem<T>.Solve()` / `.Optimize()` |
+
+> **Leçon** : un vérificateur rapide (RE# valide une ligne Sudoku en ~18 ms) peut être **plus rapide qu'un résolveur** (Z3 produit la grille en ~27 ms) — il certifie ce qu'il ne peut produire. Les notebooks de cette série enseignent le côté *résolution* ; Z3-Python-04 et Sudoku-13 enseignent le côté *reconnaissance* et le pont entre les deux.
+
+Ces ressources relèvent de l'Epic **#2978** (le Sudoku comme regex symbolique) et sont les compagnons naturels de cette série.
+
 ### Liens
 
 - [endjin/Z3.Linq](https://github.com/endjin/Z3.Linq) (upstream)
