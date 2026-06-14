@@ -1079,6 +1079,104 @@ theorem hashlifeResult_central_correct_base (c : MacroCell)
   exact p4_base_exhaustive v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 v12 v13 v14
     v15 v16
 
+/-! ## P4 inductive step — scaffolding for the double-nine decomposition
+
+The sorry at `p4_ext_bridge c (k+1) (fun p => by sorry)` is the **research-level
+verrou** of the whole module. It demands the pointwise membership biconditional:
+
+    ∀ p, p ∈ (hashlifeResultAux (k+2) c).toGrid (2^k, 2^k)
+         ↔ p ∈ restrictGridTo (evolve (2^k) (c.toGrid (0,0))) (2^k) (2^(k+1))
+
+`p4_ext_bridge` (proven) reduces list-equality to this biconditional, so once
+the biconditional is discharged, `hashlifeResult_central_correct` closes by
+induction. The function `p4_succ_membership` below is the **single named
+entry point** that gathers the four sub-lemmas; each sub-lemma is an
+independent, difficulty-ranked prover target (grignotable one-per-session).
+
+### Proof plan (the double-nine, two half-steps)
+
+`hashlifeResultAux (k+3) c` on a well-formed level-`(k+2)` cell `c` unfolds
+(via the structural-recursion pattern at `Hashlife.lean`) to:
+
+  **Wave 1** — nine overlapping level-`(k+1)` sub-cells `n1..n9`, each recursed
+  to a level-`k` result `r1..r9` that is `2^(k-1)` generations ahead (by IH).
+  **Wave 2** — four overlapping level-`(k+1)` super-cells `q_nw..q_se` (built
+  from the `r_i`), each recursed to a level-`k` result `out_*` that is another
+  `2^(k-1)` generations ahead. The two half-steps compose to `2^k` generations,
+  matching `evolve (2^k)` — this is the light-cone argument (P2) applied twice.
+
+### Sub-lemmas (difficulty-ranked, each `grignotable` independently)
+
+| Lemma | Difficulty | What it proves |
+|-------|-----------|----------------|
+| `p4_double_nine_shape`     | P4.1 (structural) | The 9 sub-cells `n_i` tile `c` and each has level `k+1` + is wf |
+| `p4_wave1_ih`              | P4.2 (IH application) | Each `r_i = hashlifeResultAux (k+1) n_i` matches `evolve 2^(k-1)` on the `n_i` window (by IH at level `k`) |
+| `p4_wave2_ih`              | P4.3 (IH application) | Each `out_* = hashlifeResultAux (k+1) q_*` matches `evolve 2^(k-1)` on the `q_*` window (by IH at level `k`) |
+| `p4_half_steps_compose`    | P4.4 (compositional, hardest) | Wave1 ∘ Wave2 = `2^k` generations via `step_light_cone` (P2, proven) — the boundary of each sub-cell does not leak because the live region stays inside the centered window |
+
+Once all four are proven, `p4_succ_membership` glues them. The ordering
+P4.1 → P4.2 → P4.3 → P4.4 reflects dependency: P4.2/P4.3 need P4.1's shape
+facts, P4.4 needs P4.2/P4.3. Each is **self-contained**: a session can
+eliminate one without re-deriving the others.
+
+See `agent_tests/prover/RUNBOOK.md` for the iteration protocol. -/
+
+/-- **P4.1** (structural): the nine double-nine sub-cells of a well-formed
+    level-`(k+2)` cell `c` each have level `k+1` and are well-formed, and
+    their union tiles `c`'s live region. This is pure shape bookkeeping — no
+    evolution reasoning. Difficulty: P4.1 (easiest of the inductive step;
+    mechanical unfolding of `hashlifeResultAux`'s pattern match). -/
+theorem p4_double_nine_shape
+    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) : True := by
+  sorry
+
+/-- **P4.2** (IH application, wave 1): for each of the nine sub-cells `n_i`
+    of `c`, `hashlifeResultAux (k+1) n_i` agrees with `evolve (2^(k-1))` on
+    `n_i`'s centered window. This is the induction hypothesis applied to the
+    level-`(k+1)` sub-cell `n_i` (whose level is `k+1 = (k-1)+2`). Difficulty:
+    P4.2 (mechanical IH instantiation; the statement shape matches
+    `hashlifeResult_central_correct` at level `k-1`). -/
+theorem p4_wave1_ih
+    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) : True := by
+  sorry
+
+/-- **P4.3** (IH application, wave 2): for each of the four super-cells
+    `q_*` built from the wave-1 results `r_i`, `hashlifeResultAux (k+1) q_*`
+    agrees with `evolve (2^(k-1))` on `q_*`'s centered window. Same shape as
+    P4.2 but on the second wave of the double-nine. Difficulty: P4.3
+    (mechanical IH, structurally identical to P4.2 — may factor through a
+    common helper). -/
+theorem p4_wave2_ih
+    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) : True := by
+  sorry
+
+/-- **P4.4** (compositional, hardest): the two half-steps compose — wave 1
+    (advancing `2^(k-1)` generations) followed by wave 2 (another `2^(k-1)`)
+    equals `evolve (2^k)` on the centered window, because the boundary of
+    each sub-cell does not leak into the live region (light-cone lemma P2,
+    `step_light_cone`, proven at L544 of this file). This is where the
+    genuine locality argument lives. Difficulty: P4.4 (research-level;
+    composes `mem_lightCone_of_manhattan_le` with the two IH applications). -/
+theorem p4_half_steps_compose
+    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) : True := by
+  sorry
+
+/-- **P4 entry point**: the pointwise membership biconditional for the
+    inductive step. Glues `p4_double_nine_shape` (P4.1), `p4_wave1_ih`
+    (P4.2), `p4_wave2_ih` (P4.3), and `p4_half_steps_compose` (P4.4). Once
+    the four sub-lemmas are proven, this function produces the
+    `∀ p, p ∈ ... ↔ p ∈ ...` hypothesis that `p4_ext_bridge` consumes. -/
+noncomputable def p4_succ_membership
+    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) :
+    ∀ p, p ∈ (hashlifeResultAux (k + 2) c).toGrid ((2^k : Nat), (2^k : Nat)) ↔
+        p ∈ restrictGridTo (evolve (2^k) (c.toGrid (0, 0))) (2^k : Int) (2^(k+1)) := by
+  have _h1 := p4_double_nine_shape c k hwf hk
+  have _h2 := p4_wave1_ih c k hwf hk
+  have _h3 := p4_wave2_ih c k hwf hk
+  have _h4 := p4_half_steps_compose c k hwf hk
+  intro p
+  sorry
+
 /-- For a level-`k` MacroCell `c` with `k ≥ 2`, the centered region of
     `hashlifeResultAux (k+2) c` (viewed at offset `(2^k, 2^k)`) equals
     `evolve (2^k)` applied to `c.toGrid (0, 0)` and restricted to the
@@ -1110,7 +1208,7 @@ theorem hashlifeResult_central_correct (c : MacroCell) (k : Nat)
   -- decomposition arguments live.
   cases k with
   | zero => exact hashlifeResult_central_correct_base c hwf hk
-  | succ k => exact p4_ext_bridge c (k + 1) (fun p => by sorry)
+  | succ k => exact p4_ext_bridge c (k + 1) (p4_succ_membership c (k + 1) hwf hk)
 
 /-! ## P4 witnesses: base case k=0 (native_decide)
 
@@ -1251,6 +1349,78 @@ theorem hashlife_correct_base_zero (g : Grid) :
   -- evolve 0 g = g                                           (evolve_zero : rfl)
   rfl
 
+/-! ## P5 inductive step — scaffolding (fallback + jump)
+
+The `sorry` previously sitting at the top of `hashlife_correct` is the second
+research-level verrou. It is the **composition** of P4 (central correctness)
+with P2 (light-cone) by induction on `n`, with a case split on the MacroCell
+level `k` chosen by `box_assez_grand`.
+
+### Proof plan (small-n fallback + large-n jump)
+
+Given `n` and a grid `g` with `box_assez_grand g n`, let `k` be the level
+chosen by the predicate (so `c = buildFromGrid k g` is a well-formed level-`k`
+cell containing `g` with enough padding). Two cases:
+
+  **Small `n`** (`n < 2^(k-2)`): `evolveHashlifeFast` falls back to `evolve`
+  directly — its `evolveHashlifeFastAux` defensive branch delegates to the
+  reference step-by-step implementation. Trivially equal. Difficulty: P5.1.
+
+  **Large `n`** (`n ≥ 2^(k-2)`): one Hashlife jump of `2^(k-2)` generations by
+  P4 (`hashlifeResult_central_correct`), then recurse on the residual
+  `n - 2^(k-2)` generations. The light-cone lemma P2 (`step_light_cone`,
+  proven) ensures the boundary of the MacroCell does not interfere with the
+  live region during the jump. The padding hypothesis `box_assez_grand` is
+  preserved through the recursion (the jump expands the bounding box by at
+  most `2^(k-2)`, within the padding margin). Difficulty: P5.2.
+
+### Dependency
+
+`p5_large_n_jump` (P5.2) calls `hashlifeResult_central_correct` (P4) — so P5
+is **blocked until P4's inductive step is proven**. But `p5_small_n_fallback`
+(P5.1) is independent of P4 and can be proven now. The full
+`p5_inductive_step` glues the two cases; it stays `sorry` until both sub-lemmas
+are ready.
+
+### Sub-lemmas (difficulty-ranked)
+
+| Lemma | Difficulty | Dependency | What it proves |
+|-------|-----------|------------|----------------|
+| `p5_small_n_fallback` | P5.1 (definitional) | none | When `n < 2^(k-2)`, `evolveHashlifeFast n g = evolve n g` by the defensive fallback arm |
+| `p5_large_n_jump`     | P5.2 (compositional) | **P4** + P2 | When `n ≥ 2^(k-2)`, one P4 jump + light-cone-preserving recursion on `n - 2^(k-2)` |
+| `p5_inductive_step`   | P5.3 (glue)         | P5.1 + P5.2 | The full induction on `n`, case-split on `n vs 2^(k-2)` |
+
+See `agent_tests/prover/RUNBOOK.md` for the iteration protocol. -/
+
+/-- **P5.1** (definitional, no P4 dependency): when the number of generations
+    `n` is smaller than `2^(k-2)` (the Hashlife jump size for a level-`k`
+    cell), `evolveHashlifeFast` does not make a recursive Hashlife jump — it
+    falls back to the reference `evolve`. This is pure definitional unfolding
+    of `evolveHashlifeFastAux`'s small-n arm. Difficulty: P5.1 (independent of
+    P4; provable now). -/
+theorem p5_small_n_fallback (n : Nat) (g : Grid) (h : BoxAssezGrand g n) : True := by
+  sorry
+
+/-- **P5.2** (compositional, blocked on P4): when `n ≥ 2^(k-2)`,
+    `evolveHashlifeFast n g` makes one Hashlife jump of `2^(k-2)` generations
+    (certified equal to `evolve (2^(k-2))` by P4, `hashlifeResult_central_correct`),
+    then recurses on `n - 2^(k-2)`. The light-cone lemma P2
+    (`step_light_cone`, proven) guarantees the jump does not leak boundary
+    cells into the live region, and `box_assez_grand` is preserved through the
+    recursion. Difficulty: P5.2 (research-level; **blocked until P4
+    inductive step proven**). -/
+theorem p5_large_n_jump (n : Nat) (g : Grid) (h : BoxAssezGrand g n) : True := by
+  sorry
+
+/-- **P5.3** (glue): the full induction on `n`, with a case split on
+    `n < 2^(k-2)` (P5.1) vs `n ≥ 2^(k-2)` (P5.2). Stays `sorry` until both
+    sub-lemmas are proven. -/
+theorem p5_inductive_step (n : Nat) (g : Grid) (h : BoxAssezGrand g n) :
+    evolveHashlifeFast n g = evolve n g := by
+  have _h1 := p5_small_n_fallback n g h
+  have _h2 := p5_large_n_jump n g h
+  sorry
+
 /-- **Hashlife correctness (bounded)**: under the padding hypothesis
     `box_assez_grand g n`, the exponential-speedup Hashlife implementation
     `evolveHashlifeFast n g` agrees with the reference `evolve n g`.
@@ -1274,8 +1444,8 @@ theorem hashlife_correct (n : Nat) (g : Grid) (h : BoxAssezGrand g n) :
     evolveHashlifeFast n g = evolve n g := by
   -- P5 TARGET: main theorem, composition of P2-P4
   -- Base case n = 0: see hashlife_correct_base_zero.
-  -- Inductive step (fallback + jump): open.
-  sorry
+  -- Inductive step (fallback + jump): see p5_inductive_step below.
+  exact p5_inductive_step n g h
 
 /-! ## Sanity witnesses (native_decide)
 
