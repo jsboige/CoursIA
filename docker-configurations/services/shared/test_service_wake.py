@@ -116,6 +116,46 @@ def test_ensure_service_up_docker_start_fails():
         assert service_wake.ensure_service_up("svc", "http://h/health") is False
 
 
+def test_ensure_service_up_fast_path_forwards_api_key():
+    """Contrat sécurité (#16) : api_key doit atteindre probe_health même au
+    fast-path — sinon un service auth-actif renvoie 401 et le helper croit le
+    service down → déclenche un docker start inutile."""
+    received_keys = []
+
+    def fake_probe(url, api_key=None, timeout=5):
+        received_keys.append(api_key)
+        return True  # fast-path hit
+
+    with patch("service_wake.probe_health", side_effect=fake_probe):
+        assert service_wake.ensure_service_up(
+            "svc", "http://h/health", api_key="secret"
+        ) is True
+        assert received_keys == ["secret"], (
+            "api_key must propagate to probe_health on the fast-path"
+        )
+
+
+def test_ensure_service_up_cold_path_forwards_api_key():
+    """Contrat sécurité (#16) : api_key doit atteindre CHAQUE poll du cold-path
+    (fast-path down + post-start polls), pas seulement le 1er."""
+    received_keys = []
+
+    def fake_probe(url, api_key=None, timeout=5):
+        received_keys.append(api_key)
+        return len(received_keys) >= 3  # down, down, then healthy
+
+    with patch("service_wake.probe_health", side_effect=fake_probe), patch(
+        "service_wake.docker_start", return_value=True
+    ), patch("service_wake.time.sleep"):
+        assert service_wake.ensure_service_up(
+            "svc", "http://h/health", api_key="secret"
+        ) is True
+        # All probes (fast-path + cold-path polls) received the key.
+        assert received_keys == ["secret", "secret", "secret"], (
+            "api_key must propagate to every probe, not just the first"
+        )
+
+
 def test_ensure_service_up_times_out():
     """Service jamais healthy après start → False après timeout."""
 
