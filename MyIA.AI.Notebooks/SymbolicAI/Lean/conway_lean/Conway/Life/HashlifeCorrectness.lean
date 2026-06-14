@@ -914,6 +914,57 @@ private theorem wf_padToLevelPlus1 {nw ne sw se : MacroCell}
              MacroCell.level, he_lvl, hla, hlb, hld]
   decide
 
+/-! ## P4 structural input: centerInLevelPlus2 level + wf
+
+`centerInLevelPlus2 c` embeds `c` (any level `n`) in a level-`(n+2)` cell,
+one copy of `c` per quadrant, the rest all-dead padding of level `n`. This
+is the centering helper P4 calls before running `hashlifeResult` on the
+padded cell. Its level and well-formedness are P4 structural inputs: the
+level-`(n+2)` shape is what makes `box_assez_grand` + the centered
+`toGrid (2^k, 2^k)` window meaningful, and the well-formedness is the
+missing hypothesis of P4 (the algorithm's well-formed arm). -/
+
+/-- `centerInLevelPlus2 c` has level `c.level + 2`: its `nw` sub-cell
+    `(node e e e c)` has level `1 + e.level = 1 + c.level` (with
+    `e = emptyOfLevel c.level`), so the outer node has level
+    `1 + (1 + c.level)`. -/
+theorem level_centerInLevelPlus2 (c : MacroCell) :
+    (centerInLevelPlus2 c).level = c.level + 2 := by
+  show (MacroCell.node
+          (MacroCell.node (MacroCell.emptyOfLevel c.level) (MacroCell.emptyOfLevel c.level)
+                          (MacroCell.emptyOfLevel c.level) c)
+          (MacroCell.node (MacroCell.emptyOfLevel c.level) (MacroCell.emptyOfLevel c.level)
+                          c (MacroCell.emptyOfLevel c.level))
+          (MacroCell.node (MacroCell.emptyOfLevel c.level) c
+                          (MacroCell.emptyOfLevel c.level) (MacroCell.emptyOfLevel c.level))
+          (MacroCell.node c (MacroCell.emptyOfLevel c.level)
+                          (MacroCell.emptyOfLevel c.level) (MacroCell.emptyOfLevel c.level))).level
+        = c.level + 2
+  simp only [MacroCell.level, emptyOfLevel_level]
+  omega
+
+/-- `centerInLevelPlus2` preserves well-formedness: from a well-formed `c`
+    it produces a well-formed level-`(c.level+2)` cell. Each quadrant is
+    `(node e e e c)` (or a rotation) — three wf equal-level empties plus
+    `c` (wf, same level `c.level`), so all four quadrants are wf at the same
+    level `1 + c.level`, and the outer node's `wf` conjunction holds. -/
+theorem wf_centerInLevelPlus2 (c : MacroCell) (h : c.wf = true) :
+    (centerInLevelPlus2 c).wf = true := by
+  show (MacroCell.node
+          (MacroCell.node (MacroCell.emptyOfLevel c.level) (MacroCell.emptyOfLevel c.level)
+                          (MacroCell.emptyOfLevel c.level) c)
+          (MacroCell.node (MacroCell.emptyOfLevel c.level) (MacroCell.emptyOfLevel c.level)
+                          c (MacroCell.emptyOfLevel c.level))
+          (MacroCell.node (MacroCell.emptyOfLevel c.level) c
+                          (MacroCell.emptyOfLevel c.level) (MacroCell.emptyOfLevel c.level))
+          (MacroCell.node c (MacroCell.emptyOfLevel c.level)
+                          (MacroCell.emptyOfLevel c.level) (MacroCell.emptyOfLevel c.level))).wf
+        = true
+  simp only [MacroCell.wf, Bool.and_eq_true, beq_iff_eq]
+  simp only [MacroCell.wf, Bool.and_eq_true, beq_iff_eq,
+             emptyOfLevel_wf, h, MacroCell.level, emptyOfLevel_level]
+  decide
+
 /-! ## P4 structural input: level preservation (level-2 base)
 
 `hashlifeResult` on a well-formed level-`k` cell is documented to return a
