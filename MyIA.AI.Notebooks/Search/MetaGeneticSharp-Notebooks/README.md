@@ -1,10 +1,10 @@
 # MetaGeneticSharp — Notebooks pédagogiques
 
-[↑ Série Search](../README.md) | [↑ Entrée Partie 4](../Part4-Metaheuristics/README.md) | [Fork jsboige/MetaGeneticSharp →](../MetaGeneticSharp/README.md)
+[↑ Série Search](../README.md) | [↑ Entrée Partie 4](../Part4-Metaheuristics/README.md) | [Fork jsboige/MetaGeneticSharp →](https://github.com/jsboige/MetaGeneticSharp/blob/main/README.md)
 
 Cinq notebooks .NET Interactive (C#) qui reconstruisent les métaheuristiques publiées à partir de **primitives composables** plutôt que comme des boîtes noires importées. Le fil conducteur : un algorithme doit pouvoir s'énoncer en quelques lignes déclaratives, et chaque brique (sélection, croisement, mutation, réinsertion) doit pouvoir être interceptée et recomposée.
 
-Ces notebooks consomment la bibliothèque [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) (sous-module voisin [`MetaGeneticSharp/`](../MetaGeneticSharp/)) via ses DLLs buildées. Pour le positionnement de la Partie 4 (MGS vs GeneticSharp / mealpy / HeuristicLab, motivations pédagogique et ingénierie), voir l'[entrée Partie 4](../Part4-Metaheuristics/README.md).
+Ces notebooks consomment la bibliothèque [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) (sous-module voisin [`MetaGeneticSharp/`](https://github.com/jsboige/MetaGeneticSharp)) via ses DLLs buildées. Pour le positionnement de la Partie 4 (MGS vs GeneticSharp / mealpy / HeuristicLab, motivations pédagogique et ingénierie), voir l'[entrée Partie 4](../Part4-Metaheuristics/README.md).
 
 ## Parcours d'apprentissage
 
