@@ -114,24 +114,26 @@ theorem tricolorable_invariant :
       ReidemeisterEquiv d₁ d₂ →
       IsTricolorable d₁ ↔ IsTricolorable d₂ := by
   exact sorry
-  -- BLOCKED (Phase 5 — transfer lemma, target PR2). The move model was
-  -- re-modeled in PR1 (this commit): `Reidemeister1/2/3` now carry
-  -- well-formedness `KnotDiagram.wf` on BOTH diagrams plus an explicit
-  -- edge-renaming `ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges`. The malformed
-  -- witnesses that REFUTED this statement under the Phase 3 symmetric-
-  -- existential model (a crossing `⟨7,8,9,10⟩` with labels out of
-  -- `[1, numEdges]`) are now EXCLUDED at the type level by `wf₂`. The
-  -- certified counter-example `tricolorable_invariant_fails_under_current_model`
-  -- that demonstrated the refutation has been removed in this same commit: it
-  -- no longer type-checks (the witness cannot satisfy the new `wf` hypothesis),
-  -- and its diagnostic purpose — "the model is too weak" — is resolved by this
-  -- re-modeling.
+  -- BLOCKED (Phase 5 — model STILL too coarse after PR1). PR1 (#2929)
+  -- strengthened the move model with `KnotDiagram.wf` on both diagrams and an
+  -- edge-renaming `ρ`. That REMOVED the Phase-3 obstruction (malformed witness
+  -- `⟨7,8,9,10⟩`, excluded by `wf`), but it did NOT make this statement true.
+  -- A SECOND certified counter-example — `tricolorable_invariant_fails_under_pr1_model`
+  -- below (§3b) — proves the biconditional is STILL REFUTED under the PR1 model.
   --
-  -- Remaining blocker = the transfer lemma itself (the original Phase 4 goal,
-  -- now unblocked): prove that a tricoloring of `d₁` pushes along `ρ` to a
-  -- tricoloring of `d₂`, for each of R1/R2/R3, including the delicate ≥2-colours
-  -- case (R1/R2 must not collapse a 3-colouring to a 1-colouring). Reference:
-  -- Fox (1962); Adams, "The Knot Book".
+  -- Root cause (the real blocker): `wf`'s "every label appears exactly twice"
+  -- condition forces an R1-twist's new crossing `c` to use ONLY the two fresh
+  -- edges `{n+1, n+2}` (labels `1..n` already appear twice in `d₁`, so `c`
+  -- cannot reuse any without breaking the parity), and `ρ` is a FREE injection
+  -- not tied to `c`'s labels. The new crossing's Fox condition is therefore
+  -- DECOUPLED from `d₁`'s coloring — a twist can CREATE tricolorability from
+  -- nothing (or hide the ≥2-colours entirely in the fresh edges while `d₁` is
+  -- forced monochrome). The fix is NOT a transfer lemma but a STRONGER
+  -- constructor model in which `ρ` DETERMINES `c`'s labels: a genuine R1 curl
+  -- on arc `a` is `⟨a, a, n+1, n+2⟩` (one strand is the EXISTING arc `a`),
+  -- whose Fox condition ties the new edges to `color a`. See §3b for the
+  -- witness and the Phase-5 prerequisite. Reference: Fox (1962); Adams, "The
+  -- Knot Book".
 
 /-! ## 3. The trefoil is tricolorable
 
@@ -169,23 +171,117 @@ theorem trefoil_tricolorable : Knot.isTricolorable trefoil := by
   -- At least 2 colors: edge 0 = red, edge 2 = blue, red ≠ blue
   · exact ⟨⟨0, by decide⟩, ⟨2, by decide⟩, by decide⟩
 
-/-! ## 3b. Certified counter-example — REMOVED in Phase 5 PR1
+/-! ## 3b. Certified counter-example: `tricolorable_invariant` is STILL FALSE
+under the Phase 5 PR1 move model.
 
-The theorem `tricolorable_invariant_fails_under_current_model` (which lived
-here) demonstrated that `tricolorable_invariant` was REFUTED by the Phase 3
-symmetric-existential move model: a single R1 "step" could append a malformed
-crossing `⟨7,8,9,10⟩` (labels out of `[1, numEdges]`), reaching a non-
-tricolorable diagram while `ReidemeisterEquiv` held — so the biconditional was
-false. That counter-example was the *evidence* that Phase 5 needed to re-model
-the moves.
+This is a *positive* diagnostic result (not a gap). PR1 (#2929) re-modeled
+`Reidemeister1/2/3` to require `KnotDiagram.wf` on both diagrams, which excluded
+the *malformed-witness* counter-example of the Phase 3 model (a crossing
+`⟨7,8,9,10⟩` with labels out of `[1, numEdges]`). But the re-modeling is still
+too coarse to make `tricolorable_invariant` TRUE.
 
-It is removed in this commit (PR1) because the re-modeling landed:
-`Reidemeister1/2/3` now require `KnotDiagram.wf = true` on both diagrams, which
-the malformed witness `⟨7,8,9,10⟩` (e3 = 9 > numEdges = 8, and labels 7,8
-appearing only once) cannot satisfy. The counter-example no longer type-checks
-under the new move model, and its diagnostic purpose ("the model is too weak")
-is resolved. The transfer lemma that the re-modeling unblocks is the target of
-PR2. See the updated diagnostic on `tricolorable_invariant` above. -/
+Why. The `wf` "every label appears exactly twice" condition forces an R1-twist's
+new crossing `c` to use ONLY the two fresh edges `{n+1, n+2}` — labels `1..n`
+already appear twice in `d₁`, so `c` cannot reuse any of them without breaking
+parity. Moreover the edge-renaming `ρ : Fin (min) ↪ Fin (max)` introduced by
+PR1 is a FREE injection, NOT tied to `c`'s labels. The new crossing's Fox
+condition therefore involves only the two fresh (freely-colorable) edges and is
+DECOUPLED from `d₁`'s coloring — so a twist can CREATE tricolorability out of
+nothing, or symmetrically hide the ≥2-colours entirely in the fresh edges while
+`d₁` is forced monochrome.
+
+Witness (refutes the universal biconditional):
+  d₁ = { crossings := [⟨1,2,1,2⟩], numEdges := 2 }    — NOT tricolorable.
+       Fox at ⟨1,2,1,2⟩ reads (coloring⟨0⟩, coloring⟨1⟩, coloring⟨0⟩), which is
+       all-equal ONLY if coloring⟨0⟩ = coloring⟨1⟩ — contradicting the ≥2-colours
+       requirement. So no valid tricoloring exists.
+  d₂ = { crossings := [⟨1,2,1,2⟩, ⟨3,4,3,4⟩], numEdges := 4 }  — tricolorable.
+       Color edges 1,2 = red and 3,4 = blue: Fox holds at both crossings
+       (all-equal within each), and ≥2 colours are used.
+  A single R1 twist step connects them (`ReidemeisterEquiv d₁ d₂`), so the
+  biconditional `IsTricolorable d₁ ↔ IsTricolorable d₂` is `(false ↔ true)`.
+
+**Phase 5 prerequisite (the real fix).** Tie the edge-renaming to the crossing:
+make the move constructors carry the geometric splicing so that `ρ` DETERMINES
+`c`'s labels — a genuine R1 curl on arc `a` is `⟨a, a, n+1, n+2⟩` (one strand is
+the EXISTING arc `a`), whose Fox condition constrains the new edges to inherit
+`color a`, which is what makes tricolorability transfer along `ρ`. Then
+re-prove the transfer lemma. Reference: Fox (1962); Adams, "The Knot Book". -/
+
+theorem tricolorable_invariant_fails_under_pr1_model :
+    ∃ (d₁ d₂ : KnotDiagram),
+      ReidemeisterEquiv d₁ d₂ ∧
+      ¬ IsTricolorable d₁ ∧
+      IsTricolorable d₂ := by
+  -- Witness pair.
+  refine' ⟨{ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial },
+           { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial },
+           ?_, ?_, ?_⟩
+  -- (a) ReidemeisterEquiv d₁ d₂: a single R1 twist step, witness c = ⟨3,4,3,4⟩.
+  --     d₁ = {[⟨1,2,1,2⟩], numEdges = 2}; d₂ = {[⟨1,2,1,2⟩, ⟨3,4,3,4⟩], numEdges = 4}.
+  · refine' ReidemeisterEquiv.step (ReidemeisterStep.r1 ?_)
+    refine' ⟨?_, ?_, ⟨⟨3, 4, 3, 4⟩, ⟨?_, ?_⟩⟩⟩
+    · -- d₁.wf = true: labels 1,2 each appear twice across [1,2,1,2].
+      decide
+    · -- d₂.wf = true: labels 1,2,3,4 each appear twice across [1,2,1,2,3,4,3,4].
+      decide
+    · -- ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
+      --   which is defeq to Fin 2 ↪ Fin 4 (d₁.numEdges = 2, d₂.numEdges = 4 reduce,
+      --   and min/max on the literals reduce). Constructed concretely as Fin 2 ↪ Fin 4
+      --   so omega sees concrete bounds; `exact` discharges the defeq to the goal type.
+      have ρ : Fin 2 ↪ Fin 4 :=
+        ⟨fun i => ⟨i.val, by omega⟩,
+         fun a b h => by
+           have h : (⟨a.val, by omega⟩ : Fin 4) = ⟨b.val, by omega⟩ := h
+           injection h with hval
+           exact Fin.ext hval⟩
+      exact ρ
+    · -- surgery (twist arm): d₂ = { d₁ with crossings := d₁.crossings ++ [⟨3,4,3,4⟩], numEdges := d₁.numEdges + 2 }.
+      left
+      rfl
+  -- (b) d₁ is NOT tricolorable: Fox at the sole crossing ⟨1,2,1,2⟩ forces the two
+  --     edges to the same colour, contradicting the ≥2-colours requirement.
+  · show ¬ IsTricolorable { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+    rintro ⟨coloring, hcond, hedges, htwo⟩
+    -- The sole crossing ⟨1,2,1,2⟩ is in d₁.crossings; apply the Fox condition to it.
+    have hfox := hcond (⟨1, 2, 1, 2⟩ : PDCrossing)
+        (by exact List.mem_cons_self : _ ∈ ([⟨1, 2, 1, 2⟩] : List PDCrossing))
+    -- Unfold: at ⟨1,2,1,2⟩ with numEdges = 2, the colours read are coloring⟨0⟩ (label 1)
+    -- and coloring⟨1⟩ (label 2). Fox's all-distinct branch is impossible (the third
+    -- strand equals the first), so Fox forces coloring⟨0⟩ = coloring⟨1⟩.
+    have h01 : coloring ⟨0, by decide⟩ = coloring ⟨1, by decide⟩ := by
+      have h := hfox
+      simp only [triColorConditionAt, KnotDiagram.colorAtNat] at h
+      rcases h with ⟨_, h | h⟩
+      · exact h.1
+      · -- all-distinct branch: needs c1 ≠ c3, but e1 = e3 = 1 makes c1 ≡ c3 (rfl) → contradiction.
+        exact (h.2.2 rfl).elim
+    -- Hence every Fin 2 colour equals coloring⟨0⟩ (the only two elements are 0, 1).
+    have hAll : ∀ (i : Fin 2), coloring i = coloring ⟨0, by decide⟩ := by
+      intro i
+      have h : i.val = 0 ∨ i.val = 1 := by omega
+      rcases h with h | h
+      · rw [show i = (⟨0, by omega⟩ : Fin 2) from Fin.ext h]
+      · rw [show i = (⟨1, by omega⟩ : Fin 2) from Fin.ext h, h01]
+    obtain ⟨i, j, hne⟩ := htwo
+    exact hne (by rw [hAll i, hAll j])
+  -- (c) d₂ IS tricolorable: edges 1,2 (Fin index 0,1) = red, edges 3,4 (index 2,3) = blue;
+  --     Fox is all-equal within each crossing, ≥2 colours used.
+  · show IsTricolorable { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+    refine' ⟨fun i : Fin 4 => if i.val ≤ 1 then TriColor.red else TriColor.blue, ?_, ?_, ?_⟩
+    · -- Fox at every crossing of d₂.
+      intro c hc
+      -- d₂.crossings = [⟨1,2,1,2⟩, ⟨3,4,3,4⟩]; hc pins c to one of them.
+      have hsplit : c = ⟨1, 2, 1, 2⟩ ∨ c = ⟨3, 4, 3, 4⟩ := by simpa using hc
+      rcases hsplit with rfl | rfl
+      · -- c = ⟨1,2,1,2⟩: local strands (1,2,1) all red → all-equal.
+        simp only [triColorConditionAt, KnotDiagram.colorAtNat]; decide
+      · -- c = ⟨3,4,3,4⟩: local strands (3,4,3) all blue → all-equal.
+        simp only [triColorConditionAt, KnotDiagram.colorAtNat]; decide
+    · -- numEdges = 4 ≥ 2.
+      decide
+    · -- ≥2 colours: edge index 0 = red ≠ blue = edge index 2.
+      exact ⟨⟨0, by decide⟩, ⟨2, by decide⟩, by decide⟩
 
 /-! ## 4. The unknot is NOT tricolorable
 
