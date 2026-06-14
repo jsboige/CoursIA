@@ -1,66 +1,66 @@
 # Programmation Probabiliste avec Infer.NET
 
-Serie de **21 notebooks** couvrant la programmation probabiliste avec Microsoft Infer.NET, des fondamentaux aux modeles relationnels avances, incluant une section complete sur la theorie de la decision et des preuves formelles Lean 4.
+Série de **21 notebooks** couvrant la programmation probabiliste avec Microsoft Infer.NET, des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision et des preuves formelles Lean 4.
 
 **21 notebooks** | **C# / .NET 9.0** | **~20h** | **.NET Interactive**
 
-**A qui s'adresse cette serie** : etudiants en IA, developpeurs .NET souhaitant maitriser l'inference probabiliste exacte, et data scientists interesses par les graphes de facteurs. Les notebooks C# requierent .NET 9.0 + dotnet-interactive. Aucun prerequis en probabilites avancees : les concepts sont introduits progressivement.
+**À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste exacte, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
-## Pourquoi cette sous-serie
+## Pourquoi cette sous-série
 
-Infer.NET est le seul framework d'inference probabiliste natif dans l'ecosysteme .NET. Il compile un modele probabiliste declaratif en un **algorithme d'inference specialise** via reflection et compilation Roslyn, offrant trois moteurs complementaires : **Expectation Propagation (EP)** pour les modeles continus et mixtes (defaut, rapide mais approximatif), **Variational Message Passing (VMP)** pour les modeles a composantes comme LDA (stable, sous-estime l'incertitude), et **Gibbs Sampling** pour la validation sur petits modeles (exact asymptotiquement, lent). Cette approche compilee contraste avec l'echantillonnage MCMC generique de PyMC et permet des infences en millisecondes plutot qu'en minutes. Cette serie couvre les 20 modeles classiques de la programmation probabiliste (reseaux bayesiens, TrueSkill, LDA, HMM) plus la theorie de la decision bayesienne complete (utilite esperee, diagrammes d'influence, EVPI, MDPs) et une preuve formelle Lean 4 de l'indice de Gittins.
+Infer.NET est le seul framework d'inférence probabiliste natif dans l'écosystème .NET. Il compile un modèle probabiliste déclaratif en un **algorithme d'inférence spécialisé** via reflection et compilation Roslyn, offrant trois moteurs complémentaires : **Expectation Propagation (EP)** pour les modèles continus et mixtes (défaut, rapide mais approximatif), **Variational Message Passing (VMP)** pour les modèles à composantes comme LDA (stable, sous-estime l'incertitude), et **Gibbs Sampling** pour la validation sur petits modèles (exact asymptotiquement, lent). Cette approche compilée contraste avec l'échantillonnage MCMC générique de PyMC et permet des inférences en millisecondes plutôt qu'en minutes. Cette série couvre les 20 modèles classiques de la programmation probabiliste (réseaux bayésiens, TrueSkill, LDA, HMM) plus la théorie de la décision bayésienne complète (utilité espérée, diagrammes d'influence, EVPI, MDPs) et une preuve formelle Lean 4 de l'indice de Gittins.
 
 | Algorithme | Force | Limite | Cas d'usage |
 | ---------- | ----- | ------ | ---------- |
-| **EP** | Rapide, bon pour gaussiennes | Approximatif, peut diverger | Modeles continus, facteurs mixtes |
-| **VMP** | Stable, bon pour discret | Sous-estime l'incertitude | LDA, modeles a composantes |
-| **Gibbs** | Exact asymptotiquement | Lent, convergence difficile | Validation, petits modeles |
+| **EP** | Rapide, bon pour gaussiennes | Approximatif, peut diverger | Modèles continus, facteurs mixtes |
+| **VMP** | Stable, bon pour discret | Sous-estime l'incertitude | LDA, modèles à composantes |
+| **Gibbs** | Exact asymptotiquement | Lent, convergence difficile | Validation, petits modèles |
 
-**Double approche** : Cette serie est le versant C#/.NET de la programmation probabiliste. Le versant Python (PyMC) couvre les memes modeles avec un moteur d'inference different. Voir [PyMC/](../PyMC/) pour la comparaison.
+**Double approche** : Cette série est le versant C#/.NET de la programmation probabiliste. Le versant Python (PyMC) couvre les mêmes modèles avec un moteur d'inférence différent. Voir [PyMC/](../PyMC/) pour la comparaison.
 
-**Applications reelles couvertes** : TrueSkill (Xbox Live, 100M+ joueurs), Item Response Theory (GMAT/GRE), LDA (Google News), systemes de recommandation, diagnostic medical.
+**Applications réelles couvertes** : TrueSkill (Xbox Live, 100M+ joueurs), Item Response Theory (GMAT/GRE), LDA (Google News), systèmes de recommandation, diagnostic médical.
 
 ## Objectifs d'apprentissage
 
-A l'issue de cette serie, vous serez capable de :
+À l'issue de cette série, vous serez capable de :
 
-1. **Construire** un modele probabiliste en Infer.NET (definition, inference, validation)
-2. **Interpreter** les distributions posterieures (moyenne, variance, intervalles de credibilite)
+1. **Construire** un modèle probabiliste en Infer.NET (définition, inférence, validation)
+2. **Interpréter** les distributions postérieures (moyenne, variance, intervalles de crédibilité)
 3. **Lire** un graphe de facteurs et comprendre le flux de messages
-4. **Appliquer** la theorie de la decision bayesienne (utilite esperee, EVPI, MDPs)
-5. **Comparer** l'inference exacte (Infer.NET) et approchee (PyMC) sur les memes modeles
+4. **Appliquer** la théorie de la décision bayésienne (utilité espérée, EVPI, MDPs)
+5. **Comparer** l'inférence exacte (Infer.NET) et approchée (PyMC) sur les mêmes modèles
 
 ## Vue d'ensemble
 
-| # | Notebook | Duree | Concepts |
+| # | Notebook | Durée | Concepts |
 |---|----------|-------|----------|
-| 1 | [Infer-1-Setup](Infer-1-Setup.ipynb) | 15 min | Installation, premier modele |
-| 2 | [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb) | 50 min | Posterieurs, melanges, Dirichlet |
-| 3 | [Infer-3-Factor-Graphs](Infer-3-Factor-Graphs.ipynb) | 45 min | Inference discrete, Monty Hall |
-| 4 | [Infer-4-Bayesian-Networks](Infer-4-Bayesian-Networks.ipynb) | 55 min | CPT, D-separation, causalite |
+| 1 | [Infer-1-Setup](Infer-1-Setup.ipynb) | 15 min | Installation, premier modèle |
+| 2 | [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb) | 50 min | Postérieurs, mélanges, Dirichlet |
+| 3 | [Infer-3-Factor-Graphs](Infer-3-Factor-Graphs.ipynb) | 45 min | Inférence discrète, Monty Hall |
+| 4 | [Infer-4-Bayesian-Networks](Infer-4-Bayesian-Networks.ipynb) | 55 min | CPT, D-séparation, causalité |
 | 5 | [Infer-5-Skills-IRT](Infer-5-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many |
-| 6 | [Infer-6-TrueSkill](Infer-6-TrueSkill.ipynb) | 55 min | Ranking, online learning, equipes |
-| 7 | [Infer-7-Classification](Infer-7-Classification.ipynb) | 50 min | BPM, regression logistique, A/B |
+| 6 | [Infer-6-TrueSkill](Infer-6-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes |
+| 7 | [Infer-7-Classification](Infer-7-Classification.ipynb) | 50 min | BPM, régression logistique, A/B |
 | 8 | [Infer-8-Model-Selection](Infer-8-Model-Selection.ipynb) | 45 min | Evidence, Bayes factors, ARD |
 | 9 | [Infer-9-Topic-Models](Infer-9-Topic-Models.ipynb) | 60 min | LDA, documents-topics-mots |
-| 10 | [Infer-10-Crowdsourcing](Infer-10-Crowdsourcing.ipynb) | 55 min | Workers, communautes, agregation |
-| 11 | [Infer-11-Sequences](Infer-11-Sequences.ipynb) | 65 min | HMM, series temporelles, motifs |
+| 10 | [Infer-10-Crowdsourcing](Infer-10-Crowdsourcing.ipynb) | 55 min | Workers, communautés, agrégation |
+| 11 | [Infer-11-Sequences](Infer-11-Sequences.ipynb) | 65 min | HMM, séries temporelles, motifs |
 | 12 | [Infer-12-Recommenders](Infer-12-Recommenders.ipynb) | 60 min | Factorisation, Click Model |
 | 13 | [Infer-13-Debugging](Infer-13-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
-| 14 | [Infer-14-Decision-Utility-Foundations](Infer-14-Decision-Utility-Foundations.ipynb) | 50 min | Loteries, axiomes VNM, utilite esperee |
+| 14 | [Infer-14-Decision-Utility-Foundations](Infer-14-Decision-Utility-Foundations.ipynb) | 50 min | Loteries, axiomes VNM, utilité espérée |
 | 15 | [Infer-15-Decision-Utility-Money](Infer-15-Decision-Utility-Money.ipynb) | 45 min | Paradoxe St-Petersbourg, CARA, CRRA |
 | 16 | [Infer-16-Decision-Multi-Attribute](Infer-16-Decision-Multi-Attribute.ipynb) | 50 min | MAUT, SMART, swing weights |
 | 17 | [Infer-17-Decision-Networks](Infer-17-Decision-Networks.ipynb) | 55 min | Diagrammes d'influence, politique optimale |
 | 18 | [Infer-18-Decision-Value-Information](Infer-18-Decision-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
-| 19 | [Infer-19-Decision-Expert-Systems](Infer-19-Decision-Expert-Systems.ipynb) | 50 min | Systemes experts, Minimax, regret |
-| 20 | [Infer-20-Decision-Sequential](Infer-20-Decision-Sequential.ipynb) | 60 min | MDPs, iteration valeur/politique |
+| 19 | [Infer-19-Decision-Expert-Systems](Infer-19-Decision-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
+| 20 | [Infer-20-Decision-Sequential](Infer-20-Decision-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique |
 | 20b | [Infer-20b-Lean-Gittins](Infer-20b-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
 
-**Duree totale** : ~20h
+**Durée totale** : ~20h
 
-**Ressource complementaire** : [Glossaire](Infer-Glossary.md) - Definitions des termes techniques
+**Ressource complémentaire** : [Glossaire](Infer-Glossary.md) - Définitions des termes techniques
 
-## Progression Pedagogique
+## Progression Pédagogique
 
 ```
 FONDAMENTAUX (1-3)
@@ -103,87 +103,87 @@ THEORIE DE LA DECISION (14-20)
 
 Les notebooks 1-3 introduisent les concepts fondamentaux de la programmation probabiliste avec Infer.NET.
 
-### Infer-1 : Configuration et Premier Modele
+### Infer-1 : Configuration et Premier Modèle
 
-**Duree** : 45 min | **Prerequis** : Notions de probabilites
+**Durée** : 45 min | **Prérequis** : Notions de probabilités
 
 **Objectifs** :
 
 - Installer et configurer Infer.NET dans .NET Interactive
-- Comprendre le workflow en 3 etapes : Modele → Moteur → Inference
-- Implementer un premier modele bayesien (Two Coins)
-- Maitriser les priors conjugues Beta-Bernoulli
+- Comprendre le workflow en 3 étapes : Modèle → Moteur → Inférence
+- Implémenter un premier modèle bayésien (Two Coins)
+- Maîtriser les priors conjugués Beta-Bernoulli
 
 **Sections** :
 
 1. Configuration de l'environnement (.NET Interactive, CompilerChoice.Roslyn)
-2. Introduction a la programmation probabiliste
-3. Exemple : Probleme des deux pieces (Two Coins)
-4. Exemple avance : Estimation de piece biaisee avec prior Beta
-5. Apprentissage en ligne : mise a jour sequentielle
+2. Introduction à la programmation probabiliste
+3. Exemple : Problème des deux pièces (Two Coins)
+4. Exemple avancé : Estimation de pièce biaisée avec prior Beta
+5. Apprentissage en ligne : mise à jour séquentielle
 
-**Concepts cles** :
+**Concepts clés** :
 
 | Concept | Description |
 |---------|-------------|
-| Variable\<T\> | Representation des quantites incertaines |
-| Prior conjugue | Beta-Bernoulli pour inference analytique |
-| ExpectationPropagation | Algorithme d'inference par defaut |
+| Variable\<T\> | Représentation des quantités incertaines |
+| Prior conjugué | Beta-Bernoulli pour inférence analytique |
+| ExpectationPropagation | Algorithme d'inférence par défaut |
 
-**Applications** : Estimation de piece biaisee, apprentissage en ligne
+**Applications** : Estimation de pièce biaisée, apprentissage en ligne
 
 ---
 
-### Infer-2 : Distributions Continues et Melanges
+### Infer-2 : Distributions Continues et Mélanges
 
-**Duree** : 50 min | **Prerequis** : Notebook 1
+**Durée** : 50 min | **Prérequis** : Notebook 1
 
 **Objectifs** :
 
-- Modeliser des donnees continues avec distributions gaussiennes
-- Maitriser les priors conjugues Gaussian-Gaussian et Gamma-Gamma
-- Implementer l'apprentissage en ligne
-- Decouvrir les modeles de melange avec `Variable.Switch`
+- Modéliser des données continues avec distributions gaussiennes
+- Maîtriser les priors conjugués Gaussian-Gaussian et Gamma-Gamma
+- Implémenter l'apprentissage en ligne
+- Découvrir les modèles de mélange avec `Variable.Switch`
 
 **Sections** :
 
-1. Modelisation de temps de trajet de cycliste
-2. Priors conjugues et apprentissage en ligne
-3. Melanges gaussiens pour donnees multimodales
+1. Modélisation de temps de trajet de cycliste
+2. Priors conjugués et apprentissage en ligne
+3. Mélanges gaussiens pour données multimodales
 4. Visualisation des factor graphs
 
-**Concepts cles** :
+**Concepts clés** :
 
-| Distribution | Usage | Parametres |
+| Distribution | Usage | Paramètres |
 |--------------|-------|------------|
-| Gaussian | Quantites continues | mean, precision |
+| Gaussian | Quantités continues | mean, precision |
 | Gamma | Prior sur precision | shape, scale |
-| Variable.Switch | Selection de composante | index, values |
+| Variable.Switch | Sélection de composante | index, values |
 
-**Applications** : Temps de trajet cycliste, detection de modes multiples, clustering
+**Applications** : Temps de trajet cycliste, détection de modes multiples, clustering
 
 ---
 
-### Infer-3 : Graphes de Facteurs et Inference Discrete
+### Infer-3 : Graphes de Facteurs et Inférence Discrète
 
-**Duree** : 55 min | **Prerequis** : Notebooks 1-2
+**Durée** : 55 min | **Prérequis** : Notebooks 1-2
 
 **Objectifs** :
 
-- Comprendre la representation en graphes de facteurs
-- Maitriser `Variable.If/IfNot` et `Variable.Case` pour branchements
-- Observer le phenomene d'explaining away
-- Implementer le paradoxe de Monty Hall
+- Comprendre la représentation en graphes de facteurs
+- Maîtriser `Variable.If/IfNot` et `Variable.Case` pour branchements
+- Observer le phénomène d'explaining away
+- Implémenter le paradoxe de Monty Hall
 
 **Sections** :
 
 1. Introduction aux graphes de facteurs
 2. Exemple Murder Mystery (MBML Ch.1)
 3. Paradoxe de Monty Hall avec `Variable.Case`
-4. Phenomene Explaining Away
+4. Phénomène Explaining Away
 5. Visualisation Graphviz
 
-**Concepts cles** :
+**Concepts clés** :
 
 | Structure | Usage | Exemple |
 |-----------|-------|---------|
@@ -191,100 +191,100 @@ Les notebooks 1-3 introduisent les concepts fondamentaux de la programmation pro
 | Variable.Case | Conditionnement multi-value | Switch sur enum |
 | Explaining away | Causes alternatives | P(A\|B,C) < P(A\|C) |
 
-**Applications** : Murder Mystery, Monty Hall (2/3 vs 1/3), systemes experts
+**Applications** : Murder Mystery, Monty Hall (2/3 vs 1/3), systèmes experts
 
 ---
 
-## Modeles Classiques (Notebooks 4-6)
+## Modèles Classiques (Notebooks 4-6)
 
-Les notebooks 4-6 couvrent les modeles bayesiens classiques : reseaux, competences et classement.
+Les notebooks 4-6 couvrent les modèles bayésiens classiques : réseaux, compétences et classement.
 
-### Infer-4 : Reseaux Bayesiens
+### Infer-4 : Réseaux Bayésiens
 
-**Duree** : 60 min | **Prerequis** : Notebook 3
+**Durée** : 60 min | **Prérequis** : Notebook 3
 
 **Objectifs** :
 
-- Construire des reseaux bayesiens avec tables de probabilite conditionnelle (CPT)
-- Comprendre D-separation et independance conditionnelle
-- Distinguer inference causale (do) vs observationnelle
-- Implementer des modeles hierarchiques
+- Construire des réseaux bayésiens avec tables de probabilité conditionnelle (CPT)
+- Comprendre D-séparation et indépendance conditionnelle
+- Distinguer inférence causale (do) vs observationnelle
+- Implémenter des modèles hiérarchiques
 
 **Sections** :
 
-1. Reseau Wet Grass/Sprinkler/Rain
+1. Réseau Wet Grass/Sprinkler/Rain
 2. Construction de CPTs avec `Variable.Case`
-3. D-separation et independance
-4. Inference causale vs observationnelle
-5. Modele hierarchique Rats (BUGS)
+3. D-séparation et indépendance
+4. Inférence causale vs observationnelle
+5. Modèle hiérarchique Rats (BUGS)
 
-**Concepts cles** :
+**Concepts clés** :
 
 | Concept | Formule | Description |
 |---------|---------|-------------|
-| CPT | P(X \| Parents(X)) | Table de probabilite conditionnelle |
-| D-separation | - | Critere graphique d'independance |
+| CPT | P(X \| Parents(X)) | Table de probabilité conditionnelle |
+| D-séparation | - | Critère graphique d'indépendance |
 | do-calculus | P(Y \| do(X)) ≠ P(Y \| X) | Intervention vs observation |
-| Hierarchique | θᵢ ~ F(λ) | Pooling partiel entre groupes |
+| Hiérarchique | θᵢ ~ F(λ) | Pooling partiel entre groupes |
 
-**Applications** : Wet Grass, diagnostic medical, modele Rats (8 laboratoires)
+**Applications** : Wet Grass, diagnostic médical, modèle Rats (8 laboratoires)
 
 ---
 
-### Infer-5 : Theorie de la Reponse a l'Item (IRT)
+### Infer-5 : Théorie de la Réponse à l'Item (IRT)
 
-**Duree** : 65 min | **Prerequis** : Notebook 4
+**Durée** : 65 min | **Prérequis** : Notebook 4
 
 **Objectifs** :
 
-- Implementer IRT (Item Response Theory) Difficulty-Ability
-- Decouvrir DINA pour competences discretes
-- Modeliser les parametres slip et guess
-- Gerer les relations many-to-many avec Q-matrix
-- Evaluer avec courbes ROC
+- Implémenter IRT (Item Response Theory) Difficulty-Ability
+- Découvrir DINA pour compétences discrètes
+- Modéliser les paramètres slip et guess
+- Gérer les relations many-to-many avec Q-matrix
+- Évaluer avec courbes ROC
 
 **Sections** :
 
-1. Modele IRT Difficulty-Ability (continu)
-2. Modele DINA avec competences binaires
-3. Parametres slip et guess
-4. Q-matrix pour competences multiples
-5. Evaluation ROC
+1. Modèle IRT Difficulty-Ability (continu)
+2. Modèle DINA avec compétences binaires
+3. Paramètres slip et guess
+4. Q-matrix pour compétences multiples
+5. Évaluation ROC
 
-**Concepts cles** :
+**Concepts clés** :
 
-| Modele | Formule | Usage |
+| Modèle | Formule | Usage |
 |--------|---------|-------|
-| IRT | P(correct) = σ(ability - difficulty) | Competence continue |
-| DINA | ηᵢⱼ = Πₖ αⱼₖ^qᵢₖ | Competences binaires |
-| Slip | P(erreur \| maitrise) | Erreur d'inattention |
-| Guess | P(succes \| non-maitrise) | Reponse au hasard |
+| IRT | P(correct) = σ(ability - difficulty) | Compétence continue |
+| DINA | ηᵢⱼ = Πₖ αⱼₖ^qᵢₖ | Compétences binaires |
+| Slip | P(erreur \| maîtrise) | Erreur d'inattention |
+| Guess | P(succès \| non-maîtrise) | Réponse au hasard |
 
-**Applications** : Tests educatifs, diagnostic de competences, adaptive testing
+**Applications** : Tests éducatifs, diagnostic de compétences, adaptive testing
 
 ---
 
 ### Infer-6 : TrueSkill
 
-**Duree** : 50 min | **Prerequis** : Notebook 2
+**Durée** : 50 min | **Prérequis** : Notebook 2
 
 **Objectifs** :
 
-- Comprendre le systeme TrueSkill (Xbox Live)
-- Modeliser le skill comme Gaussian(μ, σ²)
-- Gerer les matchs avec `ConstrainBetween`
-- Implementer l'apprentissage en ligne
-- Etendre au 2v2 et free-for-all
+- Comprendre le système TrueSkill (Xbox Live)
+- Modéliser le skill comme Gaussian(μ, σ²)
+- Gérer les matchs avec `ConstrainBetween`
+- Implémenter l'apprentissage en ligne
+- Étendre au 2v2 et free-for-all
 
 **Sections** :
 
-1. Modele TrueSkill de base (1v1)
-2. Representation du skill : N(μ, σ²)
+1. Modèle TrueSkill de base (1v1)
+2. Représentation du skill : N(μ, σ²)
 3. Modeling matches avec performance = skill + bruit
 4. Gestion des ex-aequo
 5. Extensions : Teams (2v2), Multi-player
 
-**Concepts cles** :
+**Concepts clés** :
 
 | Composant | Formule | Description |
 |-----------|---------|-------------|
@@ -293,204 +293,204 @@ Les notebooks 4-6 couvrent les modeles bayesiens classiques : reseaux, competenc
 | Team skill | Σ skills individuels | Somme des membres |
 | Update | μ_new ∝ surprise | Plus grande si upset |
 
-**Applications** : Classement Xbox Live, tournois esports, matchmaking equilibre
+**Applications** : Classement Xbox Live, tournois esports, matchmaking équilibré
 
 ---
 
-## Classification et Selection (Notebooks 7-8)
+## Classification et Sélection (Notebooks 7-8)
 
-Les notebooks 7-8 couvrent la classification bayesienne et la selection de modeles.
+Les notebooks 7-8 couvrent la classification bayésienne et la sélection de modèles.
 
-### Infer-7 : Classification Bayesienne
+### Infer-7 : Classification Bayésienne
 
-**Duree** : 55 min | **Prerequis** : Notebook 4
+**Durée** : 55 min | **Prérequis** : Notebook 4
 
 **Objectifs** :
 
-- Implementer la regression logistique bayesienne (probit model)
-- Decouvrir le Bayes Point Machine (BPM)
-- Modeliser les tests A/B cliniques avec Beta-Binomial
-- Propager l'incertitude dans les predictions
+- Implémenter la régression logistique bayésienne (probit model)
+- Découvrir le Bayes Point Machine (BPM)
+- Modéliser les tests A/B cliniques avec Beta-Binomial
+- Propager l'incertitude dans les prédictions
 
 **Sections** :
 
-1. Regression logistique bayesienne (probit)
+1. Régression logistique bayésienne (probit)
 2. Bayes Point Machine (BPM) multi-features
 3. Test A/B clinique avec Beta-Binomial
 4. Propagation d'incertitude
 5. Exercice : Classification de spam
 
-**Concepts cles** :
+**Concepts clés** :
 
-| Modele | Formule | Description |
+| Modèle | Formule | Description |
 |--------|---------|-------------|
 | Probit | P(y=1\|x) = Φ(w·x) | CDF gaussienne |
 | BPM | Moyenne du posterior sur w | Classification robuste |
-| Beta-Binomial | Hierarchique pour proportions | Test A/B |
+| Beta-Binomial | Hiérarchique pour proportions | Test A/B |
 
-**Applications** : Classification spam/ham, test A/B clinique, detection d'anomalies
+**Applications** : Classification spam/ham, test A/B clinique, détection d'anomalies
 
 ---
 
-### Infer-8 : Selection de Modeles
+### Infer-8 : Sélection de Modèles
 
-**Duree** : 50 min | **Prerequis** : Notebook 7
+**Durée** : 50 min | **Prérequis** : Notebook 7
 
 **Objectifs** :
 
 - Calculer l'evidence (marginal likelihood)
-- Comparer modeles avec Bayes Factor
+- Comparer modèles avec Bayes Factor
 - Comprendre Occam's Razor automatique
-- Implementer ARD (Automatic Relevance Determination)
+- Implémenter ARD (Automatic Relevance Determination)
 
 **Sections** :
 
 1. Evidence et marginal likelihood
-2. Bayes Factor pour comparaison de modeles
-3. Occam's Razor : penalisation automatique
-4. ARD pour selection de features
-5. LOO-CV bayesien vs frequentiste
+2. Bayes Factor pour comparaison de modèles
+3. Occam's Razor : pénalisation automatique
+4. ARD pour sélection de features
+5. LOO-CV bayésien vs fréquentiste
 
-**Concepts cles** :
+**Concepts clés** :
 
-| Concept | Formule | Interpretation |
+| Concept | Formule | Interprétation |
 |---------|---------|----------------|
 | Evidence | P(D\|M) = ∫ P(D\|θ)P(θ\|M)dθ | Vraisemblance marginale |
 | Bayes Factor | BF₁₂ = P(D\|M₁) / P(D\|M₂) | >10 = forte evidence |
 | ARD | wᵢ ~ N(0, λᵢ⁻¹) | λᵢ → ∞ si non pertinent |
 
-**Applications** : Comparaison polynomes, feature selection, model averaging
+**Applications** : Comparaison polynômes, feature selection, model averaging
 
 ---
 
-## Modeles Avances (Notebooks 9-12)
+## Modèles Avancés (Notebooks 9-12)
 
-Les notebooks 9-12 couvrent les modeles avances : topics, crowdsourcing, sequences et recommandation.
+Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, sequences et recommandation.
 
 ### Infer-9 : Topic Models (LDA)
 
-**Duree** : 60 min | **Prerequis** : Notebook 4
+**Durée** : 60 min | **Prérequis** : Notebook 4
 
 **Objectifs** :
 
-- Implementer LDA (Latent Dirichlet Allocation)
-- Maitriser les priors Dirichlet
-- Resoudre la convergence VMP vers solutions degenerees
-- Utiliser des priors asymetriques
+- Implémenter LDA (Latent Dirichlet Allocation)
+- Maîtriser les priors Dirichlet
+- Résoudre la convergence VMP vers solutions dégénérées
+- Utiliser des priors asymétriques
 
 **Sections** :
 
-1. Introduction a LDA et bag-of-words
-2. Priors Dirichlet conjugues
-3. Probleme : VMP + priors symetriques → modes degeneres
-4. Solution : Priors asymetriques
-5. Prediction sur nouveaux documents
+1. Introduction à LDA et bag-of-words
+2. Priors Dirichlet conjugués
+3. Problème : VMP + priors symétriques → modes dégénérés
+4. Solution : Priors asymétriques
+5. Prédiction sur nouveaux documents
 
-**Concepts cles** :
+**Concepts clés** :
 
-| Composant | Distribution | Role |
+| Composant | Distribution | Rôle |
 |-----------|--------------|------|
 | θ_d | Dirichlet(α) | Proportions topics/document |
 | z_dn | Categorical(θ_d) | Topic du mot n |
 | φ_k | Dirichlet(β) | Distribution mots/topic |
 
-**Note** : Utilise VMP au lieu d'EP pour les modeles LDA.
+**Note** : Utilise VMP au lieu d'EP pour les modèles LDA.
 
-**Applications** : Analyse de corpus, detection de themes, recommandation de contenu
+**Applications** : Analyse de corpus, détection de thèmes, recommandation de contenu
 
 ---
 
 ### Infer-10 : Crowdsourcing
 
-**Duree** : 55 min | **Prerequis** : Notebook 4
+**Durée** : 55 min | **Prérequis** : Notebook 4
 
 **Objectifs** :
 
-- Agreger des annotations de multiples annotateurs
-- Modeliser Honest Worker (capacite unique)
-- Implementer Biased Worker (matrice de confusion)
-- Decouvrir le modele Community
+- Agréger des annotations de multiples annotateurs
+- Modéliser Honest Worker (capacité unique)
+- Implémenter Biased Worker (matrice de confusion)
+- Découvrir le modèle Community
 - Appliquer l'apprentissage actif
 
 **Sections** :
 
-1. Modele Honest Worker
-2. Modele Biased Worker (matrice de confusion)
-3. Modele Community (groupes hierarchiques)
-4. Active learning : selection d'items
+1. Modèle Honest Worker
+2. Modèle Biased Worker (matrice de confusion)
+3. Modèle Community (groupes hiérarchiques)
+4. Active learning : sélection d'items
 5. Gold standard pour calibration
 
-**Concepts cles** :
+**Concepts clés** :
 
-| Modele | Formule | Description |
+| Modèle | Formule | Description |
 |--------|---------|-------------|
-| Honest | P(label\|true, worker) = α_worker | Capacite unique |
+| Honest | P(label\|true, worker) = α_worker | Capacité unique |
 | Biased | C_worker[true, observed] | Matrice de confusion |
 | Uncertainty | H(c \| y₁:ₙ) | Entropie pour active learning |
 
-**Applications** : Amazon Mechanical Turk, controle qualite, optimisation budget annotation
+**Applications** : Amazon Mechanical Turk, contrôle qualité, optimisation budget annotation
 
 ---
 
-### Infer-11 : Sequences (HMM)
+### Infer-11 : Séquences (HMM)
 
-**Duree** : 65 min | **Prerequis** : Notebook 10
+**Durée** : 65 min | **Prérequis** : Notebook 10
 
 **Objectifs** :
 
 - Comprendre les Hidden Markov Models (HMM)
-- Implementer les emissions gaussiennes
-- Decoder les sequences d'etats caches
+- Implémenter les émissions gaussiennes
+- Décoder les séquences d'états cachés
 - Appliquer au motif finding (bioinformatique)
 
 **Sections** :
 
 1. Introduction aux HMM
-2. HMM avec emissions gaussiennes
-3. Approche simplifiee : classification independante
+2. HMM avec émissions gaussiennes
+3. Approche simplifiée : classification indépendante
 4. HMM complet avec Forward-Backward
-5. Detection de regimes meteo
+5. Détection de régimes météo
 6. Motif finding ADN
-7. Exercice : Detection de promotions
+7. Exercice : Détection de promotions
 
-**Concepts cles** :
+**Concepts clés** :
 
 | Algorithme | Formule | Usage |
 |------------|---------|-------|
-| Forward | αₜ(k) = P(x₁:ₜ, zₜ=k) | Probabilite jointe |
-| Backward | βₜ(k) = P(xₜ₊₁:T \| zₜ=k) | Complement |
-| Posterior | γₜ(k) ∝ αₜ(k)·βₜ(k) | Etat a chaque t |
+| Forward | αₜ(k) = P(x₁:ₜ, zₜ=k) | Probabilité jointe |
+| Backward | βₜ(k) = P(xₜ₊₁:T \| zₜ=k) | Complément |
+| Posterior | γₜ(k) ∝ αₜ(k)·βₜ(k) | État à chaque t |
 
-**Note** : Infer.NET ne supporte pas nativement les HMM complets. Implementation manuelle Forward-Backward recommandee.
+**Note** : Infer.NET ne supporte pas nativement les HMM complets. Implémentation manuelle Forward-Backward recommandée.
 
-**Applications** : Detection d'anomalies capteur, prevision meteo, motif finding ADN
+**Applications** : Détection d'anomalies capteur, prévision météo, motif finding ADN
 
 ---
 
-### Infer-12 : Systemes de Recommandation
+### Infer-12 : Systèmes de Recommandation
 
-**Duree** : 70 min | **Prerequis** : Notebook 7
+**Durée** : 70 min | **Prérequis** : Notebook 7
 
 **Objectifs** :
 
-- Implementer la factorisation matricielle probabiliste
-- Gerer le cold-start avec features
-- Decouvrir le Click Model pour sources multiples
+- Implémenter la factorisation matricielle probabiliste
+- Gérer le cold-start avec features
+- Découvrir le Click Model pour sources multiples
 - Classer des documents par pertinence
 
 **Sections** :
 
-1. Introduction aux systemes de recommandation
+1. Introduction aux systèmes de recommandation
 2. Factorisation matricielle (User × Item traits)
-3. Probleme de sous-determination avec peu de donnees
-4. Cold-start : regression avec features
-5. Click Model : aggregation de sources
+3. Problème de sous-détermination avec peu de données
+4. Cold-start : régression avec features
+5. Click Model : agrégation de sources
 6. Classement de documents
 7. Exercice : Recommandation de films
 
-**Concepts cles** :
+**Concepts clés** :
 
-| Modele | Formule | Description |
+| Modèle | Formule | Description |
 |--------|---------|-------------|
 | Factorisation | R_ui ≈ U_u · I_i | Traits latents |
 | Cold-start | R ~ w·features | Features utilisateur/item |
@@ -500,17 +500,17 @@ Les notebooks 9-12 couvrent les modeles avances : topics, crowdsourcing, sequenc
 
 ---
 
-## Reference (Notebook 13)
+## Référence (Notebook 13)
 
 ### Infer-13 : Debugging et Bonnes Pratiques
 
-**Duree** : 60 min | **Prerequis** : Tous les notebooks precedents
+**Durée** : 60 min | **Prérequis** : Tous les notebooks précédents
 
 **Objectifs** :
 
 - Diagnostiquer les erreurs courantes
 - Comparer EP vs VMP
-- Maitriser les outils de debug Infer.NET
+- Maîtriser les outils de debug Infer.NET
 - Appliquer les bonnes pratiques
 
 **Sections** :
@@ -518,23 +518,23 @@ Les notebooks 9-12 couvrent les modeles avances : topics, crowdsourcing, sequenc
 1. Erreurs courantes et solutions
 2. Comparaison EP vs VMP
 3. Outils de debug (ShowFactorGraph, BrowserMode)
-4. Bonnes pratiques de modelisation
+4. Bonnes pratiques de modélisation
 5. Checklist de debugging
 6. Fonctions de diagnostic
-7. Exercice : Debugger un modele bugue
+7. Exercice : Debugger un modèle bugué
 
-**Problemes courants** :
+**Problèmes courants** :
 
-| Probleme | Symptome | Solution |
+| Problème | Symptôme | Solution |
 |----------|----------|----------|
-| Observed + Inferred | PointMass | Ne pas ObservedValue sur variable inferee |
-| Label switching | Modes symetriques | Priors asymetriques |
-| Variance nulle | IsPointMass = true | Verifier prior, observations |
-| Convergence lente | Iterations > 50 | Verifier graphe, utiliser VMP |
+| Observed + Inferred | PointMass | Ne pas ObservedValue sur variable inférée |
+| Label switching | Modes symétriques | Priors asymétriques |
+| Variance nulle | IsPointMass = true | Vérifier prior, observations |
+| Convergence lente | Iterations > 50 | Vérifier graphe, utiliser VMP |
 
 **Comparaison EP vs VMP** :
 
-| Critere | EP | VMP |
+| Critère | EP | VMP |
 |---------|-----|-----|
 | Exactitude | Exact (gaussiennes) | Approximation |
 | Vitesse | Plus lent | Rapide |
@@ -543,196 +543,196 @@ Les notebooks 9-12 couvrent les modeles avances : topics, crowdsourcing, sequenc
 **Bonnes pratiques** :
 
 1. Nommer toutes les variables : `.Named("theta")`
-2. Verifier le factor graph systematiquement
-3. Tester avec donnees simulees
+2. Vérifier le factor graph systématiquement
+3. Tester avec données simulées
 4. Choisir priors informatifs (Beta(2,2) > Beta(1,1))
 5. Valider posteriors (variance > 0, IsProper = true)
 
 ---
 
-## Theorie de la Decision (Notebooks 14-20)
+## Théorie de la Décision (Notebooks 14-20)
 
-Les notebooks 14-20 forment une serie complete sur la theorie de la decision bayesienne.
+Les notebooks 14-20 forment une série complète sur la théorie de la décision bayésienne.
 
 ### Infer-14 : Axiomes et Fondements
 
-**Duree** : 50 min | **Prerequis** : Notebooks 1-8
+**Durée** : 50 min | **Prérequis** : Notebooks 1-8
 
 **Objectifs** :
 
-- Comprendre les **loteries** comme representation des choix stochastiques
-- Maitriser les **axiomes de Von Neumann-Morgenstern** (Completude, Transitivite, Continuite, Independance)
-- Deriver la **fonction d'utilite** par calibration
+- Comprendre les **loteries** comme représentation des choix stochastiques
+- Maîtriser les **axiomes de Von Neumann-Morgenstern** (Complétude, Transitivité, Continuité, Indépendance)
+- Dériver la **fonction d'utilité** par calibration
 - Comprendre l'**agent rationnel** (maximise E[U])
 
 **Sections** :
 
-1. Pourquoi l'Utilite ?
-2. Loteries : Representation Formelle
+1. Pourquoi l'Utilité ?
+2. Loteries : Représentation Formelle
 3. Axiomes de Preferences Rationnelles
-4. Theoreme de Representation
-5. Calibration par Mise a l'Indifference
-6. Modelisation avec Infer.NET
-7. Exercice : Calibrer Votre Fonction d'Utilite
+4. Théorème de Représentation
+5. Calibration par Mise à l'Indifférence
+6. Modélisation avec Infer.NET
+7. Exercice : Calibrer Votre Fonction d'Utilité
 
-**Applications** : Decision medicale, assurance automobile, investissement
+**Applications** : Décision médicale, assurance automobile, investissement
 
 ---
 
-### Infer-15 : Utilite de l'Argent et Aversion au Risque
+### Infer-15 : Utilité de l'Argent et Aversion au Risque
 
-**Duree** : 45 min | **Prerequis** : Notebook 14
+**Durée** : 45 min | **Prérequis** : Notebook 14
 
 **Objectifs** :
 
-- Comprendre le **Paradoxe de Saint-Petersbourg** (valeur esperee infinie)
-- Maitriser les fonctions **CARA** et **CRRA**
+- Comprendre le **Paradoxe de Saint-Petersbourg** (valeur espérée infinie)
+- Maîtriser les fonctions **CARA** et **CRRA**
 - Calculer les **coefficients Arrow-Pratt** (aversion absolue/relative)
 - Appliquer la **dominance stochastique** (1er et 2nd ordre)
 
-**Concepts cles** :
+**Concepts clés** :
 
-| Fonction | Formule | Propriete |
+| Fonction | Formule | Propriété |
 |----------|---------|-----------|
 | CARA | U(x) = -e^(-ax) | Aversion absolue constante |
 | CRRA | U(x) = x^(1-rho)/(1-rho) | Aversion relative constante |
-| Logarithmique | U(x) = ln(x) | Cas special CRRA (rho=1) |
+| Logarithmique | U(x) = ln(x) | Cas spécial CRRA (rho=1) |
 
 **Sections** :
 
 1. Paradoxe de Saint-Petersbourg (Bernoulli 1713)
-2. Utilite Marginale Decroissante
-3. Fonctions d'Utilite Classiques
+2. Utilité Marginale Décroissante
+3. Fonctions d'Utilité Classiques
 4. Coefficients Arrow-Pratt
-5. Equivalent Certain et Prime de Risque
+5. Équivalent Certain et Prime de Risque
 6. Dominance Stochastique
 7. Application : Choix d'Investissement
 8. Exercice : Votre Profil de Risque
-9. Inference Bayesienne de l'Aversion avec Infer.NET
+9. Inférence Bayésienne de l'Aversion avec Infer.NET
 
-**Applications** : Simulation Monte Carlo, selection de portefeuille (Livret A vs Fonds vs Actions)
+**Applications** : Simulation Monte Carlo, sélection de portefeuille (Livret A vs Fonds vs Actions)
 
 ---
 
-### Infer-16 : Utilite Multi-Attributs
+### Infer-16 : Utilité Multi-Attributs
 
-**Duree** : 50 min | **Prerequis** : Notebooks 14-15
+**Durée** : 50 min | **Prérequis** : Notebooks 14-15
 
 **Objectifs** :
 
-- Modeliser des decisions avec **plusieurs criteres**
-- Comprendre l'**independance preferentielle**
-- Appliquer les **theoremes d'additivite et multiplicativite**
-- Utiliser la methode **SMART**
+- Modéliser des décisions avec **plusieurs critères**
+- Comprendre l'**indépendance préférentielle**
+- Appliquer les **théorèmes d'additivité et multiplicativité**
+- Utiliser la méthode **SMART**
 
-**Concepts cles** :
+**Concepts clés** :
 
 | Forme | Formule | Condition |
 |-------|---------|-----------|
-| Additive | V(x) = Sum wi x vi(xi) | Independance mutuelle |
+| Additive | V(x) = Sum wi x vi(xi) | Indépendance mutuelle |
 | Multiplicative | 1+kU = Prod(1+kki.Ui) | Interactions entre attributs |
 
 **Sections** :
 
-1. Decisions Multi-Criteres
-2. Fonctions de Valeur vs Utilite
-3. Independance Preferentielle
-4. Theoreme d'Additivite (Debreu-Gorman)
-5. Determination des Poids (Swing Weights)
-6. Utilite Multiplicative
-7. Methode SMART
-8. Analyse de Sensibilite
-9. Integration avec Infer.NET
-10. Exercice : Votre Decision Multi-Attributs
-11. Apprentissage Bayesien des Poids
+1. Décisions Multi-Critères
+2. Fonctions de Valeur vs Utilité
+3. Indépendance Préférentielle
+4. Théorème d'Additivité (Debreu-Gorman)
+5. Détermination des Poids (Swing Weights)
+6. Utilité Multiplicative
+7. Méthode SMART
+8. Analyse de Sensibilité
+9. Intégration avec Infer.NET
+10. Exercice : Votre Décision Multi-Attributs
+11. Apprentissage Bayésien des Poids
 
-**Applications** : Achat automobile (prix, securite, conso, confort), choix de carriere, selection de site
+**Applications** : Achat automobile (prix, sécurité, conso, confort), choix de carrière, sélection de site
 
 ---
 
-### Infer-17 : Reseaux de Decision
+### Infer-17 : Réseaux de Décision
 
-**Duree** : 55 min | **Prerequis** : Notebooks 3, 14-16
+**Durée** : 55 min | **Prérequis** : Notebooks 3, 14-16
 
 **Objectifs** :
 
-- Etendre les reseaux bayesiens avec **noeuds de decision et d'utilite**
+- Étendre les réseaux bayésiens avec **nœuds de décision et d'utilité**
 - Calculer la **politique optimale** (backward induction)
 - Comprendre les **arcs informationnels**
-- Modeliser des **decisions sequentielles**
+- Modéliser des **décisions séquentielles**
 
-**Types de noeuds** :
+**Types de nœuds** :
 
-| Noeud | Forme | Role |
+| Nœud | Forme | Rôle |
 |-------|-------|------|
-| Chance | Ovale | Variable aleatoire |
+| Chance | Ovale | Variable aléatoire |
 | Decision | Rectangle | Choix de l'agent |
-| Utilite | Losange | Fonction de recompense |
+| Utilité | Losange | Fonction de récompense |
 
 **Sections** :
 
-1. Des Reseaux Bayesiens aux Reseaux de Decision
-2. Types de Noeuds
+1. Des Réseaux Bayésiens aux Réseaux de Décision
+2. Types de Nœuds
 3. Arcs Informationnels
 4. Calcul de la Politique Optimale
-5. Exemple : Investissement avec Test de Marche
-6. Decisions Sequentielles
-7. Implementation avec Infer.NET
+5. Exemple : Investissement avec Test de Marché
+6. Décisions Séquentielles
+7. Implémentation avec Infer.NET
 8. Visualisation du Factor Graph
-9. Exercice : Reseau de Decision Personnalise
-10. Application MAUT : Choix de Site d'Aeroport
+9. Exercice : Réseau de Décision Personnalisé
+10. Application MAUT : Choix de Site d'Aéroport
 
-**Applications** : Diagnostic medical avec decision de traitement, investissement avec etude de marche
+**Applications** : Diagnostic médical avec décision de traitement, investissement avec étude de marché
 
 ---
 
 ### Infer-18 : Valeur de l'Information
 
-**Duree** : 45 min | **Prerequis** : Notebooks 14-17
+**Durée** : 45 min | **Prérequis** : Notebooks 14-17
 
 **Objectifs** :
 
 - Calculer la **valeur de l'information parfaite** (EVPI)
-- Calculer la **valeur de l'information d'echantillon** (EVSI)
+- Calculer la **valeur de l'information d'échantillon** (EVSI)
 - Comprendre **quand l'information a de la valeur**
 
-**Formules cles** :
+**Formules clés** :
 
-| Mesure | Formule | Interpretation |
+| Mesure | Formule | Interprétation |
 |--------|---------|----------------|
-| EVPI | E[max U given omega] - max E[U] | Gain si on connait l'etat du monde |
+| EVPI | E[max U given omega] - max E[U] | Gain si on connaît l'état du monde |
 | EVSI | E[max U given signal] - max E[U] | Gain avec test imparfait |
-| Efficacite | EVSI / EVPI | Qualite relative du test |
+| Efficacité | EVSI / EVPI | Qualité relative du test |
 
 **Sections** :
 
-1. Information et Reduction d'Incertitude
+1. Information et Réduction d'Incertitude
 2. Valeur de l'Information Parfaite (EVPI)
-3. Exemple : Droits de Forage Petrolier
-4. Exemple : Chasse au Tresor
+3. Exemple : Droits de Forage Pétrolier
+4. Exemple : Chasse au Trésor
 5. Quand l'Information a-t-elle de la Valeur ?
-6. Implementation avec Infer.NET
-7. Exercice : Faut-il Faire un Test Medical ?
-8. Diagnostic Medical avec Tests Successifs
+6. Implémentation avec Infer.NET
+7. Exercice : Faut-il Faire un Test Médical ?
+8. Diagnostic Médical avec Tests Successifs
 
-**Applications** : Droits petroliers (test sismique), diagnostic medical (sensibilite 95%, specificite 90%)
+**Applications** : Droits pétroliers (test sismique), diagnostic médical (sensibilité 95%, spécificité 90%)
 
 ---
 
-### Infer-19 : Systemes Experts et Robustesse
+### Infer-19 : Systèmes Experts et Robustesse
 
-**Duree** : 50 min | **Prerequis** : Notebooks 14-18
+**Durée** : 50 min | **Prérequis** : Notebooks 14-18
 
 **Objectifs** :
 
-- Comprendre les **systemes experts** et leur architecture
-- Appliquer le critere **Minimax** (decisions robustes)
-- Implementer le critere **Minimax Regret**
-- Gerer l'**incertitude sur les probabilites** (Knightienne)
+- Comprendre les **systèmes experts** et leur architecture
+- Appliquer le critère **Minimax** (décisions robustes)
+- Implémenter le critère **Minimax Regret**
+- Gérer l'**incertitude sur les probabilités** (Knightienne)
 
-**Criteres de decision** :
+**Critères de décision** :
 
-| Critere | Formule | Attitude |
+| Critère | Formule | Attitude |
 |---------|---------|----------|
 | Maximax | max_a max_omega U(a,omega) | Optimiste |
 | Minimax | max_a min_omega U(a,omega) | Pessimiste |
@@ -741,42 +741,42 @@ Les notebooks 14-20 forment une serie complete sur la theorie de la decision bay
 
 **Sections** :
 
-1. Systemes Experts : Architecture et Historique
-2. Decision sous Incertitude Severe
-3. Critere Minimax
-4. Critere Minimax Regret
-5. Comparaison Complete des Criteres
-6. Critere Hurwicz
-7. Robustesse aux Erreurs de Modelisation
-8. Systeme Expert Bayesien Multi-Sources avec Infer.NET
-9. Exercice : Systeme Expert de Diagnostic
+1. Systèmes Experts : Architecture et Historique
+2. Décision sous Incertitude Sévère
+3. Critère Minimax
+4. Critère Minimax Regret
+5. Comparaison Complète des Critères
+6. Critère Hurwicz
+7. Robustesse aux Erreurs de Modélisation
+8. Système Expert Bayésien Multi-Sources avec Infer.NET
+9. Exercice : Système Expert de Diagnostic
 
-**Applications** : Diagnostic informatique, diagnostic medical multi-sources, decisions financieres robustes
+**Applications** : Diagnostic informatique, diagnostic médical multi-sources, décisions financières robustes
 
 ---
 
-### Infer-20 : Decisions Sequentielles (MDPs)
+### Infer-20 : Décisions Séquentielles (MDPs)
 
-**Duree** : 60 min | **Prerequis** : Notebooks 14-19
+**Durée** : 60 min | **Prérequis** : Notebooks 14-19
 
 **Objectifs** :
 
-- Comprendre les **Processus de Decision Markoviens** (MDPs)
-- Maitriser l'**iteration de valeur** et l'**iteration de politique**
-- Decouvrir les alternatives : **LP, Expectimax, RTDP**
-- Appliquer le **reward shaping** avec preservation de politique
+- Comprendre les **Processus de Décision Markoviens** (MDPs)
+- Maîtriser l'**itération de valeur** et l'**itération de politique**
+- Découvrir les alternatives : **LP, Expectimax, RTDP**
+- Appliquer le **reward shaping** avec préservation de politique
 
 **Composants d'un MDP** :
 
 | Composant | Notation | Description |
 |-----------|----------|-------------|
-| Etats | S | Ensemble des situations possibles |
+| États | S | Ensemble des situations possibles |
 | Actions | A | Choix disponibles |
-| Transition | P(s' given s,a) | Probabilite de changement d'etat |
-| Recompense | R(s,a) | Gain immediat |
+| Transition | P(s' given s,a) | Probabilité de changement d'état |
+| Récompense | R(s,a) | Gain immédiat |
 | Discount | gamma in [0,1] | Facteur d'actualisation |
 
-**Equation de Bellman** :
+**Équation de Bellman** :
 
 ```
 V(s) = max_a [R(s,a) + gamma x Sum P(s'|s,a) x V(s')]
@@ -784,22 +784,22 @@ V(s) = max_a [R(s,a) + gamma x Sum P(s'|s,a) x V(s')]
 
 **Sections** :
 
-1. Decisions Sequentielles vs One-Shot
-2. Processus de Decision Markoviens
-3. Equation de Bellman
-4. Iteration de Valeur
-5. Iteration de Politique
+1. Décisions Séquentielles vs One-Shot
+2. Processus de Décision Markoviens
+3. Équation de Bellman
+4. Itération de Valeur
+5. Itération de Politique
 6. Alternatives : LP, Expectimax, RTDP
 7. Reward Shaping
 8. Bandits Multi-Bras
 9. Indice de Gittins
 10. POMDPs : MDPs Partiellement Observables
 
-**Applications** : Navigation robotique, allocation de ressources, jeux de strategie
+**Applications** : Navigation robotique, allocation de ressources, jeux de stratégie
 
 ### Infer-20b : Preuves formelles - Indice de Gittins (Lean 4)
 
-**Duree** : 45 min | **Prerequis** : Notebook 20, bases Lean 4
+**Durée** : 45 min | **Prérequis** : Notebook 20, bases Lean 4
 **Kernel** : Lean 4 (WSL)
 
 **Companion notebook** de [Infer-20](Infer-20-Decision-Sequential.ipynb) avec preuves formelles en Lean 4.
@@ -807,18 +807,18 @@ V(s) = max_a [R(s,a) + gamma x Sum P(s'|s,a) x V(s')]
 **Objectifs** :
 
 - Formaliser le cadre **SFABP** (Simple Family of Alternative Bandit Processes)
-- Prouver l'**optimalite de l'indice de Gittins** via l'argument des prevailing charges
-- Explorer les **limitations** (geometric discount, NP-difficulte du calcul exact)
+- Prouver l'**optimalité de l'indice de Gittins** via l'argument des prevailing charges
+- Explorer les **limitations** (geometric discount, NP-difficulté du calcul exact)
 
-**Lien avec PyMC** : Le notebook compagnon [PyMC-20](../PyMC/PyMC-20-Decision-Sequential.ipynb) couvre les memes concepts en Python avec Thompson Sampling MCMC et diagnostics ArviZ.
+**Lien avec PyMC** : Le notebook compagnon [PyMC-20](../PyMC/PyMC-20-Decision-Sequential.ipynb) couvre les mêmes concepts en Python avec Thompson Sampling MCMC et diagnostics ArviZ.
 
 ---
 
-## Prerequis
+## Prérequis
 
-- .NET 9.0 ou superieur
+- .NET 9.0 ou supérieur
 - .NET Interactive / Polyglot Notebooks
-- VS Code avec extension Polyglot Notebooks (recommande)
+- VS Code avec extension Polyglot Notebooks (recommandé)
 - Graphviz (optionnel, pour visualisation des factor graphs)
 
 ## Installation
@@ -827,7 +827,7 @@ V(s) = max_a [R(s,a) + gamma x Sum P(s'|s,a) x V(s')]
 
 ```bash
 # Installer depuis https://dotnet.microsoft.com/download
-# Verifier l'installation
+# Vérifier l'installation
 dotnet --version
 ```
 
@@ -838,7 +838,7 @@ dotnet tool install -g Microsoft.dotnet-interactive
 dotnet interactive jupyter install
 ```
 
-### 3. Ou utiliser le script PowerShell (recommande)
+### 3. Ou utiliser le script PowerShell (recommandé)
 
 ```bash
 # Installe dotnet-interactive, papermill et enregistre les kernels :
@@ -852,7 +852,7 @@ Installer l'extension "Polyglot Notebooks" depuis le marketplace VS Code.
 
 ### 5. Packages NuGet (automatique)
 
-Chaque notebook inclut les references necessaires :
+Chaque notebook inclut les références nécessaires :
 
 ```csharp
 #r "nuget: Microsoft.ML.Probabilistic"
@@ -867,7 +867,7 @@ Pour les visualisations de factor graphs dans les notebooks 11, 14-20 :
 # Windows (chocolatey)
 choco install graphviz
 
-# Ou telechargement direct depuis https://graphviz.org/download/
+# Ou téléchargement direct depuis https://graphviz.org/download/
 ```
 
 ### Verification
@@ -882,37 +882,37 @@ jupyter kernelspec list  # doit afficher .net-csharp et python3
 python MyIA.AI.Notebooks/Probas/Infer/scripts/test_notebooks.py --validate-only
 ```
 
-## Concepts Cles Infer.NET
+## Concepts Clés Infer.NET
 
 ### Types de Variables
 
 | Type | Description | Exemple |
 |------|-------------|---------|
-| `Variable<bool>` | Variable booleenne | `Variable.Bernoulli(0.5)` |
+| `Variable<bool>` | Variable booléenne | `Variable.Bernoulli(0.5)` |
 | `Variable<double>` | Variable continue | `Variable.GaussianFromMeanAndVariance(0, 1)` |
-| `Variable<int>` | Variable discrete | `Variable.DiscreteUniform(5)` |
+| `Variable<int>` | Variable discrète | `Variable.DiscreteUniform(5)` |
 | `VariableArray<T>` | Tableau 1D | `Variable.Array<double>(range)` |
 | `VariableArray2D<T>` | Tableau 2D | `Variable.Array<double>(range1, range2)` |
 
 ### Distributions
 
-| Distribution | Usage | Parametres |
+| Distribution | Usage | Paramètres |
 |--------------|-------|------------|
 | Bernoulli | Bool | prob |
 | Gaussian | Continue | mean, variance/precision |
 | Gamma | Precision | shape, scale |
-| Beta | Probabilite | alpha, beta |
+| Beta | Probabilité | alpha, beta |
 | Dirichlet | Proportions | concentrations |
-| Discrete | Categorique | probs |
+| Discrete | Catégorique | probs |
 
-### Structures de Controle
+### Structures de Contrôle
 
 ```csharp
 // Conditionnement
 using (Variable.If(condition)) { ... }
 using (Variable.IfNot(condition)) { ... }
 
-// Selection (switch)
+// Sélection (switch)
 using (Variable.Switch(variable)) { ... }
 using (Variable.Case(variable, value)) { ... }
 
@@ -920,7 +920,7 @@ using (Variable.Case(variable, value)) { ... }
 using (Variable.ForEach(range)) { ... }
 ```
 
-### Inference
+### Inférence
 
 ```csharp
 InferenceEngine moteur = new InferenceEngine();
@@ -944,31 +944,31 @@ Infer/
 
 ## Domaines d'Application
 
-| Domaine | Modeles | Notebooks |
+| Domaine | Modèles | Notebooks |
 |---------|---------|-----------|
-| Jeux video | TrueSkill, ranking | 6 |
-| Education | IRT, DINA, competences | 5 |
+| Jeux vidéo | TrueSkill, ranking | 6 |
+| Éducation | IRT, DINA, compétences | 5 |
 | NLP | LDA, topics | 9 |
-| Medecine | A/B testing, diagnostic, systemes experts | 4, 7, 17, 18, 19 |
-| Crowdsourcing | Agregation labels | 10 |
-| Finance | Detection regimes, aversion risque, MDPs | 11, 15, 20 |
+| Médecine | A/B testing, diagnostic, systèmes experts | 4, 7, 17, 18, 19 |
+| Crowdsourcing | Agrégation labels | 10 |
+| Finance | Détection régimes, aversion risque, MDPs | 11, 15, 20 |
 | E-commerce | Recommandation | 12 |
 | Bioinformatique | Motif finding | 11 |
 | Planification | Diagrammes d'influence, MDPs | 17, 20 |
-| Controle qualite | Valeur de l'information | 18 |
+| Contrôle qualité | Valeur de l'information | 18 |
 
-## Sources et References
+## Sources et Références
 
 ### Documentation Officielle
 
 - [Infer.NET Documentation](https://dotnet.github.io/infer/)
 - [Infer.NET GitHub](https://github.com/dotnet/infer)
 
-### Livre de Reference
+### Livre de Référence
 
 - [Model-Based Machine Learning (MBML)](https://mbmlbook.com/) - Bishop et al.
 
-### References Theorie de la Decision
+### Références Théorie de la Décision
 
 - von Neumann & Morgenstern (1944) : Theory of Games and Economic Behavior
 - Arrow (1965) : Aspects of the Theory of Risk Bearing
@@ -976,7 +976,7 @@ Infer/
 - Howard (1966) : Information Value Theory
 - Bellman (1957) : Dynamic Programming
 
-### Exemples Utilises
+### Exemples Utilisés
 
 - WetGrassSprinklerRain (Bayesian Networks)
 - Murder Mystery (Factor Graphs, MBML Ch1)
@@ -992,13 +992,13 @@ Infer/
 - Medical Diagnosis (Expert Systems)
 - Inventory Management (MDPs)
 
-## Algorithmes d'Inference
+## Algorithmes d'Inférence
 
 | Algorithme | Avantage | Utilisation |
 |------------|----------|-------------|
-| EP (Expectation Propagation) | Rapide, approximatif | Par defaut |
-| VMP (Variational Message Passing) | Converge toujours | Modeles complexes |
-| Gibbs Sampling | Exact (asymptotique) | Petits modeles |
+| EP (Expectation Propagation) | Rapide, approximatif | Par défaut |
+| VMP (Variational Message Passing) | Converge toujours | Modèles complexes |
+| Gibbs Sampling | Exact (asymptotique) | Petits modèles |
 
 ## Troubleshooting
 
@@ -1014,56 +1014,56 @@ Cette ligne est **obligatoire** pour les notebooks .NET Interactive.
 
 ### Convergence lente
 
-- Reduire le nombre d'iterations : `moteur.NumberOfIterations = 50`
-- Simplifier le modele
+- Réduire le nombre d'itérations : `moteur.NumberOfIterations = 50`
+- Simplifier le modèle
 - Utiliser VMP au lieu d'EP
 
-### Memoire insuffisante
+### Mémoire insuffisante
 
-- Reduire la taille des tableaux
-- Utiliser des boucles `ForEach` au lieu de developpements explicites
+- Réduire la taille des tableaux
+- Utiliser des boucles `ForEach` au lieu de développements explicites
 
-### Factor Graph non affiche
+### Factor Graph non affiché
 
-- Verifier que Graphviz est installe et dans le PATH
-- Verifier que `FactorGraphHelper.cs` est present dans le repertoire
-- Essayer `engine.ShowFactorGraph = true` avant l'inference
+- Vérifier que Graphviz est installé et dans le PATH
+- Vérifier que `FactorGraphHelper.cs` est présent dans le répertoire
+- Essayer `engine.ShowFactorGraph = true` avant l'inférence
 
-### Erreurs connues dans les notebooks de decision
+### Erreurs connues dans les notebooks de décision
 
-- `Beta.GetQuantile` n'existe pas : utiliser l'approximation normale pour les intervalles de credibilite
-- `ShowFactorGraph` peut causer un crash du kernel : utiliser avec precaution
+- `Beta.GetQuantile` n'existe pas : utiliser l'approximation normale pour les intervalles de crédibilité
+- `ShowFactorGraph` peut causer un crash du kernel : utiliser avec précaution
 
 ### Glossaire
 
-Consultez le [Glossaire](Infer-Glossary.md) pour les definitions des termes techniques (EP, VMP, Factor Graph, EVPI, MDP, etc.)
+Consultez le [Glossaire](Infer-Glossary.md) pour les définitions des termes techniques (EP, VMP, Factor Graph, EVPI, MDP, etc.)
 
 ---
 
 ## FAQ / Troubleshooting
 
-| Probleme | Solution |
+| Problème | Solution |
 | --- | --- |
-| `The type 'Variable' does not contain a definition for...` | Verifier que le namespace `MicrosoftResearch.Infer` est importe. Le notebook 1 (Setup) couvre la configuration |
-| `Inference exception: Improper distribution` | Le modele contient une boucle causale ou une observation contradictoire. Le notebook 13 (Debugging) detaille les strategies de diagnostic |
-| `Algorithm compilation failed` | Infer.NET compile un algorithme d'inference par reflection. Verifier que le modele est dans une famille supportee (conjugue). Modeles non-conjugues necessitent EP ou VMP |
-| Performance lente sur les grands modeles | Utiliser `InferenceEngine.Compiler.ShowGeneratedSource = true` pour inspecter le code genere. Le notebook 13 compare les algorithmes EP/VMP/Gibbs |
+| `The type 'Variable' does not contain a definition for...` | Vérifier que le namespace `MicrosoftResearch.Infer` est importé. Le notebook 1 (Setup) couvre la configuration |
+| `Inference exception: Improper distribution` | Le modèle contient une boucle causale ou une observation contradictoire. Le notebook 13 (Debugging) détaille les stratégies de diagnostic |
+| `Algorithm compilation failed` | Infer.NET compile un algorithme d'inférence par reflection. Vérifier que le modèle est dans une famille supportée (conjugué). Modèles non-conjugués nécessitent EP ou VMP |
+| Performance lente sur les grands modèles | Utiliser `InferenceEngine.Compiler.ShowGeneratedSource = true` pour inspecter le code généré. Le notebook 13 compare les algorithmes EP/VMP/Gibbs |
 | `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
 
 ## Ponts inter-series
 
-| Serie | Lien | Relation |
+| Série | Lien | Relation |
 | --- | --- | --- |
-| [PyMC](../PyMC/) | Meme 20 modeles en Python/NUTS | Comparaison inference exacte vs MCMC |
+| [PyMC](../PyMC/) | Même 20 modèles en Python/NUTS | Comparaison inférence exacte vs MCMC |
 | [Probas (parent)](../README.md) | Vue d'ensemble Probas | Contexte et parcours |
-| [ML.NET](../../ML/ML.Net/) | TP prevision de ventes | Combine ML.NET + Infer.NET |
-| [Search/CSP](../../Search/Part2-CSP/) | CSP-5 (Optimization) | Programmation par contraintes et probabilites |
+| [ML.NET](../../ML/ML.Net/) | TP prévision de ventes | Combine ML.NET + Infer.NET |
+| [Search/CSP](../../Search/Part2-CSP/) | CSP-5 (Optimization) | Programmation par contraintes et probabilités |
 | [SymbolicAI/Lean](../../SymbolicAI/Lean/) | Infer-20b (Gittins) | Preuves formelles Lean 4 |
 
 ## Navigation
 
-[<- Retour a la serie Probas](../README.md) | [PyMC (Python) ->](../PyMC/README.md) | [ML.NET (C#) ->](../../ML/ML.Net/README.md)
+[<- Retour à la série Probas](../README.md) | [PyMC (Python) ->](../PyMC/README.md) | [ML.NET (C#) ->](../../ML/ML.Net/README.md)
 
 ---
 
-Bonne exploration de la programmation probabiliste et de la theorie de la decision !
+Bonne exploration de la programmation probabiliste et de la théorie de la décision !
