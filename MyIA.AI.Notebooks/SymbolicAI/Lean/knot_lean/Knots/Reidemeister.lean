@@ -167,6 +167,24 @@ coordinator's C/X modeling decision (See #2874). It does NOT replace the
 merged moves (#2956) — both coexist so prior results stay valid.
 -/
 
+/-- `Y'` is obtained from `c` by renaming occurrences of `a` to `b`: each field of
+    `Y'` is either unchanged from `c`, or is `b` where `c` had `a`. This is the
+    constraint that makes the tricolorability transfer lemma (PR2) provable: under
+    a coloring extension with `col₂ b = col₁ a` and `col₂ = col₁` on the preserved
+    edges, every strand of `Y'` reads the same colour as the corresponding strand
+    of `c` under `col₁`, so the Fox condition at the modified crossing is preserved.
+
+    Without this constraint (the merged #2980 model) `Y'` is a free existential, so
+    the Fox condition at the modified crossing is decoupled from `d₁`'s coloring —
+    the transfer lemma cannot hold. This strengthening (option C, scoped step (a)) is
+    non-breaking: the #2980 witness `⟨5,2,3,4⟩ = rename(⟨1,2,3,4⟩, 1→5)` still
+    satisfies it (see `reidemeister1Connected_satisfiable`). -/
+def PDCrossing.isRenameOf (Y' c : PDCrossing) (a b : Nat) : Prop :=
+  (Y'.e1 = c.e1 ∨ (Y'.e1 = b ∧ c.e1 = a)) ∧
+  (Y'.e2 = c.e2 ∨ (Y'.e2 = b ∧ c.e2 = a)) ∧
+  (Y'.e3 = c.e3 ∨ (Y'.e3 = b ∧ c.e3 = a)) ∧
+  (Y'.e4 = c.e4 ∨ (Y'.e4 = b ∧ c.e4 = a))
+
 /-- **Reidemeister1Connected (option C)**: a CONNECTED R1 twist on arc `a`.
     The surgery modifies endpoint crossing `Y = d₁.crossings[i]` (one slot `a`
     renamed to `b = d₁.numEdges + 1`, materialised as the supplied `Y'`) and
@@ -174,13 +192,21 @@ merged moves (#2956) — both coexist so prior results stay valid.
     the `d₂.wf = true` premise is **satisfiable** — see
     `reidemeister1Connected_satisfiable`. The hypothesis `a ∈ d₁.edges` forces
     the move to be genuinely connected (arc `a` is a real edge of `d₁`), so the
-    new crossing shares an edge with `d₁` rather than being a disjoint kink. -/
+    new crossing shares an edge with `d₁` rather than being a disjoint kink.
+
+    The hypothesis `Y'.isRenameOf (d₁.crossings.get i) a (d₁.numEdges + 1)`
+    (strengthened in scoped step (a)) ties `Y'` to the endpoint crossing it
+    replaces — it is that crossing with `a`-occurrences renamed to `b`, nothing
+    else. This is what the PR2 transfer lemma needs to push a tricoloring across
+    the move (the modified crossing's Fox condition is preserved under
+    `col₂ b = col₁ a`). -/
 def Reidemeister1Connected (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
   (∃ (i : Fin d₁.crossings.length) (a : Nat) (Y' : PDCrossing)
      (ρ : Fin d₁.numEdges ↪ Fin (d₁.numEdges + 2)),
      1 ≤ a ∧ a ≤ d₁.numEdges ∧
      a ∈ d₁.edges ∧
+     Y'.isRenameOf (d₁.crossings.get i) a (d₁.numEdges + 1) ∧
      d₂ = { d₁ with crossings := d₁.crossings.set i.val Y' ++
                        [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩],
                     numEdges := d₁.numEdges + 2 })
@@ -203,10 +229,51 @@ theorem reidemeister1Connected_satisfiable :
   · -- ρ : Fin 4 ↪ Fin 6 (trivial embedding, first 4 → first 4 of 6).
     exact { toFun := fun j => ⟨j.val, by omega⟩,
             inj' := fun x y h => by injection h with hv; exact Fin.ext hv }
-  · -- body: 1 ≤ a, a ≤ numEdges, a ∈ d₁.edges, and the surgery equation.
-    -- `decide` (kernel reduction) handles the struct projections / flatMap
-    -- that `omega` cannot see; `rfl` closes the definitional surgery equation.
-    exact ⟨by decide, by decide, by decide, rfl⟩
+  · -- body: 1 ≤ a, a ≤ numEdges, a ∈ d₁.edges, Y' isRenameOf (rename 1→5 at e1),
+    --   and the surgery equation. `decide` (kernel reduction) handles the struct
+    --   projections / flatMap that `omega` cannot see; `rfl` closes the
+    --   definitional surgery equation. The isRenameOf holds: e1 renamed (1→5),
+    --   e2=e3=e4 unchanged. isRenameOf must be unfolded first — as a raw `def`
+    --   it has no `Decidable` instance, but the unfolded `∧∨=` on `Nat` does.
+    exact ⟨by decide, by decide, by decide,
+           by unfold PDCrossing.isRenameOf; decide, rfl⟩
+
+/-! ### API lemmas for `Reidemeister1Connected` (option C infrastructure for PR2)
+
+These projection-style lemmas expose the surgery's combinatorial shape, which the
+transfer lemma (PR2) consumes when pushing a tricoloring across a connected R1
+twist: the edge count grows by exactly 2 (same magnitude as the disjoint-kink
+append model, but reached by a connected splice), and the crossing count grows
+by exactly 1. They mirror the `trefoil_wf` / `unknot_wf` projection-API style of
+`Basic.lean`.
+-/
+
+/-- A connected R1 twist adds exactly two edges (the kink monogon `c` and the
+    renamed arc endpoint `b`), same magnitude as the disjoint-kink model but via
+    a connected splice. -/
+theorem Reidemeister1Connected.numEdges_succ {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) : d₂.numEdges = d₁.numEdges + 2 := by
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hrename, hsurg⟩ := h
+  have hne := congrArg (·.numEdges) hsurg
+  simpa using hne
+
+/-- A connected R1 twist adds exactly one crossing (the curl `C`); the existing
+    endpoint crossing `Y` is relabelled in place (`List.set` preserves length),
+    not duplicated. -/
+theorem Reidemeister1Connected.numCrossings_succ {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) : d₂.crossings.length = d₁.crossings.length + 1 := by
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hrename, hsurg⟩ := h
+  have hcl := congrArg (fun d => d.crossings.length) hsurg
+  simpa [List.length_set, List.length_append] using hcl
+
+/-- The arc `a` receiving the twist is a genuine edge of `d₁` (connectivity
+    hypothesis): the new crossing `C = ⟨a, b, c, c⟩` shares edge `a` with `d₁`,
+    which is what distinguishes a connected twist from a disjoint kink
+    `⟨n+1,n+1,n+2,n+2⟩` (which shares no edge with `d₁`). -/
+theorem Reidemeister1Connected.shares_edge {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) : ∃ a : Nat, a ∈ d₁.edges ∧ 1 ≤ a ∧ a ≤ d₁.numEdges := by
+  obtain ⟨_hwf₁, _hwf₂, _i, a, _Y', _ρ, hr1, hr2, hmem, _hrename, _hsurg⟩ := h
+  exact ⟨a, hmem, hr1, hr2⟩
 
 /-- R2 (Poke/Unpoke): add or remove two consecutive crossings of opposite sign.
 
