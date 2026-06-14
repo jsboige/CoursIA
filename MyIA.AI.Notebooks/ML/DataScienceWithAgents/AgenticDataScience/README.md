@@ -1,19 +1,19 @@
 # AgenticDataScience - Agents IA pour Data Science avec Google ADK
 
-Formation avancee sur les agents IA pour la Data Science, integrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider.
+Formation avancée sur les agents IA pour la Data Science, intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider.
 
-## Pourquoi cette serie
+## Pourquoi cette série
 
-Les frameworks d'agents IA (AutoGPT, CrewAI, ADK) promettent d'automatiser le travail du data scientist. Mais passer du demo au pipeline production-ready demande une comprehension approfondie des patterns d'orchestration. Cette serie vous apprend a construire des systemes multi-agents qui **fonctionnent reellement** sur des taches de data science complexes.
+Les frameworks d'agents IA (AutoGPT, CrewAI, ADK) promettent d'automatiser le travail du data scientist. Mais passer du demo au pipeline production-ready demande une compréhension approfondie des patterns d'orchestration. Cette série vous apprend à construire des systèmes multi-agents qui **fonctionnent réellement** sur des tâches de data science complexes.
 
-Les deux frameworks couverts (DS-STAR et MLE-STAR) representent l'etat de l'art en agents data science, publies par Google Research. Ils resolvent des problemes concrets :
+Les deux frameworks couverts (DS-STAR et MLE-STAR) représentent l'état de l'art en agents data science, publiés par Google Research. Ils résolvent des problèmes concrets :
 
-| Framework | Probleme resolu | Pattern |
+| Framework | Problème résolu | Pattern |
 |-----------|----------------|---------|
-| **DS-STAR** | Analyse de datasets heterogenes | Boucle Planner-Coder-Verifier |
-| **MLE-STAR** | Competitions Kaggle automatisées | Recherche SOTA + Ablation + Refinement |
+| **DS-STAR** | Analyse de datasets hétérogènes | Boucle Planner-Coder-Verifier |
+| **MLE-STAR** | Compétitions Kaggle automatisées | Recherche SOTA + Ablation + Refinement |
 
-La particularite de cette serie : le support **multi-provider** (Gemini, vLLM, OpenAI, OpenRouter) via LiteLLM. Vous n'etes pas verrouille a un fournisseur LLM et pouvez tester avec un modele local gratuit.
+La particularité de cette série : le support **multi-provider** (Gemini, vLLM, OpenAI, OpenRouter) via LiteLLM. Vous n'êtes pas verrouillé à un fournisseur LLM et pouvez tester avec un modèle local gratuit.
 
 ## Vue d'ensemble
 
@@ -128,7 +128,7 @@ python -m venv venv
 venv\Scripts\activate  # Windows
 source venv/bin/activate  # Linux/Mac
 
-# Toutes les dependances (depuis la racine du repo)
+# Toutes les dépendances (depuis la racine du repo)
 pip install -r MyIA.AI.Notebooks/ML/DataScienceWithAgents/AgenticDataScience/requirements.txt
 ```
 
@@ -139,24 +139,24 @@ pip install -r MyIA.AI.Notebooks/ML/DataScienceWithAgents/AgenticDataScience/req
 cp .env.example .env  # Linux/Mac
 copy .env.example .env  # Windows
 
-# Puis editer .env et renseigner les cles API du provider choisi
+# Puis éditer .env et renseigner les clés API du provider choisi
 ```
 
-### Providers LLM supportes (Labs 8+)
+### Providers LLM supportés (Labs 8+)
 
-| Provider | Variable cle | Notes |
+| Provider | Variable clé | Notes |
 |----------|-------------|-------|
-| **Google Gemini** (recommande) | `GEMINI_API_KEY` | Cle gratuite sur aistudio.google.com |
+| **Google Gemini** (recommandé) | `GEMINI_API_KEY` | Clé gratuite sur aistudio.google.com |
 | **OpenAI** | `OPENAI_API_KEY` | Direct ou via OpenRouter |
-| **OpenRouter** | `OPENROUTER_API_KEY` | Acces multi-modeles |
-| **vLLM local** | `VLLM_BASE_URL` | Via reverse proxy, pas de cle requise |
+| **OpenRouter** | `OPENROUTER_API_KEY` | Accès multi-modèles |
+| **vLLM local** | `VLLM_BASE_URL` | Via reverse proxy, pas de clé requise |
 | **LM Studio** | `LMSTUDIO_BASE_URL` | Local, http://localhost:1234/v1 |
 
-Definir `ACTIVE_PROVIDER=gemini` (ou `vllm`, `openai`, `openrouter`, `lmstudio`) dans `.env`.
+Définir `ACTIVE_PROVIDER=gemini` (ou `vllm`, `openai`, `openrouter`, `lmstudio`) dans `.env`.
 
 ## Technologies
 
-| Categorie | Technologies |
+| Catégorie | Technologies |
 |-----------|--------------|
 | **Abstraction** | LiteLLM |
 | **Google ADK** | google-adk, google-generativeai |
@@ -164,7 +164,7 @@ Definir `ACTIVE_PROVIDER=gemini` (ou `vllm`, `openai`, `openrouter`, `lmstudio`)
 | **ML Engineering** | MLflow, Optuna |
 | **Cloud (Day 7)** | BigQuery, Vertex AI, BQML |
 
-## Concepts cles
+## Concepts clés
 
 | Concept | Description |
 |---------|-------------|
@@ -176,59 +176,59 @@ Definir `ACTIVE_PROVIDER=gemini` (ou `vllm`, `openai`, `openrouter`, `lmstudio`)
 
 ## Objectifs d'apprentissage
 
-A l'issue de cette serie, vous serez capable de :
+À l'issue de cette série, vous serez capable de :
 
 1. **Configurer** un environnement multi-provider (Gemini, vLLM, OpenAI) via LiteLLM et l'abstraction ADK
-2. **Construire** un agent ADK avec des outils personnalises (file analysis, web search, code execution)
+2. **Construire** un agent ADK avec des outils personnalisés (file analysis, web search, code execution)
 3. **Orchestrer** une boucle Planner-Coder-Verifier pour l'analyse autonome de datasets (DS-STAR)
-4. **Optimiser** un pipeline ML via recherche SOTA et ablation systematique (MLE-STAR)
-5. **Deployer** un agent data science en production avec BigQuery et Vertex AI
+4. **Optimiser** un pipeline ML via recherche SOTA et ablation systématique (MLE-STAR)
+5. **Déployer** un agent data science en production avec BigQuery et Vertex AI
 
 ## Public cible
 
-- Data Scientists maitrisant Python
-- Ingenieurs ML interesses par les agents
-- Etudiants ayant complete Days 1-3 (LangChain)
+- Data Scientists maîtrisant Python
+- Ingénieurs ML intéressés par les agents
+- Étudiants ayant complété Days 1-3 (LangChain)
 
-## Prerequis
+## Prérequis
 
 ### Technique
 
 - Python 3.11+ et environnements virtuels
-- Connaissances Pandas/NumPy (niveau intermediaire)
+- Connaissances Pandas/NumPy (niveau intermédiaire)
 - Notions de Machine Learning
 
 ### API/Cloud
 
-| Mode | Prerequis | Labs Accessibles |
+| Mode | Prérequis | Labs Accessibles |
 |------|-----------|------------------|
 | **Local seul** | vLLM via reverse proxy | Days 4-6 |
-| **Gemini API** | Cle API gratuite | Days 4-6 |
+| **Gemini API** | Clé API gratuite | Days 4-6 |
 | **GCP complet** | Projet + Vertex AI | Days 4-7 |
 
 ## Quel parcours choisir
 
 ### Parcours agent data science (~2 jours)
 
-Labs 8-12 en sequence. Maitriser DS-STAR pour automatiser l'analyse de datasets.
+Labs 8-12 en séquence. Maîtriser DS-STAR pour automatiser l'analyse de datasets.
 
 1. Labs 8-9 -> architecture ADK, premier agent avec outils
 2. Labs 10-12 -> DS-STAR (file analyzer, planner-coder, workshop)
 
 ### Parcours ML engineering (~2 jours)
 
-Labs 13-17 en sequence. MLE-STAR pour les competitions et le deploiement.
+Labs 13-17 en séquence. MLE-STAR pour les compétitions et le déploiement.
 
 1. Labs 13-15 -> recherche SOTA, ablation, Kaggle
 2. Labs 16-17 -> BigQuery/BQML, projet final
 
 ### Parcours complet (~4 jours)
 
-Tous les labs (8-17) en sequence. Le parcours recommande pour une formation complete.
+Tous les labs (8-17) en séquence. Le parcours recommandé pour une formation complète.
 
 ### Parcours rapide (~0.5 jour)
 
-Labs 8 + 11 + 15. Architecture ADK, boucle planner-coder, et Kaggle. Les trois labs les plus representatifs.
+Labs 8 + 11 + 15. Architecture ADK, boucle planner-coder, et Kaggle. Les trois labs les plus représentatifs.
 
 ## FAQ / Troubleshooting
 
@@ -237,7 +237,7 @@ Labs 8 + 11 + 15. Architecture ADK, boucle planner-coder, et Kaggle. Les trois l
 Gemini API free tier a un quota limité. Solutions :
 
 ```bash
-# Option 1 : ajouter un delai entre les appels
+# Option 1 : ajouter un délai entre les appels
 # Dans votre code : time.sleep(2) entre les appels API
 
 # Option 2 : basculer vers un autre provider
@@ -250,7 +250,7 @@ VLLM_BASE_URL=http://localhost:8000/v1
 
 ### `ModuleNotFoundError: No module named 'google.adk'`
 
-Le package google-adk n'est pas encore sur PyPI stable. Installer depuis le depot :
+Le package google-adk n'est pas encore sur PyPI stable. Installer depuis le dépôt :
 
 ```bash
 pip install -r AgenticDataScience/requirements.txt
@@ -258,33 +258,33 @@ pip install -r AgenticDataScience/requirements.txt
 pip install google-generativeai litellm
 ```
 
-### LiteLLM ne parvient pas a se connecter au provider
+### LiteLLM ne parvient pas à se connecter au provider
 
-Verifier la configuration `.env` :
+Vérifier la configuration `.env` :
 
 ```bash
-# Debug : afficher la config chargee
+# Debug : afficher la config chargée
 python -c "from litellm import completion; print('LiteLLM OK')"
 
-# Verifier que le .env est bien charge
+# Vérifier que le .env est bien chargé
 python -c "from dotenv import load_dotenv; import os; load_dotenv(); print(os.getenv('ACTIVE_PROVIDER'))"
 ```
 
-Causes courantes : mauvais chemin `.env` (doit etre dans `AgenticDataScience/`), cle API invalide, ou URL base incorrecte pour vLLM.
+Causes courantes : mauvais chemin `.env` (doit être dans `AgenticDataScience/`), clé API invalide, ou URL base incorrecte pour vLLM.
 
 ### Les agents bouclent sans converger (Planner-Coder)
 
 Le pattern Planner-Coder-Verifier peut entrer dans une boucle infinie si le prompt du verifier est trop laxiste. Ajuster :
 
-1. Ajouter un **critere d'arret** explicite dans le prompt verifier (ex: "si le resultat est coherent avec les donnees, arreter")
-2. Limiter le nombre d'iterations : `max_iterations = 5`
-3. Verifier que le planner a acces aux **resultats** du coder (pas seulement au code)
+1. Ajouter un **critère d'arrêt** explicite dans le prompt verifier (ex: "si le résultat est cohérent avec les données, arrêter")
+2. Limiter le nombre d'itérations : `max_iterations = 5`
+3. Vérifier que le planner a accès aux **résultats** du coder (pas seulement au code)
 
-### Comment passer de LangChain (Days 1-3) a ADK ?
+### Comment passer de LangChain (Days 1-3) à ADK ?
 
 Les concepts se correspondent directement :
 
-| Concept LangChain | Equivalent ADK |
+| Concept LangChain | Équivalent ADK |
 |-------------------|----------------|
 | `ChatOpenAI` | `LiteLLM` + provider config |
 | `Tool` decorator | `FunctionTool` |
@@ -292,14 +292,14 @@ Les concepts se correspondent directement :
 | `LLMChain` | Agent avec instruction |
 | `ConversationMemory` | Session state |
 
-Le Lab 8 (ADK Introduction) reprend les memes concepts avec la syntaxe ADK.
+Le Lab 8 (ADK Introduction) reprend les mêmes concepts avec la syntaxe ADK.
 
-### Les Labs 16-17 (GCP) echouent sans projet Google Cloud
+### Les Labs 16-17 (GCP) échouent sans projet Google Cloud
 
-Les Labs 16-17 necessitent un projet GCP avec Vertex AI et BigQuery actives. Si vous n'avez pas acces GCP :
+Les Labs 16-17 nécessitent un projet GCP avec Vertex AI et BigQuery activés. Si vous n'avez pas accès GCP :
 
-- Les Labs 8-15 sont **entirement autonomes** et ne necessitent que Gemini ou vLLM
-- Le Lab 17 (Final Project) peut etre adapte avec un dataset local au lieu de BigQuery
+- Les Labs 8-15 sont **entièrement autonomes** et ne nécessitent que Gemini ou vLLM
+- Le Lab 17 (Final Project) peut être adapté avec un dataset local au lieu de BigQuery
 
 ## Ressources
 
