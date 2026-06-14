@@ -299,14 +299,23 @@ theorem bondareva_shapley_backward :
   -- (P is nonempty + closed + no element has sum < v(N) ⟹ some element has sum = v(N))
   have hCore : G.Core.Nonempty := by
     -- PROVER TARGET: Extract Core allocation from P \ K
-    -- Since P ≠ ∅ and no x ∈ P has ∑ᵢ xᵢ < v(N), take any x ∈ P.
-    -- By hK_empty, ∑ᵢ xᵢ ≥ v(N). If = v(N), done. If > v(N), need to adjust.
-    -- Actually: by hP_nonempty get x ∈ P. By hK_empty, ∑ᵢ xᵢ ≥ v(N).
-    -- If ∑ᵢ xᵢ = v(N), use ⟨x, rfl, hx.1⟩.
-    -- If ∑ᵢ xᵢ > v(N), scale down: y = x - (∑ᵢ xᵢ - v(N))/n · 1 preserves coalition constraints?
-    -- Actually scaling down might violate constraints. Better: use existence of minimum.
-    -- INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION
-    sorry
+    -- Step 1 (Plan): establish lower bound on ∑ for any x ∈ P
+    have hP_lb : ∀ x ∈ P, ∑ i : N, x i ≥ G.v Finset.univ := by
+      intro x hx
+      exact hx Finset.univ
+    -- Step 2 (Plan): existence of x ∈ P with ∑ x i ≤ v(N).
+    -- This is the LP-dual content of `hb : G.Balanced`. Without
+    -- ProperCone.hyperplane_separation instantiated for this polyhedron, the
+    -- existence cannot be derived here. Marked for Director escalation.
+    have hb_witness : ∃ x ∈ P, ∑ i : N, x i ≤ G.v Finset.univ := by
+      -- INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION
+      sorry
+    obtain ⟨x, hxP, hxle⟩ := hb_witness
+    refine ⟨x, ?_, hxP⟩
+    have hxge : ∑ i : N, x i ≥ G.v Finset.univ := hP_lb x hxP
+    linarith
+
+
   exact hCore
 
 /-- Bondareva-Shapley: The Core is nonempty iff the game is balanced. -/
