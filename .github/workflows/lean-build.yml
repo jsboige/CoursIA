@@ -111,5 +111,9 @@ jobs:
     - name: Lake build
       working-directory: ${{ inputs.project-path }}
       run: |
+        set -o pipefail   # propagate lake's exit code through `| tail` — without this a
+                          # FAILED lake build reports exit 0 (tail always succeeds), and the
+                          # CI step passes regardless. See incident conway_lean HashlifeCorrectness
+                          # L1058 (rfl fail masked as CI PASS, 2026-06-14).
         lake exe cache get || true
         lake -R build 2>&1 | tail -20
