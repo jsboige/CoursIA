@@ -88,6 +88,56 @@ theorem Reidemeister1.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister1 d₁ d�
     exact (Nat.min_comm d₂.numEdges d₁.numEdges ▸
            Nat.max_comm d₂.numEdges d₁.numEdges ▸ ρ)
 
+/-! ## R1 (ρ-determined refinement) — Phase 5 PR1.5
+
+The Phase 5 PR1 move `Reidemeister1` carries the edge-renaming `ρ` and the
+new crossing `c` as **two independent existentials**: `∃ c, ∃ ρ, surgery`.
+This leaves `ρ` free w.r.t. `c`'s PD labels, so a single R1 "twist" can
+introduce a curl whose two fresh edges `{n+1, n+2}` are completely
+disconnected from the arc being curled — the certified counter-example
+`tricolorable_invariant_fails_under_pr1_model` (`Invariant.lean`) exploits
+exactly this. The transfer lemma (PR2) cannot hold under that model.
+
+`Reidemeister1'` is the **strengthening**: the renaming `ρ` must
+*geometrically determine* the new crossing's labels. A genuine R1 curl on
+arc `a` introduces a crossing where one strand is the arc `a` itself and
+the two fresh edges are the curl's other two strands, giving the new
+crossing the shape `⟨a, a, n+1, n+2⟩`. This ties the fresh edges to
+`color(a)` via the Fox condition, preserving ≥2 colours across the move.
+
+This is an **additive refinement** (does not modify `Reidemeister1`):
+`Reidemeister1'.implies_reidemeister1` proves the conservative embedding.
+The re-modeled equivalence and transfer lemma (PR2) will be built on
+`Reidemeister1'` in a subsequent PR once the construction is validated.
+-/
+
+/-- **R1 (ρ-determined)**: an R1 move where the new crossing's labels are
+    geometrically determined by the arc being curled. In the twist arm, the
+    new crossing has shape `⟨a, a, n+1, n+2⟩`: the strand formerly labelled
+    `a` is the strand being curled, and `{n+1, n+2}` are the two fresh
+    edges of the curl. The arc `a` lives in `[1, numEdges]` of the smaller
+    diagram (1-indexed PD labels, matching `KnotDiagram.wf`). -/
+def Reidemeister1' (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.wf = true ∧ d₂.wf = true ∧
+  (∃ a : Nat,
+     1 ≤ a ∧ a ≤ min d₁.numEdges d₂.numEdges ∧
+     (∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
+       (d₂ = { d₁ with crossings := d₁.crossings ++ [⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩],
+                            numEdges := d₁.numEdges + 2 } ∨
+        d₁ = { d₂ with crossings := d₂.crossings ++ [⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩],
+                            numEdges := d₂.numEdges + 2 })))
+
+/-- `Reidemeister1'` is a strengthening of `Reidemeister1`: any ρ-determined
+    curl is, in particular, a (free) R1 move with `wf` on both sides. The
+    new crossing `⟨a, a, n+1, n+2⟩` is the witness for the independent
+    existential `∃ c` in `Reidemeister1`. -/
+theorem Reidemeister1'.implies_reidemeister1 {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1' d₁ d₂) : Reidemeister1 d₁ d₂ := by
+  -- `Reidemeister1'` unfolds as `wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, surgery|surgery))`.
+  obtain ⟨hwf₁, hwf₂, a, _hrange₁, _hrange₂, ρ, hsurg | hsurg⟩ := h
+  · exact ⟨hwf₁, hwf₂, ⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩, ρ, Or.inl hsurg⟩
+  · exact ⟨hwf₁, hwf₂, ⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩, ρ, Or.inr hsurg⟩
+
 /-- R2 (Poke/Unpoke): add or remove two consecutive crossings of opposite sign.
 
 Two parallel strands can pass through each other:

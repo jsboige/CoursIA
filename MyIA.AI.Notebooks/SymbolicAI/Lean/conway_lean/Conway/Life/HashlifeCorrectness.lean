@@ -851,6 +851,60 @@ private theorem wf_node_elim {nw ne sw se : MacroCell}
   simp only [MacroCell.wf, Bool.and_eq_true, beq_iff_eq] at h
   tauto
 
+/-! ## P4 structural input: level preservation (level-2 base)
+
+`hashlifeResult` on a well-formed level-`k` cell is documented to return a
+level-`(k-1)` cell (the centered `2^(k-1) × 2^(k-1)` region after `2^(k-2)`
+generations). This level shape is a structural input to the P4
+central-correctness assembly: both `result.toGrid (2^k, 2^k)` and the
+`restrictGridTo` window presuppose the result is level-`(k+1)` (in the
+level-`(k+2)` input's coordinates). The general statement
+`(hashlifeResult c).level = c.level - 1` requires a strong-induction on the
+double-nine recursion; the level-2 base case below is closed directly by
+shape reduction to 16 leaves + definitional evaluation of `hashlifeResultAux`
+(the `level == 2` arm yields `step4x4`, a `node` of four leaves → level 1). -/
+
+/-- **Level-2 base of level-preservation**: a well-formed level-2
+    `MacroCell` maps under `hashlifeResult` to a level-1 cell. -/
+theorem level_hashlifeResult_of_level_two (c : MacroCell)
+    (hwf : c.wf = true) (hk : c.level = 2) :
+    (hashlifeResult c).level = 1 := by
+  obtain ⟨a, b, d, e, rfl, ha⟩ := shape_of_level_succ c 1 hk
+  obtain ⟨hwa, hwb, hwd, hwe, hlb, hld, hle⟩ := wf_node_elim hwf
+  rw [ha] at hlb hld hle
+  obtain ⟨a1, a2, a3, a4, rfl, ha1⟩ := shape_of_level_succ a 0 ha
+  obtain ⟨b1, b2, b3, b4, rfl, hb1⟩ := shape_of_level_succ b 0 hlb
+  obtain ⟨d1, d2, d3, d4, rfl, hd1⟩ := shape_of_level_succ d 0 hld
+  obtain ⟨e1, e2, e3, e4, rfl, he1⟩ := shape_of_level_succ e 0 hle
+  obtain ⟨_, _, _, _, hla2, hla3, hla4⟩ := wf_node_elim hwa
+  obtain ⟨_, _, _, _, hlb2, hlb3, hlb4⟩ := wf_node_elim hwb
+  obtain ⟨_, _, _, _, hld2, hld3, hld4⟩ := wf_node_elim hwd
+  obtain ⟨_, _, _, _, hle2, hle3, hle4⟩ := wf_node_elim hwe
+  rw [ha1] at hla2 hla3 hla4
+  rw [hb1] at hlb2 hlb3 hlb4
+  rw [hd1] at hld2 hld3 hld4
+  rw [he1] at hle2 hle3 hle4
+  obtain ⟨v1, rfl⟩ := shape_of_level_zero a1 ha1
+  obtain ⟨v2, rfl⟩ := shape_of_level_zero a2 hla2
+  obtain ⟨v3, rfl⟩ := shape_of_level_zero a3 hla3
+  obtain ⟨v4, rfl⟩ := shape_of_level_zero a4 hla4
+  obtain ⟨v5, rfl⟩ := shape_of_level_zero b1 hb1
+  obtain ⟨v6, rfl⟩ := shape_of_level_zero b2 hlb2
+  obtain ⟨v7, rfl⟩ := shape_of_level_zero b3 hlb3
+  obtain ⟨v8, rfl⟩ := shape_of_level_zero b4 hlb4
+  obtain ⟨v9, rfl⟩ := shape_of_level_zero d1 hd1
+  obtain ⟨v10, rfl⟩ := shape_of_level_zero d2 hld2
+  obtain ⟨v11, rfl⟩ := shape_of_level_zero d3 hld3
+  obtain ⟨v12, rfl⟩ := shape_of_level_zero d4 hld4
+  obtain ⟨v13, rfl⟩ := shape_of_level_zero e1 he1
+  obtain ⟨v14, rfl⟩ := shape_of_level_zero e2 hle2
+  obtain ⟨v15, rfl⟩ := shape_of_level_zero e3 hle3
+  obtain ⟨v16, rfl⟩ := shape_of_level_zero e4 hle4
+  -- c is now a concrete level-2 node of 16 leaves; `hashlifeResult` =
+  -- `hashlifeResultAux 2 c`, the `level == 2` arm yields `step4x4 c` =
+  -- `node (leaf _) (leaf _) (leaf _) (leaf _)` of level 1, by computation.
+  rfl
+
 /-- Exhaustive check of the P4 base case over the 16 leaf booleans of a
     (fully explicit) level-2 cell: `2^16` instances by `native_decide`. -/
 private theorem p4_base_exhaustive :
