@@ -440,6 +440,102 @@ theorem reidemeister1Connected_witness_preserves_tricolorable :
     IsTricolorable witnessD1Connected ↔ IsTricolorable witnessD2Connected :=
   ⟨fun _ => witnessD2Connected_tricolorable, fun _ => witnessD1Connected_tricolorable⟩
 
+/-! ## 3e. Certified counter-example: the BACKWARD transfer FAILS under
+`Reidemeister1Connected` (a connected kink can CREATE tricolorability)
+
+§3d shows the *concrete witness pair* of `reidemeister1Connected_satisfiable`
+preserves tricolorability. This section shows the GENERAL backward direction
+`Reidemeister1Connected d₁ d₂ → IsTricolorable d₂ → IsTricolorable d₁` is still
+FALSE — the connected-surgery model (option C) admits its OWN permissiveness defect,
+distinct from the append-model defect of §3b. This is the third certified obstruction
+in the Phase-5 model series (append-model §3b, free-ρ vacuous Reidemeister1', and now
+connected-kink-creates-tricolorability).
+
+**Counter-example.** `d₁ = ⟨1,1,2,2⟩` (1-crossing double-monogon, `numEdges = 2`) is NOT
+tricolorable: at its sole crossing the Fox strands are `(1,1,2)`, so `c1 = c2`
+(both read label 1), forcing the all-equal branch `col 1 = col 2`, contradicting the
+≥2-colours condition. The connected twist on arc `a = 1` (which appears at `e1` AND
+`e2` of `d₁` — a degenerate monogon-loop arc, not a genuine R1 arc spanning two
+distinct crossings) renames `e1 : 1 → 3` and appends the kink `⟨1,3,4,4⟩`, yielding
+`d₂ = {[⟨3,1,2,2⟩, ⟨1,3,4,4⟩], 4}`, which IS tricolorable (witness `⟨R,G,B,G⟩`:
+strands `(3,1,2) = (B,R,G)` and `(1,3,4) = (R,B,G)` are each all-distinct). So a
+connected kink creates tricolorability and `tricolorable_invariant` is FALSE under
+`Reidemeister1Connected`.
+
+**Root cause.** `Reidemeister1Connected` allows the twist on arc `a` even when `a` is
+a monogon-loop (`e1 = e2` within one crossing), which is not a genuine Reidemeister-1
+curl on a proper arc. The forward direction (#3000,
+`Reidemeister1Connected.tricolorable_forward`) is UNAFFECTED — it is unconditional
+(`d₁` tri ⟹ `d₂` tri holds, vacuously on this pair where `d₁` is not tricolorable).
+
+**Fix direction (out of scope here — coordinator's call).** Either (a) require `a` to
+span two distinct crossings (a proper arc, excluding monogon-loops), or (b) strengthen
+`KnotDiagram.wf` to exclude standalone double-monogon diagrams. Either tightening is
+expected to restore the backward direction without abandoning option C — parallelling
+how PR1's `wf` tightening addressed the append-model defect. Certified by exhaustive
+brute-force search (all 3^n colourings) before this formal proof.
+-/
+
+theorem tricolorable_backward_fails_under_connected_model :
+    ∃ (d₁ d₂ : KnotDiagram),
+      Reidemeister1Connected d₁ d₂ ∧
+      IsTricolorable d₂ ∧
+      ¬ IsTricolorable d₁ := by
+  refine ⟨ { crossings := [⟨1,1,2,2⟩], numEdges := 2, hwell := by trivial },
+           { crossings := [⟨3,1,2,2⟩, ⟨1,3,4,4⟩], numEdges := 4, hwell := by trivial },
+           ?_, ?_, ?_ ⟩
+  · -- (a) Reidemeister1Connected d₁ d₂: mirror `reidemeister1Connected_satisfiable`
+    --     with i = ⟨0⟩ (only crossing), a = 1, Y' = ⟨3,1,2,2⟩ (rename e1: 1→3), kink ⟨1,3,4,4⟩.
+    refine ⟨by decide, by decide, ⟨0, by decide⟩, 1, ⟨3,1,2,2⟩, ?_, ?_⟩
+    · -- ρ : Fin 2 ↪ Fin 4 (d₁.numEdges = 2, d₂.numEdges = 4 = 2 + 2).
+      exact { toFun := fun j => ⟨j.val, by omega⟩,
+              inj' := fun x y h => by injection h with hv; exact Fin.ext hv }
+    · exact ⟨by decide, by decide, by decide,
+             by unfold PDCrossing.isRenameOf; decide, rfl⟩
+  · -- (b) d₂ IS tricolorable: witness colouring ⟨R,G,B,G⟩ (edges 1,2,3,4).
+    show IsTricolorable { crossings := [⟨3,1,2,2⟩, ⟨1,3,4,4⟩], numEdges := 4, hwell := by trivial }
+    refine ⟨fun i : Fin 4 =>
+              match i.val with
+              | 0 => TriColor.red
+              | 1 => TriColor.green
+              | 2 => TriColor.blue
+              | _ => TriColor.green,
+            ?_, ?_, ?_⟩
+    · -- Fox at every crossing of d₂.
+      intro c hc
+      have hsplit : c = ⟨3,1,2,2⟩ ∨ c = ⟨1,3,4,4⟩ := by simpa using hc
+      rcases hsplit with rfl | rfl
+      · -- ⟨3,1,2,2⟩: strands (3,1,2) = (blue, red, green) — all-distinct.
+        simp only [triColorConditionAt, KnotDiagram.colorAtNat]; decide
+      · -- ⟨1,3,4,4⟩: strands (1,3,4) = (red, blue, green) — all-distinct.
+        simp only [triColorConditionAt, KnotDiagram.colorAtNat]; decide
+    · decide  -- d₂.numEdges = 4 ≥ 2.
+    · exact ⟨⟨0, by decide⟩, ⟨1, by decide⟩, by decide⟩  -- ≥2 colours: red ≠ green.
+  · -- (c) d₁ is NOT tricolorable: Fox at ⟨1,1,2,2⟩ forces colouring⟨0⟩ = colouring⟨1⟩,
+    --     contradicting the ≥2-colours condition. Mirrors §3b's negation pattern.
+    show ¬ IsTricolorable { crossings := [⟨1,1,2,2⟩], numEdges := 2, hwell := by trivial }
+    rintro ⟨coloring, hcond, hedges, htwo⟩
+    have hfox := hcond (⟨1,1,2,2⟩ : PDCrossing)
+        (by exact List.mem_cons_self : _ ∈ ([⟨1,1,2,2⟩] : List PDCrossing))
+    -- Strands (1,1,2): c1 = c2 = colouring⟨0⟩ (label 1 twice), c3 = colouring⟨1⟩ (label 2).
+    -- Fox forces colouring⟨0⟩ = colouring⟨1⟩ (all-equal branch c2 = c3; all-distinct is
+    -- impossible since c1 = c2).
+    have h01 : coloring ⟨0, by decide⟩ = coloring ⟨1, by decide⟩ := by
+      have h := hfox
+      simp only [triColorConditionAt, KnotDiagram.colorAtNat] at h
+      rcases h with ⟨_, h | h⟩
+      · exact h.2  -- all-equal: c2 = c3, i.e. colouring⟨0⟩ = colouring⟨1⟩.
+      · exact (h.1 rfl).elim  -- all-distinct needs c1 ≠ c2, but c1 = c2 (both label 1).
+    -- Hence every Fin 2 colour equals colouring⟨0⟩ (the only two values are 0, 1).
+    have hAll : ∀ (i : Fin 2), coloring i = coloring ⟨0, by decide⟩ := by
+      intro i
+      have h : i.val = 0 ∨ i.val = 1 := by omega
+      rcases h with h | h
+      · rw [show i = (⟨0, by omega⟩ : Fin 2) from Fin.ext h]
+      · rw [show i = (⟨1, by omega⟩ : Fin 2) from Fin.ext h, h01]
+    obtain ⟨i, j, hne⟩ := htwo
+    exact hne (by rw [hAll i, hAll j])
+
 /-! ## 4. The unknot is NOT tricolorable
 
 The unknot has a diagram with no crossings. Any coloring uses only
