@@ -29,6 +29,7 @@ Read the following memory files to restore full situational awareness:
 
 ### Phase 2 - Gather Live State
 
+0. **Dashboards (PRIMARY channel) — read BOTH, independently**: `roosync_dashboard(action:"read", type:"workspace", section:"all")` for `workspace-CoursIA` **and** for `workspace-CoursIA-2`. These are two co-equal lanes; **neither is "the coordinator's dashboard"**. Each carries its own worker lanes (a `lane` = machine × workspace: every machine with a CoursIA-2 lane also has a CoursIA lane). Read each separately so ASKs/blockers on one lane are not missed.
 1. **RooSync inbox**: `roosync_read(mode: "inbox", status: "unread")` - Check for new messages from agents
 2. **GitHub issues**: `gh issue list --state open --limit 30 --json number,title,labels` - Current open issues
 3. **Git status**: `git log --oneline -5` - Recent commits on main
@@ -139,6 +140,6 @@ roosync_send(
 
 - **Never force push** - See CLAUDE.md rules
 - **Coordination via RooSync only** - No coordination files in git
-- **po-2023 has TWO workspaces** - GenAI_Series vs CoursIA, never conflate
+- **Two workspace dashboards, coordinated independently** - `workspace-CoursIA` and `workspace-CoursIA-2` are co-equal lanes; a `lane` = machine × workspace. Every machine with a CoursIA-2 lane ALSO has a CoursIA lane (e.g. po-2026:CoursIA = Lean Conway/Knot vs po-2026:CoursIA-2 = Grothendieck; po-2024:CoursIA = QC vs po-2024:CoursIA-2 = MGS/.NET; po-2025:CoursIA = Python/ML vs po-2025:CoursIA-2 = .NET/Argumentum). READ and POST a lane-specific coordination on EACH dashboard every cycle — never mirror-broadcast identical content, never treat one as "mine vs the workers'".
 - **Issues + PRs** - Each task = issue, each delivery = PR with review
 - **Prioritize by deadline** - QC/slides > SmartContracts > Sudoku > GenAI
