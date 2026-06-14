@@ -41,6 +41,40 @@ Stratégie composite multi-broker associant un sleeve actions/ETFs (IBKR compte 
 - Métriques : Sharpe net (après costs), CAGR, MaxDD, Calmar, Sortino, Beta SPY/BTC
 - Comparaison à benchmarks : SPY B&H, 60/40 SPY/TLT, BTC B&H
 
+#### Résultats v5 (livré, `main.py`)
+
+Backtest `715fb722` sur QC Cloud project 31717642, 2018-01-01 → 2025-12-01
+(2892 tradeable dates, status Completed, 0 runtime error).
+
+| Métrique | v5 | Cible #1027 | Verdict |
+|----------|----|-------------|---------|
+| Sharpe Ratio | **0.765** | 1.0-1.3 net | **MISS** (sous le seuil) |
+| CAGR | **17.27 %** | ~14 % | **BEATS** |
+| Max Drawdown | **-21.5 %** | ~-22 % | **MEETS** |
+| Probabilistic Sharpe | **43.4 %** | >50 % | sous le seuil de signification |
+| Alpha / Beta (vs SPY) | 0.08 / 0.186 | — | corrélation faible (diversification OK) |
+| Annual Std Dev | 12.4 % | — | — |
+| Win Rate | 64 % | — | — |
+| Total Fees | ₮1549.08 (USDT) | — | confirme currency USDT + trading actif |
+
+**Verdict honnête : INCONCLUSIVE (partial).** Le framework unifié tourne de bout
+en bout sur 8 ans sans erreur (jalon technique Phase 2 atteint), le CAGR dépasse
+la cible et le drawdown est contrôlé. **Mais le Sharpe (0.765) reste sous la
+cible nette 1.0-1.3 et le PSR (43.4 %) sous le seuil de signification** → l'edge
+n'est pas statistiquement robuste dans cette configuration single-pass. Pas de
+BEATS sans walk-forward + multi-seed (Phase 3).
+
+Caveats honnêtes :
+- **Brokerage par défaut** (IBKR retiré : `Unsupported security type: Crypto`).
+  Le modèle 2-broker réel (IBKR + Binance sur nœuds séparés) est Phase 5. Le
+  cost model est celui du brokerage par défaut, **moins strict** que 5bps IBKR +
+  10bps Binance + 5bps slippage → Sharpe 0.765 vraisemblablement optimiste.
+- **Crypto strats = proxys simplifiés** (MultiCanalProxy, HarrvjKellyProxy), pas
+  les vrais M12 HAR-RV-J / MultiCanal du ML-Training-Pipeline. La contribution du
+  sleeve crypto est un placeholder.
+- Single backtest, single seed. `totalOrders=0` au top-level = gap connu QC API
+  (phantom-orders) ; trading actif confirmé par les fees ₮1549 + win rate 64 %.
+
 ### Phase 3 — Walk-forward + multi-seed (S2-S3)
 - Walk-forward annual : train 5 ans → OOS 1 an, roll forward
 - Multi-seed >= 4 sur sous-strats ML (HAR-RV-J vol-target en particulier)
@@ -83,7 +117,9 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
 - **Phase 1** : livrée — `research.ipynb` (sleeve crypto seul, PR #1179) puis `quantbook.ipynb`
   (portefeuille complet 8 sous-stratégies : sleeve IBKR + matrice de corrélation mensuelle 8×8
   + blend net de coûts, exécuté via lean research container avec données QC réelles)
-- **Phase 2** : à faire — backtest unifié 2018-2025 via framework QC (MultiAlphaModel, cf `main.py`)
+- **Phase 2** : livrée (jalon technique) — `main.py` framework MultiAlphaModel unifié,
+  backtest QC Cloud 2018-2025 Completed. Sharpe 0.765 / CAGR 17.3 % / MaxDD -21.5 %.
+  Verdict INCONCLUSIVE (Sharpe sous cible nette, single-pass) → Phase 3 requise.
 - Issue tracker : [#1027](https://github.com/jsboige/CoursIA/issues/1027)
 
 ## Liens
