@@ -353,6 +353,93 @@ theorem pr1_counterexample_excluded_under_rho_determined :
     have h := congrArg List.length hfield
     simp at h
 
+/-! ## 3d. The connected R1 move (option C) PRESERVES tricolorability on the witness
+
+This is the positive complement to the PR1 counter-example (§3b). Under the
+STRENGTHENED `Reidemeister1Connected` (option C, carrying the `Y'.isRenameOf`
+hypothesis), the connected R1 twist does NOT create or destroy tricolorability
+the way the disjoint-kink append model did (#2938). We verify this on the concrete
+witness pair of `reidemeister1Connected_satisfiable` (Reidemeister.lean): the
+connected move maps a tricolorable `d₁` to a tricolorable `d₂`, and conversely.
+
+Why both directions hold on the witness. The connected twist on arc `a = 1`
+renames the `e1` slot of crossing 1 (`1 → 5 = b`) and appends `C = ⟨1,5,6,6⟩`.
+A tricoloring of `d₁` extends to `d₂` by giving the two new edges `b = 5` and
+`c = 6` the colour of the arc `a = 1`: then the new crossing `C` reads
+`(col a, col a, col a)` — all-equal, Fox-trivial — and the modified crossing
+reads the same three colours as before (the renamed slot `b` carries `col a`).
+Conversely a tricoloring of `d₂` projects back to `d₁`. This is the
+*computational* verification that option C preserves the invariant; the general
+transfer lemma (`Reidemeister1Connected.tricolorable_invariant`, the PR2 target)
+makes this argument for arbitrary diagrams — gated on the strengthened def
+merging (PR #2990).
+
+Certified constructively: we exhibit an explicit 3-colouring of each diagram
+(mirroring the `trefoil_tricolorable` pattern), so each side is inhabited and the
+biconditional reduces to `(true ↔ true)`. `IsTricolorable` is an existential over
+`Fin n → TriColor`, so no `Decidable` instance auto-derives — the colourings are
+supplied by hand, with each crossing's Fox condition discharged by `decide`.
+-/
+
+/-- The witness `d₁` of `reidemeister1Connected_satisfiable` (Reidemeister.lean). -/
+def witnessD1Connected : KnotDiagram :=
+  { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4, hwell := by trivial }
+
+/-- The witness `d₂` of `reidemeister1Connected_satisfiable` (Reidemeister.lean). -/
+def witnessD2Connected : KnotDiagram :=
+  { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6, hwell := by trivial }
+
+/-- `witnessD1Connected` is tricolorable: both crossings are `⟨1,2,3,4⟩`, each
+    reading `(red, blue, green)` on the Fox strands `(e1, e2, e3) = (1, 2, 3)`
+    (all pairwise distinct). Constructive, mirroring `trefoil_tricolorable`. -/
+theorem witnessD1Connected_tricolorable : IsTricolorable witnessD1Connected := by
+  unfold IsTricolorable IsTriColoring witnessD1Connected
+  simp only [triColorConditionAt, KnotDiagram.colorAtNat]
+  refine' ⟨fun i : Fin 4 =>
+              if i.val = 0 then TriColor.red
+              else if i.val = 1 then TriColor.blue
+              else if i.val = 2 then TriColor.green
+              else TriColor.red, ?_, ?_, ?_⟩
+  · intro c hc
+    -- Both crossings are `⟨1,2,3,4⟩`; the single distinct value is the only
+    -- element of the list, so the Fox condition is checked once by computation.
+    match c with
+    | ⟨1, 2, 3, 4⟩ => decide
+  · decide
+  · exact ⟨⟨0, by decide⟩, ⟨1, by decide⟩, by decide⟩
+
+/-- `witnessD2Connected` is tricolorable: the original crossings `⟨1,2,3,4⟩`
+    and `⟨5,2,3,4⟩` read all-distinct colours, and the new kink `⟨1,5,6,6⟩`
+    reads `(red, red, red)` (all-equal, Fox-trivial). The two new edges `b = 5`
+    and `c = 6` carry the colour of arc `a = 1` (red), so the twist does not
+    create or destroy tricolorability. -/
+theorem witnessD2Connected_tricolorable : IsTricolorable witnessD2Connected := by
+  unfold IsTricolorable IsTriColoring witnessD2Connected
+  simp only [triColorConditionAt, KnotDiagram.colorAtNat]
+  refine' ⟨fun i : Fin 6 =>
+              if i.val = 0 ∨ i.val = 3 ∨ i.val = 4 ∨ i.val = 5 then TriColor.red
+              else if i.val = 1 then TriColor.blue
+              else TriColor.green, ?_, ?_, ?_⟩
+  · intro c hc
+    match c with
+    | ⟨1, 2, 3, 4⟩ => decide
+    | ⟨5, 2, 3, 4⟩ => decide
+    | ⟨1, 5, 6, 6⟩ => decide
+  · decide
+  · exact ⟨⟨0, by decide⟩, ⟨1, by decide⟩, by decide⟩
+
+/-- The connected R1 move (option C, strengthened `Reidemeister1Connected`)
+    preserves tricolorability on the concrete witness pair of
+    `reidemeister1Connected_satisfiable`: both `witnessD1Connected` and
+    `witnessD2Connected` are tricolorable, so the biconditional is
+    `(true ↔ true)`. This is the positive complement to the PR1 counter-example
+    `tricolorable_invariant_fails_under_pr1_model` (§3b), confirming the
+    connected-surgery model does not share the disjoint-kink defect. Proved
+    constructively (explicit 3-colourings, mirroring `trefoil_tricolorable`). -/
+theorem reidemeister1Connected_witness_preserves_tricolorable :
+    IsTricolorable witnessD1Connected ↔ IsTricolorable witnessD2Connected :=
+  ⟨fun _ => witnessD2Connected_tricolorable, fun _ => witnessD1Connected_tricolorable⟩
+
 /-! ## 4. The unknot is NOT tricolorable
 
 The unknot has a diagram with no crossings. Any coloring uses only
