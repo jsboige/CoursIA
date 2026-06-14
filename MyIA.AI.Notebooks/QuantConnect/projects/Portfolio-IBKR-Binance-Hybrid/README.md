@@ -83,7 +83,12 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
 - **Phase 1** : livrée — `research.ipynb` (sleeve crypto seul, PR #1179) puis `quantbook.ipynb`
   (portefeuille complet 8 sous-stratégies : sleeve IBKR + matrice de corrélation mensuelle 8×8
   + blend net de coûts, exécuté via lean research container avec données QC réelles)
-- **Phase 2** : à faire — backtest unifié 2018-2025 via framework QC (MultiAlphaModel, cf `main.py`)
+- **Phase 2** : livrée (v1) — backtest unifié 2018-2025 (`main.py`, rebalance composite direct
+  des 8 sous-stratégies). Backtest QC Cloud `Phase2-DirectComposite-v7` : **Sharpe 0.916,
+  CAGR 29.2%, MaxDD -38.7%** (PSR 43.6%). Verdict : **NO BEATS** — Sharpe sous le target 1.0-1.3
+  et MaxDD au-delà du target -22% (mais dans la fourchette -35-40% anticipée, cf Caveats).
+  CAGR élevé tiré par le sleeve crypto 50%. Coûts explicites 5bps equity/10bps crypto + 5bps
+  slippage. Phase 3 = walk-forward annual + multi-seed HAR-RV-J + sweep allocation.
 - Issue tracker : [#1027](https://github.com/jsboige/CoursIA/issues/1027)
 
 ## Liens
