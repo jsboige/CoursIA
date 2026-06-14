@@ -51,10 +51,10 @@ L'intérêt pédagogique : au lieu d'écrire un algorithme de backtracking pour 
 | **.NET 9.0 SDK** | [Download](https://dotnet.microsoft.com/download/dotnet/9.0) |
 | **.NET Interactive** | `dotnet tool install --global Microsoft.dotnet-interactive` |
 | **Kernel Jupyter** | `.net-csharp` (installe automatiquement par .NET Interactive) |
-| **Package NuGet** | `Z3.Linq` (NB-01, 02, 03 : charge automatiquement via `#r nuget:...`) |
-| **NB-02b, 04, 05 — fork** | Les notebooks 02b, 04 et 05 utilisent le fork [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq) : NB-04 pour le support `int[][]` (absent du NuGet public endjin), NB-02b et NB-05 pour la feature `CollectionHandling` (mode `Constants` ressuscité, câblée le 14/06/2026). Exécuter **une fois** : [`scripts/environment/z3-build-deploy.ps1`](../../../../scripts/environment/z3-build-deploy.ps1) (Windows) ou [`.sh`](../../../../scripts/environment/z3-build-deploy.sh) (Linux/macOS) — compile uniquement le wrapper (~1,5 s) et rassemble les 4 DLL dans `.deploy/`. |
+| **Package NuGet** | `Z3.Linq` (NB-01, 02 : charge automatiquement via `#r nuget:...`) |
+| **NB-02b, 03, 04, 05 — fork** | Les notebooks 02b, 03, 04 et 05 utilisent le fork [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq) : NB-04 pour le support `int[][]` (absent du NuGet public endjin), NB-02b, NB-03 et NB-05 pour la feature `CollectionHandling` (mode `Constants` ressuscité, câblée le 14/06/2026). Exécuter **une fois** : [`scripts/environment/z3-build-deploy.ps1`](../../../../scripts/environment/z3-build-deploy.ps1) (Windows) ou [`.sh`](../../../../scripts/environment/z3-build-deploy.sh) (Linux/macOS) — compile uniquement le wrapper (~1,5 s) et rassemble les 4 DLL dans `.deploy/`. |
 
-> Les notebooks sont autonomes : le restore NuGet et l'initialisation du contexte Z3 sont inclus dans les cellules de setup de chaque notebook. **Exception** : les notebooks 02b, 04 et 05 chargent le fork via `#r "../Z3.Linq/.deploy/..."`, d'où le pré-requis du script de build ci-dessus (décision ai-01 [DECISION COORD] 2026-06-13, option (b), étendue à 02b/05 le 14/06/2026 pour `CollectionHandling`).
+> Les notebooks sont autonomes : le restore NuGet et l'initialisation du contexte Z3 sont inclus dans les cellules de setup de chaque notebook. **Exception** : les notebooks 02b, 03, 04 et 05 chargent le fork via `#r "../Z3.Linq/.deploy/..."`, d'où le pré-requis du script de build ci-dessus (décision ai-01 [DECISION COORD] 2026-06-13, option (b), étendue à 02b/03/05 le 14/06/2026 pour `CollectionHandling`).
 
 ### Configuration : NuGet public vs fork
 
@@ -62,8 +62,8 @@ La série suit une stratégie à deux volets selon le besoin en tableaux imbriqu
 
 | Notebooks      | Source                 | Chargement                    | Pré-requis      |
 |----------------|------------------------|-------------------------------|-----------------|
-| 01, 02, 03     | NuGet public `Z3.Linq` | `#r nuget:Z3.Linq,...`        | Aucun (auto)    |
-| 02b, 04, 05    | Fork (voir ci-dessus)  | `#r "../Z3.Linq/.deploy/..."` | Script de build |
+| 01, 02         | NuGet public `Z3.Linq` | `#r nuget:Z3.Linq,...`        | Aucun (auto)    |
+| 02b, 03, 04, 05| Fork (voir ci-dessus)  | `#r "../Z3.Linq/.deploy/..."` | Script de build |
 
 **Pourquoi un fork pour le notebook 04 ?** Le support des tableaux imbriqués `int[][]` (construction de sort Z3 `Array Int (Array Int Int)`, extraction récursive `ExtractCollection`) provient de [Z3.LinqBinding@EPFdevelopment](https://github.com/MyIntelligenceAgency/Z3.LinqBinding/tree/EPFdevelopment) et n'existe pas dans le NuGet public endjin (`Z3.Linq` 2.0.1, qui ne gère qu'un seul niveau de collection). Publier un NuGet forké n'est pas possible (nous ne sommes pas propriétaires du *package-id*), d'où le script qui compile **uniquement** le wrapper fin et rassemble le solveur natif + les dépendances managées depuis le cache NuGet.
 
