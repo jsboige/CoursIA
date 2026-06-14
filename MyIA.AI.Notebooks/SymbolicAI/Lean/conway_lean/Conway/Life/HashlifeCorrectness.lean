@@ -1055,7 +1055,12 @@ call path when `n > 0` — remains open and is documented in `hashlife_correct`.
     fuel-invariant behaviour of `evolveHashlifeFast`. -/
 theorem evolveHashlifeFastAux_zero_n (fuel : Nat) (g : Grid) :
     evolveHashlifeFastAux fuel 0 g = g := by
-  rfl
+  -- The `n = 0` pattern (`| _, 0, g => g`) is the FIRST arm of
+  -- `evolveHashlifeFastAux`, so it fires regardless of `fuel`. But `rfl`
+  -- fails with `fuel` a free variable: the pattern-matcher inspects `fuel`
+  -- first and blocks on the unknown constructor. Splitting on `fuel`
+  -- (`0` or `succ`) lets the first arm reduce definitionally in each case.
+  cases fuel <;> rfl
 
 /-! ## P5. Main theorem: bounded correctness
 
