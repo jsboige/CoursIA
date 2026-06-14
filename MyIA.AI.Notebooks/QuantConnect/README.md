@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 103
-breakdown: Python=53, projects=48, ML-Training-Pipeline=2
-maturity: PRODUCTION=59, ALPHA=35, BETA=6, DRAFT=2, TEMPLATE=1
+pedagogical_count: 104
+breakdown: Python=53, projects=49, ML-Training-Pipeline=2
+maturity: PRODUCTION=59, ALPHA=35, BETA=7, DRAFT=2, TEMPLATE=1
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ CaseStudies](../CaseStudies/README.md)
