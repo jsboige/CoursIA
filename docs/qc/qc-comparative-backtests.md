@@ -36,10 +36,10 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 2 | HighBookToMarketFScore-QC | ML | Equities | ~~2.09~~ → **0.41** ✓post-#2801 | 14.5 | 60.4 | 0.24 | **historique** (downgraded: real fees, MaxDD -60%) |
 | 3 | PuppiesOfTheDow-QC | IND | Equities | ~~1.99~~ → **0.30** ✓post-#2801 | 9.6 | 28.8 | 0.33 | **historique** (downgraded: real fees) |
 | 4 | LeveragedETFMomentum-QC | IND | Equities (lev ETF) | ~~1.80~~ → **1.78** ✓post-#2801 | 126.4 | 53.3 | 2.37 | robuste (confirmed, leveraged — MaxDD -53% expected) |
-| 5 | Positive-Negative-Splits-ML | ML | Equities | 1.74 | — | — | — | robuste |
+| 5 | Positive-Negative-Splits-ML | ML | Equities | ~~1.74~~ → **1.51** ✓post-#2801 | 75.7 | 37.6 | 2.01 | robuste (confirmed, PSR 82.3%, top ML leader) |
 | 6 | DynamicVIXSpyRegime-QC | ML | Equities/VIX | 1.72 | 29.8 | — | — | robuste |
 | 7 | MacroFactorRotation-QC | ML | Multi-asset | ~~1.23~~ → **0.73** ✓post-#2801 | 22.6 | 42.0 | 0.54 | robuste (revised Sharpe -40%, real fees) |
-| 8 | Framework_Composite_TrendWeather | COMP | Equities | 1.16 | 27.4 | — | — | robuste |
+| 8 | Framework_Composite_TrendWeather | COMP | Equities | ~~1.16~~ → **1.14** ✓post-#2801 | 27.1 | 27.7 | 0.98 | robuste (confirmed, PSR 77.9%) |
 | 9 | Trend-Following | IND | Equities | ~~1.07~~ → **0.41** ✓post-#2801 | 7.9 | 14.6 | 0.54 | **historique** (downgraded: real IBKR fees) |
 | 10 | Multi-Layer-EMA | IND | Crypto (BTC) | 0.93 | — | — | — | robuste |
 | 11 | Portfolio-Optimization-ML | ML | Multi-asset | 0.90 | 27.6 | — | — | robuste |
@@ -52,7 +52,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 18 | ML-RandomForest | ML | Multi-asset | 0.68 | 20.1 | — | — | robuste |
 | 19 | AllWeather | RISK | Multi-asset | 0.67 | 9.3 | — | — | robuste |
 | 20 | ML-Trend-Scanning | ML | Multi-window | 0.66 | 19.1 | — | — | robuste |
-| 21 | VolTarget-Momentum | COMP | Multi-asset | 0.65 | 14.7 | — | — | robuste |
+| 21 | VolTarget-Momentum | COMP | Multi-asset | ~~0.65~~ → **0.50** ✓post-#2801 | 11.1 | 21.2 | 0.53 | robuste borderline (revised -23%, PSR 9.4%) |
 | 22 | SectorMomentum | IND | Equities+Bonds+Gold | 0.62 | 13.2 | — | — | robuste |
 | 23 | BlackLitterman-Momentum | COMP | Equities/ETF | 0.60 | 13.7 | — | — | robuste |
 | 24 | Crypto-MultiCanal | IND | Crypto (BTC) | 0.58 | 8.2 | — | — | robuste |
@@ -66,7 +66,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 31 | RL-DQN-Trading | RL | Portfolio | 0.53 | — | — | — | robuste |
 | 31b | RL-Portfolio-Q-Learning | RL | Equities | 0.58 | 18.2 | 33.2 | — | historique (2020-2021) |
 | 32 | LSTM-Forecasting | DL | Multi-asset | 0.53 | — | — | — | robuste |
-| 33 | TrendStocks-Alpha | IND | Equities | 0.52 | 15.9 | — | — | robuste |
+| 33 | TrendStocks-Alpha | IND | Equities | ~~0.52~~ → **0.51** ✓post-#2801 | 15.7 | 39.6 | 0.40 | robuste (confirmed -2%, high-turnover near-immune to fees, PSR 5.6%) |
 | 34 | Portfolio-IBKR-Binance-Hybrid | COMP | Multi-asset | 0.52 | 15.7 | — | — | robuste |
 | 35 | Framework_Composite_FamaFrenchAllWeather | COMP | Multi-asset | — | — | — | — | robuste |
 | 36 | Framework_Composite_EMATrend | COMP | Equities | — | — | — | — | robuste |
@@ -74,9 +74,9 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 38 | composite-c2-equityfactor | COMP | Equities | — | — | — | — | robuste |
 | 39 | HAR-RV-Kelly | RISK | Multi-asset | — | — | — | — | robuste |
 
-### Post-#2801 verification — initial findings (2026-06-14)
+### Post-#2801 verification — findings (2026-06-14)
 
-Six Tier-1 entries re-run live via MCP qc-mcp (project native period, IBKR margin
+Ten Tier-1 entries re-run live via MCP qc-mcp (project native period, IBKR margin
 brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog values:
 
 | Strategy | QC project | Catalog Sharpe | **Verified Sharpe** | Delta | Real status |
@@ -84,27 +84,59 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | HighBookToMarketFScore | 32732820 | 2.09 | **0.41** | -80% | **historique** (was robuste) |
 | PuppiesOfTheDow | 32732704 | 1.99 | **0.30** | -85% | **historique** (was robuste) |
 | LeveragedETFMomentum | 32732756 | 1.80 | **1.78** | -1% | robuste (confirmed, leveraged) |
+| Positive-Negative-Splits-ML | 30317350 | 1.74 | **1.51** | -13% | robuste (confirmed, **PSR 82.3%**, top ML leader) |
 | MacroFactorRotation | 32730301 | 1.23 | **0.73** | -40% | robuste (revised Sharpe) |
+| Framework_Composite_TrendWeather | 28825740 | 1.16 | **1.14** | -2% | robuste (confirmed, **PSR 77.9%**) |
 | Trend-Following | 28797562 | 1.07 | **0.41** | -62% | **historique** (was robuste) |
 | EMA-Cross-Stocks | 28789946 | 0.87 | **0.99** | +14% | robuste (confirmed, PSR 49.7%) |
+| VolTarget-Momentum | 30784745 | 0.65 | **0.50** | -23% | robuste borderline (PSR 9.4%, at threshold) |
+| TrendStocks-Alpha | 28885507 | 0.52 | **0.51** | -2% | robuste (confirmed, high-turnover near-immune) |
 
-**Finding (methodological, now 6-strategy sample)** : the remediation impact is **not
-uniform** — 4 of the top-6 catalog Sharpes drop sharply under real IBKR fees (HighBookToMarket
--80%, PuppiesOfTheDow -85%, Trend-Following -62%, MacroFactorRotation -40%), while 2 hold or
-improve (LeveragedETFMomentum, EMA-Cross-Stocks). **The catalog's top rankings are materially
-stale**: 3 of the top 4 (HighBookToMarketFScore, PuppiesOfTheDow, Trend-Following) drop out of
-the "robuste" band entirely. This confirms the catalog's own "pending live backtests" caveat:
-**pre-remediation Sharpes are not reliable for comparative conclusions**, and the true leaders
-post-#2801 are LeveragedETFMomentum (1.78) and EMA-Cross-Stocks (0.99), not the documented
-top 3. The remaining Tier-1 list (35 strategies) needs systematic re-backtest before the table
-is trusted end-to-end. Entries marked `✓post-#2801` are verified; all others are provisional.
+**Finding (methodological, now 10-strategy sample)** : the remediation impact is **not
+uniform**, and the pattern is now actionable rather than simply "the catalog is stale". The
+verified strategies split into three regimes:
+
+- **Value/factor + simple trend collapse** (-62% to -85%): HighBookToMarketFScore, PuppiesOfTheDow,
+  Trend-Following. These three top-ranked catalog entries drop out of the "robuste" band entirely
+  — their pre-remediation Sharpes were artifacts of the negligible default fee model. MacroFactorRotation
+  (-40%) is the milder case in this family. **These catalog rankings are not reliable.**
+- **ML momentum & regime composites HOLD** (-2% to -13%): Positive-Negative-Splits-ML (1.51,
+  **PSR 82.3%**) and Framework_Composite_TrendWeather (1.14, **PSR 77.9%**) confirm their ranking
+  with statistically significant PSR. Contrast with MomentumRegime (0.185) — not all composites
+  survive, but the regime-aware ones do. **These are real alpha that survives real fees.**
+- **High-turnover equity is near-immune** (0% to -2%): EMA-Cross-Stocks and TrendStocks-Alpha
+  barely move under real IBKR fees, confirming the #1407 finding that US equity fees (<0.25 bps/trade)
+  are negligible even at high turnover.
+
+- **VolTarget-Momentum is borderline** (-23%, Sharpe 0.50 sitting exactly on the robuste threshold,
+  PSR 9.4% non-significant) — leverage scaling amplifies trade sizes enough that real fees erode it
+  to the edge.
+
+**True leaders post-#2801, ranked by statistical significance (PSR > 50%)** :
+1. Positive-Negative-Splits-ML — 1.51, PSR 82.3% (new ML leader, replaces the collapsed value entries)
+2. LeveragedETFMomentum — 1.78, PSR 79.8% (leveraged, extreme profile)
+3. Framework_Composite_TrendWeather — 1.14, PSR 77.9% (the composite that holds)
+4. EMA-Cross-Stocks — 0.99, PSR 49.7% (near-significance, near-immune to fees)
+
+**Implication for the réunion Nicolas 15/06** : the catalog is not uniformly stale — it is
+specifically the **value/factor and simple-trend top entries that are overstated**, while **ML
+momentum and regime-aware composites are validated**. The comparative table should be cited by
+significance (PSR) not raw Sharpe, and the collapsed entries must carry a caveat before any
+pedagogical use. The remaining Tier-1 list (31 strategies) needs systematic re-backtest before the
+table is trusted end-to-end. LongShortHarvest-QC (catalog 3.39, the single highest entry) and
+DynamicVIXSpyRegime-QC (1.72) are QC Community Library references without an owned project and
+are deferred to a separate baseline-clone task.
 
 Backtests: `1630-baseline-HighBookToMarketFScore-post2801` (0.411, 14.5%, -60.4%, PSR 4.5%),
 `1630-baseline-PuppiesOfTheDow-post2801` (0.302, 9.6%, -28.8%, PSR 3.5%),
 `1630-baseline-LeveragedETFMomentum-post2801` (1.779, 126.4%, -53.3%, PSR 79.8%),
+`1630-baseline-PositiveNegativeSplits-post2801` (1.511, 75.7%, -37.6%, PSR 82.3%),
 `1630-baseline-MacroFactorRotation-post2801` (0.731, 22.6%, -42.0%, PSR 23.8%),
+`1630-baseline-TrendWeather-post2801` (1.14, 27.1%, -27.7%, PSR 77.9%),
 `1630-baseline-TrendFollowing-post2801` (0.407, 7.89%, -14.6%, PSR 8.7%),
-`1630-baseline-EMACrossStocks-post2801` (0.991, 29.2%, -35.7%, PSR 49.7%).
+`1630-baseline-EMACrossStocks-post2801` (0.991, 29.2%, -35.7%, PSR 49.7%),
+`1630-baseline-VolTargetMomentum-post2801` (0.50, 11.1%, -21.2%, PSR 9.4%),
+`1630-baseline-TrendStocksAlpha-post2801` (0.512, 15.7%, -39.6%, PSR 5.6%).
 
 ---
 
