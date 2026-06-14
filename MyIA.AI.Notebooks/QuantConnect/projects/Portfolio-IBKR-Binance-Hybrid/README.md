@@ -89,6 +89,15 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
   et MaxDD au-delà du target -22% (mais dans la fourchette -35-40% anticipée, cf Caveats).
   CAGR élevé tiré par le sleeve crypto 50%. Coûts explicites 5bps equity/10bps crypto + 5bps
   slippage. Phase 3 = walk-forward annual + multi-seed HAR-RV-J + sweep allocation.
+- **Phase 3 (OOS)** : livrée — `main.py` paramétré (`ibkr_alloc`, `start`/`end`) pour sweep
+  sans duplication de code. **OOS strict 2023-2025** (params catalog frozen, jamais tunés sur
+  la fenêtre) : Sharpe **1.321**, CAGR 42.8%, MaxDD -16.4%, PSR 78%. Sweep allocation OOS :
+  60/40 → Sharpe 1.283 / MaxDD -15.2% ; 50/50 → 1.321 / -16.4% ; 40/60 → 1.347 / -18.8%.
+  **Verdict : INCONCLUSIVE (regime-dependent).** L'OOS BEATS le target, mais la fenêtre
+  2023-2025 est un bull crypto+equity sans crash ; le stress-inclusive IS (incluant l'hiver
+  crypto 2022) reste à Sharpe 0.916. L'allocation ne change que ~5% le Sharpe OOS — le levier
+  dominant est le régime, pas le mix. Multi-seed HAR-RV-J (passer du proxy au vrai modèle
+  seedé M12) reste à faire pour durcir le verdict.
 - Issue tracker : [#1027](https://github.com/jsboige/CoursIA/issues/1027)
 
 ## Liens

@@ -65,29 +65,62 @@ class PercentSlippageModel:
 
 
 class PortfolioHybridIBKRBinance(QCAlgorithm):
-    """Phase 2 unified backtest, 8 research-faithful sub-strategies, monthly."""
+    """Phase 2/3 unified backtest, 8 research-faithful sub-strategies, monthly.
 
-    # Portfolio target weights. Include the 50/50 IBKR/Binance sleeve split:
-    # IBKR sleeve (equities) sums to 50%, Binance sleeve (crypto) sums to 50%.
-    PORTFOLIO_WEIGHTS = {
-        # IBKR sleeve (50%)
-        "TrendWeather":      0.150,
-        "EMATrend":          0.125,
-        "SectorMomentum":    0.100,
-        "AllWeather":        0.075,
-        "EMA-Cross-Alpha":   0.050,
-        # Binance sleeve (50%)
-        "EMA-Cross-Crypto":  0.250,
-        "Crypto-MultiCanal": 0.150,
-        "HAR-RV-VolTarget":  0.100,
+    Phase 3 adds two backtest parameters (no code duplication across runs):
+    - ``ibkr_alloc`` (default 0.50): IBKR sleeve fraction; Binance = 1 - ibkr_alloc.
+      Drives the allocation sweep (60/40, 50/50, 40/60).
+    - ``start`` / ``end`` (default 2018-01-01 / 2025-06-01, format YYYY-MM-DD):
+      date window, so the OOS strict test (2023-2025) runs on the SAME code as
+      the in-sample (2018-2025) without a forked algorithm.
+    """
+
+    # Intra-sleeve weights (research allocation WITHIN each sleeve, fixed).
+    # The sleeve split (ibkr_alloc) is parameterized; intra weights are not
+    # (they are the catalog-research target, frozen for the OOS test).
+    INTRA_IBKR = {
+        "TrendWeather":    0.30,
+        "EMATrend":        0.25,
+        "SectorMomentum":  0.20,
+        "AllWeather":      0.15,
+        "EMA-Cross-Alpha": 0.10,
+    }
+    INTRA_BINANCE = {
+        "EMA-Cross-Crypto":  0.50,
+        "Crypto-MultiCanal": 0.30,
+        "HAR-RV-VolTarget":  0.20,
     }
 
     IBKR_SECTORS = ["XLK", "XLF", "XLE", "XLV", "XLY", "XLI", "XLB", "XLU", "XLP"]
     CRYPTO_TICKERS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "ADAUSDT", "LTCUSDT", "XRPUSDT"]
 
+    @staticmethod
+    def _parse_date(value, default):
+        """Parse a 'YYYY-MM-DD' backtest parameter into (year, month, day)."""
+        if not value:
+            return default
+        for fmt in ("%Y-%m-%d", "%Y/%m/%d"):
+            try:
+                parts = __import__("datetime").datetime.strptime(value, fmt)
+                return (parts.year, parts.month, parts.day)
+            except ValueError:
+                continue
+        return default
+
     def initialize(self):
-        self.set_start_date(2018, 1, 1)
-        self.set_end_date(2025, 6, 1)
+        # Backtest parameters (Phase 3): date window + sleeve allocation sweep.
+        start = self._parse_date(self.get_parameter("start"), (2018, 1, 1))
+        end = self._parse_date(self.get_parameter("end"), (2025, 6, 1))
+        self.set_start_date(*start)
+        self.set_end_date(*end)
+
+        ibkr_alloc = float(self.get_parameter("ibkr_alloc", "0.50"))
+        binance_alloc = 1.0 - ibkr_alloc
+        self.portfolio_weights = {}
+        for strat, w in self.INTRA_IBKR.items():
+            self.portfolio_weights[strat] = ibkr_alloc * w
+        for strat, w in self.INTRA_BINANCE.items():
+            self.portfolio_weights[strat] = binance_alloc * w
 
         # Account currency USDT so the Binance crypto sleeve (BTCUSDT, ETHUSDT)
         # settles natively. Equities (USD) auto-convert via the USD/USDT FX rate.
@@ -260,7 +293,7 @@ class PortfolioHybridIBKRBinance(QCAlgorithm):
         # Composite: final per-symbol weight = sum over strats of (portfolio_weight x signal).
         targets = {}
         for strat, sig in signals.items():
-            strat_weight = self.PORTFOLIO_WEIGHTS[strat]
+            strat_weight = self.portfolio_weights[strat]
             for sym, w in sig.items():
                 targets[sym] = targets.get(sym, 0.0) + strat_weight * w
 
