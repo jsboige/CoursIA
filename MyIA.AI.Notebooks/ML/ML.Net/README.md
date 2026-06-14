@@ -100,7 +100,7 @@ Derrière chaque concept de cette série se cache une application réelle :
 | Niveau | Connaissance | Pourquoi |
 |--------|-------------|----------|
 | **C# intermédiaire** | Classes, génériques, LINQ, async/await | Les notebooks utilisent ces concepts pour construire les pipelines et définir les classes de données |
-| **.NET SDK 9.0+** | dotnet CLI | Requirement pour .NET Interactive (kernel Jupyter) |
+| **.NET SDK 9.0+** | dotnet CLI | Prérequis pour .NET Interactive (kernel Jupyter) |
 | **Jupyter** | Navigation basique dans un notebook | Les notebooks sont exécutés dans Jupyter / VS Code avec l'extension Polyglot Notebooks |
 
 ### Concepts ML utiles (non obligatoires)
@@ -118,7 +118,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 |--------|----------|-------|
 | **Développeur C# débutant en ML** | ML-1 → ML-2 → ML-3 → ML-4 → TP | ~2h30 |
 | **Développeur C# expérimenté** | ML-1 → ML-4 → ML-5 → ML-6 → ML-7 | ~2h |
-| **Data scientist .NET enterprise** | ML-3 → ML-4 → ML-6 → ML-7 | ~2h |
+| **Data scientist .NET entreprise** | ML-3 → ML-4 → ML-6 → ML-7 | ~2h |
 
 ## Contenu détaillé
 
@@ -209,14 +209,14 @@ dotnet --version  # doit afficher 9.x.x
 dotnet tool install -g Microsoft.dotnet-interactive
 dotnet interactive jupyter install
 
-# 3. Verification
+# 3. Vérification
 jupyter kernelspec list  # doit montrer .net-csharp
 ```
 
 ## Prerequisites
 
 ```bash
-# Packages (installes via #r dans notebooks, pas de pip)
+# Packages (installés via #r dans notebooks, pas de pip)
 # Fondamentaux:
 # - Microsoft.ML
 # - Microsoft.ML.AutoML
@@ -340,7 +340,7 @@ Tous les trainers ML.NET ne supportent pas l'export ONNX. Les trainers compatibl
 
 Les concepts se correspondent directement :
 
-| Concept scikit-learn | Equivalent ML.NET |
+| Concept scikit-learn | Équivalent ML.NET |
 | ---------------------- | ------------------- |
 | `fit()` | `Fit()` sur le pipeline |
 | `predict()` | `CreatePredictionEngine().Predict()` |
@@ -363,7 +363,7 @@ Voir la licence du repository principal.
 
 ## Cross-series Bridges
 
-| Série | Lien | Connection |
+| Série | Lien | Connexion |
 |-------|------|------------|
 | [Probas/Infer](../../Probas/Infer/README.md) | Régression bayésienne | Le TP capstone utilise Infer.NET, le même moteur probabiliste de la série Probas |
 | [Search](../../Search/README.md) | Optimisation | L'AutoML (ML-3) et la détection de saisonnalité (ML-5) utilisent des techniques de recherche et optimisation |
