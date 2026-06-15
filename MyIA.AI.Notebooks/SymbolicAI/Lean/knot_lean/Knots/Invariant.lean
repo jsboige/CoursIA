@@ -988,6 +988,47 @@ multi-position adjustment" (the §9.1 qualitative claim) to "a finite,
 structured family of local overrides" — the formal proof can proceed
 case-by-case once the local Fox-rebalancing lemma is stated. Reserved for
 a dedicated cycle; CI baseline remains unchanged.
+
+### 9.5. Fox-decoupling at the proper-arc partner crossing
+
+Probe v3 (`scripts/tmp_backward_probe_v3.py`, same 292032-case scope)
+characterises, for the 84240 single-slot-at-non-`a-1` overrides (≈ 53.6% of
+all naïve-fails), the **geometric relation** between the override edge label
+`ℓ := k + 1` and the proper-arc partner crossing `j`.
+
+Findings:
+* **66.15% (55728 / 84240) of overrides have `ℓ ∉ d₁.crossings[j]`** — the
+  override edge does not appear in the partner crossing at all. Under the
+  `wf` constraint at `numCrossings = 2, numEdges = 4`, that means `ℓ` appears
+  twice in the *kink crossing* `i`, and the override propagates entirely
+  through Fox at `i`.
+* **33.85% (28512 / 84240) of overrides have `ℓ ∈ d₁.crossings[j]`** — and
+  in **100%** of those cases, `ℓ` sits at **slot 3 of `j`** (the slot that
+  `triColorConditionAt` ignores; see §3 / Lean Invariant.lean L82-87 where
+  Fox reads only `(e1, e2, e3)`). Crucially, this means **0% of overrides
+  touch a Fox-sensitive slot of `j`**.
+* The `(a-slot in j, override-slot in j)` joint distribution is balanced:
+  `a` at slots 0/1/2 of `j` each appears with `ℓ` at slot 3 of `j` in 9504
+  cases (uniform across the 3 Fox positions of `a`). No bias toward a
+  particular `a` slot.
+
+Mechanism. The kink surgery at `Y` modifies a Fox slot of `i`. The naïve
+restriction breaks Fox at `Y`. To repair, change the colour at some edge `ℓ`.
+The probe shows that the chosen `ℓ` is *always* Fox-irrelevant at `j`:
+either because `ℓ` does not appear in `j` (66% case), or because `ℓ` appears
+only at the Fox-blind slot 3 of `j` (34% case). In both sub-cases, **the
+override is invisible to Fox at `j`**, and the Fox-repair flows entirely
+through Fox at `i` (where `ℓ` sits at a Fox slot by the same accounting).
+
+This is the colour-symmetry argument of §9.1 made concrete: the override
+"swaps" a colour at an edge whose only Fox role is at the kink crossing
+itself, so changing it cannot break the partner's Fox condition. The
+formal proof can therefore localise the rebalancing entirely at `i` once
+the override edge is identified by its Fox-blindness at `j`.
+
+The 29.7% two-slot bucket (§9.4) is the residue where this single-slot
+Fox-blind move is unavailable; v3 does not characterise it yet (deferred
+to a follow-up probe). CI baseline remains unchanged.
 -/
 
 end Knots
