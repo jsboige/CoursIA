@@ -872,4 +872,66 @@ theorem Reidemeister1Connected.numEdges_eq {d₁ d₂ : KnotDiagram}
   obtain ⟨_, _, _, _, _, _, _, _, _, _, _, hsurg⟩ := h
   simpa using congrArg (·.numEdges) hsurg
 
+/-! ## 9. Backward transfer — decomposition analysis (Epic #2874, Phase 5)
+
+Backward direction of `Reidemeister1Connected.tricolorable_*`: a tricoloring
+of `d₂` restricts to one of `d₁`. Together with the forward lemma (PR #3000),
+this gives the R1 bi-implication needed to unblock the §2 placeholder
+`tricolorable_invariant`.
+
+This section is a **documentation-only** analysis: it records the decomposition
+the future proof will follow, identifies which sub-cases are easy vs.
+research-level, and pins the empirical evidence. **No new Lean declaration
+is added in this section** — the formal theorem will land in a dedicated PR
+once the all-distinct sub-case is constructed. CI baseline remains unchanged.
+
+### 9.1. Sub-case decomposition
+
+Decompose by Fox mode at the new kink crossing
+`C = ⟨a, b, c, c⟩` with `b = d₁.numEdges + 1`, `c = d₁.numEdges + 2`.
+
+Fox at `C` under `col₂` reads on slots `(a, b, c)`. The two modes:
+* **all-equal mode:** `col₂(a-1) = col₂(b-1) = col₂(c-1)`. The naïve
+  restriction `col₁ := col₂|_{Fin d₁.numEdges}` then works directly: at the
+  modified endpoint `Y` in `d₁`, the (renamed) `b` slot in `Y'` is replaced
+  by an `a` slot in `Y` whose colour under `col₁` equals `col₂(a-1) = col₂(b-1)`
+  by the all-equal condition. Fox is therefore preserved at `Y` in `d₁`.
+* **all-distinct mode:** `col₂(a-1) ≠ col₂(b-1)`. Naïve restriction casts
+  the wrong colour at the renamed slot of `Y` in `d₁` (reads `col₂(a-1)` where
+  `Y'` read `col₂(b-1)`). Fox at `Y` in `d₁` may then break — this is the
+  source of the empirical 48% naïve-fail rate documented in §8.2.
+
+Furthermore, the "obvious" repair `col₁(a-1) := col₂(b-1)` does NOT work
+either: under it, Fox at the proper-arc partner crossing `j ≠ i` (which
+still contains `a` in `d₁`) reads the wrong colour at slot `a` (reads
+`col₂(b-1)` instead of `col₂(a-1)`), so Fox at `j` breaks symmetrically.
+The all-distinct case requires a globally-consistent multi-position
+adjustment — likely via the colour-symmetry argument (permute TriColor
+across the arc-path connecting `Y` to the proper-arc partner via `a`)
+suggested by ai-01's deep-queue brief.
+
+### 9.2. Empirical status
+
+The brute-force search of §8.2 (292032 `(pair, col₂)` probes on 20184 valid
+proper-arc twists with `numCrossings ≤ 2`) reports **0 backward failures**.
+The conjecture is therefore strongly supported empirically; the obstruction
+is purely the formal proof of the all-distinct mode.
+
+### 9.3. Roadmap to the formal theorem
+
+When the all-distinct construction is in hand, the theorem statement is:
+
+```
+theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂}
+    (h : Reidemeister1Connected d₁ d₂) (htri₂ : IsTricolorable d₂) :
+    IsTricolorable d₁
+```
+
+The proof body will (i) extract the surgery shape via `numEdges_eq` (§8.5)
+and `hsurg`, (ii) case-split on the Fox mode at `C`, (iii) close all-equal
+by naïve restriction, (iv) close all-distinct by the colour-symmetry
+construction. Reserved for a dedicated cycle; no strategic-placeholder
+declaration is committed here to keep the CI baseline honest.
+-/
+
 end Knots
