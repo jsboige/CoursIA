@@ -32,12 +32,12 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 
 | # | Project | Type | Class | Sharpe | CAGR% | MaxDD% | Calmar | Status |
 |---|---------|------|-------|--------|-------|--------|--------|--------|
-| 1 | LongShortHarvest-QC | ML | Equities | 3.39 | 57.9 | — | — | robuste |
+| 1 | LongShortHarvest-QC | ML | Equities | ~~3.39~~ → **1.64** ✓post-#2801 | 45.6 | 17.0 | 2.68 | robuste (confirmed, **PSR 98.7%** top — catalog 3.39 was 1Y-OOS, full decade -52%) |
 | 2 | HighBookToMarketFScore-QC | ML | Equities | ~~2.09~~ → **0.41** ✓post-#2801 | 14.5 | 60.4 | 0.24 | **historique** (downgraded: real fees, MaxDD -60%) |
 | 3 | PuppiesOfTheDow-QC | IND | Equities | ~~1.99~~ → **0.30** ✓post-#2801 | 9.6 | 28.8 | 0.33 | **historique** (downgraded: real fees) |
 | 4 | LeveragedETFMomentum-QC | IND | Equities (lev ETF) | ~~1.80~~ → **1.78** ✓post-#2801 | 126.4 | 53.3 | 2.37 | robuste (confirmed, leveraged — MaxDD -53% expected) |
 | 5 | Positive-Negative-Splits-ML | ML | Equities | ~~1.74~~ → **1.51** ✓post-#2801 | 75.7 | 37.6 | 2.01 | robuste (confirmed, PSR 82.3%, top ML leader) |
-| 6 | DynamicVIXSpyRegime-QC | ML | Equities/VIX | 1.72 | 29.8 | — | — | robuste |
+| 6 | DynamicVIXSpyRegime-QC | ML | Equities/VIX | ~~1.72~~ → **1.00** ✓post-#2801 | 17.9 | 16.5 | 1.09 | robuste (confirmed, **PSR 69.4%** — catalog 1.72 was 1Y-OOS, full decade -42%) |
 | 7 | MacroFactorRotation-QC | ML | Multi-asset | ~~1.23~~ → **0.73** ✓post-#2801 | 22.6 | 42.0 | 0.54 | robuste (revised Sharpe -40%, real fees) |
 | 8 | Framework_Composite_TrendWeather | COMP | Equities | ~~1.16~~ → **1.14** ✓post-#2801 | 27.1 | 27.7 | 0.98 | robuste (confirmed, PSR 77.9%) |
 | 9 | Trend-Following | IND | Equities | ~~1.07~~ → **0.41** ✓post-#2801 | 7.9 | 14.6 | 0.54 | **historique** (downgraded: real IBKR fees) |
@@ -76,7 +76,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 
 ### Post-#2801 verification — findings (2026-06-15)
 
-Eighteen Tier-1 entries re-run live via MCP qc-mcp (project native period, IBKR margin
+Twenty Tier-1 entries re-run live via MCP qc-mcp (project native period, IBKR margin
 brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog values:
 
 | Strategy | QC project | Catalog Sharpe | **Verified Sharpe** | Delta | Real status |
@@ -99,8 +99,10 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | HAR-RV-Kelly | 31650567 | — | **0.75** | (gap-fill) | robuste borderline (first real data, PSR 24.0%, MaxDD -48% crypto) |
 | RL-DQN-Trading | 32057969 | 0.53 | **0.58 (2020-21)** | n/a | **non re-verifiable** (~1yr window, runtime error on extension) |
 | MeanReversion | 30776121 | 0.81 | **0.81** | 0% | robuste (confirmed, PSR 46.8%, low-turnover sector rotation holds) |
+| LongShortHarvest | 32921183 | 3.39 | **1.64** | -52% | robuste (confirmed, **PSR 98.7%** top — catalog was 1Y-OOS, baseline-clone) |
+| DynamicVIXSpyRegime | 32921262 | 1.72 | **1.00** | -42% | robuste (confirmed, **PSR 69.4%** — catalog was 1Y-OOS, baseline-clone) |
 
-**Finding (methodological, now 18-strategy sample)** : the remediation impact is **not
+**Finding (methodological, now 20-strategy sample)** : the remediation impact is **not
 uniform**, and the batch-4 results *refine and partly correct* the earlier 10-strategy pattern.
 The distinguishing axis is **not** asset class, nor ML-vs-indicator alone — it is the
 combination of (a) the fee-per-trade the asset class carries and (b) how the strategy turns
@@ -155,14 +157,16 @@ of 41 catalog entries shrinks to roughly **a dozen genuinely-holding strategies*
 the rest are overstated to varying degrees.
 
 **Implication for the réunion Nicolas 15/06** : the catalog is not uniformly stale, but the
-overstatement is widespread — **only 4 of 18 verified strategies hold robuste with significant PSR**.
+overstatement is widespread — **only 6 of 20 verified strategies hold robuste with significant PSR**.
 The overstatement is structural in two families (value/factor/trend, and crypto indicators), while
 structured ML and regime-aware composites are validated. The comparative table MUST be cited by
 significance (PSR) not raw Sharpe; collapsed entries need a caveat before any pedagogical use. The
 remaining Tier-1 list (23 strategies) needs systematic re-backtest before the table is trusted
 end-to-end. LongShortHarvest-QC (catalog 3.39, the single highest entry) and DynamicVIXSpyRegime-QC
-(1.72) are QC Community Library references without an owned project and are deferred to a separate
-baseline-clone task.
+(1.72) — previously QC Community Library references without an owned project — were deployed as owned
+baseline-clones (project IDs 32921183 / 32921262) and re-run over 2015-2024: both keep robuste status
+(PSR 98.7% / 69.4%) but their headline Sharpes nearly halve (1.64 / 1.00), confirming the catalog
+1Y-OOS values were optimistic while the strategies themselves are sound.
 
 Backtests: `1630-baseline-HighBookToMarketFScore-post2801` (0.411, 14.5%, -60.4%, PSR 4.5%),
 `1630-baseline-PuppiesOfTheDow-post2801` (0.302, 9.6%, -28.8%, PSR 3.5%),
@@ -177,7 +181,9 @@ Backtests: `1630-baseline-HighBookToMarketFScore-post2801` (0.411, 14.5%, -60.4%
 `1630-baseline-MultiLayerEMA-post2801` (0.798, 25.0%, -57.1%, PSR 23.9%),
 `1630-baseline-AllWeather-post2801` (0.469, 7.5%, -16.4%, PSR 19.6%),
 `1630-baseline-CryptoMultiCanal-post2801` (0.333, 4.6%, -14.1%, PSR 13.0%),
-`1630-baseline-MomentumStrategy-post2801` (0.499, 11.2%, -25.8%, PSR 9.3%).
+`1630-baseline-MomentumStrategy-post2801` (0.499, 11.2%, -25.8%, PSR 9.3%),
+`1630-baseline-LongShortHarvest-post2801` (1.635, 45.6%, -17.0%, PSR 98.7%),
+`1630-baseline-DynamicVIXSpyRegime-post2801` (0.997, 17.9%, -16.5%, PSR 69.4%).
 
 ---
 

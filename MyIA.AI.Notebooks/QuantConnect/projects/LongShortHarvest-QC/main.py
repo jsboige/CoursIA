@@ -10,7 +10,7 @@ from sklearn.preprocessing import StandardScaler
 # Long Short Harvest by Grant Forman
 # OOS 1Y Sharpe 3.39, 5Y CAGR 57.94%, 5Y Drawdown 15.20%, 76% Win Rate
 # Long-short equity with ML overlay, Hurst-style regime detection, ATR-scaled filters
-# Source: QC Strategy Library #238, cloned 2026-04-04, QC Project ID: 29687399
+# Source: QC Strategy Library #238, cloned 2026-04-04; redeployed 2026-06-15, QC Project ID: 32921183
 
 
 class VolatilityHarvestML_LongShort(QCAlgorithm):
