@@ -301,7 +301,7 @@ Documentation complète : [SymbolicLearning/README.md](SymbolicLearning/README.m
 | [OR-tools-Stiegler](OR-tools-Stiegler.ipynb) | .NET C# | Probleme de Stigler, programmation lineaire avec OR-Tools | 2 |
 | [01_Linq2Z3_Intro](SMT/Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
 
-Le notebook Z3 inaugure la série [SMT/Z3/](SMT/Z3/README.md) (SMT declaratif via Z3.Linq), regroupee avec la série Python [SMT/Z3-Python/](SMT/Z3-Python/README.md) sous le chapeau [SMT/](SMT/README.md) (Satisfiability Modulo Theories).
+Le notebook Z3 inaugure la série [SMT/Z3/](SMT/Z3/README.md) (SMT declaratif via Z3.Linq), regroupee avec la série Python [SMT/Z3-Python/](SMT/Z3-Python/README.md) sous le chapeau [SMT/](SMT/README.md) (Satisfiability Modulo Theories). La série Z3.Linq se termine par [06_Witness_Generation_Automata](SMT/Z3/06_Witness_Generation_Automata.ipynb), qui consomme un fork d'AutomataDotNet (opérateurs de surface `&`/`~`, témoins non bornés) pour générer des témoins SMT de `A & ~B` — le pont entre regex symbolique et SMT (cf. epic #2978).
 
 ---
 
@@ -357,11 +357,13 @@ SymbolicAI/
 │
 ├── SMT/                       # Solveurs SMT (Satisfiability Modulo Theories)
 │   ├── Z3/                     # Serie Z3.Linq C# (SMT declaratif via LINQ)
-│   │   ├── 01_Linq2Z3_Intro.ipynb ... 05_Meal_Planner_Hierarchical.ipynb
+│   │   ├── 01_Linq2Z3_Intro.ipynb ... 06_Witness_Generation_Automata.ipynb
 │   │   └── README.md
 │   ├── Z3-Python/              # Serie z3-py (API complete imperative)
 │   │   ├── Z3-Python-01-Introduction.ipynb ... Z3-Python-03-Tactics.ipynb
 │   │   └── README.md
+│   ├── Z3.Linq/                # Sous-module fork Z3.Linq (.deploy/ local)
+│   ├── Automata/               # Sous-module fork AutomataDotNet (temoins regex &/~, notebook 06)
 │   └── README.md              # Chapeau SMT
 ├── OR-tools-Stiegler.ipynb    # Optimisation LP
 │

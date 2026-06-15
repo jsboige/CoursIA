@@ -16,7 +16,7 @@ Un solveur **SAT** décide si une formule booléenne est satisfiable. Un solveur
 
 | Série | Langage / Binding | Style | Notebooks | Statut |
 |-------|-------------------|-------|-----------|--------|
-| [**Z3/**](Z3/README.md) | C# .NET 9 / **Z3.Linq** | Déclaratif borné : on traduit des expressions LINQ en formules SMT | 5 (`01` -> `05`) | PRODUCTION / BETA |
+| [**Z3/**](Z3/README.md) | C# .NET 9 / **Z3.Linq** | Déclaratif borné : on traduit des expressions LINQ en formules SMT | 7 (`01` -> `06`) | PRODUCTION / BETA |
 | [**Z3-Python/**](Z3-Python/README.md) | Python / **z3-py** | Impératif complet : accès à l'API intégrale du solveur | 6 (`01` -> `06`, série complète) | PRODUCTION |
 
 ### Z3.Linq (C#) — la porte d'entrée déclarative
@@ -26,6 +26,10 @@ Un solveur **SAT** décide si une formule booléenne est satisfiable. Un solveur
 ### z3-py (Python) — l'API complète
 
 `z3-py` n'impose aucune couche déclarative restrictive : tactiques (`simplify`, `Then`, `OrElse`), théories `BitVec` et `Array`, `Optimize`, quantificateurs, `SolverFor(...)` spécialisés. C'est l'outil de référence pour aller au-delà de la modélisation introductive et explorer les ressorts internes du solveur.
+
+### Génération de témoins (fork Automata) — le pont regex -> SMT
+
+La série Z3.Linq se clôt par [`06_Witness_Generation_Automata`](Z3/06_Witness_Generation_Automata.ipynb), qui dépasse la *reconnaissance* pour la *génération* : à partir d'un regex combinant intersection (`&`) et complément (`~`), produire un **témoin** (un mot accepté) puis l'émettre en SMT-LIB (`re.inter` / `re.comp`). Le notebook consomme un **fork d'AutomataDotNet** ([MyIntelligenceAgency/Automata](https://github.com/MyIntelligenceAgency/Automata), sous-module `Automata/`) qui ajoute les opérateurs de surface `&`/`~` au parser et lève le cap de 21 caractères sur les témoins. C'est le pont entre regex symbolique (série [Sudoku](../../Sudoku/README.md), RE#) et SMT, dans le cadre de l'epic #2978.
 
 ## Quelle série choisir ?
 
@@ -40,3 +44,4 @@ Les deux séries traitent volontairement des **mêmes problèmes phares** (théo
 - [Search / CSP](../../Search/README.md) — programmation par contraintes et automates symboliques (prédicats Z3)
 - [Z3 Prover (upstream)](https://github.com/Z3Prover/z3) — le solveur SMT lui-même
 - [Z3.Linq (endjin)](https://github.com/endjin/Z3.Linq) — le binding C# déclaratif
+- [AutomataDotNet (fork MyIntelligenceAgency)](https://github.com/MyIntelligenceAgency/Automata) — opérateurs regex `&`/`~` + génération de témoins SMT (notebook `06`)
