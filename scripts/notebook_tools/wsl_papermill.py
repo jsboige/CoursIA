@@ -52,11 +52,27 @@ def _default_mode() -> str:
 # WSL mode (Windows only)
 # =============================================================================
 
+_WIN_DRIVE_RE = __import__("re").compile(r"^([A-Za-z]:)[\\/](.*)$")
+
+
 def win_to_wsl_path(win_path: str) -> str:
-    """Convert Windows path to WSL path."""
-    p = Path(win_path).resolve()
-    drive = p.drive[0].lower()
-    return f"/mnt/{drive}{p.as_posix()[2:]}"
+    """Convert a Windows path (e.g. ``D:\\projects\\repo``) to its WSL mount
+    form (``/mnt/d/projects/repo``).
+
+    Works cross-platform: do NOT rely on ``pathlib.Path.drive`` — under
+    WSL/POSIX the path parser is ``PurePosixPath`` which does not recognise a
+    ``X:`` drive prefix (``p.drive == ""``), and ``Path.resolve()`` rewrites
+    the path to ``/mnt/d/...`` which strips the drive letter entirely. Detect
+    the Windows drive prefix with a regex so the conversion is identical on
+    Windows, WSL, and Linux CI (#2871 part 2). A path without a drive prefix
+    is returned unchanged.
+    """
+    m = _WIN_DRIVE_RE.match(win_path)
+    if not m:
+        return win_path  # no Windows drive prefix — already POSIX, leave as-is
+    drive = m.group(1)[0].lower()
+    rest = m.group(2).replace("\\", "/")
+    return f"/mnt/{drive}/{rest}"
 
 
 def run_wsl(cmd: str, timeout: int = 300) -> tuple[int, str, str]:

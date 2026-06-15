@@ -62,17 +62,20 @@ _mock_config = types.SimpleNamespace(
 )
 
 # Inject mock config into sys.modules so docker.py `from config import ...` resolves.
-# Track which keys we inject so we can cleanly remove them afterwards (targeted
-# deletion is safer than sys.modules.clear() which nukes builtins).
-_injected_keys: list[str] = []
-if "config" not in sys.modules:
-    _injected_keys.append("config")
+# Save the previous binding so we can RESTORE it afterwards (not just delete).
+# Blindly popping the key nukes a real `config` module that a sibling test
+# already imported (e.g. test_genai_config.py when both run together), leaving
+# `from config import ...` broken for the rest of the session — collection-order
+# flakiness observed under Ubuntu CI (#2871 part 2).
+_prev_config = sys.modules.get("config")
 sys.modules["config"] = _mock_config
 _dk_spec.loader.exec_module(_dk_mod)
 
-# Remove only the keys we injected — leaves all other cached modules intact.
-for _key in _injected_keys:
-    sys.modules.pop(_key, None)
+# Restore the prior binding (or remove the key if there was none).
+if _prev_config is not None:
+    sys.modules["config"] = _prev_config
+else:
+    sys.modules.pop("config", None)
 
 DockerManager = _dk_mod.DockerManager
 _run_cmd = _dk_mod._run_cmd

@@ -58,6 +58,15 @@ jobs:
           pip install numpy pandas scipy pyarrow pytest
           pip install requests bcrypt jupyter_client
           pip install pyyaml tomli
+          # python-dotenv: scripts/whisper_int8_comparison.py (and several
+          # genai-stack modules) import `dotenv` at top level.
+          pip install python-dotenv
+          # papermill + nbformat: genai-stack/commands/notebooks.py imports
+          # papermill at top level, so test_genai_notebooks.py needs it at
+          # collection time. Both are declared deps of genai-stack
+          # (scripts/genai-stack/requirements.txt). Lets us re-include the
+          # genai test suites that were excluded as missing-dep (#2871 part 2).
+          pip install papermill nbformat
           # torch (CPU) is needed at collection time by the Sudoku/RRN test
           # modules under scripts/tests/ (they `import torch` at top level and
           # skip themselves at runtime when CUDA is absent). Without it those
@@ -77,23 +86,18 @@ jobs:
         # owned by ml-tests.yml and intentionally excluded here (it duplicates
         # torch on its own job).
         #
-        # The genai + wsl suites below need lane-specific environment that a
-        # generic CPU runner does not have — live ComfyUI/genai services and
-        # module setup (genai), and a Windows-Subsystem-for-Linux host (wsl).
-        # They are excluded here and owned by their lanes (genai -> po-2023,
-        # wsl -> po-2025) as part 2 of #2871; this job stays green so a red here
-        # is a real scripts/ regression, not a missing-env collection/mock error.
+        # The genai + wsl suites were previously excluded as missing-env
+        # (#2871 part 2): they failed on ubuntu due to (a) missing papermill
+        # dep at collection time and (b) two genuine test bugs now fixed —
+        # test_genai_docker.py polluted sys.modules['config'] for sibling
+        # tests, and wsl_papermill.win_to_wsl_path relied on Path.drive which
+        # is empty under POSIX. Both are fixed; papermill/nbformat are now
+        # installed above. The 7 suites run here green (354 tests, validated
+        # under WSL ubuntu + CI deps). genai -> po-2023, wsl -> po-2025.
         run: |
           pytest \
             scripts/tests \
-            --ignore=scripts/tests/test_genai_notebooks.py \
-            --ignore=scripts/tests/test_genai_comfyui_client.py \
-            --ignore=scripts/tests/test_genai_commands_models.py \
-            --ignore=scripts/tests/test_genai_commands_gpu.py \
             scripts/notebook_tools/tests \
-            --ignore=scripts/notebook_tools/tests/test_genai_config.py \
-            --ignore=scripts/notebook_tools/tests/test_genai_docker.py \
-            --ignore=scripts/notebook_tools/tests/test_wsl_papermill.py \
             scripts/lean/tests \
             MyIA.AI.Notebooks/GameTheory/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
