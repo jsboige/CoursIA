@@ -1317,3 +1317,94 @@ def test_autonomous_gate_structural_flag_feeds_result():
         final_sorry=4, original_sorry_count=4, final_build_ok=True,
     )
     assert structural is True  # build-OK, sorry_delta==0 -> "proof restructured"
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #1500 (tools.py) — _build_check_or_revert success path must count the
+# build-aware sorry, not the text token.
+#
+# The build-count fix (#1500) was applied to compile() (tools.py:1769) and to
+# the provers.run_session / workflow P1-latch gates, but _build_check_or_revert
+# -- the build-check run after every file_replace_* edit (the dominant
+# autonomous path: ~75 replace vs ~5 compile() calls in the cycle-97 L308
+# trace) -- still used text.count('sorry'). A build that SUCCEEDS while warning
+# 'declaration uses sorry' (implicit sorry from an unresolved apply?/exact?),
+# with the explicit 'sorry' token removed, reports text=0, which
+# _record_sorry_count(0) reads as a fresh 'solved / new low' -> false progress
+# signal on the path that matters most.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def _patch_verifier_success(monkeypatch, raw_output):
+    """Mock verify_project_file to return a successful build with given log."""
+    import prover.verifier as vmod
+
+    class _FakeVerifier:
+        def verify_project_file(self, rel, force=False):
+            return {"success": True, "errors": "", "raw_output": raw_output}
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _FakeVerifier())
+
+
+def test_build_check_or_revert_counts_implicit_sorry(tmp_path, monkeypatch):
+    """A success-path build that warns 'uses sorry' must record count 1, not 0.
+
+    The agent swapped the explicit sorry for apply? (found nothing): the file
+    text no longer contains the token 'sorry', but the build still warns of an
+    implicit sorry. The build-aware count must see it so _record_sorry_count
+    does not register a false 'solved / new low'.
+    """
+    swapped = (
+        "import Mathlib.Tactic\n"
+        "theorem t : True := by\n"
+        "  apply?\n"
+    )
+    fake = tmp_path / "Implicit.lean"
+    fake.write_text(swapped, encoding="utf-8")
+
+    _patch_verifier_success(
+        monkeypatch,
+        "warning: ./Implicit.lean:3:0: declaration uses 'sorry'\n",
+    )
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=3, indentation=2,
+        indent_str="  ", full_file=swapped,
+    )
+    tt = TacticTools(state, str(fake), sctx)
+
+    # pre-edit content carried 1 explicit sorry
+    original = swapped.replace("  apply?\n", "  sorry\n")
+    result = tt._build_check_or_revert(original, "test")
+
+    assert result is None, "a successful build must not revert"
+    assert tt._min_compile_sorry_count == 1, (
+        f"implicit sorry must be counted via build output (got "
+        f"{tt._min_compile_sorry_count}); a text-only count would record 0 "
+        f"and falsely signal solved"
+    )
+
+
+def test_build_check_or_revert_real_solve_records_zero(tmp_path, monkeypatch):
+    """A genuine solve (build success, no sorry warning) records 0."""
+    proved = (
+        "import Mathlib.Tactic\n"
+        "theorem t : True := by\n"
+        "  trivial\n"
+    )
+    fake = tmp_path / "Proved.lean"
+    fake.write_text(proved, encoding="utf-8")
+
+    _patch_verifier_success(monkeypatch, "Build completed successfully.\n")
+
+    state = ProofState(theorem_statement="t")
+    sctx = SorryContext(
+        filepath=str(fake), sorry_line=3, indentation=2,
+        indent_str="  ", full_file=proved,
+    )
+    tt = TacticTools(state, str(fake), sctx)
+
+    original = proved.replace("  trivial\n", "  sorry\n")
+    assert tt._build_check_or_revert(original, "test") is None
+    assert tt._min_compile_sorry_count == 0

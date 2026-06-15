@@ -1024,8 +1024,21 @@ class TacticTools:
             }
 
         if result.get("success"):
-            # P1 fix: track delta0 even on clean build success from file_replace
-            sorry_count = Path(self._filepath).read_text(encoding="utf-8").count("sorry")
+            # P1 fix + #1500: track delta0 even on clean build success from
+            # file_replace. Use the build-aware count (max of the text token
+            # and the 'uses sorry' build warnings): a build can SUCCEED while
+            # still warning 'declaration uses sorry' (an implicit sorry from an
+            # unresolved apply?/exact?/solve_by_elim), and the file text then
+            # no longer contains the token 'sorry' -- a text-only count would
+            # record 0, i.e. a false 'solved / new low' on the dominant
+            # file_replace path (~75 vs ~5 compile() calls in the cycle-97 L308
+            # trace). Mirrors compile() (tools.py:1769) and the #1500 gates in
+            # provers.run_session / workflow P1 latch.
+            _content = Path(self._filepath).read_text(encoding="utf-8")
+            sorry_count = max(
+                _content.count("sorry"),
+                _count_sorries_from_build_output(result.get("raw_output", "")),
+            )
             self._record_sorry_count(sorry_count)
             return None
 
@@ -1058,8 +1071,13 @@ class TacticTools:
 
         # If only sorry-related errors, accept the replacement (don't revert)
         if not non_sorry_errors:
-            # P1 fix: track delta0 on sorry-only build success from file_replace
-            current_sorry = Path(self._filepath).read_text(encoding="utf-8").count("sorry")
+            # P1 fix + #1500: track delta0 on sorry-only build success from
+            # file_replace, build-aware (see the success-path note above).
+            _content = Path(self._filepath).read_text(encoding="utf-8")
+            current_sorry = max(
+                _content.count("sorry"),
+                _count_sorries_from_build_output(raw_output),
+            )
             self._record_sorry_count(current_sorry)
             return None
 
