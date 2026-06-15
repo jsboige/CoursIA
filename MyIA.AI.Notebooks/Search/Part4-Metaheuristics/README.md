@@ -45,8 +45,12 @@ Cette partie s'appuie sur les notebooks .NET Interactive du répertoire voisin [
 | 2 | [MGS-2-Composition](../MetaGeneticSharp-Notebooks/MGS-2-Composition.ipynb) | Primitives de composition : `Match`, contrôle-flux, assemblage déclaratif | ~45 min |
 | 3 | [MGS-3-Eukaryote](../MetaGeneticSharp-Notebooks/MGS-3-Eukaryote.ipynb) | Sous-populations, chromosomes composites, partitionnement spécialisé | ~50 min |
 | 4 | [MGS-4-Islands](../MetaGeneticSharp-Notebooks/MGS-4-Islands.ipynb) | Modèle insulaire, populations structurées, migration entre îles | ~50 min |
+| 5 | [MGS-5-Benchmarks](../MetaGeneticSharp-Notebooks/MGS-5-Benchmarks.ipynb) | Comparaison honnête : Uniform vs WOA-from-primitives vs Islands sur 10 fonctions (`KnownFunctions`), No-Free-Lunch | ~50 min |
+| 6 | [MGS-6-TSP](../MetaGeneticSharp-Notebooks/MGS-6-TSP.ipynb) | La grammaire de composition est agnostique à la représentation : `Islands` sur un chromosome de permutation (TSP), sans adaptation | ~45 min |
+| 7 | [MGS-7-LandscapeExplorer](../MetaGeneticSharp-Notebooks/MGS-7-LandscapeExplorer.ipynb) | Visualiser la surface de fitness : heatmaps PNG graphiques, 3 modes (fonction / 4 cartes originales jsboige / image custom), trajectoire de convergence, center-bias | ~50 min |
+| 8 | [MGS-8-EverestRelief](../MetaGeneticSharp-Notebooks/MGS-8-EverestRelief.ipynb) | Un relief terrestre réel (DEM) comme paysage à maximiser : GA/WOA/EO vs baseline PSO, taux de réussite | ~55 min |
 
-> **À venir (feuille de route)** : Benchmarks comparatifs (Uniform vs WOA-from-primitives vs Islands sur 10 fonctions de test), TSP géométrique, Visual Landscape Explorer. Voir la [feuille de route du fork](https://github.com/jsboige/MetaGeneticSharp/blob/main/ROADMAP.md).
+La série couvre désormais l'arc complet : du moteur autonome (MGS-1) à la comparaison sur benchmarks (MGS-5), puis à la **généralité** de la grammaire sur une représentation combinatoire (MGS-6) et à la **visualisation** des paysages de fitness, jusqu'à un relief terrestre réel (MGS-7/8). Vue d'ensemble et descriptions détaillées : [`MetaGeneticSharp-Notebooks/README.md`](../MetaGeneticSharp-Notebooks/README.md). Feuille de route du fork : [ROADMAP.md](https://github.com/jsboige/MetaGeneticSharp/blob/main/ROADMAP.md).
 
 ## Configuration requise
 
