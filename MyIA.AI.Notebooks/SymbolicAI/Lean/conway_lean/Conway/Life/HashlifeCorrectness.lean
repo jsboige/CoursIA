@@ -851,6 +851,26 @@ private theorem wf_node_elim {nw ne sw se : MacroCell}
   simp only [MacroCell.wf, Bool.and_eq_true, beq_iff_eq] at h
   tauto
 
+/-- Combine a node's `level` and `wf` hypotheses to extract the **absolute**
+    level (not merely equality) and well-formedness of all four quadrants.
+    `wf_node_elim` yields only relative level equality (`ne.level = nw.level`
+    etc.); this lemma closes the gap by folding in `(node nw ne sw se).level
+    = n + 1` to pin each quadrant's level to `n`. This is the depth-1
+    ingredient of the P4 double-nine decomposition (`p4_double_nine_shape`),
+    which needs every depth-2 sub-component of a well-formed level-`(k+2)`
+    cell to carry a known level `k`. Reusable wherever a well-formed node's
+    quadrant levels must be pinned to an absolute value rather than a spine
+    offset. -/
+private theorem wf_node_quad_level {nw ne sw se : MacroCell} {n : Nat}
+    (hlevel : (node nw ne sw se).level = n + 1)
+    (hwf : (node nw ne sw se).wf = true) :
+    nw.level = n ∧ ne.level = n ∧ sw.level = n ∧ se.level = n ∧
+      nw.wf = true ∧ ne.wf = true ∧ sw.wf = true ∧ se.wf = true := by
+  obtain ⟨hnw, hne, hsw, hse, hne_eq, hsw_eq, hse_eq⟩ := wf_node_elim hwf
+  simp only [MacroCell.level] at hlevel
+  refine ⟨?_, ?_, ?_, ?_, hnw, hne, hsw, hse⟩
+  all_goals omega
+
 /-! ## P3/P4 structural input: empty + padding level/wf preservation
 
 `emptyOfLevel`, `padToLevelPlus1`, `padCenter2`, and `centerInLevelPlus2`
