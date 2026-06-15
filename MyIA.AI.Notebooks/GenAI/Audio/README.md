@@ -9,13 +9,13 @@ maturity: PRODUCTION=27, BETA=3
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Video Workflows](../Video/README.md)
 
-Le traitement audio est souvent le parent pauvre de l'IA generative, eclipsé par les images et le texte. Pourtant, la voix et la musique sont les modalites les plus naturelles de l'interaction humaine. Cette serie couvre l'ensemble de la chaine audio IA : reconnaissance vocale, synthese, clonage, generation musicale, et orchestration de pipelines.
+Le traitement audio est souvent le parent pauvre de l'IA générative, éclipsé par les images et le texte. Pourtant, la voix et la musique sont les modalités les plus naturelles de l'interaction humaine. Cette série couvre l'ensemble de la chaîne audio IA : reconnaissance vocale, synthèse, clonage, génération musicale, et orchestration de pipelines.
 
-30 notebooks repartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production, dont un pipeline audiobook agentique complet (Epic #1028, livre 18/05/2026, 8 PRs, post-mortem [ici](../../../docs/archive/epic-1028-audiobook-postmortem.md)) etendu par une variante FishAudio S2-Pro avec 29 tags prosodiques officiels et validation WER (Epic #1273, en cours).
+30 notebooks répartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production, dont un pipeline audiobook agentique complet (Epic #1028, livré 18/05/2026, 8 PRs, post-mortem [ici](../../../docs/archive/epic-1028-audiobook-postmortem.md)) étendu par une variante FishAudio S2-Pro avec 29 tags prosodiques officiels et validation WER (Epic #1273, en cours).
 
-## Fil rouge : construire un podcast automatise
+## Fil rouge : construire un podcast automatisé
 
-L'objectif fil rouge de cette serie est de construire un podcast entierement genere par IA. Chaque niveau apporte une brique supplementaire : TTS pour donner une voix au contenu (niveau 1), clonage vocal et musique pour l'identite sonore (niveau 2), pipelines STT vers LLM vers TTS pour l'assemblage (niveau 3), et workflows de production pour le deploiement (niveau 4).
+L'objectif fil rouge de cette série est de construire un podcast entièrement généré par IA. Chaque niveau apporte une brique supplémentaire : TTS pour donner une voix au contenu (niveau 1), clonage vocal et musique pour l'identité sonore (niveau 2), pipelines STT vers LLM vers TTS pour l'assemblage (niveau 3), et workflows de production pour le déploiement (niveau 4).
 
 ## Structure
 
@@ -23,15 +23,15 @@ L'objectif fil rouge de cette serie est de construire un podcast entierement gen
 Audio/
 ├── 01-Foundation/     # STT, TTS, bases audio (5 notebooks)
 ├── 02-Advanced/       # Voice cloning, musique, MIDI, chansons, TTS expressif (9 notebooks)
-├── 03-Orchestration/  # Multi-modeles, temps reel (3 notebooks)
-└── 04-Applications/   # Education, production, sync A/V, live coding, audiobook (13 notebooks)
+├── 03-Orchestration/  # Multi-modèles, temps réel (3 notebooks)
+└── 04-Applications/   # Éducation, production, sync A/V, live coding, audiobook (13 notebooks)
 ```
 
 ## Progression par niveau
 
 ### 01-Foundation - Bases Speech & Audio
 
-Avant de produire un podcast, il faut maitriser les deux briques de base : la synthese vocale (TTS) pour generer de la parole, et la reconnaissance vocale (STT) pour transcrire des fichiers audio existants. Ce niveau commence par les API cloud (simples et immediates), puis passe en local GPU pour l'autonomie et le controle fin. A la fin de ce niveau, vous savez faire parler une machine et comprendre de la parole.
+Avant de produire un podcast, il faut maîtriser les deux briques de base : la synthèse vocale (TTS) pour générer de la parole, et la reconnaissance vocale (STT) pour transcrire des fichiers audio existants. Ce niveau commence par les API cloud (simples et immédiates), puis passe en local GPU pour l'autonomie et le contrôle fin. À la fin de ce niveau, vous savez faire parler une machine et comprendre de la parole.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -39,27 +39,27 @@ Avant de produire un podcast, il faut maitriser les deux briques de base : la sy
 | [01-2-OpenAI-Whisper-STT](01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) | Whisper API + GPT-4o-Transcribe | OpenAI API | 0 |
 | [01-3-Basic-Audio-Operations](01-Foundation/01-3-Basic-Audio-Operations.ipynb) | librosa, spectrogrammes, MFCC, pydub | Local | 0 |
 | [01-4-Whisper-Local](01-Foundation/01-4-Whisper-Local.ipynb) | Whisper V3 Turbo local, batch | Local GPU | ~10 GB |
-| [01-5-Kokoro-TTS-Local](01-Foundation/01-5-Kokoro-TTS-Local.ipynb) | Kokoro 82M, TTS legere | Local GPU | ~2 GB |
+| [01-5-Kokoro-TTS-Local](01-Foundation/01-5-Kokoro-TTS-Local.ipynb) | Kokoro 82M, TTS légère | Local GPU | ~2 GB |
 
-### 02-Advanced - Voix, Musique & Separation
+### 02-Advanced - Voix, Musique & Séparation
 
-Un podcast de qualite demande une voix naturelle et une identite sonore distincte. Ce niveau couvre le clonage vocal (creer un narrateur unique a partir d'un echantillon), la generation musicale (jingle et fond sonore), la separation de sources (isoler la voix d'un mix existant), et les modeles TTS expressifs (varier le ton et l'emotion). Deux parcours possibles : voix ou musique, selon l'objectif.
+Un podcast de qualité demande une voix naturelle et une identité sonore distincte. Ce niveau couvre le clonage vocal (créer un narrateur unique à partir d'un échantillon), la génération musicale (jingle et fond sonore), la séparation de sources (isoler la voix d'un mix existant), et les modèles TTS expressifs (varier le ton et l'émotion). Deux parcours possibles : voix ou musique, selon l'objectif.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
-| [02-1-Chatterbox-TTS](02-Advanced/02-1-Chatterbox-TTS.ipynb) | Chatterbox Turbo, emotions, prosodie | Local GPU | ~8 GB |
+| [02-1-Chatterbox-TTS](02-Advanced/02-1-Chatterbox-TTS.ipynb) | Chatterbox Turbo, émotions, prosodie | Local GPU | ~8 GB |
 | [02-2-XTTS-Voice-Cloning](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) | XTTS v2, clonage vocal zero-shot | Local GPU | ~6 GB |
 | [02-3-MusicGen-Generation](02-Advanced/02-3-MusicGen-Generation.ipynb) | Meta MusicGen, text-to-music | Local GPU | ~10 GB |
 | [02-4-Demucs-Source-Separation](02-Advanced/02-4-Demucs-Source-Separation.ipynb) | Demucs v4, extraction stems | Local GPU | ~4 GB |
 | [02-5-Multi-Model-TTS-Gateway](02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb) | Gateway multi-TTS (Kokoro, TADA, Qwen3) | tts-api.myia.io | ~12 GB |
-| [02-6-MIDI-Generation](02-Advanced/02-6-MIDI-Generation.ipynb) | midi-model (SkyTNT), generation symbolique | Local GPU | ~2-4 GB |
-| [02-7-Song-Generation](02-Advanced/02-7-Song-Generation.ipynb) | YuE vs SongGeneration 2, chansons completes | Local GPU | 10-24 GB |
+| [02-6-MIDI-Generation](02-Advanced/02-6-MIDI-Generation.ipynb) | midi-model (SkyTNT), génération symbolique | Local GPU | ~2-4 GB |
+| [02-7-Song-Generation](02-Advanced/02-7-Song-Generation.ipynb) | YuE vs SongGeneration 2, chansons complètes | Local GPU | 10-24 GB |
 | [02-8-Expressive-TTS](02-Advanced/02-8-Expressive-TTS.ipynb) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
 | [02-9-AceStep-Music-Generation](02-Advanced/02-9-AceStep-Music-Generation.ipynb) | ACE-Step v1.5, text-to-song multilingue | Local GPU | <4 GB |
 
-### 03-Orchestration - Multi-modeles & Temps reel
+### 03-Orchestration - Multi-modèles & Temps réel
 
-Les composants existent, il faut les assembler. Ce niveau construit les pipelines qui transforment un audio en texte (STT), l'enrichissent via un LLM, puis le reconvertissent en parole (TTS). Le notebook 03-2 realise explicitement un pipeline de podcast. L'API Realtime d'OpenAI (03-3) montre la version temps reel pour les interactions live.
+Les composants existent, il faut les assembler. Ce niveau construit les pipelines qui transforment un audio en texte (STT), l'enrichissent via un LLM, puis le reconvertissent en parole (TTS). Le notebook 03-2 réalise explicitement un pipeline de podcast. L'API Realtime d'OpenAI (03-3) montre la version temps réel pour les interactions live.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -69,27 +69,27 @@ Les composants existent, il faut les assembler. Ce niveau construit les pipeline
 
 ### 04-Applications - Cas d'usage production
 
-Application directe : les notebooks de ce niveau mettent en oeuvre des workflows complets. 04-1 a 04-5 couvrent la narration de cours, la transcription batch, la composition musicale, la synchronisation audio-video et le live coding. 04-6 a 04-12 forment un pipeline audiobook agentique complet (Epic #1028) : benchmark des voix, analyse litteraire, casting vocal, annotation prosodique, generation TTS et compilation finale. 04-13 etend le pipeline avec FishAudio S2-Pro et 29 tags prosodiques officiels (Epic #1273).
+Application directe : les notebooks de ce niveau mettent en œuvre des workflows complets. 04-1 à 04-5 couvrent la narration de cours, la transcription batch, la composition musicale, la synchronisation audio-vidéo et le live coding. 04-6 à 04-12 forment un pipeline audiobook agentique complet (Epic #1028) : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. 04-13 étend le pipeline avec FishAudio S2-Pro et 29 tags prosodiques officiels (Epic #1273).
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [04-1-Educational-Audio-Content](04-Applications/04-1-Educational-Audio-Content.ipynb) | Narration automatique de cours | Mixed | ~10 GB |
 | [04-2-Transcription-Pipeline](04-Applications/04-2-Transcription-Pipeline.ipynb) | Batch transcription, sous-titres SRT | Mixed | ~12 GB |
-| [04-3-Music-Composition-Workflow](04-Applications/04-3-Music-Composition-Workflow.ipynb) | Creation musicale multi-etapes | Local GPU | ~14 GB |
-| [04-4-Audio-Video-Sync](04-Applications/04-4-Audio-Video-Sync.ipynb) | Synchronisation audio-video | Mixed | ~10 GB |
+| [04-3-Music-Composition-Workflow](04-Applications/04-3-Music-Composition-Workflow.ipynb) | Création musicale multi-étapes | Local GPU | ~14 GB |
+| [04-4-Audio-Video-Sync](04-Applications/04-4-Audio-Video-Sync.ipynb) | Synchronisation audio-vidéo | Mixed | ~10 GB |
 | [04-5-LiveCoding-LLM-Music](04-Applications/04-5-LiveCoding-LLM-Music.ipynb) | Strudel.cc + LLM, live coding musical | OpenAI API | 0 |
 | [04-6-Audiobook-Pipeline](04-Applications/04-6-Audiobook-Pipeline.ipynb) | Pipeline audiobook orchestrateur | Mixed | ~10 GB |
 | [04-7-TTS-Voice-Benchmark](04-Applications/04-7-TTS-Voice-Benchmark.ipynb) | Benchmark comparatif TTS | Kokoro + OpenAI | ~2 GB |
-| [04-8-Lecture-Analytique](04-Applications/04-8-Lecture-Analytique.ipynb) | Analyse litteraire, segmentation | OpenAI API | 0 |
+| [04-8-Lecture-Analytique](04-Applications/04-8-Lecture-Analytique.ipynb) | Analyse littéraire, segmentation | OpenAI API | 0 |
 | [04-9-Voice-Casting](04-Applications/04-9-Voice-Casting.ipynb) | Attribution voix par personnage | OpenAI API | 0 |
 | [04-10-Annotation-Prosodique](04-Applications/04-10-Annotation-Prosodique.ipynb) | Tags prosodiques FishAudio S2-Pro | OpenAI API | 0 |
-| [04-11-Generation-TTS](04-Applications/04-11-Generation-TTS.ipynb) | Generation TTS multi-voix Kokoro | Kokoro TTS | ~2 GB |
+| [04-11-Generation-TTS](04-Applications/04-11-Generation-TTS.ipynb) | Génération TTS multi-voix Kokoro | Kokoro TTS | ~2 GB |
 | [04-12-Compilation-Audio](04-Applications/04-12-Compilation-Audio.ipynb) | FFmpeg concat + normalisation | FFmpeg | 0 |
 | [04-13-Audiobook-FishAudio-S2Pro](04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb) | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~2 GB |
 
 ## Technologies
 
-| Technologie | Notebooks | Prerequis |
+| Technologie | Notebooks | Prérequis |
 |-------------|-----------|-----------|
 | **OpenAI TTS/STT** | 01-1, 01-2 | `OPENAI_API_KEY` |
 | **Whisper V3 Turbo** | 01-4 | GPU ~10 GB VRAM |
@@ -103,9 +103,9 @@ Application directe : les notebooks de ce niveau mettent en oeuvre des workflows
 | **YuE / SongGeneration 2** | 02-7 | GPU 10-24 GB VRAM |
 | **Fish S2 Pro / Dia TTS** | 02-8 | GPU 6-18 GB VRAM |
 | **OpenAI Realtime API** | 03-3 | `OPENAI_API_KEY` |
-| **FFmpeg** | 04-12 | Installe systeme |
+| **FFmpeg** | 04-12 | Installé système |
 
-## Prerequisites
+## Prérequis
 
 ### API Keys
 
@@ -114,7 +114,7 @@ Application directe : les notebooks de ce niveau mettent en oeuvre des workflows
 OPENAI_API_KEY=sk-...
 ```
 
-### Dependances Python
+### Dépendances Python
 
 ```bash
 pip install -r requirements.txt
@@ -124,90 +124,90 @@ pip install -r requirements-audio.txt
 ### GPU (pour notebooks locaux)
 
 - Minimum : 4 GB VRAM (Demucs, Kokoro)
-- Recommande : 10+ GB VRAM (Whisper, MusicGen)
+- Recommandé : 10+ GB VRAM (Whisper, MusicGen)
 - Optimal : 24 GB VRAM (tous les notebooks)
 
-## Parcours recommande
+## Parcours recommandé
 
 ```
 01-Foundation (bases STT/TTS)
     |
 02-Advanced (voix, musique)
     |
-03-Orchestration (pipelines, temps reel)
+03-Orchestration (pipelines, temps réel)
     |
 04-Applications (production)
     |
-Video/ (serie complementaire)
+Video/ (série complémentaire)
 ```
 
 | Objectif | Notebooks |
 |----------|-----------|
-| Decouverte rapide | 01-1, 01-2, 01-3 |
-| Speech complet | 01-1 a 02-2 |
+| Découverte rapide | 01-1, 01-2, 01-3 |
+| Speech complet | 01-1 à 02-2 |
 | Musique | 02-3, 02-6, 02-7, 02-4, 04-3 |
 | Production | Tous + 03 + 04 |
 
-## Recette : construire un podcast automatise
+## Recette : construire un podcast automatisé
 
-Le fil rouge de cette serie est la creation d'un podcast genere par IA. Voici comment les niveaux s'articulent pour y parvenir :
+Le fil rouge de cette série est la création d'un podcast généré par IA. Voici comment les niveaux s'articulent pour y parvenir :
 
-1. **01-Foundation** (TTS + STT) : [01-1](01-Foundation/01-1-OpenAI-TTS-Intro.ipynb) et [01-5](01-Foundation/01-5-Kokoro-TTS-Local.ipynb) vous donnent les bases de la synthese vocale. [01-2](01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) et [01-4](01-Foundation/01-4-Whisper-Local.ipynb) couvrent la reconnaissance vocale. A la fin de ce niveau, vous savez transformer du texte en audio et inversement.
+1. **01-Foundation** (TTS + STT) : [01-1](01-Foundation/01-1-OpenAI-TTS-Intro.ipynb) et [01-5](01-Foundation/01-5-Kokoro-TTS-Local.ipynb) vous donnent les bases de la synthèse vocale. [01-2](01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) et [01-4](01-Foundation/01-4-Whisper-Local.ipynb) couvrent la reconnaissance vocale. À la fin de ce niveau, vous savez transformer du texte en audio et inversement.
 
-2. **02-Advanced** (voix + musique) : [02-2](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) clone une voix pour creer un narrateur coherent. [02-3](02-Advanced/02-3-MusicGen-Generation.ipynb) genere le jingle et le fond sonore. [02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb) isole les pistes si besoin, et [02-8](02-Advanced/02-8-Expressive-TTS.ipynb) ajoute de l'expressivite.
+2. **02-Advanced** (voix + musique) : [02-2](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) clone une voix pour créer un narrateur cohérent. [02-3](02-Advanced/02-3-MusicGen-Generation.ipynb) génère le jingle et le fond sonore. [02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb) isole les pistes si besoin, et [02-8](02-Advanced/02-8-Expressive-TTS.ipynb) ajoute de l'expressivité.
 
-3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) compare les modeaux pour choisir le meilleur STT/TTS selon le budget. [03-2](03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) assemble le pipeline STT vers LLM vers TTS qui constitue le coeur du podcast automatise.
+3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) compare les modèles pour choisir le meilleur STT/TTS selon le budget. [03-2](03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) assemble le pipeline STT vers LLM vers TTS qui constitue le cœur du podcast automatisé.
 
-4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Audio-Content.ipynb) applique le pipeline a la narration de cours. [04-2](04-Applications/04-2-Transcription-Pipeline.ipynb) gere la transcription batch pour les episodes longs. [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise avec la piste video si le podcast a une composante visuelle.
+4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Audio-Content.ipynb) applique le pipeline à la narration de cours. [04-2](04-Applications/04-2-Transcription-Pipeline.ipynb) gère la transcription batch pour les épisodes longs. [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise avec la piste vidéo si le podcast a une composante visuelle.
 
 ## Cross-series Bridges
 
-| Serie | Lien | Connection |
+| Série | Lien | Connection |
 |-------|------|------------|
-| [Video](../Video/README.md) | Sync audio-video | [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise l'audio genere avec les pistes video de la serie Video |
-| [Texte](../Texte/README.md) | LLM dans le pipeline | Le pipeline podcast (03-2) enchaine STT vers LLM vers TTS ; les prompts structures (Texte/2) et le RAG (Texte/5) alimentent le contenu |
-| [Image](../Image/README.md) | Contenu multimodal | Un podcast enrichi combine voix (Audio), illustrations (Image) et eventuellement video (Video) |
-| [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les pipelines multi-modeles Audio (03-1, 03-2) partagent les patterns d'orchestration avec Semantic Kernel |
+| [Video](../Video/README.md) | Sync audio-vidéo | [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise l'audio généré avec les pistes vidéo de la série Video |
+| [Texte](../Texte/README.md) | LLM dans le pipeline | Le pipeline podcast (03-2) enchaîne STT vers LLM vers TTS ; les prompts structurés (Texte/2) et le RAG (Texte/5) alimentent le contenu |
+| [Image](../Image/README.md) | Contenu multimodal | Un podcast enrichi combine voix (Audio), illustrations (Image) et éventuellement vidéo (Video) |
+| [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les pipelines multi-modèles Audio (03-1, 03-2) partagent les patterns d'orchestration avec Semantic Kernel |
 
 ## FAQ
 
 ### GPU OOM pendant un notebook TTS/STT local
 
-La plupart des modeles audio locaux (Whisper, MusicGen, XTTS) saturent rapidement la VRAM. Strategies :
+La plupart des modèles audio locaux (Whisper, MusicGen, XTTS) saturent rapidement la VRAM. Stratégies :
 
-- **Kokoro TTS** (01-5) : seulement ~2 GB, bon fallback si GPU limite.
+- **Kokoro TTS** (01-5) : seulement ~2 GB, bon fallback si GPU limité.
 - **Whisper V3 Turbo** (01-4) : ~10 GB en `large-v3-turbo`, ~4 GB en `medium`. Utiliser `model="medium"` si OOM.
 - **XTTS v2** (02-2) : ~6 GB. Fermer les autres notebooks GPU avant le clonage.
-- **MusicGen** (02-3) : ~10 GB en `large`, ~4 GB en `small`. Reduire `duration` si OOM.
-- Pattern general : `torch.cuda.empty_cache()` entre les cellules lourdes, et verifier avec `!nvidia-smi`.
+- **MusicGen** (02-3) : ~10 GB en `large`, ~4 GB en `small`. Réduire `duration` si OOM.
+- Pattern général : `torch.cuda.empty_cache()` entre les cellules lourdes, et vérifier avec `!nvidia-smi`.
 
 ### Whisper retourne du texte vide ou hallucine
 
-Whisper peut produire des hallucinations (repetitions, texte invente) sur l'audio silencieux ou tres bruite. Mitigation :
+Whisper peut produire des hallucinations (répétitions, texte inventé) sur l'audio silencieux ou très bruité. Mitigation :
 
 - Utiliser `condition_on_previous_text=False` pour les segments longs.
-- Specifier `language="fr"` pour forcer la langue et eviter les transcriptions melangees.
-- Appliquer un pre-traitement `pydub` pour normaliser le volume et couper le silence (notebook 01-3).
-- Le modele `large-v3-turbo` (notebook 01-4) est plus robuste que `medium` ou `small`.
+- Spécifier `language="fr"` pour forcer la langue et éviter les transcriptions mélangées.
+- Appliquer un pré-traitement `pydub` pour normaliser le volume et couper le silence (notebook 01-3).
+- Le modèle `large-v3-turbo` (notebook 01-4) est plus robuste que `medium` ou `small`.
 
 ### ComfyUI / services Docker audio injoignables
 
-Les services audio locaux (Whisper STT port 8190, Kokoro TTS port 8191, MusicGen port 8192) tournent dans des conteneurs Docker. S'ils repondent en 401 ou 502 :
+Les services audio locaux (Whisper STT port 8190, Kokoro TTS port 8191, MusicGen port 8192) tournent dans des conteneurs Docker. S'ils répondent en 401 ou 502 :
 
 ```bash
-# Verifier les conteneurs actifs
+# Vérifier les conteneurs actifs
 docker ps | grep -E "whisper|kokoro|musicgen"
 
-# Redemarrer un service specifique
+# Redémarrer un service spécifique
 cd docker-configurations && docker compose restart whisper-api kokoro-tts
 
-# Verifier le bearer token (drift bcrypt)
+# Vérifier le bearer token (drift bcrypt)
 cat GenAI/.env | grep COMFYUI_BEARER_TOKEN
 ```
 
 Les notebooks ont une **graceful degradation** : sans token, ils basculent vers les APIs cloud (OpenAI TTS/Whisper).
 
-### FFmpeg non trouve par Pydub / AudioSegment
+### FFmpeg non trouvé par Pydub / AudioSegment
 
 FFmpeg est requis pour les notebooks de compilation audio (04-12, 04-13). S'il manque :
 
@@ -218,42 +218,42 @@ conda install -c conda-forge ffmpeg
 # Linux/Mac
 sudo apt install ffmpeg   # ou brew install ffmpeg
 
-# Verifier
+# Vérifier
 ffmpeg -version
 ```
 
-Pydub utilise `AudioSegment.converter` pour trouver FFmpeg. Si installe dans un chemin non-standard :
+Pydub utilise `AudioSegment.converter` pour trouver FFmpeg. Si installé dans un chemin non-standard :
 
 ```python
 from pydub import AudioSegment
 AudioSegment.converter = "/chemin/vers/ffmpeg"
 ```
 
-### Difference entre les voix TTS (Kokoro, OpenAI, FishAudio, Chatterbox)
+### Différence entre les voix TTS (Kokoro, OpenAI, FishAudio, Chatterbox)
 
-| Moteur | Qualite | VRAM | Cout | Use case |
+| Moteur | Qualité | VRAM | Coût | Use case |
 |--------|---------|------|------|----------|
-| **Kokoro** (01-5) | Bonne, rapide | ~2 GB | Gratuit (local) | Production legere, lecture voix-off |
-| **OpenAI TTS** (01-1) | Excellente | 0 (API) | $0.015/1K chars | Qualite maximale, 6 voix |
-| **FishAudio S2-Pro** (02-8, 04-13) | Haute + tags expressifs | ~6 GB | Gratuit (local) | Prosodie fine, emotion, narration |
-| **Chatterbox Turbo** (02-1) | Bonne + emotion | ~8 GB | Gratuit (local) | Emotions extremes, humour |
+| **Kokoro** (01-5) | Bonne, rapide | ~2 GB | Gratuit (local) | Production légère, lecture voix-off |
+| **OpenAI TTS** (01-1) | Excellente | 0 (API) | $0.015/1K chars | Qualité maximale, 6 voix |
+| **FishAudio S2-Pro** (02-8, 04-13) | Haute + tags expressifs | ~6 GB | Gratuit (local) | Prosodie fine, émotion, narration |
+| **Chatterbox Turbo** (02-1) | Bonne + émotion | ~8 GB | Gratuit (local) | Émotions extrêmes, humour |
 | **XTTS v2** (02-2) | Variable (clonage) | ~6 GB | Gratuit (local) | Clonage vocal zero-shot |
 
-Pour le pipeline audiobook, la combinaison recommandee est **FishAudio S2-Pro** pour l'expressivite (notebook 04-13).
+Pour le pipeline audiobook, la combinaison recommandée est **FishAudio S2-Pro** pour l'expressivité (notebook 04-13).
 
-### Le pipeline audiobook (04-6 a 04-13) — par ou commencer ?
+### Le pipeline audiobook (04-6 à 04-13) — par où commencer ?
 
-Les notebooks 04-6 a 04-13 forment un pipeline sequentiel qui transforme un texte en audiobook complet. L'ordre recommande :
+Les notebooks 04-6 à 04-13 forment un pipeline séquentiel qui transforme un texte en audiobook complet. L'ordre recommandé :
 
-1. **04-8 Lecture Analytique** : analyse litteraire du texte (personnages, structure).
+1. **04-8 Lecture Analytique** : analyse littéraire du texte (personnages, structure).
 2. **04-9 Voice Casting** : attribution d'une voix par personnage.
-3. **04-10 Annotation Prosodique** : generation des tags expressifs FishAudio.
-4. **04-7 TTS Voice Benchmark** : comparaison des voix disponibles (optionnel mais recommande).
-5. **04-11 Generation TTS** : synthese audio de chaque segment.
+3. **04-10 Annotation Prosodique** : génération des tags expressifs FishAudio.
+4. **04-7 TTS Voice Benchmark** : comparaison des voix disponibles (optionnel mais recommandé).
+5. **04-11 Génération TTS** : synthèse audio de chaque segment.
 6. **04-12 Compilation Audio** : assemblage final via FFmpeg.
-7. **04-13 FishAudio S2-Pro** : variante avec 29 tags prosodiques officiels (meilleure qualite).
+7. **04-13 FishAudio S2-Pro** : variante avec 29 tags prosodiques officiels (meilleure qualité).
 
-Les notebooks 04-6 (pipeline orchestrateur) et 04-1 (narration educative) sont des entrees plus simples pour decouvrir le workflow.
+Les notebooks 04-6 (pipeline orchestrateur) et 04-1 (narration éducative) sont des entrées plus simples pour découvrir le workflow.
 
 ## Licence
 
