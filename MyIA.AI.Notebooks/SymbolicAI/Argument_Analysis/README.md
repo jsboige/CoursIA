@@ -34,7 +34,8 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 |---|----------|---------|------|
 | 0 | [Agentic-0-init](Argument_Analysis_Agentic-0-init.ipynb) | Configuration, chargement API | Setup |
 | 1 | [Agentic-1-informal_agent](Argument_Analysis_Agentic-1-informal_agent.ipynb) | Agent analyse informelle | Détection d'arguments |
-| 2 | [Agentic-2-pl_agent](Argument_Analysis_Agentic-2-pl_agent.ipynb) | Agent logique propositionnelle | Formalisation |
+| 2 | [Agentic-2-formal](Argument_Analysis_Agentic-2-formal.ipynb) | Logique formelle réelle (PL + FOL + Modal + Dung via Tweety) | Formalisation |
+| 2* | [Agentic-2-pl_agent](Argument_Analysis_Agentic-2-pl_agent.ipynb) | *(legacy)* Agent logique propositionnelle | Formalisation |
 | 3 | [Agentic-3-orchestration](Argument_Analysis_Agentic-3-orchestration.ipynb) | Orchestration multi-agents | Coordination |
 | UI | [UI_configuration](Argument_Analysis_UI_configuration.ipynb) | Interface utilisateur widgets | Interaction |
 | Exec | [Executor](Argument_Analysis_Executor.ipynb) | Orchestrateur principal | Exécution |
@@ -55,7 +56,8 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 |----------|----------------|-------|
 | **0-init** | Configurer l'environnement Python + Java, charger les clés API, vérifier la connexion Tweety/JVM | 30 min |
 | **1-informal_agent** | Construire un agent LLM qui identifie et annote les arguments dans un texte naturel | 60 min |
-| **2-pl_agent** | Convertir les arguments informels en formules propositionnelles et les vérifier via SAT | 60 min |
+| **2-formal** | Vérifier des arguments en logique propositionnelle, du premier ordre et modale avec le solveur réel Tweety (JVM/JPype), apéru Dung — mode fail-loud, jamais simulé | 45 min |
+| **2-pl_agent** *(legacy)* | Convertir les arguments informels en formules propositionnelles et les vérifier via SAT | 60 min |
 | **3-orchestration** | Composer les agents précédents en pipeline coordonné avec rapport de sortie structuré | 50 min |
 | **UI_configuration** | Créer une interface interactive (ipywidgets) pour piloter le pipeline en mode exploratoire | 30 min |
 | **Executor** | Exécuter le pipeline complet en mode batch (Papermill/MCP) avec configuration .env | 20 min |
