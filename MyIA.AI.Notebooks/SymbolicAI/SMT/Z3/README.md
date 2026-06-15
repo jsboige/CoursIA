@@ -4,7 +4,7 @@
 
 ## Série en quelques mots
 
-**6 notebooks** | **1 kernel** | **~4h30 de travail** | **Z3.Linq (.NET 9)**
+**7 notebooks** | **1 kernel** | **~5h10 de travail** | **Z3.Linq + fork Automata (.NET 9)**
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs C# souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de théorèmes linéaires simples pour monter progressivement vers les théories de tableaux et l'optimisation hiérarchique.
 
@@ -34,6 +34,7 @@ L'intérêt pédagogique : au lieu d'écrire un algorithme de backtracking pour 
 | 03 | [Array Theory](03_Array_Theory.ipynb) | Z3 array theory : Select/Store, switching dynamique | ~45 min | BETA |
 | 04 | [Nested Arrays 2D](04_Nested_Arrays_2D.ipynb) | Tableaux imbriqués, grilles 2D, Sudoku 4x4, carré magique | ~40 min | BETA |
 | 05 | [Meal Planner Hierarchical](05_Meal_Planner_Hierarchical.ipynb) | Planificateur de repas : data fusion LINQ + théorème hiérarchique | ~50 min | BETA |
+| 06 | [Witness Generation Automata](06_Witness_Generation_Automata.ipynb) | **Fork Automata** : générer un *témoin* depuis `A & ~B` (intersection/complément de surface), cap des 21 caractères levé (#6), émission SMT-LIB `re.inter`/`re.comp` | ~40 min | BETA |
 
 ### Fil pédagogique
 
@@ -43,6 +44,7 @@ L'intérêt pédagogique : au lieu d'écrire un algorithme de backtracking pour 
 4. **Notebook 03** plonge dans la théorie des tableaux Z3 (Select/Store), avec switching dynamique entre représentations
 5. **Notebook 04** généralise aux tableaux imbriqués (2D) : grilles, carrés magiques, Sudoku 4x4
 6. **Notebook 05** intègre tout : data fusion LINQ + théorème hiérarchique multi-niveaux pour un planificateur de repas réaliste, et démontre le mode `CollectionHandling.Constants` (feature ressuscitée du fork)
+7. **Notebook 06** ferme la boucle *reconnaissance vs production* : le fork [Automata](https://github.com/MyIntelligenceAgency/Automata) (modernisation net8.0 de AutomataDotNet, gelé ~2020) génère un **témoin** depuis la syntaxe de surface `&`/`~` (intersection/complément), démontre que le cap des 21 caractères (#6) est levé, et émet du SMT-LIB (`re.inter`/`re.comp`). C'est le payoff général de la génération de témoin `A & ~B` que [Sudoku-13](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) mesure ensuite à l'échelle (§6b)
 
 ## Prérequis
 
@@ -52,7 +54,8 @@ L'intérêt pédagogique : au lieu d'écrire un algorithme de backtracking pour 
 | **.NET Interactive** | `dotnet tool install --global Microsoft.dotnet-interactive` |
 | **Kernel Jupyter** | `.net-csharp` (installe automatiquement par .NET Interactive) |
 | **Package NuGet** | `Z3.Linq` (NB-01, 02 : charge automatiquement via `#r nuget:...`) |
-| **Tous les notebooks — fork** | La série entière utilise le fork [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq) : NB-04 pour le support `int[][]` (absent du NuGet public endjin), NB-02b, NB-03 et NB-05 pour la feature `CollectionHandling` (mode `Constants` ressuscité, câblée le 14/06/2026), NB-01 et NB-02 pour l'homogénéité de la série (toute la série sur la même build fork, cohérence pédagogique). Exécuter **une fois** : [`scripts/environment/z3-build-deploy.ps1`](../../../../scripts/environment/z3-build-deploy.ps1) (Windows) ou [`.sh`](../../../../scripts/environment/z3-build-deploy.sh) (Linux/macOS) — compile uniquement le wrapper (~1,5 s) et rassemble les 4 DLL dans `.deploy/`. |
+| **NB-01 à 05 — fork Z3.Linq** | Ces notebooks utilisent le fork [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq) : NB-04 pour le support `int[][]` (absent du NuGet public endjin), NB-02b, NB-03 et NB-05 pour la feature `CollectionHandling` (mode `Constants` ressuscité, câblée le 14/06/2026), NB-01 et NB-02 pour l'homogénéité de la série (toute la série sur la même build fork, cohérence pédagogique). Exécuter **une fois** : [`scripts/environment/z3-build-deploy.ps1`](../../../../scripts/environment/z3-build-deploy.ps1) (Windows) ou [`.sh`](../../../../scripts/environment/z3-build-deploy.sh) (Linux/macOS) — compile uniquement le wrapper (~1,5 s) et rassemble les 4 DLL dans `.deploy/`. |
+| **NB-06 — fork Automata** | Le notebook 06 consomme un fork **distinct**, [MyIntelligenceAgency/Automata](https://github.com/MyIntelligenceAgency/Automata) (modernisation net8.0 de AutomataDotNet, gelé ~2020 ; ajoute les opérateurs de surface `&`/`~` et lève le cap du témoin #6), monté en sous-module sibling de `Z3.Linq/`. Exécuter **une fois** : [`scripts/environment/automata-build-deploy.ps1`](../../../../scripts/environment/automata-build-deploy.ps1) — compile le wrapper (~6 s) et rassemble `Microsoft.Automata.dll` + `System.CodeDom.dll` dans `.deploy/`. |
 
 > Les notebooks sont autonomes : le chargement du fork Z3.Linq et l'initialisation du contexte sont inclus dans les cellules de setup de chaque notebook via `#r "../Z3.Linq/.deploy/..."`, d'où le pré-requis du script de build ci-dessus (décision ai-01 [DECISION COORD] 2026-06-13, option (b), étendue à 02b/03/05 le 14/06/2026 pour `CollectionHandling`, puis à 01/02 le 15/06/2026 pour l'homogénéité de la série).
 
@@ -62,7 +65,10 @@ Toute la série Z3 charge le **même fork** [MyIntelligenceAgency/Z3.Linq](https
 
 | Notebooks                   | Source                | Chargement                    | Pré-requis      |
 |-----------------------------|-----------------------|-------------------------------|-----------------|
-| 01, 02, 02b, 03, 04, 05     | Fork (voir ci-dessus) | `#r "../Z3.Linq/.deploy/..."` | Script de build |
+| 01, 02, 02b, 03, 04, 05     | Fork [Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq) | `#r "../Z3.Linq/.deploy/..."` | [`z3-build-deploy.ps1`](../../../../scripts/environment/z3-build-deploy.ps1) |
+| 06                          | Fork [Automata](https://github.com/MyIntelligenceAgency/Automata) | `#r "../Automata/.deploy/..."` | [`automata-build-deploy.ps1`](../../../../scripts/environment/automata-build-deploy.ps1) |
+
+> **Notebook 06 fait exception au « fork unique »** : il consomme le fork *Automata* (regex symbolique → génération de témoin, opérateurs de surface `&`/`~`, cap #6 levé), monté en sous-module sibling de `Z3.Linq/`, via son propre script de build. Les notebooks 01-05 (résolution LINQ → SMT) partagent la build Z3.Linq ; le 06 (reconnaissance/production de témoin) est le compagnon « regex symbolique » de la série, relié à l'Epic #2978/#2979.
 
 **Pourquoi un fork ?** Trois raisons : (1) le support des tableaux imbriqués `int[][]` (construction de sort Z3 `Array Int (Array Int Int)`, extraction récursive `ExtractCollection`) provient de [Z3.LinqBinding@EPFdevelopment](https://github.com/MyIntelligenceAgency/Z3.LinqBinding/tree/EPFdevelopment) et n'existe pas dans le NuGet public endjin (`Z3.Linq` 2.0.1, qui ne gère qu'un seul niveau de collection) ; (2) la feature `CollectionHandling` (mode `Constants`, un constant Z3 par élément) a été ressuscitée et câblée le 14/06/2026 ; (3) l'homogénéité de la série (NB-01 et NB-02 basculés sur le fork le 15/06/2026). Publier un NuGet forké n'est pas possible (nous ne sommes pas propriétaires du *package-id*), d'où le script qui compile **uniquement** le wrapper fin et rassemble le solveur natif + les dépendances managées depuis le cache NuGet.
 
