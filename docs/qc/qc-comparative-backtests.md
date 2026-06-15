@@ -45,7 +45,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 11 | Portfolio-Optimization-ML | ML | Multi-asset | ~~0.90~~ → **0.88** ✓post-#2801 | 27.2 | 41.6 | 0.65 | robuste (confirmed -2%, monthly rebalance + fee-homogeneous US equity basket = near-immune, PSR 37.2%) |
 | 12 | EMA-Cross-Stocks | IND | Equities | ~~0.87~~ → **0.99** ✓post-#2801 | 29.2 | 35.7 | 0.82 | robuste (PSR 49.7%, borderline significant) |
 | 13 | CausalEventAlpha | ML | Equities | ~~0.78~~ → **0.45** ✓post-#2801 | 11.7 | 38.8 | 0.30 | **historique** (downgraded -43%, monthly cadence but full-basket rotation = high turnover, PSR 5.5%) |
-| 14 | Gaussian-Direction-Classifier | ML | Equities | 0.76 | — | — | — | robuste |
+| 14 | Gaussian-Direction-Classifier | ML | Equities | ~~0.76~~ → **0.76** ✓post-#2801 | 23.1 | 25.6 | 0.90 | robuste (confirmed 0%, daily schedule but low realized turnover on liquid mega-cap basket = near-immune, PSR 22.7%) |
 | 15 | ML-Temporal-CNN | DL | Equities (QQQ) | ~~0.73~~ → **0.46** ✓post-#2801 | 12.5 | 30.8 | 0.41 | **historique** (downgraded -37%, DL/CNN overfits real fees, PSR 5.2%) |
 | 16 | TrendStocksLite | IND | Equities | 0.72 | 18.2 | — | — | robuste |
 | 17 | ML-LLM-Summarization | ML/NLP | Equities | 0.69 | 15.5 | — | — | robuste |
@@ -103,8 +103,9 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | DynamicVIXSpyRegime | 32921262 | 1.72 | **1.00** | -42% | robuste (confirmed, **PSR 69.4%** — catalog was 1Y-OOS, baseline-clone) |
 | Portfolio-Optimization-ML | 29318874 | 0.90 | **0.88** | -2% | robuste (confirmed, monthly-rebalance fee-homogeneous equity basket near-immune, PSR 37.2%) |
 | CausalEventAlpha | 29809163 | 0.78 | **0.45** | -43% | **historique** (was robuste — monthly cadence but full-basket sector rotation = high turnover, PSR 5.5%) |
+| Gaussian-Direction-Classifier | 29398513 | 0.76 | **0.76** | 0% | robuste (confirmed — daily schedule but low realized turnover on liquid mega-cap = near-immune, PSR 22.7%) |
 
-**Finding (methodological, now 22-strategy sample)** : the remediation impact is **not
+**Finding (methodological, now 23-strategy sample)** : the remediation impact is **not
 uniform**, and the batch-4 results *refine and partly correct* the earlier 10-strategy pattern.
 The distinguishing axis is **not** asset class, nor ML-vs-indicator alone — it is the
 combination of (a) the fee-per-trade the asset class carries and (b) how the strategy turns
@@ -134,7 +135,11 @@ over against that fee. Four regimes now observed:
   monthly, also a fee-homogeneous 8-sector-ETF basket) **collapses** (0.78→0.45, -43%, PSR 5.5%) because
   it liquidates and re-ranks the entire basket each month and concentrates to 4 sectors in bear regimes
   — high per-period turnover. A monthly schedule over a homogeneous basket is therefore *not* sufficient
-  for immunity; the driver is realized turnover per rebalance.
+  for immunity; the driver is realized turnover per rebalance. Gaussian-Direction-Classifier closes
+  the proof from the other side: a *daily* schedule (higher cadence than either) is near-immune
+  (0.76→0.76, 0%) because its realized turnover is low — max-3 positions whose mega-cap probability
+  rankings rarely flip, over an ultra-liquid basket. Higher cadence with low realized turnover beats
+  lower cadence with full rotation; cadence alone predicts nothing.
 - **Low-turnover multi-asset & crypto indicators are NOT immune** (-30% to -43%): batch 4
   *invalidates* the earlier broad "ML/crypto holds" generalization. AllWeather (low-turnover
   multi-asset, -30% → 0.47) and Crypto-MultiCanal (crypto indicator, -43% → 0.33) both drop
@@ -165,11 +170,11 @@ of 41 catalog entries shrinks to roughly **a dozen genuinely-holding strategies*
 the rest are overstated to varying degrees.
 
 **Implication for the réunion Nicolas 15/06** : the catalog is not uniformly stale, but the
-overstatement is widespread — **only 6 of 22 verified strategies hold robuste with significant PSR**.
+overstatement is widespread — **only 6 of 23 verified strategies hold robuste with significant PSR**.
 The overstatement is structural in two families (value/factor/trend, and crypto indicators), while
 structured ML and regime-aware composites are validated. The comparative table MUST be cited by
 significance (PSR) not raw Sharpe; collapsed entries need a caveat before any pedagogical use. The
-remaining Tier-1 list (21 strategies) needs systematic re-backtest before the table is trusted
+remaining Tier-1 list (20 strategies) needs systematic re-backtest before the table is trusted
 end-to-end. LongShortHarvest-QC (catalog 3.39, the single highest entry) and DynamicVIXSpyRegime-QC
 (1.72) — previously QC Community Library references without an owned project — were deployed as owned
 baseline-clones (project IDs 32921183 / 32921262) and re-run over 2015-2024: both keep robuste status
@@ -193,7 +198,8 @@ Backtests: `1630-baseline-HighBookToMarketFScore-post2801` (0.411, 14.5%, -60.4%
 `1630-baseline-LongShortHarvest-post2801` (1.635, 45.6%, -17.0%, PSR 98.7%),
 `1630-baseline-DynamicVIXSpyRegime-post2801` (0.997, 17.9%, -16.5%, PSR 69.4%),
 `1630-PortfolioOptimizationML-post2801` (0.884, 27.2%, -41.6%, PSR 37.2%),
-`1630-CausalEventAlpha-post2801` (0.447, 11.7%, -38.8%, PSR 5.5%).
+`1630-CausalEventAlpha-post2801` (0.447, 11.7%, -38.8%, PSR 5.5%),
+`1630-GaussianDirectionClassifier-post2801` (0.761, 23.1%, -25.6%, PSR 22.7%).
 
 ---
 
