@@ -77,7 +77,17 @@ def _api_post(path: str, data: Optional[dict] = None) -> dict:
         timeout=120,
     )
     resp.raise_for_status()
-    return resp.json()
+    payload = resp.json()
+    # QC v2 always returns HTTP 200, even on API-level failures: the body carries
+    # {"success": false, "errors": [...]}. raise_for_status() does NOT catch these.
+    # Without this guard, a rejected call (e.g. backtest create on a not-ready
+    # compile, or a duplicate name) flows through and create_backtest returns an
+    # empty backtestId with NO error text — forcing blind retries. Surface it.
+    if isinstance(payload, dict) and payload.get("success") is False:
+        errors = payload.get("errors") or []
+        msg = "; ".join(str(e) for e in errors) or "unknown error"
+        raise RuntimeError(f"QC API {path} rejected the request: {msg[:1000]}")
+    return payload
 
 
 def _extract_stats(bt: dict) -> dict:
@@ -206,12 +216,23 @@ def list_backtests(project_id: int) -> dict:
 
 
 @mcp.tool()
-def list_projects() -> dict:
-    """List all QC projects."""
+def list_projects(name_contains: str = "") -> dict:
+    """List all QC projects.
+
+    The full list is fetched in one call but capped (client-side) to keep the
+    response under the schema token budget. Pass ``name_contains`` to filter
+    case-insensitively BEFORE the cap — needed to locate project IDs by strategy
+    name when the account has many projects (the cap otherwise hides them).
+    """
     data = _api_post("/projects/read")
     projects = data.get("projects", [])
+    total = len(projects)
+    if name_contains:
+        nc = name_contains.lower()
+        projects = [p for p in projects if nc in (p.get("name", "") or "").lower()]
     return {
         "count": len(projects),
+        "total": total,
         "projects": [
             {
                 "projectId": p.get("projectId", 0),

@@ -320,6 +320,41 @@ class TestApiPost:
                 _api_post("/test")
                 assert mock_post.call_args.kwargs["timeout"] == 120
 
+    def test_surfaces_qc_api_failure(self):
+        """QC returns HTTP 200 + success:false + errors — must raise, not return."""
+        with patch.dict(
+            "os.environ",
+            {"QC_API_USER_ID": "1", "QC_API_ACCESS_TOKEN": "t"},
+        ):
+            mock_resp = _mock_api_response(
+                {"success": False, "errors": ["Compile is not in a ready state"]}
+            )
+            with patch("requests.post", return_value=mock_resp):
+                with pytest.raises(RuntimeError, match="Compile is not in a ready state"):
+                    _api_post("/backtests/create")
+
+    def test_success_true_does_not_raise(self):
+        """An explicit success:true must pass through untouched."""
+        with patch.dict(
+            "os.environ",
+            {"QC_API_USER_ID": "1", "QC_API_ACCESS_TOKEN": "t"},
+        ):
+            mock_resp = _mock_api_response({"success": True, "compileId": "c1"})
+            with patch("requests.post", return_value=mock_resp):
+                result = _api_post("/compile/create", {"projectId": 1})
+            assert result["compileId"] == "c1"
+
+    def test_missing_success_key_does_not_raise(self):
+        """Legacy endpoints without a 'success' key must pass through."""
+        with patch.dict(
+            "os.environ",
+            {"QC_API_USER_ID": "1", "QC_API_ACCESS_TOKEN": "t"},
+        ):
+            mock_resp = _mock_api_response({"projects": [{"projectId": 1}]})
+            with patch("requests.post", return_value=mock_resp):
+                result = _api_post("/projects/read")
+            assert result["projects"][0]["projectId"] == 1
+
 
 # --- Tool functions (mocked API) ---
 # These all need env vars because _api_post -> _auth_headers -> _get_credentials.
@@ -378,6 +413,16 @@ class TestCreateBacktest:
             create_backtest(1, "c1", "bt", parameters={"lookback": 20})
             body = mock_post.call_args.kwargs["json"]
             assert body["parameters"] == {"lookback": 20}
+
+    def test_surfaces_qc_rejection_not_empty_id(self):
+        """Regression: a rejected create must raise the QC error, NOT return
+        an empty backtestId (which previously forced blind retries)."""
+        mock_resp = _mock_api_response(
+            {"success": False, "errors": ["Backtest name already exists"]}
+        )
+        with patch("requests.post", return_value=mock_resp):
+            with pytest.raises(RuntimeError, match="Backtest name already exists"):
+                create_backtest(1, "c1", "bt")
 
 
 @patch.dict("os.environ", _DUMMY_ENV)
@@ -453,6 +498,30 @@ class TestListProjects:
             result = list_projects()
             assert result["count"] == 50
             assert len(result["projects"]) == 30
+
+    def test_total_reflects_pre_filter_count(self):
+        """total = raw QC count (before name filter), count = filtered count."""
+        projects = [
+            {"projectId": 1, "name": "EMA-Cross", "created": "", "language": "", "organizationId": ""},
+            {"projectId": 2, "name": "Momentum", "created": "", "language": "", "organizationId": ""},
+        ]
+        mock_resp = _mock_api_response({"projects": projects})
+        with patch("requests.post", return_value=mock_resp):
+            result = list_projects(name_contains="ema")
+        assert result["total"] == 2
+        assert result["count"] == 1
+        assert result["projects"][0]["name"] == "EMA-Cross"
+
+    def test_filter_case_insensitive(self):
+        projects = [
+            {"projectId": 1, "name": "FRAMEWORK_TrendWeather", "created": "", "language": "", "organizationId": ""},
+            {"projectId": 2, "name": "Other", "created": "", "language": "", "organizationId": ""},
+        ]
+        mock_resp = _mock_api_response({"projects": projects})
+        with patch("requests.post", return_value=mock_resp):
+            result = list_projects(name_contains="trendweather")
+        assert result["count"] == 1
+        assert result["projects"][0]["projectId"] == 1
 
 
 @patch.dict("os.environ", _DUMMY_ENV)
