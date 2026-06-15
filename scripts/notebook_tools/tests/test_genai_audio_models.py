@@ -333,15 +333,23 @@ class TestE2eTestResult:
             text = '{"text": "test"}'
             headers = {"Content-Type": "application/json"}
 
-        import types
-        import sys
+        # Patch the REAL requests module's attributes (get/post/exceptions.Timeout)
+        # rather than replacing sys.modules["requests"]. audio_apis.py does
+        # `import requests` *inside* its functions, so it resolves to the real
+        # module object — patching its attributes is intercepted correctly, AND
+        # monkeypatch restores them cleanly. Replacing sys.modules["requests"]
+        # globally contaminates any module imported afterwards that captured
+        # `requests` at its own top level (e.g. comfyui_client.py:20
+        # `import requests` then `self.session = requests.Session()`), because
+        # the binding obtained during that import window stays the mock even
+        # after monkeypatch restores sys.modules. That cross-test pollution
+        # made test_genai_comfyui_client.py::TestComfyUIClientInit fail under
+        # the full-collection order on ubuntu CI (#2871).
+        import requests as _real_requests
 
-        mock_requests = types.SimpleNamespace()
-        mock_requests.post = lambda *a, **kw: MockResp()
-        mock_requests.get = lambda *a, **kw: MockResp()
-        mock_requests.exceptions = types.SimpleNamespace(Timeout=Exception)
-        # Patch sys.modules so `import requests` inside the function picks up mock
-        monkeypatch.setitem(sys.modules, "requests", mock_requests)
+        monkeypatch.setattr(_real_requests, "get", lambda *a, **kw: MockResp())
+        monkeypatch.setattr(_real_requests, "post", lambda *a, **kw: MockResp())
+        monkeypatch.setattr(_real_requests.exceptions, "Timeout", Exception)
 
         result = _aa_mod.e2e_test_service("whisper-api")
         required_keys = {"service", "status", "time_s", "size_bytes", "detail"}
