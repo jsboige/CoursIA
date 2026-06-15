@@ -33,7 +33,8 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 | # | Notebook | Contenu | Rôle |
 |---|----------|---------|------|
 | 0 | [Agentic-0-init](Argument_Analysis_Agentic-0-init.ipynb) | Configuration, chargement API | Setup |
-| 1 | [Agentic-1-informal_agent](Argument_Analysis_Agentic-1-informal_agent.ipynb) | Agent analyse informelle | Détection d'arguments |
+| 1 | [Agentic-1-informal](Argument_Analysis_Agentic-1-informal.ipynb) | Détection de sophismes par taxonomie (CSV 1406 nœuds) | Détection d'arguments |
+| 1* | [Agentic-1-informal_agent](Argument_Analysis_Agentic-1-informal_agent.ipynb) | *(legacy)* Agent analyse informelle | Détection d'arguments |
 | 2 | [Agentic-2-formal](Argument_Analysis_Agentic-2-formal.ipynb) | Logique formelle réelle (PL + FOL + Modal + Dung via Tweety) | Formalisation |
 | 2* | [Agentic-2-pl_agent](Argument_Analysis_Agentic-2-pl_agent.ipynb) | *(legacy)* Agent logique propositionnelle | Formalisation |
 | 3 | [Agentic-3-orchestration](Argument_Analysis_Agentic-3-orchestration.ipynb) | Orchestration multi-agents | Coordination |
@@ -55,7 +56,8 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 | Notebook | Compétence clé | Temps |
 |----------|----------------|-------|
 | **0-init** | Configurer l'environnement Python + Java, charger les clés API, vérifier la connexion Tweety/JVM | 30 min |
-| **1-informal_agent** | Construire un agent LLM qui identifie et annote les arguments dans un texte naturel | 60 min |
+| **1-informal** | Charger la taxonomie des sophismes (CSV 1406 nœuds, 7 familles), descendre d'un niveau (depth=2) et construire un détecteur déterministe par mots-clés sur un texte synthétique | 30 min |
+| **1-informal_agent** *(legacy)* | Construire un agent LLM qui identifie et annote les arguments dans un texte naturel | 60 min |
 | **2-formal** | Vérifier des arguments en logique propositionnelle, du premier ordre et modale avec le solveur réel Tweety (JVM/JPype), apéru Dung — mode fail-loud, jamais simulé | 45 min |
 | **2-pl_agent** *(legacy)* | Convertir les arguments informels en formules propositionnelles et les vérifier via SAT | 60 min |
 | **3-orchestration** | Composer les agents précédents en pipeline coordonné avec rapport de sortie structuré | 50 min |
