@@ -1,4 +1,4 @@
-# Video - Generation et Comprehension Video par IA
+# Video - Génération et Compréhension Vidéo par IA
 
 <!-- CATALOG-STATUS
 series: GenAI-Video
@@ -9,81 +9,81 @@ maturity: PRODUCTION=9, ALPHA=3, BETA=2, DRAFT=2
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
 
-La video est la modalite generative la plus exigeante : elle combine l'analyse d'images, la comprehension du temps, la synchronisation audio, et la creation de mouvement coherent. Cette serie couvre l'ensemble de la chaine video IA : comprehension de sequences existantes, generation a partir de texte ou d'images, orchestration de pipelines multi-modeles, et workflows de production. 16 notebooks repartis sur 4 niveaux progressifs.
+La vidéo est la modalité générative la plus exigeante : elle combine l'analyse d'images, la compréhension du temps, la synchronisation audio, et la création de mouvement cohérent. Cette série couvre l'ensemble de la chaîne vidéo IA : compréhension de séquences existantes, génération à partir de texte ou d'images, orchestration de pipelines multi-modèles, et workflows de production. 16 notebooks répartis sur 4 niveaux progressifs.
 
-## Fil rouge : construire un pipeline texte vers video pedagogique
+## Fil rouge : construire un pipeline texte vers vidéo pédagogique
 
-L'objectif fil rouge de cette serie est de construire un pipeline capable de transformer un script texte en video pedagogique animee. Chaque niveau apporte une brique : comprehension video pour analyser les sequences (niveau 1), modeles generatifs pour creer du mouvement (niveau 2), orchestration pour assembler le pipeline (niveau 3), et workflows de production pour le deploiement (niveau 4).
+L'objectif fil rouge de cette série est de construire un pipeline capable de transformer un script texte en vidéo pédagogique animée. Chaque niveau apporte une brique : compréhension vidéo pour analyser les séquences (niveau 1), modèles génératifs pour créer du mouvement (niveau 2), orchestration pour assembler le pipeline (niveau 3), et workflows de production pour le déploiement (niveau 4).
 
 ## Progression par niveau
 
-### 01-Foundation - Comprendre la video avant de la generer
+### 01-Foundation - Comprendre la vidéo avant de la générer
 
-On ne peut pas creer ce qu'on ne comprend pas. Ce niveau pose les bases techniques (codecs, ffmpeg, moviepy) et introduit la comprehension video par IA : decomposer une sequence en scenes, repondre a des questions sur le contenu, analyser le mouvement. Vous decouvrirez aussi le surcadrage d'images (ESRGAN) et l'interpolation de frames (RIFE) pour ameliorer la qualite visuelle. A la fin de ce niveau, vous savez analyser une video existante et en extraire des informations structurelles.
+On ne peut pas créer ce qu'on ne comprend pas. Ce niveau pose les bases techniques (codecs, ffmpeg, moviepy) et introduit la compréhension vidéo par IA : décomposer une séquence en scènes, répondre à des questions sur le contenu, analyser le mouvement. Vous découvrirez aussi le surcadrage d'images (ESRGAN) et l'interpolation de frames (RIFE) pour améliorer la qualité visuelle. À la fin de ce niveau, vous savez analyser une vidéo existante et en extraire des informations structurelles.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [01-1-Video-Operations-Basics](01-Foundation/01-1-Video-Operations-Basics.ipynb) | moviepy, ffmpeg, decord, codecs | Local | 0 |
-| [01-2-GPT-5-Video-Understanding](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb) | GPT-5 video, scenes, Q&A | OpenAI API | 0 |
+| [01-2-GPT-5-Video-Understanding](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb) | GPT-5 vidéo, scènes, Q&A | OpenAI API | 0 |
 | [01-3-Qwen-VL-Video-Analysis](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb) | Qwen2.5-VL 7B local, grounding | Local GPU | ~18 GB |
 | [01-4-Video-Enhancement-ESRGAN](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) | Real-ESRGAN, RIFE interpolation | Local GPU | ~4 GB |
 | [01-5-AnimateDiff-Introduction](01-Foundation/01-5-AnimateDiff-Introduction.ipynb) | AnimateDiff, text-to-video basique | Local GPU | ~12 GB |
 
-### 02-Advanced - Generer du mouvement a partir de texte ou d'images
+### 02-Advanced - Générer du mouvement à partir de texte ou d'images
 
-Ce niveau explore les modeles generatifs video : HunyuanVideo pour la qualite cinematographique (malgre ses 24 GB de VRAM), LTX-Video pour la generation rapide sur des configurations modestes, Wan pour les prompts multilingues, et Stable Video Diffusion pour animer une image existante. Chaque modele a ses forces et ses limites — le but est de les connaitre pour choisir le bon outil au bon moment.
+Ce niveau explore les modèles génératifs vidéo : HunyuanVideo pour la qualité cinématographique (malgré ses 24 GB de VRAM), LTX-Video pour la génération rapide sur des configurations modestes, Wan pour les prompts multilingues, et Stable Video Diffusion pour animer une image existante. Chaque modèle a ses forces et ses limites — le but est de les connaître pour choisir le bon outil au bon moment.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [02-1-HunyuanVideo-Generation](02-Advanced/02-1-HunyuanVideo-Generation.ipynb) | HunyuanVideo, quantization 24GB | Local GPU | ~18 GB |
-| [02-2-LTX-Video-Lightweight](02-Advanced/02-2-LTX-Video-Lightweight.ipynb) | LTX-Video, generation rapide | Local GPU | ~8 GB |
+| [02-2-LTX-Video-Lightweight](02-Advanced/02-2-LTX-Video-Lightweight.ipynb) | LTX-Video, génération rapide | Local GPU | ~8 GB |
 | [02-3-Wan-Video-Generation](02-Advanced/02-3-Wan-Video-Generation.ipynb) | Wan 2.1/2.2, prompts FR/EN | Local GPU | ~10 GB |
 | [02-4-SVD-Image-to-Video](02-Advanced/02-4-SVD-Image-to-Video.ipynb) | Stable Video Diffusion, animation | Local GPU | ~10 GB |
 
-### 03-Orchestration - Combiner les modeles dans des pipelines
+### 03-Orchestration - Combiner les modèles dans des pipelines
 
-Un seul modele ne suffit pas pour une production video complete. Ce niveau compare les modeles entre eux, orchestre des pipelines text-to-image-to-video, et exploite ComfyUI pour des workflows natifs plus flexibles. C'est ici que le fil rouge prend forme : un script texte devient scenario, puis images, puis sequence video animee.
+Un seul modèle ne suffit pas pour une production vidéo complète. Ce niveau compare les modèles entre eux, orchestre des pipelines text-to-image-to-video, et exploite ComfyUI pour des workflows natifs plus flexibles. C'est ici que le fil rouge prend forme : un script texte devient scénario, puis images, puis séquence vidéo animée.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
-| [03-1-Multi-Model-Video-Comparison](03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb) | Benchmark modeles video | Local GPU | ~18 GB |
+| [03-1-Multi-Model-Video-Comparison](03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb) | Benchmark modèles vidéo | Local GPU | ~18 GB |
 | [03-2-Video-Workflow-Orchestration](03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb) | Pipelines text-to-image-to-video | Mixed | ~18 GB |
 | [03-3-ComfyUI-Video-Workflows](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb) | Workflows ComfyUI natifs | ComfyUI | ~20 GB |
 
-### 04-Applications - Du pipeline a la production
+### 04-Applications - Du pipeline à la production
 
-Les trois derniers notebooks et le notebook de synchronisation audio-video concluent le parcours en abordant des cas d'usage reels : generation automatique de contenus educatifs, workflows creatifs (transfert de style, clips musicaux), et l'API Sora 2 d'OpenAI pour la generation cloud. Le pipeline final integre tout ce qui a ete appris dans un systeme bout-en-bout.
+Les trois derniers notebooks et le notebook de synchronisation audio-vidéo concluent le parcours en abordant des cas d'usage réels : génération automatique de contenus éducatifs, workflows créatifs (transfert de style, clips musicaux), et l'API Sora 2 d'OpenAI pour la génération cloud. Le pipeline final intègre tout ce qui a été appris dans un système bout-en-bout.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
-| [04-1-Educational-Video-Generation](04-Applications/04-1-Educational-Video-Generation.ipynb) | Video educative automatique | Mixed | ~12 GB |
+| [04-1-Educational-Video-Generation](04-Applications/04-1-Educational-Video-Generation.ipynb) | Vidéo éducative automatique | Mixed | ~12 GB |
 | [04-2-Creative-Video-Workflows](04-Applications/04-2-Creative-Video-Workflows.ipynb) | Style transfer, music video | Mixed | ~16 GB |
 | [04-3-Sora-API-Cloud-Video](04-Applications/04-3-Sora-API-Cloud-Video.ipynb) | Sora 2 API, cloud vs local | OpenAI API | 0 |
 | [04-4-Production-Video-Pipeline](04-Applications/04-4-Production-Video-Pipeline.ipynb) | Pipeline complet bout-en-bout | Mixed | ~18 GB |
 
-## Recette : construire un pipeline texte vers video pedagogique
+## Recette : construire un pipeline texte vers vidéo pédagogique
 
-Le fil rouge de cette serie est la creation d'un pipeline de video pedagogique generee par IA. Voici comment les niveaux s'articulent :
+Le fil rouge de cette série est la création d'un pipeline de vidéo pédagogique générée par IA. Voici comment les niveaux s'articulent :
 
-1. **01-Foundation** (comprehension video) : [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb) donne les bases techniques (ffmpeg, moviepy). [01-2](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb) et [01-3](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb) couvrent la comprehension video (decomposition en scenes, Q&A). [01-4](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) ameliore la qualite. A la fin, vous savez analyser et manipuler une video existante.
+1. **01-Foundation** (compréhension vidéo) : [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb) donne les bases techniques (ffmpeg, moviepy). [01-2](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb) et [01-3](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb) couvrent la compréhension vidéo (décomposition en scènes, Q&A). [01-4](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) améliore la qualité. À la fin, vous savez analyser et manipuler une vidéo existante.
 
-2. **02-Advanced** (generation video) : [02-1](02-Advanced/02-1-HunyuanVideo-Generation.ipynb) genere des videos haute qualite. [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb) offre une alternative rapide avec support multilingue. [02-4](02-Advanced/02-4-SVD-Image-to-Video.ipynb) anime une image existante (utile pour transformer un diagramme en animation).
+2. **02-Advanced** (génération vidéo) : [02-1](02-Advanced/02-1-HunyuanVideo-Generation.ipynb) génère des vidéos haute qualité. [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb) offre une alternative rapide avec support multilingue. [02-4](02-Advanced/02-4-SVD-Image-to-Video.ipynb) anime une image existante (utile pour transformer un diagramme en animation).
 
-3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb) compare les modeles pour choisir le bon. [03-2](03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb) construit le pipeline text-to-image-to-video. [03-3](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb) utilise ComfyUI pour des workflows natifs.
+3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb) compare les modèles pour choisir le bon. [03-2](03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb) construit le pipeline text-to-image-to-video. [03-3](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb) utilise ComfyUI pour des workflows natifs.
 
-4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Video-Generation.ipynb) applique le pipeline au contenu educatif. [04-4](04-Applications/04-4-Production-Video-Pipeline.ipynb) assemble le systeme bout-en-bout. Le notebook [04-4-Audio-Video-Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) de la serie Audio synchronise la video avec l'audio genere.
+4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Video-Generation.ipynb) applique le pipeline au contenu éducatif. [04-4](04-Applications/04-4-Production-Video-Pipeline.ipynb) assemble le système bout-en-bout. Le notebook [04-4-Audio-Video-Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) de la série Audio synchronise la vidéo avec l'audio généré.
 
 ## Ce que vous saurez faire
 
-- **Comprendre** une sequence video : decomposition en scenes, Q&A sur le contenu, analyse temporelle
-- **Generer** des videos a partir de texte ou d'images : choix du modele adapte a votre materiel
-- **Orchestrer** des pipelines multi-modeles : scenario texte vers video complete
-- **Produire** des contenus video educatifs ou creatifs de bout en bout
-- **Comparer** les approches cloud (Sora) et locales (HunyuanVideo, Wan) en termes de qualite, cout et latence
+- **Comprendre** une séquence vidéo : décomposition en scènes, Q&A sur le contenu, analyse temporelle
+- **Générer** des vidéos à partir de texte ou d'images : choix du modèle adapté à votre matériel
+- **Orchestrer** des pipelines multi-modèles : scénario texte vers vidéo complète
+- **Produire** des contenus vidéo éducatifs ou créatifs de bout en bout
+- **Comparer** les approches cloud (Sora) et locales (HunyuanVideo, Wan) en termes de qualité, coût et latence
 
 ## Technologies couvertes
 
-| Technologie | Notebooks | Prerequis |
+| Technologie | Notebooks | Prérequis |
 |-------------|-----------|-----------|
 | **moviepy / FFmpeg** | 01-1 | Local |
 | **OpenAI GPT-5** | 01-2 | `OPENAI_API_KEY` |
@@ -94,10 +94,10 @@ Le fil rouge de cette serie est la creation d'un pipeline de video pedagogique g
 | **LTX-Video** | 02-2 | GPU ~8 GB VRAM |
 | **Wan 2.1/2.2** | 02-3 | GPU ~10 GB VRAM |
 | **SVD** | 02-4 | GPU ~10 GB VRAM |
-| **ComfyUI Video** | 03-3 | Docker, nodes video |
+| **ComfyUI Video** | 03-3 | Docker, nodes vidéo |
 | **OpenAI Sora 2** | 04-3 | `OPENAI_API_KEY` |
 
-## Prerequisites
+## Prérequis
 
 ### API Keys
 
@@ -110,50 +110,50 @@ COMFYUI_AUTH_TOKEN=...
 ### GPU (pour notebooks locaux)
 
 - **Minimum** : 4 GB VRAM (Real-ESRGAN, RIFE)
-- **Recommande** : 12+ GB VRAM (AnimateDiff, LTX-Video)
+- **Recommandé** : 12+ GB VRAM (AnimateDiff, LTX-Video)
 - **Optimal** : 24 GB VRAM (HunyuanVideo, Wan, tous les notebooks)
 
 ### FFmpeg
 
-FFmpeg doit etre installe sur le systeme :
+FFmpeg doit être installé sur le système :
 
 ```bash
 # Windows (via winget)
 winget install FFmpeg
 ```
 
-## Parcours recommande
+## Parcours recommandé
 
 | Objectif | Notebooks |
 |----------|-----------|
-| Decouverte rapide | 01-1, 01-2, 01-5 |
-| Generation video | 01-5, 02-1 a 02-4 |
-| Comprehension video | 01-2, 01-3 |
-| Production complete | Tous + Audio/04-4 (sync A/V) |
+| Découverte rapide | 01-1, 01-2, 01-5 |
+| Génération vidéo | 01-5, 02-1 à 02-4 |
+| Compréhension vidéo | 01-2, 01-3 |
+| Production complète | Tous + Audio/04-4 (sync A/V) |
 
 ## Cross-series Bridges
 
-| Serie | Lien | Connection |
+| Série | Lien | Connection |
 |-------|------|------------|
-| [Audio](../Audio/README.md) | Sync audio-video | [Audio/04-4](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise la piste audio generee avec la video |
-| [Image](../Image/README.md) | Source d'images | Le pipeline Video/03-2 genere des images via les modeles Image avant de les animer ; SVD (02-4) anime une image existante |
-| [Texte](../Texte/README.md) | Prompts et APIs | La comprehension video (01-2) utilise les memes APIs GPT-5 que Texte ; Sora (04-3) depend de prompts structures |
-| [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les workflows video ComfyUI (03-3) partagent les patterns d'orchestration avec les agents Semantic Kernel |
+| [Audio](../Audio/README.md) | Sync audio-vidéo | [Audio/04-4](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise la piste audio générée avec la vidéo |
+| [Image](../Image/README.md) | Source d'images | Le pipeline Video/03-2 génère des images via les modèles Image avant de les animer ; SVD (02-4) anime une image existante |
+| [Texte](../Texte/README.md) | Prompts et APIs | La compréhension vidéo (01-2) utilise les mêmes APIs GPT-5 que Texte ; Sora (04-3) dépend de prompts structurés |
+| [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les workflows vidéo ComfyUI (03-3) partagent les patterns d'orchestration avec les agents Semantic Kernel |
 
 ## FAQ
 
-### HunyuanVideo OOM ou generation extremement lente
+### HunyuanVideo OOM ou génération extrêmement lente
 
-HunyuanVideo (notebook [02-1](02-Advanced/02-1-HunyuanVideo-Generation.ipynb)) est le modele le plus gourmand de la serie (~18-24 GB VRAM). Strategies :
+HunyuanVideo (notebook [02-1](02-Advanced/02-1-HunyuanVideo-Generation.ipynb)) est le modèle le plus gourmand de la série (~18-24 GB VRAM). Stratégies :
 
-- Utiliser la quantization integree au notebook pour reduire a ~18 GB.
-- Generer des clips courts (2-3 secondes) plutot que des sequences longues.
-- Si votre GPU a 12 GB ou moins, utiliser **LTX-Video** (notebook [02-2](02-Advanced/02-2-LTX-Video-Lightweight.ipynb), ~8 GB) ou **Wan** (notebook [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb), ~10 GB) comme alternatives legeres.
-- Fermer tous les autres processus GPU avant la generation (`nvidia-smi` pour verifier).
+- Utiliser la quantization intégrée au notebook pour réduire à ~18 GB.
+- Générer des clips courts (2-3 secondes) plutôt que des séquences longues.
+- Si votre GPU a 12 GB ou moins, utiliser **LTX-Video** (notebook [02-2](02-Advanced/02-2-LTX-Video-Lightweight.ipynb), ~8 GB) ou **Wan** (notebook [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb), ~10 GB) comme alternatives légères.
+- Fermer tous les autres processus GPU avant la génération (`nvidia-smi` pour vérifier).
 
-### FFmpeg non trouve ou erreurs de codec
+### FFmpeg non trouvé ou erreurs de codec
 
-FFmpeg est requis par moviepy (notebook [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb)) et les notebooks de production (04-4). Si erreur `FileNotFoundError: [WinError 2]` ou codec non supporte :
+FFmpeg est requis par moviepy (notebook [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb)) et les notebooks de production (04-4). Si erreur `FileNotFoundError: [WinError 2]` ou codec non supporté :
 
 ```bash
 # Windows (via winget)
@@ -163,56 +163,56 @@ winget install FFmpeg
 conda install -c conda-forge ffmpeg
 ```
 
-Verifier : `ffmpeg -version`. Si installe dans un chemin non-standard, ajouter au PATH ou configurer :
+Vérifier : `ffmpeg -version`. Si installé dans un chemin non-standard, ajouter au PATH ou configurer :
 
 ```python
 import imageio_ffmpeg
 ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
 ```
 
-### Quelle difference entre Sora 2 et les modeles locaux ?
+### Quelle différence entre Sora 2 et les modèles locaux ?
 
-| Critere | Sora 2 (cloud) | HunyuanVideo | Wan | LTX-Video |
+| Critère | Sora 2 (cloud) | HunyuanVideo | Wan | LTX-Video |
 |---------|----------------|--------------|-----|-----------|
-| **Cout** | $0.10-1.00/video | Gratuit (local) | Gratuit (local) | Gratuit (local) |
-| **Qualite** | Excellente | Haute | Bonne | Correcte |
-| **Duree max** | 20s | 5-10s | 5-10s | 3-5s |
+| **Coût** | $0.10-1.00/vidéo | Gratuit (local) | Gratuit (local) | Gratuit (local) |
+| **Qualité** | Excellente | Haute | Bonne | Correcte |
+| **Durée max** | 20s | 5-10s | 5-10s | 3-5s |
 | **VRAM** | 0 (API) | ~18-24 GB | ~10 GB | ~8 GB |
 | **Latence** | 30s-2min | 1-5min | 30s-2min | 10-30s |
 
-Pour du prototypage ou des resultats rapides, Sora 2 (notebook [04-3](04-Applications/04-3-Sora-API-Cloud-Video.ipynb)) est ideal. Pour un controle fin, une production repetitive, ou des donnees sensibles, les modeaux locaux sont indispensables.
+Pour du prototypage ou des résultats rapides, Sora 2 (notebook [04-3](04-Applications/04-3-Sora-API-Cloud-Video.ipynb)) est idéal. Pour un contrôle fin, une production répétitive, ou des données sensibles, les modèles locaux sont indispensables.
 
-### Les videos generees manquent de coherence temporelle
+### Les vidéos générées manquent de cohérence temporelle
 
-La coherence entre les frames est le defi principal de la generation video. Le flickering, les objets qui apparaissent/disparaissent, ou les mouvements irrealistes sont frequents, surtout avec les modeaux les plus legers. Mitigation :
+La cohérence entre les frames est le défi principal de la génération vidéo. Le flickering, les objets qui apparaissent/disparaissent, ou les mouvements irréalistes sont fréquents, surtout avec les modèles les plus légers. Mitigation :
 
-- Limiter la duree a 3-5 secondes pour les modeaux legers (LTX, AnimateDiff).
-- Utiliser des prompts simples et descriptifs plutot que narratifs.
-- HunyuanVideo et Wan offrent une meilleure coherence temporelle que LTX-Video.
-- Le pipeline ComfyUI (notebook [03-3](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb)) permet de controler finement les parametres de generation (CFG, steps, seed).
-- L'upscaling ESRGAN + interpolation RIFE (notebook [01-4](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb)) ameliore la qualite visuelle a posteriori.
+- Limiter la durée à 3-5 secondes pour les modèles légers (LTX, AnimateDiff).
+- Utiliser des prompts simples et descriptifs plutôt que narratifs.
+- HunyuanVideo et Wan offrent une meilleure cohérence temporelle que LTX-Video.
+- Le pipeline ComfyUI (notebook [03-3](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb)) permet de contrôler finement les paramètres de génération (CFG, steps, seed).
+- L'upscaling ESRGAN + interpolation RIFE (notebook [01-4](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb)) améliore la qualité visuelle a posteriori.
 
-### ComfyUI Video retourne des erreurs de noeuds manquants
+### ComfyUI Video retourne des erreurs de nœuds manquants
 
-Les workflows video ComfyUI (notebook [03-3](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb)) necessitent des noeuds specifiques (AnimateDiff, SVD, HunyuanVideo) qui ne sont pas dans l'installation de base de ComfyUI. Si erreur `Node not found` :
+Les workflows vidéo ComfyUI (notebook [03-3](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb)) nécessitent des nœuds spécifiques (AnimateDiff, SVD, HunyuanVideo) qui ne sont pas dans l'installation de base de ComfyUI. Si erreur `Node not found` :
 
 ```bash
-# Verifier les noeuds installes
+# Vérifier les nœuds installés
 ls ComfyUI/custom_nodes/
 
-# Installer les noeuds video manquants
+# Installer les nœuds vidéo manquants
 cd ComfyUI/custom_nodes/ && git clone <node-repo-url>
 ```
 
-Les conteneurs Docker CoursIA incluent deja les noeuds necessaires. Si vous utilisez une installation ComfyUI propre, verifier que les custom nodes video sont installes.
+Les conteneurs Docker CoursIA incluent déjà les nœuds nécessaires. Si vous utilisez une installation ComfyUI propre, vérifier que les custom nodes vidéo sont installés.
 
-### GPT-5 Video Understanding echoue sur les videos longues
+### GPT-5 Video Understanding échoue sur les vidéos longues
 
-L'API GPT-5 video (notebook [01-2](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb)) a des limites sur la duree et la taille des fichiers envoyes. Si erreur 413 ou timeout :
+L'API GPT-5 vidéo (notebook [01-2](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb)) a des limites sur la durée et la taille des fichiers envoyés. Si erreur 413 ou timeout :
 
-- Decouper la video en segments de 30-60 secondes avec moviepy (notebook [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb)).
-- Compresser avant envoi : resolution 720p, bitrate reduit.
-- Utiliser le modele local Qwen2.5-VL (notebook [01-3](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb)) pour les videos longues ou sensibles, sans limite de taille.
+- Découper la vidéo en segments de 30-60 secondes avec moviepy (notebook [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb)).
+- Compresser avant envoi : résolution 720p, bitrate réduit.
+- Utiliser le modèle local Qwen2.5-VL (notebook [01-3](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb)) pour les vidéos longues ou sensibles, sans limite de taille.
 
 ## Licence
 
