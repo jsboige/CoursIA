@@ -1695,5 +1695,41 @@ theorem hashlife_correct_implies_glider_8
   have hpad : BoxAssezGrand glider 8 := by native_decide
   exact H 8 glider hpad
 
+/-- Period-2 oscillator (horizontal blinker, 3 cells in a row): fits in
+    level-4 MacroCell with margin for n=4. -/
+example : BoxAssezGrand blinker_h 4 := by
+  native_decide
+
+/-- Soundness check for the horizontal blinker. -/
+theorem hashlife_correct_implies_blinker_h_4
+    (H : ∀ n g, BoxAssezGrand g n → evolveHashlifeFast n g = evolve n g) :
+    evolveHashlifeFast 4 blinker_h = evolve 4 blinker_h := by
+  have hpad : BoxAssezGrand blinker_h 4 := by native_decide
+  exact H 4 blinker_h hpad
+
+/-- Period-2 oscillator (toad, 6 cells in a 4x2 box): fits in level-4
+    MacroCell with margin for n=4. -/
+example : BoxAssezGrand toad 4 := by
+  native_decide
+
+/-- Soundness check for the toad. -/
+theorem hashlife_correct_implies_toad_4
+    (H : ∀ n g, BoxAssezGrand g n → evolveHashlifeFast n g = evolve n g) :
+    evolveHashlifeFast 4 toad = evolve 4 toad := by
+  have hpad : BoxAssezGrand toad 4 := by native_decide
+  exact H 4 toad hpad
+
+/-- Period-2 oscillator (beacon, two diagonal blocks in a 4x4 box):
+    fits in level-4 MacroCell with margin for n=4. -/
+example : BoxAssezGrand beacon 4 := by
+  native_decide
+
+/-- Soundness check for the beacon. -/
+theorem hashlife_correct_implies_beacon_4
+    (H : ∀ n g, BoxAssezGrand g n → evolveHashlifeFast n g = evolve n g) :
+    evolveHashlifeFast 4 beacon = evolve 4 beacon := by
+  have hpad : BoxAssezGrand beacon 4 := by native_decide
+  exact H 4 beacon hpad
+
 end Life
 end Conway
