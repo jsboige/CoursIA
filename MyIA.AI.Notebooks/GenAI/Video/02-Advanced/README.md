@@ -10,9 +10,9 @@ Ce module explore les modèles de génération vidéo de pointe : HunyuanVideo, 
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 4 |
+| Notebooks | 5 |
 | Kernel | Python 3 |
-| Duree estimee | ~5-7h |
+| Duree estimee | ~6-8h |
 | GPU requis | 8-24GB |
 
 ## Notebooks
@@ -23,6 +23,7 @@ Ce module explore les modèles de génération vidéo de pointe : HunyuanVideo, 
 | 2 | [02-2-LTX-Video-Lightweight](02-2-LTX-Video-Lightweight.ipynb) | Génération légère LTX | Local GPU | ~8GB |
 | 3 | [02-3-Wan-Video-Generation](02-3-Wan-Video-Generation.ipynb) | Génération Wan | Local GPU | ~10GB |
 | 4 | [02-4-SVD-Image-to-Video](02-4-SVD-Image-to-Video.ipynb) | SVD (Image → Vidéo) | ComfyUI | ~10GB |
+| 5 | [02-5-LTX2-Audiovisual](02-5-LTX2-Audiovisual.ipynb) | LTX-2 audio+vidéo conjoint (22B) | Local GPU | ~16-24GB (INT4/NF4) |
 
 ## Prérequis
 
@@ -51,6 +52,7 @@ pip install -r requirements-comfyui.txt
 2. **02-2-LTX-Video-Lightweight** - Performance/équilibre
 3. **02-3-Wan-Video-Generation** - Alternative rapide
 4. **02-4-SVD-Image-to-Video** - Animation d'images
+5. **02-5-LTX2-Audiovisual** - Vidéo + audio synchronisé (génération conjointe)
 
 ## Technologies clés
 
@@ -73,6 +75,12 @@ pip install -r requirements-comfyui.txt
 - **Spécialité** : Image → Vidéo
 - **Durée** : Courtes animations
 - **VRAM** : ~10GB
+
+### LTX-2 (Lightricks, audiovisuel conjoint)
+- **Spécialité** : Génération **vidéo + audio synchronisés** en une passe (premier DiT audio-video fondationnel)
+- **Paramètres** : 22B (quantization INT4/NF4 obligatoire sur 24GB)
+- **VRAM** : ~16-24GB
+- **Licence** : LTX-2 Community (non-OSI, seuil commercial)
 
 ## Comparatif
 
