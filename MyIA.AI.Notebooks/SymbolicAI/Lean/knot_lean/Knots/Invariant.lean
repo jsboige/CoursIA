@@ -1028,7 +1028,57 @@ the override edge is identified by its Fox-blindness at `j`.
 
 The 29.7% two-slot bucket (§9.4) is the residue where this single-slot
 Fox-blind move is unavailable; v3 does not characterise it yet (deferred
-to a follow-up probe). CI baseline remains unchanged.
+to §9.6 below). CI baseline remains unchanged.
+
+### 9.6. Two-slot bucket Fox-coupling at the proper-arc partner crossing
+
+Probe v4 (`scripts/tmp_backward_probe_v4.py`, same 292032-case scope)
+characterises the 46656 two-slot overrides (29.7% of all naïve-fails) and
+contrasts them with §9.5's single-slot Fox-decoupling.
+
+Findings:
+* **Q1 partner-presence.** **94.21% (43956 / 46656) of two-slot overrides
+  have both override edges in `d₁.crossings[j]`**; the remaining 5.79%
+  (2700) have exactly one in `j`; **none** have neither. So in the two-slot
+  bucket, at least one override edge is always present at the partner
+  crossing — a stark contrast with the 66.15% none-in-`j` rate of §9.5.
+* **Q2 slot distribution in `j`.** Among the override edges that do appear
+  in `j`, the slots split as **slot 0: 33.25%, slot 1: 32.34%, slot 2:
+  31.43%, slot 3: 2.98%**. The Fox-sensitive slots (0, 1, 2) carry the
+  overwhelming mass, opposite to §9.5's 100% concentration at slot 3.
+* **Q3 edge pair distribution.** The six unordered pairs `(1,2), (1,3),
+  (1,4), (2,3), (2,4), (3,4)` of override edge labels occur near-uniformly
+  (7596–7956 each), with no pair forbidden — every pair of distinct
+  `d₁`-edges can serve as a two-slot override under some `(d₁, surg, col₂)`.
+* **Q4 Fox-visibility.** **94.21% (43956 / 46656) of two-slot overrides
+  have at least one override edge sitting in a Fox slot (0, 1, 2) of `j`**;
+  only 5.79% are entirely Fox-blind. The two-slot bucket is *Fox-coupled*
+  at `j`, not Fox-decoupled.
+
+Mechanism. The two-slot rebalancing changes colours at two edges, and the
+probe shows that — almost always — at least one of those two edges is
+Fox-relevant at the partner crossing `j`. A naïve local move at `i` would
+therefore disturb the Fox condition at `j`; the rebalancing must propagate
+across the proper arc, choosing colours at both override slots that
+simultaneously restore Fox at `i` (via the surgery edge `a`) and preserve
+Fox at `j` (via the cross-position constraint at the shared edge).
+
+This is the missing half of the §9.1 colour-symmetry argument: §9.5 shows
+the 70.3% single-slot bucket is *locally* repairable at `i` because the
+override is Fox-decoupled at `j`; §9.6 shows the 29.7% two-slot bucket is
+*not* locally repairable because the override is Fox-coupled at `j` —
+exactly the regime that requires the §9.3 multi-position colour-symmetry
+construction. The characterisation series §9.4 → §9.6 thus closes
+empirically: every naïve failure falls into one of two buckets with
+explicit, contrasting Fox-structure at the partner crossing.
+
+The formal `tricolorable_backward` lemma therefore admits two clean
+sub-cases — the locally repairable single-slot family (with the override
+edge identified by Fox-blindness at `j`) and the cross-position two-slot
+family (with both override slots constrained by Fox at `j` and at `i`).
+Both still require formal proof at a future cycle; the present probe
+quantifies *why* the two-slot bucket cannot be reduced to the single-slot
+construction. CI baseline remains unchanged.
 -/
 
 end Knots
