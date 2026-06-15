@@ -932,6 +932,62 @@ and `hsurg`, (ii) case-split on the Fox mode at `C`, (iii) close all-equal
 by naïve restriction, (iv) close all-distinct by the colour-symmetry
 construction. Reserved for a dedicated cycle; no strategic-placeholder
 declaration is committed here to keep the CI baseline honest.
+
+### 9.4. Empirical structural bounds (probe v2)
+
+A finer enumeration on the same scope (`numCrossings = 2`, `numEdges = 4`,
+292032 `(pair, col₂)` probes) characterises **the shape of the working `col₁`**
+when the naïve restriction fails. Source: `scripts/tmp_backward_probe_v2.py`.
+
+Naïve-fail rate, refined:
+* Fox condition only on `col₁_naive`: **139968 / 292032 = 47.93%** (the figure
+  reported in §8.2).
+* Full Lean `IsTriColoring` (Fox **and** `≥ 2` colours used): **157248 / 292032
+  = 53.85%**. The 17280 extra cases have a Fox-valid but monochrome
+  `col₁_naive` — the surviving 4-edge restriction collapses to a single colour,
+  which `IsTriColoring` rejects but Fox alone does not.
+
+Structure of the working `col₁` (minimum-Hamming-distance extension from
+`col₁_naive` to a valid Lean tricoloring of `d₁`):
+* **Always exists** (0 / 157248 missing), matching the §8.2 "0 backward
+  failures" claim under the stricter Lean criterion.
+* **Bounded by 2 slot changes**: 110592 cases (70.3% of naïve-fails) are
+  closed by a *single*-slot override; 46656 cases (29.7%) require *two*-slot
+  override; no case needs three or more.
+* **Single-slot override is not concentrated at slot `a-1`**: the four edge
+  positions of `d₁` each receive 27648 single-slot overrides (uniformly
+  distributed). Only 26352 of the 110592 single-slot overrides (≈ 24%) act
+  at slot `a-1`; the remaining 76% act at a different edge of `d₁`. This
+  refutes a tempting "override-at-`a` only" formulation.
+* **The "obvious" closed form `col₁(a-1) := col₂(b-1)`** (the §9.1 candidate
+  ruled out informally) covers **24192 / 157248 = 15.4%** of naïve-fails
+  overall. Restricted to the subset where the override does act at slot `a-1`,
+  it succeeds in **24192 / 26352 = 91.8%** of cases — confirming the
+  qualitative §9.1 argument that even within its target slice it is incomplete
+  (2160 single-slot-at-`a-1` cases need a different colour). The
+  `(col₂(a-1), col₂(b-1))` distribution on naïve-fails is perfectly uniform
+  across the 6 ordered colour pairs (26208 each), so the construction cannot
+  be biased by a particular colour configuration.
+
+Implications for the formal construction:
+* The Hamming-bound (≤ 2 slot changes per `col₁`) is a **finite case bound**:
+  any constructive proof can enumerate "single-slot at edge `k`" for
+  `k ∈ Fin d₁.numEdges` and "two-slot at `(k, ℓ)`" for ordered pairs, then
+  discharge each by a local Fox argument.
+* The single-slot-at-non-`a` overrides (76% of single-slot, ≈ 53% of all
+  naïve-fails) involve a slot whose Fox role is determined by the *proper-arc
+  partner crossing* `j` and the rest of `d₁` — not by the kink. This is the
+  geometric content the colour-symmetry argument captures.
+* The 17280 monochrome-`col₁_naive` cases are a trivially-fixable sub-family:
+  any other colour at any slot recovers `≥ 2` colours, and Fox is already
+  preserved (it held on `col₁_naive` before the colour-count check). They
+  collapse into the single-slot bucket above.
+
+These bounds reduce the construction problem from "globally consistent
+multi-position adjustment" (the §9.1 qualitative claim) to "a finite,
+structured family of local overrides" — the formal proof can proceed
+case-by-case once the local Fox-rebalancing lemma is stated. Reserved for
+a dedicated cycle; CI baseline remains unchanged.
 -/
 
 end Knots
