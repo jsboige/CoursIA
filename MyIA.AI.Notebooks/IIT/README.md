@@ -191,7 +191,7 @@ Oui, mais avec caveats. PyPhi est la référence pour IIT 3.0, mais IIT 4.0 (202
 - [PyPhi GitHub](https://github.com/wmayner/pyphi)
 - [Exemples PyPhi](https://github.com/wmayner/pyphi/tree/master/examples)
 
-### Fondements theoriques
+### Fondements théoriques
 
 - Tononi, G. (2008) - *Consciousness as Integrated Information*
 - Oizumi, M., Albantakis, L., Tononi, G. (2014) - *From the Phenomenology to the Mechanisms of Consciousness*
