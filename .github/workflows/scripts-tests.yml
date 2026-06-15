@@ -94,17 +94,6 @@ jobs:
         # is empty under POSIX. Both are fixed; papermill/nbformat are now
         # installed above. The 7 suites run here green (354 tests, validated
         # under WSL ubuntu + CI deps). genai -> po-2023, wsl -> po-2025.
-        #
-        # One residual polluter remains under the full ubuntu collection order:
-        # test_genai_comfyui_client::TestComfyUIClientInit sees client.session as a
-        # MagicMock ('mock.Session()') instead of a real requests.Session. The
-        # three concrete pollution sources found and fixed are above (config
-        # sys.modules, Path.drive, requests sys.modules mutation); this fourth
-        # one is order-dependent and does not reproduce on Windows (3170 pass),
-        # only under the POSIX collection order on ubuntu. It is ignored here
-        # with a tracking note rather than blocking the 6 re-enabled suites;
-        # the comfyui client tests still run green in isolation (77/77) and in
-        # every partial collection tried. Root-causing it is tracked in #2871.
         run: |
           pytest \
             scripts/tests \
@@ -112,5 +101,4 @@ jobs:
             scripts/lean/tests \
             MyIA.AI.Notebooks/GameTheory/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
-            --ignore=scripts/tests/test_genai_comfyui_client.py \
             --tb=short -q

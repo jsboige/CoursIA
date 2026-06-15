@@ -10,9 +10,17 @@ from unittest.mock import MagicMock
 
 import pytest
 
-# Mock optional dependencies before importing the module
+# Mock optional dependencies before importing the module.
+# Save the prior binding and restore it after the import. Without save/restore,
+# the MagicMock stays in sys.modules["requests"] for the rest of the session and
+# contaminates any later module that does `import requests` at its top level
+# (e.g. docker.py -> _dk_mod.requests becomes a MagicMock, breaking
+# test_genai_docker::TestCheckServiceHealth under the full ubuntu collection
+# order). See #2871.
+_mocked_optional_deps = {}
 for mod_name in ("websocket", "requests"):
     if mod_name not in sys.modules:
+        _mocked_optional_deps[mod_name] = None  # sentinel: was absent
         sys.modules[mod_name] = MagicMock()
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "notebook_tools"))
@@ -22,6 +30,10 @@ from execute_qcpy_docker import (
     REPO_ROOT,
     cell_needs_execution,
 )
+
+# Restore sys.modules so the optional-dep mocks don't leak to sibling suites.
+for mod_name in list(_mocked_optional_deps):
+    sys.modules.pop(mod_name, None)
 
 
 # ---------------------------------------------------------------------------
