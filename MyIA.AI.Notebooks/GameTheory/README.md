@@ -563,16 +563,16 @@ Les side tracks Lean (2b, 4b, 8b, 15b) et la sous-série [SocialChoice/](SocialC
 
 | Concept GameTheory | Notebook Python | Formalisation Lean | Statut |
 |--------------------|----------------|--------------------|--------|
-| Jeux 2x2, strategies | GameTheory-2 | `Game2x2.lean` (notebook 2b) | Prouve |
+| Jeux 2x2, stratégies | GameTheory-2 | `Game2x2.lean` (notebook 2b) | Prouve |
 | Existence Nash | GameTheory-4 | `NashExistence.lean` (notebook 4b) | Prouve |
 | Jeux combinatoires | GameTheory-8 | `PGame.lean` (notebook 8b) | Prouve |
-| Theoreme d'Arrow | SocialChoice SC-01/SC-04 | `Arrow.lean` (social_choice_lean) | 0 sorry |
-| Theoreme de Sen | SocialChoice SC-02 | `Sen.lean` (social_choice_lean) | 0 sorry |
+| Théorème d'Arrow | SocialChoice SC-01/SC-04 | `Arrow.lean` (social_choice_lean) | 0 sorry |
+| Théorème de Sen | SocialChoice SC-02 | `Sen.lean` (social_choice_lean) | 0 sorry |
 | Valeur de Shapley | GameTheory-15b | `Shapley.lean` (cooperative games) | 0 sorry |
 | Cœur coopératif | GameTheory-15b | `Basic.lean` ([cooperative_games_lean](cooperative_games_lean/)) | 1 sorry (Bondareva-Shapley, INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION) |
 | Modèles de vote | SocialChoice SC-02 | `Voting.lean` (Banks, STV, Median Voter) | 0 sorry |
 | Calibration prover | (benchmark) | `Calibration/Nash.lean` ([calibration_lean](../SymbolicAI/Lean/calibration_lean/)) | 0 sorry |
-| Gale-Shapley (stable marriage) | (pas de notebook dedie) | `GaleShapley.lean` ([stable_marriage_lean](stable_marriage_lean/)) | 0 sorry (PR #1521 GPT-5.5 prover); `Lattice.lean` residual 3 sorry (Knuth rotations, INTRACTABLE) |
+| Gale-Shapley (stable marriage) | (pas de notebook dédié) | `GaleShapley.lean` ([stable_marriage_lean](stable_marriage_lean/)) | 0 sorry (PR #1521 GPT-5.5 prover); `Lattice.lean` residual 3 sorry (Knuth rotations, INTRACTABLE) |
 
 Voir [SymbolicAI/Lean/README.md](../SymbolicAI/Lean/README.md) pour les prerequis Lean (notebooks 1-6 recommandes).
 
