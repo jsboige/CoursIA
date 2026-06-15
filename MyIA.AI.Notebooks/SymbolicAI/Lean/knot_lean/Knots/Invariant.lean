@@ -759,4 +759,117 @@ def Knot.unknottingNumber (k : Knot) : Nat := by
   --   3. Reachability in a graph of diagrams
   -- Phase 4+ target — out of scope for Phase 2
 
+/-! ## 8. Backward transfer (research scaffolding — Epic #2874, Phase 5 PR3)
+
+This section is **research scaffolding only**: it records the proof obligation
+for the backward direction of `Reidemeister1Connected.tricolorable_*` (the
+mate of the forward lemma in PR #3000, awaiting merge at the time of writing),
+together with empirical evidence pinning down the proof shape and a small
+non-empty structural lemma about `Reidemeister1Connected` that is reusable in
+both directions.
+
+**No new sorries are introduced.** The backward theorem is intentionally not
+stated here as a tactic-stub placeholder because the Knots-CI prose-header
+sorries baseline is locked at 25 (see `lean-knot.yml`) and a research stub
+would push it to 26. The proof obligation is therefore documented as a
+comment-only contract and the next BG-prover / dedicated cycle will state the
+theorem at the same time it proves it (the lemma + body land in one commit,
+keeping the sorries baseline at 25 throughout).
+
+### 8.1. Proof obligation (informal contract)
+
+Under the fix-(a) (proper-arc) strengthening of `Reidemeister1Connected`
+landed in PR #3003 (`133f7031`), the backward direction
+```
+∀ {d₁ d₂ : KnotDiagram},
+  Reidemeister1Connected d₁ d₂ →
+  IsTricolorable d₂ →
+  IsTricolorable d₁
+```
+is conjectured TRUE. Together with `Reidemeister1Connected.tricolorable_forward`
+(PR #3000), this gives the R1 bi-implication needed to unblock
+`tricolorable_invariant` (§2, the long-standing tactic placeholder on
+line 116) — modulo analogous statements for R2 and R3 (separate PRs).
+
+### 8.2. Empirical evidence (brute-force, exhaustive on small diagrams)
+
+A brute-force `3^n` colour search on all well-formed diagrams with
+`numCrossings ∈ {1, 2}` and `numEdges ∈ {2, 4}` (2526 distinct wf diagrams,
+generating 20184 valid connected R1 twists under proper-arc) reports
+**0 backward failures**: for every `(d₁, d₂)` with
+`Reidemeister1Connected d₁ d₂` and proper-arc, every tricoloring of `d₂`
+admits a tricoloring of `d₁`. This is the same brute-force methodology that
+de-risked fix (a) itself before PR #3003 was opened (see the body of #3003
+for the analogous "24 monogon-loop failures → 0" empirical table).
+
+A *finer* version of the search reports a non-trivial fact: in **48% of those
+cases (139968 / 292032 (pair, col₂) probes)**, the *naïve* candidate
+`col₁ := col₂|_{Fin d₁.numEdges}` (restrict to the first `d₁.numEdges`
+indices) is NOT a valid tricoloring of `d₁` — the witness exists but it is
+NOT this naïve restriction. The construction of `col₁` from `col₂` must
+therefore be more nuanced.
+
+### 8.3. Why the naïve restriction can fail
+
+Recall (`Reidemeister.lean`) that `Reidemeister1Connected d₁ d₂` carries an
+endpoint index `i`, an arc label `a` shared by two crossings of `d₁`, and a
+renamed crossing `Y'` with `PDCrossing.isRenameOf Y' (d₁.crossings[i]) a b`
+where `b = d₁.numEdges + 1`. The surgery is:
+```
+d₂.crossings = (d₁.crossings.set i Y') ++ [⟨a, b, c, c⟩]   (c = d₁.numEdges + 2)
+d₂.numEdges   = d₁.numEdges + 2.
+```
+Fix any tricoloring `col₂` of `d₂`. The Fox condition at `Y'` reads on the
+slots of `Y'`, where one occurrence of `a` was renamed to `b`. Setting
+`col₁ := col₂|_{Fin d₁.numEdges}` evaluates the slot in `d₁`'s `Y` at
+`col₂(a-1)`, while `col₂` evaluated the same slot of `Y'` at `col₂(b-1)`.
+When the Fox condition forces `col₂(a-1) ≠ col₂(b-1)` (the all-distinct
+branch at `Y'`), the naïve restriction violates Fox at `Y` in `d₁`.
+
+The proper-arc hypothesis (`a` shared by another crossing `j ≠ i` of `d₁`)
+is what prevents this failure mode from refuting the lemma globally: it forces
+`a` to play a role in a *different* crossing, constraining the Fox structure
+of `d₁` enough that a valid `col₁` always exists — but the construction is
+NOT simply restriction. It must reconcile the colour of `a` between the
+renamed slot of `Y'` (which `col₂` set freely as `col₂(b-1)`) and the other
+occurrence of `a` at crossing `j` (which `col₁` inherits from `col₂(a-1)`).
+
+### 8.4. Suggested proof strategies (for BG-prover / dedicated cycle)
+
+1. **Direct case-analysis on the Fox mode of `Y` in `d₁`**: each PD slot
+   matches one of four `isRenameOf` clauses (preserved or renamed). In each
+   case, derive a colour-equality/inequality constraint on `col₂` at
+   `{a-1, b-1}` and exhibit a `col₁` (built from `col₂` with a controlled
+   override at `a-1` or at the other occurrence of `a`).
+2. **Use the proper-arc witness directly**: from `∃ j ≠ i, a ∈ d₁.crossings[j]`,
+   recover the secondary crossing of `a` in `d₁` and use its Fox condition
+   under `col₂` to fix the colour of `a` in `col₁`.
+3. **Reduce to forward**: build a *bijective* candidate `col₁` and check
+   Fox at every crossing of `d₁`, exploiting the surgery equation and the
+   fact that all crossings of `d₁` except `Y` are present *verbatim* (same
+   labels, same indices) in `d₂.crossings`.
+
+Empirically, strategy (1) suffices in 100% of the brute-forced cases. The
+case analysis is mechanical but ~4-way; a small custom tactic could discharge
+it uniformly.
+
+### 8.5. Structural lemma: `Reidemeister1Connected.numEdges_eq`
+
+A small, immediate consequence of the surgery equation: under
+`Reidemeister1Connected d₁ d₂`, `d₂.numEdges = d₁.numEdges + 2`. The forward
+proof (PR #3000) discharges this inline as a `have hd₂num` from
+`congrArg (·.numEdges) hsurg`. Extracting it as a named lemma keeps it
+available for both directions and any follow-up R1 lemma without duplication.
+-/
+
+/-- `Reidemeister1Connected` strictly grows the edge count by 2: the surgery
+appends one new crossing with two fresh PD labels `b = d₁.numEdges + 1` and
+`c = d₁.numEdges + 2`. Used by both `tricolorable_forward` (#3000) and the
+forthcoming `tricolorable_backward` to bound colour-index arithmetic. -/
+theorem Reidemeister1Connected.numEdges_eq {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) :
+    d₂.numEdges = d₁.numEdges + 2 := by
+  obtain ⟨_, _, _, _, _, _, _, _, _, _, _, hsurg⟩ := h
+  simpa using congrArg (·.numEdges) hsurg
+
 end Knots
