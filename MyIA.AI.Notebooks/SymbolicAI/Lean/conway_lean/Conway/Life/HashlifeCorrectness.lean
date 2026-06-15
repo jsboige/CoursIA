@@ -147,6 +147,108 @@ def BoxAssezGrand (g : Grid) (n : Nat) : Prop := box_assez_grand g n = true
 instance (g : Grid) (n : Nat) : Decidable (BoxAssezGrand g n) :=
   inferInstanceAs (Decidable (box_assez_grand g n = true))
 
+/-! ### Monotonicity of `box_assez_grand` in the padding parameter
+
+A grid that admits `n` cells of padding also admits any smaller amount
+`m ≤ n`. This is **pure arithmetic** on `box_assez_grand`: the grid `g` is
+unchanged, the bounding-box side is the same, the target `side + 2*n` only
+shrinks when `n` shrinks, and the chosen `k_m := max 2 (natCeilLog2 (side + 2m))`
+still satisfies `2^k_m ≥ side + 2m` by the algorithm's correctness.
+
+**Relation to the P5.2 preservation chain (PR #3066 scan).** The full P5.2
+preservation sub-claim takes the form
+`BoxAssezGrand g n → ... → BoxAssezGrand (hashlifeJump ... .toGrid ...) (n - jumpSize ...)`,
+which involves the grid *transformation* — the new grid's bounding box may
+have grown by up to `jumpSize` cells in each direction (GoL light-cone).
+The full claim therefore decomposes as
+
+  (a) **Geometric** : `gridBoundingBox (g').2 ≤ gridBoundingBox g .2 + 2*jumpSize`
+      — light-cone bound on bounding-box expansion across the jump. This is
+      the genuinely hard half (P2-derivable, research-level, ai-01 BG-prover).
+  (b) **Arithmetic** : combine (a) with `box_assez_grand g n = true` to
+      conclude `box_assez_grand g' (n - jumpSize) = true`.
+
+The lemma below is the **degenerate case of (b) with `g' = g`** (no expansion),
+which captures the arithmetic core: `box_assez_grand` is monotone-decreasing
+in the padding parameter. It is a strict prerequisite of the general
+arithmetic combination, and verifies that the formulation is well-posed.
+The combined `(a) + (b)` chain is queueable behind the P4 verrou unlock. -/
+
+/-- Correctness of `natCeilLog2Loop`: starting from `pow = 2^k`, when the
+    fuel budget is sufficient (i.e. `2^(k + fuel) ≥ target`), the loop
+    returns some `j` with `2^j ≥ target`. Proof by induction on `fuel`. -/
+theorem natCeilLog2Loop_pow_ge :
+    ∀ (fuel target pow k : Nat),
+      pow = 2 ^ k →
+      2 ^ (k + fuel) ≥ target →
+      2 ^ natCeilLog2Loop fuel target pow k ≥ target
+  | 0, target, _, k, _, hfuel => by
+      -- fuel = 0: loop returns k. Have `2^(k + 0) ≥ target`, so `2^k ≥ target`.
+      simp only [natCeilLog2Loop, Nat.add_zero] at *
+      exact hfuel
+  | fuel + 1, target, pow, k, hpow, hfuel => by
+      unfold natCeilLog2Loop
+      split
+      · -- `pow ≥ target`. The loop returns `k`. Use `pow = 2^k`.
+        rename_i hpt
+        rw [← hpow]; exact hpt
+      · -- `pow < target`. Recurse with `fuel`, `2 * pow`, `k + 1`.
+        apply natCeilLog2Loop_pow_ge fuel target (2 * pow) (k + 1)
+        · -- `2 * pow = 2 * 2^k = 2^(k+1)`.
+          rw [hpow, pow_succ]; ring
+        · -- `2^((k+1) + fuel) = 2^(k + (fuel + 1)) ≥ target`.
+          have heq : k + 1 + fuel = k + (fuel + 1) := by omega
+          rw [heq]; exact hfuel
+
+/-- `natCeilLog2 n` returns a `k` with `2^k ≥ n`, i.e. it is a valid
+    upper-bounding ceiling logarithm. -/
+theorem natCeilLog2_pow_ge (n : Nat) : 2 ^ natCeilLog2 n ≥ n := by
+  match n with
+  | 0 => simp [natCeilLog2]
+  | m + 1 =>
+    show 2 ^ natCeilLog2 (m + 1) ≥ m + 1
+    unfold natCeilLog2
+    apply natCeilLog2Loop_pow_ge (m + 1) (m + 1) 1 0
+    · show (1 : Nat) = 2 ^ 0
+      simp
+    · -- `2^(0 + (m+1)) ≥ m+1`, i.e. `2^(m+1) ≥ m+1`.
+      simp only [Nat.zero_add]
+      exact Nat.le_of_lt (Nat.lt_two_pow_self)
+
+/-- **Monotonicity of `box_assez_grand` in the padding parameter `n`.**
+
+    If a grid `g` admits `n` cells of dead padding, then it also admits any
+    smaller amount `m ≤ n`. The grid is unchanged, so the bounding-box side
+    is the same; the target `side + 2*n` only shrinks when `n` shrinks; and
+    the level `k_m := max 2 (natCeilLog2 (side + 2*m))` chosen by the
+    `m`-evaluation still satisfies `2^k_m ≥ side + 2*m` by
+    `natCeilLog2_pow_ge`. -/
+theorem box_assez_grand_mono_n (g : Grid) {n m : Nat}
+    (h : box_assez_grand g n = true) (hle : m ≤ n) :
+    box_assez_grand g m = true := by
+  -- Both evaluations share the same bounding-box side.
+  unfold box_assez_grand at *
+  simp only [Bool.and_eq_true, decide_eq_true_eq] at *
+  set side := (gridBoundingBox g).2 with hside
+  -- Target for m is no larger than target for n.
+  have htgt : side + 2 * m ≤ side + 2 * n := by omega
+  -- Chosen level for m satisfies `k_m ≥ 2` trivially (via `max 2 _`).
+  refine ⟨?_, ?_⟩
+  · -- `2 ^ k_m ≥ side + 2 * m`. By `natCeilLog2_pow_ge`,
+    -- `2 ^ (natCeilLog2 (side + 2 * m)) ≥ side + 2 * m`, and
+    -- `max 2 (natCeilLog2 ...) ≥ natCeilLog2 ...`, so taking the `max`
+    -- only increases the exponent.
+    have hnc : 2 ^ natCeilLog2 (side + 2 * m) ≥ side + 2 * m :=
+      natCeilLog2_pow_ge (side + 2 * m)
+    have hexp : natCeilLog2 (side + 2 * m) ≤ max 2 (natCeilLog2 (side + 2 * m)) :=
+      Nat.le_max_right _ _
+    have hpow : 2 ^ natCeilLog2 (side + 2 * m) ≤
+        2 ^ max 2 (natCeilLog2 (side + 2 * m)) :=
+      Nat.pow_le_pow_right (by norm_num : 1 ≤ 2) hexp
+    exact le_trans hnc hpow
+  · -- `max 2 (natCeilLog2 (side + 2*m)) ≥ 2`.
+    exact Nat.le_max_left _ _
+
 /-! ## P0. Light-cone warm-up lemmas (prover ramp)
 
 Elementary facts about `manhattan` and `lightCone` that feed the **base case**
