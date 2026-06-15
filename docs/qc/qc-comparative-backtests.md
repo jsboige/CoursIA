@@ -54,7 +54,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 20 | ML-Trend-Scanning | ML | Multi-window | ~~0.66~~ → **0.33** ✓post-#2801 | 7.1 | 29.4 | 0.24 | **historique** (downgraded -50%, daily rebalance on SPY/TLT/GLD multi-asset = very high turnover crushed by real IBKR fees, PSR 7.8%) |
 | 21 | VolTarget-Momentum | COMP | Multi-asset | ~~0.65~~ → **0.50** ✓post-#2801 | 11.1 | 21.2 | 0.53 | robuste borderline (revised -23%, PSR 9.4%) |
 | 22 | SectorMomentum | IND | Equities+Bonds+Gold | ~~0.62~~ → **0.56** ✓post-#2801 | 13.1 | 22.8 | 0.58 | robuste (mild -9%, monthly rebalance winner-takes-all on 3 ETFs = low rotation near-immune, contrasts heavier multi-sleeve baskets; PSR 13.8% low, not a true leader) |
-| 23 | BlackLitterman-Momentum | COMP | Equities/ETF | 0.60 | 13.7 | — | — | robuste |
+| 23 | BlackLitterman-Momentum | COMP | Equities/ETF | ~~0.60~~ → **0.83** ✓post-#2801 | 15.8 | 16.9 | 0.94 | **robuste (catalog CORRECTED UPWARD +38%)** — catalog 0.60 was stale; code already had IBKR so the docstring v2 BEST (0.823, CAGR 15.7%, MaxDD -16.9%) was the WITH-fees value; monthly rebalance + fee-homogeneous 15-stock US equity basket = near-immune to fees; **PSR 51.4% = true leader (borderline significant)** |
 | 24 | Crypto-MultiCanal | IND | Crypto (BTC) | ~~0.58~~ → **0.33** ✓post-#2801 | 4.6 | 14.1 | 0.33 | **historique** (downgraded -43%, crypto indicator NOT robust post-fees, PSR 13.0%) |
 | 25 | ML-FeatureEngineering | ML | Multi-asset | 0.57 | 10.5 | — | — | robuste |
 | 26 | Markov-Regime-Detection | ML | Equities | 0.57 | — | — | — | robuste |
@@ -100,6 +100,7 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | RL-DQN-Trading | 32057969 | 0.53 | **0.58 (2020-21)** | n/a | **non re-verifiable** (~1yr window, runtime error on extension) |
 | MeanReversion | 30776121 | 0.81 | **0.81** | 0% | robuste (confirmed, PSR 46.8%, low-turnover sector rotation holds) |
 | SectorMomentum | 29686886 | 0.62 | **0.56** | -9% | robuste (mild — monthly rebalance winner-takes-all on 3 ETFs = low rotation near-immune; PSR 13.8% low, not a true leader) |
+| BlackLitterman-Momentum | 29816300 | 0.60 | **0.83** | +38% | **robuste (catalog CORRECTED UPWARD — was stale, not a fee effect; code already remediated, real Sharpe matches docstring v2 BEST 0.823; monthly fee-homogeneous 15-stock US equity = near-immune; PSR 51.4% true leader borderline)** |
 | LongShortHarvest | 32921183 | 3.39 | **1.64** | -52% | robuste (confirmed, **PSR 98.7%** top — catalog was 1Y-OOS, baseline-clone) |
 | DynamicVIXSpyRegime | 32921262 | 1.72 | **1.00** | -42% | robuste (confirmed, **PSR 69.4%** — catalog was 1Y-OOS, baseline-clone) |
 | Portfolio-Optimization-ML | 29318874 | 0.90 | **0.88** | -2% | robuste (confirmed, monthly-rebalance fee-homogeneous equity basket near-immune, PSR 37.2%) |
@@ -109,7 +110,7 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | TrendStocksLite | 28817425 | 0.72 | **0.71** | -2% | robuste (confirmed — weekly trend on 15 liquid large-caps, low realized turnover, near-immune, PSR 25.0%) |
 | ML-RandomForest | 29434751 | 0.68 | **0.70** | +3% | robuste (confirmed — bi-weekly RF on 10 mega-caps, moderate turnover near-immune on fee-homogeneous US equity, PSR 18.4%, baseline-clone 32940005) |
 
-**Finding (methodological, now 25-strategy sample)** : the remediation impact is **not
+**Finding (methodological, now 26-strategy sample)** : the remediation impact is **not
 uniform**, and the batch-4 results *refine and partly correct* the earlier 10-strategy pattern.
 The distinguishing axis is **not** asset class, nor ML-vs-indicator alone — it is the
 combination of (a) the fee-per-trade the asset class carries and (b) how the strategy turns
