@@ -1027,8 +1027,63 @@ formal proof can therefore localise the rebalancing entirely at `i` once
 the override edge is identified by its Fox-blindness at `j`.
 
 The 29.7% two-slot bucket (§9.4) is the residue where this single-slot
-Fox-blind move is unavailable; v3 does not characterise it yet (deferred
-to a follow-up probe). CI baseline remains unchanged.
+Fox-blind move is unavailable; it is characterised separately in §9.6
+(probe v4), where Fox-decoupling is shown NOT to extend. CI baseline
+remains unchanged.
+
+### 9.6. Two-slot bucket: Fox-decoupling does NOT extend
+
+Probe v4 (`scripts/tmp_backward_probe_v4.py`, same 292032-case scope as
+v2/v3) closes the characterisation deferred at the end of §9.5 by
+covering the two-slot override bucket — the 46656 / 157248 ≈ 29.7% of
+naïve-fail cases where a working `col₁` differs from the restriction at
+exactly two edges. The central question: does the Fox-decoupling at the
+proper-arc partner crossing `j` (§9.5, where 100% of single-slot
+overrides were Fox-blind at `j`) extend to two-slot overrides, or does
+the two-slot bucket require a genuine cross-`j` Fox constraint?
+
+Findings — a fundamental contrast with §9.5:
+* **94.2% (43956 / 46656) of two-slot overrides have BOTH override edges
+  ∈ `d₁.crossings[j]`** (vs. §9.5 where 66% of single-slot overrides did
+  not appear in `j` at all). `0%` of two-slot cases have neither edge in
+  `j`. The two-slot overrides are deeply entangled with the partner
+  crossing, not localised to the kink `i`.
+* **94.2% (43956 / 46656) of two-slot cases have at least one override
+  edge in a Fox-SENSITIVE slot (0, 1, or 2) of `j`** (vs. §9.5 where 0%
+  touched a Fox-sensitive slot of `j`). The slot-in-`j` distribution is
+  heavy on the Fox positions: slot 0 → 30132, slot 1 → 29304, slot 2 →
+  28476, with only 2700 at the Fox-blind slot 3.
+* Only **5.8% (2700 / 46656) of two-slot cases have BOTH overrides
+  Fox-blind at `j`** — the isolated regime where the §9.5 local-repair
+  strategy would still apply. The remaining 94.2% are Fox-visible at `j`.
+* The override-pair label patterns are uniform across all 6 unordered
+  pairs of `{1, 2, 3, 4}`: `(1,2), (1,3), (1,4)` each 7956 and
+  `(2,3), (2,4), (3,4)` each 7596. No privileged pair.
+
+Mechanism. In the two-slot bucket, the colour change at `i` propagates a
+Fox constraint across the shared arc `a` to the partner crossing `j`:
+because BOTH modified edges appear in `j` (and overwhelmingly at
+Fox-sensitive slots), repairing Fox at `i` by reassigning them changes
+the colours that `j`'s Fox condition reads. This is precisely the
+cross-`j` colour-symmetry obligation diagnosed in §9.3: the working
+`col₁` cannot be obtained by a purely local override at the kink, it
+must reconcile the colour of the shared arc `a` across both `i` and `j`
+simultaneously. The formal proof for this bucket therefore needs the
+proper-arc witness `j` as an active constraint (not merely a
+Fox-blind bystander as in §9.5).
+
+Closure of the characterisation. Together, §9.5 (single-slot, 70.3%,
+local-repair-sufficient, Fox-decoupled) and §9.6 (two-slot, 29.7%,
+cross-`j`-constrained, Fox-entangled) exhaust the naïve-fail space. The
+backward lemma `Reidemeister1Connected.tricolorable_backward` is
+empirically TRUE over the whole 292032-case sweep (0 counter-examples),
+but the 29.7% two-slot residue resists any construction that localises
+the repair at the kink crossing. A proof must handle both regimes:
+local repair for the single-slot bucket (mechanical, §9.5) and a genuine
+colour-symmetry argument reconciling `a` across `i` and `j` for the
+two-slot bucket (research-level, the target for a dedicated cycle or the
+BG-prover). CI baseline remains unchanged (prose doc-block, no new
+declarations, no sorries).
 -/
 
 end Knots
