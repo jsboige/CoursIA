@@ -9,7 +9,7 @@ from collections import deque
 # Dynamic VIX-SPY Regime Strategy by Ahmet Kasti
 # OOS 1Y Sharpe 1.72, 5Y CAGR 29.76%
 # Uses RandomForestClassifier + StandardScaler for ML overlay on VIX regime switching
-# Source: QC Strategy Library #50, cloned 2026-04-04, QC Project ID: 29687293
+# Source: QC Strategy Library #50, cloned 2026-04-04; redeployed 2026-06-15, QC Project ID: 32921262
 
 class VolatilityHarvestML(QCAlgorithm):
 
