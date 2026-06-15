@@ -325,6 +325,27 @@ class TestExclusions:
         result = iter_pedagogical_notebooks(tmp_path)
         assert [p.name for p in result] == ["keep.ipynb"]
 
+    def test_excludes_quantconnect_trashbin(self, tmp_path):
+        """`.QuantConnect/` is the QuantConnect CLI app-data dir; its `TrashBin/`
+        holds recycled (deleted) project research.ipynb. Counting these 450+
+        trashed notebooks as pedagogical inflated the sub-threshold tally --
+        they must be excluded (same artifact-gap class as `_output.ipynb`).
+        """
+        qc = tmp_path / "ESGF-Workspace" / ".QuantConnect" / "TrashBin"
+        qc.mkdir(parents=True)
+        # A trashed project's research notebook (the real-world shape).
+        (qc / "1777304234858_ESGF-Deleted").mkdir()
+        (qc / "1777304234858_ESGF-Deleted" / "research.ipynb").write_text(
+            "{}", encoding="utf-8"
+        )
+        # Sibling: the hidden `.QuantConnect` root itself (config etc.) -- also out.
+        (tmp_path / "ESGF-Workspace" / ".QuantConnect" / "config.json").write_text(
+            "{}", encoding="utf-8"
+        )
+        (tmp_path / "ESGF-Workspace" / "ESGF-Real.ipynb").write_text("{}", encoding="utf-8")
+        result = iter_pedagogical_notebooks(tmp_path)
+        assert [p.name for p in result] == ["ESGF-Real.ipynb"]
+
 
 # ---------------------------------------------------------------------------
 # Threshold / verdict integration

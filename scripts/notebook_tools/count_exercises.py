@@ -38,7 +38,9 @@ Exit codes:
     1 -- one or more pedagogical notebooks below threshold (--check only)
 
 Excludes (same convention as count_notebooks_by_series.py): .ipynb_checkpoints,
-research, archive, _output, partner-course, examples, obj, bin, .git.
+research, archive, _output, partner-course, examples, obj, bin, .git, plus
+`.QuantConnect`/`TrashBin` (QuantConnect CLI app-data + recycle bin of deleted
+project notebooks -- not pedagogical content).
 """
 
 from __future__ import annotations
@@ -57,6 +59,11 @@ EXCLUDE_DIRS = {
     ".ipynb_checkpoints", ".git", "__pycache__", "obj", "bin",
     "_output", "research", "archive", "partner-course", "examples",
     ".venv", "node_modules",
+    # QuantConnect CLI app-data: the hidden `.QuantConnect/` directory holds the
+    # CLI's metadata + `TrashBin/` (a recycle bin of deleted project research.ipynb).
+    # Counting 450+ trashed notebooks as "pedagogical" inflated the sub-threshold
+    # tally (false sub-3) -- same class of artifact gap as `_output.ipynb`.
+    ".QuantConnect", "TrashBin",
 }
 
 # \bexercice\b anywhere in the line, case-insensitive, French or English form.
