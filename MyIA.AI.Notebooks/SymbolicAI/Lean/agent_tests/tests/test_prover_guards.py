@@ -992,8 +992,15 @@ def test_probe_goal_caches_unchanged_file(tactic_tools, monkeypatch):
     assert json.loads(first)["goal"] == f"goal at {line}"
 
 
-def test_probe_goal_cache_invalidates_on_file_change(tactic_tools, monkeypatch):
-    """Editing the file changes its content hash, so the next probe recomputes."""
+def test_probe_goal_cache_invalidates_on_context_change(tactic_tools, monkeypatch):
+    """An edit INSIDE the [sorry-11, sorry+10] context window busts the cache.
+
+    P2 fix (#1460): the probe cache keys on the surrounding context hash
+    (±probe_ctx_lines around sorry), not the whole file. A context-window edit
+    changes that hash -> cache miss -> recompute. (The old whole-file-hash
+    test assumed ANY edit invalidated; the P2 narrowing makes that false -- see
+    the companion test_probe_goal_cache_survives_out_of_window_edit below.)
+    """
     import prover.lean_utils as lean_utils
 
     calls = {"n": 0}
@@ -1006,12 +1013,48 @@ def test_probe_goal_cache_invalidates_on_file_change(tactic_tools, monkeypatch):
     line = tactic_tools._test_sorry_line
 
     tactic_tools.compile_probe_goal(line)
-    # Mutate the underlying file: the content hash changes -> cache miss.
+    # Mutate a line INSIDE the context window (the line right after sorry is
+    # within [sorry-11, sorry+10] -> changes the context hash -> cache miss).
+    path = Path(tactic_tools._filepath)
+    lines = path.read_text(encoding="utf-8").split("\n")
+    lines[line] = lines[line] + "  -- in-window context edit"
+    path.write_text("\n".join(lines), encoding="utf-8")
+    tactic_tools.compile_probe_goal(line)
+
+    assert calls["n"] == 2, "an in-window context edit must invalidate the probe cache"
+
+
+def test_probe_goal_cache_survives_out_of_window_edit(tactic_tools, monkeypatch):
+    """An edit OUTSIDE the context window does NOT bust the cache (P2 #1460).
+
+    The padded fixture places the sorry near the middle with ~50 trailing
+    padding lines, so an EOF append lands far outside [sorry-11, sorry+10].
+    The context hash is unchanged -> cache hit -> no recompute. This is the
+    P2 optimization (edits far from the sorry no longer invalidate the cache)
+    and the exact case the old whole-file-hash assertion wrongly expected to
+    recompute (it failed with `assert 1 == 2` on a clean main).
+    """
+    import prover.lean_utils as lean_utils
+
+    calls = {"n": 0}
+
+    def fake_get_goal_state(filepath, line):
+        calls["n"] += 1
+        return f"goal v{calls['n']}"
+
+    monkeypatch.setattr(lean_utils, "get_goal_state", fake_get_goal_state)
+    line = tactic_tools._test_sorry_line
+
+    tactic_tools.compile_probe_goal(line)
+    # Append at EOF -- outside the context window, so the hash is unchanged.
     path = Path(tactic_tools._filepath)
     path.write_text(path.read_text(encoding="utf-8") + "\n-- edit\n", encoding="utf-8")
     tactic_tools.compile_probe_goal(line)
 
-    assert calls["n"] == 2, "a content change must invalidate the probe cache"
+    assert calls["n"] == 1, (
+        "an out-of-window (EOF) edit must NOT invalidate the probe cache "
+        "(P2 #1460: hash surrounding context only)"
+    )
 
 
 # ──────────────────────────────────────────────────────────────────────────
