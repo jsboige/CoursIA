@@ -440,6 +440,225 @@ theorem reidemeister1Connected_witness_preserves_tricolorable :
     IsTricolorable witnessD1Connected ↔ IsTricolorable witnessD2Connected :=
   ⟨fun _ => witnessD2Connected_tricolorable, fun _ => witnessD1Connected_tricolorable⟩
 
+/-! ## 3e. PR2 forward transfer: a connected R1 move PRESERVES tricolorability
+
+Under the strengthened `Reidemeister1Connected` (carrying the `Y'.isRenameOf`
+hypothesis, merged #2990), a tricoloring of `d₁` extends to a tricoloring of
+`d₂`: the two fresh edges `b = numEdges+1` and `c = numEdges+2` both carry the
+colour of arc `a`. This makes the new kink crossing `⟨a, b, c, c⟩` Fox-trivial
+(`(col a)³`, all-equal) and the `a → b` rename Fox-invisible (`col₂ b = col₁ a`).
+This is the forward half of `tricolorable_invariant` specialised to the
+connected R1 move (option C).
+-/
+
+/-- Forward membership for `List.set`: an element of `l.set n v` is either the
+    inserted value `v` (at the modified position) or already an element of `l`.
+    Pure list-combinatorics helper (no knot content), used by the transfer lemma
+    to split `d₂.crossings = d₁.crossings.set i Y' ++ [C]`. -/
+private theorem mem_set_fwd {α : Type*} : ∀ (n : Nat) (l : List α) (v c : α),
+    c ∈ l.set n v → c = v ∨ c ∈ l
+  | 0, [], _, _, h => by simp at h
+  | 0, hd :: tl, v, c, h => by
+    change c ∈ v :: tl at h
+    simp only [List.mem_cons] at h ⊢
+    rcases h with heq | hmem
+    · refine Or.inl ?_; exact heq
+    · exact Or.inr (Or.inr hmem)
+  | _+1, [], _, _, h => by simp at h
+  | n+1, hd :: tl, v, c, h => by
+    have ih := mem_set_fwd n tl v c
+    change c ∈ hd :: tl.set n v at h
+    simp only [List.mem_cons] at h ⊢
+    rcases h with hhd | hset
+    · exact Or.inr (Or.inl hhd)
+    · rcases ih hset with rfl | hmem
+      · exact Or.inl rfl
+      · exact Or.inr (Or.inr hmem)
+
+theorem Reidemeister1Connected.tricolorable_forward {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) (htri : IsTricolorable d₁) :
+    IsTricolorable d₂ := by
+  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, ha1, ha2, _hamem, _hproper, hrename, hsurg⟩ := h
+  -- Edge-count and crossing-list consequences of the surgery equation.
+  have hd₂num : d₂.numEdges = d₁.numEdges + 2 := by
+    simpa using congrArg (·.numEdges) hsurg
+  have hd₂cross : d₂.crossings =
+      d₁.crossings.set i.val Y' ++
+        [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] := by
+    simpa using congrArg (·.crossings) hsurg
+  obtain ⟨col₁, hfox₁, hge2, h2col⟩ := htri
+  -- Extension colouring: preserved edges keep their colour, the two new edges
+  -- (indices `d₁.numEdges` and `d₁.numEdges+1`, i.e. labels `b`, `c`) carry
+  -- `col₁ a`. Defined as a local def so `simp only [col₂]` can unfold it.
+  have haim1 : a - 1 < d₁.numEdges := by omega
+  have hd₂ge₁ : d₁.numEdges ≤ d₂.numEdges := by omega
+  -- Embedding of `d₁`'s edge indices into `d₂`'s (the +2 fresh edges sit above).
+  let emb : Fin d₁.numEdges → Fin d₂.numEdges :=
+    fun k => ⟨k.val, Nat.lt_of_lt_of_le k.isLt hd₂ge₁⟩
+  let col₂ : Fin d₂.numEdges → TriColor :=
+    fun j => if hj : j.val < d₁.numEdges then col₁ ⟨j.val, hj⟩
+             else col₁ ⟨a - 1, haim1⟩
+  refine' ⟨col₂, ?fox, ?num, ?col⟩
+  case num =>
+    -- `d₂.numEdges = d₁.numEdges + 2 ≥ 2` since `d₁.numEdges ≥ 2`.
+    omega
+  case col =>
+    -- At least two colours: two distinct-coloured edges of `d₁` embed into `d₂`.
+    obtain ⟨p, q, hpq⟩ := h2col
+    -- `col₂ (emb k) = col₁ k`: beta-reduce, the `if` is positive (k.val < n),
+    -- and the `Fin` constructor collapses by proof irrelevance.
+    have hcol_pres : ∀ k : Fin d₁.numEdges, col₂ (emb k) = col₁ k := by
+      intro k
+      conv_lhs => unfold col₂
+      rw [dif_pos k.isLt]
+    refine' ⟨emb p, emb q, ?_⟩
+    rw [hcol_pres p, hcol_pres q]
+    exact hpq
+  case fox =>
+    -- Colour-preservation facts, the heart of the transfer.
+    -- (F1) A preserved label `l` (1 ≤ l ≤ d₁.numEdges) reads the same colour in
+    --      `d₂` (under `col₂`) as in `d₁` (under `col₁`).
+    have hcolF1 : ∀ l, 1 ≤ l → l ≤ d₁.numEdges →
+        d₂.colorAtNat col₂ l = d₁.colorAtNat col₁ l := by
+      intro l hl1 hln
+      have hn0d₂ : d₂.numEdges ≠ 0 := by omega
+      have hn0d₁ : d₁.numEdges ≠ 0 := by omega
+      have hL : d₂.colorAtNat col₂ l =
+          col₂ ⟨(l - 1) % d₂.numEdges, Nat.mod_lt (l - 1) (by omega)⟩ := by
+        simp only [KnotDiagram.colorAtNat, dif_neg hn0d₂]
+      have hR : d₁.colorAtNat col₁ l =
+          col₁ ⟨(l - 1) % d₁.numEdges, Nat.mod_lt (l - 1) (by omega)⟩ := by
+        simp only [KnotDiagram.colorAtNat, dif_neg hn0d₁]
+      rw [hL, hR]
+      simp only [hd₂num]
+      have h1 : (l - 1) % (d₁.numEdges + 2) = l - 1 := Nat.mod_eq_of_lt (by omega)
+      have h2 : (l - 1) % d₁.numEdges = l - 1 := Nat.mod_eq_of_lt (by omega)
+      simp only [h1, h2]
+      conv_lhs => unfold col₂
+      simp only [dif_pos (by omega : (l - 1) < d₁.numEdges)]
+    have hcolF2b : d₂.colorAtNat col₂ (d₁.numEdges + 1) = d₁.colorAtNat col₁ a := by
+      have hn0d₂ : d₂.numEdges ≠ 0 := by omega
+      have hn0d₁ : d₁.numEdges ≠ 0 := by omega
+      have hL : d₂.colorAtNat col₂ (d₁.numEdges + 1) =
+          col₂ ⟨(d₁.numEdges + 1 - 1) % d₂.numEdges, Nat.mod_lt (d₁.numEdges + 1 - 1) (by omega)⟩ := by
+        simp only [KnotDiagram.colorAtNat, dif_neg hn0d₂]
+      have hR : d₁.colorAtNat col₁ a =
+          col₁ ⟨(a - 1) % d₁.numEdges, Nat.mod_lt _ (by omega)⟩ := by
+        simp only [KnotDiagram.colorAtNat, dif_neg hn0d₁]
+      rw [hL, hR]
+      simp only [hd₂num]
+      have h1 : (d₁.numEdges + 1 - 1) % (d₁.numEdges + 2) = d₁.numEdges := by
+        rw [Nat.mod_eq_of_lt (by omega)]; omega
+      have h2 : (a - 1) % d₁.numEdges = a - 1 := Nat.mod_eq_of_lt (by omega)
+      simp only [h1, h2]
+      conv_lhs => unfold col₂
+      simp only [dif_neg (by omega : ¬(d₁.numEdges < d₁.numEdges))]
+    have hcolF2c : d₂.colorAtNat col₂ (d₁.numEdges + 2) = d₁.colorAtNat col₁ a := by
+      have hn0d₂ : d₂.numEdges ≠ 0 := by omega
+      have hn0d₁ : d₁.numEdges ≠ 0 := by omega
+      have hL : d₂.colorAtNat col₂ (d₁.numEdges + 2) =
+          col₂ ⟨(d₁.numEdges + 2 - 1) % d₂.numEdges, Nat.mod_lt (d₁.numEdges + 2 - 1) (by omega)⟩ := by
+        simp only [KnotDiagram.colorAtNat, dif_neg hn0d₂]
+      have hR : d₁.colorAtNat col₁ a =
+          col₁ ⟨(a - 1) % d₁.numEdges, Nat.mod_lt _ (by omega)⟩ := by
+        simp only [KnotDiagram.colorAtNat, dif_neg hn0d₁]
+      rw [hL, hR]
+      simp only [hd₂num]
+      have h1 : (d₁.numEdges + 2 - 1) % (d₁.numEdges + 2) = d₁.numEdges + 1 := by
+        rw [Nat.mod_eq_of_lt (by omega)]; omega
+      have h2 : (a - 1) % d₁.numEdges = a - 1 := Nat.mod_eq_of_lt (by omega)
+      simp only [h1, h2]
+      conv_lhs => unfold col₂
+      simp only [dif_neg (by omega : ¬(d₁.numEdges + 1 < d₁.numEdges))]
+    -- ===== Forward Fox transfer: ∀ c ∈ d₂.crossings, triColorConditionAt d₂ col₂ c.
+    -- We only unfold `triColorConditionAt` (NOT `colorAtNat`), so the Fox part keeps
+    -- `colorAtNat` folded and the colour lemmas hcolF1/hcolF2b/hcolF2c fire by `rw`.
+    -- (C) New kink ⟨a, n+1, n+2, n+2⟩: strands (a, n+1, n+2) all read `col₁ a`.
+    have hC : triColorConditionAt d₂ col₂
+        ⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩ := by
+      simp only [triColorConditionAt]
+      refine ⟨⟨by omega, by omega, by omega, by omega, by omega, by omega⟩, ?_⟩
+      left
+      refine ⟨?_, ?_⟩
+      · rw [hcolF1 a ha1 ha2, hcolF2b]
+      · rw [hcolF2b, hcolF2c]
+    -- (iii) An unchanged crossing inherits d₁'s Fox: each preserved strand reads the
+    --       same colour under `col₂` (via hcolF1), so the Fox condition is identical.
+    have h_inherit : ∀ c, c ∈ d₁.crossings → triColorConditionAt d₂ col₂ c := by
+      intro c hcmem
+      have hfc : triColorConditionAt d₁ col₁ c := hfox₁ c hcmem
+      simp only [triColorConditionAt] at hfc ⊢
+      obtain ⟨⟨he11, he12, he21, he22, he31, he32⟩, hfox⟩ := hfc
+      refine ⟨⟨he11, by omega, he21, by omega, he31, by omega⟩, ?_⟩
+      have h1 : d₂.colorAtNat col₂ c.e1 = d₁.colorAtNat col₁ c.e1 := hcolF1 c.e1 he11 he12
+      have h2 : d₂.colorAtNat col₂ c.e2 = d₁.colorAtNat col₁ c.e2 := hcolF1 c.e2 he21 he22
+      have h3 : d₂.colorAtNat col₂ c.e3 = d₁.colorAtNat col₁ c.e3 := hcolF1 c.e3 he31 he32
+      rcases hfox with ⟨h12, h23⟩ | ⟨h12, h23, h13⟩
+      · left; refine ⟨?_, ?_⟩
+        · rw [h1, h2]; exact h12
+        · rw [h2, h3]; exact h23
+      · right; refine ⟨?_, ?_, ?_⟩
+        · rw [h1, h2]; exact h12
+        · rw [h2, h3]; exact h23
+        · rw [h1, h3]; exact h13
+    -- (ii) The modified endpoint Y' preserves Fox: `isRenameOf` makes each strand of
+    --       Y' read the same colour as the corresponding strand of the original crossing
+    --       under `col₁` (unchanged strand via hcolF1; renamed `a→b` strand via hcolF2b).
+    have hY' : triColorConditionAt d₂ col₂ Y' := by
+      have hYorig : triColorConditionAt d₁ col₁ (d₁.crossings.get i) :=
+        hfox₁ _ (List.get_mem d₁.crossings i)
+      simp only [triColorConditionAt] at hYorig ⊢
+      obtain ⟨⟨oe11, oe12, oe21, oe22, oe31, oe32⟩, hfoxo⟩ := hYorig
+      -- isRenameOf field-by-field: derive a colour-equation for each strand.
+      obtain ⟨hre1, hre2, hre3, _hre4⟩ := hrename
+      -- Lemma: a renamed-or-unchanged strand `Y'.f` reads `col₁ (orig.f)`.
+      have help : ∀ (hf : Nat) (ho : Nat) (hr : hf = ho ∨ (hf = d₁.numEdges + 1 ∧ ho = a))
+                     (ho1 : 1 ≤ ho) (hon : ho ≤ d₁.numEdges),
+          d₂.colorAtNat col₂ hf = d₁.colorAtNat col₁ ho := by
+        intro hf ho hr ho1 hon
+        rcases hr with heq | ⟨heqf, heqa⟩
+        · rw [heq]; exact hcolF1 ho ho1 hon
+        · -- hf = b = d₁.numEdges+1 (heqf), ho = a (heqa): col₂ reads col₁ a on edge b.
+          rw [heqf, heqa, hcolF2b]
+      have he1' : 1 ≤ Y'.e1 ∧ Y'.e1 ≤ d₂.numEdges := by
+        rcases hre1 with heq | ⟨heqf, heqa⟩
+        · rw [heq]; exact ⟨oe11, by omega⟩
+        · rw [heqf]; exact ⟨by omega, by omega⟩
+      have he2' : 1 ≤ Y'.e2 ∧ Y'.e2 ≤ d₂.numEdges := by
+        rcases hre2 with heq | ⟨heqf, heqa⟩
+        · rw [heq]; exact ⟨oe21, by omega⟩
+        · rw [heqf]; exact ⟨by omega, by omega⟩
+      have he3' : 1 ≤ Y'.e3 ∧ Y'.e3 ≤ d₂.numEdges := by
+        rcases hre3 with heq | ⟨heqf, heqa⟩
+        · rw [heq]; exact ⟨oe31, by omega⟩
+        · rw [heqf]; exact ⟨by omega, by omega⟩
+      refine ⟨⟨he1'.1, he1'.2, he2'.1, he2'.2, he3'.1, he3'.2⟩, ?_⟩
+      have h1 : d₂.colorAtNat col₂ Y'.e1 = d₁.colorAtNat col₁ (d₁.crossings.get i).e1 :=
+        help Y'.e1 (d₁.crossings.get i).e1 hre1 oe11 oe12
+      have h2 : d₂.colorAtNat col₂ Y'.e2 = d₁.colorAtNat col₁ (d₁.crossings.get i).e2 :=
+        help Y'.e2 (d₁.crossings.get i).e2 hre2 oe21 oe22
+      have h3 : d₂.colorAtNat col₂ Y'.e3 = d₁.colorAtNat col₁ (d₁.crossings.get i).e3 :=
+        help Y'.e3 (d₁.crossings.get i).e3 hre3 oe31 oe32
+      rcases hfoxo with ⟨h12, h23⟩ | ⟨h12, h23, h13⟩
+      · left; refine ⟨?_, ?_⟩
+        · rw [h1, h2]; exact h12
+        · rw [h2, h3]; exact h23
+      · right; refine ⟨?_, ?_, ?_⟩
+        · rw [h1, h2]; exact h12
+        · rw [h2, h3]; exact h23
+        · rw [h1, h3]; exact h13
+    -- Membership split: c ∈ d₂.crossings = (set i Y') ++ [C]  →  C / Y' / unchanged.
+    have hset_fwd : ∀ c, c ∈ d₁.crossings.set i.val Y' → c = Y' ∨ c ∈ d₁.crossings :=
+      fun c hcm => mem_set_fwd i.val d₁.crossings Y' c hcm
+    intro c hcmem
+    rw [hd₂cross] at hcmem
+    simp only [List.mem_append, List.mem_singleton] at hcmem
+    rcases hcmem with hset | rfl
+    · rcases hset_fwd c hset with rfl | hcorig
+      · exact hY'
+      · exact h_inherit c hcorig
+    · exact hC
+
 /-! ## 4. The unknot is NOT tricolorable
 
 The unknot has a diagram with no crossings. Any coloring uses only
