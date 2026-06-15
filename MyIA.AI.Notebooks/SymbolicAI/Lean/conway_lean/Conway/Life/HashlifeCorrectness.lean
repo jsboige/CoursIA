@@ -1030,6 +1030,29 @@ theorem wf_padCenter2 (c : MacroCell) (h : c.wf = true) :
   show (padToLevelPlus1 (padToLevelPlus1 c)).wf = true
   exact wf_padToLevelPlus1_gen _ (wf_padToLevelPlus1_gen c h)
 
+/-- **`padCenter2` lifts the level by 2** (level companion of
+    `wf_padCenter2`). On a node `c` (hence `1 ≤ c.level`), composing
+    `padToLevelPlus1` twice raises the level by exactly 2: inner pad
+    yields `c.level + 1`, outer pad of the resulting node yields
+    `c.level + 2`. Mirrors the destructured `level_padToLevelPlus1`
+    (L974) but in the consumer-friendly form `(hk : 1 ≤ c.level)`, same
+    shape as `padCenter2_correct` (L636) so they chain. Closes the
+    level-side of the `padCenter2` lift advertised alongside
+    `wf_padCenter2`. -/
+theorem level_padCenter2 (c : MacroCell) (hk : 1 ≤ c.level) :
+    (padCenter2 c).level = c.level + 2 := by
+  cases c with
+  | leaf b =>
+    -- leaves have level 0, contradicting 1 ≤ c.level
+    simp only [MacroCell.level] at hk
+    omega
+  | node nw ne sw se =>
+    show (padToLevelPlus1 (padToLevelPlus1
+            (MacroCell.node nw ne sw se))).level
+          = (MacroCell.node nw ne sw se).level + 2
+    simp only [padToLevelPlus1, MacroCell.level, emptyOfLevel_level]
+    omega
+
 /-! ## P4 structural input: centerInLevelPlus2 level + wf
 
 `centerInLevelPlus2 c` embeds `c` (any level `n`) in a level-`(n+2)` cell,
