@@ -1006,6 +1006,30 @@ private theorem wf_padToLevelPlus1 {nw ne sw se : MacroCell}
              MacroCell.level, he_lvl, hla, hlb, hld]
   decide
 
+/-- `padToLevelPlus1` preserves well-formedness in either arm: a leaf passes
+    through unchanged (`MacroCell.wf (.leaf _) = true`), and a node is padded
+    into a wf node by `wf_padToLevelPlus1`. General (non-destructured) form so
+    it composes, closing the gap that the destructured `{nw ne sw se}` form
+    leaves for the leaf case. -/
+private theorem wf_padToLevelPlus1_gen (c : MacroCell) (h : c.wf = true) :
+    (padToLevelPlus1 c).wf = true := by
+  cases c with
+  | leaf _ => simp only [padToLevelPlus1, MacroCell.wf]
+  | node nw ne sw se => exact wf_padToLevelPlus1 h
+
+/-- **`padCenter2` preserves well-formedness** — the composition of the two
+    `padToLevelPlus1` steps. `padCenter2` is definitionally
+    `padToLevelPlus1 (padToLevelPlus1 c)` (Hashlife.lean); this lemma delivers
+    the wf lift-by-composition advertised alongside `padToLevelPlus1` /
+    `centerInLevelPlus2`. P5.2 structural input: `hashlifeJump c =
+    hashlifeResult (padCenter2 c)` feeds `hashlifeResult_central_correct`,
+    whose hypothesis `c.wf = true` requires `(padCenter2 c).wf = true` on the
+    padded input. -/
+theorem wf_padCenter2 (c : MacroCell) (h : c.wf = true) :
+    (padCenter2 c).wf = true := by
+  show (padToLevelPlus1 (padToLevelPlus1 c)).wf = true
+  exact wf_padToLevelPlus1_gen _ (wf_padToLevelPlus1_gen c h)
+
 /-! ## P4 structural input: centerInLevelPlus2 level + wf
 
 `centerInLevelPlus2 c` embeds `c` (any level `n`) in a level-`(n+2)` cell,
