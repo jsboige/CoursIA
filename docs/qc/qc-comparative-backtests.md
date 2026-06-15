@@ -49,7 +49,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 15 | ML-Temporal-CNN | DL | Equities (QQQ) | ~~0.73~~ → **0.46** ✓post-#2801 | 12.5 | 30.8 | 0.41 | **historique** (downgraded -37%, DL/CNN overfits real fees, PSR 5.2%) |
 | 16 | TrendStocksLite | IND | Equities | ~~0.72~~ → **0.71** ✓post-#2801 | 18.0 | 33.7 | 0.53 | robuste (confirmed -2%, weekly trend on 15 liquid large-caps = low realized turnover, near-immune, PSR 25.0%) |
 | 17 | ML-LLM-Summarization | ML/NLP | Equities | 0.69 | 15.5 | — | — | robuste |
-| 18 | ML-RandomForest | ML | Multi-asset | 0.68 | 20.1 | — | — | robuste |
+| 18 | ML-RandomForest | ML | Equities | ~~0.68~~ → **0.70** ✓post-#2801 | 20.6 | 40.9 | 0.50 | robuste (confirmed +3%, bi-weekly RF on 10 mega-caps = moderate turnover near-immune on fee-homogeneous US equity basket, PSR 18.4%) |
 | 19 | AllWeather | RISK | Multi-asset | ~~0.67~~ → **0.47** ✓post-#2801 | 7.5 | 16.4 | 0.46 | **historique** (downgraded -30%, low-turnover multi-asset NOT near-immune, PSR 19.6%) |
 | 20 | ML-Trend-Scanning | ML | Multi-window | 0.66 | 19.1 | — | — | robuste |
 | 21 | VolTarget-Momentum | COMP | Multi-asset | ~~0.65~~ → **0.50** ✓post-#2801 | 11.1 | 21.2 | 0.53 | robuste borderline (revised -23%, PSR 9.4%) |
@@ -105,6 +105,7 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | CausalEventAlpha | 29809163 | 0.78 | **0.45** | -43% | **historique** (was robuste — monthly cadence but full-basket sector rotation = high turnover, PSR 5.5%) |
 | Gaussian-Direction-Classifier | 29398513 | 0.76 | **0.76** | 0% | robuste (confirmed — daily schedule but low realized turnover on liquid mega-cap = near-immune, PSR 22.7%) |
 | TrendStocksLite | 28817425 | 0.72 | **0.71** | -2% | robuste (confirmed — weekly trend on 15 liquid large-caps, low realized turnover, near-immune, PSR 25.0%) |
+| ML-RandomForest | 29434751 | 0.68 | **0.70** | +3% | robuste (confirmed — bi-weekly RF on 10 mega-caps, moderate turnover near-immune on fee-homogeneous US equity, PSR 18.4%, baseline-clone 32940005) |
 
 **Finding (methodological, now 24-strategy sample)** : the remediation impact is **not
 uniform**, and the batch-4 results *refine and partly correct* the earlier 10-strategy pattern.
@@ -202,7 +203,8 @@ Backtests: `1630-baseline-HighBookToMarketFScore-post2801` (0.411, 14.5%, -60.4%
 `1630-PortfolioOptimizationML-post2801` (0.884, 27.2%, -41.6%, PSR 37.2%),
 `1630-CausalEventAlpha-post2801` (0.447, 11.7%, -38.8%, PSR 5.5%),
 `1630-GaussianDirectionClassifier-post2801` (0.761, 23.1%, -25.6%, PSR 22.7%),
-`1630-TrendStocksLite-post2801` (0.707, 18.0%, -33.7%, PSR 25.0%).
+`1630-TrendStocksLite-post2801` (0.707, 18.0%, -33.7%, PSR 25.0%),
+`1630-ML-RandomForest-post2801` (0.70, 20.6%, -40.9%, PSR 18.4%).
 
 ---
 
