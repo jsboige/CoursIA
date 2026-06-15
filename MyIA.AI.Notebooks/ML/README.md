@@ -163,7 +163,7 @@ Documentation complète : [DataScienceWithAgents/README.md](DataScienceWithAgent
 
 | Section | Audience | Prérequis |
 |---------|----------|-----------|
-| **ML.NET** | Developpeurs C#/.NET, environnements enterprise | C# base, .NET SDK 9.0+ |
+| **ML.NET** | Développeurs C#/.NET, environnements enterprise | C# base, .NET SDK 9.0+ |
 | **Python Data Science (Days 1-3)** | Analystes, data scientists, débutants-intermédiaires | Python base, Jupyter |
 | **AI Agents (Days 4-7)** | Praticiens IA souhaitant intégrer LLMs | Days 1-3 ou expérience équivalente |
 
@@ -187,11 +187,11 @@ Documentation complète : [DataScienceWithAgents/README.md](DataScienceWithAgent
 1. [ML-1](ML.Net/ML-1-Introduction.ipynb) à [ML-4](ML.Net/ML-4-Evaluation.ipynb) : fondamentaux ML.NET
 1. [ML-5](ML.Net/ML-5-TimeSeries.ipynb) : séries temporelles
 1. [ML-6](ML.Net/ML-6-ONNX.ipynb) : interop Python → .NET
-1. [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) : projet integre
+1. [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) : projet intégré
 
 ## Quel parcours choisir
 
-| Profil | Parcours recommandé | Duree |
+| Profil | Parcours recommandé | Durée |
 | ------ | ------------------- | ----- |
 | Développeur C#/.NET en entreprise | Track A : ML.NET (ML-1 à ML-4 + TP) | ~6h |
 | Data scientist débutant | Track B (Days 1-3) : Python + scikit-learn | ~8h |
@@ -231,7 +231,7 @@ Les deux sous-séries sont indépendantes et peuvent être suivies dans n'import
 
 | Concept | Description |
 |---------|-------------|
-| **Pipeline ML** | Enchainement data loading → features → training → évaluation |
+| **Pipeline ML** | Enchaînement data loading → features → training → évaluation |
 | **Feature Engineering** | One-hot encoding, normalisation, concatenation |
 | **AutoML** | Recherche automatique d'hyperparamètres |
 | **Evaluation** | R², MAE, RMSE, cross-validation |
