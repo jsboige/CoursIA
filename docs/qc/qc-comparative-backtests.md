@@ -51,7 +51,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 17 | ML-LLM-Summarization | ML/NLP | Equities | 0.69 | 15.5 | — | — | robuste |
 | 18 | ML-RandomForest | ML | Multi-asset | 0.68 | 20.1 | — | — | robuste |
 | 19 | AllWeather | RISK | Multi-asset | ~~0.67~~ → **0.47** ✓post-#2801 | 7.5 | 16.4 | 0.46 | **historique** (downgraded -30%, low-turnover multi-asset NOT near-immune, PSR 19.6%) |
-| 20 | ML-Trend-Scanning | ML | Multi-window | 0.66 | 19.1 | — | — | robuste |
+| 20 | ML-Trend-Scanning | ML | Multi-window | ~~0.66~~ → **0.33** ✓post-#2801 | 7.1 | 29.4 | 0.24 | **historique** (downgraded -50%, daily rebalance on SPY/TLT/GLD multi-asset = very high turnover crushed by real IBKR fees, PSR 7.8%) |
 | 21 | VolTarget-Momentum | COMP | Multi-asset | ~~0.65~~ → **0.50** ✓post-#2801 | 11.1 | 21.2 | 0.53 | robuste borderline (revised -23%, PSR 9.4%) |
 | 22 | SectorMomentum | IND | Equities+Bonds+Gold | 0.62 | 13.2 | — | — | robuste |
 | 23 | BlackLitterman-Momentum | COMP | Equities/ETF | 0.60 | 13.7 | — | — | robuste |
@@ -104,6 +104,7 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | Portfolio-Optimization-ML | 29318874 | 0.90 | **0.88** | -2% | robuste (confirmed, monthly-rebalance fee-homogeneous equity basket near-immune, PSR 37.2%) |
 | CausalEventAlpha | 29809163 | 0.78 | **0.45** | -43% | **historique** (was robuste — monthly cadence but full-basket sector rotation = high turnover, PSR 5.5%) |
 | Gaussian-Direction-Classifier | 29398513 | 0.76 | **0.76** | 0% | robuste (confirmed — daily schedule but low realized turnover on liquid mega-cap = near-immune, PSR 22.7%) |
+| ML-Trend-Scanning | 29808859 | 0.66 | **0.33** | -50% | **historique** (was robuste — daily-rebalance SPY/TLT/GLD multi-asset crushed by real fees, PSR 7.8%) |
 | TrendStocksLite | 28817425 | 0.72 | **0.71** | -2% | robuste (confirmed — weekly trend on 15 liquid large-caps, low realized turnover, near-immune, PSR 25.0%) |
 
 **Finding (methodological, now 24-strategy sample)** : the remediation impact is **not
