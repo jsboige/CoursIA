@@ -1176,8 +1176,37 @@ class TestMergeCuratedFields:
         assert result[1]["last_validation"] == "2026-06-04"
         assert result[1]["last_validator"] == "me@test.com"
 
-    def test_partial_field_merge(self):
-        """Only empty fields are filled, non-empty kept."""
+    def test_partial_field_merge_when_current_date_is_newer(self):
+        """prefer_main is False (branch carries the newest validation): only the
+        fields the branch left empty are backfilled from main; non-empty fields
+        are kept. A genuine re-validation committed on the branch wins.
+        """
+        fresh = [
+            self._entry("Series/nb1.ipynb", last_validation="2026-06-02",
+                        last_validator="local@test.com",
+                        issue_pr_associee=""),
+        ]
+        main = {
+            "Series/nb1.ipynb": self._entry(
+                "Series/nb1.ipynb", last_validation="2026-06-01",
+                last_validator="remote@test.com",
+                issue_pr_associee="#2161",
+            ),
+        }
+        result = _merge_curated_fields(fresh, main)
+        # current date is the most recent → both it and its validator are kept
+        assert result[0]["last_validation"] == "2026-06-02"
+        assert result[0]["last_validator"] == "local@test.com"
+        # issue_pr_associee was empty → backfilled from main
+        assert result[0]["issue_pr_associee"] == "#2161"
+
+    def test_prefer_main_takes_whole_triple_when_main_is_more_recent(self):
+        """prefer_main is True (main's date is newer, or the branch date is
+        empty): main's whole curated triple is taken so the (date, validator,
+        issue) stay coherent. A branch behind main must not splice its stale
+        validator onto main's newer validation date — that is exactly the
+        stale-catalog-silent-revert the #2574 whole-triple rule prevents.
+        """
         fresh = [
             self._entry("Series/nb1.ipynb", last_validation="",
                         last_validator="local@test.com",
@@ -1191,11 +1220,10 @@ class TestMergeCuratedFields:
             ),
         }
         result = _merge_curated_fields(fresh, main)
-        # last_validation was empty → filled from main
+        # branch date empty → main is authoritative → whole triple from main,
+        # including the validator, to keep the entry internally coherent
         assert result[0]["last_validation"] == "2026-06-01"
-        # last_validator was non-empty → kept current
-        assert result[0]["last_validator"] == "local@test.com"
-        # issue_pr_associee was empty → filled from main
+        assert result[0]["last_validator"] == "remote@test.com"
         assert result[0]["issue_pr_associee"] == "#2161"
 
     def test_curated_fields_constant_contains_expected_fields(self):
