@@ -27,6 +27,7 @@ from server import (
     create_backtest,
     create_compile,
     create_file,
+    create_project,
     list_backtests,
     list_projects,
     read_backtest,
@@ -476,6 +477,42 @@ class TestListBacktests:
             result = list_backtests(1)
             assert result["count"] == 30  # Total count
             assert len(result["backtests"]) == 20  # Capped at 20
+
+
+@patch.dict("os.environ", _DUMMY_ENV)
+class TestCreateProject:
+    def test_returns_project_id(self):
+        mock_resp = _mock_api_response({
+            "projects": [{"projectId": 23456789, "name": "MyClone", "organizationId": "org1"}]
+        })
+        with patch("requests.post", return_value=mock_resp) as mock_post:
+            result = create_project("MyClone", "Py")
+            assert result["projectId"] == 23456789
+            assert result["name"] == "MyClone"
+            body = mock_post.call_args.kwargs["json"]
+            assert body["name"] == "MyClone"
+            assert body["language"] == "Py"
+
+    def test_defaults_language_python(self):
+        mock_resp = _mock_api_response({
+            "projects": [{"projectId": 1, "name": "X", "organizationId": "o"}]
+        })
+        with patch("requests.post", return_value=mock_resp) as mock_post:
+            create_project("X")
+            body = mock_post.call_args.kwargs["json"]
+            assert body["language"] == "Py"
+
+    def test_surfaces_qc_rejection_not_empty_id(self):
+        """Regression (cf create_backtest success:false guard): a rejected
+        create must raise the QC error, NOT return projectId=0 silently — a
+        zero id would block every subsequent create_file/backtest on a
+        non-existent project and force blind retries."""
+        mock_resp = _mock_api_response(
+            {"success": False, "errors": ["Project name already exists"]}
+        )
+        with patch("requests.post", return_value=mock_resp):
+            with pytest.raises(RuntimeError, match="Project name already exists"):
+                create_project("dup")
 
 
 @patch.dict("os.environ", _DUMMY_ENV)

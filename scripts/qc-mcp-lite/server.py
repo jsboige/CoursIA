@@ -216,6 +216,29 @@ def list_backtests(project_id: int) -> dict:
 
 
 @mcp.tool()
+def create_project(name: str, language: str = "Py") -> dict:
+    """Create a new QC project. Returns projectId.
+
+    ``language`` is "Py" (default) or "C#". The project is created in the
+    account's default organization unless the account has a single org. Used
+    to deploy local-only baseline-clone strategies (e.g. QC Strategy Library
+    references like LongShortHarvest) to QC Cloud so they can be compiled and
+    backtested — ``create_file`` requires an existing project.
+    """
+    data = _api_post("/projects/create", {"name": name, "language": language})
+    # QC returns {"projects": [{projectId, name, organizationId}], ...} — mirror
+    # the read_project shape so callers get a consistent projectId field.
+    projects = data.get("projects", [])
+    proj = projects[0] if projects else {}
+    return {
+        "projectId": proj.get("projectId", 0),
+        "name": proj.get("name", name),
+        "language": language,
+        "organizationId": proj.get("organizationId", ""),
+    }
+
+
+@mcp.tool()
 def list_projects(name_contains: str = "") -> dict:
     """List all QC projects.
 
