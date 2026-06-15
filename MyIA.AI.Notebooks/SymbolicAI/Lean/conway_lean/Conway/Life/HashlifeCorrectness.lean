@@ -871,6 +871,78 @@ private theorem wf_node_quad_level {nw ne sw se : MacroCell} {n : Nat}
   refine ⟨?_, ?_, ?_, ?_, hnw, hne, hsw, hse⟩
   all_goals omega
 
+/-- Constructor counterpart to `wf_node_quad_level` (#3012): where that lemma
+    *projects* a node's four quadrants, this one *builds* a well-formed node from
+    four equal-level well-formed cells, concluding both `level = n + 1` and
+    `wf = true`. The second depth-1 ingredient of `p4_double_nine_shape` (P4.1):
+    every double-nine sub-cell `n_i` is a `node` of four grandchildren of `c`,
+    so once the grandchildren are pinned (by `wf_node_depth2_grandchildren`
+    below), this helper closes each sub-cell's `level = k + 1 ∧ wf = true`. -/
+private theorem node_wf_level_of_four {g1 g2 g3 g4 : MacroCell} {n : Nat}
+    (h1 : g1.level = n) (h2 : g2.level = n) (h3 : g3.level = n) (h4 : g4.level = n)
+    (hw1 : g1.wf = true) (hw2 : g2.wf = true) (hw3 : g3.wf = true) (hw4 : g4.wf = true) :
+    (node g1 g2 g3 g4).level = n + 1 ∧ (node g1 g2 g3 g4).wf = true := by
+  refine ⟨?_, ?_⟩
+  · show 1 + g1.level = n + 1
+    rw [h1]; omega
+  · show (g1.wf && g2.wf && g3.wf && g4.wf
+            && (g2.level == g1.level) && (g3.level == g1.level) && (g4.level == g1.level)) = true
+    rw [hw1, hw2, hw3, hw4, h1, h2, h3, h4]
+    simp only [Bool.true_and, Bool.and_true, beq_self_eq_true]
+
+/-- Depth-2 lift of `wf_node_quad_level` (#3012): a well-formed level-`(n + 2)`
+    node has all sixteen depth-2 grandchildren at level `n` and well-formed.
+    Applying `wf_node_quad_level` to the outer node pins its four quadrants to
+    level `n + 1`; applying it once more to each quadrant pins the sixteen
+    grandchildren to level `n`. This is the structural fact
+    `p4_double_nine_shape` (P4.1) needs: the nine double-nine sub-cells are
+    `node`s of four grandchildren each (see the `n1`..`n9` pattern in
+    `Hashlife.lean`'s `hashlifeResultAux`), so combined with
+    `node_wf_level_of_four` this discharges every sub-cell's
+    `level = k + 1 ∧ wf = true`, leaving only the tiling-union half of P4.1. -/
+private theorem wf_node_depth2_grandchildren
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (n : Nat)
+    (hlevel : (node (node nw_nw nw_ne nw_sw nw_se)
+                    (node ne_nw ne_ne ne_sw ne_se)
+                    (node sw_nw sw_ne sw_sw sw_se)
+                    (node se_nw se_ne se_sw se_se)).level = n + 2)
+    (hwf : (node (node nw_nw nw_ne nw_sw nw_se)
+                 (node ne_nw ne_ne ne_sw ne_se)
+                 (node sw_nw sw_ne sw_sw sw_se)
+                 (node se_nw se_ne se_sw se_se)).wf = true) :
+    nw_nw.level = n ∧ nw_nw.wf = true ∧
+    nw_ne.level = n ∧ nw_ne.wf = true ∧
+    nw_sw.level = n ∧ nw_sw.wf = true ∧
+    nw_se.level = n ∧ nw_se.wf = true ∧
+    ne_nw.level = n ∧ ne_nw.wf = true ∧
+    ne_ne.level = n ∧ ne_ne.wf = true ∧
+    ne_sw.level = n ∧ ne_sw.wf = true ∧
+    ne_se.level = n ∧ ne_se.wf = true ∧
+    sw_nw.level = n ∧ sw_nw.wf = true ∧
+    sw_ne.level = n ∧ sw_ne.wf = true ∧
+    sw_sw.level = n ∧ sw_sw.wf = true ∧
+    sw_se.level = n ∧ sw_se.wf = true ∧
+    se_nw.level = n ∧ se_nw.wf = true ∧
+    se_ne.level = n ∧ se_ne.wf = true ∧
+    se_sw.level = n ∧ se_sw.wf = true ∧
+    se_se.level = n ∧ se_se.wf = true := by
+  have ho := wf_node_quad_level hlevel hwf
+  obtain ⟨q1l, q2l, q3l, q4l, q1w, q2w, q3w, q4w⟩ := ho
+  have hnw := wf_node_quad_level (n := n) q1l q1w
+  obtain ⟨a1, a2, a3, a4, b1, b2, b3, b4⟩ := hnw
+  have hne := wf_node_quad_level (n := n) q2l q2w
+  obtain ⟨c1, c2, c3, c4, d1, d2, d3, d4⟩ := hne
+  have hsw := wf_node_quad_level (n := n) q3l q3w
+  obtain ⟨e1, e2, e3, e4, f1, f2, f3, f4⟩ := hsw
+  have hse := wf_node_quad_level (n := n) q4l q4w
+  obtain ⟨g1, g2, g3, g4, h1', h2', h3', h4'⟩ := hse
+  exact ⟨a1, b1, a2, b2, a3, b3, a4, b4,
+         c1, d1, c2, d2, c3, d3, c4, d4,
+         e1, f1, e2, f2, e3, f3, e4, f4,
+         g1, h1', g2, h2', g3, h3', g4, h4'⟩
+
 /-! ## P3/P4 structural input: empty + padding level/wf preservation
 
 `emptyOfLevel`, `padToLevelPlus1`, `padCenter2`, and `centerInLevelPlus2`
