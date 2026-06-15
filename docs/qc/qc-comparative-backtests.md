@@ -60,7 +60,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 26 | Markov-Regime-Detection | ML | Equities | 0.57 | — | — | — | robuste |
 | 27 | ML-XGBoost | ML | Multi-asset | 0.57 | 14.8 | — | — | robuste |
 | 28 | MomentumStrategy | IND | Equities | ~~0.57~~ → **0.50** ✓post-#2801 | 11.2 | 25.8 | 0.43 | robuste borderline (at threshold -12%, PSR 9.3% non-significant) |
-| 28b | MeanReversion | IND | Equities (sectors) | 0.81 | 10.0 | 7.5 | 1.34 | robuste (v5.2 IBKR) |
+| 28b | MeanReversion | IND | Equities (sectors) | ~~0.81~~ → **0.81** ✓post-#2801 | 10.0 | 7.5 | 1.34 | robuste (confirmed, PSR 46.8% near-significant, low-turnover multi-asset holds = signal-frequency immunity) |
 | 29 | RegimeSwitching | ML | Equities/ETF | 0.55 | 11.7 | — | — | robuste |
 | 30 | Temporal-CNN-Prediction | DL | Multi-asset | 0.54 | — | — | — | robuste |
 | 31 | RL-DQN-Trading | RL | Portfolio | ~~0.53~~ → **0.58 (2020-21 only)** ✓post-#2801 | 18.2 | 33.2 | 0.55 | **non re-verifiable** (locked to ~1yr window, runtime error on extension, PSR 30.2%) |
@@ -76,7 +76,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 
 ### Post-#2801 verification — findings (2026-06-15)
 
-Seventeen Tier-1 entries re-run live via MCP qc-mcp (project native period, IBKR margin
+Eighteen Tier-1 entries re-run live via MCP qc-mcp (project native period, IBKR margin
 brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog values:
 
 | Strategy | QC project | Catalog Sharpe | **Verified Sharpe** | Delta | Real status |
@@ -98,8 +98,9 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | ML-Temporal-CNN | 29443034 | 0.73 | **0.46** | -37% | **historique** (DL/CNN overfits real fees, PSR 5.2%) |
 | HAR-RV-Kelly | 31650567 | — | **0.75** | (gap-fill) | robuste borderline (first real data, PSR 24.0%, MaxDD -48% crypto) |
 | RL-DQN-Trading | 32057969 | 0.53 | **0.58 (2020-21)** | n/a | **non re-verifiable** (~1yr window, runtime error on extension) |
+| MeanReversion | 30776121 | 0.81 | **0.81** | 0% | robuste (confirmed, PSR 46.8%, low-turnover sector rotation holds) |
 
-**Finding (methodological, now 17-strategy sample)** : the remediation impact is **not
+**Finding (methodological, now 18-strategy sample)** : the remediation impact is **not
 uniform**, and the batch-4 results *refine and partly correct* the earlier 10-strategy pattern.
 The distinguishing axis is **not** asset class, nor ML-vs-indicator alone — it is the
 combination of (a) the fee-per-trade the asset class carries and (b) how the strategy turns
@@ -118,7 +119,12 @@ over against that fee. Four regimes now observed:
   are negligible even at high turnover. **Batch 5 refines this: the immunity is signal-FREQUENCY,
   not asset-class — ML-Temporal-CNN (QQQ equity, -37% to 0.46, DL signal-churning) erodes despite
   being US equity. Slow EMA/trend signals (few trades) are immune; DL/CNN direction predictions
-  (frequent re-entry) are not.**
+  (frequent re-entry) are not. Batch 6 confirms: MeanReversion (low-turnover sector rotation,
+  0.81→0.81, **0% delta**, PSR 46.8%) holds flat — it is multi-asset like AllWeather but, unlike
+  AllWeather, rotates *within a single fee-homogeneous equity class* (<0.25 bps/trade), so its slow
+  signals incur negligible cost. AllWeather's -30% drop came from its bonds/gold sleeve crossing
+  higher per-trade friction. The discriminator is thus **signal-frequency × fee-homogeneity of the
+  traded basket**, not asset-class alone.**
 - **Low-turnover multi-asset & crypto indicators are NOT immune** (-30% to -43%): batch 4
   *invalidates* the earlier broad "ML/crypto holds" generalization. AllWeather (low-turnover
   multi-asset, -30% → 0.47) and Crypto-MultiCanal (crypto indicator, -43% → 0.33) both drop
@@ -149,11 +155,11 @@ of 41 catalog entries shrinks to roughly **a dozen genuinely-holding strategies*
 the rest are overstated to varying degrees.
 
 **Implication for the réunion Nicolas 15/06** : the catalog is not uniformly stale, but the
-overstatement is widespread — **only 4 of 17 verified strategies hold robuste with significant PSR**.
+overstatement is widespread — **only 4 of 18 verified strategies hold robuste with significant PSR**.
 The overstatement is structural in two families (value/factor/trend, and crypto indicators), while
 structured ML and regime-aware composites are validated. The comparative table MUST be cited by
 significance (PSR) not raw Sharpe; collapsed entries need a caveat before any pedagogical use. The
-remaining Tier-1 list (24 strategies) needs systematic re-backtest before the table is trusted
+remaining Tier-1 list (23 strategies) needs systematic re-backtest before the table is trusted
 end-to-end. LongShortHarvest-QC (catalog 3.39, the single highest entry) and DynamicVIXSpyRegime-QC
 (1.72) are QC Community Library references without an owned project and are deferred to a separate
 baseline-clone task.
