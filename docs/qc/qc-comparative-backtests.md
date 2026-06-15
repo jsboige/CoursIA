@@ -41,7 +41,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 7 | MacroFactorRotation-QC | ML | Multi-asset | ~~1.23~~ → **0.73** ✓post-#2801 | 22.6 | 42.0 | 0.54 | robuste (revised Sharpe -40%, real fees) |
 | 8 | Framework_Composite_TrendWeather | COMP | Equities | ~~1.16~~ → **1.14** ✓post-#2801 | 27.1 | 27.7 | 0.98 | robuste (confirmed, PSR 77.9%) |
 | 9 | Trend-Following | IND | Equities | ~~1.07~~ → **0.41** ✓post-#2801 | 7.9 | 14.6 | 0.54 | **historique** (downgraded: real IBKR fees) |
-| 10 | Multi-Layer-EMA | IND | Crypto (BTC) | 0.93 | — | — | — | robuste |
+| 10 | Multi-Layer-EMA | IND | Crypto (BTC) | ~~0.93~~ → **0.80** ✓post-#2801 | 25.0 | 57.1 | 0.44 | robuste (confirmed -14%, ML crypto holds, PSR 23.9%, MaxDD -57% BTC) |
 | 11 | Portfolio-Optimization-ML | ML | Multi-asset | 0.90 | 27.6 | — | — | robuste |
 | 12 | EMA-Cross-Stocks | IND | Equities | ~~0.87~~ → **0.99** ✓post-#2801 | 29.2 | 35.7 | 0.82 | robuste (PSR 49.7%, borderline significant) |
 | 13 | CausalEventAlpha | ML | Equities | 0.78 | 16.8 | — | — | robuste |
@@ -50,16 +50,16 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 16 | TrendStocksLite | IND | Equities | 0.72 | 18.2 | — | — | robuste |
 | 17 | ML-LLM-Summarization | ML/NLP | Equities | 0.69 | 15.5 | — | — | robuste |
 | 18 | ML-RandomForest | ML | Multi-asset | 0.68 | 20.1 | — | — | robuste |
-| 19 | AllWeather | RISK | Multi-asset | 0.67 | 9.3 | — | — | robuste |
+| 19 | AllWeather | RISK | Multi-asset | ~~0.67~~ → **0.47** ✓post-#2801 | 7.5 | 16.4 | 0.46 | **historique** (downgraded -30%, low-turnover multi-asset NOT near-immune, PSR 19.6%) |
 | 20 | ML-Trend-Scanning | ML | Multi-window | 0.66 | 19.1 | — | — | robuste |
 | 21 | VolTarget-Momentum | COMP | Multi-asset | ~~0.65~~ → **0.50** ✓post-#2801 | 11.1 | 21.2 | 0.53 | robuste borderline (revised -23%, PSR 9.4%) |
 | 22 | SectorMomentum | IND | Equities+Bonds+Gold | 0.62 | 13.2 | — | — | robuste |
 | 23 | BlackLitterman-Momentum | COMP | Equities/ETF | 0.60 | 13.7 | — | — | robuste |
-| 24 | Crypto-MultiCanal | IND | Crypto (BTC) | 0.58 | 8.2 | — | — | robuste |
+| 24 | Crypto-MultiCanal | IND | Crypto (BTC) | ~~0.58~~ → **0.33** ✓post-#2801 | 4.6 | 14.1 | 0.33 | **historique** (downgraded -43%, crypto indicator NOT robust post-fees, PSR 13.0%) |
 | 25 | ML-FeatureEngineering | ML | Multi-asset | 0.57 | 10.5 | — | — | robuste |
 | 26 | Markov-Regime-Detection | ML | Equities | 0.57 | — | — | — | robuste |
 | 27 | ML-XGBoost | ML | Multi-asset | 0.57 | 14.8 | — | — | robuste |
-| 28 | MomentumStrategy | IND | Equities | 0.57 | 11.8 | — | — | robuste |
+| 28 | MomentumStrategy | IND | Equities | ~~0.57~~ → **0.50** ✓post-#2801 | 11.2 | 25.8 | 0.43 | robuste borderline (at threshold -12%, PSR 9.3% non-significant) |
 | 28b | MeanReversion | IND | Equities (sectors) | 0.81 | 10.0 | 7.5 | 1.34 | robuste (v5.2 IBKR) |
 | 29 | RegimeSwitching | ML | Equities/ETF | 0.55 | 11.7 | — | — | robuste |
 | 30 | Temporal-CNN-Prediction | DL | Multi-asset | 0.54 | — | — | — | robuste |
@@ -74,9 +74,9 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 38 | composite-c2-equityfactor | COMP | Equities | — | — | — | — | robuste |
 | 39 | HAR-RV-Kelly | RISK | Multi-asset | — | — | — | — | robuste |
 
-### Post-#2801 verification — findings (2026-06-14)
+### Post-#2801 verification — findings (2026-06-15)
 
-Ten Tier-1 entries re-run live via MCP qc-mcp (project native period, IBKR margin
+Fourteen Tier-1 entries re-run live via MCP qc-mcp (project native period, IBKR margin
 brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog values:
 
 | Strategy | QC project | Catalog Sharpe | **Verified Sharpe** | Delta | Real status |
@@ -88,44 +88,62 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | MacroFactorRotation | 32730301 | 1.23 | **0.73** | -40% | robuste (revised Sharpe) |
 | Framework_Composite_TrendWeather | 28825740 | 1.16 | **1.14** | -2% | robuste (confirmed, **PSR 77.9%**) |
 | Trend-Following | 28797562 | 1.07 | **0.41** | -62% | **historique** (was robuste) |
+| Multi-Layer-EMA | 28433748 | 0.93 | **0.80** | -14% | robuste (confirmed, **ML crypto holds**, PSR 23.9%, MaxDD -57%) |
 | EMA-Cross-Stocks | 28789946 | 0.87 | **0.99** | +14% | robuste (confirmed, PSR 49.7%) |
+| AllWeather | 28657833 | 0.67 | **0.47** | -30% | **historique** (was robuste — low-turnover multi-asset NOT immune) |
 | VolTarget-Momentum | 30784745 | 0.65 | **0.50** | -23% | robuste borderline (PSR 9.4%, at threshold) |
+| Crypto-MultiCanal | 30750734 | 0.58 | **0.33** | -43% | **historique** (was robuste — crypto indicator NOT robust post-fees) |
+| MomentumStrategy | 28657837 | 0.57 | **0.50** | -12% | robuste borderline (at threshold, PSR 9.3%) |
 | TrendStocks-Alpha | 28885507 | 0.52 | **0.51** | -2% | robuste (confirmed, high-turnover near-immune) |
 
-**Finding (methodological, now 10-strategy sample)** : the remediation impact is **not
-uniform**, and the pattern is now actionable rather than simply "the catalog is stale". The
-verified strategies split into three regimes:
+**Finding (methodological, now 14-strategy sample)** : the remediation impact is **not
+uniform**, and the batch-4 results *refine and partly correct* the earlier 10-strategy pattern.
+The distinguishing axis is **not** asset class, nor ML-vs-indicator alone — it is the
+combination of (a) the fee-per-trade the asset class carries and (b) how the strategy turns
+over against that fee. Four regimes now observed:
 
-- **Value/factor + simple trend collapse** (-62% to -85%): HighBookToMarketFScore, PuppiesOfTheDow,
-  Trend-Following. These three top-ranked catalog entries drop out of the "robuste" band entirely
-  — their pre-remediation Sharpes were artifacts of the negligible default fee model. MacroFactorRotation
+- **Value/factor + simple trend COLLAPSE** (-62% to -85%): HighBookToMarketFScore, PuppiesOfTheDow,
+  Trend-Following. These top-ranked catalog entries drop out of "robuste" entirely — their
+  pre-remediation Sharpes were artifacts of the negligible default fee model. MacroFactorRotation
   (-40%) is the milder case in this family. **These catalog rankings are not reliable.**
-- **ML momentum & regime composites HOLD** (-2% to -13%): Positive-Negative-Splits-ML (1.51,
-  **PSR 82.3%**) and Framework_Composite_TrendWeather (1.14, **PSR 77.9%**) confirm their ranking
-  with statistically significant PSR. Contrast with MomentumRegime (0.185) — not all composites
-  survive, but the regime-aware ones do. **These are real alpha that survives real fees.**
-- **High-turnover equity is near-immune** (0% to -2%): EMA-Cross-Stocks and TrendStocks-Alpha
+- **Structured ML & regime composites HOLD** (-2% to -14%): Positive-Negative-Splits-ML (1.51,
+  **PSR 82.3%**), Framework_Composite_TrendWeather (1.14, **PSR 77.9%**), and Multi-Layer-EMA
+  (0.80, PSR 23.9%) confirm. Contrast with MomentumRegime (0.185) and now Crypto-MultiCanal —
+  only the *structured* ML/regime-aware designs survive real fees. **These are real alpha.**
+- **High-turnover US equity is near-immune** (0% to -2%): EMA-Cross-Stocks and TrendStocks-Alpha
   barely move under real IBKR fees, confirming the #1407 finding that US equity fees (<0.25 bps/trade)
-  are negligible even at high turnover.
+  are negligible even at high turnover. **This regime is specifically US equity — it does NOT
+  generalize.**
+- **Low-turnover multi-asset & crypto indicators are NOT immune** (-30% to -43%): batch 4
+  *invalidates* the earlier broad "ML/crypto holds" generalization. AllWeather (low-turnover
+  multi-asset, -30% → 0.47) and Crypto-MultiCanal (crypto indicator, -43% → 0.33) both drop
+  below the robuste threshold. Crypto's 10bps fees + the indicator's signal-chasing turnover erode
+  it hard; the Binance CASH cash-constraint benefit seen in the #1407 fee sweep (0.181→0.333)
+  still leaves it well under the catalog 0.58.
 
-- **VolTarget-Momentum is borderline** (-23%, Sharpe 0.50 sitting exactly on the robuste threshold,
-  PSR 9.4% non-significant) — leverage scaling amplifies trade sizes enough that real fees erode it
-  to the edge.
+**Borderline band** (-12% to -23%, sitting on the 0.5 line): VolTarget-Momentum (0.50, PSR 9.4%)
+and MomentumStrategy (0.50, PSR 9.3%) — both non-significant PSR, technically robuste but on the edge.
 
 **True leaders post-#2801, ranked by statistical significance (PSR > 50%)** :
-1. Positive-Negative-Splits-ML — 1.51, PSR 82.3% (new ML leader, replaces the collapsed value entries)
-2. LeveragedETFMomentum — 1.78, PSR 79.8% (leveraged, extreme profile)
-3. Framework_Composite_TrendWeather — 1.14, PSR 77.9% (the composite that holds)
-4. EMA-Cross-Stocks — 0.99, PSR 49.7% (near-significance, near-immune to fees)
 
-**Implication for the réunion Nicolas 15/06** : the catalog is not uniformly stale — it is
-specifically the **value/factor and simple-trend top entries that are overstated**, while **ML
-momentum and regime-aware composites are validated**. The comparative table should be cited by
-significance (PSR) not raw Sharpe, and the collapsed entries must carry a caveat before any
-pedagogical use. The remaining Tier-1 list (31 strategies) needs systematic re-backtest before the
-table is trusted end-to-end. LongShortHarvest-QC (catalog 3.39, the single highest entry) and
-DynamicVIXSpyRegime-QC (1.72) are QC Community Library references without an owned project and
-are deferred to a separate baseline-clone task.
+1. Positive-Negative-Splits-ML — 1.51, PSR 82.3% (structured ML, top leader, replaces collapsed value entries)
+2. LeveragedETFMomentum — 1.78, PSR 79.8% (leveraged, extreme profile)
+3. Framework_Composite_TrendWeather — 1.14, PSR 77.9% (regime-aware composite)
+4. EMA-Cross-Stocks — 0.99, PSR 49.7% (high-turnover US equity, near-significance, near-immune)
+
+Only these 4 survive both the fee remediation AND a significance bar. The "robuste" Tier-1 band
+of 41 catalog entries shrinks to roughly **a dozen genuinely-holding strategies** under real fees;
+the rest are overstated to varying degrees.
+
+**Implication for the réunion Nicolas 15/06** : the catalog is not uniformly stale, but the
+overstatement is widespread — **only 4 of 14 verified strategies hold robuste with significant PSR**.
+The overstatement is structural in two families (value/factor/trend, and crypto indicators), while
+structured ML and regime-aware composites are validated. The comparative table MUST be cited by
+significance (PSR) not raw Sharpe; collapsed entries need a caveat before any pedagogical use. The
+remaining Tier-1 list (27 strategies) needs systematic re-backtest before the table is trusted
+end-to-end. LongShortHarvest-QC (catalog 3.39, the single highest entry) and DynamicVIXSpyRegime-QC
+(1.72) are QC Community Library references without an owned project and are deferred to a separate
+baseline-clone task.
 
 Backtests: `1630-baseline-HighBookToMarketFScore-post2801` (0.411, 14.5%, -60.4%, PSR 4.5%),
 `1630-baseline-PuppiesOfTheDow-post2801` (0.302, 9.6%, -28.8%, PSR 3.5%),
@@ -136,7 +154,11 @@ Backtests: `1630-baseline-HighBookToMarketFScore-post2801` (0.411, 14.5%, -60.4%
 `1630-baseline-TrendFollowing-post2801` (0.407, 7.89%, -14.6%, PSR 8.7%),
 `1630-baseline-EMACrossStocks-post2801` (0.991, 29.2%, -35.7%, PSR 49.7%),
 `1630-baseline-VolTargetMomentum-post2801` (0.50, 11.1%, -21.2%, PSR 9.4%),
-`1630-baseline-TrendStocksAlpha-post2801` (0.512, 15.7%, -39.6%, PSR 5.6%).
+`1630-baseline-TrendStocksAlpha-post2801` (0.512, 15.7%, -39.6%, PSR 5.6%),
+`1630-baseline-MultiLayerEMA-post2801` (0.798, 25.0%, -57.1%, PSR 23.9%),
+`1630-baseline-AllWeather-post2801` (0.469, 7.5%, -16.4%, PSR 19.6%),
+`1630-baseline-CryptoMultiCanal-post2801` (0.333, 4.6%, -14.1%, PSR 13.0%),
+`1630-baseline-MomentumStrategy-post2801` (0.499, 11.2%, -25.8%, PSR 9.3%).
 
 ---
 
