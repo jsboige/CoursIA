@@ -385,6 +385,91 @@ theorem Reidemeister3.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister3 d₁ d�
     · exact he ▸ ρ
     · exact Or.inl h
 
+/-! ## R3 (slot-determined refinement) — Phase 5 PR1.5d
+
+`Reidemeister3` (Phase 5 PR1) carries the relabeled crossing `c` as a FREE
+existential (`∃ i c, ∃ ρ, surgery`). This leaves `c` unconstrained: the single
+relabeled crossing can take arbitrary PD labels. Unlike the append-only R1'/R2
+models (which are vacuous under `wf`), R3's `numEdges`-preserving surgery keeps
+`d₂.wf` satisfiable — but the free `c` is too loose for the transfer lemma
+(PR2) to push a tricoloring across the move: the Fox condition at the relabeled
+crossing is decoupled from `d₁`'s coloring.
+
+`Reidemeister3Determined` is the **strengthening**: the relabeled crossing `c`
+is constrained to be a **slot-permutation** of the crossing it replaces
+(`c.isSlotPermOf (d₁.crossings.get i)`) — its four PD labels are a permutation
+of the original crossing's four labels. This preserves the global edge
+multiset (hence `wf` on both sides is automatic from `d₁.wf`), and ties the
+relabeled crossing's strand structure to the original: the four strands meeting
+at crossing `i` are the same four strands, assigned to slots in a possibly
+different order (the combinatorial essence of an R3 slide, which rearranges
+strands past a crossing without changing which strands meet there).
+
+This is an **additive refinement** (does not modify `Reidemeister3`):
+`Reidemeister3Determined.implies_reidemeister3` proves the conservative
+embedding. The transfer lemma (PR2) and the question of which slot-permutations
+correspond to genuine R3 slides (vs. arbitrary relabelings) are explicitly
+future work — this is the de-risking scaffold establishing a non-vacuous,
+`wf`-satisfiable, refinement-strong model, parallel to `Reidemeister1Connected`
+for R1 (See #2874).
+-/
+
+/-- `c` "is a slot-permutation of `Y`" iff `c`'s four PD labels are a permutation
+    of `Y`'s four labels (the same multiset of four strands, possibly assigned to
+    different slots). The fields are `Nat` with decidable equality, so this Prop
+    is decidable (`List.Perm` on `List Nat`) and discharges by `decide`. -/
+def PDCrossing.isSlotPermOf (c Y : PDCrossing) : Prop :=
+  List.Perm [c.e1, c.e2, c.e3, c.e4] [Y.e1, Y.e2, Y.e3, Y.e4]
+
+/-- **Reidemeister3Determined**: an R3 slide where the relabeled crossing `c`
+    is a slot-permutation of the original crossing at index `i` (same four
+    strands, possibly reordered). `numEdges` and crossing count are preserved
+    (as in `Reidemeister3`); `wf` holds on both sides. The edge-renaming `ρ`
+    is carried to match `Reidemeister3`'s shape (the refinement provides it
+    directly). Non-vacuous — see `reidemeister3Determined_satisfiable`. -/
+def Reidemeister3Determined (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
+  (∃ (i : Fin d₁.crossings.length) (c : PDCrossing)
+     (ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges),
+     c.isSlotPermOf (d₁.crossings.get i) ∧
+     (d₂ = { d₁ with crossings := d₁.crossings.set i.val c } ∨
+      d₁ = { d₂ with crossings := d₂.crossings.set i.val c }) ∧
+     d₁.wf = true ∧ d₂.wf = true)
+
+/-- `Reidemeister3Determined` is a strengthening of `Reidemeister3`: a
+    slot-determined slide is, in particular, a (free-`c`) R3 move. The witness
+    crossing `c` and renaming `ρ` are provided directly; the surgery equation is
+    unchanged (`set i.val c` with `i.val` the underlying `Nat`). -/
+theorem Reidemeister3Determined.implies_reidemeister3 {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister3Determined d₁ d₂) : Reidemeister3 d₁ d₂ := by
+  obtain ⟨hl, he, i, c, ρ, _hperm, hsurg | hsurg, hwf₁, hwf₂⟩ := h
+  · exact ⟨hl, he, i.val, c, ρ, Or.inl hsurg, hwf₁, hwf₂⟩
+  · exact ⟨hl, he, i.val, c, ρ, Or.inr hsurg, hwf₁, hwf₂⟩
+
+/-- `Reidemeister3Determined` is NOT vacuous: a concrete slot-determined slide
+    `d₁ → d₂` with `wf = true` on both sides. Witness: `d₁` has two identical
+    crossings `⟨1,2,3,4⟩`; `d₂` relabels crossing 0 to `⟨1,3,2,4⟩` (slots e2/e3
+    swapped — a slot-permutation of `⟨1,2,3,4⟩`). The global label multiset
+    `{1,2,3,4}` is unchanged, so `wf` holds on both sides. -/
+theorem reidemeister3Determined_satisfiable :
+    Reidemeister3Determined
+      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4, hwell := by trivial }
+      { crossings := [⟨1,3,2,4⟩, ⟨1,2,3,4⟩], numEdges := 4, hwell := by trivial } := by
+  refine ⟨by decide, by decide, ?_⟩
+  refine ⟨⟨0, by decide⟩, ⟨1,3,2,4⟩, ?_, ?_, ?_, ?_, ?_⟩
+  · -- ρ : Fin 4 ↪ Fin 4 (identity; numEdges equal on both sides)
+    exact Function.Embedding.refl (Fin 4)
+  · -- c.isSlotPermOf (d₁.crossings.get ⟨0⟩): [1,3,2,4] ~ [1,2,3,4] (swap middle pair).
+    -- `isSlotPermOf` is a raw `def` (no Decidable instance), so unfold it first to
+    -- the underlying `List.Perm` on `List Nat`, which IS decidable.
+    exact by unfold PDCrossing.isSlotPermOf; decide
+  · -- surgery, left arm: d₂ = {d₁ with crossings := d₁.crossings.set 0 ⟨1,3,2,4⟩}
+    exact Or.inl rfl
+  · -- d₁.wf = true (each of {1,2,3,4} appears exactly twice)
+    exact by decide
+  · -- d₂.wf = true (multiset unchanged by the slot swap)
+    exact by decide
+
 /-! ## 2. Single Reidemeister step
 
 A single step is any of R1, R2, or R3.
