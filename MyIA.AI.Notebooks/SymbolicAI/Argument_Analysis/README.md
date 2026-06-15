@@ -32,7 +32,8 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 
 | # | Notebook | Contenu | Rôle |
 |---|----------|---------|------|
-| 0 | [Agentic-0-init](Argument_Analysis_Agentic-0-init.ipynb) | Configuration, chargement API | Setup |
+| 0 | [Agentic-0-init](Argument_Analysis_Agentic-0-init.ipynb) | Configuration env : JPype + JDK 17 + 76 jars Tweety, démarrage JVM fail-loud + smoke test | Setup |
+| 0* | [Agentic-0-init_agent](Argument_Analysis_Agentic-0-init_agent.ipynb) | *(legacy)* Configuration LLM/OpenAI (semantic_kernel) | Setup |
 | 1 | [Agentic-1-informal](Argument_Analysis_Agentic-1-informal.ipynb) | Détection de sophismes par taxonomie (CSV 1406 nœuds) | Détection d'arguments |
 | 1* | [Agentic-1-informal_agent](Argument_Analysis_Agentic-1-informal_agent.ipynb) | *(legacy)* Agent analyse informelle | Détection d'arguments |
 | 2 | [Agentic-2-formal](Argument_Analysis_Agentic-2-formal.ipynb) | Logique formelle réelle (PL + FOL + Modal + Dung via Tweety) | Formalisation |
