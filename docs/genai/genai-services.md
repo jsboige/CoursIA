@@ -218,6 +218,28 @@ if ensure_service_up("musicgen-api", "http://localhost:8192/health"):
     ...
 ```
 
+**Notebook-side wrapper** (`MyIA.AI.Notebooks/GenAI/shared/helpers/genai_service.py`):
+a drop-in for `requests.get/post` that makes the wake-on-demand **transparent at
+the notebook level** — no need to import `service_wake` or handle 502. It resolves
+a short name from a registry (12 services: ports + health paths verified), wakes
+the container if idle-stopped, waits for warm-up, then issues the HTTP request:
+
+```python
+from helpers.genai_service import call_service
+
+# Drop-in for requests.get("http://localhost:8192/v1/models")
+resp = call_service("musicgen", "/v1/models")
+
+# POST with payload + API key (Bearer derived from MUSICGEN_API_API_KEY)
+resp = call_service("tts-kokoro", "/v1/audio/speech", method="POST",
+                    json={"text": "bonjour"})
+```
+
+The registry maps short names → `(container, port, health_path)`; an unknown name
+raises `KeyError`. For services outside the registry, use `call_service_generic()`
+with explicit `container`/`port`/`health_path`. Unit tests (CI-runnable, Docker
+mocked) lock the wake-then-call contract: `shared/helpers/tests/test_genai_service.py`.
+
 VRAM economy is preserved: the idle monitor still re-stops the service after
 `idle_timeout`. See issue #2982 for the A/B/C/D decision rationale (caller-side
 wake chosen over reverse-proxy / always-on / native-sleep).
