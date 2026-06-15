@@ -1635,6 +1635,57 @@ theorem p5_small_n_fallback (n : Nat) (g : Grid)
       exact absurd hnjs (Nat.not_le_of_lt h)
     · rfl
 
+/-! ### P5.2 obstacle scan (2026-06-15)
+
+**Status after merges #3053 + #3062.** The wf+level structural inputs feeding
+`hashlifeResult_central_correct` (L1412) at the P5.2 jump step are now formally
+available:
+
+- `wf_padCenter2`    (L1028, PR #3053): `c.wf = true → (padCenter2 c).wf = true`
+- `level_padCenter2` (L1031, PR #3062): `1 ≤ c.level → (padCenter2 c).level = c.level + 2`
+
+So when `p5_large_n_jump` eventually invokes the P4 lemma on `padCenter2 c`,
+both hypotheses `(hwf : (padCenter2 c).wf = true)` and
+`(hk : (padCenter2 c).level = k + 2)` (with `k := c.level`) are dischargeable
+from `c.wf = true` and `1 ≤ c.level`. The "wf composition lift residual"
+dispatched 2026-06-15 09:59Z is now structurally closed on both axes.
+
+**Residual obstacle chain.**
+
+  `p5_large_n_jump`            (L1646, currently `: True` placeholder)
+    └→ `hashlifeResult_central_correct`  (L1412 — P4 entry point)
+         └→ inductive `succ k` arm of P4 — five `sorry`s:
+              ├ `p4_double_nine_shape`   (L1344, P4.1: 9-cell tiling shape)
+              ├ `p4_wave1_ih`            (L1354, P4.2: first IH wave)
+              ├ `p4_wave2_ih`            (L1364, P4.3: second IH wave)
+              ├ `p4_half_steps_compose`  (L1375, P4.4: `step_light_cone` chained)
+              └ `p4_succ_membership`     (L1393, glue: pointwise biconditional)
+
+The P4 inductive step is **research-level, multi-cycle**. The base case `k = 0`
+of P4 is already fully proven (`hashlifeResult_central_correct_base`, L1259,
+shape lemmas + `2^16` `native_decide`).
+
+**Independently provable sub-claim (sorry-free additive grain, P4-free).**
+
+The proof plan (L1588-1591) states "the jump expands the bounding box by at
+most `2^(k-2)`, within the padding margin", so the claim
+
+  `BoxAssezGrand g n → n ≥ jumpSize ... → BoxAssezGrand (jumpResult g) (n - jumpSize ...)`
+
+is a purely geometric/arithmetic statement on the `box_assez_grand` predicate.
+It does **not** depend on `hashlifeResult_central_correct` and can be discharged
+via decidable evaluation + `Nat` arithmetic. This is a natural next sorry-free
+additive grain on the P5.2 frame, queueable behind the P4 verrou unlock.
+
+**Placeholder defect.** `p5_large_n_jump : True` (L1646) is vacuously typed —
+the real target is something like
+
+  `(h : BoxAssezGrand g n) (hbig : n ≥ jumpSize (gridToMacroCellWithOffset g).2.level) →`
+  `  evolveHashlifeFast n g = evolve n g`
+
+When the P4 verrou unlocks, both the signature AND the proof body need to be
+filled in. Until then the obstacle remains structural-on-P4, not local-on-P5. -/
+
 /-- **P5.2** (compositional, blocked on P4): when `n ≥ 2^(k-2)`,
     `evolveHashlifeFast n g` makes one Hashlife jump of `2^(k-2)` generations
     (certified equal to `evolve (2^(k-2))` by P4, `hashlifeResult_central_correct`),
