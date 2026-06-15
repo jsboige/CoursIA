@@ -46,7 +46,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 12 | EMA-Cross-Stocks | IND | Equities | ~~0.87~~ → **0.99** ✓post-#2801 | 29.2 | 35.7 | 0.82 | robuste (PSR 49.7%, borderline significant) |
 | 13 | CausalEventAlpha | ML | Equities | 0.78 | 16.8 | — | — | robuste |
 | 14 | Gaussian-Direction-Classifier | ML | Equities | 0.76 | — | — | — | robuste |
-| 15 | ML-Temporal-CNN | DL | Equities (QQQ) | 0.73 | 20.5 | — | — | robuste |
+| 15 | ML-Temporal-CNN | DL | Equities (QQQ) | ~~0.73~~ → **0.46** ✓post-#2801 | 12.5 | 30.8 | 0.41 | **historique** (downgraded -37%, DL/CNN overfits real fees, PSR 5.2%) |
 | 16 | TrendStocksLite | IND | Equities | 0.72 | 18.2 | — | — | robuste |
 | 17 | ML-LLM-Summarization | ML/NLP | Equities | 0.69 | 15.5 | — | — | robuste |
 | 18 | ML-RandomForest | ML | Multi-asset | 0.68 | 20.1 | — | — | robuste |
@@ -63,7 +63,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 28b | MeanReversion | IND | Equities (sectors) | 0.81 | 10.0 | 7.5 | 1.34 | robuste (v5.2 IBKR) |
 | 29 | RegimeSwitching | ML | Equities/ETF | 0.55 | 11.7 | — | — | robuste |
 | 30 | Temporal-CNN-Prediction | DL | Multi-asset | 0.54 | — | — | — | robuste |
-| 31 | RL-DQN-Trading | RL | Portfolio | 0.53 | — | — | — | robuste |
+| 31 | RL-DQN-Trading | RL | Portfolio | ~~0.53~~ → **0.58 (2020-21 only)** ✓post-#2801 | 18.2 | 33.2 | 0.55 | **non re-verifiable** (locked to ~1yr window, runtime error on extension, PSR 30.2%) |
 | 31b | RL-Portfolio-Q-Learning | RL | Equities | 0.58 | 18.2 | 33.2 | — | historique (2020-2021) |
 | 32 | LSTM-Forecasting | DL | Multi-asset | 0.53 | — | — | — | robuste |
 | 33 | TrendStocks-Alpha | IND | Equities | ~~0.52~~ → **0.51** ✓post-#2801 | 15.7 | 39.6 | 0.40 | robuste (confirmed -2%, high-turnover near-immune to fees, PSR 5.6%) |
@@ -72,11 +72,11 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 36 | Framework_Composite_EMATrend | COMP | Equities | — | — | — | — | robuste |
 | 37 | composite-c1-multiasset | COMP | Multi-asset | — | — | — | — | robuste |
 | 38 | composite-c2-equityfactor | COMP | Equities | — | — | — | — | robuste |
-| 39 | HAR-RV-Kelly | RISK | Multi-asset | — | — | — | — | robuste |
+| 39 | HAR-RV-Kelly | RISK | Multi-asset | — → **0.75** ✓post-#2801 | 23.0 | 48.3 | 0.48 | robuste borderline (gap-fill first real data, PSR 24.0%, MaxDD -48% crypto tail) |
 
 ### Post-#2801 verification — findings (2026-06-15)
 
-Fourteen Tier-1 entries re-run live via MCP qc-mcp (project native period, IBKR margin
+Seventeen Tier-1 entries re-run live via MCP qc-mcp (project native period, IBKR margin
 brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog values:
 
 | Strategy | QC project | Catalog Sharpe | **Verified Sharpe** | Delta | Real status |
@@ -95,8 +95,11 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | Crypto-MultiCanal | 30750734 | 0.58 | **0.33** | -43% | **historique** (was robuste — crypto indicator NOT robust post-fees) |
 | MomentumStrategy | 28657837 | 0.57 | **0.50** | -12% | robuste borderline (at threshold, PSR 9.3%) |
 | TrendStocks-Alpha | 28885507 | 0.52 | **0.51** | -2% | robuste (confirmed, high-turnover near-immune) |
+| ML-Temporal-CNN | 29443034 | 0.73 | **0.46** | -37% | **historique** (DL/CNN overfits real fees, PSR 5.2%) |
+| HAR-RV-Kelly | 31650567 | — | **0.75** | (gap-fill) | robuste borderline (first real data, PSR 24.0%, MaxDD -48% crypto) |
+| RL-DQN-Trading | 32057969 | 0.53 | **0.58 (2020-21)** | n/a | **non re-verifiable** (~1yr window, runtime error on extension) |
 
-**Finding (methodological, now 14-strategy sample)** : the remediation impact is **not
+**Finding (methodological, now 17-strategy sample)** : the remediation impact is **not
 uniform**, and the batch-4 results *refine and partly correct* the earlier 10-strategy pattern.
 The distinguishing axis is **not** asset class, nor ML-vs-indicator alone — it is the
 combination of (a) the fee-per-trade the asset class carries and (b) how the strategy turns
@@ -112,14 +115,24 @@ over against that fee. Four regimes now observed:
   only the *structured* ML/regime-aware designs survive real fees. **These are real alpha.**
 - **High-turnover US equity is near-immune** (0% to -2%): EMA-Cross-Stocks and TrendStocks-Alpha
   barely move under real IBKR fees, confirming the #1407 finding that US equity fees (<0.25 bps/trade)
-  are negligible even at high turnover. **This regime is specifically US equity — it does NOT
-  generalize.**
+  are negligible even at high turnover. **Batch 5 refines this: the immunity is signal-FREQUENCY,
+  not asset-class — ML-Temporal-CNN (QQQ equity, -37% to 0.46, DL signal-churning) erodes despite
+  being US equity. Slow EMA/trend signals (few trades) are immune; DL/CNN direction predictions
+  (frequent re-entry) are not.**
 - **Low-turnover multi-asset & crypto indicators are NOT immune** (-30% to -43%): batch 4
   *invalidates* the earlier broad "ML/crypto holds" generalization. AllWeather (low-turnover
   multi-asset, -30% → 0.47) and Crypto-MultiCanal (crypto indicator, -43% → 0.33) both drop
   below the robuste threshold. Crypto's 10bps fees + the indicator's signal-chasing turnover erode
   it hard; the Binance CASH cash-constraint benefit seen in the #1407 fee sweep (0.181→0.333)
-  still leaves it well under the catalog 0.58.
+  still leaves it well under the catalog 0.58. HAR-RV-Kelly (vol-targeting Kelly, 0.75, PSR 24.0%)
+  is the exception that proves the rule: Kelly position-sizing dampens exposure, so it survives fees
+  where the equal-weight indicator (Crypto-MultiCanal, 0.33) collapses — but its -48% drawdown and
+  non-significant PSR mark it as a risk overlay, not pure alpha.
+
+**Reproducibility failure mode (distinct from fee-collapse)** : RL-DQN-Trading (catalog 0.53)
+cannot be re-verified on the remediation window — it runs only on a ~1-year slice (253 tradeable
+dates, 2020-2021; Sharpe 0.58, PSR 30.2%) and Runtime-Errors on any date extension. This is not a
+fee effect; it is RL training-window lock-in. The catalog "0.53" is real but un-generalizable.
 
 **Borderline band** (-12% to -23%, sitting on the 0.5 line): VolTarget-Momentum (0.50, PSR 9.4%)
 and MomentumStrategy (0.50, PSR 9.3%) — both non-significant PSR, technically robuste but on the edge.
@@ -136,11 +149,11 @@ of 41 catalog entries shrinks to roughly **a dozen genuinely-holding strategies*
 the rest are overstated to varying degrees.
 
 **Implication for the réunion Nicolas 15/06** : the catalog is not uniformly stale, but the
-overstatement is widespread — **only 4 of 14 verified strategies hold robuste with significant PSR**.
+overstatement is widespread — **only 4 of 17 verified strategies hold robuste with significant PSR**.
 The overstatement is structural in two families (value/factor/trend, and crypto indicators), while
 structured ML and regime-aware composites are validated. The comparative table MUST be cited by
 significance (PSR) not raw Sharpe; collapsed entries need a caveat before any pedagogical use. The
-remaining Tier-1 list (27 strategies) needs systematic re-backtest before the table is trusted
+remaining Tier-1 list (24 strategies) needs systematic re-backtest before the table is trusted
 end-to-end. LongShortHarvest-QC (catalog 3.39, the single highest entry) and DynamicVIXSpyRegime-QC
 (1.72) are QC Community Library references without an owned project and are deferred to a separate
 baseline-clone task.
