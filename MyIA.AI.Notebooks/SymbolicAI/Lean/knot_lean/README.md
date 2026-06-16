@@ -5,7 +5,7 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
 Epic #2874 (Phase 5 en cours). Toolchain `v4.31.0-rc1`.
 
-## État des sorries (vérifié 2026-06-16, 16 réels stable)
+## État des sorries (vérifié 2026-06-16, 19 réels — 16 + 3 du transfer backward PARTIEL #3124)
 
 Deux comptes, selon le filtre :
 
@@ -13,20 +13,23 @@ Deux comptes, selon le filtre :
 |---------|------------|-------------------|
 | `Knots/Basic.lean` | 0 | 1 |
 | `Knots/Reidemeister.lean` | 2 | 2 |
-| `Knots/Invariant.lean` | 3 | 4 |
+| `Knots/Invariant.lean` | 6 | 7 |
 | `Knots/Conway.lean` | 8 | 11 |
 | `Knots/Lidman.lean` | 3 | 5 |
 | `Knots/MathlibPrerequisites.lean` | 0 | 2 |
-| **Total** | **16** | **25** |
+| **Total** | **19** | **28** |
 
 - **sorry réels** (`exact sorry`, `:= sorry`, `:= by sorry`) = ce qui manque
-  vraiment comme preuve. **16** au total.
+  vraiment comme preuve. **19** au total — 16 stables + **3 du transfer backward
+  PARTIEL `tricolorable_backward` (#3124)** : sous-buts `fox`/`num`/`col`
+  laissés en sorry après décomposition (cœur `hcolPres` prouvé, cf. § Phase 5).
 - **sorry prose** (toute ligne contenant `sorry`, filtre CI `prose-header`) =
-  **baseline CI 25** (workflow `lean-knot.yml`). Ce compte inclut les
+  **baseline CI 28** (workflow `lean-knot.yml`). Ce compte inclut les
   occurrences dans les commentaires de diagnostic (ex. le commentaire sur
   `KnotDiagram.wf` dans `Basic.lean`).
 
-La CI `.github/workflows/lean-knot.yml` gate sur le **prose-header baseline 25** :
+La CI `.github/workflows/lean-knot.yml` gate sur le **prose-header baseline 28**
+(bump 25→28 dans #3124, justifié par la décomposition du transfer backward) :
 toute PR qui ajoute un sorry réel fait monter les deux comptes et échoue la CI,
 sauf justification documentée dans le body PR.
 
@@ -44,6 +47,8 @@ sauf justification documentée dans le body PR.
 - [x] `tricolorable_invariant_fails_under_pr1_model` — **contre-exemple certifié**
   réfutant `tricolorable_invariant` sous le modèle PR1 (diagnostic, cf. § Phase 5)
 - [x] `trefoil_wf`, `unknot_wf`, `figureEight_wf` — les 3 diagrammes nommés satisfont la parité PD de `KnotDiagram.wf`
+- [x] `Reidemeister1Connected.tricolorable_forward` (#3000, MERGED) — transfer **forward** de la 3-colorabilité d₁→d₂ sous le modèle R1 connecté (`Invariant.lean` L478, preuve complète sans sorry via `hcolF1`/`hcolF2b`/`hcolF2c`)
+- [~] `Reidemeister1Connected.tricolorable_backward` (#3124, MERGED, **PARTIEL**) — transfer **backward** d₂→d₁ : `hcolPres` (préservation des couleurs sur les labels préservés, cœur constructif) **PROUVÉ** ; 3 sous-buts résiduels `fox`/`num`/`col` laissés en sorry (recherche §9.1, décomposition instruite user)
 
 ### Scaffolding (sorry, cible formelle)
 
@@ -127,10 +132,33 @@ relabélisé `c` est contraint par slot-permutation de l'original
 (`⟨1,2,3,4⟩`→`⟨1,3,2,4⟩`, swap e2/e3). 0 sorry ajouté (scaffolding pur, R1/R2/R3
 merged inchangés).
 
-**Transfer lemma (PR2) = HELD** (coordinateur ai-01, économie de tokens). Le
-transfer R2/R3 complet (wf-satisfabilité non-triviale + lift RTC) est
-research-level multi-PR. Option C choisie (scaffolding merged) ; le marquee
-`tricolorable_invariant` reste gated sur le transfer — décision stratégique
+**Transfer lemma R1 connecté — forward #3000 PROUVÉ + backward #3124 PARTIEL (MERGED).**
+Le transfer **forward** `tricolorable_forward` (#3000) est **prouvé** : sous le
+modèle R1 connecté (Option C, `Reidemeister1Connected`), une tricoloration de `d₁`
+se propage à `d₂`. Le transfer **backward** `tricolorable_backward` (#3124) est
+**partiel** : `hcolPres` (préservation des couleurs sur les labels préservés
+`l ∈ [1, n]`, arithmétique pure `(l-1) % numEdges` close par `rfl`) est prouvé —
+c'est le cœur constructif sur lequel l'héritage Fox des crossings inchangés
+s'appuie. Trois sous-buts résiduels restent en `sorry` après décomposition
+(instruction user 2026-06-15 : « décompose, prouve le tractable, livre avec des
+sous-sorry résiduels sur lesquels ai-01 avisera ») :
+
+1. `fox` — Fox-transfer à tous les crossings de `d₁` sous `col₁`. Les crossings
+   inchangés héritent via `hcolPres` (miroir du forward `h_inherit`) ; le
+   **crossing modifié `Y`** et le **mode kink all-distinct** nécessitent la
+   construction de symétrie de couleurs §9.1 (research-level, §9.4–§9.6).
+2. `num` — `d₁.numEdges ≥ 2`. Dérivable de `d₁.wf` + proper-arc (parité PD force
+   `numEdges ∉ {0,1}`), mécanique mais nécessite de déplier le `wf` Booléen sur
+   un `d₁` abstrait (`decide` ne clôt pas).
+3. `col` — `≥ 2` couleurs sous `col₁`. En mode kink all-equal, les 2 couleurs
+   distinctes de `col₂` s'embedent dans `Fin d₁.numEdges` (découle du split Fox-mode).
+
+Ces 3 sorry font passer la **baseline CI 25→28** (bump justifié dans #3124).
+
+Le marquee `tricolorable_invariant` reste gated sur la **complétion des 3
+sous-buts backward** (puis composition forward + backward = bi-implication R1
+sous le modèle connecté). Le transfer R2/R3 complet (wf-satisfabilité
+non-triviale + lift RTC) reste research-level multi-PR. Décision stratégique
 (C) surgery connectée profonde vs (X) accepter #2938 et reframer, ouverte.
 
 Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Book*.
@@ -141,7 +169,7 @@ Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Bo
 |---------|---------|-------------|
 | `Knots/Basic.lean` | Définitions (Knot, Link, PD-code, nœuds nommés), `KnotDiagram.wf` | 0 |
 | `Knots/Reidemeister.lean` | Mouvements R1/R2/R3 (modèle Phase 5), `ReidemeisterEquiv`, symétries | 2 |
-| `Knots/Invariant.lean` | 3-colorabilité (Fox), crossing number, unknotting number, contre-exemple PR1 | 3 |
+| `Knots/Invariant.lean` | 3-colorabilité (Fox), crossing number, unknotting number, contre-exemple PR1, transfer R1 forward (#3000) + backward PARTIEL (#3124) | 6 |
 | `Knots/Conway.lean` | Nœud de Conway (11n34), Piccirillo, dichotomie lisse/topologique | 8 |
 | `Knots/Lidman.lean` | 11n102, unknotting number = 2 | 3 |
 | `Knots/MathlibPrerequisites.lean` | Index des prérequis Mathlib manquants par tier | 0 |
