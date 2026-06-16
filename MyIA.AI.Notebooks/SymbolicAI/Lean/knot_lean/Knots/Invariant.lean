@@ -1164,8 +1164,21 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     -- mode colour-invisible, all-distinct mode research-level (§9.1, §9.6).
     sorry
   case num =>
-    -- d₁.numEdges ≥ 2: derivable from d₁.wf + proper-arc (j ≠ i ⟹ length ≥ 2
-    -- ⟹ non-degenerate ⟹ wf parity forces numEdges ≥ 2). Separate wf argument.
+    -- d₁.numEdges ≥ 2. Diagnostic for the BG-prover (ai-01): d₁ is forced
+    -- NON-DEGENERATE (`crossings ≠ []`) because `_hproper` supplies a distinct
+    -- crossing index `j ≠ i`, both inhabiting `Fin d₁.crossings.length`. Hence
+    -- `d₁.wf` (Basic.lean:261) takes its ELSE branch — the parity condition:
+    -- every label in `[1, numEdges]` appears exactly twice
+    -- (`(List.range numEdges).all (fun i => edges.count (i+1) = 2)`), and every
+    -- occurring label lies in `[1, numEdges]` (clause (a)).
+    --   * numEdges = 0: `edges ≠ []` (crossings ≠ []), so (a) demands labels in
+    --     [1, 0] = ∅ — impossible.
+    --   * numEdges = 1: a single crossing contributes 4 slots, each forced to
+    --     label 1, so `edges.count 1 = 4 ≠ 2` — parity (b) fails.
+    -- Therefore numEdges ∉ {0, 1}, i.e. ≥ 2. Mechanical, BUT requires unfolding
+    -- the Bool-valued `wf` (`decide` / `List.range.all` / `edges.count` /
+    -- `List.flatMap`) over an ABSTRACT `d₁`, so `decide` cannot close it — it
+    -- is the natural mate of the Fox-transfer assembly and is left for ai-01.
     sorry
   case col =>
     -- ≥ 2 colours under col₁: under the all-equal kink mode the two distinct
