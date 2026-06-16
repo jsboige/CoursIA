@@ -149,6 +149,31 @@ Installation : `python SymbolicAI/SmartContracts/setup_env.py`.
 
 Verifier qu'elles ont aussi un env Conda dedie ou un venv local equivalent. La memoire est specifique ai-01 mais le pattern (env dedie ML) est cluster-wide. Inventorier via `conda env list` sur chaque machine.
 
+### GenAI GPU stack : triton-windows + bitsandbytes
+
+Les notebooks GenAI GPU (ex. [Video/02-5-LTX2-Audiovisual](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb), #2891) utilisent `triton` (JIT de kernels) et `bitsandbytes` (quantization INT4/NF4). `torch` embarque son runtime CUDA (`torch.cuda.is_available()=True` marche SANS le Toolkit), mais triton/bnb ont besoin de plus :
+
+| Besoin | Fourni par |
+|--------|-----------|
+| Detection CUDA par triton (`ptxas` + `cuda.h` + `cuda.lib`) | pip wheels `nvidia-cuda-nvcc-cu12` + `nvidia-cuda-runtime-cu12` |
+| Compilateur C hote pour le JIT triton (`driver.c`) + bnb | `CC` env ; triton-windows embarque un TinyCC (`triton/runtime/tcc/tcc.exe`) |
+
+**Piege Windows** : si Python et ses paquets sont en **user site-packages** (`%APPDATA%\Python\PythonXX\site-packages` — cas quand `C:\PythonXX\Lib\site-packages` exige admin), `sysconfig['platlib']` pointe sur la base. L'auto-detection de triton (`find_cuda_pip`) et de son TinyCC (`get_cc`) ratent alors. Symptomes : `RuntimeError: Failed to find CUDA` (triton) et `Failed to find C compiler. Please specify via CC` (triton + bnb).
+
+**Fix sans UAC** (canonical triton-windows, prefere a un system Toolkit install) : un `usercustomize.py` en user site-packages injecte `CUDA_HOME` + `CC` au demarrage de chaque interpreteur Python. Exemple (po-2023, 2026-06-16, pour #2891) :
+
+```python
+# %APPDATA%\Python\Python313\site-packages\usercustomize.py
+import os, site
+base = site.getusersitepackages()
+if os.path.isdir(os.path.join(base, "nvidia")):
+    os.environ.setdefault("CUDA_HOME", os.path.join(base, "nvidia"))
+if os.path.isfile(os.path.join(base, "triton", "runtime", "tcc", "tcc.exe")):
+    os.environ.setdefault("CC", os.path.join(base, "triton", "runtime", "tcc", "tcc.exe"))
+```
+
+`setdefault` => n'ecrase jamais une valeur explicite ; n'affecte que les processus Python (pas de risque global `CC` pour les builds non-Python) ; no-op sur les machines sans les wheels. Test froid (G.2) : vider `~/.triton/cache` puis executer un kernel triton -> `max err = 0` vs torch sur le GPU.
+
 ## WSL kernels (Lean / GameTheory / OpenSpiel)
 
 Notebooks dans `GameTheory/` et `SymbolicAI/Lean/` requierent un kernel WSL specifique :
