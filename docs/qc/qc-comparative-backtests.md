@@ -70,8 +70,8 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 34 | Portfolio-IBKR-Binance-Hybrid | COMP | Multi-asset | 0.52 | 15.7 | — | — | robuste |
 | 35 | Framework_Composite_FamaFrenchAllWeather | COMP | Multi-asset (VLUE/MTUM/SIZE/QUAL/USMV + SPY/IEF/GLD/XLP) | — → **0.684** ✓post-#2801 | 13.7 | 7.0 | 1.95 | robuste (**TRUE LEADER PSR 87.5%** — gap-fill first real data; 20/80 FamaFrench/AllWeather composite, monthly rebalance on fee-homogeneous 9-ETF basket HOLDS where AllWeather standalone collapsed -30%; OOS 2023-2026, MaxDD -7% exceptional) |
 | 36 | Framework_Composite_EMATrend | COMP | Equities (AAPL/MSFT/GOOGL/AMZN/NVDA + JPM/V/MA/UNH/JNJ/XOM/CVX/HD/PG/KO) | — → **0.741** ✓post-#2801 | 18.7 | 28.0 | 0.67 | robuste (gap-fill first real data; docstring claimed 0.867 → real 0.741 -14%; 70/30 EMA-Cross/TrendStocks composite, weekly rebalance on fee-homogeneous 15 mega-caps; PSR 27.4% not a true leader; Mag7-heavy EMA sleeve = survivorship caveat) |
-| 37 | composite-c1-multiasset | COMP | Multi-asset | — | — | — | — | robuste |
-| 38 | composite-c2-equityfactor | COMP | Equities | — | — | — | — | robuste |
+| 37 | composite-c1-multiasset | COMP | Multi-asset (SPY/TLT/GLD/USO/EFA) | — → **0.175** ✓post-#2801 | 4.7 | 17.0 | 0.28 | **historique** |
+| 38 | composite-c2-equityfactor | COMP | Equities (top-25 mkt-cap US) | — → **0.543** ✓post-#2801 | 10.0 | 18.8 | 0.53 | robuste (gap-fill first real data; just above threshold, PSR 16.8% low not a true leader) |
 | 39 | HAR-RV-Kelly | RISK | Multi-asset | — → **0.75** ✓post-#2801 | 23.0 | 48.3 | 0.48 | robuste borderline (gap-fill first real data, PSR 24.0%, MaxDD -48% crypto tail) |
 
 ### Post-#2801 verification — findings (2026-06-15)
@@ -117,8 +117,10 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | LSTM-Forecasting | 29443476 | 0.53 | **0.525** | ~0% | robuste (confirmed near-flat — multi-asset 7-US-ETF (SPY/QQQ/IWM/EFA/TLT/GLD/IEF) weekly-rebalance NN HOLDS; fee-homogeneous ETF basket + concentrated 2-4 selection = low realized turnover (discriminator v3); contrasts Temporal-CNN -70% DL collapse; sklearn MLPClassifier (64,32) not real LSTM per docstring; PSR 13.4% low; baseline-clone 32970990) |
 | Framework_Composite_FamaFrenchAllWeather | 28882145 | — | **0.684** | gap-fill | robuste (**TRUE LEADER PSR 87.5%** — first real backtest; 20% FamaFrench (VLUE/MTUM/SIZE/QUAL/USMV factor ETFs) + 80% AllWeather (SPY/IEF/GLD/XLP) composite, monthly rebalance on fee-homogeneous 9-US-ETF basket HOLDS where AllWeather standalone collapsed -30% (0.67→0.47); FamaFrench factor diversification + monthly low-frequency = low realized turnover; already had IBKR (direct backtest, no clone); OOS 2023-2026, Calmar 1.95, MaxDD -7% exceptional) |
 | Framework_Composite_EMATrend | 28911253 | — | **0.741** | gap-fill | robuste (first real backtest — docstring claimed 0.867 → real 0.741, -14% from claim; 70% EMA-Cross (AAPL/MSFT/GOOGL/AMZN/NVDA Mag7) + 30% TrendStocks (15 mega-caps) composite, weekly rebalance on fee-homogeneous US equity basket; already had IBKR (direct backtest, no clone); decade 2015-2025, PSR 27.4% not a true leader; **Mag7 survivorship caveat** — EMA sleeve 100% Mag7, decade dominated by Mag7 outperformance inflates trend signal) |
+| composite-c1-multiasset | 32981093 | — | **0.175** | gap-fill | **historique** (first real backtest — local-only framework deployed to QC Cloud; 5-ETF multi-asset rotation SPY/TLT/GLD/USO/EFA, 3-alpha ensemble (Momentum/MACD/RelativeStrength), RiskParityPCM weekly rebalance, drawdown-cap 12% + trail 4% + VWAP execution; multi-asset rotation through USO (commodity) + EFA (intl equity) = friction/volatility basket churns, same regime as AllWeather -30% collapse; PSR 2.0% very low; framework already had IBKR so direct deploy no clone; totalOrders=0 = phantom MCP bug, CAGR 4.7% proves trades executed) |
+| composite-c2-equityfactor | 32981222 | — | **0.543** | gap-fill | robuste (first real backtest — local-only framework deployed to QC Cloud; 25-stock equity factor composite, FineFundamental top-25 mkt-cap, 4-factor ensemble (Value/Quality/LowVol/Momentum), MeanVariancePCM weekly, sector-cap 18% + portfolio DD 18% + TWAP execution; fee-homogeneous mega-cap US equity basket HOLDS just above threshold; **contrasts c1 historique** — same composite architecture but c2 equity-only fee-homogeneous holds while c1 multi-asset friction basket collapses, re-confirming discriminator v3 (realized turnover × fee-homogeneity); PSR 16.8% low not a true leader; IBKR already in framework, direct deploy no clone; totalOrders=0 = phantom MCP bug, CAGR 10.0% proves trades) |
 
-**Finding (methodological, now 34-strategy sample)** : the remediation impact is **not
+**Finding (methodological, now 36-strategy sample)** : the remediation impact is **not
 uniform**, and the batch-4 results *refine and partly correct* the earlier 10-strategy pattern.
 The distinguishing axis is **not** asset class, nor ML-vs-indicator alone — it is the
 combination of (a) the fee-per-trade the asset class carries and (b) how the strategy turns
@@ -289,8 +291,8 @@ Projects with `main.py` but no recorded backtest metrics. Prime candidates for t
 | 85 | Vol-Ensemble-Conservative | RISK | Multi-asset | yes |
 | 86 | MomentumRegime-AdaptiveWeights | COMP | Equities | no |
 | 87 | TermStructureCommodities-QC | IND | Commodities | no |
-| 88 | composite-c1-multiasset | COMP | Multi-asset | no |
-| 89 | composite-c2-equityfactor | COMP | Equities | no |
+| 88 | composite-c1-multiasset | COMP | Multi-asset | yes |
+| 89 | composite-c2-equityfactor | COMP | Equities | yes |
 | 90 | Framework_Composite_FamaFrenchAllWeather | COMP | Multi-asset | yes |
 | 91 | Framework_Composite_EMATrend | COMP | Equities | yes |
 | 92 | Research-Executor | — | Multi-asset | yes |
