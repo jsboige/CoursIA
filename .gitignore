@@ -603,6 +603,13 @@ docker-configurations/services/tts-fishaudio/references/
 # ECE grading reports (student PII - never commit)
 reports/
 
+# Per-cohort grading configs are private "cuisine" (student grades/emails/overrides).
+# They live on GDrive: G:\Mon Drive\MyIA\Formation\<school>\<year>\grading\
+# and are resolved at runtime via the COURSIA_ROOT env var (fallback D:\CoursIA).
+# The repo keeps ONLY the school-agnostic engine (gradebook.py, run_grading.py).
+GradeBookApp/configs/*.py
+!GradeBookApp/configs/__init__.py
+
 # Claude Code MCP config (contains API tokens)
 .mcp.json
 .claude/qc-mcp-wrapper.py

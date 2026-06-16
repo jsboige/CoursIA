@@ -1,184 +1,87 @@
-# Configurations GradeBook
+# Configurations GradeBook — déplacées sur GDrive
 
-Ce répertoire contient les configurations spécifiques pour chaque classe/formation.
+> **Le dépôt CoursIA est agnostique des écoles.** Les configurations de notation
+> par cohorte (notes, emails étudiants, overrides, ajustements manuels) sont des
+> **données privées** : elles ne vivent **plus** dans ce dépôt public. Elles sont
+> sur Google Drive, point d'entrée unique de tout le contenu spécifique aux écoles.
 
-## Structure
-
-Chaque configuration est un module Python autonome qui définit un dictionnaire `CONFIG` et peut être exécuté directement.
+## Où vivent les configs
 
 ```
-configs/
-├── __init__.py              # Package Python
-├── README.md                # Ce fichier
-├── epf_2026_ml.py          # Config EPF MIS 2026 - Machine Learning
-└── epf_2026_genai.py       # Config EPF GenAI 2026 - IA Générative
+G:\Mon Drive\MyIA\Formation\<école>\<année>\grading\
 ```
 
-## Configurations disponibles
+Exemples (2026) :
 
-### EPF MIS 2026 - Machine Learning (`epf_2026_ml.py`)
-- **Cours**: MSMIS5IN11 - IA probabiliste et machine learning
-- **Moyenne cible**: 15.5/20
-- **Écart-type cible**: 2.0
-- **Pondération**: 50% professeur / 50% étudiants
+| École / cohorte | Dossier GDrive | Fichiers |
+|-----------------|----------------|----------|
+| EPITA-IS — PrCon | `Formation\Epita\2026\grading\` | `prcon_2026_config.py`, `compile_prcon_2026.py`, `epf_2026_prcon.py` (collégiale, *superseded*) |
+| EPF — GenAI / MIS / Min1 / Min2 | `Formation\EPF\2026\grading\` | `epf_2026_genai.py`, `epf_2026_ml.py`, `epf_2026_min1.py`, `epf_2026_min2.py` |
+| ECE | `Formation\ECE\2026\grading\` | cf [docs/reference/ece-grading.md](../../docs/reference/ece-grading.md) |
+| ESGF | `Formation\ESGF\2026\grading\` | cf [docs/reference/esgf-grading.md](../../docs/reference/esgf-grading.md) |
 
-### EPF GenAI 2026 - IA Générative (`epf_2026_genai.py`)
-- **Cours**: MSMIN5IN52 - IA Générative et Chatbots
-- **Moyenne cible**: 15.0/20
-- **Écart-type cible**: 2.0
-- **Pondération**: 50% professeur / 50% étudiants
-- **Groupes blacklistés**: Gestion des doublons connus
+## Ce qui reste dans le dépôt (moteur agnostique)
 
-## Utilisation
+- [`gradebook.py`](../gradebook.py) — pipeline de notation (collégiale, redressement statistique, multi-épreuve)
+- [`run_grading.py`](../run_grading.py) — orchestrateur historique
+- `configs/__init__.py` — marqueur de package (vide, configs sur GDrive)
 
-### Méthode 1: Exécution directe (recommandé)
+## Résolution du moteur depuis GDrive — `COURSIA_ROOT`
 
-Depuis le répertoire `configs/`:
+Chaque config sur GDrive retrouve le moteur du dépôt via la variable
+d'environnement `COURSIA_ROOT` (fallback `D:\CoursIA`) :
+
+```python
+if __name__ == '__main__':
+    import sys, os
+    from pathlib import Path
+    # Engine lives in the repo (school-agnostic); resolved via COURSIA_ROOT.
+    sys.path.insert(0, str(Path(os.environ.get("COURSIA_ROOT", r"D:\CoursIA")) / "GradeBookApp"))
+    from gradebook import run_pipeline
+    run_pipeline(CONFIG)
+```
+
+## Exécution
+
 ```bash
-cd GradeBookApp/configs
+# Définir COURSIA_ROOT si le dépôt n'est pas en D:\CoursIA
+setx COURSIA_ROOT "D:\CoursIA"          # une fois (Windows)
+
+cd "G:\Mon Drive\MyIA\Formation\EPF\2026\grading"
 python epf_2026_ml.py
 python epf_2026_genai.py
 ```
 
-### Méthode 2: Module Python
+## Créer une nouvelle config
 
-Depuis la racine du projet:
-```bash
-python -m GradeBookApp.configs.epf_2026_ml
-python -m GradeBookApp.configs.epf_2026_genai
-```
+1. Dans `Formation\<école>\<année>\grading\` (pas dans le dépôt), dupliquer une config existante.
+2. Adapter `CONFIG` (chemins GDrive, mapping colonnes, `target_mean`/`target_std`, `professor_email`).
+3. Conserver le bloc `__main__` avec le shim `COURSIA_ROOT` ci-dessus.
+4. Tester : `python <nouvelle_config>.py`.
 
-### Méthode 3: Import programmatique
+## Structure du dictionnaire `CONFIG`
 
-```python
-from GradeBookApp.configs.epf_2026_ml import CONFIG
-from gradebook import run_pipeline
-
-# Modifier la config si besoin
-CONFIG['target_mean'] = 16.0
-
-# Exécuter le pipeline
-run_pipeline(CONFIG)
-```
-
-## Structure du dictionnaire CONFIG
-
-Chaque configuration doit définir les clés suivantes:
+Inchangée (le moteur `gradebook.py` la consomme telle quelle) :
 
 ```python
 CONFIG = {
-    # Identification
-    'nom_classe': str,  # Nom de la classe/formation
-    
-    # Chemins des fichiers (absolus ou relatifs)
-    'inscriptions_path': str,      # CSV des inscriptions
-    'evaluations_path': str,       # CSV des évaluations
-    'output_path': str,            # Fichier Excel de sortie
-    
-    # Mapping des colonnes CSV → champs internes
-    'column_mapping': {
-        "Prénom": "prenom",
-        "Nom de famille": "nom",
-        "Projet": "sujet_projet_1"  # ou "Sujet"
-    },
-    
-    # Paramètres de redressement statistique
-    'target_mean': float,          # Moyenne cible (ex: 15.0)
-    'target_std': float,           # Écart-type cible (ex: 2.0)
-    
-    # Paramètres de pondération
-    'teacher_weight': float,       # 1.0 = 50%/50%, 2.0 = 66%/33%
-    'professor_email': str,        # Email du professeur
-    
-    # Groupes blacklistés (optionnel)
-    'blacklisted_groups': list     # Liste des noms de groupes à exclure
+    'nom_classe': str,
+    'inscriptions_path': str,      # CSV inscriptions (GDrive)
+    'evaluations_path': str,       # CSV évaluations (GDrive)
+    'output_path': str,            # XLSX de sortie (GDrive)
+    'column_mapping': {"Prénom": "prenom", "Nom de famille": "nom", "Projet": "sujet_projet_1"},
+    'target_mean': float,
+    'target_std': float,
+    'teacher_weight': float,       # 1.0 = 50%/50%
+    'professor_email': str,
+    'blacklisted_groups': list,    # optionnel
 }
 ```
 
-## Créer une nouvelle configuration
-
-### Étape 1: Créer le fichier
-
-Dupliquer une configuration existante:
-```bash
-cd GradeBookApp/configs
-cp epf_2026_ml.py nouvelle_classe.py
-```
-
-### Étape 2: Adapter le CONFIG
-
-Modifier les paramètres selon votre classe:
-```python
-CONFIG = {
-    'nom_classe': 'Nouvelle Classe 2026',
-    'inscriptions_path': r"chemin/vers/inscriptions.csv",
-    'evaluations_path': r"chemin/vers/evaluations.csv",
-    'output_path': r"chemin/vers/Notes_Finales.xlsx",
-    # ... autres paramètres
-}
-```
-
-### Étape 3: Tester
-
-```bash
-python nouvelle_classe.py
-```
-
-### Étape 4: Mettre à jour `__init__.py`
-
-Ajouter le nouveau module dans `__all__`:
-```python
-__all__ = ['epf_2026_ml', 'epf_2026_genai', 'nouvelle_classe']
-```
-
-## Notes techniques
-
-### Gestion des chemins
-
-Les configurations utilisent des chemins absolus vers Google Drive pour faciliter l'exécution.
-Si Google Drive n'est pas monté, le pipeline créera les fichiers localement.
-
-### Imports dynamiques
-
-Les configurations ajoutent automatiquement le répertoire parent au `sys.path`:
-```python
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from gradebook import run_pipeline
-```
-
-Cela permet d'importer [`gradebook.py`](../gradebook.py) même depuis le sous-répertoire.
-
-### Mapping des colonnes
-
-Le `column_mapping` permet de gérer les variations de nommage entre les CSV:
-- EPF MIS utilise `"Sujet"` pour le projet
-- EPF GenAI utilise `"Projet"` pour le projet
-
-Les deux sont mappés vers `"sujet_projet_1"` en interne.
-
-## Dépannage
-
-### Erreur "No module named 'gradebook'"
-
-Vérifiez que vous exécutez depuis le bon répertoire ou que le `sys.path` est correctement configuré.
-
-### Fichier Excel non créé
-
-Le chemin Google Drive peut être inaccessible. Vérifiez les logs pour le chemin de fallback local.
-
-### Doublons détectés
-
-Ajoutez les groupes problématiques dans `blacklisted_groups`:
-```python
-'blacklisted_groups': [
-    "Groupe_problematique_1",
-    "Groupe_problematique_2"
-]
-```
+Configs multi-épreuves (Min1/Min2) : voir la clé `epreuves` dans les fichiers sur GDrive.
 
 ## Voir aussi
 
-- [`gradebook.py`](../gradebook.py) - Pipeline principal
-- [`run_grading.py`](../run_grading.py) - Point d'entrée historique
+- [`gradebook.py`](../gradebook.py) — moteur
+- [docs/reference/ece-grading.md](../../docs/reference/ece-grading.md) — même schéma (ECE)
+- [docs/reference/esgf-grading.md](../../docs/reference/esgf-grading.md) — même schéma (ESGF)
