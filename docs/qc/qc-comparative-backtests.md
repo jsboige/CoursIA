@@ -65,7 +65,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 30 | Temporal-CNN-Prediction | DL | Multi-asset | 0.54 | — | — | — | robuste |
 | 31 | RL-DQN-Trading | RL | Portfolio | ~~0.53~~ → **0.58 (2020-21 only)** ✓post-#2801 | 18.2 | 33.2 | 0.55 | **non re-verifiable** (locked to ~1yr window, runtime error on extension, PSR 30.2%) |
 | 31b | RL-Portfolio-Q-Learning | RL | Equities | 0.58 | 18.2 | 33.2 | — | historique (2020-2021) |
-| 32 | LSTM-Forecasting | DL | Multi-asset | 0.53 | — | — | — | robuste |
+| 32 | LSTM-Forecasting | DL | Multi-asset (SPY/QQQ/IWM/EFA/TLT/GLD/IEF) | ~~0.53~~ → **0.525** ✓post-#2801 | 11.3 | 32.5 | 0.35 | robuste (confirmed flat -1%, near-immune despite weekly rebalance — fee-homogeneous 7-US-ETF basket + concentrated 2-4 selection = low realized turnover; PSR 13.4% low not a true leader; sklearn MLPClassifier not real LSTM per docstring) |
 | 33 | TrendStocks-Alpha | IND | Equities | ~~0.52~~ → **0.51** ✓post-#2801 | 15.7 | 39.6 | 0.40 | robuste (confirmed -2%, high-turnover near-immune to fees, PSR 5.6%) |
 | 34 | Portfolio-IBKR-Binance-Hybrid | COMP | Multi-asset | 0.52 | 15.7 | — | — | robuste |
 | 35 | Framework_Composite_FamaFrenchAllWeather | COMP | Multi-asset | — | — | — | — | robuste |
@@ -111,8 +111,9 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | TrendStocksLite | 28817425 | 0.72 | **0.71** | -2% | robuste (confirmed — weekly trend on 15 liquid large-caps, low realized turnover, near-immune, PSR 25.0%) |
 | ML-RandomForest | 29434751 | 0.68 | **0.70** | +3% | robuste (confirmed — bi-weekly RF on 10 mega-caps, moderate turnover near-immune on fee-homogeneous US equity, PSR 18.4%, baseline-clone 32940005) |
 | ML-XGBoost | 29434753 | 0.57 | **0.555** | -3% | robuste (confirmed flat-to-mildly-down, NOT an upward correction — bi-weekly GradientBoostingRegressor on fee-homogeneous 15 mega-caps = near-immune; PSR 10.6% low, not a true leader; universe corrected Multi-asset→Equities; baseline-clone 32958201) |
+| LSTM-Forecasting | 29443476 | 0.53 | **0.525** | ~0% | robuste (confirmed near-flat — multi-asset 7-US-ETF (SPY/QQQ/IWM/EFA/TLT/GLD/IEF) weekly-rebalance NN HOLDS; fee-homogeneous ETF basket + concentrated 2-4 selection = low realized turnover (discriminator v3); contrasts Temporal-CNN -70% DL collapse; sklearn MLPClassifier (64,32) not real LSTM per docstring; PSR 13.4% low; baseline-clone 32970990) |
 
-**Finding (methodological, now 28-strategy sample)** : the remediation impact is **not
+**Finding (methodological, now 29-strategy sample)** : the remediation impact is **not
 uniform**, and the batch-4 results *refine and partly correct* the earlier 10-strategy pattern.
 The distinguishing axis is **not** asset class, nor ML-vs-indicator alone — it is the
 combination of (a) the fee-per-trade the asset class carries and (b) how the strategy turns
