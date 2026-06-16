@@ -389,12 +389,10 @@ Search/
 │       └── App-18-HyperparameterTuning.ipynb
 │
 ├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
-│
-├── Foundations/                           # (deprecated) Ancien repertoire
-│   └── README.md
+├── MetaGeneticSharp-Notebooks/            # Notebooks pedagogiques MGS-1..8 (.NET Interactive, consomment le sous-module)
+├── Part4-Metaheuristics/                  # Entree Partie 4 (side track C# .NET 9 ; README d'orientation vers les notebooks MGS)
 │
 ├── CSPs_Intro.ipynb                       # Ancien notebook (conserve)
-├── Exploration_non_informee_*.ipynb       # Anciens notebooks (conerves)
 ├── GeneticSharp-EdgeDetection.ipynb       # Ancien notebook (conserve)
 ├── Portfolio_Optimization_GeneticSharp.ipynb # Ancien notebook (conserve)
 └── PyGad-EdgeDetection.ipynb              # Ancien notebook (conserve)
