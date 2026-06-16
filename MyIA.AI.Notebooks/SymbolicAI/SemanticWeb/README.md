@@ -417,7 +417,13 @@ SemanticWeb/
 │   ├── university.owl       # Ontologie OWL 2
 │   ├── person-shape.ttl     # Shapes SHACL
 │   ├── person-data.ttl      # Données test (avec erreurs)
-│   └── movies.csv           # Dataset pour KG
+│   ├── movies.csv           # Dataset pour KG
+│   ├── temp_company.ttl     # Données Turtle entreprise (SW-7b)
+│   ├── temp_company.owl     # Ontologie OWL entreprise (SW-7b)
+│   ├── pizza_test.owl       # Ontologie test reasoners (SW-13)
+│   ├── product.jsonld       # Exemple JSON-LD (SW-9)
+│   ├── example.srj          # Résultats SPARQL JSON (SW-5)
+│   └── example.srx          # Résultats SPARQL XML (SW-5)
 ├── SW-1-CSharp-Setup.ipynb
 ├── SW-2-CSharp-RDFBasics.ipynb
 ├── SW-2b-Python-RDFBasics.ipynb     # Sidetrack
