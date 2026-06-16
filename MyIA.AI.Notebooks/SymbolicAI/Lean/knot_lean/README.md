@@ -5,7 +5,7 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
 Epic #2874 (Phase 5 en cours). Toolchain `v4.31.0-rc1`.
 
-## État des sorries (vérifié 2026-06-16, 19 réels — 16 + 3 du transfer backward PARTIEL #3124)
+## État des sorries (vérifié 2026-06-17, 18 réels — 16 + 2 du transfer backward PARTIEL #3124, `num` prouvé)
 
 Deux comptes, selon le filtre :
 
@@ -13,18 +13,19 @@ Deux comptes, selon le filtre :
 |---------|------------|-------------------|
 | `Knots/Basic.lean` | 0 | 1 |
 | `Knots/Reidemeister.lean` | 2 | 2 |
-| `Knots/Invariant.lean` | 6 | 7 |
+| `Knots/Invariant.lean` | 5 | 6 |
 | `Knots/Conway.lean` | 8 | 11 |
 | `Knots/Lidman.lean` | 3 | 5 |
 | `Knots/MathlibPrerequisites.lean` | 0 | 2 |
-| **Total** | **19** | **28** |
+| **Total** | **18** | **27** |
 
 - **sorry réels** (`exact sorry`, `:= sorry`, `:= by sorry`) = ce qui manque
-  vraiment comme preuve. **19** au total — 16 stables + **3 du transfer backward
-  PARTIEL `tricolorable_backward` (#3124)** : sous-buts `fox`/`num`/`col`
-  laissés en sorry après décomposition (cœur `hcolPres` prouvé, cf. § Phase 5).
+  vraiment comme preuve. **18** au total — 16 stables + **2 du transfer backward
+  PARTIEL `tricolorable_backward` (#3124)** : sous-buts `fox`/`col` laissés en
+  sorry après décomposition (`num` PROUVÉ par parité `wf`, cf. § Phase 5 ;
+  cœur `hcolPres` prouvé).
 - **sorry prose** (toute ligne contenant `sorry`, filtre CI `prose-header`) =
-  **baseline CI 28** (workflow `lean-knot.yml`). Ce compte inclut les
+  **baseline CI 27** (workflow `lean-knot.yml`, baissé de 28 après preuve `num`). Ce compte inclut les
   occurrences dans les commentaires de diagnostic (ex. le commentaire sur
   `KnotDiagram.wf` dans `Basic.lean`).
 
@@ -48,7 +49,7 @@ sauf justification documentée dans le body PR.
   réfutant `tricolorable_invariant` sous le modèle PR1 (diagnostic, cf. § Phase 5)
 - [x] `trefoil_wf`, `unknot_wf`, `figureEight_wf` — les 3 diagrammes nommés satisfont la parité PD de `KnotDiagram.wf`
 - [x] `Reidemeister1Connected.tricolorable_forward` (#3000, MERGED) — transfer **forward** de la 3-colorabilité d₁→d₂ sous le modèle R1 connecté (`Invariant.lean` L478, preuve complète sans sorry via `hcolF1`/`hcolF2b`/`hcolF2c`)
-- [~] `Reidemeister1Connected.tricolorable_backward` (#3124, MERGED, **PARTIEL**) — transfer **backward** d₂→d₁ : `hcolPres` (préservation des couleurs sur les labels préservés, cœur constructif) **PROUVÉ** ; 3 sous-buts résiduels `fox`/`num`/`col` laissés en sorry (recherche §9.1, décomposition instruite user)
+- [~] `Reidemeister1Connected.tricolorable_backward` (#3124, MERGED, **PARTIEL**) — transfer **backward** d₂→d₁ : `hcolPres` (préservation des couleurs sur les labels préservés, cœur constructif) **PROUVÉ** ; `num` PROUVÉ (parité `wf` : `crossings.length ≥ 2 ⟹ numEdges ≥ 2`) ; 2 sous-buts résiduels `fox`/`col` restent en sorry (recherche §9.1, décomposition instruite user)
 
 ### Scaffolding (sorry, cible formelle)
 
