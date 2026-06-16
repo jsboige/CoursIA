@@ -76,6 +76,18 @@ Les notebooks chargent les DLL via `#r "c:/dev/MetaGeneticSharp/..."` (chemin du
 
 Le code de la bibliothèque vit dans le **fork** [jsboige/MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp), monté ici comme sous-module (`MyIA.AI.Notebooks/Search/MetaGeneticSharp/`). Les notebooks pédagogiques (`MetaGeneticSharp-Notebooks/`) sont propriété du dépôt CoursIA et consomment la bibliothèque via ses DLLs buildées. Ce point d'entrée ferme la boucle : depuis la série Search Python (Parties 1-2), on bascule vers le side track C#, qui redirige à son tour vers le fork pour le code source complet, les tests et la feuille de route.
 
+## Références
+
+Les métaheuristiques reconstruites dans cette partie suivent les articles fondateurs. Les liens bibliothèque (GeneticSharp, fork MGS) sont regroupés dans la section « Liens » ci-dessous.
+
+| Notebook(s) | Métaheuristique | Référence |
+|-------------|-----------------|-----------|
+| MGS-1 (Introduction) | Algorithme génétique | Holland, J. H. (1975) — *Adaptation in Natural and Artificial Systems*. University of Michigan Press. |
+| MGS-5 (Benchmarks) | Whale Optimization Algorithm | Mirjalili, S., & Lewis, A. (2016) — « The Whale Optimization Algorithm », *Advances in Engineering Software* 95. |
+| MGS-8 (EverestRelief) | Equilibrium Optimizer | Faramarzi, A., Heidarinejad, M., Stephens, B., & Mirjalili, S. (2020) — « Equilibrium optimizer: A novel optimization algorithm », *Knowledge-Based Systems* 197. |
+| MGS-8 (EverestRelief) | Particle Swarm Optimization (baseline) | Kennedy, J., & Eberhart, R. (1995) — « Particle Swarm Optimization », *Proc. IEEE Int. Conf. on Neural Networks*. |
+| MGS-5, MGS-6 | No-Free-Lunch | Wolpert, D. H., & Macready, W. G. (1997) — « No free lunch theorems for optimization », *IEEE Trans. on Evolutionary Computation* 1(1). |
+
 ## Liens
 
 - [Fork jsboige/MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — code source, tests, ROADMAP

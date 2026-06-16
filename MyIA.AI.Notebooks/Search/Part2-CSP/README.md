@@ -111,6 +111,18 @@ CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
 | [SymbolicAI/SMT/Z3](../../SymbolicAI/SMT/Z3/README.md) | Solveur SMT | CSP-6 (LCG) et automates symboliques |
 | [Probas/Infer](../../Probas/Infer/) | Infer.NET | Modèles graphiques et contraintes |
 
+## Références
+
+Couverture par notebook des sources fondatrices de la programmation par contraintes :
+
+| Notebook(s) | Référence |
+|-------------|-----------|
+| CSP-1 à 6 | Tsang, E. (1993) — *Foundations of Constraint Satisfaction*. Academic Press. La référence classique sur le modèle CSP et les algorithmes de résolution. |
+| CSP-1, CSP-2 | Russell, S., & Norvig, P. — *Artificial Intelligence: A Modern Approach* (4e éd., 2021), ch. « Constraint Satisfaction Problems ». Formalisation (X, D, C) et backtracking avec MRV/LCV. |
+| CSP-2 (Consistency) | Mackworth, A. K. (1977) — « Consistency in Networks of Relations », *Artificial Intelligence* 8(1). Origine de l'arc-consistency (AC-3). |
+| CSP-3 (Advanced) | Régin, J.-C. (1994) — « A filtering algorithm for constraints of difference in CSPs », *AAAI-94*. Le propagateur global AllDifferent. |
+| CSP-6 (Hybridization) | Ohrimenko, I., Stuckey, P. J., & Codish, M. (2009) — « Propagation via Lazy Clause Generation », *Constraints* 14(3). Origine de la Lazy Clause Generation. |
+
 ## Navigation
 
 [<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour à la série Search](../README.md) | [Applications ->](../Applications/README.md)

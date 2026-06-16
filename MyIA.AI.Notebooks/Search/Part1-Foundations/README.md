@@ -68,6 +68,19 @@ Pour le setup complet, voir le [README de la série Search](../README.md).
 
 Cette partie irrigue le reste du dépôt : les Dancing Links de Search-8 sont à l'œuvre dans la série [Sudoku](../../Sudoku/README.md), Minimax et MCTS (Search-6/7) se prolongent dans [GameTheory](../../GameTheory/README.md) avec OpenSpiel puis dans [RL](../../RL/README.md) côté politiques apprises, et les prédicats Z3 de Search-10 ouvrent sur [SymbolicAI](../../SymbolicAI/README.md).
 
+## Références
+
+Couverture par notebook des sources fondatrices mobilisées dans cette partie :
+
+| Notebook(s) | Référence |
+|-------------|-----------|
+| Search-1 à 7, 9 | Russell, S., & Norvig, P. — *Artificial Intelligence: A Modern Approach* (4e éd., 2021). La référence pour la formalisation en espace d'états, les algorithmes informés/non informés et la recherche dans les jeux. |
+| Search-3 (Informed) | Hart, P. E., Nilsson, N. J., & Raphael, B. (1968) — « A Formal Basis for the Heuristic Determination of Minimum Cost Paths », *IEEE Trans. on Systems Science and Cybernetics* 4(2). L'article fondateur d'A*. |
+| Search-5 (GeneticAlgorithms) | Holland, J. H. (1975) — *Adaptation in Natural and Artificial Systems*. University of Michigan Press. Origine des algorithmes génétiques. |
+| Search-7 (MCTS) | Browne, C. B., Powley, E., et al. (2012) — « A Survey of Monte Carlo Tree Search Methods », *IEEE Trans. on Computational Intelligence and AI in Games* 4(1). |
+| Search-8 (DancingLinks) | Knuth, D. E. (2000) — « Dancing Links », dans *Millennial Perspectives in Computer Science* (Springer). |
+| Search-11 (Metaheuristics) | Kennedy, J., & Eberhart, R. (1995) — « Particle Swarm Optimization », *Proc. IEEE Int. Conf. on Neural Networks*. Origine du PSO. |
+
 ## FAQ
 
 | Problème | Solution |
