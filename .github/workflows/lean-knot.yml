@@ -12,7 +12,7 @@ name: Lean Knot CI
 #
 # Uses the shared lean-build.yml reusable workflow.
 #
-# Sorry profile (verified 2026-06-14, prose-header mode, baseline=25):
+# Sorry profile (verified 2026-06-15, prose-header mode, baseline=28):
 # knot_lean's real sorries are INLINE (`exact sorry`, `:= sorry`,
 # `sorry -- comment`), never bare `sorry` on its own line. The standalone-tactic
 # filter (`^\s*sorry\s*$`) counts 0 here and would catch no regression, so we
@@ -20,8 +20,12 @@ name: Lean Knot CI
 # real sorry and fails on any addition. Breakdown of the 25:
 #   - Basic.lean:                1 (prose: TODO comment on well-formedness)
 #   - Reidemeister.lean:         2 (reidemeister_theorem ×2 — PL topology, OOS)
-#   - Invariant.lean:            4 (tricolorable_invariant, trefoil_not_unknot,
-#                                  unknottingNumber + prose)
+#   - Invariant.lean:            7 (tricolorable_invariant, trefoil_not_unknot,
+#                                  unknottingNumber + prose; +3 from the PARTIAL
+#                                  `tricolorable_backward` transfer — Epic #2874
+#                                  PR3: colour-preservation proven, 3 residual
+#                                  tactic sorries on the Fox-transfer assembly,
+#                                  user-authorised, ai-01 to advise)
 #   - Conway.lean:              11 (Conway knot 11n34, Kinoshita-Terasaka,
 #                                  mutation — scaffolding)
 #   - Lidman.lean:               5 (11n102 unknotting number = 2 — Heegaard-Floer)
@@ -51,5 +55,5 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
       display-name: knot_lean
-      sorry-baseline: "25"
+      sorry-baseline: "28"
       sorry-filter-mode: prose-header

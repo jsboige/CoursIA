@@ -1081,4 +1081,96 @@ quantifies *why* the two-slot bucket cannot be reduced to the single-slot
 construction. CI baseline remains unchanged.
 -/
 
+/-! ## 10. Backward transfer — formal declaration (partial, Epic #2874 PR3)
+
+The mate of `Reidemeister1Connected.tricolorable_forward` (PR #3000): a
+tricoloring of `d₂` restricts to one of `d₁` under the strengthened connected-R1
+model. The §9 decomposition analysis splits the proof by the Fox mode at the
+appended kink `C = ⟨a, b, c, c⟩` (with `b = d₁.numEdges + 1`, `c = d₁.numEdges + 2`):
+
+* **all-equal mode** (`col₂(a-1) = col₂(b-1) = col₂(c-1)`): the naïve
+  restriction `col₁ := col₂|_{Fin d₁.numEdges}` is Fox-preserving — the
+  `a → b` rename at the modified endpoint crossing is colour-invisible. The
+  sub-lemma `tricolorable_backward` below proves the **colour-preservation**
+  half constructively (a preserved label reads the same colour under `col₁` in
+  `d₁` as under `col₂` in `d₂`; mirrors `tricolorable_forward`'s `hcolF1`).
+* **all-distinct mode** (`col₂(a-1) ≠ col₂(b-1)`): needs the colour-symmetry /
+  multi-position rebalancing characterised empirically in §9.4–§9.6 (the 47.9%
+  naïve-fail regime). Research-level.
+
+The remaining assembly — Fox-transfer at every `d₁` crossing (the unchanged
+ones inherit via the colour-preservation fact, mirroring `h_inherit`; the
+modified crossing `Y` and the all-distinct kink mode need the §9.1
+construction), the `d₁.numEdges ≥ 2` lift (derivable from `d₁.wf` + the
+proper-arc hypothesis, but a separate wf-parity argument), and the `≥ 2`-colour
+lift — is left as three residual tactic `sorries` for ai-01 to advise on. This
+raises the Knots-CI prose-header baseline from 25 to 28 (three residual tactic
+`sorries`, one per sub-goal). User-authorised partial delivery (2026-06-15):
+ship with residual sub-proof obligations that ai-01 will advise on. Together
+with `tricolorable_forward` (#3000) this yields the R1 bi-implication needed
+to unblock the §2 placeholder `tricolorable_invariant`. See #2874.
+-/
+
+/-- BACKWARD tricolorability transfer (PARTIAL): under the strengthened
+    connected-R1 model `Reidemeister1Connected d₁ d₂`, a tricoloring of `d₂`
+    restricts to a tricoloring of `d₁`. The colour-preservation sub-lemma is
+    discharged constructively (mirrors `tricolorable_forward`'s `hcolF1`); the
+    Fox-transfer assembly and the all-distinct kink mode remain as residual
+    tactic `sorries` (see §9.1, §9.4–§9.6). -/
+theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) (htri₂ : IsTricolorable d₂) :
+    IsTricolorable d₁ := by
+  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, ha1, ha2, _hamem, _hproper, hrename, hsurg⟩ := h
+  -- Surgery shape (mirrors `tricolorable_forward`).
+  have hd₂num : d₂.numEdges = d₁.numEdges + 2 := by
+    simpa using congrArg (·.numEdges) hsurg
+  have hd₂cross : d₂.crossings =
+      d₁.crossings.set i.val Y' ++
+        [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] := by
+    simpa using congrArg (·.crossings) hsurg
+  obtain ⟨col₂, hfox₂, hge2₂, h2col₂⟩ := htri₂
+  -- Naïve restriction: `col₁` embeds `d₁`'s edge indices into `d₂` (the +2
+  -- fresh edges sit above `Fin d₁.numEdges`). Mirrors `tricolorable_forward`'s
+  -- `emb`/`col₂` (PR #3000), reversed.
+  have hd₂ge₁ : d₁.numEdges ≤ d₂.numEdges := by omega
+  let col₁ : Fin d₁.numEdges → TriColor :=
+    fun k => col₂ ⟨k.val, Nat.lt_of_lt_of_le k.isLt hd₂ge₁⟩
+  -- (F1) Colour preservation: a preserved label `l ∈ [1, d₁.numEdges]` reads
+  -- the SAME colour under `col₁` (in `d₁`) as under `col₂` (in `d₂`). Pure
+  -- arithmetic on the `(l-1) % numEdges` index; the reverse of forward `hcolF1`.
+  -- This is the constructive core that the unchanged-crossing Fox-inheritance
+  -- (`h_inherit` in the forward proof) rides on.
+  have hcolPres : ∀ l, 1 ≤ l → l ≤ d₁.numEdges →
+      d₁.colorAtNat col₁ l = d₂.colorAtNat col₂ l := by
+    intro l hl1 hln
+    have hn0d₁ : d₁.numEdges ≠ 0 := by omega
+    have hn0d₂ : d₂.numEdges ≠ 0 := by omega
+    simp only [KnotDiagram.colorAtNat, dif_neg hn0d₁, dif_neg hn0d₂]
+    have h1 : (l - 1) % d₁.numEdges = l - 1 := Nat.mod_eq_of_lt (by omega)
+    have h2 : (l - 1) % d₂.numEdges = l - 1 := Nat.mod_eq_of_lt (by omega)
+    simp only [h1, h2]
+    rfl
+  -- Residual assembly (§9): Fox-transfer at every `d₁` crossing under `col₁`
+  -- (unchanged crossings inherit via `hcolPres` — mirrors forward `h_inherit`;
+  -- the modified crossing `Y` and the all-distinct kink mode need the §9.1
+  -- colour-symmetry construction), the `d₁.numEdges ≥ 2` lift (wf + proper-arc),
+  -- and the `≥ 2`-colour lift. Left for ai-01 to advise on.
+  refine' ⟨col₁, ?fox, ?num, ?col⟩
+  case fox =>
+    -- ∀ c ∈ d₁.crossings, triColorConditionAt d₁ col₁ c.
+    -- Unchanged crossings: c ∈ d₂.crossings (survives `set i Y'`), Fox at c
+    -- under col₂ holds (hfox₂), transferred via hcolPres.
+    -- Modified crossing Y = d₁.crossings.get i: Fox under col₁; all-equal kink
+    -- mode colour-invisible, all-distinct mode research-level (§9.1, §9.6).
+    sorry
+  case num =>
+    -- d₁.numEdges ≥ 2: derivable from d₁.wf + proper-arc (j ≠ i ⟹ length ≥ 2
+    -- ⟹ non-degenerate ⟹ wf parity forces numEdges ≥ 2). Separate wf argument.
+    sorry
+  case col =>
+    -- ≥ 2 colours under col₁: under the all-equal kink mode the two distinct
+    -- colours of col₂ embed into Fin d₁.numEdges (the fresh edges duplicate
+    -- col₂(a-1)). Follows from the Fox-mode case split.
+    sorry
+
 end Knots
