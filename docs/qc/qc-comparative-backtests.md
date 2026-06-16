@@ -57,7 +57,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 23 | BlackLitterman-Momentum | COMP | Equities/ETF | ~~0.60~~ → **0.83** ✓post-#2801 | 15.8 | 16.9 | 0.94 | **robuste (catalog CORRECTED UPWARD +38%)** — catalog 0.60 was stale; code already had IBKR so the docstring v2 BEST (0.823, CAGR 15.7%, MaxDD -16.9%) was the WITH-fees value; monthly rebalance + fee-homogeneous 15-stock US equity basket = near-immune to fees; **PSR 51.4% = true leader (borderline significant)** |
 | 24 | Crypto-MultiCanal | IND | Crypto (BTC) | ~~0.58~~ → **0.33** ✓post-#2801 | 4.6 | 14.1 | 0.33 | **historique** (downgraded -43%, crypto indicator NOT robust post-fees, PSR 13.0%) |
 | 25 | ML-FeatureEngineering | ML | Equities (10 mega-caps) | ~~0.57~~ → **0.65** ✓post-#2801 | 18.7 | 28.1 | 0.67 | robuste (catalog CORRECTED UPWARD +15% — was stale; real Sharpe of current RF+GB 18-feature ensemble near-immune on fee-homogeneous US equity; PSR 15.1% low, not a true leader; universe corrected Multi-asset→Equities; baseline-clone 32952140) |
-| 26 | Markov-Regime-Detection | ML | Equities | 0.57 | — | — | — | robuste |
+| 26 | Markov-Regime-Detection | ML | Multi-asset (SPY/TLT/GLD) | ~~0.57~~ → **0.375** ✓post-#2801 | 8.4 | 24.4 | 0.35 | **historique** (downgraded -34% — catalog 0.57 was STALE; docstring v1.0 already claimed 0.408, IBKR fees add only mild ~8% drag to 0.375; binary 80% SPY↔TLT swap per regime change = high per-event turnover despite low frequency; PSR 5.8%) |
 | 27 | ML-XGBoost | ML | Equities (15 mega-caps) | ~~0.57~~ → **0.555** ✓post-#2801 | 14.5 | 40.4 | 0.36 | robuste (confirmed mild -3%, bi-weekly GradientBoostingRegressor on fee-homogeneous 15 mega-caps = near-immune; PSR 10.6% low, not a true leader; universe corrected Multi-asset→Equities) |
 | 28 | MomentumStrategy | IND | Equities | ~~0.57~~ → **0.50** ✓post-#2801 | 11.2 | 25.8 | 0.43 | robuste borderline (at threshold -12%, PSR 9.3% non-significant) |
 | 28b | MeanReversion | IND | Equities (sectors) | ~~0.81~~ → **0.81** ✓post-#2801 | 10.0 | 7.5 | 1.34 | robuste (confirmed, PSR 46.8% near-significant, low-turnover multi-asset holds = signal-frequency immunity) |
@@ -111,8 +111,9 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | TrendStocksLite | 28817425 | 0.72 | **0.71** | -2% | robuste (confirmed — weekly trend on 15 liquid large-caps, low realized turnover, near-immune, PSR 25.0%) |
 | ML-RandomForest | 29434751 | 0.68 | **0.70** | +3% | robuste (confirmed — bi-weekly RF on 10 mega-caps, moderate turnover near-immune on fee-homogeneous US equity, PSR 18.4%, baseline-clone 32940005) |
 | ML-XGBoost | 29434753 | 0.57 | **0.555** | -3% | robuste (confirmed flat-to-mildly-down, NOT an upward correction — bi-weekly GradientBoostingRegressor on fee-homogeneous 15 mega-caps = near-immune; PSR 10.6% low, not a true leader; universe corrected Multi-asset→Equities; baseline-clone 32958201) |
+| Markov-Regime-Detection | 29398512 | 0.57 | **0.375** | -34% | **historique** (downgraded — catalog 0.57 was stale, docstring v1.0 already claimed 0.408; NOT primarily a fee collapse, IBKR adds only mild ~8% drag; multi-asset (SPY/TLT/GLD) WITH turnover suppression yet binary 80% SPY↔TLT swap = high per-event turnover; challenges refined discriminator — difference vs RegimeSwitching (+6% held) is per-trade SIZE not frequency; PSR 5.8%; universe Equities→Multi-asset; baseline-clone 32964364) |
 
-**Finding (methodological, now 28-strategy sample)** : the remediation impact is **not
+**Finding (methodological, now 29-strategy sample)** : the remediation impact is **not
 uniform**, and the batch-4 results *refine and partly correct* the earlier 10-strategy pattern.
 The distinguishing axis is **not** asset class, nor ML-vs-indicator alone — it is the
 combination of (a) the fee-per-trade the asset class carries and (b) how the strategy turns
