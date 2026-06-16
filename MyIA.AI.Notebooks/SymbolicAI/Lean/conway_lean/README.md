@@ -5,7 +5,7 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 ## Status
 
 - **Toolchain**: v4.30.0-rc2
-- **Sorry count**: 2 (HashlifeCorrectness P4/P5 — prover targets, Epic #2162)
+- **Sorry count**: 7 (all in `HashlifeCorrectness.lean` — P4 double-nine inductive step [5] + P5 large-n jump [2], Epic #2162)
 - **Build**: `lake build Conway` -- SUCCESS (3352 jobs)
 - **Dependencies**: Mathlib4
 
@@ -38,7 +38,7 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 | `Conway/Life/Computation.lean` | 0 | Hashlife cross-validation (6 + 6 fast), eater1 still-life (1), glider composition (5) |
 | `Conway/Life/HashlifeMemo.lean` | 0 | Memoized Hashlife for community pillar witnesses (OTCA 35K, UnitCell 4096, Gemini 33M) |
 | `Conway/Life/Pillars.lean` | 0 | Community-witness theorem scaffolding (4 pillars) |
-| `Conway/Life/HashlifeCorrectness.lean` | 2 | Bounded correctness theorem, prover targets P4/P5 (Epic #1453, #2162) |
+| `Conway/Life/HashlifeCorrectness.lean` | 7 | Bounded correctness `hashlife_correct`; P4/P5 prover targets (Epic #1453, #2162) |
 
 ### Phase 3 — Free Will Theorem (Epic #1651, COMPLETE)
 
@@ -77,10 +77,16 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
   - Eater 1 (fishhook) still-life proved by `native_decide`
   - Multi-period glider composition theorems
 - **Memoized Hashlife**: Community pillar witnesses (OTCA 35K gen, UnitCell 4096 gen, Gemini 33M gen)
-- **HashlifeCorrectness**: Central theorem `hashlifeResult_central_correct` with 5 sub-goals
-  - P1-P3 proven (base case k=0 in full generality via `2^16 native_decide`, PR #2810)
-  - P4: well-formedness membership (sorry kept, now provable after wf-fix PR #2795)
-  - P5: highest-level inductive step (sorry, plausibly true)
+- **HashlifeCorrectness**: bounded correctness `hashlife_correct`, decomposed P1-P5
+  - **P1-P3 proven** (base case `k=0` via `2^16 native_decide`, PR #2810)
+  - **P4 inductive step** (5 sorry): decomposed by #2975 scaffolding into four `: True`
+    sub-lemmas (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`,
+    `p4_half_steps_compose`) + glue `p4_succ_membership` (the real pointwise
+    biconditional). Research-level double-nine light-cone composition. The scaffolds'
+    real statements live in their docstrings — restate + prove, do not eliminate as `True`.
+  - **P5 large-n** (2 sorry): `p5_small_n_fallback` **PROVEN** (PR #2984); `p5_large_n_jump`
+    (P5.2, blocked on P4) + `p5_inductive_step` large-n branch (P5.3 glue) remain. Base
+    `n=0` proven (`hashlife_correct_base_zero` #2898, `evolveHashlifeFastAux_zero_n` #2901).
 
 ### Kochen-Specker + Free Will Theorem (Phase 3, PROVED)
 
