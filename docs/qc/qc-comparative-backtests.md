@@ -68,7 +68,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 32 | LSTM-Forecasting | DL | Multi-asset (SPY/QQQ/IWM/EFA/TLT/GLD/IEF) | ~~0.53~~ → **0.525** ✓post-#2801 | 11.3 | 32.5 | 0.35 | robuste (confirmed flat -1%, near-immune despite weekly rebalance — fee-homogeneous 7-US-ETF basket + concentrated 2-4 selection = low realized turnover; PSR 13.4% low not a true leader; sklearn MLPClassifier not real LSTM per docstring) |
 | 33 | TrendStocks-Alpha | IND | Equities | ~~0.52~~ → **0.51** ✓post-#2801 | 15.7 | 39.6 | 0.40 | robuste (confirmed -2%, high-turnover near-immune to fees, PSR 5.6%) |
 | 34 | Portfolio-IBKR-Binance-Hybrid | COMP | Multi-asset | 0.52 | 15.7 | — | — | robuste |
-| 35 | Framework_Composite_FamaFrenchAllWeather | COMP | Multi-asset | — | — | — | — | robuste |
+| 35 | Framework_Composite_FamaFrenchAllWeather | COMP | Multi-asset (VLUE/MTUM/SIZE/QUAL/USMV + SPY/IEF/GLD/XLP) | — → **0.684** ✓post-#2801 | 13.7 | 7.0 | 1.95 | robuste (**TRUE LEADER PSR 87.5%** — gap-fill first real data; 20/80 FamaFrench/AllWeather composite, monthly rebalance on fee-homogeneous 9-ETF basket HOLDS where AllWeather standalone collapsed -30%; OOS 2023-2026, MaxDD -7% exceptional) |
 | 36 | Framework_Composite_EMATrend | COMP | Equities | — | — | — | — | robuste |
 | 37 | composite-c1-multiasset | COMP | Multi-asset | — | — | — | — | robuste |
 | 38 | composite-c2-equityfactor | COMP | Equities | — | — | — | — | robuste |
@@ -115,8 +115,9 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | Markov-Regime-Detection | 29398512 | 0.57 | **0.375** | -34% | **historique** (downgraded — catalog 0.57 was STALE; docstring v1.0 claimed 0.408; IBKR fees only ~8% drag from intrinsic ~0.41, NOT a fee-collapse. CHALLENGES discriminator: same multi-asset (SPY/TLT/GLD) + turnover-suppression as RegimeSwitching (+6% held) yet collapses; difference = per-event trade SIZE — Markov does binary 80% SPY↔TLT swap per regime change (high per-trade impact despite low freq) vs RegimeSwitching partial 70/30 + persistent defensive sleeve. Discriminator v3 = frequency × per-trade-size; universe Equities→Multi-asset; baseline-clone 32964364) |
 | Temporal-CNN-Prediction | 29816576 | 0.54 | **0.161** | -70% | **historique** (downgraded — DL/CNN weekly-retraining overfits real fees severely; same regime as ML-Temporal-CNN 0.73→0.46; PSR 3.2%; universe corrected Multi-asset→Equities (QQQ top-3); baseline-clone 32967763 + temporalcnn.py lib copy) |
 | LSTM-Forecasting | 29443476 | 0.53 | **0.525** | ~0% | robuste (confirmed near-flat — multi-asset 7-US-ETF (SPY/QQQ/IWM/EFA/TLT/GLD/IEF) weekly-rebalance NN HOLDS; fee-homogeneous ETF basket + concentrated 2-4 selection = low realized turnover (discriminator v3); contrasts Temporal-CNN -70% DL collapse; sklearn MLPClassifier (64,32) not real LSTM per docstring; PSR 13.4% low; baseline-clone 32970990) |
+| Framework_Composite_FamaFrenchAllWeather | 28882145 | — | **0.684** | gap-fill | robuste (**TRUE LEADER PSR 87.5%** — first real backtest; 20% FamaFrench (VLUE/MTUM/SIZE/QUAL/USMV factor ETFs) + 80% AllWeather (SPY/IEF/GLD/XLP) composite, monthly rebalance on fee-homogeneous 9-US-ETF basket HOLDS where AllWeather standalone collapsed -30% (0.67→0.47); FamaFrench factor diversification + monthly low-frequency = low realized turnover; already had IBKR (direct backtest, no clone); OOS 2023-2026, Calmar 1.95, MaxDD -7% exceptional) |
 
-**Finding (methodological, now 32-strategy sample)** : the remediation impact is **not
+**Finding (methodological, now 33-strategy sample)** : the remediation impact is **not
 uniform**, and the batch-4 results *refine and partly correct* the earlier 10-strategy pattern.
 The distinguishing axis is **not** asset class, nor ML-vs-indicator alone — it is the
 combination of (a) the fee-per-trade the asset class carries and (b) how the strategy turns
