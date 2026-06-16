@@ -7,7 +7,7 @@ breakdown: Lean=24
 maturity: PRODUCTION=22, BETA=2
 -->
 
-Cette serie de **21 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves, la verification formelle de reseaux de neurones, le port de théorèmes phares (théorème de Kochen-Specker, 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen), et des hommages aux mathematiciens (Grothendieck, langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre).
+Cette serie de **24 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves, la verification formelle de reseaux de neurones, le port de théorèmes phares (théorème de Kochen-Specker, 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen ; finitude des dérivées symboliques de Brzozowski), la theorie des nœuds (mouvements de Reidemeister, tricolorabilite de Fox, noeud de Conway et preuve de Piccirillo), et des hommages aux mathematiciens (Grothendieck, langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre).
 
 ## Navigation
 
@@ -23,6 +23,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | **Complet** | 1-12 | ~11h | Toutes les fonctionnalites incluant LeanDojo et théorème de sensibilite |
 | **Avec Pilier 1.B** | 1-12, 15 | ~12h | Inclut le port Kochen-Specker (Cabello 18-vecteurs) - contextuality quantique |
 | **Avec hommages** | 1-12, 13, 14a, 14b, 14c, 15, 16 | ~16h | Ajoute Lean-13 (Grothendieck), Lean-14a (Conway, l'homme et l'oeuvre), Lean-14b (Conway, Game of Life) et Lean-16 (Conway, théorème du libre arbitre - adosse a Lean-15) |
+| **Avec théorie des nœuds** | 1-12, 13, 14a-c, 15, 16, 17a, 17b | ~17h30 | Ajoute Lean-17a (Conway, les nœuds et la preuve de Piccirillo) et Lean-17b (invariants : PD-codes, tricolorabilite de Fox, mouvements de Reidemeister) - companion `knot_lean`, Epic #2874 |
 
 ## Structure
 
@@ -55,17 +56,27 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | # | Notebook | Contenu | Duree |
 |---|----------|---------|-------|
 | 15 | [Lean-15-Kochen-Specker](Lean-15-Kochen-Specker.ipynb) | théorème de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parite, contextuality quantique - Pilier 1.B Epic #1651 | 60 min |
+| 15b | [Lean-15-Finiteness-Derivatives](Lean-15-Finiteness-Derivatives.ipynb) | Dérivées symboliques de Brzozowski : la finitude des dérivées qui garantit le matching linéaire (langages rationnels, automates) | 25 min |
 
 ### Partie 4 : Hommages mathematiciens
 
 | # | Notebook | Contenu | Duree |
 |---|----------|---------|-------|
 | 13 | [Lean-13-Grothendieck-Tribute](Lean-13-Grothendieck-Tribute.ipynb) | Langage grothendieckien dans Mathlib 4 : categories/foncteurs, cribles et topologies de Grothendieck, faisceaux, schemas, site de Zariski, morphismes etales/lisses - Epic #1646 | 45 min |
+| 13b | [Lean-13b-Lean-Grothendieck](Lean-13b-Lean-Grothendieck.ipynb) | Atelier pratique Grothendieck : cribles, topologies et faisceaux en exercices (compagnon `grothendieck_lean`, fait suite a Lean-13) - Epic #1646 | 50 min |
 | 14a | [Lean-14a-Conway-Man-and-Work](Lean-14a-Conway-Man-and-Work.ipynb) | Conway, l'homme et l'oeuvre : biographie et style singulier (le jeu comme méthode) ; panorama des grands resultats (nombres surreels, groupes de Conway & Monstrous Moonshine, reseau de Leech, polynome de Conway, Doomsday, Look-and-Say, FRACTRAN, problème de l'Ange, Sprouts, théorème du libre arbitre) ; premieres noix crackees executees depuis conway_lean (Doomsday, Look-and-Say, Nim, Angel, Life - 0 sorry) - Epic #1647 / #2154 | 50 min |
 | 14b | [Lean-14b-Conway-Game-of-Life-Lean](Lean-14b-Conway-Game-of-Life-Lean.ipynb) | Hommage a John Conway : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel - Epic #1647 | 60 min |
+| 14c | [Lean-14c-Conway-Game-of-Life-Golly](Lean-14c-Conway-Game-of-Life-Golly.ipynb) | Game of Life : les 3 piliers en images (compagnon Golly, integration CLI `bgolly` pour simulation certifiee) - Epic #1647 | 45 min |
 | 16 | [Lean-16-Conway-Free-Will-Theorem](Lean-16-Conway-Free-Will-Theorem.ipynb) | théorème du libre arbitre (Conway-Kochen) : les trois axiomes SPIN/TWIN/MIN en profondeur, argument en deux temps (1 particule via Kochen-Specker, puis 2 particules via TWIN), ce que le théorème dit et NE dit PAS, port formel adosse a `FreeWillTheorem.lean` (chaine de reduction `free_will_theorem -> fwt_single_particle -> kochen_specker`, 0 sorry), registre d'extensibilite - Epic #2162 / #2156 | 40 min |
 
-**Duree totale** : ~16h
+### Partie 5 : Theorie des noeuds
+
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| 17a | [Lean-17-Knots-a-Conway-and-Proofs](Lean-17-Knots-a-Conway-and-Proofs.ipynb) | Conway, les nœuds et la preuve de Piccirillo : le noeud de Conway (11n34), slice-genre et nombre de denouement, contexte de la preuve (Piccirillo 2020, le noeud de Conway n'est pas slice) - hommage narratif, Epic #2874 | 40 min |
+| 17b | [Lean-17-Knots-b-Invariants-Companion](Lean-17-Knots-b-Invariants-Companion.ipynb) | Invariants de nœuds : PD-codes, mouvements de Reidemeister, tricolorabilite de Fox, diagrammes bien formes - companion `knot_lean` (Epic #2874, transfer forward #3000 sorry-free + backward #3124 partiel) | 60 min |
+
+**Duree totale** : ~17h30
 
 ## Acquis d'apprentissage
 
@@ -80,6 +91,7 @@ A l'issue de la serie, vous saurez :
 - **Situer l'oeuvre de Conway** dans sa largeur : des nombres surreels au Monstrous Moonshine, du reseau de Leech au théorème du libre arbitre, en executant les premieres noix formalisees (Doomsday, Look-and-Say, Nim, Angel, Life) directement depuis le projet conway_lean (0 sorry). Notebook 14a.
 - **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de resultats combinatoires iconiques. Notebook 14.
 - **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui reduit le cas a deux particules au théorème de Kochen-Specker (Notebook 15), et la lecture honnete de sa portee (ce qu'il dit et ne dit pas) — adosse a `FreeWillTheorem.lean` (0 sorry). Notebook 16.
+- **Formaliser les invariants de nœuds** : PD-codes, mouvements de Reidemeister et tricolorabilite de Fox, en s'appuyant sur le companion `knot_lean` (transfert de tricolorabilite le long d'un twist R1 connecte, preuve forward sorry-free + backward partielle). Notebooks 17a, 17b.
 
 Pour l'etat formel detaille des modules support (preuves resolues vs `sorry` residuels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md), le [README du projet conway_lean](conway_lean/README.md), et le [README du projet grothendieck_lean](grothendieck_lean/README.md).
 
@@ -102,10 +114,15 @@ Pour l'etat formel detaille des modules support (preuves resolues vs `sorry` res
 | 11a | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
 | 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
 | 13 | Grothendieck-Tribute | ~23 | 0 | - | **NOUVEAU** (hommage) |
+| 13b | Lean-Grothendieck (atelier) | ~40 | 4 | Oui | **NOUVEAU** |
 | 14a | Conway-Man-and-Work | ~39 | 3 | 0 | **NOUVEAU** (hommage) |
 | 14b | Conway-Game-of-Life-Lean | ~26 | 0 | - | **NOUVEAU** (hommage) |
+| 14c | Conway-Game-of-Life-Golly | ~47 | 5 | - | **NOUVEAU** (hommage) |
 | 15 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
+| 15b | Finiteness-Derivatives | ~12 | 1 | - | **NOUVEAU** |
 | 16 | Conway-Free-Will-Theorem | ~28 | 3 | 0 | **NOUVEAU** (hommage) |
+| 17a | Knots-a-Conway-and-Proofs | ~13 | 0 | - | **NOUVEAU** (hommage) |
+| 17b | Knots-b-Invariants-Companion | ~19 | 3 | - | **NOUVEAU** |
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks precedent/suivant
@@ -273,11 +290,17 @@ Lean/
 ├── Lean-10-LeanDojo.ipynb          # Python kernel - LeanDojo
 ├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
 ├── Lean-11-TorchLean-Python.ipynb  # Python kernel - Implementation algorithmes
+├── Lean-12-Sensitivity-Theorem.ipynb # Python kernel - theoreme de sensibilite (Huang 2019, hypercube, signing matrix)
 ├── Lean-13-Grothendieck-Tribute.ipynb # Python kernel - hommage Grothendieck (langage grothendieckien Mathlib)
+├── Lean-13b-Lean-Grothendieck.ipynb # Python kernel - atelier pratique Grothendieck (compagnon grothendieck_lean)
 ├── Lean-14a-Conway-Man-and-Work.ipynb # Python kernel - hommage Conway (l'homme et l'oeuvre, noix executees depuis conway_lean)
 ├── Lean-14b-Conway-Game-of-Life-Lean.ipynb   # Python kernel - hommage Conway (Game of Life as Computation)
+├── Lean-14c-Conway-Game-of-Life-Golly.ipynb  # Python kernel - hommage Conway (Game of Life en images, compagnon Golly)
 ├── Lean-15-Kochen-Specker.ipynb    # Lean4 kernel - théorème de Kochen-Specker (Pilier 1.B)
+├── Lean-15-Finiteness-Derivatives.ipynb # Python kernel - dérivées symboliques de Brzozowski (finitude, matching linéaire)
 ├── Lean-16-Conway-Free-Will-Theorem.ipynb # Python kernel - hommage Conway (théorème du libre arbitre, adosse a FreeWillTheorem.lean)
+├── Lean-17-Knots-a-Conway-and-Proofs.ipynb # Python kernel - Conway, les nœuds et la preuve de Piccirillo (noeud de Conway)
+├── Lean-17-Knots-b-Invariants-Companion.ipynb # Python kernel - invariants de nœuds (PD-codes, Reidemeister, Fox tricolorability), compagnon knot_lean
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
@@ -374,6 +397,19 @@ La verification formelle en Lean (type theory, Curry-Howard) est conceptuellemen
 - **SC-11 LLM-Assisted Contracts** : Le meme paradigme d'assistance LLM que les notebooks Lean-7/8/9, applique a la generation de smart contracts au lieu de preuves.
 - **SC-17 E2E Verifiable Voting** : Les resultats de `Voting.lean` (théorème du median voter, proprietes Banks/STV) eclairent les proprietes theoriques des systemes de vote verifiable.
 
+### Lean et Theorie des Nœuds
+
+Le notebook Lean-17b (Invariants de Nœuds) est le pendant pedagogique du projet formel `knot_lean/` : les invariants introduits en cours (PD-codes, mouvements de Reidemeister, tricolorabilite de Fox) y sont portes en Lean 4, avec un accent sur le theoreme de transfert -- la tricolorabilite est preservee par un twist R1 connecte (Epic #2874).
+
+| résultat | Fichier Lean | Notebook | Statut |
+|----------|-------------|----------|--------|
+| Transfert forward (R1 connecte préserve la tricolorabilité) | `knot_lean/Knots/Invariant.lean` | 17b | 0 sorry (#3000, sorry-free) |
+| Transfert backward (partiel) | `knot_lean/Knots/Invariant.lean` | 17b | 3 sorries résiduels diagnostiqués (#3124) |
+| Tricolorabilité du noeud de Conway (11n34) | `knot_lean/Knots/Conway.lean` | 17a | scaffolding |
+| Théorème d'invariance par Reidemeister (PL topology) | `knot_lean/Knots/Reidemeister.lean` | 17b | 2 sorry (out-of-scope PL) |
+
+Le notebook Lean-17a donne le contexte historique (noeud de Conway, slice-genre, preuve de Piccirillo 2020) qui motive le formalisme. Voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) pour l'etat detaille par module.
+
 ### Lecture transversale
 
 [La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot (changement de representation, certification A/B/C).
@@ -446,6 +482,15 @@ Lean 4 signale `type mismatch` quand le type attendu et le type fourni ne coïnc
 - Preuves certifiees (ex: `conway_lean/`, `grothendieck_lean/`, `social_choice_lean/`) : `sorry` = axiome implicite = trou dans la chaine de certification. Le compteur `grep -c sorry` est suivi par les agents du depot.
 
 Voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) pour l'etat detaille des preuves par module.
+
+### Quelle est la difference entre Lean-17a et Lean-17b ?
+
+Les deux notebooks couvrent la theorie des nœuds sous des angles complementaires :
+
+- **Lean-17a (Conway, les nœuds et la preuve de Piccirillo)** : hommage narratif. Le contexte mathematique et historique -- le noeud de Conway (11n34), le slice-genre, le nombre de denouement, et la preuve de Piccirillo (2020) que le noeud de Conway n'est pas slice. Aucun exercice : c'est une lecture.
+- **Lean-17b (Invariants de Nœuds)** : atelier pratique et companion du projet formel `knot_lean/`. On y manipule les PD-codes, les mouvements de Reidemeister et la tricolorabilite de Fox, avec des exercices de calcul et de vérification d'invariants.
+
+Lean-17a donne le *pourquoi* (motivation historique) ; Lean-17b donne le *comment* (calcul des invariants, port formel).
 
 ### LLM + Lean : quelles limites actuelles ?
 
