@@ -1164,22 +1164,66 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     -- mode colour-invisible, all-distinct mode research-level (§9.1, §9.6).
     sorry
   case num =>
-    -- d₁.numEdges ≥ 2. Diagnostic for the BG-prover (ai-01): d₁ is forced
-    -- NON-DEGENERATE (`crossings ≠ []`) because `_hproper` supplies a distinct
-    -- crossing index `j ≠ i`, both inhabiting `Fin d₁.crossings.length`. Hence
-    -- `d₁.wf` (Basic.lean:261) takes its ELSE branch — the parity condition:
-    -- every label in `[1, numEdges]` appears exactly twice
-    -- (`(List.range numEdges).all (fun i => edges.count (i+1) = 2)`), and every
-    -- occurring label lies in `[1, numEdges]` (clause (a)).
-    --   * numEdges = 0: `edges ≠ []` (crossings ≠ []), so (a) demands labels in
-    --     [1, 0] = ∅ — impossible.
-    --   * numEdges = 1: a single crossing contributes 4 slots, each forced to
-    --     label 1, so `edges.count 1 = 4 ≠ 2` — parity (b) fails.
-    -- Therefore numEdges ∉ {0, 1}, i.e. ≥ 2. Mechanical, BUT requires unfolding
-    -- the Bool-valued `wf` (`decide` / `List.range.all` / `edges.count` /
-    -- `List.flatMap`) over an ABSTRACT `d₁`, so `decide` cannot close it — it
-    -- is the natural mate of the Fox-transfer assembly and is left for ai-01.
-    sorry
+    -- d₁.numEdges ≥ 2. `_hproper` (a crossing index `j` exists in
+    -- `Fin d₁.crossings.length`) forces `crossings ≠ []`, so `d₁.wf` takes its
+    -- ELSE branch (Basic.lean:261) — clauses (a) every label ∈ [1,numEdges] and
+    -- (b) every label in [1,numEdges] appears exactly twice.
+    --   * numEdges = 0: empty interval [1,0] contradicts `ha1 : 1 ≤ a` ∧
+    --     `ha2 : a ≤ numEdges` directly.
+    --   * numEdges = 1: clause (a) forces every edge label = 1, and
+    --     `crossings ≠ []` forces `edges.length ≥ 4` (each crossing has 4
+    --     slots), so `count 1 ≥ 4 ≠ 2`, contradicting clause (b) at label 1.
+    obtain ⟨j, _hji, _hjedge⟩ := _hproper
+    have hcross_pos : 0 < d₁.crossings.length :=
+      Nat.lt_of_le_of_lt (Nat.zero_le _) j.isLt
+    have hcross_ne : d₁.crossings ≠ [] :=
+      List.ne_nil_of_length_pos hcross_pos
+    -- `d₁.wf = true` reduces to the else-branch parity (crossings ≠ []).
+    have hwf := _hwf₁
+    simp only [KnotDiagram.wf, if_neg hcross_ne, Bool.and_eq_true, List.all_eq_true,
+      decide_eq_true_iff] at hwf
+    obtain ⟨ha, hb⟩ := hwf
+    -- `ha`: every occurring edge label lies in [1, numEdges] (clause (a)).
+    -- `hb`: every label in [1, numEdges] appears exactly twice (clause (b)).
+    -- `crossings ≠ []` ⟹ the head crossing contributes 4 edge slots, so
+    -- `edges.length ≥ 4` (only the lower bound is needed below).
+    have hedges_ge4 : 4 ≤ d₁.edges.length := by
+      cases h : d₁.crossings with
+      | nil => exact absurd h hcross_ne
+      | cons c cs =>
+        simp only [KnotDiagram.edges, h, List.flatMap_cons, List.length_append,
+          List.length_cons, List.length_nil]
+        omega
+    -- Suppose numEdges < 2; split 0 / 1 (omega derives it from the negation).
+    by_contra hge
+    have h01 : d₁.numEdges = 0 ∨ d₁.numEdges = 1 := by omega
+    rcases h01 with h0 | h1
+    · -- numEdges = 0: a ∈ [1, 0] = ∅ — contradiction.
+      omega
+    · -- numEdges = 1: clause (b) gives count 1 = 2, but (a) forces every label
+      -- = 1, and edges.length ≥ 4, so count 1 = edges.length ≥ 4 ≠ 2.
+      have hb1 : d₁.edges.count 1 = 2 := by
+        have hmem0 : 0 ∈ List.range d₁.numEdges := by rw [h1]; simp
+        exact hb 0 hmem0
+      have hall1 : ∀ l ∈ d₁.edges, l = 1 := by
+        intro l hl
+        have hla := ha l hl
+        rw [h1] at hla
+        omega
+      have hcount1 : d₁.edges.count 1 = d₁.edges.length := by
+        -- `hall1` reverted into the goal so the IH carries the all-equal premise.
+        revert hall1
+        induction d₁.edges with
+        | nil => intro _; rfl
+        | cons hd tl ih =>
+          intro hall1
+          have hmem : hd ∈ hd :: tl := by simp
+          have hhd : hd = 1 := hall1 hd hmem
+          have hih : List.count 1 tl = tl.length :=
+            ih (fun l hl => hall1 l (List.mem_cons_of_mem hd hl))
+          simp [hhd, hih]
+      -- count 1 = length ≥ 4 but (b) forces count 1 = 2 — contradiction.
+      omega
   case col =>
     -- ≥ 2 colours under col₁: under the all-equal kink mode the two distinct
     -- colours of col₂ embed into Fin d₁.numEdges (the fresh edges duplicate
