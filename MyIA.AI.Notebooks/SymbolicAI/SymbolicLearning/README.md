@@ -373,7 +373,8 @@ SymbolicLearning/
 ├── .env.example                             # Modele de configuration LLM (OpenRouter)
 ├── requirements.txt                         # Dependances optionnelles
 ├── reference/
-│   └── AIMA_Ch19_Knowledge_in_Learning.md   # Notes de reference
+│   ├── AIMA_Ch19_Knowledge_in_Learning.md   # Notes de reference
+│   └── aima_knowledge.py                     # AIMA Ch.19 (CBH, Version Space, MINIMAL-CONSISTENT-DET) — vendored aima-python
 └── README.md                                # Cette documentation
 ```
 

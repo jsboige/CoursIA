@@ -61,7 +61,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 27 | ML-XGBoost | ML | Equities (15 mega-caps) | ~~0.57~~ → **0.555** ✓post-#2801 | 14.5 | 40.4 | 0.36 | robuste (confirmed mild -3%, bi-weekly GradientBoostingRegressor on fee-homogeneous 15 mega-caps = near-immune; PSR 10.6% low, not a true leader; universe corrected Multi-asset→Equities) |
 | 28 | MomentumStrategy | IND | Equities | ~~0.57~~ → **0.50** ✓post-#2801 | 11.2 | 25.8 | 0.43 | robuste borderline (at threshold -12%, PSR 9.3% non-significant) |
 | 28b | MeanReversion | IND | Equities (sectors) | ~~0.81~~ → **0.81** ✓post-#2801 | 10.0 | 7.5 | 1.34 | robuste (confirmed, PSR 46.8% near-significant, low-turnover multi-asset holds = signal-frequency immunity) |
-| 29 | RegimeSwitching | ML | Equities/ETF | 0.55 | 11.7 | — | — | robuste |
+| 29 | RegimeSwitching | ML | Multi-asset (SPY/QQQ/IEF/GLD) | ~~0.55~~ → **0.581** ✓post-#2801 | 12.3 | 33.0 | 0.37 | robuste (confirmed mild +6%, multi-asset HOLDS via explicit turnover suppression — regime-change trigger + anti-micro-rebalancing + beta-annealing; contrasts AllWeather -30% multi-sleeve; PSR 7.0% low not a true leader) |
 | 30 | Temporal-CNN-Prediction | DL | Multi-asset | 0.54 | — | — | — | robuste |
 | 31 | RL-DQN-Trading | RL | Portfolio | ~~0.53~~ → **0.58 (2020-21 only)** ✓post-#2801 | 18.2 | 33.2 | 0.55 | **non re-verifiable** (locked to ~1yr window, runtime error on extension, PSR 30.2%) |
 | 31b | RL-Portfolio-Q-Learning | RL | Equities | 0.58 | 18.2 | 33.2 | — | historique (2020-2021) |
@@ -111,8 +111,9 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | TrendStocksLite | 28817425 | 0.72 | **0.71** | -2% | robuste (confirmed — weekly trend on 15 liquid large-caps, low realized turnover, near-immune, PSR 25.0%) |
 | ML-RandomForest | 29434751 | 0.68 | **0.70** | +3% | robuste (confirmed — bi-weekly RF on 10 mega-caps, moderate turnover near-immune on fee-homogeneous US equity, PSR 18.4%, baseline-clone 32940005) |
 | ML-XGBoost | 29434753 | 0.57 | **0.555** | -3% | robuste (confirmed flat-to-mildly-down, NOT an upward correction — bi-weekly GradientBoostingRegressor on fee-homogeneous 15 mega-caps = near-immune; PSR 10.6% low, not a true leader; universe corrected Multi-asset→Equities; baseline-clone 32958201) |
+| RegimeSwitching | 28693650 | 0.55 | **0.581** | +6% | robuste (confirmed — multi-asset HOLDS via explicit turnover suppression: regime-change-only rebalance + anti-micro-rebalancing delta<5% + beta-annealing; contrasts AllWeather -30%; refines discriminator = realized-turnover not asset-class; PSR 7.0% low; universe Equities/ETF→Multi-asset; baseline-clone 32961367) |
 
-**Finding (methodological, now 28-strategy sample)** : the remediation impact is **not
+**Finding (methodological, now 29-strategy sample)** : the remediation impact is **not
 uniform**, and the batch-4 results *refine and partly correct* the earlier 10-strategy pattern.
 The distinguishing axis is **not** asset class, nor ML-vs-indicator alone — it is the
 combination of (a) the fee-per-trade the asset class carries and (b) how the strategy turns
