@@ -1175,11 +1175,65 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     --     [1, 0] = ∅ — impossible.
     --   * numEdges = 1: a single crossing contributes 4 slots, each forced to
     --     label 1, so `edges.count 1 = 4 ≠ 2` — parity (b) fails.
-    -- Therefore numEdges ∉ {0, 1}, i.e. ≥ 2. Mechanical, BUT requires unfolding
-    -- the Bool-valued `wf` (`decide` / `List.range.all` / `edges.count` /
-    -- `List.flatMap`) over an ABSTRACT `d₁`, so `decide` cannot close it — it
-    -- is the natural mate of the Fox-transfer assembly and is left for ai-01.
-    sorry
+    -- PROVEN: `_hproper` ⟹ two distinct `Fin crossings.length` indices `i ≠ j`
+    -- ⟹ `crossings.length ≥ 2`, so `d₁` is non-degenerate and `wf` takes its
+    -- parity branch. `edges.length = 4·crossings.length` (4 slots/crossing);
+    -- parity (a)+(b) force `2·numEdges = edges.length`, hence `numEdges ≥ 4`.
+    obtain ⟨j, hjne, _⟩ := _hproper
+    have hlen2 : 2 ≤ d₁.crossings.length := by
+      by_contra h
+      have hi : i.val = 0 := by omega
+      have hj : j.val = 0 := by omega
+      exact hjne (Fin.ext (hj.trans hi.symm))
+    have hne : d₁.crossings ≠ [] := by
+      intro he; rw [he] at hlen2; simp at hlen2
+    have hwf := _hwf₁
+    simp only [KnotDiagram.wf, if_neg hne, Bool.and_eq_true] at hwf
+    obtain ⟨ha_all, hb_all⟩ := hwf
+    have hedges_len : d₁.edges.length = 4 * d₁.crossings.length := by
+      have H : ∀ (cs : List PDCrossing),
+          (cs.flatMap fun c => [c.e1, c.e2, c.e3, c.e4] : List Nat).length =
+            4 * cs.length := by
+        intro cs; induction cs with
+        | nil => rfl
+        | cons c cs' ih =>
+          simp only [List.flatMap_cons, List.length_append, List.length_cons,
+            List.length_nil, ih]; omega
+      simp only [KnotDiagram.edges]; exact H d₁.crossings
+    by_contra hne2
+    -- `d₁.edges ≠ []`: length = 4·crossings.length ≥ 8 > 0.
+    have hedges_ne : d₁.edges ≠ [] := by
+      intro h0; rw [h0, List.length_nil] at hedges_len; omega
+    obtain ⟨l0, hl0⟩ := List.exists_mem_of_ne_nil d₁.edges hedges_ne
+    rw [List.all_eq_true] at ha_all hb_all
+    -- Clause (a) at `l0 ∈ edges` forces `1 ≤ l0 ≤ numEdges`, so `numEdges ≥ 1`;
+    -- with `hne2` (`numEdges ≤ 1`), `numEdges = 1`.
+    have ha_l0 : 1 ≤ l0 ∧ l0 ≤ d₁.numEdges := by
+      simpa using ha_all l0 hl0
+    have hne1 : d₁.numEdges = 1 := by omega
+    -- Clause (b) at `i = 0`: `edges.count 1 = 2`.
+    have hb1 : d₁.edges.count 1 = 2 := by
+      have h0mem : (0 : ℕ) ∈ List.range d₁.numEdges := by
+        rw [List.mem_range]; omega
+      have h := hb_all 0 h0mem; simpa using h
+    -- Clause (a) (numEdges = 1) forces every edge = 1, so `count 1 = length`.
+    have hall1 : ∀ e ∈ d₁.edges, e = 1 := by
+      intro e he
+      have h : 1 ≤ e ∧ e ≤ d₁.numEdges := by simpa using ha_all e he
+      omega
+    have hcount1 : d₁.edges.count 1 = d₁.edges.length := by
+      have H : ∀ (l : List Nat), (∀ e ∈ l, e = 1) → l.count 1 = l.length := by
+        intro l hl
+        induction l with
+        | nil => rfl
+        | cons hd tl ih =>
+          obtain rfl : hd = 1 := hl hd List.mem_cons_self
+          rw [List.count_cons, List.length_cons, if_pos (by decide)]
+          have := ih (fun e he => hl e (List.mem_cons_of_mem _ he))
+          omega
+      exact H d₁.edges hall1
+    -- `4·crossings.length = count 1 = 2` contradicts `crossings.length ≥ 2`.
+    rw [hcount1, hedges_len] at hb1; omega
   case col =>
     -- ≥ 2 colours under col₁: under the all-equal kink mode the two distinct
     -- colours of col₂ embed into Fin d₁.numEdges (the fresh edges duplicate
