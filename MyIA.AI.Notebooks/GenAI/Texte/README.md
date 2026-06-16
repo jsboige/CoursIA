@@ -13,13 +13,14 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 
 ## Ce que vous apprendrez
 
-À travers ces 12 notebooks pratiques, vous acquerrez une expertise complète :
+À travers ces 18 notebooks pratiques, vous acquerrez une expertise complète :
 - **Art du prompt engineering** : du zéro-shot au chain-of-thought
 - **Structuration des réponses** : JSON Schema, Pydantic, extraction de données
 - **Intelligence augmentée** : function calling, RAG moderne, code interpreter
 - **Raisonnement avancé** : modèles o4-mini, gpt-5-thinking
 - **Production enterprise** : gestion de sessions, retry, batch processing
 - **Déploiement local** : vLLM, quantification, optimisation des coûts
+- **Test-time scaling (ICR)** : routeur agentique, mémoire persistante, Tree-of-Thoughts sur CSP, courbes de scaling, raisonnement natif, plugins Semantic Kernel (notebooks 13 à 18, arc approfondi au-delà de NB-12)
 
 ## Contenu détaillé
 
@@ -54,6 +55,19 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 | 10 | `10_LocalLlama.ipynb` | vLLM, Qwen3.5-35B-A3B, ZwZ-8B, multi-endpoints, benchmarking | 60 min |
 | 11 | `11_Quantization.ipynb` | AWQ, GPTQ, llmcompressor, modèles vision, déploiement vLLM | 60 min |
 | 12 | `12_Test_Time_Scaling.ipynb` | Best-of-N, Tree-of-Thoughts (BFS/DFS), Reflexion, routeur adaptatif (cf ICR) | 60 min |
+
+### Tier 5 : Test-Time Scaling approfondi (ICR)
+
+Le notebook 12 introduit en Python pur les quatre moteurs d'inférence au moment du test (Best-of-N, Tree-of-Thoughts, Reflexion, routeur adaptatif). Les notebooks 13 à 18 approfondissent cet arc en s'inspirant du projet de référence [Iterative-Contextual-Refinements (ICR)](https://github.com/ryoiki-tokuien/Iterative-Contextual-Refinements) : on passe d'un routeur codé en dur à une orchestration agentique, on rend la mémoire persistante, on attaque des problèmes de recherche où le single-shot échoue, on quantifie les compromis de scaling, on compare au raisonnement natif, puis on expose le tout comme plugins réutilisables.
+
+| # | Notebook | Description | Durée |
+|---|----------|-------------|-------|
+| 13 | `13_Agentic_Orchestration.ipynb` | Routeur agentique : function calling (pont NB-04) pour laisser un LLM choisir le moteur par sous-tâche (mode "Agentic" d'ICR) | 60 min |
+| 14 | `14_Persistent_Memory.ipynb` | Mémoire vectorielle persistante (baseline BoW + cosine, pont NB-05 RAG) qui rétrocède les leçons aux runs suivants (agent "Memory" d'ICR) | 55 min |
+| 15 | `15_Tree_of_Thoughts_Search.ipynb` | Tree-of-Thoughts sur cryptarithmes (SEND+MORE=MONEY) : recherche DFS colonne par colonne avec propagation de retenue (pont séries Search/Sudoku) | 60 min |
+| 16 | `16_Scaling_Test_Time_Compute.ipynb` | Courbes de scaling Snell 2024 : estimateur pass@k, BoN vs Reflexion, frontière compute-optimale selon la difficulté | 65 min |
+| 17 | `17_Native_Reasoning_vs_Scaling.ipynb` | Raisonnement natif (deepseek-r1, reasoning tokens) vs scaling hand-rolled (BoN), comparaison cost-normalisée en tokens | 60 min |
+| 18 | `18_Semantic_Kernel_Plugins.ipynb` | Moteurs exposés en plugins Semantic Kernel (`@kernel_function`) composables via le kernel (pont série SemanticKernel) | 60 min |
 
 ## Prérequis
 
@@ -141,6 +155,8 @@ Le fil rouge de cette série est la progression de l'interaction basique avec un
 3. **Tier 3** (augmentation) : [5_RAG_Modern](5_RAG_Modern.ipynb) et [6_PDF_Web_Search](6_PDF_Web_Search.ipynb) enrichissent le LLM avec des sources externes. [7_Code_Interpreter](7_Code_Interpreter.ipynb) lui donne la capacité d'exécuter du code.
 
 4. **Tier 4** (production et local) : [8_Reasoning_Models](8_Reasoning_Models.ipynb) exploite les modèles raisonnants. [9_Production_Patterns](9_Production_Patterns.ipynb) couvre les patterns enterprise. [10_LocalLlama](10_LocalLlama.ipynb) et [11_Quantization](11_Quantization.ipynb) déploient en local avec vLLM.
+
+5. **Tier 5** (test-time scaling approfondi) : partant de [12_Test_Time_Scaling](12_Test_Time_Scaling.ipynb) (les quatre moteurs en Python pur), l'arc NB-13..18 décompose chaque facette de l'inférence au moment du test — orchestration agentique via function calling ([13](13_Agentic_Orchestration.ipynb)), mémoire persistante par similarité ([14](14_Persistent_Memory.ipynb)), Tree-of-Thoughts sur des problèmes de recherche ([15](15_Tree_of_Thoughts_Search.ipynb)), courbes de scaling de Snell ([16](16_Scaling_Test_Time_Compute.ipynb)), raisonnement natif vs scaling hand-rolled ([17](17_Native_Reasoning_vs_Scaling.ipynb)), puis intégration Semantic Kernel ([18](18_Semantic_Kernel_Plugins.ipynb)).
 
 ## Cross-series Bridges
 
