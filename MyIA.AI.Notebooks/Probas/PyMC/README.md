@@ -1,8 +1,8 @@
 # Programmation Probabiliste avec PyMC
 
-Port Python de la série Infer.NET — **20 notebooks** couvrant l'inference bayesienne avec PyMC (NUTS, echantillonnage MCMC), des fondamentaux aux modèles relationnels avances, incluant une section complète sur la théorie de la décision.
+[← Série Probas](../README.md) | [Infer.NET (C#) →](../Infer/README.md)
 
-**20 notebooks** | Python 3.10+ | PyMC 5.x | ~19h
+Port Python de la série Infer.NET couvrant l'inference bayesienne avec PyMC (NUTS, echantillonnage MCMC), des fondamentaux aux modèles relationnels avances, incluant une section complète sur la théorie de la décision.
 
 **A qui s'adresse cette série** : praticiens Python, data scientists et étudiants souhaitant maitriser l'inference bayesienne moderne avec l'ecosysteme PyMC/ArviZ. Aucun prérequis en C# ou Infer.NET : chaque notebook est autonome.
 
@@ -56,8 +56,6 @@ A l'issue de cette série, vous serez capable de :
 | 18 | [PyMC-18-Decision-Value-Information](PyMC-18-Decision-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
 | 19 | [PyMC-19-Decision-Expert-Systems](PyMC-19-Decision-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
 | 20 | [PyMC-20-Decision-Sequential](PyMC-20-Decision-Sequential.ipynb) | 60 min | MDPs, bandits, POMDPs |
-
-**Duree totale** : ~19h
 
 ## Progression Pédagogique
 
@@ -153,6 +151,15 @@ Alterner chaque notebook PyMC avec son équivalent [Infer.NET](../Infer/).Compar
 
 ## FAQ / Troubleshooting
 
+### `ModuleNotFoundError: pymc`
+
+PyMC n'est pas present dans le kernel Jupyter actif. Installer les dependances puis verifier le kernel :
+
+```bash
+pip install pymc arviz
+jupyter kernelspec list  # doit afficher pymc-env
+```
+
 ### PyMC ne s'installe pas sur Windows (compilateur C manquant)
 
 PyMC 5.x requiert un compilateur C pour les extensions natives. Solution :
@@ -171,6 +178,7 @@ conda install -c conda-forge pymc
 - Verifier les priors : des priors trop larges causent des explorations inutiles
 - Augmenter `target_accept` : `pm.sample(target_accept=0.95)` (defaut 0.8)
 - Utiliser `init="advi"` pour une initialisation plus robuste
+- Reduire `draws` et `tune` (ex. 500/500 au lieu de 1000/1000) si la compilation C (PyTensor) est disponible mais le temps de calcul reste prohibitif
 - Consulter [PyMC-13-Debugging](PyMC-13-Debugging.ipynb) pour les diagnostics complets
 
 ### ArviZ affiche des divergences
@@ -179,7 +187,7 @@ Les divergences indiquent que l'echantillonneur n'a pas explore correctement cer
 
 1. `az.plot_trace(trace)` -> verifier le melange des chaînes
 2. `az.summary(trace)` -> verifier que `r_hat < 1.05` et `ess_bulk > 400`
-3. Reparametriser le modèle (centrage, log-transform)
+3. Reparametriser le modèle (centrage, log-transform ; parametrisation centered vs non-centered — voir [PyMC-2-Gaussian-Mixtures](PyMC-2-Gaussian-Mixtures.ipynb) et [PyMC-13-Debugging](PyMC-13-Debugging.ipynb))
 4. Augmenter le nombre de tirages : `pm.sample(draws=4000, tune=2000)`
 
 ### Erreur "SamplingError: Initial evaluation of model failed"
@@ -219,20 +227,6 @@ Ce port Python est le pendant de la série [Infer.NET](../Infer/) (C# / .NET Int
 - [Bayesian Methods for Hackers](https://github.com/CamDavidsonPilon/Probabilistic-Programming-and-Bayesian-Methods-for-Hackers)
 - [Statistical Rethinking (McElreath)](https://xcelab.net/rm/statistical-rethinking/) — livre de référence pour l'inference bayesienne appliquee
 
----
-
-[Retour au README Probas](../README.md)
-
-## FAQ rapide
-
-| Problème | Solution |
-|----------|----------|
-| `ModuleNotFoundError: pymc` | `pip install pymc arviz` -- PyMC 5.x et ArviZ pour les diagnostics |
-| Echantillonnage très lent (>5 min par modèle) | Verifier qu'un compilateur C est disponible (PyMC utilise PyTensor avec compilation C). Sinon, reduire `draws` et `tune` (ex: 500/500 au lieu de 1000/1000) |
-| Convergence non atteinte (R-hat > 1.05) | Augmenter le nombre de `tune` steps. Le notebook 13 (Debugging) detaille les strategies de diagnostic |
-| Divergences dans l'echantillonnage | Re-parametrer le modèle (centered vs non-centered). Voir notebook 2 (Gaussian Mixtures) et 13 (Debugging) |
-| `SamplingError: Initial evaluation failed` | Les priors sont incompatibles avec les observations. Verifier les distributions a priori et les valeurs initiales |
-
 ## Ponts inter-séries
 
 | Série | Lien | Relation |
@@ -241,7 +235,3 @@ Ce port Python est le pendant de la série [Infer.NET](../Infer/) (C# / .NET Int
 | [Probas (parent)](../README.md) | Vue d'ensemble Probas | Contexte et parcours |
 | [ML](../../ML/) | Pipeline ML classique | PyMC comme alternative bayesienne |
 | [QuantConnect](../../QuantConnect/) | Strategies de trading | Modèles bayesiens appliques au trading |
-
-## Navigation
-
-[<- Retour a la série Probas](../README.md) \| [Infer.NET (C#) ->](../Infer/README.md)
