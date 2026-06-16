@@ -7,7 +7,7 @@ breakdown: Infer=21, PyMC=20, root=3
 maturity: PRODUCTION=44
 -->
 
-[← Notebooks](../README.md) | [↑ ..](../README.md) | [→ GameTheory](../GameTheory/README.md)]
+[← Notebooks](../README.md) | [Série Infer (C#) →](Infer/README.md) | [Série PyMC (Python) →](PyMC/README.md) | [GameTheory →](../GameTheory/README.md)
 
 Le monde réel est incertain. Un diagnostic medical n'est jamais sur a 100%, un classement sportif depend de performances intrinsequement variables, et les données que nous collectons sont toujours bruitees ou incompletes. La programmation probabiliste offre un cadre rigoureux pour modeliser cette incertitude : plutôt que de calculer une seule reponse, on obtient une **distribution de probabilités** qui quantifie notre confiance dans chaque resultat possible.
 
@@ -243,25 +243,7 @@ La série complete est documentee dans [Infer/README.md](Infer/README.md), qui f
 | **Modèles classiques** | 4-13 | Bayesian networks, IRT, TrueSkill, LDA, HMM | 8h |
 | **Decision** | 14-20, 20b | Theorie de la décision bayésienne + preuve Lean de Gittins | 8h |
 
-### Vue d'ensemble des notebooks
-
-| # | Notebook | Sujet |
-|---|----------|-------|
-| 1 | Setup | Configuration, Two Coins, Beta-Bernoulli |
-| 2 | Gaussian Mixtures | Distributions continues, Gamma priors |
-| 3 | Factor Graphs | Monty Hall, explaining away |
-| 4 | Bayesian Networks | CPTs, D-separation, causalite |
-| 5 | Skills (IRT) | Item Response Theory, DINA |
-| 6 | TrueSkill | Ranking, skill gaussien, equipes |
-| 7 | Classification | Probit, Bayes Point Machine |
-| 8 | Model Sélection | Evidence, Bayes Factors, ARD |
-| 9 | Topic Models | LDA, Dirichlet priors |
-| 10 | Crowdsourcing | Worker models, active learning |
-| 11 | Sequences | HMM, detection meteo, motifs |
-| 12 | Recommenders | Factorisation matricielle, Click Model |
-| 13 | Debugging | EP vs VMP, diagnostic erreurs |
-| 14-20 | Decision Theory | Utilite, MAUT, influence diagrams, MDPs |
-| 20b | Lean Gittins | Preuves formelles Lean 4 de l'indice de Gittins (projet Lake `gittins_lean`) |
+Les 21 notebooks Infer.NET sont détaillés individuellement dans [*Ce que chaque notebook apporte*](#ce-que-chaque-notebook-apporte) ci-dessus (apport pédagogique par notebook) ; le contenu exhaustif — patterns avancés, exercices corrigés — vit dans [Infer/README.md](Infer/README.md).
 
 ## Série PyMC (20 notebooks, Python)
 

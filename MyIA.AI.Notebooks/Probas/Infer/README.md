@@ -1,8 +1,8 @@
 # Programmation Probabiliste avec Infer.NET
 
-Série de **21 notebooks** couvrant la programmation probabiliste avec Microsoft Infer.NET, des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision et des preuves formelles Lean 4.
+[← Série Probas](../README.md) | [Série PyMC (Python) →](../PyMC/README.md) | [ML.NET (C#) →](../../ML/ML.Net/README.md)
 
-**21 notebooks** | **C# / .NET 9.0** | **~20h** | **.NET Interactive**
+Programmation probabiliste avec Microsoft Infer.NET : une série de 21 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision et des preuves formelles Lean 4.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste exacte, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
@@ -1000,9 +1000,17 @@ Infer/
 | VMP (Variational Message Passing) | Converge toujours | Modèles complexes |
 | Gibbs Sampling | Exact (asymptotique) | Petits modèles |
 
-## Troubleshooting
+## FAQ / Troubleshooting
 
-Pour un guide complet de troubleshooting, voir [Infer-13-Debugging](Infer-13-Debugging.ipynb).
+Pour un guide complet, voir [Infer-13-Debugging](Infer-13-Debugging.ipynb).
+
+| Problème | Solution |
+| --- | --- |
+| `The type 'Variable' does not contain a definition for...` | Vérifier que le namespace `MicrosoftResearch.Infer` est importé. Le notebook 1 (Setup) couvre la configuration |
+| `Inference exception: Improper distribution` | Le modèle contient une boucle causale ou une observation contradictoire. Le notebook 13 (Debugging) détaille les stratégies de diagnostic |
+| `Algorithm compilation failed` | Infer.NET compile un algorithme d'inférence par reflection. Vérifier que le modèle est dans une famille supportée (conjugué). Modèles non-conjugués nécessitent EP ou VMP |
+| Performance lente sur les grands modèles | Utiliser `InferenceEngine.Compiler.ShowGeneratedSource = true` pour inspecter le code généré. Le notebook 13 compare les algorithmes EP/VMP/Gibbs |
+| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
 
 ### Erreur de compilation
 
@@ -1038,18 +1046,6 @@ Cette ligne est **obligatoire** pour les notebooks .NET Interactive.
 
 Consultez le [Glossaire](Infer-Glossary.md) pour les définitions des termes techniques (EP, VMP, Factor Graph, EVPI, MDP, etc.)
 
----
-
-## FAQ / Troubleshooting
-
-| Problème | Solution |
-| --- | --- |
-| `The type 'Variable' does not contain a definition for...` | Vérifier que le namespace `MicrosoftResearch.Infer` est importé. Le notebook 1 (Setup) couvre la configuration |
-| `Inference exception: Improper distribution` | Le modèle contient une boucle causale ou une observation contradictoire. Le notebook 13 (Debugging) détaille les stratégies de diagnostic |
-| `Algorithm compilation failed` | Infer.NET compile un algorithme d'inférence par reflection. Vérifier que le modèle est dans une famille supportée (conjugué). Modèles non-conjugués nécessitent EP ou VMP |
-| Performance lente sur les grands modèles | Utiliser `InferenceEngine.Compiler.ShowGeneratedSource = true` pour inspecter le code généré. Le notebook 13 compare les algorithmes EP/VMP/Gibbs |
-| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
-
 ## Ponts inter-series
 
 | Série | Lien | Relation |
@@ -1059,11 +1055,5 @@ Consultez le [Glossaire](Infer-Glossary.md) pour les définitions des termes tec
 | [ML.NET](../../ML/ML.Net/) | TP prévision de ventes | Combine ML.NET + Infer.NET |
 | [Search/CSP](../../Search/Part2-CSP/) | CSP-5 (Optimization) | Programmation par contraintes et probabilités |
 | [SymbolicAI/Lean](../../SymbolicAI/Lean/) | Infer-20b (Gittins) | Preuves formelles Lean 4 |
-
-## Navigation
-
-[<- Retour à la série Probas](../README.md) | [PyMC (Python) ->](../PyMC/README.md) | [ML.NET (C#) ->](../../ML/ML.Net/README.md)
-
----
 
 Bonne exploration de la programmation probabiliste et de la théorie de la décision !
