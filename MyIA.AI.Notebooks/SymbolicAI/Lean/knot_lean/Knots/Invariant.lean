@@ -1158,11 +1158,56 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
   refine' ⟨col₁, ?fox, ?num, ?col⟩
   case fox =>
     -- ∀ c ∈ d₁.crossings, triColorConditionAt d₁ col₁ c.
-    -- Unchanged crossings: c ∈ d₂.crossings (survives `set i Y'`), Fox at c
-    -- under col₂ holds (hfox₂), transferred via hcolPres.
-    -- Modified crossing Y = d₁.crossings.get i: Fox under col₁; all-equal kink
-    -- mode colour-invisible, all-distinct mode research-level (§9.1, §9.6).
-    sorry
+    -- Split on whether c survives into d₂. The only d₁ crossing that can drop
+    -- out of d₂ is the modified one Y = d₁.crossings.get i (replaced by Y' at
+    -- index i in d₂.crossings.set i Y' ++ [kink]). Everything else inherits Fox
+    -- via hcolPres — the reverse of forward `h_inherit` (Invariant.lean L587-603).
+    intro c hc
+    by_cases hc2 : c ∈ d₂.crossings
+    · -- pos: unchanged crossing. Fox holds under col₂ (hfox₂), transferred.
+      have hfc2 : triColorConditionAt d₂ col₂ c := hfox₂ c hc2
+      simp only [triColorConditionAt] at hfc2 ⊢
+      obtain ⟨⟨he11, he12, he21, he22, he31, he32⟩, hfox⟩ := hfc2
+      -- WF upper bound: hfc2 only gives c.e_k ≤ d₂.numEdges (= d₁.numEdges + 2).
+      -- The stronger bound c.e_k ≤ d₁.numEdges comes from d₁.wf clause (a)
+      -- (every d₁ edge label ∈ [1, numEdges]): c ∈ d₁.crossings ⟹ c.e_k ∈ d₁.edges.
+      have hcross_ne : d₁.crossings ≠ [] := by
+        intro h; rw [h] at hc; exact (List.mem_nil_iff _).mp hc
+      have hwf := _hwf₁
+      simp only [KnotDiagram.wf, if_neg hcross_ne, Bool.and_eq_true, List.all_eq_true,
+        decide_eq_true_iff] at hwf
+      obtain ⟨ha, _hb⟩ := hwf
+      have hmem_e1 : c.e1 ∈ d₁.edges := by
+        simp only [KnotDiagram.edges, List.mem_flatMap]; exact ⟨c, hc, by simp⟩
+      have hmem_e2 : c.e2 ∈ d₁.edges := by
+        simp only [KnotDiagram.edges, List.mem_flatMap]; exact ⟨c, hc, by simp⟩
+      have hmem_e3 : c.e3 ∈ d₁.edges := by
+        simp only [KnotDiagram.edges, List.mem_flatMap]; exact ⟨c, hc, by simp⟩
+      have he1 := ha c.e1 hmem_e1
+      have he2 := ha c.e2 hmem_e2
+      have he3 := ha c.e3 hmem_e3
+      refine ⟨⟨he11, he1.2, he21, he2.2, he31, he3.2⟩, ?_⟩
+      -- Fox transfer via hcolPres (d₁ colour = d₂ colour on each strand).
+      have h1 : d₁.colorAtNat col₁ c.e1 = d₂.colorAtNat col₂ c.e1 :=
+        hcolPres c.e1 he11 he1.2
+      have h2 : d₁.colorAtNat col₁ c.e2 = d₂.colorAtNat col₂ c.e2 :=
+        hcolPres c.e2 he21 he2.2
+      have h3 : d₁.colorAtNat col₁ c.e3 = d₂.colorAtNat col₂ c.e3 :=
+        hcolPres c.e3 he31 he3.2
+      rcases hfox with ⟨h12, h23⟩ | ⟨h12, h23, h13⟩
+      · left; refine ⟨?_, ?_⟩
+        · rw [h1, h2]; exact h12
+        · rw [h2, h3]; exact h23
+      · right; refine ⟨?_, ?_, ?_⟩
+        · rw [h1, h2]; exact h12
+        · rw [h2, h3]; exact h23
+        · rw [h1, h3]; exact h13
+    · -- neg: residual §9.1. c ∈ d₁.crossings but c ∉ d₂.crossings ⟹ c must be
+      -- the value at index i (= Y, replaced by Y' in d₂); Fox under col₁ at Y
+      -- needs the colour-symmetry construction (the a→b rename may touch
+      -- e1/e2/e3). Research-level, BG-prover ai-01 territory. User-authorised
+      -- residual proof hole ("livrer avec des sous-preuves résiduelles").
+      sorry
   case num =>
     -- d₁.numEdges ≥ 2. Diagnostic for the BG-prover (ai-01): d₁ is forced
     -- NON-DEGENERATE (`crossings ≠ []`) because `_hproper` supplies a distinct
