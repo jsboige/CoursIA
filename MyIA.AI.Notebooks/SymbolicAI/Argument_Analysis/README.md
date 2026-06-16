@@ -7,6 +7,8 @@ breakdown: Argument_Analysis=11
 maturity: PRODUCTION=10, ALPHA=1
 -->
 
+[← Intelligence Symbolique](../README.md)
+
 Pipeline complet d'analyse argumentative combinant Semantic Kernel, TweetyProject et programmation logique pour l'identification et l'évaluation d'arguments dans des textes.
 
 ## Pourquoi cette série
@@ -19,11 +21,20 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 
 **À qui s'adresse cette série** : enseignants en pensée critique, équipes éditoriales construisant des outils de fact-checking, étudiants en philosophie computationnelle ou en linguistique formelle, et ingénieurs explorant les architectures hybrides LLM + solveur. La maîtrise préalable supposée est modérée : Python intermediate, intuition logique propositionnelle, familiarité minimale avec les LLMs et l'OpenAI API. Les notebooks (~4-5h total) s'enchaînent dans l'ordre 0 → 1 → 2 → 3, avec l'`Executor` comme point d'entrée pour une exécution batch reproductible (Papermill / MCP).
 
+## Objectifs d'apprentissage
+
+À l'issue de cette série, vous serez capable de :
+
+1. **Extraire le tissu argumentatif** d'un texte en identifiant prémisses, conclusions et transitions à l'aide d'un agent LLM (Semantic Kernel)
+2. **Formaliser des arguments** en logique propositionnelle et vérifier leur cohérence avec un solveur SAT (TweetyProject)
+3. **Détecter les sophismes** courants (homme de paille, faux dilemme, ad hominem, appel à l'autorité) de manière systématique
+4. **Orchestrer un pipeline multi-agents** combinant extraction informelle, formalisation logique et validation formelle
+5. **Comparer les approches** LLM-only vs hybride (LLM + solveur formel) et comprendre les limites de chaque couche
+
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 6 |
 | Kernel | Python 3 |
 | Durée estimée | ~4-5h |
 | API requise | OpenAI |
@@ -43,16 +54,6 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 | 4 | [Agentic-4-capstone](Argument_Analysis_Agentic-4-capstone.ipynb) | Capstone : baseline 0-shot vs pipeline intégral, verdicts convergents + value-gates VG-1..VG-4 | Intégration |
 | UI | [UI_configuration](Argument_Analysis_UI_configuration.ipynb) | Interface utilisateur widgets | Interaction |
 | Exec | [Executor](Argument_Analysis_Executor.ipynb) | Orchestrateur principal | Exécution |
-
-## Objectifs d'apprentissage
-
-À l'issue de cette série, vous serez capable de :
-
-1. **Extraire le tissu argumentatif** d'un texte en identifiant prémisses, conclusions et transitions à l'aide d'un agent LLM (Semantic Kernel)
-2. **Formaliser des arguments** en logique propositionnelle et vérifier leur cohérence avec un solveur SAT (TweetyProject)
-3. **Détecter les sophismes** courants (homme de paille, faux dilemme, ad hominem, appel à l'autorité) de manière systématique
-4. **Orchestrer un pipeline multi-agents** combinant extraction informelle, formalisation logique et validation formelle
-5. **Comparer les approches** LLM-only vs hybride (LLM + solveur formel) et comprendre les limites de chaque couche
 
 ## Ce que chaque notebook apporte
 
@@ -243,7 +244,7 @@ Le pipeline génère un rapport JSON dans `output/analysis_report.json` :
 
 [La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du dépôt — l'analyse d'argumentation comme changement de représentation vers le vérifiable : du langage naturel aux sémantiques formelles qu'on peut interroger.
 
-> **Note** : Le pipeline est exécutable de bout en bout. L'`Executor` (point d'entrée Papermill/MCP) a été re-exécuté avec succès le 2026-06-16 : validation `COMPLETE_VALIDATED` à 100 % (1 argument identifié, 4 sophismes, 1 belief set formel, 10 requêtes au solveur). Voir [RECONSTRUCTION_PLAN.md](RECONSTRUCTION_PLAN.md) pour le diagnostic des bugs structurels résolus (résolution de chemin robuste, fuite de `os.chdir` hors du `%run`, chaîne `%run` cohérente).
+> **Note** : Le pipeline s'exécute de bout en bout. L'`Executor` (point d'entrée Papermill/MCP) produit une validation `COMPLETE_VALIDATED` à 100 % (1 argument identifié, 4 sophismes, 1 belief set formel, 10 requêtes au solveur).
 
 ## Ressources
 
