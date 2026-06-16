@@ -9,7 +9,7 @@ maturity: PRODUCTION=9, ALPHA=3, BETA=2, DRAFT=2
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
 
-La vidéo est la modalité générative la plus exigeante : elle combine l'analyse d'images, la compréhension du temps, la synchronisation audio, et la création de mouvement cohérent. Cette série couvre l'ensemble de la chaîne vidéo IA : compréhension de séquences existantes, génération à partir de texte ou d'images, orchestration de pipelines multi-modèles, et workflows de production. 16 notebooks répartis sur 4 niveaux progressifs.
+La vidéo est la modalité générative la plus exigeante : elle combine l'analyse d'images, la compréhension du temps, la synchronisation audio, et la création de mouvement cohérent. Cette série couvre l'ensemble de la chaîne vidéo IA : compréhension de séquences existantes, génération à partir de texte ou d'images, orchestration de pipelines multi-modèles, et workflows de production. 17 notebooks répartis sur 4 niveaux progressifs.
 
 ## Fil rouge : construire un pipeline texte vers vidéo pédagogique
 
@@ -31,7 +31,7 @@ On ne peut pas créer ce qu'on ne comprend pas. Ce niveau pose les bases techniq
 
 ### 02-Advanced - Générer du mouvement à partir de texte ou d'images
 
-Ce niveau explore les modèles génératifs vidéo : HunyuanVideo pour la qualité cinématographique (malgré ses 24 GB de VRAM), LTX-Video pour la génération rapide sur des configurations modestes, Wan pour les prompts multilingues, et Stable Video Diffusion pour animer une image existante. Chaque modèle a ses forces et ses limites — le but est de les connaître pour choisir le bon outil au bon moment.
+Ce niveau explore les modèles génératifs vidéo : HunyuanVideo pour la qualité cinématographique (malgré ses 24 GB de VRAM), LTX-Video pour la génération rapide sur des configurations modestes, Wan pour les prompts multilingues, et Stable Video Diffusion pour animer une image existante. Chaque modèle a ses forces et ses limites — le but est de les connaître pour choisir le bon outil au bon moment. Le notebook 02-5 introduit en outre LTX-2 (Lightricks 22B), le seul modèle de la série qui génère vidéo **et audio synchronisés** en une seule passe de diffusion (quantization INT4/NF4 obligatoire, 20+ GB VRAM).
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -39,6 +39,7 @@ Ce niveau explore les modèles génératifs vidéo : HunyuanVideo pour la qualit
 | [02-2-LTX-Video-Lightweight](02-Advanced/02-2-LTX-Video-Lightweight.ipynb) | LTX-Video, génération rapide | Local GPU | ~8 GB |
 | [02-3-Wan-Video-Generation](02-Advanced/02-3-Wan-Video-Generation.ipynb) | Wan 2.1/2.2, prompts FR/EN | Local GPU | ~10 GB |
 | [02-4-SVD-Image-to-Video](02-Advanced/02-4-SVD-Image-to-Video.ipynb) | Stable Video Diffusion, animation | Local GPU | ~10 GB |
+| [02-5-LTX2-Audiovisual](02-Advanced/02-5-LTX2-Audiovisual.ipynb) | LTX-2 (Lightricks 22B), vidéo + audio conjoint | Local GPU | ~16-24 GB |
 
 ### 03-Orchestration - Combiner les modèles dans des pipelines
 
@@ -67,7 +68,7 @@ Le fil rouge de cette série est la création d'un pipeline de vidéo pédagogiq
 
 1. **01-Foundation** (compréhension vidéo) : [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb) donne les bases techniques (ffmpeg, moviepy). [01-2](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb) et [01-3](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb) couvrent la compréhension vidéo (décomposition en scènes, Q&A). [01-4](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) améliore la qualité. À la fin, vous savez analyser et manipuler une vidéo existante.
 
-2. **02-Advanced** (génération vidéo) : [02-1](02-Advanced/02-1-HunyuanVideo-Generation.ipynb) génère des vidéos haute qualité. [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb) offre une alternative rapide avec support multilingue. [02-4](02-Advanced/02-4-SVD-Image-to-Video.ipynb) anime une image existante (utile pour transformer un diagramme en animation).
+2. **02-Advanced** (génération vidéo) : [02-1](02-Advanced/02-1-HunyuanVideo-Generation.ipynb) génère des vidéos haute qualité. [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb) offre une alternative rapide avec support multilingue. [02-4](02-Advanced/02-4-SVD-Image-to-Video.ipynb) anime une image existante (utile pour transformer un diagramme en animation). [02-5](02-Advanced/02-5-LTX2-Audiovisual.ipynb) est le seul à produire vidéo **et audio synchronisés** en une passe (LTX-2 22B, le plus exigeant en VRAM).
 
 3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb) compare les modèles pour choisir le bon. [03-2](03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb) construit le pipeline text-to-image-to-video. [03-3](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb) utilise ComfyUI pour des workflows natifs.
 
@@ -94,6 +95,7 @@ Le fil rouge de cette série est la création d'un pipeline de vidéo pédagogiq
 | **LTX-Video** | 02-2 | GPU ~8 GB VRAM |
 | **Wan 2.1/2.2** | 02-3 | GPU ~10 GB VRAM |
 | **SVD** | 02-4 | GPU ~10 GB VRAM |
+| **LTX-2 (Lightricks)** | 02-5 | GPU ~16-24 GB VRAM (INT4/NF4) |
 | **ComfyUI Video** | 03-3 | Docker, nodes vidéo |
 | **OpenAI Sora 2** | 04-3 | `OPENAI_API_KEY` |
 
@@ -127,7 +129,7 @@ winget install FFmpeg
 | Objectif | Notebooks |
 |----------|-----------|
 | Découverte rapide | 01-1, 01-2, 01-5 |
-| Génération vidéo | 01-5, 02-1 à 02-4 |
+| Génération vidéo | 01-5, 02-1 à 02-5 |
 | Compréhension vidéo | 01-2, 01-3 |
 | Production complète | Tous + Audio/04-4 (sync A/V) |
 
