@@ -22,7 +22,18 @@ S'applique a **tous les agents** ecrivant du code dans le repo.
 
 Detail (incident, fix structurel, regex de detection, postmortem template) : [docs/secrets-and-coord-detail.md](../../docs/reference/secrets-and-coord-detail.md#1-secrets-hygiene--content-based-pas-path-based).
 
+## Centralisation — `.secrets/master.env` (source unique)
+
+Les secrets **partages** (HF, OpenAI, Anthropic, Civitai, API keys par service, tokens ComfyUI) vivent dans **`.secrets/master.env`** (gitignored). Le script [`scripts/secrets/render_envs.py`](../../scripts/secrets/render_envs.py) propage ces valeurs vers chaque `.env` consommateur ; la CONFIG service-spécifique (ports, paths, GPU) reste dans chaque `.env`.
+
+- **Rotater un secret** = éditer `master.env` + `python scripts/secrets/render_envs.py` + `docker compose restart` (OBLIGATOIRE pour ComfyUI-Login : le hash bcrypt n'est régénéré depuis l'env qu'au restart, pas à chaud — source du "drift" qui a fait croire à tort à une clé perdue en juin 2026).
+- **Audit drift** = `python scripts/secrets/render_envs.py --check` (exit 1 si un `.env` diffère de master).
+- Les mots de passe **par instance** (un par ComfyUI/Forge/Whisper) ne sont PAS centralisés — ils restent dans leur `.env` service.
+
+Detail complet (inventaire, rotation, règle restart, incident fondateur) : [docs/genai/secrets-management.md](../../docs/genai/secrets-management.md).
+
 ## Voir aussi
 
 - [.claude/rules/git-workflow.md](git-workflow.md) — no direct main push
 - [docs/env-python-reparation.md](../../docs/reference/env-python-reparation.md) — env discipline (regle F)
+- [docs/genai/secrets-management.md](../../docs/genai/secrets-management.md) — centralisation master.env + render
