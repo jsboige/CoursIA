@@ -62,7 +62,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | 28 | MomentumStrategy | IND | Equities | ~~0.57~~ → **0.50** ✓post-#2801 | 11.2 | 25.8 | 0.43 | robuste borderline (at threshold -12%, PSR 9.3% non-significant) |
 | 28b | MeanReversion | IND | Equities (sectors) | ~~0.81~~ → **0.81** ✓post-#2801 | 10.0 | 7.5 | 1.34 | robuste (confirmed, PSR 46.8% near-significant, low-turnover multi-asset holds = signal-frequency immunity) |
 | 29 | RegimeSwitching | ML | Equities/ETF | 0.55 | 11.7 | — | — | robuste |
-| 30 | Temporal-CNN-Prediction | DL | Multi-asset | 0.54 | — | — | — | robuste |
+| 30 | Temporal-CNN-Prediction | DL | Equities (QQQ top-3) | ~~0.54~~ → **0.161** ✓post-#2801 | 4.8 | 31.7 | 0.15 | **historique** (downgraded -70%, DL/CNN weekly-retraining overfits real fees severely — confirms ML-Temporal-CNN 0.73→0.46 pattern but worse; PSR 2.7%) |
 | 31 | RL-DQN-Trading | RL | Portfolio | ~~0.53~~ → **0.58 (2020-21 only)** ✓post-#2801 | 18.2 | 33.2 | 0.55 | **non re-verifiable** (locked to ~1yr window, runtime error on extension, PSR 30.2%) |
 | 31b | RL-Portfolio-Q-Learning | RL | Equities | 0.58 | 18.2 | 33.2 | — | historique (2020-2021) |
 | 32 | LSTM-Forecasting | DL | Multi-asset | 0.53 | — | — | — | robuste |
@@ -111,8 +111,9 @@ brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog
 | TrendStocksLite | 28817425 | 0.72 | **0.71** | -2% | robuste (confirmed — weekly trend on 15 liquid large-caps, low realized turnover, near-immune, PSR 25.0%) |
 | ML-RandomForest | 29434751 | 0.68 | **0.70** | +3% | robuste (confirmed — bi-weekly RF on 10 mega-caps, moderate turnover near-immune on fee-homogeneous US equity, PSR 18.4%, baseline-clone 32940005) |
 | ML-XGBoost | 29434753 | 0.57 | **0.555** | -3% | robuste (confirmed flat-to-mildly-down, NOT an upward correction — bi-weekly GradientBoostingRegressor on fee-homogeneous 15 mega-caps = near-immune; PSR 10.6% low, not a true leader; universe corrected Multi-asset→Equities; baseline-clone 32958201) |
+| Temporal-CNN-Prediction | 29816576 | 0.54 | **0.161** | -70% | **historique** (downgraded — DL/CNN weekly retraining overfits real fees severely; confirms ML-Temporal-CNN 0.73→0.46 pattern but MORE severe (0.54→0.161 barely above zero); QQQ top-3 universe + fee drag + overfit; PSR 2.7%; universe Multi-asset→Equities; baseline-clone 32967763 + temporalcnn.py lib copy) |
 
-**Finding (methodological, now 28-strategy sample)** : the remediation impact is **not
+**Finding (methodological, now 29-strategy sample)** : the remediation impact is **not
 uniform**, and the batch-4 results *refine and partly correct* the earlier 10-strategy pattern.
 The distinguishing axis is **not** asset class, nor ML-vs-indicator alone — it is the
 combination of (a) the fee-per-trade the asset class carries and (b) how the strategy turns
