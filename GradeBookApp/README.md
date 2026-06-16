@@ -30,12 +30,15 @@ GradeBookApp/
 ├── ProjectModel.cs           # Modele projet
 ├── GradeBookApp.csproj       # Projet .NET
 │
-└── configs/                  # Configurations par cours
-    ├── epf_2026_genai.py     # EPF 2026 - GenAI
-    ├── epf_2026_min1.py      # EPF 2026 - Mathématiques 1
-    ├── epf_2026_min2.py      # EPF 2026 - Mathématiques 2
-    └── epf_2026_ml.py        # EPF 2026 - Machine Learning
+└── configs/                  # Package marqueur — configs sur GDrive (cf README)
+    ├── __init__.py
+    └── README.md             # Modèle GDrive + shim COURSIA_ROOT
 ```
+
+> **Dépôt agnostique des écoles.** Les configs par cohorte (notes, emails,
+> overrides) sont privées et vivent sur GDrive :
+> `G:\Mon Drive\MyIA\Formation\<école>\<année>\grading\`, résolvant le moteur
+> via `COURSIA_ROOT` (fallback `D:\CoursIA`). Détail : [configs/README.md](configs/README.md).
 
 ## Utilisation
 
@@ -45,8 +48,9 @@ GradeBookApp/
 # Exécution avec configuration par défaut
 python GradeBookApp/gradebook.py
 
-# Exécution pour un cours spécifique
-python GradeBookApp/run_grading.py --course epf_2026_genai
+# Exécution pour un cours spécifique (config sur GDrive, cf configs/README.md)
+cd "G:\Mon Drive\MyIA\Formation\EPF\2026\grading"
+python epf_2026_genai.py
 ```
 
 ### Interface C#
@@ -80,10 +84,10 @@ TEACHER_WEIGHT = 1.0             # Poids note professeur (1.0 = 50%)
 
 ### Ajouter un nouveau cours
 
-1. Creer `configs/epf_YYYY_course.py`
-2. Definir les chemins vers les fichiers de donnees
-3. Configurer les parametres specifiques
-4. Lancer avec `--course epf_YYYY_course`
+1. Creer la config sur GDrive : `Formation\<ecole>\<annee>\grading\<ecole>_YYYY_course.py`
+2. Definir les chemins (GDrive) vers les fichiers de donnees
+3. Configurer les parametres specifiques + le shim `COURSIA_ROOT` (cf [configs/README.md](configs/README.md))
+4. Lancer depuis le dossier grading : `python <ecole>_YYYY_course.py`
 
 ## Workflow de notation
 
