@@ -42,8 +42,24 @@ Chaque cycle `/coordinate`, ai-01 doit **LIRE *et* POSTER une coordination lane-
 
 Source : mandat user 2026-06-14. Incident : un cycle entier ou seule la lane CoursIA-2 a ete coordonnee (broadcast miroir), ratant l'ASK greenlight PR1.5 Knot #2874 de po-2026:CoursIA et le rapport C.2 de #2953 (po-2025:CoursIA).
 
+## Regle 4 : JAMAIS sanctionner une lane idle — deep-queue + fallback perenne (HARD)
+
+S'applique meme quand ai-01 est **mobilise par le user** sur une autre tache (session interactive longue) : c'est precisement le cas que les deux mecanismes doivent couvrir. Source : incident 2026-06-16 — pendant une session Sudoku-13 longue, j'ai poste « po-2026 honest-idle legit / po-2024 await dispatch / po-2025 nearing exhausted ». Les workers ont **cite ma sanction** comme licence pour stand-down. Le user (verbatim) : « tu n'as pas prevu de deep queue comme on a dit, ni d'idle lane pour qu'il n'y ait jamais rien a faire ».
+
+1. **Interdit de sanctionner l'idle.** ai-01 ne poste **JAMAIS** un statut de lane terminal-idle : « honest-idle legit », « lane exhausted/closed », « await dispatch » **comme etat final**. Une lane idle = **echec ai-01**, pas un etat acceptable du worker (cf [[never-close-a-lane-feed-deep-queue]]). Si je n'ai pas de dispatch frais, je donne la **queue profonde + le fallback perenne** ci-dessous — jamais « rien a faire ».
+
+2. **Deep queue = ~5-10 steps ordonnes par lane, sur le dashboard.** Assez profonde pour couvrir **plusieurs cycles de coord meme si ai-01 est absent/mobilise plusieurs heures**. Pre-autorisation explicite dans le post : « brule-les **dans l'ordre**, NE m'attends PAS entre steps, ASK seulement sur **blocker reel** ou **queue vide** » (cf [[feedback-dispatch-fill-spare-capacity]]).
+
+3. **Fallback perenne never-empty par famille = le filet qui ne tombe jamais a sec.** Quand la deep-queue Epic d'une lane est genuinement epuisee, le worker **NE rapporte PAS idle** : il tombe sur le fallback perenne de SA famille, qui ne se vide jamais :
+   - **#2651** (OPEN) — prose pedagogique des READMEs (principal + sous-series), famille-partitionnee.
+   - **Convention 3 exercices/notebook** (`.claude/rules/three-exercises-per-notebook.md`, rule ongoing — l'Epic tracker #2161 est CLOSED mais le rollout reste a faire notebook par notebook).
+   Ces deux rollouts sont repo-wide et famille-partitionnes → une lane n'est **jamais** vide. `[CLAIMED] <item> — <machine:workspace> <ts>` avant de commencer (anti-double-claim).
+
+4. **Token economy ne ferme jamais une lane Lean/research.** L'economie de tokens est **Anthropic-only** (cf [[feedback-token-economy-anthropic-only]]) ; sur les workers z.ai/GLM (large) elle n'est PAS une contrainte. Un worker qui HOLD du Lean/proving en citant « token economy z.ai » se trompe — decomposer les sorries jusqu'au noyau dur irreductible (1-2 genuinement intractables OK a laisser, documentes). ai-01 ne valide pas un HOLD Lean motive par l'economie.
+
 ## Voir aussi
 
+- [.claude/rules/proactive-coordination.md](proactive-coordination.md) — 1 PR/wakeup plancher, backlog pickup 8 sources, queue profonde
 - [.claude/rules/git-workflow.md](git-workflow.md) — branches feature/, no force push
 - [.claude/rules/pr-review-discipline.md](pr-review-discipline.md) — Critere CHANGES_REQUESTED
 - CLAUDE.md section A — ai-01 review et merge, agents ne mergent pas
