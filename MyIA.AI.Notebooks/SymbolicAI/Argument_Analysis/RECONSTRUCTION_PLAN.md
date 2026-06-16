@@ -1,8 +1,8 @@
 # Argument_Analysis - Plan de Reconstruction
 
 **Issue** : #632
-**Date** : 2026-05-01
-**Statut** : Investigation terminee, en attente de decision
+**Date** : 2026-05-01 (initiale), 2026-06-16 (re-exec Executor, See #2137)
+**Statut** : Executor re-execute avec succes 2026-06-16 (`COMPLETE_VALIDATED` 100%) ; voir "Decouvertes re-exec 2026-06-16" ci-dessous
 
 ## Resume executif
 
@@ -80,6 +80,57 @@ Le LLM genere des "belief sets" en langage naturel au lieu de syntaxe propositio
 3 notebooks utilisent `kernel: base / python3` (3.13.7), 3 utilisent `kernel: Python 3 / python3` (3.13.2/3.13.3). Pas de consequence fonctionnelle mais complique le debugging.
 
 **Fix** : Harmoniser les metadonnees kernel.
+
+## Decouvertes re-exec 2026-06-16 (Executor, See #2137)
+
+Re-execution reelle de `Argument_Analysis_Executor.ipynb` avec cle OpenAI valide
+et regle F (env local installe : JDK 17 Zulu + 42 JARs Tweety 1.30 + semantic-kernel
+1.43.0). A revele deux bugs supplementaires au-dela du CRITIQUE 1 original (chemin/CWD).
+**Les commentaires de cellule de l'Executor les nomment "CRITIQUE 2" et "CRITIQUE 3"**
+(distincts du CRITIQUE 2 "JVM/Tweety" original ci-dessus).
+
+### CRITIQUE 2 (commentaire cellule Executor) : fuite de `os.chdir` hors du `%run`
+
+`Argument_Analysis_Agentic-0-init_agent.ipynb` fait `os.chdir(str(TWEETY_DIR))` pour
+localiser les JARs. Ce `chdir` **fuit** hors du `%run` (etat global du kernel) et
+corrompt le CWD pour les `%run` suivants : `1-informal_agent.ipynb` etait cherche dans
+`SymbolicAI/Tweety/` et introuvable (`OSError: File not found`), ce qui faisait echouer
+tout le chargement des agents.
+
+**Fix (applique)** : re-ancrer `os.chdir(str(AA_DIR))` avant **CHAQUE** `%run` dans la
+cellule 15 de l'Executor, robuste contre tout `chdir` effectue par un notebook enfant.
+
+### CRITIQUE 3 (commentaire cellule Executor) : chaine `%run` NEW/LEGACY incoherente
+
+La cellule 15 melangeait notebooks **NEW** (rungs recents `0-init.ipynb`,
+`3-orchestration.ipynb`) et **LEGACY** (`1-informal_agent.ipynb`, `2-pl_agent.ipynb`).
+Or :
+
+- le NEW `0-init.ipynb` ne construit **pas** le service OpenAI / le kernel (JVM seule) ;
+- le NEW `3-orchestration.ipynb` ne definit **pas** `run_analysis_conversation` (seul le
+  LEGACY `3-orchestration_agent.ipynb` la definit ; le NEW expose `run_conversational` /
+  `execute_dag`, architecture DAG differente).
+
+La cellule 18 appelle `run_analysis_conversation()` + les agents charges sont les
+versions `_agent` : la chaine NEW/LEGACY melangee ne pouvait **jamais** definir la
+fonction appelee. Le 401 historique de la cellule 18 etait un output **stale** d'une
+execution anterieure (avant que la chaine ne casse), pas le resultat d'une execution recente.
+
+**Fix (applique)** : basculer la chaine vers les **4 notebooks LEGACY `_agent`**
+auto-coherents (`0-init_agent` -> `1-informal_agent` -> `2-pl_agent` ->
+`3-orchestration_agent`), qui definissent le service OpenAI, les agents
+(InformalAnalysisAgent, PropositionalLogicAgent) et `run_analysis_conversation`.
+
+### Resultat
+
+Re-exec Papermill (kernel python3, BATCH_MODE, cle valide chargee depuis `.env`) :
+**SUCCESS, 481s**, validation `COMPLETE_VALIDATED` a **100%** (1 argument, 4 sophismes,
+1 belief set, 10 requetes). Pipeline multi-agents reel (ProjectManagerAgent ->
+InformalAnalyzer -> PLAnalyzer -> conclusion), 0 fuite `sk-` dans les outputs.
+
+Erreurs non-fatales residuelles (pipeline honnete, ne levent pas) : quelques appels SK
+sur le garde `allow_dangerously_set_content`, et parsing Tweety `ParserException` sur
+certaines formules generees par le LLM (deja documente en MOYENNE 5 ci-dessus).
 
 ## Infrastructure presente
 
