@@ -34,6 +34,8 @@ L'Executor utilise `%run ./Argument_Analysis_UI_configuration.ipynb` avec un che
 - Ou utiliser `__file__` via `ipywidgets` / `Path().resolve()` pattern
 - Ajouter `os.chdir()` en debut d'Executor
 
+> **Statut (2026-06-16) : RESOLU (#3132).** Walk-up `_find_argument_analysis_dir()` + `os.chdir(AA_DIR)` + `load_dotenv(AA_DIR/".env")` en cellule 3 de l'Executor. Re-exec OK (CWD = `Argument_Analysis`, `.env` charge).
+
 ### CRITIQUE 2 : JVM/Tweety non operationnel
 
 Le JDK 17 portable (`jdk-17-portable/`) n'est pas detecte : `"No JVM shared library file (jvm.dll) found."`. Le code de detection cherche `jvm.dll` mais ne le trouve pas.
@@ -44,6 +46,8 @@ Le JDK 17 portable (`jdk-17-portable/`) n'est pas detecte : `"No JVM shared libr
 - Verifier le chemin `jdk-17-portable/bin/server/jvm.dll` existe
 - Ajouter un fallback `JAVA_HOME` explicite dans le code
 - Tester sur la machine cible (Windows, JDK portable)
+
+> **Statut (2026-06-16) : RESOLU (regle F, env installe).** JDK Zulu 17.0.11 + 42 JARs Tweety 1.30 installes localement ; JVM smoke PASS ; re-exec Papermill SUCCESS 481s avec raisonnement formel reel (10 requetes SatReasoner).
 
 ### ELEVEE 3 : Cle API placeholder
 
@@ -56,6 +60,8 @@ Le fichier `.env` contient `sk-proj-1234567890` (cle factice). Sans cle OpenAI r
 - Ajouter une validation au demarrage avec message clair
 - Supporter OpenRouter comme alternative ( deja configure dans le repo global)
 
+> **Statut (2026-06-16) : RESOLU.** Cle OpenAI valide fournie par l'utilisateur (gitignoree dans `.env`, jamais commitee). Re-exec `COMPLETE_VALIDATED` 100%.
+
 ### MOYENNE 4 : Bug callback `query_string` vs `query`
 
 `PropositionalLogicPlugin.execute_and_log_pl_query()` appelle `self._log_callback(query_string=..., raw_result=...)` mais `StateManagerPlugin.log_query_result()` attend `(belief_set_id, query, raw_result)`. Le keyword `query_string` cause un `TypeError`.
@@ -63,6 +69,8 @@ Le fichier `.env` contient `sk-proj-1234567890` (cle factice). Sans cle OpenAI r
 **Impact** : Chaque log de requete PL echoue.
 
 **Fix** : Remplacer `query_string=` par `query=` dans `Agentic-2-pl_agent.ipynb`.
+
+> **Statut (2026-06-16) : RESOLU (deja applique au code live — G.1, NE PAS re-tenter ce fix).** La cellule de code `40cf9168` appelle `_log_callback(belief_set_id=..., query=..., raw_result=...)` (bons keywords, commentaire *"Fixed: was 'query_string', now 'query'"*). Le `query_string=query_string` qui apparait au grep vit dans la **cellule markdown pedagogique** `4l79vo815z` qui documente le contraste AVANT V12 (bug) / V12 (correct). Le fix V12 est live ET documente.
 
 ### MOYENNE 5 : Erreurs de parsing Tweety
 
@@ -75,11 +83,15 @@ Le LLM genere des "belief sets" en langage naturel au lieu de syntaxe propositio
 - Ajouter un retry avec feedback d'erreur au LLM
 - Ou pre-valider le format avant envoi au parser Java
 
+> **Statut (2026-06-16) : MITIGE.** Prompts V10 (BNF complete : `! && || => <=> ^^`) + le re-exec a produit 1 belief set formel valide et 10 requetes `SatReasoner` (ACCEPTED/REJECTED), soit un parsing reussi sur l'execution de reference. Des echecs residuels restent possibles sur des textes ambigus (nature LLM).
+
 ### FAIBLE 6 : Metadonnees kernel incoherentes
 
 3 notebooks utilisent `kernel: base / python3` (3.13.7), 3 utilisent `kernel: Python 3 / python3` (3.13.2/3.13.3). Pas de consequence fonctionnelle mais complique le debugging.
 
 **Fix** : Harmoniser les metadonnees kernel.
+
+> **Statut (2026-06-16) : NON BLOQUANT (cosmetique).** Le re-exec #3132 a utilise le kernel `python3` de facon coherente. Harmonisation restante = confort de debugging, pas un bug fonctionnel.
 
 ## Decouvertes re-exec 2026-06-16 (Executor, See #2137)
 
