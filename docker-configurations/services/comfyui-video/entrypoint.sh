@@ -67,7 +67,14 @@ if password:
     hashed = bcrypt.hashpw(password, salt)
     with open(password_path, 'wb') as f:
         f.write(hashed + b'\n' + username.encode('utf-8'))
-    print(f'Utilisateur {username} configure')
+    # Self-check : confirme que le .env (env au startup) verifie le hash ecrit.
+    # Previent le 'drift' (container au hash perime si .env change sans restart).
+    with open(password_path, 'rb') as f:
+        stored = f.read().split(b'\n')[0]
+    if bcrypt.checkpw(password, stored):
+        print(f'AUTH OK: utilisateur {username} configure, hash verifie contre COMFYUI_PASSWORD')
+    else:
+        print('AUTH WARNING: le hash ecrit ne verifie pas COMFYUI_PASSWORD (propagation env defectueuse ?)')
 else:
     print('Aucun mot de passe configure, authentification desactivee')
 "
