@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Video
-pedagogical_count: 16
-breakdown: Video=16
-maturity: PRODUCTION=9, ALPHA=3, BETA=2, DRAFT=2
+pedagogical_count: 17
+breakdown: Video=17
+maturity: PRODUCTION=10, ALPHA=3, BETA=2, DRAFT=2
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
