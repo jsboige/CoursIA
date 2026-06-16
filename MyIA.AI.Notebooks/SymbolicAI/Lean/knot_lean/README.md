@@ -5,7 +5,7 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
 Epic #2874 (Phase 5 en cours). Toolchain `v4.31.0-rc1`.
 
-## État des sorries (vérifié 2026-06-14)
+## État des sorries (vérifié 2026-06-16, 16 réels stable)
 
 Deux comptes, selon le filtre :
 
@@ -106,7 +106,7 @@ séparée, 0 arête partagée avec `d₁`). Conséquences :
    pour dénouer un trèfle. `tricolorable_invariant` est FAUX (un kink disjoint
    change la 3-colorabilité = #2938).
 
-**Option C — fix connecté, PR1.5c (#2980, EN VOL).** La surgery connectée
+**Option C — fix connecté, PR1.5c (#2980, MERGED 2026-06-14).** La surgery connectée
 correcte est NON-append : modifier un endpoint crossing `Y` de l'arc `a`
 (rename un slot `a`→`b = n+1`) ET append `C = ⟨a, b, c, c⟩` avec
 `c = n+2` (monogon du kink, apparaît 2× dans `C` seul). Parité préservée :
@@ -114,10 +114,24 @@ correcte est NON-append : modifier un endpoint crossing `Y` de l'arc `a`
 (Reidemeister.lean) implémente cette surgery ; `reidemeister1Connected_satisfiable`
 prouve un témoin concret `wf = true` des deux côtés (`d₁={[⟨1,2,3,4⟩,⟨1,2,3,4⟩],4}`
 → `d₂={[⟨1,2,3,4⟩,⟨5,2,3,4⟩,⟨1,5,6,6⟩],6}`). **ADDITIF** : ne modifie pas les
-moves merged (#2929/#2956 coexistent). Option C prouvée feasible (non-vacuous) ;
-PR2 transfer lemma peut être bâti dessus si le coordinateur valide (C).
-Décision coordinateur en attente : (C) migration vers surgery connectée vs
-(X) accepter #2938 comme résultat certifié et reframer le marquee.
+moves merged (#2929/#2956 coexistent). Option C **MERGED** (#2980) : feasibility
+prouvée (témoin non-vide, `wf = true` des deux côtés).
+
+**R3 connecté — PR1.5d (#3088, MERGED 2026-06-15).** R3 est le seul move
+connecté sous le modèle append+wf (point 3 ci-dessus). Formalisé additivement
+comme `Reidemeister3Determined` (Reidemeister.lean) : un slide R3 où le crossing
+relabélisé `c` est contraint par slot-permutation de l'original
+(`c.isSlotPermOf` = `List.Perm` décidable sur `Nat`), 4 strands préservés et
+`wf`. `.implies_reidemeister3` raffine en `Reidemeister3` (embedding) ;
+`reidemeister3Determined_satisfiable` prouve un témoin non-vide
+(`⟨1,2,3,4⟩`→`⟨1,3,2,4⟩`, swap e2/e3). 0 sorry ajouté (scaffolding pur, R1/R2/R3
+merged inchangés).
+
+**Transfer lemma (PR2) = HELD** (coordinateur ai-01, économie de tokens). Le
+transfer R2/R3 complet (wf-satisfabilité non-triviale + lift RTC) est
+research-level multi-PR. Option C choisie (scaffolding merged) ; le marquee
+`tricolorable_invariant` reste gated sur le transfer — décision stratégique
+(C) surgery connectée profonde vs (X) accepter #2938 et reframer, ouverte.
 
 Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Book*.
 
