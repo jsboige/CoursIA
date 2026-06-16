@@ -26,7 +26,7 @@ La structure détaillée (notebooks par niveau, contenu, services utilisés) est
 ```
 Image/
 ├── 01-Foundation/     # Modèles de base (5 notebooks)
-├── 02-Advanced/       # Modèles avancés (4 notebooks)
+├── 02-Advanced/       # Modèles avancés (5 notebooks)
 ├── 03-Orchestration/  # Multi-modèles (3 notebooks)
 ├── 04-Applications/   # Production (4 notebooks)
 └── examples/          # Cas d'usage (3 notebooks)
@@ -50,7 +50,7 @@ Avant de produire des visuels pédagogiques, il faut maîtriser les outils de g�
 
 ### 02-Advanced - Modèles avancés
 
-Un visuel éducatif de qualité demande des outils plus précis : édition d'images existantes (Qwen), génération haute qualité (FLUX), ou modèles légers et rapides (Z-Image/Lumina). Ce niveau explore les modèles de pointe et leurs compromis entre qualité, vitesse et ressources GPU.
+Un visuel éducatif de qualité demande des outils plus précis : édition d'images existantes (Qwen), génération haute qualité (FLUX), ou modèles légers et rapides (Z-Image/Lumina). Ce niveau explore les modèles de pointe et leurs compromis entre qualité, vitesse et ressources GPU. Le notebook [02-5](02-Advanced/02-5-Bonsai-Image-Ternary.ipynb) pousse l'optimisation à l'extrême avec Bonsai-Image (FLUX.2 Klein 4B en quantization ternaire 1.58-bit), qui ne consomme que ~6.8 GiB de VRAM à 1024x1024.
 
 | Notebook | Contenu | Service |
 |----------|---------|---------|
@@ -58,6 +58,7 @@ Un visuel éducatif de qualité demande des outils plus précis : édition d'ima
 | [02-2-FLUX-1-Advanced-Generation](02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb) | Génération FLUX | ComfyUI |
 | [02-3-Stable-Diffusion-3-5](02-Advanced/02-3-Stable-Diffusion-3-5.ipynb) | SD 3.5 | ComfyUI |
 | [02-4-Z-Image-Lumina2](02-Advanced/02-4-Z-Image-Lumina2.ipynb) | Z-Image/Lumina | ComfyUI |
+| [02-5-Bonsai-Image-Ternary](02-Advanced/02-5-Bonsai-Image-Ternary.ipynb) | Bonsai-Image 4B, quantization ternaire 1.58-bit | ComfyUI |
 
 [README 02-Advanced](02-Advanced/README.md)
 
@@ -105,6 +106,7 @@ Applications directes par domaine : histoire-géographie (cartes, reconstitution
 | **ComfyUI + FLUX** | 02-2 | Docker GPU |
 | **ComfyUI + SD 3.5** | 02-3 | Docker GPU |
 | **Z-Image/Lumina** | 02-4 | Docker, ~10GB VRAM |
+| **Bonsai-Image (ternaire)** | 02-5 | ComfyUI, ~7 GB VRAM |
 
 ## Prérequis
 
@@ -140,7 +142,7 @@ Accès : http://localhost:8188
 | Objectif | Notebooks |
 |----------|-----------|
 | Découverte rapide | 01-1, 01-3 |
-| Génération avancée | 01-1 à 02-4 |
+| Génération avancée | 01-1 à 02-5 |
 | Production | Tous + 03 + 04 |
 
 ## Recette : construire un générateur de contenu visuel éducatif
@@ -149,7 +151,7 @@ Le fil rouge de cette série est la création d'un système de visuels pédagogi
 
 1. **01-Foundation** (génération de base) : [01-1](01-Foundation/01-1-OpenAI-DALL-E-3.ipynb) et [01-2](01-Foundation/01-2-GPT-5-Image-Generation.ipynb) couvrent la génération via API cloud. [01-4](01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb) et [01-5](01-Foundation/01-5-Qwen-Image-Edit.ipynb) introduisent les modèles locaux. À la fin, vous savez générer une image à partir d'un texte.
 
-2. **02-Advanced** (édition et qualité) : [02-1](02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb) permet d'éditer une image existante pour corriger ou enrichir un visuel. [02-4](02-Advanced/02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage. [02-2](02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb) pousse la qualité plus loin.
+2. **02-Advanced** (édition et qualité) : [02-1](02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb) permet d'éditer une image existante pour corriger ou enrichir un visuel. [02-4](02-Advanced/02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage. [02-2](02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb) pousse la qualité plus loin. [02-5](02-Advanced/02-5-Bonsai-Image-Ternary.ipynb) montre la quantization extrême (ternaire 1.58-bit) pour faire tenir un modèle 4B dans ~7 GB de VRAM.
 
 3. **03-Orchestration** (comparaison et pipelines) : [03-1](03-Orchestration/03-1-Multi-Model-Comparison.ipynb) compare les modèles pour choisir le meilleur rapport qualité/coût. [03-2](03-Orchestration/03-2-Workflow-Orchestration.ipynb) assemble un pipeline de génération complet.
 
