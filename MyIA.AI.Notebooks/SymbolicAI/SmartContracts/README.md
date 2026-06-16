@@ -115,7 +115,11 @@ SmartContracts/
 ├── 04-Privacy-Cryptography/    # ZKP, HE, Vote E2E (3 notebooks)
 ├── 05-Alternative-Chains/      # Vyper, XRP, Bitcoin, Move, Solana (5 notebooks)
 ├── 06-Real-World/              # Cross-chain, deploy testnet/mainnet (4 notebooks)
-└── requirements.txt            # Dépendances Python
+├── foundry-lib/                # Workspace Foundry + sous-modules (forge-std, OpenZeppelin, ERC-4337)
+├── mon-premier-projet/         # Projet Foundry de démarrage (squelette scaffold)
+├── scripts/                    # Setup multi-plateforme (setup.sh, WSL, kernel Jupyter)
+├── requirements.txt            # Dépendances Python
+└── setup_env.py                # Orchestrateur Python (--setup / --check / --start-anvil)
 ```
 
 ## Parcours recommande
