@@ -1181,9 +1181,77 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     -- is the natural mate of the Fox-transfer assembly and is left for ai-01.
     sorry
   case col =>
-    -- ≥ 2 colours under col₁: under the all-equal kink mode the two distinct
-    -- colours of col₂ embed into Fin d₁.numEdges (the fresh edges duplicate
-    -- col₂(a-1)). Follows from the Fox-mode case split.
-    sorry
+    -- ≥ 2 colours under col₁. Split on the kink's Fox mode. The kink is
+    -- C = ⟨a, n+1, n+2, n+2⟩ (the appended surgery crossing, hd₂cross).
+    have hCmem : (⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩ : PDCrossing)
+        ∈ d₂.crossings := by
+      rw [hd₂cross]
+      exact List.mem_append_right _ (by simp)
+    have hCfox : triColorConditionAt d₂ col₂
+        ⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩ := hfox₂ _ hCmem
+    obtain ⟨_, hCmode⟩ := hCfox
+    -- Coerce the `let`-bound Fox disjunction to its inlined form (defeq on C's
+    -- fields: e1 = a, e2 = n+1, e3 = n+2) so `rcases` can split the disjunction.
+    have hCmode' :
+        (d₂.colorAtNat col₂ a = d₂.colorAtNat col₂ (d₁.numEdges + 1) ∧
+         d₂.colorAtNat col₂ (d₁.numEdges + 1) = d₂.colorAtNat col₂ (d₁.numEdges + 2)) ∨
+        (d₂.colorAtNat col₂ a ≠ d₂.colorAtNat col₂ (d₁.numEdges + 1) ∧
+         d₂.colorAtNat col₂ (d₁.numEdges + 1) ≠ d₂.colorAtNat col₂ (d₁.numEdges + 2) ∧
+         d₂.colorAtNat col₂ a ≠ d₂.colorAtNat col₂ (d₁.numEdges + 2)) := hCmode
+    rcases hCmode' with ⟨h_a_n1, h_n1_n2⟩ | _hdist
+    · -- all-equal kink mode. By contradiction: if col₁ is constant, col₂ is
+      -- constant on the whole [0, d₂.numEdges) range (d₁-range via the col₁
+      -- embedding; the two fresh indices via the kink's all-equal, tying them to
+      -- col₂(a-1)) — contradicting h2col₂ (col₂ has ≥2 colours).
+      have hn0d₂ : d₂.numEdges ≠ 0 := by omega
+      -- Fixed Fin proofs (avoid `by omega` re-elaborating fresh each use).
+      have ha_le : a - 1 < d₂.numEdges := by omega
+      have hn_le : d₁.numEdges < d₂.numEdges := by omega
+      have hn1_le : d₁.numEdges + 1 < d₂.numEdges := by omega
+      have ha1_le : a - 1 < d₁.numEdges := by omega
+      -- Reduce the kink's colorAtNat applications to bare col₂ applications,
+      -- with the FIXED Fin proofs above.
+      have ha_col : d₂.colorAtNat col₂ a = col₂ ⟨a - 1, ha_le⟩ := by
+        simp only [KnotDiagram.colorAtNat, dif_neg hn0d₂]
+        exact congrArg col₂ (Fin.ext (Nat.mod_eq_of_lt ha_le))
+      have hn1_col : d₂.colorAtNat col₂ (d₁.numEdges + 1) =
+          col₂ ⟨d₁.numEdges, hn_le⟩ := by
+        simp only [KnotDiagram.colorAtNat, dif_neg hn0d₂]
+        have hmod : (d₁.numEdges + 1 - 1) % d₂.numEdges = d₁.numEdges := by
+          rw [Nat.mod_eq_of_lt (by omega)]; omega
+        exact congrArg col₂ (Fin.ext hmod)
+      have hn2_col : d₂.colorAtNat col₂ (d₁.numEdges + 2) =
+          col₂ ⟨d₁.numEdges + 1, hn1_le⟩ := by
+        simp only [KnotDiagram.colorAtNat, dif_neg hn0d₂]
+        have hmod : (d₁.numEdges + 2 - 1) % d₂.numEdges = d₁.numEdges + 1 := by
+          rw [Nat.mod_eq_of_lt (by omega)]; omega
+        exact congrArg col₂ (Fin.ext hmod)
+      rw [ha_col, hn1_col] at h_a_n1
+      rw [hn1_col, hn2_col] at h_n1_n2
+      -- h_a_n1  : col₂ ⟨a-1, ha_le⟩ = col₂ ⟨d₁.numEdges, hn_le⟩
+      -- h_n1_n2 : col₂ ⟨d₁.numEdges, hn_le⟩ = col₂ ⟨d₁.numEdges+1, hn1_le⟩
+      by_contra hncol
+      push_neg at hncol
+      obtain ⟨i₀, j₀, hij⟩ := h2col₂
+      have hanch : ∀ k : Fin d₂.numEdges, col₂ k = col₂ ⟨a - 1, ha_le⟩ := by
+        intro k
+        rcases Nat.lt_trichotomy k.val d₁.numEdges with hklt | hkeq | hkgt
+        · -- k.val < d₁.numEdges: col₂ k = col₁ ⟨k.val, hklt⟩ (embedding) = anchor.
+          have hkemb : col₂ k = col₁ ⟨k.val, hklt⟩ := by simp only [col₁]
+          have hncol_k : col₁ ⟨k.val, hklt⟩ = col₁ ⟨a - 1, ha1_le⟩ := hncol _ _
+          rw [hkemb, hncol_k]
+        · -- k.val = d₁.numEdges: kink all-equal ties it to col₂⟨a-1, ha_le⟩.
+          rw [show k = (⟨d₁.numEdges, hn_le⟩ : Fin d₂.numEdges) from Fin.ext hkeq]
+          exact h_a_n1.symm
+        · -- k.val = d₁.numEdges + 1 (the only index > n in Fin (n+2)).
+          have hk1 : k.val = d₁.numEdges + 1 := by omega
+          rw [show k = (⟨d₁.numEdges + 1, hn1_le⟩ : Fin d₂.numEdges) from Fin.ext hk1]
+          exact h_n1_n2.symm.trans h_a_n1.symm
+      exact hij (by rw [hanch i₀, hanch j₀])
+    · -- all-distinct kink mode: §9.1 research. The fresh edges carry a NEW
+      -- colour absent from the d₁ range, so the naïve col₁ restriction can be
+      -- monochromatic — the ≥2-colour lift needs the colour-symmetry / proper-arc
+      -- construction (#3003). BG-prover ai-01 territory. (User-authorised residual.)
+      sorry
 
 end Knots
