@@ -243,7 +243,7 @@ Le pipeline génère un rapport JSON dans `output/analysis_report.json` :
 
 [La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du dépôt — l'analyse d'argumentation comme changement de représentation vers le vérifiable : du langage naturel aux sémantiques formelles qu'on peut interroger.
 
-> **Note** : Cette série est en statut DRAFT — les notebooks définissent l'architecture mais n'ont pas encore d'exécution complète. Voir [RECONSTRUCTION_PLAN.md](RECONSTRUCTION_PLAN.md) pour le statut.
+> **Note** : Le pipeline est exécutable de bout en bout. L'`Executor` (point d'entrée Papermill/MCP) a été re-exécuté avec succès le 2026-06-16 : validation `COMPLETE_VALIDATED` à 100 % (1 argument identifié, 4 sophismes, 1 belief set formel, 10 requêtes au solveur). Voir [RECONSTRUCTION_PLAN.md](RECONSTRUCTION_PLAN.md) pour le diagnostic des bugs structurels résolus (résolution de chemin robuste, fuite de `os.chdir` hors du `%run`, chaîne `%run` cohérente).
 
 ## Ressources
 
