@@ -7,7 +7,9 @@ breakdown: Lean=24
 maturity: PRODUCTION=22, BETA=2
 -->
 
-Cette serie de **24 notebooks** introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants, avec un focus sur les techniques modernes d'utilisation de LLMs pour l'assistance aux preuves, la verification formelle de reseaux de neurones, le port de théorèmes phares (théorème de Kochen-Specker, 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen ; finitude des dérivées symboliques de Brzozowski), la theorie des nœuds (mouvements de Reidemeister, tricolorabilite de Fox, noeud de Conway et preuve de Piccirillo), et des hommages aux mathematiciens (Grothendieck, langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre).
+> Série [`SymbolicAI`](../README.md) › **Lean**
+
+Cette serie introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants. Le fil rouge va des fondations (types dependants, mode tactique, Mathlib) vers l'etat de l'art : assistance aux preuves par LLM et verification formelle de reseaux de neurones, ports de théorèmes phares (théorème de Kochen-Specker / 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen ; finitude des dérivées symboliques de Brzozowski), theorie des nœuds (mouvements de Reidemeister, tricolorabilite de Fox, noeud de Conway et preuve de Piccirillo), et hommages aux mathematiciens (Grothendieck et le langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre).
 
 ## Navigation
 
@@ -84,7 +86,7 @@ A l'issue de la serie, vous saurez :
 
 - **Modeliser** un raisonnement mathématique dans le Calcul des Constructions : types dependants, univers, propositions comme types (Curry-Howard). Notebooks 2-3 ancrent ces objets sur des exemples concrets (Vector, propositions logiques) plutot que sur de l'abstraction nue.
 - **Prouver** un théorème en mode tactique avec les briques Mathlib : `intro`/`apply`/`exact`/`rfl` pour la structure, `ring`/`linarith`/`omega`/`simp` pour l'arithmetique et la simplification, `induction`/`cases`/`rcases` pour l'analyse de cas. Notebooks 4-6.
-- **Integrer un LLM** au workflow de preuve : patterns LeanCopilot et AlphaProof (n-best, MCTS), prompts goal-aware, comparaison ND-search vs CoT, agents APOLLO/Erdos. Notebooks 7-9.
+- **Integrer un LLM** au workflow de preuve : patterns LeanCopilot et AlphaProof (n-best, MCTS), prompts goal-aware, comparaison ND-search vs CoT, agents APOLLO/Erdos — fiables surtout sur les preuves courtes, limites persistantes sur les preuves longues et la couverture Mathlib (usage en assistant, pas en oracle). Notebooks 7-9.
 - **Tracer et explorer** une base de preuves a grande echelle : LeanDojo (parsing AST, theorem extraction, interaction Dojo), reseaux de neurones verifies via IBP/CROWN (TorchLean). Notebooks 10-11.
 - **Porter** un théorème de recherche en Lean 4 : théorème de sensibilite (Huang 2019, hypercube et signing matrix), théorème de Kochen-Specker (Cabello 18 vecteurs, argument de parite, contextuality quantique). Notebooks 12, 15.
 - **Lire le langage grothendieckien** dans Mathlib 4 : categories et foncteurs, cribles et topologies de Grothendieck, faisceaux, schemas et sites, morphismes etales/lisses — comme entree vers la geometrie algebrique formalisee. Notebook 13.
@@ -457,14 +459,6 @@ Lean 4 ne tourne pas nativement sous Windows pour les notebooks. La configuratio
 
 Le notebook [Lean-1-Setup](Lean-1-Setup.ipynb) guide l'installation complete et verifie chaque composant.
 
-### Mes preuves passent en mode terme mais pas en mode tactique
-
-C'est un pattern courant en Lean 4. Le mode terme (style `theorem foo : X := by exact h`) et le mode tactique utilisent parfois des mecanismes de synthèse differents. En général :
-
-- Le mode tactique offre plus de controle (`rw`, `simp`, `ring`) et des messages d'erreur plus lisibles.
-- Si une preuve terme échoue, essayer le mode tactique avec les memes étapes decomposees.
-- `simp?` suggere les lemmes que `simp` utilise — utile pour comprendre pourquoi `simp` seul ne passe pas.
-
 ### Comment lire les erreurs `type mismatch` ?
 
 Lean 4 signale `type mismatch` quand le type attendu et le type fourni ne coïncident pas. Les causes les plus frequentes :
@@ -491,15 +485,6 @@ Les deux notebooks couvrent la theorie des nœuds sous des angles complementaire
 - **Lean-17b (Invariants de Nœuds)** : atelier pratique et companion du projet formel `knot_lean/`. On y manipule les PD-codes, les mouvements de Reidemeister et la tricolorabilite de Fox, avec des exercices de calcul et de vérification d'invariants.
 
 Lean-17a donne le *pourquoi* (motivation historique) ; Lean-17b donne le *comment* (calcul des invariants, port formel).
-
-### LLM + Lean : quelles limites actuelles ?
-
-Les LLMs (GPT-4o, Claude, DeepSeek) sont capables de generer des tactiques Lean 4 pour des preuves de niveau undergraduate, mais :
-
-- **Preuves longues** (> 20 étapes) : le taux de succes chute significativement.
-- **Mathlib avancee** : les LLMs ne connaissent pas toujours les lemmes disponibles — LeanCopilot et la recherche semantique (Loogle/Moogle) compensent.
-- **Agents autonomes** (APOLLO, AlphaProof) : prometteurs pour les competitions (IMO, Erdos) mais pas encore fiables pour des preuves de recherche originales sans supervision.
-- **Bon usage pedagogique** : utiliser les LLMs comme assistant (suggestions, exploration), pas comme oracle (accepter sans vérifier). Les notebooks 7-9 illustrent ce workflow.
 
 ## Licence
 
