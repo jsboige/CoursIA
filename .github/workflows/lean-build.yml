@@ -18,7 +18,9 @@ name: Lean Build (reusable)
 # Sorry-filter modes (chosen per project's sorry "profile"):
 #   raw               : grep -c "sorry"                          (every mention)
 #   prose-header      : grep "sorry" | grep -viE "sorries|sorry.s"   (excludes prose plural/possessive)
-#   standalone-tactic : grep -cE "^\s*sorry\s*$"                  (only sorry as sole token on a line)
+#   standalone-tactic : sorry as the sole tactic token on a line, INCLUDING the
+#                       Lean case-bullet form `· sorry` (U+00B7), which a bare
+#                       `^\s*sorry\s*$` silently dropped (blind spot, See #2747)
 # Use raw only when sorry ALWAYS means tactic (no prose mentions). Use prose-header
 # when the only non-tactic mentions are "sorries"/"sorry's" in header comments.
 # Use standalone-tactic when there are MANY prose mentions of "sorry" mixed with
@@ -72,7 +74,13 @@ jobs:
               prose-header)
                 COUNT=$(grep "sorry" "$f" | grep -viE "sorries|sorry.s" | wc -l || true) ;;
               standalone-tactic)
-                COUNT=$(grep -cE "^\s*sorry\s*$" "$f" || true) ;;
+                # Count `sorry` as the sole tactic on a line, INCLUDING the
+                # Lean case-bullet form `· sorry` (U+00B7). The bare
+                # `^\s*sorry\s*$` regex MISSED it, so a bullet-sorry reported
+                # delta 0 and silently passed the anti-regression gate (blind
+                # spot, See #2747). Strip bullet bytes (c2 b7) first so BOTH
+                # forms match in any locale (byte-exact, not UTF-8 dependent).
+                COUNT=$(tr -d '\302\267' < "$f" | grep -cE "^\s*sorry\s*$" || true) ;;
               *)
                 echo "ERROR: unknown sorry-filter-mode '$MODE'"; exit 2 ;;
             esac
