@@ -1,54 +1,54 @@
-# Scripts for Infer.NET Notebooks
+# Scripts pour les notebooks Infer.NET
 
-This directory contains setup and testing scripts for the Infer.NET probabilistic programming notebook series.
+Ce répertoire contient les scripts de configuration et de test pour la série de notebooks de programmation probabiliste Infer.NET.
 
-## Prerequisites
+## Prérequis
 
-- .NET SDK 6.0 or higher
-- Python 3.8 or higher
-- pip (Python package manager)
+- .NET SDK 6.0 ou supérieur
+- Python 3.8 ou supérieur
+- pip (gestionnaire de paquets Python)
 
-## Quick Setup
+## Installation rapide
 
 ### Windows (PowerShell)
 
 ```powershell
-# Run the setup script
+# Exécuter le script de configuration
 .\setup_environment.ps1
 
-# Or with options
+# Ou avec des options
 .\setup_environment.ps1 -Verbose
-.\setup_environment.ps1 -SkipPapermill  # If you don't need papermill
+.\setup_environment.ps1 -SkipPapermill  # Si vous n'avez pas besoin de papermill
 ```
 
-### Manual Setup
+### Installation manuelle
 
-1. **Install .NET Interactive tool:**
+1. **Installer l'outil .NET Interactive :**
    ```bash
    dotnet tool install -g Microsoft.dotnet-interactive
    dotnet interactive jupyter install
    ```
 
-2. **Install Python dependencies:**
+2. **Installer les dépendances Python :**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Verify kernels:**
+3. **Vérifier les kernels :**
    ```bash
    jupyter kernelspec list
    ```
-   You should see `.net-csharp`, `.net-fsharp`, `.net-powershell`
+   Vous devriez voir `.net-csharp`, `.net-fsharp`, `.net-powershell`
 
-## Testing Notebooks
+## Tester les notebooks
 
-### Run all tests
+### Lancer tous les tests
 
 ```bash
 python test_notebooks.py
 ```
 
-### Test a specific notebook
+### Tester un notebook spécifique
 
 ```bash
 python test_notebooks.py -n Infer-1-Setup.ipynb -v
@@ -58,47 +58,47 @@ python test_notebooks.py -n Infer-1-Setup.ipynb -v
 
 | Option | Description |
 |--------|-------------|
-| `-n, --notebook` | Test a specific notebook |
-| `-t, --timeout` | Timeout per notebook (default: 600s) |
-| `-v, --verbose` | Verbose output |
-| `-l, --list` | List available notebooks |
+| `-n, --notebook` | Tester un notebook spécifique |
+| `-t, --timeout` | Timeout par notebook (défaut : 600s) |
+| `-v, --verbose` | Sortie verbeuse |
+| `-l, --list` | Lister les notebooks disponibles |
 
-### Output
+### Sortie
 
-- Executed notebooks are saved in `MyIA.AI.Notebooks/Probas/Infer/test_outputs/`
-- Test results summary is saved to `test_outputs/test_results.json`
+- Les notebooks exécutés sont sauvegardés dans `MyIA.AI.Notebooks/Probas/Infer/test_outputs/`
+- Le résumé des résultats de test est sauvegardé dans `test_outputs/test_results.json`
 
-## Troubleshooting
+## Dépannage
 
-### Kernel not found
+### Kernel introuvable
 
-If `.net-csharp` kernel is not found:
+Si le kernel `.net-csharp` est introuvable :
 
 ```bash
 dotnet interactive jupyter install
 ```
 
-### NuGet restore issues
+### Problèmes de restauration NuGet
 
-The notebooks automatically restore NuGet packages. If you encounter issues:
+Les notebooks restaurent automatiquement les paquets NuGet. Si vous rencontrez des problèmes :
 
 ```bash
 dotnet nuget locals all --clear
 ```
 
-### Timeout issues
+### Problèmes de timeout
 
-Some notebooks (especially those with many inference operations) may take longer. Increase the timeout:
+Certains notebooks (en particulier ceux avec de nombreuses opérations d'inférence) peuvent prendre plus de temps. Augmentez le timeout :
 
 ```bash
 python test_notebooks.py -t 1200  # 20 minutes
 ```
 
-## Files
+## Fichiers
 
-| File | Description |
+| Fichier | Description |
 |------|-------------|
-| `setup_environment.ps1` | PowerShell setup script |
-| `test_notebooks.py` | Python test runner |
-| `requirements.txt` | Python dependencies |
-| `README.md` | This file |
+| `setup_environment.ps1` | Script de configuration PowerShell |
+| `test_notebooks.py` | Lanceur de tests Python |
+| `requirements.txt` | Dépendances Python |
+| `README.md` | Ce fichier |
