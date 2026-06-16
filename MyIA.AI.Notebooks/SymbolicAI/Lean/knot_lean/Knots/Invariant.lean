@@ -1205,8 +1205,8 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     · -- neg: residual §9.1. c ∈ d₁.crossings but c ∉ d₂.crossings ⟹ c must be
       -- the value at index i (= Y, replaced by Y' in d₂); Fox under col₁ at Y
       -- needs the colour-symmetry construction (the a→b rename may touch
-      -- e1/e2/e3). Research-level, BG-prover ai-01 territory. (User-authorised
-      -- residual sub-sorry — "livrer avec des sous-sorry résiduels".)
+      -- e1/e2/e3). Research-level, BG-prover ai-01 territory. User-authorised
+      -- residual proof hole ("livrer avec des sous-preuves résiduelles").
       sorry
   case num =>
     -- d₁.numEdges ≥ 2. Diagnostic for the BG-prover (ai-01): d₁ is forced
