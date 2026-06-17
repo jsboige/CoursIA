@@ -341,7 +341,7 @@ La série SemanticWeb illustre un mouvement profond du dépôt CoursIA : **prend
 
 ---
 
-## Prerequisites
+## Prérequis
 
 ### Pour les notebooks .NET (SW-1 à SW-7)
 

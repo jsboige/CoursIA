@@ -1,6 +1,6 @@
 # SymbolicLearning - Apprentissage Symbolique
 
-[↑ SymbolicAI](../README.md)
+[← Argument_Analysis](../Argument_Analysis/README.md) | [↑ SymbolicAI](../README.md) | [SMT →](../SMT/README.md)
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SymbolicLearning
@@ -300,7 +300,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | **Provenance** | Trace de derivation attachee a chaque fait infere | SL-10 |
 | **Pipeline neuro-symbolique** | LLM aux extremites, validation et inference symboliques au centre | SL-10 |
 
-## Prerequis
+## Prérequis
 
 ### Connaissances requises
 

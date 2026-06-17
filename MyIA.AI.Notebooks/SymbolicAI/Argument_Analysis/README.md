@@ -7,7 +7,7 @@ breakdown: Argument_Analysis=11
 maturity: PRODUCTION=10, ALPHA=1
 -->
 
-[← Intelligence Symbolique](../README.md)
+[← SmartContracts](../SmartContracts/README.md) | [↑ SymbolicAI](../README.md) | [SymbolicLearning →](../SymbolicLearning/README.md)
 
 Pipeline complet d'analyse argumentative combinant Semantic Kernel, TweetyProject et programmation logique pour l'identification et l'évaluation d'arguments dans des textes.
 
@@ -170,7 +170,7 @@ jupyter notebook Argument_Analysis_Agentic-0-init.ipynb
 
 ---
 
-## Prerequisites
+## Prérequis
 
 ### Python
 

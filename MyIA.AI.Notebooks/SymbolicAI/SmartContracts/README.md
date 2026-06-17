@@ -1,6 +1,6 @@
 # Smart Contracts - Des Cypherpunks aux Blockchains Modernes
 
-[← Planners](../Planners/README.md) | [↑ SymbolicAI](../README.md)
+[← Planners](../Planners/README.md) | [↑ SymbolicAI](../README.md) | [Argument_Analysis →](../Argument_Analysis/README.md)
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SmartContracts
