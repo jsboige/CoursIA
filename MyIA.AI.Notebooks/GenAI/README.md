@@ -17,17 +17,17 @@ L'IA générative a transformé la création de contenu en 2024-2026. Un dévelo
 
 ```text
 GenAI/
-├── 00-GenAI-Environment/    # Setup et configuration (6 notebooks)
-├── Image/                   # Génération d'images (16 notebooks)
-├── Audio/                   # Speech, TTS, musique, séparation (30 notebooks)
-├── Video/                   # Génération et compréhension vidéo (16 notebooks)
-├── Texte/                   # LLMs et génération de texte (11 notebooks)
-├── SemanticKernel/          # Microsoft Semantic Kernel (20 notebooks)
-├── FineTuning/              # Fine-tuning de modèles : LoRA/QLoRA/SFT/DPO (5 notebooks)
-├── PostTraining/            # Post-training SOTA : SFT/RLHF/DPO/GRPO/RLVR (6 notebooks)
-├── CaseStudies/             # Études de cas étudiants (4 notebooks)
+├── 00-GenAI-Environment/    # Setup et configuration
+├── Image/                   # Génération d'images
+├── Audio/                   # Speech, TTS, musique, séparation
+├── Video/                   # Génération et compréhension vidéo
+├── Texte/                   # LLMs et génération de texte
+├── SemanticKernel/          # Microsoft Semantic Kernel
+├── FineTuning/              # Fine-tuning de modèles : LoRA/QLoRA/SFT/DPO
+├── PostTraining/            # Post-training SOTA : SFT/RLHF/DPO/GRPO/RLVR
+├── CaseStudies/             # Études de cas étudiants
 ├── Playwright-OWUI/         # Tests E2E Playwright (5 modules, 30+ tests)
-└── Vibe-Coding/             # Tutoriels Claude Code et Roo Code (5 notebooks)
+└── Vibe-Coding/             # Tutoriels Claude Code et Roo Code
 ```
 
 ---
@@ -38,7 +38,7 @@ GenAI/
 
 Avant de générer la moindre image ou le moindre son, il faut configurer l'environnement : clés API, services Docker, et validation que tout fonctionne. Ces 6 notebooks sont le passage obligatoire. Ils couvrent le setup Python, la gestion des conteneurs Docker (ComfyUI, Whisper, MusicGen), la configuration des endpoints API, et un test complet de validation.
 
-[README complet](00-GenAI-Environment/README.md) | 6 notebooks | ~4h
+[README complet](00-GenAI-Environment/README.md) | ~4h
 
 ---
 
@@ -48,7 +48,7 @@ On commence par les fondamentaux : appeler DALL-E 3 et GPT-5 pour générer des 
 
 **Fil rouge** : construire un générateur de contenu visuel pour l'éducation (diagrammes scientifiques, illustrations pédagogiques, motifs décoratifs).
 
-[README complet](Image/README.md) | 16 notebooks | ~6-8h
+[README complet](Image/README.md) | ~6-8h
 
 ---
 
@@ -58,7 +58,7 @@ Cette série couvre le spectre complet de l'audio IA : reconnaissance vocale (Wh
 
 **Fil rouge** : produire un podcast automatique avec voix synthétique personnalisée et fond musical généré.
 
-[README complet](Audio/README.md) | 30 notebooks | ~14-16h
+[README complet](Audio/README.md) | ~14-16h
 
 ---
 
@@ -68,7 +68,7 @@ La vidéo est la modalité la plus exigeante en ressources mais aussi la plus sp
 
 **Fil rouge** : créer une vidéo pédagogique automatisée depuis un script texte.
 
-[README complet](Video/README.md) | 16 notebooks | ~14h
+[README complet](Video/README.md) | ~14h
 
 ---
 
@@ -76,7 +76,7 @@ La vidéo est la modalité la plus exigeante en ressources mais aussi la plus sp
 
 Le texte est le socle de toute interaction avec l'IA générative. Cette série va au-delà du simple "prompt engineering" : structured outputs pour des réponses fiables, function calling pour connecter les LLMs à vos outils, RAG pour injecter de la connaissance externe, code interpreter pour l'exécution dynamique, et les modèles de raisonnement (o-series) pour les tâches complexes. Les derniers notebooks couvrent les patterns de production et les LLMs locaux.
 
-[README complet](Texte/README.md) | 11 notebooks | ~10h
+[README complet](Texte/README.md) | ~10h
 
 ---
 
@@ -84,7 +84,7 @@ Le texte est le socle de toute interaction avec l'IA générative. Cette série 
 
 Semantic Kernel est le SDK Microsoft pour construire des applications agentiques. Il fournit les briques pour orchestrer les LLMs avec des plugins, des agents, des filtres, des vector stores, et des processus multi-étapes. Cette série couvre le SDK en Python et en C# (.NET Interactive), avec une progression qui va des fondamentaux aux patterns avancés (MCP, multi-modalité, interop CLR).
 
-[README complet](SemanticKernel/README.md) | 20 notebooks | ~20h
+[README complet](SemanticKernel/README.md) | ~20h
 
 ---
 
@@ -92,7 +92,7 @@ Semantic Kernel est le SDK Microsoft pour construire des applications agentiques
 
 Le "vibe coding" est la compétence la plus demandée de 2026 : décrire ce qu'on veut à un agent IA et le laisser écrire, tester et déployer le code. Cette série couvre les deux outils majeurs du marché : Claude Code (Anthropic) et Roo Code (communautaire). Chaque outil est abordé en 5 modules, de la découverte à l'automatisation avancée.
 
-[README complet](Vibe-Coding/README.md) | 10 modules | ~30h
+[README complet](Vibe-Coding/README.md) | ~30h
 
 ---
 
@@ -100,7 +100,7 @@ Le "vibe coding" est la compétence la plus demandée de 2026 : décrire ce qu'o
 
 Les applications GenAI doivent être testées rigoureusement. Cette série utilise Playwright pour écrire des tests de bout en bout sur Open WebUI, une interface réelle de chat LLM. On y apprend la navigation, l'authentification, le streaming de réponses, le RAG, les outils MCP, et le déploiement CI/CD.
 
-[README complet](Playwright-OWUI/README.md) | 5 modules, 30+ tests | ~14h
+[README complet](Playwright-OWUI/README.md) | ~14h
 
 ---
 
@@ -108,7 +108,7 @@ Les applications GenAI doivent être testées rigoureusement. Cette série utili
 
 Projets réalisés par les étudiants : génération d'images style Barbie/Shrek, générateur de recettes, chatbot médical éducatif, challenges style Fort Boyard. Ces notebooks illustrent la diversité des applications possibles après le parcours.
 
-[README complet](CaseStudies/README.md) | 4 notebooks
+[README complet](CaseStudies/README.md)
 
 ---
 
