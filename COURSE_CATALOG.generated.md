@@ -1,11 +1,11 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-16 05:25
-Total notebooks: 562
+Generated: 2026-06-17 05:18
+Total notebooks: 563
 
 ## Status Summary
 
-- **READY**: 412
+- **READY**: 413
 - **DEMO**: 148
 - **RESEARCH**: 0
 - **BROKEN**: 2
@@ -13,7 +13,7 @@ Total notebooks: 562
 ## Maturity Summary
 
 - **PRODUCTION**: 459
-- **BETA**: 53
+- **BETA**: 54
 - **TEMPLATE**: 4
 - **ALPHA**: 42
 - **DRAFT**: 4
@@ -154,7 +154,7 @@ Total notebooks: 562
 | 128 | Pipeline Video de Production | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 129 | GenAI E2E Quant Validation | Python 3 | READY | BETA | 30min | po-2025 |
 
-### Search (54 notebooks) — READY:54 | BETA:3, PRODUCTION:51
+### Search (55 notebooks) — READY:55 | BETA:4, PRODUCTION:51
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -182,36 +182,37 @@ Total notebooks: 562
 | 22 | Introduction a la programmation par contrainte | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 23 | Recherche non informee et informee | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 24 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
-| 25 | MGS-1 : Introduction a MetaGeneticSharp et au mote | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
-| 26 | MGS-2 : Composition de metaheuristiques -- Match e | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
-| 27 | MGS-3 : L'Eukaryote -- sous-populations et chromos | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
-| 28 | MGS-4 : Le Modele Insulaire -- populations structu | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
-| 29 | MGS-5 : Benchmarks comparatifs -- l'argument primi | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 30 | MGS-6 : TSP combinatoire -- la grammaire de compos | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 31 | MGS-7 : Fitness Landscape Explorer -- voir la surf | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
-| 32 | MGS-8 - Trouver l'Everest : relief reel et bassins | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
-| 33 | Search-1 : Espaces d'etats et formulation de probl | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 34 | Search-12 : Automates Symboliques avec Z3 | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 35 | Search-11-Metaheuristiques : Optimisation avec MEA | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 36 | Search-2-Uninformed : Algorithmes de Recherche Non | Python 3 | READY | PRODUCTION | 1h | po-2025 |
-| 37 | Search-3-Informed : Algorithmes de Recherche Infor | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 38 | Search-4-LocalSearch : Recherche Locale et Metaheu | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 39 | Search-5 : Algorithmes Genetiques | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 40 | Search-6-AdversarialSearch : Recherche Adversarial | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 41 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 42 | Search-8-DancingLinks : L'algorithme X et Dancing  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 43 | Search-9-LinearProgramming : Programmation Lineair | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 44 | CSP-1 : Fondamentaux des CSP | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 45 | CSP-2 : Propagation de Contraintes et Consistance | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 46 | CSP-3 : CSP Avance - Contraintes globales, OR-Tool | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 47 | CSP-4-Scheduling : Problèmes d'Ordonnancement | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 48 | CSP-5-Optimization : Problèmes d'Optimisation Comb | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 49 | CSP-6-Hybridation : Approches Hybrides Modernes | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 50 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | READY | PRODUCTION | 1h | po-2025 |
-| 51 | CSP-8 : Temporels - Raisonnement sur le Temps | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 52 | CSP-9-Distributed : CSP Distribués (DisCSP) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 53 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
-| 54 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 25 | Search-1 : Espaces d'etats et formulation de probl | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 26 | Search-12 : Automates Symboliques avec Z3 | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 27 | Search-11-Metaheuristiques : Optimisation avec MEA | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 28 | Search-2-Uninformed : Algorithmes de Recherche Non | Python 3 | READY | PRODUCTION | 1h | po-2025 |
+| 29 | Search-3-Informed : Algorithmes de Recherche Infor | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 30 | Search-4-LocalSearch : Recherche Locale et Metaheu | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 31 | Search-5 : Algorithmes Genetiques | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 32 | Search-6-AdversarialSearch : Recherche Adversarial | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 33 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 34 | Search-8-DancingLinks : L'algorithme X et Dancing  | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 35 | Search-9-LinearProgramming : Programmation Lineair | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 36 | CSP-1 : Fondamentaux des CSP | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 37 | CSP-2 : Propagation de Contraintes et Consistance | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 38 | CSP-3 : CSP Avance - Contraintes globales, OR-Tool | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 39 | CSP-4-Scheduling : Problèmes d'Ordonnancement | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 40 | CSP-5-Optimization : Problèmes d'Optimisation Comb | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 41 | CSP-6-Hybridation : Approches Hybrides Modernes | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 42 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | READY | PRODUCTION | 1h | po-2025 |
+| 43 | CSP-8 : Temporels - Raisonnement sur le Temps | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 44 | CSP-9-Distributed : CSP Distribués (DisCSP) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 45 | MGS-1 : Introduction a MetaGeneticSharp et au mote | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
+| 46 | MGS-2 : Composition de metaheuristiques -- Match e | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
+| 47 | MGS-3 : L'Eukaryote -- sous-populations et chromos | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
+| 48 | MGS-4 : Le Modele Insulaire -- populations structu | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
+| 49 | MGS-5 : Construire les métaheuristiques composées  | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 50 | MGS-6 : Benchmarks comparatifs -- l'argument primi | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 51 | MGS-7 : TSP combinatoire -- la grammaire de compos | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 52 | MGS-8 : Fitness Landscape Explorer -- voir la surf | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
+| 53 | MGS-9 - Trouver l'Everest : relief reel et bassins | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
+| 54 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
+| 55 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 
 ### ML (27 notebooks) — DEMO:3, READY:24 | ALPHA:1, BETA:3, PRODUCTION:23
 
@@ -273,7 +274,7 @@ Total notebooks: 562
 | 22 | Lean-15 — Dérivées symboliques de Brzozowski : la  | Python 3 | READY | BETA | 15min | po-2024 |
 | 23 | Lean-15 : Le Theoreme de Kochen-Specker (Cabello 1 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 24 | Lean-16 : Le Theoreme du Libre Arbitre (Conway-Koc | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 25 | Lean 17a — Conway, les Nœuds et la Preuve de Picci | Python 3 | READY | BETA | 15min | po-2024 |
+| 25 | Lean 17a — Conway, les Nœuds et la Preuve de Picci | Python 3 | READY | BETA | 30min | po-2024 |
 | 26 | Lean 17b — Invariants de Nœuds : Calcul et Vérific | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 27 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 28 | Lean 3 - Propositions et Preuves | Lean 4 | READY | PRODUCTION | 45min | po-2024 |
@@ -357,14 +358,14 @@ Total notebooks: 562
 | 106 | SC-25 : Deploiement Mainnet (L2) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 107 | SC-26 : Projet Final - DApp Complete | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 108 | SL-1 - Apprentissage Logique : CBH Search et Versi | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 109 | SL-10 --- Capstone : un pipeline neuro-symbolique  | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 109 | SL-10 --- Capstone : un pipeline neuro-symbolique  | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 110 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 111 | SL-3 --- Apprentissage Base sur la Pertinence (RBL | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 112 | SL-4 --- Programmation Logique Inductive (ILP) | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 113 | SL-5 : Integration Neuro-Symbolique | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 114 | SL-6 - ILP Moderne et Knowledge Graphs | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 115 | SL-7 - LLMs et Apprentissage Symbolique : Generati | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 116 | SL-8 --- Apprentissage Actif d'Automates (L* d'Ang | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 116 | SL-8 --- Apprentissage Actif d'Automates (L* d'Ang | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 117 | SL-9 --- Resolution Inverse et Progol (ILP bottom- | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 118 | Configuration et Installation TweetyProject | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 119 | Logiques de Base - Propositionnelle et Premier Ord | Python 3 | READY | PRODUCTION | 45min | po-2024 |
@@ -631,7 +632,7 @@ Total notebooks: 562
 
 ## Requirements
 
-- **API**: 125 notebooks
+- **API**: 127 notebooks
 - **GPU**: 81 notebooks
 - **Cloud**: 104 notebooks
 - **WSL**: 33 notebooks
