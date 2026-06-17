@@ -26,6 +26,7 @@ Epic #2314, Issue #2315.
 """
 
 import subprocess
+import tempfile
 import platform
 import shutil
 import os
@@ -150,6 +151,36 @@ def get_lean_project_path(project_name: str) -> str:
     return win_to_wsl(win_path)
 
 
+def _run_capture(cmd, timeout, cwd=None):
+    """Run ``cmd`` capturing stdout/stderr via temp files.
+
+    Avoids ``subprocess.run(capture_output=True)`` whose per-stream
+    ``_readerthread`` race on Windows can silently drop output when the process
+    exits (the Lean-13/13b/Kochen-Specker C.2 defect: committed notebook outputs
+    were only an ``Exception in thread (_readerthread)`` trace, with no real Lean
+    output). Returns ``(returncode, stdout, stderr)``; raises
+    ``subprocess.TimeoutExpired`` and ``FileNotFoundError`` like ``subprocess.run``.
+    See PRs #3216 (Lean-13), #3222 (Lean-13b).
+    """
+    out_f = tempfile.NamedTemporaryFile('wb', delete=False, suffix='.out')
+    err_f = tempfile.NamedTemporaryFile('wb', delete=False, suffix='.err')
+    out_path, err_path = out_f.name, err_f.name
+    out_f.close()
+    err_f.close()
+    try:
+        with open(out_path, 'wb') as o, open(err_path, 'wb') as e:
+            r = subprocess.run(cmd, stdout=o, stderr=e, cwd=cwd, timeout=timeout)
+        out = Path(out_path).read_text(encoding='utf-8', errors='replace')
+        err = Path(err_path).read_text(encoding='utf-8', errors='replace')
+        return r.returncode, out, err
+    finally:
+        for p in (out_path, err_path):
+            try:
+                Path(p).unlink()
+            except OSError:
+                pass
+
+
 # ---------------------------------------------------------------------------
 # Lean command execution
 # ---------------------------------------------------------------------------
@@ -177,12 +208,7 @@ def run_lake(
     if is_native_platform():
         lake = _find_lake()
         try:
-            r = subprocess.run(
-                [lake] + args.split(),
-                cwd=project_path,
-                capture_output=True, text=True, timeout=timeout
-            )
-            return r.returncode, r.stdout, r.stderr
+            return _run_capture([lake] + args.split(), timeout, cwd=project_path)
         except subprocess.TimeoutExpired:
             return -1, "", f"TIMEOUT after {timeout}s"
         except FileNotFoundError:
@@ -193,11 +219,7 @@ def run_lake(
             f"cd {project_path} && lake {args} 2>&1 | tail -{tail}"
         )
         try:
-            r = subprocess.run(
-                ["wsl", "-d", "Ubuntu", "--", "bash", "-lc", cmd],
-                capture_output=True, text=True, timeout=timeout
-            )
-            return r.returncode, r.stdout, r.stderr
+            return _run_capture(["wsl", "-d", "Ubuntu", "--", "bash", "-lc", cmd], timeout)
         except subprocess.TimeoutExpired:
             return -1, "", f"TIMEOUT after {timeout}s"
         except FileNotFoundError:
@@ -234,12 +256,8 @@ def run_lean_snippet(
         tmp_path = Path(tmp_file)
         tmp_path.write_text(snippet, encoding="utf-8")
         try:
-            r = subprocess.run(
-                [lake, "env", "lean", str(tmp_path)],
-                cwd=project_path,
-                capture_output=True, text=True, timeout=timeout
-            )
-            return (r.stdout or "") + (r.stderr or "")
+            _rc, out, err = _run_capture([lake, "env", "lean", str(tmp_path)], timeout, cwd=project_path)
+            return (out or "") + (err or "")
         except subprocess.TimeoutExpired:
             return f"TIMEOUT after {timeout}s"
         finally:
@@ -249,11 +267,8 @@ def run_lean_snippet(
         lean_cmd = f"cd {project_path} && lake env lean {tmp_file} 2>&1"
         full_cmd = f"{write_cmd}\n{lean_cmd}"
         try:
-            r = subprocess.run(
-                ["wsl", "-d", "Ubuntu", "--", "bash", "-lc", full_cmd],
-                capture_output=True, text=True, timeout=timeout
-            )
-            return (r.stdout or "") + (r.stderr or "")
+            _rc, out, err = _run_capture(["wsl", "-d", "Ubuntu", "--", "bash", "-lc", full_cmd], timeout)
+            return (out or "") + (err or "")
         except subprocess.TimeoutExpired:
             return f"TIMEOUT after {timeout}s"
         except FileNotFoundError:
@@ -280,14 +295,11 @@ def count_sorry(project_path: str, subdir: str = "") -> int:
 
     if is_native_platform():
         try:
-            r = subprocess.run(
-                ["grep", "-rc", "sorry", "--include=*.lean", search_dir],
-                capture_output=True, text=True, timeout=30
-            )
-            if r.returncode != 0:
+            rc, out, _err = _run_capture(["grep", "-rc", "sorry", "--include=*.lean", search_dir], 30)
+            if rc != 0:
                 return 0
             total = 0
-            for line in r.stdout.strip().splitlines():
+            for line in out.strip().splitlines():
                 parts = line.split(":")
                 if len(parts) >= 2:
                     try:
@@ -303,14 +315,11 @@ def count_sorry(project_path: str, subdir: str = "") -> int:
             f"grep -rc sorry --include='*.lean' {subdir} 2>/dev/null"
         )
         try:
-            r = subprocess.run(
-                ["wsl", "-d", "Ubuntu", "--", "bash", "-lc", cmd],
-                capture_output=True, text=True, timeout=30
-            )
-            if r.returncode != 0:
+            rc, out, _err = _run_capture(["wsl", "-d", "Ubuntu", "--", "bash", "-lc", cmd], 30)
+            if rc != 0:
                 return 0
             total = 0
-            for line in r.stdout.strip().splitlines():
+            for line in out.strip().splitlines():
                 parts = line.split(":")
                 if len(parts) >= 2:
                     try:
