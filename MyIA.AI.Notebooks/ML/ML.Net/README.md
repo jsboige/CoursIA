@@ -9,21 +9,11 @@ maturity: PRODUCTION=7, ALPHA=1
 
 [← ML (série parente)](../README.md) | [DataScienceWithAgents (Python) →](../DataScienceWithAgents/README.md) | [Probas/Infer.NET →](../../Probas/Infer/README.md)
 
-Série de notebooks couvrant ML.NET, la bibliothèque open-source de Microsoft pour le Machine Learning dans l'écosystème .NET.
-
-ML.NET apporte le machine learning **nativement dans l'écosystème .NET** : on entraîne et on consomme des modèles directement en C#, sans quitter sa stack applicative ni dépendre d'un runtime Python. C'est un choix pensé pour les développeurs autant que pour les data scientists — l'AutoML abaisse la barrière d'entrée, et les modèles s'exécutent *in-process* dans des applications existantes (API web, services, desktop). L'interopérabilité **ONNX** permet d'importer des modèles entraînés ailleurs (scikit-learn, PyTorch, Hugging Face) et de les servir côté .NET : ML.NET devient ainsi un pont concret entre la recherche en Python et la production en entreprise.
+ML.NET — la bibliothèque open-source de Microsoft — apporte le machine learning **nativement dans l'écosystème .NET** : on entraîne et on consomme des modèles directement en C#, sans quitter sa stack applicative ni dépendre d'un runtime Python. C'est un choix pensé pour les développeurs autant que pour les data scientists — l'AutoML abaisse la barrière d'entrée, et les modèles s'exécutent *in-process* dans des applications existantes (API web, services, desktop). L'interopérabilité **ONNX** permet d'importer des modèles entraînés ailleurs (scikit-learn, PyTorch, Hugging Face) et de les servir côté .NET : ML.NET devient ainsi un pont concret entre la recherche en Python et la production en entreprise.
 
 Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : préparation des données et feature engineering (ML-2), entraînement et AutoML (ML-3), évaluation rigoureuse par cross-validation et importance des variables (ML-4), puis les fonctionnalités avancées — prévision de séries temporelles par SSA (ML-5), interopérabilité ONNX (ML-6) et systèmes de recommandation (ML-7) — avant un TP capstone qui marie ML.NET et la régression bayésienne d'Infer.NET.
 
 > **À qui s'adresse cette série** : développeurs C#/.NET découvrant le Machine Learning, équipes enterprise souhaitant intégrer du ML sans sortir de leur stack .NET, ou data scientists souhaitant servir des modèles en production dans des applications C#. Aucun prérequis en statistiques avancées — les concepts sont introduits progressivement dans chaque notebook.
-
-## Vue d'ensemble
-
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | 8 (5 fondamentaux + 3 avancés + 1 TP) |
-| Kernel | .NET C# |
-| Durée estimée | ~5-6h |
 
 ## Objectifs d'apprentissage
 
@@ -167,7 +157,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Régression bayésienne | Prévision avec incertitude |
 | Application | Cas d'usage ventes |
 
-### ML-5-TimeSeries (Nouveau)
+### ML-5-TimeSeries
 
 | Section | Contenu |
 |---------|---------|
@@ -176,7 +166,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | AutoML | Optimisation d'hyperparamètres |
 | Intervalles de confiance | Quantification de l'incertitude |
 
-### ML-6-ONNX (Nouveau)
+### ML-6-ONNX
 
 | Section | Contenu |
 |---------|---------|
@@ -185,7 +175,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Export ML.NET | Sauvegarder en ONNX |
 | Hugging Face | Intégration BERT, Whisper |
 
-### ML-7-Recommendation (Nouveau)
+### ML-7-Recommendation
 
 | Section | Contenu |
 |---------|---------|
@@ -215,7 +205,7 @@ dotnet interactive jupyter install
 jupyter kernelspec list  # doit montrer .net-csharp
 ```
 
-## Prerequisites
+## Dépendances (packages NuGet)
 
 ```bash
 # Packages (installés via #r dans notebooks, pas de pip)
@@ -368,7 +358,4 @@ Voir la licence du repository principal.
 | Série | Lien | Connexion |
 |-------|------|------------|
 | [Probas/Infer](../../Probas/Infer/README.md) | Régression bayésienne | Le TP capstone utilise Infer.NET, le même moteur probabiliste de la série Probas |
-| [Search](../../Search/README.md) | Optimisation | L'AutoML (ML-3) et la détection de saisonnalité (ML-5) utilisent des techniques de recherche et optimisation |
-| [QuantConnect](../../QuantConnect/README.md) | Trading algorithmique | Les modèles de prévision de séries temporelles (ML-5) s'appliquent directement aux stratégies de trading |
 | [GenAI](../../GenAI/README.md) | IA générative | Les modèles ONNX (ML-6) servent à déployer des LLMs et modèles NLP (BERT, Whisper) via ONNX Runtime dans .NET |
-| [DataScienceWithAgents](../DataScienceWithAgents/README.md) | Python ML | Les mêmes concepts ML.NET existent en Python via scikit-learn dans le track DataScienceWithAgents |
