@@ -56,6 +56,28 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 5. **Notebook 05** aborde les quantificateurs (`ForAll`, `Exists`) et la notion de preuve formelle par réfutation (une formule est valide si sa négation est insatisfiable), avec le cas honnête `unknown`
 6. **Notebook 06** explore l'optimisation avancée : contraintes hiérarchiques pondérées, objectifs multiples, front de Pareto et MaxSAT (contraintes souples)
 
+## Concepts clés
+
+La série manipule un vocabulaire précis hérité de la programmation par contraintes et de la logique. Le tableau ci-dessous reprend les notions effectivement utilisées dans les notebooks, avec un pointeur vers celui qui les introduit.
+
+| Concept | Description | Notebook |
+|---------|-------------|----------|
+| **Solveur SMT (Z3)** | Décide la satisfiabilité d'une formule sur des *théories* (entiers, réels, vecteurs de bits, tableaux, chaînes), pas seulement sur des booléens. | 01 |
+| **`Solver` vs `Optimize`** | `Solver` répond sat/unsat (le problème a-t-il une solution ?) ; `Optimize` ajoute un objectif à maximiser ou minimiser sous contraintes. | 01, 06 |
+| **`sat` / `unsat` / `unknown`** | Les trois verdicts de `check()` : il existe un modèle / aucune solution / le solveur ne tranche pas (théorie non décidable, timeout). | 01 |
+| **Modèle** | L'assignation concrète des variables qui satisfait les contraintes, obtenu via `s.model()`. Un seul exemple parmi les solutions possibles, à n'appeler que sur `sat`. | 01 |
+| **Noyau d'insatisfiabilité** | Sous-ensemble minimal de contraintes responsable d'un `unsat` (`unsat_core()`), qui pointe exactement ce qu'il faut assouplir pour rendre le problème réalisable. | 01 |
+| **Assertion / contrainte** | Une formule ajoutée au solveur via `s.add(...)`. Dite *dure* (hard) par défaut : elle doit être satisfaite. | 01 |
+| **`Distinct`** | Contrainte « tous différents » sur un ensemble de variables, raccourci central pour modéliser un Sudoku, un N-reines ou tout CSP d'exclusivité sans énumérer les inégalités deux à deux. | 02 |
+| **`BitVec`** | Vecteur de bits pour l'arithmétique modulaire (modéliser un overflow, un registre, une primitive cryptographique). | 03 |
+| **`Array`** | Tableau symbolique fonctionnel (théorie des tableaux : select/store) manipulé comme une valeur, pas comme un effet de bord. | 03 |
+| **Tactique** | Transformation du problème avant résolution (`simplify`, `Then`, `OrElse`) pour guider le solveur vers une réponse plus rapide. | 03 |
+| **Contrainte dure vs souple** | Dure : doit être satisfaite. Souple (*soft*) : une violation est tolérée moyennant une pénalité, quand on ne peut pas tout satisfaire. | 06 |
+| **MaxSAT** | Relaxation des contraintes dures en contraintes souples via des variables booléennes, pour satisfaire un maximum de contraintes simultanément. | 06 |
+| **Optimisation lexicographique** | Plusieurs objectifs résolus par priorité de déclaration : le premier objectif est optimisé, puis le second sous la contrainte que le premier reste optimal. | 06 |
+| **Front de Pareto** | Ensemble des solutions non-dominées lorsque plusieurs objectifs se contredisent : les compromis optimaux, à départager par un humain. | 06 |
+| **Preuve par réfutation** | Une formule est valide si sa négation est insatisfiable (`unsat` sur la négation = la formule tient dans tous les cas). | 05 |
+
 ## Prérequis
 
 | Besoin | Détail |
@@ -82,6 +104,17 @@ pip install -r requirements.txt
 4. **Comparer** l'approche déclarative (Z3) aux approches impératives (backtracking, CP)
 5. **Appliquer** la résolution SMT à des problèmes concrets (Sudoku, ordonnancement, allocation)
 
+## Domaines d'application
+
+Le pattern « décrire les contraintes, laisser le solveur résoudre » s'applique dès qu'un problème se réduit à un système de contraintes sur des variables. Les exercices de la série en couvrent plusieurs, et l'usage industriel de Z3 en couvre d'autres :
+
+- **Résolution de puzzles et CSP** : Sudoku, N-reines, cryptarithmes — modélisation déclarative (`Distinct`, `And`, `Or`), sans écrire de backtracking à la main. Le notebook 02 en fait l'expérience sur le Sudoku. Comparer avec les 10 autres approches algorithmiques de la [série Sudoku](../../../Sudoku/README.md).
+- **Ordonnancement (scheduling)** : placer des tâches dans le temps sous contraintes de précédence, de ressources et de fenêtres (notebook 01, exercice 2). Le solveur trouve un planning réalisable, ou retourne le noyau d'insatisfiabilité qui pointe les contraintes conflictuelles.
+- **Allocation de ressources** : maximiser un gain ou minimiser un coût sous bornes et exclusivités (notebook 01, exercice 3 ; notebook 06). `Optimize` traitera directement la fonction objectif.
+- **Vérification de programmes** : prouver qu'un code respecte sa spécification (absence d'overflow entiers via `BitVec`, invariants de boucle, propriétés de sûreté) — l'usage industriel historique de Z3 en analyse statique et model-checking.
+- **Configuration** : sélectionner des options compatibles (catalogue produit, planning d'emplois du temps) parmi un ensemble de contraintes d'exclusion et de cardinalité. MaxSAT (notebook 06) permet de relâcher les préférences les moins importantes quand tout n'est pas satisfaisable.
+- **Cryptanalyse et sécurité** : raisonner sur des schémas via `BitVec` (trouver des collisions, des contre-exemples à une propriété cryptographique, des attaques symboliques sur des protocoles).
+
 ## Contexte technique
 
 **z3-py** combine deux technologies :
@@ -96,3 +129,14 @@ pip install -r requirements.txt
 - [PyPI : z3-solver](https://pypi.org/project/z3-solver/) — package pip
 - [Série Z3 C# (Z3.Linq)](../Z3/README.md) — série sœur en .NET 9
 - [Série Sudoku](../../../Sudoku/README.md) — compare Z3 à 10 autres approches algorithmiques
+
+## FAQ / Troubleshooting
+
+| Problème | Solution |
+|----------|----------|
+| **`ModuleNotFoundError: No module named 'z3'`** | Le package pip s'appelle `z3-solver` (et non `z3`). Installer avec `pip install z3-solver`, puis `import z3`. Le notebook 0 le rappelle dans sa cellule de setup. |
+| **`check()` renvoie `unknown`** | Le solveur ne peut pas conclure : théorie non décidable, quantificateurs (notebook 5) ou timeout. Simplifier le modèle, changer de tactique (`Then`, `OrElse`, notebook 3) ou augmenter le timeout du solveur. |
+| **`s.model()` échoue ou lève une exception** | `model()` n'a de sens que si `check() == sat`. Sur `unsat`, il n'y a pas de modèle à extraire (consulter `unsat_core()` à la place) ; sur `unknown`, le résultat est incertain. |
+| **`Optimize` ou `Solver` ?** | `Solver` = satisfiabilité seule (le problème a-t-il une solution ?). Dès qu'il y a un objectif à maximiser/minimiser, utiliser `Optimize` (notebook 1 §4, notebook 6). |
+| **Plusieurs objectifs — ordre des résultats** | Z3 résout les objectifs de manière *lexicographique* (ordre de déclaration). Déclarer en priorité l'objectif le plus important : il sera optimisé, puis le suivant sous la contrainte que le premier reste optimal (notebook 6). |
+| **Lenteur sur une grande instance** | Z3 est NP-difficile : la performance n'est pas garantie. Factoriser les contraintes communes, borner le domaine des entiers, appliquer une tactique, ou décomposer le problème en sous-problèmes. |
