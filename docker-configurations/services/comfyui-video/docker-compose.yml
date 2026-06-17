@@ -48,7 +48,14 @@ services:
         target: /install_video_nodes.sh
 
     environment:
-      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      # Expose both GPUs to CUDA; selection is done by the entrypoint's
+      # --cuda-device flag (GPU_DEVICE_ID). Avoids pre-filtering with
+      # CUDA_VISIBLE_DEVICES, which (without PCI_BUS_ID order) remaps indices
+      # unpredictably and previously landed the server on the 16GB GPU0.
+      - CUDA_VISIBLE_DEVICES=0,1
+      # Deterministic enumeration = nvidia-smi order, so device index N inside
+      # matches nvidia-smi GPU N (0=3080Ti 16GB, 1=3090 24GB).
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
       - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}
       - GPU_DEVICE_ID=${GPU_DEVICE_ID:-0}
       - PYTHONUNBUFFERED=1
