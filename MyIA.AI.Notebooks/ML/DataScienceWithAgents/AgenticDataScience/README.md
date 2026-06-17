@@ -1,5 +1,7 @@
 # AgenticDataScience - Agents IA pour Data Science avec Google ADK
 
+[← DataScienceWithAgents (parent)](../README.md) | [ML.NET (C#) →](../../ML.Net/README.md)
+
 Formation avancée sur les agents IA pour la Data Science, intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider.
 
 ## Pourquoi cette série

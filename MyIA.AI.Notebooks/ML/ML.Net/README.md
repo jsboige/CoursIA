@@ -7,6 +7,8 @@ breakdown: ML.Net=8
 maturity: PRODUCTION=7, ALPHA=1
 -->
 
+[← ML (série parente)](../README.md) | [DataScienceWithAgents (Python) →](../DataScienceWithAgents/README.md) | [Probas/Infer.NET →](../../Probas/Infer/README.md)
+
 Série de notebooks couvrant ML.NET, la bibliothèque open-source de Microsoft pour le Machine Learning dans l'écosystème .NET.
 
 ML.NET apporte le machine learning **nativement dans l'écosystème .NET** : on entraîne et on consomme des modèles directement en C#, sans quitter sa stack applicative ni dépendre d'un runtime Python. C'est un choix pensé pour les développeurs autant que pour les data scientists — l'AutoML abaisse la barrière d'entrée, et les modèles s'exécutent *in-process* dans des applications existantes (API web, services, desktop). L'interopérabilité **ONNX** permet d'importer des modèles entraînés ailleurs (scikit-learn, PyTorch, Hugging Face) et de les servir côté .NET : ML.NET devient ainsi un pont concret entre la recherche en Python et la production en entreprise.
@@ -370,7 +372,3 @@ Voir la licence du repository principal.
 | [QuantConnect](../../QuantConnect/README.md) | Trading algorithmique | Les modèles de prévision de séries temporelles (ML-5) s'appliquent directement aux stratégies de trading |
 | [GenAI](../../GenAI/README.md) | IA générative | Les modèles ONNX (ML-6) servent à déployer des LLMs et modèles NLP (BERT, Whisper) via ONNX Runtime dans .NET |
 | [DataScienceWithAgents](../DataScienceWithAgents/README.md) | Python ML | Les mêmes concepts ML.NET existent en Python via scikit-learn dans le track DataScienceWithAgents |
-
-## Navigation
-
-- [<- Retour à la série ML](../README.md) | [Probas/Infer.NET ->](../../Probas/Infer/README.md) | [DataScienceWithAgents ->](../DataScienceWithAgents/README.md)
