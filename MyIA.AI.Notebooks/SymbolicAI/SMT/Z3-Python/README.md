@@ -1,10 +1,10 @@
 # Série Z3-Python - Résolution de contraintes SMT en Python
 
-**Navigation** : [Index SMT](../README.md) | [Index SymbolicAI](../../README.md) | [Série Z3 C# (Z3.Linq)](../Z3/README.md) | [Index général](../../../README.md)
+[← SMT](../README.md) | [Z3 C# (Z3.Linq) →](../Z3/README.md)
 
 ## Série en quelques mots
 
-**6 notebooks (série complète) | 1 kernel | z3-solver (Python) | matplotlib**
+L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série complète de **6 notebooks** (z3-solver + matplotlib), de la satisfaction de contraintes à l'optimisation avancée.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
 

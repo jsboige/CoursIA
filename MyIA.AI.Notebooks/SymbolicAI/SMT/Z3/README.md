@@ -1,10 +1,10 @@
 # Série Z3 - Programmation Déclarative avec Z3.Linq
 
-**Navigation** : [Index SMT](../README.md) | [Index SymbolicAI](../../README.md) | [Index général](../../../README.md)
+[← SMT](../README.md) | [Z3-Python (série sœur) →](../Z3-Python/README.md)
 
 ## Série en quelques mots
 
-**7 notebooks** | **1 kernel** | **~5h10 de travail** | **Z3.Linq + fork Automata (.NET 9)**
+Le binding Z3.Linq traduit des requêtes LINQ C# en formules SMT — on décrit les contraintes, le solveur produit la solution. Série .NET 9 de **7 notebooks** (~5h10), du théorème linéaire à la génération de témoins (fork Automata).
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs C# souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de théorèmes linéaires simples pour monter progressivement vers les théories de tableaux et l'optimisation hiérarchique.
 

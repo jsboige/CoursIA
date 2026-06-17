@@ -1,6 +1,6 @@
 # SMT - Satisfiability Modulo Theories
 
-**Navigation** : [Index SymbolicAI](../README.md) | [Index général](../../README.md)
+[← Intelligence Symbolique](../README.md) | [Z3 (C# .NET) →](Z3/README.md) | [Z3-Python →](Z3-Python/README.md)
 
 ## En quelques mots
 
