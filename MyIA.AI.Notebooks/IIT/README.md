@@ -31,8 +31,8 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [Intro_to_PyPhi](Intro_to_PyPhi.ipynb) | Introduction complète à PyPhi et IIT | 60-90 min |
-| 2 | [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) | Partitionnement MIP, répertoires, MICE, réseaux élargis | 60-90 min |
+| 1 | [Intro_to_PyPhi](Intro_to_PyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation | 60-90 min |
+| 2 | [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
 
 ## Parcours recommandés
 
@@ -53,7 +53,7 @@ Notebook 2 (Sujets avancés)
 
 **Phase 1 : Fondements (~90 min, notebook 1)**
 
-Vous installez PyPhi dans un environnement conda dédié (Python 3.9 obligatoire), puis construisez votre premier réseau causal binaire. Le calcul de Phi sur un réseau XOR à 3 nœuds illustre concrètement la notion d'intégration irréductible. L'exploration de la CES révèle comment un système "spécifie" sa propre géométrie informationnelle. Les 4 exercices vous font varier les sous-systèmes, les topologies de réseau et les paramètres pour développer une intuition sur ce qui fait monter ou baisser Phi.
+Vous installez PyPhi dans un environnement conda dédié (Python 3.9 obligatoire), puis construisez votre premier réseau causal binaire. Le calcul de Phi sur un réseau XOR à 3 nœuds illustre concrètement la notion d'intégration irréductible. L'exploration de la CES révèle comment un système "spécifie" sa propre géométrie informationnelle. Les 3 exercices vous font varier les sous-systèmes (partiel, porte AND) et explorer les concepts de la CES pour développer une intuition sur ce qui fait monter ou baisser Phi.
 
 **Phase 2 : Approfondissement (~90 min, notebook 2)**
 
@@ -65,26 +65,27 @@ Le deuxième notebook déconstruit le calcul de Phi : vous manipulez les biparti
 
 | Section | Contenu |
 |---------|---------|
-| Installation | Configuration PyPhi, environnement conda |
-| Réseaux | Création de circuits/graphes, nœuds binaires |
-| TPM | Transition Probability Matrices, règles d'évolution |
-| Sous-systèmes | Définition, calcul de Phi |
-| CES | Cause-Effect Structures, mécanismes |
-| Causation actuelle | Liens causaux entre éléments |
-| Macro-sous-systèmes | Coarse-graining, blackboxing |
+| Installation | `pip install pyphi`, vérification de la version de la bibliothèque |
+| Réseaux | Réseau XOR 3-nœuds de référence, inspection des `node_labels` |
+| TPM | Conversion *state-by-node*, dimensions de la matrice de transition |
+| Sous-systèmes & Φ | Calcul de Φ d'un sous-système à un état donné, boucle sur plusieurs états |
+| États inaccessibles | Validation via `StateUnreachableError`, option `VALIDATE_SUBSYSTEM_STATES` |
+| CES | `pyphi.compute.ces`, décompte des concepts d'un sous-système |
+| Causation actuelle | Liens causaux d'une transition (`account`), mécanisme d'un concept |
+| Macro-sous-systèmes | Coarse-graining, blackboxing (section conceptuelle) |
 
 ### IIT-2-AdvancedTopics.ipynb
 
 | Section | Contenu |
 |---------|---------|
-| Rappels | Reprise des concepts du notebook 1 |
-| Partitionnement MIP | Coupes minimales d'information, bipartitions |
-| Répertoires cause-effet | Distributions cause, effet, non-perturbées |
-| MICE et concepts | Mécanismes maximalement irréductibles |
-| Big Phi vs Small Phi | Comparaison niveau système vs mécanisme |
-| Réseaux élargis | Systèmes 4+ nœuds, interprétation |
-| Performance | Coarse-graining, timing, complexité |
-| IIT 4.0 | Concept-style, évolutions récentes, débats |
+| Rappels | Réseau XOR 3-nœuds, reprise des concepts du notebook 1 |
+| Partitionnement MIP | `bipartition`, décompte des partitions, interprétation de la coupe minimale |
+| Répertoires cause-effet | Répertoires cause, effet et non-perturbé d'un mécanisme donné |
+| MICE et concepts | MICE du mécanisme {A,B}, décompte des concepts de la CES |
+| Big Phi vs Small Phi | Big Phi au niveau système (SIA) face au small phi d'un mécanisme (MICE) |
+| Réseaux élargis | Réseau 4-nœuds en anneau (XOR cyclique), Φ sur système élargi |
+| Performance | Timing du calcul de CES, module `pyphi.macro` |
+| IIT 4.0 | Concept-Style SIA, limites computationnelles, débats |
 
 ## Concepts clés
 
