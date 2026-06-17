@@ -13,7 +13,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 
 ## Ce que vous apprendrez
 
-À travers ces 18 notebooks pratiques, vous acquerrez une expertise complète :
+À travers cette série pratique, vous acquerrez une expertise complète :
 - **Art du prompt engineering** : du zéro-shot au chain-of-thought
 - **Structuration des réponses** : JSON Schema, Pydantic, extraction de données
 - **Intelligence augmentée** : function calling, RAG moderne, code interpreter
