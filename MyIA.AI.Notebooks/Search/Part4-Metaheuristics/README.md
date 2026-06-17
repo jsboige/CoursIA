@@ -93,23 +93,30 @@ L'aboutissement : le paysage n'est plus synthétique mais un **relief terrestre 
 
 ## Configuration requise
 
-Ces notebooks requièrent **.NET 9.0** et le kernel `dotnet-interactive` (règle : pas de contournement, installer l'environnement complet) :
+Le kernel `dotnet-interactive` (version pinnée **1.0.552801**) est un **hôte .NET 8.0** : il ne peut pas charger d'assemblies compilées en `net9.0` (`System.Runtime 9.0.0.0` introuvable à l'exécution). Les notebooks MGS se répartissent donc sur deux TFM :
+
+- **MGS-1 à MGS-5** (Introduction, Composition, Eukaryote, Islands, Compound) ne consomment que `MetaGeneticSharp.Domain` + `Infrastructure` + `GeneticSharp`. Ils référencent les **DLL `net8.0`** et s'exécutent sur le kernel pinné.
+- **MGS-6 à MGS-9** (Benchmarks, TSP, Landscape, Everest) dépendent en plus de `MetaGeneticSharp.Extensions` (SkiaSharp / `System.Drawing.Common`), non encore buildé pour `net8.0`. Ils référencent les DLL `net9.0` et restent **bloqués sur le kernel pinné** (follow-up : builder `Extensions` pour `net8.0`, ou multi-targeter le fork).
+
+Règle : pas de contournement, installer l'environnement complet :
 
 ```powershell
-# 1. .NET 9 SDK (si manquant)
-dotnet --version  # doit afficher 9.x
+# 1. .NET SDK (8.0 pour le kernel pinné ; 9.0 pour le fork source)
+dotnet --version
 
-# 2. dotnet-interactive (kernel Jupyter pour C#)
+# 2. dotnet-interactive (kernel Jupyter pour C#, hôte net8.0)
 dotnet tool install --global Microsoft.dotnet-interactive
 dotnet interactive jupyter install
 
 # 3. Sous-modules + build du fork (les notebooks chargent les DLL par #r absolu)
 cd MyIA.AI.Notebooks/Search/MetaGeneticSharp
 git submodule update --init --recursive
-dotnet build
+dotnet build                      # build net9.0 (fork source ; DLLs pour MGS-6..9)
 ```
 
-Les notebooks chargent les DLL via `#r "c:/dev/MetaGeneticSharp/..."` (chemin du checkout de travail du fork). Vérifiez que `dotnet build` a produit les binaires sous `src/MetaGeneticSharp.Domain/bin/Debug/net9.0/` et `src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/`.
+> **Bins `net8.0` pour MGS-1..5.** Le fork est actuellement single-TFM `net9.0`, donc `-p:TargetFramework=net8.0` échoue (le `project.assets.json` restauré ne contient que la cible net9.0). Pour produire `Domain` + `Infrastructure` en `net8.0` (requis par le kernel pinné), il faut soit retargeter temporairement le `.csproj` en `net8.0` puis `dotnet build`, soit — solution propre — multi-targeter le fork en `<TargetFrameworks>net8.0;net9.0</TargetFrameworks>` (follow-up sur le fork, `Extensions`/SkiaSharp restant net9.0-only). Les bins référencés par MGS-1..5 doivent exister sous `src/MetaGeneticSharp.Domain/bin/Debug/net8.0/`.
+
+Les notebooks chargent les DLL via `#r "c:/dev/MetaGeneticSharp/..."` (chemin du checkout de travail du fork). **MGS-1..5** pointent sur `src/MetaGeneticSharp.Domain/bin/Debug/net8.0/` (4 DLL : GeneticSharp.Domain, GeneticSharp.Infrastructure.Framework, MetaGeneticSharp.Domain, MetaGeneticSharp.Infrastructure) ; **MGS-6..9** pointent sur `src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/` (Extensions + SkiaSharp + System.Drawing.Common). Les résultats numériques des notebooks sont **stochastiques** (GA non seedé) : les outputs committés sont une exécution valide, les valeurs varient d'une exécution à l'autre.
 
 Règle C.2 : les notebooks sont committés **avec leurs outputs** (exécution réelle, kernel .NET).
 
