@@ -159,10 +159,7 @@ PT-06 documente le pipeline d'évaluation complet et produit un tableau comparat
 | Série | Connection | Details |
 |-------|------------|---------|
 | **[RL](../../RL/)** | RL classique fondamentaux | Les notebooks RL ([rl_5 MDP/Q-Learning](../../RL/rl_5_mdp_dp_qlearning.ipynb) et [rl_6c PPO from scratch](../../RL/rl_6c_ppo_from_scratch.ipynb)) établissent l'intuition policy/value que PPO/GRPO réutilisent. Recommandés comme prérequis pour PT-04. |
-| **[GenAI/Texte](../Texte/)** | Usage des LMs aligned | Les notebooks GenAI consomment des modèles déjà post-trained. Cette série explique comment ces modèles arrivent dans cet état. |
 | **[GenAI/FineTuning](../FineTuning/)** | Boîte à outils fine-tuning | Série sœur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique sur 5 notebooks. PostTraining = profondeur méthodologique, FineTuning = recettes exécutables. |
-| **[ML](../../ML/)** | Tutoriels ML.NET | Pont conceptuel : ML.NET = inference de modèles déjà entraînés ; PostTraining = production de ces modèles. |
-| **[QuantConnect ML-Training-Pipeline](../../QuantConnect/ML-Training-Pipeline/)** | Pipeline training trading | Pipeline sœur sur RL/transformers pour trading (DT, PatchTST). PostTraining cible LMs, ML-Training-Pipeline cible time series. |
 
 ## Contexte industriel et historique 2017-2025
 
@@ -214,7 +211,7 @@ Pour les apprenants disposant de plus de VRAM (RTX 4090 24Go, A100 40Go), la sé
 
 ## Statut
 
-Série complète : 6 notebooks, tous exécutés avec outputs réels.
+Série complète : tous les notebooks sont exécutés avec outputs réels.
 
 Suivi : [Issue #1742](https://github.com/jsboige/CoursIA/issues/1742).
 
