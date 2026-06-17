@@ -49,7 +49,7 @@ sauf justification documentée dans le body PR.
   réfutant `tricolorable_invariant` sous le modèle PR1 (diagnostic, cf. § Phase 5)
 - [x] `trefoil_wf`, `unknot_wf`, `figureEight_wf` — les 3 diagrammes nommés satisfont la parité PD de `KnotDiagram.wf`
 - [x] `Reidemeister1Connected.tricolorable_forward` (#3000, MERGED) — transfer **forward** de la 3-colorabilité d₁→d₂ sous le modèle R1 connecté (`Invariant.lean` L478, preuve complète sans sorry via `hcolF1`/`hcolF2b`/`hcolF2c`)
-- [~] `Reidemeister1Connected.tricolorable_backward` (#3124, MERGED, **PARTIEL**) — transfer **backward** d₂→d₁ : `hcolPres` (préservation des couleurs sur les labels préservés, cœur constructif) **PROUVÉ** ; `num` PROUVÉ (parité `wf` : `crossings.length ≥ 2 ⟹ numEdges ≥ 2`) ; 2 sous-buts résiduels `fox`/`col` restent en sorry (recherche §9.1, décomposition instruite user)
+- [~] `Reidemeister1Connected.tricolorable_backward` (#3124, MERGED, **PARTIEL**) — transfer **backward** d₂→d₁ : `hcolPres` (préservation des couleurs sur les labels préservés, cœur constructif) **PROUVÉ** ; `num` PROUVÉ #3163 (parité `wf`) ; `fox` #3154 + `col` #3168 partiellement prouvés (un sous-cas chacun clos) ; **2 résiduels §9.1** restent en sorry (crossing modifié `Y` + kink all-distinct)
 
 ### Scaffolding (sorry, cible formelle)
 
@@ -140,24 +140,34 @@ se propage à `d₂`. Le transfer **backward** `tricolorable_backward` (#3124) e
 **partiel** : `hcolPres` (préservation des couleurs sur les labels préservés
 `l ∈ [1, n]`, arithmétique pure `(l-1) % numEdges` close par `rfl`) est prouvé —
 c'est le cœur constructif sur lequel l'héritage Fox des crossings inchangés
-s'appuie. Trois sous-buts résiduels restent en `sorry` après décomposition
+s'appuie. **Deux sous-buts §9.1 restent en `sorry`** après décomposition
 (instruction user 2026-06-15 : « décompose, prouve le tractable, livre avec des
-sous-sorry résiduels sur lesquels ai-01 avisera ») :
+sous-sorry résiduels sur lesquels ai-01 avisera »). Sur les 3 sous-buts initialement
+ouverts (`fox`/`num`/`col`), `num` est **prouvé** et `fox`/`col` sont **partiellement
+prouvés** (un sous-cas chacun clos) :
 
-1. `fox` — Fox-transfer à tous les crossings de `d₁` sous `col₁`. Les crossings
-   inchangés héritent via `hcolPres` (miroir du forward `h_inherit`) ; le
-   **crossing modifié `Y`** et le **mode kink all-distinct** nécessitent la
-   construction de symétrie de couleurs §9.1 (research-level, §9.4–§9.6).
-2. `num` — `d₁.numEdges ≥ 2`. Dérivable de `d₁.wf` + proper-arc (parité PD force
-   `numEdges ∉ {0,1}`), mécanique mais nécessite de déplier le `wf` Booléen sur
-   un `d₁` abstrait (`decide` ne clôt pas).
-3. `col` — `≥ 2` couleurs sous `col₁`. En mode kink all-equal, les 2 couleurs
-   distinctes de `col₂` s'embedent dans `Fin d₁.numEdges` (découle du split Fox-mode).
+1. `num` — **PROUVÉ (#3163)**. `d₁.numEdges ≥ 2` par parité `wf` : `_hproper`
+   fournit un crossing distinct `j ≠ i` ⟹ `crossings.length ≥ 2` ⟹
+   `edges.length = 4 × length ≥ 8` ⟹ par l'absurde (`numEdges = 1`) les clauses
+   (a)+(b) de `wf` forcent toutes les arêtes à `1` (comptage `count 1 = length ≥ 8`),
+   contredisant la clause (b) `count 1 = 2`.
+2. `fox` — **partiellement prouvé (#3154)** : les crossings **inchangés**
+   héritent via `hcolPres` (miroir du forward `h_inherit`). **Résiduel §9.1** :
+   le crossing **modifié `Y`** (remplacé par `Y'` dans `d₂`) nécessite la
+   construction de symétrie de couleurs sous `col₁` (research-level, §9.4–§9.6,
+   `Invariant.lean` L1210).
+3. `col` — **partiellement prouvé (#3168)** : le mode kink **all-equal** est clos
+   (les 2 couleurs distinctes de `col₂` s'embedent dans `Fin d₁.numEdges`).
+   **Résiduel §9.1** : le mode kink **all-distinct** porte une couleur fraîche hors
+   range `d₁`, la restriction naïve `col₁` peut être monochrome — le lift `≥ 2`
+   couleurs nécessite la construction colour-symmetry / proper-arc (#3003,
+   `Invariant.lean` L1354).
 
-Ces 3 sorry font passer la **baseline CI 25→28** (bump justifié dans #3124).
+Ces **2 résiduels §9.1** maintiennent la **baseline CI 27** (baissée de 28 après la
+preuve `num` #3163 ; bump initial 25→28 justifié dans #3124).
 
-Le marquee `tricolorable_invariant` reste gated sur la **complétion des 3
-sous-buts backward** (puis composition forward + backward = bi-implication R1
+Le marquee `tricolorable_invariant` reste gated sur la **complétion des 2 résiduels
+§9.1 backward** (puis composition forward + backward = bi-implication R1
 sous le modèle connecté). Le transfer R2/R3 complet (wf-satisfabilité
 non-triviale + lift RTC) reste research-level multi-PR. Décision stratégique
 (C) surgery connectée profonde vs (X) accepter #2938 et reframer, ouverte.
