@@ -1,5 +1,7 @@
 # DataScienceWithAgents - Data Science Python avec Agents IA
 
+[← ML (série parente)](../README.md) | [ML.NET (C#) →](../ML.Net/README.md) | [AgenticDataScience (Google ADK) →](AgenticDataScience/README.md)
+
 Formation complète en Data Science Python avec intégration d'agents IA. Combine les fondamentaux NumPy/Pandas avec deux tracks complémentaires : LangChain (3 jours) et Google ADK (4 jours).
 
 Au-delà des bibliothèques classiques, cette formation explore un changement de paradigme : passer de *l'écriture* de code data science à *l'orchestration* d'**agents LLM** qui le produisent et l'exécutent. Après les fondations NumPy/Pandas, le track **LangChain** apprend à construire des agents capables d'interroger un DataFrame, de nettoyer un jeu de données ou de scorer des candidatures ; le track **Google ADK** monte en puissance avec des systèmes multi-agents (boucles planner-coder, frameworks DS-STAR / MLE-STAR) jusqu'à concourir sur des compétitions Kaggle. L'enjeu pédagogique n'est pas seulement technique : il s'agit de comprendre *quand* un agent autonome accélère réellement le travail d'analyse, et *comment* l'encadrer (outils, validation, garde-fous).

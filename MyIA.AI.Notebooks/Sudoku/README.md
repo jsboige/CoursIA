@@ -7,9 +7,9 @@ breakdown: root=32
 maturity: PRODUCTION=32
 -->
 
-Cette série de **32 notebooks** (16 C#, 16 Python) explore différentes techniques de résolution de Sudoku, des algorithmes classiques aux approches symboliques, probabilistes et neuronales. Les notebooks sont disponibles en **approche miroir C#/Python** pour permettre aux étudiants de choisir leur langage.
+[← Notebooks](../README.md) | [→ Search](../Search/README.md)
 
-[← Notebooks](../README.md) | [↑ ..](../README.md) | [→ Search](../Search/README.md)
+Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. Les 32 notebooks (16 C#, 16 Python) sont proposés en **approche miroir C#/Python** pour permettre à chaque étudiant de choisir son langage.
 
 **A qui s'adresse cette série** : étudiants en informatique (L2-M2) découvrant les paradigmes algorithmiques, candidats a des entretiens techniques, et enseignants cherchant un fil rouge pédagogique. Les notebooks Python ne nécessitent que Python 3.10+. Les notebooks C# requierent .NET 9.0 + dotnet-interactive. Aucun prérequis en IA : les concepts sont introduits depuis le backtracking.
 

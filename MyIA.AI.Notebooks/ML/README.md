@@ -7,7 +7,7 @@ breakdown: DataScienceWithAgents=19, ML.Net=8
 maturity: PRODUCTION=23, BETA=3, ALPHA=1
 -->
 
-[← Notebooks](../README.md) | [↑ ..](../README.md) | [→ GenAI](../GenAI/README.md)
+[← Notebooks](../README.md) | [ML.NET (C#) →](ML.Net/README.md) | [Data Science with Agents (Python) →](DataScienceWithAgents/README.md) | [RL →](../RL/)
 
 Le monde regorge de données, mais les transformer en décisions éclairées demande plus qu'un tableur. Le Machine Learning offre un cadre systématique pour construire des modèles prédictifs à partir de données, en allant de la régression linéaire aux réseaux de neurones en passant par les systèmes de recommandation. Cette série vous forme au ML pratique avec deux stack complémentaires : **ML.NET** pour l'écosystème .NET/C# et **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs.
 
@@ -71,7 +71,7 @@ ML/
 
 ## ML.NET (C# / .NET Interactive)
 
-Série de 8 notebooks couvrant ML.NET de l'introduction à l'évaluation avancée. Vous apprendrez à construire un pipeline ML complet en C#, du chargement de données au déploiement ONNX, en passant par l'entraînement, l'AutoML, et l'évaluation rigoureuse.
+Pipeline ML.NET complet en C#, de l'introduction à l'évaluation avancée : du chargement de données au déploiement ONNX, en passant par l'entraînement, l'AutoML et l'évaluation rigoureuse.
 
 | # | Notebook | Contenu | Focus |
 |---|----------|---------|-------|
@@ -255,8 +255,3 @@ Les deux sous-séries sont indépendantes et peuvent être suivies dans n'import
 ## Licence
 
 Voir la licence du repository principal.
-
----
-
-- [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ GenAI](../GenAI/README.md)
-- [ML.NET →](ML.Net/README.md) | [DataScienceWithAgents →](DataScienceWithAgents/README.md) | [RL →](../RL/)
