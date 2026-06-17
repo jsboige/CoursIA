@@ -475,6 +475,51 @@ private theorem mem_set_fwd {α : Type*} : ∀ (n : Nat) (l : List α) (v c : α
       · exact Or.inl rfl
       · exact Or.inr (Or.inr hmem)
 
+/-- Backward membership for `List.set`: if `c ∈ l` but `c ∉ l.set n v`, then `c`
+    is exactly the element `l.get n` that got replaced, and `c ≠ v`. Pure
+    list-combinatorics helper, converse-in-spirit of `mem_set_fwd`, used by the
+    backward transfer lemma to identify the modified crossing `Y`. -/
+private theorem mem_drop_out {α : Type*} : ∀ (n : Nat) (l : List α) (v c : α)
+    (hn : n < l.length) (hc : c ∈ l) (hnmem : c ∉ l.set n v),
+    l.get ⟨n, hn⟩ = c ∧ c ≠ v
+  | 0, hd :: tl, v, c, hn, hc, hnmem => by
+    change c ∉ v :: tl at hnmem
+    simp only [List.mem_cons] at hc hnmem
+    refine ⟨?_, fun heq => hnmem (Or.inl heq)⟩
+    rcases hc with hhd | hctl
+    · exact hhd.symm
+    · exact absurd hctl (fun h => hnmem (Or.inr h))
+  | n+1, hd :: tl, v, c, hn, hc, hnmem => by
+    change c ∉ hd :: tl.set n v at hnmem
+    simp only [List.mem_cons] at hc hnmem
+    rcases hc with hhd | hctl
+    · exact absurd hhd (fun h => hnmem (Or.inl h))
+    · have hlen : (hd :: tl).length = tl.length + 1 := List.length_cons
+      have ihn : n < tl.length := by omega
+      have ihntset : c ∉ tl.set n v := fun h => hnmem (Or.inr h)
+      have ih := mem_drop_out n tl v c ihn hctl ihntset
+      refine ⟨?_, ih.2⟩
+      have hfin : (⟨n, Nat.lt_of_succ_lt_succ hn⟩ : Fin tl.length) = ⟨n, ihn⟩ := Fin.ext rfl
+      rw [show (hd :: tl).get ⟨n+1, hn⟩ = tl.get ⟨n, Nat.lt_of_succ_lt_succ hn⟩ from rfl, hfin]
+      exact ih.1
+  | _, [], _, _, hn, _, _ => (Nat.not_lt_zero _ hn).elim
+
+/-- Membership of the inserted value in `List.set`: `v ∈ l.set n v` whenever
+    `n < l.length`. Pure list-combinatorics helper, used by the backward transfer
+    lemma to witness that the replacement crossing `Y'` sits in `d₂.crossings`. -/
+private theorem mem_set_self {α : Type*} : ∀ (n : Nat) (l : List α) (v : α) (hn : n < l.length),
+    v ∈ l.set n v
+  | 0, hd :: tl, v, _ => by
+    change v ∈ v :: tl
+    exact List.mem_cons_self
+  | n+1, hd :: tl, v, hn => by
+    have hlen : (hd :: tl).length = tl.length + 1 := List.length_cons
+    have ihn : n < tl.length := by omega
+    change v ∈ hd :: tl.set n v
+    simp only [List.mem_cons]
+    exact Or.inr (mem_set_self n tl v ihn)
+  | _, [], _, hn => (Nat.not_lt_zero _ hn).elim
+
 theorem Reidemeister1Connected.tricolorable_forward {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) (htri : IsTricolorable d₁) :
     IsTricolorable d₂ := by
@@ -1202,12 +1247,87 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
         · rw [h1, h2]; exact h12
         · rw [h2, h3]; exact h23
         · rw [h1, h3]; exact h13
-    · -- neg: residual §9.1. c ∈ d₁.crossings but c ∉ d₂.crossings ⟹ c must be
-      -- the value at index i (= Y, replaced by Y' in d₂); Fox under col₁ at Y
-      -- needs the colour-symmetry construction (the a→b rename may touch
-      -- e1/e2/e3). Research-level, BG-prover ai-01 territory. User-authorised
-      -- residual proof hole ("livrer avec des sous-preuves résiduelles").
-      sorry
+    · -- neg: c = Y (the modified crossing, dropped from d₂ by `set i Y'`). Fox
+      -- at Y under col₁ transfers from Fox at Y' under col₂ (hfox₂): unchanged
+      -- strands via hcolPres, the renamed a→b strand via the kink all-equality
+      -- (col₂(a)=col₂(n+1) supplies the backward analogue of forward hcolF2b).
+      -- all-distinct kink mode: residual §9.1 (col₂(n+1)≠col₂(a) breaks the
+      -- rename transfer). BG-prover ai-01 territory; user-authorised residual.
+      -- (1) c = d₁.crossings.get i (= Y) and c ≠ Y'.
+      have hnotmemSet : c ∉ d₁.crossings.set i Y' := by
+        intro hmem; apply hc2; rw [hd₂cross]; exact List.mem_append_left _ hmem
+      have hdrop := mem_drop_out i.val d₁.crossings Y' c i.isLt hc hnotmemSet
+      rw [show c = d₁.crossings.get i from hdrop.1.symm]
+      -- (2) Fox at Y' under col₂ (Y' sits at index i in d₂.crossings).
+      have hY'mem : Y' ∈ d₂.crossings := by
+        rw [hd₂cross]
+        exact List.mem_append.mpr (.inl (mem_set_self i.val d₁.crossings Y' i.isLt))
+      have hY'fox : triColorConditionAt d₂ col₂ Y' := hfox₂ _ hY'mem
+      -- (3) Fox at the kink under col₂; split on its mode.
+      have hCmem : (⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩ : PDCrossing)
+          ∈ d₂.crossings := by
+        rw [hd₂cross]; exact List.mem_append_right _ (List.mem_singleton_self _)
+      have hCfox : triColorConditionAt d₂ col₂
+          ⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩ := hfox₂ _ hCmem
+      obtain ⟨_, hCmode⟩ := hCfox
+      have hCmode' :
+          (d₂.colorAtNat col₂ a = d₂.colorAtNat col₂ (d₁.numEdges + 1) ∧
+           d₂.colorAtNat col₂ (d₁.numEdges + 1) = d₂.colorAtNat col₂ (d₁.numEdges + 2)) ∨
+          (d₂.colorAtNat col₂ a ≠ d₂.colorAtNat col₂ (d₁.numEdges + 1) ∧
+           d₂.colorAtNat col₂ (d₁.numEdges + 1) ≠ d₂.colorAtNat col₂ (d₁.numEdges + 2) ∧
+           d₂.colorAtNat col₂ a ≠ d₂.colorAtNat col₂ (d₁.numEdges + 2)) := hCmode
+      rcases hCmode' with ⟨hCa_n1, _⟩ | _hdist
+      · -- all-equal kink mode: col₂(a)=col₂(n+1). Transfer Fox Y'→Y.
+        simp only [triColorConditionAt] at hY'fox ⊢
+        obtain ⟨⟨he'11, he'12, he'21, he'22, he'31, he'32⟩, hY'foxmode⟩ := hY'fox
+        obtain ⟨hre1, hre2, hre3, _hre4⟩ := hrename
+        -- WF bounds for Y's strands (d₁.wf clause a: every edge label ∈ [1,n]).
+        have hcross_ne : d₁.crossings ≠ [] := by
+          intro h; rw [h] at hc; exact (List.mem_nil_iff _).mp hc
+        have hwf := _hwf₁
+        simp only [KnotDiagram.wf, if_neg hcross_ne, Bool.and_eq_true, List.all_eq_true,
+          decide_eq_true_iff] at hwf
+        obtain ⟨ha_all, _⟩ := hwf
+        have hYmem : (d₁.crossings.get i) ∈ d₁.crossings := List.get_mem _ _
+        have hmem_eY1 : (d₁.crossings.get i).e1 ∈ d₁.edges := by
+          simp only [KnotDiagram.edges, List.mem_flatMap]; exact ⟨_, hYmem, by simp⟩
+        have hmem_eY2 : (d₁.crossings.get i).e2 ∈ d₁.edges := by
+          simp only [KnotDiagram.edges, List.mem_flatMap]; exact ⟨_, hYmem, by simp⟩
+        have hmem_eY3 : (d₁.crossings.get i).e3 ∈ d₁.edges := by
+          simp only [KnotDiagram.edges, List.mem_flatMap]; exact ⟨_, hYmem, by simp⟩
+        have heY1 := ha_all _ hmem_eY1
+        have heY2 := ha_all _ hmem_eY2
+        have heY3 := ha_all _ hmem_eY3
+        -- Per-strand colour transfer (unchanged via hcolPres; renamed via kink).
+        have help : ∀ (hf ho : Nat)
+            (hmode : hf = ho ∨ (hf = d₁.numEdges + 1 ∧ ho = a))
+            (ho1 : 1 ≤ ho) (hon : ho ≤ d₁.numEdges),
+            d₂.colorAtNat col₂ hf = d₁.colorAtNat col₁ ho := by
+          intro hf ho hmode ho1 hon
+          rcases hmode with heq | ⟨heqf, heqa⟩
+          · rw [heq]; exact (hcolPres ho ho1 hon).symm
+          · rw [heqf, heqa, ← hCa_n1]; exact (hcolPres a ha1 ha2).symm
+        have h1 : d₂.colorAtNat col₂ Y'.e1 =
+            d₁.colorAtNat col₁ (d₁.crossings.get i).e1 :=
+          help Y'.e1 (d₁.crossings.get i).e1 hre1 heY1.1 heY1.2
+        have h2 : d₂.colorAtNat col₂ Y'.e2 =
+            d₁.colorAtNat col₁ (d₁.crossings.get i).e2 :=
+          help Y'.e2 (d₁.crossings.get i).e2 hre2 heY2.1 heY2.2
+        have h3 : d₂.colorAtNat col₂ Y'.e3 =
+            d₁.colorAtNat col₁ (d₁.crossings.get i).e3 :=
+          help Y'.e3 (d₁.crossings.get i).e3 hre3 heY3.1 heY3.2
+        refine ⟨⟨heY1.1, heY1.2, heY2.1, heY2.2, heY3.1, heY3.2⟩, ?_⟩
+        rcases hY'foxmode with ⟨h12, h23⟩ | ⟨h12, h23, h13⟩
+        · left; refine ⟨?_, ?_⟩
+          · rw [← h1, ← h2]; exact h12
+          · rw [← h2, ← h3]; exact h23
+        · right; refine ⟨?_, ?_, ?_⟩
+          · rw [← h1, ← h2]; exact h12
+          · rw [← h2, ← h3]; exact h23
+          · rw [← h1, ← h3]; exact h13
+      · -- all-distinct kink mode: residual §9.1 (rename transfer needs
+        -- col₂(n+1)=col₂(a), which all-distinct denies). BG-prover ai-01.
+        sorry
   case num =>
     -- d₁.numEdges ≥ 2. Diagnostic for the BG-prover (ai-01): d₁ is forced
     -- NON-DEGENERATE (`crossings ≠ []`) because `_hproper` supplies a distinct
