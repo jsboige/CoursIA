@@ -70,7 +70,7 @@ La série SymbolicLearning (10 notebooks) suit le chapitre 19 d'AIMA : induction
 | **SemanticWeb** | .NET C# / Python | Node.js (certains) | dotNetRDF, rdflib, pySHACL | Non |
 | **Planners** | Python | WSL ou Docker (Fast-Downward) | ortools, unified_planning | Non |
 | **SmartContracts** | Python | Solidity/solc, Foundry | py-solc-x, web3 | OPENAI_API_KEY (8b) |
-| **SymbolicLearning** | Python | Aucun (WSL pour la section Popper de SL-4) | sklearn, rdflib, clingo (optionnels) | OPENROUTER_API_KEY optionnelle (SL-7/SL-10) |
+| **SymbolicLearning** | Python | Aucun (WSL pour la section Popper de SL-4) | sklearn, rdflib, clingo (optionnels) | OPENROUTER_API_KEY optionnelle (SL-8/SL-10) |
 | **Argument Analysis** | Python | Java/JPype | semantic-kernel | OPENAI_API_KEY |
 | **Autres** | .NET C# | Aucun | Google.OrTools, Z3.Linq | Non |
 
@@ -279,12 +279,12 @@ Serie de **10 notebooks** Python sur l'apprentissage symbolique (AIMA ch. 19) : 
 | 2 | [SL-2-KnowledgeBasedLearning](SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (determinations) | 3 | SL-1 |
 | 3 | [SL-3-RelevanceLearning](SymbolicLearning/SL-3-RelevanceLearning.ipynb) | Treillis des determinations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 3 | SL-2 |
 | 4 | [SL-4-InductiveLogicProgramming](SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) | FOIL, resolution inverse, knowledge graphs, Popper (LFF) | 4 | SL-1 |
-| 5 | [SL-5-NeuroSymbolic](SymbolicLearning/SL-5-NeuroSymbolic.ipynb) | T-norms, predicats neuronaux, LTN, DeepProbLog | 4 | SL-1 |
-| 6 | [SL-6-KnowledgeGraphs-ILP](SymbolicLearning/SL-6-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, completion KG, ASP avec clingo | 4 | SL-4 |
-| 7 | [SL-7-LLM-SymbolicLearning](SymbolicLearning/SL-7-LLM-SymbolicLearning.ipynb) | Extraction de règles LLM, verification symbolique (Gemini optionnel) | 4 | SL-1 |
-| 8 | [SL-8-ActiveAutomataLearning](SymbolicLearning/SL-8-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 4 | SL-1 |
-| 9 | [SL-9-InverseResolution](SymbolicLearning/SL-9-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 5 | SL-4 |
-| 10 | [SL-10-Capstone-NeuroSymbolic](SymbolicLearning/SL-10-Capstone-NeuroSymbolic.ipynb) | Pipeline neuro-symbolique 6 etages, LLM réel aux deux extremites | 4 | SL-5 a SL-7 |
+| 5 | [SL-6-NeuroSymbolic](SymbolicLearning/SL-6-NeuroSymbolic.ipynb) | T-norms, predicats neuronaux, LTN, DeepProbLog | 4 | SL-1 |
+| 6 | [SL-7-KnowledgeGraphs-ILP](SymbolicLearning/SL-7-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, completion KG, ASP avec clingo | 4 | SL-4 |
+| 7 | [SL-8-LLM-SymbolicLearning](SymbolicLearning/SL-8-LLM-SymbolicLearning.ipynb) | Extraction de règles LLM, verification symbolique (Gemini optionnel) | 4 | SL-1 |
+| 8 | [SL-9-ActiveAutomataLearning](SymbolicLearning/SL-9-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 4 | SL-1 |
+| 9 | [SL-5-InverseResolution](SymbolicLearning/SL-5-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 5 | SL-4 |
+| 10 | [SL-10-Capstone-NeuroSymbolic](SymbolicLearning/SL-10-Capstone-NeuroSymbolic.ipynb) | Pipeline neuro-symbolique 6 etages, LLM réel aux deux extremites | 4 | SL-6 a SL-8 |
 
 > 10/10 notebooks ont des exercices — 40 au total, organises en table de pioche pour la seance de restitution (chaque exercice est assorti d'une question-twist).
 

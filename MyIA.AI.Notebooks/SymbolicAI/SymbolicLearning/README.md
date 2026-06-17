@@ -11,9 +11,9 @@ maturity: PRODUCTION=10
 
 Comment un agent peut-il apprendre a partir de connaissances existantes plutot que de données brutes ? Cette série explore l'apprentissage symbolique tel que décrit dans le chapitre 19 d'AIMA (Russell & Norvig), depuis l'apprentissage inductif pur (CBH, Version Space) jusqu'aux méthodes guidees par la connaissance (EBL, RBL).
 
-Le premier notebook pose les bases : representation d'hypotheses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accélère l'apprentissage : l'apprentissage base sur les explications (EBL) compile les theories en heuristiques operationnelles, et l'apprentissage base sur la pertinence (RBL) identifie les attributs determinant via les determinations. Le troisième notebook approfondit le RBL avec le treillis des determinations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrième notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), la resolution inverse (bottom-up) et la connexion avec les knowledge graphs. Les notebooks SL-5 a SL-7 ouvrent vers des méthodes contemporaines : SL-5 introduit le neuro-symbolique (T-norms differentiables, Logic Tensor Networks, DeepProbLog) ; SL-6 outille la découverte de règles sur knowledge graphs réels avec rdflib et AMIE rule mining ; SL-7 boucle LLM et verification symbolique pour fiabiliser le raisonnement formel guide par modeles de langage. Trois notebooks etendent la série : SL-8 change de paradigme avec l'apprentissage *actif* (l'algorithme L* d'Angluin interroge un oracle au lieu de subir un echantillon, et apprend des automates finis avec garanties de minimalite) ; SL-9 complète l'ILP de SL-4 par la voie bottom-up aboutie (LGG de Plotkin, theta-subsomption, clause bottom et recherche a la Progol) ; SL-10 est le capstone qui assemble toute la série en un pipeline neuro-symbolique de bout en bout — du texte brut aux faits decouverts, avec un LLM réel (Gemini 3.5 Flash) aux deux extremites et le symbolique comme colonne vertebrale.
+Le premier notebook pose les bases : representation d'hypotheses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accélère l'apprentissage : l'apprentissage base sur les explications (EBL) compile les theories en heuristiques operationnelles, et l'apprentissage base sur la pertinence (RBL) identifie les attributs determinant via les determinations. Le troisième notebook approfondit le RBL avec le treillis des determinations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrième notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), les operateurs de resolution inverse (bottom-up) et la connexion avec les knowledge graphs, jusqu'a l'ILP moderne (Popper, Learning From Failures). SL-5 reprend et mene a terme la voie bottom-up esquissee en SL-4 (LGG de Plotkin, theta-subsomption, clause bottom par entailment inverse et recherche a la Progol), faisant directement suite a FOIL. Les notebooks SL-6 a SL-8 ouvrent vers des méthodes contemporaines : SL-6 introduit le neuro-symbolique (T-norms differentiables, Logic Tensor Networks, DeepProbLog) ; SL-7 outille la découverte de règles sur knowledge graphs réels avec rdflib et AMIE rule mining ; SL-8 boucle LLM et verification symbolique pour fiabiliser le raisonnement formel guide par modeles de langage. Enfin, deux notebooks concluent la série : SL-9 change de paradigme avec l'apprentissage *actif* (l'algorithme L* d'Angluin interroge un oracle au lieu de subir un echantillon, et apprend des automates finis avec garanties de minimalite) ; SL-10 est le capstone qui assemble toute la série en un pipeline neuro-symbolique de bout en bout — du texte brut aux faits decouverts, avec un LLM réel (Gemini 3.5 Flash) aux deux extremites et le symbolique comme colonne vertebrale.
 
-**A qui s'adresse cette série** : étudiants en IA, informaticiens interesses par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques. Les notebooks (~9h30 total) ne necessitent que Python 3.10+ standard library, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle) et SL-6 (rdflib pour les knowledge graphs) ; SL-7 et SL-10 acceptent une cle OpenRouter optionnelle (fichier `.env`) pour des appels LLM réels, avec un simulateur deterministe en repli. Une familiarite avec la logique propositionnelle suffit pour SL-1 a SL-4, SL-8 et SL-9 ; SL-5, SL-7 et SL-10 supposent une intuition des réseaux de neurones et des LLMs. Ils constituent un complement théorique aux séries [Tweety](../Tweety/README.md) (argumentation computationnelle), [SemanticWeb](../SemanticWeb/README.md) (representation de connaissances) et [ML](../../ML/README.md) (apprentissage statistique - contraste avec l'inductif symbolique).
+**A qui s'adresse cette série** : étudiants en IA, informaticiens interesses par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques. Les notebooks (~9h30 total) ne necessitent que Python 3.10+ standard library, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle) et SL-7 (rdflib pour les knowledge graphs) ; SL-8 et SL-10 acceptent une cle OpenRouter optionnelle (fichier `.env`) pour des appels LLM réels, avec un simulateur deterministe en repli. Une familiarite avec la logique propositionnelle suffit pour SL-1 a SL-5 et SL-9 ; SL-6, SL-8 et SL-10 supposent une intuition des réseaux de neurones et des LLMs. Ils constituent un complement théorique aux séries [Tweety](../Tweety/README.md) (argumentation computationnelle), [SemanticWeb](../SemanticWeb/README.md) (representation de connaissances) et [ML](../../ML/README.md) (apprentissage statistique - contraste avec l'inductif symbolique).
 
 ## Pourquoi cette série
 
@@ -23,7 +23,7 @@ L'apprentissage symbolique represente la contrepartie théorique du machine lear
 - **Interpretabilité requise** : une règle logique `IF temperature > 38 AND toux THEN infection` est comprehensible par un humain. Un réseau de neurones de 100M de parametres ne l'est pas. Pour les applications critiques ou réglementées (medecine, finance, justice), l'interpretabilité n'est pas un luxe — c'est une exigence.
 - **Integration avec la connaissance existante** : les méthodes symboliques combinent examples ET theorie du domaine. EBL compile un exemple prouve en une règle opérationnelle générale ; RBL identifie les attributs determinants via des contraintes formelles. Aucune méthode statistique ne peut exploiter cette connaissance a priori de la même façon.
 
-Cette série montre que les deux approches ne s'opposent pas — elles se **complementent**. La phase finale (SL-5 a SL-7) explore explicitement cette intégration : T-norms differentiables pour rendre la logique compatible avec l'entrainement neuronal, rule mining sur knowledge graphs réels, et boucles de verification symbolique pour fiabiliser les sorties LLM.
+Cette série montre que les deux approches ne s'opposent pas — elles se **complementent**. La phase finale (SL-6 a SL-8) explore explicitement cette intégration : T-norms differentiables pour rendre la logique compatible avec l'entrainement neuronal, rule mining sur knowledge graphs réels, et boucles de verification symbolique pour fiabiliser les sorties LLM.
 
 ## Objectifs d'apprentissage
 
@@ -33,11 +33,11 @@ A l'issue de cette série, vous serez capable de :
 2. **Compiler** des preuves en heuristiques operationnelles via EBL, et **identifier** les attributs determinants via RBL et les determinations
 3. **Construire** le treillis des determinations et appliquer MINIMAL-CONSISTENT-DET pour la selection guidee d'attributs
 4. **Apprendre** des règles logiques (clauses Horn) a partir d'exemples avec FOIL et la resolution inverse
-5. **Intégrer** logique et apprentissage neuronal via T-norms, Logique Tensorielle, et DeepProbLog
-6. **Extraire** des règles de knowledge graphs réels avec rdflib et AMIE, et **effectuer** la completion de graphes
-7. **Concevoir** une boucle LLM-symbolique : extraction de règles IF-THEN depuis du texte, verification de coherence formelle, feedback pour l'amelioration
-8. **Implémenter** l'algorithme L* d'Angluin : table d'observation, requêtes d'appartenance et d'equivalence, apprentissage actif d'automates minimaux
-9. **Construire** la chaine bottom-up de l'ILP : LGG de Plotkin, theta-subsomption, clause bottom et recherche de clause a la Progol
+5. **Construire** la chaine bottom-up de l'ILP : LGG de Plotkin, theta-subsomption, clause bottom et recherche de clause a la Progol
+6. **Intégrer** logique et apprentissage neuronal via T-norms, Logique Tensorielle, et DeepProbLog
+7. **Extraire** des règles de knowledge graphs réels avec rdflib et AMIE, et **effectuer** la completion de graphes
+8. **Concevoir** une boucle LLM-symbolique : extraction de règles IF-THEN depuis du texte, verification de coherence formelle, feedback pour l'amelioration
+9. **Implémenter** l'algorithme L* d'Angluin : table d'observation, requêtes d'appartenance et d'equivalence, apprentissage actif d'automates minimaux
 10. **Assembler** un pipeline neuro-symbolique complet : extraction LLM, oracle de validation type, mining de règles, chainage avant avec provenance, et confrontation LLM vs KG
 
 ## Vue d'ensemble
@@ -48,7 +48,7 @@ A l'issue de cette série, vous serez capable de :
 | Exercices (table de pioche) | 40 |
 | Kernel | Python 3 |
 | Duree estimee | ~570 min |
-| Prerequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-6, cle OpenRouter optionnelle pour SL-7/SL-10) |
+| Prerequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-7, cle OpenRouter optionnelle pour SL-8/SL-10) |
 
 ## Parcours d'apprentissage
 
@@ -60,33 +60,33 @@ Le parcours commence par l'apprentissage inductif pur : un agent doit découvrir
 
 La deuxième phase introduit l'idee centrale que **la connaissance accélère l'apprentissage**. EBL (SL-2) montre comment compiler un exemple prouve en une règle opérationnelle générale, en quatre étapes : expliquer, variabiliser, extraire, simplifier. RBL (introduit en SL-2, approfondi en SL-3) explore une autre facette : identifier les attributs qui determinent vraiment la cible via le formalisme des determinations et le treillis des sous-ensembles d'attributs. La comparaison avec sklearn (information mutuelle) montre quand la connaissance du domaine bat la statistique brute.
 
-### Phase 3 : Programmation logique inductive (SL-4, ~55 min)
+### Phase 3 : Programmation logique inductive (SL-4 a SL-5, ~115 min)
 
-SL-4 fait le pont entre apprentissage automatique et intelligence artificielle symbolique classique en couvrant l'ILP : apprentissage de programmes logiques (clauses Horn) a partir d'exemples. L'algorithme FOIL (top-down) et la resolution inverse (bottom-up) sont implémentes de zero, puis appliques aux knowledge graphs — avec extraction de règles AMIE et requêtes SPARQL CONSTRUCT. La section finale confronte le FOIL artisanal a l'ILP moderne : **Popper** (Learning From Failures) retrouve le programme recursif `ancestor` optimal sur les mêmes données, demontre l'apport de la recursion par ablation, et le programme appris est verifie independamment en SWI-Prolog.
+SL-4 fait le pont entre apprentissage automatique et intelligence artificielle symbolique classique en couvrant l'ILP : apprentissage de programmes logiques (clauses Horn) a partir d'exemples. L'algorithme FOIL (top-down) et la resolution inverse (bottom-up) sont implémentes de zero, puis appliques aux knowledge graphs — avec extraction de règles AMIE et requêtes SPARQL CONSTRUCT. La section finale confronte le FOIL artisanal a l'ILP moderne : **Popper** (Learning From Failures) retrouve le programme recursif `ancestor` optimal sur les mêmes données, demontre l'apport de la recursion par ablation, et le programme appris est verifie independamment en SWI-Prolog. SL-5 reprend la promesse bottom-up esquissee en SL-4 et la mene a terme : LGG de Plotkin, theta-subsomption, clause bottom par entailment inverse, et recherche de clause a la Progol qui retrouve la définition de `grandfather/2` parmi 56 candidats.
 
-### Phase 4 : Integration neuro-symbolique (SL-5 a SL-7, ~160 min)
+### Phase 4 : Integration neuro-symbolique (SL-6 a SL-8, ~160 min)
 
-La phase finale explore les méthodes contemporaines a l'intersection du symbolique et du connexionniste. SL-5 introduit les T-norms differentiables, les predicats neuronaux et les Logics Tensor Networks qui rendent la logique opérationnelle dans un gradient descent. SL-6 passe a l'échelle avec le rule mining réel sur des knowledge graphs construits avec rdflib (AMIE, completion de graphes). SL-7 ferme la boucle avec LLMs : extraction de règles depuis du texte naturel, verification symbolique des sorties, et boucles de retroaction pour fiabiliser le raisonnement.
+La phase finale explore les méthodes contemporaines a l'intersection du symbolique et du connexionniste. SL-6 introduit les T-norms differentiables, les predicats neuronaux et les Logics Tensor Networks qui rendent la logique opérationnelle dans un gradient descent. SL-7 passe a l'échelle avec le rule mining réel sur des knowledge graphs construits avec rdflib (AMIE, completion de graphes). SL-8 ferme la boucle avec LLMs : extraction de règles depuis du texte naturel, verification symbolique des sorties, et boucles de retroaction pour fiabiliser le raisonnement.
 
-### Phase 5 : Apprentissage actif, ILP bottom-up et capstone (SL-8 a SL-10, ~210 min)
+### Phase 5 : Apprentissage actif et capstone (SL-9 a SL-10, ~150 min)
 
-Trois extensions concluent la série. SL-8 inverse le rapport de l'apprenant aux données : au lieu de subir un echantillon, L* d'Angluin *choisit* ses questions (requêtes d'appartenance et d'equivalence a un oracle MAT) et apprend des automates finis deterministes prouvablement minimaux — le cadre théorique (Myhill-Nerode, fermeture et coherence de la table d'observation) est implémente et verifie de zero. SL-9 reprend la promesse bottom-up esquissee en SL-4 et la mene a terme : LGG de Plotkin, theta-subsomption, clause bottom par entailment inverse, et recherche de clause a la Progol qui retrouve la définition de `grandfather/2` parmi 56 candidats. SL-10 est le capstone : un pipeline neuro-symbolique en 6 etages (extraction LLM -> oracle de validation -> knowledge graph -> mining de règles -> chainage avant avec provenance -> confrontation LLM vs KG) execute avec de vrais appels Gemini 3.5 Flash, ou chaque etage mobilise un notebook anterieur de la série — y compris une lecon d'architecture découverte dans les sorties réelles : le chainage avant peut violer les contraintes que l'oracle impose en amont.
+Deux notebooks concluent la série. SL-9 inverse le rapport de l'apprenant aux données : au lieu de subir un echantillon, L* d'Angluin *choisit* ses questions (requêtes d'appartenance et d'equivalence a un oracle MAT) et apprend des automates finis deterministes prouvablement minimaux — le cadre théorique (Myhill-Nerode, fermeture et coherence de la table d'observation) est implémente et verifie de zero. SL-10 est le capstone : un pipeline neuro-symbolique en 6 etages (extraction LLM -> oracle de validation -> knowledge graph -> mining de règles -> chainage avant avec provenance -> confrontation LLM vs KG) execute avec de vrais appels Gemini 3.5 Flash, ou chaque etage mobilise un notebook anterieur de la série — y compris une lecon d'architecture découverte dans les sorties réelles : le chainage avant peut violer les contraintes que l'oracle impose en amont.
 
 ### Parcours alternatifs
 
-#### Parcours rapide (SL-1 + SL-5 + SL-7 + SL-10, ~4h)
+#### Parcours rapide (SL-1 + SL-6 + SL-8 + SL-10, ~4h)
 
-Pour ceux qui veulent saisir l'essence sans suivre toute la progression : les fondements inductifs (SL-1), l'intégration neuro-symbolique (SL-5), la verification LLM (SL-7) et le capstone qui assemble le tout (SL-10). Donne une vue d'ensemble du spectre, de l'inductif pur au pipeline neuro-symbolique complet.
+Pour ceux qui veulent saisir l'essence sans suivre toute la progression : les fondements inductifs (SL-1), l'intégration neuro-symbolique (SL-6), la verification LLM (SL-8) et le capstone qui assemble le tout (SL-10). Donne une vue d'ensemble du spectre, de l'inductif pur au pipeline neuro-symbolique complet.
 
-#### Parcours ILP approfondi (SL-1 a SL-4 + SL-9, ~325 min)
+#### Parcours ILP approfondi (SL-1 a SL-5, ~260 min)
 
-Pour les étudiants en logique et IA symbolique : suivre les quatre premiers notebooks dans l'ordre, puis SL-9 qui mene le bottom-up a terme — de Candidate Elimination a FOIL, puis LGG, theta-subsomption, clause bottom et Progol.
+Pour les étudiants en logique et IA symbolique : suivre les cinq premiers notebooks dans l'ordre — de Candidate Elimination a FOIL, puis SL-5 qui mene le bottom-up a terme (LGG, theta-subsomption, clause bottom et Progol).
 
-#### Parcours theorie des langages (SL-1 + SL-8, ~110 min)
+#### Parcours theorie des langages (SL-1 + SL-9, ~110 min)
 
-Pour les étudiants en informatique théorique : le cadre inductif général (SL-1), puis l'apprentissage actif d'automates avec ses garanties formelles (SL-8) — requêtes, Myhill-Nerode, minimalite, bornes PAC de l'oracle d'equivalence echantillonne.
+Pour les étudiants en informatique théorique : le cadre inductif général (SL-1), puis l'apprentissage actif d'automates avec ses garanties formelles (SL-9) — requêtes, Myhill-Nerode, minimalite, bornes PAC de l'oracle d'equivalence echantillonne.
 
-#### Parcours knowledge graphs (SL-2, SL-3, SL-4, SL-6, ~220 min)
+#### Parcours knowledge graphs (SL-2, SL-3, SL-4, SL-7, ~220 min)
 
 Pour les professionnels du web semantique et des données structurees : EBL, RBL, FOIL sur clauses Horn, puis application directe sur des knowledge graphs réels avec rdflib et AMIE. Presuppose une familiarite avec RDF/SPARQL.
 
@@ -109,35 +109,35 @@ Modalite de la seance : chaque groupe choisit **un exercice** dans la table ci-d
 | 11 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 3 — Selecteur hybride | Quelles garanties votre hybride herite-t-il vraiment ? Contre-exemple construit |
 | 12 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 1 — `sibling` avec FOIL | Le rôle du biais de langage : que se passe-t-il sans le litteral `X != Y` ? |
 | 13 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 2 — Operateur W | Generalisation consistante mais fausse : pourquoi le bottom-up y est expose |
-| 14 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 3 — Regles sur mini-KG | Monde clos vs PCA (cf SL-6) : quelle confiance est la bonne pour VOTRE KG ? |
+| 14 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 3 — Regles sur mini-KG | Monde clos vs PCA (cf SL-7) : quelle confiance est la bonne pour VOTRE KG ? |
 | 15 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 4 — `grandparent` avec Popper | Sans negatif arrière-grand-parent, quel programme plus court devient consistant ? |
-| 16 | [SL-5](SL-5-NeuroSymbolic.ipynb) | Ex. 2 — LTN frere/oncle | Retirer les axiomes negatifs : pourquoi une LTN a besoin de negatifs explicites |
-| 17 | [SL-5](SL-5-NeuroSymbolic.ipynb) | Ex. 3 — Regle transitive `ancestor` | Le modele trivial « vrai partout » sature la règle : qu'est-ce qui l'évite ? |
-| 18 | [SL-5](SL-5-NeuroSymbolic.ipynb) | Ex. 4 — T-norm de Lukasiewicz | Gradients exactement nuls : qu'est-ce qu'une semantique floue *apprenable* ? |
-| 19 | [SL-5](SL-5-NeuroSymbolic.ipynb) | Ex. 5 — Ablation de l'axiome 4 (LTNtorch) | Le negatif difficile (Marie, Pierre) est-il indispensable ? Contraste avec clingo (SL-6) |
-| 20 | [SL-6](SL-6-KnowledgeGraphs-ILP.ipynb) | Ex. 1 — Nouvelle relation au KG | Regles redondantes (même extension, syntaxe differente) : comment AMIE les évite |
-| 21 | [SL-6](SL-6-KnowledgeGraphs-ILP.ipynb) | Ex. 2 — PCA confidence | Construire un mini-KG ou la PCA confidence est trompeuse |
-| 22 | [SL-6](SL-6-KnowledgeGraphs-ILP.ipynb) | Ex. 3 — Regles a 3 atomes | Explosion combinatoire : pourquoi AMIE impose des règles fermees, a quel prix |
-| 23 | [SL-6](SL-6-KnowledgeGraphs-ILP.ipynb) | Ex. 4 — Reparation minimale (clingo) | Les reparations optimales sont ex-aequo : departager par des poids de confiance |
-| 24 | [SL-7](SL-7-LLM-SymbolicLearning.ipynb) | Ex. 1 — Prompt personnalise | Changer de modele LLM : que garantit vraiment l'oracle symbolique ? |
-| 25 | [SL-7](SL-7-LLM-SymbolicLearning.ipynb) | Ex. 2 — Prompt direct vs CoT | Validation oracle vs plausibilite du texte : les deux metriques peuvent diverger |
-| 26 | [SL-7](SL-7-LLM-SymbolicLearning.ipynb) | Ex. 3 — Detection d'hallucinations | Le detecteur suppose un monde clos : que devient-il en monde ouvert (cf SL-6) ? |
-| 27 | [SL-7](SL-7-LLM-SymbolicLearning.ipynb) | Ex. 4 — Taux d'hallucination du vrai LLM | Maximiser le taux de validation ou le nombre de règles validees par appel ? |
-| 28 | [SL-8](SL-8-ActiveAutomataLearning.ipynb) | Ex. 1 — Le langage « contient abb » | Certificat de minimalite : un suffixe distinguant pour chaque paire d'etats (Myhill-Nerode) |
-| 29 | [SL-8](SL-8-ActiveAutomataLearning.ipynb) | Ex. 2 — Fiabilite de l'EQ echantillonnee | Relier le taux de réussite empirique a la borne PAC ; construire une distribution adverse |
-| 30 | [SL-8](SL-8-ActiveAutomataLearning.ipynb) | Ex. 3 — Contre-exemples : prefixes vs suffixes | Le pire cas qui fait exploser la table d'observation (Rivest-Schapire) |
-| 31 | [SL-8](SL-8-ActiveAutomataLearning.ipynb) | Ex. 4 — Oracle bruite | Reparer L* par vote majoritaire : surcout en requêtes et probabilite residuelle d'erreur |
-| 32 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 1 — Apprendre `grandmother/2` | Pourquoi `grandparent/2` (sans sexe) est *plus facile* — rôle des negatifs |
-| 33 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 2 — Profondeur de la clause bottom | Croissance de la clause bottom avec la profondeur ; la cible reste-t-elle dans le treillis ? |
-| 34 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 3 — Tolerance au bruit | Le score `p - n - L` comme argument MDL : quand préfère-t-il une clause imparfaite ? |
-| 35 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 4 — Reduction de Plotkin | Subsomption vs implication : le cas des clauses recursives ou elles divergent |
-| 36 | [SL-9](SL-9-InverseResolution.ipynb) | Ex. 5 — Aleph face au bruit | Memoriser l'exception, sur-generaliser ou payer L dans f : trois frontieres face au même bruit |
+| 16 | [SL-5](SL-5-InverseResolution.ipynb) | Ex. 1 — Apprendre `grandmother/2` | Pourquoi `grandparent/2` (sans sexe) est *plus facile* — rôle des negatifs |
+| 17 | [SL-5](SL-5-InverseResolution.ipynb) | Ex. 2 — Profondeur de la clause bottom | Croissance de la clause bottom avec la profondeur ; la cible reste-t-elle dans le treillis ? |
+| 18 | [SL-5](SL-5-InverseResolution.ipynb) | Ex. 3 — Tolerance au bruit | Le score `p - n - L` comme argument MDL : quand préfère-t-il une clause imparfaite ? |
+| 19 | [SL-5](SL-5-InverseResolution.ipynb) | Ex. 4 — Reduction de Plotkin | Subsomption vs implication : le cas des clauses recursives ou elles divergent |
+| 20 | [SL-5](SL-5-InverseResolution.ipynb) | Ex. 5 — Aleph face au bruit | Memoriser l'exception, sur-generaliser ou payer L dans f : trois frontieres face au même bruit |
+| 21 | [SL-6](SL-6-NeuroSymbolic.ipynb) | Ex. 2 — LTN frere/oncle | Retirer les axiomes negatifs : pourquoi une LTN a besoin de negatifs explicites |
+| 22 | [SL-6](SL-6-NeuroSymbolic.ipynb) | Ex. 3 — Regle transitive `ancestor` | Le modele trivial « vrai partout » sature la règle : qu'est-ce qui l'évite ? |
+| 23 | [SL-6](SL-6-NeuroSymbolic.ipynb) | Ex. 4 — T-norm de Lukasiewicz | Gradients exactement nuls : qu'est-ce qu'une semantique floue *apprenable* ? |
+| 24 | [SL-6](SL-6-NeuroSymbolic.ipynb) | Ex. 5 — Ablation de l'axiome 4 (LTNtorch) | Le negatif difficile (Marie, Pierre) est-il indispensable ? Contraste avec clingo (SL-7) |
+| 25 | [SL-7](SL-7-KnowledgeGraphs-ILP.ipynb) | Ex. 1 — Nouvelle relation au KG | Regles redondantes (même extension, syntaxe differente) : comment AMIE les évite |
+| 26 | [SL-7](SL-7-KnowledgeGraphs-ILP.ipynb) | Ex. 2 — PCA confidence | Construire un mini-KG ou la PCA confidence est trompeuse |
+| 27 | [SL-7](SL-7-KnowledgeGraphs-ILP.ipynb) | Ex. 3 — Regles a 3 atomes | Explosion combinatoire : pourquoi AMIE impose des règles fermees, a quel prix |
+| 28 | [SL-7](SL-7-KnowledgeGraphs-ILP.ipynb) | Ex. 4 — Reparation minimale (clingo) | Les reparations optimales sont ex-aequo : departager par des poids de confiance |
+| 29 | [SL-8](SL-8-LLM-SymbolicLearning.ipynb) | Ex. 1 — Prompt personnalise | Changer de modele LLM : que garantit vraiment l'oracle symbolique ? |
+| 30 | [SL-8](SL-8-LLM-SymbolicLearning.ipynb) | Ex. 2 — Prompt direct vs CoT | Validation oracle vs plausibilite du texte : les deux metriques peuvent diverger |
+| 31 | [SL-8](SL-8-LLM-SymbolicLearning.ipynb) | Ex. 3 — Detection d'hallucinations | Le detecteur suppose un monde clos : que devient-il en monde ouvert (cf SL-7) ? |
+| 32 | [SL-8](SL-8-LLM-SymbolicLearning.ipynb) | Ex. 4 — Taux d'hallucination du vrai LLM | Maximiser le taux de validation ou le nombre de règles validees par appel ? |
+| 33 | [SL-9](SL-9-ActiveAutomataLearning.ipynb) | Ex. 1 — Le langage « contient abb » | Certificat de minimalite : un suffixe distinguant pour chaque paire d'etats (Myhill-Nerode) |
+| 34 | [SL-9](SL-9-ActiveAutomataLearning.ipynb) | Ex. 2 — Fiabilite de l'EQ echantillonnee | Relier le taux de réussite empirique a la borne PAC ; construire une distribution adverse |
+| 35 | [SL-9](SL-9-ActiveAutomataLearning.ipynb) | Ex. 3 — Contre-exemples : prefixes vs suffixes | Le pire cas qui fait exploser la table d'observation (Rivest-Schapire) |
+| 36 | [SL-9](SL-9-ActiveAutomataLearning.ipynb) | Ex. 4 — Oracle bruite | Reparer L* par vote majoritaire : surcout en requêtes et probabilite residuelle d'erreur |
 | 37 | [SL-10](SL-10-Capstone-NeuroSymbolic.ipynb) | Ex. 1 — Etendre le schéma (`marie_avec`) | Le mineur redecouvre la symetrie injectee par l'oracle : règle ou tautologie ? |
 | 38 | [SL-10](SL-10-Capstone-NeuroSymbolic.ipynb) | Ex. 2 — Politique de conflit a sources | *Truth discovery* : estimer la fiabilite des sources en même temps que les faits |
 | 39 | [SL-10](SL-10-Capstone-NeuroSymbolic.ipynb) | Ex. 3 — Le bon seuil n'existe pas | Vraie et fausse règle a confiance egale (0.67) : quel signal au-dela du seuil ? |
 | 40 | [SL-10](SL-10-Capstone-NeuroSymbolic.ipynb) | Ex. 4 — Empoisonnement bout-en-bout | Classer les defenses par etage du pipeline ; ou s'arrete la provenance ? |
 
-Note : dans SL-5, le premier exercice de la numerotation interne est un exemple guide ; les exercices a piocher sont Ex. 2 a Ex. 5.
+Note : dans SL-6, le premier exercice de la numerotation interne est un exemple guide ; les exercices a piocher sont Ex. 2 a Ex. 5.
 
 ## Notebooks
 
@@ -147,11 +147,11 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (determinations) | 45 min |
 | 3 | [SL-3 - Apprentissage Base sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des determinations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |
 | 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, resolution inverse, clauses Horn, knowledge graphs, Popper (LFF) | 55 min |
-| 5 | [SL-5 - Integration Neuro-Symbolique](SL-5-NeuroSymbolic.ipynb) | T-norms, predicats neuronaux, LTN, DeepProbLog | 55 min |
-| 6 | [SL-6 - ILP Moderne et Knowledge Graphs](SL-6-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, completion KG, ASP avec clingo | 55 min |
-| 7 | [SL-7 - LLMs et Apprentissage Symbolique](SL-7-LLM-SymbolicLearning.ipynb) | Prompting, extraction de règles, verification symbolique (Gemini 3.5 Flash optionnel) | 50 min |
-| 8 | [SL-8 - Apprentissage Actif d'Automates](SL-8-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 60 min |
-| 9 | [SL-9 - Resolution Inverse et Progol](SL-9-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 60 min |
+| 5 | [SL-5 - Resolution Inverse et Progol](SL-5-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 60 min |
+| 6 | [SL-6 - Integration Neuro-Symbolique](SL-6-NeuroSymbolic.ipynb) | T-norms, predicats neuronaux, LTN, DeepProbLog | 55 min |
+| 7 | [SL-7 - ILP Moderne et Knowledge Graphs](SL-7-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, completion KG, ASP avec clingo | 55 min |
+| 8 | [SL-8 - LLMs et Apprentissage Symbolique](SL-8-LLM-SymbolicLearning.ipynb) | Prompting, extraction de règles, verification symbolique (Gemini 3.5 Flash optionnel) | 50 min |
+| 9 | [SL-9 - Apprentissage Actif d'Automates](SL-9-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 60 min |
 | 10 | [SL-10 - Capstone Neuro-Symbolique](SL-10-Capstone-NeuroSymbolic.ipynb) | Pipeline 6 etages : extraction LLM, oracle, KG, mining, inference avec provenance, QA | 90 min |
 
 ## Contenu detaille
@@ -202,7 +202,18 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | Popper (Learning From Failures) | Programme recursif optimal, ablation sans recursion, verification SWI-Prolog (kernel Linux/WSL) |
 | Exercices | sibling, operateur W, règles sur KG |
 
-### SL-5-NeuroSymbolic.ipynb
+### SL-5-InverseResolution.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| Clauses et couverture | `covers()` par backtracking, validation de la cible `grandfather/2` |
+| LGG de Plotkin | Anti-unification, generalisation la moins générale, sur-specialisation |
+| Theta-subsomption | `subsumes()` par skolemisation, le treillis de generalite |
+| Clause bottom | Saturation bornee, entailment inverse, variabilisation |
+| Recherche Progol | Sous-ensembles connectes du corps de bottom, score `f = p - L`, consistance dure |
+| Cover-set | Boucle d'apprentissage de theorie complète |
+
+### SL-6-NeuroSymbolic.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -212,7 +223,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | Raisonnement guide | Regles logiques guidant l'entrainement neuronal |
 | DeepProbLog | Programmation logique probabiliste + predicats neuronaux |
 
-### SL-6-KnowledgeGraphs-ILP.ipynb
+### SL-7-KnowledgeGraphs-ILP.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -221,7 +232,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | Completion | Inference de nouveaux triples |
 | ASP avec clingo | Validation croisee de la completion, recursion (`ancestorOf`), contraintes d'integrite (pont série Tweety) |
 
-### SL-7-LLM-SymbolicLearning.ipynb
+### SL-8-LLM-SymbolicLearning.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -230,7 +241,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | Verification symbolique | Coherence formelle des sorties LLM |
 | Boucle LLM-Symbolique | Generation + verification + feedback |
 
-### SL-8-ActiveAutomataLearning.ipynb
+### SL-9-ActiveAutomataLearning.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -242,26 +253,15 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | Oracle echantillonne | Equivalence approchee par tirage, lien PAC |
 | Theorie | Myhill-Nerode, minimalite, bornes sur le nombre de requêtes |
 
-### SL-9-InverseResolution.ipynb
-
-| Section | Contenu |
-|---------|---------|
-| Clauses et couverture | `covers()` par backtracking, validation de la cible `grandfather/2` |
-| LGG de Plotkin | Anti-unification, generalisation la moins générale, sur-specialisation |
-| Theta-subsomption | `subsumes()` par skolemisation, le treillis de generalite |
-| Clause bottom | Saturation bornee, entailment inverse, variabilisation |
-| Recherche Progol | Sous-ensembles connectes du corps de bottom, score `f = p - L`, consistance dure |
-| Cover-set | Boucle d'apprentissage de theorie complète |
-
 ### SL-10-Capstone-NeuroSymbolic.ipynb
 
 | Section | Contenu |
 |---------|---------|
 | Corpus | Saga « Atelier Verne » : 13 enonces, 2 pieges factuels |
 | Etage 1 - Extraction | LLM (Gemini 3.5 Flash) ou simulateur : texte -> triples candidats |
-| Etage 2 - Oracle | Validation typee + contraintes fonctionnelles (cf SL-7) |
-| Etage 3 - KG | Knowledge graph valide (cf SL-6) |
-| Etage 4 - Mining | AMIE-lite : découverte de règles avec confiance standard (cf SL-4/SL-6) |
+| Etage 2 - Oracle | Validation typee + contraintes fonctionnelles (cf SL-8) |
+| Etage 3 - KG | Knowledge graph valide (cf SL-7) |
+| Etage 4 - Mining | AMIE-lite : découverte de règles avec confiance standard (cf SL-4/SL-7) |
 | Etage 5 - Inference | Chainage avant avec provenance ; le derive peut violer l'oracle (lecon d'architecture) |
 | Etage 6 - QA | Question 2 sauts : réponse KG (derivation citee) vs réponse LLM seule |
 
@@ -284,19 +284,19 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 | **Unification** | Trouve une substitution rendant deux termes egaux | SL-4 |
 | **ILP** | Apprentissage de programmes logiques a partir d'exemples | SL-4 |
 | **Learning From Failures (Popper)** | ILP moderne : recherche de programme optimal par contraintes (clingo + Prolog) | SL-4 |
-| **T-norm** | Generalisation differentiable de AND | SL-5 |
-| **DeepProbLog** | Programmation logique probabiliste + predicats neuronaux | SL-5 |
-| **Knowledge Graph** | Graphe oriente de triples (sujet, predicat, objet) | SL-6 |
-| **AMIE** | Rule mining sur knowledge graphs incomplets | SL-6 |
-| **LLM-Symbolique** | Boucle de retroaction LLM + verification formelle | SL-7 |
-| **Apprentissage actif** | L'apprenant choisit ses questions au lieu de subir un echantillon | SL-8 |
-| **MAT** | Minimally Adequate Teacher : oracle d'appartenance + equivalence | SL-8 |
-| **Table d'observation** | Structure (S, E, T) fermee et coherente dont on lit un DFA | SL-8 |
-| **Myhill-Nerode** | Classes d'equivalence de suffixes = etats du DFA minimal | SL-8 |
-| **LGG** | Generalisation la moins générale de deux clauses (Plotkin) | SL-9 |
-| **Theta-subsomption** | Ordre de generalite decidable entre clauses (∃θ : Cθ ⊆ D) | SL-9 |
-| **Clause bottom** | Clause la plus spécifique couvrant un exemple (entailment inverse) | SL-9 |
-| **Progol** | Recherche de clause guidee par la clause bottom | SL-9 |
+| **LGG** | Generalisation la moins générale de deux clauses (Plotkin) | SL-5 |
+| **Theta-subsomption** | Ordre de generalite decidable entre clauses (∃θ : Cθ ⊆ D) | SL-5 |
+| **Clause bottom** | Clause la plus spécifique couvrant un exemple (entailment inverse) | SL-5 |
+| **Progol** | Recherche de clause guidee par la clause bottom | SL-5 |
+| **T-norm** | Generalisation differentiable de AND | SL-6 |
+| **DeepProbLog** | Programmation logique probabiliste + predicats neuronaux | SL-6 |
+| **Knowledge Graph** | Graphe oriente de triples (sujet, predicat, objet) | SL-7 |
+| **AMIE** | Rule mining sur knowledge graphs incomplets | SL-7 |
+| **LLM-Symbolique** | Boucle de retroaction LLM + verification formelle | SL-8 |
+| **Apprentissage actif** | L'apprenant choisit ses questions au lieu de subir un echantillon | SL-9 |
+| **MAT** | Minimally Adequate Teacher : oracle d'appartenance + equivalence | SL-9 |
+| **Table d'observation** | Structure (S, E, T) fermee et coherente dont on lit un DFA | SL-9 |
+| **Myhill-Nerode** | Classes d'equivalence de suffixes = etats du DFA minimal | SL-9 |
 | **Provenance** | Trace de derivation attachee a chaque fait infere | SL-10 |
 | **Pipeline neuro-symbolique** | LLM aux extremites, validation et inference symboliques au centre | SL-10 |
 
@@ -310,7 +310,7 @@ Note : dans SL-5, le premier exercice de la numerotation interne est un exemple 
 
 ### Environnement Python
 
-Aucune dependance externe pour SL-1, SL-2, SL-5, SL-8 et SL-9 (bibliotheque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-6 utilise `rdflib` et `clingo` (module Python officiel Potassco, installe silencieusement par le notebook — même moteur ASP que le binaire utilise par la série Tweety via `scripts/install_clingo.py`). SL-7 et SL-10 utilisent `python-dotenv` et `openai` pour les appels LLM optionnels via OpenRouter (Gemini 3.5 Flash) : copiez `.env.example` vers `.env` et renseignez `OPENROUTER_API_KEY` ; sans cle, un simulateur deterministe prend le relais et le notebook s'execute integralement.
+Aucune dependance externe pour SL-1, SL-2, SL-5, SL-6 et SL-9 (bibliotheque standard Python 3.10+ uniquement). SL-3 utilise `scikit-learn` et `numpy` pour la comparaison avec la selection statistique. SL-7 utilise `rdflib` et `clingo` (module Python officiel Potassco, installe silencieusement par le notebook — même moteur ASP que le binaire utilise par la série Tweety via `scripts/install_clingo.py`). SL-8 et SL-10 utilisent `python-dotenv` et `openai` pour les appels LLM optionnels via OpenRouter (Gemini 3.5 Flash) : copiez `.env.example` vers `.env` et renseignez `OPENROUTER_API_KEY` ; sans cle, un simulateur deterministe prend le relais et le notebook s'execute integralement.
 
 SL-4 est en bibliotheque standard pour l'essentiel, mais sa section finale **Popper** requiert un environnement Unix : Popper utilise `signal.SIGALRM`, absent de Windows — le notebook s'execute donc sur un kernel Python **Linux** (kernel `python3-wsl` via WSL sous Windows, kernel natif sous Linux/macOS). Dependances de la section (installees silencieusement par le notebook) : SWI-Prolog >= 9.1.12 (`ppa:swi-prolog/stable`), `popper-ilp` epingle a **v4.4.0** (la 5.0 exige Python >= 3.14), `janus_swi`, `clingo`, `setuptools < 81`. Si Popper est indisponible, les cellules de la section l'indiquent et se sautent proprement — le reste du notebook tourne sur n'importe quel kernel Python.
 
@@ -318,7 +318,7 @@ SL-4 est en bibliotheque standard pour l'essentiel, mais sa section finale **Pop
 
 ### `rdflib` ne s'installe pas ou plantage a l'execution
 
-SL-6 depend de `rdflib` pour manipuler les knowledge graphs RDF. Si l'installation echoue :
+SL-7 depend de `rdflib` pour manipuler les knowledge graphs RDF. Si l'installation echoue :
 
 ```bash
 pip install rdflib
@@ -366,11 +366,11 @@ SymbolicLearning/
 ├── SL-2-KnowledgeBasedLearning.ipynb        # EBL, RBL
 ├── SL-3-RelevanceLearning.ipynb             # Treillis, MINIMAL-CONSISTENT-DET, RBL vs sklearn
 ├── SL-4-InductiveLogicProgramming.ipynb     # FOIL, resolution inverse, knowledge graphs
-├── SL-5-NeuroSymbolic.ipynb                 # T-norms, LTN, DeepProbLog
-├── SL-6-KnowledgeGraphs-ILP.ipynb           # rdflib, AMIE rule mining
-├── SL-7-LLM-SymbolicLearning.ipynb          # LLMs + verification symbolique (Gemini 3.5 Flash optionnel)
-├── SL-8-ActiveAutomataLearning.ipynb        # L* d'Angluin, apprentissage actif d'automates
-├── SL-9-InverseResolution.ipynb             # LGG, theta-subsomption, clause bottom, Progol
+├── SL-5-InverseResolution.ipynb             # LGG, theta-subsomption, clause bottom, Progol
+├── SL-6-NeuroSymbolic.ipynb                 # T-norms, LTN, DeepProbLog
+├── SL-7-KnowledgeGraphs-ILP.ipynb           # rdflib, AMIE rule mining
+├── SL-8-LLM-SymbolicLearning.ipynb          # LLMs + verification symbolique (Gemini 3.5 Flash optionnel)
+├── SL-9-ActiveAutomataLearning.ipynb        # L* d'Angluin, apprentissage actif d'automates
 ├── SL-10-Capstone-NeuroSymbolic.ipynb       # Capstone : pipeline neuro-symbolique 6 etages
 ├── .env.example                             # Modele de configuration LLM (OpenRouter)
 ├── requirements.txt                         # Dependances optionnelles
