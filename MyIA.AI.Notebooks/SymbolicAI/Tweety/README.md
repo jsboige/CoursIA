@@ -1,5 +1,7 @@
 # TweetyProject - Série de Notebooks Jupyter
 
+[↑ SymbolicAI](../README.md) | [SemanticWeb →](../SemanticWeb/README.md)
+
 <!-- CATALOG-STATUS
 series: SymbolicAI-Tweety
 pedagogical_count: 10

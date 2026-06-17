@@ -1,5 +1,7 @@
 # Web Sémantique - Semantic Web
 
+[← Tweety](../Tweety/README.md) | [↑ SymbolicAI](../README.md) | [Lean →](../Lean/README.md)
+
 <!-- CATALOG-STATUS
 series: SymbolicAI-SemanticWeb
 pedagogical_count: 18
