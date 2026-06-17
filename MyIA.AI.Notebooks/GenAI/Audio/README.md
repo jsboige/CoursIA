@@ -11,7 +11,15 @@ maturity: PRODUCTION=27, BETA=3
 
 Le traitement audio est souvent le parent pauvre de l'IA générative, éclipsé par les images et le texte. Pourtant, la voix et la musique sont les modalités les plus naturelles de l'interaction humaine. Cette série couvre l'ensemble de la chaîne audio IA : reconnaissance vocale, synthèse, clonage, génération musicale, et orchestration de pipelines.
 
-30 notebooks répartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production, dont un pipeline audiobook agentique complet (Epic #1028, livré 18/05/2026, 8 PRs, post-mortem [ici](../../../docs/archive/epic-1028-audiobook-postmortem.md)) étendu par une variante FishAudio S2-Pro avec 29 tags prosodiques officiels et validation WER (Epic #1273, en cours).
+Les notebooks de cette série sont répartis sur 4 niveaux progressifs, des bases STT/TTS aux applications de production. Le niveau Applications abrite un pipeline audiobook complet — un orchestrateur agentique qui enchaîne analyse littéraire, casting vocal, annotation prosodique, synthèse et compilation — étendu par une variante FishAudio S2-Pro pilotable par 29 tags prosodiques officiels et évaluée par taux d'erreur (WER).
+
+## Pourquoi cette série
+
+Les cas d'usage qui motivent cette série sont concrets et variés : rendre un cours accessible en version audio narrée ([04-1](04-Applications/04-1-Educational-Audio-Content.ipynb)), transcrire un épisode ou un corpus entier ([04-2](04-Applications/04-2-Transcription-Pipeline.ipynb)), produire un jingle ou une bande sonore ([04-3](04-Applications/04-3-Music-Composition-Workflow.ipynb)), cloner une voix pour obtenir un narrateur cohérent, ou assembler un podcast ou un livre audio de bout en bout. Chaque niveau répond à un de ces besoins.
+
+Spécificité technique : l'audio est un signal continu — échantillonnage, spectre, coefficients cepstraux (MFCC, voir [01-3](01-Foundation/01-3-Basic-Audio-Operations.ipynb)) — très différent du texte et de l'image discrets. La reconnaissance (STT) et la synthèse (TTS) en sont les deux faces symétriques, que les niveaux Foundation et Advanced déclinent. Le contrôle fin de l'identité (clonage vocal) et de l'émotion (prosodie) s'ajoute ensuite, puis l'orchestration assemble ces briques en pipelines, jusqu'au temps réel avec l'OpenAI Realtime API ([03-3](03-Orchestration/03-3-Realtime-Voice-API.ipynb)).
+
+Là où les séries Texte et Image traitent des signaux discrets (tokens, pixels), l'audio impose une contrainte de flux et de temps : il faut produire des dizaines de milliers d'échantillons par seconde, synchronisables avec une piste vidéo. C'est cette contrainte temporelle qui justifie l'accent sur l'orchestration et les pipelines dans les niveaux 3 et 4, ainsi que le pont naturel avec la série Video (synchronisation audio-vidéo, [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb)).
 
 ## Fil rouge : construire un podcast automatisé
 
@@ -69,7 +77,7 @@ Les composants existent, il faut les assembler. Ce niveau construit les pipeline
 
 ### 04-Applications - Cas d'usage production
 
-Application directe : les notebooks de ce niveau mettent en œuvre des workflows complets. 04-1 à 04-5 couvrent la narration de cours, la transcription batch, la composition musicale, la synchronisation audio-vidéo et le live coding. 04-6 à 04-12 forment un pipeline audiobook agentique complet (Epic #1028) : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. 04-13 étend le pipeline avec FishAudio S2-Pro et 29 tags prosodiques officiels (Epic #1273).
+Application directe : les notebooks de ce niveau mettent en œuvre des workflows complets. 04-1 à 04-5 couvrent la narration de cours, la transcription batch, la composition musicale, la synchronisation audio-vidéo et le live coding. 04-6 à 04-12 forment un pipeline audiobook agentique complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. 04-13 étend le pipeline avec FishAudio S2-Pro et 29 tags prosodiques officiels.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -104,6 +112,15 @@ Application directe : les notebooks de ce niveau mettent en œuvre des workflows
 | **Fish S2 Pro / Dia TTS** | 02-8 | GPU 6-18 GB VRAM |
 | **OpenAI Realtime API** | 03-3 | `OPENAI_API_KEY` |
 | **FFmpeg** | 04-12 | Installé système |
+
+## Concepts clés
+
+- **STT (Speech-to-Text)** — reconnaître la parole pour la transcrire en texte. Cœur des notebooks [01-2](01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) (API cloud) et [01-4](01-Foundation/01-4-Whisper-Local.ipynb) (Whisper local).
+- **TTS (Text-to-Speech)** — synthétiser de la parole à partir de texte. Cœur des notebooks [01-1](01-Foundation/01-1-OpenAI-TTS-Intro.ipynb) (OpenAI) et [01-5](01-Foundation/01-5-Kokoro-TTS-Local.ipynb) (Kokoro local).
+- **Voice cloning** — reproduire l'identité vocale d'un locuteur à partir d'un court échantillon, pour un narrateur cohérent. Notebook [02-2](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) (XTTS v2).
+- **Prosodie** — l'intonation, le rythme et l'émotion qui rendent une voix naturelle ; pilotable par tags expressifs. Notebooks [02-8](02-Advanced/02-8-Expressive-TTS.ipynb) et [04-13](04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb) (FishAudio S2-Pro, 29 tags).
+- **Source separation** — isoler les composantes d'un mix (voix, batterie, basse...). Notebook [02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb) (Demucs v4).
+- **Spectrogramme / MFCC** — représentations temps-fréquence du signal audio, base de l'analyse. Notebook [01-3](01-Foundation/01-3-Basic-Audio-Operations.ipynb).
 
 ## Prérequis
 
@@ -166,7 +183,6 @@ Le fil rouge de cette série est la création d'un podcast généré par IA. Voi
 |-------|------|------------|
 | [Video](../Video/README.md) | Sync audio-vidéo | [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise l'audio généré avec les pistes vidéo de la série Video |
 | [Texte](../Texte/README.md) | LLM dans le pipeline | Le pipeline podcast (03-2) enchaîne STT vers LLM vers TTS ; les prompts structurés (Texte/2) et le RAG (Texte/5) alimentent le contenu |
-| [Image](../Image/README.md) | Contenu multimodal | Un podcast enrichi combine voix (Audio), illustrations (Image) et éventuellement vidéo (Video) |
 | [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les pipelines multi-modèles Audio (03-1, 03-2) partagent les patterns d'orchestration avec Semantic Kernel |
 
 ## FAQ
