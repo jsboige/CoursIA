@@ -33,6 +33,11 @@ echo "Verification des dependances..."
 venv/bin/pip install -r requirements.txt
 venv/bin/pip install einops
 
+# Gemma-3 tokenizer deps (LTX-2 GGUF text encoder: gemma-3-12b-it-qat GGUF).
+# Without these, loading the gemma tokenizer fails at CLIPLoaderGGUF /
+# DualCLIPLoaderGGUF time with "Please install sentencepiece and protobuf".
+venv/bin/pip install sentencepiece protobuf
+
 # =============================================================================
 # CUSTOM NODES - VIDEO
 # =============================================================================
