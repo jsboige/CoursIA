@@ -17,9 +17,7 @@ Le parcours suit le fil annoncé par le titre : on part des **primitives cryptog
 
 ---
 
-**27 notebooks** | **Kernel Python 3** | **~22 heures**
-
-**À qui s'adresse cette série** : développeurs Solidity, ingénieurs DeFi, spécialistes security/blockchain, étudiants en IA symbolique intéressés par la vérification formelle. Un niveau intermédiaire en programmation est recommandé — les bases de Python sont suffisantes, mais les concepts blockchain/cryptographie sont introduits progressivement.
+**À qui s'adresse cette série** : développeurs Solidity, ingénieurs DeFi, spécialistes security/blockchain, étudiants en IA symbolique intéressés par la vérification formelle. Un niveau intermédiaire en programmation est recommandé — les bases de Python sont suffisantes, mais les concepts blockchain/cryptographie sont introduits progressivement. Le décompte exact des notebooks et leur maturité figurent dans le catalogue généré ci-dessous.
 
 ## Objectifs d'apprentissage
 
@@ -385,17 +383,6 @@ python setup_env.py --check
 - [ElectionGuard](https://www.electionguard.vote/)
 - [XRP Ledger Docs](https://xrpl.org/docs.html)
 
-## Cross-séries Bridges
-
-| Série | Lien | Connection |
-| ------- | ------ | ----------- |
-| [Lean](../Lean/README.md) | Formal verification | Les SMT solvers (SC-14) et les preuves Lean 4 sont deux facettes de la même vérité -- la correction mathématique |
-| [GameTheory](../../GameTheory/README.md) | Voting & DAO | SC-9 (DAO) et SC-17 (vote E2E) sont des instances de théorie du choix social (Arrow, Sen) |
-| [Probas](../../Probas/README.md) | Decision & Risk | Minimax Regret (PyMC-19) s'applique aux smart contracts pour la gestion des incertitudes on-chain |
-| [SymbolicAI/SemanticWeb](../SemanticWeb/README.md) | Ontologies & Verification | Les ontologies peuvent formaliser les propriétés de contrats pour vérification formelle |
-| [SymbolicAI/Tweety](../Tweety/README.md) | Non-monotonic reasoning | Le raisonnement non-monotone s'applique à la gouvernance DAO (propositions rétractables) |
-| [GenAI/Texte](../../GenAI/Texte/README.md) | LLM-assisted | SC-11 applique le même paradigme d'assistance LLM que la série GenAI Texte |
-
 ## Connections cross-séries
 
 ### SmartContracts et Lean (Vérification Formelle)
@@ -411,6 +398,12 @@ Les mécanismes de vote et de gouvernance on-chain (SC-9, SC-17) sont des instan
 
 - **SC-9 DAO Governance** : les systèmes de vote on-chain sont soumis aux mêmes limitations que le **théorème d'Arrow** (formalisé dans `social_choice_lean/Arrow.lean`, 0 sorry).
 - **SC-17 E2E Verifiable Voting** : les propriétés des systèmes de vote (Banks sets, monotonie STV) sont étudiées formellement dans `social_choice_lean/Voting.lean`. Le chiffrement homomorphique (SC-16) et les ZKP (SC-15) sont les briques cryptographiques qui rendent le vote E2E possible.
+
+### SmartContracts et Décision sous Incertitude (Probas)
+
+La gestion des incertitudes on-chain (réserves DeFi, slippage, garanties) s'appuie sur les mêmes outils de décision que la série Probas :
+
+- **Minimax Regret (PyMC-19)** s'applique à la conception de contrats robustes face à des conditions de marché incertaines (choix de paramètres on-chain qui minimisent le regret maximal dans le pire scénario).
 
 ### Lecture transversale
 
