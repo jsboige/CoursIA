@@ -24,7 +24,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | **Integration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
 | **Complet** | 1-12 | ~11h | Toutes les fonctionnalites incluant LeanDojo et théorème de sensibilite |
 | **Avec Pilier 1.B** | 1-12, 15 | ~12h | Inclut le port Kochen-Specker (Cabello 18-vecteurs) - contextuality quantique |
-| **Avec hommages** | 1-12, 13, 14a, 14b, 14c, 15, 16 | ~16h | Ajoute Lean-13 (Grothendieck), Lean-14a (Conway, l'homme et l'oeuvre), Lean-14b (Conway, Game of Life) et Lean-16 (Conway, théorème du libre arbitre - adosse a Lean-15) |
+| **Avec hommages** | 1-12, 13, 14a, 14b, 14c, 14d, 15, 16 | ~16h40 | Ajoute Lean-13 (Grothendieck), Lean-14a (Conway, l'homme et l'oeuvre), Lean-14b (Conway, Game of Life), Lean-14d (Conway, Game of Life sur kernel Lean natif) et Lean-16 (Conway, théorème du libre arbitre - adosse a Lean-15) |
 | **Avec théorie des nœuds** | 1-12, 13, 14a-c, 15, 16, 17a, 17b | ~17h30 | Ajoute Lean-17a (Conway, les nœuds et la preuve de Piccirillo) et Lean-17b (invariants : PD-codes, tricolorabilite de Fox, mouvements de Reidemeister) - companion `knot_lean`, Epic #2874 |
 
 ## Structure
@@ -69,6 +69,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 14a | [Lean-14a-Conway-Man-and-Work](Lean-14a-Conway-Man-and-Work.ipynb) | Conway, l'homme et l'oeuvre : biographie et style singulier (le jeu comme méthode) ; panorama des grands resultats (nombres surreels, groupes de Conway & Monstrous Moonshine, reseau de Leech, polynome de Conway, Doomsday, Look-and-Say, FRACTRAN, problème de l'Ange, Sprouts, théorème du libre arbitre) ; premieres noix crackees executees depuis conway_lean (Doomsday, Look-and-Say, Nim, Angel, Life - 0 sorry) - Epic #1647 / #2154 | 50 min |
 | 14b | [Lean-14b-Conway-Game-of-Life-Lean](Lean-14b-Conway-Game-of-Life-Lean.ipynb) | Hommage a John Conway : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel - Epic #1647 | 60 min |
 | 14c | [Lean-14c-Conway-Game-of-Life-Golly](Lean-14c-Conway-Game-of-Life-Golly.ipynb) | Game of Life : les 3 piliers en images (compagnon Golly, integration CLI `bgolly` pour simulation certifiee) - Epic #1647 | 45 min |
+| 14d | [Lean-14d-Conway-Game-of-Life-Lean-Native](Lean-14d-Conway-Game-of-Life-Lean-Native.ipynb) | Game of Life sur **kernel Lean natif** (`lean4-wsl`) : grille, règle B3/S23, moteur `step`/`evolve`, motifs (bloc, clignoteur, planeur) et faits certifiés par `decide`/`native_decide`, sans axiome `sorry` - Epic #1647 / #3294 | 40 min |
 | 16 | [Lean-16-Conway-Free-Will-Theorem](Lean-16-Conway-Free-Will-Theorem.ipynb) | théorème du libre arbitre (Conway-Kochen) : les trois axiomes SPIN/TWIN/MIN en profondeur, argument en deux temps (1 particule via Kochen-Specker, puis 2 particules via TWIN), ce que le théorème dit et NE dit PAS, port formel adosse a `FreeWillTheorem.lean` (chaine de reduction `free_will_theorem -> fwt_single_particle -> kochen_specker`, 0 sorry), registre d'extensibilite - Epic #2162 / #2156 | 40 min |
 
 ### Partie 5 : Theorie des noeuds
@@ -298,6 +299,7 @@ Lean/
 ├── Lean-14a-Conway-Man-and-Work.ipynb # Python kernel - hommage Conway (l'homme et l'oeuvre, noix executees depuis conway_lean)
 ├── Lean-14b-Conway-Game-of-Life-Lean.ipynb   # Python kernel - hommage Conway (Game of Life as Computation)
 ├── Lean-14c-Conway-Game-of-Life-Golly.ipynb  # Python kernel - hommage Conway (Game of Life en images, compagnon Golly)
+├── Lean-14d-Conway-Game-of-Life-Lean-Native.ipynb  # Lean4 (WSL) kernel - Game of Life natif (grille, B3/S23, decide/native_decide, 0 sorry)
 ├── Lean-15-Kochen-Specker.ipynb    # Lean4 kernel - théorème de Kochen-Specker (Pilier 1.B)
 ├── Lean-15-Finiteness-Derivatives.ipynb # Python kernel - dérivées symboliques de Brzozowski (finitude, matching linéaire)
 ├── Lean-16-Conway-Free-Will-Theorem.ipynb # Python kernel - hommage Conway (théorème du libre arbitre, adosse a FreeWillTheorem.lean)
