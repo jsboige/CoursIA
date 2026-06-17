@@ -22,6 +22,17 @@ paths: MyIA.AI.Notebooks/**/*.ipynb
 - Introduction de section AVANT le code qu'elle introduit
 - Conclusion avec table recap en fin de section majeure
 
+## Enchainement et ordre canonique des cellules (Epic #3240)
+
+Les cellules doivent suivre un **ordre canonique** sans glissement ni oubli. Friction observee en cours ("certaines choses n'etaient pas a leur place"). Regles :
+
+- **Numerotation monotone** : un en-tete numerote (`## 3.`, `### 3.2`) ne revient jamais en arriere sous le meme parent. Un redemarrage a 1 = nouveau groupe legitime (nouvelle partie / apres un sommaire).
+- **Exercice/Exemple ordonnes** : les labels `Exercice N` / `Exemple N` sont en ordre croissant dans leur sequence respective (les deux cohabitent, cf [exercise-example-labeling.md](exercise-example-labeling.md)).
+- **Pas d'intro orpheline** : une cellule markdown qui annonce du code imminent ("executons le code ci-dessous :") est **suivie** d'une cellule code (sinon = cellule oubliee/deplacee).
+- **Interpretation APRES le code** : un markdown d'interpretation ("on observe que...") suit l'output qu'il commente, jamais avant.
+
+**Outil** : `scripts/notebook_tools/scan_cell_ordering.py` (`<nb>` | `--family <subpath>` | `--all`, `--severity`, `--fail-on`). Skill `/check-cell-order`. Chaque finding HIGH se **ground-truth** avant correction (G.1 — le signal n'est pas un verdict). Un reorder via `NotebookEdit` **vide les outputs** -> re-executer (C.2) avant commit. Detail workflow : skill `/check-cell-order`.
+
 ## Execution
 
 - **Python notebooks** : Papermill pour batch (`notebook_tools.py execute <path>`)
