@@ -46,6 +46,25 @@ L'intérêt pédagogique : au lieu d'écrire un algorithme de backtracking pour 
 6. **Notebook 05** intègre tout : data fusion LINQ + théorème hiérarchique multi-niveaux pour un planificateur de repas réaliste, et démontre le mode `CollectionHandling.Constants` (feature ressuscitée du fork)
 7. **Notebook 06** ferme la boucle *reconnaissance vs production* : le fork [Automata](https://github.com/MyIntelligenceAgency/Automata) (modernisation net8.0 de AutomataDotNet, gelé ~2020) génère un **témoin** depuis la syntaxe de surface `&`/`~` (intersection/complément), démontre que le cap des 21 caractères (#6) est levé, et émet du SMT-LIB (`re.inter`/`re.comp`). C'est le payoff général de la génération de témoin `A & ~B` que [Sudoku-13](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) mesure ensuite à l'échelle (§6b)
 
+## Concepts clés
+
+La série manipule un vocabulaire précis hérité de la programmation par contraintes et du binding Z3.Linq. Le tableau ci-dessous reprend les notions effectivement utilisées dans les notebooks, avec un pointeur vers celui qui les introduit.
+
+| Concept | Description | Notebook |
+|---------|-------------|----------|
+| **Solveur SMT (Z3)** | Décide la satisfiabilité d'une formule sur des *théories* (entiers, réels, booléens, tableaux). Z3.Linq l'expose indirectement via le binding LINQ, sans appels Z3 bas niveau. | 01 |
+| **Binding Z3.Linq** | Traduit des expressions LINQ C# (`.Where`, projections) en formules SMT. On décrit le modèle et les contraintes, le binding fait la traduction vers le solveur. | 01 |
+| **Patron `Theorem<T>`** | Abstraction centrale de la série : déclarer une classe modèle `T`, des contraintes sous forme de lambdas LINQ, puis appeler `.Solve()` ou `.Optimize()`. | 01, 05 |
+| **`.Solve()` vs `.Optimize()`** | `.Solve()` trouve une solution satisfaisant les contraintes ; `.Optimize()` ajoute un objectif à maximiser ou minimiser sous ces contraintes. | 01 |
+| **Théorème linéaire** | Contraintes linéaires (égalités/inégalités) sur entiers et réels — le terrain de base de la série (Missionnaires-Cannibales, plus court chemin). | 01 |
+| **`CollectionHandling`** | Feature du fork contrôlant la traduction d'une collection C# : mode `Array` (un tableau Z3 via la théorie des tableaux) ou `Constants` (une constante Z3 par élément). Ressuscitée et câblée le 14/06/2026. | 02b, 03, 05 |
+| **Théorie des tableaux (Select/Store)** | Modélisation de structures dynamiques via `select`/`store`, manipulées symboliquement par le solveur plutôt qu'en effet de bord. | 03 |
+| **Tableaux imbriqués (`int[][]`)** | Grilles 2D (Sudoku 4x4, carré magique) via `int[][]` — support du fork absent du NuGet public endjin. | 04 |
+| **Théorème hiérarchique** | Contraintes multi-niveaux organisées par priorité (objectifs durs puis souples), illustrées par le planificateur de repas. | 05 |
+| **Data fusion LINQ** | Intégration de sources de données hétérogènes (catalogue d'ingrédients, contraintes nutritionnelles) dans un même théorème via LINQ. | 05 |
+| **Génération de témoin** | Produire une solution concrète depuis `A & ~B` (intersection/complément de surface), via le fork Automata. | 06 |
+| **Reconnaissance vs résolution** | Distinction centrale : un vérificateur (RE#) *certifie* une solution existante en temps linéaire ; un résolveur (Z3) *produit* une solution (NP-dur). Les notebooks 06 et Sudoku-13 mettent cette distinction en scène. | 06 |
+
 ## Prérequis
 
 | Besoin | Détail |
@@ -81,6 +100,17 @@ Toute la série Z3 charge le **même fork** [MyIntelligenceAgency/Z3.Linq](https
 3. **Utiliser** la théorie des tableaux Z3 (Select/Store) pour des structures de données dynamiques
 4. **Construire** des modèles imbriqués (tableaux 2D, grilles)
 5. **Intégrer** des sources de données hétérogènes dans un théorème hiérarchique
+
+## Domaines d'application
+
+Le pattern « décrire les contraintes en C#, laisser le binding traduire vers Z3 » s'applique dès qu'un problème se réduit à un système de contraintes sur des variables. Les exercices de la série en couvrent plusieurs :
+
+- **Résolution de puzzles et CSP** : Sudoku (81 propriétés explicites vs modélisation implicite via arrays), Missionnaires-Cannibales, carrés magiques, N-reines — décrits déclarativement en LINQ, sans écrire de backtracking à la main. Notebooks 01, 02, 04.
+- **Planification et ordonnancement** : planificateur de repas sous contraintes de précédence, de fenêtres (apports nutritionnels cibles) et d'exclusivité, avec optimisation hiérarchique multi-niveaux. Notebook 05.
+- **Optimisation sous contraintes** : maximiser un gain ou minimiser un coût (plus court chemin, allocation de ressources) via `.Optimize()` sur un théorème linéaire. Notebook 01.
+- **Structures de données dynamiques** : modéliser des structures indexées via la théorie des tableaux (Select/Store) et des grilles 2D (`int[][]`), utile dès qu'une collection doit évoluer symboliquement. Notebooks 03, 04.
+- **Génération vs vérification de motifs** : le pont avec les expressions régulières symboliques (fork Automata) — produire un témoin satisfaisant une contrainte de surface `&`/`~`, complément de la reconnaissance. Notebook 06, Epic #2978.
+- **Prototypage .NET métier** : embarquer la résolution déclarative dans un code C# existant (le binding LINQ s'intègre naturellement à un pipeline .NET) pour des outils internes de configuration, d'allocation ou de vérification.
 
 ## Contexte technique
 
@@ -128,3 +158,14 @@ Ces ressources relèvent de l'Epic **#2978** (le Sudoku comme regex symbolique) 
 - [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq) (fork cette série)
 - [MyIntelligenceAgency/Z3.LinqBinding@EPFdevelopment](https://github.com/MyIntelligenceAgency/Z3.LinqBinding/tree/EPFdevelopment) (branche contributions jsboige)
 - [Issue upstream #29](https://github.com/endjin/Z3.Linq/issues/29) (discussion contributions)
+
+## FAQ / Troubleshooting
+
+| Problème | Solution |
+|----------|----------|
+| **`Could not load file or assembly Z3.Linq`** | Le fork n'est pas buildé localement. Exécuter une fois [`scripts/environment/z3-build-deploy.ps1`](../../../../scripts/environment/z3-build-deploy.ps1) (Windows) ou le `.sh` (Linux/macOS) — compile le wrapper (~1,5 s) et rassemble les DLL dans `.deploy/`. |
+| **`#r "../Z3.Linq/.deploy/..."` échoue au démarrage du notebook** | Le dossier `.deploy/` est absent = script de build non exécuté. Les notebooks 01-05 chargent le fork depuis `.deploy/`, pas depuis NuGet. |
+| **`CollectionHandling` introuvable ou mode `Constants` inopérant** | Cette feature a été ressuscitée et câblée le 14/06/2026 **dans le fork**. Vérifier que le notebook charge `.deploy/` depuis [MyIntelligenceAgency/Z3.Linq](https://github.com/MyIntelligenceAgency/Z3.Linq), pas le NuGet public endjin (qui ne l'expose pas). |
+| **Support `int[][]` (tableaux 2D) absent** | Le support des tableaux imbriqués provient de la branche [EPFdevelopment](https://github.com/MyIntelligenceAgency/Z3.LinqBinding/tree/EPFdevelopment) du fork, absent du NuGet public. Le notebook 04 le nécessite. |
+| **Le notebook 06 échoue (`Microsoft.Automata.dll` manquant)** | Le notebook 06 consomme un fork **distinct** (Automata, pas Z3.Linq). Exécuter [`automata-build-deploy.ps1`](../../../../scripts/environment/automata-build-deploy.ps1) une fois pour peupler son propre `.deploy/`. |
+| **`Theorem<T>` vs écriture Z3 bas niveau** | Z3.Linq masque volontairement l'API Z3 : on décrit le modèle et les contraintes LINQ, le binding traduit. Pour accéder aux tactiques, à `BitVec`, à la théorie des chaînes ou aux quantificateurs, passer à la [série sœur Z3-Python](../Z3-Python/README.md) qui expose l'API complète. |
