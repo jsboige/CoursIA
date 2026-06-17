@@ -231,9 +231,9 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 - **Docker** (notebooks 4-6) : exécution du conteneur Fast Downward sur le port 8200
 - **OR-Tools** (notebook 7) : modélisation de contraintes, solveur CP-SAT
 
-## Prérequis techniques
+### Prérequis techniques
 
-### 1. Environnement Python
+#### 1. Environnement Python
 
 ```bash
 # Créer un environnement virtuel
@@ -245,7 +245,7 @@ source venv/bin/activate  # Linux/Mac
 pip install unified-planning ortools numpy matplotlib networkx
 ```
 
-### 2. Docker pour Fast Downward (recommandé)
+#### 2. Docker pour Fast Downward (recommandé)
 
 ```bash
 # Télécharger l'image Docker Fast Downward (serveur HTTP port 8200)
@@ -254,7 +254,7 @@ docker pull jsboige/coursia-fast-downward:latest
 
 L'image fournit un serveur API HTTP sur le port 8200. Les notebooks appellent l'endpoint `/plan` avec un payload JSON `{domain, problem, search}` et reçoivent le plan optimal.
 
-### 3. Vérification
+#### 3. Vérification
 
 ```bash
 python -c "import unified_planning; from ortools.sat.python import cp_model; print('OK')"
