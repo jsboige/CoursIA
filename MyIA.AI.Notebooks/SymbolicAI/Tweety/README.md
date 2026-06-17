@@ -9,11 +9,9 @@ breakdown: Tweety=10
 maturity: PRODUCTION=10
 -->
 
-Série complète de 10 notebooks pour explorer [TweetyProject](https://tweetyproject.org/), une bibliothèque Java pour l'intelligence artificielle symbolique.
+Série complète de notebooks pour explorer [TweetyProject](https://tweetyproject.org/), une bibliothèque Java pour l'intelligence artificielle symbolique. Le décompte exact des notebooks et leur maturité figurent dans le catalogue généré ci-dessous ; la série cible la version **Tweety 1.30**.
 
 ## Série en quelques mots
-
-**10 notebooks** | **1 kernel** | **~6h de travail** | **Tweety 1.30**
 
 **À qui s'adresse cette série** : étudiants en IA, chercheurs en argumentation computationnelle, développeurs intéressés par le raisonnement formel, et tout curieux souhaitant comprendre les bases mathématiques derrière le raisonnement explicite. Aucun prérequis en logique formelle n'est supposé : les concepts sont introduits progressivement, des opérateurs propositionnels de base jusqu'aux sémantiques d'argumentation les plus avancées.
 
@@ -527,19 +525,10 @@ La version est configurable dans `Tweety-1-Setup.ipynb` (variable `TWEETY_VERSIO
 | **[Argument_Analysis](../Argument_Analysis/)** | Argumentation agentique | Utilise Tweety comme backend Java pour le raisonnement argumentatif. Les sémantiques de Dung (notebook 5) sont directement appliquées dans l'analyse de textes. |
 | **[Lean](../Lean/)** | Vérification formelle | Les logiques propositionnelles et FOL (notebooks 2-3) correspondent aux tactiques de preuve Lean. Les SAT solvers de Tweety complètent la vérification Lean. |
 | **[SmartContracts](../SmartContracts/)** | Méthodes formelles | La vérification formelle SC-14 (Certora/SMTChecker) utilise les mêmes solveurs SAT/SMT. La logique propositionnelle de Tweety est la base des invariants Solidity. |
+| **[SemanticWeb](../SemanticWeb/)** | Logique de Description / OWL | La logique de Description (Tweety-3) est le fondement du raisonnement OWL : les ontologies OWL DL (SW-6/SW-7) utilisent les mêmes solveurs DL que Tweety. |
 | **[GameTheory](../../GameTheory/)** | Théorie du vote | Le notebook 9 (Préférences/Vote) couvre les concepts de choix social formalisés dans `social_choice_lean/` (Arrow, Sen, Voting). |
 | **[Planners](../Planners/)** | Planification argumentative | Les dialogues argumentatifs (notebook 8) peuvent être modélisés comme des problèmes de planification PDDL. |
 | Lecture transversale | [La mer qui monte](../../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du dépôt : changement de représentation, certification A/B/C |
-
-## Cross-series Bridges
-
-| Série | Lien | Connection |
-| ------- | ------ | ----------- |
-| [SymbolicAI/SemanticWeb](../SemanticWeb/README.md) | OWL reasoning | La logique de Description (Tweety-3) est le fondement de l'OWL reasoning — les ontologies OWL DL utilisent les mêmes solveurs DL que Tweety |
-| [IIT](../../IIT/README.md) | Argumentation pour la consciousness | L'analyse argumentative des systèmes complexes (notebooks 5-7) partage des concepts avec l'analyse IIT — identification de sous-ensembles causaux |
-| [SymbolicAI/Planners/](../Planners/README.md) | Planification logique | Les logiques formelles (notebooks 2-3) sont la base de la planification automatisée PDDL |
-| [ML/](../../ML/README.md) | Neuro-symbolic AI | L'intersection logiques + apprentissage : vérifier les prédictions de modèles neuronaux avec des contraintes logiques |
-| [Search](../../Search/README.md) | SAT-based search | Le solving SAT (notebook 2) partage les mêmes algorithmes que la recherche par contraintes (CSP) |
 
 ## Licence
 
