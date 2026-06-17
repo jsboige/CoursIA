@@ -1,5 +1,7 @@
 # SymbolicLearning - Apprentissage Symbolique
 
+[↑ SymbolicAI](../README.md)
+
 <!-- CATALOG-STATUS
 series: SymbolicAI-SymbolicLearning
 pedagogical_count: 10

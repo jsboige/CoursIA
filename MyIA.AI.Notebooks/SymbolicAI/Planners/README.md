@@ -1,5 +1,7 @@
 # Planification Automatique - Automated Planning
 
+[← Lean](../Lean/README.md) | [↑ SymbolicAI](../README.md) | [SmartContracts →](../SmartContracts/README.md)
+
 <!-- CATALOG-STATUS
 series: SymbolicAI-Planners
 pedagogical_count: 13

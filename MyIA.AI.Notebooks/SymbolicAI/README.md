@@ -1,6 +1,6 @@
 # SymbolicAI - Intelligence Artificielle Symbolique
 
-[← Notebooks](../README.md) | [↑ ..](../README.md) | [→ Sudoku](../Sudoku/README.md)
+[← Notebooks](../README.md) | [→ Sudoku](../Sudoku/README.md)
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
