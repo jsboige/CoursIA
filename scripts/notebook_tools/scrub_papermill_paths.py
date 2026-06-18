@@ -89,22 +89,29 @@ def scrub_notebook(nb_path, apply=False):
     fixed = []
     new_text = text
     for key, old_val in defects:
-        # Match the JSON substring regardless of quote style / spacing that
-        # json.dump may have produced. The value is a JSON string literal:
-        # escape backslashes present in the raw file form.
-        raw_old = json.dumps(old_val)  # exact JSON string literal as parsed
-        raw_new = json.dumps(basename)
-        needle = '"%s": %s' % (key, raw_old)
-        replacement = '"%s": %s' % (key, raw_new)
-        count = new_text.count(needle)
-        if count == 0:
-            # The on-disk literal differs from the parsed value (e.g. single
-            # quotes, spacing). Skip rather than risk a wrong edit.
+        # Match the JSON substring as it appears on disk. The value is a JSON
+        # string literal; Jupyter/papermill may store non-ASCII characters
+        # either literally (ensure_ascii=False) or escaped as \uXXXX
+        # (ensure_ascii=True). Build both candidate needles and use whichever
+        # occurs exactly once in the file. For pure-ASCII values both encodings
+        # are identical, so this is a no-op vs. the previous single-needle form.
+        candidates = []
+        seen = set()
+        for ensure_ascii in (False, True):
+            raw_old = json.dumps(old_val, ensure_ascii=ensure_ascii)
+            raw_new = json.dumps(basename, ensure_ascii=ensure_ascii)
+            needle = '"%s": %s' % (key, raw_old)
+            if needle in seen:
+                continue
+            seen.add(needle)
+            candidates.append((needle, '"%s": %s' % (key, raw_new)))
+        # Keep only needles that occur exactly once: count==0 means the on-disk
+        # literal differs (quote/spacing); count>1 is ambiguous (same path
+        # twice). Both are skipped to stay surgical.
+        matches = [(n, r) for (n, r) in candidates if new_text.count(n) == 1]
+        if len(matches) != 1:
             continue
-        if count > 1:
-            # Ambiguous: the same absolute path appears twice. Skip to stay
-            # surgical; flagged in scan output for manual review.
-            continue
+        needle, replacement = matches[0]
         new_text = new_text.replace(needle, replacement, 1)
         fixed.append((key, old_val))
 

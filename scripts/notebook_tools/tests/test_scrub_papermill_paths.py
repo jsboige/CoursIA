@@ -109,6 +109,56 @@ def test_scrub_handles_backslash_paths(tmp_path):
     assert after["metadata"]["papermill"]["output_path"] == "nb.ipynb"
 
 
+def test_scrub_handles_nonascii_path_stored_literally(tmp_path):
+    """Non-ASCII char stored literally (ensure_ascii=False) must be scrubbed.
+
+    Regression: the previous single-needle form built the needle with
+    json.dumps default (ensure_ascii=True), escaping the accent to \\uXXXX,
+    which never matched the literal accent on disk -> silent skip.
+    """
+    name = "Exploration_informée_intro.ipynb"
+    p = tmp_path / name
+    nb = {
+        "cells": [],
+        "metadata": {"papermill": {
+            "output_path": "D:\\dev\\CoursIA\\Exploration_informée_intro_output.ipynb",
+            "input_path": "D:\\dev\\CoursIA\\Exploration_informée_intro.ipynb",
+        }},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    # ensure_ascii=False -> the accent is written literally to disk.
+    p.write_text(json.dumps(nb, indent=1, ensure_ascii=False), encoding="utf-8")
+
+    defects, fixed = scrub_notebook(str(p), apply=True)
+    assert len(fixed) == 2
+    after = json.loads(p.read_text(encoding="utf-8"))
+    assert after["metadata"]["papermill"]["output_path"] == name
+    assert after["metadata"]["papermill"]["input_path"] == name
+
+
+def test_scrub_handles_nonascii_path_stored_escaped(tmp_path):
+    """Non-ASCII char stored escaped (\\uXXXX, ensure_ascii=True) must scrub too."""
+    name = "Exploration_informée_intro.ipynb"
+    p = tmp_path / name
+    nb = {
+        "cells": [],
+        "metadata": {"papermill": {
+            "output_path": "D:\\dev\\CoursIA\\Exploration_informée_intro_output.ipynb",
+        }},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    # ensure_ascii=True (default) -> the accent is written as \uXXXX on disk.
+    p.write_text(json.dumps(nb, indent=1, ensure_ascii=True), encoding="utf-8")
+    assert "\\u00e9" in p.read_text(encoding="utf-8")  # confirm escaped on disk
+
+    defects, fixed = scrub_notebook(str(p), apply=True)
+    assert len(fixed) == 1
+    after = json.loads(p.read_text(encoding="utf-8"))
+    assert after["metadata"]["papermill"]["output_path"] == name
+
+
 def test_scrub_dry_run_does_not_write(tmp_path):
     p = tmp_path / "nb.ipynb"
     _write_nb(p, pm={"output_path": "/tmp/nb_out.ipynb"})
