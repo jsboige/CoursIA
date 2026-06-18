@@ -269,7 +269,7 @@ Documentation complète : [Argument_Analysis/README.md](Argument_Analysis/README
 
 ## SymbolicLearning - Apprentissage Symbolique
 
-Serie de **10 notebooks** Python sur l'apprentissage symbolique (AIMA ch. 19) : induction pure (Version Space), apprentissage guide par la connaissance (EBL, RBL), programmation logique inductive (FOIL, resolution inverse, Progol), apprentissage actif d'automates (L* d'Angluin), et intégration neuro-symbolique jusqu'au capstone LLM + knowledge graph.
+Serie de **11 notebooks** Python sur l'apprentissage symbolique (AIMA ch. 19) : induction pure (Version Space), apprentissage guide par la connaissance (EBL, RBL), programmation logique inductive (FOIL, resolution inverse, Progol), moteurs ILP modernes reels (Aleph, Metagol, Popper, dILP), apprentissage actif d'automates (L* d'Angluin), et intégration neuro-symbolique jusqu'au capstone LLM + knowledge graph.
 
 ### Structure detaillee
 
@@ -279,14 +279,15 @@ Serie de **10 notebooks** Python sur l'apprentissage symbolique (AIMA ch. 19) : 
 | 2 | [SL-2-KnowledgeBasedLearning](SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (determinations) | 3 | SL-1 |
 | 3 | [SL-3-RelevanceLearning](SymbolicLearning/SL-3-RelevanceLearning.ipynb) | Treillis des determinations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 3 | SL-2 |
 | 4 | [SL-4-InductiveLogicProgramming](SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) | FOIL, resolution inverse, knowledge graphs, Popper (LFF) | 4 | SL-1 |
-| 5 | [SL-6-NeuroSymbolic](SymbolicLearning/SL-6-NeuroSymbolic.ipynb) | T-norms, predicats neuronaux, LTN, DeepProbLog | 4 | SL-1 |
-| 6 | [SL-7-KnowledgeGraphs-ILP](SymbolicLearning/SL-7-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, completion KG, ASP avec clingo | 4 | SL-4 |
-| 7 | [SL-8-LLM-SymbolicLearning](SymbolicLearning/SL-8-LLM-SymbolicLearning.ipynb) | Extraction de règles LLM, verification symbolique (Gemini optionnel) | 4 | SL-1 |
-| 8 | [SL-9-ActiveAutomataLearning](SymbolicLearning/SL-9-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 4 | SL-1 |
-| 9 | [SL-5-InverseResolution](SymbolicLearning/SL-5-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 5 | SL-4 |
-| 10 | [SL-10-Capstone-NeuroSymbolic](SymbolicLearning/SL-10-Capstone-NeuroSymbolic.ipynb) | Pipeline neuro-symbolique 6 etages, LLM réel aux deux extremites | 4 | SL-6 a SL-8 |
+| 5 | [SL-5-InverseResolution](SymbolicLearning/SL-5-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 5 | SL-4 |
+| 6 | [SL-6-ModernILP](SymbolicLearning/SL-6-ModernILP.ipynb) | Aleph, Metagol, Popper, dILP (Lernd) — 4 moteurs ILP reels en face a face sur ancestor/2 | 3 | SL-4, SL-5 |
+| 7 | [SL-7-NeuroSymbolic](SymbolicLearning/SL-7-NeuroSymbolic.ipynb) | T-norms, predicats neuronaux, LTN, DeepProbLog | 4 | SL-1 |
+| 8 | [SL-8-KnowledgeGraphs-ILP](SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, completion KG, ASP avec clingo | 4 | SL-4 |
+| 9 | [SL-9-LLM-SymbolicLearning](SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb) | Extraction de règles LLM, verification symbolique (Gemini optionnel) | 4 | SL-1 |
+| 10 | [SL-10-ActiveAutomataLearning](SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 4 | SL-1 |
+| 11 | [SL-11-Capstone-NeuroSymbolic](SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb) | Pipeline neuro-symbolique 6 etages, LLM réel aux deux extremites | 4 | SL-7 a SL-9 |
 
-> 10/10 notebooks ont des exercices — 40 au total, organises en table de pioche pour la seance de restitution (chaque exercice est assorti d'une question-twist).
+> 11/11 notebooks ont des exercices — 43 au total, organises en table de pioche pour la seance de restitution (chaque exercice est assorti d'une question-twist).
 
 Documentation complète : [SymbolicLearning/README.md](SymbolicLearning/README.md)
 
@@ -350,8 +351,8 @@ SymbolicAI/
 │   ├── Argument_Analysis_Agentic-0-init.ipynb ... UI_configuration.ipynb
 │   └── README.md
 │
-├── SymbolicLearning/          # Apprentissage symbolique (10 notebooks)
-│   ├── SL-1-LogicalLearning.ipynb ... SL-10-Capstone-NeuroSymbolic.ipynb
+├── SymbolicLearning/          # Apprentissage symbolique (11 notebooks)
+│   ├── SL-1-LogicalLearning.ipynb ... SL-11-Capstone-NeuroSymbolic.ipynb
 │   ├── reference/             # Notes AIMA ch. 19
 │   └── README.md
 │
@@ -520,7 +521,7 @@ Le setup est entierement automatisé via `Tweety-1-Setup.ipynb` :
 | Lean | 21 | 20 (95%) | 1 (Setup) | Complet |
 | Planners | 13 | 12 (92%) | 1 (Setup) | Complet |
 | Tweety | 10 | 10 (100%) | 0 | Complet |
-| SymbolicLearning | 10 | 10 (100%) | 0 | Complet |
+| SymbolicLearning | 11 | 11 (100%) | 0 | Complet |
 | Argument Analysis | 6 | 0 (0%) | 6 (demo) | N/A |
 
 **Total** : 95/105 notebooks de contenu avec exercices (90%). Les notebooks sans exercices sont les notebooks de setup/configuration (SW-1, Planners-0, Lean-1), le notebook legacy (RDF.Net), et la série demo Argument Analysis (6 notebooks).
