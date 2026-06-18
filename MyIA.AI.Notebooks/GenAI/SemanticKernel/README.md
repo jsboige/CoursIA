@@ -155,17 +155,6 @@ Le fil rouge de cette série est le NotebookMaker, un système multi-agents qui 
 
 4. **NotebookMaker (09-10)** : [09](09-SemanticKernel-Building-CLR.ipynb) prépare l'interop Python/C#. [10](10-SemanticKernel-NotebookMaker.ipynb) assemble le système 3 agents (Admin, Coder, Reviewer). Les versions [10a](10a-SemanticKernel-NotebookMaker-batch.ipynb) et [10b](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) ajoutent le mode batch et la paramétrisation Papermill.
 
-## Cross-series Bridges
-
-| Série | Lien | Connection |
-|-------|------|------------|
-| [GenAI/Texte](../Texte/README.md) | LLMs et APIs | Les notebooks Texte couvrent les mêmes modèles (OpenAI, Anthropic) que SemanticKernel les orchestre en agents |
-| [GenAI/Image](../Image/README.md) | Génération d'images | Le notebook 07-MultiModal utilise la génération d'images DALL-E via le Kernel SK |
-| [GenAI/Audio](../Audio/README.md) | Speech et TTS | Le notebook 07-MultiModal intègre aussi le TTS (text-to-speech) via le Kernel |
-| [ML](../../ML/README.md) | Pipelines ML | Le NotebookMaker (10) génère des notebooks ML automatiquement, la validation croisée ML-4 évalue les modèles produits |
-| [QuantConnect](../../QuantConnect/README.md) | Trading algorithmique | Les agents SK peuvent être connectés à des sources de données financières via MCP (08) pour des signaux de trading LLM-augmentés |
-| [Vibe-Coding](../Vibe-Coding/README.md) | Développement avec agents | Les patterns d'orchestration multi-agents du NotebookMaker (10) s'appliquent aux workflows Vibe-Coding |
-
 ## Changelog
 
 ### Février 2026

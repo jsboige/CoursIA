@@ -275,25 +275,3 @@ Pour le troubleshooting avancé (timeout Papermill, OOM GPU, .NET), consultez le
 | **TTS** | Text-to-Speech : synthétiser la voix depuis du texte | Audio |
 | **ComfyUI** | Interface visuelle pour chaîner les modèles génératifs en workflows | Image, Video |
 | **Playwright** | Framework de test E2E pour applications web GenAI | Playwright-OWUI |
-
-## Cross-series Bridges
-
-### Interne GenAI
-
-| Série | Lien | Connection |
-|-------|------|------------|
-| [Image](Image/README.md) | Source visuelle pour Video | Le pipeline Video/03-2 enchaîne génération d'images puis animation ; SVD (Video/02-4) anime une image existante |
-| [Audio](Audio/README.md) | Sync A/V + podcast | Audio/04-4 synchronise audio et vidéo ; le pipeline podcast (Audio/03-2) enchaîne STT, LLM (Texte) et TTS |
-| [Texte](Texte/README.md) | Prompts et APIs | Les prompts structurés (Texte/2) guident toute génération (Image, Audio, Video) ; function calling (Texte/4) pilote les APIs multimodales |
-| [SemanticKernel](SemanticKernel/README.md) | Orchestration | Les pipelines multi-modèles de chaque série suivent les patterns d'orchestration Semantic Kernel |
-
-### Externe
-
-| Série | Lien | Connection |
-|-------|------|-------------|
-| [QuantConnect](../QuantConnect/README.md) | Trading algorithmique | L'analyse de sentiment par LLM (Texte/8_Reasoning_Models) alimente les stratégies de trading du notebook QC-13 |
-| [Probas](../Probas/README.md) | Modèles probabilistes | Les VAE et diffusion models (Image/02-Advanced, Video/02-Advanced) partagent les fondements probabilistes couverts dans Probas/Infer |
-
-### Lecture transversale
-
-[La mer qui monte](../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du dépôt — GenAI comme versant *simulation* (générer, calculer, expérimenter) face au versant *preuve* des séries formelles.

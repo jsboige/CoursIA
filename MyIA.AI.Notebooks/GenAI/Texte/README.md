@@ -158,16 +158,6 @@ Le fil rouge de cette série est la progression de l'interaction basique avec un
 
 5. **Tier 5** (test-time scaling approfondi) : partant de [12_Test_Time_Scaling](12_Test_Time_Scaling.ipynb) (les quatre moteurs en Python pur), l'arc NB-13..18 décompose chaque facette de l'inférence au moment du test — orchestration agentique via function calling ([13](13_Agentic_Orchestration.ipynb)), mémoire persistante par similarité ([14](14_Persistent_Memory.ipynb)), Tree-of-Thoughts sur des problèmes de recherche ([15](15_Tree_of_Thoughts_Search.ipynb)), courbes de scaling de Snell ([16](16_Scaling_Test_Time_Compute.ipynb)), raisonnement natif vs scaling hand-rolled ([17](17_Native_Reasoning_vs_Scaling.ipynb)), puis intégration Semantic Kernel ([18](18_Semantic_Kernel_Plugins.ipynb)).
 
-## Cross-series Bridges
-
-| Série | Lien | Connection |
-|-------|------|------------|
-| [Image](../Image/README.md) | Prompts structurés | Les textes prompts guident la génération d'images (DALL-E, GPT-5 Image) — notebooks [1](1_OpenAI_Intro.ipynb) et [4](4_Function_Calling.ipynb) |
-| [Audio](../Audio/README.md) | STT/TTS + RAG podcast | Whisper STT et TTS APIs sont les bases du pipeline podcast (Audio/03-2) ; le RAG (notebook [5](5_RAG_Modern.ipynb)) alimente le contenu |
-| [Video](../Video/README.md) | GPT-5 Video + Sora prompts | La compréhension vidéo (Video/01-2) utilise les mêmes APIs texte ; Sora (Video/04-3) dépend de prompts structurés |
-| [SemanticKernel](../SemanticKernel/README.md) | Orchestration agentique | Semantic Kernel orchestre les LLMs via plugins et agents — prolonge les patterns de function calling (notebook [4](4_Function_Calling.ipynb)) |
-| [SymbolicAI](../../SymbolicAI/README.md) | Reasoning formel | Les modèles raisonnants (notebook [8](8_Reasoning_Models.ipynb)) complètent le reasoning formel (Z3, Tweety, Lean) |
-
 ## FAQ
 
 ### Chat Completions vs Responses API — laquelle utiliser ?
