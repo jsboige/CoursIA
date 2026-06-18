@@ -1,5 +1,13 @@
 # Playwright-OWUI - Tests E2E pedagogiques pour Open WebUI
 
+<!-- CATALOG-STATUS
+series: GenAI-Playwright-OWUI
+format: TypeScript (.spec.ts) -- serie non-notebook, non decomptee par le bot catalogue (.ipynb only)
+module_count: 5
+test_count: 34
+maturity: PRODUCTION=5
+-->
+
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Vibe-Coding](../Vibe-Coding/README.md)
 
 Serie pedagogique complete pour apprendre **Playwright** (framework de tests E2E) en testant une application reelle : **Open WebUI**, une plateforme de chat IA generative.
