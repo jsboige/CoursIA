@@ -133,15 +133,6 @@ winget install FFmpeg
 | Compréhension vidéo | 01-2, 01-3 |
 | Production complète | Tous + Audio/04-4 (sync A/V) |
 
-## Cross-series Bridges
-
-| Série | Lien | Connection |
-|-------|------|------------|
-| [Audio](../Audio/README.md) | Sync audio-vidéo | [Audio/04-4](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise la piste audio générée avec la vidéo |
-| [Image](../Image/README.md) | Source d'images | Le pipeline Video/03-2 génère des images via les modèles Image avant de les animer ; SVD (02-4) anime une image existante |
-| [Texte](../Texte/README.md) | Prompts et APIs | La compréhension vidéo (01-2) utilise les mêmes APIs GPT-5 que Texte ; Sora (04-3) dépend de prompts structurés |
-| [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les workflows vidéo ComfyUI (03-3) partagent les patterns d'orchestration avec les agents Semantic Kernel |
-
 ## FAQ
 
 ### HunyuanVideo OOM ou génération extrêmement lente
