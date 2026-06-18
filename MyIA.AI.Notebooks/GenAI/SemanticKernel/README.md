@@ -39,6 +39,17 @@ Parcours pédagogique complet sur Semantic Kernel en Python :
 | 10a | [SK-10a-NotebookMaker-batch](10a-SemanticKernel-NotebookMaker-batch.ipynb) | Version batch sans UI interactive | 30 min |
 | 10b | [SK-10b-NotebookMaker-batch-param](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) | Version paramétrisée pour Papermill | 30 min |
 
+## Démos interactives (curriculum)
+
+Ces notebooks appliquent Semantic Kernel à des cas d'usage concrets. Ils font partie du curriculum (exercices stub inclus), mais sont listés à part car ils ne suivent pas la numérotation principale 01-10.
+
+| Notebook | Langage | Contenu | Exercices |
+|----------|---------|---------|-----------|
+| [Semantic-kernel-AutoInteractive](Semantic-kernel-AutoInteractive.ipynb) | C# (.NET) | **Conception de notebook assistée** : SK + OpenAI function calling pour générer et exécuter d'autres notebooks .NET interactifs | 3 |
+| [Créateur de mail personnalisé](Créateur%20de%20mail%20personnalisé.ipynb) | Python | Workflow multi-agents SK (InputCollector, EmailGenerator) pour la rédaction de courriels | 3 |
+| [fort-boyard-csharp](fort-boyard-csharp.ipynb) | C# (.NET) | AgentGroupChat : duel Père Fouras vs Laurent Jalabert (jeu de devinette) | 3 |
+| [fort-boyard-python](fort-boyard-python.ipynb) | Python | Contrepartie Python du duel Fort Boyard (KernelFunctionTerminationStrategy) | 3 |
+
 ## Templates
 
 | Template | Description |
@@ -46,6 +57,17 @@ Parcours pédagogique complet sur Semantic Kernel en Python :
 | [Notebook-Template](Notebook-Template.ipynb) | Template de base C# |
 | [Workbook-Template](Workbook-Template.ipynb) | Template workbook C# |
 | [Workbook-Template-Python](Workbook-Template-Python.ipynb) | Template Python |
+
+## Artefacts générés (hors curriculum)
+
+> ⚠️ Les notebooks ci-dessous sont des **sorties produites par le système NotebookMaker / AutoInteractive**, pas du curriculum pédagogique. Ils illustrent ce que la chaîne d'agents génère mais ne contiennent pas de parcours d'apprentissage. Ils sont **exclus du compte catalogue pédagogique** (`pedagogical_count`) et ne doivent pas être comptés comme notebooks de la série.
+
+| Fichier | Nature | Origine |
+|---------|--------|---------|
+| [Notebook-Generated](Notebook-Generated.ipynb) | Scaffold généré (dataset Iris générique) | Output du [NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) / [AutoInteractive](Semantic-kernel-AutoInteractive.ipynb) |
+| [Créateur de mail personnalisé_output](Créateur%20de%20mail%20personnalisé_output.ipynb) | Copie exécutée Papermill | Artefact d'exécution de [Créateur de mail personnalisé](Créateur%20de%20mail%20personnalisé.ipynb) (suffixe `_output`) |
+
+Le notebook canonique « Créateur de mail personnalisé » (sans suffixe `_output`) est, lui, un vrai notebook de curriculum (cf. table [Démos interactives](#démos-interactives-curriculum)).
 
 ## Concepts clés
 
