@@ -555,37 +555,6 @@ La théorie des jeux n'est pas qu'un objet académique : ses résultats structur
 - **Coopération et évolution** (notebook 6) — le tournoi d'Axelrod et les dynamiques de replication modélisent l'émergence de la coopération en biologie, en relations internationales et dans les protocoles de réseaux pair-à-pair.
 - **Régulation et dissuasion** (notebooks 10-12) — l'induction arrière, les jeux de réputation et le signaling formalisent la crédibilité des menaces, des banques centrales (politique monétaire) à la stratégie concurrentielle.
 
-## Connections cross-series
-
-### GameTheory et Lean (Vérification Formelle)
-
-Les side tracks Lean (2b, 4b, 8b, 15b) et la sous-série [SocialChoice/](SocialChoice/) formalisent en Lean 4 les résultats théoriques étudiés en Python dans les notebooks principaux. Cette dualité Python (simulation) / Lean (preuve formelle) est un fil rouge du curriculum. **Inventaire détaillé** : [LEAN_INVENTORY.md](LEAN_INVENTORY.md) (toolchains, GO/NO-GO prover, lake build status, sorry résiduels).
-
-| Concept GameTheory | Notebook Python | Formalisation Lean | Statut |
-|--------------------|----------------|--------------------|--------|
-| Jeux 2x2, stratégies | GameTheory-2 | `Game2x2.lean` (notebook 2b) | Prouve |
-| Existence Nash | GameTheory-4 | `NashExistence.lean` (notebook 4b) | Prouve |
-| Jeux combinatoires | GameTheory-8 | `PGame.lean` (notebook 8b) | Prouve |
-| Théorème d'Arrow | SocialChoice SC-01/SC-04 | `Arrow.lean` (social_choice_lean) | 0 sorry |
-| Théorème de Sen | SocialChoice SC-02 | `Sen.lean` (social_choice_lean) | 0 sorry |
-| Valeur de Shapley | GameTheory-15b | `Shapley.lean` (cooperative games) | 0 sorry |
-| Cœur coopératif | GameTheory-15b | `Basic.lean` ([cooperative_games_lean](cooperative_games_lean/)) | 1 sorry (Bondareva-Shapley, INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION) |
-| Modèles de vote | SocialChoice SC-02 | `Voting.lean` (Banks, STV, Median Voter) | 0 sorry |
-| Calibration prover | (benchmark) | `Calibration/Nash.lean` ([calibration_lean](../SymbolicAI/Lean/calibration_lean/)) | 0 sorry |
-| Gale-Shapley (stable marriage) | (pas de notebook dédié) | `GaleShapley.lean` ([stable_marriage_lean](stable_marriage_lean/)) | 0 sorry (PR #1521 GPT-5.5 prover); `Lattice.lean` residual 3 sorry (Knuth rotations, INTRACTABLE) |
-
-Voir [SymbolicAI/Lean/README.md](../SymbolicAI/Lean/README.md) pour les prerequis Lean (notebooks 1-6 recommandes).
-
-### GameTheory et SmartContracts
-
-Les concepts de théorie des jeux et de choix social apparaissent directement dans les smart contracts :
-
-- **SC-9 DAO Governance** : mécanismes de vote on-chain = application directe du théorème d'Arrow et des modèles de vote étudiés dans SocialChoice/.
-- **SC-17 E2E Verifiable Voting** : le vote électronique vérifiable combine les résultats de choix social (Arrow, Banks, STV) avec la cryptographie (ZKP, chiffrement homomorphique).
-- **SC-14 Formal Verification** : la vérification formelle de smart contracts rejoint les méthodes de preuve formelle utilisées pour les formalisations Lean de cette série.
-
-Voir [SymbolicAI/SmartContracts/README.md](../SymbolicAI/SmartContracts/README.md) pour la série complète.
-
 ## Licence
 
 Voir la licence du repository principal.
