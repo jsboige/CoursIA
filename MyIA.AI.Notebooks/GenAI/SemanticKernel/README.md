@@ -65,7 +65,7 @@ Ces notebooks appliquent Semantic Kernel à des cas d'usage concrets. Ils font p
 | Fichier | Nature | Origine |
 |---------|--------|---------|
 | [Notebook-Generated](Notebook-Generated.ipynb) | Scaffold généré (dataset Iris générique) | Output du [NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) / [AutoInteractive](Semantic-kernel-AutoInteractive.ipynb) |
-| [Créateur de mail personnalisé_output](Créateur%20de%20mail%20personnalisé_output.ipynb) | Copie exécutée Papermill | Artefact d'exécution de [Créateur de mail personnalisé](Créateur%20de%20mail%20personnalisé.ipynb) (suffixe `_output`) |
+| `Créateur de mail personnalisé_output.ipynb` | Copie exécutée Papermill | Artefact d'exécution de [Créateur de mail personnalisé](Cr%C3%A9ateur%20de%20mail%20personnalis%C3%A9.ipynb) (suffixe `_output`, non tracké : produit local d'une exécution Papermill) |
 
 Le notebook canonique « Créateur de mail personnalisé » (sans suffixe `_output`) est, lui, un vrai notebook de curriculum (cf. table [Démos interactives](#démos-interactives-curriculum)).
 
