@@ -532,51 +532,6 @@ Le setup est entierement automatisé via `Tweety-1-Setup.ipynb` :
 
 ---
 
-## Ponts cross-séries
-
-Ces connexions entre séries sont exploitees dans le curriculum IA Symbolique.
-
-### Lean <-> GameTheory (Choix social)
-
-| Concept Lean | Concept GameTheory | Notebooks |
-|-------------|-------------------|-----------|
-| Theoreme d'Arrow (preuve formelle) | Theorie du vote / Choix social | `GameTheory/social_choice_lean/SocialChoice/Arrow.lean` <-> `GameTheory/GameTheory-16-MechanismDesign.ipynb` |
-| Theoreme de Sen (preuve formelle) | Impossibilite du paretien liberal | `GameTheory/social_choice_lean/SocialChoice/Sen.lean` <-> `GameTheory/GameTheory-16-MechanismDesign.ipynb` |
-| Valeur de Shapley | Coalitions, jeux cooperatifs | `GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb` <-> `GameTheory/GameTheory-15-CooperativeGames.ipynb` |
-
-### Lean <-> SmartContracts (Verification formelle)
-
-| Concept | Pont | Notebooks |
-|---------|------|-----------|
-| Theorie des types dependants | Verification formelle de contrats | `Lean/Lean-1-Setup.ipynb` (types) <-> `SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb` |
-| Preuves LLM-assistees | Contrats LLM-assistes | `Lean/Lean-8-Agentic-Proving.ipynb` <-> `SmartContracts/02-Solidity-Advanced/SC-11-LLM-Assisted.ipynb` |
-| `sorry` = axiome non prouve | Bugs de contrats non detectes | Concepts paralleles d'incompletude |
-
-### Tweety <-> Argument_Analysis (Argumentation)
-
-| Concept Tweety | Concept Argument_Analysis | Notebooks |
-|---------------|--------------------------|-----------|
-| Frameworks de Dung | Argumentation multi-agents | `Tweety/Tweety-5-Abstract-Argumentation.ipynb` <-> `Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb` |
-| ASPIC+ (argumentation structuree) | Analyse LLM d'arguments | `Tweety/Tweety-6-Structured-Argumentation.ipynb` <-> `Argument_Analysis/Argument_Analysis_Agentic-3-orchestration.ipynb` |
-| Dialogues d'agents | Debat multi-agent | `Tweety/Tweety-8-Agent-Dialogues.ipynb` <-> `Argument_Analysis/Argument_Analysis_Executor.ipynb` |
-
-### SemanticWeb <-> SmartContracts (Decentralisation)
-
-| Concept | Pont | Notebooks |
-|---------|------|-----------|
-| Ontologies RDF/OWL | Gouvernance DAO (etat canonique) | `SemanticWeb/SW-7-CSharp-OWL.ipynb` <-> `SmartContracts/02-Solidity-Advanced/SC-9-DAO-Governance.ipynb` |
-| GraphRAG | Indexation on-chain | `SemanticWeb/SW-12-Python-GraphRAG.ipynb` <-> SmartContracts DeFi indexing |
-| SHACL (validation) | Smart contract verification | `SemanticWeb/SW-8-Python-SHACL.ipynb` <-> `SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb` |
-
-### Planners <-> SmartContracts (Coordination)
-
-| Concept | Pont | Notebooks |
-|---------|------|-----------|
-| Planification multi-agent | MEV / auctions cross-chain | `Planners/03-Advanced/Planners-9-HTN.ipynb` <-> SmartContracts MEV |
-| CP-SAT (OR-Tools) | Optimisation sous contraintes (DeFi) | `Planners/03-Advanced/Planners-7-OR-Tools.ipynb` <-> `SmartContracts/02-Solidity-Advanced/SC-8-DeFi-Primitives.ipynb` |
-
----
-
 ## Ressources
 
 ### References academiques
