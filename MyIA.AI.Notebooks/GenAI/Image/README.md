@@ -25,11 +25,11 @@ La structure détaillée (notebooks par niveau, contenu, services utilisés) est
 
 ```
 Image/
-├── 01-Foundation/     # Modèles de base (5 notebooks)
-├── 02-Advanced/       # Modèles avancés (5 notebooks)
-├── 03-Orchestration/  # Multi-modèles (3 notebooks)
-├── 04-Applications/   # Production (4 notebooks)
-└── examples/          # Cas d'usage (3 notebooks)
+├── 01-Foundation/     # Modèles de base
+├── 02-Advanced/       # Modèles avancés
+├── 03-Orchestration/  # Multi-modèles
+├── 04-Applications/   # Production
+└── examples/          # Cas d'usage
 ```
 
 ## Progression par niveau
@@ -161,7 +161,7 @@ Le fil rouge de cette série est la création d'un système de visuels pédagogi
 
 | Série | Lien | Connection |
 |-------|------|------------|
-| [Video](../Video/README.md) | Image-to-video | SVD (Video/02-4) anime une image existante ; le pipeline Video/03-2 enchaîne génération d'images puis animation |
+| [Video](../Video/README.md) | Image-to-video | Les visuels générés ici (DALL-E, FLUX, Qwen) servent d'images clés à animer : SVD (Video/02-4) ou le pipeline Video/03-2 les prennent en entrée |
 | [Audio](../Audio/README.md) | Sync audio-video | Audio/04-4 synchronise la piste audio avec les visuels générés |
 | [Texte](../Texte/README.md) | Prompts structurés | Les prompts DALL-E et GPT-5 Image bénéficient des techniques de prompt engineering (Texte/2) et function calling (Texte/4) |
 | [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les pipelines d'orchestration (03-2) partagent les mêmes patterns que les agents Semantic Kernel |
