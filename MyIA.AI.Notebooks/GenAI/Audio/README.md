@@ -177,14 +177,6 @@ Le fil rouge de cette série est la création d'un podcast généré par IA. Voi
 
 4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Audio-Content.ipynb) applique le pipeline à la narration de cours. [04-2](04-Applications/04-2-Transcription-Pipeline.ipynb) gère la transcription batch pour les épisodes longs. [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise avec la piste vidéo si le podcast a une composante visuelle.
 
-## Cross-series Bridges
-
-| Série | Lien | Connection |
-|-------|------|------------|
-| [Video](../Video/README.md) | Sync audio-vidéo | [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise l'audio généré avec les pistes vidéo de la série Video |
-| [Texte](../Texte/README.md) | LLM dans le pipeline | Le pipeline podcast (03-2) enchaîne STT vers LLM vers TTS ; les prompts structurés (Texte/2) et le RAG (Texte/5) alimentent le contenu |
-| [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les pipelines multi-modèles Audio (03-1, 03-2) partagent les patterns d'orchestration avec Semantic Kernel |
-
 ## FAQ
 
 ### GPU OOM pendant un notebook TTS/STT local
