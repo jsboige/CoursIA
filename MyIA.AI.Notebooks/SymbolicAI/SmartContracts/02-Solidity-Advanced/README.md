@@ -70,7 +70,7 @@ Le LLM comme outil de developpeur Solidity : **prompting** efficace pour smart c
 | Serie | Lien | Relation |
 |-------|------|----------|
 | [SmartContracts (parent)](../README.md) | Vue d'ensemble | Contexte, parcours global, glossaire |
-| [01-Solidity-Foundation](../01-Solidity-Foundation/README.md) | Prerequis | SC-3..6 (syntaxe, types, fonctions, heritage, errors/events) |
+| [01-Solidity-Foundation](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb) | Prerequis | SC-3..6 (syntaxe, types, fonctions, heritage, errors/events) |
 | [03-Foundry-Testing](../03-Foundry-Testing/) | Suite | SC-12+ (tests Foundry, fuzzing, verification formelle) |
 | [GameTheory](../../GameTheory/) | SC-9 (DAO) | Theoreme d'Arrow : limites des systemes de vote on-chain (cf `social_choice_lean/Arrow.lean`) |
 | [SymbolicAI/Lean](../Lean/) | SC-11 (LLM) | Meme paradigme d'assistance LLM (Lean-7/8/9) applique a la preuve formelle |
