@@ -29,10 +29,10 @@ L'objectif fil rouge de cette série est de construire un podcast entièrement g
 
 ```
 Audio/
-├── 01-Foundation/     # STT, TTS, bases audio (5 notebooks)
-├── 02-Advanced/       # Voice cloning, musique, MIDI, chansons, TTS expressif (9 notebooks)
-├── 03-Orchestration/  # Multi-modèles, temps réel (3 notebooks)
-└── 04-Applications/   # Éducation, production, sync A/V, live coding, audiobook (13 notebooks)
+├── 01-Foundation/     # STT, TTS, bases audio
+├── 02-Advanced/       # Voice cloning, musique, MIDI, chansons, TTS expressif
+├── 03-Orchestration/  # Multi-modèles, temps réel
+└── 04-Applications/   # Éducation, production, sync A/V, live coding, audiobook
 ```
 
 ## Progression par niveau
