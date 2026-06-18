@@ -9,7 +9,7 @@ maturity: PRODUCTION=10, ALPHA=3, BETA=2, DRAFT=2
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
 
-La vidéo est la modalité générative la plus exigeante : elle combine l'analyse d'images, la compréhension du temps, la synchronisation audio, et la création de mouvement cohérent. Cette série couvre l'ensemble de la chaîne vidéo IA : compréhension de séquences existantes, génération à partir de texte ou d'images, orchestration de pipelines multi-modèles, et workflows de production. 17 notebooks répartis sur 4 niveaux progressifs.
+La vidéo combine quatre difficultés simultanées que les autres modalités traitent séparément : l'analyse d'images, la compréhension du temps, la synchronisation audio, et la création de mouvement cohérent. Cette série couvre l'ensemble de la chaîne vidéo IA : compréhension de séquences existantes, génération à partir de texte ou d'images, orchestration de pipelines multi-modèles, et workflows de production. Les notebooks sont répartis sur 4 niveaux progressifs.
 
 ## Fil rouge : construire un pipeline texte vers vidéo pédagogique
 
