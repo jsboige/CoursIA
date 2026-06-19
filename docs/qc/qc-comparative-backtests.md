@@ -337,7 +337,7 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 
 | Project | QC ID | Period | Sharpe | CAGR% | MaxDD% | PSR% | Backtest ID | Notes |
 |---------|-------|--------|--------|-------|--------|------|-------------|-------|
-| TrendFollowing | 28797562 | 2018-2025 | **1.072** | 23.2 | 9.3 | 81.8 | `7792ae0a` | Leader, PSR > 80% |
+| TrendFollowing | 28797562 | 2018-2025 | **1.072** | 23.2 | 9.3 | 81.8 | `7792ae0a` | Leader, PSR > 80%. **Caveat** : 1.072 = état cloud antérieur non reproductible par le code repo (2015-2024). Repo baseline-clone 33078355/`486eb064` (finding 18, #1630 item 8) |
 | AllWeather | 28657833 | 2010-2025* | 0.631 | 9.016 | 16.4 | 31.2 | `cd6ba790` | *Hardcoded start 2010. PSR 31% |
 | SectorDualMomentum | 29686886 | 2015-2025* | 0.581 | 13.488 | 22.8 | 15.3 | `8713e974` | *Hardcoded start 2015 |
 | MomentumStrategy (SectorMom) | 28657837 | 2010-2025* | 0.555 | 11.676 | 25.8 | 7.2 | `e4491127` | *Hardcoded start 2010 |
@@ -446,7 +446,7 @@ ou `Sigma` est la **matrice de covariance** complete (correlations incluses). Re
 
 ## Key findings
 
-1. **TrendFollowing = leader indiscutable**: Sharpe 1.072 sur 2018-2025 avec MaxDD 9.3%. PSR 81.8% (statistiquement significatif). Seule strategie "Robuste" confirmee sur la periode aligned.
+1. **TrendFollowing = leader indiscutable (caveat reproductibilité)**: Sharpe 1.072 sur 2018-2025 avec MaxDD 9.3%. PSR 81.8% (statistiquement significatif). Seule strategie "Robuste" confirmee sur la periode aligned. **Caveat** (finding 18 / #1630 item 8) : ce 1.072 vient d'un backtest sur un état du code cloud antérieur (`7792ae0a`, 2018-2025) qui **n'est pas reproductible depuis le code versionné du dépôt** — le `main.py` actuel backteste sur 2015-2024 et donne un Sharpe sensiblement inférieur (baseline-clone `33078355`/`486eb064`, cf finding 18). La stratégie tient (PSR 81.8%), mais le chiffre exact 1.072 ne doit pas être cité sans ce caveat.
 2. **EMA-Cross-Stocks: surprise positive**: Sharpe 0.891 sur 2018-2025, CAGR 26.2%. PSR 40.5%. 2e meilleur Sharpe aligne, derriere TrendFollowing.
 3. **EMA-Cross-Alpha: chute dramatique**: Sharpe passe de 0.996 (meilleur backtest) a -0.010 sur la periode aligned. PSR 0.5% = bruit. Confirme le pattern "backtests courts = overfitting".
 4. **Composites ne battent pas les single-strategies**: MomentumRegime (SectorMomentum + RegimeSwitching) obtient 0.185, confirmant le probleme de "double-defense".
@@ -463,7 +463,7 @@ ou `Sigma` est la **matrice de covariance** complete (correlations incluses). Re
 15. **LeveragedETFMomentum: confirme et significatif**: Sharpe 1.779 sur 2018-2025, PSR 79.8% (2e PSR significatif apres TrendFollowing). Mais MaxDD 53.3% et CAGR 126% typiques d'un levier 3x — profil risque extreme, pas comparable aux strategies non-leveragees.
 16. **PuppiesOfTheDow et HighBookToMarketFScore: effondrement sur periode alignee**: Sharpe catalog 1.99 et 2.09 (obtenus sur leur fenetre glissante par defaut `end_date - 12 ans`) tombent a 0.302 (PSR 3.5%) et 0.411 (PSR 4.5%, MaxDD 60.4%) sur 2018-2025. Les deux meilleures lignes ML/IND du Tier 1 ne sont pas reproductibles sur la fenetre standardisee.
 17. **TrendWeather: le composite qui tient**: Sharpe 0.948 (PSR 56.6%), proche du catalog 1.16. Contraste fort avec MomentumRegime (0.185) — toutes les architectures composites ne se valent pas.
-18. **Caveat reproductibilite Trend-Following**: le code du repo backteste sur 2018-2024 donne Sharpe 0.365 / MaxDD 13.8% (backtest `3748cb62`), loin du 1.072 publie ci-dessus (`7792ae0a`, 2018-2025, etat du code cloud anterieur). Periodes differentes (2025 inclus ou non) ET drift possible repo vs cloud — a investiguer avant de citer 1.072 comme reference du code versionne.
+18. **Caveat reproductibilite Trend-Following (RESOLU #1630 item 8)**: le 1.072 publié (`7792ae0a`, 2018-2025) provient d'un **état du code cloud antérieur non reproductible depuis le dépôt versionné**. Repo baseline-clone déployé verbatim (project `33078355`, `main.py` 2015-2024 IBKR-margin identique au repo) → backtest `486eb064` = **Sharpe 0.36 / CAGR 7.293% / MaxDD 15.000% / PSR 6.263%** (2516 tradeable dates). Soit ~1/3 du Sharpe publié et un PSR non significatif (6.3% vs 81.8% publié). Le drift confirmé vient (a) de la période (2015-2024 vs 2018-2025 — la période plus longue inclut 2015-2017 moins favorables) ET (b) d'une divergence entre le code cloud qui a produit 1.072 et le code versionné actuel. **Conclusion** : TrendFollowing reste une stratégie saine conceptuellement, mais 1.072 / PSR 81.8% ne doit PAS être cité comme la performance du code du dépôt sans ce caveat — la performance réelle du code versionné est ~0.36 / PSR 6.3% (non significatif sur cette fenêtre).
 19. **MeanReversion v5.2: Best Calmar ratio**: Sharpe 0.81, MaxDD 7.5%, Calmar 1.34 — best risk-adjusted return among non-leveraged strategies. PSR 46.8% (near significance). Promoted from Tier 2 (0.29) to Tier 1. The v5.2 code (IBKR brokerage, RSI65 exit, 10% stop-loss) dramatically outperforms the older version.
 20. **AdaptiveAssetAllocation: confirmed robuste**: Sharpe 0.509, CAGR 8.0%, MaxDD 18.9% (2008-2024, 16 years). Min-var + momentum approach produces steady returns. PSR 10.6% (not significant but positive).
 21. **PairsTrading: structural failure confirmed**: Sharpe -0.28 on aligned period, PSR 0.001%. OLS hedge + cointegration still produces negative alpha. Remains exploratoire/pedagogical.
@@ -500,7 +500,7 @@ ou `Sigma` est la **matrice de covariance** complete (correlations incluses). Re
 5. ~~**Transaction cost re-backtest**: Add `SetBrokerageModel` + configurable brokerage parameter~~ — Done, #2575 + fee sweep EMA-Cross-Stocks + Crypto-MultiCanal (See #2471, #2575, #2588)
 6. **Cross-seed validation**: ≥4 seeds (0/1/7/42/99) for ML/DL/RL strategies
 7. **Edge vs σ**: Compute for all strategies vs B&H baseline
-8. **Trend-Following repo/cloud drift**: repo code gives Sharpe 0.365 on 2018-2024 vs published 1.072 (2018-2025, prior cloud state) — identify which code version produced 1.072 and align repo (see Key finding 18)
+8. ~~**Trend-Following repo/cloud drift**: repo code gives Sharpe 0.365 on 2018-2024 vs published 1.072 (2018-2025, prior cloud state) — identify which code version produced 1.072 and align repo (see Key finding 18)~~ — **Done (PR #3555)**: repo baseline-clone `33078355`/`486eb064` = Sharpe 0.36 / PSR 6.3% on 2015-2024; 1.072 confirmed non-reproducible from versioned code, caveated everywhere it was cited as leader.
 
 ---
 
