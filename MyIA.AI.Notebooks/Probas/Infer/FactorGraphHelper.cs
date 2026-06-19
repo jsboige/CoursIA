@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 /// <summary>
@@ -13,19 +14,77 @@ using System.Diagnostics;
 public static class FactorGraphHelper
 {
     private static bool? _graphvizAvailable = null;
+    private static string _dotPath = null;
+    private static bool _dotResolved = false;
 
     /// <summary>
-    /// Verifie si Graphviz (dot) est disponible
+    /// Localise le binaire `dot` de Graphviz. Tente d'abord le PATH du kernel
+    /// (comportement historique) puis, en cas d'echec, les emplacements
+    /// d'installation usuels (env conda, Program Files, /usr/bin...). Le kernel
+    /// .net-csharp n'herite pas toujours du PATH conda ou Graphviz est installe,
+    /// d'ou ce fallback (issue #3473). Retourne le chemin resolu (ou "dot" si
+    /// present sur le PATH), ou null si introuvable. Resultat mis en cache.
     /// </summary>
-    public static bool IsGraphvizAvailable()
+    private static string ResolveDotPath()
     {
-        if (_graphvizAvailable.HasValue) return _graphvizAvailable.Value;
+        if (_dotResolved) return _dotPath;
+        _dotResolved = true;
 
+        // 1. PATH du kernel (comportement historique inchange si dot y est)
+        if (TryRunDot("dot")) { _dotPath = "dot"; return _dotPath; }
+
+        // 2. Emplacements d'installation usuels
+        bool isWindows = Path.DirectorySeparatorChar == '\\';
+        string exe = isWindows ? "dot.exe" : "dot";
+        var candidates = new List<string>();
+
+        // Env conda qui a lance le kernel (CONDA_PREFIX), Windows puis Unix
+        var condaPrefix = Environment.GetEnvironmentVariable("CONDA_PREFIX");
+        if (!string.IsNullOrEmpty(condaPrefix))
+        {
+            candidates.Add(Path.Combine(condaPrefix, "Library", "bin", exe));
+            candidates.Add(Path.Combine(condaPrefix, "bin", exe));
+        }
+
+        if (isWindows)
+        {
+            candidates.Add(@"C:\Program Files\Graphviz\bin\dot.exe");
+            candidates.Add(@"C:\Program Files (x86)\Graphviz\bin\dot.exe");
+            var userProfile = Environment.GetEnvironmentVariable("USERPROFILE");
+            if (!string.IsNullOrEmpty(userProfile))
+            {
+                foreach (var env in new[] { "mcp-jupyter", "coursia-ml-training", "coursia-ml", "base" })
+                foreach (var root in new[] { ".conda", "miniconda3", "anaconda3" })
+                {
+                    var sub = root == ".conda" ? Path.Combine(".conda", "envs", env)
+                                               : Path.Combine(root, "envs", env);
+                    candidates.Add(Path.Combine(userProfile, sub, "Library", "bin", exe));
+                }
+            }
+        }
+        else
+        {
+            candidates.Add("/usr/bin/dot");
+            candidates.Add("/usr/local/bin/dot");
+            candidates.Add("/opt/homebrew/bin/dot");
+        }
+
+        foreach (var c in candidates)
+        {
+            if (File.Exists(c) && TryRunDot(c)) { _dotPath = c; return _dotPath; }
+        }
+
+        _dotPath = null;
+        return null;
+    }
+
+    private static bool TryRunDot(string dotExe)
+    {
         try
         {
             var psi = new ProcessStartInfo
             {
-                FileName = "dot",
+                FileName = dotExe,
                 Arguments = "-V",
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,
@@ -33,13 +92,24 @@ public static class FactorGraphHelper
                 CreateNoWindow = true
             };
             using var proc = Process.Start(psi);
+            if (proc == null) return false;
             proc.WaitForExit(3000);
-            _graphvizAvailable = (proc.ExitCode == 0);
+            return proc.ExitCode == 0;
         }
         catch
         {
-            _graphvizAvailable = false;
+            return false;
         }
+    }
+
+    /// <summary>
+    /// Verifie si Graphviz (dot) est disponible, en cherchant au-dela du PATH
+    /// du kernel (cf ResolveDotPath, issue #3473).
+    /// </summary>
+    public static bool IsGraphvizAvailable()
+    {
+        if (_graphvizAvailable.HasValue) return _graphvizAvailable.Value;
+        _graphvizAvailable = (ResolveDotPath() != null);
         return _graphvizAvailable.Value;
     }
 
@@ -49,8 +119,20 @@ public static class FactorGraphHelper
     /// </summary>
     public static string GetLatestFactorGraphHtml(int maxWidth = 800)
     {
+        var gvFiles = Directory.GetFiles(Environment.CurrentDirectory, "Model_*.gv");
         var svgFiles = Directory.GetFiles(Environment.CurrentDirectory, "Model_*.svg");
 
+        // Prefere reconvertir le .gv le plus recent (la source de verite produite
+        // par la derniere inference) quand Graphviz est disponible, pour que le
+        // graphe affiche corresponde au modele courant et non a un .svg perime
+        // ou issu d'un autre modele (bug #3473 stale-pick).
+        if (gvFiles.Length > 0 && IsGraphvizAvailable())
+        {
+            return ConvertAndGetLatestGvHtml(maxWidth);
+        }
+
+        // Sinon (Graphviz absent, ou seulement un .svg pre-rendu disponible),
+        // reutiliser le .svg le plus recent s'il existe.
         if (svgFiles.Length > 0)
         {
             var latestSvg = svgFiles
@@ -58,10 +140,8 @@ public static class FactorGraphHelper
                 .First();
             return GetSvgFileHtml(latestSvg, maxWidth);
         }
-        else
-        {
-            return ConvertAndGetLatestGvHtml(maxWidth);
-        }
+
+        return ConvertAndGetLatestGvHtml(maxWidth);
     }
 
     /// <summary>
@@ -118,7 +198,7 @@ public static class FactorGraphHelper
         {
             var psi = new ProcessStartInfo
             {
-                FileName = "dot",
+                FileName = ResolveDotPath() ?? "dot",
                 Arguments = $"-Tsvg \"{gvPath}\" -o \"{svgPath}\"",
                 RedirectStandardError = true,
                 UseShellExecute = false,
