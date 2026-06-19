@@ -490,6 +490,30 @@ Les deux notebooks couvrent la theorie des nœuds sous des angles complementaire
 
 Lean-17a donne le *pourquoi* (motivation historique) ; Lean-17b donne le *comment* (calcul des invariants, port formel).
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Lean n'est pas un langage de programmation de plus : c'est le point où **le code devient une preuve**. En parcourant cette série, vous avez traversé le spectre de la vérification formelle :
+
+- **Les fondations** (Lean-1 Setup à Lean-6) : installer l'outil, manipuler les types dépendants, comprendre l'isomorphisme de Curry-Howard — un programme *est* une preuve, un type *est* une proposition.
+- **Prouver en pratique** (Lean-7 à Lean-12) : tactiques, lemmes, induction, l'art de *réduire* un énoncé jusqu'à ce que `rfl` ou `decide` le closent. Vous avez vu qu'une preuve formelle n'est pas une invention — c'est un dialogue avec un vérificateur qui n'accepte rien sur confiance.
+- **Les mathématiques vivantes** (Lean-13 à Lean-17b) : Game of Life (Hashlife), théorie des jeux sociaux (Arrow, Sen, Shapley), topologie (Grothendieck), théorie des nœuds (Piccirillo, tricolorabilité de Fox). Chaque domaine porté en Lean devient une *certification* — le `sorry` résiduel y est tracé comme une dette, pas caché.
+
+### Prochaines étapes
+
+- **Poussez un port jusqu'au bout** : le projet [`knot_lean/`](knot_lean/) est le companion formel de Lean-17b. Les invariants de nœuds (PD-codes, Reidemeister, Fox) y sont portés avec quelques `sorry` résiduels documentés — un terrain concret où une preuve formelle est *en cours*, pas achevée.
+- **Croisez avec la théorie des jeux** : les résultats formels d'Arrow/Sen/Shapley/Voting (notebooks 16b-16f) rencontrent la série **[GameTheory](../../GameTheory/)** — où le choix social est étudié à la fois formellement et computationnellement.
+- **Appliquez au monde réel** : la vérification formelle n'est pas qu'abstraite. La série **[SmartContracts](../SmartContracts/)** (SC-14) applique les mêmes principes aux smart contracts — SMT solvers automatiques bornés d'un côté, Lean interactif expressif de l'autre, même ambition : certifier la correction d'un programme exécuté.
+- **Élargissez au Web Sémantique** : les shapes SHACL sont des invariants sur les données, analogues aux spécifications Lean. La série **[SemanticWeb](../SemanticWeb/)** (SW-7 OWL, SW-8 SHACL) explore une autre face de la certification — valider la cohérence d'une base de connaissances plutôt que prouver un théorème.
+- **Relisez la série sous l'angle de la certification** : la [Lecture transversale](#lecture-transversale) relie ce geste — *certifier par changement de représentation* — à l'ensemble du dépôt CoursIA.
+
+### Le fil rouge
+
+Le titre annonce un solveur mathématique et de la vérification formelle. Mais le geste que cette série enseigne est plus profond : **ne rien laisser sur confiance**. Un `theorem` en Lean n'est pas une affirmation, c'est un objet vérifié mécaniquement ; un `sorry` n'est pas un raccourci, c'est un trou dans la chaîne de certification que l'on trace explicitement. Les domaines changent (topologie, choix social, nœuds, cellular automata), les tactiques changent (`induction`, `native_decide`, `aesop`), mais l'exigence reste — *prouver, pas supposer*. C'est elle que vous emportez au-delà de cette série.
+
+---
+
 ## Licence
 
 Voir la licence du repository principal.
