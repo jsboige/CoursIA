@@ -544,6 +544,30 @@ wsl -d Ubuntu -- bash /mnt/c/dev/CoursIA/MyIA.AI.Notebooks/SymbolicAI/SmartContr
 
 Si le chemin contient des espaces, encapsuler dans des guillemets. Alternative : cloner le dépôt directement dans WSL (`~/CoursIA/`) plutôt que d'utiliser `/mnt/c/`.
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+En parcourant cette série des **cypherpunks aux blockchains modernes**, vous avez traversé l'ensemble du cycle de vie d'un smart contract — de la primitive cryptographique qui le fonde au déploiement mainnet qui l'anime :
+
+- **Pourquoi une blockchain tient** : les primitives de SC-0 (hachage, Merkle, PoW, signatures) ne sont pas un hors-sujet historique — elles sont la *raison* pour laquelle un contrat déployé est immuable et vérifiable sans confiance.
+- **Construire en Solidity** (Phases 1-3) : types, héritage, standards ERC, primitives DeFi, gouvernance — un langage et ses patterns idiomatiques, déployés réellement sur Anvil à chaque étape.
+- **Sécuriser avant de déployer** (Phase 3) : tests unitaires, fuzzing, invariants, et surtout la **vérification formelle** (SC-14) — le pont entre l'ingénierie blockchain et la preuve mathématique de correction.
+- **Protéger la vie privée** (Phase 4) : ZKP, chiffrement homomorphique, vote E2E vérifiable — montrer que transparence et confidentialité ne sont pas incompatibles sur une chaîne publique.
+- **Élargir le regard** (Phases 5-6) : cinq paradigmes non-EVM (Vyper, XRP, Bitcoin, Move, Solana) puis le passage au monde réel (cross-chain, testnet, mainnet), couronné par le **projet capstone SC-26**.
+
+### Prochaines étapes
+
+- **Consolidez avec le capstone** : si vous êtes arrivé au bout du parcours recommandé, le [SC-26 Final Project](06-Real-World/SC-26-Final-Project.ipynb) intègre l'ensemble (conception → Solidity → tests → vérification → déploiement testnet). C'est le livrable qui transforme la lecture en compétence.
+- **Approfondissez la vérification formelle** : SC-14 ouvre la porte de la série **[Lean](../Lean/)** — où les SMT solvers automatiques mais bornés laissent place à la preuve interactive expressive (types dépendants, Curry-Howard). Deux faces d'une même ambition : certifier la correction d'un programme.
+- **Croisez avec la théorie des jeux** : les mécanismes de gouvernance on-chain (SC-9, SC-17) rencontrent leurs limites formelles dans le **[théorème d'Arrow](../../GameTheory/)** (formalisé en Lean dans la série GameTheory, 0 sorry) et la théorie du choix social. Comprendre *pourquoi* un design de vote est fondamentalement imparfait est aussi important que savoir l'implémenter.
+- **Décidez sous incertitude** : la conception de contrats robustes face à des marchés incertains (slippage, garanties, réserves) relève du **[Minimax Regret et de la décision sous incertitude](../../Probas/)** traités dans la série Probas.
+- **Spécialisez-vous en sécurité** : le parcours [Security-first](#parcours-security-first-7h) ci-dessus (Phases 1-2 + Testing + Formal Verification) est la base d'un cheminement vers le smart contract auditing — relisez alors SC-12/13/14 non comme des notebooks, mais comme une checklist d'attaques à anticiper.
+
+### Le fil rouge
+
+Le titre annonce un fil — *des cypherpunks aux blockchains modernes* — que le capstone referme. Mais le sous-titre implicite de la série est ailleurs : **rendre un smart contract digne de confiance**. Les outils changent (Solidity évoluera, de nouvelles chaînes émergeront), mais le triptyque *construire → tester → prouver* reste. C'est lui que vous emportez au-delà de cette série.
+
 ---
 
 *Série créée pour CoursIA - Issue #129*
