@@ -637,6 +637,31 @@ Pour contribuer à cette série :
 3. Utiliser `scripts/notebook_tools/notebook_helpers.py` pour la manipulation
 4. Tester avec `python scripts/notebook_tools/notebook_tools.py validate`
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+La planification automatique est le versant **décisionnel** de l'IA — là où le machine learning demande « que prédire ? », la planification demande « **que faire ?** ». Cette série en a parcouru tout le spectre :
+
+- **Les fondations classiques** (notebooks 1-4) : le triptyque État-Action-But, STRIPS, les heuristiques de recherche (A*, h-max, LM-cut). Vous avez vu qu'un plan n'est pas une prédiction — c'est une *séquence d'actions* justifiée par une structure de coût.
+- **Les standards et solveurs** (notebooks 5-7) : PDDL comme langage commun, Fast Downward, OR-Tools CP-SAT, le passage du « plan à la main » au « plan par solveur industriel ».
+- **La composition et la hiérarchie** (notebooks 8-9) : planification temporelle, réseaux de tâches hiérarchiques (HTN/SHOP2) — comment découper un but complexe en sous-but réutilisables.
+- **La synthèse neuro-symbolique** (notebooks 10-12) : plan repair par LLM, l'API unified-planning, et surtout *Learning to Plan* (notebook 12) — le point où l'apprentissage rencontre la planification, clôture naturelle de la série vers les foundation models.
+
+### Prochaines étapes
+
+- **Poussez vers l'apprentissage par renforcement** : un plan est une politique déterministe ; le RL en calcule une stochastique. Le pont vers les politiques apprises et le décisionnel sous incertitude se fait naturellement.
+- **Reliez au raisonnement formel** : les domaines PDDL formalisent un monde ; les ontologies OWL font de même. La série **[SemanticWeb](../SemanticWeb/)** offre la représentation, Planners l'exploite pour agir.
+- **Certifiez vos plans** : un plan correct n'est pas un plan sûr. La vérification formelle (séries **[Lean](../Lean/)** et **[SmartContracts](../SmartContracts/)**) s'applique aussi aux séquences d'actions critiques.
+- **Élargissez à la recherche adversariale** : la planification mono-agent rencontre la théorie des jeux multi-agents dans la série **[GameTheory](../../GameTheory/)** ; la recherche combinatoire (CSP, satisfaction de contraintes) se trouve dans la série **[Search](../../Search/)**.
+- Les tables « Ponts avec les autres séries » et « Cross-séries Bridges » ci-dessus cartographient l'ensemble de ces connexions ; la [Lecture transversale](../../../docs/grothendieckian-lens.md) les relie au fil rouge du dépôt.
+
+### Le fil rouge
+
+Le titre annonce la planification automatique. Mais le geste que cette série enseigne est plus simple : **transformer un but en action**. Les formalismes changent (STRIPS, PDDL, HTN), les solveurs changent (A*, Fast Downward, LLM), mais la structure reste — un état, un but, une séquence d'actions qui mène de l'un à l'autre. Le passage du *classique* au *neuro-symbolique* (notebook 12) ne change pas cette structure : il change qui la *cherche*. C'est elle que vous emportez au-delà de cette série.
+
+---
+
 ## Licence
 
 Voir la licence du repository principal.
