@@ -530,6 +530,30 @@ La version est configurable dans `Tweety-1-Setup.ipynb` (variable `TWEETY_VERSIO
 | **[Planners](../Planners/)** | Planification argumentative | Les dialogues argumentatifs (notebook 8) peuvent être modélisés comme des problèmes de planification PDDL. |
 | Lecture transversale | [La mer qui monte](../../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du dépôt : changement de représentation, certification A/B/C |
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Tweety est l'outil où **le raisonnement devient explicite et vérifiable** — le contre-pied des approches purement statistiques. En parcourant cette série, vous êtes allé du connecteur booléen au débat multi-agent :
+
+- **Les logiques classiques** (notebooks 1-4) : propositionnelle, du premier ordre, modale, de description. Vous avez vu qu'un même énoncé se *décide* mécaniquement — un SAT solver tranche, un reasoner DL classe, sans intuition.
+- **L'argumentation** (notebooks 5-7b) : la contribution la plus originale de Tweety. Les *frameworks* de Dung, ASPIC+, ABA, ADF, l'argumentation bipolaire et probabiliste — chaque modèle définit non pas « quelle conclusion est vraie » mais « quel argument résiste à l'attaque ». C'est une logique du *débat*, pas de la vérité.
+- **Les applications** (notebooks 8-9) : dialogues multi-agents, révision de croyances AGM, préférences et vote. La boucle se ferme — du raisonnement individuel à la délibération collective.
+
+### Prochaines étapes
+
+- **Appliquez l'argumentation à du texte réel** : la série **[Argument_Analysis](../Argument_Analysis/)** utilise Tweety comme backend pour analyser des argumentations naturelles — c'est le terrain où les sémantiques de Dung rencontrent du langage humain.
+- **Certifiez** : les SAT/SMT solvers de Tweety et la vérification formelle partagent le même socle. La série **[Lean](../Lean/)** pousse la logique jusqu'à la preuve de programmes ; **[SmartContracts](../SmartContracts/)** (SC-14) l'applique aux invariants Solidity.
+- **Reliez aux ontologies** : la logique de description de Tweety-3 est le moteur de raisonnement OWL. La série **[SemanticWeb](../SemanticWeb/)** (SW-6/SW-7) en fait le cœur des graphes de connaissances.
+- **Élargissez au choix social** : le notebook 9 (vote, préférences) est la porte d'entrée vers la théorie du choix social formalisée en Lean dans la série **[GameTheory](../../GameTheory/)** (Arrow, Sen, Voting).
+- Les six ponts détaillés ci-dessus (`## Ponts avec les autres séries`) cartographient l'ensemble de ces connexions ; la [Lecture transversale](../../../docs/grothendieckian-lens.md) les relie au fil rouge du dépôt.
+
+### Le fil rouge
+
+Le pitch de Tweety tient en un mot : **explicabilité**. Là où un LLM produit une réponse, Tweety produit un *argument* — une chaîne de raisonnement inspectable, attaquable, défendable. Les logiques changent (propositionnelle, FOL, modale, DL), les *frameworks* changent (Dung, ASPIC+, ABA), mais l'exigence reste — *raisonner de façon transparente, pas opaquement*. C'est elle que vous emportez au-delà de cette série, et c'est ce qui fait de l'IA symbolique un garde-fou naturel pour l'IA générative.
+
+---
+
 ## Licence
 
 Les notebooks sont distribués sous licence MIT.
