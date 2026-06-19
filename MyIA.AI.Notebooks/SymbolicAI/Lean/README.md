@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 24
-breakdown: Lean=24
-maturity: PRODUCTION=22, BETA=2
+pedagogical_count: 26
+breakdown: Lean=26
+maturity: PRODUCTION=22, BETA=4
 -->
 
 > Série [`SymbolicAI`](../README.md) › **Lean**

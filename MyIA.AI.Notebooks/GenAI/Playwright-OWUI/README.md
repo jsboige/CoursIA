@@ -2,10 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Playwright-OWUI
-format: TypeScript (.spec.ts) -- serie non-notebook, non decomptee par le bot catalogue (.ipynb only)
-module_count: 5
-test_count: 34
-maturity: PRODUCTION=5
+pedagogical_count: 0
+breakdown: 
+maturity: 
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Vibe-Coding](../Vibe-Coding/README.md)
