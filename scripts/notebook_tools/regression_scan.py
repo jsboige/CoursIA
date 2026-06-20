@@ -356,10 +356,34 @@ def is_allowlisted(relpath: str, cause: str, allow: list[dict]) -> dict | None:
 # --------------------------------------------------------------------------- #
 # Notebook discovery
 # --------------------------------------------------------------------------- #
-def discover(root: Path, series: str | None) -> list[Path]:
+def _git_tracked_files() -> set[str] | None:
+    """Return set of git-tracked relative paths, or None if not in a git repo.
+
+    Mirrors generate_catalog.py:_git_tracked_files so the axis-2 census never
+    reports on gitignored notebooks (e.g. partner-course lean-workspace/ clones
+    that live on disk but are never committed -> false-positive degradations).
+    """
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "-z", "--", "MyIA.AI.Notebooks/"],
+            capture_output=True, text=False, cwd=str(REPO_ROOT),
+        )
+        if result.returncode != 0:
+            return None
+        return set(result.stdout.decode("utf-8").strip("\x00").split("\x00"))
+    except FileNotFoundError:
+        return None
+
+
+def discover(root: Path, series: str | None,
+             git_tracked_only: bool = False) -> list[Path]:
     nbs = sorted(p for p in root.rglob("*.ipynb") if not is_excluded(p))
     if series:
         nbs = [p for p in nbs if get_series(p, root) == series]
+    if git_tracked_only:
+        tracked = _git_tracked_files()
+        if tracked is not None:
+            nbs = [p for p in nbs if rel(p) in tracked]
     return nbs
 
 
@@ -373,9 +397,10 @@ def rel(path: Path) -> str:
 # --------------------------------------------------------------------------- #
 # Mode: SNAPSHOT
 # --------------------------------------------------------------------------- #
-def run_snapshot(root: Path, series: str | None, allow: list[dict]) -> dict:
+def run_snapshot(root: Path, series: str | None, allow: list[dict],
+                 git_tracked_only: bool = False) -> dict:
     results = []
-    for nb_path in discover(root, series):
+    for nb_path in discover(root, series, git_tracked_only=git_tracked_only):
         try:
             raw = nb_path.read_text(encoding="utf-8")
             nb = json.loads(raw)
@@ -497,8 +522,8 @@ def _walk_one(nb_path: Path, root: Path, since: str | None) -> dict | None:
 
 
 def run_history(root: Path, series: str | None, since: str | None,
-                workers: int) -> dict:
-    nbs = discover(root, series)
+                workers: int, git_tracked_only: bool = False) -> dict:
+    nbs = discover(root, series, git_tracked_only=git_tracked_only)
     print(f"History-walk over {len(nbs)} notebooks ({workers} workers)...",
           file=sys.stderr)
     results = []
@@ -616,6 +641,12 @@ def main() -> int:
     ap.add_argument("--root", default=str(NOTEBOOKS_DIR), help="notebook root")
     ap.add_argument("--workers", type=int, default=8, help="history: thread pool size")
     ap.add_argument("--json", dest="json_out", help="also write machine-readable JSON here")
+    ap.add_argument("--git-tracked-only", action="store_true",
+                    help="restrict discovery to git-tracked notebooks (mirrors "
+                         "generate_catalog --git-tracked-only). Excludes gitignored "
+                         "on-disk clones (e.g. partner-course lean-workspace/) that "
+                         "are never committed and would surface as false-positive "
+                         "degradations. Default off for backward compat.")
     args = ap.parse_args()
 
     allow = load_allowlist()
@@ -628,10 +659,12 @@ def main() -> int:
         return run_guard(args.base, args.head, args.paths, allow)
 
     if args.history:
-        data = run_history(root, args.series, args.since, args.workers)
+        data = run_history(root, args.series, args.since, args.workers,
+                           git_tracked_only=args.git_tracked_only)
         out = render_history(data)
     else:
-        data = run_snapshot(root, args.series, allow)
+        data = run_snapshot(root, args.series, allow,
+                            git_tracked_only=args.git_tracked_only)
         out = render_snapshot(data)
 
     print(out)
