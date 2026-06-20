@@ -646,6 +646,29 @@ Les notebooks C# (suffixe `-Csharp`) utilisent GeneticSharp, OR-Tools .NET, Z3 .
 
 Les notebooks Python (suffixe `-Python`) couvrent 16 solveurs avec PyGAD, OR-Tools Python, Z3 Python, NumPyro et PyTorch. Commencez par **Sudoku-1-Backtracking-Python**, puis montez en complexite. Le notebook **18-Comparison-Python** synthetise tout.
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette série a utilisé le Sudoku comme **banc d'essai unique** pour comparer, sur un même problème NP-complet, sept paradigmes algorithmiques radicalement différents. L'arc pédagogique suit une progression naturelle :
+
+- **Le geste fondateur** — poser qu'un problème computationnel peut s'attaquer par des voies très différentes : énumération exhaustive (backtracking), métaheuristiques (recuit simulé, algorithmes génétiques), programmation par contraintes (CP-SAT, OR-Tools), satisfiabilité modulaire (Z3/SMT), inférence probabiliste (NumPyro, Infer.NET), et approches data-driven (réseaux de neurones, LLM). Le Sudoku n'est pas l'objectif : c'est le **terrain commun** qui rend les paradigmes comparables.
+- **Le double langage** — l'approche miroir C#/Python (16 + 16 notebooks) ancre une leçon concrète : les mêmes algorithmes se transposent d'un écosystème à l'autre. GeneticSharp ↔ PyGAD, OR-Tools .NET ↔ OR-Tools Python, Z3 .NET ↔ Z3 Python. Le concept précède l'outil.
+- **Le compromis fondamental** — chaque paradigme paie un prix différent. Les solveurs exacts (DLX, Norvig, CP-SAT, Z3) **garantissent** la solution mais au coût d'une recherche combinatoire. Les métaheuristiques sont plus rapides en moyenne sans garantie. Les approches neuronales **généralisent** mais échouent sur les instances difficiles. Le notebook 18 (Comparison) synthétise ces compromis : garantie vs performance vs généralisation.
+
+La thèse pratique est honnête : il n'existe pas de « meilleur solveur » dans l'absolu — il existe un solveur adapté à chaque contexte (garantie requise, temps imparti, données disponibles), et savoir le choisir est précisément ce que cette série enseigne.
+
+### Prochaines étapes
+
+- **Approfondir la programmation par contraintes** : la série [Search](../Search/README.md) généralise les techniques vues ici (propagation, CSP, MRV) à une famille beaucoup plus large de problèmes d'optimisation et de satisfaction — le Sudoku n'était qu'un cas particulier.
+- **Passer à la résolution symbolique formelle** : Z3/SMT, introduit comme un solveur parmi d'autres, devient un outil de **vérification formelle** dans [SymbolicAI](../SymbolicAI/README.md) — preuve de théorèmes, vérification de programmes, contrats intelligents.
+- **Rejoindre l'inférence probabiliste** : les solveurs NumPyro et Infer.NET utilisés ici (notebooks 11-12) sont l'avant-goût de [Probas](../Probas/README.md), où la modélisation probabiliste devient un langage à part entière.
+- Pour la pratique : reprenez le notebook 18 (Comparison) et ajoutez votre propre solveur hybride — par exemple une approche CP-guided qui utilise un réseau de neurones pour ordonner les variables. C'est l'exercice le plus formateur pour saisir comment combiner garantie et généralisation.
+
+### Le fil rouge
+
+La résolution du Sudoku illustre une leçon centrale de l'algorithmique appliquée : face à un problème NP-complet, **la question n'est pas de trouver le bon algorithme mais de comprendre quels compromis on est prêt à accepter**. Cette série vous a donné le vocabulaire (backtracking, propagation, métaheuristique, CP, SMT, MCMC, neurones) et le cadre de comparaison (garantie, performance, généralisation) pour transformer ce choix en décision éclairée plutôt qu'en habitude.
+
 ## Licence
 
 Voir la licence du repository principal.
