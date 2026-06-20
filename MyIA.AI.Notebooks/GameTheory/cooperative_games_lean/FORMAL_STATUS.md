@@ -6,13 +6,13 @@
 |------|-------|
 | Lean toolchain | `leanprover/lean4:v4.30.0-rc2` |
 | Mathlib | pinned via lake-manifest.json |
-| Total sorry | **0** (0 Basic + 0 Shapley) |
-| Honest unprovable (in Mathlib) | **0** |
+| Total sorry | **1** (1 Basic + 0 Shapley) |
+| Honest unprovable (in Mathlib) | **1** (`hb_witness`, Farkas/LP-dual kernel) |
 | Total lines | ~1430 (Basic 388 + Shapley 1042) |
 | Total theorems | 19 |
 | Total definitions | 35 |
 
-**Note**: Toolchain bumped to v4.30.0-rc2 (PR #1015). Bondareva backward + convex_core + shapley_uniqueness all proved.
+**Note**: Toolchain bumped to v4.30-0-rc2 (PR #1015). PR #1020's "prove bondareva_shapley_backward" was a **`apply?` placeholder** (non-proof); PR #2959 refactored honestly to isolate the irreducible LP-dual kernel `hb_witness` (`Basic.lean:312`) as a named sorry. That kernel requires `ProperCone.hyperplane_separation` (Farkas) — WIP, not yet proved.
 
 ## Per-File Status
 
@@ -22,15 +22,16 @@
 |--------|-------|
 | Definitions | 12 |
 | Theorems | 7 |
-| sorry | **0** |
-| Status | FORMAL-COMPLETE |
+| sorry | **1** (`hb_witness` @ L312, LP-dual kernel of `bondareva_shapley_backward`) |
+| Status | WIP_HARD (Farkas required) |
 
 Key definitions: `Coalition`, `TUGame`, `Superadditive`, `Convex`, `marginalContribution`,
 `unanimityGame`, `majorityGame`, `Allocation`, `Core`, `CoreEmpty`, `Balanced`.
 
 Previously-proved theorems (sorry resolved):
-- `bondareva_shapley_backward` (PR #1020, po-2026, 2026-05-13)
+- `bondareva_shapley_forward` (PR #802)
 - `convex_core_nonempty` (PR #981, Route A marginal vectors)
+- `bondareva_shapley_backward` — **decomposition skeleton** (PR #2959): `hP_conv`/`hP_closed`/`hP_nonempty`/`hK_empty`/`hP_lb` all proved; only `hb_witness` (Farkas) remains open.
 
 ### CooperativeGames/Shapley.lean — SHAPLEY VALUE
 
@@ -62,7 +63,6 @@ Previously-proved theorems (sorry resolved):
 | `superadditive_empty_nonneg` | Basic.lean | v(empty) >= 0 (trivial) |
 | `superadditive_grand_coalition_nonneg_of_nonneg_singletons` | Basic.lean | Grand coalition value nonneg |
 | `bondareva_shapley_forward` | Basic.lean | Core nonempty implies balanced |
-| `bondareva_shapley_backward` | Basic.lean | Balanced implies Core nonempty (PR #1020) |
 | `convex_core_nonempty` | Basic.lean | Convex games have nonempty Core (PR #981) |
 | `shapley_efficient` | Shapley.lean | Shapley value is efficient |
 | `shapley_additive` | Shapley.lean | Shapley value is additive |
@@ -75,20 +75,22 @@ Previously-proved theorems (sorry resolved):
 
 ### Partially Proved (contains sorry)
 
-None — all theorems fully certified.
+| Theorem | File | Open kernel | Strategy |
+|---------|------|-------------|----------|
+| `bondareva_shapley_backward` | Basic.lean | `hb_witness` @ L312 (∃ x ∈ P, ∑ xᵢ ≤ v(N)) | Farkas / `ProperCone.hyperplane_separation` (WIP_HARD, ~150-200 lines, cf `BONDAREVA_SHAPLEY_HARDNESS.md`) |
 
 ## Certification Level
 
 | File | Level |
 |------|-------|
-| Basic.lean | COMPLETE (0 sorry) |
+| Basic.lean | WIP_HARD (1 sorry: `hb_witness` LP-dual kernel) |
 | Shapley.lean | COMPLETE (0 sorry) |
 
-**Project certification: COMPLETE** — 0 sorry remaining in cooperative_games_lean module.
+**Project certification: WIP** — 1 sorry remaining (`hb_witness`, Farkas kernel). Shapley module complete.
 
 ## Remaining Work
 
-No sorry work remaining in this module. Possible extensions:
+Prove `hb_witness` (Bondareva-Shapley backward, LP-dual kernel) via `ProperCone.hyperplane_separation` (Farkas). Possible extensions:
 - Banzhaf power index theorems (definitions `BanzhafRaw`/`Critical` exist, no theorems yet)
 - Shapley value computational properties
 
@@ -113,3 +115,4 @@ No sorry work remaining in this module. Possible extensions:
 | 2026-05-13 | Toolchain bump to v4.30.0-rc2; `bondareva_shapley_backward` proved; `convex_core_nonempty` proved | PR #1015, #1020, #981 |
 | 2026-05-13 | `shapley_uniqueness` proved (Mobius decomposition) — 0 sorry Shapley.lean | PR #1024, commit `1eb5a4a0` |
 | 2026-05-14 | FORMAL_STATUS realigned: 3->0 sorry, module COMPLETE | po-2026 T-A |
+| 2026-06-20 | **Correction (G.1 verify-before-claiming):** PR #1020's `bondareva_shapley_backward` "proof" was `apply?` (non-proof); PR #2959 refactored to isolate `hb_witness` LP-dual kernel as named sorry @ L312. FORMAL_STATUS corrected: 0→1 sorry, COMPLETE→WIP_HARD | po-2026 #2959 |
