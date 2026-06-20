@@ -608,6 +608,33 @@ Oui, c'est l'approche pédagogique de la série. **Anvil** (Foundry) fournit un 
 
 ---
 
+## Conclusion / Prochaines étapes
+
+### Ce que cette série dessine
+
+Les sept domaines ci-dessus ne sont pas sept sujets indépendants : ils forment un **pipeline complet du raisonnement symbolique**, du représentationnel au certifié. L'architecture implicite du parcours :
+
+- **Représenter** la connaissance (Tweety : logiques formelles ; SemanticWeb : RDF/OWL/SHACL pour le web de données).
+- **Raisonner** dessus (Tweety : argumentation, révision de croyances ; SMT/Z3 : décision automatique par contraintes).
+- **Prouver** quand la certitude est exigée (Lean 4 : preuves mathématiques vérifiées par ordinateur, certification de réseaux de neurones).
+- **Décider et agir** dans le monde réel (Planners : ordonnancement et logistique ; SmartContracts : logique exécutable et vérifiable sur blockchain).
+- **Apprendre** à partir de connaissances plutôt que de données brutes (SymbolicLearning : de l'induction logique aux pipelines neuro-symboliques).
+- **Relier** ce pipeline aux LLMs (Argument Analysis : le symbolique comme garde-fou vérifiable du génératif).
+
+La thèse de la série, posée dès l'introduction et rappelée dans la FAQ : à l'ère des modèles statistiques opaques, l'IA symbolique apporte ce que les LLMs ne garantissent pas — un raisonnement **vérifiable, explicable et certifié**. Les deux paradigmes ne s'opposent pas : l'avenir est neuro-symbolique, et chaque sous-série montre un point de jonction concret (GraphRAG en SemanticWeb, AlphaProof/LeanCopilot en Lean, le capstone de SymbolicLearning, le pipeline Argument Analysis).
+
+### Prochaines étapes
+
+- **Choisir un point d'entrée** selon votre objectif : Tweety ou SemanticWeb pour les fondations logiques, Lean pour la rigueur de la preuve, SmartContracts ou Planners pour des applications concrètes, SymbolicLearning pour le pont avec le machine learning.
+- Chaque sous-série possède désormais sa propre section « Conclusion / Prochaines étapes » qui détaille son arc et ses ponts vers les autres séries — suivez la chaîne de navigation en haut de chaque README.
+- **Pour aller plus loin au-delà du SymbolicAI** : [Search / CSP](../Search/README.md) et [Sudoku](../Sudoku/README.md) (résolution par contraintes et SAT), [GameTheory](../GameTheory/README.md) (choix social, théorie des jeux, ports Lean), [Probas](../Probas/README.md) (programmation probabiliste avec Infer.NET), et la [Lecture transversale](../../docs/grothendieckian-lens.md) qui relie ces séries par la grille de lecture grothendieckienne (changement de représentation, certification A/B/C).
+
+### Le fil rouge
+
+L'IA symbolique moderne n'est pas un retour en arrière vers les systèmes experts : c'est la **colonne vertébrale certifiée** qui peut ancrer l'IA générative. Représenter explicitement, raisonner mécaniquement, prouver formellement, décider de manière auditable, apprendre à partir de connaissances, puis boucler avec les LLMs — c'est l'arc complet que cette série vous a permis de parcourir, domaine par domaine, jusqu'au moment où le symbolique et le neuronal cessent d'être deux camps et deviennent deux couches d'un même système fiable.
+
+---
+
 ## Licence
 
 Les notebooks sont distribues sous licence MIT.
