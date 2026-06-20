@@ -40,6 +40,7 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [.claude/rules/catalog-pr-hygiene.md](.claude/rules/catalog-pr-hygiene.md) - Catalogue = propriété de l'automatisation (cron main + CI par-PR + guard CI `catalog-guard.yml`), JAMAIS régén sur branche + rebase frais + atomique + `Closes #X` (mandat user 2026-06-06, #2632)
 - [.claude/rules/model-delegation.md](.claude/rules/model-delegation.md) - **Tout `Agent()` DOIT avoir un `model` explicite** (`sonnet`/`haiku` par défaut, `opus` uniquement sur justification écrite) — mandat user 2026-06-09. Déléguer le read-heavy borné vérifiable, garder la décision + cross-check, local-git-only sous fenêtre `gh auth` (consolide mandat 2026-06-07, 7 tests confirmants)
 - [.claude/rules/three-exercises-per-notebook.md](.claude/rules/three-exercises-per-notebook.md) - Convention >=3 exercices par notebook, rollout progressif (#2161)
+- [.claude/rules/sota-not-workaround.md](.claude/rules/sota-not-workaround.md) - Vrai outil SOTA jamais workaround degrade (install/invoke/re-plug machine-env-user, 5 verdicts) + probleme non-trivial qui met le moteur en valeur (BFS vs A*) ; enforce bots §H ; registre EPIC #3801 (mandat user 2026-06-21)
 
 ---
 
