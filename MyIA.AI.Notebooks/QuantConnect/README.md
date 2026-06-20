@@ -474,4 +474,30 @@ Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes s
 
 ---
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette série vous a fait traverser **l'arc complet du trading algorithmique moderne** — de la gestion d'un événement de marché à la production d'un agent RL déployé en live. L'arc pédagogique :
+
+- **Les fondations LEAN** (phases 1-4) : maîtriser le `QCAlgorithm` lifecycle, l'univers selection, les asset classes (equities, crypto, options, futures), le risk management (drawdown, exposure, stop-loss) et l'Algorithm Framework modulaire (Alpha + Portfolio Construction + Risk Management). On apprend à *écrire un algo propre*, pas à empiler des règles ad hoc.
+- **La préparation ML** (phase 5) : les données alternatives (sentiment, fundamentals, FRED) et le feature engineering. On apprend que **80% de la performance ML vient de la qualité des features**, pas du modèle.
+- **Le machine learning** (phases 6-7) : Random Forest et XGBoost classiques, puis deep learning (LSTM, Transformers, autoencoders pour l'anomaly detection). On apprend que les modèles de deep learning sont **fragiles aux coûts de transaction réels** et au changement de régime — un edge apparent en backtest peut s'évaporer une fois les frais appliqués (cf. les baselines vérifiées dans le tableau comparatif ci-dessus).
+- **La production** (phase 8 + compléments RL) : Reinforcement Learning (DQN, PPO, SAC/A2C), LLMs pour signaux de trading, et déploiement live (paper trading, brokers IBKR/Binance). On apprend que **la stratégie ne se juge pas sur le Sharpe brut mais sur le Sharpe net** après frais, slippage et impact de marché.
+
+Le fil rouge : **la rigueur méthodologique**. Le catalogue de 36 baselines vérifiées (PSR, walk-forward, fenêtres alignées) enseigne que la plupart des Sharpe spectaculaires ne survivent pas à un backtest honnête — un Lehmann pédagogique aussi important que les techniques elles-mêmes.
+
+### Prochaines étapes
+
+1. **Approfondir une voie** : choisir un domaine (RL, Transformers, factor investing) et creuser les notebooks avancés correspondants (QC-Py-30/31 pour le DL, QC-Py-32/33/34 pour le RL, QC-Py-21/24 pour l'optimisation de portefeuille).
+2. **Construire un composite** : combiner plusieurs Alpha Models via l'Algorithm Framework (cf. `Framework_Composite_TrendWeather`, le leader robuste du catalogue) — la diversification batte l'optimisation fine d'un signal unique.
+3. **Paper trading** : déployer une stratégie sur QuantConnect Paper Brokerage ou IBKR/Binance (cf. `docs/PAPER_TRADING_ARCHITECTURE.md`) pour valider en temps réel avant tout capital réel.
+4. **Suivre le livre** : *Hands-On AI Trading* (Jared Broad, 2025) — les 22 exemples du livre sont mappés aux notebooks de cette série (cf. `BOOK_MAPPING.md`).
+5. **Explorer les cross-series bridges** ci-dessus : les techniques ML, GenAI, Probas et Search se combinent toutes avec le trading algorithmique.
+6. **Consulter le catalogue** : [docs/qc/qc-comparative-backtests.md](../../docs/qc/qc-comparative-backtests.md) pour les 36 baselines vérifiées, leurs diagnostics de robustesse et les caveats de reproductibilité.
+
+> **Rappel honnête** : le trading algorithmique est un domaine où l'overfitting est la règle, pas l'exception. Un Sharpe > 2 sur un backtest court est presque toujours un artefact. La discipline du walk-forward, du multi-seed et du out-of-sample strict — enseignée tout au long de cette série — est ce qui sépare une stratégie robuste d'une illusion statistique.
+
+---
+
 *Version 1.1.0 - Juin 2026*
