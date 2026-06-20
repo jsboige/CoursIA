@@ -252,6 +252,29 @@ Les deux sous-séries sont indépendantes et peuvent être suivies dans n'import
 - [LangChain Documentation](https://python.langchain.com/)
 - [Google ADK Documentation](https://google.github.io/adk-docs/)
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette série vous a fait parcourir le **pipeline complet du Machine Learning appliqué**, en gardant toujours les deux pieds dans le code — depuis le chargement d'un `IDataView` ou d'un DataFrame jusqu'au déploiement et à l'automatisation par agents. L'arc pédagogique se déploie sur deux registres complémentaires :
+
+- **Le geste fondamental** — construire un modèle, ce n'est pas invoquer une boîte noire, c'est enchaîner des étapes explicites : préparer les données (encodage, normalisation), choisir un algorithme adapté au problème, entraîner, puis **évaluer rigoureusement** par cross-validation et Permutation Feature Importance plutôt que sur une seule exécution.
+- **La double stack** — ML.NET (C#/.NET) et Python (scikit-learn, PyTorch) résolvent les mêmes problèmes avec des outils différents. Les concepts — features, surapprentissage, généralisation, compromis biais/variance — sont universels ; traverser les deux écosystèmes ancre cette universalité mieux qu'un seul le pourrait.
+- **Le passage à l'agent** — la seconde moitié franchit un seuil : l'agent LLM devient un collaborateur du workflow data science, capable d'interroger un DataFrame, de parser des fichiers hétérogènes, d'orchestrer une boucle planner-coder ou de se confronter à une compétition Kaggle. Le data scientist ne fait plus seulement du modèle, il **construit des systèmes** qui font du modèle.
+
+La thèse pratique est honnête : un bon modèle vit ou meurt par la qualité de son évaluation et de ses features, et l'automatisation par agents ne dispense ni de l'un ni de l'autre — elle les rend reproductibles à l'échelle.
+
+### Prochaines étapes
+
+- **Approfondir le calcul bayésien** : le [TP prévision de ventes](ML.Net/TP-prevision-ventes.ipynb) dresse un pont vers [Probas](../Probas/README.md) (Infer.NET, PyMC), où la régression bayésienne traitée ici comme cas d'application devient un langage à part entière — distributions, inférence, incertitude quantifiée.
+- **Passer à l'apprentissage par renforcement** : [RL](../RL/README.md) prend le relais quand l'apprentissage ne se fait plus sur des données statiques mais par **interaction** avec un environnement — le cadre naturel pour le trading ([QuantConnect](../QuantConnect/README.md)) et les systèmes décisionnels séquentiels.
+- **Mesurer l'incertitude, pas seulement la prédiction** : les notebooks d'évaluation (ML-4) introduisent métriques et PFI ; la série [Probas](../Probas/README.md) pousse plus loin en quantifiant l'incertitude d'une prédiction plutôt que son seul point estimé.
+- Pour la pratique : reprenez le TP prévision de ventes en remplaçant la régression ML.NET par une Infer.NET, puis comparez les intervalles de confiance — c'est le passage le plus formateur entre ML classique et modélisation probabiliste.
+
+### Le fil rouge
+
+Le Machine Learning appliqué, c'est l'art de transformer des données en **décisions reproductibles** — et cette série insiste sur le « reproductibles » : cross-validation, PFI, pipelines explicités plutôt que notebooks jetables. Que vous soyez développeur .NET en entreprise ou data scientist Python branchant ses premiers agents, le fil conducteur reste le même : un modèle qu'on ne sait pas évaluer honnêtement ne sert à rien, et un workflow qu'on ne sait pas automatiser ne passe pas à l'échelle.
+
 ## Licence
 
 Voir la licence du repository principal.
