@@ -1,12 +1,12 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-19 05:22
+Generated: 2026-06-20 05:01
 Total notebooks: 565
 
 ## Status Summary
 
-- **READY**: 415
-- **DEMO**: 148
+- **READY**: 419
+- **DEMO**: 144
 - **RESEARCH**: 0
 - **BROKEN**: 2
 
@@ -20,7 +20,7 @@ Total notebooks: 565
 
 ## By Series
 
-### GenAI (129 notebooks) — BROKEN:2, DEMO:84, READY:43 | ALPHA:5, BETA:31, DRAFT:2, PRODUCTION:88, TEMPLATE:3
+### GenAI (129 notebooks) — BROKEN:2, DEMO:80, READY:47 | ALPHA:5, BETA:31, DRAFT:2, PRODUCTION:88, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -123,11 +123,11 @@ Total notebooks: 565
 | 97 | 18. Plugins Semantic Kernel pour le test-time scal | Python 3 | READY | BETA | 30min | po-2025 |
 | 98 | 1. Introduction a l'IA generative avec l'API OpenA | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 99 | Prompt Engineering : Advanced Prompting avec OpenA | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 100 | Structured Outputs : Sorties JSON Garanties avec O | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
-| 101 | Function Calling : Connecter les LLMs au Monde Rée | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
+| 100 | Structured Outputs : Sorties JSON Garanties avec O | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 101 | Function Calling : Connecter les LLMs au Monde Rée | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 102 | 5. RAG Modern - Retrieval Augmented Generation | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 103 | PDF et Web Search : Sources Documentaires avec Ope | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
-| 104 | Code Interpreter : Exécution de Code avec OpenAI | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
+| 103 | PDF et Web Search : Sources Documentaires avec Ope | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 104 | Code Interpreter : Exécution de Code avec OpenAI | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 105 | Modèles de Raisonnement : gpt-5-mini | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 106 | Patterns de Production : APIs Avancées OpenAI | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 107 | Claude CLI - Les Bases | Python 3 | READY | PRODUCTION | 45min | po-2025 |
@@ -319,7 +319,7 @@ Total notebooks: 565
 | 67 | SW-10-Python-RDFStar | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 68 | SW-11-Python-KnowledgeGraphs | Python 3 | READY | PRODUCTION | 1h | po-2024 |
 | 69 | SW-12-Python-GraphRAG | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 70 | SW-14-Reasoners | Python 3 | READY | PRODUCTION | 1h | po-2024 |
+| 70 | SW-13-Reasoners | Python 3 | READY | PRODUCTION | 1h | po-2024 |
 | 71 | SW-2-RDFBasics | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
 | 72 | SW-2b-Python-RDFBasics | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 73 | SW-3-GraphOperations | .NET (C#) | READY | PRODUCTION | 1h | po-2024 |
