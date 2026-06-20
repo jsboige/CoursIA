@@ -104,12 +104,12 @@
 
   <uni:Course rdf:about="http://example.org/university#course_ia">
     <rdfs:label>Intelligence Artificielle</rdfs:label>
-    <uni:credits>6</uni:credits>
+    <uni:credits rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">6</uni:credits>
   </uni:Course>
 
   <uni:Course rdf:about="http://example.org/university#course_web_sem">
     <rdfs:label>Web Semantique</rdfs:label>
-    <uni:credits>4</uni:credits>
+    <uni:credits rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">4</uni:credits>
   </uni:Course>
 
 </rdf:RDF>
