@@ -202,4 +202,31 @@ Notebooks de recherche et strategies executees sur QuantConnect Cloud.
 
 ---
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette sous-série Python couvre **l'éventail complet** du trading algorithmique sur QuantConnect, des fondations LEAN aux frontières de l'IA, organisé en 5 arcs pédagogiques :
+
+- **Fondations & Asset Classes (Phases 1-2)** : le `QCAlgorithm` lifecycle, l'universe selection, et les classes d'actifs (equities, options, futures, forex). On apprend à *structurer un algo propre* via l'Algorithm Framework modulaire.
+- **Analyse & Stratégie (Phase 3)** : indicateurs techniques, risk/portfolio management (Kelly, Risk Parity), backtesting rigoureux (Sharpe, Sortino, drawdown). On apprend que **la métrique seule ne fait pas la stratégie** — le walk-forward et l'out-of-sample sont obligatoires.
+- **Machine Learning (Phase 4)** : feature engineering, classification/régression directionnelle (Random Forest, XGBoost), portfolio optimization ML-enhanced. On apprend que le ML classique est solide en regime stable mais fragile aux coûts de transaction réels.
+- **Deep Learning & RL (QC-Py-30 à 35)** : LSTM, Transformers, puis Reinforcement Learning (DQN, PPO, SAC/A2C). On apprend que les modèles de profondeur exigent une validation multi-seed et walk-forward — un Sharpe spectaculaire en backtest court est presque toujours un artefact d'overfitting.
+- **Production (Paper Trading + Cloud)** : déploiement paper/live (IBKR, Binance), stratégies cloud-native (FinBERT sentiment, ML classification, Temporal CNN, Option Wheel). On apprend que **la stratégie ne se juge que sur le Sharpe net** après frais, slippage et impact de marché.
+
+Le fil rouge : la **rigueur méthodologique** — l'audit d'exécution honnête (section ci-dessus) et les 36 baselines vérifiées du catalogue enseignent que la plupart des edges apparents ne survivent pas à un backtest aligné.
+
+### Prochaines étapes
+
+1. **Suivre l'ordre des phases** : les notebooks sont conçus pour être lus séquentiellement (chacun suppose la maîtrise du précédent). Commencer par QC-Py-01 si vous débutez.
+2. **Exécuter sur QC Cloud** : les notebooks marqués `[QC CLOUD]` nécessitent QuantConnect Cloud (gratuit) — copier le code dans un projet QC Lab.
+3. **Consulter les projets associés** : chaque notebook pédagogique a un `main.py` correspondant dans `../projects/` pour exécution backtest réelle.
+4. **Approfondir le RL** : si le trading RL vous intéresse, enchaîner QC-Py-25 (intro RL) → 32 (DQN) → 33 (PPO) → 34 (SAC/A2C) dans l'ordre.
+5. **Lire le livre** : *Hands-On AI Trading* (Jared Broad, 2025), dont les 22 exemples sont mappés à ces notebooks (cf. `../BOOK_MAPPING.md`).
+6. **Retour au README principal** : pour la vue d'ensemble de la série QuantConnect complète (incluant les 50+ projets de stratégies backtestées) et les cross-series bridges.
+
+> **Rappel honnête** : le trading algorithmique est un domaine où l'overfitting est la règle. La discipline du walk-forward, du multi-seed et du out-of-sample strict — enseignée tout au long de cette sous-série — est ce qui sépare une stratégie robuste d'une illusion statistique.
+
+---
+
 **Navigation** : [README principal](../README.md) | [Livre de reference](https://www.hands-on-ai-trading.com/)
