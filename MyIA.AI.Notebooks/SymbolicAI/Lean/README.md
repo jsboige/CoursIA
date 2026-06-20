@@ -7,7 +7,7 @@ breakdown: Lean=26
 maturity: PRODUCTION=22, BETA=4
 -->
 
-> Série [`SymbolicAI`](../README.md) › **Lean**
+[← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
 
 Cette serie introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants. Le fil rouge va des fondations (types dependants, mode tactique, Mathlib) vers l'etat de l'art : assistance aux preuves par LLM et verification formelle de reseaux de neurones, ports de théorèmes phares (théorème de Kochen-Specker / 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen ; finitude des dérivées symboliques de Brzozowski), theorie des nœuds (mouvements de Reidemeister, tricolorabilite de Fox, noeud de Conway et preuve de Piccirillo), et hommages aux mathematiciens (Grothendieck et le langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre).
 
