@@ -17,8 +17,10 @@ if _tools_dir not in sys.path:
 from scrub_papermill_paths import (
     ABS_PATH_RE,
     find_papermill_defects,
+    find_output_path_defects,
     is_absolute,
     scrub_notebook,
+    scrub_output_paths,
 )
 
 
@@ -204,3 +206,119 @@ def test_abs_path_regex():
     assert ABS_PATH_RE.match("/x")
     assert not ABS_PATH_RE.match("x.ipynb")
     assert not ABS_PATH_RE.match("a/b.ipynb")
+
+
+# ---------------------------------------------------------------------------
+# --outputs mode: machine-local paths inside output text
+# ---------------------------------------------------------------------------
+
+def _write_nb_with_output(path, source_line, output_text):
+    """Write a 1-cell notebook whose stdout output contains `output_text`."""
+    nb = {
+        "cells": [
+            {
+                "cell_type": "code",
+                "source": [source_line],
+                "outputs": [
+                    {"output_type": "stream", "name": "stdout", "text": [output_text]}
+                ],
+                "execution_count": 1,
+                "metadata": {},
+            }
+        ],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    path.write_text(json.dumps(nb, indent=1, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
+def test_find_output_defects_none_for_clean(tmp_path):
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "print('hi')", "hi\n")
+    assert find_output_path_defects(str(p)) == 0
+
+
+def test_find_output_defects_counts_home_leak(tmp_path):
+    p = _write_nb_with_output(
+        tmp_path / "nb.ipynb",
+        "import ortools",
+        "Requirement already satisfied: ortools in "
+        "C:\\Users\\jsboi\\AppData\\Local\\Packages\\PythonSoftwareFoundation.Python.3.13\n",
+    )
+    assert find_output_path_defects(str(p)) == 1
+
+
+def test_scrub_outputs_anonymizes_home_and_preserves_rest(tmp_path):
+    raw = (
+        "Requirement already satisfied: ortools in "
+        "C:\\Users\\jsboi\\AppData\\Local\\Packages\\site-packages (9.15.6755)\n"
+    )
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "import ortools", raw)
+    before = p.read_text(encoding="utf-8")
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    assert fixed >= 1
+
+    after = p.read_text(encoding="utf-8")
+    # home root anonymized
+    assert "C:\\\\Users\\\\jsboi" not in after
+    assert "~" in after
+    # rest of path preserved (package version + site-packages)
+    assert "site-packages" in after
+    assert "9.15.6755" in after
+    # source cell byte-identical
+    nb_after = json.loads(after)
+    assert nb_after["cells"][0]["source"] == ["import ortools"]
+    # the ONLY change is the home-root substring -> ~
+    assert before.replace("C:\\\\Users\\\\jsboi", "~") == after
+
+
+def test_scrub_outputs_anonymizes_ipykernel_pid(tmp_path):
+    raw = (
+        "C:\\Users\\jsboi\\AppData\\Local\\Temp\\ipykernel_85268\\3959998143.py:74: "
+        "UserWarning: figure\n"
+    )
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "plt.plot()", raw)
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    after = p.read_text(encoding="utf-8")
+    # home + ipykernel PID anonymized
+    assert "C:\\\\Users\\\\jsboi" not in after
+    assert "ipykernel_<pid>" in after
+    # cell hash + warning message preserved (diagnostic value)
+    assert "3959998143.py:74" in after
+    assert "UserWarning" in after
+
+
+def test_scrub_outputs_dry_run_does_not_write(tmp_path):
+    raw = "Loading from C:\\Users\\jsboi\\.nuget\\packages\\plotly.net.interactive\\3.0.2\n"
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "load()", raw)
+    before = p.read_text(encoding="utf-8")
+
+    found, fixed = scrub_output_paths(str(p), apply=False)
+    assert found == 1
+    assert fixed >= 1  # would-fix reported
+    assert p.read_text(encoding="utf-8") == before  # file untouched in dry-run
+
+
+def test_scrub_outputs_clean_notebook_is_noop(tmp_path):
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "print('ok')", "ok\n")
+    before = p.read_text(encoding="utf-8")
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 0
+    assert fixed == 0
+    assert p.read_text(encoding="utf-8") == before
+
+
+def test_scrub_outputs_does_not_touch_relative_paths(tmp_path):
+    # A relative-looking path with no home root must NOT be altered.
+    raw = "loading module from ./local/relative/path/module.py\n"
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "load()", raw)
+    before = p.read_text(encoding="utf-8")
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 0
+    assert fixed == 0
+    assert p.read_text(encoding="utf-8") == before

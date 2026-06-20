@@ -17,12 +17,33 @@ This script replaces any absolute ``output_path``/``input_path`` value with
 the basename, using a text-level surgical edit so the rest of the notebook
 (byte-for-byte code, outputs, cell metadata) is preserved.
 
+A second, related defect class is covered by ``--outputs``: machine-local
+absolute paths that leak *inside output text* (stdout/stderr streams and
+text/plain data). These come from non-deterministic environment noise that
+re-execution cannot fix because it regenerates a fresh leak each run:
+
+  - ipykernel temp paths in matplotlib UserWarnings
+    (``C:\\Users\\<user>\\AppData\\Local\\Temp\\ipykernel_<PID>\\<hash>.py:line``)
+  - pip ``already satisfied: ... in C:\\Users\\<user>\\AppData\\Local\\Packages`` lines
+  - .NET Interactive ``Loading extensions from C:\\Users\\<user>\\.nuget\\packages`` lines
+  - tempfile paths in user messages (``CSV cree: C:\\Users\\<user>\\...\\Temp\\tmpXXXX``)
+
+These leak the contributor's home directory and are non-portable. The
+``--outputs`` mode anonymizes only the machine-local *prefix* (home dir ->
+``~``, process PID -> ``<pid>``, temp file id -> ``<tmpid>``) while keeping
+the rest of the path, which carries diagnostic/pedagogical value. The edit is
+text-level (string replace on the on-disk JSON) so cell structure is preserved.
+
 Usage:
     python scrub_papermill_paths.py --scan <path>      # dry-run, list only
     python scrub_papermill_paths.py --scan-all          # dry-run repo-wide
     python scrub_papermill_paths.py --scan-all --check  # exit 1 if defects
     python scrub_papermill_paths.py --apply <path>      # fix in place
     python scrub_papermill_paths.py --apply-all         # fix repo-wide
+
+    # output-path leaks (ipykernel/nuget/pip/temp inside output text):
+    python scrub_papermill_paths.py --scan <path> --outputs
+    python scrub_papermill_paths.py --apply <path> --outputs
 """
 
 import argparse
@@ -122,6 +143,169 @@ def scrub_notebook(nb_path, apply=False):
     return (defects, fixed)
 
 
+# ---------------------------------------------------------------------------
+# Output-path leaks (--outputs mode)
+# ---------------------------------------------------------------------------
+
+# Machine-local home-directory prefixes. We anonymize the *home root* (user
+# name) and keep the rest of the path. Backslash form (Windows) and forward
+# slash form both appear in committed notebooks.
+_HOME_RES = [
+    # Windows drive home: C:\Users\<user> or C:/Users/<user>  (single capture -> ~)
+    re.compile(r"[A-Za-z]:[\\/](?:Users|home)[\\/][^\\/]+"),
+    # POSIX-style home root as written by some MSYS/git-bash tools: /c/Users/<user>
+    re.compile(r"/[a-zA-Z]/(?:Users|home)/[^/]+"),
+]
+
+# Process/file-specific ids that sit *inside* a home-relative temp path. These
+# change every run (PID, temp file id), so scrubbing them keeps the output
+# stable across re-executions. Applied after home -> ~ normalization.
+_IPYKERNEL_PID = re.compile(r"(ipykernel_)\d+")
+_CLAUDE_IPYKERNEL_PID = re.compile(r"(/Temp/claude/ipykernel_)\d+")
+_TEMP_FILE_ID = re.compile(r"(/Temp/tmp)[A-Za-z0-9_\-]+")
+
+
+def _scrub_output_text(text):
+    """Anonymize machine-local path prefixes in a single output string.
+
+    Returns ``(scrubbed_text, changed_bool)``. Only the home root and
+    process/temp ids are replaced; the rest of the path is preserved.
+    """
+    if not isinstance(text, str):
+        return text, False
+    orig = text
+    for pat in _HOME_RES:
+        text = pat.sub("~", text)
+    text = _IPYKERNEL_PID.sub(lambda m: m.group(1) + "<pid>", text)
+    text = _CLAUDE_IPYKERNEL_PID.sub(lambda m: m.group(1) + "<pid>", text)
+    text = _TEMP_FILE_ID.sub(lambda m: m.group(1) + "<tmpid>", text)
+    return text, (text != orig)
+
+
+def find_output_path_defects(nb_path):
+    """Return count of machine-local path leaks found in output text.
+
+    Inspects ``outputs[].text`` (stream) and ``outputs[].data["text/plain"]``
+    of every code cell. Returns the total occurrence count (0 if clean).
+    """
+    nb = _read_notebook(nb_path)
+    if nb is None:
+        return 0
+    count = 0
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        for out in cell.get("outputs", []):
+            text = out.get("text", "")
+            if isinstance(text, list):
+                text = "".join(text)
+            _, c = _scrub_output_text(text)
+            if c:
+                count += 1
+            data = out.get("data", {})
+            if isinstance(data, dict):
+                tp = data.get("text/plain", "")
+                if isinstance(tp, list):
+                    tp = "".join(tp)
+                _, c = _scrub_output_text(tp)
+                if c:
+                    count += 1
+    return count
+
+
+def scrub_output_paths(nb_path, apply=False):
+    """Anonymize machine-local path prefixes in output text, in place.
+
+    Uses a text-level surgical edit: collect the distinct machine-local
+    *home-root substrings* that appear in any code-cell output (stream text
+    or text/plain data), then replace each one directly on the on-disk JSON
+    with ``~``. Process/temp ids (ipykernel PID, temp file id) are scrubbed
+    the same way. This preserves cell structure, source, and all other bytes
+    (no JSON re-serialization, no float coercion, no metadata churn).
+
+    Returns ``(leaks_found, leaks_fixed)`` as counts. ``leaks_found`` counts
+    output blobs that contained a leak; ``leaks_fixed`` counts distinct
+    substrings replaced on disk.
+    """
+    nb = _read_notebook(nb_path)
+    if nb is None:
+        return (0, 0)
+
+    # Collect every distinct home-root + process-id substring that appears in
+    # outputs. These are the exact needles we will replace on the raw text.
+    needles = set()
+    leaks_found = 0
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        for out in cell.get("outputs", []):
+            blobs = []
+            t = out.get("text", "")
+            if isinstance(t, list):
+                t = "".join(t)
+            blobs.append(t)
+            data = out.get("data", {})
+            if isinstance(data, dict):
+                tp = data.get("text/plain", "")
+                if isinstance(tp, list):
+                    tp = "".join(tp)
+                blobs.append(tp)
+            for blob in blobs:
+                scrubbed, changed = _scrub_output_text(blob)
+                if not changed:
+                    continue
+                leaks_found += 1
+                # Recover the distinct literal substrings this blob contributed
+                # by diffing original vs scrubbed char-by-char is overkill; the
+                # home-root and id patterns are few and unambiguous, so record
+                # the matched spans directly.
+                for pat in _HOME_RES:
+                    for m in pat.finditer(blob):
+                        needles.add(m.group(0))
+                for m in _IPYKERNEL_PID.finditer(blob):
+                    needles.add(m.group(0))
+                for m in _CLAUDE_IPYKERNEL_PID.finditer(blob):
+                    needles.add(m.group(0))
+                for m in _TEMP_FILE_ID.finditer(blob):
+                    needles.add(m.group(0))
+
+    if not needles:
+        return (0, 0)
+
+    with open(nb_path, encoding="utf-8") as f:
+        text = f.read()
+
+    new_text = text
+    fixed = 0
+    for needle in sorted(needles, key=len, reverse=True):
+        # Determine the replacement for this needle.
+        if needle.startswith("ipykernel_"):
+            repl = "ipykernel_<pid>"
+        elif "/Temp/claude/ipykernel_" in needle:
+            repl = needle[:needle.rfind("ipykernel_")] + "ipykernel_<pid>"
+        elif "/Temp/tmp" in needle:
+            repl = needle[:needle.find("/Temp/tmp") + len("/Temp/tmp")] + "<tmpid>"
+        else:
+            # Home root: anonymize to ~
+            repl = "~"
+        # The on-disk JSON may encode backslashes doubled; also try the raw
+        # form. Replace every occurrence of whichever form is present.
+        candidates = {needle, needle.replace("\\", "\\\\")}
+        replaced = False
+        for cand in candidates:
+            if cand and cand in new_text:
+                new_text = new_text.replace(cand, repl)
+                replaced = True
+        if replaced:
+            fixed += 1
+
+    if apply and new_text != text:
+        with open(nb_path, "w", encoding="utf-8", newline="") as f:
+            f.write(new_text)
+
+    return (leaks_found, fixed)
+
+
 def iter_notebooks(nb_root):
     for path in glob.glob(os.path.join(nb_root, "**", "*.ipynb"), recursive=True):
         if "_output" in os.path.basename(path) or "_executed" in os.path.basename(path):
@@ -131,13 +315,16 @@ def iter_notebooks(nb_root):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Scrub absolute paths from notebook papermill metadata"
+        description="Scrub absolute machine-local paths from notebooks"
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--scan", metavar="PATH", help="dry-run scan a file or dir")
     group.add_argument("--scan-all", action="store_true", help="dry-run scan repo-wide")
     group.add_argument("--apply", metavar="PATH", help="fix a file or dir in place")
     group.add_argument("--apply-all", action="store_true", help="fix repo-wide in place")
+    parser.add_argument("--outputs", action="store_true",
+                        help="scrub machine-local paths in OUTPUT text "
+                             "(ipykernel/nuget/pip/temp leaks) instead of papermill metadata")
     parser.add_argument("--check", action="store_true",
                         help="with --scan-all: exit 1 if any defect found")
     args = parser.parse_args()
@@ -163,6 +350,20 @@ def main():
     files_with_defect = 0
     skipped = []
     for p in sorted(paths):
+        if args.outputs:
+            found, fixed = scrub_output_paths(p, apply=do_apply)
+            defects = found  # count of leaked output blobs
+            if not found:
+                continue
+            files_with_defect += 1
+            total_defects += found
+            total_fixed += fixed
+            rel = os.path.relpath(p, repo_root)
+            tag = "FIXED" if do_apply and fixed else ("DEFECT" if not do_apply else "PARTIAL")
+            print("[%s] %s  (%d output leak(s)%s)" % (
+                tag, rel, found, ", %d fixed" % fixed if do_apply else ""))
+            continue
+
         defects, fixed = scrub_notebook(p, apply=do_apply)
         if not defects:
             continue
@@ -185,8 +386,9 @@ def main():
                 print("        %s: %s" % (key, val))
 
     mode = "apply" if do_apply else "scan"
-    print("\n%s summary: %d notebook(s) with %d absolute papermill path(s)"
-          % (mode, files_with_defect, total_defects))
+    what = "output path leak(s)" if args.outputs else "absolute papermill path(s)"
+    print("\n%s summary: %d notebook(s) with %d %s"
+          % (mode, files_with_defect, total_defects, what))
     if do_apply:
         print("  fixed: %d   skipped: %d" % (total_fixed, len(skipped)))
 
