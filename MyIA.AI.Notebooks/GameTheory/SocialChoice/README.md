@@ -100,6 +100,32 @@ Pour le notebook 02 (Lean 4) : suivre les instructions dans [README parent](../R
 | Holliday & Pacuit, "Split Cycle" (2023) | Règle de vote optimale |
 | Peters, [SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) | Formalisation Lean 4 de 12 règles + 4 théorèmes |
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette sous-série vous a fait saisir pourquoi le **choix social** est l'un des résultats intellectuels les plus troublants de la théorie de la décision : il existe des limites *mathématiquement prouvées* à ce qu'une collectivité peut décider de manière cohérente. L'arc pédagogique repose sur **quatre angles complémentaires** braqués sur les mêmes résultats d'impossibilité :
+
+- **Le résultat fondateur** — le théorème d'Arrow (1951) : aucune règle d'agrégation ne peut, simultanément et dès que 3 alternatives sont en jeu, satisfaire Pareto, l'indépendance vis-à-vis des alternatives non pertinentes (IIA) et la non-dictature. Le théorème de Sen (1970) étend le constat : liberté minimale et efficacité parétienne sont incompatibles. Ces théorèmes ne disent pas « la démocratie est impossible » ; ils délimitent précisément *quels compromis* toute règle de vote doit accepter.
+- **La quadruple convergence, délibérément juxtaposée** — un même énoncé est attaqué par quatre méthodes, chacune révélant une facette différente. La **simulation Python** (SC-01) teste les axiomes sur des règles concrètes et suit la preuve de Geanakoplos (lemme extrémal, pivot, dictateur partiel) ; la **preuve formelle Lean 4** (SC-02) couvre l'infinité des cas que la simulation ne peut qu'échantillonner, avec 0 sorry sur Arrow et Sen ; les **méthodes de vote** (SC-03) incarnent les paradoxes dans des règles réelles (Condorcet, Borda, Copeland, électeur médian de Downs) ; la **vérification mécanique SAT/Z3** (SC-04) fait émerger l'impossibilité comme un résultat UNSAT des solveurs. Comprendre les quatre, c'est comprendre qu'une *même vérité* se laisse approcher par l'expérience, la déduction formelle, la pratique électorale et la recherche combinatoire.
+- **L'instrument** — les outils qui opérationnalisent chaque angle : numpy/matplotlib pour la simulation, Lean 4 + la librairie SocialChoiceLean de Peters (12 règles de vote, Gibbard-Satterthwaite, Split Cycle, Duggan-Schwartz) pour la preuve, PySAT (clauses CNF) et Z3 (rangs entiers SMT) pour la vérification mécanique. Chaque outil éclaire un aspect que les autres laissent dans l'ombre : la simulation donne l'intuition, Lean donne la certitude, SAT/Z3 donnent la vérification automatique.
+- **La finesse** — qu'un théorème d'impossibilité n'est pas une impasse mais une **cartographie des relaxations possibles**. SC-04 montre que chaque *paire* d'axiomes d'Arrow est réalisable ; Split Cycle (Holliday & Pacuit) satisfait Condorcet sans tomber dans l'acyclicité totale ; le théorème de l'électeur médian (Downs) restaure l'existence d'un vainqueur sous l'hypothèse d'unimodalité. La leçon pratique : on ne contourne pas Arrow, on *choisit* quel axiome relâcher selon le contexte.
+
+La thèse est puissante et honnêtement présentée : il n'existe pas de règle de vote idéale, mais un *paysage* de règles aux compromis clairement cartographiés — et la rigueur exige de les confronter simultanément à l'expérience, à la preuve formelle et à la vérification mécanique avant de prétendre les comprendre.
+
+### Prochaines étapes
+
+- **Design de mécanismes** : le notebook [GameTheory-16-MechanismDesign](../GameTheory-16-MechanismDesign.ipynb) est le prolongement naturel — il retourne la question d'Arrow (« quelle règle agréger ? ») en « comment *concevoir* les règles du jeu pour que les agents révèlent honnêtement leurs préférences ? » (enchères VCG, appariement Gale-Shapley, Myerson-Satterthwaite).
+- **Jeux coopératifs et valeur de Shapley** : [GameTheory-15-CooperativeGames](../GameTheory-15-CooperativeGames.ipynb) introduit une autre forme d'agrégation — non plus des préférences mais des *contributions* — où la valeur de Shapley offre l'unique répartition équitable vérifiant des axiomes analogues à ceux d'Arrow.
+- **Approfondir la formalisation Lean 4** : [SymbolicAI/Lean](../../SymbolicAI/Lean/README.md) pour les prérequis et la méthodologie des preuves formelles, et l'inventaire [LEAN_INVENTORY.md](../LEAN_INVENTORY.md) pour la cartographie complète des théorèmes de choix social prouvés dans le projet Lake `social_choice_lean/`.
+- Pour la pratique : reprenez [04-Computational-Aggregation-SAT-Z3](04-Computational-Aggregation-SAT-Z3.ipynb) et relaxez un *autre* couple d'axiomes que ceux étudiés — encodez-le en SAT et observez si le solveur retourne SAT (une règle existe) ou UNSAT (nouvelle impossibilité). C'est l'exercice le plus formateur pour saisir comment la vérification mécanique transforme une conjecture en théorème.
+
+### Le fil rouge
+
+Le choix social propose un changement de regard sur la décision collective : ne plus demander « quelle est la meilleure règle de vote ? » mais **« quels axiomes suis-je prêt à sacrifier, et lesquels sont mutuellement incompatibles ? »**. Cette sous-série vous a donné les résultats d'impossibilité (Arrow, Sen, Gibbard-Satterthwaite), les méthodes pour les établir (simulation, preuve Lean 4, vérification SAT/Z3), et l'intuition des relaxations (électeur médian, Split Cycle) pour transformer un constat d'impossibilité apparemment stérile en une compréhension fine de l'espace des règles possibles — en gardant à l'esprit qu'aucune règle ne domine partout, et que c'est précisément cette absence de « bonne » réponse universelle qui fait du choix social un domaine vivant.
+
+---
+
 ## Licence
 
 Voir la licence du repository principal.
