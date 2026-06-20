@@ -93,9 +93,28 @@ SOFT_MARKERS = [
      "TOOL_MISSING", "ENV_DEGRADATION", "HIGH"),
     (r"ImportError|ModuleNotFoundError|No module named|cannot import name",
      "MISSING_DEP", "ENV_DEGRADATION", "HIGH"),
-    (r"api[_-]?key|OPENAI_API|ANTHROPIC_API|HUGGINGFACE|\bUnauthorized\b|\b401\b|\b403\b|ConnectionError|ConnectionRefused|Max retries exceeded",
+    # API_ENDPOINT: a bare "401"/"403" matched SVG path coordinates and pixel
+    # data (e.g. Infer factor-graph SVGs: x="403", 207,-403.25) -> the numeric
+    # codes are only a signal when an HTTP/status/error keyword sits next to them.
+    (r"\bUnauthorized\b|\bForbidden\b"
+     r"|(?:HTTP|status|code|error|erreur|Client Error)[^\n]{0,15}\b40[13]\b"
+     r"|\b40[13]\b[^\n]{0,15}(?:Forbidden|Unauthorized|Client Error)"
+     r"|ConnectionError|ConnectionRefused|ConnectionResetError|Max retries exceeded"
+     r"|Failed to establish a new connection|Name or service not known|ECONNREFUSED"
+     # Provider / env-var NAMES alone appear in SUCCESS logs ("OPENAI_API_KEY
+     # valide", "GET https://huggingface.co") -> only flag them when a failure
+     # word sits within 25 chars.
+     r"|(?:OPENAI_API|ANTHROPIC_API|HUGGINGFACE|HF_TOKEN|api[_-]?key)\w*"
+     r"[^\n]{0,25}(?:non configur|manquant|missing|not set|not configured"
+     r"|invalid|invalide|absent|erreur|\berror\b|failed|\bechou|unavailable)",
      "API_ENDPOINT", "ENV_DEGRADATION", "HIGH"),
-    (r"Solution valide\s*[:=]\s*False|is_valid\(\)\s*[:=]\s*False|\bINFEASIBLE\b|\bUNSAT\b|aucune solution",
+    # SOLVER_DOWNGRADE: bare "UNSAT" is the EXPECTED result in SAT/SMT/logic
+    # notebooks (theorem proofs: "negation = unsat => VALIDE", Arrow/Sen
+    # demonstrations, crafted pigeonhole) -> never a degradation. Only an
+    # explicit invalidity verdict (a solution was expected and the check failed)
+    # or an INFEASIBLE instance counts.
+    (r"Solution valide\s*[:=]\s*False|is_valid\(\)\s*[:=]\s*False"
+     r"|solution\s+invalide|invalid solution|\bINFEASIBLE\b",
      "SOLVER_DOWNGRADE", "SOLVER", "HIGH"),
     (r"\bSkipped\b|\bnon disponible\b|\bindisponible\b",
      "TOOL_MISSING", "ENV_DEGRADATION", "HIGH"),

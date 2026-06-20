@@ -15,6 +15,16 @@ name: Regression Guard
 #   scripts/notebook_tools/regression_allowlist.json (with evidence), or via
 #   the 'regression-accepted' PR label for a one-off demonstrated case.
 #
+#   Owner-environment mandate (user 2026-06-20):
+#     - An INSTALLABLE tool missing in OUR notebooks (JVM/Tweety, SWI-Prolog,
+#       MiniZinc, clingo, Graphviz/dot, conda/pip pkg) is NOT a "genuine skip" --
+#       it is an env regression to REPAIR (install + re-exec). Never allowlist it.
+#       Fallbacks are for third parties, never an owner excuse to commit degraded.
+#     - The allowlist is not permission to commit degraded outputs. Re-execute on
+#       the FULL faithful target env, or do NOT touch the notebook. An agent that
+#       cannot reproduce the target env must SIGNAL + HAND OFF -- never re-run and
+#       overwrite the expected outputs with degraded ones.
+#
 # This guard ONLY judges output-health (axis-2). It does NOT judge prose-vs-output
 # fidelity (axis-1) -- that stays a human/bot review job.
 #
