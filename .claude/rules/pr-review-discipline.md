@@ -73,3 +73,13 @@ Toute PR touchant `MyIA.AI.Notebooks/QuantConnect/projects/` **DOIT** inclure :
 1. Backtest run (`create_compile` + `create_backtest` via MCP qc-mcp)
 2. Métriques Sharpe/CAGR/MaxDD reportées dans le body
 3. Période OOS distincte de training (pas de same-period leak)
+
+### H. Notebook : vrai outil SOTA + problème non-trivial
+
+Source : mandat user 2026-06-21, EPIC #3801. Détail + 5 verdicts : [.claude/rules/sota-not-workaround.md](sota-not-workaround.md).
+
+Toute PR notebook (interne/contributeur) **DOIT** être refusée (`CHANGES_REQUESTED`) si :
+1. **Workaround dégradé sans verdict SOTA écrit** : la cellule commit une sortie de substitution (ASCII au lieu d'une image générée, réimplémentation jouet au lieu de la lib, stub au lieu d'un appel de service, sortie fabriquée au lieu d'un backtest) **alors que l'outil réel est installable/invocable/rebranchable**, sans un des 5 verdicts (SOTA-OK / RECOVERABLE-LOCAL / RECOVERABLE-MACHINE / RECOVERABLE-USER-HAND / INTRINSIC) écrit dans le body.
+2. **Problème dégénéré** : le notebook démontre un moteur/solveur/modèle sur un cas trivial où le SOTA équivaut à une baseline (ex: BFS vs A* sur graphe à coût uniforme, cf `8905f8845`) → exiger complexification du problème ou ajout d'un problème plus riche (modulo runtime raisonnable).
+
+`APPROVED` malgré 1 ou 2 = complaisance. **Exception PR étudiante** ([student-pr-reviews.md](student-pr-reviews.md)) : NE PAS appliquer H (review bienveillante).
