@@ -94,3 +94,29 @@ Le LLM comme outil de developpeur Solidity : **prompting** efficace pour smart c
 - **Uniswap V2** (Adams, Zinsmeister, Robinson, 2020) -- core whitepaper : AMM a produit constant x*y=k.
 - **Foundry Book** (Foundry contributors) -- `anvil`, `forge`, `cast`. book.getfoundry.sh.
 - Voir aussi les references transversales dans le [README parent de la serie](../README.md).
+
+---
+
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette deuxième sous-série quitte la syntaxe pour les **cas d'usage réels** d'Ethereum — le passage du « contrat isolé » aux **systèmes composés**. L'arc pédagogique relie cinq briques qui, ensemble, font tourner la finance décentralisée et la gouvernance on-chain :
+
+- **Les standards de tokens** (SC-7) — ERC-20 (fongibles), ERC-721 (NFT), ERC-1155 (multi-tokens), construits sur les contrats sécurisés d'OpenZeppelin. Le point de passage obligé vers DeFi et la gouvernance.
+- **Les primitives DeFi** (SC-8) — les Automated Market Makers et la formule à produit constant **x\*y=k**, la construction d'un liquidity pool, et la mesure concrète du price impact et du slippage d'un swap.
+- **La gouvernance on-chain** (SC-9) — le vote pondéré par balance de token, la création et l'exécution de propositions, et le timelock qui retarde l'exécution. Pont naturel avec les résultats formels de [GameTheory](../../../GameTheory/) (théorème d'Arrow).
+- **L'account abstraction** (SC-10) — l'ERC-4337 : séparation EOA / Smart Accounts programables, UserOperations, Paymasters qui paient le gas, et le modèle d'un wallet sans clé privée traditionnelle.
+- **L'assistance LLM** (SC-11) — le LLM comme outil de développeur Solidity (génération, audit, documentation NatSpec), pont avec les notebooks Lean-7/8/9 (même paradigme appliqué à la preuve formelle).
+
+Comme la sous-série 01, chaque concept est illustré par un contrat compilé et déployé réellement sur `anvil`.
+
+### Prochaines étapes
+
+- **Tester ce qu'on a construit** : la suite immédiate est [03-Foundry-Testing](../03-Foundry-Testing/README.md) (SC-12 à SC-14) — tests, fuzzing d'invariants et vérification formelle. On ne peut déployer en production des standards ERC et des pools DeFi sans une assurance sur leurs propriétés.
+- **Approfondir la gouvernance** : SC-9 (DAO) mérite d'être relu après [GameTheory/SocialChoice](../../../GameTheory/SocialChoice/README.md) — le théorème d'Arrow y est prouvé formellement, et éclaire les limites de tout système de vote on-chain.
+- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les six sous-séries — celle-ci est le cœur applicatif.
+
+### Le fil rouge
+
+Solidity avancé propose un changement de regard : le smart contract n'est plus un objet isolé, mais une **brique composée dans un système** (tokens + pools + gouvernance + abstraction). Comprendre ces cinq cas d'usage, c'est comprendre que la force d'Ethereum n'est pas un seul contrat mais leur **composition** — et que cette composition exige à la fois des standards partagés (ERC), des mécanismes économiques (AMM), des garde-fous démocratiques (DAO/timelock) et des abstractions ergonomiques (account abstraction), chacun introduisant ses propres compromis que la suite (tests, preuve, déploiement réel) se chargera de sécuriser.

@@ -82,3 +82,28 @@ Solidity supporte l'heritage multiple avec le mot-cle `is`, les interfaces pour 
 - **Solidity Documentation officielle** (Ethereum Foundation) -- types, data locations, heritage, errors/events. docs.soliditylang.org.
 - Wood, G. (2014) -- "Ethereum: A Secure Decentralised Generalised Transaction Ledger" (Yellow Paper) : EVM, gas, modele d'execution.
 - Voir aussi les references transversales dans le [README parent de la serie](../README.md).
+
+---
+
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette première sous-série de code Solidity vous a posé les **quatre piliers** sans lesquels aucune ligne de contrat sérieuse ne s'écrit. L'arc pédagogique procède de la brique minimale au contrat observable :
+
+- **La syntaxe et les types** (SC-3) — la structure d'un contrat, les types valeur (`uint`, `address`, `bool`, `bytes`), les variables d'état vs locales, et les conversions explicites. Premier déploiement réel sur `anvil`.
+- **Les fonctions et l'état** (SC-4) — le cœur de la programmation Solidity : les trois **data locations** (`storage`, `memory`, `calldata`) et leur coût en gas, la visibilité (`public`/`external`/`internal`/`private`), et les modifiers qui restreignent l'accès (`view`, `pure`, `payable`).
+- **L'héritage et l'abstraction** (SC-5) — l'héritage multiple via `is`, les interfaces, les contrats `abstract` et l'`override`. Cette étape prépare directement aux standards ERC de la sous-série suivante.
+- **Les erreurs et l'observabilité** (SC-6) — `require` (conditions d'entrée), `revert` (erreurs complexes), `assert` (invariants internes), les custom errors économes en gas depuis 0.8.4, et les events pour le logging hors-chaîne.
+
+Chaque concept est illustré par un contrat compilé et déployé **réellement** sur `anvil` — les adresses et receipts dans les outputs sont authentiques, et le pattern `compile -> deploy -> call` hérité de [SC-2](../00-Foundations/SC-2-Setup-Web3py.ipynb) est celui repris dans toute la suite.
+
+### Prochaines étapes
+
+- **Standards et cas d'usage réels** : la suite immédiate est [02-Solidity-Advanced](../02-Solidity-Advanced/README.md) (SC-7 à SC-11), qui construit sur ces fondamentaux — ERC-20/721/1155, primitives DeFi, gouvernance DAO, account abstraction, assistance LLM.
+- **Revenir aux fondations** : si la théorie du gas et des data locations (SC-4) reste abstraite, reprenez [SC-0-Cypherpunk-Origins](../00-Foundations/SC-0-Cypherpunk-Origins.ipynb) — comprendre *pourquoi* une blockchain fait payer chaque opération éclaire le modèle économique de la EVM.
+- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les six sous-séries — celle-ci n'est que le socle du langage.
+
+### Le fil rouge
+
+Les fondations de Solidity proposent un changement de regard sur la programmation : ne plus écrire du code qui « tourne », mais du code qui **coûte** (chaque instruction a un prix en gas) et qui est **observable** (chaque état est public sur la chaîne). Comprendre les data locations, la visibilité et les events, c'est comprendre que sur la EVM, l'optimisation et la transparence ne sont pas des raffinements mais des contraintes structurelles — et que le pattern `compile -> deploy -> call` établi ici est le squelette de toute la série.

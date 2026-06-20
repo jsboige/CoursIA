@@ -89,3 +89,27 @@ Sans ces variables, les notebooks tournent en mode degrade et les outputs commit
 - [Basescan](https://basescan.org/) / [Polygonscan](https://polygonscan.com/) -- verification de contrat (SC-25)
 
 Voir aussi les [Ressources Externes du README parent](../README.md#ressources-externes) pour les references academiques transversales (Foundry Book, OpenZeppelin, ElectionGuard).
+
+---
+
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette dernière sous-série fait le **passage de la théorie au déploiement réel**. L'arc pédagogique quitte le bac à sable `anvil` local pour affronter des réseaux publics, et assemble toute la série dans un capstone :
+
+- **L'interopérabilité cross-chain** (SC-23) — pourquoi déplacer un actif ou un message d'une chaîne à l'autre, comment Chainlink CCIP fait transiter des données on-chain de manière vérifiable, et où se cachent les attaques (reentrancy de bridge, message spoofing).
+- **Le déploiement public** (SC-24, SC-25) — le cœur métier : déployer sur Sepolia (testnet Ethereum) et transiger sur le XRP Testnet (SC-24), puis monter en gamme vers un mainnet L2 (Base, chain_id 8453) où un déploiement coûte quelques centimes (SC-25). Le cycle complet : connexion RPC, wallet, gas, broadcast, vérification.
+- **Le capstone** (SC-26) — la DApp de vote qui assemble toute la série : smart contract de gouvernance (cf SC-9), chiffrement homomorphe des bulletins via Paillier (cf SC-16/17), preuve zero-knowledge de validité (cf SC-15), déploiement anvil puis testnet (cf SC-24), tests Foundry (cf SC-12/14).
+
+Ces notebooks supposent des clés API et private keys lues depuis l'environnement — les outputs committés documentent honnêtement ce qui se passe quand la configuration est absente, et ce qui a réellement tourné quand elle est présente.
+
+### Prochaines étapes
+
+- **Le retour aux fondamentaux** : après ce capstone, la série est complète. Le meilleur approfondissement est de reprendre un notebook fondateur ([SC-0](../00-Foundations/SC-0-Cypherpunk-Origins.ipynb) ou [SC-3](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb)) — les primitives et la syntaxe se comprennent autrement une fois qu'on a déployé et sécurisé un système réel.
+- **Au-delà des smart contracts** : [SymbolicAI/Lean](../../Lean/README.md) prolonge l'idéal de vérification (cf SC-14) vers la preuve mathématique ; [GameTheory/SocialChoice](../../../GameTheory/SocialChoice/README.md) approfondit les fondations théoriques du vote (cf SC-9/SC-17, capstone SC-26).
+- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les six sous-séries — celle-ci clôt le parcours SC-0 → SC-26.
+
+### Le fil rouge
+
+Les smart contracts en production proposent un changement de regard sur le déploiement : ne plus opposer **théorie** et **pratique**, mais comprendre qu'un protocole n'est vraiment éprouvé qu'**exposé au monde réel** (gas coûteux, adversaires, immutabilité). Le passage testnet → mainnet L2, la discipline du secret (`os.getenv`, jamais inline) et le capstone qui assemble vote, chiffrement homomorphe et preuve ZKP ne sont pas des exercices accessoires : ils sont la *validation* de tout ce que les cinq sous-séries précédentes ont construit. La leçon transversale : un smart contract n'est jamais « fini » tant qu'il n'a pas survécu au contact d'un réseau public — et c'est précisément cette épreuve qui transforme une démonstration pédagogique en un système digne de confiance.
