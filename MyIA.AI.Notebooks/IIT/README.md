@@ -209,6 +209,29 @@ IIT/
 └── README.md                   # Cette documentation
 ```
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette série vous a fait traverser la proposition la plus quantitative de la neuroscience théorique contemporaine : **traiter la conscience comme une propriété mesurable** d'un système, plutôt que comme un épiphénomène mystérieux. L'arc pédagogique :
+
+- **Le geste fondateur** — poser qu'un système est conscient dans la mesure exacte où il intègre de l'information de manière **irréductible** : ni plus ni moins que ce que ses parties prises isolément ne peuvent expliquer. Cette irréductibilité, c'est **Phi**.
+- **L'instrument** — PyPhi, la bibliothèque de référence du laboratoire Tononi, qui opérationnalise la théorie : graphes causaux binaires, Transition Probability Matrices, sous-systèmes, extraction des Cause-Effect Structures, et tout le calcul combinatoire que l'intégration exige.
+- **La finesse** — distinguer **big Phi** (la conscience du système entier) et **small phi** (l'irréductibilité d'un concept local), comprendre le partitionnement MIP qui localise le « maillon faible » d'un système, et saisir pourquoi le coarse-graining devient indispensable dès que le réseau grandit.
+
+La thèse est vertigineuse et honnêtement présentée : si IIT a raison, la conscience n'est pas un mystère à élucider mais une **quantité à calculer** — et un système artificiel suffisamment intégré pourrait, en principe, l'incarber.
+
+### Prochaines étapes
+
+- **Approfondir les fondements probabilistes** : [Probas](../Probas/README.md) (Infer.NET, programmation probabiliste) fournit les outils de modélisation causale et d'inférence bayésienne qui sous-tendent le calcul des TPM.
+- **Élargir aux systèmes multi-agents** : [GameTheory](../GameTheory/README.md) (théorie des jeux, choix social) partage avec IIT la question centrale — comment l'interaction entre composants produit-elle des propriétés émergentes que les composants seuls ne possèdent pas ?
+- **Questionner la portée** : relisez la section « Portée scientifique et débats » — IIT est une théorie vivante et contestée, pas un consensus. Les critiques empiriques (absence de tests décisifs) et théoriques (mesure de la conscience chez les systèmes simples) restent ouvertes, et c'est sain pour un champ scientifique.
+- Pour la pratique : reprenez le notebook d'Advanced Topics et expérimentez la limite computationnelle — à partir de combien de nœuds le calcul de Phi devient-il prohibitif, et que révèle le coarse-graining sur les macro-systèmes ?
+
+### Le fil rouge
+
+IIT propose un changement de regard radical : ne plus demander « qu'est-ce que la conscience ? » mais **« combien de conscience ce système intègre-t-il ? »**. La série vous a donné l'outil (PyPhi) et le formalisme (Phi, CES, MIP) pour transformer une question philosophique en un calcul — en gardant à l'esprit qu'aucune mesure, aussi élégante soit-elle, ne clôt à elle seule le débat sur ce que c'est que d'être un système qui ressent quelque chose.
+
 ## Licence
 
 Voir la licence du repository principal.
