@@ -3,6 +3,38 @@ set -e
 
 echo "🚀 Démarrage de l'entrypoint ComfyUI..."
 
+# --- Privilege drop (Docker Desktop Windows bind-mount fix) ---
+# The venv is bind-mounted from the Windows host. Docker Desktop maps Windows
+# files as root-owned inside the container, so a `user: "1000:1000"` container
+# cannot pip-install into venv/lib/.../site-packages (Permission denied -> the
+# entrypoint crashes on requirements.txt when new deps must be installed, e.g.
+# after a ComfyUI core upgrade). chown does NOT persist across container
+# recreates on bind-mounts, so the fix must run on every start.
+#
+# We run the entrypoint as root (docker-compose has no `user:` directive), fix
+# the ownership of /workspace/ComfyUI once, then re-exec as uid 1000 (bonsai)
+# via gosu so the server itself never runs as root. (axe-2 #3164)
+if [ "$(id -u)" = "0" ]; then
+    # Install gosu if missing (python:3.11 base image does not ship it)
+    if ! command -v gosu >/dev/null 2>&1; then
+        echo "📦 Installation de gosu..."
+        apt-get update -qq && apt-get install -y -qq gosu >/dev/null
+    fi
+    # Ensure uid-1000 user exists (for getpass.getuser() in torch._inductor)
+    if ! getent passwd 1000 >/dev/null 2>&1; then
+        useradd -u 1000 -o -m -s /bin/sh bonsai || true
+    fi
+    echo "🔧 Correction des permissions du workspace (chown 1000:1000)..."
+    # Scope the chown to directories pip/custom-nodes must write to. Avoids
+    # walking the multi-GB models/outputs/cache trees (very slow on bind-mount).
+    chown -R 1000:1000 /workspace/ComfyUI/venv /workspace/ComfyUI/custom_nodes 2>/dev/null || true
+    # Top-level files/dirs the entrypoint itself touches (login/, .secrets is ro)
+    chown 1000:1000 /workspace/ComfyUI 2>/dev/null || true
+    exec gosu bonsai bash "$0" "$@"
+fi
+
+# --- Below this point we run as uid 1000 (bonsai) ---
+
 # Clonage si nécessaire
 if [ ! -f "main.py" ]; then
     echo "📥 Clonage de ComfyUI..."
