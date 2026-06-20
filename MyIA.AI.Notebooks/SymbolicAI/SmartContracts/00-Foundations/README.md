@@ -54,6 +54,28 @@ A l'issue de cette sous-serie, vous serez capable de :
 | [SmartContracts (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global de la serie |
 | [01-Solidity-Foundation](../01-Solidity-Foundation/README.md) | Suite immediate | SC-3 Solidity Basics demarre apres SC-2 |
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette sous-série d'ouverture vous a posé les **deux socles** sur lesquels toute la série SmartContracts reposera. L'arc pédagogique procède du *pourquoi* au *comment* :
+
+- **Le socle conceptuel — les primitives cypherpunk** (SC-0) — vous êtes remonté aux origines de la blockchain en reconstruisant les briques cryptographiques from scratch en Python : le **hachage** (ancrage immuable), l'**arbre de Merkle** (preuve d'inclusion logarithmique), la **preuve de travail** (résistance à la falsification par le coût computationnel), les **signatures numériques** (authentification non-répudiable), et la **table de hachage distribuée / Kademlia** (coordination sans serveur central). Comprendre ces primitives, c'est comprendre *pourquoi* une chaîne est immuable : non par décret, mais parce que chaque brique rend la falsification exponentiellement plus coûteuse que la vérification.
+- **Le socle technique — l'environnement Foundry + web3.py** (SC-1, SC-2) — vous avez installé la trousse à outils de référence (**`forge`**, **`cast`**, **`anvil`**) puis connecté **web3.py** + **py-solc-x** à une blockchain locale `anvil`. Le résultat n'est pas anecdotique : le pattern **`compile -> deploy -> call`** établi en SC-2 est celui repris dans *tous* les notebooks suivants. C'est la fondation opérationnelle autant que conceptuelle de la série.
+- **La posture honnête** — les notebooks de *setup* documentent ce qui s'exécute réellement (Foundry installé, `anvil` lancé, contrat compilé et déployé), sans erreurs volontaires. La rigueur commence ici : un environnement reproductible est la condition de toute expérimentation sérieuse sur les smart contracts.
+
+### Prochaines étapes
+
+- **Solidity par la pratique** : la suite immédiate est [01-Solidity-Foundation](../01-Solidity-Foundation/README.md) (SC-3 Solidity Basics et au-delà), qui exploite l'environnement désormais opérationnel pour écrire de vrais contrats — variables, fonctions, modifiers, événements, héritage.
+- **Approfondir les primitives** : [SC-0-Cypherpunk-Origins](SC-0-Cypherpunk-Origins.ipynb) mérite d'être repris après avoir écrit des contrats en Solidity — la théorie du hachage et de Merkle prend tout son sens quand on manipule `keccak256` et le stockage d'un contrat.
+- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les six sous-séries (Foundations, Solidity, Foundry-Testing, Privacy/Cryptography, Alternative-Chains, Real-World) — cette sous-série n'est que le seuil.
+
+### Le fil rouge
+
+L'ouverture propose un changement de regard sur les smart contracts : ne plus les voir comme du « code sur une blockchain » magique, mais comme la **composition de primitives cryptographiques dont l'immutabilité est mathématiquement fondée**, manipulées via un environnement d'outils reproductible. Cette sous-série vous a donné le *pourquoi* (les primitives cypherpunk) et le *comment* (Foundry + web3.py), en gardant à l'esprit que le pattern `compile -> deploy -> call` établi ici est le squelette de toute la suite — et que la rigueur de l'environnement est la condition non-négociable de toute expérimentation honnête.
+
+---
+
 ## Navigation
 
 [<- Sommaire SmartContracts](../README.md) | [SC-3 Solidity Basics ->](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb)
