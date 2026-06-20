@@ -430,6 +430,32 @@ RL/
 └── README.md
 ```
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette série vous a fait traverser le paradigme d'apprentissage qui distingue l'IA décisionnelle : là où l'apprentissage supervisé *prédit* à partir d'exemples étiquetés et l'non supervisé *découvre* des structures, le reinforcement learning **agit** — il choisit des actions, observe leurs conséquences, et s'améliore itérativement par essai et erreur. L'arc pédagogique :
+
+- **Le geste fondateur** — formaliser un problème de décision séquentielle comme un **MDP** `(S, A, P, R, γ)` et le résoudre par l'**équation de Bellman**, qui définit récursivement la valeur optimale. Cette formalisation est le socle commun : sans elle, pas de Value Iteration, pas de Q-Learning, pas de DQN. Le bandit (notebook 4) en est le cas le plus simple — le compromis exploration/exploitation à un seul pas de temps.
+- **La double approche, délibérément juxtaposée** — *framework d'abord, maths ensuite*. Vous commencez par entraîner un agent PPO en quelques lignes avec Stable Baselines3 (notebooks 1-3, production-ready), puis vous déconstruisez les mêmes algorithmes *from scratch* en PyTorch (notebooks 4-7) pour comprendre ce qui se cache sous le capot. Cette pédagogie évite le double piège : la théorie abstraite sans application, et l'usage boîte noire sans compréhension.
+- **L'instrument** — Stable Baselines3 pour la production (PPO, SAC, HER), PyTorch pur pour l'implémentation pédagogique (DQN, REINFORCE, A2C, PPO, SAC depuis zéro), Gymnasium comme interface d'environnements standard, PettingZoo pour le multi-agent.
+- **La finesse** — les **compromis cartographiés** qui structurent tout le champ : on-policy (PPO/A2C, stable mais moins économe) vs off-policy (DQN/SAC, sample-efficient mais plus fragile) ; value-based (DQN) vs policy-based (REINFORCE) vs actor-critic (A2C/SAC) ; model-free (Q-Learning) vs model-based (Dyna-Q, pont vers MCTS/AlphaZero/MuZero) ; online vs offline (Behavior Cloning, BCQ-lite, pont vers RLHF/DPO). Et les subtilités qui changent la pratique : l'experience replay et le target network qui stabilisent DQN, le clipped surrogate de PPO, le maximum entropy de SAC, le potential-based shaping (Ng 1999) qui accélère sans biaiser.
+
+La thèse est puissante et honnêtement présentée : le RL n'a pas d'algorithme universel, mais une *famille* de méthodes aux compromis clairement nommés, et la compétence de l'ingénieur est de savoir choisir dans cette famille selon la nature du problème (espace d'actions, besoin de stabilité vs efficacité, accès à l'interaction, observabilité) — voire de combiner (Actor-Critic, model-based + RL, offline + contraintes).
+
+### Prochaines étapes
+
+- **Approfondir la théorie** : le livre de référence *Sutton & Barto — Reinforcement Learning: An Introduction* (2nd ed.) et [Spinning Up in Deep RL](https://spinningup.openai.com/) d'OpenAI sont les prolongements naturels des fondements posés ici ; Mnih et al. (2015, *Human-level control through deep RL*, Nature) est le papier fondateur du DQN moderne.
+- **Élargir aux jeux et à la recherche** : [Search](../README.md) (Minimax, MCTS) et [GameTheory](../GameTheory/README.md) reprennent la recherche adversariale ; le notebook Search-7 (MCTS-And-Beyond) fait explicitement le pont AlphaGo (MCTS + DQN), et le multi-agent RL (notebook 7) rejoint la théorie des jeux.
+- **Franchir le cap production** : les notebooks 1-3 (Stable Baselines3, wrappers, callbacks, multiprocessing) donnent les outils d'un pipeline RL industriel ; le notebook 9 (offline RL) ouvre sur RLHF/DPO, le pont majeur entre RL et LLMs modernes.
+- Pour la pratique : reprenez le notebook 6c (PPO from scratch) et comparez-le au PPO de SB3 du notebook 1 — quels hyperparamètres SB3 ajuste-t-il pour vous, et où votre implémentation naïve diverge-t-elle ? C'est le meilleur moyen de saisir la valeur ajoutée d'un framework de production.
+
+### Le fil rouge
+
+Le reinforcement learning propose un changement de regard sur l'apprentissage : ne plus demander « quelle est la bonne réponse ? » mais **« quelle action maximise la récompense cumulée, sachant qu'elle détermine les états futurs ? »**. La série vous a donné le formalisme (MDP, équation de Bellman), les algorithmes (du bandit à SAC, du tabulaire au deep, du online à l'offline), et l'intuition des compromis pour transformer un problème de décision séquentielle en une politique apprise — en gardant à l'esprit que ce paradigme, de AlphaGo aux LLMs alignés par RLHF, est devenu l'un des deux piliers (avec l'apprentissage supervisé) de l'IA contemporaine.
+
+---
+
 ## Licence
 
 Voir la licence du repository principal.
