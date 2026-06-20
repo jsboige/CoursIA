@@ -96,3 +96,29 @@ L'**architecture Solana** (accounts, programs) et le framework **Anchor** (Rust)
 - **Move Book** (Diem/Meta, 2019 ; Sui) -- programmation orientee ressources, abilities. move-language.github.io/move.
 - **Solana Documentation** + **Anchor Book** (Solana Labs / Anchor) -- accounts, PDAs, CPIs. docs.solana.com, book.anchor-lang.com.
 - Voir aussi les references transversales dans le [README parent de la serie](../README.md).
+
+---
+
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette cinquième sous-série élargit le horizon **au-delà de la EVM Ethereum**. L'arc pédagogique confronte le modèle mental Ethereum à **cinq paradigmes différents**, chacun révélant un choix de conception qu'Ethereum avait présenté comme allant de soi :
+
+- **Vyper** (SC-18) — le Solidity « sécurisé par conception » : volontairement restrictif (pas d'héritage, pas d'inline assembly) pour réduire la surface d'attaque. La conception du langage *comme* mesure de sécurité.
+- **Le XRP Ledger** (SC-19) — un consensus sans minage (UNL, Unique Node List), des trust lines, un DEX intégré, des payment channels et des Hooks. Une blockchain pensée pour les paiements, pas le calcul général.
+- **Bitcoin et son langage à pile** (SC-20) — le **modèle UTXO** (vs le modèle Account d'Ethereum), **Bitcoin Script** comme langage à pile non-Turing-complet, un mini-interpréteur en Python, et les scripts avancés (multisig, timelock, P2SH). La simplicité délibérée comme sécurité.
+- **Move et Sui** (SC-21) — la programmation **orientée ressources** (née chez Meta/Diem), le modèle objet de Sui, et les abilities (`key`/`store`/`copy`/`drop`) qui contrôlent la linéarité et la copie.
+- **Solana et Anchor** (SC-22) — une architecture haute performance en Rust, les **PDAs** (Program Derived Addresses) déterministes, et les **CPIs** (Cross-Program Invocations).
+
+La signature pédagogique est multi-langage (Vyper, Bitcoin Script, Move, Rust présentés comme chaînes de caractères), avec des sorties documentées honnêtement selon que le CLI correspondant est installé.
+
+### Prochaines étapes
+
+- **Le déploiement réel** : la suite est [06-Real-World](../06-Real-World/README.md) (SC-23 à SC-26), qui confronte ces modèles à des réseaux publics (testnets, mainnets L2) et les assemble dans un capstone.
+- **Revenir sur Ethereum** : après avoir vu UTXO, ressources et paradigmes alternatifs, relire [01-Solidity-Foundation](../01-Solidity-Foundation/README.md) — le modèle Account/EVM apparaît alors comme *un* choix, non *le* choix.
+- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les six sous-séries — celle-ci est le décentrement comparatif.
+
+### Le fil rouge
+
+Les chaînes alternatives proposent un changement de regard sur la blockchain : ne plus la voir comme une technologie unique (la EVM), mais comme un **espace de conception** où chaque axe — compte vs UTXO, Turing-complet vs langage à pile, objet vs ressource, minage vs consensus par quorum — est un compromis entre expressivité, sécurité et performance. Comprendre Vyper, XRP, Bitcoin, Move et Solana, c'est comprendre qu'il n'existe pas de « bonne » blockchain dans l'absolu, mais une famille de modèles dont Ethereum n'est qu'un point — et que le choix du paradigme dépend du compromis qu'on est prêt à accepter.

@@ -80,3 +80,27 @@ La **verification formelle** comme niveau au-dessus du testing : **Certora Prove
 - **Halmos** (a16z, 2023) -- symbolic execution open-source pour tests Foundry.
 - Wilkinson, M. (2022) -- "Foundry: A Blazing Fast, Portable, and Modular Toolkit for Ethereum Application Development".
 - Voir aussi les references transversales dans le [README parent de la serie](../README.md).
+
+---
+
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette troisième sous-série introduit le **testing rigoureux** : le passage du « code qui semble marcher » au « code dont on prouve les propriétés ». L'arc pédagogique est une **escalade de l'assurance** — chaque étape couvre une classe de bugs plus large que la précédente :
+
+- **La suite Foundry** (SC-12) — installation et configuration de `forge`/`cast`/`anvil`, structure de projet, tests en Solidity avec DSTest, **cheatcodes** (`vm.prank`, `vm.warp`, `vm.expectRevert`) pour simuler des scénarios, et assertions avec logging.
+- **Le fuzz et les invariants** (SC-13) — passer des paramètres aléatoires aux fonctions de test, vérifier des **invariants** (propriétés qui doivent toujours tenir), filtrer les entrées invalides avec `vm.assume`. Cette étape change la manière de penser les tests : on ne vérifie plus des cas isolés mais des **familles entières** de comportements.
+- **La vérification formelle** (SC-14) — le niveau au-dessus du testing : **Certora Prover** et le langage de spécification **CVL**, écriture de spécifications et de règles, vérification d'invariants mathématiques. Pont naturel avec la série [Lean](../../Lean/) (même paradigme de preuve formelle).
+
+Cette sous-série a une signature pédagogique particulière : le code Solidity y est présenté comme chaînes de caractères avec les sorties de tests (`[PASS]`/`[FAIL]`) documentées comme illustration — une installation locale de Foundry et Certora permet de reproduire les tests pour de vrai.
+
+### Prochaines étapes
+
+- **Appliquer la preuve à la confidentialité** : la suite est [04-Privacy-Cryptography](../04-Privacy-Cryptography/README.md) (SC-15 à SC-17), où la rigueur formelle des protocoles cryptographiques (ZKP, chiffrement homomorphe) devient centrale.
+- **Approfondir la preuve formelle** : [SymbolicAI/Lean](../../Lean/README.md) développe le même paradigme (spécifier puis prouver) dans un cadre mathématique pur — CVL et Lean sont deux instances du même idéal de vérification.
+- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les six sous-séries — celle-ci est le garde-fous qualité.
+
+### Le fil rouge
+
+Le testing des smart contracts propose un changement de regard sur la fiabilité : ne plus demander « est-ce que ça marche sur mes exemples ? » mais **« quelles propriétés sont garanties quelles que soient les entrées ? »**. L'escalade tests unitaires → fuzz → vérification formelle n'est pas un luxe : sur une chaîne où le code est immuable et où une faille coûte des millions, prouver un invariant (qu'il résiste à toute entrée, même aléatoire, même adversariale) est précisément ce qui distingue un protocole déployable d'une démonstration de prototype — et cette exigence d'assurance est le pont vers les protocoles cryptographiques de la sous-série suivante.
