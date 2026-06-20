@@ -498,9 +498,49 @@ ou `Sigma` est la **matrice de covariance** complete (correlations incluses). Re
 3b. ~~**Run baselines for MeanReversion, AAA, PairsTrading**~~ — Done 2026-06-11. MeanReversion promoted Tier 2→1 (0.81), AAA promoted Tier 4→1 (0.509), PairsTrading confirmed exploratoire (-0.28)
 4. ~~**Transaction cost sensitivity analysis**: Estimated turnover and cost impact for all 10 research baselines~~ — Done (See #1407)
 5. ~~**Transaction cost re-backtest**: Add `SetBrokerageModel` + configurable brokerage parameter~~ — Done, #2575 + fee sweep EMA-Cross-Stocks + Crypto-MultiCanal (See #2471, #2575, #2588)
-6. **Cross-seed validation**: ≥4 seeds (0/1/7/42/99) for ML/DL/RL strategies
-7. **Edge vs σ**: Compute for all strategies vs B&H baseline
+6. **Cross-seed validation (gates #7)**: ≥4 seeds (0/1/7/42/99) for ML/DL/RL strategies — multi-cycle, requires re-training each model on ≥4 seeds and re-backtesting (heavy QC + GPU). **Blocks #7**: σ_cross_seed is a prerequisite input for Edge vs σ. See section "Edge vs σ — statut & dépendance" below.
+7. **Edge vs σ (gated on #6)**: Compute `(Sharpe - baseline_Sharpe) / σ_cross_seed` for ML/DL/RL multi-seed strategies vs B&H baseline. **Not computable standalone** — requires σ_cross_seed from #6. For non-ML (IND/COMP/RISK/OPT) strategies there is no σ_cross_seed (single-run), so Edge vs σ applies only to the ML/DL/RL subset once #6 delivers. See section "Edge vs σ — statut & dépendance" below.
 8. **Trend-Following repo/cloud drift**: repo code gives Sharpe 0.365 on 2018-2024 vs published 1.072 (2018-2025, prior cloud state) — identify which code version produced 1.072 and align repo (see Key finding 18)
+
+---
+
+## Edge vs σ — statut & dépendance (#1630 items #6 → #7)
+
+**Définition** (spec #1630) : `Edge_vs_σ = (Sharpe_strategy − baseline_Sharpe) / σ_cross_seed`, où `baseline_Sharpe` = Sharpe d'un benchmark buy-and-hold (SPY pour US equities, BTC pour crypto) sur la même période, et `σ_cross_seed` = écart-type du Sharpe de la stratégie across ≥4 seeds d'entraînement.
+
+**Statut : non calculable ce cycle — blocker structurel documenté.**
+
+### Dépendance : #7 exige #6 (σ_cross_seed)
+
+L'Edge vs σ **ne peut pas être calculé sans `σ_cross_seed`**, qui n'existe que pour les stratégies **multi-seed** — c'est précisément ce que l'item #6 (cross-seed validation) doit produire. Donc :
+
+- **#7 est gated on #6** : tant que #6 n'a pas livré ≥4 seeds par stratégie ML/DL/RL, il n'y a pas de `σ_cross_seed` en entrée.
+- **#6 est multi-cycle/lourd** : re-entraîner chaque modèle ML/DL/RL sur ≥4 seeds (0/1/7/42/99) + re-backtester chaque run consomme massivement le rate-limit QC (10 backtests/min cluster) et/ou le GPU. Pas un grain atomique 1-cycle — découper en sous-lots par famille (ML equity, DL, RL) quand priorisé.
+
+### Périmètre : ML/DL/RL uniquement
+
+Pour les stratégies **non-ML** (IND/COMP/RISK/OPT/STAT), il n'y a **pas de σ_cross_seed** : elles sont déterministes (single-run, pas de seed d'entraînement). L'Edge vs σ spec #1630 vise donc **explicitement les ML/DL/RL** (« Edge vs σ calculé pour les strategies ML/DL/RL multi-seed »). Les stratégies non-ML reçoivent un edge simplifié `(Sharpe − baseline_Sharpe)` en σ-unités via la volatilité réalisée si besoin, mais pas un edge cross-seed.
+
+### Stratégies éligibles (une fois #6 livré)
+
+Les entrées ML/DL/RL du catalogue, par tier :
+- **Tier 1 (robuste)** : LongShortHarvest, Positive-Negative-Splits-ML, DynamicVIXSpyRegime, MacroFactorRotation, Portfolio-Optimization-ML, CausalEventAlpha, Gaussian-Direction-Classifier, ML-Temporal-CNN, ML-RandomForest, ML-Trend-Scanning, ML-FeatureEngineering, Markov-Regime-Detection, ML-XGBoost, RegimeSwitching, Temporal-CNN-Prediction, RL-DQN-Trading, LSTM-Forecasting.
+- **Tier 2/3/4** : ML-Classification, ML-Regression, ML-Ensemble, ML-DeepLearning, DL-LSTM, RL-Portfolio, Reinforcement-Learning-Trading, BTC-ML, Crypto-LSTM-Prediction, ML-Reversion-Trending, ML-Chronos-Foundation, Chronos-Foundation-Forecasting, Adaptive-Conformal-Risk, ML-Gaussian-Classifier, ML-TextClassification, ML-EnhancedPairs, PCA-StatArbitrage.
+
+### Baseline_Sharpe (B&H, déjà mesurable)
+
+La moitié `baseline_Sharpe` de la formule **est** calculable dès maintenant (B&H sur la période aligned) — mais publiera un edge complet seulement après #6 :
+
+| Benchmark | Période | B&H Sharpe (approx.) | Note |
+|-----------|---------|----------------------|------|
+| SPY (US equities) | 2018-2025 | ~1.15 | Barre élevée — une stratégie equity qui ne bat pas SPY B&H n'a pas d'edge |
+| BTC (crypto) | 2020-2025 | ~1.0 (bull) | Crypto bull-market caveat — cf Portfolio-IBKR-Binance-Hybrid |
+
+**Note honnête** : un edge simplifié `(Sharpe_strategy − Sharpe_B&H)` (sans normalisation σ_cross_seed) est trompeur — il ne distingue pas une stratégie avec un edge stable d'une avec un edge bruité. La normalisation par σ_cross_seed est précisément ce qui fait la valeur de la métrique. D'où le gate #6.
+
+### Conclusion
+
+#7 n'est pas un grain livrable ce cycle. Le chemin correct : **#6 d'abord** (sous-lots par famille ML/DL/RL, multi-cycle), puis #7 se calcule trivialement (une division par ligne). Cette section documente la dépendance pour qu'elle soit traçable plutôt qu'un vague « à calculer ». Si une priorisation est voulue, starter pack suggéré : **les 4 true leaders PSR>50%** (Positive-Negative-Splits-ML 82.3%, Framework_Composite_TrendWeather 77.9%, FamaFrenchAllWeather 87.5%, Portfolio-IBKR-Binance-Hybrid 62%) — confirmer leur edge en σ-unités cross-seed est le plus utile pédagogiquement.
 
 ---
 

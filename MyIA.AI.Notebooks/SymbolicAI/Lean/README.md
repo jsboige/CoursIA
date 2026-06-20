@@ -2,12 +2,12 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 24
-breakdown: Lean=24
-maturity: PRODUCTION=22, BETA=2
+pedagogical_count: 26
+breakdown: Lean=26
+maturity: PRODUCTION=22, BETA=4
 -->
 
-> Série [`SymbolicAI`](../README.md) › **Lean**
+[← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
 
 Cette serie introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants. Le fil rouge va des fondations (types dependants, mode tactique, Mathlib) vers l'etat de l'art : assistance aux preuves par LLM et verification formelle de reseaux de neurones, ports de théorèmes phares (théorème de Kochen-Specker / 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen ; finitude des dérivées symboliques de Brzozowski), theorie des nœuds (mouvements de Reidemeister, tricolorabilite de Fox, noeud de Conway et preuve de Piccirillo), et hommages aux mathematiciens (Grothendieck et le langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre).
 
@@ -24,7 +24,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | **Integration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
 | **Complet** | 1-12 | ~11h | Toutes les fonctionnalites incluant LeanDojo et théorème de sensibilite |
 | **Avec Pilier 1.B** | 1-12, 15 | ~12h | Inclut le port Kochen-Specker (Cabello 18-vecteurs) - contextuality quantique |
-| **Avec hommages** | 1-12, 13, 14a, 14b, 14c, 15, 16 | ~16h | Ajoute Lean-13 (Grothendieck), Lean-14a (Conway, l'homme et l'oeuvre), Lean-14b (Conway, Game of Life) et Lean-16 (Conway, théorème du libre arbitre - adosse a Lean-15) |
+| **Avec hommages** | 1-12, 13, 14a, 14b, 14c, 14d, 14e, 15, 16 | ~17h20 | Ajoute Lean-13 (Grothendieck), Lean-14a (Conway, l'homme et l'oeuvre), Lean-14b (Conway, Game of Life), Lean-14d (Conway, Game of Life sur kernel Lean natif), Lean-14e (Conway, FRACTRAN sur kernel Lean natif) et Lean-16 (Conway, théorème du libre arbitre - adosse a Lean-15) |
 | **Avec théorie des nœuds** | 1-12, 13, 14a-c, 15, 16, 17a, 17b | ~17h30 | Ajoute Lean-17a (Conway, les nœuds et la preuve de Piccirillo) et Lean-17b (invariants : PD-codes, tricolorabilite de Fox, mouvements de Reidemeister) - companion `knot_lean`, Epic #2874 |
 
 ## Structure
@@ -69,6 +69,8 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 14a | [Lean-14a-Conway-Man-and-Work](Lean-14a-Conway-Man-and-Work.ipynb) | Conway, l'homme et l'oeuvre : biographie et style singulier (le jeu comme méthode) ; panorama des grands resultats (nombres surreels, groupes de Conway & Monstrous Moonshine, reseau de Leech, polynome de Conway, Doomsday, Look-and-Say, FRACTRAN, problème de l'Ange, Sprouts, théorème du libre arbitre) ; premieres noix crackees executees depuis conway_lean (Doomsday, Look-and-Say, Nim, Angel, Life - 0 sorry) - Epic #1647 / #2154 | 50 min |
 | 14b | [Lean-14b-Conway-Game-of-Life-Lean](Lean-14b-Conway-Game-of-Life-Lean.ipynb) | Hommage a John Conway : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel - Epic #1647 | 60 min |
 | 14c | [Lean-14c-Conway-Game-of-Life-Golly](Lean-14c-Conway-Game-of-Life-Golly.ipynb) | Game of Life : les 3 piliers en images (compagnon Golly, integration CLI `bgolly` pour simulation certifiee) - Epic #1647 | 45 min |
+| 14d | [Lean-14d-Conway-Game-of-Life-Lean-Native](Lean-14d-Conway-Game-of-Life-Lean-Native.ipynb) | Game of Life sur **kernel Lean natif** (`lean4-wsl`) : grille, règle B3/S23, moteur `step`/`evolve`, motifs (bloc, clignoteur, planeur) et faits certifiés par `decide`/`native_decide`, sans axiome `sorry` - Epic #1647 / #3294 | 40 min |
+| 14e | [Lean-14e-Conway-FRACTRAN-Lean-Native](Lean-14e-Conway-FRACTRAN-Lean-Native.ipynb) | FRACTRAN sur **kernel Lean natif** (`lean4-wsl`) : type `Frac` (preuve `den > 0`), moteur `fracMulNat`/`fractranStep`/`fractranRun`, programmes (doubler, diviser) et le générateur de nombres premiers de Conway (14 fractions), faits certifiés par `decide` sans axiome `sorry` - Epic #1647 / #3294 | 40 min |
 | 16 | [Lean-16-Conway-Free-Will-Theorem](Lean-16-Conway-Free-Will-Theorem.ipynb) | théorème du libre arbitre (Conway-Kochen) : les trois axiomes SPIN/TWIN/MIN en profondeur, argument en deux temps (1 particule via Kochen-Specker, puis 2 particules via TWIN), ce que le théorème dit et NE dit PAS, port formel adosse a `FreeWillTheorem.lean` (chaine de reduction `free_will_theorem -> fwt_single_particle -> kochen_specker`, 0 sorry), registre d'extensibilite - Epic #2162 / #2156 | 40 min |
 
 ### Partie 5 : Theorie des noeuds
@@ -298,6 +300,8 @@ Lean/
 ├── Lean-14a-Conway-Man-and-Work.ipynb # Python kernel - hommage Conway (l'homme et l'oeuvre, noix executees depuis conway_lean)
 ├── Lean-14b-Conway-Game-of-Life-Lean.ipynb   # Python kernel - hommage Conway (Game of Life as Computation)
 ├── Lean-14c-Conway-Game-of-Life-Golly.ipynb  # Python kernel - hommage Conway (Game of Life en images, compagnon Golly)
+├── Lean-14d-Conway-Game-of-Life-Lean-Native.ipynb  # Lean4 (WSL) kernel - Game of Life natif (grille, B3/S23, decide/native_decide, 0 sorry)
+├── Lean-14e-Conway-FRACTRAN-Lean-Native.ipynb      # Lean4 (WSL) kernel - FRACTRAN natif (machine universelle de Conway, générateur de premiers)
 ├── Lean-15-Kochen-Specker.ipynb    # Lean4 kernel - théorème de Kochen-Specker (Pilier 1.B)
 ├── Lean-15-Finiteness-Derivatives.ipynb # Python kernel - dérivées symboliques de Brzozowski (finitude, matching linéaire)
 ├── Lean-16-Conway-Free-Will-Theorem.ipynb # Python kernel - hommage Conway (théorème du libre arbitre, adosse a FreeWillTheorem.lean)
@@ -485,6 +489,30 @@ Les deux notebooks couvrent la theorie des nœuds sous des angles complementaire
 - **Lean-17b (Invariants de Nœuds)** : atelier pratique et companion du projet formel `knot_lean/`. On y manipule les PD-codes, les mouvements de Reidemeister et la tricolorabilite de Fox, avec des exercices de calcul et de vérification d'invariants.
 
 Lean-17a donne le *pourquoi* (motivation historique) ; Lean-17b donne le *comment* (calcul des invariants, port formel).
+
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Lean n'est pas un langage de programmation de plus : c'est le point où **le code devient une preuve**. En parcourant cette série, vous avez traversé le spectre de la vérification formelle :
+
+- **Les fondations** (Lean-1 Setup à Lean-6) : installer l'outil, manipuler les types dépendants, comprendre l'isomorphisme de Curry-Howard — un programme *est* une preuve, un type *est* une proposition.
+- **Prouver en pratique** (Lean-7 à Lean-12) : tactiques, lemmes, induction, l'art de *réduire* un énoncé jusqu'à ce que `rfl` ou `decide` le closent. Vous avez vu qu'une preuve formelle n'est pas une invention — c'est un dialogue avec un vérificateur qui n'accepte rien sur confiance.
+- **Les mathématiques vivantes** (Lean-13 à Lean-17b) : Game of Life (Hashlife), théorie des jeux sociaux (Arrow, Sen, Shapley), topologie (Grothendieck), théorie des nœuds (Piccirillo, tricolorabilité de Fox). Chaque domaine porté en Lean devient une *certification* — le `sorry` résiduel y est tracé comme une dette, pas caché.
+
+### Prochaines étapes
+
+- **Poussez un port jusqu'au bout** : le projet [`knot_lean/`](knot_lean/) est le companion formel de Lean-17b. Les invariants de nœuds (PD-codes, Reidemeister, Fox) y sont portés avec quelques `sorry` résiduels documentés — un terrain concret où une preuve formelle est *en cours*, pas achevée.
+- **Croisez avec la théorie des jeux** : les résultats formels d'Arrow/Sen/Shapley/Voting (notebooks 16b-16f) rencontrent la série **[GameTheory](../../GameTheory/)** — où le choix social est étudié à la fois formellement et computationnellement.
+- **Appliquez au monde réel** : la vérification formelle n'est pas qu'abstraite. La série **[SmartContracts](../SmartContracts/)** (SC-14) applique les mêmes principes aux smart contracts — SMT solvers automatiques bornés d'un côté, Lean interactif expressif de l'autre, même ambition : certifier la correction d'un programme exécuté.
+- **Élargissez au Web Sémantique** : les shapes SHACL sont des invariants sur les données, analogues aux spécifications Lean. La série **[SemanticWeb](../SemanticWeb/)** (SW-7 OWL, SW-8 SHACL) explore une autre face de la certification — valider la cohérence d'une base de connaissances plutôt que prouver un théorème.
+- **Relisez la série sous l'angle de la certification** : la [Lecture transversale](#lecture-transversale) relie ce geste — *certifier par changement de représentation* — à l'ensemble du dépôt CoursIA.
+
+### Le fil rouge
+
+Le titre annonce un solveur mathématique et de la vérification formelle. Mais le geste que cette série enseigne est plus profond : **ne rien laisser sur confiance**. Un `theorem` en Lean n'est pas une affirmation, c'est un objet vérifié mécaniquement ; un `sorry` n'est pas un raccourci, c'est un trou dans la chaîne de certification que l'on trace explicitement. Les domaines changent (topologie, choix social, nœuds, cellular automata), les tactiques changent (`induction`, `native_decide`, `aesop`), mais l'exigence reste — *prouver, pas supposer*. C'est elle que vous emportez au-delà de cette série.
+
+---
 
 ## Licence
 

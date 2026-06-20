@@ -29,10 +29,10 @@ L'objectif fil rouge de cette série est de construire un podcast entièrement g
 
 ```
 Audio/
-├── 01-Foundation/     # STT, TTS, bases audio (5 notebooks)
-├── 02-Advanced/       # Voice cloning, musique, MIDI, chansons, TTS expressif (9 notebooks)
-├── 03-Orchestration/  # Multi-modèles, temps réel (3 notebooks)
-└── 04-Applications/   # Éducation, production, sync A/V, live coding, audiobook (13 notebooks)
+├── 01-Foundation/     # STT, TTS, bases audio
+├── 02-Advanced/       # Voice cloning, musique, MIDI, chansons, TTS expressif
+├── 03-Orchestration/  # Multi-modèles, temps réel
+└── 04-Applications/   # Éducation, production, sync A/V, live coding, audiobook
 ```
 
 ## Progression par niveau
@@ -176,14 +176,6 @@ Le fil rouge de cette série est la création d'un podcast généré par IA. Voi
 3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) compare les modèles pour choisir le meilleur STT/TTS selon le budget. [03-2](03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) assemble le pipeline STT vers LLM vers TTS qui constitue le cœur du podcast automatisé.
 
 4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Audio-Content.ipynb) applique le pipeline à la narration de cours. [04-2](04-Applications/04-2-Transcription-Pipeline.ipynb) gère la transcription batch pour les épisodes longs. [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise avec la piste vidéo si le podcast a une composante visuelle.
-
-## Cross-series Bridges
-
-| Série | Lien | Connection |
-|-------|------|------------|
-| [Video](../Video/README.md) | Sync audio-vidéo | [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise l'audio généré avec les pistes vidéo de la série Video |
-| [Texte](../Texte/README.md) | LLM dans le pipeline | Le pipeline podcast (03-2) enchaîne STT vers LLM vers TTS ; les prompts structurés (Texte/2) et le RAG (Texte/5) alimentent le contenu |
-| [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les pipelines multi-modèles Audio (03-1, 03-2) partagent les patterns d'orchestration avec Semantic Kernel |
 
 ## FAQ
 

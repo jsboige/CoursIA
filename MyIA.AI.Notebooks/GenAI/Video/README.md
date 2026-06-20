@@ -9,7 +9,7 @@ maturity: PRODUCTION=10, ALPHA=3, BETA=2, DRAFT=2
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
 
-La vidéo est la modalité générative la plus exigeante : elle combine l'analyse d'images, la compréhension du temps, la synchronisation audio, et la création de mouvement cohérent. Cette série couvre l'ensemble de la chaîne vidéo IA : compréhension de séquences existantes, génération à partir de texte ou d'images, orchestration de pipelines multi-modèles, et workflows de production. 17 notebooks répartis sur 4 niveaux progressifs.
+La vidéo combine quatre difficultés simultanées que les autres modalités traitent séparément : l'analyse d'images, la compréhension du temps, la synchronisation audio, et la création de mouvement cohérent. Cette série couvre l'ensemble de la chaîne vidéo IA : compréhension de séquences existantes, génération à partir de texte ou d'images, orchestration de pipelines multi-modèles, et workflows de production. Les notebooks sont répartis sur 4 niveaux progressifs.
 
 ## Fil rouge : construire un pipeline texte vers vidéo pédagogique
 
@@ -132,15 +132,6 @@ winget install FFmpeg
 | Génération vidéo | 01-5, 02-1 à 02-5 |
 | Compréhension vidéo | 01-2, 01-3 |
 | Production complète | Tous + Audio/04-4 (sync A/V) |
-
-## Cross-series Bridges
-
-| Série | Lien | Connection |
-|-------|------|------------|
-| [Audio](../Audio/README.md) | Sync audio-vidéo | [Audio/04-4](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise la piste audio générée avec la vidéo |
-| [Image](../Image/README.md) | Source d'images | Le pipeline Video/03-2 génère des images via les modèles Image avant de les animer ; SVD (02-4) anime une image existante |
-| [Texte](../Texte/README.md) | Prompts et APIs | La compréhension vidéo (01-2) utilise les mêmes APIs GPT-5 que Texte ; Sora (04-3) dépend de prompts structurés |
-| [SemanticKernel](../SemanticKernel/README.md) | Orchestration | Les workflows vidéo ComfyUI (03-3) partagent les patterns d'orchestration avec les agents Semantic Kernel |
 
 ## FAQ
 

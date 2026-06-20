@@ -448,10 +448,10 @@ Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes s
 | 4 | EMA-Cross-Stocks | IND | **0.891** | 26.2 | 35.7 | 40.5 |
 | 5 | VolTarget-Momentum | COMP | 0.648 | 14.7 | 21.2 | 22.3 |
 
-**Lecture** : PSR (Probabilistic Sharpe Ratio) > 50% = statistiquement significatif. *LeveragedETFMomentum utilise des ETF à levier 3x : profil de risque extrême (MaxDD 53%), non comparable aux stratégies non-leveragées. TrendFollowing reste la référence risque-ajusté (PSR 81.8%, MaxDD 9.3%).
+**Lecture** : PSR (Probabilistic Sharpe Ratio) > 50% = statistiquement significatif. *LeveragedETFMomentum utilise des ETF à levier 3x : profil de risque extrême (MaxDD 53%), non comparable aux stratégies non-leveragées. **TrendFollowing (1.072)** : caveat de reproductibilité — ce Sharpe vient d'un état du code cloud antérieur (backtest `7792ae0a`, 2018-2025) **non reproductible depuis le code versionné du dépôt**. Baseline-clone du `main.py` repo (2015-2024, IBKR margin) = **Sharpe 0.36 / PSR 6.3%** (backtest `486eb064`, #1630 item 8). À citer avec ce caveat, pas comme leader incontesté.
 
 **Enseignements clés** :
-- **TrendFollowing** domine : Sharpe 1.072 avec MaxDD 9.3% seulement. La tendance persiste sur longue période.
+- **TrendFollowing** : Sharpe 1.072 publié (2018-2025, état cloud antérieur) — **non reproductible par le code repo actuel** qui donne 0.36 (2015-2024, PSR 6.3%). La tendance persiste conceptuellement, mais le chiffre exact dépend de la version du code et de la fenêtre (cf [diagnostic reproductibilité](../../docs/qc/qc-comparative-backtests.md), finding 18).
 - **EMA-Cross-Alpha** : Sharpe -0.010 en aligned (vs 0.996 en backtest court) = overfitting sever. Démonstration pédagogique du danger des backtests courts.
 - **Composites : tout dépend de l'architecture** : Framework_Composite_TrendWeather tient (0.948, PSR 56.6%) là où MomentumRegime (combinaison SectorMom + Regime) obtient seulement 0.185 ("double-defense").
 - **Les stars du catalogue ne survivent pas toutes à l'alignement** : PuppiesOfTheDow (1.99 → 0.302) et HighBookToMarketFScore (2.09 → 0.411) s'effondrent sur 2018-2025 — leurs Sharpe catalogue venaient d'une fenêtre glissante non standardisée.

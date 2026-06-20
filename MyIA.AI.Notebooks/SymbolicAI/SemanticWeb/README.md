@@ -519,6 +519,30 @@ Les smart contracts et le web sémantique convergent dans les données décentra
 
 ---
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Le fil de cette série épouse celui du Web Sémantique lui-même : **donner du sens formel à des données**, couche par couche.
+
+- **Modéliser** (Parties 1-2, .NET C#) : un domaine se découpe en triplets RDF, s'interroge en SPARQL, se structure en hiérarchies RDFS puis en ontologies OWL où le raisonneur déduit ce que vous n'avez pas écrit explicitement.
+- **Valider et échanger** (Partie 3, Python) : SHACL garantit la conformité d'un graphe, JSON-LD ponte vers le Web des APIs, RDF-Star ajoute la *provenance* — car un fait sans source n'est qu'une assertion.
+- **Fermer la boucle avec l'IA** (Partie 4) : un graphe de connaissances ancre les LLMs sur des faits vérifiables. C'est le point d'aboutissement — GraphRAG (SW-12) transforme le Web Sémantique de niche académique en garde-fou contre les hallucinations génératives.
+
+### Prochaines étapes
+
+- **Poussez l'ontologie plus loin** : SW-7 (OWL) et le bonus [SW-13-Python-Reasoners](SW-13-Python-Reasoners.ipynb) ouvrent la comparaison des raisonneurs (HermiT, owlrl, reasonable). C'est le pont naturel vers **[Tweety](../Tweety/)** — où les logiques de description (décidables, monotones) rencontrent la logique classique, le SAT solving et le raisonnement non-monotone.
+- **Branchez la planification** : un graphe de connaissances est une représentation du monde que les planificateurs peuvent exploiter. La série **[Planners](../Planners/)** (PDDL, GraphPlan, LLM planning) consomme exactement ce genre d'états initiaux et de buts que SPARQL peut extraire d'un graphe.
+- **Certifiez** : les shapes SHACL sont des invariants sur les données, analogues aux spécifications formelles. La série **[Lean](../Lean/)** pousse cette idée à son terme — prouver la correction d'un programme, pas seulement valider ses données.
+- **Allez on-chain** : les NFTs ERC-721 à métadonnées JSON-LD (SW-9) forment des graphes décentralisés. La série **[SmartContracts](../SmartContracts/)** (SC-7 Token Standards) est le terrain où RDF, identité auto-souveraine (DID) et blockchains convergent.
+- **Relisez la série sous l'angle de la représentation** : la [Lecture transversale](#lecture-transversale) ci-dessus relie ce geste — *trouver la représentation où le problème se dissolve* — à tout le dépôt CoursIA.
+
+### Le fil rouge
+
+Le titre de Berners-Lee en 2001 promettait un Web compris par les machines. Vingt ans plus tard, ce n'est plus une promesse : c'est une *technique*, du triplet RDF au GraphRAG. Les standards changent (RDF 1.2, JSON-LD 1.1), les outils changent (dotNetRDF, rdflib, kglab), mais le geste reste — **structurer, interroger, valider, raisonner**. C'est ce triptyque que vous emportez au-delà de cette série.
+
+---
+
 ## Licence
 
 Voir la licence du repository principal.

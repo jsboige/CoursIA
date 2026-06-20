@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 127
-breakdown: SmartContracts=27, Lean=24, SemanticWeb=18, Planners=13, SMT=13, Argument_Analysis=11, SymbolicLearning=10, Tweety=10, root=1
-maturity: PRODUCTION=122, BETA=4, ALPHA=1
+pedagogical_count: 129
+breakdown: SmartContracts=27, Lean=26, SemanticWeb=18, Planners=13, SMT=13, Argument_Analysis=11, SymbolicLearning=10, Tweety=10, root=1
+maturity: PRODUCTION=122, BETA=6, ALPHA=1
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.
@@ -533,51 +533,6 @@ Le setup est entierement automatisé via `Tweety-1-Setup.ipynb` :
 
 ---
 
-## Ponts cross-séries
-
-Ces connexions entre séries sont exploitees dans le curriculum IA Symbolique.
-
-### Lean <-> GameTheory (Choix social)
-
-| Concept Lean | Concept GameTheory | Notebooks |
-|-------------|-------------------|-----------|
-| Theoreme d'Arrow (preuve formelle) | Theorie du vote / Choix social | `GameTheory/social_choice_lean/SocialChoice/Arrow.lean` <-> `GameTheory/GameTheory-16-MechanismDesign.ipynb` |
-| Theoreme de Sen (preuve formelle) | Impossibilite du paretien liberal | `GameTheory/social_choice_lean/SocialChoice/Sen.lean` <-> `GameTheory/GameTheory-16-MechanismDesign.ipynb` |
-| Valeur de Shapley | Coalitions, jeux cooperatifs | `GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb` <-> `GameTheory/GameTheory-15-CooperativeGames.ipynb` |
-
-### Lean <-> SmartContracts (Verification formelle)
-
-| Concept | Pont | Notebooks |
-|---------|------|-----------|
-| Theorie des types dependants | Verification formelle de contrats | `Lean/Lean-1-Setup.ipynb` (types) <-> `SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb` |
-| Preuves LLM-assistees | Contrats LLM-assistes | `Lean/Lean-8-Agentic-Proving.ipynb` <-> `SmartContracts/02-Solidity-Advanced/SC-11-LLM-Assisted.ipynb` |
-| `sorry` = axiome non prouve | Bugs de contrats non detectes | Concepts paralleles d'incompletude |
-
-### Tweety <-> Argument_Analysis (Argumentation)
-
-| Concept Tweety | Concept Argument_Analysis | Notebooks |
-|---------------|--------------------------|-----------|
-| Frameworks de Dung | Argumentation multi-agents | `Tweety/Tweety-5-Abstract-Argumentation.ipynb` <-> `Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb` |
-| ASPIC+ (argumentation structuree) | Analyse LLM d'arguments | `Tweety/Tweety-6-Structured-Argumentation.ipynb` <-> `Argument_Analysis/Argument_Analysis_Agentic-3-orchestration.ipynb` |
-| Dialogues d'agents | Debat multi-agent | `Tweety/Tweety-8-Agent-Dialogues.ipynb` <-> `Argument_Analysis/Argument_Analysis_Executor.ipynb` |
-
-### SemanticWeb <-> SmartContracts (Decentralisation)
-
-| Concept | Pont | Notebooks |
-|---------|------|-----------|
-| Ontologies RDF/OWL | Gouvernance DAO (etat canonique) | `SemanticWeb/SW-7-CSharp-OWL.ipynb` <-> `SmartContracts/02-Solidity-Advanced/SC-9-DAO-Governance.ipynb` |
-| GraphRAG | Indexation on-chain | `SemanticWeb/SW-12-Python-GraphRAG.ipynb` <-> SmartContracts DeFi indexing |
-| SHACL (validation) | Smart contract verification | `SemanticWeb/SW-8-Python-SHACL.ipynb` <-> `SmartContracts/03-Foundry-Testing/SC-14-Formal-Verification.ipynb` |
-
-### Planners <-> SmartContracts (Coordination)
-
-| Concept | Pont | Notebooks |
-|---------|------|-----------|
-| Planification multi-agent | MEV / auctions cross-chain | `Planners/03-Advanced/Planners-9-HTN.ipynb` <-> SmartContracts MEV |
-| CP-SAT (OR-Tools) | Optimisation sous contraintes (DeFi) | `Planners/03-Advanced/Planners-7-OR-Tools.ipynb` <-> `SmartContracts/02-Solidity-Advanced/SC-8-DeFi-Primitives.ipynb` |
-
----
-
 ## Ressources
 
 ### References academiques
@@ -651,6 +606,33 @@ Les notebooks Lean utilisent **WSL (Windows Subsystem for Linux)** comme runtime
 ### Peut-on étudier les SmartContracts sans blockchain réelle ?
 
 Oui, c'est l'approche pédagogique de la série. **Anvil** (Foundry) fournit un simulateur Ethereum local qui tourne en une commande (`anvil --host 0.0.0.0`) sous WSL. Les notebooks SC-3 a SC-10 deploient et testent des contrats sur cette chaine locale — aucun ether réel, aucun testnet. Les notebooks théoriques (SC-0 a SC-2, SC-15 a SC-26) explorent les concepts (ZK proofs, DeFi, DAO, cross-chain) principalement via code Python/Solidity sans déploiement. Seuls SC-24 et SC-25 (déploiement réel) necessitent une cle testnet.
+
+---
+
+## Conclusion / Prochaines étapes
+
+### Ce que cette série dessine
+
+Les sept domaines ci-dessus ne sont pas sept sujets indépendants : ils forment un **pipeline complet du raisonnement symbolique**, du représentationnel au certifié. L'architecture implicite du parcours :
+
+- **Représenter** la connaissance (Tweety : logiques formelles ; SemanticWeb : RDF/OWL/SHACL pour le web de données).
+- **Raisonner** dessus (Tweety : argumentation, révision de croyances ; SMT/Z3 : décision automatique par contraintes).
+- **Prouver** quand la certitude est exigée (Lean 4 : preuves mathématiques vérifiées par ordinateur, certification de réseaux de neurones).
+- **Décider et agir** dans le monde réel (Planners : ordonnancement et logistique ; SmartContracts : logique exécutable et vérifiable sur blockchain).
+- **Apprendre** à partir de connaissances plutôt que de données brutes (SymbolicLearning : de l'induction logique aux pipelines neuro-symboliques).
+- **Relier** ce pipeline aux LLMs (Argument Analysis : le symbolique comme garde-fou vérifiable du génératif).
+
+La thèse de la série, posée dès l'introduction et rappelée dans la FAQ : à l'ère des modèles statistiques opaques, l'IA symbolique apporte ce que les LLMs ne garantissent pas — un raisonnement **vérifiable, explicable et certifié**. Les deux paradigmes ne s'opposent pas : l'avenir est neuro-symbolique, et chaque sous-série montre un point de jonction concret (GraphRAG en SemanticWeb, AlphaProof/LeanCopilot en Lean, le capstone de SymbolicLearning, le pipeline Argument Analysis).
+
+### Prochaines étapes
+
+- **Choisir un point d'entrée** selon votre objectif : Tweety ou SemanticWeb pour les fondations logiques, Lean pour la rigueur de la preuve, SmartContracts ou Planners pour des applications concrètes, SymbolicLearning pour le pont avec le machine learning.
+- Chaque sous-série possède désormais sa propre section « Conclusion / Prochaines étapes » qui détaille son arc et ses ponts vers les autres séries — suivez la chaîne de navigation en haut de chaque README.
+- **Pour aller plus loin au-delà du SymbolicAI** : [Search / CSP](../Search/README.md) et [Sudoku](../Sudoku/README.md) (résolution par contraintes et SAT), [GameTheory](../GameTheory/README.md) (choix social, théorie des jeux, ports Lean), [Probas](../Probas/README.md) (programmation probabiliste avec Infer.NET), et la [Lecture transversale](../../docs/grothendieckian-lens.md) qui relie ces séries par la grille de lecture grothendieckienne (changement de représentation, certification A/B/C).
+
+### Le fil rouge
+
+L'IA symbolique moderne n'est pas un retour en arrière vers les systèmes experts : c'est la **colonne vertébrale certifiée** qui peut ancrer l'IA générative. Représenter explicitement, raisonner mécaniquement, prouver formellement, décider de manière auditable, apprendre à partir de connaissances, puis boucler avec les LLMs — c'est l'arc complet que cette série vous a permis de parcourir, domaine par domaine, jusqu'au moment où le symbolique et le neuronal cessent d'être deux camps et deviennent deux couches d'un même système fiable.
 
 ---
 

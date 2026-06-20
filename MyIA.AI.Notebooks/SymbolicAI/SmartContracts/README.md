@@ -17,9 +17,7 @@ Le parcours suit le fil annoncé par le titre : on part des **primitives cryptog
 
 ---
 
-**27 notebooks** | **Kernel Python 3** | **~22 heures**
-
-**À qui s'adresse cette série** : développeurs Solidity, ingénieurs DeFi, spécialistes security/blockchain, étudiants en IA symbolique intéressés par la vérification formelle. Un niveau intermédiaire en programmation est recommandé — les bases de Python sont suffisantes, mais les concepts blockchain/cryptographie sont introduits progressivement.
+**À qui s'adresse cette série** : développeurs Solidity, ingénieurs DeFi, spécialistes security/blockchain, étudiants en IA symbolique intéressés par la vérification formelle. Un niveau intermédiaire en programmation est recommandé — les bases de Python sont suffisantes, mais les concepts blockchain/cryptographie sont introduits progressivement. Le décompte exact des notebooks et leur maturité figurent dans le catalogue généré ci-dessous.
 
 ## Objectifs d'apprentissage
 
@@ -385,17 +383,6 @@ python setup_env.py --check
 - [ElectionGuard](https://www.electionguard.vote/)
 - [XRP Ledger Docs](https://xrpl.org/docs.html)
 
-## Cross-séries Bridges
-
-| Série | Lien | Connection |
-| ------- | ------ | ----------- |
-| [Lean](../Lean/README.md) | Formal verification | Les SMT solvers (SC-14) et les preuves Lean 4 sont deux facettes de la même vérité -- la correction mathématique |
-| [GameTheory](../../GameTheory/README.md) | Voting & DAO | SC-9 (DAO) et SC-17 (vote E2E) sont des instances de théorie du choix social (Arrow, Sen) |
-| [Probas](../../Probas/README.md) | Decision & Risk | Minimax Regret (PyMC-19) s'applique aux smart contracts pour la gestion des incertitudes on-chain |
-| [SymbolicAI/SemanticWeb](../SemanticWeb/README.md) | Ontologies & Verification | Les ontologies peuvent formaliser les propriétés de contrats pour vérification formelle |
-| [SymbolicAI/Tweety](../Tweety/README.md) | Non-monotonic reasoning | Le raisonnement non-monotone s'applique à la gouvernance DAO (propositions rétractables) |
-| [GenAI/Texte](../../GenAI/Texte/README.md) | LLM-assisted | SC-11 applique le même paradigme d'assistance LLM que la série GenAI Texte |
-
 ## Connections cross-séries
 
 ### SmartContracts et Lean (Vérification Formelle)
@@ -411,6 +398,12 @@ Les mécanismes de vote et de gouvernance on-chain (SC-9, SC-17) sont des instan
 
 - **SC-9 DAO Governance** : les systèmes de vote on-chain sont soumis aux mêmes limitations que le **théorème d'Arrow** (formalisé dans `social_choice_lean/Arrow.lean`, 0 sorry).
 - **SC-17 E2E Verifiable Voting** : les propriétés des systèmes de vote (Banks sets, monotonie STV) sont étudiées formellement dans `social_choice_lean/Voting.lean`. Le chiffrement homomorphique (SC-16) et les ZKP (SC-15) sont les briques cryptographiques qui rendent le vote E2E possible.
+
+### SmartContracts et Décision sous Incertitude (Probas)
+
+La gestion des incertitudes on-chain (réserves DeFi, slippage, garanties) s'appuie sur les mêmes outils de décision que la série Probas :
+
+- **Minimax Regret (PyMC-19)** s'applique à la conception de contrats robustes face à des conditions de marché incertaines (choix de paramètres on-chain qui minimisent le regret maximal dans le pire scénario).
 
 ### Lecture transversale
 
@@ -550,6 +543,30 @@ wsl -d Ubuntu -- bash /mnt/c/dev/CoursIA/MyIA.AI.Notebooks/SymbolicAI/SmartContr
 ```
 
 Si le chemin contient des espaces, encapsuler dans des guillemets. Alternative : cloner le dépôt directement dans WSL (`~/CoursIA/`) plutôt que d'utiliser `/mnt/c/`.
+
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+En parcourant cette série des **cypherpunks aux blockchains modernes**, vous avez traversé l'ensemble du cycle de vie d'un smart contract — de la primitive cryptographique qui le fonde au déploiement mainnet qui l'anime :
+
+- **Pourquoi une blockchain tient** : les primitives de SC-0 (hachage, Merkle, PoW, signatures) ne sont pas un hors-sujet historique — elles sont la *raison* pour laquelle un contrat déployé est immuable et vérifiable sans confiance.
+- **Construire en Solidity** (Phases 1-3) : types, héritage, standards ERC, primitives DeFi, gouvernance — un langage et ses patterns idiomatiques, déployés réellement sur Anvil à chaque étape.
+- **Sécuriser avant de déployer** (Phase 3) : tests unitaires, fuzzing, invariants, et surtout la **vérification formelle** (SC-14) — le pont entre l'ingénierie blockchain et la preuve mathématique de correction.
+- **Protéger la vie privée** (Phase 4) : ZKP, chiffrement homomorphique, vote E2E vérifiable — montrer que transparence et confidentialité ne sont pas incompatibles sur une chaîne publique.
+- **Élargir le regard** (Phases 5-6) : cinq paradigmes non-EVM (Vyper, XRP, Bitcoin, Move, Solana) puis le passage au monde réel (cross-chain, testnet, mainnet), couronné par le **projet capstone SC-26**.
+
+### Prochaines étapes
+
+- **Consolidez avec le capstone** : si vous êtes arrivé au bout du parcours recommandé, le [SC-26 Final Project](06-Real-World/SC-26-Final-Project.ipynb) intègre l'ensemble (conception → Solidity → tests → vérification → déploiement testnet). C'est le livrable qui transforme la lecture en compétence.
+- **Approfondissez la vérification formelle** : SC-14 ouvre la porte de la série **[Lean](../Lean/)** — où les SMT solvers automatiques mais bornés laissent place à la preuve interactive expressive (types dépendants, Curry-Howard). Deux faces d'une même ambition : certifier la correction d'un programme.
+- **Croisez avec la théorie des jeux** : les mécanismes de gouvernance on-chain (SC-9, SC-17) rencontrent leurs limites formelles dans le **[théorème d'Arrow](../../GameTheory/)** (formalisé en Lean dans la série GameTheory, 0 sorry) et la théorie du choix social. Comprendre *pourquoi* un design de vote est fondamentalement imparfait est aussi important que savoir l'implémenter.
+- **Décidez sous incertitude** : la conception de contrats robustes face à des marchés incertains (slippage, garanties, réserves) relève du **[Minimax Regret et de la décision sous incertitude](../../Probas/)** traités dans la série Probas.
+- **Spécialisez-vous en sécurité** : le parcours [Security-first](#parcours-security-first-7h) ci-dessus (Phases 1-2 + Testing + Formal Verification) est la base d'un cheminement vers le smart contract auditing — relisez alors SC-12/13/14 non comme des notebooks, mais comme une checklist d'attaques à anticiper.
+
+### Le fil rouge
+
+Le titre annonce un fil — *des cypherpunks aux blockchains modernes* — que le capstone referme. Mais le sous-titre implicite de la série est ailleurs : **rendre un smart contract digne de confiance**. Les outils changent (Solidity évoluera, de nouvelles chaînes émergeront), mais le triptyque *construire → tester → prouver* reste. C'est lui que vous emportez au-delà de cette série.
 
 ---
 
