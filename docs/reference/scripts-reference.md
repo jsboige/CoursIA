@@ -75,7 +75,8 @@ python scripts/notebook_tools/notebook_tools.py execute SmartContracts --scrub-k
 | `check_c2_compliance.py` | Audit C.2 (outputs + execution_count présents) |
 | `detect_solution_leaks.py`, `audit_solution_leaks.py` | Détection fuite de solutions (labeling Exemple/Exercice) |
 | `validate_pr_notebooks.py` | Validation des notebooks d'une PR |
-| `diagnose_broken.py`, `forensic_scan.py` | Diagnostic notebooks cassés / scan forensic |
+| `diagnose_broken.py`, `forensic_scan.py` | Diagnostic notebooks cassés / scan forensic (HEAD, erreurs *dures* uniquement) |
+| `regression_scan.py` | Détecteur de régression **output-health** (axe-2) : marqueurs *doux* de dégradation env que `forensic_scan`/`diagnose_broken` ratent (token-starve, `Graphviz non disponible`, MiniZinc/Tweety manquant, `.env` mono-endpoint, `INFEASIBLE`/`Solution valide: False`). 3 modes : `--snapshot` (défaut, dégradés à HEAD), `--history` (git-walk `git log --follow` + `git show` par notebook → pointe le commit/date/auteur régressant + recoveries), `--guard --base <ref> --head <ref> --paths …` (CI, exit 1 si healthy→degraded). Allowlist `regression_allowlist.json` (dégradations *démontrées*/externes acquittées). Git **local-only**, stdlib pure. Ne juge PAS la fidélité prose↔sortie (axe-1 = humain/bot) |
 | `fix_string_cells.py` | Normaliser cellules `source` en string vs array |
 
 ### Diagnostic / reporting / spécifiques

@@ -1,0 +1,21 @@
+{
+  "_comment": "Genuine, demonstrated output degradations that are NOT regressions to repair. A degradation belongs here ONLY if (a) it persists after a Regle-F repair attempt (demonstrated), or (b) it depends on a genuinely-external resource the cluster cannot provision (paid service with no creds, live testnet, host-deployed GenAI stack). Everything else must be repaired + re-run, never consecrated (cf #3660 / audit-output-health-axis). Each entry needs reason + evidence_url + demonstrated_by.",
+  "_schema": {
+    "path": "repo-relative notebook path suffix (matched by endswith)",
+    "cause": "single cause tag, list of tags, or '*' for any",
+    "cell_signature": "optional human note on which cell",
+    "reason": "why this degradation is genuine, not recoverable",
+    "evidence_url": "PR/issue/log proving it was demonstrated",
+    "demonstrated_by": "agent/machine + date"
+  },
+  "acknowledged": [
+    {
+      "path": "MyIA.AI.Notebooks/Search/Part3-Advanced/App-19-WaveFunctionCollapse.ipynb",
+      "cause": "SOLVER_DOWNGRADE",
+      "cell_signature": "WFC solve returns FEASIBLE not OPTIMAL",
+      "reason": "Demonstrated genuine: FEASIBLE persists at 20/60/120s solve budgets; raising the timeout does NOT reach OPTIMAL. Honest caveat is defensible (not a recoverable degradation).",
+      "evidence_url": "https://github.com/jsboige/CoursIA/issues/3688",
+      "demonstrated_by": "ai-01 / myia-ai-01 2026-06-19"
+    }
+  ]
+}
