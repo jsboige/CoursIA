@@ -1498,6 +1498,71 @@ DEMOS = {
         ),
         "difficulty": "hard",
     },
+    55: {
+        "name": "BONDAREVA_CORE_WITNESS",
+        "file": str(BASIC_FILE) if BASIC_FILE else "",
+        "line": 312,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "bondareva_shapley_backward (hb_witness existence)",
+        "theorem": "bondareva_shapley_backward",
+        "imports": (
+            "import Mathlib.Data.Finset.Basic\n"
+            "import Mathlib.Data.Real.Basic\n"
+            "import Mathlib.Algebra.BigOperators.Group.Finset.Basic\n"
+            "import Mathlib.Tactic\n"
+            "import Mathlib.Analysis.Convex.Cone.Dual\n"
+            "import Mathlib.Analysis.InnerProductSpace.PiL2\n"
+            "import CooperativeGames.Basic\n"
+        ),
+        "description": (
+            "REPLACES the single remaining sorry at L312 of Basic.lean (the LP-dual\n"
+            "heart of Bondareva-Shapley `backward`: Balanced -> Core.Nonempty).\n"
+            "Tracked as issue #2959. The surrounding proof scaffolding is COMPLETE\n"
+            "(P convex/closed/nonempty all proven L233-268); only the witness step\n"
+            "is open.\n"
+            "\n"
+            "GOAL at sorry (EXACT):\n"
+            "  exists x in P, (sum i : N, x i) <= G.v Finset.univ\n"
+            "\n"
+            "HYPOTHESES IN SCOPE:\n"
+            "  N : Type, [Fintype N], [DecidableEq N]\n"
+            "  G : TUGame N\n"
+            "  hb : G.Balanced                          (the KEY hypothesis)\n"
+            "  P : Set (N -> R) := { x | forall S : Finset N, (sum i in S, x i) >= G.v S }\n"
+            "  hP_conv : Convex R P                     (proven above)\n"
+            "  hP_closed : IsClosed P                   (proven above)\n"
+            "  hP_nonempty : P.Nonempty                 (proven above)\n"
+            "  hP_lb : forall x in P, (sum i : N, x i) >= G.v Finset.univ\n"
+            "\n"
+            "PROOF STRATEGY (LP duality / hyperplane separation):\n"
+            "  The existence of a feasible x in P with total payoff <= v(N) is the\n"
+            "  dual content of `G.Balanced`. Two viable Mathlib routes:\n"
+            "  1. Farkas / cone duality: the balanced weights (the LP dual feasible\n"
+            "     point witnessing hb) certify that the minimum of (sum i, x i) over P\n"
+            "     does not exceed v(N). File already imports\n"
+            "     `Mathlib.Analysis.Convex.Cone.Dual` -- look for\n"
+            "     `ProperCone.hyperplane_separation` / `inner_le_iff` /\n"
+            "     `Convex.exists_ge_of_...` style separation lemmas.\n"
+            "  2. Compactness + extremum: { x in P | (sum i, x i) <= v(N)+1 } is\n"
+            "     closed and (by balancedness) nonempty/bounded -> attains its inf;\n"
+            "     show the inf <= v(N) via the balanced collection's weights.\n"
+            "\n"
+            "If a full proof is out of reach this iteration, make MEASURABLE\n"
+            "progress: split off a named sub-lemma (e.g. the balanced-weights\n"
+            "inequality) and prove it, leaving a SMALLER sorry. Do NOT close with a\n"
+            "vacuous `trivial` -- the goal is a real existence statement, not `True`."
+        ),
+        "difficulty": "very_hard",
+        "context_before": (
+            "    have hP_lb : forall x in P, (sum i : N, x i) >= G.v Finset.univ := by\n"
+            "      intro x hx\n"
+            "      exact hx Finset.univ\n"
+        ),
+        "context_after": (
+            "    obtain (x, hxP, hxle) := hb_witness\n"
+            "    refine (x, ?_, hxP)\n"
+        ),
+    },
 }
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
 # whose key appears in this set.
