@@ -235,3 +235,23 @@ Ce port Python est le pendant de la série [Infer.NET](../Infer/) (C# / .NET Int
 | [Probas (parent)](../README.md) | Vue d'ensemble Probas | Contexte et parcours |
 | [ML](../../ML/) | Pipeline ML classique | PyMC comme alternative bayesienne |
 | [QuantConnect](../../QuantConnect/) | Strategies de trading | Modèles bayesiens appliques au trading |
+
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette série vous a fait passer des **fondamentaux de l'inference bayesienne** (priors, posterieurs, echantillonnage NUTS avec [PyMC-1-Setup](PyMC-1-Setup.ipynb) à [PyMC-3-Factor-Graphs](PyMC-3-Factor-Graphs.ipynb)) à des **modèles relationnels avances** (reseaux bayesiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), en suivant le même chemin que la série [Infer.NET](../Infer/) mais avec un **moteur d'inference radicalement différent**. Trois acquis cles :
+
+- **Lire et diagnostiquer une chaine MCMC** — `pm.sample()` ne suffit pas ; ArviZ (`r_hat < 1.05`, `ess_bulk > 400`, trace plots, divergences) est devenu votre reflexe systematique, et [PyMC-13-Debugging](PyMC-13-Debugging.ipynb) votre reference pour les pannes de convergence.
+- **Choisir le bon moteur selon le modèle** — vous savez desormais **quand** MCMC (PyMC, presque tout modèle, stochastique) est preferable au **message passing** (Infer.NET, conjugue, deterministe), et inversement. Ce compromis exact/approche est une competence de praticien.
+- **Relier inference et décision** — les notebooks 14 à 20 (utilité esperee, EVPI/EVSI, MDPs, bandits) ferment la boucle : un posterior n'est pas une fin, c'est l'**input** d'une politique de décision optimale sous incertitude.
+
+### Prochaines étapes
+
+- **Approfondir la théorie de la décision** — [Infer-16-Decision-Multi-Attribute](../Infer/Infer-16-Decision-Multi-Attribute.ipynb) et [Infer-20-Decision-Sequential](../Infer/Infer-20-Decision-Sequential.ipynb) reprennent ces modèles en message passing pour comparer les deux moteurs sur les mêmes problèmes.
+- **Aller plus loin en inference bayesienne** — *Statistical Rethinking* (McElreath, cite en Ressources) est le prolongement natural de cette série pour les modèles hiérarchiques et la reflexion epistemologique sur les priors.
+- **Appliquer au trading et au ML** — les ponts vers [QuantConnect](../../QuantConnect/) et [ML](../../ML/) ouvrent la mise en production : modèles bayesiens de stratégie, regression logistique bayesienne, incertitude calibrée en prediction.
+
+### Le fil rouge
+
+Le fil rouge de cette série est le **double regard** sur les 20 mêmes modèles : PyMC (MCMC, Python) vs Infer.NET (message passing, C#). Chaque notebook jumeau vous donne non pas une implementation de plus, mais la **comparaison directe** des deux paradigmes d'inference — le determinisme analytique d'un côté, la flexibilite stochastique de l'autre. Maitriser ce compromis, c'est savoir choisir l'outil qui correspond à la structure du modèle et au besoin en incertitude, plutot que d'appliquer un moteur par defaut.
