@@ -291,6 +291,31 @@ Examples and templates cover **4 asset classes** and **8+ trading concepts** :
 
 ---
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Ce cours partenaire est une **plateforme de démarrage structurée** vers le trading algorithmique professionnel sur QuantConnect, pensée pour des étudiants partant de zéro jusqu'à un projet personnel ML. Il s'appuie sur deux piliers :
+
+- **Le workflow Cloud-First** : tout le développement se fait sur QuantConnect Cloud (QC Lab), sans installation locale — accès direct aux données historiques QC, compilation instantanée, et sponsoring *Trading Firm* offert par Jared Broad / QuantConnect. On apprend que la plateforme gère l'infrastructure pour que l'étudiant se concentre sur la *stratégie*, pas sur le plumbing.
+- **Les templates progressifs** : trois points de départ (`starter` → `intermediate` → `advanced`) calibrés par difficulté croissante. Le `starter` (EMA crossover sur BTCUSDT) enseigne le `QCAlgorithm` lifecycle ; l'`intermediate` introduit l'Algorithm Framework modulaire ; l'`advanced` ajoute le machine learning. On apprend qu'**un bon template est un échafaudage** : il code les bonnes pratiques (Initialize, Risk Management, execution) pour que l'étudiant itère sur l'alpha, pas sur la plomberie.
+- **Les exemples de projets** (`Sector-Momentum`, `Trend-Following`, `BTC-MachineLearning`, `Sector-ML-Classification`) montrent des stratégies *achevées* à étudier puis adapter. On apprend que **lire du code qui marche** est aussi formateur que d'en écrire.
+
+Le fil rouge : la **progression pédagogique** — les 28 notebooks compagnons (`../Python/`, QC-Py-01 à 28) fournissent la théorie, et ce cours fournit la *pratique guidée* via templates et exemples. Les deux sont conçus pour avancer ensemble.
+
+### Prochaines étapes
+
+1. **Créer votre compte** sur [quantconnect.com](https://www.quantconnect.com) avec votre email d'école, puis envoyer votre username à l'instructeur pour rejoindre l'organisation *Trading Firm*.
+2. **Faire les fondations** : notebooks QC-Py-01 à 04 avant tout (compte, lifecycle, data, QuantBook).
+3. **Démarrer avec le template `starter`** : copier `templates/starter/main.py` dans un projet QC Lab, le backtester, puis le modifier (changer la paire, la période EMA).
+4. **Monter de niveau** : passer à `intermediate` (Algorithm Framework) puis `advanced` (ML) à mesure que vous maîtrisez le niveau précédent.
+5. **Étudier puis adapter un exemple** : analyser `Sector-Momentum` ou `Trend-Following`, comprendre chaque module, puis créer votre propre variante comme projet personnel.
+6. **Consulter le catalogue** : `../projects/README.md` recense les 50+ stratégies backtestées de la série complète pour inspiration et comparaison.
+
+> **Rappel honnête** : un template qui backteste bien n'est pas une stratégie déployable. Le sponsoring vous donne l'infrastructure, pas l'edge. La même discipline que dans toute la série QuantConnect s'applique : walk-forward, out-of-sample, et Sharpe *net* après frais avant de croire à un résultat.
+
+---
+
 ## Resources
 
 - [QuantConnect Documentation](https://www.quantconnect.com/docs)
