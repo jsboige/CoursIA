@@ -500,15 +500,21 @@ class MultiAgentSorryProver:
         # can override.
         import asyncio as _asyncio
         if workflow_timeout_s is None:
-            # Reasoning models can spend ~5-10 min/iteration on hard goals.
-            # 600s/iter * max_iterations gives the agents room without
-            # capping a productive run mid-thinking.
-            iteration_cap = max_iterations * 600
-            # P2 (#1453 forensic): per-sorry wall-clock cap. Prevents burning
-            # hours on delta=0 runs (zai avg 59 min/run, 0 success; openrouter
-            # avg success 8.3 min). 10 min/sorry, minimum 10 min.
-            sorry_cap = max(original_sorry_count * 600, 600)
-            workflow_timeout_s = min(iteration_cap, sorry_cap)
+            # User mandate 2026-06-21: hard single-sorry nuts (e.g. the
+            # Bondareva cone-closed lemma) were STARVED by the old 600s/sorry
+            # cap. On demo-55 the agents spent ~90s planning + ~240s on the
+            # Director consult, so the FIRST Lean compile only landed at ~615s
+            # — past the 600s cap. The session timed out with 0 actual
+            # iterations and lost its traces. Long sessions are needed,
+            # especially on hard nuts. Crons fire at >= 1h, so a 45-min ceiling
+            # leaves comfortable margin for one BG run per cron tick.
+            PER_UNIT_S = 2700   # ~45 min (was 600) — room for planning + Director + several compile loops
+            CEILING_S = 2700    # hard cap, safe under the >=1h cron cadence
+            iteration_cap = max_iterations * PER_UNIT_S
+            # P2 (#1453 forensic): per-sorry wall-clock cap still scales with
+            # problem size; the CEILING keeps any single BG run under the cron.
+            sorry_cap = max(original_sorry_count * PER_UNIT_S, PER_UNIT_S)
+            workflow_timeout_s = min(iteration_cap, sorry_cap, CEILING_S)
         session_start = time.time()
         self.trace.start_session_span(demo["name"], "multi")
         proof_found = False
