@@ -41,6 +41,7 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [.claude/rules/model-delegation.md](.claude/rules/model-delegation.md) - **Tout `Agent()` DOIT avoir un `model` explicite** (`sonnet`/`haiku` par défaut, `opus` uniquement sur justification écrite) — mandat user 2026-06-09. Déléguer le read-heavy borné vérifiable, garder la décision + cross-check, local-git-only sous fenêtre `gh auth` (consolide mandat 2026-06-07, 7 tests confirmants)
 - [.claude/rules/three-exercises-per-notebook.md](.claude/rules/three-exercises-per-notebook.md) - Convention >=3 exercices par notebook, rollout progressif (#2161)
 - [.claude/rules/sota-not-workaround.md](.claude/rules/sota-not-workaround.md) - Vrai outil SOTA jamais workaround degrade (install/invoke/re-plug machine-env-user, 5 verdicts) + probleme non-trivial qui met le moteur en valeur (BFS vs A*) ; enforce bots §H ; registre EPIC #3801 (mandat user 2026-06-21)
+- [.claude/rules/readme-french-first.md](.claude/rules/readme-french-first.md) - Doc nouvelle = FR (jamais "match surrounding EN") + bascule FR preserve l'original en `README.en.md` (separateur point) ; perimetre pedagogique ; EPIC #1650 Phase 0.5 (mandat user 2026-06-21)
 
 ---
 
