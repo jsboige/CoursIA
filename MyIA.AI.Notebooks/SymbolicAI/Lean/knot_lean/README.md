@@ -224,3 +224,56 @@ Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Bo
 - **`social_choice_lean/`** — Pattern scaffolding avec sorry résolus (Arrow, Sen)
 - **`conway_lean/`** — Jeu de Conway en Lean (cf. `MacroCell.wf`, pattern de la
   ré-modélisation Phase 5 `KnotDiagram.wf`)
+
+## Conclusion
+
+`knot_lean` formalise en Lean 4 des résultats classiques et modernes de théorie
+des nœuds — 3-colorabilité de Fox, nombre de croisements, nœud de Conway (11n34),
+Lidman 11n102 — sur l'axiomatique minimale `[propext, Quot.sound]` (aucun
+`sorryAx`). L'Epic #2874 (Phase 5) en est au transfer de l'invariant de
+3-colorabilité sous le modèle connecté des mouvements de Reidemeister.
+
+### Ce qui est acquis
+
+Les **invariants locaux** sont solides : 3-colorabilité du trèfle et
+non-colorabilité de l'unknot, nombre de croisements du trèfle, symétries et
+clôture réflexive-transitive des moves, et la *well-formedness* paritaire
+`KnotDiagram.wf` des diagrammes nommés. Le **transfer forward** de la
+3-colorabilité sous R1 connecté (`#3000`) est **prouvé** sans sorry, et le
+**transfer backward** (`#3124`) est **partiellement** établi : le cœur
+constructif `hcolPres` et le sous-but `num` (parité `wf`, `#3163`) sont clos,
+ainsi qu'un sous-cas chacun de `fox` (`#3154`) et `col` (`#3168`).
+
+### Le verrou
+
+Le marquee `tricolorable_invariant` reste **gated** sur deux sous-buts résiduels
+§9.1 du backward : la symétrie des couleurs sur le crossing modifié `Y` (`fox`) et
+le lift « all-distinct » hors range du diagramme source (`col`). Leur clôture
+permettrait de composer forward + backward en une bi-implication R1 connectée
+(**18 sorry réels** au total). Les résultats « lointains » — Conway non-slice
+(Piccirillo), unknotting number de Lidman, théorème Reidemeister ↔ isotopie
+ambiante — restent du **scaffolding permanent** : ils excèdent la portée actuelle
+de Mathlib (topologie PL des 3-variétés, Heegaard-Floer).
+
+### Leçons méthodologiques
+
+La trajectoire Phase 5 illustre le pattern « *intractable* = énoncé faux » (cf.
+`conway_lean` P4) : avant de prouver, **vérifier par contre-exemple certifié** que
+l'énoncé est vrai sous le modèle courant. Trois re-modélisations successives
+(Phase 3 → PR1 `wf`+ρ → PR1.5 ρ-déterminé) ont chacune été **réfutées par un
+témoin prouvé** (`#2915`, `#2938`) avant que l'analyse de parité (2026-06-14) ne
+révèle que le modèle append+`wf` est *structurellement trop faible* (il n'admet
+que des kinks disjoints). La **surgery connectée** (Option C, `#2980` ; R3
+déterminé, `#3088`) corrige ce défaut. Enfin, la **décomposition** du backward
+(`#3124`) — prouver le tractable, livrer avec sous-sorry résiduels documentés — a
+isolé exactement les deux constructions research-level qui restent.
+
+### Prochaines étapes
+
+1. Clore les **2 résiduels §9.1** (`fox`, `col`) → bi-implication R1 connectée.
+2. Transfer **R2/R3** complet (wf-satisfaisabilité non-triviale + lift RTC) —
+   research-level multi-PR.
+3. Décision stratégique ouverte : **(C)** pousser la surgery connectée profonde,
+   ou **(X)** accepter `#2938` et reframer l'invariant.
+4. Scaffolding lointain : attendre l'évolution de Mathlib (3-variétés,
+   Heegaard-Floer) pour Conway et Lidman.
