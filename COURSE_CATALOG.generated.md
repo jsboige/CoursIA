@@ -1,26 +1,26 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-20 05:01
-Total notebooks: 565
+Generated: 2026-06-21 05:19
+Total notebooks: 566
 
 ## Status Summary
 
-- **READY**: 419
+- **READY**: 420
 - **DEMO**: 144
 - **RESEARCH**: 0
 - **BROKEN**: 2
 
 ## Maturity Summary
 
-- **PRODUCTION**: 460
-- **BETA**: 55
+- **PRODUCTION**: 458
+- **BETA**: 58
 - **TEMPLATE**: 4
 - **ALPHA**: 42
 - **DRAFT**: 4
 
 ## By Series
 
-### GenAI (129 notebooks) — BROKEN:2, DEMO:80, READY:47 | ALPHA:5, BETA:31, DRAFT:2, PRODUCTION:88, TEMPLATE:3
+### GenAI (129 notebooks) — BROKEN:2, DEMO:80, READY:47 | ALPHA:5, BETA:30, DRAFT:2, PRODUCTION:89, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -74,7 +74,7 @@ Total notebooks: 565
 | 48 | 🖼️ Opérations de Base sur les Images | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 49 | Notebook: Stable Diffusion Forge - SD XL Turbo | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 50 | Notebook: Qwen Image-Edit 2.5 - API ComfyUI | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
-| 51 | Qwen Image Edit 2509 - Édition Avancée d'Images | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 51 | Qwen Image Edit 2509 - Édition Avancée d'Images | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 52 | FLUX.1 - Génération d'Images Avancée | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 53 | Stable Diffusion 3.5 - Génération de Pointe | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 54 | Z-Image (Lumina-2) : Generation Avancee avec Comfy | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
@@ -214,7 +214,7 @@ Total notebooks: 565
 | 54 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
 | 55 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 
-### ML (27 notebooks) — DEMO:3, READY:24 | ALPHA:1, BETA:3, PRODUCTION:23
+### ML (27 notebooks) — DEMO:3, READY:24 | ALPHA:1, BETA:7, PRODUCTION:19
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -223,13 +223,13 @@ Total notebooks: 565
 | 3 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 4 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 5 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 6 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 6 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | BETA | 30min | po-2023 |
 | 7 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 | 8 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Com | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 9 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Co | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 9 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Co | Python 3 | READY | BETA | 30min | po-2023 |
 | 10 | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 11 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 12 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 11 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | BETA | 30min | po-2023 |
+| 12 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | BETA | 45min | po-2023 |
 | 13 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 14 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 | DEMO | PRODUCTION | 30min | po-2023 |
 | 15 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | PRODUCTION | 15min | po-2023 |
@@ -246,7 +246,7 @@ Total notebooks: 565
 | 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 
-### SymbolicAI (129 notebooks) — DEMO:4, READY:125 | ALPHA:1, BETA:6, PRODUCTION:122
+### SymbolicAI (130 notebooks) — DEMO:4, READY:126 | ALPHA:1, BETA:6, PRODUCTION:123
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -360,25 +360,26 @@ Total notebooks: 565
 | 108 | SC-25 : Deploiement Mainnet (L2) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 109 | SC-26 : Projet Final - DApp Complete | Python 3 | READY | PRODUCTION | 15min | po-2024 |
 | 110 | SL-1 - Apprentissage Logique : CBH Search et Versi | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 111 | SL-10 --- Capstone : un pipeline neuro-symbolique  | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 112 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 113 | SL-3 --- Apprentissage Base sur la Pertinence (RBL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 114 | SL-4 --- Programmation Logique Inductive (ILP) | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
-| 115 | SL-5 --- Resolution Inverse et Progol (ILP bottom- | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 116 | SL-6 : Integration Neuro-Symbolique | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 117 | SL-7 - ILP Moderne et Knowledge Graphs | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 118 | SL-8 - LLMs et Apprentissage Symbolique : Generati | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 119 | SL-9 --- Apprentissage Actif d'Automates (L* d'Ang | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 120 | Configuration et Installation TweetyProject | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 121 | Logiques de Base - Propositionnelle et Premier Ord | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 122 | Logiques Avancees - DL, Modale, QBF, Conditional | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 123 | Révision de Croyances et Incohérence | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 124 | Argumentation Abstraite (Dung) | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 125 | Argumentation Structuree | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 126 | Frameworks d'Argumentation Étendus | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 127 | Sémantiques de Classement et Argumentation Probabi | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 128 | Dialogues Multi-Agents Argumentatifs | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 129 | Préférences et Théorie du Vote | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 111 | SL-10 --- Apprentissage Actif d'Automates (L* d'An | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 112 | SL-11 --- Capstone : un pipeline neuro-symbolique  | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 113 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 114 | SL-3 --- Apprentissage Base sur la Pertinence (RBL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 115 | SL-4 --- Programmation Logique Inductive (ILP) | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
+| 116 | SL-5 --- Resolution Inverse et Progol (ILP bottom- | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 117 | SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Po | Python 3 (WSL) | READY | PRODUCTION | 30min | po-2024 |
+| 118 | SL-7 : Integration Neuro-Symbolique | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 119 | SL-8 - ILP Moderne et Knowledge Graphs | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 120 | SL-9 - LLMs et Apprentissage Symbolique : Generati | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 121 | Configuration et Installation TweetyProject | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 122 | Logiques de Base - Propositionnelle et Premier Ord | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 123 | Logiques Avancees - DL, Modale, QBF, Conditional | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 124 | Révision de Croyances et Incohérence | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 125 | Argumentation Abstraite (Dung) | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 126 | Argumentation Structuree | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 127 | Frameworks d'Argumentation Étendus | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 128 | Sémantiques de Classement et Argumentation Probabi | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 129 | Dialogues Multi-Agents Argumentatifs | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 130 | Préférences et Théorie du Vote | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 
 ### QuantConnect (104 notebooks) — DEMO:56, READY:48 | ALPHA:35, BETA:7, DRAFT:2, PRODUCTION:59, TEMPLATE:1
 
@@ -637,5 +638,5 @@ Total notebooks: 565
 - **API**: 127 notebooks
 - **GPU**: 81 notebooks
 - **Cloud**: 104 notebooks
-- **WSL**: 35 notebooks
+- **WSL**: 36 notebooks
 - **Local**: 279 notebooks
