@@ -105,6 +105,15 @@ def validate_notebook(nb_path: Path) -> dict:
     skip_exec = any(k in kernel for k in SKIP_EXEC_KERNELS)
     normalized = rel_path.replace("\\", "/")
     skip_exec = skip_exec or any(p in normalized for p in QC_CLOUD_PATHS)
+    # Content-aware unification (#3776): a notebook explicitly flagged as a
+    # QC Cloud reference/template (metadata.qc_reference=True) is exempt from
+    # the H.3 execution_count gate for the same reason QC_CLOUD_PATHS is — it
+    # can only be executed via QC Cloud. This unifies the gate with
+    # regression_scan.py:261, which is already content-aware. Without this,
+    # the H.3 gate exempts by PATH but not by content, so a flagged reference
+    # notebook outside QuantConnect/Python|projects (e.g. partner-course
+    # examples) fails H.3 even though it is honestly non-executable-by-design.
+    skip_exec = skip_exec or data.get("metadata", {}).get("qc_reference") is True
 
     for i, cell in enumerate(data.get("cells", [])):
         if cell.get("cell_type") != "code":
