@@ -89,3 +89,41 @@ on top of the imported results.
 - **`knot_lean/`** — references this tour in its dependencies table (Conway game-theory foundation)
 - **`conway_lean/`** — Conway's Game of Life / Free Will Theorem (the *other* Conway series)
 - **Epic #2651** — README/structure audit (Lean-series)
+
+## Conclusion
+
+This project is a **curated tour** (`#check`-based, 0 `sorry`) of the
+combinatorial game theory now living in
+[`vihdzp/combinatorial-games`](https://github.com/vihdzp/combinatorial-games),
+imported as a Lake dependency. It exists because Mathlib's CGT modules were
+**removed in Feb 2026** (PR [#35550](https://github.com/leanprover-community/mathlib4/pull/35550)),
+and this tour points learners to where that theory now lives.
+
+### What it covers
+
+- **Combinatorial games** — `IGame` (concrete pre-games by left/right option
+  sets) and `Game` (the quotient up to equivalence `≈`), with birthday and
+  canonical form.
+- **Surreal numbers** — `Surreal` as a complete ordered field containing every
+  ordered field; the **simplicity theorem** as the key computation tool; full
+  field arithmetic; dyadic and ordinal embeddings.
+- **Nimbers** — ordinals with nim arithmetic, arising from impartial games via
+  the **Sprague-Grundy theorem**; a field of characteristic 2 (long-term goal:
+  prove the nimbers algebraically closed).
+
+### Why this exists
+
+Mathlib deprecated its CGT code (`SetTheory.Surreal/PGame/Game/Nimber`) in favor
+of the upstream repository, whose author (vihdzp) is the same maintainer. Rather
+than vendor or re-derive, the tour **cites** the upstream as a dependency and
+exhibits its results via `#check` + docstrings — original exposition on top of
+imported theorems. A Mathlib-vs-upstream comparison table documents the richer
+upstream coverage (15+ modules vs Mathlib's former 8).
+
+### Where to go next
+
+- **Upstream**: [`vihdzp/combinatorial-games`](https://github.com/vihdzp/combinatorial-games)
+  (Apache-2.0, Violeta Hernandez Palacios) — the current home of CGT in Lean.
+- **Source**: Conway, J.H. — *On Numbers and Games* (2001).
+- **Related**: `conway_lean/` (Conway's Game of Life / Free Will — the *other*
+  Conway series) and `knot_lean/` (references this tour in its deps table).

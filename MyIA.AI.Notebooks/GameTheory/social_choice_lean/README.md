@@ -177,3 +177,42 @@ Ces formalisations Lean sont les bases théoriques pour les notebooks :
 ## Licence
 
 Voir la licence du repository principal.
+
+## Conclusion
+
+Ce projet formalise en Lean 4 (**0 `sorry`**) trois résultats fondateurs de la
+théorie du choix social : le **théorème d'impossibilité d'Arrow**, le **paradoxe
+libéral de Sen** et le **théorème de l'électeur médian**. Les trois théorèmes
+sont FORMAL-CERTIFIED et recompilables via `lake build` sur la toolchain
+`v4.30.0-rc2`.
+
+### Ce qui est prouvé
+
+- **Arrow** (`Arrow.lean`) : toute fonction de welfare social (≥ 3 alternatives)
+  satisfaisant faible-Pareto + IIA est une **dictature** — preuve structurée en
+  quatre étapes à la Geanakoplos (2005), via profils manipulés `maketop`/`makebot`.
+- **Sen** (`Sen.lean`) : aucune procédure sociale ne réconcilie Pareto faible et
+  libéralisme minimal, par contre-exemple direct.
+- **Électeur médian** (`Voting.lean`) : sur préférences single-peaked, la majorité
+  sélectionne le pic de l'électeur médian.
+
+### Pourquoi ça marche
+
+Le framework repose sur des **préférences faibles** `PrefOrder α` (réflexif,
+total, transitif), suivant la tradition d'économie du bien-être (Arrow 1951,
+Sen 1970) : la préférence stricte `P` et l'indifférence `I` sont dérivées d'une
+relation `R` sous-jacente, ce qui rend les définitions directement comparables
+aux textes classiques. Arrow utilise un **dictateur directionnel** (suffisant
+pour une SWF totale) ; Sen renforce l'hypothèse par une décisivité
+**bidirectionnelle**, produisant un paradoxe plus fort (tout résultat
+bidirectionnel implique l'unidirectionnel).
+
+### Où aller ensuite
+
+- **Sources** : Geanakoplos (2005), *Three Brief Proofs of Arrow's Impossibility
+  Theorem* ; Sen (1970), *The Impossibility of a Paretian Liberal*.
+- **Référence externe** : [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean)
+  (Gibbard-Satterthwaite, 15+ règles de vote, framework `LinearOrder` strict) —
+  comparé dans la section « Différences de framework » ci-dessus.
+- **Série** : notebooks [`GameTheory`](../README.md) — 16b (applications Lean),
+  16c (simulations Python), 16e (tour SocialChoiceLean).
