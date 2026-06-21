@@ -84,6 +84,15 @@ class LeanVerifier:
 
     _cache: Dict[str, dict] = {}
 
+    # Cumulative wall-clock seconds spent inside actual `lake build` subprocess
+    # calls (cache hits never reach the builder, so they don't count). Class-level
+    # so every verifier instance — including the latch-verifier the workflow
+    # spins up — accrues to the SAME counter. The prover's wall-clock supervisor
+    # reads this to credit build time back to the reasoning budget ("pause the
+    # timer during builds", user mandate 2026-06-21): a long compile must not
+    # eat the time the agents need to reason on hard nuts.
+    _total_build_seconds: float = 0.0
+
     def __init__(self, project_dir: str = None, verbose: bool = False):
         self.project_dir = project_dir or os.getenv("LEAN_PROJECT_DIR")
         self.verbose = verbose
@@ -193,6 +202,8 @@ class LeanVerifier:
                 env=env,
             )
             duration = time.time() - start
+            # Credit this compile against the prover's reasoning budget.
+            LeanVerifier._total_build_seconds += duration
 
             output = result.stdout + "\n" + result.stderr
 

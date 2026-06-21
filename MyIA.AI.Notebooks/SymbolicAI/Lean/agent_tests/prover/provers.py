@@ -515,13 +515,52 @@ class MultiAgentSorryProver:
             # problem size; the CEILING keeps any single BG run under the cron.
             sorry_cap = max(original_sorry_count * PER_UNIT_S, PER_UNIT_S)
             workflow_timeout_s = min(iteration_cap, sorry_cap, CEILING_S)
+        # Surface the (build-credited) budget to the agents' time tool so they
+        # pace to the real ceiling instead of the 1800s default.
+        try:
+            state.max_session_seconds = float(workflow_timeout_s)
+        except Exception:
+            pass
         session_start = time.time()
         self.trace.start_session_span(demo["name"], "multi")
         proof_found = False
         try:
-            result = await _asyncio.wait_for(
-                workflow.run(initial_msg), timeout=workflow_timeout_s,
-            )
+            # Build-credited wall-clock supervisor (user mandate 2026-06-21:
+            # "mettre en pause le timer de mesure pendant les builds"). A single
+            # `asyncio.wait_for` would count `lake build` time against the cap,
+            # starving the reasoning the agents need on hard nuts. Instead we
+            # poll: the effective deadline EXTENDS by the seconds spent compiling
+            # since this session started, so `workflow_timeout_s` measures
+            # reasoning time, not compile time. Caching (content-hash + olean
+            # incremental `-R`) keeps the credited build time small; the credit
+            # covers the irreducible compiles that remain.
+            # Resolve the SAME LeanVerifier class the tools build through (the
+            # package uses a spec-based loader, not a normal import — see
+            # verifier.py), so we read the class-level build accumulator instances
+            # actually write to.
+            from .verifier import _load_lean_verifier_class
+            _LeanVerifier = _load_lean_verifier_class()
+            _build_at_start = _LeanVerifier._total_build_seconds
+            _POLL_S = 30
+            _wf_task = _asyncio.ensure_future(workflow.run(initial_msg))
+            result = None
+            while True:
+                try:
+                    result = await _asyncio.wait_for(
+                        _asyncio.shield(_wf_task), timeout=_POLL_S,
+                    )
+                    break  # workflow finished on its own
+                except _asyncio.TimeoutError:
+                    build_s = _LeanVerifier._total_build_seconds - _build_at_start
+                    reasoning_s = (time.time() - session_start) - build_s
+                    if reasoning_s > workflow_timeout_s:
+                        _wf_task.cancel()
+                        try:
+                            await _wf_task
+                        except (_asyncio.CancelledError, Exception):
+                            pass
+                        raise _asyncio.TimeoutError
+                    # else: still within reasoning budget — keep waiting.
 
             if hasattr(result, 'output') and result.output:
                 final_msg = result.output
@@ -530,7 +569,13 @@ class MultiAgentSorryProver:
 
             proof_found = getattr(final_msg, 'proof_found', False)
         except _asyncio.TimeoutError:
-            print(f"  Workflow wall-clock timeout ({workflow_timeout_s}s) — aborting")
+            try:
+                _bs = _LeanVerifier._total_build_seconds - _build_at_start
+                _credit = f"; {_bs:.0f}s build credited"
+            except NameError:
+                _credit = ""
+            print(f"  Workflow reasoning-budget timeout ({workflow_timeout_s}s "
+                  f"reasoning{_credit}) — aborting")
             proof_found = False
         except Exception as e:
             print(f"  Workflow error: {e}")
