@@ -1056,4 +1056,24 @@ Consultez le [Glossaire](Infer-Glossary.md) pour les définitions des termes tec
 | [Search/CSP](../../Search/Part2-CSP/) | CSP-5 (Optimization) | Programmation par contraintes et probabilités |
 | [SymbolicAI/Lean](../../SymbolicAI/Lean/) | Infer-20b (Gittins) | Preuves formelles Lean 4 |
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette série vous a fait parcourir l'arc complet de la programmation probabiliste en .NET : des **fondamentaux** (variables `Variable<T>`, `InferenceEngine`, compilation Roslyn — [Infer-1-Setup](Infer-1-Setup.ipynb) à [Infer-3-Factor-Graphs](Infer-3-Factor-Graphs.ipynb)) aux **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), jusqu'à la **théorie de la décision** (utilité espérée, EVPI/EVSI, MDPs, bandits — notebooks 14 à 20) et son **capstone formel** en Lean 4 ([Infer-20b-Lean-Gittins](Infer-20b-Lean-Gittins.ipynb)). Trois acquis clés :
+
+- **Penser en factor graphs et message passing** — l'inférence Infer.NET est **déterministe** : EP (rapide, par défaut), VMP (converge sur les modèles complexes), Gibbs (exact asymptotiquement). Les factor graphs (rendus via `FactorGraphHelper` et Graphviz) exposent la *structure* du modèle, pas seulement ses posteriors.
+- **Lire et choisir son algorithme d'inférence** — contrairement à un échantillonneur générique, Infer.NET **compile un algorithme dédié par modèle** (reflection + Roslyn). Vous savez désormais quand ce déterminisme analytique (modèles conjugués) est avantageux, et quand il faut céder la place à MCMC.
+- **Relier inference et décision, jusqu'à la preuve** — les notebooks 14 à 20 ferment la boucle (un posterior est l'**input** d'une politique optimale sous incertitude), et Infer-20b pousse la rigueur jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
+
+### Prochaines étapes
+
+- **Le double regard MCMC** — le port [PyMC](../PyMC/) reprend les **20 mêmes modèles** en NUTS : alterner chaque jumeau pour comparer message passing (déterministe) et échantillonnage MCMC (stochastique) sur des modèles identiques.
+- **Le capstone ML.NET** — [ML.NET](../../ML/ML.Net/) combine ML.NET et Infer.NET (TP de prévision de ventes) : une mise en pratique où l'incertitude bayésienne complète une pipeline ML classique.
+- **Les ponts latéraux** — [Search/Part2-CSP](../../Search/Part2-CSP/) (CSP-5, optimisation sous contraintes) et le [glossaire](Infer-Glossary.md) prolongent la modélisation déclarative.
+
+### Le fil rouge
+
+Le fil rouge de cette série est le **déterminisme analytique** : là où MCMC (PyMC) échantillonne, Infer.NET **propage les messages** sur le factor graph et compile un solveur dédié. Ce déterminisme a un prix — la **conjugaison** des distributions — qui achète la rapidité, l'exactitude analytique et la lisibilité structurelle. Le capstone Lean 4 (Infer-20b) élève ce fil rouge jusqu'à la **preuve formelle** : l'indice de Gittins n'est plus seulement calculé, il est *démontré*. Maîtriser Infer.NET, c'est savoir quand la structure d'un modèle mérite un raisonnement exact plutôt qu'une exploration stochastique.
+
 Bonne exploration de la programmation probabiliste et de la théorie de la décision !
