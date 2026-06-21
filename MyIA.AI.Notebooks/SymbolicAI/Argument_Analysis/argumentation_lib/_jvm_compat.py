@@ -18,14 +18,19 @@ _logger = logging.getLogger("argumentation_lib._jvm_compat")
 _jvm_initialized: bool = False
 
 
-def initialize_jvm() -> bool:
+def initialize_jvm(verbose: bool = False) -> bool:
     """Initialize the JVM via CoursIA's Tweety infrastructure.
 
-    Compatible with EPITA's ``core.jvm_setup.initialize_jvm`` contract:
-    returns True on success, False on failure.
+    Robust, self-contained entry point for Argument_Analysis notebooks:
+    resolves the Tweety directory, stages ``sys.path`` (so
+    ``Tweety.tweety_init`` is importable) and ``chdir`` to the Tweety
+    directory before calling ``init_tweety`` — which locates ``libs/`` and
+    ``jdk-17-portable/`` RELATIVE to the current working directory.
 
-    Delegates to ``Tweety.tweety_init.init_tweety`` which is idempotent
-    (safe to call multiple times).
+    Idempotent (cached via ``_jvm_initialized``); safe to call repeatedly.
+    ``verbose=True`` forwards to ``init_tweety`` so a notebook can surface
+    the JDK/JAR-loading evidence (anti-theatre).
+    Returns True on success, False on failure.
     """
     global _jvm_initialized
     if _jvm_initialized:
@@ -33,9 +38,31 @@ def initialize_jvm() -> bool:
         return True
 
     try:
-        # Import relative to SymbolicAI parent — notebooks add this to sys.path
+        import os
+        import sys
+        from argumentation_lib._paths import SYMBOLIC_AI_DIR
+
+        # The Tweety runtime lives canonically at SymbolicAI/Tweety: it holds
+        # tweety_init.py, libs/*.jar and jdk-17-portable/. Resolve it directly
+        # rather than via get_tweety_jar_dir() — whose first candidate
+        # (Argument_Analysis/libs) is jar-less, so its parent has no
+        # tweety_init.py and would silently skip the chdir below if a stray
+        # jar ever landed there.
+        tweety_dir = SYMBOLIC_AI_DIR / "Tweety"
+        if not (tweety_dir / "tweety_init.py").exists():
+            _logger.error("Tweety init module not found at %s", tweety_dir)
+            return False
+
+        # Make SymbolicAI importable so `Tweety.tweety_init` resolves, then
+        # chdir into the Tweety dir: init_tweety() locates libs/ and
+        # jdk-17-portable/ RELATIVE to the current working directory.
+        sym = str(SYMBOLIC_AI_DIR)
+        if sym not in sys.path:
+            sys.path.insert(0, sym)
+        os.chdir(str(tweety_dir))
+
         from Tweety.tweety_init import init_tweety
-        result = init_tweety(verbose=False)
+        result = init_tweety(verbose=verbose)
         if result:
             _jvm_initialized = True
             _logger.info("JVM initialized via CoursIA Tweety infrastructure.")
