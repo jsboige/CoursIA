@@ -3,18 +3,26 @@ services:
     image: python:3.11
     container_name: comfyui-qwen
     hostname: comfyui-qwen
-    user: "1000:1000"
-    
+    # No `user:` directive: the entrypoint starts as root to chown the
+    # bind-mounted workspace (Docker Desktop Windows maps host files as
+    # root-owned), installs gosu, then drops to uid 1000 (bonsai) before
+    # launching the server. See entrypoint.sh privilege-drop block. (axe-2 #3164)
+
     deploy:
       resources:
         limits:
           cpus: '4'
-          memory: 12G
+          memory: 28G
         reservations:
           devices:
             - driver: nvidia
               device_ids: ['${GPU_DEVICE_ID:-0}']
               capabilities: [gpu]
+
+    # Shared memory for CUDA/PyTorch IPC. Default 64M causes OOM during Qwen
+    # image sampling (tensor allocator exhausts /dev/shm). 16g matches the
+    # working set observed during axe-2 #3164 generation testing.
+    shm_size: '16g'
     
     ports:
       - "127.0.0.1:${COMFYUI_PORT:-8188}:8188"
@@ -45,6 +53,14 @@ services:
       - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
+      # The server runs as uid 1000 (bonsai) after the entrypoint privilege
+      # drop. python:3.11 has no uid-1000 /etc/passwd entry, so
+      # torch._inductor's getpass.getuser() -> pwd.getpwuid(1000) would raise
+      # KeyError and abort the transformers->hqq->inductor import chain,
+      # disabling ALL Nunchaku loaders. Setting USER/LOGNAME makes
+      # getpass.getuser() return early without touching pwd. (axe-2 #3164)
+      - USER=bonsai
+      - LOGNAME=bonsai
       - TZ=${TZ:-Europe/Paris}
       - COMFYUI_PORT=8188
       - COMFYUI_LISTEN=0.0.0.0
