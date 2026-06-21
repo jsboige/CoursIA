@@ -87,3 +87,36 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 - Epic #1453 (prover harness calibration)
 - Conway tribute workspace (`../conway_lean/`)
 - Lean notebook series (`../README.md`)
+
+## Conclusion
+
+This tribute is a **complete pedagogical tour** (23 modules, 3182 lines, 0 `sorry`,
+0 axiom added) showing how Grothendieck's language — sites, sheaves,
+sheafification, points, cohomology — already lives in Mathlib 4. It is
+deliberately **not** a formalization of EGA/SGA; it is a curated index that lets
+learners see the library through Grothendieckian eyes.
+
+### The arc
+
+The modules trace a coherent path: **sites and sieves** (Parts 1, 6, 8, 11, 12,
+16) → **sheaves, separation, and transfer** (7, 9, 10, 17) → **sheafification and
+its left exactness** (13, 14) → **points and conservative families** (15, 19) →
+**sheaf cohomology, Mayer-Vietoris, and Čech** (20-23), with **schemes and the
+Zariski site** (2, 3) and a **Mathlib map** (4) anchoring the tour to the library
+it indexes.
+
+### Scope, honestly
+
+Per the `## Sorry count` section above, the tour is **0 `sorry`, 0 axiom added** —
+every result is fully proven. Part 4's `#check` index is explicit about what
+Mathlib has and what it does not (yet); the tour documents that boundary rather
+than papering over it. The companion `Calibration.lean` (Part 5) feeds the prover
+harness (Epic #1453), tying this formalization to the broader proving effort.
+
+### Where to go next
+
+- **Depth**: Issue #2159 / Epic #1646 track further formalization — this tour is
+  the foundation, not the ceiling.
+- **Companions**: `conway_lean/` (Conway's mathematics), the Lean notebook series.
+- **References**: Mac Lane–Moerdijk and SGA 4 for the topos-theoretic core; Vakil
+  and the Stacks Project for schemes and cohomology.
