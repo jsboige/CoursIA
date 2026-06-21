@@ -56,3 +56,42 @@ These projects do **not** depend on `lean_game_defs/` at build time — they ven
 - [GameTheory/README.md](../README.md) — Series overview (OpenSpiel + Lean tracks)
 - [scripts/README.md](../scripts/README.md) — Lean 4 WSL kernel setup
 - [.claude/rules/wsl-kernels.md](../../../.claude/rules/wsl-kernels.md) — Kernel rules
+
+## Conclusion
+
+`lean_game_defs/` is the **introductory definition layer** of the GameTheory Lean
+track: shared Lean 4 type definitions (no proofs, 0 `sorry`) used by the teaching
+notebooks and importable by adjacent Lake projects. It is **not** a standalone Lake
+project — there is no `lakefile.lean`, no toolchain pin, and no Mathlib dependency;
+every file is core Lean 4 only.
+
+### What it provides
+
+Six reference files covering the game-theory curriculum: normal-form / finite games
+([Basic.lean](Basic.lean)), Nash equilibrium and dominance ([Nash.lean](Nash.lean)),
+combinatorial game trees with minimax ([Combinatorial.lean](Combinatorial.lean)),
+social-choice primitives and Arrow's axioms ([SocialChoice.lean](SocialChoice.lean)),
+Bayesian games and signaling ([Bayesian.lean](Bayesian.lean)), and regret
+minimization / CFR ([Regret.lean](Regret.lean)). Each maps to a specific teaching
+notebook and is self-contained.
+
+### How it is used
+
+- **Copy-paste** into a notebook cell (the typical pedagogical workflow);
+- **Import** from an adjacent Lake project via `import GameTheory.lean_game_defs.*`; or
+- **Standalone exploration** via the Lean 4 WSL kernel.
+
+For full combinatorial-game theory (`PGame`, surreals, nimbers), the track points to
+Mathlib's `SetTheory.PGame` / the [`conway_cgt_lean/`](../conway_cgt_lean/) tour
+rather than redefining it here.
+
+### Where to go next
+
+- **Buildable projects** (each vendors its own proof-tailored definitions):
+  [`social_choice_lean/`](../social_choice_lean/) (Arrow / Sen / median voter),
+  [`cooperative_games_lean/`](../cooperative_games_lean/) (Shapley value, Core),
+  [`stable_marriage_lean/`](../stable_marriage_lean/) (Gale-Shapley).
+- **CGT tour**: [`conway_cgt_lean/`](../conway_cgt_lean/) — surreals, nimbers via
+  `vihdzp/combinatorial-games`.
+- **Kernel setup**: [scripts/README.md](../scripts/README.md) and
+  [.claude/rules/wsl-kernels.md](../../../.claude/rules/wsl-kernels.md).
