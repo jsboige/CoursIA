@@ -24,3 +24,18 @@ Basic Mathlib usage examples for the SymbolicAI/Lean series.
 
 - Companion to notebook `Lean-6-Mathlib-Essentials.ipynb`
 - Part of the SymbolicAI/Lean pedagogical series
+
+## Conclusion
+
+A thin **reference module** of basic Mathlib usage patterns
+(`MathLibExamples/Basic.lean`, 0 `sorry`, `lake build MathLibExamples` SUCCESS),
+serving as the Lean-side companion to the `Lean-6-Mathlib-Essentials.ipynb`
+notebook. It is intentionally minimal — a starting point for students, not a
+survey.
+
+### Where to go next
+
+- **Notebook**: `Lean-6-Mathlib-Essentials.ipynb` — the teaching companion.
+- **Fuller Lean projects**: [`calibration_lean/`](../calibration_lean/),
+  [`conway_lean/`](../conway_lean/), [`sensitivity_lean/`](../sensitivity_lean/)
+  — production Lean built on Mathlib.
