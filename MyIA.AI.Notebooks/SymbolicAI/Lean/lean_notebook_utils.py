@@ -156,11 +156,11 @@ def _run_capture(cmd, timeout, cwd=None):
 
     Avoids ``subprocess.run(capture_output=True)`` whose per-stream
     ``_readerthread`` race on Windows can silently drop output when the process
-    exits (the Lean-13/13b/Kochen-Specker C.2 defect: committed notebook outputs
+    exits (the Lean-15/15b/Kochen-Specker C.2 defect: committed notebook outputs
     were only an ``Exception in thread (_readerthread)`` trace, with no real Lean
     output). Returns ``(returncode, stdout, stderr)``; raises
     ``subprocess.TimeoutExpired`` and ``FileNotFoundError`` like ``subprocess.run``.
-    See PRs #3216 (Lean-13), #3222 (Lean-13b).
+    See PRs #3216 (Lean-15), #3222 (Lean-15b).
     """
     out_f = tempfile.NamedTemporaryFile('wb', delete=False, suffix='.out')
     err_f = tempfile.NamedTemporaryFile('wb', delete=False, suffix='.err')

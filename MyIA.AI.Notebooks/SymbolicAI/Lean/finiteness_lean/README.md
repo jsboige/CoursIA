@@ -71,7 +71,7 @@ lake build Finiteness
 
 ## Notebook pédagogique
 
-[`Lean-15-Finiteness-Derivatives.ipynb`](../Lean-15-Finiteness-Derivatives.ipynb)
+[`Lean-14-Finiteness-Derivatives.ipynb`](../Lean-14-Finiteness-Derivatives.ipynb)
 — présentation pédagogique complète et pont vers l'Epic Conway #2162.
 
 ## Voir aussi
@@ -110,5 +110,5 @@ Conway** (Game of Life).
 ### Pour aller plus loin
 
 - **Profondeur** : la preuve constructive complète dans le dépôt amont cité.
-- **Pédagogie** : le notebook `Lean-15-Finiteness-Derivatives.ipynb`.
+- **Pédagogie** : le notebook `Lean-14-Finiteness-Derivatives.ipynb`.
 - **Epics liés** : #2978 (Sudoku comme regex symbolique), #2162 (Conway).
