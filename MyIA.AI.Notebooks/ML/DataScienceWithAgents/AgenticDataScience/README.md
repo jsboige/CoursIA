@@ -303,6 +303,28 @@ Les Labs 16-17 nécessitent un projet GCP avec Vertex AI et BigQuery activés. S
 - Les Labs 8-15 sont **entièrement autonomes** et ne nécessitent que Gemini ou vLLM
 - Le Lab 17 (Final Project) peut être adapté avec un dataset local au lieu de BigQuery
 
+## Conclusion
+
+Vous avez parcouru l'intégralité du track agentique avancé : du premier agent ADK configurable à un pipeline de data science autonome déployable en production. L'enjeu n'était pas d'empiler des frameworks, mais de comprendre les **patterns d'orchestration** qui rendent un système multi-agents fiable au-delà de la démonstration.
+
+### Ce que vous avez appris
+
+- **Isoler le provider avant de choisir le modèle.** La couche LiteLLM a traité Gemini, vLLM, OpenAI et OpenRouter comme des backend interchangeables. La leçon durable : verrouiller une application sur un LLM unique est un risque architectural ; isoler le fournisseur derrière une interface est un investissement qui se rentabilise dès la première migration ou coupure de quota.
+- **Le pattern Planner-Coder-Verifier (DS-STAR).** Un agent data science crédible n'est pas un prompt unique, mais une boucle où un *planner* décompose, un *coder* exécute, et un *verifier* confronte le résultat aux données avant d'itérer. La FAQ l'a montré concrètement : un verifier trop laxiste fait boucler le système, et c'est la rigueur du critère d'arrêt qui garantit la convergence.
+- **La recherche SOTA comme point de départ (MLE-STAR).** Avant d'optimiser, l'agent identifie l'état de l'art puis mène une ablation systématique. C'est la transcription agentique du bon réflexe de praticien : on ne tune pas à l'aveugle, on part de la baseline publiée et on isole les variables une à une.
+- **Du notebook au système déployé.** Les Labs 16-17 ont articulé l'agent avec BigQuery et Vertex AI, rappelant que la valeur d'un agent data science se mesure en production — coût, latence, volume de données — et non sur un notebook isolé.
+
+### Prochaines étapes
+
+- **Croiser l'agentique et le raisonnement formel** : la série [SymbolicAI](../../../SymbolicAI/) couple ces patterns d'orchestration avec des solveurs (CSP/SAT, planificateurs), et [GameTheory](../../../GameTheory/) introduit l'agent stratégique face à d'autres décideurs.
+- **Approfondir l'hebergement de LLM** : les notebooks [GenAI](../../../GenAI/) détaillent l'auto-hebergement de modèles (Qwen, ComfyUI, vLLM) et le routage multi-modèle — la suite naturelle de votre couche LiteLLM quand vous voudrez quitter les APIs commerciales.
+- **Décider sous incertitude** : la série [Probas/PyMC](../../../Probas/PyMC/) formalise la prise de décision bayésienne (théorie de l'utilité, valeur espérée de l'information) qu'un agent data science mature doit intégrer pour agir, pas seulement analyser.
+- **Vous exercer en autonomie** : reprenez un problème Kaggle récent (Lab 15), traitez-le de bout en bout avec votre provider local, puis confrontez votre démarche à celle qu'a suivie l'agent MLE-STAR.
+
+### Le fil rouge
+
+La trame de cette série est la **réduction progressive de l'intervention humaine**. Les [Days 1-3 (PythonAgentsForDataScience)](../PythonAgentsForDataScience/) vous ont appris à *piloter* un agent ; DS-STAR lui a confié une analyse de bout en bout ; MLE-STAR lui a donné l'initiative de la recherche et de l'optimisation ; les Labs de production l'ont exposé à des contraintes réelles. La frontière entre « outil que l'on dirige » et « collègue que l'on encadre » est précisément ce que ces patterns d'orchestration déplacent — et c'est la compétence que cette série cherche à transmettre.
+
 ## Ressources
 
 - [Google ADK Documentation](https://github.com/google/adk-samples)
