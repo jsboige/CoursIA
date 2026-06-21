@@ -65,3 +65,41 @@ grep -c sorry StableMarriage/*.lean
 | `social_choice_lean/` | Same Mathlib-based structure, preference orderings |
 | `GameTheory/` | Matching theory as cooperative game (Shapley value) |
 | `Tweety-9-Preferences` | Preference orderings and aggregation |
+
+## Conclusion
+
+This project is a **complete, 0-`sorry`** Lean 4 formalization of the **Gale-Shapley
+Stable Marriage Theorem** (1962) and the **Knuth lattice structure** of its stable
+matchings. All twelve headline results are CLOSED (`lake build StableMarriage`
+SUCCESS, toolchain `v4.30.0-rc2`).
+
+### What is proven
+
+- **Gale-Shapley correctness** — termination in ≤ n² steps, the output is a valid
+  bijection, and no blocking pair exists (the algorithm produces a *stable* matching).
+- **Optimality** — the matching is **man-optimal** (proposers get their best achievable
+  partner) and **woman-pessimal** (receivers get their worst achievable), the latter
+  derived constructively from the former.
+- **Lattice structure** (Knuth 1976) — the set of stable matchings forms a
+  **distributive lattice** under join/meet, both operations preserving stability and
+  the spouse maps injective. Existence of a man-optimal stable matching is shown via a
+  minimal-weight argument on the join semilattice (`exists_isManOptimal`).
+
+### The honest lesson — "intractable" was "false as stated"
+
+Three former statements (`no_cross_match`, `man_optimal_key_step`,
+`doctor_optimal_eq_top`) resisted **30+ prover-harness iterations** before being
+recognized as **mathematically false**: the 3×3 latin-square instance (Knuth 1976)
+with the identity and cyclic-shift matchings refutes all three simultaneously. Their
+`sorry` placeholders were unprovable because the goals were contradictory, not hard.
+The honest replacement (`exists_isManOptimal`) proves *existence* rather than the
+contradictory constructive extraction. This is the same lesson as the Conway P4 case:
+when a proof stalls across many iterations, **refute the statement first**.
+
+### Where to go next
+
+- **Theory**: Gale & Shapley (1962); Knuth, *Marriages Stables* (1976, lattice
+  structure); Gusfield & Irving (1989).
+- **Reference port**: [mmaaz-git/stable-marriage-lean](https://github.com/mmaaz-git/stable-marriage-lean).
+- **Related**: [`social_choice_lean/`](../social_choice_lean/) (preference orderings),
+  [`cooperative_games_lean/`](../cooperative_games_lean/) (matching as cooperative game).
