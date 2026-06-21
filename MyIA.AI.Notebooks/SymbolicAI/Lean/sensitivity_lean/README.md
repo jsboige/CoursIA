@@ -78,3 +78,33 @@ lake build Sensitivity
   Conjecture*, Ann. Math. 190(3).
 - Nisan & Szegedy (1992), *On the degree of Boolean functions as real
   polynomials*, DIMACS.
+
+## Conclusion
+
+This mini-project formalizes in Lean 4 (0 `sorry`, 0 axiom beyond Lean core) the
+proof that **resolved the Sensitivity Conjecture** — open since 1989/1992, settled
+by Hao Huang in 2019 via a four-page combinatorial argument. The whole chain
+`s(f) ≤ bs(f) ≤ deg(f)` and Huang's degree theorem are closed.
+
+### What is proven
+
+The headline `huang_degree_theorem` (`MainTheorem.lean`): every induced subgraph
+of the `n`-cube on more than half its vertices has a vertex of degree `≥ √n`. The
+corollary is the quadratic bound `deg(f) ≤ s(f)²`, equivalently `bs(f) ≤ s(f)²` —
+sensitivity and block sensitivity are polynomially related, as the conjecture
+asked. The supporting infrastructure (hypercube `Q n`, the real vector space of
+Boolean functions, sensitivity/block-sensitivity operators) is fully built.
+
+### Why it works
+
+The argument is spectral (`exists_eigenvalue`): a signed adjacency matrix of the
+hypercube has eigenvalue `√n`, and Cauchy's interlacing theorem forces a
+high-degree vertex in any large induced subgraph. The formalization carries that
+eigenvalue/interlacing skeleton through Mathlib.
+
+### Where to go next
+
+- **Source**: Huang (2019), *Induced subgraphs of hypercubes and a proof of the
+  Sensitivity Conjecture*, Annals of Mathematics 190(3).
+- **Context**: Nisan & Szegedy (1992), the conjecture as posed.
+- **Series**: the [`SymbolicAI/Lean`](../README.md) formalization index.
