@@ -141,6 +141,34 @@ Les métaheuristiques reconstruites dans cette partie suivent les articles fonda
 | MGS-9 (EverestRelief) | Particle Swarm Optimization (baseline) | Kennedy, J., & Eberhart, R. (1995) — « Particle Swarm Optimization », *Proc. IEEE Int. Conf. on Neural Networks*. |
 | MGS-6, MGS-7 | No-Free-Lunch | Wolpert, D. H., & Macready, W. G. (1997) — « No free lunch theorems for optimization », *IEEE Trans. on Evolutionary Computation* 1(1). |
 
+---
+
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette quatrième partie a changé la question : non plus *« quelle métaheuristique choisir »* (Parties 1-2), mais *« comment construire et combiner des métaheuristiques à partir de primitives »*. L'arc pédagogique, porté par neuf notebooks C# .NET 9 au-dessus de [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp), démontre la thèse **composants > métaphores** :
+
+- **Le moteur autonome** (MGS-1, MGS-2) — un `MetaGeneticAlgorithm` qui pilote l'évolution sans dépendre de la classe `GeneticAlgorithm` amont, et la grammaire fluente (`Match`, `Container`, `Scoped`) qui permet d'assembler une métaheuristique en quelques lignes déclaratives lisibles. C'est le socle : tout le reste compose au-dessus.
+- **La structuration de population** (MGS-3, MGS-4) — le modèle eucaryote (sous-populations spécialisées portées par des chromosomes composites) et le modèle insulaire (îles migratoires) : deux configurations qu'aucune bibliothèque monolithique grand public n'offre directement, et qui deviennent naturelles une fois la composition maîtrisée.
+- **La reconstruction des composés publiés** (MGS-5) — WOA, EO, FBI : pour chaque algorithme du catalogue, le parcours en trois temps (description → reconstruction depuis les primitives `BuildMainHeuristic()` → raccourci factory prouvant l'équivalence). C'est l'argument poussé jusqu'à la **preuve** : reconstruire un algorithme bio-inspiré *démontre* son mécanisme au lieu de le cacher derrière une métaphore animale (critique de Sørensen, 2015).
+- **La confrontation honnête** (MGS-6) — dix fonctions benchmark standard, comparaison Uniform / WOA / Islands sans trier les victoires : WOA gagne ou égalise sur 7/10 mais **diverge sur Schwefel**, démonstration de No-Free-Lunch là où `mealpy` masquerait le mécanisme.
+- **L'agnosticisme à la représentation** (MGS-7) — la même `IslandMetaHeuristic` appliquée à un TSP-20 (permutation) sans aucune adaptation : la grammaire vit *sous* la couche géométrique et ne lit jamais `Gene.Value`. Le transfert continu → combinatoire sans réécriture.
+- **La visualisation des paysages** (MGS-8, MGS-9) — de vraies heatmaps PNG (fonction analytique, carte d'altitude, relief terrestre réel Everest) qui rendent le choix d'une métaheuristique *éclairé* plutôt que *doctrinal*, et un flipbook de convergence montrant la population se contracter vers le sommet.
+
+Le véritable enseignement rejoint celui des Parties 1-2 : aucune métaheuristique ne domine partout, et la bonne réponse à un problème d'optimisation est rarement « l'algorithme X » mais plutôt « **la bonne composition de primitives pour ce paysage de fitness** ».
+
+### Prochaines étapes
+
+- **Le code source de la bibliothèque** : le [fork jsboige/MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — code source, tests unitaires, et feuille de route ([ROADMAP.md](https://github.com/jsboige/MetaGeneticSharp/blob/main/ROADMAP.md)) — prolonge cette partie vers une vraie bibliothèque industrialisable. Les notebooks ne sont que la vitrine pédagogique des briques qui y vivent.
+- **Retour aux fondamentaux Python** : après avoir reconstruit WOA et EO à la main, reprendre [Search-11-Metaheuristics](../Part1-Foundations/Search-11-Metaheuristics.ipynb) (PSO, ABC, SA, BRO via `mealpy`) — l'appel de fonction y apparaît alors comme un *raccourci* au-dessus des mécanismes qu'on vient de reconstruire, et l'on mesure ce que la composition déclarative apporte.
+- **Le pont vers l'ingénierie** : les patterns de composition (sous-populations spécialisées, migration, hybrides assemblés par grammaire fluente) existent dans la littérature mais sont rares dans les libs grand public — cette partie est le socle pour les implémenter en production sur un runtime .NET typé.
+- **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties — celle-ci est le side track C# .NET qui démontre que les concepts Python (Search-5 génétique, Search-11 métaheuristiques) se retrouvent, solidement typés et composables, dans un vrai moteur.
+
+### Le fil rouge
+
+Les métaheuristiques composables proposent un changement de regard sur l'optimisation : ne plus voir un algorithme bio-inspiré comme une **boîte noire** qu'on invoque (et dont on ignore le mécanisme caché derrière une métaphore animale), mais comme une **composition de primitives** qu'on peut intercepter, lire et recomposer. Reconstruire WOA ou Equilibrium Optimizer à partir de `Match`, `IfElse` et de croisements géométriques, c'est *démontrer* leur mécanisme plutôt que le postuler ; les confronter sur des benchmarks sans trier les victoires (divergence sur Schwefel), c'est éprouver le No-Free-Lunch au lieu de le réciter ; appliquer la même grammaire à un TSP combinatoire puis à un relief terrestre réel, c'est prouver l'agnosticisme de la représentation. La leçon transversale : la puissance d'une métaheuristique ne réside pas dans sa métaphore (baleine, équilibre, essaim) mais dans les **briques réutilisables** qu'elle assemble — et les composer soi-même est précisément ce qui transforme un utilisateur de bibliothèque en praticien capable d'inventer la configuration adaptée à un paysage de fitness donné.
+
 ## Liens
 
 - [Fork jsboige/MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — code source, tests, ROADMAP
