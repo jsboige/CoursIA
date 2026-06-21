@@ -123,6 +123,33 @@ Couverture par notebook des sources fondatrices de la programmation par contrain
 | CSP-3 (Advanced) | Régin, J.-C. (1994) — « A filtering algorithm for constraints of difference in CSPs », *AAAI-94*. Le propagateur global AllDifferent. |
 | CSP-6 (Hybridization) | Ohrimenko, I., Stuckey, P. J., & Codish, M. (2009) — « Propagation via Lazy Clause Generation », *Constraints* 14(3). Origine de la Lazy Clause Generation. |
 
+---
+
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette deuxième partie a opéré un **changement de paradigme** : ne plus chercher, mais contraindre. Là où la Partie 1 construisait un algorithme d'exploration, la programmation par contraintes **déclare** le problème — variables, domaines, contraintes — et délègue la recherche au solveur. L'arc pédagogique parcourt les couches successives qui rendent ce paradigme puissant :
+
+- **Le socle déclaratif** (CSP-1, CSP-2) — le modèle `(X, D, C)` posé en CSP-1, enrichi des heuristiques MRV/LCV qui prolongent le backtracking de la Partie 1 ; puis **l'idée qui change tout**, la propagation (AC-3, Forward Checking, MAC) : plutôt que de découvrir une impasse en s'y enfonçant, élaguer les valeurs impossibles avant même de les essayer — l'espace de recherche se réduit de lui-même, par déduction locale.
+- **Les contraintes globales** (CSP-3) — AllDifferent, Cumulative, Circuit : ces contraintes de haut niveau embarquent des propagateurs spécialisés, et c'est là que CP-SAT résout en millisecondes ce qu'un backtracking naïf mettrait des heures. La leçon centrale du paradigme : **la formulation est la performance**.
+- **Les applications industrielles** (CSP-4, CSP-5) — ordonnancement (Job-Shop, RCPSP, planification d'infirmiers avec IntervalVar/NoOverlap) et optimisation combinatoire (Bin Packing, Knapsack, portefeuille) : l'arsenal CSP appliqué aux deux grands classiques de la recherche opérationnelle.
+- **Sous le capot et les frontières** (CSP-6) — la **Lazy Clause Generation** explique pourquoi CP-SAT s'appelle ainsi : un solveur CP qui apprend des clauses SAT en cours de route ; les hybridations CP+ML et LLM+CSP esquissent la discipline à l'ère des grands modèles.
+- **Desserrer les hypothèses** (CSP-7, CSP-8, CSP-9) — contraintes souples (poids inégaux), contraintes temporelles (algèbre d'Allen, STP), résolution distribuée et préservation de la vie privée.
+
+Le véritable enseignement est une **sensibilité à la modélisation** : le même problème, déclaré avec des contraintes binaires ou avec une contrainte globale équivalente, peut passer de plusieurs heures à quelques millisecondes — le solveur n'a pas changé, seule la formulation a changé. Cette compétence de formulation est ce qui distingue le praticien CSP.
+
+### Prochaines étapes
+
+- **Les applications** : les [21 notebooks d'application](../Applications/README.md) (N-Queens, Nurse Scheduling, VRP, TSP, Picross, Minesweeper CSP) mettent en pratique CP-SAT sur des problèmes concrets avec benchmark baseline-comparison.
+- **Vers le raisonnement symbolique** : la modélisation déclarative de cette partie est le premier contact avec un mode de raisonnement qu'approfondissent [Z3/SMT](../../SymbolicAI/SMT/Z3/README.md) (SMT solving), les [Planners](../../SymbolicAI/Planners/) (PDDL, HTN) et [Tweety](../../SymbolicAI/Tweety/) (logique formelle) côté SymbolicAI. CSP-6 (LCG) fait explicitement le pont vers SAT.
+- **Retour aux fondamentaux** : après avoir vu la puissance de la propagation, reprendre [Search-2 (backtracking)](../Part1-Foundations/Search-2-Uninformed.ipynb) — le DFS y apparaît comme un cas particulier de CSP sans propagation, et l'on mesure le saut qu'apportent AC-3/MAC.
+- **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties et les applications — celle-ci est le socle déclaratif qui prolonge la Partie 1 (recherche) et prépare la Partie 4 (métaheuristiques) et les Applications.
+
+### Le fil rouge
+
+La programmation par contraintes propose un changement de regard sur la résolution de problèmes : ne plus opposer **modélisation** et **résolution** comme deux étapes séparées, mais comprendre qu'en CSP **la modélisation est la résolution**. Le backtracking de la Partie 1, enrichi de la propagation (AC-3/MAC), devient capable d'élaguer l'espace de recherche par pure déduction locale avant même d'essayer une valeur ; les contraintes globales (AllDifferent, Cumulative, Circuit) encapsulent des algorithmes experts que le praticien invoque sans les réécrire ; la Lazy Clause Generation révèle que CP-SAT n'est ni purement CP ni purement SAT, mais une hybridation qui apprend ses échecs. La leçon transversale : un problème NP-difficile n'est pas forcément « dur à résoudre », il est « dur à bien formuler » — et c'est cette compétence de formulation, plus que la maîtrise de tel ou tel solveur, que cette partie cherche à transmettre. C'est aussi le premier pas vers le raisonnement déclaratif au sens large, celui des prouveurs SMT et des planificateurs PDDL où l'on déclare ce que l'on sait et laisse le moteur déduire le reste.
+
 ## Navigation
 
 [<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour à la série Search](../README.md) | [Applications ->](../Applications/README.md)
