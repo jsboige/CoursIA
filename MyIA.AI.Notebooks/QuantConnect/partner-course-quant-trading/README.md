@@ -1,293 +1,293 @@
-# Quantitative Trading with QuantConnect - Partner Course Template
+# Trading Quantitatif avec QuantConnect — Template de Cours Partenaire
 
-Workspace for partner school quant trading courses.
-Sponsored by Jared Broad (CEO QuantConnect) via the "Trading Firm" tier.
-
----
-
-## Student Registration
-
-### Registration Process
-
-To participate and benefit from QuantConnect sponsoring (Trading Firm tier):
-
-1. **Create a free account** on [quantconnect.com](https://www.quantconnect.com) with your **school email**
-2. **Send your username** to the instructor
-3. **Wait to be added** to the Trading Firm organization
-4. **Start the exercises** : notebooks QC-Py-01 to QC-Py-04, then course exercises
-
-### Cloud-First Workflow
-
-All development happens on **QuantConnect Cloud** (QC Lab), not locally.
-
-- **Benefits** : No local installation, access to QC historical data, instant compilation
-- **Projects** : Create your projects directly in QuantConnect Lab
+Espace de travail pour les cours de trading quantitatif des écoles partenaires.
+Sponsorisé par Jared Broad (CEO QuantConnect) via le tier « Trading Firm ».
 
 ---
 
-## Student Templates
+## Inscription des Étudiants
 
-Templates in `templates/` are starting points for your projects. Each level corresponds to increasing difficulty.
+### Procédure d'Inscription
 
-### Starter (Beginner)
+Pour participer et bénéficier du sponsoring QuantConnect (tier Trading Firm) :
 
-**File** : `templates/starter/main.py`
+1. **Créer un compte gratuit** sur [quantconnect.com](https://www.quantconnect.com) avec votre **email d'école**
+2. **Envoyer votre nom d'utilisateur** à l'instructeur
+3. **Attendre d'être ajouté** à l'organisation Trading Firm
+4. **Commencer les exercices** : notebooks QC-Py-01 à QC-Py-04, puis les exercices du cours
 
-**Strategy** : EMA crossover on BTCUSDT (Golden Cross / Death Cross)
+### Workflow Cloud-First
 
-**Prerequisites** :
-- Completed notebooks QC-Py-01 to QC-Py-04
-- Understand the basics : Initialize, OnData, indicators
+Tout le développement se fait sur **QuantConnect Cloud** (QC Lab), pas en local.
 
-**Concepts covered** :
-- `AddCrypto` : Add a crypto asset with market and resolution
-- `self.EMA(...)` : Create an Exponential Moving Average indicator
-- `SetWarmUp` : Pre-warm indicators before trading
-- `SetHoldings` : Allocate a percentage of the portfolio
-- `Liquidate` : Sell the entire position
-- `OnOrderEvent` : Receive execution notifications
-
-**Suggested modifications** :
-- Change EMA periods : (5, 20), (20, 50) or (50, 200)
-- Add an RSI filter : don't buy if RSI > 70
-- Implement a -5% stop-loss
-- Test on other cryptos : ETHUSDT, SOLUSDT
-
-**Full documentation** : [templates/starter/README.md](templates/starter/README.md)
+- **Avantages** : pas d'installation locale, accès aux données historiques QC, compilation instantanée
+- **Projets** : créez vos projets directement dans QuantConnect Lab
 
 ---
 
-### Intermediate
+## Templates Étudiants
 
-**File** : `templates/intermediate/main.py`
+Les templates dans `templates/` sont des points de départ pour vos projets. Chaque niveau correspond à une difficulté croissante.
 
-**Strategy** : Momentum ranking on S&P 500 stocks with Alpha Framework
+### Starter (Débutant)
 
-**Prerequisites** :
-- Completed QC-Py-13 (Alpha Models)
-- Understand the QC Algorithm Framework
+**Fichier** : `templates/starter/main.py`
 
-**Alpha Framework Modules** :
-| Module | Role | Class |
-|--------|------|-------|
-| **AlphaModel** | Generate signals (Insights) | `MomentumAlphaModel` |
-| **PortfolioConstructionModel** | Convert Insights to allocations | `EqualWeightingPortfolioConstructionModel` |
-| **RiskManagementModel** | Adjust for risk | `TrailingStopRiskManagementModel(0.05)` |
-| **ExecutionModel** | Send orders | `ImmediateExecutionModel` |
+**Stratégie** : crossover EMA sur BTCUSDT (Golden Cross / Death Cross)
 
-**Suggested modifications** :
-- Change the momentum lookback : 60, 120 or 252 days
-- Add an RSI filter to avoid overbought stocks
-- Sector filtering : focus on specific sectors
-- Change construction model : InsightWeighting, MeanVariance, RiskParity
+**Prérequis** :
+- Notebooks QC-Py-01 à QC-Py-04 terminés
+- Comprendre les bases : `Initialize`, `OnData`, indicateurs
 
-**Full documentation** : [templates/intermediate/README.md](templates/intermediate/README.md)
+**Concepts couverts** :
+- `AddCrypto` : ajouter un actif crypto avec marché et résolution
+- `self.EMA(...)` : créer un indicateur Exponential Moving Average
+- `SetWarmUp` : préchauffer les indicateurs avant de trader
+- `SetHoldings` : allouer un pourcentage du portefeuille
+- `Liquidate` : vendre toute la position
+- `OnOrderEvent` : recevoir les notifications d'exécution
+
+**Modifications suggérées** :
+- Changer les périodes EMA : (5, 20), (20, 50) ou (50, 200)
+- Ajouter un filtre RSI : ne pas acheter si RSI > 70
+- Implémenter un stop-loss à -5 %
+- Tester sur d'autres cryptos : ETHUSDT, SOLUSDT
+
+**Documentation complète** : [templates/starter/README.md](templates/starter/README.md)
 
 ---
 
-### Advanced
+### Intermediate (Intermédiaire)
 
-**File** : `templates/advanced/main.py`
+**Fichier** : `templates/intermediate/main.py`
 
-**Strategy** : Machine Learning (RandomForest) on BTCUSDT
+**Stratégie** : classement momentum sur actions S&P 500 avec l'Alpha Framework
 
-**Prerequisites** :
-- Completed QC-Py-18 (ML Features Engineering) and QC-Py-19 (ML Classification)
-- Familiar with sklearn : RandomForestClassifier, feature engineering
+**Prérequis** :
+- QC-Py-13 (Alpha Models) terminé
+- Comprendre le QC Algorithm Framework
 
-**ML Pipeline** :
+**Modules de l'Alpha Framework** :
+| Module | Rôle | Classe |
+|--------|------|--------|
+| **AlphaModel** | Générer les signaux (Insights) | `MomentumAlphaModel` |
+| **PortfolioConstructionModel** | Convertir les Insights en allocations | `EqualWeightingPortfolioConstructionModel` |
+| **RiskManagementModel** | Ajuster pour le risque | `TrailingStopRiskManagementModel(0.05)` |
+| **ExecutionModel** | Envoyer les ordres | `ImmediateExecutionModel` |
+
+**Modifications suggérées** :
+- Changer le lookback momentum : 60, 120 ou 252 jours
+- Ajouter un filtre RSI pour éviter les actions surachetées
+- Filtrage sectoriel : se concentrer sur des secteurs spécifiques
+- Changer le modèle de construction : InsightWeighting, MeanVariance, RiskParity
+
+**Documentation complète** : [templates/intermediate/README.md](templates/intermediate/README.md)
+
+---
+
+### Advanced (Avancé)
+
+**Fichier** : `templates/advanced/main.py`
+
+**Stratégie** : Machine Learning (RandomForest) sur BTCUSDT
+
+**Prérequis** :
+- QC-Py-18 (ML Features Engineering) et QC-Py-19 (ML Classification) terminés
+- Familier avec sklearn : `RandomForestClassifier`, feature engineering
+
+**Pipeline ML** :
 ```
-Data (BTCUSDT Daily)
-    -> Feature Engineering (SMA, RSI, EMA ratios, returns)
-    -> RandomForest Training (100 trees, max_depth=5)
-    -> Daily Prediction (1 = long, 0 = cash)
-    -> Automatic Monthly Re-training
+Données (BTCUSDT Daily)
+    -> Feature Engineering (SMA, RSI, ratios EMA, rendements)
+    -> Entraînement RandomForest (100 arbres, max_depth=5)
+    -> Prédiction quotidienne (1 = long, 0 = cash)
+    -> Ré-entraînement mensuel automatique
 ```
 
-**Suggested modifications** :
-- Add features : ADX, ATR, Bollinger Bands, volume
-- Try other models : XGBoost, SVC
-- Add short positions (requires Margin account)
-- Walk-forward optimization : train on N months, test on next month
-- Risk management : stop-loss, take-profit, position sizing
+**Modifications suggérées** :
+- Ajouter des features : ADX, ATR, Bollinger Bands, volume
+- Essayer d'autres modèles : XGBoost, SVC
+- Ajouter des positions courtes (requiert un compte Margin)
+- Walk-forward optimization : entraîner sur N mois, tester sur le mois suivant
+- Gestion du risque : stop-loss, take-profit, position sizing
 
-**Full documentation** : [templates/advanced/README.md](templates/advanced/README.md)
+**Documentation complète** : [templates/advanced/README.md](templates/advanced/README.md)
 
 ---
 
-## Instructor Examples
+## Exemples de l'Instructeur
 
-The `examples/` directory contains validated projects with positive backtests.
+Le répertoire `examples/` contient des projets validés avec des backtests positifs.
 
 ### Python - Crypto
 
-| Project | Cloud ID | Description |
+| Projet | Cloud ID | Description |
 |---------|----------|-------------|
-| **Multi-Layer-EMA** | 20216947 | EMA crossover multi-crypto (BTC/ETH/LTC) + RSI filter |
+| **Multi-Layer-EMA** | 20216947 | EMA crossover multi-crypto (BTC/ETH/LTC) + filtre RSI |
 
-### Python - Equities/ETFs
+### Python - Actions/ETFs
 
-| Project | Cloud ID | Description |
+| Projet | Cloud ID | Description |
 |---------|----------|-------------|
-| **Sector-Momentum** | 20216980 | Dual momentum SPY/TLT/GLD + Risk Parity PCM |
+| **Sector-Momentum** | 20216980 | Dual momentum SPY/TLT/GLD + PCM Risk Parity |
 | **Trend-Following** | 20216930 | Multi-oracle (MACD/RSI/Bollinger) + ATR trailing stop |
 
 ### Python - Options
 
-| Project | Cloud ID | Description |
+| Projet | Cloud ID | Description |
 |---------|----------|-------------|
-| **Options-VGT** | 21113806 | OTM PUT selling on 5 tech stocks (NVDA, ORCL, CSCO, AMD, QCOM) |
-| **Option-Wheel-Strategy** | 20216898 | Wheel strategy SPY : PUT selling -> assignment -> covered CALL |
+| **Options-VGT** | 21113806 | Vente de PUT OTM sur 5 actions tech (NVDA, ORCL, CSCO, AMD, QCOM) |
+| **Option-Wheel-Strategy** | 20216898 | Stratégie Wheel SPY : vente PUT -> assignment -> CALL couvert |
 
 ### Python - ML
 
-| Project | Cloud ID | Description |
+| Projet | Cloud ID | Description |
 |---------|----------|-------------|
-| **ML-RandomForest** | 29686996 | RandomForest on large-cap stocks, 6 features, monthly re-training |
-| **Framework-Composite** | 29687005 | Alpha Framework : EMAMomentum + SectorMomentum alphas, MaxDD 15% |
+| **ML-RandomForest** | 29686996 | RandomForest sur large caps, 6 features, ré-entraînement mensuel |
+| **Framework-Composite** | 29687005 | Alpha Framework : alphas EMAMomentum + SectorMomentum, MaxDD 15 % |
 
 ### C#
 
-| Project | Cloud ID | Description |
+| Projet | Cloud ID | Description |
 |---------|----------|-------------|
-| **CSharp-BTC-MACD-ADX** | 19898232 | BTC MACD+ADX daily on Binance Cash |
-| **CSharp-BTC-EMA-Cross** | 19050970 | Classic BTC EMA crossover (18/23) |
-| **CSharp-CTG-Momentum** | 19225388 | "Stocks on the Move" (Clenow) - Momentum ranking |
+| **CSharp-BTC-MACD-ADX** | 19898232 | BTC MACD+ADX daily sur Binance Cash |
+| **CSharp-BTC-EMA-Cross** | 19050970 | Crossover EMA BTC classique (18/23) |
+| **CSharp-CTG-Momentum** | 19225388 | « Stocks on the Move » (Clenow) — Momentum ranking |
 
 ---
 
-## Research Notebooks (QuantBook)
+## Notebooks de Recherche (QuantBook)
 
-Five Researcher projects with operational QuantBook notebooks for exploring QC Cloud data :
+Cinq projets Researcher avec des notebooks QuantBook opérationnels pour explorer les données QC Cloud :
 
-| Project | Cloud ID | QuantBook | Research Content |
-|---------|----------|-----------|------------------|
-| **Multi-Layer-EMA-Researcher** | 28433748 | research.ipynb | Grid search EMA/RSI/stop-loss on BTC/ETH/LTC |
+| Projet | Cloud ID | QuantBook | Contenu de recherche |
+|---------|----------|-----------|----------------------|
+| **Multi-Layer-EMA-Researcher** | 28433748 | research.ipynb | Grid search EMA/RSI/stop-loss sur BTC/ETH/LTC |
 | **BTC-ML-Researcher** | 28433750 | research.ipynb | Feature importance, walk-forward, confidence grid |
-| **MomentumStrategy-Researcher** | 28657837 | quantbook.ipynb | H1-H4 : top-N, lookback, vol window, regime filter |
+| **MomentumStrategy-Researcher** | 28657837 | quantbook.ipynb | H1-H4 : top-N, lookback, fenêtre de vol, filtre de régime |
 | **AllWeather-Researcher** | 28657833 | quantbook.ipynb | Grid search allocations All-Weather (SPY/IEF/GLD/XLP) |
-| **Sector-Momentum-Researcher** | 28433643 | quantbook.ipynb + research.ipynb | Dual Momentum SPY/TLT/GLD, full redesign |
+| **Sector-Momentum-Researcher** | 28433643 | quantbook.ipynb + research.ipynb | Dual Momentum SPY/TLT/GLD, refonte complète |
 
-These notebooks illustrate the QuantBook -> QCAlgorithm workflow : idea -> research -> backtest.
+Ces notebooks illustrent le workflow QuantBook -> QCAlgorithm : idée -> recherche -> backtest.
 
 ---
 
-## ML Research 2026 - Validated Models (Pipeline V2)
+## Recherche ML 2026 — Modèles Validés (Pipeline V2)
 
-The ML research pipeline (`ML-Training-Pipeline/`) follows a 7-stage curriculum
-based on *Hands-On AI Trading* (Broad/QuantConnect, 2025). Models below passed
-the **S1 (vol-forecasting)** gate with significant Diebold-Mariano test
-(p < 0.05, >= 4 seeds, walk-forward 5-fold).
+Le pipeline de recherche ML (`ML-Training-Pipeline/`) suit un curriculum en 7 étapes
+basé sur *Hands-On AI Trading* (Broad/QuantConnect, 2025). Les modèles ci-dessous ont passé
+le **gate S1 (vol-forecasting)** avec un test de Diebold-Mariano significatif
+(p < 0,05, >= 4 seeds, walk-forward 5-fold).
 
-### S1 KEEPERS - Multi-coin crypto volatility forecasting (BEATS)
+### S1 KEEPERS — Prévision de volatilité multi-coin (BEATS)
 
-| Model | Task | Verdict | DM p-value | Architecture |
+| Modèle | Tâche | Verdict | DM p-value | Architecture |
 |-------|------|---------|-----------|--------------|
-| **M12 HAR-RV-J** | 5-day vol forecast | BEATS RW + GARCH | **0.0015** | Heterogeneous Autoregressive + Jump component (Corsi 2009) |
-| **M15 LSTM h=32** | Short-scale vol forecast | BEATS RW | **0.0107** | LSTM hidden=32, 53/84 combos BEAT cross-coin (BTC/XRP/DOT/ADA) |
+| **M12 HAR-RV-J** | Prévision de vol à 5 jours | BEATS RW + GARCH | **0,0015** | Heterogeneous Autoregressive + composante de Jump (Corsi 2009) |
+| **M15 LSTM h=32** | Prévision de vol court-terme | BEATS RW | **0,0107** | LSTM hidden=32, 53/84 combos BEAT cross-coin (BTC/XRP/DOT/ADA) |
 
-Complementarity observed : M12 captures ETH/SOL better, M15 captures DOT better.
+Complémentarité observée : M12 capte mieux ETH/SOL, M15 capte mieux DOT.
 
-### S3 - HMM Regime daily (delivered, feeds S5 sizing)
+### S3 — HMM Regime daily (livré, alimente le sizing S5)
 
-Hidden Markov Model 2-regime (calm vs stress) on daily returns SPY+VIX+BTC.
-Discrete output used as switch in vol-target strategies (reduce exposure in stress regime).
+Hidden Markov Model 2-régimes (calme vs stress) sur les rendements daily SPY+VIX+BTC.
+La sortie discrète est utilisée comme switch dans les stratégies vol-target (réduction de l'exposition en régime stress).
 
-### S4 v2 - Inverse-Vol Ridge + HMM Regime (BEATS EqW)
+### S4 v2 — Inverse-Vol Ridge + HMM Regime (BEATS EqW)
 
-Inverse-vol weighted allocation with Ridge regression on features
-(momentum + M12 vol forecast) and HMM switch. Delta Sharpe **+0.325 vs EqW**
-(Equal Weight baseline) on QC Cloud backtest.
+Allocation pondérée inverse-vol avec régression Ridge sur les features
+(momentum + prévision de vol M12) et switch HMM. Delta Sharpe **+0,325 vs EqW**
+(baseline Equal Weight) sur backtest QC Cloud.
 
-### L4 Decision Transformer - Action-based trading (BEATS)
+### L4 Decision Transformer — Trading basé actions (BEATS)
 
-First model to beat buy-and-hold across 24/26 symbols. Action-based (buy/hold/sell classification)
-massively outperforms forecast-based approaches (PatchTST). Median AUC 0.5582, 104 combos validated.
+Premier modèle à battre le buy-and-hold sur 24/26 symboles. L'approche basée actions (classification buy/hold/sell)
+surpasse massivement les approches basées prévision (PatchTST). AUC médian 0,5582, 104 combos validés.
 
-### QC Cloud strategies powered by these models
+### Stratégies QC Cloud alimentées par ces modèles
 
-| QC Cloud Project | Cloud ID | Source Model | Description |
+| Projet QC Cloud | Cloud ID | Modèle source | Description |
 |-----------------|----------|-------------|-------------|
-| **HAR-RV-Kelly** | 31456164 | M12 HAR-RV-J | Vol forecast -> Kelly 1/4 sizing on SPY/EFA/EEM/TLT/GLD/DBC |
-| **Vol-GARCH-Target** | 31456084 | GARCH(1,1) baseline | Vol-targeting 15% annualized (reference for M12) |
-| **Vol-Ensemble-Conservative** | 31456204 | Ensemble M12+M15 | Inverse-vol weighting + leverage cap |
+| **HAR-RV-Kelly** | 31456164 | M12 HAR-RV-J | Prévision de vol -> sizing Kelly 1/4 sur SPY/EFA/EEM/TLT/GLD/DBC |
+| **Vol-GARCH-Target** | 31456084 | GARCH(1,1) baseline | Vol-targeting 15 % annualisé (référence pour M12) |
+| **Vol-Ensemble-Conservative** | 31456204 | Ensemble M12+M15 | Pondération inverse-vol + cap de levier |
 
-These projects are available in `../projects/`.
+Ces projets sont disponibles dans `../projects/`.
 
 ---
 
-## Pedagogical Concepts Covered
+## Concepts Pédagogiques Couverts
 
-Examples and templates cover **4 asset classes** and **8+ trading concepts** :
+Les exemples et templates couvrent **4 classes d'actifs** et **8+ concepts de trading** :
 
-| Level | Concepts | Strategies |
+| Niveau | Concepts | Stratégies |
 |-------|----------|------------|
-| **1 - Foundations** | EMA Crossover, MACD+ADX, Basic Options | Multi-Layer-EMA, CSharp-BTC-EMA-Cross, Options-VGT |
-| **2 - Intermediate** | Alpha Framework, Multi-indicators, Wheel Strategy | Sector-Momentum, Option-Wheel-Strategy, Trend-Following |
-| **3 - Advanced** | Momentum ranking, Risk Parity, ML | CSharp-CTG-Momentum, Sector-Momentum, ML-RandomForest |
+| **1 - Fondations** | EMA Crossover, MACD+ADX, Options de base | Multi-Layer-EMA, CSharp-BTC-EMA-Cross, Options-VGT |
+| **2 - Intermédiaire** | Alpha Framework, Multi-indicateurs, Wheel Strategy | Sector-Momentum, Option-Wheel-Strategy, Trend-Following |
+| **3 - Avancé** | Momentum ranking, Risk Parity, ML | CSharp-CTG-Momentum, Sector-Momentum, ML-RandomForest |
 
 ---
 
-## Backtest Results
+## Résultats de Backtest
 
-### Instructor Examples - 8 validated projects
+### Exemples de l'instructeur — 8 projets validés
 
-| # | Project | Sharpe | CAGR | Max DD |
+| # | Projet | Sharpe | CAGR | Max DD |
 |---|---------|--------|------|--------|
-| 1 | **Sector-Momentum** | 2.530 | 66.1% | 5.6% |
-| 2 | **Trend-Following** | 2.157 | 136.0% | 20.5% |
-| 3 | **Multi-Layer-EMA** | 1.891 | 120.9% | 54.4% |
-| 4 | **CSharp-BTC-MACD-ADX** | 1.224 | 38.1% | 48.8% |
-| 5 | **CSharp-BTC-EMA-Cross** | 1.094 | 36.2% | 40.7% |
-| 6 | **Options-VGT** | 0.892 | 25.3% | 15.6% |
-| 7 | **Option-Wheel-Strategy** | 0.524 | 12.7% | 26.4% |
-| 8 | **CSharp-CTG-Momentum** | 0.507 | 17.7% | 36.1% |
+| 1 | **Sector-Momentum** | 2.530 | 66.1 % | 5.6 % |
+| 2 | **Trend-Following** | 2.157 | 136.0 % | 20.5 % |
+| 3 | **Multi-Layer-EMA** | 1.891 | 120.9 % | 54.4 % |
+| 4 | **CSharp-BTC-MACD-ADX** | 1.224 | 38.1 % | 48.8 % |
+| 5 | **CSharp-BTC-EMA-Cross** | 1.094 | 36.2 % | 40.7 % |
+| 6 | **Options-VGT** | 0.892 | 25.3 % | 15.6 % |
+| 7 | **Option-Wheel-Strategy** | 0.524 | 12.7 % | 26.4 % |
+| 8 | **CSharp-CTG-Momentum** | 0.507 | 17.7 % | 36.1 % |
 
 ---
 
-## Recommended Learning Path
+## Parcours d'Apprentissage Recommandé
 
-### For beginners
+### Pour les débutants
 
-1. **Foundation notebooks** : QC-Py-01 to QC-Py-04 (~4.5h)
-2. **Starter Template** : Understand and modify `templates/starter/main.py`
-3. **First personal project** : Adapt the template with your ideas
-4. **Iteration** : Backtest, analyze results, improve
+1. **Notebooks de fondation** : QC-Py-01 à QC-Py-04 (~4,5h)
+2. **Template Starter** : comprendre et modifier `templates/starter/main.py`
+3. **Premier projet personnel** : adapter le template avec vos idées
+4. **Itération** : backtester, analyser les résultats, améliorer
 
-### For intermediate
+### Pour les intermédiaires
 
-1. **Alpha Framework notebooks** : QC-Py-13 to QC-Py-15 (~4h)
-2. **Intermediate Template** : Study `templates/intermediate/main.py`
-3. **Example projects** : Analyze `Sector-Momentum`, `Trend-Following`
-4. **Personal project** : Create your own strategy with Alpha Framework
+1. **Notebooks Alpha Framework** : QC-Py-13 à QC-Py-15 (~4h)
+2. **Template Intermediate** : étudier `templates/intermediate/main.py`
+3. **Projets exemples** : analyser `Sector-Momentum`, `Trend-Following`
+4. **Projet personnel** : créer votre propre stratégie avec l'Alpha Framework
 
-### For advanced
+### Pour les avancés
 
-1. **ML notebooks** : QC-Py-18 to QC-Py-21 (~4h)
-2. **Advanced Template** : Study `templates/advanced/main.py`
-3. **ML projects** : Analyze `BTC-MachineLearning`, `Sector-ML-Classification`
-4. **Advanced research** : Features engineering, hyperparameter tuning, walk-forward
+1. **Notebooks ML** : QC-Py-18 à QC-Py-21 (~4h)
+2. **Template Advanced** : étudier `templates/advanced/main.py`
+3. **Projets ML** : analyser `BTC-MachineLearning`, `Sector-ML-Classification`
+4. **Recherche avancée** : features engineering, hyperparameter tuning, walk-forward
 
 ---
 
-## Companion Notebooks
+## Notebooks Compagnons
 
-28 progressive Python notebooks in `../Python/` (QC-Py-01 to QC-Py-28) :
+28 notebooks Python progressifs dans `../Python/` (QC-Py-01 à QC-Py-28) :
 
-1. **Setup** : Account, IDE, first algorithm
-2. **Foundations** : API, Resolution, Consolidators, QuantBook
-3. **Indicators** : MACD, RSI, Bollinger, EMA
-4. **Strategies** : Mean Reversion, Momentum, Pairs Trading, Options
+1. **Setup** : compte, IDE, premier algorithme
+2. **Fondations** : API, Resolution, Consolidators, QuantBook
+3. **Indicateurs** : MACD, RSI, Bollinger, EMA
+4. **Stratégies** : Mean Reversion, Momentum, Pairs Trading, Options
 5. **Framework** : Alpha, Portfolio Construction, Risk, Execution
-6. **ML/AI** : Features, models, ObjectStore, RL, NLP
-7. **Production** : Paper trading, live, monitoring
+6. **ML/AI** : Features, modèles, ObjectStore, RL, NLP
+7. **Production** : paper trading, live, monitoring
 
 ---
 
 ## Documentation
 
-- **[GETTING-STARTED.md](../GETTING-STARTED.md)** : Detailed getting started guide
-- **[projects/README.md](../projects/README.md)** : Strategy catalog
+- **[GETTING-STARTED.md](../GETTING-STARTED.md)** : guide de démarrage détaillé
+- **[projects/README.md](../projects/README.md)** : catalogue de stratégies
 
 ---
 
@@ -316,8 +316,9 @@ Le fil rouge : la **progression pédagogique** — les 28 notebooks compagnons (
 
 ---
 
-## Resources
+## Ressources
 
 - [QuantConnect Documentation](https://www.quantconnect.com/docs)
 - [Hands-On AI Trading Book](https://www.hands-on-ai-trading.com)
 - [Book GitHub](https://github.com/QuantConnect/HandsOnAITradingBook)
+- **Version anglaise (snapshot pré-bascule)** : [README.en.md](README.en.md)
