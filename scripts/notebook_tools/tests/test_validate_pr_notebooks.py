@@ -18,11 +18,14 @@ from validate_pr_notebooks import get_kernel_name, validate_notebook
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _write_nb(path: Path, cells: list[dict], kernelspec: dict | None = None) -> Path:
+def _write_nb(path: Path, cells: list[dict], kernelspec: dict | None = None,
+              extra_metadata: dict | None = None) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     metadata = {}
     if kernelspec:
         metadata["kernelspec"] = kernelspec
+    if extra_metadata:
+        metadata.update(extra_metadata)
     nb = {"cells": cells, "metadata": metadata, "nbformat": 4, "nbformat_minor": 5}
     path.write_text(json.dumps(nb), encoding="utf-8")
     return path
@@ -139,6 +142,29 @@ class TestValidateNotebookH3:
         ])
         result = validate_notebook(nb)
         assert result["passed"] is True
+
+    def test_skip_exec_for_qc_reference_metadata(self, tmp_path):
+        """A notebook flagged metadata.qc_reference=True skips H.3 even outside
+        QC_CLOUD_PATHS (content-aware unification with regression_scan.py:261,
+        #3776). E.g. partner-course reference templates."""
+        # Path deliberately OUTSIDE QuantConnect/Python|projects
+        ref_path = tmp_path / "partner-course" / "examples" / "research.ipynb"
+        nb = _write_nb(ref_path, [
+            _code("qb = QuantBook()", exec_count=None),
+        ], extra_metadata={"qc_reference": True})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+
+    def test_no_skip_exec_without_qc_reference_metadata(self, tmp_path):
+        """Without the qc_reference flag, a non-QC-path notebook with null
+        execution_count must still FAIL H.3 (content-aware check is opt-in)."""
+        ref_path = tmp_path / "partner-course" / "examples" / "research.ipynb"
+        nb = _write_nb(ref_path, [
+            _code("print('hi')", exec_count=None),
+        ])  # no qc_reference flag
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("execution_count is null" in e for e in result["errors"])
 
 
 # ---------------------------------------------------------------------------
