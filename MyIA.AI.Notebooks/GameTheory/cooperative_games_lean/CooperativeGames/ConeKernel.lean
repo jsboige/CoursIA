@@ -465,6 +465,57 @@ lemma augCone_dual_iff (v : Finset N → ℝ) (f : ((Option N) → ℝ) →L[ℝ
     simp only [map_sum, map_smul, smul_eq_mul]
     exact Finset.sum_nonneg (fun S _ => mul_nonneg (hw S) (hgen S))
 
+/-! ## Generator coordinate values (witness-decoding prerequisite)
+
+The standard-basis generator `phiAugCont v (Pi.single S 1)` is the load-bearing
+object of the witness decoding: `augCone_dual_iff` reads a separating functional
+`f` off its value on these generators. Its coordinates are `1` in `some i`
+exactly when `i ∈ S` (coalition incidence) and `v S` in `none` (coalition value).
+These two facts generalize the grand-coalition special case used in
+`separatingFunctional_none_neg` to an arbitrary coalition `S`; they are the
+prerequisite for the witness-decoding lemma `exists_preimputation_strict`
+(separator `f` ⟹ pre-imputation `x i := f (some-basis i) / (-f (none-basis))`). -/
+
+/-- `some i` coordinate of the `S`-generator: the incidence indicator `1` if
+    `i ∈ S`, else `0`. Generalizes the grand-coalition special case to any `S`. -/
+lemma gen_apply_some (v : Finset N → ℝ) (S : Finset N) (i : N) :
+    (phiAugCont v (Pi.single S 1)) (some i) = if i ∈ S then (1 : ℝ) else 0 := by
+  -- defeq: `(phiAugCont v (Pi.single S 1)) (some i)` reduces to the `some`-arm
+  -- filtered incidence sum (cycle-18 defeq precedent).
+  show ∑ T ∈ Finset.univ.filter (fun T => i ∈ T),
+      (Pi.single S 1 : Finset N → ℝ) T = if i ∈ S then 1 else 0
+  by_cases hs : i ∈ S
+  · -- `i ∈ S`: the single term `T = S` (which lies in the filter) contributes `1`.
+    simp only [hs, if_true]
+    rw [Finset.sum_eq_single S
+        (fun T _ hT => by rw [Pi.single_apply, if_neg hT])
+        (fun h => (h (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hs⟩)).elim),
+        Pi.single_eq_same]
+  · -- `i ∉ S`: `S` is not in the filter, and every `T` in the filter has `T ≠ S`,
+    -- so `(Pi.single S 1) T = 0`; the sum vanishes.
+    simp only [hs, if_false]
+    rw [Finset.sum_eq_zero]
+    intro T hT
+    have hiT : i ∈ T := (Finset.mem_filter.mp hT).2
+    -- `T ≠ S`: were `T = S`, then `i ∈ T` would give `i ∈ S`, contradicting `hs`.
+    -- (Pin `hTS : T = S` via `intro` so `▸` sees its type — the anonymous-lambda
+    -- form leaves the binder a metavar at `▸`-elaboration time.)
+    have hTneS : T ≠ S := by intro hTS; exact hs (hTS ▸ hiT)
+    rw [Pi.single_apply, if_neg hTneS]
+
+/-- `none` coordinate of the `S`-generator: the coalition value `v S`.
+    Generalizes the grand-coalition special case to any `S`. -/
+lemma gen_apply_none (v : Finset N → ℝ) (S : Finset N) :
+    (phiAugCont v (Pi.single S 1)) none = v S := by
+  -- defeq: the `none`-arm is `∑ T, w T * v T` with `w = Pi.single S 1`.
+  have hsum : ∑ T : Finset N, (Pi.single S 1 : Finset N → ℝ) T * v T =
+      (Pi.single S 1 : Finset N → ℝ) S * v S :=
+    Finset.sum_eq_single S
+      (fun T _ hT => by rw [Pi.single_apply, if_neg hT]; ring)
+      (fun h => by simp at h)
+  show ∑ T : Finset N, (Pi.single S 1 : Finset N → ℝ) T * v T = v S
+  rw [hsum, Pi.single_eq_same, one_mul]
+
 /-! ## Witness decoding — sign condition
 
 The separating functional `f` from `hyperplane_separation_point` (applied to a point
