@@ -550,4 +550,37 @@ lemma balanced_notIn_augCone (G : TUGame N) (hb : G.Balanced) {t : ℝ} (ht : 0 
   have hbnd := hb w hw_bal
   linarith
 
+/-- **Dual characterization of `augCone`** (cycle 19): a continuous linear functional `f`
+    is nonnegative on `augCone G` iff it is nonnegative on each of the finitely many
+    generators `phiAugCont G (Pi.single S 1)`. The (⟸) direction is the load-bearing one —
+    it uses the finite generation (`augCone_mem_iff`): every cone element is a nonneg linear
+    combination of the generators, so `f` of it is a nonneg combination of the `f`-of-generators.
+    This is the foundation for translating a separating functional `f` (from
+    `hyperplane_separation_point`) into the witness structure for `hb_witness`: from
+    `0 ≤ f (phiAugCont G (Pi.single S 1))` one reads off the coalitional-rationality of `x`. -/
+lemma augCone_dual_iff (G : TUGame N) (f : ((Option N) → ℝ) →L[ℝ] ℝ) :
+    (∀ y ∈ augCone G, 0 ≤ f y) ↔
+      ∀ S : Finset N, 0 ≤ f (phiAugCont G (Pi.single S 1)) := by
+  refine ⟨fun hC S => hC _ ?_, ?_⟩
+  · -- each generator `phiAugCont G (Pi.single S 1)` is in `augCone G` (the weight `Pi.single S 1` is ≥ 0)
+    rw [augCone_mem_iff]
+    refine ⟨Pi.single S 1, fun S' => ?_, rfl⟩
+    simp only [Pi.single_apply]
+    split_ifs <;> norm_num
+  · rintro hgen y hy
+    obtain ⟨w, hw, hyw⟩ := (augCone_mem_iff G y).mp hy
+    rw [← hyw]
+    -- `phiAugCont G w = ∑ S, w S • phiAugCont G (Pi.single S 1)` by linearity + standard basis.
+    have hphi_sum : phiAugCont G w =
+        ∑ S : Finset N, w S • phiAugCont G (Pi.single S 1) := by
+      have hw_basis : w = ∑ S, w S • Pi.single S 1 := by
+        funext S₀
+        simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.single_apply,
+          mul_boole, Finset.sum_ite_eq, Finset.mem_univ, if_true]
+      conv_lhs => rw [hw_basis]
+      simp only [map_sum, map_smul]
+    rw [hphi_sum]
+    simp only [map_sum, map_smul, smul_eq_mul]
+    exact Finset.sum_nonneg (fun S _ => mul_nonneg (hw S) (hgen S))
+
 end BondarevaFarkas
