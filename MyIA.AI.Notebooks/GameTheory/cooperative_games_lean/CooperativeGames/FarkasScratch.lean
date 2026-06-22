@@ -296,7 +296,8 @@ theorem mem_cone_iff_exists_li_subset
         have hja : 0 < a j := (Finset.mem_filter.mp hj_pos).2
         have hjv_mem : (j : ι) ∈ s := Subtype.prop j
         have htja : t * a j = c j.val := by
-          rw [ht_def, ← hj_eq, div_mul_cancel₀ hja.ne']
+          rw [ht_def, ← hj_eq]
+          exact div_mul_cancel₀ (c j.val) hja.ne'
         -- `d` = slid witness; zero off `s`, zero at `j.val` (argmin).
         let d : ι → ℝ := fun i => c i - t * (if hi : i ∈ s then a ⟨i, hi⟩ else 0)
         have hdj_zero : d j.val = 0 := by
@@ -312,20 +313,22 @@ theorem mem_cone_iff_exists_li_subset
             · have hmem : (c i / a ⟨i, hi⟩) ∈ pos.image (fun k => c k.val / a k) :=
                 Finset.mem_image.mpr
                   ⟨⟨i, hi⟩, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hia⟩, rfl⟩
-              have hle : t ≤ c i / a ⟨i, hi⟩ := Finset.min'_le _ hmem
-              have htmul : t * a ⟨i, hi⟩ ≤ c i := (le_div_iff hia).mp hle
+              have hle : t ≤ c i / a ⟨i, hi⟩ := by
+                rw [ht_def]
+                exact Finset.min'_le _ _ hmem
+              have htmul : t * a ⟨i, hi⟩ ≤ c i := (le_div_iff₀ hia).mp hle
               exact sub_nonneg.mpr (by linarith [hc i])
             · have hiale : a ⟨i, hi⟩ ≤ 0 := le_of_not_gt hia
               have htmul : t * a ⟨i, hi⟩ ≤ 0 :=
                 mul_nonpos_of_nonneg_of_nonpos ht_nonneg hiale
               exact sub_nonneg.mpr (by linarith [hc i])
-          · rw [dif_neg hi, mul_zero, sub_zero]; exact hcsupp i hi
+          · rw [dif_neg hi, mul_zero, sub_zero]; exact hc i
         have hd_supp : ∀ i, i ∉ s.erase j.val → d i = 0 := by
           intro i hi
           by_cases hij : i = j.val
           · rw [hij]; exact hdj_zero
           · by_cases his : i ∈ s
-            · exact absurd hij (hi (Finset.mem_erase.mpr ⟨hij, his⟩))
+            · exact (hi (Finset.mem_erase.mpr ⟨hij, his⟩)).elim
             · show c i - t * (if _ : i ∈ s then a ⟨i, _⟩ else 0) = 0
               rw [dif_neg his, mul_zero, sub_zero]; exact hcsupp i his
         have hd_sum : y = ∑ i : ι, d i • v i := by
@@ -348,7 +351,7 @@ theorem mem_cone_iff_exists_li_subset
           rw [show ∑ i : ↥s, d i.val • v i.val = ∑ i : ↥s, (c i.val - t * a i) • v i.val from
               Finset.sum_congr rfl (fun i _ => by rw [hdi_val i])]
           simp only [sub_smul]
-          rw [← Finset.sum_sub_distrib]
+          rw [Finset.sum_sub_distrib]
           have hsum_ta : ∑ i : ↥s, (t * a i) • v i.val = 0 := by
             have heq : ∀ i : ↥s, (t * a i) • v i.val = t • (a i • v i.val) :=
               fun i => (smul_smul t (a i) (v i.val)).symm
