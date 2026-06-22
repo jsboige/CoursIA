@@ -362,4 +362,71 @@ theorem mem_cone_iff_exists_li_subset
         exact IH (s.erase j.val) hcardj ⟨d, hd_nonneg, hd_supp, hd_sum⟩
   exact (measure Finset.card).wf.induction Finset.univ step hgood_univ
 
+/-- **Brick 3.** A finitely-generated conic hull is closed.
+    K = union over all finsets I of the LI-guarded simplicial cone on I.
+    Forward (cone ⊆ union) = conic-Carathéodory (brick 2): every combo reduces
+    to a combo over a linearly-independent subset. Reverse (union ⊆ cone) =
+    extend a `↥I`-indexed combo to `ι` by zeros. Each slice is closed (LI slice:
+    brick 1; non-LI slice: empty), and the finite union of closed sets is closed. -/
+theorem finGenCone_isClosed
+    {ι F : Type*} [Fintype ι] [DecidableEq ι] [NormedAddCommGroup F] [NormedSpace ℝ F]
+    [FiniteDimensional ℝ F] (v : ι → F) :
+    IsClosed {y : F | ∃ c : ι → ℝ, (∀ i, 0 ≤ c i) ∧ y = ∑ i, c i • v i} := by
+  have hK_eq :
+      {y | ∃ c : ι → ℝ, (∀ i, 0 ≤ c i) ∧ y = ∑ i, c i • v i} =
+        ⋃ (I : Finset ι),
+          {y | LinearIndependent ℝ (fun i : ↥I => v i) ∧
+                (∃ c : ↥I → ℝ, (∀ i, 0 ≤ c i) ∧ y = ∑ i, c i • v i.val)} := by
+    ext y
+    simp only [Set.mem_setOf_eq, Set.mem_iUnion]
+    constructor
+    · rintro ⟨c, hc, hy⟩
+      obtain ⟨J, hJli, d, hd, hdsum⟩ := mem_cone_iff_exists_li_subset v y ⟨c, hc, hy⟩
+      exact ⟨J, hJli, d, hd, hdsum⟩
+    · rintro ⟨J, hJli, d, hd, hdsum⟩
+      let c : ι → ℝ := fun i => if hi : i ∈ J then d ⟨i, hi⟩ else 0
+      have hc_val : ∀ i : ↥J, c i.val = d i := by
+        intro i
+        show (if hi : i.val ∈ J then d ⟨i.val, hi⟩ else 0) = d i
+        rw [dif_pos i.prop]
+      have hc_zero : ∀ i ∉ J, c i = 0 := by
+        intro i hi
+        show (if hi : i ∈ J then d ⟨i, hi⟩ else 0) = 0
+        rw [dif_neg hi]
+      refine ⟨c, ?_, ?_⟩
+      · intro i
+        show 0 ≤ (if hi : i ∈ J then d ⟨i, hi⟩ else 0)
+        by_cases hi : i ∈ J
+        · rw [dif_pos hi]; exact hd ⟨i, hi⟩
+        · simp only [dif_neg hi]; exact le_refl (0 : ℝ)
+      · show y = ∑ i : ι, c i • v i
+        have hdtrans : ∑ i : ι, c i • v i = ∑ i : ↥J, c i.val • v i.val := by
+          have hssub : ∑ i ∈ J, c i • v i = ∑ i ∈ Finset.univ, c i • v i :=
+            Finset.sum_subset (Finset.subset_univ J)
+              (fun i _ hi => by rw [hc_zero i hi, zero_smul])
+          exact hssub.symm.trans (Finset.sum_coe_sort J (fun i => c i • v i)).symm
+        rw [hdtrans]
+        rw [show ∑ i : ↥J, c i.val • v i.val = ∑ i : ↥J, d i • v i.val from
+            Finset.sum_congr rfl (fun i _ => by rw [hc_val i])]
+        rw [← hdsum]
+  rw [hK_eq]
+  refine isClosed_iUnion_of_finite fun I => ?_
+  by_cases hI : LinearIndependent ℝ (fun i : ↥I => v i)
+  · have hSet :
+        {y | LinearIndependent ℝ (fun i : ↥I => v i) ∧
+              (∃ c : ↥I → ℝ, (∀ i, 0 ≤ c i) ∧ y = ∑ i, c i • v i.val)} =
+        {y | ∃ c : ↥I → ℝ, (∀ i, 0 ≤ c i) ∧ y = ∑ i, c i • v i.val} := by
+      ext y
+      simp only [Set.mem_setOf_eq, hI, true_and]
+    rw [hSet]
+    exact conicHull_linearIndependent_isClosed (fun i : ↥I => v i.val) hI
+  · have hSet :
+        ({y | LinearIndependent ℝ (fun i : ↥I => v i) ∧
+              (∃ c : ↥I → ℝ, (∀ i, 0 ≤ c i) ∧ y = ∑ i, c i • v i.val)} : Set F) = ∅ := by
+      rw [Set.eq_empty_iff_forall_notMem]
+      rintro y ⟨hLI, _⟩
+      exact hI hLI
+    rw [hSet]
+    exact isClosed_empty
+
 end BondarevaFarkas
