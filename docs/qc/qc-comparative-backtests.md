@@ -282,7 +282,6 @@ Projects with `main.py` but no recorded backtest metrics. Prime candidates for t
 | 75 | Options-VGT | OPT | Options (VGT) | yes |
 | 76 | Crypto-LSTM-Prediction | DL | Crypto (BTC) | yes |
 | 77 | AssetClassMomentum-QC | IND | Multi-asset | no |
-| 78 | Cloud-MeanReversion-Sectors | IND | Equities | no |
 | 79 | Cloud-RiskParity-Composite | RISK | Multi-asset | no |
 | 80 | Cloud-SectorRotation-Momentum | IND | Multi-asset | no |
 | 81 | Cloud-VolTargeting | RISK | Multi-asset | no |
@@ -356,6 +355,7 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 | HighBookToMarketFScore-QC | 32732820 | 2018-2025 | 0.411 | 14.513 | 60.4 | 4.5 | `5ef58b0d` | Collapse vs catalog 2.09, MaxDD 60% |
 | MeanReversion v5.2 | 30776121 | 2015-2024 | **0.810** | 10.040 | 7.5 | 46.8 | `b2c5b08f` | Promoted Tier 2→1. Calmar 1.34 (best risk-adj). PSR 46.8% |
 | AdaptiveAssetAllocation | 28693649 | 2008-2024 | 0.509 | 8.008 | 18.9 | 10.6 | `89e8aaef` | Promoted Tier 4→1. Min-var + momentum |
+| Cloud-MeanReversion-Sectors (v1) | 33211207 | 2018-2025 | 0.067 | 3.793 | 41.7 | 1.0 | `85bcef2b` | RSI(14) mean-rev 11 sector ETFs, IBKR. v1 default (no regime filter). Near-zero aligned, PSR 1.0% noise, MaxDD 42% (no regime filter exits bears). Promoted Tier 4→2. v2/v3 (regime filter + stop-loss) variants untested |
 | PairsTrading | 28693651 | 2015-2024 | -0.280 | 1.101 | 15.9 | 0.0 | `1ed0de9d` | Confirms exploratoire. PSR 0.001% |
 
 ### Student strategies (ESGF 5BD1 cohort, See #1405)
