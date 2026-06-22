@@ -95,9 +95,9 @@ Cycle 9 (2026-06-21) refinement — BIDUAL ROUTE RULED OUT + proof blueprint:
   Conic-Caratheodory derivable from Mathlib Convex/Caratheodory.lean (convex version) via the
   homogenization v_i |-> (v_i, 1). Finite union of closed = closed.
 Easy direction (exists w => y in closure) is constructive; only (exists) is hard. -/
-theorem augCone_mem_iff (G : TUGame N) (y : (Option N) → ℝ) :
-    y ∈ augCone G ↔ ∃ w : Finset N → ℝ, (∀ S, 0 ≤ w S) ∧ phiAugCont G w = y := by
-  sorry
+-- The `augCone_mem_iff` bridge is proven BELOW, after the cone-closed bricks
+-- (`conicHull_linearIndependent_isClosed` / `finGenCone_isClosed`), to avoid a
+-- forward reference. See the end of this namespace.
 
 /-! ## SIMPLICIAL brick (1st of the cone-closed lemma for `augCone_mem_iff`)
 
@@ -428,5 +428,82 @@ theorem finGenCone_isClosed
       exact hI hLI
     rw [hSet]
     exact isClosed_empty
+
+/-! ## The finite-dim bridge `augCone_mem_iff`
+
+With the cone-closed bricks proven, `augCone G` (a `ProperCone` = `ClosedSubmodule.map
+phiAugCont positive`, i.e. the *closure* of the image) equals the plain image: the image
+is a finitely-generated cone (standard-basis generators `v S = phiAugCont G (Pi.single S 1)`),
+hence closed by `finGenCone_isClosed`, so `closure(image) = image`. Membership then reduces
+to `∃ w ≥ 0, phiAugCont G w = y`. This closes the cone-closed kernel. -/
+theorem augCone_mem_iff (G : TUGame N) (y : (Option N) → ℝ) :
+    y ∈ augCone G ↔ ∃ w : Finset N → ℝ, (∀ S, 0 ≤ w S) ∧ phiAugCont G w = y := by
+  -- Standard-basis generators: v S = phiAugCont G (e_S), where e_S = Pi.single S 1.
+  let v (S : Finset N) : (Option N) → ℝ := phiAugCont G (Pi.single S 1)
+  -- Linearity-in-standard-basis: phiAugCont G w = Σ S, w S • v S, because every
+  -- w : Finset N → ℝ is its standard-basis expansion Σ S, w S • Pi.single S 1.
+  have hphi_sum (w : Finset N → ℝ) : phiAugCont G w = ∑ S, w S • v S := by
+    have hw : w = ∑ S, w S • Pi.single S 1 := by
+      ext S₀
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.single_apply]
+      rw [Fintype.sum_eq_single S₀]
+      · simp
+      · intro b hb
+        rw [if_neg (Ne.symm hb)]
+        ring
+    conv_lhs => rw [hw]
+    simp only [map_sum, map_smul]
+    rfl
+  -- The image cone as a finitely-generated conic hull on `v` (matches brick-3 exactly).
+  set image : Set ((Option N) → ℝ) :=
+      {y | ∃ c : Finset N → ℝ, (∀ S, 0 ≤ c S) ∧ y = ∑ S, c S • v S} with himage_def
+  have hImgClosed : IsClosed image := finGenCone_isClosed v
+  have hImg_eq : image = {y | ∃ w : Finset N → ℝ, (∀ S, 0 ≤ w S) ∧ phiAugCont G w = y} := by
+    ext y
+    constructor
+    · rintro ⟨c, hc, hy⟩; exact ⟨c, hc, by rw [hphi_sum c]; exact hy.symm⟩
+    · rintro ⟨w, hw, hy⟩; exact ⟨w, hw, by rw [← hphi_sum w]; exact hy.symm⟩
+  -- The Mathlib `PointedCone.map` image carrier equals the bridge RHS set.
+  have hmapImg : ((ProperCone.positive ℝ (Finset N → ℝ)).toPointedCone.map
+      (phiAugCont G : (Finset N → ℝ) →ₗ[ℝ] ((Option N) → ℝ)) : Set _) =
+      {y | ∃ w : Finset N → ℝ, (∀ S, 0 ≤ w S) ∧ phiAugCont G w = y} := by
+    ext y
+    simp only [SetLike.mem_coe, PointedCone.mem_map, ProperCone.mem_toPointedCone,
+      ProperCone.mem_positive]
+    constructor
+    · rintro ⟨w, hw, hy⟩; exact ⟨w, hw, hy⟩
+    · rintro ⟨w, hw, hy⟩; exact ⟨w, hw, hy⟩
+  have hRhsClosed : IsClosed
+      {y | ∃ w : Finset N → ℝ, (∀ S, 0 ≤ w S) ∧ phiAugCont G w = y} := by
+    rw [← hImg_eq]; exact hImgClosed
+  constructor
+  · -- (→) y ∈ augCone G ≡ y ∈ closure(image) → y ∈ image (image is closed)
+    intro hy
+    have hy0 : y ∈ closure
+        {y | ∃ w : Finset N → ℝ, (∀ S, 0 ≤ w S) ∧ phiAugCont G w = y} := by
+      have key : y ∈ closure
+          ((ProperCone.positive ℝ (Finset N → ℝ)).toPointedCone.map
+            (phiAugCont G : (Finset N → ℝ) →ₗ[ℝ] ((Option N) → ℝ)) : Set _) := by
+        have := hy
+        simp only [augCone, ProperCone.mem_map, PointedCone.mem_closure] at this
+        exact this
+      rw [hmapImg] at key
+      exact key
+    rw [hRhsClosed.closure_eq] at hy0
+    exact hy0
+  · -- (←) phiAugCont G w ∈ augCone G (image ⊆ closure = augCone)
+    rintro ⟨w, hw, rfl⟩
+    have h_in_image : (phiAugCont G w) ∈
+        ((ProperCone.positive ℝ (Finset N → ℝ)).toPointedCone.map
+          (phiAugCont G : (Finset N → ℝ) →ₗ[ℝ] ((Option N) → ℝ)) : Set _) := by
+      rw [hmapImg]; exact ⟨w, hw, rfl⟩
+    have h_in_closure : (phiAugCont G w) ∈ closure
+        ((ProperCone.positive ℝ (Finset N → ℝ)).toPointedCone.map
+          (phiAugCont G : (Finset N → ℝ) →ₗ[ℝ] ((Option N) → ℝ)) : Set _) :=
+      subset_closure h_in_image
+    have : (phiAugCont G w) ∈ augCone G := by
+      simp only [augCone, ProperCone.mem_map, PointedCone.mem_closure]
+      exact h_in_closure
+    exact this
 
 end BondarevaFarkas
