@@ -346,7 +346,27 @@ theorem bondareva_shapley_backward :
     -- ProperCone.hyperplane_separation instantiated for this polyhedron, the
     -- existence cannot be derived here. Marked for Director escalation.
     have hb_witness : ∃ x ∈ P, ∑ i : N, x i ≤ G.v Finset.univ := by
-      -- INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION
+      -- Step A (cone-separation → decoding, PROVEN). For every `t > 0`, the bridge
+      -- `balancedUnit_notIn_augCone` (Bridge #3941) produces `balancedUnit(v(N)+t) ∉
+      -- augCone`; `hyperplane_separation_point` (Mathlib) yields a separator `f` that
+      -- is nonneg on `augCone` and negative on `balancedUnit(v(N)+t)`; the decoding core
+      -- `exists_preimputation_strict_core` (ConeKernel #3945) turns `f` into an
+      -- `x ∈ P` with `∑ x ≤ v(N) + t`. This is the full Farkas-assembled strict witness.
+      have hb_strict : ∀ t : ℝ, 0 < t → ∃ x ∈ P, ∑ i : N, x i ≤ G.v Finset.univ + t := by
+        intro t ht
+        have hNotIn : balancedUnit (G.v Finset.univ + t) ∉ augCone G.v :=
+          balancedUnit_notIn_augCone G t ht hb
+        obtain ⟨f, hfCone, hfSep⟩ :=
+          ProperCone.hyperplane_separation_point (augCone G.v) hNotIn
+        obtain ⟨x, hxP, hxle⟩ :=
+          exists_preimputation_strict_core G.v ht f hfCone hfSep
+        exact ⟨x, hxP, hxle⟩
+      -- Step B (attainment crux). The strict witnesses give `inf_P (∑x) ≤ v(N)`
+      -- (let t → 0) and grand-coalition rationality gives `inf_P (∑x) ≥ v(N)`, so
+      -- `inf_P (∑x) = v(N)`. The slice `{x ∈ P | ∑x ≤ v(N)+1}` is compact: singletons
+      -- bound each `x_i` below by `v({i})`, the sum bound bounds each `x_i` above,
+      -- and closed ∩ bounded in the finite-dimensional `N → ℝ` is compact. By
+      -- Weierstrass, `∑x` attains its infimum `v(N)` on the slice.
       sorry
     obtain ⟨x, hxP, hxle⟩ := hb_witness
     refine ⟨x, ?_, hxP⟩
