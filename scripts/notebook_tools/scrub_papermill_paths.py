@@ -149,12 +149,37 @@ def scrub_notebook(nb_path, apply=False):
 
 # Machine-local home-directory prefixes. We anonymize the *home root* (user
 # name) and keep the rest of the path. Backslash form (Windows) and forward
-# slash form both appear in committed notebooks.
+# slash form both appear in committed notebooks. Separators use [\\/]+ (one or
+# more) rather than a single [\\/] so repr-doubled backslashes are matched too:
+# Python formats paths inside exception messages via repr(), so FileNotFoundError
+# / PermissionError etc. carry 'C:\\Users\\<user>' (two literal backslashes) not
+# 'C:\Users\<user>'. A single-separator regex misses those entirely (regression:
+# archive Fast-Downward-Legacy #3891, where traceback frames scrubbed but the
+# final exception line did not).
 _HOME_RES = [
     # Windows drive home: C:\Users\<user> or C:/Users/<user>  (single capture -> ~)
-    re.compile(r"[A-Za-z]:[\\/](?:Users|home)[\\/][^\\/]+"),
+    re.compile(r"[A-Za-z]:[\\/]+(?:Users|home)[\\/]+[^\\/]+"),
     # POSIX-style home root as written by some MSYS/git-bash tools: /c/Users/<user>
     re.compile(r"/[a-zA-Z]/(?:Users|home)/[^/]+"),
+]
+
+# Checkout-root prefixes: a drive-absolute path into the repo checkout (any
+# clone location, e.g. D:\dev\CoursIA-2\ or C:\dev\CoursIA\). Anonymized to
+# <repo>; the repo-relative tail stays informative. This is distinct from the
+# home root (no Users/home segment) so the home regexes never match it, and it
+# needs its own pattern (regression: #3892 D:\dev\CoursIA-2\ leak flagged by
+# ai-01). The drive prefix makes it specific to machine-local absolute paths, so
+# a relative discussion ("the CoursIA repo") or a URL is never touched.
+_REPO_RES = [
+    # Negative lookbehind (?<![a-zA-Z]) forbids a letter before the drive letter,
+    # so the 'e:' inside a 'file:' URL scheme (where 'e' is preceded by 'l') is
+    # never matched, nor the 'p:' in 'http:'. Only a real drive letter preceded by
+    # a separator (e.g. the 'D:' in 'file:///D:/dev/CoursIA/...', preceded by '/')
+    # matches, so the URL scheme is preserved while the checkout-root path is
+    # anonymized. Regression: SW-8 '<file:///D:/dev/CoursIA/...>' was mangled into
+    # '<fil<repo>...>' because 'e:///D:/dev/CoursIA/' matched (PR #3899, caught
+    # pre-commit by diff inspection).
+    re.compile(r"(?<![a-zA-Z])[A-Za-z]:[\\/]+(?:[^\\/'\"<>|]+[\\/]+)*CoursIA(?:-2)?[\\/]+"),
 ]
 
 # Process/file-specific ids that sit *inside* a home-relative temp path. These
@@ -176,6 +201,8 @@ def _scrub_output_text(text):
     orig = text
     for pat in _HOME_RES:
         text = pat.sub("~", text)
+    for pat in _REPO_RES:
+        text = pat.sub("<repo>", text)
     text = _IPYKERNEL_PID.sub(lambda m: m.group(1) + "<pid>", text)
     text = _CLAUDE_IPYKERNEL_PID.sub(lambda m: m.group(1) + "<pid>", text)
     text = _TEMP_FILE_ID.sub(lambda m: m.group(1) + "<tmpid>", text)
@@ -262,6 +289,9 @@ def scrub_output_paths(nb_path, apply=False):
                 for pat in _HOME_RES:
                     for m in pat.finditer(blob):
                         needles.add(m.group(0))
+                for pat in _REPO_RES:
+                    for m in pat.finditer(blob):
+                        needles.add(m.group(0))
                 for m in _IPYKERNEL_PID.finditer(blob):
                     needles.add(m.group(0))
                 for m in _CLAUDE_IPYKERNEL_PID.finditer(blob):
@@ -285,6 +315,9 @@ def scrub_output_paths(nb_path, apply=False):
             repl = needle[:needle.rfind("ipykernel_")] + "ipykernel_<pid>"
         elif "/Temp/tmp" in needle:
             repl = needle[:needle.find("/Temp/tmp") + len("/Temp/tmp")] + "<tmpid>"
+        elif any(pat.search(needle) for pat in _REPO_RES):
+            # Checkout-root: anonymize the repo clone prefix to <repo>
+            repl = "<repo>"
         else:
             # Home root: anonymize to ~
             repl = "~"
