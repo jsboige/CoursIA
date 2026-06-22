@@ -1,59 +1,59 @@
 # Calibration Lean
 
-Prover calibration targets for benchmarking the multi-agent Lean prover.
+Cibles de calibration du prouveur pour benchmarker le prouveur Lean multi-agents.
 
-## Status
+## Statut
 
-- **Toolchain**: v4.30.0-rc2
-- **Sorry count**: 0 production (all 4 calibration targets proved; previous "4 sorry" claim matched docstring text inside `/-- ... -/` blocks, not actual `sorry` terms)
-- **Build**: `lake build Calibration` -- SUCCESS
-- **Dependencies**: Mathlib4
+- **Toolchain** : v4.30.0-rc2
+- **Compte de sorry** : 0 en production (les 4 cibles de calibration sont prouvées ; un ancien compte de « 4 sorry » correspondait à du texte de docstring à l'intérieur de blocs `/-- ... -/`, pas à des termes `sorry` réels)
+- **Build** : `lake build Calibration` -- SUCCESS
+- **Dépendances** : Mathlib4
 
 ## Modules
 
-| File | sorry | Description |
-|------|-------|-------------|
-| `Calibration/Nash.lean` | 0 | Prover calibration targets (C/D/E/F) |
+| Fichier | sorry | Description |
+|---------|-------|-------------|
+| `Calibration/Nash.lean` | 0 | Cibles de calibration du prouveur (C/D/E/F) |
 
-## Calibration Targets
+## Cibles de calibration
 
-- **Target C**: Proved
-- **Target D**: Proved
-- **Target E**: Proved
-- **Target F**: Proved (docstring of this lemma mentions the word "sorry" — previous grep scans were misled by this)
+- **Cible C** : Prouvée
+- **Cible D** : Prouvée
+- **Cible E** : Prouvée
+- **Cible F** : Prouvée (la docstring de ce lemme mentionne le mot « sorry » — des scans `grep` précédents s'en sont laissés induire en erreur)
 
 ## Notes
 
-- This module benchmarks the multi-agent Lean prover's ability to close textbook-style proofs
-- All targets now closed; module is retained as a permanent regression suite for prover changes
-- Verification: `grep -nE '^[^/]*\bsorry\b' Calibration/Nash.lean` returns 0 production hits (cf [Lean README](../Lean-1-Setup.ipynb))
+- Ce module benchmark la capacité du prouveur Lean multi-agents à clore des preuves de type manuel
+- Toutes les cibles sont désormais fermées ; le module est conservé comme suite de régression permanente pour les changements du prouveur
+- Vérification : `grep -nE '^[^/]*\bsorry\b' Calibration/Nash.lean` retourne 0 correspondance en production (cf [README Lean](../Lean-1-Setup.ipynb))
 
 ## Conclusion
 
-This project is a **calibration suite** for the multi-agent Lean prover: four
-textbook-style proof targets (C / D / E / F) in `Calibration/Nash.lean`, all
-**proved with 0 `sorry`** (`lake build Calibration` SUCCESS, toolchain
-`v4.30.0-rc2`).
+Ce projet est une **suite de calibration** pour le prouveur Lean multi-agents :
+quatre cibles de preuve de type manuel (C / D / E / F) dans
+`Calibration/Nash.lean`, toutes **prouvées avec 0 `sorry`**
+(`lake build Calibration` SUCCESS, toolchain `v4.30.0-rc2`).
 
-### Why it exists
+### Pourquoi ce module existe
 
-The targets benchmark the prover's ability to close short, self-contained
-proofs end-to-end. With all four now closed, the module is retained as a
-**permanent regression suite**: any prover change that breaks one of these
-proofs surfaces here as a build failure.
+Les cibles benchmarkent la capacité du prouveur à clore des preuves courtes et
+auto-contenues de bout en bout. Les quatre étant désormais fermées, le module
+est conservé comme **suite de régression permanente** : tout changement du
+prouveur qui casse l'une de ces preuves remonte ici comme un échec de build.
 
-### The grep false-positive lesson
+### La leçon du faux positif grep
 
-An earlier "4 `sorry`" count was a **measurement artefact** — the word "sorry"
-appeared inside `/-- ... -/` docstrings (prose), not as proof terms. A naive
-`grep sorry` over-counted; the correct check
-`grep -nE '^[^/]*\bsorry\b'` (excluding comments/docstrings) returns 0. The
-same distinction — `sorry` the tactic vs "sorry" the word — applies across the
-whole Lean series.
+Un ancien compte de « 4 `sorry` » était un **artéfact de mesure** — le mot
+« sorry » apparaissait à l'intérieur de docstrings `/-- ... -/` (prose), pas
+comme termes de preuve. Un `grep sorry` naïf sur-comptait ; la vérification
+correcte `grep -nE '^[^/]*\bsorry\b'` (en excluant commentaires/docstrings)
+retourne 0. La même distinction — `sorry` la tactique vs « sorry » le mot —
+s'applique à toute la série Lean.
 
-### Where to go next
+### Où aller ensuite
 
-- **Prover harness**: [`agent_tests/prover/`](../agent_tests/prover/) — the
-  multi-agent prover these targets calibrate.
-- **Production targets**: [`conway_lean/`](../conway_lean/),
-  [`knot_lean/`](../knot_lean/) — Lean projects the prover also runs against.
+- **Harnais du prouveur** : [`agent_tests/prover/`](../agent_tests/prover/) — le prouveur multi-agents que ces cibles calibrent.
+- **Cibles de production** : [`conway_lean/`](../conway_lean/),
+  [`knot_lean/`](../knot_lean/) — projets Lean sur lesquels le prouveur
+  s'exécute également.

@@ -1,41 +1,41 @@
-# Mathlib Examples
+# Exemples Mathlib
 
-Basic Mathlib usage examples for the SymbolicAI/Lean series.
+Exemples d'utilisation basique de Mathlib pour la série SymbolicAI/Lean.
 
-## Status
+## Statut
 
-- **Toolchain**: v4.27.0
-- **Sorry count**: 0
-- **Build**: `lake build MathLibExamples` -- SUCCESS
-- **Dependencies**: Mathlib4
+- **Toolchain** : v4.27.0
+- **Compte de sorry** : 0
+- **Build** : `lake build MathLibExamples` -- SUCCESS
+- **Dépendances** : Mathlib4
 
 ## Modules
 
-| File | sorry | Description |
-|------|-------|-------------|
-| `MathLibExamples/Basic.lean` | 0 | Basic Mathlib usage patterns and examples |
+| Fichier | sorry | Description |
+|---------|-------|-------------|
+| `MathLibExamples/Basic.lean` | 0 | Patterns et exemples d'utilisation basique de Mathlib |
 
-## Key Results
+## Résultats clés
 
-- Demonstrates common Mathlib tactics and proof patterns
-- Serves as reference for students learning Lean 4 with Mathlib
+- Illustre les tactiques Mathlib courantes et les schémas de preuve
+- Sert de référence aux étudiants apprenant Lean 4 avec Mathlib
 
 ## Notes
 
-- Companion to notebook `Lean-6-Mathlib-Essentials.ipynb`
-- Part of the SymbolicAI/Lean pedagogical series
+- Compagnon du notebook `Lean-6-Mathlib-Essentials.ipynb`
+- Partie de la série pédagogique SymbolicAI/Lean
 
 ## Conclusion
 
-A thin **reference module** of basic Mathlib usage patterns
+Un **module de référence** minimal de schémas d'utilisation basique de Mathlib
 (`MathLibExamples/Basic.lean`, 0 `sorry`, `lake build MathLibExamples` SUCCESS),
-serving as the Lean-side companion to the `Lean-6-Mathlib-Essentials.ipynb`
-notebook. It is intentionally minimal — a starting point for students, not a
-survey.
+servant de compagnon côté Lean au notebook `Lean-6-Mathlib-Essentials.ipynb`.
+Il est volontairement minimal : un point de départ pour les étudiants, pas un
+aperçu exhaustif.
 
-### Where to go next
+### Où aller ensuite
 
-- **Notebook**: `Lean-6-Mathlib-Essentials.ipynb` — the teaching companion.
-- **Fuller Lean projects**: [`calibration_lean/`](../calibration_lean/),
+- **Notebook** : `Lean-6-Mathlib-Essentials.ipynb` — le compagnon pédagogique.
+- **Projets Lean plus complets** : [`calibration_lean/`](../calibration_lean/),
   [`conway_lean/`](../conway_lean/), [`sensitivity_lean/`](../sensitivity_lean/)
-  — production Lean built on Mathlib.
+  — projets Lean de production bâtis sur Mathlib.
