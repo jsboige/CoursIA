@@ -1,83 +1,87 @@
-# gittins_lean — Multi-Armed Bandits & the Gittins Index
+# gittins_lean — Bandits Manchots et Indice de Gittins
 
-Lean 4 formalization of the **multi-armed bandit** problem and the **Gittins
-index** (Gittins 1979, Weber 1992) — the optimal policy for the discounted
-infinite-horizon bandit. The **geometric-discount building blocks are fully
-proven** (PR #2911); the **marquee optimality theorem is stated but intractable**
-in the current Mathlib (no MDP/Bellman formalization), held as `sorry`.
+Formalisation en Lean 4 du problème du **bandit manchot multi-bras** (multi-armed
+bandit) et de l'**indice de Gittins** (Gittins 1979, Weber 1992) — la politique
+optimale pour le bandit actualisé à horizon infini. Les **briques de l'actualisation
+géométrique sont entièrement prouvées** (PR #2911) ; le **théorème phare
+d'optimalité est énoncé mais intraitable** dans le Mathlib actuel (pas de
+formalisation MDP/Bellman), maintenu en `sorry`.
 
-Part of the `Probas/Infer` (Infer.NET probabilistic) series. Companion notebook:
+Partie de la série `Probas/Infer` (probabiliste Infer.NET). Notebook compagnon :
 [`Infer-20b-Lean-Gittins.ipynb`](../Infer-20b-Lean-Gittins.ipynb).
 
-## Status
+## Statut
 
-- **Toolchain**: `leanprover/lean4:v4.30.0-rc2`
-- **Sorry**: **5** — all in `GittinsTheorem.lean` (the optimality theorem + index
-  properties). `Discount.lean` = **0 sorry** (fully proven), `Basic.lean` = 0.
-- **Build**: `lake build Gittins` (depends on Mathlib4)
-- **Dependencies**: Mathlib4 (`v4.30.0-rc2`) — real analysis for the discount lemmas
+- **Toolchain** : `leanprover/lean4:v4.30.0-rc2`
+- **Sorry** : **5** — tous dans `GittinsTheorem.lean` (le théorème d'optimalité +
+  propriétés de l'indice). `Discount.lean` = **0 sorry** (entièrement prouvé),
+  `Basic.lean` = 0.
+- **Build** : `lake build Gittins` (dépend de Mathlib4)
+- **Dépendances** : Mathlib4 (`v4.30.0-rc2`) — analyse réelle pour les lemmes d'actualisation
 
-## What it formalizes
+## Ce qui est formalisé
 
-A **multi-armed bandit**: at each step a policy chooses one of several arms
-(`BanditArm`) and observes a reward; the goal is to maximize total expected
-discounted reward (discount `γ ∈ (0,1)`). The **Gittins index** of an arm is the
-fixed point of an optimal-stopping problem; the **Gittins index policy** (play
-the arm with the highest index) is optimal for the discounted bandit.
+Un **bandit manchot multi-bras** : à chaque étape, une politique choisit l'un de
+plusieurs bras (`BanditArm`) et observe une récompense ; l'objectif est de maximiser
+la récompense actualisée espérée totale (actualisation `γ ∈ (0,1)`). L'**indice de
+Gittins** d'un bras est le point fixe d'un problème d'arrêt optimal ; la **politique
+à indice de Gittins** (jouer le bras d'indice le plus élevé) est optimale pour le
+bandit actualisé.
 
-The formalization is split into a **proven** layer and a **stated** layer:
+La formalisation est scindée en une couche **prouvée** et une couche **énoncée** :
 
-- **Proven** (`Discount.lean`): the geometric-series identities underpinning
-  discounted value — `∑' γ^n = 1/(1-γ)`, `∑' γ^n·r = r/(1-γ)`, and
-  `discount_monotone` (γ₁ ≤ γ₂ ⇒ ∑' γ₁^n ≤ ∑' γ₂^n). `discount_monotone` is
-  proven **closed-form** via `geometric_series_converges` +
-  `one_div_le_one_div_of_le`, sidestepping the missing `tsum_le_tsum` on bare `ℝ`
-  in Mathlib v4.30.0-rc2.
-- **Stated, intractable** (`GittinsTheorem.lean`): `gittinsIndex` (optimal
-  stopping), `gittins_optimality` (the central theorem — the index policy
-  maximizes expected discounted reward), `gittins_index_known_arm`,
-  `gittins_index_monotone_discount`. All `sorry`.
+- **Prouvé** (`Discount.lean`) : les identités de série géométrique sous-tendant la
+  valeur actualisée — `∑' γ^n = 1/(1-γ)`, `∑' γ^n·r = r/(1-γ)`, et
+  `discount_monotone` (γ₁ ≤ γ₂ ⇒ ∑' γ₁^n ≤ ∑' γ₂^n). `discount_monotone` est prouvé
+  **en forme close** via `geometric_series_converges` +
+  `one_div_le_one_div_of_le`, en contournant l'absence de `tsum_le_tsum` sur le `ℝ`
+  nu dans Mathlib v4.30.0-rc2.
+- **Énoncé, intractable** (`GittinsTheorem.lean`) : `gittinsIndex` (arrêt optimal),
+  `gittins_optimality` (le théorème central — la politique à indice maximise la
+  récompense actualisée espérée), `gittins_index_known_arm`,
+  `gittins_index_monotone_discount`. Tous en `sorry`.
 
 ## Modules
 
-| File | Lines | sorry | Content |
-|------|-------|-------|---------|
-| `Gittins/Basic.lean` | 37 | 0 | Core types — `BanditArm`, `BanditInstance` (arms + discount γ), `Policy := Nat → Nat`, `RewardHistory`, `pullCount`, `empiricalMean`. Pure Lean 4, no Mathlib. |
-| `Gittins/Discount.lean` | 68 | 0 | Geometric discounting **proven** via Mathlib real analysis: `geometric_series_converges`, `one_minus_gamma_pos`, `present_value_constant`, `discount_monotone`. |
-| `Gittins/GittinsTheorem.lean` | 96 | 5 | The marquee theorem **stated with sorry**: `gittinsIndex`, `gittinsPolicy` (argmax), `gittins_optimality`, `gittins_index_known_arm`, `gittins_index_monotone_discount`. (`gittins_beats_greedy` is a `: True := trivial` placeholder, not a sorry.) |
-| `Gittins.lean` | 19 | 0 | Umbrella imports |
+| Fichier | Lignes | sorry | Contenu |
+|---------|--------|-------|---------|
+| `Gittins/Basic.lean` | 37 | 0 | Types fondamentaux — `BanditArm`, `BanditInstance` (bras + actualisation γ), `Policy := Nat → Nat`, `RewardHistory`, `pullCount`, `empiricalMean`. Lean 4 pur, sans Mathlib. |
+| `Gittins/Discount.lean` | 68 | 0 | Actualisation géométrique **prouvée** via l'analyse réelle de Mathlib : `geometric_series_converges`, `one_minus_gamma_pos`, `present_value_constant`, `discount_monotone`. |
+| `Gittins/GittinsTheorem.lean` | 96 | 5 | Le théorème phare **énoncé avec sorry** : `gittinsIndex`, `gittinsPolicy` (argmax), `gittins_optimality`, `gittins_index_known_arm`, `gittins_index_monotone_discount`. (`gittins_beats_greedy` est un placeholder `: True := trivial`, pas un sorry.) |
+| `Gittins.lean` | 19 | 0 | Imports parapluie |
 
-## Why the optimality theorem is intractable
+## Pourquoi le théorème d'optimalité est intractable
 
-A complete proof of `gittins_optimality` requires:
+Une preuve complète de `gittins_optimality` requiert :
 
-1. **Optimal-stopping characterization** of the Gittins index (retirement value / fixed point),
-2. **Index decomposability** across independent arms,
-3. **Induction on the planning horizon**, and
-4. A **formal expected value** over the reward distribution.
+1. Une **caractérisation par arrêt optimal** de l'indice de Gittins (valeur de
+   retraite / point fixe),
+2. La **décomposabilité de l'indice** entre bras indépendants,
+3. Une **récurrence sur l'horizon de planification**, et
+4. Une **espérance formelle** sur la distribution de récompense.
 
-Mathlib (v4.30.0-rc2) has **no MDP, bandit, or Bellman-equation** formalization,
-nor a measure-theoretic expected-value API suitable here. A full proof is
-estimated at ~2000–5000 lines of supporting definitions — research-level, beyond
-a single PR. The theorem is therefore **stated** (with the precise statement
-preserved in its docstring) rather than silently weakened.
+Mathlib (v4.30.0-rc2) n'a **aucune formalisation de MDP, de bandit ou d'équation de
+Bellman**, ni d'API d'espérance mesurée-théorique adaptée ici. Une preuve complète est
+estimée à ~2000–5000 lignes de définitions support — de niveau recherche, au-delà
+d'une seule PR. Le théorème est donc **énoncé** (avec l'énoncé précis préservé dans
+son docstring) plutôt qu'affaibli silencieusement.
 
 ## Build
 
 ```bash
-# From this directory (WSL required)
+# Depuis ce répertoire (WSL requis)
 lake build Gittins
-# Depends on Mathlib4 — first build is heavy, subsequent builds use the cache
+# Dépend de Mathlib4 — le premier build est lourd, les builds suivants utilisent le cache
 ```
 
-## Notebook companion
+## Notebook compagnon
 
-[`Infer-20b-Lean-Gittins.ipynb`](../Infer-20b-Lean-Gittins.ipynb) — pedagogical
-presentation of the bandit problem and the Gittins index, bridging the Infer.NET
-probabilistic-programming material to the Lean formalization.
+[`Infer-20b-Lean-Gittins.ipynb`](../Infer-20b-Lean-Gittins.ipynb) — présentation
+pédagogique du problème du bandit et de l'indice de Gittins, reliant le matériel de
+programmation probabiliste Infer.NET à la formalisation Lean.
 
-## See also
+## Voir aussi
 
-- **PR #2911** — `discount_monotone` proven closed-form (sorry 1→0)
-- **`Probas/Infer/`** — Infer.NET probabilistic series (Bayesian inference, conjugate priors)
-- **Epic #2651** — README/structure audit (Lean-series)
+- **PR #2911** — `discount_monotone` prouvé en forme close (sorry 1→0)
+- **`Probas/Infer/`** — série probabiliste Infer.NET (inférence bayésienne, priors conjugués)
+- **Epic #2651** — audit README/structure (série Lean)
