@@ -1346,7 +1346,7 @@
         "name": "breakthrough_introduction_587cd70e_7512",
         "category": "introduction",
         "when": "After 6 failures, this tactic succeeded",
-        "tactic": "Trouvé la cause racine : **Erreur d'authentification 401** — la clé API dans `.env` est incorrecte. Le Executor utilise `sk-F6ZJn...` (une ancienne clé probablement liée à OpenAI), mais le fichier `.env` a une clé OpenRouter `sk-or-v1-36ddb...`.",
+        "tactic": "Trouvé la cause racine : **Erreur d'authentification 401** — la clé API dans `.env` est incorrecte. Le Executor utilise `sk-<redacted>...` (une ancienne clé probablement liée à OpenAI), mais le fichier `.env` a une clé OpenRouter `sk-or-v1-<redacted>...`.",
         "after": "",
         "not": [
           "lean_error: error: build failed",
