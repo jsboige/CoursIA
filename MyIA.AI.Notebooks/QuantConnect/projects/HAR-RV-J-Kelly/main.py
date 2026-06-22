@@ -21,7 +21,7 @@ class HarrvjKellyAlgorithm(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2020, 1, 1)
+        self.set_start_date(2018, 1, 1)
         self.set_end_date(2025, 6, 1)
         self.set_cash(100000)
         self.set_account_currency("USDT")
