@@ -583,4 +583,61 @@ lemma augCone_dual_iff (G : TUGame N) (f : ((Option N) → ℝ) →L[ℝ] ℝ) :
     simp only [map_sum, map_smul, smul_eq_mul]
     exact Finset.sum_nonneg (fun S _ => mul_nonneg (hw S) (hgen S))
 
+/-! ## Witness decoding (cycle 20)
+
+The separating functional `f` from `hyperplane_separation_point` (applied to
+`balancedUnit (v(N)+t) ∉ augCone`, which `balanced_notIn_augCone` provides) must be
+decoded into the Core witness `x : N → ℝ`. The natural candidate is
+`x i := f (Pi.single (some i) 1) / (-f (Pi.single none 1))`, which is well-defined once
+we know `f (Pi.single none 1) < 0`. This sign is the first load-bearing decoding step. -/
+
+/-- **Decoding sign condition (cycle 20)** — the separating functional `f` satisfies
+    `f (Pi.single none 1) < 0`. Proof: `0 ≤ f` on the grand-coalition generator
+    `phiAugCont G (Pi.single ⊤ 1)` (it is in `augCone`, via `augCone_dual_iff`); the
+    identity `balancedUnit (v(N)+t) = phiAugCont G (Pi.single ⊤ 1) + t • Pi.single none 1`
+    plus linearity turns `f (balancedUnit (v(N)+t)) < 0` into
+    `f (phiAugCont G (Pi.single ⊤ 1)) + t * f (Pi.single none 1) < 0`; combined with the
+    nonnegativity on the generator, `t * f (Pi.single none 1) < 0`, hence the sign (t > 0). -/
+lemma separatingFunctional_none_neg (G : TUGame N) {t : ℝ} (ht : 0 < t)
+    (f : ((Option N) → ℝ) →L[ℝ] ℝ)
+    (hfCone : ∀ y ∈ augCone G, 0 ≤ f y)
+    (hfSep : f (balancedUnit (G.v Finset.univ + t)) < 0) :
+    f (Pi.single none 1) < 0 := by
+  -- 0 ≤ f on the grand-coalition generator.
+  have huniv : 0 ≤ f (phiAugCont G (Pi.single Finset.univ 1)) :=
+    (augCone_dual_iff G f).mp hfCone Finset.univ
+  -- Coordinate value `phiAugCont G (Pi.single ⊤ 1) (some i) = 1` (incidence of ⊤).
+  have hGenSome (i : N) :
+      (phiAugCont G (Pi.single Finset.univ 1)) (some i) = (1 : ℝ) := by
+    show ∑ S ∈ Finset.univ.filter (fun S => i ∈ S),
+        (Pi.single Finset.univ 1 : Finset N → ℝ) S = 1
+    exact Finset.sum_eq_single Finset.univ
+      (fun b _ hb => by rw [Pi.single_apply, if_neg hb])
+      (fun h => by simp only [Finset.mem_filter, Finset.mem_univ, true_and] at h)
+  -- Coordinate value `phiAugCont G (Pi.single ⊤ 1) none = v(N)`.
+  have hGenNone :
+      (phiAugCont G (Pi.single Finset.univ 1)) none = G.v Finset.univ := by
+    have hsum : ∑ S : Finset N,
+        (Pi.single Finset.univ 1 : Finset N → ℝ) S * G.v S
+        = (Pi.single Finset.univ 1 : Finset N → ℝ) Finset.univ * G.v Finset.univ :=
+      Finset.sum_eq_single Finset.univ
+        (fun b _ hb => by rw [Pi.single_apply, if_neg hb]; ring)
+        (fun h => by simp only [Finset.mem_univ] at h)
+    show ∑ S : Finset N, (Pi.single Finset.univ 1 : Finset N → ℝ) S * G.v S = G.v Finset.univ
+    rw [hsum, Pi.single_apply, if_pos rfl, one_mul]
+  -- Identity: balancedUnit (v(N)+t) = grand-coal generator + t • none-basis.
+  have hId : balancedUnit (G.v Finset.univ + t) =
+      phiAugCont G (Pi.single Finset.univ 1) + t • Pi.single none 1 := by
+    funext j
+    rcases j with i | _
+    · simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, Pi.single_apply, balancedUnit]
+      rw [hGenSome, if_neg (fun h => Option.noConfusion h)]
+      ring
+    · simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, Pi.single_apply, balancedUnit]
+      rw [hGenNone, if_pos rfl]
+      ring
+  -- Linearity + linarith.
+  rw [hId, map_add, map_smul, smul_eq_mul] at hfSep
+  linarith
+
 end BondarevaFarkas
