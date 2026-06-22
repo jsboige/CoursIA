@@ -1,97 +1,99 @@
 # Lean Game Definitions
 
-Shared Lean 4 type definitions used by multiple GameTheory Lean projects. **NOT** a standalone Lake project — provides reference definitions imported or copied into adjacent Lake projects.
+Définitions de types partagées en Lean 4, utilisées par plusieurs projets Lean de GameTheory. **N'EST PAS** un projet Lake autonome — fournit des définitions de référence importées ou recopiées dans les projets Lake adjacents.
 
-## Status
+## Statut
 
-- **Type:** Code snippets (no `lakefile.lean`, no toolchain pin)
-- **Files:** 6 `.lean`
-- **`sorry` count:** 0 (definitions only, no proofs)
-- **Mathlib dependency:** None — all files use core Lean 4 only
-- **Buildable in isolation:** No — meant to be imported by Lake projects
-- **Last sorry audit:** 2026-05-29
-- **Last compilation fix:** 2026-06-10 (See #2748)
+- **Type** : Extraits de code (pas de `lakefile.lean`, pas de pin toolchain)
+- **Fichiers** : 6 `.lean`
+- **Compte de `sorry`** : 0 (définitions uniquement, pas de preuves)
+- **Dépendance Mathlib** : aucune — tous les fichiers utilisent le cœur de Lean 4 uniquement
+- **Compilable isolément** : Non — destiné à être importé par des projets Lake
+- **Dernier audit sorry** : 2026-05-29
+- **Dernière correction de compilation** : 2026-06-10 (See #2748)
 
-## Files
+## Fichiers
 
-- [Basic.lean](Basic.lean) — 107 lines. `NormalFormGame`, `FiniteGame`, `Game2x2` structures + expected payoffs. Source: `GameTheory-16-Lean-Definitions.ipynb`.
-- [Nash.lean](Nash.lean) — 139 lines. Best response, pure/mixed Nash equilibrium, strict dominance. Source: `GameTheory-16-Lean-Definitions.ipynb`.
-- [Combinatorial.lean](Combinatorial.lean) — 113 lines. `GameTree`, minimax evaluation, win/loss determination. Source: `GameTheory-18-Lean-CombinatorialGames.ipynb`.
-- [SocialChoice.lean](SocialChoice.lean) — 126 lines. `Preference`, `StrictPref`, Arrow's axioms (statements). Source: `GameTheory-19-Lean-SocialChoice.ipynb`.
-- [Bayesian.lean](Bayesian.lean) — Bayesian games with incomplete information: `BayesianGame`, `TypeStrategy`, `BayesianNashEquilibrium`, `InformationSet`, `SignalingGame`, `FirstPriceAuction`, Kuhn poker definitions. Source: `GameTheory-11-BayesianGames.ipynb`, `GameTheory-13-ImperfectInfo-CFR.ipynb`.
-- [Regret.lean](Regret.lean) — Regret minimization and CFR: `CumulativeRegret`, `regretMatchingStrategy`, `CounterfactualRegret`, `CFRState`, `FictitiousPlayState`. Source: `GameTheory-13-ImperfectInfo-CFR.ipynb`, `GameTheory-17-MultiAgent-RL.ipynb`.
+- [Basic.lean](Basic.lean) — 107 lignes. Structures `NormalFormGame`, `FiniteGame`, `Game2x2` + paiements espérés. Source : `GameTheory-16-Lean-Definitions.ipynb`.
+- [Nash.lean](Nash.lean) — 139 lignes. Meilleure réponse, équilibre de Nash pur/mixte, dominance stricte. Source : `GameTheory-16-Lean-Definitions.ipynb`.
+- [Combinatorial.lean](Combinatorial.lean) — 113 lignes. `GameTree`, évaluation minimax, détermination victoire/défaite. Source : `GameTheory-18-Lean-CombinatorialGames.ipynb`.
+- [SocialChoice.lean](SocialChoice.lean) — 126 lignes. `Preference`, `StrictPref`, axiomes d'Arrow (énoncés). Source : `GameTheory-19-Lean-SocialChoice.ipynb`.
+- [Bayesian.lean](Bayesian.lean) — Jeux bayésiens à information incomplète : `BayesianGame`, `TypeStrategy`, `BayesianNashEquilibrium`, `InformationSet`, `SignalingGame`, `FirstPriceAuction`, définitions du poker de Kuhn. Source : `GameTheory-11-BayesianGames.ipynb`, `GameTheory-13-ImperfectInfo-CFR.ipynb`.
+- [Regret.lean](Regret.lean) — Minimisation du regret et CFR : `CumulativeRegret`, `regretMatchingStrategy`, `CounterfactualRegret`, `CFRState`, `FictitiousPlayState`. Source : `GameTheory-13-ImperfectInfo-CFR.ipynb`, `GameTheory-17-MultiAgent-RL.ipynb`.
 
-## Usage
+## Utilisation
 
-These files are reference definitions, not a buildable library. Use them by:
+Ces fichiers sont des définitions de référence, pas une bibliothèque compilable. Utilisation :
 
-1. **Copy-paste into a notebook cell** (typical pedagogical workflow in `GameTheory-2b`, `GameTheory-8b`, etc.).
-2. **Import from an adjacent Lake project** by adding the file path to the project's `lakefile.lean`. Example from `social_choice_lean/`:
+1. **Copier-coller dans une cellule de notebook** (workflow pédagogique typique dans `GameTheory-2b`, `GameTheory-8b`, etc.).
+2. **Importer depuis un projet Lake adjacent** en ajoutant le chemin du fichier au `lakefile.lean` du projet. Exemple depuis `social_choice_lean/` :
 
    ```lean
    import GameTheory.lean_game_defs.Basic
    import GameTheory.lean_game_defs.SocialChoice
    ```
 
-3. **Standalone exploration** via the Lean 4 WSL kernel (see [scripts/README.md](../scripts/README.md) for kernel setup).
+3. **Exploration autonome** via le kernel Lean 4 WSL (voir [scripts/README.md](../scripts/README.md) pour la configuration du kernel).
 
-For full `PGame` support (combinatorial game theory in its mathematical generality), use Mathlib directly:
+Pour le support complet de `PGame` (théorie des jeux combinatoires dans toute sa généralité mathématique), utiliser Mathlib directement :
 
 ```lean
 import Mathlib.SetTheory.PGame.Basic
 import Mathlib.SetTheory.Game.Nim
 ```
 
-## Relation to other GameTheory Lean projects
+## Relation aux autres projets Lean de GameTheory
 
-- [stable_marriage_lean/](../stable_marriage_lean/) — Independent Lake project (Gale-Shapley formalization).
-- [social_choice_lean/](../social_choice_lean/) — Independent Lake project (Arrow / Sen / median voter, port of asouther4/lean-social-choice).
-- [social_choice_lean_peters/](../social_choice_lean_peters/) — Independent Lake project pinned on Peters' commit `d679d950` (Gibbard-Satterthwaite, Duggan-Schwartz).
-- [cooperative_games_lean/](../cooperative_games_lean/) — Independent Lake project (Shapley value, core, nucleolus).
+- [stable_marriage_lean/](../stable_marriage_lean/) — Projet Lake indépendant (formalisation Gale-Shapley).
+- [social_choice_lean/](../social_choice_lean/) — Projet Lake indépendant (Arrow / Sen / électeur médian, port de asouther4/lean-social-choice).
+- [social_choice_lean_peters/](../social_choice_lean_peters/) — Projet Lake indépendant pinné sur le commit `d679d950` de Peters (Gibbard-Satterthwaite, Duggan-Schwartz).
+- [cooperative_games_lean/](../cooperative_games_lean/) — Projet Lake indépendant (valeur de Shapley, cœur, nucléolus).
 
-These projects do **not** depend on `lean_game_defs/` at build time — they vendor their own definitions tailored to their proof obligations. `lean_game_defs/` is the **introductory** layer used by the teaching notebooks.
+Ces projets ne dépendent **pas** de `lean_game_defs/` à la compilation — ils vendorent leurs propres définitions adaptées à leurs obligations de preuve. `lean_game_defs/` est la couche **introductive** utilisée par les notebooks d'enseignement.
 
-## See also
+## Voir aussi
 
-- [GameTheory/README.md](../README.md) — Series overview (OpenSpiel + Lean tracks)
-- [scripts/README.md](../scripts/README.md) — Lean 4 WSL kernel setup
-- [.claude/rules/wsl-kernels.md](../../../.claude/rules/wsl-kernels.md) — Kernel rules
+- [GameTheory/README.md](../README.md) — Vue d'ensemble de la série (tracks OpenSpiel + Lean)
+- [scripts/README.md](../scripts/README.md) — Configuration du kernel Lean 4 WSL
+- [.claude/rules/wsl-kernels.md](../../../.claude/rules/wsl-kernels.md) — Règles du kernel
 
 ## Conclusion
 
-`lean_game_defs/` is the **introductory definition layer** of the GameTheory Lean
-track: shared Lean 4 type definitions (no proofs, 0 `sorry`) used by the teaching
-notebooks and importable by adjacent Lake projects. It is **not** a standalone Lake
-project — there is no `lakefile.lean`, no toolchain pin, and no Mathlib dependency;
-every file is core Lean 4 only.
+`lean_game_defs/` est la **couche de définitions introductive** du track Lean de
+GameTheory : définitions de types partagées en Lean 4 (pas de preuves, 0 `sorry`)
+utilisées par les notebooks d'enseignement et importables par les projets Lake
+adjacents. Ce n'est **pas** un projet Lake autonome — il n'y a pas de `lakefile.lean`,
+pas de pin toolchain, et aucune dépendance Mathlib ; chaque fichier utilise le cœur de
+Lean 4 uniquement.
 
-### What it provides
+### Ce qu'elle fournit
 
-Six reference files covering the game-theory curriculum: normal-form / finite games
-([Basic.lean](Basic.lean)), Nash equilibrium and dominance ([Nash.lean](Nash.lean)),
-combinatorial game trees with minimax ([Combinatorial.lean](Combinatorial.lean)),
-social-choice primitives and Arrow's axioms ([SocialChoice.lean](SocialChoice.lean)),
-Bayesian games and signaling ([Bayesian.lean](Bayesian.lean)), and regret
-minimization / CFR ([Regret.lean](Regret.lean)). Each maps to a specific teaching
-notebook and is self-contained.
+Six fichiers de référence couvrant le curriculum de théorie des jeux : jeux sous forme
+normale / finis ([Basic.lean](Basic.lean)), équilibre de Nash et dominance
+([Nash.lean](Nash.lean)), arbres de jeux combinatoires avec minimax
+([Combinatorial.lean](Combinatorial.lean)), primitives de choix social et axiomes
+d'Arrow ([SocialChoice.lean](SocialChoice.lean)), jeux bayésiens et signalisation
+([Bayesian.lean](Bayesian.lean)), et minimisation du regret / CFR
+([Regret.lean](Regret.lean)). Chaque fichier correspond à un notebook d'enseignement
+spécifique et est autonome.
 
-### How it is used
+### Comment elle est utilisée
 
-- **Copy-paste** into a notebook cell (the typical pedagogical workflow);
-- **Import** from an adjacent Lake project via `import GameTheory.lean_game_defs.*`; or
-- **Standalone exploration** via the Lean 4 WSL kernel.
+- **Copier-coller** dans une cellule de notebook (le workflow pédagogique typique) ;
+- **Importer** depuis un projet Lake adjacent via `import GameTheory.lean_game_defs.*` ; ou
+- **Explorer** de façon autonome via le kernel Lean 4 WSL.
 
-For full combinatorial-game theory (`PGame`, surreals, nimbers), the track points to
-Mathlib's `SetTheory.PGame` / the [`conway_cgt_lean/`](../conway_cgt_lean/) tour
-rather than redefining it here.
+Pour la théorie complète des jeux combinatoires (`PGame`, surréels, nimbers), le track
+renvoie au `SetTheory.PGame` de Mathlib / à la visite [`conway_cgt_lean/`](../conway_cgt_lean/)
+plutôt que de la redéfinir ici.
 
-### Where to go next
+### Où aller ensuite
 
-- **Buildable projects** (each vendors its own proof-tailored definitions):
-  [`social_choice_lean/`](../social_choice_lean/) (Arrow / Sen / median voter),
-  [`cooperative_games_lean/`](../cooperative_games_lean/) (Shapley value, Core),
+- **Projets compilables** (chacun vendore ses propres définitions adaptées aux preuves) :
+  [`social_choice_lean/`](../social_choice_lean/) (Arrow / Sen / électeur médian),
+  [`cooperative_games_lean/`](../cooperative_games_lean/) (valeur de Shapley, Cœur),
   [`stable_marriage_lean/`](../stable_marriage_lean/) (Gale-Shapley).
-- **CGT tour**: [`conway_cgt_lean/`](../conway_cgt_lean/) — surreals, nimbers via
+- **Visite CGT** : [`conway_cgt_lean/`](../conway_cgt_lean/) — surréels, nimbers via
   `vihdzp/combinatorial-games`.
-- **Kernel setup**: [scripts/README.md](../scripts/README.md) and
+- **Configuration du kernel** : [scripts/README.md](../scripts/README.md) et
   [.claude/rules/wsl-kernels.md](../../../.claude/rules/wsl-kernels.md).
