@@ -281,7 +281,6 @@ Projects with `main.py` but no recorded backtest metrics. Prime candidates for t
 | 73 | Option-Wheel | OPT | Options (SPY) | yes |
 | 75 | Options-VGT | OPT | Options (VGT) | yes |
 | 76 | Crypto-LSTM-Prediction | DL | Crypto (BTC) | yes |
-| 77 | AssetClassMomentum-QC | IND | Multi-asset | no |
 | 78 | Cloud-MeanReversion-Sectors | IND | Equities | no |
 | 79 | Cloud-RiskParity-Composite | RISK | Multi-asset | no |
 | 80 | Cloud-SectorRotation-Momentum | IND | Multi-asset | no |
@@ -357,6 +356,7 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 | MeanReversion v5.2 | 30776121 | 2015-2024 | **0.810** | 10.040 | 7.5 | 46.8 | `b2c5b08f` | Promoted Tier 2→1. Calmar 1.34 (best risk-adj). PSR 46.8% |
 | AdaptiveAssetAllocation | 28693649 | 2008-2024 | 0.509 | 8.008 | 18.9 | 10.6 | `89e8aaef` | Promoted Tier 4→1. Min-var + momentum |
 | PairsTrading | 28693651 | 2015-2024 | -0.280 | 1.101 | 15.9 | 0.0 | `1ed0de9d` | Confirms exploratoire. PSR 0.001% |
+| AssetClassMomentum-QC | 33209767 | 2018-2025 | 0.22 | 6.644 | 28.1 | 3.8 | `6746f155` | 5-ETF momentum top-3 (SPY/EFA/BND/VNQ/GSG, 252d), IBKR. Weak aligned, PSR 3.8% non-significant. Promoted Tier 4→2 |
 
 ### Student strategies (ESGF 5BD1 cohort, See #1405)
 
@@ -467,6 +467,7 @@ ou `Sigma` est la **matrice de covariance** complete (correlations incluses). Re
 19. **MeanReversion v5.2: Best Calmar ratio**: Sharpe 0.81, MaxDD 7.5%, Calmar 1.34 — best risk-adjusted return among non-leveraged strategies. PSR 46.8% (near significance). Promoted from Tier 2 (0.29) to Tier 1. The v5.2 code (IBKR brokerage, RSI65 exit, 10% stop-loss) dramatically outperforms the older version.
 20. **AdaptiveAssetAllocation: confirmed robuste**: Sharpe 0.509, CAGR 8.0%, MaxDD 18.9% (2008-2024, 16 years). Min-var + momentum approach produces steady returns. PSR 10.6% (not significant but positive).
 21. **PairsTrading: structural failure confirmed**: Sharpe -0.28 on aligned period, PSR 0.001%. OLS hedge + cointegration still produces negative alpha. Remains exploratoire/pedagogical.
+22. **AssetClassMomentum-QC: weak aligned baseline (2026-06-22)**: 5-ETF momentum (top-3 of SPY/EFA/BND/VNQ/GSG, 252d lookback, monthly rebalance, IBKR) on 2018-2025 gives Sharpe 0.22, CAGR 6.6%, MaxDD 28.1%, PSR 3.8% (non-significant). Confirms the aligned-period momentum underperformance pattern (cf MomentumRegime 0.185, EMA-Cross-Alpha -0.010). Promoted Tier 4 (Untested) → Tier 2 (Historique). Backtest `6746f155`, project 33209767.
 
 ## Comparison: Best-vs-Aligned
 
@@ -492,7 +493,7 @@ ou `Sigma` est la **matrice de covariance** complete (correlations incluses). Re
 
 ## Next Steps
 
-1. ~~**Standardized backtest period**: Re-run all 62 tested + 39 untested strategies on 2018-01-01 → 2024-12-31~~ — Done, 24 baselines verified via QC Cloud API (See #1630)
+1. ~~**Standardized backtest period**: Re-run all 62 tested + 39 untested strategies on 2018-01-01 → 2024-12-31~~ — Done, 25 baselines verified via QC Cloud API (See #1630)
 2. ~~**Run aligned baselines for AllWeather/SectorMomentum/EMA-Cross-Stocks/MomentumStrategy**~~ — Done, all 4 re-backtested via QC Cloud
 3. ~~**Student strategies (ESGF #1405)**: DualMomentum, RiskParity, ValueFactor, OptionWheel backtestees~~ — Done, 4/6 valides
 3b. ~~**Run baselines for MeanReversion, AAA, PairsTrading**~~ — Done 2026-06-11. MeanReversion promoted Tier 2→1 (0.81), AAA promoted Tier 4→1 (0.509), PairsTrading confirmed exploratoire (-0.28)
