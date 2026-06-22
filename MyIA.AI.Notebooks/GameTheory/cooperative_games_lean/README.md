@@ -1,66 +1,66 @@
 # Cooperative Games Lean
 
-Lean 4 formalization of cooperative game theory (Shapley value, core).
+Formalisation en Lean 4 de la théorie des jeux coopératifs (valeur de Shapley, cœur).
 
-## Status
+## Statut
 
-- **Toolchain**: v4.30.0-rc2
-- **Sorry count**: 1 production (`Basic.lean` L312, `bondareva_shapley_forward.hCore`, tagged `INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION`)
-- **Build**: `lake build CooperativeGames` -- SUCCESS
-- **Dependencies**: Mathlib4
+- **Toolchain** : v4.30.0-rc2
+- **Compte de sorry** : 1 en production (`Basic.lean` L312, `bondareva_shapley_forward.hCore`, taggé `INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION`)
+- **Build** : `lake build CooperativeGames` — SUCCESS
+- **Dépendances** : Mathlib4
 
 ## Modules
 
-| File | sorry | Description |
-|------|-------|-------------|
-| `CooperativeGames/Shapley.lean` | 0 | Shapley value definition and uniqueness theorem |
-| `CooperativeGames/Basic.lean` | 1 | Cooperative game / characteristic function / Core / Bondareva-Shapley scaffolding |
+| Fichier | sorry | Description |
+|---------|-------|-------------|
+| `CooperativeGames/Shapley.lean` | 0 | Définition de la valeur de Shapley et théorème d'unicité |
+| `CooperativeGames/Basic.lean` | 1 | Jeu coopératif / fonction caractéristique / Cœur / scaffolding Bondareva-Shapley |
 
-## Key Results
+## Résultats clés
 
-- **Shapley value uniqueness**: Proved that the Shapley value is the unique value satisfying efficiency, symmetry, null player, and additivity axioms (Shapley.lean, 0 sorry)
-- **Core definitions**: Cooperative game, characteristic function, player set, Core (Basic.lean)
-- **Bondareva-Shapley `←` direction** (balanced ⇒ Core nonempty): all scaffolding closed except the final extraction step at L312
+- **Unicité de la valeur de Shapley** : prouvé que la valeur de Shapley est l'unique valeur satisfaisant les axiomes d'efficacité, symétrie, joueur nul et additivité (Shapley.lean, 0 sorry)
+- **Définitions du Cœur** : jeu coopératif, fonction caractéristique, ensemble des joueurs, Cœur (Basic.lean)
+- **Direction `←` de Bondareva-Shapley** (balanced ⇒ Cœur non vide) : tout le scaffolding est clos sauf la dernière étape d'extraction en L312
 
 ## Notes
 
-- The lone `sorry` lives in `bondareva_shapley_forward.hCore` (Basic.lean L312). The proof reduces "P ⊆ {x : ∑ xᵢ ≥ v(N)}" to extracting an allocation with equality, which requires either Farkas-style hyperplane separation or a constructive minimum-existence argument over a compact convex set
-- Mathlib4 currently lacks the hyperplane-separation lemma needed; tagged **INTRACTABLE** by the multi-agent prover until that infrastructure lands (cf [LEAN_INVENTORY.md](../LEAN_INVENTORY.md) GO/NO-GO table)
-- Related to `stable_marriage_lean/` (matching theory as cooperative game)
+- Le `sorry` isolé vit dans `bondareva_shapley_forward.hCore` (Basic.lean L312). La preuve ramène « P ⊆ {x : ∑ xᵢ ≥ v(N)} » à l'extraction d'une allocation avec égalité, ce qui requiert soit une séparation d'hyperplan de type Farkas, soit un argument constructif d'existence d'un minimum sur un compact convexe
+- Mathlib4 ne dispose pas actuellement du lemme de séparation d'hyperplan requis ; taggé **INTRACTABLE** par le prouveur multi-agents en attendant que cette infrastructure arrive (cf [LEAN_INVENTORY.md](../LEAN_INVENTORY.md) table GO/NO-GO)
+- Lié à `stable_marriage_lean/` (théorie des appariements comme jeu coopératif)
 
 ## Conclusion
 
-This project formalizes cooperative game theory in Lean 4 — the **Shapley value**
-(closed, 0 `sorry`) and the **Core** with the **Bondareva-Shapley theorem** (1 `sorry`,
-WIP). It builds with `lake build CooperativeGames` on Mathlib4 (toolchain
+Ce projet formalise la théorie des jeux coopératifs en Lean 4 — la **valeur de Shapley**
+(close, 0 `sorry`) et le **Cœur** avec le **théorème de Bondareva-Shapley** (1 `sorry`,
+WIP). Il compile avec `lake build CooperativeGames` sur Mathlib4 (toolchain
 `v4.30.0-rc2`).
 
-### What is proven
+### Ce qui est prouvé
 
-- **Shapley value uniqueness** (`Shapley.lean`, 0 `sorry`): the Shapley value is the
-  *unique* allocation satisfying efficiency, symmetry, null-player, and additivity —
-  Shapley's (1953) axiomatic characterization.
-- **Core + Bondareva-Shapley scaffolding** (`Basic.lean`): cooperative game,
-  characteristic function, the Core, and the balanced-game condition, with the `←`
-  direction (balanced ⇒ Core nonempty) reduced to a single extraction step.
+- **Unicité de la valeur de Shapley** (`Shapley.lean`, 0 `sorry`) : la valeur de Shapley
+  est l'allocation *unique* satisfaisant efficacité, symétrie, joueur nul et additivité —
+  la caractérisation axiomatique de Shapley (1953).
+- **Cœur + scaffolding Bondareva-Shapley** (`Basic.lean`) : jeu coopératif, fonction
+  caractéristique, le Cœur et la condition de jeu équilibré (balanced), avec la direction
+  `←` (balanced ⇒ Cœur non vide) ramenée à une seule étape d'extraction.
 
-### Why the lone sorry remains
+### Pourquoi le sorry isolé reste
 
-The one `sorry` (`Basic.lean:312`, `hb_witness`) is the **LP-dual kernel** of the
-Bondareva-Shapley backward direction: extracting from the balanced condition an
-allocation `x ∈ Core` with `∑ xᵢ ≤ v(N)`. This is a Farkas / hyperplane-separation
-argument over a cone. It is **WIP, not abandoned** — an active plan
-([`docs/BONDAREVA_FARKAS_PLAN.md`](docs/BONDAREVA_FARKAS_PLAN.md)) validates the
-infrastructure (`ProperCone.hyperplane_separation_point` via an `(Option N) → ℝ`
-encoding) and isolates the remaining translation (~150-180 lines; the
-`StrongDual → balanced weights` step is the crux). `FORMAL_STATUS.md` records it as
-WIP_HARD.
+L'unique `sorry` (`Basic.lean:312`, `hb_witness`) est le **noyau LP-dual** de la
+direction backward de Bondareva-Shapley : extraire de la condition équilibrée une
+allocation `x ∈ Core` avec `∑ xᵢ ≤ v(N)`. C'est un argument de Farkas / séparation
+d'hyperplan sur un cône. Il est **WIP, pas abandonné** — un plan actif
+([`docs/BONDAREVA_FARKAS_PLAN.md`](docs/BONDAREVA_FARKAS_PLAN.md)) valide
+l'infrastructure (`ProperCone.hyperplane_separation_point` via un encodage
+`(Option N) → ℝ`) et isole la traduction restante (~150-180 lignes ; l'étape
+`StrongDual → balanced weights` est le point crucial). `FORMAL_STATUS.md` l'enregistre
+comme WIP_HARD.
 
-### Where to go next
+### Où aller ensuite
 
-- **Theory**: Bondareva (1963) / Shapley (1967), the Core characterizations;
+- **Théorie** : Bondareva (1963) / Shapley (1967), les caractérisations du Cœur ;
   Shapley (1953), *A Value for n-Person Games*.
-- **Active plan**: [`docs/BONDAREVA_FARKAS_PLAN.md`](docs/BONDAREVA_FARKAS_PLAN.md)
-  and [`FORMAL_STATUS.md`](FORMAL_STATUS.md).
-- **Related**: [`stable_marriage_lean/`](../stable_marriage_lean/) (Gale-Shapley
-  matching) and [`social_choice_lean/`](../social_choice_lean/) (Arrow / Sen).
+- **Plan actif** : [`docs/BONDAREVA_FARKAS_PLAN.md`](docs/BONDAREVA_FARKAS_PLAN.md)
+  et [`FORMAL_STATUS.md`](FORMAL_STATUS.md).
+- **Lié** : [`stable_marriage_lean/`](../stable_marriage_lean/) (appariement Gale-Shapley)
+  et [`social_choice_lean/`](../social_choice_lean/) (Arrow / Sen).
