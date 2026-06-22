@@ -32,6 +32,20 @@ Cluster simplifie depuis 2026-05-15 : **un workspace `CoursIA` par machine**, sa
 
 **Workspace `myia-po-2023:GenAI_Series` est DEPRECATED** depuis 2026-05-15. Tout dispatch GenAI va sur `myia-po-2023:CoursIA` uniquement.
 
+## Second workspace par machine — lanes `CoursIA-2` (depuis ~2026-06)
+
+Depuis ~juin 2026, chaque machine worker porte **deux lanes** (un `lane` = machine x workspace) : sa lane `CoursIA` historique **et** une lane `CoursIA-2` sur un second workspace, coordonnee via un **second dashboard** `workspace-CoursIA-2` co-egal. **Aucun des deux dashboards n'est « celui du coordinateur »** : ai-01 **lit ET poste un contenu lane-specific sur CHACUN** chaque cycle, jamais de broadcast miroir (cf [CLAUDE.md](../../CLAUDE.md) section A + [.claude/rules/coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) regle 3).
+
+| Machine | Lane `CoursIA` (dashboard `workspace-CoursIA`) | Lane `CoursIA-2` (dashboard `workspace-CoursIA-2`) |
+|---------|-----------------------------------------------|---------------------------------------------------|
+| `myia-po-2024` | QC backtest + ML (RTX 3070) | MetaGeneticSharp / metaheuristiques .NET (#1203) |
+| `myia-po-2025` | Python / ML CPU-only (exec OpenRouter) | .NET / Argumentum (#2137) |
+| `myia-po-2026` | Lean Conway/Knot + embeddings GenAI | Grothendieck (#2159) |
+
+`po-2023` (hote GenAI) et `ai-01` (coord) n'ont qu'une lane `CoursIA`. po-2025 ajoute par ailleurs ses 2 workspaces EPITA (cf section "po-2025 - 3 agents distincts").
+
+**Anti-collision (HARD)** : un seul editeur par serie/notebook ; une **session `CoursIA` != session `CoursIA-2`** sur la meme machine (collision-avoidance cross-session — un worker qui refuse un pivot cross-session a raison, le tort est au coordinateur). **Une lane ne se ferme jamais** : si la deep-queue Epic d'une lane est epuisee, le worker tombe sur le **fallback perenne never-empty** de SA famille (#2651 prose READMEs, #3973 README ascendant, #2161 rollout 3-exos, #3966 mise-en-forme notebooks), jamais "idle". Detail : [.claude/rules/coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) regle 4.
+
 ## ai-01 - topologie GPU (RTX 4090 x3)
 
 Regle stricte : GPU 2 **doit etre occupee 24/7** par un training BG longue duree.
