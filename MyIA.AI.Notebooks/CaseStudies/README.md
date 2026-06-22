@@ -148,6 +148,28 @@ Les systèmes IA appliqués au domaine médical sont soumis à des contraintes l
 
 Ces dimensions sont abordées en survol dans les notebooks mais méritent un module dédié pour une formation professionnelle complète.
 
+## Conclusion
+
+Cette série se veut un **capstone intégré** : le moment où les techniques apprises en silo au fil du cursus — la recherche heuristique de la série Search, les contraintes formelles de SymbolicAI, l'inférence bayésienne de Probas — cessent d'être des objets d'étude isolés pour devenir les couches d'un même système décisionnel. Les deux projets l'illustrent sous deux angles complémentaires : le **Diagnostic Médical** comme problème de *classification* (recherche dans l'espace des diagnostics + validation par contraintes Z3), l'**Oncology Planning** comme problème d'*optimisation* (planification CP-SAT + modèle probabiliste de réponse patient).
+
+### Ce que vous avez appris
+
+L'arc pédagogique parcourt trois idées qui se renforcent :
+
+- **L'architecture hybride est une composition ordonnée, pas une juxtaposition.** On filtre l'impossible (contraintes dures) avant d'optimiser, on modélise l'incertitude (bayésien) avant de décider. L'ordre des couches est lui-même une décision de conception — l'inverser produit un système soit trop rigide, soit trop flou.
+- **Le jumeau numérique est un pattern réutilisable.** Modéliser un patient qui *réagit* à une intervention (et non un patient statique) transforme la planification en expérimentation sûre. Ce schéma, appris sur un cas oncologique, se transpose à la finance (jumeau de marché), à la logistique (jumeau de flotte), à la maintenance prédictive.
+- **Le knowledge engineering fait le pont entre les paradigmes.** L'ontologie n'est pas un artéfact accessoire : c'est elle qui donne aux contraintes (Z3, OR-Tools) et au modèle probabiliste (Pyro) un vocabulaire commun. Sans représentation explicite du domaine, les solveurs ne savent pas sur quoi raisonner.
+
+### Prochaines étapes
+
+- **Consolider les fondations** : chaque paradigme mobilisé ici possède sa série dédiée. Si l'une des couches vous a paru opaque, c'est le signal pour la reprendre à la source — [Search](../Search/README.md) (A*, CSP, CP-SAT), [SymbolicAI](../SymbolicAI/README.md) (ontologies, Z3, Tweety), [Probas](../Probas/README.md) (Infer.NET, PyMC, Pyro). Le capstone révèle souvent les fondamentaux à approfondir.
+- **Pousser vers les extensions** : la section [Pour aller plus loin](#extensions-possibles) esquisse les directions de recherche naturelles — reformuler OncoPlan en MDP ([RL](../RL/README.md)), boucler un LLM pour générer des hypothèses validées par Z3, faire délibérer plusieurs agents ([GameTheory](../GameTheory/README.md)). Chacune transforme l'une des couches en un composant appris ou distribué.
+- **Transposer le pattern** : l'architecture « jumeau + contraintes + incertitude + optimisation » n'est pas propre au médical. Projeter les cinq couches sur un autre domaine (logistique, énergie, finance) est le meilleur moyen de vérifier que la compétence acquise est la *composition*, pas la recette clinique.
+
+### Le fil rouge
+
+Au-delà des techniques, la leçon transversale est une **discipline de l'architecture** : savoir reconnaître, face à un problème réel, quelle partie relève d'une contrainte dure (à déléguer à un solveur), quelle partie d'une incertitude irréductible (à confier à un modèle probabiliste), quelle partie d'une optimisation (à résoudre par recherche ou apprentissage) — et surtout, dans quel *ordre* les composer. Cette compétence de décomposition et de composition n'appartient à aucune série prise isolément ; c'est précisément ce qu'une étude de cas interdisciplinaire cherche à forger, et ce qui distingue un praticien capable de confronter un problème métier réel d'un spécialiste d'un seul paradigme.
+
 ## Installation
 
 ```bash
