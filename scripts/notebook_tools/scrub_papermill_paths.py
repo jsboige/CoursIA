@@ -179,7 +179,28 @@ _REPO_RES = [
     # anonymized. Regression: SW-8 '<file:///D:/dev/CoursIA/...>' was mangled into
     # '<fil<repo>...>' because 'e:///D:/dev/CoursIA/' matched (PR #3899, caught
     # pre-commit by diff inspection).
-    re.compile(r"(?<![a-zA-Z])[A-Za-z]:[\\/]+(?:[^\\/'\"<>|]+[\\/]+)*CoursIA(?:-2)?[\\/]+"),
+    #
+    # The path-segment char class EXCLUDES newlines ([^\\/...|\n\r]+). Without
+    # that, a Windows checkout path followed by a POSIX checkout path on the next
+    # line (common in Lean notebooks that print BOTH the Windows and WSL views of
+    # the project, e.g. 'C:\dev\CoursIA-2\...\nWSL path : /mnt/c/dev/CoursIA-2/')
+    # is captured as ONE giant multi-line needle spanning both paths. That needle
+    # never matches the raw on-disk JSON (a real newline in the parsed blob is a
+    # 2-char '\n' escape on disk) -> 0 fixed, leak left in place AND, worse, if it
+    # ever DID match it would delete the text between the two paths. Regression:
+    # Lean-13/15b/16a (this PR). Excluding \n\r keeps each path on its own line.
+    re.compile(r"(?<![a-zA-Z])[A-Za-z]:[\\/]+(?:[^\\/'\"<>|\n\r]+[\\/]+)*CoursIA(?:-2)?[\\/]+"),
+]
+
+# POSIX checkout-root prefixes: the WSL view of the repo checkout
+# (/mnt/c/dev/CoursIA-2/ or /mnt/d/dev/CoursIA/). Same defect class as the
+# Windows drive form above (a machine-local clone path), just the Linux
+# representation that WSL-executed Lean/Python notebooks print alongside the
+# Windows path. The Windows _REPO_RES never matches it (no drive letter), so
+# without this pattern the POSIX view leaks while the Windows view is scrubbed.
+# Same newline exclusion so it cannot span lines.
+_REPO_POSIX_RES = [
+    re.compile(r"/mnt/[a-z]/(?:[^/\n\r\"'<>|]+/)*CoursIA(?:-2)?/"),
 ]
 
 # Process/file-specific ids that sit *inside* a home-relative temp path. These
@@ -202,6 +223,8 @@ def _scrub_output_text(text):
     for pat in _HOME_RES:
         text = pat.sub("~", text)
     for pat in _REPO_RES:
+        text = pat.sub("<repo>", text)
+    for pat in _REPO_POSIX_RES:
         text = pat.sub("<repo>", text)
     text = _IPYKERNEL_PID.sub(lambda m: m.group(1) + "<pid>", text)
     text = _CLAUDE_IPYKERNEL_PID.sub(lambda m: m.group(1) + "<pid>", text)
@@ -292,6 +315,9 @@ def scrub_output_paths(nb_path, apply=False):
                 for pat in _REPO_RES:
                     for m in pat.finditer(blob):
                         needles.add(m.group(0))
+                for pat in _REPO_POSIX_RES:
+                    for m in pat.finditer(blob):
+                        needles.add(m.group(0))
                 for m in _IPYKERNEL_PID.finditer(blob):
                     needles.add(m.group(0))
                 for m in _CLAUDE_IPYKERNEL_PID.finditer(blob):
@@ -315,8 +341,9 @@ def scrub_output_paths(nb_path, apply=False):
             repl = needle[:needle.rfind("ipykernel_")] + "ipykernel_<pid>"
         elif "/Temp/tmp" in needle:
             repl = needle[:needle.find("/Temp/tmp") + len("/Temp/tmp")] + "<tmpid>"
-        elif any(pat.search(needle) for pat in _REPO_RES):
-            # Checkout-root: anonymize the repo clone prefix to <repo>
+        elif any(pat.search(needle) for pat in _REPO_RES) or \
+                any(pat.search(needle) for pat in _REPO_POSIX_RES):
+            # Checkout-root (Windows drive or WSL /mnt/ view): anonymize to <repo>
             repl = "<repo>"
         else:
             # Home root: anonymize to ~

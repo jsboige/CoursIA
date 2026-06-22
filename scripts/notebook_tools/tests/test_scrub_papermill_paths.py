@@ -432,3 +432,69 @@ def test_scrub_outputs_preserves_file_url_scheme(tmp_path):
     assert "SemanticWeb" in after
     # source cell byte-identical
     assert json.loads(after)["cells"][0]["source"] == ["open(...)"]
+
+
+def test_scrub_outputs_posix_checkout_root(tmp_path):
+    """A WSL /mnt/<drive>/.../CoursIA(-2)/ checkout path -> <repo>.
+
+    Regression: Lean-13/15b/16a. The Windows _REPO_RES never matches a POSIX
+    path (no drive letter), so the WSL view of the project leaked while the
+    Windows view was scrubbed. POSIX checkout paths are the same defect class
+    (machine-local clone location), just the Linux representation that
+    WSL-executed Lean/Python notebooks print alongside the Windows path.
+    """
+    raw = (
+        "Projet Lean (WSL) : /mnt/c/dev/CoursIA-2/MyIA.AI.Notebooks/"
+        "SymbolicAI/Lean/conway_lean\n"
+    )
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "setup()", raw)
+    before = p.read_text(encoding="utf-8")
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    assert fixed >= 1
+    after = p.read_text(encoding="utf-8")
+    out_text = "".join(json.loads(after)["cells"][0]["outputs"][0]["text"])
+    # the machine-local WSL clone path is anonymized
+    assert out_text.count("<repo>") == 1
+    assert "/mnt/c/dev/CoursIA-2" not in out_text
+    # the label + repo-relative tail survive
+    assert "Projet Lean (WSL)" in out_text
+    assert "SymbolicAI/Lean/conway_lean" in out_text
+    # source cell byte-identical
+    assert json.loads(after)["cells"][0]["source"] == ["setup()"]
+
+
+def test_scrub_outputs_repo_regex_does_not_span_newlines(tmp_path):
+    """A Windows checkout path and a POSIX checkout path on consecutive lines
+    are scrubbed INDEPENDENTLY; the _REPO_RES char class must not accept newlines
+    and so capture both paths (plus the label prose between) as one giant needle.
+
+    Regression: Lean-13/15b/16a. The old char class [^\\/...]+ accepted newlines,
+    so 'C:\\dev\\CoursIA-2\\...\\mod\\nWSL: /mnt/c/dev/CoursIA-2/.../mod' matched
+    as ONE needle reaching the SECOND CoursIA across the newline. That needle
+    never matched the raw on-disk JSON (real newline vs 2-char '\\n' escape) ->
+    0 fixed, leak left in place AND, if it ever did match, it would delete the
+    label prose between the two paths. With the newline exclusion both checkout
+    roots are scrubbed independently and the labels survive.
+    """
+    raw = (
+        "Windows: C:\\dev\\CoursIA-2\\proj\\mod\n"
+        "WSL: /mnt/c/dev/CoursIA-2/proj/mod\n"
+    )
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "show()", raw)
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    after = p.read_text(encoding="utf-8")
+    out_text = "".join(json.loads(after)["cells"][0]["outputs"][0]["text"])
+    # BOTH checkout roots anonymized (one <repo> per line), username-free
+    assert out_text.count("<repo>") == 2
+    assert "CoursIA" not in out_text
+    # the two labels survived (not eaten by a greedy multi-line match)
+    assert "Windows:" in out_text
+    assert "WSL:" in out_text
+    # repo-relative tails preserved
+    assert out_text.count("proj") == 2
+    # source cell byte-identical
+    assert json.loads(after)["cells"][0]["source"] == ["show()"]
