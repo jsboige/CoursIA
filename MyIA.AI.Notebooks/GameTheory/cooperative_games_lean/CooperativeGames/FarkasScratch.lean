@@ -506,4 +506,48 @@ theorem augCone_mem_iff (G : TUGame N) (y : (Option N) → ℝ) :
       exact h_in_closure
     exact this
 
+/-! ## Bridge to balanced weights (cycle 18)
+
+These two lemmas are the conic reformulation of the `Balanced` hypothesis. Together they provide
+the `x₀ ∉ augCone G` setup that `ProperCone.hyperplane_separation_point` (Dual.lean:132) needs.
+The remaining hard step of `bondareva_shapley_backward` is to decode the separating functional
+`f : StrongDual ℝ ((Option N) → ℝ)` into a witness `x : N → ℝ` with `x ∈ P` and `∑ x ≤ v(N)`.
+-/
+
+/-- The "balanced-unit" point: `1` in every `some i` coordinate, `t` in the `none` (value)
+    coordinate. -/
+def balancedUnit (t : ℝ) : (Option N) → ℝ := fun j => match j with
+  | some _ => 1
+  | none   => t
+
+/-- **Bridge lemma**: the balanced-unit point at value `t` lies in `augCone G` iff there exist
+    balanced weights `w` realizing value `t`. The `some i` coordinates of `phiAugCont G w` are
+    exactly the incidence sums `∑_{S ∋ i} w S` (so `balancedUnit`'s unit entries force
+    `BalancedWeights`), and the `none` coordinate reads off `∑_S w S * v(S)`. -/
+lemma augCone_balancedUnit_iff (G : TUGame N) (t : ℝ) :
+    balancedUnit t ∈ augCone G ↔
+      ∃ w : Finset N → ℝ, TUGame.BalancedWeights w ∧ ∑ S : Finset N, w S * G.v S = t := by
+  rw [augCone_mem_iff]
+  constructor
+  · rintro ⟨w, hw, hy⟩
+    exact ⟨w, ⟨hw, fun i => congr_fun hy (some i)⟩, congr_fun hy none⟩
+  · rintro ⟨w, ⟨hw, hbal⟩, hsum⟩
+    refine ⟨w, hw, ?_⟩
+    funext j
+    rcases j with _ | i
+    · exact hsum
+    · exact hbal i
+
+/-- **Separating point**: given `G.Balanced`, the point at value `v(N) + t` (any `t > 0`) lies
+    strictly outside `augCone G`. By `Balanced` no balanced collection can realize a value above
+    `v(N)`, so the bridge lemma excludes it. This is the `x₀ ∉ augCone G` hypothesis for
+    `hyperplane_separation_point`. -/
+lemma balanced_notIn_augCone (G : TUGame N) (hb : G.Balanced) {t : ℝ} (ht : 0 < t) :
+    balancedUnit (G.v Finset.univ + t) ∉ augCone G := by
+  intro hmem
+  rw [augCone_balancedUnit_iff] at hmem
+  obtain ⟨w, hw_bal, hw_sum⟩ := hmem
+  have hbnd := hb w hw_bal
+  linarith
+
 end BondarevaFarkas
