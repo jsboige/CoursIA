@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-21 05:19
+Generated: 2026-06-22 05:24
 Total notebooks: 566
 
 ## Status Summary
@@ -12,15 +12,15 @@ Total notebooks: 566
 
 ## Maturity Summary
 
-- **PRODUCTION**: 458
-- **BETA**: 58
+- **PRODUCTION**: 460
+- **BETA**: 56
 - **TEMPLATE**: 4
 - **ALPHA**: 42
 - **DRAFT**: 4
 
 ## By Series
 
-### GenAI (129 notebooks) — BROKEN:2, DEMO:80, READY:47 | ALPHA:5, BETA:30, DRAFT:2, PRODUCTION:89, TEMPLATE:3
+### GenAI (129 notebooks) — BROKEN:2, DEMO:80, READY:47 | ALPHA:5, BETA:29, DRAFT:2, PRODUCTION:90, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -75,7 +75,7 @@ Total notebooks: 566
 | 49 | Notebook: Stable Diffusion Forge - SD XL Turbo | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 50 | Notebook: Qwen Image-Edit 2.5 - API ComfyUI | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 51 | Qwen Image Edit 2509 - Édition Avancée d'Images | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
-| 52 | FLUX.1 - Génération d'Images Avancée | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 52 | FLUX.1 - Génération d'Images Avancée | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 53 | Stable Diffusion 3.5 - Génération de Pointe | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 54 | Z-Image (Lumina-2) : Generation Avancee avec Comfy | Python 3 | DEMO | PRODUCTION | 30min | po-2025 |
 | 55 | Bonsai-Image : Generation Text-to-Image avec Quant | Python 3 | READY | PRODUCTION | 30min | po-2025 |
@@ -214,7 +214,7 @@ Total notebooks: 566
 | 54 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
 | 55 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 
-### ML (27 notebooks) — DEMO:3, READY:24 | ALPHA:1, BETA:7, PRODUCTION:19
+### ML (27 notebooks) — DEMO:3, READY:24 | ALPHA:1, BETA:6, PRODUCTION:20
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -234,7 +234,7 @@ Total notebooks: 566
 | 14 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 | DEMO | PRODUCTION | 30min | po-2023 |
 | 15 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | PRODUCTION | 15min | po-2023 |
 | 16 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 17 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | BETA | 30min | po-2023 |
+| 17 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 18 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | BETA | 30min | po-2023 |
 | 19 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 | 20 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
@@ -266,18 +266,18 @@ Total notebooks: 566
 | 14 | Lean 11a - TorchLean : Implémentation Python des R | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 15 | Lean 11 - TorchLean : Réseaux de Neurones Formelle | Lean 4 (WSL) | READY | PRODUCTION | 30min | po-2024 |
 | 16 | Lean-12 : Le Theoreme de Sensibilite (Huang 2019) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 17 | Lean-13 : Hommage a Alexandre Grothendieck -- Le l | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 18 | Lean-13b : Grothendieck en Lean -- Atelier pratiqu | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 19 | Lean-14a - Conway, l'homme et l'oeuvre | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
-| 20 | Lean-14b : Hommage a John Conway — Game of Life as | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
-| 21 | Lean-14c - Conway Game of Life : les 3 piliers, en | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 22 | Lean-14d : Game of Life sur kernel Lean natif | Lean 4 (WSL) | READY | BETA | 30min | po-2024 |
-| 23 | Lean-14e : FRACTRAN, la machine universelle de Con | Lean 4 (WSL) | READY | BETA | 30min | po-2024 |
-| 24 | Lean-15 — Dérivées symboliques de Brzozowski : la  | Python 3 | READY | BETA | 15min | po-2024 |
-| 25 | Lean-15 : Le Theoreme de Kochen-Specker (Cabello 1 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 26 | Lean-16 : Le Theoreme du Libre Arbitre (Conway-Koc | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 17 | Lean-13 : Le Theoreme de Kochen-Specker (Cabello 1 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 18 | Lean-14 — Dérivées symboliques de Brzozowski : la  | Python 3 | READY | BETA | 15min | po-2024 |
+| 19 | Lean-15 : Hommage a Alexandre Grothendieck -- Le l | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 20 | Lean-15b : Grothendieck en Lean -- Atelier pratiqu | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 21 | Lean-16a - Conway, l'homme et l'oeuvre | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
+| 22 | Lean-16b : Hommage a John Conway — Game of Life as | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
+| 23 | Lean-16c - Conway Game of Life : les 3 piliers, en | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 24 | Lean-16d : Game of Life sur kernel Lean natif | Lean 4 (WSL) | READY | BETA | 30min | po-2024 |
+| 25 | Lean-16e : FRACTRAN, la machine universelle de Con | Lean 4 (WSL) | READY | BETA | 30min | po-2024 |
+| 26 | Lean-16f : Le Theoreme du Libre Arbitre (Conway-Ko | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 27 | Lean 17a — Conway, les Nœuds et la Preuve de Picci | Python 3 | READY | BETA | 30min | po-2024 |
-| 28 | Lean 17b — Invariants de Nœuds : Calcul et Vérific | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 28 | Lean 17b — Invariants de Nœuds : Calcul et Vérific | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 29 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 30 | Lean 3 - Propositions et Preuves | Lean 4 | READY | PRODUCTION | 45min | po-2024 |
 | 31 | Lean 4 - Quantificateurs et Logique du Premier Ord | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
