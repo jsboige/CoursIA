@@ -24,7 +24,9 @@ class GlobalMacroRegime(QCAlgorithm):
     MIN_TRENDING = 2
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
+        # Aligned baseline period 2018-2025 (#1630). Original start was 2015;
+        # standardized to 2018-01-01 for cross-strategy comparison.
+        self.set_start_date(2018, 1, 1)
         self.set_end_date(2025, 1, 1)  # Fixed end date for reproducibility
         self.set_cash(100_000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
