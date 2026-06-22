@@ -2,6 +2,16 @@
 
 Cibles de calibration du prouveur pour benchmarker le prouveur Lean multi-agents.
 
+Ces cibles sont des preuves **courtes, auto-contenues** du Dilemme du Prisonnier
+(jeu 2×2) que le harnais multi-agents ([`agent_tests/prover/`](../agent_tests/prover/))
+doit pouvoir clore de bout en bout. Chaque cible est étiquetée par un **niveau de
+difficulté P1–P5** (la taxonomie du harnais, du plus facile au plus dur) et
+exerce un chemin tactique distinct : recherche de lemme Mathlib puis repli (P3),
+analyse par cas sur `Fin 2` (P2), preuve négative par contre-exemple (P1+P2), ou
+décomposition en sous-buts avec augmentation de `sorry` (P4). Les quatre étant
+prouvées, le module sert de **suite de régression** pour détecter toute
+régression du prouveur.
+
 ## Statut
 
 - **Toolchain** : v4.30.0-rc2
@@ -17,10 +27,21 @@ Cibles de calibration du prouveur pour benchmarker le prouveur Lean multi-agents
 
 ## Cibles de calibration
 
-- **Cible C** : Prouvée
-- **Cible D** : Prouvée
-- **Cible E** : Prouvée
-- **Cible F** : Prouvée (la docstring de ce lemme mentionne le mot « sorry » — des scans `grep` précédents s'en sont laissés induire en erreur)
+Les quatre cibles vivent dans [`Calibration/Nash.lean`](Calibration/Nash.lean),
+sur le Dilemme du Prisonnier (`C` = Coopérer, `D` = Trahir). Chacune exerce un
+chemin tactique distinct du harnais :
+
+| Cible | Théorème | Niveau | Ce qu'elle exerce |
+|-------|----------|--------|-------------------|
+| **C** | `strictly_domin_defect_pd` | P3 | Recherche d'un lemme Mathlib inexistant + repli sur l'analyse par cas (`fin_cases` + `decide`) |
+| **D** | `pd_defect_is_pure_ne` | P2 | Analyse par cas `Fin 2` + comparaisons `Int` sur les deux joueurs (`norm_num`) |
+| **E** | `pd_cooperate_not_ne` | P1+P2 | Preuve **négative** : construire un témoin de déviation (`rcases` + `norm_num`) |
+| **F** | `pd_defect_is_ne_decomposable` | P4 | Cas d'**augmentation de sorry** : le harnais ne doit pas revenir en arrière quand le `sorry` augmente mais le build passe |
+
+Les quatre sont **prouvées avec 0 `sorry`** en production. La cible F porte le
+mot « sorry » dans sa docstring (elle décrit le chemin `constructor` + 2 `sorry`
+que le prouveur *devrait* tenter) ; l'implémentation actuelle réutilise la preuve
+de D via `exact`, d'où le faux positif `grep` documenté plus bas.
 
 ## Notes
 
