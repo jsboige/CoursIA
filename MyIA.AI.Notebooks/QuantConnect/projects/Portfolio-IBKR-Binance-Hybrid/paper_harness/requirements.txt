@@ -1,0 +1,5 @@
+# Local dependencies for the Phase 4 paper-trading harness.
+# Install:  python -m pip install -r paper_harness/requirements.txt
+# The QC Cloud backtest (main.py) does NOT need these — it runs on QC Cloud.
+python-binance>=1.0.37
+ib_insync>=0.9.86
