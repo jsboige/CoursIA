@@ -18,7 +18,8 @@ le sleeve crypto seul sur Binance testnet, sleeve IBKR en backtest parallèle.
 | `risk.py` (circuit-breakers) | livré, dry-run validé |
 | `binance_sleeve.py` (wrapper python-binance testnet) | livré, **SOTA-OK** (validé live) |
 | `smoke_test_binance.py` (validation read-only live) | livré |
-| `ibkr_sleeve.py` (wrapper ib_insync) | **TODO** (bloqué lancement IB Gateway, USER-HAND) |
+| `ibkr_sleeve.py` (wrapper ib_insync) | livré, **SOTA-OK** (validé live, surface read-only) |
+| `smoke_test_ibkr.py` (validation read-only live) | livré |
 | `orchestrator.py` (boucle principale + routing) | **TODO** (cycle suivant) |
 
 ## Sécurité
@@ -34,10 +35,17 @@ le sleeve crypto seul sur Binance testnet, sleeve IBKR en backtest parallèle.
 
 ## SOTA-OK (Prong A)
 
-Le sleeve Binance pilote la **vraie lib `python-binance`** contre le **vrai testnet
-Binance** (clé HMAC, perms TRADE+USER_DATA+USER_STREAM, commissions 0.1%). Aucune
-sortie de substitution (ASCII, réimplémentation jouet, stub). Validation live :
-`can_trade=True`, `maker_fee=10bps`, soldes fictifs présents (BTC/ETH/USDT…).
+Les deux sleeves pilotent la **vraie lib** contre la **vraie venue paper** — aucune
+sortie de substitution (ASCII, réimplémentation jouet, stub).
+
+- **Binance** : `python-binance` contre le Spot Testnet (clé HMAC, perms
+  TRADE+USER_DATA+USER_STREAM, commissions 0.1%). Validation live : `can_trade=True`,
+  `maker_fee=10bps`, soldes fictifs présents (BTC/ETH/USDT…).
+- **IBKR** : `ib_insync` contre IB Gateway en mode paper/simulated (port 4002). Validation
+  live : compte paper connecté, `accountSummary()` lu (NetLiq, cash, buying power),
+  `positions()` lu. Le chemin ordre est implémenté mais **gated** sur deux conditions :
+  (1) "Read-Only API" OFF côté gateway (sinon IB rejette l'ordre, Error 321), (2) passage
+  derrière l'orchestrator + circuit-breakers relus. Aucun ordre placé à ce stade.
 
 ## Installation
 
@@ -48,19 +56,23 @@ python -m pip install -r paper_harness/requirements.txt
 ## Smoke test (read-only, depuis la racine du projet)
 
 ```bash
+# Binance Spot Testnet
 python -m paper_harness.smoke_test_binance
+
+# IB Gateway paper (doit tourner en mode simulated/paper sur IBKR_PORT)
+python -m paper_harness.smoke_test_ibkr
 ```
 
-Sortie attendue : `system normal`, `can_trade True`, soldes fictifs, prix BTCUSDT
-live, puis dry-run des 3 cas breakers (sane → ALLOW, oversized → BLOCK, gross → BLOCK).
-Exit code 0 = SOTA-OK.
+Sortie attendue (IBKR) : `managed acct`, `net_liq`, `total_cash`, `buying_power`,
+`positions: N`, puis dry-run des 3 cas breakers (sane → ALLOW, oversized → BLOCK,
+gross → BLOCK). Exit code 0 = SOTA-OK.
 
 ## Suite (cycles suivants)
 
-1. `ibkr_sleeve.py` : wrapper `ib_insync` vers IB Gateway paper (gated lancement IBGW).
-2. `orchestrator.py` : boucle de rebalancement, routing des target par sleeve,
+1. `orchestrator.py` : boucle de rebalancement, routing des target par sleeve,
    appel systématique à `RiskGate` avant chaque ordre, logging fills vs backtest.
-3. Premier ordre paper testnet (BTC spot) derrière circuit-breakers relus.
+2. Premier ordre paper (BTC spot sur Binance testnet ; équity IBKR derrière
+   "Read-Only API" OFF côté gateway) derrière circuit-breakers relus.
 
 ## Liens
 
