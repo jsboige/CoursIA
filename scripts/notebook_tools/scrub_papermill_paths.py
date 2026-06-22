@@ -171,7 +171,15 @@ _HOME_RES = [
 # ai-01). The drive prefix makes it specific to machine-local absolute paths, so
 # a relative discussion ("the CoursIA repo") or a URL is never touched.
 _REPO_RES = [
-    re.compile(r"[A-Za-z]:[\\/]+(?:[^\\/'\"<>|]+[\\/]+)*CoursIA(?:-2)?[\\/]+"),
+    # Negative lookbehind (?<![a-zA-Z]) forbids a letter before the drive letter,
+    # so the 'e:' inside a 'file:' URL scheme (where 'e' is preceded by 'l') is
+    # never matched, nor the 'p:' in 'http:'. Only a real drive letter preceded by
+    # a separator (e.g. the 'D:' in 'file:///D:/dev/CoursIA/...', preceded by '/')
+    # matches, so the URL scheme is preserved while the checkout-root path is
+    # anonymized. Regression: SW-8 '<file:///D:/dev/CoursIA/...>' was mangled into
+    # '<fil<repo>...>' because 'e:///D:/dev/CoursIA/' matched (PR #3899, caught
+    # pre-commit by diff inspection).
+    re.compile(r"(?<![a-zA-Z])[A-Za-z]:[\\/]+(?:[^\\/'\"<>|]+[\\/]+)*CoursIA(?:-2)?[\\/]+"),
 ]
 
 # Process/file-specific ids that sit *inside* a home-relative temp path. These

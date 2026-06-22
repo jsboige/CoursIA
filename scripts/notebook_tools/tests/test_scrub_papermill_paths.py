@@ -399,3 +399,36 @@ def test_scrub_outputs_anonymizes_checkout_root(tmp_path):
     assert "libs" in after
     # source cell byte-identical
     assert json.loads(after)["cells"][0]["source"] == ["load()"]
+
+
+def test_scrub_outputs_preserves_file_url_scheme(tmp_path):
+    """A file:/// URL entering the repo checkout keeps its scheme.
+
+    Regression: SW-8 (#3899). _REPO_RES matched the 'e:' inside 'file:' (the 'e'
+    preceded by 'l'), consuming 'e:///D:/dev/CoursIA/' and mangling the URL into
+    '<fil<repo>...>'. The negative lookbehind (?<![a-zA-Z]) blocks that: only the
+    real 'D:' (preceded by '/') matches, so the scheme survives and just the
+    checkout-root path is anonymized.
+    """
+    raw = (
+        "<file:///D:/dev/CoursIA/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/"
+        "data/not-an-email>\n"
+    )
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "open(...)", raw)
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    assert fixed >= 1
+    after = p.read_text(encoding="utf-8")
+    # scheme preserved, checkout-root anonymized
+    assert "<file:///<repo>" in after
+    # the critical mangle must NOT happen
+    assert "<fil<repo>" not in after
+    assert "file" in after  # 'file' scheme word still present
+    # the machine-local drive path into the repo is gone
+    assert "D:/dev/CoursIA" not in after
+    # repo-relative tail preserved
+    assert "not-an-email" in after
+    assert "SemanticWeb" in after
+    # source cell byte-identical
+    assert json.loads(after)["cells"][0]["source"] == ["open(...)"]
