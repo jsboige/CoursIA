@@ -19,6 +19,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Tactic
 import Mathlib.Analysis.Convex.Cone.Dual
 import Mathlib.Analysis.InnerProductSpace.PiL2
+import CooperativeGames.ConeKernel
 
 /-! ## Basic Types -/
 
@@ -207,6 +208,43 @@ theorem bondareva_shapley_forward :
     _ = ∑ i : N, ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S * x i := h_fubini
     _ = ∑ i : N, x i * ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S := h_factor
     _ = ∑ i : N, x i := h_bal
+
+/-! ## Cone-separation bridge (Bondareva-Farkas witness decoding)
+
+These lemmas connect the `TUGame.Balanced` hypothesis to the TUGame-free cone
+machinery in `CooperativeGames.ConeKernel` (`BondarevaCone.augCone` and the
+`hyperplane_separation_point` separator from
+`Mathlib.Analysis.Convex.Cone.Dual`). They form the front half of the
+Bondareva-Shapley backward witness construction: from `hb : G.Balanced` we obtain
+a separating functional, then decode it into a pre-imputation. -/
+
+open BondarevaCone
+
+/-- From `hb : G.Balanced` and `t > 0`, the balanced-unit test point
+    `balancedUnit (G.v univ + t)` lies outside `augCone G.v`. Membership would
+    give nonneg weights `w` with `phiAugCont G.v w = balancedUnit ...`; the
+    `some i` coordinates force `w` to be a balanced collection (`BalancedWeights`),
+    while the `none` coordinate reads `∑ S, w S * G.v S = G.v univ + t > G.v univ`,
+    contradicting `hb`. -/
+theorem balancedUnit_notIn_augCone (t : ℝ) (ht : 0 < t) (hb : G.Balanced) :
+    balancedUnit (G.v Finset.univ + t) ∉ augCone G.v := by
+  intro hmem
+  rw [augCone_mem_iff] at hmem
+  obtain ⟨w, hw, hwmem⟩ := hmem
+  -- `some i` coordinate: ∑_{S ∋ i} w S = 1  (balanced collection).
+  have hsome (i : N) :
+      ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), w S = 1 := by
+    have key := congr_fun hwmem (some i)
+    simp only [balancedUnit] at key
+    exact key
+  -- `none` coordinate: ∑ S, w S * G.v S = G.v univ + t.
+  have hnone : ∑ S : Finset N, w S * G.v S = G.v Finset.univ + t := by
+    have key := congr_fun hwmem none
+    simp only [balancedUnit] at key
+    exact key
+  -- `w` is balanced, so `hb` bounds the value sum by v(N): contradiction.
+  have hbnd := hb w ⟨hw, hsome⟩
+  linarith
 
 /-- Backward direction of Bondareva-Shapley: balanced implies Core nonempty.
     Strategy (v4.30 update): ProperCone.hyperplane_separation is now available
