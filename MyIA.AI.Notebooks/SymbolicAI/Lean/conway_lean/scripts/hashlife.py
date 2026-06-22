@@ -1,6 +1,6 @@
 # HashLife — Pure Python implementation of Gosper's HashLife algorithm
 # Adapted from https://github.com/johnhw/hashlife (MIT License, John H. Williamson)
-# Used in CoursIA Lean-14c notebook for real HashLife pillar execution (See #2591)
+# Used in CoursIA Lean-16c notebook for real HashLife pillar execution (See #2591)
 
 from collections import namedtuple
 from functools import lru_cache

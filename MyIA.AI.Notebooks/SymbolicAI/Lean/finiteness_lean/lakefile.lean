@@ -12,7 +12,7 @@ La formalisation constructive *complète* en Lean 4 est due à Zhuchko, Maarand,
 Veanes, Ebner (ITP 2025) — dépôt `ezhuchko/finiteness-derivatives`. Sa licence
 amont n'étant pas confirmée, ce projet **ne vendore pas** leur code : il en
 illustre l'intuition par des définitions et exemples originaux. Voir le notebook
-[`Lean-15-Finiteness-Derivatives.ipynb`](../Lean-15-Finiteness-Derivatives.ipynb)
+[`Lean-14-Finiteness-Derivatives.ipynb`](../Lean-14-Finiteness-Derivatives.ipynb)
 pour la présentation pédagogique complète, et l'issue #2978 (livrable C). -/
 
 package «finiteness» where
