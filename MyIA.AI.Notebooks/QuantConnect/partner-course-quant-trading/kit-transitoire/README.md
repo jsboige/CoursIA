@@ -1,60 +1,60 @@
-# Transition Kit - ML & Framework Strategies
+# Kit de Transition — Stratégies ML & Framework
 
-Three progressive QuantConnect strategies for sector rotation, validated on cloud backtests (2015-2024).
+Trois stratégies QuantConnect progressives pour la rotation sectorielle, validées sur backtests cloud (2015-2024).
 
-## Objective
+## Objectif
 
-Provide 3 progressive approaches to sector rotation:
+Fournir 3 approches progressives de rotation sectorielle :
 
-1. **ML RandomForest** (classification) - Introduction to applied ML
-2. **ML XGBoost** (regression) - Advanced model with more features
-3. **Framework Composite** (alpha models) - Clean QC Framework architecture
+1. **ML RandomForest** (classification) — Introduction au ML appliqué
+2. **ML XGBoost** (régression) — Modèle avancé avec plus de features
+3. **Framework Composite** (alpha models) — Architecture QC Framework propre
 
-Each strategy includes a research notebook (QuantBook) documenting iterations and calibration.
+Chaque stratégie inclut un notebook de recherche (QuantBook) documentant les itérations et le calibrage.
 
-## Strategies
+## Stratégies
 
-### 01 - ML RandomForest Sector Rotation
+### 01 — ML RandomForest Sector Rotation
 
-| Parameter | Value |
+| Paramètre | Valeur |
 |-----------|-------|
-| Universe | 9 sector ETFs (XLK..XLRE) |
-| Features | 14 technical indicators |
-| Model | RandomForestClassifier |
-| Trees / Depth | 200 / 6 |
-| Training | 4-year rolling, monthly retrain |
-| Bear filter | SPY < SMA200 -> max 2 positions |
-| Max positions | 4 (2 in bear market) |
-| Allocation | 95% |
+| Univers | 9 ETF sectoriels (XLK..XLRE) |
+| Features | 14 indicateurs techniques |
+| Modèle | RandomForestClassifier |
+| Arbres / Profondeur | 200 / 6 |
+| Entraînement | Rolling 4 ans, ré-entraînement mensuel |
+| Filtre baissier | SPY < SMA200 -> max 2 positions |
+| Positions max | 4 (2 en marché baissier) |
+| Allocation | 95 % |
 
-**Best backtest** : Sharpe 0.556, CAGR 11.43%, MaxDD 17.2%
+**Meilleur backtest** : Sharpe 0.556, CAGR 11.43 %, MaxDD 17.2 %
 
-### 02 - ML XGBoost Sector Rotation
+### 02 — ML XGBoost Sector Rotation
 
-| Parameter | Value |
+| Paramètre | Valeur |
 |-----------|-------|
-| Universe | 9 sector ETFs (XLK..XLRE) |
-| Features | 20 technical indicators |
-| Model | GradientBoostingRegressor |
-| Trees / Depth / LR | 100 / 4 / 0.05 |
-| Training | 3-year rolling, bi-weekly train |
-| Bear filter | SPY < SMA200 -> max 2 positions |
-| Max positions | 5 (2 in bear market) |
-| Allocation | 95% |
+| Univers | 9 ETF sectoriels (XLK..XLRE) |
+| Features | 20 indicateurs techniques |
+| Modèle | GradientBoostingRegressor |
+| Arbres / Profondeur / LR | 100 / 4 / 0.05 |
+| Entraînement | Rolling 3 ans, entraînement bi-hebdomadaire |
+| Filtre baissier | SPY < SMA200 -> max 2 positions |
+| Positions max | 5 (2 en marché baissier) |
+| Allocation | 95 % |
 
-**Best backtest** : Sharpe 0.521, CAGR 12.81%, MaxDD 39.1%
+**Meilleur backtest** : Sharpe 0.521, CAGR 12.81 %, MaxDD 39.1 %
 
-### 03 - Framework Composite
+### 03 — Framework Composite
 
-| Parameter | Value |
+| Paramètre | Valeur |
 |-----------|-------|
-| Alpha 1 | SectorMomentum (SMA200 + 126d momentum) |
-| Alpha 2 | Defensive (TLT, GLD, XLU when SPY < SMA200) |
-| PCM | MultiStrategyPCM (70% momentum / 30% defensive) |
-| Risk | MaxDrawdownCircuitBreaker (15%) |
-| Execution | ImmediateExecutionModel |
+| Alpha 1 | SectorMomentum (SMA200 + momentum 126j) |
+| Alpha 2 | Defensive (TLT, GLD, XLU quand SPY < SMA200) |
+| PCM | MultiStrategyPCM (70 % momentum / 30 % defensive) |
+| Risque | MaxDrawdownCircuitBreaker (15 %) |
+| Exécution | ImmediateExecutionModel |
 
-**Best backtest** : Sharpe 0.376, CAGR 7.60%, MaxDD 20.6%, Win Rate 80%
+**Meilleur backtest** : Sharpe 0.376, CAGR 7.60 %, MaxDD 20.6 %, Win Rate 80 %
 
 ## Structure
 
@@ -62,8 +62,8 @@ Each strategy includes a research notebook (QuantBook) documenting iterations an
 kit-transitoire/
   README.md
   01-ML-RandomForest/
-    main.py           # QC Cloud strategy
-    research.ipynb    # QuantBook research notebook
+    main.py           # Stratégie QC Cloud
+    research.ipynb    # Notebook de recherche QuantBook
   02-ML-XGBoost/
     main.py
     research.ipynb
@@ -72,33 +72,39 @@ kit-transitoire/
     research.ipynb
 ```
 
-## Execution
+## Exécution
 
-### QC Cloud Backtests
+### Backtests QC Cloud
 
-Each `main.py` runs directly on QuantConnect Cloud:
-1. Create a QC project
-2. Upload `main.py`
-3. Compile and run backtest (2015-01-01 to 2024-12-31)
+Chaque `main.py` tourne directement sur QuantConnect Cloud :
 
-### Research Notebooks
+1. Créer un projet QC
+2. Uploader `main.py`
+3. Compiler et lancer le backtest (2015-01-01 à 2024-12-31)
 
-The `research.ipynb` notebooks use `QuantBook` and require the QC Lab environment:
-1. Open the project in QC Lab
-2. Create a notebook in the project
-3. Copy the content from research.ipynb
-4. Execute cell by cell
+### Notebooks de Recherche
 
-## Comparison
+Les notebooks `research.ipynb` utilisent `QuantBook` et nécessitent l'environnement QC Lab :
+
+1. Ouvrir le projet dans QC Lab
+2. Créer un notebook dans le projet
+3. Copier le contenu de research.ipynb
+4. Exécuter cellule par cellule
+
+## Comparaison
 
 | Aspect | RandomForest | XGBoost | Framework |
 |--------|-------------|---------|-----------|
-| Type | Classification | Regression | Alpha Models |
-| Features | 14 | 20 | Simple indicators |
-| Complexity | Medium | Medium | High (architecture) |
-| Retrain | Monthly | Bi-weekly | N/A (no ML) |
-| Max positions | 4 (2 in bear) | 4 (2 in bear) | Dynamic |
-| Learning | Model training | Model training | Expert rules |
+| Type | Classification | Régression | Alpha Models |
+| Features | 14 | 20 | Indicateurs simples |
+| Complexité | Moyenne | Moyenne | Haute (architecture) |
+| Ré-entraînement | Mensuel | Bi-hebdomadaire | N/A (pas de ML) |
+| Positions max | 4 (2 en baissier) | 4 (2 en baissier) | Dynamique |
+| Apprentissage | Entraînement modèle | Entraînement modèle | Règles expertes |
 | Sharpe | 0.556 | 0.521 | 0.376 |
-| CAGR | 11.43% | 12.81% | 7.60% |
-| MaxDD | 17.2% | 39.1% | 20.6% |
+| CAGR | 11.43 % | 12.81 % | 7.60 % |
+| MaxDD | 17.2 % | 39.1 % | 20.6 % |
+
+---
+
+**Version anglaise (snapshot pré-bascule)** : [README.en.md](README.en.md)
