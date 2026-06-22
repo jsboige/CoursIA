@@ -1,24 +1,25 @@
-# Lean Examples
+# Exemples Lean
 
-Standalone .lean files for pedagogical use, executed via the lean4-wsl Jupyter kernel.
+Fichiers `.lean` autonomes à usage pédagogique, exécutés via le kernel Jupyter
+`lean4-wsl`.
 
-## Status
+## Statut
 
-- **Type**: Standalone files (no lakefile -- executed cell-by-cell via Jupyter kernel)
-- **Sorry count**: 2 (in `llm_assisted_proof.lean` -- intentional pedagogical example)
+- **Type** : Fichiers autonomes (pas de lakefile — exécutés cellule par cellule via le kernel Jupyter)
+- **Compte de sorry** : 2 (dans `llm_assisted_proof.lean` — exemple pédagogique intentionnel)
 
-## Files
+## Fichiers
 
-| File | sorry | Description |
-|------|-------|-------------|
-| `basic_logic.lean` | 0 | Propositional logic foundations |
-| `llm_assisted_proof.lean` | 2 | LLM-assisted proving demonstration (intentional sorry) |
-| `mathlib_examples.lean` | 0 | Mathlib tactic examples |
-| `quantifiers.lean` | 0 | Quantifier reasoning patterns |
-| `tactics_demo.lean` | 0 | Lean 4 tactics showcase |
+| Fichier | sorry | Description |
+|---------|-------|-------------|
+| `basic_logic.lean` | 0 | Fondements de la logique propositionnelle |
+| `llm_assisted_proof.lean` | 2 | Démonstration de preuve assistée par LLM (sorry intentionnel) |
+| `mathlib_examples.lean` | 0 | Exemples de tactiques Mathlib |
+| `quantifiers.lean` | 0 | Schémas de raisonnement sur les quantificateurs |
+| `tactics_demo.lean` | 0 | Vitrine des tactiques Lean 4 |
 
 ## Notes
 
-- These files are NOT a Lake project -- they are executed cell-by-cell via the `lean4-wsl` Jupyter kernel
-- The 2 sorry in `llm_assisted_proof.lean` are intentional: they demonstrate the LLM-assisted proving workflow where the prover leaves placeholders
-- Companion to the intro Lean notebooks series (Lean-1 through Lean-5)
+- Ces fichiers ne sont **pas** un projet Lake — ils sont exécutés cellule par cellule via le kernel Jupyter `lean4-wsl`
+- Les 2 `sorry` dans `llm_assisted_proof.lean` sont **intentionnels** : ils illustrent le flux de preuve assistée par LLM, où le prouveur laisse des marqueurs de substitution
+- Compagnon de la série de notebooks d'introduction à Lean (Lean-1 à Lean-5)
