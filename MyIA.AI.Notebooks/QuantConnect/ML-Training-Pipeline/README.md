@@ -1,34 +1,34 @@
-# ML Training Pipeline for Financial Prediction
+# Pipeline d'entraînement ML pour la prévision financière
 
-Complete training pipeline for ML models on financial OHLCV data. Designed for GPU training with CPU dry-run validation. All GPU scripts use thermal-safe training via `shared/gpu_training.py` (MAX_TEMP=80C, AMP, batch_thermal_check).
+Pipeline d'entraînement complet pour modèles ML sur données financières OHLCV. Conçu pour l'entraînement GPU avec validation CPU en dry-run. Tous les scripts GPU utilisent l'entraînement sécurisé thermiquement via `shared/gpu_training.py` (MAX_TEMP=80C, AMP, batch_thermal_check).
 
-## 4-Type Classification
+## Classification type (c) — standalone
 
-All 4 notebooks in this directory are **(c) standalone research** — independent analysis using local data (yfinance, sklearn, PyTorch), no QuantConnect Cloud dependency.
+Les 4 notebooks de ce répertoire sont des **recherches indépendantes (c)** — analyses utilisant des données locales (yfinance, sklearn, PyTorch), sans dépendance QuantConnect Cloud.
 
-| Notebook | Topic | Type |
+| Notebook | Sujet | Type |
 |----------|-------|------|
-| `ML-Research-Template.ipynb` | Template for ML research | (c) |
-| `m3_har_asymmetric_semivariance.ipynb` | HAR asymmetric semivariance | (c) |
-| `research_what_dl_can_predict.ipynb` | What DL can predict in finance | (c) |
-| `research_l4_decision_transformer.ipynb` | Decision Transformer evaluation | (c) |
+| `ML-Research-Template.ipynb` | Template pour recherche ML | (c) |
+| `m3_har_asymmetric_semivariance.ipynb` | HAR semi-variance asymétrique | (c) |
+| `research_what_dl_can_predict.ipynb` | Ce que le DL peut prédire en finance | (c) |
+| `research_l4_decision_transformer.ipynb` | Évaluation Decision Transformer | (c) |
 
-Full classification: [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md)
+Classification complète : [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md)
 
-## Curriculum V2 — Validated Keepers (2026-05-16, gate FERMEE)
+## Curriculum V2 — Keepers validés (2026-05-16, gate FERMEE)
 
-After 8 stages tested (S1–S8) on anti-FAANG/Mag7 universe (SPY, TLT, XLF, XLK, XLE, XLV, XLY, XLI, XLB, XLU, XLP), **4 KEEPERS** confirmed under strict OOS 2027 holdout, walk-forward 5-fold expanding, 4-seed block bootstrap (22-day blocks), tx costs 10bps rebalance + 50bps stress :
+Après 8 stages testés (S1–S8) sur un univers anti-FAANG/Mag7 (SPY, TLT, XLF, XLK, XLE, XLV, XLY, XLI, XLB, XLU, XLP), **4 KEEPERS** confirmés sous OOS strict 2027 holdout, walk-forward 5-fold expanding, 4-seed block bootstrap (22-day blocks), coûts tx 10bps rebalance + 50bps stress :
 
-| Stage | Strategy | Δ-Sharpe | Stat. Significance | MaxDD | Script |
-|-------|----------|----------|--------------------|-------|--------|
-| S1 vol | **M12 HAR-RV-J** (jump-augmented HAR) | n/a | p=0.0015 (56/84 sign-test) | n/a | `m12_har_rv_j.py` |
-| S1 vol | **M15 LSTM h=32** (log-RV LSTM) | n/a | p=0.0107 (53/84 sign-test) | n/a | `m15_lstm_rv.py` |
-| S3 regime | **HMM Regime** (2-state, daily) | **+0.669** | 4/4 seeds positive | -39.1% | `s3_hmm_regime.py` |
-| S4 v2 | **Inverse-vol Ridge + HMM** | **+0.325** | 4/4 seeds positive | -17.7% | `s4_inverse_vol_ridge_v2.py` |
+| Stage | Stratégie | Δ-Sharpe | Signification statistique | MaxDD | Script |
+|-------|----------|----------|---------------------------|-------|--------|
+| S1 vol | **M12 HAR-RV-J** (HAR augmenté par sauts) | n/a | p=0.0015 (56/84 sign-test) | n/a | `m12_har_rv_j.py` |
+| S1 vol | **M15 LSTM h=32** (LSTM log-RV) | n/a | p=0.0107 (53/84 sign-test) | n/a | `m15_lstm_rv.py` |
+| S3 regime | **HMM Regime** (2 états, quotidien) | **+0.669** | 4/4 seeds positifs | -39.1% | `s3_hmm_regime.py` |
+| S4 v2 | **Ridge vol-inverse + HMM** | **+0.325** | 4/4 seeds positifs | -17.7% | `s4_inverse_vol_ridge_v2.py` |
 
-S1 long-horizon sweep also produced **8 BEATS multi-coin sur 16** (XRP h=66 13.5σ, ETH h=132 5.0σ, BTC h=22/66 BEATS). Reco portfolio : **S3 + S4 v2 monthly rebalance, Sharpe ~1.12**.
+S1 long-horizon sweep a également produit **8 BEATS multi-coin sur 16** (XRP h=66 13.5σ, ETH h=132 5.0σ, BTC h=22/66 BEATS). Reco portfolio : **S3 + S4 v2 rebalance mensuel, Sharpe ~1.12**.
 
-**Rejected stages** (NO BEATS) : S2 vol-ensembles (DM, MLP, GSP), S5 stop-loss overlays, S6 LO-only sectors, S7 composites, S8 long-horizon classifiers (dir_acc ≠ edge).
+**Stages rejetés** (NO BEATS) : S2 vol-ensembles (DM, MLP, GSP), S5 stop-loss overlays, S6 LO-only sectors, S7 composites, S8 classifieurs long-horizon (dir_acc ≠ edge).
 
 > Detail complet : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) — méthodologie, ablations, leçons. Pivot V2 documenté dans [`CURRICULUM.md`](CURRICULUM.md). 3 projets QC Cloud déployés à partir de ces KEEPERS — cf [`../partner-course-quant-trading/README.md`](../partner-course-quant-trading/README.md).
 
@@ -37,88 +37,88 @@ S1 long-horizon sweep also produced **8 BEATS multi-coin sur 16** (XRP h=66 13.5
 ```
 scripts/
   # --- Data & Features ---
-  features.py                      # Reusable feature engineering (indicators + caching)
-  build_dataset_v2.py              # V2 dataset builder: panier + cross-asset features + regime labels
-  data_utils.py                    # Data loading, synthetic generation, hashing
-  garch_baseline.py                # GARCH(1,1) rolling refit (no data leak) + leaky comparison
-  regime_detector.py               # Price-based regime detection (uptrend/downtrend/vol/black_swan)
-  baselines.py                     # Majority-class, buy-hold, momentum baselines + Sharpe computation
+  features.py                      # Feature engineering réutilisable (indicateurs + cache)
+  build_dataset_v2.py              # Builder dataset V2 : panier + cross-asset features + labels regime
+  data_utils.py                    # Chargement données, génération synthétique, hachage
+  garch_baseline.py                # GARCH(1,1) rolling refit (sans fuite de données) + comparaison leaky
+  regime_detector.py               # Détection regime prix-based (uptrend/downtrend/vol/black_swan)
+  baselines.py                     # Baselines majority-class, buy-hold, momentum + calcul Sharpe
 
   # --- Training: Core models ---
   train_classification.py          # RandomForest + XGBoost (CPU/GPU)
-  train_lstm.py                    # PyTorch LSTM/GRU (GPU recommended)
-  train_transformer.py             # Financial Transformer (GPU required for full scale)
-  train_dqn_rl.py                  # DQN Reinforcement Learning (GPU recommended)
+  train_lstm.py                    # PyTorch LSTM/GRU (GPU recommandé)
+  train_transformer.py             # Transformer financier (GPU requis pour full scale)
+  train_dqn_rl.py                  # DQN Reinforcement Learning (GPU recommandé)
 
   # --- Training: Advanced architectures ---
-  train_moe_regimes.py             # MoE with regime-aware routing (Issue #754 Phase B)
-  train_moe.py                     # MoE with gating network
+  train_moe_regimes.py             # MoE avec routing régime-aware (Issue #754 Phase B)
+  train_moe.py                     # MoE avec gating network
   train_patchtst.py                # PatchTST (Nie et al., ICLR 2023)
   train_itransformer.py            # iTransformer (Li et al., ICLR 2024)
   train_mamba.py                   # Mamba SSM baseline
-  train_rl_dt.py                   # Decision Transformer for RL
+  train_rl_dt.py                   # Decision Transformer pour RL
 
   # --- Training: Volatility & regime ---
-  train_volatility_garch_dl.py     # GARCH+DL hybrid volatility forecasting
-  train_volatility_regime.py       # Volatility regime classifier
-  train_regime_classifier.py       # HMM regime detection
-  train_har_baseline.py            # HAR(1,5,22d) vs GARCH-rolling vs naive on crypto RV (#834 M2)
+  train_volatility_garch_dl.py     # GARCH+DL hybrid prévision volatilité
+  train_volatility_regime.py       # Classifieur regime volatilité
+  train_regime_classifier.py       # Détection regime HMM
+  train_har_baseline.py            # HAR(1,5,22d) vs GARCH-rolling vs naive sur crypto RV (#834 M2)
   train_realized_garch.py          # Realized GARCH (M10, Hansen et al. 2012)
 
   # --- Volatility sweep series (M10-M15) ---
-  realized_variance.py             # Daily RV from intraday OHLCV + log transform
-  intraday_loader.py               # yfinance hourly data loader with Parquet cache
-  har_model.py                     # HAR(1,5,22) model + walk-forward for baseline
-  simulate_har_kelly.py            # HAR Kelly sweep (M2 baseline)
-  m11g_fee_aware_kelly.py          # Fee-aware Kelly framework (shared by all M-series)
+  realized_variance.py             # RV quotidien à partir de OHLCV intraday + transformée log
+  intraday_loader.py               # Loader données horaires yfinance avec cache Parquet
+  har_model.py                     # Modèle HAR(1,5,22) + walk-forward pour baseline
+  simulate_har_kelly.py            # HAR Kelly sweep (baseline M2)
+  m11g_fee_aware_kelly.py          # Framework Kelly fee-aware (shared par tous M-series)
   m11c_sharpe_test.py              # Ledoit-Wolf Sharpe diff SE + sign-test
   m12_har_rv_j.py                  # HAR-RV-J jump-augmented (M12)
   m13_ms_har.py                    # Markov-Switching HAR (M13, Hamilton 1989)
   m14_heavy.py                     # HEAVY bivariate (M14, Shephard & Sheppard 2010)
-  m15_lstm_rv.py                   # Log-LSTM RV (M15, neural on log-realized variance)
+  m15_lstm_rv.py                   # Log-LSTM RV (M15, neural sur log-realized variance)
 
   # --- Training: Graph Neural Networks ---
-  train_gnn.py                     # GNN (GCN/GAT/RGCN) on crypto panier
+  train_gnn.py                     # GNN (GCN/GAT/RGCN) sur crypto panier
   train_mtgnn.py                   # Multivariate Time-series GNN
   train_stgat.py                   # Spatial-Temporal GAT
 
   # --- Training: Baselines ---
-  train_baselines_crypto_panier.py # Stage 0 baselines (10 coins, WF 5-fold x 4 seeds)
+  train_baselines_crypto_panier.py # Baselines Stage 0 (10 coins, WF 5-fold x 4 seeds)
 
   # --- Evaluation ---
-  eval_rl_dt.py                    # Decision Transformer checkpoint evaluation harness
-  eval_chronos_bolt.py             # Chronos-Bolt zero-shot evaluation (Amazon, ~200M params)
-  eval_kronos_zeroshot.py          # Kronos zero-shot evaluation (AAAI 2026, 4 sizes)
-  eval_finstsb.py                  # FinTSB-style per-regime evaluation (4 regimes)
-  eval_existing_checkpoints.py     # Full pipeline: WF + baselines + regimes + transaction costs
+  eval_rl_dt.py                    # Harness évaluation checkpoint Decision Transformer
+  eval_chronos_bolt.py             # Évaluation zero-shot Chronos-Bolt (Amazon, ~200M params)
+  eval_kronos_zeroshot.py          # Évaluation zero-shot Kronos (AAAI 2026, 4 tailles)
+  eval_finstsb.py                  # Évaluation per-regime style FinTSB (4 régimes)
+  eval_existing_checkpoints.py     # Pipeline complet : WF + baselines + régimes + coûts transaction
 
   # --- Infrastructure ---
-  checkpoint_utils.py              # Shared PyTorch checkpoint saving (model.pt + metadata.json)
-  launch_po2025_track_a1.py        # Sequential launcher: Transformer -> DQN -> LSTM
-  launch_ai01_track_b.py           # Track B launcher (ai-01 RTX 4090 baselines)
-  validate_training_package.py     # Validate all scripts with --dry-run
-  registry_update.py               # Build REGISTRY.md from checkpoints
-  walk_forward.py                  # Walk-forward splitter (expanding window, 5-fold)
+  checkpoint_utils.py              # Shared sauvegarde checkpoint PyTorch (model.pt + metadata.json)
+  launch_po2025_track_a1.py        # Launcher séquentiel : Transformer -> DQN -> LSTM
+  launch_ai01_track_b.py           # Launcher Track B (ai-01 RTX 4090 baselines)
+  validate_training_package.py     # Valider tous les scripts avec --dry-run
+  registry_update.py               # Construire REGISTRY.md depuis checkpoints
+  walk_forward.py                  # Splitter walk-forward (expanding window, 5-fold)
 
-checkpoints/                       # Saved models + metadata (auto-created)
+checkpoints/                       # Modèles sauvés + metadata (auto-created)
   classification/<timestamp>/
   lstm/<timestamp>/
   transformer/<timestamp>/
   dqn/<timestamp>/
   moe_regimes/<timestamp>/
-outputs/                           # Training logs and run artifacts
-REGISTRY.md                        # Auto-generated checkpoint catalog
+outputs/                           # Logs d'entraînement et artefacts de run
+REGISTRY.md                        # Catalogue checkpoint auto-généré
 ```
 
-## Quick Start
+## Démarrage rapide
 
-### Validate the pipeline (CPU, no data needed)
+### Valider le pipeline (CPU, pas de données requises)
 
 ```bash
 python scripts/validate_training_package.py --verbose
 ```
 
-### Train on real data
+### Entraîner sur données réelles
 
 ```bash
 # Classification (RF/XGBoost)
@@ -127,7 +127,7 @@ python scripts/train_classification.py --data-dir ../datasets/yfinance --symbol 
 # LSTM
 python scripts/train_lstm.py --data-dir ../datasets/yfinance --symbol SPY --hidden-size 256 --epochs 100
 
-# Transformer (full scale for 24GB GPU)
+# Transformer (full scale pour GPU 24GB)
 python scripts/train_transformer.py --data-dir ../datasets/yfinance --symbol SPY \
     --d-model 256 --nhead 8 --num-layers 6 --dim-ff 1024 --epochs 100 --batch-size 64
 
@@ -136,63 +136,63 @@ python scripts/train_dqn_rl.py --data-dir ../datasets/yfinance --symbol SPY \
     --hidden-size 512 --num-episodes 500
 ```
 
-### Dry-run any script
+### Dry-run de n'importe quel script
 
 ```bash
 python scripts/train_<model>.py --dry-run
 ```
 
-Uses synthetic data, minimal epochs. Validates the full pipeline without GPU or real data.
+Utilise des données synthétiques, epochs minimales. Valide le pipeline complet sans GPU ni données réelles.
 
-## Models
+## Modèles
 
-### Core (direction prediction)
+### Core (prédiction direction)
 
-| Script | Model | Task | GPU | Target 24GB |
+| Script | Modèle | Tâche | GPU | Target 24GB |
 |--------|-------|------|-----|-------------|
-| train_classification.py | RandomForest / XGBoost | Direction classification (up/down) | Optional | 200+ trees, depth 12 |
-| train_lstm.py | LSTM / GRU | Return regression | Recommended | hidden=512, layers=4 |
-| train_transformer.py | Transformer encoder | Return regression | Required | d_model=256, heads=8, layers=6 |
-| train_dqn_rl.py | DQN | Trading actions (buy/sell/hold) | Recommended | hidden=512, 500 episodes |
+| train_classification.py | RandomForest / XGBoost | Classification de direction (haut/bas) | Optionnel | 200+ arbres, profondeur 12 |
+| train_lstm.py | LSTM / GRU | Régression de rendement | Recommandé | hidden=512, layers=4 |
+| train_transformer.py | Transformer encoder | Régression de rendement | Requis | d_model=256, heads=8, layers=6 |
+| train_dqn_rl.py | DQN | Actions de trading (buy/sell/hold) | Recommandé | hidden=512, 500 épisodes |
 
-### Advanced architectures (Issue #754)
+### Architectures avancées (Issue #754)
 
-| Script | Model | Task | GPU | Notes |
+| Script | Modèle | Tâche | GPU | Notes |
 |--------|-------|------|-----|-------|
-| train_moe_regimes.py | MoE + regime router | Direction via regime-aware experts | Recommended | LSTM/GRU/Transformer experts per regime (bull/bear/neutral/vol) |
-| train_moe.py | MoE + gating network | Direction via mixture of experts | Recommended | Soft routing via gating |
-| train_patchtst.py | PatchTST | Multi-variate forecasting | Required | Patch tokenization (ICLR 2023) |
-| train_itransformer.py | iTransformer | Multi-variate forecasting | Required | Inverted attention on variates (ICLR 2024) |
-| train_mamba.py | Mamba SSM | Sequence modeling | Recommended | State-space model baseline |
-| train_rl_dt.py | Decision Transformer | RL via sequence modeling | Recommended | Offline RL, return-conditioned |
+| train_moe_regimes.py | MoE + routeur regime | Direction via experts régime-aware | Recommandé | Experts LSTM/GRU/Transformer par régime (bull/bear/neutral/vol) |
+| train_moe.py | MoE + gating network | Direction via mixture of experts | Recommandé | Routing soft via gating |
+| train_patchtst.py | PatchTST | Prévision multivariée | Requis | Patch tokenization (ICLR 2023) |
+| train_itransformer.py | iTransformer | Prévision multivariée | Requis | Inverted attention sur variates (ICLR 2024) |
+| train_mamba.py | Mamba SSM | Modélisation séquentielle | Recommandé | Baseline state-space model |
+| train_rl_dt.py | Decision Transformer | RL via modélisation séquentielle | Recommandé | Offline RL, return-conditioned |
 
-### Volatility & regime
+### Volatilité & régime
 
-| Script | Model | Task | GPU | Notes |
+| Script | Modèle | Tâche | GPU | Notes |
 |--------|-------|------|-----|-------|
-| train_volatility_garch_dl.py | GARCH(1,1) + DL hybrid | Volatility forecasting | Recommended | LSTM/Transformer/TFT correction on GARCH residuals |
-| train_volatility_regime.py | Regime LSTM | Volatility regime detection | Optional | HMM + LSTM classifier |
-| train_regime_classifier.py | HMM | Regime detection (bull/bear/neutral/vol) | CPU | Hidden Markov Model |
+| train_volatility_garch_dl.py | GARCH(1,1) + DL hybrid | Prévision volatilité | Recommandé | Correction LSTM/Transformer/TFT sur résidus GARCH |
+| train_volatility_regime.py | Regime LSTM | Détection régime volatilité | Optionnel | HMM + classifieur LSTM |
+| train_regime_classifier.py | HMM | Détection régime (bull/bear/neutral/vol) | CPU | Hidden Markov Model |
 
 ### Graph Neural Networks (crypto panier)
 
-| Script | Model | Task | GPU | Notes |
+| Script | Modèle | Tâche | GPU | Notes |
 |--------|-------|------|-----|-------|
-| train_gnn.py | GCN / GAT / RGCN | Cross-asset spillover | Required | 10-coin crypto panier, rolling corr adjacency |
-| train_mtgnn.py | MTGNN | Multivariate graph learning | Required | Learns graph structure |
-| train_stgat.py | ST-GAT | Spatial-temporal attention | Required | Attention over spatial + temporal dims |
+| train_gnn.py | GCN / GAT / RGCN | Spillover cross-asset | Requis | Panier crypto 10 coins, adjacency corr rolling |
+| train_mtgnn.py | MTGNN | Apprentissage graph multivarié | Requis | Apprend structure de graphe |
+| train_stgat.py | ST-GAT | Attention spatio-temporelle | Requis | Attention sur dims spatial + temporal |
 
-### Volatility baselines
+### Baselines volatilité
 
-| Script | Model | Task | GPU | Notes |
+| Script | Modèle | Tâche | GPU | Notes |
 |--------|-------|------|-----|-------|
-| train_har_baseline.py | HAR(1,5,22d) | Realized Variance forecast | CPU | Walk-forward 5-fold vs GARCH-rolling, crypto hourly OHLCV (#834 M2) |
+| train_har_baseline.py | HAR(1,5,22d) | Prévision Realized Variance | CPU | Walk-forward 5-fold vs GARCH-rolling, crypto OHLCV horaire (#834 M2) |
 
-### Volatility sweep series (M10--M15)
+### Série volatilité sweep (M10--M15)
 
-Systematic comparison of volatility models against HAR Classic Kelly on 7 crypto coins (BTC-USD, ETH-USD, SOL-USD, LTC-USD, XRP-USD, ADA-USD, DOT-USD), 3 horizons (h=1,5,10), 4 seeds (0,1,7,42), walk-forward 5-fold expanding. Kelly cap=1.0, fee=50bps. Verdict: sign-test paired Sharpe-diff vs HAR Classic, BEATS requires p<0.05 AND win>=60%.
+Comparaison systématique de modèles de volatilité contre HAR Classic Kelly sur 7 crypto coins (BTC-USD, ETH-USD, SOL-USD, LTC-USD, XRP-USD, ADA-USD, DOT-USD), 3 horizons (h=1,5,10), 4 seeds (0,1,7,42), walk-forward 5-fold expanding. Kelly cap=1.0, fee=50bps. Verdict : sign-test apparié Sharpe-diff vs HAR Classic, BEATS requiert p<0.05 AND win>=60%.
 
-| Script | Doc | Model | Params | Verdict |
+| Script | Doc | Modèle | Params | Verdict |
 | ------ | --- | ----- | ------ | ------- |
 | train_realized_garch.py | M10_REALIZED_GARCH_VOL.md | Realized GARCH (Hansen et al. 2012) | ~8 | NO BEATS (MSE +62%) |
 | simulate_har_kelly.py | M2_HAR_BASELINE.md | HAR Classic Kelly (Corsi 2009) | 4 | **Baseline** (Sharpe +0.313 vs BH) |
@@ -201,45 +201,45 @@ Systematic comparison of volatility models against HAR Classic Kelly on 7 crypto
 | m14_heavy.py | M14_HEAVY.md | HEAVY (Shephard & Sheppard 2010) | 6 | NO BEATS (48/84, p=0.1149) |
 | m15_lstm_rv.py | M15_LSTM_RV.md | Log-LSTM RV (Hochreiter 1997) | ~4.8K (h=32) / ~17.7K (h=64) / ~68.2K (h=128) | **BEATS** h=32 (52/84, p=0.0188) / NO BEATS h=64 (45/84, p=0.2928) / NO BEATS h=128 (38/84, p=0.8369) |
 
-Supporting modules: `har_model.py`, `realized_variance.py`, `intraday_loader.py`, `m11g_fee_aware_kelly.py`, `m11c_sharpe_test.py`. Full roadmap: `docs/M_NEXT_VOL_PROPOSAL.md`.
+Modules support : `har_model.py`, `realized_variance.py`, `intraday_loader.py`, `m11g_fee_aware_kelly.py`, `m11c_sharpe_test.py`. Roadmap complète : `docs/M_NEXT_VOL_PROPOSAL.md`.
 
-### Evaluation harnesses
-
-| Script | Purpose | Notes |
-|--------|---------|-------|
-| eval_rl_dt.py | DT checkpoint evaluation | Walk-forward OOS, majority-class comparison, transaction cost analysis |
-| eval_chronos_bolt.py | Chronos-Bolt zero-shot | Amazon T5-based, ~200M params, 250x faster than original Chronos |
-| eval_kronos_zeroshot.py | Kronos zero-shot | AAAI 2026, pre-trained on 12B K-lines, 4 model sizes (4M-499M) |
-| eval_finstsb.py | Per-regime evaluation | 4 regimes (uptrend/downtrend/volatility/black_swan) |
-| eval_existing_checkpoints.py | Full pipeline evaluation | WF + baselines + per-regime + transaction costs for any checkpoint |
-
-### Dataset building
+### Harness d'évaluation
 
 | Script | Purpose | Notes |
 |--------|---------|-------|
-| build_dataset_v2.py | V2 panier dataset builder | 26 symbols, 7 asset classes, cross-asset features, HMM+price regime labels (#754 Phase C) |
+| eval_rl_dt.py | Évaluation checkpoint DT | Walk-forward OOS, comparaison majority-class, analyse coûts transaction |
+| eval_chronos_bolt.py | Chronos-Bolt zero-shot | T5-based Amazon, ~200M params, 250x plus rapide que Chronos original |
+| eval_kronos_zeroshot.py | Kronos zero-shot | AAAI 2026, pre-trained sur 12B K-lines, 4 tailles modèle (4M-499M) |
+| eval_finstsb.py | Évaluation per-regime | 4 régimes (uptrend/downtrend/volatility/black_swan) |
+| eval_existing_checkpoints.py | Évaluation pipeline complet | WF + baselines + per-regime + coûts transaction pour tout checkpoint |
 
-### Shared utilities
+### Construction de dataset
 
 | Script | Purpose | Notes |
 |--------|---------|-------|
-| features.py | Feature engineering engine | Composable indicators with Parquet caching |
-| data_utils.py | Data I/O utilities | Load yfinance/Binance, synthetic generation, SHA256 hashing |
-| baselines.py | Baseline models | Majority-class, buy-hold, momentum. Sharpe computation |
-| garch_baseline.py | GARCH utilities | Rolling refit (no data leak) vs leaky comparison. Realized vol computation |
-| regime_detector.py | Regime detection | Price-based: uptrend/downtrend/volatility/black_swan |
-| checkpoint_utils.py | Checkpoint I/O | `save_pytorch_checkpoint()`: model.pt + metadata.json with architecture/metrics/history |
-| walk_forward.py | Walk-forward splitter | Expanding window, configurable n_splits |
+| build_dataset_v2.py | Builder dataset V2 panier | 26 symboles, 7 classes d'actifs, features cross-asset, labels régime HMM+price (#754 Phase C) |
+
+### Utilitaires partagés
+
+| Script | Purpose | Notes |
+|--------|---------|-------|
+| features.py | Moteur feature engineering | Indicateurs composables avec cache Parquet |
+| data_utils.py | Utilitaires I/O données | Load yfinance/Binance, génération synthétique, hachage SHA256 |
+| baselines.py | Modèles baseline | Majority-class, buy-hold, momentum. Calcul Sharpe |
+| garch_baseline.py | Utilitaires GARCH | Rolling refit (sans fuite de données) vs comparaison leaky. Calcul vol realized |
+| regime_detector.py | Détection régime | Prix-based : uptrend/downtrend/volatility/black_swan |
+| checkpoint_utils.py | I/O checkpoint | `save_pytorch_checkpoint()`: model.pt + metadata.json avec architecture/metrics/history |
+| walk_forward.py | Splitter walk-forward | Expanding window, n_splits configurable |
 
 ### Baselines
 
 | Script | Purpose | Notes |
 |--------|---------|-------|
-| train_baselines_crypto_panier.py | Stage 0 baselines (10 coins) | Majority, buy-hold, momentum, RF. WF 5-fold x 4 seeds, 10bps costs |
+| train_baselines_crypto_panier.py | Baselines Stage 0 (10 coins) | Majority, buy-hold, momentum, RF. WF 5-fold x 4 seeds, 10bps coûts |
 
-## Features Engineered
+## Variables explicatives
 
-All indicators are available via `scripts/features.py` — composable functions with Parquet caching:
+Tous les indicateurs sont disponibles via `scripts/features.py` — fonctions composables avec cache Parquet :
 
 ```python
 from features import FeatureEngineer
@@ -250,27 +250,27 @@ features = engineer.transform(df, cache_path="cache/spy.parquet")
 
 | Feature | Description |
 |---------|-------------|
-| ret_1d, ret_5d, ret_10d, ret_20d | Returns at multiple horizons |
-| vol_5d, vol_20d | Realized volatility |
-| vol_ratio | Volume vs 20-day average |
-| ma_ratio_5/10/20/60 | Price vs moving average ratio |
-| rsi_14 | Relative Strength Index (14-period) |
-| macd, macd_signal | MACD indicator |
-| bb_width | Bollinger Band width |
-| true_range, atr_14 | True Range and ATR (requires OHLC) |
-| obv | On-Balance Volume (rolling-std normalized) |
+| ret_1d, ret_5d, ret_10d, ret_20d | Rendements multiples horizons |
+| vol_5d, vol_20d | Volatilité réalisée |
+| vol_ratio | Volume vs moyenne 20 jours |
+| ma_ratio_5/10/20/60 | Prix vs ratio moyenne mobile |
+| rsi_14 | Relative Strength Index (14 périodes) |
+| macd, macd_signal | Indicateur MACD |
+| bb_width | Largeur Bollinger Band |
+| true_range, atr_14 | True Range et ATR (requiert OHLC) |
+| obv | On-Balance Volume (normalisé rolling-std) |
 
-## Checkpoints
+## Points de contrôle (checkpoints)
 
-Each training run saves to `checkpoints/<model>/<timestamp>/`:
+Chaque run d'entraînement sauve dans `checkpoints/<model>/<timestamp>/` :
 
 ```
 checkpoints/lstm/20260430_143022/
-  model.pt (or model.joblib for sklearn)
+  model.pt (ou model.joblib pour sklearn)
   metadata.json
 ```
 
-### metadata.json structure
+### Structure metadata.json
 
 ```json
 {
@@ -285,7 +285,7 @@ checkpoints/lstm/20260430_143022/
 }
 ```
 
-### Loading a checkpoint
+### Charger un checkpoint
 
 ```python
 import torch, json
@@ -294,7 +294,7 @@ from pathlib import Path
 ckpt = Path("checkpoints/lstm/20260430_143022")
 metadata = json.loads((ckpt / "metadata.json").read_text())
 
-# For PyTorch models (LSTM, Transformer, DQN)
+# Pour modèles PyTorch (LSTM, Transformer, DQN)
 from train_lstm import build_model
 model = build_model(
     input_size=metadata["architecture"]["input_size"],
@@ -303,53 +303,53 @@ model = build_model(
 )
 model.load_state_dict(torch.load(ckpt / "model.pt", weights_only=True))
 
-# For sklearn models (classification)
+# Pour modèles sklearn (classification)
 import joblib
 model = joblib.load(ckpt / "model.joblib")
 ```
 
-## Data Sources
+## Sources de données
 
-Designed to work with datasets from `scripts/datasets/` (Track A):
+Conçu pour fonctionner avec datasets de `scripts/datasets/` (Track A) :
 
-| Source | Script | Default path |
+| Source | Script | Path par défaut |
 |--------|--------|--------------|
 | yfinance | `download_yfinance.py` | `../datasets/yfinance/` |
 | Binance | `download_binance_klines.py` | `../datasets/binance/` |
 | Crypto archive | `manage_crypto_archive.py` | `../datasets/crypto_archive/` |
 | QC lean-cli | `download_qc_data.py` | `../datasets/qc/` |
 
-## Thermal Safety (GPU Training)
+## Sécurité thermique (entraînement GPU)
 
-All GPU training scripts import from `shared/gpu_training.py` for thermal protection:
+Tous les scripts d'entraînement GPU importent de `shared/gpu_training.py` pour protection thermique :
 
 ```python
 from shared.gpu_training import batch_thermal_check, setup_amp, get_gpu_temp
 ```
 
-| Function | Usage | Default |
+| Function | Usage | Défaut |
 |----------|-------|---------|
-| `batch_thermal_check(temp, max_temp)` | Pause 30s if GPU exceeds threshold | max_temp=80C |
-| `thermal_check(max_temp)` | Check between episodes (DQN) | max_temp=80C |
-| `setup_amp(model, optimizer)` | Enable Automatic Mixed Precision | Enabled by default |
-| `get_gpu_temp()` | Read GPU temperature via nvidia-smi | n/a |
+| `batch_thermal_check(temp, max_temp)` | Pause 30s si GPU dépasse seuil | max_temp=80C |
+| `thermal_check(max_temp)` | Check entre épisodes (DQN) | max_temp=80C |
+| `setup_amp(model, optimizer)` | Activer Automatic Mixed Precision | Activé par défaut |
+| `get_gpu_temp()` | Lire température GPU via nvidia-smi | n/a |
 
-**Thermal behavior**: When GPU exceeds MAX_TEMP, training pauses 30s. On laptops (MSI GE76 RTX 3080 Ti), expect ~80C baseline, meaning frequent thermal pauses. Training efficiency is ~2-5% wall time on thermally constrained hardware.
+**Comportement thermique** : Quand GPU dépasse MAX_TEMP, l'entraînement pause 30s. Sur laptops (MSI GE76 RTX 3080 Ti), attendre ~80C baseline, donc pauses thermiques fréquentes. L'efficacité d'entraînement est ~2-5% wall time sur hardware thermiquement contraint.
 
-## Sequential Launchers
+## Lanceurs séquentiels
 
-Track A1 (`launch_po2025_track_a1.py`) runs models sequentially with full thermal safety:
+Track A1 (`launch_po2025_track_a1.py`) lance modèles séquentiellement avec sécurité thermique complète :
 
 ```bash
-# Full Track A1: Transformer -> DQN -> LSTM
+# Track A1 complet : Transformer -> DQN -> LSTM
 python scripts/launch_po2025_track_a1.py --symbol SPY --data-dir ../datasets/yfinance
 ```
 
-Track B (`launch_ai01_track_b.py`) runs baselines on ai-01 (RTX 4090, no thermal issues).
+Track B (`launch_ai01_track_b.py`) lance baselines sur ai-01 (RTX 4090, pas de problèmes thermiques).
 
-## Dependencies
+## Dépendances
 
-### Core (all scripts)
+### Core (tous les scripts)
 
 ```
 numpy
@@ -364,17 +364,17 @@ joblib
 torch>=2.0
 ```
 
-### Optional
+### Optionnel
 
 ```
-xgboost      # Enhanced classification (falls back to RF)
-arch         # GARCH volatility models (garch_baseline.py, train_har_baseline.py)
-hmmlearn     # HMM regime detection (train_regime_classifier.py)
-fastparquet  # Parquet I/O for dataset V2 (build_dataset_v2.py)
+xgboost      # Classification améliorée (fallback vers RF)
+arch         # Modèles volatilité GARCH (garch_baseline.py, train_har_baseline.py)
+hmmlearn     # Détection régime HMM (train_regime_classifier.py)
+fastparquet  # I/O Parquet pour dataset V2 (build_dataset_v2.py)
 pyarrow      # Parquet backend (build_dataset_v2.py)
 ```
 
-## Recommended GPU Training Commands (RTX 4090 24GB)
+## Commandes GPU recommandées (RTX 4090 24GB)
 
 ```bash
 # LSTM - full scale
@@ -382,12 +382,12 @@ python scripts/train_lstm.py --data-dir ../datasets/yfinance --symbol SPY \
     --hidden-size 512 --num-layers 4 --dropout 0.3 \
     --seq-len 60 --epochs 200 --batch-size 128 --lr 5e-4
 
-# Transformer - max utilization
+# Transformer - utilisation max
 python scripts/train_transformer.py --data-dir ../datasets/yfinance --symbol SPY \
     --d-model 256 --nhead 8 --num-layers 6 --dim-ff 1024 --dropout 0.15 \
     --seq-len 60 --epochs 150 --batch-size 64 --lr 3e-4
 
-# DQN - extended training
+# DQN - entraînement étendu
 python scripts/train_dqn_rl.py --data-dir ../datasets/yfinance --symbol SPY \
     --hidden-size 512 --num-episodes 1000 --replay-size 200000 \
     --batch-size 128 --lr 5e-4 --eps-decay 0.997
@@ -395,14 +395,14 @@ python scripts/train_dqn_rl.py --data-dir ../datasets/yfinance --symbol SPY \
 
 ## Validation (dry-run)
 
-All scripts support `--dry-run` (synthetic data, 2 epochs) except `train_moe.py`, `train_volatility_garch_dl.py`, and `train_regime_classifier.py` (no dry-run flag).
+Tous les scripts supportent `--dry-run` (données synthétiques, 2 epochs) sauf `train_moe.py`, `train_volatility_garch_dl.py`, et `train_regime_classifier.py` (pas de flag dry-run).
 
 ```bash
-# Validate all scripts
+# Valider tous les scripts
 python scripts/validate_training_package.py --verbose
 ```
 
-Dry-run results (CPU, Python 3.13, torch 2.11.0+cpu):
+Résultats dry-run (CPU, Python 3.13, torch 2.11.0+cpu) :
 
 | Script | Status | DirAcc / Metric | Time |
 |--------|--------|-----------------|------|
@@ -420,35 +420,35 @@ Dry-run results (CPU, Python 3.13, torch 2.11.0+cpu):
 | train_rl_dt.py | PASS | Edge=+0.223 (BEATS baseline) | ~5s |
 | train_volatility_regime.py | PASS | Acc=0.663, Edge=-0.266 | ~5s |
 
-Note: dry-run uses synthetic random data. FAILS baseline is expected with random walks. Real-data results are in `results/` and on the cluster dashboard.
+Note : dry-run utilise des données aléatoires synthétiques. FAILS baseline est attendu avec random walks. Les résultats données réelles sont dans `results/` et sur le dashboard cluster.
 
-## Ladder #1409 — Final Verdicts (2026-06-12, COMPLETE)
+## Ladder #1409 — Verdicts finaux (2026-06-12, COMPLETE)
 
-Systematic evaluation of trading signal generation approaches, 7 hard disciplines (walk-forward 5-fold expanding, multi-seed >= 4, anti-FAANG universe, explicit tx costs + 50bps stress, deflated Sharpe, honest verdict).
+Évaluation systématique d'approches de génération de signaux de trading, 7 disciplines strictes (walk-forward 5-fold expanding, multi-seed >= 4, univers anti-FAANG, coûts tx explicites + 50bps stress, Sharpe déflaté, verdict honnête).
 
-| Rung | Model | Approach | Verdict | Key metric | Doc |
-|------|-------|----------|---------|------------|-----|
-| L1 | TSMOM | Time-series momentum | NO BEATS | net Sharpe -2.26 to -2.56 (costs kill the signal) | `docs/L1_tsmom.md` |
-| L2 | CS+DM | Carry + dual momentum | NO BEATS | best CS 252d delta -0.153 | `docs/L2_dual_momentum.md` |
-| L3 | Trend | Regime + trend long-horizon | NO BEATS | 0/75 signal, median AUC 0.509, 300 combos | `results/l3_trend_long_horizon/` |
-| **L4** | **Decision Transformer** | **Action-based (buy/hold/sell)** | **BEATS** | **24/26, median AUC 0.558** | `docs/STAGE7_DECISION_TRANSFORMER.md` |
-| L5 | Vol-targeted composite | Trend filter + 10% vol-targeting on S7 composite | NO BEATS | delta -0.236 vs S4 v2 (t=-2.49), DSR 0.074 | `docs/L5_vol_targeted_composite.md` |
-| (side) | PatchTST | Forecast-based (return prediction) — mislabeled "L5" before 2026-06-12 | NO BEATS | 0/26, median AUC 0.501 | `results/l5_patchtst/` |
+| Rung | Modèle | Approche | Verdict | Métrique clé | Doc |
+|------|-------|----------|---------|--------------|-----|
+| L1 | TSMOM | Momentum time-series | NO BEATS | Sharpe net -2.56 à -2.26 (coûts tuent le signal) | `docs/L1_tsmom.md` |
+| L2 | CS+DM | Carry + momentum dual | NO BEATS | meilleur CS 252d delta -0.153 | `docs/L2_dual_momentum.md` |
+| L3 | Trend | Regime + trend long-horizon | NO BEATS | 0/75 signal, AUC médian 0.509, 300 combos | `results/l3_trend_long_horizon/` |
+| **L4** | **Decision Transformer** | **Action-based (buy/hold/sell)** | **BEATS** | **24/26, AUC médian 0.558** | `docs/STAGE7_DECISION_TRANSFORMER.md` |
+| L5 | Composite vol-targeted | Filtre trend + vol-targeting 10% sur composite S7 | NO BEATS | delta -0.236 vs S4 v2 (t=-2.49), DSR 0.074 | `docs/L5_vol_targeted_composite.md` |
+| (side) | PatchTST | Forecast-based (prédiction rendement) — mislabellisé "L5" avant 2026-06-12 | NO BEATS | 0/26, AUC médian 0.501 | `results/l5_patchtst/` |
 
-**Key findings**:
+**Key findings** :
 
-1. **Action-based >> forecast-based**: DT (classifies buy/hold/sell) massively outperforms PatchTST (predicts return magnitude). The portfolio translation layer (forecast -> position) destroys forecast signal via transaction costs and discretization errors.
-2. **Trend overlays are systematically destructive** on this universe/period: L1, L2, L3 all NO BEATS, and the L5 ablation isolates the 12-1 TSMOM filter as the cause of its deficit (-0.260 alone vs -0.025 for vol-targeting alone).
-3. **Vol-targeting is a risk tool, not alpha**: L5's 10% vol-target hits its risk objective (realised vol 10.3% vs 16.6%, reduced MaxDD) at ~zero Sharpe cost. Keep it as a risk overlay on production candidates (S3 + S4 v2 KEEPERS), not as a signal.
+1. **Action-based >> forecast-based** : DT (classifie buy/hold/sell) surperforme massivement PatchTST (prédit magnitude rendement). La couche de traduction portfolio (forecast -> position) détruit le signal forecast via coûts transaction et erreurs de discrétisation.
+2. **Trend overlays systématiquement destructeurs** sur cet univers/période : L1, L2, L3 tous NO BEATS, et l'ablation L5 isole le filtre TSMOM 12-1 comme cause de son déficit (-0.260 seul vs -0.025 pour vol-targeting seul).
+3. **Vol-targeting = outil de risque, pas alpha** : le vol-target 10% de L5 atteint son objectif de risque (vol réalisée 10.3% vs 16.6%, MaxDD réduit) à coût Sharpe ~nul. À garder comme overlay de risque sur candidats production (S3 + S4 v2 KEEPERS), pas comme signal.
 
-Results: `scripts/results/{l1_tsmom,l2_dual_momentum,l3_trend_long_horizon,l4_decision_transformer,l5_vol_targeted,l5_patchtst}/results.json`. Next: L4 DT extended multi-seed (ai-01 BG run), then QC Cloud migration.
+Résultats : `scripts/results/{l1_tsmom,l2_dual_momentum,l3_trend_long_horizon,l4_decision_transformer,l5_vol_targeted,l5_patchtst}/results.json`. Next : L4 DT multi-seed étendu (BG run ai-01), puis migration QC Cloud.
 
-## Reproducibility
+## Reproductibilité
 
-- **Data hash**: SHA256 of input dataset stored in metadata
-- **Hyperparams**: All args saved verbatim
-- **Training history**: Loss curves per epoch
-- **Seeds**: Synthetic data uses seed=42; for production, set `PYTHONHASHSEED` and `torch.manual_seed()`
+- **Hachage données** : SHA256 du dataset d'entrée stocké dans metadata
+- **Hyperparams** : Tous les args sauvés verbatim
+- **Historique entraînement** : Courbes de perte par epoch
+- **Seeds** : Données synthétiques utilisent seed=42 ; pour production, configurer `PYTHONHASHSEED` et `torch.manual_seed()`
 
 ---
 
@@ -473,3 +473,7 @@ Ce pipeline matérialise **l'empirisme honnête appliqué au ML financier** : pl
 6. **Lire la méta-analyse** : [`docs/Curriculum_V2_Meta_Analysis.md`](docs/Curriculum_V2_Meta_Analysis.md) pour la synthèse cross-iteration (parcimonie vs expressivité, vol vs direction).
 
 > **Rappel honnête** : ce pipeline est un **standalone research** (type (c), données yfinance locales). Les verdicts (KEEPERS, NO BEATS) sont valables sur l'univers et la période testés. Un edge en research standalone n'est pas un edge en production — la migration QC Cloud avec vraies données, frais réels et slippage est l'étape de validation obligatoire avant tout déploiement.
+
+---
+
+*Version anglaise (snapshot pré-bascule) : [`README.en.md`](README.en.md).*
