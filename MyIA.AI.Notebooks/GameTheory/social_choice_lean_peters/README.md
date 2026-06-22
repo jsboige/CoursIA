@@ -1,71 +1,75 @@
-# Social Choice Lean (Peters Reference)
+# Choix Social Lean (référence Peters)
 
-Reference project importing [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) as a Lake dependency. Curated tour of Peters' formalized results.
+Projet de référence important [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean)
+comme dépendance Lake. Visite guidée (« curated tour ») des résultats formalisés
+de Peters.
 
-## Status
+## Statut
 
-- **Toolchain**: v4.27.0-rc1 (pinned to Peters' version)
-- **Sorry count**: 0 production sorry
-- **Build**: `lake build` -- SUCCESS
-- **Dependencies**: Mathlib4, DominikPeters/SocialChoiceLean
+- **Toolchain** : `leanprover/lean4:v4.27.0-rc1` (pinnée sur la version de Peters)
+- **Compte de sorry** : 0 sorry en production
+- **Build** : `lake build` — SUCCESS
+- **Dépendances** : Mathlib4, `DominikPeters/SocialChoiceLean`
 
 ## Modules
 
-| File | sorry | Description |
-|------|-------|-------------|
-| `PetersTour.lean` | 0 | Curated tour of Peters' formalized results |
+| Fichier | sorry | Description |
+|---------|-------|-------------|
+| `PetersTour.lean` | 0 | Visite guidée des résultats formalisés de Peters |
 
-## Key Results
+## Résultats clés
 
-Imports and demonstrates Peters' library, including:
+Importe et illustre la bibliothèque de Peters, notamment :
 
-- **Gibbard-Satterthwaite**: Strategy-proofness implies dictatorship (>= 3 candidates)
-- **Duggan-Schwartz**: Extension to multi-winner with optimist/pessimist strategy-proofness
-- **4 Condorcet impossibilities**: Participation, Reinforcement, Strategy-proofness, Anon+Neutral+Resolute
-- **15+ voting rules** with axiom verification: Split Cycle, Schulze, Copeland, Black, IRV, Borda, etc.
+- **Gibbard-Satterthwaite** : la résistance à la manipulation (« strategy-proofness ») implique la dictature (≥ 3 candidats)
+- **Duggan-Schwartz** : extension multi-vainqueurs avec résistance à la manipulation optimiste/pessimiste
+- **4 impossibilités de Condorcet** : Participation, Renforcement, Résistance à la manipulation, Anonymat+Neutralité+Resoluteness
+- **15+ règles de vote** avec vérification d'axiomes : Split Cycle, Schulze, Copeland, Black, IRV, Borda, etc.
 
-## Relationship to `social_choice_lean`
+## Relation avec `social_choice_lean`
 
-Complementary, not duplicate. `social_choice_lean` uses custom `PrefOrder` (our proofs); this project uses Peters' `LinearOrder` (external reference). Different frameworks, different proofs.
+Complémentaire, sans doublon. `social_choice_lean` utilise un `PrefOrder` personnalisé (nos preuves) ; ce projet utilise le `LinearOrder` de Peters (référence externe). Cadres différents, preuves différentes.
 
 ## Notes
 
-- Backend for notebook `GameTheory-16e-SocialChoiceLean-Tour.ipynb`
-- Peters' repo pinned at commit `d679d950` for reproducibility
-- Peters uses `LinearOrder` (strict, Mathlib); we use `PrefOrder` (reflexive, total, transitif)
+- Backend du notebook `GameTheory-16e-SocialChoiceLean-Tour.ipynb`
+- Le dépôt de Peters est pinné au commit `d679d950` pour la reproductibilité
+- Peters utilise `LinearOrder` (strict, Mathlib) ; nous utilisons `PrefOrder` (réflexif, total, transitif)
 
 ## Conclusion
 
-This project is a **reference tour** of
-[DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean),
-imported as a Lake dependency (pinned at commit `d679d950`, toolchain
-`v4.27.0-rc1`) and exhibited via `#check`s in `PetersTour.lean` — **0 `sorry`**,
-`lake build` SUCCESS. It is **not** original formalization: it presents Peters'
-results, the current reference implementation of social-choice theory in Lean 4.
+Ce projet est une **visite de référence** de
+[`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean),
+importée comme dépendance Lake (pinnée au commit `d679d950`, toolchain
+`v4.27.0-rc1`) et exhibée via des `#check` dans `PetersTour.lean` — **0 `sorry`**,
+`lake build` SUCCESS. Ce n'est **pas** une formalisation originale : il présente
+les résultats de Peters, l'implémentation de référence actuelle de la théorie du
+choix social en Lean 4.
 
-### What the tour covers
+### Ce que la visite couvre
 
-- **Gibbard-Satterthwaite** — strategy-proofness implies dictatorship (≥ 3
-  candidates);
-- **Duggan-Schwartz** — multi-winner extension with optimist/pessimist
-  strategy-proofness;
-- **4 Condorcet impossibilities** — Participation, Reinforcement,
-  Strategy-proofness, Anon+Neutral+Resolute;
-- **15+ voting rules** with axiom verification (Split Cycle, Schulze, Copeland,
-  Black, IRV, Borda, …).
+- **Gibbard-Satterthwaite** — la résistance à la manipulation implique la
+  dictature (≥ 3 candidats) ;
+- **Duggan-Schwartz** — extension multi-vainqueurs avec résistance à la
+  manipulation optimiste/pessimiste ;
+- **4 impossibilités de Condorcet** — Participation, Renforcement, Résistance à
+  la manipulation, Anonymat+Neutralité+Resoluteness ;
+- **15+ règles de vote** avec vérification d'axiomes (Split Cycle, Schulze,
+  Copeland, Black, IRV, Borda, …).
 
-### Complementary, not duplicate
+### Complémentaire, pas doublon
 
-This project and [`social_choice_lean/`](../social_choice_lean/) cover the same
-theory through **different frameworks**: Peters uses Mathlib's strict
-`LinearOrder`, while `social_choice_lean/` uses the reflexive-total-transitive
-`PrefOrder` (closer to the welfare-economics tradition). Reading both shows how
-the framework choice shapes the definitions and proofs.
+Ce projet et [`social_choice_lean/`](../social_choice_lean/) couvrent la même
+théorie au travers de **cadres différents** : Peters utilise le `LinearOrder`
+strict de Mathlib, tandis que `social_choice_lean/` utilise le `PrefOrder`
+réflexif-total-transitif (plus proche de la tradition d'économie du bien-être).
+Lire les deux montre comment le choix du cadre modèle les définitions et les
+preuves.
 
-### Where to go next
+### Où aller ensuite
 
-- **Notebook**: `GameTheory-16e-SocialChoiceLean-Tour.ipynb` — the teaching
-  companion this project backs.
-- **Upstream**: [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) (MIT).
-- **Our proofs**: [`social_choice_lean/`](../social_choice_lean/) — Arrow / Sen /
-  median voter in the `PrefOrder` framework.
+- **Notebook** : `GameTheory-16e-SocialChoiceLean-Tour.ipynb` — le compagnon
+  pédagogique auquel ce projet sert de backend.
+- **Amont** : [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean) (MIT).
+- **Nos preuves** : [`social_choice_lean/`](../social_choice_lean/) — Arrow / Sen /
+  électeur médian dans le cadre `PrefOrder`.
