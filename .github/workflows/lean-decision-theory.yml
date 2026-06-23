@@ -1,0 +1,37 @@
+name: Lean CI (decision_theory_lean)
+
+# CI for decision_theory_lean (Probas/decision_theory_lean) — decision-theory lake
+# at the Probas series root, lifted from Probas/Infer/gittins_lean in PR #4058
+# (lake content unchanged by the lift). First module: Gittins index. Research scaffolding.
+#
+# sorry-filter-mode=standalone-tactic, baseline=3: a CONSERVATIVE regression floor
+# counting only standalone `sorry` tokens (never false-positives on prose; catches
+# any NEW standalone sorry; UNDERCOUNTS inline-commented ones). Authoritative sorry
+# profile: see decision_theory_lean/README.md (Discount.lean = 0 since PR #2911,
+# GittinsTheorem.lean = 5). Consolidated per ai-01 DRY decision (matrix). See lean-build.yml.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/Probas/decision_theory_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Probas/decision_theory_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Probas/decision_theory_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Probas/decision_theory_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/Probas/decision_theory_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Probas/decision_theory_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Probas/decision_theory_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Probas/decision_theory_lean/lean-toolchain'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/Probas/decision_theory_lean
+      display-name: decision_theory_lean
+      sorry-baseline: "3"
+      sorry-filter-mode: standalone-tactic
