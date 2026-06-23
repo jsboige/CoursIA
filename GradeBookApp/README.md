@@ -1,6 +1,6 @@
 # GradeBookApp - Systeme de Notation Etudiants
 
-Application de calcul et gestion des notes pour etudiants EPF/EPITA avec support du grading collegial.
+Application de calcul et gestion des notes étudiants, **agnostique des écoles** : le moteur de notation est public, les configurations par cohorte (ECE / ESGF / EPITA / EPF) sont privées sur GDrive. Support du grading collégial (évaluation par les pairs).
 
 ## Vue d'ensemble
 
@@ -109,6 +109,16 @@ pip install pandas numpy openpyxl rapidfuzz unidecode
 
 ```bash
 dotnet restore GradeBookApp/GradeBookApp.csproj
+```
+
+## Tests
+
+Le moteur de notation est couvert par une suite de tests xUnit dans
+[`GradeBookApp.Tests/`](../GradeBookApp.Tests/) (#1928) : pliage des accents
+(`FoldAccents`), modèles `StudentRecord` / `ProjectModel` / `EvaluationRecord`.
+
+```bash
+dotnet test GradeBookApp.Tests
 ```
 
 ## Licence
