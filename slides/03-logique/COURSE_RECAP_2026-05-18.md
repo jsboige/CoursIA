@@ -56,7 +56,7 @@
 
 **Duree estimee**: ~30 min
 
-**Depot** : voir CLAUDE.md section ECE (cf `docs/ece-grading.md` pour les patterns de notation).
+**Depot** : voir CLAUDE.md section ECE (patterns de notation = prives sur GDrive `Formation\<ecole>\<annee>\grading\`, hors repo).
 
 **Points a couvrir**:
 1. Structure du depot type (README + notebooks par theme + tests)

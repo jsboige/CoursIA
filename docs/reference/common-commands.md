@@ -76,4 +76,4 @@ python GradeBookApp/gradebook.py               # Python grading pipeline
 python GradeBookApp/run_epf_mis_2026.py         # EPF MIS multi-epreuves
 ```
 
-Cf [ece-grading.md](./ece-grading.md) pour le contexte ECE.
+Notation par cohorte (ECE, ESGF, ...) = privee sur GDrive `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` ; cf [GradeBookApp/configs/README.md](../../GradeBookApp/configs/README.md) pour le moteur generique.

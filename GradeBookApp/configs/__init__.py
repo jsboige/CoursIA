@@ -24,8 +24,8 @@ Exemple d'execution (depuis le dossier grading sur GDrive) :
     cd "G:\\Mon Drive\\MyIA\\Formation\\EPF\\2026\\grading"
     python epf_2026_ml.py
 
-Cf docs/reference/ece-grading.md et docs/reference/esgf-grading.md pour le meme
-schema applique aux cohortes ECE et ESGF.
+Le detail des pipelines par cohorte (ECE, ESGF, ...) vit avec les configs sur
+GDrive (prive, PII etudiants), pas dans ce depot public.
 """
 
 __version__ = '2.0.0'

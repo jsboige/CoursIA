@@ -1,6 +1,6 @@
 # Reviews PR etudiantes — detail
 
-Detail de [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-reviews.md). Voir aussi [exercise-example-labeling.md](../../.claude/rules/exercise-example-labeling.md), [pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md), [ece-grading.md](ece-grading.md).
+Detail de [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-reviews.md). Voir aussi [exercise-example-labeling.md](../../.claude/rules/exercise-example-labeling.md), [pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md).
 
 ## Incident fondateur (2026-05-17)
 

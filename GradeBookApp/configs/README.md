@@ -17,8 +17,8 @@ Exemples (2026) :
 |-----------------|----------------|----------|
 | EPITA-IS — PrCon | `Formation\Epita\2026\grading\` | `prcon_2026_config.py`, `compile_prcon_2026.py`, `epf_2026_prcon.py` (collégiale, *superseded*) |
 | EPF — GenAI / MIS / Min1 / Min2 | `Formation\EPF\2026\grading\` | `epf_2026_genai.py`, `epf_2026_ml.py`, `epf_2026_min1.py`, `epf_2026_min2.py` |
-| ECE | `Formation\ECE\2026\grading\` | cf [docs/reference/ece-grading.md](../../docs/reference/ece-grading.md) |
-| ESGF | `Formation\ESGF\2026\grading\` | cf [docs/reference/esgf-grading.md](../../docs/reference/esgf-grading.md) |
+| ECE | `Formation\ECE\2026\grading\` | doc pipeline = `…\ECE\2026\grading\ece-grading.md` (GDrive, privé) |
+| ESGF | `Formation\ESGF\2026\grading\` | doc pipeline = `…\ESGF\2026\grading\esgf-grading.md` (GDrive, privé) |
 
 ## Ce qui reste dans le dépôt (moteur agnostique)
 
@@ -83,5 +83,5 @@ Configs multi-épreuves (Min1/Min2) : voir la clé `epreuves` dans les fichiers 
 ## Voir aussi
 
 - [`gradebook.py`](../gradebook.py) — moteur
-- [docs/reference/ece-grading.md](../../docs/reference/ece-grading.md) — même schéma (ECE)
-- [docs/reference/esgf-grading.md](../../docs/reference/esgf-grading.md) — même schéma (ESGF)
+- `Formation\ECE\2026\grading\ece-grading.md` (GDrive, privé) — même schéma (ECE)
+- `Formation\ESGF\2026\grading\esgf-grading.md` (GDrive, privé) — même schéma (ESGF)
