@@ -77,19 +77,21 @@ formel réel, couple aux preuves :
 
 | Ligne | Théorème | Verdict | Débloqueur |
 |-------|----------|---------|------------|
-| L116 | `tricolorable_invariant` | **REFUTÉ tel qu'énoncé** | Contre-exemple certifié `tricolorable_invariant_fails_under_pr1_model` (Invariant.lean L211) : witness `(d₁={⟨1,2,1,2⟩,2}, d₂={⟨1,2,1,2⟩,⟨3,4,3,4⟩,4})` relié par `ReidemeisterEquiv.step (ReidemeisterStep.r1 …)` (L222), `d₁` non-tricolorable, `d₂` tricolorable. Le step R1 utilise le `Reidemeister1` **libre en ρ** (Reidemeister.lean L71). Récupération = **décision de design coord** : **(C)** câbler `Reidemeister1Connected`/`Reidemeister1'` dans `ReidemeisterStep`/`ReidemeisterEquiv` (exclut les kinks disjoints — `pr1_counterexample_excluded_under_rho_determined` L317 le prouve sur le witness), ou **(X)** accepter #2938 et reframer l'invariant. |
-| L743 | `trefoil_not_unknot` | **REFUTÉ par procuration** | Corollaire de L116. Même fork (C)/(X). Pas de chemin direct : `trefoil_crossing_number` est PROUVÉ mais l'invariance du crossing-number bute sur la même équivalence libre-en-ρ. |
-| L799 | `Knot.unknottingNumber` | **INFRASTRUCTURE (NP-dur)** | Minimisation sur les classes d'équivalence ; gated sur une `ReidemeisterEquiv` non-triviale (fork L116). Scaffolding permanent. |
-| L1330 | `fox` all-distinct §9.1 | **RESEARCH-HOLD** | Héritage Fox du crossing modifié `Y'` sous kink all-distinct. Nécessite la construction colour-symmetry / proper-arc #3003. Sous-cas **all-equal PROUVÉ** (L1280-1327, transfer par `help` per-strand). |
-| L1474 | `col` all-distinct §9.1 | **RESEARCH-HOLD** | Lift ≥ 2 couleurs : la restriction naïve `col₁` peut être **monochrome** si toute la variation chromatique de `col₂` vit sur les arêtes fraîches `{n+1, n+2}` (pathologie du kink disjoint). Nécessite #3003, **ou** un contre-exemple certifié qui réfuterait le backward (non exclu). Sous-cas **all-equal PROUVÉ** (L1421-1469, par l'absurde via `h2col₂`). |
+| L238 | `tricolorable_invariant` | **OPEN (`sorry`)** | Plus réfuté après le rewire Stage 2 (#3999) : `ReidemeisterStep.r1` est recâblé vers la fermeture symétrique du move géométriquement connecté `Reidemeister1Connected`. Le contre-exemple libre-en-ρ `tricolorable_invariant_fails_under_pr1_model` (L342, witness `(d₁={⟨1,2,1,2⟩,2}, d₂={⟨1,2,1,2⟩,⟨3,4,3,4⟩,4})`) vit sur le move RAW `Reidemeister1` et n'est plus `ReidemeisterEquiv`-atteignable (`pr1_counterexample_excluded_under_connected` L508). Décision coord (C) **exécutée** (trio #3997/#3999/#4003 merged). Reste OPEN sur le transfer FORWARD à travers un curl R1 connecté (les 2 arêtes fraîches héritent `color a`). |
+| L944 | `trefoil_not_unknot` | **OPEN (`sorry`)** | Plus « réfuté par procuration ». La route naturelle (`tricolorable_invariant` + `trefoil_tricolorable` + `unknot_not_tricolorable`) est gated par le transfer forward de L238. Les deux pièces composantes sont prouvées sous la vraie condition de Fox (Path B) — atterrit dès que L238 lands. |
+| L1006 | `Knot.unknottingNumber` | **INFRASTRUCTURE (NP-dur)** | Minimisation sur les classes d'équivalence ; gated sur une `ReidemeisterEquiv` non-triviale (fork L238). Scaffolding permanent. |
+| L1581 | `fox` all-distinct §9.1 | **OPEN (`sorry`)** | Héritage Fox du crossing modifié `Y'` sous kink all-distinct. #3003 (Path B, contrainte d'arc-equality) **SHIPPED** ; le résiduel est le **transfert classique backward** genuinely dur (BG-prover ai-01, cible research originelle #2874). Sous-cas **all-equal PROUVÉ** dans le corps de `tricolorable_backward` (L1373). |
+| L1731 | `col` all-distinct §9.1 | **OPEN (`sorry`)** | Lift ≥ 2 couleurs : la restriction naïve `col₁` peut être **monochrome** si toute la variation chromatique de `col₂` vit sur les arêtes fraîches `{n+1, n+2}` (pathologie du kink disjoint). #3003 (Path B) **SHIPPED** ; résiduel = transfert classique backward (BG-prover #2874). Sous-cas **all-equal PROUVÉ** (par l'absurde via `h2col₂`, dans `tricolorable_backward` L1373). |
 
-**Conclusion de l'audit.** Aucun grain de preuve tractable en 1 cycle dans
-`knot_lean` : les deux feuilles « réfutées » (L116/L743) sont un **fork de design**
-au coordinateur (décision (C) câblage vs (X) reframer), les deux résiduels §9.1
-(L1330/L1474) sont le **noyau research-level irréductible** (construction #3003,
-BG-prover ai-01), L799 est de l'infrastructure NP-dure. Le transfer R1 backward
-est en revanche **complet sur son sous-cas all-equal** (`fox`+`col` PROUVÉS) et sur
-`num` (parité `wf`, #3163) — seuls les modes all-distinct du kink restent ouverts.
+**Conclusion de l'audit (post-trio #3997/#3999/#4003, post-Path B #3003).**
+`tricolorable_invariant` (L238) et `trefoil_not_unknot` (L944) ne sont **plus
+réfutés** — le rewire connecté a exclu le witness libre-en-ρ, ils sont OPEN sur le
+transfer FORWARD. Les deux résiduels §9.1 (L1581 fox / L1731 col) restent le **noyau
+research-level irréductible** : transfert classique backward all-distinct (BG-prover
+ai-01, cible #2874), l'arc-equality #3003 étant désormais shipped. `Knot.unknottingNumber`
+(L1006) = infrastructure NP-dure. Le transfer R1 backward est en revanche **complet
+sur son sous-cas all-equal** (`fox`+`col` PROUVÉS) et sur `num` (parité `wf`, #3163)
+— seuls les modes all-distinct du kink restent ouverts.
 
 ## Path B : modèle de Fox classique restauré (2026-06-23, #3003)
 
