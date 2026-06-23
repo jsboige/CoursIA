@@ -114,26 +114,23 @@ theorem tricolorable_invariant :
       ReidemeisterEquiv d₁ d₂ →
       IsTricolorable d₁ ↔ IsTricolorable d₂ := by
   exact sorry
-  -- BLOCKED (Phase 5 — model STILL too coarse after PR1). PR1 (#2929)
-  -- strengthened the move model with `KnotDiagram.wf` on both diagrams and an
-  -- edge-renaming `ρ`. That REMOVED the Phase-3 obstruction (malformed witness
-  -- `⟨7,8,9,10⟩`, excluded by `wf`), but it did NOT make this statement true.
-  -- A SECOND certified counter-example — `tricolorable_invariant_fails_under_pr1_model`
-  -- below (§3b) — proves the biconditional is STILL REFUTED under the PR1 model.
+  -- BLOCKED (forward transfer, Phase 5 PR2). `ReidemeisterStep.r1` was rewired
+  -- (Stage 2, #2874) to the GEOMETRICALLY CONNECTED move `Reidemeister1Connected`,
+  -- so the free-ρ counter-example of §3b is no longer `ReidemeisterEquiv`-reachable
+  -- (it is provably NOT a connected move, §3c-bis / PR #3997). The invariant is
+  -- therefore NO LONGER REFUTED by that witness — it now stands on the sound
+  -- connected equivalence. It is still OPEN: the FORWARD direction is unproven,
+  -- i.e. a tricoloring of `d₁` must EXTEND across a connected R1 curl
+  -- (`Reidemeister1Connected`), so the two fresh edges inherit `color a`.
   --
-  -- Root cause (the real blocker): `wf`'s "every label appears exactly twice"
-  -- condition forces an R1-twist's new crossing `c` to use ONLY the two fresh
-  -- edges `{n+1, n+2}` (labels `1..n` already appear twice in `d₁`, so `c`
-  -- cannot reuse any without breaking the parity), and `ρ` is a FREE injection
-  -- not tied to `c`'s labels. The new crossing's Fox condition is therefore
-  -- DECOUPLED from `d₁`'s coloring — a twist can CREATE tricolorability from
-  -- nothing (or hide the ≥2-colours entirely in the fresh edges while `d₁` is
-  -- forced monochrome). The fix is NOT a transfer lemma but a STRONGER
-  -- constructor model in which `ρ` DETERMINES `c`'s labels: a genuine R1 curl
-  -- on arc `a` is `⟨a, a, n+1, n+2⟩` (one strand is the EXISTING arc `a`),
-  -- whose Fox condition ties the new edges to `color a`. See §3b for the
-  -- witness and the Phase-5 prerequisite. Reference: Fox (1962); Adams, "The
-  -- Knot Book".
+  -- Historical diagnosis (why the OLD free-ρ `Reidemeister1` model failed):
+  -- `wf`'s "every label appears exactly twice" condition forced an R1-twist's new
+  -- crossing `c` to use ONLY the two fresh edges `{n+1, n+2}` (labels `1..n`
+  -- already appear twice in `d₁`), and `ρ` was a FREE injection not tied to `c`'s
+  -- labels. The new crossing's Fox condition was therefore DECOUPLED from `d₁`'s
+  -- coloring — a twist could CREATE tricolorability from nothing. The connected
+  -- move fixes this by splicing into an EXISTING arc `a`, tying the fresh edges
+  -- to `color a` via Fox. Reference: Fox (1962); Adams, "The Knot Book".
 
 /-! ## 3. The trefoil is tricolorable
 
@@ -171,14 +168,19 @@ theorem trefoil_tricolorable : Knot.isTricolorable trefoil := by
   -- At least 2 colors: edge 0 = red, edge 2 = blue, red ≠ blue
   · exact ⟨⟨0, by decide⟩, ⟨2, by decide⟩, by decide⟩
 
-/-! ## 3b. Certified counter-example: `tricolorable_invariant` is STILL FALSE
-under the Phase 5 PR1 move model.
+/-! ## 3b. Certified counter-example: the free-ρ R1 move does NOT preserve
+tricolorability.
 
-This is a *positive* diagnostic result (not a gap). PR1 (#2929) re-modeled
-`Reidemeister1/2/3` to require `KnotDiagram.wf` on both diagrams, which excluded
-the *malformed-witness* counter-example of the Phase 3 model (a crossing
-`⟨7,8,9,10⟩` with labels out of `[1, numEdges]`). But the re-modeling is still
-too coarse to make `tricolorable_invariant` TRUE.
+This is a *positive* diagnostic result (not a gap in the invariant). It certifies
+that the free-ρ `Reidemeister1` move (Phase 5 PR1, #2929) — which carries the
+new crossing `c` and the edge-renaming `ρ` as TWO INDEPENDENT existentials —
+does NOT preserve tricolorability: a single such twist connects a
+non-tricolorable diagram to a tricolorable one. After the Stage-2 rewire
+(#2874), `ReidemeisterStep.r1` uses the GEOMETRICALLY CONNECTED refinement
+`Reidemeister1Connected` instead, and this witness pair is provably excluded
+from that move (§3c-bis, PR #3997); so this counter-example refutes the raw
+free-ρ move `Reidemeister1`, NOT the connected equivalence on which
+`tricolorable_invariant` now stands.
 
 Why. The `wf` "every label appears exactly twice" condition forces an R1-twist's
 new crossing `c` to use ONLY the two fresh edges `{n+1, n+2}` — labels `1..n`
@@ -198,29 +200,31 @@ Witness (refutes the universal biconditional):
   d₂ = { crossings := [⟨1,2,1,2⟩, ⟨3,4,3,4⟩], numEdges := 4 }  — tricolorable.
        Color edges 1,2 = red and 3,4 = blue: Fox holds at both crossings
        (all-equal within each), and ≥2 colours are used.
-  A single R1 twist step connects them (`ReidemeisterEquiv d₁ d₂`), so the
-  biconditional `IsTricolorable d₁ ↔ IsTricolorable d₂` is `(false ↔ true)`.
+  A single free-ρ R1 twist `Reidemeister1 d₁ d₂` connects them, so the
+  biconditional `IsTricolorable d₁ ↔ IsTricolorable d₂` is `(false ↔ true)`
+  for a pair linked by the raw free-ρ move (which is no longer a
+  `ReidemeisterStep` after the Stage-2 rewire).
 
-**Phase 5 prerequisite (the real fix).** Tie the edge-renaming to the crossing:
-make the move constructors carry the geometric splicing so that `ρ` DETERMINES
-`c`'s labels — a genuine R1 curl on arc `a` is `⟨a, a, n+1, n+2⟩` (one strand is
-the EXISTING arc `a`), whose Fox condition constrains the new edges to inherit
-`color a`, which is what makes tricolorability transfer along `ρ`. Then
-re-prove the transfer lemma. Reference: Fox (1962); Adams, "The Knot Book". -/
+**Implemented (Stage 2 of #2874).** The fix is wired into `ReidemeisterStep.r1`:
+the constructor carries the geometric splicing via `Reidemeister1Connected`, so
+that `ρ` DETERMINES `c`'s labels — a genuine R1 curl on arc `a` splices into the
+EXISTING arc `a`, whose Fox condition constrains the new edges to inherit
+`color a`, which is what makes tricolorability transfer along the move. The
+forward transfer (§3e, #3003) remains the open proof obligation.
+Reference: Fox (1962); Adams, "The Knot Book". -/
 
 theorem tricolorable_invariant_fails_under_pr1_model :
     ∃ (d₁ d₂ : KnotDiagram),
-      ReidemeisterEquiv d₁ d₂ ∧
+      Reidemeister1 d₁ d₂ ∧
       ¬ IsTricolorable d₁ ∧
       IsTricolorable d₂ := by
   -- Witness pair.
   refine' ⟨{ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial },
            { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial },
            ?_, ?_, ?_⟩
-  -- (a) ReidemeisterEquiv d₁ d₂: a single R1 twist step, witness c = ⟨3,4,3,4⟩.
+  -- (a) Reidemeister1 d₁ d₂: a single free-ρ R1 twist, witness c = ⟨3,4,3,4⟩.
   --     d₁ = {[⟨1,2,1,2⟩], numEdges = 2}; d₂ = {[⟨1,2,1,2⟩, ⟨3,4,3,4⟩], numEdges = 4}.
-  · refine' ReidemeisterEquiv.step (ReidemeisterStep.r1 ?_)
-    refine' ⟨?_, ?_, ⟨⟨3, 4, 3, 4⟩, ⟨?_, ?_⟩⟩⟩
+  · refine' ⟨?_, ?_, ⟨⟨3, 4, 3, 4⟩, ⟨?_, ?_⟩⟩⟩
     · -- d₁.wf = true: labels 1,2 each appear twice across [1,2,1,2].
       decide
     · -- d₂.wf = true: labels 1,2,3,4 each appear twice across [1,2,1,2,3,4,3,4].
