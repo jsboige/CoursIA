@@ -1307,3 +1307,11 @@ theorem banzhaf_index_symmetric (G : TUGame N) (i j : N)
 theorem banzhaf_index_dummy_zero (G : TUGame N) (i : N)
     (h : DummyPlayer G i) : BanzhafIndex G i = 0 := by
   simp only [BanzhafIndex, dummy_banzhaf_raw_zero G i h, Nat.cast_zero, zero_div]
+
+/-- The normalized Banzhaf index is non-negative: `BanzhafRaw` is a natural count
+    (>= 0 when cast to ℝ) and the normalizing denominator `2 ^ (card N - 1) > 0`.
+    Real BG-prover target (#1453, cycle 65), stacks on #4071 (BanzhafIndex def).
+    Slightly harder than the warm-ups: needs `div_nonneg` plus a positivity
+    argument on the denominator. -/
+theorem banzhaf_index_nonneg (G : TUGame N) (i : N) : 0 ≤ BanzhafIndex G i := by
+  sorry
