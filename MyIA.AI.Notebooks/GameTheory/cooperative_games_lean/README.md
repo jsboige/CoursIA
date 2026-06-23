@@ -87,7 +87,11 @@ Mathlib4 (toolchain `v4.30.0-rc2`).
   définition `Critical G i S` (le joueur `i` est critique pour la coalition `S` lorsque
   `i ∈ S`, `G.v S = 1` mais `G.v (S.erase i) = 0`) et sur l'indice brut
   `BanzhafRaw G i` qui compte les coalitions critiques via un filtre sur `Finset.univ`
-  (PR #4011).
+  (PR #4011). L'**indice de Banzhaf normalisé** `BanzhafIndex G i = BanzhafRaw G i / 2^(n-1)`
+  (probabilité que `i` soit pivot dans une coalition contenant `i` tirée uniformément) hérite
+  des deux propriétés clés : `banzhaf_index_symmetric` (joueurs interchangeables ⟹ indices
+  normalisés égaux, analogue de `shapley_symmetric`) et `banzhaf_index_dummy_zero` (joueur
+  dummy ⟹ indice normalisé nul).
 - **Cœur + théorème de Bondareva-Shapley** (`Basic.lean` + `ConeKernel.lean`) : jeu
   coopératif, fonction caractéristique, le Cœur et la condition de jeu équilibré (balanced),
   avec la direction `←` (balanced ⇒ Cœur non vide) **entièrement prouvée** par séparation de

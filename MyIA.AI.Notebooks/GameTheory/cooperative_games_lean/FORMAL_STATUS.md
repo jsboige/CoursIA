@@ -8,10 +8,10 @@
 | Mathlib | pinned via lake-manifest.json |
 | Total sorry | **0** |
 | Honest unprovable (in Mathlib) | **0** |
-| Total lines | ~2408 (Basic 594 + ConeKernel 733 + Shapley 1081) |
-| Total theorems | 25 (Basic 8 + ConeKernel 4 + Shapley 13) |
+| Total lines | ~2628 (Basic 594 + ConeKernel 733 + Shapley 1301) |
+| Total theorems | 27 (Basic 8 + ConeKernel 4 + Shapley 15) |
 | Total lemmas | 10 (Basic 2 + ConeKernel 8) |
-| Total definitions | 40 (Basic 13 + ConeKernel 4 + Shapley 23) |
+| Total definitions | 41 (Basic 13 + ConeKernel 4 + Shapley 24) |
 
 **Note**: Toolchain bumped to v4.30-0-rc2 (PR #1015). PR #1020's "prove bondareva_shapley_backward" was a **`apply?` placeholder** (non-proof); PR #2959 refactored honestly to isolate the irreducible LP-dual kernel `hb_witness` as a named sorry. That kernel — long tagged **INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION** — was then **closed across PRs #3933 → #3954** by building the cone-separation machinery in `CooperativeGames/ConeKernel.lean` (Farkas via `ProperCone.hyperplane_separation_point` from Mathlib `Analysis.Convex.Cone.Dual`). `hb_witness` is now a fully-proved `have` at `Basic.lean:348`. The project is **COMPLETE (0 sorry, 0 axiom beyond Lean's core)**.
 
@@ -68,15 +68,15 @@ and decoupled from the cooperative-game structure), wired into `Basic.lean` by P
 
 | Metric | Value |
 |--------|-------|
-| Definitions | 23 |
-| Theorems | 13 |
-| Lines | 1081 |
+| Definitions | 24 |
+| Theorems | 15 |
+| Lines | 1301 |
 | sorry | **0** |
 | Status | FORMAL-COMPLETE |
 
 Key definitions: `Solution`, `Efficiency`, `Symmetry`, `NullPlayerAxiom`, `Additivity`,
 `shapleyCoef`, `shapleyValue`, `shapleySolution`, `WeightedVotingGame`, `Critical`,
-`BanzhafRaw`, `VetoPlayer`, `Dictator`, `DummyPlayer`.
+`BanzhafRaw`, `BanzhafIndex`, `VetoPlayer`, `Dictator`, `DummyPlayer`.
 
 Proved theorems (sorry resolved):
 - `shapley_null_player` (PR earlier in 2026-04)
@@ -88,6 +88,8 @@ Proved theorems (sorry resolved):
 - `dummy_shapley_zero` (dummy players get zero Shapley value)
 - `dummy_banzhaf_raw_zero` (PR #4011 — dummy players get zero raw Banzhaf index)
 - `banzhaf_raw_symmetric` (PR #4037, commit `ba3b169e` — symmetric players have equal raw Banzhaf indices)
+- `banzhaf_index_symmetric` (normalized Banzhaf index treats symmetric players equally)
+- `banzhaf_index_dummy_zero` (dummy players get zero normalized Banzhaf index)
 
 ## Theorem Inventory
 
@@ -114,6 +116,8 @@ Proved theorems (sorry resolved):
 | `dummy_shapley_zero` | Shapley.lean | Dummy players get zero Shapley value |
 | `dummy_banzhaf_raw_zero` | Shapley.lean | Dummy players get zero raw Banzhaf index (PR #4011) |
 | `banzhaf_raw_symmetric` | Shapley.lean | Symmetric players have equal raw Banzhaf index (PR #4037) |
+| `banzhaf_index_symmetric` | Shapley.lean | Normalized Banzhaf index treats symmetric players equally |
+| `banzhaf_index_dummy_zero` | Shapley.lean | Dummy players get zero normalized Banzhaf index |
 
 ### Partially Proved (contains sorry)
 
