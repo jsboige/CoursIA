@@ -5,6 +5,17 @@
 **Reference**: [AUDIT_QC_CLOUD.md](audits/AUDIT_QC_CLOUD.md) for full classification
 **Curriculum V2**: [Curriculum_V2_Meta_Analysis.md](../ML-Training-Pipeline/docs/Curriculum_V2_Meta_Analysis.md) for full methodology + stage results
 
+> **Lecture vérifiée sous frais réels (#1630, 2018-2025).** Les Sharpes ci-dessous sont des valeurs **catalogue (pré-frais, fenêtres variables)** issues du QC Cloud API. La campagne #1630 a re-vérifié 36+ de ces stratégies sous frais IBKR réels sur fenêtre alignée 2018-2025 — plusieurs « Top Performers » **s'effondrent**, d'autres **tiennent** :
+
+| Stratégie (table ci-dessous) | Sharpe catalogue | Sharpe aligné | Verdict |
+|-------------------------------|------------------|---------------|---------|
+| EMA-Cross-Alpha | 0.996 | **-0.010** | effondrement (overfitting, PSR 0.5%) |
+| LongShortHarvest | 1.505 | **1.64** | tient (PSR 98.7%, le plus robuste) |
+| Framework_Composite_TrendWeather | 1.156 | **0.948** | tient (PSR 56.6%, meilleur composite) |
+| Framework_Composite_EMATrend | 0.867 | **0.611** | tient (caveat Mag7 survivorship) |
+
+Leaders backbone no-ML alignés : **composite-c2 0.574**, **FamaFrench 0.445**. Discriminateur : résistance aux frais = *realized-turnover* (fréquence × taille/trade × homogénéité des frais du panier). Catalogue vérifié complet + comparatifs best-vs-aligned : [docs/qc/qc-comparative-backtests.md](../../../docs/qc/qc-comparative-backtests.md) (See #1630).
+
 ## Top Performers (Sharpe > 0.8)
 
 | # | Strategy | ID | Sharpe | BTs | Category |
@@ -39,6 +50,13 @@
 | 8 | Framework_Composite_EMATrend | 28911253 | **0.867** | 6 | Framework |
 | 9 | EMA-Cross-Stocks | 28789946 | **0.867** | 2 | Alpha |
 | 10 | CSharp-BTC-MACD-ADX | 30751067 | **0.787** | 8 | Alpha |
+
+> **Caveat — ces deux classements sont pré-frais.** Les deux tableaux ci-dessus trient par Sharpe **catalogue**. Sous frais réels alignés (#1630, 2018-2025) :
+> - **EMA-Cross-Alpha** (0.996, rang 4-6) → **-0.010 aligné** (effondrement total, overfitting PSR 0.5%) — il n'est **pas** un Top Performer réel.
+> - **Multi-Layer-EMA** (0.900) → documenté **NON ROBUSTE** (chute à 0.38 hors bulle crypto 2017), edge exclusivement bull-market.
+> - Les classés **Long-Short Harvest (1.505→1.64)** et **TrendWeather (1.156→0.948)** **conservent** leur rang sous frais réels — ce sont les vrais Top Performers.
+>
+> Le classement "pré-frais" surestime systématiquement les stratégies à turnover élevé (EMA-crossover multi-actifs) et sous-estime les composites equity-only fee-homogeneous. Comparatifs vérifiés : [docs/qc/qc-comparative-backtests.md](../../../docs/qc/qc-comparative-backtests.md) (See #1630).
 
 ## Top 5 by Backtest Count (most iterated projects)
 
