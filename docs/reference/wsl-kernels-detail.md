@@ -61,6 +61,43 @@ La détection de la régression du 2026-05-27 (kernel.json pointant vers l'ancie
 
 Test : `python scripts/lean/tests/test_lean_kernel_check.py` (4 cas : ancien bash → error, wrapper v5 → ok, inconnu / absent → warning).
 
+### Architecture du kernel `lean4-wsl`
+
+```
+Windows (Jupyter)                  WSL (Ubuntu)
+   kernel.json ──────────────────> ~/.lean4-kernel-wrapper.py (v5)
+   %APPDATA%/jupyter/                ↓
+     kernels/lean4-wsl/            ~/.lean4-venv/bin/python3 -m lean4_jupyter
+                                    cd ~/lean-projects/notebook_context
+                                    REPL: ~/.elan/bin/repl
+```
+
+Le wrapper Python v5 `~/.lean4-kernel-wrapper.py` gère la conversion Windows→WSL des paths et les permissions NTFS. L'ancien wrapper bash `~/lean4-jupyter-wrapper.sh` est **OBSOLETE** — ne pas l'utiliser. Scripts de setup sous-jacents (orchestrés par `setup_lean4_all.py`) : `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh` (WSL : elan, Lean 4 stable, venv `~/.lean4-venv`, lean4_jupyter, REPL), `setup_lean4_kernel.ps1` (registration `%APPDATA%/jupyter/kernels/lean4-wsl/`), `SymbolicAI/Lean/scripts/validate_lean_setup.py` (`--wsl`/`--windows`), notebook `SymbolicAI/Lean/Lean-1-Setup.ipynb`.
+
+### Diagnostic manuel (commandes)
+
+```powershell
+# Verifier registration kernel — doit pointer vers ~/.lean4-venv/bin/python3 ~/.lean4-kernel-wrapper.py
+wsl -d Ubuntu -- cat ~/.local/share/jupyter/kernels/lean4-wsl/kernel.json
+
+# Verifier REPL
+wsl -d Ubuntu -- test -f ~/.elan/bin/repl && echo "OK" || echo "MISSING"
+
+# Verifier venv + module
+wsl -d Ubuntu -- ~/.lean4-venv/bin/python3 -c "import lean4_jupyter; print('OK')"
+
+# Tester kernel startup (timeout 90s)
+wsl -d Ubuntu -- bash -c "cd ~/lean-projects/notebook_context && ~/.lean4-venv/bin/python3 -c \"
+from jupyter_client.manager import KernelManager
+km = KernelManager(kernel_name='lean4-wsl')
+km.start_kernel()
+kc = km.client(); kc.start_channels()
+kc.wait_for_ready(timeout=90)
+print('KERNEL READY')
+kc.stop_channels(); km.shutdown_kernel()
+\""
+```
+
 ## Notes complémentaires
 
 - Cold start .NET Interactive : premier démarrage peut timeout (30-60s), retry une fois
