@@ -1273,3 +1273,29 @@ theorem banzhaf_raw_symmetric (G : TUGame N) (i j : N)
       (Finset.univ.filter fun S => Critical G i S).card :=
     Finset.card_image_of_injective _ hσ_inj
   rw [himage, hcard]
+
+/-! ## Normalized Banzhaf index -/
+
+/-- The normalized (absolute Penrose-Banzhaf) power index: the raw Banzhaf count divided
+    by `2 ^ (n - 1)`, the number of coalitions that contain the player (each of the other
+    `n - 1` players is independently in or out). Equivalently, the probability that `i` is
+    pivotal when a coalition containing `i` is drawn uniformly at random. Normalization
+    makes the index comparable across player sets of different sizes. -/
+noncomputable def BanzhafIndex (G : TUGame N) (i : N) : ℝ :=
+  (BanzhafRaw G i : ℝ) / (2 : ℝ) ^ (Fintype.card N - 1)
+
+/-- **Symmetry of the normalized Banzhaf index.** Symmetric (interchangeable) players have
+    equal normalized Banzhaf indices: they have equal raw counts (`banzhaf_raw_symmetric`)
+    and share the same normalizing denominator. This mirrors `shapley_symmetric`: the
+    symmetry axiom is shared by every reasonable power index. -/
+theorem banzhaf_index_symmetric (G : TUGame N) (i j : N)
+    (h : Solution.SymmetricPlayers G i j) :
+    BanzhafIndex G i = BanzhafIndex G j := by
+  simp only [BanzhafIndex]
+  rw [banzhaf_raw_symmetric G i j h]
+
+/-- A dummy player has a zero normalized Banzhaf index: it is pivotal in no coalition, so
+    its raw count (and hence its normalized share) is zero. -/
+theorem banzhaf_index_dummy_zero (G : TUGame N) (i : N)
+    (h : DummyPlayer G i) : BanzhafIndex G i = 0 := by
+  simp only [BanzhafIndex, dummy_banzhaf_raw_zero G i h, Nat.cast_zero, zero_div]

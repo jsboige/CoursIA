@@ -80,7 +80,12 @@ proved in both directions). It builds with `lake build CooperativeGames` on Math
   has zero raw Banzhaf index). The Banzhaf framework rests on the definition
   `Critical G i S` (player `i` is critical for coalition `S` when `i ∈ S`, `G.v S = 1`
   but `G.v (S.erase i) = 0`) and on the raw index `BanzhafRaw G i` counting critical
-  coalitions via a filter over `Finset.univ` (PR #4011).
+  coalitions via a filter over `Finset.univ` (PR #4011). The **normalized Banzhaf index**
+  `BanzhafIndex G i = BanzhafRaw G i / 2^(n-1)` (the probability that `i` is pivotal in a
+  uniformly-drawn coalition containing `i`) inherits the two key properties:
+  `banzhaf_index_symmetric` (interchangeable players have equal normalized indices, the
+  analogue of `shapley_symmetric`) and `banzhaf_index_dummy_zero` (a dummy player has a
+  zero normalized index).
 - **Core + Bondareva-Shapley theorem** (`Basic.lean` + `ConeKernel.lean`): cooperative
   game, characteristic function, the Core, and the balanced-game condition, with the `←`
   direction (balanced ⇒ Core nonempty) **fully proved** by cone separation.
