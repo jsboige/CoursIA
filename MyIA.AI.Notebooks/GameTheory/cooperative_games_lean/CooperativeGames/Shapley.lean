@@ -1025,7 +1025,8 @@ def Critical (G : TUGame N) (i : N) (S : Finset N) : Prop :=
     the bullet-sorry stub format fixes GoalExtract (cycle 63). -/
 theorem critical_implies_mem (G : TUGame N) (i : N) (S : Finset N) :
     Critical G i S → i ∈ S := by
-  sorry
+  intro h
+  exact h.1
 
 /-- `Critical G i` is decidable via Classical reasoning (the `TUGame.v` comparisons are
     noncomputable reals). Promoted to a global instance so that `BanzhafRaw` and any
