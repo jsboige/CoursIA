@@ -5,7 +5,7 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
 Epic #2874 (Phase 5 en cours). Toolchain `v4.31.0-rc1`.
 
-## État des sorries (vérifié 2026-06-17, 18 réels — 16 + 2 du transfer backward PARTIEL #3124, `num` prouvé)
+## État des sorries (vérifié 2026-06-23, 18 réels — 16 + 2 du transfer backward PARTIEL #3124, `num` prouvé)
 
 Deux comptes, selon le filtre :
 
@@ -29,10 +29,10 @@ Deux comptes, selon le filtre :
   occurrences dans les commentaires de diagnostic (ex. le commentaire sur
   `KnotDiagram.wf` dans `Basic.lean`).
 
-La CI `.github/workflows/lean-knot.yml` gate sur le **prose-header baseline 28**
-(bump 25→28 dans #3124, justifié par la décomposition du transfer backward) :
-toute PR qui ajoute un sorry réel fait monter les deux comptes et échoue la CI,
-sauf justification documentée dans le body PR.
+La CI `.github/workflows/lean-knot.yml` gate sur le **prose-header baseline 27**
+(bump 25→28 dans #3124 pour la décomposition du transfer backward, puis **baissé à 27**
+après la preuve `num` #3163) : toute PR qui ajoute un sorry réel fait monter les
+deux comptes et échoue la CI, sauf justification documentée dans le body PR.
 
 ## Résultats par statut réel (vérifié contre le code)
 
@@ -66,6 +66,29 @@ sauf justification documentée dans le body PR.
 - [ ] Lidman 11n102 : unknotting number = 2 (Heegaard-Floer) — 3 sorry, scaffolding
 - [ ] `reidemeister_theorem` — équivalence Reidemeister ↔ isotopie ambiante
   (topologie PL des 3-variétés, hors portée Mathlib actuel) — 2 sorry, permanent
+
+### Verdict par sorry (audit G.1, 2026-06-23)
+
+Re-vérification firsthand contre le code (`Reidemeister.lean` + `Invariant.lean`),
+par sorry réel des 5 feuilles ouvertes d'`Invariant.lean`. Classe chaque feuille
+en **PROUVEABLE** / **REFUTÉ** / **RESEARCH-HOLD** / **INFRASTRUCTURE** — l'état
+formel réel, couple aux preuves :
+
+| Ligne | Théorème | Verdict | Débloqueur |
+|-------|----------|---------|------------|
+| L116 | `tricolorable_invariant` | **REFUTÉ tel qu'énoncé** | Contre-exemple certifié `tricolorable_invariant_fails_under_pr1_model` (Invariant.lean L211) : witness `(d₁={⟨1,2,1,2⟩,2}, d₂={⟨1,2,1,2⟩,⟨3,4,3,4⟩,4})` relié par `ReidemeisterEquiv.step (ReidemeisterStep.r1 …)` (L222), `d₁` non-tricolorable, `d₂` tricolorable. Le step R1 utilise le `Reidemeister1` **libre en ρ** (Reidemeister.lean L71). Récupération = **décision de design coord** : **(C)** câbler `Reidemeister1Connected`/`Reidemeister1'` dans `ReidemeisterStep`/`ReidemeisterEquiv` (exclut les kinks disjoints — `pr1_counterexample_excluded_under_rho_determined` L317 le prouve sur le witness), ou **(X)** accepter #2938 et reframer l'invariant. |
+| L743 | `trefoil_not_unknot` | **REFUTÉ par procuration** | Corollaire de L116. Même fork (C)/(X). Pas de chemin direct : `trefoil_crossing_number` est PROUVÉ mais l'invariance du crossing-number bute sur la même équivalence libre-en-ρ. |
+| L799 | `Knot.unknottingNumber` | **INFRASTRUCTURE (NP-dur)** | Minimisation sur les classes d'équivalence ; gated sur une `ReidemeisterEquiv` non-triviale (fork L116). Scaffolding permanent. |
+| L1330 | `fox` all-distinct §9.1 | **RESEARCH-HOLD** | Héritage Fox du crossing modifié `Y'` sous kink all-distinct. Nécessite la construction colour-symmetry / proper-arc #3003. Sous-cas **all-equal PROUVÉ** (L1280-1327, transfer par `help` per-strand). |
+| L1474 | `col` all-distinct §9.1 | **RESEARCH-HOLD** | Lift ≥ 2 couleurs : la restriction naïve `col₁` peut être **monochrome** si toute la variation chromatique de `col₂` vit sur les arêtes fraîches `{n+1, n+2}` (pathologie du kink disjoint). Nécessite #3003, **ou** un contre-exemple certifié qui réfuterait le backward (non exclu). Sous-cas **all-equal PROUVÉ** (L1421-1469, par l'absurde via `h2col₂`). |
+
+**Conclusion de l'audit.** Aucun grain de preuve tractable en 1 cycle dans
+`knot_lean` : les deux feuilles « réfutées » (L116/L743) sont un **fork de design**
+au coordinateur (décision (C) câblage vs (X) reframer), les deux résiduels §9.1
+(L1330/L1474) sont le **noyau research-level irréductible** (construction #3003,
+BG-prover ai-01), L799 est de l'infrastructure NP-dure. Le transfer R1 backward
+est en revanche **complet sur son sous-cas all-equal** (`fox`+`col` PROUVÉS) et sur
+`num` (parité `wf`, #3163) — seuls les modes all-distinct du kink restent ouverts.
 
 ## Phase 5 — Re-modélisation des mouvements de Reidemeister
 
