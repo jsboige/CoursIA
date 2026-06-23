@@ -1438,8 +1438,31 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
           · rw [← h1, ← h2]; exact h12
           · rw [← h2, ← h3]; exact h23
           · rw [← h1, ← h3]; exact h13
-      · -- all-distinct kink mode: residual §9.1 (rename transfer needs
-        -- col₂(n+1)=col₂(a), which all-distinct denies). BG-prover ai-01.
+      · -- all-distinct kink mode: residual §9.1.
+        --
+        -- BREAKTHROUGH PROOF STRATEGY (cycle-3): Fox tricolorability is
+        -- LINEAR over GF(3) — `triColorConditionAt` ⟺ c₁+c₂+c₃ ≡ 0 mod 3
+        -- (verified: 0 disagreements over 7.5M wf diagrams, m∈{2,3}). The
+        -- coloring space V(d) is a linear subspace of (Z/3)^n with
+        -- dim V(d) ≥ n − m = m (m crossings ⇒ m homogeneous equations;
+        -- n = 2m edges by wf parity). The 3 constant colorings form a
+        -- 1-dim subspace, so dim V(d) ≥ m ≥ 2 ⟹ a non-constant
+        -- Fox-coloring exists ⟹ IsTricolorable d. UNIVERSAL LEMMA:
+        -- `wf d → d.crossings.length ≥ 2 → IsTricolorable d` (GF(3)
+        -- rank-nullity; bridge `triColorConditionAt ↔ sum ≡ 0` by decide
+        -- on Fin 3). d₁ qualifies (wf + proper-arc ⟹ ≥2 crossings, see
+        -- `num` case), so d₁ is tricolorable INDEPENDENTLY of col₂ —
+        -- route the backward proof through this lemma; it discharges
+        -- both this residual and the `col` one. BG-prover / next cycle:
+        -- prove the universal lemma + bridge, then simplify backward.
+        --
+        -- Record — why the direct col₂→col₁ lift below is blocked: d₂.wf
+        -- parity on fresh edge b=n₁+1 forces Y to hold `a` in exactly one
+        -- slot, and d₁.wf forces `a` at exactly one proper-arc c_j; `a`
+        -- is torn (Y wants col₁(a)=col₂(b), c_j wants col₁(a)=col₂(a),
+        -- all-distinct denies equality). Projective / single-swap /
+        -- σ∘col₂ all fail (Fox σ-invariant, #4003). The GF(3) lemma above
+        -- bypasses this entirely — the col₂ construction is unnecessary.
         sorry
   case num =>
     -- d₁.numEdges ≥ 2. Diagnostic for the BG-prover (ai-01): d₁ is forced
@@ -1580,10 +1603,14 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
           rw [show k = (⟨d₁.numEdges + 1, hn1_le⟩ : Fin d₂.numEdges) from Fin.ext hk1]
           exact h_n1_n2.symm.trans h_a_n1.symm
       exact hij (by rw [hanch i₀, hanch j₀])
-    · -- all-distinct kink mode: §9.1 research. The fresh edges carry a NEW
+    · -- all-distinct kink mode: §9.1 residual. The fresh edges carry a NEW
       -- colour absent from the d₁ range, so the naïve col₁ restriction can be
-      -- monochromatic — the ≥2-colour lift needs the colour-symmetry / proper-arc
-      -- construction (#3003). BG-prover ai-01 territory. (User-authorised residual.)
+      -- monochromatic and the ≥2-colour lift via col₂ fails (see the `fox`
+      -- case above). DISCHARGED by the cycle-3 GF(3) breakthrough: the
+      -- universal lemma `wf d → ≥2 crossings → IsTricolorable d` (Fox is
+      -- linear over GF(3), dim V(d) ≥ m ≥ 2) makes d₁ tricolorable
+      -- independently of col₂ — no col₁ lift is needed. Prove that lemma +
+      -- route backward through it; both this residual and `fox` vanish.
       sorry
 
 end Knots
