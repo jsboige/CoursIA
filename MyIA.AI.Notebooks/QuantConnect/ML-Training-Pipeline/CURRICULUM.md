@@ -14,6 +14,13 @@ Anti-bias multi-asset training pipeline for quantitative trading research.
 > Recommended portfolio: S3+S4 v2 monthly rebalance, Sharpe ~1.12.
 > Gate FERMEE 2026-05-16.
 
+> **>> FINAL VERDICT (2026-06-23, consolidated in [`docs/archive/ml-trading-state.md`](../../../docs/archive/ml-trading-state.md) + [`REGISTRY.md`](REGISTRY.md) ladder #1409):**
+> - **Direction / return forecasting is EXHAUSTED.** POST-FIX verdict = **0 BEATS / 14 FAILS** across MTGNN/LSTM/Transformer/PatchTST/iTransformer/Mamba/STGAT on SPY/BTC/multi. Do NOT re-attempt sequence-to-one direction models (DLinear/NLinear/PatchTST variants) — saturated, cf `ml-trading-state.md` §"A abandonner".
+> - **The only surviving edges are vol-forecasting + a learned action policy**: the 4 V2 KEEPERS above (M12 HAR-RV-J → QC production `HAR-RV-J-Kelly` #83; M15 LSTM h=32 4-seed hardened; S3 HMM; S4 v2 Ridge) + **L4 Decision Transformer** (24/26, the sole direction BEAT via learned buy/hold/sell — multi-seed extension BG ai-01).
+> - **Production candidate = S3+S4 v2 monthly rebalance + vol-targeting 10 % risk overlay** (Sharpe ~1.12), NOT direction-ML.
+>
+> The "IN PROGRESS" statuses on Stages 1/3/3a below are retained as historical record but are **DONE — NEGATIVE**; their "Next" bullets describe documented dead ends, not open work.
+
 **Principle**: No single-asset, single-regime training. All stages use diversified data
 from 7 asset classes (see anti-bias policy below).
 
@@ -72,7 +79,7 @@ No in-sample Sharpe reporting. All DQN Sharpe values marked INVALID until #703 r
 **SPY pathology confirmed**: 58.73% majority class makes SPY the worst asset for ML.
 BTC (+1.71pp), TLT (+1.16pp), GLD (+2.67pp) show genuine edges over their baselines.
 
-### Stage 1: Multi-Asset Training (IN PROGRESS)
+### Stage 1: Multi-Asset Training (DONE — DIRECTION-ML EXHAUSTED)
 
 Cross-asset walk-forward baselines on 7 assets (SPY, BTC-USD, GLD, TLT, EFA, EEM, DBC).
 
@@ -82,9 +89,9 @@ Cross-asset walk-forward baselines on 7 assets (SPY, BTC-USD, GLD, TLT, EFA, EEM
 - SPY confirmed pathological (-6.08pp vs majority)
 - MTGNN only model beating SPY baseline (+0.05pp)
 
-**Next**: Crypto panier 10-coin dataset ready (PR #776). Cross-asset features, regime-conditional models.
+**Status (2026-06-23)**: CLOSED NEGATIVE — direction-ML exhausted (0 BEATS POST-FIX). The crypto panier (Stage 3a) + GNN confirmed the signal limitation; the surviving edge is vol-forecasting (M12/M15). The former "Next" (cross-asset direction features) is a documented dead end — do NOT re-attempt.
 
-### Stage 3a: Crypto Panier Anti-Bias (IN PROGRESS)
+### Stage 3a: Crypto Panier Anti-Bias (DONE — NEGATIVE)
 
 10-coin daily OHLCV dataset (2018-2026) for multi-asset training.
 
@@ -124,7 +131,7 @@ Majority class baseline: 51.68% (down days).
 - Graph structure does not overcome the fundamental signal limitation (cf Stage 3 conclusion)
 - Training: CPU-only, thermal-safe (GPU forbidden on ai-01, idle 77C)
 
-**Next**: Walk-forward 5-fold evaluation pending. Walk-forward may reveal regime-dependent edges.
+**Status (2026-06-23)**: CLOSED NEGATIVE — 0/3 GNN architectures beat majority (RGCN best -1.7 pp). Graph structure does not overcome the fundamental signal limitation (cf Stage 3). The former "Next" (walk-forward revealing regime edges) was superseded by the consolidated POST-FIX verdict (0 BEATS).
 
 ### Stage 2: Feature Engineering (DONE)
 
@@ -144,7 +151,7 @@ Advanced features beyond basic OHLCV.
 
 **Validated**: Full panier (19 symbols, 7 asset classes) built end-to-end in ~13s.
 
-### Stage 3: Ensemble Methods (IN PROGRESS)
+### Stage 3: Ensemble Methods (DONE — NEGATIVE)
 
 Combine multiple model types.
 
@@ -193,7 +200,7 @@ Combine multiple model types.
 - Mutual information of top features = 0.015 (near random) — daily direction from OHLCV features is noise-predominant
 - 5-day forward horizon does not improve signal
 - **Conclusion**: Daily direction prediction from OHLCV-derived features is insufficient for consistent ML edge. 3/10 wins likely statistical noise.
-- **Next**: Shift to return magnitude prediction (regression) or multi-day holding period returns, or move to Stage 4 with transaction cost modeling
+- **Status (2026-06-23)**: CLOSED NEGATIVE — MoE 3/10 wins = statistical noise (mutual information of top features = 0.015, near random). The former "Next" (return-magnitude regression) is subsumed by the vol-forecast track (M12/M15): predicting *variance* works, predicting *return sign/magnitude* does not, cf FINAL VERDICT above + `ml-trading-state.md`
 
 ### Stage 4: Walk-Forward Optimization
 
@@ -242,8 +249,8 @@ Deploy to QuantConnect paper trading.
 
 See [REGISTRY.md](REGISTRY.md) for complete checkpoint catalog.
 
-Current: 20 SPY-only checkpoints (all biased). 7 cross-asset walk-forward baselines (PR #724).
-Target: 50+ checkpoints across panier.
+Current: 70 checkpoints (20 legacy SPY-only ARCHIVED 2026-06-12 + 50 panier baselines). The POST-FIX verdict (0 BEATS/14 FAILS) + anti-bias audit make the 20 legacy obsolete as baselines.
+Target MET + CLOSED: the panier verdict (18 BEATS crypto-selective / 32 FAIL) is consolidated in REGISTRY.md; production candidates are the 4 KEEPERS (M12/M15/S3/S4) + L4 DT, NOT new direction checkpoints.
 
 ---
 
