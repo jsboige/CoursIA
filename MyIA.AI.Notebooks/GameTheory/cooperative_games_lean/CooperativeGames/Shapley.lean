@@ -1080,3 +1080,196 @@ theorem dummy_banzhaf_raw_zero (G : TUGame N) (i : N) (h : DummyPlayer G i) :
   simp only [BanzhafRaw]
   rw [Finset.card_eq_zero, Finset.filter_eq_empty_iff]
   exact fun S _ hcrit => hneq S hcrit
+
+/-- Coalitional swap used by `banzhaf_raw_symmetric`. In a coalition `S`, replace the lone
+    member of `{i, j}` by the other (if `S` contains exactly one of `i, j`); coalitions
+    containing both or neither are fixed. It is an involution and preserves the game value
+    whenever `i, j` are symmetric in `G`. -/
+private def banzhafSwap (i j : N) (S : Finset N) : Finset N :=
+  if i ∈ S ∧ j ∉ S then (S.erase i) ∪ {j}
+  else if j ∈ S ∧ i ∉ S then (S.erase j) ∪ {i}
+  else S
+
+/-- **Symmetry of the raw Banzhaf index.**
+
+    Symmetric (interchangeable) players are critical in equally many coalitions, hence
+    have equal raw Banzhaf indices. This is the Banzhaf analog of `shapley_symmetric`: the
+    symmetry axiom is shared by every reasonable power index (Banzhaf as much as Shapley),
+    even though only the full four-axiom package characterizes Shapley uniquely.
+
+    The bijection `banzhafSwap i j` swaps `i ↔ j` throughout each coalition. It is an
+    involution, preserves the game value (by `SymmetricPlayers`, after a case split on
+    `S ∩ {i, j}`), and exchanges "critical for `i`" with "critical for `j`" (membership
+    swaps, value is invariant, and `(σ S) \\ {j} = σ (S \\ {i})`). The two
+    critical-coalition filters are therefore in bijection, so their cardinalities — the raw
+    Banzhaf indices — coincide. -/
+theorem banzhaf_raw_symmetric (G : TUGame N) (i j : N)
+    (h : Solution.SymmetricPlayers G i j) :
+    BanzhafRaw G i = BanzhafRaw G j := by
+  classical
+  by_cases heq : i = j
+  · subst heq; rfl
+  -- The hypothesis is symmetric in `i, j`.
+  have hsymm : Solution.SymmetricPlayers G j i := fun S hj hi => (h S hi hj).symm
+  -- Identity `(S.erase k) ∪ {k} = S` for `k ∈ S`.
+  have aux_readd (k : N) {S : Finset N} (hk : k ∈ S) : (S.erase k) ∪ {k} = S := by
+    rw [Finset.union_comm, ← Finset.insert_eq, Finset.insert_erase hk]
+  -- Behavior of `banzhafSwap i j` in each of the four membership cases.
+  have swap_both {S : Finset N} (hSi : i ∈ S) (hSj : j ∈ S) : banzhafSwap i j S = S := by
+    simp only [banzhafSwap]
+    rw [if_neg (fun H => H.2 hSj), if_neg (fun H => H.2 hSi)]
+  have swap_neither {S : Finset N} (hni : i ∉ S) (hnj : j ∉ S) : banzhafSwap i j S = S := by
+    simp only [banzhafSwap]
+    rw [if_neg (fun H => hni H.1), if_neg (fun H => hnj H.1)]
+  have swap_i_only {S : Finset N} (hSi : i ∈ S) (hnj : j ∉ S) :
+      banzhafSwap i j S = (S.erase i) ∪ {j} := by
+    simp only [banzhafSwap]; rw [if_pos ⟨hSi, hnj⟩]
+  have swap_j_only {S : Finset N} (hni : i ∉ S) (hSj : j ∈ S) :
+      banzhafSwap i j S = (S.erase j) ∪ {i} := by
+    simp only [banzhafSwap]
+    rw [if_neg (fun H => hni H.1), if_pos ⟨hSj, hni⟩]
+  -- (1) Involution: `banzhafSwap i j (banzhafSwap i j S) = S`.
+  have hinv : ∀ S : Finset N, banzhafSwap i j (banzhafSwap i j S) = S := by
+    intro S
+    by_cases hSi : i ∈ S <;> by_cases hSj : j ∈ S
+    · rw [swap_both hSi hSj, swap_both hSi hSj]
+    · -- i ∈ S, j ∉ S : σ S = (S.erase i) ∪ {j}, which has j ∈, i ∉.
+      have hσ : banzhafSwap i j S = (S.erase i) ∪ {j} := swap_i_only hSi hSj
+      rw [hσ]
+      have hmem_j : j ∈ (S.erase i) ∪ ({j} : Finset N) :=
+        Finset.mem_union.mpr (Or.inr (Finset.mem_singleton.mpr rfl))
+      have hni_mem : i ∉ (S.erase i) ∪ ({j} : Finset N) := by
+        rw [Finset.mem_union, Finset.mem_singleton]
+        rintro (h | hij)
+        · exact absurd h (Finset.notMem_erase i S)
+        · exact absurd hij heq
+      rw [swap_j_only hni_mem hmem_j]
+      -- ((S.erase i) ∪ {j}).erase j ∪ {i} = S
+      have hnj_erase : j ∉ S.erase i :=
+        fun Hh => hSj (Finset.mem_of_mem_erase Hh)
+      rw [Finset.erase_union_distrib, Finset.erase_singleton,
+          Finset.erase_eq_self.mpr hnj_erase, Finset.union_empty, aux_readd i hSi]
+    · -- i ∉ S, j ∈ S : symmetric to the previous case.
+      have hσ : banzhafSwap i j S = (S.erase j) ∪ {i} := swap_j_only hSi hSj
+      rw [hσ]
+      have hmem_i : i ∈ (S.erase j) ∪ ({i} : Finset N) :=
+        Finset.mem_union.mpr (Or.inr (Finset.mem_singleton.mpr rfl))
+      have hnj_mem : j ∉ (S.erase j) ∪ ({i} : Finset N) := by
+        rw [Finset.mem_union, Finset.mem_singleton]
+        rintro (h | hji)
+        · exact absurd h (Finset.notMem_erase j S)
+        · exact heq hji.symm
+      rw [swap_i_only hmem_i hnj_mem]
+      have hni_erase : i ∉ S.erase j :=
+        fun Hh => hSi (Finset.mem_of_mem_erase Hh)
+      rw [Finset.erase_union_distrib, Finset.erase_singleton,
+          Finset.erase_eq_self.mpr hni_erase, Finset.union_empty, aux_readd j hSj]
+    · rw [swap_neither hSi hSj, swap_neither hSi hSj]
+  -- (2) Value invariance: `G.v (banzhafSwap i j S) = G.v S`.
+  have hval : ∀ S : Finset N, G.v (banzhafSwap i j S) = G.v S := by
+    intro S
+    by_cases hSi : i ∈ S <;> by_cases hSj : j ∈ S
+    · -- both in: σ S = S.
+      rw [swap_both hSi hSj]
+    · -- i in, j out: σ S = (S.erase i) ∪ {j}; value equals v S by symmetry on S.erase i.
+      have hσ : banzhafSwap i j S = (S.erase i) ∪ {j} := swap_i_only hSi hSj
+      rw [hσ]
+      have hjni : j ∉ S.erase i := fun Hh => hSj (Finset.mem_of_mem_erase Hh)
+      have hT := h (S.erase i) (Finset.notMem_erase i S) hjni
+      rw [aux_readd i hSi] at hT
+      exact hT.symm
+    · -- i out, j in: σ S = (S.erase j) ∪ {i}.
+      have hσ : banzhafSwap i j S = (S.erase j) ∪ {i} := swap_j_only hSi hSj
+      rw [hσ]
+      have hini : i ∉ S.erase j := fun Hh => hSi (Finset.mem_of_mem_erase Hh)
+      have hT := hsymm (S.erase j) (Finset.notMem_erase j S) hini
+      rw [aux_readd j hSj] at hT
+      exact hT.symm
+    · rw [swap_neither hSi hSj]
+  -- `hkey`: when both i, j are in S, symmetry on S \\ {i,j} equates the two erased values.
+  have hkey : ∀ S : Finset N, i ∈ S → j ∈ S →
+      G.v (S.erase j) = G.v (S.erase i) := by
+    intro S hSi hSj
+    -- Erasing i then j is the same as erasing j then i.
+    have erase_erase_comm : (S.erase i).erase j = (S.erase j).erase i := by
+      ext x
+      simp only [Finset.mem_erase]
+      tauto
+    set T := (S.erase j).erase i
+    have hTni : i ∉ T := Finset.notMem_erase i (S.erase j)
+    have hTnj : j ∉ T := fun Hh => Finset.notMem_erase j S (Finset.mem_of_mem_erase Hh)
+    have h1 : T ∪ ({i} : Finset N) = S.erase j :=
+      aux_readd i (Finset.mem_erase.mpr ⟨heq, hSi⟩)
+    have h2 : T ∪ ({j} : Finset N) = S.erase i := by
+      rw [show T = (S.erase i).erase j from by rw [erase_erase_comm]]
+      exact aux_readd j (Finset.mem_erase.mpr ⟨fun hj => heq hj.symm, hSj⟩)
+    rw [← h1, ← h2]
+    exact h T hTni hTnj
+  -- Identity: erasing j from (S.erase i) ∪ {j} yields S.erase i.
+  have aux_erase_lone (S : Finset N) (hnj : j ∉ S.erase i) :
+      ((S.erase i) ∪ ({j} : Finset N)).erase j = S.erase i := by
+    rw [Finset.erase_union_distrib, Finset.erase_singleton,
+        Finset.erase_eq_self.mpr hnj, Finset.union_empty]
+  -- (3) "Critical for i" ↔ "critical for j (after the swap)".
+  have hiff : ∀ S : Finset N, Critical G i S ↔ Critical G j (banzhafSwap i j S) := by
+    intro S
+    by_cases hSi : i ∈ S <;> by_cases hSj : j ∈ S
+    · -- both in: σ S = S; relate v(S.erase i) and v(S.erase j) via `hkey`.
+      rw [swap_both hSi hSj]
+      refine ⟨fun ⟨_, h1, h0⟩ => ⟨hSj, h1, by rw [hkey S hSi hSj]; exact h0⟩,
+              fun ⟨_, h1, h0⟩ => ⟨hSi, h1, by rw [← hkey S hSi hSj]; exact h0⟩⟩
+    · -- i in, j out: σ S = (S.erase i) ∪ {j}.
+      have hσ : banzhafSwap i j S = (S.erase i) ∪ {j} := swap_i_only hSi hSj
+      rw [hσ]
+      have hnj_ei : j ∉ S.erase i := fun Hh => hSj (Finset.mem_of_mem_erase Hh)
+      have hval' : G.v ((S.erase i) ∪ {j}) = G.v S := by
+        rw [← hσ]; exact hval S
+      refine ⟨fun ⟨_, h1, h0⟩ =>
+                ⟨Finset.mem_union.mpr (Or.inr (Finset.mem_singleton.mpr rfl)),
+                 hval'.trans h1,
+                 by rw [aux_erase_lone S hnj_ei]; exact h0⟩,
+              fun ⟨_, h1, h0⟩ =>
+                ⟨hSi, hval'.symm.trans h1,
+                 by rw [aux_erase_lone S hnj_ei] at h0; exact h0⟩⟩
+    · -- i out, j in: σ S = (S.erase j) ∪ {i}. Both sides are false.
+      have hσ : banzhafSwap i j S = (S.erase j) ∪ {i} := swap_j_only hSi hSj
+      rw [hσ]
+      -- j ∉ (S.erase j) ∪ {i} (j was erased, j ≠ i), so `Critical G j (σ S)` is false;
+      -- `Critical G i S` is also false since i ∉ S.
+      have hnjs : j ∉ (S.erase j) ∪ ({i} : Finset N) := by
+        rw [Finset.mem_union, Finset.mem_singleton]
+        rintro (h | hji)
+        · exact absurd h (Finset.notMem_erase j S)
+        · exact heq hji.symm
+      exact ⟨fun Hh => absurd Hh.1 hSi, fun Hh => absurd Hh.1 hnjs⟩
+    · -- neither: σ S = S; both sides are false (i, j ∉ S).
+      rw [swap_neither hSi hSj]
+      exact ⟨fun Hh => absurd Hh.1 hSi, fun Hh => absurd Hh.1 hSj⟩
+  -- (4) The swap is an involution hence injective; the j-critical filter is exactly the
+  -- image of the i-critical filter under the swap, so the two cards coincide.
+  show BanzhafRaw G i = BanzhafRaw G j
+  simp only [BanzhafRaw]
+  have hσ_inj : Function.Injective (banzhafSwap i j) := by
+    intros a b hab
+    have h2 : banzhafSwap i j (banzhafSwap i j a) = banzhafSwap i j (banzhafSwap i j b) :=
+      congr_arg (banzhafSwap i j) hab
+    rw [hinv, hinv] at h2
+    exact h2
+  have himage : (Finset.univ.filter fun S => Critical G j S) =
+      Finset.image (banzhafSwap i j) (Finset.univ.filter fun S => Critical G i S) := by
+    ext T
+    simp only [Finset.mem_image, Finset.mem_filter, Finset.mem_univ, true_and]
+    constructor
+    · intro hT
+      refine ⟨banzhafSwap i j T, ?_, hinv T⟩
+      have key : Critical G j (banzhafSwap i j (banzhafSwap i j T)) := by
+        rw [hinv T]; exact hT
+      exact (hiff (banzhafSwap i j T)).mpr key
+    · rintro ⟨S, hS, hseq⟩
+      have hcj := (hiff S).mp hS
+      rwa [hseq] at hcj
+  have hcard : (Finset.image (banzhafSwap i j)
+        (Finset.univ.filter fun S => Critical G i S)).card =
+      (Finset.univ.filter fun S => Critical G i S).card :=
+    Finset.card_image_of_injective _ hσ_inj
+  rw [himage, hcard]
