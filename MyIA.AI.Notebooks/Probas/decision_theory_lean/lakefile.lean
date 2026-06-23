@@ -1,7 +1,7 @@
 import Lake
 open Lake DSL
 
-package gittins_lean where
+package decision_theory_lean where
   leanOptions := #[⟨`autoImplicit, false⟩, ⟨`pp.unicode.fun, true⟩]
 
 require mathlib from git
