@@ -1034,7 +1034,8 @@ noncomputable def BanzhafRaw (G : TUGame N) (i : N) : ℕ :=
 the critical coalitions are a subset of `Finset.univ`. First genuinely-provable,
 non-smoke target for the BG prover (#1453). -/
 theorem banzhaf_raw_le_univ (G : TUGame N) (i : N) :
-    BanzhafRaw G i ≤ (Finset.univ : Finset (Finset N)).card := by sorry
+    BanzhafRaw G i ≤ (Finset.univ : Finset (Finset N)).card := by
+  sorry
 
 /-- Player with veto power -/
 def VetoPlayer (G : TUGame N) (i : N) : Prop :=

@@ -1581,13 +1581,13 @@ DEMOS = {
     56: {
         "name": "BANZHAF_RAW_LE_UNIV",
         "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
-        "line": 1037,
+        "line": 1038,
         "sorry_type": "sorry_replacement",
         "theorem_name": "banzhaf_raw_le_univ",
         "theorem": "banzhaf_raw_le_univ",
         "imports": SHAPLEY_IMPORTS,
         "description": (
-            "REPLACES the single sorry at L1037 of Shapley.lean.\n"
+            "REPLACES the single sorry at L1038 of Shapley.lean.\n"
             "First genuinely-provable, NON-smoke target for the BG prover\n"
             "(greenlit by ai-01 2026-06-23T18:12Z, #1453). Validates the\n"
             "write-back fix #4075 on a REAL CoursIA Lean target, not a smoke.\n"
