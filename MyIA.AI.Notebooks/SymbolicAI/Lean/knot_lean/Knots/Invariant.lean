@@ -353,6 +353,62 @@ theorem pr1_counterexample_excluded_under_rho_determined :
     have h := congrArg List.length hfield
     simp at h
 
+/-! ## 3c-bis. The #2938 witness is ALSO excluded under `Reidemeister1Connected` (option C)
+
+`pr1_counterexample_excluded_under_rho_determined` (§3c above) proves the certified
+counter-example witness pair is NOT connected by a `Reidemeister1'` (ρ-determined)
+move. Here we prove the analogous statement for `Reidemeister1Connected` (option C):
+the refuting witness pair is unreachable under a connected R1 twist too. This is the
+second non-regression gate certifying that option C — the (C) wiring mandated for
+#2874 — excludes the disjoint-kink counter-example by construction.
+
+Why it fails. `Reidemeister1Connected` requires the appended kink crossing to have
+shape `⟨a, n+1, n+2, n+2⟩` where `1 ≤ a ≤ d₁.numEdges` is an existing arc of `d₁`.
+For the witness (`d₁` = {[⟨1,2,1,2⟩], numEdges = 2}), the surgery forces `d₂`'s last
+crossing `⟨3,4,3,4⟩` to equal `⟨a, 3, 4, 4⟩`, giving `a = 3` — contradicting
+`a ≤ d₁.numEdges = 2`. The disjoint-kink counter-example is thus structural: under
+any connected R1 model, the twist must splice a REAL arc of `d₁` (the witness's sole
+crossing has no arc labelled `3` to splice), so the pair is unreachable. This is what
+makes option C the honest SOTA fix rather than the (X) reframe: the refuting witness
+vanishes under the correct equivalence. (Wiring `Reidemeister1Connected` into
+`ReidemeisterStep`/`ReidemeisterEquiv` is a multi-cycle stage — `Reidemeister1Connected`
+is currently twist-only and needs an untwist arm + `.symm` before the equivalence's
+`reidemeister_equiv_symm` can carry it. See #2874.) -/
+theorem pr1_counterexample_excluded_under_connected :
+    ¬ Reidemeister1Connected
+        { crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+        { crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial } := by
+  -- Reidemeister1Connected unfolds as wf₁ ∧ wf₂ ∧ (∃ i a Y' ρ, bounds ∧ edges ∧
+  -- proper-arc ∧ isRenameOf ∧ surgery). The surgery is single-arm (twist only):
+  -- d₂ = { d₁ with crossings := d₁.crossings.set i.val Y' ++ [⟨a,3,4,4⟩], numEdges := 4 }.
+  rintro ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, _ha1, ha2, _ha_edges, _hproper, _hren, hsurg⟩
+  -- `i : Fin d₁.crossings.length = Fin 1`, so `i.val = 0`. omega cannot reduce the
+  -- structure literal's `.crossings.length` on its own, so discharge the length by
+  -- `rfl` (separate hyp — `rw` into `i.isLt` fails: `i`'s type depends on it) and
+  -- let omega combine `hbnd : i.val < e` with `hlen : e = 1` directly.
+  have hi : i.val = 0 := by
+    have hlen :
+        (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+          : KnotDiagram).crossings).length = 1 := by rfl
+    have hbnd := i.isLt
+    omega
+  have hfield :
+      ({ crossings := [⟨1, 2, 1, 2⟩, ⟨3, 4, 3, 4⟩], numEdges := 4, hwell := by trivial }
+        : KnotDiagram).crossings =
+      (({ crossings := [⟨1, 2, 1, 2⟩], numEdges := 2, hwell := by trivial }
+        : KnotDiagram).crossings.set i.val Y') ++ [⟨a, 3, 4, 4⟩] :=
+    congrArg (·.crossings) hsurg
+  rw [hi] at hfield
+  -- RHS reduces to [⟨1,2,1,2⟩].set 0 Y' ++ [⟨a,3,4,4⟩] = [Y', ⟨a,3,4,4⟩].
+  -- The second element gives ⟨3,4,3,4⟩ = ⟨a,3,4,4⟩ (cons injectivity).
+  have hkink : (⟨3, 4, 3, 4⟩ : PDCrossing) = ⟨a, 3, 4, 4⟩ := by
+    simpa [List.set, List.append] using hfield
+  -- e2 field projection: ⟨3,4,3,4⟩.e2 = 4 vs ⟨a,3,4,4⟩.e2 = 3 — a direct
+  -- `4 = 3` contradiction (structural, independent of the value of `a`).
+  -- We assert the reduced type so defeq closes the projection of the literal.
+  have h_e2 : (4 : Nat) = 3 := congrArg PDCrossing.e2 hkink
+  omega
+
 /-! ## 3d. The connected R1 move (option C) PRESERVES tricolorability on the witness
 
 This is the positive complement to the PR1 counter-example (§3b). Under the
