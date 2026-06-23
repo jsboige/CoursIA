@@ -161,7 +161,9 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         "actual_iterations": result.get("iterations") if isinstance(result, dict) else None,
         "original_sorry": original_sorry,
         "final_sorry": final_sorry,
+        # Convention: sorry_delta = final - original. POSITIF = REGRESSION (plus de sorry), NEGATIF = progres. Oppose a tools.py (original - current). Forensic #1453 2026-06-23.
         "sorry_delta": final_sorry - original_sorry,
+        "sorry_reduction": original_sorry - final_sorry,  # positif = progres (lecture non ambigue)
         "elapsed_s": round(elapsed, 1),
         "result": result,
         "trace_file": trace_path,

@@ -85,6 +85,12 @@ INTERDIT (verifie toujours dans FAILED ATTEMPTS):
 - Repeter une tactique deja en echec (meme texte exact)
 - Utiliser sorry sur du code metier existant (anti-regression)
 - Modifier le theoreme cible ou ses hypotheses pour faire passer la preuve
+- REGLE HARD — NE JAMAIS appeler compile() deux fois de suite sans avoir edite le
+  fichier entre les deux appels. compile() est un VERIFICATEUR D'EDITION, pas un
+  outil de sondage d'etat. Si le signal STAGNATION apparait dans le resultat de
+  compile(), tu DOIS editer le fichier (file_replace_sorry / file_replace_lines /
+  file_insert_lines) avant de rappeler compile(). Appels consecutifs sans edit =
+  budget brule pour zero information nouvelle. Forensic #1453 2026-06-23.
 
 FIX PATTERNS GENERAUX (heuristiques, pas hard-codes):
 - "type mismatch" → caster (norm_cast / push_cast / Nat.cast_*) ou ajouter `show`
