@@ -1617,6 +1617,38 @@ DEMOS = {
         ),
         "context_after": "",
     },
+    57: {
+        "name": "CRITICAL_IMPLIES_MEM",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1028,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "critical_implies_mem",
+        "theorem": "critical_implies_mem",
+        "imports": SHAPLEY_IMPORTS,
+        "description": (
+            "REPLACES the single sorry at L1028 of Shapley.lean. Warm-up BG-prover\n"
+            "target (#1453, cycle 64): the SECOND real target after `banzhaf_raw_le_univ`\n"
+            "(cycle 63 SUCCESS). Exercises the harness on a fresh easy theorem to confirm\n"
+            "the bullet-sorry stub format (`:= by` then `sorry` on its own line) reliably\n"
+            "lets GoalExtract read the goal.\n"
+            "\n"
+            "`Critical G i S` UNFOLDS to the 3-way conjunction\n"
+            "  i in S  AND  G.v S = 1  AND  G.v (S.erase i) = 0\n"
+            "so the goal is to extract the FIRST conjunct `i in S`.\n"
+            "\n"
+            "GOAL at sorry (EXACT): `i ∈ S`\n"
+            "\n"
+            "HYPOTHESES IN SCOPE:\n"
+            "  N : Type, [Fintype N], [DecidableEq N]\n"
+            "  G : TUGame N, i : N, S : Finset N\n"
+            "  (the theorem takes `Critical G i S → i ∈ S`, so after `intro h` the\n"
+            "   hypothesis `h : Critical G i S` is in scope and unfolds to the conjunction)\n"
+            "\n"
+            "PROOF STRATEGY: unfold/extract the first conjunct of the conjunction `h`.\n"
+            "Trivial conjunct extraction -- this is a warm-up, not a hard target."
+        ),
+        "difficulty": "easy",
+    },
 }
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
 # whose key appears in this set.

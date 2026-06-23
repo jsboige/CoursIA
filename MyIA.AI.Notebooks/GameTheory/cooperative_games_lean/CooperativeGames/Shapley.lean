@@ -1019,6 +1019,14 @@ noncomputable def WeightedVotingGame (weights : N → ℝ) (quota : ℝ) (hquota
 def Critical (G : TUGame N) (i : N) (S : Finset N) : Prop :=
   i ∈ S ∧ G.v S = 1 ∧ G.v (S.erase i) = 0
 
+/-- A critical player must be a member of the coalition: `Critical G i S` unfolds to
+    `i ∈ S ∧ …`, so membership is the first conjunct. Warm-up BG-prover target (#1453):
+    trivial conjunct extraction, exercises the harness on a second real target now that
+    the bullet-sorry stub format fixes GoalExtract (cycle 63). -/
+theorem critical_implies_mem (G : TUGame N) (i : N) (S : Finset N) :
+    Critical G i S → i ∈ S := by
+  sorry
+
 /-- `Critical G i` is decidable via Classical reasoning (the `TUGame.v` comparisons are
     noncomputable reals). Promoted to a global instance so that `BanzhafRaw` and any
     theorem about it synthesise the SAME instance, avoiding the
