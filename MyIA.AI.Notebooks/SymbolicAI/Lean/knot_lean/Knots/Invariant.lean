@@ -62,29 +62,48 @@ def KnotDiagram.colorAtNat (d : KnotDiagram)
   if h : d.numEdges = 0 then TriColor.red
   else coloring ⟨(l - 1) % d.numEdges, Nat.mod_lt _ (by omega)⟩
 
-/-- Check the tricolorability condition at a single crossing.
+/-- Check the Fox tricolorability condition at a single crossing (Path B model).
 
-At a crossing with local strands `e1` (incoming under), `e2` (over), `e3`
-(outgoing under): either all three carry the same color, or all three carry
-pairwise distinct colors. This is Fox's (1962) condition.
+At a crossing with PD edges `e1` (incoming under), `e2` (incoming over), `e3`
+(outgoing under), `e4` (outgoing over): the **over-strand** is the single arc
+passing straight through the crossing, so its two endpoints `e2` and `e4` must
+carry the SAME colour (`c2 = c4`, over-strand continuity), AND the three meeting
+strands `(e1, e2, e3)` satisfy Fox's (1962) rule — either all equal or all
+pairwise distinct. This conjunction IS the classical Fox invariant: a colouring
+that is constant on arcs, with the all-equal-or-all-distinct rule at each
+crossing.
+
+**Path B (recovering the classical invariant, mandated 2026-06-23).** The
+earlier permissive model coloured EDGES independently with no over-strand
+continuity, so the over-arc of a crossing was not forced to share a colour; that
+admitted spurious tricolorings (notably the figure-eight, classically NOT
+3-colourable) and made a "universal two-crossing colourability" lemma TRUE for
+the model but FALSE classically — which would have rendered `tricolorable_invariant`
+trivial (separating only the unknot). Adding the `c2 = c4` conjunct restores the
+arc-respecting classical model under which the figure-eight is correctly rejected
+and the trefoil correctly accepted (witness `(0,1,1,2,2,0)`).
 
 For well-formed crossings (labels in `[1, numEdges]`, the first conjunct),
-`colorAtNat` reads the genuine coloring at `e1`, `e2`, `e3`. For malformed
-labels the conjunct fails and the crossing is not tricolorable-satisfying —
-the condition is sound even before the diagram well-formedness predicate lands.
+`colorAtNat` reads the genuine coloring. For malformed labels the conjunct fails
+and the crossing is not tricolorable-satisfying — the condition is sound even
+before the diagram well-formedness predicate lands.
 -/
 def triColorConditionAt (d : KnotDiagram) (coloring : Fin d.numEdges → TriColor)
     (c : PDCrossing) : Prop :=
-  -- Well-formedness: the three strand labels are in range [1, numEdges].
+  -- Well-formedness: the four edge labels are in range [1, numEdges].
   (1 ≤ c.e1 ∧ c.e1 ≤ d.numEdges ∧
    1 ≤ c.e2 ∧ c.e2 ≤ d.numEdges ∧
-   1 ≤ c.e3 ∧ c.e3 ≤ d.numEdges) ∧
+   1 ≤ c.e3 ∧ c.e3 ≤ d.numEdges ∧
+   1 ≤ c.e4 ∧ c.e4 ≤ d.numEdges) ∧
   let c1 := d.colorAtNat coloring c.e1
   let c2 := d.colorAtNat coloring c.e2
   let c3 := d.colorAtNat coloring c.e3
-  -- Fox condition: all-equal OR all-pairwise-distinct on the three strands.
-  (c1 = c2 ∧ c2 = c3) ∨
-  (c1 ≠ c2 ∧ c2 ≠ c3 ∧ c1 ≠ c3)
+  let c4 := d.colorAtNat coloring c.e4
+  -- Over-strand continuity (Path B): the over-arc's two ends carry one colour.
+  c2 = c4 ∧
+  -- Fox condition: all-equal OR all-pairwise-distinct on the three meeting strands.
+  ((c1 = c2 ∧ c2 = c3) ∨
+   (c1 ≠ c2 ∧ c2 ≠ c3 ∧ c1 ≠ c3))
 
 /-! ### Colour-permutation invariance — enabler for the #3003 backward transfer
 
@@ -112,8 +131,9 @@ theorem KnotDiagram.colorAtNat_comp (d : KnotDiagram)
 /-- **Fox condition is invariant under injective colour relabelling.** For an
     injective `σ` and non-degenerate `d`, `triColorConditionAt d (σ ∘ coloring)
     c ↔ triColorConditionAt d coloring c`. The well-formedness conjunct is
-    colour-independent; the `(c1=c2 ∧ c2=c3) ∨ (c1≠c2 ∧ c2≠c3 ∧ c1≠c3)` Fox
-    disjunction is preserved both ways by injectivity. -/
+    colour-independent; the over-strand continuity `c2 = c4` and the
+    `(c1=c2 ∧ c2=c3) ∨ (c1≠c2 ∧ c2≠c3 ∧ c1≠c3)` Fox disjunction are both
+    preserved both ways by injectivity. -/
 theorem triColorConditionAt_invariant_perm (d : KnotDiagram)
     (coloring : Fin d.numEdges → TriColor) (σ : TriColor → TriColor)
     (hσ : Function.Injective σ) (hn : d.numEdges ≠ 0) (c : PDCrossing) :
@@ -121,12 +141,15 @@ theorem triColorConditionAt_invariant_perm (d : KnotDiagram)
   simp only [triColorConditionAt]
   rw [KnotDiagram.colorAtNat_comp d coloring σ c.e1 hn,
       KnotDiagram.colorAtNat_comp d coloring σ c.e2 hn,
-      KnotDiagram.colorAtNat_comp d coloring σ c.e3 hn]
+      KnotDiagram.colorAtNat_comp d coloring σ c.e3 hn,
+      KnotDiagram.colorAtNat_comp d coloring σ c.e4 hn]
   refine and_congr Iff.rfl ?_
-  -- Fox disjunction on `(σ c1, σ c2, σ c3)` ↔ `(c1, c2, c3)`, via injectivity.
+  -- Both the over-strand continuity `(σ c2 = σ c4)` ↔ `(c2 = c4)` and the Fox
+  -- disjunction on `(σ c1, σ c2, σ c3)` ↔ `(c1, c2, c3)` go through injectivity.
   -- `σ a = σ b ↔ a = b`; the inequalities transfer by contraposition.
   have heq : ∀ a b : TriColor, σ a = σ b ↔ a = b :=
     fun a b => ⟨fun h => hσ h, congrArg σ⟩
+  refine and_congr (heq _ _) ?_
   constructor
   · rintro (⟨h12, h23⟩ | ⟨h12, h23, h13⟩)
     · exact Or.inl ⟨(heq _ _).mp h12, (heq _ _).mp h23⟩
@@ -154,13 +177,16 @@ def IsTricolorable (d : KnotDiagram) : Prop :=
 def Knot.isTricolorable (k : Knot) : Prop :=
   IsTricolorable k.diagram
 
-/-! ### GF(3) linearity of the Fox condition (cycle-3 breakthrough, #4022)
+/-! ### GF(3) linearity of the per-crossing Fox condition (cycle-3, #4022)
 
-The Fox tricolour condition on three colours — "all equal OR all distinct" — is
+The Fox tricolour rule on three colours — "all equal OR all distinct" — is
 equivalent, for a 3-element palette, to the colours summing to `0 (mod 3)`. This
-makes the space of valid edge-colourings a *linear subspace* of `(ℤ/3)^(numEdges)`,
-which is the key to the rank-nullity argument in `tricolorability_of_two_crossings`
-below. Verified empirically over 7.5M well-formed diagrams (cycle-3, #4022). -/
+is a purely computational fact about the per-crossing Fox disjunction on three
+explicit `TriColor` values, independent of the over-strand-continuity conjunct of
+`triColorConditionAt` (Path B). It is retained as scaffolding: a linear reading of
+the per-crossing condition, useful for brute-force enumeration and as a
+`decide`-friendly bridge. Verified empirically over 7.5M well-formed diagrams
+(cycle-3, #4022). -/
 
 /-- Embed `TriColor` into `ℕ` (red ↦ 0, blue ↦ 1, green ↦ 2) so the Fox
 3-colour condition reads linearly over `ℤ/3ℤ`. -/
@@ -169,50 +195,37 @@ def TriColor.toNat : TriColor → Nat
   | blue => 1
   | green => 2
 
-/-- The Fox 3-colour condition on three colours ⟺ their `toNat`-sum is `0 mod 3`.
+/-- The Fox 3-colour rule on three colours ⟺ their `toNat`-sum is `0 mod 3`.
 Finite (3³ = 27 cases), PROVED by constructor enumeration + `decide` (cycle-6,
 #3003). Because the arguments are *explicit* (not universally quantified over an
 opaque `TriColor`), `decide` needs no `Fintype` instance — `cases` on each
 constructor leaves 27 closed goals that `simp only [TriColor.toNat]` + `decide`
-dispatch. This is the GF(3) linearity that makes the colouring space a *linear
-subspace* of `(ℤ/3)^(numEdges)` — the key to the rank-nullity argument in
-`tricolorability_of_two_crossings` below. -/
+dispatch. This is the GF(3) linearity of the per-crossing Fox disjunction — a
+linear reading retained as computational scaffolding (Path B keeps it even though
+the over-strand-continuity conjunct of `triColorConditionAt` is not itself linear
+over `(ℤ/3)^(numEdges)`). -/
 theorem triColorFoxCondition_iff_sum_mod_three (c1 c2 c3 : TriColor) :
     ((c1 = c2 ∧ c2 = c3) ∨ (c1 ≠ c2 ∧ c2 ≠ c3 ∧ c1 ≠ c3)) ↔
       (c1.toNat + c2.toNat + c3.toNat) % 3 = 0 := by
   -- 3³ = 27 closed cases; explicit arguments ⇒ no `Fintype` needed for `decide`.
   cases c1 <;> cases c2 <;> cases c3 <;> simp only [TriColor.toNat] <;> decide
 
-/-! ### Universal two-crossing colourability (cycle-3 GF(3) route, #3003)
+/-! ### Withdrawn: universal two-crossing colourability (Path B, 2026-06-23)
 
-**Statement (open placeholder, target of the BG-prover per ai-01 2026-06-23):**
-every well-formed diagram with ≥ 2 crossings admits a non-constant Fox-valid
-edge-colouring. Proof sketch: by the GF(3) linearity above, valid colourings form
-a linear subspace `V(d) ⊆ (ℤ/3)^(2m)` (m crossings ⟹ m homogeneous equations,
-2m edges by `wf` parity); rank ≤ m, so nullity ≥ m ≥ 2; the constant colourings
-form a 1-dimensional subspace, hence a non-constant witness exists.
-
-**SOUNDNESS CAVEAT (cycle-4, G.9, verified firsthand):** this lemma is TRUE for
-THIS model's `IsTricolorable` (empirically 0 failures for m ∈ {2,3,4,5}), BUT the
-model **diverges from the classical Fox invariant**: it colours EDGES
-(`Fin numEdges`) independently with NO arc-equality constraint, so the over-strand
-of a crossing is NOT forced to share a colour. Consequently `numEdges = 2·m ≠ m`
-arcs, and even the figure-8 (4 crossings, determinant 5, classically NOT
-3-colourable) IS edge-tricolorable here — witness computed against the exact
-`triColorConditionAt` (this file) + `figureEightDiagram` (Basic.lean). Proving
-this lemma would make `tricolorable_invariant` TRIVIALLY true (every ≥ 2-crossing
-diagram is tricolorable ⟹ the invariant only separates the unknot). This is an
-architectural fork (Path A: prove, accept a permissive non-classical model;
-Path B: add an arc-equality constraint, recover the classical invariant) — GATED
-on the coordinator/user's pedagogical intent. Stated here so the BG-prover can
-iterate on the rank-nullity bridge; the architectural decision is deferred.
-Reference: Fox (1962); Adams, "The Knot Book". -/
-theorem tricolorability_of_two_crossings (d : KnotDiagram)
-    (hwf : d.wf = true) (hcross : d.crossings.length ≥ 2) :
-    IsTricolorable d := by
-  -- Via GF(3) rank-nullity on the linear system of
-  -- `triColorFoxCondition_iff_sum_mod_three`; open BG-prover target (ai-01).
-  sorry
+A "universal two-crossing colourability" lemma — every well-formed diagram with
+≥ 2 crossings admits a non-constant Fox-valid colouring — was explored in
+cycles 3–6 via a GF(3) rank-nullity route. **It is withdrawn under Path B.** The
+lemma was only ever plausible for the permissive EDGE-colouring model (colours
+assigned to `Fin numEdges` independently, no over-strand continuity); under that
+model even the figure-eight (4 crossings, determinant 5, classically NOT
+3-colourable) IS tricolorable, so the lemma would have rendered
+`tricolorable_invariant` trivial (separating only the unknot). Path B adds the
+`c2 = c4` over-strand-continuity conjunct to `triColorConditionAt`, recovering
+the classical arc-respecting Fox invariant; under that model the lemma is simply
+FALSE (the figure-eight is the explicit counter-example). The GF(3) linearity
+scaffolding above is retained as a per-crossing computational fact; the
+rank-nullity universal route is not. Reference: Fox (1962); Adams, "The Knot
+Book". -/
 
 /-! ## 2. Tricolorability is an invariant
 
@@ -252,23 +265,23 @@ all three colors. This proves the trefoil is NOT the unknot.
 -/
 
 theorem trefoil_tricolorable : Knot.isTricolorable trefoil := by
-  -- Proof: construct an explicit 3-coloring of the trefoil's 6 arcs (PD labels).
-  -- The trefoil PD-code is [[1,4,2,5],[3,6,4,1],[5,2,6,3]], so numEdges = 6.
-  -- Fox condition at each crossing on (e1,e2,e3):
-  --   c0: (1,4,2), c1: (3,6,4), c2: (5,2,6).
-  -- A valid 3-coloring (labels→color, 0-indexed by label-1):
-  --   labels {1,2,4} → red, {3,5} → blue, {6} → green.
-  -- Check: c0 (1,4,2)→(red,red,red) all-equal ✓
-  --        c1 (3,6,4)→(blue,green,red) all-distinct ✓
-  --        c2 (5,2,6)→(blue,red,green) all-distinct ✓
+  -- Proof: construct an explicit arc-respecting 3-colouring of the trefoil's 6
+  -- edges (PD labels). The trefoil PD-code is [[1,4,2,5],[3,6,4,1],[5,2,6,3]],
+  -- so numEdges = 6. Path B requires over-strand continuity `c2 = c4` at each
+  -- crossing, in addition to the Fox rule on the three meeting strands (e1,e2,e3).
+  -- Witness `(0,1,1,2,2,0)` on labels 1..6 (0=red, 1=blue, 2=green), i.e. by Fin
+  -- index (index = label-1): labels {1,6} → red, {2,3} → blue, {4,5} → green.
+  --   c0 ⟨1,4,2,5⟩: Fox(red, green, blue) all-distinct ✓; arc c(e2=4)=c(e4=5) both green ✓.
+  --   c1 ⟨3,6,4,1⟩: Fox(blue, red, green) all-distinct ✓; arc c(e2=6)=c(e4=1) both red ✓.
+  --   c2 ⟨5,2,6,3⟩: Fox(green, blue, red) all-distinct ✓; arc c(e2=2)=c(e4=3) both blue ✓.
   unfold Knot.isTricolorable IsTricolorable IsTriColoring Knot.diagram trefoil
   simp only [trefoilDiagram, triColorConditionAt, KnotDiagram.colorAtNat]
   -- Provide the explicit coloring on Fin 6 (index = label - 1).
   refine' ⟨fun i : Fin 6 =>
-              if i.val = 0 ∨ i.val = 1 ∨ i.val = 3 then TriColor.red
-              else if i.val = 2 ∨ i.val = 4 then TriColor.blue
+              if i.val = 0 ∨ i.val = 5 then TriColor.red
+              else if i.val = 1 ∨ i.val = 2 then TriColor.blue
               else TriColor.green, _, _, _⟩
-  -- Crossing condition: each of the 3 crossings satisfies the Fox condition.
+  -- Crossing condition: each of the 3 crossings satisfies the (Path B) condition.
   · -- The three crossings are ⟨1,4,2,5⟩, ⟨3,6,4,1⟩, ⟨5,2,6,3⟩. Decide by computation.
     intro c hc
     -- Reduce membership in the explicit crossing list to the 3 concrete cases.
@@ -369,7 +382,8 @@ theorem tricolorable_invariant_fails_under_pr1_model :
     have h01 : coloring ⟨0, by decide⟩ = coloring ⟨1, by decide⟩ := by
       have h := hfox
       simp only [triColorConditionAt, KnotDiagram.colorAtNat] at h
-      rcases h with ⟨_, h | h⟩
+      -- Path B shape: `bounds ∧ (arc-eq ∧ Foxdisj)` — flatten the right-nested And.
+      rcases h with ⟨_, _, h | h⟩
       · exact h.1
       · -- all-distinct branch: needs c1 ≠ c3, but e1 = e3 = 1 makes c1 ≡ c3 (rfl) → contradiction.
         exact (h.2.2 rfl).elim
@@ -562,36 +576,41 @@ def witnessD1Connected : KnotDiagram :=
 def witnessD2Connected : KnotDiagram :=
   { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6, hwell := by trivial }
 
-/-- `witnessD1Connected` is tricolorable: both crossings are `⟨1,2,3,4⟩`, each
-    reading `(red, blue, green)` on the Fox strands `(e1, e2, e3) = (1, 2, 3)`
-    (all pairwise distinct). Constructive, mirroring `trefoil_tricolorable`. -/
+/-- `witnessD1Connected` is tricolorable (Path B): both crossings are
+    `⟨1,2,3,4⟩`, each reading `(red, blue, green)` on the Fox strands
+    `(e1, e2, e3) = (1, 2, 3)` (all pairwise distinct), with over-strand continuity
+    `c(e2) = c(e4)` (edges 2 and 4 both blue). Constructive, mirroring
+    `trefoil_tricolorable`. -/
 theorem witnessD1Connected_tricolorable : IsTricolorable witnessD1Connected := by
   unfold IsTricolorable IsTriColoring witnessD1Connected
   simp only [triColorConditionAt, KnotDiagram.colorAtNat]
+  -- Arc-respecting colouring (Path B): edges {1}→red, {2,4}→blue, {3}→green, so
+  -- the over-arc (e2,e4)=(2,4) is monochromatic (blue) at each ⟨1,2,3,4⟩.
   refine' ⟨fun i : Fin 4 =>
               if i.val = 0 then TriColor.red
-              else if i.val = 1 then TriColor.blue
-              else if i.val = 2 then TriColor.green
-              else TriColor.red, ?_, ?_, ?_⟩
+              else if i.val = 1 ∨ i.val = 3 then TriColor.blue
+              else TriColor.green, ?_, ?_, ?_⟩
   · intro c hc
     -- Both crossings are `⟨1,2,3,4⟩`; the single distinct value is the only
-    -- element of the list, so the Fox condition is checked once by computation.
+    -- element of the list, so the (Path B) condition is checked once by computation.
     match c with
     | ⟨1, 2, 3, 4⟩ => decide
   · decide
   · exact ⟨⟨0, by decide⟩, ⟨1, by decide⟩, by decide⟩
 
-/-- `witnessD2Connected` is tricolorable: the original crossings `⟨1,2,3,4⟩`
-    and `⟨5,2,3,4⟩` read all-distinct colours, and the new kink `⟨1,5,6,6⟩`
-    reads `(red, red, red)` (all-equal, Fox-trivial). The two new edges `b = 5`
-    and `c = 6` carry the colour of arc `a = 1` (red), so the twist does not
-    create or destroy tricolorability. -/
+/-- `witnessD2Connected` is tricolorable (Path B): the original crossings
+    `⟨1,2,3,4⟩` and `⟨5,2,3,4⟩` read all-distinct colours with over-strand
+    continuity `c(e2) = c(e4)` (edges 2,4 both blue), and the new kink `⟨1,5,6,6⟩`
+    reads `(red, red, red)` (all-equal, Fox-trivial) with `c(e2) = c(e4)` on edges
+    5,6 (both red). The two new edges `b = 5` and `c = 6` carry the colour of arc
+    `a = 1` (red), so the twist does not create or destroy tricolorability. -/
 theorem witnessD2Connected_tricolorable : IsTricolorable witnessD2Connected := by
   unfold IsTricolorable IsTriColoring witnessD2Connected
   simp only [triColorConditionAt, KnotDiagram.colorAtNat]
+  -- Arc-respecting colouring (Path B): edges {1,5,6}→red, {2,4}→blue, {3}→green.
   refine' ⟨fun i : Fin 6 =>
-              if i.val = 0 ∨ i.val = 3 ∨ i.val = 4 ∨ i.val = 5 then TriColor.red
-              else if i.val = 1 then TriColor.blue
+              if i.val = 0 ∨ i.val = 4 ∨ i.val = 5 then TriColor.red
+              else if i.val = 1 ∨ i.val = 3 then TriColor.blue
               else TriColor.green, ?_, ?_, ?_⟩
   · intro c hc
     match c with
@@ -795,30 +814,38 @@ theorem Reidemeister1Connected.tricolorable_forward {d₁ d₂ : KnotDiagram}
     have hC : triColorConditionAt d₂ col₂
         ⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩ := by
       simp only [triColorConditionAt]
-      refine ⟨⟨by omega, by omega, by omega, by omega, by omega, by omega⟩, ?_⟩
-      left
+      refine ⟨⟨by omega, by omega, by omega, by omega, by omega, by omega,
+                by omega, by omega⟩, ?_⟩
+      -- Path B: over-strand continuity c(e2)=c(e4), then Fox on (a, n+1, n+2).
       refine ⟨?_, ?_⟩
-      · rw [hcolF1 a ha1 ha2, hcolF2b]
-      · rw [hcolF2b, hcolF2c]
+      · -- c(e2) = c(n+1) = col₁ a, c(e4) = c(n+2) = col₁ a (hcolF2b / hcolF2c).
+        rw [hcolF2b, hcolF2c]
+      · left
+        refine ⟨?_, ?_⟩
+        · rw [hcolF1 a ha1 ha2, hcolF2b]
+        · rw [hcolF2b, hcolF2c]
     -- (iii) An unchanged crossing inherits d₁'s Fox: each preserved strand reads the
     --       same colour under `col₂` (via hcolF1), so the Fox condition is identical.
     have h_inherit : ∀ c, c ∈ d₁.crossings → triColorConditionAt d₂ col₂ c := by
       intro c hcmem
       have hfc : triColorConditionAt d₁ col₁ c := hfox₁ c hcmem
       simp only [triColorConditionAt] at hfc ⊢
-      obtain ⟨⟨he11, he12, he21, he22, he31, he32⟩, hfox⟩ := hfc
-      refine ⟨⟨he11, by omega, he21, by omega, he31, by omega⟩, ?_⟩
+      obtain ⟨⟨he11, he12, he21, he22, he31, he32, he41, he42⟩, ⟨harc, hfox⟩⟩ := hfc
       have h1 : d₂.colorAtNat col₂ c.e1 = d₁.colorAtNat col₁ c.e1 := hcolF1 c.e1 he11 he12
       have h2 : d₂.colorAtNat col₂ c.e2 = d₁.colorAtNat col₁ c.e2 := hcolF1 c.e2 he21 he22
       have h3 : d₂.colorAtNat col₂ c.e3 = d₁.colorAtNat col₁ c.e3 := hcolF1 c.e3 he31 he32
-      rcases hfox with ⟨h12, h23⟩ | ⟨h12, h23, h13⟩
-      · left; refine ⟨?_, ?_⟩
-        · rw [h1, h2]; exact h12
-        · rw [h2, h3]; exact h23
-      · right; refine ⟨?_, ?_, ?_⟩
-        · rw [h1, h2]; exact h12
-        · rw [h2, h3]; exact h23
-        · rw [h1, h3]; exact h13
+      have h4 : d₂.colorAtNat col₂ c.e4 = d₁.colorAtNat col₁ c.e4 := hcolF1 c.e4 he41 he42
+      refine ⟨⟨he11, by omega, he21, by omega, he31, by omega, he41, by omega⟩, ⟨?_, ?_⟩⟩
+      · -- Over-strand continuity col₂(e2)=col₂(e4) via colour-preservation + d₁'s arc-eq.
+        rw [h2, h4]; exact harc
+      · rcases hfox with ⟨h12, h23⟩ | ⟨h12, h23, h13⟩
+        · left; refine ⟨?_, ?_⟩
+          · rw [h1, h2]; exact h12
+          · rw [h2, h3]; exact h23
+        · right; refine ⟨?_, ?_, ?_⟩
+          · rw [h1, h2]; exact h12
+          · rw [h2, h3]; exact h23
+          · rw [h1, h3]; exact h13
     -- (ii) The modified endpoint Y' preserves Fox: `isRenameOf` makes each strand of
     --       Y' read the same colour as the corresponding strand of the original crossing
     --       under `col₁` (unchanged strand via hcolF1; renamed `a→b` strand via hcolF2b).
@@ -826,9 +853,9 @@ theorem Reidemeister1Connected.tricolorable_forward {d₁ d₂ : KnotDiagram}
       have hYorig : triColorConditionAt d₁ col₁ (d₁.crossings.get i) :=
         hfox₁ _ (List.get_mem d₁.crossings i)
       simp only [triColorConditionAt] at hYorig ⊢
-      obtain ⟨⟨oe11, oe12, oe21, oe22, oe31, oe32⟩, hfoxo⟩ := hYorig
+      obtain ⟨⟨oe11, oe12, oe21, oe22, oe31, oe32, oe41, oe42⟩, ⟨harc_orig, hfoxo⟩⟩ := hYorig
       -- isRenameOf field-by-field: derive a colour-equation for each strand.
-      obtain ⟨hre1, hre2, hre3, _hre4⟩ := hrename
+      obtain ⟨hre1, hre2, hre3, hre4⟩ := hrename
       -- Lemma: a renamed-or-unchanged strand `Y'.f` reads `col₁ (orig.f)`.
       have help : ∀ (hf : Nat) (ho : Nat) (hr : hf = ho ∨ (hf = d₁.numEdges + 1 ∧ ho = a))
                      (ho1 : 1 ≤ ho) (hon : ho ≤ d₁.numEdges),
@@ -850,21 +877,29 @@ theorem Reidemeister1Connected.tricolorable_forward {d₁ d₂ : KnotDiagram}
         rcases hre3 with heq | ⟨heqf, heqa⟩
         · rw [heq]; exact ⟨oe31, by omega⟩
         · rw [heqf]; exact ⟨by omega, by omega⟩
-      refine ⟨⟨he1'.1, he1'.2, he2'.1, he2'.2, he3'.1, he3'.2⟩, ?_⟩
+      have he4' : 1 ≤ Y'.e4 ∧ Y'.e4 ≤ d₂.numEdges := by
+        rcases hre4 with heq | ⟨heqf, heqa⟩
+        · rw [heq]; exact ⟨oe41, by omega⟩
+        · rw [heqf]; exact ⟨by omega, by omega⟩
       have h1 : d₂.colorAtNat col₂ Y'.e1 = d₁.colorAtNat col₁ (d₁.crossings.get i).e1 :=
         help Y'.e1 (d₁.crossings.get i).e1 hre1 oe11 oe12
       have h2 : d₂.colorAtNat col₂ Y'.e2 = d₁.colorAtNat col₁ (d₁.crossings.get i).e2 :=
         help Y'.e2 (d₁.crossings.get i).e2 hre2 oe21 oe22
       have h3 : d₂.colorAtNat col₂ Y'.e3 = d₁.colorAtNat col₁ (d₁.crossings.get i).e3 :=
         help Y'.e3 (d₁.crossings.get i).e3 hre3 oe31 oe32
-      rcases hfoxo with ⟨h12, h23⟩ | ⟨h12, h23, h13⟩
-      · left; refine ⟨?_, ?_⟩
-        · rw [h1, h2]; exact h12
-        · rw [h2, h3]; exact h23
-      · right; refine ⟨?_, ?_, ?_⟩
-        · rw [h1, h2]; exact h12
-        · rw [h2, h3]; exact h23
-        · rw [h1, h3]; exact h13
+      have h4 : d₂.colorAtNat col₂ Y'.e4 = d₁.colorAtNat col₁ (d₁.crossings.get i).e4 :=
+        help Y'.e4 (d₁.crossings.get i).e4 hre4 oe41 oe42
+      refine ⟨⟨he1'.1, he1'.2, he2'.1, he2'.2, he3'.1, he3'.2, he4'.1, he4'.2⟩, ⟨?_, ?_⟩⟩
+      · -- Over-strand continuity col₂(Y'.e2)=col₂(Y'.e4) via rename transfer + d₁'s arc-eq.
+        rw [h2, h4]; exact harc_orig
+      · rcases hfoxo with ⟨h12, h23⟩ | ⟨h12, h23, h13⟩
+        · left; refine ⟨?_, ?_⟩
+          · rw [h1, h2]; exact h12
+          · rw [h2, h3]; exact h23
+        · right; refine ⟨?_, ?_, ?_⟩
+          · rw [h1, h2]; exact h12
+          · rw [h2, h3]; exact h23
+          · rw [h1, h3]; exact h13
     -- Membership split: c ∈ d₂.crossings = (set i Y') ++ [C]  →  C / Y' / unchanged.
     have hset_fwd : ∀ c, c ∈ d₁.crossings.set i.val Y' → c = Y' ∨ c ∈ d₁.crossings :=
       fun c hcm => mem_set_fwd i.val d₁.crossings Y' c hcm
@@ -1385,7 +1420,7 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     · -- pos: unchanged crossing. Fox holds under col₂ (hfox₂), transferred.
       have hfc2 : triColorConditionAt d₂ col₂ c := hfox₂ c hc2
       simp only [triColorConditionAt] at hfc2 ⊢
-      obtain ⟨⟨he11, he12, he21, he22, he31, he32⟩, hfox⟩ := hfc2
+      obtain ⟨⟨he11, he12, he21, he22, he31, he32, he41, he42⟩, ⟨harc, hfox⟩⟩ := hfc2
       -- WF upper bound: hfc2 only gives c.e_k ≤ d₂.numEdges (= d₁.numEdges + 2).
       -- The stronger bound c.e_k ≤ d₁.numEdges comes from d₁.wf clause (a)
       -- (every d₁ edge label ∈ [1, numEdges]): c ∈ d₁.crossings ⟹ c.e_k ∈ d₁.edges.
@@ -1401,25 +1436,32 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
         simp only [KnotDiagram.edges, List.mem_flatMap]; exact ⟨c, hc, by simp⟩
       have hmem_e3 : c.e3 ∈ d₁.edges := by
         simp only [KnotDiagram.edges, List.mem_flatMap]; exact ⟨c, hc, by simp⟩
+      have hmem_e4 : c.e4 ∈ d₁.edges := by
+        simp only [KnotDiagram.edges, List.mem_flatMap]; exact ⟨c, hc, by simp⟩
       have he1 := ha c.e1 hmem_e1
       have he2 := ha c.e2 hmem_e2
       have he3 := ha c.e3 hmem_e3
-      refine ⟨⟨he11, he1.2, he21, he2.2, he31, he3.2⟩, ?_⟩
-      -- Fox transfer via hcolPres (d₁ colour = d₂ colour on each strand).
+      have he4 := ha c.e4 hmem_e4
+      -- Colour preservation (reverse of forward hcolF1): d₁ colour = d₂ colour.
       have h1 : d₁.colorAtNat col₁ c.e1 = d₂.colorAtNat col₂ c.e1 :=
         hcolPres c.e1 he11 he1.2
       have h2 : d₁.colorAtNat col₁ c.e2 = d₂.colorAtNat col₂ c.e2 :=
         hcolPres c.e2 he21 he2.2
       have h3 : d₁.colorAtNat col₁ c.e3 = d₂.colorAtNat col₂ c.e3 :=
         hcolPres c.e3 he31 he3.2
-      rcases hfox with ⟨h12, h23⟩ | ⟨h12, h23, h13⟩
-      · left; refine ⟨?_, ?_⟩
-        · rw [h1, h2]; exact h12
-        · rw [h2, h3]; exact h23
-      · right; refine ⟨?_, ?_, ?_⟩
-        · rw [h1, h2]; exact h12
-        · rw [h2, h3]; exact h23
-        · rw [h1, h3]; exact h13
+      have h4 : d₁.colorAtNat col₁ c.e4 = d₂.colorAtNat col₂ c.e4 :=
+        hcolPres c.e4 he41 he4.2
+      refine ⟨⟨he11, he1.2, he21, he2.2, he31, he3.2, he41, he4.2⟩, ⟨?_, ?_⟩⟩
+      · -- Over-strand continuity col₁(e2)=col₁(e4) via colour-preservation + d₂'s arc-eq.
+        rw [h2, h4]; exact harc
+      · rcases hfox with ⟨h12, h23⟩ | ⟨h12, h23, h13⟩
+        · left; refine ⟨?_, ?_⟩
+          · rw [h1, h2]; exact h12
+          · rw [h2, h3]; exact h23
+        · right; refine ⟨?_, ?_, ?_⟩
+          · rw [h1, h2]; exact h12
+          · rw [h2, h3]; exact h23
+          · rw [h1, h3]; exact h13
     · -- neg: c = Y (the modified crossing, dropped from d₂ by `set i Y'`). Fox
       -- at Y under col₁ transfers from Fox at Y' under col₂ (hfox₂): unchanged
       -- strands via hcolPres, the renamed a→b strand via the kink all-equality
@@ -1444,16 +1486,17 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
           ⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩ := hfox₂ _ hCmem
       obtain ⟨_, hCmode⟩ := hCfox
       have hCmode' :
-          (d₂.colorAtNat col₂ a = d₂.colorAtNat col₂ (d₁.numEdges + 1) ∧
-           d₂.colorAtNat col₂ (d₁.numEdges + 1) = d₂.colorAtNat col₂ (d₁.numEdges + 2)) ∨
-          (d₂.colorAtNat col₂ a ≠ d₂.colorAtNat col₂ (d₁.numEdges + 1) ∧
-           d₂.colorAtNat col₂ (d₁.numEdges + 1) ≠ d₂.colorAtNat col₂ (d₁.numEdges + 2) ∧
-           d₂.colorAtNat col₂ a ≠ d₂.colorAtNat col₂ (d₁.numEdges + 2)) := hCmode
-      rcases hCmode' with ⟨hCa_n1, _⟩ | _hdist
+          (d₂.colorAtNat col₂ (d₁.numEdges + 1) = d₂.colorAtNat col₂ (d₁.numEdges + 2)) ∧
+          ((d₂.colorAtNat col₂ a = d₂.colorAtNat col₂ (d₁.numEdges + 1) ∧
+            d₂.colorAtNat col₂ (d₁.numEdges + 1) = d₂.colorAtNat col₂ (d₁.numEdges + 2)) ∨
+           (d₂.colorAtNat col₂ a ≠ d₂.colorAtNat col₂ (d₁.numEdges + 1) ∧
+            d₂.colorAtNat col₂ (d₁.numEdges + 1) ≠ d₂.colorAtNat col₂ (d₁.numEdges + 2) ∧
+            d₂.colorAtNat col₂ a ≠ d₂.colorAtNat col₂ (d₁.numEdges + 2))) := hCmode
+      rcases hCmode' with ⟨_hCarc, ⟨hCa_n1, _⟩ | _hdist⟩
       · -- all-equal kink mode: col₂(a)=col₂(n+1). Transfer Fox Y'→Y.
         simp only [triColorConditionAt] at hY'fox ⊢
-        obtain ⟨⟨he'11, he'12, he'21, he'22, he'31, he'32⟩, hY'foxmode⟩ := hY'fox
-        obtain ⟨hre1, hre2, hre3, _hre4⟩ := hrename
+        obtain ⟨⟨he'11, he'12, he'21, he'22, he'31, he'32, he'41, he'42⟩, ⟨harc_Y', hY'foxmode⟩⟩ := hY'fox
+        obtain ⟨hre1, hre2, hre3, hre4⟩ := hrename
         -- WF bounds for Y's strands (d₁.wf clause a: every edge label ∈ [1,n]).
         have hcross_ne : d₁.crossings ≠ [] := by
           intro h; rw [h] at hc; exact (List.mem_nil_iff _).mp hc
@@ -1468,9 +1511,12 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
           simp only [KnotDiagram.edges, List.mem_flatMap]; exact ⟨_, hYmem, by simp⟩
         have hmem_eY3 : (d₁.crossings.get i).e3 ∈ d₁.edges := by
           simp only [KnotDiagram.edges, List.mem_flatMap]; exact ⟨_, hYmem, by simp⟩
+        have hmem_eY4 : (d₁.crossings.get i).e4 ∈ d₁.edges := by
+          simp only [KnotDiagram.edges, List.mem_flatMap]; exact ⟨_, hYmem, by simp⟩
         have heY1 := ha_all _ hmem_eY1
         have heY2 := ha_all _ hmem_eY2
         have heY3 := ha_all _ hmem_eY3
+        have heY4 := ha_all _ hmem_eY4
         -- Per-strand colour transfer (unchanged via hcolPres; renamed via kink).
         have help : ∀ (hf ho : Nat)
             (hmode : hf = ho ∨ (hf = d₁.numEdges + 1 ∧ ho = a))
@@ -1489,7 +1535,12 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
         have h3 : d₂.colorAtNat col₂ Y'.e3 =
             d₁.colorAtNat col₁ (d₁.crossings.get i).e3 :=
           help Y'.e3 (d₁.crossings.get i).e3 hre3 heY3.1 heY3.2
-        refine ⟨⟨heY1.1, heY1.2, heY2.1, heY2.2, heY3.1, heY3.2⟩, ?_⟩
+        have h4 : d₂.colorAtNat col₂ Y'.e4 =
+            d₁.colorAtNat col₁ (d₁.crossings.get i).e4 :=
+          help Y'.e4 (d₁.crossings.get i).e4 hre4 heY4.1 heY4.2
+        refine ⟨⟨heY1.1, heY1.2, heY2.1, heY2.2, heY3.1, heY3.2, heY4.1, heY4.2⟩, ⟨?_, ?_⟩⟩
+        · -- Over-strand continuity col₁(Y.e2)=col₁(Y.e4) via rename transfer + Y's arc-eq under col₂.
+          rw [← h2, ← h4]; exact harc_Y'
         rcases hY'foxmode with ⟨h12, h23⟩ | ⟨h12, h23, h13⟩
         · left; refine ⟨?_, ?_⟩
           · rw [← h1, ← h2]; exact h12
@@ -1512,9 +1563,13 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
         -- rank-nullity; bridge `triColorConditionAt ↔ sum ≡ 0` by decide
         -- on Fin 3). d₁ qualifies (wf + proper-arc ⟹ ≥2 crossings, see
         -- `num` case), so d₁ is tricolorable INDEPENDENTLY of col₂ —
-        -- route the backward proof through this lemma; it discharges
-        -- both this residual and the `col` one. BG-prover / next cycle:
-        -- prove the universal lemma + bridge, then simplify backward.
+        -- WITHDRAWN under Path B (2026-06-23). The universal lemma above is
+        -- FALSE classically: the figure-eight knot is well-formed with 4
+        -- crossings yet is NOT Fox-tricolorable (only its 3 constant colourings
+        -- exist). The per-crossing GF(3) bridge (`triColorFoxCondition_iff_sum_mod_three`,
+        -- cycle-6) still holds, but it does not lift to universal colourability.
+        -- This branch is therefore OPEN, awaiting a direct col2->col1 lift
+        -- (see the Record below); it is NOT discharged by the withdrawn lemma.
         --
         -- Record — why the direct col₂→col₁ lift below is blocked: d₂.wf
         -- parity on fresh edge b=n₁+1 forces Y to hold `a` in exactly one
@@ -1608,12 +1663,13 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     -- Coerce the `let`-bound Fox disjunction to its inlined form (defeq on C's
     -- fields: e1 = a, e2 = n+1, e3 = n+2) so `rcases` can split the disjunction.
     have hCmode' :
-        (d₂.colorAtNat col₂ a = d₂.colorAtNat col₂ (d₁.numEdges + 1) ∧
-         d₂.colorAtNat col₂ (d₁.numEdges + 1) = d₂.colorAtNat col₂ (d₁.numEdges + 2)) ∨
-        (d₂.colorAtNat col₂ a ≠ d₂.colorAtNat col₂ (d₁.numEdges + 1) ∧
-         d₂.colorAtNat col₂ (d₁.numEdges + 1) ≠ d₂.colorAtNat col₂ (d₁.numEdges + 2) ∧
-         d₂.colorAtNat col₂ a ≠ d₂.colorAtNat col₂ (d₁.numEdges + 2)) := hCmode
-    rcases hCmode' with ⟨h_a_n1, h_n1_n2⟩ | _hdist
+        (d₂.colorAtNat col₂ (d₁.numEdges + 1) = d₂.colorAtNat col₂ (d₁.numEdges + 2)) ∧
+        ((d₂.colorAtNat col₂ a = d₂.colorAtNat col₂ (d₁.numEdges + 1) ∧
+          d₂.colorAtNat col₂ (d₁.numEdges + 1) = d₂.colorAtNat col₂ (d₁.numEdges + 2)) ∨
+         (d₂.colorAtNat col₂ a ≠ d₂.colorAtNat col₂ (d₁.numEdges + 1) ∧
+          d₂.colorAtNat col₂ (d₁.numEdges + 1) ≠ d₂.colorAtNat col₂ (d₁.numEdges + 2) ∧
+          d₂.colorAtNat col₂ a ≠ d₂.colorAtNat col₂ (d₁.numEdges + 2))) := hCmode
+    rcases hCmode' with ⟨_hCarc, ⟨h_a_n1, h_n1_n2⟩ | _hdist⟩
     · -- all-equal kink mode. By contradiction: if col₁ is constant, col₂ is
       -- constant on the whole [0, d₂.numEdges) range (d₁-range via the col₁
       -- embedding; the two fresh indices via the kink's all-equal, tying them to
@@ -1666,11 +1722,12 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     · -- all-distinct kink mode: §9.1 residual. The fresh edges carry a NEW
       -- colour absent from the d₁ range, so the naïve col₁ restriction can be
       -- monochromatic and the ≥2-colour lift via col₂ fails (see the `fox`
-      -- case above). DISCHARGED by the cycle-3 GF(3) breakthrough: the
-      -- universal lemma `wf d → ≥2 crossings → IsTricolorable d` (Fox is
-      -- linear over GF(3), dim V(d) ≥ m ≥ 2) makes d₁ tricolorable
-      -- independently of col₂ — no col₁ lift is needed. Prove that lemma +
-      -- route backward through it; both this residual and `fox` vanish.
+      -- case above). [WITHDRAWN under Path B] The hoped-for discharge via the
+      -- cycle-3 GF(3) universal lemma (`wf d, >=2 crossings => IsTricolorable d`,
+      -- Fox linear over GF(3)) is FALSE classically: the figure-eight knot has
+      -- 4 crossings yet is NOT Fox-tricolorable. The universal shortcut is gone,
+      -- so this `col` residual is OPEN (as is the `fox` case above); both await a
+      -- direct arc-respecting col2->col1 lift rather than the withdrawn lemma.
       sorry
 
 end Knots

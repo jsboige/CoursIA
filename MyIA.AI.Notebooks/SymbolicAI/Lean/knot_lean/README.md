@@ -54,8 +54,9 @@ deux comptes et échoue la CI, sauf justification documentée dans le body PR.
 ### Scaffolding (sorry, cible formelle)
 
 - [ ] `tricolorable_invariant` — la 3-colorabilité est invariante par Reidemeister
-  (**FAUX sous le modèle append+wf courant** : kink disjoint change la
-  3-colorabilité = #2938. GATED sur la décision C/X du coordinateur, cf. § Phase 5)
+  (sous **Path B** le modèle EST le Fox classique : énoncé sain et non trivial —
+  distinguera trèfle/unknot/figure-8 une fois clos. GATED sur les 2 résiduels §9.1
+  du backward transfer, cf. § Path B / § Phase 5)
 - [ ] `trefoil_not_unknot` — corollaire : le trèfle n'est pas l'unknot (dépend de
   `tricolorable_invariant`)
 - [ ] `unknottingNumber` — définition + calcul (nécessite minimisation sur classes
@@ -90,43 +91,46 @@ BG-prover ai-01), L799 est de l'infrastructure NP-dure. Le transfer R1 backward
 est en revanche **complet sur son sous-cas all-equal** (`fox`+`col` PROUVÉS) et sur
 `num` (parité `wf`, #3163) — seuls les modes all-distinct du kink restent ouverts.
 
-## GF(3) linéarité & limite de soundness du modèle (2026-06-23, #3003)
+## Path B : modèle de Fox classique restauré (2026-06-23, #3003)
 
-Deux résultats combinatoires sur le modèle de 3-colorabilité, énoncés comme
-scaffolding (cibles BG-prover) suite à la caractérisation cycle-3 (#4022) :
+**Décision : Path B implémenté.** Le modèle de 3-colorabilité colorait auparavant
+des ARÊTES (`Fin numEdges`) indépendamment, sans contrainte d'arc-égalité — le Fox
+classique force l'over-strand d'un crossing à partager une couleur (continuité sur
+l'arc). Ce modèle permissif divergeait du Fox classique : il admettait des
+tricolorations parasites (notamment le **figure-8**, classiquement NON
+3-colorable, witness `(0,0,0,1,0,0,1,2)`) et rendait un « lemme universel » de
+colorabilité VRAI pour le modèle mais FAUX classiquement — ce qui aurait rendu
+`tricolorable_invariant` trivial (ne distinguant que l'unknot).
 
-- **Linéarité GF(3) du condition de Fox** (`triColorFoxCondition_iff_sum_mod_three`,
-  Invariant.lean) : pour trois couleurs, la condition « toutes égales OU toutes
-  distinctes » équivaut à `toNat(c₁)+toNat(c₂)+toNat(c₃) ≡ 0 (mod 3)`. L'espace
-  des colorations valides est donc un *sous-espace linéaire* de `(ℤ/3)^(numEdges)`.
-  Vérifié empiriquement (0 désaccord sur 7,5M diagrammes wf). Décidable par
-  `decide` une fois `Fintype` (Mathlib) importé — ce fichier n'importe actuellement
-  que `Knots.Basic`/`Knots.Reidemeister`.
-- **Lemme universel** (`tricolorability_of_two_crossings`, Invariant.lean) :
-  `wf d → d.crossings.length ≥ 2 → IsTricolorable d` (par rang-nullité sur le
-  système GF(3) ci-dessus). VRAI pour le modèle (0 échec pour m ∈ {2,3,4,5}).
+**Path B (mandaté 2026-06-23).** `triColorConditionAt` (Invariant.lean) porte
+désormais la conjonction d'**arc-égalité** `c₂ = c₄` (les deux bouts de l'over-strand
+d'un crossing portent la même couleur), en plus de la règle de Fox (toutes égales
+OU toutes distinctes) sur les trois brins se rencontrant. C'EST l'invariant de Fox
+classique (Fox 1962) : une coloration constante sur les arcs, avec la règle
+all-equal-or-all-distinct à chaque crossing.
 
-**⚠️ SOUNDNESS — le modèle DIVERGE du Fox classique (G.9, vérifié firsthand) :**
-le modèle colore des ARÊTES (`Fin numEdges`) indépendamment, SANS contrainte
-d'arc-égalité (le Fox classique force l'over-strand d'un crossing à partager sa
-couleur). Donc `numEdges = 2·m ≠ m arcs`, et même le **figure-8** (4 crossings,
-déterminant 5, classiquement NON 3-colorable) EST edge-tricolorable dans le modèle
-— witness `(0,0,0,1,0,0,1,2)` vérifié contre le `triColorConditionAt` exact.
+- **Non-régression vérifiée** : `trefoil_tricolorable` re-prouvé avec le témoin
+  arc-respectant `(0,1,1,2,2,0)` (`decide`) ; le **figure-8** est désormais
+  correctement REJETÉ (son ancien témoin permissif ne valide plus la conjonction
+  d'arc).
+- **GF(3) linéarité par-crossing** (`triColorFoxCondition_iff_sum_mod_three`,
+  Invariant.lean, cycle-6) : la condition de Fox à un crossing équivaut à
+  `toNat(c₁)+toNat(c₂)+toNat(c₃) ≡ 0 (mod 3)` — fait computationnel par-crossing,
+  indépendant de l'arc. Conservé comme scaffolding. NB : ceci ne se lève PAS en
+  lemme universel de colorabilité (cf. point suivant).
+- **Lemme universel RETIRÉ** (`tricolorability_of_two_crossings`) : il est FAUX
+  sous Path B — le figure-8 est bien-formé avec 4 crossings et n'est PAS
+  Fox-tricolorable. Le raccourci rang-nullité n'est donc pas disponible ; la
+  section « Withdrawn » d'Invariant.lean documente le retrait et le contre-exemple.
 
-**Conséquence stratégique :** prouver le lemme universel déchargerait les 2
-sorries résiduels de #3003 (fox/col backward) MAIS rendrait `tricolorable_invariant`
-TRIVIALEMENT vrai (tout diagramme wf ≥2-crossings devient tricolorable →
-l'invariant ne distingue plus que l'unknot). C'est un **fork architectural** en
-attente de décision coordinateur/user :
-
-- **Path A** : prouver le lemme (décharge #3003, consacre un modèle permissif
-  non-classique ; figure-8 false-positive permanent).
-- **Path B** : fixer le modèle (contrainte d'arc-égalité / coloration par arcs),
-  re-prouver `trefoil_tricolorable`, #3003 backward devient le transfert classique
-  GÉNUINEMENT dur.
-
-Le lemme + le pont sont énoncés (open) pour permettre l'itération BG-prover d'ai-01
-sur la cible ainsi formalisée ; la décision architecturale est différée.
+**Conséquence pour `tricolorable_invariant`.** Sous Path B, l'invariant n'est plus
+trivial : une fois les 2 sous-buts résiduels §9.1 du transfer backward clos, la
+composition forward + backward donne une bi-implication R1 sous le modèle connecté,
+et l'invariant distingue GÉNUINEMENT le trèfle (tricolorable) de l'unknot (non) et
+du figure-8 (non) — au lieu de n'isoler que l'unknot. Les 2 résiduels §9.1 restent
+ouverts (héritage Fox du crossing modifié sous kink all-distinct) ; c'est le
+transfert classique GÉNUINEMENT dur, comme anticipé par le fork ci-dessus (Path B
+choisi, Path A écarté).
 
 ## Phase 5 — Re-modélisation des mouvements de Reidemeister
 
