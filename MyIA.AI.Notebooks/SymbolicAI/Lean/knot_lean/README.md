@@ -54,8 +54,9 @@ deux comptes et échoue la CI, sauf justification documentée dans le body PR.
 ### Scaffolding (sorry, cible formelle)
 
 - [ ] `tricolorable_invariant` — la 3-colorabilité est invariante par Reidemeister
-  (**FAUX sous le modèle append+wf courant** : kink disjoint change la
-  3-colorabilité = #2938. GATED sur la décision C/X du coordinateur, cf. § Phase 5)
+  (sous **Path B** le modèle EST le Fox classique : énoncé sain et non trivial —
+  distinguera trèfle/unknot/figure-8 une fois clos. GATED sur les 2 résiduels §9.1
+  du backward transfer, cf. § Path B / § Phase 5)
 - [ ] `trefoil_not_unknot` — corollaire : le trèfle n'est pas l'unknot (dépend de
   `tricolorable_invariant`)
 - [ ] `unknottingNumber` — définition + calcul (nécessite minimisation sur classes
@@ -76,19 +77,62 @@ formel réel, couple aux preuves :
 
 | Ligne | Théorème | Verdict | Débloqueur |
 |-------|----------|---------|------------|
-| L116 | `tricolorable_invariant` | **REFUTÉ tel qu'énoncé** | Contre-exemple certifié `tricolorable_invariant_fails_under_pr1_model` (Invariant.lean L211) : witness `(d₁={⟨1,2,1,2⟩,2}, d₂={⟨1,2,1,2⟩,⟨3,4,3,4⟩,4})` relié par `ReidemeisterEquiv.step (ReidemeisterStep.r1 …)` (L222), `d₁` non-tricolorable, `d₂` tricolorable. Le step R1 utilise le `Reidemeister1` **libre en ρ** (Reidemeister.lean L71). Récupération = **décision de design coord** : **(C)** câbler `Reidemeister1Connected`/`Reidemeister1'` dans `ReidemeisterStep`/`ReidemeisterEquiv` (exclut les kinks disjoints — `pr1_counterexample_excluded_under_rho_determined` L317 le prouve sur le witness), ou **(X)** accepter #2938 et reframer l'invariant. |
-| L743 | `trefoil_not_unknot` | **REFUTÉ par procuration** | Corollaire de L116. Même fork (C)/(X). Pas de chemin direct : `trefoil_crossing_number` est PROUVÉ mais l'invariance du crossing-number bute sur la même équivalence libre-en-ρ. |
-| L799 | `Knot.unknottingNumber` | **INFRASTRUCTURE (NP-dur)** | Minimisation sur les classes d'équivalence ; gated sur une `ReidemeisterEquiv` non-triviale (fork L116). Scaffolding permanent. |
-| L1330 | `fox` all-distinct §9.1 | **RESEARCH-HOLD** | Héritage Fox du crossing modifié `Y'` sous kink all-distinct. Nécessite la construction colour-symmetry / proper-arc #3003. Sous-cas **all-equal PROUVÉ** (L1280-1327, transfer par `help` per-strand). |
-| L1474 | `col` all-distinct §9.1 | **RESEARCH-HOLD** | Lift ≥ 2 couleurs : la restriction naïve `col₁` peut être **monochrome** si toute la variation chromatique de `col₂` vit sur les arêtes fraîches `{n+1, n+2}` (pathologie du kink disjoint). Nécessite #3003, **ou** un contre-exemple certifié qui réfuterait le backward (non exclu). Sous-cas **all-equal PROUVÉ** (L1421-1469, par l'absurde via `h2col₂`). |
+| L238 | `tricolorable_invariant` | **OPEN (`sorry`)** | Plus réfuté après le rewire Stage 2 (#3999) : `ReidemeisterStep.r1` est recâblé vers la fermeture symétrique du move géométriquement connecté `Reidemeister1Connected`. Le contre-exemple libre-en-ρ `tricolorable_invariant_fails_under_pr1_model` (L342, witness `(d₁={⟨1,2,1,2⟩,2}, d₂={⟨1,2,1,2⟩,⟨3,4,3,4⟩,4})`) vit sur le move RAW `Reidemeister1` et n'est plus `ReidemeisterEquiv`-atteignable (`pr1_counterexample_excluded_under_connected` L508). Décision coord (C) **exécutée** (trio #3997/#3999/#4003 merged). Reste OPEN sur le transfer FORWARD à travers un curl R1 connecté (les 2 arêtes fraîches héritent `color a`). |
+| L944 | `trefoil_not_unknot` | **OPEN (`sorry`)** | Plus « réfuté par procuration ». La route naturelle (`tricolorable_invariant` + `trefoil_tricolorable` + `unknot_not_tricolorable`) est gated par le transfer forward de L238. Les deux pièces composantes sont prouvées sous la vraie condition de Fox (Path B) — atterrit dès que L238 lands. |
+| L1006 | `Knot.unknottingNumber` | **INFRASTRUCTURE (NP-dur)** | Minimisation sur les classes d'équivalence ; gated sur une `ReidemeisterEquiv` non-triviale (fork L238). Scaffolding permanent. |
+| L1581 | `fox` all-distinct §9.1 | **OPEN (`sorry`)** | Héritage Fox du crossing modifié `Y'` sous kink all-distinct. #3003 (Path B, contrainte d'arc-equality) **SHIPPED** ; le résiduel est le **transfert classique backward** genuinely dur (BG-prover ai-01, cible research originelle #2874). Sous-cas **all-equal PROUVÉ** dans le corps de `tricolorable_backward` (L1373). |
+| L1731 | `col` all-distinct §9.1 | **OPEN (`sorry`)** | Lift ≥ 2 couleurs : la restriction naïve `col₁` peut être **monochrome** si toute la variation chromatique de `col₂` vit sur les arêtes fraîches `{n+1, n+2}` (pathologie du kink disjoint). #3003 (Path B) **SHIPPED** ; résiduel = transfert classique backward (BG-prover #2874). Sous-cas **all-equal PROUVÉ** (par l'absurde via `h2col₂`, dans `tricolorable_backward` L1373). |
 
-**Conclusion de l'audit.** Aucun grain de preuve tractable en 1 cycle dans
-`knot_lean` : les deux feuilles « réfutées » (L116/L743) sont un **fork de design**
-au coordinateur (décision (C) câblage vs (X) reframer), les deux résiduels §9.1
-(L1330/L1474) sont le **noyau research-level irréductible** (construction #3003,
-BG-prover ai-01), L799 est de l'infrastructure NP-dure. Le transfer R1 backward
-est en revanche **complet sur son sous-cas all-equal** (`fox`+`col` PROUVÉS) et sur
-`num` (parité `wf`, #3163) — seuls les modes all-distinct du kink restent ouverts.
+**Conclusion de l'audit (post-trio #3997/#3999/#4003, post-Path B #3003).**
+`tricolorable_invariant` (L238) et `trefoil_not_unknot` (L944) ne sont **plus
+réfutés** — le rewire connecté a exclu le witness libre-en-ρ, ils sont OPEN sur le
+transfer FORWARD. Les deux résiduels §9.1 (L1581 fox / L1731 col) restent le **noyau
+research-level irréductible** : transfert classique backward all-distinct (BG-prover
+ai-01, cible #2874), l'arc-equality #3003 étant désormais shipped. `Knot.unknottingNumber`
+(L1006) = infrastructure NP-dure. Le transfer R1 backward est en revanche **complet
+sur son sous-cas all-equal** (`fox`+`col` PROUVÉS) et sur `num` (parité `wf`, #3163)
+— seuls les modes all-distinct du kink restent ouverts.
+
+## Path B : modèle de Fox classique restauré (2026-06-23, #3003)
+
+**Décision : Path B implémenté.** Le modèle de 3-colorabilité colorait auparavant
+des ARÊTES (`Fin numEdges`) indépendamment, sans contrainte d'arc-égalité — le Fox
+classique force l'over-strand d'un crossing à partager une couleur (continuité sur
+l'arc). Ce modèle permissif divergeait du Fox classique : il admettait des
+tricolorations parasites (notamment le **figure-8**, classiquement NON
+3-colorable, witness `(0,0,0,1,0,0,1,2)`) et rendait un « lemme universel » de
+colorabilité VRAI pour le modèle mais FAUX classiquement — ce qui aurait rendu
+`tricolorable_invariant` trivial (ne distinguant que l'unknot).
+
+**Path B (mandaté 2026-06-23).** `triColorConditionAt` (Invariant.lean) porte
+désormais la conjonction d'**arc-égalité** `c₂ = c₄` (les deux bouts de l'over-strand
+d'un crossing portent la même couleur), en plus de la règle de Fox (toutes égales
+OU toutes distinctes) sur les trois brins se rencontrant. C'EST l'invariant de Fox
+classique (Fox 1962) : une coloration constante sur les arcs, avec la règle
+all-equal-or-all-distinct à chaque crossing.
+
+- **Non-régression vérifiée** : `trefoil_tricolorable` re-prouvé avec le témoin
+  arc-respectant `(0,1,1,2,2,0)` (`decide`) ; le **figure-8** est désormais
+  correctement REJETÉ (son ancien témoin permissif ne valide plus la conjonction
+  d'arc).
+- **GF(3) linéarité par-crossing** (`triColorFoxCondition_iff_sum_mod_three`,
+  Invariant.lean, cycle-6) : la condition de Fox à un crossing équivaut à
+  `toNat(c₁)+toNat(c₂)+toNat(c₃) ≡ 0 (mod 3)` — fait computationnel par-crossing,
+  indépendant de l'arc. Conservé comme scaffolding. NB : ceci ne se lève PAS en
+  lemme universel de colorabilité (cf. point suivant).
+- **Lemme universel RETIRÉ** (`tricolorability_of_two_crossings`) : il est FAUX
+  sous Path B — le figure-8 est bien-formé avec 4 crossings et n'est PAS
+  Fox-tricolorable. Le raccourci rang-nullité n'est donc pas disponible ; la
+  section « Withdrawn » d'Invariant.lean documente le retrait et le contre-exemple.
+
+**Conséquence pour `tricolorable_invariant`.** Sous Path B, l'invariant n'est plus
+trivial : une fois les 2 sous-buts résiduels §9.1 du transfer backward clos, la
+composition forward + backward donne une bi-implication R1 sous le modèle connecté,
+et l'invariant distingue GÉNUINEMENT le trèfle (tricolorable) de l'unknot (non) et
+du figure-8 (non) — au lieu de n'isoler que l'unknot. Les 2 résiduels §9.1 restent
+ouverts (héritage Fox du crossing modifié sous kink all-distinct) ; c'est le
+transfert classique GÉNUINEMENT dur, comme anticipé par le fork ci-dessus (Path B
+choisi, Path A écarté).
 
 ## Phase 5 — Re-modélisation des mouvements de Reidemeister
 
