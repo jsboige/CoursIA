@@ -632,7 +632,8 @@ def build_def_type_warnings(filepath: str, goal_state: str) -> str:
 
 
 def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
-                             imports: Optional[str] = None) -> dict:
+                             imports: Optional[str] = None,
+                             persist_on_success: bool = False) -> dict:
     """Verify a sorry replacement by writing modified file to disk and checking Lean.
 
     Args:
@@ -640,8 +641,20 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
         sorry_line: 1-based line number of the sorry
         replacement: Tactic(s) to replace the sorry (will be indented to match)
         imports: Unused (file already has imports)
+        persist_on_success: when True and the isolated probe succeeds, write the
+            replacement back to the REAL file and rebuild the real module to
+            confirm. The probe alone builds an isolated ``_SorryVerify.lean``
+            copy and never touches the real file, so a caller trusting
+            ``result["success"]`` would mark a proof found while the real sorry
+            count stayed flat (false success, Epic #1453). With this flag the
+            real file is only kept if its rebuild is error-free, carries no
+            implicit ``declaration uses 'sorry'`` warning, and the textual sorry
+            count strictly dropped; otherwise the original content is restored.
 
-    Returns: dict with success, errors, time_s
+    Returns: dict with success, errors, time_s, and (when persist_on_success)
+        ``persisted`` (bool: the real file now holds the replacement) and
+        ``real_build_ok`` (bool|None: real-module rebuild verdict, None if not
+        attempted).
     """
     from .verifier import get_verifier
 
@@ -794,6 +807,57 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
         error_msg = ""
         error_type = None
 
+    # Write-back on success (Epic #1453 false-success fix, 2026-06-23).
+    # Everything above only proves the replacement compiles in an isolated
+    # _SorryVerify.lean copy; the REAL file is never modified. Callers that
+    # trust result["success"] therefore saw proof_found=True while the real
+    # sorry count stayed flat. When persist_on_success is set, write the
+    # replacement to the real file and rebuild the REAL module to confirm,
+    # restoring the original content on any failure so the file is never left
+    # broken or with a regressed proof.
+    persisted = False
+    real_build_ok = None
+    if is_success and persist_on_success:
+        original_content = content
+        real_relative = f"{subdir}/{Path(filepath).name}"
+        try:
+            Path(filepath).write_text(new_content, encoding="utf-8")
+            real_result = verifier.verify_project_file(real_relative, force=True)
+            real_output = real_result.get("raw_output", "") or ""
+            # Real module must be error-free, carry no implicit-sorry warning,
+            # and the textual sorry count must strictly drop (the replacement
+            # genuinely removed a sorry rather than compiling around it or
+            # re-introducing one, e.g. a returned `simp; sorry`).
+            real_has_error = bool(re.search(r"\berror:", real_output))
+            implicit_sorry = "declaration uses 'sorry'" in real_output
+            sorry_dropped = (new_content.count("sorry")
+                             < original_content.count("sorry"))
+            if real_has_error or implicit_sorry or not sorry_dropped:
+                Path(filepath).write_text(original_content, encoding="utf-8")
+                is_success = False
+                real_build_ok = False
+                error_type = "persist_build_failed"
+                error_msg = (
+                    "Replacement compiled in isolation but the real module "
+                    "rebuild was rejected (real_error="
+                    f"{real_has_error}, implicit_sorry={implicit_sorry}, "
+                    f"sorry_dropped={sorry_dropped}). Original restored."
+                )
+                if real_output:
+                    error_msg += "\n" + real_output[:400]
+            else:
+                persisted = True
+                real_build_ok = True
+        except OSError as _persist_err:
+            try:
+                Path(filepath).write_text(original_content, encoding="utf-8")
+            except OSError:
+                pass
+            is_success = False
+            real_build_ok = False
+            error_type = "persist_io_error"
+            error_msg = f"Failed to persist replacement to real file: {_persist_err}"
+
     return {
         "success": is_success,
         "errors": error_msg,
@@ -804,6 +868,8 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
         "all_errors": result.get("errors", ""),
         "time_s": result.get("time_s", 0),
         "backend": result.get("backend", ""),
+        "persisted": persisted,  # #1453: real file now holds the replacement
+        "real_build_ok": real_build_ok,  # real-module rebuild verdict (or None)
     }
 
 

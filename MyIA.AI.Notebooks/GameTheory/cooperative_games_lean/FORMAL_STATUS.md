@@ -87,6 +87,7 @@ Proved theorems (sorry resolved):
 - `shapley_uniqueness` (PR #1024, commit `1eb5a4a0`, 2026-05-13 — Mobius decomposition)
 - `dummy_shapley_zero` (dummy players get zero Shapley value)
 - `dummy_banzhaf_raw_zero` (PR #4011 — dummy players get zero raw Banzhaf index)
+- `banzhaf_raw_symmetric` (PR #4037, commit `ba3b169e` — symmetric players have equal raw Banzhaf indices)
 - `banzhaf_index_symmetric` (normalized Banzhaf index treats symmetric players equally)
 - `banzhaf_index_dummy_zero` (dummy players get zero normalized Banzhaf index)
 
@@ -114,6 +115,7 @@ Proved theorems (sorry resolved):
 | `shapley_uniqueness` | Shapley.lean | Shapley value is unique solution satisfying axioms (PR #1024) |
 | `dummy_shapley_zero` | Shapley.lean | Dummy players get zero Shapley value |
 | `dummy_banzhaf_raw_zero` | Shapley.lean | Dummy players get zero raw Banzhaf index (PR #4011) |
+| `banzhaf_raw_symmetric` | Shapley.lean | Symmetric players have equal raw Banzhaf index (PR #4037) |
 | `banzhaf_index_symmetric` | Shapley.lean | Normalized Banzhaf index treats symmetric players equally |
 | `banzhaf_index_dummy_zero` | Shapley.lean | Dummy players get zero normalized Banzhaf index |
 
@@ -136,9 +138,9 @@ characterised, and the Farkas/cone-separation kernel lives in `ConeKernel.lean`.
 ## Remaining Work
 
 No open sorry. Possible extensions:
-- Banzhaf power index: `dummy_banzhaf_raw_zero` proved (PR #4011); a symmetry theorem
-  `banzhaf_raw_symmetric` (interchangeable players have equal raw Banzhaf indices, the
-  Banzhaf analog of `shapley_symmetric`) is in progress in PR #4037
+- Banzhaf power index: `dummy_banzhaf_raw_zero` (PR #4011) and the symmetry theorem
+  `banzhaf_raw_symmetric` (PR #4037, merged `ba3b169e`) are proved; the lineage parallels
+  the Shapley characterisation
 - Shapley value computational properties
 
 ## References
@@ -165,3 +167,4 @@ No open sorry. Possible extensions:
 | 2026-06-20 | **Correction (G.1 verify-before-claiming):** PR #1020's `bondareva_shapley_backward` "proof" was `apply?` (non-proof); PR #2959 refactored to isolate `hb_witness` LP-dual kernel as named sorry. FORMAL_STATUS corrected: 0→1 sorry, COMPLETE→WIP_HARD | po-2026 #2959 |
 | 2026-06-23 | **ConeKernel construction closes `hb_witness` (sorry 1→0):** #3933 (ConeKernel TUGame-free kernel) → #3941 (balancedUnit bridge) → #3945 (witness-decoding core) → #3951 (wire cone-separation→decoding pipeline) → #3954 (sorry 1→0). `hb_witness` now a certified `have` @ `Basic.lean:348`. FORMAL_STATUS realigned: 1→0 sorry, WIP_HARD→COMPLETE. Lake build SUCCESS (8435 jobs). | po-2026 |
 | 2026-06-23 | **Banzhaf docs anti-dérive:** FORMAL_STATUS corrected — `dummy_banzhaf_raw_zero` (PR #4011) added to proved list + inventory; stale "no theorems yet" line fixed; Shapley.lean counts 12→13 theorems / 1042→1081 lines. README.md (FR) + README.en.md document the Banzhaf framework (`Critical`/`BanzhafRaw`). See #4037 (symmetry theorem in progress). | po-2026 |
+| 2026-06-23 | **`banzhaf_raw_symmetric` PROVED follow-up** (post-#4037 merge `ba3b169e`): the symmetry theorem is now on main (`Shapley.lean:1106`, `lake build CooperativeGames` SUCCESS 8435 jobs, 0 sorry). README.md/README.en.md "En cours/In progress"→"Prouvé/Proven" + full proof sketch (`banzhafSwap` involution, 4 membership cases, `SymmetricPlayers` value-invariance, critical-coalition bijection). FORMAL_STATUS: moved to proved list + inventory, removed from Remaining Work. Shapley.lean counts 13→14 theorems / 1081→1274 lines. See #4037. | po-2026 |

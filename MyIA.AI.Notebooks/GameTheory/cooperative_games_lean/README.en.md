@@ -49,11 +49,16 @@ A dummy player (`DummyPlayer`) never changes a coalition's value, so it is never
 its raw Banzhaf index is indeed zero. This is the Banzhaf-index analogue of the null-player
 theorem for the Shapley value.
 
-**In progress** (PR #4037): the symmetry theorem `banzhaf_raw_symmetric` — two
-interchangeable players (`SymmetricPlayers`) have equal raw Banzhaf indices, the Banzhaf
-analogue of `shapley_symmetric`. The proof builds an involution `banzhafSwap` that exchanges
-`i` and `j` in each coalition, shows it preserves the game's value, and transports the
-critical coalitions of `i` bijectively onto those of `j`.
+**Proven** (PR #4037, merged `ba3b169e`): the symmetry theorem `banzhaf_raw_symmetric`
+(`Shapley.lean:1106`) — two interchangeable players (`SymmetricPlayers`) have equal raw
+Banzhaf indices, the Banzhaf analogue of `shapley_symmetric`. The proof builds an involution
+`banzhafSwap` that exchanges `i` and `j` in each coalition (four cases: containing both,
+neither, or exactly one of them), shows it preserves the game's value (by `SymmetricPlayers`,
+after a case split on `S ∩ {i, j}`), and transports the critical coalitions of `i`
+bijectively onto those of `j`; the two critical-coalition filters are thus in bijection, so
+their cardinalities coincide — the raw Banzhaf indices. This power-index lineage
+(`dummy_banzhaf_raw_zero` #4011 → `banzhaf_raw_symmetric` #4037) parallels the Shapley
+characterisation.
 
 ## Notes
 
