@@ -1,5 +1,14 @@
 # Bondareva-Shapley `hb_witness`: Farkas plan via `(Option N) → ℝ`
 
+> **⚠ SUPERSEDED (2026-06-22).** Ce plan Farkas / séparation d'hyperplan est **historique**.
+> Le noyau d'atteinte `hb_witness` a été **prouvé** par PR #3954 (`a5288f0a7`) via un
+> argument de **tranche compacte + Weierstrass** (`Basic.lean:348`) — qui contourne le
+> lemme `ProperCone.hyperplane_separation` manquant dans Mathlib **sans axiome ajouté**.
+> Le projet `cooperative_games_lean` est désormais **0 sorry** et `bondareva_shapley`
+> (`Core.Nonempty ↔ Balanced`) est entièrement certifié. Ce document est conservé pour
+> la traçabilité de la stratégie ; ne pas le suivre comme un plan actif. Voir
+> [`../FORMAL_STATUS.md`](../FORMAL_STATUS.md) pour l'état réel.
+
 **Agent:** po-2026 | **Date:** 2026-06-20 | **Issue:** #2959
 
 This plan **supersedes** the older `BONDAREVA_SHAPLEY_HARDNESS.md` strategy (which used a

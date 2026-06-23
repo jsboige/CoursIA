@@ -7,10 +7,10 @@ Cross-directory inventory of all Lean 4 formalization projects under `GameTheory
 | Directory | Toolchain | Production sorry | Modules | Status |
 |-----------|-----------|-----------------|---------|--------|
 | `stable_marriage_lean` | v4.30.0-rc2 | 0 | 5 files | COMPLETE |
-| `cooperative_games_lean` | v4.30.0-rc2 | 1 | 2 files | Active proving |
+| `cooperative_games_lean` | v4.30.0-rc2 | 0 | 3 files | COMPLETE |
 | `social_choice_lean` | v4.30.0-rc2 | 0 | 7 files | COMPLETE |
 | `social_choice_lean_peters` | v4.27.0-rc1 | 0 | 1 file | Reference only |
-| **Total** | — | **1** | **15 files** | — |
+| **Total** | — | **0** | **16 files** | — |
 
 Note: `_GoalExtract.lean` (former prover test file) has been removed from the repo. `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogical example, not production.
 
@@ -58,12 +58,13 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 | File | sorry | Description |
 |------|-------|-------------|
-| `CooperativeGames/Shapley.lean` | 0 | Shapley value (uniqueness proved) |
-| `CooperativeGames/Basic.lean` | 1 | `bondareva_shapley_forward.hCore` (L309) tagged `INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION` |
+| `CooperativeGames/Shapley.lean` | 0 | Shapley value, characterization + uniqueness (Möbius decomposition) |
+| `CooperativeGames/Basic.lean` | 0 | TU games, Core, balanced games, `bondareva_shapley : Core.Nonempty ↔ Balanced` (iff, L434), `convex_core_nonempty` (L588) |
+| `CooperativeGames/ConeKernel.lean` | 0 | Cone-separation machinery (augmented incidence cone, closure, dual characterization) for the backward direction |
 
-**Build**: `lake build CooperativeGames` — SUCCESS (with `sorry` warning on Basic.lean:309)
+**Build**: `lake build CooperativeGames` — SUCCESS (0 sorry, no added axiom)
 
-**Status: Active proving (1 sorry)**. `bondareva_shapley_forward` reduces to extracting a Core allocation from the polytope `P \ K`; the body is sketched (P nonempty + closed + no element has coalition deficit) but requires Hahn-Banach / hyperplane separation in locally convex spaces (not yet ported to Mathlib for finite-dim R^n in this shape). Consumer theorem `bondareva_shapley` (iff form) transitively depends on this `sorry`.
+**Status: COMPLETE (0 sorry).** `bondareva_shapley` (`Core.Nonempty ↔ Balanced`) is fully proved. The backward direction's attainment crux `hb_witness` (formerly tagged `INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION`) was closed by PR #3954 via a compact-slice Weierstrass argument — bypassing the missing Mathlib `ProperCone.hyperplane_separation` without any added axiom. Lineage: #3933 (cone kernel) → #3941 (bridge) → #3945 (decoding) → #3951 (`hb_strict`) → #3954 (attainment). See [`cooperative_games_lean/FORMAL_STATUS.md`](cooperative_games_lean/FORMAL_STATUS.md).
 
 ---
 
