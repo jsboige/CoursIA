@@ -60,6 +60,36 @@ Voir [STRATEGIES_DETAIL.md](STRATEGIES_DETAIL.md#qc-strategy-library-clones-avan
 
 ---
 
+## État vérifié sous frais réels (#1630, 2018-2025)
+
+> **Caveat important.** Les Sharpes du tableau « Robuste » ci-dessus sont des valeurs **catalogue (pré-frais, fenêtres variables)**. La campagne #1630 a re-vérifié 36+ de ces stratégies sous **frais IBKR réels** (`PercentFeeModel` explicite) sur une **fenêtre alignée 2018-2025**. Plusieurs stars du catalogue **s'effondrent** dans ces conditions — le label « Robuste » ci-dessus ne préjuge pas de la robustesse sous frais réels.
+
+### Effondrements confirmés (catalogue → aligné 2018-2025)
+
+| Stratégie | Sharpe catalogue | Sharpe aligné | Delta | Cause |
+|-----------|------------------|---------------|-------|-------|
+| HighBookToMarketFScore | 2.09 | **0.41** | -80% | Value/factor écrasé par les frais réels, MaxDD -60% |
+| PuppiesOfTheDow | 1.99 | **0.30** | -85% | Value/factor + frais réels |
+| ML-Trend-Scanning | 0.66 | **0.33** | -50% | Rebalancement quotidien SPY/TLT/GLD multi-actifs = turnover écrasé |
+| AllWeather | 0.67 | **0.47** | -30% | Sleeve bonds/gold multi-actifs = friction de panier |
+
+### Leaders vérifiés alignés (backbone no-ML)
+
+| Stratégie | Sharpe aligné | PSR | Caveat |
+|-----------|---------------|-----|--------|
+| Framework_Composite_EMATrend | **0.611** | 19.8% | Sleeve EMA 100% Mag7 → biais de survivorship ; Sharpe le plus haut mais constitution concentrée |
+| composite-c2-equityfactor | **0.574** | 25.8% | **Constitution la plus robuste** (25 actions factor-diversifiées) ; tient juste au-dessus du seuil |
+
+> **TrendFollowing** (catalogue 1.072) n'est **pas reproductible** depuis le `main.py` du dépôt : le baseline-clone (2015-2024, IBKR) donne un Sharpe bien inférieur (~0.36-0.41, PSR < 9%). Le 1.072 provient d'un état du code cloud antérieur — à citer avec ce caveat (diagnostic finding #18).
+
+### Le discriminateur (leçon durable)
+
+La résistance aux frais **n'est pas** l'asset-class ni ML-vs-indicateur : c'est le **realized-turnover** = fréquence × taille par trade × homogénéité des frais du panier. Un composite equity-only fee-homogeneous en rebalancement mensuel (**c2 0.574**) tient là où un multi-asset rotationnel (**AllWeather 0.47**) s'effondre — même architecture, c'est l'univers qui décide.
+
+Détail complet, comparatifs best-vs-aligned et diagnostics par stratégie : [docs/qc/qc-comparative-backtests.md](../../../docs/qc/qc-comparative-backtests.md) (See #1630).
+
+---
+
 ## Structure d'un Projet
 
 ```
