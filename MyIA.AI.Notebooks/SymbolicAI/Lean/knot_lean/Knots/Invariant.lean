@@ -1438,8 +1438,17 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
           · rw [← h1, ← h2]; exact h12
           · rw [← h2, ← h3]; exact h23
           · rw [← h1, ← h3]; exact h13
-      · -- all-distinct kink mode: residual §9.1 (rename transfer needs
-        -- col₂(n+1)=col₂(a), which all-distinct denies). BG-prover ai-01.
+      · -- all-distinct kink mode: residual §9.1. The `help` rename-transfer
+        -- branch above closes via `← hCa_n1` (the kink all-equal fact
+        -- col₂(a)=col₂(n+1)), which all-distinct denies — so this proof
+        -- shape breaks. Deeper (empirical brute-force over ALL well-formed
+        -- 2-crossing diagrams, 202k all-distinct-kink cases): backward
+        -- TRANSFER HOLDS in 100% of proper-arc cases (0 failures), yet NO
+        -- closed-form col₁ works — the projective col₁(k)=col₂(k) is valid
+        -- only a minority of cases, the single-edge swap col₁(a)=col₂(b)
+        -- fails most a∈{e1,e2,e3} cases, and colour-permutation cannot help
+        -- (Fox is σ-invariant by #4003). The witness is genuinely
+        -- combinatorial / non-projective (per-diagram). BG-prover ai-01.
         sorry
   case num =>
     -- d₁.numEdges ≥ 2. Diagnostic for the BG-prover (ai-01): d₁ is forced
@@ -1583,7 +1592,10 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     · -- all-distinct kink mode: §9.1 research. The fresh edges carry a NEW
       -- colour absent from the d₁ range, so the naïve col₁ restriction can be
       -- monochromatic — the ≥2-colour lift needs the colour-symmetry / proper-arc
-      -- construction (#3003). BG-prover ai-01 territory. (User-authorised residual.)
+      -- construction (#3003). Empirically confirmed (brute-force, 202k cases):
+      -- projective col₁ indeed fails the ≥2-colour condition whenever col₂'s
+      -- 2nd colour lives only on a fresh edge; no closed-form col₁ works (see
+      -- the `fox` case residual above). BG-prover ai-01. (User-authorised residual.)
       sorry
 
 end Knots
