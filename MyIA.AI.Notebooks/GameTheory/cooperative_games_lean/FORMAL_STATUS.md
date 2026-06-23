@@ -6,13 +6,14 @@
 |------|-------|
 | Lean toolchain | `leanprover/lean4:v4.30.0-rc2` |
 | Mathlib | pinned via lake-manifest.json |
-| Total sorry | **1** (1 Basic + 0 Shapley) |
-| Honest unprovable (in Mathlib) | **1** (`hb_witness`, Farkas/LP-dual kernel) |
-| Total lines | ~1430 (Basic 388 + Shapley 1042) |
-| Total theorems | 19 |
-| Total definitions | 35 |
+| Total sorry | **0** |
+| Honest unprovable (in Mathlib) | **0** |
+| Total lines | ~2369 (Basic 594 + ConeKernel 733 + Shapley 1042) |
+| Total theorems | 24 (Basic 8 + ConeKernel 4 + Shapley 12) |
+| Total lemmas | 10 (Basic 2 + ConeKernel 8) |
+| Total definitions | 40 (Basic 13 + ConeKernel 4 + Shapley 23) |
 
-**Note**: Toolchain bumped to v4.30-0-rc2 (PR #1015). PR #1020's "prove bondareva_shapley_backward" was a **`apply?` placeholder** (non-proof); PR #2959 refactored honestly to isolate the irreducible LP-dual kernel `hb_witness` (`Basic.lean:312`) as a named sorry. That kernel requires `ProperCone.hyperplane_separation` (Farkas) — WIP, not yet proved.
+**Note**: Toolchain bumped to v4.30-0-rc2 (PR #1015). PR #1020's "prove bondareva_shapley_backward" was a **`apply?` placeholder** (non-proof); PR #2959 refactored honestly to isolate the irreducible LP-dual kernel `hb_witness` as a named sorry. That kernel — long tagged **INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION** — was then **closed across PRs #3933 → #3954** by building the cone-separation machinery in `CooperativeGames/ConeKernel.lean` (Farkas via `ProperCone.hyperplane_separation_point` from Mathlib `Analysis.Convex.Cone.Dual`). `hb_witness` is now a fully-proved `have` at `Basic.lean:348`. The project is **COMPLETE (0 sorry, 0 axiom beyond Lean's core)**.
 
 ## Per-File Status
 
@@ -20,18 +21,48 @@
 
 | Metric | Value |
 |--------|-------|
-| Definitions | 12 |
-| Theorems | 7 |
-| sorry | **1** (`hb_witness` @ L312, LP-dual kernel of `bondareva_shapley_backward`) |
-| Status | WIP_HARD (Farkas required) |
+| Definitions | 13 |
+| Theorems | 8 |
+| Lemmas | 2 |
+| Lines | 594 |
+| sorry | **0** |
+| Status | FORMAL-COMPLETE |
 
 Key definitions: `Coalition`, `TUGame`, `Superadditive`, `Convex`, `marginalContribution`,
 `unanimityGame`, `majorityGame`, `Allocation`, `Core`, `CoreEmpty`, `Balanced`.
 
-Previously-proved theorems (sorry resolved):
+Proved theorems (sorry resolved):
 - `bondareva_shapley_forward` (PR #802)
 - `convex_core_nonempty` (PR #981, Route A marginal vectors)
-- `bondareva_shapley_backward` — **decomposition skeleton** (PR #2959): `hP_conv`/`hP_closed`/`hP_nonempty`/`hK_empty`/`hP_lb` all proved; only `hb_witness` (Farkas) remains open.
+- `bondareva_shapley_backward` — **fully proved** (PR #3954, sorry 1→0): the decomposition
+  `hP_conv`/`hP_closed`/`hP_nonempty`/`hK_empty`/`hP_lb` plus the former `hb_witness` kernel,
+  now a certified `have` (`Basic.lean:348`) that invokes
+  `ProperCone.hyperplane_separation_point` over the augmented cone `augCone G.v`.
+
+### CooperativeGames/ConeKernel.lean — BONDAREVA-FArkAS KERNEL (NEW)
+
+| Metric | Value |
+|--------|-------|
+| Definitions | 4 |
+| Theorems | 4 |
+| Lemmas | 8 |
+| Lines | 733 |
+| sorry | **0** |
+| Status | FORMAL-COMPLETE |
+
+The cone-separation infrastructure that closes the former `hb_witness` sorry. Key results:
+
+- `augCone` (`:69`) — the `ProperCone ℝ ((Option N) → ℝ)` encoding balanced-weight violations.
+- `conicHull_linearIndependent_isClosed` (`:88`), `finGenCone_isClosed` (`:294`) — closedness
+  of the relevant cones (finite generation ⇒ closed).
+- `augCone_mem_iff` (`:363`), `augCone_dual_iff` (`:443`) — dual-characterisation bridge.
+- `separatingFunctional_none_neg` (`:601`) — the separating functional `f` from
+  `ProperCone.hyperplane_separation_point` is non-negative on the cone.
+- `balancedUnit_decomp` (`:667`), `exists_preimputation_strict_core` (`:688`) — witness
+  decoding: the separator yields an imputation in the Core, completing the backward direction.
+
+Largely **TUGame-free** (cone lemmas stated over `(Option N) → ℝ` so the kernel is reusable
+and decoupled from the cooperative-game structure), wired into `Basic.lean` by PR #3951.
 
 ### CooperativeGames/Shapley.lean — SHAPLEY VALUE
 
@@ -39,6 +70,7 @@ Previously-proved theorems (sorry resolved):
 |--------|-------|
 | Definitions | 23 |
 | Theorems | 12 |
+| Lines | 1042 |
 | sorry | **0** |
 | Status | FORMAL-COMPLETE |
 
@@ -46,7 +78,7 @@ Key definitions: `Solution`, `Efficiency`, `Symmetry`, `NullPlayerAxiom`, `Addit
 `shapleyCoef`, `shapleyValue`, `shapleySolution`, `WeightedVotingGame`, `Critical`,
 `BanzhafRaw`, `VetoPlayer`, `Dictator`, `DummyPlayer`.
 
-Previously-proved theorems (sorry resolved):
+Proved theorems (sorry resolved):
 - `shapley_null_player` (PR earlier in 2026-04)
 - `shapley_unanimity` (PR #791)
 - `shapley_symmetric` (PR earlier in 2026-04)
@@ -64,6 +96,11 @@ Previously-proved theorems (sorry resolved):
 | `superadditive_grand_coalition_nonneg_of_nonneg_singletons` | Basic.lean | Grand coalition value nonneg |
 | `bondareva_shapley_forward` | Basic.lean | Core nonempty implies balanced |
 | `convex_core_nonempty` | Basic.lean | Convex games have nonempty Core (PR #981) |
+| `bondareva_shapley_backward` | Basic.lean | Balanced implies Core nonempty (PR #3954, Farkas via ConeKernel) |
+| `conicHull_linearIndependent_isClosed` | ConeKernel.lean | Finite-generation ⇒ closed cone |
+| `augCone_dual_iff` | ConeKernel.lean | Dual characterisation of the augmented cone |
+| `separatingFunctional_none_neg` | ConeKernel.lean | Separator non-negative on the cone |
+| `exists_preimputation_strict_core` | ConeKernel.lean | Separator ⇒ imputation in Core (witness decoding) |
 | `shapley_efficient` | Shapley.lean | Shapley value is efficient |
 | `shapley_additive` | Shapley.lean | Shapley value is additive |
 | `shapley_null_player` | Shapley.lean | Shapley value = 0 for null players |
@@ -75,22 +112,23 @@ Previously-proved theorems (sorry resolved):
 
 ### Partially Proved (contains sorry)
 
-| Theorem | File | Open kernel | Strategy |
-|---------|------|-------------|----------|
-| `bondareva_shapley_backward` | Basic.lean | `hb_witness` @ L312 (∃ x ∈ P, ∑ xᵢ ≤ v(N)) | Farkas / `ProperCone.hyperplane_separation` (WIP_HARD, ~150-200 lines, cf `BONDAREVA_SHAPLEY_HARDNESS.md`) |
+None — all theorems are fully certified (0 sorry).
 
 ## Certification Level
 
 | File | Level |
 |------|-------|
-| Basic.lean | WIP_HARD (1 sorry: `hb_witness` LP-dual kernel) |
+| Basic.lean | COMPLETE (0 sorry) |
+| ConeKernel.lean | COMPLETE (0 sorry) |
 | Shapley.lean | COMPLETE (0 sorry) |
 
-**Project certification: WIP** — 1 sorry remaining (`hb_witness`, Farkas kernel). Shapley module complete.
+**Project certification: COMPLETE** — 0 sorry, 0 axiom beyond Lean's core. The Bondareva-Shapley
+theorem is proved in both directions (`forward` + `backward`), the Shapley value is fully
+characterised, and the Farkas/cone-separation kernel lives in `ConeKernel.lean`.
 
 ## Remaining Work
 
-Prove `hb_witness` (Bondareva-Shapley backward, LP-dual kernel) via `ProperCone.hyperplane_separation` (Farkas). Possible extensions:
+No open sorry. Possible extensions:
 - Banzhaf power index theorems (definitions `BanzhafRaw`/`Critical` exist, no theorems yet)
 - Shapley value computational properties
 
@@ -112,7 +150,8 @@ Prove `hb_witness` (Bondareva-Shapley backward, LP-dual kernel) via `ProperCone.
 | 2026-05-01 | `bondareva_shapley_forward` proved | PR #802 |
 | 2026-05-12 | BG iter 3: HONEST_UNPROVABLE annotation Basic.lean L234; FORMAL_STATUS realigned (7->3 sorry) | (this PR) |
 | 2026-05-12 | Reclassified bondareva_shapley_backward: HONEST_UNPROVABLE -> WIP_HARD | Cycle 28 Track A |
-| 2026-05-13 | Toolchain bump to v4.30.0-rc2; `bondareva_shapley_backward` proved; `convex_core_nonempty` proved | PR #1015, #1020, #981 |
+| 2026-05-13 | Toolchain bump to v4.30.0-rc2; `convex_core_nonempty` proved | PR #1015, #981 |
 | 2026-05-13 | `shapley_uniqueness` proved (Mobius decomposition) — 0 sorry Shapley.lean | PR #1024, commit `1eb5a4a0` |
 | 2026-05-14 | FORMAL_STATUS realigned: 3->0 sorry, module COMPLETE | po-2026 T-A |
-| 2026-06-20 | **Correction (G.1 verify-before-claiming):** PR #1020's `bondareva_shapley_backward` "proof" was `apply?` (non-proof); PR #2959 refactored to isolate `hb_witness` LP-dual kernel as named sorry @ L312. FORMAL_STATUS corrected: 0→1 sorry, COMPLETE→WIP_HARD | po-2026 #2959 |
+| 2026-06-20 | **Correction (G.1 verify-before-claiming):** PR #1020's `bondareva_shapley_backward` "proof" was `apply?` (non-proof); PR #2959 refactored to isolate `hb_witness` LP-dual kernel as named sorry. FORMAL_STATUS corrected: 0→1 sorry, COMPLETE→WIP_HARD | po-2026 #2959 |
+| 2026-06-23 | **ConeKernel construction closes `hb_witness` (sorry 1→0):** #3933 (ConeKernel TUGame-free kernel) → #3941 (balancedUnit bridge) → #3945 (witness-decoding core) → #3951 (wire cone-separation→decoding pipeline) → #3954 (sorry 1→0). `hb_witness` now a certified `have` @ `Basic.lean:348`. FORMAL_STATUS realigned: 1→0 sorry, WIP_HARD→COMPLETE. Lake build SUCCESS (8435 jobs). | po-2026 |
