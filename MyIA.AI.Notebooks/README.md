@@ -122,34 +122,51 @@ cd docker-configurations/services/comfyui-qwen
 docker-compose up -d
 ```
 
-## Parcours recommande
+## Parcours recommandé
 
-### Debutant (30h)
+Trois niveaux ordonnés par **difficulté croissante**. Le fil directeur suit l'arc classique de l'intelligence artificielle façon *AIMA* (Russell & Norvig) : on apprend d'abord à **modéliser et chercher** — agents, espaces d'états, contraintes — puis on **élargit** vers les deux écosystèmes applicatifs et les médias génératifs, avant d'atteindre le **cœur formel** où l'on prouve ce qu'on a calculé. Pour une entrée par **centre d'intérêt** plutôt que par niveau, voir les [parcours thématiques](#parcours-thématiques) en fin de section.
 
-L'objectif de ces premières heures n'est pas l'exhaustivité mais le déclic : produire ses premières images et ses premiers backtests, et installer une bonne fois l'environnement qui resservira partout.
+### Niveau 1 - Fondations (~30h)
 
-1. **GenAI/00-Environment** - Setup complet
-2. **GenAI/Image/01-Foundation** - Bases images
-3. **GenAI/Audio/01-Foundation** - Bases audio
-4. **QuantConnect/Python/** - Cours QC-Py-01 a 10
+Le déclic de ces premières heures n'est pas de générer une image, mais de faire **raisonner** une machine : formaliser un problème en espace d'états, choisir entre explorer et contraindre, mesurer une approche contre une autre sur un même terrain. C'est le socle algorithmique sur lequel tout le reste s'appuie — l'approche promue dans toute la série [Search](Search/README.md).
 
-### Intermediaire (60h)
+1. **[Search / Part1-Foundations](Search/Part1-Foundations/README.md)** - agents et espaces d'états ; BFS, A\*, Minimax, MCTS (Search-1 à 7). Le cœur classique de l'IA.
+2. **[Sudoku](Sudoku/README.md)** - un seul problème, toutes les méthodes (backtracking, contraintes, Dancing Links, réseaux de neurones) : le banc d'essai où symbolique et neuronal se mesurent à budget égal.
+3. **[Search / Part2-CSP](Search/Part2-CSP/README.md)** - CSP-1/2 : le basculement *explorer -> contraindre* (propagation AC-3, forward checking, CP-SAT).
+4. **[ML](ML/README.md)** - premiers modèles supervisés (tutoriels ML.NET en C# *ou* agents Python pour la data science) : apprendre depuis les données.
 
-On élargit le spectre : tous les médias génératifs, le ML classique des deux côtés (.NET et Python), les premiers pas symboliques — c'est le moment où les ponts entre séries commencent à apparaître.
+> Mise en route : un `venv` Python et le SDK `.NET 9` suffisent à ce niveau — la stack Docker GenAI n'est requise qu'au Niveau 2. Envie de « faire » tout de suite ? un détour par **[GenAI/Image](GenAI/Image/README.md)** ou les premiers **[QuantConnect/Python](QuantConnect/README.md)** (QC-Py-01 à 05) donne le déclic, mais le fil rouge reste l'algorithmique.
 
-1. **GenAI** - Toutes les series sauf Orchestration
-2. **ML** - Tutoriels .NET + Python Agents
-3. **SymbolicAI** - SmartContracts, SemanticWeb
-4. **QuantConnect/partner-course-quant-trading/** - Exercices trading
+### Niveau 2 - Application et élargissement (~60h)
 
-### Expert (120h+)
+On ouvre le spectre : les deux écosystèmes (Python *et* .NET), tous les médias génératifs, le raisonnement sous incertitude et les premiers pas symboliques. C'est le moment où les ponts entre séries commencent à apparaître.
 
-Le cœur formel et les stratégies avancées : les notebooks les plus exigeants, mais ceux où le dépôt dit ce qu'il a de plus singulier — prouver ce qu'on a calculé, et valider sans complaisance ce qu'on a appris.
+1. **[GenAI](GenAI/README.md)** - images, audio, vidéo, texte : on héberge les modèles soi-même ([00-GenAI-Environment](GenAI/00-GenAI-Environment/README.md) requis ici), ce qui change tout à la compréhension de leurs coûts et de leurs limites. (Orchestration -> Niveau 3.)
+2. **[QuantConnect / Python](QuantConnect/README.md)** - le cours progressif complet + le partner-course : du premier backtest à la discipline de validation (walk-forward, multi-seed, coûts de transaction) sans laquelle tout résultat ML est une illusion.
+3. **[SymbolicAI](SymbolicAI/README.md)** (porte symbolique) - SemanticWeb (RDF/SPARQL), SmartContracts (Solidity testnet), Tweety (logiques et argumentation), Planners (PDDL).
+4. **[Probas](Probas/README.md)** - raisonner avec l'incertitude : les mêmes modèles bayésiens en Infer.NET *et* en PyMC.
+5. **[RL](RL/README.md)** - apprendre en agissant (PPO, SAC, Gym) ; **[GameTheory](GameTheory/README.md)** - l'optimisation quand les autres aussi optimisent (OpenSpiel, équilibres).
 
-1. **GenAI/03-Orchestration** + **04-Applications**
-2. **SymbolicAI** - Lean, Planners, Tweety avance
-3. **Search**, **GameTheory**, **Probas** - Domaines avances
-4. **QuantConnect/projects/** - Strategies ML avancees
+### Niveau 3 - Cœur formel et frontières (~120h+)
+
+Les notebooks les plus exigeants, mais ceux où le dépôt dit ce qu'il a de plus singulier : **prouver** ce qu'on a calculé, et **valider sans complaisance** ce qu'on a appris.
+
+1. **[SymbolicAI / Lean](SymbolicAI/Lean/README.md)** - preuves formelles Lean 4 (théorème d'Arrow, Kochen-Specker, hommages à Grothendieck et Conway) + **[SymbolicLearning](SymbolicAI/SymbolicLearning/README.md)** (ILP, neuro-symbolique, automates L\*).
+2. **[GameTheory](GameTheory/README.md)** (volet formel) et **[Probas](Probas/README.md)** (indice de Gittins) - théorèmes du choix social et bandits portés en Lean 4, démontrés mécaniquement.
+3. **[Search](Search/README.md) avancé** - métaheuristiques, programmation linéaire, automates symboliques, CSP souples/temporels/distribués, et les applications réelles (planification d'horaires, ordonnancement, routage).
+4. **[GenAI / Orchestration + Applications](GenAI/README.md)** - Semantic Kernel, les **[CaseStudies](CaseStudies/README.md)** interdisciplinaires, les ateliers de vibe-coding.
+5. **[QuantConnect / projects](QuantConnect/README.md)** - le portefeuille de stratégies ML avancées (GARCH, Kelly, ensembles).
+6. **[IIT](IIT/README.md)** - la mesure Phi (PyPhi) sur des réseaux logiques : la frontière la plus spéculative.
+
+### Parcours thématiques
+
+Ces niveaux ordonnent par difficulté. Pour une entrée **par centre d'intérêt**, transversale aux niveaux, le dépôt propose cinq parcours thématiques détaillés :
+
+- [IA classique](../docs/curriculum/ia-classique.md) - recherche, CSP, Sudoku, planification
+- [IA symbolique](../docs/curriculum/ia-symbolique.md) - Lean, Tweety, SemanticWeb, Planning
+- [Recherche avancée](../docs/curriculum/recherche.md) - Infer.NET, Pyro, IIT, RL, GameTheory
+- [Trading algorithmique](../docs/curriculum/trading.md) - QuantConnect, ML, Probas
+- [GenAI multimodale](../docs/curriculum/genai.md) - Image, Audio, Vidéo, Texte
 
 ## Ressources
 
