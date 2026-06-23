@@ -2,9 +2,26 @@
 
 **Issue:** #1188
 **Date:** 2026-05-19
-**Status:** 3 sorry remaining in Lattice.lean (L130 no_cross_match, L437 meetSpouse, L777 doctor_optimal)
-**Total project sorrys:** 6 (3 Lattice + 2 GaleShapley INTRACTABLE + 1 hCore + 0 Shapley)
+**Status (updated 2026-06):** **0 sorry** in Lattice.lean — and **0 sorry project-wide** (`lake build StableMarriage` SUCCESS). The 3 former sorries tracked below (`no_cross_match`, `meetSpouse`/L437, `doctor_optimal`/L777) were **removed because their statements were FALSE as stated**: the 3×3 latin-square instance (`NoCrossCounterexample`) refutes them, so the `sorry`s were unprovable by construction. The honest replacement is `exists_isManOptimal` (existence of a man-optimal stable matching, via a minimal-weight argument on the join semilattice). See `README.md` for the current project status.
+**Total project sorrys:** **0** in production. (The lines below describe the 2026-05-19 state and are preserved as the intractability analysis — which is in fact **vindicated**: the targets were mathematically impossible, not merely hard.)
 
+> **⚠️ HISTORICAL DOCUMENT — read the body below as history, not a live plan.**
+> Everything after this banner (the 2026-05-19 Sprint D update, the S1/S2/S3
+> intractability analysis, the Wu-Roth phasage, the lemmas-to-port list, the
+> timeline estimate, the `no_cross_match` proof attempt, and the conclusion)
+> describes the roadmap **as it was on 2026-05-19**, when the 3 targets below
+> were believed to be merely hard. They are **preserved here as the vindicated
+> intractability diagnosis**: the targets — `no_cross_match`, `meetSpouse`/L437,
+> `doctor_optimal`/L777 — were in fact **FALSE as stated** (refuted by the 3×3
+> latin-square `NoCrossCounterexample`: `no_cross_match_is_false`,
+> `man_optimality_key_step_is_false`, `doctor_optimal_eq_top_is_false`), so the
+> `sorry`s were unprovable by construction, have been **removed**, and were
+> replaced by the honest statement `exists_isManOptimal`. The diagnosis below
+> was *correct* that local/cross-pair stability is insufficient — the deeper
+> reason (the statements were mathematically impossible) is the one this roadmap
+> was circling. The project is now at **0 sorry**; see `README.md` for current
+> status. No live proving work is outstanding against S1/S2/S3.
+>
 > **Update (2026-05-19 Sprint D):** The `no_cross_match` lemma has been re-added to Lattice.lean
 > at L102-130 with the m₁=m₂ sub-case proved and 3-distinct-women derivation established.
 > The general case (m₁≠m₂, 3 distinct women) is confirmed INTRACTABLE by both manual analysis
@@ -26,6 +43,16 @@
 - join_inverse_anti (join anti-complementarity)
 
 ### Remaining Sorrys (3)
+
+> **SUPERSEDED (2026-06):** None of these 3 sorries remain — the statements were
+> **FALSE as stated** (refuted by the 3×3 latin-square `NoCrossCounterexample`:
+> `no_cross_match_is_false`, `man_optimality_key_step_is_false`,
+> `doctor_optimal_eq_top_is_false`), so the `sorry`s were unprovable by construction,
+> not merely hard. The honest replacement is `exists_isManOptimal`. The detailed
+> S1/S2/S3 analysis below is preserved as the **intractability diagnosis — which is
+> vindicated**: it correctly identified that local stability is insufficient, and the
+> real reason (the statements were mathematically impossible) is the same one this
+> roadmap was circling. See `README.md` for current status.
 
 #### S1: L130 — no_cross_match (anti-crossing lemma)
 **Context:** `no_cross_match` lemma at L102-130. If μ.sp m₁ = w and ν.sp m₂ = w, then μ.sp m₂ = ν.sp m₁. This is Knuth's decomposition lemma (anti-crossing property).
