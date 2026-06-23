@@ -1649,6 +1649,24 @@ DEMOS = {
         ),
         "difficulty": "easy",
     },
+    58: {
+        "name": "BANZHAF_INDEX_NONNEG",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1309,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_index_nonneg",
+        "theorem": "banzhaf_index_nonneg",
+        "imports": SHAPLEY_IMPORTS,
+        "goal": "0 ≤ BanzhafIndex G i",
+        "description": (
+            "BG-prover target (cycle 65): the normalized Banzhaf index is\n"
+            "non-negative. Stacks on the BanzhafIndex definition (PR #4071).\n"
+            "Slightly harder than the warm-ups: needs `div_nonneg` plus a\n"
+            "positivity argument on the denominator `2 ^ (card N - 1)`.\n"
+            "Replace the placeholder at L1309 of Shapley.lean."
+        ),
+        "difficulty": "easy",
+    },
 }
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
 # whose key appears in this set.
