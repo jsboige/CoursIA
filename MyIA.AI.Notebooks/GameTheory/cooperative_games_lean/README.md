@@ -50,11 +50,16 @@ Un joueur dummy (`DummyPlayer`) ne change jamais la valeur d'une coalition, il n
 jamais critique : son indice de Banzhaf brut est bien nul. C'est l'analogue, pour l'indice
 de Banzhaf, du théorème de joueur nul pour la valeur de Shapley.
 
-**En cours** (PR #4037) : le théorème de symétrie `banzhaf_raw_symmetric` — deux joueurs
-interchangeables (`SymmetricPlayers`) ont des indices de Banzhaf brut égaux, l'analogue
-Banzhaf de `shapley_symmetric`. La preuve construit une involution `banzhafSwap` échangeant
-`i` et `j` dans chaque coalition, montre qu'elle préserve la valeur du jeu et qu'elle
-transporte bijectivement les coalitions critiques de `i` sur celles de `j`.
+**Prouvé** (PR #4037, merged `ba3b169e`) : le théorème de symétrie `banzhaf_raw_symmetric`
+(`Shapley.lean:1106`) — deux joueurs interchangeables (`SymmetricPlayers`) ont des indices
+de Banzhaf brut égaux, l'analogue Banzhaf de `shapley_symmetric`. La preuve construit une
+involution `banzhafSwap` échangeant `i` et `j` dans chaque coalition (quatre cas : contient
+les deux, aucun, ou exactement un des deux), montre qu'elle préserve la valeur du jeu (par
+`SymmetricPlayers`, après division en cas sur `S ∩ {i, j}`) et qu'elle transporte
+bijectivement les coalitions critiques de `i` sur celles de `j` ; les deux filtres de
+coalitions critiques sont donc en bijection, d'où l'égalité de leurs cardinaux — les indices
+de Banzhaf bruts. Cette lignée power-index (`dummy_banzhaf_raw_zero` #4011 →
+`banzhaf_raw_symmetric` #4037) parallèle la caractérisation Shapley.
 
 ## Notes
 
