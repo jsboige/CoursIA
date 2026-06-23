@@ -282,6 +282,8 @@ Projects with `main.py` but no recorded backtest metrics. Prime candidates for t
 | 76 | Crypto-LSTM-Prediction | DL | Crypto (BTC) | yes |
 | 92 | Research-Executor | — | Multi-asset | yes |
 
+> **Tier-4 residual characterization (2026-06-23, #1630)**: the no-ML IND/COMP/RISK/FACTOR candidates are all verified (Key-findings #22–#36). The remaining Tier-4 rows are: **ML/DL/RL** (#63–#71, #76) — heavy training, deferred to the training-specialist and to multi-seed cross-validation (Next Steps #6); **OPT** (#73 Option-Wheel, #75 Options-VGT) — naked-options strategies whose MaxDD exceeds 100 % (the QC simulator does not capture forced assignment/liquidation, see the caveat under Key-finding #13), so the baseline is intrinsically optimistic on loss and of low pedagogical value (the student OptionWheel Sharpe −0.51 / MaxDD 103.5 % already documents the catastrophe); **#92 Research-Executor** — a *research execution harness* (runs 8 embedded notebooks via a `MockQB` shim over a 2-day window and `quit()`s inside `initialize`, `on_data = pass`), **not a tradable strategy**, hence out of the #1630 aligned-baseline scope (see Key-finding #37).
+
 ---
 
 ## Type Distribution
@@ -491,6 +493,32 @@ ou `Sigma` est la **matrice de covariance** complete (correlations incluses). Re
 
 36. **EMATrend: survives alignment (0.741 → 0.611) — the highest-Sharpe COMP backbone, but Mag7-concentrated (survivorship caveat) (2026-06-23)**: QC Alpha Framework composite EMA-Cross (70%) + TrendStocks (30%) (EMACrossAlpha 20/50 EMA on the 5 Mag7 AAPL/MSFT/GOOGL/AMZN/NVDA, daily emission; TrendStocksAlpha double-confirmation Price>SMA200 + EMA20>EMA50 on 15 mega-caps including the same 5 Mag7, weekly; MultiStrategyPCM 70/30 weekly; NullRiskManagement + ImmediateExecution; IBKR margin) on 2018-2025 gives Sharpe **0.611**, CAGR 16.670%, MaxDD 27.9%, PSR 19.8% (non-significant). **Survives alignment with a mild drop** (catalog 0.741 @ 2015-2025 → 0.611, -18%) — NOT a period-overfit collapse, in direct contrast to the sibling framework composite FamaFrenchAllWeather (#35, 0.588→0.338). The drop is the expected cost of losing the 2015-2017 Mag7 pre-ramp and absorbing the 2022 Mag7 drawdown; the trend signal itself holds. On the aligned window this is the **highest-Sharpe COMP backbone verified to date**, edging composite-c2-equityfactor 0.574 (#34), and it carries the highest CAGR (16.67%) of any no-ML backbone. **But the Mag7 survivorship caveat dominates the interpretation**: the EMA sleeve is 100% Mag7, so a meaningful fraction of the Sharpe is an artifact of the Mag7 outperformance regime that defined the 2015-2025 decade rather than a transferable trend-following edge. Highest Sharpe is **not** the same as the most robust constitution — composite-c2-equityfactor (0.574, fine-fundamental factor investing across 25 large-cap stocks) is the more defensible COMP leader constitution-wise; EMATrend is the higher-Sharpe but Mag7-concentrated one. G.1 note: the repo `main.py` had drifted to the EMA40/Trend60 sweep *starting point* (its own docstring), while the deployed QC Cloud project (28911253) and the catalog entry both use the 70/30 sweep *winner* — the repo was converged to the winner so the aligned run is apples-to-apples vs the catalog 0.741. Promoted Tier 4 (Untested) → Tier 2 (Historique). Backtest `3095a263d5bd30df181ec002c0a52b72`, project 28911253. Same totalOrders=0 wrapper extraction artifact (CAGR 16.7% ⇒ real trades).
 
+37. **Research-Executor is a research harness (not a strategy) — the #1630 no-ML backbone campaign is complete (2026-06-23)**: a G.1 verification of the queued "#1630 next floor = #92 Research-Executor (dernier leader COMP à vérifier)" against the source reveals Research-Executor is a **research execution harness, not a tradable strategy**. Its `main.py` sets a 2-day window (2024-01-02 → 2024-01-03), runs 8 embedded research notebooks via a `MockQB` shim, writes the executed notebooks to the object store, and calls `self.quit('Done')` inside `initialize` (with `on_data = pass`) — there is no portfolio, no PnL and no tradable mechanics, so an "aligned 2018-2025 baseline" is meaningless (the algorithm quits on day 1 regardless of the date range). Its README and `projects/catalog.json` already classify it `Type: Utility (research execution harness, not a trading strategy)` / `classification: untested`; it was **miscategorized** in the deep-queue as a COMP leader. This **closes the #1630 no-ML backbone campaign**: every IND/COMP/RISK/FACTOR candidate (#72, #77–#91) is verified across Key-findings #22–#36 (15 baselines), with the aligned-COMP leaderboard led by EMATrend 0.611 (#36, highest Sharpe, Mag7 survivorship caveat) and composite-c2-equityfactor 0.574 (#34, the most robust constitution). The remaining Tier-4 entries are characterized in the table note above (OPT naked-options with a MaxDD > 100 % simulator caveat; ML/DL/RL deferred to multi-seed #6).
+
+## #1630 Aligned Backbone Leaderboard (2018-2025, no-ML)
+
+The 15 IND/COMP/RISK/FACTOR Tier-4 candidates verified across Key-findings #22–#36, ranked by aligned Sharpe. The three Tier-3 negatives (#24 / #27 / #28) document strategies whose published headline Sharpe does not survive the modern, fee-aware window; none of the 12 Tier-2 positives is statistically significant (PSR < 30 %) — no no-ML backbone reaches the Tier-1 > 0.5 robustness bar on the aligned period, though EMATrend (0.611) and composite-c2-equityfactor (0.574) come closest.
+
+| Rank | Strategy | Family | Sharpe | CAGR % | MaxDD % | PSR % | Tier | Finding |
+|------|----------|--------|-------:|-------:|--------:|------:|------|:--------|
+| 1 | Framework_Composite_EMATrend | COMP | **0.611** | 16.67 | 27.9 | 19.8 | 2 | #36 (Mag7 survivorship caveat) |
+| 2 | composite-c2-equityfactor | COMP | **0.574** | 11.94 | 18.6 | 25.8 | 2 | #34 (most robust constitution) |
+| 3 | HAR-RV-J-Kelly | RISK | 0.524 | 14.08 | 37.1 | 10.7 | 2 | #29 |
+| 4 | GlobalMacro-Regime | RISK | 0.454 | 9.80 | 22.8 | 16.7 | 2 | #26 |
+| 5 | FamaFrench | FACTOR | 0.445 | 11.11 | 24.1 | 11.9 | 2 | #32 |
+| 6 | Framework_Composite_FamaFrenchAllWeather | COMP | 0.338 | 6.58 | 13.1 | 22.9 | 2 | #35 (period-overfit collapse) |
+| 7 | Vol-GARCH-Target | RISK | 0.325 | 6.97 | 10.8 | 14.9 | 2 | #30 (tightest MaxDD) |
+| 8 | Vol-Ensemble-Conservative | RISK | 0.265 | 6.14 | 10.4 | 13.6 | 2 | #31 (tightest MaxDD) |
+| 9 | composite-c1-multiasset | COMP | 0.258 | 6.49 | 17.0 | 8.7 | 2 | #33 |
+| 10 | AssetClassMomentum-QC | IND | 0.220 | 6.64 | 28.1 | 3.8 | 2 | #22 |
+| 11 | Cloud-VolTargeting (v1) | RISK | 0.207 | 6.72 | 38.2 | 2.4 | 2 | #25 |
+| 12 | Cloud-RiskParity-Composite | RISK | 0.027 | 3.50 | 24.4 | 1.2 | 2 | #23 |
+| 13 | Cloud-SectorRotation-Momentum | IND | -0.029 | 2.13 | 42.7 | 0.5 | 3 | #24 |
+| 14 | TermStructureCommodities-QC | IND | -0.244 | -31.48 | 96.8 | 0.0 | 3 | #28 (catastrophic) |
+| 15 | MomentumRegime-AdaptiveWeights | COMP | -0.729 | 1.88 | 4.3 | 17.4 | 3 | #27 (double-defense) |
+
+**Read-across**: (i) the COMP family spans the entire range (0.611 → -0.729) — the component alpha / PCM choice dominates the framework wiring (#33 / #34 share one scaffold yet differ 2×); (ii) the RISK family's edge is drawdown control rather than return — Vol-GARCH-Target and Vol-Ensemble-Conservative deliver the tightest MaxDD of the campaign (10.4-10.8 %) at a modest Sharpe (#30 / #31); (iii) every positive is statistically non-significant (PSR < 30 %) — no no-ML backbone clears Tier-1 on the aligned window; (iv) the three negatives (#24 / #27 / #28) confirm that published headline Sharpe figures routinely fail to survive alignment to a modern fee-aware period.
+
 ## Comparison: Best-vs-Aligned
 
 | Strategy | Best Sharpe | Aligned Sharpe | Delta | Diagnostic |
@@ -524,6 +552,7 @@ ou `Sigma` est la **matrice de covariance** complete (correlations incluses). Re
 6. **Cross-seed validation (gates #7)**: ≥4 seeds (0/1/7/42/99) for ML/DL/RL strategies — multi-cycle, requires re-training each model on ≥4 seeds and re-backtesting (heavy QC + GPU). **Blocks #7**: σ_cross_seed is a prerequisite input for Edge vs σ. See section "Edge vs σ — statut & dépendance" below.
 7. **Edge vs σ (gated on #6)**: Compute `(Sharpe - baseline_Sharpe) / σ_cross_seed` for ML/DL/RL multi-seed strategies vs B&H baseline. **Not computable standalone** — requires σ_cross_seed from #6. For non-ML (IND/COMP/RISK/OPT) strategies there is no σ_cross_seed (single-run), so Edge vs σ applies only to the ML/DL/RL subset once #6 delivers. See section "Edge vs σ — statut & dépendance" below.
 8. **Trend-Following repo/cloud drift**: repo code gives Sharpe 0.365 on 2018-2024 vs published 1.072 (2018-2025, prior cloud state) — identify which code version produced 1.072 and align repo (see Key finding 18)
+9. **No-ML backbone campaign complete (2026-06-23)**: all IND/COMP/RISK/FACTOR Tier-4 candidates verified (Key-findings #22–#36, 15 baselines). Remaining Tier-4 = OPT (#73/#75, naked-options MaxDD > 100 % simulator caveat) + ML/DL/RL (#63–#71/#76, deferred to #6 multi-seed / training-specialist). Research-Executor (#92) is a research harness, not a strategy — out of baseline scope (Key-finding #37).
 
 ---
 
