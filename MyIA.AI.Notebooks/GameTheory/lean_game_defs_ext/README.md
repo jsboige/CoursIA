@@ -1,4 +1,4 @@
-# lean_game_defs_ext — Bayesian Games (Lean 4, core only)
+# lean_game_defs_ext — Jeux bayésiens en Lean 4 (core uniquement)
 
 Formalisation des jeux bayésiens finis à deux joueurs (espaces de types
 de Harsanyi) en Lean 4 **sans Mathlib** (toolchain `v4.30.0-rc2`, core
@@ -53,3 +53,59 @@ dominance faible, 4 — valeur de l'information : monotonie de Blackwell
 à un joueur + contre-exemple « l'information nuit » en jeu,
 5 — réputation et dissuasion d'entrée, BNE crédible unique et
 `reputation_pays`).
+
+## Conclusion
+
+`lean_game_defs_ext` formalise en Lean 4 (**0 `sorry`**, sans Mathlib, core
+uniquement) la théorie des **jeux bayésiens** à information incomplète — du
+cadre des types de Harsanyi jusqu'aux applications d'enchères et de réputation.
+Compagnon formel de `GameTheory-11-BayesianGames.ipynb`, il couvre l'Epic #2610
+(phases 1-5 livrées).
+
+### Ce qui est prouvé
+
+- **Cadre BNE** (`Types.lean`, `BNE.lean`) : `isBNE` (équilibre de Nash bayésien
+  *interim*) est **décidable** sur le fragment `Fin`/`Int`. Le **principe de
+  déviation unique** (`bne_exAnte`) — un profil interim-optimal est aussi
+  ex-ante optimal — et l'**invariance par rescaling du prior** (`isBNE_scaleW`)
+  sont prouvés : seuls les ratios de poids comptent.
+- **BNE concrets** (`Examples.lean`) : la bataille des sexes à information
+  incomplète (Harsanyi) est certifiée par `decide`.
+- **Enchère au premier prix** (`Auction.lean`) : enchérir sa valeur rapporte
+  exactement 0 (`fpa_u1_truthful`, en `n` général) ; le *bid shading*
+  `b(v) = v/2` est un BNE certifié par `decide` (n = 2, 3) ; à l'inverse,
+  enchérir sa valeur n'est **pas** un BNE (`truthful_not_bne_two/three`).
+- **Enchère de Vickrey** (`Vickrey.lean`) : enchérir sa valeur **domine
+  faiblement** toute autre enchère (`spa_truthful_dominant1/2`, argument pointwise
+  classique) — donc BNE sincère **pour tout `n`** sans `decide` ; le type haut
+  capture une rente d'information strictement positive.
+- **Valeur de l'information** (`Information.lean`) : `valueNoInfo ≤ valueSignal ≤
+  valuePerfect` et la **monotonie de Blackwell** (`valueSignal_mono` : un signal
+  plus fin vaut toujours au moins autant, via factorisation σ = h ∘ τ) ;
+  exemple « parapluie » chiffré par `decide`.
+- **L'information peut nuire en jeu** (`InfoGames.lean`) : contre-exemple 2
+  états / 2×2 où le BNE est unique dans chaque scénario et le joueur informé
+  gagne strictement **moins** (3 < 5) que sans information — contraste
+  kernel-checké avec la monotonie à un joueur.
+- **Réputation et dissuasion** (`Reputation.lean`) : dans un chain-store à 2
+  périodes, le BNE crédible **unique** fait *pooler* le type rationnel (il combat
+  bien que ce soit myopiquement dominé) et dissuade l'entrée (`reputation_pays` :
+  5 > 4 en information incomplète vs 4 en information complète).
+
+### Pourquoi ça marche
+
+Le projet évite délibérément Mathlib en se restreignant à un fragment
+**totalement décidable** : prior en poids `Nat` (pas de théorie de la mesure),
+utilités `Int`, quantificateurs sur `Fin` uniquement, **2 joueurs**. Chaque
+propriété d'équilibre se ramène alors à une somme finie décidable, et tous les
+exemples concrets se vérifient par `decide` (vérification noyau, sans axiome
+au-delà du core de Lean). Les lemmes de comptage (`Sum.lean`, `Max.lean`)
+fournissent l'arithmétique sous-jacente (monotonie, partition, max d'une somme).
+
+### Prochaines étapes
+
+Le cadre étant décidable, les extensions naturelles sont d'autres familles de
+jeux bayésiens (enchères au troisième prix, signaux corrélés, mécanismes VCG à
+allocation multi-objet) tant qu'elles tiennent dans le fragment `Fin`/`Int`, ou
+l'ajout de la dépendance Mathlib pour des résultats structurels non décidables
+(typage polymorphe sur `V`, `A`, `Fintype`).
