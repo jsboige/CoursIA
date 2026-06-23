@@ -69,18 +69,34 @@ Le module [`scripts/m12_har_rv_j.py`](../scripts/m12_har_rv_j.py) **utilise déj
 - Conversion QC : **300 QCC = 3 USD** (source : [QC data pricing](https://www.quantconnect.com/data)).
 - Les datasets CoinAPI/Binance minute sont vendus au téléchargement ; le coût exact **par symbole / par histoire complète** n'est pas publié sur la page publique (derrière le pricing page).
 - **Bracket honnête** : datasets crypto minute QC historiquement de l'ordre de **~2-10 USD / symbole / histoire complète multi-années**. Pour les 7 coins : **~15-70 USD (~1.5k-7k QCC)**.
-- **Caveat G.1** : ce bracket est une estimation basée sur le barème QCC et des datasets comparables, **pas** un prix vérifié. Le total exact doit être confirmé par ai-01/user via `lean data download` (dry-run) ou la [page pricing Binance CoinAPI](https://www.quantconnect.com/datasets/binance-crypto-price-data/pricing) **avant** tout achat.
+- **Caveat G.1** : ce bracket est une estimation basée sur le barème QCC et des datasets comparables, **pas** un prix vérifié.
+- **Réalité du pricing vérifiée (G.1, 2026-06-23)** : `lean data download` n'a **pas** de flag `--dry-run` / d'aperçu de coût (seulement des credentials data-provider + des options de téléchargement) — il consomme les QCC à la confirmation. La [page pricing Binance CoinAPI](https://www.quantconnect.com/datasets/binance-crypto-price-data/pricing) est une SPA JS derrière login : un fetch statique ne retourne que le shell (« Algorithm Lab v3.0 »), **aucun prix public**. **Donc le prix ferme exact exige l'un des deux** : (a) login QC-web (Playwright sur le compte QC) pour consulter la grille tarifaire logged-in, OU (b) greenlight user pour un micro-achat mono-symbole qui révèle le coût au prompt de confirmation (`lean data download` l'affiche avant de débiter). Le bracket ~15-70 USD reste l'estimation courante en attendant le chiffre ferme.
 - Note : les coins à listing tardif (SOL/DOT/AVAX 2020, cf `CURRICULUM.md` Stage 3a) limitent la profondeur historique réelle — ne pas payer pour des années pré-listing.
 
 ### 4.4 Décision requise (user-blocker)
 
 L'achat est une **décision user** qu'**ai-01 escalade** (signature données = user-blocker, cf directive ai-01). Tant que le greenlight n'est pas posé : **0 QCC dépensé, 0 `lean data download`, 0 run**. Le présent doc sert de base à cette décision.
 
+### 4.5 Convention de sauvegarde + vérification pré-achat (HARD, mandat user 2026-06-23)
+
+**Sauvegarde durable (HARD).** Toute donnée achetée via `lean data download` est **sauvegardée** dans `G:\Mon Drive\MyIA\Dev\Trading\Data` (durable, réutilisable cross-projet, **ne JAMAIS re-payer** une donnée déjà acquise). Cette convention s'applique à **tous** les achats data futures du pipeline ML/trading, pas seulement M12-HF.
+
+**Vérification pré-achat (G.1, faite 2026-06-23).** Le répertoire ci-dessus a été audité **avant** tout achat. Résultat :
+
+| Élément | État |
+|---------|------|
+| `Minutes_246537_1216726_bundle_archive.zip` | **Déjà présent (gratuit)** — OHLCV minute **réel** (`time,open,close,high,low,volume`, timestamps unix-ms, incréments 60000 ms), couvrant **2013-04-01 → 2020-06-05**, pour **4 des 7 coins** : btcusd, ethusd, ltcusd, xrpusd (~2.8 M barres BTC seul) |
+| SOL-USD / ADA-USD / DOT-USD | **Absents** du bundle (listings post-2020) → à acheter |
+| Période **2020-06 → 2025** | **Absente** pour tous les coins → à acheter (c'est le segment le plus décisif : bear 2022 + momentum 2024-25) |
+| Format | Le bundle GDrive est **CSV générique** (pas LEAN QC) → conversion vers LEAN requise avant ingestion |
+
+**Conséquence sur le scope d'achat.** Le bracket ~15-70 USD (§4.3) est une **borne supérieure** : la fraction déjà couverte gratuitement (4 coins × 2018-2020) réduit le périmètre payant. Le script `minute_loader.py` du §5 devra **fusionner deux sources** : le CSV GDrive converti (2018-2020 × 4 coins) **et** le LEAN QC acheté (2020-2025 × 7 coins). Le prix ferme ne peut être isolé qu'après résolution du point §4.3 (login QC-web).
+
 ---
 
 ## 5. Changements pipeline (post-greenlight)
 
-1. **Nouveau** `scripts/minute_loader.py` (parallèle à `intraday_loader.py`) : lit les archives LEAN minute, produit des `IntradayDataset` minute + `minute_log_returns`.
+1. **Nouveau** `scripts/minute_loader.py` (parallèle à `intraday_loader.py`) : **fusionne deux sources** — (i) le bundle CSV minute GDrive converti au format LEAN (4 coins BTC/ETH/LTC/XRP × 2018-2020, cf §4.5, gratuit) **et** (ii) les archives LEAN minute QC Cloud achetées (7 coins × 2020-2025) — puis produit des `IntradayDataset` minute + `minute_log_returns`. Un adaptateur de format gère le CSV générique GDrive (normalisation pandas `time/open/high/low/close/volume` → LEAN) avant la fusion.
 2. **Sparse-sampling option** : `minute_loader` expose `sample_freq ∈ {1min, 5min}` (défaut 5min = robuste microstructure ; 1min = test liquides BTC/ETH).
 3. **Ré-utilisation** de `daily_realized_variance` / `daily_bipower_variation` / `daily_jump_component` (inchangés — ils prennent déjà une série intraday quelconque).
 4. **Nouveau** `scripts/m12_hf_har_rv_j.py` : fork de `m12_har_rv_j.py`, source = minute_loader au lieu de intraday_loader. Même sortie (`results/m12_hf/`).
