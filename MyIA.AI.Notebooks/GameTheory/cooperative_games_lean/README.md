@@ -13,7 +13,7 @@ Formalisation en Lean 4 de la théorie des jeux coopératifs (valeur de Shapley,
 
 | Fichier | sorry | Description |
 |---------|-------|-------------|
-| `CooperativeGames/Shapley.lean` | 0 | Définition de la valeur de Shapley et théorème d'unicité |
+| `CooperativeGames/Shapley.lean` | 0 | Valeur de Shapley (définition + unicité), joueurs nul/dummy, indice de pouvoir de Banzhaf |
 | `CooperativeGames/Basic.lean` | 0 | Jeu coopératif / fonction caractéristique / Cœur / théorème de Bondareva-Shapley |
 | `CooperativeGames/ConeKernel.lean` | 0 | Noyau Farkas / séparation de cône (machinerie prouvant la direction backward) |
 
@@ -22,6 +22,39 @@ Formalisation en Lean 4 de la théorie des jeux coopératifs (valeur de Shapley,
 - **Unicité de la valeur de Shapley** : prouvé que la valeur de Shapley est l'unique valeur satisfaisant les axiomes d'efficacité, symétrie, joueur nul et additivité (Shapley.lean, 0 sorry)
 - **Définitions du Cœur** : jeu coopératif, fonction caractéristique, ensemble des joueurs, Cœur (Basic.lean)
 - **Direction `←` de Bondareva-Shapley** (balanced ⇒ Cœur non vide) : **entièrement prouvée** via la machinerie de séparation de cône du module `ConeKernel.lean` (`ProperCone.hyperplane_separation_point` de Mathlib)
+- **Indice de pouvoir de Banzhaf** : cadre défini (`Critical G i S`, `BanzhafRaw G i` — nombre de coalitions pour lesquelles `i` est critique) avec le théorème `dummy_banzhaf_raw_zero` : un joueur dummy (qui ne change jamais la valeur de coalition) a un indice de Banzhaf brut nul (Shapley.lean, 0 sorry, PR #4011)
+
+## Indice de pouvoir de Banzhaf
+
+La valeur de Shapley n'est pas le seul indice de pouvoir pertinent en théorie des jeux
+coopératifs. L'**indice de Banzhaf** mesure le pouvoir d'un joueur comme son nombre de
+*swings* (coalitions pivots) : combinaisons où son passage de hors-coalition à
+dans-coalition fait basculer la valeur de la coalition. Contrairement à la valeur de
+Shapley (qui pondère chaque coalition par un facteur factoriel), l'indice de Banzhaf brut
+traite toutes les coalitions de manière égale.
+
+Le module formalise ce cadre sur les jeux à valeur pondérée (`WeightedVotingGame`) :
+
+- **Joueur critique** — `Critical G i S` est vraie lorsque `i ∈ S`, la coalition `S` gagne
+  (`G.v S = 1`) mais la coalition privée de `i` perd (`G.v (S.erase i) = 0`). Un joueur est
+  critique pour `S` si son retrait fait perdre une coalition gagnante.
+- **Indice de Banzhaf brut** — `BanzhafRaw G i` est le nombre de coalitions pour lesquelles
+  `i` est critique, i.e. `(Finset.univ.filter fun S => Critical G i S).card`.
+
+Deux théorèmes de nullité sont prouvés (les deux à 0 `sorry`) :
+
+- `dummy_shapley_zero` : un joueur dummy reçoit une valeur de Shapley nulle.
+- `dummy_banzhaf_raw_zero` (PR #4011) : un joueur dummy a un indice de Banzhaf brut nul.
+
+Un joueur dummy (`DummyPlayer`) ne change jamais la valeur d'une coalition, il n'est donc
+jamais critique : son indice de Banzhaf brut est bien nul. C'est l'analogue, pour l'indice
+de Banzhaf, du théorème de joueur nul pour la valeur de Shapley.
+
+**En cours** (PR #4037) : le théorème de symétrie `banzhaf_raw_symmetric` — deux joueurs
+interchangeables (`SymmetricPlayers`) ont des indices de Banzhaf brut égaux, l'analogue
+Banzhaf de `shapley_symmetric`. La preuve construit une involution `banzhafSwap` échangeant
+`i` et `j` dans chaque coalition, montre qu'elle préserve la valeur du jeu et qu'elle
+transporte bijectivement les coalitions critiques de `i` sur celles de `j`.
 
 ## Notes
 
@@ -41,6 +74,15 @@ Mathlib4 (toolchain `v4.30.0-rc2`).
 - **Unicité de la valeur de Shapley** (`Shapley.lean`, 0 `sorry`) : la valeur de Shapley
   est l'allocation *unique* satisfaisant efficacité, symétrie, joueur nul et additivité —
   la caractérisation axiomatique de Shapley (1953).
+- **Indices de pouvoir et joueurs dummy** (`Shapley.lean`, 0 `sorry`) : en plus de la
+  caractérisation de la valeur de Shapley, le module formalise la notion de joueur nul/dummy
+  (`NullPlayer`, `DummyPlayer`) avec les deux théorèmes de nullité `dummy_shapley_zero`
+  (un joueur dummy reçoit une valeur de Shapley nulle) et `dummy_banzhaf_raw_zero`
+  (un joueur dummy a un indice de Banzhaf brut nul). Le cadre Banzhaf repose sur la
+  définition `Critical G i S` (le joueur `i` est critique pour la coalition `S` lorsque
+  `i ∈ S`, `G.v S = 1` mais `G.v (S.erase i) = 0`) et sur l'indice brut
+  `BanzhafRaw G i` qui compte les coalitions critiques via un filtre sur `Finset.univ`
+  (PR #4011).
 - **Cœur + théorème de Bondareva-Shapley** (`Basic.lean` + `ConeKernel.lean`) : jeu
   coopératif, fonction caractéristique, le Cœur et la condition de jeu équilibré (balanced),
   avec la direction `←` (balanced ⇒ Cœur non vide) **entièrement prouvée** par séparation de

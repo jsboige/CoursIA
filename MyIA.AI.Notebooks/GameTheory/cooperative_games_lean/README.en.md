@@ -13,7 +13,7 @@ Lean 4 formalization of cooperative game theory (Shapley value, core).
 
 | File | sorry | Description |
 |------|-------|-------------|
-| `CooperativeGames/Shapley.lean` | 0 | Shapley value definition and uniqueness theorem |
+| `CooperativeGames/Shapley.lean` | 0 | Shapley value (definition + uniqueness), null/dummy players, Banzhaf power index |
 | `CooperativeGames/Basic.lean` | 0 | Cooperative game / characteristic function / Core / Bondareva-Shapley theorem |
 | `CooperativeGames/ConeKernel.lean` | 0 | Farkas / cone-separation kernel (machinery proving the backward direction) |
 
@@ -22,6 +22,38 @@ Lean 4 formalization of cooperative game theory (Shapley value, core).
 - **Shapley value uniqueness**: Proved that the Shapley value is the unique value satisfying efficiency, symmetry, null player, and additivity axioms (Shapley.lean, 0 sorry)
 - **Core definitions**: Cooperative game, characteristic function, player set, Core (Basic.lean)
 - **Bondareva-Shapley `←` direction** (balanced ⇒ Core nonempty): **fully proved** via the cone-separation machinery in the `ConeKernel.lean` module (Mathlib's `ProperCone.hyperplane_separation_point`)
+- **Banzhaf power index**: framework defined (`Critical G i S`, `BanzhafRaw G i` — the number of coalitions for which `i` is critical) with the theorem `dummy_banzhaf_raw_zero`: a dummy player (who never changes a coalition's value) has zero raw Banzhaf index (Shapley.lean, 0 sorry, PR #4011)
+
+## Banzhaf power index
+
+The Shapley value is not the only relevant power index in cooperative game theory. The
+**Banzhaf index** measures a player's power as their number of *swings* (pivotal
+coalitions): combinations where moving from out-of-coalition to in-coalition flips the
+coalition's value. Unlike the Shapley value (which weights each coalition by a factorial
+factor), the raw Banzhaf index treats all coalitions equally.
+
+The module formalizes this framework over weighted voting games (`WeightedVotingGame`):
+
+- **Critical player** — `Critical G i S` holds when `i ∈ S`, the coalition `S` wins
+  (`G.v S = 1`) but the coalition without `i` loses (`G.v (S.erase i) = 0`). A player is
+  critical for `S` if removing them turns a winning coalition into a losing one.
+- **Raw Banzhaf index** — `BanzhafRaw G i` is the number of coalitions for which `i` is
+  critical, i.e. `(Finset.univ.filter fun S => Critical G i S).card`.
+
+Two nullity theorems are proved (both at 0 `sorry`):
+
+- `dummy_shapley_zero`: a dummy player receives zero Shapley value.
+- `dummy_banzhaf_raw_zero` (PR #4011): a dummy player has zero raw Banzhaf index.
+
+A dummy player (`DummyPlayer`) never changes a coalition's value, so it is never critical:
+its raw Banzhaf index is indeed zero. This is the Banzhaf-index analogue of the null-player
+theorem for the Shapley value.
+
+**In progress** (PR #4037): the symmetry theorem `banzhaf_raw_symmetric` — two
+interchangeable players (`SymmetricPlayers`) have equal raw Banzhaf indices, the Banzhaf
+analogue of `shapley_symmetric`. The proof builds an involution `banzhafSwap` that exchanges
+`i` and `j` in each coalition, shows it preserves the game's value, and transports the
+critical coalitions of `i` bijectively onto those of `j`.
 
 ## Notes
 
@@ -41,6 +73,14 @@ proved in both directions). It builds with `lake build CooperativeGames` on Math
 - **Shapley value uniqueness** (`Shapley.lean`, 0 `sorry`): the Shapley value is the
   *unique* allocation satisfying efficiency, symmetry, null-player, and additivity —
   Shapley's (1953) axiomatic characterization.
+- **Power indices and dummy players** (`Shapley.lean`, 0 `sorry`): beyond the Shapley value
+  characterization, the module formalizes the notion of null/dummy player
+  (`NullPlayer`, `DummyPlayer`) with the two nullity theorems `dummy_shapley_zero`
+  (a dummy player gets zero Shapley value) and `dummy_banzhaf_raw_zero` (a dummy player
+  has zero raw Banzhaf index). The Banzhaf framework rests on the definition
+  `Critical G i S` (player `i` is critical for coalition `S` when `i ∈ S`, `G.v S = 1`
+  but `G.v (S.erase i) = 0`) and on the raw index `BanzhafRaw G i` counting critical
+  coalitions via a filter over `Finset.univ` (PR #4011).
 - **Core + Bondareva-Shapley theorem** (`Basic.lean` + `ConeKernel.lean`): cooperative
   game, characteristic function, the Core, and the balanced-game condition, with the `←`
   direction (balanced ⇒ Core nonempty) **fully proved** by cone separation.
