@@ -1438,17 +1438,27 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
           · rw [← h1, ← h2]; exact h12
           · rw [← h2, ← h3]; exact h23
           · rw [← h1, ← h3]; exact h13
-      · -- all-distinct kink mode: residual §9.1. The `help` rename-transfer
-        -- branch above closes via `← hCa_n1` (the kink all-equal fact
-        -- col₂(a)=col₂(n+1)), which all-distinct denies — so this proof
-        -- shape breaks. Deeper (empirical brute-force over ALL well-formed
-        -- 2-crossing diagrams, 202k all-distinct-kink cases): backward
-        -- TRANSFER HOLDS in 100% of proper-arc cases (0 failures), yet NO
-        -- closed-form col₁ works — the projective col₁(k)=col₂(k) is valid
-        -- only a minority of cases, the single-edge swap col₁(a)=col₂(b)
-        -- fails most a∈{e1,e2,e3} cases, and colour-permutation cannot help
-        -- (Fox is σ-invariant by #4003). The witness is genuinely
-        -- combinatorial / non-projective (per-diagram). BG-prover ai-01.
+      · -- all-distinct kink mode: residual §9.1 (BG-prover ai-01). The
+        -- `help` rename-transfer branch above closes via `← hCa_n1`
+        -- (kink all-equal fact col₂(a)=col₂(n+1)), which all-distinct
+        -- denies. PROVABLE structural obstruction (cycle-3, not merely
+        -- empirical): edge `b = n₁+1` is fresh and occurs in d₂ only at
+        -- the kink (slot e2) and at Y' (slots where Y held `a`); d₂.wf
+        -- parity forces `b` to occur exactly twice, so Y holds `a` in
+        -- EXACTLY ONE slot, and by d₁.wf parity `a` then occurs exactly
+        -- once at a single proper-arc c_j. Thus `a` is TORN: the renamed
+        -- Y-slot wants col₁(a)=col₂(b), but Fox at c_j wants col₁(a)=
+        -- col₂(a), and all-distinct gives col₂(a)≠col₂(b). No uniform
+        -- col₁ resolves both — ruled out: projective col₁(k)=col₂(k),
+        -- single-edge swap col₁(a)=col₂(b), and every colour permutation
+        -- σ∘col₂ (Fox is σ-invariant by #4003). Brute-force over ALL wf
+        -- 2-crossing diagrams (202k all-distinct-kink cases): backward
+        -- HOLDS in 100% of proper-arc cases (0 failures) — d₁ IS
+        -- tricolorable — but the witness is genuinely combinatorial /
+        -- non-projective (per-diagram); the all-equal-kink coloring of d₂
+        -- always exists yet is not derivable from the given col₂ by any
+        -- uniform map (permute / recolour b,c / set a,b,c to one colour
+        -- all fail). Decisively BG-prover territory.
         sorry
   case num =>
     -- d₁.numEdges ≥ 2. Diagnostic for the BG-prover (ai-01): d₁ is forced
