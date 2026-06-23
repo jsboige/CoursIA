@@ -2,6 +2,18 @@
 
 Guidance pour Claude Code travaillant avec le repository CoursIA.
 
+## Principes de collaboration (5)
+
+Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent **comment** travailler ; les REGLES CRITIQUES ci-dessous disent **quoi** respecter.
+
+1. **Demander, ne pas supposer.** Si quelque chose n'est pas clair, demander avant d'écrire une ligne — jamais de supposition silencieuse sur l'intention, l'architecture ou les exigences. **En mode non-supervisé** (agent schedulé/cron, worker), prendre l'interprétation la plus raisonnable, avancer, et **consigner l'hypothèse** plutôt que de bloquer.
+2. **Solution la plus simple pour un problème simple, meilleure solution pour un problème difficile.** Ne pas sur-concevoir ni ajouter de la flexibilité dont on n'a pas encore besoin.
+3. **Ne pas toucher au code non lié** — mais **signaler** le mauvais code ou les design smells découverts, pour les traiter en sujet séparé (issue/PR dédiée).
+4. **Expliciter l'incertitude.** En cas de doute, voir le point 1. Quand c'est pertinent, mener une **expérience locale, petite et à faible risque**, puis apporter hypothèse + résultats à discuter. La confiance sans certitude fait plus de dégâts qu'admettre une lacune.
+5. **Toujours ouvert aux meilleures idées.** Ne pas hésiter à **proposer une meilleure approche**, ou une à impact durable plutôt qu'un correctif tactique. Claude est un **partenaire de raisonnement, pas un preneur de notes** : pousser une contre-proposition quand elle sert mieux l'objectif.
+
+---
+
 **Documentation deportee — `docs/` :**
 - [docs/reference/common-commands.md](docs/reference/common-commands.md) - Setup environnement, validation notebooks, slash commands
 - [docs/genai/genai-services.md](docs/genai/genai-services.md) - Architectures Qwen/Lumina, scripts genai-stack, mappings notebooks
@@ -36,11 +48,11 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [.claude/rules/proactive-coordination.md](.claude/rules/proactive-coordination.md) - 1 PR/wakeup + main track + side-track async via sous-agents spécialistes (mandat user 2026-05-23)
 - [.claude/rules/user-blocker-signaling.md](.claude/rules/user-blocker-signaling.md) - Re-poke chaque fin de session quand le user bloque (mandat user 2026-05-28, anti-dilution wakeup)
 - [.claude/rules/harness-hygiene.md](.claude/rules/harness-hygiene.md) - Info 3 tiers : harnais succinct / docs pérenne / dashboard éphémère (mandat user 2026-06-01)
-- [.claude/rules/catalog-pr-hygiene.md](.claude/rules/catalog-pr-hygiene.md) - Catalogue = propriété de l'automatisation (cron main + CI par-PR + guard CI `catalog-guard.yml`), JAMAIS régén sur branche + rebase frais + atomique + `Closes #X` (mandat user 2026-06-06, #2632)
-- [.claude/rules/model-delegation.md](.claude/rules/model-delegation.md) - **Tout `Agent()` DOIT avoir un `model` explicite** (`sonnet`/`haiku` par défaut, `opus` uniquement sur justification écrite) — mandat user 2026-06-09. Déléguer le read-heavy borné vérifiable, garder la décision + cross-check, local-git-only sous fenêtre `gh auth` (consolide mandat 2026-06-07, 7 tests confirmants)
+- [.claude/rules/catalog-pr-hygiene.md](.claude/rules/catalog-pr-hygiene.md) - Catalogue = propriété de l'automatisation : JAMAIS régén sur branche, rebase frais, atomique, `Closes #X` (#2632)
+- [.claude/rules/model-delegation.md](.claude/rules/model-delegation.md) - Tout `Agent()` DOIT avoir un `model` explicite (`sonnet`/`haiku` défaut, `opus` sur justification écrite) ; déléguer le read-heavy borné, garder la décision
 - [.claude/rules/three-exercises-per-notebook.md](.claude/rules/three-exercises-per-notebook.md) - Convention >=3 exercices par notebook, rollout progressif (#2161)
-- [.claude/rules/sota-not-workaround.md](.claude/rules/sota-not-workaround.md) - Vrai outil SOTA jamais workaround degrade (install/invoke/re-plug machine-env-user, 5 verdicts) + probleme non-trivial qui met le moteur en valeur (BFS vs A*) ; enforce bots §H ; registre EPIC #3801 (mandat user 2026-06-21)
-- [.claude/rules/readme-french-first.md](.claude/rules/readme-french-first.md) - Doc nouvelle = FR (jamais "match surrounding EN") + bascule FR preserve l'original en `README.en.md` (separateur point) ; perimetre pedagogique ; EPIC #1650 Phase 0.5 (mandat user 2026-06-21)
+- [.claude/rules/sota-not-workaround.md](.claude/rules/sota-not-workaround.md) - Vrai outil SOTA jamais workaround dégradé (5 verdicts) + problème non-trivial qui met le moteur en valeur ; EPIC #3801
+- [.claude/rules/readme-french-first.md](.claude/rules/readme-french-first.md) - Doc nouvelle = FR (jamais "match surrounding EN") ; bascule FR préserve l'original en `README.en.md` ; EPIC #1650 Phase 0.5
 
 ---
 
@@ -74,7 +86,7 @@ Avant tout merge (y compris ses propres PRs) :
 
 **Honnetete des rapports** : pas de "DONE"/"fixed"/"validated" sans validation post-fix relancee. Rapporter "5/7, 2 restantes" pas "DONE". Pas de markdown "RAPPORT"/"AUDIT" comme preuve sans code valide.
 
-**Reviewers (humains et bots)** : critères CHANGES_REQUESTED obligatoires (composite >3000 lignes / >15 fichiers / >4 features ; Lean sans `grep -c sorry` + Lake build SUCCESS ; ML sans multi-seed ≥4 + verdict BEATS/NO BEATS/INCONCLUSIVE ; notebook sans output Papermill colle ; docs-only PR <50 lignes). APPROVED malgre violation = complicite. Cf [.claude/rules/pr-review-discipline.md](.claude/rules/pr-review-discipline.md).
+**Reviewers (humains et bots)** : critères CHANGES_REQUESTED obligatoires par domaine (composite, Lean, ML, notebook, docs-only) — seuils détaillés [.claude/rules/pr-review-discipline.md](.claude/rules/pr-review-discipline.md) §A-H (composite : cf G.4). APPROVED malgré violation = complicité.
 
 ### C. Notebooks (3 regles user 2026-04-26)
 
