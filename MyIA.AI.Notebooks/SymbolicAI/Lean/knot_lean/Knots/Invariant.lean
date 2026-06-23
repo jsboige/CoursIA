@@ -170,15 +170,18 @@ def TriColor.toNat : TriColor → Nat
   | green => 2
 
 /-- The Fox 3-colour condition on three colours ⟺ their `toNat`-sum is `0 mod 3`.
-Finite (3³ = 27 cases), decidable by computation once a `Fintype TriColor` instance
-is available (this file currently imports only `Knots.Basic`/`Knots.Reidemeister`;
-`decide` on `∀ c : TriColor` needs `Fintype` from Mathlib). Empirically verified TRUE
-(0 disagreements over 7.5M well-formed diagrams, cycle-3 #4022). Open proof
-obligation, target of the BG-prover (ai-01 2026-06-23). -/
+Finite (3³ = 27 cases), PROVED by constructor enumeration + `decide` (cycle-6,
+#3003). Because the arguments are *explicit* (not universally quantified over an
+opaque `TriColor`), `decide` needs no `Fintype` instance — `cases` on each
+constructor leaves 27 closed goals that `simp only [TriColor.toNat]` + `decide`
+dispatch. This is the GF(3) linearity that makes the colouring space a *linear
+subspace* of `(ℤ/3)^(numEdges)` — the key to the rank-nullity argument in
+`tricolorability_of_two_crossings` below. -/
 theorem triColorFoxCondition_iff_sum_mod_three (c1 c2 c3 : TriColor) :
     ((c1 = c2 ∧ c2 = c3) ∨ (c1 ≠ c2 ∧ c2 ≠ c3 ∧ c1 ≠ c3)) ↔
       (c1.toNat + c2.toNat + c3.toNat) % 3 = 0 := by
-  sorry
+  -- 3³ = 27 closed cases; explicit arguments ⇒ no `Fintype` needed for `decide`.
+  cases c1 <;> cases c2 <;> cases c3 <;> simp only [TriColor.toNat] <;> decide
 
 /-! ### Universal two-crossing colourability (cycle-3 GF(3) route, #3003)
 

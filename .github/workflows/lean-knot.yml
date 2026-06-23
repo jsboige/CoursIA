@@ -12,25 +12,26 @@ name: Lean Knot CI
 #
 # Uses the shared lean-build.yml reusable workflow.
 #
-# Sorry profile (verified 2026-06-23, prose-header mode, baseline=29):
+# Sorry profile (verified 2026-06-23, prose-header mode, baseline=28):
 # knot_lean's real sorries are INLINE (`exact sorry`, `:= sorry`,
 # `sorry -- comment`), never bare `sorry` on its own line. The standalone-tactic
 # filter (`^\s*sorry\s*$`) counts 0 here and would catch no regression, so we
 # use prose-header (excludes only "sorries"/"sorry's"), which captures every
-# real sorry and fails on any addition. Breakdown of the 29:
+# real sorry and fails on any addition. Breakdown of the 28:
 #   - Basic.lean:                1 (prose: TODO comment on well-formedness)
 #   - Reidemeister.lean:         2 (reidemeister_theorem ×2 — PL topology, OOS)
-#   - Invariant.lean:            8 (tricolorable_invariant, trefoil_not_unknot,
+#   - Invariant.lean:            7 (tricolorable_invariant, trefoil_not_unknot,
 #                                  unknottingNumber + prose; +2 from the PARTIAL
 #                                  `tricolorable_backward` transfer — Epic #2874
 #                                  PR3: colour-preservation proven, `num` PROVEN
 #                                  by wf parity (numEdges ≥ 2 from length ≥ 2);
 #                                  2 residual tactic sorries fox/col, user-authorised;
-#                                  +2 GF(3) cycle-3 follow-up (#3003, 2026-06-23):
-#                                  the Fox linearity bridge `triColorFoxCondition_iff_sum_mod_three`
-#                                  (decide-able once Mathlib `Fintype` is imported) and the
-#                                  universal lemma `tricolorability_of_two_crossings` (rank-nullity) —
-#                                  both open BG-prover targets per ai-01)
+#                                  +1 GF(3) follow-up (#3003, 2026-06-23): the Fox
+#                                  linearity bridge `triColorFoxCondition_iff_sum_mod_three`
+#                                  is PROVEN cycle-6 (constructor enumeration + decide,
+#                                  no Fintype needed — args are explicit); only the
+#                                  universal lemma `tricolorability_of_two_crossings`
+#                                  (rank-nullity) remains open as a BG-prover target)
 #   - Conway.lean:              11 (Conway knot 11n34, Kinoshita-Terasaka,
 #                                  mutation — scaffolding)
 #   - Lidman.lean:               5 (11n102 unknotting number = 2 — Heegaard-Floer)
@@ -60,5 +61,5 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
       display-name: knot_lean
-      sorry-baseline: "29"
+      sorry-baseline: "28"
       sorry-filter-mode: prose-header
