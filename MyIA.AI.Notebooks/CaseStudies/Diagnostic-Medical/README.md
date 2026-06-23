@@ -236,6 +236,17 @@ Chaque cellule a remplir ou compléter sera évaluée pour constituer la note fi
 ✅ Analyse de complexité et optimisation
 ✅ Documentation technique et tests
 
+## Conclusion
+
+Ce cas d'étude illustre une idée centrale de l'IA appliquée : **aucun paradigme isolé ne suffit** à un problème de diagnostic réaliste. Les quatre briques se complètent au lieu de se concurrencer :
+
+- l'**agent à base de règles** encode le savoir clinique explicite et fournit une première classification interprétable ;
+- la recherche **A\*** explore efficacement l'espace des hypothèses diagnostiques en se laissant guider par une heuristique admissible ;
+- les **algorithmes génétiques** calibrent les paramètres là où l'espace de recherche est trop vaste pour une exploration exacte ;
+- le **solveur Z3** apporte la garantie formelle que le protocole thérapeutique retenu respecte toutes les contraintes médicales.
+
+La valeur pédagogique tient précisément à cette **intégration** : reconnaître, pour chaque facette d'un problème (classer, chercher, optimiser, vérifier), quel outil est le mieux adapté, puis composer ces outils en un pipeline cohérent. C'est cette capacité d'orchestration — davantage que la maîtrise de chaque algorithme pris isolément — qui distingue un système d'aide à la décision robuste.
+
 ---
 
 **Bonne chance avec votre implémentation !**
