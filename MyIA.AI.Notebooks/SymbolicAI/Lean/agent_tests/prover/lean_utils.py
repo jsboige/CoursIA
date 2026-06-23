@@ -821,7 +821,7 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
         original_content = content
         real_relative = f"{subdir}/{Path(filepath).name}"
         try:
-            Path(filepath).write_text(new_content, encoding="utf-8")
+            Path(filepath).write_text(new_content, encoding="utf-8", newline="")
             real_result = verifier.verify_project_file(real_relative, force=True)
             real_output = real_result.get("raw_output", "") or ""
             # Real module must be error-free, carry no implicit-sorry warning,
@@ -833,7 +833,7 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             sorry_dropped = (new_content.count("sorry")
                              < original_content.count("sorry"))
             if real_has_error or implicit_sorry or not sorry_dropped:
-                Path(filepath).write_text(original_content, encoding="utf-8")
+                Path(filepath).write_text(original_content, encoding="utf-8", newline="")
                 is_success = False
                 real_build_ok = False
                 error_type = "persist_build_failed"
@@ -850,7 +850,7 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
                 real_build_ok = True
         except OSError as _persist_err:
             try:
-                Path(filepath).write_text(original_content, encoding="utf-8")
+                Path(filepath).write_text(original_content, encoding="utf-8", newline="")
             except OSError:
                 pass
             is_success = False

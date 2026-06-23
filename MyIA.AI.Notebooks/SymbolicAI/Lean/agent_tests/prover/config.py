@@ -1578,6 +1578,45 @@ DEMOS = {
             "    refine (x, ?_, hxP)\n"
         ),
     },
+    56: {
+        "name": "BANZHAF_RAW_LE_UNIV",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1037,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_raw_le_univ",
+        "theorem": "banzhaf_raw_le_univ",
+        "imports": SHAPLEY_IMPORTS,
+        "description": (
+            "REPLACES the single sorry at L1037 of Shapley.lean.\n"
+            "First genuinely-provable, NON-smoke target for the BG prover\n"
+            "(greenlit by ai-01 2026-06-23T18:12Z, #1453). Validates the\n"
+            "write-back fix #4075 on a REAL CoursIA Lean target, not a smoke.\n"
+            "\n"
+            "GOAL at sorry (EXACT):\n"
+            "  BanzhafRaw G i <= (Finset.univ : Finset (Finset N)).card\n"
+            "\n"
+            "HYPOTHESES IN SCOPE:\n"
+            "  N : Type, [Fintype N], [DecidableEq N]\n"
+            "  G : TUGame N, i : N\n"
+            "  BanzhafRaw G i := (Finset.univ.filter fun S => Critical G i S).card\n"
+            "\n"
+            "PROOF STRATEGY (~1-2 tactics):\n"
+            "  `BanzhafRaw` unfolds to `(Finset.univ.filter p).card`; a filtered\n"
+            "  finset is no larger than the original, so the bound is exactly\n"
+            "  `Finset.card_filter_le`. Suggested tactic:\n"
+            "    exact Finset.card_filter_le (fun S => Critical G i S) Finset.univ\n"
+            "  The carrier `Finset.univ : Finset (Finset N)` is fixed by the\n"
+            "  explicit annotation in the statement. Genuinely tractable,\n"
+            "  NOT a placeholder -- exercises the real proof loop."
+        ),
+        "difficulty": "easy",
+        "context_before": (
+            "/-- `BanzhafRaw G i` is bounded by the total number of coalitions. -/\n"
+            "theorem banzhaf_raw_le_univ (G : TUGame N) (i : N) :\n"
+            "    BanzhafRaw G i <= (Finset.univ : Finset (Finset N)).card := by\n"
+        ),
+        "context_after": "",
+    },
 }
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
 # whose key appears in this set.
