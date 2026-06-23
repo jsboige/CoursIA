@@ -1,22 +1,22 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-22 05:24
+Generated: 2026-06-23 04:57
 Total notebooks: 566
 
 ## Status Summary
 
-- **READY**: 420
+- **READY**: 419
 - **DEMO**: 144
 - **RESEARCH**: 0
-- **BROKEN**: 2
+- **BROKEN**: 3
 
 ## Maturity Summary
 
-- **PRODUCTION**: 460
-- **BETA**: 56
+- **PRODUCTION**: 458
+- **BETA**: 57
 - **TEMPLATE**: 4
 - **ALPHA**: 42
-- **DRAFT**: 4
+- **DRAFT**: 5
 
 ## By Series
 
@@ -154,7 +154,7 @@ Total notebooks: 566
 | 128 | Pipeline Video de Production | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 129 | GenAI E2E Quant Validation | Python 3 | READY | BETA | 30min | po-2025 |
 
-### Search (55 notebooks) — READY:55 | BETA:4, PRODUCTION:51
+### Search (55 notebooks) — READY:55 | BETA:5, PRODUCTION:50
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -203,7 +203,7 @@ Total notebooks: 566
 | 43 | CSP-8 : Temporels - Raisonnement sur le Temps | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 44 | CSP-9-Distributed : CSP Distribués (DisCSP) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 45 | MGS-1 : Introduction a MetaGeneticSharp et au mote | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
-| 46 | MGS-2 : Composition de metaheuristiques -- Match e | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
+| 46 | MGS-2 : Composition de metaheuristiques -- Match e | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 47 | MGS-3 : L'Eukaryote -- sous-populations et chromos | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
 | 48 | MGS-4 : Le Modele Insulaire -- populations structu | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
 | 49 | MGS-5 : Construire les métaheuristiques composées  | .NET (C#) | READY | BETA | 45min | po-2025 |
@@ -214,7 +214,7 @@ Total notebooks: 566
 | 54 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
 | 55 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 
-### ML (27 notebooks) — DEMO:3, READY:24 | ALPHA:1, BETA:6, PRODUCTION:20
+### ML (27 notebooks) — BROKEN:1, DEMO:3, READY:23 | ALPHA:1, BETA:6, DRAFT:1, PRODUCTION:19
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -241,7 +241,7 @@ Total notebooks: 566
 | 21 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 22 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 | 23 | ML-4 : Evaluation des modèles | .NET (C#) | READY | ALPHA | 2h+ | po-2023 |
-| 24 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 24 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | BROKEN | DRAFT | 45min | po-2023 |
 | 25 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |

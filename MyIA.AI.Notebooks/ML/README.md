@@ -4,7 +4,7 @@
 series: ML
 pedagogical_count: 27
 breakdown: DataScienceWithAgents=19, ML.Net=8
-maturity: PRODUCTION=20, BETA=6, ALPHA=1
+maturity: PRODUCTION=19, BETA=6, ALPHA=1, DRAFT=1
 -->
 
 [← Notebooks](../README.md) | [ML.NET (C#) →](ML.Net/README.md) | [Data Science with Agents (Python) →](DataScienceWithAgents/README.md) | [RL →](../RL/)
