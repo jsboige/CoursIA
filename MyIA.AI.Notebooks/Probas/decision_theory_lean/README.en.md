@@ -1,13 +1,16 @@
-# gittins_lean — Multi-Armed Bandits & the Gittins Index
+# decision_theory_lean — Decision Theory (Lean 4)
 
-Lean 4 formalization of the **multi-armed bandit** problem and the **Gittins
-index** (Gittins 1979, Weber 1992) — the optimal policy for the discounted
-infinite-horizon bandit. The **geometric-discount building blocks are fully
-proven** (PR #2911); the **marquee optimality theorem is stated but intractable**
-in the current Mathlib (no MDP/Bellman formalization), held as `sorry`.
+Lake **at the `Probas` series root**, formalizing canonical decision-theory
+results — visible from both series tracks (Infer.NET / PyMC). First module
+delivered: the **multi-armed bandit** problem and the **Gittins index** (Gittins
+1979, Weber 1992) — the optimal policy for the discounted infinite-horizon
+bandit. The **geometric-discount building blocks are fully proven** (PR #2911);
+the **marquee optimality theorem is stated but intractable** in the current
+Mathlib (no MDP/Bellman formalization), held as `sorry`.
 
-Part of the `Probas/Infer` (Infer.NET probabilistic) series. Companion notebook:
-[`Infer-20b-Lean-Gittins.ipynb`](../Infer-20b-Lean-Gittins.ipynb).
+Planned modules (Lean roadmap #4038): **von Neumann–Morgenstern** representation
+(#4049) and **Dutch Book / de Finetti** coherence (#4050). Lean companion notebook:
+[`Infer/Infer-20b-Lean-Gittins.ipynb`](../Infer/Infer-20b-Lean-Gittins.ipynb).
 
 ## Status
 
@@ -72,7 +75,7 @@ lake build Gittins
 
 ## Notebook companion
 
-[`Infer-20b-Lean-Gittins.ipynb`](../Infer-20b-Lean-Gittins.ipynb) — pedagogical
+[`Infer/Infer-20b-Lean-Gittins.ipynb`](../Infer/Infer-20b-Lean-Gittins.ipynb) — pedagogical
 presentation of the bandit problem and the Gittins index, bridging the Infer.NET
 probabilistic-programming material to the Lean formalization.
 

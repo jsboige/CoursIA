@@ -58,7 +58,7 @@ Les notebooks 4 a 13 construisent des modèles de complexité croissante, chacun
 
 ### Phase 3 : Decision bayésienne (Notebooks 14-20, ~7h)
 
-La seconde moitie de la série passe de l'inference a la décision : comment choisir une action quand on ne connait que des probabilités ? Les notebooks 14-16 posent les fondations (axiomes de l'utilite, fonctions d'utilite mono- et multi-attributs). Les notebooks 17-20 appliquent ces concepts aux reseaux de décision, a la valeur de l'information parfaite et d'echantillon, aux systemes experts robustes, et aux processus decisionnels de Markov (MDPs) — qui relient cette série a la série [RL](../RL/). Le compagnon Infer-20b (kernel Lean 4 via WSL) clot la phase en formalisant les identites d'escompte geometrique de l'indice de Gittins dans le projet Lake [`gittins_lean`](Infer/gittins_lean/) ; le theoreme d'optimalite y est enonce, sa preuve complete exigeant une formalisation des MDP qui manque encore a Mathlib.
+La seconde moitie de la série passe de l'inference a la décision : comment choisir une action quand on ne connait que des probabilités ? Les notebooks 14-16 posent les fondations (axiomes de l'utilite, fonctions d'utilite mono- et multi-attributs). Les notebooks 17-20 appliquent ces concepts aux reseaux de décision, a la valeur de l'information parfaite et d'echantillon, aux systemes experts robustes, et aux processus decisionnels de Markov (MDPs) — qui relient cette série a la série [RL](../RL/). Le compagnon Infer-20b (kernel Lean 4 via WSL) clot la phase en formalisant les identites d'escompte geometrique de l'indice de Gittins dans le projet Lake [`decision_theory_lean`](decision_theory_lean/) — place a la **racine de la serie** pour etre visible des deux pistes (Infer.NET / PyMC) ; le theoreme d'optimalite y est enonce, sa preuve complete exigeant une formalisation des MDP qui manque encore a Mathlib.
 
 ### Parcours alternatives
 
@@ -145,10 +145,10 @@ Probas/
 ├── PyMC/                # Port PyMC complet des modeles Infer.NET (20 notebooks)
 │   ├── PyMC-1-Setup.ipynb ... PyMC-20-Decision-Sequential.ipynb
 │   └── (port en cours d'enrichissement)
+├── decision_theory_lean/        # Projet Lake (racine serie) : escompte geometrique + theoreme de Gittins ; accueillera VNM (#4049) + Dutch Book (#4050)
 └── Infer/                       # Serie complete Infer.NET (21 notebooks)
     ├── Infer-1-Setup.ipynb ... Infer-20-Decision-Sequential.ipynb
-    ├── Infer-20b-Lean-Gittins.ipynb   # Compagnon Lean 4 (kernel WSL)
-    ├── gittins_lean/            # Projet Lake : identites d'escompte, theoreme de Gittins
+    ├── Infer-20b-Lean-Gittins.ipynb   # Compagnon Lean 4 (kernel WSL, -> ../decision_theory_lean)
     ├── README.md                # Documentation detaillee de la serie
     └── scripts/
 ```

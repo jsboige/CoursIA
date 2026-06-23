@@ -1,14 +1,17 @@
-# gittins_lean — Bandits Manchots et Indice de Gittins
+# decision_theory_lean — Théorie de la décision (Lean 4)
 
-Formalisation en Lean 4 du problème du **bandit manchot multi-bras** (multi-armed
-bandit) et de l'**indice de Gittins** (Gittins 1979, Weber 1992) — la politique
+Lake **à la racine de la série `Probas`**, formalisant des résultats canoniques de
+théorie de la décision — visible des deux pistes de la série (Infer.NET / PyMC).
+Premier module livré : le problème du **bandit manchot multi-bras** (multi-armed
+bandit) et l'**indice de Gittins** (Gittins 1979, Weber 1992) — la politique
 optimale pour le bandit actualisé à horizon infini. Les **briques de l'actualisation
 géométrique sont entièrement prouvées** (PR #2911) ; le **théorème phare
 d'optimalité est énoncé mais intraitable** dans le Mathlib actuel (pas de
 formalisation MDP/Bellman), maintenu en `sorry`.
 
-Partie de la série `Probas/Infer` (probabiliste Infer.NET). Notebook compagnon :
-[`Infer-20b-Lean-Gittins.ipynb`](../Infer-20b-Lean-Gittins.ipynb).
+Modules prévus (roadmap Lean #4038) : représentation **von Neumann–Morgenstern**
+(#4049) et cohérence **Dutch Book / de Finetti** (#4050). Notebook compagnon Lean :
+[`Infer/Infer-20b-Lean-Gittins.ipynb`](../Infer/Infer-20b-Lean-Gittins.ipynb).
 
 ## Statut
 
@@ -76,7 +79,7 @@ lake build Gittins
 
 ## Notebook compagnon
 
-[`Infer-20b-Lean-Gittins.ipynb`](../Infer-20b-Lean-Gittins.ipynb) — présentation
+[`Infer/Infer-20b-Lean-Gittins.ipynb`](../Infer/Infer-20b-Lean-Gittins.ipynb) — présentation
 pédagogique du problème du bandit et de l'indice de Gittins, reliant le matériel de
 programmation probabiliste Infer.NET à la formalisation Lean.
 
