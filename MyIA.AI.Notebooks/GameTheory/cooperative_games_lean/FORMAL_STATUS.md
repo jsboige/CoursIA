@@ -8,8 +8,8 @@
 | Mathlib | pinned via lake-manifest.json |
 | Total sorry | **0** |
 | Honest unprovable (in Mathlib) | **0** |
-| Total lines | ~2369 (Basic 594 + ConeKernel 733 + Shapley 1042) |
-| Total theorems | 24 (Basic 8 + ConeKernel 4 + Shapley 12) |
+| Total lines | ~2408 (Basic 594 + ConeKernel 733 + Shapley 1081) |
+| Total theorems | 25 (Basic 8 + ConeKernel 4 + Shapley 13) |
 | Total lemmas | 10 (Basic 2 + ConeKernel 8) |
 | Total definitions | 40 (Basic 13 + ConeKernel 4 + Shapley 23) |
 
@@ -69,8 +69,8 @@ and decoupled from the cooperative-game structure), wired into `Basic.lean` by P
 | Metric | Value |
 |--------|-------|
 | Definitions | 23 |
-| Theorems | 12 |
-| Lines | 1042 |
+| Theorems | 13 |
+| Lines | 1081 |
 | sorry | **0** |
 | Status | FORMAL-COMPLETE |
 
@@ -85,6 +85,8 @@ Proved theorems (sorry resolved):
 - `shapleyCoef_top` (PR #757)
 - `bondareva_shapley_forward` (PR #802)
 - `shapley_uniqueness` (PR #1024, commit `1eb5a4a0`, 2026-05-13 — Mobius decomposition)
+- `dummy_shapley_zero` (dummy players get zero Shapley value)
+- `dummy_banzhaf_raw_zero` (PR #4011 — dummy players get zero raw Banzhaf index)
 
 ## Theorem Inventory
 
@@ -109,6 +111,7 @@ Proved theorems (sorry resolved):
 | `shapleyCoef_top` | Shapley.lean | Shapley coefficient for full coalition |
 | `shapley_uniqueness` | Shapley.lean | Shapley value is unique solution satisfying axioms (PR #1024) |
 | `dummy_shapley_zero` | Shapley.lean | Dummy players get zero Shapley value |
+| `dummy_banzhaf_raw_zero` | Shapley.lean | Dummy players get zero raw Banzhaf index (PR #4011) |
 
 ### Partially Proved (contains sorry)
 
@@ -129,7 +132,9 @@ characterised, and the Farkas/cone-separation kernel lives in `ConeKernel.lean`.
 ## Remaining Work
 
 No open sorry. Possible extensions:
-- Banzhaf power index theorems (definitions `BanzhafRaw`/`Critical` exist, no theorems yet)
+- Banzhaf power index: `dummy_banzhaf_raw_zero` proved (PR #4011); a symmetry theorem
+  `banzhaf_raw_symmetric` (interchangeable players have equal raw Banzhaf indices, the
+  Banzhaf analog of `shapley_symmetric`) is in progress in PR #4037
 - Shapley value computational properties
 
 ## References
@@ -155,3 +160,4 @@ No open sorry. Possible extensions:
 | 2026-05-14 | FORMAL_STATUS realigned: 3->0 sorry, module COMPLETE | po-2026 T-A |
 | 2026-06-20 | **Correction (G.1 verify-before-claiming):** PR #1020's `bondareva_shapley_backward` "proof" was `apply?` (non-proof); PR #2959 refactored to isolate `hb_witness` LP-dual kernel as named sorry. FORMAL_STATUS corrected: 0→1 sorry, COMPLETE→WIP_HARD | po-2026 #2959 |
 | 2026-06-23 | **ConeKernel construction closes `hb_witness` (sorry 1→0):** #3933 (ConeKernel TUGame-free kernel) → #3941 (balancedUnit bridge) → #3945 (witness-decoding core) → #3951 (wire cone-separation→decoding pipeline) → #3954 (sorry 1→0). `hb_witness` now a certified `have` @ `Basic.lean:348`. FORMAL_STATUS realigned: 1→0 sorry, WIP_HARD→COMPLETE. Lake build SUCCESS (8435 jobs). | po-2026 |
+| 2026-06-23 | **Banzhaf docs anti-dérive:** FORMAL_STATUS corrected — `dummy_banzhaf_raw_zero` (PR #4011) added to proved list + inventory; stale "no theorems yet" line fixed; Shapley.lean counts 12→13 theorems / 1042→1081 lines. README.md (FR) + README.en.md document the Banzhaf framework (`Critical`/`BanzhafRaw`). See #4037 (symmetry theorem in progress). | po-2026 |

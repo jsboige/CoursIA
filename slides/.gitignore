@@ -1,1 +1,5 @@
 dist/
+
+# Aggregated PDF exports — regenerable via `npx slidev export`; the canonical
+# audit renders live per-deck under <deck>/pptx-reference/. Do not re-commit.
+_pdfs/
