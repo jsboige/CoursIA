@@ -1323,4 +1323,7 @@ theorem banzhaf_index_dummy_zero (G : TUGame N) (i : N)
     Slightly harder than the warm-ups: needs `div_nonneg` plus a positivity
     argument on the denominator. -/
 theorem banzhaf_index_nonneg (G : TUGame N) (i : N) : 0 ≤ BanzhafIndex G i := by
-  sorry
+  simp only [BanzhafIndex]
+  apply div_nonneg
+  · exact Nat.cast_nonneg _
+  · exact pow_nonneg (by norm_num) _
