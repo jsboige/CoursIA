@@ -1030,6 +1030,14 @@ noncomputable instance criticalDecidable (G : TUGame N) (i : N) :
 noncomputable def BanzhafRaw (G : TUGame N) (i : N) : ℕ :=
   (Finset.univ.filter fun S => Critical G i S).card
 
+/-- `BanzhafRaw G i` is bounded by the total number of coalitions (`2^|N|`):
+the critical coalitions are a subset of `Finset.univ`. First genuinely-provable,
+non-smoke target for the BG prover (#1453). -/
+theorem banzhaf_raw_le_univ (G : TUGame N) (i : N) :
+    BanzhafRaw G i ≤ (Finset.univ : Finset (Finset N)).card := by
+  unfold BanzhafRaw
+  exact Finset.card_le_card (Finset.filter_subset _ _)
+
 /-- Player with veto power -/
 def VetoPlayer (G : TUGame N) (i : N) : Prop :=
   ∀ S : Finset N, G.v S = 1 → i ∈ S
