@@ -8,9 +8,9 @@
 | Mathlib | `v4.30.0-rc2` |
 | Last CI verified | 2026-05-26 |
 | Total sorry | **0** (all production files) |
-| Total lines | 1,872 |
-| Total theorems | 62 |
-| Total definitions | 60 |
+| Total lines | 2,676 (7 modules) |
+| Total theorems/lemmas | 76 |
+| Total definitions | 53 |
 
 ## Per-File Status
 
@@ -75,21 +75,60 @@ Theorems:
 
 | Metric | Value |
 |--------|-------|
-| Lines | 340 |
-| Definitions | 20 |
-| Theorems | 14 |
-| sorry | **3** |
-| Status | FORMAL-PARTIAL |
+| Lines | 875 |
+| Definitions | 22 |
+| Theorems/lemmas | 19 |
+| sorry | **0** |
+| Status | FORMAL-CERTIFIED |
 
-Key results: margin function antisymmetry, Condorcet winner uniqueness,
-Condorcet loser disjointness, single-peaked preferences, Split Cycle, clone properties.
+Key results (all 0 sorry):
 
-Port of chasenorman/Formalized-Voting.
+- **Margins**: `margin_antisymm`, `margin_self`, `margin_pos_iff_neg_rev`, `margin_pos_of_unanimous`.
+- **Condorcet**: `condorcet_winner_unique`, `condorcet_winner_not_loser`.
+- **Single-peaked / median voter**: `single_peaked_peak_unique`, `single_peaked_peak_best`,
+  `median_voter_theorem_strict`, `median_voter_theorem`.
+- **Cycles & acyclicity**: `cycle_length_pos`, `rotate_cycle`, `lt_acyclic`, `split_cycle_condorcet`.
+- **Clone structure / tournaments**: `clone_set_nonempty`, `banks_set_subset`, `banks_set_condorcet`.
 
-Sorry locations:
-- Line 231: proof requires Finset counting + sorting machinery
-- Line 298: needs IsChain construction for rotated list
-- Line 304: needs List.IsChain contradiction on irreflexive transitive relation
+Port of chasenorman/Formalized-Voting. The three former sorries (Finset counting/sorting,
+`IsChain` construction, rotated-list cycle contradiction) — historically gating the median
+voter and single-peaked proofs — are now fully resolved (0 sorry), closed via the dedicated
+`SortedListCounting.lean` combinatorial machinery (median counting lemmas).
+
+### SocialChoice/MechanismDesign.lean — VICKREY AUCTION (MECHANISM DESIGN)
+
+| Metric | Value |
+|--------|-------|
+| Lines | 76 |
+| Definitions | 2 |
+| Theorems | 4 |
+| sorry | **0** |
+| Status | FORMAL-CERTIFIED |
+
+Truthfulness / incentive-compatibility of auction rules (extending the project beyond
+pure social choice into mechanism design):
+
+- `vickrey_truthful_bidder0`, `vickrey_truthful_bidder1` — the second-price (Vickrey)
+  auction is truthful: bidding one's true valuation is a dominant strategy.
+- `first_price_not_truthful` — the first-price auction is **not** truthful
+  (counter-example to incentive compatibility).
+- `vickrey3_truthful_bidder0` — truthfulness extends to the 3-bidder Vickrey auction.
+
+### SocialChoice/SortedListCounting.lean — MEDIAN-COUNTING LEMMAS
+
+| Metric | Value |
+|--------|-------|
+| Lines | 185 |
+| Definitions | 0 |
+| Theorems | 5 |
+| sorry | **0** |
+| Status | FORMAL-CERTIFIED |
+
+Combinatorial lemmas on sorted lists and `Finset.filter` cardinality that back the
+median-voter counting arguments in `Voting.lean`: `countP_lt_kth_le_half`,
+`countP_ge_kth_ge_half_succ`, `countP_le_kth_ge_half_succ`,
+`finset_filter_card_eq_toList_countP`, `finset_filter_lt_card_eq_toList_map_countP`.
+Decoupled from the voting module so the counting kernel is reusable.
 
 ## Theorem Inventory
 
@@ -105,12 +144,23 @@ Sorry locations:
 | `pivot_exists` | Arrow.lean | Pivotal individual exists |
 | `pivot_is_dictator_except_b` | Arrow.lean | Pivot = dictator on non-b pairs |
 | `partial_dictator_is_full_dictator` | Arrow.lean | Partial = full dictatorship |
+| `margin_antisymm` | Voting.lean | Margin function antisymmetry |
+| `condorcet_winner_unique` | Voting.lean | Condorcet winner is unique |
+| `single_peaked_peak_unique` | Voting.lean | Single-peaked preference has a unique peak |
+| `median_voter_theorem` | Voting.lean | Majority selects the median voter's peak (single-peaked) |
+| `median_voter_theorem_strict` | Voting.lean | Strict single-peaked median voter theorem |
+| `split_cycle_condorcet` | Voting.lean | Split Cycle satisfies the Condorcet criterion |
+| `countP_lt_kth_le_half` | SortedListCounting.lean | Median-counting kernel lemma |
+| `vickrey_truthful_bidder0` | MechanismDesign.lean | Vickrey (2nd-price) auction is truthful (bidder 0) |
+| `vickrey_truthful_bidder1` | MechanismDesign.lean | Vickrey auction is truthful (bidder 1) |
+| `first_price_not_truthful` | MechanismDesign.lean | First-price auction is not truthful |
+| `vickrey3_truthful_bidder0` | MechanismDesign.lean | 3-bidder Vickrey auction is truthful |
 
 ### In Progress (contains sorry)
 
-| Theorem | File | sorry | Statement |
-|---------|------|-------|-----------|
-| Various | Voting.lean | 3 | Condorcet/sorting/IsChain proofs (see sorry locations above) |
+None — all modules are fully certified (0 sorry). The three former `Voting.lean` sorries
+gating the median-voter / single-peaked proofs were resolved via the `SortedListCounting.lean`
+counting kernel; Vickrey truthfulness (`MechanismDesign.lean`) is fully proved.
 
 ## Certification Level
 
@@ -120,9 +170,13 @@ Sorry locations:
 | Framework.lean | CERTIFIED (0 sorry) |
 | Arrow.lean | CERTIFIED (0 sorry) |
 | Sen.lean | CERTIFIED (0 sorry) |
-| Voting.lean | PARTIAL (3 sorry — in progress) |
+| Voting.lean | CERTIFIED (0 sorry) |
+| MechanismDesign.lean | CERTIFIED (0 sorry) |
+| SortedListCounting.lean | CERTIFIED (0 sorry) |
 
-**Project certification: PARTIAL** — Arrow/Sen/Basic/Framework fully certified (0 sorry), Voting.lean has 3 sorry remaining.
+**Project certification: COMPLETE** — all seven modules fully certified (0 sorry). Arrow,
+Sen and the Voting/median-voter results are all closed, and the project additionally covers
+mechanism design (Vickrey truthfulness) backed by a dedicated median-counting kernel.
 
 ## References
 
@@ -142,3 +196,4 @@ Sorry locations:
 | 2026-04-29 | Toolchain upgrade v4.28.0-rc1 -> v4.29.1 | `c1b2cde1` |
 | 2026-04-30 | FORMAL_STATUS.md created, CI cache fix | PR-G |
 | 2026-05-26 | Toolchain upgrade v4.29.1 -> v4.30.0-rc2, 0 sorry | — |
+| 2026-06-23 | **Docs anti-dérive (G.1 source-verified):** FORMAL_STATUS was stale — Voting.lean had grown 340->875 lines and its 3 historical sorries were resolved (median-counting kernel `SortedListCounting.lean`), yet the doc still said "3 sorry / FORMAL-PARTIAL". Corrected: Voting 0 sorry/CERTIFIED, project PARTIAL->COMPLETE, total lines 1,872->2,676, theorems 62->76. Added undocumented modules `MechanismDesign.lean` (Vickrey truthfulness) + `SortedListCounting.lean` to per-file status + inventory. README.md (FR) structure + counts realigned. | po-2026 |
