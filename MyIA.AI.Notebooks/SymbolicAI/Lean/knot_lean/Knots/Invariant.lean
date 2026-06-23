@@ -86,6 +86,59 @@ def triColorConditionAt (d : KnotDiagram) (coloring : Fin d.numEdges → TriColo
   (c1 = c2 ∧ c2 = c3) ∨
   (c1 ≠ c2 ∧ c2 ≠ c3 ∧ c1 ≠ c3)
 
+/-! ### Colour-permutation invariance — enabler for the #3003 backward transfer
+
+The Fox tricolorability condition is invariant under any injective relabelling
+of the three colours: equalities and inequalities of strand colours are both
+preserved by injectivity, and the well-formedness bounds `1 ≤ e_k ≤ numEdges`
+do not mention the colouring at all. This is the foundational fact behind the
+§9 colour-symmetry construction (`tricolorable_backward`, Epic #2874 PR3):
+given a valid `d₂` colouring whose fresh-edge colours sit outside the `d₁`
+range (the all-distinct kink mode), one permutes it to align those colours with
+a `d₁`-range colour before restricting, and Fox-validity is retained. These two
+lemmas are pure infrastructure (definition unfolding + `Function.Injective`);
+the backward construction itself (#3003, all-distinct kink) stays research.
+-/
+
+/-- Reading a strand colour commutes with post-composition by `σ`, provided the
+    diagram is non-degenerate (`numEdges ≠ 0`, so the `colorAtNat` default
+    branch is never taken). -/
+theorem KnotDiagram.colorAtNat_comp (d : KnotDiagram)
+    (coloring : Fin d.numEdges → TriColor) (σ : TriColor → TriColor) (l : Nat)
+    (hn : d.numEdges ≠ 0) :
+    d.colorAtNat (σ ∘ coloring) l = σ (d.colorAtNat coloring l) := by
+  simp only [KnotDiagram.colorAtNat, dif_neg hn, Function.comp]
+
+/-- **Fox condition is invariant under injective colour relabelling.** For an
+    injective `σ` and non-degenerate `d`, `triColorConditionAt d (σ ∘ coloring)
+    c ↔ triColorConditionAt d coloring c`. The well-formedness conjunct is
+    colour-independent; the `(c1=c2 ∧ c2=c3) ∨ (c1≠c2 ∧ c2≠c3 ∧ c1≠c3)` Fox
+    disjunction is preserved both ways by injectivity. -/
+theorem triColorConditionAt_invariant_perm (d : KnotDiagram)
+    (coloring : Fin d.numEdges → TriColor) (σ : TriColor → TriColor)
+    (hσ : Function.Injective σ) (hn : d.numEdges ≠ 0) (c : PDCrossing) :
+    triColorConditionAt d (σ ∘ coloring) c ↔ triColorConditionAt d coloring c := by
+  simp only [triColorConditionAt]
+  rw [KnotDiagram.colorAtNat_comp d coloring σ c.e1 hn,
+      KnotDiagram.colorAtNat_comp d coloring σ c.e2 hn,
+      KnotDiagram.colorAtNat_comp d coloring σ c.e3 hn]
+  refine and_congr Iff.rfl ?_
+  -- Fox disjunction on `(σ c1, σ c2, σ c3)` ↔ `(c1, c2, c3)`, via injectivity.
+  -- `σ a = σ b ↔ a = b`; the inequalities transfer by contraposition.
+  have heq : ∀ a b : TriColor, σ a = σ b ↔ a = b :=
+    fun a b => ⟨fun h => hσ h, congrArg σ⟩
+  constructor
+  · rintro (⟨h12, h23⟩ | ⟨h12, h23, h13⟩)
+    · exact Or.inl ⟨(heq _ _).mp h12, (heq _ _).mp h23⟩
+    · refine Or.inr ⟨fun heq' => h12 ((heq _ _).mpr heq'),
+                     fun heq' => h23 ((heq _ _).mpr heq'),
+                     fun heq' => h13 ((heq _ _).mpr heq')⟩
+  · rintro (⟨h12, h23⟩ | ⟨h12, h23, h13⟩)
+    · exact Or.inl ⟨(heq _ _).mpr h12, (heq _ _).mpr h23⟩
+    · refine Or.inr ⟨fun heq' => h12 ((heq _ _).mp heq'),
+                     fun heq' => h23 ((heq _ _).mp heq'),
+                     fun heq' => h13 ((heq _ _).mp heq')⟩
+
 /-- A valid tricoloring: satisfies the condition at every crossing,
 and uses at least 2 colors. -/
 def IsTriColoring (d : KnotDiagram) (coloring : TriColoring d) : Prop :=
