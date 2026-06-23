@@ -15,6 +15,10 @@ Outputs a per-notebook report + a machine-readable summary line per finding.
 import json, re, sys, pathlib
 
 HEADING_RE = re.compile(r'^(#{1,6})\s+(.*\S)\s*$')
+# Fenced code block delimiter (```... or ~~~...), possibly indented. Lines inside
+# a fence are code, not markdown: a `# comment` there is a shell/python comment,
+# NOT a heading, and must not be counted as H1 / HINT-AS-HEADING.
+FENCE_RE = re.compile(r'^\s*(`{3,}|~{3,})')
 # Text that should NOT be a heading (it's an aside / hint / step / inline label)
 HINT_RE = re.compile(
     r'^(indice|astuce|hint|tip|conseil|note|remarque|attention|todo|'
@@ -37,7 +41,13 @@ def scan_notebook(path):
             src = src.splitlines(keepends=False)
         is_first_md = not first_md_seen
         first_md_seen = True
+        in_fence = False
         for line in src:
+            if FENCE_RE.match(line):
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                continue
             m = HEADING_RE.match(line.rstrip('\n'))
             if not m:
                 continue
