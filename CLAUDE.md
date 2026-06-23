@@ -7,8 +7,7 @@ Guidance pour Claude Code travaillant avec le repository CoursIA.
 - [docs/genai/genai-services.md](docs/genai/genai-services.md) - Architectures Qwen/Lumina, scripts genai-stack, mappings notebooks
 - [docs/reference/claude-code-config.md](docs/reference/claude-code-config.md) - Agents, skills, rules, model selection
 - [docs/qc/quantconnect.md](docs/qc/quantconnect.md) - Backtests, MCP Docker, structure, livre reference
-- [docs/reference/ece-grading.md](docs/reference/ece-grading.md) - Pipeline GradeBookApp (notation collegiale, bonus CC, compilation), repos etudiants
-- [docs/reference/esgf-grading.md](docs/reference/esgf-grading.md) - Pipeline ESGF (cohorte 5ESGF-5BD1, peer eval CSV, calibration Option C HL, floor=10, mirror ECE)
+- Notation etudiants (ECE / ESGF / EPITA / EPF) : moteur generique = [GradeBookApp/configs/README.md](GradeBookApp/configs/README.md) ; **pipelines + donnees par cohorte = prives sur GDrive** `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` (PII etudiants, hors repo public)
 - [docs/reference/teaching-context.md](docs/reference/teaching-context.md) - Calendrier toutes ecoles, scope EPITA-IS, agents par ecole
 - [docs/reference/cluster-agents.md](docs/reference/cluster-agents.md) - Machines cluster, GPU topology, agents par specialisation, dispatch Epic
 - [docs/lean/](docs/lean/) - Prover iteration history, intractable diagnosis, LLM endpoints
@@ -173,7 +172,7 @@ scripts/smartcontracts/                  # SC-specifique
 scripts/genai-stack/genai.py             # GenAI Docker + validation (cf docs/genai/genai-services.md)
 
 .claude/{agents, skills, rules}/         # 21 sous-agents, 15 skills, rules auto-loaded
-GradeBookApp/                            # Notation etudiants (cf docs/reference/ece-grading.md)
+GradeBookApp/                            # Notation etudiants : moteur generique (pipelines+donnees par cohorte prives sur GDrive)
 docker-configurations/                   # ComfyUI + Qwen Docker
 docs/                                    # Documentation deportee de ce CLAUDE.md
 ```
