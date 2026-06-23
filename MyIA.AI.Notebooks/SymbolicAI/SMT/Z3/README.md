@@ -36,6 +36,7 @@ L'intérêt pédagogique : au lieu d'écrire un algorithme de backtracking pour 
 | 05 | [Meal Planner Hierarchical](05_Meal_Planner_Hierarchical.ipynb) | Planificateur de repas : data fusion LINQ + théorème hiérarchique | ~50 min | BETA |
 | 06 | [Witness Generation Automata](06_Witness_Generation_Automata.ipynb) | **Fork Automata** : générer un *témoin* depuis `A & ~B` (intersection/complément de surface), cap des 21 caractères levé (#6), émission SMT-LIB `re.inter`/`re.comp` | ~40 min | BETA |
 | 06b | [RecipeML Corpus](06b_RecipeML_Corpus.ipynb) | Modélisation SMT sur **données externes** : corpus RecipeML (XML) parsé en classes de domaine, menu booléen avec exclusion d'allergène (`MkITE`) + plan hiérarchique multi-jours `int[][]` (`CollectionHandling.Array`) | ~40 min | BETA |
+| 06c | [Meal Planner Visualization](06c_Meal_Planner_Visualization.ipynb) | **Rendu HTML** des solutions Z3 (`display(HTML(...))`) : carte de menu color-codée (kcal/protéines/allergènes), grille hebdomadaire, front de Pareto budget↔kcal — montée en gamme du rendu plat `Console.WriteLine` | ~40 min | BETA |
 
 ### Fil pédagogique
 
