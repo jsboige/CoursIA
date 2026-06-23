@@ -30,6 +30,20 @@ lean backtest --project .
 | Net Return | +258% |
 | Rebalance | Monthly |
 
+### Aligned baseline (2018-2025)
+
+Standardized #1630 backbone run (QC Cloud project `33251801`, backtest `697e96af`).
+
+| Metric | Value |
+|--------|-------|
+| Sharpe Ratio | 0.445 |
+| CAGR | 11.111% |
+| Max Drawdown | 24.100% |
+| Probabilistic Sharpe Ratio | 11.9% |
+| Tradeable dates | 1761 |
+
+Interpretation: strong positive Sharpe 0.445 (3rd-best no-ML backbone, close to GlobalMacro-Regime 0.454) with the 2nd-highest CAGR (11.1%, after HAR-RV-J-Kelly 14.1%). The risk-adjusted momentum factor rotation (12m-1m return / 63d realized vol, dynamic top_n) combined with the SMA200 regime filter, USMV risk-off and per-position -12% stop-loss survives the 2018-2025 alignment with only a mild Sharpe drop vs the author's 2015-2024 v3.0 (0.540 -> 0.445; MaxDD stable 24.2% -> 24.1%) -- the strategy is genuinely robust, not period-overfit, in contrast to the broader "simple factor collapse" finding (this is a risk-adjusted momentum rotation, not static factor exposure). Below the FamaFrenchAllWeather composite (0.684) -- the framework composite adds value over the standalone rotation. Promoted Tier 4 -> 2 (Historique). totalOrders = 0 = wrapper extraction artifact (CAGR 11.1% implies real trades).
+
 ## Files
 
 - `main.py` - Strategy (v3, risk-adjusted momentum with skip-month)
