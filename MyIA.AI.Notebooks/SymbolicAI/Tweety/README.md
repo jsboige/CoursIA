@@ -55,13 +55,13 @@ Cette série ne propose pas de choisir l'un ou l'autre, mais de **comprendre les
 | Kernel | Python 3 (JPype/Java) |
 | Version Tweety | 1.30 recommandée |
 | Solveurs externes | Clingo, SPASS, EProver, Z3, PySAT |
-| JARs Java | ~35 modules |
+| JARs Java | 42 (39 modules Tweety 1.30 + 3 deps externes) |
 
 ## Parcours d'apprentissage
 
 ### Phase 1 : Fondations (Notebooks 1-3, ~1.5h)
 
-La série débute avec le notebook 1 (Setup) qui configure toute l'environnement : téléchargement automatique du JDK Zulu, des 35 JARs TweetyProject, et des outils externes (Clingo pour ASP, SPASS pour la logique modale, EProver pour le premier ordre). Une fois la JVM initialisée via JPype, le notebook 2 plonge dans les logiques fondamentales : la logique propositionnelle avec les opérateurs booléens, la satisfaisabilité (SAT) via pySAT, et la logique du premier ordre avec la construction de signatures et le raisonnement avec EProver. Le notebook 3 étend ces fondations aux logiques de Description (DL) pour les ontologies, la logique modale (nécessité/possibilité) pour le raisonnement sur les mondes possibles, les formules booléennes quantifiées (QBF), et la logique conditionnelle pour le raisonnement defeasible. À l'issue de cette phase, vous maîtrisez les outils de base du raisonnement formel.
+La série débute avec le notebook 1 (Setup) qui configure toute l'environnement : téléchargement automatique du JDK Zulu, des 39 JARs des modules TweetyProject 1.30 (plus 3 dépendances externes), et des outils externes (Clingo pour ASP, SPASS pour la logique modale, EProver pour le premier ordre). Une fois la JVM initialisée via JPype, le notebook 2 plonge dans les logiques fondamentales : la logique propositionnelle avec les opérateurs booléens, la satisfaisabilité (SAT) via pySAT, et la logique du premier ordre avec la construction de signatures et le raisonnement avec EProver. Le notebook 3 étend ces fondations aux logiques de Description (DL) pour les ontologies, la logique modale (nécessité/possibilité) pour le raisonnement sur les mondes possibles, les formules booléennes quantifiées (QBF), et la logique conditionnelle pour le raisonnement defeasible. À l'issue de cette phase, vous maîtrisez les outils de base du raisonnement formel.
 
 ### Phase 2 : Révision de Croyances (Notebook 4, ~45 min)
 
@@ -158,7 +158,7 @@ jupyter notebook Tweety-1-Setup.ipynb
 # 3. Exécuter toutes les cellules, puis passer à Tweety-2
 ```
 
-JDK 17 et les 35 JARs TweetyProject sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
+JDK 17 et les 42 JARs (39 modules TweetyProject 1.30 + 3 dépendances externes : args4j, commons-math, sat4j) sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
 
 ## Prérequis
 
@@ -213,7 +213,7 @@ Tweety/
 ├── Tweety-7b-Ranking-Probabilistic.ipynb
 ├── Tweety-8-Agent-Dialogues.ipynb
 ├── Tweety-9-Preferences.ipynb
-├── libs/                          # JARs Tweety (35 modules)
+├── libs/                          # JARs Tweety (42 : 39 modules 1.30 + 3 deps)
 ├── resources/                     # Fichiers d'exemples (.txt, .aba, .aspic)
 ├── ext_tools/                     # Outils externes (Clingo, SPASS, EProver)
 ├── jdk-17-portable/              # JDK Zulu (telecharge auto)
@@ -412,7 +412,7 @@ cd scripts
 python verify_all_tweety.py --quick
 ```
 
-JDK 17 et les 35 JARs TweetyProject sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
+JDK 17 et les 42 JARs (39 modules TweetyProject 1.30 + 3 dépendances externes : args4j, commons-math, sat4j) sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
 
 ## Validation des Notebooks
 
