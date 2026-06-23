@@ -1019,10 +1019,15 @@ noncomputable def WeightedVotingGame (weights : N → ℝ) (quota : ℝ) (hquota
 def Critical (G : TUGame N) (i : N) (S : Finset N) : Prop :=
   i ∈ S ∧ G.v S = 1 ∧ G.v (S.erase i) = 0
 
-/-- Raw Banzhaf index: number of coalitions where i is critical.
-    Uses Classical.decPred since Critical involves noncomputable real comparisons. -/
+/-- `Critical G i` is decidable via Classical reasoning (the `TUGame.v` comparisons are
+    noncomputable reals). Promoted to a global instance so that `BanzhafRaw` and any
+    theorem about it synthesise the SAME instance, avoiding the
+    opaque-`Classical.decPred`-mismatch trap. -/
+noncomputable instance criticalDecidable (G : TUGame N) (i : N) :
+    DecidablePred (fun S : Finset N => Critical G i S) := Classical.decPred _
+
+/-- Raw Banzhaf index: number of coalitions where i is critical. -/
 noncomputable def BanzhafRaw (G : TUGame N) (i : N) : ℕ :=
-  haveI : DecidablePred (fun S => Critical G i S) := Classical.decPred _
   (Finset.univ.filter fun S => Critical G i S).card
 
 /-- Player with veto power -/
@@ -1041,3 +1046,37 @@ def DummyPlayer (G : TUGame N) (i : N) : Prop :=
 theorem dummy_shapley_zero (G : TUGame N) (i : N) (h : DummyPlayer G i) :
     shapleyValue G i = 0 :=
   ShapleyValue.shapley_null_player G i h
+
+/-- Dummy players are critical in no coalition, hence have a zero raw Banzhaf index.
+
+    A dummy player never changes a coalition's value, so it can never be the case that
+    `v S = 1` while `v (S.erase i) = 0`: the dummy hypothesis forces `v S = v (S.erase i)`,
+    contradicting criticality. -/
+theorem dummy_banzhaf_raw_zero (G : TUGame N) (i : N) (h : DummyPlayer G i) :
+    BanzhafRaw G i = 0 := by
+  -- A dummy player is critical in no coalition: criticality demands `v S = 1` and
+  -- `v (S.erase i) = 0`, but `DummyPlayer` gives `v S = v (S.erase i)`.
+  have hneq : ∀ S, Critical G i S → False := by
+    rintro S ⟨hmem, hone, hzero⟩
+    have hni : i ∉ S.erase i := by simp [Finset.mem_erase]
+    -- `S = (S.erase i) ∪ {i}` since `i ∈ S`.
+    have hS_eq : S = (S.erase i) ∪ {i} := by
+      ext j
+      simp only [Finset.mem_union, Finset.mem_erase, Finset.mem_singleton]
+      constructor
+      · intro hj
+        by_cases heq : j = i
+        · exact Or.inr heq
+        · exact Or.inl ⟨heq, hj⟩
+      · rintro (⟨_, hj⟩ | hj)
+        · exact hj
+        · rw [hj]; exact hmem
+    have hdummy := h (S.erase i) hni
+    rw [← hS_eq] at hdummy
+    rw [hdummy] at hone
+    linarith
+  -- `BanzhafRaw` = cardinality of the critical-coalition filter (instance now consistent
+  -- via `criticalDecidable`); the filter is empty since `hneq` refutes every criticality.
+  simp only [BanzhafRaw]
+  rw [Finset.card_eq_zero, Finset.filter_eq_empty_iff]
+  exact fun S _ hcrit => hneq S hcrit
