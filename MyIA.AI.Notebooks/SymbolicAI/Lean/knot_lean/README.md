@@ -90,6 +90,44 @@ BG-prover ai-01), L799 est de l'infrastructure NP-dure. Le transfer R1 backward
 est en revanche **complet sur son sous-cas all-equal** (`fox`+`col` PROUVÉS) et sur
 `num` (parité `wf`, #3163) — seuls les modes all-distinct du kink restent ouverts.
 
+## GF(3) linéarité & limite de soundness du modèle (2026-06-23, #3003)
+
+Deux résultats combinatoires sur le modèle de 3-colorabilité, énoncés comme
+scaffolding (cibles BG-prover) suite à la caractérisation cycle-3 (#4022) :
+
+- **Linéarité GF(3) du condition de Fox** (`triColorFoxCondition_iff_sum_mod_three`,
+  Invariant.lean) : pour trois couleurs, la condition « toutes égales OU toutes
+  distinctes » équivaut à `toNat(c₁)+toNat(c₂)+toNat(c₃) ≡ 0 (mod 3)`. L'espace
+  des colorations valides est donc un *sous-espace linéaire* de `(ℤ/3)^(numEdges)`.
+  Vérifié empiriquement (0 désaccord sur 7,5M diagrammes wf). Décidable par
+  `decide` une fois `Fintype` (Mathlib) importé — ce fichier n'importe actuellement
+  que `Knots.Basic`/`Knots.Reidemeister`.
+- **Lemme universel** (`tricolorability_of_two_crossings`, Invariant.lean) :
+  `wf d → d.crossings.length ≥ 2 → IsTricolorable d` (par rang-nullité sur le
+  système GF(3) ci-dessus). VRAI pour le modèle (0 échec pour m ∈ {2,3,4,5}).
+
+**⚠️ SOUNDNESS — le modèle DIVERGE du Fox classique (G.9, vérifié firsthand) :**
+le modèle colore des ARÊTES (`Fin numEdges`) indépendamment, SANS contrainte
+d'arc-égalité (le Fox classique force l'over-strand d'un crossing à partager sa
+couleur). Donc `numEdges = 2·m ≠ m arcs`, et même le **figure-8** (4 crossings,
+déterminant 5, classiquement NON 3-colorable) EST edge-tricolorable dans le modèle
+— witness `(0,0,0,1,0,0,1,2)` vérifié contre le `triColorConditionAt` exact.
+
+**Conséquence stratégique :** prouver le lemme universel déchargerait les 2
+sorries résiduels de #3003 (fox/col backward) MAIS rendrait `tricolorable_invariant`
+TRIVIALEMENT vrai (tout diagramme wf ≥2-crossings devient tricolorable →
+l'invariant ne distingue plus que l'unknot). C'est un **fork architectural** en
+attente de décision coordinateur/user :
+
+- **Path A** : prouver le lemme (décharge #3003, consacre un modèle permissif
+  non-classique ; figure-8 false-positive permanent).
+- **Path B** : fixer le modèle (contrainte d'arc-égalité / coloration par arcs),
+  re-prouver `trefoil_tricolorable`, #3003 backward devient le transfert classique
+  GÉNUINEMENT dur.
+
+Le lemme + le pont sont énoncés (open) pour permettre l'itération BG-prover d'ai-01
+sur la cible ainsi formalisée ; la décision architecturale est différée.
+
 ## Phase 5 — Re-modélisation des mouvements de Reidemeister
 
 **Marquee theorem** : `tricolorable_invariant` (la 3-colorabilité est un invariant).

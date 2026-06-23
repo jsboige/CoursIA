@@ -154,6 +154,63 @@ def IsTricolorable (d : KnotDiagram) : Prop :=
 def Knot.isTricolorable (k : Knot) : Prop :=
   IsTricolorable k.diagram
 
+/-! ### GF(3) linearity of the Fox condition (cycle-3 breakthrough, #4022)
+
+The Fox tricolour condition on three colours — "all equal OR all distinct" — is
+equivalent, for a 3-element palette, to the colours summing to `0 (mod 3)`. This
+makes the space of valid edge-colourings a *linear subspace* of `(ℤ/3)^(numEdges)`,
+which is the key to the rank-nullity argument in `tricolorability_of_two_crossings`
+below. Verified empirically over 7.5M well-formed diagrams (cycle-3, #4022). -/
+
+/-- Embed `TriColor` into `ℕ` (red ↦ 0, blue ↦ 1, green ↦ 2) so the Fox
+3-colour condition reads linearly over `ℤ/3ℤ`. -/
+def TriColor.toNat : TriColor → Nat
+  | red => 0
+  | blue => 1
+  | green => 2
+
+/-- The Fox 3-colour condition on three colours ⟺ their `toNat`-sum is `0 mod 3`.
+Finite (3³ = 27 cases), decidable by computation once a `Fintype TriColor` instance
+is available (this file currently imports only `Knots.Basic`/`Knots.Reidemeister`;
+`decide` on `∀ c : TriColor` needs `Fintype` from Mathlib). Empirically verified TRUE
+(0 disagreements over 7.5M well-formed diagrams, cycle-3 #4022). Open proof
+obligation, target of the BG-prover (ai-01 2026-06-23). -/
+theorem triColorFoxCondition_iff_sum_mod_three (c1 c2 c3 : TriColor) :
+    ((c1 = c2 ∧ c2 = c3) ∨ (c1 ≠ c2 ∧ c2 ≠ c3 ∧ c1 ≠ c3)) ↔
+      (c1.toNat + c2.toNat + c3.toNat) % 3 = 0 := by
+  sorry
+
+/-! ### Universal two-crossing colourability (cycle-3 GF(3) route, #3003)
+
+**Statement (open placeholder, target of the BG-prover per ai-01 2026-06-23):**
+every well-formed diagram with ≥ 2 crossings admits a non-constant Fox-valid
+edge-colouring. Proof sketch: by the GF(3) linearity above, valid colourings form
+a linear subspace `V(d) ⊆ (ℤ/3)^(2m)` (m crossings ⟹ m homogeneous equations,
+2m edges by `wf` parity); rank ≤ m, so nullity ≥ m ≥ 2; the constant colourings
+form a 1-dimensional subspace, hence a non-constant witness exists.
+
+**SOUNDNESS CAVEAT (cycle-4, G.9, verified firsthand):** this lemma is TRUE for
+THIS model's `IsTricolorable` (empirically 0 failures for m ∈ {2,3,4,5}), BUT the
+model **diverges from the classical Fox invariant**: it colours EDGES
+(`Fin numEdges`) independently with NO arc-equality constraint, so the over-strand
+of a crossing is NOT forced to share a colour. Consequently `numEdges = 2·m ≠ m`
+arcs, and even the figure-8 (4 crossings, determinant 5, classically NOT
+3-colourable) IS edge-tricolorable here — witness computed against the exact
+`triColorConditionAt` (this file) + `figureEightDiagram` (Basic.lean). Proving
+this lemma would make `tricolorable_invariant` TRIVIALLY true (every ≥ 2-crossing
+diagram is tricolorable ⟹ the invariant only separates the unknot). This is an
+architectural fork (Path A: prove, accept a permissive non-classical model;
+Path B: add an arc-equality constraint, recover the classical invariant) — GATED
+on the coordinator/user's pedagogical intent. Stated here so the BG-prover can
+iterate on the rank-nullity bridge; the architectural decision is deferred.
+Reference: Fox (1962); Adams, "The Knot Book". -/
+theorem tricolorability_of_two_crossings (d : KnotDiagram)
+    (hwf : d.wf = true) (hcross : d.crossings.length ≥ 2) :
+    IsTricolorable d := by
+  -- Via GF(3) rank-nullity on the linear system of
+  -- `triColorFoxCondition_iff_sum_mod_three`; open BG-prover target (ai-01).
+  sorry
+
 /-! ## 2. Tricolorability is an invariant
 
 Tricolorability is preserved by all three Reidemeister moves.
