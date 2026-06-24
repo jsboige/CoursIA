@@ -1,6 +1,6 @@
 # Contexte enseignement - calendrier, ecoles, agents
 
-Documentation transversale sur l'organisation de l'enseignement annuel : calendrier, scope par ecole, mapping agents cluster. Pour le **moteur de notation** : cf [docs/ece-grading.md](ece-grading.md). Pour le **mapping cluster machines** (au-dela des roles enseignement) : cf [docs/cluster-agents.md](cluster-agents.md).
+Documentation transversale sur l'organisation de l'enseignement annuel : calendrier, scope par ecole, mapping agents cluster. Pour le **moteur de notation** : cf [GradeBookApp/configs/README.md](../../GradeBookApp/configs/README.md) (pipelines + donnees par cohorte = prives sur GDrive). Pour le **mapping cluster machines** (au-dela des roles enseignement) : cf [docs/cluster-agents.md](cluster-agents.md).
 
 ## Ecoles partenaires 2026
 
@@ -89,7 +89,7 @@ Voir [.claude/rules/student-pr-reviews.md](../../.claude/rules/student-pr-review
 
 ## Pointeurs cross-doc
 
-- Pipeline notation et bonus CC : [docs/ece-grading.md](ece-grading.md)
+- Pipeline notation et bonus CC : moteur [GradeBookApp/configs/README.md](../../GradeBookApp/configs/README.md) ; detail par cohorte prive sur GDrive `Formation\<ecole>\<annee>\grading\`
 - Mapping cluster machines (au-dela enseignement) : [docs/cluster-agents.md](cluster-agents.md)
 - Slides Slidev EPITA : `MyIA.AI.Notebooks/SymbolicAI/<serie>/slides/` (workflow Slidev verify, cf [.claude/rules/](../../.claude/rules/))
 - QuantConnect (partenaire) : [docs/qc/quantconnect.md](../qc/quantconnect.md)

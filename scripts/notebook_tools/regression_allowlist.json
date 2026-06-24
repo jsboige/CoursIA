@@ -18,6 +18,14 @@
       "reason": "Demonstrated genuine: FEASIBLE persists at 20/60/120s solve budgets; raising the timeout does NOT reach OPTIMAL. Honest caveat is defensible (not a recoverable degradation).",
       "evidence_url": "https://github.com/jsboige/CoursIA/issues/3688",
       "demonstrated_by": "ai-01 / myia-ai-01 2026-06-19"
+    },
+    {
+      "path": "MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/examples/Crypto-MultiCanal/research_archive.ipynb",
+      "cause": "*",
+      "cell_signature": "13 NameError/KeyError residual across 33 code cells",
+      "reason": "Experimentation ARCHIVE by-design (paired with research.ipynb REFERENCE template). The 13 NameError/KeyError cells are leftover residuals from iterative prototyping on QC Cloud where cells reference variables defined/renamed in later iterations. This is NOT a degraded deliverable: it is the preserved trace of experimentation. The canonical REFERENCE notebook (research.ipynb, same dir, now flagged metadata.qc_reference=True) is the clean by-design template. Archive is committed for traceability of the Crypto-MultiCanal channel research, not as an executable pedagogical output. Greenlit by ai-01 (2026-06-20) as Option A partner-course policy.",
+      "evidence_url": "https://github.com/jsboige/CoursIA/issues/3164",
+      "demonstrated_by": "po-2024 / myia-po-2024 2026-06-20"
     }
   ]
 }

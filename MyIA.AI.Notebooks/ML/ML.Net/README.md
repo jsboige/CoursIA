@@ -4,7 +4,7 @@
 series: ML-ML.Net
 pedagogical_count: 8
 breakdown: ML.Net=8
-maturity: PRODUCTION=7, ALPHA=1
+maturity: PRODUCTION=6, ALPHA=1, DRAFT=1
 -->
 
 [← ML (série parente)](../README.md) | [DataScienceWithAgents (Python) →](../DataScienceWithAgents/README.md) | [Probas/Infer.NET →](../../Probas/Infer/README.md)
@@ -359,3 +359,23 @@ Voir la licence du repository principal.
 |-------|------|------------|
 | [Probas/Infer](../../Probas/Infer/README.md) | Régression bayésienne | Le TP capstone utilise Infer.NET, le même moteur probabiliste de la série Probas |
 | [GenAI](../../GenAI/README.md) | IA générative | Les modèles ONNX (ML-6) servent à déployer des LLMs et modèles NLP (BERT, Whisper) via ONNX Runtime dans .NET |
+
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette série vous a fait passer du **premier pipeline ML en C#** ([ML-1](ML-1-Introduction.ipynb)) à une **application complète de bout en bout**, en consolidant trois acquis cibles pour un praticien .NET :
+
+- **Construire et justifier un pipeline ML.NET complet** — de `MLContext` au `PredictionEngine`, vous savez enchaîner chargement ([ML-2](ML-2-Data&Features.ipynb)), entraînement ([ML-3](ML-3-Entrainement&AutoML.ipynb)) et prédiction, en laissant l'AutoML explorer l'espace des algorithmes (SDCA, LightGBM) plutôt que de choisir à l'aveugle.
+- **Évaluer rigoureusement et expliquer** — [ML-4](ML-4-Evaluation.ipynb) (le notebook le plus dense) vous a armé pour ne plus vous contenter d'un « ça marche » : cross-validation K-fold, R²/MAE/RMSE, Permutation Feature Importance. Un modèle que vous comprenez et pouvez défendre devant un stakeholder, pas seulement un score.
+- **Servir en production sans quitter .NET** — les notebooks avancés couvrent les cas où ML.NET excelle en entreprise : prévision par [SSA](ML-5-TimeSeries.ipynb), [interop ONNX](ML-6-ONNX.ipynb) (modèles scikit-learn/PyTorch/Hugging Face consommés en C#), [recommandation](ML-7-Recommendation.ipynb) par factorisation matricielle. Le R&D reste en Python, la production tourne en .NET.
+
+### Prochaines étapes
+
+- **Approfondir l'incertitude** — le [TP capstone](TP-prevision-ventes.ipynb) introduit la régression bayésienne via Infer.NET ; la série [Probas/Infer](../../Probas/Infer/README.md) en est le prolongement natural (même moteur probabiliste, même stack .NET).
+- **Aller plus loin en ML appliqué** — *Hands-On AI Trading* (cité en Ressources) montre ML.NET en production sur un pipeline de trading réel ; les notebooks [DataScienceWithAgents](../DataScienceWithAgents/README.md) (Python) donnent le contrepoint agentique du même métier.
+- **Déployer des LLM/NLP** — [ML-6 ONNX](ML-6-ONNX.ipynb) ouvre la voie : servir BERT, Whisper ou d'autres modèles Hugging Face dans une appli .NET via ONNX Runtime, sans dépendance Python.
+
+### Le fil rouge
+
+Le fil rouge de cette série est le **paradoxe résolu** du ML en .NET : faire du machine learning sérieux **sans quitter sa stack applicative**. La où l'orthodoxie voudrait qu'on prototypé en Python puis réécrive en C# pour produire, ML.NET + ONNX court-circuite ce détour — l'entraînement, l'évaluation et le déploiement coexistent dans le même runtime, et les modèles Python viennent à .NET plutôt que l'inverse. Maitriser cette série, c'est savoir choisir le **bon niveau de la stack** (ML.NET natif pour les workflows .NET, ONNX pour l'import de modèles exotiques, Infer.NET pour l'incertitude) plutôt que de plaquer un seul outil sur tous les problèmes.

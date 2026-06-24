@@ -39,6 +39,21 @@ Composite strategy combining two complementary approaches via QuantConnect Algor
 | Max Drawdown | 17.1% |
 | Period | 2010-2026 |
 
+### Aligned baseline (2018-2025)
+
+Standardized #1630 window (2018-01-01 to 2025-01-01, 1761 tradeable dates), backtested on QC Cloud with post-#2801 real fees.
+
+| Metric | README headline (2010-2026 sweep) | Catalog (2015-2025) | **Aligned (2018-2025)** |
+|--------|-----------------------------------|---------------------|-------------------------|
+| Sharpe | 0.588 | 0.472 | **0.338** |
+| CAGR | 9.9% | 7.226% | 6.578% |
+| MaxDD | 17.1% | 13.1% | 13.1% |
+| PSR | — | 35.0% | 22.9% |
+
+Aligned backtest `e9ac7c66` (1761 tradeable dates, Completed) / catalog backtest `70415edc` (`FF20_AW80_2015_2025_extended`, 2766 dates). `totalOrders=0` is an MCP wrapper extraction artifact (CAGR 6.6% implies real trades); QC-computed statistics are reliable.
+
+**Period-overfitting caveat**: the strong headline figures do NOT survive alignment to the standardized 2018-2025 window. The README headline Sharpe 0.588 (2010-2026 sweep) drops to **0.338** (-42%), and the separately-run OOS 2023-2026 figure (Sharpe 0.684, PSR 87.5% — backtest `b08c8956`, only 835 tradeable dates) collapses to 0.338 / PSR 22.9% on the full aligned window: the 87.5% PSR was a small-OOS-sample artifact, not a robust statistical edge. On the aligned window the 80% AllWeather sleeve (mostly static SPY/IEF/GLD/XLP) drags the composite below the standalone FamaFrench rotation (Sharpe 0.445, #72), though it buys tight drawdown control (MaxDD 13.1%, among the tighter backbones). Promoted Tier 4 (Untested) to Tier 2 (Historique).
+
 ## Allocation Sweep Results
 
 | Allocation | Sharpe | CAGR | Max DD |

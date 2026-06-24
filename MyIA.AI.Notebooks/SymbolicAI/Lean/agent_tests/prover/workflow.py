@@ -844,6 +844,8 @@ class VerifyExecutor(Executor):
             filepath=self._sorry_ctx.filepath,
             sorry_line=self._sorry_ctx.sorry_line,
             replacement=msg.tactic,
+            persist_on_success=True,  # #1453: write the verified tactic to the
+            # REAL file + confirm via real-module rebuild, else success is a lie
         )
 
         if result["success"]:
@@ -859,7 +861,8 @@ class VerifyExecutor(Executor):
                     agent="VerifyExecutor", role="verify",
                     content=f"PROOF FOUND: {msg.tactic[:80]}",
                     tool_name="verify_sorry_replacement",
-                    tool_result="success=True",
+                    tool_result=(f"success=True persisted={result.get('persisted')} "
+                                 f"real_build_ok={result.get('real_build_ok')}"),
                 )
             try:
                 self._kb.record_success(

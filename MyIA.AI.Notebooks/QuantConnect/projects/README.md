@@ -60,6 +60,36 @@ Voir [STRATEGIES_DETAIL.md](STRATEGIES_DETAIL.md#qc-strategy-library-clones-avan
 
 ---
 
+## État vérifié sous frais réels (#1630, 2018-2025)
+
+> **Caveat important.** Les Sharpes du tableau « Robuste » ci-dessus sont des valeurs **catalogue (pré-frais, fenêtres variables)**. La campagne #1630 a re-vérifié 36+ de ces stratégies sous **frais IBKR réels** (`PercentFeeModel` explicite) sur une **fenêtre alignée 2018-2025**. Plusieurs stars du catalogue **s'effondrent** dans ces conditions — le label « Robuste » ci-dessus ne préjuge pas de la robustesse sous frais réels.
+
+### Effondrements confirmés (catalogue → aligné 2018-2025)
+
+| Stratégie | Sharpe catalogue | Sharpe aligné | Delta | Cause |
+|-----------|------------------|---------------|-------|-------|
+| HighBookToMarketFScore | 2.09 | **0.41** | -80% | Value/factor écrasé par les frais réels, MaxDD -60% |
+| PuppiesOfTheDow | 1.99 | **0.30** | -85% | Value/factor + frais réels |
+| ML-Trend-Scanning | 0.66 | **0.33** | -50% | Rebalancement quotidien SPY/TLT/GLD multi-actifs = turnover écrasé |
+| AllWeather | 0.67 | **0.47** | -30% | Sleeve bonds/gold multi-actifs = friction de panier |
+
+### Leaders vérifiés alignés (backbone no-ML)
+
+| Stratégie | Sharpe aligné | PSR | Caveat |
+|-----------|---------------|-----|--------|
+| Framework_Composite_EMATrend | **0.611** | 19.8% | Sleeve EMA 100% Mag7 → biais de survivorship ; Sharpe le plus haut mais constitution concentrée |
+| composite-c2-equityfactor | **0.574** | 25.8% | **Constitution la plus robuste** (25 actions factor-diversifiées) ; tient juste au-dessus du seuil |
+
+> **TrendFollowing** (catalogue 1.072) n'est **pas reproductible** depuis le `main.py` du dépôt : le baseline-clone (2015-2024, IBKR) donne un Sharpe bien inférieur (~0.36-0.41, PSR < 9%). Le 1.072 provient d'un état du code cloud antérieur — à citer avec ce caveat (diagnostic finding #18).
+
+### Le discriminateur (leçon durable)
+
+La résistance aux frais **n'est pas** l'asset-class ni ML-vs-indicateur : c'est le **realized-turnover** = fréquence × taille par trade × homogénéité des frais du panier. Un composite equity-only fee-homogeneous en rebalancement mensuel (**c2 0.574**) tient là où un multi-asset rotationnel (**AllWeather 0.47**) s'effondre — même architecture, c'est l'univers qui décide.
+
+Détail complet, comparatifs best-vs-aligned et diagnostics par stratégie : [docs/qc/qc-comparative-backtests.md](../../../docs/qc/qc-comparative-backtests.md) (See #1630).
+
+---
+
 ## Structure d'un Projet
 
 ```
@@ -76,6 +106,31 @@ MonProjet/
 **Sur QuantConnect Cloud** : Créer un projet Python → copier `main.py` → lancer le backtest.
 
 **En local** : `pip install yfinance pandas matplotlib` puis `jupyter notebook projects/MonProjet/research.ipynb`
+
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Ce catalogue de **116 projets** est un **zoo de stratégies backtestées**, organisé non pas par thème mais par **robustesse** (Robuste / Historique / Exploratoire). La classification elle-même est la leçon :
+
+- **La robustesse prime sur le Sharpe brut** : une stratégie à Sharpe 1.6 qui s'effondre hors-échantillon vaut moins qu'une stratégie à Sharpe 0.6 stable à travers les régimes. Le label *Robuste* (> 0.5 soutenu) est la barre pédagogique, pas le chiffre spectaculaire.
+- **Les contre-exemples sont aussi importants que les succès** : les stratégies *Exploratoire* (Sharpe < 0) et *Historique* (0-0.5) sont conservées **délibérément** pour montrer *ce qui ne marche pas* et pourquoi — PairsTrading sur ETF corrélés, ForexCarry, MeanReversion naïf. On apprend autant d'un edge négatif bien diagnostiqué que d'un edge positif.
+- **La diversité des régimes compte** : un projet backtesté 2015-2026 (bull/bull) n'a pas la même valeur probante qu'un projet backtesté 2008-2026 (incluant le GFC). La colonne *Période* est lue comme un indice de robustesse, pas comme une métadonnée.
+
+Le fil rouge : **chaque projet est reproductible** — `main.py` (ou `Main.cs`) se déploie tel quel sur QuantConnect Cloud, et `research.ipynb` documente l'exploration qui a mené à la stratégie.
+
+### Prochaines étapes
+
+1. **Parcourir par niveau** : débutant (`CSharp-BTC-EMA-Cross`, `EMA-Cross-Stocks`, `AllWeather`) avant d'aborder les avancés (`Framework_Composite_TrendWeather`, `Portfolio-Optimization-ML`).
+2. **Lire les contre-exemples** : ouvrir `PairsTrading/` et `ForexCarry/` pour comprendre *pourquoi* ils échouent — le diagnostic négatif est formateur.
+3. **Consulter le détail** : `STRATEGIES_DETAIL.md` donne le contexte complet de chaque stratégie (catégorie, ML/DL/RL, clones QC Library).
+4. **Reproduire sur QC Cloud** : créer un projet, copier le `main.py`, lancer le backtest, et comparer vos métriques au tableau ci-dessus.
+5. **Étendre un projet Robuste** : choisir une stratégie *Robuste* (ex. `RegimeSwitching`, `SectorMomentum`) et itérer — changer l'univers, ajouter un filtre de risque, tester la sensibilité aux coûts de transaction.
+6. **Voir les leçons transversales** : `docs/qc/quantconnect.md` recense les 20 patterns confirmés et les anti-patterns observés à travers ces 116 projets.
+
+> **Rappel honnête** : un Sharpe de backtest, même *Robuste*, n'est pas une garantie live. Les coûts de transaction réels, le slippage et l'impact de marché dégradent systématiquement la performance paper. La barre *Robuste* (> 0.5 soutenu sur la période) est nécessaire mais pas suffisante — le walk-forward et l'out-of-sample strict restent obligatoires avant tout déploiement.
+
+---
 
 ## Ressources
 

@@ -17,12 +17,15 @@ Open cloud project 31650567, compile and run a backtest.
 
 ## Backtest Metrics
 
-Verified on QC Cloud (project 31650567, 2020-01-01 to 2025-06-01, Binance USDT DAILY):
+Verified on QC Cloud (project 31650567, Binance USDT DAILY):
 
-| Variant | Sharpe | CAGR | Max DD | PSR |
-|---------|--------|------|--------|-----|
-| HAR-RV-J Kelly v2 (use_jumps=1) | **0.746** | 23.03% | 48.30% | 24.0% |
-| HAR Classic Baseline (use_jumps=0) | 0.642 | 27.0% | 41.1% | 15.8% |
+| Variant | Period | Sharpe | CAGR | Max DD | PSR |
+|---------|--------|--------|------|--------|-----|
+| HAR-RV-J Kelly (use_jumps=1, aligned) | 2018-01-01 → 2025-06-01 | **0.524** | 14.08% | 37.10% | 10.7% |
+| HAR-RV-J Kelly v2 (use_jumps=1) | 2020-01-01 → 2025-06-01 | 0.746 | 23.03% | 48.30% | 24.0% |
+| HAR Classic Baseline (use_jumps=0) | 2020-01-01 → 2025-06-01 | 0.642 | 27.0% | 41.1% | 15.8% |
+
+The aligned 2018-2025 row (backtest `df687834`, 2026-06-22) extends the window backward: with `train_window=500` the model accumulates through ~2018-2019 before it can forecast, so the longer period adds early-regime out-of-sample data and lowers Sharpe (0.746 → 0.524) and CAGR (23.0% → 14.1%) versus the 2020-2025 window, while *improving* MaxDD (48.3% → 37.1%) — the different coefficient path through the 2022 crypto bear produces a less-leveraged exposure. PSR 10.7% (non-significant). Promoted Tier 4 (Untested) → Tier 2 (Historique) on the aligned window; the strongest backbone baseline since GlobalMacro-Regime (0.454). See #1630.
 
 The HAR-RV-J v2 row is verified under the current Binance USDT DAILY configuration (2026-06-12, backtest `verify-har-rv-j-real-metrics`). The HAR Classic baseline retains its 2026-05-14 measurement (pre-Binance configuration); a fresh `use_jumps=0` run under the current configuration is pending for an apples-to-apples delta.
 

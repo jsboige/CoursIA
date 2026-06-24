@@ -1,91 +1,131 @@
-# conway_cgt_lean — Tour of vihdzp/combinatorial-games
+# conway_cgt_lean — Visite de vihdzp/combinatorial-games
 
-A **curated tour** (`#check`-based) of the combinatorial game theory formalized in
+Une **visite guidée** (basée sur `#check`) de la théorie des jeux combinatoires
+formalisée dans
 [`vihdzp/combinatorial-games`](https://github.com/vihdzp/combinatorial-games),
-imported as a Lake dependency — surreal numbers, nimbers, and general
-combinatorial games. This is **not** an original formalization: it presents and
-exhibits the upstream results, which are the current home of CGT in the Lean
-ecosystem after Mathlib's CGT modules were removed.
+importée comme dépendance Lake — nombres surréels, nimbers et jeux combinatoires
+généraux. Ce n'est **pas** une formalisation originale : elle présente et exhibe
+les résultats amont, qui constituent le foyer actuel de la TJC dans l'écosystème
+Lean après le retrait des modules CGT de Mathlib.
 
-Reference: Conway, J.H. — *On Numbers and Games* (2001).
+Référence : Conway, J.H. — *On Numbers and Games* (2001).
 
-## Status
+## Statut
 
-- **Toolchain**: `leanprover/lean4:v4.31.0-rc1` (tracks the upstream repo — newer than the other Lean series on v4.30.0-rc2)
-- **Sorry**: **0** — the file is a tour of `#check`s and docstrings, no proofs
-- **Build**: `lake build CGTTour` (depends on Mathlib4 + CombinatorialGames)
-- **Dependencies**:
-  - **Mathlib4** (latest)
+- **Toolchain** : `leanprover/lean4:v4.31.0-rc1` (suit le dépôt amont — plus récente que les autres séries Lean en v4.30.0-rc2)
+- **Sorry** : **0** — le fichier est une visite de `#check` et de docstrings, aucune preuve
+- **Build** : `lake build CGTTour` (dépend de Mathlib4 + CombinatorialGames)
+- **Dépendances** :
+  - **Mathlib4** (dernière)
   - **[CombinatorialGames](https://github.com/vihdzp/combinatorial-games)** (Apache-2.0) — Violeta Hernandez Palacios
 
-## Why this exists — Mathlib CGT removal
+## Pourquoi ce dépôt existe — retrait de la TJC de Mathlib
 
-The upstream repository **superseded Mathlib's CGT modules**
+Le dépôt amont a **remplacé les modules CGT de Mathlib**
 (`SetTheory.Surreal`, `SetTheory.PGame`, `SetTheory.Game`, `SetTheory.Nimber`),
-which were deprecated in Mathlib PR [#28063](https://github.com/leanprover-community/mathlib4/pull/28063)
-(Aug 2025) and **removed in PR [#35550](https://github.com/leanprover-community/mathlib4/pull/35550)**
-(Feb 2026). The upstream author (vihdzp) is the same person who maintained the
-Mathlib CGT code. This tour points learners to where CGT now lives.
+dépréciés dans la PR Mathlib [#28063](https://github.com/leanprover-community/mathlib4/pull/28063)
+(août 2025) et **retirés dans la PR [#35550](https://github.com/leanprover-community/mathlib4/pull/35550)**
+(février 2026). L'autrice amont (vihdzp) est la même personne qui maintenait le
+code CGT de Mathlib. Cette visite oriente les apprenants vers le lieu où vit
+désormais la TJC.
 
-## What the tour covers
+## Ce que la visite couvre
 
-The file imports the upstream modules and exhibits their key results:
+Le fichier importe les modules amont et exhibe leurs résultats clés :
 
-### 1. Combinatorial games
-- **`IGame`** (pre-games): concrete representation by left/right option sets
-  (`left`/`right : Set IGame`) — you can inspect individual moves.
-- **`Game`** (games up to equivalence `≈`): the quotient
-  `Antisymmetrization IGame (· ≤ ·)`, an `OrderedAddCommGroup`.
-- Birthday, canonical form, player.
+### 1. Jeux combinatoires
+- **`IGame`** (pré-jeux) : représentation concrète par ensembles d'options
+  gauche/droite (`left`/`right : Set IGame`) — on peut inspecter chaque coup.
+- **`Game`** (jeux à équivalence `≈` près) : le quotient
+  `Antisymmetrization IGame (· ≤ ·)`, un `OrderedAddCommGroup`.
+- Anniversaire (birthday), forme canonique, joueur.
 
-### 2. Surreal numbers
-- **`Surreal`**: numeric games quotiented by equivalence — a **`LinearOrder`**,
-  a complete ordered field containing every ordered field as a subfield.
-- **Simplicity theorem** (`IGame.Fits.equiv_of_forall_not_fits`): the key tool
-  for computing surreal values.
-- Full field arithmetic: addition (from `Game`), multiplication, division.
-- **Dyadic** embedding (`Dyadic.toIGame`) — dyadic surreals = finite birthday.
-- **Ordinal** embedding (`NatOrdinal.toSurreal`).
+### 2. Nombres surréels
+- **`Surreal`** : jeux numériques quotientés par équivalence — un **`LinearOrder`**,
+  un corps ordonné complet contenant tout corps ordonné comme sous-corps.
+- **Théorème de simplicité** (`IGame.Fits.equiv_of_forall_not_fits`) : l'outil clé
+  pour calculer les valeurs surréelles.
+- Arithmétique de corps complète : addition (depuis `Game`), multiplication, division.
+- **Plongement dyadique** (`Dyadic.toIGame`) — surréels dyadiques = anniversaire fini.
+- **Plongement ordinal** (`NatOrdinal.toSurreal`).
 
 ### 3. Nimbers
-- **`Nimber`**: ordinals with nim arithmetic; arise from impartial games via the
-  **Sprague-Grundy theorem** (every impartial game ≈ a game of nim).
-- **Nim addition** via minimum-excluded (`Nimber.add_def`).
-- **Field of characteristic 2** (`Field Nimber`) — every element is its own
-  additive inverse. Long-term project goal: prove nimbers algebraically closed.
+- **`Nimber`** : ordinaux avec l'arithmétique de nim ; issus des jeux impartiaux via
+  le **théorème de Sprague-Grundy** (tout jeu impartial ≈ un jeu de nim).
+- **Addition de nim** par minimum-exclu (`Nimber.add_def`).
+- **Corps de caractéristique 2** (`Field Nimber`) — chaque élément est son propre
+  opposé additif. Objectif long terme : prouver les nimbers algébriquement clos.
 
-### Mathlib vs upstream (comparison table in the file)
+### Mathlib vs amont (tableau comparatif dans le fichier)
 
-| Aspect | Mathlib (removed) | combinatorial-games (current) |
-|--------|-------------------|-------------------------------|
-| Games | `PGame` (basic) | `IGame` (concrete) + `Game` (quotient) |
-| Surreals | Basic/Dyadic/Mul | + Division, Hahn series, Birthday, Pow |
-| Nimbers | Basic/Field | + Nat, SimplestExtension |
-| Games lib | 8 modules | 15+ modules (Impartial, Loopy, Specific…) |
+| Aspect | Mathlib (retiré) | combinatorial-games (actuel) |
+|--------|------------------|------------------------------|
+| Jeux | `PGame` (basique) | `IGame` (concret) + `Game` (quotient) |
+| Surréels | Basique/Dyadique/Mul | + Division, séries de Hahn, Anniversaire, Pow |
+| Nimbers | Basique/Corps | + Nat, SimplestExtension |
+| Bibliothèque de jeux | 8 modules | 15+ modules (Impartial, Loopy, Specific…) |
 
 ## Modules
 
-| File | Lines | Content |
-|------|-------|---------|
-| `CGTTour.lean` | 169 | Imports the upstream `CombinatorialGames.*` modules and tours their key types/instances/theorems via `#check` + docstrings (`IGame`/`Game`, `Surreal` + simplicity theorem, `Nimber` + Sprague-Grundy), with a Mathlib-vs-upstream comparison table. |
+| Fichier | Lignes | Contenu |
+|---------|--------|---------|
+| `CGTTour.lean` | 169 | Importe les modules amont `CombinatorialGames.*` et visite leurs types/instances/théorèmes clés via `#check` + docstrings (`IGame`/`Game`, `Surreal` + théorème de simplicité, `Nimber` + Sprague-Grundy), avec un tableau comparatif Mathlib-vs-amont. |
 
 ## Build
 
 ```bash
-# From this directory (WSL required)
+# Depuis ce répertoire (WSL requis)
 lake build CGTTour
-# Depends on Mathlib4 + CombinatorialGames (two git deps) — first build is heavy
+# Dépend de Mathlib4 + CombinatorialGames (deux dépendances git) — le premier build est lourd
 ```
 
-## Cite, not vendor
+## Citer, ne pas vendorer
 
-The upstream repo is a **Lake dependency** (`require CombinatorialGames from git`),
-not vendored. License: **Apache-2.0**. The tour file is original exposition built
-on top of the imported results.
+Le dépôt amont est une **dépendance Lake** (`require CombinatorialGames from git`),
+non vendorisée. Licence : **Apache-2.0**. Le fichier de visite est une exposition
+originale construite au-dessus des résultats importés.
 
-## See also
+## Voir aussi
 
-- **Upstream**: [`vihdzp/combinatorial-games`](https://github.com/vihdzp/combinatorial-games) (Apache-2.0, Violeta Hernandez Palacios)
-- **`knot_lean/`** — references this tour in its dependencies table (Conway game-theory foundation)
-- **`conway_lean/`** — Conway's Game of Life / Free Will Theorem (the *other* Conway series)
-- **Epic #2651** — README/structure audit (Lean-series)
+- **Amont** : [`vihdzp/combinatorial-games`](https://github.com/vihdzp/combinatorial-games) (Apache-2.0, Violeta Hernandez Palacios)
+- **`knot_lean/`** — référence cette visite dans son tableau de dépendances (fondement en théorie des jeux de Conway)
+- **`conway_lean/`** — Conway's Game of Life / Free Will Theorem (l'*autre* série Conway)
+- **Epic #2651** — audit README/structure (série Lean)
+
+## Conclusion
+
+Ce projet est une **visite guidée** (basée sur `#check`, 0 `sorry`) de la théorie
+des jeux combinatoires qui vit désormais dans
+[`vihdzp/combinatorial-games`](https://github.com/vihdzp/combinatorial-games),
+importée comme dépendance Lake. Il existe parce que les modules CGT de Mathlib ont
+été **retirés en février 2026** (PR [#35550](https://github.com/leanprover-community/mathlib4/pull/35550)),
+et cette visite oriente les apprenants vers le lieu où vit désormais cette théorie.
+
+### Ce qu'elle couvre
+
+- **Jeux combinatoires** — `IGame` (pré-jeux concrets par ensembles d'options
+  gauche/droite) et `Game` (le quotient à équivalence `≈` près), avec anniversaire
+  et forme canonique.
+- **Nombres surréels** — `Surreal` comme corps ordonné complet contenant tout corps
+  ordonné ; le **théorème de simplicité** comme outil de calcul clé ; arithmétique
+  de corps complète ; plongements dyadique et ordinal.
+- **Nimbers** — ordinaux avec l'arithmétique de nim, issus des jeux impartiaux via
+  le **théorème de Sprague-Grundy** ; un corps de caractéristique 2 (objectif long
+  terme : prouver les nimbers algébriquement clos).
+
+### Pourquoi elle existe
+
+Mathlib a déprécié son code CGT (`SetTheory.Surreal/PGame/Game/Nimber`) au profit
+du dépôt amont, dont l'autrice (vihdzp) est la même maintenante. Plutôt que
+vendoriser ou redériver, la visite **cite** l'amont comme dépendance et exhibe ses
+résultats via `#check` + docstrings — une exposition originale au-dessus de
+théorèmes importés. Un tableau comparatif Mathlib-vs-amont documente la couverture
+amont plus riche (15+ modules contre les 8 anciens de Mathlib).
+
+### Où aller ensuite
+
+- **Amont** : [`vihdzp/combinatorial-games`](https://github.com/vihdzp/combinatorial-games)
+  (Apache-2.0, Violeta Hernandez Palacios) — le foyer actuel de la TJC en Lean.
+- **Source** : Conway, J.H. — *On Numbers and Games* (2001).
+- **Lié** : `conway_lean/` (Conway's Game of Life / Free Will — l'*autre* série
+  Conway) et `knot_lean/` (réfère à cette visite dans son tableau de dépendances).

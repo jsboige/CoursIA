@@ -71,7 +71,7 @@ lake build Finiteness
 
 ## Notebook pédagogique
 
-[`Lean-15-Finiteness-Derivatives.ipynb`](../Lean-15-Finiteness-Derivatives.ipynb)
+[`Lean-14-Finiteness-Derivatives.ipynb`](../Lean-14-Finiteness-Derivatives.ipynb)
 — présentation pédagogique complète et pont vers l'Epic Conway #2162.
 
 ## Voir aussi
@@ -80,3 +80,35 @@ lake build Finiteness
 - **Epic #2162** — Conway (pont homonymie + base théorique RE#)
 - **`conway_lean/`** — Jeu de la Vie en Lean (l'autre Conway)
 - Dépôt amont cité : [`ezhuchko/finiteness-derivatives`](https://github.com/ezhuchko/finiteness-derivatives) (Zhuchko et al., ITP 2025)
+
+## Conclusion
+
+`finiteness_lean` démontre de façon **autonome** (Lean core seul, sans Mathlib,
+0 `sorry`, 0 axiom) l'intuition derrière deux résultats de Brzozowski (1964) :
+la **dérivée symbolique** d'une expression régulière et le **théorème de
+finitude** des dérivées itérées modulo équivalence ACI. C'est cette finitude qui
+garantit la terminaison et la complexité **linéaire** des reconnaisseurs modernes
+non-backtracking (.NET `RegexOptions.NonBacktracking`, RE#, SymPy).
+
+### Ce que le projet apporte
+
+Une définition minimale `Regex α` (empty/eps/char/concat/union/star), la dérivée
+`deriv` et son itérée `derivWord`, et le matching `accepts` sans reculer —
+illustrés par des exemples `#eval` et deux lemmes `example`. Le tout est prouvé
+ou illustré sans axiome ajouté, dans un mini-projet d'un seul module utile.
+
+### Honnêteté de la portée
+
+La **preuve constructive complète** de la finitude (un majorant fini de l'espace
+des dérivées modulo ACI) est due à Zhuchko, Maarand, Veanes et Ebner (ITP 2025).
+Sa licence amont n'étant pas confirmée, ce projet **ne vendore pas** leur code :
+il en donne des définitions et exemples **originaux**, et renvoie au dépôt amont
+pour la preuve complète. Le pont vers l'Epic Conway #2162 passe par une
+homonymie qu'il faut lever : **Damian Conway** (regex Perl) ≠ **John Horton
+Conway** (Game of Life).
+
+### Pour aller plus loin
+
+- **Profondeur** : la preuve constructive complète dans le dépôt amont cité.
+- **Pédagogie** : le notebook `Lean-14-Finiteness-Derivatives.ipynb`.
+- **Epics liés** : #2978 (Sudoku comme regex symbolique), #2162 (Conway).

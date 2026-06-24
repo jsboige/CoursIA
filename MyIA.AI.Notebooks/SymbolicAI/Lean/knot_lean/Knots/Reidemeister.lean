@@ -476,7 +476,9 @@ A single step is any of R1, R2, or R3.
 -/
 
 inductive ReidemeisterStep (d : KnotDiagram) : KnotDiagram → Prop where
-  | r1 {d'} : Reidemeister1 d d' → ReidemeisterStep d d'
+  | r1 {d'} :
+      (Reidemeister1Connected d d' ∨ Reidemeister1Connected d' d) →
+      ReidemeisterStep d d'
   | r2 {d'} : Reidemeister2 d d' → ReidemeisterStep d d'
   | r3 {d'} : Reidemeister3 d d' → ReidemeisterStep d d'
 

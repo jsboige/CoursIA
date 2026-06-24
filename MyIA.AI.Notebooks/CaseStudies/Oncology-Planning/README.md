@@ -131,6 +131,19 @@ C'est la conception d'un **Jumeau Numérique** du patient, capable d'éclairer l
 
 ---
 
+## Conclusion
+
+Ce cas d'étude réunit deux familles d'IA que l'on oppose souvent, pour montrer qu'elles sont en réalité **complémentaires** dans une chaîne décisionnelle :
+
+- l'**IA symbolique** (ontologie des chimiothérapies, vérification de contraintes, planification CSP des cures) garantit qu'un calendrier de traitement est *valide* — conforme aux règles métier, sans violation de protocole ;
+- la **programmation probabiliste** (Pyro) prend en charge ce que le symbolique ne sait pas exprimer : l'*incertitude* sur le profil de toxicité du patient et la probabilité de devoir adapter le traitement.
+
+Leur intégration produit un **jumeau numérique** du patient, capable de simuler « et si ? » (maintenir la dose prévue, réduire de 25 %, reporter d'une semaine) et d'éclairer la décision médicale par des scénarios chiffrés plutôt que par une règle rigide.
+
+La leçon à retenir dépasse l'oncologie : un système décisionnel mûr combine le **déterministe** (ce qui doit être respecté) et le **probabiliste** (ce qui doit être estimé). Savoir où placer cette frontière — et brancher la bonne brique de chaque côté — est au cœur de la conception des systèmes d'aide à la décision sous incertitude.
+
+---
+
 ## Notes pour les enseignants
 
 ### Genèse du sujet

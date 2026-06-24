@@ -9,37 +9,39 @@ class FrameworkCompositeEMATrend(QCAlgorithm):
     """
     Framework Composite - EMA-Cross + TrendStocks
 
-    Combines EMA-Cross (5 tech stocks, daily rebalance) with TrendStocks
-    (15 diversified stocks, weekly rebalance) via QC Algorithm Framework.
+    Combines EMA-Cross (5 tech/Mag7 stocks, daily rebalance) with TrendStocks
+    (15 diversified mega-caps, weekly rebalance) via QC Algorithm Framework.
 
-    Universe overlap: The 5 tech stocks (AAPL, MSFT, GOOGL, AMZN, NVDA)
+    Target allocation: EMA70/Trend30 (sweep WINNER; matches QC Cloud project
+    28911253 + catalog baseline Sharpe 0.741 @ 2015-2025, docstring claim 0.867).
+
+    Universe overlap: the 5 tech/Mag7 stocks (AAPL, MSFT, GOOGL, AMZN, NVDA)
     are included in both strategies. This is intentional - the MultiStrategyPCM
-    will additively combine weights, giving tech stocks higher allocation
-    when both strategies agree on the direction.
-
-    Target allocation (starting point): EMA40/Trend60
-    Sweep range: EMA30/Trend70 to EMA70/Trend30
+    additively combines weights, giving Mag7 higher allocation when both
+    strategies agree on the direction. Mag7 survivorship caveat: the EMA sleeve
+    is 100% Mag7, so a decade dominated by Mag7 outperformance inflates the
+    trend signal (see docs/qc/qc-comparative-backtests.md Key-finding #36).
 
     Reference strategies:
     - EMA-Cross-Alpha: Sharpe 0.980, daily emission
     - TrendStocks-Alpha: Sharpe 0.718, weekly emission
 
     Design principles:
-    - EMA-Cross: Fast mean-reversion on tech stocks (20/50 EMA)
+    - EMA-Cross: Fast mean-reversion on tech/Mag7 stocks (20/50 EMA)
     - TrendStocks: Double-confirmation trend following (Price>SMA200 + EMA20>EMA50)
     - Complementarity: Different timeframes and confirmation logic
     """
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2025, 12, 31)
+        self.set_start_date(2018, 1, 1)
+        self.set_end_date(2025, 1, 1)
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
-        # EMA-Cross universe: 5 tech stocks
+        # EMA-Cross universe: 5 tech/Mag7 stocks
         ema_tickers = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA"]
 
-        # TrendStocks universe: 15 stocks (includes the 5 tech)
+        # TrendStocks universe: 15 stocks (includes the 5 tech/Mag7)
         trend_tickers = [
             "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA",  # Tech (overlap)
             "JPM", "V", "MA",                            # Financials
@@ -59,11 +61,11 @@ class FrameworkCompositeEMATrend(QCAlgorithm):
             TrendStocksAlpha(trend_tickers, ema_fast=20, ema_slow=50, sma_trend=200)
         ))
 
-        # Target allocation: EMA40/Trend60 (starting point for sweep)
+        # Target allocation: EMA70/Trend30 (sweep winner)
         self.set_portfolio_construction(MultiStrategyPCM(
             alpha_allocations={
-                "EMACross": 0.40,
-                "TrendStocks": 0.60,
+                "EMACross": 0.70,
+                "TrendStocks": 0.30,
             },
             rebalance=timedelta(days=7)  # Weekly rebalance to align with TrendStocks
         ))
@@ -75,5 +77,5 @@ class FrameworkCompositeEMATrend(QCAlgorithm):
 
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
-        self.log(f"FRAMEWORK COMPOSITE (EMA40/Trend60): Final=${final:,.2f}, "
+        self.log(f"FRAMEWORK COMPOSITE (EMA70/Trend30): Final=${final:,.2f}, "
                  f"Return={(final - 100000) / 100000:.2%}")

@@ -382,7 +382,7 @@
 - 01-3-Qwen-VL-Video-Analysis: PASS (22.9s)
 - 01-4-Video-Enhancement-ESRGAN: PASS (14.2s)
 
-**Summary:** 14/21 Audio + 2/2 Video = **16/23 pass**. All 7 OpenAI failures trace to expired API key `sk-F6ZJn...` (401). The numba/numpy conflict on Whisper-Local is an environment dependency issue (numba needs numpy <=2.3, system has 2.4).
+**Summary:** 14/21 Audio + 2/2 Video = **16/23 pass**. All 7 OpenAI failures trace to expired API key `sk-<redacted>...` (401). The numba/numpy conflict on Whisper-Local is an environment dependency issue (numba needs numpy <=2.3, system has 2.4).
 
 **Action items:**
 - [ ] Renew OpenAI API key in `.env` (unblocks 8 notebooks)

@@ -322,3 +322,179 @@ def test_scrub_outputs_does_not_touch_relative_paths(tmp_path):
     assert found == 0
     assert fixed == 0
     assert p.read_text(encoding="utf-8") == before
+
+
+def test_scrub_outputs_handles_repr_escaped_double_backslash(tmp_path):
+    """A home path repr-escaped inside a Python exception must be scrubbed.
+
+    Regression: archive Fast-Downward-Legacy (#3891). Python formats the path
+    inside FileNotFoundError/PermissionError via repr(), so each separator is
+    TWO literal backslashes ('C:\\\\Users\\\\jsboi' in the actual output text).
+    The home regex previously required exactly one separator and missed these,
+    so the final exception line stayed leaked while traceback frames scrubbed.
+    """
+    raw = (
+        "FileNotFoundError: [Errno 2] No such file or directory: "
+        "'C:\\\\Users\\\\jsboi\\\\.local\\\\fast-downward\\\\release\\\\domain.pddl'\n"
+    )
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "open('x')", raw)
+    before = p.read_text(encoding="utf-8")
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    assert fixed >= 1
+    after = p.read_text(encoding="utf-8")
+    # machine-local home root gone even with doubled backslashes
+    assert "jsboi" not in after
+    assert "~" in after
+    # repo-relative tail preserved (diagnostic value)
+    assert "fast-downward" in after
+    assert "domain.pddl" in after
+    # source cell byte-identical
+    assert json.loads(after)["cells"][0]["source"] == ["open('x')"]
+
+
+def test_scrub_outputs_handles_mixed_single_and_repr_escaped_home(tmp_path):
+    """A single output mixing single-backslash (traceback frame) and repr-doubled
+    (exception line) home paths must scrub BOTH with no collision.
+
+    Regression: archive #3891, where traceback frames scrubbed but the final
+    FileNotFoundError line did not. The two forms produce distinct on-disk
+    backslash counts (2 vs 4) so neither needle substitutes for the other.
+    """
+    raw = (
+        '  File "C:\\Users\\jsboi\\.local\\app\\driver.py", line 14, in main\n'
+        "FileNotFoundError: [Errno 2] No such file: 'C:\\\\Users\\\\jsboi\\\\.local\\\\app\\\\data.pddl'\n"
+    )
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "run()", raw)
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1  # one leaked output blob
+    after = p.read_text(encoding="utf-8")
+    # BOTH forms scrubbed: the username appears nowhere
+    assert "jsboi" not in after
+    assert "~" in after
+
+
+def test_scrub_outputs_anonymizes_checkout_root(tmp_path):
+    """A checkout-root path (repo clone location, NOT under Users/home) -> <repo>.
+
+    Regression: #3892. The leak 'D:\\dev\\CoursIA-2\\Tweety\\libs' is a
+    machine-local checkout path that the home regexes (Users/home) never match,
+    so it needs its own pattern (the repo dir name CoursIA as a segment).
+    """
+    raw = "Classpath charge depuis : D:\\dev\\CoursIA-2\\Tweety\\libs\n"
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "load()", raw)
+    before = p.read_text(encoding="utf-8")
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    assert fixed >= 1
+    after = p.read_text(encoding="utf-8")
+    assert "<repo>" in after
+    # the machine-local drive path is gone
+    assert "D:\\\\dev" not in after
+    assert "CoursIA-2" not in after
+    # the repo-relative tail is preserved
+    assert "Tweety" in after
+    assert "libs" in after
+    # source cell byte-identical
+    assert json.loads(after)["cells"][0]["source"] == ["load()"]
+
+
+def test_scrub_outputs_preserves_file_url_scheme(tmp_path):
+    """A file:/// URL entering the repo checkout keeps its scheme.
+
+    Regression: SW-8 (#3899). _REPO_RES matched the 'e:' inside 'file:' (the 'e'
+    preceded by 'l'), consuming 'e:///D:/dev/CoursIA/' and mangling the URL into
+    '<fil<repo>...>'. The negative lookbehind (?<![a-zA-Z]) blocks that: only the
+    real 'D:' (preceded by '/') matches, so the scheme survives and just the
+    checkout-root path is anonymized.
+    """
+    raw = (
+        "<file:///D:/dev/CoursIA/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/"
+        "data/not-an-email>\n"
+    )
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "open(...)", raw)
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    assert fixed >= 1
+    after = p.read_text(encoding="utf-8")
+    # scheme preserved, checkout-root anonymized
+    assert "<file:///<repo>" in after
+    # the critical mangle must NOT happen
+    assert "<fil<repo>" not in after
+    assert "file" in after  # 'file' scheme word still present
+    # the machine-local drive path into the repo is gone
+    assert "D:/dev/CoursIA" not in after
+    # repo-relative tail preserved
+    assert "not-an-email" in after
+    assert "SemanticWeb" in after
+    # source cell byte-identical
+    assert json.loads(after)["cells"][0]["source"] == ["open(...)"]
+
+
+def test_scrub_outputs_posix_checkout_root(tmp_path):
+    """A WSL /mnt/<drive>/.../CoursIA(-2)/ checkout path -> <repo>.
+
+    Regression: Lean-13/15b/16a. The Windows _REPO_RES never matches a POSIX
+    path (no drive letter), so the WSL view of the project leaked while the
+    Windows view was scrubbed. POSIX checkout paths are the same defect class
+    (machine-local clone location), just the Linux representation that
+    WSL-executed Lean/Python notebooks print alongside the Windows path.
+    """
+    raw = (
+        "Projet Lean (WSL) : /mnt/c/dev/CoursIA-2/MyIA.AI.Notebooks/"
+        "SymbolicAI/Lean/conway_lean\n"
+    )
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "setup()", raw)
+    before = p.read_text(encoding="utf-8")
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    assert fixed >= 1
+    after = p.read_text(encoding="utf-8")
+    out_text = "".join(json.loads(after)["cells"][0]["outputs"][0]["text"])
+    # the machine-local WSL clone path is anonymized
+    assert out_text.count("<repo>") == 1
+    assert "/mnt/c/dev/CoursIA-2" not in out_text
+    # the label + repo-relative tail survive
+    assert "Projet Lean (WSL)" in out_text
+    assert "SymbolicAI/Lean/conway_lean" in out_text
+    # source cell byte-identical
+    assert json.loads(after)["cells"][0]["source"] == ["setup()"]
+
+
+def test_scrub_outputs_repo_regex_does_not_span_newlines(tmp_path):
+    """A Windows checkout path and a POSIX checkout path on consecutive lines
+    are scrubbed INDEPENDENTLY; the _REPO_RES char class must not accept newlines
+    and so capture both paths (plus the label prose between) as one giant needle.
+
+    Regression: Lean-13/15b/16a. The old char class [^\\/...]+ accepted newlines,
+    so 'C:\\dev\\CoursIA-2\\...\\mod\\nWSL: /mnt/c/dev/CoursIA-2/.../mod' matched
+    as ONE needle reaching the SECOND CoursIA across the newline. That needle
+    never matched the raw on-disk JSON (real newline vs 2-char '\\n' escape) ->
+    0 fixed, leak left in place AND, if it ever did match, it would delete the
+    label prose between the two paths. With the newline exclusion both checkout
+    roots are scrubbed independently and the labels survive.
+    """
+    raw = (
+        "Windows: C:\\dev\\CoursIA-2\\proj\\mod\n"
+        "WSL: /mnt/c/dev/CoursIA-2/proj/mod\n"
+    )
+    p = _write_nb_with_output(tmp_path / "nb.ipynb", "show()", raw)
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    after = p.read_text(encoding="utf-8")
+    out_text = "".join(json.loads(after)["cells"][0]["outputs"][0]["text"])
+    # BOTH checkout roots anonymized (one <repo> per line), username-free
+    assert out_text.count("<repo>") == 2
+    assert "CoursIA" not in out_text
+    # the two labels survived (not eaten by a greedy multi-line match)
+    assert "Windows:" in out_text
+    assert "WSL:" in out_text
+    # repo-relative tails preserved
+    assert out_text.count("proj") == 2
+    # source cell byte-identical
+    assert json.loads(after)["cells"][0]["source"] == ["show()"]

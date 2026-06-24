@@ -1,39 +1,43 @@
-# Student Presentation Template
+# Modèle de Présentation Étudiant
 
-## Usage
+## Utilisation
 
-1. Copy `slides.md` into your project directory
-2. Replace `[bracketed sections]` with your content
-3. Add your charts (equity_curve.png, etc.) in the same directory
-4. Launch the presentation:
+1. Copier `slides.md` dans le répertoire de votre projet
+2. Remplacer les `[sections entre crochets]` par votre contenu
+3. Ajouter vos graphiques (`equity_curve.png`, etc.) dans le même répertoire
+4. Lancer la présentation :
 
 ```bash
 npx slidev slides.md
 ```
 
-## Required Sections
+## Sections requises
 
-| Slide | Section | Expected Content |
-|-------|---------|-----------------|
-| 1 | Title | Strategy name, team |
-| 2 | Outline | Table of contents |
-| 3 | Introduction | Motivation, hypothesis |
-| 4 | Data | Assets, period, preprocessing |
-| 5 | Alpha model | Indicators, signals, risk management |
-| 6-7 | Results | Equity curve + metrics |
-| 8 | Analysis | Strengths/weaknesses, vs benchmark |
-| 9 | Robustness | Sub-periods, sensitivity |
-| 10 | Conclusion | Summary, improvements |
+| Diapositive | Section | Contenu attendu |
+|-------------|---------|-----------------|
+| 1 | Titre | Nom de la stratégie, équipe |
+| 2 | Plan | Table des matières |
+| 3 | Introduction | Motivation, hypothèse |
+| 4 | Données | Actifs, période, prétraitement |
+| 5 | Modèle alpha | Indicateurs, signaux, gestion du risque |
+| 6-7 | Résultats | Courbe d'équité + métriques |
+| 8 | Analyse | Forces/faiblesses, vs référence |
+| 9 | Robustesse | Sous-périodes, sensibilité |
+| 10 | Conclusion | Résumé, améliorations |
 
-## Timing
+## Gestion du temps
 
-- Target: 10 minutes +/- 1 minute
-- ~1 minute per slide (10 content slides)
-- Do not read slides: use keywords and speak naturally
+- Objectif : 10 minutes +/- 1 minute
+- environ 1 minute par diapositive (10 diapositives de contenu)
+- Ne pas lire les diapositives : utiliser des mots-clés et parler naturellement
 
-## Tips
+## Conseils
 
-- Charts: always with legend, axis labels, and title
-- Metrics: comparative table with benchmark
-- Equity curve: with drawdown below
-- Do not show code in slides (except short snippet for illustration)
+- Graphiques : toujours avec légende, étiquettes d'axes et titre
+- Métriques : tableau comparatif avec la référence
+- Courbe d'équité : avec le drawdown en dessous
+- Ne pas montrer de code dans les diapositives (sauf court extrait pour illustration)
+
+---
+
+*Version anglaise (snapshot) : [`README.en.md`](README.en.md).*

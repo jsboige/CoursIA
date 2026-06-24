@@ -296,6 +296,32 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 
 Documentation complète : [AgenticDataScience/README.md](AgenticDataScience/README.md)
 
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette série vous a fait traverser un **changement de posture** en data science : passer de *l'écriture* du code d'analyse à *l'orchestration* d'agents LLM qui le produisent et l'exécutent. L'arc pédagogique :
+
+- **Les fondations, volontairement manuelles** — NumPy (vectorisation) et Pandas (DataFrame, groupby, nettoyage) d'abord pratiqués à la main. Cette base n'est pas un préalable accessoire : c'est le référent qui rend *jugeable* le travail de l'agent. On ne peut évaluer ce qu'un agent produit sur un DataFrame que si l'on sait soi-même le manipuler — d'où la règle des 80/20 (CrowdFlower, 2016) qui ouvre le Lab 4 : la préparation reste le cœur du métier, l'agent l'accélère sans l'effacer.
+- **Le track LangChain — l'agent unique outillé (Days 1-3)** — on assemble les quatre composants d'un agent (LLM + outils + prompt + orchestrateur), puis on l'applique à des tâches documentaires (parsing d'appel d'offre, scoring de CV) et d'analyse (wrangling, classification, agent DataFrame). Deux paradigmes canoniques structurent cette track : **LCEL** (composition par tube `prompt | llm`) pour les chaînes, et **ReAct** (boucle Pensée→Action→Observation) couplée au **tool-calling** pour le premier agent ; le `create_pandas_dataframe_agent` concrétise **CodeAct** (l'agent écrit et exécute lui-même son Python). L'enjeu n'est pas la magie du LLM mais la *qualité du prompt* et du *schéma de sortie* (JSON structuré).
+- **Le track Google ADK — les systèmes multi-agents (Days 4-7)** — on monte en abstraction : du single-agent on passe à des *systèmes* (boucles planner-coder-verifier), puis aux architectures SOTA (DS-STAR pour la data science, MLE-STAR pour l'ingénierie ML), jusqu'à concourir sur Kaggle (MLE-bench) et déployer en production (BigQuery, Vertex AI, BQML). La question bascule : ce n'est plus « comment coder cette analyse ? » mais « comment concevoir un *système d'agents* qui l'exécute, la valide et la raffine ? ».
+- **La finesse** — la série ne vend pas l'agent autonome comme une solution universelle. Chaque lab pose la question du *cadre* : quels outils exposer, comment valider la sortie, quand l'agent accélère réellement *vs* quand il hallucine ou dérive. Le survey sur l'hallucination (Lab 17) et la méthodologie d'ablation (Lab 14) ancrent cette lucidité.
+
+La thèse est honnête : les agents LLM ne remplacent pas le data scientist, ils *reconfigurent* son métier — de l'exécution vers l'orchestration, la spécification et la validation. Le savoir-faire Pandas/scikit-learn reste le socle ; ce qui change, c'est la *granularité* à laquelle on pilote l'analyse.
+
+### Prochaines étapes
+
+- **Approfondir le ML sous-jacent** : la série [ML](../README.md) (et son pendant C# [ML.Net](../ML.Net/README.md)) reprend les algorithmes (LightGBM, SSA, évaluation PFI/ROC) sous l'angle de l'implémentation — utile pour comprendre ce que l'agent exécute quand il génère du code scikit-learn.
+- **Aller vers l'évaluation et la robustesse** : les Labs 13-15 (Web-Search-SOTA, Ablation-Refinement, Kaggle-Challenge) introduisent l'évaluation rigoureuse des agents ML (MLE-bench, métriques cross-compétition) ; le prolongement naturel est la **robustesse multi-seed** et la **walk-forward validation**, traitées dans le pipeline [QuantConnect](../../QuantConnect/README.md).
+- **Franchir le cap production** : le Day 7 (BigQuery, BQML, Vertex AI) ouvre sur le déploiement réel. Le pont vers [GenAI](../../GenAI/README.md) relie ces agents data aux pipelines de génération (image, audio, texte) et aux architectures Qwen/Lumina auto-hébergées.
+- Pour la pratique : reprenez le Lab 7 (agent DataFrame) et posez-lui une question qu'il *ne peut pas* répondre avec les seules colonnes présentes — comment réagit-il ? Confrontez cette limite au Lab 11 (boucle planner-coder) : qu'apporte vraiment le multi-agent ? C'est la tension vivante de la série : la puissance de l'agent *vs* la nécessité de l'encadrer.
+
+### Le fil rouge
+
+Le data science agentique propose un changement de regard : ne plus demander « comment coder cette analyse ? » mais **« comment la spécifier assez clairement pour qu'un agent LLM la code, l'exécute et la valide à ma place ? »**. La série vous a donné les fondations (NumPy/Pandas), l'agent unique outillé (LangChain, ReAct, tool-calling, CodeAct) et les systèmes multi-agents (ADK, DS-STAR/MLE-STAR, production GCP) — en gardant à l'esprit que la valeur d'un agent se mesure moins à ce qu'il *produit* qu'à la *qualité du cadre* (outils, prompts, validation) dans lequel il opère.
+
+---
+
 ## Licence
 
 Voir la licence du repository principal.

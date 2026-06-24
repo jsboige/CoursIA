@@ -2,6 +2,19 @@
 
 Descriptions par catégorie des 116 projets de trading algorithmique. Pour le tableau de performance résumé, voir [README.md](README.md).
 
+> **Lecture vérifiée sous frais réels (#1630, 2018-2025).** Les Sharpes ci-dessous sont des valeurs **catalogue (pré-frais, fenêtres variables)**. La campagne #1630 a re-vérifié 36+ stratégies sous frais IBKR réels sur une fenêtre alignée 2018-2025 — plusieurs s'effondrent, d'autres tiennent :
+
+| Stratégie | Sharpe catalogue | Sharpe aligné | Verdict |
+|-----------|------------------|---------------|---------|
+| HighBookToMarketFScore | 2.09 | **0.41** | effondrement -80% (MaxDD -60%) |
+| PuppiesOfTheDow | 1.99 | **0.30** | effondrement -85% |
+| ML-Trend-Scanning | 0.66 | **0.33** | effondrement -50% |
+| AllWeather | 0.67 | **0.47** | dégradation -30% |
+| LongShortHarvest | 3.39 | **1.64** | tient (PSR 98.7%, le plus robuste) |
+| TrendWeather | 1.16 | **0.948** | tient (PSR 56.6%, meilleur composite) |
+
+Leaders vérifiés alignés (backbone no-ML) : **EMATrend 0.611** / **composite-c2 0.574**. Discriminateur : la résistance aux frais dépend du *realized-turnover* (fréquence × taille par trade × homogénéité des frais du panier), pas de l'asset-class. Catalogue complet + comparatifs best-vs-aligned + diagnostics par stratégie : [docs/qc/qc-comparative-backtests.md](../../../docs/qc/qc-comparative-backtests.md) (See #1630).
+
 ## EMA Crossover (Débutant)
 
 - **EMA-Cross-Crypto** : Long BTCUSDT quand EMA20 > EMA50 ET BTC > SMA200 (filtre bull). Trailing stop 10%, position 80%. Binance Cash, daily.

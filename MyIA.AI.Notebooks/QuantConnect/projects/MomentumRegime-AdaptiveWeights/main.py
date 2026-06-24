@@ -20,8 +20,11 @@ class MomentumRegimeAdaptiveWeights(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2025, 12, 31)
+        # Aligned baseline period 2018-2025 (#1630). Original was 2015-01-01 to
+        # 2025-12-31; standardized to 2018-01-01..2025-01-01 for cross-strategy
+        # comparison.
+        self.set_start_date(2018, 1, 1)
+        self.set_end_date(2025, 1, 1)
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 

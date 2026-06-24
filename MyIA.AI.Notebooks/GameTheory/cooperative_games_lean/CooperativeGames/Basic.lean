@@ -19,6 +19,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Tactic
 import Mathlib.Analysis.Convex.Cone.Dual
 import Mathlib.Analysis.InnerProductSpace.PiL2
+import CooperativeGames.ConeKernel
 
 /-! ## Basic Types -/
 
@@ -208,6 +209,43 @@ theorem bondareva_shapley_forward :
     _ = ∑ i : N, x i * ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S := h_factor
     _ = ∑ i : N, x i := h_bal
 
+/-! ## Cone-separation bridge (Bondareva-Farkas witness decoding)
+
+These lemmas connect the `TUGame.Balanced` hypothesis to the TUGame-free cone
+machinery in `CooperativeGames.ConeKernel` (`BondarevaCone.augCone` and the
+`hyperplane_separation_point` separator from
+`Mathlib.Analysis.Convex.Cone.Dual`). They form the front half of the
+Bondareva-Shapley backward witness construction: from `hb : G.Balanced` we obtain
+a separating functional, then decode it into a pre-imputation. -/
+
+open BondarevaCone
+
+/-- From `hb : G.Balanced` and `t > 0`, the balanced-unit test point
+    `balancedUnit (G.v univ + t)` lies outside `augCone G.v`. Membership would
+    give nonneg weights `w` with `phiAugCont G.v w = balancedUnit ...`; the
+    `some i` coordinates force `w` to be a balanced collection (`BalancedWeights`),
+    while the `none` coordinate reads `∑ S, w S * G.v S = G.v univ + t > G.v univ`,
+    contradicting `hb`. -/
+theorem balancedUnit_notIn_augCone (t : ℝ) (ht : 0 < t) (hb : G.Balanced) :
+    balancedUnit (G.v Finset.univ + t) ∉ augCone G.v := by
+  intro hmem
+  rw [augCone_mem_iff] at hmem
+  obtain ⟨w, hw, hwmem⟩ := hmem
+  -- `some i` coordinate: ∑_{S ∋ i} w S = 1  (balanced collection).
+  have hsome (i : N) :
+      ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), w S = 1 := by
+    have key := congr_fun hwmem (some i)
+    simp only [balancedUnit] at key
+    exact key
+  -- `none` coordinate: ∑ S, w S * G.v S = G.v univ + t.
+  have hnone : ∑ S : Finset N, w S * G.v S = G.v Finset.univ + t := by
+    have key := congr_fun hwmem none
+    simp only [balancedUnit] at key
+    exact key
+  -- `w` is balanced, so `hb` bounds the value sum by v(N): contradiction.
+  have hbnd := hb w ⟨hw, hsome⟩
+  linarith
+
 /-- Backward direction of Bondareva-Shapley: balanced implies Core nonempty.
     Strategy (v4.30 update): ProperCone.hyperplane_separation is now available
     via `Mathlib.Analysis.Convex.Cone.Dual`. It gives: given a proper cone C and
@@ -308,8 +346,82 @@ theorem bondareva_shapley_backward :
     -- ProperCone.hyperplane_separation instantiated for this polyhedron, the
     -- existence cannot be derived here. Marked for Director escalation.
     have hb_witness : ∃ x ∈ P, ∑ i : N, x i ≤ G.v Finset.univ := by
-      -- INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION
-      sorry
+      -- Step A (cone-separation → decoding, PROVEN). For every `t > 0`, the bridge
+      -- `balancedUnit_notIn_augCone` (Bridge #3941) produces `balancedUnit(v(N)+t) ∉
+      -- augCone`; `hyperplane_separation_point` (Mathlib) yields a separator `f` that
+      -- is nonneg on `augCone` and negative on `balancedUnit(v(N)+t)`; the decoding core
+      -- `exists_preimputation_strict_core` (ConeKernel #3945) turns `f` into an
+      -- `x ∈ P` with `∑ x ≤ v(N) + t`. This is the full Farkas-assembled strict witness.
+      have hb_strict : ∀ t : ℝ, 0 < t → ∃ x ∈ P, ∑ i : N, x i ≤ G.v Finset.univ + t := by
+        intro t ht
+        have hNotIn : balancedUnit (G.v Finset.univ + t) ∉ augCone G.v :=
+          balancedUnit_notIn_augCone G t ht hb
+        obtain ⟨f, hfCone, hfSep⟩ :=
+          ProperCone.hyperplane_separation_point (augCone G.v) hNotIn
+        obtain ⟨x, hxP, hxle⟩ :=
+          exists_preimputation_strict_core G.v ht f hfCone hfSep
+        exact ⟨x, hxP, hxle⟩
+      -- Step B (attainment crux). `hb_strict` gives `inf_P (∑x) ≤ v(N)` (let t → 0)
+      -- and grand-coalition rationality (`hx Finset.univ`) gives `inf_P (∑x) ≥ v(N)`,
+      -- so the infimum is `v(N)`. We show it is ATTAINED. The sublevel slice
+      -- `S₁ = {x ∈ P | ∑x ≤ v(N)+1}` is a closed subset of the compact box
+      -- `∏ᵢ Icc (v({i})) (v(N)+1 − v(N∖{i}))` (singletons bound `x_i` below,
+      -- complement coalitions bound `x_i` above), hence compact; the continuous
+      -- functional `∑x` attains its minimum on `S₁`, and an ε-contradiction
+      -- against `hb_strict` forces that minimum to be `≤ v(N)`.
+      let S₁ : Set (N → ℝ) := { x ∈ P | ∑ i : N, x i ≤ G.v Finset.univ + 1 }
+      have hcont : Continuous (fun (x : N → ℝ) => ∑ i : N, x i) :=
+        continuous_finsetSum Finset.univ (fun i _ => continuous_apply i)
+      -- S₁ is closed: P (closed) ∩ preimage of the closed ray Iic under continuous ∑x.
+      have hS1_closed : IsClosed S₁ :=
+        hP_closed.inter (IsClosed.preimage hcont isClosed_Iic)
+      -- Compactness: S₁ sits inside the compact box ∏ᵢ Icc (v({i})) (v(N)+1 − v(N∖{i})).
+      have hS1_compact : IsCompact S₁ := by
+        have hB_compact : IsCompact
+            (Set.pi Set.univ (fun i : N =>
+              Set.Icc (G.v ({i} : Finset N)) (G.v Finset.univ + 1 - G.v (Finset.univ.erase i)))) :=
+          isCompact_univ_pi (fun _ => isCompact_Icc)
+        have hS1_subset : S₁ ⊆
+            (Set.pi Set.univ (fun i : N =>
+              Set.Icc (G.v ({i} : Finset N)) (G.v Finset.univ + 1 - G.v (Finset.univ.erase i)))) := by
+          intro x hx
+          obtain ⟨hxP, hxle⟩ := hx
+          rw [Set.mem_univ_pi]
+          intro i
+          refine ⟨?_, ?_⟩
+          · -- lower bound: singleton coalition constraint gives v({i}) ≤ x i.
+            have hi := hxP ({i} : Finset N)
+            rwa [Finset.sum_singleton] at hi
+          · -- upper bound: complement-coalition constraint + the ∑x ≤ v(N)+1 cap.
+            -- ∑ j, x j = x i + ∑ j ∈ univ.erase i, x j  (partition around i).
+            have hpart : ∑ j : N, x j = x i + ∑ j ∈ Finset.univ.erase i, x j := by
+              have key := Finset.add_sum_erase Finset.univ (fun j => x j) (Finset.mem_univ i)
+              linarith
+            have hcompl := hxP (Finset.univ.erase i)
+            linarith
+        exact IsCompact.of_isClosed_subset hB_compact hS1_closed hS1_subset
+      -- S₁ is nonempty: hb_strict with t = 1 yields a witness with ∑x ≤ v(N)+1.
+      have hS1_nonempty : S₁.Nonempty := by
+        obtain ⟨x, hxP, hxle⟩ := hb_strict (1 : ℝ) (by norm_num)
+        exact ⟨x, hxP, hxle⟩
+      -- ∑x attains its minimum on the compact slice S₁.
+      obtain ⟨m, hm_mem, hmmin⟩ :=
+        hS1_compact.exists_isMinOn hS1_nonempty hcont.continuousOn
+      obtain ⟨hmP_m, hmle_one⟩ := hm_mem
+      -- The minimum value is ≤ v(N): if ∑m > v(N), `hb_strict` with half the slack
+      -- yields `y ∈ P` with ∑y < ∑m ≤ v(N)+1 (so `y ∈ S₁`), contradicting minimality.
+      have hle : ∑ i : N, m i ≤ G.v Finset.univ := by
+        by_cases h : ∑ i : N, m i ≤ G.v Finset.univ
+        · exact h
+        · exfalso
+          simp only [not_le] at h
+          have heps : 0 < (∑ i : N, m i - G.v Finset.univ) / 2 := half_pos (by linarith)
+          obtain ⟨y, hyP, hyle⟩ := hb_strict _ heps
+          have hyS1 : y ∈ S₁ := ⟨hyP, by linarith⟩
+          have hminOn : ∀ z, z ∈ S₁ → ∑ i : N, m i ≤ ∑ i : N, z i := hmmin
+          have hmin_le : ∑ i : N, m i ≤ ∑ i : N, y i := hminOn y hyS1
+          linarith
+      exact ⟨m, hmP_m, hle⟩
     obtain ⟨x, hxP, hxle⟩ := hb_witness
     refine ⟨x, ?_, hxP⟩
     have hxge : ∑ i : N, x i ≥ G.v Finset.univ := hP_lb x hxP

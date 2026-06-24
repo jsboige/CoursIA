@@ -1,80 +1,112 @@
-# sensitivity_lean — Sensitivity Conjecture (Huang 2019)
+# sensitivity_lean — Conjecture de sensibilité (Huang 2019)
 
-> Series: [`SymbolicAI/Lean`](../README.md) · [`sensitivity_lean`](./)
+> Série : [`SymbolicAI/Lean`](../README.md) · [`sensitivity_lean`](./)
 
-Lean 4 formalization of the **Sensitivity Theorem** from Boolean function
-analysis — the degree bound that **resolves the Sensitivity Conjecture** (open
-since 1989/1992, settled by Hao Huang in 2019 via a four-page combinatorial
-argument).
+Formalisation en Lean 4 du **théorème de sensibilité** (Sensitivity Theorem)
+issu de l'analyse des fonctions booléennes — la borne de degré qui **résout la
+conjecture de sensibilité** (ouverte depuis 1989/1992, établie par Hao Huang en
+2019 via un argument combinatoire de quatre pages).
 
-Complete mini-project: **0 sorry, 0 axiom** beyond Lean core axioms.
+Mini-projet complet : **0 sorry, 0 axiome** au-delà des axiomes du cœur de Lean.
 
-## Status
+## Statut
 
-- **Toolchain**: `v4.30.0-rc2`
-- **Sorry**: **0** — every proof is closed
-- **Build**: `lake build Sensitivity` — SUCCESS
-- **Dependencies**: Mathlib4
+- **Toolchain** : `v4.30.0-rc2`
+- **Sorry** : **0** — chaque preuve est close
+- **Build** : `lake build Sensitivity` — SUCCESS
+- **Dépendances** : Mathlib4
 
-## What it formalizes
+## Ce qui est formalisé
 
-For a Boolean function `f : {0,1}^n → {0,1}`, three complexity measures are
-linked by the chain `s(f) ≤ bs(f) ≤ deg(f)`:
+Pour une fonction booléenne `f : {0,1}^n → {0,1}`, trois mesures de complexité
+sont reliées par la chaîne `s(f) ≤ bs(f) ≤ deg(f)` :
 
-- **Sensitivity** `s(f)`: the maximum, over inputs `x`, of the number of
-  coordinates `i` whose flip `x ⊕ eᵢ` changes `f(x)`.
-- **Block sensitivity** `bs(f)`: the maximum number of *disjoint* blocks of
-  coordinates that can each individually flip `f`.
-- **Degree** `deg(f)`: the degree of `f` as a real multilinear polynomial.
+- **Sensibilité** `s(f)` : le maximum, sur les entrées `x`, du nombre de
+  coordonnées `i` dont le flip `x ⊕ eᵢ` change `f(x)`.
+- **Sensibilité par blocs** `bs(f)` : le nombre maximal de blocs *disjoints* de
+  coordonnées pouvant chacun individuellement faire basculer `f`.
+- **Degré** `deg(f)` : le degré de `f` vu comme polynôme réel multilinéaire.
 
-The **Sensitivity Conjecture** (Nisan–Szegedy 1992, refining Wegener 1989 and
-Cook et al. 1986) asked whether `bs(f)` is polynomially bounded in `s(f)`. Huang
-(2019) settled it positively by proving the degree theorem: **every induced
-subgraph of the `n`-cube on more than half its vertices has a vertex of degree
-`≥ √n`** (`huang_degree_theorem`, `MainTheorem.lean` L84). The corollary is the
-quadratic bound `deg(f) ≤ s(f)²`, i.e. `bs(f) ≤ s(f)²`.
+La **conjecture de sensibilité** (Nisan–Szegedy 1992, affinant Wegener 1989 et
+Cook et al. 1986) demandait si `bs(f)` est polynomialement borné en `s(f)`. Huang
+(2019) l'a établie positivement en prouvant le théorème du degré : **tout
+sous-graphe induit du `n`-cube sur plus de la moitié de ses sommets contient un
+sommet de degré `≥ √n`** (`huang_degree_theorem`, `MainTheorem.lean` L84). Le
+corollaire est la borne quadratique `deg(f) ≤ s(f)²`, i.e. `bs(f) ≤ s(f)²`.
 
-The proof hinges on a spectral argument (`exists_eigenvalue`, L51): a signed
-adjacency matrix `Aₙ` of the hypercube has eigenvalue `√n`, and Cauchy's
-interlacing theorem forces a high-degree vertex in any large induced subgraph.
+La preuve repose sur un argument spectral (`exists_eigenvalue`, L51) : une
+matrice d'adjacence signée `Aₙ` de l'hypercube possède la valeur propre `√n`, et
+le théorème d'intercalation de Cauchy force un sommet de haut degré dans tout
+grand sous-graphe induit.
 
 ## Modules
 
-| File | Lines | sorry | Content |
-|------|------:|------:|---------|
-| `Sensitivity.lean` | 1 | 0 | Root import umbrella |
-| `Sensitivity/Hypercube.lean` | 124 | 0 | Boolean hypercube `Q n`, vertices, adjacency |
-| `Sensitivity/VectorSpace.lean` | 132 | 0 | Real vector space of Boolean functions, `ℝ^{2^n}` basis |
-| `Sensitivity/Operator.lean` | 100 | 0 | Sensitivity and block-sensitivity operators |
+| Fichier | Lignes | sorry | Contenu |
+|---------|-------:|------:|---------|
+| `Sensitivity.lean` | 1 | 0 | Ombrelle d'import racine |
+| `Sensitivity/Hypercube.lean` | 124 | 0 | Hypercube booléen `Q n`, sommets, adjacence |
+| `Sensitivity/VectorSpace.lean` | 132 | 0 | Espace vectoriel réel des fonctions booléennes, base `ℝ^{2^n}` |
+| `Sensitivity/Operator.lean` | 100 | 0 | Opérateurs de sensibilité et de sensibilité par blocs |
 | `Sensitivity/MainTheorem.lean` | 131 | 0 | `exists_eigenvalue` (L51), `huang_degree_theorem` (L84) |
 
-## Key results
+## Résultats clés
 
-- **`huang_degree_theorem`** (`MainTheorem.lean` L84) — the main result: for
-  `H : Set (Q m.succ)` with `Card H ≥ 2^m + 1` (more than half the `2^{m+1}`
-  vertices of `Q_{m+1}`), `H` contains a vertex of degree `≥ √(m+1)`.
-- **`exists_eigenvalue`** (`MainTheorem.lean` L51) — the spectral lemma feeding
-  the degree theorem.
-- Complete hypercube + vector-space + operator infrastructure (0 sorry).
+- **`huang_degree_theorem`** (`MainTheorem.lean` L84) — le résultat principal :
+  pour `H : Set (Q m.succ)` avec `Card H ≥ 2^m + 1` (plus de la moitié des
+  `2^{m+1}` sommets de `Q_{m+1}`), `H` contient un sommet de degré `≥ √(m+1)`.
+- **`exists_eigenvalue`** (`MainTheorem.lean` L51) — le lemme spectral nourrissant
+  le théorème du degré.
+- Infrastructure complète hypercube + espace vectoriel + opérateurs (0 sorry).
 
 ## Notes
 
-- The Sensitivity Conjecture was posed by Nisan and Szegedy (1992) and resolved
-  by Hao Huang (*Induced subgraphs of hypercubes and a proof of the Sensitivity
+- La conjecture de sensibilité a été posée par Nisan et Szegedy (1992) et résolue
+  par Hao Huang (*Induced subgraphs of hypercubes and a proof of the Sensitivity
   Conjecture*, Annals of Mathematics 190(3), 2019).
-- Part of the [`SymbolicAI/Lean`](../README.md) formalization series.
+- Partie de la série de formalisation [`SymbolicAI/Lean`](../README.md).
 
 ## Build
 
 ```bash
-# From this directory (WSL recommended for lake on Windows)
+# Depuis ce répertoire (WSL recommandé pour lake sous Windows)
 lake build Sensitivity
 ```
 
-## See also
+## Voir aussi
 
-- **[`SymbolicAI/Lean`](../README.md)** — parent series index
+- **[`SymbolicAI/Lean`](../README.md)** — index de la série parente
 - Huang (2019), *Induced subgraphs of hypercubes and a proof of the Sensitivity
   Conjecture*, Ann. Math. 190(3).
 - Nisan & Szegedy (1992), *On the degree of Boolean functions as real
   polynomials*, DIMACS.
+
+## Conclusion
+
+Ce mini-projet formalise en Lean 4 (0 `sorry`, 0 axiome au-delà du cœur de Lean)
+la preuve qui **a résolu la conjecture de sensibilité** — ouverte depuis 1989/1992,
+établie par Hao Huang en 2019 via un argument combinatoire de quatre pages. Toute
+la chaîne `s(f) ≤ bs(f) ≤ deg(f)` et le théorème du degré de Huang sont clos.
+
+### Ce qui est prouvé
+
+Le résultat phare `huang_degree_theorem` (`MainTheorem.lean`) : tout sous-graphe
+induit du `n`-cube sur plus de la moitié de ses sommets contient un sommet de
+degré `≥ √n`. Le corollaire est la borne quadratique `deg(f) ≤ s(f)²`,
+équivalentement `bs(f) ≤ s(f)²` — sensibilité et sensibilité par blocs sont
+polynomialement liées, comme le demandait la conjecture. L'infrastructure
+support (hypercube `Q n`, espace vectoriel réel des fonctions booléennes,
+opérateurs de sensibilité / sensibilité par blocs) est entièrement construite.
+
+### Pourquoi ça marche
+
+L'argument est spectral (`exists_eigenvalue`) : une matrice d'adjacence signée
+de l'hypercube possède la valeur propre `√n`, et le théorème d'intercalation de
+Cauchy force un sommet de haut degré dans tout grand sous-graphe induit. La
+formalisation porte ce squelette valeur propre / intercalation à travers Mathlib.
+
+### Où aller ensuite
+
+- **Source** : Huang (2019), *Induced subgraphs of hypercubes and a proof of the
+  Sensitivity Conjecture*, Annals of Mathematics 190(3).
+- **Contexte** : Nisan & Szegedy (1992), la conjecture telle que posée.
+- **Série** : l'index de formalisation [`SymbolicAI/Lean`](../README.md).

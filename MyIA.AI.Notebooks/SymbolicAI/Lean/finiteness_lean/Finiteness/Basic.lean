@@ -28,7 +28,7 @@ Symbolic Derivatives in Lean*, ITP 2025), dépôt
 Sa licence amont n'étant pas confirmée, **ce fichier ne vendore pas leur code** :
 il en illustre l'intuition par des définitions et exemples **originaux**, sans
 dépendance (pas de Mathlib). Le notebook
-[`Lean-15-Finiteness-Derivatives.ipynb`](../../Lean-15-Finiteness-Derivatives.ipynb)
+[`Lean-14-Finiteness-Derivatives.ipynb`](../../Lean-14-Finiteness-Derivatives.ipynb)
 développe la présentation pédagogique et le pont vers l'epic Conway #2162. -/
 
 

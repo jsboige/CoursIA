@@ -610,6 +610,13 @@ reports/
 GradeBookApp/configs/*.py
 !GradeBookApp/configs/__init__.py
 
+# Per-cohort grading *pipeline docs* are private too (they embed cohort codes,
+# student ids, plagiarism verdicts and grades). They live on GDrive alongside the
+# configs: G:\Mon Drive\MyIA\Formation\<school>\<year>\grading\. The repo keeps
+# ONLY the school-agnostic engine docs (GradeBookApp/README.md + configs/README.md).
+docs/reference/ece-grading.md
+docs/reference/esgf-grading.md
+
 # Claude Code MCP config (contains API tokens)
 .mcp.json
 .claude/qc-mcp-wrapper.py
@@ -827,40 +834,15 @@ right_click_context.png
 # ML training generated scripts
 MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/c2_har_rv_j_lstm_h32.py
 
-# Jupyter temp notebooks
-MyIA.AI.Notebooks/QuantConnect/Python/_executor.ipynb
-MyIA.AI.Notebooks/QuantConnect/projects/EMA-Cross-Alpha/test_qb.ipynb
-
-# Research scratch notebooks (not yet committed)
-MyIA.AI.Notebooks/QuantConnect/research/research_multi_layer_ema.ipynb
-MyIA.AI.Notebooks/QuantConnect/research/research_option_wheel.ipynb
-MyIA.AI.Notebooks/QuantConnect/research/research_sector_momentum.ipynb
-
-# Research result images
-MyIA.AI.Notebooks/QuantConnect/research/composite_ff_aw_results.png
-MyIA.AI.Notebooks/QuantConnect/research/composite_mom_regime_results.png
-MyIA.AI.Notebooks/QuantConnect/research/rl_multi_asset_curves.png
-
 # csproj cache files
 *.csproj.lscache
-
-# PowerShell artifact
-$null
-
-# Root-level libs/ (Tweety JARs downloaded by setup scripts — use SymbolicAI/Tweety/libs/ instead)
-/libs/
 
 # Temp OWL files from notebook execution
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/data/temp_*.owl
 
-# Stray root-level analytique output dir (should live under v4/outputs/ if persisted)
-/output_analytique/
-
-# Root-level artifacts from notebooks/scripts run with wrong CWD (canonical copies live in series dirs)
+# Root-level sudoku training output from wrong-CWD execution
+# (canonical home: MyIA.AI.Notebooks/Sudoku/sudoku_models/ — relocate, do not commit at root)
 /sudoku_models/
-/data/pizza_test.owl
-/results/
-/tmp_*.py
 
 # Shared Mathlib checkout cache (NTFS junctions, scripts/lean/setup_shared_mathlib.ps1, #2611)
 /.mathlib-cache/

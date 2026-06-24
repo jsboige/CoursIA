@@ -59,7 +59,7 @@ Les notebooks 7-11 abordent les standards token (ERC-20, ERC-721, ERC-1155), les
 
 ### Phase 4 : Testing et Sécurité (~2h15)
 
-Les notebooks 12-14 traitent de la sécurité : tests unitaires Foundry (SC-12), fuzz testing et invariants (SC-13), vérification formelle (SC-14). Cette phase est cruciale — un smart contract non testé est un contrat non déployable en production. La vérification formelle (SMT solvers, Certora) représente le pont vers la preuve mathématique de correction.
+Les notebooks 12-14 traitent de la sécurité : tests unitaires Foundry (SC-12), fuzz testing et invariants (SC-13), vérification formelle (SC-14). La campagne de fuzzing de SC-13 s'exécute sur le **vrai** Foundry (`forge test --fuzz-runs`) et **trouve un contre-exemple concret** — un overflow arithmétique (`panic 0x11`) sur un calcul de moyenne naïf que les seuls tests unitaires laissaient passer : la démonstration que le fuzzing attrape les bugs qu'on n'avait pas anticipés. Cette phase est cruciale — un smart contract non testé est un contrat non déployable en production. La vérification formelle (SMT solvers, Certora) représente le pont vers la preuve mathématique de correction.
 
 ### Phase 5 : Cryptographie et Vie Privée (~3h)
 
@@ -201,7 +201,7 @@ SmartContracts/
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 12 | [SC-12-Foundry-Testing](03-Foundry-Testing/SC-12-Foundry-Testing.ipynb) | 45 min | Tests unitaires, cheatcodes |
-| 13 | [SC-13-Fuzz-Invariants](03-Foundry-Testing/SC-13-Fuzz-Invariants.ipynb) | 40 min | Fuzz testing, invariants |
+| 13 | [SC-13-Fuzz-Invariants](03-Foundry-Testing/SC-13-Fuzz-Invariants.ipynb) | 40 min | Fuzz testing réel (forge) : contre-exemple d'overflow trouvé, invariants |
 | 14 | [SC-14-Formal-Verification](03-Foundry-Testing/SC-14-Formal-Verification.ipynb) | 50 min | Vérification formelle |
 
 **Objectifs** : Tests Solidity, fuzzing, vérification formelle
@@ -264,7 +264,7 @@ SmartContracts/
 | **ERC Standards** | ERC-20 (fungible), ERC-721 (NFT), ERC-1155 (multi), ERC-4337 (AA) | SC-7, SC-10 |
 | **AMM** | Automated Market Maker — uniswap V2/V3 model | SC-8 |
 | **Oracle** | Pont de données externes vers on-chain | SC-8 |
-| **Fuzz Testing** | Testing avec générateur d'inputs aléatoires | SC-13 |
+| **Fuzz Testing** | Génération d'inputs aléatoires pour casser un invariant — SC-13 exécute `forge test` et exhibe un contre-exemple d'overflow | SC-13 |
 | **Formal Verification** | Preuve mathématique de correction (SMT, Certora) | SC-14 |
 | **Zero-Knowledge Proof** | Prouver sans révéler (Schnorr, Fiat-Shamir) | SC-15 |
 | **Homomorphic Encryption** | Calculer sur données chiffrées (Paillier, CKKS) | SC-16 |
