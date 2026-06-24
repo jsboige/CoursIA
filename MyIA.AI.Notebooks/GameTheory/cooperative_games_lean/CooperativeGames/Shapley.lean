@@ -1148,6 +1148,37 @@ theorem dictator_banzhaf_pos (G : TUGame N) (i : N) (h : Dictator G i) :
   simp only [BanzhafRaw]
   exact Finset.card_pos.mpr ⟨{i}, Finset.mem_filter.2 ⟨Finset.mem_univ _, hcrit⟩⟩
 
+/-- A veto player is critical in the grand coalition, provided the grand coalition wins.
+
+    `VetoPlayer G i` forces `i ∈ S` for every winning `S`. Applied to `S = univ.erase i`, if
+    `v (univ.erase i) = 1` then `i ∈ univ.erase i`, contradicting `i ∉ univ.erase i`; hence
+    `v (univ.erase i) ≠ 1`, and `SimpleGame` forces `v (univ.erase i) = 0`. Together with
+    `v univ = 1` (`hwin`) and `i ∈ univ`, this makes `univ` a critical coalition for `i`. -/
+theorem veto_critical_in_grand {G : TUGame N} (hG : SimpleGame G) {i : N}
+    (hv : VetoPlayer G i) (hwin : G.v Finset.univ = 1) :
+    Critical G i Finset.univ := by
+  refine ⟨?_, ?_, ?_⟩
+  · exact Finset.mem_univ i
+  · exact hwin
+  · apply SimpleGame.eq_zero_of_ne_one hG (Finset.univ.erase i)
+    intro heq
+    have hni : i ∉ Finset.univ.erase i := by simp [Finset.mem_erase]
+    exact hni (hv (Finset.univ.erase i) heq)
+
+/-- A veto player has a strictly positive raw Banzhaf index when the grand coalition wins.
+
+    The veto pendant of `dummy_banzhaf_raw_zero` (a dummy has `BanzhafRaw = 0`): a veto player
+    is critical in the grand coalition (`veto_critical_in_grand`, using `SimpleGame`), so the
+    critical-coalition filter is non-empty and its cardinality is positive. Note that, unlike
+    `dictator_banzhaf_pos`, this needs the grand-coalition-wins hypothesis `hwin`: without any
+    winning coalition a player is vacuously a veto player yet has `BanzhafRaw = 0`. -/
+theorem veto_banzhaf_raw_pos (G : TUGame N) (hG : SimpleGame G) (i : N)
+    (hv : VetoPlayer G i) (hwin : G.v Finset.univ = 1) :
+    0 < BanzhafRaw G i := by
+  have hcrit : Critical G i Finset.univ := veto_critical_in_grand hG hv hwin
+  simp only [BanzhafRaw]
+  exact Finset.card_pos.mpr ⟨Finset.univ, Finset.mem_filter.2 ⟨Finset.mem_univ _, hcrit⟩⟩
+
 /-- Dummy player: adds no value -/
 def DummyPlayer (G : TUGame N) (i : N) : Prop :=
   ∀ S : Finset N, i ∉ S → G.v (S ∪ {i}) = G.v S
