@@ -56,4 +56,31 @@ def IsPeer (scopes : Scopes ι) (c c' : ι) : Prop :=
 def PresentIn (σ : Solution ι V) (s : Finset ι) (v : V) : Prop :=
   ∃ c ∈ s, σ c = v
 
+/-- **Lemme de la maison pleine.** Si une portée `s` contient autant de cellules que de
+    valeurs possibles (`s.card = card V`) et qu'une affectation `σ` est toutes-distinctes
+    sur `s`, alors **toute** valeur `v` est présente dans `s`.
+
+    C'est l'argument de pigeonhole : `σ` restreinte à `s` est injective, donc son image
+    a `card s = card V` éléments distincts — soit la totalité de `V` — donc toute valeur
+    y apparaît. Ce lemme rend automatique l'hypothèse `PresentIn σ s v` du « hidden single »
+    (`Propagation.hidden_single_sound`) dans le cas plein-maison (cf #4055). -/
+theorem full_house_present {ι V : Type*} [Fintype ι] [DecidableEq ι] [Fintype V]
+    [DecidableEq V] (σ : Solution ι V) (s : Finset ι) (v : V)
+    (hcard : s.card = Fintype.card V) (hAD : AllDistinctOn σ s) : PresentIn σ s v := by
+  -- `AllDistinctOn σ s` ⟺ `Set.InjOn σ s` (même forme, Finset/Set membership defeq)
+  have hinj : Set.InjOn σ s := by
+    intros c hc c' hc' heq
+    exact hAD hc hc' heq
+  -- L'image `σ '' s` a même cardinalité que `s` (injectivité)
+  have hcard_img : (Finset.image σ s).card = s.card := Finset.card_image_of_injOn hinj
+  -- `σ '' s ⊆ univ`, de même cardinalité que `univ` (= card V) ⟹ `σ '' s = univ`
+  have hsub : Finset.image σ s ⊆ (Finset.univ : Finset V) := Finset.subset_univ _
+  have heq_img : Finset.image σ s = (Finset.univ : Finset V) := by
+    apply Finset.eq_of_subset_of_card_le hsub
+    rw [hcard_img, hcard]; simp
+  -- `v ∈ σ '' s` (= univ), puis `mem_image` ⟺ `∃ c ∈ s, σ c = v` = `PresentIn`
+  have hmem : v ∈ Finset.image σ s := heq_img ▸ Finset.mem_univ v
+  rw [Finset.mem_image] at hmem
+  exact hmem
+
 end Sudoku
