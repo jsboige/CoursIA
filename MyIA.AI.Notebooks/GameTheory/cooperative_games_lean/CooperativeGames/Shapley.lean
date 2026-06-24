@@ -1055,6 +1055,24 @@ def VetoPlayer (G : TUGame N) (i : N) : Prop :=
 def Dictator (G : TUGame N) (i : N) : Prop :=
   G.v {i} = 1 ∧ VetoPlayer G i
 
+/-- A dictator has a strictly positive raw Banzhaf index. The positive counterpart of
+    `dummy_banzhaf_raw_zero`: a dummy never changes a coalition's value (BanzhafRaw = 0),
+    whereas a dictator wins alone (`v {i} = 1`, the first conjunct of `Dictator`) and the
+    empty coalition has value `0` (`TUGame.empty_zero`), so `{i}` is a critical coalition
+    (`i ∈ {i}`, `v {i} = 1`, `v ({i}.erase i) = v ∅ = 0`). Hence the critical-coalition
+    filter is non-empty and its cardinality is positive. -/
+theorem dictator_banzhaf_pos (G : TUGame N) (i : N) (h : Dictator G i) :
+    0 < BanzhafRaw G i := by
+  have hcrit : Critical G i ({i} : Finset N) := by
+    refine ⟨?_, ?_, ?_⟩
+    · simp
+    · exact h.1
+    · have herase : ({i} : Finset N).erase i = ∅ := by simp
+      rw [herase]
+      exact G.empty_zero
+  simp only [BanzhafRaw]
+  exact Finset.card_pos.mpr ⟨{i}, Finset.mem_filter.2 ⟨Finset.mem_univ _, hcrit⟩⟩
+
 /-- Dummy player: adds no value -/
 def DummyPlayer (G : TUGame N) (i : N) : Prop :=
   ∀ S : Finset N, i ∉ S → G.v (S ∪ {i}) = G.v S
