@@ -410,7 +410,7 @@ Le notebook Lean-17b (Invariants de Nœuds) est le pendant pedagogique du projet
 | résultat | Fichier Lean | Notebook | Statut |
 |----------|-------------|----------|--------|
 | Transfert forward (R1 connecte préserve la tricolorabilité) | `knot_lean/Knots/Invariant.lean` | 17b | 0 sorry (#3000, sorry-free) |
-| Transfert backward (partiel) | `knot_lean/Knots/Invariant.lean` | 17b | 2 sorries résiduels §9.1 (num prouvé #3163 ; fox/col partiellement prouvés #3154/#3168) |
+| Transfert backward (partiel) | `knot_lean/Knots/Invariant.lean` | 17b | Path B shipped (#3003/#4035) : invariant de Fox classique restauré (arc-égalité c₂=c₄) + pont GF(3) `triColorFoxCondition_iff_sum_mod_three` prouvé ; `num` prouvé #3163 ; 2 résiduels §9.1 (fox/col all-distinct) OPEN research-HOLD (BG-prover #2874) |
 | Tricolorabilité du noeud de Conway (11n34) | `knot_lean/Knots/Conway.lean` | 17a | scaffolding |
 | Théorème d'invariance par Reidemeister (PL topology) | `knot_lean/Knots/Reidemeister.lean` | 17b | 2 sorry (out-of-scope PL) |
 
