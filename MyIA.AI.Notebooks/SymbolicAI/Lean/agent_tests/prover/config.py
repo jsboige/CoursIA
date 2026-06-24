@@ -1649,6 +1649,82 @@ DEMOS = {
         ),
         "difficulty": "easy",
     },
+    58: {
+        "name": "BANZHAF_INDEX_NONNEG",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1309,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_index_nonneg",
+        "theorem": "banzhaf_index_nonneg",
+        "imports": SHAPLEY_IMPORTS,
+        "goal": "0 ≤ BanzhafIndex G i",
+        "description": (
+            "BG-prover target (cycle 65): the normalized Banzhaf index is\n"
+            "non-negative. Stacks on the BanzhafIndex definition (PR #4071).\n"
+            "Slightly harder than the warm-ups: needs `div_nonneg` plus a\n"
+            "positivity argument on the denominator `2 ^ (card N - 1)`.\n"
+            "Replace the placeholder at L1309 of Shapley.lean."
+        ),
+        "difficulty": "easy",
+    },
+    60: {
+        "name": "BANZHAF_INDEX_EQ_ZERO_IFF",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1319,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_index_eq_zero_iff",
+        "theorem": "banzhaf_index_eq_zero_iff",
+        "imports": SHAPLEY_IMPORTS,
+        "goal": "BanzhafIndex G i = 0 ↔ BanzhafRaw G i = 0",
+        "description": (
+            "BG-prover target (cycle 66, item 4): the normalized Banzhaf index is\n"
+            "zero exactly when the raw Banzhaf index is zero. Since BanzhafIndex =\n"
+            "BanzhafRaw / 2^(card N - 1) and the denominator 2^(card N - 1) is\n"
+            "strictly positive, division is faithful. An iff proof: forward needs\n"
+            "div_mul_cancel0 (multiply both sides by the nonzero denominator),\n"
+            "backward is Nat-cast + zero_div. Strengthens banzhaf_index_dummy_zero.\n"
+            "Replace the placeholder at L1319 of Shapley.lean."
+        ),
+        "difficulty": "medium",
+    },
+    61: {
+        "name": "BANZHAF_INDEX_POS_IFF",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1328,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_index_pos_iff",
+        "theorem": "banzhaf_index_pos_iff",
+        "imports": SHAPLEY_IMPORTS,
+        "goal": "0 < BanzhafIndex G i ↔ 0 < BanzhafRaw G i",
+        "description": (
+            "BG-prover target (cycle 67, item 5): the positivity dual of\n"
+            "banzhaf_index_eq_zero_iff. Since BanzhafIndex = BanzhafRaw /\n"
+            "2^(card N - 1) and the denominator is strictly positive, the\n"
+            "normalized index is positive exactly when the raw count is.\n"
+            "Replace the placeholder at L1328 of Shapley.lean."
+        ),
+        "difficulty": "medium",
+    },
+    59: {
+        "name": "BANZHAF_INDEX_LE_TWO",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1318,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_index_le_two",
+        "theorem": "banzhaf_index_le_two",
+        "imports": SHAPLEY_IMPORTS,
+        "goal": "BanzhafIndex G i ≤ 2",
+        "description": (
+            "BG-prover target (cycle 66, item 3, greenlit by ai-01): the normalized\n"
+            "Banzhaf index is at most 2. CHAINS banzhaf_raw_le_univ (BanzhafRaw is\n"
+            "bounded by the total number of coalitions 2^card N) and divides by the\n"
+            "normalizer 2^(card N - 1). Non-trivial: needs div_le_iff0, the powerset\n"
+            "cardinality Finset.card_univ + Fintype.card_finset, and the 2^n = 2*2^(n-1)\n"
+            "arithmetic where the player i forces 0 < card N (no Nat-subtraction underflow).\n"
+            "Replace the placeholder at L1318 of Shapley.lean."
+        ),
+        "difficulty": "medium",
+    },
 }
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
 # whose key appears in this set.

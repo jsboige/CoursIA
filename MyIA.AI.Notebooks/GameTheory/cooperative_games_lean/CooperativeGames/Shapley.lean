@@ -1316,3 +1316,61 @@ theorem banzhaf_index_symmetric (G : TUGame N) (i j : N)
 theorem banzhaf_index_dummy_zero (G : TUGame N) (i : N)
     (h : DummyPlayer G i) : BanzhafIndex G i = 0 := by
   simp only [BanzhafIndex, dummy_banzhaf_raw_zero G i h, Nat.cast_zero, zero_div]
+
+/-- The normalized Banzhaf index is non-negative: `BanzhafRaw` is a natural count
+    (>= 0 when cast to ℝ) and the normalizing denominator `2 ^ (card N - 1) > 0`.
+    Real BG-prover target (#1453, cycle 65), stacks on #4071 (BanzhafIndex def).
+    Slightly harder than the warm-ups: needs `div_nonneg` plus a positivity
+    argument on the denominator. -/
+theorem banzhaf_index_nonneg (G : TUGame N) (i : N) : 0 ≤ BanzhafIndex G i := by
+  simp only [BanzhafIndex]
+  apply div_nonneg
+  · exact Nat.cast_nonneg _
+  · exact pow_nonneg (by norm_num) _
+
+/-- The normalized Banzhaf index is zero exactly when the raw Banzhaf index is
+    zero: `BanzhafIndex = BanzhafRaw / 2^(card N - 1)` and the normalizing
+    denominator `2 ^ (card N - 1)` is strictly positive (so division by it is
+    faithful). This strengthens `banzhaf_index_dummy_zero` (one direction) into a
+    clean structural characterization.
+    BG-prover target (#1453, cycle 66, item 4); a `div_eq_zero_iff₀` iff proof. -/
+theorem banzhaf_index_eq_zero_iff (G : TUGame N) (i : N) :
+    BanzhafIndex G i = 0 ↔ BanzhafRaw G i = 0 := by
+  simp [BanzhafIndex]
+
+/-- The normalized Banzhaf index is positive exactly when the raw Banzhaf index is
+    positive: the `>0` dual of `banzhaf_index_eq_zero_iff`. Together the two iff
+    theorems give a faithful characterization — the normalizer `2 ^ (card N - 1)` is
+    strictly positive, so positivity and zerohood are both preserved by the division.
+    BG-prover target (#1453, cycle 67, item 5); a positivity iff. -/
+theorem banzhaf_index_pos_iff (G : TUGame N) (i : N) :
+    0 < BanzhafIndex G i ↔ 0 < BanzhafRaw G i := by
+  simp only [BanzhafIndex]
+  have hden : 0 < (2 : ℝ) ^ (Fintype.card N - 1) := pow_pos (by norm_num) _
+  constructor
+  · intro h
+    have hnumreal : 0 < (BanzhafRaw G i : ℝ) := (div_pos_iff_of_pos_right hden).mp h
+    exact_mod_cast hnumreal
+  · intro h
+    exact div_pos (by exact_mod_cast h) hden
+
+/-- The normalized Banzhaf index is at most 2: `BanzhafRaw` counts critical
+    coalitions, bounded by the total number of coalitions `2 ^ card N` (see
+    `banzhaf_raw_le_univ`); normalizing by `2 ^ (card N - 1)` leaves a quotient
+    of at most 2. The player `i : N` forces `0 < card N`, so the Nat-subtraction
+    `card N - 1` does not underflow.
+    BG-prover target (#1453, cycle 66, item 3); chains `banzhaf_raw_le_univ`. -/
+theorem banzhaf_index_le_two (G : TUGame N) (i : N) : BanzhafIndex G i ≤ 2 := by
+  have hn : 0 < Fintype.card N := Fintype.card_pos_iff.mpr ⟨i⟩
+  have hdenom : 0 < (2 : ℝ) ^ (Fintype.card N - 1) := pow_pos (by norm_num) _
+  rw [BanzhafIndex, div_le_iff₀ hdenom]
+  have hcard : (Finset.univ : Finset (Finset N)).card = 2 ^ Fintype.card N := by
+    rw [Finset.card_univ, Fintype.card_finset]
+  have h2 : (2 : ℝ) ^ Fintype.card N = 2 * (2 : ℝ) ^ (Fintype.card N - 1) := by
+    have hkey : Fintype.card N = Fintype.card N - 1 + 1 := by omega
+    conv_lhs => rw [hkey, pow_add, pow_one]
+    ring
+  calc (BanzhafRaw G i : ℝ)
+      ≤ ((Finset.univ : Finset (Finset N)).card : ℝ) := by exact_mod_cast banzhaf_raw_le_univ G i
+    _ = (2 ^ Fintype.card N : ℝ) := by rw [hcard]; norm_cast
+    _ = 2 * (2 : ℝ) ^ (Fintype.card N - 1) := by rw [h2]
