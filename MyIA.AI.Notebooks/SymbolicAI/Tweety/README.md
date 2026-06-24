@@ -510,6 +510,14 @@ La version est configurable dans `Tweety-1-Setup.ipynb` (variable `TWEETY_VERSIO
 | Besnard & Hunter, *Elements of Argumentation* (2008) | Notebooks 5-7, théorie argumentation |
 | Brewka, Eiter & Truszczynski, "Answer Set Programming at a Glance" (2011) | Notebook 6, ASP/Clingo |
 | Russell & Norvig, *AIMA* 4e éd., ch. 7-8 | Cadre général logique et SAT |
+| Gärdenfors & Makinson (1988) | Notebook 4, enracinement épistémique (caractérisation AGM) |
+| Caminada (2006); Modgil & Caminada (2009) | Notebook 5, labellings trivalués (in/out/undec) |
+| Baroni et al. (2005) | Notebook 5, sémantique CF2 (cycles impairs) |
+| García & Simari, "Defeasible Logic Programming" (2004) | Notebook 6, DeLP |
+| Brewka & Woltran, "Abstract Dialectical Frameworks" (2010) | Notebook 7a, ADF |
+| Cayrol & Lagasquie-Schiex (2005) | Notebook 7a, frameworks bipolaires (BAF) |
+| Bonzon, Delobelle, Konieczny & Maudet (2016) | Notebook 7b, sémantiques de classement |
+| Arrow, "Social Choice and Individual Values" (1951) | Notebook 9, théorème d'impossibilité (choix social) |
 
 ### Ressources en ligne
 
