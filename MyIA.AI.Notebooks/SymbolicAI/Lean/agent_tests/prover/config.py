@@ -1617,6 +1617,26 @@ DEMOS = {
         ),
         "context_after": "",
     },
+    59: {
+        "name": "BANZHAF_INDEX_LE_TWO",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1318,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_index_le_two",
+        "theorem": "banzhaf_index_le_two",
+        "imports": SHAPLEY_IMPORTS,
+        "goal": "BanzhafIndex G i ≤ 2",
+        "description": (
+            "BG-prover target (cycle 66, item 3, greenlit by ai-01): the normalized\n"
+            "Banzhaf index is at most 2. CHAINS banzhaf_raw_le_univ (BanzhafRaw is\n"
+            "bounded by the total number of coalitions 2^card N) and divides by the\n"
+            "normalizer 2^(card N - 1). Non-trivial: needs div_le_iff0, the powerset\n"
+            "cardinality Finset.card_univ + Fintype.card_finset, and the 2^n = 2*2^(n-1)\n"
+            "arithmetic where the player i forces 0 < card N (no Nat-subtraction underflow).\n"
+            "Replace the placeholder at L1318 of Shapley.lean."
+        ),
+        "difficulty": "medium",
+    },
 }
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
 # whose key appears in this set.

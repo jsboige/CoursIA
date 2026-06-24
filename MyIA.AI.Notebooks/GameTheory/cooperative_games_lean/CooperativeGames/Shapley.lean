@@ -1307,3 +1307,12 @@ theorem banzhaf_index_symmetric (G : TUGame N) (i j : N)
 theorem banzhaf_index_dummy_zero (G : TUGame N) (i : N)
     (h : DummyPlayer G i) : BanzhafIndex G i = 0 := by
   simp only [BanzhafIndex, dummy_banzhaf_raw_zero G i h, Nat.cast_zero, zero_div]
+
+/-- The normalized Banzhaf index is at most 2: `BanzhafRaw` counts critical
+    coalitions, bounded by the total number of coalitions `2 ^ card N` (see
+    `banzhaf_raw_le_univ`); normalizing by `2 ^ (card N - 1)` leaves a quotient
+    of at most 2. The player `i : N` forces `0 < card N`, so the Nat-subtraction
+    `card N - 1` does not underflow.
+    BG-prover target (#1453, cycle 66, item 3); chains `banzhaf_raw_le_univ`. -/
+theorem banzhaf_index_le_two (G : TUGame N) (i : N) : BanzhafIndex G i ≤ 2 := by
+  sorry
