@@ -1204,6 +1204,33 @@ theorem weighted_voting_game_proper (weights : N → ℝ) (quota : ℝ) (hquota 
   · linarith
   · rfl
 
+/-! ## Self-dual games
+
+A *self-dual* (transferable-utility) game is one that is simultaneously *proper* (a coalition and
+its complement cannot both win) and *strong* (they cannot both lose). For a simple game this is
+the canonical "decisive" / self-dual voting game: for every coalition, exactly one of it and its
+complement wins. -/
+def SelfDualGame (G : TUGame N) : Prop :=
+  ProperGame G ∧ StrongGame G
+
+namespace SelfDualGame
+
+/-- A self-dual game is proper. -/
+theorem proper (G : TUGame N) (hG : SelfDualGame G) : ProperGame G := hG.1
+
+/-- A self-dual game is strong. -/
+theorem strong (G : TUGame N) (hG : SelfDualGame G) : StrongGame G := hG.2
+
+/-- In a self-dual simple game, exactly one of a coalition and its complement wins: `v S = 1`
+    forces `v Sᶜ = 0` (proper), and `v S = 0` forces `v Sᶜ = 1` (strong). -/
+theorem complement_flip {G : TUGame N} (hG : SelfDualGame G) {S : Finset N}
+    (hS : G.v S = 1 ∨ G.v S = 0) : G.v Sᶜ = 0 ∨ G.v Sᶜ = 1 := by
+  rcases hS with h1 | h0
+  · exact Or.inl (hG.1 h1)
+  · exact Or.inr (hG.2 h0)
+
+end SelfDualGame
+
 /-- Player i is critical in coalition S if removing them causes S to lose -/
 def Critical (G : TUGame N) (i : N) (S : Finset N) : Prop :=
   i ∈ S ∧ G.v S = 1 ∧ G.v (S.erase i) = 0
