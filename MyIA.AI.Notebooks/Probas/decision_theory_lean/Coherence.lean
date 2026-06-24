@@ -1,5 +1,6 @@
 import Coherence.Basic
 import Coherence.DutchBook
+import Coherence.Probability
 
 /-!
 # Decision Theory — Dutch Book / cohérence (de Finetti)
@@ -15,15 +16,24 @@ perte sûre. La cohérence *force* donc les axiomes de probabilité.
 - `Coherence.DutchBook` : la direction constructive « incohérence ⟹ Dutch Book »
   (`non_additive_implies_dutch_book`, witness explicite, 0 `sorry`) et sa contraposée
   « cohérence ⟹ additivité » (`coherent_on_implies_additive`).
+- `Coherence.Probability` : la **caractérisation mono-livret** de de Finetti
+  (`single_coherent_iff_prob_bounds`) — une fonction de prix `q` est cohérente au sens
+  mono-livret (aucun Dutch Book à un seul ticket) **ssi** elle satisfait les bornes de
+  probabilité `0 ≤ q A ≤ 1`, `q ∅ = 0`, `q univ = 1`. Chaque axiome violé admet un
+  Dutch Book explicite à un seul ticket (`single_dutch_book_of_neg/high/pos_empty/univ_lt`),
+  0 `sorry`.
 
 ## Statut
 - Prouvé sans `sorry` : la direction constructive (violation de l'inclusion–exclusion
-  ⟹ Dutch Book avec mises explicites `(1,1,−1,−1)` ou l'inverse), et la cohérence ⟹
-  additivité sur deux événements.
-- Ouvert (jalon suivant) : la réciproque « additivité ⟹ cohérence » et le
-  `coherent_iff_probability` complet (additivité générale + normalisation
-  `q ∅ = 0`, `q univ = 1`), qui nécessitent la séparation d'hyperplans / dualité LP
-  en dimension finie (faisabilité Lean « MOYENNE », cf #4050).
+  ⟹ Dutch Book avec mises explicites `(1,1,−1,−1)` ou l'inverse), la cohérence ⟹
+  additivité sur deux événements, et la **caractérisation mono-livret** complète
+  (`single_coherent_iff_prob_bounds`, 0 `sorry`, axiomes `[propext, Classical.choice,
+  Quot.sound]`).
+- Ouvert (jalon suivant) : le `coherent_iff_probability` **complet** (livrets de taille
+  arbitraire, via la reconstruction de la mesure `q A = Σ_{ω ∈ A} q {ω}` puis l'argument
+  d'espérance, ou la séparation d'hyperplans / dualité LP en dimension finie). La version
+  mono-livret livrée ici en constitue le noyau tractable (faisabilité Lean « MOYENNE »,
+  cf #4050).
 
 ## Références croisées
 - `Utility` (même lake) : représentation d'utilité espérée vNM — l'autre fondation
