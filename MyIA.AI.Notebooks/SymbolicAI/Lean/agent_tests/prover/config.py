@@ -1648,6 +1648,7 @@ DEMOS = {
             "Trivial conjunct extraction -- this is a warm-up, not a hard target."
         ),
         "difficulty": "easy",
+    },
     59: {
         "name": "BANZHAF_INDEX_LE_TWO",
         "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",

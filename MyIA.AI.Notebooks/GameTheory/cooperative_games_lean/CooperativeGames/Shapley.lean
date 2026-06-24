@@ -1324,4 +1324,16 @@ theorem banzhaf_index_dummy_zero (G : TUGame N) (i : N)
     `card N - 1` does not underflow.
     BG-prover target (#1453, cycle 66, item 3); chains `banzhaf_raw_le_univ`. -/
 theorem banzhaf_index_le_two (G : TUGame N) (i : N) : BanzhafIndex G i ≤ 2 := by
-  sorry
+  have hn : 0 < Fintype.card N := Fintype.card_pos_iff.mpr ⟨i⟩
+  have hdenom : 0 < (2 : ℝ) ^ (Fintype.card N - 1) := pow_pos (by norm_num) _
+  rw [BanzhafIndex, div_le_iff₀ hdenom]
+  have hcard : (Finset.univ : Finset (Finset N)).card = 2 ^ Fintype.card N := by
+    rw [Finset.card_univ, Fintype.card_finset]
+  have h2 : (2 : ℝ) ^ Fintype.card N = 2 * (2 : ℝ) ^ (Fintype.card N - 1) := by
+    have hkey : Fintype.card N = Fintype.card N - 1 + 1 := by omega
+    conv_lhs => rw [hkey, pow_add, pow_one]
+    ring
+  calc (BanzhafRaw G i : ℝ)
+      ≤ ((Finset.univ : Finset (Finset N)).card : ℝ) := by exact_mod_cast banzhaf_raw_le_univ G i
+    _ = (2 ^ Fintype.card N : ℝ) := by rw [hcard]; norm_cast
+    _ = 2 * (2 : ℝ) ^ (Fintype.card N - 1) := by rw [h2]
