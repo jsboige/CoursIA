@@ -1118,6 +1118,49 @@ theorem weighted_voting_game_monotone (weights : N → ℝ) (quota : ℝ) (hquot
   · exact zero_le_one                                 -- S does not, T does: 0 ≤ 1
   · exact le_refl _                                   -- neither: 0 ≤ 0
 
+/-! ## Proper games
+
+A *proper* (transferable-utility) game is one where a coalition and its complement cannot both
+be winning: `v S = 1 → v Sᶜ = 0`. For a simple game this is the standard "no two complementary
+coalitions both win" property of a proper simple voting game (the complement of a winning
+coalition is losing). A weighted voting game is proper whenever the quota strictly exceeds half
+the total weight, since the weights of complementary coalitions sum to the total. -/
+def ProperGame (G : TUGame N) : Prop :=
+  ∀ ⦃S : Finset N⦄, G.v S = 1 → G.v Sᶜ = 0
+
+namespace ProperGame
+
+/-- In a proper game, the complement of a winning coalition is losing. -/
+theorem complement_loses {G : TUGame N} (hG : ProperGame G) {S : Finset N}
+    (hwin : G.v S = 1) : G.v Sᶜ = 0 :=
+  hG hwin
+
+end ProperGame
+
+/-- A weighted voting game whose quota strictly exceeds half the total weight is proper: if a
+    coalition's weight meets the quota, the complementary coalition's weight is strictly below it
+    (the two complementary weights sum to the total, which is less than `2 * quota`), so the
+    complement loses. No sign assumption on the weights is needed — this is a pure consequence of
+    the quota-to-total ratio. -/
+theorem weighted_voting_game_proper (weights : N → ℝ) (quota : ℝ) (hquota : 0 < quota)
+    (hproper : 2 * quota > ∑ i, weights i) :
+    ProperGame (WeightedVotingGame weights quota hquota) := by
+  intro S hwin
+  simp only [WeightedVotingGame] at hwin ⊢
+  -- Decode `S` winning into its weight reaching the quota.
+  have hS : ∑ i ∈ S, weights i ≥ quota := by
+    split_ifs at hwin with h
+    · exact h
+    · linarith
+  -- The complementary coalition's weight is `total − ∑_S`, hence `< quota`.
+  have hSc : ∑ i ∈ Sᶜ, weights i = ∑ i, weights i - ∑ i ∈ S, weights i := by
+    rw [← Finset.sum_add_sum_compl S weights]; ring
+  have hSc_lt : ∑ i ∈ Sᶜ, weights i < quota := by rw [hSc]; linarith
+  -- The complement does not reach the quota, so its value is `0`.
+  split_ifs with h
+  · linarith
+  · rfl
+
 /-- Player i is critical in coalition S if removing them causes S to lose -/
 def Critical (G : TUGame N) (i : N) (S : Finset N) : Prop :=
   i ∈ S ∧ G.v S = 1 ∧ G.v (S.erase i) = 0
