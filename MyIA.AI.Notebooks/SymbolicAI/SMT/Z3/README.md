@@ -165,6 +165,17 @@ Ces ressources relèvent de l'Epic **#2978** (le Sudoku comme regex symbolique) 
 - [MyIntelligenceAgency/Z3.LinqBinding@EPFdevelopment](https://github.com/MyIntelligenceAgency/Z3.LinqBinding/tree/EPFdevelopment) (branche contributions jsboige)
 - [Issue upstream #29](https://github.com/endjin/Z3.Linq/issues/29) (discussion contributions)
 
+## Références académiques
+
+La série manipule un vocabulaire précis (SMT, théorie des tableaux, standard SMT-LIB) hérité de la logique et de la vérification automatique. Les fondements théoriques des concepts introduits aux points d'enseignement :
+
+| Référence | Couverture |
+|-----------|------------|
+| de Moura & Bjørner, "Z3: An Efficient SMT Solver" (TACAS 2008) | Solveur Z3 utilisé tout au long de la série |
+| Nieuwenhuis, Oliveras & Tinelli, "Solving SAT and SAT Modulo Theories: From an Abstract DPLL Procedure to DPLL(T)" (JACM 2006) | Fondements théoriques de la résolution SMT (DPLL(T)) |
+| Barrett, Fontaine & Tinelli, "The SMT-LIB Standard: Version 2.6" (2017) | Standard SMT-LIB émis par le convertisseur et consommé par Z3 (notebooks 03, 06) |
+| McCarthy, "Towards a Mathematical Science of Computation" (IFIP 1962) | Axiomes de la théorie des tableaux `select`/`store` (notebook 03) |
+
 ## FAQ / Troubleshooting
 
 | Problème | Solution |
