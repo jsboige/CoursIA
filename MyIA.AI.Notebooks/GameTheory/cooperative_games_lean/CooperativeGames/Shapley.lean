@@ -1093,6 +1093,17 @@ def VetoPlayer (G : TUGame N) (i : N) : Prop :=
 def Dictator (G : TUGame N) (i : N) : Prop :=
   G.v {i} = 1 ∧ VetoPlayer G i
 
+/-- A game has at most one dictator.
+
+    If both `i` and `j` are dictators, then `j` is a veto player (`Dictator` second conjunct),
+    and `i` wins alone (`v {i} = 1`, first conjunct of `Dictator i`). Applying the veto
+    property of `j` to the winning coalition `{i}` forces `j ∈ {i}`, i.e. `j = i`. -/
+theorem dictator_unique (G : TUGame N) (i j : N) (hi : Dictator G i) (hj : Dictator G j) :
+    i = j := by
+  -- `j` is a veto player (`Dictator` second conjunct) and `i` wins alone
+  -- (`v {i} = 1`, first conjunct), so the veto property forces `j ∈ {i}`, i.e. `j = i`.
+  exact (Finset.mem_singleton.mp (hj.2 {i} hi.1)).symm
+
 /-- A dictator has a strictly positive raw Banzhaf index. The positive counterpart of
     `dummy_banzhaf_raw_zero`: a dummy never changes a coalition's value (BanzhafRaw = 0),
     whereas a dictator wins alone (`v {i} = 1`, the first conjunct of `Dictator`) and the
