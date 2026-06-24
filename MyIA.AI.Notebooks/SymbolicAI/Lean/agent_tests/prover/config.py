@@ -1637,6 +1637,24 @@ DEMOS = {
         ),
         "difficulty": "medium",
     },
+    61: {
+        "name": "BANZHAF_INDEX_POS_IFF",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1328,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_index_pos_iff",
+        "theorem": "banzhaf_index_pos_iff",
+        "imports": SHAPLEY_IMPORTS,
+        "goal": "0 < BanzhafIndex G i ↔ 0 < BanzhafRaw G i",
+        "description": (
+            "BG-prover target (cycle 67, item 5): the positivity dual of\n"
+            "banzhaf_index_eq_zero_iff. Since BanzhafIndex = BanzhafRaw /\n"
+            "2^(card N - 1) and the denominator is strictly positive, the\n"
+            "normalized index is positive exactly when the raw count is.\n"
+            "Replace the placeholder at L1328 of Shapley.lean."
+        ),
+        "difficulty": "medium",
+    },
 }
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
 # whose key appears in this set.
