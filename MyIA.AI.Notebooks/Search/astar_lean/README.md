@@ -115,6 +115,35 @@ En déduire `h(start) ≤ hStar(start)` nécessiterait que `hStar` soit le *mini
 laissée ouverte (phase suivante, construction effective de `hStar`). On prouve donc ici
 la **forme abstraite** suggérée par #4048.
 
+## Consistance ⟹ `f = g + h` monotone (pas de ré-expansion) — phase 3
+
+```lean
+theorem consistent_implies_f_monotone (h : V → NNReal)
+    (hCons : Consistent G h)
+    (g : V → NNReal) (n n' : V)
+    (hg : g n' = g n + G.edge n n') :
+    g n + h n ≤ g n' + h n'
+```
+
+Sous une heuristique **consistante**, la fonction d'évaluation `f = g + h` (coût déjà
+parcouru `g` + heuristique `h`) est **croissante** le long des expansions : si `g`
+ progresse du poids de l'arc (`g n' = g n + edge n n'`), alors `f` n'augmente pas
+(`f n ≤ f n'`). C'est le mécanisme exact qui rend A* **efficace** sous heuristique
+consistante : la frontière de `f` ne recule jamais, donc **aucun nœud n'est jamais
+ré-expansé** — par contraste avec une heuristique admissible (mais non consistante) qui
+garantit l'optimalité (phase 1) mais autorise des ré-expansions.
+
+**Preuve** (0 `sorry`, axiomes `[propext, Classical.choice, Quot.sound]`, 1 ligne) :
+`g n' + h n' = g n + edge n n' + h n' ≥ g n + h n` par consistance
+(`h n ≤ edge n n' + h n'`), donc `linarith` après réécriture de `g n'`.
+
+**Abstraction.** `g` est laissé paramètre (non calculé) : le résultat vaut pour toute
+fonction de coût déjà parcouru satisfaisant la relation d'avancement par arc,
+indépendamment du chemin spécifique. La formalisation de la **« non-ré-expansion »
+elle-même** (modélisation de la file de priorité, open/closed sets, terminaison) est la
+**phase 4** (cf #4048) — on prouve ici le **lemme mathématique central** qui en est la
+cause exacte, pas l'algorithme complet.
+
 ## Construction
 
 ```bash
@@ -127,17 +156,17 @@ Prérequis : [elan](https://github.com/leanprover/elan) (toolchain
 
 ## État et suite
 
-Ce livrable couvre les phases 1-2 (#4048) :
+Ce livrable couvre les phases 1-3 (#4048) :
 
 - [x] Scaffolding du lake (lakefile, toolchain, `.gitignore`)
 - [x] Modèle (`WeightedGraph`, `pathCost`, `PathFrom`)
 - [x] Définitions (`Admissible`, `Consistent`, `IsTrueRemainingCost`)
 - [x] **Théorème phare `admissible_implies_optimal` — 0 `sorry`** (phase 1, PR #4090)
 - [x] **`consistent_implies_admissible` — 0 `sorry`** (phase 2, téléscopage de la consistance le long du chemin)
+- [x] **`consistent_implies_f_monotone` — 0 `sorry`** (phase 3, `f = g + h` croissante ⇒ pas de ré-expansion)
 
 Phases suivantes (suivi #4048) :
 
-- [ ] `consistent_implies_monotone_f` (`f = g + h` croissante ⇒ pas de ré-expansion)
 - [ ] Construction effective de `hStar` sur graphe fini (minimum sur chemins simples)
 - [ ] Modélisation de la file de priorité et preuve « A* renvoie le chemin optimal » bout-en-bout
 

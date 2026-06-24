@@ -98,4 +98,34 @@ theorem consistent_implies_admissible_bound (h : V → NNReal) (goal : V)
     h start ≤ pathCost G p :=
   consistent_implies_path_bound G h goal hCons hGoal start p hp
 
+/-! ## Phase 3 : monotonicité de `f = g + h` (pas de ré-expansion) -/
+
+/-- **Consistance ⟹ `f = g + h` monotone.** Théorème cible #4048 phase 3
+    (`consistent_implies_monotone_f`). Sous une heuristique **consistante**, la fonction
+    d'évaluation `f = g + h` (coût déjà parcouru `g` + heuristique `h`) est **croissante**
+    le long des expansions : si le coût déjà parcouru progresse du poids de l'arc
+    (`g n' = g n + edge n n'`), alors `f` n'augmente pas (`f n ≤ f n'`).
+
+    C'est le mécanisme exact qui rend A* **efficace** sous heuristique consistante : la
+    frontière de `f` ne recule jamais, donc **aucun nœud n'est jamais ré-expansé**. À
+    comparer avec une heuristique admissible (mais non consistante), qui garantit
+    l'optimalité (phase 1) mais autorise des ré-expansions. La formalisation de la
+    « non-ré-expansion » elle-même (modélisation de la file de priorité) est laissée à la
+    phase 4 (cf #4048) — on prouve ici le **lemme mathématique central**, qui en est la
+    cause exacte. Voir Hart, Nilsson & Raphael (1968).
+
+    **Preuve** (1 ligne) : `g n' + h n' = g n + edge n n' + h n' ≥ g n + h n` par
+    consistance (`h n ≤ edge n n' + h n'`), donc `linarith` après réécriture de `g n'`.
+
+    Note d'abstraction : `g` est laissé paramètre (non calculé) — le résultat vaut pour
+    toute fonction de coût déjà parcouru satisfaisant la relation d'avancement par arc,
+    indépendamment du chemin spécifique emprunté pour l'atteindre. -/
+theorem consistent_implies_f_monotone (h : V → NNReal)
+    (hCons : Consistent G h)
+    (g : V → NNReal) (n n' : V)
+    (hg : g n' = g n + G.edge n n') :
+    g n + h n ≤ g n' + h n' := by
+  rw [hg]
+  linarith [hCons n n']
+
 end Astar
