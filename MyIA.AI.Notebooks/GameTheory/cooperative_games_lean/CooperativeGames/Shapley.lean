@@ -1074,6 +1074,18 @@ theorem le_of_subset {G : TUGame N} (hG : MonotoneGame G) {S T : Finset N}
 
 end MonotoneGame
 
+/-- The losing coalitions of a monotone simple game form a down-set: shrinking a losing
+    coalition keeps it losing. The dual of the winning up-set property: monotonicity gives
+    `v S ≤ v T`, and `v T = 0` forces `v S ≤ 0 < 1`; `SimpleGame` then rules out `v S = 1`,
+    leaving `v S = 0`. -/
+theorem losing_downward_closed {G : TUGame N} (hG : MonotoneGame G) (hG' : SimpleGame G)
+    {S T : Finset N} (hST : S ⊆ T) (hlose : G.v T = 0) : G.v S = 0 := by
+  -- Monotonicity: `v S ≤ v T = 0`, so `v S ≤ 0 < 1`; `SimpleGame` then rules out `v S = 1`.
+  apply SimpleGame.eq_zero_of_ne_one hG' S
+  intro hone
+  have : G.v S ≤ G.v T := MonotoneGame.le_of_subset hG hST
+  linarith
+
 /-- A weighted voting game with non-negative weights is monotone: enlarging a coalition
     adds non-negative weight, so the weight sum can only increase, hence `v` (an
     `if sum ≥ quota then 1 else 0`) cannot decrease. -/
