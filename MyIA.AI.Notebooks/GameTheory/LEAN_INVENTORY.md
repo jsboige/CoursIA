@@ -10,7 +10,9 @@ Cross-directory inventory of all Lean 4 formalization projects under `GameTheory
 | `cooperative_games_lean` | v4.30.0-rc2 | 0 | 3 files | COMPLETE |
 | `social_choice_lean` | v4.30.0-rc2 | 0 | 7 files | COMPLETE |
 | `social_choice_lean_peters` | v4.27.0-rc1 | 0 | 1 file | Reference only |
-| **Total** | — | **0** | **16 files** | — |
+| `minimax_lean` | v4.31.0-rc1 | 0 | 2 files | COMPLETE |
+| `conway_cgt_lean` | v4.31.0-rc1 | 0 | 1 file | Reference tour |
+| **Total** | — | **0** | **19 files** | — |
 
 Note: `_GoalExtract.lean` (former prover test file) has been removed from the repo. `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogical example, not production.
 
@@ -107,11 +109,53 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 ---
 
+### 5. minimax_lean
+
+**Objective**: Formalize the two-player zero-sum game minimax setting — payoff bilinearity and continuity as the foundation for von Neumann's minimax theorem.
+
+**Toolchain**: v4.31.0-rc1 | **Dependencies**: Mathlib4
+
+| File | sorry | Description |
+|------|-------|-------------|
+| `Minimax/ZeroSum.lean` | 0 | Zero-sum payoff structure, bilinearity (`payoff_add_in_x`, `smul`), `continuous_payoff`; saddle-point existence derived from Mathlib's Sion minimax |
+| `Minimax.lean` (umbrella) | 0 | Re-export |
+
+**Build**: `lake build Minimax` — SUCCESS | **COMPLETE: 0 sorry**
+
+**Key facts**:
+- Payoff bilinearity and continuity proven 0 sorry (`payoff_add_in_x`, payoff scalar-multiplication, `continuous_payoff`).
+- **Saddle-point existence** (`∃ mixed strategies, max_x min_y = min_y max_x`) is *derivable* from Mathlib's Sion minimax theorem and is documented as such — **not** left as a `sorry`. No sorry-backed milestone.
+
+---
+
+### 6. conway_cgt_lean
+
+**Objective**: Reference tour of combinatorial game theory (surreal numbers, partizan games, nimbers) using Mathlib's `SetTheory.Surreal` / `PGame` / `Game` / `Nimber`. Inspired by `vihdzp/combinatorial-games` and Conway's *On Numbers and Games*.
+
+**Toolchain**: v4.31.0-rc1 | **Dependencies**: Mathlib4
+
+| File | sorry | Description |
+|------|-------|-------------|
+| `CGTTour.lean` | 0 | Tour: `LinearOrder` on Surreal, PGame constructions, nimber structure |
+
+**Build**: `lake build CGTTour` — SUCCESS | **Reference tour, 0 sorry**
+
+**Status**: Reference / pedagogical tour, not a proving target. Demonstrates Mathlib's combinatorial-game-theory API (surreals, `PGame`, `Nimber`) rather than proving new CGT theorems. 0 sorry.
+
+---
+
 ## Remaining Proving Targets
 
 | Priority | Target                       | Dir                    | sorry | Feasibility                        |
 |----------|------------------------------|------------------------|-------|------------------------------------|
-| P1       | Basic.lean L309 hCore        | cooperative_games_lean | 1     | Very Low (Hahn-Banach separation)  |
+| —        | *(none — all GameTheory lakes are 0 sorry)* | —                      | 0     | —                                  |
+
+> **Note (G.9 correction):** the former P1 row `Basic.lean L309 hCore / 1 sorry / Very Low (Hahn-Banach)`
+> was stale. Verified firsthand: `CooperativeGames/Basic.lean` has **0** standalone-sorry lines
+> (`grep -nE '^\s*sorry\b'` → empty), no `hCore`/`sorry` at L309. `bondareva_shapley`
+> (`Core.Nonempty ↔ Balanced`) is fully proved (#3954, compact-slice Weierstrass — no added axiom).
+> Removing this stale target prevents a pointless BG-iter cycle on a sorry that no longer exists
+> (cf. lean-merge-discipline §2).
 
 ## GO/NO-GO per Project (for BG iter cycles)
 
