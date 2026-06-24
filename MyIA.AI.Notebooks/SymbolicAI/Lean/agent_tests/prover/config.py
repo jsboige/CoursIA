@@ -1648,6 +1648,25 @@ DEMOS = {
             "Trivial conjunct extraction -- this is a warm-up, not a hard target."
         ),
         "difficulty": "easy",
+    60: {
+        "name": "BANZHAF_INDEX_EQ_ZERO_IFF",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1319,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_index_eq_zero_iff",
+        "theorem": "banzhaf_index_eq_zero_iff",
+        "imports": SHAPLEY_IMPORTS,
+        "goal": "BanzhafIndex G i = 0 ↔ BanzhafRaw G i = 0",
+        "description": (
+            "BG-prover target (cycle 66, item 4): the normalized Banzhaf index is\n"
+            "zero exactly when the raw Banzhaf index is zero. Since BanzhafIndex =\n"
+            "BanzhafRaw / 2^(card N - 1) and the denominator 2^(card N - 1) is\n"
+            "strictly positive, division is faithful. An iff proof: forward needs\n"
+            "div_mul_cancel0 (multiply both sides by the nonzero denominator),\n"
+            "backward is Nat-cast + zero_div. Strengthens banzhaf_index_dummy_zero.\n"
+            "Replace the placeholder at L1319 of Shapley.lean."
+        ),
+        "difficulty": "medium",
     },
 }
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
