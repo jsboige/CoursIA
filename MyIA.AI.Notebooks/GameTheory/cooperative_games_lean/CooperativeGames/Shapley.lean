@@ -1316,3 +1316,29 @@ theorem banzhaf_index_symmetric (G : TUGame N) (i j : N)
 theorem banzhaf_index_dummy_zero (G : TUGame N) (i : N)
     (h : DummyPlayer G i) : BanzhafIndex G i = 0 := by
   simp only [BanzhafIndex, dummy_banzhaf_raw_zero G i h, Nat.cast_zero, zero_div]
+
+/-- The normalized Banzhaf index is zero exactly when the raw Banzhaf index is
+    zero: `BanzhafIndex = BanzhafRaw / 2^(card N - 1)` and the normalizing
+    denominator `2 ^ (card N - 1)` is strictly positive (so division by it is
+    faithful). This strengthens `banzhaf_index_dummy_zero` (one direction) into a
+    clean structural characterization.
+    BG-prover target (#1453, cycle 66, item 4); a `div_eq_zero_iff₀` iff proof. -/
+theorem banzhaf_index_eq_zero_iff (G : TUGame N) (i : N) :
+    BanzhafIndex G i = 0 ↔ BanzhafRaw G i = 0 := by
+  simp [BanzhafIndex]
+
+/-- The normalized Banzhaf index is positive exactly when the raw Banzhaf index is
+    positive: the `>0` dual of `banzhaf_index_eq_zero_iff`. Together the two iff
+    theorems give a faithful characterization — the normalizer `2 ^ (card N - 1)` is
+    strictly positive, so positivity and zerohood are both preserved by the division.
+    BG-prover target (#1453, cycle 67, item 5); a positivity iff. -/
+theorem banzhaf_index_pos_iff (G : TUGame N) (i : N) :
+    0 < BanzhafIndex G i ↔ 0 < BanzhafRaw G i := by
+  simp only [BanzhafIndex]
+  have hden : 0 < (2 : ℝ) ^ (Fintype.card N - 1) := pow_pos (by norm_num) _
+  constructor
+  · intro h
+    have hnumreal : 0 < (BanzhafRaw G i : ℝ) := (div_pos_iff_of_pos_right hden).mp h
+    exact_mod_cast hnumreal
+  · intro h
+    exact div_pos (by exact_mod_cast h) hden
