@@ -1395,6 +1395,30 @@ theorem dummy_banzhaf_raw_zero (G : TUGame N) (i : N) (h : DummyPlayer G i) :
   rw [Finset.card_eq_zero, Finset.filter_eq_empty_iff]
   exact fun S _ hcrit => hneq S hcrit
 
+/-- A veto player is never a dummy player, provided the grand coalition wins.
+
+    The veto pendant of `dictator_not_dummy`: the two roles are mutually exclusive. A dummy
+    player never changes a coalition's value; applied to `Finset.univ.erase i` (which `i` is
+    absent from), this gives `v (univ.erase i ∪ {i}) = v (univ.erase i)`, i.e.
+    `v univ = v (univ.erase i)`. But a veto player forces `v (univ.erase i) = 0` (via
+    `veto_losing_without`, since `i ∉ univ.erase i`), while the non-degeneracy hypothesis
+    `hwin : v univ = 1` gives `v univ = 1`. The equality `1 = 0` is a contradiction. -/
+theorem veto_not_dummy (G : TUGame N) (hG : SimpleGame G) (i : N) (hv : VetoPlayer G i)
+    (hwin : G.v Finset.univ = 1) : ¬ DummyPlayer G i := by
+  intro hd
+  -- A dummy never changes a coalition's value; applied to `univ.erase i` (which excludes `i`):
+  have hni : i ∉ Finset.univ.erase i := by simp [Finset.mem_erase]
+  have hdummy := hd (Finset.univ.erase i) hni
+  -- `univ.erase i ∪ {i} = univ` (the player's absence followed by addition recovers the universe).
+  have huniv : Finset.univ.erase i ∪ ({i} : Finset N) = Finset.univ := by
+    ext j; simp [Finset.mem_univ]
+  rw [huniv] at hdummy
+  -- A veto player forces `v (univ.erase i) = 0` (it is absent from that coalition).
+  rw [veto_losing_without hG hv hni] at hdummy
+  -- `hdummy : v univ = 0` contradicts `hwin : v univ = 1`.
+  rw [hdummy] at hwin
+  linarith
+
 /-- A dictator is never a dummy player.
 
     The two extreme player roles are mutually exclusive. A dummy player adds no value to any
