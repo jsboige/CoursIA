@@ -1233,6 +1233,24 @@ theorem dummy_banzhaf_raw_zero (G : TUGame N) (i : N) (h : DummyPlayer G i) :
   rw [Finset.card_eq_zero, Finset.filter_eq_empty_iff]
   exact fun S _ hcrit => hneq S hcrit
 
+/-- A dictator is never a dummy player.
+
+    The two extreme player roles are mutually exclusive. A dummy player adds no value to any
+    coalition it is absent from; applied to the empty coalition this yields `v (∅ ∪ {i}) = v ∅`,
+    i.e. `v {i} = 0` (via `TUGame.empty_zero`). But a dictator wins alone (`v {i} = 1`, the first
+    conjunct of `Dictator`), a contradiction. This is the player-type analogue of the BanzhafRaw
+    sign split (`dictator_banzhaf_pos` : `> 0`, `dummy_banzhaf_raw_zero` : `= 0`). -/
+theorem dictator_not_dummy (G : TUGame N) (i : N) (h : Dictator G i) :
+    ¬ DummyPlayer G i := by
+  intro hd
+  -- The dummy hypothesis at the empty coalition gives `v {i} = v ∅ = 0`.
+  have hdummy : G.v ({i} : Finset N) = 0 := by
+    have hni : (i : N) ∉ (∅ : Finset N) := by simp
+    have heq := hd ∅ hni
+    rw [Finset.empty_union, G.empty_zero] at heq
+    exact heq
+  linarith [h.1]
+
 /-- Coalitional swap used by `banzhaf_raw_symmetric`. In a coalition `S`, replace the lone
     member of `{i, j}` by the other (if `S` contains exactly one of `i, j`); coalitions
     containing both or neither are fixed. It is an involution and preserves the game value
