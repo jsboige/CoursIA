@@ -1053,6 +1053,49 @@ theorem eq_zero_of_ne_one {G : TUGame N} (hG : SimpleGame G) (S : Finset N)
 
 end SimpleGame
 
+/-! ## Strong games
+
+A *strong* (transferable-utility) game is the dual of a proper game: a coalition and its
+complement cannot both be losing — `v S = 0 → v Sᶜ = 1`. For a simple game this says the
+complement of a losing coalition is winning. Together with `ProperGame`, `StrongGame` defines
+a *self-dual* (proper and strong) simple voting game. A weighted voting game is strong whenever
+the quota does not exceed half the total weight. -/
+def StrongGame (G : TUGame N) : Prop :=
+  ∀ ⦃S : Finset N⦄, G.v S = 0 → G.v Sᶜ = 1
+
+namespace StrongGame
+
+/-- In a strong game, the complement of a losing coalition is winning. -/
+theorem complement_wins {G : TUGame N} (hG : StrongGame G) {S : Finset N}
+    (hlose : G.v S = 0) : G.v Sᶜ = 1 :=
+  hG hlose
+
+end StrongGame
+
+/-- A weighted voting game whose quota does not exceed half the total weight is strong: if a
+    coalition's weight falls short of the quota, the complementary coalition's weight meets it
+    (the two complementary weights sum to the total, which is at least `2 * quota`), so the
+    complement wins. No sign assumption on the weights is needed — a pure consequence of the
+    quota-to-total ratio. -/
+theorem weighted_voting_game_strong (weights : N → ℝ) (quota : ℝ) (hquota : 0 < quota)
+    (hstrong : 2 * quota ≤ ∑ i, weights i) :
+    StrongGame (WeightedVotingGame weights quota hquota) := by
+  intro S hlose
+  simp only [WeightedVotingGame] at hlose ⊢
+  -- Decode `S` losing into its weight falling short of the quota: if it reached the quota the
+  -- `if` would evaluate to `1`, contradicting `hlose : … = 0`.
+  have hS : ∑ i ∈ S, weights i < quota := by
+    by_contra hge
+    push_neg at hge
+    rw [if_pos hge] at hlose
+    linarith
+  -- The complementary coalition's weight is `total − ∑_S`, hence `≥ quota`.
+  have hSc : ∑ i ∈ Sᶜ, weights i = ∑ i, weights i - ∑ i ∈ S, weights i := by
+    rw [← Finset.sum_add_sum_compl S weights]; ring
+  have hSc_ge : ∑ i ∈ Sᶜ, weights i ≥ quota := by rw [hSc]; linarith
+  -- The complement reaches the quota, so its value is `1`.
+  exact if_pos hSc_ge
+
 /-! ## Monotone games
 
 A *monotone* (transferable-utility) game is one where enlarging a coalition never
