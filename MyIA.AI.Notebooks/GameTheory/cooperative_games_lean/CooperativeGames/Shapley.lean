@@ -1015,6 +1015,44 @@ noncomputable def WeightedVotingGame (weights : N → ℝ) (quota : ℝ) (hquota
   v := fun S => if ∑ i ∈ S, weights i ≥ quota then 1 else 0
   empty_zero := by simp [hquota]
 
+/-! ## Simple games
+
+A *simple game* is a transferable-utility game whose characteristic function takes only
+the values `0` (losing coalition) and `1` (winning coalition). This is the natural setting
+for voting-power notions: `VetoPlayer`, `Dictator`, `Critical`, and the Banzhaf indices are
+only meaningful under this constraint (otherwise `v S ∈ {0, 1}` fails and the Banzhaf
+normalisation `2 ^ (|N| - 1)` no longer matches the range of `v`).
+
+The `SimpleGame G` predicate packages the `v ∈ {0, 1}` constraint that the Veto/Dictator
+axioms (architectural greenlight, cycle 73) will assume. -/
+def SimpleGame (G : TUGame N) : Prop :=
+  ∀ S : Finset N, G.v S = 0 ∨ G.v S = 1
+
+/-- A `WeightedVotingGame` is simple: its characteristic function is an `if … then 1 else 0`,
+so every coalition's value is `0` or `1`. -/
+theorem weighted_voting_game_simple (weights : N → ℝ) (quota : ℝ) (hquota : 0 < quota) :
+    SimpleGame (WeightedVotingGame weights quota hquota) := by
+  intro S
+  simp only [WeightedVotingGame]
+  by_cases h : ∑ i ∈ S, weights i ≥ quota
+  · exact Or.inr (if_pos h)
+  · exact Or.inl (if_neg h)
+
+namespace SimpleGame
+
+/-- In a simple game, a value that is not `0` must be `1`. This is the contrapositive reader
+    used by the Veto/Dictator theorems to upgrade `v S ≠ 0` into `v S = 1`. -/
+theorem eq_one_of_ne_zero {G : TUGame N} (hG : SimpleGame G) (S : Finset N)
+    (hne : G.v S ≠ 0) : G.v S = 1 :=
+  (hG S).resolve_left hne
+
+/-- In a simple game, a value that not `1` must be `0`. Symmetric reader. -/
+theorem eq_zero_of_ne_one {G : TUGame N} (hG : SimpleGame G) (S : Finset N)
+    (hne : G.v S ≠ 1) : G.v S = 0 :=
+  (hG S).resolve_right hne
+
+end SimpleGame
+
 /-- Player i is critical in coalition S if removing them causes S to lose -/
 def Critical (G : TUGame N) (i : N) (S : Finset N) : Prop :=
   i ∈ S ∧ G.v S = 1 ∧ G.v (S.erase i) = 0
