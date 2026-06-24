@@ -1,8 +1,10 @@
-"""Qwen3-TTS client for the prosody lab (gateway port 8196).
+"""Qwen3-TTS client for the prosody lab (port 8196).
 
-Wraps the self-hosted Qwen3-TTS service exposed by the multi-model TTS
-gateway. The gateway forwards ``/qwen/v1/audio/speech`` to a vLLM-Omni
-server running ``Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign``.
+Wraps the self-hosted Qwen3-TTS service. Port 8196 (container ``tts-gateway``)
+is the vLLM-Omni server itself, serving ``Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign``
+directly on OpenAI-compatible routes — the audio endpoint is ``/v1/audio/speech``
+(verified live: ``GET /v1/models`` returns the VoiceDesign model, no ``/qwen/``
+path prefix; an earlier prefix assumption returned 404).
 
 Three task types are supported by the model (verified against the live
 container's ``vllm_omni.entrypoints.openai.protocol.audio`` schema):
@@ -44,7 +46,7 @@ def _genai_env() -> Path:
 _GENAI_ENV = _genai_env()
 load_dotenv(_GENAI_ENV)
 
-# Gateway base; /qwen/ prefix is stripped by the gateway before forwarding.
+# vLLM-Omni base serving Qwen3-TTS-VoiceDesign directly (route /v1/audio/speech).
 QWEN_GATEWAY_URL: str = os.getenv("QWEN_GATEWAY_URL", "http://localhost:8196")
 QWEN_MODEL: str = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
 
@@ -239,7 +241,7 @@ def qwen_tts_clone(
 def _post_speech(payload: dict, timeout: int) -> bytes | None:
     try:
         resp = requests.post(
-            f"{QWEN_GATEWAY_URL}/qwen/v1/audio/speech",
+            f"{QWEN_GATEWAY_URL}/v1/audio/speech",
             json=payload,
             headers=_headers(),
             timeout=timeout,
