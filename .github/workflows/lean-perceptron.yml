@@ -1,0 +1,38 @@
+name: Lean CI (perceptron_lean)
+
+# CI for perceptron_lean (ML/perceptron_lean) — convergence theorem of the
+# Perceptron (Novikoff, 1962): linearly-separable data of margin γ and radius R
+# ⟹ at most (R/γ)² updates. First Lean lake of the ML series (roadmap #4038).
+# The bound `novikoff_mistake_bound` is proved fully 0-sorry via alignment growth
+# (Lemme A) + norm growth (Lemme B) + Cauchy–Schwarz.
+#
+# sorry-filter-mode=standalone-tactic, baseline=0: the library is fully sorry-free;
+# this guards that NO new standalone `sorry` tactic is introduced (never
+# false-positives on prose mentions of "0-sorry"/"sans sorry"; catches any NEW
+# standalone sorry). All milestones (Novikoff bound, both growth lemmas) are proved.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/ML/perceptron_lean/**.lean'
+      - 'MyIA.AI.Notebooks/ML/perceptron_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/ML/perceptron_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/ML/perceptron_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/ML/perceptron_lean/**.lean'
+      - 'MyIA.AI.Notebooks/ML/perceptron_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/ML/perceptron_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/ML/perceptron_lean/lean-toolchain'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/ML/perceptron_lean
+      display-name: perceptron_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: standalone-tactic
