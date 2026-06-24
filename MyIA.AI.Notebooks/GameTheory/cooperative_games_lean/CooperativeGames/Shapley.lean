@@ -1187,6 +1187,19 @@ theorem dictator_banzhaf_pos (G : TUGame N) (i : N) (h : Dictator G i) :
   simp only [BanzhafRaw]
   exact Finset.card_pos.mpr ⟨{i}, Finset.mem_filter.2 ⟨Finset.mem_univ _, hcrit⟩⟩
 
+/-- A veto player makes every coalition it does **not** belong to losing.
+
+    The contrapositive of the veto property: `VetoPlayer G i` forces `i ∈ S` for every winning
+    `S`, so `i ∉ S` rules out `v S = 1`; combined with `SimpleGame` (which forces `v S ∈ {0, 1}`)
+    this leaves `v S = 0`. The losing-coalition companion of `veto_critical_of_winning`
+    (where that result shows a veto player is critical in every *winning* coalition, this one
+    shows every coalition *without* the veto player is losing). -/
+theorem veto_losing_without {G : TUGame N} (hG : SimpleGame G) {i : N}
+    (hv : VetoPlayer G i) {S : Finset N} (hni : i ∉ S) : G.v S = 0 := by
+  apply SimpleGame.eq_zero_of_ne_one hG S
+  intro hone
+  exact absurd (hv S hone) hni
+
 /-- A veto player is critical in the grand coalition, provided the grand coalition wins.
 
     `VetoPlayer G i` forces `i ∈ S` for every winning `S`. Applied to `S = univ.erase i`, if
