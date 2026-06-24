@@ -305,6 +305,7 @@ Le titre annonce l'analyse d'arguments. Mais le geste que cette série enseigne 
 | Référence | Couverture |
 |-----------|------------|
 | Dung, "On the Acceptability of Arguments and its Fundamental Role in Nonmonotonic Reasoning" (1995) | Argumentation abstraite, sémantiques |
+| Baroni, Caminada & Giacomin, "An Introduction to Argumentation Semantics" (2011) | Sémantiques preferred/stable/complete, étiquetages |
 | Modgil & Prakken, "The ASPIC+ Framework for Structured Argumentation" (2014) | Argumentation structurée |
 | Alchourron, Gardenfors & Makinson, "On the Logic of Theory Change" (1985) | Révision de croyances AGM |
 | Besnard & Hunter, *Elements of Argumentation* (2008) | Cadre général argumentation |
