@@ -1326,3 +1326,12 @@ theorem banzhaf_index_dummy_zero (G : TUGame N) (i : N)
 theorem banzhaf_index_eq_zero_iff (G : TUGame N) (i : N) :
     BanzhafIndex G i = 0 ↔ BanzhafRaw G i = 0 := by
   simp [BanzhafIndex]
+
+/-- The normalized Banzhaf index is positive exactly when the raw Banzhaf index is
+    positive: the `>0` dual of `banzhaf_index_eq_zero_iff`. Together the two iff
+    theorems give a faithful characterization — the normalizer `2 ^ (card N - 1)` is
+    strictly positive, so positivity and zerohood are both preserved by the division.
+    BG-prover target (#1453, cycle 67, item 5); a positivity iff. -/
+theorem banzhaf_index_pos_iff (G : TUGame N) (i : N) :
+    0 < BanzhafIndex G i ↔ 0 < BanzhafRaw G i := by
+  sorry
