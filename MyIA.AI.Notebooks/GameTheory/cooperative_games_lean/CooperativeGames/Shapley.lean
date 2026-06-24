@@ -1072,6 +1072,22 @@ theorem le_of_subset {G : TUGame N} (hG : MonotoneGame G) {S T : Finset N}
     (h : S ⊆ T) : G.v S ≤ G.v T :=
   hG h
 
+/-- The winning coalitions of a monotone simple game form an up-set: enlarging a winning
+    coalition keeps it winning.
+
+    Monotonicity gives `v S ≤ v T` for `S ⊆ T`; since `v S = 1` and `SimpleGame` forces
+    `v T ∈ {0, 1}`, this rules out `v T = 0`, leaving `v T = 1`. This is the defining
+    property of a *proper* simple voting game and the bridge from `MonotoneGame` to the
+    veto theory. -/
+theorem winning_upward_closed {G : TUGame N} (hG : MonotoneGame G) (hG' : SimpleGame G)
+    {S T : Finset N} (hST : S ⊆ T) (hwin : G.v S = 1) : G.v T = 1 := by
+  -- Monotonicity: `v S ≤ v T`, and `v S = 1` so `1 ≤ v T`; with `v T ∈ {0,1}` this
+  -- rules out `v T = 0`, hence `v T = 1`.
+  apply SimpleGame.eq_one_of_ne_zero hG' T
+  intro hzero
+  have : (1 : ℝ) ≤ G.v T := hwin ▸ hG hST
+  linarith
+
 end MonotoneGame
 
 /-- A weighted voting game with non-negative weights is monotone: enlarging a coalition
