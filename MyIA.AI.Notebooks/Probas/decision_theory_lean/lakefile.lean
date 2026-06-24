@@ -10,3 +10,7 @@ require mathlib from git
 @[default_target]
 lean_lib Gittins where
   roots := #[`Gittins]
+
+@[default_target]
+lean_lib Utility where
+  roots := #[`Utility]
