@@ -11,7 +11,7 @@ maturity: PRODUCTION=44
 
 Le monde réel est incertain. Un diagnostic medical n'est jamais sur a 100%, un classement sportif depend de performances intrinsequement variables, et les données que nous collectons sont toujours bruitees ou incompletes. La programmation probabiliste offre un cadre rigoureux pour modeliser cette incertitude : plutôt que de calculer une seule reponse, on obtient une **distribution de probabilités** qui quantifie notre confiance dans chaque resultat possible.
 
-Cette série couvre trois stack complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inference exacte par message passing, **PyMC** (Python) pour l'echantillonnage MCMC moderne, et des **applications standalone** (RSA, HMM trading). Les 21 notebooks Infer.NET couvrent les fondements mathematiques (distributions, graphs de facteurs), les modèles classiques (reseaux bayesiens, TrueSkill, LDA, HMM), puis la théorie de la décision bayésienne — jusqu'a un compagnon **Lean 4** (Infer-20b, adosse au projet Lake `gittins_lean`) qui demontre formellement les identites d'escompte de l'indice de Gittins. Les 20 notebooks PyMC reprennent l'intégralité des modèles Infer.NET en Python avec l'echantillonnage NUTS, offrant un pont naturel vers l'ecosysteme data science : fondations 1-3, modèles classiques 4-13, et théorie de la décision 14-20.
+Cette série couvre trois stack complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inference exacte par message passing, **PyMC** (Python) pour l'echantillonnage MCMC moderne, et des **applications standalone** (RSA). Les 21 notebooks Infer.NET couvrent les fondements mathematiques (distributions, graphs de facteurs), les modèles classiques (reseaux bayesiens, TrueSkill, LDA, HMM), puis la théorie de la décision bayésienne — jusqu'a un compagnon **Lean 4** (Infer-20b, adosse au projet Lake `gittins_lean`) qui demontre formellement les identites d'escompte de l'indice de Gittins. Les 20 notebooks PyMC reprennent l'intégralité des modèles Infer.NET en Python avec l'echantillonnage NUTS, offrant un pont naturel vers l'ecosysteme data science : fondations 1-3, modèles classiques 4-13, et théorie de la décision 14-20.
 
 ## Pourquoi cette série
 
@@ -103,7 +103,7 @@ Pour les étudiants en recherche operationnelle ou finance :
 
 #### Parcours rapide Python (standalone, ~2h)
 
-Si vous préférez Python au C#, commencez par Infer-101.ipynb (introduction standalone avec modèles Two Coins et Cyclist) puis Pyro_RSA_Hyperbole.ipynb (application a la linguistique pragmatique avec le framework RSA). Le notebook PyMC-HMM-Trading-Alpha.ipynb applique les HMM gaussiens a la génération de signaux de trading.
+Si vous préférez Python au C#, commencez par Infer-101.ipynb (introduction standalone avec modèles Two Coins et Cyclist) puis Pyro_RSA_Hyperbole.ipynb (application a la linguistique pragmatique avec le framework RSA).
 
 #### Parcours PyMC complet (20 notebooks, ~14h)
 
@@ -141,7 +141,6 @@ Les notebooks PyMC dans `PyMC/` reprennent l'intégralité des 20 modèles Infer
 Probas/
 ├── Infer-101.ipynb              # Introduction Python/C# (standalone)
 ├── Pyro_RSA_Hyperbole.ipynb     # Pragmatique linguistique (Python)
-├── PyMC-HMM-Trading-Alpha.ipynb # HMM gaussien pour trading (Python)
 ├── PyMC/                # Port PyMC complet des modeles Infer.NET (20 notebooks)
 │   ├── PyMC-1-Setup.ipynb ... PyMC-20-Decision-Sequential.ipynb
 │   └── (port en cours d'enrichissement)
@@ -284,13 +283,12 @@ Port Python complet des modèles Infer.NET, utilisant l'echantillonnage MCMC (NU
 | 19 | [PyMC-19-Decision-Expert-Systems](PyMC/PyMC-19-Decision-Expert-Systems.ipynb) | Systemes experts, Minimax, Minimax Regret, decisions robustes |
 | 20 | [PyMC-20-Decision-Sequential](PyMC/PyMC-20-Decision-Sequential.ipynb) | MDPs, itération de valeur/politique, bandits, POMDPs |
 
-## Applications standalone (3 notebooks)
+## Applications standalone (2 notebooks)
 
 | Notebook | Kernel | Contenu | Durée |
 | -------- | ------- | ------- | ----- |
 | [Infer-101](Infer-101.ipynb) | .NET (C#) + Python | Introduction Infer.NET, Two Coins, Cyclist | 1h |
 | [Pyro_RSA_Hyperbole](Pyro_RSA_Hyperbole.ipynb) | Python 3 | Rational Speech Acts, hyperboles | 30 min |
-| [PyMC-HMM-Trading-Alpha](PyMC-HMM-Trading-Alpha.ipynb) | Python 3 | HMM gaussien pour signaux de trading | 45 min |
 
 ## Prerequisites
 
@@ -364,7 +362,7 @@ Derriere chaque modèle de la série se cache un systeme réel déjà en product
 - **Item Response Theory** (notebook 5) est le moteur des tests adaptatifs comme le GMAT ou le GRE : la difficulte de chaque question est calibree probabilistiquement, et le test s'ajuste en temps réel au niveau estime du candidat.
 - **Les reseaux bayesiens** (notebooks 4, 7) fondent les systemes d'aide au diagnostic medical (de QMR-DT aux outils modernes) et le filtrage anti-spam : ils propagent l'incertitude entre symptomes, causes et observations.
 - **LDA / topic models** (notebook 9) structurent automatiquement de grands corpus — decouverte de thematiques dans des archives de presse, cartographie de la litterature scientifique, analyse de tickets support.
-- **Les HMM** (notebook 11, et `PyMC-HMM-Trading-Alpha`) detectent les regimes caches : phases de marche en finance, reconnaissance de la parole, segmentation de sequences biologiques.
+- **Les HMM** (notebook 11) detectent les regimes caches : phases de marche en finance, reconnaissance de la parole, segmentation de sequences biologiques.
 - **Les systemes de recommandation bayesiens** (notebook 12) sont la version « avec barre d'incertitude » du collaborative filtering de Netflix ou Amazon — utile pour decider quand explorer un nouvel item plutôt que d'exploiter une preference connue.
 - **Le crowdsourcing** (notebook 10) modelise la fiabilite de chaque annotateur (Mechanical Turk, labellisation de datasets) pour reconstruire la verite terrain malgre des votes bruites.
 - **La théorie de la décision et les MDPs** (notebooks 14-20) relient la série au controle sequentiel : gestion de stocks, maintenance predictive, et passerelle directe vers le [reinforcement learning](../RL/).

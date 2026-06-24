@@ -4,7 +4,7 @@ Pipeline d'entraînement complet pour modèles ML sur données financières OHLC
 
 ## Classification type (c) — standalone
 
-Les 4 notebooks de ce répertoire sont des **recherches indépendantes (c)** — analyses utilisant des données locales (yfinance, sklearn, PyTorch), sans dépendance QuantConnect Cloud.
+Les notebooks de ce répertoire sont des **recherches indépendantes (c)** — analyses utilisant des données locales (yfinance, sklearn, PyTorch), sans dépendance QuantConnect Cloud.
 
 | Notebook | Sujet | Type |
 |----------|-------|------|
@@ -12,6 +12,7 @@ Les 4 notebooks de ce répertoire sont des **recherches indépendantes (c)** —
 | `m3_har_asymmetric_semivariance.ipynb` | HAR semi-variance asymétrique | (c) |
 | `research_what_dl_can_predict.ipynb` | Ce que le DL peut prédire en finance | (c) |
 | `research_l4_decision_transformer.ipynb` | Évaluation Decision Transformer | (c) |
+| `hmm_alpha_research.ipynb` | HMM gaussien pour alpha trading (Broad Ch6 Ex4) | (c) |
 
 Classification complète : [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md)
 
