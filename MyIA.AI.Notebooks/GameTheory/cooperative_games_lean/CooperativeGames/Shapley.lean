@@ -1325,4 +1325,11 @@ theorem banzhaf_index_eq_zero_iff (G : TUGame N) (i : N) :
     BG-prover target (#1453, cycle 67, item 5); a positivity iff. -/
 theorem banzhaf_index_pos_iff (G : TUGame N) (i : N) :
     0 < BanzhafIndex G i ↔ 0 < BanzhafRaw G i := by
-  sorry
+  simp only [BanzhafIndex]
+  have hden : 0 < (2 : ℝ) ^ (Fintype.card N - 1) := pow_pos (by norm_num) _
+  constructor
+  · intro h
+    have hnumreal : 0 < (BanzhafRaw G i : ℝ) := (div_pos_iff_of_pos_right hden).mp h
+    exact_mod_cast hnumreal
+  · intro h
+    exact div_pos (by exact_mod_cast h) hden
