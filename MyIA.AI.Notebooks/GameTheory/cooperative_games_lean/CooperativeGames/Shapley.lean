@@ -1322,6 +1322,22 @@ theorem veto_critical_of_winning {G : TUGame N} (hG : SimpleGame G) {i : N}
     have hni : i ∉ S.erase i := by simp [Finset.mem_erase]
     exact hni (hv (S.erase i) heq)
 
+/-- A player is a veto player if and only if it is critical in every winning coalition.
+
+    The reciprocal of `veto_critical_of_winning`: being a veto player is *equivalent* to being
+    critical in every winning coalition. The forward direction is `veto_critical_of_winning` (a
+    veto player belongs to every winning coalition and its removal makes it losing); the reverse
+    direction is immediate because criticality `Critical G i S` includes the membership `i ∈ S`,
+    so being critical in every winning coalition recovers `VetoPlayer G i` (`∀ winning S, i ∈ S`).
+    The characterization is meaningful under non-degeneracy (existence of at least one winning
+    coalition); in the fully degenerate case (no winning coalition) both sides hold vacuously. -/
+theorem veto_iff_critical_of_winning {G : TUGame N} (hG : SimpleGame G) (i : N) :
+    VetoPlayer G i ↔ ∀ S : Finset N, G.v S = 1 → Critical G i S := by
+  constructor
+  · exact fun hv S hS => veto_critical_of_winning hG hv hS
+  · intro h S hS
+    exact (h S hS).1
+
 /-- A veto player has a strictly positive raw Banzhaf index when the grand coalition wins.
 
     The veto pendant of `dummy_banzhaf_raw_zero` (a dummy has `BanzhafRaw = 0`): a veto player
