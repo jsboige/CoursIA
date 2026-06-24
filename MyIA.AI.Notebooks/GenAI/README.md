@@ -4,7 +4,7 @@
 series: GenAI
 pedagogical_count: 129
 breakdown: Audio=30, SemanticKernel=20, Texte=18, Image=17, Video=17, 00-GenAI-Environment=6, PostTraining=6, FineTuning=5, Vibe-Coding=5, CaseStudies=4, root=1
-maturity: PRODUCTION=90, BETA=29, ALPHA=5, TEMPLATE=3, DRAFT=2
+maturity: PRODUCTION=89, BETA=30, ALPHA=5, TEMPLATE=3, DRAFT=2
 -->
 
 Ce parcours vous forme à la maîtrise de l'IA générative dans toute sa diversité : générer des images, synthétiser la voix, composer de la musique, produire des vidéos, orchestrer des agents autonomes, et déployer des applications en production. Chaque modalité suit une progression en quatre niveaux, du premier pas avec une API jusqu'aux pipelines multi-modèles de production. Les décomptes par sous-domaine et la maturité de chaque notebook se lisent dans le marqueur `CATALOG-STATUS` en tête de ce fichier.
