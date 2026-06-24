@@ -1204,6 +1204,25 @@ theorem veto_critical_in_grand {G : TUGame N} (hG : SimpleGame G) {i : N}
     have hni : i ∉ Finset.univ.erase i := by simp [Finset.mem_erase]
     exact hni (hv (Finset.univ.erase i) heq)
 
+/-- A veto player is critical in *every* winning coalition.
+
+    The general form of which `veto_critical_in_grand` is the grand-coalition instance:
+    specializing `S` to `Finset.univ` recovers it. `VetoPlayer G i` forces `i ∈ S` for every
+    winning `S`. To show `i` is critical in a winning `S` we need `v (S.erase i) = 0`: if
+    `v (S.erase i) = 1` then the veto property would force `i ∈ S.erase i`, contradicting
+    `i ∉ S.erase i`; hence `v (S.erase i) ≠ 1`, and `SimpleGame` forces `v (S.erase i) = 0`.
+    Together with `v S = 1` (`hwin`) and `i ∈ S`, this makes `S` a critical coalition for `i`. -/
+theorem veto_critical_of_winning {G : TUGame N} (hG : SimpleGame G) {i : N}
+    (hv : VetoPlayer G i) {S : Finset N} (hwin : G.v S = 1) :
+    Critical G i S := by
+  refine ⟨?_, ?_, ?_⟩
+  · exact hv S hwin
+  · exact hwin
+  · apply SimpleGame.eq_zero_of_ne_one hG (S.erase i)
+    intro heq
+    have hni : i ∉ S.erase i := by simp [Finset.mem_erase]
+    exact hni (hv (S.erase i) heq)
+
 /-- A veto player has a strictly positive raw Banzhaf index when the grand coalition wins.
 
     The veto pendant of `dummy_banzhaf_raw_zero` (a dummy has `BanzhafRaw = 0`): a veto player
