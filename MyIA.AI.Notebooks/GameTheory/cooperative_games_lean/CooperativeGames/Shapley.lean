@@ -1053,6 +1053,43 @@ theorem eq_zero_of_ne_one {G : TUGame N} (hG : SimpleGame G) (S : Finset N)
 
 end SimpleGame
 
+/-! ## Monotone games
+
+A *monotone* (transferable-utility) game is one where enlarging a coalition never
+decreases its value: `S ⊆ T → v S ≤ v T`. For a simple game this specialises to the
+up-set property of the winning coalitions — `S` winning and `S ⊆ T` implies `T` winning
+— the defining feature of a *proper* simple voting game.
+
+Together with `SimpleGame`, `MonotoneGame` packages the hypotheses the Veto/Dictator
+power-index theorems assume (architectural greenlight, ai-01 cycle 75→76). -/
+def MonotoneGame (G : TUGame N) : Prop :=
+  ∀ ⦃S T : Finset N⦄, S ⊆ T → G.v S ≤ G.v T
+
+namespace MonotoneGame
+
+/-- In a monotone game, a larger coalition has at least as large a value. -/
+theorem le_of_subset {G : TUGame N} (hG : MonotoneGame G) {S T : Finset N}
+    (h : S ⊆ T) : G.v S ≤ G.v T :=
+  hG h
+
+end MonotoneGame
+
+/-- A weighted voting game with non-negative weights is monotone: enlarging a coalition
+    adds non-negative weight, so the weight sum can only increase, hence `v` (an
+    `if sum ≥ quota then 1 else 0`) cannot decrease. -/
+theorem weighted_voting_game_monotone (weights : N → ℝ) (quota : ℝ) (hquota : 0 < quota)
+    (hw : ∀ i, 0 ≤ weights i) :
+    MonotoneGame (WeightedVotingGame weights quota hquota) := by
+  intro S T hST
+  have hsum : ∑ i ∈ S, weights i ≤ ∑ i ∈ T, weights i :=
+    Finset.sum_le_sum_of_subset_of_nonneg hST (fun i _ _ => hw i)
+  simp only [WeightedVotingGame]
+  split_ifs with h₁ h₂
+  · exact le_refl _                                   -- both reach quota: 1 ≤ 1
+  · exact absurd (le_trans h₁ hsum) h₂               -- S reaches, T does not: impossible
+  · exact zero_le_one                                 -- S does not, T does: 0 ≤ 1
+  · exact le_refl _                                   -- neither: 0 ≤ 0
+
 /-- Player i is critical in coalition S if removing them causes S to lose -/
 def Critical (G : TUGame N) (i : N) (S : Finset N) : Prop :=
   i ∈ S ∧ G.v S = 1 ∧ G.v (S.erase i) = 0
