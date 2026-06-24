@@ -3,7 +3,7 @@
 Lake **à la racine de la série `Probas`**, formalisant des résultats canoniques de
 théorie de la décision — visible des deux pistes de la série (Infer.NET / PyMC).
 
-Deux modules livrés :
+Trois modules livrés :
 
 - **Gittins** : le problème du **bandit manchot multi-bras** (multi-armed bandit) et
   l'**indice de Gittins** (Gittins 1979, Weber 1992) — la politique optimale pour le
@@ -12,15 +12,22 @@ Deux modules livrés :
   énoncé mais intraitable** dans le Mathlib actuel (pas de formalisation
   MDP/Bellman), maintenu en `sorry`.
 - **Utility** : la **représentation d'utilité espérée** de **von Neumann–Morgenstern**
-  (PR courante, `See #4049`). Le module formalise les **quatre axiomes vNM**
-  (complétude, transitivité, indépendance, continuité/Archimède) sur les loteries,
-  prouve **sans aucun `sorry`** la **direction saine** du théorème (existence d'une
-  représentation ⟹ rationalité, i.e. les quatre axiomes) et la **stabilité affine**
-  (cardinalité : l'utilité n'est déterminée qu'à transformation affine positive
-  près). La **direction d'existence** (rationalité ⟹ représentation, Herstein–Milnor
-  1953) est documentée comme **jalon ouvert**.
+  (`See #4049`). Le module formalise les **quatre axiomes vNM** (complétude,
+  transitivité, indépendance, continuité/Archimède) sur les loteries, prouve **sans
+  aucun `sorry`** la **direction saine** du théorème (existence d'une représentation
+  ⟹ rationalité, i.e. les quatre axiomes) et la **stabilité affine** (cardinalité :
+  l'utilité n'est déterminée qu'à transformation affine positive près). La **direction
+  d'existence** (rationalité ⟹ représentation, Herstein–Milnor 1953) est documentée
+  comme **jalon ouvert**.
+- **Coherence** : la **cohérence de de Finetti / Dutch Book** (`See #4050`). Le module
+  prouve **sans aucun `sorry`** la **direction constructive** du théorème de cohérence
+  (cas fini) : des prix de pari violant l'inclusion–exclusion exposent l'agent à un
+  *Dutch Book* explicite (livret de paris à perte sûre, mises concrètes `(1,1,−1,−1)`
+  ou l'inverse), via l'identité d'inclusion–exclusion des indicatrices. Sa contraposée
+  donne « cohérence ⟹ additivité ». La **réciproque** (additivité + normalisation ⟹
+  cohérence, i.e. la fonction de prix est une probabilité) nécessite la séparation
+  d'hyperplans / dualité LP et est documentée comme **jalon ouvert**.
 
-Modules prévus (roadmap Lean #4038) : cohérence **Dutch Book / de Finetti** (#4050).
 Notebook compagnon Lean :
 [`Infer/Infer-20b-Lean-Gittins.ipynb`](../Infer/Infer-20b-Lean-Gittins.ipynb).
 
@@ -29,11 +36,13 @@ Notebook compagnon Lean :
 - **Toolchain** : `leanprover/lean4:v4.30.0-rc2`
 - **Sorry** : **5** — tous dans `Gittins/GittinsTheorem.lean` (le théorème
   d'optimalité + propriétés de l'indice). `Gittins/Discount.lean` = **0 sorry**
-  (entièrement prouvé), `Gittins/Basic.lean` = 0. Le module **`Utility` entier =
-  0 sorry** (direction saine vNM + stabilité affine, entièrement prouvé).
-- **Build** : `lake build Gittins Utility` (dépend de Mathlib4)
+  (entièrement prouvé), `Gittins/Basic.lean` = 0. Les modules **`Utility` et
+  `Coherence` entiers = 0 sorry** (entièrement prouvés, jalon ouvert documenté non
+  `sorry`-backed).
+- **Build** : `lake build Gittins Utility Coherence` (dépend de Mathlib4)
 - **Dépendances** : Mathlib4 (`v4.30.0-rc2`) — analyse réelle pour les lemmes
-  d'actualisation, structure ordonnée et affine de `ℝ` pour vNM
+  d'actualisation, structure ordonnée et affine de `ℝ` pour vNM, théorie des `Finset`
+  / inclusion–exclusion pour la cohérence de de Finetti
 
 ## Ce qui est formalisé
 
@@ -110,6 +119,51 @@ notebooks d'inférence bayésienne de la série `Probas` :
   explique pourquoi seules les **différences** d'utilité (pas les niveaux) sont
   identifiables à partir des données de choix.
 
+### Cohérence de de Finetti / Dutch Book
+
+Le module **`Coherence`** formalise l'argument du **Dutch Book** de de Finetti (1937) :
+la **fondation conceptuelle des probabilités**. Un agent attribue un prix unitaire
+`q A` (en €) à chaque événement `A` — un ticket qui paie 1 € si `A` se réalise — et
+achète ET vend au même prix (pas de spread). Le théorème dit que des prix **cohérents**
+(sans pari à perte sûre) coïncident avec les **mesures de probabilité** (additives,
+normalisées). La **cohérence force donc les axiomes de Kolmogorov** : pourquoi
+`P(A∪B) = P(A) + P(B) − P(A∩B)` plutôt qu'une fonction de croyance arbitraire ? Parce
+que sinon, un arbitragiste construit un livret de paris à **perte sûre**.
+
+La formalisation livre **sans aucun `sorry`** la **direction constructive** et sa
+contraposée :
+
+- **Prouvé** (`DutchBook.lean`) :
+  - `ind_inclusion_exclusion` — la clé de voûte : l'identité d'inclusion–exclusion des
+    indicatrices `𝟙_A + 𝟙_B − 𝟙_{A∩B} − 𝟙_{A∪B} = 0` en tout état (disjonction sur
+    `(ω ∈ A, ω ∈ B)`).
+  - `non_additive_implies_dutch_book` — **direction constructive** : si les prix
+    violent l'inclusion–exclusion (`δ := q(A∪B)+q(A∩B)−q A−q B ≠ 0`), un **Dutch Book
+    existe avec mises explicites**. L'identité des indicatrices rend le gain du livret
+    `(1,1,−1,−1)` exactement égal à `δ` en tout état ; on choisit le signe des mises
+    pour garantir une perte stricte.
+  - `coherent_on_implies_additive` — **contraposée** : si aucun Dutch Book n'existe
+    sur `(A, B, A∩B, A∪B)`, alors `q` satisfait l'inclusion–exclusion.
+- **Énoncé, jalon ouvert** (réciproque) : la direction « additivité + normalisation
+  ⟹ cohérence » (le `coherent_iff_probability` complet, qui fait de `q` une mesure de
+  probabilité) nécessite la **séparation d'hyperplans / dualité LP** en dimension
+  finie. Elle est laissée comme **jalon naturel** et **délibérément non `sorry`-backed**
+  — la bibliothèque reste entièrement `sorry`-free. Cette structure (une direction
+  prouvée + la réciproque ouverte documentée) est cohérente avec le module `Utility`
+  du même lake (direction saine prouvée, existence Herstein–Milnor ouverte).
+
+Les primitives (`Basic.lean`) : `Event` (= `Finset Ω`), `Price` (= `Event Ω → ℝ`),
+et l'indicatrice `ind` comme réel.
+
+#### Pourquoi des probabilités ? — fondement épistémique
+
+Cette formalisation répond à la question fondatrice de toute la série `Probas` :
+**pourquoi des probabilités (additives, normalisées) ?** Les notebooks d'inférence
+bayésienne (Infer-14, PyMC-14) manipulent des distributions postérieures comme des
+probabilités au sens de Kolmogorov ; le théorème de cohérence justifie ce cadre
+comme **le seul exempt d'arbitrage** — un fondement non utilitaire (contrairement à
+vNM, qui porte sur les *préférences* sous risque), mais purement *épistémique*.
+
 ## Modules
 
 | Fichier | Lignes | sorry | Contenu |
@@ -122,6 +176,9 @@ notebooks d'inférence bayésienne de la série `Probas` :
 | `Utility/Axioms.lean` | 65 | 0 | Les **quatre axiomes vNM** — `IsComplete`, `IsTransitive`, `IsIndependent`, `IsContinuous` (solvabilité des mélanges), `IsRational`, plus `StrictPref`. |
 | `Utility/Representation.lean` | 181 | 0 | **Direction saine prouvée** (`rep_complete`, `rep_transitive`, `rep_independent`, `rep_continuous`, `expected_utility_rep_is_rational`) + **stabilité affine** (`affine_rep_is_rep`). Direction d'existence documentée comme jalon ouvert. |
 | `Utility.lean` | ~30 | 0 | Imports parapluie + doc de statut |
+| `Coherence/Basic.lean` | 52 | 0 | Primitives de Finetti — `Event` (= `Finset Ω`), `Price` (= `Event Ω → ℝ`), indicatrice `ind`, et la clé de voûte `ind_inclusion_exclusion` (inclusion–exclusion des indicatrices). |
+| `Coherence/DutchBook.lean` | 101 | 0 | **Direction constructive prouvée** (`non_additive_implies_dutch_book`, mises explicites `(1,1,−1,−1)`/inverse) + contraposée `coherent_on_implies_additive`. Réciproque (dualité LP) documentée comme jalon ouvert. |
+| `Coherence.lean` | 33 | 0 | Imports parapluie + doc de statut |
 
 ## Pourquoi le théorème d'optimalité est intractable
 
@@ -143,7 +200,7 @@ son docstring) plutôt qu'affaibli silencieusement.
 
 ```bash
 # Depuis ce répertoire (WSL requis)
-lake build Gittins Utility
+lake build Gittins Utility Coherence
 # Dépend de Mathlib4 — le premier build est lourd, les builds suivants utilisent le cache
 ```
 

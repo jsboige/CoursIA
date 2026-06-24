@@ -14,3 +14,7 @@ lean_lib Gittins where
 @[default_target]
 lean_lib Utility where
   roots := #[`Utility]
+
+@[default_target]
+lean_lib Coherence where
+  roots := #[`Coherence]
