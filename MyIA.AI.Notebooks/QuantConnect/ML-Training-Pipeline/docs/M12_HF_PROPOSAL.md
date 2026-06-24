@@ -1,8 +1,8 @@
 # M12-HF — High-Frequency (Minute) Realized Volatility for HAR-RV-J
 
-**Status :** PROPOSAL (PREP+PROPOSE). **Gated** sur (a) achat données minute crypto QC Cloud (QCC) + (b) greenlight user. Aucun achat, aucun run, aucun code exécuté tant que le greenlight n'est pas posé.
+**Status :** GREENLIT (user 2026-06-24). La data minute crypto Binance/CoinAPI sur QC Cloud est en **Cloud Access gratuit** (vérifié logged-in, ai-01 Playwright), le run cloud consomme **0 QCC** — le gate « achat » est **MOOT**. Livraison en deux PR atomiques : **(b)** présent doc (rectifie le coût/gating) puis **(a)** notebook QuantBook de recherche exécuté sur QC Cloud (0 QCC, aucun `lean data download`, aucun achat).
 
-**Source de la mission :** directive ai-01 (dashboard workspace CoursIA, 2026-06-23T16:38Z) — rédiger spec + plan d'achat données minute crypto QCC + estimation coût, **sans acheter**. ai-01 escalade la décision d'achat vers le user une fois cette spec prête (signature données = user-blocker).
+**Source de la mission :** directive ai-01 (dashboard workspace CoursIA, 2026-06-23T16:38Z) — rédiger spec + plan de données minute crypto QC + estimation coût. Initialement perçue comme un achat signé (signature données = user-blocker), puis **résolue le 2026-06-24** : la data minute crypto est Cloud-gratuite (cf §4.3), le run cloud est **greenlit à 0 QCC** — plus d'achat à escalader.
 
 ---
 
@@ -64,18 +64,16 @@ Le module [`scripts/m12_har_rv_j.py`](../scripts/m12_har_rv_j.py) **utilise déj
 
 ~7 coins × 8 ans × 365 j × 1440 min/j ≈ **29.5 M barres / coin**, ~**207 M barres total**. Stockage LEAN compressé estimé ~5-15 GB.
 
-### 4.3 Coût estimé (QCC) — **à confirmer au checkout**
+### 4.3 Coût (QCC) — **Cloud Access = gratuit, run cloud = 0 QCC**
 
-- Conversion QC : **300 QCC = 3 USD** (source : [QC data pricing](https://www.quantconnect.com/data)).
-- Les datasets CoinAPI/Binance minute sont vendus au téléchargement ; le coût exact **par symbole / par histoire complète** n'est pas publié sur la page publique (derrière le pricing page).
-- **Bracket honnête** : datasets crypto minute QC historiquement de l'ordre de **~2-10 USD / symbole / histoire complète multi-années**. Pour les 7 coins : **~15-70 USD (~1.5k-7k QCC)**.
-- **Caveat G.1** : ce bracket est une estimation basée sur le barème QCC et des datasets comparables, **pas** un prix vérifié.
-- **Réalité du pricing vérifiée (G.1, 2026-06-23)** : `lean data download` n'a **pas** de flag `--dry-run` / d'aperçu de coût (seulement des credentials data-provider + des options de téléchargement) — il consomme les QCC à la confirmation. La [page pricing Binance CoinAPI](https://www.quantconnect.com/datasets/binance-crypto-price-data/pricing) est une SPA JS derrière login : un fetch statique ne retourne que le shell (« Algorithm Lab v3.0 »), **aucun prix public**. **Donc le prix ferme exact exige l'un des deux** : (a) login QC-web (Playwright sur le compte QC) pour consulter la grille tarifaire logged-in, OU (b) greenlight user pour un micro-achat mono-symbole qui révèle le coût au prompt de confirmation (`lean data download` l'affiche avant de débiter). Le bracket ~15-70 USD reste l'estimation courante en attendant le chiffre ferme.
-- Note : les coins à listing tardif (SOL/DOT/AVAX 2020, cf `CURRICULUM.md` Stage 3a) limitent la profondeur historique réelle — ne pas payer pour des années pré-listing.
+- **Vérifié logged-in (ai-01 Playwright, compte jsboige, 2026-06-24)** : la data minute crypto Binance/CoinAPI sur QC Cloud est en **Cloud Access gratuit** — une seule option de licence, dataset Cloud-Only, **PRICE Free**, pas de tier download payant. Le run cloud sur cette data consomme donc **0 QCC**.
+- Le gate « achat signé » de `ml-trading-state.md` §B est ainsi **MOOT pour le path cloud** : aucune donnée à acheter pour exécuter M12-HF sur QC Cloud (QuantBook : `qb.AddCrypto(<coin>, Resolution.Minute, Market.Binance)` + `qb.History(..., Resolution.Minute)`).
+- **Seul coût optionnel** = export local via `lean data download` (per-file QCC, **300 QCC = 3 USD**, source [QC data pricing](https://www.quantconnect.com/data)), affiché au prompt CLI **avant** débit. **Non requis** pour le run cloud (livrable a) ; utile seulement pour une exécution locale hors-cloud. Vérifié G.1 : `lean data download` n'a pas de flag `--dry-run` et consomme les QCC à la confirmation.
+- Note : les coins à listing tardif (SOL/DOT/AVAX 2020, cf `CURRICULUM.md` Stage 3a) limitent la profondeur historique réelle — le run cloud couvre la période disponible par coin **sans surcoût**.
 
-### 4.4 Décision requise (user-blocker)
+### 4.4 Décision (résolue)
 
-L'achat est une **décision user** qu'**ai-01 escalade** (signature données = user-blocker, cf directive ai-01). Tant que le greenlight n'est pas posé : **0 QCC dépensé, 0 `lean data download`, 0 run**. Le présent doc sert de base à cette décision.
+**Feu vert user posé 2026-06-24** : le run cloud M12-HF est autorisé à **0 QCC**, plus d'achat à escalader — la data minute crypto étant Cloud-gratuite (cf §4.3), la signature « achat données » n'a plus d'objet. La question coût étant tranchée, la livraison enchaîne **(b)** présent doc, puis **(a)** notebook QuantBook de recherche exécuté sur QC Cloud (0 QCC, aucun `lean data download`, aucun achat).
 
 ### 4.5 Convention de sauvegarde + vérification pré-achat (HARD, mandat user 2026-06-23)
 
@@ -90,7 +88,7 @@ L'achat est une **décision user** qu'**ai-01 escalade** (signature données = u
 | Période **2020-06 → 2025** | **Absente** pour tous les coins → à acheter (c'est le segment le plus décisif : bear 2022 + momentum 2024-25) |
 | Format | Le bundle GDrive est **CSV générique** (pas LEAN QC) → conversion vers LEAN requise avant ingestion |
 
-**Conséquence sur le scope d'achat.** Le bracket ~15-70 USD (§4.3) est une **borne supérieure** : la fraction déjà couverte gratuitement (4 coins × 2018-2020) réduit le périmètre payant. Le script `minute_loader.py` du §5 devra **fusionner deux sources** : le CSV GDrive converti (2018-2020 × 4 coins) **et** le LEAN QC acheté (2020-2025 × 7 coins). Le prix ferme ne peut être isolé qu'après résolution du point §4.3 (login QC-web).
+**Conséquence sur le scope d'achat (résolue).** Depuis la levée du gate (§4.3, Cloud Access gratuit), il n'y a **plus de périmètre payant** pour le run cloud : la data minute crypto Binance est accessible gratuitement via QuantBook (`qb.AddCrypto(..., Resolution.Minute, Market.Binance)`), couvrant les 7 coins sur la période disponible. Le bundle GDrive ci-dessus (4 coins × 2013-2020) reste un **export local gratuit** réutilisable pour une exécution hors-cloud, mais le livrable (a) s'exécute sur QC Cloud sans l'utiliser. Le `minute_loader.py` du §5 (fusion CSV GDrive + LEAN) n'est donc requis **que** pour un path d'exécution locale optionnel, pas pour le run cloud greenlit.
 
 ---
 
@@ -144,10 +142,10 @@ Toutes les pistes GARCH-family / regime-switching / bivariate / multi-asset Kell
 | Phase B #83 (`HAR-RV-J-Kelly` prod) | **DONE** → gate §B franchi |
 | Direction-ML épuisé (0/14 BEATS) | **confirmé** → M12-HF est le bon axe (vol, pas direction) |
 | Training G.1 HOLD | **maintenu** (M12-HF = CPU, pas de GPU) |
-| **Achat données minute QCC** | **GATED user greenlight** (ai-01 escalade) |
-| **Run M12-HF** | **après achat + greenlight** |
+| **Achat données minute QCC** | **MOOT** — Cloud Access gratuit (cf §4.3), run cloud = 0 QCC |
+| **Run M12-HF** | **GREENLIT (user 2026-06-24)** — 0 QCC sur QC Cloud |
 
-**Aucune action tant que le greenlight user n'est pas posé.** Ce document est la base de la décision.
+Le run cloud est **greenlit à 0 QCC**. Livraison en cours : **(b)** présent doc, puis **(a)** notebook QuantBook de recherche exécuté sur QC Cloud.
 
 ---
 
