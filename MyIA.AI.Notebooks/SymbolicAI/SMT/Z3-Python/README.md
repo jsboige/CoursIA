@@ -130,6 +130,17 @@ Le pattern « décrire les contraintes, laisser le solveur résoudre » s'appliq
 - [Série Z3 C# (Z3.Linq)](../Z3/README.md) — série sœur en .NET 9
 - [Série Sudoku](../../../Sudoku/README.md) — compare Z3 à 10 autres approches algorithmiques
 
+## Références académiques
+
+La série manipule un vocabulaire précis (SMT, tactiques, MaxSAT, théories) hérité de la logique et de la vérification automatique. Les fondements théoriques et les papiers fondateurs des concepts introduits :
+
+| Référence | Couverture |
+|-----------|------------|
+| de Moura & Bjorner, "Z3: An Efficient SMT Solver" (TACAS 2008) | Solveur Z3 utilisé tout au long de la série |
+| Nieuwenhuis, Oliveras & Tinelli, "Solving SAT and SAT Modulo Theories: From an Abstract DPLL Procedure to DPLL(T)" (JACM 2006) | Fondements théoriques de la résolution SMT (DPLL(T)) |
+| de Moura & Passmore, "The Strategy Challenge in SMT Solving" (2013) | Tactiques et stratégies de résolution (notebook 03) |
+| Morgado, Heras, Liffiton, Planes & Marques-Silva, "Iterative and core-guided MaxSAT solving: A survey and assessment" (Constraints 2013) | MaxSAT, relaxation des contraintes dures en souples (notebook 06) |
+
 ## FAQ / Troubleshooting
 
 | Problème | Solution |
