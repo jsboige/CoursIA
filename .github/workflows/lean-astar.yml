@@ -1,0 +1,39 @@
+name: Lean CI (astar_lean)
+
+# CI for astar_lean (Search/astar_lean) — A* optimality lake at the Search series
+# root. Formalizes the landmark theorems of A* (Hart, Nilsson & Raphael, 1968):
+# phase-1 `admissible_implies_optimal` (PR #4090), phase-2
+# `consistent_implies_admissible` (téléscopage, this PR). See #4048, roadmap #4038,
+# registry #3801 (prong B « problème non-trivial » — répond au grief BFS-vs-A*
+# dégénéré sur graphe à coût uniforme).
+#
+# sorry-filter-mode=standalone-tactic, baseline=0: the astar lake is fully
+# sorry-free across all modules (Graph, Heuristic, Optimality, Consistency).
+# standalone-tactic counts only standalone `sorry` tokens (never false-positives on
+# prose); baseline 0 = any new standalone sorry fails CI. See lean-build.yml.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/Search/astar_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Search/astar_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Search/astar_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Search/astar_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/Search/astar_lean/**.lean'
+      - 'MyIA.AI.Notebooks/Search/astar_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/Search/astar_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/Search/astar_lean/lean-toolchain'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/Search/astar_lean
+      display-name: astar_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: standalone-tactic
