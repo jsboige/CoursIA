@@ -1325,4 +1325,4 @@ theorem banzhaf_index_dummy_zero (G : TUGame N) (i : N)
     BG-prover target (#1453, cycle 66, item 4); a `div_eq_zero_iff₀` iff proof. -/
 theorem banzhaf_index_eq_zero_iff (G : TUGame N) (i : N) :
     BanzhafIndex G i = 0 ↔ BanzhafRaw G i = 0 := by
-  sorry
+  simp [BanzhafIndex]
