@@ -49,6 +49,19 @@ Les trois premiers notebooks forment le socle commun — on y apprend à poser u
 - **Couverture exacte** : Search-2 puis Search-8 (DancingLinks)
 - **Indépendants** : Search-9 (LinearProgramming, algèbre linéaire requise) et Search-10 (SymbolicAutomata, liens avec SymbolicAI/SMT/Z3)
 
+```mermaid
+flowchart LR
+    SOCLE["<b>Socle commun</b><br/>Search-1 — StateSpace<br/>(formalisation S, A, T, G)<br/>Search-2 — Uninformed<br/>(BFS, DFS, UCS, IDDFS)<br/>Search-3 — Informed<br/>(A*, heuristiques)"]
+    B1["<b>Recherche locale &amp; évolutive</b><br/>Search-4 — LocalSearch<br/>Search-5 — GeneticAlgorithms<br/>Search-11 — Metaheuristics"]
+    B2["<b>Recherche dans les jeux</b><br/>Search-6 — AdversarialSearch<br/>(Minimax, Alpha-Beta)<br/>Search-7 — MCTS (AlphaGo)"]
+    B3["<b>Couverture exacte</b><br/>Search-8 — Dancing Links (Knuth)"]
+    B4["<b>Indépendants</b><br/>Search-9 — LinearProgramming<br/>Search-10 — SymbolicAutomata"]
+    SOCLE --> B1
+    SOCLE --> B2
+    SOCLE --> B3
+    SOCLE --> B4
+```
+
 Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) sont le prérequis de la [Partie 2 (CSP)](../Part2-CSP/README.md).
 
 ## Prérequis & environnement
