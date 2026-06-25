@@ -22,6 +22,15 @@ C'est l'**itération 1 du glue Sion** (milestone #4054) : via les ponts Mathlib
 Sion. L'application finale (compacité `isCompact_stdSimplex` + semi-continuité
 depuis `continuous_payoff` + ceci) reste le milestone OPEN documenté. Module
 **entièrement 0-sorry**.
+
+**Itération 2** : dérive les 2 hyps de **semi-continuité** de Sion
+(`LowerSemicontinuousOn` en `x`, `UpperSemicontinuousOn` en `y`) depuis
+`continuous_payoff_in_x` / `continuous_payoff_in_y` (`ZeroSum.lean`) via les ponts
+`Continuous.lowerSemicontinuous` / `Continuous.upperSemicontinuous` puis
+`.lowerSemicontinuousOn` / `.upperSemicontinuousOn`. Les **4 hyps analytiques** de
+Sion sont désormais prouvées (quasi-concave/quasi-convexe + LSC/USC) ; reste le
+milestone OPEN : instances `Pi`-sur-`ℝ` + `stdSimplex` non-vide + application
+finale `Sion.minimax'`.
 -/
 
 namespace MinimaxLean
@@ -79,5 +88,33 @@ theorem payoff_quasiconcave_in_y (x : m → ℝ) :
 theorem payoff_quasiconvex_in_x (y : n → ℝ) :
     QuasiconvexOn ℝ (stdSimplex ℝ m) fun x => payoff A x y :=
   (payoff_convex_in_x A y).quasiconvexOn
+
+/-! ## Itération 2 — semi-continuité (2 hyps Sion restantes)
+
+Les 4 hyps analytiques de `Sion.minimax'` (`Mathlib/Topology/Sion.lean`) :
+- `hfy' : ∀ y ∈ Y, QuasiconvexOn ℝ X (f · y)` — **prouvée** (`payoff_quasiconvex_in_x`) ;
+- `hfx' : ∀ x ∈ X, QuasiconcaveOn ℝ Y (f x ·)` — **prouvée** (`payoff_quasiconcave_in_y`) ;
+- `hfy : ∀ y ∈ Y, LowerSemicontinuousOn (f · y) X` — **prouvée ci-dessous** ;
+- `hfx : ∀ x ∈ X, UpperSemicontinuousOn (f x ·) Y` — **prouvée ci-dessous**.
+
+Une fonction continue est à la fois semi-continue inférieurement et
+supérieurement (`Continuous.lowerSemicontinuous` / `Continuous.upperSemicontinuous`),
+et la restriction à une partie passe via `.lowerSemicontinuousOn` /
+`.upperSemicontinuousOn`. Le payoff est continu en chaque variable
+(`continuous_payoff_in_x` / `continuous_payoff_in_y`), d'où les deux hyps. -/
+
+/-- **Semi-continuité inférieure en `x`** (itération 2) : `f(·, y)` est
+`LowerSemicontinuousOn` sur le simplexe — continuité ⟹ LSC, requis par
+`Sion.minimax'` (hyp `hfy : ∀ y ∈ Y, LowerSemicontinuousOn (f · y) X`). -/
+theorem payoff_lowerSemicontinuous_in_x (y : n → ℝ) :
+    LowerSemicontinuousOn (fun x => payoff A x y) (stdSimplex ℝ m) :=
+  (continuous_payoff_in_x A y).lowerSemicontinuous.lowerSemicontinuousOn (stdSimplex ℝ m)
+
+/-- **Semi-continuité supérieure en `y`** (itération 2) : `f(x, ·)` est
+`UpperSemicontinuousOn` sur le simplexe — continuité ⟹ USC, requis par
+`Sion.minimax'` (hyp `hfx : ∀ x ∈ X, UpperSemicontinuousOn (f x ·) Y`). -/
+theorem payoff_upperSemicontinuous_in_y (x : m → ℝ) :
+    UpperSemicontinuousOn (fun y => payoff A x y) (stdSimplex ℝ n) :=
+  (continuous_payoff_in_y A x).upperSemicontinuous.upperSemicontinuousOn (stdSimplex ℝ n)
 
 end MinimaxLean

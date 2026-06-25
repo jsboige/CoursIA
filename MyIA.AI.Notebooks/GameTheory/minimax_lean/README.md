@@ -40,9 +40,9 @@ Ce premier livrable établit le **cœur formel** documenté de la preuve — la
 
 - **Toolchain** : `leanprover/lean4:v4.31.0-rc1` + Mathlib4 (`v4.31.0-rc1`)
 - **Sorry** : **0** sur tout le module. L'additivité + l'homogénéité du payoff en
-  chaque variable, la continuité (jointe et restreinte), et la concavité/cvxicité
-  du payoff sur les simplexes (+ dérivation des quasi-convexité/quasi-concavité de
-  Sion) sont entièrement prouvées.
+  chaque variable, la continuité (jointe et restreinte), la concavité/cvxicité du
+  payoff sur les simplexes, et les **4 hyps analytiques de Sion** (quasi-convexité,
+  quasi-concavité, semi-continuité inf./sup.) sont entièrement prouvées.
 - **Build** : `lake build Minimax` (dépend de Mathlib4)
 - **CI** : `.github/workflows/lean-minimax.yml` (`sorry-filter-mode: standalone-tactic`,
   baseline `0`)
@@ -106,10 +106,10 @@ flowchart TD
   `continuous_payoff_in_x` / `continuous_payoff_in_y` (une variable fixée, via
   `fun_prop`).
 
-## Ce qui est formalisé (`Minimax/Concavity.lean`, 0 sorry) — itération 1 du glue Sion
+## Ce qui est formalisé (`Minimax/Concavity.lean`, 0 sorry) — glue Sion (itérations 1 & 2)
 
-La **concavité/cvxicité du payoff** sur les simplexes — première moitié du câblage
-des hypothèses de Sion, dérivée de la bilinéarité ci-dessus :
+Les **4 hyps analytiques** de `Sion.exists_isSaddlePointOn'`, dérivées de la
+bilinéarité ci-dessus :
 
 - **Concavité + cvxicité en `x`** : `payoff_concave_in_x`, `payoff_convex_in_x`
   (`ConcaveOn`/`ConvexOn ℝ (stdSimplex ℝ m)`). Une fonction linéaire est à la fois
@@ -118,11 +118,21 @@ des hypothèses de Sion, dérivée de la bilinéarité ci-dessus :
   `payoff_smul_in_x`), le domaine convexe venant de `convex_stdSimplex`.
 - **Concavité + cvxicité en `y`** : `payoff_concave_in_y`, `payoff_convex_in_y`
   (analogue sur `stdSimplex ℝ n`).
-- **Quasi-concavité / quasi-convexité** (itération 2, **hyps exactes de Sion**) :
+- **Quasi-concavité / quasi-convexité** (itération 1, **hyps exactes de Sion**) :
   `payoff_quasiconcave_in_y` (`f(x, ·)` quasi-concave, via le pont
   `ConcaveOn.quasiconcaveOn`) et `payoff_quasiconvex_in_x` (`f(·, y)` quasi-convexe,
-  via `ConvexOn.quasiconvexOn`). **Ces deux hyps de `Sion.exists_isSaddlePointOn'`
-  sont désormais prouvées.**
+  via `ConvexOn.quasiconvexOn`).
+- **Semi-continuité** (itération 2, **2 hyps restantes de Sion**) :
+  `payoff_lowerSemicontinuous_in_x` (`f(·, y)` semi-continue inférieurement, via
+  `Continuous.lowerSemicontinuous.lowerSemicontinuousOn` depuis
+  `continuous_payoff_in_x`) et `payoff_upperSemicontinuous_in_y` (`f(x, ·)`
+  semi-continue supérieurement, via
+  `Continuous.upperSemicontinuous.upperSemicontinuousOn` depuis
+  `continuous_payoff_in_y`). Une fonction continue est à la fois LSC et USC.
+
+**Les 4 hyps analytiques de `Sion.exists_isSaddlePointOn'` (quasi-convexité en `x`,
+quasi-concavité en `y`, semi-continuité inf. en `x`, sup. en `y`) sont désormais
+toutes prouvées 0 sorry.**
 
 > **Note de formalisation** — `Finset.mul_sum` (factorisation à GAUCHE dans la somme)
   vs `Finset.sum_mul` (factorisation à DROITE) : l'homogénéité `c · ∑ f = ∑ c · f`
@@ -134,14 +144,15 @@ des hypothèses de Sion, dérivée de la bilinéarité ci-dessus :
 
 Le câblage explicite de `Sion.exists_isSaddlePointOn'` sur
 `stdSimplex ℝ m × stdSimplex ℝ n` est le **milestone ouvert** de l'issue #4054.
-**Progrès réalisé** (`Minimax/Concavity.lean`) : la dérivation des
-`QuasiconvexOn`/`QuasiconcaveOn` depuis l'affinité est **désormais prouvée**
-(`payoff_quasiconvex_in_x`, `payoff_quasiconcave_in_y`) — soit 2 des 4 hyps de
-Sion. **Reste ouvert** : compacité/non-vacuité des simplexes (`stdSimplex`,
-faits Mathlib `isCompact_stdSimplex`/convexité/non-vacuité à référencer), dérivation
-des `LowerSemicontinuousOn`/`UpperSemicontinuousOn` depuis `continuous_payoff`, et
-l'**application finale** de `Sion.exists_isSaddlePointOn'` réunissant les quatre
-hyps. C'est honnêtement signalé comme étape à venir dans l'umbrella `Minimax.lean`
+**Progrès réalisé** (`Minimax/Concavity.lean`, itérations 1 & 2) : les **4 hyps
+analytiques** de Sion sont **désormais prouvées** — `payoff_quasiconvex_in_x`,
+`payoff_quasiconcave_in_y` (itération 1, depuis l'affinité) +
+`payoff_lowerSemicontinuous_in_x`, `payoff_upperSemicontinuous_in_y` (itération 2,
+depuis la continuité). **Reste ouvert** : les instances topologiques `Pi`-sur-`ℝ`
+requises par `Sion.minimax'`, la non-vacuité des simplexes (`stdSimplex`, fait
+Mathlib), et l'**application finale** réunissant les 4 hyps analytiques avec
+`isCompact_stdSimplex`/`convex_stdSimplex` vers `Sion.exists_isSaddlePointOn'`. C'est
+honnêtement signalé comme étape à venir dans l'umbrella `Minimax.lean`
 (`Status : Prop := True`) — jamais comblé par `sorry`. Le TODO de l'en-tête de
 Mathlib `Topology/Sion.lean` (« Spell out the particular case of von Neumann
 theorem ») confirme qu'il s'agit d'un travail de formalisation en cours

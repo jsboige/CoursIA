@@ -31,25 +31,31 @@ ces quatre hypothèses.
   additivité + homogénéité en chaque variable (`payoff_add_in_x`, `payoff_smul_in_x`,
   `payoff_add_in_y`, `payoff_smul_in_y`), continuité jointe et restreinte
   (`continuous_payoff`, `continuous_payoff_in_x`, `continuous_payoff_in_y`). **0 sorry.**
-- `Minimax/Concavity.lean` — **itération 1 du glue Sion** : concavité/cvxicité du
+- `Minimax/Concavity.lean` — **glue Sion (itérations 1 & 2)** : concavité/cvxicité du
   payoff sur les simplexes (`payoff_concave_in_x`, `payoff_convex_in_x`, et en `y`),
   puis quasi-concavité/quasi-convexité via les ponts Mathlib
-  (`payoff_quasiconcave_in_y`, `payoff_quasiconvex_in_x`) — 2 des 4 hyps de
-  `Sion.exists_isSaddlePointOn'`. **0 sorry.**
+  (`payoff_quasiconcave_in_y`, `payoff_quasiconvex_in_x`) — itération 1 : 2 des 4 hyps
+  analytiques de `Sion.exists_isSaddlePointOn'`. **Itération 2** : semi-continuité
+  dérivée de la continuité (`payoff_lowerSemicontinuous_in_x`,
+  `payoff_upperSemicontinuous_in_y`) — les **2 hyps restantes**.
+  **Les 4 hyps analytiques sont désormais prouvées. 0 sorry.**
 
 ## Milestone suivant (OPEN — documenté, non sorry-stubbé)
 
-Le câblage explicite de `Sion.exists_isSaddlePointOn'` sur `stdSimplex ℝ m ×
-stdSimplex ℝ n` (compacité/convexité des simplexes + dérivation des
-quasi-convexité/quasi-concavité depuis l'affinité + LSC/USC depuis la continuité) est
-le **milestone ouvert** de l'issue #4054 : il n'est **pas** comblé par `sorry` mais
-laissé comme étape de formalisation à venir, honnêtement signalé.
+Les **4 hyps analytiques** de `Sion.exists_isSaddlePointOn'` (quasi-convexité en `x`,
+quasi-concavité en `y`, semi-continuité inférieure en `x`, supérieure en `y`) sont
+désormais **prouvées 0 sorry** dans `Concavity.lean`. Reste le **milestone ouvert** de
+l'issue #4054 : les instances topologiques `Pi`-sur-`ℝ`, la non-vacuité des simplexes
+(`stdSimplex`, faits Mathlib), et l'**application finale** réunissant les 4 hyps avec
+`isCompact_stdSimplex`/`convex_stdSimplex` vers `Sion.exists_isSaddlePointOn'`. Non
+comblé par `sorry`, laissé comme étape de formalisation à venir, honnêtement signalé.
 -/
 
 namespace MinimaxLean
 
-/-- Statut : `Minimax/ZeroSum.lean` entièrement 0-sorry. Bilinéarité + continuité du
-payoff prouvées. L'application finale de Sion sur les simplexes est le milestone OPEN. -/
+/-- Statut : `Minimax/ZeroSum.lean` + `Concavity.lean` entièrement 0-sorry. Bilinéarité
++ continuité du payoff, et les 4 hyps analytiques de Sion prouvées. Reste le câblage
+topologique final (instances Pi/ℝ + non-vacuité + application `Sion.minimax'`). -/
 abbrev Status : Prop := True
 
 end MinimaxLean
