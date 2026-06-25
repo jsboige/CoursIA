@@ -15,6 +15,23 @@ joueur-colonne). Le théorème complet suit du **minimax de Sion** (Mathlib
 `Topology.Sion`), dont le cas bilinéaire sur des simplexes compacts convexes redonne
 exactement von Neumann. Voir l'issue #4054 (roadmap Lean #4038).
 
+*Le cadre — deux joueurs, une matrice, une espérance ; le joueur-ligne maximise,
+le joueur-colonne minimise, somme nulle stricte :*
+
+```mermaid
+flowchart TD
+    A["Matrice de gains A (m × n)<br/>A i j = gain du joueur-ligne"]
+    R["Joueur-ligne — maximise<br/>stratégie mixte x ∈ Δm"]
+    C["Joueur-colonne — minimise<br/>stratégie mixte y ∈ Δn"]
+    P["Payoff espéré<br/>xᵀ A y = Σᵢⱼ xᵢ · Aᵢⱼ · yⱼ"]
+    V["Valeur du jeu — point-selle<br/>maxₓ minᵧ xᵀ A y = minᵧ maxₓ xᵀ A y"]
+
+    A --> P
+    R -->|"choisit x"| P
+    C -->|"choisit y"| P
+    P --> V
+```
+
 Ce premier livrable établit le **cœur formel** documenté de la preuve — la
 **bilinéarité du payoff** `xᵀ A y`, qui porte les quatre hypothèses de Sion. Il est
 **entièrement 0-sorry**.
@@ -41,6 +58,33 @@ Pour `f = payoff A` sur `X = stdSimplex ℝ m`, `Y = stdSimplex ℝ n`, ces hypo
 découlent toutes de la **bilinéarité** :
 - `payoff` est **affine en chaque variable** ⟹ quasi-convexe ET quasi-concave ;
 - `payoff` est **continu** (somme finie de monômes) ⟹ semi-continue sup. et inf.
+
+*Comment la bilinéarité (le cœur prouvé) déroule les quatre hypothèses de Sion jusqu'au
+point-selle de von Neumann — chaque arête est un lemme de `ZeroSum.lean` :*
+
+```mermaid
+flowchart TD
+    BL["Bilinéarité du payoff<br/><i>cœur prouvé — 0 sorry</i>"]
+    AffX["Affine en x<br/>payoff_add_in_x / payoff_smul_in_x"]
+    AffY["Affine en y<br/>payoff_add_in_y / payoff_smul_in_y"]
+    Cont["Continu — joint + restreint<br/>continuous_payoff / _in_x / _in_y"]
+    QCvx["Quasi-convexe ET quasi-concave<br/><i>affine ⟹ les deux</i>"]
+    SCi["Semi-continu sup. ET inf.<br/><i>continu ⟹ les deux</i>"]
+    SionH["Hypothèses de Sion satisfaites<br/>sur stdSimplex ℝ m × stdSimplex ℝ n<br/>(compacts · convexes · non vides)"]
+    SP["Sion.exists_isSaddlePointOn'<br/>→ existence d'un point-selle"]
+    VN["von Neumann<br/>maxₓ minᵧ = minᵧ maxₓ"]
+
+    BL --> AffX
+    BL --> AffY
+    BL --> Cont
+    AffX --> QCvx
+    AffY --> QCvx
+    Cont --> SCi
+    QCvx --> SionH
+    SCi --> SionH
+    SionH --> SP
+    SP --> VN
+```
 
 ## Ce qui est formalisé (`Minimax/ZeroSum.lean`, 0 sorry)
 
