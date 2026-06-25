@@ -19,7 +19,7 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------ |
-| 1 | [01-1-OpenAI-DALL-E-3](01-1-OpenAI-DALL-E-3.ipynb) | Génération avec DALL-E 3 | OpenAI API | 0 |
+| 1 | [01-1-OpenAI-DALL-E-3](01-1-OpenAI-DALL-E-3.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API | 0 |
 | 2 | [01-2-GPT-5-Image-Generation](01-2-GPT-5-Image-Generation.ipynb) | Génération avec GPT-5 | OpenAI API | 0 |
 | 3 | [01-3-Basic-Image-Operations](01-3-Basic-Image-Operations.ipynb) | Opérations de base | PIL/OpenCV | 0 |
 | 4 | [01-4-Forge-SD-XL-Turbo](01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | ComfyUI | Variable |
@@ -53,7 +53,7 @@ Accès : http://localhost:8188
 
 - **Cloud vs Local** : OpenAI (facile, API) vs ComfyUI (puissant, local)
 - **Formats** : PNG, JPEG, WebP supportés
-- **Qualité** : DALL-E 3 > GPT-5 > SD-XL Turbo
+- **Qualité** : gpt-image-1 > GPT-5 > SD-XL Turbo
 - **Flexibilité** : SD-XL Turbo plus paramétrable que les modèles cloud
 
 ## Ressources

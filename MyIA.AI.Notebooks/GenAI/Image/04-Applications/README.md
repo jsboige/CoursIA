@@ -50,7 +50,7 @@ pip install -r requirements-comfyui.txt
 
 ### 04-1 Educational Content Generation
 - **Objectif** : Automatiser la création de contenu pédagogique
-- **Technologies** : DALL-E 3 + GPT-4o + post-processing
+- **Technologies** : gpt-image-1 + GPT-4o + post-processing
 - **Applications** : Cours, supports de formation, illustrations
 
 ### 04-2 Creative Workflows
@@ -72,7 +72,7 @@ pip install -r requirements-comfyui.txt
 
 ### Éducation
 ```
-Texte → GPT-4o (brief) → DALL-E 3 (images) → Post-processing → Support
+Texte → GPT-4o (brief) → gpt-image-1 (images) → Post-processing → Support
 ```
 
 ### Création

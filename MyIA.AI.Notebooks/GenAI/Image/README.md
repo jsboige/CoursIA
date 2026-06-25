@@ -12,7 +12,7 @@ L'objectif fil rouge de cette série est de construire un système capable de pr
 
 À l'issue de la série, l'apprenant sait :
 
-- **Choisir la bonne modalité** : API cloud (DALL-E 3, GPT-5 Image) vs ComfyUI auto-hébergé (SD XL, FLUX, Qwen) selon le besoin (contrôle, coût, débit, données sensibles).
+- **Choisir la bonne modalité** : API cloud (gpt-image-1, GPT-5 Image) vs ComfyUI auto-hébergé (SD XL, FLUX, Qwen) selon le besoin (contrôle, coût, débit, données sensibles).
 - **Manipuler une image en code** : PIL/OpenCV pour redimensionnement, masques, compositing, conversion VAE latents <-> pixels.
 - **Concevoir un workflow ComfyUI** : graphe de nœuds (Sampler, VAE, ConditioningCombine, ModelSampling), import/export JSON, batching et seeds reproductibles.
 - **Éditer plutôt que régénérer** : Qwen Image Edit, ControlNet, inpainting (zones à régénérer dans un visuel existant) — moins coûteux et plus contrôlable que repartir de zéro.
@@ -36,11 +36,11 @@ Image/
 
 ### 01-Foundation - Modèles de base
 
-Avant de produire des visuels pédagogiques, il faut maîtriser les outils de génération. Ce niveau couvre les deux approches : API cloud (DALL-E 3, GPT-5) pour la simplicité, et modèles locaux via ComfyUI (SD XL Turbo, Qwen) pour le contrôle fin. [01-3](01-Foundation/01-3-Basic-Image-Operations.ipynb) donne les bases de manipulation d'image (PIL, OpenCV) nécessaires pour comprendre ce que font les modèles.
+Avant de produire des visuels pédagogiques, il faut maîtriser les outils de génération. Ce niveau couvre les deux approches : API cloud (gpt-image-1, GPT-5) pour la simplicité, et modèles locaux via ComfyUI (SD XL Turbo, Qwen) pour le contrôle fin. [01-3](01-Foundation/01-3-Basic-Image-Operations.ipynb) donne les bases de manipulation d'image (PIL, OpenCV) nécessaires pour comprendre ce que font les modèles.
 
 | Notebook | Contenu | Service |
 |----------|---------|---------|
-| [01-1-OpenAI-DALL-E-3](01-Foundation/01-1-OpenAI-DALL-E-3.ipynb) | Génération avec DALL-E 3 | OpenAI API |
+| [01-1-OpenAI-DALL-E-3](01-Foundation/01-1-OpenAI-DALL-E-3.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API |
 | [01-2-GPT-5-Image-Generation](01-Foundation/01-2-GPT-5-Image-Generation.ipynb) | Génération avec GPT-5 | OpenAI API |
 | [01-3-Basic-Image-Operations](01-Foundation/01-3-Basic-Image-Operations.ipynb) | Opérations de base | PIL/OpenCV |
 | [01-4-Forge-SD-XL-Turbo](01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | ComfyUI |
@@ -101,7 +101,7 @@ Applications directes par domaine : histoire-géographie (cartes, reconstitution
 
 | Technologie | Notebooks | Prérequis |
 |-------------|-----------|-----------|
-| **OpenAI DALL-E 3** | 01-1, 01-2 | `OPENAI_API_KEY` |
+| **OpenAI gpt-image-1** | 01-1, 01-2 | `OPENAI_API_KEY` |
 | **ComfyUI + Qwen** | 01-4, 01-5, 02-1 | Docker, ~29GB VRAM |
 | **ComfyUI + FLUX** | 02-2 | Docker GPU |
 | **ComfyUI + SD 3.5** | 02-3 | Docker GPU |
@@ -159,13 +159,13 @@ Le fil rouge de cette série est la création d'un système de visuels pédagogi
 
 ## FAQ
 
-### DALL-E 3 retourne des images floues ou hors-sujet
+### gpt-image-1 : qualité et suivi du prompt
 
-DALL-E 3 (notebook [01-1](01-Foundation/01-1-OpenAI-DALL-E-3.ipynb)) interprète les prompts librement et peut simplifier les détails complexes. Mitigation :
+gpt-image-1 (notebook [01-1](01-Foundation/01-1-OpenAI-DALL-E-3.ipynb)) offre une bonne qualité par défaut mais peut simplifier les détails complexes. Mitigation :
 
 - Structurer le prompt : `style [photographiste/illustration/3D render], sujet [précis], contexte [arrière-plan], éclairage [type]`.
-- Utiliser `size="1792x1024"` pour les compositions larges, `1024x1024` pour les portraits.
-- GPT-5 Image (notebook [01-2](01-Foundation/01-2-GPT-5-Image-Generation.ipynb)) offre un meilleur suivi des instructions détaillées que DALL-E 3.
+- Utiliser `size="1536x1024"` pour les compositions larges (gpt-image-1 accepte `1024x1024` / `1024x1536` / `1536x1024` / `auto`), `1024x1024` pour les portraits.
+- GPT-5 Image (notebook [01-2](01-Foundation/01-2-GPT-5-Image-Generation.ipynb)) offre un meilleur suivi des instructions détaillées que gpt-image-1.
 - Pour un contrôle total, passer en ComfyUI local (niveau 02+).
 
 ### ComfyUI retourne une erreur 401 ou 502
@@ -211,17 +211,17 @@ Stratégies si OOM :
 - Fermer les autres notebooks GPU avant une génération lourde.
 - Vérifier avec `nvidia-smi` et libérer avec `torch.cuda.empty_cache()`.
 
-### Quelle différence entre DALL-E 3, GPT-5 Image et ComfyUI ?
+### Quelle différence entre gpt-image-1, GPT-5 Image et ComfyUI ?
 
-| Critère | DALL-E 3 | GPT-5 Image | ComfyUI (SD/FLUX/Qwen) |
-|---------|----------|-------------|------------------------|
-| **Coût** | $0.04-0.12/image | Variable (API) | Gratuit (local) |
+| Critère | gpt-image-1 | GPT-5 Image | ComfyUI (SD/FLUX/Qwen) |
+|---------|-------------|-------------|------------------------|
+| **Coût** | Usage-based (API) | Variable (API) | Gratuit (local) |
 | **Contrôle** | Prompt seul | Prompt + instructions | Nœuds, masques, seeds |
-| **Édition** | Non | Oui (native) | Oui (inpainting, ControlNet) |
-| **Qualité** | Bonne | Excellente | Excellente (avec réglages) |
+| **Édition** | Oui (native) | Oui (native) | Oui (inpainting, ControlNet) |
+| **Qualité** | Excellente | Excellente | Excellente (avec réglages) |
 | **VRAM** | 0 (API) | 0 (API) | 10-29 GB |
 
-Pour du prototypage rapide, DALL-E 3 ou GPT-5 Image suffisent. Pour un contrôle fin, une production répétitive, ou des données sensibles, ComfyUI est indispensable.
+Pour du prototypage rapide, gpt-image-1 ou GPT-5 Image suffisent. Pour un contrôle fin, une production répétitive, ou des données sensibles, ComfyUI est indispensable.
 
 ### Comment créer un workflow ComfyUI reproductible ?
 

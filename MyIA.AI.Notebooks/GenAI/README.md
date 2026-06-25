@@ -44,7 +44,7 @@ Avant de générer la moindre image ou le moindre son, il faut configurer l'envi
 
 ### Image - Générer, éditer et orchestrer des images
 
-On commence par les fondamentaux : appeler DALL-E 3 et GPT-5 pour générer des images depuis un prompt texte, puis manipuler ces images avec PIL et OpenCV. Le niveau avancé introduit les modèles open-source hébergés localement (Qwen Image Edit pour l'édition, FLUX pour la qualité, Stable Diffusion 3.5 pour la production, Z-Image/Lumina pour l'expérimental). En orchestration, on compare les modèles entre eux et on enchaîne les workflows. Les applications métier montrent comment intégrer tout cela dans des cas réels : contenu éducatif, workflows créatifs, motifs décoratifs.
+On commence par les fondamentaux : appeler gpt-image-1 et GPT-5 pour générer des images depuis un prompt texte, puis manipuler ces images avec PIL et OpenCV. Le niveau avancé introduit les modèles open-source hébergés localement (Qwen Image Edit pour l'édition, FLUX pour la qualité, Stable Diffusion 3.5 pour la production, Z-Image/Lumina pour l'expérimental). En orchestration, on compare les modèles entre eux et on enchaîne les workflows. Les applications métier montrent comment intégrer tout cela dans des cas réels : contenu éducatif, workflows créatifs, motifs décoratifs.
 
 **Fil rouge** : construire un générateur de contenu visuel pour l'éducation (diagrammes scientifiques, illustrations pédagogiques, motifs décoratifs).
 
@@ -173,7 +173,7 @@ Les clés essentielles dans `.env` :
 
 | Variable | Usage | Requis pour |
 | ---------- | ------- | ------------- |
-| `OPENAI_API_KEY` | DALL-E 3, GPT-5, Whisper, TTS | Image, Audio, Texte |
+| `OPENAI_API_KEY` | gpt-image-1, GPT-5, Whisper, TTS | Image, Audio, Texte |
 | `ANTHROPIC_API_KEY` | Claude Vision | Video |
 | `HUGGINGFACE_TOKEN` | Modèles HF open-source | Image, Video |
 | `COMFYUI_BEARER_TOKEN` | Services locaux ComfyUI | Image (local), Video |
@@ -229,11 +229,11 @@ Non. Les notebooks Image utilisent ComfyUI hébergé sur un serveur distant (RTX
 
 ### Quels sont les coûts API attendus ?
 
-La série est conçue pour minimiser les coûts. Les notebooks Texte utilisent principalement GPT-4o-mini (~0.15$/1M input tokens) et GPT-4o (~2.50$/1M input tokens). Les notebooks Image utilisent DALL-E 3 uniquement pour les exercices (les exemples utilisent ComfyUI/Qwen gratuit). Budget estimé : **5-15$ total** pour l'ensemble de la série, sauf appels itératifs intensifs.
+La série est conçue pour minimiser les coûts. Les notebooks Texte utilisent principalement GPT-4o-mini (~0.15$/1M input tokens) et GPT-4o (~2.50$/1M input tokens). Les notebooks Image utilisent gpt-image-1 uniquement pour les exercices (les exemples utilisent ComfyUI/Qwen gratuit). Budget estimé : **5-15$ total** pour l'ensemble de la série, sauf appels itératifs intensifs.
 
-### Quelle est la différence entre ComfyUI et DALL-E ?
+### Quelle est la différence entre ComfyUI et gpt-image-1 ?
 
-**ComfyUI** est un serveur open-source hébergé localement qui exécute des modèles open-source (FLUX, SD 3.5, Qwen Image Edit). Avantages : gratuit, contrôle total sur les paramètres (seed, steps, CFG), pipelines personnalisables. **DALL-E 3** est l'API cloud d'OpenAI. Avantages : qualité élevée par défaut, simplicité d'usage (un appel API = une image). La série montre les deux et vous apprend à choisir selon le contexte.
+**ComfyUI** est un serveur open-source hébergé localement qui exécute des modèles open-source (FLUX, SD 3.5, Qwen Image Edit). Avantages : gratuit, contrôle total sur les paramètres (seed, steps, CFG), pipelines personnalisables. **gpt-image-1** est l'API cloud d'OpenAI. Avantages : qualité élevée par défaut, simplicité d'usage (un appel API = une image). La série montre les deux et vous apprend à choisir selon le contexte.
 
 ### Peut-on suivre cette série en parallèle d'une autre ?
 
