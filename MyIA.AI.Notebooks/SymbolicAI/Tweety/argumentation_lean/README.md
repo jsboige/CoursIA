@@ -42,6 +42,24 @@ La **fonction caractéristique** `F(S) = { a | S défend a }` est un `OrderHom`
 monotone sur le treillis complet `(Set α, ⊆)` ; l'extension grounded en est le plus
 petit point fixe `F.lfp` (Knaster–Tarski).
 
+*Hiérarchie des cinq sémantiques de Dung — emboîtées par exigence décroissante
+(`Stable ⇒ Preferred ⇒ Complete ⇒ Admissible`), avec le `grounded` = plus petite
+extension complète :*
+
+```mermaid
+flowchart TD
+    ADM["Admissible<br/>sans conflit + défend ses membres"]
+    COMP["Complète<br/>admissible + contient tout ce qu'elle défend"]
+    PREF["Preferred<br/>extension complète maximale pour l'inclusion"]
+    STAB["Stable<br/>sans conflit + attaque tout argument extérieur"]
+    GROUNDED["Grounded<br/>plus petit point fixe de F (Knaster–Tarski)<br/>= plus PETITE extension complète"]
+
+    ADM -->|"complete_admissible"| COMP
+    COMP -->|"preferred_complete"| PREF
+    COMP -.->|"stable_complete"| STAB
+    GROUNDED -.->|"grounded_least_complete<br/>incluse dans toute complète"| COMP
+```
+
 ### Prouvé (0 sorry)
 
 - **Fundamental Lemma de Dung** (`Fundamental.lean`) : si `S` est admissible et
@@ -57,6 +75,25 @@ petit point fixe `F.lfp` (Knaster–Tarski).
   `Stable ⇒ Preferred ⇒ Complete ⇒ Admissible` (sans sorry).
 - **Lemme-clé de Dung** `F_preserves_admissible` : la fonction caractéristique
   préserve l'admissibilité (`Admissible S ⇒ Admissible (F S)`).
+
+*Le mécanisme de point fixe — comment l'extension grounded émerge de la fonction
+caractéristique `F` (monotone sur le treillis complet `(Set α, ⊆)`) par itération
+vers son plus petit point fixe (Knaster–Tarski, clé en main dans Mathlib via
+`OrderHom.lfp`) :*
+
+```mermaid
+flowchart TD
+    AF["Cadre d'argumentation AF α<br/>relation d'attaque attacks : α → α → Prop"]
+    F["Fonction caractéristique F : Set α →o Set α<br/>F(S) = défendus de S · monotone (OrderHom)"]
+    ITER["Suite itérée admissible<br/>∅ ⊂ F(∅) ⊂ F²(∅) ⊂ …<br/>chaque itéré admissible via F_preserves_admissible"]
+    LFP["grounded = F.lfp<br/>plus petit point fixe (Knaster–Tarski)"]
+    IDS["Identités prouvées 0 sorry<br/>grounded_fixed : F(grounded) = grounded<br/>grounded_defends_iff_mem : a ∈ grounded ⇔ grounded défend a<br/>grounded_least_complete : incluse dans toute complète"]
+
+    AF --> F
+    F --> ITER
+    ITER --> LFP
+    LFP --> IDS
+```
 
 ### Jalon OPEN (documenté, non sorry-backed)
 
