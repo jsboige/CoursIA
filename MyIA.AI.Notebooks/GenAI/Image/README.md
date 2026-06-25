@@ -157,6 +157,35 @@ Le fil rouge de cette série est la création d'un système de visuels pédagogi
 
 4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Content-Generation.ipynb) applique le pipeline au contenu éducatif. Les notebooks [examples/](examples/) montrent des cas d'usage par domaine (histoire, sciences, littérature).
 
+Le schéma ci-dessous résume comment les niveaux s'articulent pour construire un générateur de visuels pédagogiques : du prompt cloud one-shot (niveau 1) au workflow ComfyUI multi-modèles orienté production (niveau 4), en passant par l'édition fine (niveau 2) et l'orchestration (niveau 3).
+
+```mermaid
+flowchart TD
+    subgraph N1["1 · Générer de base — 01-Foundation"]
+        A1["01-1 gpt-image-1 : API cloud"]
+        A2["01-2 GPT-5 Image : API cloud"]
+        A3["01-3 : bases PIL / OpenCV"]
+        A4["01-4 SD XL Turbo : ComfyUI"]
+        A5["01-5 Qwen Image Edit : local"]
+    end
+    subgraph N2["2 · Éditer & pousser la qualité — 02-Advanced"]
+        B1["02-1 Qwen Edit : édition fine"]
+        B2["02-2 FLUX : génération haute qualité"]
+        B3["02-4 Z-Image/Lumina : rapide"]
+        B4["02-5 Bonsai : quantization ternaire ~7 GB"]
+    end
+    subgraph N3["3 · Orchestrer — 03-Orchestration"]
+        C1["03-1 : comparer qualité / coût"]
+        C2["03-2 : pipeline gén→édit→upscale"]
+        C3["03-3 : perf & quantization"]
+    end
+    subgraph N4["4 · Produire — 04-Applications"]
+        D1["04-1 : contenu éducatif"]
+        D2["examples/ : cas par domaine"]
+    end
+    N1 --> N2 --> N3 --> N4
+```
+
 ## FAQ
 
 ### gpt-image-1 : qualité et suivi du prompt
