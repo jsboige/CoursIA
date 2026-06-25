@@ -18,6 +18,7 @@ Formalisation en Lean 4 des jeux et algorithmes mathématiques de John Conway.
 | `Conway/Doomsday.lean` | 0 | Algorithme Doomsday (calcul du jour de la semaine) |
 | `Conway/DoomsdayLemmas.lean` | 0 | Lemmes pour l'algorithme Doomsday |
 | `Conway/Fractran.lean` | 0 | Langage de programmation FRACTRAN |
+| `Conway/FractranLemmas.lean` | 0 | Lemmes pour FRACTRAN (step/run : halt vide, 0-run, applicabilité `num/1`, trace concrète `{3/2}` 2→3) |
 | `Conway/LookAndSay.lean` | 0 | Suite Look-and-Say |
 | `Conway/LookAndSayLemmas.lean` | 0 | Lemmes pour la suite Look-and-Say |
 | `Conway/Nim.lean` | 0 | Théorie des jeux de Nim |
