@@ -27,6 +27,22 @@ sont reliées par la chaîne `s(f) ≤ bs(f) ≤ deg(f)` :
   coordonnées pouvant chacun individuellement faire basculer `f`.
 - **Degré** `deg(f)` : le degré de `f` vu comme polynôme réel multilinéaire.
 
+*Les trois mesures de complexité d'une fonction booléenne, et la conjecture qui
+les relie (résolue 2019) :*
+
+```mermaid
+flowchart LR
+    S["s(f) — Sensibilité<br/>nb max de flips de bit<br/>changeant f(x)"]
+    BS["bs(f) — Sensibilité par blocs<br/>nb max de blocs disjoints<br/>faisant basculer f"]
+    DEG["deg(f) — Degré<br/>degré du polynôme réel<br/>multilinéaire de f"]
+    CONJ["Conjecture de sensibilité<br/>(Nisan–Szegedy 1992)<br/>bs(f) ≤ s(f)² ?"]
+
+    S -->|"trivial"| BS
+    BS -->|"trivial"| DEG
+    S -.->|"borne polynomiale ?<br/>(ouverte 1989–2019)"| CONJ
+    CONJ -.->|"Huang 2019 : OUI"| BS
+```
+
 La **conjecture de sensibilité** (Nisan–Szegedy 1992, affinant Wegener 1989 et
 Cook et al. 1986) demandait si `bs(f)` est polynomialement borné en `s(f)`. Huang
 (2019) l'a établie positivement en prouvant le théorème du degré : **tout
@@ -38,6 +54,30 @@ La preuve repose sur un argument spectral (`exists_eigenvalue`, L51) : une
 matrice d'adjacence signée `Aₙ` de l'hypercube possède la valeur propre `√n`, et
 le théorème d'intercalation de Cauchy force un sommet de haut degré dans tout
 grand sous-graphe induit.
+
+*L'argument spectral de Huang — comment une valeur propre force un sommet de haut
+degré dans tout grand sous-graphe induit de l'hypercube (chaque arête = un
+lemme de `MainTheorem.lean` / `Operator.lean`) :*
+
+```mermaid
+flowchart TD
+    HC["Hypercube booléen Q n = Fin n → Bool<br/><i>adjacence = différer sur 1 bit</i>"]
+    A["Matrice d'adjacence signée Aₙ<br/>opérateur f — Operator.lean"]
+    EV["f² = n · id<br/>f_squared — valeur propre ±√n"]
+    EIG["exists_eigenvalue (L51)<br/>Aₙ possède la valeur propre √n"]
+    SUB["H ⊂ Q(m+1), Card H ≥ 2^m + 1<br/>plus de la moitié des sommets"]
+    CI["Théorème d'intercalation de Cauchy<br/>sous-graphe induit force<br/>une grande valeur propre"]
+    HD["huang_degree_theorem (L84)<br/>H contient un sommet de degré ≥ √n"]
+    BOUND["Borne quadratique<br/>bs(f) ≤ deg(f) ≤ s(f)²"]
+
+    HC --> A
+    A --> EV
+    EV --> EIG
+    SUB --> CI
+    EIG --> CI
+    CI --> HD
+    HD --> BOUND
+```
 
 ## Modules
 
