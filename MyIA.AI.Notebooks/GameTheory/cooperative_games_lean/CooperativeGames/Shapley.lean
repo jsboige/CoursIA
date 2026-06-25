@@ -1096,6 +1096,17 @@ theorem weighted_voting_game_strong (weights : N → ℝ) (quota : ℝ) (hquota 
   -- The complement reaches the quota, so its value is `1`.
   exact if_pos hSc_ge
 
+/-- A strong game has a winning grand coalition.
+
+    The empty coalition is always losing (`TUGame.empty_zero`), and its complement is the grand
+    coalition `Finset.univ`. The strong property (`v S = 0 → v Sᶜ = 1`) applied to `S = ∅`
+    therefore forces `v univ = 1`: a strong game is non-degenerate in the sense that the grand
+    coalition wins. -/
+theorem strong_grand_wins {G : TUGame N} (hG : StrongGame G) : G.v Finset.univ = 1 := by
+  have hcomp : (∅ : Finset N)ᶜ = Finset.univ := by simp
+  have := hG G.empty_zero
+  rwa [hcomp] at this
+
 /-! ## Monotone games
 
 A *monotone* (transferable-utility) game is one where enlarging a coalition never
