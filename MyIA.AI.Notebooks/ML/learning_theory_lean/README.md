@@ -9,14 +9,17 @@ classifieur correct.
 C'est le **premier théorème Lean de la série ML** (aucun lake Lean en ML
 auparavant, roadmap #4038 Tier 2). La preuve est **géométrique élémentaire et
 entièrement 0-sorry** : deux inégalités de croissance du vecteur de poids `wₖ`,
-combinées par Cauchy–Schwarz, donnent la borne.
+combinées par Cauchy–Schwarz, donnent la borne. Le module `Tightness` montre en
+outre que cette borne est **serrée** (atteinte avec égalité par un témoin concret
+sur `ℂ`).
 
 ## Statut
 
 - **Toolchain** : `leanprover/lean4:v4.31.0-rc1` + Mathlib4 (`v4.31.0-rc1`)
 - **Sorry** : **0** sur tout le module. La borne `novikoff_mistake_bound`
   (`n · γ² ≤ R²`), le Lemme A d'alignement (`⟪wₖ, u⟫ ≥ kγ`) et le Lemme B de norme
-  (`‖wₖ‖² ≤ kR²`) sont entièrement prouvés.
+  (`‖wₖ‖² ≤ kR²`) sont entièrement prouvés, ainsi que le **serrage**
+  `novikoff_bound_is_sharp` (témoin sur `ℂ` atteignant l'égalité `n·γ² = R²`).
 - **Build** : `lake build Perceptron` (dépend de Mathlib4)
 
 ## Ce qui est formalisé
@@ -49,6 +52,18 @@ celle de `⟨w, u⟩`.
   `⟪wₙ, u⟫ ≤ ‖wₙ‖ · ‖u‖ = ‖wₙ‖` (avec `‖u‖ = 1`) donne `n · γ ≤ ‖wₙ‖`, donc
   `(n · γ)² ≤ ‖wₙ‖² ≤ n · R²`, i.e. **`n · γ² ≤ R²`**.
 
+### Serrage de la borne (sharpness)
+
+- **`novikoff_bound_is_sharp`** (`Tightness.lean`) : la borne `(R/γ)²` est
+  **optimale** — on exhibe une exécution valide sur `ℂ` (espace préhilbertien réel
+  de dimension 2) qui l'**atteint avec égalité** `n · γ² = R²`. Deux points
+  `x₀ = 1 + I`, `x₁ = 1 − I` (demi-droites orthogonales), tous deux d'étiquette
+  `+1`, séparés par `u = 1` avec marge `γ = 1`, de norme `‖xₖ‖ = √2` (donc
+  `R = √2`), et `n = 2` : on a `n · γ² = 2 = (√2)² = R²`. Puisque l'inégalité
+  universelle `≤ R²` et l'égalité du témoin coexistent, aucune borne de la forme
+  `n · γ² ≤ c · R²` avec `c < 1` n'est valable sur toutes les exécutions : la
+  constante `1` devant `(R/γ)²` est la meilleure possible.
+
 La preuve ne dépend d'aucune hypothèse de dimension : tout vient de la structure
 d'espace préhilbertien réel (`InnerProductSpace ℝ V`), de la commutativité du
 produit scalaire réel, de Cauchy–Schwarz (`real_inner_le_norm`) et du développement
@@ -62,6 +77,7 @@ Mathlib.
 | `Perceptron/Data.lean` | 0 | Espace préhilbertien réel, `norm_sq_eq_inner_self`, développement `norm_add_sq_eq` (`‖a+b‖² = ‖a‖² + 2⟪a,b⟫ + ‖b‖²`), étiquettes `±1` (`IsLabel`, `LabeledPoint`). |
 | `Perceptron/Perceptron.lean` | 0 | Suite des poids `perceptronWeights` (`w₀ = 0`, `w_{k+1} = wₖ + yₖ · xₖ`), structure `PerceptronRun` (données séparables + trace d'erreurs + invariants de marge/rayon). |
 | `Perceptron/Convergence.lean` | 0 | Lemme A `align_growth` (`⟪wₖ,u⟫ ≥ kγ`), Lemme B `norm_bound` (`‖wₖ‖² ≤ kR²`), Cauchy–Schwarz ⟹ **`novikoff_mistake_bound`** (`n · γ² ≤ R²`). |
+| `Perceptron/Tightness.lean` | 0 | **Saturation de la borne** : témoin concret sur `ℂ` (`x₀ = 1+I`, `x₁ = 1−I`, séparés par `u = 1`, `n = 2`, `γ = 1`, `R = √2`) atteignant l'égalité `n·γ² = R²` ⟹ **`novikoff_bound_is_sharp`** (la borne `(R/γ)²` est optimale — aucune constante `< 1` ne l'améliore). Utilitaire `complex_inner_re` (produit scalaire réel de `ℂ` en coordonnées). |
 | `Perceptron.lean` | 0 | Imports parapluie + doc de statut. |
 
 ## Build
