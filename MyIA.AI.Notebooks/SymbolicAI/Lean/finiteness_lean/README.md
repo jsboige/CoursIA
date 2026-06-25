@@ -23,6 +23,29 @@ est l'expression `D_a(r)` qui reconnaît exactement les mots `w` tels que
 calcule le **matching sans reculer** (non-backtracking) : un mot `w` est reconnu
 par `r` ssi la dérivée de `r` par `w` est *nullable* (reconnaît le mot vide ε).
 
+*Comment la dérivée de Brzozowski reconnaît un mot caractère par caractère, sans
+jamais reculer (chaque étape = une fonction de `Basic.lean`) :*
+
+```mermaid
+flowchart LR
+    R["Regex r<br/><i>empty / eps / char /<br/>concat / union / star</i>"]
+    W["Mot w = a₁ a₂ … aₙ"]
+    D1["D_a₁(r)<br/>deriv"]
+    D2["D_a₂(D_a₁(r))<br/>deriv itérée"]
+    Dn["D_w(r) = derivWord"]
+    NUL["nullable (D_w r) ?"]
+    ACC["accepts r w = vrai<br/><i>mot reconnu, sans reculer</i>"]
+    REJ["accepts r w = faux"]
+
+    R --> D1
+    W --> D1
+    D1 --> D2
+    D2 --> Dn
+    Dn --> NUL
+    NUL -->|"oui (reconnaît ε)"| ACC
+    NUL -->|"non"| REJ
+```
+
 Le **théorème de finitude** (Brzozowski 1964) : l'ensemble des dérivées itérées
 d'une expression régulière est **fini** modulo l'équivalence ACI (Associativité,
 Commutativité, Idempotence) des unions. C'est cette finitude qui garantit la
@@ -31,6 +54,28 @@ terminaison et la complexité linéaire de :
 - .NET `RegexOptions.NonBacktracking` (PLDI 2023),
 - **RE#** (POPL 2025, Varatalu/Veanes/Ernits),
 - SymPy.
+
+*Pourquoi les dérivées itérées restent en nombre fini — la clé de la terminaison
+et de la complexité linéaire des moteurs modernes :*
+
+```mermaid
+flowchart TD
+    R0["Regex r fixée"]
+    DERIVS["Ensemble des dérivées itérées<br/>D_w(r) pour tous les mots w"]
+    ACI["Quotient par équivalence ACI<br/><i>Associativité · Commutativité · Idempotence des unions</i>"]
+    FIN["Théorème de finitude (Brzozowski 1964)<br/>nombre FINI de classes d'équivalence"]
+    TERM["Termination garantie<br/>l'espace des dérivées ne grandit pas indéfiniment"]
+    LIN["Complexité linéaire O(|w|)<br/>une dérivée par caractère, sans backtracking"]
+    ENGINES["Moteurs non-backtracking<br/>.NET NonBacktracking · RE# · SymPy"]
+
+    R0 --> DERIVS
+    DERIVS --> ACI
+    ACI --> FIN
+    FIN --> TERM
+    FIN --> LIN
+    TERM --> ENGINES
+    LIN --> ENGINES
+```
 
 ## Modules
 
