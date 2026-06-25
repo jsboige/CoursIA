@@ -94,24 +94,19 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 
 ## Architecture
 
-```
-                    ┌─────────────┐
-                    │  Executor   │
-                    └──────┬──────┘
-                           │
-           ┌───────────────┼───────────────┐
-           │               │               │
-    ┌──────▼──────┐ ┌──────▼──────┐ ┌──────▼──────┐
-    │  Informal   │ │     PL      │ │ Orchestration│
-    │   Agent     │ │   Agent     │ │    Agent     │
-    └─────────────┘ └─────────────┘ └──────────────┘
-           │               │               │
-           └───────────────┴───────────────┘
-                           │
-                    ┌──────▼──────┐
-                    │   Tweety    │
-                    │  (Java/JPype)│
-                    └─────────────┘
+```mermaid
+flowchart TD
+    EX(["<b>Executor</b><br/>point d'entrée batch<br/>Papermill / MCP"])
+    IA["<b>Informal Agent</b><br/>extraction du tissu argumentatif<br/>+ détection de sophismes — couche LLM"]
+    PL["<b>PL Agent</b><br/>formalisation en<br/>logique propositionnelle"]
+    OR["<b>Orchestration Agent</b><br/>coordination déterministe<br/>ou conversationnelle"]
+    TW[("<b>Tweety</b><br/>solveur formel unique<br/>Java / JPype")]
+    EX --> IA
+    EX --> PL
+    EX --> OR
+    IA --> TW
+    PL --> TW
+    OR --> TW
 ```
 
 L'`Executor` est le seul point d'entrée (exécution batch via Papermill/MCP) : il déclenche la chaîne et agrège le rapport final. Le travail se *fan-out* vers trois agents spécialisés — **Informal** (extraction du tissu argumentatif et détection de sophismes, couche LLM), **PL** (formalisation en logique propositionnelle) et **Orchestration** (coordination déterministe ou conversationnelle) — puis *converge* vers **Tweety**, le solveur formel unique (Java via JPype).
@@ -125,6 +120,16 @@ Cette topologie en entonnoir n'est pas accidentelle : la cohérence logique est 
 3. **Validation** - Vérification cohérence via Tweety
 4. **Évaluation** - Détection de sophismes et faiblesses
 5. **Rapport** - Génération conclusion structurée
+
+```mermaid
+flowchart LR
+    TXT(["Texte<br/>argumentatif"]) --> E1["1 · Extraction<br/>prémisses, conclusions"]
+    E1 --> E2["2 · Formalisation<br/>logique propositionnelle"]
+    E2 --> E3["3 · Validation<br/>cohérence (SAT)"]
+    E3 --> E4["4 · Évaluation<br/>sophismes, faiblesses"]
+    E4 --> RAP["5 · Rapport<br/>synthèse groundée"]
+    E3 -. "requêtes SAT" .-> TW[("Tweety<br/>Java / JPype")]
+```
 
 ## Exemple de trace du pipeline
 
