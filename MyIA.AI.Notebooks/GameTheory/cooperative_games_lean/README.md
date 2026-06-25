@@ -49,6 +49,25 @@ d'indice de pouvoir pour les types de joueurs canoniques.
 - **`MinimalWinning G S`** — coalition gagnante irréductible (`v S = 1 ∧ ∀ T ⊂ S, v T = 0`) :
   le noyau des coalitions clés dont le poids atteint juste le quota.
 
+*Du jeu pondéré au jeu décisif — comment ces prédicats s'empilent :*
+
+```mermaid
+flowchart TD
+    WVG["WeightedVotingGame G<br/><i>jeu à quota pondéré</i>"]
+    SG["SimpleGame G<br/>v(S) ∈ {0, 1}"]
+    MG["MonotoneGame G<br/>S ⊆ T ⟹ v(S) ≤ v(T)"]
+    PG["ProperGame G<br/>v(S)=1 ⟹ v(Sᶜ)=0"]
+    StG["StrongGame G<br/>v(S)=0 ⟹ v(Sᶜ)=1"]
+    SDG["SelfDualGame G<br/>Proper ∧ Strong — jeu décisif"]
+
+    WVG -->|"weighted_voting_game_simple"| SG
+    SG --> MG
+    WVG -->|"2·quota &gt; Σ poids"| PG
+    WVG -->|"2·quota ≤ Σ poids"| StG
+    PG --> SDG
+    StG --> SDG
+```
+
 ### Taxonomie des joueurs
 
 - **`VetoPlayer G i`** — appartient à toute coalition gagnante (`∀ S, v S = 1 → i ∈ S`).
@@ -60,6 +79,26 @@ d'indice de pouvoir pour les types de joueurs canoniques.
   (`dictator_banzhaf_pos`) et n'est pas un dummy (`dictator_not_dummy`).
 - **`DummyPlayer G i`** — ne change jamais la valeur d'une coalition ; son indice de
   Banzhaf brut est nul (`dummy_banzhaf_raw_zero`).
+
+*Qui implique qui, et ce que chaque type de joueur dit de son indice de Banzhaf
+(flèches pleines = implication positive, pointillées = exclusion) :*
+
+```mermaid
+flowchart LR
+    Dict["Dictator G i<br/>v({i})=1 ∧ VetoPlayer"]
+    Veto["VetoPlayer G i<br/>∈ toute coalition gagnante"]
+    Dummy["DummyPlayer G i<br/>ne change jamais v(S)"]
+    BI0["BanzhafIndex &gt; 0"]
+    BRpos["BanzhafRaw &gt; 0"]
+    BR0["BanzhafRaw = 0"]
+
+    Dict -->|"implique"| Veto
+    Dict -.->|"dictator_not_dummy"| Dummy
+    Veto -.->|"veto_not_dummy"| Dummy
+    Dict -->|"dictator_banzhaf_pos"| BI0
+    Veto -->|"veto_banzhaf_raw_pos<br/>(grand coalition gagne)"| BRpos
+    Dummy -->|"dummy_banzhaf_raw_zero"| BR0
+```
 
 ### Théorèmes d'indice de pouvoir
 
