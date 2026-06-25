@@ -26,6 +26,24 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 
 ## Parcours d'apprentissage
 
+Les quatre notebooks attaquent les mêmes résultats d'impossibilité sous des angles complémentaires -- l'intuition par la simulation, la pratique électorale, la certitude formelle et la vérification automatique -- qui convergent vers une cartographie des relaxations possibles.
+
+```mermaid
+flowchart TD
+    Result["Résultats d'impossibilité<br/>Arrow (1951) · Sen (1970)"]
+
+    E1["SC-01 · Simulation Python<br/>test empirique des axiomes (Geanakoplos)<br/>→ intuition"]
+    E2["SC-03 · Méthodes de vote<br/>Condorcet · Borda · électeur médian<br/>→ pratique électorale"]
+    E3["SC-02 · Preuve formelle Lean 4<br/>infinité des cas couverte · 0 sorry<br/>→ certitude"]
+    E4["SC-04 · Vérification SAT/Z3<br/>impossibilité = UNSAT<br/>→ vérification automatique"]
+
+    E1 --> Result
+    E2 --> Result
+    E3 --> Result
+    E4 --> Result
+    Result -.- Relax["Cartographie des relaxations<br/>électeur médian (Downs) · Split Cycle<br/>chaque paire d'axiomes réalisable"]
+```
+
 ### Étape 1 : Le théorème d'Arrow par la simulation (SC-01, 45 min)
 
 Le notebook SC-01 introduit les trois axiomes d'Arrow (Pareto faible, IIA, non-dictature) en les testant empiriquement sur des règles de vote usuelles (Borda, pluralité, dictature). Il suit la structure de la preuve de Geanakoplos (2005) -- lemme extrémal, existence du pivot, dictateur partiel -- et l'illustre pas à pas en Python. La conclusion montre pourquoi la preuve formelle couvre une infinité de cas que la simulation ne peut atteindre.
