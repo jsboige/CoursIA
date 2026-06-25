@@ -16,6 +16,20 @@ Infer.NET est le seul framework d'inférence probabiliste natif dans l'écosyst�
 | **VMP** | Stable, bon pour discret | Sous-estime l'incertitude | LDA, modèles à composantes |
 | **Gibbs** | Exact asymptotiquement | Lent, convergence difficile | Validation, petits modèles |
 
+```mermaid
+flowchart LR
+    MOD["Modèle déclaratif<br/>Variables + priors +<br/>vraisemblance"] -->|"compilation Roslyn<br/>(reflection)"| SPEC["Algorithme d'inférence<br/>spécialisé"]
+    SPEC --> ENG{"Moteur"}
+    ENG -->|"continu / mixte<br/>(défaut)"| EP["<b>EP</b><br/>Expectation Propagation<br/>rapide · approximatif"]
+    ENG -->|"composantes<br/>(LDA)"| VMP["<b>VMP</b><br/>Variational MP<br/>stable · sous-estime<br/>l'incertitude"]
+    ENG -->|"validation<br/>(petits modèles)"| GIBBS["<b>Gibbs</b><br/>échantillonnage<br/>exact asymptotiquement · lent"]
+    EP --> POST["Posterior<br/>(millisecondes)"]
+    VMP --> POST
+    GIBBS --> POST
+```
+
+Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via Roslyn/reflection) en un algorithme d'inférence **spécialisé**, et l'on choisit l'un des trois moteurs selon la structure du modèle. C'est l'inverse d'un échantillonneur MCMC générique (PyMC) qui traite tout modèle pareil — d'où des inférences en millisecondes plutôt qu'en minutes, au prix de l'approximation (EP) ou d'une incertitude sous-estimée (VMP).
+
 **Double approche** : Cette série est le versant C#/.NET de la programmation probabiliste. Le versant Python (PyMC) couvre les mêmes modèles avec un moteur d'inférence différent. Voir [PyMC/](../PyMC/) pour la comparaison.
 
 **Applications réelles couvertes** : TrueSkill (Xbox Live, 100M+ joueurs), Item Response Theory (GMAT/GRE), LDA (Google News), systèmes de recommandation, diagnostic médical.
@@ -62,40 +76,27 @@ Infer.NET est le seul framework d'inférence probabiliste natif dans l'écosyst�
 
 ## Progression Pédagogique
 
+```mermaid
+flowchart TD
+    P1["<b>Fondamentaux</b> (1-3)<br/>inference · distributions · graphes de facteurs"]
+    P2["<b>Modèles classiques</b> (4-6)<br/>réseaux bayésiens · IRT · TrueSkill"]
+    P3["<b>Classification & sélection</b> (7-8)<br/>A/B tests · evidence · ARD"]
+    P4["<b>Modèles avancés</b> (9-12)<br/>LDA · crowdsourcing · HMM · reco"]
+    P5["<b>Référence</b> (13)<br/>Debugging · comparaison algorithmes"]
+    P6["<b>Théorie de la décision</b> (14-20)<br/>utilité · EVPI · MDPs"]
+    P7["<b>Preuve formelle</b> (20b)<br/>indice de Gittins · Lean 4"]
+    P1 --> P2 --> P3 --> P4
+    P4 --> P6
+    P6 --> P7
+    P5 -.->|"diagnostics<br/>à tout moment"| P2
+    P5 -.-> P4
+    classDef decision fill:#d1ecf1,stroke:#0c5460,stroke-width:2px;
+    classDef lean fill:#fff3cd,stroke:#856404,stroke-width:2px;
+    class P6 decision;
+    class P7 lean;
 ```
-FONDAMENTAUX (1-3)
-+-- 1-Setup : Variables, inference basique
-+-- 2-Gaussian-Mixtures : Distributions continues, melanges
-+-- 3-Factor-Graphs : Inference discrete, conditionnement
 
-MODELES CLASSIQUES (4-6)
-+-- 4-Bayesian-Networks : CPT, causalite
-+-- 5-Skills-IRT : Relations many-to-many
-+-- 6-TrueSkill : Online learning, message passing
-
-CLASSIFICATION & SELECTION (7-8)
-+-- 7-Classification : BPM, regression logistique
-+-- 8-Model-Selection : Evidence, ARD, comparaison
-
-MODELES AVANCES (9-12)
-+-- 9-Topic-Models : LDA, documents-topics-mots
-+-- 10-Crowdsourcing : Hierarchique, communautes
-+-- 11-Sequences : HMM, series temporelles
-+-- 12-Recommenders : Factorisation, multi-vues
-
-REFERENCE (13)
-+-- 13-Debugging : Troubleshooting, diagnostics, comparaison algorithmes
-
-THEORIE DE LA DECISION (14-20)
-+-- 14-Decision-Utility-Foundations : Loteries, axiomes VNM
-+-- 15-Decision-Utility-Money : Aversion au risque, CARA/CRRA
-+-- 16-Decision-Multi-Attribute : Decisions multi-criteres, SMART
-+-- 17-Decision-Networks : Diagrammes d'influence
-+-- 18-Decision-Value-Information : EVPI, EVSI
-+-- 19-Decision-Expert-Systems : Systemes experts, Minimax
-+-- 20-Decision-Sequential : MDPs, planification
-+-- 20b-Lean-Gittins : Preuves formelles Gittins (Lean 4)
-```
+Le socle d'inference (1-12) se suit en sequence ; le notebook **13 (Debugging)** est transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. La **théorie de la décision** (14-20, surlignée bleu) forme un fil rouge autonome, et le notebook **20b (Gittins, surligné jaune)** apporte la **preuve formelle Lean 4** qui ancre le tout dans le curriculum cross-série de démonstrations. Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
 
 ---
 
