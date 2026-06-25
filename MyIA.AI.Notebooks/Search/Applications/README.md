@@ -35,6 +35,21 @@ Applications/
 └── Hybrid/     # Metaheuristiques / GA (7 notebooks)
 ```
 
+```mermaid
+flowchart LR
+    P1["<b>Partie 1 — Search</b><br/>exploration, jeux adversariaux"]
+    P2["<b>Partie 2 — CSP</b><br/>modélisation déclarative<br/>(X, D, C) + propagation"]
+    P4["<b>Partie 4 — Métaheuristiques</b><br/>SA, GA, ACO, recuit"]
+    S["<b>Applications Search</b> (2)<br/>ConnectFour : Minimax,<br/>MCTS, DQN-RL"]
+    C["<b>Applications CSP</b> (12)<br/>N-Queens, GraphColoring,<br/>Nurse/JobShop, Minesweeper,<br/>Wordle, Picross, WFC..."]
+    H["<b>Applications Hybrides</b> (7)<br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter"]
+    P1 --> S
+    P2 --> C
+    P4 --> H
+    S -.->|"benchmark croisé"| H
+    C -.->|"quand l'espace explose"| H
+```
+
 ---
 
 ## Applications Search (`Search/`)
