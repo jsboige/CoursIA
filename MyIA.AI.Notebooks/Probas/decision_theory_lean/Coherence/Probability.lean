@@ -192,4 +192,64 @@ theorem single_coherent_iff_prob_bounds (q : Price Ω) [Nonempty Ω] :
         have hqv : q A = 0 := by rw [hA]; exact h0
         linarith [hind w]
 
+/-! ## Réciproque constructive : une vraie probabilité est cohérente
+
+Le résultat-clé `single_coherent_iff_prob_bounds` caractérise les fonctions de prix
+mono-livret cohérentes par les bornes `0 ≤ q A ≤ 1`, `q ∅ = 0`, `q univ = 1`. Il reste à
+vérifier que les **vraies mesures de probabilité** — construites à partir de poids
+atomiques non négatifs sommant à 1 — satisfont ces bornes, donc sont cohérentes. C'est le
+contenu constructif du « pourquoi » des probabilités : une croyance probabiliste *sincère*
+(issue de poids cohérents) ne peut jamais être arbitrée par un Dutch Book. Cette section
+complète le noyau tractable du jalon `coherent_iff_probability` (#4050) en livrant la
+direction « vraie probabilité ⟹ cohérence » — mono-livret ET additive.
+-/
+
+/-- Une fonction de prix **issue de poids atomiques** : `q A = Σ_{ω ∈ A} p ω`. Quand les
+    poids `p` forment une distribution de probabilité (non négatifs, sommant à 1), `q` est
+    exactement une mesure de probabilité finie. -/
+noncomputable def priceFromWeights (p : Ω → ℝ) : Price Ω := fun A => ∑ ω ∈ A, p ω
+
+/-- **Additivité des prix issus de poids.** Une fonction `priceFromWeights p` satisfait
+    l'identité d'inclusion–exclusion `q(A∪B) + q(A∩B) = q A + q B`. Par contraposée de
+    `coherent_on_implies_additive`, aucune violation de l'inclusion–exclusion n'est donc
+    exploitable par un Dutch Book à quatre tickets : les poids atomiques rendent `q`
+    additive. -/
+lemma priceFromWeights_additive (p : Ω → ℝ) (A B : Event Ω) :
+    priceFromWeights p (A ∪ B) + priceFromWeights p (A ∩ B) =
+      priceFromWeights p A + priceFromWeights p B := by
+  simp only [priceFromWeights]
+  exact Finset.sum_union_inter
+
+/-- **Les poids probabilistes satisfont les bornes de probabilité.** Si `p` est une
+    distribution (non négative, sommant à 1), la fonction de prix `priceFromWeights p`
+    satisfait `0 ≤ q A ≤ 1`, `q ∅ = 0`, `q univ = 1`. -/
+lemma priceFromWeights_probBounds (p : Ω → ℝ) (hnn : ∀ ω, (0:ℝ) ≤ p ω)
+    (hsum : ∑ ω, p ω = 1) : ProbBounds (priceFromWeights p) := by
+  refine ⟨fun A => ?_, fun A => ?_, ?_, ?_⟩
+  · -- 0 ≤ q A : somme de poids non négatifs
+    simp only [priceFromWeights]
+    exact Finset.sum_nonneg (fun ω _ => hnn ω)
+  · -- q A ≤ 1 : somme partielle (sur A ⊆ univ) ≤ somme totale = 1
+    simp only [priceFromWeights]
+    have hsub : (A : Finset Ω) ⊆ Finset.univ := Finset.subset_univ _
+    calc ∑ ω ∈ A, p ω
+        ≤ ∑ ω ∈ (Finset.univ : Finset Ω), p ω :=
+          Finset.sum_le_sum_of_subset_of_nonneg hsub (fun ω _ _ => hnn ω)
+      _ = 1 := hsum
+  · -- q ∅ = 0
+    simp only [priceFromWeights, Finset.sum_empty]
+  · -- q univ = 1
+    simp only [priceFromWeights]
+    exact hsum
+
+/-- **Une vraie probabilité est cohérente (mono-livret).** Une fonction de prix issue de
+    poids atomiques formant une distribution de probabilité ne peut être arbitrée par
+    aucun Dutch Book à un seul ticket. C'est le couronnement du cadre mono-livret : les
+    croyances probabilistes sincères sont inarbitrables (de Finetti, cas fini). La preuve
+    compose `priceFromWeights_probBounds` avec la caractérisation `single_coherent_iff_prob_bounds`. -/
+lemma priceFromWeights_single_coherent (p : Ω → ℝ) [Nonempty Ω]
+    (hnn : ∀ ω, (0:ℝ) ≤ p ω) (hsum : ∑ ω, p ω = 1) :
+    SingleCoherent (priceFromWeights p) :=
+  (single_coherent_iff_prob_bounds _).mpr (priceFromWeights_probBounds p hnn hsum)
+
 end Coherence
