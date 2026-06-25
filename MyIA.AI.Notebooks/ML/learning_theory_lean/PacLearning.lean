@@ -31,8 +31,10 @@ Learning*, §2). La preuve combine :
 - `PacLearning/Data.lean` — distribution `Distribution` (poids normalisé `X → ℝ`),
   erreur vraie `trueError` (masse des instances mal classées), erreur empirique
   `empError` (proportion d'erreurs sur un échantillon). Propriétés **élémentaires
-  0-sorry** : `trueError_nonneg` (`0 ≤ L_D`), `trueError_le_one` (`L_D ≤ 1`),
-  `trueError_self` (`L_D(f, f) = 0`), `trueError_comm` (symétrie), `empError_nonneg`.
+  0-sorry**, symétriques pour les deux erreurs : non-négativité (`trueError_nonneg`,
+  `empError_nonneg`), borne supérieure `≤ 1` (`trueError_le_one`, `empError_le_one`),
+  nullité quand `h = f` (`trueError_self`, `empError_self`), symétrie `h ↔ f`
+  (`trueError_comm`, `empError_comm`).
 
 ## Itération 2+ — OPEN (documenté, pas sorry-backed)
 

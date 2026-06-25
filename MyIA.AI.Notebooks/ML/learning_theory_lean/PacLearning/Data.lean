@@ -110,6 +110,43 @@ theorem empError_nonneg (f h : Hypothesis X) {n : ℕ} (S : Fin n → X) (hn : 0
     · rw [if_neg hi]
   · exact_mod_cast hn.le
 
+/-- Une hypothèse qui coïncide avec le concept (`h = f`) a une erreur empirique
+nulle (tous les indicateurs sont nuls). -/
+theorem empError_self (f : Hypothesis X) {n : ℕ} (S : Fin n → X) :
+    empError f f S = 0 := by
+  dsimp only [empError]; simp
+
+/-- L'erreur empirique est au plus `1` : au pire les `n` instances sont mal
+classées, soit un rapport `n / n = 1`. -/
+theorem empError_le_one (f h : Hypothesis X) {n : ℕ} (S : Fin n → X) (hn : 0 < n) :
+    empError f h S ≤ 1 := by
+  dsimp only [empError]
+  have hnpos : (0 : ℝ) < n := by exact_mod_cast hn
+  have hsum : (∑ i : Fin n, if h (S i) ≠ f (S i) then (1:ℝ) else 0) ≤ (n : ℝ) := by
+    calc (∑ i : Fin n, if h (S i) ≠ f (S i) then (1:ℝ) else 0)
+        ≤ ∑ i : Fin n, (1:ℝ) := sum_le_sum fun i _ => by
+          by_cases hi : h (S i) ≠ f (S i)
+          · rw [if_pos hi]
+          · rw [if_neg hi]; norm_num
+      _ = (n : ℝ) := by simp
+  -- (Σ/n ≤ 1) ⟺ (Σ ≤ 1*n = n) when n > 0.
+  rw [div_le_iff₀ hnpos, one_mul]
+  exact hsum
+
+/-- L'erreur empirique de `h` (vs `f`) égale celle de `f` (vs `h`) : la relation
+« mal classé » est symétrique (indicateurs égaux point par point). -/
+theorem empError_comm (f h : Hypothesis X) {n : ℕ} (S : Fin n → X) :
+    empError f h S = empError h f S := by
+  dsimp only [empError]
+  have heq : (∑ i : Fin n, if h (S i) ≠ f (S i) then (1:ℝ) else 0) =
+             (∑ i : Fin n, if f (S i) ≠ h (S i) then (1:ℝ) else 0) := by
+    apply Finset.sum_congr rfl
+    intro i _
+    by_cases hi : h (S i) ≠ f (S i)
+    · rw [if_pos hi, if_pos (ne_comm.mp hi)]
+    · rw [if_neg hi, if_neg (fun h' => hi (ne_comm.mp h'))]
+  rw [heq]
+
 end Empirical
 
 end PacLearning

@@ -73,7 +73,7 @@ Mathlib.
 | `Perceptron/Perceptron.lean` | 0 | Suite des poids `perceptronWeights` (`w₀ = 0`, `w_{k+1} = wₖ + yₖ · xₖ`), structure `PerceptronRun` (données séparables + trace d'erreurs + invariants de marge/rayon). |
 | `Perceptron/Convergence.lean` | 0 | Lemme A `align_growth` (`⟪wₖ,u⟫ ≥ kγ`), Lemme B `norm_bound` (`‖wₖ‖² ≤ kR²`), Cauchy–Schwarz ⟹ **`novikoff_mistake_bound`** (`n · γ² ≤ R²`). |
 | `Perceptron.lean` | 0 | Imports parapluie + doc de statut. |
-| `PacLearning/Data.lean` | 0 | Cadre PAC (Valiant 1984) : `Distribution` (poids normalisé `X → ℝ`), erreur vraie `trueError` (masse des instances mal classées), erreur empirique `empError` (proportion d'erreurs sur un échantillon). Propriétés élémentaires : `trueError_nonneg` (`0 ≤ L_D`), `trueError_le_one` (`L_D ≤ 1`), `trueError_self` (`L_D(f,f)=0`), `trueError_comm` (symétrie), `empError_nonneg`. |
+| `PacLearning/Data.lean` | 0 | Cadre PAC (Valiant 1984) : `Distribution` (poids normalisé `X → ℝ`), erreur vraie `trueError` (masse des instances mal classées), erreur empirique `empError` (proportion d'erreurs sur un échantillon). Propriétés élémentaires symétriques pour les deux erreurs : `trueError_nonneg`/`empError_nonneg` (`≥ 0`), `trueError_le_one`/`empError_le_one` (`≤ 1`), `trueError_self`/`empError_self` (`h=f ⟹ 0`), `trueError_comm`/`empError_comm` (symétrie `h↔f`). |
 | `PacLearning.lean` | 0 | Imports parapluie + doc de statut. |
 
 ## Build
