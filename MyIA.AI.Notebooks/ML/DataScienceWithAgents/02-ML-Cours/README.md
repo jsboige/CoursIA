@@ -23,6 +23,27 @@ La thèse est volontairement classique : on ne peut évaluer ce qu'un agent gén
 | [2.5-Biais-Variance-CV-ROC](2.5-Biais-Variance-CV-ROC.ipynb) | Compromis biais-variance, validation croisée, ROC/AUC | **ROC + coût du seuil** : faux négatifs vs faux positifs | réel `load_breast_cancer` |
 | [2.6-Clustering-KMeans-PCA](2.6-Clustering-KMeans-PCA.ipynb) | Apprentissage non supervisé : KMeans + ACP | **Structure retrouvée sans étiquettes** (PCA 2D + reconstruction) | réel `load_digits` |
 
+## L'arc pédagogique
+
+Le fil rouge de la série : on pose le **workflow**, on ouvre les **boîtes noires** (descente de gradient, fonction de lien), on élargit la **famille de modèles** (linéaire/logistique, arbres, ensembles), on formalise l'**évaluation** (biais-variance, validation croisée, ROC), puis on bascule en **non supervisé** (clustering, ACP). Chaque notebook rend visible un concept-phare distinct.
+
+```mermaid
+flowchart TD
+    subgraph SUP["Apprentissage supervisé (2.1 à 2.5)"]
+      direction TB
+      A["2.1 - Workflow ML<br/>split, fit, predict, évaluer<br/>surapprentissage visible (sweep max_depth)"]
+      B["2.2 - Descente de gradient<br/>ouvrir la boîte noire de fit()<br/>3 learning rates : lent / bon / divergeant"]
+      C["2.3 - Régression linéaire et logistique<br/>OLS vs MLE<br/>droite vs sigmoïde sur mêmes labels"]
+      D["2.4 - Arbres, forêts, ensembles<br/>au-delà du linéaire<br/>réduction de variance (frontière lisse)"]
+      E["2.5 - Biais-variance, CV, ROC<br/>évaluer rigoureusement<br/>ROC + coût du seuil (FN vs FP)"]
+      A --> B --> C --> D --> E
+    end
+    subgraph UNSUP["Apprentissage non supervisé (2.6)"]
+      F["2.6 - Clustering et ACP<br/>travailler sans étiquettes<br/>structure retrouvée (PCA 2D + reconstruction)"]
+    end
+    E -. "plus d'étiquettes" .-> F
+```
+
 ## Pédagogie
 
 Chaque notebook suit les mêmes conventions :
