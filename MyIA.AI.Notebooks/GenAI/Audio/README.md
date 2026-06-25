@@ -177,6 +177,35 @@ Le fil rouge de cette série est la création d'un podcast généré par IA. Voi
 
 4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Audio-Content.ipynb) applique le pipeline à la narration de cours. [04-2](04-Applications/04-2-Transcription-Pipeline.ipynb) gère la transcription batch pour les épisodes longs. [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise avec la piste vidéo si le podcast a une composante visuelle.
 
+Le schéma ci-dessous résume comment les niveaux s'articulent pour construire un podcast automatisé : de la synthèse et reconnaissance vocales one-shot (niveau 1) au pipeline STT→LLM→TTS assemblé puis déployé en production (niveaux 3-4), en passant par le clonage vocal et l'identité sonore (niveau 2).
+
+```mermaid
+flowchart TD
+    subgraph N1["1 · Parler & comprendre — 01-Foundation"]
+        A1["01-1 OpenAI TTS : API cloud"]
+        A2["01-5 Kokoro : TTS local léger"]
+        A3["01-2 Whisper STT : API cloud"]
+        A4["01-4 Whisper : transcription locale"]
+    end
+    subgraph N2["2 · Voix & musique — 02-Advanced"]
+        B1["02-2 XTTS : clonage vocal"]
+        B2["02-3 MusicGen : jingle & fond sonore"]
+        B3["02-4 Demucs : séparation de sources"]
+        B4["02-8 FishAudio : TTS expressif"]
+    end
+    subgraph N3["3 · Orchestrer — 03-Orchestration"]
+        C1["03-1 : benchmark STT / TTS"]
+        C2["03-2 : pipeline STT→LLM→TTS"]
+        C3["03-3 : Realtime Voice API"]
+    end
+    subgraph N4["4 · Produire — 04-Applications"]
+        D1["04-1 : narration de cours"]
+        D2["04-2 : transcription batch"]
+        D3["04-4 : sync audio-vidéo"]
+    end
+    N1 --> N2 --> N3 --> N4
+```
+
 ## FAQ
 
 ### GPU OOM pendant un notebook TTS/STT local
