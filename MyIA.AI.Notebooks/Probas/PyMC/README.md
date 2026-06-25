@@ -22,6 +22,19 @@ Cette série couvre les **même 20 modèles** que la série [Infer.NET](../Infer
 
 Avoir les deux approches sur les mêmes modèles permet de comprendre les **compromis** entre inference exacte et approchee, une compétence clé pour tout praticien.
 
+```mermaid
+flowchart LR
+    M["Modèle probabiliste<br/>prior + vraisemblance<br/>+ données observées"] --> FORK{"Moteur<br/>d'inference"}
+    FORK -->|"MCMC / NUTS"| PYMC["<b>PyMC</b><br/>échantillonnage stochastique<br/>presque tout modèle"]
+    FORK -->|"message passing"| INFER["<b>Infer.NET</b><br/>EP/VMP déterministe<br/>modèles conjugués"]
+    PYMC --> P1["Posterior :<br/>distribution complète"]
+    INFER --> P2["Posterior :<br/>analytique"]
+    P1 --> D1["Diagnostics ArviZ<br/>R-hat · ESS · divergences"]
+    P2 --> D2["Factor graph"]
+```
+
+Le **même** modèle probabiliste (à gauche) se résout par deux moteurs radicalement différents : l'échantillonnage MCMC de PyMC (stochastique, convergent, flexible) ou le message passing d'Infer.NET (déterministe, analytique, restreint aux conjugués). La série parcourt les 20 mêmes modèles des deux côtés pour rendre ce compromis **visible**.
+
 ## Objectifs d'apprentissage
 
 A l'issue de cette série, vous serez capable de :
@@ -59,39 +72,23 @@ A l'issue de cette série, vous serez capable de :
 
 ## Progression Pédagogique
 
+```mermaid
+flowchart TD
+    P1["<b>Fondamentaux</b> (1-3)<br/>inference, distributions, discrete"]
+    P2["<b>Modèles classiques</b> (4-6)<br/>réseaux bayésiens · IRT · TrueSkill"]
+    P3["<b>Classification & sélection</b> (7-8)<br/>A/B tests · evidence · ARD"]
+    P4["<b>Modèles avancés</b> (9-12)<br/>LDA · crowdsourcing · HMM · reco"]
+    P5["<b>Référence</b> (13)<br/>Debugging NUTS · convergence"]
+    P6["<b>Théorie de la décision</b> (14-20)<br/>utilité · EVPI · MDPs · bandits"]
+    P1 --> P2 --> P3 --> P4
+    P4 --> P6
+    P5 -.->|"diagnostics<br/>à tout moment"| P2
+    P5 -.-> P4
+    classDef decision fill:#d1ecf1,stroke:#0c5460,stroke-width:2px;
+    class P6 decision;
 ```
-FONDAMENTAUX (1-3)
-+-- 1-Setup : Variables, inference basique, Beta-Bernoulli
-+-- 2-Gaussian-Mixtures : Distributions continues, melanges
-+-- 3-Factor-Graphs : Inference discrete, conditionnement
 
-MODÈLES CLASSIQUES (4-6)
-+-- 4-Bayesian-Networks : CPT, causalite, D-separation
-+-- 5-Skills-IRT : Relations many-to-many, IRT/DINA
-+-- 6-TrueSkill : Online learning, message passing
-
-CLASSIFICATION & SELECTION (7-8)
-+-- 7-Classification : BPM, regression logistique, A/B tests
-+-- 8-Model-Selection : Evidence, ARD, comparaison bayesienne
-
-MODÈLES AVANCES (9-12)
-+-- 9-Topic-Models : LDA, documents-topics-mots
-+-- 10-Crowdsourcing : Hierarchique, communautes
-+-- 11-Sequences : HMM, séries temporelles
-+-- 12-Recommenders : Factorisation, systèmes de recommandation
-
-RÉFÉRENCE (13)
-+-- 13-Debugging : Diagnostics NUTS, convergence, troubleshooting
-
-THÉORIE DE LA DÉCISION (14-20)
-+-- 14-Utility-Foundations : Axiomes VNM, loteries
-+-- 15-Utility-Money : Aversion au risque, CARA/CRRA
-+-- 16-Multi-Attribute : MAUT, SMART, compromis
-+-- 17-Decision-Networks : Influence diagrams, politique optimale
-+-- 18-Value-Information : EVPI, EVSI, echantillonnage optimal
-+-- 19-Expert-Systems : Regret Minimax, décisions robustes
-+-- 20-Sequential : MDPs, bandits, POMDPs
-```
+Le socle d'inference (1-12) se suit en sequence ; le notebook **13 (Debugging)** est transversal — à consulter dès qu'une chaîne MCMC dysfonctionne, à n'importe quelle étape. La **théorie de la décision** (14-20, surlignée) forme un fil rouge autonome : elle peut se suivre seule si l'inference bayésienne est déjà acquise. Le détail notebook-par-notebook figure dans la [Vue d'ensemble](#vue-densemble) ci-dessus.
 
 ## Installation
 
