@@ -17,7 +17,22 @@ Le Web Sémantique est la promesse d'un Web où les machines comprennent la sign
 
 Le Web Sémantique a traversé des cycles de hype et de désillusion. En 2001, Tim Berners-Lee en faisait la couverture de *Scientific American*. En 2010, les données liées semblaient une niche académique. En 2024, GraphRAG (Microsoft) a montré que les graphes de connaissances RDF pouvaient ancrer les LLMs sur des faits vérifiables : le Web Sémantique devenait un garde-fou pour l'IA générative.
 
-Cette série couvre le spectre complet parce que les briques s'articulent : RDF définit les données, SPARQL les interroge, RDFS/OWL structurent le raisonnement, SHACL valide la qualité, JSON-LD ponte vers le Web, RDF-Star ajoute la provenance, et les KG+LLMs ferment la boucle. Chaque standard est une couche qui s'appuie sur les précédentes.
+Cette série couvre le spectre complet parce que les briques s'articulent : RDF définit les données, SPARQL les interroge, RDFS/OWL structurent le raisonnement, SHACL valide la qualité, JSON-LD ponte vers le Web, RDF-Star ajoute la provenance, et les KG+LLMs ferment la boucle. Chaque standard est une couche qui s'appuie sur les précédentes :
+
+```mermaid
+flowchart BT
+    RDF["<b>RDF</b><br/>définir les données"]
+    RDF --> SPARQL["<b>SPARQL</b><br/>interroger"]
+    RDF --> RDFS["<b>RDFS / OWL</b><br/>raisonner"]
+    RDF --> SHACL["<b>SHACL</b><br/>valider"]
+    RDF --> JSONLD["<b>JSON-LD</b><br/>pont vers le Web"]
+    RDF --> RDFSTAR["<b>RDF-Star</b><br/>provenance"]
+    RDFS --> KG["<b>Graphe de connaissances</b>"]
+    SHACL --> KG
+    JSONLD --> KG
+    RDFSTAR --> KG
+    KG --> GRAG["<b>GraphRAG</b><br/>ancrer les LLMs"]
+```
 
 La série propose délibérément deux stacks : **.NET C#** (SW-1 à SW-7) pour les fondations avec dotNetRDF (typed, performant, intégré à l'écosystème CoursIA), et **Python** (SW-8 à SW-13) pour les standards modernes et l'IA. Les sidetracks Python (SW-2b, 4b, 5b, 7b) offrent un miroir des notebooks C# en Python.
 
