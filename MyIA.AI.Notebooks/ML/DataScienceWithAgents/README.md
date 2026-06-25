@@ -24,7 +24,7 @@ La formation couvre deux stacks complémentaires :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 19 (7 LangChain + 10 ADK + 2 fondations) |
+| Notebooks | 25 (7 LangChain + 10 ADK + 2 fondations Python + 6 fondations ML) |
 | Kernel | Python 3.11+ |
 | Durée totale | ~7 jours |
 
@@ -32,10 +32,18 @@ La formation couvre deux stacks complémentaires :
 
 ```
 DataScienceWithAgents/
-├── 01-PythonForDataScience/    # Fondations (2 notebooks)
+├── 01-PythonForDataScience/    # Fondations Python (2 notebooks)
 │   └── notebooks/
 │       ├── 1.2-NumPy.ipynb
 │       └── 1.3-Pandas.ipynb
+│
+├── 02-ML-Cours/                # Fondations ML canoniques (6 notebooks)
+│   ├── 2.1-Workflow-ML.ipynb
+│   ├── 2.2-Descente-de-gradient.ipynb
+│   ├── 2.3-Regression-lineaire-logistique.ipynb
+│   ├── 2.4-Arbres-Forets-Ensembles.ipynb
+│   ├── 2.5-Biais-Variance-CV-ROC.ipynb
+│   └── 2.6-Clustering-KMeans-PCA.ipynb
 │
 ├── PythonAgentsForDataScience/ # Track LangChain (7 labs)
 │   ├── Day1/Labs/              # Revision
@@ -55,6 +63,21 @@ DataScienceWithAgents/
 |----------|---------|-------|
 | [1.2-NumPy](01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | Arrays, opérations, vectorisation | 45 min |
 | [1.3-Pandas](01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | DataFrames, filtrage, groupby | 60 min |
+
+## Fondations ML (02-ML-Cours)
+
+Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Six notebooks (workflow, descente de gradient, régression linéaire/logistique, arbres et ensembles, biais-variance/CV/ROC, clustering/ACP), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
+
+| Notebook | Sujet | Concept-phare |
+|----------|-------|---------------|
+| [2.1-Workflow-ML](02-ML-Cours/2.1-Workflow-ML.ipynb) | split → fit → predict → évaluer | surapprentissage rendu visible |
+| [2.2-Descente-de-gradient](02-ML-Cours/2.2-Descente-de-gradient.ipynb) | ouvrir la boîte noire de `fit()` | 3 learning rates (lent / bon / divergeant) |
+| [2.3-Regression-lineaire-logistique](02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb) | OLS vs MLE | droite vs sigmoïde |
+| [2.4-Arbres-Forets-Ensembles](02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb) | DecisionTree, RandomForest, GradientBoosting | réduction de variance |
+| [2.5-Biais-Variance-CV-ROC](02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb) | biais-variance, validation croisée, ROC/AUC | coût du seuil de décision |
+| [2.6-Clustering-KMeans-PCA](02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | non supervisé : KMeans + ACP | structure retrouvée sans étiquettes |
+
+Documentation complète : [02-ML-Cours/README.md](02-ML-Cours/README.md)
 
 ## Workshop 3 Jours (PythonAgentsForDataScience)
 
