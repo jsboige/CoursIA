@@ -59,6 +59,20 @@ Cette série ne propose pas de choisir l'un ou l'autre, mais de **comprendre les
 
 ## Parcours d'apprentissage
 
+```mermaid
+flowchart LR
+    P1["<b>Phase 1</b><br/>Fondations<br/>logiques PL / FOL / DL / modale<br/>NB 1-3"]
+    P2["<b>Phase 2</b><br/>Révision de croyances<br/>AGM, MUS, MaxSAT<br/>NB 4"]
+    P3["<b>Phase 3</b><br/>Argumentation<br/>Dung + ASPIC/DeLP<br/>NB 5-6"]
+    P4["<b>Phase 4</b><br/>Frameworks avancés<br/>ADF, WAF, ranking, probabiliste<br/>NB 7a-7b"]
+    P5["<b>Phase 5</b><br/>Applications<br/>dialogues, vote, préférences<br/>NB 8-9"]
+    P1 --> P2 --> P3 --> P4 --> P5
+    classDef core fill:#fff3cd,stroke:#856404,stroke-width:2px;
+    class P3 core;
+```
+
+Le cœur de la série est la **Phase 3** (argumentation, surlignée) — les fondations logiques et la révision de croyances y mènent, les frameworks avancés et les applications en découlent. Le détail de chaque phase suit.
+
 ### Phase 1 : Fondations (Notebooks 1-3, ~1.5h)
 
 La série débute avec le notebook 1 (Setup) qui configure toute l'environnement : téléchargement automatique du JDK Zulu, des 39 JARs des modules TweetyProject 1.30 (plus 3 dépendances externes), et des outils externes (Clingo pour ASP, SPASS pour la logique modale, EProver pour le premier ordre). Une fois la JVM initialisée via JPype, le notebook 2 plonge dans les logiques fondamentales : la logique propositionnelle avec les opérateurs booléens, la satisfaisabilité (SAT) via pySAT, et la logique du premier ordre avec la construction de signatures et le raisonnement avec EProver. Le notebook 3 étend ces fondations aux logiques de Description (DL) pour les ontologies, la logique modale (nécessité/possibilité) pour le raisonnement sur les mondes possibles, les formules booléennes quantifiées (QBF), et la logique conditionnelle pour le raisonnement defeasible. À l'issue de cette phase, vous maîtrisez les outils de base du raisonnement formel.
@@ -391,6 +405,23 @@ Derrière chaque cadre de la série se cache une application réelle ou un probl
 - **La révision de croyances AGM** (notebook 4) formalise comment un système rationnel met à jour ses connaissances quand une information contradictoire arrive. Applications en intégration de données, diagnostic de bases de connaissance, et fusion de sources d'information.
 - **Les frameworks étendus** (notebook 7a) généralisent Dung pour capturer des situations réelles où des arguments ont plusieurs preconditions (ADF), où des attaques ont des poids variés (WAF), ou des groupes d'arguments attaquent collectivement (SetAF).
 - **La théorie du vote** (notebook 9) est au cœur des systèmes de recommandation collective, de l'agrégation de préférences en intelligence artificielle, et des mécanismes d'incitation (mechanism design).
+
+#### Un framework de Dung, visualisé
+
+L'argumentation abstraite de Dung (notebook 5) se réduit à un **graphe orienté** : des nœuds (les arguments) et des flèches (les attaques). La question n'est pas « l'argument est-il vrai ? » mais **« survive-t-il aux attaques ? »** — c'est ce que calculent les sémantiques. Exemple minimal :
+
+```mermaid
+flowchart LR
+    C(["<b>C</b>"]) -->|"attaque"| B["<b>B</b>"]
+    B -->|"attaque"| A["<b>A</b>"]
+    classDef acc fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724;
+    classDef rej fill:#f8d7da,stroke:#dc3545,stroke-width:2px,color:#721c24;
+    class C acc;
+    class A acc;
+    class B rej;
+```
+
+**Extension grounded** : `C` n'est attaqué par personne → **accepté** ; `B` est attaqué par l'accepté `C` → **rejeté** ; `A` n'est attaqué que par le rejeté `B` → **accepté**. D'où `{A, C}`. La règle se tient en une phrase : *un argument est acceptable si tous ses attaquants sont eux-mêmes défaits*. Les sémantiques preferred/stable, les cycles (CF2) et le raisonnement causal du notebook 5 raffinent ce même calcul.
 
 ## Installation
 
