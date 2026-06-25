@@ -28,6 +28,19 @@ La planification répond à une question différente de celle de l'apprentissage
 | Solveurs | Fast Downward, OR-Tools CP-SAT, unified-planning |
 | Environnement | Docker (Fast Downward), pip (Python packages) |
 
+La progression pédagogique suit l'**évolution des paradigmes** de planification : chaque phase répond aux limites de la précédente, du modèle formel jusqu'à la frontière neuro-symbolique.
+
+```mermaid
+flowchart TD
+    P1["<b>Phase 1 · Fondations</b><br/>triptyque État-Action-But, modèle STRIPS, langage PDDL"]
+    P2["<b>Phase 2 · Classique</b><br/>recherche dans l'espace d'états : Fast Downward, heuristiques A* / h(FF) / LM-cut"]
+    P3["<b>Phase 3 · Avancée</b><br/>au-delà de l'explosion d'états : CP-SAT (OR-Tools), temporel, HTN"]
+    P4["<b>Phase 4 · Neuro-symbolique</b><br/>frontière IA symbolique ↔ apprentissage : LLM planning, Learning to Plan"]
+    P1 -->|"modéliser un problème"| P2
+    P2 -->|"l'explosion d'états bloque"| P3
+    P3 -->|"doter le symbolique d'apprentissage"| P4
+```
+
 ## Parcours d'apprentissage
 
 ### Phase 1 : Fondations (Notebooks 1-3, ~2h)
