@@ -1405,6 +1405,30 @@ theorem critical_of_minimal_winning {G : TUGame N} {S : Finset N}
   -- `S.erase i` is a proper subset of `S` since `i ∈ S`, so minimality makes it losing.
   exact hmin.2 (S.erase i) (Finset.erase_ssubset himem)
 
+/-- The carrier of a game: the intersection of all its winning coalitions.
+
+    In voting theory the *carrier* is the set of players who belong to every winning coalition.
+    By the definition of `VetoPlayer`, membership in the carrier coincides exactly with being a
+    veto player (see `mem_carrier_iff_veto`). The notion is defined for every game; it is
+    non-trivial precisely under non-degeneracy (the existence of at least one winning coalition),
+    in which case the carrier is the set of veto players. -/
+def carrier (G : TUGame N) : Set N :=
+  ⋂₀ { S : Set N | ∃ t : Finset N, (t : Set N) = S ∧ G.v t = 1 }
+
+/-- A player belongs to the carrier (the intersection of all winning coalitions) if and only if
+    it is a veto player. Both directions are the unfoldings of the intersection (`Set.mem_sInter`,
+    membership in an arbitrary intersection is membership in each component) and of `VetoPlayer`
+    (a veto player lies in every winning coalition). -/
+theorem mem_carrier_iff_veto (G : TUGame N) (i : N) :
+    i ∈ carrier G ↔ VetoPlayer G i := by
+  constructor
+  · intro hi t ht
+    exact Finset.mem_coe.mp (Set.mem_sInter.mp hi (t : Set N) ⟨t, rfl, ht⟩)
+  · intro hv
+    apply Set.mem_sInter.mpr
+    rintro S ⟨t, rfl, ht⟩
+    exact Finset.mem_coe.mpr (hv t ht)
+
 /-- A veto player has a strictly positive raw Banzhaf index when the grand coalition wins.
 
     The veto pendant of `dummy_banzhaf_raw_zero` (a dummy has `BanzhafRaw = 0`): a veto player
