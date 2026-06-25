@@ -31,7 +31,7 @@ On ne peut pas créer ce qu'on ne comprend pas. Ce niveau pose les bases techniq
 
 ### 02-Advanced - Générer du mouvement à partir de texte ou d'images
 
-Ce niveau explore les modèles génératifs vidéo : HunyuanVideo pour la qualité cinématographique (malgré ses 24 GB de VRAM), LTX-Video pour la génération rapide sur des configurations modestes, Wan pour les prompts multilingues, et Stable Video Diffusion pour animer une image existante. Chaque modèle a ses forces et ses limites — le but est de les connaître pour choisir le bon outil au bon moment. Le notebook 02-5 introduit en outre LTX-2 (Lightricks 22B), le seul modèle de la série qui génère vidéo **et audio synchronisés** en une seule passe de diffusion (quantization INT4/NF4 obligatoire, 20+ GB VRAM).
+Ce niveau explore les modèles génératifs vidéo : HunyuanVideo pour la qualité cinématographique (malgré ses 24 GB de VRAM), LTX-Video pour la génération rapide sur des configurations modestes, Wan pour les prompts multilingues, et Stable Video Diffusion pour animer une image existante. Chaque modèle a ses forces et ses limites — le but est de les connaître pour choisir le bon outil au bon moment. Le notebook 02-5 introduit en outre LTX-2 (Lightricks 22B), le seul modèle de la série qui génère vidéo **et audio synchronisés** en une seule passe de diffusion (quantization obligatoire : `fp8-cast` via ltx-pipelines — borderline sur 24 GB — ou GGUF Q4 via ComfyUI en production, ~14-24 GB VRAM).
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -95,7 +95,7 @@ Le fil rouge de cette série est la création d'un pipeline de vidéo pédagogiq
 | **LTX-Video** | 02-2 | GPU ~8 GB VRAM |
 | **Wan 2.1/2.2** | 02-3 | GPU ~10 GB VRAM |
 | **SVD** | 02-4 | GPU ~10 GB VRAM |
-| **LTX-2 (Lightricks)** | 02-5 | GPU ~16-24 GB VRAM (INT4/NF4) |
+| **LTX-2 (Lightricks)** | 02-5 | GPU ~14-24 GB VRAM (GGUF Q4 / fp8-cast) |
 | **ComfyUI Video** | 03-3 | Docker, nodes vidéo |
 | **OpenAI Sora 2** | 04-3 | `OPENAI_API_KEY` |
 
