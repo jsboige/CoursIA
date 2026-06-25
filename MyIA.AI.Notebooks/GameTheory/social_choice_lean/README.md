@@ -33,7 +33,7 @@ Résultats formalisés par Peters :
 
 **Intégration dans notre projet** (3 phases) :
 1. **Phase 1** (ce dépôt) : Citations et références croisées
-2. **Phase 2** : Notebook dédié (`GameTheory-16e-SocialChoiceLean-Tour.ipynb`) + projet Lake séparé (`social_choice_lean_peters/`)
+2. **Phase 2** : Projet Lake séparé ([`social_choice_lean_peters/`](../social_choice_lean_peters/)) ; notebook compagnon de tour prévu (pas encore créé)
 3. **Phase 3** : Portage sélectif dans notre framework `PrefOrder` (impossibilités Condorcet, règles de scoring)
 
 **Différences de framework** :
@@ -196,11 +196,11 @@ lake test
 
 ## Intégration avec la série GameTheory
 
-Ces formalisations Lean sont les bases théoriques pour les notebooks :
+Ces formalisations Lean sont les bases théoriques pour les notebooks de la sous-série `SocialChoice/` :
 
-- **GameTheory-16b-Lean-SocialChoice** : Applications pratiques
-- **GameTheory-16c-SocialChoice-Python** : Simulations numériques
-- **GameTheory-16e-SocialChoiceLean-Tour** : Tour des résultats de DominikPeters/SocialChoiceLean
+- [`02-Lean-SocialChoice-Formal.ipynb`](../SocialChoice/02-Lean-SocialChoice-Formal.ipynb) : applications pratiques des formalisations (kernel Lean 4)
+- [`03-Voting-Methods.ipynb`](../SocialChoice/03-Voting-Methods.ipynb) : simulations numériques des méthodes de vote (Python)
+- Le tour des résultats de DominikPeters/SocialChoiceLean — backend [`social_choice_lean_peters/`](../social_choice_lean_peters/) (notebook compagnon prévu, pas encore créé)
 
 ## Liens utiles
 

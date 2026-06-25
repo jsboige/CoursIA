@@ -103,7 +103,7 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 **Build**: `lake build` — SUCCESS | **Reference only, not for proving**
 
-**Content**: Imports Peters' library (Gibbard-Satterthwaite, Duggan-Schwartz, 4 Condorcet impossibilities, 15+ voting rules with axiom verification). Serves as the backend for notebook `GameTheory-16e-SocialChoiceLean-Tour.ipynb`.
+**Content**: Imports Peters' library (Gibbard-Satterthwaite, Duggan-Schwartz, 4 Condorcet impossibilities, 15+ voting rules with axiom verification). Backend Lake for the (planned, not yet created) SocialChoiceLean tour companion notebook.
 
 **Relationship to `social_choice_lean`**: Complementary, not duplicate. `social_choice_lean` uses custom `PrefOrder` framework (our proofs). `social_choice_lean_peters` uses Peters' `LinearOrder` framework (external reference). Both kept for pedagogical completeness.
 
