@@ -1365,6 +1365,35 @@ theorem veto_iff_critical_of_winning {G : TUGame N} (hG : SimpleGame G) (i : N) 
   · intro h S hS
     exact (h S hS).1
 
+/-- A *minimal winning coalition*: `S` is winning, but every proper subset is losing.
+
+    Minimal winning coalitions are the minimal elements of the up-set of winning coalitions;
+    they form the irreducible "key" coalitions whose weight just reaches the quota in a weighted
+    voting game. A veto player, which belongs to every winning coalition, in particular belongs
+    to every minimal winning coalition. -/
+def MinimalWinning (G : TUGame N) (S : Finset N) : Prop :=
+  G.v S = 1 ∧ ∀ T ⊂ S, G.v T = 0
+
+/-- A veto player belongs to every minimal winning coalition.
+
+    A minimal winning coalition is in particular winning, so the veto property
+    (`∀ winning S, i ∈ S`) forces membership. -/
+theorem veto_mem_minimal_winning {G : TUGame N} (i : N) (hv : VetoPlayer G i)
+    {S : Finset N} (hmin : MinimalWinning G S) : i ∈ S :=
+  hv S hmin.1
+
+/-- Every member of a minimal winning coalition is critical.
+
+    Minimality says every proper subset loses, so removing any member `i ∈ S` (which yields the
+    proper subset `S.erase i`) makes `S` losing: `v (S.erase i) = 0`. Combined with `v S = 1` and
+    `i ∈ S`, this is exactly `Critical G i S`. No `SimpleGame` hypothesis is needed — this holds
+    for any `MinimalWinning` coalition (which already forces `v S = 1`). -/
+theorem critical_of_minimal_winning {G : TUGame N} {S : Finset N}
+    (hmin : MinimalWinning G S) {i : N} (himem : i ∈ S) : Critical G i S := by
+  refine ⟨himem, hmin.1, ?_⟩
+  -- `S.erase i` is a proper subset of `S` since `i ∈ S`, so minimality makes it losing.
+  exact hmin.2 (S.erase i) (Finset.erase_ssubset himem)
+
 /-- A veto player has a strictly positive raw Banzhaf index when the grand coalition wins.
 
     The veto pendant of `dummy_banzhaf_raw_zero` (a dummy has `BanzhafRaw = 0`): a veto player
