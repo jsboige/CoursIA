@@ -96,6 +96,38 @@ Niveau 7 : Synthese
     └── Benchmark Comparatif
 ```
 
+```mermaid
+flowchart TD
+    N1["<b>Niveau 1 · Recherche Exhaustive</b>"]
+    N2["<b>Niveau 2 · Exploration Optimisée</b>"]
+    N3["<b>Niveau 3 · Metaheuristiques</b><br/><i>exploration non exhaustive</i>"]
+    N4["<b>Niveau 4 · Programmation par Contraintes</b><br/><i>CSP</i>"]
+    N5["<b>Niveau 5 · IA Symbolique</b><br/><i>SMT, Automates</i>"]
+    N6["<b>Niveau 6 · IA Moderne / Data-Driven</b>"]
+    N7["<b>Niveau 7 · Synthese</b>"]
+
+    N1 --> N2 --> N3 --> N4 --> N5 --> N6 --> N7
+
+    N1 -.-> BT["Backtracking<br/><i>DFS simple, garanti</i>"]
+    N2 -.-> DL["Dancing Links<br/><i>couverture exacte</i>"]
+    N3 -.-> GA["Algorithme Genetique"]
+    N3 -.-> SA["Recuit Simule"]
+    N3 -.-> PSO["PSO"]
+    N4 -.-> AIMA["AIMA CSP<br/><i>reference academique</i>"]
+    N4 -.-> NOR["Propagation de Norvig<br/><i>MRV + Forward Checking</i>"]
+    N4 -.-> HUM["Strategies Humaines<br/><i>13 techniques d'inference</i>"]
+    N4 -.-> GC["Graph Coloring<br/><i>formulation graphe du CSP</i>"]
+    N4 -.-> OR["OR-Tools CP-SAT<br/><i>bibliotheque industrielle</i>"]
+    N4 -.-> CHO["Choco Solver<br/><i>autre bibliotheque CP</i>"]
+    N5 -.-> Z3["Z3 SMT Solver"]
+    N5 -.-> AUT["Automates Symboliques + Z3"]
+    N5 -.-> BDD["BDD/MDD<br/><i>diagrammes de decision</i>"]
+    N6 -.-> INF["Infer.NET<br/><i>probabiliste</i>"]
+    N6 -.-> CNN["Réseau de Neurones<br/><i>CNN</i>"]
+    N6 -.-> LLM["LLM Solver"]
+    N7 -.-> BENCH["Benchmark Comparatif"]
+```
+
 ### Ce que chaque niveau enseigne
 
 **Niveau 1 - Recherche Exhaustive** : Comprendre l'espace de recherche. Le backtracking est l'algorithme fondamental qui enumere systematiquement toutes les possibilites. Il garantit de trouver une solution si elle existe, mais peut etre exponentiel dans le pire cas.
