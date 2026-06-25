@@ -1,0 +1,33 @@
+# Lockfile pinné — golden-set notebooks (H.7 P3, axe A #4208 / #4209)
+# -----------------------------------------------------------------------------
+# Versions FIGEES (==) garantissant la reproductibilité du golden-set de
+# scripts/notebook_tools/golden_set.yml sur le runner CI.
+#
+# Source : snapshot de l'environnement de référence `coursia-ml-training`
+# (machine po-2025 / ai-01), l'env dans lequel les notebooks ML #4174 et les
+# notebooks Search sont executes et valides. Couvre l'union des dependances
+# declares du golden-set (numpy + pandas + scikit-learn + matplotlib + networkx)
+# + la chaine d'execution Papermill.
+#
+# Installer :
+#   python -m pip install -r scripts/notebook_tools/golden_set.lock.txt
+#
+# Philosophie : PIN exact, pas `>=` (les requirements.txt par famille restent
+# loose pour le dev ; ce lockfile est l'ancre de reproductibilité CI).
+
+# --- Runtime d'execution notebook ---
+ipykernel==7.2.0
+papermill==2.7.0
+nbformat==5.10.4
+nbconvert==7.17.1
+jupyter-client==8.8.0
+
+# --- Librairies scientifiques (golden-set ML + Search) ---
+numpy==2.4.4
+pandas==3.0.2
+scikit-learn==1.8.0
+matplotlib==3.10.9
+networkx==3.6.1
+
+# --- Utilitaire manifeste ---
+PyYAML==6.0.3
