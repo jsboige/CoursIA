@@ -9,6 +9,20 @@ Ce projet implémente un système de diagnostic médical intelligent combinant q
 3. **Algorithmes Génétiques** : Optimisation évolutionnaire des paramètres diagnostiques
 4. **Solveur Z3** : Validation par contraintes des protocoles thérapeutiques
 
+Chacune de ces approches répond à une **facette distincte** du problème (classer, chercher, calibrer, vérifier) ; leur intégration en un pipeline cohérent — davantage que la maîtrise isolée de chacune — est précisément la thèse de ce cas d'étude :
+
+```mermaid
+flowchart LR
+    C1["Classer<br/>le patient"] -->|"règles cliniques"| R["Agent rationnel"]
+    C2["Chercher<br/>le diagnostic"] -->|"heuristique admissible"| A["Recherche A*"]
+    C3["Calibrer<br/>les paramètres"] -->|"espace vaste"| G["Algorithme génétique"]
+    C4["Vérifier<br/>le protocole"] -->|"garantie formelle"| Z["Solveur Z3"]
+    R --> DEC["Aide à la décision<br/>thérapeutique"]
+    A --> DEC
+    G --> DEC
+    Z --> DEC
+```
+
 ### Objectifs pédagogiques
 
 - Maîtriser les algorithmes de recherche (BFS, DFS, A*)
