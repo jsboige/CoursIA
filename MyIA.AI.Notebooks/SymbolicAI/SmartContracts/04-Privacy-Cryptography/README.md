@@ -16,6 +16,19 @@ Cette quatrieme sous-serie (SC-15 a SC-17) explore la cryptographie avancee au s
 
 **Total** : 3 notebooks, ~2h35.
 
+SC-17 ne présente pas une primitive de plus : il **assemble** les preuves à divulgation nulle (SC-15) et le chiffrement homomorphe (SC-16) pour résoudre le paradoxe du vote électronique — concilier **anonymat** et **vérifiabilité**. Ce diagramme en fait la synthèse : chaque primitive assure l'une des deux propriétés opposées du paradoxe, et le capstone SC-26 les réutilisera toutes deux.
+
+```mermaid
+flowchart LR
+    SC15["SC-15 · Preuves à divulgation nulle<br/><b>prouver sans révéler</b><br/>Schnorr · Fiat-Shamir · Chaum-Pedersen"]
+    SC16["SC-16 · Chiffrement homomorphe<br/><b>calculer sans déchiffrer</b><br/>Paillier · CKKS · Shamir"]
+    SC17(("SC-17 · Vote E2E vérifiable<br/><b>anonymat + vérifiabilité</b>"))
+    SC26["SC-26 · Capstone<br/>DApp de vote complète<br/>(réutilise ZKP + Paillier)"]
+    SC15 -- "vérifiabilité<br/>(preuve de validité du bulletin)" --> SC17
+    SC16 -- "anonymat<br/>(tally sur chiffré)" --> SC17
+    SC17 --> SC26
+```
+
 ---
 
 ## Parcours d'apprentissage
