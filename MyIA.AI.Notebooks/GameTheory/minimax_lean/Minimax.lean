@@ -1,5 +1,6 @@
 import Mathlib
 import Minimax.ZeroSum
+import Minimax.Concavity
 
 /-!
 # minimax_lean — bilinéarité du payoff pour le théorème minimax de von Neumann
@@ -30,6 +31,11 @@ ces quatre hypothèses.
   additivité + homogénéité en chaque variable (`payoff_add_in_x`, `payoff_smul_in_x`,
   `payoff_add_in_y`, `payoff_smul_in_y`), continuité jointe et restreinte
   (`continuous_payoff`, `continuous_payoff_in_x`, `continuous_payoff_in_y`). **0 sorry.**
+- `Minimax/Concavity.lean` — **itération 1 du glue Sion** : concavité/cvxicité du
+  payoff sur les simplexes (`payoff_concave_in_x`, `payoff_convex_in_x`, et en `y`),
+  puis quasi-concavité/quasi-convexité via les ponts Mathlib
+  (`payoff_quasiconcave_in_y`, `payoff_quasiconvex_in_x`) — 2 des 4 hyps de
+  `Sion.exists_isSaddlePointOn'`. **0 sorry.**
 
 ## Milestone suivant (OPEN — documenté, non sorry-stubbé)
 

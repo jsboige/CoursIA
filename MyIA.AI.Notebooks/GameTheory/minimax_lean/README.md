@@ -40,8 +40,9 @@ Ce premier livrable établit le **cœur formel** documenté de la preuve — la
 
 - **Toolchain** : `leanprover/lean4:v4.31.0-rc1` + Mathlib4 (`v4.31.0-rc1`)
 - **Sorry** : **0** sur tout le module. L'additivité + l'homogénéité du payoff en
-  chaque variable, ainsi que la continuité (jointe et restreinte), sont entièrement
-  prouvées.
+  chaque variable, la continuité (jointe et restreinte), et la concavité/cvxicité
+  du payoff sur les simplexes (+ dérivation des quasi-convexité/quasi-concavité de
+  Sion) sont entièrement prouvées.
 - **Build** : `lake build Minimax` (dépend de Mathlib4)
 - **CI** : `.github/workflows/lean-minimax.yml` (`sorry-filter-mode: standalone-tactic`,
   baseline `0`)
@@ -105,6 +106,24 @@ flowchart TD
   `continuous_payoff_in_x` / `continuous_payoff_in_y` (une variable fixée, via
   `fun_prop`).
 
+## Ce qui est formalisé (`Minimax/Concavity.lean`, 0 sorry) — itération 1 du glue Sion
+
+La **concavité/cvxicité du payoff** sur les simplexes — première moitié du câblage
+des hypothèses de Sion, dérivée de la bilinéarité ci-dessus :
+
+- **Concavité + cvxicité en `x`** : `payoff_concave_in_x`, `payoff_convex_in_x`
+  (`ConcaveOn`/`ConvexOn ℝ (stdSimplex ℝ m)`). Une fonction linéaire est à la fois
+  concave et convexe : l'inégalité de Jensen `a · f x + b · f x' ≤ f (a · x + b · x')`
+  tient avec **égalité** (le payoff se développe par `payoff_add_in_x` +
+  `payoff_smul_in_x`), le domaine convexe venant de `convex_stdSimplex`.
+- **Concavité + cvxicité en `y`** : `payoff_concave_in_y`, `payoff_convex_in_y`
+  (analogue sur `stdSimplex ℝ n`).
+- **Quasi-concavité / quasi-convexité** (itération 2, **hyps exactes de Sion**) :
+  `payoff_quasiconcave_in_y` (`f(x, ·)` quasi-concave, via le pont
+  `ConcaveOn.quasiconcaveOn`) et `payoff_quasiconvex_in_x` (`f(·, y)` quasi-convexe,
+  via `ConvexOn.quasiconvexOn`). **Ces deux hyps de `Sion.exists_isSaddlePointOn'`
+  sont désormais prouvées.**
+
 > **Note de formalisation** — `Finset.mul_sum` (factorisation à GAUCHE dans la somme)
   vs `Finset.sum_mul` (factorisation à DROITE) : l'homogénéité `c · ∑ f = ∑ c · f`
   requiert `Finset.mul_sum`, pas `sum_mul`. La distributivité de l'additivité dépend
@@ -114,12 +133,19 @@ flowchart TD
 ## Milestone suivant (OPEN — documenté, non sorry-stubbé)
 
 Le câblage explicite de `Sion.exists_isSaddlePointOn'` sur
-`stdSimplex ℝ m × stdSimplex ℝ n` est le **milestone ouvert** de l'issue #4054 :
-compacité/convexité/non-vacuité des simplexes (`stdSimplex`), dérivation des
-`QuasiconvexOn`/`QuasiconcaveOn` depuis l'affinité, et des
-`LowerSemicontinuousOn`/`UpperSemicontinuousOn` depuis la continuité. Il est
-**honnêtement signalé comme étape à venir** dans l'umbrella `Minimax.lean`
-(`Status : Prop := True`) — jamais comblé par `sorry`.
+`stdSimplex ℝ m × stdSimplex ℝ n` est le **milestone ouvert** de l'issue #4054.
+**Progrès réalisé** (`Minimax/Concavity.lean`) : la dérivation des
+`QuasiconvexOn`/`QuasiconcaveOn` depuis l'affinité est **désormais prouvée**
+(`payoff_quasiconvex_in_x`, `payoff_quasiconcave_in_y`) — soit 2 des 4 hyps de
+Sion. **Reste ouvert** : compacité/non-vacuité des simplexes (`stdSimplex`,
+faits Mathlib `isCompact_stdSimplex`/convexité/non-vacuité à référencer), dérivation
+des `LowerSemicontinuousOn`/`UpperSemicontinuousOn` depuis `continuous_payoff`, et
+l'**application finale** de `Sion.exists_isSaddlePointOn'` réunissant les quatre
+hyps. C'est honnêtement signalé comme étape à venir dans l'umbrella `Minimax.lean`
+(`Status : Prop := True`) — jamais comblé par `sorry`. Le TODO de l'en-tête de
+Mathlib `Topology/Sion.lean` (« Spell out the particular case of von Neumann
+theorem ») confirme qu'il s'agit d'un travail de formalisation en cours
+**en amont dans Mathlib lui-même**.
 
 ## Référence
 
