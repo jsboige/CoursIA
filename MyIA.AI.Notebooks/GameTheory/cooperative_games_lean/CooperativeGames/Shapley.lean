@@ -1443,6 +1443,68 @@ theorem veto_banzhaf_raw_pos (G : TUGame N) (hG : SimpleGame G) (i : N)
   simp only [BanzhafRaw]
   exact Finset.card_pos.mpr ⟨Finset.univ, Finset.mem_filter.2 ⟨Finset.mem_univ _, hcrit⟩⟩
 
+/-- Every Shapley coefficient `s! * (n - s - 1)! / n!` is strictly positive, being a ratio of
+    strictly positive factorials (`0! = 1`). -/
+private theorem shapleyCoef_pos (n s : ℕ) : 0 < shapleyCoef n s := by
+  unfold shapleyCoef
+  exact div_pos (by exact_mod_cast Nat.mul_pos (Nat.factorial_pos _) (Nat.factorial_pos _))
+    (by exact_mod_cast Nat.factorial_pos _)
+
+/-- A veto player has a strictly positive Shapley value when the grand coalition wins.
+
+    The Shapley pendant of `dummy_shapley_zero` (a dummy has Shapley value `0`) and the
+    `veto_banzhaf_raw_pos` analogue for the Shapley value. The Shapley value is the weighted sum of
+    `i`'s marginal contributions over all predecessor coalitions `S` (with `i ∉ S`). For a veto
+    player in a simple game every such predecessor set is losing (`v S = 0` by
+    `veto_losing_without`), so each marginal contribution is `v (S ∪ {i}) ∈ {0, 1} ≥ 0`, and each
+    term of the sum is non-negative (positive coefficient times a non-negative contribution). The
+    grand coalition minus `i` is one such predecessor set; its marginal contribution is
+    `v univ - v (univ \ {i}) = 1 - 0 = 1` (by `hwin`), weighted by the strictly positive Shapley
+    coefficient it gives a strictly positive term. The whole sum is at least that single positive
+    term, hence strictly positive.
+
+    As with `veto_banzhaf_raw_pos`, the non-degeneracy hypothesis `hwin` is essential: without any
+    winning coalition a player is vacuously a veto player yet has Shapley value `0`. -/
+theorem veto_shapley_pos (G : TUGame N) (hG : SimpleGame G) (i : N)
+    (hv : VetoPlayer G i) (hwin : G.v Finset.univ = 1) :
+    0 < shapleyValue G i := by
+  -- The grand coalition minus i is a predecessor set of i whose marginal contribution is `1`.
+  set T := (Finset.univ \ ({i} : Finset N)) with hTdef
+  have hTni : i ∉ T := by simp [hTdef]
+  have hTuni : T ∪ ({i} : Finset N) = Finset.univ :=
+    Finset.sdiff_union_of_subset (Finset.subset_univ _)
+  have hvT : G.v T = 0 := veto_losing_without hG hv hTni
+  -- Every Shapley-sum term is non-negative: `v S = 0` (veto, `i ∉ S`), so the marginal
+  -- contribution is `v (S ∪ {i}) ∈ {0, 1}` and the coefficient is strictly positive.
+  have hnonneg : ∀ S ∈ Finset.univ.filter fun S => i ∉ S,
+      0 ≤ shapleyCoef (Fintype.card N) S.card * G.marginalContribution i S := by
+    rintro S hS
+    obtain ⟨-, hni⟩ := Finset.mem_filter.mp hS
+    have hvS : G.v S = 0 := veto_losing_without hG hv hni
+    have hmc : G.marginalContribution i S = G.v (S ∪ {i}) := by
+      show G.v (S ∪ {i}) - G.v S = G.v (S ∪ {i})
+      rw [hvS, sub_zero]
+    rw [hmc]
+    have hvSi : 0 ≤ G.v (S ∪ {i}) := by
+      rcases hG (S ∪ {i}) with h | h <;> rw [h] <;> norm_num
+    exact mul_nonneg (shapleyCoef_pos _ _).le hvSi
+  -- The term indexed by `T` is strictly positive: marginal `= 1`, coefficient `> 0`.
+  have hTin : T ∈ Finset.univ.filter fun S => i ∉ S := by
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and]; exact hTni
+  have hmcT : G.marginalContribution i T = 1 := by
+    show G.v (T ∪ {i}) - G.v T = 1
+    rw [hTuni, hvT, sub_zero]; exact hwin
+  have htermT :
+      0 < shapleyCoef (Fintype.card N) T.card * G.marginalContribution i T := by
+    rw [hmcT]; exact mul_pos (shapleyCoef_pos _ _) zero_lt_one
+  -- The sum over the whole filter is at least the single positive term indexed by `T`.
+  have hle :=
+    Finset.sum_le_sum_of_subset_of_nonneg
+      (Finset.singleton_subset_iff.mpr hTin)
+      (fun S hSF _ => hnonneg S hSF)
+  rw [Finset.sum_singleton] at hle
+  exact htermT.trans_le hle
+
 /-- Dummy player: adds no value -/
 def DummyPlayer (G : TUGame N) (i : N) : Prop :=
   ∀ S : Finset N, i ∉ S → G.v (S ∪ {i}) = G.v S
