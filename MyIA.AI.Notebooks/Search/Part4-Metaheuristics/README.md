@@ -58,6 +58,19 @@ Cette partie se compose de quatorze notebooks .NET Interactive (C#), hébergés 
 
 La série couvre désormais l'arc complet : du moteur autonome (MGS-1) à la **reconstruction** des composés publiés depuis leurs primitives (MGS-5), puis à la comparaison sur benchmarks (MGS-6), à la **généralité** de la grammaire sur une représentation combinatoire (MGS-7) et à la **visualisation** des paysages de fitness, jusqu'à un relief terrestre réel (MGS-8/9), puis à la **caractérisation empirique du biais central** des composés (MGS-10) et à la **mesure falsifiable d'une synergie** d'îles hétérogènes (MGS-11), enfin au **second biais des bancs CEC** : l'alignement d'axes par rotation du paysage (MGS-12), puis à la **visualisation géométrique** de ce mécanisme — pourquoi la rotation brise la séparabilité, vu en heatmaps des paysages dé-biaisés (MGS-13) —, puis au **retour critique sur MGS-11** : MGS-14 y retrouve une synergie d'îles en calibrant la migration et le ratio exploration/exploitation, et la montre **conditionnelle** au paysage (robuste sur Ackley, absente sur Rastrigin). Descriptions détaillées notebook par notebook : voir « Parcours détaillé » ci-dessous. Feuille de route du fork : [ROADMAP.md](https://github.com/jsboige/MetaGeneticSharp/blob/main/ROADMAP.md).
 
+L'arc se résume en six vagues conceptuelles, chacune posant la brique que la suivante compose :
+
+```mermaid
+flowchart LR
+    W1["<b>Socle &amp; composition</b><br/>MGS-1 — Moteur autonome<br/>MGS-2 — Grammaire fluente<br/>(Match, Container, Scoped)"]
+    W2["<b>Structuration de population</b><br/>MGS-3 — Eukaryote<br/>(sous-populations)<br/>MGS-4 — Islands (migration)"]
+    W3["<b>Composés publiés &amp; confrontation</b><br/>MGS-5 — Reconstruire WOA/EO/FBI<br/>MGS-6 — Benchmarks<br/>(No-Free-Lunch)<br/>MGS-7 — TSP combinatoire"]
+    W4["<b>Paysages de fitness</b><br/>MGS-8 — Landscape Explorer<br/>MGS-9 — Everest (relief réel)"]
+    W5["<b>Biais &amp; mesure falsifiable</b><br/>MGS-10 — Biais central<br/>(Kudela 2022)<br/>MGS-11 — Synergie d'îles<br/>(verdict négatif)"]
+    W6["<b>Rotation &amp; retour critique</b><br/>MGS-12 — Alignement d'axes<br/>MGS-13 — Paysages dé-biaisés<br/>MGS-14 — Synergie conditionnelle"]
+    W1 --> W2 --> W3 --> W4 --> W5 --> W6
+```
+
 ## Parcours détaillé
 
 ### 1 — Introduction
