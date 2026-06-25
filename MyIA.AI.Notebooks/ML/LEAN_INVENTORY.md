@@ -13,7 +13,7 @@ n'entrent pas dans ce compte ; cf.
 
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
-| `perceptron_lean` | v4.31.0-rc1 | 0 | 4 | 0¹ | PEDA/REF | #4051, #4038 |
+| `learning_theory_lean` | v4.31.0-rc1 | 0 | 4 | 0¹ | PEDA/REF | #4051, #4038 |
 | **Total** | — | **0** | **4** | — | — | — |
 
 ¹ Aucun notebook Lean dédié. Companion conceptuel = la série **ML.NET** (classification
@@ -24,7 +24,7 @@ formel, le notebook compagnon revient au propriétaire de la série ML).
 
 ## Par lake
 
-### perceptron_lean — PEDAGOGIQUE / REFERENCE
+### learning_theory_lean — PEDAGOGIQUE / REFERENCE
 
 **Objectif** : théorème de convergence du Perceptron (Novikoff, 1962) — données
 linéairement séparables de marge γ et rayon R ⟹ au plus `(R/γ)²` mises à jour. Premier lake

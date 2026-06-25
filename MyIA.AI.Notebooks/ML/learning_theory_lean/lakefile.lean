@@ -30,7 +30,7 @@ de la série ML (convention des lakes frères : le lake est le livrable formel, 
 `lake build` est la preuve d'exécution).
 -/
 
-package «perceptron_lean» where
+package «learning_theory_lean» where
   leanOptions := #[⟨`autoImplicit, false⟩]
 
 require mathlib from git

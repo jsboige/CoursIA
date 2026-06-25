@@ -4,7 +4,7 @@ import Perceptron.Perceptron
 import Perceptron.Convergence
 
 /-!
-# perceptron_lean — convergence du Perceptron (théorème de Novikoff)
+# learning_theory_lean — convergence du Perceptron (théorème de Novikoff)
 
 Lake Lean 4 (Mathlib) à la racine de la série **ML**, formalisant le **théorème de
 convergence du Perceptron** (Novikoff, 1962) : pour des données linéairement

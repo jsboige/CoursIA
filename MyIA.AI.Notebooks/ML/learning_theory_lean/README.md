@@ -1,4 +1,4 @@
-# perceptron_lean — Convergence du Perceptron (théorème de Novikoff), Lean 4
+# learning_theory_lean — Convergence du Perceptron (théorème de Novikoff), Lean 4
 
 Lake Lean 4 (Mathlib) à la racine de la série **ML**, formalisant le **théorème de
 convergence du Perceptron** (Novikoff, 1962) : pour des données linéairement
