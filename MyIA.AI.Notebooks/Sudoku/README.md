@@ -668,7 +668,7 @@ Commencez par **Sudoku-0 (Environment)** pour comprendre les structures de donne
 
 ### Si vous voulez comparer les paradigmes
 
-Suivez l'ordre numerique : 0-5 (exhaustif et metaheuristiques), puis 6-12 (CSP et symbolique), puis 16-18 (data-driven). Le notebook **18 (Comparison)** synthetise toutes les approches en un benchmark comparatif.
+Suivez l'ordre numerique : 0-5 (exhaustif et metaheuristiques), puis 6-12 (CSP et symbolique), puis 13-15 (automates symboliques, BDD, inférence probabiliste), puis 16-18 (data-driven). Le notebook **18 (Comparison)** synthetise toutes les approches en un benchmark comparatif.
 
 ### Si vous venez du C# / .NET
 
@@ -694,7 +694,7 @@ La thèse pratique est honnête : il n'existe pas de « meilleur solveur » dans
 
 - **Approfondir la programmation par contraintes** : la série [Search](../Search/README.md) généralise les techniques vues ici (propagation, CSP, MRV) à une famille beaucoup plus large de problèmes d'optimisation et de satisfaction — le Sudoku n'était qu'un cas particulier.
 - **Passer à la résolution symbolique formelle** : Z3/SMT, introduit comme un solveur parmi d'autres, devient un outil de **vérification formelle** dans [SymbolicAI](../SymbolicAI/README.md) — preuve de théorèmes, vérification de programmes, contrats intelligents.
-- **Rejoindre l'inférence probabiliste** : les solveurs NumPyro et Infer.NET utilisés ici (notebooks 11-12) sont l'avant-goût de [Probas](../Probas/README.md), où la modélisation probabiliste devient un langage à part entière.
+- **Rejoindre l'inférence probabiliste** : les solveurs NumPyro et Infer.NET utilisés ici (notebook 15) sont l'avant-goût de [Probas](../Probas/README.md), où la modélisation probabiliste devient un langage à part entière.
 - Pour la pratique : reprenez le notebook 18 (Comparison) et ajoutez votre propre solveur hybride — par exemple une approche CP-guided qui utilise un réseau de neurones pour ordonner les variables. C'est l'exercice le plus formateur pour saisir comment combiner garantie et généralisation.
 
 ### Le fil rouge
