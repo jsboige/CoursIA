@@ -1924,3 +1924,76 @@ theorem banzhaf_index_le_one (G : TUGame N) (i : N) : BanzhafIndex G i ≤ 1 := 
   rw [BanzhafIndex, div_le_iff₀ hdenom, one_mul]
   unfold BanzhafRaw
   exact_mod_cast (Finset.card_le_card hsubset).trans hmemcard.le
+
+/-- Equality case of `banzhaf_index_le_one`: a dictator attains the maximal Banzhaf
+    index `1`. Under a simple monotone game, a dictator `i` is critical in *every*
+    coalition that contains it — monotonicity makes any such coalition win (since
+    `{i}` wins), and the veto property makes its removal lose — so `i` is critical
+    in exactly the `2^(|N|-1)` coalitions containing it, giving
+    `BanzhafIndex G i = 2^(|N|-1) / 2^(|N|-1) = 1`. This characterises the attainment
+    of the upper bound proved by `banzhaf_index_le_one`. -/
+theorem dictator_banzhaf_index_eq_one (G : TUGame N) (i : N)
+    (hG : SimpleGame G) (hM : MonotoneGame G) (h : Dictator G i) :
+    BanzhafIndex G i = 1 := by
+  have hn : 0 < Fintype.card N := Fintype.card_pos_iff.mpr ⟨i⟩
+  have hdenom : 0 < (2 : ℝ) ^ (Fintype.card N - 1) := pow_pos (by norm_num) _
+  -- For a dictator, i is critical in S ⟺ i ∈ S.
+  have hcrit_iff : ∀ S : Finset N, Critical G i S ↔ i ∈ S := by
+    intro S
+    refine ⟨fun hcrit => hcrit.1, fun hmem => ?_⟩
+    refine ⟨hmem, ?_, ?_⟩
+    · -- v S = 1 : {i} ⊆ S, monotonicity gives v {i} ≤ v S, and v {i} = 1
+      have hsub : ({i} : Finset N) ⊆ S := Finset.singleton_subset_iff.mpr hmem
+      have hle : G.v ({i} : Finset N) ≤ G.v S := MonotoneGame.le_of_subset hM hsub
+      apply SimpleGame.eq_one_of_ne_zero hG S
+      intro h0
+      rw [h.1] at hle
+      linarith
+    · -- v (S.erase i) = 0 : i ∉ S.erase i, so the veto property loses it
+      exact veto_losing_without hG h.2 (by simp)
+  -- Hence the critical filter equals the membership filter.
+  have hfilter_eq :
+      (Finset.univ.filter fun S => Critical G i S) =
+        (Finset.univ : Finset (Finset N)).filter (fun S => i ∈ S) := by
+    ext S
+    rw [Finset.mem_filter, Finset.mem_filter]
+    refine ⟨fun h => ⟨Finset.mem_univ _, (hcrit_iff S).mp h.2⟩,
+      fun h => ⟨Finset.mem_univ _, (hcrit_iff S).mpr h.2⟩⟩
+  -- The membership filter has cardinal 2^(|N|-1) (insert/erase bijection).
+  have hmemcard :
+      ((Finset.univ : Finset (Finset N)).filter (fun S => i ∈ S)).card =
+        2 ^ (Fintype.card N - 1) := by
+    have heq :
+        (Finset.univ : Finset (Finset N)).filter (fun S => i ∈ S) =
+          ((Finset.univ : Finset N).erase i).powerset.image (insert i) := by
+      ext S
+      constructor
+      · intro h
+        obtain ⟨-, hmem⟩ := Finset.mem_filter.mp h
+        refine Finset.mem_image.mpr ⟨S.erase i, ?_, ?_⟩
+        · exact Finset.mem_powerset.mpr (Finset.erase_subset_erase i (Finset.subset_univ S))
+        · rw [Finset.insert_erase hmem]
+      · intro h
+        obtain ⟨T, hT, hST⟩ := Finset.mem_image.mp h
+        refine Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩
+        rw [← hST]; exact Finset.mem_insert_self i T
+    rw [heq]
+    have hinj :
+        Set.InjOn (insert i)
+          (((Finset.univ : Finset N).erase i).powerset : Set (Finset N)) := by
+      intros T₁ hT₁ T₂ hT₂ heq
+      have hsub₁ : T₁ ⊆ (Finset.univ : Finset N).erase i :=
+        Finset.mem_powerset.mp (Finset.mem_coe.mp hT₁)
+      have hsub₂ : T₂ ⊆ (Finset.univ : Finset N).erase i :=
+        Finset.mem_powerset.mp (Finset.mem_coe.mp hT₂)
+      have hi₁ : i ∉ T₁ := fun h => by simpa using hsub₁ h
+      have hi₂ : i ∉ T₂ := fun h => by simpa using hsub₂ h
+      have hstrip : (insert i T₁).erase i = (insert i T₂).erase i := by rw [heq]
+      rwa [Finset.erase_insert hi₁, Finset.erase_insert hi₂] at hstrip
+    have herase : ((Finset.univ : Finset N).erase i).card = Fintype.card N - 1 := by
+      rw [Finset.card_erase_of_mem (Finset.mem_univ (i : N)), Finset.card_univ]
+    rw [Finset.card_image_of_injOn hinj, Finset.card_powerset, herase]
+  rw [BanzhafIndex, div_eq_iff hdenom.ne', one_mul]
+  unfold BanzhafRaw
+  rw [hfilter_eq]
+  exact_mod_cast hmemcard
