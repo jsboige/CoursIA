@@ -24,6 +24,17 @@ L'intérêt pédagogique : au lieu d'écrire un algorithme de backtracking pour 
 | **Vérification** | Tester les solutions | Les solutions satisfont les contraintes par construction |
 | **Limite** | Difficile à généraliser | Performance sur les très grandes instances |
 
+```mermaid
+flowchart LR
+    CD["Code C# déclaratif<br/>LINQ + Theorem&lt;T&gt;<br/>(contraintes)"] -->|"binding Z3.Linq"| SMT["Formule SMT<br/>solveur-agnostique"]
+    SMT -->|"théories<br/>(int, real, arrays, …)"| Z3[("Z3<br/>solveur SMT")]
+    Z3 --> SAT{"Satisfiable ?"}
+    SAT -->|"oui"| SOL["Solution / témoin<br/>(.Solve / .Optimize)"]
+    SAT -->|"non"| UNS["UNSAT<br/>(preuve d'impossibilité)"]
+```
+
+L'abstraction centrale du binding : on reste en C#, on décrit des contraintes, et le pipeline ci-dessus — traduction vers le solveur puis décision — se fait sans écrire un seul appel Z3 bas niveau.
+
 ## Vue d'ensemble
 
 | # | Notebook | Sujet | Durée | Statut |
@@ -153,6 +164,26 @@ La distinction centrale, que le Sudoku met en scène de façon frappante :
 | **Complexité** | Linéaire, non-backtracking | NP-dur en général (recherche dans l'espace des solutions) |
 | **Rôle** | Vérificateur (certifie) | Producteur (témoigne) |
 | **Dans cette série** | — (Z3.Linq cible la résolution d'entiers/arrays) | Cœur de la série : `Theorem<T>.Solve()` / `.Optimize()` |
+
+```mermaid
+flowchart LR
+    subgraph REC["Reconnaissance — vérifier"]
+        direction TB
+        RC["Candidat complet<br/>(chaîne / grille)"] --> RV["RE# / Z3 InRe<br/>vérification, linéaire"]
+        RV --> RD{"Motif<br/>satisfait ?"}
+        RD -->|"oui"| RO["certifié"]
+        RD -->|"non"| RX["rejeté"]
+    end
+    subgraph RES["Résolution — produire"]
+        direction TB
+        SC["Contraintes partielles<br/>(LINQ / Theorem)"] --> SV["Z3 solveur<br/>recherche, NP-dur"]
+        SV --> SD{"Satisfiable ?"}
+        SD -->|"oui"| SO["Témoin produit<br/>(.Solve / .Optimize)"]
+        SD -->|"non"| SX["UNSAT"]
+    end
+```
+
+L'asymétrie visible : la reconnaissance reçoit un **candidat complet** et le juge, la résolution ne reçoit que des **contraintes partielles** et doit construire le candidat. Le vérificateur est donc imbattable sur une grille donnée (linéaire), mais ne sait rien *inventer* — c'est ce que la série enseigne à demander au solveur.
 
 > **Leçon** : un vérificateur rapide (RE# valide une ligne Sudoku en ~18 ms) peut être **plus rapide qu'un résolveur** (Z3 produit la grille en ~27 ms) — il certifie ce qu'il ne peut produire. Les notebooks de cette série enseignent le côté *résolution* ; Z3-Python-04 et Sudoku-13 enseignent le côté *reconnaissance* et le pont entre les deux.
 
