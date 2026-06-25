@@ -31,6 +31,26 @@ de valeurs `V` (tous deux finis), et un ensemble de **portées** `Scopes` (chacu
 est une **instance**, non un cas spécial — les théorèmes valent pour toute structure de
 ce type.
 
+*La pyramide abstraite du modèle : les types de base `ι`/`V` et les portées `Scopes`
+portent l'invariant toutes-distinctes `IsSolution`, dont découlent les deux outils de
+propagation `IsPeer` et `PresentIn` :*
+
+```mermaid
+flowchart TD
+    TYPES["Types de base<br/>cellules ι, valeurs V  <i>(finis)</i>"]
+    SCOPES["Scopes = Finset (Finset ι)<br/>portées toutes-distinctes"]
+    AD["AllDistinctOn σ s<br/><i>σ injective sur la portée s</i>"]
+    SOL["IsSolution scopes σ<br/><i>invariant fondamental : toutes-distinctes sur chaque portée</i>"]
+    PEER["IsPeer scopes c c'<br/><i>c, c' distinctes partageant une portée</i>"]
+    PRES["PresentIn σ s v<br/><i>v apparaît dans la portée s</i>"]
+    INST["9×9 concret<br/>27 portées (9 lignes · 9 colonnes · 9 blocs)<br/><i>instance, non cas spécial</i>"]
+
+    TYPES --> SCOPES --> AD --> SOL
+    SOL --> PEER
+    SOL --> PRES
+    SOL -.-> INST
+```
+
 **`Sudoku/Basic.lean`** — primitives :
 - `Scopes` (= `Finset (Finset ι)`), `Solution` (= `ι → V`).
 - `AllDistinctOn σ s` — `σ` injective sur la portée `s` (aucune valeur répétée).
@@ -51,6 +71,21 @@ ce type.
 Chaque théorème se réduit à la clé de voûte `peer_excludes_value` par un argument par
 l'absurde : un candidat « exclu » apparaîtrait sur une paire, ce que la clé de voûte
 interdit.
+
+*La déduction sound, de la clé de voûte jusqu'aux deux règles canoniques — chacune
+réduite à `peer_excludes_value` par l'absurde :*
+
+```mermaid
+flowchart TD
+    INVAR["IsSolution scopes σ<br/><i>toutes-distinctes par portée</i>"]
+    KEY["peer_excludes_value  <b>— clé de voûte</b><br/>c porte v ∧ c' paire de c  ⟹  σ c' ≠ v<br/><i>partagent une portée ⟹ σ c = σ c' ⟹ c = c'</i>"]
+    NAKED["naked_single_sound<br/><i>toutes valeurs ≠ v portées par des paires de c</i><br/>⟹ σ c = v"]
+    HIDDEN["hidden_single_sound<br/><i>v présente en s, exclue ailleurs dans s</i><br/>⟹ σ c = v (unique restante)"]
+
+    INVAR --> KEY
+    KEY -->|"absurde : candidat exclu apparaîtrait sur une paire"| NAKED
+    KEY -->|"absurde : idem sur la cellule restante"| HIDDEN
+```
 
 ## Ce qui est délibérément ouvert (non sorry-backed)
 
