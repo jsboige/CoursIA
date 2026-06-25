@@ -139,6 +139,32 @@ Honnêteté des rapports (cf `verify-before-claiming`) : verdict **BEATS / NO BE
 - **Risque** : microstructure minute influe RV sur coins peu liquides (DOT/ADA) → M12-HF NO BEATS sur ces coins, BEATS seulement sur BTC/ETH/LTC. Ce serait **déjà un résultat utile** (cadre de validité de la fréquence d'échantillonnage).
 - **Décisionnel** : même un NO BEATS clarifié vaut l'achat — c'est le **dernier levier non testé** du cœur vol, et il ferme la question « est-ce que la fréquence d'échantillonnage plafonne M12 ? ».
 
+### §7-bis — Verdict BTC réel (0 QCC, exécution locale 2026-06-25)
+
+**Hypothèse §7 falsifiée sur la magnitude.** L'exécution locale 0-QCC (tick BTC Bitstamp 2011-2024 → resample minute, fenêtre commune 2018-01 → 2024-02, **intra-source intra-période**) donne le verdict suivant :
+
+| Horizon | HAR-RV-J minute | HAR-RV-J horaire | **delta (min − hr)** | MSE minute vs horaire |
+|---------|-----------------|------------------|----------------------|-----------------------|
+| h=1     | +1.114          | +0.567           | **+0.548**           | −54.8 %               |
+| h=5     | +1.088          | +0.655           | **+0.433**           | −50.7 %               |
+| h=10    | +1.111          | +0.479           | **+0.633**           | −56.8 %               |
+
+**BEATS minute >> horaire (3/3 horizons, delta médian +0.548)** — mais **la cause et la magnitude contredisent l'hypothèse** :
+
+- **Cause = fréquence, pas sauts** (robustesse HAR-Classic sans composante de sauts : delta médian +0.550 ≈ delta HAR-RV-J +0.548). Le bénéfice vient de la **qualité de l'estimateur RV** (ABDL 2003 : la RV converge vers la variance vraie quand la fréquence augmente), pas de la décomposition sauts/continue.
+- **Les sauts n'ajoutent rien à minute** : HAR-RV-J vs HAR-Classic au niveau minute = NO BEATS (delta −0.0007). La composante de sauts, utile à fréquence horaire, devient redondante quand la RV est déjà bien estimée.
+- **Magnitude >> prédiction « modeste +10-30 % »** : la RV horaire crypto (24 obs/j) était **plus nocive** qu'estimé pour le Kelly de vol-targeting (bruit horaire sabotait la calibration). C'est un finding, pas un artifact.
+
+**Caveats (honnêteté G.9)** :
+
+- **BTC-only (1/7 coins)** — sous le seuil ≥4/7 du critère §6. La généralisation ETH/SOL/ADA/DOT reste gated par ce verdict BTC (justifierait un achat `lean data download` ciblé).
+- **Seeds = no-op** — le pipeline OLS est déterministe ; les « 12 combos » sont en réalité **3 horizons indépendants**. Pas de sign-test fallacieux sur 12.
+- **Effet source** — l'horaire Bitstamp de cette comparaison (~0.57) diffère de l'horaire KEEPER multi-source Coinbase/Binance (~0.75, full period) : effet source/période, **n'invalide pas** le delta intra-Bitstamp (les deux fréquences proviennent du même tick).
+
+**Reproductibilité** : `scripts/minute_loader.py` + `scripts/m12_hf_har_rv_j.py` + `scripts/m12_hf_compare.py` ; démonstration pédagogique exécutée dans `research/research_m12_hf_btc_local.ipynb` (outputs réels, 0 QCC, CPU-only).
+
+**Recommandation** : le verdict BTC tranche la question scientifique centrale (« la fréquence d'échantillonnage plafonnait-elle M12 ? ») par **oui** — mais via l'estimateur RV, pas via les sauts. L'extension multi-coin (spec QC Cloud `research_m12_har_rv_j_minute.ipynb`, INTRINSIC-blocked cloud) confirmerait la généralisation.
+
 ---
 
 ## 8. Pourquoi pas les alternatives
