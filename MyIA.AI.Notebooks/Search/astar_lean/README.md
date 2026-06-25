@@ -77,6 +77,24 @@ C'est la borne en `f` en chaque nœud — le mécanisme exact d'optimalité de A
 le pas via `le_trans`. Le fait clé : un suffixe d'un chemin allant au but va encore au
 but (`suffix_pathFrom`).
 
+*Mécanisme de la borne en `f` — pourquoi l'admissibilité garantit l'optimalité de A\** :*
+
+```mermaid
+flowchart TD
+    WG["Graphe pondéré WeightedGraph V<br/>arêtes edge : V → V → ℝ≥0 (non-négatives)"]
+    PATH["Chemin start → goal<br/>PathFrom start goal p · coût pathCost p"]
+    HADM["Heuristique admissible<br/>Admissible h hStar : ∀ n, h n ≤ hStar n"]
+    BOUND["Borne en f en chaque nœud<br/>h(p.get i) ≤ pathCost(p.drop i)<br/><i>admissible_implies_optimal (phase 1)</i>"]
+    STAR["A* déploie le nœud de f = g + h minimal"]
+    OPT["Chemin optimal renvoyé<br/>jamais au-delà de la frontière du coût optimal"]
+
+    WG --> PATH
+    PATH --> HADM
+    HADM --> BOUND
+    BOUND --> STAR
+    STAR --> OPT
+```
+
 ## Consistance ⟹ admissibilité (téléscopage) — phase 2
 
 ```lean
@@ -143,6 +161,27 @@ indépendamment du chemin spécifique. La formalisation de la **« non-ré-expan
 elle-même** (modélisation de la file de priorité, open/closed sets, terminaison) est la
 **phase 4** (cf #4048) — on prouve ici le **lemme mathématique central** qui en est la
 cause exacte, pas l'algorithme complet.
+
+*Synthèse — hiérarchie des propriétés d'heuristique : la consistance (forte, locale par
+arc) garantit à la fois l'optimalité (via l'admissibilité qu'elle entraîne) ET
+l'efficacité (monotonie de `f`) ; l'admissibilité seule garantit l'optimalité mais
+autorise des ré-expansions :*
+
+```mermaid
+flowchart TD
+    CONS["Heuristique consistante<br/>Consistent G h : h n ≤ edge n n' + h n'<br/><i>locale par arc (relaxation de Bellman)</i>"]
+    TELE["consistent_implies_path_bound<br/><i>téléscopage le long du chemin</i><br/>h(start) ≤ pathCost(p)"]
+    ADM["Heuristique admissible<br/>Admissible h hStar : h n ≤ hStar n<br/><i>globale</i>"]
+    OPT["admissible_implies_optimal<br/><i>phase 1 — borne en f</i><br/>chemin optimal garanti"]
+    MONO["consistent_implies_f_monotone<br/><i>phase 3 — f = g + h croissante</i>"]
+    EFF["Efficacité<br/>aucun nœud jamais ré-expansé"]
+
+    CONS --> TELE
+    TELE --> ADM
+    ADM --> OPT
+    CONS --> MONO
+    MONO --> EFF
+```
 
 ## Construction
 
