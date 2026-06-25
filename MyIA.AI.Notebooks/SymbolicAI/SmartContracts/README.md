@@ -43,6 +43,23 @@ A l'issue de cette série, vous serez capable de :
 | Cryptographie | pycryptodome, phe, TenSEAL |
 | Niveaux | Débutant à Avancé (Parties 0-6) |
 
+Le parcours ne suit pas une liste de sujets : il suit le **cycle de vie d'un smart contract**, chaque phase ajoutant une couche de robustesse jusqu'à un contrat *digne de confiance*.
+
+```mermaid
+flowchart LR
+    P1["<b>1 · Fondations</b><br/>primitives crypto :<br/>hash, Merkle, PoW, signatures"]
+    P2["<b>2-3 · Solidity</b><br/>types → ERC-20/721/1155,<br/>DeFi, gouvernance DAO"]
+    P3["<b>4 · Sécurité</b><br/>Foundry : tests, fuzzing,<br/>vérification formelle SMT"]
+    P4["<b>5 · Vie privée</b><br/>ZKP, chiffrement<br/>homomorphique, vote"]
+    P5["<b>6 · Alternatives</b><br/>Vyper · XRP · Bitcoin<br/>· Move · Solana"]
+    P6["<b>7 · Déploiement</b><br/>testnet Sepolia,<br/>mainnet L2, capstone"]
+    P1 -->|"comprendre pourquoi une blockchain tient"| P2
+    P2 -->|"construit, il faut sécuriser"| P3
+    P3 -->|"sécurisé, explorer la confidentialité"| P4
+    P4 -->|"élargir à d'autres paradigmes"| P5
+    P5 -->|"prêt pour le monde réel"| P6
+```
+
 ## Parcours d'apprentissage
 
 ### Phase 1 : Fondations (~2h10)
