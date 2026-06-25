@@ -53,6 +53,23 @@ A l'issue de cette série, vous serez capable de :
 
 ## Parcours d'apprentissage
 
+Le parcours progresse en six phases où **chacune répond à une limite de la précédente** — le bruit motive le recours à la connaissance, la rigidité logique motive la différentiabilité, l'opacité motive la provenance (thèse détaillée en conclusion) :
+
+```mermaid
+flowchart TD
+    P1["<b>Phase 1 · Inductif pur</b><br/>SL-1 · CBH · Version Space<br/>apprendre d'exemples"]
+    P2["<b>Phase 2 · Guidé par la connaissance</b><br/>SL-2/3 · EBL · RBL · déterminations<br/>la connaissance accélère"]
+    P3["<b>Phase 3 · Programmes logiques</b><br/>SL-4/5 · FOIL · résolution inverse · Progol<br/>clauses Horn + récursion"]
+    P4["<b>Phase 4 · Moteurs ILP réels</b><br/>SL-6 · Aleph · Metagol · Popper · ∂ILP<br/>4 machineries comparées"]
+    P5["<b>Phase 5 · Neuro-symbolique</b><br/>SL-7/8/9 · T-norms · KG mining · boucle LLM<br/>différentiable + vérifiable"]
+    P6(("<b>Phase 6 · Capstone</b><br/>SL-10/11 · L* actif · pipeline 6 étages<br/>LLM ↔ logique en boucle"))
+    P1 -->|"bruit + disjonction<br/>non représentables"| P2
+    P2 -->|"passer des attributs<br/>aux programmes"| P3
+    P3 -->|"comparer les machineries<br/>sur une même tâche"| P4
+    P4 -->|"rigidité logique<br/>→ différentiabilité"| P5
+    P5 -->|"opacité neuronale<br/>→ provenance"| P6
+```
+
 ### Phase 1 : Fondations inductives (SL-1, ~50 min)
 
 Le parcours commence par l'apprentissage inductif pur : un agent doit découvrir une règle cachee a partir d'exemples. SL-1 présente les algorithmes fondamentaux — Current-Best-Hypothesis (ajuste une seule hypothese incrementalement) et Candidate Elimination (maintient l'ensemble complet des hypotheses consistantes, le "Version Space"). Vous experimentez leurs limites face au bruit et aux concepts disjonctifs, ce qui motive naturellement les approches plus riches introduites ensuite.
