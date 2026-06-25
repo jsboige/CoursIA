@@ -62,6 +62,17 @@ La Phase 2 change de paradigme : au lieu d'explorer un espace, on le réduit. CS
 
 Les 20 notebooks d'applications illustrent chaque concept sur des cas réels : planification d'infirmiers (CSP-4), ordonnancement d'atelier (CSP-4), optimisation de portefeuille (métaheuristiques), TSP et VRP (routing), démineur et Wordle (CSP + théorie de l'information), Picross (couverture exacte). Les notebooks avancés de la Part 1 (programmation linéaire Search-9, automates symboliques Search-10, métaheuristiques Search-11) et de la Part 2 (contraintes souples CSP-7, temporelles CSP-8, distribuées CSP-9) complètent le panorama. L'ensemble est enrichi par des ponts vers les autres séries : Sudoku (DLX, automates), SymbolicAI (Z3, planification), GameTheory (Minimax, MCTS), et RL (MCTS + DQN).
 
+```mermaid
+flowchart LR
+    P1["<b>Phase 1 — Fondements</b> (~7h)<br/>Search-1 … Search-7<br/><i>Trois paradigmes :</i><br/>• exploration systématique<br/>&nbsp;&nbsp;(BFS, UCS, A*)<br/>• optimisation locale<br/>&nbsp;&nbsp;(SA, Tabu, GA)<br/>• recherche dans les jeux<br/>&nbsp;&nbsp;(Minimax, MCTS)"]
+    P2["<b>Phase 2 — Programmation<br/>par contraintes</b> (~6h)<br/>CSP-1 … CSP-6<br/><i>Réduire l'espace<br/>plutôt que l'explorer</i><br/>backtracking → AC-3<br/>→ contraintes globales<br/>→ ordonnancement<br/>→ CP + SAT / ML / LLM"]
+    P3["<b>Phase 3 — Applications<br/>&amp; frontières</b> (~18h)<br/>20 cas réels : TSP, VRP,<br/>RCPSP, Bin Packing,<br/>Wordle, Picross…<br/>+ notebooks avancés<br/>(LP, automates,<br/>souples, temporelles)"]
+    BR["<b>Séries connexes</b><br/>Sudoku (DLX)<br/>SymbolicAI (Z3)<br/>GameTheory (Minimax/MCTS)<br/>RL (MCTS + DQN)"]
+    P1 -->|"backtracking = DFS"| P2
+    P2 -->|"modélisation industrielle"| P3
+    P3 -.->|"ponts"| BR
+```
+
 ## Ce que chaque notebook apporte
 
 Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun.
