@@ -1693,10 +1693,18 @@ def cmd_golden_set(args):
     Reads scripts/notebook_tools/golden_set.yml, executes each pinned notebook
     end-to-end via Papermill, and reports PASS/FAIL. The CI job (PR 2 #4209)
     consumes this command's exit code + --json output.
+
+    With --json, human progress output goes to STDERR and a single clean JSON
+    object goes to STDOUT (so CI can `cmd ... > result.json` reliably).
     """
     repo_root = get_repo_root()
     default_manifest = Path(__file__).resolve().parent / "golden_set.yml"
     manifest_path = Path(args.manifest).resolve() if args.manifest else default_manifest
+
+    # When --json is set, route all human-readable progress to stderr so stdout
+    # carries ONLY the JSON object (CI parsing contract).
+    def _log(msg):
+        (sys.stderr if args.json else sys.stdout).write(str(msg) + "\n")
 
     manifest = _load_golden_set_manifest(manifest_path)
     meta = manifest.get("meta", {})
@@ -1704,12 +1712,14 @@ def cmd_golden_set(args):
     default_timeout = meta.get("timeout_per_notebook_s", 600)
     timeout = args.timeout if args.timeout is not None else default_timeout
 
-    print_section("GOLDEN-SET EXECUTION")
-    print_info(f"Manifest: {manifest_path}")
-    print_info(f"Notebooks declared: {len(entries)}")
-    print_info(f"Timeout per notebook: {timeout}s")
+    _log("=" * 60)
+    _log("GOLDEN-SET EXECUTION")
+    _log("=" * 60)
+    _log(f"Manifest: {manifest_path}")
+    _log(f"Notebooks declared: {len(entries)}")
+    _log(f"Timeout per notebook: {timeout}s")
     if meta.get("lockfile"):
-        print_info(f"Pinned lockfile: {meta['lockfile']} (install: pip install -r {meta['lockfile']})")
+        _log(f"Pinned lockfile: {meta['lockfile']} (install: pip install -r {meta['lockfile']})")
 
     results = []
     for entry in entries:
@@ -1719,8 +1729,8 @@ def cmd_golden_set(args):
         series = entry.get("series", "?")
 
         if not nb_path.exists():
-            print(f"\n[{nb_rel}]")
-            print(f"  [!] MISSING on disk (skip)")
+            _log(f"\n[{nb_rel}]")
+            _log(f"  [!] MISSING on disk (skip)")
             results.append({
                 "path": nb_rel, "series": series, "title": title,
                 "success": False, "kernel": None, "execution_time": 0.0,
@@ -1730,7 +1740,7 @@ def cmd_golden_set(args):
 
         executor = NotebookExecutor(nb_path)
         kernel = executor.detect_kernel_name()
-        print(f"\n[{nb_rel}] (kernel: {kernel}) -- {title}")
+        _log(f"\n[{nb_rel}] (kernel: {kernel}) -- {title}")
 
         result = executor.execute_with_papermill(
             timeout=timeout,
@@ -1742,7 +1752,7 @@ def cmd_golden_set(args):
         )
 
         status_icon = "+" if result.success else "!"
-        print(f"  [{status_icon}] {result.message} ({result.execution_time:.1f}s)")
+        _log(f"  [{status_icon}] {result.message} ({result.execution_time:.1f}s)")
 
         results.append({
             "path": nb_rel, "series": series, "title": title,
@@ -1751,26 +1761,30 @@ def cmd_golden_set(args):
         })
 
     # Summary
-    print_section("GOLDEN-SET SUMMARY")
     success_count = sum(1 for r in results if r["success"])
     fail_count = len(results) - success_count
     total_time = sum(r["execution_time"] for r in results)
-    print(f"  Passed: {success_count}/{len(results)}")
-    print(f"  Failed: {fail_count}")
-    print(f"  Total time: {total_time:.1f}s")
+    _log("=" * 60)
+    _log("GOLDEN-SET SUMMARY")
+    _log("=" * 60)
+    _log(f"  Passed: {success_count}/{len(results)}")
+    _log(f"  Failed: {fail_count}")
+    _log(f"  Total time: {total_time:.1f}s")
     if fail_count:
-        print("  Failures:")
+        _log("  Failures:")
         for r in results:
             if not r["success"]:
-                print(f"    - {r['path']}: {r['message']}")
+                _log(f"    - {r['path']}: {r['message']}")
 
+    summary = {
+        "passed": fail_count == 0,
+        "success_count": success_count,
+        "total": len(results),
+        "notebooks": results,
+    }
     if args.json:
-        print(json.dumps({
-            "passed": fail_count == 0,
-            "success_count": success_count,
-            "total": len(results),
-            "notebooks": results,
-        }, indent=2))
+        # Single clean JSON object to STDOUT (CI contract).
+        print(json.dumps(summary, indent=2))
 
     return 1 if fail_count > 0 else 0
 
