@@ -36,6 +36,21 @@ Au-delà de la méthodologie, cette série couvre des **applications réelles** 
 | **Combinaison de sources** | Requiert ingenierie manuelle | Probabilites conditionnelles structurees |
 | **Decisions** | Basées sur un point | Basées sur E[U] (utilite esperee) |
 
+```mermaid
+flowchart LR
+    D["Données<br/>(observations)"] --> ML["ML classique<br/>(déterministe)"]
+    D --> PP["Programmation<br/>probabiliste"]
+    ML --> P1["Un seul résultat<br/>ex: 0.73"]
+    PP --> P2["Une distribution<br/>ex: N(0.73, 0.12)"]
+    P1 --> U1["Incertitude<br/>non quantifiée"]
+    P2 --> U2["Incertitude<br/>native<br/>(intervalles de crédibilité)"]
+    U2 --> DEC["Décision basée sur<br/>E[U] (utilité espérée)"]
+    classDef dist fill:#d1ecf1,stroke:#0c5460,stroke-width:2px;
+    class P2,U2,DEC dist;
+```
+
+La différence fondatrice : le ML classique produit un **point**, la programmation probabiliste produit une **distribution** (en bleu). Cette incertitude native se propage jusqu'à la décision — on maximise l'utilité espérée `E[U]`, pas un seul score.
+
 ## Objectifs d'apprentissage
 
 À l'issue de cette série, vous serez capable de :
@@ -110,6 +125,29 @@ Si vous préférez Python au C#, commencez par Infer-101.ipynb (introduction sta
 Les notebooks PyMC dans `PyMC/` reprennent l'intégralité des 20 modèles Infer.NET en Python avec PyMC et l'echantillonnage NUTS : fondations (1-3), modèles classiques (4-13), et théorie de la décision (14-20). Ils constituent un excellent complement pour comparer les approches d'inference (message passing vs MCMC) et rejoindre l'ecosysteme Python data science. La progression suit la même structure pédagogique en 3 phases que la série Infer.NET.
 
 ## Quel stack choisir ?
+
+```mermaid
+flowchart TD
+    START(["Votre profil ?"])
+    START --> Q1{"Vous venez du<br/>C# / .NET ?"}
+    START --> Q2{"Vous venez du<br/>Python / data science ?"}
+    START --> Q3{"Indécis ?<br/>Découverte rapide"}
+    Q1 -->|"oui"| INFER["<b>Infer.NET</b><br/>API C# native · Roslyn ·<br/>factor graphs · inference exacte<br/>(EP/VMP)"]
+    Q2 -->|"oui"| PYMC["<b>PyMC</b><br/>with pm.Model() · NUTS ·<br/>écosystème pandas/arviz"]
+    Q3 --> IN101["<b>Infer-101</b><br/>(standalone, 45 min)"]
+    INFER --> PIVOT1{"Modèle trop complexe<br/>ou pipeline Python ?"}
+    PYMC --> PIVOT2{"Besoin d'inference exacte<br/>(VMP/EP) ou .NET ?"}
+    PIVOT1 -->|"oui"| PYMC
+    PIVOT2 -->|"oui"| INFER
+    classDef infer fill:#d4edda,stroke:#28a745,stroke-width:2px;
+    classDef pymc fill:#cce5ff,stroke:#004085,stroke-width:2px;
+    classDef entry fill:#fff3cd,stroke:#856404,stroke-width:2px;
+    class INFER infer;
+    class PYMC pymc;
+    class IN101 entry;
+```
+
+Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passing, déterministe) et **PyMC** (Python, MCMC, flexible). L'arbre ci-dessus donne le point d'entrée selon votre profil — et le pont de bascule vers l'autre stack quand le modèle ou l'environnement l'exige. Le détail comparatif notebook-par-notebook figure dans le [Parcours inference comparée](#parcours-inference-comparee-infernet-vs-pymc-15h) ci-dessous.
 
 ### Si vous venez du C# / .NET
 
