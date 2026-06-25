@@ -32,7 +32,7 @@ Complémentaire, sans doublon. `social_choice_lean` utilise un `PrefOrder` perso
 
 ## Notes
 
-- Backend du notebook `GameTheory-16e-SocialChoiceLean-Tour.ipynb`
+- Backend Lake pour un notebook compagnon de tour (prévu, pas encore créé)
 - Le dépôt de Peters est pinné au commit `d679d950` pour la reproductibilité
 - Peters utilise `LinearOrder` (strict, Mathlib) ; nous utilisons `PrefOrder` (réflexif, total, transitif)
 
@@ -68,8 +68,8 @@ preuves.
 
 ### Où aller ensuite
 
-- **Notebook** : `GameTheory-16e-SocialChoiceLean-Tour.ipynb` — le compagnon
-  pédagogique auquel ce projet sert de backend.
+- **Notebook compagnon** : prévu (pas encore créé) — un tour pédagogique des résultats
+  de Peters, auquel ce projet servirait de backend.
 - **Amont** : [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean) (MIT).
 - **Nos preuves** : [`social_choice_lean/`](../social_choice_lean/) — Arrow / Sen /
   électeur médian dans le cadre `PrefOrder`.

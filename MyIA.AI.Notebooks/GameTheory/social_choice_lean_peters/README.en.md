@@ -30,7 +30,7 @@ Complementary, not duplicate. `social_choice_lean` uses custom `PrefOrder` (our 
 
 ## Notes
 
-- Backend for notebook `GameTheory-16e-SocialChoiceLean-Tour.ipynb`
+- Backend Lake for a (planned, not yet created) tour companion notebook
 - Peters' repo pinned at commit `d679d950` for reproducibility
 - Peters uses `LinearOrder` (strict, Mathlib); we use `PrefOrder` (reflexive, total, transitif)
 
@@ -64,8 +64,8 @@ the framework choice shapes the definitions and proofs.
 
 ### Where to go next
 
-- **Notebook**: `GameTheory-16e-SocialChoiceLean-Tour.ipynb` — the teaching
-  companion this project backs.
+- **Companion notebook**: planned (not yet created) — a teaching tour of Peters'
+  results, which this project would back.
 - **Upstream**: [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) (MIT).
 - **Our proofs**: [`social_choice_lean/`](../social_choice_lean/) — Arrow / Sen /
   median voter in the `PrefOrder` framework.
