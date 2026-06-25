@@ -41,8 +41,9 @@ Ce premier livrable établit le **cœur formel** documenté de la preuve — la
 - **Toolchain** : `leanprover/lean4:v4.31.0-rc1` + Mathlib4 (`v4.31.0-rc1`)
 - **Sorry** : **0** sur tout le module. L'additivité + l'homogénéité du payoff en
   chaque variable, la continuité (jointe et restreinte), la concavité/cvxicité du
-  payoff sur les simplexes, et les **4 hyps analytiques de Sion** (quasi-convexité,
-  quasi-concavité, semi-continuité inf./sup.) sont entièrement prouvées.
+  payoff sur les simplexes, les **4 hyps analytiques de Sion** (quasi-convexité,
+  quasi-concavité, semi-continuité inf./sup.), et le **théorème de von Neumann
+  (forme point-selle)** sont entièrement prouvés.
 - **Build** : `lake build Minimax` (dépend de Mathlib4)
 - **CI** : `.github/workflows/lean-minimax.yml` (`sorry-filter-mode: standalone-tactic`,
   baseline `0`)
@@ -140,23 +141,49 @@ toutes prouvées 0 sorry.**
   du côté du facteur : `(x + x')` multiplie à gauche ⟹ `add_mul` ; `(y + y')`
   multiplie à droite ⟹ `mul_add`.
 
-## Milestone suivant (OPEN — documenté, non sorry-stubbé)
+## Ce qui est formalisé (`Minimax/SionApplication.lean`, 0 sorry) — itération 3 du glue Sion
 
-Le câblage explicite de `Sion.exists_isSaddlePointOn'` sur
-`stdSimplex ℝ m × stdSimplex ℝ n` est le **milestone ouvert** de l'issue #4054.
-**Progrès réalisé** (`Minimax/Concavity.lean`, itérations 1 & 2) : les **4 hyps
-analytiques** de Sion sont **désormais prouvées** — `payoff_quasiconvex_in_x`,
-`payoff_quasiconcave_in_y` (itération 1, depuis l'affinité) +
-`payoff_lowerSemicontinuous_in_x`, `payoff_upperSemicontinuous_in_y` (itération 2,
-depuis la continuité). **Reste ouvert** : les instances topologiques `Pi`-sur-`ℝ`
-requises par `Sion.minimax'`, la non-vacuité des simplexes (`stdSimplex`, fait
-Mathlib), et l'**application finale** réunissant les 4 hyps analytiques avec
-`isCompact_stdSimplex`/`convex_stdSimplex` vers `Sion.exists_isSaddlePointOn'`. C'est
-honnêtement signalé comme étape à venir dans l'umbrella `Minimax.lean`
-(`Status : Prop := True`) — jamais comblé par `sorry`. Le TODO de l'en-tête de
-Mathlib `Topology/Sion.lean` (« Spell out the particular case of von Neumann
-theorem ») confirme qu'il s'agit d'un travail de formalisation en cours
-**en amont dans Mathlib lui-même**.
+Le **théorème de von Neumann (forme point-selle)** — le milestone final de #4054,
+démontré en une application de `Sion.exists_isSaddlePointOn` :
+
+- **Non-vacuité des simplexes** : `stdSimplex_nonempty_m` / `stdSimplex_nonempty_n`
+  (le Dirac `Pi.single i 1` est un point du simplexe dès que le type d'index est non
+  vide, via `single_mem_stdSimplex (𝕜 := ℝ)`).
+- **`exists_saddle_point_payoff`** : pour toute matrice `A`, il existe `a ∈ Δₘ`, `b ∈ Δₙ`
+  tels que `payoff A a y ≤ payoff A x b` pour tout `x ∈ Δₘ`, `y ∈ Δₙ`. Câble les 4 hyps
+  analytiques (`Concavity.lean`) + compacité (`isCompact_stdSimplex (𝕜 := ℝ)`) +
+  convexité (`convex_stdSimplex ℝ`) + non-vacuité. Les instances topologiques `Pi`-sur-`ℝ`
+  se synthétisent depuis Mathlib.
+
+## Milestone — RÉSOLU (#4054)
+
+Le théorème minimax de **von Neumann** (forme point-selle) est désormais **prouvé
+0-sorry** via `Minimax/SionApplication.lean` (`exists_saddle_point_payoff`) : pour toute
+matrice de gains `A` sur des types finis non vides, il existe des stratégies mixtes
+`a ∈ Δₘ`, `b ∈ Δₙ` telles que `payoff A a y ≤ payoff A x b` pour tout `x ∈ Δₘ`,
+`y ∈ Δₙ` (point-selle).
+
+**Démonstration** — une application de `Sion.exists_isSaddlePointOn` (cas réel,
+`Mathlib/Topology/Sion.lean` section `Real`), réunissant :
+
+- **compacité** `isCompact_stdSimplex (𝕜 := ℝ)` ;
+- **convexité** `convex_stdSimplex ℝ` ;
+- **non-vacuité** `stdSimplex_nonempty_m/n` (lemmes auxiliaires via
+  `single_mem_stdSimplex (𝕜 := ℝ)` — le Dirac `Pi.single i 1` est un point du simplexe) ;
+- les **4 hyps analytiques** de `Concavity.lean` (itérations 1 & 2) :
+  `payoff_quasiconvex_in_x` + `payoff_quasiconcave_in_y` (quasi-) +
+  `payoff_lowerSemicontinuous_in_x` + `payoff_upperSemicontinuous_in_y` (semi-continuité).
+
+Les 5 prérequis topologiques de Sion sur `E = m → ℝ` et `F = n → ℝ`
+(`TopologicalSpace`, `AddCommGroup`, `Module ℝ`, `IsTopologicalAddGroup`,
+`ContinuousSMul ℝ`) se synthétisent depuis les instances `Pi` de Mathlib — l'argument
+implicit `𝕜 := ℝ` est à expliciter sur `single_mem_stdSimplex` et
+`isCompact_stdSimplex` (sinon reste en meta-var `𝕜✝`).
+
+**Note** — le TODO de l'en-tête de Mathlib `Topology/Sion.lean` (« Spell out the
+particular case of von Neumann theorem ») est un travail en cours **en amont dans
+Mathlib lui-même** : ce lake le réalise en appliquant le cadre général de Sion déjà
+prouvé, plutôt qu'en attendant une entrée dédiée dans Mathlib.
 
 ## Référence
 
