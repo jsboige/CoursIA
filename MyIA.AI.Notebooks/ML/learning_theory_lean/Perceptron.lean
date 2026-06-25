@@ -2,6 +2,7 @@ import Mathlib
 import Perceptron.Data
 import Perceptron.Perceptron
 import Perceptron.Convergence
+import Perceptron.Tightness
 
 /-!
 # learning_theory_lean — convergence du Perceptron (théorème de Novikoff)
@@ -19,6 +20,9 @@ La preuve est **géométrique élémentaire et entièrement 0-sorry** :
   `PerceptronRun` (données séparables + trace d'erreurs).
 - `Perceptron/Convergence.lean` — Lemme A `⟨wₖ,u⟩ ≥ kγ`, Lemme B `‖wₖ‖² ≤ kR²`,
   Cauchy–Schwarz ⟹ **`novikoff_mistake_bound`** : `n·γ² ≤ R²`.
+- `Perceptron/Tightness.lean` — **saturation de la borne** : un témoin concret sur
+  `ℂ` (`n=2`, `γ=1`, `R=√2`) atteignant l'égalité `n·γ² = R²`
+  (`novikoff_bound_is_sharp`) ⟹ la borne `(R/γ)²` est optimale.
 
 Référence : A. B. J. Novikoff, *On convergence proofs for perceptrons*, Symposium
 on the Mathematical Theory of Automata, Polytechnic Institute of Brooklyn (1962).
