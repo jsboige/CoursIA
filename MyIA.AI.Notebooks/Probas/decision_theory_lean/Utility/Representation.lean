@@ -159,6 +159,61 @@ theorem affine_rep_is_rep (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityR
 
 end AffineStability
 
+section StrictAndIndifference
+
+/-!
+## Strict preference and indifference under a representation
+
+The weak representation `IsExpectedUtilityRep u P` pins down `p ≽ q ↔ E_p[u] ≥ E_q[u]`.
+Two companion characterisations follow by elementary reasoning on the order of `ℝ`,
+completing the trichotomy weak / strict / indifferent of a represented preference —
+the vNM analogue of the mono-book / probability-weights dichotomy of `Coherence`.
+-/
+
+/-- Under a representation, **strict preference** `p ≻ q` (weakly preferred one way,
+    not the other) holds exactly when the expected utility under `p` *strictly* exceeds
+    that under `q`. This is the strict companion of `IsExpectedUtilityRep`. -/
+theorem rep_strict_iff (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
+    (p q : Lottery α) :
+    StrictPref P p q ↔ expectation p u > expectation q u := by
+  show P p q ∧ ¬ P q p ↔ expectation p u > expectation q u
+  refine ⟨fun ⟨hpp, hnqp⟩ => ?_, fun hgt => ⟨?_, ?_⟩⟩
+  · -- P p q ∧ ¬ P q p  ⟹ E_p > E_q
+    have hge : expectation p u ≥ expectation q u := (h p q).mp hpp
+    by_contra hneg
+    -- hneg : ¬ E_p > E_q  ⟹  E_p ≤ E_q  ⟹  P q p, contradicting hnqp
+    exact hnqp ((h q p).mpr (not_lt.mp hneg))
+  · -- E_p > E_q  ⟹  P p q
+    exact (h p q).mpr (le_of_lt hgt)
+  · -- E_p > E_q  ⟹  ¬ P q p
+    intro hqp
+    have hle := (h q p).mp hqp
+    linarith
+
+/-- Under a representation, **indifference** `p ~ q` (each weakly preferred to the other)
+    holds exactly when the two expected utilities coincide. Together with
+    `rep_strict_iff`, this partitions a represented preference into the three exhaustive
+    cases (strict-p / strict-q / indifferent) via the trichotomy of `ℝ`. -/
+theorem rep_indifference_iff (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
+    (p q : Lottery α) :
+    (P p q ∧ P q p) ↔ expectation p u = expectation q u := by
+  refine ⟨fun ⟨hpp, hqp⟩ => ?_, fun heq => ?_⟩
+  · -- P p q ∧ P q p  ⟹  E_p = E_q  (squeeze the two inequalities)
+    have hge := (h p q).mp hpp
+    have hle := (h q p).mp hqp
+    linarith
+  · -- E_p = E_q  ⟹  P p q ∧ P q p
+    exact ⟨(h p q).mpr (by linarith), (h q p).mpr (by linarith)⟩
+
+/-- **Irreflexivity of strict preference** under a representation: no lottery is strictly
+    preferred to itself. Immediate corollary of `rep_strict_iff` (`E_p > E_p` is absurd). -/
+theorem strict_irrefl (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
+    (p : Lottery α) : ¬ StrictPref P p p := by
+  rw [rep_strict_iff u P h]
+  exact lt_irrefl _
+
+end StrictAndIndifference
+
 /-!
 ## Existence direction — OPEN milestone
 
