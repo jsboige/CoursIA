@@ -24,6 +24,45 @@ Mathlib provides `tsum_geometric_of_lt_one` for this.
 def geometricPartialSum (γ : ℝ) (n : ℕ) : ℝ :=
   (List.range n).foldl (fun acc k => acc + γ ^ k) 0
 
+/-!
+## Foundational facts on the finite partial sum
+
+The infinite geometric series (`∑' n, γ^n`) is handled below via Mathlib. These
+lemmas establish the elementary identities on the *finite* partial sum
+`geometricPartialSum γ n` — the empty sum, the telescoping recurrence that builds
+it term-by-term, and the textbook closed form `(1 − γ^n)/(1 − γ)` valid for
+`γ ≠ 1`. They are the finite counterpart of `geometric_series_converges` and make
+the partial-sum definition usable (it was previously defined but unused).
+-/
+
+/-- **Empty partial sum.** `geometricPartialSum γ 0 = 0` — summing over the empty
+    range `List.range 0 = []` yields the additive identity. -/
+lemma geometricPartialSum_zero (γ : ℝ) : geometricPartialSum γ 0 = 0 := by
+  simp [geometricPartialSum]
+
+/-- **Telescoping recurrence.** Each added term contributes `γ^n`:
+    `geometricPartialSum γ (n+1) = geometricPartialSum γ n + γ^n`. This is the
+    stepwise identity underlying the finite sum (and the induction engine for the
+    closed form below). -/
+lemma geometricPartialSum_succ (γ : ℝ) (n : ℕ) :
+    geometricPartialSum γ (n + 1) = geometricPartialSum γ n + γ ^ n := by
+  simp only [geometricPartialSum, List.range_succ, List.foldl_append,
+    List.foldl_cons, List.foldl_nil]
+
+/-- **Closed form of the finite partial sum** (textbook identity). For `γ ≠ 1`,
+    the partial sum `Σ_{k=0}^{n-1} γ^k` equals `(1 − γ^n) / (1 − γ)`. Proved by
+    induction on `n` using the recurrence `geometricPartialSum_succ`. This is the
+    finite analogue of `geometric_series_converges` (which takes `n → ∞`). -/
+lemma geometricPartialSum_closed {γ : ℝ} (hγ : γ ≠ 1) (n : ℕ) :
+    geometricPartialSum γ n = (1 - γ ^ n) / (1 - γ) := by
+  have hdenom : (1:ℝ) - γ ≠ 0 := sub_ne_zero.mpr hγ.symm
+  induction n with
+  | zero => simp [geometricPartialSum]
+  | succ k ih =>
+    rw [geometricPartialSum_succ, ih]
+    field_simp [hdenom]
+    ring
+
 /-- For 0 ≤ γ < 1, the geometric series converges.
     This wraps Mathlib's `tsum_geometric_of_lt_one`. -/
 theorem geometric_series_converges {γ : ℝ} (hγ₁ : 0 ≤ γ) (hγ₂ : γ < 1) :
