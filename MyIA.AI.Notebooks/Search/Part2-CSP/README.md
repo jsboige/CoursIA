@@ -46,6 +46,17 @@ CSP-1 et CSP-2 sont incontournables : tout le paradigme — un modèle déclarat
 - **Frontières** : CSP-6 (Hybridization, le notebook le plus avancé), puis CSP-7/8/9 (Soft/Temporal/Distributed)
 - **Indépendants** : CSP-7, CSP-8 et CSP-9 sont accessibles après CSP-1 + CSP-2
 
+```mermaid
+flowchart LR
+    SOCLE["<b>Socle du paradigme</b><br/>CSP-1 — Modèle (X, D, C)<br/>&amp; backtracking + MRV/LCV<br/>CSP-2 — Propagation<br/>(AC-3, Forward Checking, MAC)"]
+    APP["<b>Applications industrielles</b><br/>CSP-3 — Contraintes globales<br/>→ CSP-4 Scheduling<br/>→ CSP-5 Optimization"]
+    FRO["<b>Frontières</b><br/>CSP-6 — Hybridization<br/>(LCG, CP+SAT/ML/LLM)<br/>→ CSP-7 Soft<br/>→ CSP-8 Temporal<br/>→ CSP-9 Distributed"]
+    IND["<b>Indépendants</b><br/>CSP-7 / CSP-8 / CSP-9<br/>(accessibles dès<br/>CSP-1 + CSP-2)"]
+    SOCLE --> APP
+    SOCLE --> FRO
+    SOCLE --> IND
+```
+
 Les notebooks CSP présupposent les bases de la Partie 1 : formalisation en espace d'états ([Search-1](../Part1-Foundations/Search-1-StateSpace.ipynb)) et backtracking ([Search-2](../Part1-Foundations/Search-2-Uninformed.ipynb)).
 
 ## Prérequis & environnement
