@@ -16,6 +16,18 @@ Cette troisieme sous-serie (SC-12 a SC-14) introduit le **testing rigoureux** de
 
 **Total** : 3 notebooks, ~2h15.
 
+Cette sous-série est une **escalade de l'assurance** : chaque étape couvre une classe de bugs plus large que la précédente — du « ça marche sur mes exemples » au « propriété garantie quelles que soient les entrées ».
+
+```mermaid
+flowchart LR
+    U["<b>Tests unitaires</b><br/>SC-12 · Foundry<br/>cas isolés fixés"]
+    F["<b>Fuzz d'invariants</b><br/>SC-13 · forge --fuzz-runs<br/>familles d'entrées aléatoires"]
+    V["<b>Vérification formelle</b><br/>SC-14 · Certora / Halmos<br/>toutes les entrées (prouvé)"]
+    U -->|"couvre les bugs d'un cas"| F
+    F -->|"couvre une famille d'entrées"| V
+    V -->|"pont vers Lean"| LEAN["preuve formelle<br/>mathématique"]
+```
+
 ---
 
 ## Parcours d'apprentissage
