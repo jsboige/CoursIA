@@ -13,10 +13,12 @@ Maximiser `g` revient à maximiser la **croissance asymptotique du capital** com
 sur une infinité de paris indépendants (c'est l'optimalité de Kelly). Voir l'issue
 #4052.
 
-Ce module définit `growth` et établit la **concavité stricte** de `g` sur la zone
-admissible (vue calcul : `g''(f) < 0`). Le théorème phare d'optimalité — qui prouve
-directement `g(f) ≤ g(f*)` via la tangente `log t ≤ t − 1`, sans recourir à la
-concavité abstraite — vit dans `Kelly.lean`.
+Ce module définit `growth` et `growthGrad`, et pose les **faits fondamentaux** de
+ligne de base (croissance nulle sans pari, pente à l'origine = l'avantage). La
+concavité stricte de `g` sur la zone admissible (vue calcul `g''(f) < 0`) est la
+stratégie de preuve **contournée** par le théorème phare d'optimalité, qui démontre
+directement `g(f) ≤ g(f*)` via la tangente `log t ≤ t − 1` plutôt que d'invoquer la
+concavité abstraite — ce phare vit dans `Kelly.lean`.
 -/
 
 namespace KellyLean
@@ -34,5 +36,25 @@ noncomputable def growth (β : Bet) (f : ℝ) : ℝ :=
     ordre `growthGrad β f* = 0`). -/
 noncomputable def growthGrad (β : Bet) (f : ℝ) : ℝ :=
   β.p * β.b / winWealth β f - q β / loseWealth β f
+
+/-- **Croissance nulle sans pari** : `g(0) = 0`. Ne rien miser (`f = 0`) laisse le
+    capital inchangé — les deux multiplicateurs de richesse valent `1`, et `log 1 = 0`.
+    C'est la **ligne de base** du critère de Kelly : toute fraction `f` avec `g(f) > 0`
+    bat le « ne rien faire », toute fraction avec `g(f) < 0` lui est inférieure
+    (cf `Kelly.kelly_optimal`, qui garantit `g(f) ≤ g(f*)` et, l'edge étant positif,
+    `g(f*) > 0 = g(0)`). -/
+lemma growth_zero (β : Bet) : growth β 0 = 0 := by
+  unfold growth winWealth loseWealth
+  simp [Real.log_one]
+
+/-- **Pente à l'origine = l'avantage** : `g'(0) = b·p − q`. Sans mise (`f = 0`), la
+    pente du log-croissance vaut exactement l'« edge » `b·p − q` — soit le **numérateur**
+    de la fraction de Kelly `f* = (b·p − q)/b`. Ainsi `g'(0) > 0` ⟺ `f* > 0` (pari
+    favorable, miser), `g'(0) < 0` ⟺ `f* < 0` (pari défavorable, shorter). C'est le
+    pont entre la géométrie locale de `g` (sa pente en `0`) et le sens de la mise
+    optimale. -/
+lemma growthGrad_zero (β : Bet) : growthGrad β 0 = β.p * β.b - q β := by
+  unfold growthGrad winWealth loseWealth
+  simp [div_one]
 
 end KellyLean
