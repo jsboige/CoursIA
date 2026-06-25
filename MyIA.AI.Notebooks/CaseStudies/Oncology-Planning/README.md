@@ -4,6 +4,22 @@
 
 Ce devoir de contrôle continu combine **IA symbolique** et **programmation probabiliste** à travers un cas d'usage médical : l'aide à la décision en oncologie.
 
+Les deux familles d'IA ne s'opposent pas : elles se répartissent le long d'une **frontière** — ce qui *doit être respecté* (déterministe) et ce qui *doit être estimé* (probabiliste) — pour produire un **jumeau numérique** du patient capable de simuler des scénarios :
+
+```mermaid
+flowchart LR
+    subgraph DET["Déterministe — doit être respecté"]
+        O["Ontologie<br/>des chimiothérapies"] --> CSP["Planification<br/>CSP des cures"]
+    end
+    subgraph PROB["Probabiliste — doit être estimé"]
+        T["Toxicité cumulée<br/>(variable latente)"] --> PYRO["Inférence Pyro<br/>profil patient"]
+    end
+    CSP -->|"calendrier valide"| JN["Jumeau numérique<br/>du patient"]
+    PYRO -->|"incertitude"| JN
+    Q{"« Et si ? »<br/>dose / report"} --> JN
+    JN --> DEC["Décision médicale<br/>éclairée par scénarios"]
+```
+
 ### Structure du dossier
 
 ```
