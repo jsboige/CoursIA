@@ -10,6 +10,33 @@ Ce répertoire regroupe les séries consacrées aux **solveurs SMT** (*Satisfiab
 
 Un solveur **SAT** décide si une formule booléenne est satisfiable. Un solveur **SMT** étend SAT en raisonnant directement sur des *théories* : arithmétique linéaire sur les entiers et les réels, tableaux (`Array`), vecteurs de bits (`BitVec`), chaînes de caractères, fonctions non interprétées. Plutôt que d'encoder un Sudoku ou un planificateur de repas en variables booléennes à la main, on exprime les contraintes dans le langage naturel de la théorie concernée, et le solveur retourne un modèle (`sat`) ou prouve l'impossibilité (`unsat`).
 
+```mermaid
+flowchart LR
+    SAT["<b>SAT</b><br/>booléens seuls<br/>(encodage manuel)"]
+    SMT["<b>SMT</b><br/>booléens + théories"]
+    SAT -->|"+ théories"| SMT
+    TH1["arithmétique linéaire<br/>(int, real)"]
+    TH2["tableaux<br/>Array select/store"]
+    TH3["vecteurs de bits<br/>BitVec"]
+    TH4["chaînes<br/>+ regex"]
+    SMT --> TH1
+    SMT --> TH2
+    SMT --> TH3
+    SMT --> TH4
+    TH1 --> V{"check()"}
+    TH2 --> V
+    TH3 --> V
+    TH4 --> V
+    V -->|"sat"| M["modèle<br/>(solution)"]
+    V -->|"unsat"| U["impossibilité<br/>prouvée"]
+    classDef sat fill:#fff3cd,stroke:#856404,stroke-width:2px;
+    classDef smt fill:#d1ecf1,stroke:#0c5460,stroke-width:2px;
+    class SAT sat;
+    class SMT smt;
+```
+
+Le saut **SAT → SMT** : plutôt que d'encoder un problème en variables booléennes à la main (coûteux, illisible), on l'exprime directement dans sa théorie naturelle — entiers, tableaux, bits, chaînes — et le solveur raisonne sur cette expressivité avant de rendre son verdict.
+
 **Z3** est le solveur SMT le plus utilisé en recherche comme en industrie (vérification de programmes, planification, synthèse, sécurité). Les deux séries ci-dessous l'exploitent via deux bindings différents.
 
 ## Les deux séries
