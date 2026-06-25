@@ -17,6 +17,25 @@ Ces notebooks supposent que les cles API et private keys sont lues depuis l'envi
 | 25 | [SC-25-Mainnet-Deploy](SC-25-Mainnet-Deploy.ipynb) | ~40 min | Choix L2 (Base/Polygon/Arbitrum), estimation de cout, deploiement mainnet, checklist securite, verification explorateur |
 | 26 | [SC-26-Final-Project](SC-26-Final-Project.ipynb) | ~90 min | Capstone : vote Solidity + chiffrement Paillier + preuve ZKP + deploiement anvil/testnet + tests Foundry |
 
+Le capstone SC-26 ne présente pas un concept nouveau : il **assemble les briques acquises** dans les sous-séries précédentes en une DApp de vote complète. Ce diagramme en fait la synthèse — chaque brique pointe vers son notebook d'origine :
+
+```mermaid
+flowchart LR
+    SC09["Contrat de gouvernance<br/>(SC-9 · DAO)"]
+    SC16["Chiffrement des bulletins<br/>(SC-16 · Paillier)"]
+    SC17["Vote vérifiable E2E<br/>(SC-17)"]
+    SC15["Preuve ZK de validité<br/>(SC-15 · ZKP)"]
+    SC12["Tests Foundry<br/>(SC-12/14)"]
+    SC24["Déploiement testnet<br/>(SC-24)"]
+    SC26((("<b>SC-26<br/>Capstone</b><br/>DApp de vote")))
+    SC09 --> SC26
+    SC16 --> SC26
+    SC17 --> SC26
+    SC15 --> SC26
+    SC12 --> SC26
+    SC24 --> SC26
+```
+
 ---
 
 ## Parcours d'apprentissage
