@@ -78,6 +78,19 @@ La série manipule un vocabulaire précis hérité de la programmation par contr
 | **Front de Pareto** | Ensemble des solutions non-dominées lorsque plusieurs objectifs se contredisent : les compromis optimaux, à départager par un humain. | 06 |
 | **Preuve par réfutation** | Une formule est valide si sa négation est insatisfiable (`unsat` sur la négation = la formule tient dans tous les cas). | 05 |
 
+```mermaid
+flowchart TD
+    A["Assertions / contraintes<br/>s.add(...)"] --> CK["s.check()"]
+    CK --> SAT["<b>sat</b>"]
+    CK --> UNS["<b>unsat</b>"]
+    CK --> UNK["<b>unknown</b>"]
+    SAT --> MS["Extraire le modèle<br/>s.model() — un témoin concret"]
+    UNS --> UC["Diagnostiquer le noyau<br/>unsat_core() — quelles contraintes<br/>conflictuent ?"]
+    UNK --> LIM["Reconnaître la limite<br/>théorie non décidable /<br/>quantificateurs / timeout"]
+```
+
+Les **trois verdicts** de `check()` appellent trois postures distinctes — c'est l'épine dorsale de l'usage du solveur, posée au notebook 01 et raffinée jusqu'au noyau d'insatisfiabilité et à la preuve par réfutation.
+
 ## Prérequis
 
 | Besoin | Détail |
@@ -164,6 +177,20 @@ Cette série vous a donné accès à **l'intégralité de la machinerie Z3**, sa
 - **La finesse** — que la distinction **satisfiabilité vs optimisation** structure l'usage du solveur : `Solver` répond « le problème a-t-il une solution ? » (`sat`/`unsat`), `Optimize` ajoute « quelle est la *meilleure* solution ? ». Et que les trois verdicts (`sat`/`unsat`/`unknown`) appellent trois postures distinctes : extraire un modèle, diagnostiquer le noyau d'insatisfiabilité, ou reconnaître honnêtement la limite du solveur (théorie non décidable, quantificateurs, timeout).
 
 La thèse est puissante et honnêtement présentée : z3-py ne promet pas la performance (Z3 est NP-difficile), mais il promet l'**expressivité** — modéliser ce que l'on *veut*, dans un langage naturel riche (entiers, réels, bits, tableaux, chaînes, quantificateurs), et laisser le solveur faire le travail de recherche. Le compromis est clair : on troque la garantie de performance contre la concision déclarative et l'accès aux théories.
+
+```mermaid
+flowchart TD
+    Q{"Un objectif<br/>à optimiser ?"}
+    Q -->|"non — juste décider"| SOLV["<b>Solver</b><br/>sat / unsat"]
+    Q -->|"oui"| OPT["<b>Optimize</b><br/>maximize / minimize"]
+    OPT --> MO{"Plusieurs<br/>objectifs ?"}
+    MO -->|"un seul"| ONE["Solution optimale<br/>unique"]
+    MO -->|"par priorité"| LEX["Lexicographique<br/>optimise puis gèle<br/>l'optimum précédent"]
+    MO -->|"contradictoires"| PARETO["Front de Pareto<br/>compromis non-dominés"]
+    PARETO --> MAXSAT["MaxSAT<br/>relâche en souples pondérées<br/>les contraintes les moins critiques"]
+```
+
+Le diagramme ci-dessus situe les deux postures du solveur — **décider** (`Solver`) ou **optimiser** (`Optimize`) — et l'escalade du notebook 06 : d'un objectif unique à plusieurs objectifs par priorité (lexicographique), puis, lorsque les objectifs se contredisent, au **front de Pareto** et à la relaxation **MaxSAT**.
 
 ### Prochaines étapes
 
