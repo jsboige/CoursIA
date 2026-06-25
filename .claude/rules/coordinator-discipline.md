@@ -51,9 +51,13 @@ S'applique meme quand ai-01 est **mobilise par le user** sur une autre tache (se
 2. **Deep queue = ~5-10 steps ordonnes par lane, sur le dashboard.** Assez profonde pour couvrir **plusieurs cycles de coord meme si ai-01 est absent/mobilise plusieurs heures**. Pre-autorisation explicite dans le post : « brule-les **dans l'ordre**, NE m'attends PAS entre steps, ASK seulement sur **blocker reel** ou **queue vide** » (cf [[feedback-dispatch-fill-spare-capacity]]).
 
 3. **Fallback perenne never-empty par famille = le filet qui ne tombe jamais a sec.** Quand la deep-queue Epic d'une lane est genuinement epuisee, le worker **NE rapporte PAS idle** : il tombe sur le fallback perenne de SA famille, qui ne se vide jamais :
-   - **#2651** (OPEN) — prose pedagogique des READMEs (principal + sous-series), famille-partitionnee.
-   - **Convention 3 exercices/notebook** (`.claude/rules/three-exercises-per-notebook.md`, rule ongoing — l'Epic tracker #2161 est CLOSED mais le rollout reste a faire notebook par notebook).
-   Ces deux rollouts sont repo-wide et famille-partitionnes → une lane n'est **jamais** vide. `[CLAIMED] <item> — <machine:workspace> <ts>` avant de commencer (anti-double-claim).
+   **Un tracker FERME ne ferme pas le rollout** : le travail repo-wide famille-partitionne persiste meme quand l'issue-Epic de suivi est CLOSED — ne JAMAIS lire « issue closed » comme « fallback indisponible » (incident recurrent 2026-06-25 : 3 lanes ont rapporte idle en citant #2651/#2161 CLOSED, alors que la prose et les 3-exercices restent a faire notebook par notebook). Rollouts perennes LIVE (OPEN au 2026-06-25, famille-partitionnes) :
+   - **#3973 feuilles-READMEs ascendantes** (filles par famille : #3974 GenAI+Python, #3975 SymbolicAI-non-Lean+Sudoku+GameTheory+CaseStudies, #3976 QuantConnect, #3978 SymbolicAI/Lean, #3979 Knot/Grothendieck). **Successeur LIVE de #2651** (prose pedagogique, CLOSED).
+   - **#4212 finition editoriale** (aeration prose + visuels Mermaid/GenAI, rolling famille-partitionne, Part of #4208).
+   - **#3870 backfill FR des READMEs EN** (#1650 Phase 0.5, ~15 READMEs, preserve `README.en.md`).
+   - **#2876 accents manquants** dans les READMEs francophones (good first issue, repo-wide).
+   - **Convention 3 exercices/notebook** (`.claude/rules/three-exercises-per-notebook.md`, rule ongoing — tracker #2161 CLOSED mais rollout a faire notebook par notebook).
+   Ces rollouts sont repo-wide et famille-partitionnes → une lane n'est **jamais** vide. `[CLAIMED] <item> — <machine:workspace> <ts>` avant de commencer (anti-double-claim). **Quand un tracker LIVE ci-dessus est ferme a son tour, ai-01 le remplace par son successeur OPEN — ce point ne pointe JAMAIS vers une issue CLOSED.**
 
 4. **Token economy ne ferme jamais une lane Lean/research.** L'economie de tokens est **Anthropic-only** (cf [[feedback-token-economy-anthropic-only]]) ; sur les workers z.ai/GLM (large) elle n'est PAS une contrainte. Un worker qui HOLD du Lean/proving en citant « token economy z.ai » se trompe — decomposer les sorries jusqu'au noyau dur irreductible (1-2 genuinement intractables OK a laisser, documentes). ai-01 ne valide pas un HOLD Lean motive par l'economie.
 
