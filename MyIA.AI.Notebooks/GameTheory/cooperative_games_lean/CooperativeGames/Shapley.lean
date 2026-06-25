@@ -1866,3 +1866,61 @@ theorem banzhaf_index_le_two (G : TUGame N) (i : N) : BanzhafIndex G i ≤ 2 := 
       ≤ ((Finset.univ : Finset (Finset N)).card : ℝ) := by exact_mod_cast banzhaf_raw_le_univ G i
     _ = (2 ^ Fintype.card N : ℝ) := by rw [hcard]; norm_cast
     _ = 2 * (2 : ℝ) ^ (Fintype.card N - 1) := by rw [h2]
+
+/-- The normalized Banzhaf index is at most 1: the raw count `BanzhafRaw` only registers
+    coalitions where `i` is critical, and a critical player must be a member
+    (`critical_implies_mem`), so the critical-coalition filter is contained in the filter of
+    coalitions *containing* `i`. There are exactly `2 ^ (card N - 1)` such coalitions (insert/erase
+    bijection with the subsets of `N \ {i}`: each of the other `card N - 1` players is in or out,
+    and `i` is forced in). Normalizing `BanzhafRaw ≤ 2 ^ (card N - 1)` by `2 ^ (card N - 1)` leaves
+    a quotient at most 1 — the Penrose-Banzhaf index is a probability-like quantity in `[0, 1]`.
+    This tightens `banzhaf_index_le_two` (which used the cruder `banzhaf_raw_le_univ ≤ 2 ^ card N`
+    bound) and pairs with `banzhaf_index_nonneg` to pin the index in `[0, 1]`. The player `i : N`
+    forces `0 < card N`, so the Nat-subtraction `card N - 1` does not underflow. -/
+theorem banzhaf_index_le_one (G : TUGame N) (i : N) : BanzhafIndex G i ≤ 1 := by
+  have hn : 0 < Fintype.card N := Fintype.card_pos_iff.mpr ⟨i⟩
+  have hdenom : 0 < (2 : ℝ) ^ (Fintype.card N - 1) := pow_pos (by norm_num) _
+  -- a critical coalition must contain i, so the critical filter ⊆ the membership filter
+  have hsubset :
+      (Finset.univ.filter fun S => Critical G i S) ⊆
+        (Finset.univ : Finset (Finset N)).filter (fun S => i ∈ S) :=
+    fun S hS =>
+      Finset.mem_filter.mpr
+        ⟨Finset.mem_univ _, critical_implies_mem G i S (Finset.mem_filter.mp hS).2⟩
+  -- coalitions containing i ↔ subsets of (univ.erase i) via insert/erase (a bijection)
+  have hmemcard :
+      ((Finset.univ : Finset (Finset N)).filter (fun S => i ∈ S)).card =
+        2 ^ (Fintype.card N - 1) := by
+    have heq :
+        (Finset.univ : Finset (Finset N)).filter (fun S => i ∈ S) =
+          ((Finset.univ : Finset N).erase i).powerset.image (insert i) := by
+      ext S
+      constructor
+      · intro h
+        obtain ⟨-, hmem⟩ := Finset.mem_filter.mp h
+        refine Finset.mem_image.mpr ⟨S.erase i, ?_, ?_⟩
+        · exact Finset.mem_powerset.mpr (Finset.erase_subset_erase i (Finset.subset_univ S))
+        · rw [Finset.insert_erase hmem]
+      · intro h
+        obtain ⟨T, hT, hST⟩ := Finset.mem_image.mp h
+        refine Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩
+        rw [← hST]; exact Finset.mem_insert_self i T
+    rw [heq]
+    have hinj :
+        Set.InjOn (insert i)
+          (((Finset.univ : Finset N).erase i).powerset : Set (Finset N)) := by
+      intros T₁ hT₁ T₂ hT₂ heq
+      have hsub₁ : T₁ ⊆ (Finset.univ : Finset N).erase i :=
+        Finset.mem_powerset.mp (Finset.mem_coe.mp hT₁)
+      have hsub₂ : T₂ ⊆ (Finset.univ : Finset N).erase i :=
+        Finset.mem_powerset.mp (Finset.mem_coe.mp hT₂)
+      have hi₁ : i ∉ T₁ := fun h => by simpa using hsub₁ h
+      have hi₂ : i ∉ T₂ := fun h => by simpa using hsub₂ h
+      have hstrip : (insert i T₁).erase i = (insert i T₂).erase i := by rw [heq]
+      rwa [Finset.erase_insert hi₁, Finset.erase_insert hi₂] at hstrip
+    have herase : ((Finset.univ : Finset N).erase i).card = Fintype.card N - 1 := by
+      rw [Finset.card_erase_of_mem (Finset.mem_univ (i : N)), Finset.card_univ]
+    rw [Finset.card_image_of_injOn hinj, Finset.card_powerset, herase]
+  rw [BanzhafIndex, div_le_iff₀ hdenom, one_mul]
+  unfold BanzhafRaw
+  exact_mod_cast (Finset.card_le_card hsubset).trans hmemcard.le
