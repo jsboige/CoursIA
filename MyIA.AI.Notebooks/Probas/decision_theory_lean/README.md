@@ -19,14 +19,19 @@ Trois modules livrés :
   l'utilité n'est déterminée qu'à transformation affine positive près). La **direction
   d'existence** (rationalité ⟹ représentation, Herstein–Milnor 1953) est documentée
   comme **jalon ouvert**.
-- **Coherence** : la **cohérence de de Finetti / Dutch Book** (`See #4050`). Le module
-  prouve **sans aucun `sorry`** la **direction constructive** du théorème de cohérence
-  (cas fini) : des prix de pari violant l'inclusion–exclusion exposent l'agent à un
-  *Dutch Book* explicite (livret de paris à perte sûre, mises concrètes `(1,1,−1,−1)`
-  ou l'inverse), via l'identité d'inclusion–exclusion des indicatrices. Sa contraposée
-  donne « cohérence ⟹ additivité ». La **réciproque** (additivité + normalisation ⟹
-  cohérence, i.e. la fonction de prix est une probabilité) nécessite la séparation
-  d'hyperplans / dualité LP et est documentée comme **jalon ouvert**.
+- **Coherence** : la **cohérence de de Finetti / Dutch Book** (`See #4050`, #4193,
+  #4244). Le module prouve **sans aucun `sorry`** la **direction constructive** du
+  théorème de cohérence (cas fini) : des prix de pari violant l'inclusion–exclusion
+  exposent l'agent à un *Dutch Book* explicite (livret de paris à perte sûre, mises
+  concrètes `(1,1,−1,−1)` ou l'inverse), via l'identité d'inclusion–exclusion des
+  indicatrices. Sa contraposée donne « cohérence ⟹ additivité ». **Le cas mono-ticket
+  est entièrement clos** (`single_coherent_iff_prob_bounds`, #4193 : la cohérence d'un
+  ticket unique équivaut aux bornes de probabilité `0 ≤ q ≤ 1`), et **des poids
+  additifs normalisés on dérive une fonction de prix mono-cohérente**
+  (`priceFromWeights_single_coherent`, #4244). La **réciproque complète** sur livrets de
+  taille arbitraire (`coherent_iff_probability`, qui fait de `q` une mesure de
+  probabilité) nécessite la séparation d'hyperplans / dualité LP en dimension finie et
+  reste un **jalon ouvert** (délibérément non `sorry`-backed).
 
 Notebook compagnon Lean :
 [`Infer/Infer-20b-Lean-Gittins.ipynb`](../Infer/Infer-20b-Lean-Gittins.ipynb).
@@ -144,7 +149,17 @@ contraposée :
     pour garantir une perte stricte.
   - `coherent_on_implies_additive` — **contraposée** : si aucun Dutch Book n'existe
     sur `(A, B, A∩B, A∪B)`, alors `q` satisfait l'inclusion–exclusion.
-- **Énoncé, jalon ouvert** (réciproque) : la direction « additivité + normalisation
+- **Prouvé** (`Probability.lean`) — le **cas mono-ticket est entièrement clos** :
+  - `single_coherent_iff_prob_bounds` (PR #4193) — **iff** entre cohérence d'un ticket
+    unique et bornes de probabilité : une fonction de prix `q` évite tout Dutch Book
+    mono-ticket **si et seulement si** `0 ≤ q(A) ≤ 1` pour tout `A`. La preuve procède
+    par trichotomie sur le signe de la mise, construisant un **Dutch Book explicite**
+    pour chaque borne violée (`q < 0`, `q > 1`, `q(∅) > 0`, `q(univ) < 1`).
+  - `priceFromWeights_single_coherent` (PR #4244) — **des poids à la cohérence** : à
+    partir de poids `p : Ω → ℝ` additifs et normalisés, la fonction de prix dérivée
+    `q A = ∑_{ω∈A} p ω` est mono-cohérente. C'est le pont « poids de probabilité ⟹
+    prix cohérent » (la moitié additive du `coherent_iff_probability` complet).
+- **Énoncé, jalon ouvert** (réciproque complète) : la direction « additivité + normalisation
   ⟹ cohérence » (le `coherent_iff_probability` complet, qui fait de `q` une mesure de
   probabilité) nécessite la **séparation d'hyperplans / dualité LP** en dimension
   finie. Elle est laissée comme **jalon naturel** et **délibérément non `sorry`-backed**
@@ -169,15 +184,16 @@ vNM, qui porte sur les *préférences* sous risque), mais purement *épistémiqu
 | Fichier | Lignes | sorry | Contenu |
 |---------|--------|-------|---------|
 | `Gittins/Basic.lean` | 37 | 0 | Types fondamentaux — `BanditArm`, `BanditInstance` (bras + actualisation γ), `Policy := Nat → Nat`, `RewardHistory`, `pullCount`, `empiricalMean`. Lean 4 pur, sans Mathlib. |
-| `Gittins/Discount.lean` | 68 | 0 | Actualisation géométrique **prouvée** via l'analyse réelle de Mathlib : `geometric_series_converges`, `one_minus_gamma_pos`, `present_value_constant`, `discount_monotone`. |
+| `Gittins/Discount.lean` | 107 | 0 | Actualisation géométrique **prouvée** via l'analyse réelle de Mathlib : `geometric_series_converges`, `one_minus_gamma_pos`, `present_value_constant`, `discount_monotone`. **Compagnon somme partielle finie** (PR #4252) : `geometricPartialSum γ n = ∑₀..n γ^k` avec `geometricPartialSum_zero`/`_succ` (récurrence télescopique) et `geometricPartialSum_closed` (forme close `(1−γ^n)/(1−γ)`). |
 | `Gittins/GittinsTheorem.lean` | 96 | 5 | Le théorème phare **énoncé avec sorry** : `gittinsIndex`, `gittinsPolicy` (argmax), `gittins_optimality`, `gittins_index_known_arm`, `gittins_index_monotone_discount`. (`gittins_beats_greedy` est un placeholder `: True := trivial`, pas un sorry.) |
 | `Gittins.lean` | 19 | 0 | Imports parapluie |
 | `Utility/Basic.lean` | 91 | 0 | Primitives vNM — `Lottery` (loterie sur `Fintype`), `expectation`, mélange convexe `mix` (preuve de validité), identités affine d'espérance (`expectation_mix`, `expectation_add`, `expectation_smul`, `expectation_const`, `expectation_affine`). |
 | `Utility/Axioms.lean` | 65 | 0 | Les **quatre axiomes vNM** — `IsComplete`, `IsTransitive`, `IsIndependent`, `IsContinuous` (solvabilité des mélanges), `IsRational`, plus `StrictPref`. |
-| `Utility/Representation.lean` | 181 | 0 | **Direction saine prouvée** (`rep_complete`, `rep_transitive`, `rep_independent`, `rep_continuous`, `expected_utility_rep_is_rational`) + **stabilité affine** (`affine_rep_is_rep`). Direction d'existence documentée comme jalon ouvert. |
+| `Utility/Representation.lean` | 236 | 0 | **Direction saine prouvée** (`rep_complete`, `rep_transitive`, `rep_independent`, `rep_continuous`, `expected_utility_rep_is_rational`) + **stabilité affine** (`affine_rep_is_rep`) + **caractérisation stricte/indifférence** (PR #4250 : `rep_strict_iff` `StrictPref ↔ E_p > E_q`, `rep_indifference_iff` `(P p q ∧ P q p) ↔ E_p = E_q`, `strict_irrefl`). Direction d'existence documentée comme jalon ouvert. |
 | `Utility.lean` | ~30 | 0 | Imports parapluie + doc de statut |
 | `Coherence/Basic.lean` | 52 | 0 | Primitives de Finetti — `Event` (= `Finset Ω`), `Price` (= `Event Ω → ℝ`), indicatrice `ind`, et la clé de voûte `ind_inclusion_exclusion` (inclusion–exclusion des indicatrices). |
 | `Coherence/DutchBook.lean` | 101 | 0 | **Direction constructive prouvée** (`non_additive_implies_dutch_book`, mises explicites `(1,1,−1,−1)`/inverse) + contraposée `coherent_on_implies_additive`. Réciproque (dualité LP) documentée comme jalon ouvert. |
+| `Coherence/Probability.lean` | 255 | 0 | **Cohérence mono-ticket** (PR #4193 : `single_coherent_iff_prob_bounds` — *iff* entre cohérence d'un ticket unique et bornes de probabilité `0 ≤ q ≤ 1`, via trichotomie du signe de la mise + Dutch Books explicites pour chaque borne violée) + **des poids à la cohérence** (PR #4244 : `priceFromWeights_single_coherent` — des poids additifs normalisés on dérive une fonction de prix mono-cohérente). Le `coherent_iff_probability` complet (livrets de taille arbitraire) reste ouvert. |
 | `Coherence.lean` | 33 | 0 | Imports parapluie + doc de statut |
 
 ## Pourquoi le théorème d'optimalité est intractable
