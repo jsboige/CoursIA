@@ -39,6 +39,21 @@ L'IA réelle ne fonctionne quasi-jamais avec un seul paradigme. Un assistant dia
 
 Une seule couche ne suffit pas, et l'**ordre de composition** importe : on filtre avant d'optimiser, on modélise l'incertitude avant de valider sous contraintes. Les études de cas matérialisent ces patterns d'architecture.
 
+Le pipeline ci-dessous rend visible cet ordre : chaque couche alimente la suivante, et l'inverser produit un système soit trop rigide (contraintes avant connaissance du domaine), soit trop flou (décision avant modélisation de l'incertitude).
+
+```mermaid
+flowchart TD
+    L1["<b>1 · Connaissances métier</b><br/>représenter le domaine<br/>Ontologies OWL · règles"]
+    L2["<b>2 · Contraintes dures</b><br/>filtrer l'impossible<br/>CSP · SMT · OR-Tools"]
+    L3["<b>3 · Incertitude</b><br/>modéliser l'aléatoire<br/>Bayésien · Pyro · Infer.NET"]
+    L4["<b>4 · Optimisation</b><br/>choisir la meilleure option<br/>A* · génétique · RL"]
+    L5(("<b>5 · Décision finale</b><br/>synthèse + explication<br/>workflow · scoring"))
+    L1 --> L2
+    L2 --> L3
+    L3 --> L4
+    L4 --> L5
+```
+
 ### Le pattern "twin numérique"
 
 Les deux projets reposent sur un **modèle de patient simulé** : un objet logiciel qui représente l'état clinique (symptômes, antécédents, paramètres biologiques) et réagit à des interventions (diagnostic proposé, traitement appliqué). Ce pattern, appelé **jumeau numérique** (digital twin), est devenu central en santé numérique, en industrie 4.0 et en simulation environnementale. L'apprendre sur 10 patients diabétiques (Diagnostic-Medical) ou un cas oncologique (Oncology-Planning) prépare directement aux applications professionnelles.
