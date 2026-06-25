@@ -72,7 +72,7 @@ Solidity supporte l'heritage multiple avec le mot-cle `is`, les interfaces pour 
 
 - **Lancer `anvil` avant l'execution** : chaque notebook se connecte a un noeud local. Sans `anvil` actif, les cellules de deploiement echouent en `ConnectionRefusedError`.
 - **`py-solc-x` telecharge le compilateur** au premier appel (`solcx.install_solc`) ; le versioning se fait via `foundry-lib/` au niveau de la serie.
-- Les outputs committes proviennent d'executions reelles sur `anvil` : les adresses de contrat, les gas utilises et les receipts sont authentiques (contrairement aux notebooks des sous-series 03/05 qui, pour certains, s'appuient sur des replis statiques disclosees).
+- Les outputs committes proviennent d'executions reelles sur `anvil` : les adresses de contrat, les gas utilises et les receipts sont authentiques. La sous-serie 03 (Foundry) execute elle aussi `forge` pour de vrai (SC-12 re-execute la suite Foundry, SC-13 lance un fuzz qui decouvre un contre-exemple d'overflow) ; seuls certains notebooks restent en repli disclose quand l'outil est verrouille par acces commercial (SC-14 Certora) ou depend d'un CLI externe non installe (sous-serie 05 : Vyper / Bitcoin Script / Move / Rust).
 
 ---
 
