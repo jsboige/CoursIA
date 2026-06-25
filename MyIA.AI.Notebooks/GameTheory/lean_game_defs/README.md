@@ -51,6 +51,28 @@ import Mathlib.SetTheory.Game.Nim
 
 Ces projets ne dépendent **pas** de `lean_game_defs/` à la compilation — ils vendorent leurs propres définitions adaptées à leurs obligations de preuve. `lean_game_defs/` est la couche **introductive** utilisée par les notebooks d'enseignement.
 
+*Architecture en couches — la couche de définitions introductive (ce module, sans
+preuves) vs. les projets Lake qui portent les preuves formelles (chacun vendore ses
+propres définitions) :*
+
+```mermaid
+flowchart TD
+    NOTEBOOKS["Notebooks d'enseignement<br/><i>copier-coller les définitions</i>"]
+    INTRO["lean_game_defs/<br/><b>couche introductive</b><br/>définitions uniquement · 0 sorry · cœur Lean<br/>(ce module)"]
+    PROJ["Projets Lake — preuves formelles<br/>chacun vendore ses définitions adaptées"]
+    SC["social_choice_lean/<br/>Arrow · Sen · électeur médian"]
+    COOP["cooperative_games_lean/<br/>Shapley · Cœur · Banzhaf"]
+    SM["stable_marriage_lean/<br/>Gale-Shapley"]
+    CGT["conway_cgt_lean/<br/>surréels · nimbers (via Mathlib)"]
+
+    NOTEBOOKS -->|"copier-coller"| INTRO
+    INTRO -.->|"inspire / ne compile pas avec"| PROJ
+    PROJ --> SC
+    PROJ --> COOP
+    PROJ --> SM
+    PROJ --> CGT
+```
+
 ## Voir aussi
 
 - [GameTheory/README.md](../README.md) — Vue d'ensemble de la série (tracks OpenSpiel + Lean)
@@ -76,6 +98,25 @@ d'Arrow ([SocialChoice.lean](SocialChoice.lean)), jeux bayésiens et signalisati
 ([Bayesian.lean](Bayesian.lean)), et minimisation du regret / CFR
 ([Regret.lean](Regret.lean)). Chaque fichier correspond à un notebook d'enseignement
 spécifique et est autonome.
+
+*La carte du curriculum — six fichiers, du jeu sous forme normale jusqu'au CFR, chacun
+rattaché à son notebook pédagogique source :*
+
+```mermaid
+flowchart LR
+    BASIC["Basic.lean<br/>NormalFormGame · FiniteGame · Game2x2<br/><i>16-Lean-Definitions</i>"]
+    NASH["Nash.lean<br/>meilleure réponse · Nash pur/mixte<br/>dominance stricte<br/><i>16-Lean-Definitions</i>"]
+    COMB["Combinatorial.lean<br/>GameTree · minimax · détermination<br/><i>18-CombinatorialGames</i>"]
+    SC["SocialChoice.lean<br/>Preference · axiomes d'Arrow<br/><i>19-SocialChoice</i>"]
+    BAY["Bayesian.lean<br/>BayesianGame · Nash bayésien · poker de Kuhn<br/><i>11-Bayesian · 13-CFR</i>"]
+    REG["Regret.lean<br/>CumulativeRegret · CFR · FictitiousPlay<br/><i>13-CFR · 17-MultiAgent-RL</i>"]
+
+    BASIC --> NASH
+    NASH --> COMB
+    NASH --> SC
+    NASH --> BAY
+    BAY --> REG
+```
 
 ### Comment elle est utilisée
 
