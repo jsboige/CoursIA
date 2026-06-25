@@ -43,6 +43,22 @@ mot « sorry » dans sa docstring (elle décrit le chemin `constructor` + 2 `sor
 que le prouveur *devrait* tenter) ; l'implémentation actuelle réutilise la preuve
 de D via `exact`, d'où le faux positif `grep` documenté plus bas.
 
+*Les quatre cibles (Dilemme du Prisonnier 2×2) ordonnées par le chemin tactique
+qu'elles forcent le harnais à emprunter — du plus simple (P1) au plus exigeant (P4) :*
+
+```mermaid
+flowchart LR
+    E["Cible E — P1+P2<br/>pd_cooperate_not_ne<br/><i>preuve négative</i>"]
+    D["Cible D — P2<br/>pd_defect_is_pure_ne<br/><i>analyse par cas Fin 2</i>"]
+    C["Cible C — P3<br/>strictly_domin_defect_pd<br/><i>lemme manquant → repli</i>"]
+    F["Cible F — P4<br/>pd_defect_is_ne_decomposable<br/><i>augmentation de sorry</i>"]
+
+    E -->|"rcases + norm_num<br/>(témoin de déviation)"| E2["NE rejeté"]
+    D -->|"fin_cases + norm_num<br/>(comparaisons Int)"| D2["Équilibre de Nash"]
+    C -->|"decide + fin_cases<br/>(repli du P3)"| C2["Défection dominante"]
+    F -->|"constructor + sorry<br/>(anti-retour harnais)"| F2["Décomposition OK"]
+```
+
 ## Notes
 
 - Ce module benchmark la capacité du prouveur Lean multi-agents à clore des preuves de type manuel
@@ -62,6 +78,23 @@ Les cibles benchmarkent la capacité du prouveur à clore des preuves courtes et
 auto-contenues de bout en bout. Les quatre étant désormais fermées, le module
 est conservé comme **suite de régression permanente** : tout changement du
 prouveur qui casse l'une de ces preuves remonte ici comme un échec de build.
+
+*La boucle de régression — comment ces quatre cibles protègent le prouveur :*
+
+```mermaid
+flowchart TD
+    HARNESS["Changement du prouveur<br/>multi-agents (agent_tests/prover/)"]
+    BUILD["lake build Calibration"]
+    TARGETS["Cibles C / D / E / F<br/>(4 chemins tactiques distincts)"]
+    OK["Build SUCCESS — 0 sorry<br/>pas de régression"]
+    FAIL["Échec de build<br/>régression détectée"]
+
+    HARNESS --> BUILD
+    BUILD --> TARGETS
+    TARGETS -->|"les 4 tiennent"| OK
+    TARGETS -.->|"l'une casse"| FAIL
+    OK -->|"suite ré-armée<br/>(cycle suivant)"| HARNESS
+```
 
 ### La leçon du faux positif grep
 
