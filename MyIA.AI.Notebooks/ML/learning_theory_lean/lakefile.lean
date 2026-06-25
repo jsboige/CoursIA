@@ -39,3 +39,10 @@ require mathlib from git
 @[default_target]
 lean_lib «Perceptron» where
   globs := #[.submodules `Perceptron]
+
+/-- Module `PacLearning` — théorie PAC (Valiant 1984), sample complexity classe finie.
+Frère de `Perceptron` dans le lake ML généraliste `learning_theory_lean` (cf
+`decision_theory_lean` qui mutualise Gittins + Utility + Coherence). Voir #4293. -/
+@[default_target]
+lean_lib «PacLearning» where
+  globs := #[.submodules `PacLearning]
