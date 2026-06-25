@@ -4,6 +4,8 @@
 
 **Source de la mission :** directive ai-01 (dashboard workspace CoursIA, 2026-06-23T16:38Z) — rédiger spec + plan de données minute crypto QC + estimation coût. Initialement perçue comme un achat signé (signature données = user-blocker), puis **résolue le 2026-06-24** : la data minute crypto est Cloud-gratuite (cf §4.3), le run cloud est **greenlit à 0 QCC** — plus d'achat à escalader.
 
+> **PIVOT 2026-06-25 (décision user via ai-01 dispatch `myia-ai-01|CoursIA` 00:18Z) — exécution LOCALE/Docker, fin du path cloud.** Le run sur le noeud research QC Cloud (R1-4, 1 CPU / 4 GB) est **INTRINSIC-blocké** : l'handshake ipykernel échoue systématiquement (8 sessions consécutives, 0 cellule exécutée — même sur noeud vérifié-libre et après libération des sessions zombies ; cf mémoire `m12-hf-qccloud-auth-and-infra`). Le vrai blocage est le **compute** (noeud free sous-dimensionné), **pas** la donnée. Dès lors (user 2026-06-25) : canaliser les QCC vers un **dataset réutilisable local** (`lean data download` → backup `G:\Mon Drive\MyIA\Dev\Trading\Data` → exec locale/Docker à la granularité voulue), **JAMAIS** de gros noeud cloud one-shot. Les sections §4.3/§4.4/§4.5 ci-dessous (path cloud gratuit) sont **supersédées par ce pivot pour l'exécution** : la data Cloud reste théoriquement gratuite mais inexploitable sans noeud fonctionnel. Le présent doc est corrigé en §4.5 pour refléter la **couverture minute owned réelle** (vérifiée G.1 firsthand 2026-06-25) + le **gap résiduel**.
+
 ---
 
 ## 1. Contexte — pourquoi maintenant
@@ -75,20 +77,30 @@ Le module [`scripts/m12_har_rv_j.py`](../scripts/m12_har_rv_j.py) **utilise déj
 
 **Feu vert user posé 2026-06-24** : le run cloud M12-HF est autorisé à **0 QCC**, plus d'achat à escalader — la data minute crypto étant Cloud-gratuite (cf §4.3), la signature « achat données » n'a plus d'objet. La question coût étant tranchée, la livraison enchaîne **(b)** présent doc, puis **(a)** notebook QuantBook de recherche exécuté sur QC Cloud (0 QCC, aucun `lean data download`, aucun achat).
 
-### 4.5 Convention de sauvegarde + vérification pré-achat (HARD, mandat user 2026-06-23)
+### 4.5 Couverture minute owned réelle + gap résiduel (vérifié G.1 firsthand 2026-06-25)
 
-**Sauvegarde durable (HARD).** Toute donnée achetée via `lean data download` est **sauvegardée** dans `G:\Mon Drive\MyIA\Dev\Trading\Data` (durable, réutilisable cross-projet, **ne JAMAIS re-payer** une donnée déjà acquise). Cette convention s'applique à **tous** les achats data futures du pipeline ML/trading, pas seulement M12-HF.
+**Correction d'un claim STALE du présent doc (édition 2026-06-24).** La version précédente affirmait qu'un `Minutes_246537_1216726_bundle_archive.zip` (OHLCV minute réel, 4 coins BTC/ETH/LTC/XRP × 2013-2020) était **déjà présent** sur le GDrive. **Falsifié par audit firsthand 2026-06-25** : un `find` récursif sur tout l'arbre `G:\Mon Drive\MyIA\Dev\Trading\Data` ne retourne **aucun** fichier `Minutes_*` / `*246537*` / `minute*bundle*`. Seuls les zips Binance **horaire/journalier** + Forex sont présents. Le claim était non-vérifié (violation G.1) et est **retiré**.
 
-**Vérification pré-achat (G.1, faite 2026-06-23).** Le répertoire ci-dessus a été audité **avant** tout achat. Résultat :
+**Couverture minute réellement owned (audit 2026-06-25, G.1 contre la source) :**
 
-| Élément | État |
-|---------|------|
-| `Minutes_246537_1216726_bundle_archive.zip` | **Déjà présent (gratuit)** — OHLCV minute **réel** (`time,open,close,high,low,volume`, timestamps unix-ms, incréments 60000 ms), couvrant **2013-04-01 → 2020-06-05**, pour **4 des 7 coins** : btcusd, ethusd, ltcusd, xrpusd (~2.8 M barres BTC seul) |
-| SOL-USD / ADA-USD / DOT-USD | **Absents** du bundle (listings post-2020) → à acheter |
-| Période **2020-06 → 2025** | **Absente** pour tous les coins → à acheter (c'est le segment le plus décisif : bear 2022 + momentum 2024-25) |
-| Format | Le bundle GDrive est **CSV générique** (pas LEAN QC) → conversion vers LEAN requise avant ingestion |
+| Coin | Donnée owned | Format | Plage vérifiée | Dérivable en minute ? |
+| ---- | ------------ | ------ | -------------- | --------------------- |
+| **BTC** | `bitstampUSD.csv.gz` (70.3 M trades) | tick Bitcoincharts (`unix_sec,price,amount`) | **2011-09 → 2024-02** | **Oui** — resample tick → 1-min OHLCV (couvre le segment décisif bear-2022 + recovery 2023) |
+| BTC (aux) | `coinbaseUSD.csv.gz` (56.6 M) / `krakenUSD.csv.gz` (63.9 M) | tick | 2014-12→2019-01 / →2023-11 | Oui (redondance / validation cross-exchange) |
+| **ETH** | `Binance/Hour/ethbusd_trade.zip` | **horaire** OHLCV (`YYYYMMDD HH:MM,O,H,L,C,V`) | 2019-10 → 2023 | **Non** — hourly only (pas de tick ETH owned) |
+| **LTC** | `krakenLTC.csv.gz` (181 k trades) | tick | **2014-01 → 2016-07** | Partiel — vintage court, pré-listing moderne |
+| **XRP** | `krakenXRP.csv.gz` (61 k trades) | tick | **2014-01 → 2016-07** | Partiel — vintage court |
+| **SOL / ADA / DOT** | (aucun) | — | — | **Non** — absents du GDrive |
 
-**Conséquence sur le scope d'achat (résolue).** Depuis la levée du gate (§4.3, Cloud Access gratuit), il n'y a **plus de périmètre payant** pour le run cloud : la data minute crypto Binance est accessible gratuitement via QuantBook (`qb.AddCrypto(..., Resolution.Minute, Market.Binance)`), couvrant les 7 coins sur la période disponible. Le bundle GDrive ci-dessus (4 coins × 2013-2020) reste un **export local gratuit** réutilisable pour une exécution hors-cloud, mais le livrable (a) s'exécute sur QC Cloud sans l'utiliser. Le `minute_loader.py` du §5 (fusion CSV GDrive + LEAN) n'est donc requis **que** pour un path d'exécution locale optionnel, pas pour le run cloud greenlit.
+**Gap résiduel pour un verdict M12-HF honnête sur l'univers complet (7 coins × ~2020-2025) :**
+
+1. **BTC** : **couvert** par resample du tick bitstamp (segment 2020-2024 atteignable, 0 QCC). C'est le coin le plus liquide — le cas où l'hypothèse « minute affine RV/sauts » est la plus testable.
+2. **ETH/SOL/ADA/DOT** : **non couverts en minute** owned (ETH horaire ; SOL/ADA/DOT absents). Trois voies, par ordre de coût QCC :
+   - **(α) Resample tick owned** : ne couvre que BTC (+ LTC/XRP vintage). Inutile pour ETH/SOL/ADA/DOT.
+   - **(β) `lean data download`** (lean-cli 1.0.223 installé, **non authentifié** à date — config `~/.lean/lean-cli-config.json` absente) : achat per-file, ~300 QCC ≈ 3 USD / file affiché **au confirm-prompt avant débit** (cf [QC data pricing](https://www.quantconnect.com/data)). Le gap ETH+SOL+ADA+DOT × ~5 ans minute ≈ **estimation grossière ~4-12 fichiers** (un par ticker, segmentation QC) → **~1200-3600 QCC ≈ 12-36 USD**, sous le cap pré-autorisé de ~$30 pour la part < $30, **au-dessus pour la part > $30** → STOP + report du chiffre exact à ai-01 (relais user en session).
+   - **(γ) Réduire le scope** : livrer M12-HF **sur BTC seul** (le coin le plus liquide, 0 QCC via resample tick) → verdict **partiel mais honnête** sur la question scientifique centrale « la fréquence minute affine-t-elle HAR-RV-J ? ». Puis étendre aux autres coins si le verdict BTC est positif (justifie alors l'achat QCC ciblé).
+
+**Décision d'exécution (séquence bornée du dispatch ai-01, priorité QC-lane, 0 QCC tant que pas de confirm-prompt).** Suivre l'ordre : (1) caractériser l'existant [fait, ci-dessus] → (2) identifier le gap réel [fait] → (3) si gap, `lean data download` **seulement** après auth + au confirm-prompt, gap ≤ ~$30 pré-autorisé / > $30 = STOP + report → (4) backup GDrive immédiat post-débit → (5) exec locale/Docker vraies sorties (HAR-RV-J walk-forward + multi-seed, C.2 outputs reels) → (6) PR correction du présent doc (ce livrable). **Option (γ) BTC-seul = voie 0-QCC immédiate** recommandée comme première exécution (le verdict BTC tranche déjà la question scientifique sans achat).
 
 ---
 
@@ -138,14 +150,16 @@ Toutes les pistes GARCH-family / regime-switching / bivariate / multi-asset Kell
 ## 9. Gating récapitulatif
 
 | Gate | État |
-|------|------|
+| ---- | ---- |
 | Phase B #83 (`HAR-RV-J-Kelly` prod) | **DONE** → gate §B franchi |
 | Direction-ML épuisé (0/14 BEATS) | **confirmé** → M12-HF est le bon axe (vol, pas direction) |
 | Training G.1 HOLD | **maintenu** (M12-HF = CPU, pas de GPU) |
-| **Achat données minute QCC** | **MOOT** — Cloud Access gratuit (cf §4.3), run cloud = 0 QCC |
-| **Run M12-HF** | **GREENLIT (user 2026-06-24)** — 0 QCC sur QC Cloud |
+| Run QC Cloud (noeud research R1-4) | **INTRINSIC-blocké** — handshake ipykernel échoue (8 sessions, 0 cellule exécutée). Pivot **local/Docker** 2026-06-25. |
+| Couverture minute owned | **BTC couvert** (tick bitstamp 2011-2024, resample, 0 QCC). ETH/SOL/ADA/DOT = gap (cf §4.5). |
+| Achat données QCC (path local) | **Conditionnel** — `lean data download` only si gap > 0 après scope BTC ; ≤ ~$30 pré-autorisé, > $30 = STOP + report. lean-cli installé mais **non authentifié** (config absente). |
+| **Run M12-HF** | **GREENLIT (user 2026-06-24/25)** — voie 0-QCC = BTC-seul via resample tick owned ; extension aux autres coins subordonnée au verdict BTC. |
 
-Le run cloud est **greenlit à 0 QCC**. Livraison en cours : **(b)** présent doc, puis **(a)** notebook QuantBook de recherche exécuté sur QC Cloud.
+L'exécution locale est **greenlit**. Livraison en cours : **(b)** présent doc (corrigé du pivot local 2026-06-25 + du §4.5 falsifié), puis **(a)** exécution M12-HF sur data minute locale (voie BTC-seul recommandée comme première exécution 0-QCC).
 
 ---
 
