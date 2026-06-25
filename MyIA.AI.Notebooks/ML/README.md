@@ -63,10 +63,13 @@ ML/
 │   ├── TP-prevision-ventes.ipynb
 │   └── taxi-fare.csv
 │
-└── DataScienceWithAgents/            # Data Science Python + AI Agents
-    ├── 01-PythonForDataScience/      # Fondations NumPy/Pandas
-    ├── PythonAgentsForDataScience/   # Track LangChain (Labs 1-7)
-    └── AgenticDataScience/           # Track Google ADK (Labs 8-17)
+├── DataScienceWithAgents/            # Data Science Python + AI Agents
+│   ├── 01-PythonForDataScience/      # Fondations NumPy/Pandas
+│   ├── 02-ML-Cours/                  # Socle ML canonique (scikit-learn)
+│   ├── PythonAgentsForDataScience/   # Track LangChain (Labs 1-7)
+│   └── AgenticDataScience/           # Track Google ADK (Labs 8-17)
+│
+└── perceptron_lean/                  # Lake Lean 4 — convergence du perceptron (Novikoff)
 ```
 
 ## ML.NET (C# / .NET Interactive)
@@ -107,6 +110,12 @@ Formation complète en Data Science Python enrichie d'agents IA. Vous commencere
 |----------|---------|
 | [1.2-NumPy](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | Arrays, vectorisation, opérations |
 | [1.3-Pandas](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | DataFrames, filtrage, manipulation |
+
+### Socle ML canonique (02-ML-Cours)
+
+Entre les fondations NumPy/Pandas et les labs agentic, le socle machine learning **canonique avec scikit-learn** : le workflow (train/test split, surapprentissage rendu visible), la descente de gradient (ouvrir la boîte noire de `fit()`), les régressions linéaire et logistique (OLS vs MLE), les arbres et ensembles (réduction de variance), l'évaluation rigoureuse (biais-variance, validation croisée, courbe ROC/AUC), et le non supervisé (KMeans, ACP). Chaque notebook rend visible un concept-phare et ancre les articles fondateurs — le référent manuel qui rend *jugeable* ce qu'un agent produira ensuite.
+
+- Introduction : [2.1-Workflow-ML](DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) · Dossier : [`02-ML-Cours/`](DataScienceWithAgents/02-ML-Cours/)
 
 ### Workshop 3 Jours (PythonAgentsForDataScience)
 
@@ -158,6 +167,14 @@ cp .env.example .env  # puis configurer les clés API
 Providers LLM supportés (Labs 8+) : Google Gemini (recommandé), OpenAI, OpenRouter, vLLM local, LM Studio.
 
 Documentation complète : [DataScienceWithAgents/README.md](DataScienceWithAgents/README.md)
+
+## Théorie formelle (Lean)
+
+Au-delà des notebooks empiriques (ML.NET, Python), la série ML accueille un **lake Lean 4** qui formalise un résultat théorique canonique de l'apprentissage : [`perceptron_lean/`](perceptron_lean/). Convention des **lakes frères** — le lake est le livrable formel, `lake build` SUCCESS en est la preuve d'exécution, et le notebook pédagogique vient en pendant.
+
+- **[`perceptron_lean/`](perceptron_lean/)** — **théorème de convergence du perceptron** (Novikoff, 1962) : pour des données linéairement séparables de marge γ et de rayon R, l'algorithme du perceptron effectue au plus `(R/γ)²` mises à jour avant de trouver un classifieur correct. Preuve **géométrique élémentaire et entièrement 0-sorry** (croissance de l'alignement `⟨wₖ,u⟩ ≥ kγ` + croissance de la norme `‖wₖ‖² ≤ kR²` + Cauchy–Schwarz), sur un espace préhilbertien réel abstrait via Mathlib.
+
+C'est le **pendant prouvé** des notebooks de classification linéaire (`ML.Net/ML-3` entraîne des classifieurs, `02-ML-Cours/2.3` pose régression linéaire/logistique) : là où les notebooks *montrent* que le perceptron converge en pratique, le lake *prouve* la borne. Voir le [README du lake](perceptron_lean/README.md) pour les modules et le détail de la preuve.
 
 ## Public cible
 
