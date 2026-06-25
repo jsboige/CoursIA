@@ -79,7 +79,7 @@ La **verification formelle** comme niveau au-dessus du testing : **Certora Prove
 ## Points de vigilance (execution Foundry)
 
 - **Foundry doit etre installe localement** pour reproduire les tests pour de vrai (`forge`, `cast`, `anvil` sur le PATH). Les notebooks orchestrent les commandes `forge` depuis des cellules Python.
-- **Signature pedagogique** : le code Solidity est presente comme chaines de caracteres avec les sorties de tests ([PASS]/[FAIL]) documentees. Avec une installation Foundry locale, ces tests se reproduisent ; sans elle, les sorties committes servent d'illustration (honetement disclosees dans le notebook).
+- **Signature pedagogique** : le code Solidity est presente comme chaines de caracteres avec les sorties de tests ([PASS]/[FAIL]) documentees. **SC-12 et SC-13 executent desormais `forge` pour de vrai** : SC-12 re-execute la suite Foundry avec `forge` sur le PATH (#3765) et SC-13 lance un `forge test --fuzz-runs` qui decouvre un contre-exemple d'overflow (la moyenne naive `(a+b)/2` panique, la version safe resiste, #3921). Les sorties committes sont donc des runs forge authentiques, pas de simples illustrations ; si Foundry n'est pas installe, le notebook affiche honnetement un message d'install sans sortie fabriquee.
 - **SC-14 Certora** : la verification formelle requiere un acces Certora (commercial) ou Halmos (open-source). Les regles CVL ne sont pas toutes verifiables sans ces outils.
 - **Audit #3164** : cette sous-serie a ete auditee (fidélité) — les resultats de tests sont honnetement documentes comme illustration, pas comme execution masquee. 1 finding de labeling (SC-12) resolu via #3369.
 
