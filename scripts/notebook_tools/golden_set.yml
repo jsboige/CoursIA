@@ -69,11 +69,23 @@ notebooks:
     kernel: python3
     rationale: "Fondations search ; graphes networkx generes ; BFS/DFS/A* en pur Python+numpy ; 0 solver, 0 JVM, 0 reseau."
 
+  # --- SymbolicLearning : apprentissage symbolique (serie SymbolicLearning) ---
+  # current-best hypothesis (AIMA Ch.19). Importe le module local aima_knowledge
+  # (vendorise dans reference/, suivi git) via sys.path.insert(0,"reference") ->
+  # exige cwd = repertoire parent du notebook. NotebookExecutor execute DEJA par
+  # defaut avec cwd = notebook.parent (papermill --cwd), donc l'import relatif
+  # resolve SANS champ cwd dedie (verifie empiriquement, PR3 #4209). Kernel
+  # python3, dependances STDLIB uniquement (random/sys/time/typing, 0 lib
+  # scientifique), random.seed(42) -> sortie deterministe.
+  - path: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb
+    series: SymbolicLearning
+    title: "SL-1 - Apprentissage logique (current-best hypothesis, ref. aima-python)"
+    kernel: python3
+    rationale: "Current-best learning (AIMA Ch.19) ; module local aima_knowledge vendorise dans reference/ (suivi git) ; stdlib uniquement, random.seed(42) deterministe ; prouve que le packaging local resolve via cwd=notebook.parent par defaut."
+
 # -----------------------------------------------------------------------------
-# Candidats DEFERRES (v2+) : a certifier quand le lockfile etendra sa couverture.
-#   - SL-1-LogicalLearning (SymbolicLearning) : importe module local aima_knowledge
-#     -> verifier packaging d'abord.
+# Candidats DEFERRES (v3+) : a certifier quand le lockfile etendra sa couverture.
 #   - Probas/PyMC-* : MCMC non deterministe (sortie stochastique) -> politesse
-#     CI = tolerance numerique, hors scope du 1er golden-set sobre.
+#     CI = tolerance numerique, hors scope du golden-set sobre.
 #   - IIT/PyPhi : depend pyphi (lourd, Python 3.9) -> env dedie.
 # -----------------------------------------------------------------------------
