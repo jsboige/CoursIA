@@ -59,6 +59,23 @@ La série s'articule autour d'un **fil principal** qui suit la maturation histor
 
 Chaque notebook principal renvoie vers ses side tracks ; ceux-ci se lisent indépendamment et ne sont jamais des prérequis du fil principal.
 
+```mermaid
+flowchart TD
+    subgraph FIL["<b>Fil principal</b> — maturation historique"]
+        direction LR
+        P1["<b>Phase 1</b><br/>Notebooks 1-6<br/>statiques : Nash, minimax"]
+        P2["<b>Phase 2</b><br/>Notebooks 7-12<br/>dynamiques : induction, info. incomplète"]
+        P3["<b>Phase 3</b><br/>Notebooks 13-17<br/>frontières : CFR, mécanismes, RL"]
+        P1 --> P2 --> P3
+    end
+    LEAN["<b>Fil transversal Lean (b)</b><br/>2b · 4b · 8b · 15b<br/>preuve formelle des grands théorèmes"]
+    PYC["<b>Fil transversal Python (c)</b><br/>4c · 8c · 15c<br/>variantes &amp; visualisations"]
+    SC["<b>Sous-série SocialChoice</b><br/>SC-01 → SC-04<br/>Arrow · Sen · vote · SAT/Z3"]
+    FIL -.->|"formalise"| LEAN
+    FIL -.->|"approfondit"| PYC
+    FIL -.->|"prolonge (choix social)"| SC
+```
+
 ### Partie 1 : Fondations et Jeux statiques (Notebooks 1-6)
 
 | # | Notebook | Kernel | Contenu | Durée |
