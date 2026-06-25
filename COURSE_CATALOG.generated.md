@@ -1,18 +1,18 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-24 04:58
-Total notebooks: 573
+Generated: 2026-06-25 04:58
+Total notebooks: 572
 
 ## Status Summary
 
-- **READY**: 426
+- **READY**: 425
 - **DEMO**: 144
 - **RESEARCH**: 0
 - **BROKEN**: 3
 
 ## Maturity Summary
 
-- **PRODUCTION**: 460
+- **PRODUCTION**: 459
 - **BETA**: 62
 - **TEMPLATE**: 4
 - **ALPHA**: 42
@@ -564,7 +564,7 @@ Total notebooks: 573
 | 31 | Notebook 9: Resolution de Sudoku par Coloration de | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 32 | Sudoku-9 : Coloration de Graphe (Python) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 
-### Probas (44 notebooks) — READY:44 | PRODUCTION:44
+### Probas (43 notebooks) — READY:43 | PRODUCTION:43
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -590,28 +590,27 @@ Total notebooks: 573
 | 20 | Infer-7-Classification : Classification Bayesienne | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 21 | Infer-8-Model-Selection : Selection et Comparaison | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 22 | Infer-9-Topic-Models : Latent Dirichlet Allocation | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 23 | HMM Gaussian Alpha -- Generation de signaux direct | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 24 | PyMC-1 : Configuration et Premier Modele | Python 3 | READY | PRODUCTION | 15min | po-2023 |
-| 25 | PyMC-10 : Crowdsourcing - Agregation de Labels et  | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 26 | PyMC-11 — Modeles de Sequences et Chaines de Marko | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 27 | PyMC-12-Recommenders : Systemes de Recommandation  | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 28 | PyMC-13-Debugging : Troubleshooting et Bonnes Prat | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 29 | PyMC-14-Decision-Utility-Foundations : Axiomes et  | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 30 | PyMC-15-Decision-Utility-Money : Utilite de l'Arge | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2023 |
-| 31 | PyMC-16-Decision-Multi-Attribute : Utilite Multi-A | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 32 | PyMC-17-Decision-Networks : Reseaux de Decision | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 33 | PyMC-18 : Valeur de l'Information | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 34 | PyMC-19 : Systemes Experts et Decisions Robustes | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 35 | PyMC-2 : Distributions Gaussiennes et Melanges | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 36 | PyMC-20 : MDPs, Bandits et POMDPs | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 37 | PyMC-3 : Graphes de Facteurs et Inference Discrete | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 38 | PyMC-4 : Reseaux Bayesiens | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 39 | PyMC-5 : Modeles de Competences (IRT et DINA) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 40 | PyMC-6 : TrueSkill - Classement et Apprentissage e | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 41 | PyMC-7 : Classification Bayesienne et Tests A/B | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 42 | PyMC-8 : Selection de Modeles et Comparaison Bayes | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 43 | PyMC-9 : Modeles de Sujets (Topic Models) et LDA | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 44 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 23 | PyMC-1 : Configuration et Premier Modele | Python 3 | READY | PRODUCTION | 15min | po-2023 |
+| 24 | PyMC-10 : Crowdsourcing - Agregation de Labels et  | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 25 | PyMC-11 — Modeles de Sequences et Chaines de Marko | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 26 | PyMC-12-Recommenders : Systemes de Recommandation  | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 27 | PyMC-13-Debugging : Troubleshooting et Bonnes Prat | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 28 | PyMC-14-Decision-Utility-Foundations : Axiomes et  | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 29 | PyMC-15-Decision-Utility-Money : Utilite de l'Arge | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2023 |
+| 30 | PyMC-16-Decision-Multi-Attribute : Utilite Multi-A | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 31 | PyMC-17-Decision-Networks : Reseaux de Decision | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 32 | PyMC-18 : Valeur de l'Information | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 33 | PyMC-19 : Systemes Experts et Decisions Robustes | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 34 | PyMC-2 : Distributions Gaussiennes et Melanges | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 35 | PyMC-20 : MDPs, Bandits et POMDPs | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 36 | PyMC-3 : Graphes de Facteurs et Inference Discrete | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 37 | PyMC-4 : Reseaux Bayesiens | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 38 | PyMC-5 : Modeles de Competences (IRT et DINA) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 39 | PyMC-6 : TrueSkill - Classement et Apprentissage e | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 40 | PyMC-7 : Classification Bayesienne et Tests A/B | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 41 | PyMC-8 : Selection de Modeles et Comparaison Bayes | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 42 | PyMC-9 : Modeles de Sujets (Topic Models) et LDA | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 43 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | PRODUCTION | 45min | po-2023 |
 
 ### IIT (2 notebooks) — READY:2 | PRODUCTION:2
 
@@ -646,4 +645,4 @@ Total notebooks: 573
 - **GPU**: 81 notebooks
 - **Cloud**: 104 notebooks
 - **WSL**: 36 notebooks
-- **Local**: 286 notebooks
+- **Local**: 285 notebooks
