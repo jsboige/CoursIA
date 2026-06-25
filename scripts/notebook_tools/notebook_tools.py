@@ -1658,6 +1658,123 @@ def cmd_execute(args):
     return 1 if error_count > 0 else 0
 
 
+def _load_golden_set_manifest(manifest_path):
+    """Load and validate the golden-set manifest (golden_set.yml).
+
+    Returns the parsed dict. Raises SystemExit(2) on malformed manifest so CI
+    fails loudly (setup error) rather than silently executing nothing.
+    """
+    try:
+        import yaml  # part of the golden-set lockfile (PyYAML)
+    except ImportError:
+        print_error(
+            "golden-set needs PyYAML. Install the lockfile:\n"
+            "  python -m pip install -r scripts/notebook_tools/golden_set.lock.txt"
+        )
+        raise SystemExit(2)
+
+    if not manifest_path.exists():
+        print_error(f"Golden-set manifest not found: {manifest_path}")
+        raise SystemExit(2)
+
+    with manifest_path.open(encoding="utf-8") as fh:
+        manifest = yaml.safe_load(fh)
+
+    if not isinstance(manifest, dict) or "notebooks" not in manifest:
+        print_error(f"Malformed manifest (missing 'notebooks' key): {manifest_path}")
+        raise SystemExit(2)
+
+    return manifest
+
+
+def cmd_golden_set(args):
+    """Execute the certified-reproducible golden-set (H.7 P3, axe A #4208 / #4209).
+
+    Reads scripts/notebook_tools/golden_set.yml, executes each pinned notebook
+    end-to-end via Papermill, and reports PASS/FAIL. The CI job (PR 2 #4209)
+    consumes this command's exit code + --json output.
+    """
+    repo_root = get_repo_root()
+    default_manifest = Path(__file__).resolve().parent / "golden_set.yml"
+    manifest_path = Path(args.manifest).resolve() if args.manifest else default_manifest
+
+    manifest = _load_golden_set_manifest(manifest_path)
+    meta = manifest.get("meta", {})
+    entries = manifest["notebooks"]
+    default_timeout = meta.get("timeout_per_notebook_s", 600)
+    timeout = args.timeout if args.timeout is not None else default_timeout
+
+    print_section("GOLDEN-SET EXECUTION")
+    print_info(f"Manifest: {manifest_path}")
+    print_info(f"Notebooks declared: {len(entries)}")
+    print_info(f"Timeout per notebook: {timeout}s")
+    if meta.get("lockfile"):
+        print_info(f"Pinned lockfile: {meta['lockfile']} (install: pip install -r {meta['lockfile']})")
+
+    results = []
+    for entry in entries:
+        nb_rel = entry["path"]
+        nb_path = (repo_root / nb_rel).resolve()
+        title = entry.get("title", nb_rel)
+        series = entry.get("series", "?")
+
+        if not nb_path.exists():
+            print(f"\n[{nb_rel}]")
+            print(f"  [!] MISSING on disk (skip)")
+            results.append({
+                "path": nb_rel, "series": series, "title": title,
+                "success": False, "kernel": None, "execution_time": 0.0,
+                "message": "notebook missing on disk",
+            })
+            continue
+
+        executor = NotebookExecutor(nb_path)
+        kernel = executor.detect_kernel_name()
+        print(f"\n[{nb_rel}] (kernel: {kernel}) -- {title}")
+
+        result = executor.execute_with_papermill(
+            timeout=timeout,
+            batch_mode=False,
+            kernel_override=None,
+            cwd_override=None,
+            env_extra=None,
+            scrub_keys=args.scrub_keys,
+        )
+
+        status_icon = "+" if result.success else "!"
+        print(f"  [{status_icon}] {result.message} ({result.execution_time:.1f}s)")
+
+        results.append({
+            "path": nb_rel, "series": series, "title": title,
+            "success": result.success, "kernel": result.kernel,
+            "execution_time": result.execution_time, "message": result.message,
+        })
+
+    # Summary
+    print_section("GOLDEN-SET SUMMARY")
+    success_count = sum(1 for r in results if r["success"])
+    fail_count = len(results) - success_count
+    total_time = sum(r["execution_time"] for r in results)
+    print(f"  Passed: {success_count}/{len(results)}")
+    print(f"  Failed: {fail_count}")
+    print(f"  Total time: {total_time:.1f}s")
+    if fail_count:
+        print("  Failures:")
+        for r in results:
+            if not r["success"]:
+                print(f"    - {r['path']}: {r['message']}")
+
+    if args.json:
+        print(json.dumps({
+            "passed": fail_count == 0,
+            "success_count": success_count,
+            "total": len(results),
+            "notebooks": results,
+        }, indent=2))
+
+    return 1 if fail_count > 0 else 0
+
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -1724,6 +1841,18 @@ def main():
     p_execute.add_argument('--verbose', '-v', action='store_true')
     p_execute.add_argument('--json', action='store_true')
 
+    # golden-set command (H.7 P3, axe A #4208 / #4209)
+    p_golden = subparsers.add_parser('golden-set',
+                          help='Execute the certified-reproducible golden-set (H.7 P3)')
+    p_golden.add_argument('--manifest', type=str, default=None,
+                          help='Path to golden_set.yml (default: scripts/notebook_tools/golden_set.yml)')
+    p_golden.add_argument('--timeout', type=int, default=None,
+                          help=f'Override per-notebook timeout (manifest default applies)')
+    p_golden.add_argument('--scrub-keys', action='store_true',
+                          help='Remove LLM API keys from subprocess env')
+    p_golden.add_argument('--json', action='store_true',
+                          help='Emit machine-readable JSON (CI consumption)')
+
     args = parser.parse_args()
 
     if not args.command:
@@ -1736,6 +1865,7 @@ def main():
         'analyze': cmd_analyze,
         'check-env': cmd_check_env,
         'execute': cmd_execute,
+        'golden-set': cmd_golden_set,
     }
 
     return commands[args.command](args)
