@@ -100,6 +100,31 @@ Le deuxième notebook déconstruit le calcul de Phi : vous manipulez les biparti
 | **MICE** | Mécanisme maximalement irréductible | Brique élémentaire de conscience |
 | **Purview** | Ensemble de nœuds sur lesquels un mécanisme spécifie de l'information | Champ d'influence |
 
+*Comment ces concepts s'enchaînent pour produire Φ — la chaîne de calcul de l'IIT 3.0
+(réalisé par PyPhi) :*
+
+```mermaid
+flowchart TD
+    NET["Réseau causal binaire<br/>TPM (Transition Probability Matrix)"]
+    SUB["Sous-système S, à un état donné"]
+    MEC["Mécanisme<br/>(sous-ensemble de nœuds de S)"]
+    PURV["Purview + partition MIP<br/>coupe minimisant l'information"]
+    MICE["MICE — small φ<br/>cause/effet maximalement irréductible"]
+    CONCEPT["Concept<br/><i>si small φ &gt; 0</i>"]
+    CES["CES — Cause-Effect Structure<br/>ensemble des concepts de S"]
+    BIGMIP["MIP du sous-système S<br/>partition minimisant l'intégration"]
+    PHI["Big Phi Φ<br/>quantité de conscience du système"]
+
+    NET --> SUB
+    SUB --> MEC
+    MEC --> PURV
+    PURV --> MICE
+    MICE -->|"φ > 0"| CONCEPT
+    CONCEPT --> CES
+    CES --> BIGMIP
+    BIGMIP --> PHI
+```
+
 ## Prérequis
 
 ### Connaissances requises
@@ -146,6 +171,29 @@ La Théorie de l'Information Intégrée (IIT) propose une approche mathématique
 3. **Exclusion** : Un seul niveau de Phi domine à tout moment
 
 **Phi** mesure le degré d'intégration informationnelle d'un système. Un Phi > 0 indique une intégration irréductible, suggérant une forme de conscience.
+
+*Les deux niveaux d'analyse de l'IIT — small phi (un mécanisme) remonte vers big Phi
+(le système), et l'axiome d'exclusion ne retient qu'un seul maximum à la fois :*
+
+```mermaid
+flowchart TD
+    SYS["Système S complet<br/>Φ = big Phi"]
+    MECA1["Mécanisme {A}<br/>small φ₁"]
+    MECA2["Mécanisme {A,B}<br/>small φ₂ = MICE"]
+    MECA3["Mécanisme {B,C}<br/>small φ₃"]
+    CES2["CES = concepts de small φ > 0"]
+    MIPSYS["MIP du système<br/>partition la moins intégrée"]
+    EXCL["Axiome d'exclusion<br/>un seul maximum domine"]
+    ONE["Un seul Φ retenu<br/>= la conscience du système"]
+
+    SYS --> MIPSYS
+    MECA1 --> CES2
+    MECA2 --> CES2
+    MECA3 --> CES2
+    CES2 --> MIPSYS
+    MIPSYS --> EXCL
+    EXCL --> ONE
+```
 
 ## Portée scientifique et débats
 
