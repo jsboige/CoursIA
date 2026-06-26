@@ -4,7 +4,7 @@
 
 Ce module explore les modèles de génération vidéo de pointe : HunyuanVideo, LTX Video, Wan Video, et SVD.
 
-**Dans le cadre du fil rouge pipeline video pedagogique** : ce niveau fournit les modeles generatifs. [02-1](02-1-HunyuanVideo-Generation.ipynb) produit des videos haute qualite (cinematographique). [02-3](02-3-Wan-Video-Generation.ipynb) offre une generation rapide avec support multilingue. [02-4](02-4-SVD-Image-to-Video.ipynb) anime une image existante -- utile pour transformer un diagramme ou une illustration en sequence animee.
+**Dans le cadre du fil rouge pipeline vidéo pédagogique** : ce niveau fournit les modèles génératifs. [02-1](02-1-HunyuanVideo-Generation.ipynb) produit des vidéos haute qualité (cinématographique). [02-3](02-3-Wan-Video-Generation.ipynb) offre une génération rapide avec support multilingue. [02-4](02-4-SVD-Image-to-Video.ipynb) anime une image existante -- utile pour transformer un diagramme ou une illustration en séquence animée.
 
 ## Vue d'overview
 
@@ -12,7 +12,7 @@ Ce module explore les modèles de génération vidéo de pointe : HunyuanVideo, 
 |-------------|--------|
 | Notebooks | 5 |
 | Kernel | Python 3 |
-| Duree estimee | ~6-8h |
+| Durée estimée | ~6-8h |
 | GPU requis | 8-24GB |
 
 ## Notebooks

@@ -4,7 +4,7 @@
 
 Ce module présente des cas d'usage concrets et des workflows de production pour la génération vidéo.
 
-**Dans le cadre du fil rouge pipeline video pedagogique** : ce niveau met en oeuvre les workflows complets. [04-1](04-1-Educational-Video-Generation.ipynb) genere automatiquement du contenu video educatif a partir d'un script. [04-3](04-3-Sora-API-Cloud-Video.ipynb) explore la generation cloud via l'API Sora. [04-4](04-4-Production-Video-Pipeline.ipynb) assemble le pipeline bout-en-bout.
+**Dans le cadre du fil rouge pipeline vidéo pédagogique** : ce niveau met en oeuvre les workflows complets. [04-1](04-1-Educational-Video-Generation.ipynb) génère automatiquement du contenu vidéo éducatif à partir d'un script. [04-3](04-3-Sora-API-Cloud-Video.ipynb) explore la génération cloud via l'API Sora. [04-4](04-4-Production-Video-Pipeline.ipynb) assemble le pipeline bout-en-bout.
 
 ## Vue d'overview
 
@@ -12,7 +12,7 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 |-------------|--------|
 | Notebooks | 4 |
 | Kernel | Python 3 |
-| Duree estimee | ~6-8h |
+| Durée estimée | ~6-8h |
 | GPU requis | 0-24GB |
 
 ## Notebooks
