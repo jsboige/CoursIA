@@ -37,13 +37,15 @@ DataScienceWithAgents/
 │       ├── 1.2-NumPy.ipynb
 │       └── 1.3-Pandas.ipynb
 │
-├── 02-ML-Cours/                # Fondations ML canoniques (6 notebooks)
+├── 02-ML-Cours/                # Fondations ML canoniques (8 notebooks)
 │   ├── 2.1-Workflow-ML.ipynb
 │   ├── 2.2-Descente-de-gradient.ipynb
 │   ├── 2.3-Regression-lineaire-logistique.ipynb
 │   ├── 2.4-Arbres-Forets-Ensembles.ipynb
 │   ├── 2.5-Biais-Variance-CV-ROC.ipynb
-│   └── 2.6-Clustering-KMeans-PCA.ipynb
+│   ├── 2.6-Clustering-KMeans-PCA.ipynb
+│   ├── 2.7-Modeles-Non-Parametriques.ipynb
+│   └── 2.8-Theorie-PAC.ipynb
 │
 ├── PythonAgentsForDataScience/ # Track LangChain (7 labs)
 │   ├── Day1/Labs/              # Revision
@@ -66,7 +68,7 @@ DataScienceWithAgents/
 
 ## Fondations ML (02-ML-Cours)
 
-Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Six notebooks (workflow, descente de gradient, régression linéaire/logistique, arbres et ensembles, biais-variance/CV/ROC, clustering/ACP), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
+Le socle machine learning canonique avec scikit-learn, posé à la main entre les fondations NumPy/Pandas et les labs agentic — là où scikit-learn n'apparaissait jusqu'ici que comme une séquence magique non expliquée. Huit notebooks (workflow, descente de gradient, régression linéaire/logistique, arbres et ensembles, biais-variance/CV/ROC, clustering/ACP, SVM à noyau/k-NN, théorie PAC/dimension VC), chacun rendant visible un concept-phare et ancrant les articles fondateurs.
 
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
@@ -76,6 +78,8 @@ Le socle machine learning canonique avec scikit-learn, posé à la main entre le
 | [2.4-Arbres-Forets-Ensembles](02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb) | DecisionTree, RandomForest, GradientBoosting | réduction de variance |
 | [2.5-Biais-Variance-CV-ROC](02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb) | biais-variance, validation croisée, ROC/AUC | coût du seuil de décision |
 | [2.6-Clustering-KMeans-PCA](02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | non supervisé : KMeans + ACP | structure retrouvée sans étiquettes |
+| [2.7-Modeles-Non-Parametriques](02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | SVM à noyau et k plus proches voisins | kernel trick (linéaire vs RBF) |
+| [2.8-Theorie-PAC](02-ML-Cours/2.8-Theorie-PAC.ipynb) | théorie PAC : sample complexity, dimension VC | la borne PAC prédit l'empirique |
 
 Documentation complète : [02-ML-Cours/README.md](02-ML-Cours/README.md)
 
