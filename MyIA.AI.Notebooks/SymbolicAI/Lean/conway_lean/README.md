@@ -2,6 +2,20 @@
 
 Formalisation en Lean 4 des jeux et algorithmes mathématiques de John Conway.
 
+*Les trois facettes de l'œuvre de Conway, chacune un Epic formel distinct — des
+algorithmes classiques au calcul universel du Jeu de la Vie, jusqu'au fondement
+quantique du Free Will Theorem :*
+
+```mermaid
+flowchart LR
+    P1["Phase 1 — Algorithmes classiques<br/>Doomsday · FRACTRAN · Look-and-Say<br/>Nim · Angel · Collatz  <i>(0 sorry, native_decide)</i>"]
+    P2["Phase 2 — Jeu de la Vie<br/>MacroCell quadtree → Hashlife<br/>→ HashlifeCorrectness (P1-P5)"]
+    P3["Phase 3 — Free Will Theorem<br/>Kochen-Specker 18-vecteurs (Cabello)<br/>→ SPIN + TWIN + MIN  <i>(0 sorry)</i>"]
+
+    P1 -->|"Epic #1151 COMPLETE"| P2
+    P2 -->|"calcul universel →"| P3
+```
+
 ## Statut
 
 - **Toolchain** : v4.30.0-rc2
@@ -119,6 +133,27 @@ Ce workspace formalise en Lean 4 trois facettes de l'oeuvre de John Conway, des 
 ### État honnête du verrou HashlifeCorrectness
 
 Le théorème central `hashlife_correct` (borné par l'hypothèse de padding `BoxAssezGrand`) n'est **pas encore prouvé en pleine généralité** : il reste **7 `sorry`** dans `HashlifeCorrectness.lean`. Le socle est solide — cas de base `k=0` prouvé (`2^16 native_decide`), cas de base `n=0` prouvé, P1/P2/P3 (padding, light-cone, locality) prouvés, `p5_small_n_fallback` prouvé — mais le pas inductif P4 (double-nine decomposition, 5 sorry) et le grand-n P5 (2 sorry, bloqué sur P4) sont **research-level**. Ce sont les cibles du BG-prover (`agent_tests/prover/`), pas des grains bornés : la composition light-cone multi-vagues résiste à l'automatisation tactique courante. Les scaffolds P4 (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`, `p4_half_steps_compose`, `p4_succ_membership`) énoncent précisément chaque sous-but dans leurs docstrings.
+
+*La pyramide de correction `hashlife_correct` : le socle prouvé (cas de base, P1-P3,
+`p5_small_n_fallback`) porte le théorème ; au sommet, le verrou research-level P4
+(double-nine, **énoncé non restreint FAUX** — `p4_unrestricted_counterexample`) bloque
+le grand-n P5 :*
+
+```mermaid
+flowchart TD
+    BASE["Cas de base  <b>prouvés</b><br/>k=0 (2¹⁶ native_decide) · n=0"]
+    P1["P1 — Padding<br/>box_assez_grand · natCeilLog2  <b>✓</b>"]
+    P2["P2 — Light-cone<br/>step_light_cone  <b>✓</b>"]
+    P3["P3 — Localité<br/>aliveNext_local · step_local  <b>✓</b>"]
+    P5S["P5 petit-n<br/>p5_small_n_fallback  <b>✓</b> (#2984)"]
+    P4["P4 — Pas inductif double-nine  <b>⚠ research-level</b><br/>5 sorry · p4_unrestricted_counterexample<br/><i>énoncé non restreint FAUX → oriente vers MacroCell.wf</i>"]
+    P5["P5 — Grand-n jump  <b>⚠ bloqué sur P4</b><br/>2 sorry · p5_large_n_jump"]
+    GOAL["hashlife_correct  <b>non prouvé en pleine généralité</b>"]
+
+    BASE --> P1 --> P2 --> P3 --> GOAL
+    P5S -.-> GOAL
+    P4 -.->|"verrou du BG-prover"| P5 -.-> GOAL
+```
 
 ### Leçons méthodologiques
 
