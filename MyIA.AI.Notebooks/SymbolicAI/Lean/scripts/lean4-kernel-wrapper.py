@@ -17,13 +17,15 @@ v6 changes:
    picks up its LEAN_PATH, enabling in-kernel imports of lake modules. Falls
    back to ~/lean-projects/notebook_context (stub lake) when none is found.
 
-NOTE (native-import probe, 2026-06): even with the lake cwd detected, a native
-lean4-wsl kernel CANNOT import a Mathlib lake today — `lake env repl` clobbers
-the repl's sysroot (repl loses Init, `#check Nat` -> "Unknown identifier"),
-unlike `lake env lean` (the compiler) which resolves its sysroot natively. The
-working verification channel for Mathlib lakes remains `lake env lean --stdin`
-(python3 kernel + subprocess, see Lean-12b sensitivity companion #4388). See
-docs/reference/wsl-kernels-detail.md for the full evidence-cited probe.
+NOTE (native-import probe, 2026-06, c.126→c.127): this wrapper detects the lake
+workspace cwd, which is necessary but NOT sufficient for native Mathlib import —
+`lake env repl` (lean4_jupyter.repl:52) clobbers the repl's sysroot (repl loses
+Init, `#check Nat` -> "Unknown identifier"). The COMPLETE fix is in
+scripts/lean/setup_native_lean4_import.py: it patches lean4_jupyter's launch()
+to run the repl binary DIRECT (not via `lake env`) with the lake's LEAN_PATH,
+which makes native lean4-wsl import of a Mathlib lake WORK (proven on
+sensitivity_lean: real `#check huang_degree_theorem` + `#print axioms` in-kernel,
+0 sorry). See docs/reference/wsl-kernels-detail.md § "Native import ... VERDICT (a)".
 """
 import sys
 import subprocess
