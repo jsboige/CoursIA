@@ -62,6 +62,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 12 | [Infer-12-Recommenders](Infer-12-Recommenders.ipynb) | 60 min | Factorisation, Click Model |
 | 13 | [Infer-13-Debugging](Infer-13-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
 | 14 | [Infer-14-Decision-Utility-Foundations](Infer-14-Decision-Utility-Foundations.ipynb) | 50 min | Loteries, axiomes VNM, utilité espérée |
+| 14b | [Infer-14b-Lean-ExpectedUtility](Infer-14b-Lean-ExpectedUtility.ipynb) | 45 min | Preuves formelles Lean 4, axiomes VNM, théorème de représentation (direction sound) |
 | 15 | [Infer-15-Decision-Utility-Money](Infer-15-Decision-Utility-Money.ipynb) | 45 min | Paradoxe St-Petersbourg, CARA, CRRA |
 | 16 | [Infer-16-Decision-Multi-Attribute](Infer-16-Decision-Multi-Attribute.ipynb) | 50 min | MAUT, SMART, swing weights |
 | 17 | [Infer-17-Decision-Networks](Infer-17-Decision-Networks.ipynb) | 55 min | Diagrammes d'influence, politique optimale |
