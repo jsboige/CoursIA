@@ -4,7 +4,7 @@
 
 Ce module couvre les fondamentaux de la vidéo par IA : opérations vidéo, compréhension vidéo, et amélioration.
 
-**Dans le cadre du fil rouge pipeline video pedagogique** : avant de generer des videos, il faut savoir les analyser et les manipuler. [01-1](01-1-Video-Operations-Basics.ipynb) donne les bases techniques (ffmpeg, moviepy). [01-2](01-2-GPT-5-Video-Understanding.ipynb) et [01-3](01-3-Qwen-VL-Video-Analysis.ipynb) couvrent la comprehension video (decomposition en scenes, Q&A sur le contenu). [01-4](01-4-Video-Enhancement-ESRGAN.ipynb) ameliore la qualite visuelle. [01-5](01-5-AnimateDiff-Introduction.ipynb) introduit la generation de mouvement a partir de texte.
+**Dans le cadre du fil rouge pipeline vidéo pédagogique** : avant de générer des vidéos, il faut savoir les analyser et les manipuler. [01-1](01-1-Video-Operations-Basics.ipynb) donne les bases techniques (ffmpeg, moviepy). [01-2](01-2-GPT-5-Video-Understanding.ipynb) et [01-3](01-3-Qwen-VL-Video-Analysis.ipynb) couvrent la compréhension vidéo (décomposition en scènes, Q&A sur le contenu). [01-4](01-4-Video-Enhancement-ESRGAN.ipynb) améliore la qualité visuelle. [01-5](01-5-AnimateDiff-Introduction.ipynb) introduit la génération de mouvement à partir de texte.
 
 ## Vue d'overview
 
@@ -12,7 +12,7 @@ Ce module couvre les fondamentaux de la vidéo par IA : opérations vidéo, comp
 |-------------|--------|
 | Notebooks | 5 |
 | Kernel | Python 3 |
-| Duree estimee | ~4-6h |
+| Durée estimée | ~4-6h |
 | GPU requis | 0-12GB |
 
 ## Notebooks

@@ -4,7 +4,7 @@
 
 Ce module couvre l'orchestration de plusieurs modèles vidéo, les workflows complexes, et l'intégration ComfyUI.
 
-**Dans le cadre du fil rouge pipeline video pedagogique** : les briques existent, il faut les assembler. [03-1](03-1-Multi-Model-Video-Comparison.ipynb) compare les modeaux pour choisir le meilleur selon le materiel et le contexte. [03-2](03-2-Video-Workflow-Orchestration.ipynb) construit le pipeline text-to-image-to-video qui constitue le coeur du generateur. [03-3](03-3-ComfyUI-Video-Workflows.ipynb) utilise ComfyUI pour des workflows natifs plus flexibles.
+**Dans le cadre du fil rouge pipeline vidéo pédagogique** : les briques existent, il faut les assembler. [03-1](03-1-Multi-Model-Video-Comparison.ipynb) compare les modeaux pour choisir le meilleur selon le matériel et le contexte. [03-2](03-2-Video-Workflow-Orchestration.ipynb) construit le pipeline text-to-image-to-video qui constitue le coeur du générateur. [03-3](03-3-ComfyUI-Video-Workflows.ipynb) utilise ComfyUI pour des workflows natifs plus flexibles.
 
 ## Vue d'overview
 
@@ -12,7 +12,7 @@ Ce module couvre l'orchestration de plusieurs modèles vidéo, les workflows com
 |-------------|--------|
 | Notebooks | 3 |
 | Kernel | Python 3 |
-| Duree estimee | ~4-6h |
+| Durée estimée | ~4-6h |
 | GPU requis | Variable |
 
 ## Notebooks
