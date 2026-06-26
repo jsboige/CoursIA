@@ -6,6 +6,24 @@ Formalisation en Lean 4 du **théorème de mariage stable de Gale-Shapley** (196
 
 Le problème du mariage stable : étant donné n hommes et n femmes, chacun ayant un ordre de préférence strict sur l'ensemble opposé, trouver un couplage parfait où aucune paire non appariée (m, w) ne se préférerait mutuellement à leurs partenaires actuels.
 
+*Le pipeline de Gale-Shapley — de la machine à états (propositions descendantes des
+hommes) jusqu'aux trois garanties prouvées, puis la dualité optimal-hommes /
+pessimal-femmes :*
+
+```mermaid
+flowchart TD
+    PROF["Préférences strictes<br/>PrefProfile  <i>(homme/femme, ordres totaux)</i>"]
+    GS["Machine d'états GS<br/>propositions descendantes · gsChooseMax<br/><i>chaque homme propose à sa préférée restante</i>"]
+    TERM["gale_shapley_terminates<br/>≤ n² propositions  <b>✓</b>"]
+    MATCH["gale_shapley_produces_matching<br/>bijection valide  <b>✓</b>"]
+    STAB["gale_shapley_stable<br/>aucune paire bloquante  <b>✓</b>"]
+    OPT["gale_shapley_man_optimal<br/>optimal pour les proposants  <b>✓</b>"]
+    PESS["gale_shapley_woman_pessimal<br/>pessimal pour les récepteurs  <b>✓</b>"]
+
+    PROF --> GS --> TERM --> MATCH --> STAB
+    STAB --> OPT -.->|"déduit constructivement"| PESS
+```
+
 | Fichier | Contenu | sorry |
 |---------|---------|-------|
 | `StableMarriage/Defs.lean` | Définitions de types fondamentales (préférences, profils, couplages, stabilité) | 0 |
@@ -98,6 +116,23 @@ pas difficiles. Le remplacement honnête (`exists_isManOptimal`) prouve *l'exist
 plutôt que l'extraction constructive contradictoire. C'est la même leçon que le cas
 Conway P4 : quand une preuve cale au fil de nombreuses itérations, **réfuter l'énoncé
 d'abord**.
+
+*La structure de treillis de Knuth (1976) et le contre-exemple qui a réorienté la
+formalisation — l'ordre `ManLE` des couplages stables, les opérations qui le
+préservent, et le carré latin 3×3 qui réfute les anciens énoncés :*
+
+```mermaid
+flowchart TD
+    ORDER["ManLE prof μ ν<br/><i>ordre des couplages du point de vue des hommes</i>"]
+    LAT["Treillis distributif des couplages stables<br/>join_isStable · meet_isStable<br/><i>join/meet préservent la stabilité</i>"]
+    EXIST["exists_isManOptimal<br/>existence d'un optimal-hommes via poids minimal<br/>+ Nat.find + join_isStable  <b>✓</b>"]
+    REFUTE["Contre-exemple carré latin 3×3 (Knuth 1976)<br/>prof3 · M0 (identité) · M1 (décalage cyclique)<br/><i>réfute no_cross_match / man_optimal_key_step / doctor_optimal_eq_top</i>"]
+    LESSON["Leçon : « intractable » = « faux tel qu'énoncé »<br/><i>30+ itérations du harnais sur des buts contradictoires</i>"]
+
+    ORDER --> LAT --> EXIST
+    REFUTE -.-> LESSON
+    EXIST -.->|"remplacement honnête"| LESSON
+```
 
 ### Où aller ensuite
 
