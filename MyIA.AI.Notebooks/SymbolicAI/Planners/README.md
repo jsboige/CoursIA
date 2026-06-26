@@ -181,7 +181,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 |---|----------|--------|---------|-------|
 | 0 | [Planners-0-Setup](00-Environment/Planners-0-Setup.ipynb) | Python | Installation unified-planning, OR-Tools, Docker Fast Downward | 20 min |
 
-### Partie 1 : Fondations (01-Foundation/)
+### Partie 1 : Fondations ([01-Foundation/](01-Foundation/README.md))
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
@@ -189,7 +189,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 2 | [Planners-2-PDDL-Basics](01-Foundation/Planners-2-PDDL-Basics.ipynb) | Python | Syntaxe PDDL, domaines, problèmes, prédicats, actions | 40 min |
 | 3 | [Planners-3-State-Space](01-Foundation/Planners-3-State-Space.ipynb) | Python | Espaces d'états, graphes de recherche, explosion combinatoire | 35 min |
 
-### Partie 2 : Planification Classique (02-Classical/)
+### Partie 2 : Planification Classique ([02-Classical/](02-Classical/README.md))
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
@@ -197,7 +197,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 5 | [Planners-5-Heuristics](02-Classical/Planners-5-Heuristics.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min |
 | 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
 
-### Partie 3 : Approches Avancées (03-Advanced/)
+### Partie 3 : Approches Avancées ([03-Advanced/](03-Advanced/README.md))
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
@@ -205,7 +205,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 8 | [Planners-8-Temporal](03-Advanced/Planners-8-Temporal.ipynb) | Python | PDDL 2.1, durées, parallélisme, ordonnancement | 40 min |
 | 9 | [Planners-9-HTN](03-Advanced/Planners-9-HTN.ipynb) | Python | Hierarchical Task Networks, méthodes, décomposition | 45 min |
 
-### Partie 4 : Neuro-Symbolique (04-NeuroSymbolic/)
+### Partie 4 : Neuro-Symbolique ([04-NeuroSymbolic/](04-NeuroSymbolic/README.md))
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
