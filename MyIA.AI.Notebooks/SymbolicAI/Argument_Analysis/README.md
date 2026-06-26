@@ -52,6 +52,7 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 | 3 | [Agentic-3-orchestration](Argument_Analysis_Agentic-3-orchestration.ipynb) | Orchestration : mini-DAG déterministe vs conversationnel (state-driven) | Coordination |
 | 3* | [Agentic-3-orchestration_agent](Argument_Analysis_Agentic-3-orchestration_agent.ipynb) | *(legacy)* Orchestration multi-agents (semantic_kernel) | Coordination |
 | 4 | [Agentic-4-capstone](Argument_Analysis_Agentic-4-capstone.ipynb) | Capstone : baseline 0-shot vs pipeline intégral, verdicts convergents + value-gates VG-1..VG-4 | Intégration |
+| 5 | [Agentic-5-jtms](Argument_Analysis_Agentic-5-jtms.ipynb) | Truth Maintenance System déterministe (Doyle 1979) : étiquetage IN/OUT, cascade de rétractation, détection d'odd loops — pur stdlib Python | Raisonnement non-monotone |
 | UI | [UI_configuration](Argument_Analysis_UI_configuration.ipynb) | Interface utilisateur widgets | Interaction |
 | Exec | [Executor](Argument_Analysis_Executor.ipynb) | Orchestrateur principal | Exécution |
 
@@ -65,6 +66,7 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 | **2-formal** | Vérifier des arguments en logique propositionnelle, du premier ordre et modale avec le solveur réel Tweety (JVM/JPype), apéru Dung — mode fail-loud, jamais simulé | 45 min |
 | **2-pl_agent** *(legacy)* | Convertir les arguments informels en formules propositionnelles et les vérifier via SAT | 60 min |
 | **3-orchestration** | Composer les agents précédents en pipeline coordonné avec rapport de sortie structuré | 50 min |
+| **5-jtms** | Construire un moteur de croyances non-monotones (étiquetage IN/OUT, cascade de rétractation, détection d'odd loops) en pur stdlib Python, sans LLM ni solveur externe | 40 min |
 | **UI_configuration** | Créer une interface interactive (ipywidgets) pour piloter le pipeline en mode exploratoire | 30 min |
 | **Executor** | Exécuter le pipeline complet en mode batch (Papermill/MCP) avec configuration .env | 20 min |
 
