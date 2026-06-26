@@ -23,6 +23,20 @@ La formalisation couvre **23 modules (Parties 1-23, 3182 lignes, 0 sorry)**,
 importés dans l'ordre par le parapluie `Grothendieck.lean`. Chaque module se
 numérote lui-même via son en-tête (`Grothendieck tribute — Part N`).
 
+*La trajectoire pédagogique des 23 modules — des sites et cribles jusqu'à la cohomologie, avec schémas/Zariski et carte Mathlib en ancrage :*
+
+```mermaid
+flowchart LR
+    T1["<b>Sites & cribles</b><br/><i>Parties 1·6·8·11·12·16</i><br/>topologies de Grothendieck<br/>pullback_id · pullback_monotone"]
+    T2["<b>Faisceaux & séparation</b><br/><i>7·9·10·17</i><br/>préfaisceau séparé<br/>transfert le long de J₁ ≤ J₂"]
+    T3["<b>Faisceautisation</b><br/><i>13·14</i><br/>foncteur faisceau associé<br/>exactitude à gauche (LeftExact)"]
+    T4["<b>Points & conservateurs</b><br/><i>15·19</i><br/>foncteurs fibres<br/>familles conservatrices"]
+    T5["<b>Cohomologie</b><br/><i>20·21·22·23</i><br/>Ext · Mayer-Vietoris · Čech"]
+    T1 --> T2 --> T3 --> T4 --> T5
+    S["<b>Schémas & site de Zariski</b><br/><i>Parties 2·3</i><br/>foncteur Spec<br/>zariski_topology_eq"] -.->|"ancre géométrique"| T1
+    MM["<b>Carte Mathlib</b><br/><i>Partie 4</i><br/>index #check"] -.->|"ancre bibliothèque"| T3
+```
+
 | Partie | Fichier | Contenu | Lignes |
 |--------|---------|---------|--------|
 | 1 | `Grothendieck/CategoryAndSites.lean` | Cribles, topologies de Grothendieck (triviale/discrète/dense), trois axiomes | 106 |
@@ -106,6 +120,22 @@ Les modules tracent un chemin cohérent : **sites et cribles** (Parties 1, 6, 8,
 conservatrices** (15, 19) → **cohomologie des faisceaux, Mayer-Vietoris et Čech**
 (20-23), avec **schémas et site de Zariski** (2, 3) et une **carte Mathlib** (4)
 ancrant la visite à la bibliothèque qu'elle indexe.
+
+*La construction verticale « faisceau » — chaque couche bâtie sur la précédente, de la donnée du site jusqu'à la cohomologie :*
+
+```mermaid
+flowchart TD
+    SITE["<b>Site</b><br/><i>catégorie + topologie de Grothendieck</i><br/>(Partie 1)"]
+    PSH["<b>Préfaisceau</b><br/><i>objets Cᵒᵖ → Type*</i>"]
+    SEP["<b>Préfaisceau séparé</b><br/>unicité du recollement"]
+    SH["<b>Faisceau</b><br/>existence + unicité du recollement"]
+    SHIF["<b>Faisceautisation</b><br/><i>foncteur faisceau associé</i><br/>Partie 13 — exactitude à gauche (Partie 14)"]
+    COH["<b>Cohomologie des faisceaux</b><br/>Parties 20-23<br/>Ext · Mayer-Vietoris · Čech"]
+    SITE --> PSH --> SEP --> SH
+    SHIF -.->|"produit un faisceau<br/>depuis un préfaisceau"| SH
+    SH --> COH
+    TR["<b>Transfert de faisceau</b><br/>le long de J₁ ≤ J₂<br/>(Partie 7)"] -.-> SH
+```
 
 ### Le périmètre, honnêtement
 
