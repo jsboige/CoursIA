@@ -1,6 +1,6 @@
 # Partie 2 : Programmation par Contraintes
 
-[← Partie 1 : Search](../Part1-Foundations/README.md) | [↑ Série Search](../README.md) | [Applications →](../Applications/README.md)
+[← Partie 1 : Search](../Part1-Foundations/README.md) | [↑ Série Search](../README.md) | [Partie 3 : Recherche avancée →](../Part3-Advanced/README.md)
 
 Au lieu de concevoir un algorithme d'exploration, que se passe-t-il si l'on déclare les contraintes du problème et que l'on laisse le solveur trouver les solutions ? La programmation par contraintes (CSP) représente ce changement de paradigme : on ne cherche plus, on contraint. Ce modèle déclaratif est au coeur des outils industriels (ordonnancement, logistique, vérification) et s'applique naturellement aux problèmes NP-difficiles.
 
@@ -163,4 +163,4 @@ La programmation par contraintes propose un changement de regard sur la résolut
 
 ## Navigation
 
-[<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour à la série Search](../README.md) | [Applications ->](../Applications/README.md)
+[<- Partie 1 : Search Fondamental](../Part1-Foundations/README.md) | [Retour à la série Search](../README.md) | [Partie 3 : Recherche avancée ->](../Part3-Advanced/README.md)
