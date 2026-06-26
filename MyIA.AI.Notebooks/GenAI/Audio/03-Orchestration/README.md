@@ -2,9 +2,9 @@
 
 [← Audio Advanced](../02-Advanced/) | [↑ Audio](../README.md) | [→ Audio Applications](../04-Applications/)
 
-Ce module couvre l'orchestration de plusieurs modeles audio, les pipelines complexes, et l'API temps reel d'OpenAI.
+Ce module couvre l'orchestration de plusieurs modèles audio, les pipelines complexes, et l'API temps réel d'OpenAI.
 
-**Dans le cadre du fil rouge podcast** : les briques existent, il faut les assembler. [03-1](03-1-Multi-Model-Audio-Comparison.ipynb) compare les modeles STT et TTS pour choisir le meilleur selon le budget et la qualite vises. [03-2](03-2-Audio-Pipeline-Orchestration.ipynb) construit le pipeline STT vers LLM vers TTS qui constitue le coeur du podcast automatise. [03-3](03-3-Realtime-Voice-API.ipynb) montre l'alternative temps reel d'OpenAI pour les interactions live.
+**Dans le cadre du fil rouge podcast** : les briques existent, il faut les assembler. [03-1](03-1-Multi-Model-Audio-Comparison.ipynb) compare les modèles STT et TTS pour choisir le meilleur selon le budget et la qualité visés. [03-2](03-2-Audio-Pipeline-Orchestration.ipynb) construit le pipeline STT vers LLM vers TTS qui constitue le coeur du podcast automatisé. [03-3](03-3-Realtime-Voice-API.ipynb) montre l'alternative temps réel d'OpenAI pour les interactions live.
 
 ## Vue d'ensemble
 
@@ -12,7 +12,7 @@ Ce module couvre l'orchestration de plusieurs modeles audio, les pipelines compl
 |-------------|--------|
 | Notebooks | 3 |
 | Kernel | Python 3 |
-| Duree estimee | ~4-6h |
+| Durée estimée | ~4-6h |
 | GPU requis | 0-14GB |
 
 ## Notebooks

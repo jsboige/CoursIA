@@ -1,6 +1,6 @@
 # Partie 4 : Metaheuristiques Composables (MetaGeneticSharp)
 
-[↑ Série Search](../README.md) | [← Partie 2 : CSP](../Part2-CSP/README.md) | [Notebooks MGS →](MGS-1-Introduction.ipynb)
+[↑ Série Search](../README.md) | [← Partie 3 : Recherche avancée](../Part3-Advanced/README.md) | [Notebooks MGS →](MGS-1-Introduction.ipynb)
 
 Comment passer de l'application *d'une* métaheuristique à la **composition** de plusieurs ? Cette partie ouvre la voie à [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — une bibliothèque .NET qui reconstruit les métaheuristiques publiées (Whale Optimization, Equilibrium Optimizer, Differential Evolution, Bare-Bones PSO, modèle insulaire...) à partir de **primitives réutilisables** plutôt que comme des monolithes opaques. Quatorze notebooks .NET Interactive (C#) en sont le fil conducteur : un algorithme doit pouvoir s'énoncer en quelques lignes déclaratives, et chaque brique (sélection, croisement, mutation, réinsertion) doit pouvoir être interceptée et recomposée.
 

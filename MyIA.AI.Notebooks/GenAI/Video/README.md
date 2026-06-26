@@ -74,6 +74,35 @@ Le fil rouge de cette série est la création d'un pipeline de vidéo pédagogiq
 
 4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Video-Generation.ipynb) applique le pipeline au contenu éducatif. [04-4](04-Applications/04-4-Production-Video-Pipeline.ipynb) assemble le système bout-en-bout. Le notebook [04-4-Audio-Video-Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb) de la série Audio synchronise la vidéo avec l'audio généré.
 
+Le schéma ci-dessous résume comment les quatre niveaux du fil rouge s'articulent : chaque niveau apporte une brique (comprendre → générer → orchestrer → produire) qui s'assemble dans le pipeline final 04-4, lui-même synchronisé à l'audio par la série Audio.
+
+```mermaid
+flowchart TD
+    subgraph N1["1 · Comprendre — 01-Foundation"]
+        A1["01-1 : bases ffmpeg / moviepy"]
+        A2["01-2 / 01-3 : décomposition en scènes, Q&A"]
+        A3["01-4 : surcadrage ESRGAN + interpolation RIFE"]
+    end
+    subgraph N2["2 · Générer — 02-Advanced"]
+        B1["02-1 HunyuanVideo : qualité cinématographique"]
+        B2["02-3 Wan : rapide, multilingue"]
+        B3["02-4 SVD : animer une image"]
+        B4["02-5 LTX-2 : vidéo + audio conjoints"]
+    end
+    subgraph N3["3 · Orchestrer — 03-Orchestration"]
+        C1["03-1 : comparer les modèles"]
+        C2["03-2 : pipeline texte → image → vidéo"]
+        C3["03-3 : workflows ComfyUI natifs"]
+    end
+    subgraph N4["4 · Produire — 04-Applications"]
+        D1["04-1 : vidéo éducative automatique"]
+        D2["04-4 : pipeline bout-en-bout"]
+        D3["Audio/04-4 : synchronisation A/V"]
+    end
+    N1 --> N2 --> N3 --> N4
+    D2 -. "audio" .-> D3
+```
+
 ## Ce que vous saurez faire
 
 - **Comprendre** une séquence vidéo : décomposition en scènes, Q&A sur le contenu, analyse temporelle

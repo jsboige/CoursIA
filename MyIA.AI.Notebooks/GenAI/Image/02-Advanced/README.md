@@ -4,7 +4,7 @@
 
 Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5, Z-Image/Lumina, et la quantification extrême (Bonsai ternaire 1.58-bit).
 
-**Dans le cadre du fil rouge contenu visuel educatif** : un visuel de qualite demande des outils precis. [02-1](02-1-Qwen-Image-Edit-2509.ipynb) edite une image existante pour corriger ou enrichir un diagramme. [02-2](02-2-FLUX-1-Advanced-Generation.ipynb) genere des images haute qualite. [02-4](02-4-Z-Image-Lumina2.ipynb) offre une generation rapide pour le prototypage iteratif. [02-5](02-5-Bonsai-Image-Ternary.ipynb) aborde la quantification ternaire 1.58-bit : un modèle 4B compressé à ~4 GB qui se genere en ~2s, parfait pour deployer la generation d'images sur du materiel modeste (formation, demos) sans sacrifier la qualite.
+**Dans le cadre du fil rouge contenu visuel éducatif** : un visuel de qualité demande des outils précis. [02-1](02-1-Qwen-Image-Edit-2509.ipynb) édite une image existante pour corriger ou enrichir un diagramme. [02-2](02-2-FLUX-1-Advanced-Generation.ipynb) génère des images haute qualité. [02-4](02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage itératif. [02-5](02-5-Bonsai-Image-Ternary.ipynb) aborde la quantification ternaire 1.58-bit : un modèle 4B compressé à ~4 GB qui se génère en ~2s, parfait pour déployer la génération d'images sur du matériel modeste (formation, demos) sans sacrifier la qualité.
 
 ## Vue d'overview
 
@@ -12,7 +12,7 @@ Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5
 |-------------|--------|
 | Notebooks | 5 |
 | Kernel | Python 3 |
-| Duree estimee | ~5-7h |
+| Durée estimée | ~5-7h |
 | GPU requis | 5-29GB |
 
 ## Notebooks

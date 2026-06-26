@@ -221,6 +221,20 @@ Les sous-domaines ne sont pas isolés. Un projet final typique enchaîne :
 
 C'est ce parcours d'intégration qui différencie une démonstration jouet d'un produit déployable.
 
+Le schéma ci-dessous visualise ce fil rouge transverse : les quatre modalités génératives (Texte, Image, Audio, Video) produisent le contenu, puis SemanticKernel orchestre le tout en agents autonomes et Playwright-OWUI valide l'interface utilisateur finale.
+
+```mermaid
+flowchart LR
+    T["Texte<br/>script structuré"]
+    I["Image<br/>illustrations"]
+    A["Audio<br/>narration + musique"]
+    V["Video<br/>assemblage A/V"]
+    S["SemanticKernel<br/>orchestration agents"]
+    P["Playwright-OWUI<br/>tests E2E"]
+    Prod["Produit déployable"]
+    T --> I --> A --> V --> S --> P --> Prod
+```
+
 ## FAQ
 
 ### Faut-il un GPU pour cette série ?

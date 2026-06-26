@@ -13,95 +13,95 @@ Ce module configure l'environnement technique avant toute exploration GenAI. Les
 
 ## Objectifs d'apprentissage
 
-A l'issue de ce module, vous serez capable de :
+À l'issue de ce module, vous serez capable de :
 
-1. **Configurer** un environnement Python complet pour le developpement GenAI (dependances, variables d'environnement, services Docker)
-2. **Gerer** des services Docker conteneurises (ComfyUI, modeles de langue) avec demarrage, arret et monitoring
-3. **Parametrer** les endpoints API pour les services IA (OpenAI, Anthropic, OpenRouter, services locaux)
+1. **Configurer** un environnement Python complet pour le développement GenAI (dépendances, variables d'environnement, services Docker)
+2. **Gérer** des services Docker conteneurisés (ComfyUI, modèles de langue) avec démarrage, arrêt et monitoring
+3. **Paramétrer** les endpoints API pour les services IA (OpenAI, Anthropic, OpenRouter, services locaux)
 4. **Valider** que chaque composant fonctionne correctement via les scripts de diagnostic
-5. **Deployer** localement l'infrastructure GenAI complete sur un poste de travail
+5. **Déployer** localement l'infrastructure GenAI complète sur un poste de travail
 
 ## Notebooks
 
-| # | Notebook | Contenu | Duree |
+| # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 1 | [00-1-Environment-Setup](00-1-Environment-Setup.ipynb) | Configuration environnement complet | 30 min |
-| 2 | [00-2-Docker-Services-Management](00-2-Docker-Services-Management.ipynb) | Gestion services conteneurises | 40 min |
+| 2 | [00-2-Docker-Services-Management](00-2-Docker-Services-Management.ipynb) | Gestion services conteneurisés | 40 min |
 | 3 | [00-3-API-Endpoints-Configuration](00-3-API-Endpoints-Configuration.ipynb) | Configuration endpoints API | 25 min |
 | 4 | [00-4-Environment-Validation](00-4-Environment-Validation.ipynb) | Tests et validation setup | 30 min |
 | 5 | [00-5-ComfyUI-Local-Test](00-5-ComfyUI-Local-Test.ipynb) | Test local des services ComfyUI | 25 min |
-| 6 | [00-6-Local-Docker-Deployment](00-6-Local-Docker-Deployment.ipynb) | Deploiement Docker local complet | 45 min |
+| 6 | [00-6-Local-Docker-Deployment](00-6-Local-Docker-Deployment.ipynb) | Déploiement Docker local complet | 45 min |
 
-## Prerequis & environnement
+## Prérequis & environnement
 
-| Besoin | Detail |
+| Besoin | Détail |
 |--------|--------|
-| Python | 3.10+ avec dependances (`pip install -r requirements.txt`) |
-| Docker Desktop | v29.5+ recommande pour les notebooks GPU |
-| Cles API | `.env` dans `GenAI/` : `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_BEARER_TOKEN` |
+| Python | 3.10+ avec dépendances (`pip install -r requirements.txt`) |
+| Docker Desktop | v29.5+ recommandé pour les notebooks GPU |
+| Clés API | `.env` dans `GenAI/` : `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COMFYUI_BEARER_TOKEN` |
 | GPU | Optionnel pour ce module, requis pour les sous-domaines Image/Audio/Video |
 
 ## FAQ
 
-### Les notebooks echouent avec "OPENAI_API_KEY not found" ou variable manquante
+### Les notebooks échouent avec "OPENAI_API_KEY not found" ou variable manquante
 
-Le notebook [00-1-Environment-Setup](00-1-Environment-Setup.ipynb) configure les variables d'environnement, mais il faut les creer au prealable dans le fichier `.env` du repertoire `GenAI/` :
+Le notebook [00-1-Environment-Setup](00-1-Environment-Setup.ipynb) configure les variables d'environnement, mais il faut les créer au préalable dans le fichier `.env` du répertoire `GenAI/` :
 
 ```bash
-# Template .env (voir .env.example pour la liste complete)
+# Template .env (voir .env.example pour la liste complète)
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 OPENROUTER_API_KEY=sk-or-v1-...
 COMFYUI_BEARER_TOKEN=...
 ```
 
-Points frequents :
+Points fréquents :
 
-- Le fichier `.env` doit etre dans `MyIA.AI.Notebooks/GenAI/`, pas dans le sous-repertoire `00-GenAI-Environment/`.
-- `OPENAI_API_KEY` et `OPENROUTER_API_KEY` sont deux cles differentes. OpenAI pour les modeaux OpenAI directs, OpenRouter pour l'acces multi-fournisseurs.
-- Le script de validation (`python scripts/genai-stack/genai.py validate --full`) detecte les cles manquantes avant l'execution.
+- Le fichier `.env` doit être dans `MyIA.AI.Notebooks/GenAI/`, pas dans le sous-répertoire `00-GenAI-Environment/`.
+- `OPENAI_API_KEY` et `OPENROUTER_API_KEY` sont deux clés différentes. OpenAI pour les modeaux OpenAI directs, OpenRouter pour l'accès multi-fournisseurs.
+- Le script de validation (`python scripts/genai-stack/genai.py validate --full`) détecte les clés manquantes avant l'exécution.
 
-### Docker Desktop ne demarre pas ou les conteneurs echouent
+### Docker Desktop ne démarre pas ou les conteneurs échouent
 
-Les notebooks [00-2](00-2-Docker-Services-Management.ipynb) et [00-6](00-6-Local-Docker-Deployment.ipynb) requierent Docker Desktop (v29.5.2+ recommande). Si erreur :
+Les notebooks [00-2](00-2-Docker-Services-Management.ipynb) et [00-6](00-6-Local-Docker-Deployment.ipynb) requièrent Docker Desktop (v29.5.2+ recommandé). Si erreur :
 
 ```bash
-# Verifier Docker
+# Vérifier Docker
 docker --version
 docker compose version
 
-# Verifier que Docker Desktop est actif
+# Vérifier que Docker Desktop est actif
 docker ps
 # Si erreur "Cannot connect to the Docker daemon", lancer Docker Desktop
 
-# Verifier les ressources GPU (si applicable)
+# Vérifier les ressources GPU (si applicable)
 nvidia-smi
 docker run --gpus all nvidia/cuda:12.4.0-base-ubuntu22.04 nvidia-smi
 ```
 
-Pour les services ComfyUI (notebooks [00-5](00-5-ComfyUI-Local-Test.ipynb)), le conteneur doit avoir acces au GPU. Sur Windows : Docker Desktop > Settings > Resources > cocher "Enable GPU". Sur Linux : installer `nvidia-container-toolkit`.
+Pour les services ComfyUI (notebooks [00-5](00-5-ComfyUI-Local-Test.ipynb)), le conteneur doit avoir accès au GPU. Sur Windows : Docker Desktop > Settings > Resources > cocher "Enable GPU". Sur Linux : installer `nvidia-container-toolkit`.
 
-### Le script de validation echoue sur certains services
+### Le script de validation échoue sur certains services
 
-Le notebook [00-4-Environment-Validation](00-4-Environment-Validation.ipynb) teste chaque service individuellement. Si certains echouent :
+Le notebook [00-4-Environment-Validation](00-4-Environment-Validation.ipynb) teste chaque service individuellement. Si certains échouent :
 
-- **ComfyUI (401/502)** : le bearer token dans `.env` peut drift par rapport au token reel du conteneur. Recuperer le token actuel : `docker exec <container> cat login/PASSWORD` et mettre a jour `.env`.
-- **vLLM/Z-Image** : le service peut etre DOWN si le GPU est insuffisant (16 GB VRAM minimum). Ce n'est pas bloquant pour les autres notebooks.
+- **ComfyUI (401/502)** : le bearer token dans `.env` peut drift par rapport au token réel du conteneur. Récupérer le token actuel : `docker exec <container> cat login/PASSWORD` et mettre à jour `.env`.
+- **vLLM/Z-Image** : le service peut être DOWN si le GPU est insuffisant (16 GB VRAM minimum). Ce n'est pas bloquant pour les autres notebooks.
 - **Reverse proxies (IIS)** : certains proxies (whisper, tts) peuvent retourner 404. Les endpoints directs fonctionnent (ports 8190+).
 
-Le script `genai.py docker status` montre l'etat de chaque conteneur. Les services non critiques (vLLM, reverse proxies) peuvent etre ignores pour les notebooks de base.
+Le script `genai.py docker status` montre l'état de chaque conteneur. Les services non critiques (vLLM, reverse proxies) peuvent être ignorés pour les notebooks de base.
 
-### Quelle difference entre les endpoints API et les services Docker ?
+### Quelle différence entre les endpoints API et les services Docker ?
 
-| Approche | Notebooks | Avantage | Inconvenient |
+| Approche | Notebooks | Avantage | Inconvénient |
 |----------|-----------|----------|--------------|
-| **API cloud** (OpenAI, Anthropic) | [00-3](00-3-API-Endpoints-Configuration.ipynb) | Aucun setup local | Cout par appel |
-| **Docker local** (ComfyUI, Whisper) | [00-5](00-5-ComfyUI-Local-Test.ipynb), [00-6](00-6-Local-Docker-Deployment.ipynb) | Gratuit, controle total | GPU requise, setup lourd |
-| **OpenRouter** | [00-3](00-3-API-Endpoints-Configuration.ipynb) | Multi-modeles, une cle | Depend d'OpenRouter |
+| **API cloud** (OpenAI, Anthropic) | [00-3](00-3-API-Endpoints-Configuration.ipynb) | Aucun setup local | Coût par appel |
+| **Docker local** (ComfyUI, Whisper) | [00-5](00-5-ComfyUI-Local-Test.ipynb), [00-6](00-6-Local-Docker-Deployment.ipynb) | Gratuit, contrôle total | GPU requise, setup lourd |
+| **OpenRouter** | [00-3](00-3-API-Endpoints-Configuration.ipynb) | Multi-modèles, une clé | Dépend d'OpenRouter |
 
-Les notebooks GenAI utilisent un melange : APIs cloud pour les modeaux de langage (GPT, Claude), Docker local pour les modeaux d'image/audio (ComfyUI, Whisper). Le notebook [00-1](00-1-Environment-Setup.ipynb) configure les deux.
+Les notebooks GenAI utilisent un mélange : APIs cloud pour les modeaux de langage (GPT, Claude), Docker local pour les modeaux d'image/audio (ComfyUI, Whisper). Le notebook [00-1](00-1-Environment-Setup.ipynb) configure les deux.
 
-### Peut-on executer les notebooks GenAI sans Docker ?
+### Peut-on exécuter les notebooks GenAI sans Docker ?
 
 Partiellement. Les notebooks qui utilisent uniquement des APIs cloud (OpenAI, Anthropic, OpenRouter) fonctionnent sans Docker. C'est le cas de la plupart des notebooks Texte, PostTraining et FineTuning. En revanche :
 
@@ -110,10 +110,10 @@ Partiellement. Les notebooks qui utilisent uniquement des APIs cloud (OpenAI, An
 - **Video** (ComfyUI Video) : Docker requis
 - **SemanticKernel** : API cloud uniquement, Docker non requis
 
-Le notebook [00-6](00-6-Local-Docker-Deployment.ipynb) detaille le deploiement Docker complet. Si vous n'avez pas de GPU, utiliser Google Colab pour les notebooks GPU-intensifs.
+Le notebook [00-6](00-6-Local-Docker-Deployment.ipynb) détaille le déploiement Docker complet. Si vous n'avez pas de GPU, utiliser Google Colab pour les notebooks GPU-intensifs.
 
 ## Utilisation
 
 1. Configurer l'environnement selon 00-GenAI-Environment
-2. Executer les notebooks dans l'ordre numerique
-3. Verifier les outputs dans /outputs/
+2. Exécuter les notebooks dans l'ordre numérique
+3. Vérifier les outputs dans /outputs/

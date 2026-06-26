@@ -8,13 +8,26 @@ name: Notebook Execution Required
 #
 # Non-Python kernels (.NET, Lean, WSL) are checked for C.1 and error outputs
 # but execution_count is advisory only (cannot Papermill-execute in CI yet).
-# Full Papermill execution for Python notebooks is a separate job (Phase 2).
+# Full Papermill execution for the SOBER golden-set subset is the
+# golden-set-execute job below (H.7 P3, axe A #4208 / #4209). A full
+# Docker runner covering every notebook kernel remains future work (H.7 P4).
 
 on:
   pull_request:
     branches: [main]
     paths:
       - '**.ipynb'
+      # Golden-set certifie sa propre reproductibilite quand le manifeste /
+      # le lockfile / le workflow changent (axe A #4208, #4209).
+      - 'scripts/notebook_tools/golden_set.yml'
+      - 'scripts/notebook_tools/golden_set.lock.txt'
+      - 'scripts/notebook_tools/notebook_tools.py'
+      - '.github/workflows/notebook-execution-required.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/notebook_tools/golden_set.yml'
+      - 'scripts/notebook_tools/golden_set.lock.txt'
   workflow_dispatch:
     inputs:
       notebook_paths:
@@ -168,14 +181,20 @@ jobs:
               console.log('Could not post validation summary:', e.message);
             }
 
-  # Phase 2 (future): Papermill execution for Python notebooks
-  # Requires Docker compose with Python + .NET + Lean + WSL
-  # This is a placeholder — full implementation deferred to P4 (H.7)
-  execute-python:
-    name: Papermill execution (Python only)
+  # Golden-set execution (H.7 P3, axe A #4208 / #4209 PR 2/2).
+  # Executes the pinned, sober golden-set end-to-end via Papermill on a plain
+  # Ubuntu runner (no Docker / no GPU / no cloud). This is the highest-trust
+  # CI lever: it proves the golden-set notebooks actually produce their stated
+  # outputs, not just that they are structurally valid (validate-static).
+  # A broken notebook makes this job RED, then GREEN once repaired.
+  golden-set-execute:
+    name: Golden-set execution (H.7 P3)
     runs-on: ubuntu-latest
-    needs: validate-static
-    if: false  # Disabled until Docker runner is ready
+    # Independent of notebook-change detection: the golden-set is a FIXED
+    # certified core, re-executed whenever the manifest/lockfile/workflow
+    # change (PR + main push) or on manual dispatch. No `if:` needed — the
+    # workflow triggers above already gate this job's execution.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -183,11 +202,58 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/notebook_tools/golden_set.lock.txt
 
-      - name: Install Papermill
-        run: pip install papermill ipykernel
-
-      - name: Execute Python notebooks
+      - name: Install pinned golden-set lockfile
         run: |
-          echo "Phase 2: Papermill execution not yet implemented"
-          echo "Will use: python scripts/notebook_tools/notebook_tools.py execute"
+          python -m pip install --upgrade pip
+          python -m pip install -r scripts/notebook_tools/golden_set.lock.txt
+
+      - name: Execute golden-set (Papermill)
+        run: |
+          python scripts/notebook_tools/notebook_tools.py golden-set --json > /tmp/golden_set_result.json
+          cat /tmp/golden_set_result.json
+          # The subcommand exits non-zero if any notebook fails (red CI).
+          python -c "import json,sys; r=json.load(open('/tmp/golden_set_result.json')); sys.exit(0 if r['passed'] else 1)"
+
+      - name: Post golden-set summary
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '## Golden-Set Execution (H.7 P3)\n\n';
+            try {
+              const r = JSON.parse(fs.readFileSync('/tmp/golden_set_result.json', 'utf8'));
+              const icon = r.passed ? '✅' : '❌';
+              body += `${icon} **${r.success_count}/${r.total}** notebooks passed (certified reproducible)\n\n`;
+              body += `| Notebook | Status | Time |\n|-----------|--------|------|\n`;
+              for (const n of r.notebooks) {
+                const s = n.success ? '✅' : '❌';
+                body += `| ${n.path.split('/').pop()} | ${s} ${n.message} | ${n.execution_time.toFixed(1)}s |\n`;
+              }
+              body += `\nPinned lockfile: \`scripts/notebook_tools/golden_set.lock.txt\` (H.7 P3, axe A #4208)\n`;
+            } catch (e) {
+              body += `⚠️ Could not read result: ${e.message}\n`;
+            }
+            core.info(body);
+            // Post as PR comment when on a PR; otherwise just log.
+            if (context.eventName === 'pull_request') {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+              const existing = comments.find(c => c.user.type === 'Bot' && c.body.includes('Golden-Set Execution'));
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existing.id, body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, body,
+                });
+              }
+            }

@@ -17,6 +17,24 @@ MechanismDesign, SortedListCounting) sont **FORMAL-CERTIFIED** (0 sorry). Voir
 
 ## Théorèmes formalisés
 
+*Les quatre résultats fondateurs formalisés (0 sorry, 7 modules) — de l'impossibilité de
+Arrow et du paradoxe de Sen jusqu'au théorème de l'électeur médian et à la véridicité de
+l'enchère de Vickrey :*
+
+```mermaid
+flowchart TD
+    FW["Framework  <i>Basic · Framework</i><br/>PrefOrder réflexif-total-transitif<br/>Profile · SWF · weak_pareto · ind_of_irr_alts · is_dictatorship"]
+    ARROW["Arrow — impossibilité<br/>faible-Pareto + IIA ⟹ dictature<br/><i>Geanakoplos 2005, profils maketop/makebot</i>"]
+    SEN["Sen — paradoxe libéral<br/>Pareto + libéralisme minimal ⟹ contradiction<br/><i>décisivité bidirectionnelle</i>"]
+    VOTE["Vote<br/>Condorcet unique · électeur médian · Split Cycle · Banks"]
+    VICK["Mécanismes — Vickrey<br/>second prix véridique · premier prix non-véridique"]
+
+    FW --> ARROW
+    FW --> SEN
+    FW --> VOTE
+    FW -.->|"théorie des incitations"| VICK
+```
+
 ### 0. DominikPeters/SocialChoiceLean (référence externe)
 
 Un dépôt de référence majeur pour la formalisation du choix social en Lean 4 :
@@ -43,8 +61,6 @@ Résultats formalisés par Peters :
 | Règle de vote | `SCC ι σ` (types fixés) | `VotingRule` (polymorphe sur V, A) |
 | Toolchain | `v4.30.0-rc2` | `v4.27.0-rc1` (pin commit `d679d950`) |
 
-```
-
 ### 1. Théorème d'Impossibilité d'Arrow (Arrow's Impossibility Theorem)
 
 **Dans `SocialChoice/Arrow.lean`** :
@@ -60,6 +76,20 @@ Résultats formalisés par Peters :
   2. **Existence du pivot** : Chaque alternative a un individu pivot
   3. **Troisième étape** : Les pivots deviennent des dictateurs sur les paires non-b
   4. **Quatrième étape** : La dictature partielle s'étend à une dictature complète
+
+*La preuve en quatre étapes de Geanakoplos (2005), des profils manipulés `maketop`/`makebot`
+jusqu'à la dictature complète — chaque étape décharge la suivante :*
+
+```mermaid
+flowchart TD
+    EXT["extremal_lemma<br/>tous placent b en haut/bas ⟹ société aussi<br/><i>via maketop_rel / makebot_rel</i>"]
+    PIV["pivot_exists<br/>chaque alternative b a un individu pivot<br/><i>transition collective→individuelle</i>"]
+    PDEX["pivot_is_dictator_except_b<br/>le pivot de b est dictateur sur les paires ≠ b<br/><i>par IIA + extremal_lemma</i>"]
+    FULL["partial_dictator_is_full_dictator<br/>dictateur partiel ⟹ dictateur complet<br/><i>2 pivots coïncident sur b</i>"]
+    ARROW["arrow · no_perfect_swf<br/>SWF (Pareto+IIA, ≥3 alt.) = dictature  <b>✓</b>"]
+
+    EXT --> PIV --> PDEX --> FULL --> ARROW
+```
 
 ### 2. Paradoxe de la Libéralité de Sen (Sen's Liberal Paradox)
 

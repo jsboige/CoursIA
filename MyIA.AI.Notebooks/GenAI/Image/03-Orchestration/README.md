@@ -4,7 +4,7 @@
 
 Ce module couvre l'orchestration de plusieurs modèles, les workflows complexes, et l'optimisation de performance.
 
-**Dans le cadre du fil rouge contenu visuel educatif** : en production, un seul modele ne suffit pas. [03-1](03-1-Multi-Model-Comparison.ipynb) compare les modeles pour choisir le meilleur selon le contexte. [03-2](03-2-Workflow-Orchestration.ipynb) assemble des pipelines (generation, edition, upscaling). [03-3](03-3-Performance-Optimization.ipynb) optimise les performances pour le deploiement.
+**Dans le cadre du fil rouge contenu visuel éducatif** : en production, un seul modèle ne suffit pas. [03-1](03-1-Multi-Model-Comparison.ipynb) compare les modèles pour choisir le meilleur selon le contexte. [03-2](03-2-Workflow-Orchestration.ipynb) assemble des pipelines (génération, édition, upscaling). [03-3](03-3-Performance-Optimization.ipynb) optimise les performances pour le déploiement.
 
 ## Vue d'overview
 
@@ -12,7 +12,7 @@ Ce module couvre l'orchestration de plusieurs modèles, les workflows complexes,
 |-------------|--------|
 | Notebooks | 3 |
 | Kernel | Python 3 |
-| Duree estimee | ~3-5h |
+| Durée estimée | ~3-5h |
 | GPU requis | Variable |
 
 ## Notebooks

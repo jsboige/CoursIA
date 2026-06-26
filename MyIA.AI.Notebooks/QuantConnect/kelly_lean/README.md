@@ -19,6 +19,23 @@ Kelly Jr., *A New Interpretation of Information Rate*, BSTJ (1956). Voir l'issue
 [#4052](https://github.com/jsboige/CoursIA/issues/4052) (roadmap Lean
 [#4038](https://github.com/jsboige/CoursIA/issues/4038), Tier 2).
 
+*Le théorème, du pari brut jusqu'à l'unicité du maximiseur — la chaîne causale des
+symboles Lean formant le résultat :*
+
+```mermaid
+flowchart TD
+    BET["Pari de Bernoulli Bet β<br/><i>p gain, b cote, q = 1 − p</i>"]
+    W["Multiplicateurs de richesse<br/>W_win(f) = 1 + b·f ; W_lose(f) = 1 − f"]
+    G["Croissance espérée composée<br/>g(f) = p·log W_win(f) + q·log W_lose(f)"]
+    STAR["Fraction de Kelly<br/>f* = (b·p − q) / b"]
+    OPT["kelly_optimal : g(f) ≤ g(f*)<br/><i>f* maximise la log-croissance</i>"]
+    UNIQ["kelly_unique : f ≠ f* ⟹ g(f) < g(f*)<br/><i>sur-pari et sous-pari strictement sous-optimaux</i>"]
+
+    BET --> W --> G
+    G -->|"condition du 1er ordre g'(f*) = 0"| STAR
+    STAR --> OPT -.-> UNIQ
+```
+
 ## Stratégie de preuve
 
 On évite la concavité abstraite (`StrictConcaveOn`) et l'on prouve `g(f) ≤ g(f*)`
@@ -42,6 +59,24 @@ L'**unicité** suit de la version stricte `log t < t − 1` : si `f ≠ f*`, les
 multiplicateurs de richesse diffèrent (injectivité de `f ↦ 1 + b·f` et
 `f ↦ 1 − f`), donc au moins un rapport diffère de 1, l'inégalité est stricte, et
 `g(f) < g(f*)`.
+
+*La mécanique de preuve, réduite à son squelette — la tangente du log, la majoration
+clé et la condition du premier ordre qui la neutralise :*
+
+```mermaid
+flowchart TD
+    TAN["Tangente du log en 1<br/>log t ≤ t − 1 ; <i>strict si t ≠ 1</i>"]
+    RAP["Rapports de multiplicateurs<br/>W_win(f) / W_win(f*) ; W_lose(f) / W_lose(f*)"]
+    KEY["Majoration clé : g(f) − g(f*) ≤ (f − f*)·g'(f*)<br/><i>growth_diff_le</i>"]
+    FOC["Condition du 1er ordre g'(f*) = 0<br/><i>growthGrad_kelly_zero</i>"]
+    OPT["g(f) ≤ g(f*) — kelly_optimal"]
+    STRICT["Cas strict t ≠ 1<br/>au moins un rapport ≠ 1"]
+    UNIQ["g(f) < g(f*) — kelly_unique"]
+
+    TAN -->|"appliquée à chaque rapport"| RAP --> KEY
+    FOC -.-> KEY --> OPT
+    TAN -.-> STRICT --> UNIQ
+```
 
 ## Modules
 

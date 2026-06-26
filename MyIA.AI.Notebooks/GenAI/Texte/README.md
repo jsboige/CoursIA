@@ -158,6 +158,35 @@ Le fil rouge de cette série est la progression de l'interaction basique avec un
 
 5. **Tier 5** (test-time scaling approfondi) : partant de [12_Test_Time_Scaling](12_Test_Time_Scaling.ipynb) (les quatre moteurs en Python pur), l'arc NB-13..18 décompose chaque facette de l'inférence au moment du test — orchestration agentique via function calling ([13](13_Agentic_Orchestration.ipynb)), mémoire persistante par similarité ([14](14_Persistent_Memory.ipynb)), Tree-of-Thoughts sur des problèmes de recherche ([15](15_Tree_of_Thoughts_Search.ipynb)), courbes de scaling de Snell ([16](16_Scaling_Test_Time_Compute.ipynb)), raisonnement natif vs scaling hand-rolled ([17](17_Native_Reasoning_vs_Scaling.ipynb)), puis intégration Semantic Kernel ([18](18_Semantic_Kernel_Plugins.ipynb)).
 
+Le schéma ci-dessous résume comment les cinq tiers s'enchaînent pour maîtriser les LLMs : du prompt one-shot (tier 1) aux patterns de production puis à l'arc test-time scaling approfondi (tiers 4-5), en passant par les sorties structurées (tier 2) et l'augmentation RAG/code interpreter (tier 3).
+
+```mermaid
+flowchart TD
+    subgraph T1["Tier 1 · Fondations"]
+        A1["1 : API OpenAI & tokens"]
+        A2["2 : Prompt engineering"]
+    end
+    subgraph T2["Tier 2 · Sorties structurées"]
+        B1["3 : Structured Outputs"]
+        B2["4 : Function Calling"]
+    end
+    subgraph T3["Tier 3 · Augmentation"]
+        C1["5-6 : RAG & PDF/Web"]
+        C2["7 : Code Interpreter"]
+    end
+    subgraph T4["Tier 4 · Avancé & production"]
+        D1["8-9 : Reasoning & Production"]
+        D2["10-11 : Local Llama & Quantization"]
+        D3["12 : Test-Time Scaling"]
+    end
+    subgraph T5["Tier 5 · Test-time scaling approfondi (ICR)"]
+        E1["13-14 : Agentic & Mémoire"]
+        E2["15-17 : ToT, Scaling, Native"]
+        E3["18 : Plugins Semantic Kernel"]
+    end
+    T1 --> T2 --> T3 --> T4 --> T5
+```
+
 ## FAQ
 
 ### Chat Completions vs Responses API — laquelle utiliser ?

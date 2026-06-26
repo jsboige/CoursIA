@@ -1,6 +1,7 @@
 import Mathlib
 import Minimax.ZeroSum
 import Minimax.Concavity
+import Minimax.SionApplication
 
 /-!
 # minimax_lean — bilinéarité du payoff pour le théorème minimax de von Neumann
@@ -39,23 +40,31 @@ ces quatre hypothèses.
   dérivée de la continuité (`payoff_lowerSemicontinuous_in_x`,
   `payoff_upperSemicontinuous_in_y`) — les **2 hyps restantes**.
   **Les 4 hyps analytiques sont désormais prouvées. 0 sorry.**
+- `Minimax/SionApplication.lean` — **itération 3 du glue Sion** : non-vacuité des
+  simplexes (`stdSimplex_nonempty_m/n` via `single_mem_stdSimplex`) puis **application
+  finale** `exists_saddle_point_payoff` — le théorème de von Neumann (forme point-selle)
+  prouvé en une application de `Sion.exists_isSaddlePointOn` réunissant les 4 hyps
+  analytiques + compacité `isCompact_stdSimplex` + convexité `convex_stdSimplex` +
+  non-vacuité. Les instances topologiques `Pi`-sur-`ℝ` (`TopologicalSpace`,
+  `AddCommGroup`, `Module ℝ`, `IsTopologicalAddGroup`, `ContinuousSMul ℝ`) se
+  synthétisent depuis Mathlib. **Milestone #4054 RÉSOLU. 0 sorry.**
 
-## Milestone suivant (OPEN — documenté, non sorry-stubbé)
+## Milestone — RÉSOLU (#4054)
 
-Les **4 hyps analytiques** de `Sion.exists_isSaddlePointOn'` (quasi-convexité en `x`,
-quasi-concavité en `y`, semi-continuité inférieure en `x`, supérieure en `y`) sont
-désormais **prouvées 0 sorry** dans `Concavity.lean`. Reste le **milestone ouvert** de
-l'issue #4054 : les instances topologiques `Pi`-sur-`ℝ`, la non-vacuité des simplexes
-(`stdSimplex`, faits Mathlib), et l'**application finale** réunissant les 4 hyps avec
-`isCompact_stdSimplex`/`convex_stdSimplex` vers `Sion.exists_isSaddlePointOn'`. Non
-comblé par `sorry`, laissé comme étape de formalisation à venir, honnêtement signalé.
+Le théorème minimax de **von Neumann** (forme point-selle) est désormais **prouvé
+0-sorry** via `Minimax/SionApplication.lean` (`exists_saddle_point_payoff`) : pour toute
+matrice de gains `A` sur des types finis non vides, il existe `a ∈ Δₘ`, `b ∈ Δₙ` tels
+que `payoff A a y ≤ payoff A x b` pour tout `x ∈ Δₘ`, `y ∈ Δₙ`. Démontré en une
+application de `Sion.exists_isSaddlePointOn` (cas réel, `Topology/Sion.lean`), réunissant
+les 4 hyps analytiques de `Concavity.lean` (quasi-convexité en `x`, quasi-concavité en
+`y`, semi-continuité inf. en `x`, sup. en `y`) avec la compacité/convexité/non-vacuité
+des simplexes (faits Mathlib `isCompact_stdSimplex`/`convex_stdSimplex`/`single_mem_stdSimplex`).
 -/
 
 namespace MinimaxLean
 
-/-- Statut : `Minimax/ZeroSum.lean` + `Concavity.lean` entièrement 0-sorry. Bilinéarité
-+ continuité du payoff, et les 4 hyps analytiques de Sion prouvées. Reste le câblage
-topologique final (instances Pi/ℝ + non-vacuité + application `Sion.minimax'`). -/
+/-- Statut : le théorème minimax de von Neumann (forme point-selle) est **prouvé 0-sorry**
+via `Minimax/SionApplication.lean`. Milestone #4054 RÉSOLU. -/
 abbrev Status : Prop := True
 
 end MinimaxLean
