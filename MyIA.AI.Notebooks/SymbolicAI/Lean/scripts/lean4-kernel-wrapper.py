@@ -1,12 +1,31 @@
 #!/usr/bin/env python3
 r"""
-Lean 4 Jupyter Kernel Wrapper for WSL
+Lean 4 Jupyter Kernel Wrapper for WSL (v6)
 
 This script converts Windows paths to WSL paths and launches the lean4_jupyter kernel.
 It handles various path formats that VSCode/Jupyter might pass:
 - Standard Windows paths: C:\Users\...
 - Tilde shorthand: ~\AppData\... or ~/AppData/...
 - Mangled paths (backslashes eaten): c:UsersjsboiAppData...
+
+v6 changes:
+1. Mangled-path regex now covers BOTH AppData/Roaming (jupyter kernelspec) AND
+   AppData/Local/Temp (nbconvert connection files) — the kernel no longer dies
+   with PermissionError under nbconvert/papermill execution.
+2. find_lake_root(): chdir to the nearest lakefile.lean/.toml ancestor so that
+   `lake env repl` (lean4_jupyter.repl:52) detects the real lake workspace and
+   picks up its LEAN_PATH, enabling in-kernel imports of lake modules. Falls
+   back to ~/lean-projects/notebook_context (stub lake) when none is found.
+
+NOTE (native-import probe, 2026-06, c.126→c.127): this wrapper detects the lake
+workspace cwd, which is necessary but NOT sufficient for native Mathlib import —
+`lake env repl` (lean4_jupyter.repl:52) clobbers the repl's sysroot (repl loses
+Init, `#check Nat` -> "Unknown identifier"). The COMPLETE fix is in
+scripts/lean/setup_native_lean4_import.py: it patches lean4_jupyter's launch()
+to run the repl binary DIRECT (not via `lake env`) with the lake's LEAN_PATH,
+which makes native lean4-wsl import of a Mathlib lake WORK (proven on
+sensitivity_lean: real `#check huang_degree_theorem` + `#print axioms` in-kernel,
+0 sorry). See docs/reference/wsl-kernels-detail.md § "Native import ... VERDICT (a)".
 """
 import sys
 import subprocess
@@ -43,20 +62,24 @@ def convert_windows_path(path):
         return f'/mnt/c/Users/jsboi/{rest}'
 
     # Check for mangled path FIRST (backslashes eaten): c:UsersjsboiAppData...
-    # This happens when VSCode passes paths through certain shells
+    # This happens when VSCode passes paths through certain shells. nbconvert
+    # connection files live under AppData/Local/Temp (NOT AppData/Roaming, where
+    # the kernelspec lives), so the regex must cover BOTH subdirs + Temp/tmp.
     if len(path) >= 2 and path[1] == ':':
         # Detect mangled path: has Users immediately after drive letter without separator
         if path[2:].startswith('Users') and '\\' not in path and '/' not in path[2:]:
-            match = re.match(r'([a-zA-Z]):Users([a-z0-9_]+)AppDataRoaming(.+)', path, re.IGNORECASE)
+            match = re.match(
+                r'([a-zA-Z]):Users([a-z0-9_]+)AppData(Roaming|Local)(.+)', path, re.IGNORECASE)
             if match:
                 drive = match.group(1).lower()
                 user = match.group(2)
-                rest = match.group(3)
-                # Re-insert slashes at known boundaries
-                rest = rest.replace('jupyter', '/jupyter').replace('runtime', '/runtime')
-                rest = rest.replace('kernel-', '/kernel-')
+                subdir = match.group(3).capitalize()  # Roaming | Local
+                rest = match.group(4)
+                # Re-insert slashes at known segment boundaries
+                for sep in ['jupyter', 'runtime', 'kernel-', 'Temp', 'tmp']:
+                    rest = rest.replace(sep, '/' + sep)
                 rest = rest.lstrip('/')
-                return f'/mnt/{drive}/Users/{user}/AppData/Roaming/{rest}'
+                return f'/mnt/{drive}/Users/{user}/AppData/{subdir}/{rest}'
 
         # Standard Windows path with proper separators (C:\... or C:/...)
         # Use wslpath for proper conversion
@@ -72,6 +95,29 @@ def convert_windows_path(path):
         return f'/mnt/{drive}/{rest}'
 
     return path
+
+
+def find_lake_root(start_dir):
+    """Walk up from start_dir to find the nearest directory containing a
+    lakefile.lean (the lake workspace root). Returns None if not found.
+
+    When the kernel is launched from inside a lake project, chdir-ing to its
+    root lets `lake env repl` (lean4_jupyter.repl:52) detect the workspace and
+    pick up its LEAN_PATH, so in-kernel imports can resolve lake modules.
+    """
+    d = os.path.abspath(start_dir)
+    for _ in range(12):
+        try:
+            if os.path.isfile(os.path.join(d, 'lakefile.lean')) or \
+               os.path.isfile(os.path.join(d, 'lakefile.toml')):
+                return d
+        except OSError:
+            break
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    return None
 
 
 def main():
@@ -116,7 +162,20 @@ def main():
     # Set up environment with CLEAN PATH (not inheriting polluted Windows PATH)
     # The Windows PATH causes issues because it contains spaces and special chars
     os.environ['PATH'] = '/home/jesse/.elan/bin:/home/jesse/.lean4-venv/bin:/usr/local/bin:/usr/bin:/bin'
-    os.chdir(os.path.expanduser('~'))
+
+    # chdir to the lake workspace root (detected from the inherited cwd) so that
+    # `lake env repl` (lean4_jupyter.repl:52) detects the lake and picks up its
+    # LEAN_PATH, enabling in-kernel imports of lake modules. Falls back to the
+    # stub notebook_context lake when no lakefile is found nearby.
+    inherited_cwd = os.getcwd()
+    lake_root = find_lake_root(inherited_cwd)
+    if lake_root:
+        target_cwd = lake_root
+        log(f"Lake detected: chdir {inherited_cwd} -> {target_cwd}")
+    else:
+        target_cwd = os.path.expanduser('~/lean-projects/notebook_context')
+        log(f"No lakefile near {inherited_cwd} -> stub cwd {target_cwd}")
+    os.chdir(target_cwd)
     log(f"PATH set (clean): {os.environ['PATH']}")
     log(f"cwd: {os.getcwd()}")
     log(f"About to launch kernel with args: {args}")

@@ -65,14 +65,40 @@ Test : `python scripts/lean/tests/test_lean_kernel_check.py` (4 cas : ancien bas
 
 ```
 Windows (Jupyter)                  WSL (Ubuntu)
-   kernel.json ──────────────────> ~/.lean4-kernel-wrapper.py (v5)
+   kernel.json ──────────────────> ~/.lean4-kernel-wrapper.py (v6)
    %APPDATA%/jupyter/                ↓
      kernels/lean4-wsl/            ~/.lean4-venv/bin/python3 -m lean4_jupyter
-                                    cd ~/lean-projects/notebook_context
-                                    REPL: ~/.elan/bin/repl
+                                    chdir: lakefile ancêtre le plus proche
+                                          (fallback ~/lean-projects/notebook_context)
+                                    REPL: ~/.elan/bin/repl  (via `lake env repl`)
 ```
 
-Le wrapper Python v5 `~/.lean4-kernel-wrapper.py` gère la conversion Windows→WSL des paths et les permissions NTFS. L'ancien wrapper bash `~/lean4-jupyter-wrapper.sh` est **OBSOLETE** — ne pas l'utiliser. Scripts de setup sous-jacents (orchestrés par `setup_lean4_all.py`) : `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh` (WSL : elan, Lean 4 stable, venv `~/.lean4-venv`, lean4_jupyter, REPL), `setup_lean4_kernel.ps1` (registration `%APPDATA%/jupyter/kernels/lean4-wsl/`), `SymbolicAI/Lean/scripts/validate_lean_setup.py` (`--wsl`/`--windows`), notebook `SymbolicAI/Lean/Lean-1-Setup.ipynb`.
+Le wrapper Python v6 `~/.lean4-kernel-wrapper.py` (source dans le dépôt : `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py`) gère la conversion Windows→WSL des paths, les permissions NTFS, et la détection du lake workspace. v6 = (1) regex mangled-path couvre `AppData/Roaming` (kernelspec) ET `AppData/Local/Temp` (fichiers de connexion nbconvert — le kernel ne meurt plus sous nbconvert/papermill), (2) `find_lake_root()` chdir vers le `lakefile.lean`/`.toml` ancêtre le plus proche pour que `lake env repl` détecte le lake. L'ancien wrapper bash `~/lean4-jupyter-wrapper.sh` est **OBSOLETE** — ne pas l'utiliser. Scripts de setup sous-jacents (orchestrés par `setup_lean4_all.py`) : `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh` (WSL : elan, Lean 4 stable, venv `~/.lean4-venv`, lean4_jupyter, REPL), `setup_lean4_kernel.ps1` (registration `%APPDATA%/jupyter/kernels/lean4-wsl/`), `SymbolicAI/Lean/scripts/validate_lean_setup.py` (`--wsl`/`--windows`), notebook `SymbolicAI/Lean/Lean-1-Setup.ipynb`.
+
+### Native import d'un lake Mathlib en kernel `lean4-wsl` — VERDICT (a) PROUVÉ (probe 2026-06, c.127)
+
+**Objectif** : un companion notebook **pur-Lean** (kernel natif) qui `import` un lake Mathlib (#4038) et `#check` ses théorèmes — alternative lisible au pattern python3 + `lake env lean --stdin` (companion Lean-12b sensitivity #4388).
+
+**Verdict final : (a) FAISABLE** — un kernel `lean4-wsl` lancé dans un lake workspace nativement `import` le lake Mathlib et rend les signatures `#check` IN-kernel (Alectryon HTML), zéro Python.
+
+**Cause racine (probe c.126 → fix c.127)** : lean4_jupyter hardcode `pexpect.spawn("lake env repl")` (`repl.py:52`). Sous `lake env`, le repl **perd son sysroot** (ne trouve plus `Init` → `#check Nat` = "Unknown identifier"). Asymétrie : `lake env lean` (le compilateur) résout son sysroot nativement ; `lake env repl` non. **Fix** : lancer le repl binary **directement** (pas via `lake env`) avec `LEAN_PATH` capturé de `lake env` (= sysroot toolchain + deps + oleans Mathlib jonctionnés + lake build). Preuve firsthand (notebook natif exécuté dans `sensitivity_lean`, kernel Lean pur, 184s = import Mathlib réel) :
+
+- `import Sensitivity` → OK
+- `#check Sensitivity.huang_degree_theorem` → signature réelle : `huang_degree_theorem {m : ℕ} (H : Set (Sensitivity.Q m.succ)) (hH : ...) : ∃ q ∈ H, √(↑m + 1) ≤ ↑(H ∩ q.adjacent).toFinset.card`
+- `#check Sensitivity.f_squared` → `(f n) ((f n) v) = ↑n • v`
+- `#print axioms Sensitivity.huang_degree_theorem` → **depends on axioms: [propext, Classical.choice, Quot.sound]** (0 sorry, pas de `sorryAx`)
+
+**Prérequis** : (1) le wrapper v6 (`find_lake_root` chdir vers le lakefile ancêtre) pour que le kernel hérite le cwd du lake, (2) un repl binaire matchant la toolchain du lake (`~/.elan/bin/repl` est stable-locked ; rc1/rc2 lakes ont besoin d'un repl matché), (3) le patch `lean4_jupyter/repl.py` `launch()`. Le script `scripts/lean/setup_native_lean4_import.py` automatise le patch (idempotent + backup) + le build de repl par toolchain (`build-repl v4.30.0-rc2` / `v4.31.0-rc1`).
+
+**Setup** :
+
+```powershell
+python scripts/lean/setup_native_lean4_import.py status        # état patch + repl toolchains
+python scripts/lean/setup_native_lean4_import.py build-repl v4.30.0-rc2   # build+install repl matché (~2 min)
+python scripts/lean/setup_native_lean4_import.py patch         # patch repl.py (idempotent)
+```
+
+**Note durabilité (gate ai-01/user)** : le patch modifie le package pip `lean4_jupyter` (perdu au prochain `pip install`). Solution durable = fork lean4_jupyter ou PR upstream. Le script rend le patch reproductible (idempotent, backup `.bak.native`), mais c'est un débloqueur local, pas une solution upstream.
 
 ### Diagnostic manuel (commandes)
 
