@@ -1,17 +1,29 @@
-# learning_theory_lean — Convergence du Perceptron (théorème de Novikoff), Lean 4
+# learning_theory_lean — Learning theory (Perceptron / Novikoff + PAC / Valiant), Lean 4
 
-Lake Lean 4 (Mathlib) à la racine de la série **ML**, formalisant le **théorème de
-convergence du Perceptron** (Novikoff, 1962) : pour des données linéairement
-séparables de marge `γ > 0` et de rayon `R`, l'algorithme du perceptron effectue au
-plus `(R/γ)²` mises à jour (erreurs de classification) avant de trouver un
-classifieur correct.
+Lake Lean 4 (Mathlib) à la racine de la série **ML**, mutualisant deux résultats
+fondamentaux de **théorie de l'apprentissage** sous un même umbrella généraliste
+(cf `decision_theory_lean` qui co-localise Gittins + Utility + Coherence) :
 
-C'est le **premier théorème Lean de la série ML** (aucun lake Lean en ML
-auparavant, roadmap #4038 Tier 2). La preuve est **géométrique élémentaire et
-entièrement 0-sorry** : deux inégalités de croissance du vecteur de poids `wₖ`,
-combinées par Cauchy–Schwarz, donnent la borne. Le module `Tightness` montre en
-outre que cette borne est **serrée** (atteinte avec égalité par un témoin concret
-sur `ℂ`).
+1. **Module `Perceptron`** — convergence du Perceptron (théorème de Novikoff,
+   1962) : pour des données linéairement séparables de marge `γ > 0` et de rayon
+   `R`, l'algorithme effectue au plus `(R/γ)²` mises à jour avant de trouver un
+   classifieur correct. Le sous-module `Tightness` montre en outre que cette borne
+   est **serrée** (atteinte avec égalité par un témoin concret sur `ℂ`).
+2. **Module `PacLearning`** — théorie PAC (Valiant, 1984) : cadre de la
+   **généralisation** — *quand* une hypothèse bien classée sur l'échantillon
+   généralise-t-elle, et avec *combien d'exemples* ? Ce module pose le modèle
+   (distribution, erreur vraie `trueError`, erreur empirique `empError`) et les
+   propriétés élémentaires ; la **borne de complexité d'échantillon** classe finie
+   `m ≥ (1/ε)(ln|H| + ln(1/δ))` (Hoeffding + union bound) est itération suivante.
+
+C'est le **premier lake Lean de la série ML** (aucun lake Lean en ML auparavant,
+roadmap #4038 Tier 2). La preuve de Novikoff est **géométrique élémentaire** :
+deux inégalités de croissance du vecteur de poids `wₖ`, combinées par
+Cauchy–Schwarz, donnent la borne. Les deux modules sont **entièrement 0-sorry**
+sur leur périmètre prouvé : le module `Perceptron` est complet (Novikoff +
+serrage `Tightness`) ; le module `PacLearning` livre son itération 1 (modèle +
+propriétés élémentaires), la borne phare de Valiant étant documentée OPEN (pas
+sorry-backed).
 
 ## Statut
 
@@ -79,12 +91,15 @@ Mathlib.
 | `Perceptron/Convergence.lean` | 0 | Lemme A `align_growth` (`⟪wₖ,u⟫ ≥ kγ`), Lemme B `norm_bound` (`‖wₖ‖² ≤ kR²`), Cauchy–Schwarz ⟹ **`novikoff_mistake_bound`** (`n · γ² ≤ R²`). |
 | `Perceptron/Tightness.lean` | 0 | **Saturation de la borne** : témoin concret sur `ℂ` (`x₀ = 1+I`, `x₁ = 1−I`, séparés par `u = 1`, `n = 2`, `γ = 1`, `R = √2`) atteignant l'égalité `n·γ² = R²` ⟹ **`novikoff_bound_is_sharp`** (la borne `(R/γ)²` est optimale — aucune constante `< 1` ne l'améliore). Utilitaire `complex_inner_re` (produit scalaire réel de `ℂ` en coordonnées). |
 | `Perceptron.lean` | 0 | Imports parapluie + doc de statut. |
+| `PacLearning/Data.lean` | 0 | Cadre PAC (Valiant 1984) : `Distribution` (poids normalisé `X → ℝ`), erreur vraie `trueError` (masse des instances mal classées), erreur empirique `empError` (proportion d'erreurs sur un échantillon). Propriétés élémentaires symétriques pour les deux erreurs : `trueError_nonneg`/`empError_nonneg` (`≥ 0`), `trueError_le_one`/`empError_le_one` (`≤ 1`), `trueError_self`/`empError_self` (`h=f ⟹ 0`), `trueError_comm`/`empError_comm` (symétrie `h↔f`). |
+| `PacLearning.lean` | 0 | Imports parapluie + doc de statut. |
 
 ## Build
 
 ```bash
 # Depuis ce répertoire (WSL recommandé)
-lake build Perceptron
+lake build Perceptron    # théorème de Novikoff
+lake build PacLearning   # cadre PAC (modèle + propriétés élémentaires)
 # Dépend de Mathlib4 — le premier build est lourd, les builds suivants utilisent le cache
 ```
 
@@ -96,15 +111,21 @@ série **ML** : [`ML.Net/`](../ML.Net/) (classification linéaire, entraînement
 évaluation de classifieurs en C#/.NET), dont le perceptron est l'ancêtre
 historique de la classification linéaire. La formalisation Lean démontre *pourquoi*
 le perceptron converge — la garantie algorithmique que la pratique ML.NET met en
-œuvre.
+œuvre. Le module `PacLearning` a son pendant empirique dans le notebook companion
+`02-ML-Cours/2.8-Theorie-PAC` (issue #4294).
 
 ## Référence
 
-A. B. J. Novikoff, *On convergence proofs for perceptrons*, Symposium on the
-Mathematical Theory of Automata, Polytechnic Institute of Brooklyn (1962).
+- A. B. J. Novikoff, *On convergence proofs for perceptrons*, Symposium on the
+  Mathematical Theory of Automata, Polytechnic Institute of Brooklyn (1962).
+- L. G. Valiant, *A theory of the learnable*, Communications of the ACM **27**
+  (1984).
+- S. Shalev-Shwartz & S. Ben-David, *Understanding Machine Learning*, Cambridge
+  University Press (2014), §2 (classes finies) et §6 (VC dimension).
 
 ## Voir aussi
 
-- **Issue #4051** — création du lake (roadmap Lean #4038, Tier 2 « first ML theorem »)
+- **Issue #4051** — création du lake + module Perceptron (roadmap Lean #4038, Tier 2 « first ML theorem »)
+- **Issue #4293** — renommage `perceptron_lean → learning_theory_lean` + module PacLearning (mutualisation, cf `decision_theory_lean`)
 - **`ML/`** — série Machine Learning (ML.NET C#, Data Science with Agents Python)
 - **Epic #2651** — prose pédagogique README
