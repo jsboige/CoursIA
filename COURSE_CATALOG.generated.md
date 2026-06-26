@@ -1,19 +1,19 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-06-25 04:58
-Total notebooks: 572
+Generated: 2026-06-26 05:00
+Total notebooks: 580
 
 ## Status Summary
 
-- **READY**: 425
+- **READY**: 433
 - **DEMO**: 144
 - **RESEARCH**: 0
 - **BROKEN**: 3
 
 ## Maturity Summary
 
-- **PRODUCTION**: 459
-- **BETA**: 62
+- **PRODUCTION**: 465
+- **BETA**: 64
 - **TEMPLATE**: 4
 - **ALPHA**: 42
 - **DRAFT**: 5
@@ -154,7 +154,7 @@ Total notebooks: 572
 | 128 | Pipeline Video de Production | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 129 | GenAI E2E Quant Validation | Python 3 | READY | BETA | 30min | po-2025 |
 
-### Search (60 notebooks) — READY:60 | BETA:9, PRODUCTION:51
+### Search (61 notebooks) — READY:61 | BETA:10, PRODUCTION:51
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -183,7 +183,7 @@ Total notebooks: 572
 | 23 | Recherche non informee et informee | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 24 | TP : Conception d'Algorithmes Genetiques avec Gene | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
 | 25 | Search-1 : Espaces d'etats et formulation de probl | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 26 | Search-12 : Automates Symboliques avec Z3 | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 26 | Search-10 : Automates Symboliques avec Z3 | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 27 | Search-11-Metaheuristiques : Optimisation avec MEA | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 28 | Search-2-Uninformed : Algorithmes de Recherche Non | Python 3 | READY | PRODUCTION | 1h | po-2025 |
 | 29 | Search-3-Informed : Algorithmes de Recherche Infor | Python 3 | READY | PRODUCTION | 45min | po-2025 |
@@ -202,54 +202,61 @@ Total notebooks: 572
 | 42 | CSP-7 : Contraintes Souples - Soft CSP | Python 3 | READY | PRODUCTION | 1h | po-2025 |
 | 43 | CSP-8 : Temporels - Raisonnement sur le Temps | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 44 | CSP-9-Distributed : CSP Distribués (DisCSP) | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 45 | MGS-1 : Introduction a MetaGeneticSharp et au mote | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
-| 46 | MGS-10 : Le test du biais central — un optimiseur  | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 47 | MGS-11 : Synergie d'iles complementaires -- explor | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
-| 48 | MGS-12 : Le test de l'alignement d'axes -- un opti | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 49 | MGS-13 — Visualiser les paysages dé-biaisés : pour | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 50 | MGS-14 — Trouver une synergie (et dire quand il n' | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 51 | MGS-2 : Composition de metaheuristiques -- Match e | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 52 | MGS-3 : L'Eukaryote -- sous-populations et chromos | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
-| 53 | MGS-4 : Le Modele Insulaire -- populations structu | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
-| 54 | MGS-5 : Construire les métaheuristiques composées  | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 55 | MGS-6 : Benchmarks comparatifs -- l'argument primi | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 56 | MGS-7 : TSP combinatoire -- la grammaire de compos | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 57 | MGS-8 : Fitness Landscape Explorer -- voir la surf | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
-| 58 | MGS-9 - Trouver l'Everest : relief reel et bassins | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
-| 59 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
-| 60 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | PRODUCTION | 30min | po-2025 |
+| 45 | Search-12 — Bases de données de motifs (Pattern Da | Python 3 | READY | BETA | 30min | po-2025 |
+| 46 | MGS-1 : Introduction a MetaGeneticSharp et au mote | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
+| 47 | MGS-10 : Le test du biais central — un optimiseur  | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 48 | MGS-11 : Synergie d'iles complementaires -- explor | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
+| 49 | MGS-12 : Le test de l'alignement d'axes -- un opti | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 50 | MGS-13 — Visualiser les paysages dé-biaisés : pour | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 51 | MGS-14 — Trouver une synergie (et dire quand il n' | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 52 | MGS-2 : Composition de metaheuristiques -- Match e | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 53 | MGS-3 : L'Eukaryote -- sous-populations et chromos | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
+| 54 | MGS-4 : Le Modele Insulaire -- populations structu | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
+| 55 | MGS-5 : Construire les métaheuristiques composées  | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 56 | MGS-6 : Benchmarks comparatifs -- l'argument primi | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 57 | MGS-7 : TSP combinatoire -- la grammaire de compos | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 58 | MGS-8 : Fitness Landscape Explorer -- voir la surf | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
+| 59 | MGS-9 - Trouver l'Everest : relief reel et bassins | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
+| 60 | Search - Portfolio Optimization avec GeneticSharp | .NET (C#) | READY | PRODUCTION | 30min | po-2025 |
+| 61 | TP : Algorithmes Genetiques pour la Detection de B | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 
-### ML (27 notebooks) — BROKEN:1, DEMO:3, READY:23 | ALPHA:1, BETA:6, DRAFT:1, PRODUCTION:19
+### ML (33 notebooks) — BROKEN:1, DEMO:3, READY:29 | ALPHA:1, BETA:6, DRAFT:1, PRODUCTION:25
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | 1.2 - Manipulation de Données avec NumPy | Python 3 | READY | BETA | 15min | po-2023 |
 | 2 | 1.3 - Analyse de Données avec Pandas | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 3 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 4 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 5 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 6 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | BETA | 30min | po-2023 |
-| 7 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | PRODUCTION | 45min | po-2023 |
-| 8 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Com | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 9 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Co | Python 3 | READY | BETA | 30min | po-2023 |
-| 10 | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 11 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | BETA | 30min | po-2023 |
-| 12 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | BETA | 45min | po-2023 |
-| 13 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 14 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 | DEMO | PRODUCTION | 30min | po-2023 |
-| 15 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | PRODUCTION | 15min | po-2023 |
-| 16 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 17 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 18 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | BETA | 30min | po-2023 |
-| 19 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | PRODUCTION | 30min | po-2023 |
-| 20 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 21 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 22 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
-| 23 | ML-4 : Evaluation des modèles | .NET (C#) | READY | ALPHA | 2h+ | po-2023 |
-| 24 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | BROKEN | DRAFT | 45min | po-2023 |
-| 25 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 26 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 27 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
+| 3 | 2.1 — Le workflow d'apprentissage automatique | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 4 | 2.2 — La descente de gradient : comment un modèle  | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 5 | 2.3 — Régression linéaire et régression logistique | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 6 | 2.4 — Arbres de décision, forêts aléatoires et boo | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 7 | 2.5 — Biais, variance, validation croisée et courb | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 8 | 2.6 — Clustering (KMeans) et réduction de dimensio | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 9 | Lab 8: Introduction au Framework ADK et Multi-Prov | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 10 | Lab 9: Premier Agent ADK pour Data Science | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 11 | Lab 10: Data File Analyzer (DS-STAR Component) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 12 | Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core) | Python 3 | READY | BETA | 30min | po-2023 |
+| 13 | Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers | Python 3 | READY | PRODUCTION | 45min | po-2023 |
+| 14 | Lab 13: Web Search pour Modèles SOTA (MLE-STAR Com | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 15 | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Co | Python 3 | READY | BETA | 30min | po-2023 |
+| 16 | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 17 | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | BETA | 30min | po-2023 |
+| 18 | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | BETA | 45min | po-2023 |
+| 19 | Lab 1 - Les Bases de la Data Science en Python | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 20 | Lab 2 - Analyser un Appel d'Offre avec l'IA | Python 3 | DEMO | PRODUCTION | 30min | po-2023 |
+| 21 | Lab 3 - Pré-qualifier des Candidats avec l'IA | Python 3 | DEMO | PRODUCTION | 15min | po-2023 |
+| 22 | Lab 4 - Le Nettoyage de Données avec Pandas | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 23 | Lab 5 - De la Visualisation au Machine Learning | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 24 | Lab 6 - Anatomie de votre premier Agent d'IA | Python 3 | DEMO | BETA | 30min | po-2023 |
+| 25 | Lab 7 - Votre premier Agent Analyste de Données | Python 3 | READY | PRODUCTION | 30min | po-2023 |
+| 26 | ML-1 : Introduction au Machine Learning avec ML.NE | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 27 | ML-2 : Préparation des données et ingénierie des f | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 28 | ML-3 : Entraînement et AutoML | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
+| 29 | ML-4 : Evaluation des modèles | .NET (C#) | READY | ALPHA | 2h+ | po-2023 |
+| 30 | ML-5 : Time Series Forecasting avec ML.NET | .NET (C#) | BROKEN | DRAFT | 45min | po-2023 |
+| 31 | ML-6 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 32 | ML-7 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
+| 33 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 
 ### SymbolicAI (132 notebooks) — DEMO:4, READY:128 | ALPHA:1, BETA:6, PRODUCTION:125
 
@@ -497,35 +504,36 @@ Total notebooks: 572
 | 103 | Research QuantBook: VIX-TermStructure (Short Volat | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 104 | Top-4 Sharpe > 0.5 Strategies: OOS Deep-Dive (Issu | Python 3 | READY | PRODUCTION | 15min | po-2026 |
 
-### GameTheory (25 notebooks) — READY:25 | BETA:1, PRODUCTION:24
+### GameTheory (26 notebooks) — READY:26 | BETA:2, PRODUCTION:24
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | GameTheory-1-Setup | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 2 | GameTheory-10-ForwardInduction-SPE | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 3 | GameTheory-11-BayesianGames | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 4 | GameTheory-12-ReputationGames | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 5 | GameTheory-13 : Jeux a Information Imparfaite et C | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
-| 6 | GameTheory-14 : Jeux Differentiels et Equilibres d | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 7 | GameTheory-15-CooperativeGames | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
-| 8 | GameTheory 15b - Jeux Cooperatifs en Lean : Formal | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
-| 9 | GameTheory 15c - Jeux Cooperatifs Lean (Python) | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
-| 10 | GameTheory-16 : Theorie des Mecanismes et Principe | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
-| 11 | GameTheory-17 : Apprentissage par Renforcement Mul | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
-| 12 | GameTheory-2-NormalForm | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 13 | GameTheory 2b - Formalisation Lean : Definitions d | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
-| 14 | GameTheory-3-Topology2x2 | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
-| 15 | GameTheory-4-NashEquilibrium | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
-| 16 | GameTheory 4b - Theoreme d'Existence de Nash (Lean | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
-| 17 | GameTheory 4c - Theoreme d'Existence de Nash (Pyth | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 18 | GameTheory-5-ZeroSum-Minimax | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
-| 19 | GameTheory-6-EvolutionTrust | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
-| 20 | GameTheory-7-ExtensiveForm | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 21 | GameTheory-9-BackwardInduction | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 22 | SocialChoice 01 - Theoreme d'Arrow : Preuve Formel | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 23 | SocialChoice 02 - Choix Social Formel en Lean 4 | Lean 4 (WSL) | READY | BETA | 45min | po-2024 |
-| 24 | SocialChoice 03 - Methodes de Vote et Paradoxes | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 25 | SocialChoice 04 - Agregation Computationnelle : SA | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
+| 4 | GameTheory-11b — Jeux Bayésiens en Lean 4 (compani | Lean 4 (WSL) | READY | BETA | 30min | po-2024 |
+| 5 | GameTheory-12-ReputationGames | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 6 | GameTheory-13 : Jeux a Information Imparfaite et C | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
+| 7 | GameTheory-14 : Jeux Differentiels et Equilibres d | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 8 | GameTheory-15-CooperativeGames | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
+| 9 | GameTheory 15b - Jeux Cooperatifs en Lean : Formal | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
+| 10 | GameTheory 15c - Jeux Cooperatifs Lean (Python) | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
+| 11 | GameTheory-16 : Theorie des Mecanismes et Principe | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
+| 12 | GameTheory-17 : Apprentissage par Renforcement Mul | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
+| 13 | GameTheory-2-NormalForm | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 14 | GameTheory 2b - Formalisation Lean : Definitions d | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
+| 15 | GameTheory-3-Topology2x2 | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
+| 16 | GameTheory-4-NashEquilibrium | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
+| 17 | GameTheory 4b - Theoreme d'Existence de Nash (Lean | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
+| 18 | GameTheory 4c - Theoreme d'Existence de Nash (Pyth | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 19 | GameTheory-5-ZeroSum-Minimax | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
+| 20 | GameTheory-6-EvolutionTrust | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 45min | po-2024 |
+| 21 | GameTheory-7-ExtensiveForm | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 22 | GameTheory-9-BackwardInduction | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 23 | SocialChoice 01 - Theoreme d'Arrow : Preuve Formel | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 24 | SocialChoice 02 - Choix Social Formel en Lean 4 | Lean 4 (WSL) | READY | BETA | 45min | po-2024 |
+| 25 | SocialChoice 03 - Methodes de Vote et Paradoxes | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 26 | SocialChoice 04 - Agregation Computationnelle : SA | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 
 ### Sudoku (32 notebooks) — DEMO:1, READY:31 | PRODUCTION:32
 
@@ -644,5 +652,5 @@ Total notebooks: 572
 - **API**: 127 notebooks
 - **GPU**: 81 notebooks
 - **Cloud**: 104 notebooks
-- **WSL**: 36 notebooks
-- **Local**: 285 notebooks
+- **WSL**: 37 notebooks
+- **Local**: 292 notebooks
