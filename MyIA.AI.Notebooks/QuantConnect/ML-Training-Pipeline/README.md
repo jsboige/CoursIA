@@ -35,6 +35,29 @@ S1 long-horizon sweep a également produit **8 BEATS multi-coin sur 16** (XRP h=
 
 ## Architecture
 
+Le pipeline enchaîne ingestion → features → entraînement (4 familles de modèles) → validation walk-forward → checkpointing reproductible. Chaque étape est découplée et cache ses sorties (Parquet, `.pt`+`metadata.json`) pour permettre itérations rapides sans relancer l'amont.
+
+```mermaid
+flowchart TD
+    DATA["Donnees OHLCV<br/>yfinance / Binance / QC lean-cli"] --> FE["Feature Engineering<br/>features.py (cache Parquet)"]
+    FE --> DS["Dataset V2<br/>panier + cross-asset + labels regime"]
+    DS --> TRAIN{"Famille de modele"}
+    TRAIN -->|"Core direction"| C["RF / XGBoost / LSTM / DQN"]
+    TRAIN -->|"Advanced"| A["MoE / PatchTST / iTransformer / Mamba / DT"]
+    TRAIN -->|"Volatilite & regime"| V["GARCH+DL / HMM / HAR-RV-J (M12)"]
+    TRAIN -->|"Graph"| G["GCN / GAT / MTGNN / ST-GAT"]
+    C & A & V & G --> WF["Validation walk-forward<br/>5-fold expanding, 4-seed"]
+    WF --> VERD{"Verdict BEATS / NO BEATS<br/>(sign-test, p<0.05, win>=60%)"}
+    VERD --> CKPT["Checkpoint<br/>model.pt + metadata.json"]
+    VERD -.-> NO["NO BEATS<br/>(documente honnetement)"]
+    CKPT --> REG["REGISTRY.md"]
+    style VERD fill:#fff3e0
+    style CKPT fill:#e8f5e9
+    style NO fill:#ffebee
+```
+
+Ci-dessous, l'arborescence des scripts qui implémente ce pipeline.
+
 ```
 scripts/
   # --- Data & Features ---
@@ -426,6 +449,30 @@ Note : dry-run utilise des données aléatoires synthétiques. FAILS baseline es
 ## Ladder #1409 — Verdicts finaux (2026-06-12, COMPLETE)
 
 Évaluation systématique d'approches de génération de signaux de trading, 7 disciplines strictes (walk-forward 5-fold expanding, multi-seed >= 4, univers anti-FAANG, coûts tx explicites + 50bps stress, Sharpe déflaté, verdict honnête).
+
+La leçon centrale du ladder n'est pas le score d'un modèle isolé mais le contraste entre **deux paradigmes de formulation du signal** : prédire la **direction/action discrète** (Buy/Hold/Sell) vs prédire le **rendement futur continu** puis seuiller. Le graphe ci-dessous résume pourquoi seul le paradigme action-based survit au seuil BEATS face au buy-and-hold 2015-2025 (Sharpe 1.15).
+
+```mermaid
+flowchart LR
+    subgraph PARA["Deux paradigmes de signal"]
+        direction TB
+        P1["Paradigme action<br/>RF / DT / DQN"]
+        P2["Paradigme prevision<br/>PatchTST / LSTM / Transformer"]
+    end
+    P1 --> ACT["Sortie = action discrete<br/>(Buy / Hold / Sell)"]
+    P2 --> RET["Sortie = rendement<br/>(regression continue)"]
+    ACT --> TR1["Trading direct"]
+    RET --> TH["Seuillage / conversion<br/>en position"]
+    TH --> TR2["Trading differe"]
+    TR1 --> RES1["L4 DT : 24/26 seeds BEATS<br/>Sharpe net > buy-hold 1.15"]
+    TR2 --> RES2["PatchTST : 0/26 seeds BEATS<br/>Signal noye dans le bruit"]
+    style P1 fill:#e8f5e9
+    style P2 fill:#ffebee
+    style RES1 fill:#c8e6c9
+    style RES2 fill:#ffcdd2
+```
+
+L'écart de performance n'est pas un hasard : un classifieur d'action capture la **non-linéarité directionnelle** qu'un régresseur de rendement lisse et perd dans le seuillage. D'où le verdict consolidé — un seul BEATS (DT action-based), tout le reste NO BEATS (rendement/forecast).
 
 | Rung | Modèle | Approche | Verdict | Métrique clé | Doc |
 |------|-------|----------|---------|--------------|-----|
