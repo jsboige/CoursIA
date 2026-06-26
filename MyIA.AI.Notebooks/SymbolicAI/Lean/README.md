@@ -80,7 +80,13 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 17a | [Lean-17-Knots-a-Conway-and-Proofs](Lean-17-Knots-a-Conway-and-Proofs.ipynb) | Conway, les nœuds et la preuve de Piccirillo : le noeud de Conway (11n34), slice-genre et nombre de denouement, contexte de la preuve (Piccirillo 2020, le noeud de Conway n'est pas slice) - hommage narratif, Epic #2874 | 40 min |
 | 17b | [Lean-17-Knots-b-Invariants-Companion](Lean-17-Knots-b-Invariants-Companion.ipynb) | Invariants de nœuds : PD-codes, mouvements de Reidemeister, tricolorabilite de Fox, diagrammes bien formes - companion `knot_lean` (Epic #2874, transfer forward #3000 sorry-free + backward #3124 partiel) | 60 min |
 
-**Duree totale** : ~17h30
+### Partie 6 : Recherche pondérée et optimalité (A*)
+
+| # | Notebook | Contenu | Duree |
+|---|----------|---------|-------|
+| 18 | [Lean-18-Search-AStar-Optimality](Lean-18-Search-AStar-Optimality.ipynb) | Optimalité de A* sous heuristique admissible : graphe pondéré ℝ≥0 et coût additif `pathCost`, prédicats `Admissible`/`Consistent`, théorème phare `admissible_implies_optimal` (borne en f), téléscopage `consistent_implies_path_bound` + monotonie de f - companion `astar_lean` (lake `Search/`, 0 sorry, registre #3801 prong B) | 35 min |
+
+**Duree totale** : ~18h05
 
 ## Acquis d'apprentissage
 
