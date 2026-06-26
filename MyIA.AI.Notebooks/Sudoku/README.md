@@ -574,6 +574,7 @@ Sudoku/
 ├── Sudoku-6-AIMA-CSP-Python.ipynb         # AIMA CSP Python
 ├── Sudoku-7-Norvig-Csharp.ipynb           # Propagation de Norvig C#
 ├── Sudoku-7-Norvig-Python.ipynb           # Propagation de Norvig Python
+├── Sudoku-7b-Lean-Propagation.ipynb       # Companion lake sudoku_lean : soundness propagation (peer_excludes_value, naked/hidden single)
 ├── Sudoku-8-HumanStrategies-Csharp.ipynb  # Stratégies humaines C#
 ├── Sudoku-8-HumanStrategies-Python.ipynb  # Stratégies humaines Python
 ├── Sudoku-9-GraphColoring-Csharp.ipynb    # Graph Coloring C#
