@@ -29,9 +29,36 @@ dépréciés dans la PR Mathlib [#28063](https://github.com/leanprover-community
 code CGT de Mathlib. Cette visite oriente les apprenants vers le lieu où vit
 désormais la TJC.
 
+*La migration qui motive ce dépôt — des modules CGT de Mathlib vers le dépôt amont :*
+
+```mermaid
+flowchart LR
+    M["<b>Mathlib (retiré)</b><br/><i>SetTheory.Surreal / PGame /<br/>Game / Nimber</i><br/>8 modules"]
+    D["<b>#28063</b><br/>dépréciation<br/>(août 2025)"]
+    R["<b>#35550</b><br/>retrait<br/>(février 2026)"]
+    U["<b>vihdzp/combinatorial-games</b><br/><i>nouveau foyer de la TJC</i><br/>même autrice · Apache-2.0<br/>15+ modules"]
+    T["<b>conway_cgt_lean</b><br/><i>visite #check · 0 sorry</i><br/>dépendance Lake<br/>(non vendorisée)"]
+    M --> D --> R -.->|"remplacé par"| U -->|"expose via #check"| T
+```
+
 ## Ce que la visite couvre
 
 Le fichier importe les modules amont et exhibe leurs résultats clés :
+
+*La hiérarchie de types de la visite — du pré-jeu concret `IGame` aux deux destinations `Surreal` (jeux numériques) et `Nimber` (jeux impartiaux) :*
+
+```mermaid
+flowchart TD
+    IG["<b>IGame</b><br/><i>pré-jeu concret</i><br/>left / right : Set IGame"]
+    G["<b>Game</b><br/><i>quotient par ≈</i><br/>Antisymmetrization IGame (· ≤ ·)<br/>AddCommGroupWithOne · PartialOrder"]
+    S["<b>Surreal</b><br/><i>jeux numériques quotientés</i><br/>LinearOrder · CommRing<br/>= corps ordonné complet"]
+    N["<b>Nimber</b><br/><i>ordinaux, arithmétique de nim</i><br/>add_def (mex) · Field caractéristique 2"]
+    IG -->|"Game.mk"| G
+    G -->|"Surreal.mk (Numeric)"| S
+    G -.->|"jeux impartiaux<br/>Sprague-Grundy"| N
+    S --- SIM["<b>théorème de simplicité</b><br/><i>equiv_of_forall_not_fits</i><br/>outil de calcul des valeurs"]
+    S -.->|"Dyadic.toIGame<br/>NatOrdinal.toSurreal"| EMB["plongements<br/>dyadique + ordinal"]
+```
 
 ### 1. Jeux combinatoires
 - **`IGame`** (pré-jeux) : représentation concrète par ensembles d'options
