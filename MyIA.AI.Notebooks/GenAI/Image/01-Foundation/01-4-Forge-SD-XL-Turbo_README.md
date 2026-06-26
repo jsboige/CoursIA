@@ -105,7 +105,7 @@ Le notebook est organisé en **7 sections progressives** (15 cellules total):
 1. **Cloner/Télécharger** le notebook :
    ```bash
    git clone https://github.com/MyIA/CoursIA.git
-   cd CoursIA/MyIA.AI.Notebooks/GenAI/01-Images-Foundation
+   cd CoursIA/MyIA.AI.Notebooks/GenAI/Image/01-Foundation
    ```
 
 2. **Installer dépendances** :
@@ -268,7 +268,7 @@ Le notebook gère automatiquement les erreurs courantes :
    - Hugging Face : [stabilityai/sdxl-turbo](https://huggingface.co/stabilityai/sdxl-turbo)
 
 3. **Documentation GenAI** :
-   - [Services et API GenAI](../../../../docs/genai-services.md)
+   - [Services et API GenAI](../../../../docs/genai/genai-services.md)
 
 ### Tutoriels Supplémentaires
 

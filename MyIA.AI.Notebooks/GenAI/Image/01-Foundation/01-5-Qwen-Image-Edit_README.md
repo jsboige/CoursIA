@@ -77,7 +77,7 @@ jupyter notebook
 ```
 
 Naviguez vers:  
-`MyIA.AI.Notebooks/GenAI/01-Images-Foundation/01-5-Qwen-Image-Edit.ipynb`
+`MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb`
 
 ### 2. Exécuter Séquentiellement
 
@@ -272,7 +272,7 @@ pip install Pillow
 ### Notebooks Associés
 
 - **`01-4-Forge-SD-XL-Turbo.ipynb`**: Génération images Stable Diffusion (comparaison API)
-- **`01-Images-Foundation/`**: Série complète notebooks GenAI images
+- **`Image/01-Foundation/`**: Série complète notebooks GenAI images
 
 ---
 
@@ -330,11 +330,11 @@ Le notebook contient un template workflow `workflow_exercice` avec:
 ### Contact Formation
 
 - **Email**: support-formation@myia.io
-- **Documentation GenAI** : [Services et architecture GenAI](../../../../docs/genai-services.md)
+- **Documentation GenAI** : [Services et architecture GenAI](../../../../docs/genai/genai-services.md)
 
 ### Issues Connues
 
-Consultez les rapports de tests dans les [archives GenAI](../../../../docs/genai-services.md).
+Consultez les rapports de tests dans les [archives GenAI](../../../../docs/genai/genai-services.md).
 
 ---
 
