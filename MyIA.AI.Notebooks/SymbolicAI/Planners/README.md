@@ -21,7 +21,7 @@ La planification répond à une question différente de celle de l'apprentissage
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 13 (1 setup + 3 foundation + 3 classical + 3 advanced + 3 neuro-symbolic) |
+| Notebooks | 14 (1 setup + 3 foundation + 4 classical + 3 advanced + 3 neuro-symbolic) |
 | Durée totale | ~8h |
 | Langage | Python 3.9+ |
 | Kernel | Python 3 |
@@ -121,6 +121,7 @@ SymbolicAI/Planners/
 ├── 02-Classical/
 │   ├── Planners-4-Fast-Downward.ipynb   # A*, heuristiques
 │   ├── Planners-5-Heuristics.ipynb      # h-add, h-max, h-FF
+│   ├── Planners-5b-Lean-Relaxation.ipynb # Companion lake planning_lean : h⁺ ≤ h* (admissibilité relaxation)
 │   └── Planners-6-Domains.ipynb         # Domaines classiques
 ├── 03-Advanced/
 │   ├── Planners-7-OR-Tools.ipynb        # CP-SAT
