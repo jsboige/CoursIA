@@ -52,6 +52,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: reseaux de neurones verifies, IBP, CROWN | 1h30-2h |
 | 11a | [Lean-11-TorchLean-Python](Lean-11-TorchLean-Python.ipynb) | Implementation Python des algorithmes de verification (IBP, CROWN) | 1h30-2h |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | théorème de sensibilite (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
+| 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Companion formel : théorème de Huang prouvé dans le lake `sensitivity_lean` (0 sorry), vérification `#check` native via `lake env lean` + `lake build` SUCCESS (jonction Mathlib #2611) | 45 min |
 
 ### Partie 3 : théorèmes phares (ports complets)
 
