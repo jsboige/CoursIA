@@ -83,6 +83,20 @@ Gestion du risque professionnelle, types d'ordres avancés, analyse approfondie 
 
 Architecture modulaire QuantConnect pour stratégies scalables (Alpha, Portfolio Construction, Execution, Risk).
 
+```mermaid
+flowchart LR
+    U["Universe Selection<br/>quels actifs ?"] --> A["Alpha Model<br/>quels signaux ?"]
+    A --> PC["Portfolio Construction<br/>quelles tailles ?"]
+    PC --> E["Execution<br/>quels ordres ?"]
+    E --> R["Risk Management<br/>quels filtres ?"]
+    R -. "ajustement temps reel" .-> U
+    style A fill:#e1f5ff
+    style PC fill:#e8f5e9
+    style R fill:#fff3e0
+```
+
+Le flux de données traverse cinq modules Découplables : l'**Universe** sélectionne les actifs, l'**Alpha** produit les signaux directionnels, la **Portfolio Construction** transforme les signaux en tailles cibles, l'**Execution** route les ordres, et le **Risk Management** filtre/ajuste en continu. Chaque module est remplaçable indépendamment — c'est ce qui permet de composer une stratégie complexe sans réécrire l'ensemble.
+
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 13 | [QC-Py-13-Alpha-Models](Python/QC-Py-13-Alpha-Models.ipynb) | 75 min | Algorithm Framework intro, Alpha models, insights |
@@ -438,6 +452,26 @@ Après completion de cette série, vous maîtriserez :
 ## Stratégies Vérifiées — Baselines Comparatives
 
 Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes standardisées via QC Cloud API. Le tableau ci-dessous présente les **meilleures performances vérifiées** (Sharpe, CAGR, MaxDD, PSR) : [catalogue complet](../../docs/qc/qc-comparative-backtests.md).
+
+```mermaid
+flowchart TD
+    BT["Backtest in-sample<br/>(Sharpe brut)"] --> WF["Walk-forward<br/>5-fold"]
+    WF --> OOS["Out-of-sample strict<br/>(fenetre alignee 2018-2025)"]
+    OOS --> MS["Multi-seed<br/>0/1/7/42/99"]
+    MS --> PSR{"PSR > 50% ?"}
+    PSR -->|"oui"| FEES["Test frais reels<br/>5bps equity / 10bps crypto"]
+    PSR -->|"non"| ART["Artefact :<br/>edge illusoire"]
+    FEES --> VERD{"Sharpe net<br/>survit aux frais ?"}
+    VERD -->|"oui"| KEEP["Strategie robuste"]
+    VERD -->|"non"| DROP["Edge evapore"]
+    style PSR fill:#fff3e0
+    style VERD fill:#fff3e0
+    style KEEP fill:#e8f5e9
+    style ART fill:#ffebee
+    style DROP fill:#ffebee
+```
+
+Le **fil rouge** de la série : un Sharpe spectaculaire en backtest court est presque toujours un artefact. La validation ci-dessus — walk-forward, OOS strict aligné, multi-seed, PSR > 50%, puis test des frais réels — est ce qui sépare une stratégie robuste d'une illusion statistique. Les stratégies du tableau Top 5 ci-dessous sont celles qui ont survécu à ce pipeline.
 
 ### Top 5 stratégies (Sharpe aligned, 2018-2025)
 
