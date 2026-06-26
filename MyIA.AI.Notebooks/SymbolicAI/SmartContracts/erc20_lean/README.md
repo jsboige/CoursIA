@@ -32,6 +32,23 @@ série SmartContract.
 
 ## Approche : machine à états finie
 
+*La machine à états — l'état porte l'invariant `supplyInvariant`, et trois transitions gardées le préservent ; toute trace atteignable l'hérite par induction :*
+
+```mermaid
+flowchart TD
+    S["<b>State n</b><br/><i>balances : Address n → ℕ</i><br/>totalSupply : ℕ"]
+    INV["<b>supplyInvariant s</b><br/>∑ a, balances a = totalSupply"]
+    S --- INV
+    MINT["<b>mint</b><br/>crédite dst + amount<br/>offre + amount<br/>⟹ invariant préservé"]
+    BURN["<b>burn</b> <i>(garde solde ≥ amount)</i><br/>débite src − amount<br/>offre − amount<br/>⟹ invariant préservé"]
+    TR["<b>transfer</b> <i>(garde solde ≥ amount, src ≠ dst)</i><br/>− amount à src, + amount à dst<br/>offre inchangée<br/>⟹ invariant préservé"]
+    S --> MINT & BURN & TR
+    OP["<b>Op n s s'</b><br/><i>inductif</i> : une des 3 transitions"]
+    REACH["<b>Reachable n s s'</b><br/><i>inductif</i> : fermeture réflexive-transitive"]
+    MINT & BURN & TR --> OP --> REACH
+    REACH -.->|"reachable_preserves_invariant<br/>(induction sur la trace)"| INV
+```
+
 Plutôt que de modéliser un langage de contrat complet (gaz, stockage Merkle,
 reentrancy), on isole le **cœur mathématique** de la conservation : une machine à
 états finie dont l'invariant est `Σ balances = totalSupply`, et trois transitions
@@ -58,6 +75,18 @@ gardées.
 L'ingrédient technique clé est l'**extraction additive** d'un point d'une somme
 finie (`∑ a ∈ s, f a = f a₀ + ∑ a ∈ s \ {a₀}, f a`), qui évite de distribuer la
 soustraction tronquée de `ℕ` sur la somme.
+
+*Mécanisme de `transfer_preserves_supply` (0 `sorry`) — extraire `src` puis `dst` de la somme des nouveaux soldes, le delta net s'annule :*
+
+```mermaid
+flowchart LR
+    SPLIT["<b>sum_univ_split</b><br/>∑ a, balances a =<br/>f a₀ + ∑ a ≠ a₀, f a<br/><i>(extraction additive)</i>"]
+    NEW["<b>nouveaux soldes</b><br/>src : − amount<br/>dst : + amount"]
+    DELTA["<b>delta net = 0</b><br/>(− amount) + (+ amount)"]
+    CONC["<b>somme inchangée</b><br/>= totalSupply inchangé<br/>(transfer ne touche pas l'offre)"]
+    SPLIT --> NEW --> DELTA --> CONC
+    CONC -.->|"transfer_preserves_supply"| OK["<b>invariant préservé</b>"]
+```
 
 ## Modules
 
