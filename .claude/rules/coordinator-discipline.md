@@ -61,6 +61,26 @@ S'applique meme quand ai-01 est **mobilise par le user** sur une autre tache (se
 
 4. **Token economy ne ferme jamais une lane Lean/research.** L'economie de tokens est **Anthropic-only** (cf [[feedback-token-economy-anthropic-only]]) ; sur les workers z.ai/GLM (large) elle n'est PAS une contrainte. Un worker qui HOLD du Lean/proving en citant « token economy z.ai » se trompe — decomposer les sorries jusqu'au noyau dur irreductible (1-2 genuinement intractables OK a laisser, documentes). ai-01 ne valide pas un HOLD Lean motive par l'economie.
 
+## Regle 5 : le STEER doit ATTEINDRE le worker, etre VRAI, et DECIDER — pas un post dashboard phantom (HARD)
+
+Source : mandat user 2026-06-26 (« je ne veux PLUS JAMAIS trouver de workers oisifs ... tes dispatchs longue queue ne tiennent pas, tes taches idle ne tiennent pas, ou ta facon de coordonner n'est pas la bonne »). Diagnostic firsthand (wakeup po-2024:CoursIA-2 montre par le user) : un worker mature firsthand-sature, qui refuse correctement de fabriquer du filler (G.9 + anti-filler), reste oisif quand le coordinateur (a) poste ses steers sur l'intercom dashboard (qui **auto-condense/archive chaque cycle**), (b) les redige depuis le **status CONDENSE** (qui hallucine : confond un `[DONE]` avec un merge, pointe des issues CLOSED), et (c) **defere** les design-gates au lieu de trancher. Resultat = steers **phantom** (4 cycles de suite sur une meme lane), le worker brule ses cycles a les refuter au lieu de produire. **L'idle est un echec COORDINATEUR, jamais worker** (renforce Regle 4).
+
+Les 4 mecanismes correctifs (chaque cycle, par lane) :
+
+1. **Livrer la decision en DIRECT MESSAGE** (`roosync_messages send`/`reply` vers `machine:workspace`), **pas seulement** un append dashboard. Le tour du worker lit `inbox status:unread` EN PREMIER ; un message direct y atterrit et **survit a la condensation**. Un steer qui ne vit que dans l'intercom est archive avant le prochain wakeup = il « ne tient pas ». Le dashboard reste le backstop persistant, **pas** le canal de decision.
+
+2. **Grounder chaque grain firsthand AVANT de dispatcher.** `gh issue view N` / `gh pr view N --json state,mergeStateStatus` sur CHAQUE issue/PR cite — **jamais** depuis le status condense. Un steer qui pointe une issue CLOSED, une PR deja mergee, ou un rollout deja sature = phantom (cf [[verify-before-claiming]], `stale-steer`). Si le worker a firsthand-rapporte une saturation, **le croire** et fournir un grain HORS de ce scope, pas re-pointer le scope sature.
+
+3. **DECIDER les design-gates, ne pas deferer.** Quand un worker surface des options de design (ex : « greenlight (b)/(c)/(d) ? ») avec son investigation firsthand, **trancher dans le cycle** — un greenlight nomme + acceptance. Deferer = fabriquer de l'idle. « Je note pour le prochain sweep » sur une option deja investiguee = manquement.
+
+4. **La premisse « fallback perenne jamais vide » FAILE pour les familles MATURES — deux sources la remplacent.** Les rollouts mecaniques famille-partitionnes (#2161 3-exos, #3973 feuilles-READMEs, #4212 Mermaid, #2876 accents, #3870 FR) **s'epuisent reellement** par famille — un worker peut etre genuinement 100% conforme sur toute sa partition (verifiable G.1). Quand c'est le cas, **ne pas re-pointer le fallback** (= phantom Regle 5.2). Les deux sources never-empty restantes :
+   - **(a) CREATION SUBSTANTIELLE** scopee-coordinateur : nouveaux lakes Lean (#4038), audits axe-2 SOTA (#3801, self-verifying = livrable dans les deux issues), consolidation lakes (#4362), nouveaux notebooks. ai-01 maintient cette queue **stockee en avance** sur le rythme de consommation.
+   - **(b) DIVERSITE DU BACKLOG EN SOUFFRANCE** (mandat user 2026-06-26) : le depot porte **des dizaines d'issues anciennes/priority-low/EPICs partiellement avancees** qui meritent d'etre **avancees au compte-goutte** — #16 (securisation services IA, 03-03), #417 (OWUI tests+docs), #569 (QC-masterclass Jared), #1206 (Z3.Linq fork), #1210 (semantic-fleet debt), #2137 (Argumentum), #3436 (papermill-paths repo-wide)… **Piocher une tranche concrete par cycle** (pas l'EPIC entier d'un coup), **varier genres ET familles** cycle apres cycle, ne JAMAIS tunneliser un mono-theme. Une vieille issue figee depuis des semaines merite **une tranche**, pas l'oubli. Grounder firsthand (Regle 5.2) avant de dispatcher : beaucoup de vieux EPICs ont des tranches deja faites.
+
+   C'est plus de scoping coordinateur — c'est le cout reel de la maturite du depot, pas une option.
+
+**Tell d'auto-detection** : avant de poster un steer, se demander « (a) ce grain est-il verifie OPEN/non-sature firsthand a l'instant ? (b) la decision atteint-elle l'inbox du worker ? (c) ai-je tranche, ou defere ? ». Trois oui requis. Sinon = phantom, le worker idlera.
+
 ## Voir aussi
 
 - [.claude/rules/proactive-coordination.md](proactive-coordination.md) — 1 PR/wakeup plancher, backlog pickup 8 sources, queue profonde
