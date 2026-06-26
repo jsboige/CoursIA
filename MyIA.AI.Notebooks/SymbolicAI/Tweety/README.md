@@ -134,6 +134,7 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 4 | [Tweety-4-Belief-Revision](Tweety-4-Belief-Revision.ipynb) | CrMas, MUS, MaxSAT, Mesures d'incohérence | 50 min |
 | **Argumentation** |
 | 5 | [Tweety-5-Abstract-Argumentation](Tweety-5-Abstract-Argumentation.ipynb) | Dung AF, Sémantiques, CF2, Génération | 55 min |
+| 5b | [Tweety-5b-Lean-Argumentation](Tweety-5b-Lean-Argumentation.ipynb) | Companion lake `argumentation_lean` : Dung AF, 5 extensions, point fixe grounded (Knaster–Tarski) | 50 min |
 | 6 | [Tweety-6-Structured-Argumentation](Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP | 60 min |
 | 7a | [Tweety-7a-Extended-Frameworks](Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended | 50 min |
 | 7b | [Tweety-7b-Ranking-Probabilistic](Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking Semantics, Probabiliste | 40 min |
