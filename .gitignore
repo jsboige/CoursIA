@@ -451,6 +451,15 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/voice_casting_output/*.wav
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/benchmark_output/*.mp3
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/benchmark_output/*.wav
 
+# SymbolicAI notebook execution artifacts (regenerable, kept local, not committed)
+# Generated on notebook execution (matplotlib savefig / pyvis save). They are NOT
+# displayed inline nor embedded in committed cell outputs, so versioning them is
+# unnecessary. They were removed as "stray files" 3 times (9f7aaff77, 6eac572b2,
+# b22c0e3f9) and keep reappearing on re-execution; gitignoring is the durable fix.
+MyIA.AI.Notebooks/SymbolicAI/Lean/signing_matrix_A4.png
+MyIA.AI.Notebooks/SymbolicAI/Lean/hypercube_q3.png
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/output_kg_recent.html
+
 # Tweety runtime dependencies (downloaded by notebook)
 # Note: Les binaires PRECIEUX sont maintenant versionnés (voir exceptions positives ci-dessous)
 MyIA.AI.Notebooks/SymbolicAI/resources/
