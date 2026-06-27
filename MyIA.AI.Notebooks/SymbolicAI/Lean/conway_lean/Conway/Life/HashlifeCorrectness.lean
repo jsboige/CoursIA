@@ -1496,15 +1496,73 @@ theorem p4_double_nine_shape
     nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se k hk hwf
 
-/-- **P4.2** (IH application, wave 1): for each of the nine sub-cells `n_i`
-    of `c`, `hashlifeResultAux (k+1) n_i` agrees with `evolve (2^(k-1))` on
-    `n_i`'s centered window. This is the induction hypothesis applied to the
-    level-`(k+1)` sub-cell `n_i` (whose level is `k+1 = (k-1)+2`). Difficulty:
-    P4.2 (mechanical IH instantiation; the statement shape matches
-    `hashlifeResult_central_correct` at level `k-1`). -/
+/-- The central-correctness statement, abstracted as a named predicate.
+    Quoting it as `centralCorrect c j` (instead of the unfolded `2^j`-indexed
+    Grid equality) stops the elaborator from running `whnf` on
+    `hashlifeResultAux (j+2) c.toGrid` while checking the `ih` argument type of
+    `p4_wave1_ih`; that reduction diverges (it pattern-matches `c`, a free
+    variable). Unlike the c.138 `@[irreducible]` variant, a plain `def` still
+    allows defeq at the `hashlifeResult_central_correct` -> `p4_succ_membership`
+    threading boundary (c.139). -/
+def centralCorrect (c : MacroCell) (j : Nat) : Prop :=
+  (hashlifeResultAux (j + 2) c).toGrid ((2^j : Nat), (2^j : Nat)) =
+    restrictGridTo (evolve (2^j) (c.toGrid (0, 0))) (2^j : Int) (2^(j+1))
+
+/-- **P4.2 helper (c.139 workaround).** The `ih` *application*
+    `ih (node nw_se ne_sw sw_ne se_nk) (k-1) ...` diverges on `whnf` when it
+    appears inline inside `p4_wave1_ih`'s body, because there the four
+    grandchildren are free variables tied into a 16-grandchild / 32-fact local
+    context (post `p4_double_nine_shape` obtain). Moving the application into
+    this standalone helper makes `nw_se` etc. opaque binders at the application
+    site, which is enough to stop the divergence (minimal-repro probe
+    `WhnfProbe.lean`, arm 4 diverges / arm 6 compiles). -/
+private theorem p4_wave1_ih_step
+    (k : Nat) (hk1 : 1 ≤ k)
+    (nw_se ne_sw sw_ne se_nw : MacroCell)
+    (hnw_se_l : nw_se.level = k) (hne_sw_l : ne_sw.level = k)
+    (hsw_ne_l : sw_ne.level = k) (hse_nw_l : se_nw.level = k)
+    (hnw_se_w : nw_se.wf = true) (hne_sw_w : ne_sw.wf = true)
+    (hsw_ne_w : sw_ne.wf = true) (hse_nw_w : se_nw.wf = true)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j) :
+    centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) := by
+  have hn5 := node_wf_level_of_four hnw_se_l hne_sw_l hsw_ne_l hse_nw_l
+                                    hnw_se_w hne_sw_w hsw_ne_w hse_nw_w
+  exact ih (node nw_se ne_sw sw_ne se_nw) (k - 1) (by omega) hn5.2 (by omega)
+
+/-- **P4.2** (IH application, wave 1): for the center sub-cell
+    `n5 = node nw_se ne_sw sw_ne se_nw` of the double-nine decomposition,
+    `hashlifeResultAux (k+1) n5` agrees with `evolve (2^(k-1))` on `n5`'s
+    centered window. This is the induction hypothesis (passed in explicitly by
+    `p4_succ_membership`, breaking the cyclic back-reference to
+    `hashlifeResult_central_correct`) applied to the level-`(k+1)` sub-cell
+    `n5` (whose level is `k+1 = (k-1)+2`). The `ih` application is delegated to
+    `p4_wave1_ih_step` (c.139 workaround for the whnf divergence). -/
 theorem p4_wave1_ih
-    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) : True := by
-  sorry
+    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) (hk1 : 1 ≤ k)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j) :
+    ∃ nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+       sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell,
+      c = node (node nw_nw nw_ne nw_sw nw_se)
+               (node ne_nw ne_ne ne_sw ne_se)
+               (node sw_nw sw_ne sw_sw sw_se)
+               (node se_nw se_ne se_sw se_se) ∧
+      centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) := by
+  obtain ⟨nw_nw, nw_ne, nw_sw, nw_se, ne_nw, ne_ne, ne_sw, ne_se,
+          sw_nw, sw_ne, sw_sw, sw_se, se_nw, se_ne, se_sw, se_se, rfl, hgrands⟩ :=
+    p4_double_nine_shape c k hwf hk
+  obtain ⟨hnw_nw_l, hnw_nw_w, hnw_ne_l, hnw_ne_w, hnw_sw_l, hnw_sw_w, hnw_se_l, hnw_se_w,
+          hne_nw_l, hne_nw_w, hne_ne_l, hne_ne_w, hne_sw_l, hne_sw_w, hne_se_l, hne_se_w,
+          hsw_nw_l, hsw_nw_w, hsw_ne_l, hsw_ne_w, hsw_sw_l, hsw_sw_w, hsw_se_l, hsw_se_w,
+          hse_nw_l, hse_nw_w, hse_ne_l, hse_ne_w, hse_sw_l, hse_sw_w, hse_se_l, hse_se_w⟩ :=
+    hgrands
+  refine ⟨nw_nw, nw_ne, nw_sw, nw_se, ne_nw, ne_ne, ne_sw, ne_se,
+          sw_nw, sw_ne, sw_sw, sw_se, se_nw, se_ne, se_sw, se_se, rfl, ?_⟩
+  exact p4_wave1_ih_step k hk1 nw_se ne_sw sw_ne se_nw
+          hnw_se_l hne_sw_l hsw_ne_l hse_nw_l
+          hnw_se_w hne_sw_w hsw_ne_w hse_nw_w ih
+
 
 /-- **P4.3** (IH application, wave 2): for each of the four super-cells
     `q_*` built from the wave-1 results `r_i`, `hashlifeResultAux (k+1) q_*`
@@ -1533,11 +1591,13 @@ theorem p4_half_steps_compose
     the four sub-lemmas are proven, this function produces the
     `∀ p, p ∈ ... ↔ p ∈ ...` hypothesis that `p4_ext_bridge` consumes. -/
 noncomputable def p4_succ_membership
-    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) :
+    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) (hk1 : 1 ≤ k)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j) :
     ∀ p, p ∈ (hashlifeResultAux (k + 2) c).toGrid ((2^k : Nat), (2^k : Nat)) ↔
         p ∈ restrictGridTo (evolve (2^k) (c.toGrid (0, 0))) (2^k : Int) (2^(k+1)) := by
   have _h1 := p4_double_nine_shape c k hwf hk
-  have _h2 := p4_wave1_ih c k hwf hk
+  have _h2 := p4_wave1_ih c k hwf hk hk1 ih
   have _h3 := p4_wave2_ih c k hwf hk
   have _h4 := p4_half_steps_compose c k hwf hk
   intro p
@@ -1566,15 +1626,27 @@ theorem hashlifeResult_central_correct (c : MacroCell) (k : Nat)
     let resultGrid := result.toGrid ((2^k : Nat), (2^k : Nat))
     let expected := evolve (2^k) (c.toGrid (0, 0))
     resultGrid = restrictGridTo expected (2^k : Int) (2^(k+1)) := by
-  -- P4 TARGET: central Hashlife correctness, by induction on level.
-  -- Base case k = 0 holds in full generality (shape lemmas + 2^16
-  -- native_decide). `p4_ext_bridge` discharges the canonical-list
-  -- bookkeeping of the remaining arm: the goal left is the pointwise
-  -- membership biconditional, where the light-cone (P2) and double-nine
-  -- decomposition arguments live.
-  cases k with
-  | zero => exact hashlifeResult_central_correct_base c hwf hk
-  | succ k => exact p4_ext_bridge c (k + 1) (p4_succ_membership c (k + 1) hwf hk)
+  -- P4 TARGET: central Hashlife correctness, by STRONG induction on the level
+  -- index `k`. The motive quantifies over `c` (reverted before induction) so
+  -- the induction hypothesis `ih` ranges over every MacroCell at a smaller
+  -- level (not just a fixed `c`): this is required because the recursive step
+  -- applies the IH to the double-nine *sub-cells* `n_i` of `c`, which are
+  -- MacroCells distinct from `c` itself. A plain `cases k` exposes no such
+  -- cross-cell IH, which (c.137) forced `p4_wave1_ih` to stay a vacuous `True`
+  -- placeholder to avoid a forbidden mutual-recursion cycle. Threading `ih`
+  -- down through `p4_succ_membership` -> `p4_wave1_ih` breaks that cycle (c.138),
+  -- and the c.139 helper `p4_wave1_ih_step` makes the `ih` application compile.
+  revert c hwf hk
+  induction k using Nat.strongRecOn with
+  | ind n ih =>
+    intro c hwf hk
+    cases n with
+    | zero => exact hashlifeResult_central_correct_base c hwf hk
+    | succ k =>
+      have hk1 : 1 ≤ k + 1 := by omega
+      exact p4_ext_bridge c (k + 1)
+        (p4_succ_membership c (k + 1) hwf hk hk1
+          (fun c' j hj hc'w hc'l => ih j hj c' hc'w hc'l))
 
 /-! ## P4 witnesses: base case k=0 (native_decide)
 
