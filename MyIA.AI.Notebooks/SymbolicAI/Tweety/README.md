@@ -49,8 +49,8 @@ Cette série ne propose pas de choisir l'un ou l'autre, mais de **comprendre les
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 10 |
-| Cellules totales | ~375 |
+| Notebooks | 12 |
+| Cellules totales | ~400 |
 | Durée estimée | ~6h (tutorat) |
 | Kernel | Python 3 (JPype/Java) |
 | Version Tweety | 1.30 recommandée |
@@ -141,8 +141,10 @@ Pour les praticiens intéressés par les applications multi-agents :
 | **Applications** |
 | 8 | [Tweety-8-Agent-Dialogues](Tweety-8-Agent-Dialogues.ipynb) | Agents, Dialogues argumentatifs, Loteries | 35 min |
 | 9 | [Tweety-9-Preferences](Tweety-9-Preferences.ipynb) | Préférences, Théorie du vote | 30 min |
+| **Synthèse** |
+| 10 | [Tweety-10-MLN](Tweety-10-MLN.ipynb) | Markov Logic Networks (FOL pondérée) | 50 min |
 
-**Durée totale estimée** : ~7 heures
+**Durée totale estimée** : ~7.5 heures
 
 ## En quoi chaque notebook est unique
 
@@ -160,6 +162,7 @@ Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau
 | 7b | Ranking & Probabilistic | Classement graduel des arguments + incertitude sur les arguments |
 | 8 | Agent Dialogues | Protocoles d'échange entre agents + négociation argumentative |
 | 9 | Preferences | Agrégation de préférences (Borda, Condorcet) + théorie du vote |
+| 10 | MLN | Pont symbolique/statistique : FOL + poids, marginales, exceptions (pingouin) |
 
 ## Quick Start
 
@@ -334,6 +337,7 @@ python scripts/download_tweety_tools.py --help
 | `logics.ml` | Logique Modale | 3 |
 | `logics.qbf` | Quantified Boolean Formulas | 3 |
 | `logics.cl` | Logique Conditionnelle | 3 |
+| `logics.mln` | Markov Logic Networks (FOL pondérée) | 10 |
 
 ### Révision de Croyances (Notebook 4)
 
