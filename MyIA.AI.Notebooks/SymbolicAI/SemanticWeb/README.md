@@ -136,7 +136,7 @@ Dans ce notebook, vous approfondirez votre compréhension du modèle de données
 - Formats de sérialisation : Turtle, N-Triples, RDF/XML
 - Création de namespaces pour simplifier l'écriture
 
-> **Sidetrack Python disponible** : [SW-2b-Python-RDFBasics](SW-2b-Python-RDFBasics.ipynb) - Equivalent Python avec rdflib
+> **Sidetrack Python disponible** : [SW-2b-Python-RDFBasics](SW-2b-Python-RDFBasics.ipynb) - Équivalent Python avec rdflib
 
 #### SW-3-CSharp-GraphOperations : Manipulation Avancée de Graphes (50 min)
 
@@ -160,7 +160,7 @@ SPARQL est au RDF ce que SQL est aux bases de données relationnelles. Ce notebo
 - `UNION` pour combiner plusieurs patterns
 - `ORDER BY`, `LIMIT`, `OFFSET` pour pagination
 
-> **Sidetrack Python disponible** : [SW-4b-Python-SPARQL](SW-4b-Python-SPARQL.ipynb) - Equivalent Python avec rdflib
+> **Sidetrack Python disponible** : [SW-4b-Python-SPARQL](SW-4b-Python-SPARQL.ipynb) - Équivalent Python avec rdflib
 
 ---
 
@@ -250,10 +250,10 @@ RDF-Star (RDF 1.2) permet d'exprimer des statements à propos de statements, ess
 
 **Points clés appris** :
 - Quoted triples : `<<<:s :p :o>>> :confidence 0.9`
-- Use cases : annotations, provenance, confiance, probabilites
+- Use cases : annotations, provenance, confiance, probabilités
 - Syntaxe Turtle-Star et N-Triples-Star
-- SPARQL-Star : requetes sur les quoted triples
-- rdflib support experimental RDF-Star
+- SPARQL-Star : requêtes sur les quoted triples
+- rdflib support expérimental RDF-Star
 
 ---
 
@@ -402,7 +402,7 @@ cp .env.example .env
 
 ## Technologies et versions
 
-| Technologie | Version | Notebooks | Role |
+| Technologie | Version | Notebooks | Rôle |
 |-------------|---------|-----------|------|
 | dotNetRDF | 3.4.1 | SW-1 à SW-7 | Core RDF/SPARQL en .NET |
 | rdflib | 7.5.0 | Sidetracks, SW-8 à SW-12 | Core RDF/SPARQL en Python |
@@ -500,7 +500,7 @@ SemanticWeb/
 - [DBpedia](https://dbpedia.org/) - Données structurées de Wikipedia
 - [Wikidata](https://www.wikidata.org/) - Base de connaissances libre
 
-## Connections cross-series
+## Connections cross-séries
 
 ### SemanticWeb et Planners (Planification Automatique)
 
