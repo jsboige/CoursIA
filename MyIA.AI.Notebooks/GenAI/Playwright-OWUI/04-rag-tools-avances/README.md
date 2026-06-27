@@ -1,27 +1,27 @@
-# Module 04 - RAG, Outils MCP & Fonctionnalites avancees
+# Module 04 - RAG, Outils MCP & Fonctionnalites avancées
 
-> **Format** : Fichier TypeScript `.spec.ts` avec tests commentes. Ouvrez `04-rag-tools.spec.ts` dans VS Code. Certains tests dependent de la configuration de l'instance (KBs, outils MCP, canaux) — les tests non-applicables seront automatiquement skipped.
+> **Format** : Fichier TypeScript `.spec.ts` avec tests commentés. Ouvrez `04-rag-tools.spec.ts` dans VS Code. Certains tests dependent de la configuration de l'instance (KBs, outils MCP, canaux) — les tests non-applicables seront automatiquement skipped.
 
-## Objectifs pedagogiques
+## Objectifs pédagogiques
 
 A la fin de ce module, vous serez capable de :
 
-- Tester l'integration RAG (Retrieval-Augmented Generation) avec des knowledge bases
+- Tester l'integration RAG (Retrieval-Augmented Génération) avec des knowledge bases
 - Interagir avec les outils MCP (Model Context Protocol) via Playwright
 - Tester la fonctionnalite Channels (canaux de discussion de groupe)
-- Ecrire des tests plus complexes combinant navigation et interactions
-- Gerer les interactions conditionnelles (elements optionnels)
+- Écrire des tests plus complexes combinant navigation et interactions
+- Gérer les interactions conditionnelles (elements optionnels)
 
-## Duree estimee
+## Durée estimée
 
 **3 heures**
 
 ## Contenu du module
 
-### Partie theorique
+### Partie théorique
 
 **RAG dans Open WebUI :**
-Le RAG (Retrieval-Augmented Generation) enrichit les reponses du LLM avec des documents.
+Le RAG (Retrieval-Augmented Génération) enrichit les réponses du LLM avec des documents.
 Dans OWUI (v0.8.8+), on "attache" une Knowledge Base (KB) au chat via le bouton `+`
 puis "Joindre une connaissance" :
 
@@ -35,11 +35,11 @@ Clic sur le bouton "+" dans la barre de chat
 ```
 
 > **Note historique** : Avant v0.8.8, le raccourci `#` dans le chat input
-> declenchait un popup de selection de KB. Ce raccourci a ete remplace.
+> déclenchait un popup de selection de KB. Ce raccourci a été remplacé.
 
 **Outils MCP :**
-Le Model Context Protocol (MCP) permet d'etendre les capacites du LLM
-avec des outils externes (recherche web, execution de code, etc.).
+Le Model Context Protocol (MCP) permet d'etendre les capacités du LLM
+avec des outils externes (recherche web, exécution de code, etc.).
 Depuis v0.8.8+, les outils sont accessibles via un bouton icone (engrenages)
 dans la barre de chat, qui ouvre un menu avec : Outils, Recherche Web, Image, Code.
 
@@ -52,11 +52,11 @@ ou par URL directe `/channels/{id}`.
 
 | Test | Description | Concepts |
 |------|-------------|----------|
-| RAG — menu "+" | Attacher une KB via "Joindre une connaissance" | Menus, selecteurs |
-| RAG — chat avec KB | Poser une question avec KB attachee | Workflow multi-etapes |
-| MCP — menu outils | Verifier la presence des outils (bouton engrenages) | Selecteurs positionnels |
-| MCP — activer outils | Ouvrir le selecteur d'outils | Dialogs, menus |
-| MCP — recherche web | Declencher une recherche via outil | Toggles, tests fonctionnels |
+| RAG — menu "+" | Attacher une KB via "Joindre une connaissance" | Menus, sélecteurs |
+| RAG — chat avec KB | Poser une question avec KB attachee | Workflow multi-étapes |
+| MCP — menu outils | Vérifier la presence des outils (bouton engrenages) | Sélecteurs positionnels |
+| MCP — activer outils | Ouvrir le sélecteur d'outils | Dialogs, menus |
+| MCP — recherche web | Déclencher une recherche via outil | Toggles, tests fonctionnels |
 | Channels — naviguer | Acceder a un canal via API + URL directe | API + navigateur combines |
 | Channels — poster | Envoyer un message dans un canal | TipTap dans un autre contexte |
 
@@ -71,6 +71,6 @@ npx playwright test --grep "04" --headed
 
 - Les KBs s'attachent via le bouton `+` → "Joindre une connaissance" (v0.8.8+)
 - Les outils MCP sont optionnels — utilisez `test.skip()` si absents
-- Les canaux utilisent le meme editeur TipTap que le chat principal
+- Les canaux utilisent le même éditeur TipTap que le chat principal
 - Combiner API (pour obtenir les IDs) + navigateur (pour tester l'UI) = tests robustes en headless
-- Les selecteurs positionnels (`nth(1)`) sont un dernier recours quand il n'y a pas d'aria-label stable
+- Les sélecteurs positionnels (`nth(1)`) sont un dernier recours quand il n'y a pas d'aria-label stable
