@@ -2,16 +2,16 @@
 
 [← CaseStudies](../README.md) | [↑ GenAI](../../README.md)
 
-Jeu interactif Fort Boyard utilisant des modeles de langage pour generer des enigmes et gerer les interactions.
+Jeu interactif Fort Boyard utilisant des modèles de langage pour générer des énigmes et gérer les interactions.
 
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
 | Notebooks | 1 |
-| Difficulte | Intermédiaire |
-| Duree | ~1-2h |
-| Theme | Jeu interactif IA |
+| Difficulté | Intermédiaire |
+| Durée | ~1-2h |
+| Thème | Jeu interactif IA |
 
 ## Notebook
 
@@ -22,9 +22,9 @@ Jeu interactif Fort Boyard utilisant des modeles de langage pour generer des eni
 ## Technologies
 
 - **Python** : Logique de jeu
-- **OpenAI GPT** : Generation d'enigmes et dialogues
+- **OpenAI GPT** : Génération d'énigmes et dialogues
 
-## Prerequis
+## Prérequis
 
 ```bash
 pip install openai jupyter
@@ -32,4 +32,4 @@ pip install openai jupyter
 
 ---
 
-*Projet etudiant - Janvier 2026*
+*Projet étudiant - Janvier 2026*
