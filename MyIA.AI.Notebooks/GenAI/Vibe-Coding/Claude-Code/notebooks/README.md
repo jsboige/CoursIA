@@ -1,39 +1,39 @@
 # Notebooks Interactifs Claude CLI
 
-Cette serie de notebooks Jupyter permet d'apprendre et d'experimenter avec Claude Code en ligne de commande (`claude -p "..."`).
+Cette série de notebooks Jupyter permet d'apprendre et d'expérimenter avec Claude Code en ligne de commande (`claude -p "..."`).
 
-## Prerequis
+## Prérequis
 
-Avant d'executer ces notebooks, assurez-vous d'avoir :
+Avant d'exécuter ces notebooks, assurez-vous d'avoir :
 
-1. **Claude Code CLI installe** :
+1. **Claude Code CLI installé** :
    ```bash
    claude --version
    ```
 
-2. **OpenRouter configure** (ou Anthropic directement) :
+2. **OpenRouter configuré** (ou Anthropic directement) :
    ```bash
    claude /status
    ```
 
-3. **Python 3.9+** avec les dependances :
+3. **Python 3.9+** avec les dépendances :
    ```bash
    pip install jupyter ipykernel
    ```
 
 ## Notebooks Disponibles
 
-| Notebook | Duree | Niveau | Description |
+| Notebook | Durée | Niveau | Description |
 |----------|-------|--------|-------------|
-| [01-Claude-CLI-Bases](01-Claude-CLI-Bases.ipynb) | 20 min | Debutant | Installation, premiere commande, formats de sortie |
-| [02-Claude-CLI-Sessions](02-Claude-CLI-Sessions.ipynb) | 25 min | Debutant | Gestion des conversations et sessions |
-| [03-Claude-CLI-References](03-Claude-CLI-References.ipynb) | 25 min | Intermediaire | @-mentions, contexte fichiers, CLAUDE.md |
-| [04-Claude-CLI-Agents](04-Claude-CLI-Agents.ipynb) | 30 min | Intermediaire | Agents Explore, Plan, subagents |
-| [05-Claude-CLI-Automatisation](05-Claude-CLI-Automatisation.ipynb) | 30 min | Avance | Pipelines, scripts, hooks |
+| [01-Claude-CLI-Bases](01-Claude-CLI-Bases.ipynb) | 20 min | Débutant | Installation, premiere commande, formats de sortie |
+| [02-Claude-CLI-Sessions](02-Claude-CLI-Sessions.ipynb) | 25 min | Débutant | Gestion des conversations et sessions |
+| [03-Claude-CLI-References](03-Claude-CLI-References.ipynb) | 25 min | Intermédiaire | @-mentions, contexte fichiers, CLAUDE.md |
+| [04-Claude-CLI-Agents](04-Claude-CLI-Agents.ipynb) | 30 min | Intermédiaire | Agents Explore, Plan, subagents |
+| [05-Claude-CLI-Automatisation](05-Claude-CLI-Automatisation.ipynb) | 30 min | Avancé | Pipelines, scripts, hooks |
 
-**Duree totale estimee : 2h10**
+**Durée totale estimée : 2h10**
 
-## Structure du Repertoire
+## Structure du Répertoire
 
 ```
 notebooks/
@@ -71,19 +71,19 @@ jupyter lab
 
 ### Mode Simulation (Sans API)
 
-Si vous n'avez pas de cle API configuree, les notebooks peuvent fonctionner en mode simulation. Definissez la variable dans la premiere cellule :
+Si vous n'avez pas de clé API configurée, les notebooks peuvent fonctionner en mode simulation. Definissez la variable dans la premiere cellule :
 
 ```python
 SIMULATION_MODE = True
 ```
 
-Les appels a Claude seront simules avec des reponses d'exemple.
+Les appels a Claude seront simules avec des réponses d'exemple.
 
-## Couts API
+## Coûts API
 
-Chaque execution de cellule consomme des tokens. Estimation par notebook :
+Chaque exécution de cellule consomme des tokens. Estimation par notebook :
 
-| Notebook | Tokens estimes | Cout approximatif* |
+| Notebook | Tokens estimés | Coût approximatif* |
 |----------|---------------|-------------------|
 | 01-Bases | ~2,000 | ~$0.01 |
 | 02-Sessions | ~3,000 | ~$0.02 |
@@ -91,7 +91,7 @@ Chaque execution de cellule consomme des tokens. Estimation par notebook :
 | 04-Agents | ~8,000 | ~$0.05 |
 | 05-Automatisation | ~10,000 | ~$0.06 |
 
-*Basé sur les tarifs OpenRouter avec GLM-4.7-Flash. Les couts varient selon le modele utilise.
+*Basé sur les tarifs OpenRouter avec GLM-4.7-Flash. Les coûts varient selon le modèle utilise.
 
 ## Module Helpers
 
@@ -121,29 +121,29 @@ stdout, stderr, code = run_claude_command("/sessions")
 
 ## Fichiers Exemples
 
-Le repertoire `examples/` contient des fichiers pour les exercices des notebooks 03-05 :
+Le répertoire `examples/` contient des fichiers pour les exercices des notebooks 03-05 :
 
 - **sample_project/** : Mini-projet Python avec structure standard
 - **CLAUDE.md** : Exemple de fichier de contexte projet
 
-## Resolution de Problemes
+## Résolution de Problèmes
 
 ### "claude: command not found"
 
-1. Verifiez l'installation : `where.exe claude` (Windows) ou `which claude` (macOS/Linux)
-2. Ajoutez Claude au PATH si necessaire
-3. Redemarrez votre terminal/VS Code
+1. Vérifiez l'installation : `where.exe claude` (Windows) ou `which claude` (macOS/Linux)
+2. Ajoutez Claude au PATH si nécessaire
+3. Redémarrez votre terminal/VS Code
 
 ### "Authentication failed"
 
-1. Verifiez les variables d'environnement :
+1. Vérifiez les variables d'environnement :
    ```bash
    echo $ANTHROPIC_BASE_URL
    echo $ANTHROPIC_AUTH_TOKEN
    ```
 2. Consultez [INSTALLATION-CLAUDE-CODE.md](../docs/INSTALLATION-CLAUDE-CODE.md)
 
-### Timeout lors de l'execution
+### Timeout lors de l'exécution
 
 Certaines commandes peuvent prendre du temps. Augmentez le timeout :
 
@@ -154,10 +154,10 @@ stdout, stderr, code = run_claude("Question complexe", timeout=120)
 ## Ressources
 
 - [Guide Installation](../docs/INSTALLATION-CLAUDE-CODE.md)
-- [Modeles Alternatifs OpenRouter](../docs/INSTALLATION-CLAUDE-CODE.md#modeles-alternatifs-via-openrouter)
+- [Modèles Alternatifs OpenRouter](../docs/INSTALLATION-CLAUDE-CODE.md#modeles-alternatifs-via-openrouter)
 - [Cheat Sheet](../docs/CHEAT-SHEET.md)
 - [Documentation Officielle Claude Code](https://docs.claude.com/code)
 
 ---
 
-*Ces notebooks font partie de la serie Vibe-Coding du cours GenAI.*
+*Ces notebooks font partie de la série Vibe-Coding du cours GenAI.*
