@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: ML
-pedagogical_count: 33
-breakdown: DataScienceWithAgents=25, ML.Net=8
-maturity: PRODUCTION=25, BETA=6, ALPHA=1, DRAFT=1
+pedagogical_count: 35
+breakdown: DataScienceWithAgents=27, ML.Net=8
+maturity: PRODUCTION=27, BETA=6, ALPHA=1, DRAFT=1
 -->
 
 [← Notebooks](../README.md) | [ML.NET (C#) →](ML.Net/README.md) | [Data Science with Agents (Python) →](DataScienceWithAgents/README.md) | [RL →](../RL/)
