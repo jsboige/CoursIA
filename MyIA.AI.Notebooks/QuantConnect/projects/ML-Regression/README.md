@@ -1,25 +1,25 @@
 # ML-Regression
 
-**Asset class:** US Equities (20 large-cap stocks)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Actions US (20 grandes capitalisations)
+**ID projet Cloud :** Aucun (local uniquement)
 
 ## Description
 
-Ridge regression strategy predicting next-day returns on a 20-stock universe. Uses lagged open-close returns as features. Bi-weekly rebalance with monthly retraining. Selects top-N stocks by predicted return.
+Stratégie de régression Ridge prédisant les rendements du jour suivant sur un univers de 20 actions. Utilise les rendements open-close décalés comme variables explicatives. Rebalancement bi-hebdomadaire avec ré-entraînement mensuel. Sélectionne les meilleures actions (`top-N`) selon le rendement prédit.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Regression"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Regression"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour l'exécuter.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Metric | Value |
-|--------|-------|
-| Model | Ridge regression |
-| Universe | 20 large-cap stocks |
-| Rebalance | Biweekly |
+| Métrique | Valeur |
+|----------|--------|
+| Modèle | Régression Ridge |
+| Univers | 20 grandes capitalisations |
+| Rebalancement | Bi-hebdomadaire |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (227L, MLRegressionAlgorithm)
+- `main.py` — Stratégie (227 lignes, `MLRegressionAlgorithm`)
