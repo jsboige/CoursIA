@@ -181,6 +181,21 @@ flowchart LR
     MLN --> PENG
 ```
 
+## L'échelle causale de Pearl (notebook 11 — Causalité)
+
+Le notebook 11 monte d'un niveau par rapport aux approches probabilistes : il distingue **corrélation** et **causalité** grâce à l'opérateur `do(X)`. Judea Pearl formalise cette distinction par une **échelle à trois niveaux**, chaque saut étant inaccessible au niveau inférieur. Le scénario du **baromètre** illustre le saut crucial entre les niveaux 1 et 2 : observer la baisse du baromètre prédit la pluie (corrélation via l'orage), mais **forcer** le baromètre à baisser ne fait pas pleuvoir (pas de causalité) :
+
+```mermaid
+flowchart TD
+    L1["<b>Niveau 1 — Association</b><br/>observe(X) → Y<br/>P(rain | drops) = <b>True</b><br/><i>corrélation : drops et rain coïncident via le confondeur storm</i>"]
+    L2["<b>Niveau 2 — Intervention</b><br/>do(X) → Y<br/>P(rain | do(drops)) = <b>False</b><br/><i>l'opérateur do ROMPT l'équation storm → drops ; drops ne porte plus d'info sur rain</i>"]
+    L3["<b>Niveau 3 — Contrefactuel</b><br/>« si X avait été différent, Y aurait-il eu lieu ? »<br/>observe(wet) ∧ ¬sprinkler → wet = <b>True</b><br/><i>twin model : rain aurait suffi à mouiller l'herbe</i>"]
+    L1 -->|"saut inaccessible à la statistique seule"| L2
+    L2 -->|"saut inaccessible à l'intervention seule"| L3
+```
+
+La signature du do-calculus — **P(rain | drops) ≠ P(rain | do(drops))** — est exactement ce que la logique classique (notebooks 1-4) et les MLN (notebook 10) restent **incapables d'exprimer** : ils ne connaissent que l'association.
+
 ## Quick Start
 
 ```bash
