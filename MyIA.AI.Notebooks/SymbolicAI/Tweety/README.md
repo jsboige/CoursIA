@@ -164,6 +164,21 @@ Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau
 | 9 | Preferences | Agrégation de préférences (Borda, Condorcet) + théorie du vote |
 | 10 | MLN | Pont symbolique/statistique : FOL + poids, marginales, exceptions (pingouin) |
 
+## Le pont symbolique/statistique (notebook 10 — MLN)
+
+Le notebook 10 introduit les **Markov Logic Networks**, qui font varier le « degré de logique » d'une formule via son poids `w`. À une extrémité (`w → ∞`), on retrouve la **logique classique** (un seul monde violant rend la base inconsistante) ; à l'autre (`w = 0`), la **statistique pure** (tous les mondes équiprobables). Le **paradoxe du pingouin** illustre comment ce spectre résout des cas qu'aucune des deux extrêmes ne sait traiter seule :
+
+```mermaid
+flowchart LR
+    LOGIC["<b>Logique classique</b><br/>FOL stricte<br/><i>w → ∞ (règle dure)</i><br/>un seul monde violant = ⊥"]
+    MLN["<b>Markov Logic Network</b><br/>P(world) ∝ exp(Σ wᵢ · nᵢ)<br/>chaque formule FOL = une contrainte <i>souple</i>"]
+    STAT["<b>Statistique pure</b><br/>mondes équiprobables<br/><i>w = 0 (aucune contrainte)</i>"]
+    LOGIC -.->|"poids croissant"| MLN
+    MLN -.->|"poids décroissant"| STAT
+    PENG(["<b>Paradoxe du pingouin</b> — discrimine les deux extrêmes<br/>Flies(tweety) = 0.00 : l'exception stricte « pingouin ⇒ ¬vole » l'emporte<br/>Flies(robin)  = 0.79 : la règle pondérée « oiseau ⇒ vole » seule, sans exception"])
+    MLN --> PENG
+```
+
 ## Quick Start
 
 ```bash
