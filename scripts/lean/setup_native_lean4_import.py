@@ -99,7 +99,12 @@ REPL_PY_PATCH = '''    @staticmethod
                 out = _sp.run(
                     ['lake', 'env', 'python3', '-c',
                      'import os; print(os.environ.get("LEAN_PATH",""))'],
-                    capture_output=True, text=True, timeout=60, cwd=lake_root,
+                    # timeout=240 (not 60): on rc1 lakes whose Mathlib is an NTFS
+                    # junction, `lake env` re-verifies the junction ("has local
+                    # changes") and takes ~111-125s (measured c.129). timeout=60
+                    # tripped RC1-TIMEOUT -> empty LEAN_PATH -> broken `lake env
+                    # repl` fallback -> silent kernel failure. 240s = ~2x margin.
+                    capture_output=True, text=True, timeout=240, cwd=lake_root,
                     env={**os.environ,
                          'PATH': os.path.expanduser('~/.elan/bin') + ':/usr/local/bin:/usr/bin:/bin'}
                 ).stdout
