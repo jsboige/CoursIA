@@ -2,29 +2,29 @@
 
 [← Vibe-Coding](../README.md) | [↑ ..](../README.md)
 
-Les **Claw systems** sont des plateformes d'agents IA autonomes, conteneurisees et self-hosted. Contrairement aux assistants de codage (Claude Code, Roo Code) qui assistent un developpeur en temps reel, les Claw systems deployent des agents qui operent de maniere autonome via des interfaces comme Telegram.
+Les **Claw systems** sont des plateformes d'agents IA autonomes, conteneurisées et self-hosted. Contrairement aux assistants de codage (Claude Code, Roo Code) qui assistent un développeur en temps réel, les Claw systems deployent des agents qui opèrent de manière autonome via des interfaces comme Telegram.
 
 ## Pourquoi une section Claw ?
 
 | Aspect | Claude Code / Roo Code | Claw Systems |
 |--------|------------------------|--------------|
-| **Paradigme** | Assistance au developpeur | Agent autonome |
+| **Paradigme** | Assistance au développeur | Agent autonome |
 | **Interface** | CLI / VS Code | Telegram, API, Web |
 | **Execution** | Session interactive | Service persistant (Docker) |
-| **Utilisateur** | Developpeur | Utilisateur final |
+| **Utilisateur** | Développeur | Utilisateur final |
 | **Orchestration** | Agent unique | Multi-agents possible |
 
-Les Claw systems representent l'evolution naturelle : de l'assistant qui ecrit du code a l'agent qui execute des taches de maniere autonome.
+Les Claw systems représentent l'évolution naturelle : de l'assistant qui écrit du code a l'agent qui exécuté des tâches de manière autonome.
 
-## Ecosysteme
+## Écosystème
 
 ### NanoClaw
 
-Agent leger conteneurise avec interface Telegram.
+Agent léger conteneurisé avec interface Telegram.
 
 - **Architecture** : Conteneur Docker + API LLM (OpenRouter/local) + Telegram Bot API
-- **Deploiement** : Docker Compose sur serveur (ai-01)
-- **Fonctionnalites** : Chat, transcription vocale (ASR), skills personnalisables
+- **Déploiement** : Docker Compose sur serveur (ai-01)
+- **Fonctionnalités** : Chat, transcription vocale (ASR), skills personnalisables
 - **Code source** : roo-extensions#1318
 
 **Pipeline de production :**
@@ -41,9 +41,9 @@ Utilisateur Telegram
 
 ### OpenClaw
 
-Plateforme multi-agents open source (en developpement).
+Plateforme multi-agents open source (en développement).
 
-- Orchestration de plusieurs agents specialises
+- Orchestration de plusieurs agents spécialisés
 - Cluster management
 - Workflows autonomes
 
@@ -69,7 +69,7 @@ Claw-Systems/
 | ASR Whisper | Transcription vocale | po-2023 | `whisper-api.myia.io` |
 | LLM | Raisonnement | OpenRouter / local | API |
 
-## Prerequis
+## Prérequis
 
 - **Docker** + Docker Compose
 - **Telegram Bot Token** (via @BotFather)
@@ -79,8 +79,8 @@ Claw-Systems/
 ## Liens
 
 - [Architecture NanoClaw](docs/NanoClaw-Architecture.md)
-- [Guide de deploiement](docs/NanoClaw-Deploy.md)
-- [Integration ASR](docs/ASR-Integration.md)
+- [Guide de déploiement](docs/NanoClaw-Deploy.md)
+- [Intégration ASR](docs/ASR-Integration.md)
 - [Vibe-Coding parent](../README.md)
 
 ---
