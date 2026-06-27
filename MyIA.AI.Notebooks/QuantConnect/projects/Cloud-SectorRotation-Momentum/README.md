@@ -1,14 +1,14 @@
 # Cloud-SectorRotation-Momentum
 
-**Asset class:** Equities, Bonds, Commodities (ETF rotation)
+**Classe d'actifs :** Actions, Obligations, Matières premières (rotation d'ETF)
 
-**Cloud project ID:** N/A
+**ID projet Cloud :** N/A
 
 ## Description
 
-Momentum-weighted trend following on a 5-ETF universe (QQQ, SPY, EFA, GLD, IWM) with SHY as the defensive cash equivalent. Uses a dual filter (price above SMA200 AND positive 6-month momentum) to select trending assets, then allocates proportionally to their rate-of-change (ROC) momentum scores. Rebalances every 21 trading days.
+Trend-following pondéré par momentum sur un univers de 5 ETF (QQQ, SPY, EFA, GLD, IWM) avec SHY comme équivalent cash défensif. Utilise un double filtre (prix au-dessus du SMA200 ET momentum positif sur 6 mois) pour sélectionner les actifs en tendance, puis alloue proportionnellement à leurs scores de momentum mesurés par taux de variation (ROC). Rebalance tous les 21 jours de bourse.
 
-## How to Run
+## Comment exécuter
 
 ### Lean CLI
 ```bash
@@ -16,20 +16,20 @@ lean backtest --algorithm Cloud-SectorRotation-Momentum/main.py
 ```
 
 ### QC Cloud
-Create a new project, upload `main.py`, compile and run a backtest (default: 2015-01-01 to 2024-12-31).
+Créer un nouveau projet, téléverser `main.py`, compiler et lancer un backtest (défaut : 2015-01-01 au 2024-12-31).
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Method | Rebalance | Key Parameters |
-|--------|-----------|----------------|
-| Momentum-weighted trend following | 21 days | SMA200 + 6m momentum dual filter, ROC proportional weighting |
+| Méthode | Rebalance | Paramètres clés |
+|---------|-----------|-----------------|
+| Trend-following pondéré par momentum | 21 jours | Double filtre SMA200 + momentum 6 mois, pondération proportionnelle au ROC |
 
-## Files
+## Fichiers
 
-| File | Description |
-|------|-------------|
-| `main.py` | Sector rotation with momentum-weighted allocation and dual trend filter |
+| Fichier | Description |
+|---------|-------------|
+| `main.py` | Rotation sectorielle avec allocation pondérée par momentum et double filtre de tendance |
 
-## References
+## Références
 
-- [QuantConnect Documentation](https://www.quantconnect.com/docs/)
+- [Documentation QuantConnect](https://www.quantconnect.com/docs/)

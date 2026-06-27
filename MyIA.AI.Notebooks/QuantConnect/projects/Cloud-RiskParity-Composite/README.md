@@ -1,14 +1,14 @@
 # Cloud-RiskParity-Composite
 
-**Asset class:** Multi-asset (Equities, Bonds, Commodities)
+**Classe d'actifs :** Multi-actifs (Actions, Obligations, Matières premières)
 
-**Cloud project ID:** N/A
+**ID projet Cloud :** N/A
 
 ## Description
 
-Tactical rotation across six asset classes (SPY, TLT, GLD, EFA, EEM, DBC) using a dual filter: price above SMA200 AND positive 6-month momentum. Assets passing both filters receive equal weight. Rebalances every 30 days. Inspired by AQR's Hurst, Ooi, and Pedersen (2014) approach to trend-following with risk parity allocation.
+Rotation tactique à travers six classes d'actifs (SPY, TLT, GLD, EFA, EEM, DBC) en utilisant un double filtre : prix au-dessus du SMA200 ET momentum positif sur 6 mois. Les actifs passant les deux filtres reçoivent une pondération égale. Rebalance tous les 30 jours. Inspiré de l'approche de trend-following avec allocation en parité de risque de Hurst, Ooi et Pedersen (2014) chez AQR.
 
-## How to Run
+## Comment exécuter
 
 ### Lean CLI
 ```bash
@@ -16,21 +16,21 @@ lean backtest --algorithm Cloud-RiskParity-Composite/main.py
 ```
 
 ### QC Cloud
-Create a new project, upload `main.py`, compile and run a backtest (default: 2015-01-01 to 2024-12-31).
+Créer un nouveau projet, téléverser `main.py`, compiler et lancer un backtest (défaut : 2015-01-01 au 2024-12-31).
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Method | Rebalance | Key Parameters |
-|--------|-----------|----------------|
-| Dual-filter Risk Parity | 30 days | SMA200 + 6-month momentum, equal weight among passing assets |
+| Méthode | Rebalance | Paramètres clés |
+|---------|-----------|-----------------|
+| Parité de risque à double filtre | 30 jours | SMA200 + momentum 6 mois, pondération égale entre les actifs retenus |
 
-## Files
+## Fichiers
 
-| File | Description |
-|------|-------------|
-| `main.py` | Risk parity rotation with SMA200 + momentum dual filter on 6 multi-asset ETFs |
+| Fichier | Description |
+|---------|-------------|
+| `main.py` | Rotation parité de risque avec double filtre SMA200 + momentum sur 6 ETF multi-actifs |
 
-## References
+## Références
 
-- Hurst, B., Ooi, Y.H., Pedersen, L.H. (2014). *A Century of Evidence on Trend-Following Investing*. AQR.
-- [QuantConnect Documentation](https://www.quantconnect.com/docs/)
+- Hurst, B., Ooi, Y.H., Pedersen, L.h. (2014). *A Century of Evidence on Trend-Following Investing*. AQR.
+- [Documentation QuantConnect](https://www.quantconnect.com/docs/)
