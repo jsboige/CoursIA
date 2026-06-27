@@ -39,10 +39,19 @@ Learning*, §2). La preuve combine :
 
 ## Itération 2 — complexité d'échantillon (en cours, décomposée en briques)
 
-⚠ **Mathlib v4.31.0-rc1 n'expose PAS de lemme de concentration de Hoeffding**
-(vérifié : ni `Probability.Hoeffding`, ni Chernoff). La borne se prouve donc
-**en self-contained** via la méthode de Chernoff (`log t ≤ t − 1` + Markov sur
-`exp(t · X̄)`), par briques atomiques 0-sorry :
+**Mathlib v4.31.0-rc1 expose Hoeffding** (`Probability.Moments.SubGaussian` :
+`measure_sum_ge_le_of_iIndepFun`, inégalité de Hoeffding pour sommes de
+sub-Gaussiennes indépendantes ; `hasSubgaussianMGF_of_mem_Icc_of_integral_eq_zero`,
+lemme de Hoeffding), mais dans le cadre lourd **Kernel + Measure + ℝ≥0∞ +
+`HasSubgaussianMGF` + `iIndepFun`**. Câbler la distribution discrète pédagogique
+`Distribution X` (style ℝ-weight de `Data.lean`) vers ce cadre (prouver
+l'indépendance i.i.d. des tirages, la sub-Gaussianité des indicateurs) est plus
+lourd que de prouver Hoeffding-for-Bernoulli **directement en ℝ-weight** via la
+méthode de Chernoff (`log_le_sub_one_of_pos` + Markov sur `exp(t · X̄)` +
+convexité de `exp`, en réutilisant les *lemmes* Mathlib mais pas le *cadre*).
+C'est un **choix pédagogique** (lisibilité, cohérent avec `Data.lean`), non une
+nécessité — le résultat mathématique est le vrai Hoeffding. Par briques atomiques
+0-sorry :
 
 - `PacLearning/Sample.lean` (ce livrable, **brique 1/3**) — distribution produit
   `D^m` sur l'espace des échantillons `Fin n → X` : poids `sampleWeight`
