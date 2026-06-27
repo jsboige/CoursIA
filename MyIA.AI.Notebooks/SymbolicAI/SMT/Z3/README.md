@@ -4,7 +4,7 @@
 
 ## Série en quelques mots
 
-Le binding Z3.Linq traduit des requêtes LINQ C# en formules SMT — on décrit les contraintes, le solveur produit la solution. Série .NET 9 de **8 notebooks** (~5h50), du théorème linéaire à la planification multi-jours couplée (fenêtre nutrition × variété).
+Le binding Z3.Linq traduit des requêtes LINQ C# en formules SMT — on décrit les contraintes, le solveur produit la solution. Série .NET 9 de **10 notebooks** (~6h55), du théorème linéaire à la planification multi-jours couplée (fenêtre nutrition × variété).
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs C# souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de théorèmes linéaires simples pour monter progressivement vers les théories de tableaux et l'optimisation hiérarchique.
 
