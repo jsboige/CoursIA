@@ -18,6 +18,7 @@ Vibe-Coding/
 ├── Claude-Code/          # Ateliers Claude Code (5 modules)
 ├── Roo-Code/             # Ateliers Roo Code (5 modules + avances)
 ├── Claw-Systems/         # Agents IA autonomes (NanoClaw, OpenClaw)
+├── Claudish/             # Proxy multi-provider (route assistants vers Anthropic/GLM/Qwen)
 └── docs/                 # Documentation commune et introductions
 ```
 
@@ -95,6 +96,16 @@ Plateformes d'agents IA conteneurisés, self-hosted, opérant de manière autono
 | [ASR Integration](Claw-Systems/docs/ASR-Integration.md) | Transcription vocale Whisper |
 
 **Cas d'usage** : Agent Telegram avec transcription vocale, orchestration multi-agents, déploiement production.
+
+## Claudish - Proxy Multi-Provider
+
+Proxy/routeur qui rend les assistants (Claude Code, Roo Code) et les bots (Hermes, NanoClaw) **agnostiques du fournisseur** : un wire Anthropic en entrée, le provider budgeté en sortie (Anthropic, z.ai GLM, Qwen self-hosté), jamais de bascule silencieuse.
+
+| Document | Description |
+|----------|-------------|
+| [README](Claudish/README.md) | Vue d'ensemble, écosystème 3 tiers, pipeline |
+| [Proxy en détail](Claudish/docs/Claudish-Proxy.md) | Principe wire, topologie, router, connecter un agent, avancées du fork, troubleshooting |
+| [Config](Claudish/configs/claudish.env.secrets.example) | Template de configuration (placeholders uniquement) |
 
 ## Documentation commune
 
