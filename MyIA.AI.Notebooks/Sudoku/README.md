@@ -330,6 +330,7 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 5 | PSO | Essaim de particules : convergence collective, vitesse, position |
 | 6 | AIMA CSP | CSP académique : variables, domaines, contraintes, MRV, AC-3 |
 | 7 | Norvig | Propagation de Norvig : élimination des candidats + recherche efficace |
+| 7b | [Sudoku-7b-Lean-Propagation](Sudoku-7b-Lean-Propagation.ipynb) | **Companion natif** (kernel Lean) : preuve formelle 0-sorry de la soundness de la propagation (naked/hidden single, clé de voûte `peer_excludes_value`) dans le lake `sudoku_lean`, `#check` + `#print axioms` in-kernel (UNLOCK c.127, jonction Mathlib #2611) |
 | 8 | Human Stratégies | 13 techniques humaines : naked/hidden singles, pairs, pointing, box/line |
 | 9 | Graph Coloring | Formulation graphe : nx.sudoku_graph(), coloration DSATUR |
 | 10 | OR-Tools | CP-SAT industriel : modèle déclaratif, contraintes globales, parallélisme |
