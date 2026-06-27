@@ -1,18 +1,18 @@
-# 04-Privacy-Cryptography - Preuves Zero-Knowledge, Chiffrement Homomorphe et Vote Verifiable
+# 04-Privacy-Cryptography - Preuves Zero-Knowledge, Chiffrement Homomorphe et Vote Vérifiable
 
-**Navigation** : [Sommaire de la serie](../README.md) | [<< SC-14 Formal Verification](../03-Foundry-Testing/SC-14-Formal-Verification.ipynb) | [SC-18 Vyper >>](../05-Alternative-Chains/SC-18-Vyper.ipynb)
+**Navigation** : [Sommaire de la série](../README.md) | [<< SC-14 Formal Verification](../03-Foundry-Testing/SC-14-Formal-Verification.ipynb) | [SC-18 Vyper >>](../05-Alternative-Chains/SC-18-Vyper.ipynb)
 
-Cette quatrieme sous-serie (SC-15 a SC-17) explore la cryptographie avancee au service de la confidentialite sur blockchain : les **preuves a divulgation nulle** (Zero-Knowledge Proofs), le **chiffrement homomorphe** (calcul sur donnees chiffrees), et le **vote electronique de bout en bout verifiable** (E2E). Ces notebooks implementent les protocoles cryptographiques pour de vrai en Python (`pycryptodome`, `phe`, `tenseal`), avec la crypto Paillier et Schnorr reelement executee dans les outputs committes.
+Cette quatrieme sous-série (SC-15 a SC-17) explore la cryptographie avancée au service de la confidentialite sur blockchain : les **preuves a divulgation nulle** (Zero-Knowledge Proofs), le **chiffrement homomorphe** (calcul sur données chiffrees), et le **vote électronique de bout en bout vérifiable** (E2E). Ces notebooks implementent les protocoles cryptographiques pour de vrai en Python (`pycryptodome`, `phe`, `tenseal`), avec la crypto Paillier et Schnorr reelement executee dans les outputs committes.
 
 ---
 
 ## Notebooks
 
-| # | Notebook | Duree | Contenu |
+| # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 15 | [SC-15-Zero-Knowledge-Proofs](SC-15-Zero-Knowledge-Proofs.ipynb) | 60 min | ZKP, protocole de Schnorr from scratch, Fiat-Shamir, Sigma protocols, Chaum-Pedersen |
 | 16 | [SC-16-Homomorphic-Encryption](SC-16-Homomorphic-Encryption.ipynb) | 50 min | Chiffrement homomorphe (PHE/SHE/FHE), Paillier (`phe`), CKKS (`tenseal`), partage de secrets de Shamir |
-| 17 | [SC-17-E2E-Verifiable-Voting](SC-17-E2E-Verifiable-Voting.ipynb) | 45 min | Paradoxe du vote electronique, vote a la main (Paillier + ZKP), bulletin board, ElectionGuard |
+| 17 | [SC-17-E2E-Vérifiable-Voting](SC-17-E2E-Verifiable-Voting.ipynb) | 45 min | Paradoxe du vote électronique, vote a la main (Paillier + ZKP), bulletin board, ElectionGuard |
 
 **Total** : 3 notebooks, ~2h35.
 
@@ -33,29 +33,29 @@ flowchart LR
 
 ## Parcours d'apprentissage
 
-### Etape 1 : Preuves Zero-Knowledge (SC-15, 60 min)
+### Étape 1 : Preuves Zero-Knowledge (SC-15, 60 min)
 
-Les **preuves a divulgation nulle** : prouver la connaissance d'un secret sans le reveler. Implementation from scratch du **protocole de Schnorr** (preuve de connaissance d'un logarithme discret), transformation de **Fiat-Shamir** (rendre un protocole interactif non-interactif via oracle aleatoire), et exploration des **Sigma protocols** avec le protocole de **Chaum-Pedersen**. Crypto `pycryptodome` reelle dans les outputs.
+Les **preuves a divulgation nulle** : prouver la connaissance d'un secret sans le reveler. Implémentation from scratch du **protocole de Schnorr** (preuve de connaissance d'un logarithme discret), transformation de **Fiat-Shamir** (rendre un protocole interactif non-interactif via oracle aleatoire), et exploration des **Sigma protocols** avec le protocole de **Chaum-Pedersen**. Crypto `pycryptodome` réelle dans les outputs.
 
-### Etape 2 : Chiffrement homomorphe (SC-16, 50 min)
+### Étape 2 : Chiffrement homomorphe (SC-16, 50 min)
 
-Le calcul sur donnees chiffrees : trois variantes (**PHE** partiellement homomorphe, **SHE** partiellement, **FHE** completement). Schema de **Paillier** (additivement homomorphe) avec `phe`, schema **CKKS** pour l'arithmetique approchee avec `tenseal`, et **calcul multipartite securise** (MPC) via le partage de secrets de **Shamir**. Paillier et Shamir sont executes reellement ; CKKS/TenSEAL depend d'une installation optionnelle.
+Le calcul sur données chiffrees : trois variantes (**PHE** partiellement homomorphe, **SHE** partiellement, **FHE** complètement). Schéma de **Paillier** (additivement homomorphe) avec `phe`, schéma **CKKS** pour l'arithmetique approchee avec `tenseal`, et **calcul multipartite sécurisé** (MPC) via le partage de secrets de **Shamir**. Paillier et Shamir sont exécutés réellement ; CKKS/TenSEAL depend d'une installation optionnelle.
 
-### Etape 3 : Vote verifiable (SC-17, 45 min)
+### Étape 3 : Vote vérifiable (SC-17, 45 min)
 
-Le **paradoxe du vote electronique** : concilier **anonymat** et **verifiabilite**. Construction d'un systeme de vote a la main combinant **Paillier + ZKP**, implementation d'un **bulletin board** publiquement verifiable, et decouverte d'**ElectionGuard** (Microsoft), l'etat de l'art en vote E2E verifiable. Le tally (3+2+2=7) est corroboré dans les outputs ; la partie ElectionGuard est disclosed comme simulation conceptuelle.
+Le **paradoxe du vote électronique** : concilier **anonymat** et **vérifiabilité**. Construction d'un système de vote a la main combinant **Paillier + ZKP**, implémentation d'un **bulletin board** publiquement vérifiable, et découverte d'**ElectionGuard** (Microsoft), l'état de l'art en vote E2E vérifiable. Le tally (3+2+2=7) est corroboré dans les outputs ; la partie ElectionGuard est disclosed comme simulation conceptuelle.
 
 ---
 
-## Prerequis
+## Prérequis
 
 ### Par notebook
 
-| Notebook | Fondations requises | Dependances |
+| Notebook | Fondations requises | Dépendances |
 |----------|---------------------|-------------|
 | SC-15 Zero-Knowledge-Proofs | Arithmetique modulaire de base ; Python | `pycryptodome` (nombres premiers), `hashlib` (stdlib) |
 | SC-16 Homomorphic-Encryption | Python ; notions de crypto | `phe` (python-paillier), `tenseal` (optionnel), `mpyc` (optionnel) |
-| SC-17 E2E-Verifiable-Voting | [SC-15](SC-15-Zero-Knowledge-Proofs.ipynb) + [SC-16](SC-16-Homomorphic-Encryption.ipynb) completes | `phe`, `pycryptodome`, `electionguard` (optionnel SOTA) |
+| SC-17 E2E-Vérifiable-Voting | [SC-15](SC-15-Zero-Knowledge-Proofs.ipynb) + [SC-16](SC-16-Homomorphic-Encryption.ipynb) complètes | `phe`, `pycryptodome`, `electionguard` (optionnel SOTA) |
 
 ### Configuration requise
 
@@ -65,39 +65,39 @@ Le **paradoxe du vote electronique** : concilier **anonymat** et **verifiabilite
   - `pip install tenseal` (SC-16 CKKS — **optionnel**, depend d'une toolchain C++ ; sans lui, la partie CKKS tourne en repli disclose)
   - `pip install mpyc` (SC-16 MPC — optionnel)
   - `pip install electionguard` (SC-17 SOTA — optionnel)
-- Aucune blockchain, aucun faucet necessaire : la crypto tourne en Python pur.
+- Aucune blockchain, aucun faucet nécessaire : la crypto tourne en Python pur.
 
 ---
 
-## Ponts inter-series
+## Ponts inter-séries
 
-| Serie | Lien | Relation |
+| Série | Lien | Relation |
 |-------|------|----------|
 | [SmartContracts (parent)](../README.md) | Vue d'ensemble | Contexte, parcours global, glossaire |
-| [03-Foundry-Testing](../03-Foundry-Testing/SC-12-Foundry-Testing.ipynb) | Predecesseur | SC-12..14 (tests Foundry, fuzzing, verification formelle) |
+| [03-Foundry-Testing](../03-Foundry-Testing/SC-12-Foundry-Testing.ipynb) | Predecesseur | SC-12..14 (tests Foundry, fuzzing, vérification formelle) |
 | [05-Alternative-Chains](../05-Alternative-Chains/SC-18-Vyper.ipynb) | Suite | SC-18..22 (Vyper, XRP, Bitcoin, Move, Solana) |
 | [06-Real-World](../06-Real-World/SC-23-Cross-Chain.ipynb) | Capstone | SC-23..26 mobilisent ZKP + chiffrement homomorphe (projet final) |
 
 ---
 
-## Points de vigilance (dependances cryptographiques)
+## Points de vigilance (dépendances cryptographiques)
 
-- **Paillier + Schnorr executes reellement** (SC-15, SC-16, SC-17) : les outputs committes refletent une vraie execution crypto `phe`/`pycryptodome`. Les parametres (cles, challenges, reponses) sont authentiques.
-- **CKKS / TenSEAL (SC-16) optionnel** : si `tenseal` n'est pas installe, la section CKKS tourne en repli honnetement disclose (message `TenSEAL non installe`), avec des plages d'erreur illustrees. Audit #3164 a verifie que les nombres measures au-dessus de ce repli sont honnetement documentes (PR #3382).
-- **ElectionGuard (SC-17)** : la partie SOTA est disclose comme **simulation conceptuelle** (ElectionGuard requiert un setup lourd) ; le vote a la main Paillier+ZKP est lui reellement execute.
-- **ZKP interactif vs non-interactif** : SC-15 implemente les deux formes ; verifier que la transformation Fiat-Shamir produit bien un proof non-transferable.
+- **Paillier + Schnorr exécutés réellement** (SC-15, SC-16, SC-17) : les outputs committes refletent une vraie exécution crypto `phe`/`pycryptodome`. Les parametres (clés, challenges, reponses) sont authentiques.
+- **CKKS / TenSEAL (SC-16) optionnel** : si `tenseal` n'est pas installe, la section CKKS tourne en repli honnêtement disclose (message `TenSEAL non installe`), avec des plages d'erreur illustrees. Audit #3164 a vérifie que les nombres measures au-dessus de ce repli sont honnêtement documentés (PR #3382).
+- **ElectionGuard (SC-17)** : la partie SOTA est disclose comme **simulation conceptuelle** (ElectionGuard requiert un setup lourd) ; le vote a la main Paillier+ZKP est lui réellement exécute.
+- **ZKP interactif vs non-interactif** : SC-15 implémente les deux formes ; vérifier que la transformation Fiat-Shamir produit bien un proof non-transferable.
 
 ---
 
 ## Ressources
 
-- **Schnorr, C.-P. (1991)** -- "Efficient Signature Generation by Smart Cards", *Journal of Cryptology* 4(3). Protocole de Schnorr.
+- **Schnorr, C.-P. (1991)** -- "Efficient Signature Génération by Smart Cards", *Journal of Cryptology* 4(3). Protocole de Schnorr.
 - **Fiat, A., & Shamir, A. (1987)** -- "How To Prove Yourself: Practical Solutions to Identification and Signature Problems", *CRYPTO 1986*, LNCS 263. Transformation Fiat-Shamir.
 - **Chaum, D., & Pedersen, T. (1993)** -- "Wallet Databases with Observers", *CRYPTO 1992*. Protocole Chaum-Pedersen.
-- **Paillier, P. (1999)** -- "Public-Key Cryptosystems Based on Composite Degree Residuosity Classes", *EUROCRYPT 1999*. Schema de Paillier (additivement homomorphe).
+- **Paillier, P. (1999)** -- "Public-Key Cryptosystems Based on Composite Degree Residuosity Classes", *EUROCRYPT 1999*. Schéma de Paillier (additivement homomorphe).
 - **Shamir, A. (1979)** -- "How to Share a Secret", *Communications of the ACM* 22(11). Partage de secrets.
-- **ElectionGuard** (Microsoft, 2019) -- specification du vote E2E verifiable. github.com/microsoft/electionguard.
-- Voir aussi les references transversales dans le [README parent de la serie](../README.md).
+- **ElectionGuard** (Microsoft, 2019) -- specification du vote E2E vérifiable. github.com/microsoft/electionguard.
+- Voir aussi les références transversales dans le [README parent de la série](../README.md).
 
 ---
 
