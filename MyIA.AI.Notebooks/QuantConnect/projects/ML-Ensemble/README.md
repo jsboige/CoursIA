@@ -1,25 +1,25 @@
 # ML-Ensemble
 
-**Asset class:** US Equities (30 large-cap stocks)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Actions US (30 grandes capitalisations)
+**ID projet Cloud :** Aucun (local uniquement)
 
 ## Description
 
-Ensemble ML strategy combining Ridge regression, Random Forest, and Gradient Boosting on a 30-stock universe. Weekly rebalance with monthly retraining. Uses lagged returns as features for direction prediction.
+Stratégie ML d'ensemble combinant la régression Ridge, le Random Forest et le Gradient Boosting sur un univers de 30 actions. Rebalancement hebdomadaire avec ré-entraînement mensuel. Utilise les rendements décalés comme variables explicatives pour la prédiction de direction.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Ensemble"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Ensemble"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour l'exécuter.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Metric | Value |
-|--------|-------|
-| Models | Ridge + RF + GradientBoosting ensemble |
-| Universe | 30 large-cap stocks |
-| Rebalance | Weekly |
+| Métrique | Valeur |
+|----------|--------|
+| Modèles | Ensemble Ridge + Random Forest + Gradient Boosting |
+| Univers | 30 grandes capitalisations |
+| Rebalancement | Hebdomadaire |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (269L, MLEnsembleAlgorithm)
+- `main.py` — Stratégie (269 lignes, `MLEnsembleAlgorithm`)

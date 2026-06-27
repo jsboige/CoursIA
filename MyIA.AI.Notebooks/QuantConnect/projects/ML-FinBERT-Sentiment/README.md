@@ -1,29 +1,29 @@
 # ML-FinBERT-Sentiment (HandsOn Ex19)
 
-**Asset class:** US Equities (top 10 tech)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Actions US (top 10 tech)
+**ID projet Cloud :** Aucun (local uniquement)
 
 ## Description
 
-FinBERT sentiment analysis on financial text. Requires TensorFlow and model weights unavailable in QC Cloud.
+Analyse de sentiment FinBERT sur du texte financier. Nécessite TensorFlow et les poids du modèle, indisponibles sur QC Cloud.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-FinBERT-Sentiment"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-FinBERT-Sentiment"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour l'exécuter.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Metric | Value |
-|--------|-------|
-| Model | FinBERT (HuggingFace) |
-| Note | Requires local Lean execution with TF |
+| Métrique | Valeur |
+|----------|--------|
+| Modèle | FinBERT (HuggingFace) |
+| Note | Nécessite une exécution Lean locale avec TensorFlow |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (v1.0, FinBERT sentiment)
-- research.ipynb - Sentiment model evaluation
-## References
+- `main.py` — Stratégie (v1.0, sentiment FinBERT)
+- `research.ipynb` — Évaluation du modèle de sentiment
 
-- Hands-On AI Trading, Section 06, Example 19
+## Références
 
+- *Hands-On AI Trading*, Section 06, Exemple 19
