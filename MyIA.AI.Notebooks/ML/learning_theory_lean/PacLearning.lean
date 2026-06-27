@@ -1,6 +1,7 @@
 import Mathlib
 import PacLearning.Data
 import PacLearning.Sample
+import PacLearning.Concentration
 
 /-!
 # PacLearning — théorie PAC (Valiant 1984), module classe finie, Lean 4
@@ -53,15 +54,22 @@ C'est un **choix pédagogique** (lisibilité, cohérent avec `Data.lean`), non u
 nécessité — le résultat mathématique est le vrai Hoeffding. Par briques atomiques
 0-sorry :
 
-- `PacLearning/Sample.lean` (ce livrable, **brique 1/3**) — distribution produit
+- `PacLearning/Sample.lean` (**brique 1/3 livrée**) — distribution produit
   `D^m` sur l'espace des échantillons `Fin n → X` : poids `sampleWeight`
   (`∏ i, D.weight (S i)`), non-négativité, **normalisation**
   `sampleWeight_sum_one` (`∑ S, sampleWeight D S = 1` via Fubini discret
   `sum_pow'` puis `D.sum_one`). C'est le cadre probabiliste requis pour parler
   de tirages i.i.d. `S ∼ D^m`.
-- **Brique 2/3 — OPEN** : concentration de Hoeffding-for-Bernoulli,
+- `PacLearning/Concentration.lean` (ce livrable, **brique 2a/3 livrée**) —
+  espérance `expect` (`∑ x, D.weight x · g x`) + linéarité, espérance des
+  constantes, pont `trueError_eq_expect`, et **inégalité de Markov** en
+  ℝ-weight (`markov_ineq` : `D-weight {x | t ≤ g x} ≤ E[g]/t` via
+  `Finset.filter` + `Finset.sum_mul` + `mul_le_mul_of_nonneg_left`). Pose les
+  fondations de la méthode de Chernoff (brique 2b/3).
+- **Brique 2b/3 — OPEN** : concentration de Hoeffding-for-Bernoulli,
   `ℙ_S [ |empError − trueError| > ε ] ≤ 2·exp(−2mε²)` (Markov + `log t ≤ t − 1`
-  sur les indicateurs `𝟙[h(S i) ≠ f(S i)]`, self-contained).
+  sur les indicateurs `𝟙[h(S i) ≠ f(S i)]`, self-contained, réutilisant
+  `expect` et `markov_ineq` de la brique 2a/3).
 - **Brique 3/3 — OPEN** : `pac_finite_class_bound`, `m ≥ (1/ε)(ln|H| + ln(1/δ))`
   (union bound sur `H` fini, `Finset.sum_le_*`). Le théorème phare de Valiant.
 
@@ -77,9 +85,10 @@ nécessité — le résultat mathématique est le vrai Hoeffding. Par briques at
 namespace PacLearning
 
 /-- Statut : itération 1 livrée (modèle + propriétés élémentaires 0-sorry) ;
-itération 2 en cours — **brique 1/3 livrée** (`Sample.lean` : distribution produit
-`D^m` + normalisation). Briques 2/3 (Hoeffding-for-Bernoulli self-contained) et
-3/3 (`pac_finite_class_bound` union bound) documentées OPEN. -/
+itération 2 en cours — **briques 1/3 + 2a/3 livrées** (`Sample.lean` : distribution
+produit `D^m` + normalisation ; `Concentration.lean` : `expect`, `markov_ineq`).
+Briques 2b/3 (Hoeffding-for-Bernoulli self-contained) et 3/3
+(`pac_finite_class_bound` union bound) documentées OPEN. -/
 abbrev Status : Prop := True
 
 end PacLearning
