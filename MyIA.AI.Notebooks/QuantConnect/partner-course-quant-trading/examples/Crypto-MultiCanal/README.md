@@ -1,7 +1,7 @@
-# Detecteur Hierarchique Multi-Canaux (ID: 22298373)
+# Détecteur Hiérarchique Multi-Canaux (ID: 22298373)
 
-Strategie de detection de canaux de prix a plusieurs echelles temporelles pour BTCUSDT.
-C'est le projet le plus avance du portfolio, issu d'un travail iteratif sur plusieurs mois.
+Stratégie de detection de canaux de prix a plusieurs échelles temporelles pour BTCUSDT.
+C'est le projet le plus avancé du portfolio, issu d'un travail itératif sur plusieurs mois.
 
 ## Architecture
 
@@ -33,16 +33,16 @@ Gestion SL/TP avec OCO (One-Cancels-Other)
 
 ## Algorithme de detection des canaux
 
-Pour chaque echelle (Macro/Meso/Micro), les lignes de resistance et support sont trouvees par :
+Pour chaque échelle (Macro/Meso/Micro), les lignes de résistance et support sont trouvées par :
 
-1. **Enumeration** de toutes les paires de pivots de meme type (hauts pour resistance, bas pour support)
-2. **Validation stricte** : tous les autres pivots doivent etre du bon cote de la ligne
-3. **Scoring WSSE** (Weighted Sum of Squared Errors) : les pivots recents ont plus de poids
-4. **Selection** : la ligne avec le WSSE le plus faible est retenue
+1. **Énumération** de toutes les paires de pivots de même type (hauts pour résistance, bas pour support)
+2. **Validation stricte** : tous les autres pivots doivent être du bon côté de la ligne
+3. **Scoring WSSE** (Weighted Sum of Squared Errors) : les pivots récents ont plus de poids
+4. **Sélection** : la ligne avec le WSSE le plus faible est retenue
 
-Les canaux sont hierarchiques : Meso utilise les pivots apres le 2e pivot Macro le plus recent, et Micro apres le 2e pivot Meso le plus recent.
+Les canaux sont hiérarchiques : Meso utilise les pivots après le 2e pivot Macro le plus récent, et Micro après le 2e pivot Meso le plus récent.
 
-## Parametres GA (optimises par algorithme genetique)
+## Paramètres GA (optimisés par algorithme génétique)
 
 ```python
 strategy_params = {
@@ -62,7 +62,7 @@ strategy_params = {
 }
 ```
 
-## Parametres des canaux
+## Paramètres des canaux
 
 ```python
 channel_params = {
@@ -81,26 +81,26 @@ channel_params = {
 
 | Fichier | Taille | Description |
 |---------|--------|-------------|
-| `main.py` | ~930 lignes | Algorithme complet : helpers, ZigZag, canaux, entrees/sorties, OCO |
+| `main.py` | ~930 lignes | Algorithme complet : helpers, ZigZag, canaux, entrées/sorties, OCO |
 | `fix_ipynb_quotes.py` | petit | Utilitaire de nettoyage pour le notebook research |
 | `research.ipynb` | 210K | Notebook de recherche et visualisation (cloud QC) |
-| `research_archive.ipynb` | archive | Version archivee du notebook research |
+| `research_archive.ipynb` | archive | Version archivée du notebook research |
 
-## Concepts pedagogiques
+## Concepts pédagogiques
 
-- **Detection de pivots** : ZigZag avec seuil de retracement configurable
-- **Canaux de prix** : Regression lineaire stricte (pas de violation)
-- **Multi-echelles** : Hierarchie Macro > Meso > Micro avec filtrage temporel
-- **Gestion du risque** : Position sizing base sur le risque par trade
-- **OCO Orders** : Stop Loss + Take Profit avec annulation croisee
-- **Optimisation parametrique** : Parametres trouves par algorithme genetique
+- **Détection de pivots** : ZigZag avec seuil de retracement configurable
+- **Canaux de prix** : Régression linéaire stricte (pas de violation)
+- **Multi-échelles** : Hiérarchie Macro > Meso > Micro avec filtrage temporel
+- **Gestion du risque** : Position sizing basé sur le risque par trade
+- **OCO Orders** : Stop Loss + Take Profit avec annulation croisée
+- **Optimisation paramétrique** : Paramètres trouvés par algorithme génétique
 
-## Versions precedentes
+## Versions précédentes
 
 - **C# v1** : `Exemple-CSharp-BTC-MACD-ADX-Daily-1` (ID 19898232) - base originale MACD+ADX
 - **C# v2** : `BTC-MultiCanal-ZigZag-Hour-1` (ID 22275116) - seuils adaptatifs par percentiles
-- **C# v2bis** : `BTC-MACD-ADX-Hour-1` (ID 20423659) - iteration horaire intermediaire
-- **Python (actuel)** : Version la plus avancee avec GA et multi-canaux complets
+- **C# v2bis** : `BTC-MACD-ADX-Hour-1` (ID 20423659) - itération horaire intermédiaire
+- **Python (actuel)** : Version la plus avancée avec GA et multi-canaux complets
 
 ## Configuration Backtest
 
@@ -113,28 +113,28 @@ channel_params = {
 
 ## Changelog
 
-### 2026-02-15 - Ameliorations prioritaires
+### 2026-02-15 - Améliorations prioritaires
 
-**Modifications appliquees dans `main.py`:**
+**Modifications appliquées dans `main.py`:**
 
 1. **Default TP robuste** (lignes 223-230)
-   - Ajout d'un Take Profit par defaut = 2x la distance du stop-loss
-   - Evite les trades sans TP si le calcul RR echoue
-   - Preserve la directionnalite (long/short)
+   - Ajout d'un Take Profit par défaut = 2x la distance du stop-loss
+   - Évite les trades sans TP si le calcul RR échoue
+   - Préserve la directionnalité (long/short)
 
 2. **Activation du trend filter** (ligne 25)
    - `trend_filter_level`: 'none' → 'macro'
-   - Filtre les entrees contre-tendance sur l'echelle macro
-   - Ameliore la qualite des signaux
+   - Filtre les entrées contre-tendance sur l'échelle macro
+   - Améliore la qualité des signaux
 
 3. **Activation des signaux bounce** (ligne 25)
    - `signal_type`: 'breakout' → 'both'
    - Active les signaux de rebond en plus des cassures
-   - Augmente les opportunites de trading
+   - Augmente les opportunités de trading
 
 **Statut compilation:** BuildSuccess (warnings linter non-bloquants)
 
-**Prochaines etapes:**
+**Prochaines étapes:**
 - Lancer un backtest via l'interface web QC
-- Analyser les metriques (Sharpe, Drawdown, Win Rate)
-- Comparer avec les backtests precedents
+- Analyser les métriques (Sharpe, Drawdown, Win Rate)
+- Comparer avec les backtests précédents
