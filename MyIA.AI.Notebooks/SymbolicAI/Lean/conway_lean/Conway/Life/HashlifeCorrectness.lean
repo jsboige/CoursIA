@@ -1438,14 +1438,63 @@ eliminate one without re-deriving the others.
 
 See `agent_tests/prover/RUNBOOK.md` for the iteration protocol. -/
 
-/-- **P4.1** (structural): the nine double-nine sub-cells of a well-formed
-    level-`(k+2)` cell `c` each have level `k+1` and are well-formed, and
-    their union tiles `c`'s live region. This is pure shape bookkeeping — no
-    evolution reasoning. Difficulty: P4.1 (easiest of the inductive step;
-    mechanical unfolding of `hashlifeResultAux`'s pattern match). -/
+/-- **P4.1** (structural half, PROVEN): a well-formed level-`(k+2)` MacroCell
+    decomposes into sixteen depth-2 grandchildren `nw_nw..se_se`, each of level
+    `k` and well-formed. This is exactly the shape precondition
+    `hashlifeResultAux`'s double-nine pattern match relies on: the nine sub-cells
+    `n1..n9` of `Hashlife.lean` are each `node`s of four such grandchildren, so
+    combined with `node_wf_level_of_four` this discharges every `n_i`'s
+    `level = k + 1 ∧ wf = true`.
+
+    The signature `(c : MacroCell)` is preserved so the `p4_succ_membership`
+    glue (L1490) typechecks unchanged; the conclusion is the depth-2 existential
+    decomposition plus the sixteen `level = k ∧ wf = true` facts, which is
+    precisely `wf_node_depth2_grandchildren`'s output. The **geometric half**
+    of P4.1 — that the `n_i` union tiles `c`'s live region (a statement on
+    `toGrid`/`restrictGridTo` overlap, not just shape) — is genuinely
+    non-structural and stays open (research-level, queueable behind the
+    `step_light_cone` P2 machinery). -/
 theorem p4_double_nine_shape
-    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) : True := by
-  sorry
+    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) :
+    ∃ nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+       sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell,
+      c = node (node nw_nw nw_ne nw_sw nw_se)
+               (node ne_nw ne_ne ne_sw ne_se)
+               (node sw_nw sw_ne sw_sw sw_se)
+               (node se_nw se_ne se_sw se_se) ∧
+      nw_nw.level = k ∧ nw_nw.wf = true ∧
+      nw_ne.level = k ∧ nw_ne.wf = true ∧
+      nw_sw.level = k ∧ nw_sw.wf = true ∧
+      nw_se.level = k ∧ nw_se.wf = true ∧
+      ne_nw.level = k ∧ ne_nw.wf = true ∧
+      ne_ne.level = k ∧ ne_ne.wf = true ∧
+      ne_sw.level = k ∧ ne_sw.wf = true ∧
+      ne_se.level = k ∧ ne_se.wf = true ∧
+      sw_nw.level = k ∧ sw_nw.wf = true ∧
+      sw_ne.level = k ∧ sw_ne.wf = true ∧
+      sw_sw.level = k ∧ sw_sw.wf = true ∧
+      sw_se.level = k ∧ sw_se.wf = true ∧
+      se_nw.level = k ∧ se_nw.wf = true ∧
+      se_ne.level = k ∧ se_ne.wf = true ∧
+      se_sw.level = k ∧ se_sw.wf = true ∧
+      se_se.level = k ∧ se_se.wf = true := by
+  -- depth-1: c = node nw ne sw se with nw.level = k + 1
+  obtain ⟨nw, ne, sw, se, rfl, hnw_lvl⟩ := shape_of_level_succ c (k + 1) hk
+  obtain ⟨hnw, hne, hsw, hse, hne_eq, hsw_eq, hse_eq⟩ := wf_node_elim hwf
+  -- siblings share nw's level
+  have hne_lvl : ne.level = k + 1 := hne_eq ▸ hnw_lvl
+  have hsw_lvl : sw.level = k + 1 := hsw_eq ▸ hnw_lvl
+  have hse_lvl : se.level = k + 1 := hse_eq ▸ hnw_lvl
+  -- depth-2: each quadrant is a node of four grandchildren
+  obtain ⟨nw_nw, nw_ne, nw_sw, nw_se, rfl, _⟩ := shape_of_level_succ nw k hnw_lvl
+  obtain ⟨ne_nw, ne_ne, ne_sw, ne_se, rfl, _⟩ := shape_of_level_succ ne k hne_lvl
+  obtain ⟨sw_nw, sw_ne, sw_sw, sw_se, rfl, _⟩ := shape_of_level_succ sw k hsw_lvl
+  obtain ⟨se_nw, se_ne, se_sw, se_se, rfl, _⟩ := shape_of_level_succ se k hse_lvl
+  refine ⟨nw_nw, nw_ne, nw_sw, nw_se, ne_nw, ne_ne, ne_sw, ne_se,
+          sw_nw, sw_ne, sw_sw, sw_se, se_nw, se_ne, se_sw, se_se, rfl, ?_⟩
+  exact wf_node_depth2_grandchildren
+    nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+    sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se k hk hwf
 
 /-- **P4.2** (IH application, wave 1): for each of the nine sub-cells `n_i`
     of `c`, `hashlifeResultAux (k+1) n_i` agrees with `evolve (2^(k-1))` on
