@@ -9,6 +9,8 @@ maturity:
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Vibe-Coding](../Vibe-Coding/README.md)
 
+> **Refonte pédagogique en cours (#4433).** Cette série évolue d'un banc de tests vers un **parcours QA narratif** : fil rouge « QA Engineer d'une flotte GenAI multi-tenant », format hybride notebook + tests E2E réels conservés en backend, et projet de certification final. Point d'entrée : **[00-Parcours-QA-OWUI.md](./00-Parcours-QA-OWUI.md)** (cadrage de la mission). La revalidation cible **Open WebUI v0.9.6** (Phase 3, en cours) ; la mention « v0.9.1 » plus bas est périmée et sera reprise à ce moment-là.
+
 Serie pédagogique complète pour apprendre **Playwright** (framework de tests E2E) en testant une application réelle : **Open WebUI**, une plateforme de chat IA générative.
 
 > **Format particulier** : Contrairement aux autres sous-domaines GenAI qui utilisent des Jupyter Notebooks (.ipynb), cette série utilise des **fichiers TypeScript (.spec.ts)** exécutés par Playwright. Chaque module contient un `README.md` avec la théorie et les explications, et un fichier `.spec.ts` avec les tests commentés qui servent d'exercices pratiques. Les tests sont auto-documentés : chaque test contient des commentaires pédagogiques expliquant les concepts, et des exercices supplémentaires a compléter par l'étudiant.
