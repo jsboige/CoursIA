@@ -1,31 +1,31 @@
-# Recipe-Maker - Generateur de recettes
+# Recipe-Maker - Générateur de recettes
 
 [← CaseStudies](../README.md) | [↑ GenAI](../../README.md)
 
-Generateur automatise de recettes culinaires utilisant des agents IA.
+Générateur automatisé de recettes culinaires utilisant des agents IA.
 
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
 | Notebooks | 1 |
-| Difficulte | Intermédiaire |
-| Duree | ~1-2h |
-| Theme | Intelligence culinaire |
+| Difficulté | Intermédiaire |
+| Durée | ~1-2h |
+| Thème | Intelligence culinaire |
 
 ## Notebook
 
 | # | Notebook | Description |
 |---|----------|-------------|
-| 1 | [receipe_maker](receipe_maker.ipynb) | Generateur automatise de recettes culinaires |
+| 1 | [receipe_maker](receipe_maker.ipynb) | Générateur automatisé de recettes culinaires |
 
 ## Technologies
 
-- **Python** : Traitement de donnees, generation de texte
+- **Python** : Traitement de données, génération de texte
 - **Semantic Kernel** : Orchestration d'agents
-- **OpenAI** : Modeles de langage
+- **OpenAI** : Modèles de langage
 
-## Prerequis
+## Prérequis
 
 ```bash
 pip install openai pandas numpy semantic-kernel
@@ -33,4 +33,4 @@ pip install openai pandas numpy semantic-kernel
 
 ---
 
-*Projet etudiant - Janvier 2026*
+*Projet étudiant - Janvier 2026*

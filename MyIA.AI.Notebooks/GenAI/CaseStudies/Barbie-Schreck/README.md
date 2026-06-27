@@ -2,16 +2,16 @@
 
 [← CaseStudies](../README.md) | [↑ GenAI](../../README.md)
 
-Analyse et visualisation de donnees avec generation d'images hybrides Barbie/Shrek.
+Analyse et visualisation de données avec génération d'images hybrides Barbie/Shrek.
 
 ## Vue d'ensemble
 
 | Statistique | Valeur |
 |-------------|--------|
 | Notebooks | 1 |
-| Difficulte | Intermédiaire |
-| Duree | ~1-2h |
-| Theme | Analyse de donnees visuelles |
+| Difficulté | Intermédiaire |
+| Durée | ~1-2h |
+| Thème | Analyse de données visuelles |
 
 ## Notebook
 
@@ -21,11 +21,11 @@ Analyse et visualisation de donnees avec generation d'images hybrides Barbie/Shr
 
 ## Technologies
 
-- **Python** : Analyse de donnees
-- **OpenAI DALL-E** : Generation d'images
+- **Python** : Analyse de données
+- **OpenAI DALL-E** : Génération d'images
 - **PIL** : Manipulation d'images
 
-## Prerequis
+## Prérequis
 
 ```bash
 pip install pandas matplotlib seaborn openai jupyter
@@ -33,4 +33,4 @@ pip install pandas matplotlib seaborn openai jupyter
 
 ---
 
-*Projet etudiant - Janvier 2026*
+*Projet étudiant - Janvier 2026*
