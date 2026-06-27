@@ -164,6 +164,42 @@ Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau
 | 9 | Preferences | Agrégation de préférences (Borda, Condorcet) + théorie du vote |
 | 10 | MLN | Pont symbolique/statistique : FOL + poids, marginales, exceptions (pingouin) |
 
+## Concepts clés en images
+
+Deux concepts phares de la série, rendus visuels plutôt qu'en prose seule.
+
+### Le pont symbolique/statistique (notebook 10 — MLN)
+
+Un **Markov Logic Network** fait varier le « degré de logique » d'une formule via son poids `w`. À une extrémité (`w → ∞`), on retrouve la **logique classique** (un seul monde violant rend la base inconsistante) ; à l'autre (`w = 0`), la **statistique pure** (tous les mondes équiprobables). Le **paradoxe du pingouin** illustre comment ce spectre résout des cas qu'aucune des deux extrêmes ne sait traiter seule :
+
+```mermaid
+flowchart LR
+    LOGIC["<b>Logique classique</b><br/>FOL stricte<br/><i>w → ∞ (règle dure)</i><br/>un seul monde violant = ⊥"]
+    MLN["<b>Markov Logic Network</b><br/>P(world) ∝ exp(Σ wᵢ · nᵢ)<br/>chaque formule FOL = une contrainte <i>souple</i>"]
+    STAT["<b>Statistique pure</b><br/>mondes équiprobables<br/><i>w = 0 (aucune contrainte)</i>"]
+    LOGIC -.->|"poids croissant"| MLN
+    MLN -.->|"poids décroissant"| STAT
+    PENG(["<b>Paradoxe du pingouin</b> — discrimine les deux extrêmes<br/>Flies(tweety) = 0.00 : l'exception stricte « pingouin ⇒ ¬vole » l'emporte<br/>Flies(robin)  = 0.79 : la règle pondérée « oiseau ⇒ vole » seule, sans exception"])
+    MLN --> PENG
+```
+
+### La hiérarchie des sémantiques de Dung (notebook 5)
+
+Les sémantiques de Dung s'emboîtent par spécialisation. Partant de l'**admissibilité**, on resserre progressivement les conditions (défendre tout ce que l'on contient, puis maximalité, puis attaque de l'extérieur), ce qui engendre la chaîne **grounded → complete → preferred → stable** :
+
+```mermaid
+flowchart TD
+    ADM["<b>Admissible</b><br/>S défend chaque argument qu'elle contient"]
+    COMP["<b>Complete</b><br/>admissible <b>+</b> contient tout ce qu'elle défend"]
+    GRO["<b>Grounded</b><br/>la complete <i>minimale</i><br/>(point fixe de Knaster–Tarski, toujours unique)"]
+    PREF["<b>Preferred</b><br/>les complete <i>maximales</i> (au moins une)"]
+    STAB["<b>Stable</b><br/>preferred attaquant tout argument extérieur<br/>(peut ne pas exister pour certains AF)"]
+    ADM --> COMP
+    COMP --> GRO
+    COMP --> PREF
+    PREF --> STAB
+```
+
 ## Quick Start
 
 ```bash
