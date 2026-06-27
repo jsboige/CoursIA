@@ -1,14 +1,14 @@
 # Cloud-MeanReversion-Sectors
 
-**Asset class:** Equities (GICS sector ETFs)
+**Classe d'actifs :** Actions (ETF sectoriels GICS)
 
-**Cloud project ID:** N/A
+**ID projet Cloud :** N/A
 
 ## Description
 
-RSI(14) mean reversion strategy on 11 GICS sector ETFs (XLK, XLF, XLE, XLV, XLI, XLY, XLP, XLU, XLB, XLRE, XLC). Three variants with increasing sophistication: v1 uses raw RSI oversold/overbought signals; v2 adds SMA200 regime filtering (only trade in bull markets); v3 incorporates stop-loss rules. Scans daily 30 minutes after market open.
+Stratégie de retour à la moyenne basée sur le RSI(14) sur 11 ETF sectoriels GICS (XLK, XLF, XLE, XLV, XLI, XLY, XLP, XLU, XLB, XLRE, XLC). Trois variantes de sophistication croissante : v1 utilise des signaux bruts de survente/surachat du RSI ; v2 ajoute un filtre de régime SMA200 (ne trader qu'en marché haussier) ; v3 incorpore des règles de stop-loss. Scan quotidien 30 minutes après l'ouverture du marché.
 
-## How to Run
+## Comment exécuter
 
 ### Lean CLI
 ```bash
@@ -16,20 +16,20 @@ lean backtest --algorithm Cloud-MeanReversion-Sectors/main.py
 ```
 
 ### QC Cloud
-Create a new project, upload `main.py`, compile and run a backtest (default: 2015-01-01 to 2024-12-31).
+Créer un nouveau projet, téléverser `main.py`, compiler et lancer un backtest (défaut : 2015-01-01 au 2024-12-31).
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Method | Rebalance | Key Parameters |
-|--------|-----------|----------------|
-| RSI Mean Reversion (3 variants) | Daily scan | RSI period 14, SMA200 regime filter (v2+), stop-loss (v3) |
+| Méthode | Rebalance | Paramètres clés |
+|---------|-----------|-----------------|
+| Retour à la moyenne RSI (3 variantes) | Scan quotidien | RSI période 14, filtre de régime SMA200 (v2+), stop-loss (v3) |
 
-## Files
+## Fichiers
 
-| File | Description |
-|------|-------------|
-| `main.py` | Mean reversion algorithm with 3 variants (RSI, +regime filter, +stop-loss) on 11 sector ETFs |
+| Fichier | Description |
+|---------|-------------|
+| `main.py` | Algorithme de retour à la moyenne avec 3 variantes (RSI, +filtre de régime, +stop-loss) sur 11 ETF sectoriels |
 
-## References
+## Références
 
-- [QuantConnect Documentation](https://www.quantconnect.com/docs/)
+- [Documentation QuantConnect](https://www.quantconnect.com/docs/)

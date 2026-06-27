@@ -1,14 +1,14 @@
 # Cloud-VolTargeting
 
-**Asset class:** Multi-asset (Equities, Bonds, Commodities)
+**Classe d'actifs :** Multi-actifs (Actions, Obligations, Matières premières)
 
-**Cloud project ID:** N/A
+**ID projet Cloud :** N/A
 
 ## Description
 
-Volatility targeting strategy with three variants. v1 targets 12% annualized volatility on SPY alone using realized vol scaling. v2 extends to a multi-asset portfolio (SPY, QQQ, IEF, GLD) with equal risk contribution targeting 10% annualized vol. v3 adds a 126-day momentum filter to the multi-asset approach. Monthly rebalance across all variants.
+Stratégie de ciblage de volatilité avec trois variantes. v1 cible 12 % de volatilité annualisée sur SPY seul via une mise à l'échelle par volatilité réalisée. v2 étend à un portefeuille multi-actifs (SPY, QQQ, IEF, GLD) avec une contribution en risque égale ciblant 10 % de volatilité annualisée. v3 ajoute un filtre de momentum sur 126 jours à l'approche multi-actifs. Rebalance mensuelle pour toutes les variantes.
 
-## How to Run
+## Comment exécuter
 
 ### Lean CLI
 ```bash
@@ -16,20 +16,20 @@ lean backtest --algorithm Cloud-VolTargeting/main.py
 ```
 
 ### QC Cloud
-Create a new project, upload `main.py`, compile and run a backtest (default: 2015-01-01 to 2024-12-31).
+Créer un nouveau projet, téléverser `main.py`, compiler et lancer un backtest (défaut : 2015-01-01 au 2024-12-31).
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Method | Rebalance | Key Parameters |
-|--------|-----------|----------------|
-| Vol targeting (3 variants) | Monthly | Vol target 10-12%, momentum filter 126 days (v3), equal risk contribution (v2/v3) |
+| Méthode | Rebalance | Paramètres clés |
+|---------|-----------|-----------------|
+| Ciblage de volatilité (3 variantes) | Mensuelle | Cible de vol 10-12 %, filtre momentum 126 jours (v3), contribution en risque égale (v2/v3) |
 
-## Files
+## Fichiers
 
-| File | Description |
-|------|-------------|
-| `main.py` | Volatility targeting algorithm with 3 variants (single-asset, multi-asset ERC, +momentum) |
+| Fichier | Description |
+|---------|-------------|
+| `main.py` | Algorithme de ciblage de volatilité avec 3 variantes (actif unique, multi-actifs ERC, +momentum) |
 
-## References
+## Références
 
-- [QuantConnect Documentation](https://www.quantconnect.com/docs/)
+- [Documentation QuantConnect](https://www.quantconnect.com/docs/)
