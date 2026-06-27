@@ -49,8 +49,8 @@ Cette série ne propose pas de choisir l'un ou l'autre, mais de **comprendre les
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 12 |
-| Cellules totales | ~400 |
+| Notebooks | 13 |
+| Cellules totales | ~430 |
 | Durée estimée | ~6h (tutorat) |
 | Kernel | Python 3 (JPype/Java) |
 | Version Tweety | 1.30 recommandée |
@@ -143,8 +143,9 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 9 | [Tweety-9-Preferences](Tweety-9-Preferences.ipynb) | Préférences, Théorie du vote | 30 min |
 | **Synthèse** |
 | 10 | [Tweety-10-MLN](Tweety-10-MLN.ipynb) | Markov Logic Networks (FOL pondérée) | 50 min |
+| 11 | [Tweety-11-Causal](Tweety-11-Causal.ipynb) | Raisonnement causal : do-calculus, interventions, contrefactuels | 50 min |
 
-**Durée totale estimée** : ~7.5 heures
+**Durée totale estimée** : ~8.5 heures
 
 ## En quoi chaque notebook est unique
 
@@ -163,6 +164,7 @@ Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau
 | 8 | Agent Dialogues | Protocoles d'échange entre agents + négociation argumentative |
 | 9 | Preferences | Agrégation de préférences (Borda, Condorcet) + théorie du vote |
 | 10 | MLN | Pont symbolique/statistique : FOL + poids, marginales, exceptions (pingouin) |
+| 11 | Causalité | do-calculus de Pearl : intervention `do(X)` vs observation, contrefactuels |
 
 ## Quick Start
 
@@ -338,6 +340,7 @@ python scripts/download_tweety_tools.py --help
 | `logics.qbf` | Quantified Boolean Formulas | 3 |
 | `logics.cl` | Logique Conditionnelle | 3 |
 | `logics.mln` | Markov Logic Networks (FOL pondérée) | 10 |
+| `causal` | Raisonnement causal (do-calculus, SCM, contrefactuels) | 11 |
 
 ### Révision de Croyances (Notebook 4)
 
