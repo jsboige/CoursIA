@@ -1,8 +1,8 @@
-# Template Avance - Machine Learning sur BTC
+# Template Avancé - Machine Learning sur BTC
 
 ## Description
 
-Ce template implemente une strategie de trading algorithmique sur BTCUSDT utilisant un modele de Machine Learning (RandomForestClassifier) pour predire la direction du prix. Le modele est entraine directement dans l'algorithme et re-entraine mensuellement pour s'adapter aux conditions de marche.
+Ce template implémente une stratégie de trading algorithmique sur BTCUSDT utilisant un modèle de Machine Learning (RandomForestClassifier) pour prédire la direction du prix. Le modèle est entraîné directement dans l'algorithme et ré-entraîne mensuellement pour s'adapter aux conditions de marché.
 
 ## Pipeline ML
 
@@ -31,39 +31,39 @@ Prediction quotidienne
 Execution sur Binance Cash
 ```
 
-## Persistance du modele (ObjectStore)
+## Persistance du modèle (ObjectStore)
 
-Le modele entraine est sauvegarde dans l'ObjectStore de QuantConnect via `pickle`. Cela permet de :
+Le modèle entraîné est sauvegardé dans l'ObjectStore de QuantConnect via `pickle`. Cela permet de :
 
-- **Reprendre** un backtest sans re-entrainer depuis zero
-- **Deployer** un modele entraine en backtest vers le live trading
-- **Sauvegarder automatiquement** a la fin du backtest et a chaque re-entrainement
+- **Reprendre** un backtest sans ré-entraîner depuis zéro
+- **Deployer** un modèle entraîné en backtest vers le live trading
+- **Sauvegarder automatiquement** à la fin du backtest et à chaque ré-entraînement
 
-## Concepts cles abordes
+## Concepts clés abordés
 
 | Concept | Description |
 |---------|-------------|
-| **Feature engineering** | Transformation d'indicateurs techniques en features ML normalisees |
+| **Feature engineering** | Transformation d'indicateurs techniques en features ML normalisées |
 | **sklearn dans QC** | Utilisation de RandomForestClassifier dans l'environnement QuantConnect |
-| **ObjectStore** | Persistance de modeles serialises entre executions |
-| **Re-entrainement programme** | `Schedule.On` pour adapter le modele au regime de marche |
-| **Warmup** | Periode d'initialisation des indicateurs avant le trading |
+| **ObjectStore** | Persistance de modèles sérialisés entre exécutions |
+| **Ré-entraînement programmé** | `Schedule.On` pour adapter le modèle au régime de marché |
+| **Warmup** | Période d'initialisation des indicateurs avant le trading |
 
-## Modifications suggerees
+## Modifications suggérées
 
-Pour aller plus loin, les etudiants peuvent :
+Pour aller plus loin, les étudiants peuvent :
 
-1. **Ajouter des features** : ADX, ATR, Bollinger Bands, volume, volatilite historique
-2. **Essayer d'autres modeles** : `XGBClassifier` (xgboost), `SVC` (sklearn), ou un ensemble de modeles
-3. **Ajouter des positions short** : Vendre a decouvert quand la prediction est baissiere (necessite Margin account)
-4. **Walk-forward optimization** : Entrainer sur les N derniers mois, tester sur le mois suivant, puis avancer la fenetre
-5. **Gestion du risque** : Stop-loss, take-profit, taille de position variable selon la confiance du modele
-6. **Decalage temporel** : Predire le label de J+1 avec les features de J (voir avertissement ci-dessous)
+1. **Ajouter des features** : ADX, ATR, Bollinger Bands, volume, volatilité historique
+2. **Essayer d'autres modèles** : `XGBClassifier` (xgboost), `SVC` (sklearn), ou un ensemble de modèles
+3. **Ajouter des positions short** : Vendre à découvert quand la prédiction est baissière (nécessite Margin account)
+4. **Walk-forward optimization** : Entraîner sur les N derniers mois, tester sur le mois suivant, puis avancer la fenêtre
+5. **Gestion du risque** : Stop-loss, take-profit, taille de position variable selon la confiance du modèle
+6. **Décalage temporel** : Predire le label de J+1 avec les features de J (voir avertissement ci-dessous)
 
 ## Avertissements importants
 
-**Overfitting** : Un modele trop complexe (trop d'arbres, profondeur illimitee) apprendra le bruit du marche plutot que les vrais signaux. La performance en backtest sera excellente mais catastrophique en live. Toujours valider sur des donnees hors echantillon.
+**Overfitting** : Un modèle trop complexe (trop d'arbres, profondeur illimitée) apprendra le bruit du marché plutôt que les vrais signaux. La performance en backtest sera excellente mais catastrophique en live. Toujours valider sur des données hors échantillon.
 
-**Lookahead bias** : Dans ce template simplifie, les features et le label sont calcules a partir des memes donnees du jour J. En production, il faut s'assurer que la prediction utilise uniquement des donnees disponibles AVANT la prise de decision. Decaler les labels d'un jour (predire J+1 avec les features de J) est la correction standard.
+**Lookahead bias** : Dans ce template simplifié, les features et le label sont calculés à partir des mêmes données du jour J. En production, il faut s'assurer que la prédiction utilise uniquement des données disponibles AVANT la prise de decision. Décaler les labels d'un jour (prédire J+1 avec les features de J) est la correction standard.
 
-**Data snooping** : Tester de nombreuses combinaisons de features/hyperparametres sur le meme jeu de donnees augmente le risque de trouver des patterns aleatoires. Utiliser un jeu de validation separe.
+**Data snooping** : Tester de nombreuses combinaisons de features/hyperparamètres sur le même jeu de données augmente le risque de trouver des patterns aléatoires. Utiliser un jeu de validation séparé.
