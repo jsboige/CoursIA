@@ -1,4 +1,4 @@
-# Lean - Solveur mathématique et Verification Formelle
+# Lean - Solveur mathématique et Vérification Formelle
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
@@ -9,19 +9,19 @@ maturity: PRODUCTION=23, BETA=5
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
 
-Cette serie introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel base sur la theorie des types dependants. Le fil rouge va des fondations (types dependants, mode tactique, Mathlib) vers l'etat de l'art : assistance aux preuves par LLM et verification formelle de reseaux de neurones, ports de théorèmes phares (théorème de Kochen-Specker / 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen ; finitude des dérivées symboliques de Brzozowski), theorie des nœuds (mouvements de Reidemeister, tricolorabilite de Fox, noeud de Conway et preuve de Piccirillo), et hommages aux mathematiciens (Grothendieck et le langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre).
+Cette série introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel basé sur la théorie des types dépendants. Le fil rouge va des fondations (types dépendants, mode tactique, Mathlib) vers l'état de l'art : assistance aux preuves par LLM et vérification formelle de réseaux de neurones, ports de théorèmes phares (théorème de Kochen-Specker / 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen ; finitude des dérivées symboliques de Brzozowski), théorie des nœuds (mouvements de Reidemeister, tricolorabilite de Fox, noeud de Conway et preuve de Piccirillo), et hommages aux mathématiciens (Grothendieck et le langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre).
 
 ## Navigation
 
-Tous les notebooks incluent une **barre de navigation** en haut et en bas permettant de passer facilement d'un notebook a l'autre. Chaque notebook contient egalement un **Plan** avec des liens ancres vers chaque section.
+Tous les notebooks incluent une **barre de navigation** en haut et en bas permettant de passer facilement d'un notebook a l'autre. Chaque notebook contient également un **Plan** avec des liens ancres vers chaque section.
 
-## Modes d'execution suggeres
+## Modes d'exécution suggeres
 
 | Mode | Notebooks | Temps | Description |
 |------|-----------|-------|-------------|
-| **Fondations** | 1-5 | ~3h | Base theorique complete (types, logique, tactiques) |
+| **Fondations** | 1-5 | ~3h | Base théorique complète (types, logique, tactiques) |
 | **Avec Mathlib** | 1-6 | ~3h45 | Ajoute les tactiques Mathlib |
-| **Integration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
+| **Intégration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
 | **Complet** | 1-12 | ~11h | Toutes les fonctionnalites incluant LeanDojo et théorème de sensibilite |
 | **Avec Pilier 1.B** | 1-12, 13 | ~12h | Inclut le port Kochen-Specker (Cabello 18-vecteurs) - contextuality quantique |
 | **Avec hommages** | 1-12, 13, 15, 16a, 16b, 16c, 16d, 16e, 16f | ~17h20 | Ajoute Lean-15 (Grothendieck), Lean-16a (Conway, l'homme et l'oeuvre), Lean-16b (Conway, Game of Life), Lean-16d (Conway, Game of Life sur kernel Lean natif), Lean-16e (Conway, FRACTRAN sur kernel Lean natif) et Lean-16f (Conway, théorème du libre arbitre - adosse a Lean-13) |
@@ -29,82 +29,82 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 
 ## Structure
 
-### Partie 1 : Fondations (base sur PDF de reference)
+### Partie 1 : Fondations (basé sur PDF de référence)
 
-| # | Notebook | Contenu | Duree |
+| # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [Lean-1-Setup](Lean-1-Setup.ipynb) | Installation elan, kernel Jupyter, verification | 15 min |
+| 1 | [Lean-1-Setup](Lean-1-Setup.ipynb) | Installation elan, kernel Jupyter, vérification | 15 min |
 | 2 | [Lean-2-Dependent-Types](Lean-2-Dependent-Types.ipynb) | Calcul des Constructions, types, polymorphisme | 35 min |
 | 3 | [Lean-3-Propositions-Proofs](Lean-3-Propositions-Proofs.ipynb) | Prop, connecteurs, Curry-Howard, preuves par termes | 45 min |
 | 4 | [Lean-4-Quantifiers](Lean-4-Quantifiers.ipynb) | forall, exists, egalite, arithmetique Nat | 40 min |
 | 5 | [Lean-5-Tactics](Lean-5-Tactics.ipynb) | Mode tactique, apply/exact/intro/rw/simp | 50 min |
 
-### Partie 2 : Etat de l'art et integration IA
+### Partie 2 : État de l'art et intégration IA
 
-| # | Notebook | Contenu | Duree |
+| # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 6 | [Lean-6-Mathlib-Essentials](Lean-6-Mathlib-Essentials.ipynb) | Mathlib4, tactiques ring/linarith/omega, recherche | 45 min |
-| 7 | [Lean-7-LLM-Integration](Lean-7-LLM-Integration.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
+| 7 | [Lean-7-LLM-Intégration](Lean-7-LLM-Integration.ipynb) | LeanCopilot, AlphaProof, patterns LLM-Lean | 50 min |
 | 7b | [Lean-7b-Examples](Lean-7b-Examples.ipynb) | Exemples progressifs, benchmarks, cas pratiques | 40 min |
 | 8 | [Lean-8-Agentic-Proving](Lean-8-Agentic-Proving.ipynb) | Agents autonomes, APOLLO, problèmes Erdos | 55 min |
 | 9 | [Lean-9-SK-Multi-Agents](Lean-9-SK-Multi-Agents.ipynb) | Agent Framework (Microsoft), orchestration multi-agents | 45 min |
 | 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | LeanDojo: tracing, theorems, Dojo interactif | 45 min |
-| 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: reseaux de neurones verifies, IBP, CROWN | 1h30-2h |
-| 11a | [Lean-11-TorchLean-Python](Lean-11-TorchLean-Python.ipynb) | Implementation Python des algorithmes de verification (IBP, CROWN) | 1h30-2h |
+| 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: réseaux de neurones vérifies, IBP, CROWN | 1h30-2h |
+| 11a | [Lean-11-TorchLean-Python](Lean-11-TorchLean-Python.ipynb) | Implémentation Python des algorithmes de vérification (IBP, CROWN) | 1h30-2h |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | théorème de sensibilite (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
 | 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Huang dans le lake `sensitivity_lean`, `#check` + `#print axioms` rendus in-kernel (UNLOCK c.127, jonction Mathlib #2611) | 45 min |
 
 ### Partie 3 : théorèmes phares (ports complets)
 
-| # | Notebook | Contenu | Duree |
+| # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 13 | [Lean-13-Kochen-Specker](Lean-13-Kochen-Specker.ipynb) | théorème de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parite, contextuality quantique - Pilier 1.B Epic #1651 | 60 min |
 | 14 | [Lean-14-Finiteness-Derivatives](Lean-14-Finiteness-Derivatives.ipynb) | Dérivées symboliques de Brzozowski : la finitude des dérivées qui garantit le matching linéaire (langages rationnels, automates) | 25 min |
 
-### Partie 4 : Hommages mathematiciens
+### Partie 4 : Hommages mathématiciens
 
-| # | Notebook | Contenu | Duree |
+| # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 15 | [Lean-15-Grothendieck-Tribute](Lean-15-Grothendieck-Tribute.ipynb) | Langage grothendieckien dans Mathlib 4 : categories/foncteurs, cribles et topologies de Grothendieck, faisceaux, schemas, site de Zariski, morphismes etales/lisses - Epic #1646 | 45 min |
+| 15 | [Lean-15-Grothendieck-Tribute](Lean-15-Grothendieck-Tribute.ipynb) | Langage grothendieckien dans Mathlib 4 : categories/foncteurs, cribles et topologies de Grothendieck, faisceaux, schémas, site de Zariski, morphismes etales/lisses - Epic #1646 | 45 min |
 | 15b | [Lean-15b-Lean-Grothendieck](Lean-15b-Lean-Grothendieck.ipynb) | Atelier pratique Grothendieck : cribles, topologies et faisceaux en exercices (compagnon `grothendieck_lean`, fait suite a Lean-15) - Epic #1646 | 50 min |
-| 16a | [Lean-16a-Conway-Man-and-Work](Lean-16a-Conway-Man-and-Work.ipynb) | Conway, l'homme et l'oeuvre : biographie et style singulier (le jeu comme méthode) ; panorama des grands resultats (nombres surreels, groupes de Conway & Monstrous Moonshine, reseau de Leech, polynome de Conway, Doomsday, Look-and-Say, FRACTRAN, problème de l'Ange, Sprouts, théorème du libre arbitre) ; premieres noix crackees executees depuis conway_lean (Doomsday, Look-and-Say, Nim, Angel, Life - 0 sorry) - Epic #1647 / #2154 | 50 min |
+| 16a | [Lean-16a-Conway-Man-and-Work](Lean-16a-Conway-Man-and-Work.ipynb) | Conway, l'homme et l'oeuvre : biographie et style singulier (le jeu comme méthode) ; panorama des grands résultats (nombres surreels, groupes de Conway & Monstrous Moonshine, réseau de Leech, polynome de Conway, Doomsday, Look-and-Say, FRACTRAN, problème de l'Ange, Sprouts, théorème du libre arbitre) ; premières noix crackees exécutées depuis conway_lean (Doomsday, Look-and-Say, Nim, Angel, Life - 0 sorry) - Epic #1647 / #2154 | 50 min |
 | 16b | [Lean-16b-Conway-Game-of-Life-Lean](Lean-16b-Conway-Game-of-Life-Lean.ipynb) | Hommage a John Conway : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel - Epic #1647 | 60 min |
-| 16c | [Lean-16c-Conway-Game-of-Life-Golly](Lean-16c-Conway-Game-of-Life-Golly.ipynb) | Game of Life : les 3 piliers en images (compagnon Golly, integration CLI `bgolly` pour simulation certifiee) - Epic #1647 | 45 min |
+| 16c | [Lean-16c-Conway-Game-of-Life-Golly](Lean-16c-Conway-Game-of-Life-Golly.ipynb) | Game of Life : les 3 piliers en images (compagnon Golly, intégration CLI `bgolly` pour simulation certifiee) - Epic #1647 | 45 min |
 | 16d | [Lean-16d-Conway-Game-of-Life-Lean-Native](Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb) | Game of Life sur **kernel Lean natif** (`lean4-wsl`) : grille, règle B3/S23, moteur `step`/`evolve`, motifs (bloc, clignoteur, planeur) et faits certifiés par `decide`/`native_decide`, sans axiome `sorry` - Epic #1647 / #3294 | 40 min |
 | 16e | [Lean-16e-Conway-FRACTRAN-Lean-Native](Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb) | FRACTRAN sur **kernel Lean natif** (`lean4-wsl`) : type `Frac` (preuve `den > 0`), moteur `fracMulNat`/`fractranStep`/`fractranRun`, programmes (doubler, diviser) et le générateur de nombres premiers de Conway (14 fractions), faits certifiés par `decide` sans axiome `sorry` - Epic #1647 / #3294 | 40 min |
 | 16f | [Lean-16f-Conway-Free-Will-Theorem](Lean-16f-Conway-Free-Will-Theorem.ipynb) | théorème du libre arbitre (Conway-Kochen) : les trois axiomes SPIN/TWIN/MIN en profondeur, argument en deux temps (1 particule via Kochen-Specker, puis 2 particules via TWIN), ce que le théorème dit et NE dit PAS, port formel adosse a `FreeWillTheorem.lean` (chaine de reduction `free_will_theorem -> fwt_single_particle -> kochen_specker`, 0 sorry), registre d'extensibilite - Epic #2162 / #2156 | 40 min |
 
-### Partie 5 : Theorie des noeuds
+### Partie 5 : Théorie des noeuds
 
-| # | Notebook | Contenu | Duree |
+| # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 17a | [Lean-17-Knots-a-Conway-and-Proofs](Lean-17-Knots-a-Conway-and-Proofs.ipynb) | Conway, les nœuds et la preuve de Piccirillo : le noeud de Conway (11n34), slice-genre et nombre de denouement, contexte de la preuve (Piccirillo 2020, le noeud de Conway n'est pas slice) - hommage narratif, Epic #2874 | 40 min |
 | 17b | [Lean-17-Knots-b-Invariants-Companion](Lean-17-Knots-b-Invariants-Companion.ipynb) | Invariants de nœuds : PD-codes, mouvements de Reidemeister, tricolorabilite de Fox, diagrammes bien formes - companion `knot_lean` (Epic #2874, transfer forward #3000 sorry-free + backward #3124 partiel) | 60 min |
 
 ### Partie 6 : Recherche pondérée et optimalité (A*)
 
-| # | Notebook | Contenu | Duree |
+| # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 18 | [Lean-18-Search-AStar-Optimality](Lean-18-Search-AStar-Optimality.ipynb) | Optimalité de A* sous heuristique admissible : graphe pondéré ℝ≥0 et coût additif `pathCost`, prédicats `Admissible`/`Consistent`, théorème phare `admissible_implies_optimal` (borne en f), téléscopage `consistent_implies_path_bound` + monotonie de f - companion `astar_lean` (lake `Search/`, 0 sorry, registre #3801 prong B) | 35 min |
 
-**Duree totale** : ~18h05
+**Durée totale** : ~18h05
 
 ## Acquis d'apprentissage
 
-A l'issue de la serie, vous saurez :
+A l'issue de la série, vous saurez :
 
-- **Modeliser** un raisonnement mathématique dans le Calcul des Constructions : types dependants, univers, propositions comme types (Curry-Howard). Notebooks 2-3 ancrent ces objets sur des exemples concrets (Vector, propositions logiques) plutot que sur de l'abstraction nue.
+- **Modéliser** un raisonnement mathématique dans le Calcul des Constructions : types dépendants, univers, propositions comme types (Curry-Howard). Notebooks 2-3 ancrent ces objets sur des exemples concrets (Vector, propositions logiques) plutôt que sur de l'abstraction nue.
 - **Prouver** un théorème en mode tactique avec les briques Mathlib : `intro`/`apply`/`exact`/`rfl` pour la structure, `ring`/`linarith`/`omega`/`simp` pour l'arithmetique et la simplification, `induction`/`cases`/`rcases` pour l'analyse de cas. Notebooks 4-6.
-- **Integrer un LLM** au workflow de preuve : patterns LeanCopilot et AlphaProof (n-best, MCTS), prompts goal-aware, comparaison ND-search vs CoT, agents APOLLO/Erdos — fiables surtout sur les preuves courtes, limites persistantes sur les preuves longues et la couverture Mathlib (usage en assistant, pas en oracle). Notebooks 7-9.
-- **Tracer et explorer** une base de preuves a grande echelle : LeanDojo (parsing AST, theorem extraction, interaction Dojo), reseaux de neurones verifies via IBP/CROWN (TorchLean). Notebooks 10-11.
+- **Intégrer un LLM** au workflow de preuve : patterns LeanCopilot et AlphaProof (n-best, MCTS), prompts goal-aware, comparaison ND-search vs CoT, agents APOLLO/Erdos — fiables surtout sur les preuves courtes, limites persistantes sur les preuves longues et la couverture Mathlib (usage en assistant, pas en oracle). Notebooks 7-9.
+- **Tracer et explorer** une basé de preuves a grande echelle : LeanDojo (parsing AST, theorem extraction, interaction Dojo), réseaux de neurones vérifies via IBP/CROWN (TorchLean). Notebooks 10-11.
 - **Porter** un théorème de recherche en Lean 4 : théorème de sensibilite (Huang 2019, hypercube et signing matrix), théorème de Kochen-Specker (Cabello 18 vecteurs, argument de parite, contextuality quantique). Notebooks 12, 13.
-- **Lire le langage grothendieckien** dans Mathlib 4 : categories et foncteurs, cribles et topologies de Grothendieck, faisceaux, schemas et sites, morphismes etales/lisses — comme entree vers la geometrie algebrique formalisee. Notebook 15.
-- **Situer l'oeuvre de Conway** dans sa largeur : des nombres surreels au Monstrous Moonshine, du reseau de Leech au théorème du libre arbitre, en executant les premieres noix formalisees (Doomsday, Look-and-Say, Nim, Angel, Life) directement depuis le projet conway_lean (0 sorry). Notebook 16a.
-- **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de resultats combinatoires iconiques. Notebooks 16a-16e.
+- **Lire le langage grothendieckien** dans Mathlib 4 : categories et foncteurs, cribles et topologies de Grothendieck, faisceaux, schémas et sites, morphismes etales/lisses — comme entree vers la geometrie algebrique formalisee. Notebook 15.
+- **Situer l'oeuvre de Conway** dans sa largeur : des nombres surreels au Monstrous Moonshine, du réseau de Leech au théorème du libre arbitre, en executant les premières noix formalisees (Doomsday, Look-and-Say, Nim, Angel, Life) directement depuis le projet conway_lean (0 sorry). Notebook 16a.
+- **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de résultats combinatoires iconiques. Notebooks 16a-16e.
 - **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui reduit le cas a deux particules au théorème de Kochen-Specker (Notebook 13), et la lecture honnete de sa portee (ce qu'il dit et ne dit pas) — adosse a `FreeWillTheorem.lean` (0 sorry). Notebook 16f.
 - **Formaliser les invariants de nœuds** : PD-codes, mouvements de Reidemeister et tricolorabilite de Fox, en s'appuyant sur le companion `knot_lean` (transfert de tricolorabilite le long d'un twist R1 connecte, preuve forward sorry-free + backward partielle). Notebooks 17a, 17b.
 
-Pour l'etat formel detaille des modules support (preuves resolues vs `sorry` residuels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md), le [README du projet conway_lean](conway_lean/README.md), et le [README du projet grothendieck_lean](grothendieck_lean/README.md).
+Pour l'état formel detaille des modules support (preuves resolues vs `sorry` résiduels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md), le [README du projet conway_lean](conway_lean/README.md), et le [README du projet grothendieck_lean](grothendieck_lean/README.md).
 
 ## Statut de maturite
 
@@ -116,7 +116,7 @@ Pour l'etat formel detaille des modules support (preuves resolues vs `sorry` res
 | 4 | Quantifiers | ~46 | 3 | 3 | **COMPLET** |
 | 5 | Tactics | ~70 | 3 | 3 | **COMPLET** |
 | 6 | Mathlib-Essentials | ~45 | 3 | 3 | **COMPLET** |
-| 7 | LLM-Integration | ~50 | 2 | 2 | **COMPLET** |
+| 7 | LLM-Intégration | ~50 | 2 | 2 | **COMPLET** |
 | 7b | Examples | ~40 | 3 | 3 | **COMPLET** |
 | 8 | Agentic-Proving | ~70 | 2 | 2 | **COMPLET** |
 | 9 | SK-Multi-Agents | ~50 | 2 | 2 | **COMPLET** |
@@ -136,10 +136,10 @@ Pour l'etat formel detaille des modules support (preuves resolues vs `sorry` res
 | 17b | Knots-b-Invariants-Companion | ~19 | 3 | - | **NOUVEAU** |
 
 Tous les notebooks incluent :
-- Navigation header/footer avec liens vers notebooks precedent/suivant
+- Navigation header/footer avec liens vers notebooks précédent/suivant
 - Plan de ce Notebook avec liens ancres (notebooks 2-4)
 - Tableaux recapitulatifs en fin de section
-- Exercices avec solutions completes
+- Exercices avec solutions complètes
 
 ## Quick Start
 
@@ -162,7 +162,7 @@ Pour les notebooks 7-10 (LLM), configurer `.env` avec `OPENAI_API_KEY`. Pour le 
 
 ## Prerequisites
 
-- Connaissances de base en logique mathématique
+- Connaissances de basé en logique mathématique
 - Familiarite avec la programmation fonctionnelle (utile mais non obligatoire)
 - Pour notebooks 7-8 : compte OpenAI/Anthropic pour APIs LLM (optionnel)
 
@@ -239,23 +239,23 @@ cp .env.example .env
 - [TorchLean GitHub](https://github.com/lean-dojo/TorchLean)
 - [Papers: IBP, CROWN, LiRPA](https://github.com/lean-dojo/TorchLean#references)
 
-### References academiques
+### Références académiques
 
-| Reference | Couverture |
+| Référence | Couverture |
 |-----------|------------|
 | de Moura & Ullrich, "The Lean 4 Theorem Prover and Programming Language" (2021) | système Lean 4 |
 | The Mathlib Community, "The Mathlib Library" (2020), arXiv:1910.09436 | Mathlib4 |
 | Avigad, "Mathematics and Programming" (2024) — *Mathematics in Lean* | Fondations notebooks 1-5 |
 | Jiang et al., "LeanDojo: Theorem Proving with Retrieval-Augmented Language Models" (NeurIPS 2023) | LeanDojo, notebooks 10 |
 | First et al., "AlphaProof: Formal Math Reasoning" (DeepMind, 2024) | Notebook 7 |
-| Song et al., "Towards Counting Forall: Neural Network Verification via IBP, CROWN, and LiRPA" | TorchLean, notebooks 11 |
-| Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005) | Cross-series GameTheory |
-| Sen, "Collective Choice and Social Welfare" (1970) | Cross-series GameTheory |
+| Song et al., "Towards Counting Forall: Neural Network Vérification via IBP, CROWN, and LiRPA" | TorchLean, notebooks 11 |
+| Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005) | Cross-séries GameTheory |
+| Sen, "Collective Choice and Social Welfare" (1970) | Cross-séries GameTheory |
 
 ## Document source
 
 - Notebooks 1-5 bases sur : `D:\Dropbox\IA101\TPs\TP - Z3 - Tweety - Lean.pdf` (Section VI)
-- Notebooks 6-8 bases sur : Recherches etat de l'art 2025-2026
+- Notebooks 6-8 bases sur : Recherches état de l'art 2025-2026
 
 ## Validation
 
@@ -350,15 +350,15 @@ Lean/
 
 ## Prover daemon
 
-Le package `agent_tests/prover/` implemente un prouveur autonome Lean 4 utilisant le Microsoft Agent Framework.
+Le package `agent_tests/prover/` implémente un prouveur autonome Lean 4 utilisant le Microsoft Agent Framework.
 
 ### Architecture
 
 4 agents spécialisés dans un workflow conditionnel :
 
 1. **SearchAgent** : analyse le contexte, detecte les sorry, identifie les helpers
-2. **TacticAgent** : genere des tactiques de preuve (avec outils de compilation)
-3. **VerifyExecutor** : verifie les tactiques via `lake build` (non-LLM)
+2. **TacticAgent** : génère des tactiques de preuve (avec outils de compilation)
+3. **VerifyExecutor** : vérifie les tactiques via `lake build` (non-LLM)
 4. **CriticAgent** : analyse les erreurs et route vers le bon agent
 
 ### Usage
@@ -380,39 +380,39 @@ python agent_tests/multi_agent_proof.py --batch --demos 1,2,3
 ### Configuration
 
 Le fichier `.env` dans `agent_tests/` ou le repertoire parent configure :
-- `ZAI_API_KEY` : cle API z.ai pour GLM-5.1 (raisonnement)
+- `ZAI_API_KEY` : clé API z.ai pour GLM-5.1 (raisonnement)
 - `ZAI_BASE_URL` : endpoint API z.ai
 - `LEAN_PROJECT_DIR` : repertoire du projet Lean (pour `lake build`)
 
-## Connections cross-series
+## Connections cross-séries
 
-Les concepts de verification formelle et de preuve assistee par LLM presentes dans cette serie se retrouvent dans d'autres series du curriculum :
+Les concepts de vérification formelle et de preuve assistee par LLM presentes dans cette série se retrouvent dans d'autres séries du curriculum :
 
-### Lean et Theorie des Jeux (GameTheory)
+### Lean et Théorie des Jeux (GameTheory)
 
-Les notebooks GameTheory side tracks (16b-16f) formalisent en Lean 4 des resultats fondamentaux de theorie des jeux et de choix social :
+Les notebooks GameTheory side tracks (16b-16f) formalisent en Lean 4 des résultats fondamentaux de théorie des jeux et de choix social :
 
-| resultat | Fichier Lean | Notebook GameTheory | Statut |
+| résultat | Fichier Lean | Notebook GameTheory | Statut |
 |----------|-------------|---------------------|--------|
 | théorème d'Arrow (impossibilite) | `social_choice_lean/SocialChoice/Arrow.lean` | 16d | 0 sorry (Geanakoplos 2005) |
 | théorème de Sen (liberalisme) | `social_choice_lean/SocialChoice/Sen.lean` | 16e | 0 sorry (bidirectionnel) |
 | Valeur de Shapley | `cooperative_games_lean/CooperativeGames/Shapley.lean` | 16b | 1 sorry (en cours) |
-| Modeles de vote (Banks, STV) | `social_choice_lean/SocialChoice/Voting.lean` | 16f | 4 sorry (open problems) |
+| Modèles de vote (Banks, STV) | `social_choice_lean/SocialChoice/Voting.lean` | 16f | 4 sorry (open problems) |
 | Gale-Shapley (stable marriage) | `stable_marriage_lean/StableMarriage/GaleShapley.lean` | (pas de notebook dedie) | 2 sorry / 5 théorèmes. `gale_shapley_stable` CLOSED via mmaaz upstream (PR #1181). `man_optimal` + `woman_pessimal` OPEN (Knuth 1976 lattice, Wu-Roth 2018 — ~5-8j Mathlib). |
 
-Le notebook Lean-5 (tactiques) et Lean-6 (Mathlib) sont des prerequis directs pour les side tracks Lean de GameTheory.
+Le notebook Lean-5 (tactiques) et Lean-6 (Mathlib) sont des prérequis directs pour les side tracks Lean de GameTheory.
 
 ### Lean et SmartContracts
 
-La verification formelle en Lean (type theory, Curry-Howard) est conceptuellement liee a la verification formelle des smart contracts :
+La vérification formelle en Lean (type theory, Curry-Howard) est conceptuellement liee a la vérification formelle des smart contracts :
 
-- **SC-14 Formal Verification** : Certora/SMTChecker vs. Lean -- la meme idee de preuve mathématique de correction, mais sur des cibles differentes (Solidity vs. mathematiques). Les methodes différent : SMT solving (automatique, borne) vs. tactiques interactives (expressif, guidable).
-- **SC-11 LLM-Assisted Contracts** : Le meme paradigme d'assistance LLM que les notebooks Lean-7/8/9, applique a la generation de smart contracts au lieu de preuves.
-- **SC-17 E2E Verifiable Voting** : Les resultats de `Voting.lean` (théorème du median voter, proprietes Banks/STV) eclairent les proprietes theoriques des systemes de vote verifiable.
+- **SC-14 Formal Verification** : Certora/SMTChecker vs. Lean -- la même idée de preuve mathématique de correction, mais sur des cibles différentes (Solidity vs. mathématiques). Les méthodes différent : SMT solving (automatique, borne) vs. tactiques interactives (expressif, guidable).
+- **SC-11 LLM-Assisted Contracts** : Le même paradigme d'assistance LLM que les notebooks Lean-7/8/9, applique a la génération de smart contracts au lieu de preuves.
+- **SC-17 E2E Vérifiable Voting** : Les résultats de `Voting.lean` (théorème du median voter, proprietes Banks/STV) eclairent les proprietes théoriques des systemes de vote vérifiable.
 
-### Lean et Theorie des Nœuds
+### Lean et Théorie des Nœuds
 
-Le notebook Lean-17b (Invariants de Nœuds) est le pendant pedagogique du projet formel `knot_lean/` : les invariants introduits en cours (PD-codes, mouvements de Reidemeister, tricolorabilite de Fox) y sont portes en Lean 4, avec un accent sur le theoreme de transfert -- la tricolorabilite est preservee par un twist R1 connecte (Epic #2874).
+Le notebook Lean-17b (Invariants de Nœuds) est le pendant pédagogique du projet formel `knot_lean/` : les invariants introduits en cours (PD-codes, mouvements de Reidemeister, tricolorabilite de Fox) y sont portes en Lean 4, avec un accent sur le théorème de transfert -- la tricolorabilite est preservee par un twist R1 connecte (Epic #2874).
 
 | résultat | Fichier Lean | Notebook | Statut |
 |----------|-------------|----------|--------|
@@ -421,7 +421,7 @@ Le notebook Lean-17b (Invariants de Nœuds) est le pendant pedagogique du projet
 | Tricolorabilité du noeud de Conway (11n34) | `knot_lean/Knots/Conway.lean` | 17a | scaffolding |
 | Théorème d'invariance par Reidemeister (PL topology) | `knot_lean/Knots/Reidemeister.lean` | 17b | 2 sorry (out-of-scope PL) |
 
-Le notebook Lean-17a donne le contexte historique (noeud de Conway, slice-genre, preuve de Piccirillo 2020) qui motive le formalisme. Voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) pour l'etat detaille par module.
+Le notebook Lean-17a donne le contexte historique (noeud de Conway, slice-genre, preuve de Piccirillo 2020) qui motive le formalisme. Voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) pour l'état detaille par module.
 
 ### Lecture transversale
 
@@ -429,7 +429,7 @@ Le notebook Lean-17a donne le contexte historique (noeud de Conway, slice-genre,
 
 ## FAQ
 
-### Le kernel lean4-wsl ne demarre pas (timeout apres 60s)
+### Le kernel lean4-wsl ne demarre pas (timeout après 60s)
 
 **Cause** : le wrapper Python (`~/.lean4-kernel-wrapper.py`) ne trouve pas le venv Lean ou le REPL. vérifier :
 
@@ -444,7 +444,7 @@ Si un element manque, relancer le setup : `bash MyIA.AI.Notebooks/GameTheory/scr
 
 ### `lake build` échoue avec des erreurs Mathlib inattendues
 
-**Cause frequente** : la toolchain Lean locale est désynchronisée du `lean-toolchain` du projet. Lean 4 evolue rapidement et Mathlib suit.
+**Cause fréquente** : la toolchain Lean locale est désynchronisée du `lean-toolchain` du projet. Lean 4 évolue rapidement et Mathlib suit.
 
 ```bash
 # vérifier la toolchain requise par le projet
@@ -468,7 +468,7 @@ Lean 4 ne tourne pas nativement sous Windows pour les notebooks. La configuratio
 3. `elan default leanprover/lean4:stable`
 4. Installer le kernel Jupyter via `scripts/setup_wsl_lean4.sh` (cree le venv, le wrapper, et enregistre le kernel)
 
-Le notebook [Lean-1-Setup](Lean-1-Setup.ipynb) guide l'installation complete et verifie chaque composant.
+Le notebook [Lean-1-Setup](Lean-1-Setup.ipynb) guide l'installation complète et vérifie chaque composant.
 
 ### Comment lire les erreurs `type mismatch` ?
 
@@ -477,22 +477,22 @@ Lean 4 signale `type mismatch` quand le type attendu et le type fourni ne coïnc
 - **Universe level** : `Type u` vs `Type` — ajouter `universe u` ou utiliser `Sort _`.
 - **Implicit arguments** : Lean ne peut pas inferrer un argument implicite. Essayer `@nom_fonction` pour rendre tous les arguments explicites.
 - **Definitional equality** : `Nat` vs `Int`, `List` vs `Array` — utiliser les conversions explicites (`Int.ofNat`, `List.toArray`).
-- **Motive mismatch** dans `induction`/`cases` : le motif (motive) ne generalise pas correctement. Essayer `generalizing h` ou restructurer le but avec `have` avant l'induction.
+- **Motive mismatch** dans `induction`/`cases` : le motif (motive) ne généralise pas correctement. Essayer `generalizing h` ou restructurer le but avec `have` avant l'induction.
 
-### `sorry` dans un notebook pedagogique, c'est grave ?
+### `sorry` dans un notebook pédagogique, c'est grave ?
 
-**Non** dans les cellules d'exercice (stub pour l'etudiant). **Oui** dans le code de production (preuves formelles). La convention CoursIA :
+**Non** dans les cellules d'exercice (stub pour l'étudiant). **Oui** dans le code de production (preuves formelles). La convention CoursIA :
 
-- Cellules d'exercice : `sorry` = placeholder etudiant, normal et attendu.
+- Cellules d'exercice : `sorry` = placeholder étudiant, normal et attendu.
 - Preuves certifiees (ex: `conway_lean/`, `grothendieck_lean/`, `social_choice_lean/`) : `sorry` = axiome implicite = trou dans la chaine de certification. Le compteur `grep -c sorry` est suivi par les agents du depot.
 
-Voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) pour l'etat detaille des preuves par module.
+Voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) pour l'état detaille des preuves par module.
 
-### Quelle est la difference entre Lean-17a et Lean-17b ?
+### Quelle est la différence entre Lean-17a et Lean-17b ?
 
-Les deux notebooks couvrent la theorie des nœuds sous des angles complementaires :
+Les deux notebooks couvrent la théorie des nœuds sous des angles complementaires :
 
-- **Lean-17a (Conway, les nœuds et la preuve de Piccirillo)** : hommage narratif. Le contexte mathematique et historique -- le noeud de Conway (11n34), le slice-genre, le nombre de denouement, et la preuve de Piccirillo (2020) que le noeud de Conway n'est pas slice. Aucun exercice : c'est une lecture.
+- **Lean-17a (Conway, les nœuds et la preuve de Piccirillo)** : hommage narratif. Le contexte mathématique et historique -- le noeud de Conway (11n34), le slice-genre, le nombre de denouement, et la preuve de Piccirillo (2020) que le noeud de Conway n'est pas slice. Aucun exercice : c'est une lecture.
 - **Lean-17b (Invariants de Nœuds)** : atelier pratique et companion du projet formel `knot_lean/`. On y manipule les PD-codes, les mouvements de Reidemeister et la tricolorabilite de Fox, avec des exercices de calcul et de vérification d'invariants.
 
 Lean-17a donne le *pourquoi* (motivation historique) ; Lean-17b donne le *comment* (calcul des invariants, port formel).
@@ -512,7 +512,7 @@ Lean n'est pas un langage de programmation de plus : c'est le point où **le cod
 - **Poussez un port jusqu'au bout** : le projet [`knot_lean/`](knot_lean/) est le companion formel de Lean-17b. Les invariants de nœuds (PD-codes, Reidemeister, Fox) y sont portés avec quelques `sorry` résiduels documentés — un terrain concret où une preuve formelle est *en cours*, pas achevée.
 - **Croisez avec la théorie des jeux** : les résultats formels d'Arrow/Sen/Shapley/Voting (notebooks 16b-16f) rencontrent la série **[GameTheory](../../GameTheory/)** — où le choix social est étudié à la fois formellement et computationnellement.
 - **Appliquez au monde réel** : la vérification formelle n'est pas qu'abstraite. La série **[SmartContracts](../SmartContracts/)** (SC-14) applique les mêmes principes aux smart contracts — SMT solvers automatiques bornés d'un côté, Lean interactif expressif de l'autre, même ambition : certifier la correction d'un programme exécuté.
-- **Élargissez au Web Sémantique** : les shapes SHACL sont des invariants sur les données, analogues aux spécifications Lean. La série **[SemanticWeb](../SemanticWeb/)** (SW-7 OWL, SW-8 SHACL) explore une autre face de la certification — valider la cohérence d'une base de connaissances plutôt que prouver un théorème.
+- **Élargissez au Web Sémantique** : les shapes SHACL sont des invariants sur les données, analogues aux spécifications Lean. La série **[SemanticWeb](../SemanticWeb/)** (SW-7 OWL, SW-8 SHACL) explore une autre face de la certification — valider la cohérence d'une basé de connaissances plutôt que prouver un théorème.
 - **Relisez la série sous l'angle de la certification** : la [Lecture transversale](#lecture-transversale) relie ce geste — *certifier par changement de représentation* — à l'ensemble du dépôt CoursIA.
 
 ### Le fil rouge
