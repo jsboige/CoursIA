@@ -1,4 +1,4 @@
-# Playwright-OWUI - Tests E2E pedagogiques pour Open WebUI
+# Playwright-OWUI - Tests E2E pédagogiques pour Open WebUI
 
 <!-- CATALOG-STATUS
 series: GenAI-Playwright-OWUI
@@ -9,16 +9,16 @@ maturity:
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Vibe-Coding](../Vibe-Coding/README.md)
 
-Serie pedagogique complete pour apprendre **Playwright** (framework de tests E2E) en testant une application reelle : **Open WebUI**, une plateforme de chat IA generative.
+Serie pédagogique complète pour apprendre **Playwright** (framework de tests E2E) en testant une application réelle : **Open WebUI**, une plateforme de chat IA générative.
 
-> **Format particulier** : Contrairement aux autres sous-domaines GenAI qui utilisent des Jupyter Notebooks (.ipynb), cette serie utilise des **fichiers TypeScript (.spec.ts)** executes par Playwright. Chaque module contient un `README.md` avec la theorie et les explications, et un fichier `.spec.ts` avec les tests commentes qui servent d'exercices pratiques. Les tests sont auto-documentes : chaque test contient des commentaires pedagogiques expliquant les concepts, et des exercices supplementaires a completer par l'etudiant.
+> **Format particulier** : Contrairement aux autres sous-domaines GenAI qui utilisent des Jupyter Notebooks (.ipynb), cette série utilise des **fichiers TypeScript (.spec.ts)** exécutés par Playwright. Chaque module contient un `README.md` avec la théorie et les explications, et un fichier `.spec.ts` avec les tests commentés qui servent d'exercices pratiques. Les tests sont auto-documentés : chaque test contient des commentaires pédagogiques expliquant les concepts, et des exercices supplémentaires a compléter par l'étudiant.
 
-## Pourquoi cette serie ?
+## Pourquoi cette série ?
 
-Cette serie se distingue des tutoriels Playwright classiques par son sujet :
+Cette série se distingue des tutoriels Playwright classiques par son sujet :
 - On ne teste pas un simple formulaire ou une todo-list
-- On teste une **vraie application de production** avec des **modeles d'IA generative**
-- Les defis sont reels : streaming, non-determinisme, latence variable, multi-tenant
+- On teste une **vraie application de production** avec des **modèles d'IA générative**
+- Les defis sont réels : streaming, non-determinisme, latence variable, multi-tenant
 
 ## Structure
 
@@ -55,17 +55,17 @@ Playwright-OWUI/
 
 ## Modules
 
-### Module 01 — Decouverte de Playwright & OWUI (2-3h)
-*Niveau Debutant*
+### Module 01 — Découverte de Playwright & OWUI (2-3h)
+*Niveau Débutant*
 
 - Installation et configuration de Playwright
-- Premier test : verifier le chargement de la page
-- Selecteurs CSS, ARIA, et semantiques
+- Premier test : vérifier le chargement de la page
+- Sélecteurs CSS, ARIA, et semantiques
 - Mode headed et screenshots
 - **4 tests + exercices**
 
 ### Module 02 — Navigation & Authentification (2-3h)
-*Niveau Debutant+*
+*Niveau Débutant+*
 
 - Pattern d'authentification par storageState
 - Navigation entre les sections d'OWUI (admin, workspace, channels)
@@ -74,17 +74,17 @@ Playwright-OWUI/
 - **8 tests + exercices**
 
 ### Module 03 — Chat & Streaming LLM (3h)
-*Niveau Intermediaire*
+*Niveau Intermédiaire*
 
-- L'editeur TipTap : `keyboard.type()` vs `fill()`
+- L'éditeur TipTap : `keyboard.type()` vs `fill()`
 - Gestion du streaming (polling, waitForFunction)
 - Assertions sur du contenu non-deterministe
 - Skip gracieux pour services indisponibles
-- Actions sur les messages (regenerer, editer)
+- Actions sur les messages (régénérer, éditer)
 - **7 tests + exercices**
 
-### Module 04 — RAG, Outils MCP & Fonctionnalites avancees (3h)
-*Niveau Intermediaire+*
+### Module 04 — RAG, Outils MCP & Fonctionnalites avancées (3h)
+*Niveau Intermédiaire+*
 
 - RAG : attacher une Knowledge Base via le raccourci #
 - Outils MCP (Model Context Protocol) : recherche web
@@ -145,9 +145,9 @@ cp .env.example .env
 
 | Variable | Description | Module |
 |----------|-------------|--------|
-| `OWUI_CLOUD_MODEL` | Modele cloud pour les tests de chat | 03 |
-| `OWUI_LOCAL_MODEL` | Modele local (vLLM/Ollama) | 03 |
-| `OWUI_PERSONA_MODEL` | Modele persona/custom | 03 |
+| `OWUI_CLOUD_MODEL` | Modèle cloud pour les tests de chat | 03 |
+| `OWUI_LOCAL_MODEL` | Modèle local (vLLM/Ollama) | 03 |
+| `OWUI_PERSONA_MODEL` | Modèle persona/custom | 03 |
 | `OWUI_TENANT2_*` | Instance secondaire (multi-tenant) | 05 |
 
 ### 4. Verification
@@ -190,10 +190,10 @@ npm run report
 
 | Concept | Module | Description |
 |---------|--------|-------------|
-| Selecteurs | 01 | IDs, ARIA, getByRole, getByText |
-| storageState | 01-02 | Session authentifiee reutilisable |
+| Sélecteurs | 01 | IDs, ARIA, getByRole, getByText |
+| storageState | 01-02 | Session authentifiee réutilisable |
 | Auto-wait | 01 | Playwright attend automatiquement |
-| TipTap/fill() | 03 | keyboard.type() pour editeurs rich text |
+| TipTap/fill() | 03 | keyboard.type() pour éditeurs rich text |
 | Streaming | 03 | Polling et waitForFunction |
 | test.skip() | 03-04 | Skip gracieux pour services indisponibles |
 | API testing | 05 | APIRequestContext sans navigateur |
@@ -202,8 +202,8 @@ npm run report
 
 ## Pieges courants et solutions
 
-Ces pieges ont ete decouverts lors de la validation initiale de la suite de tests.
-Ils sont documentes ici car ils sont representatifs de vrais problemes
+Ces pieges ont été découverts lors de la validation initiale de la suite de tests.
+Ils sont documentés ici car ils sont representatifs de vrais problemes
 rencontres lors du test E2E d'applications web modernes.
 
 ### 1. Modal "Quoi de neuf" (Changelog)
@@ -219,9 +219,9 @@ await page.goto('/');
 await dismissModals(page);
 ```
 
-### 2. Editeur TipTap (fill() ne fonctionne pas)
+### 2. Éditeur TipTap (fill() ne fonctionne pas)
 
-**Probleme** : Open WebUI utilise TipTap/ProseMirror au lieu d'un `<textarea>`. La methode `fill()` de Playwright ne declenche pas les evenements necessaires.
+**Probleme** : Open WebUI utilise TipTap/ProseMirror au lieu d'un `<textarea>`. La methode `fill()` de Playwright ne déclenche pas les evenements necessaires.
 
 **Solution** : Toujours utiliser `keyboard.type()` pour saisir du texte dans le chat :
 
@@ -237,7 +237,7 @@ await page.keyboard.type('Bonjour', { delay: 10 });
 
 **Probleme** : L'endpoint `/api/v1/auths/signin` a un rate limit strict (~2 min entre appels). Si chaque test fait son propre login, on atteint rapidement le 429.
 
-**Solution** : S'authentifier UNE FOIS dans `beforeAll()` et reutiliser le token :
+**Solution** : S'authentifier UNE FOIS dans `beforeAll()` et réutiliser le token :
 
 ```typescript
 let token = '';
@@ -254,7 +254,7 @@ test('...', async ({ request }) => {
 
 **Probleme** : Certaines APIs (knowledge bases, functions) retournent du HTML au lieu de JSON quand le reverse proxy intercepte la requete ou la redirige.
 
-**Solution** : Verifier le Content-Type avant de parser, et utiliser `test.skip()` si l'API n'est pas disponible en JSON.
+**Solution** : Vérifier le Content-Type avant de parser, et utiliser `test.skip()` si l'API n'est pas disponible en JSON.
 
 ## Liens utiles
 
@@ -265,15 +265,15 @@ test('...', async ({ request }) => {
 
 ## Origine
 
-Cette serie pedagogique a ete creee dans le cadre du cycle GenAI CoursIA,
+Cette série pédagogique a été créée dans le cadre du cycle GenAI CoursIA,
 en complement des ateliers Vibe-Coding (Claude Code et Roo Code).
-Elle utilise les tests E2E reels du projet Open WebUI comme base pedagogique.
+Elle utilise les tests E2E réels du projet Open WebUI comme base pédagogique.
 
 ## FAQ
 
 ### `npm install` echoue ou Playwright ne trouve pas Chromium
 
-Playwright (utilise dans les modules [01](01-decouverte/) a [05](05-multi-tenant-ci/)) requiert Node.js 18+ et telecharge Chromium (~200 Mo). Si erreur :
+Playwright (utilise dans les modules [01](01-decouverte/) a [05](05-multi-tenant-ci/)) requiert Node.js 18+ et télécharge Chromium (~200 Mo). Si erreur :
 
 ```bash
 # Verifier Node.js
@@ -286,9 +286,9 @@ npx playwright install chromium
 npx playwright install-deps chromium
 ```
 
-Si vous etes derriere un proxy ou firewall, telecharger manuellement : `PLAYWRIGHT_DOWNLOAD_HOST=https://proxy.example.com npx playwright install chromium`. Le module [01](01-decouverte/) couvre la configuration pas-a-pas.
+Si vous êtes derrière un proxy ou firewall, télécharger manuellement : `PLAYWRIGHT_DOWNLOAD_HOST=https://proxy.example.com npx playwright install chromium`. Le module [01](01-decouverte/) couvre la configuration pas-a-pas.
 
-### Les tests echouent avec "Timeout exceeded" sur le chat
+### Les tests échouent avec "Timeout exceeded" sur le chat
 
 Le module [03](03-chat-streaming/) teste le chat avec un LLM reel via streaming. Les timeouts sont elonges (30-60s) mais les LLM lents ou surcharges peuvent les depasser. Mitigation :
 
@@ -300,13 +300,13 @@ test('chat reponse', { tag: '@slow' }, async ({ page }) => {
 });
 ```
 
-- Verifier que l'instance OWUI est accessible : `curl $OWUI_URL/api/v1/models`
-- Le streaming utilise `page.waitForFunction()` — si le modele ne stream pas, le poll tourne en boucle.
+- Vérifier que l'instance OWUI est accessible : `curl $OWUI_URL/api/v1/models`
+- Le streaming utilise `page.waitForFunction()` — si le modèle ne stream pas, le poll tourne en boucle.
 - Le module [03](03-chat-streaming/) explique les strategies d'assertion sur du contenu non-deterministe.
 
-### Peut-on utiliser cette serie sans instance Open WebUI ?
+### Peut-on utiliser cette série sans instance Open WebUI ?
 
-Partiellement. Les modules [01](01-decouverte/) (navigation, selecteurs) et [05](05-multi-tenant-ci/) (API testing) fonctionnent sur toute application web. Les modules [02](02-navigation-authentification/) a [04](04-rag-tools-avances/) sont specifiques a OWUI (auth, chat, RAG).
+Partiellement. Les modules [01](01-decouverte/) (navigation, sélecteurs) et [05](05-multi-tenant-ci/) (API testing) fonctionnent sur toute application web. Les modules [02](02-navigation-authentification/) a [04](04-rag-tools-avances/) sont spécifiques a OWUI (auth, chat, RAG).
 
 Pour une instance locale rapide :
 
@@ -322,35 +322,35 @@ Le module [01](01-decouverte/) explique comment pointer Playwright vers votre in
 
 ### Les tests du module 04 (RAG/MCP) sont tous skip
 
-Le module [04](04-rag-tools-avances/) teste les Knowledge Bases, les outils MCP et les channels. Les 5 skips dans les resultats de validation viennent de fonctionnalites non configurees sur l'instance OWUI :
+Le module [04](04-rag-tools-avances/) teste les Knowledge Bases, les outils MCP et les channels. Les 5 skips dans les résultats de validation viennent de fonctionnalités non configurées sur l'instance OWUI :
 
-- **Knowledge Bases** : necessitent un upload prealable de documents via l'interface OWUI.
-- **Outils MCP** : le serveur MCP doit etre configure dans les parametres OWUI (Admin > Tools).
+- **Knowledge Bases** : nécessitent un upload prealable de documents via l'interface OWUI.
+- **Outils MCP** : le serveur MCP doit être configure dans les parametres OWUI (Admin > Tools).
 - **Channels** : fonctionnalite collaborative qui requiert plusieurs utilisateurs actifs.
 
-Pour activer ces tests, configurer les fonctionnalites correspondantes dans OWUI et decommenter les `test.skip()` dans [04-rag-tools.spec.ts](04-rag-tools-avances/04-rag-tools.spec.ts).
+Pour activer ces tests, configurer les fonctionnalités correspondantes dans OWUI et decommenter les `test.skip()` dans [04-rag-tools.spec.ts](04-rag-tools-avances/04-rag-tools.spec.ts).
 
-### Quelle difference entre cette serie et les ateliers Vibe-Coding ?
+### Quelle différence entre cette série et les ateliers Vibe-Coding ?
 
-| Critere | Playwright-OWUI | Vibe-Coding |
+| Critère | Playwright-OWUI | Vibe-Coding |
 |---------|-----------------|-------------|
-| **Focus** | Tests E2E automatises | Developpement assiste par IA |
+| **Focus** | Tests E2E automatises | Développement assiste par IA |
 | **Langage** | TypeScript (.spec.ts) | Naturel (prompt engineering) |
 | **Outil** | Playwright | Claude Code / Roo Code |
-| **Public** | Testeurs QA, dev backend | Developeurs, debutants |
-| **Non-determinisme** | Gere (streaming, LLM) | N/A |
+| **Public** | Testeurs QA, dev backend | Developeurs, débutants |
+| **Non-determinisme** | Gère (streaming, LLM) | N/A |
 
-Les deux series sont complementaires : Vibe-Coding ([README](../Vibe-Coding/README.md)) couvre le developpement assiste par IA, tandis que Playwright-OWUI couvre la validation automatisee des interfaces generees.
+Les deux series sont complementaires : Vibe-Coding ([README](../Vibe-Coding/README.md)) couvre le développement assiste par IA, tandis que Playwright-OWUI couvre la validation automatisee des interfaces generees.
 
-### Comment adapter les tests a une autre application OWUI (version ou config differente) ?
+### Comment adapter les tests a une autre application OWUI (version ou config différente) ?
 
-Les selecteurs CSS et les patterns d'auth sont stables entre OWUI v0.8.x et v0.9.x. Si votre instance differe :
+Les sélecteurs CSS et les patterns d'auth sont stables entre OWUI v0.8.x et v0.9.x. Si votre instance diffère :
 
-1. **Selecteurs** : verifier avec le mode debug (`npx playwright test --debug`) que les selecteurs dans [helpers/selectors.ts](helpers/selectors.ts) correspondent a votre version.
+1. **Sélecteurs** : vérifier avec le mode debug (`npx playwright test --debug`) que les sélecteurs dans [helpers/selectors.ts](helpers/selectors.ts) correspondent a votre version.
 2. **Labels multilingues** : OWUI v0.9+ a change certains labels. Adapter dans les tests ou utiliser `getByRole()` (plus robuste que `getByText()`).
-3. **Nouvelles fonctionnalites** : OWUI v0.9.1 ajoute Calendar, Automations, Desktop app. Ce sont de bons candidats pour des exercices bonus (voir `WHATS-NEW-v0.9.1.md`).
+3. **Nouvelles fonctionnalités** : OWUI v0.9.1 ajoute Calendar, Automations, Desktop app. Ce sont de bons candidats pour des exercices bonus (voir `WHATS-NEW-v0.9.1.md`).
 
-Le module [01](01-decouverte/) enseigne les selecteurs robustes (`getByRole`, `getByTestId`) qui resistent aux changements d'UI.
+Le module [01](01-decouverte/) enseigne les sélecteurs robustes (`getByRole`, `getByTestId`) qui resistent aux changements d'UI.
 
 ---
 

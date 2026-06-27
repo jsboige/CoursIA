@@ -1,24 +1,24 @@
 # Module 05 - Multi-tenant, API Testing & CI/CD
 
-> **Format** : Fichier TypeScript `.spec.ts` avec tests commentes. Ouvrez `05-api-multi-tenant.spec.ts` dans VS Code. Ce module utilise l'API REST (pas le navigateur) pour la plupart des tests. Configurez `OWUI_TENANT2_*` dans `.env` pour activer les tests multi-tenant.
+> **Format** : Fichier TypeScript `.spec.ts` avec tests commentés. Ouvrez `05-api-multi-tenant.spec.ts` dans VS Code. Ce module utilise l'API REST (pas le navigateur) pour la plupart des tests. Configurez `OWUI_TENANT2_*` dans `.env` pour activer les tests multi-tenant.
 
-## Objectifs pedagogiques
+## Objectifs pédagogiques
 
 A la fin de ce module, vous serez capable de :
 
 - Tester des APIs REST directement avec Playwright (sans navigateur)
 - Comprendre l'architecture multi-tenant d'Open WebUI
-- Verifier l'isolation des donnees entre tenants
-- Valider le partage de ressources (KBs, modeles) entre instances
+- Vérifier l'isolation des donnees entre tenants
+- Valider le partage de ressources (KBs, modèles) entre instances
 - Integrer les tests Playwright dans un pipeline CI/CD
 
-## Duree estimee
+## Durée estimée
 
 **3 a 4 heures**
 
 ## Contenu du module
 
-### Partie theorique
+### Partie théorique
 
 **Tests API vs Tests UI :**
 Playwright n'est pas limite aux interactions navigateur.
@@ -38,28 +38,28 @@ expect(users.length).toBeGreaterThan(0);
 **Quand utiliser l'API vs le navigateur :**
 | Scenario | Approche |
 |----------|----------|
-| Verifier un rendu visuel | Navigateur (page) |
+| Vérifier un rendu visuel | Navigateur (page) |
 | Comparer des donnees entre instances | API (request) |
 | Tester l'authentification | Les deux |
-| Verifier la performance | API + metrics |
+| Vérifier la performance | API + metrics |
 
 **Architecture multi-tenant :**
 Chaque "tenant" est une instance independante d'Open WebUI :
-- Base de donnees PostgreSQL separee
-- Configuration independante (modeles, fonctions, users)
-- Certaines ressources partagees (KBs via Qdrant, modeles LLM)
+- Base de donnees PostgreSQL séparée
+- Configuration independante (modèles, fonctions, users)
+- Certaines ressources partagees (KBs via Qdrant, modèles LLM)
 
 ### Partie pratique
 
 | Test | Description | Concepts |
 |------|-------------|----------|
 | Auth API | Login via API, obtenir un token JWT | `request.post()`, JWT |
-| Modeles API | Lister les modeles via API | `request.get()`, headers |
+| Modèles API | Lister les modèles via API | `request.get()`, headers |
 | KBs API | Lister les knowledge bases via API | Pagination API |
 | Multi-tenant auth | Authentification sur deux instances | Isolation |
-| KB partagees | Verifier le partage de KBs | Comparison cross-tenant |
-| Modeles identiques | Verifier la parite des modeles | Assertions en boucle |
-| Isolation donnees | Verifier l'isolation des users | Securite multi-tenant |
+| KB partagees | Vérifier le partage de KBs | Comparison cross-tenant |
+| Modèles identiques | Vérifier la parite des modèles | Assertions en boucle |
+| Isolation donnees | Vérifier l'isolation des users | Sécurité multi-tenant |
 
 ## Commandes
 
@@ -104,4 +104,4 @@ jobs:
 2. **Retries** : Activer 1-2 retries en CI (reseaux instables)
 3. **Rapports** : Toujours uploader le rapport HTML comme artefact
 4. **Timeouts** : Augmenter les timeouts en CI (machines plus lentes)
-5. **Screenshots** : `only-on-failure` pour le debogage post-mortem
+5. **Screenshots** : `only-on-failure` pour le débogage post-mortem
