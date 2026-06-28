@@ -11,7 +11,7 @@ maturity: PRODUCTION=2
 
 La conscience est-elle mesurable ? La Théorie de l'Information Intégrée (IIT), proposée par Giulio Tononi, répond oui : un système est conscient dans la mesure où il intègre de l'information de manière non réductible. Plus formellement, la quantité de conscience d'un système correspond à la valeur **Phi** (big Phi), qui mesure le degré d'intégration causale irréductible. Cette série vous apprend à calculer cette mesure avec **PyPhi**, la bibliothèque de référence du laboratoire Tononi, et à explorer la géométrie informationnelle des systèmes complexes.
 
-Le premier notebook couvre le spectre fondamental : construction de graphes causaux binaires, calcul des Transition Probability Matrices (TPM), définition des sous-systèmes, extraction des Cause-Effect Structures (CES), et exploration des macro-sous-systèmes. Le second approfondit les aspects avancés : partitionnement MIP, répertoires cause-effet, MICE, comparaison big Phi vs small phi, réseaux élargis à 4+ nœuds, coarse-graining et aperçu IIT 4.0.
+Le premier notebook couvre le spectre fondamental : construction de graphes causaux binaires, calcul des Transition Probability Matrices (TPM), définition des sous-systèmes, extraction des Cause-Effect Structures (CES), et exploration des macro-sous-systèmes. Le second approfondit les aspects avancés : partitionnement MIP, répertoires cause-effet, MICE, comparaison big Phi vs small phi, réseaux élargis à 4+ nœuds, coarse-graining et aperçu IIT 4.0. Le troisième est consacré au **coarse-graining et à la question de l'échelle du $\Phi$** : il opérationnalise le module `pyphi.macro` (information efficace de Hoel, énumération des regroupements, comparaison micro/macro) et examine honnêtement la prédiction de *causal emergence*.
 
 **À qui s'adresse cette série** : étudiants en sciences cognitives, neuroscience computationnelle, et philosophie de l'esprit. Les notebooks (~60-90 min chacun) nécessitent Python 3.9 avec `pyphi` (installé via conda env dédié). Une familiarité avec les graphes et la logique booléenne suffit. Il constitue un complément théorique aux séries [Probas](../Probas/README.md) (modèles probabilistes) et [GameTheory](../GameTheory/README.md) (systèmes multi-agents), avec lesquelles il partage les concepts de causalité et d'interaction.
 
@@ -33,6 +33,7 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 |---|----------|---------|-------|
 | 1 | [Intro_to_PyPhi](Intro_to_PyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation | 60-90 min |
 | 2 | [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
+| 3 | [IIT-3-CoarseGraining-Macro-Phi](IIT-3-CoarseGraining-Macro-Phi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
 
 ## Parcours recommandés
 
@@ -41,13 +42,17 @@ Notebook 1 (Fondements)
     |
     v
 Notebook 2 (Sujets avancés)
+    |
+    v
+Notebook 3 (Coarse-graining & échelle du Φ)
 ```
 
 | Objectif | Parcours |
 |----------|----------|
 | Découverte rapide | Notebook 1 seul |
-| Maîtrise complète | Notebook 1 puis 2 |
+| Maîtrise complète | Notebook 1 puis 2, puis 3 |
 | Focus philosophie | Notebook 1 (sections CES + débats) + Notebook 2 (section IIT 4.0) |
+| Focus emergence & échelle | Notebook 1 + Notebook 3 (causal emergence de Hoel) |
 
 ### Parcours d'apprentissage
 
@@ -58,6 +63,10 @@ Vous installez PyPhi dans un environnement conda dédié (Python 3.9 obligatoire
 **Phase 2 : Approfondissement (~90 min, notebook 2)**
 
 Le deuxième notebook déconstruit le calcul de Phi : vous manipulez les bipartitions (MIP), les répertoires cause-effet, et les MICE (Maximally Irreducible Cause or Effect). La comparaison big Phi vs small phi clarifie les deux niveaux d'analyse. L'extension à des réseaux à 4+ nœuds montre l'explosion combinatoire et justifie le coarse-graining. L'aperçu IIT 4.0 ouvre sur les évolutions récentes de la théorie. Les 3 exercices testent votre compréhension des répertoires, du Phi multi-états et des réseaux feed-forward (Phi = 0 attendu).
+
+**Phase 3 : Échelle et emergence (~60 min, notebook 3)**
+
+Le troisième notebook opérationnalise le module `pyphi.macro` resté conceptuel jusque-là : vous mesurez l'**information efficace** (EI) de Hoel, énumérez les regroupements (coarse-grain) possibles d'un réseau, et comparez $\Phi$ à l'échelle micro et macro sur l'exemple canonique de pyphi. Surtout, il examine **honnêtement** la prédiction contre-intuitive de *causal emergence* (Hoel 2013) : pourquoi le $\Phi$ macro ne dépasse le $\Phi$ micro que sur des réseaux probabilistes où le coarse-grain filtre du bruit, et pas sur des toys déterministes. Les 3 exercices portent sur la dégénérescence (réseau AND), l'énumération des regroupements et le test d'une hypothèse d'emergence.
 
 ## Contenu détaillé
 
@@ -86,6 +95,17 @@ Le deuxième notebook déconstruit le calcul de Phi : vous manipulez les biparti
 | Réseaux élargis | Réseau 4-nœuds en anneau (XOR cyclique), Φ sur système élargi |
 | Performance | Timing du calcul de CES, module `pyphi.macro` |
 | IIT 4.0 | Concept-Style SIA, limites computationnelles, débats |
+
+### IIT-3-CoarseGraining-Macro-Phi.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| Setup | Configuration mono-cœur déterministe de `pyphi.macro` |
+| Échelle micro | Réseau copy 3-nœuds, information efficace (EI) et $\Phi$ de référence |
+| Méthode coarse-grain | `all_partitions` : énumération des regroupements possibles |
+| Échelle macro | Exemple canonique `macro_network`, $\Phi$ coarse-grained |
+| Comparaison micro/macro | $\Phi$ macro vs $\Phi$ micro, interprétation honnête de l'emergence |
+| Causal emergence | Hoel 2013 : pourquoi l'emergence positive n'est ni automatique ni garantie |
 
 ## Concepts clés
 
@@ -249,8 +269,9 @@ Oui, mais avec caveats. PyPhi est la référence pour IIT 3.0, mais IIT 4.0 (202
 
 ```
 IIT/
-├── Intro_to_PyPhi.ipynb        # Notebook 1 : introduction
-├── IIT-2-AdvancedTopics.ipynb  # Notebook 2 : sujets avances
+├── Intro_to_PyPhi.ipynb             # Notebook 1 : introduction
+├── IIT-2-AdvancedTopics.ipynb       # Notebook 2 : sujets avances
+├── IIT-3-CoarseGraining-Macro-Phi.ipynb  # Notebook 3 : coarse-graining & échelle du Φ
 ├── scripts/
 │   ├── setup_pyphi_env.ps1     # Setup conda env + kernel
 │   └── build_notebook.py       # Script de construction notebook 2
