@@ -1,92 +1,92 @@
 # DualMomentum Strategy
 
-**Status**: ⚠️ REPLACED by DualMomentumNoTLT - Counter-Example for Educational Purposes
+**Statut** : ⚠️ REMPLACÉE par DualMomentumNoTLT — contre-exemple à visée pédagogique.
 
 ## Performance
 
-| Metric | Value | Note |
-|--------|-------|------|
-| Sharpe Ratio | **0.350** | Weaker than replacement |
-| CAGR | 9.2% | Similar to replacement |
-| Max Drawdown | **33.6%** | Worse than replacement |
-| Period | 2015-2026 | |
+| Métrique | Valeur | Note |
+|----------|--------|------|
+| Sharpe Ratio | **0.350** | Plus faible que le remplacement |
+| CAGR | 9.2 % | Similaire au remplacement |
+| Max Drawdown | **33.6 %** | Pire que le remplacement |
+| Période | 2015-2026 | |
 
-## Why This Strategy Was Replaced
+## Pourquoi cette stratégie a été remplacée
 
-### Root Cause: TLT (Long-Term Treasuries) Risk-Off Failure
+### Cause racine : échec du TLT (obligations long terme) en risk-off
 
-This strategy uses **TLT** as the risk-off asset during bear markets:
-- **Hypothesis**: TLT provides safe haven during equity declines
-- **Reality (2022)**: TLT crashed -26% during rate hike cycle
-- **Impact**: Max drawdown of 33.6% (mostly from COVID + 2022)
+Cette stratégie utilise **TLT** comme actif risk-off pendant les marchés baissiers :
+- **Hypothèse** : TLT offre une valeur refuge pendant les baisses actions
+- **Réalité (2022)** : TLT s'est effondré de -26 % pendant le cycle de hausse des taux
+- **Impact** : Max drawdown de 33.6 % (surtout issu de COVID + 2022)
 
-### The COVID Problem (March 2020)
+### Le problème COVID (mars 2020)
 
-| Event | SPY Drop | TLT Drop | Strategy Impact |
-|-------|----------|----------|------------------|
-| COVID crash (Mar 2020) | -34% | +2% | TLT worked as intended |
-| Rate hike cycle (2022) | -25% | **-26%** | TLT FAILED as safe haven |
+| Événement | Baisse SPY | Baisse TLT | Impact stratégie |
+|-----------|------------|------------|------------------|
+| Crash COVID (mars 2020) | -34 % | +2 % | TLT a fonctionné comme prévu |
+| Cycle de hausse des taux (2022) | -25 % | **-26 %** | TLT a ÉCHOUÉ comme valeur refuge |
 
-**The structural issue**: TLT is **duration risk**, not true diversification:
-- In rate hike cycles, TLT correlates WITH equities (both down)
-- 2022 broke the "bonds = safe haven" assumption
-- Max DD of 33.6% is structural (cannot be fixed with parameter tuning)
+**Le problème structurel** : TLT est un **risque de duration**, pas une vraie diversification :
+- En cycle de hausse des taux, TLT se corrèle AVEC les actions (les deux baissent)
+- 2022 a cassé l'hypothèse « obligations = valeur refuge »
+- Le Max DD de 33.6 % est structurel (ne peut pas être corrigé par ajustement de paramètres)
 
-### Replacement: DualMomentumNoTLT
+### Remplacement : DualMomentumNoTLT
 
-| Strategy | Sharpe | CAGR | Max DD | Improvement |
-|----------|--------|------|--------|-------------|
-| DualMomentum (original) | 0.350 | 9.2% | 33.6% | Baseline |
-| **DualMomentumNoTLT** | **0.469** | **11.0%** | **23.6%** | **+34% Sharpe, -10% Max DD** |
+| Stratégie | Sharpe | CAGR | Max DD | Amélioration |
+|-----------|--------|------|--------|--------------|
+| DualMomentum (original) | 0.350 | 9.2 % | 33.6 % | Référence |
+| **DualMomentumNoTLT** | **0.469** | **11.0 %** | **23.6 %** | **+34 % Sharpe, -10 % Max DD** |
 
-**What changed**:
-- Removed TLT, replaced with **defensive assets** (XLP, IEF, GLD)
-- Max DD reduced from 33.6% → 23.6%
-- Sharpe improved from 0.350 → 0.469
+**Ce qui a changé** :
+- Retrait du TLT, remplacé par des **actifs défensifs** (XLP, IEF, GLD)
+- Max DD réduit de 33.6 % → 23.6 %
+- Sharpe amélioré de 0.350 → 0.469
 
-### Lessons Learned
+### Leçons retenues
 
-1. **TLT is not a safe haven in all regimes**: Duration risk creates correlation with equities during rate hikes
-2. **Max DD is structural**: 33.6% drawdown is unacceptable for most investors
-3. **Asset selection matters**: The choice of risk-off asset is as important as the signal
-4. **Regime awareness**: Strategies must account for different market regimes (rate hikes vs. cuts)
-5. **Don't overfit to one period**: TLT worked 2015-2020 but broke in 2022
+1. **TLT n'est pas une valeur refuge dans tous les régimes** : le risque de duration crée une corrélation avec les actions pendant les hausses de taux
+2. **Le Max DD est structurel** : un drawdown de 33.6 % est inacceptable pour la plupart des investisseurs
+3. **Le choix d'actif compte** : le choix de l'actif risk-off est aussi important que le signal
+4. **Sensibilité au régime** : les stratégies doivent tenir compte des différents régimes de marché (hausse vs. baisse des taux)
+5. **Ne pas sur-ajuster à une période** : TLT a fonctionné sur 2015-2020 mais a cassé en 2022
 
-## When DualMomentum (with TLT) CAN Work
+## Quand DualMomentum (avec TLT) PEUT fonctionner
 
-This original approach may work in:
-- **Falling rate environments**: TLT benefits from rate cuts
-- **Deflationary periods**: Bonds provide true diversification
-- **Shorter backtests**: 2015-2020 shows good results (but 2022 breaks it)
+Cette approche originale peut fonctionner dans :
+- **Environnements de baisse des taux** : TLT bénéficie des baisses de taux
+- **Périodes déflationnistes** : les obligations offrent une vraie diversification
+- **Backtests plus courts** : 2015-2020 montre de bons résultats (mais 2022 le casse)
 
-**For full-cycle (2015-2026)**: Use DualMomentumNoTLT instead.
+**Pour le cycle complet (2015-2026)** : utiliser DualMomentumNoTLT à la place.
 
-## Pedagogical Value
+## Valeur pédagogique
 
-This strategy serves as a counter-example for:
-- ⚠️ **Asset selection risk**: The "safe haven" asset can become a source of risk
-- ⚠️ **Regime dependence**: Strategies that work in one regime may fail in another
-- ⚠️ **Max DD matters**: 33.6% drawdown is psychologically and financially damaging
-- ⚠️ **The importance of full-period backtesting**: 2015-2020 looks good, 2022 breaks it
+Cette stratégie sert de contre-exemple pour :
+- ⚠️ **Risque de sélection d'actif** : l'actif « valeur refuge » peut devenir une source de risque
+- ⚠️ **Dépendance au régime** : une stratégie qui fonctionne dans un régime peut échouer dans un autre
+- ⚠️ **Le Max DD compte** : un drawdown de 33.6 % est psychologiquement et financièrement dommageable
+- ⚠️ **L'importance du backtest sur période complète** : 2015-2020 paraît bon, 2022 le casse
 
-## Comparison to Replacement
+## Comparaison au remplacement
 
 ```python
 # Original (DualMomentum)
-UNIVERSE = [SPY, QQQ, IEF, GLD, XLP, TLT]  # TLT included
+UNIVERSE = [SPY, QQQ, IEF, GLD, XLP, TLT]  # TLT inclus
 RISK_OFF_ASSETS = [TLT, IEF, GLD, XLP]
 
-# Replacement (DualMomentumNoTLT)
-UNIVERSE = [SPY, QQQ, IEF, GLD, XLP]  # TLT removed
-RISK_OFF_ASSETS = [IEF, GLD, XLP]  # Defensive, no duration risk
+# Remplacement (DualMomentumNoTLT)
+UNIVERSE = [SPY, QQQ, IEF, GLD, XLP]  # TLT retiré
+RISK_OFF_ASSETS = [IEF, GLD, XLP]  # Défensif, sans risque de duration
 ```
 
-## References
+## Références
 
-- **DualMomentumNoTLT**: The improved version without TLT
-- **SectorMomentum**: Similar dual-momentum approach with defensive assets
-- **OPTIMIZATION_BACKLOG.md**: Full iteration history
+- **DualMomentumNoTLT** : la version améliorée sans TLT
+- **SectorMomentum** : approche dual-momentum similaire avec actifs défensifs
+- **OPTIMIZATION_BACKLOG.md** : historique complet des itérations
 
 ---
 
-**Note**: This strategy is kept as a counter-example. For production use, see **DualMomentumNoTLT** which removes TLT and achieves better risk-adjusted returns.
+**Note** : cette stratégie est conservée comme contre-exemple. Pour un usage en production, voir **DualMomentumNoTLT** qui retire le TLT et atteint de meilleurs rendements ajustés au risque.
