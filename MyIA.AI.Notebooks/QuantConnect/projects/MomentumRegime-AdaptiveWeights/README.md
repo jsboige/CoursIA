@@ -1,55 +1,57 @@
 # MomentumRegime-AdaptiveWeights
 
-**Asset class:** US Equities (SPY/QQQ/IEF/GLD)
-**Cloud project ID:** 31524424
-**Baseline:** Framework_Composite_MomentumRegime (Sharpe 0.185, CAGR 4.73%)
+**Classe d'actifs :** Actions US (SPY/QQQ/IEF/GLD)
+**Cloud project ID :** 31524424
+**Baseline :** Framework_Composite_MomentumRegime (Sharpe 0.185, CAGR 4.73 %)
 
 ## Description
 
-Adaptive-weight variant of Framework_Composite_MomentumRegime.
-Shifts allocation toward SectorMomentum (85/15 vs baseline 60/40),
-expands momentum universe to include QQQ, and favors shorter-term lookbacks.
+Variante à poids adaptatifs de Framework_Composite_MomentumRegime.
+Décale l'allocation vers SectorMomentum (85/15 contre 60/40 pour la baseline),
+élargit l'univers de momentum pour inclure QQQ et privilégie des lookbacks plus courts.
 
-## Backtest Results
+## Résultats de backtest
 
-| Metric | Baseline (T60/RS40) | This Variant (T85/RS15) | Delta |
-|--------|---------------------|--------------------------|-------|
+| Métrique | Baseline (T60/RS40) | Cette variante (T85/RS15) | Delta |
+|----------|---------------------|---------------------------|-------|
 | Sharpe Ratio | 0.185 | **-0.74** | -0.925 |
-| CAGR | 4.73% | 1.76% | -2.97pp |
-| Max Drawdown | - | 4.4% | - |
-| Net Profit | - | 21.1% | - |
+| CAGR | 4.73 % | 1.76 % | -2.97 pp |
+| Max Drawdown | - | 4.4 % | - |
+| Net Profit | - | 21.1 % | - |
 | Beta (vs SPY) | - | 0.081 | - |
 | Total Orders | - | 403 | - |
-| Win Rate | - | 71% | - |
+| Win Rate | - | 71 % | - |
 
-**Verdict: NO BEATS.** Negative Sharpe ratio. The 85/15 shift destroyed value.
+**Verdict : NO BEATS.** Sharpe ratio négatif. Le décalage 85/15 a détruit de la valeur.
 
-## Analysis
+## Analyse
 
-The variant dramatically underperforms the baseline. Root causes:
+La variante sous-performe dramatiquement la baseline. Causes profondes :
 
-1. **Over-concentration on SectorMomentum**: At 85% weight, SectorMomentum
-   dominates allocations. When its monthly signal flips (common with short-term
-   lookbacks 0.5/0.2/0.2/0.1), the portfolio churns between assets.
+1. **Sur-concentration sur SectorMomentum** : à 85 % de poids, SectorMomentum
+   domine les allocations. Quand son signal mensuel s'inverse (fréquent avec des
+   lookbacks courts 0.5/0.2/0.2/0.1), le portefeuille navigue entre les actifs.
 
-2. **QQQ addition dilutes signal quality**: Adding QQQ to SectorMomentum's
-   universe creates a 4-way race where the best-scored asset rotates frequently,
-   generating unnecessary turnover.
+2. **L'ajout de QQQ dilue la qualité du signal** : ajouter QQQ à l'univers de
+   SectorMomentum crée une course à 4 où l'actif au meilleur score tourne fréquemment,
+   générant un turnover inutile.
 
-3. **Low beta (0.081)**: The strategy spends most time in defensive assets (IEF/GLD)
-   despite bull market conditions, suggesting SectorMomentum's composite scoring
-   with short-term bias overweights transient pullbacks.
+3. **Beta faible (0.081)** : la stratégie passe l'essentiel du temps dans des actifs
+   défensifs (IEF/GLD) malgré des conditions de marché haussier, ce qui suggère que le
+   scoring composite de SectorMomentum, avec un biais court terme, surpondère les
+   replis transitoires.
 
-4. **RegimeSwitching at 15%**: Too small to matter. The regime-switching safety net
-   that protects in bear/sideways markets is effectively disabled.
+4. **RegimeSwitching à 15 %** : trop faible pour compter. Le filet de sécurité de
+   commutation de régime qui protège en marché baissier/latéral est effectivement
+   désactivé.
 
-## Files
+## Fichiers
 
-- main.py - Strategy (T85/RS15 allocation)
-- alpha_models.py - SectorMomentum + RegimeSwitching alpha models
-- portfolio_construction.py - MultiStrategyPCM portfolio construction
+- main.py - Stratégie (allocation T85/RS15)
+- alpha_models.py - Modèles alpha SectorMomentum + RegimeSwitching
+- portfolio_construction.py - Construction de portefeuille MultiStrategyPCM
 
-## References
+## Références
 
 - Hands-On AI Trading, Section 06
-- Baseline: Framework_Composite_MomentumRegime
+- Baseline : Framework_Composite_MomentumRegime
