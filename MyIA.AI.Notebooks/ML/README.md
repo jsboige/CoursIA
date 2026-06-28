@@ -42,6 +42,36 @@ Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introdui
 
 Le parcours Python commence par les fondations (NumPy/Pandas) puis se divise en deux sous-tracks. Le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique (régression, classification, clustering), les modèles d'ensemble et le NLP de base. Le sous-track **Google ADK** (Labs 8-17) monte en complexité avec le deep learning (PyTorch), l'analyse de survivors, le dashboarding, et les pipelines agentic (agents LLM pour automatiser le workflow data science). Ce track présuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
 
+### Carte des parcours
+
+```mermaid
+flowchart TD
+    ROOT["Série ML — 35 notebooks<br/>deux stacks complémentaires"]
+    ROOT --> PROFIL{"Profil et stack cible ?"}
+
+    PROFIL -->|"Développeur .NET / C#"| A
+    PROFIL -->|"Data scientist Python"| B
+
+    subgraph A ["Track A — ML.NET (C#, 8 notebooks, ~6 h)"]
+        direction LR
+        A1["ML-1 Intro · ML-2 Data&Features"] --> A2["ML-3 Entraînement · AutoML"]
+        A2 --> A3["ML-4 Évaluation<br/>cross-validation · PFI"]
+        A3 --> A4["ML-5 TimeSeries · ML-6 ONNX<br/>ML-7 Recommandation · TP ventes"]
+    end
+
+    subgraph B ["Track B — Data Science + Agents (Python, 27 notebooks)"]
+        direction TB
+        B1["01 PythonForDataScience<br/>NumPy · Pandas — fondations"] --> B2["02 ML-Cours<br/>socle scikit-learn canonique"]
+        B2 --> CHOIX{"Direction agentic ?"}
+        CHOIX -->|"Workshop 3 jours"| B3["PythonAgentsForDataScience<br/>LangChain — Labs 1-7"]
+        CHOIX -->|"Multi-agents avancés"| B4["AgenticDataScience<br/>Google ADK — Labs 8-17"]
+    end
+
+    ROOT -.->|"pendant théorique"| TH["learning_theory_lean (Lean 4)<br/>convergence du perceptron — Novikoff"]
+```
+
+Le point de bascule est le profil : un développeur .NET s'oriente vers le **Track A** (pipeline ML.NET natif en C#), un data scientist Python vers le **Track B** (fondations puis agents LLM). Au sein du Track B, un second embranchement sépare le *workshop d'initiation* (LangChain, Labs 1-7) du *track avancé multi-agents* (Google ADK, Labs 8-17). Le lake Lean `learning_theory_lean` est un pendant transversal : il prouve formellement (Novikoff) ce que les notebooks de classification montrent empiriquement.
+
 ## Positionnement pédagogique
 
 Cette série sert les cours d'introduction au Machine Learning appliqué. Elle se situe après les fondamentaux de programmation (Python ou C#) et avant les séries spécialisées ([QuantConnect](../QuantConnect/) pour le trading, [RL](../RL/) pour l'apprentissage par renforcement). Aucun prérequis en statistiques avancées : les concepts sont introduits au fil des notebooks.
