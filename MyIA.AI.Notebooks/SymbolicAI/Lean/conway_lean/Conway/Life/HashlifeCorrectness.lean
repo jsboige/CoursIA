@@ -77,9 +77,34 @@ open MacroCell
 
 /-! ## P1. Padding predicate
 
-The predicate `box_assez_grand : Grid → Nat → Prop` asserts that the grid's
-bounding box, when padded to a MacroCell of level `k`, has at least `n` cells
-of margin on every side. This is the "boundary doesn't leak" hypothesis. -/
+The predicate `box_assez_grand : Grid → Nat → Bool` asserts that every live
+cell has at least `n` cells of margin to the MacroCell domain boundary on all
+four sides. This is the genuine light-cone "boundary doesn't leak" hypothesis
+(strengthened c.151, replacing the vacuous always-true version of c.148). -/
+
+/-- Per-cell light-cone margin check (Bool): the cell `(r,c)` has margin ≥ `n`
+    on all four sides of the MacroCell domain `[r0, r0+sz) × [c0, c0+sz)`:
+    top `r0+n ≤ r`, bottom `r < r0+sz-n`, left `c0+n ≤ c`, right `c < c0+sz-n`.
+
+    Isolated as a helper taking `r0 c0 sz` as **parameters** (not read from
+    `gridFrame`) so that `cellMargin_true_iff` proves cleanly with free
+    variables — `decide_eq_true_eq` fires on `decide (r0+n ≤ r)` when `r0` is a
+    bound variable, but gets stuck in the `Int.decLe` match when `r0` is the
+    non-reducible projection `(gridFrame g).1.1`. This split keeps `mono_n`
+    tractable (it bridges through `cellMargin_true_iff`, never unfolding the
+    decidability of a symbolic `gridFrame`). -/
+def cellMargin (r0 c0 sz : Int) (n : Nat) (r c : Int) : Bool :=
+  decide (r0 + n ≤ r) && decide (r < r0 + sz - n) &&
+  decide (c0 + n ≤ c) && decide (c < c0 + sz - n)
+
+/-- `cellMargin = true` unfolds to the four `Int` margin bounds as a clean
+    propositional conjunction. -/
+theorem cellMargin_true_iff (r0 c0 sz : Int) (n : Nat) (r c : Int) :
+    cellMargin r0 c0 sz n r c = true ↔
+      r0 + n ≤ r ∧ r < r0 + sz - n ∧ c0 + n ≤ c ∧ c < c0 + sz - n := by
+  simp only [cellMargin, Bool.and_eq_true, decide_eq_true_eq]
+  -- residual is pure `∧`-associativity (left-nested vs flat conjunction)
+  tauto
 
 /-- Manhattan distance between two cells. -/
 def manhattan (p q : Int × Int) : Nat :=
@@ -127,19 +152,34 @@ def natCeilLog2 : Nat → Nat
   | 0 => 0
   | n + 1 => natCeilLog2Loop (n + 1) (n + 1) 1 0
 
-/-- The "box assez grand" predicate: the grid's bounding box fits inside a
-    MacroCell of level `k`, with at least `n` cells of dead padding on every
-    side. This ensures that for `n` generations, no live cell can reach the
-    MacroCell boundary (light cone argument).
+/-- The "box assez grand" predicate (light-cone margin, strengthened c.151):
+    every live cell of `g` has at least `n` cells of margin to the MacroCell
+    domain boundary on all four sides.
 
-    Returns the *chosen* level `k` (not just an existential) so that the
-    predicate is decidable and `native_decide` can evaluate it on concrete
-    grids. -/
+    This ensures that over `n` generations, no live cell — and nothing in its
+    `n`-step light cone — can reach the MacroCell boundary. The Game of Life
+    light cone has radius `n`: each generation, a cell's influence spreads by
+    one in Manhattan distance, so over `n` generations a cell can move at most
+    `n` towards the boundary. Requiring margin `≥ n` on every side is exactly
+    the "boundary doesn't leak" hypothesis the docstring (P1) advertises.
+
+    **Strengthened per ai-01 design-gate decision (a)** (c.148 → c.151): the
+    previous definition computed a *fictional* level `k := max 2 (natCeilLog2
+    (side + 2*n))` and checked `2^k ≥ target && k ≥ 2`, which is *vacuously
+    always-true* (it can always find such a `k`) — see the now-superseded
+    `box_assez_grand_always_true` diagnostic. This version instead reads the
+    *actual* level `lvl` chosen by `gridFrame g` and checks the genuine
+    geometric margin from each live cell to the domain `[r0, r0+2^lvl)²`. It
+    is therefore **non-vacuous**: it fails for tight grids / large `n` (see
+    `box_assez_grand_not_vacuous`). The `BoxAssezGrand g n` hypothesis in the
+    P5 theorems now carries genuine information (ai-01: "equivalence
+    conditionnelle"). -/
 def box_assez_grand (g : Grid) (n : Nat) : Bool :=
-  let (_, side) := gridBoundingBox g
-  let target := side + 2*n
-  let k := max 2 (natCeilLog2 target)
-  2^k ≥ target && k ≥ 2
+  let ((r0, c0), lvl) := gridFrame g
+  let sz : Int := 2^lvl
+  -- Every live cell `(r,c)` must satisfy the `cellMargin` bound (margin ≥ n on
+  -- all four sides of the MacroCell domain `[r0, r0+sz) × [c0, c0+sz)`).
+  g.all (fun (r, c) => cellMargin r0 c0 sz n r c)
 
 /-- Propositional version of `box_assez_grand` for theorem statements. -/
 def BoxAssezGrand (g : Grid) (n : Nat) : Prop := box_assez_grand g n = true
@@ -149,30 +189,11 @@ instance (g : Grid) (n : Nat) : Decidable (BoxAssezGrand g n) :=
 
 /-! ### Monotonicity of `box_assez_grand` in the padding parameter
 
-A grid that admits `n` cells of padding also admits any smaller amount
-`m ≤ n`. This is **pure arithmetic** on `box_assez_grand`: the grid `g` is
-unchanged, the bounding-box side is the same, the target `side + 2*n` only
-shrinks when `n` shrinks, and the chosen `k_m := max 2 (natCeilLog2 (side + 2m))`
-still satisfies `2^k_m ≥ side + 2m` by the algorithm's correctness.
-
-**Relation to the P5.2 preservation chain (PR #3066 scan).** The full P5.2
-preservation sub-claim takes the form
-`BoxAssezGrand g n → ... → BoxAssezGrand (hashlifeJump ... .toGrid ...) (n - jumpSize ...)`,
-which involves the grid *transformation* — the new grid's bounding box may
-have grown by up to `jumpSize` cells in each direction (GoL light-cone).
-The full claim therefore decomposes as
-
-  (a) **Geometric** : `gridBoundingBox (g').2 ≤ gridBoundingBox g .2 + 2*jumpSize`
-      — light-cone bound on bounding-box expansion across the jump. This is
-      the genuinely hard half (P2-derivable, research-level, ai-01 BG-prover).
-  (b) **Arithmetic** : combine (a) with `box_assez_grand g n = true` to
-      conclude `box_assez_grand g' (n - jumpSize) = true`.
-
-The lemma below is the **degenerate case of (b) with `g' = g`** (no expansion),
-which captures the arithmetic core: `box_assez_grand` is monotone-decreasing
-in the padding parameter. It is a strict prerequisite of the general
-arithmetic combination, and verifies that the formulation is well-posed.
-The combined `(a) + (b)` chain is queueable behind the P4 verrou unlock. -/
+A grid that admits `n` cells of margin also admits any smaller amount `m ≤ n`:
+the MacroCell level `lvl` is unchanged (same grid `g`), and each live cell's
+four margin bounds only become *weaker* when `n` shrinks (`r0 + m ≤ r0 + n ≤ r`,
+and `r < r0 + sz - n ≤ r0 + sz - m`). This is **pure linear arithmetic**
+in `n` once `lvl`, `r0`, `c0`, `sz` are fixed. -/
 
 /-- Correctness of `natCeilLog2Loop`: starting from `pow = 2^k`, when the
     fuel budget is sufficient (i.e. `2^(k + fuel) ≥ target`), the loop
@@ -217,73 +238,50 @@ theorem natCeilLog2_pow_ge (n : Nat) : 2 ^ natCeilLog2 n ≥ n := by
 
 /-- **Monotonicity of `box_assez_grand` in the padding parameter `n`.**
 
-    If a grid `g` admits `n` cells of dead padding, then it also admits any
-    smaller amount `m ≤ n`. The grid is unchanged, so the bounding-box side
-    is the same; the target `side + 2*n` only shrinks when `n` shrinks; and
-    the level `k_m := max 2 (natCeilLog2 (side + 2*m))` chosen by the
-    `m`-evaluation still satisfies `2^k_m ≥ side + 2*m` by
-    `natCeilLog2_pow_ge`. -/
+    If a grid `g` admits `n` cells of light-cone margin (every live cell is ≥ n
+    from the MacroCell boundary on all four sides), then it also admits any
+    smaller amount `m ≤ n`: the MacroCell level `lvl` is unchanged (same grid),
+    and each live cell's four margin bounds only weaken when `n` shrinks
+    (`r0 + m ≤ r0 + n ≤ r`, and `r < r0 + sz - n ≤ r0 + sz - m`). -/
 theorem box_assez_grand_mono_n (g : Grid) {n m : Nat}
     (h : box_assez_grand g n = true) (hle : m ≤ n) :
     box_assez_grand g m = true := by
-  -- Both evaluations share the same bounding-box side.
-  unfold box_assez_grand at *
-  simp only [Bool.and_eq_true, decide_eq_true_eq] at *
-  set side := (gridBoundingBox g).2 with hside
-  -- Target for m is no larger than target for n.
-  have htgt : side + 2 * m ≤ side + 2 * n := by omega
-  -- Chosen level for m satisfies `k_m ≥ 2` trivially (via `max 2 _`).
-  refine ⟨?_, ?_⟩
-  · -- `2 ^ k_m ≥ side + 2 * m`. By `natCeilLog2_pow_ge`,
-    -- `2 ^ (natCeilLog2 (side + 2 * m)) ≥ side + 2 * m`, and
-    -- `max 2 (natCeilLog2 ...) ≥ natCeilLog2 ...`, so taking the `max`
-    -- only increases the exponent.
-    have hnc : 2 ^ natCeilLog2 (side + 2 * m) ≥ side + 2 * m :=
-      natCeilLog2_pow_ge (side + 2 * m)
-    have hexp : natCeilLog2 (side + 2 * m) ≤ max 2 (natCeilLog2 (side + 2 * m)) :=
-      Nat.le_max_right _ _
-    have hpow : 2 ^ natCeilLog2 (side + 2 * m) ≤
-        2 ^ max 2 (natCeilLog2 (side + 2 * m)) :=
-      Nat.pow_le_pow_right (by norm_num : 1 ≤ 2) hexp
-    exact le_trans hnc hpow
-  · -- `max 2 (natCeilLog2 (side + 2*m)) ≥ 2`.
-    exact Nat.le_max_left _ _
+  -- Both evaluations share the same `gridFrame g` (hence r0, c0, lvl, sz).
+  -- Only the padding shrinks n → m; per-cell, each bound weakens under m ≤ n.
+  -- Bridge through `cellMargin_true_iff` to stay at the Prop level (unfolding
+  -- the `decide` of a symbolic `gridFrame` projection gets stuck in the
+  -- `Int.decLe` match — see the `cellMargin` docstring).
+  simp only [box_assez_grand, List.all_eq_true] at h ⊢
+  intro x hx
+  obtain ⟨r, c⟩ := x
+  obtain ⟨h1, h2, h3, h4⟩ :=
+    (cellMargin_true_iff _ _ _ _ _ _).mp (h (r, c) hx)
+  exact (cellMargin_true_iff _ _ _ _ _ _).mpr
+    ⟨by omega, by omega, by omega, by omega⟩
 
-/-- **Diagnostic (G.1 finding, c.148)**: `box_assez_grand g n = true` for ALL
-    grids `g` and all padding amounts `n`.
+/-- **Non-vacuity (c.148 diagnostic → c.151 strengthen)**: the strengthened
+    `box_assez_grand` is NOT always-true — it discriminates on the grid geometry
+    and the padding `n`, so the `BoxAssezGrand g n` hypothesis in the P5
+    theorems carries genuine information (ai-01: "equivalence conditionnelle").
 
-    The level chosen by the definition, `k := max 2 (natCeilLog2 target)` with
-    `target := (gridBoundingBox g).2 + 2*n`, always satisfies both conjuncts:
-    `2^k ≥ target` (since `natCeilLog2_pow_ge` gives `2^(natCeilLog2 target) ≥
-    target`, and `max 2 (natCeilLog2 _) ≥ natCeilLog2 _` only raises the
-    exponent) and `k ≥ 2` (trivially, `max 2 _`). The two conjunct proofs are
-    exactly those of `box_assez_grand_mono_n` above, which also do not use the
-    `h`/`hle` hypotheses for the inequalities themselves.
+    A single live cell at `(0,0)` lives in the level-`3` MacroCell frame
+    `[-2, 6) × [-2, 6)` (`gridFrame` gives side `5`, `ceilLog2 5 = 3`,
+    `2^3 = 8`). Its top margin is `0 - (-2) = 2`, so the predicate holds for
+    `n = 2` but fails for `n = 3` (`-2 + 3 = 1 ≰ 0`). This supersedes the c.148
+    `box_assez_grand_always_true` diagnostic (removed): the vacuous-always-true
+    finding was the *symptom* of the latent defect; this witness is the *proof*
+    that the strengthened predicate no longer has it. -/
+theorem box_assez_grand_not_vacuous :
+    ∃ (g : Grid) (n : Nat), box_assez_grand g n = false := by
+  refine ⟨[(0, 0)], 3, ?_⟩
+  native_decide
 
-    **Consequence** — the `BoxAssezGrand g n` hypothesis in `p5_inductive_step`,
-    `p5_large_n_jump`, and `hashlife_correct` is **vacuous**: it holds for every
-    grid and every `n`, so it carries no information. The real content of those
-    theorems is the unconditional `evolveHashlifeFast n g = evolve n g` equality
-    (which remains gated on P4). This reframes the P5 plan: the "preservation
-    through jump" sub-claim (L2372-2382) is trivially true, and the padding
-    guarantee the predicate was meant to provide — that no live cell can reach
-    the MacroCell boundary within `n` generations — is NOT actually enforced by
-    the current `box_assez_grand` definition. That is a latent defect to surface
-    to the lane owner (ai-01), not a sorry to close here. -/
-theorem box_assez_grand_always_true (g : Grid) (n : Nat) :
-    box_assez_grand g n = true := by
-  unfold box_assez_grand
-  simp only [Bool.and_eq_true, decide_eq_true_eq]
-  set side := (gridBoundingBox g).2
-  refine ⟨?_, Nat.le_max_left _ _⟩
-  -- `2 ^ (max 2 (natCeilLog2 (side + 2*n))) ≥ side + 2*n`, unconditionally:
-  -- `natCeilLog2_pow_ge` + `max` only raises the exponent. Mirrors the first
-  -- conjunct of `box_assez_grand_mono_n` (which needs no hypothesis either).
-  have hnc : 2 ^ natCeilLog2 (side + 2 * n) ≥ side + 2 * n :=
-    natCeilLog2_pow_ge (side + 2 * n)
-  have hexp : natCeilLog2 (side + 2 * n) ≤ max 2 (natCeilLog2 (side + 2 * n)) :=
-    Nat.le_max_right _ _
-  exact le_trans hnc (Nat.pow_le_pow_right (by norm_num : 1 ≤ 2) hexp)
+/-- Satisfiability witness: the strengthened predicate holds for the single
+    cell at `(0,0)` with `n = 2` (margin exactly `2` on every side). Paired
+    with `box_assez_grand_not_vacuous`, this confirms the predicate is neither
+    vacuously true nor vacuously false — it carries genuine geometric content. -/
+theorem box_assez_grand_single_cell_2 : box_assez_grand [(0, 0)] 2 = true := by
+  native_decide
 
 /-! ## P0. Light-cone warm-up lemmas (prover ramp)
 
@@ -2559,71 +2557,77 @@ Concrete instantiations of `hashlife_correct` on small patterns verify that
 the theorem is *satisfiable* under the padding hypothesis. Each `native_decide`
 here strengthens the scaffolding by confirming the theorem is not vacuous. -/
 
-/-- For the empty grid, any `n` is OK (no live cells to evolve). -/
+/-- For the empty grid, any `n` is OK (no live cells to constrain) —
+    `List.all` over `[]` is vacuously `true`. -/
 example : BoxAssezGrand ([] : Grid) 0 := by
   decide
 
-/-- The block pattern fits in a level-4 MacroCell with margin for n=4.
-    Block has side 2 (4 cells in a 2x2 square), padding for 4 gens needs
-    2*4 = 8 cells of margin, so 2 + 8 = 10 ≤ 16 = 2^4. -/
-example : BoxAssezGrand block 4 := by
+/-- **Consequence of the strengthen (c.151)**: the strengthened `box_assez_grand`
+    only holds for `n ≤ 2` on these canonical patterns, because `gridFrame`
+    fixes a 2-cell top/left padding (`r0 := rMin - 2`), so the top margin is
+    exactly `2` — `r0 + n ≤ rMin` forces `n ≤ 2`. This is honest geometric
+    content (the old vacuous predicate accepted `n = 4, 8` for free). It also
+    surfaces a real property of the current `gridFrame`: it under-pads for
+    large-`n` correctness, which is material for the P5 plan. -/
+example : BoxAssezGrand block 2 := by
   native_decide
 
-/-- For larger `n`, the padding must be larger too. -/
-example : BoxAssezGrand glider 8 := by
+/-- The glider (3x3 bounding box) also holds for `n = 2` (its top/left margin
+    is the same fixed `2` from `gridFrame`, and its bottom/right margin is
+    large enough in the level-`3` frame). -/
+example : BoxAssezGrand glider 2 := by
   native_decide
 
-/-- If the theorem is true, then the existing `native_decide` witnesses
-    must hold. This is a "soundness check" — if `hashlife_correct` ever
-    gets proved, these follow by specialization. -/
-theorem hashlife_correct_implies_block_4
+/-- If the theorem is true, then the `native_decide` witnesses must hold.
+    This is a "soundness check" — if `hashlife_correct` ever gets proved,
+    these follow by specialization. -/
+theorem hashlife_correct_implies_block_2
     (H : ∀ n g, BoxAssezGrand g n → evolveHashlifeFast n g = evolve n g) :
-    evolveHashlifeFast 4 block = evolve 4 block := by
-  have hpad : BoxAssezGrand block 4 := by native_decide
-  exact H 4 block hpad
+    evolveHashlifeFast 2 block = evolve 2 block := by
+  have hpad : BoxAssezGrand block 2 := by native_decide
+  exact H 2 block hpad
 
 /-- Same soundness check for the glider. -/
-theorem hashlife_correct_implies_glider_8
+theorem hashlife_correct_implies_glider_2
     (H : ∀ n g, BoxAssezGrand g n → evolveHashlifeFast n g = evolve n g) :
-    evolveHashlifeFast 8 glider = evolve 8 glider := by
-  have hpad : BoxAssezGrand glider 8 := by native_decide
-  exact H 8 glider hpad
+    evolveHashlifeFast 2 glider = evolve 2 glider := by
+  have hpad : BoxAssezGrand glider 2 := by native_decide
+  exact H 2 glider hpad
 
-/-- Period-2 oscillator (horizontal blinker, 3 cells in a row): fits in
-    level-4 MacroCell with margin for n=4. -/
-example : BoxAssezGrand blinker_h 4 := by
+/-- Period-2 oscillator (horizontal blinker, 3 cells in a row): holds for
+    `n = 2` (same fixed-`2` top/left margin from `gridFrame`). -/
+example : BoxAssezGrand blinker_h 2 := by
   native_decide
 
 /-- Soundness check for the horizontal blinker. -/
-theorem hashlife_correct_implies_blinker_h_4
+theorem hashlife_correct_implies_blinker_h_2
     (H : ∀ n g, BoxAssezGrand g n → evolveHashlifeFast n g = evolve n g) :
-    evolveHashlifeFast 4 blinker_h = evolve 4 blinker_h := by
-  have hpad : BoxAssezGrand blinker_h 4 := by native_decide
-  exact H 4 blinker_h hpad
+    evolveHashlifeFast 2 blinker_h = evolve 2 blinker_h := by
+  have hpad : BoxAssezGrand blinker_h 2 := by native_decide
+  exact H 2 blinker_h hpad
 
-/-- Period-2 oscillator (toad, 6 cells in a 4x2 box): fits in level-4
-    MacroCell with margin for n=4. -/
-example : BoxAssezGrand toad 4 := by
+/-- Period-2 oscillator (toad, 6 cells in a 4x2 box): holds for `n = 2`. -/
+example : BoxAssezGrand toad 2 := by
   native_decide
 
 /-- Soundness check for the toad. -/
-theorem hashlife_correct_implies_toad_4
+theorem hashlife_correct_implies_toad_2
     (H : ∀ n g, BoxAssezGrand g n → evolveHashlifeFast n g = evolve n g) :
-    evolveHashlifeFast 4 toad = evolve 4 toad := by
-  have hpad : BoxAssezGrand toad 4 := by native_decide
-  exact H 4 toad hpad
+    evolveHashlifeFast 2 toad = evolve 2 toad := by
+  have hpad : BoxAssezGrand toad 2 := by native_decide
+  exact H 2 toad hpad
 
-/-- Period-2 oscillator (beacon, two diagonal blocks in a 4x4 box):
-    fits in level-4 MacroCell with margin for n=4. -/
-example : BoxAssezGrand beacon 4 := by
+/-- Period-2 oscillator (beacon, two diagonal blocks in a 4x4 box): holds
+    for `n = 2` (bottom/right margin `2` in the level-`3` frame). -/
+example : BoxAssezGrand beacon 2 := by
   native_decide
 
 /-- Soundness check for the beacon. -/
-theorem hashlife_correct_implies_beacon_4
+theorem hashlife_correct_implies_beacon_2
     (H : ∀ n g, BoxAssezGrand g n → evolveHashlifeFast n g = evolve n g) :
-    evolveHashlifeFast 4 beacon = evolve 4 beacon := by
-  have hpad : BoxAssezGrand beacon 4 := by native_decide
-  exact H 4 beacon hpad
+    evolveHashlifeFast 2 beacon = evolve 2 beacon := by
+  have hpad : BoxAssezGrand beacon 2 := by native_decide
+  exact H 2 beacon hpad
 
 end Life
 end Conway
