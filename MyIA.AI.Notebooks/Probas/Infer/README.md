@@ -8,7 +8,7 @@ Programmation probabiliste avec Microsoft Infer.NET : une série de 21 notebooks
 
 ## Pourquoi cette sous-série
 
-Infer.NET est le seul framework d'inférence probabiliste natif dans l'écosystème .NET. Il compile un modèle probabiliste déclaratif en un **algorithme d'inférence spécialisé** via reflection et compilation Roslyn, offrant trois moteurs complémentaires : **Expectation Propagation (EP)** pour les modèles continus et mixtes (défaut, rapide mais approximatif), **Variational Message Passing (VMP)** pour les modèles à composantes comme LDA (stable, sous-estimé l'incertitude), et **Gibbs Sampling** pour la validation sur petits modèles (exact asymptotiquement, lent). Cette approche compilée contraste avec l'échantillonnage MCMC générique de PyMC et permet des inférences en millisecondes plutôt qu'en minutes. Cette série couvre les 20 modèles classiques de la programmation probabiliste (réseaux bayésiens, TrueSkill, LDA, HMM) plus la théorie de la décision bayésienne complète (utilité espérée, diagrammes d'influence, EVPI, MDPs) et une preuve formelle Lean 4 de l'indice de Gittins.
+Infer.NET est le seul framework d'inférence probabiliste natif dans l'écosystème .NET. Il compile un modèle probabiliste déclaratif en un **algorithme d'inférence spécialisé** via reflection et compilation Roslyn, offrant trois moteurs complémentaires : **Expectation Propagation (EP)** pour les modèles continus et mixtes (défaut, rapide mais approximatif), **Variational Message Passing (VMP)** pour les modèles à composantes comme LDA (stable, sous-estime l'incertitude), et **Gibbs Sampling** pour la validation sur petits modèles (exact asymptotiquement, lent). Cette approche compilée contraste avec l'échantillonnage MCMC générique de PyMC et permet des inférences en millisecondes plutôt qu'en minutes. Cette série couvre les 20 modèles classiques de la programmation probabiliste (réseaux bayésiens, TrueSkill, LDA, HMM) plus la théorie de la décision bayésienne complète (utilité espérée, diagrammes d'influence, EVPI, MDPs) et une preuve formelle Lean 4 de l'indice de Gittins.
 
 | Algorithme | Force | Limite | Cas d'usage |
 | ---------- | ----- | ------ | ---------- |
@@ -21,7 +21,7 @@ flowchart LR
     MOD["Modèle déclaratif<br/>Variables + priors +<br/>vraisemblance"] -->|"compilation Roslyn<br/>(reflection)"| SPEC["Algorithme d'inférence<br/>spécialisé"]
     SPEC --> ENG{"Moteur"}
     ENG -->|"continu / mixte<br/>(défaut)"| EP["<b>EP</b><br/>Expectation Propagation<br/>rapide · approximatif"]
-    ENG -->|"composantes<br/>(LDA)"| VMP["<b>VMP</b><br/>Variational MP<br/>stable · sous-estimé<br/>l'incertitude"]
+    ENG -->|"composantes<br/>(LDA)"| VMP["<b>VMP</b><br/>Variational MP<br/>stable · sous-estime<br/>l'incertitude"]
     ENG -->|"validation<br/>(petits modèles)"| GIBBS["<b>Gibbs</b><br/>échantillonnage<br/>exact asymptotiquement · lent"]
     EP --> POST["Posterior<br/>(millisecondes)"]
     VMP --> POST
