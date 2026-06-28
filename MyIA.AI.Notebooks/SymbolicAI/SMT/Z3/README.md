@@ -4,7 +4,7 @@
 
 ## Série en quelques mots
 
-Le binding Z3.Linq traduit des requêtes LINQ C# en formules SMT — on décrit les contraintes, le solveur produit la solution. Série .NET 9 de **7 notebooks** (~5h10), du théorème linéaire à la génération de témoins (fork Automata).
+Le binding Z3.Linq traduit des requêtes LINQ C# en formules SMT — on décrit les contraintes, le solveur produit la solution. Série .NET 9 de **10 notebooks** (~6h55), du théorème linéaire à la planification multi-jours couplée (fenêtre nutrition × variété).
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs C# souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de théorèmes linéaires simples pour monter progressivement vers les théories de tableaux et l'optimisation hiérarchique.
 
@@ -48,6 +48,7 @@ L'abstraction centrale du binding : on reste en C#, on décrit des contraintes, 
 | 06 | [Witness Generation Automata](06_Witness_Generation_Automata.ipynb) | **Fork Automata** : générer un *témoin* depuis `A & ~B` (intersection/complément de surface), cap des 21 caractères levé (#6), émission SMT-LIB `re.inter`/`re.comp` | ~40 min | BETA |
 | 06b | [RecipeML Corpus](06b_RecipeML_Corpus.ipynb) | Modélisation SMT sur **données externes** : corpus RecipeML (XML) parsé en classes de domaine, menu booléen avec exclusion d'allergène (`MkITE`) + plan hiérarchique multi-jours `int[][]` (`CollectionHandling.Array`) | ~40 min | BETA |
 | 06c | [Meal Planner Visualization](06c_Meal_Planner_Visualization.ipynb) | **Rendu HTML** des solutions Z3 (`display(HTML(...))`) : carte de menu color-codée (kcal/protéines/allergènes), grille hebdomadaire, front de Pareto budget↔kcal — montée en gamme du rendu plat `Console.WriteLine` | ~40 min | BETA |
+| 07 | [Weekly Nutrition Planner](07_Weekly_Nutrition_Planner.ipynb) | **Matrice booléenne jour×plat** + **fenêtre kcal par jour** + **variété globale** : le couplage non-trivial où un glouton se bloque (jour 4) tandis que le SMT résout globalement — fusion de la nutrition (05 §5) et du plan multi-jours (05 §7) | ~40 min | BETA |
 | 09 | [Graph Coloring Petersen](09_Graph_Coloring_Petersen.ipynb) | **Coloration de graphe** sur le graphe de Petersen : recherche du nombre chromatique `χ = 3` par requêtes SAT successives, glouton first-fit order-sensible (3 ou 4 couleurs) vs optimum prouvé Z3 (UNSAT à 2 couleurs) | ~40 min | BETA |
 
 ### Fil pédagogique
@@ -61,6 +62,7 @@ L'abstraction centrale du binding : on reste en C#, on décrit des contraintes, 
 7. **Notebook 06** ferme la boucle *reconnaissance vs production* : le fork [Automata](https://github.com/MyIntelligenceAgency/Automata) (modernisation net8.0 de AutomataDotNet, gelé ~2020) génère un **témoin** depuis la syntaxe de surface `&`/`~` (intersection/complément), démontre que le cap des 21 caractères (#6) est levé, et émet du SMT-LIB (`re.inter`/`re.comp`). C'est le payoff général de la génération de témoin `A & ~B` que [Sudoku-13](../../../Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb) mesure ensuite à l'échelle (§6b)
 8. **Notebook 06b** fait le **pont vers des données externes** : plutôt que des littéraux *in-notebook*, un corpus de recettes au format **RecipeML** (standard XML culinaire) est parsé en classes de domaine via LINQ-to-XML, puis consommé par le solveur. Le modèle booléen agrège la nutrition via `MkITE` et exclut un allergène ; le théorème hiérarchique `int[][]` planifie plusieurs jours sans répétition. C'est le moment où l'on voit que le paradigme déclaratif absorbe une source de données réelle aussi naturellement qu'un Sudoku
 9. **Notebook 06c** élève le **rendu des solutions** : les tableaux plats `Console.WriteLine` des notebooks précédents deviennent des cartes HTML color-codées (calories, protéines, allergènes) via `display(HTML(...))`, une grille hebdomadaire, et un **front de Pareto** budget↔calories. La leçon : la valeur d'un solveur se mesure aussi à la lisibilité de ses solutions pour un humain
+10. **Notebook 07** referme la boucle sur le **couplage combinatoire** : contrairement au modèle en grille d'index de 05 §7 (qui *affiche* la nutrition sans la *contraindre*), il adopte une **matrice booléenne `int[][]`** jour×plat pour pouvoir **agréger les kcal par jour** (`sum_i Sel[j][i] × kcal[i] ∈ [lo, hi]`) tout en imposant une **variété globale** (chaque plat ≤1×/semaine). Ce couplage fenêtre×variété est **non compositionnel** : un glouton sans retour arrière se bloque au jour 4, alors que le solveur propage les contraintes globalement et résout en ~1 s. C'est le chaînon manquant entre la nutrition (05 §5) et le plan multi-jours (05 §7), et la démonstration canonique d'un **CSP couplé non trivial** (Prong-B)
 
 ## Concepts clés
 
@@ -82,6 +84,8 @@ La série manipule un vocabulaire précis hérité de la programmation par contr
 | **Reconnaissance vs résolution** | Distinction centrale : un vérificateur (RE#) *certifie* une solution existante en temps linéaire ; un résolveur (Z3) *produit* une solution (NP-dur). Les notebooks 06 et Sudoku-13 mettent cette distinction en scène. | 06 |
 | **Données externes (RecipeML/XML)** | Le solveur consomme une source réelle parsée (corpus XML LINQ-to-XML → classes de domaine) plutôt que des littéraux *in-notebook*. Démontre que le paradigme déclaratif s'applique à des données structurées hétérogènes. | 06b |
 | **Rendu HTML des solutions** | Production d'une sortie visuellement interprétable (`display(HTML(...))`) : cartes color-codées, grilles, front de Pareto. Un solveur se jauge aussi à la lisibilité de ses solutions pour l'humain. | 06c |
+| **Matrice booléenne jour×plat** | Modéliser un choix par `(jour, plat)` comme `Sel[j][i] ∈ {0,1}` plutôt que par un index `Plan[j]`. Permet d'**agréger linéairement** des attributs par jour (`sum_i Sel[j][i] × kcal[i]`) — impossible avec une grille d'index car on ne peut pas indexer un tableau C# par une variable Z3. | 07 |
+| **CSP couplé non trivial** | Couplage de deux contraintes **globales non compositionnelles** (fenêtre kcal par jour × variété une fois/semaine) : un glouton sans retour arrière s'y bloque (jour 4), alors que la propagation du solveur résout globalement. Définit le seuil où un solveur SMT *discrimine* face à une heuristique triviale (Prong-B). | 07 |
 
 ## Prérequis
 

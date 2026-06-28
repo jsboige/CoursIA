@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Tweety
-pedagogical_count: 11
-breakdown: Tweety=11
-maturity: PRODUCTION=10, BETA=1
+pedagogical_count: 13
+breakdown: Tweety=13
+maturity: PRODUCTION=12, BETA=1
 -->
 
 Série complète de notebooks pour explorer [TweetyProject](https://tweetyproject.org/), une bibliothèque Java pour l'intelligence artificielle symbolique. Le décompte exact des notebooks et leur maturité figurent dans le catalogue généré ci-dessous ; la série cible la version **Tweety 1.30**.

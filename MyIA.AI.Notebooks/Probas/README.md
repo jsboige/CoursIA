@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 43
-breakdown: Infer=21, PyMC=20, root=2
-maturity: PRODUCTION=43
+pedagogical_count: 44
+breakdown: Infer=22, PyMC=20, root=2
+maturity: PRODUCTION=43, BETA=1
 -->
 
 [← Notebooks](../README.md) | [Série Infer (C#) →](Infer/README.md) | [Série PyMC (Python) →](PyMC/README.md) | [GameTheory →](../GameTheory/README.md)
