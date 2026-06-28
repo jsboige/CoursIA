@@ -84,8 +84,8 @@ L'enchaînement recommandé pour suivre le répertoire de bout en bout :
 | 6 | [05 — Architecture Hermes](docs/05-Hermes-Architecture.md) | Passer à un système plus complexe : fork upstream, drift isolé, MCPs, cron. |
 | 7 | [06 — Hermes Deploy s6-overlay](docs/06-Hermes-Deploy-s6-Overlay.md) | Le déploiement Windows + s6-overlay, avec les patches CRLF/with-contenv/HOME documentés. |
 | 8 | [07 — Hermes Cluster Coordinator Role](docs/07-Hermes-Cluster-Coordinator-Role.md) | Le rôle de coordinateur cluster (dashboards, routing, hand-off, surveillance 6h). |
-| 9 | `08 — Multi-Bot Coordination` *(à venir, PR-C, co-écrit)* | Comment plusieurs Claws coexistent et coopèrent (intercom, mentions, anti-collision). |
-| 10 | `09 — Patterns & Anti-Patterns` *(à venir, PR-C, co-écrit)* | Les leçons apprises en production — incidents, fixes, règles d'or. |
+| 9 | [08 — Multi-Bot Coordination](docs/08-Multi-Bot-Coordination.md) *(draft, co-écrit)* | Comment plusieurs Claws coexistent et coopèrent (intercom, mentions, anti-collision). |
+| 10 | [09 — Patterns & Anti-Patterns](docs/09-Patterns-Anti-Patterns.md) *(draft, co-écrit)* | Les leçons apprises en production — incidents, fixes, règles d'or. |
 
 Une fois ce parcours terminé, un lecteur devrait être capable de **déployer NanoClaw lui-même** sans surprise majeure, **comprendre ce qu'il faut déployer pour un Hermes-like** sans devoir tout réinventer, et — surtout — **anticiper les incidents** plutôt que les découvrir.
 
@@ -116,8 +116,8 @@ Claw-Systems/
 │   ├── 05-Hermes-Architecture.md                      # Archi Hermes
 │   ├── 06-Hermes-Deploy-s6-Overlay.md                 # Deploy Hermes
 │   ├── 07-Hermes-Cluster-Coordinator-Role.md          # Rôle coordinateur cluster
-│   ├── 08-Multi-Bot-Coordination.md                   # (à venir, PR-C co-écrit)
-│   └── 09-Patterns-Anti-Patterns.md                   # (à venir, PR-C co-écrit)
+│   ├── 08-Multi-Bot-Coordination.md                   # Co-écrit (draft Hermes, NanoClaw à compléter)
+│   └── 09-Patterns-Anti-Patterns.md                   # Co-écrit (draft Hermes, NanoClaw à compléter)
 └── configs/
     ├── docker-compose.nanoclaw.yml                    # Template Docker Compose NanoClaw
     ├── nanoclaw.env.example                           # Variables d'environnement NanoClaw
