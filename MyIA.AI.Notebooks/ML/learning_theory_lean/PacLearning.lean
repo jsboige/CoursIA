@@ -3,6 +3,7 @@ import PacLearning.Data
 import PacLearning.Sample
 import PacLearning.Concentration
 import PacLearning.SampleExpect
+import PacLearning.UnionBound
 
 /-!
 # PacLearning — théorie PAC (Valiant 1984), module classe finie, Lean 4
@@ -82,8 +83,16 @@ nécessité — le résultat mathématique est le vrai Hoeffding. Par briques at
 - **Brique 2c/3-restante — OPEN** : concentration de Hoeffding-for-Bernoulli,
   `ℙ_S [ |empError − trueError| > ε ] ≤ 2·exp(−2mε²)` (méthode Chernoff : Markov
   sur `exp(t·(X̄−μ))` + `log t ≤ t − 1` sur les indicateurs).
-- **Brique 3/3 — OPEN** : `pac_finite_class_bound`, `m ≥ (1/ε)(ln|H| + ln(1/δ))`
-  (union bound sur `H` fini, `Finset.sum_le_*`). Le théorème phare de Valiant.
+- `PacLearning/UnionBound.lean` (**brique 3/3-moitié combinatoire livrée**) —
+  **moitié combinatoire** du flagship `pac_finite_class_bound`. Probabilité d'un
+  événement sur l'espace des échantillons `sampleProb` (`E[𝟙{Q}]`) + linéarité
+  Finset-indexée `sampleExpect_finset_sum`, et surtout l'**union bound (Bornes de
+  Boole)** `sampleProb_union_bound` : `ℙ_S[∃ i ∈ s, P i S] ≤ ∑_{i ∈ s} ℙ_S[P i S]`,
+  0-sorry (indicateur(∃) ≤ ∑ indicateurs point par point via
+  `Finset.single_le_sum`, puis monotonie + linéarité de `sampleExpect`).
+- **Brique 3/3-finale — OPEN** : `pac_finite_class_bound`, `m ≥ (1/ε)(ln|H| +
+  ln(1/δ))` (combine l'`union_bound` ci-dessus avec une concentration Hoeffding
+  générique sur chaque `P i = (|empError − trueError| > ε)`). Le théorème phare.
 
 ## Référence
 
@@ -97,12 +106,15 @@ nécessité — le résultat mathématique est le vrai Hoeffding. Par briques at
 namespace PacLearning
 
 /-- Statut : itération 1 livrée (modèle + propriétés élémentaires 0-sorry) ;
-itération 2 en cours — **briques 1/3, 2a/3, 2b/3, 2c/3 livrées**
+itération 2 en cours — **briques 1/3, 2a/3, 2b/3, 2c/3 livrées + 3/3-moitié
+combinatoire (UnionBound) livrée**
 (`Sample.lean` : distribution produit `D^m` + normalisation ; `Concentration.lean` :
 `expect`, `markov_ineq` ; `SampleExpect.lean` : `sampleExpect` + linéarité/normalisation
 + **marginalisation coordonnée `sampleExpect_coord`** + **estimateur non-biaisé
-`sampleExpect_empError_eq_trueError`**). Briques restantes : Hoeffding-for-Bernoulli
-(2c/3 concentration) et 3/3 (`pac_finite_class_bound` union bound) documentées OPEN. -/
+`sampleExpect_empError_eq_trueError`** ; `UnionBound.lean` : `sampleProb` +
+**union bound (Bornes de Boole) `sampleProb_union_bound`**). Briques restantes :
+Hoeffding-for-Bernoulli (2c/3 concentration) et 3/3-finale (`pac_finite_class_bound`,
+combine union bound + Hoeffding) documentées OPEN. -/
 abbrev Status : Prop := True
 
 end PacLearning
