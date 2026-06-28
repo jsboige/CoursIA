@@ -45,6 +45,9 @@ def execute_and_persist(notebook_path: str, timeout_per_cell: int = 120):
 
         cell['outputs'] = []
         executed += 1
+        # Assign cell-level execution_count (C.2: every executed code cell needs a
+        # coherent int). Previously omitted, so re-exec left counts stale / None.
+        cell['execution_count'] = executed
         print(f"  Cell {i}: ", end='', flush=True)
         t0 = time.time()
 
