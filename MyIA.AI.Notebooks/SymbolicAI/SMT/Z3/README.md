@@ -49,6 +49,7 @@ L'abstraction centrale du binding : on reste en C#, on décrit des contraintes, 
 | 06b | [RecipeML Corpus](06b_RecipeML_Corpus.ipynb) | Modélisation SMT sur **données externes** : corpus RecipeML (XML) parsé en classes de domaine, menu booléen avec exclusion d'allergène (`MkITE`) + plan hiérarchique multi-jours `int[][]` (`CollectionHandling.Array`) | ~40 min | BETA |
 | 06c | [Meal Planner Visualization](06c_Meal_Planner_Visualization.ipynb) | **Rendu HTML** des solutions Z3 (`display(HTML(...))`) : carte de menu color-codée (kcal/protéines/allergènes), grille hebdomadaire, front de Pareto budget↔kcal — montée en gamme du rendu plat `Console.WriteLine` | ~40 min | BETA |
 | 07 | [Weekly Nutrition Planner](07_Weekly_Nutrition_Planner.ipynb) | **Matrice booléenne jour×plat** + **fenêtre kcal par jour** + **variété globale** : le couplage non-trivial où un glouton se bloque (jour 4) tandis que le SMT résout globalement — fusion de la nutrition (05 §5) et du plan multi-jours (05 §7) | ~40 min | BETA |
+| 09 | [Graph Coloring Petersen](09_Graph_Coloring_Petersen.ipynb) | **Coloration de graphe** sur le graphe de Petersen : recherche du nombre chromatique `χ = 3` par requêtes SAT successives, glouton first-fit order-sensible (3 ou 4 couleurs) vs optimum prouvé Z3 (UNSAT à 2 couleurs) | ~40 min | BETA |
 
 ### Fil pédagogique
 
