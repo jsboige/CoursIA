@@ -697,6 +697,57 @@ theorem step_light_cone (t : Nat) (g₁ g₂ : Grid) (p : Int × Int)
     have h_tri : manhattan p r ≤ manhattan p q + manhattan q r := manhattan_triangle p q r
     omega
 
+/-! ## P2 corollary. Influence cone (light cone of influence)
+
+`step_light_cone` is the **cone of dependence**: to know the state of `p`
+after `t` generations, it suffices to know the cells of `g` within Manhattan
+distance `2*t` of `p`. Its contrapositive is the **cone of influence**: a live
+cell of `g` outside Manhattan distance `2*t` of `p` cannot make `p` live at
+generation `t`. Equivalently, if `p` is live after `t` generations, some live
+cell of `g` must lie within Manhattan distance `2*t` — the live region can
+expand toward the MacroCell boundary by at most `2*t` per `t` generations.
+
+This is the sorry-free, P4-independent geometric fact underpinning the
+`BoxAssezGrand`-preservation argument for P5.2 (the recursion's padding
+hypothesis is preserved because the jump of `jumpSize` generations expands the
+live region by at most `2*jumpSize`, within the margin `n`). -/
+
+/-- `isAlive` on the empty grid is always `false` (no cell is live). -/
+theorem isAlive_empty (p : Int × Int) : isAlive ([] : Grid) p = false := by
+  simp [isAlive]
+
+/-- `sortDedup` of the empty list is empty (empty `mergeSort`, empty `dedup`). -/
+theorem sortDedup_nil : sortDedup ([] : List (Int × Int)) = [] := by
+  simp [sortDedup]
+
+/-- The empty grid is a fixed point of `step` (no live cells → no births). -/
+theorem step_empty : step ([] : Grid) = [] := by
+  simp [step, candidates, sortDedup_nil]
+
+/-- `evolve` of the empty grid is empty (the fixed point iterated). -/
+theorem evolve_empty (t : Nat) : evolve t ([] : Grid) = [] := by
+  induction t with
+  | zero => simp [evolve_zero]
+  | succ k ih => simp [evolve_succ, step_empty, ih]
+
+/-- **Influence cone (contrapositive form)**: if no live cell of `g` lies in
+    `lightCone p (2*t)`, then `evolve t g` is dead at `p`. Proof: `g` then
+    agrees with the empty grid on the cone, so `step_light_cone` equates
+    `evolve t g` to `evolve t ∅` (which is dead everywhere) at `p`.
+
+    This is the directly-usable form for the `BoxAssezGrand`-preservation
+    argument: outside the live region (margin ≥ `n`), the cone is all-dead, so
+    `evolve t` cannot bring a boundary cell to life within `t < n/2` generations. -/
+theorem evolve_dead_of_cone_dead (t : Nat) (g : Grid) (p : Int × Int)
+    (h : ∀ q ∈ lightCone p (2 * t), isAlive g q = false) :
+    isAlive (evolve t g) p = false := by
+  have hagree : ∀ q ∈ lightCone p (2 * t),
+      isAlive g q = isAlive ([] : Grid) q := by
+    intro q hq
+    rw [h q hq, isAlive_empty]
+  have heq := step_light_cone t g ([] : Grid) p hagree
+  rw [heq, evolve_empty, isAlive_empty]
+
 /-! ## P3. Padding correctness
 
 `padCenter2 c` places `c` (assuming `c.level ≥ 1`) inside a level-`(k+2)`
