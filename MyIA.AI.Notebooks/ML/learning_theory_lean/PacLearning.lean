@@ -5,6 +5,7 @@ import PacLearning.Concentration
 import PacLearning.SampleExpect
 import PacLearning.UnionBound
 import PacLearning.Hoeffding
+import PacLearning.MGF
 
 /-!
 # PacLearning — théorie PAC (Valiant 1984), module classe finie, Lean 4
@@ -113,8 +114,11 @@ combinatoire (UnionBound) livrée**
 `expect`, `markov_ineq` ; `SampleExpect.lean` : `sampleExpect` + linéarité/normalisation
 + **marginalisation coordonnée `sampleExpect_coord`** + **estimateur non-biaisé
 `sampleExpect_empError_eq_trueError`** ; `UnionBound.lean` : `sampleProb` +
-**union bound (Bornes de Boole) `sampleProb_union_bound`**). Briques restantes :
-Hoeffding-for-Bernoulli (2c/3 concentration) et 3/3-finale (`pac_finite_class_bound`,
+**union bound (Bornes de Boole) `sampleProb_union_bound`** ; `MGF.lean` :
+**réduction algébrique de la MGF centrée `expect_exp_centered_eq`** (première
+sous-brique de Hoeffding : `E_D[exp(t(ind−μ))] = μ·exp(t(1−μ)) + (1−μ)·exp(−tμ)`,
+0-analyse). Briques restantes : borne finale Hoeffding `bernoulli_mgf_le ≤ exp(t²/8)`
+(analytique) + concentration bilatérale + 3/3-finale (`pac_finite_class_bound`,
 combine union bound + Hoeffding) documentées OPEN. -/
 abbrev Status : Prop := True
 
