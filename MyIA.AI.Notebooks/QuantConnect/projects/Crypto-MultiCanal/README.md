@@ -1,27 +1,27 @@
 # Crypto-MultiCanal
 
-**Asset class:** Crypto (BTC)
-**Cloud project ID:** 30750734
+**Classe d'actifs :** Crypto (BTC)
+**ID projet Cloud :** 30750734
 
 ## Description
 
-Multi-channel ZigZag strategy on Bitcoin. Uses 3 nested ZigZag channels (short/medium/long) to identify trend structure at multiple scale.
+Stratégie ZigZag multi-canal sur Bitcoin. Utilise 3 canaux ZigZag imbriqués (court/moyen/long) pour identifier la structure de tendance à plusieurs échelles.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Crypto-MultiCanal"`
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Crypto-MultiCanal"`
 
-**QC Cloud:** Deployed as project 30750734.
+**QC Cloud :** Déployée comme projet 30750734.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Metric | Value |
-|--------|-------|
-| Method | Multi-channel ZigZag |
-| Universe | BTCUSD |
-| Channels | 3 (nested) |
+| Métrique | Valeur |
+|----------|--------|
+| Méthode | ZigZag multi-canal |
+| Univers | BTCUSD |
+| Canaux | 3 (imbriqués) |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (v18, inlined channel_helpers for QC Cloud compatibility)
-- channel_helpers.py - Original helpers (kept for local Lean CLI / research notebook use)
+- main.py - Stratégie (v18, channel_helpers inlinés pour la compatibilité QC Cloud)
+- channel_helpers.py - Helpers d'origine (conservés pour l'usage Lean CLI local / notebook de recherche)

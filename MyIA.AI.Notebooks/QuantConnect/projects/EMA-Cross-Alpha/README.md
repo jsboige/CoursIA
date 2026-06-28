@@ -1,41 +1,41 @@
 # EMA-Cross-Alpha
 
-**Asset class:** US Equities (Large-cap tech)
-**Cloud project ID:** 28885488
+**Classe d'actifs :** Actions US (Grandes capitalisations tech)
+**ID projet Cloud :** 28885488
 
 ## Description
 
-Framework-based EMA crossover alpha strategy on 5 major tech stocks (AAPL, MSFT, GOOGL, AMZN, NVDA).
-Uses the QuantConnect Alpha Model framework with `EMACrossAlpha` (fast=20, slow=50) and daily portfolio rebalance via `MultiStrategyPCM`.
+Stratégie alpha de croisement EMA basée sur le framework, sur 5 grandes valeurs tech (AAPL, MSFT, GOOGL, AMZN, NVDA).
+Utilise le framework QuantConnect Alpha Model avec `EMACrossAlpha` (fast=20, slow=50) et un rebalancement quotidien du portefeuille via `MultiStrategyPCM`.
 
-The alpha model generates insights when the fast EMA crosses the slow EMA for each stock, and the portfolio construction module allocates capital accordingly.
+Le modèle alpha génère des insights quand l'EMA rapide croise l'EMA lente pour chaque action, et le module de construction de portefeuille alloue le capital en conséquence.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/EMA-Cross-Alpha"`
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/EMA-Cross-Alpha"`
 ```bash
 lean backtest --project .
 ```
 
-**QC Cloud:** Open project 28885488 in the QuantConnect IDE and click "Backtest".
+**QC Cloud :** Ouvrir le projet 28885488 dans l'IDE QuantConnect et cliquer sur « Backtest ».
 
-## Backtest Metrics (2015-2026)
+## Métriques de backtest (2015-2026)
 
-| Metric | Value |
-|--------|-------|
-| Sharpe Ratio | ~1.00 |
+| Métrique | Valeur |
+|----------|--------|
+| Sharpe Ratio | ~1,00 |
 | Benchmark | SPY |
-| Rebalance | Daily |
-| Universe | 5 tech stocks |
+| Rebalance | Quotidien |
+| Univers | 5 actions tech |
 
-## Files
+## Fichiers
 
-- `main.py` - Strategy entry point (framework alpha model)
-- `alpha_models.py` - EMACrossAlpha implementation
-- `portfolio_construction.py` - MultiStrategyPCM module
-- `quantbook.ipynb` - Research notebook
+- `main.py` - Point d'entrée de la stratégie (modèle alpha du framework)
+- `alpha_models.py` - Implémentation de EMACrossAlpha
+- `portfolio_construction.py` - Module MultiStrategyPCM
+- `quantbook.ipynb` - Notebook de recherche
 
-## References
+## Références
 
-- QC Framework: Alpha Model + Portfolio Construction pattern
-- Ref: Brock et al. (1992), moving average trading rules
+- Framework QC : pattern Alpha Model + Portfolio Construction
+- Réf : Brock et al. (1992), moving average trading rules
