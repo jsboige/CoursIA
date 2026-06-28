@@ -43,7 +43,7 @@ Utilisateur Telegram
   → Message vocal/texte
   → NanoClaw (Docker)
     → ASR (whisper-api.myia.io) si vocal
-    → LLM (OpenRouter / local)
+    → LLM via Claudish (proxy → GLM / Qwen / Anthropic)
     → Skills (outils configurés)
   → Réponse Telegram
 ```
@@ -120,18 +120,18 @@ Claw-Systems/
 | **NanoClaw** | Agent autonome Telegram | ai-01 (cluster) | Bot Telegram |
 | **Hermes** | Gateway Telegram + cluster coordinator | po-2026 (cluster) | Bot Telegram + dashboards |
 | **ASR Whisper** | Transcription vocale (faster-whisper large-v3-turbo) | po-2023 (cluster) | `whisper-api.myia.io` |
-| **LLM principal NanoClaw** | Raisonnement | OpenRouter ou local | API OpenAI-compatible |
+| **LLM principal NanoClaw** | Raisonnement | Claudish (proxy multi-providers) | wire Anthropic → GLM-5.2 / Qwen / Opus selon le tier |
 | **LLM principal Hermes** | Raisonnement | z.ai (provider natif `"zai"`) | `glm-5.2` via `/api/coding/paas/v4` |
 | **MCP roo-state-manager** | Dashboards + sessions | po-2026 (Hermes) | mcp-remote → proxy LAN (port 9090) |
 
-Les Claw systems sont conçus pour fonctionner **avec ou sans le cluster CoursIA**. Tous les éléments sont remplaçables : OpenRouter peut remplacer z.ai pour Hermes (au prix de la perte du modèle GLM-5.2), Telegram peut être remplacé par n'importe quelle plateforme (Discord, Slack, WhatsApp, Signal — Hermes upstream supporte les six), Whisper auto-hébergé peut être remplacé par l'API Whisper d'OpenAI.
+Les Claw systems sont conçus pour fonctionner **avec ou sans le cluster CoursIA**. Tous les éléments sont remplaçables : NanoClaw consomme le LLM via **Claudish**, un proxy Anthropic-compatible qui peut basculer entre GLM, Qwen et Anthropic d'un simple changement de `MODEL_NAME` (voir [`Claudish/docs/Claudish-Proxy.md`](../Claudish/docs/Claudish-Proxy.md)) ; Hermes, qui parle z.ai natif en direct, peut basculer vers OpenRouter (au prix de la perte du modèle GLM-5.2), Telegram peut être remplacé par n'importe quelle plateforme (Discord, Slack, WhatsApp, Signal — Hermes upstream supporte les six), Whisper auto-hébergé peut être remplacé par l'API Whisper d'OpenAI.
 
 ## Prérequis
 
 **Pour NanoClaw** :
 - **Docker** + Docker Compose (v20.10+ / v2+)
 - **Telegram Bot Token** (via [@BotFather](https://t.me/BotFather) sur Telegram)
-- **OpenRouter API key** ou LLM local (Ollama, vLLM)
+- **Accès Claudish** (proxy LLM multi-providers) : `ANTHROPIC_BASE_URL` + clé d'auth — voir [03-NanoClaw-Deploy.md](docs/03-NanoClaw-Deploy.md) et [`Claudish/docs/Claudish-Proxy.md`](../Claudish/docs/Claudish-Proxy.md)
 - Accès à un endpoint ASR (`whisper-api.myia.io` ou autre service compatible OpenAI Whisper)
 
 **Pour Hermes** :
