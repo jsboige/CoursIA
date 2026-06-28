@@ -1,64 +1,64 @@
 # Sector ML Classification
 
-**Status**: 🔄 Research Phase - Based on HandsOnAITrading Book
+**Statut** : 🔄 Phase de recherche — basé sur le livre HandsOnAITrading.
 
 ## Description
 
-Sector rotation strategy using Machine Learning (Random Forest) to classify US sectors into buy/hold/avoid categories.
+Stratégie de rotation sectorielle utilisant le Machine Learning (Random Forest) pour classer les secteurs US en catégories buy/hold/avoid.
 
-### Strategy Overview
+### Vue d'ensemble de la stratégie
 
-- **11 Sector ETFs**: XLK, XLF, XLV, XLE, XLY, XLP, XLI, XLB, XLU, XLRE, XLC
-- **ML Classification**: Random Forest with 3 classes (BUY, HOLD, AVOID)
-- **Monthly Rebalancing**: Top 3 sectors classified as "BUY" (equal-weight)
-- **Features**: Technical indicators from QC-Py-18 (Feature Engineering)
+- **11 ETF sectoriels** : XLK, XLF, XLV, XLE, XLY, XLP, XLI, XLB, XLU, XLRE, XLC
+- **Classification ML** : Random Forest à 3 classes (BUY, HOLD, AVOID)
+- **Rééquilibrage mensuel** : les 3 premiers secteurs classés « BUY » (équi-pondéré)
+- **Features** : indicateurs techniques issus de QC-Py-18 (Feature Engineering)
 
-### Key Features
+### Caractéristiques principales
 
-- **Random Forest Classifier**: sklearn.ensemble.RandomForestClassifier
-  - Handles non-linear relationships
-  - Feature importance analysis
-  - Robust to overfitting
+- **Classifieur Random Forest** : `sklearn.ensemble.RandomForestClassifier`
+  - Gère les relations non-linéaires
+  - Analyse de l'importance des features
+  - Robuste au surajustement
 
-- **Feature Engineering** (from QC-Py-18):
-  - Momentum indicators (RSI, MACD)
-  - Trend indicators (SMA, EMA)
-  - Volatility measures (ATR, Bollinger Bands)
+- **Feature Engineering** (issu de QC-Py-18) :
+  - Indicateurs de momentum (RSI, MACD)
+  - Indicateurs de tendance (SMA, EMA)
+  - Mesures de volatilité (ATR, bandes de Bollinger)
 
-- **Universe**: 11 GICS Sector ETFs (SPDR sector spiders)
+- **Univers** : 11 ETF sectoriels GICS (SPDR sector spiders)
 
-## Sector ETFs
+## ETF sectoriels
 
-| Ticker | Sector | Description |
-|--------|--------|-------------|
-| XLK | Technology | Tech giants (AAPL, MSFT, NVDA) |
-| XLF | Financials | Banks, insurance |
-| XLV | Healthcare | Pharma, medical devices |
-| XLE | Energy | Oil, gas companies |
-| XLY | Consumer Disc | Retail, autos, luxury |
-| XLP | Consumer Staples | Essentials, food, beverages |
-| XLI | Industrials | Manufacturing, aerospace |
-| XLB | Materials | Chemicals, mining |
-| XLU | Utilities | Power, water, gas |
-| XLRE | Real Estate | REITs, property |
-| XLC | Communication | Telecom, media, internet |
+| Ticker | Secteur | Description |
+|--------|---------|-------------|
+| XLK | Technologie | Géants tech (AAPL, MSFT, NVDA) |
+| XLF | Finances | Banques, assurance |
+| XLV | Santé | Pharma, dispositifs médicaux |
+| XLE | Énergie | Pétrole, gaz |
+| XLY | Discrétionnaire | Retail, autos, luxe |
+| XLP | Produits de base | Essentiels, alimentation, boissons |
+| XLI | Industriels | Manufacturing, aéronautique |
+| XLB | Matériaux | Chimie, mines |
+| XLU | Services publics | Électricité, eau, gaz |
+| XLRE | Immobilier | REIT, propriété |
+| XLC | Communication | Télécom, média, internet |
 
-## Files
+## Fichiers
 
-- `main.py`: QC algorithm with Random Forest classifier
-- `research.ipynb`: Research notebook with feature engineering and model training
-- `config.json`: Project configuration
+- `main.py` : algorithme QC avec classifieur Random Forest
+- `research.ipynb` : notebook de recherche avec feature engineering et entraînement du modèle
+- `config.json` : configuration du projet
 
-## References
+## Références
 
-- **Book**: Hands-On AI Trading (ML Classification chapter)
-- **Related Notebook**: QC-Py-19-ML-Supervised-Classification.ipynb
-- **Concept**: Sector Rotation based on ML predictions
+- **Livre** : Hands-On AI Trading (chapitre ML Classification)
+- **Notebook associé** : QC-Py-19-ML-Supervised-Classification.ipynb
+- **Concept** : rotation sectorielle basée sur des prédictions ML
 
-## Status
+## Statut
 
-Research phase. Performance metrics and backtesting results to be determined.
+Phase de recherche. Les métriques de performance et les résultats de backtest restent à déterminer.
 
 ---
 
-**Note**: Sector rotation adds diversification beyond single-asset strategies.
+**Note** : la rotation sectorielle ajoute de la diversification au-delà des stratégies mono-actif.
