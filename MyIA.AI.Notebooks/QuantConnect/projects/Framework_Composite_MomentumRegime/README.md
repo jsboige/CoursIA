@@ -2,50 +2,50 @@
 
 ## Description
 
-Composite strategy combining two complementary approaches via QuantConnect Algorithm Framework:
+Stratégie composite combinant deux approches complémentaires via le QuantConnect Algorithm Framework :
 
-1. **SectorMomentum (60% slice)**: Dual momentum among SPY/IEF/GLD
-   - Multi-lookback composite score (1/3/6/12 months)
-   - SMA200 filter for SPY
-   - Monthly rebalancing
+1. **SectorMomentum (tranche 60 %)** : Dual momentum entre SPY/IEF/GLD
+   - Score composite multi-lookback (1/3/6/12 mois)
+   - Filtre SMA200 sur SPY
+   - Rééquilibrage mensuel
 
-2. **RegimeSwitching (40% slice)**: Regime-dependent strategy
-   - Bull markets: Risk-adjusted momentum on SPY/QQQ (70/30)
-   - Bear/Sideways: Mean-reversion (RSI oversold) + defensive (GLD/IEF)
-   - Regime detection via SMA50/SMA200 on SPY
+2. **RegimeSwitching (tranche 40 %)** : Stratégie dépendante du régime
+   - Marchés haussiers : Momentum ajusté du risque sur SPY/QQQ (70/30)
+   - Marchés baissiers/latéraux : Mean-reversion (RSI survendu) + défensif (GLD/IEF)
+   - Détection de régime via SMA50/SMA200 sur SPY
 
-## Files
+## Fichiers
 
-- `main.py`: Algorithm setup with CompositeAlpha and MultiStrategyPCM
-- `alpha_models.py`: SectorMomentumAlpha and RegimeSwitchingAlpha classes
-- `portfolio_construction.py`: MultiStrategyPCM for capital allocation per strategy
+- `main.py` : Configuration de l'algorithme avec CompositeAlpha et MultiStrategyPCM
+- `alpha_models.py` : Classes SectorMomentumAlpha et RegimeSwitchingAlpha
+- `portfolio_construction.py` : MultiStrategyPCM pour l'allocation de capital par stratégie
 
-## Backtest Results (T60/RS40)
+## Résultats de backtest (T60/RS40)
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | 0.185 |
-| CAGR | 4.728% |
-| Net Profit | 66.272% |
-| Max Drawdown | 11.500% |
+| CAGR | 4.728 % |
+| Net Profit | 66.272 % |
+| Max Drawdown | 11.500 % |
 | Total Orders | 520 |
-| Win Rate | 73% |
+| Win Rate | 73 % |
 | Alpha | -0.008 |
 | Beta | 0.218 |
 | Sortino | 0.196 |
 
-**Verdict**: Underperforming. Sharpe 0.185 is well below SectorMomentum standalone (0.555).
-The RegimeSwitching component dilutes returns in the 60/40 blend. Very low beta (0.218)
-indicates the composite is too conservative.
+**Verdict** : Sous-performance. Le Sharpe 0.185 est bien en dessous de SectorMomentum
+autonome (0.555). La composante RegimeSwitching dilue les rendements dans le blend 60/40.
+Le beta très faible (0.218) indique que le composite est trop conservateur.
 
-**Next steps**: Try T80/RS20 or T90/RS10 to reduce RegimeSwitching drag, or replace
-RegimeSwitching with a more aggressive bull-only variant.
+**Prochaines étapes** : Tester T80/RS20 ou T90/RS10 pour réduire la traînée du
+RegimeSwitching, ou remplacer RegimeSwitching par une variante plus agressive bull-only.
 
 ## Cloud IDs
 
-- Project ID: 31243821
-- Organization: d600793ee4caecb03441a09fc2d00f7f
+- Project ID : 31243821
+- Organization : d600793ee4caecb03441a09fc2d00f7f
 
-## Backtest Period
+## Période de backtest
 
-2015-01-01 to 2025-12-31
+2015-01-01 à 2025-12-31

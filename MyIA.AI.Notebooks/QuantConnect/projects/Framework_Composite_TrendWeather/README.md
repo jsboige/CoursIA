@@ -1,26 +1,27 @@
 # Framework_Composite_TrendWeather
 
-**Asset class:** US Equities (ETF + stocks)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Actions US (ETF + actions)
+**Cloud project ID :** Aucun (local uniquement)
 
 ## Description
 
-Framework composite combining TrendStocks (75%) with AllWeather (25%). Trend uses SMA200+EMA, AllWeather provides diversification.
+Composite framework combinant TrendStocks (75 %) avec AllWeather (25 %). La composante
+tendance utilise SMA200+EMA, AllWeather apporte la diversification.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Framework_Composite_TrendWeather"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Framework_Composite_TrendWeather"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | 1.155 |
-| CAGR | 27.4% |
-| Max Drawdown | 27.7% |
-| Allocation | 75% Trend / 25% AllWeather |
+| CAGR | 27.4 % |
+| Max Drawdown | 27.7 % |
+| Allocation | 75 % Trend / 25 % AllWeather |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (v1.5, T75/AW25 composite)
+- `main.py` — Stratégie (composite T75/AW25 v1.5)
