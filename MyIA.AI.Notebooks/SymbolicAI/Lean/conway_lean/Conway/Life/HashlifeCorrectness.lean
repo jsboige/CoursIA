@@ -1868,6 +1868,24 @@ theorem p4_wave2_ih
               (hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
               (hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
               (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw)))
+        (k - 1) ∧
+      centralCorrect
+        (node (hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+              (hashlifeResultAux (k + 1) (node ne_nw ne_ne ne_sw ne_se))
+              (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+              (hashlifeResultAux (k + 1) (node ne_sw ne_se se_nw se_ne)))
+        (k - 1) ∧
+      centralCorrect
+        (node (hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+              (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+              (hashlifeResultAux (k + 1) (node sw_nw sw_ne sw_sw sw_se))
+              (hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw)))
+        (k - 1) ∧
+      centralCorrect
+        (node (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+              (hashlifeResultAux (k + 1) (node ne_sw ne_se se_nw se_ne))
+              (hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw))
+              (hashlifeResultAux (k + 1) (node se_nw se_ne se_sw se_se)))
         (k - 1) := by
   obtain ⟨nw_nw, nw_ne, nw_sw, nw_se, ne_nw, ne_ne, ne_sw, ne_se,
           sw_nw, sw_ne, sw_sw, sw_se, se_nw, se_ne, se_sw, se_se, rfl, hgrands⟩ :=
@@ -1885,6 +1903,10 @@ theorem p4_wave2_ih
   have hq2 := node_wf_level_of_four hnw_ne_l hne_nw_l hnw_se_l hne_sw_l
                                     hnw_ne_w hne_nw_w hnw_se_w hne_sw_w
   have hr2 := wave1_result_facts k hk1 (node nw_ne ne_nw nw_se ne_sw) hq2.2 hq2.1
+  -- n3 = node ne_nw ne_ne ne_sw ne_se
+  have hq3 := node_wf_level_of_four hne_nw_l hne_ne_l hne_sw_l hne_se_l
+                                    hne_nw_w hne_ne_w hne_sw_w hne_se_w
+  have hr3 := wave1_result_facts k hk1 (node ne_nw ne_ne ne_sw ne_se) hq3.2 hq3.1
   -- n4 = node nw_sw nw_se sw_nw sw_ne
   have hq4 := node_wf_level_of_four hnw_sw_l hnw_se_l hsw_nw_l hsw_ne_l
                                     hnw_sw_w hnw_se_w hsw_nw_w hsw_ne_w
@@ -1893,16 +1915,60 @@ theorem p4_wave2_ih
   have hq5 := node_wf_level_of_four hnw_se_l hne_sw_l hsw_ne_l hse_nw_l
                                     hnw_se_w hne_sw_w hsw_ne_w hse_nw_w
   have hr5 := wave1_result_facts k hk1 (node nw_se ne_sw sw_ne se_nw) hq5.2 hq5.1
+  -- n6 = node ne_sw ne_se se_nw se_ne
+  have hq6 := node_wf_level_of_four hne_sw_l hne_se_l hse_nw_l hse_ne_l
+                                    hne_sw_w hne_se_w hse_nw_w hse_ne_w
+  have hr6 := wave1_result_facts k hk1 (node ne_sw ne_se se_nw se_ne) hq6.2 hq6.1
+  -- n7 = node sw_nw sw_ne sw_sw sw_se
+  have hq7 := node_wf_level_of_four hsw_nw_l hsw_ne_l hsw_sw_l hsw_se_l
+                                    hsw_nw_w hsw_ne_w hsw_sw_w hsw_se_w
+  have hr7 := wave1_result_facts k hk1 (node sw_nw sw_ne sw_sw sw_se) hq7.2 hq7.1
+  -- n8 = node sw_ne se_nw sw_se se_sw
+  have hq8 := node_wf_level_of_four hsw_ne_l hse_nw_l hsw_se_l hse_sw_l
+                                    hsw_ne_w hse_nw_w hsw_se_w hse_sw_w
+  have hr8 := wave1_result_facts k hk1 (node sw_ne se_nw sw_se se_sw) hq8.2 hq8.1
+  -- n9 = node se_nw se_ne se_sw se_se
+  have hq9 := node_wf_level_of_four hse_nw_l hse_ne_l hse_sw_l hse_se_l
+                                    hse_nw_w hse_ne_w hse_sw_w hse_se_w
+  have hr9 := wave1_result_facts k hk1 (node se_nw se_ne se_sw se_se) hq9.2 hq9.1
   refine ⟨nw_nw, nw_ne, nw_sw, nw_se, ne_nw, ne_ne, ne_sw, ne_se,
-          sw_nw, sw_ne, sw_sw, sw_se, se_nw, se_ne, se_sw, se_se, rfl, ?_⟩
-  exact p4_wave2_ih_step k hk1
-          (hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
-          (hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
-          (hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
-          (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
-          hr1.1 hr2.1 hr4.1 hr5.1
-          (wf_of_cellWf hr1.2) (wf_of_cellWf hr2.2)
-          (wf_of_cellWf hr4.2) (wf_of_cellWf hr5.2) ih
+          sw_nw, sw_ne, sw_sw, sw_se, se_nw, se_ne, se_sw, se_se, rfl, ?_, ?_, ?_, ?_⟩
+  · -- q_nw = node r1 r2 r4 r5
+    exact p4_wave2_ih_step k hk1
+            (hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+            (hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+            (hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+            (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+            hr1.1 hr2.1 hr4.1 hr5.1
+            (wf_of_cellWf hr1.2) (wf_of_cellWf hr2.2)
+            (wf_of_cellWf hr4.2) (wf_of_cellWf hr5.2) ih
+  · -- q_ne = node r2 r3 r5 r6
+    exact p4_wave2_ih_step k hk1
+            (hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+            (hashlifeResultAux (k + 1) (node ne_nw ne_ne ne_sw ne_se))
+            (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+            (hashlifeResultAux (k + 1) (node ne_sw ne_se se_nw se_ne))
+            hr2.1 hr3.1 hr5.1 hr6.1
+            (wf_of_cellWf hr2.2) (wf_of_cellWf hr3.2)
+            (wf_of_cellWf hr5.2) (wf_of_cellWf hr6.2) ih
+  · -- q_sw = node r4 r5 r7 r8
+    exact p4_wave2_ih_step k hk1
+            (hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+            (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+            (hashlifeResultAux (k + 1) (node sw_nw sw_ne sw_sw sw_se))
+            (hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw))
+            hr4.1 hr5.1 hr7.1 hr8.1
+            (wf_of_cellWf hr4.2) (wf_of_cellWf hr5.2)
+            (wf_of_cellWf hr7.2) (wf_of_cellWf hr8.2) ih
+  · -- q_se = node r5 r6 r8 r9
+    exact p4_wave2_ih_step k hk1
+            (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+            (hashlifeResultAux (k + 1) (node ne_sw ne_se se_nw se_ne))
+            (hashlifeResultAux (k + 1) (node sw_ne se_nw sw_se se_sw))
+            (hashlifeResultAux (k + 1) (node se_nw se_ne se_sw se_se))
+            hr5.1 hr6.1 hr8.1 hr9.1
+            (wf_of_cellWf hr5.2) (wf_of_cellWf hr6.2)
+            (wf_of_cellWf hr8.2) (wf_of_cellWf hr9.2) ih
 
 /-- **P4.4** (compositional, hardest): the two half-steps compose — wave 1
     (advancing `2^(k-1)` generations) followed by wave 2 (another `2^(k-1)`)
