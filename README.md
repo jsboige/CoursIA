@@ -192,7 +192,7 @@ Chaque modalité (Image, Audio, Video) suit la même montée en quatre niveaux -
 
 **Spécialisation des modèles** -- Au-delà de l'usage, on entraîne : [FineTuning](MyIA.AI.Notebooks/GenAI/FineTuning/README.md) (LoRA, QLoRA, SFT, DPO) pour adapter un modèle sans tout ré-entraîner, et [PostTraining](MyIA.AI.Notebooks/GenAI/PostTraining/README.md) pour les techniques d'alignement de pointe (RLHF, DPO, GRPO, RLVR).
 
-**Industrialisation** -- Les applications GenAI se testent : la série [Playwright-OWUI](MyIA.AI.Notebooks/GenAI/Playwright-OWUI/README.md) écrit des tests de bout en bout sur Open WebUI (navigation, streaming, RAG, outils MCP, CI/CD), pour passer de la démonstration jouet au produit déployable.
+**Industrialisation** -- Les applications GenAI se testent : la série [Playwright-OWUI](MyIA.AI.Notebooks/GenAI/Open-WebUI/Playwright-OWUI/README.md) écrit des tests de bout en bout sur Open WebUI (navigation, streaming, RAG, outils MCP, CI/CD), pour passer de la démonstration jouet au produit déployable.
 
 **[Vibe-Coding](MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md)** -- Le développement assisté par agents IA, devenu compétence centrale : ateliers progressifs sur Claude Code et Roo Code, plus une introduction aux agents autonomes (Claw-Systems), de la découverte à l'automatisation avancée (skills, sous-agents, MCP, hooks).
 

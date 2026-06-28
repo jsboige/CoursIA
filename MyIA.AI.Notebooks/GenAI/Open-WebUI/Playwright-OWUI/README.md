@@ -7,7 +7,7 @@ breakdown:
 maturity: 
 -->
 
-[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Vibe-Coding](../Vibe-Coding/README.md)
+[← Documentation GenAI](../../README.md) | [↑ Open-WebUI](../README.md) | [→ Vibe-Coding](../../Vibe-Coding/README.md)
 
 > **Refonte pédagogique en cours (#4433).** Cette série évolue d'un banc de tests vers un **parcours QA narratif** : fil rouge « QA Engineer d'une flotte GenAI multi-tenant », format hybride notebook + tests E2E réels conservés en backend, et projet de certification final. Point d'entrée : **[00-Parcours-QA-OWUI.md](./00-Parcours-QA-OWUI.md)** (cadrage de la mission). La revalidation cible **Open WebUI v0.9.6** (Phase 3, en cours) ; la mention « v0.9.1 » plus bas est périmée et sera reprise à ce moment-là.
 
@@ -342,7 +342,7 @@ Pour activer ces tests, configurer les fonctionnalités correspondantes dans OWU
 | **Public** | Testeurs QA, dev backend | Developeurs, débutants |
 | **Non-determinisme** | Gère (streaming, LLM) | N/A |
 
-Les deux series sont complementaires : Vibe-Coding ([README](../Vibe-Coding/README.md)) couvre le développement assiste par IA, tandis que Playwright-OWUI couvre la validation automatisee des interfaces generees.
+Les deux series sont complementaires : Vibe-Coding ([README](../../Vibe-Coding/README.md)) couvre le développement assiste par IA, tandis que Playwright-OWUI couvre la validation automatisee des interfaces generees.
 
 ### Comment adapter les tests a une autre application OWUI (version ou config différente) ?
 

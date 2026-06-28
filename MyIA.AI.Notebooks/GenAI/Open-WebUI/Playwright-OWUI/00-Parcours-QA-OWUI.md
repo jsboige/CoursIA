@@ -2,7 +2,7 @@
 
 > **Document de cadrage (Phase 0 de la refonte #4433).** Ce fichier pose le fil rouge narratif, la carte de la mission, le projet de certification final (capstone) et les acquis d'apprentissage de la série. Il sert de fondation au notebook chapeau `00-Parcours-QA-OWUI.ipynb` (livré en Phase 1) et à l'enrobage pédagogique des cinq modules existants.
 
-[← Documentation GenAI](../README.md) | [Série Playwright-OWUI](./README.md) | [→ Vibe-Coding](../Vibe-Coding/README.md)
+[← Documentation GenAI](../../README.md) | [↑ Open-WebUI](../README.md) | [Série Playwright-OWUI](./README.md) | [→ Vibe-Coding](../../Vibe-Coding/README.md)
 
 ---
 

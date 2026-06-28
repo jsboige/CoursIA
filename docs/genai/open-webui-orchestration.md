@@ -7,7 +7,7 @@
 > niveau d'abstraction** (produit GUI self-hosté vs librairie vs framework multi-agents)
 > selon le besoin.
 >
-> Voir aussi : la série [`GenAI/Playwright-OWUI`](../../MyIA.AI.Notebooks/GenAI/Playwright-OWUI/README.md)
+> Voir aussi : la série [`GenAI/Open-WebUI/Playwright-OWUI`](../../MyIA.AI.Notebooks/GenAI/Open-WebUI/Playwright-OWUI/README.md)
 > couvre OWUI sous l'angle **tests E2E** (Playwright). Ce document est le référentiel
 > **orchestration** ; il n'en duplique pas le contenu test.
 
@@ -152,7 +152,7 @@ produit documentée) restent à confirmer avant d'en faire un point d'évaluatio
 ## 6. Exercices proposés (≥ 3, convention 3-exercices/notebook)
 
 Ces exercices supposent l'accès à l'instance OWUI de cours référencée par
-`MyIA.AI.Notebooks/GenAI/Playwright-OWUI/.env` (`OWUI_URL`). Ils restent des **stubs**
+`MyIA.AI.Notebooks/GenAI/Open-WebUI/Playwright-OWUI/.env` (`OWUI_URL`). Ils restent des **stubs**
 (objectif + indices), à compléter par l'étudiant.
 
 1. **Automation RRULE.** Créer une automation « résume mes notes chaque matin » via une
@@ -170,7 +170,7 @@ Ces exercices supposent l'accès à l'instance OWUI de cours référencée par
 
 La source canonique (le **tag de release GitHub `v0.9.0`**) attribue **Automations,
 Task Management, Calendar et Desktop App à la version v0.9.0**. Le README de la série
-`GenAI/Playwright-OWUI` (validé contre une instance **v0.9.1**) parle de « v0.9.1 ajoute
+`GenAI/Open-WebUI/Playwright-OWUI` (validé contre une instance **v0.9.1**) parle de « v0.9.1 ajoute
 Calendar, Automations, Desktop app ». Ces fonctionnalités ont été **introduites en
 v0.9.0** et **persistent** en v0.9.1 ; la formulation « ajoute » du README est imprécise.
 Réconciliation à faire dans une PR distincte sur la série Playwright-OWUI (sujet séparé).
