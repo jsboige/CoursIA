@@ -1,69 +1,72 @@
 # PairsTrading Strategy
 
-**Status**: ❌ BROKEN - Counter-Example for Educational Purposes
+**Statut** : BROKEN — contre-exemple à visée pédagogique
 
 ## Performance
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | **-0.361** |
-| CAGR | 0.9% |
-| Max Drawdown | 15.1% |
-| Period | 2010-2026 |
+| CAGR | 0.9 % |
+| Max Drawdown | 15.1 % |
+| Période | 2010-2026 |
 
-## Why This Strategy Failed
+## Pourquoi cette stratégie a échoué
 
-### Root Cause: Structural Cointegration Breakdown
+### Cause racine : rupture structurelle de cointégration
 
-The fundamental assumption of pairs trading is that the two securities are **cointegrated** - meaning their price spread is stationary and mean-reverting. This strategy assumes:
+L'hypothèse fondamentale du pairs trading est que les deux titres sont **cointégrés** — c'est-à-dire que leur spread de prix est stationnaire et mean-reverting. Cette stratégie suppose :
 
-1. The hedge ratio is stable over time
-2. The spread will revert to its mean
-3. Statistical arbitrage opportunities exist
+1. Que le ratio de couverture (hedge ratio) est stable dans le temps
+2. Que le spread reviendra à sa moyenne
+3. Qu'il existe des opportunités d'arbitrage statistique
 
-**In reality (2010-2026)**:
-- US equity pairs showed **no stable cointegration relationship**
-- The hedge ratio (estimated via OLS) was unstable
-- Spread diverged permanently instead of reverting
-- Result: Consistent losses with no edge
+**En réalité (2010-2026)** :
 
-### What Was Tested
+- Les paires d'actions US n'ont montré **aucune relation de cointégration stable**
+- Le ratio de couverture (estimé par OLS) était instable
+- Le spread a divergé de façon permanente au lieu de revenir
+- Résultat : pertes constantes sans aucun avantage (edge)
 
-| Iteration | Modification | Result |
-|-----------|--------------|--------|
-| v1.0 | Basic OLS hedge ratio + z-score | Sharpe -0.361 |
-| v2.0 | Multiple pairs (5 pairs) + cointegration test | Sharpe -0.420 |
-| v3.0 | Different pair combinations | All negative |
+### Ce qui a été testé
 
-### Lessons Learned
+| Itération | Modification | Résultat |
+|-----------|--------------|----------|
+| v1.0 | Hedge ratio OLS basique + z-score | Sharpe -0.361 |
+| v2.0 | Paires multiples (5 paires) + test de cointégration | Sharpe -0.420 |
+| v3.0 | Combinaisons de paires différentes | Toutes négatives |
 
-1. **Cointegration is rare in US equities**: Most stocks that appear correlated are NOT cointegrated
-2. **Hedge ratio instability**: Even if pairs test positive for cointegration in-sample, the relationship often breaks down out-of-sample
-3. **Transaction costs**: Spread trading requires frequent rebalancing, which erodes any theoretical edge
-4. **Regime changes**: Market structure changes (2010-2026 includes bull, bear, COVID, inflation) break cointegration
+### Leçons retenues
 
-## When Pairs Trading CAN Work
+1. **La cointégration est rare dans les actions US** : la plupart des actions qui paraissent corrélées ne sont PAS cointégrées
+2. **Instabilité du hedge ratio** : même si des paires testent positif à la cointégration in-sample, la relation se dégrade souvent out-of-sample
+3. **Coûts de transaction** : le spread trading nécessite des rééquilibrages fréquents, ce qui érode tout avantage théorique
+4. **Changements de régime** : les mutations de structure de marché (2010-2026 inclut bull, bear, COVID, inflation) brisent la cointégration
 
-This strategy class may work in:
-- **Different asset classes**: Commodities, futures, FX where cointegration is more common
-- **Specific market regimes**: Certain volatility environments
-- **Shorter time windows**: In-sample cointegration may exist for limited periods
+## Quand le pairs trading PEUT fonctionner
 
-**For US equities (2010-2026)**: This approach failed consistently.
+Cette classe de stratégies peut fonctionner dans :
 
-## Pedagogical Value
+- **Des classes d'actifs différentes** : matières premières, futures, FX où la cointégration est plus fréquente
+- **Des régimes de marché spécifiques** : certains environnements de volatilité
+- **Des fenêtres temporelles plus courtes** : une cointégration in-sample peut exister sur des périodes limitées
 
-This strategy is kept as a **counter-example** to demonstrate:
-- ❌ The danger of assuming correlation = cointegration
-- ❌ Why backtesting must cover the full period (2010-2026, not just 2015-2020)
-- ❌ The importance of regime-awareness in strategy design
-- ❌ When to abandon a strategy idea (after 2-3 failed iterations)
+**Pour les actions US (2010-2026)** : cette approche a échoué de façon constante.
 
-## References
+## Valeur pédagogique
 
-- **QuantBook**: `quantbook.ipynb` - Research notebook with cointegration tests
-- **Research**: `research.ipynb` - Exploratory analysis
+Cette stratégie est conservée comme **contre-exemple** pour illustrer :
+
+- Le danger de supposer que corrélation = cointégration
+- Pourquoi le backtesting doit couvrir la période complète (2010-2026, pas seulement 2015-2020)
+- L'importance de la conscience du régime dans la conception de stratégies
+- Quand abandonner une idée de stratégie (après 2-3 itérations ratées)
+
+## Références
+
+- **QuantBook** : `quantbook.ipynb` — notebook de recherche avec tests de cointégration
+- **Research** : `research.ipynb` — analyse exploratoire
 
 ---
 
-**Note**: This strategy is NOT recommended for live trading. It serves as a warning about the importance of validating fundamental assumptions (cointegration) before deploying capital.
+**Note** : cette stratégie n'est PAS recommandée pour le trading en live. Elle sert d'avertissement sur l'importance de valider les hypothèses fondamentales (cointégration) avant de déployer du capital.
