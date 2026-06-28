@@ -249,6 +249,42 @@ theorem box_assez_grand_mono_n (g : Grid) {n m : Nat}
   · -- `max 2 (natCeilLog2 (side + 2*m)) ≥ 2`.
     exact Nat.le_max_left _ _
 
+/-- **Diagnostic (G.1 finding, c.148)**: `box_assez_grand g n = true` for ALL
+    grids `g` and all padding amounts `n`.
+
+    The level chosen by the definition, `k := max 2 (natCeilLog2 target)` with
+    `target := (gridBoundingBox g).2 + 2*n`, always satisfies both conjuncts:
+    `2^k ≥ target` (since `natCeilLog2_pow_ge` gives `2^(natCeilLog2 target) ≥
+    target`, and `max 2 (natCeilLog2 _) ≥ natCeilLog2 _` only raises the
+    exponent) and `k ≥ 2` (trivially, `max 2 _`). The two conjunct proofs are
+    exactly those of `box_assez_grand_mono_n` above, which also do not use the
+    `h`/`hle` hypotheses for the inequalities themselves.
+
+    **Consequence** — the `BoxAssezGrand g n` hypothesis in `p5_inductive_step`,
+    `p5_large_n_jump`, and `hashlife_correct` is **vacuous**: it holds for every
+    grid and every `n`, so it carries no information. The real content of those
+    theorems is the unconditional `evolveHashlifeFast n g = evolve n g` equality
+    (which remains gated on P4). This reframes the P5 plan: the "preservation
+    through jump" sub-claim (L2372-2382) is trivially true, and the padding
+    guarantee the predicate was meant to provide — that no live cell can reach
+    the MacroCell boundary within `n` generations — is NOT actually enforced by
+    the current `box_assez_grand` definition. That is a latent defect to surface
+    to the lane owner (ai-01), not a sorry to close here. -/
+theorem box_assez_grand_always_true (g : Grid) (n : Nat) :
+    box_assez_grand g n = true := by
+  unfold box_assez_grand
+  simp only [Bool.and_eq_true, decide_eq_true_eq]
+  set side := (gridBoundingBox g).2
+  refine ⟨?_, Nat.le_max_left _ _⟩
+  -- `2 ^ (max 2 (natCeilLog2 (side + 2*n))) ≥ side + 2*n`, unconditionally:
+  -- `natCeilLog2_pow_ge` + `max` only raises the exponent. Mirrors the first
+  -- conjunct of `box_assez_grand_mono_n` (which needs no hypothesis either).
+  have hnc : 2 ^ natCeilLog2 (side + 2 * n) ≥ side + 2 * n :=
+    natCeilLog2_pow_ge (side + 2 * n)
+  have hexp : natCeilLog2 (side + 2 * n) ≤ max 2 (natCeilLog2 (side + 2 * n)) :=
+    Nat.le_max_right _ _
+  exact le_trans hnc (Nat.pow_le_pow_right (by norm_num : 1 ≤ 2) hexp)
+
 /-! ## P0. Light-cone warm-up lemmas (prover ramp)
 
 Elementary facts about `manhattan` and `lightCone` that feed the **base case**
