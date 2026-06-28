@@ -2,7 +2,7 @@
 
 [← Série Probas](../README.md) | [Série PyMC (Python) →](../PyMC/README.md) | [ML.NET (C#) →](../../ML/ML.Net/README.md)
 
-Programmation probabiliste avec Microsoft Infer.NET : une série de 22 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision, l'inférence causale (do-calculus de Pearl) et des preuves formelles Lean 4.
+Programmation probabiliste avec Microsoft Infer.NET : une série de 23 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision, l'inférence causale (do-calculus de Pearl), les bandits bayésiens (Thompson Sampling) et des preuves formelles Lean 4.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste exacte, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
@@ -71,8 +71,9 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 20 | [Infer-20-Decision-Sequential](Infer-20-Decision-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique |
 | 20b | [Infer-20b-Lean-Gittins](Infer-20b-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
 | 21 | [Infer-21-Causal-Inference](Infer-21-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
+| 22 | [Infer-22-Thompson-Sampling](Infer-22-Thompson-Sampling.ipynb) | 60 min | Thompson Sampling bayésien, posterior Beta-Bernoulli par le moteur, regret vs ε-greedy/UCB1 |
 
-**Durée totale** : ~20h
+**Durée totale** : ~21h
 
 **Ressource complémentaire** : [Glossaire](Infer-Glossary.md) - Définitions des termes techniques
 
@@ -846,6 +847,33 @@ V(s) = max_a [R(s,a) + gamma x Sum P(s'|s,a) x V(s')]
 
 ---
 
+## Bandits Bayésiens (Notebook 22)
+
+### Infer-22 : Thompson Sampling bayésien
+
+**Durée** : 60 min | **Prérequis** : [Notebook 5](Infer-5-Skills-IRT.ipynb) (posterior Beta), [Notebook 20](Infer-20-Decision-Sequential.ipynb) (bandits, ε-greedy, UCB1)
+
+**Objectifs** :
+
+- Modéliser un **bandit multi-bras** comme un programme probabiliste Infer.NET
+- Faire calculer au **moteur d'inférence** le posterior Beta-Bernoulli de chaque bras (EP/VMP), plutôt que d'appliquer la formule conjuguée à la main
+- Implémenter le **Thompson Sampling** : jouer le bras dont l'échantillon posterior est le plus élevé
+- Mesurer le **regret cumulé** face à ε-greedy et UCB1 (Thompson exploite l'incertitude posterior)
+- Étendre au **best-arm identification** : estimer P(bras i est le meilleur) par échantillonnage posterior
+
+**Concepts clés** :
+
+| Concept | Formule | Description |
+|---------|---------|-------------|
+| Posterior Beta | `Beta(1+s, 1+f)` | Calculé par Infer.NET (EP/VMP), pas à la main |
+| Thompson | `a = argmax_k θ̃_k`, `θ̃_k ~ posterior_k` | Jouer selon P(bras k est le meilleur) |
+| Regret | `Σ_t (θ*_max − θ*(a_t))` | Perte cumulée vs bras optimal |
+| Best-arm id | `P(bras i = argmax θ) ≈ freq(i gagne)` | Identification probabiliste du meilleur bras |
+
+**Positionnement** : le notebook [Infer-20](Infer-20-Decision-Sequential.ipynb) section 8 implémente ε-greedy, UCB1 et un exercice de Thompson **manuel** (comptage des succès/échecs, formule conjuguée codée à la main). Infer-22 en est le versant **moteur** : Infer.NET calcule le posterior Beta de chaque bras par inférence variationnelle, et Thompson échantillonne depuis ce posterior. Le regret cumulé mesuré (Thompson ≪ ε-greedy) prouve que l'exploration bayésienne ciblée par le posterior exploite l'incertitude là où l'information manque — la généralisation naturelle à des modèles non conjugués (où seule l'inférence approchée sait calculer le posterior) justifie l'usage du moteur.
+
+**Applications** : A/B testing adaptatif, recommandation en ligne, essais cliniques séquentiels, publicité programmatique.
+
 ---
 
 ## Prérequis
@@ -968,7 +996,7 @@ var posterior = moteur.Infer<DistributionType>(variable);
 
 ```
 Infer/
-+-- Infer-1-Setup.ipynb ... Infer-20-Decision-Sequential.ipynb
++-- Infer-1-Setup.ipynb ... Infer-22-Thompson-Sampling.ipynb
 +-- Infer-20b-Lean-Gittins.ipynb    # Companion Lean 4 (preuves formelles Gittins)
 +-- Infer-Glossary.md
 +-- FactorGraphHelper.cs          # Helper pour visualisation Graphviz
