@@ -37,13 +37,22 @@ else 1)`, de sorte que `∏_j g' j (S j) = (∏_j w (S j)) · g (S i)`
 `∑_S ∏_j g' j (S j) = ∏_j ∑_x g' j x`, et ce produit vaut
 `(∑_x w·g) · (∑_x w)^{n−1} = E_D[g] · 1` (`D.sum_one`).
 
+## Ce livrable — estimateur non-biaisé (brique 2c/3)
+
+On prouve l'**estimateur non-biaisé** `sampleExpect_empError_eq_trueError`
+(`E_{S∼D^m}[empError f h S] = trueError D f h`) : l'erreur empirique, moyennée sur
+les tirages i.i.d., coïncide avec l'erreur vraie (elle est **centrée** dessus).
+C'est le second pilier de la concentration de Hoeffding. Preuve : `empError S =
+n⁻¹ · (∑_i ind(S_i))` (`ind = 1_{h≠f}`) ; on sort le scalaire (`sampleExpect_smul`),
+on distribue la somme (`sampleExpect_sum`), puis chaque indicateur marginalise en
+`E_D[ind] = trueError` via `sampleExpect_coord` + `trueError_eq_expect` ;
+`∑_i trueError = n · trueError` (`sum_const`), et `field_simp` annule `n⁻¹·n`.
+
 ## Briques restantes — OPEN (documentées comme travail futur, pas de stub)
 
-- **Estimateur non-biaisé** `sampleExpect_empError_eq_trueError` :
-  `E_{S∼D^m}[empError f h S] = trueError D f h` (par linéarité + `sampleExpect_coord`
-  coordonnée-par-coordonnée ; l'erreur empirique est centrée sur l'erreur vraie).
 - **Hoeffding-for-Bernoulli** : `ℙ_S [ |empError − trueError| ≥ ε ] ≤
   2·exp(−2nε²)` (méthode Chernoff : Markov sur `exp(t·(X̄−μ))` + `log t ≤ t−1`).
+- **Borne finale** `pac_finite_class_bound` (brique 3/3, union bound sur `H` fini).
 
 Ces briques suivent en itérations dédiées. On reste dans le style
 **ℝ-weight pédagogique** (pas de `ℝ≥0∞` / `Measure`).
@@ -144,6 +153,72 @@ theorem sampleExpect_coord {n : ℕ} (g : X → ℝ) (i : Fin n) :
   -- (5) `∏_j (if j = i then expect D g else 1) = expect D g` : un seul non-trivial.
   rw [Finset.prod_eq_single_of_mem i (Finset.mem_univ _) (fun b _ hb ↦ if_neg hb),
       if_pos rfl]
+
+/-- **Linéarité en une somme indicée** : l'espérance empirique d'une somme de
+fonctions est la somme des espérances (Fubini discret : `∑_S w S · (∑_i F i S) =
+∑_i ∑_S w S · F i S` via `Finset.mul_sum` puis `Finset.sum_comm`). Réutilisé par
+l'estimateur non-biaisé `sampleExpect_empError_eq_trueError`. -/
+theorem sampleExpect_sum {ι : Type*} [Fintype ι] {n : ℕ} (F : ι → ((Fin n → X) → ℝ)) :
+    sampleExpect D (fun S ↦ ∑ i, F i S) = ∑ i, sampleExpect D (F i) := by
+  dsimp only [sampleExpect]
+  simp only [Finset.mul_sum]
+  exact Finset.sum_comm
+
+/-- **Linéarité en un facteur scalaire** : `E[c · g] = c · E[g]` (le scalaire sort
+de la somme pondérée via `Finset.mul_sum`). Réutilisé par l'estimateur non-biaisé
+(pour sortir le facteur `1/n` de l'erreur empirique). -/
+theorem sampleExpect_smul {n : ℕ} (c : ℝ) (g : (Fin n → X) → ℝ) :
+    sampleExpect D (fun S ↦ c * g S) = c * sampleExpect D g := by
+  dsimp only [sampleExpect]
+  simp only [show ∀ S, sampleWeight D S * (c * g S) = c * (sampleWeight D S * g S) from
+               fun _ ↦ by ring]
+  rw [← Finset.mul_sum]
+
+/-- **Estimateur non-biaisé** : l'espérance (sous `D^m`) de l'erreur empirique
+égale l'erreur vraie. C'est le fait que `empError` est un estimateur **non-biaisé**
+de `trueError` : en moyenne sur les tirages `S ∼ D^m`, l'erreur empirique coïncide
+avec l'erreur vraie (elle est **centrée** sur `trueError`).
+
+Preuve : `empError S = (∑_i 1_{h(S_i)≠f(S_i)}) / n = n⁻¹ · (∑_i ind (S i))`. Par
+`sampleExpect_smul` (sortir le `n⁻¹`), `sampleExpect_sum` (linéarité), puis
+`sampleExpect_coord` (chaque indicateur marginalise en `E_D[ind] = trueError` via
+`trueError_eq_expect`), on obtient
+`E_S[empError] = n⁻¹ · (∑_i trueError) = n⁻¹ · (n · trueError) = trueError`. -/
+theorem sampleExpect_empError_eq_trueError {n : ℕ} (f h : Hypothesis X) (hn : 0 < n) :
+    sampleExpect D (fun S : Fin n → X ↦ empError f h S) = trueError D f h := by
+  -- Indicateur de mauvaise classification d'une instance.
+  let ind : X → ℝ := fun x ↦ if h x ≠ f x then 1 else 0
+  -- (1) `empError f h S = (n:ℝ)⁻¹ · (∑ i, ind (S i))` (réécriture du `1/n`).
+  have h_emp : ∀ S : Fin n → X,
+      empError f h S = (n : ℝ)⁻¹ * (∑ i : Fin n, ind (S i)) := by
+    intro S
+    dsimp only [empError, ind]
+    field_simp
+  -- (2) Per-coordinate marginal : `E_S[ind (S i)] = E_D[ind]` (sampleExpect_coord,
+  -- D implicite → named arg `(D := D)` car D n'apparaît que dans le goal).
+  have h_coord : ∀ i : Fin n, sampleExpect D (fun S ↦ ind (S i)) = expect D ind := by
+    intro i
+    exact sampleExpect_coord (D := D) ind i
+  -- (3) `expect D ind = trueError D f h`.
+  have h_true : expect D ind = trueError D f h := (trueError_eq_expect (D := D) f h).symm
+  -- (4) `n > 0` (en ℝ) pour le field_simp final.
+  have hnreal : (0 : ℝ) < n := mod_cast hn
+  calc sampleExpect D (fun S : Fin n → X ↦ empError f h S)
+      = sampleExpect D (fun S ↦ (n : ℝ)⁻¹ * (∑ i : Fin n, ind (S i))) := by
+          simp only [h_emp]
+    _ = (n : ℝ)⁻¹ * sampleExpect D (fun S ↦ ∑ i : Fin n, ind (S i)) := by
+          rw [sampleExpect_smul]
+    _ = (n : ℝ)⁻¹ * ∑ i : Fin n, sampleExpect D (fun S ↦ ind (S i)) := by
+          rw [sampleExpect_sum]
+    _ = (n : ℝ)⁻¹ * ∑ i : Fin n, expect D ind := by
+          congr 1
+          exact Finset.sum_congr rfl (fun i _ ↦ h_coord i)
+    _ = (n : ℝ)⁻¹ * ∑ i : Fin n, trueError D f h := by rw [h_true]
+    _ = (n : ℝ)⁻¹ * (n * trueError D f h) := by
+          congr 1
+          simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+    _ = trueError D f h := by
+          field_simp
 
 end PacLearning
 
