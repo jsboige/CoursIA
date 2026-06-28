@@ -35,6 +35,7 @@ from argumentation_lib._jvm_compat import (
 from argumentation_lib._shared_state import (
     ArgumentProfile,
     RhetoricalAnalysisState,
+    UnifiedAnalysisState,
 )
 
 # -- State Manager Plugin (Semantic Kernel @kernel_function wrapper) --
@@ -72,7 +73,7 @@ __all__ = [
     # jvm
     "initialize_jvm", "is_jvm_started", "shutdown_jvm",
     # state
-    "ArgumentProfile", "RhetoricalAnalysisState",
+    "ArgumentProfile", "RhetoricalAnalysisState", "UnifiedAnalysisState",
     "get_state_manager_plugin",
     # runner
     "get_analysis_runner",
