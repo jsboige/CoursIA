@@ -1,0 +1,98 @@
+# Template Docker Compose - Qdrant production (ANONYMISE)
+# ------------------------------------------------------
+# Exemple pedagogique derive d'une configuration reelle. A adapter :
+#   - le bind de volume (section `volumes`) doit pointer vers VOTRE stockage monte ;
+#   - la cle d'API se met dans un fichier `.env` NON versionne (voir qdrant.env.example) ;
+#   - aucune valeur sensible ne doit figurer dans ce fichier.
+#
+# Demarrer :  docker compose -f docker-compose.qdrant.example.yml up -d
+# Sante    :  curl http://localhost:6333/healthz
+
+services:
+  qdrant:
+    # Version EPINGLEE (jamais ':latest' en production : un tag mouvant peut
+    # sauter de version au prochain pull et casser le format de quantization).
+    # TurboQuant (quantization 4 bits) requiert le moteur >= 1.18.0.
+    image: qdrant/qdrant:v1.18.2
+    container_name: qdrant_production
+    restart: always
+
+    # Periode de grace a l'arret pour un flush propre des donnees.
+    stop_grace_period: 60s
+
+    # GARDE-FOU ANTI-SPLIT-BRAIN (sentinelle).
+    # La sentinelle vit SUR le disque de donnees (/qdrant/storage/.qdrant_vhdx_sentinel).
+    # Si le bind se resout vers un repertoire vide (disque non monte), la sentinelle
+    # est absente -> exit 1, au lieu de servir un index vide et de "reindexer dans le vide".
+    # `exec ./entrypoint.sh` garde l'entrypoint d'origine comme PID 1 (arret gracieux preserve).
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        if [ ! -f /qdrant/storage/.qdrant_vhdx_sentinel ]; then
+          echo "[SENTINEL] FATAL: sentinelle absente -- disque non monte. Refus de demarrer." >&2
+          exit 1
+        fi
+        echo "[SENTINEL] OK: sentinelle presente, demarrage Qdrant."
+        exec ./entrypoint.sh
+
+    # La cle d'API et les variables sensibles vivent ICI, hors du fichier compose.
+    env_file:
+      - .env            # cf. qdrant.env.example (NE PAS versionner le vrai .env)
+
+    environment:
+      - QDRANT__SERVICE__MAX_REQUEST_SIZE_MB=32
+      - QDRANT__SERVICE__GRPC_TIMEOUT_MS=60000
+      - QDRANT__LOG_LEVEL=INFO
+      - QDRANT__TELEMETRY_DISABLED=true
+
+    ports:
+      - "6333:6333"     # HTTP / REST
+      - "6334:6334"     # gRPC
+
+    volumes:
+      # ADAPTER : ces chemins doivent pointer vers VOTRE stockage monte (disque dedie).
+      # Exemple generique ci-dessous -- remplacer par le chemin reel de l'hote.
+      - "${QDRANT_STORAGE_PATH:-./qdrant_data/storage}:/qdrant/storage"
+      - "${QDRANT_SNAPSHOTS_PATH:-./qdrant_data/snapshots}:/qdrant/snapshots"
+      - ./qdrant.production.example.yaml:/qdrant/config/production.yaml
+
+    deploy:
+      resources:
+        limits:
+          memory: 60G    # marge large au-dessus de l'empreinte reelle
+          cpus: '12'
+        reservations:
+          memory: 24G
+          cpus: '4'
+
+    # Healthcheck HTTP reel (detecte un freeze, pas seulement un crash).
+    # L'image n'a ni curl ni wget mais a bash : on utilise /dev/tcp.
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 10 bash -c 'exec 3<>/dev/tcp/localhost/6333; echo -e \"GET /healthz HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3; timeout 5 cat <&3; exec 3>&-' | grep -q 'healthz check passed'"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      # IMPORTANT : assez long pour couvrir la recovery a froid d'un gros index
+      # (plusieurs minutes). Trop court, l'autoheal tue le conteneur avant la fin
+      # de la recovery -> boucle de redemarrage.
+      start_period: 600s
+
+  # Autoheal : redemarre le conteneur si le healthcheck echoue plusieurs fois
+  # (Docker Compose hors-swarm ne redemarre pas les conteneurs "unhealthy").
+  autoheal:
+    image: willfarrell/autoheal
+    container_name: qdrant_autoheal
+    restart: always
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+      - AUTOHEAL_INTERVAL=60
+      - AUTOHEAL_START_PERIOD=300
+      - AUTOHEAL_DEFAULT_STOP_TIMEOUT=60
+    volumes:
+      - //var/run/docker.sock:/var/run/docker.sock
+
+# RAPPELS :
+# - Ne jamais utiliser `--remove-orphans` si deux instances partagent le meme nom
+#   de projet Compose : cela supprimerait les conteneurs de l'autre instance.
+# - Resoudre le disque de donnees par son LABEL, jamais par sa lettre de peripherique.

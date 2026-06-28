@@ -47,12 +47,25 @@ Plateforme multi-agents open source (en développement).
 - Cluster management
 - Workflows autonomes
 
+## Parcours NanoClaw v2 (en modules)
+
+> Cette série documente le **NanoClaw v2 réel**, tel qu'il tourne en production sur le cluster : un hôte Node unique orchestrant des conteneurs d'agents **par session**, où l'hôte et les agents ne communiquent **que** par des bases SQLite. Elle actualise progressivement les fiches `docs/NanoClaw-*.md`, qui décrivent un modèle conceptuel antérieur. Format **hybride** : une progression pédagogique en modules, chaque module ancré dans des décisions et des incidents de production réels.
+
+| Module | Sujet | Statut |
+|--------|-------|--------|
+| [M1 · Le modèle « tout est message »](docs/M1-tout-est-message.md) | Principe fondateur (zéro IPC), modèle d'entités, deux bases par session | ✅ disponible |
+| M2 · Architecture v2 | Hôte Node, conteneurs par session, détail des deux bases + base centrale | 🔜 à venir |
+| M3 · Déploiement Windows réel | Service, build du conteneur, vault de secrets, montages | 🔜 à venir |
+| M4 · Vivre en production | La chaîne de patches : incidents réels → correctifs | 🔜 à venir |
+| M5 · Coordination multi-bots | Intercom, mentions, patterns et anti-patterns (co-écrit) | 🔜 à venir |
+
 ## Structure
 
 ```text
 Claw-Systems/
 ├── README.md                    # Ce fichier
 ├── docs/
+│   ├── M1-tout-est-message.md   # Parcours v2 — Module 1 : « tout est message »
 │   ├── NanoClaw-Architecture.md # Architecture technique NanoClaw
 │   ├── NanoClaw-Deploy.md       # Guide de deploiement
 │   └── ASR-Integration.md       # Integration transcription vocale
@@ -78,6 +91,7 @@ Claw-Systems/
 
 ## Liens
 
+- **[Parcours NanoClaw v2 — M1 : « tout est message »](docs/M1-tout-est-message.md)**
 - [Architecture NanoClaw](docs/NanoClaw-Architecture.md)
 - [Guide de déploiement](docs/NanoClaw-Deploy.md)
 - [Intégration ASR](docs/ASR-Integration.md)

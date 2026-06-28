@@ -67,18 +67,20 @@ nécessité — le résultat mathématique est le vrai Hoeffding. Par briques at
   ℝ-weight (`markov_ineq` : `D-weight {x | t ≤ g x} ≤ E[g]/t` via
   `Finset.filter` + `Finset.sum_mul` + `mul_le_mul_of_nonneg_left`). Pose les
   fondations de la méthode de Chernoff (brique 2c/3).
-- `PacLearning/SampleExpect.lean` (ce livrable, **brique 2b/3 livrée**) —
+- `PacLearning/SampleExpect.lean` (**brique 2b/3 + 2c/3-partiel livrées**) —
   espérance empirique `sampleExpect D g = ∑ S, sampleWeight D S · g S` sur
   l'espace des échantillons `Fin n → X` (prolongement de `expect` au produit
   `D^m`), avec **linéarité**, **normalisation** `sampleExpect_const`
   (`E_{S∼D^m}[c] = c` via `sampleWeight_sum_one`), non-négativité et monotonie.
-  Cadre requis par toute inégalité de concentration sur l'échantillon.
+  **Et la marginalisation d'une coordonnée** `sampleExpect_coord`
+  (`E_{S∼D^m}[g(S i)] = E_D[g]`, brique-clé via `Fintype.prod_sum` +
+  `prod_eq_single_of_mem`) : marginaliser une coordonnée du produit `D^m`
+  redonne `D`. Cadre requis par l'estimateur non-biaisé puis Hoeffding.
 - **Brique 2c/3 — OPEN** : concentration de Hoeffding-for-Bernoulli,
-  `ℙ_S [ |empError − trueError| > ε ] ≤ 2·exp(−2mε²)`. Préalable : la
-  **marginalisation coordonnée** `sampleExpect_coord` (`E_{S∼D^m}[g(S i)] =
-  E_D[g]`, via `Finset.sum_prod_piFinset`) puis l'**estimateur non-biaisé**
-  `sampleExpect_empError_eq_trueError` (`E_S[empError] = trueError`), puis la
-  méthode Chernoff (Markov + `log t ≤ t − 1` sur les indicateurs).
+  `ℙ_S [ |empError − trueError| > ε ] ≤ 2·exp(−2mε²)`. Préalable : l'**estimateur
+  non-biaisé** `sampleExpect_empError_eq_trueError` (`E_S[empError] = trueError`
+  par linéarité + `sampleExpect_coord`), puis la méthode Chernoff (Markov +
+  `log t ≤ t − 1` sur les indicateurs).
 - **Brique 3/3 — OPEN** : `pac_finite_class_bound`, `m ≥ (1/ε)(ln|H| + ln(1/δ))`
   (union bound sur `H` fini, `Finset.sum_le_*`). Le théorème phare de Valiant.
 
@@ -94,12 +96,12 @@ nécessité — le résultat mathématique est le vrai Hoeffding. Par briques at
 namespace PacLearning
 
 /-- Statut : itération 1 livrée (modèle + propriétés élémentaires 0-sorry) ;
-itération 2 en cours — **briques 1/3, 2a/3, 2b/3 livrées** (`Sample.lean` :
-distribution produit `D^m` + normalisation ; `Concentration.lean` : `expect`,
-`markov_ineq` ; `SampleExpect.lean` : `sampleExpect` + linéarité/normalisation).
-Briques 2c/3 (marginalisation coordonnée + estimateur non-biaisé +
-Hoeffding-for-Bernoulli) et 3/3 (`pac_finite_class_bound` union bound)
-documentées OPEN. -/
+itération 2 en cours — **briques 1/3, 2a/3, 2b/3, 2c/3-partiel livrées**
+(`Sample.lean` : distribution produit `D^m` + normalisation ; `Concentration.lean` :
+`expect`, `markov_ineq` ; `SampleExpect.lean` : `sampleExpect` + linéarité/normalisation
++ **marginalisation coordonnée `sampleExpect_coord`**). Briques 2c/3-restantes
+(estimateur non-biaisé + Hoeffding-for-Bernoulli) et 3/3
+(`pac_finite_class_bound` union bound) documentées OPEN. -/
 abbrev Status : Prop := True
 
 end PacLearning
