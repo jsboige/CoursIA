@@ -57,10 +57,10 @@ Hermes est un **fork autonome** de [`nousresearch/hermes-agent`](https://github.
 
 L'isolation entre le code upstream et nos additions est nette : tous nos scripts, configurations et patches déploiement vivent dans `roosync-cluster/` au sein du fork (`hermes-restore-config.sh`, `docker/cont-init.d/`, etc.). Le reste du code reste alignable avec l'upstream sans conflit.
 
-**Documentation détaillée** :
-- [docs/05-Hermes-Architecture.md](docs/05-Hermes-Architecture.md) — composants, MCPs, cron jobs *(à venir, PR-B)*
-- [docs/06-Hermes-Deploy-s6-Overlay.md](docs/06-Hermes-Deploy-s6-Overlay.md) — déploiement Windows + s6-overlay + patches concrets *(à venir, PR-B)*
-- [docs/07-Hermes-Cluster-Coordinator-Role.md](docs/07-Hermes-Cluster-Coordinator-Role.md) — rôle de coordinateur cluster *(à venir, PR-B)*
+**Documentation détaillée** (modules Hermes à venir dans une PR suivante) :
+- `docs/05-Hermes-Architecture.md` — composants, MCPs, cron jobs, profils *(à venir, PR-B)*
+- `docs/06-Hermes-Deploy-s6-Overlay.md` — déploiement Windows + s6-overlay + patches concrets *(à venir, PR-B)*
+- `docs/07-Hermes-Cluster-Coordinator-Role.md` — rôle de coordinateur cluster *(à venir, PR-B)*
 
 ### OpenClaw — l'inspirateur historique
 
@@ -81,11 +81,11 @@ L'enchaînement recommandé pour suivre le répertoire de bout en bout :
 | 3 | [02 — Architecture NanoClaw](docs/02-NanoClaw-Architecture.md) | Le plus simple des trois systèmes — c'est par là qu'on commence à mettre les mains dedans. |
 | 4 | [03 — NanoClaw Deploy](docs/03-NanoClaw-Deploy.md) | Le déployer effectivement (Docker Compose, Telegram, ASR). |
 | 5 | [04 — ASR Integration](docs/04-ASR-Integration.md) | Approfondissement sur la transcription vocale (Whisper auto-hébergé). |
-| 6 | [05 — Architecture Hermes](docs/05-Hermes-Architecture.md) *(à venir)* | Passer à un système plus complexe : fork upstream, drift isolé, MCPs, cron. |
-| 7 | [06 — Hermes Deploy s6-overlay](docs/06-Hermes-Deploy-s6-Overlay.md) *(à venir)* | Le déploiement Windows + s6-overlay, avec les patches CRLF/with-contenv/HOME documentés. |
-| 8 | [07 — Hermes Cluster Coordinator Role](docs/07-Hermes-Cluster-Coordinator-Role.md) *(à venir)* | Le rôle de coordinateur cluster (dashboards, routing, hand-off, surveillance 6h). |
-| 9 | [08 — Multi-Bot Coordination](docs/08-Multi-Bot-Coordination.md) *(à venir, co-écrit)* | Comment plusieurs Claws coexistent et coopèrent (intercom, mentions, anti-collision). |
-| 10 | [09 — Patterns & Anti-Patterns](docs/09-Patterns-Anti-Patterns.md) *(à venir, co-écrit)* | Les leçons apprises en production — incidents, fixes, règles d'or. |
+| 6 | `05 — Architecture Hermes` *(à venir, PR-B)* | Passer à un système plus complexe : fork upstream, drift isolé, MCPs, cron. |
+| 7 | `06 — Hermes Deploy s6-overlay` *(à venir, PR-B)* | Le déploiement Windows + s6-overlay, avec les patches CRLF/with-contenv/HOME documentés. |
+| 8 | `07 — Hermes Cluster Coordinator Role` *(à venir, PR-B)* | Le rôle de coordinateur cluster (dashboards, routing, hand-off, surveillance 6h). |
+| 9 | `08 — Multi-Bot Coordination` *(à venir, PR-C, co-écrit)* | Comment plusieurs Claws coexistent et coopèrent (intercom, mentions, anti-collision). |
+| 10 | `09 — Patterns & Anti-Patterns` *(à venir, PR-C, co-écrit)* | Les leçons apprises en production — incidents, fixes, règles d'or. |
 
 Une fois ce parcours terminé, un lecteur devrait être capable de **déployer NanoClaw lui-même** sans surprise majeure, **comprendre ce qu'il faut déployer pour un Hermes-like** sans devoir tout réinventer, et — surtout — **anticiper les incidents** plutôt que les découvrir.
 

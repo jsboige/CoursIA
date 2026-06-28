@@ -92,9 +92,9 @@ Plateformes d'agents IA conteneurisés, self-hosted, opérant de manière autono
 | Document | Description |
 |----------|-------------|
 | [README](Claw-Systems/README.md) | Vue d'ensemble, comparaison avec Claude/Roo |
-| [Architecture](Claw-Systems/docs/NanoClaw-Architecture.md) | Architecture technique NanoClaw |
-| [Déploiement](Claw-Systems/docs/NanoClaw-Deploy.md) | Guide de déploiement Docker |
-| [ASR Integration](Claw-Systems/docs/ASR-Integration.md) | Transcription vocale Whisper |
+| [Architecture](Claw-Systems/docs/02-NanoClaw-Architecture.md) | Architecture technique NanoClaw |
+| [Déploiement](Claw-Systems/docs/03-NanoClaw-Deploy.md) | Guide de déploiement Docker |
+| [ASR Integration](Claw-Systems/docs/04-ASR-Integration.md) | Transcription vocale Whisper |
 
 **Cas d'usage** : Agent Telegram avec transcription vocale, orchestration multi-agents, déploiement production.
 
@@ -237,9 +237,9 @@ Si `UserName` contient des espaces, l'entourer de guillemets. Les workspaces son
 
 Les Claw Systems ([README](Claw-Systems/README.md)) sont des agents IA conteneurisés qui opèrent via Telegram et API. Pour demarrer :
 
-1. Lire l'[Architecture](Claw-Systems/docs/NanoClaw-Architecture.md) pour comprendre les composants (LLM, ASR Whisper, Telegram bot).
-2. Suivre le [Guide de déploiement](Claw-Systems/docs/NanoClaw-Deploy.md) pour Docker Compose.
-3. Configurer l'[ASR Whisper](Claw-Systems/docs/ASR-Integration.md) si la transcription vocale est requise.
+1. Lire l'[Architecture](Claw-Systems/docs/02-NanoClaw-Architecture.md) pour comprendre les composants (LLM, ASR Whisper, Telegram bot).
+2. Suivre le [Guide de déploiement](Claw-Systems/docs/03-NanoClaw-Deploy.md) pour Docker Compose.
+3. Configurer l'[ASR Whisper](Claw-Systems/docs/04-ASR-Integration.md) si la transcription vocale est requise.
 
 **Prérequis** : Docker + Docker Compose, un token Telegram Bot (`@BotFather`), une clé API LLM (OpenRouter ou OpenAI). Le déploiement complet tourne sur un VPS 4 GB RAM minimum.
 
