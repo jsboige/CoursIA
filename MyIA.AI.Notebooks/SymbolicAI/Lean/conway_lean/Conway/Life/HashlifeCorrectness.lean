@@ -1787,6 +1787,43 @@ def centralCorrect (c : MacroCell) (j : Nat) : Prop :=
   (hashlifeResultAux (j + 2) c).toGrid ((2^j : Nat), (2^j : Nat)) =
     restrictGridTo (evolve (2^j) (c.toGrid (0, 0))) (2^j : Int) (2^(j+1))
 
+/-- **The whnf-wall bypass (4th abstraction technique, c.153).**
+
+    `centralCorrect c j` is a *grid equality*. To reason about pointwise
+    membership `p ∈ (hashlifeResultAux (j+2) c).toGrid off` WITHOUT whnf-reducing
+    the `hashlifeResultAux` term (the wall that blocked c.138–c.140), apply
+    `p ∈ ·` to both sides of the equality by **congruence** (`congrArg`), then
+    `Iff.of_eq`. This substitutes the `hashlifeResultAux` term *syntactically* —
+    it is never unfolded. The four previous techniques (opaque-binder helper
+    c.139, `inductive cellWf` c.142, plain `def centralCorrect` c.139,
+    `set m := k-1` c.147) all work *around* the wall by hiding hRA behind an
+    opaque binder; this one crosses it by congruence, which is exactly what
+    G2/G3 need (they must inspect the *membership* of the composed result, not
+    just its level/wf).
+
+    Instantiated with `mem_restrictGridTo`, this is the **G1 reduction**
+    (membership of a sub-cell whose `centralCorrect` is known, e.g. `q_j` via
+    `ih`) in one sorry-free step. The residual wall is **G3 assembly** (how
+    `(hashlifeResultAux (k+2) c).toGrid off` decomposes into the four
+    `(hashlifeResultAux (k+1) q_j).toGrid off_j` — the `toCellsAux` walk on an
+    `hRA` that unfolds), which remains to be bridged. This lemma is the
+    `p4_succ_membership` analogue of the P4.3 gate lemma (`hashlifeResultAux_
+    level_cellWf`, c.142): sorry-stable infrastructure that unlocks the next
+    attack. -/
+theorem centralCorrect_mem (c : MacroCell) (j : Nat) (p : Int × Int)
+    (h : centralCorrect c j) :
+    p ∈ (hashlifeResultAux (j + 2) c).toGrid ((2^j : Nat), (2^j : Nat)) ↔
+      isAlive (evolve (2^j) (c.toGrid (0, 0))) p = true ∧
+      (2^j : Int) ≤ p.1 ∧ p.1 < (2^j : Int) + 2^(j+1) ∧
+      (2^j : Int) ≤ p.2 ∧ p.2 < (2^j : Int) + 2^(j+1) := by
+  have hb : p ∈ (hashlifeResultAux (j + 2) c).toGrid ((2^j : Nat), (2^j : Nat)) ↔
+      p ∈ restrictGridTo (evolve (2^j) (c.toGrid (0, 0))) (2^j : Int) (2^(j+1)) :=
+    Iff.of_eq (congrArg (fun g : Grid => p ∈ g) h)
+  rw [hb, mem_restrictGridTo]
+  refine ⟨fun ⟨Hm, h1, h2, h3, h4⟩ => ⟨?_, h1, h2, h3, h4⟩,
+          fun ⟨H, h1, h2, h3, h4⟩ => ⟨?_, h1, h2, h3, h4⟩⟩ <;>
+    simp_all [isAlive]
+
 /-- **P4.2 helper (c.139 workaround).** The `ih` *application*
     `ih (node nw_se ne_sw sw_ne se_nk) (k-1) ...` diverges on `whnf` when it
     appears inline inside `p4_wave1_ih`'s body, because there the four
