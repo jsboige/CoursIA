@@ -1,24 +1,24 @@
 # Crypto LSTM Prediction
 
-**Status**: 🔄 Research Phase - Based on HandsOnAITrading Book
+**Statut** : 🔄 Phase de recherche — basé sur le livre HandsOnAITrading.
 
 ## Description
 
-Deep Learning model for cryptocurrency price prediction using LSTM (Long Short-Term Memory) networks with advanced architecture.
+Modèle de Deep Learning pour la prédiction de prix de cryptomonnaies utilisant des réseaux LSTM (Long Short-Term Memory) avec une architecture avancée.
 
-### Key Features
+### Caractéristiques principales
 
-- **DLinear Architecture** (AAAI 2023): Ultra-simple decomposition + linear layers
-  - SeriesDecomposition block (moving average trend/seasonal split)
-  - No attention mechanism (~10K parameters)
-  - SOTA performance on time series forecasting
+- **Architecture DLinear** (AAAI 2023) : décomposition ultra-simple + couches linéaires
+  - Bloc SeriesDecomposition (séparation tendance/saisonnalité par moyenne mobile)
+  - Pas de mécanisme d'attention (~10K paramètres)
+  - Performance SOTA en prévision de séries temporelles
 
-- **PyTorch Implementation**: Full deep learning stack
-  - Custom Dataset and DataLoader
-  - SeriesDecomposition module
-  - DLinear model (trend + seasonal forecasting)
+- **Implémentation PyTorch** : stack Deep Learning complète
+  - Dataset et DataLoader personnalisés
+  - Module SeriesDecomposition
+  - Modèle DLinear (prévision tendance + saisonnière)
 
-- **Target**: BTCUSDT price prediction
+- **Cible** : prédiction du prix BTCUSDT
 
 ## Architecture
 
@@ -27,29 +27,29 @@ Input → SeriesDecomposition → [Trend, Seasonal] → DLinear → Prediction
          (Moving Avg)
 ```
 
-### DLinear Model Components
+### Composants du modèle DLinear
 
-1. **SeriesDecomposition**: Decomposes time series into trend and seasonal components
-2. **Trend Linear Layer**: Projects trend features
-3. **Seasonal Linear Layer**: Projects seasonal features
-4. **Reconstruction**: Combines trend + seasonal predictions
+1. **SeriesDecomposition** : décompose la série temporelle en composantes tendance et saisonnières
+2. **Couche linéaire de tendance** : projette les features de tendance
+3. **Couche linéaire saisonnière** : projette les features saisonnières
+4. **Reconstruction** : combine les prédictions tendance + saisonnière
 
-## Files
+## Fichiers
 
-- `main.py`: QC algorithm with PyTorch model integration
-- `research.ipynb`: Research notebook with model training and evaluation
-- `config.json`: Project configuration
+- `main.py` : algorithme QC avec intégration du modèle PyTorch
+- `research.ipynb` : notebook de recherche avec entraînement et évaluation du modèle
+- `config.json` : configuration du projet
 
-## Reference
+## Référence
 
-- **Paper**: "Are Transformers Effective for Time Series Forecasting?" (AAAI 2023)
-- **Book**: Hands-On AI Trading (Chapter on Deep Learning)
-- **Related Notebook**: QC-Py-22-Deep-Learning-LSTM.ipynb
+- **Paper** : « Are Transformers Effective for Time Series Forecasting? » (AAAI 2023)
+- **Livre** : Hands-On AI Trading (chapitre Deep Learning)
+- **Notebook associé** : QC-Py-22-Deep-Learning-LSTM.ipynb
 
-## Status
+## Statut
 
-This is a research/exploration project. Backtesting results and performance metrics to be determined.
+Projet de recherche/exploration. Les résultats de backtest et les métriques de performance restent à déterminer.
 
 ---
 
-**Note**: Crypto markets are highly volatile. This strategy is for educational purposes.
+**Note** : les marchés crypto sont très volatils. Cette stratégie est à but éducatif.
