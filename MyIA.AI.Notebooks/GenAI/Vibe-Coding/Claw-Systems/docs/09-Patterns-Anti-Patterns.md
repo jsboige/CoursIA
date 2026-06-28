@@ -2,10 +2,10 @@
 
 [← Claw-Systems](../README.md) | [↑ ..](../README.md)
 
-> **Module co-écrit.** Patterns Hermes (po-2026) documentés ci-dessous avec leurs
-> incidents réels. Les sections `<!-- NANOCLAW -->` attendent les patterns propres à
-> NanoClaw (TLS SAN, OneCLI SDK leak, watchdog MCP chain, format messages Telegram,
-> Protocol MAJ v3). Voir [tracker #4428](https://github.com/jsboige/CoursIA/issues/4428).
+> **Module co-écrit.** Patterns et anti-patterns Hermes (po-2026) **et** NanoClaw (ai-01),
+> chacun documenté avec un incident réel. Les entrées suffixées « (NanoClaw) » et
+> numérotées P7+/AP7+ apportent la perspective de l'agent terminal sur `ai-01`. Voir
+> [tracker #4428](https://github.com/jsboige/CoursIA/issues/4428).
 
 Ce module est le **retour d'expérience en production**. Il ne décrit pas comment les
 Claw systems *devraient* marcher, mais comment ils *cassent vraiment* — et les fixes
@@ -59,9 +59,41 @@ commentaire, une review, ou de merger. Évite le double-post et le conflit. Voir
 **Jamais** `ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic`. Voir
 [AP4 — Perte du registre MCP post-compaction](#ap4--perte-du-registre-mcp-post-compaction).
 
-<!-- NANOCLAW : ajouter ici vos patterns émergés (ex. OneCLI SDK version pinning,
-     TBXark proxy bypass IIS, format messages ≤3 lignes/cycle, watchdog MCP chain,
-     Protocol MAJ v3). -->
+### P7 — Un seul écrivain par base SQLite (NanoClaw)
+
+**Pratique :** dans NanoClaw v2, chaque base de session n'a **qu'un seul** processus qui
+y écrit — l'hôte dans `inbound.db`, le conteneur dans `outbound.db` — et les numéros de
+séquence sont partitionnés (`seq` pairs côté hôte, impairs côté conteneur).
+
+**Pourquoi :** aucune contention de verrou cross-montage, et tout l'état est inspectable
+à froid en SQLite. C'est la traduction concrète de « tout est message » (voir
+[02-NanoClaw-Architecture.md](02-NanoClaw-Architecture.md)).
+
+### P8 — Exclure le trafic interne du proxy credential (NanoClaw)
+
+**Pratique :** quand un proxy d'injection de secrets est placé devant le conteneur
+(`HTTP(S)_PROXY`), **toujours** pousser un `NO_PROXY` couvrant les hôtes internes
+(`host.docker.internal`, etc.).
+
+**Pourquoi :** sans cela, le trafic MCP interne part dans le proxy credential et se fait
+rejeter (`401`) → crash-loop. C'est exactement le piège documenté en **AP8** ci-dessous.
+
+### P9 — Épingler SDK et gateway en lockstep (NanoClaw)
+
+**Pratique :** ne jamais bumper le SDK OneCLI sans upgrader le gateway au même palier
+d'API (et inversement). Vérifier la date de release, épingler une version **exacte**.
+
+**Pourquoi :** client et serveur d'un même protocole forment un couple ; les désynchroniser
+casse tout silencieusement (voir **AP8**). Le tronc applique d'ailleurs un délai de
+quarantaine sur les nouvelles versions npm (`minimumReleaseAge`) — ne pas le contourner
+sans accord humain.
+
+### P10 — Réponses Telegram courtes (NanoClaw)
+
+**Pratique :** viser **≤ 3 lignes** par message Telegram. Le chat n'est pas une console.
+
+**Pourquoi :** un pavé de 30 lignes dans Telegram est illisible et noie le signal. La
+concision est ici un trait de produit, pas une limite technique.
 
 ---
 
@@ -178,14 +210,85 @@ recommence.
 **Leçon :** le contexte conversationnel est volatile. L'état durable doit vivre
 ailleurs (git, dashboards, SQLite).
 
-<!-- NANOCLAW : ajouter ici vos anti-patterns documentés. Sujets suggérés par le
-     scope #4428 :
-  - TLS SAN manquant (certificat)
-  - OneCLI SDK leak (mémoire/version)
-  - Échecs de bypass edge IIS via TBXark
-  - Format messages Telegram (>3 lignes = mauvaise UX)
-  - Quiproquos de version Protocol MAJ
-  Décrire pour chacun : symptôme, cause racine, fix, leçon. -->
+### AP7 — Certificat TLS sans le SAN du sous-domaine (incident 2026-05-09)
+
+**Symptôme :** depuis le conteneur, les appels HTTPS vers un sous-domaine
+(`mcp-tools.myia.io`) échouent en erreur TLS ; depuis l'hôte, `curl` « marche »
+(parce qu'on l'avait lancé avec `-k`).
+
+**Cause racine :** un renouvellement de certificat a **perdu la couverture SAN** du
+sous-domaine. Un client TLS strict (Node, dans le conteneur) rejette ; un `curl -k`
+indulgent sur l'hôte masque le problème.
+
+**Fix :** contournement immédiat (rendre le serveur non-bloquant +
+`NODE_TLS_REJECT_UNAUTHORIZED=0` sur ce flux), puis **vrai** correctif = réémettre le
+certificat avec le bon SAN.
+
+**Leçon :** tester depuis le **vrai client**, pas depuis un `curl -k` complaisant. Le
+masquage côté hôte transforme un bug certain en panne « mystérieuse » côté conteneur.
+
+### AP8 — Versions OneCLI SDK et gateway désynchronisées
+
+**Symptôme :** après un bump, plus aucun conteneur ne *spawn* ; `ensureAgent` renvoie
+`404`.
+
+**Cause racine :** le bump du SDK (0.5 → 2.2) déplace les routes `/api/*` vers `/v1/*`,
+mais le gateway n'a pas été upgradé au même palier. Le SDK appelle des routes que le
+gateway ne sert pas (encore / plus).
+
+**Fix :** upgrader les **deux** ensemble (`docker compose pull onecli`), en **préservant
+le vault** (`pgdata`). Vérifier le palier d'API des deux côtés avant de redémarrer.
+
+**Leçon :** client et serveur d'un même protocole forment un couple indissociable. En
+bumper un seul = panne totale, et **silencieuse** (rien ne *spawn*, pas d'erreur
+évidente). Voir le pattern préventif **P9**.
+
+### AP9 — Bypass d'edge sans `--allow-http` (incident 2026-06-24)
+
+**Symptôme :** après bascule du bot en direct sur le backend MCP
+(`http://host.docker.internal:9090`, pour contourner un edge mort), l'init MCP reste
+**`failed`** en permanence ; un 🔄 transient réapparaît à **chaque** cron.
+
+**Cause racine :** `mcp-remote` **refuse** une URL en `http://` sans le flag
+`--allow-http`.
+
+**Fix :** ajouter `--allow-http` sur le bypass.
+
+**Leçon :** ce **même** symptôme (`FATAL … unreachable` + crash-loop) a eu **trois**
+causes distinctes en deux mois — edge reverse-proxy mort, proxy OneCLI sans `NO_PROXY`
+(cf. **P8**), et ici `mcp-remote` sans `--allow-http`. Ne pas s'arrêter à la première
+hypothèse : **discriminer** (tester `npx mcp-remote` dans le conteneur, vérifier
+`printenv NO_PROXY`, regarder si sk-agent échoue aussi).
+
+### AP10 — Zombie query : heartbeat vivant, raisonnement gelé (upstream #2177)
+
+**Symptôme :** le bot est muet, mais son heartbeat est frais et le conteneur tourne.
+
+**Cause racine :** un *stall* du SDK en mode push après un tour à texte vide — la requête
+LLM ne progresse plus, alors que le process, lui, est bien vivant.
+
+**Fix :** croiser **deux** signaux — heartbeat (le process vit) **et**
+`container_state.tool_started_at` (le travail progresse). Récupération : `Stop-Service` →
+`docker rm` → purge des `processing_ack` / `container_state` non terminés →
+`Start-Service`. Détail dans
+[08-Multi-Bot-Coordination.md](08-Multi-Bot-Coordination.md#anti-silent).
+
+**Leçon :** la *liveness* du process ne prouve pas la progression du travail. Le faux
+vivant est plus dangereux que le crash, parce qu'il est invisible.
+
+### AP11 — Le piège du slug d'image conteneur sous Windows
+
+**Symptôme :** on rebuild l'image, mais le correctif n'a **aucun effet** — l'hôte
+continue de lancer l'ancienne image.
+
+**Cause racine :** `./container/build.sh` dérive le nom d'image du répertoire courant ;
+or Bash voit `/d/nanoclaw` (un hash) tandis que Node voit `D:\nanoclaw` (un autre hash).
+Le build et le *spawn* visent donc deux noms d'image différents.
+
+**Fix :** forcer le même slug : `NANOCLAW_PROJECT_ROOT='D:\nanoclaw' bash container/build.sh`.
+
+**Leçon :** sur Windows, deux runtimes peuvent dériver deux identités du même répertoire.
+Toujours vérifier que l'artefact buildé est bien celui que l'orchestrateur lance.
 
 ---
 
@@ -199,13 +302,9 @@ ailleurs (git, dashboards, SQLite).
 6. **État durable hors du contexte.** Git, dashboards, SQLite — pas la conversation.
 7. **Présence explicite.** Poster `[OK]` même quand tout va bien.
 8. **Offsets de cron décalés.** Jamais `:00`/`:30` dans la flotte.
-
-## À compléter (côté NanoClaw)
-
-<!-- NANOCLAW : compléter les patterns (P7+) et anti-patterns (AP7+) propres à
-     NanoClaw (TLS SAN, OneCLI SDK leak, TBXark bypass, format messages Telegram,
-     Protocol MAJ v3). Puis retirer les marqueurs <!-- NANOCLAW --> et passer en
-     "complet". -->
+9. **Un seul écrivain par base SQLite.** L'invariant qui rend l'état observable et sans contention (NanoClaw).
+10. **Client et serveur d'un protocole bougent ensemble.** SDK ↔ gateway en lockstep (NanoClaw).
+11. **Tester depuis le vrai client.** Un `curl -k` sur l'hôte masque ce qu'un client TLS strict (le conteneur) rejette (NanoClaw).
 
 ## Liens
 

@@ -3,9 +3,9 @@
 [← Claw-Systems](../README.md) | [↑ ..](../README.md)
 
 > **Module co-écrit.** Ce document est une collaboration Hermes (po-2026) + NanoClaw
-> (ai-01). La structure et les sections « côté Hermes » sont remplies ; les sections
-> marquées `<!-- NANOCLAW -->` attendent la contribution NanoClaw pour le rééquilibrer
-> en un récit symétrique. Voir [tracker #4428](https://github.com/jsboige/CoursIA/issues/4428).
+> (ai-01). Les sections « côté Hermes » posent la structure et le cadre ; les sections
+> « côté NanoClaw » apportent la perspective de l'agent terminal sur `ai-01` (session,
+> heartbeat, hand-off de conteneur). Voir [tracker #4428](https://github.com/jsboige/CoursIA/issues/4428).
 
 Un seul agent autonome, c'est déjà intéressant. **Plusieurs agents autonomes qui se
 parlent**, c'est un autre problème entièrement — et c'est le sujet de ce module.
@@ -119,9 +119,35 @@ Un échange typique sur `workspace-CoursIA` :
 Chaque message est **autonome et horodaté** : si Hermes est down quand NanoClaw poste
 son `[ASK]`, Hermes le lit à son prochain tour. Pas de handshake synchrone nécessaire.
 
-<!-- NANOCLAW : décrire ici un exemple réel d'échange NanoClaw-initié (ex. décision
-     de routing de tâche, hand-off de session Telegram). Inclure le contexte et
-     pourquoi le canal dashboard (vs message direct) était le bon choix. -->
+### Exemple côté NanoClaw : un incident remonté par le bot
+
+NanoClaw initie aussi des échanges — souvent dans le sens « le bot a détecté quelque
+chose que seule la session de développement locale peut corriger ». Cas réel, observé
+plusieurs fois : le bot **ClusterManager** (le conteneur NanoClaw sur `ai-01`) constate
+que sa chaîne MCP est tombée (`FATAL … unreachable`, puis crash-loop) après la panne d'un
+nœud du cluster. Il ne peut pas se réparer lui-même — le correctif est un patch de code.
+Il poste donc, sur `workspace-nanoclaw`, un message **adressé** à la session Claude Code
+locale :
+
+```
+## [INCIDENT] MCP chain down — crash-loop au boot
+
+**Expéditeur :** cluster-manager (nanoclaw-cluster)
+**Pour :** ai-01 (nanoclaw)
+mentions: [{userId: {machineId: "myia-ai-01", workspace: "nanoclaw"}}]
+
+Backend MCP injoignable depuis ~03:00. Suspect : edge reverse-proxy mort.
+container-runner.ts ~L301 ? Besoin d'un diagnostic + fix.
+```
+
+**Pourquoi le dashboard et pas un message direct ?** Un bot Telegram ne peut pas ouvrir
+de canal synchrone vers une session Claude Code — il n'existe aucune API entre les deux.
+Le dashboard est le seul terrain commun : tous deux le *pollent*. Il est **persistant**
+(la session de fix lit le message à son démarrage, même six heures plus tard),
+**adressé** (la `mention` le priorise dans l'inbox), et **auditable** (diagnostic et
+correctif restent tracés au même endroit). Une fois le fix livré, la session répond par
+un `[DONE]` mentionnant en retour `cluster-manager` — pour que le bot « apprenne » que
+l'incident est clos et cesse de le re-signaler.
 
 ## Anti-collision
 
@@ -161,9 +187,17 @@ Un workspace peut porter un statut `[BLOCKED]` ou `[CLAIMED]` :
 - `[CLAIMED]` — un bot a pris la tâche, les autres ne la démarrent pas
 - `[BLOCKED]` — le workspace attend une résolution, ne pas dispatcher dessus
 
-<!-- NANOCLAW : décrire ici votre mécanisme de claim / verrou si applicable
-     (ex. comment NanoClaw signale qu'une session Telegram est en cours et
-     évite qu'un autre bot n'interrompe). -->
+**Côté NanoClaw — la session *est* le verrou.** NanoClaw n'a pas besoin d'un `[CLAIMED]`
+inter-bots pour ses propres conversations : son unité d'exécution est un **conteneur par
+session** (`agent_group` + `messaging_group` + `thread_id`). Deux conversations distinctes
+tournent dans deux conteneurs distincts, sur deux paires de bases SQLite distinctes — la
+collision est physiquement impossible. Le risque résiduel est *interne* : qu'un message de
+réveil soit capté par un conteneur en train de mourir (fenêtre de grâce SIGTERM) plutôt que
+par le conteneur frais. NanoClaw le neutralise par la colonne `on_wake` sur `messages_in`
+(un message de réveil n'est lu qu'à la **première** itération de poll d'un conteneur neuf)
+et par `processing_ack` (un message en cours de traitement est marqué, jamais re-pris). Le
+verrou n'est donc pas un drapeau partagé entre bots : c'est l'**identité de la session**,
+plus un protocole de hand-off propre entre conteneur sortant et conteneur entrant.
 
 ## Anti-SILENT
 
@@ -194,9 +228,19 @@ vérifie :
 2. 2h–6h → à surveiller
 3. > 6h sans `[OK]` → probablement tombé silencieux
 
-<!-- NANOCLAW : décrire ici votre côté de la surveillance anti-SILENT — comment
-     NanoClaw prouve sa propre présence (heartbeat Telegram, log rotation,
-     watchdog local, etc.). -->
+**Côté NanoClaw — prouver sa présence, et démasquer le « faux vivant ».** Chaque conteneur
+de session touche un fichier `/workspace/.heartbeat` ; l'hôte (un *sweep* toutes les 60 s)
+lit la *mtime* et repère les conteneurs figés. Mais le vrai piège du multi-bot, c'est le
+**faux vivant** : un conteneur dont le heartbeat est frais alors que la requête LLM, elle,
+est gelée (un *stall* en mode push après un tour à texte vide — upstream Claude Code
+#2177). Le heartbeat ment alors « je suis vivant » pendant que rien ne progresse. NanoClaw
+a donc ajouté un second signal pour ce cas précis : `container_state.tool_started_at`, qui
+a déjà révélé un appel d'outil MCP figé **onze heures**. La détection croise deux preuves —
+*liveness* du process (heartbeat) **et** progression du raisonnement (âge du dernier outil
+démarré) — et la récupération est un cycle propre : `Stop-Service` → `docker rm` → purge des
+`processing_ack`/`container_state` non terminés → `Start-Service`. Au niveau coordination, le
+cron du bot poste en plus son `[OK]` périodique sur le dashboard : la présence est prouvée
+aux **deux** échelles, le process local et la flotte.
 
 ## Anti-bagarre (boucles de réponse)
 
@@ -209,8 +253,17 @@ des tokens à l'infini. Trois gardes-fous :
 3. **Limite de profondeur** — au-delà de 3 échanges `[ASK]`/`[REPLY]` sans
    résolution, un humain est mentionné.
 
-<!-- NANOCLAW : si NanoClaw a une heuristique similaire (ex. dédoublonnage de
-     ses propres réponses Telegram), la décrire ici. -->
+**Côté NanoClaw — le destinataire explicite coupe court à la boucle.** Un agent NanoClaw
+n'« envoie » un message que s'il émet un bloc `<message to="...">` explicite. Un bloc sans
+destinataire (`<internal>…</internal>`) est **silencieusement avalé** : l'hôte journalise
+« no <message to> blocks — nothing was sent » et rien ne part. Heureuse conséquence pour
+l'anti-bagarre : le défaut, c'est le **silence**, pas la réponse automatique — il faut une
+intention explicite pour parler, donc pas d'auto-alimentation accidentelle. Le risque propre
+à NanoClaw n'est d'ailleurs pas tant la boucle à deux que le **double-post après
+compaction** : une session dont le contexte vient d'être résumé peut « oublier » qu'elle a
+déjà répondu et re-poster. Le garde-fou est celui de toute la v2 — l'état durable vit **hors**
+du contexte (SQLite, dashboard, git), et on le relit avant d'agir (voir
+[AP6](09-Patterns-Anti-Patterns.md) dans le module patterns).
 
 ## Le rôle de l'humain
 
@@ -238,17 +291,18 @@ comprendre non seulement chaque agent, mais leurs interactions.
 | Confusion sur qui fait quoi | Frontières tranchées + dashboards |
 | Panne silencieuse | Détection staleness + `[ALERT]` |
 
-## À compléter (côté NanoClaw)
+## Synthèse — la coordination vue de NanoClaw
 
-<!-- NANOCLAW : pour que ce module soit symétrique, compléter :
-  - Un exemple réel d'échange NanoClaw-initié
-  - Votre mécanisme de claim / verrou de session
-  - Votre côté de l'anti-SILENT (heartbeat, watchdog local)
-  - Le cas échéant, votre heuristique anti-bagarre
-  - Toute spécificité NanoClaw (TBXark proxy, format messages ≤3 lignes, etc.)
+Là où Hermes apporte le rôle de coordinateur read-only, NanoClaw apporte la perspective
+de l'**agent terminal** : ses garde-fous sont autant *architecturaux* (conteneurs isolés,
+bases à un seul écrivain) que *conventionnels* (tags, mentions).
 
-  Puis retirer les marqueurs <!-- NANOCLAW --> et passer le module en "complet".
--->
+| Risque multi-bot | Réponse NanoClaw |
+|------------------|------------------|
+| **Collision** | Conteneur par session = isolation physique ; `on_wake` + `processing_ack` pour le hand-off interne |
+| **Silence** | Heartbeat fichier + *sweep* 60 s **et** `tool_started_at` pour démasquer le « faux vivant » (#2177) |
+| **Bagarre** | Envoi sur destinataire explicite (`<message to>`), `<internal>` avalé ; état durable hors-contexte contre le double-post |
+| **Frontières** | `[ASK]`/`[ACK]`/`[REPLY]` sur `workspace-CoursIA`, tranchage humain par ai-01 (#4428) |
 
 ## Liens
 
