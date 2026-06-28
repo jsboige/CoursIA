@@ -5,10 +5,12 @@ from AlgorithmImports import *
 
 # ===========================================================================
 # Reality models: explicit transaction costs (README Phase 2 cost basis).
-# The default brokerage (required because IBKR rejects Crypto securities)
-# applies no meaningful fee, so without these models the backtest is
-# optimistic. Mirrors the repo's SpreadSlippageModel idiom.
-#   5bps equity commission + 10bps crypto commission + 5bps slippage.
+# Equities use an explicit 5bps PercentFeeModel (the default brokerage applies
+# no meaningful fee, so without it the backtest is optimistic -- mirrors the
+# repo's SpreadSlippageModel idiom). The crypto sleeve uses the NATIVE
+# CoinbaseFeeModel (realistic Coinbase Advanced-1 tier: maker 0.6% / taker 0.8%)
+# by default; set crypto_fee_bps to a flat bps value to override with
+# PercentFeeModel (fee-switch isolation). 5bps slippage on both sleeves.
 # ===========================================================================
 
 class PercentFeeModel(FeeModel):
@@ -40,7 +42,7 @@ class PercentSlippageModel:
 
 
 # ===========================================================================
-# Portfolio Hybride IBKR (50%) + Binance (50%) - Phase 2
+# Portfolio Hybride IBKR (50%) + Coinbase (50%) - Phase 2 (MiCA migration)
 # ---------------------------------------------------------------------------
 # Unified backtest 2018-2025 aggregating 8 sub-strategies via a direct composite
 # rebalance. The 8 signal rules are transposed verbatim from the Phase 1 research
@@ -57,22 +59,43 @@ class PercentSlippageModel:
 #
 # Brokerage: the DEFAULT model (no set_brokerage_model), because IBKR margin
 # REJECTS Crypto ("Unsupported security type: Crypto"). The default authorizes
-# both equities and crypto; explicit PercentFeeModel/PercentSlippageModel apply
-# the README cost basis. Account currency USDT so the Binance sleeve settles.
+# both equities and crypto; the explicit PercentFeeModel/PercentSlippageModel
+# (equities) + CoinbaseFeeModel (crypto) apply the README cost basis.
+#
+# Account currency USDT (NOT USD). Findings firsthand (2026-06-28): with
+# Market.COINBASE + add_crypto("BTCUSD") + set_account_currency("USD"), the
+# backtest produces 0 trades (warmup never completes -- cash-settlement
+# bookkeeping collides when the account currency equals the BTCUSD quote
+# currency USD). set_account_currency("USDT") restores trades (QC auto-converts
+# USD quote -> USDT account, exactly like the Binance canonical converts equity
+# USD -> USDT). CoinbaseBrokerageModel enforces NO account currency, so this is
+# a settlement-layer subtlety, not a brokerage-model constraint.
+#
+# MiCA migration (2026-06-28): crypto sleeve migrated Binance -> Coinbase.
+# Binance France services cease 2026-07-01 (no CASP MiCA licence); Coinbase
+# holds CASP MiCA France + is QC-native. Coinbase Crypto Price Data on QC covers
+# 860+ pairs since January 2015 (full 2018-2025 window covered).
 #
 # See #1027.
 # ===========================================================================
 
 
-class PortfolioHybridIBKRBinance(QCAlgorithm):
+class PortfolioHybridIBKRCoinbase(QCAlgorithm):
     """Phase 2/3 unified backtest, 8 research-faithful sub-strategies, monthly.
 
     Phase 3 adds two backtest parameters (no code duplication across runs):
-    - ``ibkr_alloc`` (default 0.50): IBKR sleeve fraction; Binance = 1 - ibkr_alloc.
+    - ``ibkr_alloc`` (default 0.50): IBKR sleeve fraction; crypto = 1 - ibkr_alloc.
       Drives the allocation sweep (60/40, 50/50, 40/60).
     - ``start`` / ``end`` (default 2018-01-01 / 2025-06-01, format YYYY-MM-DD):
       date window, so the OOS strict test (2023-2025) runs on the SAME code as
       the in-sample (2018-2025) without a forked algorithm.
+
+    MiCA migration adds:
+    - ``crypto_fee_bps`` (default unset = native CoinbaseFeeModel, realistic
+      Coinbase Advanced-1 maker 0.6% / taker 0.8%; set_holdings emits MARKET
+      orders so the 0.8% taker rate applies). Set to a flat bps value (e.g. 10)
+      to override with PercentFeeModel and isolate the pure fee effect (10
+      reproduces the Binance basis on Coinbase data). See README MiCA section.
     """
 
     # Intra-sleeve weights (research allocation WITHIN each sleeve, fixed).
@@ -85,14 +108,16 @@ class PortfolioHybridIBKRBinance(QCAlgorithm):
         "AllWeather":      0.15,
         "EMA-Cross-Alpha": 0.10,
     }
-    INTRA_BINANCE = {
+    INTRA_COINBASE = {
         "EMA-Cross-Crypto":  0.50,
         "Crypto-MultiCanal": 0.30,
         "HAR-RV-VolTarget":  0.20,
     }
 
     IBKR_SECTORS = ["XLK", "XLF", "XLE", "XLV", "XLY", "XLI", "XLB", "XLU", "XLP"]
-    CRYPTO_TICKERS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "ADAUSDT", "LTCUSDT", "XRPUSDT"]
+    # Coinbase pairs are USD-quoted (BTCUSD, not BTCUSDT). Only BTC/ETH have
+    # continuous full-window data on QC; the basket rule falls back gracefully.
+    CRYPTO_TICKERS = ["BTCUSD", "ETHUSD", "SOLUSD", "ADAUSD", "LTCUSD", "XRPUSD"]
 
     @staticmethod
     def _parse_date(value, default):
@@ -115,16 +140,23 @@ class PortfolioHybridIBKRBinance(QCAlgorithm):
         self.set_end_date(*end)
 
         ibkr_alloc = float(self.get_parameter("ibkr_alloc", "0.50"))
-        binance_alloc = 1.0 - ibkr_alloc
+        crypto_alloc = 1.0 - ibkr_alloc
         self.portfolio_weights = {}
         for strat, w in self.INTRA_IBKR.items():
             self.portfolio_weights[strat] = ibkr_alloc * w
-        for strat, w in self.INTRA_BINANCE.items():
-            self.portfolio_weights[strat] = binance_alloc * w
+        for strat, w in self.INTRA_COINBASE.items():
+            self.portfolio_weights[strat] = crypto_alloc * w
 
-        # Account currency USDT so the Binance crypto sleeve (BTCUSDT, ETHUSDT)
-        # settles natively. Equities (USD) auto-convert via the USD/USDT FX rate.
-        # Set BEFORE set_cash (canonical order).
+        # MiCA fee model: native CoinbaseFeeModel by default (realistic Coinbase
+        # Advanced-1 taker 0.8%). Set crypto_fee_bps to a flat bps value to
+        # override with PercentFeeModel (e.g. 10 to reproduce the Binance basis
+        # on Coinbase data, isolating the pure fee effect). None => native model.
+        raw_fee = self.get_parameter("crypto_fee_bps")
+        self.crypto_fee_bps = float(raw_fee) if raw_fee else None
+
+        # Account currency USDT (NOT USD -- see header findings). Coinbase crypto
+        # (BTCUSD) is USD-quoted; QC auto-converts USD quote -> USDT account, like
+        # the Binance canonical converts equity USD -> USDT. Set BEFORE set_cash.
         self.set_account_currency("USDT")
         self.set_cash(100000)
 
@@ -148,13 +180,20 @@ class PortfolioHybridIBKRBinance(QCAlgorithm):
             sec.set_slippage_model(PercentSlippageModel(0.0005))
             self.sector_symbols[ticker] = sec.symbol
 
-        # Binance sleeve (crypto): 10bps commission + 5bps slippage.
-        # Only BTCUSDT has continuous data over the full window on QC; the basket
-        # rule falls back to whatever has data.
+        # Coinbase sleeve (crypto): native CoinbaseFeeModel by default (realistic
+        # Coinbase Advanced-1 tier: maker 0.6% / taker 0.8% -- set_holdings emits
+        # MARKET orders so the 0.8% taker rate applies). Set crypto_fee_bps to a
+        # flat value to override with PercentFeeModel instead (used to isolate the
+        # pure fee effect: crypto_fee_bps=10 reproduces the Binance basis on the
+        # SAME Coinbase data, isolating data-source vs fee-level contributions).
+        # Only BTCUSD/ETHUSD have continuous full-window data; basket falls back.
         self.crypto_symbols = {}
         for ticker in self.CRYPTO_TICKERS:
-            sec = self.add_crypto(ticker, Resolution.DAILY, Market.BINANCE)
-            sec.set_fee_model(PercentFeeModel(0.001))
+            sec = self.add_crypto(ticker, Resolution.DAILY, Market.COINBASE)
+            if self.crypto_fee_bps is None:
+                sec.set_fee_model(CoinbaseFeeModel())
+            else:
+                sec.set_fee_model(PercentFeeModel(self.crypto_fee_bps / 10000.0))
             sec.set_slippage_model(PercentSlippageModel(0.0005))
             self.crypto_symbols[ticker] = sec.symbol
 
@@ -243,12 +282,12 @@ class PortfolioHybridIBKRBinance(QCAlgorithm):
 
     def _ema_cross_crypto(self):
         """SMA20 > SMA50 on BTC -> 100% BTC ; else cash."""
-        btc = self._close_series(self.crypto_symbols["BTCUSDT"], 60)
+        btc = self._close_series(self.crypto_symbols["BTCUSD"], 60)
         if btc is None or len(btc) < 50:
             return {}
         sma20 = float(btc.iloc[-20:].mean())
         sma50 = float(btc.iloc[-50:].mean())
-        return {self.crypto_symbols["BTCUSDT"]: 1.0} if sma20 > sma50 else {}
+        return {self.crypto_symbols["BTCUSD"]: 1.0} if sma20 > sma50 else {}
 
     def _crypto_multicanal(self):
         """Equal-weight basket of cryptos with data."""
@@ -264,7 +303,7 @@ class PortfolioHybridIBKRBinance(QCAlgorithm):
 
     def _har_rv_voltarget(self):
         """BTC weight = clip(0.15 / RV22, 0, 1), RV22 = std(returns, 22) x sqrt(252)."""
-        btc = self._close_series(self.crypto_symbols["BTCUSDT"], 30)
+        btc = self._close_series(self.crypto_symbols["BTCUSD"], 30)
         if btc is None or len(btc) < 23:
             return {}
         rets = btc.pct_change().dropna()
@@ -273,7 +312,7 @@ class PortfolioHybridIBKRBinance(QCAlgorithm):
         rv22 = float(rets.iloc[-22:].std() * (252 ** 0.5))
         if rv22 <= 0:
             return {}
-        return {self.crypto_symbols["BTCUSDT"]: min(0.15 / rv22, 1.0)}
+        return {self.crypto_symbols["BTCUSD"]: min(0.15 / rv22, 1.0)}
 
     def rebalance(self):
         if self.is_warming_up:
