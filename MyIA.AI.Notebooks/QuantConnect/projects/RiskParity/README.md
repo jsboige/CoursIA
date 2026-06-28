@@ -1,103 +1,108 @@
 # RiskParity Strategy
 
-**Status**: ⚠️ PLAFOND STRUCTUREL CONFIRMÉ - Counter-Example for Educational Purposes
+**Statut** : Plafond structurel confirmé — contre-exemple à visée pédagogique.
 
 ## Performance
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | **0.399** |
-| CAGR | 7.8% |
-| Max Drawdown | 20.9% |
-| Period | 2015-2026 |
+| CAGR | 7.8 % |
+| Max Drawdown | 20.9 % |
+| Période | 2015-2026 |
 
-## Why This Strategy Hit a Ceiling
+## Pourquoi cette stratégie a atteint un plafond
 
-### Root Cause: Anti-Pattern in Bull Markets
+### Cause racine : anti-pattern en marché haussier
 
-Risk parity allocates capital inversely proportional to volatility:
-- **Hypothesis**: Equal risk contribution = better risk-adjusted returns
-- **Reality (2015-2026)**: Underperforms simpler approaches
+La parité de risque alloue le capital de façon inversement proportionnelle à la volatilité :
 
-### What Was Tested (and Failed)
+- **Hypothèse** : contribution égale au risque = meilleurs rendements ajustés du risque
+- **Réalité (2015-2026)** : sous-performe face à des approches plus simples
 
-| Iteration | Modification | Result | Why It Failed |
-|-----------|--------------|--------|---------------|
-| H5 | Replace TLT with IEF | Sharpe 0.330 | TLT superior in bull bond market (2015-2020) |
-| H6 | Vol targeting 10% | Negative | Cash drag in low-vol (anti-pattern in bull) |
-| H7 | VIX filter >25 (exit to cash) | Negative | Too little time in stress (<15%) = cash drag |
+### Ce qui a été testé (et a échoué)
 
-### Why Risk Parity Underperforms (2015-2026)
+| Itération | Modification | Résultat | Pourquoi l'échec |
+|-----------|--------------|----------|------------------|
+| H5 | Remplacer TLT par IEF | Sharpe 0.330 | TLT supérieur en marché haussier obligataire (2015-2020) |
+| H6 | Ciblage de vol 10 % | Négatif | Cash drag en faible vol (anti-pattern en hausse) |
+| H7 | Filtre VIX > 25 (sortie vers cash) | Négatif | Trop peu de temps en stress (<15 %) = cash drag |
 
-**The bull market problem**:
-1. **Vol targeting reduces exposure**: When vol is low, strategy reduces exposure (misses gains)
-2. **Bonds underperformed post-2020**: IEF/TLT correlation with equities during rate hikes
-3. **Equal risk ≠ equal return**: Low-vol assets (bonds) drag down returns in bull markets
-4. **Complexity without benefit**: Simple equal-weight outperforms
+### Pourquoi la parité de risque sous-performe (2015-2026)
 
-### Comparison to Alternatives
+**Le problème du marché haussier** :
 
-| Strategy | Sharpe | CAGR | Complexity |
-|----------|--------|------|------------|
-| RiskParity | 0.399 | 7.8% | High (vol weighting, rebalancing) |
-| Equal Weight (60/40) | ~0.45 | ~9% | Low |
-| AdaptiveAssetAllocation | 0.518 | 8.0% | High (momentum + min-var) |
+1. **Le ciblage de vol réduit l'exposition** : quand la vol est faible, la stratégie réduit l'exposition (elle rate les gains)
+2. **Les obligations ont sous-performé après 2020** : corrélation IEF/TLT avec les actions durant les hausses de taux
+3. **Risque égal != rendement égal** : les actifs faible-vol (obligations) pèsent sur les rendements en marché haussier
+4. **Complexité sans bénéfice** : l'équi-pondéré simple surperforme
 
-### The "Vol Targeting" Anti-Pattern
+### Comparaison aux alternatives
 
-Risk parity often uses vol targeting (e.g., target 10% vol):
-- **In low-vol periods**: Reduce exposure to maintain target → miss gains
-- **In high-vol periods**: Increase exposure → buy high, sell low
-- **Net result**: Negative alpha in trending markets
+| Stratégie | Sharpe | CAGR | Complexité |
+|-----------|--------|------|-------------|
+| RiskParity | 0.399 | 7.8 % | Élevée (pondération vol, rééquilibrage) |
+| Équi-pondéré (60/40) | ~0.45 | ~9 % | Faible |
+| AdaptiveAssetAllocation | 0.518 | 8.0 % | Élevée (momentum + min-var) |
 
-**2015-2026 was mostly a bull market**: Vol targeting consistently reduced exposure during the best periods.
+### L'anti-pattern du « ciblage de vol »
 
-### Lessons Learned
+La parité de risque utilise souvent un ciblage de vol (ex : cible 10 % de vol) :
 
-1. **Risk parity ≠ free lunch**: Equal risk contribution doesn't guarantee better returns
-2. **Vol targeting is regime-dependent**: Works in choppy markets, fails in trending markets
-3. **Complexity isn't always better**: Equal-weight 60/40 outperforms with less effort
-4. **Bonds aren't always diversifiers**: Post-2020 rate hikes broke the bond/equity correlation
-5. **Know when to stop**: After 3 failed iterations (H5-H7), the ceiling is confirmed
+- **En période de faible vol** : réduit l'exposition pour maintenir la cible -> rate les gains
+- **En période de forte vol** : augmente l'exposition -> achète haut, vend bas
+- **Résultat net** : alpha négatif en marché trenduel
 
-## When Risk Parity CAN Work
+**2015-2026 a été majoritairement un marché haussier** : le ciblage de vol a systématiquement réduit l'exposition durant les meilleures périodes.
 
-This approach may work in:
-- **Sideways/choppy markets**: Where vol targeting adds value
-- **High volatility environments**: Where risk equalization protects capital
-- **Multi-asset futures**: Where cointegration creates more stable relationships
-- **Regime-aware versions**: That adjust approach based on market state
+### Leçons retenues
 
-**For 2015-2026 US equities**: Plafond structurel confirmé.
+1. **Parité de risque != repas gratuit** : une contribution égale au risque ne garantit pas de meilleurs rendements
+2. **Le ciblage de vol dépend du régime** : fonctionne en marché irrégulier, échoue en marché trenduel
+3. **La complexité n'est pas toujours meilleure** : le 60/40 équi-pondéré surperforme avec moins d'effort
+4. **Les obligations ne sont pas toujours des diversificateurs** : les hausses de taux post-2020 ont cassé la corrélation obligations/actions
+5. **Savoir quand s'arrêter** : après 3 itérations ratées (H5-H7), le plafond est confirmé
 
-## Pedagogical Value
+## Quand la parité de risque PEUT fonctionner
 
-This strategy demonstrates:
-- ⚠️ The **vol targeting anti-pattern** in bull markets
-- ⚠️ **Complexity ≠ performance**: Simple equal-weight can beat sophisticated risk parity
-- ⚠️ **Regime dependence**: Strategies optimized for one regime may fail in another
-- ⚠️ **When to declare a ceiling**: After 3+ failed iterations with clear hypotheses
+Cette approche peut fonctionner dans :
 
-## Comparison to Better Alternatives
+- **Marchés latéraux / irréguliers** : où le ciblage de vol ajoute de la valeur
+- **Environnements à forte volatilité** : où l'égalisation du risque protège le capital
+- **Futures multi-actifs** : où la cointégration crée des relations plus stables
+- **Versions sensibles au régime** : qui ajustent l'approche selon l'état du marché
+
+**Pour les actions US 2015-2026** : plafond structurel confirmé.
+
+## Valeur pédagogique
+
+Cette stratégie illustre :
+
+- L'**anti-pattern du ciblage de vol** en marché haussier
+- **Complexité != performance** : le simple équi-pondéré peut battre une parité de risque sophistiquée
+- **Dépendance au régime** : une stratégie optimisée pour un régime peut échouer dans un autre
+- **Quand déclarer un plafond** : après 3+ itérations ratées avec des hypothèses claires
+
+## Comparaison avec de meilleures alternatives
 
 ```python
-# RiskParity (volatility-weighted)
+# RiskParity (pondéré par la volatilité)
 weights = 1 / volatility
 weights /= weights.sum()
 
-# Equal weight (simpler, better 2015-2026)
+# Équi-pondéré (plus simple, meilleur 2015-2026)
 weights = np.array([1/n] * n)
 
-# Adaptive (momentum + min-var)
-# See AdaptiveAssetAllocation project
+# Adaptative (momentum + min-var)
+# Voir le projet AdaptiveAssetAllocation
 ```
 
-## References
+## Références
 
-- **AdaptiveAssetAllocation**: Combines momentum + min-var (Sharpe 0.518)
-- **AllWeather**: Simpler multi-asset portfolio (Sharpe 0.667)
-- **OPTIMIZATION_BACKLOG.md**: Full iteration history (H5-H7)
+- **AdaptiveAssetAllocation** : combine momentum + min-var (Sharpe 0.518)
+- **AllWeather** : portefeuille multi-actif plus simple (Sharpe 0.667)
+- **OPTIMIZATION_BACKLOG.md** : historique complet des itérations (H5-H7)
 
 ---
 
-**Note**: This strategy is kept as a counter-example. For production use, consider simpler approaches (equal weight) or momentum-based alternatives (AdaptiveAssetAllocation).
+**Note** : cette stratégie est conservée comme contre-exemple. Pour un usage en production, considérer des approches plus simples (équi-pondéré) ou des alternatives basées momentum (AdaptiveAssetAllocation).
