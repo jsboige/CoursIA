@@ -1,73 +1,73 @@
 # ETF-Pairs Strategy
 
-**Status**: ❌ BROKEN - Counter-Example for Educational Purposes
+**Statut** : ❌ BROKEN — contre-exemple à visée pédagogique.
 
 ## Performance
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | **-0.706** |
-| CAGR | -4.7% |
-| Max Drawdown | 35.0% |
-| Period | 2020-2026 |
+| CAGR | -4.7 % |
+| Max Drawdown | 35.0 % |
+| Période | 2020-2026 |
 
-## Why This Strategy Failed
+## Pourquoi cette stratégie a échoué
 
-### Root Cause: Same Fundamental Problem as PairsTrading
+### Cause racine : le même problème fondamental que PairsTrading
 
-This strategy attempted pairs trading with **ETFs instead of individual stocks**, hypothesizing that:
-- ETFs would be more stable than individual stocks
-- Sector ETFs might show better cointegration
-- Diversification within ETFs would reduce noise
+Cette stratégie tentait le pairs trading avec **des ETF au lieu d'actions individuelles**, en faisant l'hypothèse que :
+- les ETF seraient plus stables que les actions individuelles
+- les ETF sectoriels pourraient présenter une meilleure cointégration
+- la diversification interne des ETF réduirait le bruit
 
-**Result**: The same cointegration breakdown, but with WORSE performance:
-- ETF pairs showed even LESS cointegration than stock pairs
-- Higher volatility led to larger losses
-- The hedge ratio was even more unstable
+**Résultat** : la même rupture de cointégration, mais avec une performance **encore pire** :
+- les paires d'ETF présentaient encore MOINS de cointégration que les paires d'actions
+- une volatilité plus élevée a conduit à des pertes plus importantes
+- le ratio de couverture était encore plus instable
 
-### What Makes This Worse Than PairsTrading
+### Ce qui rend cette stratégie pire que PairsTrading
 
-| Factor | PairsTrading | ETF-Pairs |
-|--------|--------------|-----------|
+| Facteur | PairsTrading | ETF-Pairs |
+|---------|--------------|-----------|
 | Sharpe | -0.361 | **-0.706** |
-| CAGR | 0.9% | **-4.7%** (negative!) |
-| Max DD | 15.1% | **35.0%** |
+| CAGR | 0.9 % | **-4.7 %** (négatif !) |
+| Max DD | 15.1 % | **35.0 %** |
 
-### Why ETFs Failed Here
+### Pourquoi les ETF ont échoué ici
 
-1. **ETF composition changes**: ETFs rebalance their holdings, breaking any cointegration
-2. **Sector correlation ≠ cointegration**: Sectors may move together but don't have mean-reverting spreads
-3. **Lag effects**: ETF rebalancing creates artificial price disconnects
-4. **Shorter history**: Most sector ETFs have less history for robust cointegration testing
+1. **La composition des ETF change** : les ETF rééquilibrent leurs positions, ce qui brise toute cointégration
+2. **Corrélation sectorielle ≠ cointégration** : les secteurs peuvent bouger ensemble sans avoir de spreads mean-reverting
+3. **Effets de décalage** : le rééquilibrage des ETF crée des déconnexions de prix artificielles
+4. **Historique plus court** : la plupart des ETF sectoriels ont moins d'historique pour un test de cointégration robuste
 
-### Lessons Learned
+### Leçons retenues
 
-1. **ETF diversification ≠ cointegration stability**: Just because ETFs hold multiple stocks doesn't mean their price relationship is stable
-2. **Don't double down on broken assumptions**: If stock pairs don't work, ETF pairs won't magically fix the fundamental issue
-3. **Negative CAGR is a red flag**: Losing money consistently means the strategy has no edge whatsoever
-4. **Stop after 2-3 iterations**: We tested multiple ETF pair combinations - all failed
+1. **Diversification ETF ≠ stabilité de cointégration** : le fait qu'un ETF détienne plusieurs actions ne signifie pas que la relation de prix est stable
+2. **Ne pas s'entêter sur des hypothèses rompues** : si les paires d'actions ne fonctionnent pas, les paires d'ETF ne répareront pas magiquement le problème fondamental
+3. **Un CAGR négatif est un signal d'alarme** : perdre de l'argent de façon consistante signifie que la stratégie n'a aucun avantage
+4. **S'arrêter après 2-3 itérations** : nous avons testé plusieurs combinaisons de paires d'ETF — toutes ont échoué
 
-## When Pairs Trading Might Work
+## Quand le pairs trading peut fonctionner
 
-See `PairsTrading/README.md` for context. For ETFs specifically:
-- **Commodity ETFs** (GLD/GSLV, USO/UCO) where cointegration is structural
-- **Leveraged ETF pairs** where the decay relationship is predictable
-- **Fixed-income ETFs** where yield curve relationships create cointegration
+Voir `PairsTrading/README.md` pour le contexte. Pour les ETF spécifiquement :
+- **ETF de matières premières** (GLD/GSLV, USO/UCO) où la cointégration est structurelle
+- **Paires d'ETF leveragés** où la relation de décroissance est prévisible
+- **ETF obligataires** où les relations de courbe des taux créent une cointégration
 
-**For equity sector ETFs (2020-2026)**: This approach failed catastrophically.
+**Pour les ETF sectoriels d'actions (2020-2026)** : cette approche a échoué de façon catastrophique.
 
-## Pedagogical Value
+## Valeur pédagogique
 
-This strategy serves as a **double counter-example**:
-- ❌ Same lesson as PairsTrading: correlation ≠ cointegration
-- ❌ Additional lesson: ETF "stability" is a myth for cointegration
-- ❌ When to pivot: If the core assumption fails, changing the instrument (stocks→ETFs) won't help
+Cette stratégie sert de **double contre-exemple** :
+- ❌ Même leçon que PairsTrading : corrélation ≠ cointégration
+- ❌ Leçon supplémentaire : la « stabilité » des ETF est un mythe pour la cointégration
+- ❌ Quand pivoter : si l'hypothèse fondamentale échoue, changer l'instrument (actions → ETF) n'aide pas
 
-## References
+## Références
 
-- **PairsTrading**: See the stock-based version for comparison
-- **QuantBook**: `quantbook.ipynb` - ETF cointegration analysis
+- **PairsTrading** : voir la version basée sur des actions pour comparaison
+- **QuantBook** : `quantbook.ipynb` — analyse de cointégration ETF
 
 ---
 
-**Note**: This strategy is NOT recommended for live trading. It demonstrates that instrument choice cannot fix a fundamentally flawed strategy assumption.
+**Note** : cette stratégie n'est PAS recommandée pour le trading en réel. Elle démontre que le choix de l'instrument ne peut pas corriger une hypothèse de stratégie fondamentalement défectueuse.
