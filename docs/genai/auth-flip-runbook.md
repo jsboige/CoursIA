@@ -8,7 +8,9 @@ blocage USER — désormais **RECOVERABLE-COORD** (ai-01 a ajouté `TTS_GATEWAY_
 au schéma `SECRET_KEYS` via PR #4566 + délégué le bootstrap au value-holder
 po-2023 qui héberge la gateway). Procédure couverte **Phase 3** ci-dessous.
 **Statut** : greenlight ai-01 2026-06-14 17:14Z — Claudish + Qdrant ;
-**greenlight tts-gateway 2026-06-28** (post-merge #4566).
+**tts-gateway EXECUTÉ 2026-06-28** (post-merge #4566, flip vérifié firsthand :
+`/v1/models` 401→200 avec clé, endpoint public `tts-multi.myia.io` sécurisé).
+Claudish + Qdrant restent à exécuter.
 **Caveat scope** : Claudish + Qdrant vivent dans d'**autres repos** (`claudish`,
 `roo-extensions`) — le flip y est une **op manuelle** admin. `tts-gateway` est le
 seul des 3 dont le compose est **dans CoursIA** (`docker-configurations/services/tts-multi/`)
@@ -229,12 +231,25 @@ exposé publiquement** (`tts-multi.myia.io` via IIS).
    grep -c "TTS_GATEWAY_API_KEY" docker-configurations/services/tts-multi/.env  # → 1
    grep -c "TTS_GATEWAY_API_KEY" MyIA.AI.Notebooks/GenAI/.env                    # → 1
    ```
-3. **Recréer la gateway** (applique API_KEY + bind 127.0.0.1) :
+3. **Rebuild + recréer la gateway** (applique API_KEY + bind 127.0.0.1) :
    ```bash
-   cd /d/Dev/CoursIA/docker-configurations/services/tts-multi && docker compose up -d --force-recreate tts-gateway
+   cd /d/Dev/CoursIA/docker-configurations/services/tts-multi && docker compose up -d --no-deps --build --force-recreate tts-gateway
    docker port tts-gateway  # doit maintenant afficher 127.0.0.1:8196 (pas 0.0.0.0)
    ```
-4. **Vérifier la preuve** (401 sans clé, 200 avec) :
+
+   > ⚠️ **★★★ stale-image trap (vérifié firsthand 2026-06-28)** : `--force-recreate` **SEUL ne
+   > reconstruit PAS l'image** — il réutilise l'image existante. Or l'image tts-gateway
+   > était **built AVANT** que le code `setup_auth` soit ajouté à `gateway/app.py` →
+   > `/app/app.py` dans le container n'avait AUCUNE référence à `setup_auth`/`API_KEY` →
+   > l'auth restait **OFF silencieusement** (`/v1/models` retournait 200 au lieu de 401,
+   > logs container vides). **Diagnostic** : `docker exec tts-gateway sh -c 'grep -c
+   > setup_auth /app/app.py'` → `0` = image stale. **Fix** : `docker compose build
+   --no-deps tts-gateway` (rebuild depuis le source courant) puis recreate. Le flag
+   `--build` dans la commande ci-dessus fait les deux. `--no-deps` évite de tenter de
+   démarrer tts-tada (non-déployé). Le service utilise `build:` (image locale), pas
+   `image:` — tout changement au source `gateway/app.py` exige un rebuild.
+
+4. **Vérifier la preuve** (401 sans clé, 200 avec clé, 401 mauvaise clé) :
    ```bash
    # Sans clé : doit devenir 401 APRÈS flip (200 avant).
    curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8196/v1/models
@@ -242,6 +257,10 @@ exposé publiquement** (`tts-multi.myia.io` via IIS).
    curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8196/health
    # Avec clé : 200.
    curl -s -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer $(grep TTS_GATEWAY_API_KEY /d/Dev/CoursIA/.secrets/master.env | cut -d= -f2)" http://localhost:8196/v1/models
+   # Mauvaise clé : 401 (confirme que le gate ne fait pas que vérifier la présence du header).
+   curl -s -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer wrongkey" http://localhost:8196/v1/models
+   # Logs container doivent confirmer : "Bearer token authentication ENABLED".
+   docker logs tts-gateway 2>&1 | grep -i "authentication ENABLED"
    ```
 5. **Vérifier le notebook consommateur** : re-exécuter `02-5-Multi-Model-TTS-Gateway.ipynb`
    (kernel `mcp-jupyter-py310`, `--cwd` le dossier du notebook) → doit toujours
