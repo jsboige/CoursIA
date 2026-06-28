@@ -978,13 +978,13 @@ Serie pedagogique pour apprendre Playwright en testant une application GenAI ree
 
 | Module | Nom | Duree | Niveau | Tests |
 |--------|-----|-------|--------|-------|
-| 01 | [Decouverte](Playwright-OWUI/01-decouverte/) | 2-3h | Debutant | 4 |
-| 02 | [Navigation & Auth](Playwright-OWUI/02-navigation-authentification/) | 2-3h | Debutant+ | 8 |
-| 03 | [Chat & Streaming](Playwright-OWUI/03-chat-streaming/) | 3h | Intermediaire | 7 |
-| 04 | [RAG, MCP & Avances](Playwright-OWUI/04-rag-tools-avances/) | 3h | Intermediaire+ | 7 |
-| 05 | [Multi-tenant & CI/CD](Playwright-OWUI/05-multi-tenant-ci/) | 3-4h | Expert | 8 |
+| 01 | [Decouverte](Open-WebUI/Playwright-OWUI/01-decouverte/) | 2-3h | Debutant | 4 |
+| 02 | [Navigation & Auth](Open-WebUI/Playwright-OWUI/02-navigation-authentification/) | 2-3h | Debutant+ | 8 |
+| 03 | [Chat & Streaming](Open-WebUI/Playwright-OWUI/03-chat-streaming/) | 3h | Intermediaire | 7 |
+| 04 | [RAG, MCP & Avances](Open-WebUI/Playwright-OWUI/04-rag-tools-avances/) | 3h | Intermediaire+ | 7 |
+| 05 | [Multi-tenant & CI/CD](Open-WebUI/Playwright-OWUI/05-multi-tenant-ci/) | 3-4h | Expert | 8 |
 
-[README Playwright-OWUI](Playwright-OWUI/README.md)
+[README Playwright-OWUI](Open-WebUI/Playwright-OWUI/README.md)
 
 ---
 

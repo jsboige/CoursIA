@@ -26,7 +26,8 @@ GenAI/
 ├── FineTuning/              # Fine-tuning de modèles : LoRA/QLoRA/SFT/DPO
 ├── PostTraining/            # Post-training SOTA : SFT/RLHF/DPO/GRPO/RLVR
 ├── CaseStudies/             # Études de cas étudiants
-├── Playwright-OWUI/         # Tests E2E Playwright (5 modules, 30+ tests)
+├── Open-WebUI/              # Plateforme Open WebUI : tour guidé + série QA Playwright
+│   └── Playwright-OWUI/     # Tests E2E Playwright (5 modules, 30+ tests)
 └── Vibe-Coding/             # Tutoriels Claude Code et Roo Code
 ```
 
@@ -96,11 +97,11 @@ Le "vibe coding" est la compétence la plus demandée de 2026 : décrire ce qu'o
 
 ---
 
-### Playwright-OWUI - Tester les applications GenAI
+### Open-WebUI - La plateforme et son assurance qualité
 
-Les applications GenAI doivent être testées rigoureusement. Cette série utilise Playwright pour écrire des tests de bout en bout sur Open WebUI, une interface réelle de chat LLM. On y apprend la navigation, l'authentification, le streaming de réponses, le RAG, les outils MCP, et le déploiement CI/CD.
+Open WebUI est une interface réelle de chat LLM, multi-tenant et auto-hébergée. Ce sous-domaine ombrelle présente la plateforme et ses fonctionnalités, et regroupe la série **Playwright-OWUI** : des tests de bout en bout (navigation, authentification, streaming, RAG, outils MCP, CI/CD) pour passer de la démonstration au produit déployable.
 
-[README complet](Playwright-OWUI/README.md) | ~14h
+[README de l'ombrelle Open-WebUI](Open-WebUI/README.md) | ~14h
 
 ---
 
