@@ -97,7 +97,7 @@ flowchart TD
     class P7 lean;
 ```
 
-Le socle d'inference (1-12) se suit en sequence ; le notebook **13 (Debugging)** est transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. La **théorie de la décision** (14-20, surlignée bleu) forme un fil rouge autonome, et le notebook **20b (Gittins, surligné jaune)** apporte la **preuve formelle Lean 4** qui ancre le tout dans le curriculum cross-série de démonstrations. Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
+Le socle d'inference (1-12) se suit en séquence ; le notebook **13 (Debugging)** est transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. La **théorie de la décision** (14-20, surlignée bleu) forme un fil rouge autonome, et le notebook **20b (Gittins, surligné jaune)** apporte la **preuve formelle Lean 4** qui ancre le tout dans le curriculum cross-série de démonstrations. Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
 
 ---
 
@@ -367,7 +367,7 @@ Les notebooks 7-8 couvrent la classification bayésienne et la sélection de mod
 
 ## Modèles Avancés (Notebooks 9-12)
 
-Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, sequences et recommandation.
+Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, séquences et recommandation.
 
 ### Infer-9 : Topic Models (LDA)
 
@@ -668,7 +668,7 @@ Les notebooks 14-20 forment une série complète sur la théorie de la décision
 | Nœud | Forme | Rôle |
 |-------|-------|------|
 | Chance | Ovale | Variable aléatoire |
-| Decision | Rectangle | Choix de l'agent |
+| Décision | Rectangle | Choix de l'agent |
 | Utilité | Losange | Fonction de récompense |
 
 **Sections** :
@@ -872,7 +872,7 @@ choco install graphviz
 # Ou téléchargement direct depuis https://graphviz.org/download/
 ```
 
-### Verification
+### Vérification
 
 ```bash
 jupyter kernelspec list  # doit afficher .net-csharp et python3
