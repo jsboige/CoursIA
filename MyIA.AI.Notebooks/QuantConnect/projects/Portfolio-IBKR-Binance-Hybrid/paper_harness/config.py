@@ -77,6 +77,9 @@ class IBKRConfig:
 
 @dataclass(frozen=True)
 class BinanceConfig:
+    """LEGACY sleeve config (pre-MiCA). Preserved as a fallback; the ACTIVE
+    crypto venue is Coinbase (see CoinbaseConfig). Binance France services
+    cease 2026-07-01 (no CASP MiCA licence). See ../README.md."""
     api_key: str
     api_secret: str
     testnet: bool
@@ -89,10 +92,30 @@ class BinanceConfig:
 
 
 @dataclass(frozen=True)
+class CoinbaseConfig:
+    """ACTIVE crypto sleeve config (post-MiCA, see ../README.md).
+
+    Auth is a CDP API key (UUID-like key name) + a base64 Ed25519/ECDSA
+    private key (``api_secret``), as required by ``coinbase.rest.RESTClient``.
+    Coinbase Advanced Trade has no public testnet: ``sandbox`` is informational
+    (a paper Coinbase account's key hits the same endpoint), NOT a URL toggle.
+    """
+    api_key: str
+    api_secret: str
+    sandbox: bool
+    initial_capital_usd: float
+    base_quote: str  # USDT (matches main.py account currency) or USD
+
+    @property
+    def has_credentials(self) -> bool:
+        return bool(self.api_key and self.api_secret)
+
+
+@dataclass(frozen=True)
 class PortfolioConfig:
     total_capital_usd: float
     alloc_ibkr: float
-    alloc_binance: float
+    alloc_coinbase: float
     rebalance_freq: str
     rebalance_threshold: float
 
@@ -109,7 +132,8 @@ class RiskConfig:
 @dataclass(frozen=True)
 class HarnessConfig:
     ibkr: IBKRConfig
-    binance: BinanceConfig
+    coinbase: CoinbaseConfig        # ACTIVE crypto sleeve (MiCA)
+    binance: BinanceConfig          # LEGACY fallback (pre-MiCA)
     portfolio: PortfolioConfig
     risk: RiskConfig
     env_path: Path
@@ -130,6 +154,13 @@ def load_config(env_path: Path | None = None) -> HarnessConfig:
             port=_get_int(env, "IBKR_PORT", 4002),
             client_id=_get_int(env, "IBKR_CLIENT_ID", 1),
         ),
+        coinbase=CoinbaseConfig(
+            api_key=_get(env, "COINBASE_API_KEY"),
+            api_secret=_get(env, "COINBASE_API_SECRET"),
+            sandbox=_get_bool(env, "COINBASE_SANDBOX", True),
+            initial_capital_usd=_get_float(env, "COINBASE_INITIAL_CAPITAL_USD", 0.0),
+            base_quote=_get(env, "COINBASE_BASE_QUOTE", "USDT"),
+        ),
         binance=BinanceConfig(
             api_key=_get(env, "BINANCE_API_KEY"),
             api_secret=_get(env, "BINANCE_API_SECRET"),
@@ -140,7 +171,7 @@ def load_config(env_path: Path | None = None) -> HarnessConfig:
         portfolio=PortfolioConfig(
             total_capital_usd=_get_float(env, "PORTFOLIO_TOTAL_CAPITAL_USD", 0.0),
             alloc_ibkr=_get_float(env, "PORTFOLIO_ALLOC_IBKR", 0.5),
-            alloc_binance=_get_float(env, "PORTFOLIO_ALLOC_BINANCE", 0.5),
+            alloc_coinbase=_get_float(env, "PORTFOLIO_ALLOC_COINBASE", 0.5),
             rebalance_freq=_get(env, "PORTFOLIO_REBALANCE_FREQ", "monthly"),
             rebalance_threshold=_get_float(env, "PORTFOLIO_REBALANCE_THRESHOLD", 0.05),
         ),
