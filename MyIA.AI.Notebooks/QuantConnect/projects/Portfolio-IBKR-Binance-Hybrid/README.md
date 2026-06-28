@@ -29,6 +29,74 @@ Stratégie composite multi-broker associant un sleeve actions/ETFs (IBKR compte 
 | Crypto-MultiCanal | BTC/ETH + alts | (à benchmarker) | 30% |
 | HAR-RV-J vol-target BTC (M12) | BTC, Kelly capé 0.5 | M12 BEATS (p=7.9e-7) | 20% |
 
+> **Note (2026-06-28)** : le sleeve crypto ci-dessus est décrit dans sa version Binance
+> d'origine (avant migration MiCA). L'état courant du code est **Coinbase** — voir la
+> section [Migration MiCA](#migration-mica-sleeve-crypto-binance--coinbase-2026-06-28)
+> ci-dessous.
+
+## Migration MiCA : sleeve crypto Binance → Coinbase (2026-06-28)
+
+**Contexte réglementaire.** Les services Binance France cessent le **2026-07-01** (pas de
+licence CASP MiCA). Coinbase détient la licence CASP MiCA France et est nativement supporté
+par QuantConnect (`Market.COINBASE`, données depuis janvier 2015, 860+ paires). Le sleeve
+crypto du portefeuille hybride est migré Binance → Coinbase. Le sleeve IBKR (equities) est
+inchangé. See #1027.
+
+### Changements de code
+
+| Aspect | Avant (Binance) | Après (Coinbase) |
+|--------|-----------------|------------------|
+| Marché crypto | `Market.BINANCE` | `Market.COINBASE` |
+| Tickers | `BTCUSDT`, `ETHUSDT`, … (USDT-quoted) | `BTCUSD`, `ETHUSD`, … (USD-quoted) |
+| Fee crypto | `PercentFeeModel(0.001)` hardcodé (10bps) | `CoinbaseFeeModel()` natif (maker 0.6% / taker 0.8%) |
+| Devise compte | `USDT` | `USDT` (inchangé — voir finding ci-dessous) |
+| Paramètre | — | `crypto_fee_bps` (override flat bps pour isoler l'effet fee) |
+
+Le `CoinbaseFeeModel()` natif applique le barème réaliste Coinbase Advanced-1 (maker 0.6% /
+taker 0.8%). Comme `set_holdings()` émet des ordres **market**, le taux **taker 0.8% (80bps)**
+s'applique par défaut — bien plus cher que les 10bps Binance. Le paramètre `crypto_fee_bps`
+permet de surcharger avec un `PercentFeeModel` flat pour isoler l'effet fee pur (ex. `10`
+reproduit le barème Binance sur les données Coinbase).
+
+### Finding technique : `USD` casse le backtest (0 trades)
+
+Avec `Market.COINBASE` + `add_crypto("BTCUSD")` + `set_account_currency("USD")`, le backtest
+produit **0 trade** (le warmup ne se termine jamais — la comptabilité de cash-settlement
+entre en collision quand la devise du compte égale la devise de cotation BTCUSD = USD, et
+`is_warming_up` reste `True` → `rebalance()` retourne immédiatement). `set_account_currency("USDT")`
+restaure les trades (QC convertit automatiquement la cotation USD → compte USDT, exactement
+comme la version Binance canonique convertit l'USD equity → USDT). Vérifié firsthand : la
+version Binance canonique sur le même projet QC donne Sharpe 0.908 (le projet fonctionne),
+donc le coupable est bien la combinaison `USD` + `Market.COINBASE`, pas une défaillance du
+projet. `CoinbaseBrokerageModel` n'impose aucune devise de compte (lu dans la source Lean) —
+c'est une subtilité de couche de settlement, pas une contrainte du modèle de brokerage.
+
+### Analyse fee-switch (fenêtre 2018-2025, sleeve 50/50)
+
+| Config | Source données | Fee crypto | Sharpe | CAGR | MaxDD | PSR | Backtest |
+|--------|-----------------|-----------|--------|------|-------|-----|----------|
+| Référence Binance (avant) | Binance | 10bps | **0.908** | 29.1% | 38.5% | 42.7% | `db1cabdb` |
+| Coinbase, fee Binance | Coinbase | 10bps | **0.399** | 10.9% | 39.8% | 8.1% | `a2e9df89` |
+| Coinbase, fee intermédiaire | Coinbase | 60bps | 0.373 | 10.4% | 40.3% | 7.0% | `e5f96562` |
+| Coinbase, fee natif (défaut) | Coinbase | ~80bps taker | 0.362 | 10.1% | 40.5% | 6.6% | `7bef8b7f` |
+
+`totalOrders=0` dans le wrapper MCP est un artefact d'extraction connu (le CAGR 10% implique
+des trades réels) — les statistiques QC sont fiables.
+
+**Décomposition des effets** (isolation par fee constant d'un côté, data constante de l'autre) :
+
+- **Effet data-source** (Binance@10 → Coinbase@10, fee constant à 10bps) : Sharpe **0.908 → 0.399 = −0.51 (−56%)**. **Effet dominant.** Le différentiel de prix historique BTC/alts entre Binance et Coinbase sur 2018-2025 (liquidité, spreads, disponibilité des alts dans le basket MultiCanal) dégrade le Sharpe bien plus que le fee.
+- **Effet fee** (Coinbase@10 → Coinbase natif ~80bps taker, data Coinbase constante) : Sharpe **0.399 → 0.362 = −0.04 (−9%)**. **Modéré.** Le turnover du sleeve crypto est faible (3 stratégies mensuelles, dont 2 — EMA-Cross-Crypto et HAR-RV-VolTarget — passent souvent en cash), ce qui limite l'impact du fee malgré un barème 8× plus élevé.
+
+**Verdict honnête.** La migration MiCA coûte ~0.55 de Sharpe (0.908 → 0.362, −60%), mais **~93% de
+cette dégradation vient du changement de source de données**, pas de l'augmentation du fee
+Coinbase (souvent pointé du doigt, mais qui ne coûte que ~0.04). Le Sharpe 0.362 reste viable
+mais sous le target 1.0-1.3 du README — la migration MiCA est une contrainte réglementaire
+(continuité du service après le 2026-07-01), pas un gain de performance. Le sleeve crypto
+reste dominé par le BTC (seul BTC/ETH ont des données continues pleine fenêtre sur QC) ;
+la valeur ajoutée du basket MultiCanal et du HAR-RV-VolTarget est à ré-évaluer sous données
+Coinbase en Phase 3.
+
 ## Roadmap 5 phases
 
 ### Phase 1 — Research notebook agrégé (S1)
