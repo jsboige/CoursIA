@@ -8,9 +8,9 @@ Le catalogue rassemble plus de 500 notebooks répartis sur les onze domaines ci-
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 589
-breakdown: SymbolicAI=137, GenAI=129, QuantConnect=104, Search=61, Probas=43, ML=35, Sudoku=33, GameTheory=27, RL=14, CaseStudies=4, IIT=2
-maturity: PRODUCTION=468, BETA=70, ALPHA=42, DRAFT=5, TEMPLATE=4
+total: 593
+breakdown: SymbolicAI=139, GenAI=130, QuantConnect=104, Search=61, Probas=44, ML=35, Sudoku=33, GameTheory=27, RL=14, CaseStudies=4, IIT=2
+maturity: PRODUCTION=471, BETA=71, ALPHA=42, DRAFT=5, TEMPLATE=4
 -->
 
 Dernière mise à jour : 2026-06-11
