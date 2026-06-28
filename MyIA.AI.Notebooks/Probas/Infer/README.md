@@ -2,7 +2,7 @@
 
 [← Série Probas](../README.md) | [Série PyMC (Python) →](../PyMC/README.md) | [ML.NET (C#) →](../../ML/ML.Net/README.md)
 
-Programmation probabiliste avec Microsoft Infer.NET : une série de 21 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision et des preuves formelles Lean 4.
+Programmation probabiliste avec Microsoft Infer.NET : une série de 22 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision, l'inférence causale (do-calculus de Pearl) et des preuves formelles Lean 4.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste exacte, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
@@ -70,6 +70,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 19 | [Infer-19-Decision-Expert-Systems](Infer-19-Decision-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
 | 20 | [Infer-20-Decision-Sequential](Infer-20-Decision-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique |
 | 20b | [Infer-20b-Lean-Gittins](Infer-20b-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
+| 21 | [Infer-21-Causal-Inference](Infer-21-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
 
 **Durée totale** : ~20h
 
@@ -813,6 +814,37 @@ V(s) = max_a [R(s,a) + gamma x Sum P(s'|s,a) x V(s')]
 - Explorer les **limitations** (geometric discount, NP-difficulté du calcul exact)
 
 **Lien avec PyMC** : Le notebook compagnon [PyMC-20](../PyMC/PyMC-20-Decision-Sequential.ipynb) couvre les mêmes concepts en Python avec Thompson Sampling MCMC et diagnostics ArviZ.
+
+---
+
+## Inférence Causale (Notebook 21)
+
+### Infer-21 : Inférence Causale et do-calculus
+
+**Durée** : 65 min | **Prérequis** : Notebook 4 (réseaux bayésiens, CPT, D-séparation)
+
+**Objectifs** :
+
+- Distinguer **observation** `P(Y|X)` et **intervention** `P(Y|do(X))` (Pearl, 2000)
+- Implémenter le **do-opérateur** par **mutilation de graphe** (`Variable.Bernoulli(1.0)` coupe l'arc parent)
+- Calculer l'effet causal via **backdoor** et **front-door adjustment**
+- Reconnaître et **résoudre causalement** le **paradoxe de Simpson**
+- Aborder le **contrefactuel** (Niveau 3 de l'échelle de Pearl)
+
+**Concepts clés** :
+
+| Concept | Formule | Description |
+|---------|---------|-------------|
+| do-opérateur | `P(Y\|do(X))` | Intervention : coupe les arcs entrants de X |
+| Backdoor | `Σ_u P(Y\|X,u)P(u)` | Ajustement quand le confondeur U est observé |
+| Front-door | `Σ_m P(M\|X)Σ_{x'} P(Y\|M,x')P(x')` | Ajustement par médiateur quand U est inobservable |
+| Simpson | agrégé ≠ conditionnel | Renversement : la conclusion s'inverse |
+
+**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) n'abordait la causalité qu'en deux cellules isolées. Infer-21 en fait un traitement dédié et **distributionnel** : les effets causaux sont **calculés** par le moteur d'inférence Infer.NET via mutilation de graphe, là où le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) raisonne en Java propositionnel, et où [PyMC-4](../PyMC/PyMC-4-Bayesian-Networks.ipynb) démontre `P(Cloudy|do(Rain))` en MCMC.
+
+**Applications** : baromètre (confondeur), diagnostic médical (paradoxe de Simpson), tabac-cancer (front-door), requêtes contrefactuelles.
+
+---
 
 ---
 
