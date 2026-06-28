@@ -4,6 +4,7 @@ import PacLearning.Sample
 import PacLearning.Concentration
 import PacLearning.SampleExpect
 import PacLearning.UnionBound
+import PacLearning.Hoeffding
 
 /-!
 # PacLearning — théorie PAC (Valiant 1984), module classe finie, Lean 4
