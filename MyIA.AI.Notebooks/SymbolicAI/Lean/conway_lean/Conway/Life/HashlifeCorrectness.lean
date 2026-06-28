@@ -1970,13 +1970,56 @@ theorem p4_wave2_ih
             (wf_of_cellWf hr5.2) (wf_of_cellWf hr6.2)
             (wf_of_cellWf hr8.2) (wf_of_cellWf hr9.2) ih
 
+/-! ### P4.4 decomposition — balisage en sous-sorries
+
+The research-level composition `evolve (2^k) = evolve (2^(k-1)) ∘ evolve (2^(k-1))`
+on the centered window is decomposed into four named sub-goals, each
+independently attackable. This turns the monolithic P4.4 `sorry` into a chain
+of milestones with clear interfaces (the same methodology that isolated
+`hashlifeResultAux_level_cellWf` as a sub-goal unblocked P4.3, c.142).
+
+- **S1 (CLOSED — `evolve_add` below)** : function-iteration composition.
+  `evolve (a + b) g = evolve a (evolve b g)`. Pure `step^[·]` arithmetic, no
+  `hashlifeResultAux`, no whnf wall — proven.
+- **S2 (sub-sorry)** : boundary does not leak — for `p` in the centered window
+  `[2^k, 2^k + 2^(k+1))²`, the light cone `lightCone p (2^k)` (radius of
+  `evolve 2^(k-1)`, via `step_light_cone`) stays inside the domain covered by
+  `c.toGrid (0,0)`. Geometric (manhattan bounds), consumes the already-proven
+  `mem_lightCone_of_manhattan_le`.
+- **S3 (sub-sorry)** : sub-cell coverage — the quadrant super-cell `q_j` whose
+  centered region contains `p` agrees with `c.toGrid` on that light cone, so
+  `evolve 2^(k-1) (c.toGrid) p = evolve 2^(k-1) (q_j.toGrid) p` by
+  `step_light_cone (2^(k-1))`.
+- **S4 (sub-sorry, core)** : assemble — combine S1+S2+S3 with the four
+  `centralCorrect q_j (k-1)` facts from P4.3 (`p4_wave2_ih`) to conclude the
+  pointwise membership agreement that `p4_succ_membership` needs.
+
+Until S2–S4 are closed, `p4_half_steps_compose` remains the `True` placeholder
+(it is consumed by `p4_succ_membership` only structurally); closing each
+sub-sorry shrinks the open surface without touching the others. -/
+
+/-- **S1** (CLOSED): `evolve (a + b) g = evolve a (evolve b g)`.
+
+Pure function-iteration arithmetic — `evolve n g = step^[n] g`, so iteration
+splits additively. The first closed milestone of the P4.4 balisage: the
+composition `evolve 2^k = evolve 2^(k-1) ∘ evolve 2^(k-1)` is exactly
+`evolve_add (2^(k-1)) (2^(k-1)) g`. -/
+theorem evolve_add (a b : Nat) (g : Grid) :
+    evolve (a + b) g = evolve a (evolve b g) := by
+  induction a with
+  | zero => simp [evolve_zero]
+  | succ n ih =>
+    rw [Nat.succ_add, evolve_succ, evolve_succ, ih]
+
 /-- **P4.4** (compositional, hardest): the two half-steps compose — wave 1
     (advancing `2^(k-1)` generations) followed by wave 2 (another `2^(k-1)`)
     equals `evolve (2^k)` on the centered window, because the boundary of
     each sub-cell does not leak into the live region (light-cone lemma P2,
-    `step_light_cone`, proven at L544 of this file). This is where the
-    genuine locality argument lives. Difficulty: P4.4 (research-level;
-    composes `mem_lightCone_of_manhattan_le` with the two IH applications). -/
+    `step_light_cone`, proven above). Difficulty: P4.4 (research-level).
+
+    **Balisage (c.145)**: decomposed into S1 (CLOSED, `evolve_add`) + S2/S3/S4
+    sub-sorries — see the section docstring above. Until S2–S4 close, this
+    remains the `True` placeholder consumed structurally by `p4_succ_membership`. -/
 theorem p4_half_steps_compose
     (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) : True := by
   sorry
