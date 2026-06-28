@@ -1981,11 +1981,12 @@ of milestones with clear interfaces (the same methodology that isolated
 - **S1 (CLOSED — `evolve_add` below)** : function-iteration composition.
   `evolve (a + b) g = evolve a (evolve b g)`. Pure `step^[·]` arithmetic, no
   `hashlifeResultAux`, no whnf wall — proven.
-- **S2 (sub-sorry)** : boundary does not leak — for `p` in the centered window
-  `[2^k, 2^k + 2^(k+1))²`, the light cone `lightCone p (2^k)` (radius of
-  `evolve 2^(k-1)`, via `step_light_cone`) stays inside the domain covered by
-  `c.toGrid (0,0)`. Geometric (manhattan bounds), consumes the already-proven
-  `mem_lightCone_of_manhattan_le`.
+- **S2 (CLOSED — `window_cone_in_domain` below)** : boundary does not leak —
+  for `p` in the centered window `[2^k, 2^k + 2^(k+1))²`, the light cone
+  `lightCone p (2^k)` (radius of `evolve 2^(k-1)`, via `step_light_cone`) stays
+  inside the domain covered by `c.toGrid (0,0)`. Pure Manhattan arithmetic, no
+  `hashlifeResultAux`, no whnf wall — proven (`manhattan_deviation` Nat→Int
+  bridge + power-normalization + pure-Int `linarith`).
 - **S3 (sub-sorry)** : sub-cell coverage — the quadrant super-cell `q_j` whose
   centered region contains `p` agrees with `c.toGrid` on that light cone, so
   `evolve 2^(k-1) (c.toGrid) p = evolve 2^(k-1) (q_j.toGrid) p` by
@@ -1994,9 +1995,10 @@ of milestones with clear interfaces (the same methodology that isolated
   `centralCorrect q_j (k-1)` facts from P4.3 (`p4_wave2_ih`) to conclude the
   pointwise membership agreement that `p4_succ_membership` needs.
 
-Until S2–S4 are closed, `p4_half_steps_compose` remains the `True` placeholder
-(it is consumed by `p4_succ_membership` only structurally); closing each
-sub-sorry shrinks the open surface without touching the others. -/
+Until S3–S4 are closed, `p4_half_steps_compose` remains the `True` placeholder
+(it is consumed by `p4_succ_membership` only structurally); S1 (composition)
+and S2 (no-leak) are now closed, so the remaining open surface is the
+sub-cell-coverage + assembly argument (S3, S4). -/
 
 /-- **S1** (CLOSED): `evolve (a + b) g = evolve a (evolve b g)`.
 
@@ -2010,6 +2012,84 @@ theorem evolve_add (a b : Nat) (g : Grid) :
   | zero => simp [evolve_zero]
   | succ n ih =>
     rw [Nat.succ_add, evolve_succ, evolve_succ, ih]
+
+/-- **S2 helper**: lift the `Nat` `manhattan` bound to per-coordinate `Int.abs`
+    bounds. Isolated from `window_cone_in_domain` below so the cone/window
+    reasoning works purely in `Int`: `omega` closes the `Nat.natAbs` goals here
+    in isolation, but splits the `Nat` `2^k` atom from its `(2^k : Int)` cast
+    when both appear in one goal (a known `omega` limitation on mixed
+    `Nat`/`Int` atoms). -/
+private theorem manhattan_deviation (p q : Int × Int) (R : Nat)
+    (h : manhattan p q ≤ R) : |p.1 - q.1| ≤ (R : Int) ∧ |p.2 - q.2| ≤ (R : Int) := by
+  -- Isolate the Nat `manhattan`/`natAbs` → `Int.abs` lifting from the
+  -- power/window reasoning, so `window_cone_in_domain` below works purely in
+  -- `Int` (omega handles `Int.abs` + powers cleanly, but struggles when
+  -- `Nat.natAbs` and `Int.abs` of the same term share a goal).
+  unfold manhattan at h
+  have h1' : Int.natAbs (p.1 - q.1) ≤ R := by omega
+  have h2' : Int.natAbs (p.2 - q.2) ≤ R := by omega
+  refine ⟨?_, ?_⟩
+  · rw [Int.abs_eq_natAbs]; exact_mod_cast h1'
+  · rw [Int.abs_eq_natAbs]; exact_mod_cast h2'
+
+/-- **S2** (CLOSED): the light cone does not leak out of the MacroCell domain.
+
+    For a point `p` in the centered window `[2^k, 2^k + 2^(k+1))²` (the region
+    the Hashlife result covers), any cell `q` within Manhattan distance `2^k`
+    of `p` — i.e. any cell in the light cone `lightCone p (2^k)` (radius `2^k`
+    is exactly the cone radius of `evolve 2^(k-1)` via `step_light_cone`) —
+    stays inside the full MacroCell domain `[0, 2^(k+2))²`.
+
+    This is the geometric core of the "boundary does not leak" half of P4.4:
+    it is why the wave-2 super-cells, each computing `evolve 2^(k-1)` on its
+    own grid, nonetheless agree with the global `evolve 2^k` on the centered
+    window — every cell that could influence a centered point is still within
+    the MacroCell's recorded domain. No `hashlifeResultAux`, no whnf wall —
+    pure Manhattan arithmetic over `Int`, reusing `manhattan` (L85). The proof
+    bridges via `manhattan_deviation`, proves the power facts `2^(k+1) = 2·2^k`
+    and `2^(k+2) = 4·2^k` in pure `Nat` (rw + `Nat.pow_succ`), rewrites them in
+    so everything is linear in the single atom `2^k`, and closes with `linarith`
+    (`omega` loses the positivity of `2^k` under the multiplicative atoms). -/
+private theorem window_cone_in_domain (k : Nat) (p q : Int × Int)
+    (hp1_lo : (2^k : Int) ≤ p.1) (hp1_hi : p.1 < 2^k + 2^(k+1))
+    (hp2_lo : (2^k : Int) ≤ p.2) (hp2_hi : p.2 < 2^k + 2^(k+1))
+    (hc : manhattan p q ≤ 2^k) :
+    (0 : Int) ≤ q.1 ∧ q.1 < 2^(k+2) ∧ (0 : Int) ≤ q.2 ∧ q.2 < 2^(k+2) := by
+  -- Bridge the Nat `manhattan` bound to per-coordinate `Int` abs bounds, then
+  -- unpack abs into linear inequalities (linarith does not split `|x|`).
+  obtain ⟨hq1, hq2⟩ := manhattan_deviation p q (2^k) hc
+  -- `manhattan_deviation` types its bound as `↑(2^k)` (Nat cast of the Nat
+  -- radius), but the window hypotheses below use the native-Int `(2^k : Int)`
+  -- (`HPow`). These are the same value but distinct terms, so `linarith` would
+  -- see two unrelated atoms. Normalize via `Nat.cast_pow` to a single atom.
+  have hk_pow : (↑((2:Nat)^k) : Int) = (2^k : Int) := Nat.cast_pow 2 k
+  rw [hk_pow] at hq1 hq2
+  obtain ⟨hq1lo, hq1hi⟩ := abs_le.mp hq1
+  obtain ⟨hq2lo, hq2hi⟩ := abs_le.mp hq2
+  -- Power facts proven in pure Nat (rw only — omega splits the Nat `2^k` from
+  -- `Nat.pow_succ` against the `(2^k : Int)` casts in scope), lifted to Int.
+  have hpe1 : (2^(k+1) : Int) = 2 * (2^k : Int) := by
+    have h : (2 : Nat)^(k+1) = 2 * (2 : Nat)^k := by
+      rw [show (k + 1 : Nat) = Nat.succ k from rfl, Nat.pow_succ, Nat.mul_comm]
+    exact_mod_cast h
+  have hpe2 : (2^(k+2) : Int) = 4 * (2^k : Int) := by
+    have h1 : (2 : Nat)^(k+1) = 2 * (2 : Nat)^k := by
+      rw [show (k + 1 : Nat) = Nat.succ k from rfl, Nat.pow_succ, Nat.mul_comm]
+    have h2 : (2 : Nat)^(k+2) = 2 * (2 : Nat)^(k+1) := by
+      rw [show (k + 2 : Nat) = Nat.succ (k + 1) from rfl, Nat.pow_succ, Nat.mul_comm]
+    have h : (2 : Nat)^(k+2) = 4 * (2 : Nat)^k := by rw [h2, h1]; ring
+    exact_mod_cast h
+  -- Rewrite every power occurrence into a multiple of the single atom `2^k`,
+  -- so the goal reduces to pure linear `Int` arithmetic in `2^k`. `linarith`
+  -- (not `omega`) closes it: omega loses the positivity of `2^k` when juggling
+  -- the `2^(k+1)`/`2^(k+2)` multiplicative atoms (counterexample: `2^k ≤ -1`),
+  -- while `linarith` treats `2^k` as a plain linear variable, and the bounds
+  -- `0 ≤ q.i`, `q.i < 4·2^k` follow from `p.i ∈ [2^k, 3·2^k)` and
+  -- `|p.i - q.i| ≤ 2^k` with no sign assumption.
+  rw [hpe1] at hp1_hi hp2_hi
+  rw [hpe2]
+  refine ⟨?_, ?_, ?_, ?_⟩
+  all_goals linarith
 
 /-- **P4.4** (compositional, hardest): the two half-steps compose — wave 1
     (advancing `2^(k-1)` generations) followed by wave 2 (another `2^(k-1)`)
