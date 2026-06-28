@@ -30,7 +30,7 @@ Cette section adopte la convention pédagogique CoursIA standard : français-d'a
 
 Agent autonome minimaliste, conteneurisé, avec interface Telegram (texte + vocal).
 
-- **Architecture** : Conteneur Docker + API LLM (OpenRouter ou local) + Telegram Bot API + Whisper ASR pour le vocal
+- **Architecture (v2)** : un **hôte Node** orchestrant des **conteneurs d'agents par session**, hôte et agents ne communiquant **que** par des bases SQLite ; LLM via le Claude Agent SDK, interface Telegram, Whisper ASR pour le vocal — détail dans [02-NanoClaw-Architecture.md](docs/02-NanoClaw-Architecture.md)
 - **Déploiement** : Docker Compose, originellement sur ai-01 (cluster CoursIA)
 - **Fonctionnalités** : Chat, transcription vocale, skills personnalisables (function calling)
 - **Code source de référence** : roo-extensions issue #1318
@@ -78,7 +78,7 @@ L'enchaînement recommandé pour suivre le répertoire de bout en bout :
 |-------|--------|--------------------------------|
 | 1 | [00 — Philosophie Agentic Engineering](docs/00-Philosophie-Agentic-Engineering.md) | Poser le cadre. Sans le « pourquoi », le « comment » des modules suivants paraît arbitraire. |
 | 2 | [01 — OpenClaw / Origines Steinberger](docs/01-OpenClaw-Steinberger-Origins.md) | Comprendre **d'où viennent** ces idées (récit founder, MoltBook, leçons douloureuses). |
-| 3 | [02 — Architecture NanoClaw](docs/02-NanoClaw-Architecture.md) | Le plus simple des trois systèmes — c'est par là qu'on commence à mettre les mains dedans. |
+| 3 | [02 — Architecture NanoClaw](docs/02-NanoClaw-Architecture.md) | Le plus simple des trois systèmes — c'est par là qu'on commence à mettre les mains dedans. Compagnon : [M1 — « tout est message »](docs/M1-tout-est-message.md) pour le récit du principe fondateur. |
 | 4 | [03 — NanoClaw Deploy](docs/03-NanoClaw-Deploy.md) | Le déployer effectivement (Docker Compose, Telegram, ASR). |
 | 5 | [04 — ASR Integration](docs/04-ASR-Integration.md) | Approfondissement sur la transcription vocale (Whisper auto-hébergé). |
 | 6 | [05 — Architecture Hermes](docs/05-Hermes-Architecture.md) | Passer à un système plus complexe : fork upstream, drift isolé, MCPs, cron. |
@@ -88,18 +88,6 @@ L'enchaînement recommandé pour suivre le répertoire de bout en bout :
 | 10 | [09 — Patterns & Anti-Patterns](docs/09-Patterns-Anti-Patterns.md) *(draft, co-écrit)* | Les leçons apprises en production — incidents, fixes, règles d'or. |
 
 Une fois ce parcours terminé, un lecteur devrait être capable de **déployer NanoClaw lui-même** sans surprise majeure, **comprendre ce qu'il faut déployer pour un Hermes-like** sans devoir tout réinventer, et — surtout — **anticiper les incidents** plutôt que les découvrir.
-
-## Parcours NanoClaw v2 (en modules)
-
-> Cette série documente le **NanoClaw v2 réel**, tel qu'il tourne en production sur le cluster : un hôte Node unique orchestrant des conteneurs d'agents **par session**, où l'hôte et les agents ne communiquent **que** par des bases SQLite. Elle actualise progressivement les fiches `docs/NanoClaw-*.md`, qui décrivent un modèle conceptuel antérieur. Format **hybride** : une progression pédagogique en modules, chaque module ancré dans des décisions et des incidents de production réels.
-
-| Module | Sujet | Statut |
-|--------|-------|--------|
-| [M1 · Le modèle « tout est message »](docs/M1-tout-est-message.md) | Principe fondateur (zéro IPC), modèle d'entités, deux bases par session | ✅ disponible |
-| M2 · Architecture v2 | Hôte Node, conteneurs par session, détail des deux bases + base centrale | 🔜 à venir |
-| M3 · Déploiement Windows réel | Service, build du conteneur, vault de secrets, montages | 🔜 à venir |
-| M4 · Vivre en production | La chaîne de patches : incidents réels → correctifs | 🔜 à venir |
-| M5 · Coordination multi-bots | Intercom, mentions, patterns et anti-patterns (co-écrit) | 🔜 à venir |
 
 ## Structure
 
@@ -112,7 +100,7 @@ Claw-Systems/
 │   ├── 02-NanoClaw-Architecture.md                    # Archi NanoClaw
 │   ├── 03-NanoClaw-Deploy.md                          # Deploy NanoClaw
 │   ├── 04-ASR-Integration.md                          # Whisper auto-hébergé
-│   ├── M1-tout-est-message.md                         # Parcours NanoClaw v2 — Module 1 (NanoClaw)
+│   ├── M1-tout-est-message.md                         # Récit « tout est message » — companion de 02 (NanoClaw)
 │   ├── 05-Hermes-Architecture.md                      # Archi Hermes
 │   ├── 06-Hermes-Deploy-s6-Overlay.md                 # Deploy Hermes
 │   ├── 07-Hermes-Cluster-Coordinator-Role.md          # Rôle coordinateur cluster
@@ -164,7 +152,7 @@ Les Claw systems sont conçus pour fonctionner **avec ou sans le cluster CoursIA
 
 ## Liens — internes au cours
 
-- [Parcours NanoClaw v2 — M1 : « tout est message »](docs/M1-tout-est-message.md) — module NanoClaw (rédigé par NanoClaw, ai-01)
+- [M1 — Le modèle « tout est message »](docs/M1-tout-est-message.md) — récit du principe fondateur de NanoClaw v2, companion de [02 — Architecture NanoClaw](docs/02-NanoClaw-Architecture.md) (rédigé par NanoClaw, ai-01)
 - [Vibe-Coding parent](../README.md) — section englobante (Claude-Code, Roo-Code, Claw-Systems)
 - [Claude-Code](../Claude-Code/) — pendant assistant interactif (5 modules, 13-16h)
 - [Roo-Code](../Roo-Code/) — pendant assistant interactif VS Code-natif (5 modules)
