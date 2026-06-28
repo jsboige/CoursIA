@@ -1,69 +1,74 @@
 # Corrective AI / Meta-Labeling (Ch08-02)
 
-**Type:** Stub (planned exercise, code files not yet created)
+**Type :** Stub (exercice planifié, fichiers de code non encore créés)
 
-**Hands-On AI Trading**, Chapter 8-02 — Meta-Labeling with Corrective AI
+**Hands-On AI Trading**, Chapitre 8-02 — Meta-Labeling avec Corrective AI
 
-## Objective
+## Objectif
 
-Implement a meta-labeling approach where a primary model generates trading signals and a secondary corrective model filters out false positives, improving precision while maintaining recall.
+Implémenter une approche de meta-labeling où un modèle primaire génère des signaux de trading et un modèle correctif secondaire filtre les faux positifs, améliorant la précision tout en préservant le rappel.
 
-## Approach
+## Approche
 
-### Primary Model: SMA Crossover
-- Fast SMA (20-day) vs Slow SMA (60-day)
-- Signal: bullish when fast > slow * 1.02, bearish when fast < slow * 0.98
-- Universe: SPY, TLT, GLD (multi-asset diversification)
+### Modèle primaire : croisement de SMA
 
-### Corrective Filter
-The secondary model evaluates whether to trust the primary signal based on:
-- **Trend strength**: Gap between fast and slow SMA (normalized)
-- **Volatility regime**: Price relative to EMA (50-day volatility proxy)
-- **Rules**:
-  - Strong trend (>3% gap) -> trust signal
-  - Moderate trend + low volatility -> trust signal
-  - Weak trend + high volatility -> reject signal (stay flat)
+- SMA rapide (20 jours) vs SMA lente (60 jours)
+- Signal : haussier quand rapide > lente * 1.02, baissier quand rapide < lente * 0.98
+- Univers : SPY, TLT, GLD (diversification multi-actifs)
 
-### Meta-Labeling Concept
-- Primary model labels: +1 (long), -1 (short), 0 (flat)
-- Secondary model labels: 1 (trust primary), 0 (reject primary)
-- Net position = primary_direction * corrective_approval
-- Expected: higher precision (fewer false signals), similar or lower recall
+### Filtre correctif
 
-## QC Project
+Le modèle secondaire évalue s'il faut faire confiance au signal primaire sur la base de :
 
-| Field | Value |
-|-------|-------|
+- **Force de la tendance** : écart entre SMA rapide et lente (normalisé)
+- **Régime de volatilité** : prix relatif à l'EMA (proxy de volatilité 50 jours)
+- **Règles** :
+  - Tendance forte (écart >3 %) -> confiance dans le signal
+  - Tendance modérée + faible volatilité -> confiance dans le signal
+  - Tendance faible + forte volatilité -> rejet du signal (rester à plat)
+
+### Concept de meta-labeling
+
+- Étiquettes du modèle primaire : +1 (long), -1 (short), 0 (plat)
+- Étiquettes du modèle secondaire : 1 (faire confiance au primaire), 0 (rejeter le primaire)
+- Position nette = direction_primaire * approbation_corrective
+- Attendu : précision plus élevée (moins de faux signaux), rappel similaire ou inférieur
+
+## Projet QC
+
+| Champ | Valeur |
+|-------|--------|
 | Project ID | 30800636 |
-| Organization | Trading Firm QC-Course |
-| Period | 2018-01-01 to 2024-12-31 |
-| Starting Capital | $1,000,000 |
+| Organisation | Trading Firm QC-Course |
+| Période | 2018-01-01 à 2024-12-31 |
+| Capital de départ | $1 000 000 |
 
-## Backtest Results (v1)
+## Résultats du backtest (v1)
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | -0.151 |
-| CAGR | 2.22% |
-| Max Drawdown | 11.3% |
-| Net Profit | +16.64% |
-| Win Rate | 70% |
+| CAGR | 2.22 % |
+| Max Drawdown | 11.3 % |
+| Net Profit | +16.64 % |
+| Win Rate | 70 % |
 | Total Orders | 1242 |
-| Total Fees | $2,673.78 |
+| Total Fees | $2 673.78 |
 
-### Analysis
-- 70% win rate confirms the corrective filter improves signal quality
-- Negative Sharpe indicates risk-adjusted returns are suboptimal
-- Average loss (-0.18%) exceeds average win (0.12%) — position sizing and exit timing need improvement
-- The multi-asset approach (SPY/TLT/GLD) provides diversification but the SMA crossover lag hurts in sideways markets
+### Analyse
 
-## Files
+- Un win rate de 70 % confirme que le filtre correctif améliore la qualité des signaux
+- Un Sharpe négatif indique des rendements ajustés au risque sous-optimaux
+- La perte moyenne (-0.18 %) dépasse le gain moyen (0.12 %) — le sizing de position et le timing de sortie doivent être améliorés
+- L'approche multi-actifs (SPY/TLT/GLD) apporte de la diversification mais le retard du croisement SMA pénalise en marché latéral
 
-- `main.py` — QC algorithm with primary signal + corrective filter
-- `research.ipynb` — SMA crossover computation, corrective filter design, signal reduction analysis
+## Fichiers
 
-## Reference
+- `main.py` — algorithme QC avec signal primaire + filtre correctif
+- `research.ipynb` — calcul du croisement SMA, conception du filtre correctif, analyse de la réduction des signaux
 
-- Hands-On AI Trading, Chapter 8-02
-- De Prado, M. (2018), "Advances in Financial Machine Learning" — Meta-labeling concept
-- Corrective AI: secondary model trained on primary model's prediction errors
+## Référence
+
+- Hands-On AI Trading, Chapitre 8-02
+- De Prado, M. (2018), « Advances in Financial Machine Learning » — concept de meta-labeling
+- Corrective AI : modèle secondaire entraîné sur les erreurs de prédiction du modèle primaire
