@@ -4,6 +4,7 @@ import PacLearning.Concentration
 import PacLearning.Data
 import PacLearning.Hoeffding
 import PacLearning.MGF
+import PacLearning.PacFiniteBound
 import PacLearning.Sample
 import PacLearning.SampleExpect
 import PacLearning.UnionBound
@@ -107,9 +108,19 @@ nécessité — le résultat mathématique est le vrai Hoeffding. Par briques at
   Boole)** `sampleProb_union_bound` : `ℙ_S[∃ i ∈ s, P i S] ≤ ∑_{i ∈ s} ℙ_S[P i S]`,
   0-sorry (indicateur(∃) ≤ ∑ indicateurs point par point via
   `Finset.single_le_sum`, puis monotonie + linéarité de `sampleExpect`).
-- **Brique 3/3-finale — OPEN** : `pac_finite_class_bound`, `m ≥ (1/ε)(ln|H| +
-  ln(1/δ))` (combine l'`union_bound` ci-dessus avec une concentration Hoeffding
-  générique sur chaque `P i = (|empError − trueError| > ε)`). Le théorème phare.
+- `PacLearning/PacFiniteBound.lean` (**brique 3/3 LIVRÉE — cas réalisable**) :
+  théorème phare `pac_finite_class_bound` (Valiant 1984, `m ≥ (1/ε)(ln|Hs| +
+  ln(1/δ))`), preuve close. Combine `sampleProb_consistent_le` (`(1−μ)^n`) +
+  `one_sub_pow_le_exp` (`(1−μ)^n ≤ exp(−εn)`) + **union bound au niveau
+  `sampleExpect`** (contournement du blowup de la synthèse `Decidable` sur
+  `∃ hyp ∈ Hs, …` qui énumère `Hypothesis X = X → Bool` via
+  `decidableExistsAndFinsetCoe` : instance `hDec` explicite + annotation `@ite` +
+  `Classical.em`, symbole `pacDecidable` pour le defeq wrapper).
+- **Brique 3/3-restante — OPEN (cas agnostique)** : borne agnostique
+  `m ≥ (1/(2ε²))·(ln(2|H|/δ))` (Shalev-Shwartz–Ben-David §2.4), requiert la
+  concentration Hoeffding-for-Bernoulli `ℙ[|empError − trueError| > ε] ≤
+  2·exp(−2nε²)`, bloquée sur la borne MGF générale (2b/5, route variationnelle
+  OPEN dans `BernoulliMGF.lean`).
 
 ## Référence
 
@@ -123,8 +134,8 @@ nécessité — le résultat mathématique est le vrai Hoeffding. Par briques at
 namespace PacLearning
 
 /-- Statut : itération 1 livrée (modèle + propriétés élémentaires 0-sorry) ;
-itération 2 en cours — **briques 1/3, 2a/3, 2b/3, 2c/3 livrées + 3/3-moitié
-combinatoire (UnionBound) livrée**
+itération 2 — **briques 1/3, 2a/3, 2b/3, 2c/3 livrées + 3/3 LIVRÉE (cas
+réalisable, `pac_finite_class_bound` dans `PacFiniteBound.lean`)**
 (`Sample.lean` : distribution produit `D^m` + normalisation ; `Concentration.lean` :
 `expect`, `markov_ineq` ; `SampleExpect.lean` : `sampleExpect` + linéarité/normalisation
 + **marginalisation coordonnée `sampleExpect_coord`** + **estimateur non-biaisé
@@ -135,10 +146,12 @@ i.i.d.) `sampleExpect_prod_coord`** ; `UnionBound.lean` : `sampleProb` +
 sous-brique de Hoeffding : `E_D[exp(t(ind−μ))] = μ·exp(t(1−μ)) + (1−μ)·exp(−tμ)`,
 0-analyse) ; `BernoulliMGF.lean` : **cœur analytique Hoeffding** —
 `bernoulli_var_le` (variance `μ(1−μ)≤1/4`), `bernoulli_mgf_half_le` (cas symétrique
-via `cosh x ≤ exp(x²/2)`), positivité + normalisation MGF. Briques restantes :
+via `cosh x ≤ exp(x²/2)`), positivité + normalisation MGF. Briques restantes (cas **agnostique** uniquement — le réalisable est livré) :
 borne MGF générale `μ·exp(t(1−μ))+(1−μ)·exp(−tμ) ≤ exp(t²/8)` (2b/5 analytique dur,
-route variationnelle OPEN) + concentration bilatérale + 3/3-finale
-(`pac_finite_class_bound`, combine union bound + Hoeffding) documentées OPEN. -/
+route variationnelle OPEN) + concentration bilatérale Hoeffding + borne agnostique
+`m ≥ (1/(2ε²))·(ln(2|H|/δ))`. Le **cas réalisable** `pac_finite_class_bound`
+(`m ≥ (1/ε)(ln|Hs|+ln(1/δ))`) est LIVRÉ (preuve close, sans axiome) dans
+  `PacFiniteBound.lean`. -/
 abbrev Status : Prop := True
 
 end PacLearning
