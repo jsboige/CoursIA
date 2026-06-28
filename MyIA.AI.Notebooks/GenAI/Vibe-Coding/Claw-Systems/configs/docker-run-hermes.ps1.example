@@ -1,0 +1,60 @@
+# docker-run-hermes.ps1.example
+#
+# Lance le conteneur Hermes en gateway (production).
+# Copier en docker-run-hermes.ps1 et adapter les variables <$...> a votre environnement.
+#
+# IMPORTANT :
+#   - Lancer en PowerShell (PAS Git Bash : la conversion de chemins casse les -v).
+#   - Aucun token en clair ici : les secrets proviennent de /opt/data/.env.secrets,
+#     charge par le script de restore au demarrage conteneur.
+#
+# Voir docs/06-Hermes-Deploy-s6-Overlay.md pour le detail (boot sequence,
+# patches Windows, restore script, watchdog MCP).
+
+# ----------------------------------------------------------------------------
+# Variables a adapter (PAS de valeurs par defaut contenant des secrets)
+# ----------------------------------------------------------------------------
+
+# Volume persistant Hermes (host) -> /opt/data dans le conteneur.
+# Survit aux rebuilds d'image (sessions, skills, config, cron jobs).
+$HermesHome = "C:\Users\<your-user>\.hermes"
+
+# Volume roo-state-manager (host) -> /opt/roo-state-manager (montage read-only).
+# Sert de fallback MCP local quand le proxy LAN est injoignable.
+$RooStateManagerSrc = "C:\dev\roo-extensions\mcps\internal\servers\roo-state-manager"
+
+# Tag d'image Hermes. Build local depuis le fork (PAS un pull upstream).
+$Image = "hermes-agent:s6-20260528"
+
+# Mapping de port : host -> conteneur (dashboard web sur 9119 dans le conteneur).
+$HostPort = "9120"
+$ContainerPort = "9119"
+
+# ----------------------------------------------------------------------------
+# Lancement
+# ----------------------------------------------------------------------------
+
+docker run -d --name hermes `
+  --restart unless-stopped `
+  -v "${HermesHome}:/opt/data" `
+  -v "${RooStateManagerSrc}:/opt/roo-state-manager:ro" `
+  --add-host=host.docker.internal:host-gateway `
+  -p "${HostPort}:${ContainerPort}" `
+  $Image gateway run
+
+# ----------------------------------------------------------------------------
+# Verification post-lancement
+# ----------------------------------------------------------------------------
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Hermes lance. Verification :" -ForegroundColor Green
+    docker ps --filter "name=hermes" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+    Write-Host ""
+    Write-Host "Logs (Ctrl+C pour quitter) :" -ForegroundColor Cyan
+    Write-Host "  docker logs -f hermes"
+    Write-Host ""
+    Write-Host "Dashboard : http://localhost:${HostPort}"
+} else {
+    Write-Host "Echec du lancement (exit code $LASTEXITCODE)." -ForegroundColor Red
+    Write-Host "Verifier : image presente (docker images | findstr hermes), chemins <$...> adaptes."
+}
