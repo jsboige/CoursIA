@@ -1,11 +1,12 @@
 import Mathlib
-import PacLearning.Data
-import PacLearning.Sample
+import PacLearning.BernoulliMGF
 import PacLearning.Concentration
-import PacLearning.SampleExpect
-import PacLearning.UnionBound
+import PacLearning.Data
 import PacLearning.Hoeffding
 import PacLearning.MGF
+import PacLearning.Sample
+import PacLearning.SampleExpect
+import PacLearning.UnionBound
 
 /-!
 # PacLearning — théorie PAC (Valiant 1984), module classe finie, Lean 4
@@ -85,6 +86,14 @@ nécessité — le résultat mathématique est le vrai Hoeffding. Par briques at
 - **Brique 2c/3-restante — OPEN** : concentration de Hoeffding-for-Bernoulli,
   `ℙ_S [ |empError − trueError| > ε ] ≤ 2·exp(−2mε²)` (méthode Chernoff : Markov
   sur `exp(t·(X̄−μ))` + `log t ≤ t − 1` sur les indicateurs).
+- `PacLearning/BernoulliMGF.lean` (**brique 2b/5-partielle livrée**) — **cœur
+  analytique** de Hoeffding. Ingrédients prouvés de la borne finale `μ·exp(t(1−μ)) +
+  (1−μ)·exp(−tμ) ≤ exp(t²/8)` : variance Bernoulli `μ(1−μ) ≤ 1/4` (`bernoulli_var_le`,
+  inconditionnelle par complétion du carré), positivité + normalisation MGF, et le
+  **cas symétrique `μ = 1/2`** `bernoulli_mgf_half_le` via `cosh x ≤ exp(x²/2)`
+  (Mathlib `cosh_le_exp_half_sq`). La borne générale pour `μ ∈ [0,1]` arbitraire est
+  documentée OPEN : elle requiert la route variationnelle (Donsker–Varadhan + Pinsker)
+  ou seconde-dérivée (cgf tilté), lourdes hors du cadre Measure de Mathlib.
 - `PacLearning/UnionBound.lean` (**brique 3/3-moitié combinatoire livrée**) —
   **moitié combinatoire** du flagship `pac_finite_class_bound`. Probabilité d'un
   événement sur l'espace des échantillons `sampleProb` (`E[𝟙{Q}]`) + linéarité
@@ -117,9 +126,12 @@ combinatoire (UnionBound) livrée**
 **union bound (Bornes de Boole) `sampleProb_union_bound`** ; `MGF.lean` :
 **réduction algébrique de la MGF centrée `expect_exp_centered_eq`** (première
 sous-brique de Hoeffding : `E_D[exp(t(ind−μ))] = μ·exp(t(1−μ)) + (1−μ)·exp(−tμ)`,
-0-analyse). Briques restantes : borne finale Hoeffding `bernoulli_mgf_le ≤ exp(t²/8)`
-(analytique) + concentration bilatérale + 3/3-finale (`pac_finite_class_bound`,
-combine union bound + Hoeffding) documentées OPEN. -/
+0-analyse) ; `BernoulliMGF.lean` : **cœur analytique Hoeffding** —
+`bernoulli_var_le` (variance `μ(1−μ)≤1/4`), `bernoulli_mgf_half_le` (cas symétrique
+via `cosh x ≤ exp(x²/2)`), positivité + normalisation MGF. Briques restantes :
+borne MGF générale `μ·exp(t(1−μ))+(1−μ)·exp(−tμ) ≤ exp(t²/8)` (2b/5 analytique dur,
+route variationnelle OPEN) + concentration bilatérale + 3/3-finale
+(`pac_finite_class_bound`, combine union bound + Hoeffding) documentées OPEN. -/
 abbrev Status : Prop := True
 
 end PacLearning
