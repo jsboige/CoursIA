@@ -2,7 +2,7 @@
 
 [← Série Probas](../README.md) | [Série PyMC (Python) →](../PyMC/README.md) | [ML.NET (C#) →](../../ML/ML.Net/README.md)
 
-Programmation probabiliste avec Microsoft Infer.NET : une série de 23 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision, l'inférence causale (do-calculus de Pearl), les bandits bayésiens (Thompson Sampling) et des preuves formelles Lean 4.
+Programmation probabiliste avec Microsoft Infer.NET : une série de 24 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision (MDPs, indice de Gittins, puis les **bandits bayésiens** via Thompson Sampling), l'**inférence causale** (do-calculus de Pearl) en clôture, et des preuves formelles Lean 4.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste exacte, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
@@ -70,8 +70,8 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 19 | [Infer-19-Decision-Expert-Systems](Infer-19-Decision-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
 | 20 | [Infer-20-Decision-Sequential](Infer-20-Decision-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique |
 | 20b | [Infer-20b-Lean-Gittins](Infer-20b-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
-| 21 | [Infer-21-Causal-Inference](Infer-21-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
-| 22 | [Infer-22-Thompson-Sampling](Infer-22-Thompson-Sampling.ipynb) | 60 min | Thompson Sampling bayésien, posterior Beta-Bernoulli par le moteur, regret vs ε-greedy/UCB1 |
+| 21 | [Infer-21-Thompson-Sampling](Infer-21-Thompson-Sampling.ipynb) | 60 min | Thompson Sampling bayésien, posterior Beta-Bernoulli par le moteur, regret vs ε-greedy/UCB1 |
+| 22 | [Infer-22-Causal-Inference](Infer-22-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
 
 **Durée totale** : ~21h
 
@@ -818,38 +818,11 @@ V(s) = max_a [R(s,a) + gamma x Sum P(s'|s,a) x V(s')]
 
 ---
 
-## Inférence Causale (Notebook 21)
+## Bandits Bayésiens (Notebook 21)
 
-### Infer-21 : Inférence Causale et do-calculus
+### Infer-21 : Thompson Sampling bayésien
 
-**Durée** : 65 min | **Prérequis** : Notebook 4 (réseaux bayésiens, CPT, D-séparation)
-
-**Objectifs** :
-
-- Distinguer **observation** `P(Y|X)` et **intervention** `P(Y|do(X))` (Pearl, 2000)
-- Implémenter le **do-opérateur** par **mutilation de graphe** (`Variable.Bernoulli(1.0)` coupe l'arc parent)
-- Calculer l'effet causal via **backdoor** et **front-door adjustment**
-- Reconnaître et **résoudre causalement** le **paradoxe de Simpson**
-- Aborder le **contrefactuel** (Niveau 3 de l'échelle de Pearl)
-
-**Concepts clés** :
-
-| Concept | Formule | Description |
-|---------|---------|-------------|
-| do-opérateur | `P(Y\|do(X))` | Intervention : coupe les arcs entrants de X |
-| Backdoor | `Σ_u P(Y\|X,u)P(u)` | Ajustement quand le confondeur U est observé |
-| Front-door | `Σ_m P(M\|X)Σ_{x'} P(Y\|M,x')P(x')` | Ajustement par médiateur quand U est inobservable |
-| Simpson | agrégé ≠ conditionnel | Renversement : la conclusion s'inverse |
-
-**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) n'abordait la causalité qu'en deux cellules isolées. Infer-21 en fait un traitement dédié et **distributionnel** : les effets causaux sont **calculés** par le moteur d'inférence Infer.NET via mutilation de graphe, là où le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) raisonne en Java propositionnel, et où [PyMC-4](../PyMC/PyMC-4-Bayesian-Networks.ipynb) démontre `P(Cloudy|do(Rain))` en MCMC.
-
-**Applications** : baromètre (confondeur), diagnostic médical (paradoxe de Simpson), tabac-cancer (front-door), requêtes contrefactuelles.
-
----
-
-## Bandits Bayésiens (Notebook 22)
-
-### Infer-22 : Thompson Sampling bayésien
+Prolongement naturel de la théorie de la décision séquentielle : après les MDPs ([Infer-20](Infer-20-Decision-Sequential.ipynb)) et l'indice de Gittins ([Infer-20b](Infer-20b-Lean-Gittins.ipynb)), le **bandit multi-bras** vu comme un programme probabiliste Infer.NET.
 
 **Durée** : 60 min | **Prérequis** : [Notebook 5](Infer-5-Skills-IRT.ipynb) (posterior Beta), [Notebook 20](Infer-20-Decision-Sequential.ipynb) (bandits, ε-greedy, UCB1)
 
@@ -870,9 +843,38 @@ V(s) = max_a [R(s,a) + gamma x Sum P(s'|s,a) x V(s')]
 | Regret | `Σ_t (θ*_max − θ*(a_t))` | Perte cumulée vs bras optimal |
 | Best-arm id | `P(bras i = argmax θ) ≈ freq(i gagne)` | Identification probabiliste du meilleur bras |
 
-**Positionnement** : le notebook [Infer-20](Infer-20-Decision-Sequential.ipynb) section 8 implémente ε-greedy, UCB1 et un exercice de Thompson **manuel** (comptage des succès/échecs, formule conjuguée codée à la main). Infer-22 en est le versant **moteur** : Infer.NET calcule le posterior Beta de chaque bras par inférence variationnelle, et Thompson échantillonne depuis ce posterior. Le regret cumulé mesuré (Thompson ≪ ε-greedy) prouve que l'exploration bayésienne ciblée par le posterior exploite l'incertitude là où l'information manque — la généralisation naturelle à des modèles non conjugués (où seule l'inférence approchée sait calculer le posterior) justifie l'usage du moteur.
+**Positionnement** : [Infer-20](Infer-20-Decision-Sequential.ipynb) section 8 implémente ε-greedy, UCB1 et un exercice de Thompson **manuel** (comptage des succès/échecs, formule conjuguée codée à la main). Infer-21 en est le versant **moteur** : Infer.NET calcule le posterior Beta de chaque bras par inférence variationnelle, et Thompson échantillonne depuis ce posterior. Le regret cumulé mesuré (Thompson ≪ ε-greedy) prouve que l'exploration bayésienne ciblée exploite l'incertitude là où l'information manque — la généralisation à des modèles non conjugués (où seule l'inférence approchée sait calculer le posterior) justifie l'usage du moteur.
 
 **Applications** : A/B testing adaptatif, recommandation en ligne, essais cliniques séquentiels, publicité programmatique.
+
+---
+
+## Inférence Causale (Notebook 22)
+
+### Infer-22 : Inférence Causale et do-calculus
+
+**Durée** : 65 min | **Prérequis** : Notebook 4 (réseaux bayésiens, CPT, D-séparation)
+
+**Objectifs** :
+
+- Distinguer **observation** `P(Y|X)` et **intervention** `P(Y|do(X))` (Pearl, 2000)
+- Implémenter le **do-opérateur** par **mutilation de graphe** (`Variable.Bernoulli(1.0)` coupe l'arc parent)
+- Calculer l'effet causal via **backdoor** et **front-door adjustment**
+- Reconnaître et **résoudre causalement** le **paradoxe de Simpson**
+- Aborder le **contrefactuel** (Niveau 3 de l'échelle de Pearl)
+
+**Concepts clés** :
+
+| Concept | Formule | Description |
+|---------|---------|-------------|
+| do-opérateur | `P(Y\|do(X))` | Intervention : coupe les arcs entrants de X |
+| Backdoor | `Σ_u P(Y\|X,u)P(u)` | Ajustement quand le confondeur U est observé |
+| Front-door | `Σ_m P(M\|X)Σ_{x'} P(Y\|M,x')P(x')` | Ajustement par médiateur quand U est inobservable |
+| Simpson | agrégé ≠ conditionnel | Renversement : la conclusion s'inverse |
+
+**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) n'abordait la causalité qu'en deux cellules isolées. Infer-22 en fait un traitement dédié et **distributionnel** : les effets causaux sont **calculés** par le moteur d'inférence Infer.NET via mutilation de graphe, là où le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) raisonne en Java propositionnel, et où [PyMC-4](../PyMC/PyMC-4-Bayesian-Networks.ipynb) démontre `P(Cloudy|do(Rain))` en MCMC.
+
+**Applications** : baromètre (confondeur), diagnostic médical (paradoxe de Simpson), tabac-cancer (front-door), requêtes contrefactuelles.
 
 ---
 
@@ -996,7 +998,7 @@ var posterior = moteur.Infer<DistributionType>(variable);
 
 ```
 Infer/
-+-- Infer-1-Setup.ipynb ... Infer-22-Thompson-Sampling.ipynb
++-- Infer-1-Setup.ipynb ... Infer-22-Causal-Inference.ipynb
 +-- Infer-20b-Lean-Gittins.ipynb    # Companion Lean 4 (preuves formelles Gittins)
 +-- Infer-Glossary.md
 +-- FactorGraphHelper.cs          # Helper pour visualisation Graphviz
