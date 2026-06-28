@@ -1775,6 +1775,44 @@ private theorem p4_wave1_ih_step
                                     hnw_se_w hne_sw_w hsw_ne_w hse_nw_w
   exact ih (node nw_se ne_sw sw_ne se_nw) (k - 1) (by omega) hn5.2 (by omega)
 
+/-- **P4.3 helper (c.142/c.139 pattern).** Wave-1 result facts for one sub-cell
+    `n` (a double-nine `n_i`): `n`'s level-`(k+1)` well-formedness yields, via the
+    proven preservation lemma `hashlifeResultAux_level_cellWf`, that the wave-1
+    result `hashlifeResultAux (k+1) n` has level `k` and `cellWf`. `n` is an
+    OPAQUE binder here so the `hashlifeResultAux` term in the conclusion does not
+    whnf-reduce (calling the preservation lemma inline, with `n` spelled out as a
+    `node` of grandchildren, makes the elaborator whnf the conclusion's nested
+    `hashlifeResultAux` term — divergent). -/
+private theorem wave1_result_facts (k : Nat) (hk1 : 1 ≤ k) (n : MacroCell)
+    (hn_wf : n.wf = true) (hn_lvl : n.level = k + 1) :
+    (hashlifeResultAux (k + 1) n).level = k ∧ cellWf (hashlifeResultAux (k + 1) n) := by
+  have hcn := cellWf_of_wf n hn_wf
+  exact hashlifeResultAux_level_cellWf (k + 1) n hcn hn_lvl (by omega)
+
+/-- **P4.3 helper (wave 2).** The `ih` *application*
+    `ih (node r1 r2 r4 r5) (k - 1) ...` for the NW super-cell `q_nw`
+    (`= node r1 r2 r4 r5`, the four wave-1 results `r_i`), done in a standalone
+    helper so the four `r_i` are opaque binders at the application site —
+    same whnf-isolation pattern as `p4_wave1_ih_step` (c.139). The `r_i` are
+    `hashlifeResultAux` results whose level (`k`) and `cellWf` are established
+    by the proven preservation lemma `hashlifeResultAux_level_cellWf` (c.142),
+    then bridged to `.wf = true` for the central-correctness `ih` (which is on
+    `.wf`). `q_nw` is taken as representative (the three other super-cells are
+    isomorphic, queued). -/
+private theorem p4_wave2_ih_step
+    (k : Nat) (hk1 : 1 ≤ k)
+    (r1 r2 r4 r5 : MacroCell)
+    (hr1_l : r1.level = k) (hr2_l : r2.level = k)
+    (hr4_l : r4.level = k) (hr5_l : r5.level = k)
+    (hr1_w : r1.wf = true) (hr2_w : r2.wf = true)
+    (hr4_w : r4.wf = true) (hr5_w : r5.wf = true)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j) :
+    centralCorrect (node r1 r2 r4 r5) (k - 1) := by
+  have hq := node_wf_level_of_four hr1_l hr2_l hr4_l hr5_l
+                                    hr1_w hr2_w hr4_w hr5_w
+  exact ih (node r1 r2 r4 r5) (k - 1) (by omega) hq.2 (by omega)
+
 /-- **P4.2** (IH application, wave 1): for the center sub-cell
     `n5 = node nw_se ne_sw sw_ne se_nw` of the double-nine decomposition,
     `hashlifeResultAux (k+1) n5` agrees with `evolve (2^(k-1))` on `n5`'s
@@ -1816,8 +1854,55 @@ theorem p4_wave1_ih
     (mechanical IH, structurally identical to P4.2 — may factor through a
     common helper). -/
 theorem p4_wave2_ih
-    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) : True := by
-  sorry
+    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) (hk1 : 1 ≤ k)
+    (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
+      centralCorrect c' j) :
+    ∃ nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+       sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell,
+      c = node (node nw_nw nw_ne nw_sw nw_se)
+               (node ne_nw ne_ne ne_sw ne_se)
+               (node sw_nw sw_ne sw_sw sw_se)
+               (node se_nw se_ne se_sw se_se) ∧
+      centralCorrect
+        (node (hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+              (hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+              (hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+              (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw)))
+        (k - 1) := by
+  obtain ⟨nw_nw, nw_ne, nw_sw, nw_se, ne_nw, ne_ne, ne_sw, ne_se,
+          sw_nw, sw_ne, sw_sw, sw_se, se_nw, se_ne, se_sw, se_se, rfl, hgrands⟩ :=
+    p4_double_nine_shape c k hwf hk
+  obtain ⟨hnw_nw_l, hnw_nw_w, hnw_ne_l, hnw_ne_w, hnw_sw_l, hnw_sw_w, hnw_se_l, hnw_se_w,
+          hne_nw_l, hne_nw_w, hne_ne_l, hne_ne_w, hne_sw_l, hne_sw_w, hne_se_l, hne_se_w,
+          hsw_nw_l, hsw_nw_w, hsw_ne_l, hsw_ne_w, hsw_sw_l, hsw_sw_w, hsw_se_l, hsw_se_w,
+          hse_nw_l, hse_nw_w, hse_ne_l, hse_ne_w, hse_sw_l, hse_sw_w, hse_se_l, hse_se_w⟩ :=
+    hgrands
+  -- n1 = node nw_nw nw_ne nw_sw nw_se: level+wf, then preservation (c.142) -> r1 facts.
+  have hq1 := node_wf_level_of_four hnw_nw_l hnw_ne_l hnw_sw_l hnw_se_l
+                                    hnw_nw_w hnw_ne_w hnw_sw_w hnw_se_w
+  have hr1 := wave1_result_facts k hk1 (node nw_nw nw_ne nw_sw nw_se) hq1.2 hq1.1
+  -- n2 = node nw_ne ne_nw nw_se ne_sw
+  have hq2 := node_wf_level_of_four hnw_ne_l hne_nw_l hnw_se_l hne_sw_l
+                                    hnw_ne_w hne_nw_w hnw_se_w hne_sw_w
+  have hr2 := wave1_result_facts k hk1 (node nw_ne ne_nw nw_se ne_sw) hq2.2 hq2.1
+  -- n4 = node nw_sw nw_se sw_nw sw_ne
+  have hq4 := node_wf_level_of_four hnw_sw_l hnw_se_l hsw_nw_l hsw_ne_l
+                                    hnw_sw_w hnw_se_w hsw_nw_w hsw_ne_w
+  have hr4 := wave1_result_facts k hk1 (node nw_sw nw_se sw_nw sw_ne) hq4.2 hq4.1
+  -- n5 = node nw_se ne_sw sw_ne se_nw
+  have hq5 := node_wf_level_of_four hnw_se_l hne_sw_l hsw_ne_l hse_nw_l
+                                    hnw_se_w hne_sw_w hsw_ne_w hse_nw_w
+  have hr5 := wave1_result_facts k hk1 (node nw_se ne_sw sw_ne se_nw) hq5.2 hq5.1
+  refine ⟨nw_nw, nw_ne, nw_sw, nw_se, ne_nw, ne_ne, ne_sw, ne_se,
+          sw_nw, sw_ne, sw_sw, sw_se, se_nw, se_ne, se_sw, se_se, rfl, ?_⟩
+  exact p4_wave2_ih_step k hk1
+          (hashlifeResultAux (k + 1) (node nw_nw nw_ne nw_sw nw_se))
+          (hashlifeResultAux (k + 1) (node nw_ne ne_nw nw_se ne_sw))
+          (hashlifeResultAux (k + 1) (node nw_sw nw_se sw_nw sw_ne))
+          (hashlifeResultAux (k + 1) (node nw_se ne_sw sw_ne se_nw))
+          hr1.1 hr2.1 hr4.1 hr5.1
+          (wf_of_cellWf hr1.2) (wf_of_cellWf hr2.2)
+          (wf_of_cellWf hr4.2) (wf_of_cellWf hr5.2) ih
 
 /-- **P4.4** (compositional, hardest): the two half-steps compose — wave 1
     (advancing `2^(k-1)` generations) followed by wave 2 (another `2^(k-1)`)
@@ -1843,7 +1928,7 @@ noncomputable def p4_succ_membership
         p ∈ restrictGridTo (evolve (2^k) (c.toGrid (0, 0))) (2^k : Int) (2^(k+1)) := by
   have _h1 := p4_double_nine_shape c k hwf hk
   have _h2 := p4_wave1_ih c k hwf hk hk1 ih
-  have _h3 := p4_wave2_ih c k hwf hk
+  have _h3 := p4_wave2_ih c k hwf hk hk1 ih
   have _h4 := p4_half_steps_compose c k hwf hk
   intro p
   sorry
