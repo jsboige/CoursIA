@@ -18,6 +18,7 @@ Vibe-Coding/
 ├── Claude-Code/          # Ateliers Claude Code (5 modules)
 ├── Roo-Code/             # Ateliers Roo Code (5 modules + avances)
 ├── Claw-Systems/         # Agents IA autonomes (NanoClaw, OpenClaw)
+├── Memoire-Semantique-Qdrant/   # Backend mémoire sémantique (Qdrant, grounding)
 └── docs/                 # Documentation commune et introductions
 ```
 
@@ -95,6 +96,20 @@ Plateformes d'agents IA conteneurisés, self-hosted, opérant de manière autono
 | [ASR Integration](Claw-Systems/docs/ASR-Integration.md) | Transcription vocale Whisper |
 
 **Cas d'usage** : Agent Telegram avec transcription vocale, orchestration multi-agents, déploiement production.
+
+## Mémoire Sémantique Qdrant - Infrastructure de Grounding
+
+Le **backend de mémoire sémantique** qui donne aux agents de codage une mémoire long-terme et les ancre dans des faits vérifiables (grounding) : une base de données vectorielle Qdrant qui indexe conversations et code, interrogée par le sens. Là où les sections ci-dessus décrivent les front-ends agents, celle-ci documente l'infrastructure qui les alimente -- avec les incidents d'ops réels (dérives de montage, pertes de données, durcissement des sauvegardes) comme matière pédagogique.
+
+| Document | Description |
+|----------|-------------|
+| [README](Memoire-Semantique-Qdrant/README.md) | Vue d'ensemble, pipeline, écosystème |
+| [Pourquoi la mémoire sémantique](Memoire-Semantique-Qdrant/docs/01-Pourquoi-Memoire-Semantique.md) | Grounding, SDDD, RAG, sémantique vs lexical |
+| [Infrastructure Qdrant](Memoire-Semantique-Qdrant/docs/02-Infrastructure-Qdrant.md) | Docker, stockage WSL2, quantization TurboQuant, anti-split-brain |
+| [Utilisation et indexation](Memoire-Semantique-Qdrant/docs/03-Utilisation-MCP-Indexation.md) | MCP, indexation code + conversations, requêtes |
+| [Incidents et leçons](Memoire-Semantique-Qdrant/docs/04-Incidents-et-Lecons.md) | War-stories d'ops : dérive de montage, perte de données, sauvegardes |
+
+**Cas d'usage** : donner à un assistant de codage une mémoire interrogeable par le sens, partagée entre machines, robuste aux pannes.
 
 ## Documentation commune
 
