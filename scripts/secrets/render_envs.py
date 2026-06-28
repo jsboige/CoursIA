@@ -73,6 +73,8 @@ SECRET_KEYS: frozenset[str] = frozenset({
     "WHISPER_API_KEY", "VLLM_API_KEY", "TTS_API_KEY",
     "QWEN_ASR_API_KEY", "MUSICGEN_API_KEY", "DEMUCS_API_KEY",
     "FUNASR_API_KEY",
+    # OWUI native API (NB-20, #417) + TTS multi-voice gateway (#16, po-2023)
+    "OWUI_API_KEY", "TTS_GATEWAY_API_KEY",
     # ComfyUI client tokens (notebook client <-> service must agree)
     "COMFYUI_VIDEO_TOKEN", "COMFYUI_API_TOKEN",
     # Session
