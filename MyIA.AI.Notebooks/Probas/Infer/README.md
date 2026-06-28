@@ -8,7 +8,7 @@ Programmation probabiliste avec Microsoft Infer.NET : une série de 21 notebooks
 
 ## Pourquoi cette sous-série
 
-Infer.NET est le seul framework d'inférence probabiliste natif dans l'écosystème .NET. Il compile un modèle probabiliste déclaratif en un **algorithme d'inférence spécialisé** via reflection et compilation Roslyn, offrant trois moteurs complémentaires : **Expectation Propagation (EP)** pour les modèles continus et mixtes (défaut, rapide mais approximatif), **Variational Message Passing (VMP)** pour les modèles à composantes comme LDA (stable, sous-estime l'incertitude), et **Gibbs Sampling** pour la validation sur petits modèles (exact asymptotiquement, lent). Cette approche compilée contraste avec l'échantillonnage MCMC générique de PyMC et permet des inférences en millisecondes plutôt qu'en minutes. Cette série couvre les 20 modèles classiques de la programmation probabiliste (réseaux bayésiens, TrueSkill, LDA, HMM) plus la théorie de la décision bayésienne complète (utilité espérée, diagrammes d'influence, EVPI, MDPs) et une preuve formelle Lean 4 de l'indice de Gittins.
+Infer.NET est le seul framework d'inférence probabiliste natif dans l'écosystème .NET. Il compile un modèle probabiliste déclaratif en un **algorithme d'inférence spécialisé** via reflection et compilation Roslyn, offrant trois moteurs complémentaires : **Expectation Propagation (EP)** pour les modèles continus et mixtes (défaut, rapide mais approximatif), **Variational Message Passing (VMP)** pour les modèles à composantes comme LDA (stable, sous-estimé l'incertitude), et **Gibbs Sampling** pour la validation sur petits modèles (exact asymptotiquement, lent). Cette approche compilée contraste avec l'échantillonnage MCMC générique de PyMC et permet des inférences en millisecondes plutôt qu'en minutes. Cette série couvre les 20 modèles classiques de la programmation probabiliste (réseaux bayésiens, TrueSkill, LDA, HMM) plus la théorie de la décision bayésienne complète (utilité espérée, diagrammes d'influence, EVPI, MDPs) et une preuve formelle Lean 4 de l'indice de Gittins.
 
 | Algorithme | Force | Limite | Cas d'usage |
 | ---------- | ----- | ------ | ---------- |
@@ -21,7 +21,7 @@ flowchart LR
     MOD["Modèle déclaratif<br/>Variables + priors +<br/>vraisemblance"] -->|"compilation Roslyn<br/>(reflection)"| SPEC["Algorithme d'inférence<br/>spécialisé"]
     SPEC --> ENG{"Moteur"}
     ENG -->|"continu / mixte<br/>(défaut)"| EP["<b>EP</b><br/>Expectation Propagation<br/>rapide · approximatif"]
-    ENG -->|"composantes<br/>(LDA)"| VMP["<b>VMP</b><br/>Variational MP<br/>stable · sous-estime<br/>l'incertitude"]
+    ENG -->|"composantes<br/>(LDA)"| VMP["<b>VMP</b><br/>Variational MP<br/>stable · sous-estimé<br/>l'incertitude"]
     ENG -->|"validation<br/>(petits modèles)"| GIBBS["<b>Gibbs</b><br/>échantillonnage<br/>exact asymptotiquement · lent"]
     EP --> POST["Posterior<br/>(millisecondes)"]
     VMP --> POST
@@ -97,7 +97,7 @@ flowchart TD
     class P7 lean;
 ```
 
-Le socle d'inference (1-12) se suit en sequence ; le notebook **13 (Debugging)** est transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. La **théorie de la décision** (14-20, surlignée bleu) forme un fil rouge autonome, et le notebook **20b (Gittins, surligné jaune)** apporte la **preuve formelle Lean 4** qui ancre le tout dans le curriculum cross-série de démonstrations. Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
+Le socle d'inference (1-12) se suit en séquence ; le notebook **13 (Debugging)** est transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. La **théorie de la décision** (14-20, surlignée bleu) forme un fil rouge autonome, et le notebook **20b (Gittins, surligné jaune)** apporte la **preuve formelle Lean 4** qui ancre le tout dans le curriculum cross-série de démonstrations. Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
 
 ---
 
@@ -367,7 +367,7 @@ Les notebooks 7-8 couvrent la classification bayésienne et la sélection de mod
 
 ## Modèles Avancés (Notebooks 9-12)
 
-Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, sequences et recommandation.
+Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, séquences et recommandation.
 
 ### Infer-9 : Topic Models (LDA)
 
@@ -668,7 +668,7 @@ Les notebooks 14-20 forment une série complète sur la théorie de la décision
 | Nœud | Forme | Rôle |
 |-------|-------|------|
 | Chance | Ovale | Variable aléatoire |
-| Decision | Rectangle | Choix de l'agent |
+| Décision | Rectangle | Choix de l'agent |
 | Utilité | Losange | Fonction de récompense |
 
 **Sections** :
@@ -872,7 +872,7 @@ choco install graphviz
 # Ou téléchargement direct depuis https://graphviz.org/download/
 ```
 
-### Verification
+### Vérification
 
 ```bash
 jupyter kernelspec list  # doit afficher .net-csharp et python3
