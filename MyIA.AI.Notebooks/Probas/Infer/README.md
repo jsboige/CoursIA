@@ -2,7 +2,7 @@
 
 [← Série Probas](../README.md) | [Série PyMC (Python) →](../PyMC/README.md) | [ML.NET (C#) →](../../ML/ML.Net/README.md)
 
-Programmation probabiliste avec Microsoft Infer.NET : une série de 23 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision (MDPs, indice de Gittins, puis les **bandits bayésiens** via Thompson Sampling), l'**inférence causale** (do-calculus de Pearl) en clôture, et des preuves formelles Lean 4.
+Programmation probabiliste avec Microsoft Infer.NET : une série de 24 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision (MDPs, indice de Gittins, puis les **bandits bayésiens** via Thompson Sampling), l'**inférence causale** (do-calculus de Pearl) en clôture, et des preuves formelles Lean 4.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste exacte, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
