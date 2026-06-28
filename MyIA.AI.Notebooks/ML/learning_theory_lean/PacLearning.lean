@@ -82,7 +82,13 @@ nécessité — le résultat mathématique est le vrai Hoeffding. Par briques at
   redonne `D`. **Et l'estimateur non-biaisé** `sampleExpect_empError_eq_trueError`
   (`E_{S∼D^m}[empError] = trueError`, par linéarité + `sampleExpect_coord`
   coordonnée-par-coordonnée) : l'erreur empirique est centrée sur l'erreur vraie.
-  Cadre requis par la concentration de Hoeffding.
+  **Et la factorisation d'un produit (indépendance i.i.d.)** `sampleExpect_prod_coord`
+  (`E_{S∼D^m}[∏_i h (S i)] = ∏_i E_D[h]`, même squelette `Fintype.prod_sum` que
+  `sampleExpect_coord` mais sans `if` — toutes les coordonnées portent `h`) :
+  ingrédient-clé de la concentration de Hoeffding (brique 3/5), il donne la
+  **MGF d'une somme = produit des MGFs** (`h = exp(t·ind)` ⟹
+  `E_S[exp(t·∑_i ind(S_i))] = ∏_i E_D[exp(t·ind)]`). Cadre requis par la
+  concentration de Hoeffding.
 - **Brique 2c/3-restante — OPEN** : concentration de Hoeffding-for-Bernoulli,
   `ℙ_S [ |empError − trueError| > ε ] ≤ 2·exp(−2mε²)` (méthode Chernoff : Markov
   sur `exp(t·(X̄−μ))` + `log t ≤ t − 1` sur les indicateurs).
@@ -122,7 +128,8 @@ combinatoire (UnionBound) livrée**
 (`Sample.lean` : distribution produit `D^m` + normalisation ; `Concentration.lean` :
 `expect`, `markov_ineq` ; `SampleExpect.lean` : `sampleExpect` + linéarité/normalisation
 + **marginalisation coordonnée `sampleExpect_coord`** + **estimateur non-biaisé
-`sampleExpect_empError_eq_trueError`** ; `UnionBound.lean` : `sampleProb` +
+`sampleExpect_empError_eq_trueError`** + **factorisation produit (indépendance
+i.i.d.) `sampleExpect_prod_coord`** ; `UnionBound.lean` : `sampleProb` +
 **union bound (Bornes de Boole) `sampleProb_union_bound`** ; `MGF.lean` :
 **réduction algébrique de la MGF centrée `expect_exp_centered_eq`** (première
 sous-brique de Hoeffding : `E_D[exp(t(ind−μ))] = μ·exp(t(1−μ)) + (1−μ)·exp(−tμ)`,
