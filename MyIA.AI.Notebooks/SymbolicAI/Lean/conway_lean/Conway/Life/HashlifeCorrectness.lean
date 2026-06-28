@@ -2049,6 +2049,28 @@ theorem evolve_add (a b : Nat) (g : Grid) :
   | succ n ih =>
     rw [Nat.succ_add, evolve_succ, evolve_succ, ih]
 
+/-- **S1 2^k instantiation** (CLOSED): `evolve 2^k = evolve 2^(k-1) ∘ evolve 2^(k-1)`.
+
+The exact `2^k`-form of `evolve_add` (S1) that the glue `p4_succ_membership`
+and the eventual P4.4 assemble step (S4) consume: the centered-window result of
+`evolve 2^k` decomposes into two `evolve 2^(k-1)` half-steps (wave 1 then wave
+2). Gated on `1 ≤ k` so that the predecessor `k-1` is well-defined as a `Nat`.
+The power fact `2^k = 2^(k-1) + 2^(k-1)` is discharged in pure `Nat`
+(`Nat.pow_succ` + `ring`); `omega` is avoided on the powers because it loses the
+positivity of the `2^(k-1)` atom under the additive doubling (cf. the c.146
+omega-limitation lesson on `window_cone_in_domain`). -/
+theorem evolve_half_step (k : Nat) (hk : 1 ≤ k) (g : Grid) :
+    evolve (2^k) g = evolve (2^(k-1)) (evolve (2^(k-1)) g) := by
+  -- Introduce a fresh name `m` for the predecessor `k-1`. A plain
+  -- `have hpred : k = (k-1) + 1` then `rw [hpred]` rewrites the `k` *inside*
+  -- `2^(k-1)` too (since `k` appears in `k-1`), leaving atoms `2^(k-1)` vs
+  -- `2^(1+(k-1)-1)` that `ring` cannot unify. `set` makes `m` opaque so
+  -- `rw [hkm]` touches only the LHS-exponent `k`.
+  set m := k - 1 with hm
+  have hkm : k = m + 1 := by omega
+  have h2pow : 2^k = 2^m + 2^m := by rw [hkm, Nat.pow_succ]; ring
+  rw [h2pow, evolve_add]
+
 /-- **S2 helper**: lift the `Nat` `manhattan` bound to per-coordinate `Int.abs`
     bounds. Isolated from `window_cone_in_domain` below so the cone/window
     reasoning works purely in `Int`: `omega` closes the `Nat.natAbs` goals here
@@ -2144,7 +2166,27 @@ theorem p4_half_steps_compose
     inductive step. Glues `p4_double_nine_shape` (P4.1), `p4_wave1_ih`
     (P4.2), `p4_wave2_ih` (P4.3), and `p4_half_steps_compose` (P4.4). Once
     the four sub-lemmas are proven, this function produces the
-    `∀ p, p ∈ ... ↔ p ∈ ...` hypothesis that `p4_ext_bridge` consumes. -/
+    `∀ p, p ∈ ... ↔ p ∈ ...` hypothesis that `p4_ext_bridge` consumes.
+
+    **Pointwise-proof balisage (c.147)** — the residual `sorry` after `intro p`
+    is the pointwise form of the P4.4 sub-cell coverage (S3) + assemble (S4)
+    argument, decomposed here into three named pieces:
+    - **G1 (geometric, tractable)** — RHS reduction: `p ∈ restrictGridTo
+      (evolve 2^k g) 2^k 2^(k+1)` splits via `mem_restrictGridTo` into window
+      bounds `[2^k, 3·2^k)²` (since `2^k + 2^(k+1) = 3·2^k`) plus the cell-state
+      `isAlive (evolve 2^k g) p`. Pure arithmetic, no `hashlifeResultAux`.
+    - **G2 (whnf-hard)** — LHS reduction: `p ∈ (hashlifeResultAux (k+2) c).toGrid
+      (2^k, 2^k)` agrees, on the containing quadrant `q_j`, with `evolve 2^(k-1)`
+      on `q_j.toGrid`, via the four `centralCorrect q_j (k-1)` from `_h3` (P4.3).
+      Touches `hashlifeResultAux` results → the c.139/142/143 whnf wall.
+    - **G3 (whnf-hard assemble)** — combine G1 and G2 with `step_light_cone`
+      (locality, radius `2·2^k`) and `evolve_half_step` (the `2^k` half-step
+      `evolve 2^k = evolve 2^(k-1) ∘ evolve 2^(k-1)`, now closed): the local
+      sub-cell computation equals the global `evolve 2^k` on the centered window.
+
+    Of these, `evolve_half_step` (the G3 half-step composition) is closed;
+    G1/G2/G3 themselves remain `sorry` because they compose `hashlifeResultAux`
+    results (the whnf-hard core, reserved for dedicated multi-cycle effort). -/
 noncomputable def p4_succ_membership
     (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) (hk1 : 1 ≤ k)
     (ih : ∀ (c' : MacroCell) (j : Nat), j < k → c'.wf = true → c'.level = j + 2 →
