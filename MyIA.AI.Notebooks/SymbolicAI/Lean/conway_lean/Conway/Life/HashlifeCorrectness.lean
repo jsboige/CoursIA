@@ -824,6 +824,50 @@ def MacroCell.wf : MacroCell → Bool
       && (ne.level == nw.level) && (sw.level == nw.level)
       && (se.level == nw.level)
 
+/-- Separate well-formedness predicate (c.142). An `inductive`, hence OPAQUE
+    to defeq — unlike `MacroCell.wf` (a transparent `Bool` def), `cellWf (node …)`
+    does NOT whnf-reduce during defeq. This is the unblock for the level/wf
+    preservation lemma of `hashlifeResultAux`: its `.wf` conjunct diverges on
+    whnf for nested hRA results (any defeq on `(node <hRA terms>).wf` evaluates
+    the transparent `wf`, recursing into `hashlifeResultAux`; c.140/c.141, 8M
+    heartbeats, 5 formulations). Reformulated over the opaque `cellWf`, the
+    conjunct closes by constructor application + `omega` (treating `.level` as
+    atoms, as the level conjunct already did). -/
+inductive cellWf : MacroCell → Prop
+  | leaf (b : Bool) : cellWf (.leaf b)
+  | node {nw ne sw se : MacroCell}
+      (hnw : cellWf nw) (hne : cellWf ne) (hsw : cellWf sw) (hse : cellWf se)
+      (hne_lvl : nw.level = ne.level) (hsw_lvl : nw.level = sw.level)
+      (hse_lvl : nw.level = se.level) :
+      cellWf (.node nw ne sw se)
+
+/-- Bridge between the opaque `cellWf` predicate and the transparent `MacroCell.wf`
+    (c.142). Both directions, by structural induction on `c` (clean context, no
+    hRA terms — so no whnf divergence). Lets the preservation lemma consume
+    `.wf = true` facts (from `p4_double_nine_shape`, `wf_hashlifeResult_of_level_two`)
+    and produce `cellWf`, and lets downstream code convert back. -/
+theorem cellWf_of_wf (c : MacroCell) : c.wf = true → cellWf c := by
+  induction c with
+  | leaf b => intro _; exact cellWf.leaf b
+  | node nw ne sw se hnw hne hsw hse =>
+    intro h
+    have hne_eq : nw.level = ne.level := by simp_all [MacroCell.wf, beq_iff_eq]
+    have hsw_eq : nw.level = sw.level := by simp_all [MacroCell.wf, beq_iff_eq]
+    have hse_eq : nw.level = se.level := by simp_all [MacroCell.wf, beq_iff_eq]
+    have hw_nw : nw.wf = true := by simp_all [MacroCell.wf]
+    have hw_ne : ne.wf = true := by simp_all [MacroCell.wf]
+    have hw_sw : sw.wf = true := by simp_all [MacroCell.wf]
+    have hw_se : se.wf = true := by simp_all [MacroCell.wf]
+    exact cellWf.node (hnw hw_nw) (hne hw_ne) (hsw hw_sw) (hse hw_se)
+                   hne_eq hsw_eq hse_eq
+
+theorem wf_of_cellWf {c : MacroCell} (h : cellWf c) : c.wf = true := by
+  induction h with
+  | leaf b => simp [MacroCell.wf]
+  | node _ _ _ _ hne_lvl hsw_lvl hse_lvl ihnw ihne ihsw ihse =>
+    simp only [MacroCell.wf, ihnw, ihne, ihsw, ihse, ← hne_lvl, ← hsw_lvl, ← hse_lvl,
+               beq_self_eq_true, Bool.true_and, Bool.and_true]
+
 /-- A malformed level-2 cell: `nw` is a level-1 node but `ne`/`sw`/`se`
     are bare leaves. `level` only inspects `nw`, so
     `malformedLevel2.level = 2` satisfies the unrestricted P4 hypothesis
@@ -1495,6 +1539,207 @@ theorem p4_double_nine_shape
   exact wf_node_depth2_grandchildren
     nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se k hk hwf
+
+/-- Clean-context level helper (c.142). Computes the level of the double-nine
+    outer node from its 16 grandchildren (level `n-2`) as a single arithmetic
+    fact, so the pos arm of the preservation step helper does not whnf
+    `(node …).level`'s type in the 32-fact context. -/
+private theorem node16_level (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell) (n : Nat)
+    (hn2 : 2 ≤ n) (h : nw_nw.level = n - 2) :
+    (node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+          (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).level = n := by
+  show 1 + (1 + nw_nw.level) = n
+  omega
+
+/-- Apply the level/`cellWf` IH to a `node` of four level-`(n-2)` `cellWf` cells
+    (c.142 workhorse), for BOTH wave layers of the preservation lemma: wave-1
+    (the nine `n_i`, each a `node` of four grandchildren) and wave-2 (the four
+    `q_*`, each a `node` of four wave-1 results `r_i`). Clean context (four
+    cells as opaque binders) avoids the whnf divergence an inline `ih`
+    application hits in the step helper's rich context (c.139 pattern). -/
+private theorem cellWf_quad (n : Nat) (hn3 : 3 ≤ n)
+    (ih : ∀ (m : Nat), m < n → ∀ (c' : MacroCell), cellWf c' → c'.level = m → 2 ≤ m →
+            ((hashlifeResultAux m c').level = m - 1 ∧ cellWf (hashlifeResultAux m c')))
+    (g1 g2 g3 g4 : MacroCell)
+    (hg1 : g1.level = n - 2) (hg2 : g2.level = n - 2)
+    (hg3 : g3.level = n - 2) (hg4 : g4.level = n - 2)
+    (hw1 : cellWf g1) (hw2 : cellWf g2) (hw3 : cellWf g3) (hw4 : cellWf g4) :
+    ((hashlifeResultAux (n - 1) (node g1 g2 g3 g4)).level = n - 2 ∧
+     cellWf (hashlifeResultAux (n - 1) (node g1 g2 g3 g4))) := by
+  have hqwf : cellWf (node g1 g2 g3 g4) :=
+    cellWf.node hw1 hw2 hw3 hw4 (by omega) (by omega) (by omega)
+  have hqlvl : (node g1 g2 g3 g4).level = n - 1 := by show 1 + g1.level = n - 1; omega
+  exact ih (n - 1) (by omega) (node g1 g2 g3 g4) hqwf hqlvl (by omega)
+
+/-- Clean-context conjunct-closer (c.142, c.139 pattern). Closes the level AND
+    `cellWf` conjuncts of a `node` of four wave-2 results `out_*`, with the four
+    cells as OPAQUE binders. Inside, `out_nw.level` etc. are atoms to `omega`
+    (no whnf), so the level conjunct closes; `cellWf.node` constructor closes the
+    `cellWf` conjunct syntactically. This isolation is required because closing
+    these conjuncts INLINE in the step helper (where `out_*` are spelled-out
+    `hashlifeResultAux` terms) makes `omega`/`rw` `whnf`-normalize
+    `(hashlifeResultAux (n-1) q_*)`.level` recursively → divergent (c.142 Exp1-3). -/
+private theorem node_level_cellWf_conjuncts (n : Nat) (hn3 : 3 ≤ n)
+    (out_nw out_ne out_sw out_se : MacroCell)
+    (hnw : out_nw.level = n - 2) (hne : out_ne.level = n - 2)
+    (hsw : out_sw.level = n - 2) (hse : out_se.level = n - 2)
+    (hw_nw : cellWf out_nw) (hw_ne : cellWf out_ne)
+    (hw_sw : cellWf out_sw) (hw_se : cellWf out_se) :
+    (node out_nw out_ne out_sw out_se).level = n - 1 ∧
+    cellWf (node out_nw out_ne out_sw out_se) := by
+  refine ⟨?_, ?_⟩
+  · show 1 + out_nw.level = n - 1; omega
+  · exact cellWf.node hw_nw hw_ne hw_sw hw_se (by omega) (by omega) (by omega)
+
+/-- Step helper for `hashlifeResultAux_level_cellWf` (c.142). Unfolds the
+    double-nine recursive arm of `hashlifeResultAux` in the clean-probe context,
+    builds the wave-1 results `r_i` and wave-2 results `out_*` via `cellWf_quad`,
+    and closes both conjuncts. The `cellWf` conclusion (opaque to defeq) is what
+    makes the wf conjunct closeable — the transparent `.wf` version diverges on
+    whnf for the nested `hashlifeResultAux` results (c.140, 8M heartbeats). -/
+private theorem hashlifeResultAux_level_cellWf_step (n : Nat) (hn3 : 3 ≤ n)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (hgrands : nw_nw.level = n - 2 ∧ nw_nw.wf = true ∧
+               nw_ne.level = n - 2 ∧ nw_ne.wf = true ∧
+               nw_sw.level = n - 2 ∧ nw_sw.wf = true ∧
+               nw_se.level = n - 2 ∧ nw_se.wf = true ∧
+               ne_nw.level = n - 2 ∧ ne_nw.wf = true ∧
+               ne_ne.level = n - 2 ∧ ne_ne.wf = true ∧
+               ne_sw.level = n - 2 ∧ ne_sw.wf = true ∧
+               ne_se.level = n - 2 ∧ ne_se.wf = true ∧
+               sw_nw.level = n - 2 ∧ sw_nw.wf = true ∧
+               sw_ne.level = n - 2 ∧ sw_ne.wf = true ∧
+               sw_sw.level = n - 2 ∧ sw_sw.wf = true ∧
+               sw_se.level = n - 2 ∧ sw_se.wf = true ∧
+               se_nw.level = n - 2 ∧ se_nw.wf = true ∧
+               se_ne.level = n - 2 ∧ se_ne.wf = true ∧
+               se_sw.level = n - 2 ∧ se_sw.wf = true ∧
+               se_se.level = n - 2 ∧ se_se.wf = true)
+    (ih : ∀ (m : Nat), m < n → ∀ (c' : MacroCell), cellWf c' → c'.level = m → 2 ≤ m →
+            ((hashlifeResultAux m c').level = m - 1 ∧ cellWf (hashlifeResultAux m c'))) :
+    ((hashlifeResultAux n
+        (node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+              (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se))).level = n - 1 ∧
+     cellWf (hashlifeResultAux n
+        (node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+              (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)))) := by
+  obtain ⟨hnw_nw_l, hnw_nw_w, hnw_ne_l, hnw_ne_w, hnw_sw_l, hnw_sw_w, hnw_se_l, hnw_se_w,
+          hne_nw_l, hne_nw_w, hne_ne_l, hne_ne_w, hne_sw_l, hne_sw_w, hne_se_l, hne_se_w,
+          hsw_nw_l, hsw_nw_w, hsw_ne_l, hsw_ne_w, hsw_sw_l, hsw_sw_w, hsw_se_l, hsw_se_w,
+          hse_nw_l, hse_nw_w, hse_ne_l, hse_ne_w, hse_sw_l, hse_sw_w, hse_se_l, hse_se_w⟩ := hgrands
+  rw [show n = (n - 1) + 1 from by omega]
+  by_cases heq : (node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+                     (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).level == 2
+  · -- pos arm: node level == 2, but 16 grandchildren level (n-2) give node level n ≥ 3.
+    have hnode := node16_level nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+                 sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se n (by omega) hnw_nw_l
+    rw [hnode] at heq
+    have hn2 : n = 2 := by simpa [beq_iff_eq] using heq
+    exfalso; omega
+  · -- neg arm: the recursive double-nine body.
+    simp only [MacroCell.level] at heq
+    have hr1 := cellWf_quad n hn3 ih nw_nw nw_ne nw_sw nw_se
+                   hnw_nw_l hnw_ne_l hnw_sw_l hnw_se_l
+                   (cellWf_of_wf _ hnw_nw_w) (cellWf_of_wf _ hnw_ne_w)
+                   (cellWf_of_wf _ hnw_sw_w) (cellWf_of_wf _ hnw_se_w)
+    have hr2 := cellWf_quad n hn3 ih nw_ne ne_nw nw_se ne_sw
+                   hnw_ne_l hne_nw_l hnw_se_l hne_sw_l
+                   (cellWf_of_wf _ hnw_ne_w) (cellWf_of_wf _ hne_nw_w)
+                   (cellWf_of_wf _ hnw_se_w) (cellWf_of_wf _ hne_sw_w)
+    have hr3 := cellWf_quad n hn3 ih ne_nw ne_ne ne_sw ne_se
+                   hne_nw_l hne_ne_l hne_sw_l hne_se_l
+                   (cellWf_of_wf _ hne_nw_w) (cellWf_of_wf _ hne_ne_w)
+                   (cellWf_of_wf _ hne_sw_w) (cellWf_of_wf _ hne_se_w)
+    have hr4 := cellWf_quad n hn3 ih nw_sw nw_se sw_nw sw_ne
+                   hnw_sw_l hnw_se_l hsw_nw_l hsw_ne_l
+                   (cellWf_of_wf _ hnw_sw_w) (cellWf_of_wf _ hnw_se_w)
+                   (cellWf_of_wf _ hsw_nw_w) (cellWf_of_wf _ hsw_ne_w)
+    have hr5 := cellWf_quad n hn3 ih nw_se ne_sw sw_ne se_nw
+                   hnw_se_l hne_sw_l hsw_ne_l hse_nw_l
+                   (cellWf_of_wf _ hnw_se_w) (cellWf_of_wf _ hne_sw_w)
+                   (cellWf_of_wf _ hsw_ne_w) (cellWf_of_wf _ hse_nw_w)
+    have hr6 := cellWf_quad n hn3 ih ne_sw ne_se se_nw se_ne
+                   hne_sw_l hne_se_l hse_nw_l hse_ne_l
+                   (cellWf_of_wf _ hne_sw_w) (cellWf_of_wf _ hne_se_w)
+                   (cellWf_of_wf _ hse_nw_w) (cellWf_of_wf _ hse_ne_w)
+    have hr7 := cellWf_quad n hn3 ih sw_nw sw_ne sw_sw sw_se
+                   hsw_nw_l hsw_ne_l hsw_sw_l hsw_se_l
+                   (cellWf_of_wf _ hsw_nw_w) (cellWf_of_wf _ hsw_ne_w)
+                   (cellWf_of_wf _ hsw_sw_w) (cellWf_of_wf _ hsw_se_w)
+    have hr8 := cellWf_quad n hn3 ih sw_ne se_nw sw_se se_sw
+                   hsw_ne_l hse_nw_l hsw_se_l hse_sw_l
+                   (cellWf_of_wf _ hsw_ne_w) (cellWf_of_wf _ hse_nw_w)
+                   (cellWf_of_wf _ hsw_se_w) (cellWf_of_wf _ hse_sw_w)
+    have hr9 := cellWf_quad n hn3 ih se_nw se_ne se_sw se_se
+                   hse_nw_l hse_ne_l hse_sw_l hse_se_l
+                   (cellWf_of_wf _ hse_nw_w) (cellWf_of_wf _ hse_ne_w)
+                   (cellWf_of_wf _ hse_sw_w) (cellWf_of_wf _ hse_se_w)
+    -- Wave 2: q_* = node of four r_i; out_* = hRA (n-1) q_*.
+    have honw := cellWf_quad n hn3 ih (hashlifeResultAux (n - 1) (node nw_nw nw_ne nw_sw nw_se))
+                           (hashlifeResultAux (n - 1) (node nw_ne ne_nw nw_se ne_sw))
+                           (hashlifeResultAux (n - 1) (node nw_sw nw_se sw_nw sw_ne))
+                           (hashlifeResultAux (n - 1) (node nw_se ne_sw sw_ne se_nw))
+                           hr1.1 hr2.1 hr4.1 hr5.1 hr1.2 hr2.2 hr4.2 hr5.2
+    have hone := cellWf_quad n hn3 ih (hashlifeResultAux (n - 1) (node nw_ne ne_nw nw_se ne_sw))
+                           (hashlifeResultAux (n - 1) (node ne_nw ne_ne ne_sw ne_se))
+                           (hashlifeResultAux (n - 1) (node nw_se ne_sw sw_ne se_nw))
+                           (hashlifeResultAux (n - 1) (node ne_sw ne_se se_nw se_ne))
+                           hr2.1 hr3.1 hr5.1 hr6.1 hr2.2 hr3.2 hr5.2 hr6.2
+    have hosw := cellWf_quad n hn3 ih (hashlifeResultAux (n - 1) (node nw_sw nw_se sw_nw sw_ne))
+                           (hashlifeResultAux (n - 1) (node nw_se ne_sw sw_ne se_nw))
+                           (hashlifeResultAux (n - 1) (node sw_nw sw_ne sw_sw sw_se))
+                           (hashlifeResultAux (n - 1) (node sw_ne se_nw sw_se se_sw))
+                           hr4.1 hr5.1 hr7.1 hr8.1 hr4.2 hr5.2 hr7.2 hr8.2
+    have hose := cellWf_quad n hn3 ih (hashlifeResultAux (n - 1) (node nw_se ne_sw sw_ne se_nw))
+                           (hashlifeResultAux (n - 1) (node ne_sw ne_se se_nw se_ne))
+                           (hashlifeResultAux (n - 1) (node sw_ne se_nw sw_se se_sw))
+                           (hashlifeResultAux (n - 1) (node se_nw se_ne se_sw se_se))
+                           hr5.1 hr6.1 hr8.1 hr9.1 hr5.2 hr6.2 hr8.2 hr9.2
+    -- Unfold hRA's recursive arm now that the wave facts are established.
+    simp only [hashlifeResultAux, if_neg heq, MacroCell.level]
+    exact node_level_cellWf_conjuncts n hn3 _ _ _ _
+        honw.1 hone.1 hosw.1 hose.1 honw.2 hone.2 hosw.2 hose.2
+
+/-- **(c.142) Level + well-formedness preservation of `hashlifeResultAux`**,
+    over the OPAQUE `cellWf` predicate. For `2 ≤ L` and a well-formed level-`L`
+    cell, `hashlifeResultAux L c` is well-formed and level `L - 1`.
+
+    This is the gate for P4.3 (and the wave-2 layer of the lane): wave-2
+    super-cells `q_*` are built from `hashlifeResultAux` RESULTS `r_i`, so
+    instantiating the central-correctness IH on `q_*` requires `r_i`'s level
+    and well-formedness — which only this lemma provides. c.140 proved the
+    transparent `.wf` version diverges on whnf (8M heartbeats); the opaque
+    `cellWf` conclusion breaks that defeq divergence. -/
+theorem hashlifeResultAux_level_cellWf :
+    ∀ (L : Nat) (c : MacroCell), cellWf c → c.level = L → 2 ≤ L →
+      ((hashlifeResultAux L c).level = L - 1 ∧ cellWf (hashlifeResultAux L c)) := by
+  intro L
+  induction L using Nat.strongRecOn with
+  | ind n ih =>
+    intro c hwf hc hn2
+    by_cases h2 : n = 2
+    · subst h2
+      refine ⟨?_, ?_⟩
+      · have hdef : hashlifeResultAux 2 c = hashlifeResult c := by
+          show hashlifeResultAux 2 c = hashlifeResultAux c.level c
+          rw [hc]
+        rw [hdef]
+        exact level_hashlifeResult_of_level_two c (wf_of_cellWf hwf) hc
+      · have hdef : hashlifeResultAux 2 c = hashlifeResult c := by
+          show hashlifeResultAux 2 c = hashlifeResultAux c.level c
+          rw [hc]
+        rw [hdef]
+        exact cellWf_of_wf _ (wf_hashlifeResult_of_level_two c (wf_of_cellWf hwf) hc)
+    · have hn3 : 3 ≤ n := by omega
+      have hk' : c.level = (n - 2) + 2 := by omega
+      obtain ⟨nw_nw, nw_ne, nw_sw, nw_se, ne_nw, ne_ne, ne_sw, ne_se,
+              sw_nw, sw_ne, sw_sw, sw_se, se_nw, se_ne, se_sw, se_se, rfl, hgrands⟩ :=
+        p4_double_nine_shape c (n - 2) (wf_of_cellWf hwf) hk'
+      exact hashlifeResultAux_level_cellWf_step n hn3
+        nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+        sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hgrands ih
 
 /-- The central-correctness statement, abstracted as a named predicate.
     Quoting it as `centralCorrect c j` (instead of the unfolded `2^j`-indexed
