@@ -1,30 +1,30 @@
 # ML-Classification
 
-ML Classification strategy using a pre-trained model loaded from QuantConnect ObjectStore.
+Stratégie de classification ML utilisant un modèle pré-entraîné chargé depuis le QuantConnect ObjectStore.
 
-## Prerequisites
+## Prérequis
 
-This strategy **requires a pre-trained model** stored in QC ObjectStore. It cannot run as a standalone backtest without the model artifact.
+Cette stratégie **nécessite un modèle pré-entraîné** stocké dans le QC ObjectStore. Elle ne peut pas s'exécuter comme un backtest autonome sans l'artefact du modèle.
 
-### Setup Steps
+### Étapes de configuration
 
-1. Open the QC Research environment
-2. Run `research_classification.ipynb` to train the model
-3. Save the model to ObjectStore using `qb.object_store.save_bytes()`
-4. Then run this algorithm as a backtest
+1. Ouvrir l'environnement de recherche QC
+2. Exécuter `research_classification.ipynb` pour entraîner le modèle
+3. Sauvegarder le modèle dans l'ObjectStore via `qb.object_store.save_bytes()`
+4. Puis lancer cet algorithme en backtest
 
-### ObjectStore Keys
+### Clés ObjectStore
 
-- `classification_model` — Serialized sklearn classifier (joblib format)
-- `classification_config` — Model configuration JSON (feature columns, thresholds)
+- `classification_model` — classifieur sklearn sérialisé (format joblib)
+- `classification_config` — configuration JSON du modèle (colonnes de features, seuils)
 
-## Strategy Logic
+## Logique de stratégie
 
-- Predicts market direction (up/down) at T+1 using a RandomForest classifier
-- Goes long when predicted probability > 0.55
-- Liquidates when predicted probability < 0.45
-- Trades SPY daily
+- Prédit la direction du marché (hausse/baisse) à T+1 via un classifieur RandomForest
+- Prend position long lorsque la probabilité prédite > 0.55
+- Liquide la position lorsque la probabilité prédite < 0.45
+- Trade SPY en quotidien
 
-## PEP8 Compliance
+## Conformité PEP8
 
-All custom methods use `snake_case` naming per PEP8 conventions. QC Framework methods (`Initialize`, `OnData`, etc.) retain their PascalCase naming as required by the API.
+Toutes les méthodes personnalisées utilisent le naming `snake_case` selon les conventions PEP8. Les méthodes du QC Framework (`Initialize`, `OnData`, etc.) conservent leur naming PascalCase comme l'exige l'API.
