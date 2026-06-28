@@ -154,6 +154,43 @@ theorem sampleExpect_coord {n : ℕ} (g : X → ℝ) (i : Fin n) :
   rw [Finset.prod_eq_single_of_mem i (Finset.mem_univ _) (fun b _ hb ↦ if_neg hb),
       if_pos rfl]
 
+/-- **Factorisation d'un produit (indépendance i.i.d.)** : l'espérance (sous le
+produit `D^m`) d'une fonction de la forme `∏_i h (S i)` — produit de fonctions
+une-coordonnée, i.i.d. par construction de la distribution produit `D^m` — se
+factorise en le produit des espérances `∏_i E_D[h]`. C'est la **brique 3/5
+d'Hoeffding** (indépendance produit) : pour `h = exp(t · ind)`, elle donne
+`E_S[exp(t · ∑_i ind(S_i))] = E_S[∏_i exp(t·ind(S_i))] = ∏_i E_D[exp(t·ind)]`,
+c.-à-d. la **MGF d'une somme = produit des MGFs** — ingrédient-clé de la
+concentration bilatérale de Hoeffding.
+
+Preuve : même squelette que `sampleExpect_coord` — on porte `h` sur chaque
+coordonnée via `g' j x = w x · h x`, de sorte que
+`∏_j g' j (S j) = (∏_j w (S j)) · (∏_j h (S j))` (`Finset.prod_mul_distrib`),
+puis `Fintype.prod_sum` échange produit-de-sommes et somme-de-produits :
+`∑_S ∏_j g' j (S j) = ∏_j ∑_x g' j x = ∏_j E_D[h]`. Plus simple que
+`sampleExpect_coord` : sans `if` (toutes les coordonnées portent `h`), donc pas
+de réduction `Finset.prod_eq_single_of_mem`. -/
+theorem sampleExpect_prod_coord {n : ℕ} (h : X → ℝ) :
+    sampleExpect D (fun S : Fin n → X ↦ ∏ i, h (S i)) = ∏ _ : Fin n, expect D h := by
+  dsimp only [sampleExpect, sampleWeight]
+  -- `g'` porte `h` sur chaque coordonnée : `g' j x = w x · h x`.
+  let g' : Fin n → X → ℝ := fun j x ↦ D.weight x * h x
+  -- (1) `∏_j g' j (S j) = (∏_j w (S j)) * ∏_j h (S j)` : `prod_mul_distrib` sépare.
+  have hprod : ∀ S : Fin n → X,
+      ∏ j, g' j (S j) = (∏ j, D.weight (S j)) * ∏ j, h (S j) := by
+    intro S
+    simp only [g', Finset.prod_mul_distrib]
+  -- (2) Le summand `(∏_j w (S j)) * ∏_j h (S j)` coïncide point par point avec `∏_j g' j (S j)`.
+  rw [Finset.sum_congr rfl (fun S _ ↦ (hprod S).symm)]
+  -- (3) Produit de sommes = somme de produits (`Fintype.prod_sum`) :
+  -- `∑_S ∏_j g' j (S j) = ∏_j ∑_x g' j x`.
+  rw [← Fintype.prod_sum (κ := fun _ : Fin n ↦ X) g']
+  -- (4) `∑_x g' j x = ∑_x w x · h x = E_D[h]` (indépendant de `j`).
+  have hsum : ∀ j, ∑ x, g' j x = expect D h := by
+    intro j
+    simp only [g', expect]
+  simp only [hsum]
+
 /-- **Linéarité en une somme indicée** : l'espérance empirique d'une somme de
 fonctions est la somme des espérances (Fubini discret : `∑_S w S · (∑_i F i S) =
 ∑_i ∑_S w S · F i S` via `Finset.mul_sum` puis `Finset.sum_comm`). Réutilisé par
