@@ -301,6 +301,27 @@ La thèse est vertigineuse et honnêtement présentée : si IIT a raison, la con
 
 IIT propose un changement de regard radical : ne plus demander « qu'est-ce que la conscience ? » mais **« combien de conscience ce système intègre-t-il ? »**. La série vous a donné l'outil (PyPhi) et le formalisme (Phi, CES, MIP) pour transformer une question philosophique en un calcul — en gardant à l'esprit qu'aucune mesure, aussi élégante soit-elle, ne clôt à elle seule le débat sur ce que c'est que d'être un système qui ressent quelque chose.
 
+## Extension : la série ICT (Integrated Causal Trajectories)
+
+La série IIT étudie des structures causales **à un instant donné**. Une extension expérimentale,
+**ICT** (Integrated Causal Trajectories, Epic #4588), prolonge ce regard vers les **trajectoires**
+de structures causales : comment une organisation se maintient, se transforme, se répare, change
+d'échelle et traverse un espace de possibles ($C_0 \rightarrow C_1 \rightarrow \dots \rightarrow C_n$).
+
+ICT s'appuie sur un package léger `ict/` posé à côté de PyPhi (autonome pour les simulations et
+mesures, PyPhi pour les calculs IIT stricts), et s'ouvre sur deux articles fondateurs : le tri vu
+comme morphogenèse minimale (Zhang, Goldstein & Levin, 2025) et l'ingénierie de l'émergence
+multi-échelle (Jansma & Hoel, 2025).
+
+| Document | Contenu |
+|----------|---------|
+| [ICT-0-Framing](ICT-0-Framing.md) | Cadrage de la série : de l'état à la trajectoire, articles fondateurs, feuille de route |
+| [ICT-2-SelfSortingMorphogenesis](ICT-2-SelfSortingMorphogenesis.ipynb) | Le tri auto-organisé comme morphogenèse : trajectoire dans le morphospace, robustesse aux cellules défectueuses, délai de gratification, auto-réparation, impasses chimériques |
+
+Les notebooks ICT-1, ICT-3 à ICT-7 (trajectoires de $\Phi$, agrégation chimérique, TPM
+multi-échelles, pont tri → PyPhi, signatures scale-free) sont sur la feuille de route de
+[ICT-0-Framing](ICT-0-Framing.md).
+
 ## Licence
 
 Voir la licence du repository principal.
