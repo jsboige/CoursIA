@@ -73,7 +73,9 @@ IIT/
 ├── ICT-0-Framing.md                       # ce document
 ├── ICT-1-PhiTrajectories.ipynb            # ✅ trajectoires de Φ (vrai PyPhi)
 ├── ICT-2-SelfSortingMorphogenesis.ipynb   # ✅ premier livrable (#4588)
-├── ICT-3..7-*.ipynb                        # à venir
+├── ICT-3-RobustnessDelayedGratification.ipynb  # ✅ étude quantitative
+├── ICT-5-CausalEmergence.ipynb            # ✅ émergence causale micro/macro (vrai pyphi.macro)
+├── ICT-4/6/7-*.ipynb                       # à venir
 └── ict/
     ├── self_sorting.py     # ✅ modèle vue-cellule (Cell, SelfSortingArray, scheduler)
     ├── sorting_metrics.py  # ✅ sortedness, monotonie, inversions, agrégation, recovery
@@ -92,7 +94,7 @@ IIT/
 | **ICT-1** | [Trajectoires de $\Phi$](ICT-1-PhiTrajectories.ipynb) — paysage de $\Phi$, trajectoire de $\Phi$ sur l'attracteur (pulsations), robustesse aux perturbations (vrai PyPhi) | ✅ |
 | **ICT-3** | [Robustesse & délai de gratification](ICT-3-RobustnessDelayedGratification.ipynb) — étude quantitative : dégradation gracieuse, distributions de récupération, comptage du délai de gratification | ✅ |
 | ICT-4 | Tableaux chimériques & agrégation émergente — le jeu de règles riche du papier (« kin ») | à venir |
-| ICT-5 | Causal emergence 2 — TPM multi-échelles (Jansma & Hoel) | à venir |
+| **ICT-5** | [Émergence causale](ICT-5-CausalEmergence.ipynb) — $\Phi$ et information effective aux échelles micro/macro, recherche de coarse-graining (vrai `pyphi.macro`), émergence discriminante (Jansma & Hoel) | ✅ |
 | ICT-6 | Pont tri → TPM — transformer les simulations en chaînes de Markov analysables par PyPhi | à venir |
 | ICT-7 | Signatures scale-free & fractales | à venir |
 
