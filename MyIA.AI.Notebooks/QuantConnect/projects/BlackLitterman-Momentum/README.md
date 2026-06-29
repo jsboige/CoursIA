@@ -1,30 +1,30 @@
 # BlackLitterman-Momentum
 
-**Asset class:** US Equities/ETF (multi-asset)
-**Cloud project ID:** 29816300
+**Classe d'actifs :** Actions/ETF US (multi-actifs)
+**ID projet Cloud :** 29816300
 
 ## Description
 
-Black-Litterman portfolio with multi-window momentum views (1M, 3M, 6M, 12M). BL optimization produces final weights.
+Portefeuille Black-Litterman avec vues de momentum multi-fenêtres (1M, 3M, 6M, 12M). L'optimisation BL produit les poids finaux.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/BlackLitterman-Momentum"`
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/BlackLitterman-Momentum"`
 
-**QC Cloud:** Deployed as project 29816300.
+**QC Cloud :** Déployé en tant que projet 29816300.
 
-## Backtest Metrics
+## Métriques du backtest
 
-| Metric | Value |
-|--------|-------|
-| Method | Black-Litterman + momentum views |
+| Métrique | Valeur |
+|----------|--------|
+| Méthode | Black-Litterman + vues momentum |
 | Lookbacks | 1M, 3M, 6M, 12M |
-| Rebalance | Monthly |
+| Rebalancement | Mensuel |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (v1.0, BL momentum)
+- main.py - Stratégie (v1.0, BL momentum)
 
-## References
+## Références
 
 - Black & Litterman (1992), Global Portfolio Optimization

@@ -1,29 +1,29 @@
 # AdaptiveAssetAllocation
 
-**Asset class:** US Equities/ETF (diversified)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Actions/ETF US (diversifié)
+**ID projet Cloud :** Aucun (local uniquement)
 
 ## Description
 
-Top-4 ETFs by 6-month momentum with minimum-variance portfolio optimization. Selects from SPY, QQQ, TLT, GLD, EFA, IWM.
+Top-4 ETFs par momentum 6 mois avec optimisation de portefeuille à variance minimum. Sélection parmi SPY, QQQ, TLT, GLD, EFA, IWM.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/AdaptiveAssetAllocation"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/AdaptiveAssetAllocation"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
-## Backtest Metrics
+## Métriques du backtest
 
-| Metric | Value |
-|--------|-------|
-| Method | 6M momentum + min-variance |
-| Universe | 6 ETFs (top 4) |
-| Rebalance | Monthly |
+| Métrique | Valeur |
+|----------|--------|
+| Méthode | Momentum 6M + variance min. |
+| Univers | 6 ETFs (top 4) |
+| Rebalancement | Mensuel |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (iter2c, adaptive allocation)
+- main.py - Stratégie (iter2c, allocation adaptative)
 
-## References
+## Références
 
 - Faber (2007), A Quantitative Approach to Tactical Asset Allocation
