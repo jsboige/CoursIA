@@ -20,7 +20,7 @@ Cette série couvre les **mêmes modèles** que la série [Infer.NET](../Infer/)
 | **Diagnostics** | Factor graphs | ArviZ (trace, ESS, R-hat) |
 | **Ecosysteme** | .NET | NumPy/Pandas/Matplotlib |
 
-Avoir les deux approches sur les mêmes modèles permet de comprendre les **compromis** entre inférence exacte et approchee, une compétence clé pour tout praticien.
+Avoir les deux approches sur les mêmes modèles permet de comprendre les **compromis** entre message passing déterministe (Infer.NET) et échantillonnage stochastique (PyMC), une compétence clé pour tout praticien.
 
 ```mermaid
 flowchart LR
@@ -249,7 +249,7 @@ Ce port Python est le pendant de la série [Infer.NET](../Infer/) (C# / .NET Int
 
 | Série | Lien | Relation |
 |-------|------|----------|
-| [Infer.NET](../Infer/) | Mêmes modèles en C# / message passing | Comparaison MCMC vs inférence exacte |
+| [Infer.NET](../Infer/) | Mêmes modèles en C# / message passing | Comparaison MCMC vs message passing déterministe |
 | [Probas (parent)](../README.md) | Vue d'ensemble Probas | Contexte et parcours |
 | [ML](../../ML/) | Pipeline ML classique | PyMC comme alternative bayésienne |
 | [QuantConnect](../../QuantConnect/) | Strategies de trading | Modèles bayésiens appliques au trading |
@@ -261,7 +261,7 @@ Ce port Python est le pendant de la série [Infer.NET](../Infer/) (C# / .NET Int
 Cette série vous a fait passer des **fondamentaux de l'inférence bayésienne** (priors, postérieurs, échantillonnage NUTS avec [PyMC-1-Setup](PyMC-1-Setup.ipynb) à [PyMC-3-Factor-Graphs](PyMC-3-Factor-Graphs.ipynb)) à des **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), en suivant le même chemin que la série [Infer.NET](../Infer/) mais avec un **moteur d'inférence radicalement différent**. Trois acquis cles :
 
 - **Lire et diagnostiquer une chaine MCMC** — `pm.sample()` ne suffit pas ; ArviZ (`r_hat < 1.05`, `ess_bulk > 400`, trace plots, divergences) est devenu votre réflexe systématique, et [PyMC-13-Debugging](PyMC-13-Debugging.ipynb) votre référence pour les pannes de convergence.
-- **Choisir le bon moteur selon le modèle** — vous savez desormais **quand** MCMC (PyMC, presque tout modèle, stochastique) est préférable au **message passing** (Infer.NET, conjugué, déterministe), et inversement. Ce compromis exact/approche est une compétence de praticien.
+- **Choisir le bon moteur selon le modèle** — vous savez desormais **quand** MCMC (PyMC, presque tout modèle, stochastique) est préférable au **message passing** (Infer.NET, conjugué, déterministe), et inversement. Ce compromis déterministe/stochastique est une compétence de praticien.
 - **Relier inférence et décision** — les notebooks 14 à 20 (utilité espérée, EVPI/EVSI, MDPs, bandits) ferment la boucle : un posterior n'est pas une fin, c'est l'**input** d'une politique de décision optimale sous incertitude.
 
 ### Prochaines étapes

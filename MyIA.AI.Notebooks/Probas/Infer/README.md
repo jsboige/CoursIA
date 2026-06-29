@@ -4,7 +4,7 @@
 
 Programmation probabiliste avec Microsoft Infer.NET : une série de 24 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision (MDPs, indice de Gittins, puis les **bandits bayésiens** via Thompson Sampling), l'**inférence causale** (do-calculus de Pearl) en clôture, et des preuves formelles Lean 4.
 
-**À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste exacte, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
+**À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste par message passing, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
 ## Pourquoi cette sous-série
 
@@ -42,7 +42,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 2. **Interpréter** les distributions postérieures (moyenne, variance, intervalles de crédibilité)
 3. **Lire** un graphe de facteurs et comprendre le flux de messages
 4. **Appliquer** la théorie de la décision bayésienne (utilité espérée, EVPI, MDPs)
-5. **Comparer** l'inférence exacte (Infer.NET) et approchée (PyMC) sur les mêmes modèles
+5. **Comparer** l'inférence par message passing déterministe (Infer.NET) et l'échantillonnage MCMC (PyMC) sur les mêmes modèles
 
 ## Vue d'ensemble
 
@@ -1116,7 +1116,7 @@ Consultez le [Glossaire](Infer-Glossary.md) pour les définitions des termes tec
 
 | Série | Lien | Relation |
 | --- | --- | --- |
-| [PyMC](../PyMC/) | Même 20 modèles en Python/NUTS | Comparaison inférence exacte vs MCMC |
+| [PyMC](../PyMC/) | Même 20 modèles en Python/NUTS | Comparaison message passing déterministe vs MCMC |
 | [Probas (parent)](../README.md) | Vue d'ensemble Probas | Contexte et parcours |
 | [ML.NET](../../ML/ML.Net/) | TP prévision de ventes | Combine ML.NET + Infer.NET |
 | [Search/CSP](../../Search/Part2-CSP/) | CSP-5 (Optimization) | Programmation par contraintes et probabilités |
@@ -1140,6 +1140,6 @@ Cette série vous a fait parcourir l'arc complet de la programmation probabilist
 
 ### Le fil rouge
 
-Le fil rouge de cette série est le **déterminisme analytique** : là où MCMC (PyMC) échantillonne, Infer.NET **propage les messages** sur le factor graph et compile un solveur dédié. Ce déterminisme a un prix — la **conjugaison** des distributions — qui achète la rapidité, l'exactitude analytique et la lisibilité structurelle. Le capstone Lean 4 (Infer-20b) élève ce fil rouge jusqu'à la **preuve formelle** : l'indice de Gittins n'est plus seulement calculé, il est *démontré*. Maîtriser Infer.NET, c'est savoir quand la structure d'un modèle mérite un raisonnement exact plutôt qu'une exploration stochastique.
+Le fil rouge de cette série est le **déterminisme analytique** : là où MCMC (PyMC) échantillonne, Infer.NET **propage les messages** sur le factor graph et compile un solveur dédié. Ce déterminisme a un prix — la **conjugaison** des distributions — qui achète la rapidité, l'exactitude analytique et la lisibilité structurelle. Le capstone Lean 4 (Infer-20b) élève ce fil rouge jusqu'à la **preuve formelle** : l'indice de Gittins n'est plus seulement calculé, il est *démontré*. Maîtriser Infer.NET, c'est savoir quand la structure d'un modèle se prête au message passing déterministe plutôt qu'à une exploration stochastique.
 
 Bonne exploration de la programmation probabiliste et de la théorie de la décision !
