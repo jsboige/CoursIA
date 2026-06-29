@@ -31,16 +31,20 @@ garantit la qualité*.
 
 | Parcours | Angle | Format | État |
 |----------|-------|--------|------|
-| **Tour de la plateforme** | « À quoi sert Open WebUI et comment l'utilise-t-on ? » | Markdown pédagogique + captures d'écran annotées | 🚧 En construction (Epic #4433) |
+| **[Tour de la plateforme](00-Tour-Plateforme/README.md)** | « À quoi sert Open WebUI et comment l'utilise-t-on ? » | Markdown pédagogique + captures d'écran annotées | 🟡 Narratif disponible — captures live à venir (Epic #4433) |
 | **[Série QA Playwright-OWUI](Playwright-OWUI/README.md)** | « Comment teste-t-on une plateforme GenAI de bout en bout ? » | Notebooks + specs Playwright (5 modules) | ✅ Disponible |
 
-### Tour de la plateforme *(à venir)*
+### [Tour de la plateforme](00-Tour-Plateforme/README.md)
 
 Un parcours narratif qui présente chaque grande fonctionnalité d'Open WebUI
-(chat, RAG, outils, administration, multi-tenant…) accompagné de captures
-d'écran commentées montrant *comment* on s'en sert. Les captures sont produites
-de façon reproductible et **sans fuite de secret** (comptes de démonstration,
-données fictives, masquage des champs sensibles).
+(chat, RAG, outils, administration, multi-tenant…) montrant *comment* on s'en
+sert, avec une page [`architecture.md`](00-Tour-Plateforme/architecture.md) qui
+**schématise** l'administration et le multi-tenant (diagrammes Mermaid) plutôt
+que d'exposer des panneaux réels. Le **narratif et les schémas sont disponibles** ;
+les captures d'écran seront produites de façon reproductible et **sans fuite de
+secret** (tenant de démonstration, compte non-admin, données fictives, masquage
+des champs sensibles) une fois le tenant de démonstration en ligne — voir
+[`00-Tour-Plateforme/capture/`](00-Tour-Plateforme/capture/).
 
 ### Série QA Playwright-OWUI
 
