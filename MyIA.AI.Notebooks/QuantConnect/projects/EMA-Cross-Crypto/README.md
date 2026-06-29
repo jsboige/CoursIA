@@ -1,25 +1,25 @@
 # EMA-Cross-Crypto
 
-**Asset class:** Crypto (BTC, ETH)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Crypto (BTC, ETH)
+**ID projet Cloud :** Aucun (local uniquement)
 
 ## Description
 
-Dual EMA crossover on cryptocurrency. Goes long when EMA(20) > EMA(60) on BTC/ETH.
+Croisement dual EMA sur crypto. Prend position long quand EMA(20) > EMA(60) sur BTC/ETH.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/EMA-Cross-Crypto"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/EMA-Cross-Crypto"`
+**QC Cloud :** Pas encore déployée. Copier les fichiers dans un nouveau projet QC Cloud pour l'exécuter.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Metric | Value |
-|--------|-------|
-| Method | EMA 20/60 crossover |
-| Universe | BTC, ETH |
-| Rebalance | Daily |
+| Métrique | Valeur |
+|----------|--------|
+| Méthode | Croisement EMA 20/60 |
+| Univers | BTC, ETH |
+| Rebalance | Quotidien |
 
-## Files
+## Fichiers
 
-- main.py - Strategy
+- main.py - Stratégie
