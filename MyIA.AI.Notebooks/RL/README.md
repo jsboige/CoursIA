@@ -33,6 +33,7 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 | 9 | [rl_9_offline_rl](rl_9_offline_rl.ipynb) | RL offline : Behavior Cloning, erreur d'extrapolation, BCQ-lite | 50-55 min |
 | 10 | [rl_10_reward_shaping](rl_10_reward_shaping.ipynb) | Reward Shaping (Ng 1999), curriculum learning, pont RLHF | 45-50 min |
 | 11 | [rl_11_pomdp](rl_11_pomdp.ipynb) | POMDP, Tiger Problem, belief tracking, Q-MDP | 45-50 min |
+| 12 | [rl_12_distributional_rl](rl_12_distributional_rl.ipynb) | RL distributionnel : C51 (Categorical DQN) depuis zéro, projection categorielle, politique CVaR | 50-55 min |
 
 ## Contenu détaillé
 
@@ -182,6 +183,18 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 | Comparaison | 5 seeds, impact de la précision d'observation, pont DRQN/PPO+LSTM |
 | Exercices | Impact précision, nombre optimal d'écoutes, Tiger 3 portes |
 
+### Notebook 12 - RL distributionnel : C51 (Categorical DQN)
+
+| Section | Contenu |
+|---------|---------|
+| Du scalaire à la distribution | Pourquoi apprendre $Z(s,a)$ tout entière plutôt que sa seule espérance $Q = \mathbb{E}[Z]$ ; support categoriel à 51 atomes fixes |
+| Bellman distributionnel | Opérateur $TZ = R + \gamma Z(s',a^*)$, problème du déplacement hors-grille, projection categorielle $\Phi$ |
+| Réseau `CategoricalDQN` | Sorties softmax par action, reconstruction de $Q(s,a) = \sum_i z_i p_i$ |
+| Perte | Entropie croisée entre cible projetée et distribution prédite |
+| Entraînement CartPole-v1 | ~18 000 pas, courbe d'apprentissage, visualisation de la distribution de retour apprise par action |
+| C51 vs DQN | Tableau comparatif, lignée QR-DQN / IQN / Rainbow |
+| Exercices | QR-DQN (quantile regression), sensibilité du support, politique sensible au risque (CVaR) |
+
 ## Algorithmes couverts
 
 | Algorithme | Type | Notebook | Utilisation |
@@ -206,6 +219,7 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 | **Curriculum learning** | Training strategy | 10 | Difficulté progressive, généralisation |
 | **Q-MDP** | POMDP approximation | 11 | Q-learning sur états vrais, action via belief |
 | **Belief-state Q-learning** | POMDP | 11 | Discrétisation du belief, Q-table dans l'espace des croyances |
+| **C51 (Categorical DQN)** | Distributionnel (deep) | 12 | Distribution de retour sur support fixe, projection categorielle |
 | **DQN** | Off-policy (deep) | 6 | Espaces continus |
 | **REINFORCE** | Policy gradient | 6 | Politique directe |
 | **IQL** | Multi-agent | 7 | Apprentissage indépendant |
@@ -307,7 +321,7 @@ Le notebook 4 pose la question fondatrice du RL : comment choisir entre explorer
 
 **Phase 4 : Les maths sous le capot (~4.5h, notebooks 5-7)**
 
-Les notebooks 5 à 7 quittent le framework pour implémenter les algorithmes depuis zéro. Le notebook 5 formalise le problème RL (MDP, équation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe à l'échelle avec les réseaux de neurones : DQN et REINFORCE implémentés en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mécanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanément, coopèrent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modèle du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset figé (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naïf, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au problème du reward sparse : comment guider l'agent quand la récompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accélère la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulté progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatisé. Le notebook 11 aborde la partial observability : l'agent ne voit plus l'état vrai mais une observation bruitée. Le Tiger Problem (Cassandra 1994) illustre le POMDP, le belief tracking (filtre bayésien) maintient une estimation de l'état caché, et le Q-MDP approximation montre les limites de l'approche tabulaire.
+Les notebooks 5 à 7 quittent le framework pour implémenter les algorithmes depuis zéro. Le notebook 5 formalise le problème RL (MDP, équation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe à l'échelle avec les réseaux de neurones : DQN et REINFORCE implémentés en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mécanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanément, coopèrent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modèle du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset figé (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naïf, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au problème du reward sparse : comment guider l'agent quand la récompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accélère la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulté progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatisé. Le notebook 11 aborde la partial observability : l'agent ne voit plus l'état vrai mais une observation bruitée. Le Tiger Problem (Cassandra 1994) illustre le POMDP, le belief tracking (filtre bayésien) maintient une estimation de l'état caché, et le Q-MDP approximation montre les limites de l'approche tabulaire. Le notebook 12 enrichit l'objectif lui-même : au lieu d'apprendre l'espérance du retour comme un DQN, C51 (Categorical DQN, Bellemare et al. 2017) apprend sa **distribution complète** $Z(s,a)$ sur un support à atomes fixes, via une projection categorielle de la cible de Bellman — ce qui débloque les politiques sensibles au risque (CVaR) impossibles avec une valeur scalaire, et ouvre la lignée QR-DQN / IQN / Rainbow.
 
 ## Concepts clés
 
@@ -348,6 +362,9 @@ Les notebooks 5 à 7 quittent le framework pour implémenter les algorithmes dep
 | **POMDP** | MDP avec observations partielles et bruitées | 11 |
 | **Belief state** | Distribution de probabilité sur les états cachés | 11 |
 | **Belief tracking** | Filtre bayésien pour mettre à jour le belief | 11 |
+| **RL distributionnel** | Apprendre la distribution complète du retour $Z(s,a)$, pas seulement $\mathbb{E}[Z]$ | 12 |
+| **Projection categorielle** | Redistribuer la cible de Bellman sur un support à atomes fixes | 12 |
+| **Politique sensible au risque (CVaR)** | Choisir selon la queue basse de la distribution, hors de portée d'un DQN scalaire | 12 |
 
 ## Caractéristiques
 
@@ -427,6 +444,7 @@ RL/
 ├── rl_9_offline_rl.ipynb
 ├── rl_10_reward_shaping.ipynb
 ├── rl_11_pomdp.ipynb
+├── rl_12_distributional_rl.ipynb
 └── README.md
 ```
 
