@@ -1,31 +1,31 @@
 # ML-Trend-Scanning (HandsOn Ex01)
 
-**Asset class:** US Equities/ETF (SPY, TLT, GLD)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Actions/ETF US (SPY, TLT, GLD)
+**ID projet Cloud :** Aucun (local uniquement)
 
 ## Description
 
-RandomForestClassifier trend-scanning. Predicts next-day direction using lagged returns, volatility, and volume features on a 3-asset universe. Monthly rebalance.
+Scanning de tendance par `RandomForestClassifier`. Prédit la direction du lendemain à partir de caractéristiques de rendements décalés (lagged returns), de volatilité et de volume, sur un univers de 3 actifs. Ré-équilibrage mensuel.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Trend-Scanning"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Trend-Scanning"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
-## Backtest Metrics
+## Métriques du backtest
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | 0.292 |
-| Model | RandomForestClassifier |
-| Universe | SPY, TLT, GLD |
-| Rebalance | Monthly |
+| Modèle | RandomForestClassifier |
+| Univers | SPY, TLT, GLD |
+| Rebalancement | Mensuel |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (v1.0, RandomForest trend scanning)
-- research.ipynb - Feature engineering and model evaluation
-## References
+- main.py - Stratégie (v1.0, scanning de tendance RandomForest)
+- research.ipynb - Feature engineering et évaluation du modèle
 
-- Hands-On AI Trading, Section 06, Example 01
+## Références
 
+- Hands-On AI Trading, Section 06, Exemple 01
