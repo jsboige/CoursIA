@@ -97,6 +97,61 @@ reste dominé par le BTC (seul BTC/ETH ont des données continues pleine fenêtr
 la valeur ajoutée du basket MultiCanal et du HAR-RV-VolTarget est à ré-évaluer sous données
 Coinbase en Phase 3.
 
+### Analyse fee-switch — sleeve crypto isolé (`ibkr_alloc=0`)
+
+La décomposition ci-dessus porte sur le portefeuille **composite 50/50**. Pour isoler
+le coût MiCA du **sleeve crypto seul** — la question pertinente pour le double
+portefeuille, où le sleeve crypto est détenu séparément du sleeve equity IBKR — on
+relance le même backtest avec `ibkr_alloc=0` (sleeve IBKR désactivé, 100% crypto) sur
+trois régimes de fee. Le point d'ancrage pré-MiCA est la référence Binance
+sleeve-isolé (`Phase4-BinanceSleeve-Standalone-100pct`, code Binance pré-migration,
+2026-06-14). Fenêtre 2018-2025, même `main.py` (le paramètre `ibkr_alloc` évite toute
+duplication de code).
+
+| Config | Source données | Fee crypto | Sharpe | CAGR | MaxDD | PSR | Backtest |
+|--------|-----------------|-----------|--------|------|-------|-----|----------|
+| Référence Binance sleeve-isolé | Binance | 10bps | **0.990** | 47.0% | 57.0% | 36.9% | `46aaf08e` |
+| Coinbase sleeve-isolé, fee-free | Coinbase | 0bps | 0.348 | 11.9% | 58.1% | 3.3% | `6f27c434` |
+| Coinbase sleeve-isolé, fee Binance | Coinbase | 10bps | 0.342 | 11.7% | 58.2% | 3.1% | `3247554e` |
+| Coinbase sleeve-isolé, fee natif | Coinbase | ~80bps taker | **0.298** | 10.1% | 59.3% | 2.3% | `9f7ebbbe` |
+
+`totalOrders=0` reste l'artefact d'extraction connu du wrapper MCP (le CAGR 10-12%
+implique des trades réels).
+
+**Décomposition sleeve-isolé** (isolation par fee constant d'un côté, data constante de l'autre) :
+
+- **Effet data-source** (Binance@10 → Coinbase@10, fee constant à 10bps) : Sharpe
+  **0.990 → 0.342 = −0.648 (−65%)**. **Effet dominant**, et même *plus marqué* que sur
+  le composite 50/50 (−0.51) : sans le sleeve equity (data-source-invariant — mêmes
+  ETFs IBKR sur les deux sources) pour diluer l'effet, la dégradation prix crypto
+  Binance→Coinbase apparaît à plein. Le différentiel de prix historique BTC/alts
+  (liquidité, spreads Binance vs Coinbase, disponibilité des alts dans le basket
+  MultiCanal) est le coupable unique.
+- **Effet fee** (Coinbase@10 → Coinbase natif ~80bps taker, data Coinbase constante) :
+  Sharpe **0.342 → 0.298 = −0.044 (−13%)**. **Modéré**, quasi identique au composite
+  50/50 (−0.04) — l'effet fee est une propriété du turnover crypto (3 stratégies
+  mensuelles, dont 2 — EMA-Cross-Crypto et HAR-RV-VolTarget — passent souvent en
+  cash), pas du mix de portefeuille.
+- **Plafond fee-free** (Coinbase@0 → Coinbase natif) : Sharpe 0.348 → 0.298 = −0.050
+  au total pour le fee. **Même à fee nul, le sleeve Coinbase plafonne à 0.348** (vs
+  0.990 Binance) — confirmation que la data-source est le goulet, pas le fee.
+
+**Convergence composite vs sleeve-isolé.** Les deux vues convergent vers le même
+verdict structurel : **~94% de la dégradation MiCA vient du changement de source de
+données** (sleeve-isolé : −0.648 = 93.6% du −0.692 total ; composite 50/50 : −0.51 =
+93% du −0.55 total). Le fee Coinbase (souvent pointé du doigt) ne coûte que ~6%, et
+aucun niveau de fee ne ramène le sleeve crypto Coinbase au niveau Binance. Le MaxDD
+(~57-59%) est quasi invariant au régime de fee — c'est le ratio return/vol qui
+dégrade, pas le risque de queue.
+
+**Implication double-portefeuille.** Pour le sleeve crypto détenu seul, la migration
+MiCA coûte ~0.69 de Sharpe (0.99 → 0.30, −70%). C'est une contrainte réglementaire
+(continuité du service après le 2026-07-01), pas un choix de performance. Le levier
+d'amélioration n'est PAS le fee (rabais taker→maker = ~+0.02) mais la **sélection de
+stratégies crypto sous données Coinbase** (ré-évaluer le basket MultiCanal et le
+HAR-RV-VolTarget, dont la valeur a été calibrée sur données Binance — cf Roadmap
+Phase 3).
+
 ## Roadmap 5 phases
 
 ### Phase 1 — Research notebook agrégé (S1)
