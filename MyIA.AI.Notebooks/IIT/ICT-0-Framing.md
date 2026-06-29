@@ -90,7 +90,7 @@ IIT/
 | **ICT-0** | Cadrage de la série (ce document) | ✅ |
 | **ICT-2** | [Self-sorting arrays : le tri comme morphogenèse](ICT-2-SelfSortingMorphogenesis.ipynb) — trajectoire, robustesse, délai de gratification, auto-réparation, impasses chimériques | ✅ |
 | ICT-1 | Trajectoires de $\Phi$ — appliquer la notion de trajectoire à $\Phi$ lui-même | à venir |
-| ICT-3 | Robustesse & délai de gratification — étude approfondie des cellules endommagées | à venir |
+| **ICT-3** | [Robustesse & délai de gratification](ICT-3-RobustnessDelayedGratification.ipynb) — étude quantitative : dégradation gracieuse, distributions de récupération, comptage du délai de gratification | ✅ |
 | ICT-4 | Tableaux chimériques & agrégation émergente — le jeu de règles riche du papier (« kin ») | à venir |
 | ICT-5 | Causal emergence 2 — TPM multi-échelles (Jansma & Hoel) | à venir |
 | ICT-6 | Pont tri → TPM — transformer les simulations en chaînes de Markov analysables par PyPhi | à venir |
