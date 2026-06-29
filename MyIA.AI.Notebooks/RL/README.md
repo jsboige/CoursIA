@@ -447,12 +447,27 @@ La thèse est puissante et honnêtement présentée : le RL n'a pas d'algorithme
 
 - **Approfondir la théorie** : le livre de référence *Sutton & Barto — Reinforcement Learning: An Introduction* (2nd ed.) et [Spinning Up in Deep RL](https://spinningup.openai.com/) d'OpenAI sont les prolongements naturels des fondements posés ici ; Mnih et al. (2015, *Human-level control through deep RL*, Nature) est le papier fondateur du DQN moderne.
 - **Élargir aux jeux et à la recherche** : [Search](../README.md) (Minimax, MCTS) et [GameTheory](../GameTheory/README.md) reprennent la recherche adversariale ; le notebook Search-7 (MCTS-And-Beyond) fait explicitement le pont AlphaGo (MCTS + DQN), et le multi-agent RL (notebook 7) rejoint la théorie des jeux.
-- **Franchir le cap production** : les notebooks 1-3 (Stable Baselines3, wrappers, callbacks, multiprocessing) donnent les outils d'un pipeline RL industriel ; le notebook 9 (offline RL) ouvre sur RLHF/DPO, le pont majeur entre RL et LLMs modernes.
+- **Franchir le cap production** : les notebooks 1-3 (Stable Baselines3, wrappers, callbacks, multiprocessing) donnent les outils d'un pipeline RL industriel ; le notebook 9 (offline RL) et le notebook 10 (reward shaping) ouvrent sur le **RLHF/DPO**, le pont majeur entre RL et LLMs modernes — dont la réalisation concrète sur de vrais modèles vit dans les séries [GenAI / PostTraining](../GenAI/PostTraining/README.md) (chaîne SFT → RLHF → DPO → GRPO → RLVR) et [GenAI / FineTuning](../GenAI/FineTuning/README.md) (DPO en pratique).
 - Pour la pratique : reprenez le notebook 6c (PPO from scratch) et comparez-le au PPO de SB3 du notebook 1 — quels hyperparamètres SB3 ajuste-t-il pour vous, et où votre implémentation naïve diverge-t-elle ? C'est le meilleur moyen de saisir la valeur ajoutée d'un framework de production.
 
 ### Le fil rouge
 
 Le reinforcement learning propose un changement de regard sur l'apprentissage : ne plus demander « quelle est la bonne réponse ? » mais **« quelle action maximise la récompense cumulée, sachant qu'elle détermine les états futurs ? »**. La série vous a donné le formalisme (MDP, équation de Bellman), les algorithmes (du bandit à SAC, du tabulaire au deep, du online à l'offline), et l'intuition des compromis pour transformer un problème de décision séquentielle en une politique apprise — en gardant à l'esprit que ce paradigme, de AlphaGo aux LLMs alignés par RLHF, est devenu l'un des deux piliers (avec l'apprentissage supervisé) de l'IA contemporaine.
+
+## Où atterrit le « pont RLHF » : les séries GenAI
+
+Plusieurs notebooks de cette série annoncent un « pont RLHF » (notebook 9 sur l'offline RL, notebook 10 sur le reward shaping). Ce pont **atterrit concrètement** dans deux séries GenAI, qui appliquent ces fondations RL à de vrais modèles de langue. La série RL fournit l'algorithmique tabulaire ; GenAI fournit la réalisation à l'échelle des LLM.
+
+| Concept RL (cette série) | Réalisation côté LLM (GenAI) |
+|--------------------------|------------------------------|
+| Behavior Cloning = imitation ([rl_9](rl_9_offline_rl.ipynb)) | SFT — [PostTraining PT-02](../GenAI/PostTraining/PT_02_sft_baseline.ipynb), [FineTuning FT-03](../GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT.ipynb) |
+| Contrainte de support BCQ = pénalité KL ([rl_9](rl_9_offline_rl.ipynb)) | KL vers le modèle de référence dans PPO-RLHF / DPO — [PT-03](../GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb) |
+| Reward shaping = guider via le signal ([rl_10](rl_10_reward_shaping.ipynb)) | Reward model appris à partir de préférences — [FineTuning FT-04](../GenAI/FineTuning/FT-04-RLHF-DPO.ipynb) |
+| Biais du shaping naïf = reward hacking ([rl_10](rl_10_reward_shaping.ipynb)) | Goodhart / overoptimisation du reward model — [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) |
+| Policy gradient / PPO ([rl_6c](rl_6c_ppo_from_scratch.ipynb)) | PPO-RLHF et son successeur GRPO — [PT-04](../GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb) |
+| MDP, value/Q ([rl_5](rl_5_mdp_dp_qlearning.ipynb)) | Socle policy/value réutilisé par tout post-training — [GenAI/PostTraining](../GenAI/PostTraining/README.md) |
+
+En résumé : **DPO** (Direct Preference Optimization) est l'aboutissement direct de la ligne offline RL + contrainte de support + preference learning tracée par les notebooks 9 et 10. Pour le voir tourner sur de vrais LLM, suivre [GenAI/PostTraining](../GenAI/PostTraining/README.md) puis [GenAI/FineTuning](../GenAI/FineTuning/README.md).
 
 ---
 

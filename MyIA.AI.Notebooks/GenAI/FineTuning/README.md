@@ -174,6 +174,16 @@ Si le modèle merge (FT-05) perd en qualité par rapport aux adaptateurs individ
 - DARE (Drop And Rescale) élimine les poids redondants — essayer si TIES ne converge pas.
 - Le routage MoE (Mixture of Experts) est une alternative au merge statique : chaque token est routé vers l'adaptateur le plus compétent. FT-05 couvre cette approche.
 
+## Ponts avec les autres séries
+
+| Série | Connection | Détails |
+|-------|------------|---------|
+| **[GenAI/PostTraining](../PostTraining/README.md)** | Profondeur méthodologique | Série sœur : la math du loss derrière SFT/DPO + GRPO/RLVR. FineTuning = recettes, PostTraining = pourquoi ça marche. |
+| **[RL — rl_5 MDP/Q-Learning](../../RL/rl_5_mdp_dp_qlearning.ipynb)** | Fondations policy/value | Socle Bellman/Q réutilisé par tout post-training. |
+| **[RL — rl_6c PPO from scratch](../../RL/rl_6c_ppo_from_scratch.ipynb)** | PPO from scratch | L'optimiseur derrière PPO-RLHF, implémenté pas à pas. |
+| **[RL — rl_9 offline RL](../../RL/rl_9_offline_rl.ipynb)** | SFT = Behavior Cloning | DPO comme preference learning offline ; contrainte de support = KL. |
+| **[RL — rl_10 reward shaping](../../RL/rl_10_reward_shaping.ipynb)** | Reward model = shaping appris | Reward shaping (Ng 1999) et reward hacking, préfiguration tabulaire du reward model RLHF. |
+
 ## Références
 
 - **Hugging Face PEFT** : https://huggingface.co/docs/peft
