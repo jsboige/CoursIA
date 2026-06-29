@@ -87,6 +87,51 @@ def test_spectral_similarity_translation_invariant():
     assert agency.spectral_similarity(base, shifted) > 0.95
 
 
+def test_spatial_autocorrelation_smooth_vs_noise():
+    # champ organise basse frequence -> autocorrelation au decalage 1 proche de 1
+    n = 48
+    yy, xx = np.mgrid[0:n, 0:n]
+    organized = np.sin(2 * np.pi * xx / n) + np.cos(2 * np.pi * yy / n)
+    noise = np.random.default_rng(0).standard_normal((n, n))
+    assert agency.spatial_autocorrelation(organized) > 0.9
+    assert abs(agency.spatial_autocorrelation(noise)) < 0.1
+
+
+def test_spatial_autocorrelation_uniform_is_zero():
+    assert agency.spatial_autocorrelation(np.full((10, 10), 0.42)) == 0.0
+
+
+def test_variance_matched_noise_same_variance_different_organization():
+    """Le controle adverse cle : variance appariee, organisation absente.
+
+    Demontre que :func:`structure` (= variance) ne suffit pas a certifier une
+    forme — le bruit apparie obtient le meme score de structure mais une
+    auto-correlation quasi nulle.
+    """
+    n = 48
+    yy, xx = np.mgrid[0:n, 0:n]
+    organized = np.sin(2 * np.pi * xx / n) + np.cos(2 * np.pi * yy / n)
+    noise = agency.variance_matched_noise(organized, np.random.default_rng(3))
+    # meme moyenne et meme variance (donc meme score de structure)
+    assert noise.mean() == pytest.approx(organized.mean(), abs=1e-9)
+    assert agency.structure(noise) == pytest.approx(agency.structure(organized), rel=1e-6)
+    # mais organisation tres differente : c'est tout l'interet du controle
+    assert agency.spatial_autocorrelation(organized) > 0.8
+    assert abs(agency.spatial_autocorrelation(noise)) < 0.15
+
+
+def test_energy_gated_spectral_similarity_gates_low_energy():
+    rng = np.random.default_rng(7)
+    a = rng.standard_normal((32, 32))                       # variance ~1
+    flat = np.full((32, 32), 0.5) + 1e-4 * rng.standard_normal((32, 32))  # quasi uniforme
+    # au-dessus du seuil : identique a spectral_similarity
+    assert agency.energy_gated_spectral_similarity(
+        a, a, min_variance=1e-2
+    ) == pytest.approx(agency.spectral_similarity(a, a), abs=1e-9)
+    # une zone sans energie -> gate a 0 (pas de ressemblance fantome)
+    assert agency.energy_gated_spectral_similarity(a, flat, min_variance=1e-2) == 0.0
+
+
 def test_recovery_score_full_and_none():
     ref = np.zeros((8, 8))
     ref[:4] = 1.0          # structure presente (variance > 0)
