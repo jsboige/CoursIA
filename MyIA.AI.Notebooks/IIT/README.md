@@ -31,9 +31,9 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [Intro_to_PyPhi](Intro_to_PyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation | 60-90 min |
+| 1 | [IIT-1-IntroToPyPhi](IIT-1-IntroToPyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation | 60-90 min |
 | 2 | [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
-| 3 | [IIT-3-CoarseGraining-Macro-Phi](IIT-3-CoarseGraining-Macro-Phi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
+| 3 | [IIT-3-CoarseGrainingMacroPhi](IIT-3-CoarseGrainingMacroPhi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
 
 ## Parcours recommandés
 
@@ -70,7 +70,7 @@ Le troisième notebook opérationnalise le module `pyphi.macro` resté conceptue
 
 ## Contenu détaillé
 
-### Intro_to_PyPhi.ipynb
+### IIT-1-IntroToPyPhi.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -96,7 +96,7 @@ Le troisième notebook opérationnalise le module `pyphi.macro` resté conceptue
 | Performance | Timing du calcul de CES, module `pyphi.macro` |
 | IIT 4.0 | Concept-Style SIA, limites computationnelles, débats |
 
-### IIT-3-CoarseGraining-Macro-Phi.ipynb
+### IIT-3-CoarseGrainingMacroPhi.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -269,9 +269,9 @@ Oui, mais avec caveats. PyPhi est la référence pour IIT 3.0, mais IIT 4.0 (202
 
 ```
 IIT/
-├── Intro_to_PyPhi.ipynb             # Notebook 1 : introduction
-├── IIT-2-AdvancedTopics.ipynb       # Notebook 2 : sujets avances
-├── IIT-3-CoarseGraining-Macro-Phi.ipynb  # Notebook 3 : coarse-graining & échelle du Φ
+├── IIT-1-IntroToPyPhi.ipynb           # Notebook 1 : introduction
+├── IIT-2-AdvancedTopics.ipynb         # Notebook 2 : sujets avances
+├── IIT-3-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
 ├── scripts/
 │   ├── setup_pyphi_env.ps1     # Setup conda env + kernel
 │   └── build_notebook.py       # Script de construction notebook 2

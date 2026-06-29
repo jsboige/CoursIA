@@ -443,9 +443,9 @@ class TestDiscoverNotebooks:
 
     def test_single_notebook_path(self):
         root = get_repo_root()
-        nbs = discover_notebooks("MyIA.AI.Notebooks/IIT/Intro_to_PyPhi.ipynb", root)
+        nbs = discover_notebooks("MyIA.AI.Notebooks/IIT/IIT-1-IntroToPyPhi.ipynb", root)
         assert len(nbs) == 1
-        assert nbs[0].name == "Intro_to_PyPhi.ipynb"
+        assert nbs[0].name == "IIT-1-IntroToPyPhi.ipynb"
 
     def test_nonexistent_returns_empty(self):
         root = get_repo_root()

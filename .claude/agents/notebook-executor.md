@@ -527,7 +527,7 @@ Task(
     prompt="""
     Agent notebook-executor.
 
-    Notebook: MyIA.AI.Notebooks/IIT/Intro_to_PyPhi.ipynb
+    Notebook: MyIA.AI.Notebooks/IIT/IIT-1-IntroToPyPhi.ipynb
     Mode: full
     Kernel: python3 (auto-détecté)
     Timeout: 300
