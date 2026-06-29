@@ -1,32 +1,32 @@
 # Dividend-Harvesting-ML (HandsOn Ex06)
 
-**Asset class:** US Equities (QQQ 100)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Actions US (QQQ 100)
+**ID projet Cloud :** Aucun (local uniquement)
 
 ## Description
 
-DecisionTreeRegressor dividend prediction. Predicts dividend yield using fundamental ratios. Buys top-10 predicted high-dividend stocks quarterly.
+Prédiction de dividendes par `DecisionTreeRegressor`. Prédit le rendement des dividendes à partir de ratios fondamentaux. Achète trimestriellement les 10 actions à dividendes élevés les mieux prédites.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Dividend-Harvesting-ML"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Dividend-Harvesting-ML"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
-## Backtest Metrics
+## Métriques du backtest
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | 0.468 |
 | CAGR | 12.66% |
 | Max Drawdown | 30.6% |
-| Model | DecisionTreeRegressor |
-| Rebalance | Quarterly |
+| Modèle | DecisionTreeRegressor |
+| Rebalancement | Trimestriel |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (v1.0, dividend yield prediction)
-- research.ipynb - Dividend feature analysis
-## References
+- main.py - Stratégie (v1.0, prédiction de rendement de dividendes)
+- research.ipynb - Analyse des caractéristiques de dividendes
 
-- Hands-On AI Trading, Section 06, Example 06
+## Références
 
+- Hands-On AI Trading, Section 06, Exemple 06

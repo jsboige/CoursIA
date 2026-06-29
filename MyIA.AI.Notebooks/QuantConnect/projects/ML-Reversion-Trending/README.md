@@ -1,32 +1,32 @@
 # ML-Reversion-Trending (HandsOn Ex03)
 
-**Asset class:** US Equities/ETF (5 assets)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Actions/ETF US (5 actifs)
+**ID projet Cloud :** Aucun (local uniquement)
 
 ## Description
 
-GradientBoostingClassifier mean-reversion-in-trending. Uses Bollinger Band width, RSI, and return lags to predict next-day direction.
+Mean-reversion-en-régime-tendance par `GradientBoostingClassifier`. Utilise la largeur des bandes de Bollinger, le RSI et les rendements décalés pour prédire la direction du lendemain.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Reversion-Trending"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Reversion-Trending"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
-## Backtest Metrics
+## Métriques du backtest
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | 0.375 |
 | CAGR | 8.44% |
 | Max Drawdown | 24.4% |
-| Model | GradientBoostingClassifier |
-| Rebalance | Weekly |
+| Modèle | GradientBoostingClassifier |
+| Rebalancement | Hebdomadaire |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (v1.0, GBM reversion/trending)
-- research.ipynb - Regime detection and model comparison
-## References
+- main.py - Stratégie (v1.0, GBM reversion/tendance)
+- research.ipynb - Détection de régime et comparaison de modèles
 
-- Hands-On AI Trading, Section 06, Example 03
+## Références
 
+- Hands-On AI Trading, Section 06, Exemple 03

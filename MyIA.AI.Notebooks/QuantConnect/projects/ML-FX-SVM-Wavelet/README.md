@@ -1,30 +1,30 @@
 # ML-FX-SVM-Wavelet (HandsOn Ex05)
 
-**Asset class:** Forex (4 pairs: EURUSD, AUDUSD, USDJPY, USDCAD)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Forex (4 paires : EURUSD, AUDUSD, USDJPY, USDCAD)
+**ID projet Cloud :** Aucun (local uniquement)
 
 ## Description
 
-SVR + Wavelet decomposition on G10 FX pairs. Uses pywt wavelet denoising on price series, then SVR to predict returns.
+SVR + décomposition en ondelettes sur les paires FX du G10. Utilise le débruitage par ondelettes (`pywt`) sur les séries de prix, puis un SVR pour prédire les rendements.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-FX-SVM-Wavelet"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-FX-SVM-Wavelet"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
-## Backtest Metrics
+## Métriques du backtest
 
-| Metric | Value |
-|--------|-------|
-| Model | SVR + Wavelet (pywt) |
-| Universe | 4 G10 FX pairs |
-| Rebalance | Monthly |
+| Métrique | Valeur |
+|----------|--------|
+| Modèle | SVR + Ondelettes (pywt) |
+| Univers | 4 paires FX du G10 |
+| Rebalancement | Mensuel |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (v1.0, SVR + wavelet)
-- research.ipynb - Wavelet decomposition analysis
-## References
+- main.py - Stratégie (v1.0, SVR + ondelettes)
+- research.ipynb - Analyse de la décomposition en ondelettes
 
-- Hands-On AI Trading, Section 06, Example 05
+## Références
 
+- Hands-On AI Trading, Section 06, Exemple 05
