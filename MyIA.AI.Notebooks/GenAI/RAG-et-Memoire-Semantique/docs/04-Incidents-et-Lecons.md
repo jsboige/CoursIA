@@ -1,6 +1,6 @@
 # 04 - Incidents et leçons
 
-[← 03 Utilisation](03-Utilisation-MCP-Indexation.md) | [Mémoire Sémantique Qdrant](../README.md)
+[← 03 Utilisation](03-Utilisation-MCP-Indexation.md) | [RAG et Mémoire Sémantique](../README.md)
 
 Ce document est le plus utile de la section, parce qu'il est le plus honnête. Une infrastructure ne s'apprend pas dans son état idéal mais dans ses pannes : ce qui a cassé, pourquoi, et ce qu'on a changé pour que cela ne recommence pas. Chaque incident ci-dessous est réel (les dates sont conservées pour l'authenticité) ; tout identifiant sensible est généralisé.
 
@@ -89,7 +89,23 @@ Tous les chantiers ne sont pas urgents. Un VHDX **ne se réduit pas tout seul** 
 
 La décision a été de **différer** cette opération à une fenêtre calme et surveillée, plutôt que de la lancer sous pression. C'est aussi une leçon d'ops : **une dette connue, bornée et planifiée n'est pas une urgence** ; la traiter au mauvais moment crée plus de risque qu'elle n'en résout (voir section 4 sur les opérations WSL).
 
-## 8. Méta-leçons
+## 8. L'index de payload manquant : la boucle de scroll qui sature le CPU
+
+**Ce qui s'est passé (fin juin 2026).** Après un redémarrage, la collection principale (plus d'un million de points, *payload* stocké sur disque via `on_disk_payload: true`) s'est retrouvée **sans ses index de payload**. Or l'indexeur, pour dédupliquer avant d'écrire, interroge Qdrant par un `scroll` filtré sur un champ de hash de contenu (`contentHash`). Sans index sur ce champ, **chaque `scroll` filtré devient un balayage complet** du million de points lus depuis le disque — de l'ordre de 60 à 95 secondes par requête.
+
+**L'emballement (*doom loop*).** Ces `scroll` dépassaient le délai d'opération (60 s) → réponse **HTTP 500** → les clients **réessayaient** automatiquement → un essaim de `scroll` concurrents s'accumulait → les 12 cœurs du conteneur **saturaient (~1190 %)** pendant des heures → l'optimiseur, privé de CPU, **ne pouvait justement pas construire l'index** qui aurait rendu le `scroll` instantané. Une boucle auto-entretenue : le symptôme empêchait sa propre guérison.
+
+**La remédiation.** Couper brièvement le trafic des clients distants (une courte fenêtre de pare-feu) pour laisser l'essaim se vider, puis **créer les index de payload manquants** — au premier chef `contentHash` (type `keyword`), le « tueur de boucle ». Effet mesuré : le `scroll` filtré est passé de ~60 s à **~4 millisecondes** ; le CPU de ~1190 % à ~160 % ; et la tempête s'est éteinte **alors même que les clients étaient reconnectés** — preuve que c'était bien l'index manquant, et non le pare-feu, qui éteignait la cause.
+
+**Les leçons.**
+
+- **Un index de payload n'est pas un luxe : sans lui, tout filtre est un balayage `O(n)`.** Sur une grosse collection avec `on_disk_payload`, l'absence d'index sur un champ filtré fréquemment est une bombe à retardement.
+- **Créer les index de payload *à la création de la collection*.** Une collection recréée sans ses index repart sur la même bombe ; le correctif durable est de les recréer automatiquement, pas à la main après coup.
+- **Un *retry* naïf peut amplifier une panne.** Quand une opération lente échoue par dépassement de délai, la réessayer en boucle transforme une lenteur en saturation. Le correctif de fond consiste à remplacer la déduplication par `scroll` par une récupération **par identifiant** (`retrieve()`, `O(1)`), qui supprime la cause à la racine.
+
+Le notebook pratique de cette section reproduit ce scénario en miniature : on y mesure la latence d'un filtre **avec et sans** index de payload.
+
+## 9. Méta-leçons
 
 En filigrane de tous ces incidents, quelques principes transversaux :
 
@@ -101,4 +117,4 @@ En filigrane de tous ces incidents, quelques principes transversaux :
 
 ---
 
-[← Retour au README de la section](../README.md) · [↑ Vibe-Coding](../../README.md)
+[← Retour au README de la section](../README.md) · [↑ GenAI](../../README.md)

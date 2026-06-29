@@ -28,7 +28,8 @@ GenAI/
 ├── CaseStudies/             # Études de cas étudiants
 ├── Open-WebUI/              # Plateforme Open WebUI : tour guidé + série QA Playwright
 │   └── Playwright-OWUI/     # Tests E2E Playwright (5 modules, 30+ tests)
-└── Vibe-Coding/             # Tutoriels Claude Code et Roo Code
+├── Vibe-Coding/             # Tutoriels Claude Code et Roo Code
+└── RAG-et-Memoire-Semantique/  # Mémoire sémantique : Qdrant, embeddings, grounding (SDDD)
 ```
 
 ---
@@ -94,6 +95,14 @@ Semantic Kernel est le SDK Microsoft pour construire des applications agentiques
 Le "vibe coding" est la compétence la plus demandée de 2026 : décrire ce qu'on veut à un agent IA et le laisser écrire, tester et déployer le code. Cette série couvre les deux outils majeurs du marché : Claude Code (Anthropic) et Roo Code (communautaire). Chaque outil est abordé en 5 modules, de la découverte à l'automatisation avancée.
 
 [README complet](Vibe-Coding/README.md) | ~30h
+
+---
+
+### RAG et Mémoire Sémantique - Le backend de grounding des agents
+
+Là où Vibe-Coding montre les *front-ends* d'agents, cette section documente la couche d'en dessous : la **mémoire sémantique** qui ancre un agent dans des faits vérifiables plutôt que dans des suppositions. C'est le récit d'une infrastructure réelle — une base vectorielle [Qdrant](https://qdrant.tech/) qui indexe conversations et code, interrogée à chaque tâche pour retrouver « ce qui a déjà été dit, écrit, décidé ». Quatre documents (le besoin et la méthode SDDD, l'infrastructure Docker/WSL2, l'usage via MCP, les incidents réels et leurs leçons) et un **notebook pratique** exécutable hors ligne (Qdrant en mémoire + `fastembed`, sans clé d'API ni Docker). Le pendant *applicatif* du RAG sur documents reste la série [Texte](Texte/README.md).
+
+[README complet](RAG-et-Memoire-Semantique/README.md) | ~6h
 
 ---
 
@@ -280,7 +289,10 @@ Pour le troubleshooting avancé (timeout Papermill, OOM GPU, .NET), consultez le
 | **CFG (Classifier-Free Guidance)** | Paramètre contrôlant la fidélité au prompt vs liberté créatrice | Image |
 | **LoRA / QLoRA** | Adaptateurs légers pour spécialiser un modèle sans ré-entraîner tout le poids | FineTuning |
 | **DPO / RLHF** | Alignement des modèles sur les préférences humaines | PostTraining |
-| **RAG** | Retrieval-Augmented Generation : injecter des documents externes dans le contexte LLM | Texte |
+| **RAG** | Retrieval-Augmented Generation : injecter des documents externes dans le contexte LLM | Texte, RAG et Mémoire Sémantique |
+| **Grounding / Mémoire sémantique** | Ancrer un agent dans un corpus indexé (conversations, code) pour éviter l'hallucination hors-contexte | RAG et Mémoire Sémantique |
+| **Base vectorielle (Qdrant / HNSW)** | Stocker des embeddings et rechercher les plus proches voisins approchés à grande échelle | RAG et Mémoire Sémantique |
+| **Quantization (TurboQuant)** | Comprimer les vecteurs (4 bits) pour réduire l'empreinte mémoire sans perte de rappel | RAG et Mémoire Sémantique |
 | **Function Calling** | Le LLM appelle vos fonctions — passerelle vers les outils et APIs | Texte |
 | **Structured Outputs** | Forcer le LLM à respecter un schéma JSON précis | Texte |
 | **SFT / GRPO / RLVR** | Post-training : Supervised Fine-Tuning, Group Relative Policy Optimization, RL with Verifiable Rewards | PostTraining |
