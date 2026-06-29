@@ -160,6 +160,7 @@ IIT/
 ├── ICT-5-CausalEmergence.ipynb            # ✅ émergence causale micro/macro (vrai pyphi.macro)
 ├── ICT-6-SortingToTPM-CausalEmergence.ipynb  # ✅ pont tri → TPM → émergence causale (CE 2.0)
 ├── ICT-7-ScaleFreeSignatures.ipynb        # ✅ signatures scale-free & criticalité (loi de Borel τ=3/2)
+├── ICT-8-AttractorLandscapesEWS.ipynb     # ✅ strate 2 : paysages d'attracteurs + early-warning signals
 └── ict/
     ├── self_sorting.py      # ✅ modèle vue-cellule (Cell, SelfSortingArray, scheduler)
     ├── kin_sorting.py       # ✅ règles enrichies : réparation bidirectionnelle + affinité kin
@@ -168,6 +169,8 @@ IIT/
     ├── causal_emergence.py  # ✅ CE 2.0 (Hoel 2025) : primitives causales, apportionnement, EC
     ├── tpm_estimation.py    # ✅ pont simulation → chaîne de Markov → TPM (état-à-état)
     ├── scale_free.py        # ✅ diagnostic scale-free (MLE de Hill, KS, choix de xmin, branchement)
+    ├── bistable.py          # ✅ strate 2 : modèle de pâturage de May, potentiel effectif, bifurcation pli
+    ├── early_warning.py     # ✅ strate 2 : variance/AR1 roulantes, τ de Kendall, amincissement, détrendage
     ├── distances.py         # à venir : distances entre états / structures / trajectoires
     └── ...
 ```
@@ -184,6 +187,40 @@ IIT/
 | **ICT-5** | [Émergence causale](ICT-5-CausalEmergence.ipynb) — $\Phi$ et information effective aux échelles micro/macro, recherche de coarse-graining (vrai `pyphi.macro`), émergence discriminante (Jansma & Hoel) | ✅ |
 | **ICT-6** | [Pont tri → TPM](ICT-6-SortingToTPM-CausalEmergence.ipynb) — chaîne de Markov estimée depuis les trajectoires de tri, émergence causale multi-échelles (CE 2.0 *scale-free*, au-delà de la borne de taille de PyPhi) | ✅ |
 | **ICT-7** | [Signatures scale-free & criticalité](ICT-7-ScaleFreeSignatures.ipynb) — détecter une signature sans échelle *sans se faire avoir* (MLE de Hill, choix de $x_{\min}$, KS, comparaison de modèles à la Clauset et al.) ; étalon critique (branchement, exposant $3/2$) vs tri auto-organisé qui *paraît* à queue lourde mais possède une échelle caractéristique (la taille), révélée par effondrement d'échelle | ✅ |
+| **ICT-8** | [Paysages d'attracteurs & signaux précurseurs](ICT-8-AttractorLandscapesEWS.ipynb) — **strate 2**. Modèle de pâturage de May (1977), bistabilité + bifurcation pli ; *early-warning signals* (Scheffer 2009) : potentiel effectif, valeur propre → 0, variance ↑, autocorrélation ↑ (τ de Kendall), avec la leçon de protocole *sans complaisance* (amincir, détrendre) | ✅ |
+| **ICT-9** | Agence & régénération réaction-diffusion (Gray-Scott) — **strate 2**. Un système qui **répare** sa forme vers un point de consigne intrinsèque après ablation, démontré *par contraste* avec la simple diffusion | 🚧 planifié |
+
+## Strate 2 — du tri transparent à la morphogenèse dynamique
+
+La **strate 1** (ICT-1 à ICT-7) a fait du **tri auto-organisé** un marche-pied idéal : tout y est
+calculable, les trajectoires sont enregistrables, et des compétences réelles (robustesse, délai de
+gratification, agrégation « kin ») y apparaissent. Mais ce banc d'essai bute sur **trois limites**
+dès qu'on veut voir émerger l'**agence** et l'**organisation générative** :
+
+1. un **attracteur global unique**, dont le but (le tableau trié) est **imposé de l'extérieur** ;
+2. **aucun point de consigne intrinsèque** — rien que le système « cherche » de lui-même ;
+3. **pas de hiérarchie génératrice** — la richesse multi-échelle de la strate 1 est *analytique*
+   (on la lit dans les TPM), pas **produite** par la dynamique.
+
+La **strate 2** ouvre la *morphogenèse dynamique* sur des substrats dont le **paysage
+d'attracteurs est engendré par la dynamique elle-même**, et lève ces limites une à une :
+
+- **ICT-8** (bifurcation pli + *early-warning signals*) lève les limites **1** et **3** : un vrai
+  paysage à **plusieurs bassins** séparés par un col, une **bifurcation** qui crée et détruit des
+  attracteurs, et une hiérarchie naturelle (les deux bassins forment un gros-grain à deux
+  macro-états, branché sur la causal emergence d'ICT-5/6). Le substrat — le modèle de pâturage de
+  May, canonique des EWS (Scheffer 2009 ; Dakos 2012) — porte la narration *« les deux tressées »* :
+  chaque image métaphorique (la vallée qui s'aplatit, la mémoire du danger, l'alerte avant la
+  bascule) est **adossée à une grandeur mesurée**, et la leçon *sans complaisance* montre qu'une
+  mesure naïve **fabrique ou masque** le signal — la métaphore n'est créditée que par la rigueur du
+  protocole.
+- **ICT-9** (réaction-diffusion régénérante, type Gray-Scott) lèvera la limite **2** : l'**agence**
+  comme capacité à **maintenir et réparer sa propre forme** vers un *point de consigne intrinsèque*,
+  démontrée *par contraste* — la réaction répare là où la simple diffusion dissout (l'analogue
+  dynamique du « sans liberté, pas d'agrégation » d'ICT-4).
+
+C'est la même discipline que la strate 1 (exécuter, mesurer, narrer le résultat réel) appliquée à
+une dynamique qui, cette fois, **génère** son propre paysage de buts plutôt que de le recevoir.
 
 ## Principe méthodologique
 
