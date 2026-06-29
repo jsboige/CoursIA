@@ -16,8 +16,10 @@ from . import sorting_metrics
 from . import trajectories
 from . import causal_emergence
 from . import tpm_estimation
+from . import scale_free
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "ALGOTYPES",
     "sorting_metrics", "trajectories", "causal_emergence", "tpm_estimation",
+    "scale_free",
 ]

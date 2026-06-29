@@ -76,13 +76,15 @@ IIT/
 ├── ICT-3-RobustnessDelayedGratification.ipynb  # ✅ étude quantitative
 ├── ICT-5-CausalEmergence.ipynb            # ✅ émergence causale micro/macro (vrai pyphi.macro)
 ├── ICT-6-SortingToTPM-CausalEmergence.ipynb  # ✅ pont tri → TPM → émergence causale (CE 2.0)
-├── ICT-4/7-*.ipynb                         # à venir
+├── ICT-7-ScaleFreeSignatures.ipynb        # ✅ signatures scale-free & criticalité (loi de Borel τ=3/2)
+├── ICT-4-*.ipynb                          # à venir (jeu de règles « kin », cf. #4588)
 └── ict/
     ├── self_sorting.py      # ✅ modèle vue-cellule (Cell, SelfSortingArray, scheduler)
     ├── sorting_metrics.py   # ✅ sortedness, monotonie, inversions, agrégation, recovery
     ├── trajectories.py      # ✅ évolution d'états, attracteurs, trajectoire de Φ, événements
     ├── causal_emergence.py  # ✅ CE 2.0 (Hoel 2025) : primitives causales, apportionnement, EC
     ├── tpm_estimation.py    # ✅ pont simulation → chaîne de Markov → TPM (état-à-état)
+    ├── scale_free.py        # ✅ diagnostic scale-free (MLE de Hill, KS, choix de xmin, branchement)
     ├── distances.py         # à venir : distances entre états / structures / trajectoires
     └── ...
 ```
@@ -98,7 +100,7 @@ IIT/
 | ICT-4 | Tableaux chimériques & agrégation émergente — le jeu de règles riche du papier (« kin ») | à venir |
 | **ICT-5** | [Émergence causale](ICT-5-CausalEmergence.ipynb) — $\Phi$ et information effective aux échelles micro/macro, recherche de coarse-graining (vrai `pyphi.macro`), émergence discriminante (Jansma & Hoel) | ✅ |
 | **ICT-6** | [Pont tri → TPM](ICT-6-SortingToTPM-CausalEmergence.ipynb) — chaîne de Markov estimée depuis les trajectoires de tri, émergence causale multi-échelles (CE 2.0 *scale-free*, au-delà de la borne de taille de PyPhi) | ✅ |
-| ICT-7 | Signatures scale-free & fractales | à venir |
+| **ICT-7** | [Signatures scale-free & criticalité](ICT-7-ScaleFreeSignatures.ipynb) — détecter une signature sans échelle *sans se faire avoir* (MLE de Hill, choix de $x_{\min}$, KS, comparaison de modèles à la Clauset et al.) ; étalon critique (branchement, exposant $3/2$) vs tri auto-organisé qui *paraît* à queue lourde mais possède une échelle caractéristique (la taille), révélée par effondrement d'échelle | ✅ |
 
 ## Principe méthodologique
 
