@@ -129,14 +129,23 @@ class GrayScott:
         V: np.ndarray,
         steps: int,
         record_every: int = 0,
+        include_initial: bool = False,
     ) -> Tuple[np.ndarray, np.ndarray, Optional[List[np.ndarray]]]:
         """Integre ``steps`` pas. Retourne ``(U, V, snapshots)``.
 
         Si ``record_every > 0``, ``snapshots`` est la liste des champs ``V``
         captures tous les ``record_every`` pas (pour les courbes temporelles et
         les animations) ; sinon ``snapshots`` vaut ``None``.
+
+        Si ``include_initial`` est vrai (et ``record_every > 0``), l'etat ``V``
+        **avant le premier pas** (t = 0) est insere en tete de ``snapshots``. Par
+        defaut la capture commence apres le premier pas : pour une courbe de
+        recuperation qui part de l'etat ablate exact, passer ``include_initial=True``
+        garantit que le point de depart de la trajectoire est bien l'instant 0.
         """
         snapshots: Optional[List[np.ndarray]] = [] if record_every > 0 else None
+        if snapshots is not None and include_initial:
+            snapshots.append(V.copy())
         for t in range(steps):
             U, V = self.step(U, V)
             if snapshots is not None and (t % record_every == 0):

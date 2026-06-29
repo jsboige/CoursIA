@@ -84,6 +84,51 @@ def structure(V: np.ndarray) -> float:
     return float(np.var(V))
 
 
+def spatial_autocorrelation(field: np.ndarray) -> float:
+    """Auto-correlation spatiale au decalage 1 (moyenne des deux axes, bords periodiques).
+
+    Mesure de **l'organisation** spatiale, complementaire de :func:`structure`.
+    Pour un champ centre ``f`` ::
+
+        ac = 0.5 * ( <f * roll(f, 1, axe_y)> + <f * roll(f, 1, axe_x)> ) / var(f)
+
+    Vaut ~1 pour un champ lisse et organise (taches de Gray-Scott : les voisins se
+    ressemblent), et ~0 pour du bruit blanc (voisins decorreles). C'est exactement
+    le discriminant qui manque a la variance seule : un bruit **apparie en variance**
+    a une forme reelle a la **meme** :func:`structure` mais une auto-correlation
+    quasi nulle. On distingue ainsi « il y a de l'energie » de « il y a une forme ».
+    """
+    f = np.asarray(field, dtype=float)
+    f = f - f.mean()
+    var = float(np.mean(f * f))
+    if var < 1e-12:
+        return 0.0
+    ac_y = float(np.mean(f * np.roll(f, 1, axis=0)))
+    ac_x = float(np.mean(f * np.roll(f, 1, axis=1)))
+    return 0.5 * (ac_y + ac_x) / var
+
+
+def variance_matched_noise(
+    field: np.ndarray, rng: Optional[np.random.Generator] = None
+) -> np.ndarray:
+    """Champ de **bruit blanc apparie en moyenne et variance** a ``field``.
+
+    Construit un controle adverse pour :func:`structure` : un champ aleatoire sans
+    aucune organisation spatiale, mais de **meme moyenne et meme variance** que
+    ``field``. Il sert a demontrer que la variance seule ne suffit pas a certifier
+    une forme — le bruit apparie obtient le meme score de :func:`structure` tout en
+    ayant une :func:`spatial_autocorrelation` quasi nulle.
+    """
+    if rng is None:
+        rng = np.random.default_rng(0)
+    f = np.asarray(field, dtype=float)
+    target_mean = float(f.mean())
+    target_std = float(f.std())
+    z = rng.standard_normal(f.shape)
+    z = (z - z.mean()) / (z.std() + 1e-12)  # moyenne 0, ecart-type 1 exacts
+    return target_mean + target_std * z
+
+
 def pattern_distance(a: np.ndarray, b: np.ndarray) -> float:
     """Distance morphologique RMS (racine de l'erreur quadratique moyenne).
 
@@ -136,6 +181,31 @@ def spectral_similarity(a: np.ndarray, b: np.ndarray, nbins: int = 24) -> float:
     sb = _radial_power_spectrum(b, nbins)
     denom = (np.linalg.norm(sa) * np.linalg.norm(sb)) + 1e-12
     return float(np.dot(sa, sb) / denom)
+
+
+def energy_gated_spectral_similarity(
+    a: np.ndarray,
+    b: np.ndarray,
+    nbins: int = 24,
+    min_variance: float = 1e-4,
+) -> float:
+    """:func:`spectral_similarity` **protegee par un seuil d'energie**.
+
+    Le cosinus spectral normalise l'amplitude : il peut donc renvoyer une valeur
+    elevee en comparant une forme reelle a une zone **sans structure** (un champ
+    quasi uniforme dont le spectre, domine par le bruit numerique, s'aligne par
+    hasard). C'est la **ressemblance fantome** que le notebook ICT-9 met en garde.
+
+    Cette variante renvoie ``0.0`` des que l'un des deux champs a une variance
+    inferieure a ``min_variance`` — autrement dit : *pas d'energie, pas de
+    similarite de texture qui vaille*. Le seuil se choisit relativement a la
+    variance du substrat structure (typiquement une fraction de la structure de
+    reference). Au-dessus du seuil, le comportement est identique a
+    :func:`spectral_similarity`.
+    """
+    if min(float(np.var(a)), float(np.var(b))) < min_variance:
+        return 0.0
+    return spectral_similarity(a, b, nbins)
 
 
 # --------------------------------------------------------------------------- #

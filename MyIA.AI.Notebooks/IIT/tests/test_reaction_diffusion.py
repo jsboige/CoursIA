@@ -89,6 +89,22 @@ def test_run_records_snapshots():
     assert all(s.shape == (32, 32) for s in snaps)
 
 
+def test_run_include_initial_prepends_t0():
+    gs = rd.GrayScott()
+    U, V = gs.seed(n=32, rng=np.random.default_rng(4))
+    V0 = V.copy()
+    _, _, snaps = gs.run(U.copy(), V.copy(), steps=100, record_every=20)
+    _, _, snaps_i = gs.run(
+        U.copy(), V.copy(), steps=100, record_every=20, include_initial=True
+    )
+    # une capture de plus, et la premiere est l'etat initial exact (t = 0)
+    assert len(snaps_i) == len(snaps) + 1
+    assert np.array_equal(snaps_i[0], V0)
+    # include_initial sans capture active reste sans effet
+    _, _, none_snaps = gs.run(U.copy(), V.copy(), steps=10, include_initial=True)
+    assert none_snaps is None
+
+
 def test_pure_diffusion_conserves_mass():
     # la diffusion pure (bords periodiques) conserve la masse totale
     f = np.random.default_rng(5).standard_normal((24, 24)) + 5.0
