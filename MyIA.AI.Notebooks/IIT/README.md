@@ -339,10 +339,12 @@ ces limites une à une.
 | Document | Contenu |
 |----------|---------|
 | [ICT-8-AttractorLandscapesEWS](ICT-8-AttractorLandscapesEWS.ipynb) | Paysages d'attracteurs & signaux précurseurs — *les deux tressées*. Modèle de pâturage de May (1977), système canonique des *early-warning signals* (Scheffer 2009). Bistabilité entre deux états positifs alternatifs, bifurcation pli, catastrophe = changement de régime. Chaque image (vallée qui s'aplatit, mémoire du danger, alerte) adossée à une mesure réelle (potentiel effectif, valeur propre → 0, variance ↑, autocorrélation ↑, τ de Kendall). Lève l'attracteur unique + ouvre une hiérarchie générative |
+| [ICT-9-AgencyRegeneration](ICT-9-AgencyRegeneration.ipynb) | Agence & régénération — *réparer sa forme, ou seulement dériver ?* Morphogenèse réaction-diffusion de Gray-Scott (Pearson 1993) : le système engendre un motif auto-entretenu (point de consigne **intrinsèque**), on l'ablate via une intervention `do(·)`, puis on contraste **deux mondes contrefactuels** (Pearl) — réaction-diffusion qui régénère vs diffusion pure qui dissout. L'agence n'est jamais déclarée, elle est **mesurée** comme *gain de réparation* (recouvrement RD − recouvrement diffusion). *Sans complaisance* : les mesures naïves de ressemblance (pixel-à-pixel, cosinus spectral) fabriquent un signal fantôme ; seule la structure restaurée contrastée au contrôle passif tient. Lève le **but extrinsèque** : un point de consigne que le système maintient de lui-même |
 
-Reste sur la feuille de route de [ICT-0-Framing](ICT-0-Framing.md) : **ICT-9** — l'**agence** comme
-régénération vers un *point de consigne intrinsèque* (morphogenèse réaction-diffusion : un système
-qui répare sa forme après ablation, démontré par contraste avec la simple diffusion).
+Reste sur la feuille de route de [ICT-0-Framing](ICT-0-Framing.md) : **ICT-10** — la *grammaire des
+catastrophes* (typer pli/fronce/fourche/hystérésis comme transitions **mesurées**), puis **ICT-11/12**
+(profils d'agence causale micro/méso/macro ; renormalisation causale & invariance multi-échelle) et
+**ICT-Synthèse**.
 
 ## Ponts causaux : le do-calculus de Pearl à travers les paradigmes
 
