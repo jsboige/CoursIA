@@ -316,11 +316,15 @@ multi-échelle (Jansma & Hoel, 2025).
 | Document | Contenu |
 |----------|---------|
 | [ICT-0-Framing](ICT-0-Framing.md) | Cadrage de la série : de l'état à la trajectoire, articles fondateurs, feuille de route |
+| [ICT-1-PhiTrajectories](ICT-1-PhiTrajectories.ipynb) | Trajectoires de $\Phi$ : appliquer la notion de trajectoire à $\Phi$ lui-même le long de l'évolution déterministe d'un système (de la *photographie* au *film*) |
 | [ICT-2-SelfSortingMorphogenesis](ICT-2-SelfSortingMorphogenesis.ipynb) | Le tri auto-organisé comme morphogenèse : trajectoire dans le morphospace, robustesse aux cellules défectueuses, délai de gratification, auto-réparation, impasses chimériques |
+| [ICT-3-RobustnessDelayedGratification](ICT-3-RobustnessDelayedGratification.ipynb) | Étude quantitative de la robustesse et du délai de gratification du tri vu-cellule (mélange d'algotypes, cellules défectueuses) |
+| [ICT-5-CausalEmergence](ICT-5-CausalEmergence.ipynb) | Émergence causale : $\Phi$ et information effective aux échelles micro/macro, recherche de coarse-graining (vrai `pyphi.macro`), émergence discriminante (Jansma & Hoel, 2025) |
+| [ICT-6-SortingToTPM-CausalEmergence](ICT-6-SortingToTPM-CausalEmergence.ipynb) | Pont tri → chaîne de Markov : TPM estimée depuis les trajectoires de tri, émergence causale multi-échelles (*Causal Emergence 2.0*, Hoel 2025) |
 
-Les notebooks ICT-1, ICT-3 à ICT-7 (trajectoires de $\Phi$, agrégation chimérique, TPM
-multi-échelles, pont tri → PyPhi, signatures scale-free) sont sur la feuille de route de
-[ICT-0-Framing](ICT-0-Framing.md).
+Restent à construire, sur la feuille de route de [ICT-0-Framing](ICT-0-Framing.md) : **ICT-4**
+(tableaux chimériques & agrégation émergente — le jeu de règles « kin » plus riche du papier de
+Zhang, Goldstein & Levin) et **ICT-7** (signatures scale-free & fractales des trajectoires causales).
 
 ## Ponts causaux : le do-calculus de Pearl à travers les paradigmes
 
