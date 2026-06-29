@@ -71,13 +71,13 @@ pour revenir à des calculs IIT stricts sur de petits systèmes.
 ```
 IIT/
 ├── ICT-0-Framing.md                       # ce document
+├── ICT-1-PhiTrajectories.ipynb            # ✅ trajectoires de Φ (vrai PyPhi)
 ├── ICT-2-SelfSortingMorphogenesis.ipynb   # ✅ premier livrable (#4588)
-├── ICT-1-PhiTrajectories.ipynb            # à venir
 ├── ICT-3..7-*.ipynb                        # à venir
 └── ict/
     ├── self_sorting.py     # ✅ modèle vue-cellule (Cell, SelfSortingArray, scheduler)
     ├── sorting_metrics.py  # ✅ sortedness, monotonie, inversions, agrégation, recovery
-    ├── trajectories.py     # à venir : PhiTrajectory, détection d'événements
+    ├── trajectories.py     # ✅ évolution d'états, attracteurs, trajectoire de Φ, événements
     ├── distances.py        # à venir : distances entre états / structures / trajectoires
     ├── tpm_estimation.py   # à venir : pont simulation → chaîne de Markov → TPM
     └── ...
@@ -89,7 +89,7 @@ IIT/
 |----------|-------|------|
 | **ICT-0** | Cadrage de la série (ce document) | ✅ |
 | **ICT-2** | [Self-sorting arrays : le tri comme morphogenèse](ICT-2-SelfSortingMorphogenesis.ipynb) — trajectoire, robustesse, délai de gratification, auto-réparation, impasses chimériques | ✅ |
-| ICT-1 | Trajectoires de $\Phi$ — appliquer la notion de trajectoire à $\Phi$ lui-même | à venir |
+| **ICT-1** | [Trajectoires de $\Phi$](ICT-1-PhiTrajectories.ipynb) — paysage de $\Phi$, trajectoire de $\Phi$ sur l'attracteur (pulsations), robustesse aux perturbations (vrai PyPhi) | ✅ |
 | **ICT-3** | [Robustesse & délai de gratification](ICT-3-RobustnessDelayedGratification.ipynb) — étude quantitative : dégradation gracieuse, distributions de récupération, comptage du délai de gratification | ✅ |
 | ICT-4 | Tableaux chimériques & agrégation émergente — le jeu de règles riche du papier (« kin ») | à venir |
 | ICT-5 | Causal emergence 2 — TPM multi-échelles (Jansma & Hoel) | à venir |
