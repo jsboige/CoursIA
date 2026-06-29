@@ -161,6 +161,7 @@ IIT/
 ├── ICT-6-SortingToTPM-CausalEmergence.ipynb  # ✅ pont tri → TPM → émergence causale (CE 2.0)
 ├── ICT-7-ScaleFreeSignatures.ipynb        # ✅ signatures scale-free & criticalité (loi de Borel τ=3/2)
 ├── ICT-8-AttractorLandscapesEWS.ipynb     # ✅ strate 2 : paysages d'attracteurs + early-warning signals
+├── ICT-9-AgencyRegeneration.ipynb         # ✅ strate 2 : agence = régénération réaction-diffusion (Gray-Scott)
 └── ict/
     ├── self_sorting.py      # ✅ modèle vue-cellule (Cell, SelfSortingArray, scheduler)
     ├── kin_sorting.py       # ✅ règles enrichies : réparation bidirectionnelle + affinité kin
@@ -171,6 +172,8 @@ IIT/
     ├── scale_free.py        # ✅ diagnostic scale-free (MLE de Hill, KS, choix de xmin, branchement)
     ├── bistable.py          # ✅ strate 2 : modèle de pâturage de May, potentiel effectif, bifurcation pli
     ├── early_warning.py     # ✅ strate 2 : variance/AR1 roulantes, τ de Kendall, amincissement, détrendage
+    ├── reaction_diffusion.py # ✅ strate 2 : simulateur Gray-Scott (Laplacien périodique, diffusion pure de contrôle)
+    ├── agency.py            # ✅ strate 2 : ablation do(·), structure, recovery_score, repair_gain, similarité spectrale
     ├── distances.py         # à venir : distances entre états / structures / trajectoires
     └── ...
 ```
@@ -188,7 +191,11 @@ IIT/
 | **ICT-6** | [Pont tri → TPM](ICT-6-SortingToTPM-CausalEmergence.ipynb) — chaîne de Markov estimée depuis les trajectoires de tri, émergence causale multi-échelles (CE 2.0 *scale-free*, au-delà de la borne de taille de PyPhi) | ✅ |
 | **ICT-7** | [Signatures scale-free & criticalité](ICT-7-ScaleFreeSignatures.ipynb) — détecter une signature sans échelle *sans se faire avoir* (MLE de Hill, choix de $x_{\min}$, KS, comparaison de modèles à la Clauset et al.) ; étalon critique (branchement, exposant $3/2$) vs tri auto-organisé qui *paraît* à queue lourde mais possède une échelle caractéristique (la taille), révélée par effondrement d'échelle | ✅ |
 | **ICT-8** | [Paysages d'attracteurs & signaux précurseurs](ICT-8-AttractorLandscapesEWS.ipynb) — **strate 2**. Modèle de pâturage de May (1977), bistabilité + bifurcation pli ; *early-warning signals* (Scheffer 2009) : potentiel effectif, valeur propre → 0, variance ↑, autocorrélation ↑ (τ de Kendall), avec la leçon de protocole *sans complaisance* (amincir, détrendre) | ✅ |
-| **ICT-9** | Agence & régénération réaction-diffusion (Gray-Scott) — **strate 2**. Un système qui **répare** sa forme vers un point de consigne intrinsèque après ablation, démontré *par contraste* avec la simple diffusion | 🚧 planifié |
+| **ICT-9** | [Agence & régénération](ICT-9-AgencyRegeneration.ipynb) — **strate 2**. Morphogenèse réaction-diffusion de Gray-Scott (Pearson 1993) : un système qui **répare** sa forme vers un point de consigne **intrinsèque** après une ablation `do(·)`, l'agence **mesurée** comme *gain de réparation* (réaction-diffusion vs diffusion pure, deux mondes contrefactuels de Pearl). *Sans complaisance* : les mesures naïves de ressemblance (pixel-à-pixel, cosinus spectral) fabriquent un signal fantôme ; seule la structure restaurée contrastée au contrôle passif tient | ✅ |
+| **ICT-10** | Grammaire des catastrophes — **strate 2**. Typer les transitions qualitatives (pli, fronce, fourche, hystérésis) comme **transitions mesurées**, pas comme images | 🚧 planifié |
+| **ICT-11** | Profils d'agence causale — **strate 2**. L'agence aux échelles micro/méso/macro (lien avec la causal emergence d'ICT-5/6) | 🚧 planifié |
+| **ICT-12** | Renormalisation causale & signatures fractales — **strate 2**. L'**invariance multi-échelle** des propriétés causales comme invariance *testée*, pas comme jolie image | 🚧 planifié |
+| **ICT-Synthèse** | Réunir $\Phi$, trajectoires, bassins, transitions, réparation, émergence, invariance d'échelle et agence en un seul fil | 🚧 planifié |
 
 ## Strate 2 — du tri transparent à la morphogenèse dynamique
 
@@ -214,10 +221,19 @@ d'attracteurs est engendré par la dynamique elle-même**, et lève ces limites 
   bascule) est **adossée à une grandeur mesurée**, et la leçon *sans complaisance* montre qu'une
   mesure naïve **fabrique ou masque** le signal — la métaphore n'est créditée que par la rigueur du
   protocole.
-- **ICT-9** (réaction-diffusion régénérante, type Gray-Scott) lèvera la limite **2** : l'**agence**
+- **ICT-9** (réaction-diffusion régénérante, type Gray-Scott) lève la limite **2** : l'**agence**
   comme capacité à **maintenir et réparer sa propre forme** vers un *point de consigne intrinsèque*,
   démontrée *par contraste* — la réaction répare là où la simple diffusion dissout (l'analogue
-  dynamique du « sans liberté, pas d'agrégation » d'ICT-4).
+  dynamique du « sans liberté, pas d'agrégation » d'ICT-4). L'agence n'y est jamais *déclarée* : elle
+  est **mesurée** comme un gain de récupération sur un contrôle passif, après une intervention `do(·)`
+  identique appliquée à deux mondes contrefactuels (Pearl). La leçon *sans complaisance* y est que les
+  mesures naïves de ressemblance (distance pixel-à-pixel, similarité cosinus) **fabriquent un signal
+  fantôme** sur un attracteur mitotique ou un champ sans structure — seule la structure restaurée,
+  contrastée, tient.
+
+Les notebooks suivants (**ICT-10** grammaire des catastrophes, **ICT-11/12** profils d'agence causale
+et renormalisation causale, **ICT-Synthèse**) poursuivront la même règle : *ne pas ouvrir cinq fronts
+à la fois* — une métaphore n'entre dans ICT que lorsqu'elle est **attachée à une mesure**.
 
 C'est la même discipline que la strate 1 (exécuter, mesurer, narrer le résultat réel) appliquée à
 une dynamique qui, cette fois, **génère** son propre paysage de buts plutôt que de le recevoir.
