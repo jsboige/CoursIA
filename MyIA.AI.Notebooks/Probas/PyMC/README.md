@@ -2,7 +2,7 @@
 
 [← Série Probas](../README.md) | [Infer.NET (C#) →](../Infer/README.md)
 
-Port Python de la série Infer.NET couvrant l'inférence bayésienne avec PyMC (NUTS, échantillonnage MCMC), des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision.
+Port Python de la série Infer.NET couvrant l'inférence bayésienne avec PyMC (NUTS, échantillonnage MCMC), des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision et une clôture sur l'**inférence causale** (do-calculus de Pearl, opérateur `pm.do`).
 
 **A qui s'adresse cette série** : praticiens Python, data scientists et étudiants souhaitant maîtriser l'inférence bayésienne moderne avec l'écosystème PyMC/ArviZ. Aucun prérequis en C# ou Infer.NET : chaque notebook est autonome.
 
@@ -10,7 +10,7 @@ Port Python de la série Infer.NET couvrant l'inférence bayésienne avec PyMC (
 
 PyMC est le framework d'inférence bayésienne le plus utilise en Python pour la modélisation probabiliste appliquee. La ou scikit-learn fournit des predictions ponctuelles, PyMC produit des **distributions postérieures complètes** qui quantifient l'incertitude de chaque paramètre.
 
-Cette série couvre les **même 20 modèles** que la série [Infer.NET](../Infer/) mais avec un moteur d'inférence radicalement différent :
+Cette série couvre les **mêmes modèles** que la série [Infer.NET](../Infer/) (des fondamentaux à l'inférence causale) mais avec un moteur d'inférence radicalement différent :
 
 | Aspect | Infer.NET (C#) | PyMC (Python) |
 |--------|----------------|---------------|
@@ -85,6 +85,9 @@ A l'issue de cette série, vous serez capable de :
 | 18 | [PyMC-18-Décision-Value-Information](PyMC-18-Decision-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
 | 19 | [PyMC-19-Décision-Expert-Systems](PyMC-19-Decision-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
 | 20 | [PyMC-20-Décision-Sequential](PyMC-20-Decision-Sequential.ipynb) | 60 min | MDPs, bandits, POMDPs |
+| 22 | [PyMC-22-Causal-Inference](PyMC-22-Causal-Inference.ipynb) | 65 min | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
+
+> **Numérotation** : le notebook **22** porte ce numéro par **parité** avec son jumeau C# [Infer-22-Causal-Inference](../Infer/Infer-22-Causal-Inference.ipynb). Le sujet d'Infer-21 (Thompson Sampling) est, côté Python, **intégré dans** [PyMC-20-Decision-Sequential](PyMC-20-Decision-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
 
 ## Progression Pédagogique
 
@@ -244,7 +247,7 @@ Ce port Python est le pendant de la série [Infer.NET](../Infer/) (C# / .NET Int
 
 | Série | Lien | Relation |
 |-------|------|----------|
-| [Infer.NET](../Infer/) | Même 20 modèles en C# / message passing | Comparaison MCMC vs inférence exacte |
+| [Infer.NET](../Infer/) | Mêmes modèles en C# / message passing | Comparaison MCMC vs inférence exacte |
 | [Probas (parent)](../README.md) | Vue d'ensemble Probas | Contexte et parcours |
 | [ML](../../ML/) | Pipeline ML classique | PyMC comme alternative bayésienne |
 | [QuantConnect](../../QuantConnect/) | Strategies de trading | Modèles bayésiens appliques au trading |
