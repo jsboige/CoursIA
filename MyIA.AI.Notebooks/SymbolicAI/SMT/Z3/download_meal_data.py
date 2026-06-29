@@ -17,36 +17,42 @@ Deux sources, deux mecanismes :
     Table 2025 = 3484 aliments x 74 constituants ; le gros fichier est
     `compo_2025_11_03.xml` (~69 Mo, valeurs aliment x constituant).
 
-  - **Recettes + RecipeML = depuis le fork** MyIntelligenceAgency/Z3.LinqBinding
-    @ EPFdevelopment, projet Demo2 (clone git partiel blobless + sparse-checkout).
-      * Recettes : denrees/plats/menus OpenData cantine (JSON) -- donnee du demo.
-      * RecipeML : corpus TIERS "Squirrel's RecipeML Archive" (993 recettes XML,
-        10 batches, ~2,3 Mo) -- vendorise dans le fork. PAS une donnee du demo
-        d'origine ; reserve au scale-up (Slice B). Mirrors publics plus petits :
-        JimSaiya/eXist-recipes (403), mark-dunn/exist-db-recipes (27).
-        Pour la convergence-a-tres-grande-echelle (#4617 Part 4), fallback geant :
-        HuggingFace `mbien/recipe_nlg` (RecipeNLG, ~2,2 M recettes) -- a brancher
-        si les 993 du Squirrel archive sont insuffisantes.
+  - **Recettes = depuis le fork** MyIntelligenceAgency/Z3.LinqBinding @
+    EPFdevelopment, projet Demo2 (clone git partiel blobless + sparse-checkout) :
+    denrees/plats/menus OpenData cantine (JSON) -- donnee du demo.
+
+  - **RecipeML = corpus ORIGINAL "Squirrel's RecipeML Archive" (~11 000 recettes)**
+    recupere via la Wayback Machine. L'hote canonique d'origine
+    (recipewebservice.com -> dsquirrel.tripod.com/xmlzips/) est mort, mais
+    archive.org a snapshote les 110 zips `RecipeMLArchive00001..00110.zip`
+    (100 recettes XML chacun) au snapshot 2011-08-27. C'est un corpus TIERS (PAS
+    une donnee du demo) ; le fork n'en avait vendorise que ~10 batches (993).
+    `--recipeml-limit N` ne prend que les N premiers batches (workflow
+    "subsets-first" du capstone, #4617 Part 4). Fallback geant pour la
+    convergence-a-tres-grande-echelle : HuggingFace `mbien/recipe_nlg`
+    (RecipeNLG, ~2,2 M recettes, telechargement manuel).
 
 Le cache `dietetique.json` n'est PAS telecharge : c'est un artefact runtime que
 le notebook regenere via `Dietetique.Load` sur les donnees 2025 (l'ancien cache
 du fork etait calcule sur la table 2017 -> obsolete).
 
 Usage :
-    python download_meal_data.py                 # Ciqual 2025 + Recettes + RecipeML
-    python download_meal_data.py --areas Ciqual  # table ANSES 2025 seule
-    python download_meal_data.py --areas Recettes RecipeML
-    python download_meal_data.py --force         # re-telecharge meme si present
+    python download_meal_data.py                       # Ciqual 2025 + Recettes + RecipeML (11k)
+    python download_meal_data.py --areas Ciqual        # table ANSES 2025 seule
+    python download_meal_data.py --areas RecipeML --recipeml-limit 5   # 5 batches (500 recettes)
+    python download_meal_data.py --force               # re-telecharge meme si present
     python download_meal_data.py --dest /chemin/data
 """
 from __future__ import annotations
 
 import argparse
+import io
 import shutil
 import subprocess
 import sys
 import tempfile
 import urllib.request
+import zipfile
 from pathlib import Path
 
 # --- Source officielle ANSES : table Ciqual 2025 (recherche.data.gouv.fr) -------
@@ -65,7 +71,7 @@ CIQUAL_2025_FILES: dict[str, str] = {
     # sources_2025_11_03.xml (doi:10.57745/3MVEOJ, ~0,9 Mo) : non lu -> omis.
 }
 
-# --- Source fork : Recettes + RecipeML (git sparse-checkout) --------------------
+# --- Source fork : Recettes (git sparse-checkout) -------------------------------
 REPO_URL = "https://github.com/MyIntelligenceAgency/Z3.LinqBinding.git"
 BRANCH = "EPFdevelopment"
 # Demo2 = projet canonique (#4617 « Demo2/MealPlanning »).
@@ -74,10 +80,19 @@ SRC_SUBTREE = "src/Z3.LinqBinding.Demo2/App_data/Meals"
 # (un chemin termine par "/" = dossier copie recursivement).
 FORK_AREAS: dict[str, list[str]] = {
     "Recettes": ["Recettes/"],   # denrees/plats/menus OpenData cantine (JSON) -- original
-    "RecipeML": ["RecipeML/"],   # Squirrel's RecipeML Archive (993 recettes, tiers) -- Slice B
 }
 
-ALL_AREAS = ["Ciqual", *FORK_AREAS]
+# --- Source Wayback : RecipeML "Squirrel's RecipeML Archive" (~11k recettes) -----
+# Hote d'origine mort ; archive.org a snapshote les 110 zips au 2011-08-27
+# (timestamp verifie : 00001 et 00110 resolvent). Suffixe `id_` = octets bruts.
+WAYBACK_TS = "20110827085807"
+RECIPEML_ZIP_URL = (
+    "https://web.archive.org/web/" + WAYBACK_TS
+    + "id_/http://dsquirrel.tripod.com/xmlzips/RecipeMLArchive{:05d}.zip"
+)
+RECIPEML_BATCHES = 110  # 110 batches x 100 recettes ~= 11 000
+
+ALL_AREAS = ["Ciqual", *FORK_AREAS, "RecipeML"]
 
 
 def _run(cmd: list[str], cwd: Path | None = None) -> None:
@@ -163,16 +178,52 @@ def download_fork(dest: Path, areas: list[str]) -> None:
             print(f"  [ok] {area} -> {count} element(s) ({_human(_dir_size(dest / area))})")
 
 
-def download(dest: Path, areas: list[str], force: bool) -> None:
+def download_recipeml(dest: Path, limit: int | None) -> None:
+    """Recupere la "Squirrel's RecipeML Archive" (~11k recettes) via Wayback.
+
+    Telecharge les zips `RecipeMLArchive#####.zip` snapshotes sur archive.org et
+    extrait les XML dans `RecipeML/RecipeMLArchive#####/`. `limit` borne le nombre
+    de batches (subsets-first).
+    """
+    rml = dest / "RecipeML"
+    rml.mkdir(parents=True, exist_ok=True)
+    n = RECIPEML_BATCHES if limit is None else min(limit, RECIPEML_BATCHES)
+    print(f"RecipeML (Squirrel's Archive via Wayback {WAYBACK_TS}) : {n} batch(es)")
+    total = 0
+    for i in range(1, n + 1):
+        url = RECIPEML_ZIP_URL.format(i)
+        try:
+            with urllib.request.urlopen(url, timeout=120) as resp:  # noqa: S310 (URL fixe Wayback)
+                data = resp.read()
+            with zipfile.ZipFile(io.BytesIO(data)) as zf:
+                members = [m for m in zf.namelist() if m.lower().endswith(".xml")]
+                outdir = rml / f"RecipeMLArchive{i:05d}"
+                outdir.mkdir(exist_ok=True)
+                for m in members:
+                    (outdir / Path(m).name).write_bytes(zf.read(m))
+            total += len(members)
+        except Exception as exc:  # noqa: BLE001
+            print(f"  [warn] batch {i:05d} : {exc} - ignore")
+            continue
+        if i % 10 == 0 or i == n:
+            print(f"  ... {i}/{n} batches, {total} recettes")
+    print(f"  [ok] RecipeML -> {total} recettes ({_human(_dir_size(rml))})")
+
+
+def download(dest: Path, areas: list[str], force: bool, recipeml_limit: int | None) -> None:
     dest.mkdir(parents=True, exist_ok=True)
 
     do_ciqual = "Ciqual" in areas
+    do_recipeml = "RecipeML" in areas
     fork_to_fetch = [a for a in areas if a in FORK_AREAS]
 
     # Filtre presence (sauf --force).
     if do_ciqual and _ciqual_present(dest) and not force:
         print(f"[skip] Ciqual deja present ({_human(_dir_size(dest / 'Ciqual'))}) - --force pour ecraser")
         do_ciqual = False
+    if do_recipeml and (dest / "RecipeML").exists() and not force:
+        print(f"[skip] RecipeML deja present ({_human(_dir_size(dest / 'RecipeML'))}) - --force pour ecraser")
+        do_recipeml = False
     kept = []
     for a in fork_to_fetch:
         target = dest / a
@@ -182,7 +233,7 @@ def download(dest: Path, areas: list[str], force: bool) -> None:
             kept.append(a)
     fork_to_fetch = kept
 
-    if not do_ciqual and not fork_to_fetch:
+    if not do_ciqual and not do_recipeml and not fork_to_fetch:
         print("Rien a telecharger. Corpus deja complet.")
         return
 
@@ -190,6 +241,8 @@ def download(dest: Path, areas: list[str], force: bool) -> None:
         download_ciqual(dest)
     if fork_to_fetch:
         download_fork(dest, fork_to_fetch)
+    if do_recipeml:
+        download_recipeml(dest, recipeml_limit)
 
     print(f"\nCorpus disponible dans : {dest.resolve()}")
     print(f"Taille totale : {_human(_dir_size(dest))}")
@@ -206,10 +259,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--dest", type=Path, default=default_dest, help=f"dossier cible (defaut : {default_dest})")
     parser.add_argument("--force", action="store_true", help="re-telecharge meme si deja present")
+    parser.add_argument(
+        "--recipeml-limit", type=int, default=None, metavar="N",
+        help=f"ne prend que les N premiers batches RecipeML (defaut : tous, {RECIPEML_BATCHES})",
+    )
     args = parser.parse_args(argv)
 
     try:
-        download(args.dest, args.areas, args.force)
+        download(args.dest, args.areas, args.force, args.recipeml_limit)
     except RuntimeError as exc:
         print(f"ERREUR : {exc}", file=sys.stderr)
         return 1
