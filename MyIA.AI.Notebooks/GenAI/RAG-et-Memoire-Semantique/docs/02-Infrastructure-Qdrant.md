@@ -1,6 +1,6 @@
 # 02 - Infrastructure Qdrant
 
-[← 01 Pourquoi](01-Pourquoi-Memoire-Semantique.md) | [Mémoire Sémantique Qdrant](../README.md) | [→ 03 Utilisation](03-Utilisation-MCP-Indexation.md)
+[← 01 Pourquoi](01-Pourquoi-Memoire-Semantique.md) | [RAG et Mémoire Sémantique](../README.md) | [→ 03 Utilisation](03-Utilisation-MCP-Indexation.md)
 
 Ce document décrit le **déploiement réel** de la base vectorielle : le moteur, son conteneur, son stockage, sa quantization, et les garde-fous qui le protègent. Les valeurs et configurations sont tirées d'une infrastructure en production ; les templates anonymisés correspondants sont dans [`configs/`](../configs/).
 
@@ -72,7 +72,16 @@ Deux garde-fous protègent ce montage — la sentinelle anti-split-brain (sectio
 
 Un vecteur de 2560 dimensions en virgule flottante 32 bits pèse ~10 Ko. Multiplié par des centaines de milliers de points, la RAM nécessaire pour garder l'index « chaud » explose. La **quantization** compresse les vecteurs pour la recherche, tout en gardant les originaux pour affiner les résultats.
 
-Nous utilisons **TurboQuant 4 bits** (disponible à partir du moteur 1.18.0) avec l'option `always_ram: true`. Les faits mesurés sur notre collection principale :
+Nous utilisons **TurboQuant 4 bits** (disponible à partir du moteur 1.18.0). Dans la configuration Qdrant, cela correspond à la clé officielle `quantization_config.turbo.bits: bits4`, assortie de `always_ram: true` :
+
+```yaml
+quantization_config:
+  turbo:
+    bits: bits4        # TurboQuant 4 bits — valeurs possibles : bits1, bits2, bits4, bits8
+    always_ram: true   # garder les vecteurs quantizés en RAM pour des recherches rapides
+```
+
+En REST, le même réglage s'applique sans recréer la collection, via un `PATCH` sur `/collections/<nom>` avec le corps `{"quantization_config":{"turbo":{"bits":"bits4","always_ram":true}}}`. Les faits mesurés sur notre collection principale :
 
 - **Compression 8×** des vecteurs gardés en RAM.
 - **Rappel de score `recall@10 = 1.0`** par rapport à la recherche exacte : aucun voisin de qualité inférieure n'est introduit. Autrement dit, **zéro perte de qualité** observable à ce niveau de bits.

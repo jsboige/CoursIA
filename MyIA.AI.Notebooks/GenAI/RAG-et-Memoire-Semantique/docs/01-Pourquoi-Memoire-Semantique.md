@@ -1,6 +1,6 @@
 # 01 - Pourquoi la mémoire sémantique ?
 
-[← Mémoire Sémantique Qdrant](../README.md) | [→ Infrastructure Qdrant](02-Infrastructure-Qdrant.md)
+[← RAG et Mémoire Sémantique](../README.md) | [→ Infrastructure Qdrant](02-Infrastructure-Qdrant.md)
 
 Ce document explique le **besoin** auquel répond une base de données vectorielle dans un système d'agents de codage. Avant de déployer quoi que ce soit (document 02), il faut comprendre *pourquoi* on le déploie.
 
@@ -41,6 +41,8 @@ Un **plongement** (*embedding*) est un vecteur de nombres réels — par exemple
 La **similarité** entre deux vecteurs se mesure le plus souvent par le **cosinus** de l'angle qui les sépare (1 = identique, 0 = sans rapport). Rechercher, c'est donc : embarquer la requête, puis trouver les *k* points de la base dont le vecteur est le plus proche. Sur des millions de points, un balayage exhaustif serait trop lent ; c'est pourquoi Qdrant utilise un index approché **HNSW** (détaillé au [document 02](02-Infrastructure-Qdrant.md)).
 
 C'est le socle du motif **RAG** (*Retrieval-Augmented Generation*) : au lieu de tout demander au modèle de mémoire, on **récupère** d'abord les fragments pertinents dans la base vectorielle, puis on les **injecte** dans le contexte pour que la génération soit ancrée sur des faits réels.
+
+> **Pont vers le RAG appliqué au texte.** Cette section traite le RAG du point de vue de l'*infrastructure* — la base vectorielle qui sert de mémoire à une flotte d'agents. Pour le même motif vu *en application* sur des documents, la section [Texte](../../Texte/) propose deux notebooks complémentaires : [`5_RAG_Modern.ipynb`](../../Texte/5_RAG_Modern.ipynb) (un pipeline RAG complet de bout en bout) et [`14_Persistent_Memory.ipynb`](../../Texte/14_Persistent_Memory.ipynb) (donner une mémoire persistante à un agent conversationnel). Et pour manipuler Qdrant soi-même sans rien installer, le [notebook pratique de cette section](../01-Hands-On-Grounding.ipynb).
 
 ## 4. La base vectorielle comme mémoire d'une flotte
 

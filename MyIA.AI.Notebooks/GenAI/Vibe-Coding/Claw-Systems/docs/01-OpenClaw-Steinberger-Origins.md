@@ -80,7 +80,7 @@ roosync_dashboard(type: "workspace", workspace: "CoursIA")
                  └── condensation  ← auto à 92% utilisation
 ```
 
-Le dashboard CoursIA, sur lequel cette PR est précisément coordonnée, **est** un MoltBook au sens fonctionnel. Sa différence avec celui de Steinberger est pratique : il est porté par un MCP (`roo-state-manager`), accessible depuis Claude Code et Roo Code, et indexé par Qdrant pour la recherche sémantique (voir [Memoire-Semantique-Qdrant/](../Memoire-Semantique-Qdrant/) — chantier parallèle de l'agent qdrant, instance #4432 de l'EPIC #4427).
+Le dashboard CoursIA, sur lequel cette PR est précisément coordonnée, **est** un MoltBook au sens fonctionnel. Sa différence avec celui de Steinberger est pratique : il est porté par un MCP (`roo-state-manager`), accessible depuis Claude Code et Roo Code, et indexé par Qdrant pour la recherche sémantique (voir [RAG et Mémoire Sémantique](../../../RAG-et-Memoire-Semantique/) — chantier parallèle de l'agent qdrant, instance #4432 de l'EPIC #4427).
 
 Steinberger ne savait pas, en construisant MoltBook, qu'il offrait un patron général. Mais c'en est un. Tout cluster d'agents un peu sérieux finit par en avoir besoin.
 

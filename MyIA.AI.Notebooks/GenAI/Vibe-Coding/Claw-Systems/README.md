@@ -156,7 +156,7 @@ Les Claw systems sont conçus pour fonctionner **avec ou sans le cluster CoursIA
 - [Vibe-Coding parent](../README.md) — section englobante (Claude-Code, Roo-Code, Claw-Systems)
 - [Claude-Code](../Claude-Code/) — pendant assistant interactif (5 modules, 13-16h)
 - [Roo-Code](../Roo-Code/) — pendant assistant interactif VS Code-natif (5 modules)
-- [Memoire-Semantique-Qdrant](../Memoire-Semantique-Qdrant/) — couche infra mémoire/grounding (chantier parallèle, EPIC #4427 instance #2)
+- [RAG et Mémoire Sémantique](../../RAG-et-Memoire-Semantique/) — couche infra mémoire/grounding (chantier parallèle, EPIC #4427 instance #2)
 - `Playwright-OWUI` — banc QA flotte OWUI multi-tenant (chantier parallèle, EPIC #4427 instance #3, à venir)
 
 ---

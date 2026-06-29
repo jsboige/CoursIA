@@ -19,7 +19,6 @@ Vibe-Coding/
 ├── Roo-Code/             # Ateliers Roo Code (5 modules + avances)
 ├── Claw-Systems/         # Agents IA autonomes (NanoClaw, OpenClaw)
 ├── Claudish/             # Proxy multi-provider (route assistants vers Anthropic/GLM/Qwen)
-├── Memoire-Semantique-Qdrant/   # Backend mémoire sémantique (Qdrant, grounding)
 └── docs/                 # Documentation commune et introductions
 ```
 
@@ -108,19 +107,9 @@ Proxy/routeur qui rend les assistants (Claude Code, Roo Code) et les bots (Herme
 | [Proxy en détail](Claudish/docs/Claudish-Proxy.md) | Principe wire, topologie, router, connecter un agent, avancées du fork, troubleshooting |
 | [Config](Claudish/configs/claudish.env.secrets.example) | Template de configuration (placeholders uniquement) |
 
-## Mémoire Sémantique Qdrant - Infrastructure de Grounding
+## Mémoire sémantique et grounding — voir la section dédiée
 
-Le **backend de mémoire sémantique** qui donne aux agents de codage une mémoire long-terme et les ancre dans des faits vérifiables (grounding) : une base de données vectorielle Qdrant qui indexe conversations et code, interrogée par le sens. Là où les sections ci-dessus décrivent les front-ends agents, celle-ci documente l'infrastructure qui les alimente -- avec les incidents d'ops réels (dérives de montage, pertes de données, durcissement des sauvegardes) comme matière pédagogique.
-
-| Document | Description |
-|----------|-------------|
-| [README](Memoire-Semantique-Qdrant/README.md) | Vue d'ensemble, pipeline, écosystème |
-| [Pourquoi la mémoire sémantique](Memoire-Semantique-Qdrant/docs/01-Pourquoi-Memoire-Semantique.md) | Grounding, SDDD, RAG, sémantique vs lexical |
-| [Infrastructure Qdrant](Memoire-Semantique-Qdrant/docs/02-Infrastructure-Qdrant.md) | Docker, stockage WSL2, quantization TurboQuant, anti-split-brain |
-| [Utilisation et indexation](Memoire-Semantique-Qdrant/docs/03-Utilisation-MCP-Indexation.md) | MCP, indexation code + conversations, requêtes |
-| [Incidents et leçons](Memoire-Semantique-Qdrant/docs/04-Incidents-et-Lecons.md) | War-stories d'ops : dérive de montage, perte de données, sauvegardes |
-
-**Cas d'usage** : donner à un assistant de codage une mémoire interrogeable par le sens, partagée entre machines, robuste aux pannes.
+Le **backend de mémoire sémantique** qui donne aux agents de codage une mémoire long-terme et les ancre dans des faits vérifiables (grounding) a été promu en **section top-level** : [RAG et Mémoire Sémantique](../RAG-et-Memoire-Semantique/). Là où les ateliers ci-dessus décrivent les front-ends agents, cette section documente l'infrastructure qui les alimente — base vectorielle Qdrant, embeddings, indexation, et un notebook pratique de grounding — avec les incidents d'ops réels (dérives de montage, pertes de données, durcissement des sauvegardes) comme matière pédagogique.
 
 ## Documentation commune
 

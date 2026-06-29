@@ -1,6 +1,6 @@
 # 03 - Utilisation et indexation
 
-[← 02 Infrastructure](02-Infrastructure-Qdrant.md) | [Mémoire Sémantique Qdrant](../README.md) | [→ 04 Incidents et leçons](04-Incidents-et-Lecons.md)
+[← 02 Infrastructure](02-Infrastructure-Qdrant.md) | [RAG et Mémoire Sémantique](../README.md) | [→ 04 Incidents et leçons](04-Incidents-et-Lecons.md)
 
 Une base vectorielle déployée (document 02) ne sert à rien tant qu'elle n'est ni **alimentée** ni **interrogée**. Ce document décrit comment l'agent s'y connecte (MCP), comment le contenu y est indexé, et comment on l'interroge efficacement.
 
