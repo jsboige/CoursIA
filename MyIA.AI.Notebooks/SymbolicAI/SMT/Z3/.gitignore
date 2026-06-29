@@ -1,0 +1,3 @@
+# Corpus MealPlanning telecharge a la demande par download_meal_data.py (#4617).
+# Trop volumineux pour le depot (Ciqual ANSES 2017 ~46 Mo + Recettes + RecipeML).
+data/
