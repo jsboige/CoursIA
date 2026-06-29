@@ -89,6 +89,8 @@ A l'issue de cette série, vous serez capable de :
 
 > **Numérotation** : le notebook **22** porte ce numéro par **parité** avec son jumeau C# [Infer-22-Causal-Inference](../Infer/Infer-22-Causal-Inference.ipynb). Le sujet d'Infer-21 (Thompson Sampling) est, côté Python, **intégré dans** [PyMC-20-Decision-Sequential](PyMC-20-Decision-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
 
+> **Ponts causaux** : [PyMC-22](PyMC-22-Causal-Inference.ipynb) est le maillon **MCMC** d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau **message passing** en C# [Infer-22](../Infer/Infer-22-Causal-Inference.ipynb) (Infer.NET, EP/VMP), le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-5-CausalEmergence.ipynb). Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
+
 ## Progression Pédagogique
 
 ```mermaid

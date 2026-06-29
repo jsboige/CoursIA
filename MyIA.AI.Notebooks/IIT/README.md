@@ -322,6 +322,59 @@ Les notebooks ICT-1, ICT-3 à ICT-7 (trajectoires de $\Phi$, agrégation chimér
 multi-échelles, pont tri → PyPhi, signatures scale-free) sont sur la feuille de route de
 [ICT-0-Framing](ICT-0-Framing.md).
 
+## Ponts causaux : le do-calculus de Pearl à travers les paradigmes
+
+Quatre séries du dépôt abordent la **causalité** — non pas la corrélation, mais la question
+« que se passe-t-il si j'**interviens** ? ». Elles le font dans des paradigmes radicalement
+différents (logique symbolique, inférence bayésienne par message passing, MCMC, théorie de l'information),
+et pourtant elles partagent **le même noyau** : l'opérateur `do(·)` de Judea Pearl et son
+**échelle de la causalité** à trois barreaux.
+
+**L'échelle de la causalité (ladder of causation)** :
+
+| Barreau | Question | Formalisme | Exemple canonique |
+|---------|----------|------------|-------------------|
+| **L1 — Association** | « Que voit-on ? » | `P(Y \| X)` | observer le baromètre baisser prédit la pluie |
+| **L2 — Intervention** | « Que se passe-t-il si on agit ? » | `P(Y \| do(X))` | *forcer* le baromètre à baisser ne fait **pas** pleuvoir |
+| **L3 — Contrefactuel** | « Qu'aurait-il fallu ? » | `P(Y_x \| X', Y')` | « l'herbe aurait-elle été mouillée si on avait coupé l'arrosage ? » |
+
+Le saut **L1 → L2** est le cœur du do-calculus : `do(X=x)` **mutile** le graphe causal — il coupe
+les arcs entrants de `X`, brisant les chemins de confusion — de sorte que
+`P(Y|do(X)) ≠ P(Y|X)` dès qu'un confondeur existe.
+
+**Le même opérateur, quatre instanciations** :
+
+| Paradigme | Notebook | Instanciation de `do(·)` | Résultat-signature |
+|-----------|----------|---------------------------|--------------------|
+| **Symbolique** (logique propositionnelle, Java/Tweety) | [Tweety-11-Causal](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | `scm.intervene(p, b)` → nouveau SCM dont l'équation de `p` devient une constante | `P(rain\|drops)=True ≠ P(rain\|do(drops))=False` (baromètre) |
+| **Bayésien par message passing** (Infer.NET, EP/VMP — Gibbs disponible) | [Infer-22](../Probas/Infer/Infer-22-Causal-Inference.ipynb) | mutilation de graphe `Variable.Bernoulli(1.0)` ; backdoor / front-door | paradoxe de Simpson résolu, identifiabilité par ajustement |
+| **Bayésien MCMC** (PyMC) | [PyMC-22](../Probas/PyMC/PyMC-22-Causal-Inference.ipynb) | opérateur natif `pm.do(model, {X:x})` ; backdoor / front-door | contrefactuel par abduction (postérieur sur les exogènes) |
+| **Théorie de l'information / émergence** (ICT) | [ICT-5-CausalEmergence](ICT-5-CausalEmergence.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
+
+**Le pont le plus profond — ICT-5 lève le do-calculus au niveau des échelles.** Dans la théorie
+de l'émergence causale (Hoel, *Causal Emergence 2.0* ; Jansma & Hoel, *Engineering Emergence*,
+2025), l'**information effective** (EI) et la *causal primitive* (`CP = déterminisme −
+dégénérescence`, équivalente à l'`effectiveness`) se calculent en plaçant le système sous une
+**distribution d'intervention** `p(C)` — par défaut **uniforme sur les états**. C'est exactement
+`do(X_t = x)` de Pearl, appliqué uniformément : on ne *regarde* pas la dynamique, on la *sonde*
+en forçant chaque état d'entrée. Mesurer « combien de travail causal fait un mécanisme »
+**exige** donc l'opérateur `do`, tout comme définir un effet causal l'exige chez Pearl.
+L'**émergence** apparaît quand une description **macro** (gros-grain) réalise *plus* de travail
+causal que le micro — l'`effectiveness` monte sous coarse-graining.
+
+**Parcours de lecture conseillé** : commencer par le **symbolique qualitatif**
+([Tweety-11](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb)) pour *voir* `observe` vs `do` sans
+nombres ; passer au **quantitatif distributionnel** ([Infer-22](../Probas/Infer/Infer-22-Causal-Inference.ipynb)
+message passing, [PyMC-22](../Probas/PyMC/PyMC-22-Causal-Inference.ipynb) MCMC) pour *calculer* les effets
+et lever le paradoxe de Simpson ; finir par l'**information-théorique**
+([ICT-5](ICT-5-CausalEmergence.ipynb)) où le même `do` mesure le travail causal **à travers les
+échelles**.
+
+**Articles d'ancrage** : Pearl, *Causality* (2009) ; Hoel, *Causal Emergence 2.0*
+(arXiv:2503.13395) ; Jansma & Hoel, *Engineering Emergence* (arXiv:2510.02649).
+
+*Voir #4208 (surfaçage des différenciants du dépôt) et l'Epic ICT #4588.*
+
 ## Licence
 
 Voir la licence du repository principal.
