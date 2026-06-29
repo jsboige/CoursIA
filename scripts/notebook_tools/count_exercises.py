@@ -28,7 +28,7 @@ A markdown "Exemple" header + working code is an EXAMPLE, not counted.
 Usage:
     python count_exercises.py                                  # all pedagogical notebooks
     python count_exercises.py --family IIT                     # single family
-    python count_exercises.py MyIA.AI.Notebooks/IIT/Intro_to_PyPhi.ipynb   # single notebook
+    python count_exercises.py MyIA.AI.Notebooks/IIT/IIT-1-IntroToPyPhi.ipynb   # single notebook
     python count_exercises.py --threshold 3                    # default: flag < 3
     python count_exercises.py --json                           # machine-readable
     python count_exercises.py --check                          # exit 1 if any sub-threshold

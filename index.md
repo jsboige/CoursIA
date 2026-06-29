@@ -74,7 +74,7 @@ Ce document fournit un index organisé de tous les notebooks disponibles dans le
 
 | Notebook | Description | Difficulté | Tags |
 |----------|-------------|------------|------|
-| [Intro_to_PyPhi.ipynb](MyIA.AI.Notebooks/IIT/Intro_to_PyPhi.ipynb) | Introduction à PyPhi pour IIT | 🔴 Avancé | `IIT`, `Consciousness`, `PyPhi` |
+| [IIT-1-IntroToPyPhi.ipynb](MyIA.AI.Notebooks/IIT/IIT-1-IntroToPyPhi.ipynb) | Introduction à PyPhi pour IIT | 🔴 Avancé | `IIT`, `Consciousness`, `PyPhi` |
 
 ---
 
