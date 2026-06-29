@@ -38,9 +38,9 @@ Avoir les deux approches permet de comprendre que le ML n'est pas lié à un lan
 
 Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introduisent ML.NET et la préparation de données (IDataView, encodage). Le notebook 3 couvre l'entraînement (SDCA, LightGBM, AutoML). Le notebook 4 est crucial : évaluation rigoureuse par cross-validation et Permutation Feature Importance. Les notebooks 5-7 abordent les séries temporelles, l'export ONNX pour la production, et les systèmes de recommandation. Le TP final (prévision de ventes) combine ML.NET et Infer.NET pour une régression bayésienne. Ce track présuppose .NET 9.0 + dotnet-interactive.
 
-### Track B : Data Science with Agents (Python, 19 notebooks, ~17h)
+### Track B : Data Science with Agents (Python, 27 notebooks, ~21h)
 
-Le parcours Python commence par les fondations (NumPy/Pandas) puis se divise en deux sous-tracks. Le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique (régression, classification, clustering), les modèles d'ensemble et le NLP de base. Le sous-track **Google ADK** (Labs 8-17) monte en complexité avec le deep learning (PyTorch), l'analyse de survivors, le dashboarding, et les pipelines agentic (agents LLM pour automatiser le workflow data science). Ce track présuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
+Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) installent la manipulation de données. Le **socle ML canonique** ([02-ML-Cours](DataScienceWithAgents/02-ML-Cours/), 8 notebooks scikit-learn) pose ensuite les concepts fondamentaux — workflow et surapprentissage, descente de gradient, régressions, ensembles, biais-variance, non supervisé, théorie PAC — chacun rendant *visible* un concept-phare et ancrant un article fondateur. Viennent enfin les **labs agentic**, en deux sous-tracks : le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique et le NLP de base ; le sous-track **Google ADK** (Labs 8-17) monte en complexité avec le deep learning (PyTorch), le dashboarding et les pipelines multi-agents (agents LLM pour automatiser le workflow data science). Ce track présuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
 
 ## Positionnement pédagogique
 
@@ -115,7 +115,18 @@ Formation complète en Data Science Python enrichie d'agents IA. Vous commencere
 
 Entre les fondations NumPy/Pandas et les labs agentic, le socle machine learning **canonique avec scikit-learn** : le workflow (train/test split, surapprentissage rendu visible), la descente de gradient (ouvrir la boîte noire de `fit()`), les régressions linéaire et logistique (OLS vs MLE), les arbres et ensembles (réduction de variance), l'évaluation rigoureuse (biais-variance, validation croisée, courbe ROC/AUC), et le non supervisé (KMeans, ACP). Chaque notebook rend visible un concept-phare et ancre les articles fondateurs — le référent manuel qui rend *jugeable* ce qu'un agent produira ensuite.
 
-- Introduction : [2.1-Workflow-ML](DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) · Dossier : [`02-ML-Cours/`](DataScienceWithAgents/02-ML-Cours/)
+| # | Notebook | Concept rendu visible | Focus |
+|---|----------|----------------------|-------|
+| 2.1 | [Workflow ML](DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) | Train/test split, surapprentissage rendu visible | Méthodologie |
+| 2.2 | [Descente de gradient](DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb) | Ouvrir la boîte noire de `fit()` | Optimisation |
+| 2.3 | [Régression linéaire & logistique](DataScienceWithAgents/02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb) | OLS vs maximum de vraisemblance | Modèles linéaires |
+| 2.4 | [Arbres, forêts & ensembles](DataScienceWithAgents/02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb) | Réduction de variance (bagging, boosting) | Ensembles |
+| 2.5 | [Biais, variance, CV & ROC](DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb) | Compromis biais-variance, validation croisée, ROC/AUC | Évaluation |
+| 2.6 | [Clustering & PCA](DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | KMeans, réduction de dimension | Non supervisé |
+| 2.7 | [Modèles non paramétriques](DataScienceWithAgents/02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | SVM, k plus proches voisins | Non paramétrique |
+| 2.8 | [Théorie PAC & VC](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) | Cadre PAC, dimension de Vapnik-Chervonenkis | Théorie de l'apprentissage |
+
+Dossier : [`02-ML-Cours/`](DataScienceWithAgents/02-ML-Cours/). Le notebook 2.8 (borne PAC/VC) est le **pendant empirique** du lake [`learning_theory_lean/`](learning_theory_lean/) qui *prouve* la convergence du perceptron — voir la section [Théorie formelle (Lean)](#théorie-formelle-lean) ci-dessous.
 
 ### Workshop 3 Jours (PythonAgentsForDataScience)
 
@@ -190,6 +201,7 @@ C'est le **pendant prouvé** des notebooks de classification linéaire (`ML.Net/
 
 1. [ML-1](ML.Net/ML-1-Introduction.ipynb) → comprendre le pipeline ML
 1. [NumPy](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) + [Pandas](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) → maîtriser les données
+1. [Socle ML canonique 2.1 → 2.8](DataScienceWithAgents/02-ML-Cours/) → les fondamentaux scikit-learn (gradient, régressions, ensembles, biais-variance, non supervisé, PAC)
 1. [ML-2](ML.Net/ML-2-Data&Features.ipynb) + [ML-3](ML.Net/ML-3-Entrainement&AutoML.ipynb) → entraîner des modèles
 1. [ML-4](ML.Net/ML-4-Evaluation.ipynb) → évaluer rigoureusement
 

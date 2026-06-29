@@ -83,6 +83,21 @@ notebooks:
     kernel: python3
     rationale: "Current-best learning (AIMA Ch.19) ; module local aima_knowledge vendorise dans reference/ (suivi git) ; stdlib uniquement, random.seed(42) deterministe ; prouve que le packaging local resolve via cwd=notebook.parent par defaut."
 
+  # --- RL : apprentissage par renforcement, fondations tabulaires (serie RL) ---
+  # Bandits multi-bras (epsilon-greedy / UCB / Thompson) : le coin SOBRE de la
+  # serie RL, AVANT l'arrivee de gymnasium (rl_5) et torch/stable-baselines3
+  # (rl_1, rl_6+). Dependances = numpy + matplotlib UNIQUEMENT (toutes deux
+  # pinnees dans golden_set.lock.txt), 0 env de simulation, 0 GPU, 0 reseau.
+  # Aleatoire entierement seede via np.random.default_rng(seed=42) -> sortie
+  # deterministe. Certifie end-to-end par Papermill (39 cellules, 20 code, 0
+  # erreur, 5 figures, ~12 s sur CPU, kernel coursia-ml-training = snapshot du
+  # lock). Premiere serie RL au golden-set (objectif ~1/serie de #4209).
+  - path: MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb
+    series: RL
+    title: "RL-4 - Bandits multi-bras (epsilon-greedy / UCB / Thompson, exploration vs exploitation)"
+    kernel: python3
+    rationale: "Coin sobre de la serie RL (numpy + matplotlib seuls, avant gymnasium/torch) ; default_rng(seed=42) deterministe ; dilemme exploration-exploitation rendu visible (regret cumule par strategie) ; certifie Papermill ~12 s CPU, 0 erreur."
+
 # -----------------------------------------------------------------------------
 # Candidats DEFERRES (v3+) : a certifier quand le lockfile etendra sa couverture.
 #   - Probas/PyMC-* : MCMC non deterministe (sortie stochastique) -> politesse

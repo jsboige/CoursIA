@@ -31,9 +31,9 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [Intro_to_PyPhi](Intro_to_PyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation | 60-90 min |
+| 1 | [IIT-1-IntroToPyPhi](IIT-1-IntroToPyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation | 60-90 min |
 | 2 | [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
-| 3 | [IIT-3-CoarseGraining-Macro-Phi](IIT-3-CoarseGraining-Macro-Phi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
+| 3 | [IIT-3-CoarseGrainingMacroPhi](IIT-3-CoarseGrainingMacroPhi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
 
 ## Parcours recommandés
 
@@ -70,7 +70,7 @@ Le troisième notebook opérationnalise le module `pyphi.macro` resté conceptue
 
 ## Contenu détaillé
 
-### Intro_to_PyPhi.ipynb
+### IIT-1-IntroToPyPhi.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -96,7 +96,7 @@ Le troisième notebook opérationnalise le module `pyphi.macro` resté conceptue
 | Performance | Timing du calcul de CES, module `pyphi.macro` |
 | IIT 4.0 | Concept-Style SIA, limites computationnelles, débats |
 
-### IIT-3-CoarseGraining-Macro-Phi.ipynb
+### IIT-3-CoarseGrainingMacroPhi.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -269,9 +269,9 @@ Oui, mais avec caveats. PyPhi est la référence pour IIT 3.0, mais IIT 4.0 (202
 
 ```
 IIT/
-├── Intro_to_PyPhi.ipynb             # Notebook 1 : introduction
-├── IIT-2-AdvancedTopics.ipynb       # Notebook 2 : sujets avances
-├── IIT-3-CoarseGraining-Macro-Phi.ipynb  # Notebook 3 : coarse-graining & échelle du Φ
+├── IIT-1-IntroToPyPhi.ipynb           # Notebook 1 : introduction
+├── IIT-2-AdvancedTopics.ipynb         # Notebook 2 : sujets avances
+├── IIT-3-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
 ├── scripts/
 │   ├── setup_pyphi_env.ps1     # Setup conda env + kernel
 │   └── build_notebook.py       # Script de construction notebook 2
@@ -313,14 +313,36 @@ mesures, PyPhi pour les calculs IIT stricts), et s'ouvre sur deux articles fonda
 comme morphogenèse minimale (Zhang, Goldstein & Levin, 2025) et l'ingénierie de l'émergence
 multi-échelle (Jansma & Hoel, 2025).
 
+La série progresse en **deux strates**. La **strate 1** (ICT-0 à ICT-7) prend le **tri
+auto-organisé** comme banc d'essai entièrement transparent : trajectoires enregistrables,
+compétences inattendues réelles, pont vers la causal emergence. Elle bute toutefois sur trois
+limites — un **attracteur global unique**, un **but imposé de l'extérieur**, une **hiérarchie non
+générative**. La **strate 2** (ICT-8+) ouvre la *morphogenèse dynamique* sur des systèmes dont le
+paysage d'attracteurs est **engendré par la dynamique** (bifurcation, réaction-diffusion), levant
+ces limites une à une.
+
+### Strate 1 — le tri auto-organisé (transparent et calculable)
+
 | Document | Contenu |
 |----------|---------|
 | [ICT-0-Framing](ICT-0-Framing.md) | Cadrage de la série : de l'état à la trajectoire, articles fondateurs, feuille de route |
+| [ICT-1-PhiTrajectories](ICT-1-PhiTrajectories.ipynb) | Trajectoires de $\Phi$ : paysage de $\Phi$, suivi de $\Phi$ le long d'un attracteur (pulsations) et robustesse aux perturbations — la photographie IIT mise en mouvement, avec le vrai PyPhi |
 | [ICT-2-SelfSortingMorphogenesis](ICT-2-SelfSortingMorphogenesis.ipynb) | Le tri auto-organisé comme morphogenèse : trajectoire dans le morphospace, robustesse aux cellules défectueuses, délai de gratification, auto-réparation, impasses chimériques |
+| [ICT-3-RobustnessDelayedGratification](ICT-3-RobustnessDelayedGratification.ipynb) | Robustesse & délai de gratification, étude quantitative : dégradation gracieuse face aux cellules défectueuses, distributions de récupération, comptage du délai de gratification |
+| [ICT-4-ChimericArraysKinAggregation](ICT-4-ChimericArraysKinAggregation.ipynb) | Tableaux chimériques & agrégation émergente : réparation bidirectionnelle (guérit l'impasse d'ICT-2) puis affinité « kin », mesurée honnêtement (sans degrés de liberté, pas d'agrégation) |
+| [ICT-5-CausalEmergence](ICT-5-CausalEmergence.ipynb) | Émergence causale : $\Phi$ et information effective aux échelles micro/macro, recherche systématique du coarse-graining (vrai `pyphi.macro`), émergence discriminante (Jansma & Hoel, 2025) |
+| [ICT-6-SortingToTPM-CausalEmergence](ICT-6-SortingToTPM-CausalEmergence.ipynb) | Pont tri → TPM : chaîne de Markov estimée depuis les trajectoires de tri d'ICT-2, puis émergence causale multi-échelles avec l'outillage *Causal Emergence 2.0* (Hoel, 2025) au-delà de la borne de taille de PyPhi |
+| [ICT-7-ScaleFreeSignatures](ICT-7-ScaleFreeSignatures.ipynb) | Signatures scale-free & criticalité : détecter une loi de puissance *sans se faire avoir* (MLE de Hill, choix de $x_{\min}$, KS, à la Clauset et al.) ; étalon critique (branchement, exposant $3/2$) vs tri qui *paraît* sans échelle mais possède une taille caractéristique |
 
-Les notebooks ICT-1, ICT-3 à ICT-7 (trajectoires de $\Phi$, agrégation chimérique, TPM
-multi-échelles, pont tri → PyPhi, signatures scale-free) sont sur la feuille de route de
-[ICT-0-Framing](ICT-0-Framing.md).
+### Strate 2 — morphogenèse dynamique (paysages d'attracteurs)
+
+| Document | Contenu |
+|----------|---------|
+| [ICT-8-AttractorLandscapesEWS](ICT-8-AttractorLandscapesEWS.ipynb) | Paysages d'attracteurs & signaux précurseurs — *les deux tressées*. Modèle de pâturage de May (1977), système canonique des *early-warning signals* (Scheffer 2009). Bistabilité entre deux états positifs alternatifs, bifurcation pli, catastrophe = changement de régime. Chaque image (vallée qui s'aplatit, mémoire du danger, alerte) adossée à une mesure réelle (potentiel effectif, valeur propre → 0, variance ↑, autocorrélation ↑, τ de Kendall). Lève l'attracteur unique + ouvre une hiérarchie générative |
+
+Reste sur la feuille de route de [ICT-0-Framing](ICT-0-Framing.md) : **ICT-9** — l'**agence** comme
+régénération vers un *point de consigne intrinsèque* (morphogenèse réaction-diffusion : un système
+qui répare sa forme après ablation, démontré par contraste avec la simple diffusion).
 
 ## Ponts causaux : le do-calculus de Pearl à travers les paradigmes
 
@@ -381,4 +403,4 @@ Voir la licence du repository principal.
 
 ---
 
-*Version 1.1.0 — Juin 2026*
+*Version 1.2.0 — Juin 2026*

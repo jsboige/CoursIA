@@ -14,13 +14,13 @@ Cette série couvre les **mêmes modèles** que la série [Infer.NET](../Infer/)
 
 | Aspect | Infer.NET (C#) | PyMC (Python) |
 |--------|----------------|---------------|
-| **Moteur** | Message passing (EP/VMP) | Échantillonnage MCMC (NUTS) |
-| **Résultats** | Deterministes, analytiques | Stochastiques, convergents |
-| **Flexibilité** | Modèles conjugués | Presque tout modèle |
+| **Moteur** | Message passing : EP (défaut), VMP, Gibbs | Échantillonnage : NUTS (défaut), ADVI |
+| **Posterior (défaut)** | Analytique, déterministe (EP/VMP) | Échantillons MCMC, convergents (NUTS) |
+| **Point fort** | Modèles conjugués et structurés | Presque tout modèle continu |
 | **Diagnostics** | Factor graphs | ArviZ (trace, ESS, R-hat) |
 | **Ecosysteme** | .NET | NumPy/Pandas/Matplotlib |
 
-Avoir les deux approches sur les mêmes modèles permet de comprendre les **compromis** entre inférence exacte et approchee, une compétence clé pour tout praticien.
+Aucune des deux librairies n'est purement déterministe ou purement stochastique — Infer.NET propose aussi un échantillonneur de **Gibbs**, PyMC une inférence variationnelle (**ADVI**) — mais leur moteur *par défaut* incarne deux familles d'algorithmes : le message passing sur graphe de facteurs (Infer.NET/EP) et l'échantillonnage MCMC (PyMC/NUTS). Avoir les deux sur les mêmes modèles permet de comprendre ce **compromis**, une compétence clé pour tout praticien.
 
 ```mermaid
 flowchart LR
@@ -33,7 +33,7 @@ flowchart LR
     P2 --> D2["Factor graph"]
 ```
 
-Le **même** modèle probabiliste (à gauche) se résout par deux moteurs radicalement différents : l'échantillonnage MCMC de PyMC (stochastique, convergent, flexible) ou le message passing d'Infer.NET (déterministe, analytique, restreint aux conjugués). La série parcourt les 20 mêmes modèles des deux côtés pour rendre ce compromis **visible**.
+Le **même** modèle probabiliste (à gauche) se résout par deux moteurs *par défaut* radicalement différents : l'échantillonnage MCMC de PyMC (NUTS, piloté par gradient, flexible sur les modèles continus) ou le message passing d'Infer.NET (EP, rapide sur les modèles conjugués et structurés ; VMP et Gibbs prennent le relais au-delà). La série parcourt les 20 mêmes modèles des deux côtés pour rendre ce compromis **visible**.
 
 ## Quand le MCMC devient nécessaire : modèles hiérarchiques et partial pooling
 
@@ -249,7 +249,7 @@ Ce port Python est le pendant de la série [Infer.NET](../Infer/) (C# / .NET Int
 
 | Série | Lien | Relation |
 |-------|------|----------|
-| [Infer.NET](../Infer/) | Mêmes modèles en C# / message passing | Comparaison MCMC vs inférence exacte |
+| [Infer.NET](../Infer/) | Mêmes modèles en C# / message passing | MCMC (NUTS) vs message passing (EP) |
 | [Probas (parent)](../README.md) | Vue d'ensemble Probas | Contexte et parcours |
 | [ML](../../ML/) | Pipeline ML classique | PyMC comme alternative bayésienne |
 | [QuantConnect](../../QuantConnect/) | Strategies de trading | Modèles bayésiens appliques au trading |
@@ -261,7 +261,7 @@ Ce port Python est le pendant de la série [Infer.NET](../Infer/) (C# / .NET Int
 Cette série vous a fait passer des **fondamentaux de l'inférence bayésienne** (priors, postérieurs, échantillonnage NUTS avec [PyMC-1-Setup](PyMC-1-Setup.ipynb) à [PyMC-3-Factor-Graphs](PyMC-3-Factor-Graphs.ipynb)) à des **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), en suivant le même chemin que la série [Infer.NET](../Infer/) mais avec un **moteur d'inférence radicalement différent**. Trois acquis cles :
 
 - **Lire et diagnostiquer une chaine MCMC** — `pm.sample()` ne suffit pas ; ArviZ (`r_hat < 1.05`, `ess_bulk > 400`, trace plots, divergences) est devenu votre réflexe systématique, et [PyMC-13-Debugging](PyMC-13-Debugging.ipynb) votre référence pour les pannes de convergence.
-- **Choisir le bon moteur selon le modèle** — vous savez desormais **quand** MCMC (PyMC, presque tout modèle, stochastique) est préférable au **message passing** (Infer.NET, conjugué, déterministe), et inversement. Ce compromis exact/approche est une compétence de praticien.
+- **Choisir le bon moteur selon le modèle** — vous savez desormais **quand** l'échantillonnage MCMC (PyMC/NUTS, piloté par gradient, flexible sur presque tout modèle continu) est préférable au **message passing** sur graphe de facteurs (Infer.NET/EP, rapide sur les modèles conjugués et structurés), et inversement. Arbitrer entre ces deux familles d'algorithmes est une compétence de praticien.
 - **Relier inférence et décision** — les notebooks 14 à 20 (utilité espérée, EVPI/EVSI, MDPs, bandits) ferment la boucle : un posterior n'est pas une fin, c'est l'**input** d'une politique de décision optimale sous incertitude.
 
 ### Prochaines étapes
@@ -272,4 +272,4 @@ Cette série vous a fait passer des **fondamentaux de l'inférence bayésienne**
 
 ### Le fil rouge
 
-Le fil rouge de cette série est le **double regard** sur les 20 mêmes modèles : PyMC (MCMC, Python) vs Infer.NET (message passing, C#). Chaque notebook jumeau vous donne non pas une implémentation de plus, mais la **comparaison directe** des deux paradigmes d'inférence — le déterminisme analytique d'un côté, la flexibilité stochastique de l'autre. Maitriser ce compromis, c'est savoir choisir l'outil qui correspond à la structure du modèle et au besoin en incertitude, plutot que d'appliquer un moteur par défaut.
+Le fil rouge de cette série est le **double regard** sur les 20 mêmes modèles : PyMC (MCMC/NUTS, Python) vs Infer.NET (message passing, C#). Chaque notebook jumeau vous donne non pas une implémentation de plus, mais la **comparaison directe** des deux paradigmes d'inférence — le message passing compilé sur graphe de facteurs d'un côté, l'échantillonnage MCMC piloté par gradient de l'autre. Maitriser ce compromis, c'est savoir choisir l'outil qui correspond à la structure du modèle et au besoin en incertitude, plutot que d'appliquer un moteur par défaut.
