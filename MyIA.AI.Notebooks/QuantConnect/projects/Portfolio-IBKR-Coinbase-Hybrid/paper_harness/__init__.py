@@ -1,4 +1,4 @@
-"""Phase 4 paper-trading harness (Portfolio-IBKR-Binance-Hybrid).
+"""Phase 4 paper-trading harness (Portfolio-IBKR-Coinbase-Hybrid).
 
 Local execution harness for paper trading the composite portfolio described
 in the project README. Distinct from ``main.py`` (the QC Cloud backtest

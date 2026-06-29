@@ -1154,7 +1154,7 @@
     "classification": "untested"
   },
   {
-    "name": "Portfolio-IBKR-Binance-Hybrid",
+    "name": "Portfolio-IBKR-Coinbase-Hybrid",
     "cloudId": 31717642,
     "language": "Python",
     "hasMain": true,
