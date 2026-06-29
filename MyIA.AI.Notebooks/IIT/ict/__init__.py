@@ -12,12 +12,13 @@ Premier jalon livre : le modele de morphogenese minimale par tri auto-organise
 """
 
 from .self_sorting import Cell, Probe, SelfSortingArray, ALGOTYPES
+from .kin_sorting import KinSortingArray
 from . import sorting_metrics
 from . import trajectories
 from . import causal_emergence
 from . import tpm_estimation
 
 __all__ = [
-    "Cell", "Probe", "SelfSortingArray", "ALGOTYPES",
+    "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
     "sorting_metrics", "trajectories", "causal_emergence", "tpm_estimation",
 ]
