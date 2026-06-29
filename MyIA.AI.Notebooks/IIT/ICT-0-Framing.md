@@ -75,13 +75,15 @@ IIT/
 ├── ICT-2-SelfSortingMorphogenesis.ipynb   # ✅ premier livrable (#4588)
 ├── ICT-3-RobustnessDelayedGratification.ipynb  # ✅ étude quantitative
 ├── ICT-5-CausalEmergence.ipynb            # ✅ émergence causale micro/macro (vrai pyphi.macro)
-├── ICT-4/6/7-*.ipynb                       # à venir
+├── ICT-6-SortingToTPM-CausalEmergence.ipynb  # ✅ pont tri → TPM → émergence causale (CE 2.0)
+├── ICT-4/7-*.ipynb                         # à venir
 └── ict/
-    ├── self_sorting.py     # ✅ modèle vue-cellule (Cell, SelfSortingArray, scheduler)
-    ├── sorting_metrics.py  # ✅ sortedness, monotonie, inversions, agrégation, recovery
-    ├── trajectories.py     # ✅ évolution d'états, attracteurs, trajectoire de Φ, événements
-    ├── distances.py        # à venir : distances entre états / structures / trajectoires
-    ├── tpm_estimation.py   # à venir : pont simulation → chaîne de Markov → TPM
+    ├── self_sorting.py      # ✅ modèle vue-cellule (Cell, SelfSortingArray, scheduler)
+    ├── sorting_metrics.py   # ✅ sortedness, monotonie, inversions, agrégation, recovery
+    ├── trajectories.py      # ✅ évolution d'états, attracteurs, trajectoire de Φ, événements
+    ├── causal_emergence.py  # ✅ CE 2.0 (Hoel 2025) : primitives causales, apportionnement, EC
+    ├── tpm_estimation.py    # ✅ pont simulation → chaîne de Markov → TPM (état-à-état)
+    ├── distances.py         # à venir : distances entre états / structures / trajectoires
     └── ...
 ```
 
@@ -95,7 +97,7 @@ IIT/
 | **ICT-3** | [Robustesse & délai de gratification](ICT-3-RobustnessDelayedGratification.ipynb) — étude quantitative : dégradation gracieuse, distributions de récupération, comptage du délai de gratification | ✅ |
 | ICT-4 | Tableaux chimériques & agrégation émergente — le jeu de règles riche du papier (« kin ») | à venir |
 | **ICT-5** | [Émergence causale](ICT-5-CausalEmergence.ipynb) — $\Phi$ et information effective aux échelles micro/macro, recherche de coarse-graining (vrai `pyphi.macro`), émergence discriminante (Jansma & Hoel) | ✅ |
-| ICT-6 | Pont tri → TPM — transformer les simulations en chaînes de Markov analysables par PyPhi | à venir |
+| **ICT-6** | [Pont tri → TPM](ICT-6-SortingToTPM-CausalEmergence.ipynb) — chaîne de Markov estimée depuis les trajectoires de tri, émergence causale multi-échelles (CE 2.0 *scale-free*, au-delà de la borne de taille de PyPhi) | ✅ |
 | ICT-7 | Signatures scale-free & fractales | à venir |
 
 ## Principe méthodologique
