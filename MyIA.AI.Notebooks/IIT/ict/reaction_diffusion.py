@@ -134,21 +134,32 @@ class GrayScott:
         """Integre ``steps`` pas. Retourne ``(U, V, snapshots)``.
 
         Si ``record_every > 0``, ``snapshots`` est la liste des champs ``V``
-        captures tous les ``record_every`` pas (pour les courbes temporelles et
-        les animations) ; sinon ``snapshots`` vaut ``None``.
+        captures (pour les courbes temporelles et les animations) ; sinon
+        ``snapshots`` vaut ``None`` et ``include_initial`` est sans effet.
 
-        Si ``include_initial`` est vrai (et ``record_every > 0``), l'etat ``V``
-        **avant le premier pas** (t = 0) est insere en tete de ``snapshots``. Par
-        defaut la capture commence apres le premier pas : pour une courbe de
-        recuperation qui part de l'etat ablate exact, passer ``include_initial=True``
-        garantit que le point de depart de la trajectoire est bien l'instant 0.
+        Echantillonnage temporel — convention exacte (verrouillee par les tests).
+        On capture aux **multiples exacts** de ``record_every`` : aux instants
+        ``record_every, 2*record_every, ...``, **instant final ``steps`` inclus**
+        lorsqu'il est multiple de ``record_every``. Si ``include_initial`` est vrai,
+        l'etat **avant le premier pas** (instant 0) est insere en tete ; la
+        trajectoire est alors regulierement espacee a partir de 0, et
+        ``snapshots[i]`` correspond *exactement* a l'instant ``i*record_every``.
+        C'est la convention qu'attend :func:`ict.agency.time_to_recover`, qui
+        convertit l'indice ``i`` en nombre de pas via ``i*record_every`` — d'ou
+        l'importance de l'alignement exact pour les signaux temporels (ICT-11/12).
+
+        Ancrer une courbe de recuperation a l'etat ablate exact demande donc
+        ``record_every > 0`` **et** ``include_initial=True``.
         """
         snapshots: Optional[List[np.ndarray]] = [] if record_every > 0 else None
         if snapshots is not None and include_initial:
-            snapshots.append(V.copy())
+            snapshots.append(V.copy())  # instant 0, avant tout pas
         for t in range(steps):
             U, V = self.step(U, V)
-            if snapshots is not None and (t % record_every == 0):
+            # apres ce pas, (U, V) est l'etat a l'instant t+1 : on capture aux
+            # multiples exacts de record_every (echantillonnage regulier, instant
+            # final inclus si steps % record_every == 0), pas a t+1 = 1, R+1, ...
+            if snapshots is not None and ((t + 1) % record_every == 0):
                 snapshots.append(V.copy())
         return U, V, snapshots
 

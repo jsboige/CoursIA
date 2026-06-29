@@ -105,6 +105,27 @@ def test_run_include_initial_prepends_t0():
     assert none_snaps is None
 
 
+def test_run_snapshot_timing_is_regular():
+    # Convention exacte : captures aux multiples de record_every, instant final
+    # inclus (steps multiple de record_every), pas decalees a 1, R+1, 2R+1...
+    # Avec include_initial, snapshots[i] == instant i*record_every : c'est la
+    # grille reguliere qu'attend agency.time_to_recover (i -> i*record_every).
+    gs = rd.GrayScott()
+    U, V = gs.seed(n=32, rng=np.random.default_rng(7))
+    steps, rec = 100, 20
+    _, V_end, snaps_i = gs.run(
+        U.copy(), V.copy(), steps=steps, record_every=rec, include_initial=True
+    )
+    # instants 0, 20, 40, 60, 80, 100 -> steps//rec + 1 captures
+    assert len(snaps_i) == steps // rec + 1
+    # le dernier instantane EST l'etat final retourne (l'instant `steps` est capture)
+    assert np.array_equal(snaps_i[-1], V_end)
+    # sans include_initial : instants 20..100 -> steps//rec captures, dernier = etat final
+    _, V_end2, snaps = gs.run(U.copy(), V.copy(), steps=steps, record_every=rec)
+    assert len(snaps) == steps // rec
+    assert np.array_equal(snaps[-1], V_end2)
+
+
 def test_pure_diffusion_conserves_mass():
     # la diffusion pure (bords periodiques) conserve la masse totale
     f = np.random.default_rng(5).standard_normal((24, 24)) + 5.0
