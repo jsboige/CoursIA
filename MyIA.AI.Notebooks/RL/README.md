@@ -34,6 +34,7 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 | 10 | [rl_10_reward_shaping](rl_10_reward_shaping.ipynb) | Reward Shaping (Ng 1999), curriculum learning, pont RLHF | 45-50 min |
 | 11 | [rl_11_pomdp](rl_11_pomdp.ipynb) | POMDP, Tiger Problem, belief tracking, Q-MDP | 45-50 min |
 | 12 | [rl_12_distributional_rl](rl_12_distributional_rl.ipynb) | RL distributionnel : C51 (Categorical DQN) depuis zéro, projection categorielle, politique CVaR | 50-55 min |
+| 13 | [rl_13_curiosity_exploration](rl_13_curiosity_exploration.ipynb) | Exploration par curiosité (RND), motivation intrinsèque, piège d'exploitation | 35-40 min |
 
 ## Contenu détaillé
 
@@ -195,6 +196,18 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 | C51 vs DQN | Tableau comparatif, lignée QR-DQN / IQN / Rainbow |
 | Exercices | QR-DQN (quantile regression), sensibilité du support, politique sensible au risque (CVaR) |
 
+### Notebook 13 - Exploration par curiosité : Random Network Distillation (RND)
+
+| Section | Contenu |
+|---------|---------|
+| Exploration profonde | Pourquoi l'aléa (epsilon-greedy) échoue dès que la récompense est parcimonieuse |
+| Motivation intrinsèque | Bonus de nouveauté $r = r^e + \beta\,r^i$, exploration dirigée vers l'inexploré |
+| Mécanisme RND | Cible aléatoire figée + prédicteur entraîné ; erreur de prédiction = nouveauté (Burda et al. 2018) |
+| Partie A - détecteur de nouveauté | Jouet 2D, carte de nouveauté, ratio inconnu/visité ~1969x |
+| Partie B - piège d'exploitation | Chaîne MDP : epsilon-greedy plafonne sur le piège (~0.10), RND atteint la grande récompense (~0.96) |
+| Comparaison | RND vs comptage tabulaire / pseudo-comptage / ICM, problème de la noisy-TV, réglage du taux du prédicteur |
+| Exercices | Effet de beta, normalisation du bonus intrinsèque (Welford), limites de la curiosité (longueur de chaîne) |
+
 ## Algorithmes couverts
 
 | Algorithme | Type | Notebook | Utilisation |
@@ -223,6 +236,7 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 | **DQN** | Off-policy (deep) | 6 | Espaces continus |
 | **REINFORCE** | Policy gradient | 6 | Politique directe |
 | **IQL** | Multi-agent | 7 | Apprentissage indépendant |
+| **RND** | Exploration intrinsèque (deep) | 13 | Récompense parcimonieuse, exploration profonde par nouveauté |
 
 ## Environnements
 
@@ -300,7 +314,7 @@ Notebook 3 (Goal-conditioned RL)                                                
 | Objectif | Notebooks |
 |----------|-----------|
 | Découverte rapide | 1 uniquement |
-| Exploration et bandits | 4 uniquement |
+| Exploration et bandits | 4 + 13 (curiosité / RND) |
 | Fondations SB3 | 1 + 2 + 3 |
 | Fondements théoriques | 4 + 5 + 6 + 7 + 8 |
 | Maîtrise complète | 1 à 11 |
@@ -365,6 +379,9 @@ Les notebooks 5 à 7 quittent le framework pour implémenter les algorithmes dep
 | **RL distributionnel** | Apprendre la distribution complète du retour $Z(s,a)$, pas seulement $\mathbb{E}[Z]$ | 12 |
 | **Projection categorielle** | Redistribuer la cible de Bellman sur un support à atomes fixes | 12 |
 | **Politique sensible au risque (CVaR)** | Choisir selon la queue basse de la distribution, hors de portée d'un DQN scalaire | 12 |
+| **Motivation intrinsèque** | Récompense de nouveauté pour guider l'exploration | 13 |
+| **Random Network Distillation** | Erreur de prédiction d'une cible figée comme mesure de nouveauté | 13 |
+| **Exploration profonde** | Atteindre une récompense cachée derrière une longue séquence d'actions | 13 |
 
 ## Caractéristiques
 
@@ -445,6 +462,7 @@ RL/
 ├── rl_10_reward_shaping.ipynb
 ├── rl_11_pomdp.ipynb
 ├── rl_12_distributional_rl.ipynb
+├── rl_13_curiosity_exploration.ipynb
 └── README.md
 ```
 
