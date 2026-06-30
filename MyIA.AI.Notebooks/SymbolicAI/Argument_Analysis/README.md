@@ -56,6 +56,7 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 | Dung | [Dung_AF_Semantics](Argument_Analysis_Dung_AF_Semantics.ipynb) | Sémantiques grounded / preferred / stable reconstruites de zéro en pur Python (cas canonique où les trois divergent) | Fondation argumentation abstraite |
 | Rank | [Ranking_Semantics](Argument_Analysis_Ranking_Semantics.ipynb) | Sémantiques de classement (h-Categoriser, fardeau) en pur Python : force numérique départageant des arguments de même statut Dung | Argumentation graduée |
 | Route | [Multi_Backend_Routing](Argument_Analysis_Multi_Backend_Routing.ipynb) | Routage multi-backend « décider ou échouer bruyamment » : PL/Modal/Dung/FOL décidés par Tweety embarqué + sentinelle de contrat de livraison gardant les prouveurs externes (EProver/Mace4) — doctrine anti-théâtre / fail-loud | Raisonnement robuste |
+| Matrix | [Formal_Richness_Matrix](Argument_Analysis_Formal_Richness_Matrix.ipynb) | Matrice de richesse formelle (FP-5) : classifier ce qu'un solveur *décide réellement* (principe *wiring* ≠ *output*), 4 classes de verdict (substantive / honest-absent / unavailable / théâtre), sentinelle anti-théâtre `fabricated_true` + diagnostic laggards — pur stdlib | Évaluation honnête / anti-théâtre |
 | UI | [UI_configuration](Argument_Analysis_UI_configuration.ipynb) | Interface utilisateur widgets | Interaction |
 | Exec | [Executor](Argument_Analysis_Executor.ipynb) | Orchestrateur principal | Exécution |
 
