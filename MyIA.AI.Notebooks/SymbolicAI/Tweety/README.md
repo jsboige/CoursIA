@@ -202,7 +202,7 @@ Tweety raisonne sur le do-calculus en **logique propositionnelle** : `do(X)` y e
 
 - [Infer-22-Causal-Inference](../../Probas/Infer/Infer-22-Causal-Inference.ipynb) — le **jumeau distributionnel par message passing** : `P(Y|do(X))` calculé par mutilation de graphe en Infer.NET (EP/VMP), ajustements backdoor / front-door, paradoxe de Simpson résolu numériquement.
 - [PyMC-22-Causal-Inference](../../Probas/PyMC/PyMC-22-Causal-Inference.ipynb) — la version **MCMC** avec l'opérateur natif `pm.do` et le contrefactuel par abduction.
-- [ICT-5-CausalEmergence](../../IIT/ICT-5-CausalEmergence.ipynb) — le même `do` monte d'un cran : à **quelle échelle** un système fait-il le plus de travail causal ?
+- [ICT-5-CausalEmergence](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb) — le même `do` monte d'un cran : à **quelle échelle** un système fait-il le plus de travail causal ?
 
 Vue d'ensemble des quatre paradigmes : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 

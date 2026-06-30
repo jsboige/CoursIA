@@ -272,8 +272,15 @@ IIT/
 ├── IIT-1-IntroToPyPhi.ipynb           # Notebook 1 : introduction
 ├── IIT-2-AdvancedTopics.ipynb         # Notebook 2 : sujets avances
 ├── IIT-3-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
+├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
+│   ├── ICT-0-Framing.md        # Cadrage de la série ICT
+│   ├── ICT-1..10-*.ipynb       # 10 notebooks (2 strates : tri auto-organisé, morphogenèse dynamique)
+│   ├── ict/                    # Package Python autonome (simulations + mesures)
+│   ├── tests/                  # Suite pytest de validation des modules ict/
+│   └── README.md               # Documentation de la série ICT
+├── requirements.txt            # Dépendances Python (partagées IIT + ICT)
 ├── scripts/
-│   ├── setup_pyphi_env.ps1     # Setup conda env + kernel
+│   ├── setup_pyphi_env.ps1     # Setup conda env + kernel (partagé IIT + ICT)
 │   └── build_notebook.py       # Script de construction notebook 2
 └── README.md                   # Cette documentation
 ```
@@ -307,43 +314,13 @@ La série IIT étudie des structures causales **à un instant donné**. Une exte
 **ICT** (Integrated Causal Trajectories, Epic #4588), prolonge ce regard vers les **trajectoires**
 de structures causales : comment une organisation se maintient, se transforme, se répare, change
 d'échelle et traverse un espace de possibles ($C_0 \rightarrow C_1 \rightarrow \dots \rightarrow C_n$).
+Elle progresse en deux strates — le **tri auto-organisé** transparent (ICT-0 à ICT-7), puis la
+**morphogenèse dynamique** à paysages d'attracteurs engendrés (ICT-8+).
 
-ICT s'appuie sur un package léger `ict/` posé à côté de PyPhi (autonome pour les simulations et
-mesures, PyPhi pour les calculs IIT stricts), et s'ouvre sur deux articles fondateurs : le tri vu
-comme morphogenèse minimale (Zhang, Goldstein & Levin, 2025) et l'ingénierie de l'émergence
-multi-échelle (Jansma & Hoel, 2025).
-
-La série progresse en **deux strates**. La **strate 1** (ICT-0 à ICT-7) prend le **tri
-auto-organisé** comme banc d'essai entièrement transparent : trajectoires enregistrables,
-compétences inattendues réelles, pont vers la causal emergence. Elle bute toutefois sur trois
-limites — un **attracteur global unique**, un **but imposé de l'extérieur**, une **hiérarchie non
-générative**. La **strate 2** (ICT-8+) ouvre la *morphogenèse dynamique* sur des systèmes dont le
-paysage d'attracteurs est **engendré par la dynamique** (bifurcation, réaction-diffusion), levant
-ces limites une à une.
-
-### Strate 1 — le tri auto-organisé (transparent et calculable)
-
-| Document | Contenu |
-|----------|---------|
-| [ICT-0-Framing](ICT-0-Framing.md) | Cadrage de la série : de l'état à la trajectoire, articles fondateurs, feuille de route |
-| [ICT-1-PhiTrajectories](ICT-1-PhiTrajectories.ipynb) | Trajectoires de $\Phi$ : paysage de $\Phi$, suivi de $\Phi$ le long d'un attracteur (pulsations) et robustesse aux perturbations — la photographie IIT mise en mouvement, avec le vrai PyPhi |
-| [ICT-2-SelfSortingMorphogenesis](ICT-2-SelfSortingMorphogenesis.ipynb) | Le tri auto-organisé comme morphogenèse : trajectoire dans le morphospace, robustesse aux cellules défectueuses, délai de gratification, auto-réparation, impasses chimériques |
-| [ICT-3-RobustnessDelayedGratification](ICT-3-RobustnessDelayedGratification.ipynb) | Robustesse & délai de gratification, étude quantitative : dégradation gracieuse face aux cellules défectueuses, distributions de récupération, comptage du délai de gratification |
-| [ICT-4-ChimericArraysKinAggregation](ICT-4-ChimericArraysKinAggregation.ipynb) | Tableaux chimériques & agrégation émergente : réparation bidirectionnelle (guérit l'impasse d'ICT-2) puis affinité « kin », mesurée honnêtement (sans degrés de liberté, pas d'agrégation) |
-| [ICT-5-CausalEmergence](ICT-5-CausalEmergence.ipynb) | Émergence causale : $\Phi$ et information effective aux échelles micro/macro, recherche systématique du coarse-graining (vrai `pyphi.macro`), émergence discriminante (Jansma & Hoel, 2025) |
-| [ICT-6-SortingToTPM-CausalEmergence](ICT-6-SortingToTPM-CausalEmergence.ipynb) | Pont tri → TPM : chaîne de Markov estimée depuis les trajectoires de tri d'ICT-2, puis émergence causale multi-échelles avec l'outillage *Causal Emergence 2.0* (Hoel, 2025) au-delà de la borne de taille de PyPhi |
-| [ICT-7-ScaleFreeSignatures](ICT-7-ScaleFreeSignatures.ipynb) | Signatures scale-free & criticalité : détecter une loi de puissance *sans se faire avoir* (MLE de Hill, choix de $x_{\min}$, KS, à la Clauset et al.) ; étalon critique (branchement, exposant $3/2$) vs tri qui *paraît* sans échelle mais possède une taille caractéristique |
-
-### Strate 2 — morphogenèse dynamique (paysages d'attracteurs)
-
-| Document | Contenu |
-|----------|---------|
-| [ICT-8-AttractorLandscapesEWS](ICT-8-AttractorLandscapesEWS.ipynb) | Paysages d'attracteurs & signaux précurseurs — *les deux tressées*. Modèle de pâturage de May (1977), système canonique des *early-warning signals* (Scheffer 2009). Bistabilité entre deux états positifs alternatifs, bifurcation pli, catastrophe = changement de régime. Chaque image (vallée qui s'aplatit, mémoire du danger, alerte) adossée à une mesure réelle (potentiel effectif, valeur propre → 0, variance ↑, autocorrélation ↑, τ de Kendall). Lève l'attracteur unique + ouvre une hiérarchie générative |
-| [ICT-9-AgencyRegeneration](ICT-9-AgencyRegeneration.ipynb) | Agence & régénération — *réparer sa forme, ou seulement dériver ?* Morphogenèse réaction-diffusion de Gray-Scott (Pearson 1993) : le système engendre un motif auto-entretenu (point de consigne **intrinsèque**), on l'ablate via une intervention `do(·)`, puis on contraste **deux mondes contrefactuels** (Pearl) — réaction-diffusion qui régénère vs diffusion pure qui dissout. L'agence n'est jamais déclarée, elle est **mesurée** comme *gain de réparation* (recouvrement RD − recouvrement diffusion). *Sans complaisance* : les mesures naïves de ressemblance (pixel-à-pixel, cosinus spectral) fabriquent un signal fantôme ; seule la structure restaurée contrastée au contrôle passif tient. Lève le **but extrinsèque** : un point de consigne que le système maintient de lui-même |
-| [ICT-10-CatastropheGrammar](ICT-10-CatastropheGrammar.ipynb) | Grammaire des catastrophes — *l'obstacle qui engendre les formes, le verbe qui les fait basculer*. **Charnière strate 2→3**, prélude sémiophysique de R. Thom (*Esquisse d'une sémiophysique*, 1991). Sur la catastrophe canonique (la **fronce**), deux fils tressés et **mesurés** : le **métathéorème** (le comptage d'équilibres ne change qu'aux **plis** — exactement 2 transitions le long d'un chemin générique ; *l'obstacle comme source de l'ontologie*, clôt la strate 2) et le **lacet de prédation** (cycle d'hystérésis à 2 catastrophes — perception J, capture K — d'aire signée non nulle = irréversibilité ; un **représentant interne** `p̂` dont le contenu anticipateur est *mesuré* : pic de corrélation au futur, battant la persistance ; ouvre la strate 3). La correspondance linguistique du **Ch.2 « Le Langage »** de Thom est *nommée* (pivots ↔ transitions de comptage ; verbe transitif SVO ↔ lacet ; anticipation ↔ `p̂`), avec son caveat explicite de **non-prédictivité** et les barreaux du pont basse-dim → haute-dim (séries neurosymbolique, Lean ; veille EML #4653). *Sans complaisance* : hors régime non dégénéré ($a<0$), zéro saut, aire nulle — un *fantôme* |
-
-Reste sur la feuille de route de [ICT-0-Framing](ICT-0-Framing.md) : **ICT-11/12** (profils d'agence
-causale micro/méso/macro ; renormalisation causale & invariance multi-échelle) et **ICT-Synthèse**.
+ICT vit dans le sous-répertoire [`ICT-Series/`](ICT-Series/README.md), placé sous IIT pour respecter
+l'ordre de lecture (ICT prolonge IIT). **Voir son [README dédié](ICT-Series/README.md)** pour la liste
+complète des notebooks, les deux strates et le détail des mesures *sans complaisance*. La série
+partage l'environnement Python d'IIT (`scripts/setup_pyphi_env.ps1`, `requirements.txt`).
 
 ## Ponts causaux : le do-calculus de Pearl à travers les paradigmes
 
@@ -372,7 +349,7 @@ les arcs entrants de `X`, brisant les chemins de confusion — de sorte que
 | **Symbolique** (logique propositionnelle, Java/Tweety) | [Tweety-11-Causal](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | `scm.intervene(p, b)` → nouveau SCM dont l'équation de `p` devient une constante | `P(rain\|drops)=True ≠ P(rain\|do(drops))=False` (baromètre) |
 | **Bayésien par message passing** (Infer.NET, EP/VMP — Gibbs disponible) | [Infer-22](../Probas/Infer/Infer-22-Causal-Inference.ipynb) | mutilation de graphe `Variable.Bernoulli(1.0)` ; backdoor / front-door | paradoxe de Simpson résolu, identifiabilité par ajustement |
 | **Bayésien MCMC** (PyMC) | [PyMC-22](../Probas/PyMC/PyMC-22-Causal-Inference.ipynb) | opérateur natif `pm.do(model, {X:x})` ; backdoor / front-door | contrefactuel par abduction (postérieur sur les exogènes) |
-| **Théorie de l'information / émergence** (ICT) | [ICT-5-CausalEmergence](ICT-5-CausalEmergence.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
+| **Théorie de l'information / émergence** (ICT) | [ICT-5-CausalEmergence](ICT-Series/ICT-5-CausalEmergence.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
 
 **Le pont le plus profond — ICT-5 lève le do-calculus au niveau des échelles.** Dans la théorie
 de l'émergence causale (Hoel, *Causal Emergence 2.0* ; Jansma & Hoel, *Engineering Emergence*,
@@ -390,7 +367,7 @@ causal que le micro — l'`effectiveness` monte sous coarse-graining.
 nombres ; passer au **quantitatif distributionnel** ([Infer-22](../Probas/Infer/Infer-22-Causal-Inference.ipynb)
 message passing, [PyMC-22](../Probas/PyMC/PyMC-22-Causal-Inference.ipynb) MCMC) pour *calculer* les effets
 et lever le paradoxe de Simpson ; finir par l'**information-théorique**
-([ICT-5](ICT-5-CausalEmergence.ipynb)) où le même `do` mesure le travail causal **à travers les
+([ICT-5](ICT-Series/ICT-5-CausalEmergence.ipynb)) où le même `do` mesure le travail causal **à travers les
 échelles**.
 
 **Articles d'ancrage** : Pearl, *Causality* (2009) ; Hoel, *Causal Emergence 2.0*
