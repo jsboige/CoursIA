@@ -37,7 +37,7 @@ MetaGeneticSharp vise le point que les autres n'occupent pas : **l'expressivité
 
 ## Notebooks
 
-Cette partie se compose de dix-huit notebooks .NET Interactive (C#), hébergés dans ce répertoire et consommant le sous-module voisin [`MetaGeneticSharp/`](../MetaGeneticSharp/) :
+Cette partie se compose de dix-neuf notebooks .NET Interactive (C#), hébergés dans ce répertoire et consommant le sous-module voisin [`MetaGeneticSharp/`](../MetaGeneticSharp/) :
 
 | # | Notebook | Concept clé | Primitives introduites | Durée |
 |---|----------|-------------|------------------------|-------|
