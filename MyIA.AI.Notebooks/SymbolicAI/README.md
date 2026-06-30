@@ -31,7 +31,7 @@ La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les 
 
 ### Phase 4 : Applications (Planners + SmartContracts, ~30h)
 
-Deux séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **planification automatique** (13 notebooks) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
+Deux séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **planification automatique** (14 notebooks) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
 
 ### Parcours alternatif : Pont LLM (Argument Analysis, ~4h)
 
@@ -39,7 +39,7 @@ Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série A
 
 ### Parcours alternatif : Apprentissage symbolique (SymbolicLearning, ~9h30)
 
-La série SymbolicLearning (10 notebooks) suit le chapitre 19 d'AIMA : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), apprentissage actif d'automates (L* d'Angluin), puis intégration neuro-symbolique jusqu'à un capstone LLM + knowledge graph. Elle ne requiert que Python standard pour l'essentiel et peut être suivie indépendamment des autres phases.
+La série SymbolicLearning (11 notebooks) suit le chapitre 19 d'AIMA : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), apprentissage actif d'automates (L* d'Angluin), puis intégration neuro-symbolique jusqu'à un capstone LLM + knowledge graph. Elle ne requiert que Python standard pour l'essentiel et peut être suivie indépendamment des autres phases.
 
 ---
 
@@ -199,7 +199,7 @@ Documentation complète : [SemanticWeb/README.md](SemanticWeb/README.md)
 
 ## Planners - Planification Automatique
 
-Série de **13 notebooks** sur la planification automatique, couvrant PDDL classique, CP-SAT (OR-Tools), VRP, planification temporelle, HTN, et intégration LLM.
+Série de **14 notebooks** sur la planification automatique, couvrant PDDL classique, CP-SAT (OR-Tools), VRP, planification temporelle, HTN, et intégration LLM.
 
 ### Structure détaillée
 
@@ -224,7 +224,7 @@ Série de **13 notebooks** sur la planification automatique, couvrant PDDL class
 | 11 | [Planners-11-Unified-Planning](Planners/04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Unified Planning Framework | 3 | unified_planning |
 | 12 | [Planners-12-LOOP](Planners/04-NeuroSymbolic/Planners-12-LOOP.ipynb) | LLM + OR-Tools + planification | 2 | Fast-Downward |
 
-> 12/13 notebooks ont des exercices. Seul Planners-0-Setup (configuration) n'en a pas.
+> 13/14 notebooks ont des exercices. Seul Planners-0-Setup (configuration) n'en a pas.
 
 Documentation complète : [Planners/README.md](Planners/README.md)
 
@@ -314,7 +314,7 @@ Le notebook Z3 inaugure la série [SMT/Z3/](SMT/Z3/README.md) (SMT declaratif vi
 
 ```
 SymbolicAI/
-├── Tweety/                    # Serie TweetyProject (10 notebooks)
+├── Tweety/                    # Serie TweetyProject (13 notebooks)
 │   ├── Tweety-1-Setup.ipynb ... Tweety-9-Preferences.ipynb
 │   ├── tweety_init.py         # Module d'initialisation partage
 │   ├── libs/                  # JARs TweetyProject (35 modules)
@@ -333,7 +333,7 @@ SymbolicAI/
 │   ├── RDF.Net-Legacy/      # Notebook original (reference historique)
 │   └── README.md
 │
-├── Planners/                  # Planification automatique (13 notebooks)
+├── Planners/                  # Planification automatique (14 notebooks)
 │   ├── 00-Environment/       # Setup
 │   ├── 01-Foundation/        # Introduction, PDDL Basics, State Space
 │   ├── 02-Classical/         # State Space, Fast-Downward, Heuristics, Domains
