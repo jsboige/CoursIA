@@ -162,6 +162,7 @@ IIT/
 ├── ICT-7-ScaleFreeSignatures.ipynb        # ✅ signatures scale-free & criticalité (loi de Borel τ=3/2)
 ├── ICT-8-AttractorLandscapesEWS.ipynb     # ✅ strate 2 : paysages d'attracteurs + early-warning signals
 ├── ICT-9-AgencyRegeneration.ipynb         # ✅ strate 2 : agence = régénération réaction-diffusion (Gray-Scott)
+├── ICT-10-CatastropheGrammar.ipynb        # ✅ charnière strate 2→3 : grammaire des catastrophes (fronce, pli, lacet de prédation)
 └── ict/
     ├── self_sorting.py      # ✅ modèle vue-cellule (Cell, SelfSortingArray, scheduler)
     ├── kin_sorting.py       # ✅ règles enrichies : réparation bidirectionnelle + affinité kin
@@ -174,6 +175,7 @@ IIT/
     ├── early_warning.py     # ✅ strate 2 : variance/AR1 roulantes, τ de Kendall, amincissement, détrendage
     ├── reaction_diffusion.py # ✅ strate 2 : simulateur Gray-Scott (Laplacien périodique, diffusion pure de contrôle)
     ├── agency.py            # ✅ strate 2 : ablation do(·), structure, recovery_score, repair_gain, similarité spectrale
+    ├── catastrophe.py       # ✅ charnière strate 2→3 : fronce (cusp), équilibres/plis, lacet d'hystérésis, représentant interne p̂
     ├── distances.py         # à venir : distances entre états / structures / trajectoires
     └── ...
 ```
@@ -192,7 +194,7 @@ IIT/
 | **ICT-7** | [Signatures scale-free & criticalité](ICT-7-ScaleFreeSignatures.ipynb) — détecter une signature sans échelle *sans se faire avoir* (MLE de Hill, choix de $x_{\min}$, KS, comparaison de modèles à la Clauset et al.) ; étalon critique (branchement, exposant $3/2$) vs tri auto-organisé qui *paraît* à queue lourde mais possède une échelle caractéristique (la taille), révélée par effondrement d'échelle | ✅ |
 | **ICT-8** | [Paysages d'attracteurs & signaux précurseurs](ICT-8-AttractorLandscapesEWS.ipynb) — **strate 2**. Modèle de pâturage de May (1977), bistabilité + bifurcation pli ; *early-warning signals* (Scheffer 2009) : potentiel effectif, valeur propre → 0, variance ↑, autocorrélation ↑ (τ de Kendall), avec la leçon de protocole *sans complaisance* (amincir, détrendre) | ✅ |
 | **ICT-9** | [Agence & régénération](ICT-9-AgencyRegeneration.ipynb) — **strate 2**. Morphogenèse réaction-diffusion de Gray-Scott (Pearson 1993) : un système qui **répare** sa forme vers un point de consigne **intrinsèque** après une ablation `do(·)`, l'agence **mesurée** comme *gain de réparation* (réaction-diffusion vs diffusion pure, deux mondes contrefactuels de Pearl). *Sans complaisance* : les mesures naïves de ressemblance (pixel-à-pixel, cosinus spectral) fabriquent un signal fantôme ; seule la structure restaurée contrastée au contrôle passif tient | ✅ |
-| **ICT-10** | Grammaire des catastrophes — **strate 2**. Typer les transitions qualitatives (pli, fronce, fourche, hystérésis) comme **transitions mesurées**, pas comme images | 🚧 planifié |
+| **ICT-10** | [Grammaire des catastrophes](ICT-10-CatastropheGrammar.ipynb) — **charnière strate 2→3**, prélude sémiophysique de R. Thom. Le squelette catastrophique (fronce, pli, fourche, hystérésis) **mesuré** : le métathéorème (le comptage d'équilibres ne change qu'aux plis, clôt la strate 2) et le **lacet de prédation** (cycle d'hystérésis à 2 catastrophes + représentant interne `p̂` qui anticipe, ouvre la strate 3). La correspondance linguistique du Ch.2 de Thom (pivots ↔ transitions de comptage ; verbe transitif SVO ↔ lacet ; anticipation ↔ `p̂`) **nommée**, avec le caveat de non-prédictivité et les barreaux du pont basse-dim → haute-dim (neurosymbolique, Lean, veille EML #4653). *Sans complaisance* : hors régime non dégénéré ($a<0$), zéro saut — fantôme | ✅ |
 | **ICT-11** | Profils d'agence causale — **strate 2**. L'agence aux échelles micro/méso/macro (lien avec la causal emergence d'ICT-5/6) | 🚧 planifié |
 | **ICT-12** | Renormalisation causale & signatures fractales — **strate 2**. L'**invariance multi-échelle** des propriétés causales comme invariance *testée*, pas comme jolie image | 🚧 planifié |
 | **ICT-Synthèse** | Réunir $\Phi$, trajectoires, bassins, transitions, réparation, émergence, invariance d'échelle et agence en un seul fil | 🚧 planifié |
@@ -231,9 +233,17 @@ d'attracteurs est engendré par la dynamique elle-même**, et lève ces limites 
   fantôme** sur un attracteur mitotique ou un champ sans structure — seule la structure restaurée,
   contrastée, tient.
 
-Les notebooks suivants (**ICT-10** grammaire des catastrophes, **ICT-11/12** profils d'agence causale
-et renormalisation causale, **ICT-Synthèse**) poursuivront la même règle : *ne pas ouvrir cinq fronts
-à la fois* — une métaphore n'entre dans ICT que lorsqu'elle est **attachée à une mesure**.
+- **ICT-10** (grammaire des catastrophes) est la **charnière** : il ferme la strate 2 sur son squelette
+  catastrophique (le métathéorème — *l'obstacle engendre les êtres* — mesuré comme « le comptage d'équilibres
+  ne change qu'aux plis ») et ouvre la strate 3 (agents) sur le **lacet de prédation** de Thom : un cycle
+  d'hystérésis à deux catastrophes (perception, capture) et un **représentant interne** `p̂` dont le contenu
+  anticipateur est *mesuré* (pic de corrélation au futur, battant la persistance). C'est le **prélude
+  sémiophysique** de R. Thom, tenu *sans complaisance* — chaque image (saillance, prégnance, actant) attachée
+  à une grandeur calculée sur la fronce canonique, le caveat de non-prédictivité (Thom lui-même) explicite.
+
+Les notebooks suivants (**ICT-11/12** profils d'agence causale et renormalisation causale,
+**ICT-Synthèse**) poursuivront la même règle : *ne pas ouvrir cinq fronts à la fois* — une métaphore
+n'entre dans ICT que lorsqu'elle est **attachée à une mesure**.
 
 C'est la même discipline que la strate 1 (exécuter, mesurer, narrer le résultat réel) appliquée à
 une dynamique qui, cette fois, **génère** son propre paysage de buts plutôt que de le recevoir.
