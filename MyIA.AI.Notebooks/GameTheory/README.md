@@ -102,6 +102,7 @@ flowchart TD
 | 9 | [GameTheory-9-BackwardInduction](GameTheory-9-BackwardInduction.ipynb) | Python | Induction arrière, mille-pattes, escalade | 55 min |
 | 10 | [GameTheory-10-ForwardInduction-SPE](GameTheory-10-ForwardInduction-SPE.ipynb) | Python | Induction avant, SPE, menaces crédibles | 60 min |
 | 11 | [GameTheory-11-BayesianGames](GameTheory-11-BayesianGames.ipynb) | Python | Jeux bayésiens, information incomplète | 55 min |
+| 11b | [GameTheory-11b-Lean-BayesianGamesExt](GameTheory-11b-Lean-BayesianGamesExt.ipynb) | Lean 4 | Companion natif : théorème de Vickrey (enchère au second prix) prouvé 0-sorry dans le lake `lean_game_defs_ext` (module Bayesian, sans Mathlib) | 50 min |
 | 12 | [GameTheory-12-ReputationGames](GameTheory-12-ReputationGames.ipynb) | Python | Jeux de réputation, signaling | 50 min |
 
 ### Partie 3 : Algorithmes et applications avancées (Notebooks 13-17)
@@ -162,6 +163,7 @@ Chaque notebook adopte la même trame pédagogique — introduction motivée, pl
 | 4b | Lean-NashExistence | ~20 | 3 | **COMPLET** |
 | 4c | NashExistence-Python | ~20 | 2 | **COMPLET** |
 | 5 | ZeroSum-Minimax | ~25 | 3 | **COMPLET** |
+| 5b | Lean-Minimax | ~20 | 3 | **COMPLET** |
 | 6 | EvolutionTrust | ~40 | 3 | **COMPLET** |
 | 7 | ExtensiveForm | ~30 | 3 | **COMPLET** |
 | 8 | CombinatorialGames | ~17 | 3 | **NOUVEAU** |
@@ -170,6 +172,7 @@ Chaque notebook adopte la même trame pédagogique — introduction motivée, pl
 | 9 | BackwardInduction | ~35 | 3 | **COMPLET** |
 | 10 | ForwardInduction-SPE | ~35 | 3 | **COMPLET** |
 | 11 | BayesianGames | ~30 | 3 | **COMPLET** |
+| 11b | Lean-BayesianGamesExt | ~35 | - | **COMPLET** |
 | 12 | ReputationGames | ~30 | 3 | **COMPLET** |
 | 13 | ImperfectInfo-CFR | ~45 | 3 | **COMPLET** |
 | 14 | DifferentialGames | ~35 | 3 | **COMPLET** |
@@ -221,7 +224,9 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 |---|----------|-------------------|
 | 2b | Lean-Definitions | Formalisation Game2x2, stratégies mixtes, Nash en Lean |
 | 4b | Lean-NashExistence | Brouwer, Kakutani, preuve existence Nash |
+| 5b | Lean-Minimax | Théorème minimax (von Neumann/Sion) prouvé 0-sorry, lake `minimax_lean` |
 | 8b | Lean-CombinatorialGames | PGame Mathlib, Nim formel, Sprague-Grundy |
+| 11b | Lean-BayesianGamesExt | Théorème de Vickrey (enchère au second prix) prouvé 0-sorry, lake `lean_game_defs_ext` |
 | 15b | Lean-CooperativeGames | Axiomes Shapley formels, Core, Bondareva-Shapley |
 
 ### Side tracks Python (approfondissement)

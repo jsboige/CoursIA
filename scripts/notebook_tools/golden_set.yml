@@ -98,6 +98,25 @@ notebooks:
     kernel: python3
     rationale: "Coin sobre de la serie RL (numpy + matplotlib seuls, avant gymnasium/torch) ; default_rng(seed=42) deterministe ; dilemme exploration-exploitation rendu visible (regret cumule par strategie) ; certifie Papermill ~12 s CPU, 0 erreur."
 
+  # --- GameTheory : theorie des jeux, existence de Nash (serie GameTheory) ---
+  # Theoreme d'existence d'un equilibre de Nash (point fixe de Brouwer sur le
+  # simplexe). Illustrations numeriques from-scratch en numpy pur : convergence
+  # du point fixe (1D -> x=1.0, 2D sur le simplexe -> (0.5,0.5)), application a
+  # Matching Pennies (best-response dynamics via sigmoide -> equilibre mixte),
+  # contre-exemples a Brouwer, lecture guidee du depot Lean math-xmum/Brouwer.
+  # Dependances = numpy + matplotlib UNIQUEMENT (toutes deux pinnees dans
+  # golden_set.lock.txt), 0 solver externe (pas nashpy/open_spiel/pyspiel), 0
+  # JVM, 0 reseau, 0 random (purement deterministe : calculs algebriques +
+  # iteration de point fixe, verifie : ni np.random ni random. dans le source).
+  # Kernel python3. Certifie end-to-end par Papermill (40 cellules, 15 code, 0
+  # erreur, ~12 s sur CPU, kernel coursia-ml-training = snapshot du lock).
+  # Premiere serie GameTheory au golden-set (objectif ~1/serie de #4209).
+  - path: MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Python.ipynb
+    series: GameTheory
+    title: "GT-4c - Existence de Nash (point fixe de Brouwer, best-response numpy)"
+    kernel: python3
+    rationale: "Theoreme d'existence d'un equilibre de Nash (Brouwer sur le simplexe) ; implementation from-scratch numpy pur (best-response sigmoide, Matching Pennies) ; 0 solver externe, 0 random -> purement deterministe ; certifie Papermill ~12 s CPU, 0 erreur."
+
 # -----------------------------------------------------------------------------
 # Candidats DEFERRES (v3+) : a certifier quand le lockfile etendra sa couverture.
 #   - Probas/PyMC-* : MCMC non deterministe (sortie stochastique) -> politesse

@@ -111,6 +111,8 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 
 Side track C# .NET 9 (cf. [Search-5](Part1-Foundations/Search-5-GeneticAlgorithms.ipynb), [Search-11](Part1-Foundations/Search-11-Metaheuristics.ipynb)) : reconstruire et **composer** les métaheuristiques au-dessus de GeneticSharp plutôt que d'en importer une boîte noire.
 
+La série se lit en trois temps : **MGS-1 à 7** bâtissent le moteur et la grammaire de composition (jusqu'aux composés publiés et au TSP) ; **MGS-8 à 14** visualisent les paysages de fitness et mesurent la robustesse aux biais des bancs CEC (décalage, rotation, synergie d'îles) ; **MGS-15 à 18** referment la série sur l'**analyse quantitative de paysage** et la **méta-stratégie** — choisir l'optimiseur selon le paysage (No-Free-Lunch), adapter ses paramètres en cours de route, et confronter le portefeuille au protocole CEC complet.
+
 | # | Notebook | Apport pédagogique |
 |---|----------|-------------------|
 | 1 | MGS-1 Introduction | Moteur autonome `MetaGeneticAlgorithm` au-dessus de GeneticSharp |
@@ -127,6 +129,10 @@ Side track C# .NET 9 (cf. [Search-5](Part1-Foundations/Search-5-GeneticAlgorithm
 | 12 | MGS-12 AxisAlignment | Biais d'alignement d'axes (rotation) |
 | 13 | MGS-13 LandscapeDebias | Pourquoi la rotation casse la séparabilité (visuel) |
 | 14 | MGS-14 IslandSynergyFound | Une synergie d'îles *trouvée* (et un cas négatif) |
+| 15 | MGS-15 LandscapeAnalysis | Corrélation fitness-distance (FDC, Jones & Forrest 1995) : le nombre derrière la heatmap, prédire la difficulté d'un paysage |
+| 16 | MGS-16 AlgorithmSelection | No-Free-Lunch (Wolpert & Macready 1997) + cadre de Rice : features de paysage → recommandation d'optimiseur, validée sur un paysage inconnu (Rosenbrock) |
+| 17 | MGS-17 ParameterControl | Adapter les paramètres *pendant* la course (taxonomie d'Eiben : réglage vs contrôle) — la seconde réponse au No-Free-Lunch |
+| 18 | MGS-18 CecBanc | Banc CEC consolidé : combiner décalage (MGS-10) et rotation (MGS-12) — robuste à chaque biais séparément l'est-il au biais combiné ? |
 
 ### Applications
 
@@ -438,7 +444,7 @@ Search/
 │       └── App-18-HyperparameterTuning.ipynb
 │
 ├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
-├── Part4-Metaheuristics/                  # Partie 4 (side track C# .NET 9) : README + 14 notebooks MGS-1..14 (moteur, composition, composés, benchmarks, TSP, paysages, biais central, synergie d'îles, alignement d'axes, paysages dé-biaisés, synergie conditionnelle ; consomment le sous-module)
+├── Part4-Metaheuristics/                  # Partie 4 (side track C# .NET 9) : README + 18 notebooks MGS-1..18 (moteur, composition, composés, benchmarks, TSP, paysages, biais central, synergie d'îles, alignement d'axes, paysages dé-biaisés, synergie conditionnelle, analyse de paysage FDC, sélection d'algorithme No-Free-Lunch, contrôle de paramètres, banc CEC consolidé ; consomment le sous-module)
 │
 ├── CSPs_Intro.ipynb                       # Ancien notebook (conserve)
 ├── GeneticSharp-EdgeDetection.ipynb       # Ancien notebook (conserve)
