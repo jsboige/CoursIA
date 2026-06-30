@@ -17,9 +17,9 @@ Vous y découvrirez sept domaines complémentaires. Le **Web Sémantique** (RDF,
 
 ## Parcours d'apprentissage
 
-### Phase 1 : Logique et argumentation (Tweety, ~7h)
+### Phase 1 : Logique et argumentation (Tweety, ~9h)
 
-Le parcours commence par Tweety-1-Setup qui configure l'environnement Java/JPype et charge les 35 modules TweetyProject. Les notebooks 2-3 introduisent les logiques formelles (propositionnelle, premier ordre, modale, description) avec des solveurs SAT et des prouveurs de théorèmes. Les notebooks 4-7 couvrent la révision de croyances (postulats AGM), l'argumentation abstraite (sémantiques de Dung), l'argumentation structurée (ASPIC+, ABA, ASP avec Clingo), et les extensions (bipolaire, probabiliste). Les notebooks 8-9 appliquent ces théories aux dialogues d'agents et aux préférences collectives. À l'issue de cette phase, vous maîtrisez les formalismes de base du raisonnement symbolique et pouvez implémenter des systèmes argumentatifs.
+Le parcours commence par Tweety-1-Setup qui configure l'environnement Java/JPype et charge les 35 modules TweetyProject. Les notebooks 2-3 introduisent les logiques formelles (propositionnelle, premier ordre, modale, description) avec des solveurs SAT et des prouveurs de théorèmes. Les notebooks 4-7 couvrent la révision de croyances (postulats AGM), l'argumentation abstraite (sémantiques de Dung), l'argumentation structurée (ASPIC+, ABA, ASP avec Clingo), et les extensions (bipolaire, probabiliste). Les notebooks 8-9 appliquent ces théories aux dialogues d'agents et aux préférences collectives, tandis que les notebooks 10-11 étendent au raisonnement incertain (Markov Logic Networks, FOL pondérée) et causal (do-calculus de Pearl, interventions, contrefactuels). Un companion natif Lean (Tweety-5b) double l'argumentation abstraite d'une preuve formelle 0-sorry. À l'issue de cette phase, vous maîtrisez les formalismes de base du raisonnement symbolique et pouvez implémenter des systèmes argumentatifs.
 
 ### Phase 2 : Représentation de connaissances (SemanticWeb, ~13h)
 
@@ -78,7 +78,7 @@ La série SymbolicLearning (10 notebooks) suit le chapitre 19 d'AIMA : induction
 
 ## Tweety - TweetyProject
 
-Série de **10 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour l'IA symbolique. Couvre les logiques formelles, la révision de croyances, et l'argumentation computationnelle.
+Série de **13 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour l'IA symbolique. Couvre les logiques formelles, la révision de croyances, l'argumentation computationnelle, le raisonnement incertain (Markov Logic) et causal.
 
 ### Structure détaillée
 
@@ -92,14 +92,18 @@ Série de **10 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibl
 | 4 | [Tweety-4-Belief-Revision](Tweety/Tweety-4-Belief-Revision.ipynb) | Postulats AGM, MUS, MaxSAT, mesures d'incohérence | 2 | Java/JPype |
 | **Argumentation** |
 | 5 | [Tweety-5-Abstract-Argumentation](Tweety/Tweety-5-Abstract-Argumentation.ipynb) | Frameworks de Dung, sémantiques (grounded, preferred, stable, CF2) | 2 | Java/JPype |
+| 5b | [Tweety-5b-Lean-Argumentation](Tweety/Tweety-5b-Lean-Argumentation.ipynb) | Companion natif (kernel Lean) : preuve formelle 0-sorry de l'argumentation de Dung (grounded = point fixe Knaster–Tarski) dans le lake `argumentation_lean` | 3 | Lean 4 / WSL |
 | 6 | [Tweety-6-Structured-Argumentation](Tweety/Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP avec Clingo | 2 | Java/JPype, Clingo |
 | 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, EAF | 2 | Java/JPype |
 | 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking semantics, argumentation probabiliste | 2 | Java/JPype |
 | **Applications** |
 | 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
 | 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de préférence, théorie du vote (Borda, Copeland) | 1 | Java/JPype |
+| **Raisonnement avancé** |
+| 10 | [Tweety-10-MLN](Tweety/Tweety-10-MLN.ipynb) | Markov Logic Networks : FOL pondérée, inférence probabiliste sur formules | 3 | Java/JPype |
+| 11 | [Tweety-11-Causal](Tweety/Tweety-11-Causal.ipynb) | Raisonnement causal : do-calculus (Pearl), interventions, contrefactuels | 3 | Java/JPype |
 
-> 10/10 notebooks ont des exercices. La configuration de Tweety-1-Setup constitue l'exercice setup de la série.
+> 13/13 notebooks ont des exercices. La configuration de Tweety-1-Setup constitue l'exercice setup de la série.
 
 ### Technologies
 
