@@ -69,6 +69,7 @@ Le notebook 12 introduit en Python pur les quatre moteurs d'inférence au moment
 | 17 | `17_Native_Reasoning_vs_Scaling.ipynb` | Raisonnement natif (deepseek-r1, reasoning tokens) vs scaling hand-rolled (BoN), comparaison cost-normalisée en tokens | 60 min |
 | 18 | `18_Semantic_Kernel_Plugins.ipynb` | Moteurs exposés en plugins Semantic Kernel (`@kernel_function`) composables via le kernel (pont série SemanticKernel) | 60 min |
 | 19 | `19_OWUI_Orchestration.ipynb` | Orchestration sans code via Open WebUI v0.9.0 (Automations RRULE / Task Management / Calendar) ; trois niveaux d'abstraction (produit OWUI vs LangGraph vs CrewAI) ; migration async 0.8→0.9 ; skeleton API OpenAI-compatible avec graceful skip (`OWUI_API_KEY`) | 60 min |
+| 20 | `20_OWUI_Native_API.ipynb` | Compagnon du 19 : introspection de la **vraie surface API native** OWUI v0.9.6 (routes REST auth-free : santé/version/config ; couche authentifiée Bearer) via `urllib` standard ; graceful skip honnête si `OWUI_API_KEY` absente (Stop & Repair, pas de sortie fabriquée) | 60 min |
 
 ## Prérequis
 
