@@ -1,43 +1,43 @@
 # VIX-TermStructure
 
-**Asset class:** Volatility (SVXY)
-**Cloud project ID:** None (local only)
-**Status:** ARCHIVED (Sharpe ceiling +0.05)
+**Classe d'actifs :** Volatilité (SVXY)
+**Cloud project ID :** None (local only)
+**Statut :** ARCHIVED (plafond Sharpe +0.05)
 
 ## Description
 
-VIX term structure strategy using SVXY (short-volatility ETF).
-Signals based on the spread between VIX spot and VIX3M (3-month VIX futures).
-Goes long SVXY when term structure is in contango (VIX < VIX3M), flat in backwardation.
+Stratégie de term structure VIX utilisant SVXY (ETF short-volatility).
+Signaux basés sur le spread entre le VIX spot et le VIX3M (futures VIX à 3 mois).
+Prend position long SVXY quand la term structure est en contango (VIX < VIX3M), à plat en backwardation.
 
-**Archived because:** Structural ceiling at Sharpe +0.05. Short-vol strategies suffer from
-asymmetric payoffs (small gains, rare catastrophic losses). The 2018 Volmageddon event
-demonstrates the structural risk. See ARCHIVE.md for full ceiling analysis.
+**Archivée car :** Plafond structurel à Sharpe +0.05. Les stratégies short-vol souffrent de
+paiements asymétriques (petits gains, pertes catastrophiques rares). L'événement Volmageddon de 2018
+démontre le risque structurel. Voir ARCHIVE.md pour l'analyse complète du plafond.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/VIX-TermStructure"`
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/VIX-TermStructure"`
 ```bash
 lean backtest --project .
 ```
 
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
-## Backtest Metrics (2015-2026)
+## Métriques de backtest (2015-2026)
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | +0.05 |
-| Strategy | Long SVXY in contango |
-| Signal | VIX vs VIX3M spread |
-| Risk | Volmageddon tail risk |
+| Stratégie | Long SVXY en contango |
+| Signal | Spread VIX vs VIX3M |
+| Risque | Risque de queue Volmageddon |
 
-## Files
+## Fichiers
 
-- `main.py` - Strategy (v4.1, VIX term structure contango signal)
-- `research.ipynb` - VIX spread analysis and regime testing
+- main.py - Stratégie (v4.1, signal contango term structure VIX)
+- research.ipynb - Analyse du spread VIX et test de régimes
 
-## References
+## Références
 
 - Simon & Campasano (2014), "The VIX Fix"
-- ARCHIVE.md - Full iteration history and structural ceiling analysis
+- ARCHIVE.md - Historique complet des itérations et analyse du plafond structurel

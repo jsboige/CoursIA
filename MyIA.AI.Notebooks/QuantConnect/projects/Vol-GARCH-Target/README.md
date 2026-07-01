@@ -1,14 +1,14 @@
 # Vol-GARCH-Target
 
-**Asset class:** Multi-asset (Equities, Bonds, Commodities)
+**Classe d'actifs :** Multi-actifs (Actions, Obligations, Matières premières)
 
-**Cloud project ID:** See `config.json` (local-id: 209093652)
+**Cloud project ID :** Voir `config.json` (local-id : 209093652)
 
 ## Description
 
-GARCH(1,1) volatility targeting strategy on six assets (SPY, EFA, EEM, TLT, GLD, DBC). Each asset targets 10% annualized volatility with position sizes adjusted by the GARCH forecast. Uses SMA200 for trend direction (long in uptrend, reduce in downtrend). Model is refit every 22 trading days on a 500-day training window. Weekly rebalance on Mondays.
+Stratégie de vol-targeting GARCH(1,1) sur six actifs (SPY, EFA, EEM, TLT, GLD, DBC). Chaque actif cible 10 % de volatilité annualisée avec des tailles de position ajustées par la prévision GARCH. Utilise une SMA200 pour la direction de la tendance (long en tendance haussière, réduction en tendance baissière). Le modèle est ré-estimé tous les 22 jours de bourse sur une fenêtre d'apprentissage de 500 jours. Rebalance hebdomadaire le lundi.
 
-## How to Run
+## Comment exécuter
 
 ### Lean CLI
 ```bash
@@ -16,42 +16,33 @@ lean backtest --algorithm Vol-GARCH-Target/main.py
 ```
 
 ### QC Cloud
-Open the cloud project (local-id: 209093652), compile and run a backtest.
+Ouvrir le projet cloud (local-id : 209093652), compiler et lancer un backtest.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Method | Rebalance | Key Parameters |
-|--------|-----------|----------------|
-| GARCH(1,1) vol targeting | Weekly (Monday) | Vol target 10%, SMA200 trend, 500-day window, refit every 22 days |
+| Méthode | Rebalance | Paramètres clés |
+|---------|-----------|-----------------|
+| Vol-targeting GARCH(1,1) | Hebdomadaire (lundi) | Vol target 10 %, tendance SMA200, fenêtre 500 jours, ré-estimation tous les 22 jours |
 
-### Aligned baseline (2018-2025)
+### Baseline alignée (2018-2025)
 
-Verified on QC Cloud (project 33245149, backtest `a0f7a5b59e878becd574612b85791d51`).
+Vérifiée sur QC Cloud (projet 33245149, backtest `a0f7a5b59e878becd574612b85791d51`).
 
-| Period | Sharpe | CAGR | MaxDD | PSR |
-|--------|--------|------|-------|-----|
-| 2018-2025 (aligned) | 0.325 | 6.97% | 10.80% | 14.9% |
+| Période | Sharpe | CAGR | MaxDD | PSR |
+|---------|--------|------|-------|-----|
+| 2018-2025 (alignée) | 0.325 | 6.97 % | 10.80 % | 14.9 % |
 
-The strategy's strength is risk control, not return. MaxDD 10.80% is the tightest of
-the backbone baselines to date (cf GlobalMacro-Regime 22.8%, HAR-RV-J-Kelly 37.1%,
-Cloud-VolTargeting single-asset 38.2%) -- the GARCH(1,1) variance forecast, the 30%
-per-asset cap and the SMA200 trend filter combine into genuine risk budgeting that
-holds drawdowns in check. Sharpe 0.325 is positive but modest, and PSR 14.9% is
-non-significant. Notably it beats Cloud-VolTargeting (single-asset SPY, realized-vol,
-150% clamp) on both Sharpe (0.325 vs 0.207) and MaxDD (10.8% vs 38.2%): GARCH
-forecasting plus multi-asset diversification outperforms a naive realized-vol single
-asset with a leverage clamp. Promoted Tier 4 (Untested) to Tier 2 (Historique). See
-the comparative-backtests doc for the cross-strategy table.
+La force de la stratégie est le contrôle du risque, pas le rendement. Un MaxDD de 10.80 % est le plus serré des baselines dorsales à ce jour (cf GlobalMacro-Regime 22.8 %, HAR-RV-J-Kelly 37.1 %, Cloud-VolTargeting mono-actif 38.2 %) — la prévision de variance GARCH(1,1), le plafond de 30 % par actif et le filtre de tendance SMA200 se combinent en un véritable budget de risque qui contient les drawdowns. Le Sharpe de 0.325 est positif mais modeste, et le PSR de 14.9 % est non significatif. Notablement, elle bat Cloud-VolTargeting (mono-actif SPY, vol réalisée, clamp 150 %) à la fois sur le Sharpe (0.325 vs 0.207) et le MaxDD (10.8 % vs 38.2 %) : la prévision GARCH plus la diversification multi-actifs surperforme une naïve vol réalisée mono-actif avec clamp de levier. Promue Tier 4 (Untested) vers Tier 2 (Historique). Voir le doc comparative-backtests pour la table cross-strategy.
 
-## Files
+## Fichiers
 
-| File | Description |
-|------|-------------|
-| `main.py` | GARCH(1,1) volatility targeting with SMA200 trend filter on 6 multi-asset ETFs |
-| `config.json` | Project configuration (local-id) |
-| `research.ipynb` | Research notebook with GARCH model analysis and parameter exploration |
+| Fichier | Description |
+|---------|-------------|
+| `main.py` | Vol-targeting GARCH(1,1) avec filtre de tendance SMA200 sur 6 ETF multi-actifs |
+| `config.json` | Configuration du projet (local-id) |
+| `research.ipynb` | Notebook de recherche avec analyse du modèle GARCH et exploration des paramètres |
 
-## References
+## Références
 
 - Bollerslev, T. (1986). *Generalized Autoregressive Conditional Heteroskedasticity*. Journal of Econometrics.
-- [QuantConnect Documentation](https://www.quantconnect.com/docs/)
+- [Documentation QuantConnect](https://www.quantconnect.com/docs/)
