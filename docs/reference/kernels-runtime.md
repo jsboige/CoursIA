@@ -127,6 +127,20 @@ python scripts/notebook_tools/wsl_papermill.py execute <nb>
 # .NET / Lean : cell-by-cell MCP Jupyter (Papermill ne marche PAS)
 ```
 
+#### MCP jupyter-papermill DOWN : bascule directe, JAMAIS bloquer (HARD)
+
+**Il existe DEUX chemins d'exécution notebook** : (1) le MCP `jupyter-papermill` (cell-by-cell), (2) **papermill/nbconvert en direct** via `notebook_tools` / les binaires ci-dessus. Ils sont **interchangeables** pour l'exécution.
+
+**Règle (mandat user 2026-07-01)** : si le MCP jupyter-papermill est **down / non-live / ne répond pas** (ex. PR #660 fix pas encore déployé), un agent **bascule IMMÉDIATEMENT** sur `nbconvert --execute` / `python -m papermill` / `notebook_tools` — il **NE bloque JAMAIS** en attendant le MCP. Preuve que ça marche sans le MCP : Infer-24 (#4710) + Search-13 (#4713) exécutés `nbconvert --execute` exit 0, alors que le MCP était down.
+
+```bash
+# Fallback direct (kernel .net-csharp ou python3), quand le MCP est down :
+jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.kernel_name=.net-csharp <nb>
+/c/Users/jsboi/.conda/envs/mcp-jupyter-py310/python.exe -m papermill <nb> <out>   # python3
+```
+
+Un worker **oisif une demi-journée** parce que « le MCP est down » = **échec coordinateur** (coordinator-discipline Règle 4/5 : une lane ne s'arrête jamais), jamais un état worker acceptable. Le restart définitif du MCP (#660) reste une action **user-hand** ; en attendant, la bascule nbconvert est **obligatoire**, pas optionnelle.
+
 #### SmartContracts (8/14 groups, maj 2026-05-23)
 
 Packages installes dans mcp-jupyter-py310 : web3, py-solc-x, pycryptodome, py_ecc, phe, tenseal, mpyc, xrpl-py, python-bitcoinlib, vyper, tabulate.
