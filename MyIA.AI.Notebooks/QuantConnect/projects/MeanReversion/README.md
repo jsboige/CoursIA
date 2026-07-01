@@ -1,41 +1,41 @@
 # MeanReversion
 
-**Asset class:** US Sector ETFs
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** ETF sectoriels américains
+**ID projet Cloud :** Aucun (local uniquement)
 
 ## Description
 
-Short-term mean reversion strategy on 11 GICS sector ETFs (XLK, XLF, XLE, XLV, XLI, XLY, XLP, XLU, XLB, XLRE, XLC).
-Buys the most oversold ETFs (RSI(14) < 40) and holds for 15 days or until RSI > 60.
+Stratégie de mean-reversion court terme sur 11 ETF sectoriels GICS (XLK, XLF, XLE, XLV, XLI, XLY, XLP, XLU, XLB, XLRE, XLC).
+Achète les ETF les plus survendus (RSI(14) < 40) et conserve 15 jours ou jusqu'à RSI > 60.
 
-SMA200 regime filter on SPY: exits all positions in bear markets.
-Stop-loss at -8% to cut real breakdowns. Max 4 concurrent positions at 25% each.
+Filtre de régime SMA200 sur SPY : sort de toutes les positions en marché baissier.
+Stop-loss à -8 % pour couper les vraies ruptures. Maximum 4 positions simultanées à 25 % chacune.
 
-## How to Run
+## Comment lancer
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/MeanReversion"`
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/MeanReversion"`
 ```bash
 lean backtest --project .
 ```
 
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour lancer.
 
-## Backtest Metrics (2015-2026)
+## Métriques de backtest (2015-2026)
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | 0.294 |
-| CAGR | 7.53% |
-| Max Drawdown | 16.5% |
-| Net Return | +80.9% |
-| Rebalance | Daily scan |
+| CAGR | 7.53 % |
+| Max Drawdown | 16.5 % |
+| Rendement net | +80.9 % |
+| Rebalance | Scan quotidien |
 
-## Files
+## Fichiers
 
-- `main.py` - Strategy (v4.0, sector ETF mean reversion)
-- `research.ipynb` - RSI optimization, stop-loss, and holding period tests
+- `main.py` - Stratégie (v4.0, mean-reversion sur ETF sectoriels)
+- `research.ipynb` - Optimisation RSI, stop-loss et tests de période de détention
 
-## References
+## Références
 
-- Jegadeesh (1990), "Evidence of Predictable Behavior of Security Returns"
-- De Bondt & Thaler (1985), "Does the Stock Market Overreact?"
+- Jegadeesh (1990), « Evidence of Predictable Behavior of Security Returns »
+- De Bondt & Thaler (1985), « Does the Stock Market Overreact? »
