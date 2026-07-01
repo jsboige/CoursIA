@@ -1707,6 +1707,29 @@ private theorem node16_level (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
   show 1 + (1 + nw_nw.level) = n
   omega
 
+/-- **P4.4 assembly grain (c.156).** In a CLEAN context (the 16 grandchildren as
+    opaque binders + one level hypothesis), the `hashlifeResultAux_succ_node`
+    if-condition `(node16).level == 2` is false for `k ≥ 1` (the node level is
+    `k + 2 ≥ 3`). Proven standalone because stating/rewriting `(node16).level`
+    INLINE inside `p4_succ_membership`'s rich context (post `_h1`/`_h2`/`_h3`/`_h4`
+    obtain of 16 gc's) whnf-diverges (the c.142 pathology). Applying this helper
+    there keeps the level term inferred, never re-elaborated — the opaque-binder
+    pattern of c.139/c.143. -/
+private theorem node16_level_ne_two (k : Nat) (hk1 : 1 ≤ k)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+     sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (hnw : nw_nw.level = k) :
+    ¬ ((node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+             (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).level == 2) := by
+  -- Mirror the working pos-arm discharge at L1810-1815: `beq_iff_eq` converts the
+  -- `==` (Nat.beq) to `=`, then omega finds k+2 = 2 contradicts k >= 1.
+  intro heq
+  have hnode := node16_level nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+               sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se (k + 2) (by omega) (by omega)
+  rw [hnode] at heq
+  have hn2 : k + 2 = 2 := by simpa [beq_iff_eq] using heq
+  omega
+
 /-- Apply the level/`cellWf` IH to a `node` of four level-`(n-2)` `cellWf` cells
     (c.142 workhorse), for BOTH wave layers of the preservation lemma: wave-1
     (the nine `n_i`, each a `node` of four grandchildren) and wave-2 (the four
@@ -2354,6 +2377,33 @@ noncomputable def p4_succ_membership
   have _h3 := p4_wave2_ih c k hwf hk hk1 ih
   have _h4 := p4_half_steps_compose c k hwf hk
   intro p
+  -- LHS assembly (c.156). The 3 G3 gates (hcnode, hashlifeResultAux_succ_node,
+  -- if_neg) now compose through the whnf wall, exposing the `node out_*`
+  -- constructor and decomposing it via `mem_toGrid_node`.
+  -- Destruct c via _h1 (p4_double_nine_shape: c = node(node×4)×4 ∧ 16 facts).
+  obtain ⟨nw_nw, nw_ne, nw_sw, nw_se, ne_nw, ne_ne, ne_sw, ne_se,
+          sw_nw, sw_ne, sw_sw, sw_se, se_nw, se_ne, se_sw, se_se, _hcshape⟩ := _h1
+  obtain ⟨hcnode, hfacts⟩ := _hcshape
+  -- Rewrite the input cell to its 16-grandchild node, then iota-reduce hRA.
+  rw [hcnode]
+  rw [show (k + 2) = (k + 1) + 1 from by omega]
+  rw [hashlifeResultAux_succ_node]
+  -- The if-condition (node16).level == 2 is FALSE for k >= 1 (level = k+2 >= 3).
+  -- Discharge via the clean-context helper (opaque binders, c.139/c.143 pattern):
+  -- applying it here keeps the level term inferred, never whnf-re-elaborated.
+  have hne2 := node16_level_ne_two k hk1
+    nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
+    sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se hfacts.1
+  rw [if_neg hne2]
+  -- LHS is now `p ∈ (node out_nw out_ne out_sw out_se).toGrid (2^k, 2^k)`;
+  -- `mem_toGrid_node` (G3) decomposes it into the four quadrant memberships.
+  rw [mem_toGrid_node]
+  -- RESIDUAL (the offset-matching assembly): each `out_*.toGrid (off_*, off_*)`
+  -- must be characterized via `centralCorrect_mem` (G2 congruence, crossing the
+  -- whnf wall on the composed result) + the induction hypothesis `centralCorrect
+  -- q_* (k-1)` from `_h3`, then bridged to the RHS window via `evolve_half_step`
+  -- (the `2^k` half-step) + `evolve_add` (G1). The offsets `2^out_*.level` vs
+  -- `2^k` and the ih at level (k-1) vs goal at level k are the matching core.
   sorry
 
 /-- For a level-`k` MacroCell `c` with `k ≥ 2`, the centered region of
