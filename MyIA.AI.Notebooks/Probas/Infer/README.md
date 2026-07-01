@@ -2,7 +2,7 @@
 
 [← Série Probas](../README.md) | [Série PyMC (Python) →](../PyMC/README.md) | [ML.NET (C#) →](../../ML/ML.Net/README.md)
 
-Programmation probabiliste avec Microsoft Infer.NET : une série de 26 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision (MDPs, indice de Gittins, puis les **bandits bayésiens** via Thompson Sampling), les **processus gaussiens** (GP sparse, frontières non-linéaires), l'**inférence causale** (do-calculus de Pearl), les **modèles hiérarchiques** (pooling partiel et shrinkage) en clôture, et des preuves formelles Lean 4.
+Programmation probabiliste avec Microsoft Infer.NET : une série de 27 notebooks, scindée en deux arcs. Le **corpus bayésien** (17 notebooks, ce README) va des fondamentaux (distributions, factor graphs) aux frontières (modèles relationnels, TrueSkill, LDA, HMM, **inférence causale** (do-calculus de Pearl), **processus gaussiens** (GP sparse, frontières non-linéaires), **modèles hiérarchiques** (pooling partiel, shrinkage), **filtre de Kalman**). Un **arc autonome de 10 notebooks de théorie de la décision** ([`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md)) couvre utilité espérée, EVPI, MDPs, indice de Gittins et **bandits bayésiens** (Thompson Sampling), avec des preuves formelles Lean 4.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste par message passing, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
@@ -61,22 +61,14 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 11 | [Infer-11-Sequences](Infer-11-Sequences.ipynb) | 65 min | HMM, séries temporelles, motifs |
 | 12 | [Infer-12-Recommenders](Infer-12-Recommenders.ipynb) | 60 min | Factorisation, Click Model |
 | 13 | [Infer-13-Debugging](Infer-13-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
-| 14 | [Infer-14-Decision-Utility-Foundations](Infer-14-Decision-Utility-Foundations.ipynb) | 50 min | Loteries, axiomes VNM, utilité espérée |
-| 14b | [Infer-14b-Lean-ExpectedUtility](Infer-14b-Lean-ExpectedUtility.ipynb) | 45 min | **Companion natif** (kernel Lean) : preuve formelle 0-sorry de la direction sound du théorème vNM (représentation ⟹ rationalité) dans le lake `decision_theory_lean` (lib `Utility`), `#check` + `#print axioms` in-kernel (UNLOCK c.127, jonction Mathlib #2611) |
-| 15 | [Infer-15-Decision-Utility-Money](Infer-15-Decision-Utility-Money.ipynb) | 45 min | Paradoxe St-Petersbourg, CARA, CRRA |
-| 16 | [Infer-16-Decision-Multi-Attribute](Infer-16-Decision-Multi-Attribute.ipynb) | 50 min | MAUT, SMART, swing weights |
-| 17 | [Infer-17-Decision-Networks](Infer-17-Decision-Networks.ipynb) | 55 min | Diagrammes d'influence, politique optimale |
-| 18 | [Infer-18-Decision-Value-Information](Infer-18-Decision-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
-| 19 | [Infer-19-Decision-Expert-Systems](Infer-19-Decision-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
-| 20 | [Infer-20-Decision-Sequential](Infer-20-Decision-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique |
-| 20b | [Infer-20b-Lean-Gittins](Infer-20b-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
-| 21 | [Infer-21-Thompson-Sampling](Infer-21-Thompson-Sampling.ipynb) | 60 min | Thompson Sampling bayésien, posterior Beta-Bernoulli par le moteur, regret vs ε-greedy/UCB1 |
-| 22 | [Infer-22-Causal-Inference](Infer-22-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
-| 23 | [Infer-23-Sparse-Gaussian-Process](Infer-23-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens, noyau RBF, classification non-linéaire, sparse GP |
-| 24 | [Infer-24-Modeles-Hierarchiques](Infer-24-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
-| 25 | [Infer-25-Kalman-Filter](Infer-25-Kalman-Filter.ipynb) | 55 min | Filtre de Kalman, système dynamique linéaire gaussien, conjugaison, EP exacte |
+| 14 | [Infer-14-Causal-Inference](Infer-14-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
+| 15 | [Infer-15-Sparse-Gaussian-Process](Infer-15-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens, noyau RBF, classification non-linéaire, sparse GP |
+| 16 | [Infer-16-Modeles-Hierarchiques](Infer-16-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
+| 17 | [Infer-17-Kalman-Filter](Infer-17-Kalman-Filter.ipynb) | 55 min | Filtre de Kalman, système dynamique linéaire gaussien, conjugaison, EP exacte |
 
-**Durée totale** : ~22h
+> **Théorie de la décision** : les 10 notebooks de décision (utilité, EVPI, MDPs, Thompson Sampling, plus 2 companions Lean) forment désormais un arc autonome dans [`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/).
+
+**Durée totale** : ~13h (corpus bayésien 1-17)
 
 **Ressource complémentaire** : [Glossaire](Infer-Glossary.md) - Définitions des termes techniques
 
@@ -89,20 +81,18 @@ flowchart TD
     P3["<b>Classification & sélection</b> (7-8)<br/>A/B tests · evidence · ARD"]
     P4["<b>Modèles avancés</b> (9-12)<br/>LDA · crowdsourcing · HMM · reco"]
     P5["<b>Référence</b> (13)<br/>Debugging · comparaison algorithmes"]
-    P6["<b>Théorie de la décision</b> (14-20)<br/>utilité · EVPI · MDPs"]
-    P7["<b>Preuve formelle</b> (20b)<br/>indice de Gittins · Lean 4"]
+    P8["<b>Frontières</b> (14-17)<br/>causalité · GP sparse · hiérarchique · Kalman"]
+    DT["<b>Théorie de la décision</b><br/>arc autonome : ../DecisionTheory/Infer/"]
     P1 --> P2 --> P3 --> P4
-    P4 --> P6
-    P6 --> P7
+    P4 --> P8
     P5 -.->|"diagnostics<br/>à tout moment"| P2
     P5 -.-> P4
+    P8 -.->|"décision séquentielle,<br/>Thompson, Gittins"| DT
     classDef decision fill:#d1ecf1,stroke:#0c5460,stroke-width:2px;
-    classDef lean fill:#fff3cd,stroke:#856404,stroke-width:2px;
-    class P6 decision;
-    class P7 lean;
+    class DT decision;
 ```
 
-Le socle d'inference (1-12) se suit en séquence ; le notebook **13 (Debugging)** est transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. La **théorie de la décision** (14-20, surlignée bleu) forme un fil rouge autonome, et le notebook **20b (Gittins, surligné jaune)** apporte la **preuve formelle Lean 4** qui ancre le tout dans le curriculum cross-série de démonstrations. Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
+Le socle d'inference (1-12) se suit en séquence ; le notebook **13 (Debugging)** est transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. Les notebooks **14-17 (Frontières)** prolongent le corpus bayésien (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman). La **théorie de la décision** — utilité espérée, EVPI, MDPs, Thompson Sampling, plus les companions Lean (indice de Gittins) — forme désormais un **arc autonome** dans [`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/). Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
 
 ---
 
@@ -557,304 +547,18 @@ Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, séqu
 
 ---
 
-## Théorie de la Décision (Notebooks 14-20)
+## Théorie de la Décision (arc autonome)
 
-Les notebooks 14-20 forment une série complète sur la théorie de la décision bayésienne.
+Les 10 notebooks de théorie de la décision --- fondements de l'utilité (axiomes vNM, aversion au risque), utilité multi-attributs, réseaux de décision, valeur de l'information (EVPI/EVSI), systèmes experts (Minimax/regret), décisions séquentielles (MDPs), Thompson Sampling bayésien, plus deux companions Lean (preuve formelle du théorème vNM et indice de Gittins) --- constituent désormais un **arc autonome** dans [`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/).
 
-### Infer-14 : Axiomes et Fondements
-
-**Durée** : 50 min | **Prérequis** : Notebooks 1-8
-
-**Objectifs** :
-
-- Comprendre les **loteries** comme représentation des choix stochastiques
-- Maîtriser les **axiomes de Von Neumann-Morgenstern** (Complétude, Transitivité, Continuité, Indépendance)
-- Dériver la **fonction d'utilité** par calibration
-- Comprendre l'**agent rationnel** (maximise E[U])
-
-**Sections** :
-
-1. Pourquoi l'Utilité ?
-2. Loteries : Représentation Formelle
-3. Axiomes de Preferences Rationnelles
-4. Théorème de Représentation
-5. Calibration par Mise à l'Indifférence
-6. Modélisation avec Infer.NET
-7. Exercice : Calibrer Votre Fonction d'Utilité
-
-**Applications** : Décision médicale, assurance automobile, investissement
+Cette extraction clarifie les deux fils du corpus Probas : la **modélisation bayésienne** (ce README, notebooks 1-17) et la **théorie de la décision** (DecisionTheory/). Voir le README de DecisionTheory pour la vue d'ensemble, la progression pédagogique et le détail notebook-par-notebook.
 
 ---
 
-### Infer-15 : Utilité de l'Argent et Aversion au Risque
 
-**Durée** : 45 min | **Prérequis** : Notebook 14
+## Inférence Causale (Notebook 14)
 
-**Objectifs** :
-
-- Comprendre le **Paradoxe de Saint-Petersbourg** (valeur espérée infinie)
-- Maîtriser les fonctions **CARA** et **CRRA**
-- Calculer les **coefficients Arrow-Pratt** (aversion absolue/relative)
-- Appliquer la **dominance stochastique** (1er et 2nd ordre)
-
-**Concepts clés** :
-
-| Fonction | Formule | Propriété |
-|----------|---------|-----------|
-| CARA | U(x) = -e^(-ax) | Aversion absolue constante |
-| CRRA | U(x) = x^(1-rho)/(1-rho) | Aversion relative constante |
-| Logarithmique | U(x) = ln(x) | Cas spécial CRRA (rho=1) |
-
-**Sections** :
-
-1. Paradoxe de Saint-Petersbourg (Bernoulli 1713)
-2. Utilité Marginale Décroissante
-3. Fonctions d'Utilité Classiques
-4. Coefficients Arrow-Pratt
-5. Équivalent Certain et Prime de Risque
-6. Dominance Stochastique
-7. Application : Choix d'Investissement
-8. Exercice : Votre Profil de Risque
-9. Inférence Bayésienne de l'Aversion avec Infer.NET
-
-**Applications** : Simulation Monte Carlo, sélection de portefeuille (Livret A vs Fonds vs Actions)
-
----
-
-### Infer-16 : Utilité Multi-Attributs
-
-**Durée** : 50 min | **Prérequis** : Notebooks 14-15
-
-**Objectifs** :
-
-- Modéliser des décisions avec **plusieurs critères**
-- Comprendre l'**indépendance préférentielle**
-- Appliquer les **théorèmes d'additivité et multiplicativité**
-- Utiliser la méthode **SMART**
-
-**Concepts clés** :
-
-| Forme | Formule | Condition |
-|-------|---------|-----------|
-| Additive | V(x) = Sum wi x vi(xi) | Indépendance mutuelle |
-| Multiplicative | 1+kU = Prod(1+kki.Ui) | Interactions entre attributs |
-
-**Sections** :
-
-1. Décisions Multi-Critères
-2. Fonctions de Valeur vs Utilité
-3. Indépendance Préférentielle
-4. Théorème d'Additivité (Debreu-Gorman)
-5. Détermination des Poids (Swing Weights)
-6. Utilité Multiplicative
-7. Méthode SMART
-8. Analyse de Sensibilité
-9. Intégration avec Infer.NET
-10. Exercice : Votre Décision Multi-Attributs
-11. Apprentissage Bayésien des Poids
-
-**Applications** : Achat automobile (prix, sécurité, conso, confort), choix de carrière, sélection de site
-
----
-
-### Infer-17 : Réseaux de Décision
-
-**Durée** : 55 min | **Prérequis** : Notebooks 3, 14-16
-
-**Objectifs** :
-
-- Étendre les réseaux bayésiens avec **nœuds de décision et d'utilité**
-- Calculer la **politique optimale** (backward induction)
-- Comprendre les **arcs informationnels**
-- Modéliser des **décisions séquentielles**
-
-**Types de nœuds** :
-
-| Nœud | Forme | Rôle |
-|-------|-------|------|
-| Chance | Ovale | Variable aléatoire |
-| Décision | Rectangle | Choix de l'agent |
-| Utilité | Losange | Fonction de récompense |
-
-**Sections** :
-
-1. Des Réseaux Bayésiens aux Réseaux de Décision
-2. Types de Nœuds
-3. Arcs Informationnels
-4. Calcul de la Politique Optimale
-5. Exemple : Investissement avec Test de Marché
-6. Décisions Séquentielles
-7. Implémentation avec Infer.NET
-8. Visualisation du Factor Graph
-9. Exercice : Réseau de Décision Personnalisé
-10. Application MAUT : Choix de Site d'Aéroport
-
-**Applications** : Diagnostic médical avec décision de traitement, investissement avec étude de marché
-
----
-
-### Infer-18 : Valeur de l'Information
-
-**Durée** : 45 min | **Prérequis** : Notebooks 14-17
-
-**Objectifs** :
-
-- Calculer la **valeur de l'information parfaite** (EVPI)
-- Calculer la **valeur de l'information d'échantillon** (EVSI)
-- Comprendre **quand l'information a de la valeur**
-
-**Formules clés** :
-
-| Mesure | Formule | Interprétation |
-|--------|---------|----------------|
-| EVPI | E[max U given omega] - max E[U] | Gain si on connaît l'état du monde |
-| EVSI | E[max U given signal] - max E[U] | Gain avec test imparfait |
-| Efficacité | EVSI / EVPI | Qualité relative du test |
-
-**Sections** :
-
-1. Information et Réduction d'Incertitude
-2. Valeur de l'Information Parfaite (EVPI)
-3. Exemple : Droits de Forage Pétrolier
-4. Exemple : Chasse au Trésor
-5. Quand l'Information a-t-elle de la Valeur ?
-6. Implémentation avec Infer.NET
-7. Exercice : Faut-il Faire un Test Médical ?
-8. Diagnostic Médical avec Tests Successifs
-
-**Applications** : Droits pétroliers (test sismique), diagnostic médical (sensibilité 95%, spécificité 90%)
-
----
-
-### Infer-19 : Systèmes Experts et Robustesse
-
-**Durée** : 50 min | **Prérequis** : Notebooks 14-18
-
-**Objectifs** :
-
-- Comprendre les **systèmes experts** et leur architecture
-- Appliquer le critère **Minimax** (décisions robustes)
-- Implémenter le critère **Minimax Regret**
-- Gérer l'**incertitude sur les probabilités** (Knightienne)
-
-**Critères de décision** :
-
-| Critère | Formule | Attitude |
-|---------|---------|----------|
-| Maximax | max_a max_omega U(a,omega) | Optimiste |
-| Minimax | max_a min_omega U(a,omega) | Pessimiste |
-| Minimax Regret | min_a max_omega [U*(omega) - U(a,omega)] | Minimise le pire regret |
-| Hurwicz | alpha x max + (1-alpha) x min | Compromis |
-
-**Sections** :
-
-1. Systèmes Experts : Architecture et Historique
-2. Décision sous Incertitude Sévère
-3. Critère Minimax
-4. Critère Minimax Regret
-5. Comparaison Complète des Critères
-6. Critère Hurwicz
-7. Robustesse aux Erreurs de Modélisation
-8. Système Expert Bayésien Multi-Sources avec Infer.NET
-9. Exercice : Système Expert de Diagnostic
-
-**Applications** : Diagnostic informatique, diagnostic médical multi-sources, décisions financières robustes
-
----
-
-### Infer-20 : Décisions Séquentielles (MDPs)
-
-**Durée** : 60 min | **Prérequis** : Notebooks 14-19
-
-**Objectifs** :
-
-- Comprendre les **Processus de Décision Markoviens** (MDPs)
-- Maîtriser l'**itération de valeur** et l'**itération de politique**
-- Découvrir les alternatives : **LP, Expectimax, RTDP**
-- Appliquer le **reward shaping** avec préservation de politique
-
-**Composants d'un MDP** :
-
-| Composant | Notation | Description |
-|-----------|----------|-------------|
-| États | S | Ensemble des situations possibles |
-| Actions | A | Choix disponibles |
-| Transition | P(s' given s,a) | Probabilité de changement d'état |
-| Récompense | R(s,a) | Gain immédiat |
-| Discount | gamma in [0,1] | Facteur d'actualisation |
-
-**Équation de Bellman** :
-
-```
-V(s) = max_a [R(s,a) + gamma x Sum P(s'|s,a) x V(s')]
-```
-
-**Sections** :
-
-1. Décisions Séquentielles vs One-Shot
-2. Processus de Décision Markoviens
-3. Équation de Bellman
-4. Itération de Valeur
-5. Itération de Politique
-6. Alternatives : LP, Expectimax, RTDP
-7. Reward Shaping
-8. Bandits Multi-Bras
-9. Indice de Gittins
-10. POMDPs : MDPs Partiellement Observables
-
-**Applications** : Navigation robotique, allocation de ressources, jeux de stratégie
-
-### Infer-20b : Preuves formelles - Indice de Gittins (Lean 4)
-
-**Durée** : 45 min | **Prérequis** : Notebook 20, bases Lean 4
-**Kernel** : Lean 4 (WSL)
-
-**Companion notebook** de [Infer-20](Infer-20-Decision-Sequential.ipynb) avec preuves formelles en Lean 4.
-
-**Objectifs** :
-
-- Formaliser le cadre **SFABP** (Simple Family of Alternative Bandit Processes)
-- Prouver l'**optimalité de l'indice de Gittins** via l'argument des prevailing charges
-- Explorer les **limitations** (geometric discount, NP-difficulté du calcul exact)
-
-**Lien avec PyMC** : Le notebook compagnon [PyMC-20](../PyMC/PyMC-20-Decision-Sequential.ipynb) couvre les mêmes concepts en Python avec Thompson Sampling MCMC et diagnostics ArviZ.
-
----
-
-## Bandits Bayésiens (Notebook 21)
-
-### Infer-21 : Thompson Sampling bayésien
-
-Prolongement naturel de la théorie de la décision séquentielle : après les MDPs ([Infer-20](Infer-20-Decision-Sequential.ipynb)) et l'indice de Gittins ([Infer-20b](Infer-20b-Lean-Gittins.ipynb)), le **bandit multi-bras** vu comme un programme probabiliste Infer.NET.
-
-**Durée** : 60 min | **Prérequis** : [Notebook 5](Infer-5-Skills-IRT.ipynb) (posterior Beta), [Notebook 20](Infer-20-Decision-Sequential.ipynb) (bandits, ε-greedy, UCB1)
-
-**Objectifs** :
-
-- Modéliser un **bandit multi-bras** comme un programme probabiliste Infer.NET
-- Faire calculer au **moteur d'inférence** le posterior Beta-Bernoulli de chaque bras (EP/VMP), plutôt que d'appliquer la formule conjuguée à la main
-- Implémenter le **Thompson Sampling** : jouer le bras dont l'échantillon posterior est le plus élevé
-- Mesurer le **regret cumulé** face à ε-greedy et UCB1 (Thompson exploite l'incertitude posterior)
-- Étendre au **best-arm identification** : estimer P(bras i est le meilleur) par échantillonnage posterior
-
-**Concepts clés** :
-
-| Concept | Formule | Description |
-|---------|---------|-------------|
-| Posterior Beta | `Beta(1+s, 1+f)` | Calculé par Infer.NET (EP/VMP), pas à la main |
-| Thompson | `a = argmax_k θ̃_k`, `θ̃_k ~ posterior_k` | Jouer selon P(bras k est le meilleur) |
-| Regret | `Σ_t (θ*_max − θ*(a_t))` | Perte cumulée vs bras optimal |
-| Best-arm id | `P(bras i = argmax θ) ≈ freq(i gagne)` | Identification probabiliste du meilleur bras |
-
-**Positionnement** : [Infer-20](Infer-20-Decision-Sequential.ipynb) section 8 implémente ε-greedy, UCB1 et un exercice de Thompson **manuel** (comptage des succès/échecs, formule conjuguée codée à la main). Infer-21 en est le versant **moteur** : Infer.NET calcule le posterior Beta de chaque bras par inférence variationnelle, et Thompson échantillonne depuis ce posterior. Le regret cumulé mesuré (Thompson ≪ ε-greedy) prouve que l'exploration bayésienne ciblée exploite l'incertitude là où l'information manque — la généralisation à des modèles non conjugués (où seule l'inférence approchée sait calculer le posterior) justifie l'usage du moteur.
-
-**Applications** : A/B testing adaptatif, recommandation en ligne, essais cliniques séquentiels, publicité programmatique.
-
----
-
-## Inférence Causale (Notebook 22)
-
-### Infer-22 : Inférence Causale et do-calculus
+### Infer-14 : Inférence Causale et do-calculus
 
 **Durée** : 65 min | **Prérequis** : Notebook 4 (réseaux bayésiens, CPT, D-séparation)
 
@@ -883,9 +587,9 @@ Prolongement naturel de la théorie de la décision séquentielle : après les M
 
 ---
 
-## Modèles Non-Linéaires (Notebook 23)
+## Modèles Non-Linéaires (Notebook 15)
 
-### Infer-23 : Processus Gaussiens et frontières non-linéaires
+### Infer-15 : Processus Gaussiens et frontières non-linéaires
 
 Prolongement naturel de la classification bayésienne : là où [Infer-7](Infer-7-Classification.ipynb) (Bayes Point Machine) trace un **hyperplan**, le processus gaussien place un **prior sur des fonctions** (noyau RBF) et infère une frontière **courbe** et **incertaine**.
 
@@ -915,9 +619,9 @@ Prolongement naturel de la classification bayésienne : là où [Infer-7](Infer-
 
 ---
 
-## Modèles Hiérarchiques (Notebook 24)
+## Modèles Hiérarchiques (Notebook 16)
 
-### Infer-24 : Modèles Hiérarchiques Bayésiens
+### Infer-16 : Modèles Hiérarchiques Bayésiens
 
 Cas d'école du **pooling partiel** : quand les données sont **structurées en groupes** (élèves dans des classes, patients dans des hôpitaux, mesures répétées), ni le *complete pooling* (un seul paramètre global qui gomme la variabilité entre groupes) ni le *no pooling* (un paramètre indépendant par groupe qui surajuste les groupes clairsemés) ne sont satisfaisants. La solution bayésienne donne à chaque groupe son propre paramètre `theta[c]`, mais tous tirés d'une **loi de population commune** `(mu, tau)` — les groupes mal informés **rétractent** (*shrinkage*) vers la moyenne globale.
 
@@ -946,9 +650,9 @@ Cas d'école du **pooling partiel** : quand les données sont **structurées en 
 
 ---
 
-## Filtrage et séquences continues (Notebook 25)
+## Filtrage et séquences continues (Notebook 17)
 
-### Infer-25 : Filtre de Kalman (système dynamique linéaire gaussien)
+### Infer-17 : Filtre de Kalman (système dynamique linéaire gaussien)
 
 Le **filtre de Kalman** (Kalman, 1960) est l'analogue à état **continu** du HMM d'[Infer-11](Infer-11-Sequences.ipynb) : l'état caché $x_t$ (position, température, prix) évolue linéairement avec un bruit gaussien (la *dynamique*, variance $Q$), et on l'observe à travers un autre bruit gaussien (le *capteur*, variance $R$). Parce que tout est **linéaire et gaussien**, l'inférence est **exactement conjugée** : le postérieur reste gaussien à chaque pas, calculable en temps fermé — c'est le cas d'école où Infer.NET (EP) résout l'inférence de manière **exacte**, sans MCMC ni approximation variationnelle.
 
@@ -1097,8 +801,8 @@ var posterior = moteur.Infer<DistributionType>(variable);
 
 ```
 Infer/
-+-- Infer-1-Setup.ipynb ... Infer-25-Kalman-Filter.ipynb
-+-- Infer-20b-Lean-Gittins.ipynb    # Companion Lean 4 (preuves formelles Gittins)
++-- Infer-1-Setup.ipynb ... Infer-17-Kalman-Filter.ipynb
++-- Infer-9-Lean-Gittins.ipynb    # Companion Lean 4 (preuves formelles Gittins)
 +-- Infer-Glossary.md
 +-- FactorGraphHelper.cs          # Helper pour visualisation Graphviz
 +-- README.md
@@ -1200,7 +904,9 @@ Cette ligne est **obligatoire** pour les notebooks .NET Interactive.
 - Vérifier que `FactorGraphHelper.cs` est présent dans le répertoire
 - Essayer `engine.ShowFactorGraph = true` avant l'inférence
 
-### Erreurs connues dans les notebooks de décision
+### Erreurs Infer.NET connues
+
+> Documentées lors du développement des notebooks de décision (désormais dans [`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md)), ces pièges s'appliquent à tout le corpus.
 
 - `Beta.GetQuantile` n'existe pas : utiliser l'approximation normale pour les intervalles de crédibilité
 - `ShowFactorGraph` peut causer un crash du kernel : utiliser avec précaution
@@ -1217,17 +923,17 @@ Consultez le [Glossaire](Infer-Glossary.md) pour les définitions des termes tec
 | [Probas (parent)](../README.md) | Vue d'ensemble Probas | Contexte et parcours |
 | [ML.NET](../../ML/ML.Net/) | TP prévision de ventes | Combine ML.NET + Infer.NET |
 | [Search/CSP](../../Search/Part2-CSP/) | CSP-5 (Optimization) | Programmation par contraintes et probabilités |
-| [SymbolicAI/Lean](../../SymbolicAI/Lean/) | Infer-20b (Gittins) | Preuves formelles Lean 4 |
+| [SymbolicAI/Lean](../../SymbolicAI/Lean/) | Infer-9 (Gittins, [DecisionTheory](../DecisionTheory/Infer/)) | Preuves formelles Lean 4 |
 
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
 
-Cette série vous a fait parcourir l'arc complet de la programmation probabiliste en .NET : des **fondamentaux** (variables `Variable<T>`, `InferenceEngine`, compilation Roslyn — [Infer-1-Setup](Infer-1-Setup.ipynb) à [Infer-3-Factor-Graphs](Infer-3-Factor-Graphs.ipynb)) aux **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), jusqu'à la **théorie de la décision** (utilité espérée, EVPI/EVSI, MDPs, bandits — notebooks 14 à 20) et son **capstone formel** en Lean 4 ([Infer-20b-Lean-Gittins](Infer-20b-Lean-Gittins.ipynb)). Trois acquis clés :
+Cette série vous a fait parcourir l'arc complet de la programmation probabiliste en .NET : des **fondamentaux** (variables `Variable<T>`, `InferenceEngine`, compilation Roslyn — [Infer-1-Setup](Infer-1-Setup.ipynb) à [Infer-3-Factor-Graphs](Infer-3-Factor-Graphs.ipynb)) aux **modèles relationnels avancés** (réseaux bayésiens, IRT, TrueSkill, LDA, HMM, recommandation — notebooks 4 à 12), jusqu'aux **frontières** (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman — notebooks 14 à 17). La **théorie de la décision** (utilité espérée, EVPI/EVSI, MDPs, bandits) forme un **arc autonome** dans [`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md), dont le **capstone formel** Lean 4 ([Infer-9-Lean-Gittins](../DecisionTheory/Infer/Infer-9-Lean-Gittins.ipynb)) démontre l'indice de Gittins. Trois acquis clés :
 
 - **Penser en factor graphs et message passing** — Infer.NET propose trois moteurs sur le graphe de facteurs : EP (message passing déterministe, rapide, par défaut, approximatif), VMP (déterministe, converge sur les modèles complexes) et Gibbs (échantillonnage, exact asymptotiquement). Les factor graphs (rendus via `FactorGraphHelper` et Graphviz) exposent la *structure* du modèle, pas seulement ses posteriors.
 - **Lire et choisir son algorithme d'inférence** — contrairement à un échantillonneur générique, Infer.NET **compile un algorithme dédié par modèle** (reflection + Roslyn). Vous savez désormais quand le message passing déterministe (EP/VMP) sur modèles conjugués et structurés est avantageux, et quand il faut céder la place à MCMC.
-- **Relier inference et décision, jusqu'à la preuve** — les notebooks 14 à 20 ferment la boucle (un posterior est l'**input** d'une politique optimale sous incertitude), et Infer-20b pousse la rigueur jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
+- **Relier inference et décision, jusqu'à la preuve** — l'arc [`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md) ferme la boucle (un posterior est l'**input** d'une politique optimale sous incertitude), et le companion Lean [Infer-9-Lean-Gittins](../DecisionTheory/Infer/Infer-9-Lean-Gittins.ipynb) pousse la rigueur jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
 
 ### Prochaines étapes
 
@@ -1237,6 +943,6 @@ Cette série vous a fait parcourir l'arc complet de la programmation probabilist
 
 ### Le fil rouge
 
-Le fil rouge de cette série est la **compilation d'un algorithme d'inférence dédié** : à partir du modèle déclaratif, Infer.NET génère (via Roslyn) un solveur spécialisé qui **propage des messages** sur le graphe de facteurs. Ses moteurs par défaut — EP et VMP — exploitent la **conjugaison** des distributions pour des mises à jour déterministes en forme close, rapides et sans diagnostics de convergence ; un moteur de **Gibbs** (échantillonnage) prend le relais quand la conjugaison fait défaut. Là où PyMC fait tourner un échantillonneur MCMC générique sur une densité compilée, Infer.NET compile l'algorithme lui-même. Le capstone Lean 4 (Infer-20b) élève ce fil rouge jusqu'à la **preuve formelle** : l'indice de Gittins n'est plus seulement calculé, il est *démontré*. Maîtriser Infer.NET, c'est savoir quand la structure d'un modèle se prête au message passing sur graphe de facteurs plutôt qu'à l'échantillonnage MCMC de PyMC.
+Le fil rouge de cette série est la **compilation d'un algorithme d'inférence dédié** : à partir du modèle déclaratif, Infer.NET génère (via Roslyn) un solveur spécialisé qui **propage des messages** sur le graphe de facteurs. Ses moteurs par défaut — EP et VMP — exploitent la **conjugaison** des distributions pour des mises à jour déterministes en forme close, rapides et sans diagnostics de convergence ; un moteur de **Gibbs** (échantillonnage) prend le relais quand la conjugaison fait défaut. Là où PyMC fait tourner un échantillonneur MCMC générique sur une densité compilée, Infer.NET compile l'algorithme lui-même. Le capstone Lean 4 ([Infer-9-Lean-Gittins](../DecisionTheory/Infer/Infer-9-Lean-Gittins.ipynb), dans l'arc [`DecisionTheory`](../DecisionTheory/Infer/README.md)) élève ce fil rouge jusqu'à la **preuve formelle** : l'indice de Gittins n'est plus seulement calculé, il est *démontré*. Maîtriser Infer.NET, c'est savoir quand la structure d'un modèle se prête au message passing sur graphe de facteurs plutôt qu'à l'échantillonnage MCMC de PyMC.
 
 Bonne exploration de la programmation probabiliste et de la théorie de la décision !

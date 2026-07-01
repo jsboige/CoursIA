@@ -2,7 +2,7 @@
 """
 Tests pour `exercice_portfolio.py` (Probas/Infer, CoursIA-2).
 
-Module Python (numpy/scipy) traduisant le notebook Infer-15-Decision-Utility-Money
+Module Python (numpy/scipy) traduisant le notebook Infer-3-Utility-Money
 (C#/Infer.NET) : optimisation d'un portefeuille 3 actifs sous contrainte de
 risque VaR/CVaR a 95 %.
 

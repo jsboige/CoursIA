@@ -1,7 +1,7 @@
 """
 Exercice : Portfolio avec Contraintes de Risque (VaR / CVaR)
 ============================================================
-Traduction Python du notebook Infer-15-Decision-Utility-Money (C#/Infer.NET).
+Traduction Python du notebook Infer-3-Utility-Money (C#/Infer.NET).
 
 Actifs :
   - Obligataire  : rendement moyen 3 %,  écart-type 2 %

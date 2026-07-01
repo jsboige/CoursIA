@@ -35,19 +35,40 @@ NOTEBOOKS_CORE = [
     "Infer-11-Sequences.ipynb",
     "Infer-12-Recommenders.ipynb",
     "Infer-13-Debugging.ipynb",
+    # Bayesian frontières (gap-closure: anciens 22-25 -> 14-17)
+    "Infer-14-Causal-Inference.ipynb",
+    "Infer-15-Sparse-Gaussian-Process.ipynb",
+    "Infer-16-Modeles-Hierarchiques.ipynb",
+    "Infer-17-Kalman-Filter.ipynb",
 ]
 
+# Decision theory notebooks moved to Probas/DecisionTheory/Infer/ (arc autonome, #4725)
+NOTEBOOKS_DECISION_DIR = NOTEBOOKS_DIR.parent / "DecisionTheory" / "Infer"
 NOTEBOOKS_DECISION = [
-    "Infer-14-Decision-Utility-Foundations.ipynb",
-    "Infer-15-Decision-Utility-Money.ipynb",
-    "Infer-16-Decision-Multi-Attribute.ipynb",
-    "Infer-17-Decision-Networks.ipynb",
-    "Infer-18-Decision-Value-Information.ipynb",
-    "Infer-19-Decision-Expert-Systems.ipynb",
-    "Infer-20-Decision-Sequential.ipynb",
+    "Infer-1-Utility-Foundations.ipynb",
+    "Infer-2-Lean-ExpectedUtility.ipynb",
+    "Infer-3-Utility-Money.ipynb",
+    "Infer-4-Multi-Attribute.ipynb",
+    "Infer-5-Decision-Networks.ipynb",
+    "Infer-6-Value-Information.ipynb",
+    "Infer-7-Expert-Systems.ipynb",
+    "Infer-8-Sequential.ipynb",
+    "Infer-9-Lean-Gittins.ipynb",
+    "Infer-10-Thompson-Sampling.ipynb",
 ]
 
 NOTEBOOKS = NOTEBOOKS_CORE + NOTEBOOKS_DECISION
+
+
+def resolve_dir(notebook_name: str) -> Path:
+    """Resolve the directory holding a notebook.
+
+    Bayesian corpus lives in NOTEBOOKS_DIR (Probas/Infer/); decision arc lives
+    in NOTEBOOKS_DECISION_DIR (Probas/DecisionTheory/Infer/) since #4725.
+    """
+    if notebook_name in NOTEBOOKS_DECISION:
+        return NOTEBOOKS_DECISION_DIR
+    return NOTEBOOKS_DIR
 
 # ANSI color codes for terminal output
 class Colors:
@@ -519,7 +540,8 @@ def run_notebook(notebook_name: str, timeout: int = 600, verbose: bool = False) 
     Returns:
         dict with keys: success, output_path, error, duration
     """
-    input_path = NOTEBOOKS_DIR / notebook_name
+    nb_dir = resolve_dir(notebook_name)
+    input_path = nb_dir / notebook_name
     output_path = OUTPUT_DIR / f"{notebook_name.replace('.ipynb', '_output.ipynb')}"
 
     if not input_path.exists():
@@ -537,7 +559,7 @@ def run_notebook(notebook_name: str, timeout: int = 600, verbose: bool = False) 
         str(input_path),
         str(output_path),
         "-k", KERNEL_NAME,
-        "--cwd", str(NOTEBOOKS_DIR),
+        "--cwd", str(nb_dir),
     ]
 
     if verbose:
@@ -616,17 +638,17 @@ def main():
     parser.add_argument('--verbose', '-v', action='store_true', help='Verbose output')
     parser.add_argument('--list', '-l', action='store_true', help='List notebooks and exit')
     parser.add_argument('--validate-only', action='store_true', help='Only validate content, skip execution')
-    parser.add_argument('--decision', '-d', action='store_true', help='Test only Decision Theory notebooks (14-20)')
-    parser.add_argument('--core', '-c', action='store_true', help='Test only core notebooks (1-13)')
+    parser.add_argument('--decision', '-d', action='store_true', help='Test only Decision Theory notebooks (1-10, in ../DecisionTheory/Infer/)')
+    parser.add_argument('--core', '-c', action='store_true', help='Test only core/bayesian notebooks (1-17)')
     args = parser.parse_args()
 
     # Select notebooks based on flags
     if args.decision:
         notebooks_to_test = NOTEBOOKS_DECISION
-        print_colored("Testing Decision Theory notebooks (14-20)", Colors.MAGENTA)
+        print_colored("Testing Decision Theory notebooks (1-10)", Colors.MAGENTA)
     elif args.core:
         notebooks_to_test = NOTEBOOKS_CORE
-        print_colored("Testing Core notebooks (1-13)", Colors.MAGENTA)
+        print_colored("Testing Core/bayesian notebooks (1-17)", Colors.MAGENTA)
     elif args.notebook:
         notebooks_to_test = [args.notebook]
     else:
@@ -634,16 +656,16 @@ def main():
 
     if args.list:
         print_colored("Available notebooks:", Colors.BOLD)
-        print_colored("\nCore (1-13):", Colors.CYAN)
+        print_colored("\nCore (1-17, bayesian corpus):", Colors.CYAN)
         for nb in NOTEBOOKS_CORE:
             path = NOTEBOOKS_DIR / nb
             if path.exists():
                 print_colored(f"  [+] {nb}", Colors.GREEN)
             else:
                 print_colored(f"  [-] {nb}", Colors.RED)
-        print_colored("\nDecision Theory (14-20):", Colors.MAGENTA)
+        print_colored("\nDecision Theory (1-10, ../DecisionTheory/Infer/):", Colors.MAGENTA)
         for nb in NOTEBOOKS_DECISION:
-            path = NOTEBOOKS_DIR / nb
+            path = NOTEBOOKS_DECISION_DIR / nb
             if path.exists():
                 print_colored(f"  [+] {nb}", Colors.GREEN)
             else:
@@ -664,7 +686,7 @@ def main():
 
     validation_results = []
     for notebook in notebooks_to_test:
-        path = NOTEBOOKS_DIR / notebook
+        path = resolve_dir(notebook) / notebook
         if path.exists():
             report = validate_notebook(path)
             validation_results.append(report)
