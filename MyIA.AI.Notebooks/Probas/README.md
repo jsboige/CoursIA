@@ -11,7 +11,7 @@ maturity: PRODUCTION=47, BETA=1
 
 Le monde réel est incertain. Un diagnostic médical n'est jamais sûr à 100%, un classement sportif dépend de performances intrinsèquement variables, et les données que nous collectons sont toujours bruitées ou incomplètes. La programmation probabiliste offre un cadre rigoureux pour modéliser cette incertitude : plutôt que de calculer une seule réponse, on obtient une **distribution de probabilités** qui quantifie notre confiance dans chaque résultat possible.
 
-Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence exacte par message passing, **PyMC** (Python) pour l'échantillonnage MCMC moderne, et des **applications standalone** (RSA). Les 27 notebooks Infer.NET se scindent en deux arcs : **17 notebooks bayésiens** ([`Infer/`](Infer/README.md)) couvrant les fondements (distributions, graphs de facteurs), les modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM) et les frontières (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman) ; puis un **arc autonome de 10 notebooks de théorie de la décision** ([`DecisionTheory/Infer/`](DecisionTheory/Infer/README.md)) — utilité espérée, EVPI, MDPs, bandits — jusqu'à un compagnon **Lean 4** (Infer-9, adossé au lake [`decision_theory_lean`](decision_theory_lean/)) qui démontre formellement les identités d'escompte de l'indice de Gittins. Les 20 notebooks PyMC reprennent l'intégralité des modèles Infer.NET en Python avec l'échantillonnage NUTS, offrant un pont naturel vers l'écosystème data science : fondations 1-3, modèles classiques 4-13, et théorie de la décision 14-20.
+Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence exacte par message passing, **PyMC** (Python) pour l'échantillonnage MCMC moderne, et des **applications standalone** (RSA). Les 28 notebooks Infer.NET se scindent en deux arcs : **18 notebooks bayésiens** ([`Infer/`](Infer/README.md)) couvrant les fondements (distributions, graphs de facteurs), les modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM) et les frontières (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture) ; puis un **arc autonome de 10 notebooks de théorie de la décision** ([`DecisionTheory/Infer/`](DecisionTheory/Infer/README.md)) — utilité espérée, EVPI, MDPs, bandits — jusqu'à un compagnon **Lean 4** (Infer-9, adossé au lake [`decision_theory_lean`](decision_theory_lean/)) qui démontre formellement les identités d'escompte de l'indice de Gittins. Les 20 notebooks PyMC reprennent l'intégralité des modèles Infer.NET en Python avec l'échantillonnage NUTS, offrant un pont naturel vers l'écosystème data science : fondations 1-3, modèles classiques 4-13, et théorie de la décision 14-20.
 
 ## Pourquoi cette série
 
@@ -183,8 +183,8 @@ Probas/
 │   ├── PyMC-1-Setup.ipynb ... PyMC-20-Decision-Sequential.ipynb
 │   └── (port en cours d'enrichissement)
 ├── decision_theory_lean/        # Projet Lake (racine série) : escompte géométrique + théorème de Gittins ; accueillera VNM (#4049) + Dutch Book (#4050)
-├── Infer/                       # Corpus bayésien Infer.NET (17 notebooks)
-│   ├── Infer-1-Setup.ipynb ... Infer-17-Kalman-Filter.ipynb
+├── Infer/                       # Corpus bayésien Infer.NET (18 notebooks)
+│   ├── Infer-1-Setup.ipynb ... Infer-18-Change-Point.ipynb
 │   ├── README.md                # Documentation détaillée de la série bayésienne
 │   └── scripts/
 └── DecisionTheory/              # Arc théorie de la décision Infer.NET (10 notebooks, #4725)
@@ -269,9 +269,9 @@ Application avancée à la linguistique pragmatique :
 - Modélisation des hyperboles (prix, excitation)
 - Question Under Discussion (QUD)
 
-## Série Infer.NET (27 notebooks)
+## Série Infer.NET (28 notebooks)
 
-La série se scinde en deux arcs : le **corpus bayésien** (17 notebooks, [`Infer/`](Infer/README.md)) et l'**arc théorie de la décision** (10 notebooks, [`DecisionTheory/Infer/`](DecisionTheory/Infer/README.md)). La documentation détaillée de chaque notebook, les patterns Infer.NET avancés et les exercices corrigés vivent dans ces deux README.
+La série se scinde en deux arcs : le **corpus bayésien** (18 notebooks, [`Infer/`](Infer/README.md)) et l'**arc théorie de la décision** (10 notebooks, [`DecisionTheory/Infer/`](DecisionTheory/Infer/README.md)). La documentation détaillée de chaque notebook, les patterns Infer.NET avancés et les exercices corrigés vivent dans ces deux README.
 
 ### Progression
 
@@ -279,10 +279,10 @@ La série se scinde en deux arcs : le **corpus bayésien** (17 notebooks, [`Infe
 |--------|-----------|-------|-------|
 | **Fondations** | 1-3 | Setup, distributions, factor graphs | 2h |
 | **Modèles classiques** | 4-13 | Bayesian networks, IRT, TrueSkill, LDA, HMM | 8h |
-| **Frontières bayésiennes** | 14-17 | Causalité, GP sparse, hiérarchique, filtre de Kalman | 4h |
+| **Frontières bayésiennes** | 14-18 | Causalité, GP sparse, hiérarchique, filtre de Kalman, change-point | 4,5h |
 | **Décision (arc autonome)** | [DecisionTheory/Infer/ 1-10](DecisionTheory/Infer/README.md) | Théorie de la décision bayésienne + preuve Lean de Gittins | 7h |
 
-Les 27 notebooks Infer.NET sont détaillés individuellement dans [*Ce que chaque notebook apporte*](#ce-que-chaque-notebook-apporte) ci-dessous (apport pédagogique par notebook) ; le contenu exhaustif — patterns avancés, exercices corrigés — vit dans [Infer/README.md](Infer/README.md) et [DecisionTheory/Infer/README.md](DecisionTheory/Infer/README.md).
+Les 28 notebooks Infer.NET sont détaillés individuellement dans [*Ce que chaque notebook apporte*](#ce-que-chaque-notebook-apporte) ci-dessous (apport pédagogique par notebook) ; le contenu exhaustif — patterns avancés, exercices corrigés — vit dans [Infer/README.md](Infer/README.md) et [DecisionTheory/Infer/README.md](DecisionTheory/Infer/README.md).
 
 ## Série PyMC (20 notebooks, Python)
 
