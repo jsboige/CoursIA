@@ -10,7 +10,7 @@ Arc autonome de **théorie de la décision bayésienne** en Infer.NET : 10 noteb
 
 ## Pourquoi un arc autonome
 
-Jusqu'à la restructure (#4725), la théorie de la décision était imbriquée dans le corpus bayésien Infer (notebooks 14-21), ce qui masquait la **dualité des deux fils** : *modéliser l'incertitude* (inférence bayésienne) vs *décider face à l'incertitude* (théorie de la décision). L'extraction dans [`DecisionTheory/Infer/`](Infer/) rend ces deux arcs **physiquement indépendants** tout en préservant le continuum pédagogique (le fil décision s'appuie sur les posteriors du corpus bayésien). Le lake [`decision_theory_lean`](../../decision_theory_lean/), à la **racine de la série Probas**, reste visible des deux pistes (Infer.NET et PyMC).
+Jusqu'à la restructure (#4725), la théorie de la décision était imbriquée dans le corpus bayésien Infer (notebooks 14-21), ce qui masquait la **dualité des deux fils** : *modéliser l'incertitude* (inférence bayésienne) vs *décider face à l'incertitude* (théorie de la décision). L'extraction dans [`DecisionTheory/Infer/`](./) rend ces deux arcs **physiquement indépendants** tout en préservant le continuum pédagogique (le fil décision s'appuie sur les posteriors du corpus bayésien). Le lake [`decision_theory_lean`](../../decision_theory_lean/), à la **racine de la série Probas**, reste visible des deux pistes (Infer.NET et PyMC).
 
 ## Vue d'ensemble
 

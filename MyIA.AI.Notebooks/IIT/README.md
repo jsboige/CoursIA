@@ -347,7 +347,7 @@ les arcs entrants de `X`, brisant les chemins de confusion — de sorte que
 | Paradigme | Notebook | Instanciation de `do(·)` | Résultat-signature |
 |-----------|----------|---------------------------|--------------------|
 | **Symbolique** (logique propositionnelle, Java/Tweety) | [Tweety-11-Causal](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | `scm.intervene(p, b)` → nouveau SCM dont l'équation de `p` devient une constante | `P(rain\|drops)=True ≠ P(rain\|do(drops))=False` (baromètre) |
-| **Bayésien par message passing** (Infer.NET, EP/VMP — Gibbs disponible) | [Infer-22](../Probas/Infer/Infer-22-Causal-Inference.ipynb) | mutilation de graphe `Variable.Bernoulli(1.0)` ; backdoor / front-door | paradoxe de Simpson résolu, identifiabilité par ajustement |
+| **Bayésien par message passing** (Infer.NET, EP/VMP — Gibbs disponible) | [Infer-14](../Probas/Infer/Infer-14-Causal-Inference.ipynb) | mutilation de graphe `Variable.Bernoulli(1.0)` ; backdoor / front-door | paradoxe de Simpson résolu, identifiabilité par ajustement |
 | **Bayésien MCMC** (PyMC) | [PyMC-22](../Probas/PyMC/PyMC-22-Causal-Inference.ipynb) | opérateur natif `pm.do(model, {X:x})` ; backdoor / front-door | contrefactuel par abduction (postérieur sur les exogènes) |
 | **Théorie de l'information / émergence** (ICT) | [ICT-5-CausalEmergence](ICT-Series/ICT-5-CausalEmergence.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
 
@@ -364,7 +364,7 @@ causal que le micro — l'`effectiveness` monte sous coarse-graining.
 
 **Parcours de lecture conseillé** : commencer par le **symbolique qualitatif**
 ([Tweety-11](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb)) pour *voir* `observe` vs `do` sans
-nombres ; passer au **quantitatif distributionnel** ([Infer-22](../Probas/Infer/Infer-22-Causal-Inference.ipynb)
+nombres ; passer au **quantitatif distributionnel** ([Infer-14](../Probas/Infer/Infer-14-Causal-Inference.ipynb)
 message passing, [PyMC-22](../Probas/PyMC/PyMC-22-Causal-Inference.ipynb) MCMC) pour *calculer* les effets
 et lever le paradoxe de Simpson ; finir par l'**information-théorique**
 ([ICT-5](ICT-Series/ICT-5-CausalEmergence.ipynb)) où le même `do` mesure le travail causal **à travers les
