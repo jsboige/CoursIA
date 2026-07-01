@@ -3,7 +3,7 @@
 <!-- CATALOG-STATUS
 series: IIT
 pedagogical_count: 13
-breakdown: root=13
+breakdown: ICT-Series=10, root=3
 maturity: BETA=6, PRODUCTION=6, ALPHA=1
 -->
 
