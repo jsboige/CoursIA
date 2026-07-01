@@ -200,7 +200,7 @@ La signature du do-calculus — **P(rain | drops) ≠ P(rain | do(drops))** — 
 
 Tweety raisonne sur le do-calculus en **logique propositionnelle** : `do(X)` y est *qualitatif* — un atome forcé, un SCM réécrit, une réponse vrai/faux. C'est idéal pour *voir* la différence entre `observe` et `do` sans nombres, mais Tweety **ne chiffre pas** un effet causal ni ne lève quantitativement un paradoxe de Simpson. Les séries probabilistes du dépôt reprennent **exactement ce notebook** avec des distributions :
 
-- [Infer-22-Causal-Inference](../../Probas/Infer/Infer-22-Causal-Inference.ipynb) — le **jumeau distributionnel par message passing** : `P(Y|do(X))` calculé par mutilation de graphe en Infer.NET (EP/VMP), ajustements backdoor / front-door, paradoxe de Simpson résolu numériquement.
+- [Infer-14-Causal-Inference](../../Probas/Infer/Infer-14-Causal-Inference.ipynb) — le **jumeau distributionnel par message passing** : `P(Y|do(X))` calculé par mutilation de graphe en Infer.NET (EP/VMP), ajustements backdoor / front-door, paradoxe de Simpson résolu numériquement.
 - [PyMC-22-Causal-Inference](../../Probas/PyMC/PyMC-22-Causal-Inference.ipynb) — la version **MCMC** avec l'opérateur natif `pm.do` et le contrefactuel par abduction.
 - [ICT-5-CausalEmergence](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb) — le même `do` monte d'un cran : à **quelle échelle** un système fait-il le plus de travail causal ?
 
