@@ -138,11 +138,11 @@ Cette série consolide cinq concepts qui reviennent dans tous les systèmes IA a
 
 | Concept | Définition | Manifestation dans CaseStudies | Cours connexes |
 |---------|------------|--------------------------------|----------------|
-| **Architecture hybride** | Pipeline combinant techniques symboliques et statistiques | Diagnostic : A* + GA + Z3 / OncoPlan : Ontologie + CSP + Pyro | [SymbolicAI](../SymbolicAI/README.md), [Probas](../Probas/README.md) |
-| **Jumeau numérique** | Modèle logiciel d'un objet/personne réagissant à des interventions | Modèle patient (état, paramètres bio, réponse au traitement) | [RL](../RL/README.md), [Probas](../Probas/README.md) |
+| **Architecture hybride** | Pipeline combinant techniques symboliques et statistiques | Diagnostic : A* + GA + Z3 / OncoPlan : Ontologie + CSP + Pyro / SmartGrid : CP-SAT + Bayésien + multi-objectif | [SymbolicAI](../SymbolicAI/README.md), [Probas](../Probas/README.md) |
+| **Jumeau numérique** | Modèle logiciel d'un objet/personne/système réagissant à des interventions | Modèle patient (état, paramètres bio, réponse au traitement) / réseau électrique (charge, pannes) | [RL](../RL/README.md), [Probas](../Probas/README.md) |
 | **Knowledge engineering** | Formalisation explicite des connaissances métier en classes/règles | Ontologie oncologique, règles de diagnostic | [SemanticWeb](../SymbolicAI/SemanticWeb/README.md) |
 | **Inférence sous contraintes** | Résolution conjointe d'un problème avec contraintes dures et incertitudes | OncoPlan : calendrier valide ET probable | [Search](../Search/README.md), [SymbolicAI/Tweety](../SymbolicAI/Tweety/README.md) |
-| **Décision sous incertitude** | Choisir entre options avec résultats probabilistes et regret asymétrique | OncoPlan : adapter ou non un protocole | [Probas](../Probas/README.md), [GameTheory](../GameTheory/README.md) |
+| **Décision sous incertitude** | Choisir entre options avec résultats probabilistes et regret asymétrique | OncoPlan : adapter ou non un protocole / SmartGrid : dispatch sous risque de panne | [Probas](../Probas/README.md), [GameTheory](../GameTheory/README.md) |
 
 Ces concepts ne sont pas exclusifs au domaine médical : on les retrouve à l'identique en **finance algorithmique** (jumeau de marché + contraintes réglementaires + signaux probabilistes), **logistique** (jumeau de flotte + planification + prévisions) et **maintenance prédictive** (jumeau équipement + règles métier + Bayésien). Le choix du médical est pédagogique : domaine riche en contraintes formelles et en incertitude irréductible.
 
@@ -210,7 +210,7 @@ Dépendances principales : numpy, pandas, matplotlib, seaborn, z3-solver, pyro-p
 
 ### Faut-il avoir suivi toutes les séries avant de commencer les études de cas ?
 
-Non, mais les prérequis varient par projet. Le **Diagnostic Médical** nécessite d'avoir vu Search Part 1 (recherche informée) et Search Part 2 (CSP/Z3). L'**Oncology Planning** nécessite Probas (inférence bayésienne) et idéalement Planners (CP-SAT). Chaque projet indique les prérequis spécifiques dans sa section. Commencez par le projet dont vous maîtrisez les prérequis.
+Non, mais les prérequis varient par projet. Le **Diagnostic Médical** nécessite d'avoir vu Search Part 1 (recherche informée) et Search Part 2 (CSP/Z3). L'**Oncology Planning** nécessite Probas (inférence bayésienne) et idéalement Planners (CP-SAT). Le **SmartGrid Energy** nécessite Planners (CP-SAT / OR-Tools) et Probas (inférence bayésienne du risque de panne). Chaque projet indique les prérequis spécifiques dans sa section. Commencez par le projet dont vous maîtrisez les prérequis.
 
 ### Qu'est-ce qu'un jumeau numérique patient ?
 
