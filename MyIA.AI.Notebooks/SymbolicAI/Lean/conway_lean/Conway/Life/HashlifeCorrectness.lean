@@ -1031,6 +1031,20 @@ theorem mem_toGrid {c : MacroCell} {offset : Int × Int} {p : Int × Int} :
   unfold MacroCell.toGrid
   exact mem_sortDedup
 
+/-- **Offset-shift for `toGrid` membership** (P4.4 offset-matching ingredient).
+    Membership of `p` in `c.toGrid (r0, c0)` is equivalent to membership of the
+    translated point `(p.1 - r0, p.2 - c0)` in `c.toGrid (0, 0)` — i.e. the cell
+    content is the same grid, just viewed at a different origin. This is the
+    shift ingredient the P4.4 offset-matching assembly needs to relate each
+    quadrant membership `p ∈ out_*.toGrid (off, off)` (after `mem_toGrid_node`
+    decomposes the result node into its four children at offsets `(2^k, 2^k)`,
+    `(2^k, 2^k + 2^out_nw.level)`, …) to the centered form that
+    `centralCorrect_mem` + the ih characterize. -/
+theorem mem_toGrid_shift {c : MacroCell} {r0 c0 : Int} {p : Int × Int} :
+    p ∈ c.toGrid (r0, c0) ↔ (p.1 - r0, p.2 - c0) ∈ c.toGrid (0, 0) := by
+  rw [mem_toGrid, mem_toGrid]
+  exact mem_toCellsAux_shift
+
 /-- **G3 infrastructure (toGrid node-decomposition).** Membership in a `node`
     cell's grid decomposes into membership in the four children's grids, with
     the standard quadtree offset shifts (row increases downward, column
