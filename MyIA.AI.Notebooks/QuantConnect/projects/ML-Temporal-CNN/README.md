@@ -1,30 +1,30 @@
 # ML-Temporal-CNN (HandsOn Ex14)
 
-**Asset class:** US Equities (QQQ top-3)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Actions US (QQQ top-3)
+**Cloud project ID :** None (local only)
 
 ## Description
 
-Temporal Conv1D CNN for return prediction. Uses sliding window of past 20 days returns as input to a 1D convolutional network.
+CNN Conv1D temporel pour la prédiction de rendements. Utilise une fenêtre glissante des 20 derniers jours de rendements comme entrée d'un réseau de convolution 1D.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Temporal-CNN"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Temporal-CNN"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Metric | Value |
-|--------|-------|
-| Model | Conv1D CNN (Keras) |
-| Universe | QQQ top-3 |
+| Métrique | Valeur |
+|----------|--------|
+| Modèle | Conv1D CNN (Keras) |
+| Univers | QQQ top-3 |
 | Rebalance | Daily |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (v1.0, temporal CNN)
-- research.ipynb - CNN architecture and training
-## References
+- main.py - Stratégie (v1.0, CNN temporel)
+- research.ipynb - Architecture CNN et entraînement
 
-- Hands-On AI Trading, Section 06, Example 14
+## Références
 
+- Hands-On AI Trading, Section 06, Exemple 14

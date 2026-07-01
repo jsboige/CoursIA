@@ -1,32 +1,32 @@
 # ML-Chronos-Foundation (HandsOn Ex18)
 
-**Asset class:** US Equities (top 10)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Actions US (top 10)
+**Cloud project ID :** None (local only)
 
 ## Description
 
-Amazon Chronos T5 foundation model for time series forecasting. Biweekly rebalance based on forecast direction.
+Modèle de fondation Chronos T5 d'Amazon pour le forecasting de séries temporelles. Rebalance bi-hebdomadaire basée sur la direction des prévisions.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Chronos-Foundation"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Chronos-Foundation"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | 0.277 |
 | CAGR | 7.23% |
 | Max Drawdown | 13.5% |
-| Model | Chronos T5 (Amazon) |
+| Modèle | Chronos T5 (Amazon) |
 | Rebalance | Biweekly |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (v1.0, Chronos forecasting)
-- research.ipynb - Foundation model evaluation
-## References
+- main.py - Stratégie (v1.0, forecasting Chronos)
+- research.ipynb - Évaluation du modèle de fondation
 
-- Hands-On AI Trading, Section 06, Example 18
+## Références
 
+- Hands-On AI Trading, Section 06, Exemple 18
