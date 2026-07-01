@@ -45,9 +45,9 @@ La série illustre ce fil rouge sur plusieurs notebooks, chacun sur un cas non-c
 
 - [PyMC-1-Setup](PyMC-1-Setup.ipynb) — introduction : du Beta-Bernoulli conjugué (où MCMC = prior) à un modèle hiérarchique non-centré sur plusieurs pièces, où le shrinkage devient visible.
 - [PyMC-11-Sequences](PyMC-11-Sequences.ipynb) — HMM à états cachés : la vraisemblance de mélange (`NormalMixture`) marginalise l'assignation discrète pour garder un NUTS pur sur les paramètres continus.
-- [PyMC-1-Decision-Utility-Foundations](../DecisionTheory/PyMC/PyMC-1-Decision-Utility-Foundations.ipynb) — diagnostic multi-sites : un portefeuille de groupes hétérogènes où le partial pooling régularise les estimations à faible effectif.
+- [PyMC-1-Utility-Foundations](../DecisionTheory/PyMC/PyMC-1-Utility-Foundations.ipynb) — diagnostic multi-sites : un portefeuille de groupes hétérogènes où le partial pooling régularise les estimations à faible effectif.
 - [PyMC-4-Decision-Networks](../DecisionTheory/PyMC/PyMC-4-Decision-Networks.ipynb) — états latents : prévalence réelle d'un phénomène observé via un test imparfait (inversion d'état caché, non-conjuguée).
-- [PyMC-6-Decision-Expert-Systems](../DecisionTheory/PyMC/PyMC-6-Decision-Expert-Systems.ipynb) — recette de référence : paramétrisation **non-centrée** (offsets de Neal) qui évite le funnel et stabilise la convergence.
+- [PyMC-6-Expert-Systems](../DecisionTheory/PyMC/PyMC-6-Expert-Systems.ipynb) — recette de référence : paramétrisation **non-centrée** (offsets de Neal) qui évite le funnel et stabilise la convergence.
 
 > **Leçon technique récurrente** : sur ces modèles, la **paramétrisation non-centrée** `θ = μ + σ · z` (avec `z ~ Normal(0,1)`) est souvent indispensable. Elle découple l'estimation de la moyenne de celle de la dispersion et évite le *funnel de Neal* — une pathologie géométrique qui piège l'échantillonneur quand la dispersion inter-groupes est faible. Le réflexe naïf « augmenter `target_accept` » **aggrave** alors les divergences ; c'est la reparamétrisation, pas la tolérance, qui débloque la convergence. Voir [PyMC-13-Debugging](PyMC-13-Debugging.ipynb) pour les diagnostics associés.
 
@@ -82,7 +82,7 @@ La série illustre ce fil rouge sur plusieurs notebooks, chacun sur un cas non-c
 
 > **Théorie de la décision** : les notebooks décisionnels (utilité espérée, EVPI, MDPs, bandits) forment désormais une sous-série autonome dans [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (1 à 7), miroir Python de [DecisionTheory/Infer/](../DecisionTheory/Infer/README.md).
 
-> **Numérotation** : le notebook **14** (inférence causale) porte ce numéro par **parité** avec son jumeau C# [Infer-14-Causal-Inference](../Infer/Infer-14-Causal-Inference.ipynb). Le sujet d'Infer-21 (Thompson Sampling) est, côté Python, **intégré dans** [PyMC-7-Decision-Sequential](../DecisionTheory/PyMC/PyMC-7-Decision-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
+> **Numérotation** : le notebook **14** (inférence causale) porte ce numéro par **parité** avec son jumeau C# [Infer-14-Causal-Inference](../Infer/Infer-14-Causal-Inference.ipynb). Le sujet d'Infer-21 (Thompson Sampling) est, côté Python, **intégré dans** [PyMC-7-Sequential](../DecisionTheory/PyMC/PyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
 
 > **Ponts causaux** : [PyMC-14](PyMC-14-Causal-Inference.ipynb) est le maillon **MCMC** d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau **message passing** en C# [Infer-14](../Infer/Infer-14-Causal-Inference.ipynb) (Infer.NET, EP/VMP), le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb). Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
@@ -149,10 +149,10 @@ Notebooks 1-3 (fondations) puis 7-8 (classification/sélection) puis 9-12 (modè
 
 Ce parcours couvre l'utilité espérée, la valeur de l'information et les MDPs avec un moteur MCMC. Il se suit dans la sous-série [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (notebooks 1 à 7).
 
-1. [PyMC-1](../DecisionTheory/PyMC/PyMC-1-Decision-Utility-Foundations.ipynb) -> axiomes VNM
-2. [PyMC-2](../DecisionTheory/PyMC/PyMC-2-Decision-Utility-Money.ipynb) -> aversion au risque
+1. [PyMC-1](../DecisionTheory/PyMC/PyMC-1-Utility-Foundations.ipynb) -> axiomes VNM
+2. [PyMC-2](../DecisionTheory/PyMC/PyMC-2-Utility-Money.ipynb) -> aversion au risque
 3. [PyMC-4](../DecisionTheory/PyMC/PyMC-4-Decision-Networks.ipynb) -> réseaux de décision
-4. [PyMC-5](../DecisionTheory/PyMC/PyMC-5-Decision-Value-Information.ipynb) -> [PyMC-7](../DecisionTheory/PyMC/PyMC-7-Decision-Sequential.ipynb) -> EVPI, MDPs
+4. [PyMC-5](../DecisionTheory/PyMC/PyMC-5-Value-Information.ipynb) -> [PyMC-7](../DecisionTheory/PyMC/PyMC-7-Sequential.ipynb) -> EVPI, MDPs
 
 ### Parcours comparatif Infer.NET vs PyMC (~15h)
 

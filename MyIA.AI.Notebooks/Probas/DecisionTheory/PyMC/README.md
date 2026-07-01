@@ -16,13 +16,13 @@ Jusqu'à la restructure (#4725), la théorie de la décision était imbriquée d
 
 | # | Notebook | Durée | Concepts |
 |---|----------|-------|----------|
-| 1 | [PyMC-1-Decision-Utility-Foundations](PyMC-1-Decision-Utility-Foundations.ipynb) | 50 min | Loteries, axiomes VNM, utilité espérée, diagnostic hiérarchique multi-sites |
-| 2 | [PyMC-2-Decision-Utility-Money](PyMC-2-Decision-Utility-Money.ipynb) | 60 min | Paradoxe St-Petersbourg, CARA, CRRA, profil de risque par inference bayésienne |
-| 3 | [PyMC-3-Decision-Multi-Attribute](PyMC-3-Decision-Multi-Attribute.ipynb) | 50 min | MAUT, SMART, swing weights |
+| 1 | [PyMC-1-Utility-Foundations](PyMC-1-Utility-Foundations.ipynb) | 50 min | Loteries, axiomes VNM, utilité espérée, diagnostic hiérarchique multi-sites |
+| 2 | [PyMC-2-Utility-Money](PyMC-2-Utility-Money.ipynb) | 60 min | Paradoxe St-Petersbourg, CARA, CRRA, profil de risque par inference bayésienne |
+| 3 | [PyMC-3-Multi-Attribute](PyMC-3-Multi-Attribute.ipynb) | 50 min | MAUT, SMART, swing weights |
 | 4 | [PyMC-4-Decision-Networks](PyMC-4-Decision-Networks.ipynb) | 55 min | Diagrammes d'influence, prévalence à test imparfait (état latent) |
-| 5 | [PyMC-5-Decision-Value-Information](PyMC-5-Decision-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
-| 6 | [PyMC-6-Decision-Expert-Systems](PyMC-6-Decision-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
-| 7 | [PyMC-7-Decision-Sequential](PyMC-7-Decision-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique, bandits, Thompson Sampling MCMC, POMDPs |
+| 5 | [PyMC-5-Value-Information](PyMC-5-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
+| 6 | [PyMC-6-Expert-Systems](PyMC-6-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
+| 7 | [PyMC-7-Sequential](PyMC-7-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique, bandits, Thompson Sampling MCMC, POMDPs |
 
 **Durée totale** : ~6h
 
@@ -47,7 +47,7 @@ Le socle des **fondations** (1-3) pose les axiomes de rationalité et la notion 
 
 ## Spécificité PyMC : Thompson Sampling par MCMC
 
-Là où l'arc [Infer.NET](../Infer/README.md) calcule les posteriors de bandits par message passing (EP/VMP, analytique), cet arc PyMC les obtient par **échantillonnage NUTS**. La valeur distinctive apparaît sur des modèles de bandits **non conjugués** (priors Beta-Bernoulli conjugués mis à part) : seul l'échantillonnage MCMC sait alors explorer le posterior, et Thompson Sampling se nourrit directement des échantillons. Le sujet d'Infer-21 (Thompson Sampling) est, côté Python, **intégré dans** [PyMC-7-Decision-Sequential](PyMC-7-Decision-Sequential.ipynb) (section bandits bayésiens MCMC).
+Là où l'arc [Infer.NET](../Infer/README.md) calcule les posteriors de bandits par message passing (EP/VMP, analytique), cet arc PyMC les obtient par **échantillonnage NUTS**. La valeur distinctive apparaît sur des modèles de bandits **non conjugués** (priors Beta-Bernoulli conjugués mis à part) : seul l'échantillonnage MCMC sait alors explorer le posterior, et Thompson Sampling se nourrit directement des échantillons. Le sujet d'Infer-21 (Thompson Sampling) est, côté Python, **intégré dans** [PyMC-7-Sequential](PyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC).
 
 ## Ponts inter-series
 
