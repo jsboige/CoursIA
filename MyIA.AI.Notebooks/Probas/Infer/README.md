@@ -2,7 +2,7 @@
 
 [← Série Probas](../README.md) | [Série PyMC (Python) →](../PyMC/README.md) | [ML.NET (C#) →](../../ML/ML.Net/README.md)
 
-Programmation probabiliste avec Microsoft Infer.NET : une série de 25 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision (MDPs, indice de Gittins, puis les **bandits bayésiens** via Thompson Sampling), les **processus gaussiens** (GP sparse, frontières non-linéaires), l'**inférence causale** (do-calculus de Pearl) en clôture, et des preuves formelles Lean 4.
+Programmation probabiliste avec Microsoft Infer.NET : une série de 26 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision (MDPs, indice de Gittins, puis les **bandits bayésiens** via Thompson Sampling), les **processus gaussiens** (GP sparse, frontières non-linéaires), l'**inférence causale** (do-calculus de Pearl), les **modèles hiérarchiques** (pooling partiel et shrinkage) en clôture, et des preuves formelles Lean 4.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste par message passing, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
@@ -73,6 +73,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 21 | [Infer-21-Thompson-Sampling](Infer-21-Thompson-Sampling.ipynb) | 60 min | Thompson Sampling bayésien, posterior Beta-Bernoulli par le moteur, regret vs ε-greedy/UCB1 |
 | 22 | [Infer-22-Causal-Inference](Infer-22-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
 | 23 | [Infer-23-Sparse-Gaussian-Process](Infer-23-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens, noyau RBF, classification non-linéaire, sparse GP |
+| 24 | [Infer-24-Modeles-Hierarchiques](Infer-24-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
 
 **Durée totale** : ~22h
 
@@ -913,6 +914,37 @@ Prolongement naturel de la classification bayésienne : là où [Infer-7](Infer-
 
 ---
 
+## Modèles Hiérarchiques (Notebook 24)
+
+### Infer-24 : Modèles Hiérarchiques Bayésiens
+
+Cas d'école du **pooling partiel** : quand les données sont **structurées en groupes** (élèves dans des classes, patients dans des hôpitaux, mesures répétées), ni le *complete pooling* (un seul paramètre global qui gomme la variabilité entre groupes) ni le *no pooling* (un paramètre indépendant par groupe qui surajuste les groupes clairsemés) ne sont satisfaisants. La solution bayésienne donne à chaque groupe son propre paramètre `theta[c]`, mais tous tirés d'une **loi de population commune** `(mu, tau)` — les groupes mal informés **rétractent** (*shrinkage*) vers la moyenne globale.
+
+**Durée** : 50 min | **Prérequis** : [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb) (prior gaussien, précision), [Infer-4-Bayesian-Networks](Infer-4-Bayesian-Networks.ipynb) (modèle Rats hiérarchique en deux cellules)
+
+**Objectifs** :
+
+- Comprendre le dilemme **complete-pool / no-pool / partial-pool** sur des groupes inégalement informés
+- Construire un modèle hiérarchique natif Infer.NET : `theta[c] ~ Gaussian(mu, tau)` via `VariableArray` indexé par `theta[classOfI[i]]`
+- **Observer le shrinkage** sur données synthétiques à vrais effets connus : les groupes clairsemés (effectif 1-2) rétractent vers `mu`
+- Mesurer le **gain de récupération** (MSE hiérarchique vs no-pooling) et le rôle auto-calibré de la précision de population `tau`
+- Prédire pour un **nouveau groupe** non observé (posterior prédictif = loi de population)
+
+**Concepts clés** :
+
+| Concept | Formule / API | Description |
+| --------- | --------------- | ------------- |
+| Prior de population | `mu ~ Gaussian(0, grand)`, `tau ~ Gamma` | Loi commune dont chaque groupe est tiré |
+| Effet de groupe | `theta[c] = GaussianFromMeanAndPrecision(mu, tau).ForEach(c)` | Un paramètre par groupe, partagé |
+| Indexation | `y[i] ~ Gaussian(theta[classOfI[i]], obsPrec)` | Rattachement observation → groupe |
+| Shrinkage | `theta[c]` ↔ compromis données/moyenne | Plus fort pour les groupes clairsemés |
+
+**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) effleurait le modèle Rats (8 laboratoires) en deux cellules ; Infer-24 en fait un traitement dédié et **démonstratif** — données synthétiques avec **vrais effets connus**, comparaison **no-pool vs partial-pool** mesurée en MSE de récupération. Le gain net (hierarchique bat le no-pooling) et la rétraction visible sur les groupes clairsemés prouvent que le prior de population partagé **emprunte de la force statistique aux voisins** — exactement le paradigme pour lequel Infer.NET (EP analytique sur gaussiennes, `VariableArray` + indexation) est un moteur natif, sans recours au MCMC.
+
+**Applications** : estimations par établissement/classe, essais multi-centres, mesures répétées par sujet, modèles de recommandation (cf [Infer-12](Infer-12-Recommenders.ipynb)), régressions à coefficients variables par groupe.
+
+---
+
 ## Prérequis
 
 - .NET 9.0 ou supérieur
@@ -1033,7 +1065,7 @@ var posterior = moteur.Infer<DistributionType>(variable);
 
 ```
 Infer/
-+-- Infer-1-Setup.ipynb ... Infer-22-Causal-Inference.ipynb
++-- Infer-1-Setup.ipynb ... Infer-24-Modeles-Hierarchiques.ipynb
 +-- Infer-20b-Lean-Gittins.ipynb    # Companion Lean 4 (preuves formelles Gittins)
 +-- Infer-Glossary.md
 +-- FactorGraphHelper.cs          # Helper pour visualisation Graphviz
