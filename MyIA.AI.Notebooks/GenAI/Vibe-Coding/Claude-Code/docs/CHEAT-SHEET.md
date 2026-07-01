@@ -1,12 +1,12 @@
-# Claude Code - Aide-Memoire Rapide
+# Claude Code - Aide-Mémoire Rapide
 
-Guide de reference rapide pour Claude Code CLI et Extension VS Code.
+Guide de référence rapide pour Claude Code CLI et Extension VS Code.
 
 > **Documentation officielle** : [code.claude.com/docs](https://code.claude.com/docs)
 
 ## Commandes CLI Essentielles
 
-### Demarrage et Sessions
+### Démarrage et Sessions
 
 ```bash
 # Demarrer une session interactive
@@ -28,7 +28,7 @@ claude -r "nom-session"
 claude --fork-session
 ```
 
-### Selection de Modele
+### Sélection de Modèle
 
 ```bash
 # Modele par defaut (Sonnet)
@@ -89,7 +89,7 @@ claude -p "query" --max-turns 5
 claude -p "query" --max-budget-usd 0.50
 ```
 
-### Agents Personnalises
+### Agents Personnalisés
 
 ```bash
 # Utiliser un agent defini dans .claude/agents/
@@ -155,9 +155,9 @@ claude --remote "Fix le bug de login"
 
 ### Workflow Typique
 
-1. **Ouvrir Claude** : Cliquer sur l'icone spark dans la barre laterale
-1. **Selectionner code** : Surligner dans l'editeur
-1. **Referencer** : `Alt+K` pour creer @-mention
+1. **Ouvrir Claude** : Cliquer sur l'icône spark dans la barre latérale
+1. **Sélectionner code** : Surligner dans l'éditeur
+1. **Référencer** : `Alt+K` pour créer @-mention
 1. **Poser question** : Taper dans Claude
 1. **Revoir changements** : Examiner les diffs
 1. **Accepter/Rejeter** : Valider ou refuser
@@ -237,7 +237,7 @@ claude mcp add --transport stdio db -- \
   npx -y @bytebase/dbhub --dsn "postgresql://..."
 ```
 
-## Slash Commands Integres
+## Slash Commands Intégrés
 
 ```text
 /init              # Generer CLAUDE.md pour le projet
@@ -252,7 +252,7 @@ claude mcp add --transport stdio db -- \
 
 ## Configuration Fichiers
 
-### Hierarchie de priorite (du plus fort au plus faible)
+### Hiérarchie de priorité (du plus fort au plus faible)
 
 1. **Managed** : `C:\Program Files\ClaudeCode\` (Windows) ou `/etc/claude-code/` (Linux)
 1. **Arguments CLI** : `--model`, `--permission-mode`, etc.
@@ -319,7 +319,7 @@ claude mcp add --transport stdio db -- \
 }
 ```
 
-### CLAUDE.md (Memoire Projet)
+### CLAUDE.md (Mémoire Projet)
 
 ```markdown
 # Mon Projet
@@ -348,9 +348,9 @@ claude mcp add --transport stdio db -- \
 - Commits conventionnels : `feat:`, `fix:`, `docs:`
 ```
 
-### .claude/rules/ (Regles modulaires)
+### .claude/rules/ (Règles modulaires)
 
-Les regles dans `.claude/rules/*.md` sont chargees automatiquement selon le contexte.
+Les règles dans `.claude/rules/*.md` sont chargées automatiquement selon le contexte.
 Ajoutez un frontmatter YAML pour limiter a certains fichiers :
 
 ```yaml
@@ -361,9 +361,9 @@ Utilise pytest pour les tests.
 Docstrings en Google style.
 ```
 
-### .claude/skills/ (Competences)
+### .claude/skills/ (Compétences)
 
-Les skills dans `.claude/skills/*/SKILL.md` fournissent des connaissances specifiques.
+Les skills dans `.claude/skills/*/SKILL.md` fournissent des connaissances spécifiques.
 Claude les applique automatiquement quand le contexte correspond.
 
 ```yaml
@@ -391,7 +391,7 @@ Tu es un expert en revue de code...
 
 ## Hooks (Automatisation)
 
-Les hooks executent des scripts a des points cles du workflow.
+Les hooks exécutent des scripts a des points clés du workflow.
 A configurer dans `settings.json` :
 
 ```json
@@ -492,17 +492,17 @@ export ENABLE_TOOL_SEARCH=auto:5
 export IS_DEMO=1
 ```
 
-## Resolution Problemes Rapide
+## Résolution Problèmes Rapide
 
-| Probleme | Solution |
+| Problème | Solution |
 | --- | --- |
-| `command not found: claude` | Verifier PATH, reinstaller, redemarrer terminal |
-| `Authentication failed` | Verifier `ANTHROPIC_AUTH_TOKEN` et `ANTHROPIC_BASE_URL` |
-| Extension ne se connecte pas | Verifier que le CLI est installe et dans le PATH |
-| MCP server timeout | Augmenter `MCP_TIMEOUT` ou verifier le serveur |
-| Modele non disponible | Verifier credits OpenRouter et nom du modele |
-| `npx` echoue (Windows) | Utiliser `cmd /c npx ...` dans les commandes MCP |
-| Hooks non executes | Verifier format dans `settings.json`, tester le script manuellement |
+| `command not found: claude` | Vérifier PATH, réinstaller, redémarrer terminal |
+| `Authentication failed` | Vérifier `ANTHROPIC_AUTH_TOKEN` et `ANTHROPIC_BASE_URL` |
+| Extension ne se connecte pas | Vérifier que le CLI est installe et dans le PATH |
+| MCP server timeout | Augmenter `MCP_TIMEOUT` ou vérifier le serveur |
+| Modèle non disponible | Vérifier credits OpenRouter et nom du modèle |
+| `npx` échoue (Windows) | Utiliser `cmd /c npx ...` dans les commandes MCP |
+| Hooks non exécutés | Vérifier format dans `settings.json`, tester le script manuellement |
 | macOS : variables perdues | Ajouter exports dans `~/.zshrc` (pas `.zprofile`) |
 
 ## Ressources
@@ -519,7 +519,7 @@ export IS_DEMO=1
 
 - [Introduction Claude Code](./INTRO-CLAUDE-CODE.md) - Vue d'ensemble et concepts de base
 - [Installation](./INSTALLATION-CLAUDE-CODE.md) - Guide d'installation avec OpenRouter
-- [Concepts Avances](./CONCEPTS-AVANCES.md) - Skills, Subagents, Hooks, MCP en detail
+- [Concepts Avancés](./CONCEPTS-AVANCES.md) - Skills, Subagents, Hooks, MCP en détail
 - [Comparaison Claude/Roo](../../docs/COMPARAISON-CLAUDE-ROO.md) - Choisir son outil
 
 ---
