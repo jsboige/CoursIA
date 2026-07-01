@@ -1,27 +1,27 @@
 # Markov-Regime-Detection
 
-**Asset class:** US Equities/ETF (SPY, TLT, GLD)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Actions/ETF américains (SPY, TLT, GLD)
+**ID projet Cloud :** Aucun (local uniquement)
 
 ## Description
 
-Markov regime detection using statsmodels MarkovRegression. Identifies 2-regime (bull/bear) states on SPY returns.
+Détection de régime markovien avec `MarkovRegression` de statsmodels. Identifie 2 régimes (haussier/baissier) sur les rendements de SPY.
 
-**Consolidated from ML-HMM-Regime** (near-identical copy with same class name, same k_regimes=2, same allocation logic).
+**Consolidé depuis ML-HMM-Regime** (copie quasi-identique avec même nom de classe, même `k_regimes=2`, même logique d'allocation).
 
-## How to Run
+## Comment lancer
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Markov-Regime-Detection"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Markov-Regime-Detection"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour lancer.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | 0.408 |
-| Model | MarkovRegression |
-| Regimes | 2 (bull/bear) |
+| Modèle | MarkovRegression |
+| Régimes | 2 (haussier/baissier) |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (v1.1, Markov regime, consolidated from ML-HMM-Regime)
+- `main.py` - Stratégie (v1.1, régime markovien, consolidé depuis ML-HMM-Regime)

@@ -1,24 +1,24 @@
 # RegimeSwitching
 
-**Asset class:** US Equities/ETF
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Actions/ETF américains
+**ID projet Cloud :** Aucun (local uniquement)
 
 ## Description
 
-Momentum/mean-reversion regime switching using SMA50/SMA200 crossover. Applies momentum in trending, mean-reversion in sideways.
+Basculage de régime momentum/mean-reversion par croisement SMA50/SMA200. Applique le momentum en tendance, la mean-reversion en range.
 
-## How to Run
+## Comment lancer
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/RegimeSwitching"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/RegimeSwitching"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour lancer.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Metric | Value |
-|--------|-------|
-| Method | SMA50/200 regime switch |
-| Strategies | Momentum + Mean-reversion |
+| Métrique | Valeur |
+|----------|--------|
+| Méthode | Bascule de régime SMA50/200 |
+| Stratégies | Momentum + Mean-reversion |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (iter3, regime switching)
+- `main.py` - Stratégie (iter3, bascule de régime)
