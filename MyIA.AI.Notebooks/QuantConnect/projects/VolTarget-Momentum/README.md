@@ -1,14 +1,14 @@
 # VolTarget-Momentum
 
-**Asset class:** Multi-asset (Equities, Bonds, Commodities)
+**Classe d'actifs :** Multi-actifs (Actions, Obligations, Matières premières)
 
-**Cloud project ID:** 30784745
+**Cloud project ID :** 30784745
 
 ## Description
 
-Rank-based allocation on six risky assets (SPY, EFA, EEM, TLT, GLD, DBC) with BND as a defensive safe harbor. v5 best variant achieved Sharpe 0.65, CAGR 14.72%. Uses SMA200 plus 6-month and 12-month momentum filters for asset selection. Targets 15% annualized volatility using 60-day realized volatility for position sizing, with leverage constrained to 0.3-1.5x. Monthly rebalance.
+Allocation basée sur un ranking de six actifs risqués (SPY, EFA, EEM, TLT, GLD, DBC) avec BND comme refuge défensif (safe harbor). La variante v5 best a atteint un Sharpe de 0.65 et un CAGR de 14.72 %. Utilise SMA200 plus des filtres de momentum 6 mois et 12 mois pour la sélection des actifs. Cible 15 % de volatilité annualisée en utilisant la volatilité réalisée sur 60 jours pour le dimensionnement des positions, avec levier contraint entre 0.3 et 1.5x. Rebalance mensuelle.
 
-## How to Run
+## Comment exécuter
 
 ### Lean CLI
 ```bash
@@ -16,21 +16,21 @@ lean backtest --algorithm VolTarget-Momentum/main.py
 ```
 
 ### QC Cloud
-Open the cloud project (ID: 30784745), compile and run a backtest.
+Ouvrir le projet cloud (ID : 30784745), compiler et lancer un backtest.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Method | Rebalance | Key Parameters |
-|--------|-----------|----------------|
-| Rank-based vol targeting + momentum | Monthly | Vol target 15%, 60-day realized vol, leverage 0.3-1.5x, SMA200 + 6m/12m momentum |
+| Méthode | Rebalance | Paramètres clés |
+|---------|-----------|-----------------|
+| Vol-targeting basé sur ranking + momentum | Mensuelle | Vol target 15 %, vol réalisée 60 jours, levier 0.3-1.5x, SMA200 + momentum 6m/12m |
 
-## Files
+## Fichiers
 
-| File | Description |
-|------|-------------|
-| `main.py` | Volatility targeting with momentum filters and rank-based allocation on 6 risky + 1 defensive asset |
-| `config.json` | Project configuration (cloud-id, organization-id, language) |
+| Fichier | Description |
+|---------|-------------|
+| `main.py` | Volatility targeting avec filtres momentum et allocation basée sur ranking sur 6 actifs risqués + 1 défensif |
+| `config.json` | Configuration du projet (cloud-id, organization-id, language) |
 
-## References
+## Références
 
-- [QuantConnect Documentation](https://www.quantconnect.com/docs/)
+- [Documentation QuantConnect](https://www.quantconnect.com/docs/)
