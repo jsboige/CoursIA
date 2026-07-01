@@ -1,4 +1,4 @@
-# Diagnostic Medical - Systeme de Diagnostic Multi-Contraintes
+# Diagnostic Medical - Système de Diagnostic Multi-Contraintes
 
 ## Vue d'ensemble
 
@@ -36,11 +36,11 @@ flowchart LR
 ```
 Diagnostic-Medical/
 ├── student/
-│   └── Diagnostic-Medical.ipynb          # Template etudiant (a completer)
+│   └── Diagnostic-Medical.ipynb          # Template étudiant (à compléter)
 ├── solution/
-│   └── Diagnostic-Medical.ipynb          # Solution de reference
+│   └── Diagnostic-Medical.ipynb          # Solution de référence
 ├── data/
-│   └── patients.csv                      # Donnees de test (10 patients)
+│   └── patients.csv                      # Données de test (10 patients)
 ├── subject.md                            # Sujet complet
 └── README.md                             # Ce fichier
 ```
@@ -114,7 +114,7 @@ student/Diagnostic-Medical.ipynb
 #### 2. Pour les Évaluateurs
 
 ```bash
-# Ouvrir le notebook corrige
+# Ouvrir le notebook corrigé
 jupyter notebook solution/Diagnostic-Medical.ipynb
 ```
 
@@ -189,7 +189,7 @@ pip install z3-solver
 
 ```bash
 # Vérifier le chemin relatif
-# Le notebook doit etre execute depuis le repertoire Diagnostic-Medical/
+# Le notebook doit être exécuté depuis le répertoire Diagnostic-Medical/
 ```
 
 #### 3. Erreur de convergence A*
@@ -231,7 +231,7 @@ self.solver.set("timeout", 5000)  # 5 secondes
 
 ### Critères d'évaluation
 
-Chaque cellule a remplir ou compléter sera évaluée pour constituer la note finale sur 20.
+Chaque cellule à remplir ou compléter sera évaluée pour constituer la note finale sur 20.
 
 **Bonus** (jusqu'à +2 points) :
 - Innovation algorithmique

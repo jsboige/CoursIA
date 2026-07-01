@@ -27,11 +27,11 @@ Oncology-Planning/
 ├── README.md                           # Ce fichier
 ├── subject.md                          # Sujet complet
 ├── student/
-│   └── Oncology-Planning.ipynb         # Notebook a completer
+│   └── Oncology-Planning.ipynb         # Notebook à compléter
 ├── solution/
-│   └── Oncology-Planning.ipynb         # Solution de reference
+│   └── Oncology-Planning.ipynb         # Solution de référence
 └── data/
-    └── patients_oncology.csv           # Donnees patients
+    └── patients_oncology.csv           # Données patients
 ```
 
 ---
