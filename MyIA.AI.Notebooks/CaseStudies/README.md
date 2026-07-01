@@ -62,15 +62,15 @@ Les deux projets reposent sur un **modèle de patient simulé** : un objet logic
 
 ```text
 CaseStudies/
-├── Diagnostic-Medical/    # Systeme de diagnostic multi-contraintes (A*, genetique, Z3)
-│   ├── student/           # Template etudiant
-│   ├── solution/          # Solution de reference
-│   └── data/              # Donnees de test
+├── Diagnostic-Medical/    # Système de diagnostic multi-contraintes (A*, génétique, Z3)
+│   ├── student/           # Template étudiant
+│   ├── solution/          # Solution de référence
+│   └── data/              # Données de test
 ├── Oncology-Planning/     # Planification oncologique (CSP, Pyro probabiliste, ontologie)
-│   ├── student/           # Template etudiant
-│   ├── solution/          # Solution de reference
-│   └── data/              # Donnees patients
-└── requirements.txt       # Dependances communes
+│   ├── student/           # Template étudiant
+│   ├── solution/          # Solution de référence
+│   └── data/              # Données patients
+└── requirements.txt       # Dépendances communes
 ```
 
 ## Projets
