@@ -1045,6 +1045,30 @@ theorem mem_toGrid_shift {c : MacroCell} {r0 c0 : Int} {p : Int × Int} :
   rw [mem_toGrid, mem_toGrid]
   exact mem_toCellsAux_shift
 
+/-- **Offset-to-offset translation for `toGrid` membership** (P4.4 offset-matching
+    ingredient). Membership of `p` in `c.toGrid (a, b)` is equivalent to
+    membership of the point translated by `(a'-a, b'-b)` in `c.toGrid (a', b')` —
+    i.e. re-anchoring the same cell's grid at a different origin.
+
+    This is the double-shift ingredient the P4.4 offset-matching assembly needs:
+    after `mem_toGrid_node` decomposes the result node, each quadrant sits at its
+    own offset (e.g. NW at `(2^k, 2^k)`), but `centralCorrect_mem` (G2)
+    characterizes the quadrant at offset `(2^(k-1), 2^(k-1))` (its `2^j` centering
+    with `j = k-1`). `toGrid_shift_between` bridges those two offsets directly,
+    without re-centering through `(0,0)` twice. -/
+theorem toGrid_shift_between {c : MacroCell} {a b a' b' : Int} {p : Int × Int} :
+    p ∈ c.toGrid (a, b) ↔ (p.1 - a + a', p.2 - b + b') ∈ c.toGrid (a', b') := by
+  rw [mem_toGrid_shift]
+  constructor
+  · intro h
+    rw [mem_toGrid_shift]
+    have he : (p.1 - a + a' - a', p.2 - b + b' - b') = (p.1 - a, p.2 - b) := by ext <;> ring
+    rw [he]; exact h
+  · intro h
+    rw [mem_toGrid_shift] at h
+    have he : (p.1 - a, p.2 - b) = (p.1 - a + a' - a', p.2 - b + b' - b') := by ext <;> ring
+    rw [he]; exact h
+
 /-- **G3 infrastructure (toGrid node-decomposition).** Membership in a `node`
     cell's grid decomposes into membership in the four children's grids, with
     the standard quadtree offset shifts (row increases downward, column
