@@ -2,7 +2,7 @@
 
 [← Série Probas](../README.md) | [Série PyMC (Python) →](../PyMC/README.md) | [ML.NET (C#) →](../../ML/ML.Net/README.md)
 
-Programmation probabiliste avec Microsoft Infer.NET : une série de 27 notebooks, scindée en deux arcs. Le **corpus bayésien** (17 notebooks, ce README) va des fondamentaux (distributions, factor graphs) aux frontières (modèles relationnels, TrueSkill, LDA, HMM, **inférence causale** (do-calculus de Pearl), **processus gaussiens** (GP sparse, frontières non-linéaires), **modèles hiérarchiques** (pooling partiel, shrinkage), **filtre de Kalman**). Un **arc autonome de 10 notebooks de théorie de la décision** ([`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md)) couvre utilité espérée, EVPI, MDPs, indice de Gittins et **bandits bayésiens** (Thompson Sampling), avec des preuves formelles Lean 4.
+Programmation probabiliste avec Microsoft Infer.NET : une série de 28 notebooks, scindée en deux arcs. Le **corpus bayésien** (18 notebooks, ce README) va des fondamentaux (distributions, factor graphs) aux frontières (modèles relationnels, TrueSkill, LDA, HMM, **inférence causale** (do-calculus de Pearl), **processus gaussiens** (GP sparse, frontières non-linéaires), **modèles hiérarchiques** (pooling partiel, shrinkage), **filtre de Kalman**, **détection de rupture** (change-point bayésien)). Un **arc autonome de 10 notebooks de théorie de la décision** ([`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md)) couvre utilité espérée, EVPI, MDPs, indice de Gittins et **bandits bayésiens** (Thompson Sampling), avec des preuves formelles Lean 4.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste par message passing, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
@@ -65,10 +65,11 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 15 | [Infer-15-Sparse-Gaussian-Process](Infer-15-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens, noyau RBF, classification non-linéaire, sparse GP |
 | 16 | [Infer-16-Modeles-Hierarchiques](Infer-16-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
 | 17 | [Infer-17-Kalman-Filter](Infer-17-Kalman-Filter.ipynb) | 55 min | Filtre de Kalman, système dynamique linéaire gaussien, conjugaison, EP exacte |
+| 18 | [Infer-18-Change-Point](Infer-18-Change-Point.ipynb) | 50 min | Détection de rupture, DiscreteUniform, ForEach + If/IfNot sur plage, EP, Poisson |
 
 > **Théorie de la décision** : les 10 notebooks de décision (utilité, EVPI, MDPs, Thompson Sampling, plus 2 companions Lean) forment désormais un arc autonome dans [`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/).
 
-**Durée totale** : ~13h (corpus bayésien 1-17)
+**Durée totale** : ~14h (corpus bayésien 1-18)
 
 **Ressource complémentaire** : [Glossaire](Infer-Glossary.md) - Définitions des termes techniques
 
@@ -81,7 +82,7 @@ flowchart TD
     P3["<b>Classification & sélection</b> (7-8)<br/>A/B tests · evidence · ARD"]
     P4["<b>Modèles avancés</b> (9-12)<br/>LDA · crowdsourcing · HMM · reco"]
     P5["<b>Référence</b> (13)<br/>Debugging · comparaison algorithmes"]
-    P8["<b>Frontières</b> (14-17)<br/>causalité · GP sparse · hiérarchique · Kalman"]
+    P8["<b>Frontières</b> (14-18)<br/>causalité · GP sparse · hiérarchique · Kalman · change-point"]
     DT["<b>Théorie de la décision</b><br/>arc autonome : ../DecisionTheory/Infer/"]
     P1 --> P2 --> P3 --> P4
     P4 --> P8
@@ -92,7 +93,7 @@ flowchart TD
     class DT decision;
 ```
 
-Le socle d'inference (1-12) se suit en séquence ; le notebook **13 (Debugging)** est transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. Les notebooks **14-17 (Frontières)** prolongent le corpus bayésien (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman). La **théorie de la décision** — utilité espérée, EVPI, MDPs, Thompson Sampling, plus les companions Lean (indice de Gittins) — forme désormais un **arc autonome** dans [`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/). Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
+Le socle d'inference (1-12) se suit en séquence ; le notebook **13 (Debugging)** est transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. Les notebooks **14-18 (Frontières)** prolongent le corpus bayésien (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture). La **théorie de la décision** — utilité espérée, EVPI, MDPs, Thompson Sampling, plus les companions Lean (indice de Gittins) — forme désormais un **arc autonome** dans [`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/). Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
 
 ---
 
@@ -613,7 +614,7 @@ Prolongement naturel de la classification bayésienne : là où [Infer-7](Infer-
 | Sparse GP | `SparseGPFixed(gp, basis)` | Approximation sur $m$ points inducteurs, coût $O(nm^2)$ |
 | Full GP | basis = inputs ($m = n$) | Équivalent au GP non-sparse, coût $O(n^3)$ |
 
-**Positionnement** : [Infer-7](Infer-7-Classification.ipynb) introduisait le **Bayes Point Machine** (hyperplan séparateur, marginalisation sur les poids). Infer-23 en est le complément **non-linéaire** : le GP infère une fonction $f$ tirée d'un processus gaussien, capable de frontières courbes. La démonstration sur un dataset « donut » (disque intérieur + anneau extérieur, **non-séparable linéairement**) prouve que le GP résout ce que le BPM ne peut pas — 16/16 sur le training, avec une incertitude calibrée (P ≈ 0.5 à mi-rayon, la zone d'indécision). La comparaison sparse (4 inducteurs) vs full (16) illustre le continuum coût-exactitude.
+**Positionnement** : [Infer-7](Infer-7-Classification.ipynb) introduisait le **Bayes Point Machine** (hyperplan séparateur, marginalisation sur les poids). Infer-15 en est le complément **non-linéaire** : le GP infère une fonction $f$ tirée d'un processus gaussien, capable de frontières courbes. La démonstration sur un dataset « donut » (disque intérieur + anneau extérieur, **non-séparable linéairement**) prouve que le GP résout ce que le BPM ne peut pas — 16/16 sur le training, avec une incertitude calibrée (P ≈ 0.5 à mi-rayon, la zone d'indécision). La comparaison sparse (4 inducteurs) vs full (16) illustre le continuum coût-exactitude.
 
 **Applications** : classification non-linéaire, régression avec incertitude calibrée, géostatistique (krigeage), optimisation bayésienne (l'acquisition exploite le posterior GP).
 
@@ -644,7 +645,7 @@ Cas d'école du **pooling partiel** : quand les données sont **structurées en 
 | Indexation | `y[i] ~ Gaussian(theta[classOfI[i]], obsPrec)` | Rattachement observation → groupe |
 | Shrinkage | `theta[c]` ↔ compromis données/moyenne | Plus fort pour les groupes clairsemés |
 
-**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) effleurait le modèle Rats (8 laboratoires) en deux cellules ; Infer-24 en fait un traitement dédié et **démonstratif** — données synthétiques avec **vrais effets connus**, comparaison **no-pool vs partial-pool** mesurée en MSE de récupération. Le gain net (hierarchique bat le no-pooling) et la rétraction visible sur les groupes clairsemés prouvent que le prior de population partagé **emprunte de la force statistique aux voisins** — exactement le paradigme pour lequel Infer.NET (EP analytique sur gaussiennes, `VariableArray` + indexation) est un moteur natif, sans recours au MCMC.
+**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) effleurait le modèle Rats (8 laboratoires) en deux cellules ; Infer-16 en fait un traitement dédié et **démonstratif** — données synthétiques avec **vrais effets connus**, comparaison **no-pool vs partial-pool** mesurée en MSE de récupération. Le gain net (hierarchique bat le no-pooling) et la rétraction visible sur les groupes clairsemés prouvent que le prior de population partagé **emprunte de la force statistique aux voisins** — exactement le paradigme pour lequel Infer.NET (EP analytique sur gaussiennes, `VariableArray` + indexation) est un moteur natif, sans recours au MCMC.
 
 **Applications** : estimations par établissement/classe, essais multi-centres, mesures répétées par sujet, modèles de recommandation (cf [Infer-12](Infer-12-Recommenders.ipynb)), régressions à coefficients variables par groupe.
 
@@ -675,9 +676,36 @@ Le **filtre de Kalman** (Kalman, 1960) est l'analogue à état **continu** du HM
 | Mise à jour | `engine.Infer<Gaussian>(x)` (EP) | Conjugaison : postérieur gaussien exact |
 | Borne de variance | équation de Riccati discrète | L'incertitude résiduelle plafonne (filtre fiable) |
 
-**Positionnement** : [Infer-11](Infer-11-Sequences.ipynb) couvrait le HMM à état **discret** (météo, mots) ; Infer-25 franchit le pas vers l'état **continu** — le filtre le plus utilisé au monde (navigation GPS, fusion de capteurs, contrôle, finance). La récursion pas-à-pas compile le mini-modèle linéaire-gaussien une fois (`Variable.New<double>` + `ObservedValue`), et EP retourne le postérieur exact qui sert d'a priori au pas suivant. Sur une trajectoire dérivante fortement bruitée ($R = 4 \gg Q = 0{,}5$), le filtre réduit l'erreur de **~74 %** (MSE brute 4,88 → filtrée 1,28) et borne la variance postérieure vers **1,2** (vs $R = 4$) — la signature d'un filtre qui *aide*.
+**Positionnement** : [Infer-11](Infer-11-Sequences.ipynb) couvrait le HMM à état **discret** (météo, mots) ; Infer-17 franchit le pas vers l'état **continu** — le filtre le plus utilisé au monde (navigation GPS, fusion de capteurs, contrôle, finance). La récursion pas-à-pas compile le mini-modèle linéaire-gaussien une fois (`Variable.New<double>` + `ObservedValue`), et EP retourne le postérieur exact qui sert d'a priori au pas suivant. Sur une trajectoire dérivante fortement bruitée ($R = 4 \gg Q = 0{,}5$), le filtre réduit l'erreur de **~74 %** (MSE brute 4,88 → filtrée 1,28) et borne la variance postérieure vers **1,2** (vs $R = 4$) — la signature d'un filtre qui *aide*.
 
 **Applications** : suivi de mobiles, navigation inertielle et GPS, fusion multi-capteurs, filtrage de signaux, tracking financier, estimation d'état en robotique et contrôle.
+
+### Infer-18 : Détection de rupture (change-point bayésien)
+
+Le **point de rupture** (*change-point*) modélise une série qui suit un régime stable, puis **bascule** une seule fois vers un autre régime à un instant `cp` inconnu. Contrairement au HMM d'[Infer-11](Infer-11-Sequences.ipynb) (état discret récurrent) et au filtre de Kalman d'[Infer-17](Infer-17-Kalman-Filter.ipynb) (état continu récurrent), l'inconnue n'est pas une trajectoire d'états mais **un unique entier** — l'indice de la rupture. L'idiome Infer.NET : un *a priori* `Variable.DiscreteUniform(N)` sur `cp`, une sélection de vraisemblance `Variable.If(block.Index <= cp)` / `IfNot` à l'intérieur d'un `Variable.ForEach` sur la plage temporelle, et le moteur **EP** qui retourne un postérieur **`Discrete`** sur la localisation de la rupture.
+
+**Durée** : 50 min | **Prérequis** : [Infer-11-Sequences](Infer-11-Sequences.ipynb) (`Variable.ForEach`), [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb) (conjugaison), [Infer-8-Model-Selection](Infer-8-Model-Selection.ipynb) (Bayes factors)
+
+**Objectifs** :
+
+- Comprendre le change-point comme le quatrième membre de la famille « séquences dans le temps » (HMM, Kalman, GP, rupture)
+- Maîtriser l'idiome `DiscreteUniform` + `ForEach` + `If(block.Index <= cp)` couplé à une plage
+- Construire le modèle **gaussien** (saut de moyenne) et le modèle **de Poisson** (saut de taux — cas canonique des catastrophes minières)
+- Mesurer la concentration du postérieur (entropie) et comprendre le **piège du surajustement** — pourquoi un Bayes factor est nécessaire pour distinguer une vraie rupture d'un caprice du bruit
+
+**Concepts clés** :
+
+| Concept | API | Description |
+| --------- | --------------- | ------------- |
+| Localisation de rupture | `Variable.DiscreteUniform(N)` | *A priori* uniforme sur l'indice entier `cp` |
+| Sélection de régime | `Variable.If(block.Index <= cp)` / `IfNot` | Branche la vraisemblance avant/après la rupture |
+| Postérieur discret | `ie.Infer<Discrete>(cp)` | Vecteur de probabilités sur les $N$ positions |
+| Initialisation EP | `taux.InitialiseTo(...)` | EP déterministe : amorcer les taux évite les optima locaux |
+| Concentration | entropie $H(\text{cp})$ | $H \to 0$ = rupture certaine ; le Bayes factor teste sa réalite (cf. Infer-8) |
+
+**Positionnement** : [Infer-11](Infer-11-Sequences.ipynb) et [Infer-17](Infer-17-Kalman-Filter.ipynb) infèrent un état **récurrent** (un par pas) ; Infer-18 infère un **indice structurel unique** couplé à toute la plage — un usage du `If` sur une plage qu'aucun autre notebook n'exploite. Sur le cas gaussien, EP récupère le vrai point caché **exactement** (mode = 50, masse 0,998) ; sur les catastrophes minières (1851–1962), la rupture est datée à **1890–1891** (taux 3,1 → 0,9, rapport 3,3×), soit le résultat canonique de la littérature. Le notebook pointe aussi vers [Infer-14 (Causal)](Infer-14-Causal-Inference.ipynb) : un point de rupture est un changement de mécanisme générateur.
+
+**Applications** : contrôle qualité (dérive de production), finance (changement de régime de marché), épidémiologie, surveillance de capteurs, datation d'événements structurels en sciences sociales et climatiques.
 
 ---
 
