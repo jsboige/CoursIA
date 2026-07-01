@@ -362,7 +362,7 @@ SymbolicAI/
 │
 ├── SMT/                       # Solveurs SMT (Satisfiability Modulo Theories)
 │   ├── Z3/                     # Serie Z3.Linq C# (SMT declaratif via LINQ)
-│   │   ├── 01_Linq2Z3_Intro.ipynb ... 05_Meal_Planner_Hierarchical.ipynb
+│   │   ├── 01_Linq2Z3_Intro.ipynb ... 18_Einsteins_Riddle.ipynb
 │   │   └── README.md
 │   ├── Z3-Python/              # Serie z3-py (API complete imperative)
 │   │   ├── Z3-Python-01-Introduction.ipynb ... Z3-Python-03-Tactics.ipynb
