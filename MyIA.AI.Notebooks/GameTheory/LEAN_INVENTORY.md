@@ -172,7 +172,7 @@ Conway calibration targets (Doomsday / FRACTRAN / Look-and-Say / Nim / Angel) li
 
 ## Related documentation
 
-- [docs/lean/sota-2026-analysis.md](../../../docs/lean/sota-2026-analysis.md) — SOTA in automated Lean 4 proving
-- [docs/lean/prover_iteration_history.md](../../../docs/lean/prover_iteration_history.md) — Prover iterations F6-F11, B3
-- [docs/lean/llm-endpoints.md](../../../docs/lean/llm-endpoints.md) — LLM providers for the prover
-- [docs/lean/coordinator-workflow.md](../../../docs/lean/coordinator-workflow.md) — Coordinator build + BG iter workflow
+- [docs/lean/sota-2026-analysis.md](../../docs/lean/sota-2026-analysis.md) — SOTA in automated Lean 4 proving
+- [docs/lean/prover_iteration_history.md](../../docs/lean/prover_iteration_history.md) — Prover iterations F6-F11, B3
+- [docs/lean/llm-endpoints.md](../../docs/lean/llm-endpoints.md) — LLM providers for the prover
+- [docs/lean/coordinator-workflow.md](../../docs/lean/coordinator-workflow.md) — Coordinator build + BG iter workflow
