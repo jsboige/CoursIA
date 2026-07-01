@@ -2,18 +2,22 @@
  * Captures du « Tour de la plateforme » — utilitaire de génération, PAS un test QA.
  * -----------------------------------------------------------------------------
  * Ce script produit, de façon reproductible, les images annotées du tour
- * (../assets/*.png) en visitant un TENANT DE DÉMONSTRATION dédié avec un compte
- * NON-ADMINISTRATEUR et des données fictives.
+ * (../assets/*.png) en visitant une INSTANCE RÉELLE avec un compte
+ * NON-ADMINISTRATEUR et des données fictives ou fraîches (compte neuf).
  *
  * Anti-fuite (voir capture/README.md) :
- *   - tenant de démonstration uniquement (jamais une instance de production) ;
- *   - compte non-admin → pas d'accès aux panneaux d'administration sensibles ;
+ *   - compte NON-ADMIN, de préférence neuf → aucune donnée réelle
+ *     d'établissement visible (ni listes de modèles/bases internes, ni canaux) ;
+ *   - on ne capture QUE des surfaces sans contenu réel (connexion, chat neuf sur
+ *     invite fictive, réglages vides) ; les surfaces à contenu restent
+ *     schématisées dans ../architecture.md ;
  *   - masquage (`mask`) des zones d'identité sur CHAQUE capture ;
+ *   - revue anti-fuite de CHAQUE image avant de la commiter ;
  *   - identifiants/URL lus depuis un .env NON commité (placeholders ci-dessous).
  *
- * Exécution différée : tant que les variables d'environnement du tenant de démo
- * ne sont pas fournies, tout le fichier est `skip` — il ne s'exécute donc jamais,
- * et n'échoue jamais, en intégration continue.
+ * Exécution différée : tant que les variables d'environnement de capture ne sont
+ * pas fournies, tout le fichier est `skip` — il ne s'exécute donc jamais, et
+ * n'échoue jamais, en intégration continue.
  */
 import { test, type Page, type Locator } from '@playwright/test';
 import path from 'node:path';
@@ -21,27 +25,33 @@ import path from 'node:path';
 const URL = process.env.DEMO_OWUI_URL;
 const EMAIL = process.env.DEMO_OWUI_EMAIL;
 const PASSWORD = process.env.DEMO_OWUI_PASSWORD;
+// Optionnel : nom d'un modèle « thinking » pour la capture du raisonnement (v0.10).
+const REASONING_MODEL = process.env.DEMO_OWUI_REASONING_MODEL;
 
 // Dossier de sortie : ../assets relativement à ce fichier.
 const ASSETS = path.resolve(__dirname, '..', 'assets');
 
-// Sans tenant de démo configuré, on ne fait rien (pas d'exécution en CI).
+// Sans compte de capture configuré, on ne fait rien (pas d'exécution en CI).
 const configured = Boolean(URL && EMAIL && PASSWORD);
 test.skip(
   !configured,
-  'Tenant de démonstration non configuré — voir 00-Tour-Plateforme/capture/README.md',
+  'Compte de capture non configuré — voir 00-Tour-Plateforme/capture/README.md',
 );
 
 /**
  * Zones sensibles masquées sur toutes les captures. Les sélecteurs sont
  * volontairement larges (rôles ARIA + libellés multilingues) et devront être
- * confirmés contre la version live du tenant de démonstration.
+ * confirmés contre la version live de l'instance ciblée.
  */
 function sensitiveZones(page: Page): Locator[] {
   return [
     page.locator('[data-tour-mask]'), // points de masquage explicites si présents
     page.getByRole('button', { name: /account|compte|profil|profile/i }),
     page.getByText(/@/), // adresses e-mail visibles
+    // Marque / logo de l'instance (identité du tenant) — visible en haut de la
+    // sidebar sur toutes les vues authentifiées. Sélecteurs volontairement larges,
+    // à CONFIRMER contre l'UI live lors de la génération (revue anti-fuite).
+    page.locator('nav a[href="/"], #sidebar a[href="/"], header a[href="/"]'),
   ];
 }
 
@@ -63,7 +73,7 @@ async function signIn(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');
 }
 
-test.describe('Tour de la plateforme — captures (tenant démo)', () => {
+test.describe('Tour de la plateforme — captures (compte de capture)', () => {
   // 1 — page de connexion (avant authentification, champs masqués).
   test('01 — page de connexion', async ({ page }) => {
     await page.goto(URL!);
@@ -134,6 +144,91 @@ test.describe('Tour de la plateforme — captures (tenant démo)', () => {
         .click()
         .catch(() => {});
       await capture(page, '05-parametres.png');
+    });
+
+    // ================================================================
+    // Nouveautés v0.10 — surfaces sans contenu réel (compte neuf)
+    // ================================================================
+
+    // 2 — raisonnement affiché en direct (v0.10) : bloc de réflexion d'un
+    // modèle « thinking » sur une invite FICTIVE. Nécessite un modèle de
+    // raisonnement ; sans DEMO_OWUI_REASONING_MODEL, on saute.
+    test('02 — raisonnement en direct (v0.10)', async ({ page }) => {
+      test.skip(!REASONING_MODEL, 'DEMO_OWUI_REASONING_MODEL non défini');
+      await page.goto(URL!);
+      await page.waitForLoadState('networkidle');
+      // Ouvrir le sélecteur de modèle et choisir le modèle de raisonnement.
+      await page
+        .locator('button[id^="model-selector-"]')
+        .first()
+        .click()
+        .catch(() => {});
+      await page
+        .locator('#model-search-input, [role="listbox"] input')
+        .first()
+        .fill(REASONING_MODEL!)
+        .catch(() => {});
+      await page.waitForTimeout(400);
+      await page.locator('[role="option"]').first().click().catch(() => {});
+      // Envoyer une invite neutre qui déclenche du raisonnement.
+      await page.locator('#chat-input').click().catch(() => {});
+      await page.keyboard.type(
+        'Explique étape par étape pourquoi le ciel est bleu.',
+        { delay: 8 },
+      );
+      await page.keyboard.press('Enter');
+      // Attendre l'apparition du bloc de raisonnement, puis capturer.
+      await page
+        .locator(
+          'details[class*="reason" i], details[class*="think" i], [class*="reasoning" i], [class*="thinking" i]',
+        )
+        .first()
+        .waitFor({ state: 'visible', timeout: 30_000 })
+        .catch(() => {});
+      await capture(page, '02-raisonnement-direct.png');
+    });
+
+    // 3 — dossiers d'équipe partageables (v0.10) : création d'un dossier dans la
+    // sidebar (compte neuf → aucun dossier réel visible).
+    test("03 — dossier d'équipe (v0.10)", async ({ page }) => {
+      await page.goto(URL!);
+      await page.waitForLoadState('networkidle');
+      await page
+        .getByRole('button', {
+          name: /nouveau dossier|new folder|cr[ée]er un dossier/i,
+        })
+        .first()
+        .click()
+        .catch(() => {});
+      await capture(page, '03-dossier-equipe.png');
+    });
+
+    // 5 — mémoire (v0.10) : Paramètres > Personnalisation > Mémoire
+    // (compte neuf → aucun souvenir réel enregistré).
+    test('05 — mémoire (v0.10)', async ({ page }) => {
+      await page.goto(URL!);
+      await page.waitForLoadState('networkidle');
+      await page
+        .getByRole('button', { name: /account|compte|profil|profile/i })
+        .first()
+        .click()
+        .catch(() => {});
+      await page
+        .getByRole('menuitem', { name: /settings|param[èe]tres/i })
+        .first()
+        .click()
+        .catch(() => {});
+      await page
+        .getByText(/personnalisation|personalization/i)
+        .first()
+        .click()
+        .catch(() => {});
+      await page
+        .getByText(/m[ée]moire|memory/i)
+        .first()
+        .click()
+        .catch(() => {});
+      await capture(page, '05-memoire.png');
     });
   });
 });

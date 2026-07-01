@@ -77,8 +77,9 @@ flowchart LR
     User -->|role| Role{Role<br/>admin / user / pending}
     Group -->|octroi d'acces| Grant[Access grant]
     Grant -->|autorise| Res[Ressource<br/>modele, base de connaissances, outil]
+    Grant -->|autorise| Folder[Dossier d'equipe<br/>conversations partagees<br/>v0.10]
 
-    Role -. admin .-> Admin[Panneau d'administration<br/>gestion users / groupes / connecteurs]
+    Role -. admin .-> Admin[Panneau d'administration<br/>gestion users / groupes / connecteurs<br/>+ config authentification v0.10]
 ```
 
 - Un **rôle** détermine ce qu'on peut faire globalement (un *admin* accède au
@@ -88,6 +89,16 @@ flowchart LR
 - Un **access grant** relie un groupe (ou « tout le monde ») à une ressource
   précise. C'est le maillon qui répond à la question « qui a le droit de voir ce
   modèle / cette base de connaissances ? ».
+- **Dossiers d'équipe *(nouveau — v0.10)*.** Le même mécanisme d'octroi d'accès
+  s'étend aux **dossiers** : partager un dossier avec un groupe, c'est créer un
+  *access grant* du groupe vers ce dossier. Les membres accèdent alors aux
+  conversations qu'il contient, toujours **dans les limites de leur tenant** —
+  l'isolation multi-tenant de la section 1 reste la frontière infranchissable.
+- **Configuration de l'authentification *(nouveau — v0.10)*.** Les réglages
+  d'identité (OAuth, LDAP, SAML, mode d'inscription) se pilotent désormais depuis
+  le **panneau d'administration** et non plus uniquement par variables
+  d'environnement au démarrage — d'où la branche `+ config authentification` sur
+  le nœud d'administration ci-dessus.
 
 ---
 
@@ -157,4 +168,5 @@ cours. Voir la [politique du dossier ombrelle](../README.md#sécurité--pas-de-s
 ---
 
 *Architecture — Tour de la plateforme (Epic #4433, sous #4427). FR-first.
+Édition **v0.10** (dossiers d'équipe + config d'authentification ajoutés au RBAC).
 Diagrammes Mermaid (rendus nativement par GitHub).*
