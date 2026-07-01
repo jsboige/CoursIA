@@ -1,6 +1,6 @@
 # Concepts Avances de Claude Code
 
-Ce document approfondit les concepts cles de Claude Code : **Slash Commands**, **Skills**, **Subagents**, **Hooks**, **Permissions**, **Sandbox** et **MCP**. Ces fonctionnalites permettent de personnaliser et d'etendre considerablement les capacites de l'assistant.
+Ce document approfondit les concepts clés de Claude Code : **Slash Commands**, **Skills**, **Subagents**, **Hooks**, **Permissions**, **Sandbox** et **MCP**. Ces fonctionnalités permettent de personnaliser et d'étendre considérablement les capacités de l'assistant.
 
 > **Documentation officielle** : [code.claude.com/docs](https://code.claude.com/docs)
 
@@ -10,7 +10,7 @@ Ce document approfondit les concepts cles de Claude Code : **Slash Commands**, *
 1. [Skills (Compétences)](#skills-compétences)
 1. [Subagents (Sous-agents)](#subagents-sous-agents)
 1. [Hooks (Déclencheurs)](#hooks-déclencheurs)
-1. [Permissions et Securite](#permissions-et-securite)
+1. [Permissions et Sécurité](#permissions-et-securite)
 1. [Sandbox](#sandbox)
 1. [MCP (Model Context Protocol)](#mcp-model-context-protocol)
 1. [Comparaison et Cas d'Usage](#comparaison-et-cas-dusage)
@@ -672,27 +672,27 @@ hooks:
 
 ### Securite des Hooks
 
-Claude Code inclut une protection : les modifications directes des fichiers de configuration de hooks necessitent une revue dans le menu `/hooks` avant prise d'effet.
+Claude Code inclut une protection : les modifications directes des fichiers de configuration de hooks nécessitent une revue dans le menu `/hooks` avant prise d'effet.
 
 ---
 
 ## Permissions et Securite
 
-Le systeme de permissions de Claude Code permet un controle granulaire sur les actions autorisees. Il repose sur des regles `allow`, `deny` et `ask` configurees dans `settings.json`.
+Le système de permissions de Claude Code permet un contrôle granulaire sur les actions autorisées. Il repose sur des règles `allow`, `deny` et `ask` configurées dans `settings.json`.
 
 ### Niveaux de Permission
 
 | Mode | Comportement |
 | --- | --- |
 | `default` | Demande permission pour chaque action |
-| `acceptEdits` | Accepte lectures et ecritures de fichiers, demande pour Bash |
-| `plan` | Mode lecture seule, pas d'execution |
+| `acceptEdits` | Accepte lectures et écritures de fichiers, demande pour Bash |
+| `plan` | Mode lecture seule, pas d'exécution |
 | `auto-accept` | Accepte tout automatiquement (a utiliser avec prudence) |
-| `bypassPermissions` | Ignore les permissions (deconseille en production) |
+| `bypassPermissions` | Ignore les permissions (déconseillé en production) |
 
 ### Regles de Permission
 
-Les regles se configurent dans `settings.json` avec trois niveaux :
+Les règles se configurent dans `settings.json` avec trois niveaux :
 
 ```json
 {
@@ -719,23 +719,23 @@ Les regles se configurent dans `settings.json` avec trois niveaux :
 
 ### Syntaxe des Regles
 
-| Regle | Effet |
+| Règle | Effet |
 | --- | --- |
 | `Bash` | Correspond a toutes les commandes Bash |
-| `Bash(npm run *)` | Commandes commencant par `npm run` |
+| `Bash(npm run *)` | Commandes commençant par `npm run` |
 | `Read(.env)` | Lecture du fichier `.env` |
 | `Read(./secrets/**)` | Lecture recursive dans `secrets/` |
-| `Edit(src/**)` | Editions dans `src/` |
-| `WebFetch(domain:example.com)` | Requetes vers example.com |
+| `Edit(src/**)` | Éditions dans `src/` |
+| `WebFetch(domain:example.com)` | Requêtes vers example.com |
 | `MCP(github)` | Utilisation du serveur MCP github |
 
 ### Ordre d'Evaluation
 
-1. **Deny** : premiere regle correspondante gagne
-1. **Ask** : premiere regle correspondante gagne
-1. **Allow** : premiere regle correspondante gagne
+1. **Deny** : première règle correspondante gagne
+1. **Ask** : première règle correspondante gagne
+1. **Allow** : première règle correspondante gagne
 
-Les regles `deny` sont toujours evaluees en premier, garantissant que les interdictions ne peuvent pas etre contournees.
+Les règles `deny` sont toujours évaluées en premier, garantissant que les interdictions ne peuvent pas être contournées.
 
 ### Options Avancees
 
@@ -749,15 +749,15 @@ Les regles `deny` sont toujours evaluees en premier, garantissant que les interd
 }
 ```
 
-- **additionalDirectories** : Repertoires supplementaires accessibles a Claude
-- **defaultMode** : Mode de permission par defaut
-- **disableBypassPermissionsMode** : Empeche l'utilisation du mode bypass
+- **additionalDirectories** : Répertoires supplémentaires accessibles a Claude
+- **defaultMode** : Mode de permission par défaut
+- **disableBypassPermissionsMode** : Empêche l'utilisation du mode bypass
 
 ---
 
 ## Sandbox
 
-Le sandbox isole l'execution de Claude Code dans un environnement controle, limitant l'acces au systeme de fichiers et au reseau.
+Le sandbox isole l'exécution de Claude Code dans un environnement contrôlé, limitant l'accès au système de fichiers et au réseau.
 
 ### Activation
 
@@ -770,7 +770,7 @@ Le sandbox isole l'execution de Claude Code dans un environnement controle, limi
 }
 ```
 
-Quand `autoAllowBashIfSandboxed` est `true`, les commandes Bash sont auto-acceptees car le sandbox empeche les actions destructives.
+Quand `autoAllowBashIfSandboxed` est `true`, les commandes Bash sont auto-acceptées car le sandbox empêche les actions destructives.
 
 ### Configuration Reseau
 
@@ -793,7 +793,7 @@ Quand `autoAllowBashIfSandboxed` est `true`, les commandes Bash sont auto-accept
 
 ### Commandes Exclues
 
-Certaines commandes peuvent etre exclues du sandbox (executees hors isolation) :
+Certaines commandes peuvent être exclues du sandbox (exécutées hors isolation) :
 
 ```json
 {
@@ -807,7 +807,7 @@ Certaines commandes peuvent etre exclues du sandbox (executees hors isolation) :
 
 ### Disponibilite
 
-Le sandbox est disponible sur macOS et Linux. Sur Windows, il n'est pas encore supporte nativement (utiliser WSL comme alternative).
+Le sandbox est disponible sur macOS et Linux. Sur Windows, il n'est pas encore supporté nativement (utiliser WSL comme alternative).
 
 ---
 
