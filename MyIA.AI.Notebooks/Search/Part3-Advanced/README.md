@@ -25,8 +25,9 @@ Cette partie occupe une position charnière. Elle **prolonge la Partie 1** (rech
 | # | Notebook | Kernel | Contenu | Durée | Prérequis |
 |---|----------|--------|---------|-------|-----------|
 | 1 | [Search-12-PatternDatabases](Search-12-PatternDatabases.ipynb) | Python 3 | Pattern Databases (Culberson & Schaeffer 1996), PDB additives (Korf & Felner 2002), 15-puzzle optimal, IDA\* | ~1h30 | [Search-3](../Part1-Foundations/Search-3-Informed.ipynb) |
+| 2 | [Search-13-LimitedDiscrepancySearch](Search-13-LimitedDiscrepancySearch.ipynb) | Python 3 | Limited Discrepancy Search (Harvey & Ginsberg 1995), sac à dos 0/1, greedy vs LDS(k) vs exhaustif | ~45min | [Search-3](../Part1-Foundations/Search-3-Informed.ipynb) |
 
-Cette partie est en croissance : d'autres techniques de recherche avancée (heuristiques à mémoire, recherche de ramification limitée, abstractions) pourront s'y ajouter.
+Les deux notebooks répondent à la même question — « l'heuristique ne suffit pas à résoudre à l'optimum » — par deux stratégies **complémentaires** : Search-12 *renforce* l'heuristique (précalcul d'une PDB plus informée), Search-13 *borne les écarts* à l'heuristique dont on dispose (parier que l'optimum est un proche voisin du chemin greedy). Cette partie reste en croissance : d'autres techniques avancées (heuristiques à mémoire, recherche anytime, abstractions) pourront s'y ajouter.
 
 ## Prérequis & environnement
 
@@ -56,6 +57,7 @@ Couverture par notebook des sources fondatrices mobilisées dans cette partie :
 | Search-12 (15-puzzle optimal) | Korf, R. E. (1985) — « Depth-First Iterative-Deepening: An Optimal Admissible Tree Search », *Artificial Intelligence* 27(1). L'article fondateur d'IDA\*, établit le 15-puzzle comme banc d'essai de la recherche à l'optimum. |
 | Search-12 (Pattern Databases) | Culberson, J. C., & Schaeffer, J. (1996) — « Searching with Pattern Databases », *Advances in Artificial Intelligence (AI'97)*. Origine des Pattern Databases par retournement du problème. |
 | Search-12 (PDB additives) | Korf, R. E., & Felner, A. (2002) — « Disjoint Pattern Database Heuristics », *Artificial Intelligence* 134(1-2). Les PDB additives disjointes — l'heuristique SOTA qui résout le 15-puzzle (puis le 24-puzzle) à l'optimum. |
+| Search-13 (Limited Discrepancy Search) | Harvey, W. D., & Ginsberg, M. L. (1995) — « Limited Discrepancy Search », *Proceedings of IJCAI*. Formalise le principe « l'optimum est un proche voisin du greedy » et l'algorithme LDS(k) qui énumère les chemins à au plus k écarts de l'heuristique. |
 
 ---
 

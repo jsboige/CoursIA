@@ -207,8 +207,8 @@ Les notebooks CSP nécessitent une compréhension préalable de :
 ## Partie 3 : Recherche heuristique avancée (`Part3-Advanced/`)
 
 Techniques de recherche avancées au-delà des fondations : heuristiques
-précalculées (pattern databases), recherches à mémoire. Cette partie fait le pont
-entre les fondations ([Partie 1](Part1-Foundations/Search-3-Informed.ipynb) :
+précalculées (pattern databases), recherche à écart limité (limited discrepancy search).
+Cette partie fait le pont entre les fondations ([Partie 1](Part1-Foundations/Search-3-Informed.ipynb) :
 A\*, IDA\*, heuristiques admissibles) et les métaheuristiques composables
 ([Partie 4](Part4-Metaheuristics/README.md)), sans relever de la programmation par
 contraintes ([Partie 2](Part2-CSP/CSP-1-Fundamentals.ipynb)).
@@ -216,6 +216,7 @@ contraintes ([Partie 2](Part2-CSP/CSP-1-Fundamentals.ipynb)).
 | # | Notebook | Durée | Contenu | Prérequis |
 |---|----------|-------|---------|-----------|
 | 1 | [Search-12-PatternDatabases](Part3-Advanced/Search-12-PatternDatabases.ipynb) | ~1h30 | Pattern Databases (Culberson & Schaeffer 1996), PDB additives (Korf & Felner 2002), 15-puzzle optimal, IDA\* | Search-3 |
+| 2 | [Search-13-LimitedDiscrepancySearch](Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb) | ~45min | Limited Discrepancy Search (Harvey & Ginsberg 1995), sac à dos 0/1, greedy vs LDS(k) vs exhaustif | Search-3 |
 
 ---
 
