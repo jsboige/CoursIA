@@ -19,7 +19,7 @@ flowchart LR
 ## Statut
 
 - **Toolchain** : v4.30.0-rc2
-- **Compte de sorry** : 7 (tous dans `HashlifeCorrectness.lean` — pas inductif P4 double-nine [5] + grand-n P5 jump [2], Epic #2162)
+- **Compte de sorry** : 4 (tous dans `HashlifeCorrectness.lean` — pas inductif P4 double-nine [2] + grand-n P5 jump [2], Epic #2162). Trois sous-lemmes P4 sont désormais prouvés sorry-free (voir § « Jeu de la Vie » ci-dessous)
 - **Build** : `lake build Conway` — SUCCESS (3352 jobs)
 - **Dépendances** : Mathlib4
 
@@ -53,7 +53,7 @@ flowchart LR
 | `Conway/Life/Computation.lean` | 0 | Cross-validation Hashlife (6 + 6 fast), still-life eater1 (1), composition de planeurs (5) |
 | `Conway/Life/HashlifeMemo.lean` | 0 | Hashlife mémoïsé pour témoins des piliers communautaires (OTCA 35K, UnitCell 4096, Gemini 33M) |
 | `Conway/Life/Pillars.lean` | 0 | Scaffolding du théorème community-witness (4 piliers) |
-| `Conway/Life/HashlifeCorrectness.lean` | 7 | Correction bornée `hashlife_correct` ; cibles P4/P5 du prouveur (Epic #1453, #2162) |
+| `Conway/Life/HashlifeCorrectness.lean` | 4 | Correction bornée `hashlife_correct` ; cibles P4/P5 du prouveur (Epic #1453, #2162) |
 
 ### Phase 3 — Free Will Theorem (Epic #1651, COMPLETE)
 
@@ -94,15 +94,19 @@ flowchart LR
 - **Hashlife mémoïsé** : témoins des piliers communautaires (OTCA 35K gen, UnitCell 4096 gen, Gemini 33M gen)
 - **HashlifeCorrectness** : correction bornée `hashlife_correct`, décomposée en P1-P5
   - **P1-P3 prouvés** (cas de base `k=0` via `2^16 native_decide`, PR #2810)
-  - **Pas inductif P4** (5 sorry) : décomposé par le scaffolding #2975 en quatre sous-lemmes
-    `: True` (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`,
-    `p4_half_steps_compose`) + la colle `p4_succ_membership` (la biconditionnelle
-    ponctuelle réelle). Composition light-cone double-nine de niveau recherche. Les énoncés
-    réels des scaffolds vivent dans leurs docstrings — les restituer et les prouver, ne pas les
-    éliminer comme `True`.
-  - **Grand-n P5** (2 sorry) : `p5_small_n_fallback` **POUVÉ** (PR #2984) ; `p5_large_n_jump`
-    (P5.2, bloqué sur P4) + branche grand-n de `p5_inductive_step` (colle P5.3) restent. Cas de
-    base `n=0` prouvé (`hashlife_correct_base_zero` #2898, `evolveHashlifeFastAux_zero_n` #2901).
+  - **Pas inductif P4** (2 sorry) : décomposé par le scaffolding #2975 en cinq sous-lemmes.
+    Trois sont désormais **prouvés sorry-free** avec énoncés réels — `p4_double_nine_shape`
+    (existence structurelle des neuf quadrants d'une cellule double-nine), `p4_wave1_ih` et
+    `p4_wave2_ih` (propagation du `centralCorrect` par l'hypothèse d'induction sur les deux
+    vagues). Restent : `p4_half_steps_compose` (placeholder `: True`, composition des
+    demi-pas light-cone double-nine) + la colle `p4_succ_membership` (la biconditionnelle
+    ponctuelle réelle après `intro p`). Composition light-cone double-nine de niveau recherche,
+    whnf-dure — réservée à un effort multi-cycle dédié. Les énoncés réels des sous-lemmes
+    vivent dans leurs docstrings — les restituer et les prouver, ne pas les éliminer comme `True`.
+  - **Grand-n P5** (2 sorry) : `p5_small_n_fallback` **PROUVÉ** (PR #2984) ; `p5_large_n_jump`
+    (P5.2, placeholder `: True`, bloqué sur P4) + branche grand-n de `p5_inductive_step`
+    (colle P5.3) restent. Cas de base `n=0` prouvé (`hashlife_correct_base_zero` #2898,
+    `evolveHashlifeFastAux_zero_n` #2901).
 
 ### Kochen-Specker + Free Will Theorem (Phase 3, PROUVÉ)
 
@@ -132,7 +136,7 @@ Ce workspace formalise en Lean 4 trois facettes de l'oeuvre de John Conway, des 
 
 ### État honnête du verrou HashlifeCorrectness
 
-Le théorème central `hashlife_correct` (borné par l'hypothèse de padding `BoxAssezGrand`) n'est **pas encore prouvé en pleine généralité** : il reste **7 `sorry`** dans `HashlifeCorrectness.lean`. Le socle est solide — cas de base `k=0` prouvé (`2^16 native_decide`), cas de base `n=0` prouvé, P1/P2/P3 (padding, light-cone, locality) prouvés, `p5_small_n_fallback` prouvé — mais le pas inductif P4 (double-nine decomposition, 5 sorry) et le grand-n P5 (2 sorry, bloqué sur P4) sont **research-level**. Ce sont les cibles du BG-prover (`agent_tests/prover/`), pas des grains bornés : la composition light-cone multi-vagues résiste à l'automatisation tactique courante. Les scaffolds P4 (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`, `p4_half_steps_compose`, `p4_succ_membership`) énoncent précisément chaque sous-but dans leurs docstrings.
+Le théorème central `hashlife_correct` (borné par l'hypothèse de padding `BoxAssezGrand`) n'est **pas encore prouvé en pleine généralité** : il reste **4 `sorry`** dans `HashlifeCorrectness.lean`. Le socle est solide — cas de base `k=0` prouvé (`2^16 native_decide`), cas de base `n=0` prouvé, P1/P2/P3 (padding, light-cone, locality) prouvés, `p5_small_n_fallback` prouvé, et trois des cinq sous-lemmes P4 (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`) désormais prouvés sorry-free — mais le pas inductif P4 (double-nine decomposition, 2 sorry résiduels : `p4_half_steps_compose` + colle `p4_succ_membership`) et le grand-n P5 (2 sorry, bloqué sur P4) sont **research-level**. Ce sont les cibles du BG-prover (`agent_tests/prover/`), pas des grains bornés : la composition light-cone multi-vagues résiste à l'automatisation tactique courante. Les scaffolds P4 (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`, `p4_half_steps_compose`, `p4_succ_membership`) énoncent précisément chaque sous-but dans leurs docstrings.
 
 *La pyramide de correction `hashlife_correct` : le socle prouvé (cas de base, P1-P3,
 `p5_small_n_fallback`) porte le théorème ; au sommet, le verrou research-level P4
@@ -146,7 +150,7 @@ flowchart TD
     P2["P2 — Light-cone<br/>step_light_cone  <b>✓</b>"]
     P3["P3 — Localité<br/>aliveNext_local · step_local  <b>✓</b>"]
     P5S["P5 petit-n<br/>p5_small_n_fallback  <b>✓</b> (#2984)"]
-    P4["P4 — Pas inductif double-nine  <b>⚠ research-level</b><br/>5 sorry · p4_unrestricted_counterexample<br/><i>énoncé non restreint FAUX → oriente vers MacroCell.wf</i>"]
+    P4["P4 — Pas inductif double-nine  <b>⚠ research-level</b><br/>2 sorry · p4_half_steps_compose · p4_succ_membership<br/><i>3 sous-lemmes prouvés (shape, wave1, wave2) ; reste la colle light-cone</i>"]
     P5["P5 — Grand-n jump  <b>⚠ bloqué sur P4</b><br/>2 sorry · p5_large_n_jump"]
     GOAL["hashlife_correct  <b>non prouvé en pleine généralité</b>"]
 
