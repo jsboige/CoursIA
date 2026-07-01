@@ -189,7 +189,7 @@ Probas/
 │   └── scripts/
 └── DecisionTheory/              # Arc théorie de la décision (#4725) : Infer.NET + PyMC (miroirs)
     ├── Infer/                   # Infer-1-Utility ... Infer-10-Thompson (+ companions Lean 2/9)
-    └── PyMC/                    # PyMC-1-Decision ... PyMC-7-Decision-Sequential
+    └── PyMC/                    # PyMC-1-Decision ... PyMC-7-Sequential
 ```
 
 ## Ce que chaque notebook apporte
@@ -318,13 +318,13 @@ Port Python complet des modèles Infer.NET, utilisant l'échantillonnage MCMC (N
 
 | # | Notebook | Sujet |
 |---|----------|-------|
-| 1 | [PyMC-1-Decision-Utility-Foundations](DecisionTheory/PyMC/PyMC-1-Decision-Utility-Foundations.ipynb) | Loteries, axiomes Von Neumann-Morgenstern, utilité espérée |
-| 2 | [PyMC-2-Decision-Utility-Money](DecisionTheory/PyMC/PyMC-2-Decision-Utility-Money.ipynb) | Aversion au risque, CARA, CRRA, paradoxe Saint-Petersbourg |
-| 3 | [PyMC-3-Decision-Multi-Attribute](DecisionTheory/PyMC/PyMC-3-Decision-Multi-Attribute.ipynb) | MAUT, SMART, swing weights, décisions multi-critères |
+| 1 | [PyMC-1-Utility-Foundations](DecisionTheory/PyMC/PyMC-1-Utility-Foundations.ipynb) | Loteries, axiomes Von Neumann-Morgenstern, utilité espérée |
+| 2 | [PyMC-2-Utility-Money](DecisionTheory/PyMC/PyMC-2-Utility-Money.ipynb) | Aversion au risque, CARA, CRRA, paradoxe Saint-Petersbourg |
+| 3 | [PyMC-3-Multi-Attribute](DecisionTheory/PyMC/PyMC-3-Multi-Attribute.ipynb) | MAUT, SMART, swing weights, décisions multi-critères |
 | 4 | [PyMC-4-Decision-Networks](DecisionTheory/PyMC/PyMC-4-Decision-Networks.ipynb) | Réseaux de décision, diagrammes d'influence, politique optimale |
-| 5 | [PyMC-5-Decision-Value-Information](DecisionTheory/PyMC/PyMC-5-Decision-Value-Information.ipynb) | EVPI, EVSI, valeur de l'information parfaite et d'échantillon |
-| 6 | [PyMC-6-Decision-Expert-Systems](DecisionTheory/PyMC/PyMC-6-Decision-Expert-Systems.ipynb) | Systèmes experts, Minimax, Minimax Regret, décisions robustes |
-| 7 | [PyMC-7-Decision-Sequential](DecisionTheory/PyMC/PyMC-7-Decision-Sequential.ipynb) | MDPs, itération de valeur/politique, bandits, POMDPs |
+| 5 | [PyMC-5-Value-Information](DecisionTheory/PyMC/PyMC-5-Value-Information.ipynb) | EVPI, EVSI, valeur de l'information parfaite et d'échantillon |
+| 6 | [PyMC-6-Expert-Systems](DecisionTheory/PyMC/PyMC-6-Expert-Systems.ipynb) | Systèmes experts, Minimax, Minimax Regret, décisions robustes |
+| 7 | [PyMC-7-Sequential](DecisionTheory/PyMC/PyMC-7-Sequential.ipynb) | MDPs, itération de valeur/politique, bandits, POMDPs |
 
 ### Phase 4 — Inférence causale (notebook 14, ~1h)
 
