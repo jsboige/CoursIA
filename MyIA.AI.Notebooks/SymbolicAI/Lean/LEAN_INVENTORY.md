@@ -13,20 +13,22 @@ définitions `:= sorry` non-tactique n'entrent pas dans ce compte ; cf.
 
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
-| `grothendieck_lean` | v4.30.0-rc2 | 0 | 20 | 4 | REF | #2159, #1646 |
-| `conway_lean` | v4.30.0-rc2 | 6¹ | 12 | 24 | PEDA | #1453, #1651, #2162 |
+| `grothendieck_lean` | v4.30.0-rc2 | 0 | 23 | 4 | REF | #2159, #1646 |
+| `conway_lean` | v4.30.0-rc2 | 4¹ | 23 | 24 | PEDA | #1453, #1651, #2162 |
 | `knot_lean` | v4.31.0-rc1 | 3² | 6 | 2 | PEDA/REF | #2874, #3003 |
 | `finiteness_lean` | v4.30.0-rc2 | 0 | 1 | 2 | REF | #3111 |
 | `sensitivity_lean` | v4.30.0-rc2 | 0 | 4 | 2 | PEDA/REF | famille calibration |
 | `calibration_lean` | v4.30.0-rc2 | 0³ | 3 | 0 | HARNESS | #1764 |
 | `mathlib_examples` | v4.30.0-rc2 | 0 | 1 | 0 | REF | référence |
-| **Total** | — | **9** | **47** | — | — | — |
+| **Total** | — | **7** | **61** | — | — | — |
 
-¹ Les 6 `sorry` de `conway_lean` sont des **cibles de prover intentionnelles** dans
+¹ Les 4 `sorry` de `conway_lean` sont des **cibles de prover intentionnelles** dans
 `Conway/Life/HashlifeCorrectness.lean` (Hashlife) — chaque `sorry` est un sous-but
 auto-contenu destiné au harnais de preuve (`agent_tests/prover/`), pas une régression de
 contenu pédagogique. Le reste de la série Conway (Doomsday, FRACTRAN, Look-and-Say, Nim,
-Angel) est prouvé 0 sorry.
+Angel) est prouvé 0 sorry. Vérifié 2026-07-01 (comment-stripped grep, après #4780 :
+P4 décomposé en 3 sous-lemmes sorry-free à énoncé réel `p4_double_nine_shape`,
+`p4_wave1_ih`, `p4_wave2_ih`, restent 4 cibles tactic `p4_half_steps_compose`/`p4_succ_membership`/`p5_large_n_jump`/`p5_inductive_step`).
 ² `knot_lean` = **research-HOLD** : théorie des nœuds (#2874). Les `sorry` sont des
 définitions non définies (`AreMutants`, `alexanderPolynomial`, `IsSmoothlySlice`,
 `IsTopologicallySlice := sorry`) et des preuves de transfert classique ouvertes. Le pont
@@ -47,7 +49,7 @@ du code de production, donc *sorry (production) = 0*.
 faisceaux, topologie dense, foncteur constant, lemme d'Yoneda, conservativité).
 
 - **Toolchain** : v4.30.0-rc2 · **Dépendance** : Mathlib4
-- **Modules** : `Grothendieck/` (20 fichiers) + umbrella `Grothendieck.lean`
+- **Modules** : `Grothendieck/` (23 fichiers) + umbrella `Grothendieck.lean`
 - **sorry (production)** : **0** — entièrement prouvé à la création (« All `sorry`s
   eliminated at creation »). Build SUCCESS.
 - **Notebook câblé** : 4 notebooks (série SymbolicAI/Lean).
@@ -59,8 +61,8 @@ faisceaux, topologie dense, foncteur constant, lemme d'Yoneda, conservativité).
 Game of Life / Hashlife.
 
 - **Toolchain** : v4.30.0-rc2 · **Dépendance** : Mathlib4
-- **Modules** : `Conway/` (12 fichiers) + umbrella + `patterns/` + `scripts/`
-- **sorry (production)** : **6** (cibles de prover Hashlife, voir note ¹). Sujets non-Hashlife
+- **Modules** : `Conway/` (23 fichiers) + umbrella + `patterns/` + `scripts/`
+- **sorry (production)** : **4** (cibles de prover Hashlife, voir note ¹). Sujets non-Hashlife
   prouvés (Doomsday, FRACTRAN, etc. via `native_decide`).
 - **Notebook câblé** : 24 notebooks (série Conway la plus câblée).
 - **Suivi** : Epic #1453, #1651 ; Conway P5 (#2162) = research-HOLD.
