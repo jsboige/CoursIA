@@ -1108,6 +1108,27 @@ theorem mem_restrictGridTo {g : Grid} {lo : Int} {size : Nat} {p : Int × Int} :
         lo ≤ p.2 ∧ p.2 < lo + (size : Int) := by
   simp [restrictGridTo, List.mem_filter, and_assoc]
 
+/-- **Four-quadrant window partition** (P4.4 offset-matching ingredient, G1).
+    A square window `[a, a + 2s)²` (with `0 ≤ s`) is exactly the disjoint union
+    of its four half-side quadrants: NW `[a, a+s)²`, NE `[a, a+s) × [a+s, a+2s)`,
+    SW `[a+s, a+2s) × [a, a+s)`, SE `[a+s, a+2s)²`. Pure linear arithmetic — no
+    `hashlifeResultAux`, no whnf.
+
+    This is the G1 ingredient the `p4_succ_membership` offset-matching assembly
+    consumes: the RHS window bounds `[2^k, 2^k + 2^(k+1))² = [2^k, 3·2^k)²`
+    (from `mem_restrictGridTo`, with `lo = 2^k`, `size = 2^(k+1)`) factor as
+    `[a, a+2s)²` with `a = 2^k`, `s = 2^k`; the four quadrants of the result node
+    (each level `k`, side `2^k = s`) tile exactly these four sub-windows. The
+    disjunction `Or` on the LHS (from `mem_toGrid_node`) thus partitions the
+    window bound on the RHS. -/
+theorem quad_partition_bounds (a s : Int) (hs : 0 ≤ s) (p : Int × Int) :
+    (a ≤ p.1 ∧ p.1 < a + 2*s ∧ a ≤ p.2 ∧ p.2 < a + 2*s) ↔
+      (a ≤ p.1 ∧ p.1 < a + s ∧ a ≤ p.2 ∧ p.2 < a + s) ∨
+      (a ≤ p.1 ∧ p.1 < a + s ∧ a + s ≤ p.2 ∧ p.2 < a + 2*s) ∨
+      (a + s ≤ p.1 ∧ p.1 < a + 2*s ∧ a ≤ p.2 ∧ p.2 < a + s) ∨
+      (a + s ≤ p.1 ∧ p.1 < a + 2*s ∧ a + s ≤ p.2 ∧ p.2 < a + 2*s) := by
+  omega
+
 /-- **The P4 ext bridge**: pointwise membership suffices for the P4 goal.
     Reduces the list-equality statement of `hashlifeResult_central_correct`
     to a per-cell biconditional. -/
