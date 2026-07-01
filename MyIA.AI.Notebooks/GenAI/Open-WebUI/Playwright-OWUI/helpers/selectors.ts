@@ -87,6 +87,24 @@ export const SIDEBAR = {
   searchContainer: '#search-container',
 } as const;
 
+// --- Compte / menu utilisateur ---
+// VERIFIE firsthand contre v0.10.2 fr-FR (2026-07, lors de la generation des
+// captures du Tour). Le bouton avatar (bas de la sidebar) porte l'aria-label
+// localise "Menu utilisateur" (fr) / "User menu" (en) et n'a pas d'ID stable.
+// Les entrees du menu (Reglages, Conversations archivees, Deconnexion...) sont
+// des <button> cibles par leur libelle via getByRole('button', { name }).
+export const ACCOUNT = {
+  // Bouton avatar ouvrant le menu utilisateur.
+  menuButton:
+    'button[aria-label="Menu utilisateur"], button[aria-label="User menu" i]',
+  // ATTENTION v0.10.2 fr : l'entree des reglages s'appelle "Reglages"
+  // (PAS "Parametres"). Regex tolerante pour les deux libelles fr + l'anglais.
+  settingsEntry: /r[ée]glages|param[èe]tres|settings/i,
+  // Autres entrees du menu (multilingue)
+  logout: /d[ée]connexion|log ?out|sign ?out/i,
+  archivedChats: /conversations archiv[ée]es|archived chats/i,
+} as const;
+
 // =====================================================================
 // Nouveautes v0.10 (voir module 06)
 // =====================================================================
@@ -116,7 +134,19 @@ export const FOLDER = {
 } as const;
 
 // --- Memoire (v0.10 : refonte, sort de beta) ---
+// Chemin VERIFIE firsthand contre v0.10.2 fr-FR (2026-07) :
+//   ACCOUNT.menuButton -> ACCOUNT.settingsEntry ("Reglages")
+//   -> personalizationTab ("Personnalisation") -> manageButton ("Gerer")
+//   -> fenetre "Memoire N" (emptyState visible sur un compte neuf).
 export const MEMORY = {
-  // Section "Memoire" dans Parametres > Personnalisation (libelle multilingue)
+  // Onglet "Personnalisation" dans la fenetre Reglages
+  personalizationTab: /personnalisation|personalization/i,
+  // Bouton "Gerer" de la section Memoire (ouvre la fenetre de gestion)
+  manageButton: /g[ée]rer|manage/i,
+  // Etat vide (compte neuf) dans la fenetre de gestion de la memoire
+  emptyState: /aucun|les souvenirs|no memories|seront affich/i,
+  // Bouton d'ajout d'un souvenir
+  addButton: /ajouter un souvenir|add memory/i,
+  // (conserve) libelle multilingue de la section (compat module 06)
   settingsLabel: /m[ée]moire|memory|personnalisation|personalization/i,
 } as const;
