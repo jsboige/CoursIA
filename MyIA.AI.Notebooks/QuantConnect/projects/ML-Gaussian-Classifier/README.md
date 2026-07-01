@@ -1,32 +1,32 @@
 # ML-Gaussian-Classifier (HandsOn Ex15)
 
-**Asset class:** US Equities (top 10 tech)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Actions US (top 10 tech)
+**Cloud project ID :** None (local only)
 
 ## Description
 
-GaussianNB direction classifier on top-10 tech stocks. Uses lagged returns, RSI, and MACD features.
+Classifieur de direction GaussianNB sur les top-10 actions tech. Utilise les lagged returns, RSI et MACD comme features.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Gaussian-Classifier"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Gaussian-Classifier"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | 0.361 |
 | CAGR | 12.49% |
 | Max Drawdown | 47.4% |
-| Model | GaussianNB |
+| Modèle | GaussianNB |
 | Rebalance | Daily |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (v1.0, Gaussian NB classifier)
-- research.ipynb - Feature selection and NB evaluation
-## References
+- main.py - Stratégie (v1.0, classifieur Gaussian NB)
+- research.ipynb - Sélection de features et évaluation du NB
 
-- Hands-On AI Trading, Section 06, Example 15
+## Références
 
+- Hands-On AI Trading, Section 06, Exemple 15

@@ -1,30 +1,30 @@
 # ML-HeadShoulders-CNN (HandsOn Ex17)
 
-**Asset class:** Forex (USDCAD)
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** Forex (USDCAD)
+**Cloud project ID :** None (local only)
 
 ## Description
 
-Keras CNN for head-and-shoulders pattern detection on USDCAD. Requires pre-trained model from research.ipynb.
+CNN Keras pour la détection de figure tête-épaules sur USDCAD. Requiert le modèle pré-entraîné issu de research.ipynb.
 
-## How to Run
+## Comment exécuter
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-HeadShoulders-CNN"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-HeadShoulders-CNN"`
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Metric | Value |
-|--------|-------|
-| Model | Keras CNN (pattern detection) |
-| Universe | USDCAD |
-| Rebalance | Event-driven (pattern) |
+| Métrique | Valeur |
+|----------|--------|
+| Modèle | Keras CNN (détection de figure) |
+| Univers | USDCAD |
+| Rebalance | Event-driven (figure) |
 
-## Files
+## Fichiers
 
-- main.py - Strategy (v1.0, pattern CNN)
-- research.ipynb - Pattern labeling and CNN training
-## References
+- main.py - Stratégie (v1.0, CNN de figures)
+- research.ipynb - Labellisation des figures et entraînement du CNN
 
-- Hands-On AI Trading, Section 06, Example 17
+## Références
 
+- Hands-On AI Trading, Section 06, Exemple 17
