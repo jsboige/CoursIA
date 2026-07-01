@@ -127,19 +127,25 @@ python scripts/notebook_tools/wsl_papermill.py execute <nb>
 # .NET / Lean : cell-by-cell MCP Jupyter (Papermill ne marche PAS)
 ```
 
-#### MCP jupyter-papermill DOWN : bascule directe, JAMAIS bloquer (HARD)
+#### MCP jupyter-papermill HANG (bug #835) : bascule directe timeout-wrappée, JAMAIS bloquer (HARD)
 
 **Il existe DEUX chemins d'exécution notebook** : (1) le MCP `jupyter-papermill` (cell-by-cell), (2) **papermill/nbconvert en direct** via `notebook_tools` / les binaires ci-dessus. Ils sont **interchangeables** pour l'exécution.
 
-**Règle (mandat user 2026-07-01)** : si le MCP jupyter-papermill est **down / non-live / ne répond pas** (ex. PR #660 fix pas encore déployé), un agent **bascule IMMÉDIATEMENT** sur `nbconvert --execute` / `python -m papermill` / `notebook_tools` — il **NE bloque JAMAIS** en attendant le MCP. Preuve que ça marche sans le MCP : Infer-24 (#4710) + Search-13 (#4713) exécutés `nbconvert --execute` exit 0, alors que le MCP était down.
+**Le MCP est un piège (bug #835, CLOSED mais reproductible 2026-07-01)** : `mcp__jupyter-papermill__*` peut **bloquer 6 h+ sur un appel `execute`/`manage_kernel` et tuer la session** (root cause = **stdout buffering** qui bloque le spawn Claude Code — ce n'est PAS un serveur mort, donc **un restart ne corrige rien**). Le tracker « PR #660 » cité par erreur dans des cycles antérieurs = GPU-training checkpoints, **sans rapport**.
+
+**Règle (mandat user 2026-07-01)** :
+1. **NE JAMAIS appeler naïvement `mcp__jupyter-papermill__*`.** Pour (re-)exécuter un notebook, un agent **bascule IMMÉDIATEMENT** sur `nbconvert --execute` / `python -m papermill` / `notebook_tools`, **wrappé dans un `timeout`** (child process contrôlable, contrairement au pipe MCP qui peut hang). Il **NE bloque JAMAIS** en attendant le MCP.
+2. **Preuve que le direct suffit** : Infer-24 (#4710) + Search-13 (#4713) exécutés `nbconvert --execute` exit 0 alors que le MCP était HS.
 
 ```bash
-# Fallback direct (kernel .net-csharp ou python3), quand le MCP est down :
-jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.kernel_name=.net-csharp <nb>
-/c/Users/jsboi/.conda/envs/mcp-jupyter-py310/python.exe -m papermill <nb> <out>   # python3
+# Fallback direct timeout-wrappé (kernel .net-csharp ou python3) — JAMAIS le MCP :
+timeout 600 jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.kernel_name=.net-csharp <nb>
+timeout 600 /c/Users/jsboi/.conda/envs/mcp-jupyter-py310/python.exe -m papermill <nb> <out>   # python3
 ```
 
-Un worker **oisif une demi-journée** parce que « le MCP est down » = **échec coordinateur** (coordinator-discipline Règle 4/5 : une lane ne s'arrête jamais), jamais un état worker acceptable. Le restart définitif du MCP (#660) reste une action **user-hand** ; en attendant, la bascule nbconvert est **obligatoire**, pas optionnelle.
+**Correctif config #835 (par machine worker, dans `.mcp.json`)** : forcer stdout non-bufferisé — `python -u` + `PYTHONUNBUFFERED=1` (+ `--offline`) sur le serveur MCP. Action **user-hand / par-machine** (ai-01 ne configure pas le `.mcp.json` des workers) ; le correctif **définitif** upstream vit dans `roo-extensions` (cross-team). En attendant, la bascule `nbconvert` timeout-wrappée est **obligatoire**, pas optionnelle.
+
+Un worker **oisif une demi-journée** parce que « le MCP hang » = **échec coordinateur** (coordinator-discipline Règle 4/5 : une lane ne s'arrête jamais), jamais un état worker acceptable.
 
 #### SmartContracts (8/14 groups, maj 2026-05-23)
 
