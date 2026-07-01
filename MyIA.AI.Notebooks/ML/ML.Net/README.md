@@ -11,7 +11,7 @@ maturity: PRODUCTION=6, ALPHA=1, DRAFT=1
 
 ML.NET — la bibliothèque open-source de Microsoft — apporte le machine learning **nativement dans l'écosystème .NET** : on entraîne et on consomme des modèles directement en C#, sans quitter sa stack applicative ni dépendre d'un runtime Python. C'est un choix pensé pour les développeurs autant que pour les data scientists — l'AutoML abaisse la barrière d'entrée, et les modèles s'exécutent *in-process* dans des applications existantes (API web, services, desktop). L'interopérabilité **ONNX** permet d'importer des modèles entraînés ailleurs (scikit-learn, PyTorch, Hugging Face) et de les servir côté .NET : ML.NET devient ainsi un pont concret entre la recherche en Python et la production en entreprise.
 
-Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : préparation des données et feature engineering (ML-2), entraînement et AutoML (ML-3), évaluation rigoureuse par cross-validation et importance des variables (ML-4), puis les fonctionnalités avancées — prévision de séries temporelles par SSA (ML-5), interopérabilité ONNX (ML-6) et systèmes de recommandation (ML-7) — avant un TP capstone qui marie ML.NET et la régression bayésienne d'Infer.NET.
+Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : préparation des données et feature engineering (ML-2), entraînement et AutoML (ML-3), évaluation rigoureuse par cross-validation et importance des variables (ML-4), puis les fonctionnalités avancées — prévision de séries temporelles par SSA (ML-5), interopérabilité ONNX (ML-6), systèmes de recommandation (ML-7) et clustering non-supervisé par K-Means (ML-8) — avant un TP capstone qui marie ML.NET et la régression bayésienne d'Infer.NET.
 
 > **À qui s'adresse cette série** : développeurs C#/.NET découvrant le Machine Learning, équipes enterprise souhaitant intégrer du ML sans sortir de leur stack .NET, ou data scientists souhaitant servir des modèles en production dans des applications C#. Aucun prérequis en statistiques avancées — les concepts sont introduits progressivement dans chaque notebook.
 
@@ -36,13 +36,14 @@ Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : p
 | 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML | 45-60 min |
 | 4 | [ML-4-Evaluation](ML-4-Evaluation.ipynb) | Cross-validation, métriques, PFI | 40-50 min |
 
-### Fonctionnalités avancées (ML-5 à ML-7)
+### Fonctionnalités avancées (ML-5 à ML-8)
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 5 | [ML-5-TimeSeries](ML-5-TimeSeries.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | 45-60 min |
 | 6 | [ML-6-ONNX](ML-6-ONNX.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | 45-60 min |
 | 7 | [ML-7-Recommendation](ML-7-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | 45-60 min |
+| 8 | [ML-8-Clustering](ML-8-Clustering.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | 45-60 min |
 
 ### TP Pratique
 
@@ -184,6 +185,15 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Cold Start | Gérer nouveaux utilisateurs/items |
 | Métriques | Precision@K, Recall@K, NDCG |
 
+### ML-8-Clustering
+
+| Section | Contenu |
+|---------|---------|
+| K-Means | Clustering non-supervisé via `ClusteringCatalog` |
+| Normalisation | `NormalizeMinMax` indispensable pour la distance euclidienne |
+| Évaluation | AverageDistance (inertie), DaviesBouldinIndex (séparation) |
+| Choix de K | Méthode du coude (elbow method), Thorndike 1953 |
+
 ## Dataset
 
 | Fichier          | Description                                                  |
@@ -260,6 +270,8 @@ ML-5-TimeSeries (forecasting)
 ML-6-ONNX (interopérabilité)
     |
 ML-7-Recommendation (systèmes de recommandation)
+    |
+ML-8-Clustering (clustering non-supervisé)
 ```
 
 **Note** : Les notebooks ML-5, ML-6, ML-7 présentent les fonctionnalités récentes de ML.NET (2024-2025) et sont conçus comme références pédagogiques. Certains exemples nécessitent des modèles ou services externes pour une exécution complète.
