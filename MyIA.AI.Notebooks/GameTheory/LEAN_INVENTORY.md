@@ -162,7 +162,7 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 | Project                | Decision | Reasoning                                                      |
 |------------------------|----------|----------------------------------------------------------------|
 | stable_marriage_lean   | COMPLETE | 0 sorry. Former false statements refuted, honest `exists_isManOptimal` proved. |
-| cooperative_games_lean | NO-GO    | hCore requires Hahn-Banach / hyperplane separation.           |
+| cooperative_games_lean | COMPLETE | 0 sorry. Bondareva-Shapley proven (#3954) via compact-slice Weierstrass; hCore bypassed without added axiom. |
 | social_choice_lean     | N/A      | COMPLETE (0 sorry). MechanismDesign added (#1469).             |
 | social_choice_lean_peters | N/A   | Reference only (pinned v4.27.0-rc1).                           |
 
