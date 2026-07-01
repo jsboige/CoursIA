@@ -24,7 +24,7 @@ Cross-references:
 - Infer-14 (Infer.NET): the posterior-mean utilities computed there are an
   instance of `expectation` over a Bayesian posterior; the representation here
   is the decision-theoretic justification for ranking by expected utility.
-- PyMC-14 (PyMC): posterior expected-utility estimates by sampling approximate
+- PyMC-1 (PyMC): posterior expected-utility estimates by sampling approximate
   the same `expectation` operator; affine uniqueness justifies why only utility
   *differences* (not levels) are identified by choice data.
 -/

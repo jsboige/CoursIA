@@ -420,7 +420,7 @@ Les mécanismes de vote et de gouvernance on-chain (SC-9, SC-17) sont des instan
 
 La gestion des incertitudes on-chain (réserves DeFi, slippage, garanties) s'appuie sur les mêmes outils de décision que la série Probas :
 
-- **Minimax Regret (PyMC-19)** s'applique à la conception de contrats robustes face à des conditions de marché incertaines (choix de paramètres on-chain qui minimisent le regret maximal dans le pire scénario).
+- **Minimax Regret (PyMC-6)** s'applique à la conception de contrats robustes face à des conditions de marché incertaines (choix de paramètres on-chain qui minimisent le regret maximal dans le pire scénario).
 
 ### Lecture transversale
 

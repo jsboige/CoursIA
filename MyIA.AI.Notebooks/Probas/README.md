@@ -179,16 +179,17 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 Probas/
 ├── Infer-101.ipynb              # Introduction Python/C# (standalone)
 ├── Pyro_RSA_Hyperbole.ipynb     # Pragmatique linguistique (Python)
-├── PyMC/                # Port PyMC complet des modèles Infer.NET (20 notebooks)
-│   ├── PyMC-1-Setup.ipynb ... PyMC-20-Decision-Sequential.ipynb
+├── PyMC/                # Port PyMC : bayésien (1-13) + inférence causale (14)
+│   ├── PyMC-1-Setup.ipynb ... PyMC-13-Debugging.ipynb, PyMC-14-Causal-Inference.ipynb
 │   └── (port en cours d'enrichissement)
 ├── decision_theory_lean/        # Projet Lake (racine série) : escompte géométrique + théorème de Gittins ; accueillera VNM (#4049) + Dutch Book (#4050)
 ├── Infer/                       # Corpus bayésien Infer.NET (17 notebooks)
 │   ├── Infer-1-Setup.ipynb ... Infer-17-Kalman-Filter.ipynb
 │   ├── README.md                # Documentation détaillée de la série bayésienne
 │   └── scripts/
-└── DecisionTheory/              # Arc théorie de la décision Infer.NET (10 notebooks, #4725)
-    └── Infer/                   # Infer-1-Utility ... Infer-10-Thompson (+ companions Lean 2/9)
+└── DecisionTheory/              # Arc théorie de la décision (#4725) : Infer.NET + PyMC (miroirs)
+    ├── Infer/                   # Infer-1-Utility ... Infer-10-Thompson (+ companions Lean 2/9)
+    └── PyMC/                    # PyMC-1-Decision ... PyMC-7-Decision-Sequential
 ```
 
 ## Ce que chaque notebook apporte
@@ -311,17 +312,25 @@ Port Python complet des modèles Infer.NET, utilisant l'échantillonnage MCMC (N
 | 12 | [PyMC-12-Recommenders](PyMC/PyMC-12-Recommenders.ipynb) | Systèmes de recommandation bayésiens, factorisation |
 | 13 | [PyMC-13-Debugging](PyMC/PyMC-13-Debugging.ipynb) | Troubleshooting MCMC, diagnostics NUTS, bonnes pratiques |
 
-### Phase 3 — Théorie de la décision (notebooks 14-20, ~6h)
+### Phase 3 — Théorie de la décision (sous-série DecisionTheory/PyMC/, ~6h)
+
+> Les notebooks décisionnels ont été extraits vers une sous-série autonome : [DecisionTheory/PyMC/](DecisionTheory/PyMC/README.md) (notebooks 1 à 7), miroir Python de [DecisionTheory/Infer/](DecisionTheory/Infer/README.md).
 
 | # | Notebook | Sujet |
 |---|----------|-------|
-| 14 | [PyMC-14-Décision-Utility-Foundations](PyMC/PyMC-14-Decision-Utility-Foundations.ipynb) | Loteries, axiomes Von Neumann-Morgenstern, utilité espérée |
-| 15 | [PyMC-15-Décision-Utility-Money](PyMC/PyMC-15-Decision-Utility-Money.ipynb) | Aversion au risque, CARA, CRRA, paradoxe Saint-Petersbourg |
-| 16 | [PyMC-16-Décision-Multi-Attribute](PyMC/PyMC-16-Decision-Multi-Attribute.ipynb) | MAUT, SMART, swing weights, décisions multi-critères |
-| 17 | [PyMC-17-Décision-Networks](PyMC/PyMC-17-Decision-Networks.ipynb) | Réseaux de décision, diagrammes d'influence, politique optimale |
-| 18 | [PyMC-18-Décision-Value-Information](PyMC/PyMC-18-Decision-Value-Information.ipynb) | EVPI, EVSI, valeur de l'information parfaite et d'échantillon |
-| 19 | [PyMC-19-Décision-Expert-Systems](PyMC/PyMC-19-Decision-Expert-Systems.ipynb) | Systèmes experts, Minimax, Minimax Regret, décisions robustes |
-| 20 | [PyMC-20-Décision-Sequential](PyMC/PyMC-20-Decision-Sequential.ipynb) | MDPs, itération de valeur/politique, bandits, POMDPs |
+| 1 | [PyMC-1-Decision-Utility-Foundations](DecisionTheory/PyMC/PyMC-1-Decision-Utility-Foundations.ipynb) | Loteries, axiomes Von Neumann-Morgenstern, utilité espérée |
+| 2 | [PyMC-2-Decision-Utility-Money](DecisionTheory/PyMC/PyMC-2-Decision-Utility-Money.ipynb) | Aversion au risque, CARA, CRRA, paradoxe Saint-Petersbourg |
+| 3 | [PyMC-3-Decision-Multi-Attribute](DecisionTheory/PyMC/PyMC-3-Decision-Multi-Attribute.ipynb) | MAUT, SMART, swing weights, décisions multi-critères |
+| 4 | [PyMC-4-Decision-Networks](DecisionTheory/PyMC/PyMC-4-Decision-Networks.ipynb) | Réseaux de décision, diagrammes d'influence, politique optimale |
+| 5 | [PyMC-5-Decision-Value-Information](DecisionTheory/PyMC/PyMC-5-Decision-Value-Information.ipynb) | EVPI, EVSI, valeur de l'information parfaite et d'échantillon |
+| 6 | [PyMC-6-Decision-Expert-Systems](DecisionTheory/PyMC/PyMC-6-Decision-Expert-Systems.ipynb) | Systèmes experts, Minimax, Minimax Regret, décisions robustes |
+| 7 | [PyMC-7-Decision-Sequential](DecisionTheory/PyMC/PyMC-7-Decision-Sequential.ipynb) | MDPs, itération de valeur/politique, bandits, POMDPs |
+
+### Phase 4 — Inférence causale (notebook 14, ~1h)
+
+| # | Notebook | Sujet |
+|---|----------|-------|
+| 14 | [PyMC-14-Causal-Inference](PyMC/PyMC-14-Causal-Inference.ipynb) | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
 
 ## Applications standalone (2 notebooks)
 
