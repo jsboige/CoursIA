@@ -123,7 +123,7 @@ Au-delà du routing de base, le fork `jsboige/claudish` ajoute ce qui fait tourn
 | Avancée | Rôle |
 |---------|------|
 | **Never-hang (priorité #1)** | Un flux se termine **toujours**, même si le provider coupe mid-stream ou renvoie du vide. Un agent bloqué est jugé pire qu'une erreur propre. |
-| **Overload 529** | Un 429 « quota » (que le client peut interrompre en stoppant le tour) est converti en `529 overloaded_error` + `Retry-After`, pour que le client **réessaie** au lieu d'abandonner. |
+| **Overload 529** | Un 429 de **surcharge transitoire** (ou 503) est converti en `529 overloaded_error` + `Retry-After`, pour que le client **réessaie** au lieu d'abandonner ; le 429 « quota » reste distinct (passe tel quel). |
 | **Contrôle de concurrence** | `LocalModelQueue` (cap GPU) + `ConcurrencyLimiter` (cap provider remote), indépendants par provider (voir §3). |
 | **Interception web search** | Les appels `web_search` des providers sont interceptés et servis via SearXNG (MCP) — ne bloque jamais l'agent (dégradation gracieuse en texte). |
 | **Support `/compact` non-streaming** | Les requêtes `stream:false` (condensation de contexte) sont rebufferisées en un message JSON, pas en SSE. |
@@ -138,7 +138,7 @@ Ces trois épisodes, extraits de l'historique du fork `jsboige/claudish`, illust
 
 ### 7.1 Architecture par soustraction — le no-fallback (24/06/2026)
 
-Au démarrage, claudish enchaînait les providers en fallback : si GLM rate-limitait, il basculait sur Qwen, puis Anthropic. **Le problème** : cette bascule se faisait à l'insu de l'agent, en plein milieu d'une conversation — changeant la qualité du modèle et le coût d'un tour sur l'autre, de façon invisible et imprévisible. Pire, le chemin fallback vers Qwen (GPU maison) a grippé le backend à plusieurs reprises (concurrence non bornée sur des contextes longs = famine GPU).
+Au démarrage, claudish enchaînait les providers en fallback : si GLM rate-limitait, il basculait sur Qwen. **Le problème** : cette bascule se faisait à l'insu de l'agent, en plein milieu d'une conversation — changeant la qualité du modèle et le coût d'un tour sur l'autre, de façon invisible et imprévisible. Pire, le chemin fallback vers Qwen (GPU maison) a grippé le backend à plusieurs reprises (concurrence non bornée sur des contextes longs = famine GPU).
 
 **La décision** n'a pas été d'ajouter du code pour mieux orchestrer les bascules, mais de **le retirer** : suppression de `defaultProvider`, une seule entrée par chaîne. Depuis, sur un burst claudish **backoff** puis réessaie le *même* provider ; sur une panne franche il **fail-hard** (erreur explicite). *Leçon : un fallback silencieux est une dégradation cachée. Mieux vaut une erreur visible qu'une dérive de qualité invisible — et un chemin de code en moins est un bug en moins.*
 
