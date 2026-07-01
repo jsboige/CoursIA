@@ -13,7 +13,7 @@ expected-utility representation theorem are built (see `Axioms` and
 
 Cross-references:
 - Infer-14 (Infer.NET): Bayesian expected utility under posterior uncertainty.
-- PyMC-14 (PyMC): expected utility estimation by posterior sampling.
+- PyMC-1 (PyMC): expected utility estimation by posterior sampling.
 -/
 
 namespace Utility

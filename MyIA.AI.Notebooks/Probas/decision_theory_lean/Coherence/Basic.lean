@@ -17,7 +17,7 @@ arbitragiste construit un pari à perte sûre.
 
 Références croisées :
 - Infer-14 (Infer.NET) : espérance d'utilité bayésienne sous incertitude sur la postérieure.
-- PyMC-14 (PyMC) : estimation d'utilité espérée par échantillonnage postérieur.
+- PyMC-1 (PyMC) : estimation d'utilité espérée par échantillonnage postérieur.
 -/
 
 namespace Coherence

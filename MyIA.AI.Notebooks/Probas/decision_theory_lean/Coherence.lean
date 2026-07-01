@@ -39,5 +39,5 @@ perte sûre. La cohérence *force* donc les axiomes de probabilité.
 - `Utility` (même lake) : représentation d'utilité espérée vNM — l'autre fondation
   de la théorie de la décision sous risque.
 - Infer-14 (Infer.NET) : utilité espérée bayésienne sous postérieure.
-- PyMC-14 (PyMC) : estimation d'utilité espérée par échantillonnage postérieur.
+- PyMC-1 (PyMC) : estimation d'utilité espérée par échantillonnage postérieur.
 -/

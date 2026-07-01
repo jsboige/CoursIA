@@ -119,7 +119,7 @@ notebooks d'inférence bayésienne de la série `Probas` :
 - **Infer-14** (Infer.NET) : les utilités à *moyenne a posteriori* calculées là sont
   une instance de `expectation` sur une **postérieure bayésienne** ; la
   représentation vNM justifie de **classer les actions par utilité espérée**.
-- **PyMC-14** (PyMC) : les estimations d'utilité espérée par **échantillonnage de la
+- **PyMC-1** (PyMC) : les estimations d'utilité espérée par **échantillonnage de la
   postérieure** approximent le même opérateur `expectation` ; l'**unicité affine**
   explique pourquoi seules les **différences** d'utilité (pas les niveaux) sont
   identifiables à partir des données de choix.
@@ -230,5 +230,5 @@ programmation probabiliste Infer.NET à la formalisation Lean.
 
 - **PR #2911** — `discount_monotone` prouvé en forme close (sorry 1→0)
 - **`Probas/Infer/`** — série probabiliste Infer.NET (inférence bayésienne, priors conjugués) ; **Infer-14** = utilité espérée sous postérieure bayésienne
-- **`Probas/PyMC/`** — série PyMC ; **PyMC-14** = utilité espérée par échantillonnage de postérieure
+- **`Probas/PyMC/`** — série PyMC ; **PyMC-1** = utilité espérée par échantillonnage de postérieure
 - **Epic #2651** — audit README/structure (série Lean)

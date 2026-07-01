@@ -118,7 +118,7 @@ Applications : A/B testing adaptatif, recommandation en ligne, essais cliniques 
 | Série | Lien | Relation |
 | --- | --- | --- |
 | [Corpus bayésien Infer](../../Infer/README.md) | Posteriors (Beta, gaussianes) | Le posterior est l'input de la politique de décision |
-| [PyMC](../../PyMC/README.md) | PyMC-14 à PyMC-20 | Même arc décision en Python/NUTS (Thompson MCMC, diagnostics ArviZ) |
+| [PyMC](../PyMC/README.md) | PyMC-1 à PyMC-7 | Même arc décision en Python/NUTS (Thompson MCMC, diagnostics ArviZ) |
 | [Lake `decision_theory_lean`](../../decision_theory_lean/) | Companions 2, 9 | Preuves formelles Lean 4 (vNM, Gittins) |
 | [GameTheory](../../../GameTheory/README.md) | Décision sous incertitude | Miroir : adversaire rationnel vs processus stochastique |
 | [RL](../../../RL/README.md) | MDPs (Infer-8) | L'agent apprend la politique par interaction |
