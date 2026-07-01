@@ -70,6 +70,10 @@ CaseStudies/
 │   ├── student/           # Template étudiant
 │   ├── solution/          # Solution de référence
 │   └── data/              # Données patients
+├── SmartGrid-Energy/      # Dispatch énergétique sous incertitude (CP-SAT, bayésien, multi-objectif)
+│   ├── student/           # Template étudiant
+│   ├── solution/          # Solution de référence
+│   └── subject.md         # Sujet du devoir
 └── requirements.txt       # Dépendances communes
 ```
 
@@ -92,6 +96,15 @@ Protocole oncologique adaptatif combinant IA symbolique (ontologie, CSP/OR-Tools
 - **Concepts** : Ontologies, planification CSP, inférence bayésienne, programmation probabiliste
 
 [README complet](Oncology-Planning/README.md) | 2 notebooks (student + solution) | ~3-4h
+
+### SmartGrid Energy
+
+Ordonnancement de la production électrique (unit commitment) sous incertitude renouvelable, combinant programmation par contraintes (OR-Tools CP-SAT), inférence bayésienne du risque de défaillance et optimisation multi-objectif (coût + CO2 + risque). Jumeau numérique d'un réseau à 3 centrales sur 6 heures.
+
+- **Technologies** : Python, ortools (CP-SAT), numpy
+- **Concepts** : Unit commitment NP-difficile, modèle bayésien de l'incertitude, optimisation multi-objectif, architecture en couches (filtrer > modéliser > optimiser)
+
+[Sujet](SmartGrid-Energy/subject.md) | 2 notebooks (student + solution) | ~3-4h
 
 ## Acquis d'apprentissage
 
