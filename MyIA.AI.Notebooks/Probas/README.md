@@ -11,7 +11,7 @@ maturity: PRODUCTION=46, BETA=1
 
 Le monde réel est incertain. Un diagnostic médical n'est jamais sûr à 100%, un classement sportif dépend de performances intrinsèquement variables, et les données que nous collectons sont toujours bruitées ou incomplètes. La programmation probabiliste offre un cadre rigoureux pour modéliser cette incertitude : plutôt que de calculer une seule réponse, on obtient une **distribution de probabilités** qui quantifie notre confiance dans chaque résultat possible.
 
-Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence exacte par message passing, **PyMC** (Python) pour l'échantillonnage MCMC moderne, et des **applications standalone** (RSA). Les 21 notebooks Infer.NET couvrent les fondements mathématiques (distributions, graphs de facteurs), les modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM), puis la théorie de la décision bayésienne — jusqu'à un compagnon **Lean 4** (Infer-20b, adossé au projet Lake `gittins_lean`) qui démontre formellement les identités d'escompte de l'indice de Gittins. Les 20 notebooks PyMC reprennent l'intégralité des modèles Infer.NET en Python avec l'échantillonnage NUTS, offrant un pont naturel vers l'écosystème data science : fondations 1-3, modèles classiques 4-13, et théorie de la décision 14-20.
+Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence exacte par message passing, **PyMC** (Python) pour l'échantillonnage MCMC moderne, et des **applications standalone** (RSA). Les 26 notebooks Infer.NET couvrent les fondements mathématiques (distributions, graphs de facteurs), les modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM), puis la théorie de la décision bayésienne — jusqu'à un compagnon **Lean 4** (Infer-20b, adossé au projet Lake `gittins_lean`) qui démontre formellement les identités d'escompte de l'indice de Gittins. Les 20 notebooks PyMC reprennent l'intégralité des modèles Infer.NET en Python avec l'échantillonnage NUTS, offrant un pont naturel vers l'écosystème data science : fondations 1-3, modèles classiques 4-13, et théorie de la décision 14-20.
 
 ## Pourquoi cette série
 
@@ -183,7 +183,7 @@ Probas/
 │   ├── PyMC-1-Setup.ipynb ... PyMC-20-Decision-Sequential.ipynb
 │   └── (port en cours d'enrichissement)
 ├── decision_theory_lean/        # Projet Lake (racine série) : escompte géométrique + théorème de Gittins ; accueillera VNM (#4049) + Dutch Book (#4050)
-└── Infer/                       # Série complète Infer.NET (21 notebooks)
+└── Infer/                       # Série complète Infer.NET (26 notebooks)
     ├── Infer-1-Setup.ipynb ... Infer-20-Decision-Sequential.ipynb
     ├── Infer-20b-Lean-Gittins.ipynb   # Compagnon Lean 4 (kernel WSL, -> ../decision_theory_lean)
     ├── README.md                # Documentation détaillée de la série
@@ -268,7 +268,7 @@ Application avancée à la linguistique pragmatique :
 - Modélisation des hyperboles (prix, excitation)
 - Question Under Discussion (QUD)
 
-## Série Infer.NET (21 notebooks)
+## Série Infer.NET (26 notebooks)
 
 La série complète est documentée dans [Infer/README.md](Infer/README.md), qui fournit des descriptions détaillées de chaque notebook, les patterns Infer.NET avancés, et des exercices corrigés.
 
@@ -280,7 +280,7 @@ La série complète est documentée dans [Infer/README.md](Infer/README.md), qui
 | **Modèles classiques** | 4-13 | Bayesian networks, IRT, TrueSkill, LDA, HMM | 8h |
 | **Décision** | 14-20, 20b | Théorie de la décision bayésienne + preuve Lean de Gittins | 8h |
 
-Les 21 notebooks Infer.NET sont détaillés individuellement dans [*Ce que chaque notebook apporte*](#ce-que-chaque-notebook-apporte) ci-dessus (apport pédagogique par notebook) ; le contenu exhaustif — patterns avancés, exercices corrigés — vit dans [Infer/README.md](Infer/README.md).
+Les 26 notebooks Infer.NET sont détaillés individuellement dans [*Ce que chaque notebook apporte*](#ce-que-chaque-notebook-apporte) ci-dessus (apport pédagogique par notebook) ; le contenu exhaustif — patterns avancés, exercices corrigés — vit dans [Infer/README.md](Infer/README.md).
 
 ## Série PyMC (20 notebooks, Python)
 
