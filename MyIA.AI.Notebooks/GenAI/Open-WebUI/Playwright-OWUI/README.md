@@ -9,7 +9,7 @@ maturity:
 
 [← Documentation GenAI](../../README.md) | [↑ Open-WebUI](../README.md) | [→ Vibe-Coding](../../Vibe-Coding/README.md)
 
-> **Refonte pédagogique en cours (#4433).** Cette série évolue d'un banc de tests vers un **parcours QA narratif** : fil rouge « QA Engineer d'une flotte GenAI multi-tenant », format hybride notebook + tests E2E réels conservés en backend, et projet de certification final. Point d'entrée : **[00-Parcours-QA-OWUI.md](./00-Parcours-QA-OWUI.md)** (cadrage de la mission). La revalidation cible **Open WebUI v0.9.6** (Phase 3, en cours) ; la mention « v0.9.1 » plus bas est périmée et sera reprise à ce moment-là.
+> **Refonte pédagogique en cours (#4433).** Cette série évolue d'un banc de tests vers un **parcours QA narratif** : fil rouge « QA Engineer d'une flotte GenAI multi-tenant », format hybride notebook + tests E2E réels conservés en backend, et projet de certification final. Point d'entrée : **[00-Parcours-QA-OWUI.md](./00-Parcours-QA-OWUI.md)** (cadrage de la mission). La flotte multi-tenant est passée en **Open WebUI v0.10.2** (1er juillet 2026) : le nouveau **module [06](06-nouveautes-v0.10/)** en démontre les nouveautés (mémoire, dossiers d'équipe, raisonnement streamé). Les modules 01-05, rédigés sur la base v0.9.x, seront revalidés dans le cadre de la refonte.
 
 Serie pédagogique complète pour apprendre **Playwright** (framework de tests E2E) en testant une application réelle : **Open WebUI**, une plateforme de chat IA générative.
 
@@ -41,17 +41,23 @@ Playwright-OWUI/
 ├── 05-multi-tenant-ci/               # API tests, multi-tenant, CI/CD
 │   ├── README.md
 │   └── 05-api-multi-tenant.spec.ts   # 8 tests : API REST, isolation, partage
+├── 06-nouveautes-v0.10/              # Nouveautes v0.10 (memoire, dossiers, raisonnement)
+│   ├── README.md
+│   └── 06-nouveautes.spec.ts         # 7 tests : memoire, dossiers, raisonnement, compaction
 ├── helpers/                          # Fonctions utilitaires reutilisables
-│   ├── selectors.ts                  # Selecteurs CSS centralises
+│   ├── selectors.ts                  # Selecteurs CSS centralises (+ REASONING/FOLDER/MEMORY)
 │   ├── chat.ts                       # Helpers d'interaction chat
-│   └── api.ts                        # Client API REST
+│   └── api.ts                        # Client API REST (+ memoire & dossiers v0.10)
 ├── fixtures/                         # Setup et configuration
 │   └── auth.setup.ts                 # Authentification automatique
 ├── .auth/                            # Sessions sauvegardees (gitignore)
 ├── .env.example                      # Template de configuration
 ├── .gitignore
 ├── package.json
+├── tsconfig.json                     # Typecheck CI (tsc --noEmit)
 ├── playwright.config.ts
+├── WHATS-NEW-v0.9.1.md               # Nouveautes v0.9.1 (historique)
+├── WHATS-NEW-v0.10.md                # Nouveautes v0.10 (cote etudiant)
 └── README.md                         # Ce fichier
 ```
 
@@ -103,6 +109,16 @@ Playwright-OWUI/
 - Integration CI/CD (GitHub Actions)
 - **8 tests + exercices**
 
+### Module 06 — Les nouveautes v0.10 (3h)
+*Niveau Expert*
+
+- **Memoire** persistante : CRUD via API + preuve du champ `type` (nouveaute v0.10)
+- **Dossiers** et partage d'equipe (permissions lecture/ecriture)
+- **Raisonnement streame** : afficher le bloc « reflexion » d'un modele thinking (skip gracieux)
+- **Compaction automatique** du contexte : verifier que le fil de conversation tient sur plusieurs tours
+- Detection de fonctionnalite (feature-detection) et nettoyage systematique via `finally`
+- **7 tests + exercices** — voir aussi [WHATS-NEW-v0.10.md](./WHATS-NEW-v0.10.md)
+
 ## Installation rapide (5 minutes)
 
 ### 1. Prerequisites
@@ -151,6 +167,7 @@ cp .env.example .env
 | `OWUI_LOCAL_MODEL` | Modèle local (vLLM/Ollama) | 03 |
 | `OWUI_PERSONA_MODEL` | Modèle persona/custom | 03 |
 | `OWUI_TENANT2_*` | Instance secondaire (multi-tenant) | 05 |
+| `OWUI_REASONING_MODEL` | Modèle « thinking » affichant son raisonnement (sinon test sauté) | 06 |
 
 ### 4. Verification
 
@@ -174,6 +191,7 @@ npm run test:module2    # Module 02
 npm run test:module3    # Module 03
 npm run test:module4    # Module 04
 npm run test:module5    # Module 05
+npm run test:module6    # Module 06 (nouveautes v0.10)
 
 # Mode visible (navigateur affiche)
 npx playwright test --headed
@@ -183,6 +201,10 @@ npm run test:debug
 
 # Interface graphique Playwright
 npm run test:ui
+
+# Verifier que tout compile et se collecte (sans instance live, comme la CI)
+npm run typecheck       # tsc --noEmit
+npm run test:list       # enumere les tests sans les executer
 
 # Voir le rapport HTML des derniers tests
 npm run report
@@ -201,6 +223,9 @@ npm run report
 | API testing | 05 | APIRequestContext sans navigateur |
 | Multi-tenant | 05 | Isolation et partage de donnees |
 | CI/CD | 05 | GitHub Actions, rapports, artefacts |
+| Feature-detection | 06 | Prouver une nouveaute via un champ de reponse (ex. `type` sur la memoire) |
+| Nettoyage (`finally`) | 06 | Toujours supprimer les donnees de test creees (memoire, dossiers) |
+| Comportement observable | 06 | Tester la compaction/le raisonnement par leur effet, pas leur implementation |
 
 ## Pieges courants et solutions
 
@@ -346,14 +371,15 @@ Les deux series sont complementaires : Vibe-Coding ([README](../../Vibe-Coding/R
 
 ### Comment adapter les tests a une autre application OWUI (version ou config différente) ?
 
-Les sélecteurs CSS et les patterns d'auth sont stables entre OWUI v0.8.x et v0.9.x. Si votre instance diffère :
+Les sélecteurs CSS et les patterns d'auth sont stables entre OWUI v0.8.x et v0.10.x. Si votre instance diffère :
 
 1. **Sélecteurs** : vérifier avec le mode debug (`npx playwright test --debug`) que les sélecteurs dans [helpers/selectors.ts](helpers/selectors.ts) correspondent a votre version.
 2. **Labels multilingues** : OWUI v0.9+ a change certains labels. Adapter dans les tests ou utiliser `getByRole()` (plus robuste que `getByText()`).
-3. **Nouvelles fonctionnalités** : OWUI v0.9.1 ajoute Calendar, Automations, Desktop app. Ce sont de bons candidats pour des exercices bonus (voir `WHATS-NEW-v0.9.1.md`).
+3. **Nouvelles fonctionnalités** : OWUI v0.9.1 ajoute Calendar, Automations, Desktop app (voir `WHATS-NEW-v0.9.1.md`) ; OWUI v0.10 ajoute la mémoire persistante, les dossiers d'équipe et le raisonnement streamé (voir `WHATS-NEW-v0.10.md` et le module [06](06-nouveautes-v0.10/)). Ce sont de bons candidats pour des exercices bonus.
+4. **Changement de comportement v0.10** : le *native tool calling* devient le défaut. Les modèles conversationnels (sans outils) qui répondaient normalement peuvent renvoyer des réponses vides s'ils héritent de ce mode — à surveiller lors de l'adaptation des tests de chat.
 
 Le module [01](01-decouverte/) enseigne les sélecteurs robustes (`getByRole`, `getByTestId`) qui resistent aux changements d'UI.
 
 ---
 
-*Version 1.1.0 — Avril 2026 (revalidee sur OWUI v0.9.1)*
+*Version 1.2.0 — Juillet 2026 (module 06 ajoute, validé sur OWUI v0.10.2)*

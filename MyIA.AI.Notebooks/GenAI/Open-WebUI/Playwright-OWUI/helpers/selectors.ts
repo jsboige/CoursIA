@@ -35,11 +35,24 @@ export const NAV = {
 
 // --- Selection de modele ---
 export const MODEL = {
-  // Matche "Select a model" (vide) et "Selected model: X" (avec defaut)
-  selectorButton: 'button[aria-label^="Select"]',
-  // Les modeles sont dans un listbox ARIA
-  modelListbox: '[role="listbox"][aria-label="Available models"]',
+  // Le bouton du selecteur de modele.
+  // IMPORTANT (v0.10) : l'aria-label est localise ("Modele selectionne : X"
+  // en fr-FR, "Selected model: X" en en). L'ancien selecteur
+  // `button[aria-label^="Select"]` ne matchait donc plus en francais.
+  // On privilegie l'ID (independant de la langue et de la version) et on
+  // garde des variantes aria-label en repli pour les versions anterieures.
+  selectorButton:
+    'button[id^="model-selector-"], button[aria-label^="Select" i], button[aria-label^="Modèle" i], button[aria-label^="Sélection" i]',
+  // Les modeles sont dans un listbox ARIA. IMPORTANT (v0.10) : l'aria-label
+  // est localise ("Modeles disponibles" en fr, "Available models" en en) ;
+  // quand le dropdown est ouvert c'est le seul listbox affiche, on cible
+  // donc simplement le role, independamment de la langue.
+  modelListbox: '[role="listbox"]',
   modelOption: '[role="option"]',
+  // Champ de recherche du dropdown (v0.10 : id stable #model-search-input,
+  // avec des replis sur le placeholder localise pour les versions anterieures)
+  searchInput:
+    '#model-search-input, [role="listbox"] input, input[placeholder*="odel" i], input[placeholder*="odèle" i]',
   addModelButton: 'button[aria-label="Add Model"]',
 } as const;
 
@@ -72,4 +85,38 @@ export const SHARE = {
 // --- Barre laterale ---
 export const SIDEBAR = {
   searchContainer: '#search-container',
+} as const;
+
+// =====================================================================
+// Nouveautes v0.10 (voir module 06)
+// =====================================================================
+
+// --- Raisonnement / reflexion (v0.10.2 : visualisation live) ---
+// La v0.10.2 affiche EN DIRECT les etapes de raisonnement des modeles
+// "thinking". Le bloc est generalement un <details> repliable, ou un
+// conteneur dont le libelle contient "raisonnement"/"reflexion"/"thinking".
+// Selecteurs volontairement larges — A CONFIRMER contre l'UI live (comme
+// tous les selecteurs, l'interface peut deriver d'une version a l'autre).
+export const REASONING = {
+  // Conteneur repliable du raisonnement
+  block:
+    'details[class*="reason" i], details[class*="think" i], [class*="reasoning" i], [class*="thinking" i]',
+  // Libelle multilingue du bloc (pour getByText)
+  label: /raisonnement|r[ée]flexion|r[ée]fl[ée]chi|reasoning|thinking|thought/i,
+} as const;
+
+// --- Dossiers (v0.10 : dossiers d'equipe partageables) ---
+export const FOLDER = {
+  // Bouton de creation d'un dossier dans la sidebar (libelle multilingue)
+  newFolderButton: /nouveau dossier|new folder|cr[ée]er un dossier/i,
+  // Entree de dossier dans la sidebar
+  item: '[data-folder-id], [class*="folder" i]',
+  // Option de partage dans le menu contextuel d'un dossier
+  shareOption: /partager|share/i,
+} as const;
+
+// --- Memoire (v0.10 : refonte, sort de beta) ---
+export const MEMORY = {
+  // Section "Memoire" dans Parametres > Personnalisation (libelle multilingue)
+  settingsLabel: /m[ée]moire|memory|personnalisation|personalization/i,
 } as const;
