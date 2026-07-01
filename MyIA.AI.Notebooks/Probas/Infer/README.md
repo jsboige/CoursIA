@@ -74,6 +74,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 22 | [Infer-22-Causal-Inference](Infer-22-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
 | 23 | [Infer-23-Sparse-Gaussian-Process](Infer-23-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens, noyau RBF, classification non-linéaire, sparse GP |
 | 24 | [Infer-24-Modeles-Hierarchiques](Infer-24-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
+| 25 | [Infer-25-Kalman-Filter](Infer-25-Kalman-Filter.ipynb) | 55 min | Filtre de Kalman, système dynamique linéaire gaussien, conjugaison, EP exacte |
 
 **Durée totale** : ~22h
 
@@ -945,6 +946,37 @@ Cas d'école du **pooling partiel** : quand les données sont **structurées en 
 
 ---
 
+## Filtrage et séquences continues (Notebook 25)
+
+### Infer-25 : Filtre de Kalman (système dynamique linéaire gaussien)
+
+Le **filtre de Kalman** (Kalman, 1960) est l'analogue à état **continu** du HMM d'[Infer-11](Infer-11-Sequences.ipynb) : l'état caché $x_t$ (position, température, prix) évolue linéairement avec un bruit gaussien (la *dynamique*, variance $Q$), et on l'observe à travers un autre bruit gaussien (le *capteur*, variance $R$). Parce que tout est **linéaire et gaussien**, l'inférence est **exactement conjugée** : le postérieur reste gaussien à chaque pas, calculable en temps fermé — c'est le cas d'école où Infer.NET (EP) résout l'inférence de manière **exacte**, sans MCMC ni approximation variationnelle.
+
+**Durée** : 55 min | **Prérequis** : [Infer-11-Sequences](Infer-11-Sequences.ipynb) (HMM, structure markovienne), [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb) (conjugaison gaussienne)
+
+**Objectifs** :
+
+- Comprendre le filtre de Kalman comme le pendant **continu** du HMM discret
+- Formuler un **système dynamique linéaire gaussien** (équations de transition et d'observation)
+- Implémenter la **récursion de filtrage bayésien** (prédiction + mise à jour) via Infer.NET, en compilant le mini-modèle une fois et en le réutilisant via `ObservedValue`
+- **Mesurer** l'apport du filtre : MSE filtrée vs MSE brute, variance postérieure bornée (équation de Riccati)
+
+**Concepts clés** :
+
+| Concept | Formule / API | Description |
+| --------- | --------------- | ------------- |
+| Transition | `x[t] ~ N(x[t-1] + drift, Q)` | Dynamique : l'état évolue avec du bruit |
+| Observation | `y[t] ~ N(x[t], R)` | Capteur bruité de l'état caché |
+| Prédiction | propager le postérieur (variance `+= Q`) | L'incertitude croît entre deux observations |
+| Mise à jour | `engine.Infer<Gaussian>(x)` (EP) | Conjugaison : postérieur gaussien exact |
+| Borne de variance | équation de Riccati discrète | L'incertitude résiduelle plafonne (filtre fiable) |
+
+**Positionnement** : [Infer-11](Infer-11-Sequences.ipynb) couvrait le HMM à état **discret** (météo, mots) ; Infer-25 franchit le pas vers l'état **continu** — le filtre le plus utilisé au monde (navigation GPS, fusion de capteurs, contrôle, finance). La récursion pas-à-pas compile le mini-modèle linéaire-gaussien une fois (`Variable.New<double>` + `ObservedValue`), et EP retourne le postérieur exact qui sert d'a priori au pas suivant. Sur une trajectoire dérivante fortement bruitée ($R = 4 \gg Q = 0{,}5$), le filtre réduit l'erreur de **~74 %** (MSE brute 4,88 → filtrée 1,28) et borne la variance postérieure vers **1,2** (vs $R = 4$) — la signature d'un filtre qui *aide*.
+
+**Applications** : suivi de mobiles, navigation inertielle et GPS, fusion multi-capteurs, filtrage de signaux, tracking financier, estimation d'état en robotique et contrôle.
+
+---
+
 ## Prérequis
 
 - .NET 9.0 ou supérieur
@@ -1065,7 +1097,7 @@ var posterior = moteur.Infer<DistributionType>(variable);
 
 ```
 Infer/
-+-- Infer-1-Setup.ipynb ... Infer-24-Modeles-Hierarchiques.ipynb
++-- Infer-1-Setup.ipynb ... Infer-25-Kalman-Filter.ipynb
 +-- Infer-20b-Lean-Gittins.ipynb    # Companion Lean 4 (preuves formelles Gittins)
 +-- Infer-Glossary.md
 +-- FactorGraphHelper.cs          # Helper pour visualisation Graphviz
