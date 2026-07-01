@@ -2027,6 +2027,47 @@ theorem centralCorrect_mem (c : MacroCell) (j : Nat) (p : Int × Int)
           fun ⟨H, h1, h2, h3, h4⟩ => ⟨?_, h1, h2, h3, h4⟩⟩ <;>
     simp_all [isAlive]
 
+/-- **Offset-generalized centralCorrect membership** (P4.4 offset-matching G2 gate).
+
+    `centralCorrect_mem` characterizes membership of a cell's result at its
+    *canonical* centered offset `(2^j, 2^j)`. The P4.4 offset-matching assembly
+    needs the same characterization at the **quadrant offsets** where the
+    super-cells `q_*` actually sit in the parent result node (e.g. NW quadrant at
+    `(2^k, 2^k)`, per `mem_toGrid_node`). This lemma re-anchors
+    `centralCorrect_mem` from `(2^j, 2^j)` to an arbitrary offset `(a, b)` via
+    `toGrid_shift_between`: the alive-status is evaluated at the back-shifted
+    point `(p.1 - a + 2^j, p.2 - b + 2^j)`, and the centered window bounds
+    `[2^j, 2^j + 2^(j+1))` translate to `[a, a + 2^(j+1))` (and `[b, b + 2^(j+1))`).
+
+    Pure composition of `centralCorrect_mem` (G2 congruence, c.153) and
+    `toGrid_shift_between` (#4797, the double-shift ingredient) — sorry-free gate
+    ingredient. The residual research heart (sorry 4→3) is `evolve_half_step`,
+    which consumes this gate to connect the induction hypothesis
+    `centralCorrect q_* (k-1)` to the four quadrant offsets at once. -/
+theorem centralCorrect_mem_shift (c : MacroCell) (j : Nat) (a b : Int) (p : Int × Int)
+    (h : centralCorrect c j) :
+    p ∈ (hashlifeResultAux (j + 2) c).toGrid (a, b) ↔
+      isAlive (evolve (2^j) (c.toGrid (0, 0)))
+        (p.1 - a + (2^j : Int), p.2 - b + (2^j : Int)) = true ∧
+      a ≤ p.1 ∧ p.1 < a + 2^(j+1) ∧
+      b ≤ p.2 ∧ p.2 < b + 2^(j+1) := by
+  -- Re-anchor `(a,b)` → the canonical `(2^j,2^j)` offset. `centralCorrect_mem`'s
+  -- canonical offset is the Nat-cast `↑(2^j)` (the display of `(2^j : Nat)`
+  -- coerced to Int), so we instantiate `toGrid_shift_between` with
+  -- `a' = b' = (2^j : Nat)` to match its rewrite pattern (native `(2^j : Int)`
+  -- would not unify — the c.146/c.147 native-Int-vs-Nat-cast distinction).
+  have hshift : p ∈ (hashlifeResultAux (j + 2) c).toGrid (a, b) ↔
+      (p.1 - a + (2^j : Nat), p.2 - b + (2^j : Nat)) ∈
+        (hashlifeResultAux (j + 2) c).toGrid ((2^j : Nat), (2^j : Nat)) :=
+    toGrid_shift_between
+  rw [hshift, centralCorrect_mem c j _ h]
+  -- `centralCorrect_mem`'s bounds carry native `(2^j : Int)` literals, while the
+  -- substituted point carries `↑(2^j)` (Nat-cast). Normalize to a single atom
+  -- (c.146: linarith otherwise sees `↑(2^j)` and `(2^j : Int)` as unrelated).
+  rw [show ((2 : Nat)^j).cast = (2^j : Int) from Nat.cast_pow 2 j]
+  refine ⟨fun ⟨H, h1, h2, h3, h4⟩ => ⟨H, ?_, ?_, ?_, ?_⟩,
+          fun ⟨H, h1, h2, h3, h4⟩ => ⟨H, ?_, ?_, ?_, ?_⟩⟩ <;> linarith
+
 /-- **P4.2 helper (c.139 workaround).** The `ih` *application*
     `ih (node nw_se ne_sw sw_ne se_nk) (k-1) ...` diverges on `whnf` when it
     appears inline inside `p4_wave1_ih`'s body, because there the four
