@@ -1031,6 +1031,28 @@ theorem mem_toGrid {c : MacroCell} {offset : Int × Int} {p : Int × Int} :
   unfold MacroCell.toGrid
   exact mem_sortDedup
 
+/-- **G3 infrastructure (toGrid node-decomposition).** Membership in a `node`
+    cell's grid decomposes into membership in the four children's grids, with
+    the standard quadtree offset shifts (row increases downward, column
+    rightward): `nw` at `(r0,c0)`, `ne` at `(r0, c0+half)`, `sw` at
+    `(r0+half, c0)`, `se` at `(r0+half, c0+half)`, where `half = 2^nw.level`.
+
+    Pure structural fact — no `hashlifeResultAux`. This is the sorry-free G3
+    piece of `p4_succ_membership`: once established, the LHS
+    `p ∈ (hashlifeResultAux (k+2) c).toGrid (2^k, 2^k)` (which is a
+    `node out_nw out_ne out_sw out_se`) decomposes into the four
+    `out_*.toGrid ...` memberships, each characterizable via
+    `centralCorrect_mem` + the induction hypothesis `centralCorrect q_* (k-1)`. -/
+theorem mem_toGrid_node {nw ne sw se : MacroCell} {r0 c0 : Int} {p : Int × Int} :
+    p ∈ (node nw ne sw se).toGrid (r0, c0) ↔
+      p ∈ nw.toGrid (r0, c0) ∨
+      p ∈ ne.toGrid (r0, c0 + (2 ^ nw.level : Int)) ∨
+      p ∈ sw.toGrid (r0 + (2 ^ nw.level : Int), c0) ∨
+      p ∈ se.toGrid (r0 + (2 ^ nw.level : Int), c0 + (2 ^ nw.level : Int)) := by
+  repeat rw [mem_toGrid]
+  simp only [toCellsAux, List.mem_append]
+  tauto
+
 /-- Membership in a restricted grid: in the grid and inside the window. -/
 theorem mem_restrictGridTo {g : Grid} {lo : Int} {size : Nat} {p : Int × Int} :
     p ∈ restrictGridTo g lo size ↔
