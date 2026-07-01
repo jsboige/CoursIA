@@ -63,14 +63,45 @@ async function capture(page: Page, fileName: string): Promise<void> {
   });
 }
 
+/**
+ * Ferme les fenêtres modales qui recouvrent la vue à capturer : nouveautés
+ * (« What's New » v0.10) et onboarding, affichées à la première connexion d'un
+ * compte neuf. Tolérant et borné dans le temps (ne bloque jamais la capture).
+ */
+async function dismissModals(page: Page): Promise<void> {
+  const deadline = Date.now() + 8000;
+  while (Date.now() < deadline) {
+    const dialog = page.locator('[role="dialog"], .modal').first();
+    if (!(await dialog.isVisible().catch(() => false))) return;
+    const cta = page
+      .getByRole('button', {
+        name: /d'accord, allons-y|allons-y|got it|get started|commencer|fermer|close|dismiss|plus tard|skip|ignorer/i,
+      })
+      .first();
+    if (await cta.isVisible().catch(() => false)) {
+      await cta.click().catch(() => {});
+    } else {
+      await page.keyboard.press('Escape').catch(() => {});
+    }
+    await page.waitForTimeout(500);
+  }
+}
+
 async function signIn(page: Page): Promise<void> {
   await page.goto(URL!);
-  await page.getByPlaceholder(/email/i).fill(EMAIL!);
-  await page.getByPlaceholder(/password|mot de passe/i).fill(PASSWORD!);
+  // Le libellé français est « adresse e-mail » (avec trait d'union) : /mail/i
+  // le couvre, /email/i non.
+  await page.getByPlaceholder(/e-?mail|adresse/i).first().fill(EMAIL!);
+  await page
+    .getByPlaceholder(/password|mot de passe/i)
+    .first()
+    .fill(PASSWORD!);
   await page
     .getByRole('button', { name: /sign in|se connecter|connexion|log in/i })
+    .first()
     .click();
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await dismissModals(page);
 }
 
 test.describe('Tour de la plateforme — captures (compte de capture)', () => {
@@ -156,7 +187,8 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
     test('02 — raisonnement en direct (v0.10)', async ({ page }) => {
       test.skip(!REASONING_MODEL, 'DEMO_OWUI_REASONING_MODEL non défini');
       await page.goto(URL!);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await dismissModals(page);
       // Ouvrir le sélecteur de modèle et choisir le modèle de raisonnement.
       await page
         .locator('button[id^="model-selector-"]')
@@ -192,7 +224,8 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
     // sidebar (compte neuf → aucun dossier réel visible).
     test("03 — dossier d'équipe (v0.10)", async ({ page }) => {
       await page.goto(URL!);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await dismissModals(page);
       await page
         .getByRole('button', {
           name: /nouveau dossier|new folder|cr[ée]er un dossier/i,
@@ -203,30 +236,44 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
       await capture(page, '03-dossier-equipe.png');
     });
 
-    // 5 — mémoire (v0.10) : Paramètres > Personnalisation > Mémoire
-    // (compte neuf → aucun souvenir réel enregistré).
+    // 5 — mémoire (v0.10) : Menu utilisateur > Réglages > Personnalisation >
+    // Mémoire > Gérer (compte neuf → panneau « Mémoire 0 », aucun souvenir réel).
     test('05 — mémoire (v0.10)', async ({ page }) => {
       await page.goto(URL!);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('networkidle').catch(() => {});
+      await dismissModals(page);
+      // Ouvrir le menu utilisateur (avatar) puis les Réglages.
       await page
-        .getByRole('button', { name: /account|compte|profil|profile/i })
+        .getByRole('button', { name: /menu utilisateur|user menu/i })
         .first()
         .click()
         .catch(() => {});
+      await page.waitForTimeout(500);
       await page
-        .getByRole('menuitem', { name: /settings|param[èe]tres/i })
+        .getByRole('button', { name: /r[ée]glages|param[èe]tres|settings/i })
         .first()
         .click()
         .catch(() => {});
-      await page
+      await page.waitForTimeout(1000);
+      const dialog = page.locator('[role="dialog"], .modal').last();
+      // Onglet Personnalisation → section Mémoire → bouton « Gérer ».
+      await dialog
         .getByText(/personnalisation|personalization/i)
         .first()
         .click()
         .catch(() => {});
-      await page
-        .getByText(/m[ée]moire|memory/i)
+      await page.waitForTimeout(800);
+      await dialog
+        .getByRole('button', { name: /g[ée]rer|manage/i })
         .first()
         .click()
+        .catch(() => {});
+      await page
+        .getByText(
+          /aucun|les souvenirs|no memories|seront affich/i,
+        )
+        .first()
+        .waitFor({ state: 'visible', timeout: 8000 })
         .catch(() => {});
       await capture(page, '05-memoire.png');
     });
