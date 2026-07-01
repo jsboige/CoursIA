@@ -1,42 +1,42 @@
 # TFT-Crypto-Ranking
 
-**Type:** Research (no deployable algorithm, research-only notebook)
+**Type :** Recherche (notebook de recherche only, pas d'algorithme déployable)
 
-**Asset class:** Crypto (BTC-USD, ETH-USD)
+**Classe d'actifs :** Crypto (BTC-USD, ETH-USD)
 
-**Cloud project ID:** N/A (research-only, no deployable algorithm)
+**Cloud project ID :** N/A (recherche only, pas d'algorithme déployable)
 
 ## Description
 
-Research notebook applying the Temporal Fusion Transformer (TFT, Lim et al. 2021) for crypto cross-sectional ranking (BTC vs ETH direction prediction). Uses 26 features (11 BTC-specific + 11 ETH-specific + 4 cross-asset). Architecture includes Variable Selection Network (VSN), Gated Residual Network (GRN), LSTM encoder, and multi-head attention. Walk-forward 5-fold validation across 4 seeds with 10bps transaction costs. DLinear baseline achieved Sharpe 0.742. Verdict: INCONCLUSIVE (z=1.33, insufficient for BEATS threshold).
+Notebook de recherche appliquant le Temporal Fusion Transformer (TFT, Lim et al. 2021) au ranking crypto cross-sectional (prédiction de direction BTC vs ETH). Utilise 26 features (11 spécifiques BTC + 11 spécifiques ETH + 4 cross-asset). L'architecture inclut un Variable Selection Network (VSN), un Gated Residual Network (GRN), un encodeur LSTM et une multi-head attention. Validation walk-forward 5-fold sur 4 seeds avec coûts de transaction 10bps. La baseline DLinear atteint Sharpe 0.742. Verdict : INCONCLUSIVE (z=1.33, insuffisant pour le seuil BEATS).
 
-## How to Run
+## Comment exécuter
 
 ### Lean CLI
-Not applicable (research-only notebook, no `main.py`).
+Non applicable (notebook de recherche only, pas de `main.py`).
 
 ### QC Cloud
-Not applicable. Run the research notebook locally with Python 3.10+ and PyTorch.
+Non applicable. Exécuter le notebook de recherche localement avec Python 3.10+ et PyTorch.
 
 ### Local
 ```bash
 papermill research.ipynb output.ipynb
 ```
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Method | Rebalance | Key Parameters |
-|--------|-----------|----------------|
-| TFT cross-sectional ranking | N/A (research) | 26 features, VSN+GRN+LSTM+attention, walk-forward 5-fold x 4 seeds, 10bps T-cost |
+| Méthode | Rebalance | Paramètres clés |
+|---------|-----------|-----------------|
+| TFT ranking cross-sectional | N/A (recherche) | 26 features, VSN+GRN+LSTM+attention, walk-forward 5-fold x 4 seeds, T-cost 10bps |
 
-## Files
+## Fichiers
 
-| File | Description |
-|------|-------------|
-| `research.ipynb` | Research notebook with TFT model for crypto ranking, feature engineering, and walk-forward validation |
-| `_generate_research.py` | Script that generates the research notebook |
+| Fichier | Description |
+|---------|-------------|
+| `research.ipynb` | Notebook de recherche avec modèle TFT pour ranking crypto, feature engineering et validation walk-forward |
+| `_generate_research.py` | Script qui génère le notebook de recherche |
 
-## References
+## Références
 
 - Lim, B. et al. (2021). *Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting*. International Journal of Forecasting.
-- [QuantConnect Documentation](https://www.quantconnect.com/docs/)
+- [Documentation QuantConnect](https://www.quantconnect.com/docs/)
