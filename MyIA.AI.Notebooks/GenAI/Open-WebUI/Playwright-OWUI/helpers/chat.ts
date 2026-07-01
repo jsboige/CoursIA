@@ -28,38 +28,57 @@ import { CHAT, MODEL } from './selectors';
  * et on le clique s'il est visible. Sinon, on passe.
  */
 export async function dismissModals(page: Page): Promise<void> {
-  // Attendre un court instant que les modales eventuelles apparaissent
-  await page.waitForTimeout(1000);
+  // La modale "Quoi de neuf" (changelog) peut se charger EN DIFFERE : elle
+  // apparait souvent 1 a 3 s apres le chargement de la page (fetch async du
+  // changelog, surtout juste apres une montee de version). Une verification
+  // immediate la manquerait donc, et le clic suivant serait intercepte par
+  // l'overlay z-9999. On SONDE pendant ~8 s en fermant toute modale qui
+  // apparait, et on ne s'arrete qu'apres deux sondages consecutifs sans
+  // modale (ce qui couvre aussi le cas de modales enchainees).
+  const deadlineMs = Date.now() + 8_000;
+  let clearStreak = 0;
 
-  // Strategie 1 : Cliquer le bouton de fermeture du dialogue (croix ou bouton)
-  const closeButtons = [
-    // Bouton "Okay, Got it!" ou "Fermer" en bas du changelog
-    page.getByRole('button', { name: /okay|got it|fermer|close|d'accord/i }),
-    // Bouton croix (X) dans la modale
-    page.locator('[role="dialog"] button').filter({ hasText: /×|✕/ }),
-    // Bouton croix generique dans une modale
-    page.locator('[role="dialog"] button[aria-label*="close" i], [role="dialog"] button[aria-label*="fermer" i]'),
-    // Cliquer en dehors de la modale (sur l'overlay)
-  ];
+  while (Date.now() < deadlineMs && clearStreak < 2) {
+    const dialog = page.locator('[role="dialog"]').first();
+    const visible = await dialog.isVisible({ timeout: 1_000 }).catch(() => false);
 
-  for (const btn of closeButtons) {
-    try {
-      if (await btn.isVisible({ timeout: 2_000 })) {
-        await btn.click({ timeout: 3_000 });
-        // Attendre que la modale disparaisse
-        await page.locator('[role="dialog"]').waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
-        return;
-      }
-    } catch {
-      // Continuer avec le prochain selecteur
+    if (!visible) {
+      clearStreak++;
+      await page.waitForTimeout(700);
+      continue;
     }
-  }
+    clearStreak = 0;
 
-  // Strategie 2 : Si aucun bouton trouve, essayer Escape
-  const dialog = page.locator('[role="dialog"]');
-  if (await dialog.isVisible({ timeout: 1_000 }).catch(() => false)) {
-    await page.keyboard.press('Escape');
-    await dialog.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+    // Strategie 1 : Cliquer le bouton de fermeture (aria-label, CTA, ou croix)
+    const closeButtons = [
+      // Bouton "Fermer" via aria-label (stable, independant du texte)
+      page.locator('[role="dialog"] button[aria-label*="close" i], [role="dialog"] button[aria-label*="fermer" i]'),
+      // CTA de bas de changelog : "Okay, Got it!", "D'accord, allons-y !", etc.
+      page.getByRole('button', { name: /okay|got it|fermer|close|d.accord|allons/i }),
+      // Bouton croix (X) dans la modale
+      page.locator('[role="dialog"] button').filter({ hasText: /×|✕/ }),
+    ];
+
+    let clicked = false;
+    for (const btn of closeButtons) {
+      try {
+        if (await btn.first().isVisible({ timeout: 1_000 })) {
+          await btn.first().click({ timeout: 3_000 });
+          clicked = true;
+          break;
+        }
+      } catch {
+        // Continuer avec le prochain selecteur
+      }
+    }
+
+    // Strategie 2 : Si aucun bouton trouve, essayer Escape
+    if (!clicked) {
+      await page.keyboard.press('Escape');
+    }
+
+    // Attendre que CETTE modale disparaisse avant le prochain sondage
+    await dialog.waitFor({ state: 'hidden', timeout: 4_000 }).catch(() => {});
   }
 }
 
@@ -82,14 +101,14 @@ export async function startNewChat(page: Page): Promise<void> {
  * Ouvre le dropdown, recherche le modele par nom, et clique dessus.
  */
 export async function selectModel(page: Page, modelName: string): Promise<void> {
-  await page.locator(MODEL.selectorButton).click();
+  await page.locator(MODEL.selectorButton).first().click();
   await expect(page.locator(MODEL.modelListbox)).toBeVisible({ timeout: 10_000 });
 
-  // Rechercher dans le champ de recherche du dropdown
-  const searchInput = page.locator(
-    '[role="menu"] input[type="text"], [role="menu"] input[placeholder]'
-  ).first();
+  // Rechercher dans le champ de recherche du dropdown (id stable en v0.10)
+  const searchInput = page.locator(MODEL.searchInput).first();
   await searchInput.fill(modelName);
+  // Laisser la liste se filtrer avant de cliquer
+  await page.waitForTimeout(300);
 
   // Cliquer le premier resultat
   await page.locator(MODEL.modelOption).first().click({ timeout: 10_000 });
