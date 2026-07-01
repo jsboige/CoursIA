@@ -29,13 +29,15 @@ Chaque section suit le même rythme :
 4. **Exercice** *(certaines sections)* — une manipulation à faire soi-même.
 
 > **Note sur les captures.** Les images de ce tour sont produites de façon
-> **reproductible** par un script Playwright ([`capture/`](capture/)) qui vise un
-> **tenant de démonstration** dédié, avec un compte non-administrateur, des
-> données fictives, et le masquage (`mask`) des zones sensibles. Tant que le
-> tenant de démonstration n'est pas en ligne, les emplacements de capture sont
-> indiqués par `📷 Capture à venir` et le dossier [`assets/`](assets/) reste un
-> gabarit. **Aucune capture ne montre d'URL réelle de tenant, d'e-mail nominatif,
-> de clé ni de jeton.**
+> **reproductible** par un script Playwright ([`capture/`](capture/)) exécuté
+> contre une **instance réelle** avec un **compte non-administrateur**, sur des
+> **données fictives ou fraîches**, et avec le **masquage** (`mask`) des zones
+> sensibles. Chaque image passe une **revue anti-fuite** avant d'être commitée.
+> Les captures de surfaces qui exposeraient du contenu réel d'un établissement
+> (listes de modèles ou de bases internes, canaux) restent volontairement
+> indiquées par `📷 Capture à venir` et **schématisées** dans
+> [`architecture.md`](architecture.md). **Aucune capture ne montre d'URL réelle de
+> tenant, d'e-mail nominatif, de clé ni de jeton.**
 
 ---
 
@@ -49,6 +51,18 @@ Chaque section suit le même rythme :
 | 4 | [Canaux & collaboration](#4--canaux--collaboration) | Échanges en équipe, bots |
 | 5 | [Notes & autres surfaces](#5--notes--autres-surfaces) | Prise de notes, historique, paramètres |
 | 6 | [Administration & multi-tenant](#6--administration--multi-tenant) | Panneau admin, RBAC, isolation des tenants |
+
+> **Nouveautés de la v0.10 (juillet 2026).** Cette édition du tour intègre les
+> apports marquants de la version 0.10 d'Open WebUI, signalés par la mention
+> ***(nouveau — v0.10)*** au fil des sections :
+> - **Raisonnement affiché en direct** et **compaction automatique du contexte** (section 2) ;
+> - **Dossiers d'équipe partageables** et **téléversement de dossier** vers une base de connaissances (section 3) ;
+> - **Mémoire** de l'assistant, sortie de bêta (section 5) ;
+> - **Configuration de l'authentification** déplacée dans le panneau d'administration (section 6).
+>
+> Ces mêmes fonctionnalités sont *testées* par le **module 06** de la
+> [série QA Playwright-OWUI](../Playwright-OWUI/README.md) : le tour montre *comment
+> s'en servir*, la série QA vérifie *qu'elles marchent*.
 
 ---
 
@@ -89,8 +103,24 @@ WebUI unifie derrière une seule interface des modèles très différents — lo
 4. Reprenez une réponse, régénérez-la, ou comparez deux modèles côte à côte selon
    les options offertes par votre instance.
 
+**Raisonnement affiché en direct *(nouveau — v0.10)*.** Avec les modèles dits
+« thinking » (Claude, Qwen, o-series…), la plateforme affiche désormais **en
+temps réel** les étapes de raisonnement du modèle, dans un bloc repliable placé
+au-dessus de la réponse finale. On voit le modèle « réfléchir » pendant qu'il
+génère, puis on peut replier ce bloc pour ne garder que la conclusion. C'est un
+appui pédagogique précieux : on rend visible le *cheminement*, pas seulement le
+résultat.
+
+**Compaction automatique du contexte *(nouveau — v0.10)*.** Sur les conversations
+longues, la plateforme **résume et compacte** automatiquement les échanges les
+plus anciens pour rester dans la fenêtre de contexte du modèle, sans qu'on ait à
+démarrer une nouvelle conversation. La discussion se prolonge donc sans perdre le
+fil ni provoquer d'erreur de dépassement de contexte.
+
 > 📷 Capture à venir — `02-chat-streaming.png` (réponse en cours de streaming) et
 > `02-selecteur-modele.png` (liste des modèles), masquage du nom d'utilisateur.
+> `02-raisonnement-direct.png` illustre le bloc de raisonnement en direct
+> *(nouveau — v0.10)*.
 
 ### Exercice 1 — Prendre le chat en main
 
@@ -119,10 +149,19 @@ outils, et constituer des bases de connaissances interrogeables (RAG).
   API, exécuter du code, consulter une source externe via le protocole MCP.
 - **Bases de connaissances (RAG).** Téléversez des documents ; la plateforme les
   découpe, les vectorise et les rend interrogeables. Le modèle cite alors vos
-  documents dans ses réponses.
+  documents dans ses réponses. *(nouveau — v0.10)* Le **téléversement d'un dossier
+  entier** préserve désormais son **arborescence** : la structure des sous-dossiers
+  est conservée dans la base, ce qui aide à organiser de gros corpus.
+- **Dossiers d'équipe partageables *(nouveau — v0.10)*.** On peut regrouper des
+  conversations (et le travail associé) dans des **dossiers**, puis **partager un
+  dossier avec un groupe**. Tous les membres du groupe y accèdent avec les droits
+  accordés — pratique pour un binôme de TP ou une promotion entière. Le partage
+  s'appuie sur le même modèle d'octroi d'accès que les modèles et les bases (voir
+  le [modèle RBAC](architecture.md)).
 
 > 📷 Capture à venir — `03-workspace-modele.png`, `03-base-connaissances.png`
-> (données fictives uniquement).
+> (données fictives uniquement) ; `03-dossier-equipe.png` pour le partage de
+> dossier *(nouveau — v0.10)*.
 
 ### Exercice 2 — Créer un assistant RAG
 
@@ -170,9 +209,15 @@ prise de **notes**, historique et recherche des conversations, dossiers, et
   conversations.
 - **Paramètres** — changez la langue de l'interface (multilingue), le thème
   clair/sombre, activez la synthèse ou la reconnaissance vocale.
+- **Mémoire *(nouveau — v0.10)*.** L'assistant peut **retenir des informations**
+  d'une conversation à l'autre (mémoire à long terme) ou au sein d'une conversation
+  donnée. On garde la **main** : la mémoire se gère depuis *Paramètres >
+  Personnalisation*, où l'on consulte, modifie ou supprime chaque souvenir. Sortie
+  de bêta en v0.10, elle permet par exemple à un tuteur de se rappeler le niveau ou
+  les préférences d'un·e étudiant·e sans qu'on ait à les répéter.
 
 > 📷 Capture à venir — `05-parametres.png` (panneau de paramètres, identité
-> masquée).
+> masquée) ; `05-memoire.png` pour la gestion de la mémoire *(nouveau — v0.10)*.
 
 ### Exercice 3 — Personnaliser son espace
 
@@ -210,6 +255,10 @@ même infrastructure, chacun isolé des autres.
 3. Les **connecteurs** déclarent les fournisseurs de modèles (URL, type) ; les
    secrets associés ne vivent **jamais** dans un support pédagogique — voir la
    section sécurité ci-dessous.
+4. *(nouveau — v0.10)* La **configuration de l'authentification** (OAuth, LDAP,
+   SAML, inscription ouverte ou sur invitation) se règle désormais **dans le
+   panneau d'administration** plutôt que par des variables d'environnement au
+   démarrage — un·e admin peut donc ajuster ces réglages sans redéployer l'instance.
 
 ### Exercice 4 — Cartographier les accès (sur schéma)
 
@@ -227,9 +276,10 @@ module 5 vérifie par des tests.)*
 
 Conformément à la [politique du dossier ombrelle](../README.md#sécurité--pas-de-secret-dans-les-supports) :
 pas d'URL de tenant réel, pas d'e-mail nominatif, pas de clé d'API ni de jeton,
-pas de mot de passe. Les captures s'appuient sur un **tenant de démonstration**
-(compte non-admin, données fictives, masquage Playwright). Les identifiants et
-URL de démonstration vivent dans un `.env` **non commité** ; seuls les
+pas de mot de passe. Les captures sont produites contre une **instance réelle**
+via un **compte non-administrateur neuf** (aucune donnée réelle visible), avec
+**masquage Playwright** et **revue anti-fuite de chaque image**. Les identifiants
+et l'URL de capture vivent dans un `.env` **non commité** ; seuls les
 `*.env.example` documentent les variables attendues. Voir
 [`capture/README.md`](capture/README.md).
 
@@ -246,5 +296,6 @@ URL de démonstration vivent dans un `.env` **non commité** ; seuls les
 ---
 
 *Tour de la plateforme — parcours découverte (Epic #4433, sous #4427). FR-first.
-Statut : narratif disponible ; captures live à générer une fois le tenant de
-démonstration en ligne.*
+Édition **v0.10** (contenu validé contre Open WebUI 0.10.2, juillet 2026).
+Statut : narratif complet ; script de capture reproductible prêt (voir la
+[note sur les captures](#comment-lire-ce-tour)).*

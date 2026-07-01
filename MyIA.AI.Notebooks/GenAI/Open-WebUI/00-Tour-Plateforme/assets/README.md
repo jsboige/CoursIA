@@ -6,23 +6,32 @@ Ce dossier accueille les **captures d'écran annotées** du
 [tour](../README.md), générées de façon reproductible par le script
 [`../capture/tour-captures.spec.ts`](../capture/).
 
-> **Statut : gabarit.** Les images ne sont pas encore présentes : elles seront
-> produites une fois le **tenant de démonstration** en ligne (compte non-admin,
-> données fictives, masquage des zones sensibles). En attendant, le tour indique
-> chaque emplacement par `📷 Capture à venir`.
+> **Statut.** Les captures sont produites contre une **instance réelle** via un
+> **compte non-administrateur neuf**, avec **masquage** des zones sensibles et
+> **revue anti-fuite de chaque image**. Les surfaces qui exposeraient du contenu
+> réel d'un établissement (listes de modèles/bases internes, canaux) restent
+> volontairement **schématisées** dans [`../architecture.md`](../architecture.md)
+> et signalées `📷 Capture à venir` dans le tour.
 
 ## Fichiers attendus
 
-| Fichier | Section du tour |
-|---------|-----------------|
-| `01-connexion.png` | 1 — page de connexion (champs masqués) |
-| `01-premiere-vue.png` | 1 — écran de chat |
-| `02-selecteur-modele.png` | 2 — liste des modèles |
-| `02-chat-streaming.png` | 2 — réponse en streaming |
-| `03-workspace-modele.png` | 3 — modèle personnalisé |
-| `03-base-connaissances.png` | 3 — base de connaissances (RAG) |
-| `04-canal.png` | 4 — fil de discussion d'un canal |
-| `05-parametres.png` | 5 — paramètres personnels |
+| Fichier | Section du tour | Peut être capturé sans contenu réel ? |
+|---------|-----------------|:---:|
+| `01-connexion.png` | 1 — page de connexion (champs masqués) | ✅ (pré-auth) |
+| `01-premiere-vue.png` | 1 — écran de chat vide | ✅ (compte neuf) |
+| `02-selecteur-modele.png` | 2 — liste des modèles | ⚠️ (noms de modèles) |
+| `02-chat-streaming.png` | 2 — réponse en streaming (invite fictive) | ✅ |
+| `02-raisonnement-direct.png` | 2 — raisonnement en direct *(v0.10)* | ✅ (invite fictive) |
+| `03-workspace-modele.png` | 3 — modèle personnalisé | ⚠️ (contenu établissement) |
+| `03-base-connaissances.png` | 3 — base de connaissances (RAG) | ⚠️ (contenu établissement) |
+| `03-dossier-equipe.png` | 3 — dossier d'équipe *(v0.10)* | ✅ (compte neuf) |
+| `04-canal.png` | 4 — fil de discussion d'un canal | ⚠️ (contenu établissement) |
+| `05-parametres.png` | 5 — paramètres personnels | ✅ (identité masquée) |
+| `05-memoire.png` | 5 — gestion de la mémoire *(v0.10)* | ✅ (compte neuf, vide) |
+
+Les entrées ⚠️ exposent du contenu réel d'un établissement : elles restent
+schématisées dans [`../architecture.md`](../architecture.md) tant qu'un jeu de
+**données fictives** dédié n'est pas disponible.
 
 ## Règles
 
@@ -34,5 +43,4 @@ Ce dossier accueille les **captures d'écran annotées** du
 
 ---
 
-*Assets — Tour de la plateforme (Epic #4433, sous #4427). FR-first. Gabarit en
-attente du tenant de démonstration.*
+*Assets — Tour de la plateforme (Epic #4433, sous #4427). FR-first.*
