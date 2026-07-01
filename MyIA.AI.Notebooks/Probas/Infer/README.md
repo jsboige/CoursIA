@@ -2,7 +2,7 @@
 
 [← Série Probas](../README.md) | [Série PyMC (Python) →](../PyMC/README.md) | [ML.NET (C#) →](../../ML/ML.Net/README.md)
 
-Programmation probabiliste avec Microsoft Infer.NET : une série de 24 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision (MDPs, indice de Gittins, puis les **bandits bayésiens** via Thompson Sampling), l'**inférence causale** (do-calculus de Pearl) en clôture, et des preuves formelles Lean 4.
+Programmation probabiliste avec Microsoft Infer.NET : une série de 25 notebooks allant des fondamentaux aux modèles relationnels avancés, incluant une section complète sur la théorie de la décision (MDPs, indice de Gittins, puis les **bandits bayésiens** via Thompson Sampling), les **processus gaussiens** (GP sparse, frontières non-linéaires), l'**inférence causale** (do-calculus de Pearl) en clôture, et des preuves formelles Lean 4.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste par message passing, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
@@ -72,8 +72,9 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 20b | [Infer-20b-Lean-Gittins](Infer-20b-Lean-Gittins.ipynb) | 45 min | Preuves formelles Lean 4, indice de Gittins, SFABP |
 | 21 | [Infer-21-Thompson-Sampling](Infer-21-Thompson-Sampling.ipynb) | 60 min | Thompson Sampling bayésien, posterior Beta-Bernoulli par le moteur, regret vs ε-greedy/UCB1 |
 | 22 | [Infer-22-Causal-Inference](Infer-22-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
+| 23 | [Infer-23-Sparse-Gaussian-Process](Infer-23-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens, noyau RBF, classification non-linéaire, sparse GP |
 
-**Durée totale** : ~21h
+**Durée totale** : ~22h
 
 **Ressource complémentaire** : [Glossaire](Infer-Glossary.md) - Définitions des termes techniques
 
@@ -877,6 +878,38 @@ Prolongement naturel de la théorie de la décision séquentielle : après les M
 **Ponts causaux** : Infer-22 est le maillon **distributionnel par message passing** (Infer.NET, EP/VMP) d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) (Java propositionnel), le jumeau MCMC [PyMC-22](../PyMC/PyMC-22-Causal-Inference.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb), où la distribution d'intervention `p(C)` uniforme **est** `do(X_t = x)`. Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
 **Applications** : baromètre (confondeur), diagnostic médical (paradoxe de Simpson), tabac-cancer (front-door), requêtes contrefactuelles.
+
+---
+
+## Modèles Non-Linéaires (Notebook 23)
+
+### Infer-23 : Processus Gaussiens et frontières non-linéaires
+
+Prolongement naturel de la classification bayésienne : là où [Infer-7](Infer-7-Classification.ipynb) (Bayes Point Machine) trace un **hyperplan**, le processus gaussien place un **prior sur des fonctions** (noyau RBF) et infère une frontière **courbe** et **incertaine**.
+
+**Durée** : 55 min | **Prérequis** : [Infer-7-Classification](Infer-7-Classification.ipynb) (BPM, modèle probit), [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb)
+
+**Objectifs** :
+
+- Comprendre le **processus gaussien** comme une distribution sur des fonctions (moyenne + noyau de covariance)
+- Construire un prior via le **noyau squared-exponential** (RBF) et sa longueur de corrélation
+- Implémenter la **classification GP** (modèle probit `y = [f(x) > 0]`) sur des données **non-linéairement séparables**
+- Mesurer le rôle du **basis set** (points inducteurs) dans l'approximation **sparse** vs full
+- Contraster avec le **Bayes Point Machine** : frontière linéaire vs courbe, coût $O(nm^2)$ vs linéaire
+
+**Concepts clés** :
+
+| Concept | Formule / API | Description |
+| --------- | --------------- | ------------- |
+| Prior sur fonctions | `Variable<IFunction>.Random(prior)` | Distribution sur $f$, pas sur un vecteur de poids |
+| Noyau RBF | $k(x,x') = \exp(-\lVert x-x'\rVert^2 / 2\ell^2)$ | Covariance décroissant avec la distance |
+| Modèle probit | $y_j = [f(x_j) + \varepsilon_j > 0]$ | Score = fonction (non-linéaire), bruit gaussien |
+| Sparse GP | `SparseGPFixed(gp, basis)` | Approximation sur $m$ points inducteurs, coût $O(nm^2)$ |
+| Full GP | basis = inputs ($m = n$) | Équivalent au GP non-sparse, coût $O(n^3)$ |
+
+**Positionnement** : [Infer-7](Infer-7-Classification.ipynb) introduisait le **Bayes Point Machine** (hyperplan séparateur, marginalisation sur les poids). Infer-23 en est le complément **non-linéaire** : le GP infère une fonction $f$ tirée d'un processus gaussien, capable de frontières courbes. La démonstration sur un dataset « donut » (disque intérieur + anneau extérieur, **non-séparable linéairement**) prouve que le GP résout ce que le BPM ne peut pas — 16/16 sur le training, avec une incertitude calibrée (P ≈ 0.5 à mi-rayon, la zone d'indécision). La comparaison sparse (4 inducteurs) vs full (16) illustre le continuum coût-exactitude.
+
+**Applications** : classification non-linéaire, régression avec incertitude calibrée, géostatistique (krigeage), optimisation bayésienne (l'acquisition exploite le posterior GP).
 
 ---
 
