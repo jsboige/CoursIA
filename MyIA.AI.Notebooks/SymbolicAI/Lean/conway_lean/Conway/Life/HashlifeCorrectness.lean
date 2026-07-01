@@ -1053,6 +1053,54 @@ theorem mem_toGrid_node {nw ne sw se : MacroCell} {r0 c0 : Int} {p : Int × Int}
   simp only [toCellsAux, List.mem_append]
   tauto
 
+/-- **G3 LHS-unlock infrastructure.** The single-step iota reduction of
+    `hashlifeResultAux` at the well-formed (`fuel + 1`, 16-grandchild node) arm.
+
+    `hashlifeResultAux`'s definition uses a pattern alias `c@(node ...)`, whose
+    alias fvar blocks `simp`/`unfold` syntactic rewriting (cf. the
+    `HashlifeMemo` comment). This lemma restates the well-formed arm with
+    explicit patterns and zeta-expanded `let`s, so it IS available for
+    rewriting from this module. It is true by `rfl` (iota + zeta reduction).
+
+    **Why this is the LHS-unlock for `p4_succ_membership`**: the goal's LHS is
+    `p ∈ (hashlifeResultAux (k+2) c).toGrid (2^k, 2^k)`. With `k+2 = (k+1)+1`
+    and `c` destructured via `p4_double_nine_shape`, this lemma rewrites the
+    `hRA` application to the explicit `node out_nw out_ne out_sw out_se` (else
+    branch, level ≥ 3), exposing the `node _ _ _ _` constructor that
+    `mem_toGrid_node` needs. It is the missing link between the LHS and the
+    G3 toGrid decomposition. -/
+theorem hashlifeResultAux_succ_node (fuel : Nat)
+    (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell) :
+    hashlifeResultAux (fuel + 1)
+      (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+            (node c1 c2 c3 c4) (node d1 d2 d3 d4)) =
+    if (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).level == 2 then
+      step4x4 (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+                    (node c1 c2 c3 c4) (node d1 d2 d3 d4))
+    else
+      node
+        (hashlifeResultAux fuel (node
+          (hashlifeResultAux fuel (node a1 a2 a3 a4))
+          (hashlifeResultAux fuel (node a2 b1 a4 b3))
+          (hashlifeResultAux fuel (node a3 a4 c1 c2))
+          (hashlifeResultAux fuel (node a4 b3 c2 d1))))
+        (hashlifeResultAux fuel (node
+          (hashlifeResultAux fuel (node a2 b1 a4 b3))
+          (hashlifeResultAux fuel (node b1 b2 b3 b4))
+          (hashlifeResultAux fuel (node a4 b3 c2 d1))
+          (hashlifeResultAux fuel (node b3 b4 d1 d2))))
+        (hashlifeResultAux fuel (node
+          (hashlifeResultAux fuel (node a3 a4 c1 c2))
+          (hashlifeResultAux fuel (node a4 b3 c2 d1))
+          (hashlifeResultAux fuel (node c1 c2 c3 c4))
+          (hashlifeResultAux fuel (node c2 d1 c4 d3))))
+        (hashlifeResultAux fuel (node
+          (hashlifeResultAux fuel (node a4 b3 c2 d1))
+          (hashlifeResultAux fuel (node b3 b4 d1 d2))
+          (hashlifeResultAux fuel (node c2 d1 c4 d3))
+          (hashlifeResultAux fuel (node d1 d2 d3 d4)))) := rfl
+
 /-- Membership in a restricted grid: in the grid and inside the window. -/
 theorem mem_restrictGridTo {g : Grid} {lo : Int} {size : Nat} {p : Int × Int} :
     p ∈ restrictGridTo g lo size ↔
