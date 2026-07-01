@@ -207,7 +207,8 @@ Les notebooks CSP nécessitent une compréhension préalable de :
 ## Partie 3 : Recherche heuristique avancée (`Part3-Advanced/`)
 
 Techniques de recherche avancées au-delà des fondations : heuristiques
-précalculées (pattern databases), recherche à écart limité (limited discrepancy search).
+précalculées (pattern databases), recherche à écart limité (limited discrepancy search),
+recherche à sous-optimalité bornée (Weighted A\*).
 Cette partie fait le pont entre les fondations ([Partie 1](Part1-Foundations/Search-3-Informed.ipynb) :
 A\*, IDA\*, heuristiques admissibles) et les métaheuristiques composables
 ([Partie 4](Part4-Metaheuristics/README.md)), sans relever de la programmation par
@@ -217,6 +218,7 @@ contraintes ([Partie 2](Part2-CSP/CSP-1-Fundamentals.ipynb)).
 |---|----------|-------|---------|-----------|
 | 1 | [Search-12-PatternDatabases](Part3-Advanced/Search-12-PatternDatabases.ipynb) | ~1h30 | Pattern Databases (Culberson & Schaeffer 1996), PDB additives (Korf & Felner 2002), 15-puzzle optimal, IDA\* | Search-3 |
 | 2 | [Search-13-LimitedDiscrepancySearch](Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb) | ~45min | Limited Discrepancy Search (Harvey & Ginsberg 1995), sac à dos 0/1, greedy vs LDS(k) vs exhaustif | Search-3 |
+| 3 | [Search-14-WeightedAstar](Part3-Advanced/Search-14-WeightedAstar.ipynb) | ~1h | Weighted A\* (Pohl 1970), recherche à sous-optimalité bornée par W, terrain pondéré, triptyque Partie 3 | Search-3 |
 
 ---
 
@@ -417,12 +419,17 @@ Search/
 │   ├── CSP-8-Temporal.ipynb
 │   └── CSP-9-Distributed.ipynb
 │
+├── Part3-Advanced/                       # Recherche heuristique avancée (3 notebooks)
+│   ├── Search-12-PatternDatabases.ipynb
+│   ├── Search-13-LimitedDiscrepancySearch.ipynb
+│   └── Search-14-WeightedAstar.ipynb
+│
 ├── Applications/
 │   ├── Search/                            # Applications Search (2 notebooks)
 │   │   ├── App-12-ConnectFour.ipynb
 │   │   └── App-14-ConnectFour-Adversarial.ipynb
 │   │
-│   ├── CSP/                               # Applications CSP (11 notebooks)
+│   ├── CSP/                               # Applications CSP (12 notebooks)
 │   │   ├── App-1-NQueens.ipynb
 │   │   ├── App-2-GraphColoring.ipynb
 │   │   ├── App-3-NurseScheduling.ipynb
@@ -433,7 +440,8 @@ Search/
 │   │   ├── App-8-MiniZinc.ipynb
 │   │   ├── App-11-Picross.ipynb
 │   │   ├── App-15-SportsScheduling.ipynb
-│   │   └── App-16-Crossword-CSP.ipynb
+│   │   ├── App-16-Crossword-CSP.ipynb
+│   │   └── App-19-ProceduralGeneration-WFC.ipynb
 │   │
 │   └── Hybrid/                            # Metaheuristiques (7 notebooks)
 │       ├── App-9-EdgeDetection.ipynb
