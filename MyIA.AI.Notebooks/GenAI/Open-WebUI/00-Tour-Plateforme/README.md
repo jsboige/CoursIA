@@ -81,8 +81,11 @@ puis l'espace de conversation où tout se passe.
 3. Vous arrivez sur l'écran de chat : une zone de saisie au centre, l'historique
    des conversations à gauche, le sélecteur de modèle en haut.
 
-> 📷 Capture à venir — `01-connexion.png` (page de connexion, champs masqués) et
-> `01-premiere-vue.png` (écran de chat vide), générées via [`capture/`](capture/).
+![Page de connexion d'Open WebUI : champ e-mail, mot de passe et bouton « Connexion ».](assets/01-connexion.png)
+
+*Page de connexion (aucun contenu réel — capture pré-authentification).*
+
+> 📷 Capture à venir — `01-premiere-vue.png` (écran de chat vide), générée via [`capture/`](capture/).
 
 ---
 
@@ -117,10 +120,13 @@ plus anciens pour rester dans la fenêtre de contexte du modèle, sans qu'on ait
 démarrer une nouvelle conversation. La discussion se prolonge donc sans perdre le
 fil ni provoquer d'erreur de dépassement de contexte.
 
+![Réponse d'un modèle « thinking » (GLM-5) détaillant son raisonnement étape par étape sur une invite fictive ; la marque du bandeau latéral est masquée.](assets/02-raisonnement-direct.png)
+
+*Raisonnement affiché en direct **(v0.10)** : un modèle « thinking » explicite son
+cheminement pas à pas. Invite fictive, marque latérale masquée.*
+
 > 📷 Capture à venir — `02-chat-streaming.png` (réponse en cours de streaming) et
 > `02-selecteur-modele.png` (liste des modèles), masquage du nom d'utilisateur.
-> `02-raisonnement-direct.png` illustre le bloc de raisonnement en direct
-> *(nouveau — v0.10)*.
 
 ### Exercice 1 — Prendre le chat en main
 
@@ -216,8 +222,12 @@ prise de **notes**, historique et recherche des conversations, dossiers, et
   de bêta en v0.10, elle permet par exemple à un tuteur de se rappeler le niveau ou
   les préférences d'un·e étudiant·e sans qu'on ait à les répéter.
 
-> 📷 Capture à venir — `05-parametres.png` (panneau de paramètres, identité
-> masquée) ; `05-memoire.png` pour la gestion de la mémoire *(nouveau — v0.10)*.
+![Panneau « Réglages > Personnalisation » : section Mémoire (EXPÉRIMENTAL) et fenêtre « Mémoire 0 » vide sur un compte neuf.](assets/05-memoire.png)
+
+*Gestion de la mémoire **(v0.10)** : on consulte, ajoute ou supprime chaque
+souvenir depuis *Réglages > Personnalisation*. Compte neuf → mémoire vide.*
+
+> 📷 Capture à venir — `05-parametres.png` (panneau de paramètres, identité masquée).
 
 ### Exercice 3 — Personnaliser son espace
 

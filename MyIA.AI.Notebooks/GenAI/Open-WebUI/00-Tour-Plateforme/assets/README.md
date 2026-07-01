@@ -12,6 +12,11 @@ Ce dossier accueille les **captures d'écran annotées** du
 > réel d'un établissement (listes de modèles/bases internes, canaux) restent
 > volontairement **schématisées** dans [`../architecture.md`](../architecture.md)
 > et signalées `📷 Capture à venir` dans le tour.
+>
+> **Sous-ensemble sûr livré** (2026-07, contre une instance v0.10.2) : les trois
+> captures **sans contenu réel** — `01-connexion.png`, `02-raisonnement-direct.png`
+> *(v0.10)* et `05-memoire.png` *(v0.10)* — sont présentes et relues. Les entrées
+> ⚠️ restent en attente d'un jeu de données fictives.
 
 ## Fichiers attendus
 
