@@ -1,42 +1,42 @@
 # GraphSAGE-MultiAsset-Ranking
 
-**Type:** Research (no deployable algorithm, research-only notebook)
+**Type :** Recherche (notebook de recherche only, pas d'algorithme déployable)
 
-**Asset class:** Equities (large-cap US stocks)
+**Classe d'actifs :** Actions (large-caps US)
 
-**Cloud project ID:** N/A (research-only, no deployable algorithm)
+**Cloud project ID :** N/A (recherche only, pas d'algorithme déployable)
 
 ## Description
 
-Research notebook applying GraphSAGE (Hamilton, Ying, and Leskovec 2017) graph neural network for cross-asset direction prediction on 8 large-cap US stocks (JPM, JNJ, XOM, PG, UNP, V, HD, BA). Constructs a correlation-based graph with threshold 0.5 to capture inter-asset dependencies. Walk-forward 5-fold validation across 4 seeds with 10bps transaction costs. Verdict: INCONCLUSIVE (insufficient statistical evidence to confirm or reject the approach).
+Notebook de recherche appliquant le réseau de neurones sur graphe GraphSAGE (Hamilton, Ying et Leskovec 2017) à la prédiction de direction cross-asset sur 8 large-caps US (JPM, JNJ, XOM, PG, UNP, V, HD, BA). Construit un graphe basé sur les corrélations avec un seuil de 0.5 pour capturer les dépendances inter-actifs. Validation walk-forward 5-fold sur 4 seeds avec coûts de transaction 10bps. Verdict : INCONCLUSIVE (preuves statistiques insuffisantes pour confirmer ou rejeter l'approche).
 
-## How to Run
+## Comment exécuter
 
 ### Lean CLI
-Not applicable (research-only notebook, no `main.py`).
+Non applicable (notebook de recherche only, pas de `main.py`).
 
 ### QC Cloud
-Not applicable. Run the research notebook locally with Python 3.10+ and PyTorch Geometric.
+Non applicable. Exécuter le notebook de recherche localement avec Python 3.10+ et PyTorch Geometric.
 
 ### Local
 ```bash
 papermill research.ipynb output.ipynb
 ```
 
-## Backtest Metrics
+## Métriques de backtest
 
-| Method | Rebalance | Key Parameters |
-|--------|-----------|----------------|
-| GraphSAGE cross-asset ranking | N/A (research) | Correlation threshold 0.5, walk-forward 5-fold x 4 seeds, 10bps T-cost |
+| Méthode | Rebalance | Paramètres clés |
+|---------|-----------|-----------------|
+| GraphSAGE ranking cross-asset | N/A (recherche) | Seuil de corrélation 0.5, walk-forward 5-fold x 4 seeds, T-cost 10bps |
 
-## Files
+## Fichiers
 
-| File | Description |
-|------|-------------|
-| `research.ipynb` | Research notebook with GraphSAGE model, correlation graph construction, and walk-forward validation |
-| `_generate_research.py` | Script that generates the research notebook |
+| Fichier | Description |
+|---------|-------------|
+| `research.ipynb` | Notebook de recherche avec modèle GraphSAGE, construction du graphe de corrélation et validation walk-forward |
+| `_generate_research.py` | Script qui génère le notebook de recherche |
 
-## References
+## Références
 
 - Hamilton, W., Ying, Z., Leskovec, J. (2017). *Inductive Representation Learning on Large Graphs*. NeurIPS.
-- [QuantConnect Documentation](https://www.quantconnect.com/docs/)
+- [Documentation QuantConnect](https://www.quantconnect.com/docs/)
