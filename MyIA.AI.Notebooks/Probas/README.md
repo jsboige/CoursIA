@@ -11,7 +11,7 @@ maturity: PRODUCTION=47, BETA=1
 
 Le monde réel est incertain. Un diagnostic médical n'est jamais sûr à 100%, un classement sportif dépend de performances intrinsèquement variables, et les données que nous collectons sont toujours bruitées ou incomplètes. La programmation probabiliste offre un cadre rigoureux pour modéliser cette incertitude : plutôt que de calculer une seule réponse, on obtient une **distribution de probabilités** qui quantifie notre confiance dans chaque résultat possible.
 
-Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence exacte par message passing, **PyMC** (Python) pour l'échantillonnage MCMC moderne, et des **applications standalone** (RSA). Les 26 notebooks Infer.NET couvrent les fondements mathématiques (distributions, graphs de facteurs), les modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM), puis la théorie de la décision bayésienne — jusqu'à un compagnon **Lean 4** (Infer-20b, adossé au projet Lake `gittins_lean`) qui démontre formellement les identités d'escompte de l'indice de Gittins. Les 20 notebooks PyMC reprennent l'intégralité des modèles Infer.NET en Python avec l'échantillonnage NUTS, offrant un pont naturel vers l'écosystème data science : fondations 1-3, modèles classiques 4-13, et théorie de la décision 14-20.
+Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence exacte par message passing, **PyMC** (Python) pour l'échantillonnage MCMC moderne, et des **applications standalone** (RSA). Les 27 notebooks Infer.NET se scindent en deux arcs : **17 notebooks bayésiens** ([`Infer/`](Infer/README.md)) couvrant les fondements (distributions, graphs de facteurs), les modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM) et les frontières (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman) ; puis un **arc autonome de 10 notebooks de théorie de la décision** ([`DecisionTheory/Infer/`](DecisionTheory/Infer/README.md)) — utilité espérée, EVPI, MDPs, bandits — jusqu'à un compagnon **Lean 4** (Infer-9, adossé au lake [`decision_theory_lean`](decision_theory_lean/)) qui démontre formellement les identités d'escompte de l'indice de Gittins. Les 20 notebooks PyMC reprennent l'intégralité des modèles Infer.NET en Python avec l'échantillonnage NUTS, offrant un pont naturel vers l'écosystème data science : fondations 1-3, modèles classiques 4-13, et théorie de la décision 14-20.
 
 ## Pourquoi cette série
 
@@ -71,9 +71,9 @@ Le parcours commence par le notebook 1 (Setup) qui installe Infer.NET et constru
 
 Les notebooks 4 à 13 construisent des modèles de complexité croissante, chacun illustré par une application concrète : réseaux bayésiens (diagnostic médical), Item Response Theory (évaluation de compétences), TrueSkill (classement Xbox Live), classification bayésienne, sélection de modèles (Bayes Factors), LDA (topic modeling), crowdsourcing (agrégation de labels), HMM (séquences temporelles), systèmes de recommandation, et debugging. Chaque notebook est autonome mais présuppose la maîtrise des concepts des notebooks 1-3. Le notebook 13 (Debugging) est une référence pratique à consulter tout au long du parcours.
 
-### Phase 3 : Décision bayésienne (Notebooks 14-20, ~7h)
+### Phase 3 : Décision bayésienne (arc autonome, ~7h)
 
-La seconde moitié de la série passe de l'inférence à la décision : comment choisir une action quand on ne connaît que des probabilités ? Les notebooks 14-16 posent les fondations (axiomes de l'utilité, fonctions d'utilité mono- et multi-attributs). Les notebooks 17-20 appliquent ces concepts aux réseaux de décision, à la valeur de l'information parfaite et d'échantillon, aux systèmes experts robustes, et aux processus décisionnels de Markov (MDPs) — qui relient cette série à la série [RL](../RL/). Le compagnon Infer-20b (kernel Lean 4 via WSL) clôt la phase en formalisant les identités d'escompte géométrique de l'indice de Gittins dans le projet Lake [`decision_theory_lean`](decision_theory_lean/) — place à la **racine de la série** pour être visible des deux pistes (Infer.NET / PyMC) ; le théorème d'optimalité y est énoncé, sa preuve complète exigeant une formalisation des MDP qui manque encore à Mathlib.
+La seconde moitié passe de l'inférence à la décision : comment choisir une action quand on ne connaît que des probabilités ? Chez **Infer.NET**, cet arc a été extrait dans [`DecisionTheory/Infer/`](DecisionTheory/Infer/README.md) (10 notebooks, renumérotés 1-10) : les notebooks 1-4 posent les fondations (axiomes de l'utilité, fonctions mono- et multi-attributs), les notebooks 5-8 appliquent aux réseaux de décision, valeur de l'information, systèmes experts robustes et processus décisionnels de Markov (MDPs) — qui relient cette série à [RL](../RL/). Le compagnon Infer-9 (kernel Lean 4 via WSL) clôt en formalisant les identités d'escompte géométrique de l'indice de Gittins dans le lake [`decision_theory_lean`](decision_theory_lean/) — place à la **racine de la série** pour être visible des deux pistes (Infer.NET / PyMC) ; le théorème d'optimalité y est énoncé, sa preuve complète exigeant une formalisation des MDP qui manque encore à Mathlib. Côté PyMC, l'arc reste en ligne (notebooks 14-20).
 
 ### Parcours alternatifs
 
@@ -183,11 +183,12 @@ Probas/
 │   ├── PyMC-1-Setup.ipynb ... PyMC-20-Decision-Sequential.ipynb
 │   └── (port en cours d'enrichissement)
 ├── decision_theory_lean/        # Projet Lake (racine série) : escompte géométrique + théorème de Gittins ; accueillera VNM (#4049) + Dutch Book (#4050)
-└── Infer/                       # Série complète Infer.NET (26 notebooks)
-    ├── Infer-1-Setup.ipynb ... Infer-20-Decision-Sequential.ipynb
-    ├── Infer-20b-Lean-Gittins.ipynb   # Compagnon Lean 4 (kernel WSL, -> ../decision_theory_lean)
-    ├── README.md                # Documentation détaillée de la série
-    └── scripts/
+├── Infer/                       # Corpus bayésien Infer.NET (17 notebooks)
+│   ├── Infer-1-Setup.ipynb ... Infer-17-Kalman-Filter.ipynb
+│   ├── README.md                # Documentation détaillée de la série bayésienne
+│   └── scripts/
+└── DecisionTheory/              # Arc théorie de la décision Infer.NET (10 notebooks, #4725)
+    └── Infer/                   # Infer-1-Utility ... Infer-10-Thompson (+ companions Lean 2/9)
 ```
 
 ## Ce que chaque notebook apporte
@@ -268,19 +269,20 @@ Application avancée à la linguistique pragmatique :
 - Modélisation des hyperboles (prix, excitation)
 - Question Under Discussion (QUD)
 
-## Série Infer.NET (26 notebooks)
+## Série Infer.NET (27 notebooks)
 
-La série complète est documentée dans [Infer/README.md](Infer/README.md), qui fournit des descriptions détaillées de chaque notebook, les patterns Infer.NET avancés, et des exercices corrigés.
+La série se scinde en deux arcs : le **corpus bayésien** (17 notebooks, [`Infer/`](Infer/README.md)) et l'**arc théorie de la décision** (10 notebooks, [`DecisionTheory/Infer/`](DecisionTheory/Infer/README.md)). La documentation détaillée de chaque notebook, les patterns Infer.NET avancés et les exercices corrigés vivent dans ces deux README.
 
-### Progression en 3 parties
+### Progression
 
 | Partie | Notebooks | Focus | Durée |
 |--------|-----------|-------|-------|
 | **Fondations** | 1-3 | Setup, distributions, factor graphs | 2h |
 | **Modèles classiques** | 4-13 | Bayesian networks, IRT, TrueSkill, LDA, HMM | 8h |
-| **Décision** | 14-20, 20b | Théorie de la décision bayésienne + preuve Lean de Gittins | 8h |
+| **Frontières bayésiennes** | 14-17 | Causalité, GP sparse, hiérarchique, filtre de Kalman | 4h |
+| **Décision (arc autonome)** | [DecisionTheory/Infer/ 1-10](DecisionTheory/Infer/README.md) | Théorie de la décision bayésienne + preuve Lean de Gittins | 7h |
 
-Les 26 notebooks Infer.NET sont détaillés individuellement dans [*Ce que chaque notebook apporte*](#ce-que-chaque-notebook-apporte) ci-dessus (apport pédagogique par notebook) ; le contenu exhaustif — patterns avancés, exercices corrigés — vit dans [Infer/README.md](Infer/README.md).
+Les 27 notebooks Infer.NET sont détaillés individuellement dans [*Ce que chaque notebook apporte*](#ce-que-chaque-notebook-apporte) ci-dessous (apport pédagogique par notebook) ; le contenu exhaustif — patterns avancés, exercices corrigés — vit dans [Infer/README.md](Infer/README.md) et [DecisionTheory/Infer/README.md](DecisionTheory/Infer/README.md).
 
 ## Série PyMC (20 notebooks, Python)
 
@@ -509,14 +511,14 @@ Cette série vous a fait changer de regard sur l'incertitude : plutôt que de la
 
 - **Le geste fondateur** — remplacer une prédiction ponctuelle par une **distribution**. Un modèle probabiliste ne dit pas « la probabilité est 0.73 » mais « voici la distribution complète N(0.73, 0.12) », et cette densité porte l'information que la moyenne dissimule : la confiance, les queues, les modes multiples. C'est ce déplacement qui ouvre tout le reste.
 - **La double inférence** — Infer.NET (message passing, EP/VMP) et PyMC (NUTS, MCMC) résolvent les mêmes modèles par des voies opposées. Le traverser sur des modèles jumeaux (notebook à notebook, Infer-N ↔ PyMC-N) ancre une intuition qu'aucun cours théorique ne donne : **quand l'inférence exacte est tractable, elle est déterministe et rapide ; quand elle ne l'est plus, l'échantillonnage prend le relais mais exige des diagnostics** (R-hat, effective sample size, trace plots).
-- **La décision** — la seconde moitié franchit le pas : des croyances (distributions) aux **actions**. Utilité espérée E[U], valeur de l'information (EVPI/EVSI), réseaux de décision, et enfin les MDP qui relient cette série à l'apprentissage par renforcement. Le compagnon Lean 4 (Infer-20b) pousse l'exigence jusqu'à **formaliser** les identités d'escompte de l'indice de Gittins — l'assurance que les identités numériques ne sont pas des approximations accidentelles mais des théorèmes.
+- **La décision** — la seconde moitié franchit le pas : des croyances (distributions) aux **actions**. Utilité espérée E[U], valeur de l'information (EVPI/EVSI), réseaux de décision, et enfin les MDP qui relient cette série à l'apprentissage par renforcement. Chez Infer.NET cet arc forme un **track autonome** ([`DecisionTheory/Infer/`](DecisionTheory/Infer/README.md)) ; son compagnon Lean 4 (Infer-9) pousse l'exigence jusqu'à **formaliser** les identités d'escompte de l'indice de Gittins — l'assurance que les identités numériques ne sont pas des approximations accidentelles mais des théorèmes.
 
 La thèse pratique est honnête : un modèle probabiliste est plus lourd à bâtir qu'un classifieur, mais il est le seul à pouvoir dire « je ne sais pas » — et dans le diagnostic médical, le classement sportif ou l'évaluation de compétences, cette honnêteté est précisément ce qu'on cherche.
 
 ### Prochaines étapes
 
-- **Passer à la décision séquentielle** : les MDP des notebooks 17-20 préparent directement [RL](../RL/README.md), où l'agent **apprend** la politique optimale par interaction plutôt que de la calculer hors ligne — la frontière naturelle entre inférence probabiliste et apprentissage par renforcement.
-- **Croiser la théorie des jeux** : [GameTheory](../GameTheory/README.md) partage la notion de **décision sous incertitude**, mais l'incertitude y vient d'un adversaire rationnel plutôt que d'un processus stochastique. Les fonctions d'utilité multi-attributs (notebooks 15-16) trouvent leur miroir dans le choix social et l'utilité collective.
+- **Passer à la décision séquentielle** : les MDP de l'arc décision ([`DecisionTheory/Infer/`](DecisionTheory/Infer/README.md) ou PyMC 14-20) préparent directement [RL](../RL/README.md), où l'agent **apprend** la politique optimale par interaction plutôt que de la calculer hors ligne — la frontière naturelle entre inférence probabiliste et apprentissage par renforcement.
+- **Croiser la théorie des jeux** : [GameTheory](../GameTheory/README.md) partage la notion de **décision sous incertitude**, mais l'incertitude y vient d'un adversaire rationnel plutôt que d'un processus stochastique. Les fonctions d'utilité multi-attributs trouvent leur miroir dans le choix social et l'utilité collective.
 - **Revenir au ML appliqué** : le [TP prévision de ventes](../ML/ML.Net/TP-prevision-ventes.ipynb) de la série ML est une porte d'entrée — il traite la régression bayésienne comme cas d'application ; cette série en donne le langage complet (distributions, facteurs, inférence).
 - Pour la pratique : reprenez un même modèle (par exemple TrueSkill, Infer-6 / PyMC-6) dans les deux stacks, comparez les intervalles de crédibilité, et observez comment EP (déterministe) et NUTS (stochastique) convergent vers des conclusions cohérentes — c'est l'exercice le plus formateur pour saisir le champ d'application de chaque approche.
 

@@ -87,9 +87,9 @@ La série illustre ce fil rouge sur plusieurs notebooks, chacun sur un cas non-c
 | 20 | [PyMC-20-Décision-Sequential](PyMC-20-Decision-Sequential.ipynb) | 60 min | MDPs, bandits, POMDPs |
 | 22 | [PyMC-22-Causal-Inference](PyMC-22-Causal-Inference.ipynb) | 65 min | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
 
-> **Numérotation** : le notebook **22** porte ce numéro par **parité** avec son jumeau C# [Infer-22-Causal-Inference](../Infer/Infer-22-Causal-Inference.ipynb). Le sujet d'Infer-21 (Thompson Sampling) est, côté Python, **intégré dans** [PyMC-20-Decision-Sequential](PyMC-20-Decision-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
+> **Numérotation** : le notebook **22** porte ce numéro par **parité** avec son jumeau C# [Infer-14-Causal-Inference](../Infer/Infer-14-Causal-Inference.ipynb). Le sujet d'Infer-21 (Thompson Sampling) est, côté Python, **intégré dans** [PyMC-20-Decision-Sequential](PyMC-20-Decision-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
 
-> **Ponts causaux** : [PyMC-22](PyMC-22-Causal-Inference.ipynb) est le maillon **MCMC** d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau **message passing** en C# [Infer-22](../Infer/Infer-22-Causal-Inference.ipynb) (Infer.NET, EP/VMP), le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb). Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
+> **Ponts causaux** : [PyMC-22](PyMC-22-Causal-Inference.ipynb) est le maillon **MCMC** d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau **message passing** en C# [Infer-14](../Infer/Infer-14-Causal-Inference.ipynb) (Infer.NET, EP/VMP), le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb). Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
 ## Progression Pédagogique
 
@@ -266,7 +266,7 @@ Cette série vous a fait passer des **fondamentaux de l'inférence bayésienne**
 
 ### Prochaines étapes
 
-- **Approfondir la théorie de la décision** — [Infer-16-Décision-Multi-Attribute](../Infer/Infer-16-Decision-Multi-Attribute.ipynb) et [Infer-20-Décision-Sequential](../Infer/Infer-20-Decision-Sequential.ipynb) reprennent ces modèles en message passing pour comparer les deux moteurs sur les mêmes problèmes.
+- **Approfondir la théorie de la décision** — [Infer-4-Multi-Attribute](../DecisionTheory/Infer/Infer-4-Multi-Attribute.ipynb) et [Infer-8-Sequential](../DecisionTheory/Infer/Infer-8-Sequential.ipynb) reprennent ces modèles en message passing pour comparer les deux moteurs sur les mêmes problèmes.
 - **Aller plus loin en inférence bayésienne** — *Statistical Rethinking* (McElreath, cité en Ressources) est le prolongement naturel de cette série pour les modèles hiérarchiques et la réflexion épistémologique sur les priors.
 - **Appliquer au trading et au ML** — les ponts vers [QuantConnect](../../QuantConnect/) et [ML](../../ML/) ouvrent la mise en production : modèles bayésiens de stratégie, régression logistique bayésienne, incertitude calibrée en prédiction.
 
