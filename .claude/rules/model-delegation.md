@@ -46,7 +46,7 @@ Le mapping `model` explicite vers le moteur sous-jacent depend de la machine d'e
 | po-2023   | ZAI GLM-5.1                   | MiniMax M3               |
 | autres workers po-* | voir `roosync_inventory`     | voir `roosync_inventory` |
 
-MiniMax M3 (deploie sur `po-2023` depuis 2026-07-02, mandat coordinateur) remplace Qwen 3.6 sur le tier `haiku` pour cette lane. Conséquence operationnelle : les sous-agents `model: "haiku"` invoques depuis `po-2023` (ou routés vers lui) sont executes par MiniMax M3, pas par Qwen. La regle de qualite (deleguer le read-heavy borne, garder la decision) reste identique — seul le moteur change.
+MiniMax M3 (deploie sur `po-2023` depuis 2026-07-02, mandat user) remplace Qwen 3.6 sur le tier `haiku` pour cette lane. Conséquence operationnelle : les sous-agents `model: "haiku"` invoques depuis `po-2023` (ou routés vers lui) sont executes par MiniMax M3, pas par Qwen. La regle de qualite (deleguer le read-heavy borne, garder la decision) reste identique — seul le moteur change.
 
 ## Voir aussi
 
