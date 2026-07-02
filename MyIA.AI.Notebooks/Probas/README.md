@@ -512,6 +512,57 @@ Le notebook `Infer-101.ipynb` est le seul à mélanger les deux kernels. Il util
 - Von Neumann & Morgenstern (1944) - *Theory of Games and Economic Behavior*
 - Russell & Norvig - *Artificial Intelligence*, Chapter 16 (Decision Theory)
 
+### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
+
+Cette série ancre mathématiquement ses résultats phares dans un assistant de preuve, en partenariat avec les autres familles du dépôt. La programmation probabiliste ne se contente pas de **calculer** des densités, des utilités espérées et des bornes de généralisation — elle les **prouve**. Le tableau ci-dessous croise les notebooks Probas avec les **lakes Lean 4** qui certifient leurs théorèmes, et signale les passerelles vers les autres hubs (`QC` ↔ `kelly_lean`, `GameTheory` ↔ `social_choice_lean` Arrow, `Search` ↔ `astar_lean`, `SymbolicAI` ↔ `argumentation_lean`).
+
+| Famille                  | Lake phare                       | Théorème                                                                          | Branchement notebook                                                |
+| ---                      | ---                              | ---                                                                               | ---                                                                  |
+| Probas (DecisionTheory)  | `decision_theory_lean`           | Axiomes de Von Neumann-Morgenstern ⇒ existence d'une utilité espérée (`0 sorry`)  | [`DecisionTheory/Infer/`](DecisionTheory/Infer/README.md) Infer-14b  |
+| Probas (DecisionTheory)  | `decision_theory_lean`           | Coherence utility ⟹ preferences (loterie de référence) `#4150 MERGED`             | [`DecisionTheory/Infer/`](DecisionTheory/Infer/README.md) Coherence   |
+| Probas (PAC Learning)    | chaîne PAC iter-2 complète       | `pac_finite_class_bound` + `pac_agnostic_generalization` (`0 sorry bout-en-bout`)  | notebook PAC Learning compagnon Lean                                 |
+| Probas (DecisionTheory)  | `decision_theory_lean` Peters    | Indice de Gittins, identités d'escompte (`0 sorry`, ref `v4.27.0-rc1`)            | Infer-9 (companion Lean)                                             |
+| QC ↔ Probas              | `kelly_lean` `#4052`             | Fraction risquée `f* = μ−σ²/2` sous log-bienveillance (`0 sorry`, `#4164 SHIPPED`) | notebook `kelly-criterion`                                           |
+| GameTheory ↔ Probas      | `social_choice_lean`             | Impossibilité d'Arrow (5 axiomes ⇒ dictature)                                     | hub GameTheory notebook 16a                                          |
+| Search ↔ Probas          | `astar_lean` `#4048`             | Consistance heuristique `h ≤ h*` ⇒ optimalité `A*`                                 | hub Search notebook `A*` phases 1-3 (`#4090 SHIPPED`)                |
+| SymbolicAI ↔ Probas      | `argumentation_lean`             | Extension Dung (`grounded`/`preferred`/`stable`) par cadre formel                 | hub SymbolicAI/Tweety notebook AF-Dung                               |
+
+```mermaid
+flowchart LR
+    subgraph SIM["Probas — simulation numérique"]
+        NB_DT["Infer-14b vNM sound"]
+        NB_CO["Infer Coherence"]
+        NB_GIT["Infer-9 Gittins companion"]
+        NB_PAC["PAC Learning iter-2"]
+        NB_MCMC["PyMC NUTS / HMC"]
+        NB_EP["Infer.NET EP / VMP"]
+    end
+    subgraph LEAN["Lakes Lean 4 — preuves formelles"]
+        LK_DT["decision_theory_lean VNM"]
+        LK_CO["decision_theory_lean Coherence"]
+        LK_PAC["PAC chain uniform_concentration"]
+        LK_GIT["decision_theory_lean Peters Gittins"]
+        LK_KELLY["kelly_lean"]
+        LK_SC["social_choice_lean"]
+    end
+    NB_DT -. "axiomes vNM ⟹ utilité espérée" .-> LK_DT
+    NB_CO -. "coherence ⟹ preferences" .-> LK_CO
+    NB_PAC -. "uniform_concentration ⟹ erm_error_bound" .-> LK_PAC
+    NB_GIT -. "identités d'escompte ⟹ indice Gittins" .-> LK_GIT
+    NB_MCMC -. "log-bienveillance ⟹ f* = μ−σ²/2" .-> LK_KELLY
+    NB_EP -. "extension Dung ⟹ cadre formel" .-> LK_SC
+    style LK_DT fill:#e8f5e9,stroke:#2e7d32
+    style LK_CO fill:#e8f5e9,stroke:#2e7d32
+    style LK_PAC fill:#e8f5e9,stroke:#2e7d32
+    style LK_GIT fill:#e8f5e9,stroke:#2e7d32
+    style LK_KELLY fill:#e8f5e9,stroke:#2e7d32
+    style LK_SC fill:#e8f5e9,stroke:#2e7d32
+```
+
+La double culture Probas tient en deux gestes complémentaires. D'un côté, **simuler** : PyMC fait tourner NUTS/HMC sur des modèles hiérarchiques, Infer.NET propage des messages EP/VMP sur des graphes factoriels, et les notebooks PAC entraînent des hypothèses parERM. De l'autre, **prouver** : `decision_theory_lean` (VNM résolu 0 sorry #4049, Coherence #4150 MERGED, mono-livret #4193 OPEN) certifie que les axiomes de rationalité impliquent l'existence d'une utilité espérée, et la chaîne PAC iter-2 démontre `pac_agnostic_generalization` de bout en bout sans `sorry`. Les deux faces du même raisonnement bayésien et décisionnel — l'une touche l'intuition numérique, l'autre ancre la garantie formelle.
+
+EPIC [#4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean) · cross-ref hubs [`QC` ↔ `kelly_lean`](../QuantConnect/README.md) (PR #5047), [central P0](../README.md) (PR #5049), [`GameTheory` ↔ `social_choice_lean`](../GameTheory/README.md) (PR #5050), [`SymbolicAI/Lean`](../SymbolicAI/Lean/README.md) (PR #5043 MERGED).
+
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
