@@ -174,16 +174,16 @@ Série de **18 notebooks** sur le Web Sémantique (dont 1 legacy déprécié), c
 | **Partie 1 : Fondations RDF** |
 | 1 | [SW-1-CSharp-Setup](SemanticWeb/SW-1-CSharp-Setup.ipynb) | .NET C# | Installation dotNetRDF, pile W3C "Layer Cake" | Setup |
 | 2 | [SW-2-CSharp-RDFBasics](SemanticWeb/SW-2-CSharp-RDFBasics.ipynb) | .NET C# | Triplets RDF, noeuds, serialisation (Turtle, N-Triples, RDF/XML) | 6 |
-| 2b | [SW-2b-Python-RDFBasics](SemanticWeb/SW-2b-Python-RDFBasics.ipynb) | Python | Equivalent Python avec rdflib | 5 |
+| 2b | [SW-2b-Python-RDFBasics](SemanticWeb/SW-2b-Python-RDFBasics.ipynb) | Python | Équivalent Python avec rdflib | 5 |
 | 3 | [SW-3-CSharp-GraphOperations](SemanticWeb/SW-3-CSharp-GraphOperations.ipynb) | .NET C# | Parsers/Writers, fusion de graphes, LINQ sur RDF | 7 |
 | 4 | [SW-4-CSharp-SPARQL](SemanticWeb/SW-4-CSharp-SPARQL.ipynb) | .NET C# | Query Builder, SELECT/FILTER, OPTIONAL, UNION | 7 |
-| 4b | [SW-4b-Python-SPARQL](SemanticWeb/SW-4b-Python-SPARQL.ipynb) | Python | Equivalent Python avec SPARQLWrapper | 5 |
+| 4b | [SW-4b-Python-SPARQL](SemanticWeb/SW-4b-Python-SPARQL.ipynb) | Python | Équivalent Python avec SPARQLWrapper | 5 |
 | **Partie 2 : Données Liees et Ontologies** |
 | 5 | [SW-5-CSharp-LinkedData](SemanticWeb/SW-5-CSharp-LinkedData.ipynb) | .NET C# | DBpedia, Wikidata, requêtes federees SERVICE | 6 |
-| 5b | [SW-5b-Python-LinkedData](SemanticWeb/SW-5b-Python-LinkedData.ipynb) | Python | Equivalent Python | 5 |
+| 5b | [SW-5b-Python-LinkedData](SemanticWeb/SW-5b-Python-LinkedData.ipynb) | Python | Équivalent Python | 5 |
 | 6 | [SW-6-CSharp-RDFS](SemanticWeb/SW-6-CSharp-RDFS.ipynb) | .NET C# | RDFS, inference automatique, OntologyGraph | 4 |
 | 7 | [SW-7-CSharp-OWL](SemanticWeb/SW-7-CSharp-OWL.ipynb) | .NET C# | OWL 2, profils (EL/QL/RL), restrictions | 5 |
-| 7b | [SW-7b-Python-OWL](SemanticWeb/SW-7b-Python-OWL.ipynb) | Python | Equivalent Python avec OWLReady2 | 5 |
+| 7b | [SW-7b-Python-OWL](SemanticWeb/SW-7b-Python-OWL.ipynb) | Python | Équivalent Python avec OWLReady2 | 5 |
 | **Partie 3 : Standards Modernes (Python)** |
 | 8 | [SW-8-Python-SHACL](SemanticWeb/SW-8-Python-SHACL.ipynb) | Python | SHACL, NodeShape, PropertyShape, pySHACL | 7 |
 | 9 | [SW-9-Python-JSONLD](SemanticWeb/SW-9-Python-JSONLD.ipynb) | Python | JSON-LD, Schema.org, SEO | 7 |
@@ -330,7 +330,7 @@ SymbolicAI/
 ├── SemanticWeb/               # Web semantique (18 notebooks)
 │   ├── SW-1-CSharp-Setup.ipynb ... SW-13-Python-Reasoners.ipynb
 │   ├── data/                 # Fichiers RDF, OWL, SHACL, JSON-LD
-│   ├── RDF.Net-Legacy/      # Notebook original (reference historique)
+│   ├── RDF.Net-Legacy/      # Notebook original (référence historique)
 │   └── README.md
 │
 ├── Planners/                  # Planification automatique (14 notebooks)
@@ -502,7 +502,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 | **SPASS / EProver** | Prouveurs de théorèmes | Tweety |
 | **Z3** | SMT solver | Tweety, Z3 |
 | **elan / Lean 4** | Proof assistant | Lean |
-| **Mathlib4** | Bibliotheque maths Lean | Lean |
+| **Mathlib4** | Bibliothèque maths Lean | Lean |
 | **Semantic Kernel** | Orchestration LLM | Argument Analysis, Lean |
 | **OR-Tools** | Optimisation, CP-SAT, VRP | OR-Tools, Planners |
 | **Fast Downward** | Planification PDDL | Planners |
@@ -597,7 +597,7 @@ Les séries **SemanticWeb** (notebooks Python), **Planners** (notebooks théoriq
 
 ### Pourquoi Tweety utilise-t-il JPype plutôt que des implémentations Python natives ?
 
-TweetyProject est la bibliothèque de référence pour l'IA symbolique formelle (argumentation de Dung, ASPIC+, révision de croyances, logiques modales). Elle couvre des domaines ou il n'existe pas d'equivalent Python mature : solveurs d'argumentation structurée, frameworks d'agent dialogues, logiques épistémiques. JPype permet d'appeler directement les JARs Java depuis Python sans réimplémentation. Les notebooks gèrent la bridge de manière transparente via `tweety_init.py`.
+TweetyProject est la bibliothèque de référence pour l'IA symbolique formelle (argumentation de Dung, ASPIC+, révision de croyances, logiques modales). Elle couvre des domaines ou il n'existe pas d'équivalent Python mature : solveurs d'argumentation structurée, frameworks d'agent dialogues, logiques épistémiques. JPype permet d'appeler directement les JARs Java depuis Python sans réimplémentation. Les notebooks gèrent la bridge de manière transparente via `tweety_init.py`.
 
 ### Quelle est la différence entre les notebooks C# et Python de SemanticWeb ?
 

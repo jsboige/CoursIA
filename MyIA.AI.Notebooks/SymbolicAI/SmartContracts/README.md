@@ -424,7 +424,7 @@ La gestion des incertitudes on-chain (réserves DeFi, slippage, garanties) s'app
 
 ### Lecture transversale
 
-[La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot (changement de representation, certification A/B/C).
+[La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du depot (changement de représentation, certification A/B/C).
 
 ## FAQ / Troubleshooting
 

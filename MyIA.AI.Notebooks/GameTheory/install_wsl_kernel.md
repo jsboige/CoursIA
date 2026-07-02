@@ -15,7 +15,7 @@ Les notebooks 17 et 18 utilisent Python avec `lean_runner.py` et peuvent fonctio
 
 ## Probleme
 
-OpenSpiel (bibliotheque DeepMind pour la theorie des jeux) n'a pas de wheels pre-compiles pour Windows et necessite une compilation C++ complexe.
+OpenSpiel (bibliothèque DeepMind pour la théorie des jeux) n'a pas de wheels pré-compilés pour Windows et necessite une compilation C++ complexe.
 
 ## Solution
 
@@ -23,7 +23,7 @@ Installer un kernel Python dans WSL Ubuntu avec OpenSpiel, accessible depuis Jup
 
 ## Installation Automatique (Recommandee)
 
-### Methode rapide avec scripts
+### Méthode rapide avec scripts
 
 ```bash
 # 1. Dans WSL Ubuntu
@@ -50,7 +50,7 @@ wsl --install -d Ubuntu
 ### 2. Dans WSL Ubuntu - Installer OpenSpiel
 
 ```bash
-# Mettre a jour le systeme
+# Mettre a jour le système
 sudo apt update && sudo apt upgrade -y
 
 # Installer les dependances
