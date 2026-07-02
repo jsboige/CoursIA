@@ -376,13 +376,13 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 
 ### Risk Parity pedagogique : inverse-vol vs ERC, et lecture critique du PSR (See #1405)
 
-Les 4 strategies etudiantes ci-dessus sont aussi un support de cours. Cette section formalise les 3 points d'enseignement demandes par #1405 : (1) pourquoi le Sharpe seul ne suffit pas et ce que mesure le **PSR**, (2) la difference entre **inverse-volatilite naive** et **Equal Risk Contribution (ERC)**, (3) la lecture critique d'un backtest (dates hardcoded, MaxDD > 100%, fenetres non comparables).
+Les 4 stratégies étudiantes ci-dessus sont aussi un support de cours. Cette section formalise les 3 points d'enseignement demandes par #1405 : (1) pourquoi le Sharpe seul ne suffit pas et ce que mesure le **PSR**, (2) la différence entre **inverse-volatilité naive** et **Equal Risk Contribution (ERC)**, (3) la lecture critique d'un backtest (dates hardcoded, MaxDD > 100%, fenêtres non comparables).
 
 #### 1. Le PSR (Probabilistic Sharpe Ratio) — Bailey & Lopez de Prado (2012)
 
-Le ratio de Sharpe observe suppose des rendements **IID et gaussiens**. Les rendements reels violent ces deux hypotheses : ils ont en general une **asymetrie (skew) negative** (les krachs sont plus profonds que les booms ne sont hauts) et des **queues epaisses (kurtosis > 3)**. Sous ces conditions, le Sharpe empirique est **systematiquement surestime**, surtout sur de courtes fenetres.
+Le ratio de Sharpe observe suppose des rendements **IID et gaussiens**. Les rendements réels violent ces deux hypothèses : ils ont en général une **asymétrie (skew) négative** (les krachs sont plus profonds que les booms ne sont hauts) et des **queues épaisses (kurtosis > 3)**. Sous ces conditions, le Sharpe empirique est **systématiquement surestime**, surtout sur de courtes fenêtres.
 
-Le PSR corrige en estimant la probabilite que le vrai Sharpe depasse un seuil de reference `SR0` (souvent 0, le hasard) :
+Le PSR corrige en estimant la probabilité que le vrai Sharpe depasse un seuil de référence `SR0` (souvent 0, le hasard) :
 
 ```text
                      (SR_hat - SR0) * sqrt(T - 1)
@@ -390,31 +390,31 @@ Le PSR corrige en estimant la probabilite que le vrai Sharpe depasse un seuil de
                   sqrt( 1 - skew*SR_hat + (kurt-1)/4 * SR_hat^2 )
 ```
 
-ou `T` = nombre d'annees d'observation (quand `SR_hat` est annualise), `skew` et `kurt` sont les moments empiriques des rendements, et `Phi` = fonction de repartition de la loi normale centree.
+où `T` = nombre d'années d'observation (quand `SR_hat` est annualise), `skew` et `kurt` sont les moments empiriques des rendements, et `Phi` = fonction de répartition de la loi normale centree.
 
-**Lecture** : asymetrie negative et exces de kurtosis (kurt > 3) **gonflent le denominateur**, donc abaissent le PSR. Un meme Sharpe nominal peut donner un PSR tres different selon la distribution des rendements. Regle pratique : **PSR > 50%** = l'edge observe a plus de chances d'etre reel que d'etre du bruit ; **PSR < 50%** = on ne peut pas ecarter le bruit.
+**Lecture** : asymétrie négative et excès de kurtosis (kurt > 3) **gonflent le dénominateur**, donc abaissent le PSR. Un même Sharpe nominal peut donner un PSR très différent selon la distribution des rendements. Règle pratique : **PSR > 50%** = l'edge observe a plus de chances d'être réel que d'être du bruit ; **PSR < 50%** = on ne peut pas écarter le bruit.
 
-**Applique aux 4 strategies etudiantes** :
+**Applique aux 4 stratégies étudiantes** :
 
-| Strategie | Sharpe | PSR% | Lecture |
+| Stratégie | Sharpe | PSR% | Lecture |
 |-----------|--------|------|---------|
-| DualMomentum | 0.493 | **54.9** | Edge a la limite de la significativite (juste au-dessus de 50%). Fenetre courte (2 ans) => estimation des moments bruitee, a confirmer sur une periode plus longue. |
-| RiskParity inverse-vol | 0.514 | 16.3 | Sharpe plus haut mais PSR faible : sur 10 ans, l'edge moyen est reel mais **statistiquement peu concluant** (estimation robuste d'un edge faible). |
-| ValueFactor | 0.227 | 0.8 | Quasi-zero : l'alpha observe est indistinguable du bruit. Confirme l'effondrement du facteur value sur une decennie dominee par la growth. |
-| OptionWheel | -0.51 | 0.0 | Aucun edge. La probabilite d'un vrai Sharpe positif est nulle. |
+| DualMomentum | 0.493 | **54.9** | Edge a la limite de la significativité (juste au-dessus de 50%). Fenêtre courte (2 ans) => estimation des moments bruitee, a confirmer sur une période plus longue. |
+| RiskParity inverse-vol | 0.514 | 16.3 | Sharpe plus haut mais PSR faible : sur 10 ans, l'edge moyen est réel mais **statistiquement peu concluant** (estimation robuste d'un edge faible). |
+| ValueFactor | 0.227 | 0.8 | Quasi-zéro : l'alpha observe est indistinguable du bruit. Confirme l'effondrement du facteur value sur une décennie dominee par la growth. |
+| OptionWheel | -0.51 | 0.0 | Aucun edge. La probabilité d'un vrai Sharpe positif est nulle. |
 
-**Contraste cle** : Sharpe et PSR ne classent pas pareil. RiskParity bat DualMomentum en Sharpe (0.514 > 0.493) mais DualMomentum le bat largement en PSR (54.9 > 16.3). Le PSR est la statistique a citer, pas le Sharpe brut — premiere lecon de lecture critique.
+**Contraste clé** : Sharpe et PSR ne classent pas pareil. RiskParity bat DualMomentum en Sharpe (0.514 > 0.493) mais DualMomentum le bat largement en PSR (54.9 > 16.3). Le PSR est la statistique a citer, pas le Sharpe brut — première leçon de lecture critique.
 
 #### 2. inverse-volatilite naive vs Equal Risk Contribution (ERC)
 
-Le `RiskParity inverse-vol` etudiant n'implemente pas du "vrai" risk parity. Deux familles distinctes :
+Le `RiskParity inverse-vol` étudiant n'implemente pas du "vrai" risk parity. Deux familles distinctes :
 
-**inverse-volatilite (naive)** — ce que fait l'etudiant :
+**inverse-volatilité (naive)** — ce que fait l'étudiant :
 
 ```text
    poids_i  proportionnel a  1 / sigma_i
 ```
-Chaque actif recoit un poids inverse a sa volatilite **individuelle**. Methode simple, une seule donnee par actif, mais elle **ignore les correlations**.
+Chaque actif reçoit un poids inverse a sa volatilité **individuelle**. Méthode simple, une seule donnée par actif, mais elle **ignore les correlations**.
 
 **Equal Risk Contribution (ERC)** — Maillard, Roncalli & Teiletche (2010), le "vrai" risk parity :
 
@@ -422,17 +422,17 @@ Chaque actif recoit un poids inverse a sa volatilite **individuelle**. Methode s
    chaque actif i contribue EGALEMENT au risque total :
    (Sigma * w)_i / (w' * Sigma * w)  =  constant   pour tout i
 ```
-ou `Sigma` est la **matrice de covariance** complete (correlations incluses). Resolution par programmation convexe (QP / Newton-Lagrange), sans solution analytique en general.
+où `Sigma` est la **matrice de covariance** complète (correlations incluses). Résolution par programmation convexe (QP / Newton-Lagrange), sans solution analytique en général.
 
-**Pourquoi la difference compte** : avec l'inverse-vol naive, deux actifs **fortement correles** (ex. deux ETF actions US) reçoivent chacun un budget de risque eleve, donc le portefeuille reste **concentre sur un meme facteur** — faussement "diversifie". L'ERC, en integrant la covariance, **force une vraie diversification** : deux actifs correles se partagent un meme budget de risque cumule, pas deux budgets independants.
+**Pourquoi la différence compte** : avec l'inverse-vol naive, deux actifs **fortement corrélés** (ex. deux ETF actions US) reçoivent chacun un budget de risque élevé, donc le portefeuille reste **concentré sur un même facteur** — faussement "diversifié". L'ERC, en intégrant la covariance, **force une vraie diversification** : deux actifs corrélés se partagent un même budget de risque cumulé, pas deux budgets indépendants.
 
-**Pedagogique** : le `RiskParity inverse-vol` (Sharpe 0.514, PSR 16.3%) est un **bon point d'entree** — simple, robuste, peu de parametres. L'upgrade naturel est l'**ERC** (gestion des correlations via la matrice de covariance). Le saut conceptuel : passer de "donner moins de poids au plus volatile" (1D) a "egaliser la contribution marginale au risque" (matricielle, multidimensionnelle).
+**Pédagogique** : le `RiskParity inverse-vol` (Sharpe 0.514, PSR 16.3%) est un **bon point d'entrée** — simple, robuste, peu de paramètres. L'upgrade naturel est l'**ERC** (gestion des correlations via la matrice de covariance). Le saut conceptuel : passer de "donner moins de poids au plus volatile" (1D) a "égaliser la contribution marginale au risque" (matricielle, multidimensionnelle).
 
 #### 3. Lecture critique d'un backtest — les pieges visibles dans la table ci-dessus
 
-- **Dates de debut hardcoded** (`*` sur les 4) : les fenetres ne sont **pas aligned** avec le reste du catalogue (2018-2025). Les metriques ne sont pas directement comparables — comparer le Sharpe d'un DualMomentum 2023-2025 a un TrendFollowing 2018-2025 est abusif.
-- **MaxDD > 100% (OptionWheel, 103.5%)** : un drawdown superieur a 100% signale une vente d'options **naked non couverte** integrale — le simulateur ne capture pas parfaitement l'assignation / liquidation forcee. Le backtest est probablement **optimiste** sur la perte reelle.
-- **Croiser PSR et duree** : un PSR de 54.9% sur 2 ans (DualMomentum) n'a pas le meme poids qu'un PSR de 81.8% sur 8 ans (TrendFollowing, ligne 381). La signification statistique croit avec `sqrt(T)` ; une courte fenetre a besoin d'un edge plus fort pour convaincre.
+- **Dates de début hardcoded** (`*` sur les 4) : les fenêtres ne sont **pas aligned** avec le reste du catalogue (2018-2025). Les métriques ne sont pas directement comparables — comparer le Sharpe d'un DualMomentum 2023-2025 a un TrendFollowing 2018-2025 est abusif.
+- **MaxDD > 100% (OptionWheel, 103.5%)** : un drawdown supérieur a 100% signale une vente d'options **naked non couverte** intégrale — le simulateur ne capture pas parfaitement l'assignation / liquidation forcée. Le backtest est probablement **optimiste** sur la perte réelle.
+- **Croiser PSR et durée** : un PSR de 54.9% sur 2 ans (DualMomentum) n'a pas le même poids qu'un PSR de 81.8% sur 8 ans (TrendFollowing, ligne 381). La signification statistique croît avec `sqrt(T)` ; une courte fenêtre a besoin d'un edge plus fort pour convaincre.
 
 #### References
 
