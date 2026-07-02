@@ -4,7 +4,7 @@ Formalisation en Lean 4 de la théorie des jeux coopératifs (valeur de Shapley,
 
 ## Statut
 
-- **Toolchain** : v4.30.0-rc2
+- **Toolchain** : v4.31.0-rc1
 - **Compte de sorry** : **0** — le théorème de Bondareva-Shapley est prouvé dans les deux directions
 - **Build** : `lake build CooperativeGames` — SUCCESS
 - **Dépendances** : Mathlib4
@@ -157,7 +157,7 @@ Ce projet formalise la théorie des jeux coopératifs en Lean 4 — la **valeur 
 (close, 0 `sorry`), le **Cœur** avec le **théorème de Bondareva-Shapley** (0 `sorry`,
 prouvé dans les deux directions), et la **théorie des jeux de vote simples** avec sa
 taxonomie des joueurs et les théorèmes d'indice de pouvoir associés (0 `sorry`). Il compile
-avec `lake build CooperativeGames` sur Mathlib4 (toolchain `v4.30.0-rc2`).
+avec `lake build CooperativeGames` sur Mathlib4 (toolchain `v4.31.0-rc1`).
 
 ### Ce qui est prouvé
 

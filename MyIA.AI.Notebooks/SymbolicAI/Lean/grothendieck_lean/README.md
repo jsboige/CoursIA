@@ -81,7 +81,7 @@ lake build Grothendieck
 
 ## Toolchain
 
-Alignée avec les autres projets SymbolicAI/Lean : `leanprover/lean4:v4.30.0-rc2`
+Alignée avec les autres projets SymbolicAI/Lean : `leanprover/lean4:v4.31.0-rc1`
 
 ## References
 
