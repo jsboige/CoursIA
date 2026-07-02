@@ -5,7 +5,7 @@
 
 ## Description
 
-Strategie trend following avec oracles multiples (MACD, RSI, Bollinger).
+Stratégie trend following avec oracles multiples (MACD, RSI, Bollinger).
 
 ## How to Run
 
@@ -16,7 +16,7 @@ Strategie trend following avec oracles multiples (MACD, RSI, Bollinger).
 ## Architecture (multi-fichiers)
 - `main.py` - Algorithme principal, universe equity top 600
 - `alpha.py` - Custom alpha avec 7+ indicateurs et scoring composite
-- `trendCalculator.py` - Detection HH/HL/LL/LH (extrema locaux)
+- `trendCalculator.py` - Détection HH/HL/LL/LH (extrema locaux)
 - `macd_oracle.py` - Oracle MACD (cross + seuils)
 - `rsi_oracle.py` - Oracle RSI (convergence/divergence trend)
 - `bollinger_oracle.py` - Oracle Bollinger (position relative)
@@ -24,7 +24,7 @@ Strategie trend following avec oracles multiples (MACD, RSI, Bollinger).
 
 ## Concepts enseignes
 - Multi-oracle scoring
-- Detection de tendance (Higher Highs, Lower Lows)
+- Détection de tendance (Higher Highs, Lower Lows)
 - ATR trailing stop-loss
 - EMA 50/200 cross confirmation
 - ADX strength filter
