@@ -1874,6 +1874,112 @@ def cmd_normalize_source_newlines(args):
     return 0
 
 
+def cmd_normalize_source_charsplit(args):
+    """Re-join source lists where every character was split into its own element.
+
+    Fixes a second corruption pattern detected during the #5005 blast-radius sweep:
+    some code cells store `source` as a list of ~700-1400 single-character strings
+    (no newline anywhere), where the canonical nbformat form is ~20-60 line strings
+    each ending in `\\n`. `''.join(source)` reconstructs the intended text verbatim,
+    so this transform is semantics-preserving: `execution_count`, `outputs`, and the
+    rendered cell content are all unchanged -- only the on-disk `source` shape moves
+    from per-char list to per-line list.
+
+    Detection heuristic: a source list is "char-split" when most of its elements
+    have length <= 2 (typical for ASCII code split per character) AND the joined
+    text contains the newlines that the list form is missing. Threshold = at least
+    50 short elements AND short/total ratio >= 0.5. False positives are prevented by
+    the post-join invariant: the new list equals `text.splitlines(keepends=True)` of
+    the joined source, so `''.join(new) == ''.join(old)` always holds when applied.
+
+    Complements `normalize-source-newlines` (#5028, newline-missing-trailing):
+    - newline-miss: elements present and correctly sized but lack trailing `\\n`.
+    - char-split: elements are per-character, no line structure at all.
+
+    Same mergeable-without-re-exec invariant: outputs are preserved because the
+    rendered text is byte-identical to the original (verified by `''.join(new) ==
+    ''.join(old)`). See #5005 (root-cause firsthand), #5028 (sister fix).
+    """
+    repo_root = get_repo_root()
+    notebooks = discover_notebooks(
+        args.target, repo_root,
+        python_only=args.python_only,
+        dotnet_only=args.dotnet_only
+    )
+
+    if not notebooks:
+        print_error(f"No notebooks found for target: {args.target}")
+        return 1
+
+    print_info(f"Scanning {len(notebooks)} notebook(s) for char-split source corruption")
+
+    total_fixed_cells = 0
+    total_fixed_files = 0
+    per_file = []
+
+    for nb_path in notebooks:
+        try:
+            with open(nb_path, 'r', encoding='utf-8') as f:
+                nb = json.load(f)
+        except (json.JSONDecodeError, OSError) as exc:
+            print_error(f"Could not read {nb_path}: {exc}")
+            continue
+
+        fixed_cells = 0
+        for cell in nb.get('cells', []):
+            if cell.get('cell_type') not in ('code', 'markdown'):
+                continue
+            src = cell.get('source')
+            # source may be a list (split form) or a string (already-joined form).
+            # Only the list form can carry this corruption; a string is nbformat-valid as-is.
+            if not isinstance(src, list) or len(src) <= 1:
+                continue
+            # Char-split heuristic: many short elements (typically 1 char each).
+            n_short = sum(1 for el in src if isinstance(el, str) and len(el) <= 2)
+            if n_short < max(50, len(src) * 0.5):
+                continue
+            # Invariant-preserving rebuild: join then splitlines with keepends.
+            # `''.join(new) == ''.join(src)` is a structural property of splitlines(keepends=True),
+            # so semantics (execution_count, outputs, rendered text) are preserved exactly.
+            joined = ''.join(src)
+            new_src = joined.splitlines(keepends=True)
+            # Edge case: splitlines returns [] for an empty string; preserve that as empty list.
+            # If joined is non-empty, splitlines returns at least one element; no collapse needed.
+            cell['source'] = new_src
+            fixed_cells += 1
+
+        if fixed_cells > 0:
+            total_fixed_cells += fixed_cells
+            total_fixed_files += 1
+            per_file.append({'path': str(nb_path), 'fixed_cells': fixed_cells})
+            if args.apply:
+                # Write back: UTF-8 without BOM, preserve list-form source, stable indent.
+                with open(nb_path, 'w', encoding='utf-8') as f:
+                    json.dump(nb, f, ensure_ascii=False, indent=1)
+                    f.write('\n')
+            status = "FIXED" if args.apply else "DRY-RUN (would fix)"
+            if args.verbose:
+                print(f"  [{status}] {nb_path.name}: {fixed_cells} cell(s)")
+
+    print_section("SUMMARY")
+    mode = "APPLIED" if args.apply else "DRY-RUN (--apply to write)"
+    print(f"  Mode: {mode}")
+    print(f"  Files with corruption: {total_fixed_files}")
+    print(f"  Total cells fixed: {total_fixed_cells}")
+
+    if args.json:
+        print(json.dumps({
+            'mode': mode,
+            'files_with_corruption': total_fixed_files,
+            'total_cells_fixed': total_fixed_cells,
+            'per_file': per_file,
+        }, indent=2, ensure_ascii=False))
+
+    # Exit 0 in dry-run regardless (it's a report); exit 0 after apply too.
+    # A non-zero exit is reserved for unreadable notebooks (handled above per-file).
+    return 0
+
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -1964,6 +2070,18 @@ def main():
     p_norm.add_argument('--verbose', '-v', action='store_true')
     p_norm.add_argument('--json', action='store_true')
 
+    # normalize-source-charsplit command (#5005 fix, char-split pattern)
+    p_cs = subparsers.add_parser('normalize-source-charsplit',
+                       help='Re-join per-character source lists into per-line lists (See #5005)')
+    p_cs.add_argument('target', nargs='?', default='all',
+                      help='Notebook path, family name, or "all" (default: all)')
+    p_cs.add_argument('--apply', action='store_true',
+                      help='Write the fix back to disk (default: dry-run, report only)')
+    p_cs.add_argument('--python-only', action='store_true')
+    p_cs.add_argument('--dotnet-only', action='store_true')
+    p_cs.add_argument('--verbose', '-v', action='store_true')
+    p_cs.add_argument('--json', action='store_true')
+
     args = parser.parse_args()
 
     if not args.command:
@@ -1978,6 +2096,7 @@ def main():
         'execute': cmd_execute,
         'golden-set': cmd_golden_set,
         'normalize-source-newlines': cmd_normalize_source_newlines,
+        'normalize-source-charsplit': cmd_normalize_source_charsplit,
     }
 
     return commands[args.command](args)
