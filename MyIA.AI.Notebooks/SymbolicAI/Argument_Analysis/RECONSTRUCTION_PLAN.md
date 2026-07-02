@@ -12,14 +12,14 @@ La serie Argument_Analysis comprend **6 notebooks sources** formant un pipeline 
 
 ## Notebooks (6 sources)
 
-| # | Notebook | Role | Etat | Difficulte |
+| # | Notebook | Role | Etat | Difficulté |
 |---|----------|------|------|------------|
 | 1 | `UI_configuration.ipynb` | Widgets de configuration UI, extraction texte | Fonctionne en standalone | EASY |
 | 2 | `Agentic-0-init.ipynb` | Initialisation : pip install, JVM, Semantic Kernel, state | 3 erreurs en cascade | HARD |
 | 3 | `Agentic-1-informal_agent.ipynb` | Agent informel : sophismes, analyse rhetorique | OK (definitions seules) | MEDIUM |
 | 4 | `Agentic-2-pl_agent.ipynb` | Agent logique propositionnelle : Tweety + LLM | JVM-dependant | HARD |
 | 5 | `Agentic-3-orchestration.ipynb` | Orchestration multi-agents, terminaison | NameError (cascading) | MEDIUM |
-| 6 | `Executor.ipynb` | Point d'entree, `%run` des autres notebooks | Erreur path relatif | MEDIUM |
+| 6 | `Executor.ipynb` | Point d'entrée, `%run` des autres notebooks | Erreur path relatif | MEDIUM |
 
 ## Causes racines (par severite)
 
@@ -40,18 +40,18 @@ L'Executor utilise `%run ./Argument_Analysis_UI_configuration.ipynb` avec un che
 
 Le JDK 17 portable (`jdk-17-portable/`) n'est pas detecte : `"No JVM shared library file (jvm.dll) found."`. Le code de detection cherche `jvm.dll` mais ne le trouve pas.
 
-**Impact** : `PropositionalLogicPlugin` fonctionne en mode degrade (simulation LLM uniquement, pas de raisonnement formel reel).
+**Impact** : `PropositionalLogicPlugin` fonctionne en mode degrade (simulation LLM uniquement, pas de raisonnement formel réel).
 
 **Fix** :
 - Verifier le chemin `jdk-17-portable/bin/server/jvm.dll` existe
 - Ajouter un fallback `JAVA_HOME` explicite dans le code
 - Tester sur la machine cible (Windows, JDK portable)
 
-> **Statut (2026-06-16) : RESOLU (regle F, env installe).** JDK Zulu 17.0.11 + 42 JARs Tweety 1.30 installes localement ; JVM smoke PASS ; re-exec Papermill SUCCESS 481s avec raisonnement formel reel (10 requetes SatReasoner).
+> **Statut (2026-06-16) : RESOLU (regle F, env installe).** JDK Zulu 17.0.11 + 42 JARs Tweety 1.30 installes localement ; JVM smoke PASS ; re-exec Papermill SUCCESS 481s avec raisonnement formel réel (10 requetes SatReasoner).
 
 ### ELEVEE 3 : Cle API placeholder
 
-Le fichier `.env` contient `sk-proj-1234567890` (cle factice). Sans cle OpenAI reelle, les agents LLM ne fonctionnent pas.
+Le fichier `.env` contient `sk-proj-1234567890` (cle factice). Sans cle OpenAI réelle, les agents LLM ne fonctionnent pas.
 
 **Impact** : Aucun agent ne peut generer de reponse.
 
@@ -95,7 +95,7 @@ Le LLM genere des "belief sets" en langage naturel au lieu de syntaxe propositio
 
 ## Decouvertes re-exec 2026-06-16 (Executor, See #2137)
 
-Re-execution reelle de `Argument_Analysis_Executor.ipynb` avec cle OpenAI valide
+Re-execution réelle de `Argument_Analysis_Executor.ipynb` avec cle OpenAI valide
 et regle F (env local installe : JDK 17 Zulu + 42 JARs Tweety 1.30 + semantic-kernel
 1.43.0). A revele deux bugs supplementaires au-dela du CRITIQUE 1 original (chemin/CWD).
 **Les commentaires de cellule de l'Executor les nomment "CRITIQUE 2" et "CRITIQUE 3"**
@@ -137,7 +137,7 @@ auto-coherents (`0-init_agent` -> `1-informal_agent` -> `2-pl_agent` ->
 
 Re-exec Papermill (kernel python3, BATCH_MODE, cle valide chargee depuis `.env`) :
 **SUCCESS, 481s**, validation `COMPLETE_VALIDATED` a **100%** (1 argument, 4 sophismes,
-1 belief set, 10 requetes). Pipeline multi-agents reel (ProjectManagerAgent ->
+1 belief set, 10 requetes). Pipeline multi-agents réel (ProjectManagerAgent ->
 InformalAnalyzer -> PLAnalyzer -> conclusion), 0 fuite `sk-` dans les outputs.
 
 Erreurs non-fatales residuelles (pipeline honnete, ne levent pas) : quelques appels SK
@@ -182,7 +182,7 @@ En plus du fix minimal :
 En plus de l'Option B :
 - Remplacer JPype/Tweety par `python-tweety` (bindings Python natifs) si disponible
 - Ou utiliser le package `tweety-python` sur PyPI
-- Eliminer la dependance JVM entiere
+- Eliminer la dependance JVM entière
 
 **Avantages** : Supprime la dependance Java (~800MB d'infrastructure).
 **Risques** : `python-tweety` peut ne pas avoir la parite fonctionnelle. Effort significatif.
@@ -191,7 +191,7 @@ En plus de l'Option B :
 
 **Option B** (refactoring modularise). L'architecture agentic est saine et a deja fonctionne. Le probleme principal est l'experience developpeur : chemins fragiles, JVM difficile a configurer, pas de validation d'environnement. Un refactoring modulaire resout ces problemes tout en preservant la logique metier.
 
-Etapes prioritaire :
+Étapes prioritaire :
 1. Fix bug callback `query_string` (5 min)
 2. Fix chemins relatifs -> absolus dans Executor (30 min)
 3. Creer `.env.example` avec documentation (15 min)

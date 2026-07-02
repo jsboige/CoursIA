@@ -349,7 +349,7 @@ claude --model haiku -p "Reponds 'Haiku OK'"
 
 ---
 
-## Modeles Alternatifs via OpenRouter
+## Modèles Alternatifs via OpenRouter
 
 OpenRouter permet d'utiliser des modèles alternatifs a Claude, souvent moins chers et performants pour le code.
 
@@ -480,7 +480,7 @@ Personnalisez vos raccourcis : `Cmd+K Cmd+S` / `Ctrl+K Ctrl+S`
 
 ## Configuration des MCP Servers
 
-Les serveurs MCP etendent les capacites de Claude Code.
+Les serveurs MCP etendent les capacités de Claude Code.
 
 ### Installation de Serveurs MCP Recommandes
 

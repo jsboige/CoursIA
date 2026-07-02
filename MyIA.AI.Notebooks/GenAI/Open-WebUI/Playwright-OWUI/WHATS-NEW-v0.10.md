@@ -27,7 +27,7 @@ Pauwels) sont sur **v0.10.2**.
   (~2 min), meme pattern `storageState`.
 - **Editeur de chat** : toujours TipTap/ProseMirror → `keyboard.type()` obligatoire
   (jamais `fill()`).
-- **Selecteurs principaux** : `#chat-input`, la sidebar, le selecteur de modeles —
+- **Selecteurs principaux** : `#chat-input`, la sidebar, le selecteur de modèles —
   inchanges.
 - **Streaming** : meme mecanisme Server-Sent Events, meme API `/api/chat/completions`.
 
@@ -62,17 +62,17 @@ exercice (variables `OWUI_TENANT2_*`).
 
 ### 3. Raisonnement streame (v0.10.2)
 
-Les modeles "thinking" affichent leurs **etapes de raisonnement en direct** dans
+Les modèles "thinking" affichent leurs **étapes de raisonnement en direct** dans
 l'interface (bloc repliable). **A tester (module 06, UI)** : selectionner un
-modele de raisonnement (`OWUI_REASONING_MODEL`), poser une question, verifier
-l'apparition du bloc de raisonnement — avec **skip gracieux** si le modele n'en
+modèle de raisonnement (`OWUI_REASONING_MODEL`), poser une question, verifier
+l'apparition du bloc de raisonnement — avec **skip gracieux** si le modèle n'en
 emet pas.
 
 ### 4. Compaction automatique du contexte
 
 Quand une conversation approche de la limite de contexte, elle est **resumee
 automatiquement** au lieu d'etre tronquee. **A tester (module 06, UI)** : plusieurs
-tours d'affilee, le modele **garde le fil** (test de non-regression conversation
+tours d'affilee, le modèle **garde le fil** (test de non-regression conversation
 longue).
 
 ### 5. Uploads de connaissances qui preservent l'arborescence (v0.10.2)
@@ -83,7 +83,7 @@ uploader une arborescence et verifier que les chemins relatifs sont preserves.
 
 ## Nouveautes backend utiles (Module 05 — API)
 
-- **Recherche hybride native** (base de donnees) pour des requetes KB nettement
+- **Recherche hybride native** (base de données) pour des requetes KB nettement
   plus rapides.
 - **Sources de recuperation externes** : interroger des systemes tiers directement
   depuis le chat.
@@ -92,15 +92,15 @@ uploader une arborescence et verifier que les chemins relatifs sont preserves.
 - **Administration centralisee de l'authentification** (LDAP et OAuth/OIDC sur une
   page admin dediee — voir piege n°3 plus bas).
 - **Config via variables d'environnement** des connexions Ollama/OpenAI (v0.10.2),
-  et modeles d'arene definissables par variables d'environnement.
+  et modèles d'arene definissables par variables d'environnement.
 
 ## Changements BREAKING (a connaitre)
 
 | Changement | Impact pour vous |
 |------------|------------------|
-| **Native tool calling par defaut** (remplace le mode "legacy") | Un modele conversationnel appele en API non-streaming peut renvoyer `tool_calls` + `content` vide. Testez le texte via l'UI (streaming), ou ciblez des modeles sans outils. |
+| **Native tool calling par defaut** (remplace le mode "legacy") | Un modèle conversationnel appele en API non-streaming peut renvoyer `tool_calls` + `content` vide. Testez le texte via l'UI (streaming), ou ciblez des modèles sans outils. |
 | **Python cote client en iframe sandbox** | L'execution Python cote navigateur tourne dans une iframe isolee → ciblez le `frameLocator`, pas le document principal. |
-| **Config d'authentification deplacee** sur une page admin dediee | Les tests qui cherchaient les reglages auth dans les parametres generaux doivent viser la nouvelle page admin. |
+| **Config d'authentification deplacee** sur une page admin dediee | Les tests qui cherchaient les reglages auth dans les paramètres generaux doivent viser la nouvelle page admin. |
 | **Migration BDD irreversible** (backup serveur obligatoire) | Pas d'impact test ; explique pourquoi on ne "revient pas en arriere" sur une instance. |
 | Renommage `ENABLE_RAG_LOCAL_WEB_FETCH` → `ENABLE_LOCAL_WEB_FETCH` | Cote deploiement uniquement. |
 | Cle You.com : `YOUCOM_API_KEY` → `YDC_API_KEY` | Cote deploiement uniquement. |

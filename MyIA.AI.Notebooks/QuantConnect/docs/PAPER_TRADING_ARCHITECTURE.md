@@ -12,14 +12,14 @@ Le meme algorithme LEAN s'execute en mode paper ou live. La difference est au ni
 
 | Aspect | Paper Trading | Live Trading |
 |--------|---------------|--------------|
-| Donnees de marche | Reelles (temps reel) | Reelles (temps reel) |
-| Execution des ordres | Simulee (fills fictifs) | Reelle (envoyee au broker) |
-| Capital | Fictif | Reel |
+| Données de marche | Réelles (temps réel) | Réelles (temps réel) |
+| Execution des ordres | Simulee (fills fictifs) | Réelle (envoyee au broker) |
+| Capital | Fictif | Réel |
 | Slippage | Aucun | Variable selon liquidite |
-| Commissions | Simulees selon broker model | Reelles |
+| Commissions | Simulees selon broker model | Réelles |
 | Credentials broker | Non requis | Requis |
 
-Le paper trading teste la logique algorithmique en conditions reelles de donnees, sans risque financier.
+Le paper trading teste la logique algorithmique en conditions réelles de données, sans risque financier.
 
 ### Tiers QuantConnect
 
@@ -67,11 +67,11 @@ update_project_nodes(project_id=PROJECT_ID, nodes=["LN-xxxxx"])
 
 ### Configuration
 
-| Parametre | Paper Trading | Live Trading |
+| Paramètre | Paper Trading | Live Trading |
 |-----------|---------------|--------------|
 | Brokerage | `BinanceBrokerage` | `BinanceBrokerage` |
 | Environnement | `paper` (Spot Test Network) | `live` |
-| Credentials | API key Testnet (gratuite, pas de compte requis) | API key reelle |
+| Credentials | API key Testnet (gratuite, pas de compte requis) | API key réelle |
 | Account type | Cash ou Margin | Cash ou Margin |
 
 ### Code d'initialisation
@@ -101,7 +101,7 @@ def initialize(self):
 ### Fees simulees
 
 - 0.1% maker/taker (VIP Level 0)
-- Le Testnet ne facture pas de frais reels
+- Le Testnet ne facture pas de frais réels
 
 ### Leverage
 
@@ -112,7 +112,7 @@ def initialize(self):
 ### Assets disponibles
 
 - Spot crypto : BTC, ETH, et 300+ paires sur Binance
-- Donnees : minute, hour, daily (via QC data cloud)
+- Données : minute, hour, daily (via QC data cloud)
 
 ---
 
@@ -120,11 +120,11 @@ def initialize(self):
 
 ### Configuration
 
-| Parametre | Paper Trading | Live Trading |
+| Paramètre | Paper Trading | Live Trading |
 |-----------|---------------|--------------|
 | Brokerage | `InteractiveBrokersBrokerage` | `InteractiveBrokersBrokerage` |
 | Environnement | Paper TWS (port 7497) | Live TWS/Gateway (port 7496) |
-| Credentials | Compte paper IBKR | Compte reel IBKR |
+| Credentials | Compte paper IBKR | Compte réel IBKR |
 | Prerequis | TWS ou IB Gateway en cours d'execution | Idem + 2FA |
 
 ### Code d'initialisation
@@ -139,11 +139,11 @@ def initialize(self):
     self.add_equity("QQQ", Resolution.MINUTE, Market.USA)
 ```
 
-### Prerequis specifiques
+### Prerequis spécifiques
 
 1. **Compte IBKR** : ouverture en ligne (processus KYC, delai 1-3 jours)
 2. **TWS (Trader Workstation)** ou **IB Gateway** installe et en cours d'execution
-3. **Parametres TWS** :
+3. **Paramètres TWS** :
    - Activer ActiveX and Socket Clients
    - Configurer le port (7497 paper / 7496 live)
    - Desactiver Read-Only API
@@ -183,15 +183,15 @@ create_live_algorithm(
 ### Asset classes
 
 - US Equities, Equity Options, Forex, Futures, Future Options
-- Donnees : tick, second, minute, hour, daily
+- Données : tick, second, minute, hour, daily
 
 ---
 
-## 5. Flux de donnees en live
+## 5. Flux de données en live
 
 ### Data Providers
 
-QuantConnect supporte plusieurs sources de donnees en live, configurees separement du brokerage :
+QuantConnect supporte plusieurs sources de données en live, configurees separement du brokerage :
 
 | Provider | Assets | Resolution | Notes |
 |----------|--------|------------|-------|
@@ -222,13 +222,13 @@ create_live_algorithm(
 
 ### Ordre de precedence
 
-Les providers sont consultes dans l'ordre de la configuration. Si le premier n'a pas la donnee, le suivant est interroge.
+Les providers sont consultes dans l'ordre de la configuration. Si le premier n'a pas la donnée, le suivant est interroge.
 
 ---
 
 ## 6. Workflow pedagogique : Backtest -> Paper -> Live
 
-### Etape 1 : Backtest
+### Étape 1 : Backtest
 
 ```
 1. Ecrire l'algorithme (Initialize + OnData)
@@ -237,7 +237,7 @@ Les providers sont consultes dans l'ordre de la configuration. Si le premier n'a
 4. Optimiser les parametres (si necessaire)
 ```
 
-### Etape 2 : Paper Trading (1-2 semaines)
+### Étape 2 : Paper Trading (1-2 semaines)
 
 ```
 1. Compiler le projet : create_compile()
@@ -249,16 +249,16 @@ Les providers sont consultes dans l'ordre de la configuration. Si le premier n'a
 4. Comparer les resultats paper avec le backtest sur la meme periode
 ```
 
-### Etape 3 : Analyse des ecarts backtest/paper
+### Étape 3 : Analyse des ecarts backtest/paper
 
 | Source d'ecart | Description |
 |----------------|-------------|
 | Slippage | Le paper trading simule sans slippage (sauf si configure) |
-| Timing | Les donnees live peuvent avoir des latences differentes |
+| Timing | Les données live peuvent avoir des latences differentes |
 | Liquidite | Les ordres paper sont fills immediatement, pas toujours le cas en live |
 | Market impact | Non modelise en paper trading |
 
-### Etape 4 : Transition vers le live (hors scope pedagogique)
+### Étape 4 : Transition vers le live (hors scope pedagogique)
 
 Voir `PAPER_TO_LIVE_TRANSITION.md` pour les prerequis.
 
@@ -308,17 +308,17 @@ Notebook structure:
 
 ### Paper Trading n'est pas un backtest
 
-- Le paper trading utilise les memes donnees que le live, mais simule les fills
+- Le paper trading utilise les memes données que le live, mais simule les fills
 - Il peut masquer des problemes de liquidite qui apparaitront en live
 - La latence d'execution est differente de celle d'un backtest
 
-### Limites specifiques Binance
+### Limites spécifiques Binance
 
 - Pas de support des order updates (annuler + recreer)
 - Pas de Futures support via QC (spot uniquement a ce jour)
 - Testnet : les liquidites reflettent le mainnet mais avec moins de volume
 
-### Limites specifiques IBKR
+### Limites spécifiques IBKR
 
 - Requiert TWS/Gateway en cours d'execution (pas 100% cloud)
 - Redemarrage hebdomadaire obligatoire avec 2FA

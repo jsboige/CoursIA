@@ -14,7 +14,7 @@ L'instance de cours (et toutes les instances partenaires : EPF, EPF-GenAI, ECE, 
 - **Editeur de chat** : toujours TipTap/ProseMirror, donc `keyboard.type()` obligatoire (pas `fill()`)
 - **Selecteurs principaux** : `#chat-input`, les boutons admin, la sidebar des chats — inchanges
 - **Streaming** : meme mecanisme (Server-Sent Events), meme API `/api/chat/completions`
-- **Modele de permissions** : memes AccessGrants, memes roles user/admin
+- **Modèle de permissions** : memes AccessGrants, memes roles user/admin
 
 ## Nouveautes UI visibles (opportunites de tests bonus)
 
@@ -36,7 +36,7 @@ await expect(page.getByRole('heading', { name: /calendar/i })).toBeVisible();
 
 ### 2. Page `/automations` — Taches planifiees
 
-Les utilisateurs peuvent demander a l'IA d'**executer des taches de maniere recurrente** (digest quotidien, rapport hebdomadaire, etc.).
+Les utilisateurs peuvent demander a l'IA d'**executer des taches de manière recurrente** (digest quotidien, rapport hebdomadaire, etc.).
 
 **Variables admin associees** :
 - `AUTOMATION_MAX_COUNT` : nombre max d'automations par utilisateur
@@ -57,15 +57,15 @@ OWUI est maintenant disponible comme **app native Mac / Windows / Linux**, avec 
 
 ### 4. Task management tool integre
 
-Les IA peuvent maintenant **creer et suivre des taches** dans une conversation. Une conversation complexe est decomposee en etapes avec statut en temps reel.
+Les IA peuvent maintenant **creer et suivre des taches** dans une conversation. Une conversation complexe est decomposee en étapes avec statut en temps réel.
 
 ### 5. Indicateurs et UX
 
 - **Unread chat indicators** : badge sur les chats avec nouveaux messages
-- **Pinned notes** : notes epinglees dans la sidebar, creation rapide
+- **Pinned notes** : notes epinglees dans la sidebar, création rapide
 - **Emoji shortcodes** : `:wave:` dans le chat ouvre un selecteur d'emoji
 - **Swipe-to-reply** : geste swipe-droit sur mobile pour repondre a un message
-- **WebSocket feedback** : notifications visibles si la connexion temps-reel tombe / reconnecte
+- **WebSocket feedback** : notifications visibles si la connexion temps-réel tombe / reconnecte
 
 ## Nouveautes backend (pertinentes pour Module 05 — API testing)
 
@@ -119,7 +119,7 @@ Les 4 pieges documentes dans le README principal restent valides en v0.9.1 :
 
 La v0.9.0 a reecrit une grosse partie du backend en **async** (DB, file processing, vector search). Consequence : **les requetes longues ne sont plus annulees par le middleware** quand la connexion HTTP se ferme tot. C'est GENERALEMENT un bienfait (les embeddings ne s'interrompent plus), mais :
 
-**Probleme potentiel** : si votre test declenche un traitement long (upload PDF, creation KB) et quitte brutalement, le backend continue. Le prochain test peut voir des donnees non-consommees.
+**Probleme potentiel** : si votre test declenche un traitement long (upload PDF, création KB) et quitte brutalement, le backend continue. Le prochain test peut voir des données non-consommees.
 
 **Solution** : utiliser `test.step()` et laisser les operations se terminer avant d'abandonner. Exemple :
 ```typescript
