@@ -888,7 +888,18 @@ class MultiAgentSorryProver:
         return {
             "success": success,
             "proof": state.final_proof,
-            "iterations": state.iteration,
+            # FX-9 (#1453, ai-01 L2536 harvest): the multi-agent workflow loops
+            # on the message-level iteration counter (workflow.py) but never
+            # copies it onto the shared state's iteration field, so the count
+            # reported here was stuck at 0 while the workflow looped (observed
+            # ``Iterations: 0/12`` with 13 attempts on the L2536 run). The
+            # workflow DOES keep ``remaining_iterations`` in sync per step
+            # (workflow.py:1167), so the actual loops run is
+            # ``max(0, max_iterations - remaining_iterations)``. ``attempts``
+            # below carries the tactic count (>= iterations via CriticAgent
+            # routing). The autonomous path keeps its own iteration field (it
+            # increments it in its own loop).
+            "iterations": max(0, max_iterations - state.remaining_iterations),
             "attempts": len(state.tactic_history),
             "total_s": round(total_s, 1),
             "config": f"multi-{self.provider}",
