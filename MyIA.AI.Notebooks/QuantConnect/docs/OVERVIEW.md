@@ -80,7 +80,7 @@ Forex                  -0.32   -0.32   1    ▏
 | 2 | **Monthly rebalancing** bat weekly et daily sur la plupart des strategies | Stabilite | Multiple strategies |
 | 3 | **Stop-loss asymetrique -8%/-12%** (trailing) optimal vs -5% ou -15% | Réduit MaxDD | Portfolio construction |
 | 4 | **Modeles action (DT)** surpassent modeles prediction rendement (PatchTST) | AUC 0.56 vs 0.50 | L4 vs L5 Ladder ML |
-| 5 | **yfinance != QC Cloud** : les resultats locaux ne reproduisent pas QC (dividends, splits, fills) | 20+ patterns | docs/quantconnect.md |
+| 5 | **yfinance != QC Cloud** : les resultats locaux ne reproduisent pas QC (dividends, splits, fills) | 20+ patterns | docs/qc/quantconnect.md |
 
 ## Timeline des iterations majeures
 

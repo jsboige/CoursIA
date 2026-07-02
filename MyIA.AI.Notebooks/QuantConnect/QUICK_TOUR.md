@@ -12,7 +12,7 @@ Cette section contient un parcours complet de trading algorithmique sur **QuantC
 
 2. **[Catalogue strategies](docs/qc_strategies_catalog.md)** — 95+ projets organises par categorie (Alpha, Trend Following, ML/RL, Composites). Top performers vérifiés alignés (#1630) : Long-Short Harvest (Sharpe **1.64**, PSR 98.7%), TrendWeather Composite (**0.948**, PSR 56.6%), EMATrend (**0.611**).
 
-3. **[Patterns confirmes](../../docs/quantconnect.md)** — 20 patterns valides sur 30+ iterations (risk-adjusted momentum, skip-month, stop-loss -8/-12%, monthly rebalancing, anti-overfitting) et 10 anti-patterns critiques (SPY Parking, backtests courts, yfinance != QC cloud).
+3. **[Patterns confirmes](../../docs/qc/quantconnect.md)** — 20 patterns valides sur 30+ iterations (risk-adjusted momentum, skip-month, stop-loss -8/-12%, monthly rebalancing, anti-overfitting) et 10 anti-patterns critiques (SPY Parking, backtests courts, yfinance != QC cloud).
 
 4. **[Notebooks pedagogiques](Python/)** — 51 notebooks en 8 phases progressives : fondations LEAN, universe/asset classes, risk management, Algorithm Framework, donnees alternatives, ML (RF/XGBoost), deep learning (LSTM/Transformers), RL et LLMs pour trading.
 
@@ -24,4 +24,4 @@ Cette section contient un parcours complet de trading algorithmique sur **QuantC
 2. Copier un `main.py` depuis [projects/](projects/) dans un nouveau projet QC Lab
 3. Cliquer **Backtest** — c'est tout
 
-> Documentation complete : [README.md](README.md) | [Guide demarrage](GETTING-STARTED.md) | [Patterns QC](../../docs/quantconnect.md)
+> Documentation complete : [README.md](README.md) | [Guide demarrage](GETTING-STARTED.md) | [Patterns QC](../../docs/qc/quantconnect.md)
