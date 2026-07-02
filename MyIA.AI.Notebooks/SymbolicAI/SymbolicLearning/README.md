@@ -11,7 +11,7 @@ maturity: PRODUCTION=11
 
 Comment un agent peut-il apprendre à partir de connaissances existantes plutôt que de données brutes ? Cette série explore l'apprentissage symbolique tel que décrit dans le chapitre 19 d'AIMA (Russell & Norvig), depuis l'apprentissage inductif pur (CBH, Version Space) jusqu'aux méthodes guidées par la connaissance (EBL, RBL).
 
-Le premier notebook pose les bases : représentation d'hypothèses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Élimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accélère l'apprentissage : l'apprentissage basé sur les explications (EBL) compile les théories en heuristiques opérationnelles, et l'apprentissage basé sur la pertinence (RBL) identifie les attributs déterminant via les déterminations. Le troisième notebook approfondit le RBL avec le treillis des déterminations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrième notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), les opérateurs de résolution inverse (bottom-up) et la connexion avec les knowledge graphs, jusqu'à l'ILP moderne (Popper, Learning From Failures). SL-5 reprend et mène à terme la voie bottom-up esquissée en SL-4 (LGG de Plotkin, theta-subsomption, clause bottom par entailment inverse et recherche à la Progol), faisant directement suite à FOIL. SL-6 met quatre moteurs ILP *réels* face à face — Aleph, Metagol, Popper et ∂ILP (Lernd) — sur une même tâche récursive (`ancestor/2`), pour comparer leurs machineries (entailment inverse, MIL, Learning From Failures, gradient différentiable). Les notebooks SL-7 à SL-9 ouvrent ensuite vers des méthodes contemporaines : SL-7 introduit le neuro-symbolique (T-norms différentiables, Logic Tensor Networks, DeepProbLog) ; SL-8 outille la découverte de règles sur knowledge graphs réels avec rdflib et AMIE rule mining ; SL-9 boucle LLM et vérification symbolique pour fiabiliser le raisonnement formel guidé par modèles de langage. Enfin, deux notebooks concluent la série : SL-10 change de paradigme avec l'apprentissage *actif* (l'algorithme L* d'Angluin interroge un oracle au lieu de subir un échantillon, et apprend des automates finis avec garanties de minimalité) ; SL-11 est le capstone qui assemble toute la série en un pipeline neuro-symbolique de bout en bout — du texte brut aux faits découverts, avec un LLM réel (Gemini 3.5 Flash) aux deux extrémités et le symbolique comme colonne vertébrale.
+Le premier notebook pose les bases : représentation d'hypothèses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accélère l'apprentissage : l'apprentissage basé sur les explications (EBL) compile les théories en heuristiques opérationnelles, et l'apprentissage basé sur la pertinence (RBL) identifie les attributs déterminant via les déterminations. Le troisième notebook approfondit le RBL avec le treillis des déterminations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrième notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), les opérateurs de résolution inverse (bottom-up) et la connexion avec les knowledge graphs, jusqu'à l'ILP moderne (Popper, Learning From Failures). SL-5 reprend et mène à terme la voie bottom-up esquissée en SL-4 (LGG de Plotkin, theta-subsomption, clause bottom par entailment inverse et recherche à la Progol), faisant directement suite à FOIL. SL-6 met quatre moteurs ILP *réels* face à face — Aleph, Metagol, Popper et ∂ILP (Lernd) — sur une même tâche récursive (`ancestor/2`), pour comparer leurs machineries (entailment inverse, MIL, Learning From Failures, gradient différentiable). Les notebooks SL-7 à SL-9 ouvrent ensuite vers des méthodes contemporaines : SL-7 introduit le neuro-symbolique (T-norms différentiables, Logic Tensor Networks, DeepProbLog) ; SL-8 outille la découverte de règles sur knowledge graphs réels avec rdflib et AMIE rule mining ; SL-9 boucle LLM et vérification symbolique pour fiabiliser le raisonnement formel guidé par modèles de langage. Enfin, deux notebooks concluent la série : SL-10 change de paradigme avec l'apprentissage *actif* (l'algorithme L* d'Angluin interroge un oracle au lieu de subir un échantillon, et apprend des automates finis avec garanties de minimalité) ; SL-11 est le capstone qui assemble toute la série en un pipeline neuro-symbolique de bout en bout — du texte brut aux faits découverts, avec un LLM réel (Gemini 3.5 Flash) aux deux extrémités et le symbolique comme colonne vertébrale.
 
 **À qui s'adresse cette série** : étudiants en IA, informaticiens intéressés par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques. Les notebooks (~10h35 total) ne nécessitent que Python 3.10+ standard library, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle), SL-6 (moteurs ILP réels : SWI-Prolog, Popper, Lernd) et SL-8 (rdflib pour les knowledge graphs) ; SL-9 et SL-11 acceptent une clé OpenRouter optionnelle (fichier `.env`) pour des appels LLM réels, avec un simulateur déterministe en repli. Une familiarité avec la logique propositionnelle suffit pour SL-1 à SL-6 et SL-10 ; SL-7, SL-9 et SL-11 supposent une intuition des réseaux de neurones et des LLMs. Ils constituent un complément théorique aux séries [Tweety](../Tweety/README.md) (argumentation computationnelle), [SemanticWeb](../SemanticWeb/README.md) (représentation de connaissances) et [ML](../../ML/README.md) (apprentissage statistique - contraste avec l'inductif symbolique).
 
@@ -19,7 +19,7 @@ Le premier notebook pose les bases : représentation d'hypothèses comme conjonc
 
 L'apprentissage symbolique représente la contrepartie théorique du machine learning statistique. Tandis que les méthodes modernes (deep learning, ensembles d'arbres) excellent à extraire des patterns de grandes masses de données, elles souffrent de trois limites fondamentales que l'approche symbolique adresse directement :
 
-- **Peu de données disponibles** : les méthodes symboliques comme Candidate Élimination ou FOIL apprennent à partir de quelques exemples, voire d'un seul (EBL). Quand la collecte de données est coûteuse ou impossible (diagnostic médical rare, validation formelle), l'induction pure ne fonctionne pas.
+- **Peu de données disponibles** : les méthodes symboliques comme Candidate Elimination ou FOIL apprennent à partir de quelques exemples, voire d'un seul (EBL). Quand la collecte de données est coûteuse ou impossible (diagnostic médical rare, validation formelle), l'induction pure ne fonctionne pas.
 - **Interprétabilité requise** : une règle logique `IF temperature > 38 AND toux THEN infection` est compréhensible par un humain. Un réseau de neurones de 100M de paramètres ne l'est pas. Pour les applications critiques ou réglementées (médecine, finance, justice), l'interprétabilité n'est pas un luxe — c'est une exigence.
 - **Intégration avec la connaissance existante** : les méthodes symboliques combinent examples ET théorie du domaine. EBL compile un exemple prouvé en une règle opérationnelle générale ; RBL identifie les attributs déterminants via des contraintes formelles. Aucune méthode statistique ne peut exploiter cette connaissance a priori de la même façon.
 
@@ -29,7 +29,7 @@ Cette série montre que les deux approches ne s'opposent pas — elles se **comp
 
 À l'issue de cette série, vous serez capable de :
 
-1. **Implémenter** les algorithmes d'apprentissage inductif de base (CBH, Candidate Élimination, Version Space)
+1. **Implémenter** les algorithmes d'apprentissage inductif de base (CBH, Candidate Elimination, Version Space)
 2. **Compiler** des preuves en heuristiques opérationnelles via EBL, et **identifier** les attributs déterminants via RBL et les déterminations
 3. **Construire** le treillis des déterminations et appliquer MINIMAL-CONSISTENT-DET pour la sélection guidée d'attributs
 4. **Apprendre** des règles logiques (clauses Horn) à partir d'exemples avec FOIL et la résolution inverse
@@ -72,7 +72,7 @@ flowchart TD
 
 ### Phase 1 : Fondations inductives (SL-1, ~50 min)
 
-Le parcours commence par l'apprentissage inductif pur : un agent doit découvrir une règle cachée à partir d'exemples. SL-1 présente les algorithmes fondamentaux — Current-Best-Hypothesis (ajuste une seule hypothèse incrémentalement) et Candidate Élimination (maintient l'ensemble complet des hypothèses consistantes, le "Version Space"). Vous expérimentez leurs limites face au bruit et aux concepts disjonctifs, ce qui motive naturellement les approches plus riches introduites ensuite.
+Le parcours commence par l'apprentissage inductif pur : un agent doit découvrir une règle cachée à partir d'exemples. SL-1 présente les algorithmes fondamentaux — Current-Best-Hypothesis (ajuste une seule hypothèse incrémentalement) et Candidate Elimination (maintient l'ensemble complet des hypothèses consistantes, le "Version Space"). Vous expérimentez leurs limites face au bruit et aux concepts disjonctifs, ce qui motive naturellement les approches plus riches introduites ensuite.
 
 ### Phase 2 : Apprentissage basé sur la connaissance (SL-2 a SL-3, ~95 min)
 
@@ -102,7 +102,7 @@ Pour ceux qui veulent saisir l'essence sans suivre toute la progression : les fo
 
 #### Parcours ILP approfondi (SL-1 a SL-6, ~325 min)
 
-Pour les étudiants en logique et IA symbolique : suivre les six premiers notebooks dans l'ordre — de Candidate Élimination a FOIL, puis SL-5 qui mène le bottom-up a terme (LGG, theta-subsomption, clause bottom et Progol), et SL-6 qui confronte quatre moteurs ILP réels (Aleph, Metagol, Popper, ∂ILP) sur une même tâche récursive.
+Pour les étudiants en logique et IA symbolique : suivre les six premiers notebooks dans l'ordre — de Candidate Elimination a FOIL, puis SL-5 qui mène le bottom-up a terme (LGG, theta-subsomption, clause bottom et Progol), et SL-6 qui confronte quatre moteurs ILP réels (Aleph, Metagol, Popper, ∂ILP) sur une même tâche récursive.
 
 #### Parcours théorie des langages (SL-1 + SL-10, ~110 min)
 
@@ -168,7 +168,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [SL-1 - Apprentissage Logique](SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Élimination | 50 min |
+| 1 | [SL-1 - Apprentissage Logique](SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 50 min |
 | 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (déterminations) | 45 min |
 | 3 | [SL-3 - Apprentissage Basé sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des déterminations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |
 | 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, résolution inverse, clauses Horn, knowledge graphs, Popper (LFF) | 55 min |
@@ -190,7 +190,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | Consistance | Faux positifs/négatifs, vérification d'hypothèses |
 | Généralisation/Spécialisation | Opérations fondamentales, hiérarchie de généralité |
 | CBH | Algorithme Current-Best-Hypothesis (AIMA Fig 19.2) |
-| Version Space | Candidate Élimination, G-set et S-set (AIMA Fig 19.3) |
+| Version Space | Candidate Elimination, G-set et S-set (AIMA Fig 19.3) |
 | Prédiction | Stratégies unanime, conservateur, majority |
 | Limites | Sensibilité au bruit, incapacité à représenter les disjonctions |
 
@@ -284,7 +284,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 
 | Section | Contenu |
 |---------|---------|
-| Apprentissage actif | Passif vs actif, le cadre MAT (Minimally Adéquate Teacher) |
+| Apprentissage actif | Passif vs actif, le cadre MAT (Minimally Adequate Teacher) |
 | DFA | Représentation, exécution, langage du mot « se termine par a » |
 | Table d'observation | Prefixes S, suffixes E, fermeture et cohérence |
 | L* | Algorithme complet d'Angluin (1987), construction de l'hypothèse |
@@ -336,7 +336,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | **AMIE** | Rule mining sur knowledge graphs incomplets | SL-8 |
 | **LLM-Symbolique** | Boucle de rétroaction LLM + vérification formelle | SL-9 |
 | **Apprentissage actif** | L'apprenant choisit ses questions au lieu de subir un échantillon | SL-10 |
-| **MAT** | Minimally Adéquate Teacher : oracle d'appartenance + équivalence | SL-10 |
+| **MAT** | Minimally Adequate Teacher : oracle d'appartenance + équivalence | SL-10 |
 | **Table d'observation** | Structure (S, E, T) fermée et cohérente dont on lit un DFA | SL-10 |
 | **Myhill-Nerode** | Classes d'équivalence de suffixes = états du DFA minimal | SL-10 |
 | **Provenance** | Trace de dérivation attachée à chaque fait inféré | SL-11 |
@@ -441,7 +441,7 @@ SymbolicLearning/
 
 Cette série traverse le **spectre complet** de l'apprentissage, du pur-inductif au pur-neuro-symbolique — un arc qu'aucune autre série du dépôt ne couvre dans son entièreté. Vous avez vu les deux extrémités et le point d'équilibre :
 
-- **Phase 1-2 — apprendre avec peu de données et beaucoup de connaissance** : CBH, Candidate Élimination, Version Space (SL-1) puis EBL (compiler une preuve en règle opérationnelle) et RBL (identifier les attributs déterminants via le treillis des déterminations, SL-2/SL-3). Quand la collecte de données est coûteuse ou impossible, la *connaissance du domaine* bat la statistique brute.
+- **Phase 1-2 — apprendre avec peu de données et beaucoup de connaissance** : CBH, Candidate Elimination, Version Space (SL-1) puis EBL (compiler une preuve en règle opérationnelle) et RBL (identifier les attributs déterminants via le treillis des déterminations, SL-2/SL-3). Quand la collecte de données est coûteuse ou impossible, la *connaissance du domaine* bat la statistique brute.
 - **Phase 3 — apprendre des programmes logiques** : FOIL (top-down), résolution inverse et ses opérateurs V/W (bottom-up), LGG de Plotkin, θ-subsomption, clause bottom, recherche à la Progol (SL-4/SL-5) — jusqu'à l'ILP moderne avec **Popper** (Learning From Failures) qui retrouve le programme récursif optimal et le fait vérifier en SWI-Prolog.
 - **Phase 4-5 — réconcilier le symbolique et le connexionniste** : T-norms différentiables, Logics Tensor Networks, DeepProbLog (SL-6) ; rule mining sur knowledge graphs réels avec rdflib + AMIE (SL-7) ; boucle LLM-symbolique d'extraction et vérification (SL-8) ; apprentissage actif d'automates avec L* d'Angluin (SL-9) ; et le **capstone SL-10** qui assemble un pipeline neuro-symbolique complet — LLM aux extrémités, validation et inférence symboliques au centre, avec provenance.
 
