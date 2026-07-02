@@ -13,6 +13,33 @@ L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux d
 
 Vous y découvrirez sept domaines complémentaires. Le **Web Sémantique** (RDF, SPARQL, OWL) montre comment structurer les connaissances du web pour les rendre exploitables par les machines. La **vérification formelle** avec Lean 4 vous apprend à écrire des preuves mathématiques vérifiées par un ordinateur. L'**argumentation computationnelle** (TweetyProject) modélise le débat et la délibération. La **planification automatique** résout des problèmes concrets de logistique et d'ordonnancement. Les **smart contracts** relient la cryptographie et la logique formelle aux blockchains. L'**analyse argumentative** avec les LLMs jette un pont entre l'IA symbolique et l'IA neuronale. Et l'**apprentissage symbolique** (AIMA ch. 19) montre comment un agent apprend à partir de connaissances existantes plutôt que de données brutes, jusqu'aux pipelines neuro-symboliques couplés aux LLMs. Chaque sous-série est autonome, mais ensemble elles dessinent une vision cohérente de l'IA symbolique moderne.
 
+**Carte de la famille** — les sept sous-séries et leurs ponts (formalismes fondamentaux → applications → ponts neuro-symboliques) :
+
+```mermaid
+flowchart TD
+    TW["Tweety<br/>Argumentation + logiques<br/>(Dung, ASPIC+, AGM, Pearl)"]
+    SW["SemanticWeb<br/>Connaissance du web<br/>(RDF, SPARQL, OWL, SHACL)"]
+    LEAN["Lean<br/>Preuve formelle<br/>(Mathlib4, types dependants)"]
+    PL["Planners<br/>Planification<br/>(PDDL, Fast-Downward, CP-SAT)"]
+    SC["SmartContracts<br/>Blockchain + crypto<br/>(Solidity, DeFi, ZK)"]
+    AA["Argument Analysis<br/>Pont LLM (sophismes, SK)"]
+    SL["SymbolicLearning<br/>Apprentissage symbolique (AIMA 19)"]
+
+    TW -->|"generalise en representation"| SW
+    TW -.->|"companion natif (Tweety-5b)"| LEAN
+    LEAN -.->|"companion (planners_lean)"| PL
+    TW --> AA
+    SW -->|"GraphRAG / linked data"| AA
+    AA --> SL
+
+    classDef found fill:#e8f0fe,stroke:#1a73e8
+    classDef app fill:#e6f4ea,stroke:#188038
+    classDef bridge fill:#fef7e0,stroke:#f9ab00
+    class TW,SW,LEAN found
+    class PL,SC app
+    class AA,SL bridge
+```
+
 **À qui s'adresse cette série** : étudiants en IA, ingénieurs logiciel curieux de logique formelle, et chercheurs souhaitant aller au-delà du machine learning. Les notebooks Python (Tweety, Planners, SmartContracts, SemanticWeb Python, SymbolicLearning) ne nécessitent que Python 3.10+. Les notebooks .NET C# (SemanticWeb, optimisation) requièrent .NET 9.0 + dotnet-interactive. Les notebooks Lean nécessitent WSL + elan. Aucun prérequis en logique avancée : chaque série introduit ses concepts progressivement depuis les fondements.
 
 ## Parcours d'apprentissage
