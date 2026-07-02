@@ -1,110 +1,55 @@
 # 📚 Index des Notebooks CoursIA
 
-Ce document fournit un index organisé de tous les notebooks disponibles dans le dépôt CoursIA, avec une brève description de chaque notebook et des indications sur le niveau de difficulté.
+Ce document sert de **portail d'entrée éditorial** vers le contenu pédagogique du dépôt CoursIA. Il ne maintient **plus** de liste de liens vers les notebooks individuels (cause racine historique de rot : chemins à la main non resynchronisés après les restructurations de séries).
 
-## 🔍 Comment utiliser cet index
+> **Catalogue à jour** — Pour l'inventaire exhaustif et toujours synchronisé des 637 notebooks (comptes exacts par série, statut READY/DEMO, maturité, owner), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)**. Ce catalogue est régénéré automatiquement chaque jour par le workflow `catalog-cron.yml` ; il fait foi sur les chiffres et les statuts.
 
-- Chaque notebook est classé par catégorie thématique
-- Le niveau de difficulté est indiqué : 🟢 Débutant | 🟠 Intermédiaire | 🔴 Avancé
-- Des tags indiquent les concepts clés abordés dans chaque notebook
+## 🎯 Trois niveaux de lecture
 
-## 🤖 IA Générative (GenAI)
+- **Entrée** (le présent fichier, [`index.md`](index.md)) — portail éditorial : thématiques + parcours. Maintenance manuelle, modifications rares.
+- **Vue d'ensemble** ([`README.md`](README.md)) — cartographie rapide du dépôt + parcours d'apprentissage par niveau. Maintenance manuelle, vue pédagogique consolidée.
+- **Catalogue à jour** ([`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)) — inventaire exhaustif : 637 notebooks, statuts, maturités, owners. Maintenance **automatique** (workflow `catalog-cron.yml` quotidien).
 
-| Notebook | Description | Difficulté | Tags |
-|----------|-------------|------------|------|
-| [OpenAI_Intro.ipynb](MyIA.AI.Notebooks/GenAI/OpenAI_Intro.ipynb) | Introduction à l'API OpenAI et aux grands modèles de langage | 🟢 Débutant | `OpenAI`, `API`, `LLM`, `Prompts` |
-| [PromptEngineering.ipynb](MyIA.AI.Notebooks/GenAI/PromptEngineering.ipynb) | Techniques avancées d'ingénierie de prompts | 🟠 Intermédiaire | `Prompt Engineering`, `Few-shot`, `Chain-of-Thought` |
-| [RAG.ipynb](MyIA.AI.Notebooks/GenAI/RAG.ipynb) | Retrieval Augmented Generation pour améliorer les réponses des LLMs | 🔴 Avancé | `RAG`, `Embeddings`, `Vector DB`, `Retrieval` |
-| [LocalLlama.ipynb](MyIA.AI.Notebooks/GenAI/LocalLlama.ipynb) | Utilisation de modèles locaux comme Llama | 🔴 Avancé | `Llama`, `Local LLM`, `Inference` |
+Les trois niveaux sont complémentaires : l'`index.md` répond à *« quelles thématiques ? »*, le `README.md` à *« par où commencer ? »*, le catalogue à *« quel notebook précis dans quelle série ? »*.
 
-### 🧠 Microsoft Semantic Kernel
+## 🗂️ Thématiques pédagogiques
 
-| Notebook | Description | Difficulté | Tags |
-|----------|-------------|------------|------|
-| [01-SemanticKernel-Intro.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/01-SemanticKernel-Intro.ipynb) | Introduction à Microsoft Semantic Kernel | 🟠 Intermédiaire | `Semantic Kernel`, `Plugins`, `Skills` |
-| [02-SemanticKernel-Advanced.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/02-SemanticKernel-Advanced.ipynb) | Fonctionnalités avancées de Semantic Kernel | 🔴 Avancé | `Memory`, `Embeddings`, `Connectors` |
-| [03-SemanticKernel-Agents.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/03-SemanticKernel-Agents.ipynb) | Création d'agents avec Semantic Kernel | 🔴 Avancé | `Agents`, `Planning`, `Orchestration` |
-| [05-SemanticKernel-NotebookMaker.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/05-SemanticKernel-NotebookMaker.ipynb) | Génération automatique de notebooks avec SK | 🔴 Avancé | `Notebook Generation`, `Automation` |
+Chaque série est introduite par son thème central, ses prérequis et un pointeur vers son README détaillé. Aucun lien direct vers un notebook individuel n'est maintenu ici — pour la liste exhaustive, voir le catalogue auto.
 
-## 📊 Machine Learning (ML)
+### Algorithmes de recherche et résolution de contraintes
 
-| Notebook | Description | Difficulté | Tags |
-|----------|-------------|------------|------|
-| [ML-1-Introduction.ipynb](MyIA.AI.Notebooks/ML/ML-1-Introduction.ipynb) | Introduction au ML avec ML.NET | 🟢 Débutant | `ML.NET`, `Régression`, `Introduction` |
-| [ML-2-Data&Features.ipynb](MyIA.AI.Notebooks/ML/ML-2-Data&Features.ipynb) | Préparation des données et ingénierie des caractéristiques | 🟠 Intermédiaire | `Feature Engineering`, `Data Preparation` |
-| [ML-3-Entrainement&AutoML.ipynb](MyIA.AI.Notebooks/ML/ML-3-Entrainement&AutoML.ipynb) | Entraînement de modèles et AutoML | 🟠 Intermédiaire | `Training`, `AutoML`, `Hyperparameters` |
-| [ML-4-Evaluation.ipynb](MyIA.AI.Notebooks/ML/ML-4-Evaluation.ipynb) | Évaluation des modèles de ML | 🟠 Intermédiaire | `Evaluation`, `Metrics`, `Cross-validation` |
-| [TP-prevision-ventes.ipynb](MyIA.AI.Notebooks/ML/TP-prevision-ventes.ipynb) | TP sur la prévision des ventes | 🟠 Intermédiaire | `Sales Prediction`, `Time Series`, `Regression` |
+- **[Search](MyIA.AI.Notebooks/Search/README.md)** — BFS, A*, métaheuristiques (recuit simulé, algorithmes génétiques), propagation de contraintes. Point d'entrée idéal pour découvrir les paradigmes de recherche sans prérequis IA. *Débutant.*
+- **[Sudoku](MyIA.AI.Notebooks/Sudoku/README.md)** — Résolution multi-paradigme d'un même problème NP-complet (33 notebooks C#/Python) : backtracking, métaheuristiques, CP (OR-Tools, Choco), SMT (Z3), inférence probabiliste. Excellent fil rouge pour comparer les approches sur un terrain commun. *Intermédiaire.*
 
-## 🧩 Sudoku
+### Apprentissage automatique
 
-| Notebook | Description | Difficulté | Tags |
-|----------|-------------|------------|------|
-| [Sudoku-0-Environment.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment.ipynb) | Mise en place de l'environnement Sudoku | 🟢 Débutant | `Environment Setup`, `Problem Definition` |
-| [Sudoku-1-Backtracking.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking.ipynb) | Résolution par backtracking | 🟠 Intermédiaire | `Backtracking`, `Search`, `Constraint Satisfaction` |
-| [Sudoku-2-Genetic.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-2-Genetic.ipynb) | Algorithmes génétiques pour Sudoku | 🔴 Avancé | `Genetic Algorithm`, `Evolutionary Computing` |
-| [Sudoku-3-ORTools.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-3-ORTools.ipynb) | Utilisation d'OR-Tools | 🟠 Intermédiaire | `OR-Tools`, `Constraint Programming` |
-| [Sudoku-4-Z3.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-4-Z3.ipynb) | Résolution avec le solveur Z3 | 🟠 Intermédiaire | `Z3`, `SMT Solver`, `Formal Methods` |
-| [Sudoku-5-DancingLinks.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-5-DancingLinks.ipynb) | Algorithme de Dancing Links | 🔴 Avancé | `Dancing Links`, `Algorithm X`, `Exact Cover` |
-| [Sudoku-6-Infer.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-6-Infer.ipynb) | Inférence probabiliste | 🔴 Avancé | `Probabilistic Inference`, `Bayesian` |
+- **[ML](MyIA.AI.Notebooks/ML/README.md)** — Machine Learning avec ML.NET et agents ADK : régression, feature engineering, entraînement, évaluation, TP de prévision de ventes. *Intermédiaire.*
+- **[RL](MyIA.AI.Notebooks/RL/README.md)** — Reinforcement Learning (PPO, DQN, Stable Baselines3). *Avancé.*
 
-## 🔍 Algorithmes de recherche (Search)
+### Intelligence artificielle générative
 
-| Notebook | Description | Difficulté | Tags |
-|----------|-------------|------------|------|
-| [GeneticSharp-EdgeDetection.ipynb](MyIA.AI.Notebooks/Search/GeneticSharp-EdgeDetection.ipynb) | Détection de contours avec algorithmes génétiques | 🔴 Avancé | `Edge Detection`, `Genetic Algorithm`, `Image Processing` |
-| [Portfolio_Optimization_GeneticSharp.ipynb](MyIA.AI.Notebooks/Search/Portfolio_Optimization_GeneticSharp.ipynb) | Optimisation de portefeuille | 🔴 Avancé | `Portfolio Optimization`, `Finance`, `Genetic Algorithm` |
-| [PyGad-EdgeDetection.ipynb](MyIA.AI.Notebooks/Search/PyGad-EdgeDetection.ipynb) | Détection de contours avec PyGad | 🔴 Avancé | `PyGad`, `Edge Detection`, `Python` |
+- **[GenAI](MyIA.AI.Notebooks/GenAI/README.md)** — IA générative multimodale : Image, Audio, Vidéo, Texte, Semantic Kernel, Vibe Coding. La plus grande série du dépôt. *Intermédiaire à avancé selon les sous-séries ; nécessite des clés API (OpenAI, Anthropic) pour les volets LLM.*
 
-## 🧠 IA Symbolique (SymbolicAI)
+### Raisonnement formel et symbolique
 
-| Notebook | Description | Difficulté | Tags |
-|----------|-------------|------------|------|
-| [01_Linq2Z3_Intro.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3/01_Linq2Z3_Intro.ipynb) | Utilisation du solveur Z3 avec LINQ | 🔴 Avancé | `Z3`, `LINQ`, `Constraint Solving` |
-| [OR-tools-Stiegler.ipynb](MyIA.AI.Notebooks/SymbolicAI/OR-tools-Stiegler.ipynb) | Résolution de problèmes avec OR-Tools | 🟠 Intermédiaire | `OR-Tools`, `Optimization`, `Constraint Programming` |
-| [RDF.Net/RDF.Net.ipynb](MyIA.AI.Notebooks/SymbolicAI/RDF.Net/RDF.Net.ipynb) | Utilisation de RDF avec .NET | 🟠 Intermédiaire | `RDF`, `Semantic Web`, `.NET` |
+- **[SymbolicAI](MyIA.AI.Notebooks/SymbolicAI/README.md)** — Lean 4 (preuves formelles), Tweety (argumentation), Semantic Web (RDF, OWL), Smart Contracts, Planners, Symbolic Learning. *Avancé.*
+- **[Probas](MyIA.AI.Notebooks/Probas/README.md)** — Programmation probabiliste (Infer.NET, NumPyro). *Intermédiaire à avancé.*
+- **[GameTheory](MyIA.AI.Notebooks/GameTheory/README.md)** — Théorie des jeux, équilibres de Nash, mechanism design, social choice (Arrow, Sen, Voting) avec ports Lean. *Intermédiaire à avancé.*
 
-## 🔢 Probabilités (Probas)
+### Domaines connexes
 
-| Notebook | Description | Difficulté | Tags |
-|----------|-------------|------------|------|
-| [Infer-101.ipynb](MyIA.AI.Notebooks/Probas/Infer-101.ipynb) | Introduction à l'inférence probabiliste | 🟠 Intermédiaire | `Probabilistic Inference`, `Bayesian`, `Infer.NET` |
+- **[IIT](MyIA.AI.Notebooks/IIT/README.md)** — Théorie de l'information intégrée (Tononi) avec PyPhi. *Avancé / recherche.*
+- **[QuantConnect](MyIA.AI.Notebooks/QuantConnect/README.md)** — Trading algorithmique : notebooks pédagogiques + stratégies backtestées + pipeline ML. *Intermédiaire à avancé.*
+- **[CaseStudies](MyIA.AI.Notebooks/CaseStudies/README.md)** — Études de cas interdisciplinaires.
+- **[cross-series](MyIA.AI.Notebooks/cross-series/README.md)** — Applications transverses (matching-cv : data science multi-domaines).
 
-## 🧪 Integrated Information Theory (IIT)
+## 🚀 Comment choisir son point d'entrée
 
-| Notebook | Description | Difficulté | Tags |
-|----------|-------------|------------|------|
-| [IIT-1-IntroToPyPhi.ipynb](MyIA.AI.Notebooks/IIT/IIT-1-IntroToPyPhi.ipynb) | Introduction à PyPhi pour IIT | 🔴 Avancé | `IIT`, `Consciousness`, `PyPhi` |
+Pour un plan d'apprentissage guidé par niveau (débutant, intermédiaire, avancé), consultez la section **[Parcours recommandés](README.md#parcours-recommandés)** du `README.md` racine.
 
----
+Pour un inventaire technique exhaustif (notebook par notebook, statuts d'exécution, owners), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)**.
 
-## 📈 Parcours d'apprentissage recommandés
+## 📖 Documentation projet
 
-### Parcours Débutant en IA
-1. [ML-1-Introduction.ipynb](MyIA.AI.Notebooks/ML/ML-1-Introduction.ipynb)
-2. [OpenAI_Intro.ipynb](MyIA.AI.Notebooks/GenAI/OpenAI_Intro.ipynb)
-3. [Sudoku-0-Environment.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-0-Environment.ipynb)
+Le répertoire **[docs/](docs/README.md)** centralise les règles de travail, l'infrastructure du dépôt, les procédés récurrents (workflow PR, dispatch d'agents, validation notebook) et les guides d'apprentissage. Cette documentation est destinée aux contributeurs internes du cluster et aux coordinateurs IA.
 
-### Parcours Data Science
-1. [ML-1-Introduction.ipynb](MyIA.AI.Notebooks/ML/ML-1-Introduction.ipynb)
-2. [ML-2-Data&Features.ipynb](MyIA.AI.Notebooks/ML/ML-2-Data&Features.ipynb)
-3. [ML-3-Entrainement&AutoML.ipynb](MyIA.AI.Notebooks/ML/ML-3-Entrainement&AutoML.ipynb)
-4. [ML-4-Evaluation.ipynb](MyIA.AI.Notebooks/ML/ML-4-Evaluation.ipynb)
-5. [TP-prevision-ventes.ipynb](MyIA.AI.Notebooks/ML/TP-prevision-ventes.ipynb)
-
-### Parcours IA Générative
-1. [OpenAI_Intro.ipynb](MyIA.AI.Notebooks/GenAI/OpenAI_Intro.ipynb)
-2. [PromptEngineering.ipynb](MyIA.AI.Notebooks/GenAI/PromptEngineering.ipynb)
-3. [01-SemanticKernel-Intro.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/01-SemanticKernel-Intro.ipynb)
-4. [RAG.ipynb](MyIA.AI.Notebooks/GenAI/RAG.ipynb)
-5. [LocalLlama.ipynb](MyIA.AI.Notebooks/GenAI/LocalLlama.ipynb)
-
-### Parcours Algorithmes de Recherche
-1. [Sudoku-1-Backtracking.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-1-Backtracking.ipynb)
-2. [Sudoku-3-ORTools.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-3-ORTools.ipynb)
-3. [OR-tools-Stiegler.ipynb](MyIA.AI.Notebooks/SymbolicAI/OR-tools-Stiegler.ipynb)
-4. [Portfolio_Optimization_GeneticSharp.ipynb](MyIA.AI.Notebooks/Search/Portfolio_Optimization_GeneticSharp.ipynb)
-
----
-
-🚀 Bon apprentissage !
