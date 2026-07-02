@@ -31,7 +31,7 @@ CSV, columns: `Date,Open,High,Low,Close,Volume`
 
 ## Anti-bias design
 
-5 coins with full 2018+ coverage (BTC, ETH, LTC, XRP, ADA, LINK) prevent the model from overfitting to a single asset's return distribution. 4 coins with shorter histories test generalization to newer assets. MATIC tests handling of delisted/rebranded assets.
+6 coins with full 2018+ coverage (BTC, ETH, LTC, XRP, ADA, LINK) prevent the model from overfitting to a single asset's return distribution. 4 coins with shorter histories test generalization to newer assets. MATIC tests handling of delisted/rebranded assets.
 
 ## Regeneration
 
