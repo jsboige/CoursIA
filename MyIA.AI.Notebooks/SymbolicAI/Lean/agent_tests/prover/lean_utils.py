@@ -23,6 +23,56 @@ _HONEST_SORRY_RE = re.compile(
     "|".join(_HONEST_SORRY_PATTERNS), re.IGNORECASE,
 )
 
+_SORRY_TOKEN_RE = re.compile(r"\bsorry\b")
+
+
+def strip_lean_comments(content: str) -> str:
+    """Strip Lean line comments (``--``) and nested block comments (``/- -/``).
+
+    Character-level scan: handles nested block comments (Lean allows them).
+    No string-literal awareness — Lean proofs virtually never contain the
+    token ``sorry`` inside a string literal, and over-stripping there cannot
+    create a false token.
+    """
+    out = []
+    i, n, depth = 0, len(content), 0
+    while i < n:
+        two = content[i:i + 2]
+        if depth == 0 and two == "--":
+            # line comment: skip to end of line (keep the newline)
+            j = content.find("\n", i)
+            i = n if j < 0 else j
+            continue
+        if two == "/-":
+            depth += 1
+            i += 2
+            continue
+        if depth > 0 and two == "-/":
+            depth -= 1
+            i += 2
+            continue
+        if depth == 0:
+            out.append(content[i])
+        i += 1
+    return "".join(out)
+
+
+def count_real_sorries(content: str) -> int:
+    """Count REAL ``sorry`` tokens: comment-stripped, word-bounded (FX-6 #1453).
+
+    ``content.count("sorry")`` — used historically across the harness —
+    over-counts by including prose mentions in comments/docstrings (observed
+    x4+ inflation: HashlifeCorrectness reported 33 where 4 were real) and
+    misses nothing real: after stripping ``--`` line comments and nested
+    ``/- -/`` blocks, the word-bounded token catches every real form
+    (``exact sorry``, ``:= sorry``, bare ``sorry``, ``sorry -- comment``).
+
+    Reporting/diagnostic use only for now: the success gates keep the legacy
+    substring counter so their deltas stay consistent with the snapshot
+    counters in tools.py (migrating ALL counters at once = FX-7 follow-up).
+    """
+    return len(_SORRY_TOKEN_RE.findall(strip_lean_comments(content)))
+
 
 def is_honest_sorry(filepath: str, sorry_line: int,
                     lookback: int = 12) -> Tuple[bool, str]:

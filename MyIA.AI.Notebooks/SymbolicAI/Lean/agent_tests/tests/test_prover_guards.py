@@ -1451,3 +1451,172 @@ def test_build_check_or_revert_real_solve_records_zero(tmp_path, monkeypatch):
     original = proved.replace("  trivial\n", "  sorry\n")
     assert tt._build_check_or_revert(original, "test") is None
     assert tt._min_compile_sorry_count == 0
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# FX-6 (#1453) — statement-mutation false success. Founding incident
+# (Reidemeister.lean L545, 2026-07-02, trace
+# multi_custom_Reidemeister_L545_openrouter_result.json): the agent replaced
+# the in-statement hole `sorry -- ambient_isotopic k₁ k₂` with the RHS,
+# producing a vacuous X ↔ X closed by `Iff.rfl`. The run reported
+# success=True with proof=null ∧ attempts=0 ∧ sorry_delta=-2: the drop-based
+# disjuncts of the success gates were not conditioned on ANY verified tactic.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_gate_rejects_drop_with_zero_verified_tactics():
+    """Reidemeister shape: drop + build OK + 0 verified tactic => NOT success."""
+    from prover.provers import _autonomous_success_gate
+
+    success, structural = _autonomous_success_gate(
+        final_sorry=2, original_sorry_count=4, final_build_ok=True,
+        verified_tactic_count=0,
+    )
+    assert success is False, (
+        "a sorry drop nobody proved is a statement mutation, not a success"
+    )
+    assert structural is False
+
+
+def test_gate_accepts_drop_with_verified_tactic():
+    """Same drop with >=1 build-verified tactic stays a success."""
+    from prover.provers import _autonomous_success_gate
+
+    success, structural = _autonomous_success_gate(
+        final_sorry=3, original_sorry_count=4, final_build_ok=True,
+        verified_tactic_count=1,
+    )
+    assert success is True
+    assert structural is False
+
+
+def test_gate_structural_progress_unaffected_by_zero_verified():
+    """Decomposition (count up, build OK) stays success even with 0 verified
+    tactics — the FX-6 condition only gates the DROP disjunct (#1483 P4)."""
+    from prover.provers import _autonomous_success_gate
+
+    success, structural = _autonomous_success_gate(
+        final_sorry=5, original_sorry_count=4, final_build_ok=True,
+        verified_tactic_count=0,
+    )
+    assert success is True
+    assert structural is True
+
+
+def test_gate_backward_compat_without_verified_param():
+    """Legacy callers (no verified_tactic_count) keep pre-FX-6 behaviour."""
+    from prover.provers import _autonomous_success_gate
+
+    success, structural = _autonomous_success_gate(
+        final_sorry=2, original_sorry_count=4, final_build_ok=True,
+    )
+    assert success is True
+    assert structural is False
+
+
+def test_stmt_mutation_guard_fires_on_reidemeister_shape():
+    """build OK + drop + proof_found=False + 0 verified => mutation flagged."""
+    from prover.provers import _stmt_mutation_guard
+
+    assert _stmt_mutation_guard(
+        final_sorry=2, original_sorry_count=4, final_build_ok=True,
+        proof_found=False, verified_tactic_count=0,
+    ) is True
+
+
+@pytest.mark.parametrize(
+    "final_sorry,original,build_ok,proof_found,verified,why",
+    [
+        (2, 4, True, True, 0, "proof_found: a real proof legitimises the drop"),
+        (2, 4, True, False, 1, "a build-verified tactic legitimises the drop"),
+        (2, 4, False, False, 0, "build failure is handled by the revert path"),
+        (4, 4, True, False, 0, "no drop: nothing to flag (structural case)"),
+        (5, 4, True, False, 0, "increase: decomposition territory, not mutation"),
+    ],
+)
+def test_stmt_mutation_guard_quiet_cases(final_sorry, original, build_ok,
+                                         proof_found, verified, why):
+    from prover.provers import _stmt_mutation_guard
+
+    assert _stmt_mutation_guard(
+        final_sorry=final_sorry, original_sorry_count=original,
+        final_build_ok=build_ok, proof_found=proof_found,
+        verified_tactic_count=verified,
+    ) is False, why
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# FX-6 (#1453) — count_real_sorries: comment-stripped, word-bounded counter.
+# The legacy `content.count("sorry")` substring counter over-counts prose
+# mentions (HashlifeCorrectness reported 33 where 4 were real) and counts
+# `sorry -- comment` annotations twice when the comment mentions sorry.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_count_real_sorries_ignores_line_comments():
+    from prover.lean_utils import count_real_sorries
+
+    content = (
+        "-- this proof used to be sorry, sorry everywhere\n"
+        "theorem t : True := by\n"
+        "  exact sorry\n"
+    )
+    assert count_real_sorries(content) == 1
+
+
+def test_count_real_sorries_ignores_nested_block_comments():
+    from prover.lean_utils import count_real_sorries
+
+    content = (
+        "/- sorry /- nested sorry -/ still comment sorry -/\n"
+        "theorem t : True := sorry\n"
+    )
+    assert count_real_sorries(content) == 1
+
+
+def test_count_real_sorries_counts_sorry_with_trailing_comment_once():
+    """The Reidemeister in-statement hole form: `sorry -- <prose>` is ONE
+    real sorry even when the trailing comment matters to a human reader."""
+    from prover.lean_utils import count_real_sorries
+
+    content = "    sorry -- ambient_isotopic k₁ k₂\n"
+    assert count_real_sorries(content) == 1
+
+
+def test_count_real_sorries_word_boundary():
+    """`sorryAx` / identifiers containing 'sorry' are not real sorries."""
+    from prover.lean_utils import count_real_sorries
+
+    content = (
+        "#check @sorryAx\n"
+        "def notsorry := 1\n"
+        "example : True := by trivial\n"
+    )
+    assert count_real_sorries(content) == 0
+
+
+def test_count_real_sorries_catches_all_real_forms():
+    from prover.lean_utils import count_real_sorries
+
+    content = (
+        "theorem a : True := sorry\n"          # term-mode := sorry
+        "theorem b : True := by\n"
+        "  exact sorry\n"                       # exact sorry
+        "theorem c : True := by\n"
+        "  sorry\n"                             # bare tactic sorry
+    )
+    assert count_real_sorries(content) == 3
+
+
+def test_strip_lean_comments_preserves_code():
+    from prover.lean_utils import strip_lean_comments
+
+    content = (
+        "import Mathlib.Tactic  -- tail comment\n"
+        "/- block\n   spanning lines -/\n"
+        "theorem t : 1 + 1 = 2 := by norm_num\n"
+    )
+    stripped = strip_lean_comments(content)
+    assert "tail comment" not in stripped
+    assert "spanning lines" not in stripped
+    assert "theorem t : 1 + 1 = 2 := by norm_num" in stripped

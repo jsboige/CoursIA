@@ -177,7 +177,9 @@ def _refuse_honest_sorry(filepath: str, sorry_line: int,
 
 
 def _autonomous_success_gate(final_sorry: int, original_sorry_count: int,
-                             final_build_ok: bool) -> tuple[bool, bool]:
+                             final_build_ok: bool,
+                             verified_tactic_count: Optional[int] = None
+                             ) -> tuple[bool, bool]:
     """Decide AutonomousProver session success from the post-verify counts (P4).
 
     Pure decision behind the increase-case gate (#1483). A file that BUILDS
@@ -189,6 +191,15 @@ def _autonomous_success_gate(final_sorry: int, original_sorry_count: int,
     branch upstream is keyed on ``final_build_ok`` (``level_1_build``) alone, so
     a sorry increase never reaches it as long as the build passes.
 
+    FX-6 (#1453, incident Reidemeister 2026-07-02): when
+    ``verified_tactic_count`` is provided, a sorry-count DROP with ZERO
+    build-verified tactic is NOT a success. A drop nobody proved means the
+    statement itself was mutated (e.g. an in-statement hole
+    ``sorry -- ambient_isotopic k₁ k₂`` rewritten to ``KnotEquiv k₁ k₂``,
+    turning the theorem into a vacuous X ↔ X closed by ``Iff.rfl``): the file
+    compiles, the count drops, and nothing was proved. ``None`` preserves the
+    pre-FX-6 behaviour for legacy callers.
+
     Returns ``(success, structural_progress)``.
     """
     structural_progress = (
@@ -196,11 +207,40 @@ def _autonomous_success_gate(final_sorry: int, original_sorry_count: int,
         and final_build_ok
         and final_sorry > 0
     )
+    sorry_drop = final_sorry < original_sorry_count
+    if verified_tactic_count is not None and verified_tactic_count == 0:
+        sorry_drop = False
     success = (
-        (final_sorry < original_sorry_count or structural_progress)
+        (sorry_drop or structural_progress)
         and final_build_ok
     )
     return success, structural_progress
+
+
+def _stmt_mutation_guard(final_sorry: int, original_sorry_count: int,
+                         final_build_ok: bool, proof_found: bool,
+                         verified_tactic_count: int) -> bool:
+    """FX-6 (#1453): detect a statement-mutation false success.
+
+    Founding incident (Reidemeister.lean L545, 2026-07-02, trace
+    ``multi_custom_Reidemeister_L545_openrouter_result.json``): the agent
+    replaced the in-statement hole ``sorry -- ambient_isotopic k₁ k₂`` with
+    the RHS ``KnotEquiv k₁ k₂``, producing a vacuous X ↔ X theorem closed by
+    ``Iff.rfl``. The run persisted with ``success=True`` while the result
+    JSON showed ``proof=null ∧ attempts=0 ∧ sorry_delta=-2``: the drop-based
+    disjuncts of the success gate were not conditioned on ANY verified
+    tactic.
+
+    A sorry-count drop that no build-verified tactic produced is a mutation
+    of the statement, not a proof. Callers must restore the original file
+    content and flag the outcome ``STMT_MUTATION_FALSE_SUCCESS``.
+    """
+    return (
+        final_build_ok
+        and final_sorry < original_sorry_count
+        and not proof_found
+        and verified_tactic_count == 0
+    )
 
 
 class MultiAgentSorryProver:
@@ -678,10 +718,33 @@ class MultiAgentSorryProver:
         # IMPORTANT: success ALSO requires final_build_ok — a sorry-count drop
         # without a real build is the iter 2 false positive we are guarding
         # against. final_build_ok is set above in the mandatory verify.
+        # FX-6 (#1453): the drop-based disjuncts additionally require at least
+        # one build-verified tactic. A drop with attempts=0 / proof=null is a
+        # statement mutation (vacuous theorem), not a proof — restore the
+        # original file so the mutated statement is never persisted.
+        # (`final_sorry == 0` was subsumed by the drop disjunct: a run always
+        # targets a file with >= 1 sorry, so 0 implies a drop.)
+        verified_tactic_count = sum(
+            1 for a in state.tactic_history if a.success
+        )
+        stmt_mutation = _stmt_mutation_guard(
+            final_sorry, original_sorry_count, final_build_ok,
+            proof_found, verified_tactic_count,
+        )
+        if stmt_mutation:
+            print(
+                f"  STMT_MUTATION_FALSE_SUCCESS: sorry {original_sorry_count}"
+                f" -> {final_sorry} with 0 verified tactic (proof_found="
+                f"{proof_found}). The statement was mutated, nothing was "
+                f"proved. Restoring original file."
+            )
+            Path(filepath).write_text(original_content, encoding="utf-8")
+            final_sorry = original_sorry_count
+            structural_progress = False
         success = (
             (proof_found
-             or final_sorry == 0
-             or final_sorry < original_sorry_count
+             or (final_sorry < original_sorry_count
+                 and verified_tactic_count > 0)
              or structural_progress)
             and final_build_ok
         )
@@ -727,6 +790,9 @@ class MultiAgentSorryProver:
             # from an actual sorry reduction. Without this, both report
             # success=True and consumers cannot tell them apart.
             "structural_progress": structural_progress,
+            # FX-6 (#1453): diagnostic fields for the statement-mutation guard.
+            "verified_tactic_count": verified_tactic_count,
+            **({"flag": "STMT_MUTATION_FALSE_SUCCESS"} if stmt_mutation else {}),
         }
 
     def _build_context_message(self, demo: dict, ctx_data: dict,
@@ -1369,8 +1435,27 @@ class AutonomousProver:
         # strategic decomposition) as long as the file builds. Decision is
         # extracted to a pure helper so the increase-case is unit-testable
         # (#1483). final_build_ok == final_verify_ok here (set at line ~1102).
+        # FX-6 (#1453): same statement-mutation guard as the multi-agent path —
+        # a sorry drop with zero build-verified tactic is a mutated statement,
+        # not a proof: restore the original file and fail the session.
+        verified_tactic_count = sum(
+            1 for a in state.tactic_history if a.success
+        )
+        stmt_mutation = _stmt_mutation_guard(
+            final_sorry, original_sorry_count, final_build_ok,
+            proof_found=False, verified_tactic_count=verified_tactic_count,
+        )
+        if stmt_mutation:
+            print(
+                f"  STMT_MUTATION_FALSE_SUCCESS: sorry {original_sorry_count}"
+                f" -> {final_sorry} with 0 verified tactic. The statement was "
+                f"mutated, nothing was proved. Restoring original file."
+            )
+            Path(filepath).write_text(original_file_content, encoding="utf-8")
+            final_sorry = original_sorry_count
         success, structural_progress_autonomous = _autonomous_success_gate(
-            final_sorry, original_sorry_count, final_build_ok
+            final_sorry, original_sorry_count, final_build_ok,
+            verified_tactic_count=verified_tactic_count,
         )
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
@@ -1415,6 +1500,9 @@ class AutonomousProver:
             # sorry_delta>=0 "proof restructured" outcome is distinguishable
             # from a real sorry reduction in the result JSON.
             "structural_progress": structural_progress_autonomous,
+            # FX-6 (#1453): diagnostic fields for the statement-mutation guard.
+            "verified_tactic_count": verified_tactic_count,
+            **({"flag": "STMT_MUTATION_FALSE_SUCCESS"} if stmt_mutation else {}),
         }
 
     def _build_autonomous_context(self, demo: dict, sorry_line: int,
