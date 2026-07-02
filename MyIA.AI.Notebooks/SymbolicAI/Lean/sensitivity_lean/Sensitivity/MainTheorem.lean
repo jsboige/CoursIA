@@ -101,7 +101,11 @@ theorem huang_degree_theorem (H : Set (Q m.succ)) (hH : Card H ≥ 2 ^ m + 1) :
   calc
     s * |ε q y| = |ε q (s • y)| := by
       rw [map_smul, smul_eq_mul, abs_mul, abs_of_nonneg (Real.sqrt_nonneg _)]
-    _ = |ε q (f m.succ y)| := by rw [← f_image_g y (by simpa using y_mem_g)]
+    _ = |ε q (f m.succ y)| := by
+      -- rc1 : `y ∈ ↑(g m).range` (Submodule.range coe'd to Set) ne defeq plus vers
+      -- `∃ v, (g m) v = y` ; convertir via `Submodule.mem_range` (rc1 API drift).
+      obtain ⟨v, hv⟩ := (g m).mem_range.mp y_mem_g
+      rw [← f_image_g y ⟨v, hv⟩]
     _ = |ε q (f m.succ (lc _ (coeffs y)))| := by rw [(dualBases_e_ε _).lc_coeffs y]
     _ =
         |(coeffs y).sum fun (i : Q m.succ) (a : ℝ) =>

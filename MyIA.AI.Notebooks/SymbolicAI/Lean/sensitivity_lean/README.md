@@ -11,7 +11,7 @@ Mini-projet complet : **0 sorry, 0 axiome** au-delà des axiomes du cœur de Lea
 
 ## Statut
 
-- **Toolchain** : `v4.30.0-rc2`
+- **Toolchain** : `v4.31.0-rc1`
 - **Sorry** : **0** — chaque preuve est close
 - **Build** : `lake build Sensitivity` — SUCCESS
 - **Dépendances** : Mathlib4
