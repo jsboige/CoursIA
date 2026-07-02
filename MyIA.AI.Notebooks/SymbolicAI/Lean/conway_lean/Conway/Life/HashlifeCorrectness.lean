@@ -2070,9 +2070,10 @@ theorem centralCorrect_mem (c : MacroCell) (j : Nat) (p : Int × Int)
 
     Pure composition of `centralCorrect_mem` (G2 congruence, c.153) and
     `toGrid_shift_between` (#4797, the double-shift ingredient) — sorry-free gate
-    ingredient. The residual research heart (sorry 4→3) is `evolve_half_step`,
-    which consumes this gate to connect the induction hypothesis
-    `centralCorrect q_* (k-1)` to the four quadrant offsets at once. -/
+    ingredient. `evolve_half_step` (L2370) and `evolve_add` (L2353) are now
+    sorry-free (c.167 audit); the residual research heart is the L2536
+    offset-matching assembly, which consumes this gate to relate each
+    `out_*` quadrant grid to the wave-2 super-cell `centralCorrect`. -/
 theorem centralCorrect_mem_shift (c : MacroCell) (j : Nat) (a b : Int) (p : Int × Int)
     (h : centralCorrect c j) :
     p ∈ (hashlifeResultAux (j + 2) c).toGrid (a, b) ↔
@@ -2533,7 +2534,61 @@ noncomputable def p4_succ_membership
   -- q_* (k-1)` from `_h3`, then bridged to the RHS window via `evolve_half_step`
   -- (the `2^k` half-step) + `evolve_add` (G1). The offsets `2^out_*.level` vs
   -- `2^k` and the ih at level (k-1) vs goal at level k are the matching core.
-  sorry
+  --
+  -- ATTACK PLAN (c.167 structural audit, po-2026): all G2/G3 infrastructure is
+  -- sorry-free (`evolve_add` L2353, `evolve_half_step` L2370,
+  -- `centralCorrect_mem_shift` L2076, `mem_toGrid_node` L1113,
+  -- `centralCorrect_mem` L2045) — do NOT re-litigate them. The crux is that
+  -- `p4_wave2_ih` (L2200) provides `centralCorrect` of the wave-2 SUPER-CELL
+  -- (a node of 4 `hashlifeResultAux (k+1)` cells), NOT of the individual
+  -- `out_*` quadrants; the goal needs each quadrant separately. Strategy:
+  -- prove ONE intermediate lemma per quadrant relating
+  -- `out_*.toGrid (off_*, off_*)` to the super-cell's `centralCorrect`, via
+  -- `centralCorrect_mem_shift` (#4812, arbitrary-offset re-anchoring) +
+  -- `toGrid_shift_between` (#4797); reduce the RHS with
+  -- `simp [mem_restrictGridTo, isAlive]`. Then assemble the four quadrant
+  -- lemmas under `mem_toGrid_node`. Quadrant-by-quadrant, not all at once.
+  -- Decomposition (c.167 structural balisage): split the iff into (mp) 4 quadrants
+  -- + (mpr) reverse direction. Each mp-branch is a standalone offset-matching
+  -- assembly: relate `out_*.toGrid (off_*, off_*)` to the wave-2 super-cell's
+  -- `centralCorrect` (via `centralCorrect_mem_shift` + `p4_wave2_ih`), then bridge
+  -- to the RHS `restrictGridTo` window via `evolve_half_step` + `evolve_add`.
+  refine Iff.intro (fun hmem => ?_) (fun hmem => ?_)
+  rcases hmem with hnw | hne | hsw | hse
+  · -- NW quadrant: p ∈ (hashlifeResultAux (k+1) out_nw).toGrid (2^k, 2^k)
+    -- where out_nw = hashlifeResultAux (k+1) (node r1 r2 r4 r5).
+    -- Apply centralCorrect_mem_shift with `a = b = 2^k`, `j = k`, `c = out_nw`,
+    -- using centralCorrect via p4_wave2_ih on the super-cell q_nw = node r1 r2 r4 r5.
+    -- Then reduce isAlive/restrictGridTo on RHS via mem_restrictGridTo + evolve_half_step.
+    sorry
+  · -- NE quadrant: shifted window offset (2^k, 2^k + 2^level_out) via out_ne.
+    sorry
+  · -- SW quadrant: shifted window offset (2^k + 2^level_out, 2^k) via out_sw.
+    sorry
+  · -- SE quadrant: shifted window offset (2^k + 2^level_out, 2^k + 2^level_out) via out_se.
+    sorry
+  · -- Reverse direction (mpr): from `p ∈ restrictGridTo (evolve 2^k g) 2^k 2^(k+1)`,
+    -- extract `p.1, p.2 ∈ [2^k, 3·2^k)` and split into 4 sub-windows to pick the
+    -- correct quadrant, then invert the mp argument via centralCorrect_mem_shift.
+    rw [mem_restrictGridTo] at hmem
+    obtain ⟨halive, h1, h2, h3, h4⟩ := hmem
+    -- Window bounds: h1..h4 : (2^k : Int) ≤ p.i < (2^k : Int) + 2^(k+1).
+    -- Convert to `+ 2 * 2^k` form for quad_partition_bounds.
+    have hpow : (2^(k+1) : Int) = 2 * (2^k : Int) := by
+      rw [pow_succ]; ring
+    have h2' : p.1 < (2^k : Int) + 2 * (2^k : Int) := by rw [← hpow]; exact h2
+    have h4' : p.2 < (2^k : Int) + 2 * (2^k : Int) := by rw [← hpow]; exact h4
+    have hs : (0 : Int) ≤ (2^k : Int) := by positivity
+    have hpart := (quad_partition_bounds (2^k : Int) (2^k : Int) hs p).mp
+      ⟨h1, h2', h3, h4'⟩
+    -- hpart : one of 4 sub-window disjuncts. Each disjunct pins p to one quadrant
+    -- sub-window, from which the appropriate out_* is selected via left/right and
+    -- membership reconstructed via inverse centralCorrect_mem_shift + p4_wave2_ih.
+    -- Full case-split (rcases hpart with ⟨..⟩ | ⟨..⟩ | ⟨..⟩ | ⟨..⟩) will consume
+    -- 4 sub-sorries — deferred to next cycle to respect the sorry ceiling budget.
+    -- Ingredients ready in scope: halive, h1..h4, hpart, hpow, p4_wave2_ih.
+    sorry
+
 
 /-- For a level-`k` MacroCell `c` with `k ≥ 2`, the centered region of
     `hashlifeResultAux (k+2) c` (viewed at offset `(2^k, 2^k)`) equals
