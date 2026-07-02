@@ -8,7 +8,7 @@ Authors: Reid Barton, Johan Commelin, Jesse Michael Han, Chris Hughes, Robert Y.
 Port of mathlib4/Archive/Sensitivity.lean to standalone Lake workspace.
 -/
 import Mathlib.Analysis.Normed.Module.Basic
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 import Mathlib.Tactic.FinCases
 
 /-!
