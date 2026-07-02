@@ -17,14 +17,14 @@ Ce glossaire recapitule les termes techniques utilises dans la serie de notebook
 
 ## Distributions
 
-| Distribution | Support | Parametres | Usage typique |
+| Distribution | Support | Paramètres | Usage typique |
 |--------------|---------|------------|---------------|
-| **Bernoulli** | {0, 1} | p (probabilite) | Evenements binaires |
-| **Beta** | [0, 1] | alpha, beta | Prior sur probabilites |
+| **Bernoulli** | {0, 1} | p (probabilité) | Evenements binaires |
+| **Beta** | [0, 1] | alpha, beta | Prior sur probabilités |
 | **Gaussian** | R | mean, precision | Valeurs continues |
 | **TruncatedGaussian** | [a, b] | mean, variance, lower, upper | Valeurs contraintes |
 | **Gamma** | R+ | shape, scale | Prior sur precisions |
-| **Dirichlet** | Simplex | alpha[] | Prior sur poids de melange |
+| **Dirichlet** | Simplex | alpha[] | Prior sur poids de mélange |
 | **Discrete** | {0, ..., K-1} | probs[] | Variables categoriques |
 
 ---
@@ -33,11 +33,11 @@ Ce glossaire recapitule les termes techniques utilises dans la serie de notebook
 
 | Terme | Definition | Exemple |
 |-------|------------|---------|
-| **Prior** | Distribution a priori sur un parametre avant observation | Beta(1,1) = uniform |
+| **Prior** | Distribution a priori sur un paramètre avant observation | Beta(1,1) = uniform |
 | **Posterior** | Distribution mise a jour apres observations | Beta(8,4) |
-| **Likelihood** | Probabilite des observations sachant les parametres | P(donnees \| theta) |
+| **Likelihood** | Probabilité des observations sachant les paramètres | P(données \| theta) |
 | **Conjugate Prior** | Prior dont le posterior a la meme forme | Beta-Bernoulli |
-| **Evidence** | Probabilite marginale des observations P(donnees) | Pour comparaison de modeles |
+| **Evidence** | Probabilité marginale des observations P(données) | Pour comparaison de modèles |
 | **Latent Variable** | Variable non observee a inferer | Capacite etudiant (IRT) |
 
 ---
@@ -46,7 +46,7 @@ Ce glossaire recapitule les termes techniques utilises dans la serie de notebook
 
 | Element | Syntaxe | Description |
 |---------|---------|-------------|
-| **Variable<T>** | `Variable<double>` | Variable aleatoire scalaire |
+| **Variable<T>** | `Variable<double>` | Variable aléatoire scalaire |
 | **VariableArray<T>** | `Variable.Array<double>(range)` | Tableau de variables |
 | **VariableArray2D<T>** | `Variable.Array<double>(r1, r2)` | Matrice de variables |
 | **Range** | `new Range(n)` | Indice pour les boucles de plaque |
@@ -56,11 +56,11 @@ Ce glossaire recapitule les termes techniques utilises dans la serie de notebook
 
 ---
 
-## Modeles Specifiques
+## Modèles Spécifiques
 
 ### IRT (Item Response Theory)
 - **Capacite** : Variable latente representant le niveau d'un etudiant
-- **Difficulte** : Parametre d'une question
+- **Difficulté** : Paramètre d'une question
 - **Discrimination** : Sensibilite de la question a la capacite
 
 ### DINA (Deterministic Input, Noisy And)
@@ -81,13 +81,13 @@ Ce glossaire recapitule les termes techniques utilises dans la serie de notebook
 ### HMM (Hidden Markov Model)
 - **Etat cache** : Variable latente discrete a chaque temps
 - **Emission** : Distribution d'observation par etat
-- **Transition** : Probabilite de changement d'etat
+- **Transition** : Probabilité de changement d'etat
 
 ---
 
 ## Patterns de Code
 
-### Creation de modele
+### Création de modèle
 ```csharp
 // Variable avec prior
 Variable<double> x = Variable.GaussianFromMeanAndPrecision(0, 1).Named("x");
@@ -106,7 +106,7 @@ engine.Compiler.CompilerChoice = CompilerChoice.Roslyn;
 Gaussian xPost = engine.Infer<Gaussian>(x);
 ```
 
-### Modele de melange
+### Modèle de mélange
 ```csharp
 Variable<int> z = Variable.Discrete(weights);  // Composante
 using (Variable.Switch(z))
