@@ -1,26 +1,26 @@
 # Guide d'Installation de Claude Code
 
-Ce guide vous explique comment installer et configurer Claude Code (CLI et extension VS Code) pour la formation, en utilisant OpenRouter comme fournisseur de modeles.
+Ce guide vous explique comment installer et configurer Claude Code (CLI et extension VS Code) pour la formation, en utilisant OpenRouter comme fournisseur de modèles.
 
-## Prerequis
+## Prérequis
 
-- **Visual Studio Code** version 1.98.0 ou superieure : [Telecharger](https://code.visualstudio.com/)
+- **Visual Studio Code** version 1.98.0 ou supérieure : [Télécharger](https://code.visualstudio.com/)
 - **Terminal** : PowerShell (Windows), bash/zsh (macOS/Linux)
 - **Connexion internet**
-- **Cle API OpenRouter** : Fournie par le formateur
+- **Clé API OpenRouter** : Fournie par le formateur
 
 ## Installation de Claude Code
 
-### Option 1 : Installation Native (Recommandee)
+### Option 1 : Installation Native (Recommandée)
 
-L'installation native ne necessite pas Node.js et fonctionne sur tous les systemes d'exploitation.
+L'installation native ne nécessite pas Node.js et fonctionne sur tous les systèmes d'exploitation.
 
 #### Windows
 
-1. Telechargez l'installateur depuis [claude.com/code](https://claude.com/code)
-1. Executez l'installateur `.exe`
-1. Suivez les instructions a l'ecran
-1. Redemarrez votre terminal
+1. Téléchargez l'installateur depuis [claude.com/code](https://claude.com/code)
+1. Exécutez l'installateur `.exe`
+1. Suivez les instructions a l'écran
+1. Redémarrez votre terminal
 
 **Verification :**
 
@@ -63,30 +63,30 @@ claude --version
 
 ### Option 2 : Installation via npm
 
-Si vous avez deja Node.js 18+ installe :
+Si vous avez déjà Node.js 18+ installe :
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
 
-**Note :** L'installation native est preferee car elle evite les conflits de versions Node.js.
+**Note :** L'installation native est préférée car elle évite les conflits de versions Node.js.
 
 ## Installation de l'Extension VS Code
 
-### Methode 1 : Via VS Code Marketplace
+### Méthode 1 : Via VS Code Marketplace
 
 1. Ouvrez **Visual Studio Code**
 1. Appuyez sur `Ctrl+Shift+X` (Windows/Linux) ou `Cmd+Shift+X` (macOS)
 1. Recherchez **"Claude Code"**
 1. Trouvez l'extension officielle **"Claude Code" par Anthropic**
 1. Cliquez sur **Installer**
-1. Redemarrez VS Code si demande
+1. Redémarrez VS Code si demande
 
-### Methode 2 : Lien Direct
+### Méthode 2 : Lien Direct
 
 Cliquez sur ce lien : [Installer Claude Code pour VS Code](vscode:extension/anthropic.claude-code)
 
-### Methode 3 : Command Palette
+### Méthode 3 : Command Palette
 
 1. `Cmd+Shift+P` / `Ctrl+Shift+P`
 1. Tapez : `Extensions: Install Extensions`
@@ -95,9 +95,9 @@ Cliquez sur ce lien : [Installer Claude Code pour VS Code](vscode:extension/anth
 
 ## Configuration avec OpenRouter
 
-### Etape 0 : Installer le proxy OpenRouter (Requis)
+### Étape 0 : Installer le proxy OpenRouter (Requis)
 
-Les requetes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic utilise par Claude Code (bug connu : reponses mal formatees, erreurs d'authentification intermittentes). Le proxy [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) traduit les requetes correctement.
+Les requêtes OpenRouter ne sont pas strictement compatibles avec le protocole Anthropic utilise par Claude Code (bug connu : réponses mal formatées, erreurs d'authentification intermittentes). Le proxy [openrouter-proxy](https://github.com/ahaostudy/openrouter-proxy) traduit les requêtes correctement.
 
 **Installation :**
 
@@ -112,13 +112,13 @@ npm install -g openrouter-proxy
 openrouter-proxy
 ```
 
-Le proxy doit tourner en arriere-plan tant que vous utilisez Claude Code. Verifiez qu'il fonctionne :
+Le proxy doit tourner en arrière-plan tant que vous utilisez Claude Code. Verifiez qu'il fonctionne :
 
 ```bash
 curl http://127.0.0.1:8899/api/v1/models
 ```
 
-Une reponse JSON avec la liste des modeles confirme que le proxy est actif.
+Une réponse JSON avec la liste des modèles confirme que le proxy est actif.
 
 **Lancement automatique (optionnel) :**
 
@@ -134,24 +134,24 @@ macOS / Linux - Ajoutez a `~/.zshrc` ou `~/.bashrc` :
 (openrouter-proxy &>/dev/null &)
 ```
 
-### Etape 1 : Obtenir la Cle API OpenRouter
+### Étape 1 : Obtenir la Clé API OpenRouter
 
-**La cle API vous sera fournie par le formateur.** Conservez-la precieusement.
+**La clé API vous sera fournie par le formateur.** Conservez-la précieusement.
 
-Si vous souhaitez creer votre propre compte OpenRouter :
+Si vous souhaitez créer votre propre compte OpenRouter :
 
 1. Visitez [openrouter.ai](https://openrouter.ai/)
-1. Creez un compte
-1. Accedez a [Settings > API Keys](https://openrouter.ai/settings/keys)
-1. Creez une nouvelle cle API
+1. Créez un compte
+1. Accédez a [Settings > API Keys](https://openrouter.ai/settings/keys)
+1. Créez une nouvelle clé API
 
-### Etape 2 : Configuration via fichier settings.json (Recommandee)
+### Étape 2 : Configuration via fichier settings.json (Recommandée)
 
-La methode la plus fiable pour configurer Claude Code est le fichier `settings.json`. Contrairement aux variables d'environnement, cette methode fonctionne dans **tous les contextes** (terminal, VS Code, scripts) sans manipuler votre profil shell.
+La méthode la plus fiable pour configurer Claude Code est le fichier `settings.json`. Contrairement aux variables d'environnement, cette méthode fonctionne dans **tous les contextes** (terminal, VS Code, scripts) sans manipuler votre profil shell.
 
-#### Option A : Fichier machine (recommande)
+#### Option A : Fichier machine (recommandé)
 
-Creez ou editez le fichier de settings de votre machine :
+Créez ou editez le fichier de settings de votre machine :
 
 - **Windows** : `C:\Users\<UTILISATEUR>\.claude\settings.json`
 - **macOS / Linux** : `~/.claude/settings.json`
@@ -171,16 +171,16 @@ Contenu :
 }
 ```
 
-**Pourquoi cette methode est preferable :**
+**Pourquoi cette méthode est préférable :**
 
-- Fonctionne immediatement dans le terminal, VS Code et les scripts
+- Fonctionne immédiatement dans le terminal, VS Code et les scripts
 - Pas besoin de modifier votre profil shell
-- Pas besoin de redemarrer VS Code pour prendre en compte les changements
+- Pas besoin de redémarrer VS Code pour prendre en compte les changements
 - Le fichier `~/.claude/settings.json` est propre a votre machine et ne sera jamais commite dans un depot git
 
-#### Option B : Fichier projet (si configuration specifique)
+#### Option B : Fichier projet (si configuration spécifique)
 
-Creez `.claude/settings.json` a la racine du projet :
+Créez `.claude/settings.json` a la racine du projet :
 
 ```json
 {
@@ -192,7 +192,7 @@ Creez `.claude/settings.json` a la racine du projet :
 }
 ```
 
-**Important :** Ajoutez-le a votre `.gitignore` pour ne pas exposer votre cle API :
+**Important :** Ajoutez-le a votre `.gitignore` pour ne pas exposer votre clé API :
 
 ```bash
 echo ".claude/settings.json" >> .gitignore
@@ -200,16 +200,16 @@ echo ".claude/settings.json" >> .gitignore
 
 #### Ordre de priorite des settings
 
-Claude Code charge les configurations dans cet ordre (la derniere ecrase les precedentes) :
+Claude Code charge les configurations dans cet ordre (la dernière ecrase les precedentes) :
 
-1. Configuration par defaut de Claude Code
+1. Configuration par défaut de Claude Code
 1. `~/.claude/settings.json` (fichier machine)
 1. `.claude/settings.json` (fichier projet)
-1. Variables d'environnement (PowerShell/Bash, cf. Etape 3)
+1. Variables d'environnement (PowerShell/Bash, cf. Étape 3)
 
-### Etape 3 : Configuration via Variables d'Environnement (Alternative)
+### Étape 3 : Configuration via Variables d'Environnement (Alternative)
 
-Si vous preferez utiliser les variables d'environnement, cette methode fonctionne egalement. **Choisissez l'une ou l'autre methode, pas les deux a la fois.**
+Si vous preferez utiliser les variables d'environnement, cette méthode fonctionne egalement. **Choisissez l'une ou l'autre méthode, pas les deux a la fois.**
 
 #### Windows (PowerShell)
 
@@ -255,14 +255,14 @@ Sauvegardez et rechargez :
 
 #### macOS / Linux (Zsh/Bash)
 
-**Quel fichier editer ?** Sur macOS moderne (Catalina+), le shell par defaut est **zsh**. Selon votre configuration, editez **l'un** des fichiers suivants :
+**Quel fichier editer ?** Sur macOS moderne (Catalina+), le shell par défaut est **zsh**. Selon votre configuration, editez **l'un** des fichiers suivants :
 
-- **`~/.zshrc`** : Source pour tous les shells zsh interactifs (Terminal + VSCode). **Recommande** - couvre tous les cas.
+- **`~/.zshrc`** : Source pour tous les shells zsh interactifs (Terminal + VSCode). **Recommandé** - couvre tous les cas.
 - **`~/.zprofile`** : Source uniquement pour les shells zsh de connexion (login). Fonctionne avec Terminal.app/iTerm2, mais **pas toujours** avec le terminal VSCode.
 - **`~/.bashrc`** : Shells bash interactifs. Uniquement si vous utilisez bash (`chsh -s /bin/bash`).
-- **`~/.bash_profile`** : Shells bash de connexion. Meme remarque que `.zprofile` pour bash.
+- **`~/.bash_profile`** : Shells bash de connexion. Même remarque que `.zprofile` pour bash.
 
-> **Conseil :** Si vous avez deja un `~/.zprofile` mais pas de `~/.zshrc`, le plus simple est de creer `~/.zshrc` ou d'ajouter les exports dans votre `~/.zprofile` existant. Les deux fonctionnent depuis Terminal.app. Si vous utilisez aussi le terminal integre de VSCode, preferez `~/.zshrc`.
+> **Conseil :** Si vous avez déjà un `~/.zprofile` mais pas de `~/.zshrc`, le plus simple est de créer `~/.zshrc` ou d'ajouter les exports dans votre `~/.zprofile` existant. Les deux fonctionnent depuis Terminal.app. Si vous utilisez aussi le terminal integre de VSCode, preferez `~/.zshrc`.
 
 Pour verifier quel shell vous utilisez :
 
@@ -270,7 +270,7 @@ Pour verifier quel shell vous utilisez :
 echo $SHELL    # Affiche /bin/zsh ou /bin/bash
 ```
 
-Pour verifier quels fichiers de profil existent deja :
+Pour verifier quels fichiers de profil existent déjà :
 
 ```bash
 ls -la ~/.zshrc ~/.zprofile ~/.bashrc ~/.bash_profile 2>/dev/null
@@ -308,9 +308,9 @@ source ~/.zshrc       # Si vous avez edite .zshrc
 source ~/.zprofile    # Si vous avez edite .zprofile
 ```
 
-> **Important :** Apres avoir recharge, **fermez et rouvrez votre terminal** (et VSCode si vous l'utilisez) pour que les variables soient prises en compte partout. Un simple `source` ne suffit pas toujours pour les applications lancees depuis le Finder ou Spotlight.
+> **Important :** Après avoir recharge, **fermez et rouvrez votre terminal** (et VSCode si vous l'utilisez) pour que les variables soient prises en compte partout. Un simple `source` ne suffit pas toujours pour les applications lancees depuis le Finder ou Spotlight.
 
-### Etape 4 : Verification de la Configuration
+### Étape 4 : Verification de la Configuration
 
 #### Via CLI
 
@@ -334,7 +334,7 @@ Base URL: http://127.0.0.1:8899/api
    - Activez **"Disable Login Prompt"**
 1. Tapez un message de test : `Bonjour, peux-tu me confirmer que tu fonctionnes ?`
 
-#### Tester chaque modele
+#### Tester chaque modèle
 
 ```bash
 # Test du modele par defaut (Sonnet)
@@ -351,18 +351,18 @@ claude --model haiku -p "Reponds 'Haiku OK'"
 
 ## Modeles Alternatifs via OpenRouter
 
-OpenRouter permet d'utiliser des modeles alternatifs a Claude, souvent moins chers et performants pour le code.
+OpenRouter permet d'utiliser des modèles alternatifs a Claude, souvent moins chers et performants pour le code.
 
-### Pourquoi des modeles alternatifs ?
+### Pourquoi des modèles alternatifs ?
 
-- **Couts** : Jusqu'a 30x moins cher que les modeles Claude natifs
-- **Flexibilite** : Tester differents modeles selon vos besoins
+- **Coûts** : Jusqu'a 30x moins cher que les modèles Claude natifs
+- **Flexibilite** : Tester différents modèles selon vos besoins
 - **Experimentation** : Comparer les performances sur vos cas d'usage
 - **Disponibilite** : Avoir des alternatives en cas d'indisponibilite
 
-### Modeles Recommandes (Mars 2026)
+### Modèles Recommandes (Mars 2026)
 
-| Alias Claude | Modele Alternatif | Identifiant OpenRouter | Context | Prix (Input/Output per M) |
+| Alias Claude | Modèle Alternatif | Identifiant OpenRouter | Context | Prix (Input/Output per M) |
 | ------------ | ----------------- | ---------------------- | ------- | ------------------------- |
 | `opus` | Qwen 3.6 Plus | `qwen/qwen3.6-plus` | 262K | voir OpenRouter |
 | `sonnet` | MiniMax M2.7 | `minimax/minimax-m2.7` | 205K | $0.30 / $1.20 |
@@ -383,16 +383,16 @@ claude --model haiku -p "Liste les fichiers"    # Qwen 3.6 35B-A3B
 claude --model qwen/qwen3.6-plus -p "Question complexe"
 ```
 
-### Presentation des Modeles
+### Presentation des Modèles
 
 #### Qwen 3.6 Plus (Alias Opus)
 
 **Identifiant :** `qwen/qwen3.6-plus`
 
-Qwen 3.6 Plus est le modele flagship de la famille Qwen 3.6 (Alibaba, avril 2026), plus recent et plus performant que Kimi K2.5 sur les taches de raisonnement et de coding agentique :
+Qwen 3.6 Plus est le modèle flagship de la famille Qwen 3.6 (Alibaba, avril 2026), plus recent et plus performant que Kimi K2.5 sur les taches de raisonnement et de coding agentique :
 
 - **Context window** : 262K tokens
-- **Forces** : Raisonnement avance, programmation complexe, taches agentiques multi-etapes
+- **Forces** : Raisonnement avance, programmation complexe, taches agentiques multi-étapes
 - **Cas d'usage ideaux** : Refactoring complexe, architecture de projets, documentation technique
 - **Prix** : voir [openrouter.ai/qwen/qwen3.6-plus](https://openrouter.ai/qwen/qwen3.6-plus)
 
@@ -400,40 +400,40 @@ Qwen 3.6 Plus est le modele flagship de la famille Qwen 3.6 (Alibaba, avril 2026
 
 **Identifiant :** `minimax/minimax-m2.7`
 
-Modele de derniere generation optimise pour la productivite et le coding :
+Modèle de dernière génération optimise pour la productivite et le coding :
 
 - **Context window** : 205K tokens
 - **Forces** : Coding agentique, workflows autonomes, amelioration continue, excellent sur benchmarks coding
-- **Cas d'usage ideaux** : Developpement quotidien, debug, generation de tests, refactoring
+- **Cas d'usage ideaux** : Developpement quotidien, debug, génération de tests, refactoring
 - **Prix** : $0.30 / $1.20 per million tokens (input/output)
 
 #### Qwen 3.6 35B-A3B (Alias Haiku)
 
 **Identifiant :** `qwen/qwen3.6-35b-a3b`
 
-Modele dense compact et rapide :
+Modèle dense compact et rapide :
 
 - **Taille** : 27B parametres (dense)
 - **Context window** : 262K tokens
-- **Forces** : Rapidite, bon rapport qualite/cout, coding solide pour sa taille
+- **Forces** : Rapidite, bon rapport qualite/coût, coding solide pour sa taille
 - **Cas d'usage ideaux** : Exploration rapide, questions simples, taches repetitives, prototypage
 - **Prix** : $0.20 / $1.56 per million tokens (input/output)
 
-### Comparaison avec les Modeles Claude Natifs
+### Comparaison avec les Modèles Claude Natifs
 
 | Aspect | Claude Opus | Qwen 3.6 Plus | Claude Sonnet | MiniMax M2.7 | Claude Haiku | Qwen 3.6 35B-A3B |
 | ---------------- | ----------- | ------------- | ------------- | ------------ | ------------ | ------------ |
 | **Context** | 200K | 262K | 200K | 205K | 200K | 262K |
 | **Prix Input** | $15.00 | voir OR | $3.00 | $0.30 | $0.25 | $0.20 |
 | **Prix Output** | $75.00 | voir OR | $15.00 | $1.20 | $1.25 | $1.56 |
-| **Coding** | Excellent | Excellent | Tres bon | Excellent | Bon | Tres bon |
-| **Raisonnement** | Excellent | Excellent | Tres bon | Tres bon | Bon | Bon |
+| **Coding** | Excellent | Excellent | Très bon | Excellent | Bon | Très bon |
+| **Raisonnement** | Excellent | Excellent | Très bon | Très bon | Bon | Bon |
 
-**Note :** Les prix sont indicatifs. Consultez [OpenRouter Models](https://openrouter.ai/models) pour les tarifs a jour.
+**Note :** Les prix sont indicatifs. Consultez [OpenRouter Models](https://openrouter.ai/models) pour les tarifs à jour.
 
 ### Dans les Subagents
 
-Vous pouvez assigner des modeles differents aux subagents :
+Vous pouvez assigner des modèles différents aux subagents :
 
 ```json
 {
@@ -460,19 +460,19 @@ Vous pouvez assigner des modeles differents aux subagents :
 1. Allez dans **Extensions > Claude Code**
 1. Configurez :
 
-| Parametre | Valeur Recommandee | Description |
+| Parametre | Valeur Recommandée | Description |
 | ------------------------- | ------------------ | ------------------------------------ |
-| **Disable Login Prompt** | Active | Evite la connexion Anthropic |
+| **Disable Login Prompt** | Active | Évite la connexion Anthropic |
 | **Initial Permission Mode** | `default` | Demande avant chaque action |
 | **Preferred Location** | `sidebar` | Position dans l'interface |
-| **Autosave** | Active | Sauvegarde avant lecture/ecriture |
+| **Autosave** | Active | Sauvegarde avant lecture/écriture |
 | **Respect Git Ignore** | Active | Exclut les fichiers ignores |
 
 ### Raccourcis Clavier
 
 Personnalisez vos raccourcis : `Cmd+K Cmd+S` / `Ctrl+K Ctrl+S`
 
-**Raccourcis par defaut :**
+**Raccourcis par défaut :**
 
 - **Toggle Claude Code** : `Cmd+Esc` / `Ctrl+Esc`
 - **New Conversation (Tab)** : `Cmd+Shift+Esc` / `Ctrl+Shift+Esc`
@@ -492,7 +492,7 @@ claude mcp add --transport http searxng https://search.myia.io/
 
 #### 2. Serveur Playwright (Automatisation Navigateur)
 
-Permet d'interagir avec des pages web, remplir des formulaires, prendre des captures d'ecran.
+Permet d'interagir avec des pages web, remplir des formulaires, prendre des captures d'écran.
 
 ```bash
 claude mcp add --transport stdio playwright -- npx -y @anthropic/mcp-server-playwright
@@ -504,19 +504,19 @@ claude mcp add --transport stdio playwright -- npx -y @anthropic/mcp-server-play
 claude mcp add --transport http github https://api.githubcopilot.com/mcp/
 ```
 
-#### 4. Context7 (Documentation a jour)
+#### 4. Context7 (Documentation à jour)
 
-Fournit de la documentation actualisee et des exemples de code specifiques aux versions pour vos prompts. Evite les informations obsoletes des LLMs.
+Fournit de la documentation actualisee et des exemples de code spécifiques aux versions pour vos prompts. Évite les informations obsolètes des LLMs.
 
 ```bash
 claude mcp add --transport stdio context7 -- npx -y @upstash/context7-mcp
 ```
 
-**Utilisation** : Ajoutez "use context7" a votre question ou precisez l'ID de la librairie.
+**Utilisation** : Ajoutez "use context7" a votre question ou précisez l'ID de la librairie.
 
 #### 5. OpenMemory (Memoire persistante)
 
-Permet a Claude de memoriser le contexte entre les sessions. Plus besoin de re-expliquer votre projet a chaque nouvelle conversation.
+Permet a Claude de mémoriser le contexte entre les sessions. Plus besoin de re-expliquer votre projet a chaque nouvelle conversation.
 
 ```bash
 claude mcp add --transport stdio openmemory -- npx -y @mem0/openmemory-mcp
@@ -526,32 +526,32 @@ claude mcp add --transport stdio openmemory -- npx -y @mem0/openmemory-mcp
 
 #### 6. Serena (Agent de code semantique)
 
-Toolkit d'agent de codage offrant recuperation et edition semantique via LSP. Supporte 30+ langages de programmation.
+Toolkit d'agent de codage offrant récupération et edition semantique via LSP. Supporte 30+ langages de programmation.
 
 ```bash
 claude mcp add --transport stdio serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context claude-code --project "$(pwd)"
 ```
 
-**Note** : Utilisez `--context claude-code` pour eviter les conflits avec les outils natifs de Claude Code.
+**Note** : Utilisez `--context claude-code` pour éviter les conflits avec les outils natifs de Claude Code.
 
 #### 7. QuantConnect (Trading Algorithmique - Cours partenaire)
 
-Le serveur MCP QuantConnect permet a Claude Code d'interagir directement avec la plateforme QuantConnect : creer des projets, compiler du code, lancer des backtests, analyser les resultats. Indispensable pour le cours de trading algorithmique.
+Le serveur MCP QuantConnect permet a Claude Code d'interagir directement avec la plateforme QuantConnect : créer des projets, compiler du code, lancer des backtests, analyser les resultats. Indispensable pour le cours de trading algorithmique.
 
-**Prerequis :**
+**Prérequis :**
 
 - Un compte QuantConnect (gratuit sur [quantconnect.com](https://www.quantconnect.com/))
-- Docker Desktop installe et en cours d'execution
+- Docker Desktop installe et en cours d'exécution
 - Vos identifiants QC fournis par le formateur
 
 **Configuration :**
 
-1. Recuperez vos identifiants QuantConnect :
+1. Récupérez vos identifiants QuantConnect :
    - **User ID** : Trouvez-le dans [Account Settings](https://www.quantconnect.com/account)
    - **API Token** : Generez-le dans [API Credentials](https://www.quantconnect.com/account/api)
    - **Organization ID** : Visible dans [Organizations](https://www.quantconnect.com/organization)
 
-2. Creez un fichier `.mcp.json` a la racine de votre projet :
+2. Créez un fichier `.mcp.json` a la racine de votre projet :
 
 ```json
 {
@@ -587,9 +587,9 @@ echo ".mcp.json" >> .gitignore
 docker ps
 ```
 
-Si Docker n'est pas lance, demarrez Docker Desktop et attendez qu'il soit pret.
+Si Docker n'est pas lance, démarrez Docker Desktop et attendez qu'il soit pret.
 
-1. Redemarrez Claude Code pour charger le serveur MCP :
+1. Redémarrez Claude Code pour charger le serveur MCP :
 
 ```bash
 # Dans VS Code : fermez et rouvrez le panneau Claude Code
@@ -620,7 +620,7 @@ Vous devriez voir le serveur `qc-mcp` avec le statut "Connected" et environ 60 o
 
 | Probleme | Solution |
 | ---------- | ---------- |
-| "Docker not found" | Installez Docker Desktop et redemarrez votre terminal |
+| "Docker not found" | Installez Docker Desktop et redémarrez votre terminal |
 | "Authentication failed" | Verifiez vos identifiants dans `.mcp.json` |
 | "No spare nodes" | Attendez quelques minutes, les ressources QC sont partagees |
 | Rate limiting | Max 10 appels/minute. Postez sur le dashboard si blocage persistant |
@@ -633,7 +633,7 @@ Vous devriez voir le serveur `qc-mcp` avec le statut "Connected" et environ 60 o
 claude mcp list
 ```
 
-**Voir les details d'un serveur :**
+**Voir les détails d'un serveur :**
 
 ```bash
 claude mcp get searxng
@@ -665,7 +665,7 @@ claude mcp add --transport http --scope user mon-serveur https://...
 claude mcp add --transport http --scope project mon-serveur https://...
 ```
 
-Creera un fichier `.mcp.json` dans votre projet.
+Créera un fichier `.mcp.json` dans votre projet.
 
 ## Premiers Pas
 
@@ -689,7 +689,7 @@ claude
 claude -p "Liste les fichiers Python de ce projet"
 ```
 
-**Continuer la derniere conversation :**
+**Continuer la dernière conversation :**
 
 ```bash
 claude -c
@@ -700,11 +700,11 @@ claude -c
 1. **Ouvrir un fichier dans VS Code**
 1. **Cliquer sur l'icone (spark)** dans la barre d'outils
 1. **Selectionner du code**
-1. **Appuyer sur `Alt+K`** pour creer une reference
+1. **Appuyer sur `Alt+K`** pour créer une référence
 1. **Poser une question :** `Explique-moi ce code`
-1. **Examiner la reponse et les diffs proposes**
+1. **Examiner la réponse et les diffs proposes**
 
-### Generer CLAUDE.md pour Votre Projet
+### Générer CLAUDE.md pour Votre Projet
 
 ```bash
 cd /chemin/vers/votre/projet
@@ -717,7 +717,7 @@ Puis dans Claude :
 /init
 ```
 
-Claude generera automatiquement un fichier `CLAUDE.md` adapte a votre projet.
+Claude générera automatiquement un fichier `CLAUDE.md` adapte a votre projet.
 
 ## Resolution de Problemes
 
@@ -726,8 +726,8 @@ Claude generera automatiquement un fichier `CLAUDE.md` adapte a votre projet.
 **Solution :**
 
 - Verifiez l'installation : `which claude` (macOS/Linux) ou `where.exe claude` (Windows)
-- Ajoutez au PATH si necessaire
-- Redemarrez votre terminal
+- Ajoutez au PATH si nécessaire
+- Redémarrez votre terminal
 
 ### Probleme : "Authentication failed" avec OpenRouter
 
@@ -741,31 +741,31 @@ echo $ANTHROPIC_AUTH_TOKEN     # Doit afficher votre cle sk-or-v1-...
 echo $ANTHROPIC_API_KEY        # Doit afficher une ligne vide
 ```
 
-Verifiez votre cle API sur [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys).
+Verifiez votre clé API sur [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys).
 
-Sur macOS, verifiez que les exports sont dans le bon fichier de profil (voir Etape 3).
+Sur macOS, verifiez que les exports sont dans le bon fichier de profil (voir Étape 3).
 
 ### Probleme : Extension VS Code ne se connecte pas
 
 **Solution :**
 
 1. Activez **"Disable Login Prompt"** dans les parametres
-1. Redemarrez VS Code **completement** (pas juste recharger la fenetre)
+1. Redémarrez VS Code **complètement** (pas juste recharger la fenetre)
 1. Verifiez les logs : `Cmd+Shift+P` > "Developer: Show Logs"
 
 ### Probleme : "Model not found"
 
-Verifiez que l'identifiant du modele est correct sur [OpenRouter Models](https://openrouter.ai/models).
+Verifiez que l'identifiant du modèle est correct sur [OpenRouter Models](https://openrouter.ai/models).
 
 ### Probleme : "Rate limit exceeded"
 
 1. Attendez quelques secondes et reessayez
 1. Verifiez vos credits sur [OpenRouter Activity](https://openrouter.ai/activity)
-1. Considerez un plan payant pour des limites plus elevees
+1. Considerez un plan payant pour des limites plus élevées
 
-### Probleme : Le modele ne repond pas comme attendu
+### Probleme : Le modèle ne repond pas comme attendu
 
-Certains modeles alternatifs ont des comportements differents. Ajustez vos prompts :
+Certains modèles alternatifs ont des comportements différents. Ajustez vos prompts :
 
 ```bash
 # Etre plus explicite sur le format attendu
@@ -785,7 +785,7 @@ claude mcp add --transport stdio mon-serveur -- cmd /c npx -y @package/nom
 
 ## Commandes Utiles
 
-**Mettre a jour Claude Code :**
+**Mettre à jour Claude Code :**
 
 ```bash
 claude update
@@ -825,15 +825,15 @@ claude -p --no-session-persistence "query"
 claude --append-system-prompt "Toujours utiliser TypeScript et inclure des tests"
 ```
 
-**Remplacer completement le system prompt :**
+**Remplacer complètement le system prompt :**
 
 ```bash
 claude --system-prompt "Tu es un expert Python specialise en data science"
 ```
 
-### Definir des Agents Personnalises
+### Définir des Agents Personnalises
 
-Creez un fichier `custom-agents.json` :
+Créez un fichier `custom-agents.json` :
 
 ```json
 {
@@ -893,7 +893,7 @@ Editez `.claude/settings.json` :
 
 - [Documentation OpenRouter](https://openrouter.ai/docs)
 - [Guide d'integration Claude Code](https://openrouter.ai/docs/guides/claude-code-integration)
-- [Tarifs et modeles](https://openrouter.ai/models)
+- [Tarifs et modèles](https://openrouter.ai/models)
 - [Qwen 3.6 Plus sur OpenRouter](https://openrouter.ai/qwen/qwen3.6-plus)
 - [MiniMax M2.7 sur OpenRouter](https://openrouter.ai/minimax/minimax-m2.7)
 - [Qwen 3.6 35B-A3B sur OpenRouter](https://openrouter.ai/qwen/qwen3.6-35b-a3b)
@@ -911,12 +911,12 @@ Editez `.claude/settings.json` :
 - [ ] Claude Code CLI installe et fonctionnel (`claude --version`)
 - [ ] Extension VS Code installee
 - [ ] Fichier settings.json configure (ou variables d'environnement)
-- [ ] Test CLI reussi (`claude /status`)
-- [ ] Test Extension VS Code reussi
+- [ ] Test CLI réussi (`claude /status`)
+- [ ] Test Extension VS Code réussi
 - [ ] Au moins 1 serveur MCP configure
-- [ ] Fichier CLAUDE.md genere pour votre projet (`/init`)
+- [ ] Fichier CLAUDE.md généré pour votre projet (`/init`)
 - [ ] Raccourcis clavier personnalises (optionnel)
-- [ ] Modeles alternatifs configures (optionnel)
+- [ ] Modèles alternatifs configures (optionnel)
 
 ---
 
