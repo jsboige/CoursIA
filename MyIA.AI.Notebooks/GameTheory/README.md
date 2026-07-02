@@ -581,6 +581,56 @@ La théorie des jeux n'est pas qu'un objet académique : ses résultats structur
 - **Coopération et évolution** (notebook 6) — le tournoi d'Axelrod et les dynamiques de replication modélisent l'émergence de la coopération en biologie, en relations internationales et dans les protocoles de réseaux pair-à-pair.
 - **Régulation et dissuasion** (notebooks 10-12) — l'induction arrière, les jeux de réputation et le signaling formalisent la crédibilité des menaces, des banques centrales (politique monétaire) à la stratégie concurrentielle.
 
+### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
+
+GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **cinq lakes game-théoriques phares** (toolchain `v4.31.0-rc1`, branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
+
+| Famille | Lake phare | Théorème | Branchement notebook |
+| --- | --- | --- | --- |
+| **GameTheory** (choix social) | `social_choice_lean` (cf. `arrow_lean`) | Théorème d'impossibilité d'Arrow + caractérisation Sen + valeur de Shapley (résolu 0 sorry) | Notebooks 16b (Arrow), Argument_Analysis |
+| **GameTheory** (équilibres) | `minimax_lean` (Sion) | Existence d'un équilibre en stratégies mixtes via point fixe (Brouwer-Sion) | GameTheory-5b-Lean-Minimax (companion natif) |
+| **GameTheory** (design) | `lean_game_defs_ext` | Vickrey (enchère au second prix = stratégie dominante), théorème de révélation | GameTheory-11b-Lean-BayesianGamesExt |
+| **GameTheory** (coopératif) | `cooperative_games_lean` (Bondareva-Shapley) | Bondareva-Shapley résolu 0 sorry (#3954), Core non-vide sous balanced | Notebooks 13-14 (coalitions, valeur de Shapley) |
+| **GameTheory** (matching) | `stable_marriage_lean` | Gale-Shapley : existence + optimalité côté proposant | Notebooks 16a-2 (stable matching) |
+| **Search** (cross-famille) | `astar_lean` (cf. `#4048`) | Consistance + heuristique admissible = optimalité | Search-13 (A*), branchement par preuve de correction |
+| **QuantConnect** (cross-famille) | `kelly_lean` (cf. `#4052`) | Kelly `g(f) ≤ g(f*)` + unicité | QC-Py-10 Risk Management, branchement par fraction risquée |
+
+```mermaid
+flowchart LR
+    subgraph SIM["Notebooks GameTheory (simulation)"]
+        N1["Arrow Vote social"]
+        N2["Minimax Sion"]
+        N3["Vickrey Bayesian"]
+        N4["Shapley Core"]
+        N5["Gale-Shapley matching"]
+        N6["Repeated games grim"]
+    end
+    subgraph LEAN["Lakes Lean 4 (preuve)"]
+        L1["social_choice_lean<br/>impossibilité"]
+        L2["minimax_lean<br/>Sion"]
+        L3["lean_game_defs_ext<br/>Vickrey"]
+        L4["cooperative_games_lean<br/>0 sorry #3954"]
+        L5["stable_marriage_lean<br/>Gale-Shapley"]
+        L6["repeated_games_lean<br/>grim_trigger"]
+    end
+    N1 -. "impossibilité prouvée" .-> L1
+    N2 -. "existence point fixe" .-> L2
+    N3 -. "stratégie dominante" .-> L3
+    N4 -. "balanced ⟹ Core non-vide" .-> L4
+    N5 -. "optimalité proposant" .-> L5
+    N6 -. "stabilité sous menace" .-> L6
+    style L1 fill:#e8f5e9
+    style L2 fill:#e8f5e9
+    style L3 fill:#e8f5e9
+    style L4 fill:#e8f5e9
+    style L5 fill:#e8f5e9
+    style L6 fill:#e8f5e9
+```
+
+Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Lemke-Howson, Gale-Shapley via `stable_marriage_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, Gale-Shapley existence et optimalité côté proposant). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
+
+Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [hub QuantConnect ↔ `kelly_lean`](../QuantConnect/README.md) (PR #5047), [hub central P0 ↔ Lean inter-familles](../README.md) (PR #5049), [hub SymbolicAI Lean](../SymbolicAI/Lean/README.md).
+
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
