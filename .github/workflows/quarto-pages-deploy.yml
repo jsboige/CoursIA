@@ -1,0 +1,92 @@
+name: Quarto Pages Deploy
+
+# Quarto site build + GitHub Pages deployment
+# Tranche 4 #4211 — cf. https://github.com/jsboige/CoursIA/issues/4211
+# Owner: po-2023:CoursIA (scaffolding) / ai-01 (steering)
+#
+# Pattern : actions/deploy-pages + upload-pages-artifact (recommandé par GitHub)
+# vs branche `gh-pages` (legacy) — évite la pollution git du repo principal.
+#
+# Spécificités CoursIA :
+# - `freeze: auto` dans `_quarto.yml` : Quarto re-render seulement sur changement source
+# - `notebook-preview: false` : les .ipynb sont publiés tels quels avec outputs embedded
+# - Pas de kernel exec sur CI : les notebooks .NET C# / Lean 4 / Python sont déjà
+#   commités avec outputs (règle C.2). Seuls les .qmd sont rendus sur CI.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "_quarto.yml"
+      - "**.qmd"
+      - "MyIA.AI.Notebooks/**/index.qmd"
+      - "MyIA.AI.Notebooks/**/_output.ipynb"
+      - "MyIA.AI.Notebooks/**/README.md"
+      - "docs/**"
+      - "favicon.ico"
+      - "styles.css"
+      - ".github/workflows/quarto-pages-deploy.yml"
+  workflow_dispatch:
+
+# Annule les runs obsolètes pour économiser des minutes CI (mêmes pushes en rafale)
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Quarto site
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          # Version alignée sur local (cf. po-2023-c160/c161 Quarto tranches).
+          # Si bump futur → changer ici + changer .claude/CLAUDE.md si besoin.
+          version: 1.7.32
+
+      - name: Render Quarto site
+        # `freeze: auto` (dans _quarto.yml) => Quarto n'exécute PAS les notebooks .ipynb.
+        # Les .ipynb sont juste copiés dans _site/ avec leurs outputs embedded
+        # (déjà validés et commités par les workers, règle C.2).
+        run: quarto render --to html
+        # Pas de --execute : sinon ça tente de ré-exécuter les notebooks = impossible
+        # sans kernels .NET Interactive / Lean 4 / conda Python spécialisés.
+
+      - name: Check output
+        # Sécurité : vérifie que _site/ existe (sinon le deploy échouera avec une
+        # erreur cryptique). Fail fast = message d'erreur clair.
+        run: |
+          test -d _site || (echo "::error::_site/ absent après quarto render" && exit 1)
+          test -f _site/index.html || (echo "::error::_site/index.html absent" && exit 1)
+          echo "_site/ présent avec $(find _site -type f | wc -l) fichiers"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+          # name: pas nécessaire, l'action lit le path
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+        # Pas de branche gh-pages : utilise l'environment GitHub Pages natif
+        # via OIDC token (page-deploy doit être activé dans Settings → Pages).
