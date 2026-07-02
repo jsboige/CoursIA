@@ -66,10 +66,11 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 16 | [Infer-16-Modeles-Hierarchiques](Infer-16-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
 | 17 | [Infer-17-Kalman-Filter](Infer-17-Kalman-Filter.ipynb) | 55 min | Filtre de Kalman, système dynamique linéaire gaussien, conjugaison, EP exacte |
 | 18 | [Infer-18-Change-Point](Infer-18-Change-Point.ipynb) | 50 min | Détection de rupture, DiscreteUniform, ForEach + If/IfNot sur plage, EP, Poisson |
+| 19 | [Infer-19-Survival-Analysis](Infer-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, Exponentielle conjugée (Gamma), Weibull par transformée, S(t) forme fermée |
 
 > **Théorie de la décision** : les 10 notebooks de décision (utilité, EVPI, MDPs, Thompson Sampling, plus 2 companions Lean) forment désormais un arc autonome dans [`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/).
 
-**Durée totale** : ~14h (corpus bayésien 1-18)
+**Durée totale** : ~14h50 (corpus bayésien 1-19)
 
 **Ressource complémentaire** : [Glossaire](Infer-Glossary.md) - Définitions des termes techniques
 
@@ -82,7 +83,7 @@ flowchart TD
     P3["<b>Classification & sélection</b> (7-8)<br/>A/B tests · evidence · ARD"]
     P4["<b>Modèles avancés</b> (9-12)<br/>LDA · crowdsourcing · HMM · reco"]
     P5["<b>Référence</b> (13)<br/>Debugging · comparaison algorithmes"]
-    P8["<b>Frontières</b> (14-18)<br/>causalité · GP sparse · hiérarchique · Kalman · change-point"]
+    P8["<b>Frontières</b> (14-19)<br/>causalité · GP sparse · hiérarchique · Kalman · change-point · survie"]
     DT["<b>Théorie de la décision</b><br/>arc autonome : ../DecisionTheory/Infer/"]
     P1 --> P2 --> P3 --> P4
     P4 --> P8
