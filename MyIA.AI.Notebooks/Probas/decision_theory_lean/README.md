@@ -167,6 +167,20 @@ contraposée :
   prouvée + la réciproque ouverte documentée) est cohérente avec le module `Utility`
   du même lake (direction saine prouvée, existence Herstein–Milnor ouverte).
 
+#### Mécanisme du Dutch Book — pourquoi la cohérence force l'additivité
+
+```mermaid
+flowchart TD
+    Q["Prix unitaire q A : un ticket paie 1 € si A se réalise<br/>achète = vend au même prix (pas de spread)"]
+    Q --> T{"q viole-t-il l'inclusion–exclusion ?<br/>δ := q(A∪B)+q(A∩B)−q A−q B"}
+    T -->|"OUI (δ ≠ 0, prix incohérents)"| DB["Dutch Book : mises (1, 1, −1, −1)<br/>sur (A, B, A∩B, A∪B)"]
+    DB --> G["Gain du livret = δ en tout état<br/>(ind_inclusion_exclusion :<br/>𝟙_A+𝟙_B−𝟙_{A∩B}−𝟙_{A∪B} = 0)"]
+    G --> LOSS["Signe des mises choisi ⟹<br/>perte stricte et sûre pour l'agent"]
+    LOSS --> NEG["Un prix cohérent ne peut pas violer<br/>l'inclusion–exclusion (contraposée)"]
+    T -->|"NON (δ = 0 pour tout A,B)"| ADD["q cohérent ⟹ additif<br/>(coherent_on_implies_additive)"]
+    ADD --> K["⟹ axiomes de Kolmogorov :<br/>q est une mesure de probabilité"]
+```
+
 Les primitives (`Basic.lean`) : `Event` (= `Finset Ω`), `Price` (= `Event Ω → ℝ`),
 et l'indicatrice `ind` comme réel.
 
