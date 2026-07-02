@@ -35,7 +35,7 @@ layout: default
 - I. Introduction
 - II. Resolution de problemes
 - III. Bases de connaissances et logique
-- IV. Incertitude et modeles probabilistes
+- IV. Incertitude et modèles probabilistes
 - **V. Theorie des jeux**
 - VI. Apprentissage
 - VII. Traitement du langage naturel
@@ -99,7 +99,7 @@ layout: dense
 
 ## Meilleure reponse
 
-- Etant donnee les autres choix
+- Etant donnée les autres choix
 - Equilibre de Nash = meilleure reponse pour tous
 
 ---
@@ -122,7 +122,7 @@ layout: dense
 
 ## Calcul des gains esperes
 
-- Somme ponderee par les probabilites individuelles
+- Somme ponderee par les probabilités individuelles
 - Ex: Bataille des sexes (boxe vs ballet): 2 equilibres purs + mixte 1/3 vs 2/3 -> gain 2/3
 
 ---
@@ -182,14 +182,14 @@ layout: dense
 layout: dense
 ---
 
-# Jeux a etapes
+# Jeux a étapes
 
 ## Plusieurs manches
 
 - Sous-jeux simultanes, Gains independants, connaissance du passe
 - Difficile a dessiner (exponentiel)
 - Theoremes:
-  - Derniere etape -> Equilibre de Nash (passe non modifiable)
+  - Derniere étape -> Equilibre de Nash (passe non modifiable)
   - Autres: jouer equilibres de Nash = 1 equilibre de sous-jeu
   - Mais autres equilibres de sous-jeu possibles (cooperation)
 
@@ -227,9 +227,9 @@ layout: dense
 ## Equilibre de lame de couteau
 
 - X>0 -> Up, Left vs x<0 -> down, right, x=0 -> tous
-- Instable autour de x=0, probabilite faible -> ignore
+- Instable autour de x=0, probabilité faible -> ignore
 
-## Modeles causaux
+## Modèles causaux
 
 - Proprietes causales des inputs -> Statiques comparees
   - Calcul des gradients aux equilibres
@@ -283,7 +283,7 @@ layout: dense
 ## Information incomplete
 
 - Sur les autres joueurs (ex: recompenses)
-- Representation = Distribution de probabilite sur les types de joueurs
+- Representation = Distribution de probabilité sur les types de joueurs
   - Information imparfaite -> Analyse probabiliste
 
 ## Formalisation
@@ -315,8 +315,8 @@ layout: dense
 ## Jeux sequentiels
 
 - Rappel SPE -> equilibres non plausibles (menaces non credibles)
-- Systemes de croyance: assignations de probabilites sur les types
-  - "Consistant" -> Probabilites par application des strategies (Bayes)
+- Systemes de croyance: assignations de probabilités sur les types
+  - "Consistant" -> Probabilités par application des strategies (Bayes)
 - Rationalite sequentielle: recompense esperee maximale
 
 ## Definition PBE
@@ -517,7 +517,7 @@ layout: default
 
 # Allocation par la negociation
 
-## Modele des offres alternees
+## Modèle des offres alternees
 
 - Si pas d'accord: Accord de conflit -> fenetre de negociation
 - Nombre de manches:
@@ -545,7 +545,7 @@ layout: default
 
 ## Demarche
 
-- Hypotheses -> Modeles de jeux -> Equilibres et pouvoirs de negociation
+- Hypotheses -> Modèles de jeux -> Equilibres et pouvoirs de negociation
 
 ## Sources du pouvoir de negociation
 
@@ -672,7 +672,7 @@ layout: default
 - I. Introduction
 - II. Resolution de problemes
 - III. Bases de connaissances et logique
-- IV. Incertitude et modeles probabilistes
+- IV. Incertitude et modèles probabilistes
 - V. Theorie des jeux
 - **VI. Apprentissage**
 - VII. Traitement du langage naturel
@@ -686,8 +686,8 @@ layout: dense
 
 1. Moteur de recherche augmente par le raisonnement et le langage naturel
 2. Conception de bots de services sur reseaux sociaux
-3. Conception d'un modele d'inference pour l'analyse de sentiment
-4. Creation d'une plateforme semantique LDP
+3. Conception d'un modèle d'inference pour l'analyse de sentiment
+4. Création d'une plateforme semantique LDP
 5. Resolution de Captchas par deep learning
 6. Entrainement de strategies de trading algorithmiques sur crypto monnaies
 7. Amelioration par l'apprentissage d'un agent joueur de Go simple
