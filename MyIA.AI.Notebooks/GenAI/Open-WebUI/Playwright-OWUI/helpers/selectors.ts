@@ -113,8 +113,10 @@ export const ACCOUNT = {
 // La v0.10.2 affiche EN DIRECT les etapes de raisonnement des modeles
 // "thinking". Le bloc est generalement un <details> repliable, ou un
 // conteneur dont le libelle contient "raisonnement"/"reflexion"/"thinking".
-// Selecteurs volontairement larges — A CONFIRMER contre l'UI live (comme
-// tous les selecteurs, l'interface peut deriver d'une version a l'autre).
+// VERIFIE firsthand contre v0.10.2 (2026-07-02) : avec un modele "thinking"
+// (ex. OpenRouter.deepseek/deepseek-r1-0528), ces selecteurs detectent bien le
+// bloc de raisonnement rendu en direct (test 06b "raisonnement", 7 passed).
+// Restent volontairement larges (l'UI peut deriver d'une version a l'autre).
 export const REASONING = {
   // Conteneur repliable du raisonnement
   block:
