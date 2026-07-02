@@ -301,6 +301,6 @@ Une fois votre environnement configuré :
 
 ---
 
-**Besoin d'aide ?** Consultez le [TROUBLESHOOTING.md](TROUBLESHOOTING.md) (à venir) ou posez vos questions sur le forum QuantConnect.
+**Besoin d'aide ?** Consultez la section « Problèmes Courants » ci-dessus, ou posez vos questions sur le forum QuantConnect.
 
 **Bon trading algorithmique !** 🚀
