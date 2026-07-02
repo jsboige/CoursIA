@@ -21,6 +21,7 @@ from generate_catalog import (
     _effective_code_cells,
     _is_exercise_stub,
     _merge_curated_fields,
+    analyze_notebook,
     check_errors,
     classify_maturity,
     count_todos,
@@ -418,6 +419,122 @@ class TestHasMarkdownIntroConclusion:
         ]
         _, conclusion = has_markdown_intro_conclusion(cells)
         assert conclusion is False
+
+
+# --- analyze_notebook : serie/sous_serie classification (regression #4910) ---
+
+class TestAnalyzeNotebookSerieClassification:
+    """Regression tests for #4910.
+
+    Issue: catalog-cron marker for CaseStudies/README.md was stale
+    (pedagogical_count: 4) because the scanner seemed to miss SmartGrid-Energy
+    notebooks. Diagnosis: the scanner IS correct (it rglobs all *.ipynb),
+    but the README feuille for SmartGrid-Energy was missing at the time of
+    the last cron run. Once the leaf README is in place (PR #4915), the cron
+    picks up the entries at the next 03:37 UTC run and updates the marker.
+
+    These tests lock down the classification behavior so that:
+    - CaseStudies/SmartGrid-Energy/solution/foo.ipynb -> serie=CaseStudies,
+      sous_serie=SmartGrid-Energy (the exact pattern from #4910)
+    - A leaf dir with no README still gets picked up correctly
+    - The two-level structure (solution/ + student/) inside the leaf dir
+      does NOT change the serie/sous_serie derivation
+    """
+
+    def _write_notebook(self, base: Path, rel_path: str) -> Path:
+        """Write a minimal READY notebook at base/rel_path."""
+        nb_path = base / rel_path
+        nb_path.parent.mkdir(parents=True, exist_ok=True)
+        nb = _nb(
+            [_code("x = 1", [_stream_output("ok")])],
+            metadata={"kernelspec": {"display_name": "Python 3", "name": "python3"}},
+        )
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        return nb_path
+
+    def test_smartgrid_solution_classified_case_studies(self, tmp_path, monkeypatch):
+        """#4910: CaseStudies/SmartGrid-Energy/solution/*.ipynb ->
+        serie=CaseStudies, sous_serie=SmartGrid-Energy."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb_path = self._write_notebook(
+            tmp_path,
+            "CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb",
+        )
+        entry = analyze_notebook(nb_path, pedagogical=True, git_meta={})
+        assert entry is not None
+        assert entry["serie"] == "CaseStudies"
+        assert entry["sous_serie"] == "SmartGrid-Energy"
+        assert entry["path"] == (
+            "CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb"
+        )
+
+    def test_smartgrid_student_classified_case_studies(self, tmp_path, monkeypatch):
+        """#4910: CaseStudies/SmartGrid-Energy/student/*.ipynb gets the
+        same serie/sous_serie as the solution notebook."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb_path = self._write_notebook(
+            tmp_path,
+            "CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb",
+        )
+        entry = analyze_notebook(nb_path, pedagogical=True, git_meta={})
+        assert entry is not None
+        assert entry["serie"] == "CaseStudies"
+        assert entry["sous_serie"] == "SmartGrid-Energy"
+
+    def test_diagnostic_medical_sibling_keeps_its_own_sous_serie(
+        self, tmp_path, monkeypatch
+    ):
+        """Sibling leaf dirs (Diagnostic-Medical vs SmartGrid-Energy) must
+        not collide on sous_serie — each one keeps its own."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb_dm = self._write_notebook(
+            tmp_path,
+            "CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb",
+        )
+        nb_sg = self._write_notebook(
+            tmp_path,
+            "CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb",
+        )
+        entry_dm = analyze_notebook(nb_dm, pedagogical=True, git_meta={})
+        entry_sg = analyze_notebook(nb_sg, pedagogical=True, git_meta={})
+        assert entry_dm["serie"] == entry_sg["serie"] == "CaseStudies"
+        assert entry_dm["sous_serie"] == "Diagnostic-Medical"
+        assert entry_sg["sous_serie"] == "SmartGrid-Energy"
+        assert entry_dm["sous_serie"] != entry_sg["sous_serie"]
+
+    def test_solution_student_dirs_below_leaf_do_not_become_sous_serie(
+        self, tmp_path, monkeypatch
+    ):
+        """The solution/ and student/ subdirs are packaging artifacts, not
+        a separate sous_serie. analyse_notebook derives sous_serie from
+        parts[1] (the immediate child of serie), not from deeper nesting."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb_sol = self._write_notebook(
+            tmp_path,
+            "CaseStudies/SmartGrid-Energy/solution/Foo.ipynb",
+        )
+        nb_std = self._write_notebook(
+            tmp_path,
+            "CaseStudies/SmartGrid-Energy/student/Foo.ipynb",
+        )
+        entry_sol = analyze_notebook(nb_sol, pedagogical=True, git_meta={})
+        entry_std = analyze_notebook(nb_std, pedagogical=True, git_meta={})
+        # Both under SmartGrid-Energy (parts[1]), NOT solution/student
+        assert entry_sol["sous_serie"] == "SmartGrid-Energy"
+        assert entry_std["sous_serie"] == "SmartGrid-Energy"
+        # The path is preserved verbatim
+        assert "solution" in entry_sol["path"]
+        assert "student" in entry_std["path"]
+
+    def test_serie_no_sous_serie_root_layout(self, tmp_path, monkeypatch):
+        """Sudoku (no sous_serie, notebooks directly under Serie/) sets
+        sous_serie='' so the breakdown groups them as 'root'."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb_path = self._write_notebook(tmp_path, "Sudoku/Sudoku-1.ipynb")
+        entry = analyze_notebook(nb_path, pedagogical=True, git_meta={})
+        assert entry["serie"] == "Sudoku"
+        # parts == ('Sudoku', 'Sudoku-1.ipynb'), len(parts)=2, sous_serie=''
+        assert entry["sous_serie"] == ""
 
 
 # --- classify_maturity ---
