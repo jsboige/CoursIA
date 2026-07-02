@@ -4,6 +4,7 @@ project:
   render:
     - "*.qmd"
     - "MyIA.AI.Notebooks/index.qmd"
+    - "MyIA.AI.Notebooks/Search/index.qmd"
     - "docs/index.qmd"
 
 site:
@@ -24,6 +25,8 @@ site:
         text: "Accueil"
       - href: MyIA.AI.Notebooks/index.qmd
         text: "Notebooks"
+      - href: MyIA.AI.Notebooks/Search/index.qmd
+        text: "Search"
       - href: docs/index.qmd
         text: "Documentation"
       - href: parcours.qmd
