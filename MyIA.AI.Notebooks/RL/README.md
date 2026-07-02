@@ -33,7 +33,7 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 | 9 | [rl_9_offline_rl](rl_9_offline_rl.ipynb) | RL offline : Behavior Cloning, erreur d'extrapolation, BCQ-lite | 50-55 min |
 | 10 | [rl_10_reward_shaping](rl_10_reward_shaping.ipynb) | Reward Shaping (Ng 1999), curriculum learning, pont RLHF | 45-50 min |
 | 11 | [rl_11_pomdp](rl_11_pomdp.ipynb) | POMDP, Tiger Problem, belief tracking, Q-MDP | 45-50 min |
-| 12 | [rl_12_distributional_rl](rl_12_distributional_rl.ipynb) | RL distributionnel : C51 (Categorical DQN) depuis zéro, projection categorielle, politique CVaR | 50-55 min |
+| 12 | [rl_12_distributional_rl](rl_12_distributional_rl.ipynb) | RL distributionnel : C51 (Categorical DQN) depuis zéro, projection catégorielle, politique CVaR | 50-55 min |
 | 13 | [rl_13_curiosity_exploration](rl_13_curiosity_exploration.ipynb) | Exploration par curiosité (RND), motivation intrinsèque, piège d'exploitation | 35-40 min |
 
 ## Contenu détaillé
@@ -188,8 +188,8 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 
 | Section | Contenu |
 |---------|---------|
-| Du scalaire à la distribution | Pourquoi apprendre $Z(s,a)$ tout entière plutôt que sa seule espérance $Q = \mathbb{E}[Z]$ ; support categoriel à 51 atomes fixes |
-| Bellman distributionnel | Opérateur $TZ = R + \gamma Z(s',a^*)$, problème du déplacement hors-grille, projection categorielle $\Phi$ |
+| Du scalaire à la distribution | Pourquoi apprendre $Z(s,a)$ tout entière plutôt que sa seule espérance $Q = \mathbb{E}[Z]$ ; support catégoriel à 51 atomes fixes |
+| Bellman distributionnel | Opérateur $TZ = R + \gamma Z(s',a^*)$, problème du déplacement hors-grille, projection catégorielle $\Phi$ |
 | Réseau `CategoricalDQN` | Sorties softmax par action, reconstruction de $Q(s,a) = \sum_i z_i p_i$ |
 | Perte | Entropie croisée entre cible projetée et distribution prédite |
 | Entraînement CartPole-v1 | ~18 000 pas, courbe d'apprentissage, visualisation de la distribution de retour apprise par action |
@@ -232,7 +232,7 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 | **Curriculum learning** | Training strategy | 10 | Difficulté progressive, généralisation |
 | **Q-MDP** | POMDP approximation | 11 | Q-learning sur états vrais, action via belief |
 | **Belief-state Q-learning** | POMDP | 11 | Discrétisation du belief, Q-table dans l'espace des croyances |
-| **C51 (Categorical DQN)** | Distributionnel (deep) | 12 | Distribution de retour sur support fixe, projection categorielle |
+| **C51 (Categorical DQN)** | Distributionnel (deep) | 12 | Distribution de retour sur support fixe, projection catégorielle |
 | **DQN** | Off-policy (deep) | 6 | Espaces continus |
 | **REINFORCE** | Policy gradient | 6 | Politique directe |
 | **IQL** | Multi-agent | 7 | Apprentissage indépendant |
@@ -267,13 +267,13 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 python -m venv venv
 venv\Scripts\activate  # Windows
 
-# Dependances de base (notebooks 1-4)
+# Dépendances de base (notebooks 1-4)
 pip install "stable-baselines3[extra]>=2.0.0a4" gymnasium numpy pandas matplotlib
 
 # Pour le notebook 3 (parking environment)
 pip install highway-env moviepy
 
-# Pour le notebook 4 (bandits — pas de dependance supplementaire)
+# Pour le notebook 4 (bandits — pas de dépendance supplémentaire)
 
 # Pour les notebooks 6, 6b, 6c, 6d (DQN, REINFORCE, A2C, PPO, SAC)
 pip install torch
@@ -335,7 +335,7 @@ Le notebook 4 pose la question fondatrice du RL : comment choisir entre explorer
 
 **Phase 4 : Les maths sous le capot (~4.5h, notebooks 5-7)**
 
-Les notebooks 5 à 7 quittent le framework pour implémenter les algorithmes depuis zéro. Le notebook 5 formalise le problème RL (MDP, équation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe à l'échelle avec les réseaux de neurones : DQN et REINFORCE implémentés en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mécanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanément, coopèrent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modèle du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset figé (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naïf, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au problème du reward sparse : comment guider l'agent quand la récompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accélère la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulté progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatisé. Le notebook 11 aborde la partial observability : l'agent ne voit plus l'état vrai mais une observation bruitée. Le Tiger Problem (Cassandra 1994) illustre le POMDP, le belief tracking (filtre bayésien) maintient une estimation de l'état caché, et le Q-MDP approximation montre les limites de l'approche tabulaire. Le notebook 12 enrichit l'objectif lui-même : au lieu d'apprendre l'espérance du retour comme un DQN, C51 (Categorical DQN, Bellemare et al. 2017) apprend sa **distribution complète** $Z(s,a)$ sur un support à atomes fixes, via une projection categorielle de la cible de Bellman — ce qui débloque les politiques sensibles au risque (CVaR) impossibles avec une valeur scalaire, et ouvre la lignée QR-DQN / IQN / Rainbow.
+Les notebooks 5 à 7 quittent le framework pour implémenter les algorithmes depuis zéro. Le notebook 5 formalise le problème RL (MDP, équation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe à l'échelle avec les réseaux de neurones : DQN et REINFORCE implémentés en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mécanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanément, coopèrent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modèle du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset figé (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naïf, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au problème du reward sparse : comment guider l'agent quand la récompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accélère la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulté progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatisé. Le notebook 11 aborde la partial observability : l'agent ne voit plus l'état vrai mais une observation bruitée. Le Tiger Problem (Cassandra 1994) illustre le POMDP, le belief tracking (filtre bayésien) maintient une estimation de l'état caché, et le Q-MDP approximation montre les limites de l'approche tabulaire. Le notebook 12 enrichit l'objectif lui-même : au lieu d'apprendre l'espérance du retour comme un DQN, C51 (Categorical DQN, Bellemare et al. 2017) apprend sa **distribution complète** $Z(s,a)$ sur un support à atomes fixes, via une projection catégorielle de la cible de Bellman — ce qui débloque les politiques sensibles au risque (CVaR) impossibles avec une valeur scalaire, et ouvre la lignée QR-DQN / IQN / Rainbow.
 
 ## Concepts clés
 
@@ -377,7 +377,7 @@ Les notebooks 5 à 7 quittent le framework pour implémenter les algorithmes dep
 | **Belief state** | Distribution de probabilité sur les états cachés | 11 |
 | **Belief tracking** | Filtre bayésien pour mettre à jour le belief | 11 |
 | **RL distributionnel** | Apprendre la distribution complète du retour $Z(s,a)$, pas seulement $\mathbb{E}[Z]$ | 12 |
-| **Projection categorielle** | Redistribuer la cible de Bellman sur un support à atomes fixes | 12 |
+| **Projection catégorielle** | Redistribuer la cible de Bellman sur un support à atomes fixes | 12 |
 | **Politique sensible au risque (CVaR)** | Choisir selon la queue basse de la distribution, hors de portée d'un DQN scalaire | 12 |
 | **Motivation intrinsèque** | Récompense de nouveauté pour guider l'exploration | 13 |
 | **Random Network Distillation** | Erreur de prédiction d'une cible figée comme mesure de nouveauté | 13 |
@@ -405,7 +405,7 @@ Non. Les notebooks 1-4 (SB3 intro, wrappers, bandits, DQN from scratch) et 7-8 (
 
 Un **MDP** (Markov Decision Process) est le modèle mathématique du RL : un ensemble d'états S, d'actions A, de transitions T(s'|s,a), de récompenses R(s,a), et d'un facteur d'actualisation gamma. Tout problème de RL se formalise comme un MDP. L'équation de Bellman (notebook 3) définit récursivement la valeur optimale. Si vous avez fait la série Probas, les MDP généralisent les chaînes de Markov avec des décisions.
 
-### Quelle est la difference entre on-policy et off-policy ?
+### Quelle est la différence entre on-policy et off-policy ?
 
 **On-policy** (PPO, A2C, REINFORCE) : l'apprentissage utilise uniquement les données collectées par la politique courante. Plus stable mais moins sample-efficient. **Off-policy** (DQN, SAC, DDPG) : l'apprentissage peut réutiliser des données passées stockées dans un replay buffer. Plus sample-efficient mais potentiellement moins stable. Le notebook 6 compare DQN (off-policy) et REINFORCE (on-policy) sur le même environnement.
 
@@ -413,13 +413,13 @@ Un **MDP** (Markov Decision Process) est le modèle mathématique du RL : un ens
 
 Stable Baselines3 permet de résoudre un problème réel en quelques lignes, ce qui donne une intuition concreten avant d'étudier la théorie. L'approche "framework d'abord, maths ensuite" évite le piège de la théorie abstraite sans application. Les notebooks 4-7 déconstruisent ensuite les mêmes algorithmes pour comprendre ce qui se passe sous le capot.
 
-### Quelle est la difference entre value-based et policy-based ?
+### Quelle est la différence entre value-based et policy-based ?
 
 **Value-based** (Q-Learning, DQN) : on apprend à estimer la valeur de chaque action dans chaque état, puis on choisit l'action avec la plus haute valeur. Adapté aux espaces d'actions discrets. **Policy-based** (REINFORCE, PPO) : on optimise directement la politique (probabilité de choisir chaque action). Adapté aux espaces continus et aux politiques stochastiques. **Actor-Critic** (A2C, SAC) combine les deux : l'acteur choisit l'action, le critique estime la valeur.
 
-### Qu'est-ce que l'experience replay et pourquoi est-ce important ?
+### Qu'est-ce que l'expérience replay et pourquoi est-ce important ?
 
-L'experience replay (notebook 6) stocke les transitions (état, action, reward, état_suivant) dans un buffer et ré-échantillonne aléatoirement pendant l'apprentissage. Cela casse les corrélations temporelles entre expériences consécutives et améliore l'efficacité en réutilisant chaque expérience plusieurs fois. Sans replay buffer, les agents off-policy comme DQN seraient instables. HER (notebook 3) étend ce concept en ré-interprétant les échecs comme des succès par changement d'objectif.
+L'expérience replay (notebook 6) stocke les transitions (état, action, reward, état_suivant) dans un buffer et ré-échantillonne aléatoirement pendant l'apprentissage. Cela casse les corrélations temporelles entre expériences consécutives et améliore l'efficacité en réutilisant chaque expérience plusieurs fois. Sans replay buffer, les agents off-policy comme DQN seraient instables. HER (notebook 3) étend ce concept en ré-interprétant les échecs comme des succès par changement d'objectif.
 
 ### Comment choisir entre DQN et PPO pour un nouveau problème ?
 
@@ -475,7 +475,7 @@ Cette série vous a fait traverser le paradigme d'apprentissage qui distingue l'
 - **Le geste fondateur** — formaliser un problème de décision séquentielle comme un **MDP** `(S, A, P, R, γ)` et le résoudre par l'**équation de Bellman**, qui définit récursivement la valeur optimale. Cette formalisation est le socle commun : sans elle, pas de Value Iteration, pas de Q-Learning, pas de DQN. Le bandit (notebook 4) en est le cas le plus simple — le compromis exploration/exploitation à un seul pas de temps.
 - **La double approche, délibérément juxtaposée** — *framework d'abord, maths ensuite*. Vous commencez par entraîner un agent PPO en quelques lignes avec Stable Baselines3 (notebooks 1-3, production-ready), puis vous déconstruisez les mêmes algorithmes *from scratch* en PyTorch (notebooks 4-7) pour comprendre ce qui se cache sous le capot. Cette pédagogie évite le double piège : la théorie abstraite sans application, et l'usage boîte noire sans compréhension.
 - **L'instrument** — Stable Baselines3 pour la production (PPO, SAC, HER), PyTorch pur pour l'implémentation pédagogique (DQN, REINFORCE, A2C, PPO, SAC depuis zéro), Gymnasium comme interface d'environnements standard, PettingZoo pour le multi-agent.
-- **La finesse** — les **compromis cartographiés** qui structurent tout le champ : on-policy (PPO/A2C, stable mais moins économe) vs off-policy (DQN/SAC, sample-efficient mais plus fragile) ; value-based (DQN) vs policy-based (REINFORCE) vs actor-critic (A2C/SAC) ; model-free (Q-Learning) vs model-based (Dyna-Q, pont vers MCTS/AlphaZero/MuZero) ; online vs offline (Behavior Cloning, BCQ-lite, pont vers RLHF/DPO). Et les subtilités qui changent la pratique : l'experience replay et le target network qui stabilisent DQN, le clipped surrogate de PPO, le maximum entropy de SAC, le potential-based shaping (Ng 1999) qui accélère sans biaiser.
+- **La finesse** — les **compromis cartographiés** qui structurent tout le champ : on-policy (PPO/A2C, stable mais moins économe) vs off-policy (DQN/SAC, sample-efficient mais plus fragile) ; value-based (DQN) vs policy-based (REINFORCE) vs actor-critic (A2C/SAC) ; model-free (Q-Learning) vs model-based (Dyna-Q, pont vers MCTS/AlphaZero/MuZero) ; online vs offline (Behavior Cloning, BCQ-lite, pont vers RLHF/DPO). Et les subtilités qui changent la pratique : l'expérience replay et le target network qui stabilisent DQN, le clipped surrogate de PPO, le maximum entropy de SAC, le potential-based shaping (Ng 1999) qui accélère sans biaiser.
 
 La thèse est puissante et honnêtement présentée : le RL n'a pas d'algorithme universel, mais une *famille* de méthodes aux compromis clairement nommés, et la compétence de l'ingénieur est de savoir choisir dans cette famille selon la nature du problème (espace d'actions, besoin de stabilité vs efficacité, accès à l'interaction, observabilité) — voire de combiner (Actor-Critic, model-based + RL, offline + contraintes).
 
