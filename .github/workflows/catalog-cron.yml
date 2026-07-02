@@ -92,6 +92,18 @@ jobs:
             -m "Refresh COURSE_CATALOG.generated.{json,md} + CATALOG-STATUS markers." \
             -m "Catalog is owned by automation; agents must not regenerate it on feature branches (see .claude/rules/catalog-pr-hygiene.md, #2433)."
 
+          # Sync with remote main before pushing. Without this, when other PRs
+          # land between checkout and push, `git push` is rejected with
+          # "[rejected] HEAD -> main (fetch first)" (incident: 2026-07-02 cron
+          # run 28566453812, catalog stayed stale for 24h+ -> CaseStudies
+          # marker held at pedagogical_count: 4 while disk had 6, See #4910).
+          # `--rebase` rewrites our local catalog commit on top of remote main
+          # (the catalog regen is idempotent and pull-and-retry safe since
+          # #2433); `--autostash` preserves any in-progress local changes if
+          # the rebase touches the same files.
+          git fetch origin main
+          git pull --rebase --autostash origin main
+
           # Direct push of a generated artifact to main. Requires branch
           # protection to allow github-actions[bot] (GITHUB_TOKEN) to push to
           # main, or main to have no PR-required protection for this actor.
