@@ -376,13 +376,13 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 
 ### Risk Parity pedagogique : inverse-vol vs ERC, et lecture critique du PSR (See #1405)
 
-Les 4 stratégies étudiantes ci-dessus sont aussi un support de cours. Cette section formalise les 3 points d'enseignement demandes par #1405 : (1) pourquoi le Sharpe seul ne suffit pas et ce que mesure le **PSR**, (2) la différence entre **inverse-volatilité naive** et **Equal Risk Contribution (ERC)**, (3) la lecture critique d'un backtest (dates hardcoded, MaxDD > 100%, fenêtres non comparables).
+Les 4 strategies etudiantes ci-dessus sont aussi un support de cours. Cette section formalise les 3 points d'enseignement demandes par #1405 : (1) pourquoi le Sharpe seul ne suffit pas et ce que mesure le **PSR**, (2) la difference entre **inverse-volatilite naive** et **Equal Risk Contribution (ERC)**, (3) la lecture critique d'un backtest (dates hardcoded, MaxDD > 100%, fenetres non comparables).
 
 #### 1. Le PSR (Probabilistic Sharpe Ratio) — Bailey & Lopez de Prado (2012)
 
-Le ratio de Sharpe observe suppose des rendements **IID et gaussiens**. Les rendements réels violent ces deux hypothèses : ils ont en général une **asymétrie (skew) négative** (les krachs sont plus profonds que les booms ne sont hauts) et des **queues épaisses (kurtosis > 3)**. Sous ces conditions, le Sharpe empirique est **systématiquement surestime**, surtout sur de courtes fenêtres.
+Le ratio de Sharpe observe suppose des rendements **IID et gaussiens**. Les rendements réels violent ces deux hypotheses : ils ont en general une **asymetrie (skew) negative** (les krachs sont plus profonds que les booms ne sont hauts) et des **queues epaisses (kurtosis > 3)**. Sous ces conditions, le Sharpe empirique est **systematiquement surestime**, surtout sur de courtes fenetres.
 
-Le PSR corrige en estimant la probabilité que le vrai Sharpe depasse un seuil de référence `SR0` (souvent 0, le hasard) :
+Le PSR corrige en estimant la probabilité que le vrai Sharpe depasse un seuil de reference `SR0` (souvent 0, le hasard) :
 
 ```text
                      (SR_hat - SR0) * sqrt(T - 1)
@@ -390,31 +390,31 @@ Le PSR corrige en estimant la probabilité que le vrai Sharpe depasse un seuil d
                   sqrt( 1 - skew*SR_hat + (kurt-1)/4 * SR_hat^2 )
 ```
 
-où `T` = nombre d'années d'observation (quand `SR_hat` est annualise), `skew` et `kurt` sont les moments empiriques des rendements, et `Phi` = fonction de répartition de la loi normale centree.
+ou `T` = nombre d'annees d'observation (quand `SR_hat` est annualise), `skew` et `kurt` sont les moments empiriques des rendements, et `Phi` = fonction de repartition de la loi normale centree.
 
-**Lecture** : asymétrie négative et excès de kurtosis (kurt > 3) **gonflent le dénominateur**, donc abaissent le PSR. Un même Sharpe nominal peut donner un PSR très différent selon la distribution des rendements. Règle pratique : **PSR > 50%** = l'edge observe a plus de chances d'être réel que d'être du bruit ; **PSR < 50%** = on ne peut pas écarter le bruit.
+**Lecture** : asymetrie negative et exces de kurtosis (kurt > 3) **gonflent le denominateur**, donc abaissent le PSR. Un meme Sharpe nominal peut donner un PSR tres different selon la distribution des rendements. Regle pratique : **PSR > 50%** = l'edge observe a plus de chances d'etre réel que d'etre du bruit ; **PSR < 50%** = on ne peut pas ecarter le bruit.
 
-**Applique aux 4 stratégies étudiantes** :
+**Applique aux 4 strategies etudiantes** :
 
-| Stratégie | Sharpe | PSR% | Lecture |
+| Strategie | Sharpe | PSR% | Lecture |
 |-----------|--------|------|---------|
-| DualMomentum | 0.493 | **54.9** | Edge a la limite de la significativité (juste au-dessus de 50%). Fenêtre courte (2 ans) => estimation des moments bruitee, a confirmer sur une période plus longue. |
+| DualMomentum | 0.493 | **54.9** | Edge a la limite de la significativite (juste au-dessus de 50%). Fenetre courte (2 ans) => estimation des moments bruitee, a confirmer sur une periode plus longue. |
 | RiskParity inverse-vol | 0.514 | 16.3 | Sharpe plus haut mais PSR faible : sur 10 ans, l'edge moyen est réel mais **statistiquement peu concluant** (estimation robuste d'un edge faible). |
-| ValueFactor | 0.227 | 0.8 | Quasi-zéro : l'alpha observe est indistinguable du bruit. Confirme l'effondrement du facteur value sur une décennie dominee par la growth. |
+| ValueFactor | 0.227 | 0.8 | Quasi-zero : l'alpha observe est indistinguable du bruit. Confirme l'effondrement du facteur value sur une decennie dominee par la growth. |
 | OptionWheel | -0.51 | 0.0 | Aucun edge. La probabilité d'un vrai Sharpe positif est nulle. |
 
-**Contraste clé** : Sharpe et PSR ne classent pas pareil. RiskParity bat DualMomentum en Sharpe (0.514 > 0.493) mais DualMomentum le bat largement en PSR (54.9 > 16.3). Le PSR est la statistique a citer, pas le Sharpe brut — première leçon de lecture critique.
+**Contraste cle** : Sharpe et PSR ne classent pas pareil. RiskParity bat DualMomentum en Sharpe (0.514 > 0.493) mais DualMomentum le bat largement en PSR (54.9 > 16.3). Le PSR est la statistique a citer, pas le Sharpe brut — premiere lecon de lecture critique.
 
 #### 2. inverse-volatilite naive vs Equal Risk Contribution (ERC)
 
-Le `RiskParity inverse-vol` étudiant n'implemente pas du "vrai" risk parity. Deux familles distinctes :
+Le `RiskParity inverse-vol` etudiant n'implemente pas du "vrai" risk parity. Deux familles distinctes :
 
-**inverse-volatilité (naive)** — ce que fait l'étudiant :
+**inverse-volatilite (naive)** — ce que fait l'etudiant :
 
 ```text
    poids_i  proportionnel a  1 / sigma_i
 ```
-Chaque actif reçoit un poids inverse a sa volatilité **individuelle**. Méthode simple, une seule donnée par actif, mais elle **ignore les correlations**.
+Chaque actif recoit un poids inverse a sa volatilite **individuelle**. Methode simple, une seule donnée par actif, mais elle **ignore les correlations**.
 
 **Equal Risk Contribution (ERC)** — Maillard, Roncalli & Teiletche (2010), le "vrai" risk parity :
 
@@ -422,17 +422,17 @@ Chaque actif reçoit un poids inverse a sa volatilité **individuelle**. Méthod
    chaque actif i contribue EGALEMENT au risque total :
    (Sigma * w)_i / (w' * Sigma * w)  =  constant   pour tout i
 ```
-où `Sigma` est la **matrice de covariance** complète (correlations incluses). Résolution par programmation convexe (QP / Newton-Lagrange), sans solution analytique en général.
+ou `Sigma` est la **matrice de covariance** complete (correlations incluses). Résolution par programmation convexe (QP / Newton-Lagrange), sans solution analytique en general.
 
-**Pourquoi la différence compte** : avec l'inverse-vol naive, deux actifs **fortement corrélés** (ex. deux ETF actions US) reçoivent chacun un budget de risque élevé, donc le portefeuille reste **concentré sur un même facteur** — faussement "diversifié". L'ERC, en intégrant la covariance, **force une vraie diversification** : deux actifs corrélés se partagent un même budget de risque cumulé, pas deux budgets indépendants.
+**Pourquoi la difference compte** : avec l'inverse-vol naive, deux actifs **fortement correles** (ex. deux ETF actions US) reçoivent chacun un budget de risque eleve, donc le portefeuille reste **concentre sur un meme facteur** — faussement "diversifie". L'ERC, en integrant la covariance, **force une vraie diversification** : deux actifs correles se partagent un meme budget de risque cumule, pas deux budgets independants.
 
-**Pédagogique** : le `RiskParity inverse-vol` (Sharpe 0.514, PSR 16.3%) est un **bon point d'entrée** — simple, robuste, peu de paramètres. L'upgrade naturel est l'**ERC** (gestion des correlations via la matrice de covariance). Le saut conceptuel : passer de "donner moins de poids au plus volatile" (1D) a "égaliser la contribution marginale au risque" (matricielle, multidimensionnelle).
+**Pedagogique** : le `RiskParity inverse-vol` (Sharpe 0.514, PSR 16.3%) est un **bon point d'entrée** — simple, robuste, peu de paramètres. L'upgrade naturel est l'**ERC** (gestion des correlations via la matrice de covariance). Le saut conceptuel : passer de "donner moins de poids au plus volatile" (1D) a "egaliser la contribution marginale au risque" (matricielle, multidimensionnelle).
 
 #### 3. Lecture critique d'un backtest — les pieges visibles dans la table ci-dessus
 
-- **Dates de début hardcoded** (`*` sur les 4) : les fenêtres ne sont **pas aligned** avec le reste du catalogue (2018-2025). Les métriques ne sont pas directement comparables — comparer le Sharpe d'un DualMomentum 2023-2025 a un TrendFollowing 2018-2025 est abusif.
-- **MaxDD > 100% (OptionWheel, 103.5%)** : un drawdown supérieur a 100% signale une vente d'options **naked non couverte** intégrale — le simulateur ne capture pas parfaitement l'assignation / liquidation forcée. Le backtest est probablement **optimiste** sur la perte réelle.
-- **Croiser PSR et durée** : un PSR de 54.9% sur 2 ans (DualMomentum) n'a pas le même poids qu'un PSR de 81.8% sur 8 ans (TrendFollowing, ligne 381). La signification statistique croît avec `sqrt(T)` ; une courte fenêtre a besoin d'un edge plus fort pour convaincre.
+- **Dates de debut hardcoded** (`*` sur les 4) : les fenetres ne sont **pas aligned** avec le reste du catalogue (2018-2025). Les metriques ne sont pas directement comparables — comparer le Sharpe d'un DualMomentum 2023-2025 a un TrendFollowing 2018-2025 est abusif.
+- **MaxDD > 100% (OptionWheel, 103.5%)** : un drawdown superieur a 100% signale une vente d'options **naked non couverte** integrale — le simulateur ne capture pas parfaitement l'assignation / liquidation forcee. Le backtest est probablement **optimiste** sur la perte réelle.
+- **Croiser PSR et duree** : un PSR de 54.9% sur 2 ans (DualMomentum) n'a pas le meme poids qu'un PSR de 81.8% sur 8 ans (TrendFollowing, ligne 381). La signification statistique croit avec `sqrt(T)` ; une courte fenetre a besoin d'un edge plus fort pour convaincre.
 
 #### References
 
@@ -451,24 +451,24 @@ où `Sigma` est la **matrice de covariance** complète (correlations incluses). 
 
 ## Key findings
 
-1. **TrendFollowing = leader indiscutable**: Sharpe 1.072 sur 2018-2025 avec MaxDD 9.3%. PSR 81.8% (statistiquement significatif). Seule stratégie "Robuste" confirmee sur la période aligned.
-2. **EMA-Cross-Stocks: surprise positive**: Sharpe 0.891 sur 2018-2025, CAGR 26.2%. PSR 40.5%. 2e meilleur Sharpe aligne, derrière TrendFollowing.
-3. **EMA-Cross-Alpha: chute dramatique**: Sharpe passe de 0.996 (meilleur backtest) a -0.010 sur la période aligned. PSR 0.5% = bruit. Confirme le pattern "backtests courts = overfitting".
-4. **Composites ne battent pas les single-strategies**: MomentumRegime (SectorMomentum + RegimeSwitching) obtient 0.185, confirmant le problème de "double-defense".
+1. **TrendFollowing = leader indiscutable**: Sharpe 1.072 sur 2018-2025 avec MaxDD 9.3%. PSR 81.8% (statistiquement significatif). Seule strategie "Robuste" confirmee sur la periode aligned.
+2. **EMA-Cross-Stocks: surprise positive**: Sharpe 0.891 sur 2018-2025, CAGR 26.2%. PSR 40.5%. 2e meilleur Sharpe aligne, derriere TrendFollowing.
+3. **EMA-Cross-Alpha: chute dramatique**: Sharpe passe de 0.996 (meilleur backtest) a -0.010 sur la periode aligned. PSR 0.5% = bruit. Confirme le pattern "backtests courts = overfitting".
+4. **Composites ne battent pas les single-strategies**: MomentumRegime (SectorMomentum + RegimeSwitching) obtient 0.185, confirmant le probleme de "double-defense".
 5. **Crypto = rendement modere mais stable**: Crypto-MultiCanal (0.581) et Portfolio-IBKR-Binance (0.519) offrent diversification avec MaxDD maitrises.
 6. **FX Carry = perdant**: Sharpe -1.108, les taux bas post-COVID ont elimine l'avantage du carry trade.
 7. **AllWeather: performance confirme**: Sharpe 0.631 (2010-2025), MaxDD 16.4%, PSR 31.2%. Risk-parity solide.
 8. **MomentumStrategy (SectorMom v4.0)**: Sharpe 0.555, CAGR 11.7%, mais PSR 7.2% = non significatif.
 9. **SectorDualMomentum v3.2**: Sharpe 0.581, CAGR 13.5%, MaxDD 22.8%. PSR 15.3%.
 10. **TrendStocks-Alpha: high return, high risk**: CAGR 15.9% mais MaxDD 39.6% (Calmar 0.40). PSR 5.8% = non significatif.
-11. **Student DualMomentum: PSR > 50%**: Sharpe 0.493 sur 2023-2025 avec MaxDD 9.0%. Seule stratégie etudiante avec PSR significatif (54.9%).
-12. **Student RiskParity: performance honnête**: Sharpe 0.514, CAGR 9.3%, MaxDD 20.7%. Inverse-vol simple mais efficace. PSR 16.3% (non significatif mais respectable).
-13. **Student OptionWheel: catastrophe pédagogique**: Sharpe -0.51, MaxDD 103.5%. Parfait comme étude de cas du "win-rate paradoxe".
-14. **Student ValueFactor: alpha négatif confirmee**: Sharpe 0.227, PSR 0.8%. Décennie growth-dominée = facteur value sous-performant.
-15. **LeveragedETFMomentum: confirme et significatif**: Sharpe 1.779 sur 2018-2025, PSR 79.8% (2e PSR significatif après TrendFollowing). Mais MaxDD 53.3% et CAGR 126% typiques d'un levier 3x — profil risque extreme, pas comparable aux strategies non-leveragees.
-16. **PuppiesOfTheDow et HighBookToMarketFScore: effondrement sur période alignee**: Sharpe catalog 1.99 et 2.09 (obtenus sur leur fenêtre glissante par défaut `end_date - 12 ans`) tombent a 0.302 (PSR 3.5%) et 0.411 (PSR 4.5%, MaxDD 60.4%) sur 2018-2025. Les deux meilleures lignes ML/IND du Tier 1 ne sont pas reproductibles sur la fenêtre standardisee.
+11. **Student DualMomentum: PSR > 50%**: Sharpe 0.493 sur 2023-2025 avec MaxDD 9.0%. Seule strategie etudiante avec PSR significatif (54.9%).
+12. **Student RiskParity: performance honnete**: Sharpe 0.514, CAGR 9.3%, MaxDD 20.7%. Inverse-vol simple mais efficace. PSR 16.3% (non significatif mais respectable).
+13. **Student OptionWheel: catastrophe pedagogique**: Sharpe -0.51, MaxDD 103.5%. Parfait comme etude de cas du "win-rate paradoxe".
+14. **Student ValueFactor: alpha negatif confirmee**: Sharpe 0.227, PSR 0.8%. Decennie growth-dominée = facteur value sous-performant.
+15. **LeveragedETFMomentum: confirme et significatif**: Sharpe 1.779 sur 2018-2025, PSR 79.8% (2e PSR significatif apres TrendFollowing). Mais MaxDD 53.3% et CAGR 126% typiques d'un levier 3x — profil risque extreme, pas comparable aux strategies non-leveragees.
+16. **PuppiesOfTheDow et HighBookToMarketFScore: effondrement sur periode alignee**: Sharpe catalog 1.99 et 2.09 (obtenus sur leur fenetre glissante par defaut `end_date - 12 ans`) tombent a 0.302 (PSR 3.5%) et 0.411 (PSR 4.5%, MaxDD 60.4%) sur 2018-2025. Les deux meilleures lignes ML/IND du Tier 1 ne sont pas reproductibles sur la fenetre standardisee.
 17. **TrendWeather: le composite qui tient**: Sharpe 0.948 (PSR 56.6%), proche du catalog 1.16. Contraste fort avec MomentumRegime (0.185) — toutes les architectures composites ne se valent pas.
-18. **Caveat reproductibilité Trend-Following**: le code du repo backteste sur 2018-2024 donne Sharpe 0.365 / MaxDD 13.8% (backtest `3748cb62`), loin du 1.072 publie ci-dessus (`7792ae0a`, 2018-2025, état du code cloud antérieur). Périodes differentes (2025 inclus ou non) ET drift possible repo vs cloud — a investiguer avant de citer 1.072 comme référence du code versionne.
+18. **Caveat reproductibilite Trend-Following**: le code du repo backteste sur 2018-2024 donne Sharpe 0.365 / MaxDD 13.8% (backtest `3748cb62`), loin du 1.072 publie ci-dessus (`7792ae0a`, 2018-2025, etat du code cloud anterieur). Periodes differentes (2025 inclus ou non) ET drift possible repo vs cloud — a investiguer avant de citer 1.072 comme reference du code versionne.
 19. **MeanReversion v5.2: Best Calmar ratio**: Sharpe 0.81, MaxDD 7.5%, Calmar 1.34 — best risk-adjusted return among non-leveraged strategies. PSR 46.8% (near significance). Promoted from Tier 2 (0.29) to Tier 1. The v5.2 code (IBKR brokerage, RSI65 exit, 10% stop-loss) dramatically outperforms the older version.
 20. **AdaptiveAssetAllocation: confirmed robuste**: Sharpe 0.509, CAGR 8.0%, MaxDD 18.9% (2008-2024, 16 years). Min-var + momentum approach produces steady returns. PSR 10.6% (not significant but positive).
 21. **PairsTrading: structural failure confirmed**: Sharpe -0.28 on aligned period, PSR 0.001%. OLS hedge + cointegration still produces negative alpha. Remains exploratoire/pedagogical.

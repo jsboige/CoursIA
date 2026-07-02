@@ -2,7 +2,7 @@
 
 **Generation d'images, audio, video et texte**
 
-Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, generation musicale, video, et orchestration de modeles. Inclut les workflows Vibe-Coding et les pipelines de production.
+Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, generation musicale, video, et orchestration de modèles. Inclut les workflows Vibe-Coding et les pipelines de production.
 
 ## Statistiques
 
@@ -25,13 +25,13 @@ Generation d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthese vocale, 
 | 6 | XTTS v2 - Clonage Vocal Zero-Shot | ALPHA | Non |
 | 7 | MusicGen - Generation Musicale par IA | ALPHA | Non |
 | 8 | Demucs v4 - Separation de Sources Audio | ALPHA | Non |
-| 9 | Multi-Model TTS Gateway - Synthese Vocale Multi-Modeles | ALPHA | Oui |
+| 9 | Multi-Model TTS Gateway - Synthese Vocale Multi-Modèles | ALPHA | Oui |
 | 10 | Generation MIDI avec midi-model (SkyTNT) | ALPHA | Non |
 | 11 | Generation de Chansons Completes : YuE vs SongGeneratio | ALPHA | Non |
-| 12 | TTS Expressif : Fish S2 Pro et Modeles SOTA | ALPHA | Non |
-| 13 | Comparaison Multi-Modeles Audio | ALPHA | Non |
+| 12 | TTS Expressif : Fish S2 Pro et Modèles SOTA | ALPHA | Non |
+| 13 | Comparaison Multi-Modèles Audio | ALPHA | Non |
 | 14 | Orchestration de Pipelines Audio | ALPHA | Non |
-| 15 | Creation de Contenu Audio Educatif | ALPHA | Non |
+| 15 | Création de Contenu Audio Educatif | ALPHA | Non |
 | 16 | Pipeline de Transcription et Sous-titrage | ALPHA | Non |
 | 17 | Workflow de Composition Musicale | ALPHA | Non |
 | 18 | Synchronisation Audio-Video (Passerelle) | ALPHA | Non |
