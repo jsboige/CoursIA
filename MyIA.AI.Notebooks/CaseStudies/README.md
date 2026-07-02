@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: CaseStudies
-pedagogical_count: 6
-breakdown: Diagnostic-Medical=2, Oncology-Planning=2, SmartGrid-Energy=2
-maturity: BETA=4, PRODUCTION=2
+pedagogical_count: 4
+breakdown: Diagnostic-Medical=2, Oncology-Planning=2
+maturity: BETA=2, PRODUCTION=2
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ QuantConnect](../QuantConnect/README.md)
