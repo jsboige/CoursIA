@@ -111,7 +111,7 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 
 Side track C# .NET 9 (cf. [Search-5](Part1-Foundations/Search-5-GeneticAlgorithms.ipynb), [Search-11](Part1-Foundations/Search-11-Metaheuristics.ipynb)) : reconstruire et **composer** les métaheuristiques au-dessus de GeneticSharp plutôt que d'en importer une boîte noire.
 
-La série se lit en trois temps : **MGS-1 à 7** bâtissent le moteur et la grammaire de composition (jusqu'aux composés publiés et au TSP) ; **MGS-8 à 14** visualisent les paysages de fitness et mesurent la robustesse aux biais des bancs CEC (décalage, rotation, synergie d'îles) ; **MGS-15 à 18** referment la série sur l'**analyse quantitative de paysage** et la **méta-stratégie** — choisir l'optimiseur selon le paysage (No-Free-Lunch), adapter ses paramètres en cours de route, et confronter le portefeuille au protocole CEC complet.
+La série se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la grammaire de composition (jusqu'aux composés publiés et au TSP) ; **MGS-8 à 14** visualisent les paysages de fitness et mesurent la robustesse aux biais des bancs CEC (décalage, rotation, synergie d'îles) ; **MGS-15 à 18** referment la série sur l'**analyse quantitative de paysage** et la **méta-stratégie** — choisir l'optimiseur selon le paysage (No-Free-Lunch), adapter ses paramètres en cours de route, et confronter le portefeuille au protocole CEC complet ; **MGS-19** prolonge la thèse « composants > métaphores » jusqu'au **démontage** — extraire l'opérateur de Metropolis du recuit simulé et l'éprouver seul sur un GA, pour vérifier que le bénéfice du recuit tient au couplage perturbation+acceptation, pas à l'acceptation seule.
 
 | # | Notebook | Apport pédagogique |
 |---|----------|-------------------|
@@ -124,7 +124,7 @@ La série se lit en trois temps : **MGS-1 à 7** bâtissent le moteur et la gram
 | 7 | MGS-7 TSP | Grammaire agnostique à la représentation (permutation, `OrderedCrossover`) |
 | 8 | MGS-8 LandscapeExplorer | Visualiser la surface de fitness (heatmaps, trajectoire de convergence) |
 | 9 | MGS-9 EverestRelief | Relief terrestre réel comme paysage de fitness (DEM, flipbook) |
-| 10 | MGS-10 CenterBias | Biais central vs robustesse au déplacement (banc Kudella 2022) |
+| 10 | MGS-10 CenterBias | Biais central vs robustesse au déplacement (banc Kudela 2022) |
 | 11 | MGS-11 IslandSynergy | Synergie d'îles complémentaires (verdict mesuré) |
 | 12 | MGS-12 AxisAlignment | Biais d'alignement d'axes (rotation) |
 | 13 | MGS-13 LandscapeDebias | Pourquoi la rotation casse la séparabilité (visuel) |
@@ -133,6 +133,7 @@ La série se lit en trois temps : **MGS-1 à 7** bâtissent le moteur et la gram
 | 16 | MGS-16 AlgorithmSelection | No-Free-Lunch (Wolpert & Macready 1997) + cadre de Rice : features de paysage → recommandation d'optimiseur, validée sur un paysage inconnu (Rosenbrock) |
 | 17 | MGS-17 ParameterControl | Adapter les paramètres *pendant* la course (taxonomie d'Eiben : réglage vs contrôle) — la seconde réponse au No-Free-Lunch |
 | 18 | MGS-18 CecBanc | Banc CEC consolidé : combiner décalage (MGS-10) et rotation (MGS-12) — robuste à chaque biais séparément l'est-il au biais combiné ? |
+| 19 | [MGS-19 MetropolisReinsertion](Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb) | Démontage du recuit simulé : isoler `MetropolisReinsertion` du compound `SimulatedAnnealing` et le greffer seul sur un GA — verdict honnête négatif, le bénéfice du recuit tient au couplage perturbation+acceptation |
 
 ### Applications
 
