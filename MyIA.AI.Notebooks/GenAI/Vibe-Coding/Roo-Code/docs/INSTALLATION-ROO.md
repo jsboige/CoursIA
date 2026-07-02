@@ -141,7 +141,7 @@ Faire instruire une tâche pour valider le fonctionnement des différents outils
 
 ## Étape 11 : Configurer les Custom Instructions
 
-Les Custom Instructions permettent de personnaliser le comportement de Roo selon vos projets et preferences.
+Les Custom Instructions permettent de personnaliser le comportement de Roo selon vos projets et préférences.
 
 ### Configuration rapide projet
 
