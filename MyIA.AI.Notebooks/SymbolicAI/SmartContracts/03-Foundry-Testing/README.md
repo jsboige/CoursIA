@@ -11,8 +11,8 @@ Cette troisième sous-série (SC-12 a SC-14) introduit le **testing rigoureux** 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 12 | [SC-12-Foundry-Testing](SC-12-Foundry-Testing.ipynb) | 45 min | Installation Foundry, structure de projet, tests Solidity (DSTest), cheatcodes, assertions |
-| 13 | [SC-13-Fuzz-Invariants](SC-13-Fuzz-Invariants.ipynb) | 40 min | Fuzz testing, parametres aleatoires, invariants de contrats, `vm.assume` |
-| 14 | [SC-14-Formal-Verification](SC-14-Formal-Verification.ipynb) | 50 min | Verification formelle, Certora Prover, CVL, specifications, regles |
+| 13 | [SC-13-Fuzz-Invariants](SC-13-Fuzz-Invariants.ipynb) | 40 min | Fuzz testing, paramètres aléatoires, invariants de contrats, `vm.assume` |
+| 14 | [SC-14-Formal-Verification](SC-14-Formal-Verification.ipynb) | 50 min | Verification formelle, Certora Prover, CVL, spécifications, regles |
 
 **Total** : 3 notebooks, ~2h15.
 
@@ -38,11 +38,11 @@ Installation et configuration de **Foundry** (forge, cast, anvil), création d'u
 
 ### Étape 2 : Fuzz et invariants (SC-13, 40 min)
 
-Le **fuzz testing** : passer des parametres aleatoires aux fonctions de test, tester des **invariants** (propriétés qui doivent toujours tenir, quelles que soient les entrees), et filtrer les entrees invalides avec `vm.assume`. Cette étape change la maniere de penser les tests : on ne vérifie plus des cas isolés mais des familles entieres de comportements.
+Le **fuzz testing** : passer des paramètres aléatoires aux fonctions de test, tester des **invariants** (propriétés qui doivent toujours tenir, quelles que soient les entrées), et filtrer les entrées invalides avec `vm.assume`. Cette étape change la manière de penser les tests : on ne vérifie plus des cas isolés mais des familles entières de comportements.
 
 ### Étape 3 : Verification formelle (SC-14, 50 min)
 
-La **vérification formelle** comme niveau au-dessus du testing : **Certora Prover** et le langage de specification **CVL** (Certora Verification Language), ecriture de **specifications** et de **regles**, vérification d'invariants mathematiques. Pont naturel avec la série Lean (preuve formelle de propriétés).
+La **vérification formelle** comme niveau au-dessus du testing : **Certora Prover** et le langage de spécification **CVL** (Certora Verification Language), ecriture de **spécifications** et de **regles**, vérification d'invariants mathematiques. Pont naturel avec la série Lean (preuve formelle de propriétés).
 
 ---
 
@@ -88,7 +88,7 @@ La **vérification formelle** comme niveau au-dessus du testing : **Certora Prov
 ## Ressources
 
 - **Foundry Book** (Foundry contributors) -- `forge test`, `forge build`, fuzzing, cheatcodes. book.getfoundry.sh.
-- **Certora Documentation** (Certora Inc.) -- Certora Prover, langage CVL, ecriture de specifications. docs.certora.com.
+- **Certora Documentation** (Certora Inc.) -- Certora Prover, langage CVL, ecriture de spécifications. docs.certora.com.
 - **Halmos** (a16z, 2023) -- symbolic exécution open-source pour tests Foundry.
 - Wilkinson, M. (2022) -- "Foundry: A Blazing Fast, Portable, and Modular Toolkit for Ethereum Application Development".
 - Voir aussi les références transversales dans le [README parent de la série](../README.md).
