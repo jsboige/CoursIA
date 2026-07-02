@@ -64,6 +64,25 @@ celle de `⟨w, u⟩`.
   `⟪wₙ, u⟫ ≤ ‖wₙ‖ · ‖u‖ = ‖wₙ‖` (avec `‖u‖ = 1`) donne `n · γ ≤ ‖wₙ‖`, donc
   `(n · γ)² ≤ ‖wₙ‖² ≤ n · R²`, i.e. **`n · γ² ≤ R²`**.
 
+#### Structure de la preuve de Novikoff
+
+Les deux invariants d'une exécution valide (erreur + marge) nourrissent deux
+lemmes de croissance aux directions opposées, que Cauchy–Schwarz combine en la
+borne de convergence :
+
+```mermaid
+flowchart TD
+    INV["Exécution valide (PerceptronRun)<br/>erreur : yₖ·⟪wₖ,xₖ⟫ ≤ 0 ; marge : yₖ·⟪u,xₖ⟫ ≥ γ ; ‖xₖ‖ ≤ R"]
+    INV --> LA["Lemme A — alignement (align_growth)<br/>⟪wₖ, u⟫ ≥ k·γ"]
+    INV --> LB["Lemme B — norme (norm_bound)<br/>‖wₖ‖² ≤ k·R²"]
+    LA --> CS{"Cauchy–Schwarz<br/>⟪wₙ, u⟫ ≤ ‖wₙ‖·‖u‖ = ‖wₙ‖  (‖u‖ = 1)"}
+    LB --> CS
+    CS --> B1["n·γ ≤ ‖wₙ‖"]
+    B1 --> B2["(n·γ)² ≤ ‖wₙ‖² ≤ n·R²"]
+    B2 --> TH["Borne de Novikoff<br/>n · γ² ≤ R²  ⟺  erreurs ≤ (R/γ)²"]
+    TH -->|"serrage Tightness.lean"| SH["n·γ² = R² atteint sur ℂ ⟹ (R/γ)² optimale"]
+```
+
 ### Serrage de la borne (sharpness)
 
 - **`novikoff_bound_is_sharp`** (`Tightness.lean`) : la borne `(R/γ)²` est
