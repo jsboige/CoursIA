@@ -126,6 +126,32 @@ docker-compose up -d
 
 Trois niveaux ordonnés par **difficulté croissante**. Le fil directeur suit l'arc classique de l'intelligence artificielle façon *AIMA* (Russell & Norvig) : on apprend d'abord à **modéliser et chercher** — agents, espaces d'états, contraintes — puis on **élargit** vers les deux écosystèmes applicatifs et les médias génératifs, avant d'atteindre le **cœur formel** où l'on prouve ce qu'on a calculé. Pour une entrée par **centre d'intérêt** plutôt que par niveau, voir les [parcours thématiques](#parcours-thématiques) en fin de section.
 
+```mermaid
+flowchart TD
+    TH["Fil directeur AIMA :<br/>faire ET comprendre<br/>(dualité simulation / preuve)"]
+
+    subgraph N1["Niveau 1 — Fondations (~30h) : modéliser et chercher"]
+        N1a["Search + Sudoku<br/>espaces d'états, contraintes"]
+        N1b["ML<br/>modèles supervisés"]
+    end
+
+    subgraph N2["Niveau 2 — Application (~60h) : élargir"]
+        N2a["GenAI<br/>médias génératifs self-hosted"]
+        N2b["QuantConnect<br/>ML appliqué + validation"]
+        N2c["SymbolicAI + Probas + RL/GameTheory<br/>premiers ponts symboliques"]
+    end
+
+    subgraph N3["Niveau 3 — Cœur formel (~120h+) : prouver"]
+        N3a["Lean + SymbolicLearning<br/>prouver ce qu'on a calculé"]
+        N3b["GameTheory + Probas (Lean)<br/>choix social, Gittins"]
+        N3c["IIT / ICT<br/>frontières de la recherche"]
+    end
+
+    TH --> N1
+    N1 -->|"élargir"| N2
+    N2 -->|"certifier"| N3
+```
+
 ### Niveau 1 - Fondations (~30h)
 
 Le déclic de ces premières heures n'est pas de générer une image, mais de faire **raisonner** une machine : formaliser un problème en espace d'états, choisir entre explorer et contraindre, mesurer une approche contre une autre sur un même terrain. C'est le socle algorithmique sur lequel tout le reste s'appuie — l'approche promue dans toute la série [Search](Search/README.md).
