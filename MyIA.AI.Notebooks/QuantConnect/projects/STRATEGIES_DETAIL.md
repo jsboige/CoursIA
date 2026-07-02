@@ -167,4 +167,4 @@ Références avancées clonées depuis la QC Cloud Library (avril 2026). Métriq
 
 ---
 
-Voir aussi : [README.md](README.md) (résumé) · [Leçons](../../docs/quantconnect.md) · [Catalogue QC Cloud](../docs/qc_strategies_catalog.md)
+Voir aussi : [README.md](README.md) (résumé) · [Leçons](../../../docs/qc/quantconnect.md) · [Catalogue QC Cloud](../docs/qc_strategies_catalog.md)

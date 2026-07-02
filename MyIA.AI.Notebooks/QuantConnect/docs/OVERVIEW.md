@@ -144,7 +144,7 @@ Les notebooks pedagogiques `Python/QC-Py-*` couvrent les concepts ; les projets 
 ## Pour aller plus loin
 
 - [Quick Tour](../QUICK_TOUR.md) — Vue d'ensemble en 2 minutes
-- [Patterns confirmes](../../../docs/quantconnect.md) — 20 patterns + 10 anti-patterns
-- [Catalogue detaille](STRATEGIES_DETAIL.md) — Toutes les strategies par categorie
+- [Patterns confirmes](../../../docs/qc/quantconnect.md) — 20 patterns + 10 anti-patterns
+- [Catalogue detaille](../projects/STRATEGIES_DETAIL.md) — Toutes les strategies par categorie
 - [Livre Jared Broad](../BOOK_MAPPING.md) — 63 exemples du livre *Hands-On AI Trading*
 - [Catalogue QC Cloud](qc_strategies_catalog.md) — Metriques par strategy avec Cloud IDs
