@@ -226,7 +226,7 @@ SPY seul. 5 features. Sharpe 0.136, Beta 0.276, Alpha -0.009. Signaux aleatoires
 
 **Bug critique corrige (v2.0 -> v2.0.1)**: _target_network.predict() avant premier fit() -> NotFittedError.
 FIX: _target_initialized = False separement de _network_initialized.
-Utiliser Q-network comme fallback jusqu'a la premiere mise a jour mensuelle du target network.
+Utiliser Q-network comme fallback jusqu'à la première mise à jour mensuelle du target network.
 Insidieux: build reussit, echec uniquement a l'execution apres quelques semaines.
 
 **Pistes restantes (non testees):**

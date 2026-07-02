@@ -59,7 +59,7 @@ Cellules en gras : ESCALATE (sign-test p < 0.10 a 100bps avec cap=3.0).
 - **POSITIVE sur Kelly cap** : 12/27 cellules de la grille (cap, thr, fee>=50bps)
   passent ESCALATE (>=60% delta>0 et p<0.10). Toutes les cellules cap=3.0/fee>=50bps
   sont positives.
-- **Trade-off** : cap=3.0 = jusqu'a 3x leverage sur la Kelly fraction. Drawdowns
+- **Trade-off** : cap=3.0 = jusqu'à 3x leverage sur la Kelly fraction. Drawdowns
   potentiels significativement plus eleves. M11h NE QUANTIFIE PAS ces drawdowns
   (script ne calcule que Sharpe paired diff).
 
@@ -92,7 +92,7 @@ Sortie : `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/results/m11h_kelly
 
 ## Discipline (G.2 / regle multi-seed)
 
-- Walk-forward 5-fold preserve (n_splits=5 par default, refit_every=22)
+- Walk-forward 5-fold preserve (n_splits=5 par défaut, refit_every=22)
 - Pas de FAANG/Mag7 (crypto only, conforme dataset_paths.md)
 - Transaction costs documentes (10/50/100 bps)
 - Pas de single-seed verdict — agregation 35-combo cross-coin/cross-horizon

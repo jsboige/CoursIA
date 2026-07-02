@@ -106,7 +106,7 @@ def initialize(self):
 ### Leverage
 
 - Compte Cash : 1x
-- Compte Margin : jusqu'a 3x
+- Compte Margin : jusqu'à 3x
 - Binance US : Cash uniquement
 
 ### Assets disponibles
