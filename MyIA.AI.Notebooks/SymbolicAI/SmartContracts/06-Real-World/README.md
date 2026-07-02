@@ -42,7 +42,7 @@ flowchart LR
 
 ### Phase 1 : Interoperabilite (SC-23, ~45 min)
 
-Pourquoi deplacer un actif ou un message d'une chaîne a l'autre, comment Chainlink CCIP fait transituer des données on-chain de maniere vérifiable, et ou se cachent les attaques cross-chain (reentrancy de bridge, message spoofing). Le notebook reste en mode source-as-strings (les contrats CCIP sont lus comme texte pédagogique, non déployés).
+Pourquoi deplacer un actif ou un message d'une chaîne a l'autre, comment Chainlink CCIP fait transituer des données on-chain de manière vérifiable, et ou se cachent les attaques cross-chain (reentrancy de bridge, message spoofing). Le notebook reste en mode source-as-strings (les contrats CCIP sont lus comme texte pédagogique, non déployés).
 
 ### Phase 2 : Deploiement public (SC-24 + SC-25, ~1h30)
 

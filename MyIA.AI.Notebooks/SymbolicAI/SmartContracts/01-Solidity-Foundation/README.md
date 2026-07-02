@@ -35,7 +35,7 @@ Solidity supporte l'héritage multiple avec le mot-clé `is`, les interfaces pou
 
 ### Étape 4 : Erreurs et observabilite (SC-6, 30 min)
 
-`require` (conditions d'entree, gas rembourse), `revert` (erreurs complexes), `assert` (invariants internes), les custom errors economes en gas depuis 0.8.4, et les events pour le logging hors-chain.
+`require` (conditions d'entrée, gas rembourse), `revert` (erreurs complexes), `assert` (invariants internes), les custom errors economes en gas depuis 0.8.4, et les events pour le logging hors-chain.
 
 ---
 

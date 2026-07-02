@@ -2,7 +2,7 @@
 
 **Navigation** : [Sommaire de la série](../README.md) | [<< SC-14 Formal Verification](../03-Foundry-Testing/SC-14-Formal-Verification.ipynb) | [SC-18 Vyper >>](../05-Alternative-Chains/SC-18-Vyper.ipynb)
 
-Cette quatrieme sous-série (SC-15 a SC-17) explore la cryptographie avancée au service de la confidentialite sur blockchain : les **preuves a divulgation nulle** (Zero-Knowledge Proofs), le **chiffrement homomorphe** (calcul sur données chiffrees), et le **vote électronique de bout en bout vérifiable** (E2E). Ces notebooks implementent les protocoles cryptographiques pour de vrai en Python (`pycryptodome`, `phe`, `tenseal`), avec la crypto Paillier et Schnorr reelement executee dans les outputs committes.
+Cette quatrième sous-série (SC-15 a SC-17) explore la cryptographie avancée au service de la confidentialite sur blockchain : les **preuves a divulgation nulle** (Zero-Knowledge Proofs), le **chiffrement homomorphe** (calcul sur données chiffrees), et le **vote électronique de bout en bout vérifiable** (E2E). Ces notebooks implementent les protocoles cryptographiques pour de vrai en Python (`pycryptodome`, `phe`, `tenseal`), avec la crypto Paillier et Schnorr reelement executee dans les outputs committes.
 
 ---
 
@@ -35,7 +35,7 @@ flowchart LR
 
 ### Étape 1 : Preuves Zero-Knowledge (SC-15, 60 min)
 
-Les **preuves a divulgation nulle** : prouver la connaissance d'un secret sans le reveler. Implémentation from scratch du **protocole de Schnorr** (preuve de connaissance d'un logarithme discret), transformation de **Fiat-Shamir** (rendre un protocole interactif non-interactif via oracle aleatoire), et exploration des **Sigma protocols** avec le protocole de **Chaum-Pedersen**. Crypto `pycryptodome` réelle dans les outputs.
+Les **preuves a divulgation nulle** : prouver la connaissance d'un secret sans le reveler. Implémentation from scratch du **protocole de Schnorr** (preuve de connaissance d'un logarithme discret), transformation de **Fiat-Shamir** (rendre un protocole interactif non-interactif via oracle aléatoire), et exploration des **Sigma protocols** avec le protocole de **Chaum-Pedersen**. Crypto `pycryptodome` réelle dans les outputs.
 
 ### Étape 2 : Chiffrement homomorphe (SC-16, 50 min)
 
@@ -82,7 +82,7 @@ Le **paradoxe du vote électronique** : concilier **anonymat** et **vérifiabili
 
 ## Points de vigilance (dépendances cryptographiques)
 
-- **Paillier + Schnorr exécutés réellement** (SC-15, SC-16, SC-17) : les outputs committes refletent une vraie exécution crypto `phe`/`pycryptodome`. Les parametres (clés, challenges, reponses) sont authentiques.
+- **Paillier + Schnorr exécutés réellement** (SC-15, SC-16, SC-17) : les outputs committes refletent une vraie exécution crypto `phe`/`pycryptodome`. Les paramètres (clés, challenges, réponses) sont authentiques.
 - **CKKS / TenSEAL (SC-16) optionnel** : si `tenseal` n'est pas installe, la section CKKS tourne en repli honnêtement disclose (message `TenSEAL non installe`), avec des plages d'erreur illustrees. Audit #3164 a vérifie que les nombres measures au-dessus de ce repli sont honnêtement documentés (PR #3382).
 - **ElectionGuard (SC-17)** : la partie SOTA est disclose comme **simulation conceptuelle** (ElectionGuard requiert un setup lourd) ; le vote a la main Paillier+ZKP est lui réellement exécute.
 - **ZKP interactif vs non-interactif** : SC-15 implémente les deux formes ; vérifier que la transformation Fiat-Shamir produit bien un proof non-transferable.
@@ -96,7 +96,7 @@ Le **paradoxe du vote électronique** : concilier **anonymat** et **vérifiabili
 - **Chaum, D., & Pedersen, T. (1993)** -- "Wallet Databases with Observers", *CRYPTO 1992*. Protocole Chaum-Pedersen.
 - **Paillier, P. (1999)** -- "Public-Key Cryptosystems Based on Composite Degree Residuosity Classes", *EUROCRYPT 1999*. Schéma de Paillier (additivement homomorphe).
 - **Shamir, A. (1979)** -- "How to Share a Secret", *Communications of the ACM* 22(11). Partage de secrets.
-- **ElectionGuard** (Microsoft, 2019) -- specification du vote E2E vérifiable. github.com/microsoft/electionguard.
+- **ElectionGuard** (Microsoft, 2019) -- spécification du vote E2E vérifiable. github.com/microsoft/electionguard.
 - Voir aussi les références transversales dans le [README parent de la série](../README.md).
 
 ---
