@@ -209,7 +209,7 @@ Claude Code charge les configurations dans cet ordre (la dernière ecrase les pr
 
 ### Étape 3 : Configuration via Variables d'Environnement (Alternative)
 
-Si vous preferez utiliser les variables d'environnement, cette méthode fonctionne egalement. **Choisissez l'une ou l'autre méthode, pas les deux a la fois.**
+Si vous préférez utiliser les variables d'environnement, cette méthode fonctionne également. **Choisissez l'une ou l'autre méthode, pas les deux a la fois.**
 
 #### Windows (PowerShell)
 
@@ -262,7 +262,7 @@ Sauvegardez et rechargez :
 - **`~/.bashrc`** : Shells bash interactifs. Uniquement si vous utilisez bash (`chsh -s /bin/bash`).
 - **`~/.bash_profile`** : Shells bash de connexion. Même remarque que `.zprofile` pour bash.
 
-> **Conseil :** Si vous avez déjà un `~/.zprofile` mais pas de `~/.zshrc`, le plus simple est de créer `~/.zshrc` ou d'ajouter les exports dans votre `~/.zprofile` existant. Les deux fonctionnent depuis Terminal.app. Si vous utilisez aussi le terminal integre de VSCode, preferez `~/.zshrc`.
+> **Conseil :** Si vous avez déjà un `~/.zprofile` mais pas de `~/.zshrc`, le plus simple est de créer `~/.zshrc` ou d'ajouter les exports dans votre `~/.zprofile` existant. Les deux fonctionnent depuis Terminal.app. Si vous utilisez aussi le terminal integre de VSCode, préférez `~/.zshrc`.
 
 Pour verifier quel shell vous utilisez :
 
@@ -393,7 +393,7 @@ Qwen 3.6 Plus est le modèle flagship de la famille Qwen 3.6 (Alibaba, avril 202
 
 - **Context window** : 262K tokens
 - **Forces** : Raisonnement avance, programmation complexe, taches agentiques multi-étapes
-- **Cas d'usage ideaux** : Refactoring complexe, architecture de projets, documentation technique
+- **Cas d'usage idéaux** : Refactoring complexe, architecture de projets, documentation technique
 - **Prix** : voir [openrouter.ai/qwen/qwen3.6-plus](https://openrouter.ai/qwen/qwen3.6-plus)
 
 #### MiniMax M2.7 (Alias Sonnet)
@@ -404,7 +404,7 @@ Modèle de dernière génération optimise pour la productivite et le coding :
 
 - **Context window** : 205K tokens
 - **Forces** : Coding agentique, workflows autonomes, amelioration continue, excellent sur benchmarks coding
-- **Cas d'usage ideaux** : Developpement quotidien, debug, génération de tests, refactoring
+- **Cas d'usage idéaux** : Developpement quotidien, debug, génération de tests, refactoring
 - **Prix** : $0.30 / $1.20 per million tokens (input/output)
 
 #### Qwen 3.6 35B-A3B (Alias Haiku)
@@ -413,10 +413,10 @@ Modèle de dernière génération optimise pour la productivite et le coding :
 
 Modèle dense compact et rapide :
 
-- **Taille** : 27B parametres (dense)
+- **Taille** : 27B paramètres (dense)
 - **Context window** : 262K tokens
 - **Forces** : Rapidite, bon rapport qualite/coût, coding solide pour sa taille
-- **Cas d'usage ideaux** : Exploration rapide, questions simples, taches repetitives, prototypage
+- **Cas d'usage idéaux** : Exploration rapide, questions simples, taches repetitives, prototypage
 - **Prix** : $0.20 / $1.56 per million tokens (input/output)
 
 ### Comparaison avec les Modèles Claude Natifs
@@ -454,13 +454,13 @@ Vous pouvez assigner des modèles différents aux subagents :
 
 ## Configuration de l'Extension VS Code
 
-### Parametres Recommandes
+### Paramètres Recommandes
 
-1. Ouvrez les parametres : `Cmd+,` / `Ctrl+,`
+1. Ouvrez les paramètres : `Cmd+,` / `Ctrl+,`
 1. Allez dans **Extensions > Claude Code**
 1. Configurez :
 
-| Parametre | Valeur Recommandée | Description |
+| Paramètre | Valeur Recommandée | Description |
 | ------------------------- | ------------------ | ------------------------------------ |
 | **Disable Login Prompt** | Active | Évite la connexion Anthropic |
 | **Initial Permission Mode** | `default` | Demande avant chaque action |
@@ -616,9 +616,9 @@ Vous devriez voir le serveur `qc-mcp` avec le statut "Connected" et environ 60 o
 > Analyse les resultats du dernier backtest : Sharpe, CAGR, Max Drawdown
 ```
 
-**Resolution de problemes :**
+**Resolution de problèmes :**
 
-| Probleme | Solution |
+| Problème | Solution |
 | ---------- | ---------- |
 | "Docker not found" | Installez Docker Desktop et redémarrez votre terminal |
 | "Authentication failed" | Verifiez vos identifiants dans `.mcp.json` |
@@ -719,9 +719,9 @@ Puis dans Claude :
 
 Claude générera automatiquement un fichier `CLAUDE.md` adapte a votre projet.
 
-## Resolution de Problemes
+## Resolution de Problèmes
 
-### Probleme : "Command not found: claude"
+### Problème : "Command not found: claude"
 
 **Solution :**
 
@@ -729,7 +729,7 @@ Claude générera automatiquement un fichier `CLAUDE.md` adapte a votre projet.
 - Ajoutez au PATH si nécessaire
 - Redémarrez votre terminal
 
-### Probleme : "Authentication failed" avec OpenRouter
+### Problème : "Authentication failed" avec OpenRouter
 
 **Solution :**
 
@@ -745,25 +745,25 @@ Verifiez votre clé API sur [openrouter.ai/settings/keys](https://openrouter.ai/
 
 Sur macOS, verifiez que les exports sont dans le bon fichier de profil (voir Étape 3).
 
-### Probleme : Extension VS Code ne se connecte pas
+### Problème : Extension VS Code ne se connecte pas
 
 **Solution :**
 
-1. Activez **"Disable Login Prompt"** dans les parametres
+1. Activez **"Disable Login Prompt"** dans les paramètres
 1. Redémarrez VS Code **complètement** (pas juste recharger la fenetre)
 1. Verifiez les logs : `Cmd+Shift+P` > "Developer: Show Logs"
 
-### Probleme : "Model not found"
+### Problème : "Model not found"
 
 Verifiez que l'identifiant du modèle est correct sur [OpenRouter Models](https://openrouter.ai/models).
 
-### Probleme : "Rate limit exceeded"
+### Problème : "Rate limit exceeded"
 
 1. Attendez quelques secondes et reessayez
 1. Verifiez vos credits sur [OpenRouter Activity](https://openrouter.ai/activity)
 1. Considerez un plan payant pour des limites plus élevées
 
-### Probleme : Le modèle ne repond pas comme attendu
+### Problème : Le modèle ne repond pas comme attendu
 
 Certains modèles alternatifs ont des comportements différents. Ajustez vos prompts :
 
@@ -775,7 +775,7 @@ claude -p "Reponds UNIQUEMENT avec du code Python, sans explication"
 claude -p "En tant qu'expert Python, analyse ce code : ..."
 ```
 
-### Probleme : MCP server ne repond pas (Windows)
+### Problème : MCP server ne repond pas (Windows)
 
 Pour les serveurs locaux `npx` sur Windows, utilisez le wrapper `cmd /c` :
 
