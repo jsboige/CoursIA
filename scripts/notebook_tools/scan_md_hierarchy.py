@@ -24,6 +24,25 @@ HINT_RE = re.compile(
     r'^(indice|astuce|hint|tip|conseil|note|remarque|attention|todo|'
     r'etape|étape|step|rappel|warning|important|aide|piste|nb)\b',
     re.IGNORECASE)
+# A numbered step WITH a descriptive title (`Step 1: Load Data`, `Étape 3 :
+# Installation`) is a real titled SECTION header, not a bare aside. Without
+# this exclusion the level-agnostic HINT_RE flags the tutorial's backbone H2s
+# as hint-asides (false positives). Bare asides (`## Note`, `## Étape 3`,
+# `### Note pédagogique`) carry no colon+title, so they stay flagged. See #3968.
+TITLED_STEP_RE = re.compile(
+    r'^(step|etape|étape)\s+\d+\s*:\s*\S',
+    re.IGNORECASE)
+# A hint word that is the FIRST PART of a hyphenated compound noun
+# (`Aide-mémoire des commandes`) is a real titled section, not a bare aside:
+# the hyphenated compound is a single lexical unit naming the section. A bare
+# aside (`## Note`, `### Aide`) has no hyphenated compound, so it stays flagged.
+# Without this, demoting `### Aide-mémoire des commandes` while its sibling
+# `### Points clés à retenir` stays H3 would create an asymmetric hierarchy.
+# See #3968.
+COMPOUND_HINT_RE = re.compile(
+    r'^(indice|astuce|hint|tip|conseil|note|remarque|attention|todo|'
+    r'etape|étape|step|rappel|warning|important|aide|piste|nb)-',
+    re.IGNORECASE)
 
 def scan_notebook(path):
     try:
@@ -57,7 +76,9 @@ def scan_notebook(path):
                 h1_cells.append(ci)
                 if not is_first_md:
                     findings.append({'kind': 'H1-DEEP', 'cell': ci, 'level': level, 'text': text[:90]})
-            if HINT_RE.match(text):
+            if (HINT_RE.match(text)
+                    and not TITLED_STEP_RE.match(text)
+                    and not COMPOUND_HINT_RE.match(text)):
                 findings.append({'kind': 'HINT-AS-HEADING', 'cell': ci, 'level': level, 'text': text[:90]})
     if len(h1_cells) > 1:
         findings.insert(0, {'kind': 'MULTI-H1', 'cell': h1_cells[0], 'level': 1,
