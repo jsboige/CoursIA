@@ -1503,6 +1503,54 @@ def test_gate_structural_progress_unaffected_by_zero_verified():
     assert structural is True
 
 
+# ──────────────────────────────────────────────────────────────────────────
+# FX-8 (#1453, NanoClaw #4936 concern): the autonomous-path asymmetry of #4909.
+# After _stmt_mutation_guard restores the original file, final_sorry ==
+# original_sorry_count with verified_tactic_count == 0. The pre-FX-8 gate
+# reported success=True via the structural-progress disjunct (final >=
+# original covering the equality), a FALSE SUCCESS (mutation detected, nothing
+# proved). The multi-agent path overrides structural_progress = False after its
+# mutation guard; FX-8 mirrors that inside the gate itself.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_fx8_gate_rejects_same_count_zero_verified():
+    """NanoClaw #4936: post-mutation-restore state must NOT be a success.
+
+    Shape: final == original (restored), build OK, 0 verified tactic. Pre-FX-8
+    this reported success=True via structural_progress (the bug); the gate must
+    now refuse it.
+    """
+    from prover.provers import _autonomous_success_gate
+
+    success, structural = _autonomous_success_gate(
+        final_sorry=4, original_sorry_count=4, final_build_ok=True,
+        verified_tactic_count=0,
+    )
+    assert success is False, (
+        "a same-count build with 0 verified tactic is a restored statement "
+        "mutation (or no-op), not a success (FX-8 autonomous asymmetry fix)"
+    )
+    assert structural is False
+
+
+def test_fx8_gate_same_count_stays_structural_with_verified():
+    """A genuine same-count restructure (>=1 verified tactic) stays a success.
+
+    Bounds FX-8: the narrow guard only fires when verified == 0 AND
+    final == original. A legitimate restructured proof with the same sorry
+    count but a build-verified tactic remains structural progress.
+    """
+    from prover.provers import _autonomous_success_gate
+
+    success, structural = _autonomous_success_gate(
+        final_sorry=4, original_sorry_count=4, final_build_ok=True,
+        verified_tactic_count=1,
+    )
+    assert success is True
+    assert structural is True
+
+
 def test_gate_backward_compat_without_verified_param():
     """Legacy callers (no verified_tactic_count) keep pre-FX-6 behaviour."""
     from prover.provers import _autonomous_success_gate
@@ -1669,7 +1717,9 @@ def test_fx7_no_legacy_substring_counter_in_prover_source():
             if '.count("sorry")' in line:
                 # lean_utils.py keeps ONE historical mention in the
                 # count_real_sorries docstring describing the retired counter.
-                if py.name == "lean_utils.py" and line.strip().startswith("``"):
+                # Match on an explicit marker (not markdown formatting) so the
+                # allow survives a docstring reformat (NanoClaw #4936 △ Mineur).
+                if py.name == "lean_utils.py" and "# FX-7-ALLOW" in line:
                     continue
                 legacy.append(f"{py.name}:{ln}: {line.strip()}")
     assert not legacy, (
