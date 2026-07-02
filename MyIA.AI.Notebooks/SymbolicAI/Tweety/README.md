@@ -25,7 +25,14 @@ TweetyProject est une collection de bibliothèques Java couvrant plusieurs domai
 - **Agents et dialogues** : Multi-agents, Protocoles argumentatifs
 - **Préférences et vote** : Ordres de préférence, Agrégation
 
-Les notebooks utilisent **JPype** pour intégrer Java dans Python, permettant un apprentissage interactif.
+Les notebooks utilisent **deux implémentations** pour exécuter TweetyProject, selon le langage d'apprentissage visé :
+
+| Implémentation           | Stack                          | Kernel        | JVM requise ?                     | Notebooks                                                                                                    |
+| ------------------------ | ------------------------------ | ------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Python** (originelle)  | JPype (pont Java↔Python)       | Python 3      | Oui (JDK téléchargé par le setup) | `Tweety-1` à `Tweety-11` (13 notebooks)                                                                      |
+| **C#/.NET** (port natif) | IKVM 8.15 (bytecode Java→.NET) | `.net-csharp` | **Non** (runtime IKVM pur .NET)   | `Tweety-2-Basic-Logics-Csharp`, `Tweety-2b-Semantics-Csharp`, `Tweety-2c-FOL-Csharp`, `Tweety-3-Dung-Csharp` |
+
+Les deux implémentations couvrent les mêmes concepts fondamentaux (logique propositionnelle, sémantique des mondes possibles, logique du premier ordre, argumentation de Dung) ; le port C# les expose **sans JVM**, directement dans le runtime .NET, ce qui les rend exécutables côté .NET Interactive comme n'importe quel notebook C#. Les notebooks `-Csharp` vivent **à côté** de leurs homologues Python (pas dans un sous-dossier), pour faciliter la comparaison des deux stacks sur un même concept. Voir EPIC [#4667](https://github.com/jsboige/CoursIA/issues/4667).
 
 À l'heure des modèles statistiques et des LLMs, pourquoi étudier ces logiques symboliques ? Parce qu'elles apportent ce que l'apprentissage seul ne garantit pas : un raisonnement **explicite, vérifiable et explicable**. L'argumentation computationnelle (cadres de Dung, ASPIC+, ABA) modélise la façon dont des agents confrontent des arguments, gèrent les contradictions et aboutissent à des conclusions justifiées — avec des applications en raisonnement juridique, en aide à la décision, en négociation multi-agents, et de plus en plus comme couche de contrôle au-dessus des LLMs (détecter les incohérences, structurer un débat). La révision de croyances (AGM) formalise comment un agent rationnel met à jour ses connaissances face à une information nouvelle ou contradictoire. L'intérêt de TweetyProject est de réunir tous ces formalismes sous un même toit : on expérimente d'une logique à l'autre sans avoir à réimplémenter chaque solveur.
 
