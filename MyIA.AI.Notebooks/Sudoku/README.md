@@ -341,7 +341,7 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 15 | Infer/NumPyro | Inférence probabiliste : distribution a posteriori sur les cases |
 | 16 | Neural Network | CNN PyTorch : apprentissage de patterns visuels sur grilles |
 | 17 | LLM | LLM Solver : prompt engineering pour résolution logique, limites |
-| 18 | Comparison | Benchmark comparatif : toutes les approches sur Easy/Medium/Hard |
+| 18 | Comparison | Benchmark comparatif : toutes les approches sur Easy/Medium/Hard/Expert |
 
 ---
 
