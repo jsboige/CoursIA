@@ -16,3 +16,6 @@
 [submodule "MyIA.AI.Notebooks/SymbolicAI/SMT/Automata"]
 	path = MyIA.AI.Notebooks/SymbolicAI/SMT/Automata
 	url = https://github.com/MyIntelligenceAgency/Automata.git
+[submodule "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"]
+	path = MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum
+	url = https://github.com/ArgumentumGames/Argumentum
