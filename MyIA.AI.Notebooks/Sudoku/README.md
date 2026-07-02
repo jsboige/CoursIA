@@ -360,7 +360,7 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 8 | Human Stratégies | Oui | Oui | Port C# vers Python |
 | 9 | Graph Coloring | Oui | Oui | **networkx** + `nx.sudoku_graph()` |
 | 10 | OR-Tools | Oui | Oui | **ortools** CP-SAT |
-| 11 | Choco | Oui* | Oui | **JPype** + Choco JAR |
+| 11 | Choco | Oui | Oui | **JPype** + Choco JAR |
 | 12 | Z3 | Oui | Oui | **z3-solver** |
 | 13 | Symbolic Automata | Oui | - | (C# uniquement) |
 | 14 | BDD | Oui | - | (C# uniquement) |
@@ -370,8 +370,6 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 18 | Comparison | - | Oui | Benchmark comparatif |
 
 **Légende** : Oui = disponible, - = non applicable
-
-*\* Le notebook `Sudoku-11-Choco-Csharp` ne fonctionne pas en pratique : IKVM 7.2.4630.5 (seule version publiée sur NuGet) ne peut pas charger le JAR Choco via la directive `#r` — erreur `CS0009` sur les métadonnées PE. Pour Choco, utilisez le notebook Python équivalent (`Sudoku-11-Choco-Python`), ou en C# les alternatives OR-Tools (`Sudoku-10-ORTools-Csharp`) et Z3 (`Sudoku-12-Z3-Csharp`). Plus de détails dans la FAQ ci-dessous.*
 
 ## Notebooks avec Versions Miroir C#/Python
 
@@ -389,11 +387,9 @@ Les notebooks suivants sont disponibles dans les deux langages pour comparaison 
 | 8 | Human Stratégies | [Sudoku-8-HumanStrategies-Csharp](Sudoku-8-HumanStrategies-Csharp.ipynb) | [Sudoku-8-HumanStrategies-Python](Sudoku-8-HumanStrategies-Python.ipynb) | Déduction logique |
 | 9 | Graph Coloring | [Sudoku-9-GraphColoring-Csharp](Sudoku-9-GraphColoring-Csharp.ipynb) | [Sudoku-9-GraphColoring-Python](Sudoku-9-GraphColoring-Python.ipynb) | Théorie des graphes |
 | 10 | OR-Tools | [Sudoku-10-ORTools-Csharp](Sudoku-10-ORTools-Csharp.ipynb) | [Sudoku-10-ORTools-Python](Sudoku-10-ORTools-Python.ipynb) | CP-SAT solveur |
-| 11 | Choco | [Sudoku-11-Choco-Csharp*](Sudoku-11-Choco-Csharp.ipynb) | [Sudoku-11-Choco-Python](Sudoku-11-Choco-Python.ipynb) | CP industrielle (C# non fonctionnel : voir note ci-dessous) |
+| 11 | Choco | [Sudoku-11-Choco-Csharp](Sudoku-11-Choco-Csharp.ipynb) | [Sudoku-11-Choco-Python](Sudoku-11-Choco-Python.ipynb) | CP industrielle |
 | 12 | Z3 | [Sudoku-12-Z3-Csharp](Sudoku-12-Z3-Csharp.ipynb) | [Sudoku-12-Z3-Python](Sudoku-12-Z3-Python.ipynb) | SMT solveur |
 | 15 | Infer (Probabiliste) | [Sudoku-15-Infer-Csharp](Sudoku-15-Infer-Csharp.ipynb) | [Sudoku-15-Infer-Python](Sudoku-15-Infer-Python.ipynb) | Inférence bayésienne |
-
-*\* `Sudoku-11-Choco-Csharp` ne fonctionne pas en pratique : IKVM 7.2.4630.5 (seule version NuGet) ne peut pas charger le JAR Choco via `#r`. Voir FAQ « Le solveur Choco C# (notebook 11) ne fonctionne pas » ci-dessous pour le diagnostic complet et les alternatives C#.*
 
 ## Algorithmes Couverts
 
@@ -648,23 +644,26 @@ Sudoku/
 - MEALPy (notebook 5 PSO) : `pip install mealpy` — dépendances nombreuses, préférez un env dédié
 - Si conflit de versions : `pip install --upgrade numpy pygad mealpy`
 
-### Le solveur Choco (notebook 11) ne fonctionne pas
+### Configuration du solveur Choco (notebook 11)
 
-#### Côté Python
+Choco est un solveur Java, exposé différemment selon le langage.
 
-Choco est un solveur Java appelé via JPype :
+#### Côté Python (`Sudoku-11-Choco-Python.ipynb`) — via JPype
+
 - Vérifiez que Java est installé : `java -version`
 - Installez JPype : `pip install jpype1`
 - Le JAR Choco est téléchargé automatiquement par le notebook
 
-#### Côté C# (`Sudoku-11-Choco-Csharp.ipynb`) — NE FONCTIONNE PAS
+#### Côté C# (`Sudoku-11-Choco-Csharp.ipynb`) — via IKVM 8.15.0
 
-Le notebook C# est conservé pour la complétude pédagogique, mais **ne s'exécute pas en l'état**. Diagnostic :
+Le notebook C# charge Choco via **IKVM 8.15.0** (runtime Java-sur-.NET, package NuGet `IKVM 8.15.0`) et une DLL Choco précompilée (`org.chocosolver.solver.dll`, fournie dans le dossier `Sudoku/`) :
 
-- **Cause racine** : IKVM 7.2.4630.5 est la seule version publiée sur NuGet compatible .NET 9.0 ; elle ne peut pas charger le JAR Choco via la directive `#r`. Erreur observée : `CS0009: Impossible d'ouvrir le fichier de métadonnées '...jar' -- L'image PE ne contient pas de métadonnées gérées`.
-- **IKVM 8.x** (compatible .NET 10) existe sur GitHub mais **n'est pas publiée sur NuGet** — pas de chemin d'installation reproductible depuis un notebook.
-- **Alternatives C# recommandées** : utilisez [`Sudoku-10-ORTools-Csharp.ipynb`](Sudoku-10-ORTools-Csharp.ipynb) (CP-SAT, OR-Tools .NET, installable et fonctionnel) ou [`Sudoku-12-Z3-Csharp.ipynb`](Sudoku-12-Z3-Csharp.ipynb) (SMT, via `Microsoft.Z3` NuGet).
-- **Statut** : notebook conservé avec un avertissement explicite en première cellule ; ne pas tenter de fix sans bump IKVM → NuGet.
+- **Restauration IKVM** : la première exécution est lente (restauration NuGet d'IKVM 8.15.0 + assemblage du *home* IKVM, environ 1 à 2 minutes).
+- **DLL Choco** : `#r "org.chocosolver.solver.dll"` référence la build précompilée de choco-solver 4.10.17. Le chargement direct du JAR via `#r` n'est pas pris en charge par IKVM ; la DLL précompilée contourne.
+- **Vérification** : le notebook affiche `IKVM 8.15.0 prêt (tzdb=True) - Choco-solver chargé` puis résout un Sudoku de référence (`Solution trouvée en ~700 ms`).
+- **Alternative plus légère** : pour une mise en place plus simple, le notebook Python ([`Sudoku-11-Choco-Python`](Sudoku-11-Choco-Python.ipynb), JPype) ou les solveurs C# natifs [`Sudoku-10-ORTools-Csharp`](Sudoku-10-ORTools-Csharp.ipynb) (CP-SAT) et [`Sudoku-12-Z3-Csharp`](Sudoku-12-Z3-Csharp.ipynb) (SMT) ne nécessitent pas de runtime Java.
+
+> **Historique** : la version C# était auparavant non fonctionnelle (IKVM 7.2.4630.5, seule version NuGet à l'époque, ne chargeait pas le JAR — erreur `CS0009`). Résolu lors de la bascule vers IKVM 8.15.0 + DLL précompilée (See #4667, #5005).
 
 ### L'entraînement du réseau de neurones (notebook 16) est lent
 
