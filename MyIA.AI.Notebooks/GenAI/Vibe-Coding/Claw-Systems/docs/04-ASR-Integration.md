@@ -1,8 +1,8 @@
-# Integration ASR - Transcription Vocale pour Agents IA
+# Intégration ASR - Transcription Vocale pour Agents IA
 
 ## Vue d'ensemble
 
-L'integration ASR (Automatic Speech Recognition) permet aux agents IA de traiter des messages vocaux. Le pipeline utilise un endpoint Whisper heberge sur l'infrastructure locale.
+L'intégration ASR (Automatic Speech Recognition) permet aux agents IA de traiter des messages vocaux. Le pipeline utilise un endpoint Whisper heberge sur l'infrastructure locale.
 
 ## Architecture
 
@@ -24,7 +24,7 @@ Telegram (message vocal .ogg)
 
 **Host** : po-2023 (RTX 3090, ~5GB VRAM)
 
-**Compatibilite** : API compatible OpenAI Whisper
+**Compatibilité** : API compatible OpenAI Whisper
 
 ### Formats supportes
 
@@ -36,12 +36,12 @@ Telegram (message vocal .ogg)
 | FLAC | `.flac` | Sans perte |
 | M4A | `.m4a` | Apple |
 
-### Parametres
+### Paramètres
 
-| Parametre | Type | Default | Description |
+| Paramètre | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `file` | binary | requis | Fichier audio |
-| `model` | string | `large-v3-turbo` | Modele Whisper |
+| `model` | string | `large-v3-turbo` | Modèle Whisper |
 | `language` | string | auto | Code langue (fr, en, ...) |
 | `response_format` | string | `json` | json, text, srt, vtt |
 | `temperature` | float | 0 | Temperature de decodage |
@@ -73,7 +73,7 @@ def transcribe(audio_path: str, language: str = "fr") -> str:
     return response.json()["text"]
 ```
 
-**Reponse :**
+**Réponse :**
 
 ```json
 {
@@ -83,7 +83,7 @@ def transcribe(audio_path: str, language: str = "fr") -> str:
 }
 ```
 
-## Integration dans un agent
+## Intégration dans un agent
 
 ### Pattern recommande
 
@@ -129,13 +129,13 @@ async def safe_transcribe(audio_bytes: bytes) -> str | None:
 | 5min | ~20s | Correcte |
 
 **Notes** :
-- Le modele large-v3-turbo offre un bon compromis vitesse/qualite
+- Le modèle large-v3-turbo offre un bon compromis vitesse/qualite
 - Les messages courts (< 10s) peuvent avoir une qualité reduite
-- Le francais est bien supporte (modele entraine sur des donnees multilingues)
+- Le français est bien supporte (modèle entraine sur des donnees multilingues)
 
 ## Monitoring
 
-Verifier la sante du service :
+Vérifier la sante du service :
 
 ```bash
 # Health check basique

@@ -14,7 +14,7 @@ persistante, compression de contexte, skills, et plusieurs surfaces d'interactio
 
 ## Origine du projet
 
-| Element | Valeur |
+| Élément | Valeur |
 |---------|--------|
 | Upstream | [`nousresearch/hermes-agent`](https://github.com/nousresearch/hermes-agent) |
 | Fork cluster | [`jsboige/hermes-agent`](https://github.com/jsboige/hermes-agent) |
@@ -22,8 +22,8 @@ persistante, compression de contexte, skills, et plusieurs surfaces d'interactio
 | Langage | Python 3.11+ (uv), TypeScript (TUI Ink) |
 | Licence | voir upstream |
 
-Le principe : **le code upstream reste synchronisable**. Tout ce qui est specifique
-au cluster (scripts de deploiement, restore-config, docker, ADR) vit dans
+Le principe : **le code upstream reste synchronisable**. Tout ce qui est spécifique
+au cluster (scripts de déploiement, restore-config, docker, ADR) vit dans
 `roosync-cluster/` et n'altere jamais les sources Hermes. Un `git merge upstream/main`
 reste donc un merge propre.
 
@@ -39,7 +39,7 @@ Message utilisateur → AIAgent._run_agent_loop()   (run_agent.py)
 ```
 
 C'est une boucle **ReAct-classique** : l'agent peut enchainer plusieurs appels
-d'outils avant de produire une reponse finale. Chaque tour est journalise dans
+d'outils avant de produire une réponse finale. Chaque tour est journalise dans
 une session SQLite (`~/.hermes/state.db`, recherche full-text via FTS5).
 
 ## Surfaces d'interaction
@@ -51,7 +51,7 @@ une session SQLite (`~/.hermes/state.db`, recherche full-text via FTS5).
 | **Gateway** | `gateway/run.py` | Bot multi-plateformes (Telegram, Discord, Slack, WhatsApp, Signal...) |
 
 En production, Hermes tourne en **gateway** : c'est la surface qui expose le bot
-Telegram 24/7. La CLI et la TUI servent au developpement et au debug.
+Telegram 24/7. La CLI et la TUI servent au développement et au debug.
 
 ## Chaine de dependances des outils
 
@@ -81,7 +81,7 @@ model: glm-5.2
 provider: zai            # endpoint natif /api/coding/paas/v4
 ```
 
-> **Attention :** ne JAMAIS utiliser la couche de compatibilite Anthropic
+> **Attention :** ne JAMAIS utiliser la couche de compatibilité Anthropic
 > (`ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic`). Cette traduction perd
 > le registre d'outils MCP apres une compression de contexte. Voir
 > [06-Hermes-Deploy-s6-Overlay.md](06-Hermes-Deploy-s6-Overlay.md).
@@ -97,8 +97,8 @@ Hermes se connecte a trois serveurs MCP qui lui donnent acces au cluster :
 | `searxng` | Recherche web canonique |
 
 Les serveurs sont atteints via un proxy MCP LAN (port 9090). Quand le proxy est
-indisponible, un fallback local (volume-monte) prend le relais — detail dans le
-guide de deploiement.
+indisponible, un fallback local (volume-monte) prend le relais — détail dans le
+guide de déploiement.
 
 ## Crons integrés
 
@@ -111,7 +111,7 @@ en plus du planificateur OS. Trois jobs tournent en production :
 | `pr-review` | planifié | Review de PRs assignées |
 | `inbox-poll` | planifié | Scrutation de la messagerie inter-machines |
 
-## Systeme de profils
+## Système de profils
 
 Plusieurs instances Hermes isolees coexistent via la variable `HERMES_HOME`.
 Tout le code doit appeler `get_hermes_home()` (depuis `hermes_constants`) —
@@ -119,13 +119,13 @@ Tout le code doit appeler `get_hermes_home()` (depuis `hermes_constants`) —
 
 | Chemin | Usage |
 |--------|-------|
-| `~/.hermes/config.yaml` | Tous les reglages (modele, terminal, toolsets, compression) |
-| `~/.hermes/.env` | Cles API et secrets **uniquement** |
+| `~/.hermes/config.yaml` | Tous les réglages (modèle, terminal, toolsets, compression) |
+| `~/.hermes/.env` | Clés API et secrets **uniquement** |
 | `~/.hermes/auth.json` | Identifiants OAuth |
 | `~/.hermes/skills/` | Skills actifs |
 | `~/.hermes/state.db` | Base de sessions SQLite |
 
-## Points d'entree cles
+## Points d'entree clés
 
 | Fichier | Role |
 |---------|------|
@@ -138,7 +138,7 @@ Tout le code doit appeler `get_hermes_home()` (depuis `hermes_constants`) —
 | `hermes_cli/config.py` | Gestion de config, `DEFAULT_CONFIG`, variables d'env |
 | `hermes_cli/commands.py` | Registre central des slash commands |
 | `gateway/run.py` | `GatewayRunner` — cycle de vie plateformes, routage messages |
-| `agent/prompt_builder.py` | Assemblage du system prompt (identite, skills, contexte, memoire) |
+| `agent/prompt_builder.py` | Assemblage du system prompt (identite, skills, contexte, mémoire) |
 
 ## Hermes vs NanoClaw
 
