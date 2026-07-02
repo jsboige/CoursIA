@@ -1,31 +1,48 @@
 /-
   Repeated Games Library
-  ======================
+  =======================
 
-  A Lean 4 library for repeated game theory, formalizing the classical
-  result that grim trigger sustains cooperation in the infinitely repeated
-  Prisoner's Dilemma if and only if the discount factor is large enough:
+  Lean 4 formalization of the foundational results on infinitely repeated
+  games with imperfect monitoring, companion formel of the pedagogical
+  notebook GameTheory-6c (jeux répétés, dilemme du prisonnier).
 
-    grim_trigger_sustains_iff : (no profitable one-shot deviation) ↔ δ ≥ (T−R)/(T−P)
+  ## Théorème-phare
 
-  The proof rests on the one-shot deviation principle and geometric series
-  (Mathlib `tsum_geometric_of_lt_one`).
+  `grim_trigger_sustains_iff` : la stratégie grim-trigger soutient la
+  coopération ssi le facteur d'actualisation vérifie δ ≥ (T−R)/(T−P).
 
-  Main Modules:
-  - RepeatedGames.Stage: the stage game (Prisoner's Dilemma parameters,
-    action profiles, stage payoffs)
-  - RepeatedGames.Discounting: discounted payoff streams, geometric sums
-  - RepeatedGames.GrimTrigger: the theorem phare (one-shot deviation principle)
+  Cette inégalité caractérise le seuil en-dessous duquel un joueur préfère
+  dévier (gagner T aujourd'hui puis endurer P forever) plutôt que coopérer
+  perpétuellement (R forever). Le mécanisme est le one-shot deviation
+  principle (Lemke–Tarski) : aucune déviation sur deux périodes ou plus
+  ne bat la déviation en une seule période, donc regarder uniquement le
+  trade-off one-shot suffit.
 
-  Companion notebook: GameTheory-6c (jeux répétés) — the lake is the formal
-  counterpart deriving the central threshold result rigorously.
+  ## Structure
 
-  References:
-  - R. Gibbons, "Game Theory for Applied Economists" (1992), ch. 2
-  - D. Fudenberg and J. Tirole, "Game Theory" (1991), ch. 5
-  - Pont ICT-13 (#4879): numerical verification of the δ threshold is a gate there.
+  - `RepeatedGames.Stage` — définitions du jeu statique (PD à 4 paramètres
+    T > R > P > S, 2R > T + S), actions {C, D}, payoffs.
+  - `RepeatedGames.Discounting` — factor d'actualisation, sommes géométriques
+    pour les flux R, T + δ·P actualisés. Lemme de réécriture du seuil
+    (cible prover BG).
+  - `RepeatedGames.GrimTrigger` — stratégie grim (coopère → si déviation
+    détectée, défaut éternel), théorème-phare `grim_trigger_sustains_iff`,
+    corollaire NE. Ces deux sorries sont les cibles primaires du prover BG.
+  - `RepeatedGames.Folk` (STRETCH) — théorème de Folk actualisé (Fudenberg–
+    Maskin 1986), `sorry` accepté dans le scope stretch du companion.
+
+  ## Cohorte de lakes mutualisés
+
+  Toolchain `leanprover/lean4:v4.31.0-rc1`, Mathlib rev `d568c8c0` —
+  cohérent avec 18 autres lakes (cf `.claude/rules/lean-merge-discipline.md`
+  + `MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/RUNBOOK.md`).
+  Junction shared cache `.lake/packages/mathlib4` (cf Issue #4363) —
+  zéro checkout Mathlib physique neuf.
+
+  Référence : GameTheory-6c notebook (jeux répétés, théorie et numérique).
 -/
 
 import RepeatedGames.Stage
 import RepeatedGames.Discounting
 import RepeatedGames.GrimTrigger
+import RepeatedGames.Folk
