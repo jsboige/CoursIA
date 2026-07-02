@@ -184,6 +184,58 @@ Les notebooks les plus exigeants, mais ceux où le dépôt dit ce qu'il a de plu
 5. **[QuantConnect / projects](QuantConnect/README.md)** - le portefeuille de stratégies ML avancées (GARCH, Kelly, ensembles).
 6. **[IIT](IIT/README.md)** - la mesure Phi (PyPhi) sur des réseaux logiques, prolongée vers les trajectoires causales et l'émergence multi-échelles (extension ICT) : la frontière la plus spéculative.
 
+<a id="lean"></a>
+
+#### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
+
+Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette promesse par une **couche de 23 lakes Lean 4 / Mathlib** (toolchain `v4.31.0-rc1`, ~900 théorèmes-lemmes, ~130 sorry WIP) qui ancre mathématiquement les résultats phares des séries. Pas une anthologie de devoirs formalisés : **un théorème-phare par famille**, validé mécaniquement, et **branché sur les notebooks** qui l'enseignent ou l'utilisent. Cartographie inter-familles :
+
+| Famille | Lake phare | Théorème | Branchement notebook |
+|---------|-----------|----------|----------------------|
+| **SymbolicAI** (Tweety) | `argumentation_lean` | Théorèmes d'extension (Dung) + pragmatique Walton-Krabbe (cf. `#4046`) | Notebook Tweety + Argument_Analysis |
+| **SymbolicAI** (Lean) | `bondareva_lean` (résolu 0 sorry), `knot_lean` (GF(3) Path B), `fwt_lean` | Bondareva-Shapley, nœud trinôme, Fermat | SymbolicAI/Lean/Grothendieck + Conway |
+| **SymbolicAI** (SC) | `erc20_lean` | Pas de réentrance ERC-20 (cf. `#4047`) | SmartContracts/Erc20 |
+| **Search** | `astar_lean` | Consistance + heuristique admissible = optimalité (cf. `#4048`) | Search-13 (A*), Part3-Advanced |
+| **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | Probas/Infer-9 + DecisionTheory/Infer-6..10 |
+| **QuantConnect** | `kelly_lean` | Kelly `g(f) ≤ g(f*)` + unicité (cf. `#4052`) | QuantConnect QC-Py-10 Risk Management |
+| **GameTheory** | `social_choice_lean` (Arrow) | Théorème d'impossibilité d'Arrow (cf. `arrow_lean`) | GameTheory/16b-* Choix social |
+
+```mermaid
+flowchart LR
+    subgraph SIM["Notebooks (simulation)"]
+        N1[Search A*]
+        N2[Tweety argumentation]
+        N3[Probas Decision Theory]
+        N4[QuantConnect Kelly sizing]
+        N5[SmartContracts ERC20]
+        N6[GameTheory Vote social]
+    end
+    subgraph LEAN["Lakes Lean 4 (preuve)"]
+        L1["astar_lean<br/>optimalité"]
+        L2["argumentation_lean<br/>extensions Dung"]
+        L3["decision_theory_lean<br/>VNM"]
+        L4["kelly_lean<br/>unicité"]
+        L5["erc20_lean<br/>no-reentrancy"]
+        L6["social_choice_lean<br/>Arrow"]
+    end
+    N1 -. "consistance heuristic" .-> L1
+    N2 -. "extension prouvée" .-> L2
+    N3 -. "axiomes VNM" .-> L3
+    N4 -. "fraction risquée f" .-> L4
+    N5 -. "invariant réentrance" .-> L5
+    N6 -. "impossibilité" .-> L6
+    style L1 fill:#e8f5e9
+    style L2 fill:#e8f5e9
+    style L3 fill:#e8f5e9
+    style L4 fill:#e8f5e9
+    style L5 fill:#e8f5e9
+    style L6 fill:#e8f5e9
+```
+
+Le pipeline complet relie les **notebooks** (qui motivent) aux **lakes** (qui prouvent) et inversement : un notebook Tweety illustre un AF-Dung et cite `argumentation_lean` comme source de l'extension prouvée ; un cours QuantConnect cite `kelly_lean` comme justification formelle de la fraction risquée optimale. Sans la couche Lean, ces résultats seraient des formules réputées « standard » mais jamais démontrées. Avec elle, la justification est formellement garantie — pas seulement empiriquement ajustée.
+
+Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [hub QuantConnect ↔ `kelly_lean`](QuantConnect/README.md), [hub SymbolicAI Lean](SymbolicAI/Lean/README.md).
+
 ### Parcours thématiques
 
 Ces niveaux ordonnent par difficulté. Pour une entrée **par centre d'intérêt**, transversale aux niveaux, le dépôt propose cinq parcours thématiques détaillés :
