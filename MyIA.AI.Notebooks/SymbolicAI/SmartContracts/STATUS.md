@@ -25,7 +25,7 @@
 | SC-2-Setup-Web3py | 9 | 9/9 | 0 | 2026-05-24 |
 
 **Deps**: pycryptodome (SC-0), Foundry forge/anvil (SC-1), web3.py + py-solc-x (SC-2)
-**Re-exec Papermill**: Necessite Foundry + web3.py installes. SC-0 re-executable avec pycryptodome seul.
+**Re-exec Papermill**: Necessite Foundry + web3.py installés. SC-0 re-executable avec pycryptodome seul.
 
 ### 01-Solidity-Foundation (4 notebooks, ~2h30)
 
@@ -82,7 +82,7 @@
 | SC-22-Solana-Anchor | 6 | 6/6 | 0 | 2026-05-17 |
 
 **Deps**: vyper, xrpl-py, python-bitcoinlib
-**Note**: Plus anciens (16-17 mai) — re-execution recommandee si possible
+**Note**: Plus anciens (16-17 mai) — re-exécution recommandée si possible
 
 ### 06-Real-World (4 notebooks, ~3h45)
 
@@ -94,18 +94,18 @@
 | SC-26-Final-Project | 5 | 5/5 | 0 | 2026-05-24 |
 
 **Deps**: web3.py, Sepolia testnet (SC-24), API keys
-**Note**: SC-23 ancien (16 mai) — re-execution recommandee
+**Note**: SC-23 ancien (16 mai) — re-exécution recommandée
 
 ## Environnement po-2023
 
-- **Foundry**: NON installe
-- **web3.py**: NON installe
-- **pycryptodome**: NON installe
-- **Re-execution Papermill**: BLOQUEE — necessite installation Foundry + deps Python
+- **Foundry**: NON installé
+- **web3.py**: NON installé
+- **pycryptodome**: NON installé
+- **Re-exécution Papermill**: BLOQUÉE — necessite installation Foundry + deps Python
 
 ## Actions requises
 
-1. **Installer Foundry** (WSL ou natif) pour re-execution SC-1+
+1. **Installer Foundry** (WSL ou natif) pour re-exécution SC-1+
 2. **Installer deps Python**: `pip install -r requirements.txt`
 3. **Re-executer 05-Alternative-Chains** (outputs les plus anciens, 16-17 mai)
 4. **Re-executer SC-23** (16 mai)
