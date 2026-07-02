@@ -43,7 +43,7 @@ Au-delà de la théorie classique, cette série couvre les **applications contem
 
 ### Phase 1 : Jeux statiques et équilibres (Notebooks 1-6, ~5h)
 
-Le parcours commence par le setup (Nashpy, OpenSpiel) et les jeux sous forme normale (matrices de gains, dominance, meilleure réponse). Le notebook 3 (Topology2x2) classifie les jeux 2x2 selon la table périodique de Robinson-Goforth, une perspective géométrique unique. Les notebooks 4-4b-4c plongent dans l'équilibre de Nash : calcul en stratégies pures et mixtes, algorithme de Lemke-Howson, et preuve formelle d'existence via Brouwer et Kakutani en Lean 4. Le notebook 5 (ZeroSum) démontre le théorème minimax et la dualité LP. Le notebook 6 (EvolutionTrust) montre comment la coopération émerge dans les tournois itérés (Axelrod, replicator dynamics). À l'issue de cette phase, vous comprenez les trois piliers : Nash, minimax, et évolution.
+Le parcours commence par le setup (Nashpy, OpenSpiel) et les jeux sous forme normale (matrices de gains, dominance, meilleure réponse). Le notebook 3 (Topology2x2) classifie les jeux 2x2 selon la table périodique de Robinson-Goforth, une perspective géométrique unique. Les notebooks 4-4b-4c plongent dans l'équilibre de Nash : calcul en stratégies pures et mixtes, algorithme de Lemke-Howson, et preuve formelle d'existence via Brouwer et Kakutani en Lean 4. Le notebook 5 (ZeroSum) démontre le théorème minimax et la dualité LP. Le notebook 6 (EvolutionTrust) montre comment la coopération émerge dans les tournois itérés (Axelrod, replicator dynamics). Son companion **6c** (RepeatedGames-FolkTheorem) formalise cette intuition : horizon fini → effondrement par induction arrière, horizon infini → grim trigger, condition de crédibilité $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement faisable et individuellement rationnel est soutenable comme SPNE pour $\delta$ assez proche de 1). À l'issue de cette phase, vous comprenez les trois piliers : Nash, minimax, et évolution.
 
 ### Phase 2 : Jeux dynamiques et information incomplète (Notebooks 7-12, ~5h30)
 
@@ -90,6 +90,7 @@ flowchart TD
 | 5 | [GameTheory-5-ZeroSum-Minimax](GameTheory-5-ZeroSum-Minimax.ipynb) | Python | Théorème minimax, LP primal/dual, Von Neumann | 40 min |
 | 5b | [GameTheory-5b-Lean-Minimax](GameTheory-5b-Lean-Minimax.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de von Neumann dans le lake `minimax_lean` (Sion), `#check` + `#print axioms` in-kernel (UNLOCK c.127, jonction Mathlib #2611) | 45 min |
 | 6 | [GameTheory-6-EvolutionTrust](GameTheory-6-EvolutionTrust.ipynb) | Python | Tournoi Axelrod, tit-for-tat, replicator dynamics | 65 min |
+| 6c | [GameTheory-6c-RepeatedGames-FolkTheorem](GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) | Python | Compagnon **formel** de GT-6 : horizon fini (effondrement par induction arrière), horizon infini, grim trigger, condition $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement IR faisable est SPNE pour $\delta$ assez proche de 1) | 45 min |
 
 ### Partie 2 : Jeux dynamiques et raisonnement stratégique (Notebooks 7-12)
 
@@ -165,6 +166,7 @@ Chaque notebook adopte la même trame pédagogique — introduction motivée, pl
 | 5 | ZeroSum-Minimax | ~25 | 3 | **COMPLET** |
 | 5b | Lean-Minimax | ~20 | 3 | **COMPLET** |
 | 6 | EvolutionTrust | ~40 | 3 | **COMPLET** |
+| 6c | RepeatedGames-FolkTheorem | ~30 | 3 | **NOUVEAU** |
 | 7 | ExtensiveForm | ~30 | 3 | **COMPLET** |
 | 8 | CombinatorialGames | ~17 | 3 | **NOUVEAU** |
 | 8b | Lean-CombinatorialGames | ~25 | 3 | **COMPLET** |
@@ -206,6 +208,7 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | 4 | NashEquilibrium | Nash mixte, Lemke-Howson, analyse paramétrique, support enumeration |
 | 5 | ZeroSum-Minimax | Théorème minimax, dualité LP, programmation linéaire pour jeux |
 | 6 | EvolutionTrust | Tournoi Axelrod, tit-for-tat, replicator dynamics, émergence coopération |
+| 6c | RepeatedGames-FolkTheorem | Compagnon formel de GT-6 : Folk Theorem (horizon fini vs infini), condition de crédibilité du grim trigger $\delta \geq (T-R)/(T-P)$, comparaison grim trigger vs tit-for-tat (seuil de patience), ensemble faisable et IR |
 | 7 | ExtensiveForm | Arbres de jeu, ensembles d'information, stratégies comportementales |
 | 8 | CombinatorialGames | Positions P/N, Nim, Grundy values, théorème Sprague-Grundy |
 | 9 | BackwardInduction | Induction arrière, mille-pattes, escalade, engagement |
