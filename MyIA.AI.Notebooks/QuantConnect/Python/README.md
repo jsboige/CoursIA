@@ -3,7 +3,7 @@
 Supports de cours pour l'apprentissage du trading algorithmique avec QuantConnect LEAN.
 
 > **Note** : Ces notebooks sont des supports de cours a lire sur GitHub ou en local.
-> Pour executer les backtests, copiez le code dans un projet [QuantConnect Cloud](https://www.quantconnect.com/lab).
+> Pour exécuter les backtests, copiez le code dans un projet [QuantConnect Cloud](https://www.quantconnect.com/lab).
 
 ## 4-Type Classification
 
@@ -111,7 +111,7 @@ Les notebooks NON EXÉCUTÉS doivent être exécutés (kernel local pour les ind
 | Notebook | Contenu |
 |----------|---------|
 | [QC-Py-05-Universe-Selection](QC-Py-05-Universe-Selection.ipynb) | Univers dynamiques, filtres fondamentaux |
-| [QC-Py-06-Options-Trading](QC-Py-06-Options-Trading.ipynb) | Chaines d'options, greeks, strategies couvertes |
+| [QC-Py-06-Options-Trading](QC-Py-06-Options-Trading.ipynb) | Chaînes d'options, greeks, stratégies couvertes |
 | [QC-Py-07-Futures-Forex](QC-Py-07-Futures-Forex.ipynb) | Contrats a terme, devises, hedging |
 | [QC-Py-08-Multi-Asset-Strategies](QC-Py-08-Multi-Asset-Strategies.ipynb) | Portefeuilles multi-classes d'actifs |
 | [QC-Py-09-Order-Types](QC-Py-09-Order-Types.ipynb) | Market, limit, stop, trailing, combo orders |
@@ -126,7 +126,7 @@ Les notebooks NON EXÉCUTÉS doivent être exécutés (kernel local pour les ind
 | [QC-Py-13-Alpha-Models](QC-Py-13-Alpha-Models.ipynb) | Framework Alpha, signaux, combinaison |
 | [QC-Py-14-Portfolio-Construction-Execution](QC-Py-14-Portfolio-Construction-Execution.ipynb) | Construction portefeuille, execution |
 | [QC-Py-15-Parameter-Optimization](QC-Py-15-Parameter-Optimization.ipynb) | Optimization, grid search, walk-forward |
-| [QC-Py-16-Alternative-Data](QC-Py-16-Alternative-Data.ipynb) | donnees alternatives, sentiment, fundamentals |
+| [QC-Py-16-Alternative-Data](QC-Py-16-Alternative-Data.ipynb) | données alternatives, sentiment, fundamentals |
 | [QC-Py-17-Sentiment-Analysis](QC-Py-17-Sentiment-Analysis.ipynb) | NLP, analyse sentiment, signaux textuels |
 
 ## Phase 4 : Machine Learning (QC-Py-18 a 28)
@@ -174,7 +174,7 @@ Approfondissement RL au-dela du DQN de la Phase 8 : PPO, SAC/A2C, application po
 
 ## Strategies Cloud (QC-Py-Cloud-*)
 
-Notebooks de recherche et strategies executees sur QuantConnect Cloud.
+Notebooks de recherche et stratégies exécutées sur QuantConnect Cloud.
 
 | Notebook | Strategie |
 |----------|-----------|
