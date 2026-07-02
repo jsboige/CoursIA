@@ -789,7 +789,7 @@ execute_notebook(
 
 ## Documentation Technique
 
-- [docs/genai-services.md](../../../docs/genai-services.md) — Architecture services GenAI, GPU, modeles, configurations Docker
+- [docs/genai-services.md](../../../docs/genai-services.md) — Architecture services GenAI, GPU, modèles, configurations Docker
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — Resolution problemes courants, erreurs APIs, scripts diagnostiques
 
 > Historique des investigations (phases 12a/29/30/31 ComfyUI-Qwen) : archive dans [docs/_archives/suivis/genai-image/](../../../docs/_archives/suivis/genai-image/)
@@ -974,7 +974,7 @@ Contributions welcomes ! Voir [`CONTRIBUTING.md`](../../CONTRIBUTING.md)
 
 ## Playwright-OWUI - Tests E2E sur Open WebUI
 
-Serie pedagogique pour apprendre Playwright en testant une application GenAI reelle.
+Serie pedagogique pour apprendre Playwright en testant une application GenAI réelle.
 
 | Module | Nom | Duree | Niveau | Tests |
 |--------|-----|-------|--------|-------|

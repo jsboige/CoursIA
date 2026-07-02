@@ -14,14 +14,14 @@ points: "20"
 
 ### Objectifs pedagogiques
 
-Cette etude de cas evalue votre capacite a **composer plusieurs paradigmes d'IA** pour resoudre un
-probleme metier reel de la transition energetique : decider, heure par heure, quelles centrales activer
+Cette etude de cas evalue votre capacité a **composer plusieurs paradigmes d'IA** pour resoudre un
+probleme metier réel de la transition energetique : decider, heure par heure, quelles centrales activer
 et a quel niveau de production (*unit commitment* / dispatch) pour satisfaire la demande electrique tout
 en minimisant le cout et les emissions de CO2.
 
 **Competences evaluees :**
 - Programmation par contraintes (OR-Tools CP-SAT, unit commitment NP-difficile)
-- Inference probabiliste (modele bayesien de l'incertitude renouvelable)
+- Inference probabiliste (modèle bayesien de l'incertitude renouvelable)
 - Optimisation multi-objectif (cout + CO2 + risque, front de Pareto)
 - Architecture en couches : filtrer (contraintes) avant de modeliser (incertitude) avant d'optimiser
 - Application sectorielle (reseau electrique, transition energetique)
@@ -30,20 +30,20 @@ en minimisant le cout et les emissions de CO2.
 
 Un operateur de reseau electrique doit, pour chaque heure de la journee, decider quelles centrales
 pilotables activer (charbon, gaz, hydro) et a quel niveau de production, afin de satisfaire la demande
-des consommateurs. La difficulte vient de trois facteurs combines :
+des consommateurs. La difficulté vient de trois facteurs combines :
 
 1. **l'incertitude** : la production renouvelable (eolien, solaire) est stochastique ; la demande varie ;
-2. **les contraintes dures** : chaque centrale a une capacite minimale stable (`pmin`) et maximale
+2. **les contraintes dures** : chaque centrale a une capacité minimale stable (`pmin`) et maximale
    (`pmax`), et ne peut pas etre exploitee en dessous de `pmin` ;
 3. **les objectifs multiples conflictuels** : le charbon est bon marche mais tres emissif ; le gaz est
-   intermediaire ; l'hydro est propre mais capacite limitee.
+   intermediaire ; l'hydro est propre mais capacité limitee.
 
-Une seule technique ne suffit pas : un solveur deterministe ignore l'incertitude, un modele probabiliste
+Une seule technique ne suffit pas : un solveur deterministe ignore l'incertitude, un modèle probabiliste
 seul ne respecte pas les contraintes physiques. Le systeme doit les **composer dans le bon ordre**.
 
 ### Le jumeau numerique
 
-On dispose d'un modele de reseau (`PowerNetwork`) representant :
+On dispose d'un modèle de reseau (`PowerNetwork`) representant :
 - 3 centrales pilotables : Charbon (50-400 MW, 30 EUR/MWh, 900 kg/MWh), Gaz (20-250 MW, 60 EUR/MWh,
   400 kg/MWh), Hydro (0-150 MW, 10 EUR/MWh, 0 kg/MWh)
 - une demande horaire sur 6 heures : [500, 520, 480, 540, 600, 580] MW
@@ -54,7 +54,7 @@ On dispose d'un modele de reseau (`PowerNetwork`) representant :
 | Partie | Couche | Technique | Livrable attendu |
 |--------|--------|-----------|------------------|
 | **1** | Contraintes dures | OR-Tools CP-SAT | `solve_dispatch_cp` : unit commitment min-cout |
-| **2** | Incertitude | Modele bayesien | `failure_risk` : probabilite de defaillance |
+| **2** | Incertitude | Modèle bayesien | `failure_risk` : probabilité de defaillance |
 | **3** | Optimisation | Multi-objectif pondere | `multi_objective_score` : score normalise |
 | **4** | Decision | Analyse comparative | `comparative_analysis` : 3 strategies comparees |
 
@@ -64,12 +64,12 @@ Apres les 4 couches de base, 3 exercices approfondissent le systeme :
 
 - **Exercice 1 (reserve tournante n-1)** : ajouter une contrainte de securite — la reserve disponible
   doit couvrir la perte de la plus grosse centrale en service.
-- **Exercice 2 (sensibilite au prior)** : analyser comment le risque de defaillance evolue quand on
+- **Exercice 2 (sensibilité au prior)** : analyser comment le risque de defaillance evolue quand on
   modifie l'incertitude renouvelable (x0.5, x1, x2). Quelle heure devient la plus risqueuse ?
 - **Exercice 3 (equite territoriale)** : ajouter un troisieme objectif evitant qu'une region subisse
   toutes les centrales les plus polluantes.
 
-### Donnees et lancement
+### Données et lancement
 
 - **Notebook etudiant** : `student/SmartGrid-Energy.ipynb` (a completer)
 - **Notebook solution** : `solution/SmartGrid-Energy.ipynb` (reference)
@@ -90,8 +90,8 @@ Apres les 4 couches de base, 3 exercices approfondissent le systeme :
 ### Concepts cles transversaux
 
 - **Composition ordonnee** des paradigmes : l'ordre importe (filtrer > modeliser > optimiser)
-- **Jumeau numerique** : modele de reseau reactif aux decisions de dispatch
-- **Incertitude vs contraintes** : un systeme trop rigide ignore l'aleatoire ; trop flou, il ignore la physique
+- **Jumeau numerique** : modèle de reseau reactif aux decisions de dispatch
+- **Incertitude vs contraintes** : un systeme trop rigide ignore l'aléatoire ; trop flou, il ignore la physique
 - **Multi-objectif** : pas de solution unique optimale, mais un compromis (front de Pareto)
 
 Cf [README CaseStudies](../README.md) pour le principe d'integration et les etudes de cas associees.

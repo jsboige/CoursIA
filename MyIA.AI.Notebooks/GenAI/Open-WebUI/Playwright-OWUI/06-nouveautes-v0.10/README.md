@@ -24,7 +24,7 @@ ecrire des tests** pour ces surfaces.
 
 ## Concepts pedagogiques nouveaux
 
-### 1. Tester une donnee qui s'injecte ailleurs — la memoire
+### 1. Tester une donnée qui s'injecte ailleurs — la memoire
 
 La **memoire** est particuliere : un souvenir cree est ensuite **injecte dans les
 prompts** des conversations. Un test qui cree un souvenir et l'oublie **pollue les
@@ -63,10 +63,10 @@ test lui-meme**.
 
 ### 3. Le raisonnement streame — un contenu qui n'existe pas toujours
 
-Depuis **v0.10.2**, les modeles "thinking" affichent leurs etapes de raisonnement
-en direct. Mais **tous les modeles n'en emettent pas**. Un bon test ne doit donc
+Depuis **v0.10.2**, les modèles "thinking" affichent leurs étapes de raisonnement
+en direct. Mais **tous les modèles n'en emettent pas**. Un bon test ne doit donc
 pas echouer sur l'absence de raisonnement : il **skip proprement** si la
-fonctionnalite n'est pas exercee (modele non configure, ou modele sans
+fonctionnalite n'est pas exercee (modèle non configure, ou modèle sans
 raisonnement visible). C'est la difference entre *"le test a echoue"* et *"la
 pre-condition n'etait pas reunie"*.
 
@@ -75,7 +75,7 @@ pre-condition n'etait pas reunie"*.
 La **compaction automatique** resume la conversation quand on approche de la
 limite de contexte. Impossible de saturer le contexte dans un test rapide : on
 teste donc le **comportement observable** — plusieurs tours d'affilee continuent
-de repondre et le modele **garde le fil** (il retrouve une info du 1er tour).
+de repondre et le modèle **garde le fil** (il retrouve une info du 1er tour).
 C'est un test de **non-regression de la conversation longue**.
 
 ## Executer ce module
@@ -97,21 +97,21 @@ Variables `.env` utiles pour ce module :
 | Variable | Role | Obligatoire |
 |----------|------|-------------|
 | `OWUI_URL` / `OWUI_EMAIL` / `OWUI_PASSWORD` | Instance + compte | Oui (06a) |
-| `OWUI_CLOUD_MODEL` | Modele rapide pour la compaction | Non (defaut `gpt-5.1`) |
-| `OWUI_REASONING_MODEL` | Modele "thinking" pour le test de raisonnement | Non (skip si absent) |
+| `OWUI_CLOUD_MODEL` | Modèle rapide pour la compaction | Non (defaut `gpt-5.1`) |
+| `OWUI_REASONING_MODEL` | Modèle "thinking" pour le test de raisonnement | Non (skip si absent) |
 | `OWUI_TENANT2_EMAIL` / `OWUI_TENANT2_PASSWORD` | 2e compte pour le partage | Non (exercice) |
 
 > **Sans configuration**, les tests API se connectent, les tests dependant d'un
-> modele de raisonnement ou d'un 2e compte se mettent **en pause** (`skip`) — le
+> modèle de raisonnement ou d'un 2e compte se mettent **en pause** (`skip`) — le
 > module ne produit jamais de faux echec.
 
-## Pieges specifiques v0.10
+## Pieges spécifiques v0.10
 
 1. **Native tool calling par defaut.** En v0.10, l'appel d'outils "natif" devient
-   le comportement par defaut. Pour un modele purement conversationnel appele via
+   le comportement par defaut. Pour un modèle purement conversationnel appele via
    l'API en mode non-streaming, une reponse peut revenir avec `tool_calls` et un
-   `content` vide. Ce n'est pas un bug : c'est le modele qui choisit d'appeler un
-   outil. Testez le contenu **via l'UI (streaming)** ou ciblez des modeles sans
+   `content` vide. Ce n'est pas un bug : c'est le modèle qui choisit d'appeler un
+   outil. Testez le contenu **via l'UI (streaming)** ou ciblez des modèles sans
    outils pour les assertions de texte.
 2. **Python cote client en iframe sandbox.** L'execution Python cote navigateur
    tourne desormais dans une iframe isolee (origine opaque). Si vous testez une

@@ -150,7 +150,7 @@
 
 ## 5-Point Audit Summary (CLAUDE.md sec B)
 
-### 1. Scope reel
+### 1. Scope réel
 - README claims "27 notebooks" but actual count is **29** (17 main + 12 side: 5b + 4c + 3d/e/f)
 - **16f-SocialChoice-Z3 completely absent from README** (no table entry, no file structure mention)
 - README says "d/e = Social Choice" but actual is "d/e/f" (3 Social Choice side tracks)
@@ -174,7 +174,7 @@
 - **Issue**: GT-8b (Lean-CombinatorialGames) only 4 Lean code cells / 53KB — very short Lean notebook. Footer references non-existent "Notebook 19b" and "Notebook 20" (should be 8c and index)
 - **Issue**: GT-16e (SocialChoiceLean-Tour) only 2 code cells / 28KB — tour format, acceptable for reference notebook
 
-### 4. Execution reelle
+### 4. Execution réelle
 - 26 null execution cells across 11 notebooks (analyzed above, all expected)
 - No cell produces an error output
 - Lean notebooks (2b, 4b, 8b, 15b, 16b) require Lean 4 WSL kernel — execution status depends on kernel availability

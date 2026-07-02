@@ -1,6 +1,6 @@
 # Paper to Live Transition Guide
 
-Ce document decrit les prerequis et etapes pour passer du paper trading au live trading sur QuantConnect. Il s'agit d'un guide pedagogique, **pas d'une recommandation d'investissement**.
+Ce document decrit les prerequis et étapes pour passer du paper trading au live trading sur QuantConnect. Il s'agit d'un guide pedagogique, **pas d'une recommandation d'investissement**.
 
 ---
 
@@ -40,11 +40,11 @@ Backtest (historique)
 
 | Source | Backtest | Paper | Live |
 |--------|:--------:|:-----:|:----:|
-| Slippage | Modelise | Aucun | Reel |
+| Slippage | Modelise | Aucun | Réel |
 | Latence | N/A | Faible | Variable |
-| Liquidite | Illimitee | Simulee | Reelle |
+| Liquidite | Illimitee | Simulee | Réelle |
 | Market impact | Aucun | Aucun | Proportionnel |
-| Commissions | Simulees | Simulees | Reelles |
+| Commissions | Simulees | Simulees | Réelles |
 | Connection | N/A | QC cloud | QC + Broker |
 
 ### Red flags en paper trading
@@ -63,11 +63,11 @@ Si vous observez l'un de ces comportements en paper trading, **ne pas passer en 
 
 ### Paper -> Live
 
-| Parametre | Paper | Live |
+| Paramètre | Paper | Live |
 |-----------|-------|------|
 | Environnement | `paper` (Testnet) | `live` |
-| Credentials | Testnet API key | API key reelle |
-| Capital | Fictif (10 000 USD) | Reel |
+| Credentials | Testnet API key | API key réelle |
+| Capital | Fictif (10 000 USD) | Réel |
 | Slippage | Aucun | Variable selon liquidite BTC/ETH |
 
 ### Configuration live
@@ -82,7 +82,7 @@ brokerage = {
 }
 ```
 
-### Risques specifiques crypto
+### Risques spécifiques crypto
 
 - **Volatilite** : les crypto peuvent bouger de 10-20% en une journee
 - **Liquidite** : les petits altcoins peuvent avoir des spreads enormes
@@ -95,11 +95,11 @@ brokerage = {
 
 ### Paper -> Live
 
-| Parametre | Paper | Live |
+| Paramètre | Paper | Live |
 |-----------|-------|------|
 | Port TWS | 7497 | 7496 |
 | Account | DU... (paper) | U... (live) |
-| Slippage | Minimal | Reel (surtout small caps) |
+| Slippage | Minimal | Réel (surtout small caps) |
 | 2FA | Optionnel | Obligatoire |
 
 ### Configuration live
@@ -114,11 +114,11 @@ brokerage = {
 }
 ```
 
-### Risques specifiques equities
+### Risques spécifiques equities
 
 - **Gap risk** : le marche ouvre avec un gap par rapport a la cloture precedente
 - **Short selling** : les actions peuvent etre "hard to borrow"
-- **Regulation T** : regles de marge specifiques (pattern day trader aux US)
+- **Regulation T** : regles de marge spécifiques (pattern day trader aux US)
 - **Corporate actions** : splits, dividendes, mergers affectent les positions
 
 ---
@@ -146,8 +146,8 @@ Chaque position live doit avoir un stop-loss. Options :
 
 | Methode | Description | Avantage |
 |---------|-------------|----------|
-| Fixe (%) | -5% du prix d'entree | Simple |
-| ATR-based | k * ATR(14) sous l'entree | S'adapte a la volatilite |
+| Fixe (%) | -5% du prix d'entrée | Simple |
+| ATR-based | k * ATR(14) sous l'entrée | S'adapte a la volatilite |
 | Trailing | Monte avec le prix | Protege les gains |
 | Time-based | Sortie apres N jours | Evite les positions stagnantes |
 
@@ -184,7 +184,7 @@ Si une anomalie est detectee :
 
 ## 7. Avertissement pedagogique
 
-Ce document est un **guide pedagogique**, pas un conseil financier. Le trading algorithmique en live comporte des risques reels de perte de capital.
+Ce document est un **guide pedagogique**, pas un conseil financier. Le trading algorithmique en live comporte des risques réels de perte de capital.
 
 > "Past performance is not indicative of future results."
 

@@ -42,9 +42,9 @@ else if (adxValue < q1Adx && isMacdBearish) {
 
 **Hypothese**: La fenetre de 140 barres reste stable sur 2019-2025
 
-**Test**: Analyse de sensibilite sur windows [80, 100, 140, 180, 200]
+**Test**: Analyse de sensibilité sur windows [80, 100, 140, 180, 200]
 
-**Validation**: Les parametres actuels (140, 6, 86) doivent figurer dans le top 3
+**Validation**: Les paramètres actuels (140, 6, 86) doivent figurer dans le top 3
 
 ### H2: MACD vs EMA Cross
 
@@ -68,7 +68,7 @@ else if (adxValue < q1Adx && isMacdBearish) {
 
 ### H4: Walk-Forward Robustesse
 
-**Hypothese**: Walk-forward validation confirme la robustesse des parametres
+**Hypothese**: Walk-forward validation confirme la robustesse des paramètres
 
 **Test**:
 - Train: 252 jours (1 an)
@@ -89,7 +89,7 @@ else if (adxValue < q1Adx && isMacdBearish) {
 
 ## Methodologie
 
-### 1. Donnees
+### 1. Données
 
 - **Source**: Yahoo Finance (BTC-USD comme proxy pour BTCUSDT)
 - **Periode**: 2019-01-01 → 2026-02-17 (7+ annees)
@@ -143,7 +143,7 @@ upper_threshold = adx.rolling(140).quantile(0.86)
 
 ### 3. Backtest Vectorise
 
-**Logique d'entree**:
+**Logique d'entrée**:
 ```python
 position = 1 if (histogram > 0 and adx > adx_upper) else 0
 ```
@@ -160,9 +160,9 @@ position = 0 if (histogram < 0 or adx < adx_lower) else position
 - Win Rate
 - Nombre de trades
 
-### 4. Analyse de Sensibilite
+### 4. Analyse de Sensibilité
 
-**Grid search** sur parametres ADX:
+**Grid search** sur paramètres ADX:
 - Windows: [80, 100, 140, 180, 200]
 - Percentiles: [(5, 85), (6, 86), (10, 90)]
 - Total: 15 configurations
@@ -173,8 +173,8 @@ position = 0 if (histogram < 0 or adx < adx_lower) else position
 
 **Procedure**:
 1. Train sur 252 jours
-2. Optimiser parametres sur train (grid search reduit)
-3. Tester parametres optimaux sur 63 jours suivants
+2. Optimiser paramètres sur train (grid search reduit)
+3. Tester paramètres optimaux sur 63 jours suivants
 4. Repeter avec fenetre glissante de 63 jours
 
 **Metriques**:
@@ -221,13 +221,13 @@ position = 0 if (histogram < 0 or adx < adx_lower) else position
 SetStartDate(2019, 1, 1);  // Etendre de 2021-04-09 a 2019-01-01
 ```
 
-**Parametres a conserver**:
+**Paramètres a conserver**:
 - MACD: (12, 26, 9) - standard, robuste
 - ADX: period=25, window=140, percentiles=(6, 86)
 
-### Si H1 refutee (parametres non optimaux)
+### Si H1 refutee (paramètres non optimaux)
 
-**ACTION**: Ajuster selon resultats sensibilite
+**ACTION**: Ajuster selon resultats sensibilité
 
 Exemple si meilleure config est (Window=180, P10-90):
 ```csharp
@@ -294,7 +294,7 @@ python execute_research.py
 
 Le notebook genere:
 1. **Tableaux de comparaison** (4 strategies)
-2. **Analyse de sensibilite** (15 configurations ADX)
+2. **Analyse de sensibilité** (15 configurations ADX)
 3. **Walk-forward results** (10-15 periodes)
 4. **Recommandations finales** basees sur les hypotheses validees
 
@@ -303,7 +303,7 @@ Le notebook genere:
 - **Estime**: 3-5 minutes
 - **Critique**: Walk-forward validation (grid search repete)
 
-## Prochaines Etapes
+## Prochaines Étapes
 
 ### Si recherche concluante
 
@@ -325,7 +325,7 @@ Le notebook genere:
 
 ### Limitations
 
-1. **Donnees**: Yahoo Finance peut avoir gaps vs Binance reel
+1. **Données**: Yahoo Finance peut avoir gaps vs Binance réel
 2. **Frais**: Backtest vectorise ignore slippage/fees (assume 0.1% Binance)
 3. **Execution**: Pas de simulation realiste des ordres (assume remplissage instantane)
 4. **Capital**: Assume capital constant (pas de compounding exact)
@@ -334,10 +334,10 @@ Le notebook genere:
 
 | Aspect | QuantConnect (C#) | Notebook (Python) |
 |--------|-------------------|-------------------|
-| Donnees | BTCUSDT Binance | BTC-USD Yahoo |
+| Données | BTCUSDT Binance | BTC-USD Yahoo |
 | Resolution | Daily bars | Daily bars |
 | Frais | Binance model | Non simule |
-| Warmup | 500 jours | Inclus dans donnees |
+| Warmup | 500 jours | Inclus dans données |
 | Execution | Event-driven | Vectorise |
 
 **Conclusion**: Les resultats notebook sont une **approximation** des vrais resultats QuantConnect. La validation finale doit se faire via backtest cloud QuantConnect.

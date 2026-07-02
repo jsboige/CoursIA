@@ -29,8 +29,8 @@ layout: default
 # Plan de la Presentation
 
 1. Introduction et motivation
-2. Donnees et univers
-3. Modele alpha
+2. Données et univers
+3. Modèle alpha
 4. Resultats de backtest
 5. Analyse et robustesse
 6. Demo (optionnel)
@@ -58,7 +58,7 @@ layout: default
 layout: default
 ---
 
-# 2. Donnees et Univers
+# 2. Données et Univers
 
 ## Actifs selectionnes
 
@@ -76,7 +76,7 @@ layout: default
 
 ## Preprocessing
 
-- [Nettoyage des donnees]
+- [Nettoyage des données]
 - [Gestion des valeurs manquantes]
 - [Normalisation si applicable]
 
@@ -84,13 +84,13 @@ layout: default
 layout: default
 ---
 
-# 3. Modele Alpha
+# 3. Modèle Alpha
 
-## Signaux d'entree
+## Signaux d'entrée
 
-- **Indicateur 1** : [Nom, parametres, justification]
-- **Indicateur 2** : [Nom, parametres, justification]
-- **Condition d'entree** : [Logique precise]
+- **Indicateur 1** : [Nom, paramètres, justification]
+- **Indicateur 2** : [Nom, paramètres, justification]
+- **Condition d'entrée** : [Logique precise]
 
 ## Signaux de sortie
 
@@ -139,8 +139,8 @@ layout: default
 
 ## Points forts
 
-- [Premier point fort avec donnees]
-- [Deuxieme point fort avec donnees]
+- [Premier point fort avec données]
+- [Deuxieme point fort avec données]
 
 ## Points faibles
 
@@ -167,10 +167,10 @@ layout: default
 | [2023] | [X%] | [X] | [X%] |
 | [2024] | [X%] | [X] | [X%] |
 
-## Sensibilite aux parametres
+## Sensibilité aux paramètres
 
-- [Parametre 1] : plage testee, impact sur Sharpe
-- [Parametre 2] : plage testee, impact sur MaxDD
+- [Paramètre 1] : plage testee, impact sur Sharpe
+- [Paramètre 2] : plage testee, impact sur MaxDD
 
 ---
 layout: default
