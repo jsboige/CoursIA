@@ -39,23 +39,23 @@ Dernière mise à jour : 2026-06-11
 
 **[IIT](IIT/README.md)** — La plus spéculative : la théorie de l'information intégrée et la mesure Phi (PyPhi) appliquées à des réseaux logiques — où l'on calcule, littéralement, des candidats quantitatifs à une mesure de la conscience. La série prolonge le Phi *statique* vers les **trajectoires** causales avec l'extension **ICT** (*Integrated Causal Trajectories*) : tri auto-organisé comme morphogenèse, émergence causale multi-échelles (Hoel, *Causal Emergence 2.0*). Elle rejoint ainsi le fil rouge **causalité** du dépôt, où le même opérateur `do(·)` de Pearl s'instancie à travers quatre paradigmes — symbolique (Tweety), message passing (Infer.NET), MCMC (PyMC) et théorie de l'information (ICT).
 
-### Progression pedagogique
+### Progression pédagogique
 
 ```text
 GenAI
 ├── 00-GenAI-Environment/ - Setup Docker, GPU, services
-├── Image/ - Generation d'images (SDXL, Qwen, Flux)
+├── Image/ - Génération d'images (SDXL, Qwen, Flux)
 ├── Audio/ - STT, TTS, music, pipeline audiobook FishAudio S2-Pro
-├── Video/ - Generation video, animation
+├── Video/ - Génération vidéo, animation
 ├── Texte/ - LLMs, RAG, reasoning
 ├── SemanticKernel/ - SDK Microsoft
 ├── FineTuning/ - Fine-tuning LoRA, adapters
-├── CaseStudies/ - Etudes de cas etudiants
+├── CaseStudies/ - Études de cas étudiants
 └── Vibe-Coding/ - Claude-Code + Roo-Code
 
 QuantConnect
-├── Python/ - Cours progressifs QC-Py (fondamentaux → strategies)
-├── projects/ - Strategies backtestees et ML (GARCH, Kelly, ensemble)
+├── Python/ - Cours progressifs QC-Py (fondamentaux → stratégies)
+├── projects/ - Stratégies backtestées et ML (GARCH, Kelly, ensemble)
 └── ML-Training-Pipeline/ - Pipeline training thermal-safe
 
 SymbolicAI
@@ -79,22 +79,22 @@ SymbolicAI
 
 ### QuantConnect / Finance
 - **LEAN Engine**: Backtesting, live trading, optimisation
-- **sklearn / XGBoost / PyTorch**: Modeles ML financiers
+- **sklearn / XGBoost / PyTorch**: Modèles ML financiers
 - **QuantConnect Cloud**: 95 projets, backtests cloud
-- **Hands-On AI Trading**: 18/19 exemples du livre implementes
+- **Hands-On AI Trading**: 18/19 exemples du livre implémentés
 
 ### Infrastructure
 - **Docker**: ComfyUI (29GB VRAM), services GenAI
 - **MCP**: Jupyter automation, QuantConnect MCP server
-- **Papermill**: Execution batch
+- **Papermill**: Exécution batch
 
-### Domaines d'etude
+### Domaines d'étude
 - **Computer Vision**: Image, Video, Animation
 - **NLP**: LLMs, RAG, Reasoning, Sentiment
 - **Audio**: STT, TTS, Voice Cloning, Music
 - **Finance**: Trading algorithmique, ML financier, options
 - **Symbolic**: RDF, Z3 SMT, Lean 4, SmartContracts
-- **Optimization**: CSP, metaheuristiques, recherche operationnelle
+- **Optimization**: CSP, metaheuristiques, recherche opérationnelle
 
 ## Configuration requise
 
