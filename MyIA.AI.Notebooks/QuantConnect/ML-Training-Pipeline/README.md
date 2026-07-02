@@ -11,7 +11,10 @@ Les notebooks de ce répertoire sont des **recherches indépendantes (c)** — a
 | `ML-Research-Template.ipynb` | Template pour recherche ML | (c) |
 | `m3_har_asymmetric_semivariance.ipynb` | HAR semi-variance asymétrique | (c) |
 | `research_what_dl_can_predict.ipynb` | Ce que le DL peut prédire en finance | (c) |
-| `research_l4_decision_transformer.ipynb` | Évaluation Decision Transformer | (c) |
+| `research_l1_tsmom.ipynb` | L1 TSMOM — baseline momentum temporelle (NO BEATS) | (c) |
+| `research_l2_dual_momentum.ipynb` | L2 Cross-Sectional + Dual Momentum (NO BEATS) | (c) |
+| `research_l3_trend.ipynb` | L3 Trend Long-Horizon — LSTM directionnel (NO BEATS) | (c) |
+| `research_l4_decision_transformer.ipynb` | L4 Decision Transformer (seul BEATS du ladder) | (c) |
 | `hmm_alpha_research.ipynb` | HMM gaussien pour alpha trading (Broad Ch6 Ex4) | (c) |
 | `m4_dlinear_vol_research.ipynb` | DLinear-vol : DL linéaire vs HAR (prévisions pures) | (c) |
 | `m5_hmm_regime_research.ipynb` | HMM regime-switching HAR : quand la sophistication structurelle nuit | (c) |
