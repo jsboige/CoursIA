@@ -9,7 +9,7 @@ maturity: PRODUCTION=32, BETA=1
 
 [← Notebooks](../README.md) | [→ Search](../Search/README.md)
 
-Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. Les 33 notebooks — **16 C# et 16 Python en approche miroir** (un par algorithme dans chaque langage), plus un companion Lean natif ([Sudoku-7b](Sudoku-7b-Lean-Propagation.ipynb)) — permettent à chaque étudiant de choisir son langage.
+Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. Les 33 notebooks couvrent **13 paires miroir C#/Python** (algorithmes comparables dans les deux langages), **3 notebooks C# uniquement** (13-SymbolicAutomata, 14-BDD, 0-Environment), **3 notebooks Python uniquement** (16-NeuralNetwork, 17-LLM, 18-Comparison-benchmark) et **1 companion Lean natif** ([Sudoku-7b](Sudoku-7b-Lean-Propagation.ipynb), preuve formelle de la propagation de contraintes). Cette structure laisse à chaque étudiant le choix de son langage sur la majorité des algorithmes.
 
 **À qui s'adresse cette série** : étudiants en informatique (L2-M2) découvrant les paradigmes algorithmiques, candidats à des entretiens techniques, et enseignants cherchant un fil rouge pédagogique. Les notebooks Python ne nécessitent que Python 3.10+. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en IA : les concepts sont introduits depuis le backtracking.
 
@@ -360,7 +360,7 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 8 | Human Stratégies | Oui | Oui | Port C# vers Python |
 | 9 | Graph Coloring | Oui | Oui | **networkx** + `nx.sudoku_graph()` |
 | 10 | OR-Tools | Oui | Oui | **ortools** CP-SAT |
-| 11 | Choco | Oui | Oui | **JPype** + Choco JAR |
+| 11 | Choco | Oui* | Oui | **JPype** + Choco JAR |
 | 12 | Z3 | Oui | Oui | **z3-solver** |
 | 13 | Symbolic Automata | Oui | - | (C# uniquement) |
 | 14 | BDD | Oui | - | (C# uniquement) |
@@ -371,6 +371,8 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 
 **Légende** : Oui = disponible, - = non applicable
 
+*\* Le notebook `Sudoku-11-Choco-Csharp` ne fonctionne pas en pratique : IKVM 7.2.4630.5 (seule version publiée sur NuGet) ne peut pas charger le JAR Choco via la directive `#r` — erreur `CS0009` sur les métadonnées PE. Pour Choco, utilisez le notebook Python équivalent (`Sudoku-11-Choco-Python`), ou en C# les alternatives OR-Tools (`Sudoku-10-ORTools-Csharp`) et Z3 (`Sudoku-12-Z3-Csharp`). Plus de détails dans la FAQ ci-dessous.*
+
 ## Notebooks avec Versions Miroir C#/Python
 
 Les notebooks suivants sont disponibles dans les deux langages pour comparaison directe :
@@ -380,9 +382,18 @@ Les notebooks suivants sont disponibles dans les deux langages pour comparaison 
 | 1 | Backtracking | [Sudoku-1-Backtracking-Csharp](Sudoku-1-Backtracking-Csharp.ipynb) | [Sudoku-1-Backtracking-Python](Sudoku-1-Backtracking-Python.ipynb) | Algorithme de base |
 | 2 | Dancing Links | [Sudoku-2-DancingLinks-Csharp](Sudoku-2-DancingLinks-Csharp.ipynb) | [Sudoku-2-DancingLinks-Python](Sudoku-2-DancingLinks-Python.ipynb) | Couverture exacte |
 | 3 | Genetic | [Sudoku-3-Genetic-Csharp](Sudoku-3-Genetic-Csharp.ipynb) | [Sudoku-3-Genetic-Python](Sudoku-3-Genetic-Python.ipynb) | GeneticSharp vs PyGAD |
+| 4 | Simulated Annealing | [Sudoku-4-SimulatedAnnealing-Csharp](Sudoku-4-SimulatedAnnealing-Csharp.ipynb) | [Sudoku-4-SimulatedAnnealing-Python](Sudoku-4-SimulatedAnnealing-Python.ipynb) | Recherche locale |
+| 5 | PSO | [Sudoku-5-PSO-Csharp](Sudoku-5-PSO-Csharp.ipynb) | [Sudoku-5-PSO-Python](Sudoku-5-PSO-Python.ipynb) | Swarm intelligence |
+| 6 | AIMA CSP | [Sudoku-6-AIMA-CSP-Csharp](Sudoku-6-AIMA-CSP-Csharp.ipynb) | [Sudoku-6-AIMA-CSP-Python](Sudoku-6-AIMA-CSP-Python.ipynb) | Port Russell & Norvig |
+| 7 | Norvig | [Sudoku-7-Norvig-Csharp](Sudoku-7-Norvig-Csharp.ipynb) | [Sudoku-7-Norvig-Python](Sudoku-7-Norvig-Python.ipynb) | Propagation (100x plus rapide) |
+| 8 | Human Stratégies | [Sudoku-8-HumanStrategies-Csharp](Sudoku-8-HumanStrategies-Csharp.ipynb) | [Sudoku-8-HumanStrategies-Python](Sudoku-8-HumanStrategies-Python.ipynb) | Déduction logique |
 | 9 | Graph Coloring | [Sudoku-9-GraphColoring-Csharp](Sudoku-9-GraphColoring-Csharp.ipynb) | [Sudoku-9-GraphColoring-Python](Sudoku-9-GraphColoring-Python.ipynb) | Théorie des graphes |
 | 10 | OR-Tools | [Sudoku-10-ORTools-Csharp](Sudoku-10-ORTools-Csharp.ipynb) | [Sudoku-10-ORTools-Python](Sudoku-10-ORTools-Python.ipynb) | CP-SAT solveur |
+| 11 | Choco | [Sudoku-11-Choco-Csharp*](Sudoku-11-Choco-Csharp.ipynb) | [Sudoku-11-Choco-Python](Sudoku-11-Choco-Python.ipynb) | CP industrielle (C# non fonctionnel : voir note ci-dessous) |
 | 12 | Z3 | [Sudoku-12-Z3-Csharp](Sudoku-12-Z3-Csharp.ipynb) | [Sudoku-12-Z3-Python](Sudoku-12-Z3-Python.ipynb) | SMT solveur |
+| 15 | Infer (Probabiliste) | [Sudoku-15-Infer-Csharp](Sudoku-15-Infer-Csharp.ipynb) | [Sudoku-15-Infer-Python](Sudoku-15-Infer-Python.ipynb) | Inférence bayésienne |
+
+*\* `Sudoku-11-Choco-Csharp` ne fonctionne pas en pratique : IKVM 7.2.4630.5 (seule version NuGet) ne peut pas charger le JAR Choco via `#r`. Voir FAQ « Le solveur Choco C# (notebook 11) ne fonctionne pas » ci-dessous pour le diagnostic complet et les alternatives C#.*
 
 ## Algorithmes Couverts
 
@@ -425,6 +436,8 @@ Sudoku-0-Csharp (Environment)
     +---> Niveau 6 : Sudoku-15-Csharp (Infer.NET)
     |
     +---> Niveau 7 : Sudoku-18-Comparison-Python (Benchmark)
+    |
+    +---> Note : le benchmark final (notebook 18) est Python uniquement — il synthétise les solveurs C# ET Python sur un même cadre comparatif. Pour un parcours full-C#, exécutez chaque notebook C# individuellement et comparez les métriques à celles publiées dans le notebook 18.
 ```
 
 ### Parcours Python (Complet)
@@ -637,10 +650,21 @@ Sudoku/
 
 ### Le solveur Choco (notebook 11) ne fonctionne pas
 
+#### Côté Python
+
 Choco est un solveur Java appelé via JPype :
 - Vérifiez que Java est installé : `java -version`
 - Installez JPype : `pip install jpype1`
 - Le JAR Choco est téléchargé automatiquement par le notebook
+
+#### Côté C# (`Sudoku-11-Choco-Csharp.ipynb`) — NE FONCTIONNE PAS
+
+Le notebook C# est conservé pour la complétude pédagogique, mais **ne s'exécute pas en l'état**. Diagnostic :
+
+- **Cause racine** : IKVM 7.2.4630.5 est la seule version publiée sur NuGet compatible .NET 9.0 ; elle ne peut pas charger le JAR Choco via la directive `#r`. Erreur observée : `CS0009: Impossible d'ouvrir le fichier de métadonnées '...jar' -- L'image PE ne contient pas de métadonnées gérées`.
+- **IKVM 8.x** (compatible .NET 10) existe sur GitHub mais **n'est pas publiée sur NuGet** — pas de chemin d'installation reproductible depuis un notebook.
+- **Alternatives C# recommandées** : utilisez [`Sudoku-10-ORTools-Csharp.ipynb`](Sudoku-10-ORTools-Csharp.ipynb) (CP-SAT, OR-Tools .NET, installable et fonctionnel) ou [`Sudoku-12-Z3-Csharp.ipynb`](Sudoku-12-Z3-Csharp.ipynb) (SMT, via `Microsoft.Z3` NuGet).
+- **Statut** : notebook conservé avec un avertissement explicite en première cellule ; ne pas tenter de fix sans bump IKVM → NuGet.
 
 ### L'entraînement du réseau de neurones (notebook 16) est lent
 
