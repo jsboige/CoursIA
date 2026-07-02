@@ -66,6 +66,15 @@ def brute_force_efficient_welfare(bidders, items, valuations):
     Reimplementation de l'enumeration SANS reutiliser le code sous test,
     pour que les tests d'efficacite et de paiement de Clarke soient de
     vrais controles croises.
+
+    Bundle lookup goes through ``tuple(sorted(bundle))`` so this helper
+    is robust to bundle order: ``('Y','X')`` matches ``('X','Y')`` in
+    the valuations dict (cf. the canonical ``(_, ('X', 'Y'))`` key
+    convention). Without this, on Python builds where
+    ``list(set(items))`` happens to enumerate items in non-sorted order
+    this brute-force returns a suboptimal welfare and the
+    ``test_efficiency_vs_bruteforce`` cross-checks spuriously fail.
+    See #4934.
     """
     best = 0.0
 
@@ -76,8 +85,8 @@ def brute_force_efficient_welfare(bidders, items, valuations):
             return
         bidder = remaining_bidders[0]
         rest = remaining_bidders[1:]
-        for bundle in _powerset(list(remaining_items)):
-            value = valuations.get((bidder, bundle), 0)
+        for bundle in _powerset(sorted(remaining_items)):
+            value = valuations.get((bidder, tuple(sorted(bundle))), 0)
             allocate(rest, set(remaining_items) - set(bundle), welfare + value)
 
     allocate(list(bidders), set(items), 0.0)

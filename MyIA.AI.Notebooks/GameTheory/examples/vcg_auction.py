@@ -68,8 +68,15 @@ def vcg_combinatorial_auction(
         )
 
     def get_value(bidder: str, bundle: Tuple[str, ...]) -> float:
-        """Get valuation for a bundle."""
-        return valuations.get((bidder, bundle), 0)
+        """Get valuation for a bundle.
+
+        Normalises ``bundle`` to its sorted-tuple canonical form before
+        the dict lookup, so the result is robust to bundle order
+        (e.g. ``('Y','X')`` == ``('X','Y')``). This matches the
+        convention used when the caller constructs the ``valuations``
+        dict with sorted-tuple keys.
+        """
+        return valuations.get((bidder, tuple(sorted(bundle))), 0)
 
     def find_efficient_allocation(
         bidders_subset: List[str],
@@ -100,8 +107,12 @@ def vcg_combinatorial_auction(
             bidder = remaining_bidders[0]
             rest_bidders = remaining_bidders[1:]
 
-            # Try all subsets of remaining items for this bidder
-            for bundle in powerset(list(remaining_items)):
+            # Try all subsets of remaining items for this bidder.
+            # `sorted(...)` makes bundle enumeration order canonical
+            # (independent of `set` iteration order across Python runs),
+            # so the recursion no longer misses the optimal bundle when
+            # `remaining_items` is a set. See #4934 for diagnosis.
+            for bundle in powerset(sorted(remaining_items)):
                 bundle_value = get_value(bidder, bundle)
                 new_remaining = remaining_items - set(bundle)
                 current_allocation[bidder] = bundle

@@ -32,11 +32,12 @@ from . import bistable
 from . import reaction_diffusion
 from . import agency
 from . import catastrophe
+from . import synthesis
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
     "GrazingModel", "GrayScott",
     "sorting_metrics", "trajectories", "causal_emergence", "tpm_estimation",
     "scale_free", "early_warning", "bistable", "reaction_diffusion", "agency",
-    "catastrophe",
+    "catastrophe", "synthesis",
 ]
