@@ -301,6 +301,37 @@ CSP-8  Temporal            ───> Temporal Planning, STP
 
 ---
 
+## Parité .NET ⇄ Python
+
+Cette série est **Python d'abord** pour son cœur pédagogique (recherche, CSP, applications), avec des **side tracks C# / .NET** là où l'écosystème .NET apporte une valeur propre : la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) (native .NET au-dessus de MetaGeneticSharp) et deux applications hybrides portées en C# (détection de bords, portefeuille). Le tableau ci-dessous fait le point sur la couverture par langage et sert de carte de départ pour un portage .NET progressif.
+
+### Couverture actuelle
+
+| Sous-série | Notebooks | Langage | Correspondance dans l'autre langage |
+|-----------|-----------|---------|-------------------------------------|
+| [Part1-Foundations](Part1-Foundations/) | 11 (Search-1 à Search-11) | Python | Aucune |
+| [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python | Aucune |
+| [Part3-Advanced](Part3-Advanced/) | 3 (Search-12 à Search-14) | Python | Aucune |
+| [Part4-Metaheuristics](Part4-Metaheuristics/) | 19 (MGS-1 à MGS-19) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
+| [Applications](Applications/) | 21 | 19 Python + 2 C# | App-9 ⇄ App-9b, App-10 ⇄ App-10b (2 paires) |
+| Racine | 5 | 3 Python + 2 C# | GeneticSharp-EdgeDetection, Portfolio_Optimization_GeneticSharp |
+
+Le **cœur curriculaire** (Parties 1 à 3, soit 23 notebooks) est aujourd'hui exclusivement en Python ; seules deux applications disposent d'un binôme Python/C#.
+
+### Pistes de portage .NET
+
+Le levier .NET dépend de la dépendance sous-jacente de chaque notebook :
+
+| Cible | Dépendance Python | Levier .NET | Précédent / remarque |
+|-------|-------------------|-------------|----------------------|
+| CSP-1 à CSP-9 (modélisation par contraintes) | `ortools` (CSP-3 à CSP-8) | **Google.OrTools** (NuGet natif) pour CP-SAT ; **Choco-solver** via **IKVM** pour l'API de modélisation | Précédent en place : `Sudoku-11-Choco-Csharp` (Choco via IKVM) et son binôme `Sudoku-11-Choco-Python` |
+| Search-9 Linear Programming | `pulp` | **Google.OrTools** (NuGet natif, GLOP / PDLP) | Port direct, sans IKVM |
+| Recherche d'états (Search-1 à Search-4) | aucune dépendance lourde | **.NET Interactive** pur | Structures d'états directement portables |
+
+Le portage se fait **au fil de l'eau, une tranche par contribution** — un notebook .NET exécuté de bout en bout avec ses exercices — et non en une seule passe. Le suivi d'ensemble est assuré par l'issue [#4956](https://github.com/jsboige/CoursIA/issues/4956).
+
+---
+
 ## Prérequis
 
 ### Python
