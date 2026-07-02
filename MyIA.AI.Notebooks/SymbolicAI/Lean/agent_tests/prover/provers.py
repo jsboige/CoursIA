@@ -19,6 +19,7 @@ from .lean_utils import (
     extract_sorry_block, get_goal_state, verify_sorry_replacement,
     extract_hypotheses, extract_local_lemmas, build_def_type_warnings,
     is_honest_sorry, sorry_is_in_statement, count_real_sorries,
+    is_true_placeholder_goal,
 )
 from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools, DiagnosisTools
 from .agents import (
@@ -213,6 +214,41 @@ def _refuse_in_statement_sorry(filepath: str, sorry_line: int,
     }
 
 
+def _refuse_true_placeholder_goal(filepath: str, sorry_line: int,
+                                  demo_name: str) -> Optional[dict]:
+    """Return an early-fail result dict if the target sorry's goal is `True`.
+
+    FX-5 (#1453): a sorry whose goal is the trivial Prop `True` is never a
+    legitimate obligation (True proves by `trivial`). It arises from a
+    mutated/vacuous statement or a degenerate decomposition sub-goal; the
+    downstream symptom — the L545 replay — is the TacticAgent looping x13 on
+    "The task is already complete" because there is nothing to prove. The
+    in-statement mutation form is already blocked upstream by FX-6b; this
+    catches the body-sorry form. Detection runs ONE probe compile
+    (`exact True.intro`); it is zero-false-positive (only a `True` goal closes
+    under that probe). Mirrors ``_refuse_in_statement_sorry``. Returns None
+    on any ambiguity (never blocks a legitimate run); the one-probe compile
+    cost is small against the 190-2600s run it saves when it fires.
+    """
+    is_true, reason = is_true_placeholder_goal(filepath, sorry_line)
+    if not is_true:
+        return None
+    msg = (
+        f"REFUSED: sorry at {filepath}:{sorry_line} has the trivial goal "
+        f"`True` (TRUE_PLACEHOLDER_GOAL, FX-5). {reason}"
+    )
+    print(f"\n{'!'*70}\n{msg}\n{'!'*70}\n")
+    return {
+        "success": False,
+        "skipped": True,
+        "reason": "true_placeholder_goal",
+        "detail": reason,
+        "demo": demo_name,
+        "sorry_line": sorry_line,
+        "filepath": filepath,
+    }
+
+
 def _autonomous_success_gate(final_sorry: int, original_sorry_count: int,
                              final_build_ok: bool,
                              verified_tactic_count: Optional[int] = None
@@ -392,6 +428,13 @@ class MultiAgentSorryProver:
         in_stmt = _refuse_in_statement_sorry(filepath, sorry_line, demo["name"])
         if in_stmt is not None:
             return in_stmt
+
+        # FX-5 (#1453): refuse a sorry whose goal is the trivial Prop `True`
+        # — a degenerate/placeholder goal the TacticAgent loops on ("task
+        # already complete"). One-probe detection, zero false positives.
+        true_goal = _refuse_true_placeholder_goal(filepath, sorry_line, demo["name"])
+        if true_goal is not None:
+            return true_goal
 
         print(f"\n{'='*70}")
         print(f"MULTI-AGENT PROVER: {demo['name']}")
@@ -988,6 +1031,13 @@ class AutonomousProver:
         in_stmt = _refuse_in_statement_sorry(filepath, sorry_line, demo["name"])
         if in_stmt is not None:
             return in_stmt
+
+        # FX-5 (#1453): refuse a sorry whose goal is the trivial Prop `True`
+        # — a degenerate/placeholder goal the TacticAgent loops on ("task
+        # already complete"). One-probe detection, zero false positives.
+        true_goal = _refuse_true_placeholder_goal(filepath, sorry_line, demo["name"])
+        if true_goal is not None:
+            return true_goal
 
         print(f"\n{'='*70}")
         print(f"AUTONOMOUS PROVER: {demo['name']}")

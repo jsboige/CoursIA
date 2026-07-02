@@ -137,6 +137,106 @@ def sorry_is_in_statement(content: str, sorry_line: int) -> bool:
     return False
 
 
+# FX-5 (#1453) — TRUE_PLACEHOLDER_GOAL: refuse a sorry whose goal is the
+# trivial Prop `True`. Such a goal is never a legitimate proof obligation
+# (True is provable by `trivial` with zero content), so stubbing it with sorry
+# is always a degenerate/vacuous case: a mutated statement (the founding
+# Reidemeister replay, now upstream-blocked by FX-6b for the in-statement
+# form) or a degenerate decomposition sub-goal. The downstream symptom —
+# observed in the L545 replay (TacticAgent x13 "The task is already
+# complete") — is the agent looping because there is nothing to prove.
+# Refusing it upstream (mirror of FX-6b) saves the run.
+#
+# Conservative by design: `exact True.intro` closes a goal IFF its type is
+# exactly `True`. Equality/Prop/Unit goals type-mismatch, so real theorems
+# are never refused. The broader "probe-closable by rfl/trivial" family is a
+# riskier follow-up (rfl can close legitimate reflexive goals) and is NOT
+# covered here.
+_TRUE_PROBE = "exact True.intro"
+_PROBE_LINE_TOL = 3
+_PROBE_UNSOLVED_TOL = 25
+
+
+def _probe_closes_goal(raw_output: str, sorry_line: int) -> bool:
+    """True when a probe replacing the sorry CLOSED that goal: no compile
+    error at the sorry line and no 'unsolved goals' report there. Other
+    sorries elsewhere in the file may still error — only the target line
+    matters."""
+    for line in raw_output.split("\n"):
+        m = re.match(r".*?(\d+):\d+: error: ", line)
+        if not m:
+            m = re.match(r"error: .*?(\d+):\d+: ", line)
+        if m and abs(int(m.group(1)) - sorry_line) <= _PROBE_LINE_TOL:
+            return False  # error at the probed line → probe did not close
+    for pat in (r"(\d+):\d+: error: unsolved goals",
+                r"error: .*?(\d+):\d+: unsolved goals"):
+        for m in re.finditer(pat, raw_output):
+            if abs(int(m.group(1)) - sorry_line) <= _PROBE_UNSOLVED_TOL:
+                return False  # open goal left at the probed site
+    return True
+
+
+def is_true_placeholder_goal(filepath: str, sorry_line: int) -> Tuple[bool, str]:
+    """FX-5 (#1453): True when the goal at ``sorry_line`` is the trivial Prop
+    ``True`` — a degenerate placeholder no honest obligation would stub.
+
+    Detection replaces the sorry with ``exact True.intro`` and compiles: if
+    that probe closes the goal (no error and no unsolved goal at the sorry
+    line), the goal type is exactly ``True``. See the FX-5 module note for why
+    this is zero-false-positive and what the broader follow-up would cover.
+
+    Returns ``(True, reason)`` for a True goal, ``(False, "")`` otherwise
+    (including unreadable files, out-of-range lines, deeply-nested sorrys
+    where probe errors cascade, or any compile/parse ambiguity — never blocks
+    a legitimate run).
+    """
+    try:
+        content = Path(filepath).read_text(encoding="utf-8")
+    except OSError:
+        return False, ""
+    lines = content.split("\n")
+    if not (1 <= sorry_line <= len(lines)):
+        return False, ""
+
+    sorry_text = lines[sorry_line - 1]
+    # Only consider a line whose code actually carries a real sorry token.
+    if _SORRY_TOKEN_RE.search(sorry_text.split("--", 1)[0]) is None:
+        return False, ""
+
+    indent = len(sorry_text) - len(sorry_text.lstrip())
+    # Deeply nested sorrys produce cascade errors (see get_goal_state); skip.
+    if indent >= 8:
+        return False, ""
+
+    from .verifier import get_verifier
+    project_dir = str(Path(filepath).resolve().parent.parent)
+    verifier = get_verifier(project_dir)
+    subdir = Path(filepath).parent.name
+    relative_path = f"{subdir}/_GoalExtract.lean"
+    tmp_path = Path(filepath).parent / "_GoalExtract.lean"
+
+    indent_str = " " * indent
+    new_lines = lines[:sorry_line - 1] + [indent_str + _TRUE_PROBE] + lines[sorry_line:]
+    tmp_path.write_text("\n".join(new_lines), encoding="utf-8")
+    try:
+        raw_output = verifier.verify_project_file(relative_path).get("raw_output", "") or ""
+    finally:
+        try:
+            tmp_path.unlink()
+        except OSError:
+            pass
+
+    if _probe_closes_goal(raw_output, sorry_line):
+        return True, (
+            "TRUE_PLACEHOLDER_GOAL: the goal at this sorry is the trivial Prop "
+            "`True` (it closes under `exact True.intro`). No honest proof "
+            "obligation stubs a True goal — this is a degenerate/vacuous "
+            "statement or sub-goal; the TacticAgent would loop on 'task "
+            "already complete'. Refused upstream (FX-5)."
+        )
+    return False, ""
+
+
 def is_honest_sorry(filepath: str, sorry_line: int,
                     lookback: int = 12) -> Tuple[bool, str]:
     """Check whether the sorry at `sorry_line` is documented as intentionally
