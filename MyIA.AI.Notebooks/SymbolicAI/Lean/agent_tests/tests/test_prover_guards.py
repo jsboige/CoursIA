@@ -1829,3 +1829,130 @@ def test_refuse_in_statement_sorry_none_when_file_missing(tmp_path):
 
     missing = tmp_path / "nope.lean"
     assert _refuse_in_statement_sorry(str(missing), 8, "demo") is None
+
+
+# --- FX-5 (#1453): TRUE_PLACEHOLDER_GOAL — refuse a sorry whose goal is True -
+# A goal of `True` is never a legitimate obligation (proves by `trivial`). It
+# arises from a mutated/vacuous statement or a degenerate sub-goal; the agent
+# then loops on "task already complete" (L545 replay). Detection runs ONE probe
+# (`exact True.intro`); zero false positives — only a True goal closes under it.
+
+def _mock_probe_verifier(monkeypatch, raw_output):
+    """Point get_verifier at a fake whose compile returns `raw_output`."""
+    import prover.verifier as vmod
+
+    class _FakeVerifier:
+        def verify_project_file(self, rel, force=False):
+            return {"success": not raw_output, "errors": "", "raw_output": raw_output}
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _FakeVerifier())
+
+
+_TRUE_GOAL_FILE = (
+    "import Mathlib.Tactic\n"
+    "theorem t : True := by\n"
+    "  sorry\n"           # line 3 — a True goal (degenerate)
+)
+
+
+def test_is_true_placeholder_goal_detects_true_goal(tmp_path, monkeypatch):
+    from prover.lean_utils import is_true_placeholder_goal
+
+    # Probe `exact True.intro` closes the goal → no error, no unsolved.
+    _mock_probe_verifier(monkeypatch, raw_output="")
+    f = tmp_path / "T.lean"
+    f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")
+    is_true, reason = is_true_placeholder_goal(str(f), 3)
+    assert is_true is True
+    assert "TRUE_PLACEHOLDER_GOAL" in reason
+
+
+def test_is_true_placeholder_goal_false_on_type_mismatch(tmp_path, monkeypatch):
+    """A real goal (e.g. 1 + 1 = 2) type-mismatches `exact True.intro`."""
+    from prover.lean_utils import is_true_placeholder_goal
+
+    # Error reported AT the probed line → probe did not close the goal.
+    _mock_probe_verifier(
+        monkeypatch,
+        raw_output="3:2: error: type mismatch\n  exact True.intro\nhas type\n  True",
+    )
+    f = tmp_path / "Real.lean"
+    f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")
+    is_true, _ = is_true_placeholder_goal(str(f), 3)
+    assert is_true is False
+
+
+def test_is_true_placeholder_goal_false_on_unsolved_goals(tmp_path, monkeypatch):
+    """Probe accepted but left an open goal → not a closed True goal."""
+    from prover.lean_utils import is_true_placeholder_goal
+
+    _mock_probe_verifier(monkeypatch, raw_output="3:2: error: unsolved goals")
+    f = tmp_path / "Uns.lean"
+    f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")
+    assert is_true_placeholder_goal(str(f), 3)[0] is False
+
+
+def test_is_true_placeholder_goal_false_when_no_sorry_token(tmp_path, monkeypatch):
+    """A line without a real sorry token is never probed (no compile)."""
+    from prover.lean_utils import is_true_placeholder_goal
+
+    probe_calls = []
+    _mock_probe_verifier(monkeypatch, raw_output="")
+    f = tmp_path / "NoSorry.lean"
+    f.write_text("theorem t : True := by\n  trivial\n", encoding="utf-8")
+    # Line 2 has no sorry → False, and the verifier must not have been built.
+    assert is_true_placeholder_goal(str(f), 2)[0] is False
+
+
+def test_is_true_placeholder_goal_false_for_deeply_nested(tmp_path, monkeypatch):
+    """Indent >= 8 → cascade errors → conservatively skip (no false positive)."""
+    from prover.lean_utils import is_true_placeholder_goal
+
+    _mock_probe_verifier(monkeypatch, raw_output="")
+    f = tmp_path / "Nested.lean"
+    f.write_text("theorem t : True := by\n        sorry\n", encoding="utf-8")  # 8-space indent
+    assert is_true_placeholder_goal(str(f), 2)[0] is False
+
+
+def test_is_true_placeholder_goal_false_when_file_missing(tmp_path):
+    from prover.lean_utils import is_true_placeholder_goal
+
+    missing = tmp_path / "nope.lean"
+    assert is_true_placeholder_goal(str(missing), 3)[0] is False
+
+
+def test_is_true_placeholder_goal_conservative_on_other_sorries_erroring(tmp_path, monkeypatch):
+    """Errors from OTHER sorries FAR from the probed line do not flip the
+    verdict: only an error/unsolved-goal within tolerance of the target line
+    decides closure. (A nearby unsolved goal WOULD block detection — the
+    conservative tolerance — so this test uses a far-away error.)"""
+    from prover.lean_utils import is_true_placeholder_goal
+
+    # An unrelated sorry's error at line 30 (>> the 25-line tolerance from
+    # the True goal at line 3) must not block the True-goal detection.
+    _mock_probe_verifier(monkeypatch, raw_output="30:2: error: unsolved goals")
+    f = tmp_path / "Mixed.lean"
+    f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")  # _TRUE_GOAL_FILE: sorry at line 3
+    assert is_true_placeholder_goal(str(f), 3)[0] is True
+
+
+def test_refuse_true_placeholder_goal_returns_dict_on_true_goal(tmp_path, monkeypatch):
+    from prover.provers import _refuse_true_placeholder_goal
+
+    _mock_probe_verifier(monkeypatch, raw_output="")
+    f = tmp_path / "T.lean"
+    f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")
+    out = _refuse_true_placeholder_goal(str(f), 3, "demo-true")
+    assert out is not None
+    assert out["reason"] == "true_placeholder_goal"
+    assert out["skipped"] is True
+    assert out["demo"] == "demo-true"
+
+
+def test_refuse_true_placeholder_goal_none_on_real_goal(tmp_path, monkeypatch):
+    from prover.provers import _refuse_true_placeholder_goal
+
+    _mock_probe_verifier(
+        monkeypatch, raw_output="3:2: error: type mismatch\n  exact True.intro")
+    f = tmp_path / "Real.lean"
+    f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")
+    assert _refuse_true_placeholder_goal(str(f), 3, "demo") is None
