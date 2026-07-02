@@ -494,6 +494,33 @@ Le **fil rouge** de la série : un Sharpe spectaculaire en backtest court est pr
 
 ---
 
+## Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
+
+Le dépôt ne se limite pas aux notebooks Python : il embarque une **couche de preuves Lean 4** qui ancre mathématiquement les résultats phares des séries. Le bridge QuantConnect ↔ Lean est [`kelly_lean`](kelly_lean/) — un lake Lean 4 (Mathlib, toolchain `v4.31.0-rc1`) qui prouve l'**optimalité du critère de Kelly** pour le *position sizing*. Le théorème : pour un pari de Bernoulli (probabilité `p` de gain, cote nette `b`, `q = 1 − p`), la fraction optimale du capital à risquer est
+
+> **f\* = (b·p − q) / b**
+
+qui maximise de façon unique le taux de croissance espéré du capital composé. Tout sur-pari (`f > f*`) ou sous-pari (`f < f*`) est **strictement sous-optimal**. Référence : J. L. Kelly Jr., *A New Interpretation of Information Rate*, BSTJ (1956).
+
+```mermaid
+flowchart LR
+    QC["Stratégie QuantConnect<br/>QC-Py-10 Risk Management<br/>Kelly fraction sizing"]
+    KELLY["kelly_lean lake<br/>kelly_optimal : g(f) ≤ g(f*)<br/>kelly_unique : f ≠ f* ⟹ g(f) < g(f*)"]
+    ML["ML-Training-Pipeline<br/>dimensionnement Kelly<br/>HMM-regime + fee-aware"]
+    BACKTEST["Backtests QC Cloud<br/>Sharpe aligned 2018-2025<br/>walk-forward + multi-seed"]
+    QC -. "fréquence risquée f" .-> KELLY
+    KELLY -. "théorème-prouve f*" .-> ML
+    ML --> BACKTEST
+    style KELLY fill:#e8f5e9
+    style BACKTEST fill:#e1f5ff
+```
+
+Le pipeline complet relie donc trois familles du dépôt : la **théorie** (Lean prouve `kelly_optimal` + `kelly_unique`), la **pratique** (ML-Training-Pipeline dimensionne Kelly HMM-regime, fee-aware, multi-asset, cap-relaxed — voir `ML-Training-Pipeline/docs/M11*`), et la **validation empirique** (backtests QC Cloud walk-forward + multi-seed, comparatif dans [`docs/qc/qc-comparative-backtests.md`](../../docs/qc/qc-comparative-backtests.md)). Sans la couche Lean, la pratique risquerait de s'appuyer sur une formule réputée « standard » mais jamais démontrée. Avec elle, la justification du fractionnement du capital est formellement garantie — pas seulement empiriquement ajustée.
+
+Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [issue #4052](https://github.com/jsboige/CoursIA/issues/4052) (kelly_lean Tier 2), [`kelly_lean/README.md`](kelly_lean/README.md), [`kelly_lean/Kelly.en.md`](kelly_lean/Kelly.en.md).
+
+---
+
 ## Cross-series Bridges
 
 | Serie | Lien | Connection |
@@ -504,6 +531,7 @@ Le **fil rouge** de la série : un Sharpe spectaculaire en backtest court est pr
 | [Probas](../Probas/README.md) | Programmation probabiliste | La modélisation bayésienne des rendements et la gestion du risque s'appuient sur les modèles probabilistes de la série Probas |
 | [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparamètres de stratégies (grid search, bayésienne) rejoint les techniques de recherche |
 | [ML](../ML/ML.Net/README.md) | Séries temporelles ML.NET | L'analyse technique (QC-4 à QC-7) partage les mêmes fondements que le forecasting par SSA (ML-5) |
+| **Lean 4 (kelly_lean)** | **Preuves formelles** | **Le théorème de Kelly est prouvé formellement dans `kelly_lean/` (Mathlib, toolchain v4.31.0-rc1) — fondement du position sizing enseigné dans QC-Py-10** |
 
 ---
 
