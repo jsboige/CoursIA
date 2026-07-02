@@ -118,7 +118,7 @@ Le répertoire `docs/` contient :
 | Document | Description |
 |----------|-------------|
 | [INTRO-GENAI.md](docs/INTRO-GENAI.md) | Introduction pratique a l'IA générative |
-| [Claude-Code/docs/](Claude-Code/docs/) | Documentation Claude Code (installation, concepts, aide-memoire) |
+| [Claude-Code/docs/](Claude-Code/docs/) | Documentation Claude Code (installation, concepts, aide-mémoire) |
 | [Roo-Code/docs/](Roo-Code/docs/) | Documentation Roo Code (installation, guide) |
 | [activites/](docs/activites/) | Activités pédagogiques |
 | [sessions/](docs/sessions/) | Sessions de formation |
@@ -148,7 +148,7 @@ Le répertoire `docs/` contient :
 A l'issue de cette série, vous serez capable de :
 
 1. **Décrire** un projet en langage naturel et obtenir du code fonctionnel via l'IA
-2. **Orchestrer** des workflows multi-agents (recherche, planification, execution)
+2. **Orchestrer** des workflows multi-agents (recherche, planification, exécution)
 3. **Automatiser** les tâches courantes du développeur (tests, documentation, déploiement)
 4. **Configurer** des agents autonomes conteneurisés (Claw Systems)
 
