@@ -222,7 +222,7 @@ theorem extremal_lemma (f : SWF ι σ) (X : Finset σ)
     (same_order_iff_same_order' (f prof).total (f prof').total).2 <|
       hind prof prof' a b ha hb fun j => by
         have h := makeabove_rel_noteq_P (prof j).rel a hac hcb.symm
-        simp only [makeabove_all, makeabove_pref] at h ⊢
+        show same_order' (prof j).rel (makeabove_rel (prof j).rel a c) a b a b
         exact ⟨h.1.symm, h.2.symm⟩
   -- IIA for (b,c): pair involves c (raised element), case-split via extremality
   have hIIA_bc : same_order (f prof).rel (f prof').rel b c b c :=
