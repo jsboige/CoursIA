@@ -14,7 +14,7 @@ Supports de cours pour l'apprentissage du trading algorithmique avec QuantConnec
 | **(c)** standalone research | 6 | Local yfinance/sklearn training |
 | **(d)** pedagogical placeholder | 33 | Course material with embedded QCAlgorithm strings |
 
-> Récapitulatif : 16+2+6+33 = 57 entrées de classification. Le nombre total de fichiers `.ipynb` dans le dossier est **51** : la différence reflète les notebooks classés dans plusieurs catégories (ex. course material exécuté localement = (c)+(d)). Voir [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md) pour la classification détaillée.
+> Récapitulatif : 16+2+6+33 = 57 entrées de classification. Le nombre total de fichiers `.ipynb` dans le dossier est **53** : la différence reflète les notebooks classés dans plusieurs catégories (ex. course material exécuté localement = (c)+(d)). Voir [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md) pour la classification détaillée.
 
 Full classification: [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md)
 
