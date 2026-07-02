@@ -184,6 +184,8 @@ Les notebooks les plus exigeants, mais ceux où le dépôt dit ce qu'il a de plu
 5. **[QuantConnect / projects](QuantConnect/README.md)** - le portefeuille de stratégies ML avancées (GARCH, Kelly, ensembles).
 6. **[IIT](IIT/README.md)** - la mesure Phi (PyPhi) sur des réseaux logiques, prolongée vers les trajectoires causales et l'émergence multi-échelles (extension ICT) : la frontière la plus spéculative.
 
+<a id="lean"></a>
+
 #### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
 Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette promesse par une **couche de 23 lakes Lean 4 / Mathlib** (toolchain `v4.31.0-rc1`, ~900 théorèmes-lemmes, ~130 sorry WIP) qui ancre mathématiquement les résultats phares des séries. Pas une anthologie de devoirs formalisés : **un théorème-phare par famille**, validé mécaniquement, et **branché sur les notebooks** qui l'enseignent ou l'utilisent. Cartographie inter-familles :
