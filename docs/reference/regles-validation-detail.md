@@ -100,7 +100,7 @@ Sudoku-13 aurait du sortir `NEVER_EXECUTED_SINCE_<creation>` au premier appel �
 
 ## H.7 — Plan de sortie du cycle perpetuel (incident 2026-05-09)
 
-L'audit du 2026-05-09 a révèle un pattern systemique : 988 notebooks repo, dont une fraction inconnue n'a jamais ete reellement exécutée malgre des dizaines de commits "fix" cosmétiques.
+L'audit du 2026-05-09 a révélé un pattern systemique : 988 notebooks repo, dont une fraction inconnue n'a jamais ete reellement exécutée malgre des dizaines de commits "fix" cosmétiques.
 
 **Plan de remediation 4 phases** :
 
