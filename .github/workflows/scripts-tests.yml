@@ -61,6 +61,11 @@ jobs:
           # python-dotenv: scripts/whisper_int8_comparison.py (and several
           # genai-stack modules) import `dotenv` at top level.
           pip install python-dotenv
+          # matplotlib: MyIA.AI.Notebooks/GameTheory/trust_simulation/visualization.py
+          # imports it at module top level. Without it, pytest bails on
+          # collection errors for test_trust_simulation.py and skips the
+          # entire suite, masking every other test result. See #4937.
+          pip install matplotlib
           # papermill + nbformat: genai-stack/commands/notebooks.py imports
           # papermill at top level, so test_genai_notebooks.py needs it at
           # collection time. Both are declared deps of genai-stack
