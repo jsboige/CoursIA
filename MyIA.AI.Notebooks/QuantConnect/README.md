@@ -492,7 +492,7 @@ Le **fil rouge** de la série : un Sharpe spectaculaire en backtest court est pr
 - **Les stars du catalogue ne survivent pas toutes à l'alignement** : PuppiesOfTheDow (1.99 → 0.302) et HighBookToMarketFScore (2.09 → 0.411) s'effondrent sur 2018-2025 — leurs Sharpe catalogue venaient d'une fenêtre glissante non standardisée.
 - **Crypto = diversification stable** : MaxDD maitrisé (~17%), rendement modéré.
 
-> Voir [docs/qc/qc-comparative-backtests.md](../../docs/qc/qc-comparative-backtests.md) pour les 21 baselines vérifiées, les comparaisons best-vs-aligned, et les diagnostics détaillés (See #1630).
+> Voir [docs/qc/qc-comparative-backtests.md](../../docs/qc/qc-comparative-backtests.md) pour les 36 baselines vérifiées, les comparaisons best-vs-aligned, et les diagnostics détaillés (See #1630).
 
 ---
 
