@@ -4,7 +4,9 @@ paths: **/*
 
 # Secrets via RooSync — Policy (décision 2026-07-02)
 
-**Statut** : ACTIF. **L'interdit absolu « JAMAIS secrets via RooSync » est LEVÉ** sous 4 conditions cumulatives.
+**Statut** : ACTIF. **L'interdit absolu « JAMAIS secrets via RooSync » est LEVÉ** sous 4 conditions cumulatives — mais il s'agit d'une **exception encadrée**, pas d'une levée générale.
+
+> **Cadre d'application** : `master.env` → `scripts/secrets/render_envs.py` → `docker compose restart` reste le **canal par défaut** pour tout secret présent au catalogue. RooSync = canal **dégradé** réservé aux **tokens éphémères**, **rotations ad-hoc** et **services hors catalogue** que `master.env` ne couvre pas. Hors de ces cas, `master.env` gagne — toujours.
 
 ## Décision 2026-07-02 (verbatim user via ai-01)
 
@@ -33,32 +35,38 @@ paths: **/*
 
 ## Worked example (SANS valeur réelle — purement illustratif)
 
-**Cas d'usage légitime** : token TTS_GATEWAY_API_KEY rotation cross-workspace entre `po-2023:CoursIA` et `ai-01:myia-open-webui`, parce que la cible n'est pas encore intégrée à `master.env` (service hors catalogue).
+> **Cadre** : ce worked-example illustre une **exception encadrée**, pas une levée générale. Le défaut reste `master.env` → `render_envs.py` → `docker compose restart`. RooSync n'intervient que pour les **tokens éphémères / rotations ad-hoc / services hors catalogue** que `master.env` ne couvre pas. Toute ressemblance avec un service réel serait un placeholder — voir avertissement ci-dessous.
+
+**Cas d'usage légitime (illustration)** : rotation cross-workspace d'un token d'API pour un service *non encore intégré à* `master.env` (service hors catalogue). Pour zéro risque de copie accidentelle, on utilise un placeholder générique `SERVICE_TOKEN_EXAMPLE` à la place d'un nom de token réel.
 
 ```python
 # NE PAS exécuter tel quel — illustration uniquement
+# SERVICE_TOKEN_EXAMPLE = placeholder générique, AUCUN nom de service réel
 from pathlib import Path
 
-# 1. Lire depuis la source de vérité (env local)
-token_value = Path("docker-configurations/services/tts-multi/.env") \
+# 1. Lire depuis la source de vérité (env local du service hors catalogue)
+token_value = Path("<path-to-service-env>") \
     .read_text(encoding="utf-8") \
-    .split("TTS_GATEWAY_API_KEY=", 1)[1].split("\n", 1)[0].strip()
+    .split("SERVICE_TOKEN_EXAMPLE=", 1)[1].split("\n", 1)[0].strip()
 
 # 2. Transmettre via RooSync attachment + auto-destruct court
 roosync_messages_send(
-    to="myia-ai-01:myia-open-webui",
-    subject="[ROTATION] TTS_GATEWAY_API_KEY — auto-destruct 30m",
+    to="<recipient-machine>:<recipient-workspace>",
+    subject="[ROTATION] SERVICE_TOKEN_EXAMPLE — auto-destruct 30m",
     body="Voir attachement. Détruire après usage.",
     attachments=[{
         "path": "<temp-file-with-token>",
-        "filename": "tts-gateway-token.txt",
+        "filename": "service-token.txt",
     }],
-    auto_destruct="30m",  # condition 2
+    auto_destruct="30m",  # condition 2 : OBLIGATOIRE, ≤ 2h
     tags=["ROTATION", "EPHEMERAL"],
 )
 ```
 
-**Important** : cet exemple n'utilise aucune valeur réelle. Aucun token n'est inclus dans ce fichier de policy.
+**Important** :
+- Cet exemple n'utilise **aucun nom de service réel** (`SERVICE_TOKEN_EXAMPLE` est un placeholder générique).
+- Cet exemple n'utilise **aucune valeur réelle** (aucun token littéral n'est inclus dans ce fichier de policy).
+- Toute transposition vers un cas réel doit **préalablement** vérifier que `master.env` ne couvre pas la cible (condition 4) — sinon, utiliser le pipeline propre.
 
 ## Worked example (interdit — anti-pattern)
 
