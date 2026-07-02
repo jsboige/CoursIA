@@ -57,9 +57,9 @@ Basé sur le contenu réel du repo GitHub `QuantConnect/HandsOnAITradingBook` :
 | Exemple Livre | Concept | Notebook CoursIA | Statut |
 |---------------|---------|------------------|--------|
 | 01 ML Trend Scanning with MLFinlab | Trend scanning ML | QC-Py-11-Technical-Indicators | ⚠️ Partiel |
-| 02 Factor Preprocessing for Regime Detection | Régimes de marché | QC-Py-25-Reinforcement-Learning, partner-course-quant-trading/examples/Markov-Regime-Detection | ✅ **NEW** |
+| 02 Factor Preprocessing for Regime Detection | Régimes de marché | QC-Py-25-Reinforcement-Learning, projects/Markov-Regime-Detection | ✅ **NEW** |
 | 03 Reversion vs Trending by Classification | Classification momentum/mean reversion | QC-Py-19-ML-Supervised-Classification | ✅ |
-| 04 Alpha by Hidden Markov Models | HMM pour régimes | QC-Py-25-Reinforcement-Learning, partner-course-quant-trading/examples/Markov-Regime-Detection | ✅ **NEW** |
+| 04 Alpha by Hidden Markov Models | HMM pour régimes | QC-Py-25-Reinforcement-Learning, projects/Markov-Regime-Detection | ✅ **NEW** |
 | 05 FX SVM Wavelet Forecasting | SVM + Wavelet decomposition | projects/SVM-Wavelet-Forecasting | ✅ **NEW** (Sharpe 0.17) |
 | 06 Dividend Harvesting Selection | Sélection dividendes | projects/Dividend-Harvesting-ML | ✅ **NEW** |
 | 07 Effect of Positive-Negative Splits | Stock splits ML | projects/Positive-Negative-Splits-ML | ✅ **NEW** (Sharpe 1.74) |
@@ -70,7 +70,7 @@ Basé sur le contenu réel du repo GitHub `QuantConnect/HandsOnAITradingBook` :
 | 12 Trading Costs Optimization | Coûts de trading | QC-Py-14-Portfolio-Construction-Execution | ✅ |
 | 13 PCA Statistical Arbitrage Mean Reversion | PCA stat-arb | QC-Py-13-Alpha-Models | ✅ |
 | 14 Temporal CNN Prediction | Temporal features + MLPClassifier | projects/Temporal-CNN-Prediction | ✅ **NEW** (Sharpe 0.73) |
-| 15 Gaussian Classifier for Direction Prediction | Gaussian Naive Bayes | QC-Py-19-ML-Supervised-Classification, partner-course-quant-trading/examples/Gaussian-Direction-Classifier | ✅ **NEW** |
+| 15 Gaussian Classifier for Direction Prediction | Gaussian Naive Bayes | QC-Py-19-ML-Supervised-Classification, projects/Gaussian-Direction-Classifier | ✅ **NEW** |
 | 16 LLM Summarization of Tiingo News | LLM pour sentiment news | QC-Py-26-LLM-Trading-Signals | ✅ |
 | 17 Head Shoulders Pattern Matching with CNN | CNN pattern detection | projects/ML-HeadShoulders-CNN | ✅ **NEW** |
 | 18 Amazon Chronos Model | Ensemble ML forecasting | projects/Chronos-Foundation-Forecasting | ✅ **NEW** (Sharpe 0.28) |
@@ -103,13 +103,13 @@ Le livre se concentre sur ML/AI appliqué au trading. Voici les projets CoursIA 
 | [AllWeather](../projects/AllWeather/) | Portfolio optimisation | ✅ |
 | [ETF-Pairs-Trading](../partner-course-quant-trading/examples/ETF-Pairs-Trading/) | Pairs trading (PCA stat-arb) | ✅ |
 | [Sector-Momentum](../partner-course-quant-trading/examples/Sector-Momentum/) | Momentum sectoriel | ✅ |
-| [Markov-Regime-Detection](../partner-course-quant-trading/examples/Markov-Regime-Detection/) | HMM pour régimes (Ex04) | ✅ **NEW** |
+| [Markov-Regime-Detection](../projects/Markov-Regime-Detection/) | HMM pour régimes (Ex04) | ✅ **NEW** |
 | [SVM-Wavelet-Forecasting](../projects/SVM-Wavelet-Forecasting/) | SVM + Wavelet decomposition (Ex05) | ✅ **NEW** |
 | [Positive-Negative-Splits-ML](../projects/Positive-Negative-Splits-ML/) | Stock splits ML (Ex07) | ✅ **NEW** |
 | [Stoploss-Volatility-ML](../projects/Stoploss-Volatility-ML/) | Stoploss ML Lasso (Ex08) | ✅ **NEW** |
 | [Dividend-Harvesting-ML](../projects/Dividend-Harvesting-ML/) | Dividend selection ML (Ex06) | ✅ **NEW** |
 | [ML-HeadShoulders-CNN](../projects/ML-HeadShoulders-CNN/) | CNN pattern detection (Ex17) | ✅ **NEW** |
-| [Gaussian-Direction-Classifier](../partner-course-quant-trading/examples/Gaussian-Direction-Classifier/) | Gaussian Naive Bayes (Ex15) | ✅ **NEW** |
+| [Gaussian-Direction-Classifier](../projects/Gaussian-Direction-Classifier/) | Gaussian Naive Bayes (Ex15) | ✅ **NEW** |
 | [Temporal-CNN-Prediction](../projects/Temporal-CNN-Prediction/) | Temporal CNN (Ex14) | ✅ **NEW** |
 | [LSTM-Forecasting](../projects/LSTM-Forecasting/) | LSTM Forecasting (Ex07) | ✅ **NEW** |
 | [Reinforcement-Learning-Trading](../projects/Reinforcement-Learning-Trading/) | DQN Trading (Ex08) | ✅ **NEW** |
