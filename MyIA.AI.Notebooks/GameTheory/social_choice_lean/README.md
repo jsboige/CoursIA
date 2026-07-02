@@ -158,7 +158,7 @@ social_choice_lean/
     └── sen_liberal_paradox.lean     # Exemple du paradoxe de Sen
 ```
 
-Le projet `social_choice_lean_peters/` (adjacent) contient un projet Lake séparé qui importe DominikPeters/SocialChoiceLean en dépendance. Il sert de vérification de build et de référence pour le notebook 16e.
+Le projet `social_choice_lean_peters/` (adjacent) contient un projet Lake séparé qui importe DominikPeters/SocialChoiceLean en dépendance. Il sert de vérification de build et de référence pour le notebook [SC-02](../SocialChoice/02-Lean-SocialChoice-Formal.ipynb) (qui inclut un tour du code `social_choice_lean`).
 
 ## Choix de design
 
@@ -287,5 +287,5 @@ bidirectionnel implique l'unidirectionnel).
 - **Référence externe** : [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean)
   (Gibbard-Satterthwaite, 15+ règles de vote, framework `LinearOrder` strict) —
   comparé dans la section « Différences de framework » ci-dessus.
-- **Série** : notebooks [`GameTheory`](../README.md) — 16b (applications Lean),
-  16c (simulations Python), 16e (tour SocialChoiceLean).
+- **Série** : notebooks [`GameTheory`](../README.md) — [SC-02](../SocialChoice/02-Lean-SocialChoice-Formal.ipynb) (preuve formelle Lean, inclut le tour de `social_choice_lean`),
+  [SC-03](../SocialChoice/03-Voting-Methods.ipynb) (simulations Python).
