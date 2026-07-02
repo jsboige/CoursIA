@@ -9,7 +9,7 @@ breakdown: PostTraining=7
 maturity: PRODUCTION=4, BETA=3
 -->
 
-> **Place dans GenAI** : cette série est le pendant *théorique et SOTA 2024-2025* de la série [FineTuning](../FineTuning/README.md). FineTuning couvre la boîte à outils pratique (LoRA, QLoRA, SFT, DPO, model merging) sur 5 notebooks exécutés ; PostTraining remonte la chaîne conceptuelle complète SFT → RLHF → DPO → GRPO → RLVR et reproduit les techniques récentes (Deepseek-R1) sur petits modèles. Les deux se complèment : commencer par FineTuning pour la pratique, PostTraining pour la profondeur méthodologique.
+> **Place dans GenAI** : cette série est le pendant *théorique et SOTA 2024-2025* de la série [FineTuning](../FineTuning/README.md). FineTuning couvre la boîte à outils pratique (LoRA, QLoRA, SFT, DPO, model merging) sur 5 notebooks exécutés ; PostTraining remonte la chaîne conceptuelle complète SFT → RLHF → DPO → GRPO → RLVR et reproduit les techniques récentes (Deepseek-R1) sur petits modèles, complétée par un notebook d'évaluation comparative et un détecteur de reward hacking, soit **7 notebooks** au total. Les deux se complèment : commencer par FineTuning pour la pratique, PostTraining pour la profondeur méthodologique.
 
 Série pédagogique dédiée aux techniques de **post-training** des LMs ouverts : SFT, DPO, GRPO, RLVR. L'objectif est de comprendre pourquoi 2024-2025 marque une rupture pédagogique dans la façon dont les modèles de langue passent du pre-training brut à un assistant utile, et comment cette chaîne s'est simplifiée depuis la cascade RLHF historique jusqu'aux méthodes "direct" récentes.
 
@@ -162,7 +162,7 @@ PT-06 documente le pipeline d'évaluation complet et produit un tableau comparat
 | **[RL](../../RL/)** | RL classique fondamentaux | Les notebooks RL ([rl_5 MDP/Q-Learning](../../RL/rl_5_mdp_dp_qlearning.ipynb) et [rl_6c PPO from scratch](../../RL/rl_6c_ppo_from_scratch.ipynb)) établissent l'intuition policy/value que PPO/GRPO réutilisent. Recommandés comme prérequis pour PT-04. |
 | **[RL — rl_9 offline](../../RL/rl_9_offline_rl.ipynb)** | DPO = preference learning offline | Le Behavior Cloning y est l'analogue tabulaire du SFT, et la contrainte de support de BCQ celle de la pénalité KL de DPO (PT-03). Le meilleur prérequis conceptuel pour DPO. |
 | **[RL — rl_10 reward shaping](../../RL/rl_10_reward_shaping.ipynb)** | Reward model = shaping appris | Le reward shaping (Ng 1999) et son biais (shaping naïf → reward hacking) préfigurent le reward model appris et le Goodhart traité en [PT-07](PT_07_rewardspy_reward_hacking.ipynb). |
-| **[GenAI/FineTuning](../FineTuning/)** | Boîte à outils fine-tuning | Série sœur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique sur 5 notebooks. PostTraining = profondeur méthodologique, FineTuning = recettes exécutables. |
+| **[GenAI/FineTuning](../FineTuning/)** | Boîte à outils fine-tuning | Série sœur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique sur 5 notebooks. PostTraining = profondeur méthodologique (7 notebooks), FineTuning = recettes exécutables. |
 
 ## Contexte industriel et historique 2017-2025
 
