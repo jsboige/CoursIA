@@ -1,8 +1,8 @@
-# Hermes — Guide de Deploiement (s6-overlay)
+# Hermes — Guide de Déploiement (s6-overlay)
 
 [← Claw-Systems](../README.md) | [↑ ..](../README.md)
 
-Ce guide documente le deploiement production d'Hermes comme conteneur Docker
+Ce guide documente le déploiement production d'Hermes comme conteneur Docker
 long-running avec **s6-overlay** en PID 1. Hermes tourne ainsi 24/7, survive aux
 redemarrages, et expose le bot Telegram + les jobs cron.
 
@@ -10,7 +10,7 @@ redemarrages, et expose le bot Telegram + les jobs cron.
 > Les patches notes ci-dessous (section [Patches Windows](#3-patches-windows-obligatoires))
 > existent precisement a cause de cette combinaison Windows + s6-overlay.
 
-## Prerequis
+## Prérequis
 
 | Outil | Version | Usage |
 |-------|---------|-------|
@@ -21,17 +21,17 @@ redemarrages, et expose le bot Telegram + les jobs cron.
 ### Tokens requis
 
 1. **Telegram Bot Token** — via [@BotFather](https://t.me/BotFather)
-2. **GLM / z.ai API key** — cle provider LLM natif
+2. **GLM / z.ai API key** — clé provider LLM natif
 3. **GitHub CLI token** (`gh auth`) — pour les jobs pr-review
 4. **MCP auth bearer** — token du proxy MCP LAN
 5. **Whisper bearer** — pour le STT cluster (optionnel)
 
-Aucun token ne doit etre commité. Voir
+Aucun token ne doit être commité. Voir
 [hermes.env.secrets.example](../configs/hermes.env.secrets.example).
 
 ## Conteneur
 
-| Element | Valeur |
+| Élément | Valeur |
 |----------|--------|
 | **Image** | `hermes-agent:s6-20260528` (build local depuis le fork) |
 | **PID 1** | `s6-svscan` (s6-overlay v3.2.3.0, remplace tini/gosu) |
@@ -55,7 +55,7 @@ Le script complet et commenté vit dans
 [`configs/docker-run-hermes.ps1.example`](../configs/docker-run-hermes.ps1.example).
 
 > **Pas de `-e` :** tous les secrets proviennent de `/opt/data/.env.secrets`,
-> charge par le script de restore au demarrage. Ne JAMAIS passer un token en
+> charge par le script de restore au démarrage. Ne JAMAIS passer un token en
 > flag `docker run -e` — il fuiterait dans l'historique des processus.
 
 ## Séquence de boot (s6-overlay, Architecture B)
@@ -76,7 +76,7 @@ Le script complet et commenté vit dans
 ```
 
 Le shim `013-roosync-restore` est le point d'injection cluster : il appelle
-`/opt/data/restore-config.sh` a **chaque** demarrage conteneur, ce qui rend la
+`/opt/data/restore-config.sh` a **chaque** démarrage conteneur, ce qui rend la
 configuration idempotente et reproductible.
 
 ## Script de restore
@@ -86,9 +86,9 @@ configuration idempotente et reproductible.
 configuration a partir des secrets a chaque boot, dans cet ordre :
 
 1. Charge les secrets depuis `/opt/data/.env.secrets`
-2. Positionne le modele (`glm-5.2`) et le provider (`zai`)
+2. Positionne le modèle (`glm-5.2`) et le provider (`zai`)
 3. Supprime la contamination `provider: "auto"` et `base_url` OpenRouter
-4. Ajoute la config de deploiement RooSync (providers auxiliaires, STT, MCPs, approvals)
+4. Ajoute la config de déploiement RooSync (providers auxiliaires, STT, MCPs, approvals)
 5. **Auto-detection MCP** : sonde le proxy LAN (port 9090). Si injoignable, active le fallback local
 6. Ecrit `/opt/data/.env` avec tous les tokens
 7. Corrige le format `jobs.json` (list→dict, normalisation, retrait des restrictions de toolsets)
@@ -102,7 +102,7 @@ configuration a partir des secrets a chaque boot, dans cet ordre :
 Quand le proxy MCP LAN (port 9090) est injoignable, le script active une
 infrastructure MCP locale :
 
-| Serveur | Transport | Detail |
+| Serveur | Transport | Détail |
 |---------|-----------|--------|
 | `roo-state-manager` | stdio direct | Volume-monté depuis roo-extensions, `.env` patché (GDrive/Qdrant désactivés), `index.js` patché (FATAL → degrade) |
 | `sk-agent` | mcp-remote via proxy | `host.docker.internal:9092/sk-agent/mcp` |
@@ -110,10 +110,10 @@ infrastructure MCP locale :
 
 **Conteneur proxy local :** `myia-mcp-proxy` (proxy Go, port 9092).
 
-> **Regle d'or :** le script copie `/opt/roo-state-manager` vers `/tmp/` puis
+> **Règle d'or :** le script copie `/opt/roo-state-manager` vers `/tmp/` puis
 > patche **la copie uniquement**. Le volume host n'est **jamais** touché
 > (regression #560 — corruption du `.env` host). Le montage roo-state-manager
-> est `ro` (read-only) pour la meme raison.
+> est `ro` (read-only) pour la même raison.
 
 ## 3 patches Windows (obligatoires)
 
@@ -213,7 +213,7 @@ redémarre. Garde les 5 derniers.
 .\roosync-cluster\scripts\hermes-verify.ps1
 ```
 
-12 checks : process gateway, Telegram connecté, symlinks config/env, modele, MCPs,
+12 checks : process gateway, Telegram connecté, symlinks config/env, modèle, MCPs,
 cron jobs, kanban inscriptible, gh auth, santé MCP.
 
 ## Rollback
