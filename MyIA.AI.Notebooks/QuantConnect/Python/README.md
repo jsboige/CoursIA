@@ -2,7 +2,7 @@
 
 Supports de cours pour l'apprentissage du trading algorithmique avec QuantConnect LEAN.
 
-> **Note** : Ces notebooks sont des supports de cours a lire sur GitHub ou en local.
+> **Note** : Ces notebooks sont des supports de cours à lire sur GitHub ou en local.
 > Pour exécuter les backtests, copiez le code dans un projet [QuantConnect Cloud](https://www.quantconnect.com/lab).
 
 ## 4-Type Classification
@@ -97,7 +97,7 @@ Les notebooks NON EXÉCUTÉS doivent être exécutés (kernel local pour les ind
 
 ---
 
-## Phase 1 : Fondations LEAN (QC-Py-01 a 04)
+## Phase 1 : Fondations LEAN (QC-Py-01 à 04)
 
 | Notebook | Contenu |
 |----------|---------|
@@ -106,58 +106,58 @@ Les notebooks NON EXÉCUTÉS doivent être exécutés (kernel local pour les ind
 | [QC-Py-03-Data-Management](QC-Py-03-Data-Management.ipynb) | History API, consolidators, multi-timeframe |
 | [QC-Py-04-Research-Workflow](QC-Py-04-Research-Workflow.ipynb) | QuantBook, pandas, notebook vers algorithme |
 
-## Phase 2 : Classes d'actifs (QC-Py-05 a 10)
+## Phase 2 : Classes d'actifs (QC-Py-05 à 10)
 
 | Notebook | Contenu |
 |----------|---------|
 | [QC-Py-05-Universe-Selection](QC-Py-05-Universe-Selection.ipynb) | Univers dynamiques, filtres fondamentaux |
 | [QC-Py-06-Options-Trading](QC-Py-06-Options-Trading.ipynb) | Chaînes d'options, greeks, stratégies couvertes |
-| [QC-Py-07-Futures-Forex](QC-Py-07-Futures-Forex.ipynb) | Contrats a terme, devises, hedging |
+| [QC-Py-07-Futures-Forex](QC-Py-07-Futures-Forex.ipynb) | Contrats à terme, devises, hedging |
 | [QC-Py-08-Multi-Asset-Strategies](QC-Py-08-Multi-Asset-Strategies.ipynb) | Portefeuilles multi-classes d'actifs |
 | [QC-Py-09-Order-Types](QC-Py-09-Order-Types.ipynb) | Market, limit, stop, trailing, combo orders |
 | [QC-Py-10-Risk-Portfolio-Management](QC-Py-10-Risk-Portfolio-Management.ipynb) | Risk management, position sizing, drawdown |
 
-## Phase 3 : Analyse et Strategie (QC-Py-11 a 17)
+## Phase 3 : Analyse et Stratégie (QC-Py-11 à 17)
 
 | Notebook | Contenu |
 |----------|---------|
 | [QC-Py-11-Technical-Indicators](QC-Py-11-Technical-Indicators.ipynb) | Indicateurs techniques, indicateurs custom |
 | [QC-Py-12-Backtesting-Analysis](QC-Py-12-Backtesting-Analysis.ipynb) | Mesures de performance, Sharpe, drawdown |
 | [QC-Py-13-Alpha-Models](QC-Py-13-Alpha-Models.ipynb) | Framework Alpha, signaux, combinaison |
-| [QC-Py-14-Portfolio-Construction-Execution](QC-Py-14-Portfolio-Construction-Execution.ipynb) | Construction portefeuille, execution |
+| [QC-Py-14-Portfolio-Construction-Execution](QC-Py-14-Portfolio-Construction-Execution.ipynb) | Construction portefeuille, exécution |
 | [QC-Py-15-Parameter-Optimization](QC-Py-15-Parameter-Optimization.ipynb) | Optimization, grid search, walk-forward |
 | [QC-Py-16-Alternative-Data](QC-Py-16-Alternative-Data.ipynb) | données alternatives, sentiment, fundamentals |
 | [QC-Py-17-Sentiment-Analysis](QC-Py-17-Sentiment-Analysis.ipynb) | NLP, analyse sentiment, signaux textuels |
 
-## Phase 4 : Machine Learning (QC-Py-18 a 28)
+## Phase 4 : Machine Learning (QC-Py-18 à 28)
 
 | Notebook | Contenu |
 |----------|---------|
 | [QC-Py-18-ML-Features-Engineering](QC-Py-18-ML-Features-Engineering.ipynb) | Feature engineering pour trading |
 | [QC-Py-19-ML-Supervised-Classification](QC-Py-19-ML-Supervised-Classification.ipynb) | Classification, signaux d'achat/vente |
-| [QC-Py-20-ML-Regression-Prediction](QC-Py-20-ML-Regression-Prediction.ipynb) | Regression, prediction de prix |
+| [QC-Py-20-ML-Regression-Prediction](QC-Py-20-ML-Regression-Prediction.ipynb) | Régression, prédiction de prix |
 | [QC-Py-21-Portfolio-Optimization-ML](QC-Py-21-Portfolio-Optimization-ML.ipynb) | Optimisation ML de portefeuille |
-| [QC-Py-22-Deep-Learning-LSTM](QC-Py-22-Deep-Learning-LSTM.ipynb) | Reseaux LSTM pour series temporelles |
+| [QC-Py-22-Deep-Learning-LSTM](QC-Py-22-Deep-Learning-LSTM.ipynb) | Réseaux LSTM pour séries temporelles |
 | [QC-Py-23-Attention-Transformers](QC-Py-23-Attention-Transformers.ipynb) | Transformers, attention mechanism |
-| [QC-Py-24-Autoencoders-Anomaly](QC-Py-24-Autoencoders-Anomaly.ipynb) | Detection d'anomalies, autoencodeurs |
+| [QC-Py-24-Autoencoders-Anomaly](QC-Py-24-Autoencoders-Anomaly.ipynb) | Détection d'anomalies, autoencodeurs |
 | [QC-Py-25-Reinforcement-Learning](QC-Py-25-Reinforcement-Learning.ipynb) | RL, DQN, environnement trading |
 | [QC-Py-26-LLM-Trading-Signals](QC-Py-26-LLM-Trading-Signals.ipynb) | LLM pour signaux de trading |
-| [QC-Py-27-Production-Deployment](QC-Py-27-Production-Deployment.ipynb) | Deploiement live, monitoring |
-| [QC-Py-28-Market-Regime-Detection](QC-Py-28-Market-Regime-Detection.ipynb) | Detection de regimes de marche |
+| [QC-Py-27-Production-Deployment](QC-Py-27-Production-Deployment.ipynb) | Déploiement live, monitoring |
+| [QC-Py-28-Market-Regime-Detection](QC-Py-28-Market-Regime-Detection.ipynb) | Détection de régimes de marché |
 
-## Entrainement ML (QC-Py-30 a 32)
+## Entraînement ML (QC-Py-30 à 32)
 
-Notebooks d'entrainement de modeles avec checkpoints GPU.
+Notebooks d'entraînement de modèles avec checkpoints GPU.
 
-| Notebook | Modele | Sortie |
+| Notebook | Modèle | Sortie |
 |----------|--------|--------|
 | [QC-Py-30-LSTM-Training](QC-Py-30-LSTM-Training.ipynb) | LSTM | Checkpoint PyTorch |
 | [QC-Py-31-Transformer-Training](QC-Py-31-Transformer-Training.ipynb) | Transformer | Checkpoint PyTorch |
 | [QC-Py-32-RL-DQN-Trading](QC-Py-32-RL-DQN-Trading.ipynb) | DQN | Checkpoint PyTorch |
 
-## Reinforcement Learning Avance (QC-Py-33 a 35)
+## Reinforcement Learning Avancé (QC-Py-33 à 35)
 
-Approfondissement RL au-dela du DQN de la Phase 8 : PPO, SAC/A2C, application portfolio.
+Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, application portfolio.
 
 | Notebook | Algorithme | Contenu |
 |----------|------------|---------|
@@ -165,29 +165,29 @@ Approfondissement RL au-dela du DQN de la Phase 8 : PPO, SAC/A2C, application po
 | [QC-Py-34-RL-SAC-A2C-Trading](QC-Py-34-RL-SAC-A2C-Trading.ipynb) | SAC + A2C | Soft Actor-Critic + A2C, comparatif algorithmes RL |
 | [QC-Py-35-RL-Portfolio-Construction](QC-Py-35-RL-Portfolio-Construction.ipynb) | RL multi-asset | RL pour allocation multi-asset, contraintes de risque |
 
-## Paper Trading (QC-Py-40 a 41)
+## Paper Trading (QC-Py-40 à 41)
 
 | Notebook | Courtier |
 |----------|----------|
 | [QC-Py-40-PaperTrading-Binance](QC-Py-40-PaperTrading-Binance.ipynb) | Binance |
 | [QC-Py-41-PaperTrading-IBKR](QC-Py-41-PaperTrading-IBKR.ipynb) | Interactive Brokers |
 
-## Strategies Cloud (QC-Py-Cloud-*)
+## Stratégies Cloud (QC-Py-Cloud-*)
 
 Notebooks de recherche et stratégies exécutées sur QuantConnect Cloud.
 
-| Notebook | Strategie |
+| Notebook | Stratégie |
 |----------|-----------|
 | [QC-Py-Cloud-01-FinBERT-Sentiment](QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | NLP FinBERT sentiment |
-| [QC-Py-Cloud-01-RiskParity-Composite](QC-Py-Cloud-01-RiskParity-Composite.ipynb) | Risk Parite composite |
+| [QC-Py-Cloud-01-RiskParity-Composite](QC-Py-Cloud-01-RiskParity-Composite.ipynb) | Risk Parité composite |
 | [QC-Py-Cloud-02-ML-Classification](QC-Py-Cloud-02-ML-Classification.ipynb) | ML classification |
 | [QC-Py-Cloud-02-SectorRotation-Momentum](QC-Py-Cloud-02-SectorRotation-Momentum.ipynb) | Rotation sectorielle |
 | [QC-Py-Cloud-03-DualMomentum](QC-Py-Cloud-03-DualMomentum.ipynb) | Dual Momentum |
-| [QC-Py-Cloud-03-Risk-Parity](QC-Py-Cloud-03-Risk-Parity.ipynb) | Risk Parite |
+| [QC-Py-Cloud-03-Risk-Parity](QC-Py-Cloud-03-Risk-Parity.ipynb) | Risk Parité |
 | [QC-Py-Cloud-04-MeanReversion](QC-Py-Cloud-04-MeanReversion.ipynb) | Mean Reversion |
 | [QC-Py-Cloud-04-RL-DQN-Trading](QC-Py-Cloud-04-RL-DQN-Trading.ipynb) | RL DQN |
 | [QC-Py-Cloud-05-MLP-Forecasting](QC-Py-Cloud-05-MLP-Forecasting.ipynb) | MLP Forecasting |
-| [QC-Py-Cloud-05-RegimeSwitching](QC-Py-Cloud-05-RegimeSwitching.ipynb) | Regime Switching |
+| [QC-Py-Cloud-05-RegimeSwitching](QC-Py-Cloud-05-RegimeSwitching.ipynb) | Régime Switching |
 | [QC-Py-Cloud-06-VolTargeting](QC-Py-Cloud-06-VolTargeting.ipynb) | Volatility Targeting |
 | [QC-Py-Cloud-06-PCA-StatArb](QC-Py-Cloud-06-PCA-StatArb.ipynb) | PCA Statistical Arbitrage |
 | [QC-Py-Cloud-07-TemporalCNN](QC-Py-Cloud-07-TemporalCNN.ipynb) | Temporal CNN |
@@ -229,4 +229,4 @@ Le fil rouge : la **rigueur méthodologique** — l'audit d'exécution honnête 
 
 ---
 
-**Navigation** : [README principal](../README.md) | [Livre de reference](https://www.hands-on-ai-trading.com/)
+**Navigation** : [README principal](../README.md) | [Livre de référence](https://www.hands-on-ai-trading.com/)
