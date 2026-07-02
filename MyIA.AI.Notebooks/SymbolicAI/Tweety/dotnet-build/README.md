@@ -1,10 +1,10 @@
-# `dotnet-build/` — Recette de build du runtime Tweety C# / IKVM
+# `dotnet-build/` — Recette de build des runtimes Tweety C# / IKVM
 
-Ce dossier contient la **recette de build** (POM shade + csproj) du runtime .NET de Tweety
-(cluster `pl`) recompilé via IKVM 8.15.0. Le runtime compilé (`org.tweetyproject.tweety-pl.dll`)
-est placé **à côté du notebook** [`../Tweety-2-Basic-Logics-Csharp.ipynb`](../Tweety-2-Basic-Logics-Csharp.ipynb).
+Ce dossier contient les **recettes de build** (POM shade + csproj) des runtimes .NET de Tweety
+recompilés via IKVM 8.15.0. Chaque runtime compilé (`org.tweetyproject.tweety-<module>.dll`)
+est placé **à côté du notebook** qui le charge.
 
-## Fichiers
+## Fichiers — cluster `pl` (notebook [`../Tweety-2-Basic-Logics-Csharp.ipynb`](../Tweety-2-Basic-Logics-Csharp.ipynb))
 
 | Fichier | Rôle | Committé ? |
 |---------|------|-----------|
@@ -12,6 +12,25 @@ est placé **à côté du notebook** [`../Tweety-2-Basic-Logics-Csharp.ipynb`](.
 | `tweety-pl-full-1.30.jar` (6.9 MB) | Fat-jar Maven shade (artefact de build intermédiaire) | Non (gitignoré, reconstruit ci-dessous) |
 | `build-tweety-pl-shade.pom.xml` | POM aggregator Maven shade (produit le fat-jar) | Oui (reproductibilité) |
 | `build-TweetyShade.csproj` | Projet MSBuild `<IkvmReference>` (convertit le fat-jar en DLL) | Oui (reproductibilité) |
+
+## Fichiers — cluster `beliefdynamics` (notebook [`../Tweety-4-Belief-Revision-Csharp.ipynb`](../Tweety-4-Belief-Revision-Csharp.ipynb))
+
+| Fichier | Rôle | Committé ? |
+|---------|------|-----------|
+| `org.tweetyproject.tweety-beliefdynamics.dll` (10.3 MB) | **Runtime** .NET des opérateurs AGM (contraction, révision de Levi) | Oui (pattern #4711) |
+| `tweety-beliefdynamics-full-1.30.jar` (9.6 MB) | Fat-jar Maven shade (artefact intermédiaire) | Non (gitignoré, reconstruit ci-dessous) |
+| `build-tweety-beliefdynamics-shade.pom.xml` | POM aggregator Maven shade | Oui (reproductibilité) |
+| `build-TweetyBeliefDynamicsShade.csproj` | Projet MSBuild `<IkvmReference>` | Oui (reproductibilité) |
+
+### Contrainte bytecode Java 8 (piège majeur du cluster `beliefdynamics`)
+
+IKVM 8.15 est un runtime **Java 8** : il **saute silencieusement** toute classe compilée en
+bytecode major > 52 (Java 9+), avec un warning `IKVM0101 class format error "55.0"`. Le pom parent
+de Tweety compile par défaut en `<release>11</release>` (major 55) → **les opérateurs de révision
+seraient absents de la DLL**. La recette rebuild patche le pom parent en `<release>8</release>`
+(+ `source`/`target` 8) avant `mvn install` du module `beliefdynamics`, garantissant du major-52
+IKVM-compilable. Vérification : `od -An -tu1 -j6 -N2 LeviMultipleBaseRevisionOperator.class` doit
+afficher `52`.
 
 ## Recette de rebuild (si la DLL doit être régénérée)
 
