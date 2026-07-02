@@ -70,7 +70,7 @@
 
 | Category | Count | Note |
 |----------|-------|------|
-| Exercise stubs (TODO, a completer) | 9 | Expected — student implémentation cells |
+| Exercise stubs (TODO, a completer) | 9 | Expected — student implementation cells |
 | Lean theorem/proof cells | 10 | Lean 4 kernel-specific, outputs via REPL |
 | Class/function definitions | 3 | Skipped in last execution |
 | Conceptual prints (schemas) | 2 | Non-critical |
