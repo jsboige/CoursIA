@@ -855,3 +855,8 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/data/temp_*.owl
 
 # Shared Mathlib checkout cache (NTFS junctions, scripts/lean/setup_shared_mathlib.ps1, #2611)
 /.mathlib-cache/
+
+# Quarto build output
+_site/
+**/.quarto/
+_freeze/
