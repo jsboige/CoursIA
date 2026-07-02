@@ -1,12 +1,12 @@
 # Trading Options sur VGT Equities (ID: 21113806)
 
-Strategie d'options (PUTs/CALLs) sur 5 valeurs tech (NVDA, ORCL, CSCO, AMD, QCOM).
+Stratégie d'options (PUTs/CALLs) sur 5 valeurs tech (NVDA, ORCL, CSCO, AMD, QCOM).
 
 ## Architecture
-- `main.py` - Wheel strategy multi-equity avec seuils OTM personnalises
+- `main.py` - Wheel strategy multi-equity avec seuils OTM personnalisés
 - `essai_pour_voir.ipynb` - Exploration options chains et distributions
 
-## Concepts enseignes
+## Concepts enseignés
 - Options trading (PUT selling, covered CALL)
-- OTM threshold personnalise par actif
+- OTM threshold personnalisé par actif
 - Exposure validation et cash-secured positions
