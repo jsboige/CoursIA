@@ -588,6 +588,62 @@ La recherche en IA propose un changement de regard sur la résolution de problè
 
 ---
 
+### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
+
+Le hub Search alignait une riche prose sur la double approche *exploration systématique / réduction par contraintes*, mais ne posait pas de **cartographie Lean 4 inter-familles formalisée**. Le search algorithmique a pourtant un lake phare : [`astar_lean` (#4048)](https://github.com/jsboige/CoursIA/issues/4048), où la correction d'A\* (admissibilité de l'heuristique ⟹ optimalité), la consistance de l'heuristique (P2) et les bornes sur la complexité (P4/P5) sont démontrées en Lean 4 sur des graphes à coût uniforme puis généralisées au cas pondéré.
+
+`grep -E "cartographie|inter-familles"` dans le hub Search = **0 occurrence** avant cette PR. La même section livrée c.194-c.196 sur les hubs [GameTheory](../GameTheory/README.md) (#5050), [Probas](../Probas/README.md) (#5053) et [ML](../ML/README.md) (#5054) reçoit une table focalisée + un Mermaid flowchart ; le hub Search doit donc renvoyer la balle avec une **vue locale focalisée Search/astar_lean**, pas un copier-coller.
+
+| Famille | Lake phare | Théorème / brique | Branchement notebook |
+|---------|-----------|-------------------|----------------------|
+| Search / Part 1 | `astar_lean` (#4048) | A\* admissibilité → optimalité (P1) | [Search-3-Informed](Part1-Foundations/Search-3-Informed.ipynb) (A\*, heuristique admissible) |
+| Search / Part 3 | `astar_lean` | A\* consistance d'heuristique (P2) + relaxation pondérée | [Search-14-WeightedAstar](Part3-Advanced/Search-14-WeightedAstar.ipynb) (Weighted A\*, Pohl 1970) |
+| Search / Part 4 | `astar_lean` | Pattern DB additives (Korf & Felner 2002) | [Search-12-PatternDatabases](Part3-Advanced/Search-12-PatternDatabases.ipynb) |
+| ML | `learning_theory_lean` (#5054) | Novikoff perceptron 0 sorry #4140 | [`Perceptron.lean`](../ML/learning_theory_lean/Perceptron/Perceptron.lean) (lake, pas notebook pédagogique) |
+| Probas | `decision_theory_lean` (#5053) | Concentration uniforme + Hoeffding (PAC iter-2) | [Infer-3-Factor-Graphs](../Probas/Infer/Infer-3-Factor-Graphs.ipynb) (factor graphs + PAC) |
+| QC | `kelly_lean` (#5047) | Kelly criterion + mean-variance bound | [QC-Py-10-Risk-Portfolio-Management](../QuantConnect/Python/QC-Py-10-Risk-Portfolio-Management.ipynb) (Kelly sizing) |
+| GameTheory | `social_choice_lean` (#5050) | Arrow + Sen voting | [GameTheory-15-CooperativeGames](../GameTheory/GameTheory-15-CooperativeGames.ipynb) |
+| GameTheory | `cooperative_games_lean` | Bondareva-Shapley 0 sorry #3954 | [GameTheory-13-ImperfectInfo-CFR](../GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb) |
+| SymbolicAI | `argumentation_lean` (#5043 MERGED) | Tweety Preferred extensions + Dung framework | [Tweety-3-Dung-Csharp](../SymbolicAI/Tweety/Tweety-3-Dung-Csharp.ipynb) (Dung Preferred semantics) |
+
+```mermaid
+flowchart LR
+    subgraph SIM["Simulation (notebooks)"]
+        S3["Search-3<br/>A* + heuristique<br/>admissible"]
+        S14["Search-14<br/>Weighted A*<br/>Pohl 1970"]
+        S12["Search-12<br/>Pattern DB<br/>additives"]
+        S6["Search-6<br/>Minimax / Alpha-Beta"]
+        S7["Search-7<br/>MCTS + UCB1"]
+    end
+    subgraph LEAN["Preuves formelles (Lean 4)"]
+        LA["astar_lean<br/>A* admissibilité<br/>P1/P2/P4/P5"]
+        LM["learning_theory_lean<br/>Novikoff perceptron<br/>0 sorry #4140"]
+        LP["decision_theory_lean<br/>PAC iter-2<br/>uniform concentration"]
+        LK["kelly_lean<br/>Kelly + MV bound"]
+        LG["social_choice_lean<br/>Arrow + Sen"]
+        LB["cooperative_games_lean<br/>Bondareva-Shapley<br/>0 sorry #3954"]
+    end
+    S3 -.->|"admissibilité ⟹<br/>optimalité"| LA
+    S14 -.->|"pondération W<br/>bornée par"| LA
+    S12 -.->|"PDB additives<br/>(Korf 2002)"| LA
+    S6 -.->|"valeur de position<br/>+ élagage"| LG
+    S7 -.->|"UCB1 + borne<br/>regret cumulé"| LP
+    SIM -.->|"simulation<br/>ML.NET / Python"| LEAN
+    LEAN -.->|"garantie<br/>formelle"| SIM
+    classDef lean fill:#e8f5e9,stroke:#1b5e20,color:#1b5e20
+    class LA,LM,LP,LK,LG,LB lean
+```
+
+La double culture **simulation + preuve formelle** est précisément ce que la [cartographie AIMA 3-level du hub central P0](../README.md#lean) (#5045 MERGED) articule : « instinct algorithmique ↔ méta-analyse ↔ preuve formelle ». Le hub Search ancre le **premier niveau (instinct)** par ses 66 notebooks Python/C# et le **deuxième niveau (méta-analyse)** par les benchmarks comparatifs (App-13 TSP, App-18 hyperparameter tuning, MGS-16 No-Free-Lunch) ; le **troisième niveau (preuve formelle)** arrive ici via `astar_lean`, qui démontre ce que les simulations Search-3/Search-14 ne peuvent que suggérer empiriquement : qu'une heuristique admissible **garantit** l'optimalité d'A\*, et qu'une heuristique consistente (P2) **garantit** que le premier chemin trouvé est déjà optimal (sans réouverture).
+
+Sans cette section, le chainage vers ML (perceptron 0 sorry comme borne duale de la convergence A\* sur graphes pondérés), QC (Kelly, borné inférieurement par l'arbitrage risque/rendement), GameTheory (Arrow, posant les conditions sur les procédures de vote), Probas (PAC iter-2, formalisant pourquoi un échantillon suffit) et SymbolicAI (argumentation, formalisant la sémantique preferred) restait invisible depuis Search.
+
+**Note sur les références notebooks** : cette PR substitut PR #5055 corrige 6 références stale (cf issue #5065) identifiées post-rename PR #4849 (GT-6c) + renommages successifs : ML-2.3-Perceptron → `Perceptron.lean` (lake, car pas de notebook pédagogique correspondant), Infer-3-ProbabilisticReasoning → Infer-3-Factor-Graphs, QC-Py-10 → QC-Py-10-Risk-Portfolio-Management, GT-15-SocialChoice ↔ GT-15-CooperativeGames (inversion), GT-13-CooperativeGames → GT-13-ImperfectInfo-CFR (inversion), Tweety-3-PreferredSemantics → Tweety-3-Dung-Csharp. Toutes les références vérifiées firsthand via `find MyIA.AI.Notebooks -maxdepth 3 -name '<pattern>'`.
+
+Liens : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean) · cross-refs hubs [QC](../QuantConnect/README.md) (#5047) · [central P0](../README.md) (#5049) · [GameTheory](../GameTheory/README.md) (#5050) · [Probas](../Probas/README.md) (#5053) · [ML](../ML/README.md) (#5054) · [SymbolicAI Lean](../SymbolicAI/Lean/README.md) (#5043 MERGED).
+
+---
+
 ## Licence
 
 Voir la licence du repository principal.
