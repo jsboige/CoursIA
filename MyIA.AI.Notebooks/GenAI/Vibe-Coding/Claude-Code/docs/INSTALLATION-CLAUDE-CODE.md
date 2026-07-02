@@ -914,7 +914,7 @@ Editez `.claude/settings.json` :
 - [ ] Test CLI réussi (`claude /status`)
 - [ ] Test Extension VS Code réussi
 - [ ] Au moins 1 serveur MCP configure
-- [ ] Fichier CLAUDE.md génère pour votre projet (`/init`)
+- [ ] Fichier CLAUDE.md généré pour votre projet (`/init`)
 - [ ] Raccourcis clavier personnalises (optionnel)
 - [ ] Modèles alternatifs configures (optionnel)
 
