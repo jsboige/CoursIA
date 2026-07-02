@@ -178,7 +178,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | 8 | [SL-8 - ILP Moderne et Knowledge Graphs](SL-8-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, complétion KG, ASP avec clingo | 55 min |
 | 9 | [SL-9 - LLMs et Apprentissage Symbolique](SL-9-LLM-SymbolicLearning.ipynb) | Prompting, extraction de règles, vérification symbolique (Gemini 3.5 Flash optionnel) | 50 min |
 | 10 | [SL-10 - Apprentissage Actif d'Automates](SL-10-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 60 min |
-| 11 | [SL-11 - Capstone Neuro-Symbolique](SL-11-Capstone-NeuroSymbolic.ipynb) | Pipeline 6 étages : extraction LLM, oracle, KG, mining, inference avec provenance, QA | 90 min |
+| 11 | [SL-11 - Capstone Neuro-Symbolique](SL-11-Capstone-NeuroSymbolic.ipynb) | Pipeline 6 étages : extraction LLM, oracle, KG, mining, inférence avec provenance, QA | 90 min |
 
 ## Contenu détaillé
 
@@ -301,7 +301,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | Étage 2 - Oracle | Validation typée + contraintes fonctionnelles (cf SL-8) |
 | Étage 3 - KG | Knowledge graph valide (cf SL-7) |
 | Étage 4 - Mining | AMIE-lite : découverte de règles avec confiance standard (cf SL-4/SL-7) |
-| Étage 5 - Inference | Chainage avant avec provenance ; le dérivé peut violer l'oracle (lecon d'architecture) |
+| Étage 5 - Inférence | Chainage avant avec provenance ; le dérivé peut violer l'oracle (lecon d'architecture) |
 | Étage 6 - QA | Question 2 sauts : réponse KG (dérivation citée) vs réponse LLM seule |
 
 ## Concepts clés
@@ -340,7 +340,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | **Table d'observation** | Structure (S, E, T) fermée et cohérente dont on lit un DFA | SL-10 |
 | **Myhill-Nerode** | Classes d'équivalence de suffixes = états du DFA minimal | SL-10 |
 | **Provenance** | Trace de dérivation attachée à chaque fait inféré | SL-11 |
-| **Pipeline neuro-symbolique** | LLM aux extrémités, validation et inference symboliques au centre | SL-11 |
+| **Pipeline neuro-symbolique** | LLM aux extrémités, validation et inférence symboliques au centre | SL-11 |
 
 ## Prérequis
 
@@ -419,7 +419,7 @@ SymbolicLearning/
 ├── SL-11-Capstone-NeuroSymbolic.ipynb       # Capstone : pipeline neuro-symbolique 6 étages
 ├── .env.example                             # Modèle de configuration LLM (OpenRouter)
 ├── requirements.txt                         # Dépendances optionnelles
-├── reference/
+├── référence/
 │   ├── AIMA_Ch19_Knowledge_in_Learning.md   # Notes de référence
 │   └── aima_knowledge.py                     # AIMA Ch.19 (CBH, Version Space, MINIMAL-CONSISTENT-DET) — vendored aima-python
 └── README.md                                # Cette documentation
