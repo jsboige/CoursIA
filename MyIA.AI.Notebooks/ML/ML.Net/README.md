@@ -11,7 +11,7 @@ maturity: PRODUCTION=6, ALPHA=1, DRAFT=1
 
 ML.NET — la bibliothèque open-source de Microsoft — apporte le machine learning **nativement dans l'écosystème .NET** : on entraîne et on consomme des modèles directement en C#, sans quitter sa stack applicative ni dépendre d'un runtime Python. C'est un choix pensé pour les développeurs autant que pour les data scientists — l'AutoML abaisse la barrière d'entrée, et les modèles s'exécutent *in-process* dans des applications existantes (API web, services, desktop). L'interopérabilité **ONNX** permet d'importer des modèles entraînés ailleurs (scikit-learn, PyTorch, Hugging Face) et de les servir côté .NET : ML.NET devient ainsi un pont concret entre la recherche en Python et la production en entreprise.
 
-Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : préparation des données et feature engineering (ML-2), entraînement et AutoML (ML-3), évaluation rigoureuse par cross-validation et importance des variables (ML-4), puis les fonctionnalités avancées — prévision de séries temporelles par SSA (ML-5), interopérabilité ONNX (ML-6), systèmes de recommandation (ML-7) et clustering non-supervisé par K-Means (ML-8) — avant un TP capstone qui marie ML.NET et la régression bayésienne d'Infer.NET.
+Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : préparation des données et feature engineering (ML-2), entraînement et AutoML (ML-3), évaluation rigoureuse par cross-validation et importance des variables (ML-4), puis les fonctionnalités avancées — prévision de séries temporelles par SSA (ML-5), interopérabilité ONNX (ML-6), systèmes de recommandation (ML-7), clustering non-supervisé par K-Means (ML-8) et détection d'anomalies par Randomized PCA (ML-9) — avant un TP capstone qui marie ML.NET et la régression bayésienne d'Infer.NET.
 
 > **À qui s'adresse cette série** : développeurs C#/.NET découvrant le Machine Learning, équipes enterprise souhaitant intégrer du ML sans sortir de leur stack .NET, ou data scientists souhaitant servir des modèles en production dans des applications C#. Aucun prérequis en statistiques avancées — les concepts sont introduits progressivement dans chaque notebook.
 
@@ -36,7 +36,7 @@ Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : p
 | 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML | 45-60 min |
 | 4 | [ML-4-Evaluation](ML-4-Evaluation.ipynb) | Cross-validation, métriques, PFI | 40-50 min |
 
-### Fonctionnalités avancées (ML-5 à ML-8)
+### Fonctionnalités avancées (ML-5 à ML-9)
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
@@ -44,6 +44,7 @@ Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : p
 | 6 | [ML-6-ONNX](ML-6-ONNX.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | 45-60 min |
 | 7 | [ML-7-Recommendation](ML-7-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | 45-60 min |
 | 8 | [ML-8-Clustering](ML-8-Clustering.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | 45-60 min |
+| 9 | [ML-9-Anomaly-Detection](ML-9-Anomaly-Detection.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | 45-60 min |
 
 ### TP Pratique
 
@@ -63,13 +64,15 @@ Le notebook 3 introduit l'entraînement proprement dit. Vous découvrirez SDCA (
 
 Le notebook 4 est le plus dense (82 cellules) et le plus crucial : évaluation rigoureuse. Vous apprendrez à mesurer un modèle avec R², MAE, RMSE, à utiliser la validation croisée pour estimer la généralisation, et à expliquer les prédictions avec la Permutation Feature Importance (PFI) et le Feature Contribution Calculation (FCC). Ce notebook transforme un "modèle qui marche" en un modèle que vous comprenez et pouvez justifier.
 
-### Phase 2 : Fonctionnalités avancées (ML-5 à ML-7, ~2h)
+### Phase 2 : Fonctionnalités avancées (ML-5 à ML-9, ~2h30)
 
 Le notebook 5 aborde les séries temporelles avec `ForecastBySsa` (Singular Spectrum Analysis), un algorithme qui détecte automatiquement les tendances et saisonnalités. Vous travaillerez sur un dataset de ventes quotidiennes, apprendrez à détecter des anomalies par écart à la moyenne mobile, à quantifier l'incertitude via les intervalles de confiance, et à comparer plusieurs configurations de prévision. Ce notebook est directement applicable à la prévision de ventes, de charge serveur, ou de demande produit.
 
 Le notebook 6 présente l'interopérabilité ONNX — le pont entre l'écosystème Python et .NET. Vous apprendrez à charger des modèles exportés depuis scikit-learn ou PyTorch, à exporter un modèle ML.NET vers ONNX, et même à utiliser des modèles Hugging Face (BERT, Whisper) via ONNX Runtime. Le notebook montre un workflow complet : R&D en Python, export ONNX, déploiement en production dans une application .NET. C'est le chapitre "déploiement en entreprise" du parcours.
 
 Le notebook 7 explore les systèmes de recommandation — un domaine où ML.NET brille vraiment en production. Vous implémenterez la factorisation matricielle (collaborative filtering), apprendrez à générer des recommendations Top-N, à mesurer la qualité avec Precision@K et NDCG, et à gérer le "cold start problem" (nouveaux utilisateurs ou items sans historique). Deux exemples concrets : recommandation de films et recommandation e-commerce.
+
+Les notebooks 8 et 9 couvrent l'apprentissage **non-supervisé**. Le notebook 8 (K-Means) partitionne les clients en segments naturels sans étiquettes, via la distance euclidienne — il illustre pourquoi la normalisation y est indispensable. Le notebook 9 (Randomized PCA) répond à une question différente : étant donné un régime de fonctionnement normal, quels points s'en écartent assez pour être des anomalies ? Le cas d'usage est la **maintenance prédictive** (capteurs industriels), et l'accent est mis sur le choix du **seuil de décision** (compromis détection / fausse alarme) — une problématique opérationnelle qui n'apparaît ni en classification (ML-3) ni en clustering (ML-8).
 
 ### Phase 3 : TP Capstone (~1h)
 
@@ -194,6 +197,15 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Évaluation | AverageDistance (inertie), DaviesBouldinIndex (séparation) |
 | Choix de K | Méthode du coude (elbow method), Thorndike 1953 |
 
+### ML-9-Anomaly-Detection
+
+| Section | Contenu |
+|---------|---------|
+| Randomized PCA | Détection d'anomalies via `AnomalyDetectionCatalog` (résidu de reconstruction) |
+| Score d'anomalie | Résidu hors du sous-espace PCA (plus élevé = plus anomalous) |
+| Évaluation | `AreaUnderRocCurve` (AUC), `DetectionRateAtFalsePositiveCount` |
+| Seuil de décision | Trade-off TPR (détection) vs FPR (fausse alarme) |
+
 ## Dataset
 
 | Fichier          | Description                                                  |
@@ -272,6 +284,8 @@ ML-6-ONNX (interopérabilité)
 ML-7-Recommendation (systèmes de recommandation)
     |
 ML-8-Clustering (clustering non-supervisé)
+    |
+ML-9-Anomaly-Detection (détection d'anomalies)
 ```
 
 **Note** : Les notebooks ML-5, ML-6, ML-7 présentent les fonctionnalités récentes de ML.NET (2024-2025) et sont conçus comme références pédagogiques. Certains exemples nécessitent des modèles ou services externes pour une exécution complète.
