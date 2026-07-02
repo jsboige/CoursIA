@@ -1,0 +1,68 @@
+---
+title: "CoursIA — Apprendre l'IA par la pratique"
+subtitle: "Notebooks interactifs couvrant l'ensemble du spectre de l'intelligence artificielle"
+description: "CoursIA = collection de notebooks Jupyter (Python, C# .NET Interactive, Lean 4) couvrant recherche, contraintes, théorie des jeux, probabilités, ML, GenAI, et trading algorithmique."
+toc: false
+---
+
+::: {.quarto-title-banner}
+# Bienvenue sur CoursIA
+
+**Une collection de notebooks interactifs pour apprendre l'IA par la pratique — des fondements théoriques aux applications avancées.**
+
+[Parcourir les séries](MyIA.AI.Notebooks/index.qmd){.btn .btn-primary} [Lire la documentation](docs/index.qmd){.btn .btn-secondary}
+:::
+
+## Pourquoi CoursIA ?
+
+**Du concret, pas du bla-bla.** Chaque concept est illustré par un notebook exécutable, avec code, sortie, et interprétation pédagogique. Les notebooks couvrent l'ensemble du spectre de l'IA :
+
+- **Algorithmes fondamentaux** — recherche (BFS, A*, métaheuristiques), résolution de contraintes (CSP), planification
+- **Raisonnement formel** — Lean 4, Tweety (argumentation), logique, théorie des jeux
+- **Probabilités & décision** — Infer.NET, PyMC, modèles graphiques, EVPI
+- **Machine learning** — ML.NET, PPO, Decision Transformer, GNN, LSTM
+- **IA générative multimodale** — ComfyUI, Qwen 2.5-VL, Semantic Kernel, Playwright-OWUI
+- **Trading algorithmique** — QuantConnect, 50+ stratégies, Sharpe/CAGR/MaxDD
+
+## Trois langages, une plateforme
+
+| Langage | Usage | Outils |
+|---------|-------|--------|
+| **Python 3.10+** | ML, GenAI, probabilités, trading | Jupyter, Papermill, PyTorch, PyMC |
+| **C# / .NET 9** | Algorithmes, contraintes, raisonnement | .NET Interactive, ML.NET, Semantic Kernel |
+| **Lean 4** | Preuves formelles, vérification | Lake, Mathlib, REPL |
+
+## Structure du dépôt
+
+```
+MyIA.AI.Notebooks/         # Séries pédagogiques par thème (12 séries niveau 1)
+  Search/                  # Algorithmes de recherche + métaheuristiques
+  Sudoku/                  # Résolution multi-paradigme
+  ML/                      # Machine Learning (.NET C#)
+  RL/                      # Reinforcement Learning (Python)
+  GameTheory/              # Théorie des jeux + Lean (Arrow, Sen)
+  GenAI/                   # IA générative multimodale (image, audio, texte)
+  Probas/                  # Probabilités (Infer.NET, PyMC)
+  SymbolicAI/              # Lean, Tweety, SemanticWeb, Planning
+  QuantConnect/            # Trading algorithmique (27 notebooks + 50 stratégies)
+  CaseStudies/             # Études de cas transverses
+  IIT/                     # Integrated Information Theory (PyPhi)
+  SemanticKernel/          # SDK Microsoft Semantic Kernel
+docs/                      # Documentation projet (règles, harnais, références)
+```
+
+## Comment commencer ?
+
+Trois parcours certifiés selon votre niveau — voir [PARCOURS.md](parcours.qmd) :
+
+1. **Local sobre** — Python + Jupyter uniquement, sans GPU, sans Docker. Idéal pour démarrer.
+2. **ML.NET + Symbolic** — Ajout de .NET Interactive pour les algorithmes C# et Lean 4.
+3. **GenAI complet** — Inclut Docker (ComfyUI, Qwen), GPU RTX 3090, services cloud.
+
+## Catalogue vivant
+
+L'inventaire exhaustif (nombre exact de notebooks par série, statut READY/DEMO, maturité PRODUCTION/BETA) vit dans [`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md). Ce catalogue est régénéré automatiquement chaque jour : il fait foi sur les chiffres et les statuts, ce site en donne la vue d'ensemble pédagogique.
+
+## Licence
+
+MIT — voir [LICENSE](LICENSE).

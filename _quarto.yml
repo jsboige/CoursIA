@@ -1,0 +1,57 @@
+project:
+  type: site
+  output-dir: _site
+  render:
+    - "*.qmd"
+    - "MyIA.AI.Notebooks/index.qmd"
+    - "docs/index.qmd"
+
+site:
+  title: "CoursIA"
+  description: "Apprendre l'intelligence artificielle par la pratique, des fondements théoriques aux applications avancées."
+  site-url: https://jsboige.github.io/CoursIA
+  repo-url: https://github.com/jsboige/CoursIA
+  repo-actions: [edit, issue]
+  page-navigation: true
+  favicon: "favicon.ico"
+  search: true
+  back-to-top-navigation: true
+
+  navbar:
+    title: "CoursIA"
+    left:
+      - href: index.qmd
+        text: "Accueil"
+      - href: MyIA.AI.Notebooks/index.qmd
+        text: "Notebooks"
+      - href: docs/index.qmd
+        text: "Documentation"
+      - href: parcours.qmd
+        text: "Parcours"
+    right:
+      - icon: github
+        href: https://github.com/jsboige/CoursIA
+
+format:
+  html:
+    theme:
+      - cosmo
+      - brand
+    css: styles.css
+    toc: true
+    toc-depth: 3
+    code-link: true
+    code-fold: false
+    code-overflow: wrap
+    smooth-scroll: true
+    lang: fr
+
+lang: fr
+
+execute:
+  freeze: auto
+  cache: true
+  echo: false
+  warning: false
+
+notebook-preview: false
