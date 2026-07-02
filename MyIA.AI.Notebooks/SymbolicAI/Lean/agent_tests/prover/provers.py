@@ -18,7 +18,7 @@ from .state import ProofState, SorryContext, ProofPhase, PHASE_TRANSITIONS, Tact
 from .lean_utils import (
     extract_sorry_block, get_goal_state, verify_sorry_replacement,
     extract_hypotheses, extract_local_lemmas, build_def_type_warnings,
-    is_honest_sorry, sorry_is_in_statement,
+    is_honest_sorry, sorry_is_in_statement, count_real_sorries,
 )
 from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools, DiagnosisTools
 from .agents import (
@@ -325,7 +325,7 @@ class MultiAgentSorryProver:
 
         # Read original content
         original_content = Path(filepath).read_text(encoding="utf-8")
-        original_sorry_count = original_content.count("sorry")
+        original_sorry_count = count_real_sorries(original_content)
 
         # Auto-detect actual sorry line — exclude lines where "sorry" appears
         # only inside comments. A line is "sorry inside comment" when:
@@ -673,7 +673,7 @@ class MultiAgentSorryProver:
             # that work instead of throwing it away. The agent is then free
             # to resume from that partial state in a future run.
             total_s = time.time() - session_start
-            final_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
+            final_sorry = count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
             structural_progress = False
             # Default value so the success check after finally always has it,
             # even if an exception is raised mid-block before the verify runs.
@@ -936,7 +936,7 @@ class AutonomousProver:
         from agent_framework import Agent
 
         original_content = Path(filepath).read_text(encoding="utf-8")
-        original_sorry_count = original_content.count("sorry")
+        original_sorry_count = count_real_sorries(original_content)
 
         # Auto-detect actual sorry line — pick NEAREST to configured line
         actual_sorry_lines = [
@@ -1199,7 +1199,7 @@ class AutonomousProver:
                 self._update_state_from_response(state, response_text, proof_tactics_found)
 
                 # Auto-compile after each iteration
-                current_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
+                current_sorry = count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
                 compile_str = tactic_tools.compile()
                 try:
                     compile_data = json.loads(compile_str)
@@ -1403,7 +1403,7 @@ class AutonomousProver:
             print(f"  Autonomous session error: {e}")
 
         total_s = (datetime.now() - state.start_time).total_seconds()
-        final_sorry = Path(filepath).read_text(encoding="utf-8").count("sorry")
+        final_sorry = count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
 
         # Restore best state if worse — but validate first (P2, V5).
         # best_content was captured when sorry decreased AND build passed,

@@ -17,6 +17,7 @@ from typing import Optional, Dict, List
 from .state import ProofState, TacticAttempt, SorryContext
 from .trace import TraceLogger
 from .knowledge import ProofKnowledgeBase
+from .lean_utils import count_real_sorries
 
 # Regex to detect standalone `axiom` declarations in Lean 4 source.
 # Matches lines like `axiom foo`, `axiom bar : Prop`, `axiom baz (n : Nat) : ...`
@@ -1036,7 +1037,7 @@ class TacticTools:
             # provers.run_session / workflow P1 latch.
             _content = Path(self._filepath).read_text(encoding="utf-8")
             sorry_count = max(
-                _content.count("sorry"),
+                count_real_sorries(_content),
                 _count_sorries_from_build_output(result.get("raw_output", "")),
             )
             self._record_sorry_count(sorry_count)
@@ -1075,7 +1076,7 @@ class TacticTools:
             # file_replace, build-aware (see the success-path note above).
             _content = Path(self._filepath).read_text(encoding="utf-8")
             current_sorry = max(
-                _content.count("sorry"),
+                count_real_sorries(_content),
                 _count_sorries_from_build_output(raw_output),
             )
             self._record_sorry_count(current_sorry)
@@ -1086,8 +1087,8 @@ class TacticTools:
         # If the edit reduced sorry count but introduced non-sorry errors,
         # preserve the progress rather than throwing it away.
         current_content = Path(self._filepath).read_text(encoding="utf-8")
-        current_sorry_count = current_content.count("sorry")
-        original_sorry_count = original_content.count("sorry")
+        current_sorry_count = count_real_sorries(current_content)
+        original_sorry_count = count_real_sorries(original_content)
         if current_sorry_count < original_sorry_count and non_sorry_errors:
             # Progress made but with non-sorry errors — log but don't revert.
             # Update best snapshot if this is an improvement.
@@ -1254,7 +1255,7 @@ class TacticTools:
                                    "replaced_lines": f"{start}-{end}"},
                                   ensure_ascii=False)
 
-            sorry_count = new_file_content.count("sorry")
+            sorry_count = count_real_sorries(new_file_content)
 
             # Axiom guard: block edits that introduce new `axiom` declarations.
             # The prover can game sorry_guard by replacing `lemma foo := by sorry`
@@ -1452,7 +1453,7 @@ class TacticTools:
 
             Path(self._filepath).write_text(new_file_content, encoding="utf-8")
 
-            sorry_count = new_file_content.count("sorry")
+            sorry_count = count_real_sorries(new_file_content)
             if self._trace:
                 self._trace.log(
                     agent="TacticTools", role="tool",
@@ -1564,7 +1565,7 @@ class TacticTools:
                                    "replaced": old_line.strip()},
                                   ensure_ascii=False)
 
-            sorry_count = new_content.count("sorry")
+            sorry_count = count_real_sorries(new_content)
 
             # Axiom guard: block edits that introduce new `axiom` declarations.
             new_axiom_count = _count_axiom_declarations(new_content)
@@ -1784,7 +1785,7 @@ class TacticTools:
                 errors.append({"line": int(m.group(1)), "message": m.group(2)})
 
         content = Path(self._filepath).read_text(encoding="utf-8")
-        text_sorry_count = content.count("sorry")
+        text_sorry_count = count_real_sorries(content)
         build_sorry_count = _count_sorries_from_build_output(raw_output)
         sorry_count = max(text_sorry_count, build_sorry_count)
         implicit_sorry = build_sorry_count - text_sorry_count
@@ -1919,7 +1920,7 @@ class TacticTools:
         # 2026-06-23) and expose the raw probe verdict as `probe_compiles` so
         # decomposition-style tactics still see that their edit builds.
         probe_compiles = bool(result["success"])
-        original_count = (self._sorry_ctx.full_file.count("sorry")
+        original_count = (count_real_sorries(self._sorry_ctx.full_file)
                           if self._sorry_ctx.full_file else -1)
         sorry_eliminated = (probe_compiles and sorry_count >= 0
                             and original_count >= 0
@@ -1962,7 +1963,7 @@ class TacticTools:
         indent_str = " " * indent
         replacement_lines = [indent_str + l.strip() for l in tactic.strip().split("\n") if l.strip()]
         new_lines = lines[:sorry_idx] + replacement_lines + lines[sorry_idx + 1:]
-        return "\n".join(new_lines).count("sorry")
+        return count_real_sorries("\n".join(new_lines))
 
     @property
     def best_sorry_count(self) -> int:
@@ -2542,8 +2543,8 @@ class DiagnosisTools:
             current = Path(self._filepath).read_text(encoding="utf-8")
         except OSError as e:
             return json.dumps({"error": f"Cannot read file: {e}"})
-        current_count = current.count("sorry")
-        original_count = self._original_content.count("sorry") if self._original_content else current_count
+        current_count = count_real_sorries(current)
+        original_count = count_real_sorries(self._original_content) if self._original_content else current_count
         delta = current_count - original_count
         return json.dumps({
             "current_sorry_count": current_count,

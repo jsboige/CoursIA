@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from prover import DEMOS, PROVED_DEMOS, TraceLogger
 from prover.provers import MultiAgentSorryProver, AutonomousProver
 from prover.config import create_client
+from prover.lean_utils import count_real_sorries
 
 TRACES_DIR = Path(__file__).parent / "traces"
 TRACES_DIR.mkdir(exist_ok=True)
@@ -56,7 +57,7 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         sys.exit(1)
 
     original = Path(filepath).read_text(encoding="utf-8")
-    original_sorry = original.count("sorry")
+    original_sorry = count_real_sorries(original)
     print(f"Target: {name}")
     print(f"  File: {filepath} (line {line})")
     print(f"  Mode: {mode}, Iterations: {iterations}")
@@ -70,8 +71,8 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     # curation — or any direct --file/--line target that is already clean — would
     # otherwise still spawn a full multi-agent run for zero work (the forensic
     # "already-solved schedule" pathology). A count of 0 is a SAFE skip signal:
-    # str.count("sorry") only ever OVER-counts (it also matches comments/strings),
-    # so == 0 guarantees there is genuinely nothing to prove and can never skip a
+    # count_real_sorries strips comments/docstrings and word-bounds the token, so
+    # == 0 guarantees there is genuinely nothing to prove and can never skip a
     # live target. (count > 0 still spawns the prover, exactly as before.)
     if original_sorry == 0:
         print(f"Already solved: 0 sorry in {filepath} — skipping prover spawn.")
@@ -130,7 +131,7 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     elapsed = time.time() - start
 
     final = Path(filepath).read_text(encoding="utf-8")
-    final_sorry = final.count("sorry")
+    final_sorry = count_real_sorries(final)
 
     # Forensic #1453 (2026-07-02): a run's outcome was scattered across 4 fields
     # (result.status, sorry_delta, structural_progress, error) and every consumer

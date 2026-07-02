@@ -67,9 +67,10 @@ def count_real_sorries(content: str) -> int:
     ``/- -/`` blocks, the word-bounded token catches every real form
     (``exact sorry``, ``:= sorry``, bare ``sorry``, ``sorry -- comment``).
 
-    Reporting/diagnostic use only for now: the success gates keep the legacy
-    substring counter so their deltas stay consistent with the snapshot
-    counters in tools.py (migrating ALL counters at once = FX-7 follow-up).
+    Used everywhere a sorry tally is needed (FX-7, #1453): success gates,
+    snapshot counters in tools.py, and run_prover_bg reporting all call this
+    so their deltas stay consistent — the legacy substring counter was retired
+    repo-wide in one pass to avoid mixed-counter drift.
     """
     return len(_SORRY_TOKEN_RE.findall(strip_lean_comments(content)))
 
@@ -942,8 +943,8 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             # re-introducing one, e.g. a returned `simp; sorry`).
             real_has_error = bool(re.search(r"\berror:", real_output))
             implicit_sorry = "declaration uses 'sorry'" in real_output
-            sorry_dropped = (new_content.count("sorry")
-                             < original_content.count("sorry"))
+            sorry_dropped = (count_real_sorries(new_content)
+                             < count_real_sorries(original_content))
             if real_has_error or implicit_sorry or not sorry_dropped:
                 Path(filepath).write_text(original_content, encoding="utf-8", newline="")
                 is_success = False
