@@ -74,6 +74,68 @@ def count_real_sorries(content: str) -> int:
     return len(_SORRY_TOKEN_RE.findall(strip_lean_comments(content)))
 
 
+_DECL_START_RE = re.compile(
+    r"^\s*(?:@\[[^\]]*\]\s*)?"
+    r"(?:private\s+|protected\s+|noncomputable\s+|partial\s+|unsafe\s+)*"
+    r"(?:theorem|lemma|def|instance|example|abbrev|structure|inductive|"
+    r"class|opaque)\b"
+)
+
+
+def sorry_is_in_statement(content: str, sorry_line: int) -> bool:
+    """True when the sorry at ``sorry_line`` sits INSIDE its declaration's
+    statement — i.e. BEFORE the first ``:=`` of the enclosing declaration
+    (FX-6b, #1453).
+
+    Such a hole is a SPECIFICATION gap, not a proof obligation: "filling" it
+    rewrites the theorem itself (founding incident: Reidemeister.lean L545,
+    ``sorry -- ambient_isotopic k₁ k₂`` inside an Iff statement, rewritten
+    to the RHS producing a vacuous X ↔ X). No prover run can honestly close
+    it — the decision of WHAT the statement says belongs to a human.
+
+    Deliberately conservative (never blocks a legitimate run):
+    - sorry only inside a comment on the target line → False
+    - no enclosing declaration found → False
+    - no ``:=`` in the declaration (match-syntax ``| pat =>`` bodies)
+      → False (a sorry in the TYPE of a match-syntax def is the accepted
+      residual false-negative; none exists in the repo)
+    - a ``:=`` inside a ``/- -/`` block comment or a default-value binder
+      ``(h : T := v)`` before the real one → False (residual, documented)
+
+    ``--`` line comments ARE stripped per-line before the structural scan.
+    """
+    lines = content.split("\n")
+    if not (1 <= sorry_line <= len(lines)):
+        return False
+
+    def _code(line: str) -> str:
+        return line.split("--", 1)[0]
+
+    m_sorry = _SORRY_TOKEN_RE.search(_code(lines[sorry_line - 1]))
+    if m_sorry is None:
+        return False
+
+    decl_idx = None
+    for i in range(sorry_line - 1, -1, -1):
+        if _DECL_START_RE.match(_code(lines[i])):
+            decl_idx = i
+            break
+    if decl_idx is None:
+        return False
+
+    for j in range(decl_idx, len(lines)):
+        if j > decl_idx and _DECL_START_RE.match(_code(lines[j])):
+            return False  # next declaration reached without any ':='
+        col = _code(lines[j]).find(":=")
+        if col >= 0:
+            if j < sorry_line - 1:
+                return False  # ':=' above the sorry line → sorry in the body
+            if j == sorry_line - 1:
+                return m_sorry.start() < col  # same line: position decides
+            return True  # ':=' below the sorry line → sorry in the statement
+    return False
+
+
 def is_honest_sorry(filepath: str, sorry_line: int,
                     lookback: int = 12) -> Tuple[bool, str]:
     """Check whether the sorry at `sorry_line` is documented as intentionally

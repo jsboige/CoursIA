@@ -749,6 +749,43 @@ class VerifyExecutor(Executor):
             await ctx.send_message(msg)
             return
 
+        # FX-6b (#1453): defense-in-depth against the latch+proof_found hole
+        # (po-2026 post-merge review of #4909). The in-place latch below and
+        # verify_sorry_replacement both set msg.proof_found=True WITHOUT
+        # touching state.tactic_history, and proof_found is a standalone OR
+        # disjunct in the success gates — so a statement-mutation that fires
+        # either path would bypass both the verified_tactic_count check and
+        # _stmt_mutation_guard (which requires NOT proof_found). A sorry that
+        # sits INSIDE its declaration's statement can never be honestly
+        # proved: refuse the verify outright. The provers.py entry refusal
+        # normally catches this before any agent runs; this covers direct
+        # workflow entries.
+        try:
+            from .lean_utils import sorry_is_in_statement as _fx6b_in_stmt
+            _fx6b_src = getattr(self._sorry_ctx, "full_file", "") or ""
+            if _fx6b_src and _fx6b_in_stmt(
+                    _fx6b_src, self._sorry_ctx.sorry_line):
+                msg.error = (
+                    "IN_STATEMENT_SORRY: the target sorry is inside the "
+                    "declaration statement (before its ':='); filling it is "
+                    "a specification decision, not a proof (FX-6b)."
+                )
+                msg.error_type = "in_statement_sorry"
+                if self._trace:
+                    self._trace.log(
+                        agent="VerifyExecutor", role="fx6b_guard",
+                        content=msg.error,
+                    )
+                await ctx.yield_output(msg)
+                return
+        except Exception as _fx6b_err:
+            if self._trace:
+                self._trace.log(
+                    agent="VerifyExecutor", role="fx6b_guard_error",
+                    content=(f"in-statement check failed, falling through: "
+                             f"{_fx6b_err}"),
+                )
+
         # P1 latch-success (Epic #1453, 2026-05-23 forensic): detect the case
         # where TacticAgent has ALREADY proved the target in-place before this
         # verify runs. tools.file_replace_lines edits the REAL target file on
