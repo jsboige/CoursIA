@@ -46,7 +46,7 @@ Development  →  Staging  →  Production
 
 - ✅ Environnement configuré ([`00-1-Environment-Setup.ipynb`](00-GenAI-Environment/00-1-Environment-Setup.ipynb))
 - ✅ APIs validées ([`00-4-Environment-Validation.ipynb`](00-GenAI-Environment/00-4-Environment-Validation.ipynb))
-- ✅ Tests passés (voir [TROUBLESHOOTING.md](TROUBLESHOOTING.md))
+- ✅ Tests passés (voir [TROUBLESHOOTING.md (archive)](../../docs/archive/suivis/genai-image/TROUBLESHOOTING.md))
 - ✅ Budget configuré (alertes activées)
 - ✅ Monitoring en place
 
