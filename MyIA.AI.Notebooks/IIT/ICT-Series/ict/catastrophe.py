@@ -46,7 +46,7 @@ Numpy uniquement (racines via ``numpy.roots``), comme le reste du package leger
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -271,3 +271,120 @@ def lead_error(p_hat: np.ndarray, target: np.ndarray, lead: int) -> float:
     if lead <= 0:
         return float(np.mean((p - t) ** 2))
     return float(np.mean((p[:-lead] - t[lead:]) ** 2))
+
+
+# --------------------------------------------------------------------------- #
+#  Durcissement de p_hat (cran 10.1, #4588) : familles de trajectoires,       #
+#  baselines adverses, banc de mesure aux deux metriques separees             #
+# --------------------------------------------------------------------------- #
+
+
+def moving_average_tracker(observation: np.ndarray, window: int = 5) -> np.ndarray:
+    """Baseline **lissage** : moyenne mobile causale sur ``window`` points.
+
+    Ne regarde que le passe (``obs[t-window+1 .. t]``) : elle debruite mais
+    **retarde** — sur une rampe, elle est systematiquement en dessous. Sert
+    d'adversaire « lisse » a ``p_hat`` : si l'anticipation ne bat pas un simple
+    lissage, elle n'apporte rien.
+    """
+    obs = np.asarray(observation, dtype=float)
+    w = int(window)
+    out = np.empty_like(obs)
+    for k in range(obs.shape[0]):
+        lo = max(0, k - w + 1)
+        out[k] = float(obs[lo : k + 1].mean())
+    return out
+
+
+def ar1_coefficient(observation: np.ndarray) -> float:
+    """Coefficient AR(1) ``phi`` ajuste par moindres carres sur la serie centree.
+
+    ``phi = <x[t] x[t-1]> / <x[t-1]^2>`` avec ``x = obs - mean(obs)``. C'est
+    l'estimateur Yule-Walker au premier ordre.
+    """
+    obs = np.asarray(observation, dtype=float)
+    x = obs - obs.mean()
+    num = float(np.dot(x[1:], x[:-1]))
+    den = float(np.dot(x[:-1], x[:-1])) + 1e-12
+    return num / den
+
+
+def ar1_tracker(observation: np.ndarray, lead: int = 1) -> np.ndarray:
+    """Baseline **autoregressive** : prediction AR(1) a l'horizon ``lead``.
+
+    ``p_hat[t] = mu + phi^lead * (obs[t] - mu)`` — retour geometrique vers la
+    moyenne. ``phi`` est ajuste **in-sample sur la serie complete** : la
+    baseline voit des donnees que ``p_hat`` ne voit pas, elle est donc
+    volontairement *avantagee* (adversaire severe, pas homme de paille).
+    """
+    obs = np.asarray(observation, dtype=float)
+    mu = float(obs.mean())
+    phi = ar1_coefficient(obs)
+    return mu + (phi ** int(lead)) * (obs - mu)
+
+
+def prey_trajectory(
+    kind: str,
+    n_steps: int = 300,
+    noise: float = 0.10,
+    rng: Optional[np.random.Generator] = None,
+    drift: float = 0.02,
+) -> np.ndarray:
+    """Trois familles de trajectoires de proie, aux cinematiques opposees.
+
+    * ``"sinus"``   — periodique lisse bruitee : **inertie exploitable** par une
+      extrapolation de vitesse (le regime du claim initial d'ICT-10).
+    * ``"derive"``  — marche aleatoire a derive ``drift`` : l'increment est du
+      bruit, la « vitesse » estimee n'est que du bruit amplifie.
+    * ``"creneau"`` — onde carree bruitee (rebond) : discontinuites que nulle
+      extrapolation de vitesse ne peut anticiper (la vitesse EMA sur-reagit au
+      saut et depasse la cible).
+
+    Un banc honnete doit croiser les trois : un seul regime ne peut crediter
+    l'anticipation *en general* (gate du cran 10.1, #4588).
+    """
+    if rng is None:
+        rng = np.random.default_rng(7)
+    n = int(n_steps)
+    t = np.linspace(0.0, 8.0 * np.pi, n)
+    if kind == "sinus":
+        return np.sin(t) + noise * rng.standard_normal(n)
+    if kind == "derive":
+        return np.cumsum(drift + noise * rng.standard_normal(n))
+    if kind == "creneau":
+        return np.sign(np.sin(t / 2.0)) + noise * rng.standard_normal(n)
+    raise ValueError(f"famille de trajectoire inconnue : {kind!r}")
+
+
+def anticipation_report(
+    observation: np.ndarray,
+    lead: int = 4,
+    alpha: float = 0.25,
+    window: int = 5,
+    max_lag: int = 10,
+) -> Dict[str, Dict[str, float]]:
+    """Banc de mesure de l'anticipation : ``p_hat`` contre 3 baselines adverses.
+
+    Pour chaque estimateur (``p_hat``, ``persistance``, ``moyenne_mobile``,
+    ``ar1``), renvoie les **deux metriques separees** que le recit initial
+    fusionnait : ``erreur`` (quadratique moyenne a l'horizon ``lead``) et
+    ``pic_lag`` (lag du pic de correlation croisee). Elles peuvent **diverger**
+    — un pic de lag flatteur avec une erreur pire est exactement le fantome
+    statistique que la serie s'engage a debusquer. A reporter **par famille**
+    de trajectoire, jamais agrege (gates du cran 10.1, #4588).
+    """
+    obs = np.asarray(observation, dtype=float)
+    estimateurs = {
+        "p_hat": constant_velocity_tracker(obs, lead=lead, alpha=alpha),
+        "persistance": persistence_tracker(obs),
+        "moyenne_mobile": moving_average_tracker(obs, window=window),
+        "ar1": ar1_tracker(obs, lead=lead),
+    }
+    rapport: Dict[str, Dict[str, float]] = {}
+    for nom, est in estimateurs.items():
+        lags, corr = cross_correlation(est, obs, max_lag=max_lag)
+        rapport[nom] = {
+            "erreur": lead_error(est, obs, lead),
+            "pic_lag": peak_lag(lags, corr),
+        }
+    return rapport
