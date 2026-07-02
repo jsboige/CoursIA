@@ -18,7 +18,7 @@ from .state import ProofState, SorryContext, ProofPhase, PHASE_TRANSITIONS, Tact
 from .lean_utils import (
     extract_sorry_block, get_goal_state, verify_sorry_replacement,
     extract_hypotheses, extract_local_lemmas, build_def_type_warnings,
-    is_honest_sorry,
+    is_honest_sorry, sorry_is_in_statement,
 )
 from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools, DiagnosisTools
 from .agents import (
@@ -174,6 +174,43 @@ def _refuse_honest_sorry(filepath: str, sorry_line: int,
             "filepath": filepath,
         }
     return None
+
+
+def _refuse_in_statement_sorry(filepath: str, sorry_line: int,
+                               demo_name: str) -> Optional[dict]:
+    """Return an early-fail result dict if the target sorry is IN-STATEMENT.
+
+    FX-6b (#1453): a sorry BEFORE the ``:=`` of its enclosing declaration is
+    a hole in the STATEMENT itself (e.g. Reidemeister.lean L545,
+    ``sorry -- ambient_isotopic k₁ k₂`` inside an Iff). No run can honestly
+    close it: any "fix" mutates the theorem — exactly the false-success
+    family the FX-6 gate catches downstream. Refusing here saves the whole
+    run (~190-2600s observed) instead of looping to the iteration cap.
+    Mirrors the shape of ``_refuse_honest_sorry``. Returns None when the
+    file is unreadable (the run proceeds; downstream guards still apply).
+    """
+    try:
+        content = Path(filepath).read_text(encoding="utf-8")
+    except OSError:
+        return None
+    if not sorry_is_in_statement(content, sorry_line):
+        return None
+    msg = (
+        f"REFUSED: sorry at {filepath}:{sorry_line} is INSIDE the declaration "
+        f"statement (before its ':='). Filling it is a specification "
+        f"decision, not a proof — a human must decide what the statement "
+        f"says. (FX-6b, founding incident Reidemeister.lean L545)"
+    )
+    print(f"\n{'!'*70}\n{msg}\n{'!'*70}\n")
+    return {
+        "success": False,
+        "skipped": True,
+        "reason": "in_statement_sorry",
+        "detail": msg,
+        "demo": demo_name,
+        "sorry_line": sorry_line,
+        "filepath": filepath,
+    }
 
 
 def _autonomous_success_gate(final_sorry: int, original_sorry_count: int,
@@ -349,6 +386,12 @@ class MultiAgentSorryProver:
         intractable = _refuse_intractable(filepath, sorry_line, demo["name"])
         if intractable is not None:
             return intractable
+
+        # FX-6b (#1453): refuse in-statement sorrys BEFORE spinning up agents
+        # — a specification hole cannot be proved, only mutated.
+        in_stmt = _refuse_in_statement_sorry(filepath, sorry_line, demo["name"])
+        if in_stmt is not None:
+            return in_stmt
 
         print(f"\n{'='*70}")
         print(f"MULTI-AGENT PROVER: {demo['name']}")
@@ -939,6 +982,12 @@ class AutonomousProver:
         intractable = _refuse_intractable(filepath, sorry_line, demo["name"])
         if intractable is not None:
             return intractable
+
+        # FX-6b (#1453): refuse in-statement sorrys BEFORE spinning up the
+        # agent — a specification hole cannot be proved, only mutated.
+        in_stmt = _refuse_in_statement_sorry(filepath, sorry_line, demo["name"])
+        if in_stmt is not None:
+            return in_stmt
 
         print(f"\n{'='*70}")
         print(f"AUTONOMOUS PROVER: {demo['name']}")

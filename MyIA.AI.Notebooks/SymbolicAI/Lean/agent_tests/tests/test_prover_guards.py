@@ -1620,3 +1620,156 @@ def test_strip_lean_comments_preserves_code():
     assert "tail comment" not in stripped
     assert "spanning lines" not in stripped
     assert "theorem t : 1 + 1 = 2 := by norm_num" in stripped
+
+
+# --- FX-6b (#1453): sorry_is_in_statement + in-statement entry refusal ------
+# The latch (workflow.py) and verify_sorry_replacement both set
+# proof_found=True without touching tactic_history, and proof_found is a
+# standalone OR disjunct in the success gates (po-2026 post-merge review of
+# #4909). An in-statement sorry "closed" through either path is a statement
+# mutation the FX-6 gate cannot see. The fix is upstream: such a hole is a
+# SPECIFICATION gap, refused before any agent runs.
+
+REIDEMEISTER_L545_SHAPE = (
+    "import Mathlib.Tactic\n"                                        # 1
+    "\n"                                                             # 2
+    "def KnotEquiv (a b : Nat) : Prop := a = b\n"                    # 3
+    "\n"                                                             # 4
+    "theorem reidemeister_theorem :\n"                               # 5
+    "    ∀ (k₁ k₂ : Nat),\n"                          # 6
+    "      -- Ambient isotopy of the embeddings\n"                   # 7
+    "      sorry -- ambient_isotopic k₁ k₂\n"              # 8  <- in-statement
+    "      ↔\n"                                                 # 9
+    "      KnotEquiv k₁ k₂ := by\n"                        # 10 <- first ':='
+    "  exact sorry\n"                                                # 11 <- in-body
+)
+
+
+def test_in_statement_detected_on_reidemeister_shape():
+    from prover.lean_utils import sorry_is_in_statement
+
+    assert sorry_is_in_statement(REIDEMEISTER_L545_SHAPE, 8) is True
+
+
+def test_in_body_sorry_of_same_declaration_not_flagged():
+    from prover.lean_utils import sorry_is_in_statement
+
+    assert sorry_is_in_statement(REIDEMEISTER_L545_SHAPE, 11) is False
+
+
+def test_same_line_sorry_after_assign_is_body():
+    from prover.lean_utils import sorry_is_in_statement
+
+    content = "theorem foo : 1 + 1 = 2 := by sorry\n"
+    assert sorry_is_in_statement(content, 1) is False
+
+
+def test_same_line_sorry_before_assign_is_statement():
+    from prover.lean_utils import sorry_is_in_statement
+
+    content = "def x : sorry := trivial\n"
+    assert sorry_is_in_statement(content, 1) is True
+
+
+def test_match_syntax_body_without_assign_not_flagged():
+    from prover.lean_utils import sorry_is_in_statement
+
+    content = (
+        "def f : Nat → Nat\n"
+        "  | 0 => sorry\n"
+        "  | _ => 1\n"
+    )
+    assert sorry_is_in_statement(content, 2) is False
+
+
+def test_sorry_only_in_comment_on_target_line_not_flagged():
+    from prover.lean_utils import sorry_is_in_statement
+
+    content = (
+        "theorem t :\n"
+        "    -- sorry, this comment mentions it\n"
+        "    1 + 1 = 2 := by norm_num\n"
+    )
+    assert sorry_is_in_statement(content, 2) is False
+
+
+def test_attribute_and_modifiers_above_declaration_handled():
+    from prover.lean_utils import sorry_is_in_statement
+
+    content = (
+        "@[simp]\n"
+        "private noncomputable def g :\n"
+        "    sorry := by\n"
+        "  trivial\n"
+    )
+    # ':=' is on line 3 at a column AFTER the sorry token -> statement
+    assert sorry_is_in_statement(content, 3) is True
+
+
+def test_line_comment_assign_is_ignored_in_scan():
+    from prover.lean_utils import sorry_is_in_statement
+
+    content = (
+        "theorem t :\n"
+        "    -- fake := in a comment\n"
+        "    sorry\n"
+        "    ↔ True := by\n"
+        "  exact sorry\n"
+    )
+    assert sorry_is_in_statement(content, 3) is True
+
+
+def test_out_of_range_line_not_flagged():
+    from prover.lean_utils import sorry_is_in_statement
+
+    assert sorry_is_in_statement("theorem t : True := by sorry\n", 99) is False
+    assert sorry_is_in_statement("", 1) is False
+
+
+def test_no_enclosing_declaration_not_flagged():
+    from prover.lean_utils import sorry_is_in_statement
+
+    content = "-- orphan\nsorry\n"
+    assert sorry_is_in_statement(content, 2) is False
+
+
+def test_next_declaration_bounds_the_scan():
+    from prover.lean_utils import sorry_is_in_statement
+
+    # decl A uses match syntax (no ':='); decl B below has one. The scan
+    # must stop at decl B and NOT attribute B's ':=' to A's sorry.
+    content = (
+        "def f : Nat → Nat\n"
+        "  | 0 => sorry\n"
+        "theorem t : True := by trivial\n"
+    )
+    assert sorry_is_in_statement(content, 2) is False
+
+
+def test_refuse_in_statement_sorry_returns_skip_dict(tmp_path):
+    from prover.provers import _refuse_in_statement_sorry
+
+    f = tmp_path / "Reid.lean"
+    f.write_text(REIDEMEISTER_L545_SHAPE, encoding="utf-8")
+    result = _refuse_in_statement_sorry(str(f), 8, "demo-reid")
+    assert result is not None
+    assert result["success"] is False
+    assert result["skipped"] is True
+    assert result["reason"] == "in_statement_sorry"
+    assert result["sorry_line"] == 8
+    assert result["demo"] == "demo-reid"
+
+
+def test_refuse_in_statement_sorry_none_for_body_sorry(tmp_path):
+    from prover.provers import _refuse_in_statement_sorry
+
+    f = tmp_path / "Reid.lean"
+    f.write_text(REIDEMEISTER_L545_SHAPE, encoding="utf-8")
+    assert _refuse_in_statement_sorry(str(f), 11, "demo-reid") is None
+
+
+def test_refuse_in_statement_sorry_none_when_file_missing(tmp_path):
+    from prover.provers import _refuse_in_statement_sorry
+
+    missing = tmp_path / "nope.lean"
+    assert _refuse_in_statement_sorry(str(missing), 8, "demo") is None
