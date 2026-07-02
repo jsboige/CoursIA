@@ -113,6 +113,6 @@ L'assistant rapporte des Sharpes **inflationnes** car :
 
 - Issue #1195 : contexte + protocole + matrice delegation
 - `feedback_qc_assistants_preferred.md` : methode preferee QC Cloud Assistants
-- `docs/quantconnect.md` : configuration MCP Docker + regles QC
+- `docs/qc/quantconnect.md` : configuration MCP Docker + regles QC
 - `docs/ml-trading-state.md` : 7 disciplines ML trading
 - Portfolio IBKR-Binance-Hybrid : validation Phase 1 (deployment A-8ad2fb)

@@ -69,7 +69,7 @@ The runner is designed for CI/CD:
 
 - **QuantConnect notebooks**: Only 5 tickers have data locally (SPY, QQQ, AAPL, GOOGL, IWM).
   Crypto and sector ETF notebooks will fail with empty data errors.
-  Full data requires QC Cloud backend (see `docs/quantconnect.md`).
+  Full data requires QC Cloud backend (see `docs/qc/quantconnect.md`).
 - **Lean 4 notebooks**: Require `lean4` kernel installed in the image. WSL-specific notebooks
   (kernel `lean4-wsl`) may need path adjustments.
 - **GPU notebooks**: No GPU support in this runner. GenAI notebooks requiring GPU
