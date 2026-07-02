@@ -154,7 +154,13 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     trace_path = trace.save(trace_name)
 
     print(f"\n{'='*60}")
-    print(f"RESULT: {result.get('status', 'unknown')}")
+    # FX-9 (#1453, ai-01 L2536 harvest): the prover result dict carries a
+    # boolean ``success`` field, not a string ``status`` field — reading the
+    # latter always fell through to the ``unknown`` default. Derive the
+    # SUCCESS/FAILED label from the boolean to match the prover's own internal
+    # RESULT line (provers.py:880/1580).
+    _success = bool(result.get("success")) if isinstance(result, dict) else False
+    print(f"RESULT: {'SUCCESS' if _success else 'FAILED'}")
     print(f"  Verdict: {result_kind}")
     print(f"  Sorry: {original_sorry} → {final_sorry}")
     _actual_iters = result.get("iterations") if isinstance(result, dict) else None

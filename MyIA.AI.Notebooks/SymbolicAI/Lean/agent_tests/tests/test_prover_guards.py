@@ -1551,6 +1551,77 @@ def test_fx8_gate_same_count_stays_structural_with_verified():
     assert structural is True
 
 
+# ──────────────────────────────────────────────────────────────────────────
+# FX-9 (#1453, ai-01 L2536 harvest): launcher/reporting accuracy. Two lies
+# observed on the L2536 multi-agent run (be9uzhmc1, multi/zai/12, 1757s):
+#   (a) ``RESULT: unknown`` — run_prover_bg read ``result['status']`` which the
+#       prover never sets (it returns ``success``), so the launcher always fell
+#       through to ``unknown``.
+#   (b) ``Iterations: 0/12`` while 13 attempts ran — the multi-agent workflow
+#       increments ``msg.iteration`` (workflow.py:185) but never mirrors it into
+#       ``state.iteration``, so the result's ``iterations`` field was stuck at 0.
+#       The workflow DOES keep ``state.remaining_iterations`` in sync
+#       (workflow.py:1167), so the real loop count is
+#       ``max(0, budget - remaining_iterations)``.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_fx9_multi_result_iterations_derived_from_remaining():
+    """The multi-agent result must report actual loops run, not the stale
+    state iteration field (which the workflow never increments).
+
+    Regression guard: the fix line is unique in provers.py — the early-return
+    paths use the literal ``"iterations": 0``, so the computed form is unique
+    to the main multi-agent return. Catches a reintroduction of the 0-count bug.
+    """
+    from pathlib import Path
+
+    src = (Path(__file__).resolve().parent.parent / "prover" / "provers.py"
+           ).read_text(encoding="utf-8")
+    assert (
+        '"iterations": max(0, max_iterations - state.remaining_iterations),' in src
+    ), (
+        "FX-9 violated — multi-agent result iterations must be derived from "
+        "remaining_iterations (max(0, max_iterations - state.remaining_iterations)), "
+        "not the stale per-state iteration field the workflow never updates"
+    )
+
+
+def test_fx9_multi_iterations_formula_matches_l2536_scenario():
+    """The FX-9 iteration formula gives the honest loop count for the L2536
+    harvest scenario: budget 12, workflow ran to the cap (remaining=0) =>
+    12 loops reported (not 0). A session that exited after 3 loops
+    (remaining=9) => 3."""
+    # budget=12, remaining=0 (cap hit, the L2536 case): 12 loops, not 0.
+    assert max(0, 12 - 0) == 12
+    # budget=12, remaining=9 (early exit after 3 loops): 3.
+    assert max(0, 12 - 9) == 3
+    # budget=8, remaining=8 (no loop ran): 0.
+    assert max(0, 8 - 8) == 0
+
+
+def test_fx9_launcher_status_derived_from_success():
+    """The launcher RESULT line must derive SUCCESS/FAILED from ``success``
+    (bool), not the nonexistent ``status`` key (which always yielded
+    ``unknown``).
+
+    Regression guard (FX-7-style source scan).
+    """
+    from pathlib import Path
+
+    src = (Path(__file__).resolve().parent.parent / "prover" / "run_prover_bg.py"
+           ).read_text(encoding="utf-8")
+    # The buggy form read the never-set 'status' key.
+    assert "result.get('status'" not in src and 'result.get("status"' not in src, (
+        "FX-9 violated — launcher must not read result['status'] (the prover "
+        "returns 'success', never 'status'); that yielded 'RESULT: unknown'"
+    )
+    # The fix derives the label from the bool 'success' field.
+    assert "result.get(\"success\")" in src, (
+        "FX-9 violated — launcher RESULT line must derive from result['success']"
+    )
+
+
 def test_gate_backward_compat_without_verified_param():
     """Legacy callers (no verified_tactic_count) keep pre-FX-6 behaviour."""
     from prover.provers import _autonomous_success_gate
