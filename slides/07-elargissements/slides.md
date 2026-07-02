@@ -16,7 +16,7 @@ Intelligence Artificielle - VII
 
 **Que signifie l'IA?**
 Quelles sont ses limites?
-Son impact reel?
+Son impact réel?
 
 ---
 
@@ -25,7 +25,7 @@ Son impact reel?
 - I. Introduction
 - II. Resolution de problemes
 - III. Bases de connaissances et logique
-- IV. Incertitude et modeles probabilistes
+- IV. Incertitude et modèles probabilistes
 - V. Apprentissage
 - VI. Traitement du langage naturel
 - **VII. Elargissements** <- *vous etes ici*
@@ -50,7 +50,7 @@ Son impact reel?
   - Peut-on formaliser l'intelligence humaine?
   - Distinction entre:
     - **IA faible**: simuler l'intelligence
-    - **IA forte**: conscience, comprehension reelle
+    - **IA forte**: conscience, comprehension réelle
 - **Grandes critiques historiques** (Turing, Dreyfus):
   - Argument de l'informalite
   - Argument du handicap
@@ -98,7 +98,7 @@ layout: dense
   - Comprehension, biais, impact, monopolisation, desinformation
 - **Limites persistantes**
   - Hallucinations, manque de "comprehension"
-  - L'IA reste incapable d'emotions ou de conscience reelle
+  - L'IA reste incapable d'emotions ou de conscience réelle
   - Autonomie simulee = meta-programmes (prompts systemes)
 
 ---
@@ -131,7 +131,7 @@ layout: dense
 
 - **Le Turing Test (1950)**
   - Objectif: Evaluer l'intelligence par une conversation convaincante
-  - Limite: Test de la "tromperie" plutot que de l'intelligence reelle
+  - Limite: Test de la "tromperie" plutot que de l'intelligence réelle
   - 2023: GPT-4 a surpasse les performances humaines, mais insuffisant pour evaluer l'AGI
   - Nouveaux criteres: Resolution de taches complexes, explicabilite, ethique
 - **La course aux benchmarks**
@@ -147,7 +147,7 @@ layout: dense
 # Machines et pensee
 
 - **Les debats philosophiques depuis Turing**
-  - Pensee simulee vs pensee reelle
+  - Pensee simulee vs pensee réelle
   - La "polite convention" (Turing): nous attribuons la pensee par convention sociale
 - **Metaphore de Dijkstra**
   - "Les machines pensent-elles?" est aussi pertinent que de demander si les sous-marins nagent
@@ -165,7 +165,7 @@ layout: dense
   - La comprehension peut emerger du systeme global (theorie des systemes)
   - Les LLMs illustrent ce debat: production coherente sans comprehension intrinseque
 - **Reflexion rapide**
-  - "Comment distinguer comprehension reelle et apparente chez une IA?"
+  - "Comment distinguer comprehension réelle et apparente chez une IA?"
 
 ---
 
@@ -173,10 +173,10 @@ layout: dense
 
 - **Definir la conscience**
   - Qualia: Les experiences subjectives (ressentir la chaleur, la douleur)
-  - Conscience comme modele de soi et du monde
+  - Conscience comme modèle de soi et du monde
 - **Global Workspace Theory (GWT)**
   - La conscience est un espace de travail ou differentes parties du cerveau partagent des informations
-  - Applications: Modeles d'attention, taches complexes
+  - Applications: Modèles d'attention, taches complexes
   - Role important de l'inconscient
 - **Integrated Information Theory (IIT)**
   - La conscience est mesuree par le degre d'integration de l'information (Phi)
@@ -271,7 +271,7 @@ layout: dense
   - Regulation: GDPR, HIPAA
   - Approches techniques: Anonymisation (k-anonymity, differential privacy)
 - **Exemples concrets**
-  - Federated learning (modele sans base de donnees centralisee)
+  - Federated learning (modèle sans base de données centralisee)
   - Deep learning confidentiel
   - Chiffrement homomorphe
   - Augmentation
@@ -281,12 +281,12 @@ layout: dense
 # Biais et equite
 
 - **Types de biais**
-  - **Biais de donnees**: minorites sous-representees
+  - **Biais de données**: minorites sous-representees
   - **Biais dans les algorithmes**: justice americaine (COMPAS), reconnaissance faciale
   - **Biais de preferences**: Exemple LLMs
 - **Solutions**
   - Oversampling des classes minoritaires (SMOTE)
-  - Transparence et documentation des donnees (data sheets)
+  - Transparence et documentation des données (data sheets)
 - **Exemple concret**
   - Inclusive Images Competition (Google/NeurIPS)
 
@@ -415,7 +415,7 @@ layout: section
 
 - **Avancees majeures**
   - Large deploiement: medecine, finance, transport, communication
-  - Deep learning: depassement des capacites humaines dans des taches specifiques
+  - Deep learning: depassement des capacités humaines dans des taches spécifiques
 - **Estimation des experts**
   - IA generale dans 10 a 100 ans
   - Trillions de dollars ajoutes a l'economie chaque annee dans la prochaine decennie
@@ -454,7 +454,7 @@ layout: section
 # Composants - Selection d'Actions
 
 - **Complexite**
-  - Plans a long terme: milliards d'etapes primitives (ex: obtenir un diplome)
+  - Plans a long terme: milliards d'étapes primitives (ex: obtenir un diplome)
   - Defis dans les environnements partiellement observables (POMDP)
 - **Progres recents**
   - Representations hierarchiques (MDP hierarchiques)
@@ -486,8 +486,8 @@ layout: dense
 - **Progres spectaculaires**
   - Vision par ordinateur, langage naturel, apprentissage par renforcement
 - **Limites**
-  - Dependance excessive a des donnees annotees massives
-  - Difficultes avec des donnees rares ou non structurees
+  - Dependance excessive a des données annotees massives
+  - Difficultes avec des données rares ou non structurees
 - **Progres recents**
   - Self-supervised learning, Apprentissage contrastif (GPT)
   - Reinforcement Learning with Human Feedback (ChatGPT)
@@ -502,15 +502,15 @@ layout: dense
 # Ressources et Infrastructures
 
 - **Evolution des infrastructures**
-  - Cloud computing pour partager des modeles prets a l'emploi
+  - Cloud computing pour partager des modèles prets a l'emploi
   - Outils de diffusion et de deploiement: HuggingFace, Azure ML
-  - Augmentation exponentielle des capacites de traitement (GPU, TPU, FPGA)
+  - Augmentation exponentielle des capacités de traitement (GPU, TPU, FPGA)
 - **Defis**
-  - Validation et gestion des donnees massives (crowdsourcing, validation par LLM)
+  - Validation et gestion des données massives (crowdsourcing, validation par LLM)
   - Conception de systemes robustes pour des domaines complexes
 - **Opportunites**
-  - Modeles universels reutilisables pour plusieurs taches
-  - Modeles open-source (Llama, Gemma, Qwen, Phi) + fine-tunes (LoRAs) et quants
+  - Modèles universels reutilisables pour plusieurs taches
+  - Modèles open-source (Llama, Gemma, Qwen, Phi) + fine-tunes (LoRAs) et quants
 
 ---
 
@@ -518,7 +518,7 @@ layout: dense
 
 - **Approches hybrides**
   - Symbolique: raisonnement et chaines de logique complexe
-  - Connexionniste: reconnaissance de patterns dans des donnees bruyantes
+  - Connexionniste: reconnaissance de patterns dans des données bruyantes
 - **Concepts avances**
   - Algorithmes "anytime": amelioration progressive en fonction du temps disponible
     - Exemple: Arbres de jeux et MCMC
@@ -536,10 +536,10 @@ layout: dense
 - **Objectif**
   - Creer des agents capables de maitriser plusieurs taches diverses
 - **Probleme**
-  - Aujourd'hui, les systemes sont concus pour des taches specifiques
+  - Aujourd'hui, les systemes sont concus pour des taches spécifiques
   - Manque de diversite comportementale et de generalisation
 - **Progres recents**
-  - Systemes multi-langues ou multi-taches bases sur des modeles de grande taille (ex: GPT)
+  - Systemes multi-langues ou multi-taches bases sur des modèles de grande taille (ex: GPT)
 
 ---
 
@@ -549,11 +549,11 @@ layout: dense
   - IA encore difficile a deployer pour les non-experts
   - Besoin d'un ecosysteme de developpement accessible et robuste
 - **Proposition de Jeff Dean (Google)**
-  - Construire un enorme modele universel, puis en extraire les parties pertinentes pour des taches specifiques
+  - Construire un enorme modèle universel, puis en extraire les parties pertinentes pour des taches spécifiques
 - **Exemples**
-  - Transformers (GPT-4+) avec des milliards de parametres
+  - Transformers (GPT-4+) avec des milliards de paramètres
   - Montee de l'Open-source
-  - Distillation des grands modeles
+  - Distillation des grands modèles
   - Nombreuses variations / specialisations
 
 ---
@@ -585,7 +585,7 @@ layout: dense
   - USA, Chine, UE (Mistral), Moyen-Orient (Falcon)
 - **Guerre des puces**
   - Nvidia vs Huawei
-- **Modeles proprietaires vs Open-source**
+- **Modèles proprietaires vs Open-source**
   - USA vs Chine
 - **Sovereign AI**
   - Chaque nation veut son "cerveau numerique"
@@ -601,7 +601,7 @@ layout: dense
 - **Jurgen Schmidhuber**
   - L'un des peres de l'IA moderne, controverse
 - **Compression et Beaute**
-  - Principe cle: Intelligence et esthetique reposent sur la capacite a decouvrir et compresser des regularites
+  - Principe cle: Intelligence et esthetique reposent sur la capacité a decouvrir et compresser des regularites
   - Low Complexity Art: Beaute = Surprise liee a une structure compressible non evidente
   - L'attrait diminue une fois la compression exploitee
   - Applications: Algorithmes generant des motifs artistiques revelant des regularites

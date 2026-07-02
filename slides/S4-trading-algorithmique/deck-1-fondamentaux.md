@@ -20,7 +20,7 @@ Intelligence Artificielle -- S4 -- Partie 1 : Fondamentaux
 - Apprendre a utiliser Lean/QuantConnect
 - Concevoir et implementer un algorithme de trading
 - Evaluer et optimiser une strategie algorithmique
-- Maitriser le traitement de donnees et l'IA pour le trading
+- Maitriser le traitement de données et l'IA pour le trading
 
 ---
 
@@ -115,8 +115,8 @@ Ce cours est organise en 3 decks thematiques :
 
 - **Methodes d'analyse**
   - Analyse technique (indicateurs, patterns graphiques)
-  - Donnees fondamentales (revenus, indicateurs macroeconomiques)
-  - Donnees extra-financieres (flux d'actualites, sentiment du marche)
+  - Données fondamentales (revenus, indicateurs macroeconomiques)
+  - Données extra-financieres (flux d'actualites, sentiment du marche)
 
 </div>
 <div v-click="2">
@@ -142,7 +142,7 @@ Ce cours est organise en 3 decks thematiques :
 - **Competences requises**
   - Mathematiques, statistiques et programmation
   - Comprehension des marches financiers
-  - Curiosite et capacite d'apprentissage continu
+  - Curiosite et capacité d'apprentissage continu
 
 </div>
 <div v-click="2">
@@ -192,7 +192,7 @@ Ce cours est organise en 3 decks thematiques :
 
 - **QuantConnect**
   - 300K+ utilisateurs, democratisation du trading quantitatif
-  - Plateforme open-source, acces gratuit aux donnees et au cloud
+  - Plateforme open-source, acces gratuit aux données et au cloud
 
 </div>
 <div v-click="5">
@@ -213,7 +213,7 @@ Ce cours est organise en 3 decks thematiques :
 
 - **Optimisation du temps**
   - Automatisation des taches repetitives (screening, execution)
-  - Plus de temps pour la recherche et l'amelioration des modeles
+  - Plus de temps pour la recherche et l'amelioration des modèles
   - Execution 24/7 sur les marches crypto et forex
 </div>
 
@@ -229,7 +229,7 @@ Ce cours est organise en 3 decks thematiques :
 
 - **Autonomie et independance**
   - Pas besoin de clients ni de mandats de gestion
-  - Focus sur la performance pure du modele
+  - Focus sur la performance pure du modèle
   - Possibilite de demarrer avec un capital modeste
 </div>
 
@@ -247,7 +247,7 @@ Ce cours est organise en 3 decks thematiques :
 - **MFT (Medium-Frequency Trading)**
   - Operations sur des secondes, minutes a quelques heures
   - Objectif: Arbitrage, suivi de tendance, et autres strategies
-  - Flexibilite: Moins exigeant technologiquement mais necessite une analyse de donnees robuste
+  - Flexibilite: Moins exigeant technologiquement mais necessite une analyse de données robuste
 
 </div>
 
@@ -284,7 +284,7 @@ Ce cours est organise en 3 decks thematiques :
 | **Capital min.** | > 1M$ | 10K - 100K$ | 1K - 50K$ |
 | **Infrastructure** | Co-location, FPGA | Serveur dedie | PC personnel |
 | **Competences** | C++, reseaux, hardware | Python, stats | Finance, analyse |
-| **Barriere a l'entree** | Tres haute | Moyenne | Basse |
+| **Barriere a l'entrée** | Tres haute | Moyenne | Basse |
 
 </div>
 
@@ -292,7 +292,7 @@ Ce cours est organise en 3 decks thematiques :
 
 # Le Workflow du Trader Quantitatif
 
-Un processus iteratif en 6 etapes :
+Un processus iteratif en 6 étapes :
 
 <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap; justify-content: center; margin: 0.2em 0;">
   <div style="background: #3b82f6; color: white; padding: 6px 10px; border-radius: 6px; text-align: center; font-size: 0.7em; min-width: 100px;"><b>1. Hypothese</b><br><span style="opacity:0.8; font-size:0.85em;">Idee, papier</span></div>
@@ -303,22 +303,22 @@ Un processus iteratif en 6 etapes :
   <span style="color: #64748b; font-size: 1.2em;">&#x2192;</span>
   <div style="background: #f59e0b; color: white; padding: 6px 10px; border-radius: 6px; text-align: center; font-size: 0.7em; min-width: 100px;"><b>4. Backtest</b><br><span style="opacity:0.8; font-size:0.85em;">Sharpe, MaxDD</span></div>
   <span style="color: #64748b; font-size: 1.2em;">&#x2192;</span>
-  <div style="background: #f97316; color: white; padding: 6px 10px; border-radius: 6px; text-align: center; font-size: 0.7em; min-width: 100px;"><b>5. Paper</b><br><span style="opacity:0.8; font-size:0.85em;">Temps reel</span></div>
+  <div style="background: #f97316; color: white; padding: 6px 10px; border-radius: 6px; text-align: center; font-size: 0.7em; min-width: 100px;"><b>5. Paper</b><br><span style="opacity:0.8; font-size:0.85em;">Temps réel</span></div>
   <span style="color: #64748b; font-size: 1.2em;">&#x2192;</span>
-  <div style="background: #10b981; color: white; padding: 6px 10px; border-radius: 6px; text-align: center; font-size: 0.7em; min-width: 100px;"><b>6. Live</b><br><span style="opacity:0.8; font-size:0.85em;">Capital reel</span></div>
+  <div style="background: #10b981; color: white; padding: 6px 10px; border-radius: 6px; text-align: center; font-size: 0.7em; min-width: 100px;"><b>6. Live</b><br><span style="opacity:0.8; font-size:0.85em;">Capital réel</span></div>
 </div>
-<div style="text-align: center; color: #94a3b8; font-size: 0.65em; font-style: italic; margin-top: 2px;">&#x21A9; Retour iteratif (majorite du temps sur etapes 1-4)</div>
+<div style="text-align: center; color: #94a3b8; font-size: 0.65em; font-style: italic; margin-top: 2px;">&#x21A9; Retour iteratif (majorite du temps sur étapes 1-4)</div>
 
 <div v-click="1">
 
-- **Etapes 1-2** : Generer et valider une hypothese (notebook de recherche QC)
-- **Etapes 3-4** : Coder et backtester sur donnees historiques (Sharpe, CAGR, MaxDD)
+- **Étapes 1-2** : Generer et valider une hypothese (notebook de recherche QC)
+- **Étapes 3-4** : Coder et backtester sur données historiques (Sharpe, CAGR, MaxDD)
 
 </div>
 <div v-click="2">
 
-- **Etapes 5-6** : Paper trading puis deploiement live avec monitoring
-- A chaque etape, on peut revenir en arriere pour affiner
+- **Étapes 5-6** : Paper trading puis deploiement live avec monitoring
+- A chaque étape, on peut revenir en arriere pour affiner
 
 </div>
 
@@ -346,9 +346,9 @@ Un processus iteratif en 6 etapes :
 </div>
 <div v-click="3">
 
-- **Importance des Donnees**
+- **Importance des Données**
   - Tickers, Order Book, Volume, Time & Sales
-  - Impact de la qualite et de la frequence (temps reel vs resolution)
+  - Impact de la qualite et de la frequence (temps réel vs resolution)
 
 </div>
 
@@ -445,7 +445,7 @@ imageClass: mid-right visible
 - **Limites de l'analyse graphique**
   - Subjectivite dans l'interpretation
   - Les patterns fonctionnent mieux en combinaison avec des indicateurs
-  - Le trading algorithmique permet de tester objectivement ces patterns sur des donnees historiques
+  - Le trading algorithmique permet de tester objectivement ces patterns sur des données historiques
 
 </div>
 
@@ -466,8 +466,8 @@ imageClass: mid-right visible
 </div>
 <div v-click="2">
 
-- **Flux de Donnees**
-  - Fournit des informations en temps reel ou differe sur les marches
+- **Flux de Données**
+  - Fournit des informations en temps réel ou differe sur les marches
   - Certaines plateformes offrent des flux combines
 
 </div>
@@ -555,7 +555,7 @@ imageClass: mid-right visible
 # Types d'Ordres Avances
 
 - **Iceberg Order** (Ordre iceberg)
-  - Ordre fractionne pour masquer la taille reelle sur le carnet
+  - Ordre fractionne pour masquer la taille réelle sur le carnet
   - Utilise par les institutionnels pour eviter l'impact de marche
 
 <div v-click="1">
@@ -575,7 +575,7 @@ imageClass: mid-right visible
 <div v-click="3">
 
 - **Bracket Order** (Ordre encadre)
-  - Combinaison : entree + stop loss + take profit
+  - Combinaison : entrée + stop loss + take profit
   - Gestion complete du risque en un seul passage d'ordre
 
 </div>
@@ -699,12 +699,12 @@ imageClass: mid-right visible
 - **Drawdowns** (la realite brutale de toute strategie)
   - Perte de valeur depuis un pic : profondeur, duree, et vitesse de recuperation a evaluer
   - Exemple : notre meilleure strategie (EMA-Cross-Alpha, Sharpe 0.98) a un MaxDD de 19% -- acceptable
-  - Mais InverseVolatility-Rank v1 avait un MaxDD de 54.7% -- inacceptable pour un capital reel
+  - Mais InverseVolatility-Rank v1 avait un MaxDD de 54.7% -- inacceptable pour un capital réel
   - Regle : si vous ne pouvez pas dormir avec votre drawdown, reduisez votre exposition
 <div v-click="1">
 
 - **Slippage** (l'ecart entre theorie et realite)
-  - Difference entre le prix prevu et le prix d'execution reelle
+  - Difference entre le prix prevu et le prix d'execution réelle
   - Causes : volatilite, taille de l'ordre, liquidite du marche, latence du systeme
   - Impact : peut transformer une strategie profitable en strategie perdante sur petits alphas
 
@@ -730,7 +730,7 @@ imageClass: mid-right visible
 # Strategies Plausibles et leurs Pieges (2/2)
 
 - **Changements de Regime** (le risque le plus sous-estime)
-  - Les donnees historiques pre-COVID ne predisent pas le comportement post-COVID
+  - Les données historiques pre-COVID ne predisent pas le comportement post-COVID
   - Les correlations entre actifs changent en crise (tout baisse ensemble, la diversification echoue)
   - Exemple concret : TLT (obligations longues) etait un refuge fiable jusqu'en 2022, puis s'est effondre avec la hausse des taux
 
@@ -738,7 +738,7 @@ imageClass: mid-right visible
 
 - **Overfitting** (le piege le plus courant en trading quantitatif)
   - Plus vous testez de strategies, plus vous trouverez de "faux positifs" par hasard
-  - Un Sharpe de 2.0 sur 3 ans avec 50 parametres est probablement du surajustement
+  - Un Sharpe de 2.0 sur 3 ans avec 50 paramètres est probablement du surajustement
   - Regle : si votre strategie ne marche que sur une periode precise, elle est overfittee
 
 </div>
@@ -747,7 +747,7 @@ imageClass: mid-right visible
 - **Frais de financement** (le cout cache du levier)
   - Positions a marge : interet annuel sur le capital emprunte (4-8% en 2024-2026)
   - Short selling : cout d'emprunt des titres + risque de rappel (short squeeze, cf. GameStop 2021)
-  - Ces frais erosent la performance reelle par rapport au backtest "ideal"
+  - Ces frais erosent la performance réelle par rapport au backtest "ideal"
 
 </div>
 
@@ -758,21 +758,21 @@ imageClass: mid-right visible
 # Intelligence Artificielle et Selection de Stocks
 
 - **Scepticisme initial sur l'IA**
-  - Tendance a surajuster les donnees historiques
+  - Tendance a surajuster les données historiques
   - Les marches financiers ne sont pas comme la vision par ordinateur
   - Les patterns changent constamment
 <div v-click="1">
 
 - **Pratiques qui fonctionnent en IA**
-  - Modeles simples avec fondements econometriques solides
-  - Mixture d'experts : combiner plusieurs modeles specialises
+  - Modèles simples avec fondements econometriques solides
+  - Mixture d'experts : combiner plusieurs modèles specialises
   - Features engineering soigne > architectures complexes
 
 </div>
 <div v-click="2">
 
 - **Strategies "Sous le Radar"**
-  - Marches de niche a faible capacite (small caps, crypto alt coins)
+  - Marches de niche a faible capacité (small caps, crypto alt coins)
   - Moins d'arbitrage par les grands fonds qui ne s'y interessent pas
   - Opportunite pour les traders individuels et les petites equipes
 </div>
@@ -826,7 +826,7 @@ imageClass: mid-right visible
 
 <div v-click="5">
 
-- **FAUX** : Nos backtests montrent que des modeles simples (EMA, Momentum) rivalisent souvent avec le ML.
+- **FAUX** : Nos backtests montrent que des modèles simples (EMA, Momentum) rivalisent souvent avec le ML.
 
 </div>
 

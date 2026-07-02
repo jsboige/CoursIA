@@ -27,7 +27,7 @@ Intelligence Artificielle -- VIII
 - I. Introduction
 - II. Resolution de problemes
 - III. Bases de connaissances et logique
-- IV. Incertitude et modeles probabilistes
+- IV. Incertitude et modèles probabilistes
 - V. Apprentissage
 - VI. Traitement du langage naturel
 - VII. Elargissements
@@ -38,9 +38,9 @@ Intelligence Artificielle -- VIII
 # Introduction a l'IA Generative
 
 - **Qu'est-ce que l'IA generative ?**
-  - Creation de textes, images, audio, video a partir de modeles probabilistes
+  - Création de textes, images, audio, video a partir de modèles probabilistes
   - En reponse a des prompts (+ autres modalites)
-  - Exploitation d'algorithmes d'apprentissage profond sur des jeux de donnees massifs
+  - Exploitation d'algorithmes d'apprentissage profond sur des jeux de données massifs
 - **Exemples :**
   - ChatGPT (texte), Stable Diffusion / Flux (images)
   - Hunyuan (video), Whisper (audio/speech-to-text)
@@ -59,7 +59,7 @@ imageClass: mid-right
   - Scaling Laws : GPT-1 (117M) → GPT-2 (1.5B) → GPT-3 (175B) → GPT-4 (1T+)
   - ChatGPT : 1M utilisateurs en 5 jours, 100M en 2 mois
 - **Defis :**
-  - Cout d'entrainement, biais des modeles
+  - Cout d'entrainement, biais des modèles
   - Complexite des prompts, intervention humaine necessaire
 - **Approche multidisciplinaire**
   - ML + NLP + Vision par ordinateur
@@ -70,9 +70,9 @@ imageClass: mid-right
 # Systemes ISPO
 
 - **Input, Storage, Process, Output** : les quatre fonctions fondamentales d'un systeme informatique
-  - **Input** : donnees d'entree (texte, image, audio, video)
-  - **Storage** : memoire des poids du modele et du contexte de la conversation
-  - **Process** : inference par le modele (attention, generation token par token)
+  - **Input** : données d'entrée (texte, image, audio, video)
+  - **Storage** : memoire des poids du modèle et du contexte de la conversation
+  - **Process** : inference par le modèle (attention, generation token par token)
   - **Output** : resultat genere (texte, image, code, audio...)
 - Proprietes : vitesse, precision, regularite, polyvalence, fiabilite, programmabilite
 
@@ -82,16 +82,16 @@ image: ./images/img_002.png
 imageClass: mid-right
 ---
 
-# Les donnees : Qualite et biais
+# Les données : Qualite et biais
 
-- **Importance des donnees en IA generative**
-  - Qualite et representativite des donnees
+- **Importance des données en IA generative**
+  - Qualite et representativite des données
   - "Garbage in, Garbage out"
   - Biais possibles : genre, culture, contexte geographique
   - Risque d'hallucination → pre-traitement, audit
-- **Pipeline de donnees**
+- **Pipeline de données**
   - Acquisition → Nettoyage → Preparation → Annotation
-- **Donnees synthetiques**
+- **Données synthetiques**
   - Alternative pour creer en masse, proteger la confidentialite
   - 2025 : risque de Model Collapse
 
@@ -101,16 +101,16 @@ image: ./images/img_005.png
 imageClass: mid-right
 ---
 
-# Les donnees : Entrainement et cout
+# Les données : Entrainement et cout
 
 - **Scalabilite et cout energetique**
   - Necessite d'infrastructures puissantes (datacenters)
-  - Optimisations : modeles distilles, datacenters verts
+  - Optimisations : modèles distilles, datacenters verts
 - **Methodes d'entrainement**
-  - *Apprentissage de base* : tres couteux, modeles fondationnels
-  - *Fine-Tuning* : ajustement specifique, LoRAs, RL
+  - *Apprentissage de base* : tres couteux, modèles fondationnels
+  - *Fine-Tuning* : ajustement spécifique, LoRAs, RL
   - *Apprentissage en contexte* : peu couteux, prompt engineering
-- **Activite : Sources de donnees**
+- **Activite : Sources de données**
   - Classe, Maison, Transport, Loisirs → Mots ?
 
 ---
@@ -129,7 +129,7 @@ imageClass: mid-right
   - Permet de calculer la proximite semantique
   - *King - Man + Woman = Queen*
 - **Activite : Mind-Meld**
-  - Par deux, mots aleatoires simultanes
+  - Par deux, mots aléatoires simultanes
   - Puis mots a "mi-distance"
 
 <!-- Second image: ./images/img_007.png -->
@@ -158,12 +158,12 @@ image: ./images/img_008.png
 imageClass: mid-right
 ---
 
-# Modeles probabilistes : Generation de texte
+# Modèles probabilistes : Generation de texte
 
 - **Les mots sont choisis en sequence**
-  - En fonction de leur probabilite d'occurrence
+  - En fonction de leur probabilité d'occurrence
   - Dans un contexte donne (= mots qui precedent)
-- **Parametres de generation :**
+- **Paramètres de generation :**
   - *Temperature* : controle la variabilite des resultats
   - *Top-p sampling* : seuil de distribution cumulatif
   - *Top-k sampling* : k mots les plus probables
@@ -176,18 +176,18 @@ image: ./images/img_011.png
 imageClass: mid-right
 ---
 
-# Modeles probabilistes : Generation d'images
+# Modèles probabilistes : Generation d'images
 
-- **Modele de diffusion**
+- **Modèle de diffusion**
   - Ajout de bruit gaussien, apprentissage du debruitage
   - Generation depuis un espace latent
   - Conditionnement par attention (texte, image, etc.)
-- **Parametres :**
-  - *N-steps* : etapes de debruitage
+- **Paramètres :**
+  - *N-steps* : étapes de debruitage
   - *CFG-scale* : conformite au conditionnement
   - *Denoising strength* (img2img) : quantite de changement
   - *Seed* : reproductibilite
-- **Activite : Experimentation de parametres** (seed fixe)
+- **Activite : Experimentation de paramètres** (seed fixe)
 
 <!-- Second image: ./images/img_012.png -->
 
@@ -243,7 +243,7 @@ imageClass: mid-right
   - Scenarios d'entretien personnalises
   - Parcours de formation adaptatifs
 - **Analytics et prise de decision**
-  - Automatisation des pipelines de donnees
+  - Automatisation des pipelines de données
   - Modelisation avancee, visualisation rapide
   - Synthese de tableaux de bord complexes
 - **Activite : Campagne Marketing fictive : Nouveau Soda**
@@ -262,7 +262,7 @@ imageClass: mid-right
 - **Sante** : rapports medicaux, assistance au diagnostic, chatbots de suivi
 - **Education** : supports pedagogiques, vulgarisation, quiz dynamiques, assistants interactifs
 - **Finance** : extraction de rapports, previsions, detection d'anomalies
-- **Recherche** : synthese d'articles, exploration documentaire, optimisation de modeles
+- **Recherche** : synthese d'articles, exploration documentaire, optimisation de modèles
 - **Activite :** Prevision Trading Crypto par graphiques avec indicateurs
 
 <!-- Additional images: ./images/img_020.png, ./images/img_019.jpg, ./images/img_022.jpg -->
@@ -276,7 +276,7 @@ layout: dense
 - **Prompt Engineering** : instructions explicites, few-shot learning, variantes stylistiques
 - **Prompts Systemes** : structuration pour taches complexes (CoT, ToT)
 - **RAG** (Retrieval Augmented Generation)
-  - Combinaison modeles generatifs + bases documentaires
+  - Combinaison modèles generatifs + bases documentaires
   - Chunks, embeddings, requetes contextuelles
 - **Function Calling** : appels API, generation structuree
 - **Orchestration** : Semantic Kernel, LangChain
@@ -312,17 +312,17 @@ layout: two-cols
 - **Code**
   - VS Code: Copilot, Cline, Continue
 - **Maths**
-  - Modeles de reflexion
+  - Modèles de reflexion
   - Proprietaires: OpenAI, Google
   - Open-Source: DeepSeek
 
 ---
 
-# Ecosysteme GenAI : Modeles et APIs
+# Ecosysteme GenAI : Modèles et APIs
 
 - **APIs proprietaires** : OpenAI, Anthropic, Google, Mistral
   - Aggregateur : OpenRouter
-- **Modeles locaux** : Llama, Mistral, Gemini, Phi, Qwen, DeepSeek
+- **Modèles locaux** : Llama, Mistral, Gemini, Phi, Qwen, DeepSeek
   - Diffuseurs : Hugging Face, Github
   - Nombreux benchmarks
 
@@ -366,8 +366,8 @@ imageClass: mid-right small
 # Enjeux ethiques et societaux
 
 - **Biais et discrimination**
-  - Stereotypes dans les donnees d'entrainement
-  - Techniques de debiaisage des modeles
+  - Stereotypes dans les données d'entrainement
+  - Techniques de debiaisage des modèles
 - **Illusions**
   - Hallucinations : reponses incorrectes mais plausibles
   - Confiance exageree des utilisateurs
@@ -384,8 +384,8 @@ layout: dense
 
 - **Propriete intellectuelle**
   - Droits sur les contenus generes
-  - Modeles open-source vs proprietaires
-- **Protection des donnees**
+  - Modèles open-source vs proprietaires
+- **Protection des données**
   - Conformite RGPD, anonymisation
 - **Normes emergentes**
   - AI Act europeen (en vigueur 01/08/2024)
@@ -403,16 +403,16 @@ layout: dense
 # Risques et limites
 
 - **Fiabilite** : hallucinations, fabrications, impact confiance
-  - Solutions : algorithmes robustes, verification croisee multi-modeles
+  - Solutions : algorithmes robustes, verification croisee multi-modèles
 - **Tests et validation**
   - "Auditeurs IA" : detection de biais en scenarios fictifs
-  - **Activite :** recommandation voyage, sources de donnees in/out
+  - **Activite :** recommandation voyage, sources de données in/out
 - **Securite** : risques de mauvaise utilisation, perte de controle
   - Niveaux de securite Anthropic, Constitutional AI
 - **Points critiques** : perte d'emplois, homogeneisation creative, deepfakes
   - **Activite : Constitutional AI** → definir une constitution, tester
 
-> **Niveaux Anthropic** : ASL-1 (pas de risque) → ASL-2 (risque modere, garde-fous) → ASL-3 (capacites avancees, controle renforce) → ASL-4+ (autonomie, risque systemique)
+> **Niveaux Anthropic** : ASL-1 (pas de risque) → ASL-2 (risque modere, garde-fous) → ASL-3 (capacités avancees, controle renforce) → ASL-4+ (autonomie, risque systemique)
 
 ---
 layout: dense
@@ -436,14 +436,14 @@ layout: dense
 # Defis pratiques de l'adoption
 
 - **Compatibilite technologique** : adaptation CRM/ERP, bases vectorielles
-- **Confidentialite** : maitrise des flux de donnees
+- **Confidentialite** : maitrise des flux de données
 - **Scalabilite et couts** : PMEs, infrastructure technique
 - **Realite du ROI**
   - Gartner 2025 : 75% d'adoption mais "AI Fatigue"
   - ROI tangibles limites (redaction, code)
 - **Optimisations :**
-  - Solutions open-source, modeles distilles
-  - Modeles specialises SOTA, confidentialite maitrisee
+  - Solutions open-source, modèles distilles
+  - Modèles specialises SOTA, confidentialite maitrisee
 
 ---
 layout: section
