@@ -41,12 +41,10 @@ noncomputable def deviateValue (T P δ : ℝ) : ℝ := T + δ * P / (1 - δ)
 perpétuelle est au moins aussi bonne que dévier-puis-punir **ssi**
 `δ ≥ (T − R) / (T − P)`.
 
-Démonstration : algèbre réelle pure. On multiplie l'inégalité `R / (1 − δ) ≥
-T + δ·P / (1 − δ)` par `1 − δ > 0`, ce qui donne `R ≥ T·(1 − δ) + δ·P`, i.e.
-`δ·(T − P) ≥ T − R`, puis on divise par `T − P > 0`.
-
-TODO tranche 2 : tactiques `field_simp` + `linarith` (les hypothèses de
-positivité `1 − δ > 0`, `T − P > 0` découlent de `h1` et de `hTR`, `hRP`). -/
+Démonstration (algèbre réelle pure) : `R/(1−δ) ≥ T + δ·P/(1−δ)` ⟺ (multiplier
+par `1−δ > 0`) `R ≥ T·(1−δ) + δ·P` ⟺ `δ·(T−P) ≥ T−R` ⟺ (diviser par `T−P > 0`)
+`δ ≥ (T−R)/(T−P)`. La réduction via `div_le_div_iff₀` + `le_div_iff₀`/
+`div_le_iff₀` est en cours de calibrage REPL (tranche 2). -/
 lemma coop_ge_deviate_iff {δ : ℝ} (g : PrisonersDilemma)
     (h0 : 0 ≤ δ) (h1 : δ < 1) :
     coopValue g.R δ ≥ deviateValue g.T g.P δ ↔
