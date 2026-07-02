@@ -1,32 +1,32 @@
 # Roo Code - Custom Instructions et Contexte
 
-Ce guide explique comment configurer le contexte global et local dans Roo Code pour personnaliser le comportement de l'assistant selon vos projets et preferences.
+Ce guide explique comment configurer le contexte global et local dans Roo Code pour personnaliser le comportement de l'assistant selon vos projets et préférences.
 
 > **Documentation officielle** : [docs.roocode.com/features/custom-instructions](https://docs.roocode.com/features/custom-instructions)
 
 ## Vue d'Ensemble
 
-Roo Code charge et fusionne les instructions de plusieurs sources pour creer un ensemble unifie de "custom instructions" ajoutees au system prompt. Cela permet de :
+Roo Code charge et fusionne les instructions de plusieurs sources pour créer un ensemble unifié de "custom instructions" ajoutées au system prompt. Cela permet de :
 
 - **Standardiser** les conventions de code au sein d'une equipe
-- **Personnaliser** le style de reponse de Roo
+- **Personnaliser** le style de réponse de Roo
 - **Adapter** le comportement selon le contexte (projet, mode de travail)
-- **Partager** des configurations via le controle de version
+- **Partager** des configurations via le contrôle de version
 
-## Hierarchie et Priorite des Sources
+## Hiérarchie et Priorité des Sources
 
-Roo charge les instructions dans un ordre specifique. Les sources chargees en dernier ont priorite sur les precedentes en cas de conflit.
+Roo charge les instructions dans un ordre spécifique. Les sources chargées en dernier ont priorité sur les précédentes en cas de conflit.
 
-| Priorite | Source | Emplacement | Portee |
+| Priorité | Source | Emplacement | Portée |
 |----------|--------|-------------|--------|
 | 1 (basse) | Global UI | Prompts tab (interface) | Tous projets |
 | 2 | Global fichiers | `~/.roo/rules/` | Tous projets |
-| 3 | Mode-specific global | `~/.roo/rules-{mode}/` | Mode specifique, tous projets |
+| 3 | Mode-specific global | `~/.roo/rules-{mode}/` | Mode spécifique, tous projets |
 | 4 | Projet fichiers | `.roo/rules/` | Projet courant |
-| 5 (haute) | Mode-specific projet | `.roo/rules-{mode}/` | Mode specifique, projet |
+| 5 (haute) | Mode-specific projet | `.roo/rules-{mode}/` | Mode spécifique, projet |
 | Variable | AGENTS.md | Racine projet | Equipe (si active) |
 
-**Regle cle :** Les rules de niveau projet prennent toujours le dessus sur les rules globales en cas de conflit.
+**Règle clé :** Les rules de niveau projet prennent toujours le dessus sur les rules globales en cas de conflit.
 
 ---
 
@@ -34,12 +34,12 @@ Roo charge les instructions dans un ordre specifique. Les sources chargees en de
 
 Les instructions globales s'appliquent a tous vos projets.
 
-### Via l'Interface Prompts (Recommande pour debuter)
+### Via l'Interface Prompts (Recommandé pour debuter)
 
 1. Ouvrez Roo Code dans VS Code
-2. Cliquez sur l'icone **Prompts** (en haut du panneau)
+2. Cliquez sur l'icône **Prompts** (en haut du panneau)
 3. Dans la section **"Global Instructions"**, ajoutez vos instructions
-4. Pour des instructions specifiques a un mode, selectionnez le mode et ajoutez-les
+4. Pour des instructions spécifiques a un mode, selectionnez le mode et ajoutez-les
 
 **Exemple :**
 
@@ -51,7 +51,7 @@ Privilegier la lisibilite a la concision.
 
 ### Via Fichiers (~/.roo/rules/)
 
-Pour une gestion plus avancee et versionnable :
+Pour une gestion plus avancée et versionnable :
 
 **Windows :**
 ```powershell
@@ -91,7 +91,7 @@ Toujours repondre en francais.
 EOF
 ```
 
-### Structure Recommandee (~/.roo/)
+### Structure Recommandée (~/.roo/)
 
 ```
 ~/.roo/
@@ -109,11 +109,11 @@ EOF
 
 ## Configuration Projet
 
-Les instructions projet s'appliquent uniquement au projet courant et peuvent etre versionnees avec Git.
+Les instructions projet s'appliquent uniquement au projet courant et peuvent être versionnées avec Git.
 
-### Structure Recommandee (.roo/)
+### Structure Recommandée (.roo/)
 
-Creez le repertoire `.roo/rules/` a la racine de votre projet :
+Créez le répertoire `.roo/rules/` a la racine de votre projet :
 
 ```
 mon-projet/
@@ -210,7 +210,7 @@ Ce projet utilise Python 3.11 avec FastAPI.
 
 ### .roorules-{mode} (Mode-specific)
 
-Vous pouvez creer des fichiers specifiques a un mode :
+Vous pouvez créer des fichiers spécifiques a un mode :
 
 **`.roorules-code` :**
 ```markdown
@@ -236,13 +236,13 @@ Lors de la planification :
 
 ## AGENTS.md
 
-Le fichier `AGENTS.md` permet de standardiser les instructions pour une equipe entiere. Il est generalement versionne avec le code.
+Le fichier `AGENTS.md` permet de standardiser les instructions pour une equipe entiere. Il est généralement versionne avec le code.
 
 ### Activation
 
 Pour activer le support AGENTS.md :
 
-1. Ouvrez les parametres VS Code (`Ctrl+,` / `Cmd+,`)
+1. Ouvrez les paramètres VS Code (`Ctrl+,` / `Cmd+,`)
 2. Recherchez "Roo"
 3. Activez l'option **"Use AGENTS.md"**
 
@@ -254,11 +254,11 @@ Ou via les settings JSON :
 }
 ```
 
-> **Note :** Roo prefere `AGENTS.md` a `AGENT.md` si les deux existent.
+> **Note :** Roo préfère `AGENTS.md` a `AGENT.md` si les deux existent.
 
 ### Format AGENTS.md
 
-Creez le fichier `AGENTS.md` a la racine du projet :
+Créez le fichier `AGENTS.md` a la racine du projet :
 
 ```markdown
 # AGENTS.md
@@ -310,13 +310,13 @@ Roo propose plusieurs modes de travail, chacun pouvant avoir ses propres instruc
 
 | Mode | Slug | Description | Fichier rules |
 |------|------|-------------|---------------|
-| Code | `code` | Developpement et implementation | `.roo/rules-code/` |
+| Code | `code` | Développement et implementation | `.roo/rules-code/` |
 | Architect | `architect` | Planification et conception | `.roo/rules-architect/` |
 | Ask | `ask` | Questions et explications | `.roo/rules-ask/` |
 | Docs Writer | `docs-writer` | Documentation | `.roo/rules-docs-writer/` |
 | Debug | `debug` | Debug et diagnostic | `.roo/rules-debug/` |
 
-### Creer des Rules Mode-Specific
+### Créer des Rules Mode-Specific
 
 ```bash
 # Mode Code
@@ -358,7 +358,7 @@ Voici l'ordre exact dans lequel Roo charge et fusionne les instructions :
 9. AGENTS.md (si active)
 ```
 
-**Conseil :** Utilisez des prefixes numeriques pour controler l'ordre de chargement :
+**Conseil :** Utilisez des prefixes numériques pour controler l'ordre de chargement :
 
 ```text
 .roo/rules/
@@ -369,7 +369,7 @@ Voici l'ordre exact dans lequel Roo charge et fusionne les instructions :
 
 ### Traitement des Fichiers
 
-- **Chargement recursif** : tous les fichiers des sous-repertoires sont inclus
+- **Chargement recursif** : tous les fichiers des sous-répertoires sont inclus
 - **Tri alphabetique** : insensible a la casse, par nom de fichier
 - **Fichiers ignores** : `.DS_Store`, `*.bak`, `*.cache`, `*.log`, `*.tmp`, `Thumbs.db`
 - **Fichiers vides** : ignores silencieusement
@@ -381,17 +381,17 @@ Voici l'ordre exact dans lequel Roo charge et fusionne les instructions :
 
 ### Organisation des Fichiers
 
-1. **Prefixes numeriques** pour l'ordre : `01-`, `02-`, `10-`, `99-`
+1. **Prefixes numériques** pour l'ordre : `01-`, `02-`, `10-`, `99-`
 2. **Noms descriptifs** : `conventions-typescript.md` plutot que `rules.md`
 3. **Un sujet par fichier** : facilite la maintenance et la comprehension
-4. **Commentaires** : expliquez le "pourquoi" des regles
+4. **Commentaires** : expliquez le "pourquoi" des règles
 
 ### Contenu des Rules
 
 1. **Format Markdown** : titres, listes, exemples de code
-2. **Instructions claires** : evitez l'ambiguite
+2. **Instructions claires** : évitez l'ambiguite
 3. **Exemples concrets** : montrez ce que vous attendez
-4. **Contexte** : expliquez quand appliquer la regle
+4. **Contexte** : expliquez quand appliquer la règle
 
 ### Versionnement
 
@@ -401,9 +401,9 @@ Voici l'ordre exact dans lequel Roo charge et fusionne les instructions :
 
 ### Performance
 
-1. **Evitez les fichiers trop longs** : impact sur le contexte
-2. **Soyez specifiques** : instructions ciblees > instructions generiques
-3. **Nettoyez regulierement** : supprimez les rules obsoletes
+1. **Évitez les fichiers trop longs** : impact sur le contexte
+2. **Soyez spécifiques** : instructions ciblees > instructions generiques
+3. **Nettoyez régulièrement** : supprimez les rules obsoletes
 
 ---
 
@@ -493,7 +493,7 @@ src/
 
 Si vous avez un fichier `.roorules` existant, migrez vers la nouvelle structure :
 
-### Etape 1 : Creer la structure
+### Étape 1 : Créer la structure
 
 ```bash
 mkdir -p .roo/rules
@@ -501,7 +501,7 @@ mkdir -p .roo/rules-code
 mkdir -p .roo/rules-architect
 ```
 
-### Etape 2 : Deplacer le contenu
+### Étape 2 : Deplacer le contenu
 
 Divisez le contenu de `.roorules` en fichiers thematiques :
 
@@ -516,7 +516,7 @@ Divisez le contenu de `.roorules` en fichiers thematiques :
 # -> .roo/rules-architect/01-design.md
 ```
 
-### Etape 3 : Supprimer l'ancien fichier (optionnel)
+### Étape 3 : Supprimer l'ancien fichier (optionnel)
 
 ```bash
 rm .roorules
@@ -526,28 +526,28 @@ rm .roorules
 
 ---
 
-## Resolution de Problemes
+## Resolution de Problèmes
 
 ### Les rules ne sont pas appliquees
 
-1. **Verifiez l'emplacement** : `.roo/rules/` doit etre a la racine du workspace ouvert
-2. **Verifiez le format** : fichiers `.md` uniquement
-3. **Rechargez VS Code** : parfois necessaire apres ajout de fichiers
+1. **Vérifiez l'emplacement** : `.roo/rules/` doit être a la racine du workspace ouvert
+2. **Vérifiez le format** : fichiers `.md` uniquement
+3. **Rechargez VS Code** : parfois nécessaire après ajout de fichiers
 4. **Consultez les logs** : Output > Roo Code
 
 ### Conflit entre rules
 
-Les rules de priorite superieure ecrasent les inferieures. Pour debugger :
+Les rules de priorité supérieure ecrasent les inferieures. Pour debugger :
 
 1. Identifiez les sources en conflit
-2. Reorganisez les fichiers (prefixes numeriques)
-3. Utilisez des rules plus specifiques (mode-specific)
+2. Reorganisez les fichiers (prefixes numériques)
+3. Utilisez des rules plus spécifiques (mode-specific)
 
 ### AGENTS.md non pris en compte
 
-1. Verifiez que l'option est activee dans les settings
-2. Le fichier doit etre a la racine du workspace
-3. Le format doit etre Markdown valide
+1. Vérifiez que l'option est activee dans les settings
+2. Le fichier doit être a la racine du workspace
+3. Le format doit être Markdown valide
 
 ---
 
