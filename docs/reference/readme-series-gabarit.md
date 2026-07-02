@@ -2,7 +2,7 @@
 
 Canevas commun pour l'harmonisation des READMEs de series (niveau 1) et de sous-series (niveau 2), Partie 2 de l'issue #2651. Chaque element du gabarit est **derive d'un exemplaire existant** du depot (recensement des 37 READMEs, commentaire #2651) : rien n'est invente, on generalise ce qui marche deja.
 
-Le README principal du depot donne le ton de reference (registre sobre, ouverture par une question, pas de jugement de valeur editorial) ; les READMEs de series emmenent le lecteur **plus loin**, au plus pres du contenu reel des notebooks.
+Le README principal du depot donne le ton de reference (registre sobre, ouverture par une question, pas de jugement de valeur editorial) ; les READMEs de series emmenent le lecteur **plus loin**, au plus pres du contenu réel des notebooks.
 
 ---
 
@@ -19,7 +19,7 @@ Le README principal du depot donne le ton de reference (registre sobre, ouvertur
 | 6 | Parcours de progression / « Pourquoi cet ordre ? » | `GenAI/README.md:117-133` ; `Sudoku/README.md:170-231` | niveau 1 : oui |
 | 7 | Prerequis & environnement | `SymbolicAI/README.md:72-84` | oui |
 | 8 | Exercices (couverture) | `SymbolicAI/README.md:497-512` | si exercices |
-| 9 | Ponts cross-series (specifiques) | cf. anti-pattern 3 | optionnel |
+| 9 | Ponts cross-series (spécifiques) | cf. anti-pattern 3 | optionnel |
 | 10 | References | `GameTheory/README.md:421-459` | recommande |
 | 11 | FAQ (bornee) | cf. anti-pattern 4 | optionnel |
 
@@ -27,7 +27,7 @@ Le README principal du depot donne le ton de reference (registre sobre, ouvertur
 
 ### 1. Pitch
 
-Le fil rouge de la serie pose en une phrase, puis 1-2 phrases de cadrage. Modele : `Sudoku/README.md:1-10` (equilibre concision/information). Pas de bandeau de chiffres en ouverture : les decomptes exacts vivent dans le catalogue genere.
+Le fil rouge de la serie pose en une phrase, puis 1-2 phrases de cadrage. Modèle : `Sudoku/README.md:1-10` (equilibre concision/information). Pas de bandeau de chiffres en ouverture : les decomptes exacts vivent dans le catalogue genere.
 
 ### 2. Navigation
 
@@ -35,19 +35,19 @@ Une seule barre, en tete de fichier, sous le titre : lien parent + precedent + s
 
 ### 4. Objectifs d'apprentissage
 
-Numerotes, verbes d'action, en trois categories : techniques / methodologiques / applicatifs. Modele : `CaseStudies/README.md:81-105` (competences verifiables). Present dans 8 series sur 12 ; a creer pour RL, a normaliser pour GenAI et QuantConnect.
+Numerotes, verbes d'action, en trois categories : techniques / methodologiques / applicatifs. Modèle : `CaseStudies/README.md:81-105` (competences verifiables). Present dans 8 series sur 12 ; a creer pour RL, a normaliser pour GenAI et QuantConnect.
 
 ### 5. Table des notebooks
 
-Colonnes normalisees : `# | Notebook | Kernel | Contenu | Duree`. Modele : `GameTheory/README.md:64-105` (fil principal et side-tracks separes). Colonne optionnelle « Apport conceptuel » par notebook, differenciateur majeur de `Search/README.md:82-113` -- a generaliser quand la serie s'y prete. Les miroirs C#/Python (Sudoku) ou les phases (QuantConnect) restent des specificites legitimes : adapter les colonnes, pas les supprimer.
+Colonnes normalisees : `# | Notebook | Kernel | Contenu | Duree`. Modèle : `GameTheory/README.md:64-105` (fil principal et side-tracks separes). Colonne optionnelle « Apport conceptuel » par notebook, differenciateur majeur de `Search/README.md:82-113` -- a generaliser quand la serie s'y prete. Les miroirs C#/Python (Sudoku) ou les phases (QuantConnect) restent des specificites legitimes : adapter les colonnes, pas les supprimer.
 
 ### 6. Parcours de progression
 
-Profils de progression chiffres en heures (modele : `GenAI/README.md:117-133`, 4 profils 20h -> 120h+) ou encart « Pourquoi cet ordre ? » justifiant la sequence (modele : `Sudoku/README.md:170-231`).
+Profils de progression chiffres en heures (modèle : `GenAI/README.md:117-133`, 4 profils 20h -> 120h+) ou encart « Pourquoi cet ordre ? » justifiant la sequence (modèle : `Sudoku/README.md:170-231`).
 
 ### 7. Prerequis & environnement
 
-Tableau : Kernel / Env special / Packages / Cles API. Modele : `SymbolicAI/README.md:72-84`. Renvoyer au notebook de setup de la serie plutot que dupliquer les instructions d'installation du README principal.
+Tableau : Kernel / Env special / Packages / Cles API. Modèle : `SymbolicAI/README.md:72-84`. Renvoyer au notebook de setup de la serie plutot que dupliquer les instructions d'installation du README principal.
 
 ### 9. Ponts cross-series
 
@@ -55,7 +55,7 @@ Un pont doit nommer le notebook ou le concept precis **des deux cotes** (ex. : �
 
 ### 10. References
 
-References academiques avec couverture par notebook + bibliotheques + formalisations le cas echeant. Modele : `GameTheory/README.md:421-459`.
+References academiques avec couverture par notebook + bibliotheques + formalisations le cas echeant. Modèle : `GameTheory/README.md:421-459`.
 
 ---
 
@@ -83,5 +83,5 @@ Les blocs CATALOG-STATUS et `COURSE_CATALOG.generated.*` sont **bot-owned** : ja
 
 - **1 livrable par PR** : une serie, ou un petit lot coherent de 4-6 sous-series. Pas de composite.
 - **Conserver les specificites legitimes** de chaque serie (miroirs C#/Python, phases, sous-series) : le gabarit normalise la structure, pas le contenu.
-- **Cibles prioritaires (bimodalite niveau 2)** : remonter les stubs (`GenAI/CaseStudies` 61 lignes, `QuantConnect/projects` 86, `Search/Part1` 111) vers le gabarit ; reequilibrer les tres longs (`Probas/Infer` 1069 lignes) sans perte de contenu reel.
-- **Enrichissement** : rapprocher chaque entree de table du contenu reel du notebook (ce qu'il demontre, point cle), pour prolonger les intros du README principal.
+- **Cibles prioritaires (bimodalite niveau 2)** : remonter les stubs (`GenAI/CaseStudies` 61 lignes, `QuantConnect/projects` 86, `Search/Part1` 111) vers le gabarit ; reequilibrer les tres longs (`Probas/Infer` 1069 lignes) sans perte de contenu réel.
+- **Enrichissement** : rapprocher chaque entrée de table du contenu réel du notebook (ce qu'il demontre, point cle), pour prolonger les intros du README principal.

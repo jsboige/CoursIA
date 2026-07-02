@@ -69,7 +69,7 @@ nohup "C:/Users/MYIA/miniconda3/envs/coursia-ml-training/python.exe" train_moe.p
 
 Sur ai-01, le Python 3.14 systeme est instable : scipy DLL corruption recurrente, conflits pip Python 3.12 vs 3.14, `~cipy/` residus apres force-reinstall rates. L'env Conda `coursia-ml-training` est l'env de reference stable pour le training ML, configure expressement avec PyTorch CUDA pour la RTX 4090.
 
-Incident 2026-05-06 : training MoE tente directement sur Python 3.14 systeme : `scipy DLL load failed` → `sklearn force-reinstall denied`. Resolution : utiliser l'env Conda dedie. D'ou la regle F (cf [env-python-reparation.md](env-python-reparation.md)).
+Incident 2026-05-06 : training MoE tente directement sur Python 3.14 systeme : `scipy DLL load failed` → `sklearn force-reinstall denied`. Résolution : utiliser l'env Conda dedie. D'ou la regle F (cf [env-python-reparation.md](env-python-reparation.md)).
 
 **Reflexe coordinateur** : avant tout dispatch ML training local, verifier que le script utilise `coursia-ml-training`. Si un agent rapporte un `ImportError` ML (sklearn, scipy, torch), premier debug = "tu as utilise l'env Conda `coursia-ml-training` ?".
 
@@ -167,7 +167,7 @@ Installation : `python SymbolicAI/SmartContracts/setup_env.py`.
 
 ### Autres machines (po-2023/24/26)
 
-Verifier qu'elles ont aussi un env Conda dedie ou un venv local equivalent. La memoire est specifique ai-01 mais le pattern (env dedie ML) est cluster-wide. Inventorier via `conda env list` sur chaque machine.
+Verifier qu'elles ont aussi un env Conda dedie ou un venv local equivalent. La memoire est spécifique ai-01 mais le pattern (env dedie ML) est cluster-wide. Inventorier via `conda env list` sur chaque machine.
 
 ### GenAI GPU stack : triton-windows + bitsandbytes
 
@@ -196,7 +196,7 @@ if os.path.isfile(os.path.join(base, "triton", "runtime", "tcc", "tcc.exe")):
 
 ## WSL kernels (Lean / GameTheory / OpenSpiel)
 
-Notebooks dans `GameTheory/` et `SymbolicAI/Lean/` requierent un kernel WSL specifique :
+Notebooks dans `GameTheory/` et `SymbolicAI/Lean/` requierent un kernel WSL spécifique :
 
 - `Python (GameTheory WSL + OpenSpiel)` pour GameTheory
 - `Python 3 (WSL)` ou `Lean 4 (WSL)` pour SymbolicAI/Lean
@@ -212,7 +212,7 @@ Le multi-agent Lean prover (`MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prove
 | Provider type | Comportement attendu | Quand utiliser |
 |---------------|----------------------|----------------|
 | **Powerful reasoning** (e.g. GLM-5.1) | Heavy thinking : ~99% des completion_tokens en `reasoning_content`. Necessite `max_tokens >= 8192` et `timeout >= 300s` par call. | Multi-step proof discovery, theoremes non-triviaux |
-| **Fast/modest** (e.g. Qwen3.6 local 35B-A3B) | Moins de thinking, plus rapide (~5s/293 tokens). | Validation lemma, sorry guard, etapes routine |
+| **Fast/modest** (e.g. Qwen3.6 local 35B-A3B) | Moins de thinking, plus rapide (~5s/293 tokens). | Validation lemma, sorry guard, étapes routine |
 | **Openrouter** (Sonnet/Gemma fallback) | Free tier rate-limited. | Backup powerful quand endpoint principal down |
 | **Anthropic direct** | Reserve si on ajoute un client natif (le framework actuel = `OpenAIChatCompletionClient` seul). | A activer ulterieurement |
 
@@ -225,9 +225,9 @@ Mapping avec `prover/config.py PROVIDERS` :
 
 **Pieges connus** :
 
-1. Modeles powerful reasoning separent `content` et `reasoning_content` dans la reponse JSON. Le framework `agent_framework_openai` gere via `Content.from_text_reasoning()`.
-2. `finish_reason: "length"` arrive vite si `max_tokens <= 2048` sur les modeles reasoning (toute la fenetre passe en reasoning).
-3. Verifier le nom exact du modele cote endpoint (changements silencieux possibles).
+1. Modèles powerful reasoning separent `content` et `reasoning_content` dans la reponse JSON. Le framework `agent_framework_openai` gere via `Content.from_text_reasoning()`.
+2. `finish_reason: "length"` arrive vite si `max_tokens <= 2048` sur les modèles reasoning (toute la fenetre passe en reasoning).
+3. Verifier le nom exact du modèle cote endpoint (changements silencieux possibles).
 4. Ports vLLM locaux 5001/5002 sur ai-01 = surveiller dispo (escalations Cycle 20). Preferer endpoint stable si flaky.
 
 ## Training wrapper checkpoints (ai-01)

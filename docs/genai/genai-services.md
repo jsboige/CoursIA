@@ -2,7 +2,7 @@
 
 ## Services disponibles
 
-| Service | Modele | VRAM | Description |
+| Service | Modèle | VRAM | Description |
 |---------|--------|------|-------------|
 | **Qwen Image Edit** | qwen_image_edit_2509 | ~29GB | Edition d'images avec prompts multimodaux |
 | **Z-Image/Lumina** | Lumina-Next-SFT | ~10GB | Generation text-to-image haute qualite |
@@ -53,7 +53,7 @@ VAEDecode
 SaveImage
 ```
 
-**Parametres LuminaDiffusersNode** :
+**Paramètres LuminaDiffusersNode** :
 - `model_path`: "Alpha-VLLM/Lumina-Next-SFT-diffusers"
 - `num_inference_steps`: 20-40
 - `guidance_scale`: 3.0-5.0
@@ -109,7 +109,7 @@ python scripts/genai-stack/genai.py auth sync              # Synchroniser tokens
 | 01-4, 02-3 | SD Forge | Service local ou myia.io |
 | 01-5, 02-1 | ComfyUI Qwen | COMFYUI_AUTH_TOKEN, ~29GB VRAM |
 | 02-4 | Z-Image/vLLM | ~10GB VRAM |
-| 03-* | Multi-modeles | Tous les services |
+| 03-* | Multi-modèles | Tous les services |
 | 04-* | Applications | Variable |
 
 ## Mapping notebooks Audio -> services
@@ -124,7 +124,7 @@ python scripts/genai-stack/genai.py auth sync              # Synchroniser tokens
 | Audio/02-2 | XTTS v2 | GPU ~6 GB |
 | Audio/02-3 | MusicGen | GPU ~10 GB |
 | Audio/02-4 | Demucs v4 | GPU ~4 GB |
-| Audio/03-* | Multi-modeles | Mixed |
+| Audio/03-* | Multi-modèles | Mixed |
 | Audio/04-11 | Kokoro TTS + FishAudio S2-Pro | GPU ~5 GB (FishAudio BnB 4-bit NF4) + ~2 GB (Kokoro) |
 | Audio/04-* | Applications | Mixed |
 

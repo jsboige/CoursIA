@@ -8,7 +8,7 @@ Le repo contient deja plusieurs documents canoniques. **Ne pas dupliquer ici** c
 
 | Document | Role | Source canonique de |
 |----------|------|---------------------|
-| [MyIA.AI.Notebooks/QuantConnect/README.md](../../MyIA.AI.Notebooks/QuantConnect/README.md) | Entree serie pedagogique | Catalog des 27+ notebooks Python, structure series |
+| [MyIA.AI.Notebooks/QuantConnect/README.md](../../MyIA.AI.Notebooks/QuantConnect/README.md) | Entrée serie pedagogique | Catalog des 27+ notebooks Python, structure series |
 | [MyIA.AI.Notebooks/QuantConnect/GETTING-STARTED.md](../../MyIA.AI.Notebooks/QuantConnect/GETTING-STARTED.md) | Setup utilisateur | Premiere prise en main QC + LEAN |
 | [MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md](../../MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md) | Mapping livre Jared | 63 exemples / 71 deliverables HandsOnAITradingBook -> nos notebooks/projects |
 | [MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md](../../MyIA.AI.Notebooks/QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md) | Mapping detaille Ch06 | 22 strategies ML du livre |
@@ -26,14 +26,14 @@ Le repo contient deja plusieurs documents canoniques. **Ne pas dupliquer ici** c
 
 ## Backtests obligatoires
 
-Toute modification d'une strategie QC (main.py, parametres, periodes) **DOIT** etre validee par un backtest :
+Toute modification d'une strategie QC (main.py, paramètres, periodes) **DOIT** etre validee par un backtest :
 
 1. `create_compile` pour verifier la compilation
 2. `create_backtest` pour lancer le backtest
 3. `read_backtest` pour recuperer les metriques (Sharpe, CAGR, MaxDD)
 4. Reporter les resultats dans le message de commit ET sur RooSync
 
-**Changer une date ou un parametre sans backtest = travail invalide.**
+**Changer une date ou un paramètre sans backtest = travail invalide.**
 
 ## QC Cloud API - Acces via MCP Docker (OBLIGATOIRE)
 
@@ -73,7 +73,7 @@ Le MCP Docker officiel charge un schema d'outils volumineux (~40k tokens). Pour 
 
 Outils exposes : `create_compile`, `read_compile`, `create_backtest`, `read_backtest` (Sharpe/CAGR/MaxDD), `list_backtests`, `list_projects`, `read_project`, `read_file`, `create_file`, `update_file_contents`. Auth = pattern QC v2 (`SHA256(token:timestamp)` + header `Basic userId:hash`). Rate limiting 10 appels/min applique in-process (meme limite fleet-wide).
 
-Config `.mcp.json` (remplace l'entree Docker `qc-mcp` ; secrets dans `.env` gitignore, **JAMAIS inline**) :
+Config `.mcp.json` (remplace l'entrée Docker `qc-mcp` ; secrets dans `.env` gitignore, **JAMAIS inline**) :
 
 ```json
 {
@@ -112,7 +112,7 @@ Verifier dans cet ordre :
 2. `.mcp.json` racine projet (config projet standard)
 3. Token valide sur QC (tester via API directe Python)
 
-**Fix recurrent** : supprimer l'entree `mcpServers.qc-mcp` de `~/.claude.json` pour que `.mcp.json` soit la seule source de verite.
+**Fix recurrent** : supprimer l'entrée `mcpServers.qc-mcp` de `~/.claude.json` pour que `.mcp.json` soit la seule source de verite.
 
 ## Organisations QC
 
@@ -231,7 +231,7 @@ Pattern standardise pour combiner plusieurs strategies dans un meme algo QC :
 8. **Vol window 60d > 20d** pour covariance min-var
 9. **Monthly + regime-change rebal > daily** : reduit trades 80%
 10. **Trail breakeven 3% > 4%** pour BTC daily
-11. **SMA50 >> SMA100 pour crypto** : SMA100 filtre les bonnes entrees bull
+11. **SMA50 >> SMA100 pour crypto** : SMA100 filtre les bonnes entrées bull
 12. **SL 6% minimum sur BTC daily** : 5% trop serre
 13. **OLS hedge ratio ne sauve pas pairs trading** : le probleme est les paires elles-memes
 14. **Fix structural bugs >> academic improvements** : leverage/risk mgmt > signal refinement

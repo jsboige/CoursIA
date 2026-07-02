@@ -6,10 +6,10 @@ Configuration des providers LLM utilises par le multi-agent prover dans `MyIA.AI
 
 ## Providers
 
-| Provider key | Type | Modele | Usage | Comportement |
+| Provider key | Type | Modèle | Usage | Comportement |
 |--------------|------|--------|-------|--------------|
 | `zai` | Cloud dedie Lean | `glm-5.1` | **Powerful** — reasoning model | Heavy thinking : ~99% des completion_tokens vont en `reasoning_content`. 1 prompt simple peut consommer 2048 tokens en raisonnement seul. **Exiger `max_tokens >= 8192` et timeout per-call >= 300s**. |
-| `local` | Cluster interne reverse-proxy | `qwen3.6-35b-a3b` | **Fast** — modeste mais rapide | Modere : ~5s pour 293 tokens dont ~270 reasoning. Plus rapide que zai mais reste thinking-aware. Attention au nom de modele (`.6` pas `.5`, changement silencieux 2026-05-11). |
+| `local` | Cluster interne reverse-proxy | `qwen3.6-35b-a3b` | **Fast** — modeste mais rapide | Modere : ~5s pour 293 tokens dont ~270 reasoning. Plus rapide que zai mais reste thinking-aware. Attention au nom de modèle (`.6` pas `.5`, changement silencieux 2026-05-11). |
 | `openrouter` | OpenRouter API | `anthropic/claude-sonnet-4.5` (powerful) / `google/gemma-3-27b-it:free` (fast) | Backup powerful, free tier rate-limite | Bon fallback Director. Free tier limite ~50 req/jour. |
 | `anthropic` | Anthropic API directe | `claude-sonnet-4-5` | **Reserve** — pas encore wire | Le framework actuel utilise `OpenAIChatCompletionClient` only. Necessiterait un client Anthropic natif. |
 
@@ -23,7 +23,7 @@ Configuration des providers LLM utilises par le multi-agent prover dans `MyIA.AI
 
 3. **Local LLM ports DOWN** : ai-01 ports 5001/5002 (vLLM mini/medium) ont ete observes DOWN cycliquement (Cycle 20 Track 1 po-2023 escalation). Toujours preferer l'endpoint reverse-proxy public (`local` provider key) plutot que `localhost:500X`.
 
-4. **Nom de modele case-sensitive** : si une cle valide retourne 404, verifier le nom exact via `curl /v1/models` avant de presumer une cle expiree.
+4. **Nom de modèle case-sensitive** : si une cle valide retourne 404, verifier le nom exact via `curl /v1/models` avant de presumer une cle expiree.
 
 ## Cout indicatif (estimation 2026-05)
 

@@ -10,7 +10,7 @@ Source : mandat user 2026-06-23 (EPIC #3966). Les agents editent le markdown/cod
 - **Symptome a bannir** (`MULTI-H1`, `H1-DEEP`) : plusieurs H1 -> le vrai titre n'est plus visuellement distinct (« les titres sont difficilement visibles »).
 
 ### 1.2 Asides d'exercice : JAMAIS un heading
-Un **indice / objectif / etape / conseil / note / remarque / attention / TODO** ne doit **jamais** etre ecrit en `#` ou `##` : il apparaitrait dans la **plus grande police** alors qu'il doit etre discret (« les indices apparaissent comme les elements de police la plus grande alors que ca devrait etre l'inverse »).
+Un **indice / objectif / étape / conseil / note / remarque / attention / TODO** ne doit **jamais** etre ecrit en `#` ou `##` : il apparaitrait dans la **plus grande police** alors qu'il doit etre discret (« les indices apparaissent comme les elements de police la plus grande alors que ca devrait etre l'inverse »).
 
 | A bannir | A utiliser |
 |----------|-----------|
@@ -60,7 +60,7 @@ Le rendu notebook de `github.com/.../blob/...ipynb` est **React-virtualise** : s
 
 ## 4. Garde-fous (rollout)
 - **Scope typo strict** : changer le **niveau** d'un heading n'est pas changer le **contenu** pedagogique. Ne jamais en profiter pour resoudre/stubber/relabeler un exercice (cf [exercise-example-labeling.md](../../.claude/rules/exercise-example-labeling.md), [anti-regression.md](../../.claude/rules/anti-regression.md)).
-- **C.2** : modif markdown seule -> outputs precedents valides ; cellule code modifiee -> re-exec reelle, jamais scrub.
+- **C.2** : modif markdown seule -> outputs precedents valides ; cellule code modifiee -> re-exec réelle, jamais scrub.
 - **1 sujet par PR** (G.4/G.5) : rollout par famille / sous-lot, pas de composite.
 - **Verifier visuellement** apres fix, pas seulement relancer le scanner.
 
