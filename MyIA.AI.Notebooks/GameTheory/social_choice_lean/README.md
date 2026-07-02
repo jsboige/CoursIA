@@ -8,7 +8,7 @@ Ce répertoire contient les formalisations mathématiques de la théorie du choi
 |-------------|--------|
 | Théorèmes/Lemmas | 76 (0 sorry, 7 modules) |
 | sorry restants | 0 |
-| Toolchain | `leanprover/lean4:v4.30.0-rc2` |
+| Toolchain | `leanprover/lean4:v4.31.0-rc1` |
 | Dépendances | Mathlib4, Lake |
 
 **Statut formel** : les **sept** modules (Basic, Framework, Arrow, Sen, Voting,
@@ -59,7 +59,7 @@ Résultats formalisés par Peters :
 |--------|---------------------------|---------------|
 | Type de préférence | `PrefOrder α` (réflexif, total, transitif) | `LinearOrder A` (strict, Mathlib) |
 | Règle de vote | `SCC ι σ` (types fixés) | `VotingRule` (polymorphe sur V, A) |
-| Toolchain | `v4.30.0-rc2` | `v4.27.0-rc1` (pin commit `d679d950`) |
+| Toolchain | `v4.31.0-rc1` | `v4.27.0-rc1` (pin commit `d679d950`) |
 
 ### 1. Théorème d'Impossibilité d'Arrow (Arrow's Impossibility Theorem)
 
@@ -138,7 +138,7 @@ au-delà du choix social pur vers la **théorie des mécanismes** (incitations e
 social_choice_lean/
 ├── README.md                          # Documentation générale
 ├── lakefile.lean                      # Configuration du projet Lake
-├── lean-toolchain                     # Version de Lean (v4.30.0-rc2)
+├── lean-toolchain                     # Version de Lean (v4.31.0-rc1)
 ├── SocialChoice.lean                  # Fichier d'imports principaux
 ├── SocialChoice/                      # Module principal (7 fichiers, 0 sorry)
 │   ├── Basic.lean                    # Définitions de base (P, I, PrefOrder, QuasiOrder,
@@ -250,7 +250,7 @@ résultats fondateurs de la théorie du choix social : le **théorème d'impossi
 d'Arrow**, le **paradoxe libéral de Sen**, la **théorie du vote** (Condorcet, électeur
 médian, Split Cycle) et la **véridicité de l'enchère de Vickrey** (théorie des mécanismes).
 Tous les modules sont FORMAL-CERTIFIED et recompilables via `lake build` sur la toolchain
-`v4.30.0-rc2`.
+`v4.31.0-rc1`.
 
 ### Ce qui est prouvé
 

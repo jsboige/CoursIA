@@ -12,7 +12,7 @@ Référence : Conway, J.H. — *On Numbers and Games* (2001).
 
 ## Statut
 
-- **Toolchain** : `leanprover/lean4:v4.31.0-rc1` (suit le dépôt amont — plus récente que les autres séries Lean en v4.30.0-rc2)
+- **Toolchain** : `leanprover/lean4:v4.31.0-rc1` (suit le dépôt amont)
 - **Sorry** : **0** — le fichier est une visite de `#check` et de docstrings, aucune preuve
 - **Build** : `lake build CGTTour` (dépend de Mathlib4 + CombinatorialGames)
 - **Dépendances** :
