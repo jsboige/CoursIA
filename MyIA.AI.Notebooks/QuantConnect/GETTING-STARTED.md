@@ -68,13 +68,13 @@ class MyFirstAlgorithm(QCAlgorithm):
 
 ### Etape 4 : Utiliser les ressources CoursIA
 
-Les notebooks `QC-Py-XX` sont des **supports de cours** a lire sur GitHub ou en Jupyter local. Ils ne sont pas conçus pour etre uploades dans QC Lab.
+Les notebooks `QC-Py-XX` sont des **supports de cours** a lire sur GitHub ou en Jupyter local. Ils ne sont pas conçus pour être uploadés dans QC Lab.
 
 **Pour votre projet QC, utilisez plutot** :
 
 1. **Projets prets a backtester** : Copiez un `main.py` depuis `projects/` dans votre projet QC Lab
 2. **Templates de projet** : Partez d'un template (`partner-course-quant-trading/templates/starter/`) adapte a votre niveau
-3. **Notebooks de reference** : Lisez les `QC-Py-XX` pour comprendre la theorie et les patterns
+3. **Notebooks de reference** : Lisez les `QC-Py-XX` pour comprendre la théorie et les patterns
 
 **Exemple concret** :
 1. Ouvrez `projects/EMA-Cross-Alpha/main.py` sur GitHub

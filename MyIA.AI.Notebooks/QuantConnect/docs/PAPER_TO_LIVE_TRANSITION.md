@@ -6,7 +6,7 @@ Ce document decrit les prerequis et étapes pour passer du paper trading au live
 
 ## 1. Checklist pre-live
 
-Avant de passer en live, **toutes** les conditions suivantes doivent etre remplies :
+Avant de passer en live, **toutes** les conditions suivantes doivent être remplies :
 
 ### Performance
 - [ ] Sharpe Ratio > 0.5 sur le backtest (minimum 3 ans)
@@ -34,8 +34,8 @@ Avant de passer en live, **toutes** les conditions suivantes doivent etre rempli
 
 ```
 Backtest (historique)
-  -> Paper Trading (donnees reelles, fills simules)
-    -> Live Trading (donnees reelles, fills reels)
+  -> Paper Trading (données réelles, fills simulés)
+    -> Live Trading (données réelles, fills réels)
 ```
 
 | Source | Backtest | Paper | Live |
@@ -108,7 +108,7 @@ brokerage = {
 brokerage = {
     "id": "InteractiveBrokersBrokerage",
     "ib-user-name": "<username>",
-    "ib-account": "U12345",  # <- compte reel (pas DU...)
+    "ib-account": "U12345",  # <- compte réel (pas DU...)
     "ib-password": "<password>",
     "ib-weekly-restart-utc-time": "04:00:00"
 }
@@ -117,8 +117,8 @@ brokerage = {
 ### Risques spécifiques equities
 
 - **Gap risk** : le marche ouvre avec un gap par rapport a la cloture precedente
-- **Short selling** : les actions peuvent etre "hard to borrow"
-- **Regulation T** : regles de marge spécifiques (pattern day trader aux US)
+- **Short selling** : les actions peuvent être "hard to borrow"
+- **Regulation T** : règles de marge spécifiques (pattern day trader aux US)
 - **Corporate actions** : splits, dividendes, mergers affectent les positions
 
 ---
@@ -144,12 +144,12 @@ position_size = (capital * risk_per_trade) / stop_loss_distance
 
 Chaque position live doit avoir un stop-loss. Options :
 
-| Methode | Description | Avantage |
+| Méthode | Description | Avantage |
 |---------|-------------|----------|
 | Fixe (%) | -5% du prix d'entrée | Simple |
 | ATR-based | k * ATR(14) sous l'entrée | S'adapte a la volatilite |
 | Trailing | Monte avec le prix | Protege les gains |
-| Time-based | Sortie apres N jours | Evite les positions stagnantes |
+| Time-based | Sortie après N jours | Évite les positions stagnantes |
 
 ### Diversification minimum
 
@@ -176,9 +176,9 @@ Chaque position live doit avoir un stop-loss. Options :
 Si une anomalie est detectee :
 
 1. **Stop live algorithm** via MCP QC : `stop_live_algorithm(projectId=...)`
-2. **Liquidier les positions** si necessaire : `liquidate_live_algorithm(projectId=...)`
+2. **Liquidier les positions** si nécessaire : `liquidate_live_algorithm(projectId=...)`
 3. **Analyser les logs** : `read_live_logs(projectId=..., algorithmId=..., startLine=0, endLine=250)`
-4. **Corriger l'algorithme** et re-backtester avant de re-deployer
+4. **Corriger l'algorithme** et re-backtester avant de re-déployer
 
 ---
 
@@ -188,7 +188,7 @@ Ce document est un **guide pedagogique**, pas un conseil financier. Le trading a
 
 > "Past performance is not indicative of future results."
 
-Les strategies presentees dans les notebooks QC-Py-40 et QC-Py-41 sont des exemples educatifs. Leur performance en backtest ou paper trading ne garantit pas de performance en live.
+Les strategies présentées dans les notebooks QC-Py-40 et QC-Py-41 sont des exemples éducatifs. Leur performance en backtest ou paper trading ne garantit pas de performance en live.
 
 ### Ressources
 - [QC Live Trading Docs](https://www.quantconnect.com/docs/v2/our-platform/live-trading)
