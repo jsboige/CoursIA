@@ -98,7 +98,7 @@ A l'issue de la série, vous saurez :
 - **Intégrer un LLM** au workflow de preuve : patterns LeanCopilot et AlphaProof (n-best, MCTS), prompts goal-aware, comparaison ND-search vs CoT, agents APOLLO/Erdos — fiables surtout sur les preuves courtes, limites persistantes sur les preuves longues et la couverture Mathlib (usage en assistant, pas en oracle). Notebooks 7-9.
 - **Tracer et explorer** une basé de preuves a grande echelle : LeanDojo (parsing AST, theorem extraction, interaction Dojo), réseaux de neurones vérifies via IBP/CROWN (TorchLean). Notebooks 10-11.
 - **Porter** un théorème de recherche en Lean 4 : théorème de sensibilite (Huang 2019, hypercube et signing matrix), théorème de Kochen-Specker (Cabello 18 vecteurs, argument de parite, contextuality quantique). Notebooks 12, 13.
-- **Lire le langage grothendieckien** dans Mathlib 4 : categories et foncteurs, cribles et topologies de Grothendieck, faisceaux, schémas et sites, morphismes etales/lisses — comme entree vers la geometrie algebrique formalisee. Notebook 15.
+- **Lire le langage grothendieckien** dans Mathlib 4 : categories et foncteurs, cribles et topologies de Grothendieck, faisceaux, schémas et sites, morphismes etales/lisses — comme entrée vers la géométrie algébrique formalisée. Notebook 15.
 - **Situer l'oeuvre de Conway** dans sa largeur : des nombres surreels au Monstrous Moonshine, du réseau de Leech au théorème du libre arbitre, en executant les premières noix formalisees (Doomsday, Look-and-Say, Nim, Angel, Life) directement depuis le projet conway_lean (0 sorry). Notebook 16a.
 - **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de résultats combinatoires iconiques. Notebooks 16a-16e.
 - **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui reduit le cas a deux particules au théorème de Kochen-Specker (Notebook 13), et la lecture honnete de sa portee (ce qu'il dit et ne dit pas) — adosse a `FreeWillTheorem.lean` (0 sorry). Notebook 16f.
@@ -275,7 +275,7 @@ elan show
 | **AlphaProof** (DeepMind) | Medaille d'argent IMO 2024 |
 | **Harmonic Aristotle** | Resolution Erdos #124 variant (~30 ans ouvert) en 6h |
 | **DeepSeek-Prover** | Resolution de problèmes Erdos 379, 987, 730, 198 |
-| **Mathlib4** v4.27.0-rc1 | 4M+ lignes, utilise par Terry Tao |
+| **Mathlib4** v4.27.0-rc1 | 4M+ lignes, utilisé par Terry Tao |
 
 ## Notes techniques
 
@@ -304,7 +304,7 @@ Lean/
 ├── Lean-12-Sensitivity-Theorem.ipynb # Python kernel - theoreme de sensibilite (Huang 2019, hypercube, signing matrix)
 ├── Lean-15-Grothendieck-Tribute.ipynb # Python kernel - hommage Grothendieck (langage grothendieckien Mathlib)
 ├── Lean-15b-Lean-Grothendieck.ipynb # Python kernel - atelier pratique Grothendieck (compagnon grothendieck_lean)
-├── Lean-16a-Conway-Man-and-Work.ipynb # Python kernel - hommage Conway (l'homme et l'oeuvre, noix executees depuis conway_lean)
+├── Lean-16a-Conway-Man-and-Work.ipynb # Python kernel - hommage Conway (l'homme et l'œuvre, noix exécutées depuis conway_lean)
 ├── Lean-16b-Conway-Game-of-Life-Lean.ipynb   # Python kernel - hommage Conway (Game of Life as Computation)
 ├── Lean-16c-Conway-Game-of-Life-Golly.ipynb  # Python kernel - hommage Conway (Game of Life en images, compagnon Golly)
 ├── Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb  # Lean4 (WSL) kernel - Game of Life natif (grille, B3/S23, decide/native_decide, 0 sorry)
@@ -320,7 +320,7 @@ Lean/
 ├── .env.example
 ├── conway_lean/                    # Conway tribute workspace (0 sorry, Lake build)
 ├── grothendieck_lean/              # Grothendieck tribute workspace (0 sorry, Lake build)
-├── knot_lean/                      # Knot theory workspace (theorie des noeuds, companion Lean-17a/b, sorries residuels documentes, Lake build)
+├── knot_lean/                      # Knot theory workspace (théorie des nœuds, companion Lean-17a/b, sorries residuels documentes, Lake build)
 ├── agent_tests/                    # Prover daemon (autonomous Lean proof)
 │   ├── multi_agent_proof.py        # CLI principal
 │   ├── lean_server.py              # Serveur Lean LSP
@@ -461,7 +461,7 @@ lake build            # Doit passer
 
 ### Comment installer Lean 4 sous Windows ?
 
-Lean 4 ne tourne pas nativement sous Windows pour les notebooks. La configuration recommandee utilise **WSL 2 (Ubuntu)** :
+Lean 4 ne tourne pas nativement sous Windows pour les notebooks. La configuration recommandée utilise **WSL 2 (Ubuntu)** :
 
 1. `wsl --install -d Ubuntu` (si pas encore fait)
 2. Dans WSL : `curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh`
