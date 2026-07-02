@@ -1622,6 +1622,62 @@ def test_strip_lean_comments_preserves_code():
     assert "theorem t : 1 + 1 = 2 := by norm_num" in stripped
 
 
+# --- FX-7 (#1453): migrate ALL sorry counters to count_real_sorries ----------
+# The success gates (verify_sorry_replacement, the workflow latch), snapshot
+# counters in tools.py, and run_prover_bg reporting all historically used the
+# `content.count("sorry")` substring counter, which over-counts prose mentions
+# in comments/docstrings (HashlifeCorrectness: substring 34, real 4 — 8.5x
+# inflation). FX-7 retires the substring counter repo-wide in one pass so every
+# before/after delta is consistent; a "0 sorry -> skip" gate now fires on the
+# REAL count instead of never firing while comment prose mentions survive.
+
+
+def test_fx7_count_real_sorries_massively_undercounts_comment_prose():
+    """Mirrors the founding HashlifeCorrectness inflation: a file with heavy
+    'sorry' prose in comments/docstrings must count only the REAL tokens, so
+    the migrated gates see the true obligation count (FX-7 value)."""
+    from prover.lean_utils import count_real_sorries
+
+    content = (
+        "/-!\n"
+        "This file proves the hashlife result. It used to be sorry everywhere;\n"
+        "we removed sorry after sorry until only sorry-free scaffolding sorry\n"
+        "mentions remained in this docstring (sorry, sorry, sorry).\n"
+        "-/\n"
+        "-- NB: the word sorry in this line comment is NOT an obligation.\n"
+        "theorem t1 : True := by\n"
+        "  sorry\n"                       # 1 real
+        "theorem t2 : True := by\n"
+        "  exact sorry\n"                 # 2 real
+    )
+    assert content.count("sorry") >= 8    # substring over-counts prose
+    assert count_real_sorries(content) == 2
+
+
+def test_fx7_no_legacy_substring_counter_in_prover_source():
+    """FX-7 regression guard: no prover source module may reintroduce the
+    legacy `.count("sorry")` substring counter on file content — every gate,
+    snapshot, and report must go through count_real_sorries so deltas stay
+    consistent. The only allowed mention is the historical docstring in
+    lean_utils.py describing the retired counter."""
+    from pathlib import Path
+
+    prover_dir = Path(__file__).resolve().parent.parent / "prover"
+    legacy = []
+    for py in sorted(prover_dir.glob("*.py")):
+        for ln, line in enumerate(py.read_text(encoding="utf-8").splitlines(), 1):
+            if '.count("sorry")' in line:
+                # lean_utils.py keeps ONE historical mention in the
+                # count_real_sorries docstring describing the retired counter.
+                if py.name == "lean_utils.py" and line.strip().startswith("``"):
+                    continue
+                legacy.append(f"{py.name}:{ln}: {line.strip()}")
+    assert not legacy, (
+        "FX-7 violated — legacy substring `.count(\"sorry\")` reintroduced:\n"
+        + "\n".join(legacy)
+    )
+
+
 # --- FX-6b (#1453): sorry_is_in_statement + in-statement entry refusal ------
 # The latch (workflow.py) and verify_sorry_replacement both set
 # proof_found=True without touching tactic_history, and proof_found is a

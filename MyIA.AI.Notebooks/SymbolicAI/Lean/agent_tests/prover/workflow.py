@@ -37,6 +37,7 @@ from agent_framework import (
 from .state import SorryContext
 from .trace import TraceLogger
 from .knowledge import ProofKnowledgeBase
+from .lean_utils import count_real_sorries
 
 
 # Default per-agent LLM timeout. Reasoning models (z.ai GLM-5.1, Qwen3.6) burn
@@ -817,11 +818,11 @@ class VerifyExecutor(Executor):
                 and "sorry" not in _latch_lines[_latch_target - 1]
             )
             _latch_orig = (
-                self._sorry_ctx.full_file.count("sorry")
+                count_real_sorries(self._sorry_ctx.full_file)
                 if getattr(self._sorry_ctx, "full_file", "")
                 else (self._original_sorry_count or 0)
             )
-            _latch_now = _latch_cur.count("sorry")
+            _latch_now = count_real_sorries(_latch_cur)
             if _latch_line_clear and _latch_now < _latch_orig:
                 _latch_verifier = _latch_get_verifier(
                     str(_LatchPath(_latch_fp).parent.parent))
@@ -1133,7 +1134,7 @@ class VerifyExecutor(Executor):
         indent_str = " " * indent
         replacement_lines = [indent_str + l.strip() for l in tactic.strip().split("\n") if l.strip()]
         new_lines = lines[:sorry_idx] + replacement_lines + lines[sorry_idx + 1:]
-        return "\n".join(new_lines).count("sorry")
+        return count_real_sorries("\n".join(new_lines))
 
 
 class DiagnosisExecutor(Executor):
