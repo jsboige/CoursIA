@@ -24,6 +24,29 @@ tout Sudoku ? non en général — d'où le backtracking), sont des jalons natur
 **ouverts**, délibérément **non `sorry`-backed** : la bibliothèque reste entièrement
 `sorry`-free. Le résultat de calcul massif « 17 indices minimum » est hors scope
 (non formalisable).
+
+---
+
+**English — Soundness of the propagation rules.**
+
+Issue #4055. Sudoku solvers (backtracking, OR-Tools, the .NET solvers of the `Sudoku`
+series) speed up resolution by **propagating** constraints: as soon as a value is placed,
+the candidates that have become impossible are eliminated. Two canonical rules:
+
+- **Naked single**: a cell whose only remaining candidate is `v` must contain `v`.
+- **Hidden single**: a value that can go in only one cell of a scope must go there.
+
+This module proves the **soundness** of these rules: they **remove no valid solution** —
+eliminating a candidate via propagation means eliminating an assignment that **no
+solution uses**. The keystone is `peer_excludes_value`: an assigned cell excludes its
+value from all its peers.
+
+**Honest scoping (G.3/G.9).** The soundness of both propagation rules is proved in full
+(0 `sorry`). The **Sudoku ⇔ exact-cover reduction** (Knuth, 4 constraint families), as
+well as completeness (do the rules suffice to solve every Sudoku? no in general — hence
+backtracking), are natural milestones left **open**, deliberately **not `sorry`-backed**:
+the library remains entirely `sorry`-free. The massive-computation "17-clue minimum"
+result is out of scope (not formalisable).
 -/
 
 namespace Sudoku
@@ -36,7 +59,14 @@ namespace Sudoku
 
     **Preuve** (0 `sorry`) : `c` et `c'` partagent une portée `s` ; `σ` est
     toutes-distinctes sur `s`, donc `σ c = σ c'` impliquerait `c = c'`, contredisant
-    `c ≠ c'` (définition de paire). -/
+    `c ≠ c'` (définition de paire).
+
+    **Keystone.** In a solution, a cell `c` carrying the value `v` excludes `v` from
+    every **peer** cell `c'` (same scope): `σ c' ≠ v`. This is the fundamental fact from
+    which all propagation rules derive.
+
+    **Proof** (0 `sorry`): `c` and `c'` share a scope `s`; `σ` is all-distinct on `s`, so
+    `σ c = σ c'` would imply `c = c'`, contradicting `c ≠ c'` (the definition of peer). -/
 theorem peer_excludes_value {ι V : Type*} [Fintype ι] [DecidableEq ι] [Fintype V]
     [DecidableEq V] (scopes : Scopes ι) (σ : Solution ι V)
     (hσ : IsSolution scopes σ) (c c' : ι) (v : V)
@@ -60,7 +90,20 @@ theorem peer_excludes_value {ι V : Type*} [Fintype ι] [DecidableEq ι] [Fintyp
 
     **Preuve** (0 `sorry`) : par l'absurde, `σ c = w ≠ v`. Par l'hypothèse de couverture,
     `w` apparaît sur une paire `c'` de `c` ; mais `peer_excludes_value` interdit à `c'`
-    de porter `σ c`. Contradiction. -/
+    de porter `σ c`. Contradiction.
+
+    **Naked single (soundness).** If, in a solution `σ`, every value but `v` is already
+    carried by a **peer** of `c` (i.e. each `w ≠ v` occurs on a peer cell of `c`), then
+    `σ c = v`.
+
+    This is the formalisation of the "naked single": cell `c` has only `v` left as a
+    possible candidate (every other value is excluded by its peers), so every solution
+    places `v` there. The rule removes no solution because it identifies a **forced**
+    value.
+
+    **Proof** (0 `sorry`): by contradiction, `σ c = w ≠ v`. By the coverage hypothesis,
+    `w` occurs on a peer `c'` of `c`; but `peer_excludes_value` forbids `c'` from
+    carrying `σ c`. Contradiction. -/
 theorem naked_single_sound {ι V : Type*} [Fintype ι] [DecidableEq ι] [Fintype V]
     [DecidableEq V] (scopes : Scopes ι) (σ : Solution ι V)
     (hσ : IsSolution scopes σ) (c : ι) (v : V)
@@ -83,7 +126,20 @@ theorem naked_single_sound {ι V : Type*} [Fintype ι] [DecidableEq ι] [Fintype
 
     **Preuve** (0 `sorry`) : `v` apparaît en `c0 ∈ s`. Si `c0 ≠ c`, l'hypothèse
     d'exclusion donne une paire `c''` de `c0` portant `v` ; mais `peer_excludes_value`
-    interdit à `c''` de porter `σ c0 = v`. Contradiction. Donc `c0 = c`, `σ c = v`. -/
+    interdit à `c''` de porter `σ c0 = v`. Contradiction. Donc `c0 = c`, `σ c = v`.
+
+    **Hidden single (soundness).** If, in a solution `σ` of the structure `scopes`, the
+    value `v` is present in the scope `s` (`PresentIn σ s v`), `c ∈ s`, and `v` is
+    **excluded** from every other cell `c' ∈ s` (each `c' ≠ c` has a peer carrying `v`),
+    then `σ c = v`.
+
+    This is the formalisation of the "hidden single": within a scope, `v` can only go in
+    `c`, so every solution places it there. For a "full house" scope (`|s| = |V|`), the
+    hypothesis `PresentIn σ s v` is automatic (every value occurs).
+
+    **Proof** (0 `sorry`): `v` occurs at `c0 ∈ s`. If `c0 ≠ c`, the exclusion hypothesis
+    gives a peer `c''` of `c0` carrying `v`; but `peer_excludes_value` forbids `c''` from
+    carrying `σ c0 = v`. Contradiction. Hence `c0 = c`, so `σ c = v`. -/
 theorem hidden_single_sound {ι V : Type*} [Fintype ι] [DecidableEq ι] [Fintype V]
     [DecidableEq V] (scopes : Scopes ι) (σ : Solution ι V)
     (hσ : IsSolution scopes σ) (s : Finset ι) (_hs : s ∈ scopes)
