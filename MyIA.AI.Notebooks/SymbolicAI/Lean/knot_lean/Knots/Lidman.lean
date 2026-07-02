@@ -35,10 +35,31 @@ namespace Knots
 It is a Montesinos knot M(-2/3, 1/3, 2/7) with determinant 3.
 -/
 
+/-- The knot 11n102, defined by its PD-code from KnotInfo.
+    Reference: KnotInfo, https://knotinfo.org (entry 11n_102, PD notation),
+    fetched and hand-checked 2026-07-02: 11 crossings, 22 edge labels,
+    each label 1..22 appears exactly twice.
+    Classification (KnotInfo): Montesinos K(2/3;-1/3;-2/7), determinant 3. -/
+def knot_11n102_diagram : KnotDiagram where
+  crossings := [
+    ⟨4,  2,  5,  1⟩,   -- crossing 1
+    ⟨7,  12, 8,  13⟩,  -- crossing 2
+    ⟨10, 3,  11, 4⟩,   -- crossing 3
+    ⟨2,  11, 3,  12⟩,  -- crossing 4
+    ⟨5,  14, 6,  15⟩,  -- crossing 5
+    ⟨13, 6,  14, 7⟩,   -- crossing 6
+    ⟨17, 20, 18, 21⟩,  -- crossing 7
+    ⟨9,  19, 10, 18⟩,  -- crossing 8
+    ⟨19, 9,  20, 8⟩,   -- crossing 9
+    ⟨15, 22, 16, 1⟩,   -- crossing 10
+    ⟨21, 16, 22, 17⟩   -- crossing 11
+  ]
+  numEdges := 22
+  hwell := by trivial  -- TODO Phase 2: proper well-formedness check
+
 def knot_11n102 : Knot where
-  diagram := sorry  -- TODO: PD-code from KnotInfo
-  -- Reference: KnotInfo, https://knotinfo.org
-  -- Classification: Montesinos knot M(-2/3, 1/3, 2/7)
+  diagram := knot_11n102_diagram
+
 
 /-! ## 2. Unknotting number bounds
 
