@@ -49,7 +49,7 @@ ASR_ENDPOINT=https://whisper-api.myia.io/v1/audio/transcriptions
 SYSTEM_PROMPT=Tu es NanoClaw, un assistant autonome.
 ```
 
-> **Note sur `MODEL_NAME`** : NanoClaw parle le wire Anthropic via Claudish. Envoyer un nom de modèle du tier voulu (`glm-5.2` = Sonnet-tier via GLM, `claude-opus-4-8` = Opus-tier Anthropic natif, `qwen3.6-35b-a3b` = Haiku-tier vLLM). Claudish gere la traduction vers le provider reel — NanoClaw n'a pas a connaitre GLM, vLLM ou Anthropic en direct. Voir la section « Connecter un bot » de `Claudish-Proxy.md`.
+> **Note sur `MODEL_NAME`** : NanoClaw parle le wire Anthropic via Claudish. Envoyer un nom de modèle du tier voulu (`glm-5.2` = Sonnet-tier via GLM, `claude-opus-4-8` = Opus-tier Anthropic natif, `qwen3.6-35b-a3b` = Haiku-tier vLLM). Claudish gere la traduction vers le provider réel — NanoClaw n'a pas a connaitre GLM, vLLM ou Anthropic en direct. Voir la section « Connecter un bot » de `Claudish-Proxy.md`.
 
 ### 3. Lancer le service
 
