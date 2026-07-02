@@ -1,10 +1,10 @@
-# Regles validation H.1-H.7 — pas de complaisance sur notebooks (detail)
+# Règles validation H.1-H.7 — pas de complaisance sur notebooks (detail)
 
-Resume operationnel : CLAUDE.md section H.
+Résumé opérationnel : CLAUDE.md section H.
 
-S'applique a TOUS les agents (executants, coordinateur, reviewers humains, bots). Aucune derogation.
+S'applique a TOUS les agents (exécutants, coordinateur, reviewers humains, bots). Aucune dérogation.
 
-**Incident origine (2026-05-09)** : 5+ vagues de "fix" cosmetiques sur Sudoku-13 (5 commits structurels depuis mars 2026, `execution_count=null` sur 11/11 cellules code — jamais execute depuis sa creation) ne l'ont jamais detecte, parce que toutes les "validations" ont ete superficielles (rule C.2 verifiee sur structure JSON, jamais sur l'execution reelle).
+**Incident origine (2026-05-09)** : 5+ vagues de "fix" cosmétiques sur Sudoku-13 (5 commits structurels depuis mars 2026, `execution_count=null` sur 11/11 cellules code — jamais execute depuis sa creation) ne l'ont jamais detecte, parce que toutes les "validations" ont ete superficielles (rule C.2 vérifiée sur structure JSON, jamais sur l'execution reelle).
 
 ---
 
@@ -25,13 +25,13 @@ Sans ces 4 preuves : la PR n'est PAS validee. Peu importe qui la signe. La verif
 
 Chaque machine cluster (po-2023, po-2024, po-2025, po-2026, ai-01) doit pouvoir executer N'IMPORTE QUEL notebook du repo. Inventaire minimum (cf [docs/kernels-runtime.md](kernels-runtime.md)) :
 
-- Python 3.10+ + envs Conda dedies (`coursia-ml-training`, `epita_symbolic_ai`, `mcp-jupyter`)
+- Python 3.10+ + envs Conda dédiés (`coursia-ml-training`, `epita_symbolic_ai`, `mcp-jupyter`)
 - .NET 9.0 SDK + `dotnet-interactive` Jupyter kernels (.NET notebooks Sudoku/SymbolicAI/ML/Probas/Search/SmartContract)
 - WSL kernels (GameTheory + OpenSpiel + Lean 4)
 - Lean `elan` toolchain
 - Docker + acces aux services GenAI (po-2023 host) ou env de bypass
 
-Si un agent ne peut pas executer un notebook → il INSTALLE l'env (peut demander UAC user). Pas de "skip car env manquant", pas de "delegation a un autre agent". Reparation env > contournement (extension de la regle F — cf [docs/env-python-reparation.md](env-python-reparation.md)).
+Si un agent ne peut pas executer un notebook → il INSTALLE l'env (peut demander UAC user). Pas de "skip car env manquant", pas de "delegation a un autre agent". Réparation env > contournement (extension de la regle F — cf [docs/env-python-reparation.md](env-python-reparation.md)).
 
 ---
 
@@ -53,7 +53,7 @@ Si fail → agent doit :
 - (b) executer via dispatch RooSync sur machine compatible, OU
 - (c) deplacer le notebook dans `_pending_execution/` avec issue ouverte detaillant le blocage
 
-Pas de 4eme option, pas de "je commit quand meme c'est juste structurel".
+Pas de 4ème option, pas de "je commit quand meme c'est juste structurel".
 
 ---
 
@@ -75,7 +75,7 @@ Cascade merge sans audit individuel = violation H.4 = revert + post-mortem dashb
 
 Tout bot reviewer (clusterManager-Myia, jsboige self-bot, futurs) doit poster sur chaque PR notebook une analyse statique structuree :
 
-- **Diff par cellule** : source modifiee oui/non, execution_count avant/apres, outputs ajoutes/retires/modifies, output_type:error present
+- **Diff par cellule** : source modifiée oui/non, execution_count avant/apres, outputs ajoutes/retires/modifies, output_type:error present
 - **Detection "fix superficiel"** : source code cell change ET `execution_count` reste null OU identique, OU outputs vides apres modification source = **RED FLAG**
 - **Detection "regression silencieuse"** : outputs avec `error_type`, execution_count decremente, kernel mismatch dans metadata
 - **Verdict explicite** : `EXEC_PROVED` / `STRUCTURAL_ONLY` / `SUSPECT_REGRESSION`
@@ -94,19 +94,19 @@ Avant ouverture d'une issue ou PR "le notebook X est casse" / "X n'a jamais marc
 - Date du dernier commit avec preuve d'execution (Papermill log presence OU outputs non-vides apres source change)
 - Verdict : `LAST_REAL_EXEC <date> <commit>` ou `NEVER_EXECUTED_SINCE_<creation>`
 
-Sudoku-13 aurait du sortir `NEVER_EXECUTED_SINCE_<creation>` au premier appel — ca aurait economise les 5 PRs cosmetiques accumulees depuis mars 2026.
+Sudoku-13 aurait du sortir `NEVER_EXECUTED_SINCE_<creation>` au premier appel — ca aurait économisé les 5 PRs cosmétiques accumulees depuis mars 2026.
 
 ---
 
 ## H.7 — Plan de sortie du cycle perpetuel (incident 2026-05-09)
 
-L'audit du 2026-05-09 a revele un pattern systemique : 988 notebooks repo, dont une fraction inconnue n'a jamais ete reellement executee malgre des dizaines de commits "fix" cosmetiques.
+L'audit du 2026-05-09 a révélé un pattern systemique : 988 notebooks repo, dont une fraction inconnue n'a jamais ete reellement exécutée malgre des dizaines de commits "fix" cosmétiques.
 
 **Plan de remediation 4 phases** :
 
 - **P0** : gel des "vagues de fix C.x / cosmetique / enrichissement" sur tous les agents jusqu'a inventaire complet
 - **P1** (48h) : forensique massif sur HEAD courant → `STABLE_SNAPSHOT.md` (matrice 988 notebooks : `ALL_NULL` / `ALL_EXEC` / `PARTIAL` + errors_count + LAST_REAL_EXEC)
-- **P2** (1 semaine) : pour chaque NEVER_EXECUTED → soit slot agent dedie executant pour de vrai, soit archive avec mention pedagogique explicite "non executable en l'etat"
+- **P2** (1 semaine) : pour chaque NEVER_EXECUTED → soit slot agent dedie executant pour de vrai, soit archive avec mention pedagogique explicite "non exécutable en l'etat"
 - **P3** (2 semaines) : workflow GitHub Actions `notebook-execution-required.yml` qui execute via Papermill toute notebook touchee dans une PR. Failure → merge bloque. Runner = Docker compose (.NET + Python + Lean + WSL bypass)
 - **P4** (continu) : `STABLE_SNAPSHOT.md` regenere mensuel, gravant `sha + date + matrice exec_status` → point de reference factuel quand quelqu'un dit "X est valide"
 
@@ -117,7 +117,7 @@ Cf [docs/archive/STABLE_SNAPSHOT.md](../archive/STABLE_SNAPSHOT.md).
 ## References connexes
 
 - [.claude/rules/notebook-conventions.md](../../.claude/rules/notebook-conventions.md) — Rules C.1/C.2/C.3 notebook
-- [docs/regles-vigilance-detail.md](regles-vigilance-detail.md) — Regles G.1-G.9 anti-complaisance
-- [docs/env-python-reparation.md](env-python-reparation.md) — Reparation env Python (regle F)
+- [docs/regles-vigilance-detail.md](regles-vigilance-detail.md) — Règles G.1-G.9 anti-complaisance
+- [docs/env-python-reparation.md](env-python-reparation.md) — Réparation env Python (regle F)
 - [docs/kernels-runtime.md](kernels-runtime.md) — Inventaire kernels par machine
 - [docs/archive/STABLE_SNAPSHOT.md](../archive/STABLE_SNAPSHOT.md) — Matrice exec_status des notebooks
