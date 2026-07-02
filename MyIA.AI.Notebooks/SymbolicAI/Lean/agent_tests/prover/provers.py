@@ -273,12 +273,36 @@ def _autonomous_success_gate(final_sorry: int, original_sorry_count: int,
     compiles, the count drops, and nothing was proved. ``None`` preserves the
     pre-FX-6 behaviour for legacy callers.
 
+    FX-8 (#1453, NanoClaw #4936): the structural-progress disjunct has the same
+    gap — ``final >= original`` covers the equality case of a statement-mutation
+    restore (``final == original`` after revert, zero verified tactic), so a
+    restored mutation would report ``structural_progress = True``. A same-count
+    outcome is now structural progress only when at least one tactic is
+    build-verified; a decomposition (``final > original``) and the legacy
+    ``verified is None`` case are unaffected. This closes the autonomous-path
+    asymmetry of #4909 (the multi-agent path overrides the flag after its
+    mutation guard; the autonomous path delegates here).
+
     Returns ``(success, structural_progress)``.
     """
     structural_progress = (
         final_sorry >= original_sorry_count
         and final_build_ok
         and final_sorry > 0
+        # FX-8 (#1453, NanoClaw #4936): a same-count build-OK outcome
+        # (``final == original``) is "structural progress" only when at least
+        # one tactic is build-verified. Otherwise it is a statement-mutation
+        # restore (the autonomous path reverts to the original after
+        # ``_stmt_mutation_guard`` fires, giving ``final == original ∧ verified
+        # == 0``) or a no-op — neither is a real restructured proof. Legitimate
+        # cases are preserved: a decomposition (``final > original``, any
+        # verified count) and a legacy same-count restructure (``verified is
+        # None``) both stay structural progress. This mirrors the ``sorry_drop``
+        # FX-6 guard and closes the autonomous-path asymmetry of #4909 (the
+        # multi-agent path overrides ``structural_progress = False`` after the
+        # mutation guard; the autonomous path delegates here).
+        and not (verified_tactic_count == 0
+                 and final_sorry == original_sorry_count)
     )
     sorry_drop = final_sorry < original_sorry_count
     if verified_tactic_count is not None and verified_tactic_count == 0:

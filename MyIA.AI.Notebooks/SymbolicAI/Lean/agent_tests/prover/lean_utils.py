@@ -60,7 +60,7 @@ def strip_lean_comments(content: str) -> str:
 def count_real_sorries(content: str) -> int:
     """Count REAL ``sorry`` tokens: comment-stripped, word-bounded (FX-6 #1453).
 
-    ``content.count("sorry")`` — used historically across the harness —
+    ``content.count("sorry")`` — used historically across the harness — # FX-7-ALLOW: historical
     over-counts by including prose mentions in comments/docstrings (observed
     x4+ inflation: HashlifeCorrectness reported 33 where 4 were real) and
     misses nothing real: after stripping ``--`` line comments and nested
