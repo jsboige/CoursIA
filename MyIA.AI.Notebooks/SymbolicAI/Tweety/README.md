@@ -27,10 +27,10 @@ TweetyProject est une collection de bibliothèques Java couvrant plusieurs domai
 
 Les notebooks utilisent **deux implémentations** pour exécuter TweetyProject, selon le langage d'apprentissage visé :
 
-| Implémentation           | Stack                          | Kernel        | JVM requise ?                     | Notebooks                                                                                                    |
-| ------------------------ | ------------------------------ | ------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **Python** (originelle)  | JPype (pont Java↔Python)       | Python 3      | Oui (JDK téléchargé par le setup) | `Tweety-1` à `Tweety-11` (13 notebooks)                                                                      |
-| **C#/.NET** (port natif) | IKVM 8.15 (bytecode Java→.NET) | `.net-csharp` | **Non** (runtime IKVM pur .NET)   | `Tweety-2-Basic-Logics-Csharp`, `Tweety-2b-Semantics-Csharp`, `Tweety-2c-FOL-Csharp`, `Tweety-3-Dung-Csharp` |
+| Implémentation           | Stack                          | Kernel        | JVM requise ?                     | Notebooks                                                                                                                               |
+| ------------------------ | ------------------------------ | ------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Python** (originelle)  | JPype (pont Java↔Python)       | Python 3      | Oui (JDK téléchargé par le setup) | `Tweety-1` à `Tweety-11` (13 notebooks)                                                                                                 |
+| **C#/.NET** (port natif) | IKVM 8.15 (bytecode Java→.NET) | `.net-csharp` | **Non** (runtime IKVM pur .NET)   | `Tweety-2-Basic-Logics-Csharp`, `Tweety-2b-Semantics-Csharp`, `Tweety-2c-FOL-Csharp`, `Tweety-3-Dung-Csharp`, `Tweety-4-Aspic-Csharp`   |
 
 Les deux implémentations couvrent les mêmes concepts fondamentaux (logique propositionnelle, sémantique des mondes possibles, logique du premier ordre, argumentation de Dung) ; le port C# les expose **sans JVM**, directement dans le runtime .NET, ce qui les rend exécutables côté .NET Interactive comme n'importe quel notebook C#. Les notebooks `-Csharp` vivent **à côté** de leurs homologues Python (pas dans un sous-dossier), pour faciliter la comparaison des deux stacks sur un même concept. Voir EPIC [#4667](https://github.com/jsboige/CoursIA/issues/4667).
 
