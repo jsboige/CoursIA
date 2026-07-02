@@ -32,7 +32,7 @@ flowchart TD
 | `StableMarriage/GaleShapley.lean` | Terminaison, stabilité, `man_optimal`, `woman_pessimal` | 0 |
 | `StableMarriage/Lattice.lean` | Treillis de Knuth, réfutations, `exists_isManOptimal` | 0 |
 
-**Total** : 0 sorry en production. `lake build StableMarriage` SUCCESS. Toolchain `v4.30.0-rc2`.
+**Total** : 0 sorry en production. `lake build StableMarriage` SUCCESS. Toolchain `v4.31.0-rc1`.
 
 ## Théorèmes (statut)
 
@@ -89,7 +89,7 @@ grep -c sorry StableMarriage/*.lean
 Ce projet est une formalisation Lean 4 **complète, à 0 `sorry`** du **théorème de
 mariage stable de Gale-Shapley** (1962) et de la **structure de treillis de Knuth** de
 ses couplages stables. Les douze résultats phares sont tous CLOSED (`lake build
-StableMarriage` SUCCESS, toolchain `v4.30.0-rc2`).
+StableMarriage` SUCCESS, toolchain `v4.31.0-rc1`).
 
 ### Ce qui est prouvé
 

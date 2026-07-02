@@ -13,7 +13,7 @@ projets plus ambitieux (`calibration_lean`, `conway_lean`, `sensitivity_lean`).
 
 ## Statut
 
-- **Toolchain** : v4.30.0-rc2
+- **Toolchain** : v4.31.0-rc1
 - **Compte de sorry** : 0
 - **Build** : `lake build MathLibExamples` -- SUCCESS
 - **Dépendances** : Mathlib4
