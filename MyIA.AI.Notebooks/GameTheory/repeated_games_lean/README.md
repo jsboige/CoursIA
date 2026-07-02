@@ -1,6 +1,6 @@
 # Repeated Games — Lean (compagnon formel GT-6c)
 
-> **Compagnon formel** du notebook pédagogique [GameTheory-6c](../GameTheory-6c.ipynb) (`Jeux répétés` — Dilemme du prisonnier itéré).
+> **Compagnon formel** du notebook pédagogique [GameTheory-6c](../GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) (`Jeux répétés` — Dilemme du prisonnier itéré).
 > Série GameTheory a déjà 4 lakes (`cooperative_games`, `minimax`, `social_choice`, `stable_marriage`).
 > Aucun ne couvrait les jeux répétés — ce companion comble le manque avec le théorème-phare de la **stratégie grim-trigger**.
 
@@ -78,5 +78,5 @@ Cibles : `Discounting.discount_threshold_rewrite`, `GrimTrigger.grim_trigger_sus
 
 - [Issue #4880 (création du lake)](https://github.com/jsboige/CoursIA/issues/4880)
 - [Issue #4363 (junction shared Mathlib cache)](https://github.com/jsboige/CoursIA/issues/4363)
-- Notebook : [`GameTheory-6c.ipynb`](../GameTheory-6c.ipynb)
+- Notebook : [`GameTheory-6c.ipynb`](../GameTheory-6c-RepeatedGames-FolkTheorem.ipynb)
 - Lake jumeau `cooperative_games_lean` (sorries closed 2026-06-09, voir BONDAREVA_SHAPLEY_HARDNESS.md)
