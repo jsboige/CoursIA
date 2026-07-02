@@ -1,92 +1,65 @@
-# `repeated_games_lean` — Théorie des jeux répétés (Lean 4)
+# Repeated Games — Lean (compagnon formel GT-6c)
 
-Compagnon **formel** du notebook **GameTheory-6c** (jeux répétés). Le notebook
-dérive à la main le résultat central de soutenabilité de la coopération ; ce
-lake en donne la preuve formelle sous kernel Lean 4 + Mathlib. Part of
-[#4038](https://github.com/jsboige/CoursIA/issues/4038) (modèle « 1 théorème-phare
-par série »). See [#4880](https://github.com/jsboige/CoursIA/issues/4880).
+> **Compagnon formel** du notebook pédagogique [GameTheory-6c](../GameTheory-6c.ipynb) (`Jeux répétés` — Dilemme du prisonnier itéré).
+> Série GameTheory a déjà 4 lakes (`cooperative_games`, `minimax`, `social_choice`, `stable_marriage`).
+> Aucun ne couvrait les jeux répétés — ce companion comble le manque avec le théorème-phare de la **stratégie grim-trigger**.
 
 ## Théorème-phare
 
-> **Grim trigger soutient la coopération ssi `δ ≥ (T − R) / (T − P)`.**
+**Grim trigger soutient la coopération ssi δ ≥ (T − R) / (T − P)** (one-shot deviation principle).
 
-Dans le Dilemme du Prisonnier infiniment répété avec facteur d'escompte
-`δ ∈ [0, 1)`, la stratégie *grim trigger* (coopérer tant que l'adversaire
-coopère, dévier pour toujours dès la première défection) est un équilibre de
-Nash parfait en sous-jeux exactement lorsque `δ` dépasse le seuil critique :
+Pour un jeu répété à horizon infini, facteur d'actualisation δ ∈ [0,1), paramètres réels `T > R > P > S` avec `2R > T + S` :
 
-```
-δ* = (T − R) / (T − P)
-```
+- **Coopération perpétuelle** génère `R / (1 − δ)` (somme géométrique).
+- **Déviation one-shot puis punition éternelle** génère `T + δ · P / (1 − δ)`.
+- Seuil d'indifférence : `δ · (T − R) ≥ (T − R)` ⇔ `δ ≥ (T − R) / (T − P)`.
 
-où `T > R > P > S` sont les paramètres du Dilemme du Prisonnier (`T` tentation,
-`R` coopération mutuelle, `P` punition mutuelle, `S` sucker), avec `2·R > T + S`.
+> Au-dessus du seuil, **aucune déviation unilatérale n'est profitable**. La grim est une stratégie d'équilibre sous-jeu-parfait (subgame-perfect Nash equilibrium).
 
-La preuve repose sur le **principe de déviation en un coup** (one-shot deviation
-principle) et les sommes géométriques (Mathlib `tsum_geometric_of_lt_one`) :
+## Cohorte (leçon #4362, Issue #4880)
 
-| Trajectoire          | Flux actualisé          |
-|----------------------|-------------------------|
-| Coopération perpétuelle | `V_C = R + δR + δ²R + … = R / (1 − δ)` |
-| Dévier puis punition   | `V_D = T + δP + δ²P + … = T + δ·P / (1 − δ)` |
+| Paramètre | Valeur | Référence |
+|-----------|--------|-----------|
+| Toolchain | `leanprover/lean4:v4.31.0-rc1` | Cohorte 18 lakes mutualisés |
+| Mathlib rev | `d568c8c0` | `#4363` junction shared cache |
+| Total sorry (production) | Voir [FORMAL_STATUS.md](FORMAL_STATUS.md) | Théorème-phare 0 sorry requis |
+| Total sorry (stretch) | Folk.lean — tolérés | `#4880` § "Critères de fermeture" §1 |
 
-`V_C ≥ V_D` ⟺ `R ≥ T·(1 − δ) + δ·P` ⟺ `δ·(T − P) ≥ (T − R)` ⟺ `δ ≥ (T−R)/(T−P)`.
+## Modules
 
-## Exemple numérique (Pont ICT-13, [#4879](https://github.com/jsboige/CoursIA/issues/4879))
+| Module | Rôle | Statut théorique |
+|--------|------|------------------|
+| `RepeatedGames.Stage` | PD paramétrique, actions C/D, payoffs, défault > cooperate en stage game | FORMAL-CERTIFIED (0 sorry) |
+| `RepeatedGames.Discounting` | Facteur d'actualisation, sommes géométriques, lemme de réécriture du seuil | 1 sorry (cible prover BG) |
+| `RepeatedGames.GrimTrigger` | Stratégie grim, théorème-phare `grim_trigger_sustains_iff`, corollaire NE | 2 sorries (cibles primaires prover BG) |
+| `RepeatedGames.Folk` (STRETCH) | Folk theorem actualisé (Fudenberg–Maskin 1986) | Sorries tolérés (stretch) |
 
-Pour `T = 3, R = 2, P = 1, S = 0` :
+## Pont ICT-13 (#4879)
 
-```
-δ* = (3 − 2) / (3 − 1) = 1/2
-```
+Le seuil numérique `δ ≥ (T − R) / (T − P)` est le **gate falsifiable** d'[ICT-13](https://github.com/jsboige/CoursIA/issues/4879) — stratégies comme formes stables (Axelrod) :
+- ICT-13 stratégies STABLES = celles dont le seuil grim-trigger est satisfait pour les paramètres empiriques (T-R)/(T-P) du dilemme observé.
+- Voir `scripts/research/ict/ict13_threshold_compute.py` (à venir — référence croisée à ajouter dans une PR ultérieure).
 
-→ Grim trigger soutient la coopération dès `δ ≥ 0.5`. La vérification numérique
-de ce seuil est un gate du notebook ICT-13.
+## Reproving BG
 
-## Structure du lake
-
-```
-repeated_games_lean/
-├── lakefile.lean              -- package + Mathlib dep
-├── lean-toolchain             -- v4.31.0-rc1
-├── RepeatedGames.lean         -- agrégateur racine
-└── RepeatedGames/
-    ├── Stage.lean             -- Dilemme du Prisonnier (T,R,P,S), paiement de stage
-    ├── Discounting.lean       -- sommes géométriques, V_C, V_D, réduction au seuil
-    └── GrimTrigger.lean       -- théorème-phare grim_trigger_sustains_iff
-```
-
-**Stretch optionnel (non requis pour fermer [#4880](https://github.com/jsboige/CoursIA/issues/4880))** :
-`RepeatedGames/Folk.lean` — Folk theorem minimal (tout paiement faisable strictement
-individuellement rationnel est soutenable quand `δ → 1`).
-
-## État formel
-
-| Module | Sorries |
-|--------|---------|
-| `Stage.lean` | **0** (PD définitions + domination stricte de la défection) |
-| `Discounting.lean` | 1 (`coop_ge_deviate_iff` — algèbre réelle pure, tranche 2) |
-| `GrimTrigger.lean` | transitif via `coop_ge_deviate_iff` |
-| **`grim_trigger_sustains_iff`** | **cible 0 sorry** (critère de fermeture [#4880](https://github.com/jsboige/CoursIA/issues/4880)) |
-
-Le théorème-phare sera **0-sorry** une fois la réduction au seuil prouvée
-(`field_simp` + `linarith`, tranche 2). Les fondations (`Stage`, `geom_sum`,
-`coopValue`, `deviateValue`) sont déjà sorry-free et compilent.
-
-## Toolchain
-
-- `leanprover/lean4:v4.31.0-rc1`
-- Mathlib `d568c8c0` (groupe mutualisé des 18 lakes, junction cache #4363).
-
-## Build
-
+Une fois la PR mergée, lancer en side-track BG (cf directive ai-01 msg-20260702T040323-3i0obi) :
 ```bash
-cd MyIA.AI.Notebooks/GameTheory/repeated_games_lean
-lake build RepeatedGames
+cd MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests
+python -u run_prover_bg.py <demo_id_grim_trigger> \
+  --provider zai --director-provider openrouter \
+  --max-iter 20 --workflow-timeout 2400
 ```
+Cibles : `Discounting.discount_threshold_rewrite`, `GrimTrigger.grim_trigger_sustains_iff`, `GrimTrigger.grim_trigger_is_NE`.
 
-## Références
+## Référence externe
 
-- R. Gibbons, *Game Theory for Applied Economists* (1992), ch. 2.
-- D. Fudenberg & J. Tirole, *Game Theory* (1991), ch. 5.
-- Companion : notebook **GameTheory-6c** (jeux répétés).
+- Geanakoplos, J. (2005). "Three Brief Proofs of Arrow's Impossibility Theorem"
+- Fudenberg, D., & Maskin, E. (1986). "The Folk Theorem in Repeated Games with Discounting"
+- Mailath, G. J., & Samuelson, L. (2006). *Repeated Games and Reputations: Long-Run Relationships*. Oxford University Press.
+
+## Voir aussi
+
+- [Issue #4880 (création du lake)](https://github.com/jsboige/CoursIA/issues/4880)
+- [Issue #4363 (junction shared Mathlib cache)](https://github.com/jsboige/CoursIA/issues/4363)
+- Notebook : [`GameTheory-6c.ipynb`](../GameTheory-6c.ipynb)
+- Lake jumeau `cooperative_games_lean` (sorries closed 2026-06-09, voir BONDAREVA_SHAPLEY_HARDNESS.md)
