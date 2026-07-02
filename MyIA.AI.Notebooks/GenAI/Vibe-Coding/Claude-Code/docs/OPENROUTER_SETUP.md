@@ -144,7 +144,7 @@ Contenu (remplacez `sk-or-v1-VOTRE_CLE` par votre vraie clé) :
 
 ### Alternative : variables d'environnement PowerShell (Windows)
 
-Si vous preferez les variables d'environnement, ouvrez votre profil :
+Si vous préférez les variables d'environnement, ouvrez votre profil :
 
 ```powershell
 notepad $PROFILE
