@@ -326,7 +326,7 @@ Les coûts sont identiques si le même modèle est utilise via OpenRouter.
 
 ### Préférer Claude Code pour
 
-- Développement **professionnel** et **supporte**
+- Développement **professionnel** et **supporté**
 - **Parallélisation** de tâches (sous-agents)
 - Intégration **CLI** pour automatisation et CI/CD
 - Support **MCP** complet
