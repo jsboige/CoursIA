@@ -33,6 +33,15 @@ Les questions centrales deviennent dynamiques et multi-échelles :
 
 ## Deux articles fondateurs
 
+La série s'appuie sur **deux publications scientifiques** — une par branche — et, pour chacune, sur
+un **éclairage informel** qui en rend les enjeux intuitifs sans en relâcher l'exigence. La branche du
+**tri-morphogenèse** (Zhang, Goldstein & Levin) est éclairée par l'entretien de Michael Levin avec
+Lex Fridman ; la branche de l'**émergence causale** (Jansma & Hoel) par l'essai de vulgarisation
+d'Erik Hoel *I Figured Out How to Engineer Emergence*. Les deux éclairages jouent le même rôle : ils
+fournissent le **vocabulaire** et l'**intuition** de chaque programme, jamais un blanc-seing — les
+revendications spéculatives y sont tenues à distance et ne sont créditées que par la mesure (voir le
+[principe méthodologique](#principe-méthodologique) plus bas).
+
 ### 1. Le tri comme morphogenèse minimale (Zhang, Goldstein & Levin, 2025)
 
 **Classical sorting algorithms as a model of morphogenesis: self-sorting arrays reveal
@@ -49,17 +58,24 @@ où apparaissent pourtant des compétences inattendues : robustesse aux cellules
 C'est le **banc d'essai d'entrée** de la série : tout est observable, les règles sont simples,
 les trajectoires sont enregistrables. Notebooks associés : **ICT-2**, ICT-3, ICT-4.
 
-### 2. Engineering Emergence (Jansma & Hoel, 2025)
+### 2. L'ingénierie de l'émergence multi-échelle (Jansma & Hoel, 2025)
 
-**Engineering Emergence**, Abel Jansma, Erik Hoel, arXiv 2025 (et *I figured out how to engineer
-emergence*, Erik Hoel, The Intrinsic Perspective, 2025).
+**Engineering Emergence**, Abel Jansma & Erik Hoel, 2025 —
+[arXiv:2510.02649](https://arxiv.org/abs/2510.02649) — prolongé par le cadre *Causal Emergence 2.0*
+([arXiv:2503.13395](https://arxiv.org/abs/2503.13395)).
 
-Second pilier conceptuel : la recherche **systématique des échelles causales pertinentes**. Un
-système dynamique peut être analysé à plusieurs niveaux ; certaines macro-échelles ne sont pas
-de simples compressions pratiques, elles révèlent une organisation causale plus nette, plus
-déterministe, moins dégénérée. ICT y puise son outillage multi-échelle (micro / méso / macro,
-partitions, hiérarchies de contributions, signatures scale-free). Notebooks associés : ICT-5,
-ICT-6, ICT-7.
+Les auteurs cherchent **systématiquement les échelles causales pertinentes** d'un système dynamique.
+Partant de sa matrice de transition (TPM), ils parcourent le **treillis des partitions** de ses états
+— chaque partition est un *coarse-graining* candidat, une macro-échelle obtenue en « regroupant » des
+micro-états — et attribuent à chacune un **score d'émergence** entre 0 et 1, bâti sur deux primitives
+information-théoriques (un gain de **déterminisme**, une baisse de **dégénérescence**). La plupart des
+échelles n'apportent rien ; seul un petit sous-ensemble **irréductible** contribue, et il s'ordonne du
+micro vers le macro en une **hiérarchie émergente**. Certains réseaux (Barabási–Albert au voisinage de
+$\alpha = 1$) produisent même une signature **scale-free**.
+
+C'est le **second banc d'essai** de la série : là où Levin fournit le vocabulaire cognitif, Hoel
+fournit l'**outillage multi-échelle** (micro / méso / macro, partitions, hiérarchies de contributions,
+signatures scale-free) qu'ICT branche sur le tri. Notebooks associés : **ICT-5**, **ICT-6**, ICT-7.
 
 ## Pourquoi parler de « compétences » pour un algorithme de tri ?
 
@@ -142,6 +158,79 @@ l'IIT (voir la section « Portée scientifique et débats » du [README](README.
 vivante et contestée. C'est là que se loge l'humilité épistémique de Levin : le procès en
 anthropomorphisme est, selon lui, mal posé — « *we have the same magic that everything has* » — mais
 cette continuité ne s'établit qu'instrument en main, jamais par décret.
+
+## Pourquoi une macro-échelle ferait-elle un *vrai* travail causal ?
+
+La branche « émergence » emploie, elle aussi, un vocabulaire fort — une macro-échelle qui *émerge*,
+qui *fait un travail causal*, une organisation qu'on *ingénierie*. Là encore : intuition commode, ou
+affirmation défendable ? L'essai d'Erik Hoel *I Figured Out How to Engineer Emergence* — l'éclairage
+informel de cette seconde jambe — expose l'intuition, et le cadre *Engineering Emergence* / *Causal
+Emergence 2.0* fournit la **méthode** qui la rend honnête. On en retient quatre idées qui éclairent
+ICT-5/6/7 (voir *Pour aller plus loin*).
+
+### 1. L'objection réductionniste : la causalité « s'écoule » vers le micro
+
+Le réflexe symétrique de celui de la branche Levin consiste à décider *a priori* qu'une macro-échelle
+« ne peut pas » faire un vrai travail causal — que seule la micro-physique agit, et que tout niveau
+supérieur n'est qu'un résumé commode. Hoel nomme ce réflexe et le pousse à sa conclusion :
+
+> « Either you say everything is overdetermined, or you say that only the microscale is really doing
+> anything (the classic reductionist option). » — *E. Hoel*
+
+C'est ce que le philosophe Ned Block appelait le fait que la causalité « *drains away* » vers le
+micro. La réponse d'ICT n'est pas de trancher par principe, mais de **mesurer** : à chaque
+macro-échelle candidate, la structure causale gagne-t-elle en netteté, ou non ? C'est exactement le
+protocole d'**ICT-5**, qui compare l'information effective et le $\Phi$ aux échelles micro et macro
+avec le vrai `pyphi.macro` — et n'accorde d'émergence qu'à celles qui l'obtiennent réellement.
+
+### 2. Une définition opérationnelle : un score sur le treillis des partitions
+
+Pour sortir de la métaphore, il faut, ici aussi, une grandeur **mesurable**. « Émerger » cesse d'être
+une impression : c'est un **score entre 0 et 1** attribué à chaque *coarse-graining*, bâti sur deux
+primitives information-théoriques — un gain de **déterminisme**, une baisse de **dégénérescence**. On
+parcourt le **treillis des partitions** des états du système et on lit quelles échelles gagnent
+réellement en clarté causale.
+
+> « The etymology of the word "system" is something like "I cause to stand together." » — *E. Hoel*
+
+Autrement dit, ce qui fait qu'un ensemble de micro-états forme un « système » à une échelle donnée est
+une **affirmation causale** — précisément ce que le score quantifie. C'est le cœur d'**ICT-6**, qui
+estime une chaîne de Markov depuis les trajectoires de tri d'ICT-2, puis cherche l'émergence causale
+multi-échelles avec l'outillage *Causal Emergence 2.0*, au-delà de la borne de taille de PyPhi.
+
+### 3. Peu d'échelles comptent : la hiérarchie émergente
+
+Le balayage ne consacre pas toutes les échelles. La plupart des partitions n'apportent rien ; seul un
+petit sous-ensemble **irréductible** contribue — et ce sous-ensemble s'ordonne du micro vers le macro
+en une **hiérarchie émergente**. L'idée est ancienne ; Herbert Simon la formulait dès 1962 :
+
+> « …complexity takes the form of hierarchy—the complex system being composed of subsystems that, in
+> turn, have their own subsystems, and so on. » — *H. Simon, "The Architecture of Complexity", 1962*
+
+Distinguer les rares échelles porteuses de la masse des découpages inertes est ce que mesurent
+**ICT-6** (hiérarchies de contributions) et **ICT-7**, qui va jusqu'à traquer une signature
+**scale-free** — mais *sans se faire avoir* : MLE de Hill, choix de $x_{\min}$, test KS à la Clauset.
+Un système peut *paraître* sans échelle tout en possédant une taille caractéristique ; ICT-7 refuse le
+diagnostic hâtif.
+
+### 4. « Engineer emergence » est un titre, pas une preuve
+
+Reste la revendication forte — le titre lui-même, *« I figured out how to engineer emergence »*, et
+son imagerie (les « ballons », le « jardin de pierres » des hiérarchies). ICT l'accueille comme un
+**permis d'enquêter**, pas comme un résultat à importer. Hoel décrit d'ailleurs lui-même son essai
+comme
+
+> « an overview built for a larger audience, constructed in favor of conceptual understanding » —
+> *E. Hoel*
+
+c'est-à-dire une vulgarisation *conceptuelle*, assumée comme telle. Ce qu'ICT retient n'est donc pas
+la promesse d'« ingénierie », mais le **score falsifiable** : et la même discipline oblige à rapporter
+les échecs. Quand une macro-échelle **n'émerge pas**, ou quand un signal scale-free se révèle un
+**fantôme statistique** (degrés de liberté cachés), les notebooks le disent. C'est le pendant exact,
+pour cette branche, du [principe méthodologique](#principe-méthodologique) d'ICT — *mesurer ce que le
+modèle fait vraiment, pas ce qu'on espérait* — et de la thèse de Levin sur les revendications de
+protocole : l'émergence causale est une **grandeur qu'on expose au risque de la mesure**, jamais un
+décret.
 
 ## Architecture : une couche `ict/` à côté de PyPhi
 
@@ -280,3 +369,18 @@ qu'au vu de ce qu'une expérience explicite en mesure.
   lumière cognitif et de l'agentivité multi-échelle.
 - Zhang, Goldstein & Levin, *Classical sorting algorithms as a model of morphogenesis*, Adaptive
   Behavior, 2025 — [arXiv:2401.05375](https://arxiv.org/abs/2401.05375) — le banc d'essai d'ICT-2/3.
+
+### Pour aller plus loin — l'émergence causale (Hoel)
+
+- **Erik Hoel, *I Figured Out How to Engineer Emergence*** (The Intrinsic Perspective, 2025) —
+  l'exposé grand public du programme : coarse-graining sur le treillis des partitions, score
+  d'émergence, hiérarchies émergentes, signatures scale-free :
+  <https://www.theintrinsicperspective.com/p/i-figured-out-how-to-engineer-emergence>. (Toutes les
+  citations de la section « Pourquoi une macro-échelle ferait-elle un vrai travail causal ? » en sont
+  tirées.)
+- Jansma & Hoel, *Engineering Emergence*, 2025 — [arXiv:2510.02649](https://arxiv.org/abs/2510.02649)
+  — le cadre formel : primitives causales (déterminisme, dégénérescence), score d'émergence, treillis
+  des partitions.
+- *Causal Emergence 2.0* — [arXiv:2503.13395](https://arxiv.org/abs/2503.13395) — l'arrière-plan
+  conceptuel : lever l'axiome d'exclusion de la formulation d'origine (Hoel, Albantakis & Tononi,
+  PNAS 2013), pour que l'émergence puisse s'exprimer à *plusieurs* échelles à la fois.
