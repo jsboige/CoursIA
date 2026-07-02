@@ -231,6 +231,71 @@ def persistence_tracker(observation: np.ndarray) -> np.ndarray:
     return out
 
 
+def moving_average_tracker(observation: np.ndarray, window: int = 5, lead: int = 1) -> np.ndarray:
+    """Estimateur **moyenne mobile** : ``p_hat[t] = mean(obs[t-w+1 : t+1])``.
+
+    Baseline de lissage sans modele de tendance. Pour ``lead > 0`` on extrapole
+    en deplacement la moyenne mobile d'un pas, comme un *dead-reckoning* sur
+    la valeur moyenne. Le compromis biais-variance est pilote par ``window``
+    (petite fenetre = reactif mais bruite ; grande fenetre = lisse mais
+    dephase). Distinct de la persistance (qui regarde le dernier point
+    seulement) et de l'AR(1) (qui modelise une dynamique lineaire).
+    """
+    obs = np.asarray(observation, dtype=float)
+    window = max(1, int(window))
+    n = obs.shape[0]
+    out = np.empty_like(obs)
+    csum = np.concatenate([[0.0], np.cumsum(obs)])
+    for k in range(n):
+        lo = max(0, k - window + 1)
+        hi = k + 1
+        out[k] = (csum[hi] - csum[lo]) / (hi - lo)
+    if lead > 0:
+        # Extrapolation dead-reckoning sur la valeur moyenne (difference
+        # entre la derniere moyenne mobile et la precedente).
+        diff = np.diff(out, prepend=out[0])
+        out = out + float(lead) * diff
+    return out
+
+
+def ar1_tracker(observation: np.ndarray, lead: int = 1) -> np.ndarray:
+    """Estimateur **AR(1)** : ``p_hat[t] = phi * obs[t-1] + c``.
+
+    Baseline lineaire classique : on ajuste un modele AR(1) ``obs[t] = phi *
+    obs[t-1] + c + eps`` sur les observations (OLS a 1 pas), puis on **itere**
+    ``lead`` fois depuis l'amorce ``obs[-1]`` pour obtenir la prediction
+    multi-pas ``p_hat[t]`` (forward, sans reutiliser les observations). Le
+    scalaire projete est **aligne** sur toute la trajectoire : on reporte
+    cette prediction constante comme l'horizon de reference de la baseline.
+
+    Le coefficient ``phi`` est appris par regression sur toute la trajectoire,
+    ce qui distingue cette baseline de la persistance (``phi = 1, c = 0``)
+    et du modele a vitesse constante ``p_hat = obs + lead * v`` (qui extrapole
+    lineairement a partir de la derive recente).
+    """
+    obs = np.asarray(observation, dtype=float)
+    if obs.shape[0] < 3:
+        return np.full_like(obs, float(obs[-1]))
+    y = obs[1:]
+    x = obs[:-1]
+    x_mean = float(x.mean())
+    y_mean = float(y.mean())
+    var_x = float(np.mean((x - x_mean) ** 2))
+    if var_x < 1e-12:
+        return np.full_like(obs, y_mean)
+    phi = float(np.mean((x - x_mean) * (y - y_mean)) / var_x)
+    c = y_mean - phi * x_mean
+    # Projection multi-pas iterative (forward sans observation), amorce sur
+    # la derniere observation.
+    projected = float(obs[-1])
+    for _ in range(int(lead)):
+        projected = phi * projected + c
+    # Le modele AR(1) fournit un scalaire de prediction a horizon ``lead``.
+    # On l'aligne sur toute la trajectoire (la baseline "voit" ce scalaire
+    # constant comme son estimation pour chaque pas).
+    return np.full_like(obs, projected)
+
+
 def cross_correlation(p_hat: np.ndarray, target: np.ndarray, max_lag: int = 12):
     """Correlation croisee normalisee entre ``p_hat[t]`` et ``target[t + lag]``.
 
