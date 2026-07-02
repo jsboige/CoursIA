@@ -393,7 +393,7 @@ Search/
 ├── README.md                              # Ce fichier
 ├── requirements.txt                       # Dependances Python
 ├── search_helpers.py                      # Utilitaires partages
-├── resources/                             # Images et donnees
+├── resources/                             # Images et données
 │
 ├── Part1-Foundations/                     # Search Fondamental (11 notebooks)
 │   ├── Search-1-StateSpace.ipynb
