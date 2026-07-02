@@ -4,24 +4,24 @@
 
 ## Objectif
 
-Identifier les combinaisons d'alpha reellement complementaires pour les strategies composites QuantConnect.
+Identifier les combinaisons d'alpha réellement complémentaires pour les stratégies composites QuantConnect.
 
-## Probleme
+## Problème
 
 Les composites actuels combinent des alphas correles:
 - TrendWeather (Sharpe 1.155) = TrendStocks + AllWeather, mais TrendStocks domine
 - FamaFrench + AllWeather: sweep monotone vers AllWeather
-- MomentumSector + RegimeSwitching: double-defense en periode de stress
+- MomentumSector + RegimeSwitching: double-defense en période de stress
 
-## Methodologie
+## Méthodologie
 
 1. **Return Stream Collection**: Collecter les returns de chaque alpha
-2. **Correlation Matrix**: Identifier les strategies non-correlees
+2. **Correlation Matrix**: Identifier les stratégies non-corrélées
 3. **Regime Analysis**: Mapper la performance par regime (bull/bear/sideways, high/low vol)
-4. **Complementarity Score**: Classer les paires par performance asymetrique
+4. **Complementarity Score**: Classer les paires par performance asymétrique
 5. **Downside Protection**: Mesurer la protection en drawdown
 
-## Resultats preliminaires
+## Résultats préliminaires
 
 | Composite potentiel | Correlation | Sharpe combine | Synergie |
 |---------------------|-------------|----------------|----------|
