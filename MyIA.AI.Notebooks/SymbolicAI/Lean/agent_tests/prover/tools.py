@@ -1910,16 +1910,41 @@ class TacticTools:
         duration = time.time() - start
         sorry_count = self._count_sorry_after_replacement(tactic)
 
+        # Forensic #1453 (2026-07-02, traces L180/L185/Basic_L224): the probe
+        # `success` alone means "the replacement COMPILES in isolation" — a
+        # tactic that IS `sorry` or leaves sorry placeholders compiles fine, so
+        # the agent read success=True as PROOF FOUND while the sorry count
+        # stayed flat. Gate `success` on actual sorry elimination (same
+        # semantics the VerifyExecutor adopted via persist_on_success on
+        # 2026-06-23) and expose the raw probe verdict as `probe_compiles` so
+        # decomposition-style tactics still see that their edit builds.
+        probe_compiles = bool(result["success"])
+        original_count = (self._sorry_ctx.full_file.count("sorry")
+                          if self._sorry_ctx.full_file else -1)
+        sorry_eliminated = (probe_compiles and sorry_count >= 0
+                            and original_count >= 0
+                            and sorry_count < original_count)
+        note = None
+        if probe_compiles and not sorry_eliminated:
+            note = (f"Compiles but sorry count did not decrease "
+                    f"({original_count} -> {sorry_count}): NOT a completed "
+                    f"proof — the tactic is or leaves a sorry placeholder.")
+
         if self._trace:
             self._trace.log(
                 agent="TacticAgent", role="sorry_verify",
-                content=f"tactic={tactic[:80]} -> success={result['success']}",
+                content=(f"tactic={tactic[:80]} -> compiles={probe_compiles} "
+                         f"eliminated={sorry_eliminated}"),
                 duration_s=duration, tool_name="verify_sorry_replacement",
-                tool_result=f"success={result['success']}, sorry_count={sorry_count}",
+                tool_result=(f"success={sorry_eliminated}, "
+                             f"probe_compiles={probe_compiles}, "
+                             f"sorry_count={sorry_count}"),
             )
 
         return json.dumps({
-            "success": result["success"],
+            "success": sorry_eliminated,
+            "probe_compiles": probe_compiles,
+            "note": note,
             "errors": result.get("errors", "")[:500],
             "error_type": result.get("error_type"),
             "residual_goals": result.get("residual_goals", []),
