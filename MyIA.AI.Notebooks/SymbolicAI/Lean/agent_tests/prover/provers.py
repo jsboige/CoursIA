@@ -203,6 +203,49 @@ def _autonomous_success_gate(final_sorry: int, original_sorry_count: int,
     return success, structural_progress
 
 
+def _multi_success_verdict(
+    proof_found: bool,
+    final_sorry: int,
+    original_sorry_count: int,
+    structural_progress: bool,
+    final_build_ok: bool,
+    attempts: int,
+    final_proof: Optional[str],
+) -> bool:
+    """Decide MultiAgentSorryProver session success with the statement-mutation
+    guard (FX-6, Epic #1453).
+
+    Pure decision extracted from ``run()`` so the guard is unit-testable. The
+    sorry-count disjuncts (``final_sorry == 0`` / ``< original`` /
+    ``structural_progress``) stay as in #1453, BUT a sorry-count change alone is
+    never a proof: it must come with >=1 verified tactic. The Reidemeister L545
+    run (trace ``multi_custom_Reidemeister_L545_openrouter_result.json``) filled
+    an in-statement ``sorry`` placeholder with the goal RHS, making the theorem
+    reflexive; the build passed and sorry 2->0, yet ``attempts == 0`` and
+    ``final_proof is None`` because the in-place latch (workflow.py) sets
+    ``proof_found`` without any tactic ever being verified. The guard therefore
+    keys on ``attempts`` / ``final_proof`` — NOT on ``proof_found``, which the
+    latch taints — so a pure statement mutation cannot report success,
+    independently of the sorry delta. (#4075 persists on "build OK + sorry count
+    dropped"; this completes it by requiring the drop to be backed by a real
+    tactic.)
+
+    Returns ``success``.
+    """
+    # No verified tactic => any sorry-count change is a statement mutation, not
+    # a proof. Block regardless of the delta (Reidemeister had sorry 2->0).
+    no_verified_tactic = attempts == 0 or final_proof is None
+    if no_verified_tactic:
+        return False
+    return (
+        (proof_found
+         or final_sorry == 0
+         or final_sorry < original_sorry_count
+         or structural_progress)
+        and final_build_ok
+    )
+
+
 class MultiAgentSorryProver:
     """Multi-agent sorry replacement using WorkflowBuilder graph.
 
@@ -678,13 +721,39 @@ class MultiAgentSorryProver:
         # IMPORTANT: success ALSO requires final_build_ok — a sorry-count drop
         # without a real build is the iter 2 false positive we are guarding
         # against. final_build_ok is set above in the mandatory verify.
-        success = (
-            (proof_found
-             or final_sorry == 0
-             or final_sorry < original_sorry_count
-             or structural_progress)
-            and final_build_ok
+        # FX-6 (Epic #1453, statement-mutation guard): a sorry-count drop with
+        # NO verified tactic is a statement mutation, not a proof (Reidemeister
+        # L545 trace). Delegate to the pure verifier so the guard is testable.
+        attempts_count = len(state.tactic_history)
+        success = _multi_success_verdict(
+            proof_found=proof_found,
+            final_sorry=final_sorry,
+            original_sorry_count=original_sorry_count,
+            structural_progress=structural_progress,
+            final_build_ok=final_build_ok,
+            attempts=attempts_count,
+            final_proof=state.final_proof,
         )
+        # FX-6 restore: when the build passed and sorry dropped but NO tactic
+        # was attempted (attempts == 0, the unambiguous statement-mutation
+        # signal), the on-disk file holds the mutation (e.g. an in-statement
+        # sorry filled with the goal RHS). Restore the original so the mutation
+        # cannot persist as a silent "success". Conservative: only fires on
+        # attempts == 0 so a legitimate decomposition snapshot (attempts > 0)
+        # is never undone here.
+        if (not success and final_build_ok and attempts_count == 0
+                and final_sorry < original_sorry_count):
+            print(
+                f"  STATEMENT-MUTATION GUARD (FX-6): build OK + sorry "
+                f"{original_sorry_count}->{final_sorry} with no verified tactic "
+                f"(attempts=0, proof={'set' if state.final_proof else 'null'}). "
+                f"Restoring original — not a proof."
+            )
+            try:
+                Path(filepath).write_text(original_content, encoding="utf-8")
+                final_sorry = original_sorry_count
+            except OSError:
+                pass
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
         # Persist outcome to cross-session history (best-effort)

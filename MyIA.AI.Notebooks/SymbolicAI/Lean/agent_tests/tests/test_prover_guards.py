@@ -1451,3 +1451,153 @@ def test_build_check_or_revert_real_solve_records_zero(tmp_path, monkeypatch):
     original = proved.replace("  trivial\n", "  sorry\n")
     assert tt._build_check_or_revert(original, "test") is None
     assert tt._min_compile_sorry_count == 0
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# FX-6 (Epic #1453) — statement-mutation false-success guard + c.139 token count
+#
+# Incident: the Reidemeister L545 run (trace
+# multi_custom_Reidemeister_L545_openrouter_result.json) filled an in-statement
+# `sorry` placeholder with the goal RHS, making the theorem reflexive -> build
+# OK, sorry 2->0, reported success=true, YET attempts=0 and proof=null. The
+# in-place latch (workflow.py) set proof_found without any verified tactic, so
+# the success verdict must key on attempts/proof, NOT proof_found.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_fx6_guard_blocks_when_no_tactic_attempted():
+    """Reidemeister L545 case: build OK + sorry 2->0, but attempts=0 and
+    proof=None -> success MUST be False (statement mutation, not a proof)."""
+    from prover.provers import _multi_success_verdict
+    assert _multi_success_verdict(
+        proof_found=True,           # tainted by the latch — must NOT rescue it
+        final_sorry=0,
+        original_sorry_count=2,
+        structural_progress=False,
+        final_build_ok=True,
+        attempts=0,                 # no verified tactic
+        final_proof=None,
+    ) is False
+
+
+def test_fx6_guard_blocks_when_proof_null():
+    """attempts>0 but final_proof=None (tactics submitted, none verified) ->
+    still blocked, even with a sorry drop."""
+    from prover.provers import _multi_success_verdict
+    assert _multi_success_verdict(
+        proof_found=False,
+        final_sorry=0,
+        original_sorry_count=2,
+        structural_progress=False,
+        final_build_ok=True,
+        attempts=3,                 # tactics submitted...
+        final_proof=None,           # ...but none verified
+    ) is False
+
+
+def test_fx6_guard_passes_verified_tactic():
+    """Genuine proof: >=1 verified tactic + sorry drop + build OK -> success."""
+    from prover.provers import _multi_success_verdict
+    assert _multi_success_verdict(
+        proof_found=True,
+        final_sorry=0,
+        original_sorry_count=2,
+        structural_progress=False,
+        final_build_ok=True,
+        attempts=1,
+        final_proof="exact Nat.zero_add n",
+    ) is True
+
+
+def test_fx6_guard_build_failure_never_success():
+    """Build failed -> never success, even with a verified tactic."""
+    from prover.provers import _multi_success_verdict
+    assert _multi_success_verdict(
+        proof_found=True,
+        final_sorry=0,
+        original_sorry_count=2,
+        structural_progress=False,
+        final_build_ok=False,
+        attempts=1,
+        final_proof="exact h",
+    ) is False
+
+
+def test_fx6_guard_no_drop_with_tactic_is_failure():
+    """Verified tactic present but sorry did NOT drop (no proof_found, no
+    structural progress) -> failure (the tactic did not close the goal)."""
+    from prover.provers import _multi_success_verdict
+    assert _multi_success_verdict(
+        proof_found=False,
+        final_sorry=2,              # unchanged
+        original_sorry_count=2,
+        structural_progress=False,
+        final_build_ok=True,
+        attempts=2,
+        final_proof="some tactic",  # present -> guard passes, but no drop
+    ) is False
+
+
+def test_fx6_guard_structural_progress_needs_verified_tactic():
+    """structural_progress (decomposition) still requires a verified tactic —
+    decomposition without a proved step is not real progress."""
+    from prover.provers import _multi_success_verdict
+    assert _multi_success_verdict(
+        proof_found=False,
+        final_sorry=3,              # increased (decomposition)
+        original_sorry_count=1,
+        structural_progress=True,
+        final_build_ok=True,
+        attempts=0,
+        final_proof=None,
+    ) is False
+
+
+# ── c.139 token-level sorry count ─────────────────────────────────────────
+
+
+def test_count_sorry_tokens_catches_trailing_comment():
+    """c.139: the strict ``^[ \\t]*sorry$`` missed a bare-sorry line carrying a
+    trailing comment (``sorry -- comment``). The corrected pattern catches it."""
+    from prover.lean_utils import count_sorry_tokens
+    content = "theorem t : True := by\n  sorry -- TODO etudiant\n  sorry\n"
+    # One bare-sorry line with a trailing comment + one clean bare sorry = 2.
+    assert count_sorry_tokens(content) == 2
+
+
+def test_count_sorry_tokens_excludes_comment_mentions():
+    """A ``sorry`` inside a doc/line comment must NOT count (naive .count
+    over-counts these)."""
+    from prover.lean_utils import count_sorry_tokens
+    content = (
+        "/-- Doc mentioning sorry as a word. -/\n"
+        "-- sorry is not a tactic here\n"
+        "theorem t : True := by trivial\n"
+    )
+    assert count_sorry_tokens(content) == 0
+
+
+def test_count_sorry_tokens_le_naive_count():
+    """Token count <= naive substring count (safety invariant for the persist
+    gate: a token-count drop implies a naive-count drop)."""
+    from prover.lean_utils import count_sorry_tokens
+    content = (
+        "-- sorry in a comment\n"
+        "theorem t : True := by sorry\n"
+        "theorem u : True := by\n  sorry\n"
+    )
+    assert count_sorry_tokens(content) <= content.count("sorry")
+    # 2 real proof sorries, 3 naive substring hits (incl. the comment).
+    assert count_sorry_tokens(content) == 2
+
+
+def test_count_sorry_tokens_covers_all_proof_forms():
+    """Covers `:= by sorry`, `:= sorry`, `exact sorry`, and bullet sorry."""
+    from prover.lean_utils import count_sorry_tokens
+    content = (
+        "theorem a : True := by sorry\n"        # := by sorry
+        "def b : True := sorry\n"               # := sorry
+        "theorem c : True := by\n  exact sorry\n"  # exact sorry
+        "theorem d : True := by\n  · sorry\n"   # bullet sorry (· U+00B7)
+    )
+    assert count_sorry_tokens(content) == 4

@@ -23,6 +23,33 @@ _HONEST_SORRY_RE = re.compile(
     "|".join(_HONEST_SORRY_PATTERNS), re.IGNORECASE,
 )
 
+# Token-level sorry counter (FX-6 / c.139, Epic #1453). The naive
+# ``content.count("sorry")`` over-counts: it matches the word inside comments,
+# docstrings and identifiers, so removing a `sorry` mention from a doc-comment
+# would read as "progress". This pattern counts only sorry TOKENS in proof
+# positions, and — unlike the strict ``^[ \t]*sorry$`` — also catches in-statement
+# forms that carry a trailing comment (``sorry -- ambient_isotopic k1 k2``) or a
+# bullet (``- sorry`` / ``· sorry``). It is strictly <= the naive count, so a
+# drop under the token count implies a drop under the naive count: using it in
+# the persist decision is SAFE (never persists a non-proof) and HONEST.
+_SORRY_TOKEN_RE = re.compile(
+    r"^[ \t]*sorry(?=$|[ \t]|--)"   # bare sorry line (+ optional trailing comment)
+    r"|:=\s*by\s+sorry\b"            # := by sorry
+    r"|:=\s*sorry\b"                 # := sorry
+    r"|\bexact\s+sorry\b"            # exact sorry
+    r"|^[ \t]*[·\-]\s*sorry\b",      # bullet sorry (middle dot U+00B7 or hyphen)
+    re.MULTILINE,
+)
+
+
+def count_sorry_tokens(content: str) -> int:
+    """Count sorry TOKENS in proof positions (c.139 corrected pattern).
+
+    Excludes ``sorry`` mentions in comments/strings and catches the in-statement
+    forms that the strict line-anchored pattern missed. See FX-6.
+    """
+    return len(_SORRY_TOKEN_RE.findall(content))
+
 
 def is_honest_sorry(filepath: str, sorry_line: int,
                     lookback: int = 12) -> Tuple[bool, str]:
@@ -830,8 +857,11 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             # re-introducing one, e.g. a returned `simp; sorry`).
             real_has_error = bool(re.search(r"\berror:", real_output))
             implicit_sorry = "declaration uses 'sorry'" in real_output
-            sorry_dropped = (new_content.count("sorry")
-                             < original_content.count("sorry"))
+            # FX-6 (c.139): count sorry TOKENS, not naive substrings, so a
+            # `sorry` removed only from a comment cannot read as a drop. Token
+            # count is <= naive, so this is strictly safer for the persist gate.
+            sorry_dropped = (count_sorry_tokens(new_content)
+                             < count_sorry_tokens(original_content))
             if real_has_error or implicit_sorry or not sorry_dropped:
                 Path(filepath).write_text(original_content, encoding="utf-8", newline="")
                 is_success = False
