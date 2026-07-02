@@ -246,6 +246,18 @@ def load_panier_closes(
 
     panel = pd.DataFrame(closes)
     panel.index.name = "Date"
+    # Fail fast with an actionable message when the dataset is missing and the
+    # caller opted out of network access (auto_fetch=False). Without this guard
+    # a fresh clone silently gets an empty DataFrame (see #4921).
+    if not closes and not auto_fetch:
+        raise FileNotFoundError(
+            f"No panier CSV data found in {panier_dir}. "
+            f"Build it first with:\n"
+            f"    python scripts/datasets/build_panier_anti_bias.py\n"
+            f"(datasets/ is gitignored by design -- the build script is the "
+            f"reproducibility path). Alternatively call "
+            f"load_panier_closes(auto_fetch=True) to fetch via yfinance."
+        )
     return panel
 
 
