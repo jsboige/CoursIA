@@ -255,7 +255,6 @@ partner-course-quant-trading/
 │   ├── starter/        # Niveau débutant
 │   ├── intermediate/   # Niveau intermédiaire
 │   └── advanced/       # Niveau avancé
-└── archive-2025/       # Archives historiques
 ```
 
 Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/README.md) pour le détail des exemples et templates.
@@ -268,7 +267,6 @@ Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/READM
 |-----------|--------|-------------|
 | `_pending_execution/` | Local-only | Transient QuantBook workspace (untracked local files); committed placeholder purged |
 | `projects/_archive/` | Purged | Dedup-archive removed; canonical strategies retained in `projects/` (commit `#1815`, `#1627`) |
-| `partner-course-quant-trading/archive-2025/` | Reference | 2024-2025 student project IDs and cloud references |
 | `_archive/` | Purged | Superseded reports moved to `docs/audits/` (commit `#1626`) |
 | `_esgf_cours_5mai/` | Purged | Course 5 May 2026 backtest results archived to G drive (commit `#1626`) |
 
