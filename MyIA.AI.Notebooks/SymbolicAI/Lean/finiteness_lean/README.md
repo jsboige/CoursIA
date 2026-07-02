@@ -9,7 +9,7 @@ Mini-projet Lean 4 issu de l'Epic #2978 (livrable C), livré par la PR #3018.
 
 ## État
 
-- **Toolchain** : `leanprover/lean4:v4.30.0-rc2`
+- **Toolchain** : `leanprover/lean4:v4.31.0-rc1`
 - **Sorry** : **0 sorry, 0 axiom** — tout est prouvé ou illustré par `#eval`
 - **Build** : `lake build Finiteness` — **autonome, sans Mathlib** (Lean core seul)
 - **Dépendances** : aucune
