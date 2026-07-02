@@ -187,6 +187,56 @@ Au-delà des notebooks empiriques (ML.NET, Python), la série ML accueille un **
 
 C'est le **pendant prouvé** des notebooks de classification linéaire (`ML.Net/ML-3` entraîne des classifieurs, `02-ML-Cours/2.3` pose régression linéaire/logistique) : là où les notebooks *montrent* que le perceptron converge en pratique, le lake *prouve* la borne. Voir le [README du lake](learning_theory_lean/README.md) pour les modules et le détail de la preuve.
 
+### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
+
+La section ci-dessus focusse sur le **lake phare** `learning_theory_lean` (Novikoff perceptron). Le différenciant CoursIA tient à la **cartographie inter-familles** : chaque notebook ML (simulation/expérimentation) peut être doublé par un *lake* (preuve formelle) chez au moins une autre famille — décision, choix social,分配 équitable, recherche de chemin. Cette double culture (empirique ML.NET / scikit-learn ↔ formelle Lean 4 / Mathlib) ancre mathématiquement les notebooks qui *montrent* par les résultats des *preuves* qu'ils invoquent.
+
+| Famille | Lake phare | Théorème | Branchement notebook ML |
+| --- | --- | --- | --- |
+| ML | `learning_theory_lean` | Convergence perceptron Novikoff 0 sorry #4140 | Ce hub (Novikoff marge γ rayon R) |
+| ML | `learning_theory_lean` | Tightness (borne optimale) #4301 OPEN | Ce hub (à prouver serré) |
+| ML | `learning_theory_lean` | i18n-B tranche 5 (FR `.lean` + companion `.en.md`) MERGED #5009 | Convention i18n à étendre aux autres lakes |
+| Probas | `decision_theory_lean` | VNM résolu 0 sorry #4049, Coherence MERGED #4150, Peters Gittins ref v4.27.0-rc1, PAC iter-2 chaîne 0-sorry bout-en-bout | Notebooks PAC (02-ML-Cours 2.5 biais-variance / ERM sous incertitude) |
+| QuantConnect | `kelly_lean` | Kelly criterion Growth MERGED #5003, Calmar/IR/MDD #4223 / #4164 | `02-ML-Cours` lien finance/ML : allocation optimale sous i.i.d. |
+| GameTheory | `social_choice_lean` | Arrow impossibilité, Sen, Voting | `02-ML-Cours` 2.7 ensembles (vote d'ensemble ≅ agrégation préférences) |
+| GameTheory | `cooperative_games_lean` | Bondareva-Shapley 0 sorry #3954 (noyau, attributions) | `02-ML-Cours` Shapley values (feature importance ≅ valeur de Shapley) |
+| Search | `astar_lean` | Phase 1-3 SHIPPED #4090 / #4142 OPEN / #4144 OPEN | `02-ML-Cours` 2.4 descente de gradient / arêtes de coût ≅ heuristique admissible |
+| SymbolicAI | `argumentation_lean` | Extension Dung (complète, préférée, stable, fondée) | `02-ML-Cours` 2.5 / 02-ML-Cours 2.7 débat ≅ framework d'argumentation |
+
+```mermaid
+flowchart LR
+    subgraph SIM["Simulation (notebooks ML)"]
+        NB1["ML-3 — SDCA classification"]
+        NB2["2.3 — régression linéaire/logistique"]
+        NB3["2.4 — descente de gradient"]
+        NB4["2.5 — biais-variance / ERM"]
+        NB5["2.7 — ensembles (vote, bagging)"]
+        NB6["2.6 — PAC / échantillons"]
+    end
+    subgraph LEAN["Preuves formelles (Lean 4)"]
+        L1["learning_theory_lean — Novikoff 0 sorry #4140"]
+        L2["learning_theory_lean — Tightness #4301 OPEN"]
+        L3["decision_theory_lean — VNM 0 sorry #4049 + Coherence #4150"]
+        L4["kelly_lean — Growth #5003 / #4223 / #4164"]
+        L5["social_choice_lean + cooperative_games_lean — Arrow + Bondareva-Shapley"]
+        L6["astar_lean + argumentation_lean — heuristique + Dung"]
+    end
+    NB1 -. "marge γ ⊥ rayon R ⟹ convergence" .-> L1
+    NB2 -. "ERM minimise erreur empirique" .-> L3
+    NB3 -. "pas adaptatif + Lipschitz" .-> L1
+    NB4 -. "PAC ⇓ uniform_concentration" .-> L3
+    NB5 -. "vote ≅ préférences agrégées" .-> L5
+    NB6 -. "échantillon i.i.d. + Hoeffding" .-> L3
+    style L1 fill:#e8f5e9,stroke:#2e7d32
+    style L2 fill:#e8f5e9,stroke:#2e7d32
+    style L3 fill:#e8f5e9,stroke:#2e7d32
+    style L4 fill:#e8f5e9,stroke:#2e7d32
+    style L5 fill:#e8f5e9,stroke:#2e7d32
+    style L6 fill:#e8f5e9,stroke:#2e7d32
+```
+
+Lecture : chaque nœud **SIM** représente un notebook ML dont le résultat empirique (marge, ERM, ensemble, PAC) est *prouvé* par au moins un nœud **LEAN** via une flèche pointillée. Le **vert pâle** sur les nœuds Lean rappelle que la *preuve* est l'engagement de véracité du notebook — pas une décoration. Voir l'EPIC [#4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean) et le hub central [P0](../README.md#lean) pour la cartographie complète (PR #5049). Cross-réf hubs voisins déjà livrés : [QuantConnect (PR #5047)](../QuantConnect/README.md), [GameTheory (PR #5050)](../GameTheory/README.md), [Probas (PR #5053)](../Probas/README.md), [SymbolicAI Lean (#5043 MERGED)](../SymbolicAI/Lean/README.md).
+
 ## Public cible
 
 | Section | Audience | Prérequis |
