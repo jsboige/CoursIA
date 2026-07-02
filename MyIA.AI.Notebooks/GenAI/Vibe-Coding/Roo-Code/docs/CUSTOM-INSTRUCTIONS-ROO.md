@@ -382,7 +382,7 @@ Voici l'ordre exact dans lequel Roo charge et fusionne les instructions :
 ### Organisation des Fichiers
 
 1. **Prefixes numériques** pour l'ordre : `01-`, `02-`, `10-`, `99-`
-2. **Noms descriptifs** : `conventions-typescript.md` plutot que `rules.md`
+2. **Noms descriptifs** : `conventions-typescript.md` plutôt que `rules.md`
 3. **Un sujet par fichier** : facilite la maintenance et la comprehension
 4. **Commentaires** : expliquez le "pourquoi" des règles
 

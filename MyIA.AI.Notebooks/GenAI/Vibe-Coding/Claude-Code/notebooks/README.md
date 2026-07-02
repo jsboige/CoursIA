@@ -25,7 +25,7 @@ Avant d'exécuter ces notebooks, assurez-vous d'avoir :
 
 | Notebook | Durée | Niveau | Description |
 |----------|-------|--------|-------------|
-| [01-Claude-CLI-Bases](01-Claude-CLI-Bases.ipynb) | 20 min | Débutant | Installation, premiere commande, formats de sortie |
+| [01-Claude-CLI-Bases](01-Claude-CLI-Bases.ipynb) | 20 min | Débutant | Installation, première commande, formats de sortie |
 | [02-Claude-CLI-Sessions](02-Claude-CLI-Sessions.ipynb) | 25 min | Débutant | Gestion des conversations et sessions |
 | [03-Claude-CLI-References](03-Claude-CLI-References.ipynb) | 25 min | Intermédiaire | @-mentions, contexte fichiers, CLAUDE.md |
 | [04-Claude-CLI-Agents](04-Claude-CLI-Agents.ipynb) | 30 min | Intermédiaire | Agents Explore, Plan, subagents |
@@ -71,7 +71,7 @@ jupyter lab
 
 ### Mode Simulation (Sans API)
 
-Si vous n'avez pas de clé API configurée, les notebooks peuvent fonctionner en mode simulation. Definissez la variable dans la premiere cellule :
+Si vous n'avez pas de clé API configurée, les notebooks peuvent fonctionner en mode simulation. Definissez la variable dans la première cellule :
 
 ```python
 SIMULATION_MODE = True
