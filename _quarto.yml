@@ -5,6 +5,7 @@ project:
     - "*.qmd"
     - "MyIA.AI.Notebooks/index.qmd"
     - "MyIA.AI.Notebooks/Search/index.qmd"
+    - "MyIA.AI.Notebooks/GameTheory/index.qmd"
     - "docs/index.qmd"
 
 site:
@@ -27,6 +28,8 @@ site:
         text: "Notebooks"
       - href: MyIA.AI.Notebooks/Search/index.qmd
         text: "Search"
+      - href: MyIA.AI.Notebooks/GameTheory/index.qmd
+        text: "GameTheory"
       - href: docs/index.qmd
         text: "Documentation"
       - href: parcours.qmd
