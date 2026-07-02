@@ -36,9 +36,17 @@ S'applique a **tout agent qui delegue du travail a un sous-agent** (`Agent()` to
 
 **Comportement attendu du sous-agent (bon signe)** : deferer explicitement les jugements hors de sa portee (« the coordinator should assess ») plutot qu'halluciner un verdict. Un sous-agent qui defere sur un blind-spot connu est plus fiable, pas moins.
 
-## Note de mapping (environnement ai-01)
+## Note de mapping (par machine)
 
-Sur ai-01, les alias resolvent : `sonnet` => GLM-5.1, `haiku` => Qwen 3.6 local. Sur une autre machine le mapping peut differer : raisonner en **tiers** (intermediaire / leger), pas en nom de modele. Le principe — deleguer le read-heavy borne, garder la decision, modele explicite obligatoire — est invariant.
+Le mapping `model` explicite vers le moteur sous-jacent depend de la machine d'execution. Raisonner en **tiers** (intermediaire / leger), pas en nom de modele. Le principe — deleguer le read-heavy borne, garder la decision, modele explicite obligatoire — est invariant.
+
+| Machine   | `sonnet` (tier intermediaire) | `haiku` (tier leger)     |
+|-----------|-------------------------------|--------------------------|
+| ai-01     | GLM-5.1                       | Qwen 3.6 local           |
+| po-2023   | ZAI GLM-5.1                   | MiniMax M3               |
+| autres workers po-* | voir `roosync_inventory`     | voir `roosync_inventory` |
+
+MiniMax M3 (deploie sur `po-2023` depuis 2026-07-02, mandat user) remplace Qwen 3.6 sur le tier `haiku` pour cette lane. Conséquence operationnelle : les sous-agents `model: "haiku"` invoques depuis `po-2023` (ou routés vers lui) sont executes par MiniMax M3, pas par Qwen. La regle de qualite (deleguer le read-heavy borne, garder la decision) reste identique — seul le moteur change.
 
 ## Voir aussi
 
