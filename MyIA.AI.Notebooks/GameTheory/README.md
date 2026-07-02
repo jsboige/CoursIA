@@ -516,7 +516,7 @@ GameTheory/
 │   └── visualization.py           # Animations populations
 ├── cooperative_games_lean/        # Projet Lake jeux cooperatifs (Shapley 0 sorry, Bondareva-Shapley 1 sorry INTRACTABLE)
 ├── social_choice_lean/            # Projet Lake choix social (Arrow, Sen, Voting/Median Voter — 0 sorry)
-├── social_choice_lean_peters/     # Projet Lake reference DominikPeters (0 sorry, toolchain v4.27.0-rc1)
+├── social_choice_lean_peters/     # Projet Lake référence DominikPeters (0 sorry, toolchain v4.27.0-rc1)
 ├── stable_marriage_lean/          # Projet Lake Gale-Shapley (GS COMPLETE, 3 sorry residual dans Lattice.lean)
 ├── lean_game_defs/                # Types Lean partages (pas de Lake project)
 ├── examples/

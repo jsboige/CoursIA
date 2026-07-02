@@ -70,7 +70,7 @@
 
 | Category | Count | Note |
 |----------|-------|------|
-| Exercise stubs (TODO, a completer) | 9 | Expected — student implementation cells |
+| Exercise stubs (TODO, a completer) | 9 | Expected — student implémentation cells |
 | Lean theorem/proof cells | 10 | Lean 4 kernel-specific, outputs via REPL |
 | Class/function definitions | 3 | Skipped in last execution |
 | Conceptual prints (schemas) | 2 | Non-critical |
@@ -171,8 +171,8 @@
 - Lean side tracks (b) align with their parent notebooks (2, 4, 8, 15, 16)
 - Python side tracks (c) provide practical complements
 - **Issue**: GT-8 (CombinatorialGames) only 8 code cells / 19KB — marked DEMO, potentially thin for a 55-min session claimed in README
-- **Issue**: GT-8b (Lean-CombinatorialGames) only 4 Lean code cells / 53KB — very short Lean notebook. Footer references non-existent "Notebook 19b" and "Notebook 20" (should be 8c and index)
-- **Issue**: GT-16e (SocialChoiceLean-Tour) only 2 code cells / 28KB — tour format, acceptable for reference notebook
+- **Issue**: GT-8b (Lean-CombinatorialGames) only 4 Lean code cells / 53KB — very short Lean notebook. Footer références non-existent "Notebook 19b" and "Notebook 20" (should be 8c and index)
+- **Issue**: GT-16e (SocialChoiceLean-Tour) only 2 code cells / 28KB — tour format, acceptable for référence notebook
 
 ### 4. Execution réelle
 - 26 null execution cells across 11 notebooks (analyzed above, all expected)

@@ -62,7 +62,7 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 |------|-------|-------------|
 | `CooperativeGames/Shapley.lean` | 0 | Shapley value, characterization + uniqueness (Möbius decomposition) |
 | `CooperativeGames/Basic.lean` | 0 | TU games, Core, balanced games, `bondareva_shapley : Core.Nonempty ↔ Balanced` (iff, L434), `convex_core_nonempty` (L588) |
-| `CooperativeGames/ConeKernel.lean` | 0 | Cone-separation machinery (augmented incidence cone, closure, dual characterization) for the backward direction |
+| `CooperativeGames/ConeKernel.lean` | 0 | Cone-séparation machinery (augmented incidence cone, closure, dual characterization) for the backward direction |
 
 **Build**: `lake build CooperativeGames` — SUCCESS (0 sorry, no added axiom)
 
@@ -105,7 +105,7 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 **Content**: Imports Peters' library (Gibbard-Satterthwaite, Duggan-Schwartz, 4 Condorcet impossibilities, 15+ voting rules with axiom verification). Backend Lake for the (planned, not yet created) SocialChoiceLean tour companion notebook.
 
-**Relationship to `social_choice_lean`**: Complementary, not duplicate. `social_choice_lean` uses custom `PrefOrder` framework (our proofs). `social_choice_lean_peters` uses Peters' `LinearOrder` framework (external reference). Both kept for pedagogical completeness.
+**Relationship to `social_choice_lean`**: Complementary, not duplicate. `social_choice_lean` uses custom `PrefOrder` framework (our proofs). `social_choice_lean_peters` uses Peters' `LinearOrder` framework (external référence). Both kept for pedagogical completeness.
 
 ---
 
