@@ -49,7 +49,7 @@ ASR_ENDPOINT=https://whisper-api.myia.io/v1/audio/transcriptions
 SYSTEM_PROMPT=Tu es NanoClaw, un assistant autonome.
 ```
 
-> **Note sur `MODEL_NAME`** : NanoClaw parle le wire Anthropic via Claudish. Envoyer un nom de modele du tier voulu (`glm-5.2` = Sonnet-tier via GLM, `claude-opus-4-8` = Opus-tier Anthropic natif, `qwen3.6-35b-a3b` = Haiku-tier vLLM). Claudish gere la traduction vers le provider reel — NanoClaw n'a pas a connaitre GLM, vLLM ou Anthropic en direct. Voir la section « Connecter un bot » de `Claudish-Proxy.md`.
+> **Note sur `MODEL_NAME`** : NanoClaw parle le wire Anthropic via Claudish. Envoyer un nom de modele du tier voulu (`glm-5.2` = Sonnet-tier via GLM, `claude-opus-4-8` = Opus-tier Anthropic natif, `qwen3.6-35b-a3b` = Haiku-tier vLLM). Claudish gere la traduction vers le provider réel — NanoClaw n'a pas a connaitre GLM, vLLM ou Anthropic en direct. Voir la section « Connecter un bot » de `Claudish-Proxy.md`.
 
 ### 3. Lancer le service
 
@@ -72,7 +72,7 @@ docker logs -f nanoclaw
 Envoyer un message texte au bot Telegram. Verifier dans les logs que :
 1. Le message est recu
 2. Le LLM repond
-3. La reponse est envoyee sur Telegram
+3. La réponse est envoyee sur Telegram
 
 ## Test de la transcription vocale
 
@@ -118,7 +118,7 @@ ANTHROPIC_AUTH_TOKEN=<zai-api-key>
 MODEL_NAME=glm-5.2
 ```
 
-> En production, preferer Claudish : il ajoute le controle de concurrence, le never-hang (priorite #1), la conversion overload 529 + Retry-After, et l'observabilite (captures, surveillance trafic). Voir `Claudish-Proxy.md` §6.
+> En production, préférer Claudish : il ajoute le controle de concurrence, le never-hang (priorite #1), la conversion overload 529 + Retry-After, et l'observabilite (captures, surveillance trafic). Voir `Claudish-Proxy.md` §6.
 
 ### Subdomain et HTTPS
 

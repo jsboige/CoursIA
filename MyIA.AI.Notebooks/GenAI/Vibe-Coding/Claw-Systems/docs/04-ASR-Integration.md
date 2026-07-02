@@ -36,9 +36,9 @@ Telegram (message vocal .ogg)
 | FLAC | `.flac` | Sans perte |
 | M4A | `.m4a` | Apple |
 
-### Parametres
+### Paramètres
 
-| Parametre | Type | Default | Description |
+| Paramètre | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `file` | binary | requis | Fichier audio |
 | `model` | string | `large-v3-turbo` | Modele Whisper |
@@ -73,7 +73,7 @@ def transcribe(audio_path: str, language: str = "fr") -> str:
     return response.json()["text"]
 ```
 
-**Reponse :**
+**Réponse :**
 
 ```json
 {

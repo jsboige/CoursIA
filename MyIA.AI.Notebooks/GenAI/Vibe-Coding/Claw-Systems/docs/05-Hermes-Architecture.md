@@ -39,7 +39,7 @@ Message utilisateur → AIAgent._run_agent_loop()   (run_agent.py)
 ```
 
 C'est une boucle **ReAct-classique** : l'agent peut enchainer plusieurs appels
-d'outils avant de produire une reponse finale. Chaque tour est journalise dans
+d'outils avant de produire une réponse finale. Chaque tour est journalise dans
 une session SQLite (`~/.hermes/state.db`, recherche full-text via FTS5).
 
 ## Surfaces d'interaction
@@ -111,7 +111,7 @@ en plus du planificateur OS. Trois jobs tournent en production :
 | `pr-review` | planifié | Review de PRs assignées |
 | `inbox-poll` | planifié | Scrutation de la messagerie inter-machines |
 
-## Systeme de profils
+## Système de profils
 
 Plusieurs instances Hermes isolees coexistent via la variable `HERMES_HOME`.
 Tout le code doit appeler `get_hermes_home()` (depuis `hermes_constants`) —
