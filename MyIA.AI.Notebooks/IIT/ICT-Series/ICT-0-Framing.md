@@ -237,7 +237,8 @@ d'attracteurs est engendré par la dynamique elle-même**, et lève ces limites 
   catastrophique (le métathéorème — *l'obstacle engendre les êtres* — mesuré comme « le comptage d'équilibres
   ne change qu'aux plis ») et ouvre la strate 3 (agents) sur le **lacet de prédation** de Thom : un cycle
   d'hystérésis à deux catastrophes (perception, capture) et un **représentant interne** `p̂` dont le contenu
-  anticipateur est *mesuré* (pic de corrélation au futur, battant la persistance). C'est le **prélude
+  anticipateur est *mesuré* contre trois baselines adverses sur trois familles de trajectoires — verdict
+  honnête : avantage **régime-dépendant**, réel là où l'inertie est exploitable, illusoire ailleurs. C'est le **prélude
   sémiophysique** de R. Thom, tenu *sans complaisance* — chaque image (saillance, prégnance, actant) attachée
   à une grandeur calculée sur la fronce canonique, le caveat de non-prédictivité (Thom lui-même) explicite.
 

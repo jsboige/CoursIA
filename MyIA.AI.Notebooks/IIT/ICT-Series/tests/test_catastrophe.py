@@ -204,3 +204,75 @@ def test_cross_correlation_symmetric_lags():
     assert lags[0] == -6 and lags[-1] == 6
     assert cat.peak_lag(lags, corr) == 0                # autocorrelation pique a 0
     assert corr[np.argmax(corr)] == pytest.approx(1.0, abs=1e-6)
+
+
+# --------------------------------------------------------------------------- #
+#  Durcissement p_hat (cran 10.1, #4588) : baselines adverses, familles,       #
+#  banc aux deux metriques separees                                            #
+# --------------------------------------------------------------------------- #
+
+
+def test_moving_average_tracker_constant_and_lag():
+    const = np.full(50, 3.0)
+    assert np.allclose(cat.moving_average_tracker(const, window=5), 3.0)
+    ramp = np.arange(50, dtype=float)
+    ma = cat.moving_average_tracker(ramp, window=5)
+    assert np.all(ma[5:] < ramp[5:])                    # lisser retarde une rampe
+
+
+def test_ar1_coefficient_recovers_generating_phi():
+    rng = np.random.default_rng(0)
+    phi_true = 0.8
+    x = np.zeros(4000)
+    for k in range(1, x.shape[0]):
+        x[k] = phi_true * x[k - 1] + rng.standard_normal()
+    assert abs(cat.ar1_coefficient(x) - phi_true) < 0.05
+
+
+def test_ar1_tracker_shrinks_toward_mean():
+    prey = _prey()
+    pred = cat.ar1_tracker(prey, lead=4)
+    mu = prey.mean()
+    # phi < 1 sur une serie stationnaire : la prediction se contracte vers mu
+    assert np.all(np.abs(pred - mu) <= np.abs(prey - mu) + 1e-9)
+
+
+def test_prey_trajectory_families_distinct():
+    kinds = ["sinus", "derive", "creneau"]
+    trajs = {
+        k: cat.prey_trajectory(k, n_steps=200, noise=0.1,
+                               rng=np.random.default_rng(7))
+        for k in kinds
+    }
+    for k in kinds:
+        assert trajs[k].shape == (200,)
+    assert not np.allclose(trajs["sinus"], trajs["derive"])
+    assert not np.allclose(trajs["sinus"], trajs["creneau"])
+    with pytest.raises(ValueError):
+        cat.prey_trajectory("inconnue")
+
+
+def test_anticipation_report_both_metrics_all_estimators():
+    rep = cat.anticipation_report(_prey(), lead=4)
+    assert set(rep) == {"p_hat", "persistance", "moyenne_mobile", "ar1"}
+    for valeurs in rep.values():
+        assert set(valeurs) == {"erreur", "pic_lag"}
+        assert valeurs["erreur"] >= 0.0
+
+
+def test_phat_advantage_is_regime_dependent():
+    # Gate du cran 10.1 (#4588) : p_hat bat les 3 baselines sur trajectoire
+    # lisse (sinus, inertie exploitable) mais PERD sur le creneau (la vitesse
+    # EMA sur-reagit au saut). L'avantage est regime-dependant, et le banc
+    # doit rendre cet echec visible plutot que l'agreger.
+    lead = 4
+
+    def meilleure_baseline(rep):
+        return min(v["erreur"] for k, v in rep.items() if k != "p_hat")
+
+    rep_sin = cat.anticipation_report(
+        cat.prey_trajectory("sinus", rng=np.random.default_rng(7)), lead=lead)
+    rep_cre = cat.anticipation_report(
+        cat.prey_trajectory("creneau", rng=np.random.default_rng(7)), lead=lead)
+    assert rep_sin["p_hat"]["erreur"] < meilleure_baseline(rep_sin)
+    assert rep_cre["p_hat"]["erreur"] > meilleure_baseline(rep_cre)
