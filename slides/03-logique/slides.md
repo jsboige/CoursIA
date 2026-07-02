@@ -144,7 +144,7 @@ layout: default
 ## Semantique
 
 - Definit le sens des enonces
-- Relation entre les enonces et le monde reel
+- Relation entre les enonces et le monde réel
 
 ## Proposition logique
 
@@ -159,7 +159,7 @@ layout: default
 - EQUIVAUT (equivalence)
 
 
-<img src="./images/img_007.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Relation semantique enonces et monde reel" />
+<img src="./images/img_007.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Relation semantique enonces et monde réel" />
 
 ---
 layout: default
@@ -299,7 +299,7 @@ layout: default
 ## Entailment (consequence semantique)
 
 - KB |= alpha : "KB entraine alpha"
-- Alpha est vrai dans tous les modeles ou KB est vrai
+- Alpha est vrai dans tous les modèles ou KB est vrai
 
 ## Theoreme de deduction
 
@@ -307,7 +307,7 @@ layout: default
 
 ## Demonstration d'infrence
 
-1. **Methodes de verification de modele**
+1. **Methodes de verification de modèle**
    - Enumerer toutes les interpretations
    - Verifier que alpha est vrai quand KB est vrai
 
@@ -453,7 +453,7 @@ layout: default
 
 # Procedure d'inference simple
 
-## Approche par verification de modele (truth table)
+## Approche par verification de modèle (truth table)
 
 - Enumerer toutes les interpretations possibles
 - Verifier que la conclusion est vraie quand les premisses sont vraies
@@ -464,7 +464,7 @@ layout: default
 - Mais **couteuse** : exponentielle en fonction du nombre de symboles
 
 
-<img src="./images/img_010.png" style="position:absolute; top:50px; right:20px; width:350px;" alt="Procedure d'inference par verification de modele" />
+<img src="./images/img_010.png" style="position:absolute; top:50px; right:20px; width:350px;" alt="Procedure d'inference par verification de modèle" />
 
 ---
 layout: default
@@ -499,7 +499,7 @@ layout: default
 - Analyse des composants
 - Ordre des variables
 - Backtracking intelligent
-- Reprises aleatoires
+- Reprises aléatoires
 - Indexation intelligente
 
 ## Applications modernes
@@ -539,7 +539,7 @@ layout: default
 
 - Variables temporelles (fluent) et atemporelles
 
-## Modele de transition -> axiomes d'effet
+## Modèle de transition -> axiomes d'effet
 
 - L<sub>0,1</sub> ∧ FacingEast<sub>0</sub> ∧ Forward<sub>0</sub> => (L<sub>1,2,1</sub> ∧ ¬L<sub>1,1,1</sub>)
 - Ask(KB, L<sub>1,2,1</sub>) = true
@@ -618,7 +618,7 @@ layout: default
 ## Agents
 
 - Variables (Fluents / atemporelles)
-- Modele transitionnel, axiomes
+- Modèle transitionnel, axiomes
 - Hybride / SatPlan
 
 ---
@@ -693,7 +693,7 @@ layout: default
 - Une interpretation satisfait ∀x P(x) si P(x) est vrai pour tout element du domaine
 - Une interpretation satisfait ∃x P(x) si P(x) est vrai pour au moins un element
 
-## Modele
+## Modèle
 
 - Une interpretation qui satisfait une formule
 
@@ -777,14 +777,14 @@ layout: default
 layout: default
 ---
 
-# Axiomes et ingenierie des donnees
+# Axiomes et ingenierie des données
 
 ## Axiomes de base
 
 - Enonces consideres comme vrais sans demonstration
 - Fondements de la base de connaissances
 
-## Ingenierie des donnees
+## Ingenierie des données
 
 - Processus de formalisation des connaissances
 - Identifier les objets, relations et proprietes pertinentes
@@ -989,9 +989,9 @@ layout: default
 
 ## Interpretation d'enonce
 
-- Modele d'enonces, enonce satisfiable (vrai selon une interpretation)
+- Modèle d'enonces, enonce satisfiable (vrai selon une interpretation)
 - Valide (toutes les interpretations), inconsistant (pas d'interpretation)
-- Consequence logique (inclusion des modeles)
+- Consequence logique (inclusion des modèles)
 
 ## Derivations
 
@@ -1006,11 +1006,11 @@ layout: default
 
 # Semantique de la logique du premier ordre (2/2)
 
-## Semantique de base de donnees
+## Semantique de base de données
 
 - Hypothese des noms uniques
 - Les enonces atomiques inconnus sont presumes faux (hypothese de monde clos)
-- Fermeture du domaine (pas plus d'elements que les constantes donnees)
+- Fermeture du domaine (pas plus d'elements que les constantes données)
 
 ## Infrence en FOL : Operations Tell, Ask
 
@@ -1029,7 +1029,7 @@ layout: default
 
 ## Chainages
 
-- **Chainage avant** : bases de donnees deductives, systemes de production
+- **Chainage avant** : bases de données deductives, systemes de production
 - **Chainage arriere** : programmation logique (Prolog) + memoisation
 
 ## Exemple : le crime du Colonel West
@@ -1107,7 +1107,7 @@ layout: default
 ## Algorithme d'unification
 
 - Comparer recursivement les termes
-- Remplacer les variables par des termes plus specifiques
+- Remplacer les variables par des termes plus spécifiques
 
 ---
 layout: default
@@ -1254,7 +1254,7 @@ layout: default
 
 ## Logique argumentative abstraite (de Dung)
 
-- Modele sous forme de graphe
+- Modèle sous forme de graphe
   - Noeuds = arguments
   - Aretes = attaques
 - Notion d'ensembles stables / extensions (pas d'attaques internes)
@@ -1330,7 +1330,7 @@ layout: default
 ## Theories
 
 - Egalite de fonctions, differences
-- Arithmetique lineaire entiere, rationnelle, reelle
+- Arithmetique lineaire entière, rationnelle, réelle
 - Tableaux, arithmetique non lineaire, vecteur de bits
 
 ## Outils
@@ -1361,15 +1361,15 @@ layout: default
 # Agents a base de connaissance (2/2)
 
 
-## Fondes sur un modele
+## Fondes sur un modèle
 
-- Modele interne du monde
+- Modèle interne du monde
 - Representation du changement -> calcul situationnel
 - Proprietes perpetuelles -> proprietes cachees des lieux
 - Regles causales, de diagnostique
 - Ex: (l1,l2,s) At(Wumpus,l1,s) ∧ Adjacent(l1,l2) => Smelly(l2)
 - Axiomes de persistance, d'effets, problemes de qualifications
-- Ingenierie de donnees -> modeliser le bon niveau
+- Ingenierie de données -> modeliser le bon niveau
 
 
 <img src="./images/img_024.png" style="position:absolute; top:50px; right:20px; width:300px;" alt="Sequence etats Wumpus S0-S3" />
@@ -1397,8 +1397,8 @@ layout: default
 
 - Objets, relations, fonctions
 - Termes, Quantificateurs
-- Modele, interpretation
-- Axiomes, Ingenierie de donnees
+- Modèle, interpretation
+- Axiomes, Ingenierie de données
 
 ## Inference
 
@@ -1421,7 +1421,7 @@ layout: default
 ## Agents
 
 - Reflex
-- Modele
+- Modèle
 - Fondes sur un but
 
 ---
@@ -1617,12 +1617,12 @@ layout: default
 # Graphes de planification
 
 
-## Structure de donnees
+## Structure de données
 
 - Generee a partir d'un probleme de planification
 - Divisee en niveaux:
   - Niveaux d'etats Si: Les fluents peuvent etre vrais au niveau i
-  - Niveaux d'actions Ai: Les actions applicables a l'etape i
+  - Niveaux d'actions Ai: Les actions applicables a l'étape i
 
 ## Construction
 
@@ -1680,7 +1680,7 @@ layout: default
 ## Formulation comme CSP
 
 - Plan a "k" actions
-- Variables: Action unique pour chaque etape, Fluent
+- Variables: Action unique pour chaque étape, Fluent
 - Contraintes: decrivent les effets + etat initial et but
 
 ---
@@ -1748,7 +1748,7 @@ layout: default
 
 # Planification a ordre partiel
 
-<img src="./images/img_034.png" style="position:absolute; top:96px; right:28px; width:330px;" alt="Planification ordre partiel - ordonnancement etapes" />
+<img src="./images/img_034.png" style="position:absolute; top:96px; right:28px; width:330px;" alt="Planification ordre partiel - ordonnancement étapes" />
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
@@ -1757,11 +1757,11 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 
 ## Planificateur non lineaire
 
-- Construit une liste d'etapes avec des contraintes temporelles
+- Construit une liste d'étapes avec des contraintes temporelles
 
 ## Raffinement du plan partiellement ordonne
 
-- Par ajout d'etapes
+- Par ajout d'étapes
 - Par ajout de contraintes
 
 ## Engagement minimal
@@ -1771,14 +1771,14 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 
 ## Plan non lineaire
 
-- Etapes &#123;S1, S2, S3...&#125;
+- Étapes &#123;S1, S2, S3...&#125;
   - Description d'operateurs + pre et post-conditions
 - Liens causaux &#123;... (Si, C, Sj) ...&#125;
 - Contraintes d'ordre &#123;... Si &lt; Sj ...&#125;
 
 ## Plan complet
 
-- Toutes les etapes sont incluses
+- Toutes les étapes sont incluses
 - Chaine de causalite
 - Validite temporelle
 
@@ -1796,7 +1796,7 @@ layout: default
 h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 </style>
 
-## Conditions reelles plus difficiles
+## Conditions réelles plus difficiles
 
 - Gestion des ressources, du temps, des abstractions
 - Planning -> scheduling
@@ -1899,7 +1899,7 @@ layout: default
 ## Linked Data
 
 - SOA (Service Oriented Architecture)
-- Donnees connectees sur le web
+- Données connectees sur le web
 
 
 <img src="./images/img_042.jpg" style="position:absolute; top:60px; right:20px; width:200px;" alt="dotNetRDF" />
@@ -2003,7 +2003,7 @@ layout: default
 
 ## Ontologies
 
-- Meta-modeles de donnees
+- Meta-modèles de données
 
 ## Web semantique
 
@@ -2236,7 +2236,7 @@ reach(X, Y) :- reach(X, Z), edge(Z, Y).
 **Dialogues argumentatifs** (Walton & Krabbe, 1995) :
 - **Persuasion** : convaincre
 - **Negotiation** : trouver un accord
-- **Information-seeking** : obtenir une donnee
+- **Information-seeking** : obtenir une donnée
 - **Inquiry** : decouvrir la verite
 - **Deliberation** : decider d'une action
 
@@ -2340,7 +2340,7 @@ theorem zero_add (n : Nat) : 0 + n = n := by
 | `rw` | Reecrit avec une egalite |
 | `simp` | Simplifie avec lemmes marques `@[simp]` |
 | `omega` | Arithmetique lineaire Nat/Int |
-| `linarith` | Ordres lineaires reels |
+| `linarith` | Ordres lineaires réels |
 | `ring` | Anneaux commutatifs |
 | `decide` | Decide une proposition decidable |
 
@@ -2423,11 +2423,11 @@ with Dojo(theorem) as dojo:
 
 ---
 
-# Notebook 12 — Theoreme de sensibilite
+# Notebook 12 — Theoreme de sensibilité
 
-**Huang (2019)** : reponse au probleme de sensibilite (ouvert depuis 1988).
+**Huang (2019)** : reponse au probleme de sensibilité (ouvert depuis 1988).
 
-> Pour toute fonction booleenne `f : {0,1}^n → {0,1}`, sensibilite `s(f)` et degre `deg(f)` sont polynomialement equivalents : `deg(f) ≤ s(f)^4`.
+> Pour toute fonction booleenne `f : {0,1}^n → {0,1}`, sensibilité `s(f)` et degre `deg(f)` sont polynomialement equivalents : `deg(f) ≤ s(f)^4`.
 
 **Outils** :
 - Hypercube `{0,1}^n`

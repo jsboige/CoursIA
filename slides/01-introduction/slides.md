@@ -58,7 +58,7 @@ image: ./images/img_001.jpg
     <ul><li>Comment tenir compte des autres ?</li></ul>
   </li>
   <li v-click>Apprentissage
-    <ul><li>Comment utiliser les donnees et l'experience ?</li></ul>
+    <ul><li>Comment utiliser les données et l'experience ?</li></ul>
   </li>
   <li v-click>Application : le langage naturel</li>
 </ul>
@@ -99,9 +99,9 @@ A l'issue de ce cours, vous serez capables de :
 
 # Objectifs du cours (2/2)
 
-- **Concevoir des systemes intelligents en conditions reelles**
+- **Concevoir des systemes intelligents en conditions réelles**
   - Integrer les differentes briques pour construire un systeme complet
-  - Gerer les contraintes du monde reel : incertitude, temps de calcul, donnees imparfaites
+  - Gerer les contraintes du monde réel : incertitude, temps de calcul, données imparfaites
 - **BONUS : Mieux comprendre l'intelligence elle-meme**
   - Comment l'intelligence emerge-t-elle dans la nature ?
   - Comment fonctionne le cerveau humain, et en quoi l'IA s'en inspire ?
@@ -179,7 +179,7 @@ imageClass: mid-right large
 L'IA est une discipline profondement interdisciplinaire :
 
 - **Philosophie :** logique, methodes de raisonnement, nature de l'esprit, langage, apprentissage
-- **Mathematiques :** representation formelle et preuve, algorithmes, calcul, complexite, (in)decidabilite, probabilites
+- **Mathematiques :** representation formelle et preuve, algorithmes, calcul, complexite, (in)decidabilite, probabilités
 - **Economie :** utilite, theorie de la decision, theorie des jeux, agents economiques rationnels
 - **Biologie :** intelligence naturelle et animale, evolution
 - **Neurosciences :** substrat physique de l'activite mentale (cerveau, neurones, plasticite)
@@ -216,7 +216,7 @@ image: ./images/img_004.png
 - **1970s** : l'IA se heurte a la complexite calculatoire -- premier "hiver"
 - **1980s** : l'IA devient une industrie (robotique, vision, systemes experts)
 - **1986** : retour des reseaux de neurones grace a la retropropagation
-- **1990s** : l'IA se mathematise (probabilites, optimisation)
+- **1990s** : l'IA se mathematise (probabilités, optimisation)
 - **2000s** : data mining, apprentissage bayesien, web semantique
 
 **Renaissance et explosion (2010-aujourd'hui)**
@@ -240,7 +240,7 @@ image: ./images/img_005.jpg
 - **2018** : AlphaZero apprend seul Go, echecs et shogi par renforcement
 - **2019** : StarCraft II, Pluribus (poker multi-joueurs)
 
-**Applications dans le monde reel**
+**Applications dans le monde réel**
 
 - Preuve de conjectures mathematiques (Robbins, 1996)
 - Vehicules autonomes (vol, conduite, marche robotique)
@@ -264,11 +264,11 @@ image: ./images/img_005.jpg
 
 **L'ere de l'IA generative (2020-2026)**
 
-- **2020** : GPT-3 (175 milliards de parametres)
+- **2020** : GPT-3 (175 milliards de paramètres)
 - **2021** : DALL-E (images), AlphaFold (proteines)
 - **2022** : ChatGPT (1M utilisateurs en 5 jours), Stable Diffusion
 - **2023** : GPT-4, Claude, LLaMA, Gemini -- competition ouverte
-- **2024** : modeles de reflexion (O1), agents LLM, open source (DeepSeek)
+- **2024** : modèles de reflexion (O1), agents LLM, open source (DeepSeek)
 - **2025** : GPT-5, agents autonomes, MCP (interoperabilite)
 
 ---
@@ -366,7 +366,7 @@ image: ./images/img_020.png
   - Utiliser l'inference pour deduire de nouvelles connaissances
   - Exemple : prouveurs automatiques de theoremes
 - **Limites de l'approche purement logique**
-  - Le monde reel est incertain (capteurs imparfaits, information incomplete)
+  - Le monde réel est incertain (capteurs imparfaits, information incomplete)
   - Tout comportement intelligent ne relève pas d'une délibération logique
   - En pratique, il faut aussi definir des buts et evaluer des couts
 
@@ -536,7 +536,7 @@ Chaque environnement de tache possede des proprietes qui influencent la concepti
 
 <div v-click="4">
 
-**En pratique**, le monde reel combine les cas les plus difficiles : partiellement observable, stochastique, sequentiel, dynamique, continu, multiagent.
+**En pratique**, le monde réel combine les cas les plus difficiles : partiellement observable, stochastique, sequentiel, dynamique, continu, multiagent.
 
 </div>
 
@@ -568,7 +568,7 @@ Un agent naif pourrait stocker une table "percepts → action" :<br>la table ser
 **Cinq architectures d'agents, par ordre de generalite :**
 
 1. Agent réflexe simple
-2. Agent réflexe fondé sur un modele
+2. Agent réflexe fondé sur un modèle
 3. Agent fonde sur des buts
 4. Agent fonde sur l'utilite
 5. Agent capable d'apprentissage
@@ -605,11 +605,11 @@ Un agent naif pourrait stocker une table "percepts → action" :<br>la table ser
 
 ---
 
-# Agent réflexe fondé sur un modele
+# Agent réflexe fondé sur un modèle
 
-<img src="./images/img_034.png" style="position:absolute; top:60px; right:20px; width:380px; background:white; padding:4px; border-radius:4px;" alt="Schema agent modele" />
+<img src="./images/img_034.png" style="position:absolute; top:60px; right:20px; width:380px; background:white; padding:4px; border-radius:4px;" alt="Schema agent modèle" />
 
-<img src="./images/img_035.png" style="position:absolute; bottom:30px; right:30px; width:320px; background:white; padding:4px; border-radius:4px;" alt="Pseudocode agent fonde sur un modele" />
+<img src="./images/img_035.png" style="position:absolute; bottom:30px; right:30px; width:320px; background:white; padding:4px; border-radius:4px;" alt="Pseudocode agent fonde sur un modèle" />
 
 **Caracteristiques :**
 
@@ -621,7 +621,7 @@ Un agent naif pourrait stocker une table "percepts → action" :<br>la table ser
 
 **Ex : Subsomption (Brooks)**
 
-- Modele non representatif
+- Modèle non representatif
 - Comportements simples
 - Couches d'automates
 - Emergence
@@ -655,7 +655,7 @@ Un agent naif pourrait stocker une table "percepts → action" :<br>la table ser
 - L'agent choisit l'action qui maximise l'utilite esperee
 
 **Permet d'arbitrer entre :**
-- Probabilite de succes vs importance de l'objectif
+- Probabilité de succes vs importance de l'objectif
 - Risque vs recompense, urgence vs cout
 
 ---
@@ -693,7 +693,7 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
 </div>
 <div v-click="3">
 
-- **Structure** : un etat est un objet complexe avec des relations (ex: base de donnees)
+- **Structure** : un etat est un objet complexe avec des relations (ex: base de données)
 
 </div>
 
@@ -713,9 +713,9 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
   - Un agent percoit son environnement et agit pour maximiser sa performance
   - La rationalite parfaite est un ideal ; en pratique, on vise le meilleur compromis
 - **Architectures d'agents**
-  - Reflexes (simples ou avec modele), fondes sur des buts ou l'utilite, apprenants
+  - Reflexes (simples ou avec modèle), fondes sur des buts ou l'utilite, apprenants
   - Les proprietes de l'environnement dictent le choix de l'architecture
-  - La representation des etats (atomique, factorisee, structuree) conditionne les capacites
+  - La representation des etats (atomique, factorisee, structuree) conditionne les capacités
 
 ---
 
@@ -740,7 +740,7 @@ Chaque chapitre du cours est accompagne de travaux pratiques sous forme de noteb
 
 - **Exploration** : `Search/Part1-Foundations/` (11 notebooks), `Search/Part2-CSP/` (9 notebooks), `Sudoku/` (16 notebooks) -- recherche, CSP, algorithmes genetiques, optimisation
 - **Logique** : `SymbolicAI/` -- Z3, Tweety, Lean 4, argumentation, smart-contracts
-- **Probabilites** : `Probas/Infer/` -- inference bayesienne, reseaux de decision (Infer.NET)
+- **Probabilités** : `Probas/Infer/` -- inference bayesienne, reseaux de decision (Infer.NET)
 - **Jeux** : `GameTheory/` -- equilibres de Nash, jeux bayesiens, MARL (OpenSpiel)
 - **Apprentissage** : `ML/` -- classification, regression, renforcement (ML.NET)
 - **IA Generative** : `GenAI/` -- Image (19 notebooks), Audio (16), Video (16), Texte (10)

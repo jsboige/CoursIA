@@ -16,7 +16,7 @@ TRADING ALGORITHMIQUE AVEC QUANTCONNECT
 
 **IA 101 -- S4**
 
-9 exercices progressifs du setup aux modeles de foundation
+9 exercices progressifs du setup aux modèles de foundation
 
 ---
 layout: section
@@ -35,7 +35,7 @@ layout: default
 - **Fichiers sources** : projets dans `QuantConnect/projects/`
 - **Notebooks de cours** : `QuantConnect/Python/QC-Py-*.ipynb`
 
-### Niveaux de difficulte
+### Niveaux de difficulté
 
 | Niveau | Exercices | Prerequis |
 |--------|-----------|-----------|
@@ -57,7 +57,7 @@ layout: default
 
 - **QuantConnect Cloud** : https://www.quantconnect.com/cloud
 - **Documentation** : https://www.quantconnect.com/docs/v2
-- **Dataset** : 100+ sources de donnees gratuites (US Equity, Crypto, Forex, Futures)
+- **Dataset** : 100+ sources de données gratuites (US Equity, Crypto, Forex, Futures)
 
 ### Livre de reference
 
@@ -241,7 +241,7 @@ layout: default
 ### Ce que vous allez apprendre
 
 - Feature engineering pour le trading (rendements, volatilite, indicateurs)
-- Entrainement d'un modele de classification supervisee
+- Entrainement d'un modèle de classification supervisee
 - Walk-forward training pour eviter le data leakage
 
 ### Sources
@@ -257,7 +257,7 @@ layout: default
 
 1. **Explorer le projet** `ML-RandomForest/main.py`
 
-2. **Identifier les features** utilisees par le modele :
+2. **Identifier les features** utilisees par le modèle :
    - Quels indicateurs techniques ?
    - Quelle fenetre temporelle ?
    - Comment les labels sont-ils construits ?
@@ -267,7 +267,7 @@ layout: default
 3. **Executer le backtest** sur QC Cloud (periode 2020-2025)
 
 4. **Analyser les resultats** :
-   - Le modele bat-il le buy-and-hold ?
+   - Le modèle bat-il le buy-and-hold ?
    - Quelle est la precision de prediction ?
    - Y a-t-il des periodes de sous-performance ?
 
@@ -279,8 +279,8 @@ layout: default
 
 - Le Random Forest utilise `sklearn.ensemble.RandomForestClassifier`
 - Les features incluent : rendements, volatilite, RSI, ratio de volume
-- Walk-forward : le modele est reentraine periodiquement
-- Parametres cles : `n_estimators`, `max_depth`, `lookback`
+- Walk-forward : le modèle est reentraine periodiquement
+- Paramètres cles : `n_estimators`, `max_depth`, `lookback`
 
 </v-click>
 
@@ -315,13 +315,13 @@ layout: default
 
 # Ex04 - Objectif
 
-> Detecter les regimes de marche avec un modele de Markov a changement de regime
+> Detecter les regimes de marche avec un modèle de Markov a changement de regime
 
 ### Ce que vous allez apprendre
 
-- Modeles probabilistes pour les series temporelles financieres
+- Modèles probabilistes pour les series temporelles financieres
 - Detection de regimes (haute/basse volatilite)
-- Allocation conditionnelle basee sur les probabilites
+- Allocation conditionnelle basee sur les probabilités
 
 ### Sources
 
@@ -336,15 +336,15 @@ layout: default
 
 1. **Lire le code** de `Markov-Regime-Detection/main.py`
 
-2. **Comprendre le modele** :
+2. **Comprendre le modèle** :
    - Qu'est-ce qu'un regime de marche ?
-   - Comment le modele de Markov identifie-t-il 2 regimes ?
-   - Comment les probabilites sont-elles utilisees pour l'allocation ?
+   - Comment le modèle de Markov identifie-t-il 2 regimes ?
+   - Comment les probabilités sont-elles utilisees pour l'allocation ?
 
 <v-click>
 
 3. **Executer le backtest** et analyser :
-   - Quand le modele detecte-t-il un changement de regime ?
+   - Quand le modèle detecte-t-il un changement de regime ?
    - Comment l'allocation SPY/TLT change-t-elle ?
    - Quel est le role du GLD (10% constant) ?
 
@@ -433,7 +433,7 @@ layout: default
 ### Hints
 
 - `pywt.wavedec()` pour la decomposition
-- Un SVR par composante (4 modeles)
+- Un SVR par composante (4 modèles)
 - `pywt.waverec()` pour la reconstruction du signal
 - Le bruit haute frequence (cD1) est souvent elimine
 
@@ -533,7 +533,7 @@ layout: default
 ### Ce que vous allez apprendre
 
 - Architecture LSTM (Long Short-Term Memory)
-- Portes d'oubli, d'entree et de sortie
+- Portes d'oubli, d'entrée et de sortie
 - Capturer les dependances temporelles longues
 
 ### Sources
@@ -656,7 +656,7 @@ layout: default
 ### Hints
 
 - `epsilon` decroit de 0.3 a 0.05 (exploration -> exploitation)
-- Experience replay : le modele re-apprend de situations passees
+- Experience replay : le modèle re-apprend de situations passees
 - Le Q-network est un simple MLP (pas de convolution)
 - Attention au surapprentissage sur une seule periode
 
@@ -684,7 +684,7 @@ layout: default
 layout: section
 ---
 
-# Ex09 - Modeles de Foundation (Chronos)
+# Ex09 - Modèles de Foundation (Chronos)
 
 ---
 layout: default
@@ -692,11 +692,11 @@ layout: default
 
 # Ex09 - Objectif
 
-> Utiliser un modele de foundation pour la prevision de series temporelles
+> Utiliser un modèle de foundation pour la prevision de series temporelles
 
 ### Ce que vous allez apprendre
 
-- Modeles de foundation pour series temporelles (zero-shot forecasting)
+- Modèles de foundation pour series temporelles (zero-shot forecasting)
 - Tokenisation de valeurs continues
 - Architecture Transformer pour le forecasting
 
@@ -712,7 +712,7 @@ layout: default
 
 # Ex09 - Consignes
 
-1. **Comprendre le concept de modele de foundation** :
+1. **Comprendre le concept de modèle de foundation** :
    - Preentraine sur un grand corpus de series temporelles
    - Zero-shot : pas de fine-tuning necessaire
    - Architecture T5 (Transformer)
@@ -730,7 +730,7 @@ layout: default
 
 3. **Executer le backtest** et reflechir :
    - Le zero-shot forecasting est-il competitif ?
-   - Quels sont les avantages par rapport a un modele entraine specifiquement ?
+   - Quels sont les avantages par rapport a un modèle entraine specifiquement ?
 
 </v-click>
 
@@ -757,7 +757,7 @@ layout: default
 | CAGR | ~15% |
 | Max Drawdown | ~34% |
 
-### Evolution des modeles
+### Evolution des modèles
 
 ```
 Ex03: Random Forest (ensemble, interpretable)
@@ -778,17 +778,17 @@ layout: default
 
 # Tableau des Exercices
 
-| # | Titre | Difficulte | Concept cle | Projet |
+| # | Titre | Difficulté | Concept cle | Projet |
 |---|-------|-----------|-------------|--------|
 | Ex01 | Setup et Premier Backtest | Debutant | QCAlgorithm, OnData | -- |
 | Ex02 | EMA Crossover | Debutant | Indicateurs techniques | EMA-Cross-Stocks |
 | Ex03 | Random Forest | Intermediaire | Classification ML | ML-RandomForest |
-| Ex04 | Markov Regime | Intermediaire | Modeles probabilistes | Markov-Regime-Detection |
+| Ex04 | Markov Regime | Intermediaire | Modèles probabilistes | Markov-Regime-Detection |
 | Ex05 | SVM Wavelet | Intermediaire | Signal processing | SVM-Wavelet-Forecasting |
 | Ex06 | Temporal CNN | Avance | CNN 1D | Temporal-CNN-Prediction |
 | Ex07 | LSTM Forecasting | Avance | Reseaux recurrents | LSTM-Forecasting |
 | Ex08 | RL Trading | Avance | Reinforcement Learning | Reinforcement-Learning-Trading |
-| Ex09 | Chronos Foundation | Avance | Modeles de foundation | Chronos-Foundation-Forecasting |
+| Ex09 | Chronos Foundation | Avance | Modèles de foundation | Chronos-Foundation-Forecasting |
 
 ---
 layout: default
@@ -816,11 +816,11 @@ layout: default
 ### Avant chaque exercice
 1. Lisez le **notebook de cours** associe
 2. Explorez le **code source** du projet sur GitHub
-3. Notez les **parametres** et leur role
+3. Notez les **paramètres** et leur role
 
 ### Pendant l'exercice
 4. Executez d'abord le backtest **tel quel**
-5. Puis **modifiez un parametre** a la fois
+5. Puis **modifiez un paramètre** a la fois
 6. **Documentez** vos observations
 
 ### Apres l'exercice
@@ -836,15 +836,15 @@ layout: default
 
 ### Pieges courants
 
-- **Overfitting** : un modele parfait en backtest peut etre mauvais en live
-- **Data leakage** : ne jamais utiliser les donnees futures pour l'entrainement
-- **Survivorship bias** : les donnees QC filtrent les entreprises disparues
-- **Look-ahead bias** : verifier que chaque decision utilise uniquement les donnees passees
+- **Overfitting** : un modèle parfait en backtest peut etre mauvais en live
+- **Data leakage** : ne jamais utiliser les données futures pour l'entrainement
+- **Survivorship bias** : les données QC filtrent les entreprises disparues
+- **Look-ahead bias** : verifier que chaque decision utilise uniquement les données passees
 
 ### Bonnes pratiques
 
 - Toujours **diviser** la periode (train / validation / test)
-- **Reentrainer** periodiquement les modeles
+- **Reentrainer** periodiquement les modèles
 - **Diversifier** les strategies plutot qu'optimiser une seule
 - **Questionner** les resultats anormalement bons
 
