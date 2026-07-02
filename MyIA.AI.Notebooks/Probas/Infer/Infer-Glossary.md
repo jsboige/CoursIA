@@ -38,7 +38,7 @@ Ce glossaire recapitule les termes techniques utilises dans la serie de notebook
 | **Likelihood** | Probabilité des observations sachant les paramètres | P(données \| theta) |
 | **Conjugate Prior** | Prior dont le posterior a la meme forme | Beta-Bernoulli |
 | **Evidence** | Probabilité marginale des observations P(données) | Pour comparaison de modèles |
-| **Latent Variable** | Variable non observee a inferer | Capacite etudiant (IRT) |
+| **Latent Variable** | Variable non observee a inferer | Capacité étudiant (IRT) |
 
 ---
 
@@ -59,9 +59,9 @@ Ce glossaire recapitule les termes techniques utilises dans la serie de notebook
 ## Modèles Spécifiques
 
 ### IRT (Item Response Theory)
-- **Capacite** : Variable latente representant le niveau d'un etudiant
+- **Capacité** : Variable latente representant le niveau d'un étudiant
 - **Difficulté** : Paramètre d'une question
-- **Discrimination** : Sensibilite de la question a la capacite
+- **Discrimination** : Sensibilité de la question a la capacite
 
 ### DINA (Deterministic Input, Noisy And)
 - **Matrice Q** : Indique quelles competences sont requises par question
@@ -69,7 +69,7 @@ Ce glossaire recapitule les termes techniques utilises dans la serie de notebook
 - **Guess** : P(correct | manque une competence)
 
 ### TrueSkill
-- **Skill** : Capacite estimee d'un joueur
+- **Skill** : Capacité estimee d'un joueur
 - **Performance** : Realisation bruitee du skill dans un match
 - **Dynamic Factor** : Evolution du skill dans le temps
 
