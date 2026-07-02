@@ -1,93 +1,97 @@
-# TrendFilteredMeanReversion Strategy
+# Stratégie TrendFilteredMeanReversion
 
-**Status**: ❌ PLAFOND STRUCTUREL CONFIRMÉ - Counter-Example for Educational Purposes
+**Statut** : ❌ PLAFOND STRUCTUREL CONFIRMÉ — Contre-exemple à des fins pédagogiques
 
 ## Performance
 
-| Metric | Value |
-|--------|-------|
+| Métrique | Valeur |
+|----------|--------|
 | Sharpe Ratio | **-0.016** |
 | CAGR | 3.4% |
-| Max Drawdown | 11.4% |
-| Period | 2015-2026 |
+| Drawdown maximum | 11.4% |
+| Période | 2015-2026 |
 
-## Why This Strategy Failed
+## Pourquoi cette stratégie a échoué
 
-### Root Cause: Signal Frequency vs. Quality Trade-off
+### Cause racine : arbitrage fréquence vs. qualité du signal
 
-This strategy combines:
-1. **RSI(2) < 10**: Extreme oversold signal (pullback)
-2. **SMA200 filter**: Only trade in bull markets
-3. **Time stop 5 days**: Exit if signal doesn't materialize
+Cette stratégie combine :
+1. **RSI(2) < 10** : signal de survente extrême (repli)
+2. **Filtre SMA200** : ne trader qu'en marché haussier
+3. **Time stop 5 jours** : sortie si le signal ne se matérialise pas
 
-**The problem**: It's a **valid signal** (73% win rate) but occurs **too rarely** (~9 trades/year).
+**Le problème** : c'est un **signal valide** (73 % de taux de réussite) mais qui survient **trop rarement** (~9 transactions/an).
 
-### Performance Breakdown
+### Décomposition des performances
 
-| Version | Signal | Sharpe | Trades/Year | Win Rate | Max DD |
-|---------|--------|--------|-------------|----------|--------|
+| Version | Signal | Sharpe | Transactions/an | Taux de réussite | Max DD |
+|---------|--------|--------|-----------------|------------------|--------|
 | v1.0 | RSI(2) < 10 | -0.016 | ~9 | 73% | 11.4% |
 | v2.0 | RSI(2) < 20 | -0.002 | ~31 | 71% | 16.2% |
 | v3.0 | RSI(3) < 15 | -0.050 | ~12 | 72% | 10.3% |
 | v4.0 | Multi-instrument (3x) | -0.129 | ~27 | 65% | 18.5% |
 
-**Pattern observed**:
-- **Tighter signal** (RSI<10) = High quality but too rare
-- **Looser signal** (RSI<20) = More frequent but lower quality
-- **Multi-instrument** = More trades but dilutes edge + higher correlation risk
+**Schéma observé** :
+- **Signal strict** (RSI<10) = haute qualité mais trop rare
+- **Signal laxiste** (RSI<20) = plus fréquent mais de moindre qualité
+- **Multi-instrument** = plus de transactions mais dilue l'avantage + risque de corrélation accru
 
-### Cause of Failure: Cash Drag
+### Cause de l'échec : cash drag (coût de détention de liquidités)
 
-| Metric | Value |
-|--------|-------|
-| Time in cash | ~85% |
-| Cash return (2015-2026) | ~0% (no interest earned) |
-| Risk-free rate (T-bills) | 2-5% annualized |
+| Métrique | Valeur |
+|----------|--------|
+| Temps en liquidités | ~85% |
+| Rendement du cash (2015-2026) | ~0% (aucun intérêt perçu) |
+| Taux sans risque (T-bills) | 2-5% annualisé |
 
-**The structural problem**:
-- Strategy is in cash 85% of the time
-- Cash earns 0% while risk-free (T-bills) earns 2-5%
-- This **opportunity cost** creates negative alpha
-- Even with 73% win rate, the cash drag destroys returns
+**Le problème structurel** :
+- La stratégie est en liquidités 85 % du temps
+- Le cash rapporte 0 % tandis que le sans risque (T-bills) rapporte 2-5 %
+- Ce **coût d'opportunité** crée un alpha négatif
+- Même avec 73 % de taux de réussite, le cash drag détruit la performance
 
-### Why Multi-Instrument Failed (v4.0)
+### Pourquoi le multi-instrument a échoué (v4.0)
 
-We tested SPY + QQQ + IWM to increase opportunities:
-- **Hypothesis**: 3x more instruments = 3x more signals
-- **Reality**: Signals are correlated (all 3 trigger together) + individual quality drops
-- **Result**: Sharpe -0.129 (worse than baseline)
+Nous avons testé SPY + QQQ + IWM pour augmenter les opportunités :
+- **Hypothèse** : 3x plus d'instruments = 3x plus de signaux
+- **Réalité** : les signaux sont corrélés (les 3 se déclenchent ensemble) + la qualité individuelle baisse
+- **Résultat** : Sharpe -0.129 (pire que la baseline)
 
-### Lessons Learned
+### Leçons apprises
 
-1. **Signal quality vs. frequency is a real trade-off**: Can't have both
-2. **Cash drag is real**: Being in cash 85% of the time = -2 to -5% annualized vs. T-bills
-3. **Multi-instrument ≠ independent signals**: Correlated markets don't increase true opportunities
-4. **Know when to stop**: We tested RSI(2), RSI(3), RSI(7), multi-instrument - all failed
-5. **Regime dependence**: This strategy only works in bull markets with sharp pullbacks (rare)
+1. **Qualité vs. fréquence du signal est un véritable arbitrage** : on ne peut pas avoir les deux
+2. **Le cash drag est réel** : être en liquidités 85 % du temps = -2 à -5 % annualisé vs. T-bills
+3. **Multi-instrument ≠ signaux indépendants** : des marchés corrélés n'augmentent pas les vraies opportunités
+4. **Savoir quand s'arrêter** : nous avons testé RSI(2), RSI(3), RSI(7), multi-instrument — tous ont échoué
+5. **Dépendance au régime** : cette stratégie ne fonctionne qu'en marchés haussiers avec replis francs (rares)
 
-## When This Approach CAN Work
+## Quand cette approche PEUT fonctionner
 
-Similar strategies may work in:
-- **Bear markets**: RSI pullbacks are more frequent
-- **Higher volatility**: More extreme RSI readings
-- **Individual stock screening**: Cherry-pick the best setups (not systematic)
-- **Different asset classes**: Crypto, FX where mean reversion is stronger
+Des stratégies similaires peuvent fonctionner en :
+- **Marchés baissiers** : les replis de RSI sont plus fréquents
+- **Forte volatilité** : lectures RSI plus extrêmes
+- **Screening d'actions individuelles** : sélectionner les meilleurs setups (non systématique)
+- **Autres classes d'actifs** : crypto, FX où le retour à la moyenne est plus fort
 
-**For SPY (2015-2026)**: Plafond structurel confirmé.
+**Pour SPY (2015-2026)** : plafond structurel confirmé.
 
-## Pedagogical Value
+## Valeur pédagogique
 
-This strategy demonstrates:
-- ❌ The importance of **signal frequency** in strategy design
-- ❌ **Cash drag** as a hidden cost (especially vs. risk-free rate)
-- ❌ When to declare a **plafond structurel** (after exhaustive testing)
-- ❌ The **73% win rate trap**: High win rate ≠ profitability if trades are too rare
+Cette stratégie illustre :
+- ❌ L'importance de la **fréquence du signal** dans la conception de stratégie
+- ❌ Le **cash drag** comme coût caché (notamment vs. taux sans risque)
+- ❌ Quand déclarer un **plafond structurel** (après tests exhaustifs)
+- ❌ Le **piège du 73 % de réussite** : taux de réussite élevé ≠ rentabilité si les trades sont trop rares
 
-## References
+## Références
 
-- **OPTIMIZATION_BACKLOG.md**: Full iteration history (v1.0-v4.0)
-- **MeanReversion**: Similar strategy but with different parameters
+- **OPTIMIZATION_BACKLOG.md** : historique complet des itérations (v1.0-v4.0)
+- **MeanReversion** : stratégie similaire avec des paramètres différents
 
 ---
 
-**Note**: This strategy has a valid signal but is structurally unprofitable due to cash drag. It serves as a lesson in opportunity cost and signal frequency.
+**Note** : cette stratégie a un signal valide mais est structurellement non rentable à cause du cash drag. Elle sert de leçon sur le coût d'opportunité et la fréquence du signal.
+
+---
+
+*Version anglaise préservée dans [README.en.md](README.en.md).*
