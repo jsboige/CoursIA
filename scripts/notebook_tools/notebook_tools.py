@@ -1789,6 +1789,91 @@ def cmd_golden_set(args):
     return 1 if fail_count > 0 else 0
 
 
+def cmd_normalize_source_newlines(args):
+    """Normalize nbformat `source` arrays so every element except the last ends with '\\n'.
+
+    Fixes a silent corruption (#5005): some notebooks store code-cell `source` as a
+    JSON list whose elements lack the trailing newline mandated by the nbformat spec.
+    The standard `''.join(source)` then produces a single line with no newlines, so a
+    leading line-comment (`#` in Python, `//` in C#) swallows the entire cell -- the
+    code never executes and no output/error is emitted (cell appears as ec=None/outs=0
+    or, after a forced run, silently passes). Adding '\\n' to all-but-last element
+    restores the intended line structure without touching source content, execution
+    counts, or outputs.
+
+    See #5005 (root-cause firsthand), #4956 (marathon .NET/Python parity).
+    """
+    repo_root = get_repo_root()
+    notebooks = discover_notebooks(
+        args.target, repo_root,
+        python_only=args.python_only,
+        dotnet_only=args.dotnet_only
+    )
+
+    if not notebooks:
+        print_error(f"No notebooks found for target: {args.target}")
+        return 1
+
+    print_info(f"Scanning {len(notebooks)} notebook(s) for source-newline corruption")
+
+    total_fixed_cells = 0
+    total_fixed_files = 0
+    per_file = []
+
+    for nb_path in notebooks:
+        try:
+            with open(nb_path, 'r', encoding='utf-8') as f:
+                nb = json.load(f)
+        except (json.JSONDecodeError, OSError) as exc:
+            print_error(f"Could not read {nb_path}: {exc}")
+            continue
+
+        fixed_cells = 0
+        for cell in nb.get('cells', []):
+            if cell.get('cell_type') not in ('code', 'markdown'):
+                continue
+            src = cell.get('source')
+            # source may be a list (split form) or a string (already-joined form).
+            # Only the list form can carry this corruption; a string is nbformat-valid as-is.
+            if not isinstance(src, list) or len(src) <= 1:
+                continue
+            # Corrupt = any non-last element lacks a trailing newline.
+            if any(not el.endswith('\n') for el in src[:-1]):
+                cell['source'] = [el + '\n' for el in src[:-1]] + [src[-1]]
+                fixed_cells += 1
+
+        if fixed_cells > 0:
+            total_fixed_cells += fixed_cells
+            total_fixed_files += 1
+            per_file.append({'path': str(nb_path), 'fixed_cells': fixed_cells})
+            if args.apply:
+                # Write back: UTF-8 without BOM, preserve list-form source, stable indent.
+                with open(nb_path, 'w', encoding='utf-8') as f:
+                    json.dump(nb, f, ensure_ascii=False, indent=1)
+                    f.write('\n')
+            status = "FIXED" if args.apply else "DRY-RUN (would fix)"
+            if args.verbose:
+                print(f"  [{status}] {nb_path.name}: {fixed_cells} cell(s)")
+
+    print_section("SUMMARY")
+    mode = "APPLIED" if args.apply else "DRY-RUN (--apply to write)"
+    print(f"  Mode: {mode}")
+    print(f"  Files with corruption: {total_fixed_files}")
+    print(f"  Total cells fixed: {total_fixed_cells}")
+
+    if args.json:
+        print(json.dumps({
+            'mode': mode,
+            'files_with_corruption': total_fixed_files,
+            'total_cells_fixed': total_fixed_cells,
+            'per_file': per_file,
+        }, indent=2, ensure_ascii=False))
+
+    # Exit 0 in dry-run regardless (it's a report); exit 0 after apply too.
+    # A non-zero exit is reserved for unreadable notebooks (handled above per-file).
+    return 0
+
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -1867,6 +1952,18 @@ def main():
     p_golden.add_argument('--json', action='store_true',
                           help='Emit machine-readable JSON (CI consumption)')
 
+    # normalize-source-newlines command (#5005 fix)
+    p_norm = subparsers.add_parser('normalize-source-newlines',
+                         help='Fix code/markdown cells whose source list lacks trailing newlines (#5005)')
+    p_norm.add_argument('target', nargs='?', default='all',
+                        help='Notebook path, family name, or "all" (default: all)')
+    p_norm.add_argument('--apply', action='store_true',
+                        help='Write the fix back to disk (default: dry-run, report only)')
+    p_norm.add_argument('--python-only', action='store_true')
+    p_norm.add_argument('--dotnet-only', action='store_true')
+    p_norm.add_argument('--verbose', '-v', action='store_true')
+    p_norm.add_argument('--json', action='store_true')
+
     args = parser.parse_args()
 
     if not args.command:
@@ -1880,6 +1977,7 @@ def main():
         'check-env': cmd_check_env,
         'execute': cmd_execute,
         'golden-set': cmd_golden_set,
+        'normalize-source-newlines': cmd_normalize_source_newlines,
     }
 
     return commands[args.command](args)
