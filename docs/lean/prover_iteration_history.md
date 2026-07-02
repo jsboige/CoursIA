@@ -163,6 +163,22 @@ From 20 prover history files containing 89 tactic attempts:
 | **F10** | 2026-05-17 | — | Critical verifier bug fix (lake config error ≠ build failure) |
 | **F11** | 2026-05-17 | #1231 | SearchAgent loop detection for sterile queries |
 | **B3** | 2026-05-18 | #1225 | Constructive existential heuristic (regex parse ∃ goals → scan constructors) |
+| **Verify write-back** | 2026-06-23 | — | `lean_utils.verify_sorry_replacement` : `is_success` conditionné au rebuild réel sans erreur + sans sorry implicite + baisse stricte du compte ; `persist_on_success` restaure l'original sinon |
+| **FX-1** | 2026-07-02 | — | tools.py wrapper `verify_sorry_replacement` : succès = compile **ET** baisse du compte sorry (avant : probe-only, `tactic=sorry` → success=True) |
+| **FX-2** | 2026-07-02 | — | agents.py : `search_leanexplore` enregistré seulement si le client lean-explore est disponible (16 appels no-op observés par run sinon) |
+| **FX-3** | 2026-07-02 | — | run_prover_bg.py : verdict canonique `result_kind` dans le summary (sorry_decreased / structural_only / no_progress / crashed / already_solved) |
+
+### Itération forensic 2026-07-02 (ping-pong #1453)
+
+Analyse forensic de 8 traces (02/06–23/06 : coneSteer, Lattice, Hashlife L849/L231, Basic L224, BONDAREVA, SHAPLEY) confrontée au code courant **avant** patch (G.1) :
+
+- **Déjà corrigé, ne pas re-patcher** : le TOP-1 forensic (gate de vérification laxiste) visait des traces **antérieures** au fix write-back du 2026-06-23 — `lean_utils.verify_sorry_replacement` + le VerifyExecutor de workflow.py sont déjà sains. Idem F1/F8/B2c (escalade Director sur échecs de build consécutifs / wall-clock / compteur cumulatif) : déjà dans workflow.py. Le succès-sur-augmentation-de-sorry est un choix P4 délibéré (#1483, décomposition).
+- **Réellement ouvert, patché (FX-1..FX-3)** : le wrapper tools.py côté TacticAgent retournait un succès probe-only (une tactique qui *est* un sorry compilait donc « réussissait ») ; `search_leanexplore` était enregistré même sans client installé ; le verdict d'un run était éparpillé sur 4 champs (`result.status`, `sorry_delta`, `structural_progress`, `error`), chaque consommateur re-dérivait le sien.
+- **Validation** : 75/75 `tests/test_prover_guards.py` (env `coursia-ml-training`) + import smoke des 3 modules.
+
+Leçon de méthode : un rapport forensic sur traces datées se relit **contre le code courant** avant d'agir — ici 2 des 3 recommandations TOP étaient déjà résolues, le patch set réel s'est réduit aux 3 écarts ci-dessus.
+
+**Pathologie nouvelle observée le même jour (run Lidman L39)** : élimination de sorry par **données fabriquées derrière un invariant trivial**. Le prover a remplacé `diagram := sorry` par un PD-code plausible étiqueté « Reference: KnotInfo » — mais le code ne correspondait PAS à l'entrée KnotInfo réelle de 11n_102 (seul 1 tuple sur 11 en était une rotation). Comme `KnotDiagram.hwell : True` (placeholder Phase 2), le build passe quelle que soit la donnée : le gate build+compte-sorry est structurellement aveugle à l'hallucination de données. Contre-mesures : (a) G.1 côté récolte — toute donnée « citée d'une source » se re-vérifie contre la source avant PR (fait ici : PD-code corrigé depuis knotinfo.org) ; (b) le vrai fix est le prédicat de bonne-formation Phase 2 (chaque label d'arête apparaît exactement 2×), qui aurait rejeté... non, qui ne suffirait PAS (un code cohérent peut rester le mauvais nœud) — seule la vérification contre la source fait foi pour la *donnée*, le prédicat n'attrape que la malformation.
 
 ### Dual-Track Workflow (established May 11)
 

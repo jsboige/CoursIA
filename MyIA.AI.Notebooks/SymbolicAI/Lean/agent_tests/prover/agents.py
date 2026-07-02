@@ -43,18 +43,26 @@ def create_search_agent(tools: SearchTools, provider: str = "local",
                         goal: str = "", name: str = "SearchAgent") -> Agent:
     """SearchAgent: finds Mathlib lemmas. Uses fast local model."""
     client = create_client(provider, model_key="fast")
+    # Forensic #1453 (2026-07-02, traces L849/L180): when the lean-explore
+    # client is not installed, search_leanexplore is a 0.0s no-op — yet the
+    # agent invoked it 11x/5x per run (span noise + one LLM decision each).
+    # Probe availability once (cached module-global) and only register the
+    # tool when it can actually answer.
+    from .tools import _get_leanexplore_client
+    _, _le_available = _get_leanexplore_client()
+    agent_tools = [
+        tools.search_mathlib_lemmas,
+        *([tools.search_leanexplore] if _le_available else []),
+        tools.lookup_proven_pattern,
+        tools.get_proof_state,
+        tools.add_discovered_lemma,
+        tools.file_read_lines,
+        tools.file_load,
+    ]
     return Agent(
         client=client,
         instructions=augment_instructions(SEARCH_AGENT_INSTRUCTIONS, goal=goal),
-        tools=[
-            tools.search_mathlib_lemmas,
-            tools.search_leanexplore,
-            tools.lookup_proven_pattern,
-            tools.get_proof_state,
-            tools.add_discovered_lemma,
-            tools.file_read_lines,
-            tools.file_load,
-        ],
+        tools=agent_tools,
         name=name,
         default_options=_fast_options(),
     )

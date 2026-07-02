@@ -86,6 +86,7 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
             "original_sorry": 0,
             "final_sorry": 0,
             "sorry_delta": 0,
+            "result_kind": "already_solved",
             "elapsed_s": 0.0,
             "result": {"status": "already_solved",
                        "reason": "0 sorry in target file (pre-check, no prover spawn)"},
@@ -131,11 +132,29 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     final = Path(filepath).read_text(encoding="utf-8")
     final_sorry = final.count("sorry")
 
+    # Forensic #1453 (2026-07-02): a run's outcome was scattered across 4 fields
+    # (result.status, sorry_delta, structural_progress, error) and every consumer
+    # re-derived its own verdict — the ai-01 harvest step included. One canonical
+    # verdict, ranked by what a coordinator does next:
+    #   sorry_decreased  -> harvest: branch + PR (textual sorry count dropped)
+    #   structural_only  -> keep iterating: decomposition landed, count did not drop
+    #   crashed          -> postmortem the harness, not the proof
+    #   no_progress      -> diagnostic data only
+    if isinstance(result, dict) and result.get("error"):
+        result_kind = "crashed"
+    elif final_sorry < original_sorry:
+        result_kind = "sorry_decreased"
+    elif isinstance(result, dict) and result.get("structural_progress"):
+        result_kind = "structural_only"
+    else:
+        result_kind = "no_progress"
+
     trace_name = f"{mode}_{name.replace(' ', '_')}_{provider}"
     trace_path = trace.save(trace_name)
 
     print(f"\n{'='*60}")
     print(f"RESULT: {result.get('status', 'unknown')}")
+    print(f"  Verdict: {result_kind}")
     print(f"  Sorry: {original_sorry} → {final_sorry}")
     _actual_iters = result.get("iterations") if isinstance(result, dict) else None
     print(f"  Iterations: {_actual_iters if _actual_iters is not None else '?'}/{iterations} (actual/budget)")
@@ -164,6 +183,9 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         # Convention: sorry_delta = final - original. POSITIF = REGRESSION (plus de sorry), NEGATIF = progres. Oppose a tools.py (original - current). Forensic #1453 2026-06-23.
         "sorry_delta": final_sorry - original_sorry,
         "sorry_reduction": original_sorry - final_sorry,  # positif = progres (lecture non ambigue)
+        # Canonical verdict (see derivation above): sorry_decreased |
+        # structural_only | no_progress | crashed | already_solved.
+        "result_kind": result_kind,
         "elapsed_s": round(elapsed, 1),
         "result": result,
         "trace_file": trace_path,
