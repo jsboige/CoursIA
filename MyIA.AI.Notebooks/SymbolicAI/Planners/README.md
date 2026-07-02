@@ -51,7 +51,7 @@ La série débute par le notebook Setup (0) qui configure automatiquement l'envi
 
 Les notebooks 4 à 6 constituent le cœur technique de la série. Le notebook 4 (Fast-Downward) présente l'architecture en trois étapes de Fast Downward (translator PDDL→SAS+, preprocessor C++, search C++) et montre comment l'exécuter via Docker et unified-planning. Les algorithmes de recherche (A*, Greedy, EHC) y sont testés sur Blocks World et Logistics. Le notebook 5 (Heuristics) approfondit la théorie : classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), comparaison expérimentale des heuristiques sur le nombre de nœuds expansés, et guide de sélection. Le notebook **5b** (Lean-Relaxation) est un **companion natif** au kernel Lean 4 : il prouve formellement, sans `sorry`, l'admissibilité de la relaxation $h^{+} \leq h^{*}$ dans le lake `planning_lean` — la certification mathématique de la propriété que le notebook 5 constate empiriquement. Le notebook 6 (Domains) couvre les domaines standards de l'IPC (Blocks World, Logistics, Gripper, Satellite) avec des problèmes de complexité croissante. À l'issue, vous pouvez configurer un planificateur optimal, choisir l'heuristique adéquate, et modéliser n'importe quel domaine IPC.
 
-### Phase 3 : Approches Avancees (Notebooks 7-9, ~3h)
+### Phase 3 : Approches Avancées (Notebooks 7-9, ~3h)
 
 La planification classique épuise ses limites dès que les problèmes deviennent trop grands pour l'exploration d'états. Les notebooks 7 à 9 proposent des alternatives. Le notebook 7 (OR-Tools) introduit la programmation par contraintes avec CP-SAT de Google OR-Tools : modélisation de contraintes (all-different, cumulative, table), scheduling, et optimisation multi-objectif. Le notebook 8 (Temporal) étend au domaine temporel avec PDDL 2.1 : durées d'actions, parallélisme, contraintes temporelles simples et denses, ordonnancement de tâches. Le notebook 9 (HTN) présente la planification hiérarchique (Task Networks) : tâches primitives vs abstraites, méthodes de décomposition, langage HDDL, solveur inspiré de SHOP2, et comparaison avec STRIPS. À l'issue, vous disposez de trois paradigmes complémentaires pour les problèmes qui dépassent la planification classique.
 
@@ -152,7 +152,7 @@ A l'issue de cette série, vous saurez :
 | Intermediate | Algorithmes, outils pratiques | 4, 5, 6, 7, 8, 9 |
 | Advanced | Extensions, recherche | 10, 11, 12 |
 
-## Contenu detaille des notebooks
+## Contenu détaillé des notebooks
 
 Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — au-delà du titre, c'est le **concept clé** qu'il enseigne.
 
@@ -240,7 +240,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 
 - **Bases en machine learning** (notebooks 10-12) : réseaux de neurones, loss, backpropagation
 - **API OpenAI/Anthropic** (notebook 10) : prompts LLM, génération de texte
-- **Connaissance de PDDL** (notebooks 8-9) : domains, problems, types
+- **Connaissance de PDDL** (notebooks 8-9) : domaines, problèmes, types
 
 ### Pour les notebooks pratiques
 
@@ -511,7 +511,7 @@ BATCH_MODE=true python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.
 La planification automatique est une branche de l'IA symbolique :
 
 - Raisonnement sur actions et états
-- Recherche dans espace d'états
+- Recherche dans l'espace d'états
 - Heuristiques admissibles pour optimalité
 
 ### Ponts avec les autres séries
