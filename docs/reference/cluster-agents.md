@@ -8,7 +8,7 @@ Reference perenne sur la structure du cluster : machines, GPUs, workspaces RooSy
 |---------|----------------|------|-------------|
 | `myia-ai-01` | **Coordinateur** + tests universels + vLLM hosting + training BG GPU 2 + prover BG forensic | 3x RTX 4090 | 72 GB (3x 24) |
 | `myia-po-2023` | Hote services GenAI Image/Audio/Video (8 Docker services) | RTX 3080 + eGPU RTX 3090 | 40 GB (16 + 24) |
-| `myia-po-2024` | QC backtest + ML training (modeles <= 10M params) | RTX 3070 | 8 GB |
+| `myia-po-2024` | QC backtest + ML training (modèles <= 10M params) | RTX 3070 | 8 GB |
 | `myia-po-2025` | Tracks intensives ML/audits + workspace EPITA (3 agents) | RTX 3080 Ti laptop | 16 GB |
 | `myia-po-2026` | Lean prover + QC MCP + service embedding + reverse proxy `xx.myia.io` | RTX 3080 | 16 GB |
 
@@ -18,7 +18,7 @@ Reference perenne sur la structure du cluster : machines, GPUs, workspaces RooSy
 
 Cluster simplifie depuis 2026-05-15 : **un workspace `CoursIA` par machine**, sauf po-2025 qui a 3 agents distincts pour 3 workspaces dedies (CoursIA + 2 EPITA).
 
-| RooSync ID | Role | Capacite dispatch depuis ai-01 |
+| RooSync ID | Role | Capacité dispatch depuis ai-01 |
 |-----------|------|--------------------------------|
 | `myia-ai-01:CoursIA` | Coord + reviewer PR + merger + tests universels | (self) |
 | `myia-po-2023:CoursIA` | GenAI Image/Audio/Video + audit notebooks (Search/CSP/Sudoku) | OUI |
@@ -95,7 +95,7 @@ Si user dit "OK GPU heavy po-2025" : verifier qu'il connait l'incident avant d'a
 | `myia-po-2025:2026-Epita-Programmation-par-Contraintes` | Review/merge PRs etudiants PrCon | EN ATTENTE PRs etudiants |
 | `myia-po-2025:2026-Epita-Intelligence-Symbolique` | Veille sujets + enrichissement | ACTIF veille |
 
-**Skills cross-workspace tappables** : po-2025 developpe des skills specifiques par workspace, mais ai-01 peut tapper l'agent qui a deja la skill fraiche. Exemple : formulaire eval partenaire cree par `po-2025:2026-Epita-PrCon` plutot que `po-2025:CoursIA`, parce que PrCon avait fait des formulaires GWorkspace+Playwright le meme jour.
+**Skills cross-workspace tappables** : po-2025 developpe des skills spécifiques par workspace, mais ai-01 peut tapper l'agent qui a deja la skill fraiche. Exemple : formulaire eval partenaire cree par `po-2025:2026-Epita-PrCon` plutot que `po-2025:CoursIA`, parce que PrCon avait fait des formulaires GWorkspace+Playwright le meme jour.
 
 ## Specialisations infrastructure
 
@@ -118,15 +118,15 @@ Container embedding dedie sur po-2026. Tout agent peut consommer l'endpoint.
 
 ### Reverse proxy `xx.myia.io` -> po-2023
 
-Sous-domaines publics qui pointent vers les services GenAI de po-2023. Permet validation **bout-en-bout** des notebooks GenAI (auth bearer + timeouts + latences reelles client-side) en plus du test localhost de po-2023.
+Sous-domaines publics qui pointent vers les services GenAI de po-2023. Permet validation **bout-en-bout** des notebooks GenAI (auth bearer + timeouts + latences réelles client-side) en plus du test localhost de po-2023.
 
-**Sequence GenAI a 2 etapes** : po-2023 dev + test local, puis po-2026 (optionnel) re-validation via sous-domaine public. po-2026 intervient APRES po-2023, jamais a la place.
+**Sequence GenAI a 2 étapes** : po-2023 dev + test local, puis po-2026 (optionnel) re-validation via sous-domaine public. po-2026 intervient APRES po-2023, jamais a la place.
 
 ### QuantConnect MCP -> po-2024 + po-2026
 
 Tokens API QC configures dans `.mcp.json` sur les 2 machines (Docker MCP server `quantconnect/mcp-server`). Ils peuvent `create_compile` + `create_backtest` sur QC Cloud.
 
-**Polyvalence** : avoir le token QC ne signifie PAS perimetre exclusif. Ces agents peuvent etre dispatch sur n'importe quelle mission (audit, Lean, notebooks). Le token QC = capacite **supplementaire**.
+**Polyvalence** : avoir le token QC ne signifie PAS perimetre exclusif. Ces agents peuvent etre dispatch sur n'importe quelle mission (audit, Lean, notebooks). Le token QC = capacité **supplementaire**.
 
 **Contrainte rate limit** : MAX 10 appels API QC / minute entre **tous les agents**. Avant backtest, annonce obligatoire sur dashboard workspace CoursIA pour eviter contention.
 
@@ -161,7 +161,7 @@ Rotation cle API geree par po-2023 lui-meme. **NON consomme** dans workspace Cou
 
 ## Dispatch via Epic GitHub (sprints multi-stages)
 
-Pour tout sprint / curriculum >= 3 etapes, creer **Epic GitHub** + sub-issues numerotees AVANT de dispatcher. Les agents lisent l'issue, voient leur prochain step, livrent la PR liee, prennent le step suivant **sans re-demander la coord**.
+Pour tout sprint / curriculum >= 3 étapes, creer **Epic GitHub** + sub-issues numerotees AVANT de dispatcher. Les agents lisent l'issue, voient leur prochain step, livrent la PR liee, prennent le step suivant **sans re-demander la coord**.
 
 | Element | Format |
 |---------|--------|

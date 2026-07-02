@@ -1,8 +1,8 @@
 # IA Classique
 
-**Recherche, CSP et resolution de problemes**
+**Recherche, CSP et résolution de problemes**
 
-Algorithmes de recherche classique, satisfaction de contraintes (CSP), resolution de Sudoku, planification classique. De A* aux heuristiques avancees, en passant par les solveurs SAT/SMT.
+Algorithmes de recherche classique, satisfaction de contraintes (CSP), résolution de Sudoku, planification classique. De A* aux heuristiques avancees, en passant par les solveurs SAT/SMT.
 
 ## Statistiques
 
@@ -37,11 +37,11 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), resolutio
 
 | # | Notebook | Maturite | Executable |
 |---|----------|----------|------------|
-| 1 | Notebook 11: Resolution de Sudoku avec Choco Constraint | PRODUCTION | Oui |
+| 1 | Notebook 11: Résolution de Sudoku avec Choco Constraint | PRODUCTION | Oui |
 | 2 | Sudoku-12-Z3-Python : Z3 SMT Solver (Python) | BETA | Oui |
 | 3 | Sudoku-13 : Automates avec BDD/MDD - Approche Pure | BETA | Oui |
-| 4 | Sudoku-15-Infer-Python : Resolution Probabiliste avec N | BETA | Oui |
+| 4 | Sudoku-15-Infer-Python : Résolution Probabiliste avec N | BETA | Oui |
 | 5 | Sudoku-Python-Genetic : Algorithme Genetique (Python) | BETA | Oui |
 | 6 | Sudoku-5 : Particle Swarm Optimization (Python) | BETA | Oui |
-| 7 | Sudoku-6 : Resolution par CSP Academique (Python) | BETA | Oui |
+| 7 | Sudoku-6 : Résolution par CSP Academique (Python) | BETA | Oui |
 | 8 | Sudoku-9-GraphColoring-Python : Coloration de Graphe (P | BETA | Oui |

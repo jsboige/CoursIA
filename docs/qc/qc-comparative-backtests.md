@@ -380,9 +380,9 @@ Les 4 strategies etudiantes ci-dessus sont aussi un support de cours. Cette sect
 
 #### 1. Le PSR (Probabilistic Sharpe Ratio) — Bailey & Lopez de Prado (2012)
 
-Le ratio de Sharpe observe suppose des rendements **IID et gaussiens**. Les rendements reels violent ces deux hypotheses : ils ont en general une **asymetrie (skew) negative** (les krachs sont plus profonds que les booms ne sont hauts) et des **queues epaisses (kurtosis > 3)**. Sous ces conditions, le Sharpe empirique est **systematiquement surestime**, surtout sur de courtes fenetres.
+Le ratio de Sharpe observe suppose des rendements **IID et gaussiens**. Les rendements réels violent ces deux hypotheses : ils ont en general une **asymetrie (skew) negative** (les krachs sont plus profonds que les booms ne sont hauts) et des **queues epaisses (kurtosis > 3)**. Sous ces conditions, le Sharpe empirique est **systematiquement surestime**, surtout sur de courtes fenetres.
 
-Le PSR corrige en estimant la probabilite que le vrai Sharpe depasse un seuil de reference `SR0` (souvent 0, le hasard) :
+Le PSR corrige en estimant la probabilité que le vrai Sharpe depasse un seuil de reference `SR0` (souvent 0, le hasard) :
 
 ```text
                      (SR_hat - SR0) * sqrt(T - 1)
@@ -392,16 +392,16 @@ Le PSR corrige en estimant la probabilite que le vrai Sharpe depasse un seuil de
 
 ou `T` = nombre d'annees d'observation (quand `SR_hat` est annualise), `skew` et `kurt` sont les moments empiriques des rendements, et `Phi` = fonction de repartition de la loi normale centree.
 
-**Lecture** : asymetrie negative et exces de kurtosis (kurt > 3) **gonflent le denominateur**, donc abaissent le PSR. Un meme Sharpe nominal peut donner un PSR tres different selon la distribution des rendements. Regle pratique : **PSR > 50%** = l'edge observe a plus de chances d'etre reel que d'etre du bruit ; **PSR < 50%** = on ne peut pas ecarter le bruit.
+**Lecture** : asymetrie negative et exces de kurtosis (kurt > 3) **gonflent le denominateur**, donc abaissent le PSR. Un meme Sharpe nominal peut donner un PSR tres different selon la distribution des rendements. Regle pratique : **PSR > 50%** = l'edge observe a plus de chances d'etre réel que d'etre du bruit ; **PSR < 50%** = on ne peut pas ecarter le bruit.
 
 **Applique aux 4 strategies etudiantes** :
 
 | Strategie | Sharpe | PSR% | Lecture |
 |-----------|--------|------|---------|
 | DualMomentum | 0.493 | **54.9** | Edge a la limite de la significativite (juste au-dessus de 50%). Fenetre courte (2 ans) => estimation des moments bruitee, a confirmer sur une periode plus longue. |
-| RiskParity inverse-vol | 0.514 | 16.3 | Sharpe plus haut mais PSR faible : sur 10 ans, l'edge moyen est reel mais **statistiquement peu concluant** (estimation robuste d'un edge faible). |
+| RiskParity inverse-vol | 0.514 | 16.3 | Sharpe plus haut mais PSR faible : sur 10 ans, l'edge moyen est réel mais **statistiquement peu concluant** (estimation robuste d'un edge faible). |
 | ValueFactor | 0.227 | 0.8 | Quasi-zero : l'alpha observe est indistinguable du bruit. Confirme l'effondrement du facteur value sur une decennie dominee par la growth. |
-| OptionWheel | -0.51 | 0.0 | Aucun edge. La probabilite d'un vrai Sharpe positif est nulle. |
+| OptionWheel | -0.51 | 0.0 | Aucun edge. La probabilité d'un vrai Sharpe positif est nulle. |
 
 **Contraste cle** : Sharpe et PSR ne classent pas pareil. RiskParity bat DualMomentum en Sharpe (0.514 > 0.493) mais DualMomentum le bat largement en PSR (54.9 > 16.3). Le PSR est la statistique a citer, pas le Sharpe brut — premiere lecon de lecture critique.
 
@@ -414,7 +414,7 @@ Le `RiskParity inverse-vol` etudiant n'implemente pas du "vrai" risk parity. Deu
 ```text
    poids_i  proportionnel a  1 / sigma_i
 ```
-Chaque actif recoit un poids inverse a sa volatilite **individuelle**. Methode simple, une seule donnee par actif, mais elle **ignore les correlations**.
+Chaque actif recoit un poids inverse a sa volatilite **individuelle**. Methode simple, une seule donnée par actif, mais elle **ignore les correlations**.
 
 **Equal Risk Contribution (ERC)** — Maillard, Roncalli & Teiletche (2010), le "vrai" risk parity :
 
@@ -422,16 +422,16 @@ Chaque actif recoit un poids inverse a sa volatilite **individuelle**. Methode s
    chaque actif i contribue EGALEMENT au risque total :
    (Sigma * w)_i / (w' * Sigma * w)  =  constant   pour tout i
 ```
-ou `Sigma` est la **matrice de covariance** complete (correlations incluses). Resolution par programmation convexe (QP / Newton-Lagrange), sans solution analytique en general.
+ou `Sigma` est la **matrice de covariance** complete (correlations incluses). Résolution par programmation convexe (QP / Newton-Lagrange), sans solution analytique en general.
 
 **Pourquoi la difference compte** : avec l'inverse-vol naive, deux actifs **fortement correles** (ex. deux ETF actions US) reçoivent chacun un budget de risque eleve, donc le portefeuille reste **concentre sur un meme facteur** — faussement "diversifie". L'ERC, en integrant la covariance, **force une vraie diversification** : deux actifs correles se partagent un meme budget de risque cumule, pas deux budgets independants.
 
-**Pedagogique** : le `RiskParity inverse-vol` (Sharpe 0.514, PSR 16.3%) est un **bon point d'entree** — simple, robuste, peu de parametres. L'upgrade naturel est l'**ERC** (gestion des correlations via la matrice de covariance). Le saut conceptuel : passer de "donner moins de poids au plus volatile" (1D) a "egaliser la contribution marginale au risque" (matricielle, multidimensionnelle).
+**Pedagogique** : le `RiskParity inverse-vol` (Sharpe 0.514, PSR 16.3%) est un **bon point d'entrée** — simple, robuste, peu de paramètres. L'upgrade naturel est l'**ERC** (gestion des correlations via la matrice de covariance). Le saut conceptuel : passer de "donner moins de poids au plus volatile" (1D) a "egaliser la contribution marginale au risque" (matricielle, multidimensionnelle).
 
 #### 3. Lecture critique d'un backtest — les pieges visibles dans la table ci-dessus
 
 - **Dates de debut hardcoded** (`*` sur les 4) : les fenetres ne sont **pas aligned** avec le reste du catalogue (2018-2025). Les metriques ne sont pas directement comparables — comparer le Sharpe d'un DualMomentum 2023-2025 a un TrendFollowing 2018-2025 est abusif.
-- **MaxDD > 100% (OptionWheel, 103.5%)** : un drawdown superieur a 100% signale une vente d'options **naked non couverte** integrale — le simulateur ne capture pas parfaitement l'assignation / liquidation forcee. Le backtest est probablement **optimiste** sur la perte reelle.
+- **MaxDD > 100% (OptionWheel, 103.5%)** : un drawdown superieur a 100% signale une vente d'options **naked non couverte** integrale — le simulateur ne capture pas parfaitement l'assignation / liquidation forcee. Le backtest est probablement **optimiste** sur la perte réelle.
 - **Croiser PSR et duree** : un PSR de 54.9% sur 2 ans (DualMomentum) n'a pas le meme poids qu'un PSR de 81.8% sur 8 ans (TrendFollowing, ligne 381). La signification statistique croit avec `sqrt(T)` ; une courte fenetre a besoin d'un edge plus fort pour convaincre.
 
 #### References
