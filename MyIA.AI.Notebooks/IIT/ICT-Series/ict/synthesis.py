@@ -13,7 +13,11 @@ discretisees (labels hachables), sans rien connaitre des substrats. La
 discretisation substrat-specifique (coarse-graining d'un champ 2D, binning
 d'un scalaire, symbolisation d'un vecteur de frequences strategiques) vit dans
 le notebook ICT-Synthese, ou elle est un choix documente et mesure -- pas une
-constante cachee dans la librairie.
+constante cachee dans la librairie. Ce choix doit rester **grossier** : le
+chemin d'echelles de ``causal_emergence.greedy_apportionment`` explore toutes
+les paires d'etats a chaque pas (cout ~O(k^2) par echelle, k = nombre d'etats
+distincts), donc une trajectoire de tri brute (``tuple(config)``) explose vite
+alors que sa version macro (niveau d'inversions) tient en une dizaine d'etats.
 
 Gate falsifiable central : *un scalaire d'integration transfere-t-il entre
 substrats ?* Les aides ``cross_substrate_summary`` et ``rank_consistency``
