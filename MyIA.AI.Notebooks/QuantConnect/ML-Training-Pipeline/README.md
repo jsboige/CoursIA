@@ -13,6 +13,12 @@ Les notebooks de ce répertoire sont des **recherches indépendantes (c)** — a
 | `research_what_dl_can_predict.ipynb` | Ce que le DL peut prédire en finance | (c) |
 | `research_l4_decision_transformer.ipynb` | Évaluation Decision Transformer | (c) |
 | `hmm_alpha_research.ipynb` | HMM gaussien pour alpha trading (Broad Ch6 Ex4) | (c) |
+| `m4_dlinear_vol_research.ipynb` | DLinear-vol : DL linéaire vs HAR (prévisions pures) | (c) |
+| `m5_hmm_regime_research.ipynb` | HMM regime-switching HAR : quand la sophistication structurelle nuit | (c) |
+| `m9_tft_vol_research.ipynb` | TFT (Temporal Fusion Transformer) : l'échec du surparamétrage | (c) |
+| `m11e_ensemble_research.ipynb` | Ensemble HAR-Kelly : la dilution confirmée (3e axe d'échec) | (c) |
+| `m12_har_rv_j_research.ipynb` | HAR-RV-J : décomposition de sauts (Andersen-Bollerslev-Diebold 2007) | (c) |
+| `m15_lstm_rv_research.ipynb` | Log-LSTM RV : mémoire séquentielle pour la variance réalisée | (c) |
 
 Classification complète : [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md)
 
