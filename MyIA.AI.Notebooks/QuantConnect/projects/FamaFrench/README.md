@@ -1,55 +1,56 @@
 # FamaFrench
 
-**Asset class:** US Factor ETFs
-**Cloud project ID:** None (local only)
+**Classe d'actifs :** ETFs facteurs US
+**ID projet Cloud :** Aucun (local uniquement)
 
 ## Description
 
-Factor ETF rotation strategy using risk-adjusted momentum (12m-1m return / 63d realized volatility) with skip-month.
-Universe of 5 Fama-French factor ETFs: VLUE (value), MTUM (momentum), SIZE (size), QUAL (quality), USMV (low-vol).
+Stratégie de rotation d'ETFs因子 utilisant le momentum ajusté au risque (rendement 12m-1m / volatilité réalisée 63j) avec mois de skip.
 
-SMA200 regime filter on SPY: in bear markets, rotates to USMV as risk-off asset.
-Dynamic top_n selection (all factors with positive score). Per-position stop-loss at -12%.
+Univers de 5 ETFs facteurs Fama-French : VLUE (valeur), MTUM (momentum), SIZE (taille), QUAL (qualité), USMV (low-vol).
 
-## How to Run
+Filtre de régime SMA200 sur SPY : en marché baissier, rotation vers USMV comme actif risk-off.
+Sélection dynamique top_n (tous les facteurs à score positif). Stop-loss par position à -12%.
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/FamaFrench"`
+## Comment exécuter
+
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/FamaFrench"`
 ```bash
 lean backtest --project .
 ```
 
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
-## Backtest Metrics (2015-2026)
+## Métriques backtest (2015-2026)
 
-| Metric | Value |
-|--------|-------|
-| Sharpe Ratio | 0.540 |
-| CAGR | 12.1% |
-| Max Drawdown | 24.2% |
-| Net Return | +258% |
-| Rebalance | Monthly |
+| Métrique | Valeur |
+|----------|--------|
+| Ratio de Sharpe | 0,540 |
+| CAGR | 12,1 % |
+| Drawdown max | 24,2 % |
+| Rendement net | +258 % |
+| Rééquilibrage | Mensuel |
 
-### Aligned baseline (2018-2025)
+### Baseline alignée (2018-2025)
 
-Standardized #1630 backbone run (QC Cloud project `33251801`, backtest `697e96af`).
+Exécution backbone #1630 standardisée (projet QC Cloud `33251801`, backtest `697e96af`).
 
-| Metric | Value |
-|--------|-------|
-| Sharpe Ratio | 0.445 |
-| CAGR | 11.111% |
-| Max Drawdown | 24.100% |
-| Probabilistic Sharpe Ratio | 11.9% |
-| Tradeable dates | 1761 |
+| Métrique | Valeur |
+|----------|--------|
+| Ratio de Sharpe | 0,445 |
+| CAGR | 11,111 % |
+| Drawdown max | 24,100 % |
+| Ratio de Sharpe probabiliste | 11,9 % |
+| Dates tradables | 1761 |
 
-Interpretation: strong positive Sharpe 0.445 (3rd-best no-ML backbone, close to GlobalMacro-Regime 0.454) with the 2nd-highest CAGR (11.1%, after HAR-RV-J-Kelly 14.1%). The risk-adjusted momentum factor rotation (12m-1m return / 63d realized vol, dynamic top_n) combined with the SMA200 regime filter, USMV risk-off and per-position -12% stop-loss survives the 2018-2025 alignment with only a mild Sharpe drop vs the author's 2015-2024 v3.0 (0.540 -> 0.445; MaxDD stable 24.2% -> 24.1%) -- the strategy is genuinely robust, not period-overfit, in contrast to the broader "simple factor collapse" finding (this is a risk-adjusted momentum rotation, not static factor exposure). Below the FamaFrenchAllWeather composite (0.684) -- the framework composite adds value over the standalone rotation. Promoted Tier 4 -> 2 (Historique). totalOrders = 0 = wrapper extraction artifact (CAGR 11.1% implies real trades).
+Interprétation : Sharpe positif fort 0,445 (3ᵉ meilleur backbone non-ML, proche de GlobalMacro-Regime 0,454) avec le 2ᵉ CAGR le plus élevé (11,1 %, après HAR-RV-J-Kelly 14,1 %). La rotation因子 ajustée au risque (momentum 12m-1m / vol réalisée 63j, top_n dynamique) combinée au filtre de régime SMA200, USMV risk-off et stop-loss -12 % par position survit à l'alignement 2018-2025 avec seulement une baisse légère du Sharpe vs la v3.0 2015-2024 de l'auteur (0,540 → 0,445 ; MaxDD stable 24,2 % → 24,1 %) — la stratégie est véritablement robuste, pas sur-ajustée à la période, contrairement au constat plus large « effondrement des facteurs simples » (il s'agit d'une rotation momentum ajustée au risque, pas d'une exposition statique aux facteurs). Sous le composite FamaFrenchAllWeather (0,684) — le composite dframework apporte de la valeur par rapport à la rotation isolée. Promu Tier 4 → 2 (Historique). totalOrders = 0 = artefact d'extraction du wrapper (CAGR 11,1 % implique des trades réels).
 
-## Files
+## Fichiers
 
-- `main.py` - Strategy (v3, risk-adjusted momentum with skip-month)
-- `research.ipynb` - Factor analysis and signal robustness tests
+- `main.py` — Stratégie (v3, momentum ajusté au risque avec mois de skip)
+- `research.ipynb` — Analyse因子 et tests de robustesse du signal
 
-## References
+## Références
 
-- Fama & French (1993), "Common risk factors in the returns on stocks and bonds"
-- Barroso & Santa-Clara (2015), "Momentum has its moments"
+- Fama & French (1993), « Common risk factors in the returns on stocks and bonds »
+- Barroso & Santa-Clara (2015), « Momentum has its moments »
