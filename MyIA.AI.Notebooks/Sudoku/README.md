@@ -18,7 +18,7 @@ Comment résoudre un Sudoku ? Cette série explore les techniques de résolution
 À l'issue de cette série, vous serez capable de :
 
 1. **Implémenter** un solveur de backtracking avec heuristiques (MRV, Forward Checking) et comprendre sa complexité
-2. **Comparer** 7 paradigmes algorithmiques (exhaustif, métaheuristique, CP, SMT, neuronal, LLM) sur un même problème NP-complet
+2. **Comparer** 7 paradigmes algorithmiques (exhaustif, métaheuristique, CP, SMT, probabiliste, neuronal, LLM) sur un même problème NP-complet
 3. **Modéliser** le Sudoku comme un CSP (variables, domaines, contraintes) et utiliser des solveurs industriels (OR-Tools, Choco)
 4. **Evaluer** les compromis garantie vs performance vs généralisation pour choisir une stratégie de résolution
 5. **Mesurer** empiriquement les performances de chaque approche (temps, taux de succès, échelle de difficulté)
@@ -341,7 +341,7 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 15 | Infer/NumPyro | Inférence probabiliste : distribution a posteriori sur les cases |
 | 16 | Neural Network | CNN PyTorch : apprentissage de patterns visuels sur grilles |
 | 17 | LLM | LLM Solver : prompt engineering pour résolution logique, limites |
-| 18 | Comparison | Benchmark comparatif : toutes les approches sur Easy/Medium/Hard/Expert |
+| 18 | Comparison | Benchmark comparatif : toutes les approches sur Easy/Medium/Hard |
 
 ---
 
@@ -709,7 +709,7 @@ Les notebooks Python (suffixe `-Python`) couvrent 16 solveurs avec PyGAD, OR-Too
 Cette série a utilisé le Sudoku comme **banc d'essai unique** pour comparer, sur un même problème NP-complet, sept paradigmes algorithmiques radicalement différents. L'arc pédagogique suit une progression naturelle :
 
 - **Le geste fondateur** — poser qu'un problème computationnel peut s'attaquer par des voies très différentes : énumération exhaustive (backtracking), métaheuristiques (recuit simulé, algorithmes génétiques), programmation par contraintes (CP-SAT, OR-Tools), satisfiabilité modulaire (Z3/SMT), inférence probabiliste (NumPyro, Infer.NET), et approches data-driven (réseaux de neurones, LLM). Le Sudoku n'est pas l'objectif : c'est le **terrain commun** qui rend les paradigmes comparables.
-- **Le double langage** — l'approche miroir C#/Python (16 + 16 notebooks) ancre une leçon concrète : les mêmes algorithmes se transposent d'un écosystème à l'autre. GeneticSharp ↔ PyGAD, OR-Tools .NET ↔ OR-Tools Python, Z3 .NET ↔ Z3 Python. Le concept précède l'outil.
+- **Le double langage** — l'approche miroir C#/Python (13 paires miroir, soit 26 notebooks) ancre une leçon concrète : les mêmes algorithmes se transposent d'un écosystème à l'autre. GeneticSharp ↔ PyGAD, OR-Tools .NET ↔ OR-Tools Python, Z3 .NET ↔ Z3 Python. Le concept précède l'outil.
 - **Le compromis fondamental** — chaque paradigme paie un prix différent. Les solveurs exacts (DLX, Norvig, CP-SAT, Z3) **garantissent** la solution mais au coût d'une recherche combinatoire. Les métaheuristiques sont plus rapides en moyenne sans garantie. Les approches neuronales **généralisent** mais échouent sur les instances difficiles. Le notebook 18 (Comparison) synthétise ces compromis : garantie vs performance vs généralisation.
 
 La thèse pratique est honnête : il n'existe pas de « meilleur solveur » dans l'absolu — il existe un solveur adapté à chaque contexte (garantie requise, temps imparti, données disponibles), et savoir le choisir est précisément ce que cette série enseigne.
