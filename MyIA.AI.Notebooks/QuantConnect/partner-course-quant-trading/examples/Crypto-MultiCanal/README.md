@@ -1,6 +1,6 @@
 # Détecteur Hiérarchique Multi-Canaux (ID: 22298373)
 
-Stratégie de detection de canaux de prix a plusieurs échelles temporelles pour BTCUSDT.
+Stratégie de détection de canaux de prix à plusieurs échelles temporelles pour BTCUSDT.
 C'est le projet le plus avancé du portfolio, issu d'un travail itératif sur plusieurs mois.
 
 ## Architecture
@@ -14,15 +14,15 @@ ZigZag (seuil 5%)
     v
 Pivots (Hauts -1 / Bas +1)
     |
-    +---> Macro (500j lookback) --> Resistance + Support
+    +---> Macro (500j lookback) --> Résistance + Support
     |         |
-    |         v (filtre temporel: 2e pivot macro le plus recent)
+    |         v (filtre temporel: 2e pivot macro le plus récent)
     |
-    +---> Meso (150j lookback) --> Resistance + Support
+    +---> Meso (150j lookback) --> Résistance + Support
     |         |
-    |         v (filtre temporel: 2e pivot meso le plus recent)
+    |         v (filtre temporel: 2e pivot meso le plus récent)
     |
-    +---> Micro (50j lookback) --> Resistance + Support
+    +---> Micro (50j lookback) --> Résistance + Support
     |
     v
 Signaux: Breakout (cassure) ou Bounce (rebond)
@@ -31,7 +31,7 @@ Signaux: Breakout (cassure) ou Bounce (rebond)
 Gestion SL/TP avec OCO (One-Cancels-Other)
 ```
 
-## Algorithme de detection des canaux
+## Algorithme de détection des canaux
 
 Pour chaque échelle (Macro/Meso/Micro), les lignes de résistance et support sont trouvées par :
 
@@ -51,10 +51,10 @@ strategy_params = {
     'trend_filter_level': 'macro',      # Filtre de tendance (MODIFIE: active sur macro)
     'risk_per_trade_pct': 0.0199,       # Risque par trade (~2%)
     'min_channel_width_pct': 0.0062,    # Largeur minimum du canal
-    'bounce_sl_type': 'pct_entry',      # SL bounce en % de l'entree
+    'bounce_sl_type': 'pct_entry',      # SL bounce en % de l'entrée
     'bounce_sl_value': 0.0105,          # SL bounce = 1.05%
     'bounce_tp_value': 2.1194,          # TP bounce = ~2.1x le risque
-    'bounce_entry_offset': 0.0015,      # Offset d'entree bounce = 0.15%
+    'bounce_entry_offset': 0.0015,      # Offset d'entrée bounce = 0.15%
     'breakout_sl_type': 'pct_level',    # SL en % du niveau casse
     'breakout_sl_value': 0.0120,        # SL = 1.2% sous le niveau
     'breakout_tp_type': 'rr_ratio',     # TP en ratio Risk/Reward
@@ -66,14 +66,14 @@ strategy_params = {
 
 ```python
 channel_params = {
-    "wp_macro_res": 2.0,   # Poids temporel WSSE (macro resistance)
-    "rpf_macro_res": 1.0,  # Fraction de pivots recents pour WSSE
+    "wp_macro_res": 2.0,   # Poids temporel WSSE (macro résistance)
+    "rpf_macro_res": 1.0,  # Fraction de pivots récents pour WSSE
     "wp_meso_res": 2.0,
     "rpf_meso_res": 1.0,
     "wp_micro_res": 2.0,
     "rpf_micro_res": 1.0,
-    "wp_micro_sup": 4.0,   # Micro support: poids plus fort sur les recents
-    "rpf_micro_sup": 0.30, # Micro support: seulement 30% des pivots les plus recents
+    "wp_micro_sup": 4.0,   # Micro support: poids plus fort sur les récents
+    "rpf_micro_sup": 0.30, # Micro support: seulement 30% des pivots les plus récents
 }
 ```
 
