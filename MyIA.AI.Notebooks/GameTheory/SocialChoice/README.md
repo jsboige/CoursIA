@@ -105,7 +105,7 @@ pip install -r ../requirements.txt
 pip install pysat z3-solver
 ```
 
-Pour le notebook 02 (Lean 4) : suivre les instructions dans [README parent](../README.md#notebooks-lean-4-2b-4b-8b-15b-16b).
+Pour le notebook 02 (Lean 4) : suivre les instructions dans [README parent](../README.md#notebooks-lean-4-2b-4b-8b-15b).
 
 ## Ressources
 
