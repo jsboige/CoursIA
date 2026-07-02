@@ -16,6 +16,23 @@ Pour un jeu répété à horizon infini, facteur d'actualisation δ ∈ [0,1), p
 
 > Au-dessus du seuil, **aucune déviation unilatérale n'est profitable**. La grim est une stratégie d'équilibre sous-jeu-parfait (subgame-perfect Nash equilibrium).
 
+### One-shot deviation principle — schéma de décision
+
+Le théorème repose sur le **principe de déviation unilatérale** : sous grim-trigger, une seule déviation déclenche la punition éternelle. La coopération est soutenable ssi la valeur actualisée de coopérer perpétuellement dépasse celle de dévier une fois puis d'être puni.
+
+```mermaid
+flowchart TD
+    A["Agent au stage t (historique : coopération mutuelle)"] --> B{"Action choisie au stage t ?"}
+    B -->|"Coopérer (C)"| C["Payoff R, puis coopération perpétuelle"]
+    B -->|"Dévier (D)"| D["Payoff T maintenant, puis punition éternelle P"]
+    C --> CV["Valeur actualisée = R / (1 - δ)"]
+    D --> DV["Valeur actualisée = T + δ * P / (1 - δ)"]
+    CV --> E{"CV ≥ DV ?"}
+    DV --> E
+    E -->|"δ ≥ (T-R)/(T-P)"| F["Coopération soutenable : équilibre sous-jeu-parfait"]
+    E -->|"δ < (T-R)/(T-P)"| G["Déviation profitable : la grim ne tient pas"]
+```
+
 ## Cohorte (leçon #4362, Issue #4880)
 
 | Paramètre | Valeur | Référence |
