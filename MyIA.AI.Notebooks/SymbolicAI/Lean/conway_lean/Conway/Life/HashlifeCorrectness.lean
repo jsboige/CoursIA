@@ -697,6 +697,35 @@ theorem step_light_cone (t : Nat) (g₁ g₂ : Grid) (p : Int × Int)
     have h_tri : manhattan p r ≤ manhattan p q + manhattan q r := manhattan_triangle p q r
     omega
 
+/-! ## Locality composition (radius-doubling agreement)
+
+`evolve_cone_agree` is the sorry-free, P4-independent locality-composition
+handle consumed by `p4_succ_membership` (the G3 bridge): it reduces agreement
+of `evolve u g₁` and `evolve u g₂` on `lightCone p (2*t)` to agreement of
+`g₁ g₂` on the larger `lightCone p (2*(t+u))`, so that a further
+`step_light_cone t` step closes the half-step composition. -/
+
+/-- **Locality composition (radius-doubling agreement).** If two grids `g₁ g₂`
+    agree on every cell of the light cone of radius `2*(t+u)` around `p`, then
+    after evolving each for `u` generations they agree at every point `q` of the
+    smaller cone of radius `2*t` around `p`. -/
+theorem evolve_cone_agree (t u : Nat) (g₁ g₂ : Grid) (p q : Int × Int)
+    (h_cone : ∀ r ∈ lightCone p (2 * (t + u)), isAlive g₁ r = isAlive g₂ r)
+    (hq : q ∈ lightCone p (2 * t)) :
+    isAlive (evolve u g₁) q = isAlive (evolve u g₂) q := by
+  -- `q` sits in `lightCone p (2*t)`. Apply `step_light_cone u` at `q`: it
+  -- requires `g₁ g₂` to agree on `lightCone q (2*u)`. For any `r` in that cone,
+  -- `manhattan q r ≤ 2*u` and `manhattan p q ≤ 2*t`, so `manhattan p r ≤ 2*(t+u)`
+  -- by the triangle inequality, i.e. `r ∈ lightCone p (2*(t+u))`.
+  apply step_light_cone u g₁ g₂ q
+  intro r hr
+  apply h_cone r
+  apply mem_lightCone_of_manhattan_le
+  have hpq : manhattan p q ≤ 2 * t := manhattan_le_of_mem_lightCone p q (2 * t) hq
+  have hqr : manhattan q r ≤ 2 * u := manhattan_le_of_mem_lightCone q r (2 * u) hr
+  have htri : manhattan p r ≤ manhattan p q + manhattan q r := manhattan_triangle p q r
+  omega
+
 /-! ## P2 corollary. Influence cone (light cone of influence)
 
 `step_light_cone` is the **cone of dependence**: to know the state of `p`
