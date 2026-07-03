@@ -388,7 +388,7 @@ class TestValidateNotebookLeanTextErrors:
     (display_data / execute_result), never as output_type=="error". A whole
     Lean notebook can be red (every cell ❌) while CI stays green. The
     detector anchors on the toolchain-emitted `severity: error` message.
-    Regression guard for #5151 (Sudoku-7b-Lean-Propagation: failed import ->
+    Regression guard for #5151 (Sudoku-19-Lean-Propagation: failed import ->
     48 unknown-identifier + 12 unknown-constant cascade, CI all green)."""
 
     def _lean_err_output(self) -> dict:
