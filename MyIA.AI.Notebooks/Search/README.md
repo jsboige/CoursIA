@@ -135,6 +135,16 @@ La série se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la gra
 | 18 | MGS-18 CecBanc | Banc CEC consolidé : combiner décalage (MGS-10) et rotation (MGS-12) — robuste à chaque biais séparément l'est-il au biais combiné ? |
 | 19 | [MGS-19 MetropolisReinsertion](Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb) | Démontage du recuit simulé : isoler `MetropolisReinsertion` du compound `SimulatedAnnealing` et le greffer seul sur un GA — verdict honnête négatif, le bénéfice du recuit tient au couplage perturbation+acceptation |
 
+### Applications spécialisées (Part4-Metaheuristics)
+
+Trois notebooks d'application spécialisée complètent la Partie 4 sans relever de la série MGS numérotée (ils ne construisent pas le moteur mais l'utilisent sur des cas réels) :
+
+| Notebook | Apport pédagogique |
+|----------|-------------------|
+| [Portfolio_Optimization_GeneticSharp](Part4-Metaheuristics/Portfolio_Optimization_GeneticSharp.ipynb) | Frontière de Pareto de portefeuille : optimisation multi-objectif (rendement × risque) au-dessus de GeneticSharp |
+| [GeneticSharp-EdgeDetection](Part4-Metaheuristics/GeneticSharp-EdgeDetection.ipynb) | Détection de bords par GA (GeneticSharp) : convolution + fitness = similarité contour |
+| [PyGad-EdgeDetection](Part4-Metaheuristics/PyGad-EdgeDetection.ipynb) | Détection de bords par GA (PyGAD, Python) : même problème, autre moteur — comparaison PyGAD ⇄ GeneticSharp |
+
 ### Applications
 
 | # | Notebook | Apport pédagogique |
@@ -312,9 +322,9 @@ Cette série est **Python d'abord** pour son cœur pédagogique (recherche, CSP,
 | [Part1-Foundations](Part1-Foundations/) | 11 (Search-1 à Search-11) | Python | Aucune |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python | Aucune |
 | [Part3-Advanced](Part3-Advanced/) | 3 (Search-12 à Search-14) | Python | Aucune |
-| [Part4-Metaheuristics](Part4-Metaheuristics/) | 19 (MGS-1 à MGS-19) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
+| [Part4-Metaheuristics](Part4-Metaheuristics/) | 22 (MGS-1 à MGS-19 + 3 applications spécialisées) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
 | [Applications](Applications/) | 21 | 19 Python + 2 C# | App-9 ⇄ App-9b, App-10 ⇄ App-10b (2 paires) |
-| Racine | 5 | 3 Python + 2 C# | GeneticSharp-EdgeDetection, Portfolio_Optimization_GeneticSharp |
+| Racine | 2 | 2 Python | CSPs_Intro, Exploration_non_informée_et_informée_intro (legacy à archiver) |
 
 Le **cœur curriculaire** (Parties 1 à 3, soit 23 notebooks) est aujourd'hui exclusivement en Python ; seules deux applications disposent d'un binôme Python/C#.
 
@@ -485,12 +495,10 @@ Search/
 │       └── App-18-HyperparameterTuning.ipynb
 │
 ├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
-├── Part4-Metaheuristics/                  # Partie 4 (side track C# .NET 9) : README + 19 notebooks MGS-1..19 (moteur, composition, composés, benchmarks, TSP, paysages, biais central, synergie d'îles, alignement d'axes, paysages dé-biaisés, synergie conditionnelle, analyse de paysage FDC, sélection d'algorithme No-Free-Lunch, contrôle de paramètres, banc CEC consolidé, démontage du recuit ; consomment le sous-module)
+├── Part4-Metaheuristics/                  # Partie 4 (side track C# .NET 9) : README + 19 notebooks MGS-1..19 (moteur, composition, composés, benchmarks, TSP, paysages, biais central, synergie d'îles, alignement d'axes, paysages dé-biaisés, synergie conditionnelle, analyse de paysage FDC, sélection d'algorithme No-Free-Lunch, contrôle de paramètres, banc CEC consolidé, démontage du recuit) + 3 applications spécialisées (GeneticSharp-EdgeDetection, PyGad-EdgeDetection, Portfolio_Optimization_GeneticSharp) ; consomment le sous-module
 │
 ├── CSPs_Intro.ipynb                       # Ancien notebook (conserve)
-├── GeneticSharp-EdgeDetection.ipynb       # Ancien notebook (conserve)
-├── Portfolio_Optimization_GeneticSharp.ipynb # Ancien notebook (conserve)
-└── PyGad-EdgeDetection.ipynb              # Ancien notebook (conserve)
+└── Exploration_non_informée_et_informée_intro.ipynb # Ancien notebook (conservé)
 ```
 
 ## Progression recommandée
