@@ -18,6 +18,8 @@ CoursIA copy
 | `_state_manager_plugin.py`            | `argumentation_analysis/core/state_manager_plugin.py` | see git log |
 | `_taxonomy_sophism_detector.py` (442 lines) | `argumentation_analysis/agents/core/informal/taxonomy_sophism_detector.py` | a8025f60 (2026-07-02) |
 | `_informal_definitions.py` (891 lines) | `argumentation_analysis/agents/core/informal/informal_definitions.py` | a8025f60 (2026-07-02) |
+| `_pl_handler.py` (689 lines)        | `argumentation_analysis/agents/core/logic/pl_handler.py` | a8025f60 (2026-07-02) |
+| `_fol_handler.py` (1163 lines)      | `argumentation_analysis/agents/core/logic/fol_handler.py` | a8025f60 (2026-07-02) |
 
 Rationale for verbatim import
 -----------------------------
@@ -139,6 +141,78 @@ preserving it byte-for-byte in `argumentation_lib/` documents the exact
 contract the shim must satisfy. The cost is a 913-line file that is
 currently dead-weight (cannot be imported); the benefit is no drift
 between this reference and the eventual shim.
+
+Volet B etape 4 sub-tranche C186b (pl_handler + fol_handler)
+--------------------------------------------------------------
+
+PR #XXXX (C186b) added `_pl_handler.py` (689L) and `_fol_handler.py` (1163L)
+as verbatim copies of the EPITA-IS `pl_handler.py` and `fol_handler.py`
+modules at commit `a8025f60`. These are the **PL (Propositional Logic)**
+and **FOL (First-Order Logic) core handlers** for the JPype-based Tweety
+bridge runtime.
+
+Symbols exposed (2 public via lazy accessors):
+
+- `get_pl_handler_symbol()` -> `PLHandler` class (lazy import)
+- `get_fol_handler_symbol()` -> `FOLHandler` class (lazy import)
+
+Verbatim integrity:
+- `_pl_handler.py` body SHA1=`7341823ac37aaa83e8b77c54ccd2d4dfd133ee76` (689L).
+- `_fol_handler.py` body SHA1=`f8a70e45b70ece23dd13e680c9d5e9fd54e983f4` (1163L).
+- LF line endings (no CRLF), UTF-8 (no BOM), first line of body = `import jpype`
+  (no shebang prelude, full upstream SHA1 == body SHA1).
+
+Dependency disclosure (G.9 honest caveat): both files import multiple
+upstream modules that are NOT vendored in `argumentation_lib/` today:
+
+- `argumentation_analysis.core.utils.logging_utils.setup_logging`
+- `from .tweety_initializer import TweetyInitializer` (sub-tranche C186f)
+- `argumentation_analysis.core.jvm_setup.{initialize_jvm_robustly,
+  shutdown_jvm, is_jvm_started}` (line ~16 of pl_handler.py)
+- `argumentation_analysis.core.prover9_runner.run_prover9` (fol_handler
+  only -- third-party prover9 binding via shell subprocess)
+
+Therefore, both `PLHandler` and `FOLHandler` symbols are **NOT standalone-
+importable today**: `from argumentation_lib._pl_handler import PLHandler`
+raises `ModuleNotFoundError: No module named
+'argumentation_analysis.core.utils.logging_utils'` (or equivalent).
+
+The lazy accessors `argumentation_lib.get_pl_handler_symbol()` and
+`argumentation_lib.get_fol_handler_symbol()` preserve the API symmetry
+with C184/C185 accessors but, like C185, do **not** bypass the top-level
+imports. Runtime usability awaits Volet B etape 4 sub-tranches C186f
+(TweetyInitializer) and C186g (runtime bridge shim wrapping
+`argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`).
+
+**Note re: C186a** : `_pl_handler.py` and `_fol_handler.py` are
+**referenced at module-load time** by `tweety_bridge.py` (the C186a
+sub-tranche, awaiting merge via PR #5231). Once C186a lands in `main`,
+the bridge singleton will be able to load all three layers together
+(C186a bridge + C186b PL/FOL core + C186c-f other handlers + C186g
+runtime shim). Until then, PLHandler and FOLHandler can only be imported
+through the lazy accessors (which surface the G.9 caveat honestly).
+
+**Why deliver the verbatim copy anyway** (G.9 honesty over abandonment):
+the verbatim blocks are the authoritative source for the eventual CoursIA
+JPype runtime integration. The cost is two dead-weight files today
+(1852L total, ~0 usable at runtime); the benefit is no drift between
+this reference and the future shim that routes the 12 handlers through
+CoursIA's native JPype runtime.
+
+**Sub-tranche plan (after this PR)** :
+
+- **C186c** (future) : `modal_handler.py` + `adf_handler.py` = 525L.
+- **C186d** (future) : `af_handler.py` + `ranking_handler.py` = 354L.
+- **C186e** (future) : `belief_revision_handler.py` +
+  `probabilistic_handler.py` + `dialogue_handler.py` = 463L.
+- **C186f** (future) : `tweety_initializer.py` 365L -- initializer isole.
+- **C186g** (future) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L
+  wrapping `argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`.
+
+**Excluded by ai-01 mandate** (gap NL->structured) : `bipolar_handler.py`,
+`aba_handler.py`, `aspic_handler.py`. **Out of scope** : `setaf_handler.py`,
+`weighted_handler.py`, `social_handler.py` (not imported by upstream
+`tweety_bridge.py:29-41`).
 
 What this NOTICE does NOT cover
 -------------------------------
