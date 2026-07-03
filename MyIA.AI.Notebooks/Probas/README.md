@@ -11,7 +11,7 @@ maturity: PRODUCTION=50, BETA=3
 
 Le monde réel est incertain. Un diagnostic médical n'est jamais sûr à 100%, un classement sportif dépend de performances intrinsèquement variables, et les données que nous collectons sont toujours bruitées ou incomplètes. La programmation probabiliste offre un cadre rigoureux pour modéliser cette incertitude : plutôt que de calculer une seule réponse, on obtient une **distribution de probabilités** qui quantifie notre confiance dans chaque résultat possible.
 
-Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence exacte par message passing, **PyMC** (Python) pour l'échantillonnage MCMC moderne, et des **applications standalone** (RSA). Les 29 notebooks Infer.NET se scindent en deux arcs : **19 notebooks bayésiens** ([`Infer/`](Infer/README.md)) couvrant les fondements (distributions, graphs de facteurs), les modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM) et les frontières (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie) ; puis un **arc autonome de 10 notebooks de théorie de la décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) — utilité espérée, EVPI, MDPs, bandits — jusqu'à un compagnon **Lean 4** (Infer-9, adossé au lake [`decision_theory_lean`](decision_theory_lean/)) qui démontre formellement les identités d'escompte de l'indice de Gittins. Les 21 notebooks PyMC portent les modèles Infer.NET en Python avec l'échantillonnage NUTS, offrant un pont naturel vers l'écosystème data science : 14 notebooks bayésiens ([`PyMC/`](PyMC/README.md), fondations et modèles classiques 1-14) et le cœur de l'arc décision extrait dans [`DecisionTheory/PyMC/`](DecisionTheory/PyMC/README.md) (7 notebooks renumérotés 1-7).
+Cette série couvre trois stacks complémentaires : **Infer.NET** (Microsoft, C#/.NET Interactive) pour l'inférence exacte par message passing, **PyMC** (Python) pour l'échantillonnage MCMC moderne, et des **applications standalone** (RSA). Les 29 notebooks Infer.NET se scindent en deux arcs : **19 notebooks bayésiens** ([`Infer/`](Infer/README.md)) couvrant les fondements (distributions, graphs de facteurs), les modèles classiques (réseaux bayésiens, TrueSkill, LDA, HMM) et les frontières (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie) ; puis un **arc autonome de 10 notebooks de théorie de la décision** ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md)) — utilité espérée, EVPI, MDPs, bandits — jusqu'à un compagnon **Lean 4** (Infer-9, adossé au lake [`decision_theory_lean`](decision_theory_lean/)) qui démontre formellement les identités d'escompte de l'indice de Gittins. Les 21 notebooks PyMC portent les modèles Infer.NET en Python avec l'échantillonnage NUTS, offrant un pont naturel vers l'écosystème data science : 14 notebooks bayésiens ([`PyMC/`](PyMC/README.md), fondations et modèles classiques 1-14) et le cœur de l'arc décision extrait dans [`DecisionTheory/PyMC/`](DecisionTheory/PyMC/README.md) (7 notebooks renumérotés 1-7). Enfin, un **notebook-pont** ([`DecisionTheory/Causal-Bridges/`](DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb)) fédère les quatre traitements de la causalité disséminés dans le dépôt — Tweety (logique), Infer.NET, PyMC et l'émergence causale (PyPhi) — autour de l'échelle de Pearl et du do-calculus, exécutés sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/).
 
 ## Pourquoi cette série
 
@@ -187,9 +187,10 @@ Probas/
 │   ├── Infer-1-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb
 │   ├── README.md                # Documentation détaillée de la série bayésienne
 │   └── scripts/
-└── DecisionTheory/              # Arc théorie de la décision (#4725) : Infer.NET + PyMC (miroirs)
+└── DecisionTheory/              # Arc théorie de la décision (#4725) : Infer.NET + PyMC (miroirs) + pont causal
     ├── Infer/                   # Infer-1-Utility ... Infer-10-Thompson (+ companions Lean 2/9)
-    └── PyMC/                    # PyMC-1-Decision ... PyMC-7-Sequential
+    ├── PyMC/                    # PyMC-1-Decision ... PyMC-7-Sequential
+    └── Causal-Bridges/          # Do-Calculus-Bridge : pont unifié des 4 séries causales (Pearl, dowhy)
 ```
 
 ## Ce que chaque notebook apporte
@@ -331,6 +332,19 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 | # | Notebook | Sujet |
 |---|----------|-------|
 | 14 | [PyMC-14-Causal-Inference](PyMC/PyMC-14-Causal-Inference.ipynb) | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
+
+## Pont causal — les quatre séries causales réunies
+
+La causalité est traitée à **quatre endroits** du dépôt, chacun avec son moteur et son angle propre. Le notebook-pont [`Do-Calculus-Bridge`](DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb) fournit l'**armature formelle commune** — l'échelle de Pearl (observation / intervention / contrefactuel) et les trois règles du do-calculus — puis l'exécute sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/) (installé et lancé réellement, pas de réimplémentation jouet) avant de renvoyer à chaque série pour l'instanciation par son moteur.
+
+| Série | Moteur | Angle causal |
+|-------|--------|--------------|
+| [Tweety-11-Causal](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | Tweety (.NET, logique) | modèle causal structurel, opérateur `do`, contrefactuels |
+| [Infer-14-Causal-Inference](Infer/Infer-14-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
+| [PyMC-14-Causal-Inference](PyMC/PyMC-14-Causal-Inference.ipynb) | PyMC (MCMC) | backdoor, front-door, contrefactuel bayésien |
+| [ICT-5](../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-6-SortingToTPM-CausalEmergence.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
+
+Ce que le pont ajoute par rapport aux quatre notebooks pris isolément : la théorie du do-calculus posée une bonne fois, vérifiée sur `dowhy` à effet connu, et la distinction explicite entre **causalité interventionniste** (Pearl) et **émergence causale** (Hoel).
 
 ## Applications standalone (2 notebooks)
 
