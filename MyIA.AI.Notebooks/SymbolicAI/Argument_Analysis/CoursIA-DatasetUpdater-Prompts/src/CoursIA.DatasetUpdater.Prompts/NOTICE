@@ -1,0 +1,145 @@
+CoursIA.DatasetUpdater.Prompts
+=============================
+
+This library is a verbatim port of selected data classes from the
+`Argumentum.AssetConverter.DatasetUpdater` namespace of the upstream
+`Argumentum/Argumentum` repository, dual-licensed LGPL-3.0 OR AGPL-3.0
+(for network use). The upstream author is jsboige; the original sources
+were copied from commit
+`ac33f607a4889d8a982093c413804ed25bef3dc0` (the "pre-v0.9.0 merge" pin
+decided in C174 of EPIC #4960).
+
+  - Upstream project:    https://github.com/Argumentum/Argumentum
+  - Source path:         Generation/Converters/Argumentum.AssetConverter/DatasetUpdater/
+  - Source files ported: DivisionMode.cs, Prompt.cs, PromptExample.cs, TokenManager.cs
+  - Source files NOT ported (see "Test port scope" below):
+        RecordsUpdater.cs, DatasetUpdaterConfig.cs, DatasetUpdaterRootConfig.cs,
+        Resource1.Designer.cs, Resource1.resx, and the entire `Resources/` subfolder
+        (99 .txt / .json prompt templates designed for the full Argumentum pipeline).
+
+License
+-------
+
+The original sources are distributed under the terms of the GNU Lesser
+General Public License v3.0 (LGPL-3.0), or alternatively the GNU Affero
+General Public License v3.0 (AGPL-3.0) when the library is used over a
+network. Per LGPL v3 §5 (Conveying Modified Source Versions), this port:
+
+  1. carries this prominent NOTICE file documenting the upstream work,
+     source path, original commit SHA, port date and license terms;
+  2. preserves the LGPL-3.0 header verbatim on every ported source file;
+  3. is itself distributed under the same LGPL-3.0 terms as the upstream.
+
+LGPL-3.0 is file-level copyleft: any direct modification of a ported file
+MUST be released under a compatible license. Wrapping or consuming the
+public API of this lib from another namespace is permitted without
+triggering copyleft — only modifications to the LGPL files themselves
+must propagate.
+
+Modifications from upstream (LGPL v3 §5 disclosure)
+---------------------------------------------------
+
+1. Namespace: every ported class moved from
+   `Argumentum.AssetConverter` to
+   `CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.DatasetUpdater`
+   to follow the CoursIA convention `SymbolicAI/<sous-projet>/`.
+
+2. Target framework: Argumentum targets `net9.0-windows` due to a
+   project-wide `UseWindowsForms=true`; this lib targets `net9.0` plain
+   because none of the ported POCOs use Windows-specific APIs.
+
+3. `Prompt.cs` — OpenAI SDK stripped. The upstream `Send(CancellationToken,
+   Action<string>)` method, the lazy `_openAIClient` / `_chatClient` field
+   initialisation, the nested `FunctionToolDef` class, and the
+   `CallFunction(string, string)` reflection dispatch have all been
+   removed. The justification: those are I/O orchestration around the
+   OpenAI 2.x SDK, not the pedagogical request shape that the upstream
+   POCO exposes. The preserved POCO surface (Model, ApiKey, BaseUrl,
+   SystemPrompt, UserPrompt, DialogPrompts, Functions, FunctionName,
+   MaxOutputTokens, Tokenizer) is sufficient to build a request payload
+   for any LLM backend (OpenAI, Azure OpenAI, Ollama, vLLM, etc.).
+   `FunctionToolDef` was replaced by a small data-only
+   `FunctionDescriptor` record (Name / Description / ParametersJson)
+   that keeps the same triple of fields without the SDK-specific
+   `ToChatTool()` factory.
+
+4. `TokenManager.cs` — SharpToken stripped. The upstream
+   `GptEncoding.GetEncodingForModel(model)` binding has been replaced by
+   an abstract `ITokenCounter` interface. The rate-limit algorithm
+   (concurrent timestamp queue, sliding 1-minute window, throttle on
+   `MaxTokensPerMinute`, `WaitForTokenAvailability` polling) is preserved
+   verbatim, byte-for-byte.
+
+5. `Argumentum.Logger.Log(string)` static coupling — replaced by an
+   injectable `ILegacyLogger` interface (mirroring the same pattern
+   used in `CoursIA.OwlAdapter`, tranche B of EPIC #4960). A
+   `NullLegacyLogger` no-op implementation is provided. The
+   `WaitForTokenAvailability` polling callsite is preserved 1:1.
+
+6. Header comments translated to English (the upstream Argumentum
+   files were already in English; this NOTICE is in English to match
+   the upstream convention; the in-source XML doc comments are in
+   English to remain consistent with the public API surface).
+
+7. No emojis added or removed (CLAUDE.md §E interdit emojis dans le
+   code — the upstream files had none either, this is just a
+   confirmation that the port stays clean).
+
+Test port scope (G.9 honest verdict)
+-------------------------------------
+
+The upstream `Argumentum.AssetConverter.Tests/DatasetUpdater/` folder
+contains exactly one test file:
+`RecordsUpdaterContractTests.cs`. That test exercises the
+`RecordsUpdater` / `DatasetUpdaterRootConfig` / 99-resource pipeline,
+which is **NOT** in this port. The four ported classes
+(DivisionMode, Prompt, PromptExample, TokenManager) have **no
+dedicated upstream test layer**, so the test suite for this lib is
+greenfield — it covers the POCO defaults, the rate-limit sliding
+window, the lazy file-read cache in PromptExample, and the
+`NullLegacyLogger` no-op contract.
+
+The 99 prompt-template `.txt` / `.json` resources under
+`Resources/` are NOT ported: they are tightly coupled to the
+Argumentum full pipeline (OwlDocumentConfig + AssetConverterConfig +
+Humanizer Camelize + Virtue generator + OwlValidatorConfig). Porting
+them would require a tranche D of EPIC #4960 (likely its own EPIC
+given the scope: 99 files, prompt chains in FR/EN/PT).
+
+The full port of `DatasetUpdater.cs` (the orchestration entry point
+that wires Prompt + RecordsUpdater + TokenManager + Resources +
+CSV/JSON adapters) is also NOT in this port: that class lives in
+`DatasetUpdaterRootConfig.cs` (2698 LOC) and depends on
+`Microsoft.Extensions.Configuration` + `Microsoft.Extensions.Logging`
++ the full Resources/ folder. It is scoped to a future tranche
+(tranche D, separate EPIC-sized initiative).
+
+Why this scope (the "pédagogical bridge" rationale)
+---------------------------------------------------
+
+EPIC #4960 is the "Argument_Analysis v3" landing in CoursIA, with
+three documented sub-deliverables:
+
+  A. CsvDiffEngine (delivered, MERGED via PR #5161, 2026-07-03)
+  B. OwlAdapter (delivered, MERGED via PR #5167, 2026-07-03)
+  C. DatasetUpdater (this port — POCOs only)
+
+The pedagogical value of the upstream Argumentum.AssetConverter
+stack is the request shape: how a structured prompt template
+(system + dialog examples + user) is composed, what fields describe
+a function-call tool, how a rate-limiter guards token consumption.
+That pedagogical content lives entirely in the four ported classes.
+The I/O orchestration (which OpenAI SDK call to make, which tokenizer
+to use, which logger to write to) is environment-specific and
+belongs in the consumer host — not in a reusable CoursIA lib.
+
+This is the same scope discipline applied in tranche B (OwlAdapter
+verbatim, but with `ILegacyLogger` mocked out of the upstream
+`Argumentum.Logger` static coupling) and in tranche A
+(CsvDiffEngine verbatim, with the Argumentum-Windows Forms flag
+stripped). The pattern is: preserve the data + the algorithm,
+externalise the I/O.
+
+Date of port: 2026-07-03.
+Ported by: po-2025 (myia-po-2025:CoursIA-2) under EPIC #4960 tranche C.
+Original commit SHA: ac33f607a4889d8a982093c413804ed25bef3dc0.
