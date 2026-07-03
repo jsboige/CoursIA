@@ -1789,19 +1789,57 @@ def cmd_golden_set(args):
     return 1 if fail_count > 0 else 0
 
 
-def cmd_normalize_source_newlines(args):
-    """Normalize nbformat `source` arrays so every element except the last ends with '\\n'.
+def _fix_source_newlines(src):
+    """Surgically fix a nbformat ``source`` list at GENUINELY-glued boundaries only.
 
-    Fixes a silent corruption (#5005): some notebooks store code-cell `source` as a
-    JSON list whose elements lack the trailing newline mandated by the nbformat spec.
-    The standard `''.join(source)` then produces a single line with no newlines, so a
-    leading line-comment (`#` in Python, `//` in C#) swallows the entire cell -- the
-    code never executes and no output/error is emitted (cell appears as ec=None/outs=0
-    or, after a forced run, silently passes). Adding '\\n' to all-but-last element
+    A boundary between ``src[k]`` and ``src[k+1]`` is genuinely corrupt when
+    ``''.join`` glues two tokens with no separator at all: ``src[k]`` does not end in
+    ``'\\n'`` or whitespace AND ``src[k+1]`` does not start in ``'\\n'`` or whitespace.
+    Trailing/leading spaces (mid-paragraph chunks) or an existing ``'\\n'`` on either
+    side already render correctly and are cosmetic false positives -- left untouched.
+
+    Returns ``(new_src, changed)``: ``new_src`` is the (possibly fixed) source list,
+    ``changed`` is True iff at least one boundary was fixed. When unchanged, ``new_src``
+    is the input list object itself (callers may rely on identity to skip re-serialization).
+    """
+    if not isinstance(src, list) or len(src) <= 1:
+        return src, False
+    _WS = (' ', '\t')
+    genuine = [
+        k for k in range(len(src) - 1)
+        if not src[k].endswith('\n') and not src[k].endswith(_WS)
+        and not src[k + 1].startswith('\n') and not src[k + 1].startswith(_WS)
+    ]
+    if not genuine:
+        return src, False
+    new_src = list(src)
+    for k in genuine:
+        if not new_src[k].endswith('\n'):
+            new_src[k] = new_src[k] + '\n'
+    return new_src, True
+
+
+def cmd_normalize_source_newlines(args):
+    """Normalize nbformat `source` arrays where a GENUINE line-merge corrupts the cell.
+
+    Fixes a silent corruption (#5005): some notebooks store `source` as a JSON list
+    whose elements lack the trailing newline mandated by the nbformat spec. When
+    `''.join(source)` glues two non-whitespace tokens with no separator at all, a
+    leading line-comment (`#` in Python, `//` in C#) can swallow the entire cell, or
+    two markdown lines merge into one. Adding '\\n' at the genuinely-glued boundary
     restores the intended line structure without touching source content, execution
     counts, or outputs.
 
-    See #5005 (root-cause firsthand), #4956 (marathon .NET/Python parity).
+    A boundary src[k]/src[k+1] is treated as genuine ONLY when neither side carries a
+    separator -- src[k] does not end in '\\n' or whitespace AND src[k+1] does not
+    start in '\\n' or whitespace. Boundaries with a trailing/leading space (mid-
+    paragraph chunks) or an existing '\\n' on either side render correctly already and
+    are left untouched (cosmetic false positives). The earlier blanket form added
+    '\\n' to every non-last element unconditionally, which doubled existing newlines
+    ('\\n\\n' -> '\\n\\n\\n\\n') and broke flowing markdown prose; this surgical form
+    touches only the genuinely-glued boundaries and preserves everything else
+    byte-identical. See #5005 (root cause), #5094 (tool fix), #5093 (closed, the
+    corruption the blanket form caused), #4956 (.NET/Python parity marathon).
     """
     repo_root = get_repo_root()
     notebooks = discover_notebooks(
@@ -1837,9 +1875,12 @@ def cmd_normalize_source_newlines(args):
             # Only the list form can carry this corruption; a string is nbformat-valid as-is.
             if not isinstance(src, list) or len(src) <= 1:
                 continue
-            # Corrupt = any non-last element lacks a trailing newline.
-            if any(not el.endswith('\n') for el in src[:-1]):
-                cell['source'] = [el + '\n' for el in src[:-1]] + [src[-1]]
+            # Surgical fix at GENUINELY-glued boundaries only (see _fix_source_newlines).
+            # The earlier blanket form doubled existing newlines and broke flowing prose;
+            # this touches only boundaries where ''.join glues two non-whitespace tokens.
+            new_src, changed = _fix_source_newlines(src)
+            if changed:
+                cell['source'] = new_src
                 fixed_cells += 1
 
         if fixed_cells > 0:
