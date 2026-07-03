@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Vibe-Coding
-pedagogical_count: 5
-breakdown: Vibe-Coding=5
-maturity: PRODUCTION=4, BETA=1
+pedagogical_count: 6
+breakdown: Vibe-Coding=6
+maturity: PRODUCTION=6
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Claude Discovery](Claude-Code/01-decouverte/README.md)
