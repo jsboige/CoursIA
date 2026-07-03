@@ -16,13 +16,13 @@ Jusqu'à la restructure (#4725), la théorie de la décision était imbriquée d
 
 | # | Notebook | Durée | Concepts |
 |---|----------|-------|----------|
-| 1 | [PyMC-1-Utility-Foundations](PyMC-1-Utility-Foundations.ipynb) | 50 min | Loteries, axiomes VNM, utilité espérée, diagnostic hiérarchique multi-sites |
-| 2 | [PyMC-2-Utility-Money](PyMC-2-Utility-Money.ipynb) | 60 min | Paradoxe St-Petersbourg, CARA, CRRA, profil de risque par inference bayésienne |
-| 3 | [PyMC-3-Multi-Attribute](PyMC-3-Multi-Attribute.ipynb) | 50 min | MAUT, SMART, swing weights |
-| 4 | [PyMC-4-Decision-Networks](PyMC-4-Decision-Networks.ipynb) | 55 min | Diagrammes d'influence, prévalence à test imparfait (état latent) |
-| 5 | [PyMC-5-Value-Information](PyMC-5-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
-| 6 | [PyMC-6-Expert-Systems](PyMC-6-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
-| 7 | [PyMC-7-Sequential](PyMC-7-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique, bandits, Thompson Sampling MCMC, POMDPs |
+| 1 | [DecPyMC-1-Utility-Foundations](DecPyMC-1-Utility-Foundations.ipynb) | 50 min | Loteries, axiomes VNM, utilité espérée, diagnostic hiérarchique multi-sites |
+| 2 | [DecPyMC-2-Utility-Money](DecPyMC-2-Utility-Money.ipynb) | 60 min | Paradoxe St-Petersbourg, CARA, CRRA, profil de risque par inference bayésienne |
+| 3 | [DecPyMC-3-Multi-Attribute](DecPyMC-3-Multi-Attribute.ipynb) | 50 min | MAUT, SMART, swing weights |
+| 4 | [DecPyMC-4-Decision-Networks](DecPyMC-4-Decision-Networks.ipynb) | 55 min | Diagrammes d'influence, prévalence à test imparfait (état latent) |
+| 5 | [DecPyMC-5-Value-Information](DecPyMC-5-Value-Information.ipynb) | 45 min | EVPI, EVSI, valeur de l'information |
+| 6 | [DecPyMC-6-Expert-Systems](DecPyMC-6-Expert-Systems.ipynb) | 50 min | Systèmes experts, Minimax, regret |
+| 7 | [DecPyMC-7-Sequential](DecPyMC-7-Sequential.ipynb) | 60 min | MDPs, itération valeur/politique, bandits, Thompson Sampling MCMC, POMDPs |
 
 **Durée totale** : ~6h
 
@@ -47,7 +47,7 @@ Le socle des **fondations** (1-3) pose les axiomes de rationalité et la notion 
 
 ## Spécificité PyMC : Thompson Sampling par MCMC
 
-Là où l'arc [Infer.NET](../DecInfer/README.md) calcule les posteriors de bandits par message passing (EP/VMP, analytique), cet arc PyMC les obtient par **échantillonnage NUTS**. La valeur distinctive apparaît sur des modèles de bandits **non conjugués** (priors Beta-Bernoulli conjugués mis à part) : seul l'échantillonnage MCMC sait alors explorer le posterior, et Thompson Sampling se nourrit directement des échantillons. Le sujet de [DecInfer-10-Thompson-Sampling](../DecInfer/DecInfer-10-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [PyMC-7-Sequential](PyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC).
+Là où l'arc [Infer.NET](../DecInfer/README.md) calcule les posteriors de bandits par message passing (EP/VMP, analytique), cet arc PyMC les obtient par **échantillonnage NUTS**. La valeur distinctive apparaît sur des modèles de bandits **non conjugués** (priors Beta-Bernoulli conjugués mis à part) : seul l'échantillonnage MCMC sait alors explorer le posterior, et Thompson Sampling se nourrit directement des échantillons. Le sujet de [DecInfer-10-Thompson-Sampling](../DecInfer/DecInfer-10-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [DecPyMC-7-Sequential](DecPyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC).
 
 ## Ponts inter-series
 
@@ -55,13 +55,13 @@ Là où l'arc [Infer.NET](../DecInfer/README.md) calcule les posteriors de bandi
 | --- | --- | --- |
 | [Corpus bayésien PyMC](../../PyMC/README.md) | Posteriors (Beta, gaussiennes) | Le posterior est l'input de la politique de décision |
 | [Arc décision Infer.NET](../DecInfer/README.md) | DecInfer-1 à DecInfer-10 | Même arc décision en C# (message passing EP/VMP), avec companions Lean 4 (vNM, Gittins) |
-| [Inférence causale PyMC-14](../../PyMC/PyMC-14-Causal-Inference.ipynb) | `do(·)` de Pearl | L'intervention comme transformation de modèle avant la décision |
+| [Inférence causale DecPyMC-14](../../PyMC/PyMC-14-Causal-Inference.ipynb) | `do(·)` de Pearl | L'intervention comme transformation de modèle avant la décision |
 | [Lake `decision_theory_lean`](../../decision_theory_lean/) | Formalisation | Preuves formelles Lean 4 (vNM sound, Gittins) — companions côté Infer.NET |
 | [GameTheory](../../../GameTheory/README.md) | Décision sous incertitude | Miroir : adversaire rationnel vs processus stochastique |
-| [RL](../../../RL/README.md) | MDPs (PyMC-7) | L'agent apprend la politique par interaction |
+| [RL](../../../RL/README.md) | MDPs (DecPyMC-7) | L'agent apprend la politique par interaction |
 
 ## Conclusion
 
-La théorie de la décision bayésienne ferme la boucle ouverte par le corpus bayésien : un posterior n'est utile que s'il informe une **action**. De l'**utilité espérée** (PyMC-1) aux **MDPs** et **bandits MCMC** (PyMC-7), cet arc montre que décider sous incertitude est un calcul rigoureux — et l'arc miroir [Infer.NET](../DecInfer/README.md) l'ancre en plus dans la **preuve formelle** Lean 4 (indice de Gittins, théorème vNM).
+La théorie de la décision bayésienne ferme la boucle ouverte par le corpus bayésien : un posterior n'est utile que s'il informe une **action**. De l'**utilité espérée** (DecPyMC-1) aux **MDPs** et **bandits MCMC** (DecPyMC-7), cet arc montre que décider sous incertitude est un calcul rigoureux — et l'arc miroir [Infer.NET](../DecInfer/README.md) l'ancre en plus dans la **preuve formelle** Lean 4 (indice de Gittins, théorème vNM).
 
 Bonne exploration de la théorie de la décision bayésienne en PyMC !
