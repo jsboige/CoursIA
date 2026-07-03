@@ -1,6 +1,6 @@
 # Cluster CoursIA - agents, GPUs, specialisations
 
-Reference perenne sur la structure du cluster : machines, GPUs, workspaces RooSync, specialisations infrastructure. Pour les **regles de coordination** : cf [docs/architecture_mcp_roo.md](architecture_mcp_roo.md) (RooSync) + [CLAUDE.md](../../CLAUDE.md) section A. Pour le **calendrier enseignement / scope par ecole** : cf [docs/teaching-context.md](teaching-context.md).
+Reference perenne sur la structure du cluster : machines, GPUs, workspaces RooSync, specialisations infrastructure. Pour les **règles de coordination** : cf [docs/architecture_mcp_roo.md](architecture_mcp_roo.md) (RooSync) + [CLAUDE.md](../../CLAUDE.md) section A. Pour le **calendrier enseignement / scope par ecole** : cf [docs/teaching-context.md](teaching-context.md).
 
 ## Machines du cluster
 
@@ -34,7 +34,7 @@ Cluster simplifie depuis 2026-05-15 : **un workspace `CoursIA` par machine**, sa
 
 ## Second workspace par machine — lanes `CoursIA-2` (depuis ~2026-06)
 
-Depuis ~juin 2026, chaque machine worker porte **deux lanes** (un `lane` = machine x workspace) : sa lane `CoursIA` historique **et** une lane `CoursIA-2` sur un second workspace, coordonnee via un **second dashboard** `workspace-CoursIA-2` co-egal. **Aucun des deux dashboards n'est « celui du coordinateur »** : ai-01 **lit ET poste un contenu lane-specific sur CHACUN** chaque cycle, jamais de broadcast miroir (cf [CLAUDE.md](../../CLAUDE.md) section A + [.claude/rules/coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) regle 3).
+Depuis ~juin 2026, chaque machine worker porte **deux lanes** (un `lane` = machine x workspace) : sa lane `CoursIA` historique **et** une lane `CoursIA-2` sur un second workspace, coordonnee via un **second dashboard** `workspace-CoursIA-2` co-egal. **Aucun des deux dashboards n'est « celui du coordinateur »** : ai-01 **lit ET poste un contenu lane-specific sur CHACUN** chaque cycle, jamais de broadcast miroir (cf [CLAUDE.md](../../CLAUDE.md) section A + [.claude/rules/coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) règle 3).
 
 | Machine | Lane `CoursIA` (dashboard `workspace-CoursIA`) | Lane `CoursIA-2` (dashboard `workspace-CoursIA-2`) |
 |---------|-----------------------------------------------|---------------------------------------------------|
@@ -44,11 +44,11 @@ Depuis ~juin 2026, chaque machine worker porte **deux lanes** (un `lane` = machi
 
 `po-2023` (hote GenAI) et `ai-01` (coord) n'ont qu'une lane `CoursIA`. po-2025 ajoute par ailleurs ses 2 workspaces EPITA (cf section "po-2025 - 3 agents distincts").
 
-**Anti-collision (HARD)** : un seul editeur par serie/notebook ; une **session `CoursIA` != session `CoursIA-2`** sur la meme machine (collision-avoidance cross-session — un worker qui refuse un pivot cross-session a raison, le tort est au coordinateur). **Une lane ne se ferme jamais** : si la deep-queue Epic d'une lane est epuisee, le worker tombe sur le **fallback perenne never-empty** de SA famille (#2651 prose READMEs, #3973 README ascendant, #2161 rollout 3-exos, #3966 mise-en-forme notebooks), jamais "idle". Detail : [.claude/rules/coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) regle 4.
+**Anti-collision (HARD)** : un seul editeur par serie/notebook ; une **session `CoursIA` != session `CoursIA-2`** sur la meme machine (collision-avoidance cross-session — un worker qui refuse un pivot cross-session a raison, le tort est au coordinateur). **Une lane ne se ferme jamais** : si la deep-queue Epic d'une lane est epuisee, le worker tombe sur le **fallback perenne never-empty** de SA famille (#2651 prose READMEs, #3973 README ascendant, #2161 rollout 3-exos, #3966 mise-en-forme notebooks), jamais "idle". Detail : [.claude/rules/coordinator-discipline.md](../../.claude/rules/coordinator-discipline.md) règle 4.
 
 ## ai-01 - topologie GPU (RTX 4090 x3)
 
-Regle stricte : GPU 2 **doit etre occupee 24/7** par un training BG longue duree.
+Règle stricte : GPU 2 **doit etre occupee 24/7** par un training BG longue duree.
 
 | GPU | Role | Etat normal |
 |-----|------|-------------|
@@ -80,12 +80,12 @@ A chaque reveil de session ai-01 :
 
 Hardware : MSI GE76 12UHS, RTX 3080 Ti laptop. Pas de persistence mode (non supporte laptop). Throttle deja a 50W sous charge a 89C, malgre power limit 150W. Lid ouvert ameliore mais ne suffit pas.
 
-**Regle ai-01** : trainings GPU non-supervises > 15 min sur po-2025 INTERDITS, sauf si :
+**Règle ai-01** : trainings GPU non-supervises > 15 min sur po-2025 INTERDITS, sauf si :
 - Pattern reuse `scripts/training/train_with_checkpoints.py` (outer supervisor checkpoint + thermal backoff `max_temp=80`, `cool_sleep=60`, `heartbeat=30`)
 - Watchdog `nvidia-smi` polling avec auto-stop a 87C
-- Batch size reduit + mixed precision FP16
+- Batch size réduit + mixed precision FP16
 
-Si user dit "OK GPU heavy po-2025" : verifier qu'il connait l'incident avant d'agir (override possible).
+Si user dit "OK GPU heavy po-2025" : vérifier qu'il connait l'incident avant d'agir (override possible).
 
 ## po-2025 - 3 agents distincts
 
@@ -95,7 +95,7 @@ Si user dit "OK GPU heavy po-2025" : verifier qu'il connait l'incident avant d'a
 | `myia-po-2025:2026-Epita-Programmation-par-Contraintes` | Review/merge PRs etudiants PrCon | EN ATTENTE PRs etudiants |
 | `myia-po-2025:2026-Epita-Intelligence-Symbolique` | Veille sujets + enrichissement | ACTIF veille |
 
-**Skills cross-workspace tappables** : po-2025 developpe des skills spécifiques par workspace, mais ai-01 peut tapper l'agent qui a deja la skill fraiche. Exemple : formulaire eval partenaire cree par `po-2025:2026-Epita-PrCon` plutot que `po-2025:CoursIA`, parce que PrCon avait fait des formulaires GWorkspace+Playwright le meme jour.
+**Skills cross-workspace tappables** : po-2025 developpe des skills spécifiques par workspace, mais ai-01 peut tapper l'agent qui a deja la skill fraiche. Exemple : formulaire eval partenaire cree par `po-2025:2026-Epita-PrCon` plutôt que `po-2025:CoursIA`, parce que PrCon avait fait des formulaires GWorkspace+Playwright le meme jour.
 
 ## Specialisations infrastructure
 
@@ -106,7 +106,7 @@ Hardware : RTX 3080 Ti 16GB + eGPU 3090 24GB. **8 services Docker GenAI** :
 - Audio : Whisper STT, Kokoro TTS, MusicGen, Demucs
 - Video : ComfyUI Video
 
-**Regle user** : s'il y a du GenAI Image/Audio/Video, ca va a po-2023. Lui seul peut tester notebooks contre ses propres services locaux.
+**Règle user** : s'il y a du GenAI Image/Audio/Video, ca va a po-2023. Lui seul peut tester notebooks contre ses propres services locaux.
 
 ### GenAI Texte (vLLM) -> ai-01
 
@@ -126,7 +126,7 @@ Sous-domaines publics qui pointent vers les services GenAI de po-2023. Permet va
 
 Tokens API QC configures dans `.mcp.json` sur les 2 machines (Docker MCP server `quantconnect/mcp-server`). Ils peuvent `create_compile` + `create_backtest` sur QC Cloud.
 
-**Polyvalence** : avoir le token QC ne signifie PAS perimetre exclusif. Ces agents peuvent etre dispatch sur n'importe quelle mission (audit, Lean, notebooks). Le token QC = capacité **supplementaire**.
+**Polyvalence** : avoir le token QC ne signifie PAS perimetre exclusif. Ces agents peuvent etre dispatch sur n'importe quelle mission (audit, Lean, notebooks). Le token QC = capacité **supplémentaire**.
 
 **Contrainte rate limit** : MAX 10 appels API QC / minute entre **tous les agents**. Avant backtest, annonce obligatoire sur dashboard workspace CoursIA pour eviter contention.
 
@@ -136,7 +136,7 @@ Specialisation `*.lean`, port social_choice, Lake build, reecriture preuves stru
 
 ### Whisper API host -> po-2023
 
-Rotation cle API geree par po-2023 lui-meme. **NON consomme** dans workspace CoursIA (verifie 2026-05-16, 0 .env actif avec WHISPER_API_KEY cote CoursIA).
+Rotation cle API geree par po-2023 lui-meme. **NON consommé** dans workspace CoursIA (verifie 2026-05-16, 0 .env actif avec WHISPER_API_KEY cote CoursIA).
 
 ## Table rapide dispatch
 
@@ -157,7 +157,7 @@ Rotation cle API geree par po-2023 lui-meme. **NON consomme** dans workspace Cou
 | Training CNN gros (>10M, batch >256) | ai-01 GPU 2 | po-2023 eGPU 3090 si dispo |
 | Coordination cross-workspace EPITA | `ai-01:CoursIA` via `roosync_messages send` | exception "grand manitou" |
 
-**Regle implicite** : tous les agents sont polyvalents sur la **pedagogie**. Les **specialisations sont infra/tokens/hardware**. ai-01 doit pouvoir tester partout (priorite pour installer envs manquants).
+**Règle implicite** : tous les agents sont polyvalents sur la **pédagogie**. Les **specialisations sont infra/tokens/hardware**. ai-01 doit pouvoir tester partout (priorite pour installer envs manquants).
 
 ## Dispatch via Epic GitHub (sprints multi-stages)
 
@@ -181,7 +181,7 @@ Pour tout sprint / curriculum >= 3 étapes, creer **Epic GitHub** + sub-issues n
 ## Pointeurs cross-doc
 
 - Architecture RooSync (34 outils MCP roo-state-manager) : [docs/architecture_mcp_roo.md](architecture_mcp_roo.md)
-- Regles de coordination Git + dashboard : [CLAUDE.md](../../CLAUDE.md) section A
+- Règles de coordination Git + dashboard : [CLAUDE.md](../../CLAUDE.md) section A
 - Calendrier enseignement + scope ecoles : [docs/teaching-context.md](teaching-context.md)
 - Wrapper training BG avec checkpoints : `scripts/training/train_with_checkpoints.py`
 - QC backtest + MCP Docker : [docs/qc/quantconnect.md](../qc/quantconnect.md)
