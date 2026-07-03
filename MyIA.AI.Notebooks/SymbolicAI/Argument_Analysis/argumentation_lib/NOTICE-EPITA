@@ -16,6 +16,7 @@ CoursIA copy
 |---------------------------------------|----------------------------|-----------------|
 | `_shared_state.py` (1121 lines)       | `argumentation_analysis/core/shared_state.py` | a8025f60 (2026-07-02) |
 | `_state_manager_plugin.py`            | `argumentation_analysis/core/state_manager_plugin.py` | see git log |
+| `_taxonomy_sophism_detector.py` (442 lines) | `argumentation_analysis/agents/core/informal/taxonomy_sophism_detector.py` | a8025f60 (2026-07-02) |
 
 Rationale for verbatim import
 -----------------------------
@@ -67,6 +68,42 @@ without explicit user sign-off is forbidden. The data classes here are reference
 by the Argument_Analysis notebook series (e.g. the `Restitution 3 actes` notebook
 uses `ArgumentProfile` as the in-memory shape for per-argument aggregation) and
 stripping their implementation would break the pedagogical contract.
+
+
+Volet B etape 3 sub-tranche C184 (TaxonomySophismDetector)
+-----------------------------------------------------------
+
+PR #XXXX (C184) added `_taxonomy_sophism_detector.py` as a verbatim copy of the EPITA-IS
+`TaxonomySophismDetector` class. This class provides:
+
+- `get_main_branches()` -- list of depth=0/1 taxonomy branches (root + 7 first-level families)
+- `explore_branch(taxonomy_key, max_depth=3)` -- recursive subtree exploration
+- `detect_sophisms_from_taxonomy(text, max_sophisms=10)` -- lexical detection heuristic
+- `search_sophisms_by_pattern(pattern, max_results=10)` -- multi-field text search
+- `get_sophism_details_by_key(taxonomy_key)` -- delegate to plugin for full details
+- `_get_parent_context(taxonomy_key)` -- sibling retrieval (private but kept verbatim)
+- Module-level helpers: `create_unified_detector()`, `get_global_detector()` (singleton)
+
+**DEPENDENCY (NOT vendored in this tranche)** : the class imports
+`InformalAnalysisPlugin` from
+`argumentation_analysis.agents.core.informal.informal_definitions` (891 lines,
+Semantic-Kernel coupled). This plugin is **explicitly excluded** from the
+"essence landing" pattern of EPIC #4960 Volet B etape 3 and will be ported as
+part of **Volet B etape 4** (TweetyBridge shim JPype + 12 logic handlers).
+
+**Practical consequence** : the class symbol itself is import-safe
+(`from argumentation_lib._taxonomy_sophism_detector import TaxonomySophismDetector`
+succeeds because the import is lazy via the wrapper module-level `InformalAnalysisPlugin`
+reference). However, **instantiation** (`TaxonomySophismDetector(...)`) will fail
+with `ImportError: cannot import name 'InformalAnalysisPlugin' from partially
+initialized module 'argumentation_analysis.agents.core.informal'` until the
+upstream plugin shim is vendored. The lazy accessor `get_taxonomy_sophism_detector()`
+in `__init__.py` returns the class symbol without triggering instantiation.
+
+**Anti-regression** : the verbatim block is byte-for-byte identical to the
+upstream source at commit `a8025f60`. No CoursIA modification has been applied
+(no stub, no `pass`, no `return None`, no header rewrite inside the class).
+Only an MIT attribution header was prepended (10 LOC of comments).
 
 What this NOTICE does NOT cover
 -------------------------------
