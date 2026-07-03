@@ -11,8 +11,9 @@ that UNDERCOUNTED two real cases (the G.1 finding from the #2161 audit cycle):
      The strict `^#+\\s*Exercice` requires the word right after the hashes with
      no intervening number/dash, so `## 8. Exercice` was missed.
   2. Exercise CODE cells with NO markdown header at all -- a stub code cell
-     whose first comment is `# Exercice ...` but is not preceded by any markdown
-     "Exercice" header. A header-only counter never sees these.
+     whose first comment is `# Exercice ...` (Python/F#/Lean) or
+     `// Exercice ...` (C# / .NET Interactive) but is not preceded by any
+     markdown "Exercice" header. A header-only counter never sees these.
 
 This tool counts `\bexercice\b` ANYWHERE in a markdown header (numbered or not)
 PLUS stub code cells whose source comments reference an exercise, then
@@ -179,8 +180,23 @@ def _is_stub_code(source: str) -> bool:
 
 
 def _code_cell_mentions_exercise(source: str) -> bool:
-    """A code cell whose comments name an exercise (`# Exercice ...`)."""
-    comments = [ln for ln in source.split("\n") if ln.strip().startswith("#")]
+    """A code cell whose comments name an exercise.
+
+    Language-agnostic comment detection: a full-line comment is one whose
+    stripped form starts with ``#`` (Python / F# / Lean) OR ``//`` (C# /
+    .NET Interactive). Inline trailing comments (``code // Exercice``) are
+    intentionally NOT matched -- a stub marker is a full-line comment, not a
+    reference buried after executable code.
+
+    Historically this only matched ``#``, which made every C# notebook blind
+    to ``// Exercice N`` stubs (the .NET family uses ``//``). Agents then
+    re-discovered the undercount ad-hoc, notebook by notebook (Probas/Infer,
+    ML.Net). Matching ``//`` here closes that blind-spot at the source.
+    """
+    comments = [
+        ln for ln in source.split("\n")
+        if ln.strip().startswith("#") or ln.strip().startswith("//")
+    ]
     blob = "\n".join(comments)
     return bool(EXERCISE_WORD_RE.search(blob) or EXERCISE_WORD_EN_RE.search(blob))
 
