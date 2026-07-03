@@ -11,6 +11,8 @@ maturity: PRODUCTION=8, ALPHA=1, DRAFT=1
 
 ML.NET — la bibliothèque open-source de Microsoft — apporte le machine learning **nativement dans l'écosystème .NET** : on entraîne et on consomme des modèles directement en C#, sans quitter sa stack applicative ni dépendre d'un runtime Python. C'est un choix pensé pour les développeurs autant que pour les data scientists — l'AutoML abaisse la barrière d'entrée, et les modèles s'exécutent *in-process* dans des applications existantes (API web, services, desktop). L'interopérabilité **ONNX** permet d'importer des modèles entraînés ailleurs (scikit-learn, PyTorch, Hugging Face) et de les servir côté .NET : ML.NET devient ainsi un pont concret entre la recherche en Python et la production en entreprise.
 
+> **Jumeaux de parité (C# ⇄ Python/scikit-learn).** Plusieurs notebooks avancés de cette série disposent d'un **jumeau Python** co-localisé (`*-Python.ipynb`) qui couvre le **même concept pédagogique** avec les outils canoniques de l'écosystème Python (scikit-learn, statsmodels) — un contrepoint direct au pipeline ML.NET. Là où ML.NET `RandomizedPca` détecte les anomalies, le jumeau utilise `sklearn.PCA` + erreur de reconstruction ; là où `ForecastBySsa` prévoit les séries temporelles, le jumeau emploie `statsmodels` STL + SARIMA ; là où `MatrixFactorization` recommande, le jumeau applique `NMF`. Cette parité permet de voir qu'un **même problème** se modélise idiomatiquement dans deux écosystèmes, et que les concepts (résidu de reconstruction, facteurs latents, décomposition tendance/saisonnalité) sont universels — seuls les outils diffèrent. Les jumeaux sont signalés dans la table des notebooks avancés ci-dessous.
+
 Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : préparation des données et feature engineering (ML-2), entraînement et AutoML (ML-3), évaluation rigoureuse par cross-validation et importance des variables (ML-4), puis les fonctionnalités avancées — prévision de séries temporelles par SSA (ML-5), interopérabilité ONNX (ML-6), systèmes de recommandation (ML-7), clustering non-supervisé par K-Means (ML-8) et détection d'anomalies par Randomized PCA (ML-9) — avant un TP capstone qui marie ML.NET et la régression bayésienne d'Infer.NET.
 
 > **À qui s'adresse cette série** : développeurs C#/.NET découvrant le Machine Learning, équipes enterprise souhaitant intégrer du ML sans sortir de leur stack .NET, ou data scientists souhaitant servir des modèles en production dans des applications C#. Aucun prérequis en statistiques avancées — les concepts sont introduits progressivement dans chaque notebook.
@@ -38,13 +40,13 @@ Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : p
 
 ### Fonctionnalités avancées (ML-5 à ML-9)
 
-| # | Notebook | Contenu | Durée |
-|---|----------|---------|-------|
-| 5 | [ML-5-TimeSeries](ML-5-TimeSeries.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | 45-60 min |
-| 6 | [ML-6-ONNX](ML-6-ONNX.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | 45-60 min |
-| 7 | [ML-7-Recommendation](ML-7-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | 45-60 min |
-| 8 | [ML-8-Clustering](ML-8-Clustering.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | 45-60 min |
-| 9 | [ML-9-Anomaly-Detection](ML-9-Anomaly-Detection.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | 45-60 min |
+| # | Notebook | Contenu | Jumeau Python (scikit-learn / statsmodels) | Durée |
+|---|----------|---------|------------------------------------------|-------|
+| 5 | [ML-5-TimeSeries](ML-5-TimeSeries.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | [ML-5-Python](ML-5-TimeSeries-Python.ipynb) — STL + SARIMA | 45-60 min |
+| 6 | [ML-6-ONNX](ML-6-ONNX.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | — (pont inter-langage, par nature .NET-centrique) | 45-60 min |
+| 7 | [ML-7-Recommendation](ML-7-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-7-Python](ML-7-Recommendation-Python.ipynb) — NMF | 45-60 min |
+| 8 | [ML-8-Clustering](ML-8-Clustering.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | — (déjà couvert en Python : [2.6-Clustering](../DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb)) | 45-60 min |
+| 9 | [ML-9-Anomaly-Detection](ML-9-Anomaly-Detection.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | [ML-9-Python](ML-9-Anomaly-Detection-Python.ipynb) — PCA + erreur de reconstruction | 45-60 min |
 
 ### TP Pratique
 
