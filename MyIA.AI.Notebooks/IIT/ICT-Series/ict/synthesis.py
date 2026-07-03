@@ -129,12 +129,25 @@ def emergence_gain(states: Sequence, rng: np.random.Generator,
     Retourne les valeurs reelles, les valeurs du controle et le gain pour EI et
     EC, plus un booleen ``credited`` : True quand le gain d'EC depasse
     l'ecart-type du controle (signal au-dessus du bruit du reservoir d'etats).
+
+    Capstone ICT-15 (#5090) : enrichi (retro-compatible) des deux autres
+    facettes de la theorie fondatrice -- la surprise transitionnelle ``fe_gain``
+    (jambe F, ``free_energy.surprise_gain``) et la compression ``k_gain`` (jambe
+    K, ``compression.compression_gain``). Les trois scalaires partagent le MEME
+    controle shuffle, condition necessaire au gate de convergence Gate 4
+    (τ de Kendall par paire sur {ec_gain, fe_gain, k_gain}). Les anciennes cles
+    sont preservees : les tests Synthese existants restent verts sans modif.
     """
+    from . import compression as CMP
+    from . import free_energy as FE
+
     real = trajectory_battery(states, unseen=unseen)
     base = shuffled_baseline(states, rng, n_shuffles=n_shuffles, unseen=unseen)
     ec_gain = real["emergent_complexity"] - base["emergent_complexity"]
     ei_gain = real["effective_information"] - base["effective_information"]
     credited = ec_gain > base["emergent_complexity_std"] + 1e-12
+    fe = FE.surprise_gain(states, rng, n_shuffles=n_shuffles)
+    kp = CMP.compression_gain(states, rng, n_shuffles=n_shuffles)
     return {
         "ei_real": real["effective_information"],
         "ei_shuffled": base["effective_information"],
@@ -144,6 +157,9 @@ def emergence_gain(states: Sequence, rng: np.random.Generator,
         "ec_gain": ec_gain,
         "credited": bool(credited),
         "n_states": real["n_states"],
+        # capstone ICT-15 : les deux autres facettes (retro-compatibles)
+        "fe_gain": fe["fe_gain"],
+        "k_gain": kp["k_gain"],
     }
 
 

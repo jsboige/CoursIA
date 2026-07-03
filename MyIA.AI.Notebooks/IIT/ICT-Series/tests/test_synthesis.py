@@ -143,3 +143,47 @@ def test_rank_consistency_detects_agreement():
     rc = S.rank_consistency(summary)
     assert abs(rc["kendall_tau"] - 1.0) < 1e-12
     assert rc["consistent"] is True
+
+
+# --------------------------------------------------------------------------- #
+#  Capstone ICT-15 (#5090) : cles fe_gain / k_gain retro-compatibles          #
+# --------------------------------------------------------------------------- #
+
+
+def test_emergence_gain_has_capstone_keys():
+    # emergence_gain enrichi des deux facettes du capstone, sans casser les anciennes
+    rng = np.random.default_rng(7)
+    eg = S.emergence_gain(_macro_deterministic_micro_random(rng), rng, n_shuffles=3)
+    # anciennes cles preservees (retro-compatibilite)
+    for k in ["ei_real", "ei_shuffled", "ei_gain", "ec_real", "ec_shuffled",
+              "ec_gain", "credited", "n_states"]:
+        assert k in eg
+    # nouvelles cles du capstone ICT-15
+    assert "fe_gain" in eg
+    assert "k_gain" in eg
+    assert isinstance(eg["fe_gain"], float)
+    assert isinstance(eg["k_gain"], float)
+
+
+def test_capstone_keys_contrast_structured_vs_iid():
+    # un cycle macro-deterministe : fe_gain et k_gain positifs (structure)
+    rng = np.random.default_rng(8)
+    structured = _macro_deterministic_micro_random(rng)
+    iid = [(int(rng.integers(0, 3)), int(rng.integers(0, 2))) for _ in range(600)]
+    eg_s = S.emergence_gain(structured, rng, n_shuffles=5)
+    eg_n = S.emergence_gain(iid, rng, n_shuffles=5)
+    # la structure batt nettement le shuffle sur les deux nouvelles facettes
+    assert eg_s["fe_gain"] > eg_n["fe_gain"]
+    assert eg_s["k_gain"] > eg_n["k_gain"]
+
+
+def test_rank_consistency_works_with_capstone_keys():
+    # rank_consistency est generique sur les cles : fe_gain/k_gain fonctionnent aussi
+    summary = {
+        "A": {"ec_gain": 0.9, "fe_gain": 2.0, "k_gain": 0.8},
+        "B": {"ec_gain": 0.5, "fe_gain": 1.0, "k_gain": 0.4},
+        "C": {"ec_gain": 0.1, "fe_gain": 0.2, "k_gain": 0.1},
+    }
+    rc_fe = S.rank_consistency(summary, key_a="fe_gain", key_b="k_gain")
+    assert abs(rc_fe["kendall_tau"] - 1.0) < 1e-12
+

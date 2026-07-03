@@ -33,6 +33,7 @@ from . import reaction_diffusion
 from . import agency
 from . import catastrophe
 from . import free_energy
+from . import compression
 from . import synthesis
 
 __all__ = [
@@ -40,5 +41,5 @@ __all__ = [
     "GrazingModel", "GrayScott",
     "sorting_metrics", "trajectories", "causal_emergence", "tpm_estimation",
     "scale_free", "early_warning", "bistable", "reaction_diffusion", "agency",
-    "catastrophe", "free_energy", "synthesis",
+    "catastrophe", "free_energy", "compression", "synthesis",
 ]

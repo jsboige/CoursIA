@@ -237,3 +237,129 @@ def fe_anticipation_report(
             "pic_lag": float(cat.peak_lag(lags, corr)),
         }
     return rapport
+
+
+# --------------------------------------------------------------------------- #
+#  Surprise transitionnelle (capstone ICT-15) : la jambe F sur la trajectoire  #
+# --------------------------------------------------------------------------- #
+# Contrairement a ``gaussian_surprise`` (continue, sur le representant interne
+# ``p_hat``), la surprise transitionnelle mesure la **predictibilite d'un modele
+# generatif discret** estime depuis la trajectoire : une TPM etat-a-etat est
+# ajustee sur une portion d'apprentissage, puis la cross-entropie held-out
+# ``-log2 P(s_{t+1} | s_t)`` est moyennee sur la portion de test. C'est la
+# definition operationnelle de F pour le capstone ICT-15 (gate de convergence
+# Φ/F/K), au meme titre que ``ec_gain`` est celle de Φ et ``k_gain`` celle de K.
+
+
+def transition_surprise(states, split: float = 0.5, alpha: float = 0.5) -> dict:
+    """Cross-entropie held-out d'une TPM etat-a-etat estimee sur la trajectoire.
+
+    La sequence ``states`` (labels hachables) est coupee en deux : la 1re
+    fraction ``split`` ajuste une TPM empirique (via
+    ``tpm_estimation.tpm_from_transitions``), la 2de fraction mesure la
+    surprise **held-out** ``F = mean(-log2 P(s_{t+1}|s_t))`` sur les transitions
+    de test dont l'etat source a ete vu a l'entrainement.
+
+    Lissage Laplace ``alpha`` (defaut 0.5, type Jeffreys) : ajoute ``alpha`` au
+    compte de chaque transition (etat source vu) pour eviter ``log2(0)`` sur les
+    transitions plausibles non observees a l'entrainement. La normalisation se
+    fait sur le compte total par ligne (somme des comptes + ``alpha * n_vu``),
+    ou ``n_vu`` est le nombre d'etats cibles possibles (l'unions des etats de
+    train + l'etat cible courant). Documente honnetement : ce lissage est une
+    *regularisation* modeste, pas un modele de structure -- la surprise mesure
+    la predictibilite de l'ordre-1, pas une compression optimale.
+
+    Retourne ``{"F": surprise moyennee, "n_train", "n_test", "alpha", "n_states"}``.
+    ``F`` est en **bits** (base 2). Retourne ``F = nan`` si aucune transition de
+    test n'a un etat source connu (trajectoire trop courte / split trop petit).
+    """
+    from . import tpm_estimation as TE
+
+    seq = list(states)
+    if not 0.0 < split < 1.0:
+        raise ValueError(f"split doit etre dans ]0, 1[, recu {split}")
+    n = len(seq)
+    n_train = max(2, int(round(split * n)))
+    if n_train >= n:
+        # trajectoire trop courte pour un vrai split : on prend la 1re moitié
+        n_train = max(1, n // 2)
+    train = seq[:n_train]
+    test = seq[n_train:]
+
+    # TPM empirique sur le train : comptes bruts (non normalises) pour appliquer
+    # le lissage Laplace nous-memes. ``tpm_from_transitions`` normalise, donc on
+    # reconstruit les comptes a la main (cohrent avec ``_normalize_counts``).
+    mapping: dict = {}
+    for s in train:
+        mapping.setdefault(s, len(mapping))
+    # on enrichit le mapping des etats rencontres dans le test (un etat cible
+    # inedit au test reste "surprenant" -- il compte dans le vocabulaire).
+    for s in test:
+        mapping.setdefault(s, len(mapping))
+    counts = {src: {} for src in mapping}
+    for a, b in zip(train, train[1:]):
+        counts[a][b] = counts[a].get(b, 0) + 1.0
+
+    # surprise held-out
+    n_vu = len(mapping)
+    surprisals = []
+    for a, b in zip(test, test[1:]):
+        if a not in mapping:
+            # etat source jamais vu au train : on ne sait rien predire, on
+            # l'ignore (pas de fuite : la TPM n'aurait pas de ligne pour lui).
+            continue
+        row = counts.get(a, {})
+        total = sum(row.values()) + alpha * n_vu
+        if total <= 0:
+            continue
+        p = (row.get(b, 0.0) + alpha) / total
+        surprisals.append(-np.log2(p))
+
+    if not surprisals:
+        f = float("nan")
+    else:
+        f = float(np.mean(surprisals))
+    return {
+        "F": f,
+        "n_train": int(n_train),
+        "n_test": int(len(test)),
+        "alpha": float(alpha),
+        "n_states": int(n_vu),
+    }
+
+
+def surprise_gain(states, rng: np.random.Generator, n_shuffles: int = 20,
+                  split: float = 0.5, alpha: float = 0.5) -> dict:
+    """Gain de surprise : reel vs controle permute (le signal credite).
+
+    ``fe_gain = F_shuffled - F_real`` : une trajectoire reelle structurée est
+    PLUS previsible (F_real petit) qu'une permutation de memes etats
+    (F_shuffled grand -- le shuffle detruit les transitions regulieres, la TPM
+    held-out devient proche de l'uniforme). ``fe_gain`` positif = la dynamique
+    porte de la structure predictable au-dela du reservoir d'etats.
+
+    Contraste au MEME shuffle que ``emergence_gain`` (Φ) et ``compression_gain``
+    (K) : les trois scalaires du capstone ICT-15 sont definis sur le meme
+    controle degenere, condition necessaire au gate de convergence (Gate 4).
+    """
+    real = transition_surprise(states, split=split, alpha=alpha)
+    seq = list(states)
+    fs = []
+    for _ in range(int(n_shuffles)):
+        idx = rng.permutation(len(seq))
+        perm = [seq[i] for i in idx]
+        fs.append(transition_surprise(perm, split=split, alpha=alpha)["F"])
+    f_shuffled = float(np.nanmean(fs)) if fs else float("nan")
+    f_real = real["F"]
+    if np.isnan(f_real) or np.isnan(f_shuffled):
+        gain = float("nan")
+    else:
+        gain = float(f_shuffled - f_real)
+    return {
+        "F_real": f_real,
+        "F_shuffled": f_shuffled,
+        "fe_gain": gain,
+        "n_shuffles": int(n_shuffles),
+        "n_states": real["n_states"],
+    }
+
