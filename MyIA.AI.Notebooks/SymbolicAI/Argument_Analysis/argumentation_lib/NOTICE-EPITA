@@ -18,6 +18,7 @@ CoursIA copy
 | `_state_manager_plugin.py`            | `argumentation_analysis/core/state_manager_plugin.py` | see git log |
 | `_taxonomy_sophism_detector.py` (442 lines) | `argumentation_analysis/agents/core/informal/taxonomy_sophism_detector.py` | a8025f60 (2026-07-02) |
 | `_informal_definitions.py` (891 lines) | `argumentation_analysis/agents/core/informal/informal_definitions.py` | a8025f60 (2026-07-02) |
+| `_tweety_bridge.py` (488 lines) | `argumentation_analysis/agents/core/logic/tweety_bridge.py` | a8025f60 (2026-07-02) |
 | `_pl_handler.py` (689 lines)        | `argumentation_analysis/agents/core/logic/pl_handler.py` | a8025f60 (2026-07-02) |
 | `_fol_handler.py` (1163 lines)      | `argumentation_analysis/agents/core/logic/fol_handler.py` | a8025f60 (2026-07-02) |
 
@@ -141,6 +142,72 @@ preserving it byte-for-byte in `argumentation_lib/` documents the exact
 contract the shim must satisfy. The cost is a 913-line file that is
 currently dead-weight (cannot be imported); the benefit is no drift
 between this reference and the eventual shim.
+
+Volet B etape 4 sub-tranche C186a (tweety_bridge)
+--------------------------------------------------
+
+PR #5231 (C186a) added `_tweety_bridge.py` (488L body, 531L with MIT
+header) as a verbatim copy of the EPITA-IS `tweety_bridge.py` module at
+commit `a8025f60`. This is the **JPype bridge singleton** that ties the 12
+logic handlers (PL/FOL/Modal/ADF/AF/Ranking/BeliefRevision/Probabilistic/
+Dialogue + the unimported Bipolar/ABA/ASPIC) into a single
+`TweetyBridge.initialize_jvm()` -> `TweetyBridge.<Logic>().is_consistent()`
+runtime.
+
+Symbols exposed (5 public via lazy accessor tuple):
+
+- `get_tweety_bridge_symbol()` -> tuple
+  `(TweetyBridge, TweetyBridgeSK, initialize_jvm, shutdown_jvm, is_jvm_started)`
+  (lazy import, returns the verbatim tuple)
+
+Verbatim integrity:
+- `_tweety_bridge.py` body SHA1=`6999e355db2bd25156d1358959c0c09660d9cd12`
+  (488L, no prelude, starts with `# FORCE_RELOAD` marker).
+- LF line endings (no CRLF), UTF-8 (no BOM), FORCE_RELOAD marker preserved.
+
+Dependency disclosure (G.9 honest caveat): the bridge file imports
+multiple upstream modules at module-load time that are NOT vendored in
+`argumentation_lib/` today:
+
+- `argumentation_analysis.core.jvm_setup.shutdown_jvm` (line ~442 of
+  upstream, imported at top-level)
+- `from .pl_handler import PLHandler as PropositionalLogicHandler`
+- `from .fol_handler import FOLHandler as FirstOrderLogicHandler`
+- `from .modal_handler import ModalHandler`
+- `from .af_handler import AFHandler as ArgumentationFrameworkHandler`
+- `from .ranking_handler import RankingHandler`
+- `from .bipolar_handler import BipolarHandler`
+- `from .aba_handler import ABAHandler`
+- `from .adf_handler import ADFHandler`
+- `from .aspic_handler import ASPICHandler`
+- `from .belief_revision_handler import BeliefRevisionHandler`
+- `from .probabilistic_handler import ProbabilisticHandler`
+- `from .dialogue_handler import DialogueHandler`
+- `from .tweety_initializer import TweetyInitializer`
+
+Total: **13 sibling modules absent from the vendored context** -> the
+top-level import `from argumentation_lib._tweety_bridge import TweetyBridge`
+raises `ModuleNotFoundError: No module named
+'argumentation_analysis.agents.core.logic.pl_handler'` (or equivalent
+for whichever handler is hit first by the import chain).
+
+The lazy accessor `argumentation_lib.get_tweety_bridge_symbol()` preserves
+the API symmetry with C184/C185/C186b accessors but, like them, does
+**not** bypass the top-level imports. Runtime usability awaits Volet B
+etape 4 sub-tranches C186b (PL/FOL core handlers, PR #5234) +
+C186c (modal/adf) + C186d (af/ranking) + C186e (belief_rev/prob/
+dialogue) + C186f (tweety_initializer) + C186g (runtime bridge shim
+wrapping `argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`).
+
+For a **fully-functional JPype bridge today**, use
+`argumentation_lib.initialize_jvm()` (the CoursIA-native bridge via
+`Tweety.tweety_init` -- see `_jvm_compat.py`) and write the reasoning
+glue manually. The verbatim Python is preserved here as the authoritative
+reference contract for the future CoursIA integration.
+
+**Sub-tranche plan (after this PR)** -- see NOTICE-EPITA section C186b
+below for the full C186b-g chain. C186a is the singleton shell; C186b-g
+populate its dependencies.
 
 Volet B etape 4 sub-tranche C186b (pl_handler + fol_handler)
 --------------------------------------------------------------
