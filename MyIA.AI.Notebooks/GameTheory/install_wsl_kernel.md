@@ -1,6 +1,6 @@
 # Installation des Kernels WSL pour GameTheory
 
-Ce guide couvre l'installation de deux kernels WSL pour la serie GameTheory :
+Ce guide couvre l'installation de deux kernels WSL pour la série GameTheory :
 
 | Kernel | Notebooks | Usage |
 |--------|-----------|-------|
@@ -13,15 +13,15 @@ Les notebooks 17 et 18 utilisent Python avec `lean_runner.py` et peuvent fonctio
 
 # Partie 1 : Kernel Python + OpenSpiel
 
-## Probleme
+## Problème
 
-OpenSpiel (bibliothèque DeepMind pour la théorie des jeux) n'a pas de wheels pré-compilés pour Windows et necessite une compilation C++ complexe.
+OpenSpiel (bibliothèque DeepMind pour la théorie des jeux) n'a pas de wheels pré-compilés pour Windows et nécessite une compilation C++ complexe.
 
 ## Solution
 
 Installer un kernel Python dans WSL Ubuntu avec OpenSpiel, accessible depuis Jupyter Windows.
 
-## Installation Automatique (Recommandee)
+## Installation Automatique (Recommandée)
 
 ### Méthode rapide avec scripts
 
@@ -39,7 +39,7 @@ cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
 
 ## Installation Manuelle
 
-### 1. Installer WSL (si pas deja fait)
+### 1. Installer WSL (si pas déjà fait)
 
 ```powershell
 # Dans PowerShell Admin
@@ -68,14 +68,14 @@ pip install open_spiel nashpy numpy scipy matplotlib networkx seaborn pandas tqd
 python -c "import pyspiel; print(f'OpenSpiel OK: {len(pyspiel.registered_names())} jeux')"
 ```
 
-### 3. Creer le wrapper script (WSL)
+### 3. Créer le wrapper script (WSL)
 
-VSCode passe les chemins de connexion au format `~\AppData\...`. Le shell WSL **consomme les backslashes**, donc un wrapper bash est necessaire.
+VSCode passe les chemins de connexion au format `~\AppData\...`. Le shell WSL **consomme les backslashes**, donc un wrapper bash est nécessaire.
 
-**IMPORTANT - Problemes connus:**
-1. Les backslashes sont **completement supprimes** par le shell WSL:
+**IMPORTANT - Problèmes connus:**
+1. Les backslashes sont **complètement supprimés** par le shell WSL:
    - VSCode envoie: `~\AppData\Roaming\jupyter\runtime\kernel-xxx.json`
-   - Le wrapper recoit: `c:UsersjsboiAppDataRoamingjupyterruntimekernel-xxx.json`
+   - Le wrapper reçoit: `c:UsersjsboiAppDataRoamingjupyterruntimekernel-xxx.json`
 2. Le wrapper doit **reconstruire** le chemin avec une regex
 3. Les docstrings Python avec `\A`, `\U` causent des SyntaxWarning
 4. Utiliser un wrapper **bash** (pas Python directement)
@@ -151,7 +151,7 @@ chmod +x ~/.gametheory-kernel-wrapper.sh
 bash -n ~/.gametheory-kernel-wrapper.sh && echo "Wrapper OK"
 ```
 
-### 4. Creer le kernelspec Windows (PowerShell)
+### 4. Créer le kernelspec Windows (PowerShell)
 
 ```powershell
 # Creer le dossier pour le kernel
@@ -178,11 +178,11 @@ $wslUser = (wsl -d Ubuntu whoami).Trim()
 jupyter kernelspec list
 ```
 
-### 5. Redemarrer VSCode
+### 5. Redémarrer VSCode
 
-Apres installation, redemarrez **completement** VSCode (pas juste recharger la fenetre) et selectionnez le kernel "Python (GameTheory WSL + OpenSpiel)" pour les notebooks qui utilisent OpenSpiel (7, 12, 15).
+Après installation, redémarrez **complètement** VSCode (pas juste recharger la fenêtre) et sélectionnez le kernel "Python (GameTheory WSL + OpenSpiel)" pour les notebooks qui utilisent OpenSpiel (7, 12, 15).
 
-## Verification
+## Vérification
 
 ### Test rapide dans WSL
 
@@ -220,7 +220,7 @@ game = pyspiel.load_game("kuhn_poker")
 print(f"Kuhn Poker: {game.num_players()} joueurs, {game.num_distinct_actions()} actions")
 ```
 
-## Notebooks concernes
+## Notebooks concernés
 
 | Notebook | Utilise OpenSpiel | Alternative |
 |----------|-------------------|-------------|
@@ -229,17 +229,17 @@ print(f"Kuhn Poker: {game.num_players()} joueurs, {game.num_distinct_actions()} 
 | 12-ImperfectInfo-CFR | Oui (CFR) | game_theory_utils.CFRSolver |
 | 15-MultiAgent-RL | Oui (NFSP) | game_theory_utils.FictitiousPlay |
 
-## Depannage
+## Dépannage
 
-### Le kernel ne demarre pas (backslashes manquants)
+### Le kernel ne démarre pas (backslashes manquants)
 
-**Symptome**: Le log `/tmp/kernel-wrapper.log` montre un chemin sans separateurs:
+**Symptôme**: Le log `/tmp/kernel-wrapper.log` montre un chemin sans séparateurs:
 
 ```
 Original path: c:UsersjsboiAppDataRoamingjupyterruntimekernel-xxx.json
 ```
 
-**Cause**: Le shell WSL consomme **tous** les backslashes avant que le script les recoive
+**Cause**: Le shell WSL consomme **tous** les backslashes avant que le script les reçoive
 
 **Solution**: Le wrapper doit reconstruire le chemin avec une regex:
 
@@ -249,60 +249,60 @@ if [[ "$arg" =~ ^c:Users([a-zA-Z0-9_]+)AppDataRoamingjupyterruntime(.*)$ ]]; the
 fi
 ```
 
-Verifier que le wrapper contient cette regex (voir section 3 ci-dessus).
+Vérifier que le wrapper contient cette regex (voir section 3 ci-dessus).
 
-### Le kernel ne demarre pas (SyntaxWarning)
+### Le kernel ne démarre pas (SyntaxWarning)
 
 Si vous voyez `SyntaxWarning: invalid escape sequence '\A'` ou similaire:
 
 1. Le wrapper script contient des docstrings avec backslashes
 2. **Solution**: Utiliser des commentaires `#` au lieu de docstrings `"""`
-3. Verifier: `wsl -d Ubuntu -- bash -c "python3 -m py_compile ~/.gametheory-kernel-wrapper.py"`
+3. Vérifier: `wsl -d Ubuntu -- bash -c "python3 -m py_compile ~/.gametheory-kernel-wrapper.py"`
 
-### Le kernel ne demarre pas (timeout 60s)
+### Le kernel ne démarre pas (timeout 60s)
 
-1. Verifier que WSL fonctionne: `wsl -l -v`
-2. Verifier l'environnement: `wsl -d Ubuntu -- bash -c "source ~/.gametheory-venv/bin/activate && python --version"`
-3. Verifier le log du wrapper:
+1. Vérifier que WSL fonctionne: `wsl -l -v`
+2. Vérifier l'environnement: `wsl -d Ubuntu -- bash -c "source ~/.gametheory-venv/bin/activate && python --version"`
+3. Vérifier le log du wrapper:
    ```bash
    wsl -d Ubuntu -- cat /tmp/kernel-wrapper.log
    ```
 
 ### OpenSpiel ne s'importe pas
 
-1. Verifier l'installation dans WSL:
+1. Vérifier l'installation dans WSL:
    ```bash
    source ~/.gametheory-venv/bin/activate
    pip show open_spiel
    python -c "import pyspiel; print('OK')"
    ```
 
-2. Reinstaller si necessaire:
+2. Reinstaller si nécessaire:
    ```bash
    pip uninstall open_spiel -y
    pip install open_spiel --no-cache-dir
    ```
 
-### Probleme de connexion Jupyter
+### Problème de connexion Jupyter
 
-Le fichier de connexion utilise des ports TCP. Verifier que le pare-feu Windows autorise les connexions WSL.
+Le fichier de connexion utilise des ports TCP. Vérifier que le pare-feu Windows autorise les connexions WSL.
 
 ## Alternative: Sans WSL
 
-Si WSL n'est pas disponible, les notebooks utilisent automatiquement `game_theory_utils.py` qui fournit des implementations Python pures:
+Si WSL n'est pas disponible, les notebooks utilisent automatiquement `game_theory_utils.py` qui fournit des implémentations Python pures:
 
 - `CFRSolver`: Counterfactual Regret Minimization
 - `FictitiousPlay`: Apprentissage fictif
-- `VCGAuction`: Mecanisme VCG
+- `VCGAuction`: Mécanisme VCG
 - `gale_shapley`: Matching stable
 
-Ces implementations sont suffisantes pour comprendre les concepts, meme si elles n'ont pas toutes les optimisations d'OpenSpiel.
+Ces implémentations sont suffisantes pour comprendre les concepts, même si elles n'ont pas toutes les optimisations d'OpenSpiel.
 
 ---
 
 ## Partie 2 : Kernel Lean 4 (WSL)
 
-### Probleme
+### Problème
 
 Le kernel `lean4_jupyter` utilise `signal.SIGPIPE` qui n'existe pas sur Windows. De plus, Lean 4 fonctionne mieux dans un environnement Linux.
 
@@ -310,7 +310,7 @@ Le kernel `lean4_jupyter` utilise `signal.SIGPIPE` qui n'existe pas sur Windows.
 
 Installer Lean 4 et lean4_jupyter dans WSL Ubuntu, avec un kernel accessible depuis Jupyter Windows.
 
-### Installation Automatique (Recommandee)
+### Installation Automatique (Recommandée)
 
 ```bash
 # 1. Dans WSL Ubuntu
@@ -340,7 +340,7 @@ elan default leanprover/lean4:stable
 lean --version
 ```
 
-#### 2. Creer l'environnement Python pour lean4_jupyter
+#### 2. Créer l'environnement Python pour lean4_jupyter
 
 ```bash
 # Creer un environnement virtuel
@@ -365,11 +365,11 @@ lake build
 cp .lake/build/bin/repl ~/.elan/bin/
 ```
 
-#### 4. Creer le wrapper (WSL)
+#### 4. Créer le wrapper (WSL)
 
-Le script `setup_wsl_lean4.sh` cree automatiquement le wrapper `~/.lean4-kernel-wrapper.py` qui gere la conversion des chemins Windows vers WSL.
+Le script `setup_wsl_lean4.sh` créé automatiquement le wrapper `~/.lean4-kernel-wrapper.py` qui gère la conversion des chemins Windows vers WSL.
 
-#### 5. Creer le kernelspec Windows (PowerShell)
+#### 5. Créer le kernelspec Windows (PowerShell)
 
 ```powershell
 # Creer le dossier pour le kernel
@@ -397,7 +397,7 @@ $wslUser = (wsl -d Ubuntu whoami).Trim()
 jupyter kernelspec list
 ```
 
-### Verification
+### Vérification
 
 ```bash
 # Dans WSL
@@ -411,22 +411,22 @@ echo '{"cmd": "#eval 2 + 2"}' | repl
 python3 -c "import lean4_jupyter; print('OK')"
 ```
 
-### Notebooks concernes
+### Notebooks concernés
 
 | Notebook | Kernel | Contenu |
 |----------|--------|---------|
-| 16-Lean-Definitions | Lean 4 (WSL) | Definitions formelles Game, Nash |
+| 16-Lean-Definitions | Lean 4 (WSL) | Définitions formelles Game, Nash |
 | 17-Lean-NashExistence | Python 3 | Python + lean_runner.py |
 | 18-Lean-CombinatorialGames | Python 3 | Python + lean_runner.py |
 | 19-Lean-SocialChoice | Lean 4 (WSL) | Arrow, Sen en Lean natif |
 
-### Depannage Lean
+### Dépannage Lean
 
-#### Le kernel ne demarre pas
+#### Le kernel ne démarre pas
 
-1. Verifier les logs: `wsl -d Ubuntu -- cat ~/.lean4-wrapper.log`
-2. Verifier l'installation: `wsl -d Ubuntu -- bash -c "source ~/.elan/env && lean --version"`
-3. Verifier le REPL: `wsl -d Ubuntu -- bash -c "source ~/.elan/env && which repl"`
+1. Vérifier les logs: `wsl -d Ubuntu -- cat ~/.lean4-wrapper.log`
+2. Vérifier l'installation: `wsl -d Ubuntu -- bash -c "source ~/.elan/env && lean --version"`
+3. Vérifier le REPL: `wsl -d Ubuntu -- bash -c "source ~/.elan/env && which repl"`
 
 #### Erreur "repl not found"
 
