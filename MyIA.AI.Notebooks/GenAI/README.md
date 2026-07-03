@@ -27,7 +27,7 @@ GenAI/
 ├── PostTraining/            # Post-training SOTA : SFT/RLHF/DPO/GRPO/RLVR
 ├── CaseStudies/             # Études de cas étudiants
 ├── Open-WebUI/              # Plateforme Open WebUI : tour guidé + série QA Playwright
-│   └── Playwright-OWUI/     # Tests E2E Playwright (5 modules, 30+ tests)
+│   └── Playwright-OWUI/     # Tests E2E Playwright (6 modules, 30+ tests)
 ├── Vibe-Coding/             # Tutoriels Claude Code et Roo Code
 └── RAG-et-Memoire-Semantique/  # Mémoire sémantique : Qdrant, embeddings, grounding (SDDD)
 ```
@@ -87,6 +87,22 @@ Le texte est le socle de toute interaction avec l'IA générative. Cette série 
 Semantic Kernel est le SDK Microsoft pour construire des applications agentiques. Il fournit les briques pour orchestrer les LLMs avec des plugins, des agents, des filtres, des vector stores, et des processus multi-étapes. Cette série couvre le SDK en Python et en C# (.NET Interactive), avec une progression qui va des fondamentaux aux patterns avancés (MCP, multi-modalité, interop CLR).
 
 [README complet](SemanticKernel/README.md) | ~20h
+
+---
+
+### FineTuning - Adapter un modèle à votre tâche
+
+Un modèle généraliste ne connaît pas votre domaine, et le ré-entraîner de zéro coûterait des millions. Le fine-tuning l'adapte à moindre frais. Cette série progressive de 5 notebooks part des adaptateurs légers — LoRA, puis QLoRA qui quantifie le modèle en 4 bits pour tenir sur un GPU grand public (T4/V100) —, passe par le supervised fine-tuning (SFT) au format ChatML qui transforme un *base model* en modèle conversationnel, l'alignement sur les préférences humaines (RLHF/DPO), et culmine avec la fusion de plusieurs modèles spécialisés en un seul (TIES, DARE, routage MoE). C'est la boîte à outils **pratique** pour spécialiser un LLM.
+
+[README complet](FineTuning/README.md)
+
+---
+
+### PostTraining - La chaîne SOTA du post-entraînement
+
+Là où FineTuning donne la boîte à outils, PostTraining en est le **pendant théorique et SOTA (2024-2025)** : il remonte toute la chaîne conceptuelle du post-entraînement — SFT vers RLHF, DPO, GRPO, puis RLVR. Ces 7 notebooks prennent le parti d'expliquer d'abord la *mathématique du loss*, puis l'intuition, puis l'implémentation (TRL/HuggingFace) — l'ordre inverse des tutoriels habituels. Le fil rouge reproduit les techniques récentes, jusqu'au raisonnement à la Deepseek-R1 (janvier 2025), sur de **petits** modèles (Qwen2.5-0.5B/1.5B) qui tiennent sur un GPU 8 Go, avec évaluation comparative et détection du *reward hacking*. À suivre après FineTuning pour la profondeur méthodologique.
+
+[README complet](PostTraining/README.md)
 
 ---
 
