@@ -207,7 +207,7 @@ Points fréquents :
 
 ### Les scripts PowerShell de preparation échouent
 
-Les scripts `Scripts/prepare-workspaces.ps1` et `Scripts/clean-workspaces.ps1` (references dans les modules Claude Code et Roo Code) préparent les espaces de travail individuels. Si erreur :
+Les scripts `Scripts/prepare-workspaces.ps1` et `Scripts/clean-workspaces.ps1` (référencés dans les modules Claude Code et Roo Code) préparent les espaces de travail individuels. Si erreur :
 
 ```powershell
 # Verifier la politique d'execution PowerShell
@@ -234,10 +234,10 @@ Les Claw Systems ([README](Claw-Systems/README.md)) sont des agents IA conteneur
 
 ### Peut-on faire les ateliers sans OpenRouter ?
 
-Oui, partiellement. OpenRouter est le fournisseur par défaut car il aggrege plusieurs modeaux (Claude, GPT, Gemini) sous une seule clé. Alternatives :
+Oui, partiellement. OpenRouter est le fournisseur par défaut car il aggrege plusieurs modèles (Claude, GPT, Gemini) sous une seule clé. Alternatives :
 
-- **API Anthropic directe** : `$env:ANTHROPIC_API_KEY = "sk-ant-..."` (sans `ANTHROPIC_BASE_URL`). Fonctionne avec les modeaux Claude uniquement.
-- **API OpenAI directe** : configurée via les settings Claude Code (sans OpenRouter). Modeaux GPT uniquement.
+- **API Anthropic directe** : `$env:ANTHROPIC_API_KEY = "sk-ant-..."` (sans `ANTHROPIC_BASE_URL`). Fonctionne avec les modèles Claude uniquement.
+- **API OpenAI directe** : configurée via les settings Claude Code (sans OpenRouter). Modèles GPT uniquement.
 - **Mode hors-ligne** : les modules [01](Claude-Code/01-decouverte/) et [02](Claude-Code/02-orchestration-taches/) contiennent des exercices de découverte qui ne nécessitent pas d'API (exploration de l'interface, configuration CLAUDE.md, gestion de sessions).
 
 Le module [05](Claude-Code/05-automatisation-avancee/) (Skills, Subagents, MCP) nécessite un LLM actif pour les démonstrations avancées.
