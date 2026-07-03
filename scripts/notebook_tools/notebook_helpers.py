@@ -1052,6 +1052,14 @@ class NotebookExecutor:
             result.duration = time.time() - start_time
             return result
 
+        # .NET Interactive: after protocol-ready, the kernel still loads default
+        # usings (System, etc.). Without this delay, the first kc.execute() hits
+        # a NameError ('Console'/'using' not defined) and outputs of all subsequent
+        # cells are lost. dotnet_executor.py uses the same warmup for the same
+        # reason. See jsboige/CoursIA#5005.
+        if '.net' in kernel_name or kernel_name in ('csharp', 'fsharp'):
+            time.sleep(5)
+
         try:
             # Set working directory
             nb_dir = str(Path(notebook_path).parent)

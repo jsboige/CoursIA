@@ -58,6 +58,25 @@ python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/GenAI/
 python scripts/notebook_tools/notebook_tools.py execute SmartContracts --scrub-keys --batch-mode
 ```
 
+#### Capture des outputs .NET post-`#r` (#5005)
+
+Les notebooks .NET Interactive contenant une directive `#r "nuget: ..."` ou `#r "<dll>"` perdent leurs outputs stdout (`Console.WriteLine`) si exécutes via le chemin Papermill par defaut (drain iopub / timing `nbclient` 2.7.0).
+
+**Recommandations** :
+
+- **`--cell-by-cell`** (chemin `jupyter_client` direct) : OK depuis le fix du warmup post-`wait_for_ready` (cf PR `feature/5005-cell-by-cell-warmup`, fichier `scripts/notebook_tools/notebook_helpers.py`). Pas de régression Python/Lean (warmup conditionnel `.net-*`).
+- **`dotnet_executor.py`** directement : chemin canonique pour les notebooks .NET, déjà fonctionnel avant le fix. À privilégier pour les re-exécutions de validation.
+
+```bash
+# Validation .NET canonique (chemin kc.execute() direct, sans Papermill)
+python scripts/notebook_tools/dotnet_executor.py <notebook> --kernel .net-csharp --timeout 240
+
+# Equivalent via le CLI multi-famille (depuis le fix warmup)
+python scripts/notebook_tools/notebook_tools.py execute <notebook> --cell-by-cell --kernel .net-csharp --timeout 240
+```
+
+**Diagnostic** : le bug n'est PAS dans le kernel .NET Interactive ni dans le mode HTTP — un test `jupyter_client` direct (`kc.execute()` + `get_iopub_msg`) capture 9/9 outputs post-`#r`. Le défaut venait des wrappers client (Papermill + cell-by-cell sans warmup).
+
 ### Catalogue (anti-drift)
 | Script | Usage |
 |--------|-------|

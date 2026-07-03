@@ -1259,13 +1259,15 @@ class NotebookExecutor:
             )
 
     def execute_cell_by_cell(self, timeout: int = 60,
-                              verbose: bool = False) -> NotebookExecutionResult:
+                              verbose: bool = False,
+                              kernel_override: Optional[str] = None) -> NotebookExecutionResult:
         """Execute notebook cell by cell using jupyter_client."""
         # Use base executor if available
         if self._base_executor:
             self._base_executor.verbose = verbose
             result = self._base_executor.execute_notebook_cell_by_cell(
-                str(self.path), timeout_per_cell=timeout
+                str(self.path), timeout_per_cell=timeout,
+                kernel_name=kernel_override,
             )
             msg = (
                 f"Executed {result.executed_cells} cells: "
@@ -1613,7 +1615,8 @@ def cmd_execute(args):
         if args.cell_by_cell:
             result = executor.execute_cell_by_cell(
                 timeout=args.timeout,
-                verbose=args.verbose
+                verbose=args.verbose,
+                kernel_override=kernel_override,
             )
         else:
             result = executor.execute_with_papermill(
