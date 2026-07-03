@@ -2,7 +2,7 @@
 
 [← Série Probas](../README.md) | [Série PyMC (Python) →](../PyMC/README.md) | [ML.NET (C#) →](../../ML/ML.Net/README.md)
 
-Programmation probabiliste avec Microsoft Infer.NET : une série de 28 notebooks, scindée en deux arcs. Le **corpus bayésien** (18 notebooks, ce README) va des fondamentaux (distributions, factor graphs) aux frontières (modèles relationnels, TrueSkill, LDA, HMM, **inférence causale** (do-calculus de Pearl), **processus gaussiens** (GP sparse, frontières non-linéaires), **modèles hiérarchiques** (pooling partiel, shrinkage), **filtre de Kalman**, **détection de rupture** (change-point bayésien)). Un **arc autonome de 10 notebooks de théorie de la décision** ([`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md)) couvre utilité espérée, EVPI, MDPs, indice de Gittins et **bandits bayésiens** (Thompson Sampling), avec des preuves formelles Lean 4.
+Programmation probabiliste avec Microsoft Infer.NET : une série de 29 notebooks, scindée en deux arcs. Le **corpus bayésien** (19 notebooks, ce README) va des fondamentaux (distributions, factor graphs) aux frontières (modèles relationnels, TrueSkill, LDA, HMM, **inférence causale** (do-calculus de Pearl), **processus gaussiens** (GP sparse, frontières non-linéaires), **modèles hiérarchiques** (pooling partiel, shrinkage), **filtre de Kalman**, **détection de rupture** (change-point bayésien), **analyse de survie** (modèles de risque, censure)). Un **arc autonome de 10 notebooks de théorie de la décision** ([`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md)) couvre utilité espérée, EVPI, MDPs, indice de Gittins et **bandits bayésiens** (Thompson Sampling), avec des preuves formelles Lean 4.
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs .NET souhaitant maîtriser l'inférence probabiliste par message passing, et data scientists intéressés par les graphes de facteurs. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en probabilités avancées : les concepts sont introduits progressivement.
 
@@ -94,7 +94,7 @@ flowchart TD
     class DT decision;
 ```
 
-Le socle d'inference (1-12) se suit en séquence ; le notebook **13 (Debugging)** est transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. Les notebooks **14-18 (Frontières)** prolongent le corpus bayésien (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture). La **théorie de la décision** — utilité espérée, EVPI, MDPs, Thompson Sampling, plus les companions Lean (indice de Gittins) — forme désormais un **arc autonome** dans [`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/). Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
+Le socle d'inference (1-12) se suit en séquence ; le notebook **13 (Debugging)** est transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. Les notebooks **14-19 (Frontières)** prolongent le corpus bayésien (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie). La **théorie de la décision** — utilité espérée, EVPI, MDPs, Thompson Sampling, plus les companions Lean (indice de Gittins) — forme désormais un **arc autonome** dans [`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/). Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
 
 ---
 
@@ -553,7 +553,7 @@ Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, séqu
 
 Les 10 notebooks de théorie de la décision --- fondements de l'utilité (axiomes vNM, aversion au risque), utilité multi-attributs, réseaux de décision, valeur de l'information (EVPI/EVSI), systèmes experts (Minimax/regret), décisions séquentielles (MDPs), Thompson Sampling bayésien, plus deux companions Lean (preuve formelle du théorème vNM et indice de Gittins) --- constituent désormais un **arc autonome** dans [`../DecisionTheory/Infer/`](../DecisionTheory/Infer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/).
 
-Cette extraction clarifie les deux fils du corpus Probas : la **modélisation bayésienne** (ce README, notebooks 1-17) et la **théorie de la décision** (DecisionTheory/). Voir le README de DecisionTheory pour la vue d'ensemble, la progression pédagogique et le détail notebook-par-notebook.
+Cette extraction clarifie les deux fils du corpus Probas : la **modélisation bayésienne** (ce README, notebooks 1-19) et la **théorie de la décision** (DecisionTheory/). Voir le README de DecisionTheory pour la vue d'ensemble, la progression pédagogique et le détail notebook-par-notebook.
 
 ---
 
@@ -581,9 +581,9 @@ Cette extraction clarifie les deux fils du corpus Probas : la **modélisation ba
 | Front-door | `Σ_m P(M\|X)Σ_{x'} P(Y\|M,x')P(x')` | Ajustement par médiateur quand U est inobservable |
 | Simpson | agrégé ≠ conditionnel | Renversement : la conclusion s'inverse |
 
-**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) n'abordait la causalité qu'en deux cellules isolées. Infer-22 en fait un traitement dédié et **distributionnel** : les effets causaux sont **calculés** par le moteur d'inférence Infer.NET via mutilation de graphe, là où le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) raisonne en Java propositionnel, et où [PyMC-4](../PyMC/PyMC-4-Bayesian-Networks.ipynb) démontre `P(Cloudy|do(Rain))` en MCMC.
+**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) n'abordait la causalité qu'en deux cellules isolées. Infer-14 en fait un traitement dédié et **distributionnel** : les effets causaux sont **calculés** par le moteur d'inférence Infer.NET via mutilation de graphe, là où le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) raisonne en Java propositionnel, et où [PyMC-4](../PyMC/PyMC-4-Bayesian-Networks.ipynb) démontre `P(Cloudy|do(Rain))` en MCMC.
 
-**Ponts causaux** : Infer-22 est le maillon **distributionnel par message passing** (Infer.NET, EP/VMP) d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) (Java propositionnel), le jumeau MCMC [PyMC-14](../PyMC/PyMC-14-Causal-Inference.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb), où la distribution d'intervention `p(C)` uniforme **est** `do(X_t = x)`. Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
+**Ponts causaux** : Infer-14 est le maillon **distributionnel par message passing** (Infer.NET, EP/VMP) d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) (Java propositionnel), le jumeau MCMC [PyMC-14](../PyMC/PyMC-14-Causal-Inference.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb), où la distribution d'intervention `p(C)` uniforme **est** `do(X_t = x)`. Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
 **Applications** : baromètre (confondeur), diagnostic médical (paradoxe de Simpson), tabac-cancer (front-door), requêtes contrefactuelles.
 
