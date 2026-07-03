@@ -1,13 +1,13 @@
 # Panier Anti-Biais - 26 Symboles OHLCV Journalier
 
-Dataset diversifie multi-actifs pour l'entrainement ML (Epic #1409 / #4921),
-utilise par les notebooks de recherche du pipeline ML-Training-Pipeline
+Dataset diversifié multi-actifs pour l'entraînement ML (Epic #1409 / #4921),
+utilisé par les notebooks de recherche du pipeline ML-Training-Pipeline
 (L1 tsmom, L2 dual momentum, ...).
 
 ## Politique anti-biais
 
 Symboles **interdits** dans le training set : AAPL, MSFT, GOOG, AMZN, NVDA, TSLA, META.
-Objectif : eviter le sur-apprentissage aux FAANG/Mag7 et forcer la
+Objectif : éviter le sur-apprentissage aux FAANG/Mag7 et forcer la
 diversification sectorielle / asset-class.
 
 ## Couverture (7 classes d'actifs, 26 symboles)
@@ -32,7 +32,7 @@ CSV, colonnes : `Date,Open,High,Low,Close,Volume`
 
 - Date : AAAA-MM-JJ (journalier)
 - Prix : float, USD
-- Volume : int, volume echange journalier
+- Volume : int, volume échangé journalier
 
 Fichiers additionnels :
 - `panier_close_all.csv` : matrice panel (rows=dates, cols=symboles), closes only, NaN pour dates de cotation manquantes.
@@ -41,21 +41,21 @@ Fichiers additionnels :
 ## Construction / rebuild
 
 ```bash
-# Build complet (telecharge les 26 symboles via yfinance, ~10s en cache warm)
+# Build complet (télécharge les 26 symboles via yfinance, ~10s en cache warm)
 python scripts/datasets/build_panier_anti_bias.py --start 2015-01-01
 
-# Re-build rapide si deja en cache
+# Re-build rapide si déjà en cache
 python scripts/datasets/build_panier_anti_bias.py --start 2015-01-01 --skip-download
 ```
 
 Cache yfinance : `scripts/datasets/yfinance_cache/` (Parquet, MD5-cache-key).
 Les CSVs sont gitignored (cf `.gitignore` ligne 94 `datasets/`) - ce README
-est force-tracke pour la reproductibilite fresh-clone.
+est forcé-tracké pour la reproductibilité fresh-clone.
 
 ## Utilisation dans les notebooks
 
 Le helper `scripts/datasets/panier_loader.py` (dans ML-Training-Pipeline/scripts/)
-charge ce dataset avec `auto_fetch=False` (pas d'appel reseau) :
+charge ce dataset avec `auto_fetch=False` (pas d'appel réseau) :
 
 ```python
 from panier_loader import load_panier_closes, PANIER_GROUPS
