@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyVersion>1.0</AssemblyVersion>
+    <FileVersion>1.0</FileVersion>
+    <LangVersion>12.0</LangVersion>
+    <Authors>CoursIA — port verbatim from Argumentum</Authors>
+    <Copyright>Copyright (c) 2026 CoursIA. Port verbatim from Argumentum under LGPL-3.0 + AGPL-3.0 — see NOTICE.</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OWLSharp" Version="4.23.0" />
+    <PackageReference Include="OWLSharp.Extensions" Version="4.22.0" />
+    <PackageReference Include="dotNetRdf" Version="3.3.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="NOTICE">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
