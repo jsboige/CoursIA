@@ -78,7 +78,7 @@ d'env + redémarrer**, sans développement, **réversible**.
      -d '{"model":"openai/gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}'
    #   APRÈS flip : 200
    ```
-4. **Propager la clé** aux consommateurs claudish listés au pre-flight (via GDrive chiffré, **jamais** RooSync — règle no-secrets-roosync).
+4. **Propager la clé** aux consommateurs claudish listés au pre-flight (via GDrive chiffré ou **message RooSync privé** — attachment + `destruct_after` ; jamais sur un dashboard broadcast, cf [secrets-roosync-policy.md](../../.claude/rules/secrets-roosync-policy.md)).
 
 > ⚠️ **Piège de test** : un `POST /v1/messages` avec un modèle `claude-*` reste **200
 > même après le flip** (pass-through Anthropic exempté). Pour valider le gate, on
