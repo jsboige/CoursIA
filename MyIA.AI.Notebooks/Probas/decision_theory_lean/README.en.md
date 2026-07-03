@@ -27,7 +27,7 @@ Three modules delivered:
   **open milestone** (deliberately not `sorry`-backed).
 
 Lean companion notebook:
-[`Infer/Infer-9-Lean-Gittins.ipynb`](../DecisionTheory/Infer/Infer-9-Lean-Gittins.ipynb).
+[`Infer/Infer-9-Lean-Gittins.ipynb`](../DecisionTheory/DecInfer/DecInfer-9-Lean-Gittins.ipynb).
 
 ## Status
 
@@ -104,7 +104,7 @@ lake build Gittins
 
 ## Notebook companion
 
-[`Infer/Infer-9-Lean-Gittins.ipynb`](../DecisionTheory/Infer/Infer-9-Lean-Gittins.ipynb) — pedagogical
+[`Infer/Infer-9-Lean-Gittins.ipynb`](../DecisionTheory/DecInfer/DecInfer-9-Lean-Gittins.ipynb) — pedagogical
 presentation of the bandit problem and the Gittins index, bridging the Infer.NET
 probabilistic-programming material to the Lean formalization.
 
