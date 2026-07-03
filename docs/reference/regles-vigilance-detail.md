@@ -37,7 +37,7 @@ Avant de relayer un diagnostic technique d'un autre agent dans un dispatch ou un
 
 ## G.3 — Pas de "DONE" sur progres marginal
 
-Si N tracks dispatchees → M < N livrees : rapporter `M/N livrees, (N-M) restantes : <liste>`. Pas de `Cycle X complete` quand Track 1 (le HIGH) n'est pas fait et 7 LOW le sont.
+Si N tracks dispatchées → M < N livrées : rapporter `M/N livrées, (N-M) restantes : <liste>`. Pas de `Cycle X complète` quand Track 1 (le HIGH) n'est pas fait et 7 LOW le sont.
 
 Si sorry count passe de N a N-1 : rapporter `1/N elimine, (N-1) restants`. Pas de "DONE Voting".
 
@@ -64,7 +64,7 @@ Le coordinateur **conteste** (commentaire CHANGES_REQUESTED) au lieu de merger. 
 
 ## G.5 — Shopping cart interdit
 
-Un dispatch > 5 tracks par agent encourage le shopping (LOW d'abord, HIGH reportes). Cibler **2 deep tracks max par agent** par cycle, avec **criteres de sortie verifiables** (compile log, multi-seed verdict, build SUCCESS, healthcheck E2E). Pas de Track LOW pour combler.
+Un dispatch > 5 tracks par agent encourage le shopping (LOW d'abord, HIGH reportées). Cibler **2 deep tracks max par agent** par cycle, avec **critères de sortie vérifiables** (compile log, multi-seed verdict, build SUCCESS, healthcheck E2E). Pas de Track LOW pour combler.
 
 Si un agent finit ses 2 tracks avant la coord finale : il attend, il n'invente pas une 3e mission. Laisser les LOW au cycle suivant.
 
@@ -102,9 +102,9 @@ Cf [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipl
 
 ## G.9 — Culture du doute
 
-Avant d'envoyer un rapport ou de merger : se demander explicitement "est-ce que je pourrais avoir tort ?". Si oui, vérifier. Une affirmation surprenante (ex: "le multi-agent prover existe deja") merite vérification avant relais.
+Avant d'envoyer un rapport ou de merger : se demander explicitement "est-ce que je pourrais avoir tort ?". Si oui, vérifier. Une affirmation surprenante (ex: "le multi-agent prover existe déjà") merite vérification avant relais.
 
-Avant d'accepter une "breakthrough" rapportee par un agent (sorry 5→0, BEATS magique, service restaure en 5min) : reproduire au moins 1 element du resultat. Les vrais succes resistent a la vérification ; les faux positifs s'effondrent.
+Avant d'accepter une "breakthrough" rapportée par un agent (sorry 5→0, BEATS magique, service restaure en 5min) : reproduire au moins 1 element du resultat. Les vrais succès résistent a la vérification ; les faux positifs s'effondrent.
 
 ---
 
