@@ -389,6 +389,41 @@ def get_tweety_bridge_symbol():
     )
 
 
+# -- Tweety Initializer (JPype setup, 3 sibling imports absent) --
+def get_tweety_initializer_symbol():
+    """Lazy import for the TweetyInitializer class symbol.
+
+    Note (G.9 honest caveat): `tweety_initializer.py` ships 3 EPITA-IS-internal
+    sibling imports at module level (none vendored in `argumentation_lib/`
+    today):
+
+      L11: `from argumentation_analysis.core.utils.logging_utils import setup_logging`
+      L14-17:
+        `from argumentation_analysis.core.jvm_setup import (`
+        `    initialize_jvm as initialize_jvm_robustly,`
+        `)`
+      L17: `from argumentation_analysis.core.jvm_setup import shutdown_jvm, is_jvm_started`
+
+    Therefore this module is **NOT standalone-importable today**: even the
+    module-level `import argumentation_lib._tweety_initializer` raises
+    `ModuleNotFoundError: No module named 'argumentation_analysis'` because
+    the top-level imports cannot resolve.
+
+    The lazy accessor preserves API symmetry with the C184/C185/C186a-e
+    accessors but — like the C185/C186b `tweety_bridge` accessors — does
+    **not** bypass the top-level imports.
+
+    **Why deliver the verbatim copy anyway** (G.9 honesty over abandonment):
+    the body is the authoritative source for the future bridge shim in
+    C186g (`_jvm_shutdown_shim.py` + `_jvm_setup` re-export). Runtime
+    usability awaits Volet B etape 4 sub-tranche C186g.
+
+    Chain anchor: `a8025f60` (consistent with C186a/b/c/d/e upstream ports).
+    """
+    from argumentation_lib._tweety_initializer import TweetyInitializer
+    return TweetyInitializer
+
+
 
 __all__ = [
     # config
@@ -416,6 +451,7 @@ __all__ = [
     "get_probabilistic_handler_symbol",
     "get_dialogue_handler_symbol",
     "get_tweety_bridge_symbol",
+    "get_tweety_initializer_symbol",
     # reporting
     "EnhancedGlobalTraceAnalyzer", "enhanced_global_trace_analyzer",
     "start_enhanced_pm_capture", "stop_enhanced_pm_capture",
