@@ -1,30 +1,30 @@
-# Standalone Research Notebooks
+# Notebooks de recherche standalone
 
-Independent research using local data (yfinance, pandas, sklearn). No QuantConnect Cloud required.
+Recherche indépendante utilisant des données locales (yfinance, pandas, sklearn). Aucun QuantConnect Cloud requis.
 
 ## Notebooks
 
-| Notebook | Topic | Type | Data Source |
-|----------|-------|------|-------------|
-| `research_btc_ml.ipynb` | BTC ML prediction features | (c) Standalone | yfinance |
-| `research_composite_ff_aw.ipynb` | FamaFrench + AllWeather composite | (c) Standalone | yfinance |
-| `research_composite_mom_regime.ipynb` | Momentum + Regime composite | (c) Standalone | yfinance |
-| `research_m11ef_ensemble.ipynb` | Ensemble methods | (c) Standalone | yfinance |
-| `research_m12_har_rv_j.ipynb` | HAR-RV-J volatility model (hourly) | (c) Standalone | yfinance |
+| Notebook | Sujet | Type | Source de données |
+|----------|-------|------|-------------------|
+| `research_btc_ml.ipynb` | Caractéristiques de prédiction ML BTC | (c) Standalone | yfinance |
+| `research_composite_ff_aw.ipynb` | Composite FamaFrench + AllWeather | (c) Standalone | yfinance |
+| `research_composite_mom_regime.ipynb` | Composite Momentum + Régime | (c) Standalone | yfinance |
+| `research_m11ef_ensemble.ipynb` | Méthodes d'ensemble | (c) Standalone | yfinance |
+| `research_m12_har_rv_j.ipynb` | Modèle de volatilité HAR-RV-J (horaire) | (c) Standalone | yfinance |
 | `research_m12_har_rv_j_minute.ipynb` | M12-HF : variante minute (QuantBook QC Cloud) | (c) Standalone | QC Cloud crypto |
 | `research_m12_hf_btc_local.ipynb` | M12-HF : verdict BTC minute vs hourly (local) | (c) Standalone | BTC tick Bitstamp |
 | `research_m12_hf_dm_test.ipynb` | M12-HF : test de significativité Diebold-Mariano | (c) Standalone | BTC tick Bitstamp |
-| `research_quality_lowvol.ipynb` | Quality + Low Vol factor | (c) Standalone | yfinance |
-| `research_risk_parity.ipynb` | Risk parity allocation | (c) Standalone | yfinance |
-| `research_rl_grpo.ipynb` | RL GRPO trading agent | (c) Standalone | yfinance |
-| `research_rl_intro.ipynb` | RL introduction | (c) Standalone | yfinance |
-| `research_rl_multi_asset.ipynb` | RL multi-asset allocation | (c) Standalone | yfinance |
-| `research_rl_ppo.ipynb` | PPO trading agent | (c) Standalone | yfinance |
-| `research_rl_reward_shaping.ipynb` | RL reward shaping | (c) Standalone | yfinance |
-| `research_rl_tactical_overlay.ipynb` | RL tactical overlay | (c) Standalone | yfinance |
-| `research_vrp_putwrite.ipynb` | VRP put-write strategy | (c) Standalone | yfinance |
+| `research_quality_lowvol.ipynb` | Facteur Quality + Low Vol | (c) Standalone | yfinance |
+| `research_risk_parity.ipynb` | Allocation risk parity | (c) Standalone | yfinance |
+| `research_rl_grpo.ipynb` | Agent de trading RL GRPO | (c) Standalone | yfinance |
+| `research_rl_intro.ipynb` | Introduction au RL | (c) Standalone | yfinance |
+| `research_rl_multi_asset.ipynb` | Allocation multi-actifs RL | (c) Standalone | yfinance |
+| `research_rl_ppo.ipynb` | Agent de trading PPO | (c) Standalone | yfinance |
+| `research_rl_reward_shaping.ipynb` | Reward shaping RL | (c) Standalone | yfinance |
+| `research_rl_tactical_overlay.ipynb` | Overlay tactique RL | (c) Standalone | yfinance |
+| `research_vrp_putwrite.ipynb` | Stratégie VRP put-write | (c) Standalone | yfinance |
 
-All 17 notebooks are type **(c) standalone research**. La plupart s'exécutent localement avec `pip install yfinance pandas matplotlib scikit-learn` ; la famille M12-HF (3 notebooks) utilise des données tick BTC Bitstamp possédées (agrégées en minute localement), et la variante `_minute` est un QuantBook à exécuter sur QC Cloud.
+Les 17 notebooks sont de type **(c) standalone research**. La plupart s'exécutent localement avec `pip install yfinance pandas matplotlib scikit-learn` ; la famille M12-HF (3 notebooks) utilise des données tick BTC Bitstamp possédées (agrégées en minute localement), et la variante `_minute` est un QuantBook à exécuter sur QC Cloud.
 
 ---
 
