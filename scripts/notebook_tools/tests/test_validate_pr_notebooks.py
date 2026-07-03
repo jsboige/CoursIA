@@ -102,6 +102,7 @@ class TestValidateNotebookH3:
         assert result["passed"] is True
         assert result["total_code"] == 2
         assert result["errors"] == []
+        assert result["forensic_verdict"] == "EXEC_PROVED"
 
     def test_null_exec_count_fails(self, tmp_path):
         nb = _write_nb(tmp_path / "test.ipynb", [
@@ -110,30 +111,67 @@ class TestValidateNotebookH3:
         result = validate_notebook(nb)
         assert result["passed"] is False
         assert any("execution_count is null" in e for e in result["errors"])
+        assert result["forensic_verdict"] == "STRUCTURAL_ONLY"
 
-    def test_skip_exec_for_dotnet_kernel(self, tmp_path):
-        """dotnet kernel notebooks skip execution_count check."""
+    def test_dotnet_null_exec_count_fails_5214(self, tmp_path):
+        """A .NET Interactive notebook with a null execution_count FAILS —
+        dotnet-interactive runs locally on every worker, so a committed .NET
+        cell must prove execution (#5214: "CI skip .NET" != "outputs may be
+        empty"). Regression guard for the Tweety-3 cluster (#5194/#5199/#5202)
+        merged at execution_count:null + outputs:[]."""
         nb = _write_nb(tmp_path / "test.ipynb", [
             _code("Console.WriteLine(\"hi\")", exec_count=None),
         ], kernelspec={"name": ".net-csharp", "language": "C#"})
         result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("execution_count is null" in e and "#5214" in e
+                   for e in result["errors"])
+        assert result["forensic_verdict"] == "STRUCTURAL_ONLY"
+
+    def test_dotnet_exec_proved_passes(self, tmp_path):
+        """A .NET notebook executed locally (execution_count set) PASSes and is
+        stamped EXEC_PROVED — the verdict a reviewer/bot trusts (#5214, H.5)."""
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code("Console.WriteLine(\"hi\")", exec_count=1,
+                  outputs=[{"output_type": "stream", "name": "stdout",
+                            "text": ["hi"]}]),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
         assert result["passed"] is True
+        assert result["forensic_verdict"] == "EXEC_PROVED"
+
+    def test_dotnet_empty_outputs_with_exec_count_passes(self, tmp_path):
+        """A .NET cell that ran but produced no display output (e.g. a pure
+        assignment `var x = 5;`) still PASSes — execution_count is the proof
+        of execution, NOT a non-empty outputs list. This is the crucial
+        distinction: null exec_count (never ran) FAILs, but exec_count set +
+        empty outputs (ran, no output) is legitimate (#5214)."""
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code("var x = 5;", exec_count=1),
+        ], kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert result["forensic_verdict"] == "EXEC_PROVED"
 
     def test_skip_exec_for_lean_kernel(self, tmp_path):
+        """Lean notebooks tolerate a null execution_count (kept advisory — own
+        rendering subtleties via lean4_jupyter/alectryon, out of #5214 scope)."""
         nb = _write_nb(tmp_path / "test.ipynb", [
             _code("#check Nat", exec_count=None),
         ], kernelspec={"name": "lean4", "language": "lean4"})
         result = validate_notebook(nb)
         assert result["passed"] is True
+        assert result["forensic_verdict"] == "ADVISORY_NON_EXEC"
 
     def test_skip_exec_for_qc_cloud_path(self, tmp_path):
-        """Notebooks in QuantConnect/ paths skip execution check."""
+        """Notebooks in QuantConnect/ paths skip execution check (need QC Cloud)."""
         qc_path = tmp_path / "QuantConnect" / "Python" / "test.ipynb"
         nb = _write_nb(qc_path, [
             _code("qb = QuantBook()", exec_count=None),
         ])
         result = validate_notebook(nb)
         assert result["passed"] is True
+        assert result["forensic_verdict"] == "ADVISORY_NON_EXEC"
 
     def test_skip_exec_for_qc_projects_path(self, tmp_path):
         qc_path = tmp_path / "QuantConnect" / "projects" / "test.ipynb"
