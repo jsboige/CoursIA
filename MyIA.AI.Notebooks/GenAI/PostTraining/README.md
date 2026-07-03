@@ -61,7 +61,7 @@ La rupture mémoire de 2024. PPO classique nécessite (1) la policy, (2) une cop
 
 ### RLVR — RL with Verifiable Rewards (Deepseek-R1 2025)
 
-L'innovation méthodologique de 2025. Au lieu d'apprendre un Reward Model sur des préférences (cycle long, biaisé par les annotateurs), on utilise des tâches dont la réponse est vérifiable **algorithmiquement** : équations math (`sympy.simplify(answer - target) == 0`), code (`exec(code); assert tests`), traduction (`bleu_score(translation, reference) > seuil`). Le RM devient un vérificateur exact, ce qui élimine toute la complexité RLHF en aval. C'est ce qui a rendu possible Deepseek-R1 : combiné avec GRPO, on entraîne sur des prompts math/code sans aucune annotation humaine, et le modèle développe spontanément des chains-of-thought longs. Limite : applicable uniquement aux tâches vérifiables (math, code, logique formelle), pas aux tâches subjectives (écriture créative, conseil).
+L'innovation méthodologique de 2025. Au lieu d'apprendre un Reward Model sur des préférences (cycle long, biaisé par les annotateurs), on utilise des tâches dont la réponse est vérifiable **algorithmiquement** : équations math (`sympy.simplify(answer - target) == 0`), code (`exec(code); assert tests`), traduction (`bleu_score(translation, référence) > seuil`). Le RM devient un vérificateur exact, ce qui élimine toute la complexité RLHF en aval. C'est ce qui a rendu possible Deepseek-R1 : combiné avec GRPO, on entraîne sur des prompts math/code sans aucune annotation humaine, et le modèle développe spontanément des chains-of-thought longs. Limite : applicable uniquement aux tâches vérifiables (math, code, logique formelle), pas aux tâches subjectives (écriture créative, conseil).
 
 ## Architecture conceptuelle
 
@@ -90,7 +90,7 @@ L'innovation méthodologique de 2025. Au lieu d'apprendre un Reward Model sur de
                   ┌──────────▼───────────┐
                   │  Eval (PT-06)        │
                   │  GSM8K, IFEval       │
-                  │  comparaison metriques│
+                  │  comparaison métriques│
                   └──────────────────────┘
 ```
 
