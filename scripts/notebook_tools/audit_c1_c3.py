@@ -76,9 +76,12 @@ def check_c1(nb_path: Path) -> list[dict]:
         source = "".join(cell.get("source", []))
         in_doc = False
         for line in source.split("\n"):
-            if line.lstrip().startswith("#"):
+            # Skip full-line comments (Python '#' or C-family '//', e.g. C#).
+            stripped = line.lstrip()
+            if stripped.startswith("#") or stripped.startswith("//"):
                 continue
-            code_part = line.split("#")[0].rstrip()
+            # Strip inline comments before checking patterns (both '#' and '//').
+            code_part = re.split(r"#|//", line, maxsplit=1)[0].rstrip()
             in_doc, inside = _is_in_docstring(line, in_doc)
             if inside:
                 continue

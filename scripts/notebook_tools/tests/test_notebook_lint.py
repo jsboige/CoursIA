@@ -132,6 +132,25 @@ class TestScanC1Source:
         hits = scan_c1_source("pass  # raise NotImplementedError")
         assert hits == []
 
+    def test_csharp_line_comment_not_flagged(self):
+        """C-family '//' comment mentioning a banned pattern is not code (#5261).
+
+        A .net-csharp stub whose comment reads
+        '// stub : pas de raise NotImplementedError' must not false-flag C.1.
+        """
+        hits = scan_c1_source("// Cellule stub : pas de raise NotImplementedError")
+        assert hits == []
+
+    def test_csharp_inline_comment_stripped(self):
+        hits = scan_c1_source('Console.WriteLine("ok");  // raise NotImplementedError')
+        assert hits == []
+
+    def test_csharp_executable_division_still_flagged(self):
+        """Executable C# 'int x = 1/0;' sits before any '//' and is still caught."""
+        hits = scan_c1_source("int x = 1/0;  // divide by zero")
+        assert len(hits) == 1
+        assert hits[0][1] == "1/0"
+
     def test_date_not_flagged(self):
         """Date 21/02/2022 should not be flagged as 1/0."""
         hits = scan_c1_source("date = '21/02/2022'")
