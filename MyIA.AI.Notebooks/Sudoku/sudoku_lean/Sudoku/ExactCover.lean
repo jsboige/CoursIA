@@ -39,11 +39,15 @@ La sélection associée à une affectation `σ` est `toSelection σ = {(c, σ c)
 
 ## Résultat
 
-Le théorème principal `solution_imp_exact_cover` (sous l'hypothèse « pleine
+Le théorème capstone `sudoku_iff_exact_cover` (sous l'hypothèse « pleine
 maison » `∀ s ∈ scopes, s.card = card V`, satisfaite par le Sudoku 9×9 où chaque
-portée a 9 cellules pour 9 valeurs) établit le **sens direct** de l'équivalence :
+portée a 9 cellules pour 9 valeurs) établit l'**équivalence complète** entre
+résoudre le Sudoku et résoudre un problème de couverture exacte :
 
-  `IsSolution scopes σ → IsExactCover (toSelection σ) scopes`.
+  `(∃ σ, IsSolution scopes σ) ↔ (∃ sel, IsExactCover sel scopes)`.
+
+**Sens direct** `solution_imp_exact_cover` — une solution est une couverture
+exacte :
 
 - Chaque **cellule** est couverte exactement une fois — par construction de
   `toSelection` (une option `(c, σ c)` par cellule), via `mem_toSelection_iff`.
@@ -53,12 +57,20 @@ portée a 9 cellules pour 9 valeurs) établit le **sens direct** de l'équivalen
   `full_house_present` (`Sudoku.Basic`), qui dit que dans une portée pleine,
   toute valeur apparaît.
 
-**Cadrage honnête (G.3/G.9).** Le sens direct est prouvé intégralement (0
-`sorry`). Le sens retour (couverture exacte ⇒ solution) et l'équivalence
-complète `sudoku_iff_exact_cover` sont le jalon suivant — délibérément **non
-`sorry`-backed**, pour garder la bibliothèque entièrement `sorry`-free (comme
-`Propagation.lean` gardait ce même jalon ouvert). Le résultat de calcul massif
-« 17 indices minimum » reste hors scope (non formalisable).
+**Sens retour** `exact_cover_imp_solution` — une couverture exacte redonne une
+solution : l'affectation reconstruite `fromSelection` (la valeur unique de
+chaque cellule) est toutes-distinctes sur chaque portée, car deux cellules d'une
+même portée portant la même valeur violeraient l'unicité `∃!` de la paire
+(portée, valeur) ; et sa sélection redonne exactement `sel`
+(`toSelection_fromSelection`).
+
+**Cadrage honnête (G.3/G.9).** L'équivalence est prouvée intégralement (0
+`sorry`). Les axiomes sont le trio standard du noyau Lean 4 (`propext`,
+`Classical.choice`, `Quot.sound`) — `Classical.choice` intervient pour la
+construction non constructive `fromSelection` (extraire un témoin par cellule
+depuis l'`∃!` de couverture), comme toute preuve Mathlib-dépendante ; aucun
+axiome ad hoc. Le résultat de calcul massif « 17 indices minimum » reste hors
+scope (non formalisable).
 -/
 
 namespace Sudoku
@@ -133,5 +145,74 @@ theorem solution_imp_exact_cover (scopes : Scopes ι) (σ : Solution ι V)
     ExactCover.IsExactCover (toSelection σ) scopes :=
   ⟨fun c => toSelection_cell_unique σ c,
    fun s hs v => toSelection_scopeVal_unique σ s v (hfull s hs) (hσ s hs)⟩
+
+/-! ## Sens retour : une couverture exacte est une solution -/
+
+/-- **Construction inverse.** À partir d'une sélection où chaque cellule est
+    couverte exactement une fois, on récupère l'affectation : la valeur unique
+    portée par chaque cellule. Non constructive (extraction d'un témoin par
+    cellule depuis l'`∃!` de couverture) — repose sur l'axiome `Classical.choice`. -/
+noncomputable def fromSelection (sel : ExactCover.Sel ι V)
+    (hcell : ∀ c : ι, ∃! v : V, (c, v) ∈ sel) : Solution ι V :=
+  fun c => Classical.choose (ExistsUnique.exists (hcell c))
+
+/-- La cellule `c` porte bien sa valeur reconstruite dans `sel`. -/
+theorem fromSelection_mem (sel : ExactCover.Sel ι V)
+    (hcell : ∀ c : ι, ∃! v : V, (c, v) ∈ sel) (c : ι) :
+    (c, fromSelection sel hcell c) ∈ sel :=
+  Classical.choose_spec (ExistsUnique.exists (hcell c))
+
+/-- **Caractérisation duale de `mem_toSelection_iff`.** `(c, v)` est dans `sel`
+    si et seulement si la valeur reconstruite de `c` vaut `v` — par unicité de
+    la valeur couvrant `c`. -/
+theorem mem_fromSelection_iff (sel : ExactCover.Sel ι V)
+    (hcell : ∀ c : ι, ∃! v : V, (c, v) ∈ sel) (c : ι) (v : V) :
+    (c, v) ∈ sel ↔ fromSelection sel hcell c = v := by
+  refine ⟨fun hcv => ?_, fun h => ?_⟩
+  · obtain ⟨w, hw, huniq⟩ := hcell c
+    have h1 : fromSelection sel hcell c = w := huniq _ (fromSelection_mem sel hcell c)
+    have h2 : v = w := huniq v hcv
+    rw [h1, h2]
+  · rw [← h]; exact fromSelection_mem sel hcell c
+
+/-- **La sélection reconstruite est la sélection originale.** `toSelection`
+    appliquée à l'affectation reconstruite depuis `sel` redonne exactement
+    `sel` : les deux caractérisations d'appartenance coïncident. -/
+theorem toSelection_fromSelection (sel : ExactCover.Sel ι V)
+    (hcell : ∀ c : ι, ∃! v : V, (c, v) ∈ sel) :
+    toSelection (fromSelection sel hcell) = sel := by
+  ext ⟨c, v⟩
+  rw [mem_toSelection_iff, mem_fromSelection_iff]
+
+/-- **Sens retour de l'équivalence.** Une couverture exacte redonne une
+    solution : l'affectation reconstruite est toutes-distinctes sur chaque
+    portée (car deux cellules d'une même portée portant la même valeur
+    violeraient l'unicité `∃!` de la paire (portée, valeur)), et sa sélection
+    est la sélection originale. -/
+theorem exact_cover_imp_solution (scopes : Scopes ι) (sel : ExactCover.Sel ι V)
+    (hec : ExactCover.IsExactCover sel scopes) :
+    ∃ σ, IsSolution scopes σ ∧ toSelection σ = sel :=
+  ⟨fromSelection sel hec.1,
+   (fun s hs c c' hcs hc's hcc' => by
+      have hcv : (c, fromSelection sel hec.1 c) ∈ sel := fromSelection_mem sel hec.1 c
+      have hc'v : (c', fromSelection sel hec.1 c) ∈ sel := by
+        rw [hcc']; exact fromSelection_mem sel hec.1 c'
+      obtain ⟨c0, ⟨hc0s, hc0v⟩, hc0uniq⟩ := hec.2 s hs (fromSelection sel hec.1 c)
+      rw [hc0uniq c ⟨hcs, hcv⟩, hc0uniq c' ⟨hc's, hc'v⟩]),
+   toSelection_fromSelection sel hec.1⟩
+
+/-- **Équivalence Sudoku ⇔ couverture exacte (Knuth).** Sous l'hypothèse « pleine
+    maison » (le cas du Sudoku 9×9), une structure admet une solution si et
+    seulement si elle admet une couverture exacte. C'est le théorème
+    d'équivalence complet — le sens direct (`solution_imp_exact_cover`) plus le
+    sens retour (`exact_cover_imp_solution`). -/
+theorem sudoku_iff_exact_cover (scopes : Scopes ι)
+    (hfull : ∀ s ∈ scopes, s.card = Fintype.card V) :
+    (∃ σ : Solution ι V, IsSolution scopes σ) ↔
+      (∃ sel : ExactCover.Sel ι V, ExactCover.IsExactCover sel scopes) := by
+  refine ⟨fun ⟨σ, hσ⟩ => ⟨toSelection σ, solution_imp_exact_cover scopes σ hσ hfull⟩,
+          fun ⟨sel, hec⟩ => ?_⟩
+  obtain ⟨σ, hσ, _⟩ := exact_cover_imp_solution scopes sel hec
+  exact ⟨σ, hσ⟩
 
 end Sudoku
