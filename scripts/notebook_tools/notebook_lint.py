@@ -64,16 +64,24 @@ def scan_c1_source(source: str) -> list[tuple[str, str]]:
     substring) is not flagged. This is the single shared C.1 detector; both
     notebook_lint and validate_pr_notebooks consume it to avoid divergence
     (#1505).
+
+    Comment syntax is language-agnostic here: both Python '#' and C-family '//'
+    (C#/.NET Interactive, JS, Java) markers are recognised. Without the '//'
+    case a '.net-csharp' cell whose comment merely *mentions* a banned pattern
+    — e.g. "// stub : pas de raise NotImplementedError" — was flagged as a
+    C.1 violation (false positive on Tweety C# stubs, #5261). Executable C#
+    'int x = 1/0;' is still caught because the pattern sits before any '//'.
     """
     hits: list[tuple[str, str]] = []
     in_docstring = False
     for line in source.split("\n"):
         stripped = line.lstrip()
-        # Skip any comment line (commented-out code is not executable)
-        if stripped.startswith("#"):
+        # Skip any full-line comment (Python '#' or C-family '//');
+        # commented-out code is not executable.
+        if stripped.startswith("#") or stripped.startswith("//"):
             continue
-        # Strip inline comments before checking patterns
-        code_part = line.split("#")[0].rstrip()
+        # Strip inline comments before checking patterns (both '#' and '//').
+        code_part = re.split(r"#|//", line, maxsplit=1)[0].rstrip()
         # Track and skip docstring content
         in_docstring, is_inside = _is_in_docstring(line, in_docstring)
         if is_inside:
