@@ -39,8 +39,8 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 | 9 | [Search-9-LinearProgramming](Search-9-LinearProgramming.ipynb) | Python 3 | Programmation linéaire avec PuLP, simplex, problème du transport, diet problem, PLNE | ~2h |
 | 10 | [Search-10-SymbolicAutomata](Search-10-SymbolicAutomata.ipynb) | Python 3 | Automates finis (DFA/NFA) avec automata-lib, prédicats Z3, automates symboliques | ~2h |
 | 11 | [Search-11-Metaheuristics](Search-11-Metaheuristics.ipynb) | Python 3 | PSO, ABC, SA, BRO avec MEALPy, benchmark comparatif de métaheuristiques | ~1h30 |
-| 12 | [Search-12-NetworkX](Search-12-NetworkX.ipynb) | Python 3 | Bibliothèque de graphes `networkx` : `Graph`/`DiGraph`, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, composantes connexes, MST, Floyd-Warshall, parité structurelle avec QuikGraph (Search-13) | ~1h |
-| 13 | [Search-13-QuikGraph](Search-13-QuikGraph.ipynb) | .NET (C#) | Bibliothèque de graphes QuikGraph 2.5.0 (NuGet) : AdjacencyGraph / BidirectionalGraph / UndirectedGraph, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, composantes connexes, Edmonds-Karp (flot max), parité avec NetworkX | ~1h |
+| 15 | [Search-15-NetworkX](Search-15-NetworkX.ipynb) | Python 3 | Bibliothèque de graphes `networkx` : `Graph`/`DiGraph`, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, composantes connexes, MST, Floyd-Warshall, parité structurelle avec QuikGraph (Search-16) | ~1h |
+| 16 | [Search-16-QuikGraph](Search-16-QuikGraph.ipynb) | .NET (C#) | Bibliothèque de graphes QuikGraph 2.5.0 (NuGet) : AdjacencyGraph / BidirectionalGraph / UndirectedGraph, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, composantes connexes, Edmonds-Karp (flot max), parité avec NetworkX | ~1h |
 
 ## Progression
 
@@ -82,9 +82,9 @@ Pour le setup complet, voir le [README de la série Search](../README.md).
 
 ## Bibliothèques : parité Python `networkx` ↔ .NET `QuikGraph`
 
-Le notebook [Search-13-QuikGraph](Search-13-QuikGraph.ipynb) ferme la boucle côté **.NET Interactive** : il offre l'équivalent C# du notebook Python [Search-12-NetworkX](Search-12-NetworkX.ipynb), avec une table de parité structurelle entre les deux écosystèmes. La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algorithmes classiques (DFS, BFS, Dijkstra, Bellman-Ford, A\*, Edmonds-Karp, Tarjan, MST, Floyd-Warshall) et **suffit pour tous les notebooks Search 1-11** si l'on travaille en C# — son **verdict honnête** est qu'il ne fournit pas les centralités élaborées (betweenness, closeness, PageRank) ni la détection de communautés (Louvain), qu'il faut alors implémenter à la main ou brancher une autre bibliothèque.
+Le notebook [Search-16-QuikGraph](Search-16-QuikGraph.ipynb) ferme la boucle côté **.NET Interactive** : il offre l'équivalent C# du notebook Python [Search-15-NetworkX](Search-15-NetworkX.ipynb), avec une table de parité structurelle entre les deux écosystèmes. La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algorithmes classiques (DFS, BFS, Dijkstra, Bellman-Ford, A\*, Edmonds-Karp, Tarjan, MST, Floyd-Warshall) et **suffit pour tous les notebooks Search 1-11** si l'on travaille en C# — son **verdict honnête** est qu'il ne fournit pas les centralités élaborées (betweenness, closeness, PageRank) ni la détection de communautés (Louvain), qu'il faut alors implémenter à la main ou brancher une autre bibliothèque.
 
-> **Note de numérotation.** Les numéros 12 et 13 réapparaissent dans la [Partie 3 (Recherche avancée)](../Part3-Advanced/README.md) pour `Search-12-PatternDatabases` et `Search-13-LimitedDiscrepancySearch`. Les deux numérotations sont **parallèles par design** : cette Partie 1 utilise 12-13 pour les **bibliothèques de graphes** (parité `networkx` ↔ `QuikGraph`), la Partie 3 réserve 12-14 aux **heuristiques avancées** (Pattern Databases, Limited Discrepancy Search, Weighted A\*). Quand un lien renvoie à `Search-12` ou `Search-13`, la partie d'appartenance lève l'ambiguïté.
+> **Note de numérotation.** Les **bibliothèques de graphes** portent les numéros **15-16** (`Search-15-NetworkX` en Python, `Search-16-QuikGraph` en .NET), volontairement hors de la plage 1-11 des algorithmes fondamentaux et hors de la plage 12-14 réservée à la [Partie 3](../Part3-Advanced/README.md) (heuristiques avancées : `Search-12-PatternDatabases`, `Search-13-LimitedDiscrepancySearch`, `Search-14-WeightedAstar`). Chaque numéro désigne désormais un notebook unique.
 
 ## Ponts vers les autres séries
 
