@@ -81,7 +81,7 @@ Pour le setup complet, voir le [README de la série Search](../README.md).
 
 ## Bibliothèques : parité Python `networkx` ↔ .NET `QuikGraph`
 
-Le notebook [Search-13-QuikGraph](Search-13-QuikGraph.ipynb) ferme la boucle côté **.NET Interactive** : il offre l'équivalent C# du notebook Python [Search-12-NetworkX](../Part2-CSP/Search-12-NetworkX.ipynb), avec une table de parité structurelle entre les deux écosystèmes. La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algorithmes classiques (DFS, BFS, Dijkstra, Bellman-Ford, A\*, Edmonds-Karp, Tarjan, MST, Floyd-Warshall) et **suffit pour tous les notebooks Search 1-11** si l'on travaille en C# — son **verdict honnête** est qu'il ne fournit pas les centralités élaborées (betweenness, closeness, PageRank) ni la détection de communautés (Louvain), qu'il faut alors implémenter à la main ou brancher une autre bibliothèque.
+Le notebook [Search-13-QuikGraph](Search-13-QuikGraph.ipynb) ferme la boucle côté **.NET Interactive** : il offre l'équivalent C# du notebook Python [Search-12-NetworkX](Search-12-NetworkX.ipynb), avec une table de parité structurelle entre les deux écosystèmes. La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algorithmes classiques (DFS, BFS, Dijkstra, Bellman-Ford, A\*, Edmonds-Karp, Tarjan, MST, Floyd-Warshall) et **suffit pour tous les notebooks Search 1-11** si l'on travaille en C# — son **verdict honnête** est qu'il ne fournit pas les centralités élaborées (betweenness, closeness, PageRank) ni la détection de communautés (Louvain), qu'il faut alors implémenter à la main ou brancher une autre bibliothèque.
 
 ## Ponts vers les autres séries
 
