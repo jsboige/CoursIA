@@ -1,4 +1,40 @@
 /-
+  Enchère scellée au second prix (Vickrey)
+  ========================================
+
+  Le résultat compagnon de `Auction.lean` (enchère au premier prix) :
+  dans l'enchère au second prix (Vickrey 1961), le gagnant paie l'offre
+  PERDANTE, et l'offre sincère devient une stratégie faiblement
+  dominante — pour tout nombre de valorisations `n`, pas seulement sur
+  les petites instances.
+
+  Encodage (mêmes conventions que `Auction.lean`, Lean 4 core seul) :
+  - Les valorisations sont les *types*, les offres sont les *actions*
+    d'un `BayesGame2` avec un poids de prior uniforme 1.
+  - Les utilités sont mises à l'échelle par 2 pour que le cas d'égalité
+    reste dans `Int` : gain = `2*(v - b_opp)` (payer l'offre adverse),
+    égalité = `v - b`, perte = `0`.
+
+  Résultats (tous pour `n` arbitraire) :
+  - `spa_truthful_dominant1/2` : l'offre sincère domine faiblement toute
+    autre offre PONCTUELLEMENT — face à toute offre adverse, dans tout
+    état. C'est l'argument classique de dominance de Vickrey, par
+    disjonction des cas sur qui gagne.
+  - `spa_interim_best1/2` : la dominance ponctuelle se transfère à
+    l'utilité interimaire via `sumFin_mono`.
+  - `spa_truthful_bne` : le profil sincère est un équilibre de Nash
+    bayésien pour TOUT `n` — un théorème général, contrastant avec
+    l'enchère au premier prix où l'offre sincère n'est pas un BNE
+    (`truthful_not_bne_two/three` dans `Auction.lean`).
+  - `spa_truthful_pos_three` : contrairement à l'enchère au premier prix
+    (où l'offre sincère rapporte exactement 0, `interimU1_truthful`), le
+    soumissionnaire sincère de Vickrey conserve une rente informationnelle
+    strictement positive (instance vérifiée au noyau).
+
+  Voir #2610 (formalisation GT-Lean, phase bayésienne 3).
+
+  ---
+  English:
   Second-Price Sealed-Bid (Vickrey) Auction
   =========================================
 
@@ -35,7 +71,11 @@
 
 import Bayesian.BNE
 
-/-- Second-price sealed-bid auction with two bidders, valuations and
+/-- Enchère scellée au second prix à deux enchérisseurs, valorisations et
+    offres dans `Fin n`, prior uniforme. Le gagnant paie l'offre adverse ;
+    les utilités sont mises à l'échelle par 2 pour que le cas d'égalité
+    reste entier.
+    English: Second-price sealed-bid auction with two bidders, valuations and
     bids in `Fin n`, uniform prior. The winner pays the opponent's
     bid; utilities are scaled by 2 so the tie split stays integral. -/
 @[reducible] def spa (n : Nat) : BayesGame2 where
@@ -53,13 +93,22 @@ import Bayesian.BNE
     else if b1.val = b2.val then (v2.val : Int) - b1.val
     else 0
 
-/-- Truthful bidding for player 1 in the second-price auction. -/
+/-- Offre sincère du joueur 1 dans l'enchère au second prix.
+    English: Truthful bidding for player 1 in the second-price auction. -/
 @[reducible] def spaTruthful1 (n : Nat) : Strategy1 (spa n) := fun v => v
 
-/-- Truthful bidding for player 2 in the second-price auction. -/
+/-- Offre sincère du joueur 2 dans l'enchère au second prix.
+    English: Truthful bidding for player 2 in the second-price auction. -/
 @[reducible] def spaTruthful2 (n : Nat) : Strategy2 (spa n) := fun v => v
 
-/-- Vickrey's dominance argument, player 1: truthful bidding weakly
+/-- Argument de dominance de Vickrey, joueur 1 : l'offre sincère domine
+    faiblement toute autre offre face à toute offre adverse, dans tout
+    état. Quel que soit l'adversaire et son offre, dévier de `v` ne peut
+    que faire perdre une victoire rentable (cas `b1 < v`) ou acheter une
+    victoire non rentable (cas `b1 > v`) — cela n'améliore jamais l'offre
+    `v`, parce que le PRIX (l'offre adverse) ne dépend pas de sa propre
+    offre.
+    English: Vickrey's dominance argument, player 1: truthful bidding weakly
     dominates every other bid against every opponent bid, in every
     state. Whoever the opponent is and whatever they bid, deviating
     from `v` can only forfeit a profitable win (`b1 < v`-type cases)
@@ -77,7 +126,8 @@ theorem spa_truthful_dominant1 (n : Nat) (v t2 b1 b2 : Fin n) :
   repeat' split
   all_goals omega
 
-/-- Vickrey's dominance argument, player 2 (symmetric). -/
+/-- Argument de dominance de Vickrey, joueur 2 (symétrique).
+    English: Vickrey's dominance argument, player 2 (symmetric). -/
 theorem spa_truthful_dominant2 (n : Nat) (t1 v b1 b2 : Fin n) :
     (spa n).u2 t1 v b1 b2 ≤ (spa n).u2 t1 v b1 v := by
   show (if b1.val < b2.val then 2 * ((v.val : Int) - b1.val)
@@ -89,7 +139,10 @@ theorem spa_truthful_dominant2 (n : Nat) (t1 v b1 b2 : Fin n) :
   repeat' split
   all_goals omega
 
-/-- Pointwise dominance transfers to interim expected utility: against
+/-- La dominance ponctuelle se transfère à l'utilité interimaire : face à
+    N'IMPORTE QUELLE stratégie adverse, tout type du joueur 1 préfère
+    faiblement l'offre sincère (par monotonie de la somme pondérée).
+    English: Pointwise dominance transfers to interim expected utility: against
     ANY opponent strategy, every type of player 1 weakly prefers the
     truthful bid (via monotonicity of the weight-sum). -/
 theorem spa_interim_best1 (n : Nat) (v a : Fin n) (s2 : Strategy2 (spa n)) :
@@ -99,7 +152,8 @@ theorem spa_interim_best1 (n : Nat) (v a : Fin n) (s2 : Strategy2 (spa n)) :
   exact Int.mul_le_mul_of_nonneg_left
     (spa_truthful_dominant1 n v t2 a (s2 t2)) (by omega)
 
-/-- Interim best response, player 2 side. -/
+/-- Meilleure réponse interimaire, côté joueur 2.
+    English: Interim best response, player 2 side. -/
 theorem spa_interim_best2 (n : Nat) (v a : Fin n) (s1 : Strategy1 (spa n)) :
     interimU2 (spa n) v a s1 ≤ interimU2 (spa n) v (spaTruthful2 n v) s1 := by
   apply sumFin_mono
@@ -107,7 +161,12 @@ theorem spa_interim_best2 (n : Nat) (v a : Fin n) (s1 : Strategy1 (spa n)) :
   exact Int.mul_le_mul_of_nonneg_left
     (spa_truthful_dominant2 n t1 v (s1 t1) a) (by omega)
 
-/-- **Vickrey's theorem** (finite, two bidders): the truthful profile
+/-- **Théorème de Vickrey** (fini, deux enchérisseurs) : le profil sincère
+    est un équilibre de Nash bayésien de l'enchère au second prix pour
+    TOUT `n`. Un théorème général — pas de `decide`, pas de vérification
+    d'instance — contrastant avec l'enchère au premier prix, où l'offre
+    sincère n'est pas un BNE (`truthful_not_bne_two/three`).
+    English: **Vickrey's theorem** (finite, two bidders): the truthful profile
     is a Bayesian Nash equilibrium of the second-price auction for
     EVERY `n`. A general theorem — no `decide`, no instance checking —
     in contrast with the first-price auction, where truthful bidding
@@ -117,7 +176,13 @@ theorem spa_truthful_bne (n : Nat) :
   ⟨fun t1 a => spa_interim_best1 n t1 a (spaTruthful2 n),
    fun t2 a => spa_interim_best2 n t2 a (spaTruthful1 n)⟩
 
-/-- Information rent: in the truthful Vickrey equilibrium with
+/-- Rente informationnelle : dans l'équilibre sincère de Vickrey avec
+    valorisations `{0, 1, 2}`, le type haut gagne une utilité interimaire
+    strictement positive (concrètement 6, mis à l'échelle : gagne en
+    payant 0 et 1 face aux types bas, à égalité à 2 pour un surplus nul)
+    — alors que l'offre sincère dans l'enchère au PREMIER prix rapporte
+    exactement 0 (`interimU1_truthful` dans `Auction.lean`).
+    English: Information rent: in the truthful Vickrey equilibrium with
     valuations `{0, 1, 2}`, the high type earns strictly positive
     interim utility (concretely 6, scaled: wins paying 0 and 1
     against the low types, ties at 2 for zero surplus) — whereas
