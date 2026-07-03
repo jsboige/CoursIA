@@ -82,7 +82,7 @@ La série illustre ce fil rouge sur plusieurs notebooks, chacun sur un cas non-c
 
 > **Théorie de la décision** : les notebooks décisionnels (utilité espérée, EVPI, MDPs, bandits) forment désormais une sous-série autonome dans [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (1 à 7), miroir Python de [DecisionTheory/Infer/](../DecisionTheory/Infer/README.md).
 
-> **Numérotation** : le notebook **14** (inférence causale) porte ce numéro par **parité** avec son jumeau C# [Infer-14-Causal-Inference](../Infer/Infer-14-Causal-Inference.ipynb). Le sujet de [Infer-10-Thompson-Sampling](../DecisionTheory/Infer/Infer-10-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [PyMC-7-Sequential](../DecisionTheory/PyMC/PyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
+> **Numérotation** : le notebook **14** (inférence causale) porte ce numéro par **parité** avec son jumeau C# [Infer-14-Causal-Inference](../Infer/Infer-14-Causal-Inference.ipynb). Le sujet de [Infer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [PyMC-7-Sequential](../DecisionTheory/PyMC/PyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
 
 > **Ponts causaux** : [PyMC-14](PyMC-14-Causal-Inference.ipynb) est le maillon **MCMC** d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau **message passing** en C# [Infer-14](../Infer/Infer-14-Causal-Inference.ipynb) (Infer.NET, EP/VMP), le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb). Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
@@ -261,7 +261,7 @@ Cette série vous a fait passer des **fondamentaux de l'inférence bayésienne**
 
 ### Prochaines étapes
 
-- **Approfondir la théorie de la décision** — [Infer-4-Multi-Attribute](../DecisionTheory/Infer/Infer-4-Multi-Attribute.ipynb) et [Infer-8-Sequential](../DecisionTheory/Infer/Infer-8-Sequential.ipynb) reprennent ces modèles en message passing pour comparer les deux moteurs sur les mêmes problèmes.
+- **Approfondir la théorie de la décision** — [Infer-4-Multi-Attribute](../DecisionTheory/DecInfer/DecInfer-4-Multi-Attribute.ipynb) et [Infer-8-Sequential](../DecisionTheory/DecInfer/DecInfer-8-Sequential.ipynb) reprennent ces modèles en message passing pour comparer les deux moteurs sur les mêmes problèmes.
 - **Aller plus loin en inférence bayésienne** — *Statistical Rethinking* (McElreath, cité en Ressources) est le prolongement naturel de cette série pour les modèles hiérarchiques et la réflexion épistémologique sur les priors.
 - **Appliquer au trading et au ML** — les ponts vers [QuantConnect](../../QuantConnect/) et [ML](../../ML/) ouvrent la mise en production : modèles bayésiens de stratégie, régression logistique bayésienne, incertitude calibrée en prédiction.
 
