@@ -43,6 +43,23 @@ COMPOUND_HINT_RE = re.compile(
     r'^(indice|astuce|hint|tip|conseil|note|remarque|attention|todo|'
     r'etape|étape|step|rappel|warning|important|aide|piste|nb)-',
     re.IGNORECASE)
+# `Step`/`Étape` followed by a NON-numeric word forms a technical compound
+# noun (`Step recursif` = the recursive step of an algorithm, `Step function`,
+# `Step response`, `Étape méthodologique`) — a real subsection title, not the
+# bare numbered aside `## Étape 3` (which stays flagged). Distinct from
+# TITLED_STEP_RE (`Step N: Title`). Deliberately scoped to step/etape ONLY,
+# NOT the whole hint list, so `## Note pédagogique` (a legit bare aside per
+# the design above) stays flagged. See #3968.
+STEP_COMPOUND_RE = re.compile(
+    r'^(step|etape|étape)\s+[^\d\s:-]',
+    re.IGNORECASE)
+# `Rappel` followed by a reference token that contains a digit (`Rappel ICT-10`,
+# `Rappel du chapitre 3`, `Rappel ... la strate 4`) = a recap SECTION pointing
+# back at prior named content, not a bare aside (`## Rappel`). A bare
+# `## Rappel` has no digit reference, so it stays flagged. See #3968.
+RAPPEL_REFERENCE_RE = re.compile(
+    r'^rappel\s+.*\d',
+    re.IGNORECASE)
 
 def scan_notebook(path):
     try:
@@ -78,7 +95,9 @@ def scan_notebook(path):
                     findings.append({'kind': 'H1-DEEP', 'cell': ci, 'level': level, 'text': text[:90]})
             if (HINT_RE.match(text)
                     and not TITLED_STEP_RE.match(text)
-                    and not COMPOUND_HINT_RE.match(text)):
+                    and not COMPOUND_HINT_RE.match(text)
+                    and not STEP_COMPOUND_RE.match(text)
+                    and not RAPPEL_REFERENCE_RE.match(text)):
                 findings.append({'kind': 'HINT-AS-HEADING', 'cell': ci, 'level': level, 'text': text[:90]})
     if len(h1_cells) > 1:
         findings.insert(0, {'kind': 'MULTI-H1', 'cell': h1_cells[0], 'level': 1,
