@@ -21,6 +21,8 @@ CoursIA copy
 | `_tweety_bridge.py` (488 lines) | `argumentation_analysis/agents/core/logic/tweety_bridge.py` | a8025f60 (2026-07-02) |
 | `_pl_handler.py` (689 lines)        | `argumentation_analysis/agents/core/logic/pl_handler.py` | a8025f60 (2026-07-02) |
 | `_fol_handler.py` (1163 lines)      | `argumentation_analysis/agents/core/logic/fol_handler.py` | a8025f60 (2026-07-02) |
+| `_modal_handler.py` (327 lines)    | `argumentation_analysis/agents/core/logic/modal_handler.py` | a8025f60 (2026-07-02) |
+| `_adf_handler.py` (161 lines)      | `argumentation_analysis/agents/core/logic/adf_handler.py` | a8025f60 (2026-07-02) |
 
 Rationale for verbatim import
 -----------------------------
@@ -269,6 +271,84 @@ CoursIA's native JPype runtime.
 **Sub-tranche plan (after this PR)** :
 
 - **C186c** (future) : `modal_handler.py` + `adf_handler.py` = 525L.
+- **C186d** (future) : `af_handler.py` + `ranking_handler.py` = 354L.
+- **C186e** (future) : `belief_revision_handler.py` +
+  `probabilistic_handler.py` + `dialogue_handler.py` = 463L.
+- **C186f** (future) : `tweety_initializer.py` 365L -- initializer isole.
+- **C186g** (future) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L
+  wrapping `argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`.
+
+**Excluded by ai-01 mandate** (gap NL->structured) : `bipolar_handler.py`,
+`aba_handler.py`, `aspic_handler.py`. **Out of scope** : `setaf_handler.py`,
+`weighted_handler.py`, `social_handler.py` (not imported by upstream
+`tweety_bridge.py:29-41`).
+
+Volet B etape 4 sub-tranche C186c (modal_handler + adf_handler)
+---------------------------------------------------------------
+
+PR #XXXX (C186c) added `_modal_handler.py` (327L) and `_adf_handler.py`
+(161L) as verbatim copies of the EPITA-IS `modal_handler.py` and
+`adf_handler.py` modules at commit `a8025f60`. These are the **Modal
+Logic** and **Abstract Dialectical Framework** core handlers for the
+JPype-based Tweety bridge runtime.
+
+Symbols exposed (2 public via lazy accessors):
+
+- `get_modal_handler_symbol()` -> `ModalHandler` class (lazy import)
+- `get_adf_handler_symbol()` -> `ADFHandler` class (lazy import)
+
+Verbatim integrity:
+- `_modal_handler.py` body SHA1=`ea424fff87cccd77c322d5a97ff0c516190f0f54`
+  (327L, no prelude, starts with `import jpype`).
+- `_adf_handler.py` body SHA1=`3ac651e01cdfde50641710c5ef3ebddb8154761d`
+  (161L, no prelude, starts with `"""Handler for Abstract Dialectical`).
+- LF line endings (no CRLF), UTF-8 (no BOM), full upstream SHA1 == body SHA1
+  (no shebang prelude).
+
+Dependency disclosure (G.9 honest caveat):
+
+**`_modal_handler.py`** imports at module-load:
+- `from .modal_kb_identifier_normalizer import ModalIdentifierNormalizer`
+  (sibling not vendored, MlParser underscore-normalization #1326)
+- `from .tweety_initializer import TweetyInitializer` (sub-tranche C186f)
+- `from argumentation_analysis.core.config import settings, ModalSolverChoice`
+  (upstream internal settings module, not vendored)
+- `jpype.JClass`, `jpype.JException` (JPype runtime singleton,
+  sub-tranche C186g bridge shim)
+
+Therefore, the `ModalHandler` symbol is **NOT standalone-importable
+today**: `from argumentation_lib._modal_handler import ModalHandler`
+raises `ModuleNotFoundError: No module named
+'argumentation_lib.modal_kb_identifier_normalizer'` — that is the G.9
+fingerprint that proves the verbatim block is honest, not fabricated.
+(Sibling `modal_kb_identifier_normalizer` is NOT part of the C186 chain
+and is not vendored; future CoursIA shim will re-route or stub this.)
+
+**`_adf_handler.py`** has **NO upstream `argumentation_analysis.*`
+imports** — only stdlib (`jpype`, `logging`, `typing`). The class symbol
+is therefore **import-safe today**; ONLY JPype-Tweety singletons are
+referenced. Instantiation WILL fail at runtime until the JPype bridge
+singleton from C186a (`argumentation_lib.initialize_jvm`) is initialized
+and the target classes are exposed by the JVM.
+
+The lazy accessors `argumentation_lib.get_modal_handler_symbol()` and
+`argumentation_lib.get_adf_handler_symbol()` preserve the API symmetry
+with C184/C185/C186a/C186b accessors but, like them, do **not** bypass the
+top-level imports. Runtime usability awaits Volet B etape 4 sub-tranches
+C186f (TweetyInitializer) and C186g (runtime bridge shim).
+
+**Note re: modal_handler upstream drift** : 1 upstream commit (f5ce8bd9
+"fix(modal): hoist SPASS routing to shared ModalHandler layer #1339")
+post-a8025f60 affects `_modal_handler.py` — it adds a new private
+method `_resolve_active_solver_choice()` and updates 2 callers to route
+through the resolved solver choice. Pinned to **a8025f60** for chain
+consistency; the verbatim copy is the reference contract and the
+CoursIA shim will eventually re-route via the resolved solver choice
+(post-#1339). The adf_handler.py file has **0 upstream commits** between
+a8025f60 and HEAD (verified via `git log a8025f60..HEAD -- adf_handler.py`).
+
+**Sub-tranche plan (after this PR)** :
+
 - **C186d** (future) : `af_handler.py` + `ranking_handler.py` = 354L.
 - **C186e** (future) : `belief_revision_handler.py` +
   `probabilistic_handler.py` + `dialogue_handler.py` = 463L.
