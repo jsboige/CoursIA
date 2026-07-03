@@ -119,7 +119,7 @@ Only an MIT attribution header was prepended (10 LOC of comments).
 Volet B etape 4 sub-tranche C185 (informal_definitions)
 -------------------------------------------------------
 
-PR #XXXX (C185) added `_informal_definitions.py` as a verbatim copy of the EPITA-IS
+PR #5216 (C185) added `_informal_definitions.py` as a verbatim copy of the EPITA-IS
 `informal_definitions.py` module. This module exposes:
 
 - `IdentifiedFallacy` -- Pydantic model for a single identified sophism.
@@ -220,7 +220,7 @@ populate its dependencies.
 Volet B etape 4 sub-tranche C186b (pl_handler + fol_handler)
 --------------------------------------------------------------
 
-PR #XXXX (C186b) added `_pl_handler.py` (689L) and `_fol_handler.py` (1163L)
+PR #5234 (C186b) added `_pl_handler.py` (689L) and `_fol_handler.py` (1163L)
 as verbatim copies of the EPITA-IS `pl_handler.py` and `fol_handler.py`
 modules at commit `a8025f60`. These are the **PL (Propositional Logic)**
 and **FOL (First-Order Logic) core handlers** for the JPype-based Tweety
@@ -292,7 +292,7 @@ CoursIA's native JPype runtime.
 Volet B etape 4 sub-tranche C186c (modal_handler + adf_handler)
 ---------------------------------------------------------------
 
-PR #XXXX (C186c) added `_modal_handler.py` (327L) and `_adf_handler.py`
+PR #5242 (C186c) added `_modal_handler.py` (327L) and `_adf_handler.py`
 (161L) as verbatim copies of the EPITA-IS `modal_handler.py` and
 `adf_handler.py` modules at commit `a8025f60`. These are the **Modal
 Logic** and **Abstract Dialectical Framework** core handlers for the
@@ -360,7 +360,7 @@ a8025f60 and HEAD (verified via `git log a8025f60..HEAD -- adf_handler.py`).
   `probabilistic_handler.py` + `dialogue_handler.py` = 463L.
 - **C186f** (awaiting) : `tweety_initializer.py` 365L -- initializer isole,
   gates C186c/C186d runtime (AFHandler + ModalHandler).
-- **C186g** (awaiting) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L
+- **C186g** (this PR) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L
   wrapping `argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`.
 
 **Excluded by ai-01 mandate** (gap NL->structured) : `bipolar_handler.py`,
@@ -435,7 +435,7 @@ sub-tranches C186f (TweetyInitializer) and C186g (runtime bridge shim).
 - **C186e** (PR #5253 MERGED) : `belief_revision_handler.py` +
   `probabilistic_handler.py` + `dialogue_handler.py` = 463L.
 - **C186f** (awaiting) : `tweety_initializer.py` 365L.
-- **C186g** (awaiting) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L.
+- **C186g** (this PR) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L.
 
 **Excluded by ai-01 mandate** (gap NL->structured) : `bipolar_handler.py`,
 `aba_handler.py`, `aspic_handler.py`. **Out of scope** : `setaf_handler.py`,
@@ -508,7 +508,7 @@ sub-tranches C186f (TweetyInitializer) and C186g (runtime bridge shim).
 
 - **C186f** (this PR) : `tweety_initializer.py` 365L -- initializer isole,
   gates C186c/C186d runtime (AFHandler + ModalHandler).
-- **C186g** (awaiting) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L
+- **C186g** (this PR) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L
   wrapping `argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`.
 
 **Excluded by ai-01 mandate** (gap NL->structured) : `bipolar_handler.py`,
@@ -584,7 +584,7 @@ the benefit is no drift between this reference and the eventual shim.
 
 **Sub-tranche plan (after this PR)** :
 
-- **C186g** (awaiting) : runtime bridge shim `_jvm_shutdown_shim.py`
+- **C186g** (this PR) : runtime bridge shim `_jvm_shutdown_shim.py`
   ~10L wrapping `argumentation_lib.shutdown_jvm` from C184's
   `_jvm_compat.py` + re-export of `setup_logging` from a future
   `_logging_utils_compat.py` (gated by user-machine JVM setup).
@@ -593,6 +593,130 @@ the benefit is no drift between this reference and the eventual shim.
 `aba_handler.py`, `aspic_handler.py`. **Out of scope** : `setaf_handler.py`,
 `weighted_handler.py`, `social_handler.py` (not imported by upstream
 `tweety_bridge.py:29-41`).
+Volet B etape 4 sub-tranche C186g (_jvm_setup_compat runtime shim)
+----------------------------------------------------------
+
+PR #5258 (C186g) added `_jvm_setup_compat.py` (186L) as a **CoursIA-
+owned G6 glue shim**, NOT a verbatim upstream port.  Per ai-01 verdict
+`msg-20260703T155506-3gv1da` Q3: "Shim minimal de cycle-de-vie JVM
+(garde atexit/context-manager) accepte. Garde-le glue-fin : purete
+verbatim preservee pour le core, le shim est de la colle, pas du port."
+
+## Purpose
+
+The verbatim upstream `_tweety_initializer.py` (C186f) imports at
+module-load time 3 EPITA-IS-internal siblings that are NOT vendored in
+`argumentation_lib/`:
+
+```python
+from argumentation_analysis.core.utils.logging_utils import setup_logging
+from argumentation_analysis.core.jvm_setup import (
+    initialize_jvm as initialize_jvm_robustly,
+)
+from argumentation_analysis.core.jvm_setup import shutdown_jvm, is_jvm_started
+```
+
+The `argumentation_analysis` package is EPITA-IS-internal and is
+**never vendored** in `argumentation_lib/` (vendor time would explode,
+and CoursIA's `init_tweety()` infrastructure is already superior to
+EPITA's `jvm_setup.py` -- see `_jvm_compat.py` C184 header for the
+rationale).
+
+Instead of vendoring the upstream module, this shim registers
+`argumentation_analysis.core.{jvm_setup,utils.logging_utils}` as
+virtual `sys.modules` proxies that re-export:
+
+- `initialize_jvm_robustly / initialize_jvm / shutdown_jvm / is_jvm_started`
+  -> `_jvm_compat.py` (C184)
+- `setup_logging(name)` -> stdlib-only single-handler INFO+Stderr shim
+
+The verbatim imports then resolve transparently -- the upstream
+contract is satisfied without duplicating the upstream sources.
+
+## Implementation shape (186L, ASCII-only)
+
+| Component | Lines | Notes |
+| --- | --- | --- |
+| Module docstring + module-load-time `install_epita_namespace_shim()` call | ~50 | Idempotent, best-effort (preserves G.9 fingerprint on failure) |
+| `_build_setup_logging()` factory | ~30 | Stdlib-only single-callable; idempotent (no-op if logger already has handlers) |
+| `install_epita_namespace_shim()` (proxy registration) | ~70 | Builds `types.ModuleType` proxies under `sys.modules["argumentation_analysis.*"]`; idempotent via `_PROXY_INSTALLED` flag |
+| `__all__` + comments | ~30 | API surface declaration |
+
+Composed by `build_c186g.py` (cycle 10 lesson: ASCII-only source, no
+UTF-8 corruption surface to worry about for shim code).
+
+## G.9 honest caveat (NOT verbatim -- fabrication-prime)
+
+`_jvm_setup_compat.py` is a **CoursIA-owned G6 glue shim**, not a
+verbatim upstream copy.  License is implicit CoursIA-internal
+(per CLAUDE.md §A "Code avant documentation").  No SHA1 byte-equal
+attestation vs upstream because there is no upstream 1:1 source --
+this is intentional glue, not a port.
+
+G.9 surface test (verified post-PR):
+
+```python
+import argumentation_lib
+# Side-effect: shim installs the EPITA namespace proxies at __init__ load.
+
+from argumentation_lib._tweety_initializer import TweetyInitializer
+# Was: ModuleNotFoundError: No module named 'argumentation_analysis'
+# Now: <class 'argumentation_lib._tweety_initializer.TweetyInitializer'>
+```
+
+## Scope / non-scope
+
+**In scope** (this PR closes):
+
+- Unblock `_tweety_initializer.py` (C186f) standalone import
+- Unblock `_tweety_bridge.py` (C186a) line 485 lazy import of
+  `from argumentation_analysis.core.jvm_setup import shutdown_jvm`
+- Provide `setup_logging(name)` for the C186 chain (stdlib-only)
+- Install proxies automatically as a side-effect of `import argumentation_lib`
+  (top-of-`__init__.py` `from argumentation_lib import _jvm_setup_compat`)
+
+**Out of scope** (deferred to a future sub-tranche -- NOT closing
+EPIC #4960 chain here, but flagging):
+
+- `_af_handler.py` upstream does `from .tweety_initializer import
+  TweetyInitializer` (no underscore prefix), which the CoursIA file
+  `_tweety_initializer.py` does NOT satisfy.  This is a **CoursIA
+  naming-vs-upstream-naming** mismatch, separate from the EPITA
+  namespace injection.  A future tranche would either rename the
+  upstream import (anti-regression D risk) or add a `_tweety_initializer`
+  shim alias file.  Tracked but not delivered in C186g.
+- PL/FOL/modal handlers also import broader upstream
+  `argumentation_analysis` siblings (e.g.
+  `argumentation_analysis.core.config.settings`,
+  `argumentation_analysis.core.prover9_runner.run_prover9`,
+  `argumentation_analysis.core.mace4_runner.MACE4_EXECUTABLE`,
+  `argumentation_analysis.agents.core.logic.pl_formula_sanitizer`,
+  `argumentation_analysis.agents.core.logic.fol_logic_agent`).  These
+  are C186h+ work.  The C186g shim does not unblock the wider
+  handler chain -- only the C186f initializer + C186a bridge line 485.
+
+## Build approach
+
+`build_c186g.py` (cycle 10 lesson applied: ASCII-only source string
++ `wb`-equivalent write + SHA1 round-trip verification + ASCII-only
+sanity check) -> `_jvm_setup_compat.py` 186L.
+
+Idempotent rebuild (same SHA1).  Deterministic output (no timestamps,
+no random state).
+
+## Sub-tranche plan (chain completion -- See #4960)
+
+After this PR, the **C186 chain is structurally complete** at the
+EPITA-namespace-injection level.  Further handler-import unblocking
+is documented above as out-of-scope sub-tranches (NOT closing EPIC
+#4960 here -- the wider C186h+ work for PL/FOL/modal/AF handler
+imports is a separate Epic sub-tranche).
+
+## Anti-regression D
+
+0 `pass`, 0 `return None`, 0 `sorry`, 0 `raise NotImplementedError`
+introduced in the shim.  Every public symbol either re-exports
+`_jvm_compat` (C184) or stdlib-only `logging`.  No derivation logic.
 What this NOTICE does NOT cover
 -------------------------------
 
