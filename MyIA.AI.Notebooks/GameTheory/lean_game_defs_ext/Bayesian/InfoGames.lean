@@ -1,4 +1,38 @@
 /-
+  L'information peut nuire dans les jeux (contre-exemple, vérifié au noyau)
+  ==============================================================
+
+  `Information.lean` prouve qu'un décideur *seul* ne perd jamais à
+  observer un signal (monotonie de Blackwell). Ce fichier montre que le
+  résultat est authentiquement à un joueur : dans un jeu, donner à un
+  joueur strictement plus d'information peut strictement *réduire* son
+  paiement d'équilibre.
+
+  L'exemple (construction classique à deux états, 2x2) : un état
+  θ ∈ {0, 1} est tiré avec poids égaux. Le joueur 1 (lignes, actions T/B)
+  n'observe jamais θ. On compare deux scénarios pour le joueur 2
+  (colonnes, actions l/r) :
+
+  - `gNoInfo` : le joueur 2 n'observe pas θ non plus. Les paiements sont
+    le plongement des tables dépendant de l'état sur θ (réduction ex-ante :
+    un type par joueur, paiements sommés sur les états — voir
+    `infoHurts_reduction`).
+  - `gInfo` : le joueur 2 observe privément θ (deux types).
+
+  Voir `Information.lean` et le fichier original pour les tables de
+  paiement dépendant de l'état et l'argument d'équilibre. Les deux jeux
+  portent la même échelle de poids de prior totale, donc les paiements 3
+  et 5 sont directement comparables.
+
+  L'unicité de l'équilibre est établie pour *tous* les profils de
+  stratégies en réduisant une stratégie arbitraire à un constructeur
+  canonique (`mkS1g`/`mkS2g`, une éta-expansion sur les littéraux `Fin`)
+  puis en décidant l'énoncé fini par calcul au noyau.
+
+  Voir #2610 (formalisation GT-Lean, phase bayésienne 4).
+
+  ---
+  English:
   Information Can Hurt in Games (counterexample, kernel-checked)
   ==============================================================
 
@@ -47,7 +81,8 @@
 
 import Bayesian.BNE
 
-/-- The informed game: player 2 privately observes the state θ (their
+/-- Le jeu informé : le joueur 2 observe privément l'état θ (son type),
+    English: The informed game: player 2 privately observes the state θ (their
     type), player 1 has a single type. Equal prior weights. -/
 def gInfo : BayesGame2 where
   nT1 := 1
@@ -69,7 +104,8 @@ def gInfo : BayesGame2 where
       (if a1.val = 0 then (if a2.val = 0 then 2 else 3)
        else (if a2.val = 0 then 0 else 1))
 
-/-- The uninformed benchmark: nobody observes θ, so both players have a
+/-- Le benchmark non informé : personne n'observe θ, donc les deux joueurs
+    English: The uninformed benchmark: nobody observes θ, so both players have a
     single type and payoffs are summed over the two states (ex-ante
     reduction of `gInfo` for an uninformed player 2). -/
 def gNoInfo : BayesGame2 where
@@ -85,7 +121,8 @@ def gNoInfo : BayesGame2 where
     if a1.val = 0 then (if a2.val = 0 then 5 else 3)
     else (if a2.val = 0 then 2 else 1)
 
-/-- Sanity check: `gNoInfo`'s payoffs are exactly `gInfo`'s summed over
+/-- Vérification : les paiements de `gNoInfo` sont exactement ceux de
+    English: Sanity check: `gNoInfo`'s payoffs are exactly `gInfo`'s summed over
     the two states — the uninformed game is the faithful ex-ante
     reduction, not an unrelated game. -/
 theorem infoHurts_reduction :
@@ -100,22 +137,26 @@ theorem infoHurts_reduction :
 
 /-! ### Canonical strategy constructors (informed game) -/
 
-/-- Player 1's strategies in `gInfo` are constants (one type). -/
+/-- Les stratégies du joueur 1 dans `gInfo` sont constantes (un seul type).
+    English: Player 1's strategies in `gInfo` are constants (one type). -/
 def mkS1g (x : Fin 2) : Strategy1 gInfo := fun _ => x
 
-/-- Player 2's strategies in `gInfo`, from the two type-contingent
+/-- Les stratégies du joueur 2 dans `gInfo`, depuis les deux actions
+    English: Player 2's strategies in `gInfo`, from the two type-contingent
     actions. -/
 def mkS2g (y z : Fin 2) : Strategy2 gInfo :=
   fun t2 => if t2.val = 0 then y else z
 
-/-- Every strategy of player 1 is a canonical constant. -/
+/-- Toute stratégie du joueur 1 est une constante canonique.
+    English: Every strategy of player 1 is a canonical constant. -/
 theorem s1g_eta (s1 : Strategy1 gInfo) : s1 = mkS1g (s1 ⟨0, by decide⟩) := by
   funext t1
   cases t1 using Fin.cases with
   | zero => rfl
   | succ j => exact j.elim0
 
-/-- Every strategy of player 2 is determined by its two values. -/
+/-- Toute stratégie du joueur 2 est déterminée par ses deux valeurs.
+    English: Every strategy of player 2 is determined by its two values. -/
 theorem s2g_eta (s2 : Strategy2 gInfo) :
     s2 = mkS2g (s2 ⟨0, by decide⟩) (s2 ⟨1, by decide⟩) := by
   funext t2
@@ -128,12 +169,14 @@ theorem s2g_eta (s2 : Strategy2 gInfo) :
 
 /-! ### Equilibrium analysis of the informed game -/
 
-/-- (B, follow-the-state) is a BNE of the informed game. -/
+/-- (B, suivre-l'état) est un BNE du jeu informé.
+    English: (B, follow-the-state) is a BNE of the informed game. -/
 theorem gInfo_bne :
     isBNE gInfo (mkS1g ⟨1, by decide⟩) (mkS2g ⟨0, by decide⟩ ⟨1, by decide⟩) := by
   decide
 
-/-- Over canonical strategies, the BNE of `gInfo` is unique: player 1
+/-- Sur les stratégies canoniques, le BNE de `gInfo` est unique : le
+    English: Over canonical strategies, the BNE of `gInfo` is unique: player 1
     plays B and player 2 plays l on θ=0, r on θ=1. -/
 theorem gInfo_unique_aux :
     ∀ x y z : Fin 2,
@@ -141,7 +184,9 @@ theorem gInfo_unique_aux :
         x = ⟨1, by decide⟩ ∧ y = ⟨0, by decide⟩ ∧ z = ⟨1, by decide⟩ := by
   decide
 
-/-- Over canonical strategies, every BNE of `gInfo` pays player 2
+/-- Sur les stratégies canoniques, tout BNE de `gInfo` paie le joueur 2
+    exactement 3.
+    English: Over canonical strategies, every BNE of `gInfo` pays player 2
     exactly 3. -/
 theorem gInfo_exAnteU2_aux :
     ∀ x y z : Fin 2,
@@ -149,7 +194,8 @@ theorem gInfo_exAnteU2_aux :
         exAnteU2 gInfo (mkS1g x) (mkS2g y z) = 3 := by
   decide
 
-/-- The informed game has an essentially unique BNE. -/
+/-- Le jeu informé a un BNE essentiellement unique.
+    English: The informed game has an essentially unique BNE. -/
 theorem gInfo_unique (s1 : Strategy1 gInfo) (s2 : Strategy2 gInfo)
     (h : isBNE gInfo s1 s2) :
     s1 = mkS1g ⟨1, by decide⟩ ∧ s2 = mkS2g ⟨0, by decide⟩ ⟨1, by decide⟩ := by
@@ -157,7 +203,8 @@ theorem gInfo_unique (s1 : Strategy1 gInfo) (s2 : Strategy2 gInfo)
   have hu := gInfo_unique_aux _ _ _ h
   exact ⟨by rw [s1g_eta s1, hu.1], by rw [s2g_eta s2, hu.2.1, hu.2.2]⟩
 
-/-- In every BNE of the informed game, player 2 earns 3. -/
+/-- Dans tout BNE du jeu informé, le joueur 2 gagne 3.
+    English: In every BNE of the informed game, player 2 earns 3. -/
 theorem gInfo_bne_payoff (s1 : Strategy1 gInfo) (s2 : Strategy2 gInfo)
     (h : isBNE gInfo s1 s2) : exAnteU2 gInfo s1 s2 = 3 := by
   rw [s1g_eta s1, s2g_eta s2] at h ⊢
@@ -165,10 +212,12 @@ theorem gInfo_bne_payoff (s1 : Strategy1 gInfo) (s2 : Strategy2 gInfo)
 
 /-! ### Equilibrium analysis of the uninformed game -/
 
-/-- Player 1's strategies in `gNoInfo` are constants. -/
+/-- Les stratégies du joueur 1 dans `gNoInfo` sont constantes.
+    English: Player 1's strategies in `gNoInfo` are constants. -/
 def mkS1n (x : Fin 2) : Strategy1 gNoInfo := fun _ => x
 
-/-- Player 2's strategies in `gNoInfo` are constants. -/
+/-- Les stratégies du joueur 2 dans `gNoInfo` sont constantes.
+    English: Player 2's strategies in `gNoInfo` are constants. -/
 def mkS2n (y : Fin 2) : Strategy2 gNoInfo := fun _ => y
 
 theorem s1n_eta (s1 : Strategy1 gNoInfo) : s1 = mkS1n (s1 ⟨0, by decide⟩) := by
@@ -183,12 +232,16 @@ theorem s2n_eta (s2 : Strategy2 gNoInfo) : s2 = mkS2n (s2 ⟨0, by decide⟩) :=
   | zero => rfl
   | succ j => exact j.elim0
 
-/-- (T, l) is a BNE of the uninformed game. -/
+/-- (T, l) est un BNE du jeu non informé.
+    English: (T, l) is a BNE of the uninformed game. -/
 theorem gNoInfo_bne :
     isBNE gNoInfo (mkS1n ⟨0, by decide⟩) (mkS2n ⟨0, by decide⟩) := by
   decide
 
-/-- Over canonical strategies, every BNE of `gNoInfo` pays player 2
+/-- Sur les stratégies canoniques, tout BNE de `gNoInfo` paie le joueur 2
+    exactement 5 (le BNE (T, l) est en fait unique, par dominance stricte
+    de l).
+    English: Over canonical strategies, every BNE of `gNoInfo` pays player 2
     exactly 5 (the BNE (T, l) is in fact unique, by strict dominance
     of l). -/
 theorem gNoInfo_exAnteU2_aux :
@@ -197,7 +250,8 @@ theorem gNoInfo_exAnteU2_aux :
         exAnteU2 gNoInfo (mkS1n x) (mkS2n y) = 5 := by
   decide
 
-/-- In every BNE of the uninformed game, player 2 earns 5. -/
+/-- Dans tout BNE du jeu non informé, le joueur 2 gagne 5.
+    English: In every BNE of the uninformed game, player 2 earns 5. -/
 theorem gNoInfo_bne_payoff (s1 : Strategy1 gNoInfo) (s2 : Strategy2 gNoInfo)
     (h : isBNE gNoInfo s1 s2) : exAnteU2 gNoInfo s1 s2 = 5 := by
   rw [s1n_eta s1, s2n_eta s2] at h ⊢
@@ -205,7 +259,8 @@ theorem gNoInfo_bne_payoff (s1 : Strategy1 gNoInfo) (s2 : Strategy2 gNoInfo)
 
 /-! ### Punchline -/
 
-/-- **Information can hurt in games.** In every equilibrium, the
+/-- **L'information peut nuire dans les jeux.** Dans tout équilibre, le
+    English: **Information can hurt in games.** In every equilibrium, the
     informed player 2 earns strictly less (3) than in every equilibrium
     of the game where nobody observes the state (5): observing the
     signal destroys player 2's ability to commit to `l`, reveals the
