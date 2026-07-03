@@ -192,6 +192,96 @@ class TestCodeCellOnlyExercise:
         result = count_exercises_in_notebook(nb)
         assert result.count == 1
 
+    def test_stub_preceding_its_header_same_number_not_double_counted(
+        self, tmp_path
+    ):
+        """The "fill-in box then description" layout: a stub code cell at cell
+        i PRECEDES its own descriptive markdown header at cell i+1. Both
+        reference the same exercise number, so they are ONE exercise -- not
+        two. This is the forward-only-dedup blind-spot documented in #5179
+        (genuine case: Oncology-Planning reported 6 exercises for 3 real ones).
+        """
+        nb = _write_nb(
+            tmp_path / "backward.ipynb",
+            [
+                _code("# Exercice 1 : etendre l'ontologie\n# TODO etudiant\npass"),
+                _md("### Exercice 1 : Etendre l'ontologie avec de nouveaux medicaments"),
+                _code("# Exercice 2 : sensibilite au prior\n# TODO\nreturn None"),
+                _md("### Exercice 2 : Sensibilite du modele bayesien au prior"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 2, (
+            "stub-then-header same-number layout must not double-count"
+        )
+        # The header is the canonical representative; the stub is absorbed.
+        assert all(h.detected_by == "markdown_header" for h in result.exercises)
+
+    def test_stub_preceding_different_number_header_is_not_absorbed(
+        self, tmp_path
+    ):
+        """SAFETY GUARD (anti under-count): the normal sequential layout is
+        ``header N -> stub N -> header N+1``. The stub at cell i belongs to
+        exercise N, the header at cell i+1 introduces exercise N+1. The
+        backward pairing must NOT absorb the stub here (numbers differ), or
+        exercise N would be silently lost. Verified repo-wide: 27 sequential
+        notebooks (GameTheory, Sudoku-12, Lean, SW) stay byte-identical.
+        """
+        nb = _write_nb(
+            tmp_path / "sequential.ipynb",
+            [
+                _md("### Exercice 1 : premier"),
+                _code("# Exercice 1 : premiere impl\n# TODO\npass"),
+                _md("### Exercice 2 : second"),
+                _code("# Exercice 2 : seconde impl\n# TODO\npass"),
+                _md("### Exercice 3 : troisieme"),
+                _code("# Exercice 3 : troisieme impl\n# TODO\npass"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "sequential layout must count each exercise once (no under-count)"
+        )
+
+    def test_stub_preceding_header_with_hint_cell_between_pairs(
+        self, tmp_path
+    ):
+        """Backward pairing skips an intervening non-code (markdown hint) cell
+        to find the stub, as long as the number matches. A gap of one markdown
+        hint between the stub and its header is still paired.
+        """
+        nb = _write_nb(
+            tmp_path / "gap.ipynb",
+            [
+                _code("# Exercice 4 : mini-KG\n# Indice\nresult = None"),
+                _md("**Indice:** pensez aux cycles."),
+                _md("### Exercice 4 : Un mini-KG ou la PCA est trompeuse"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "stub + hint + same-number header is one exercise"
+        )
+
+    def test_stub_preceding_numberless_header_left_unpaired(self, tmp_path):
+        """A stub with NO number before a header with NO number cannot be
+        safely pair-matched (conservative -- we cannot tell whether the stub
+        belongs to this header or the previous exercise). It is left
+        unpaired: both the stub and the header count, which may leave a
+        residual double-count but never under-counts.
+        """
+        nb = _write_nb(
+            tmp_path / "numberless.ipynb",
+            [
+                _code("# Exercice : free-form\n# TODO\npass"),
+                _md("### Exercice : description sans numero"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 2, (
+            "numberless stub/header are not absorbed (conservative)"
+        )
+
     def test_csharp_double_slash_comment_exercise_is_counted(self, tmp_path):
         """The .NET / C# family uses ``//`` for line comments (not ``#``).
         A stub code cell whose ``// Exercice ...`` comment names an exercise
