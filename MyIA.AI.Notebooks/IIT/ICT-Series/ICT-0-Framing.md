@@ -31,6 +31,42 @@ Les questions centrales deviennent dynamiques et multi-échelles :
 - quelles échelles contribuent vraiment à l'explication du comportement ?
 - certains systèmes produisent-ils spontanément des signatures multi-échelles, voire scale-free ?
 
+## Double lecture du sigle
+
+L'acronyme **ICT** porte **deux lectures** qu'il faut tenir ensemble :
+
+1. **« Integrated Complexity Theory »** — la théorie fondatrice, héritée d'IIT et reformulée par
+   une discussion de référence (préservée verbatim dans
+   [`ICT-0-Annexe-IntegratedComplexityTheory.md`](ICT-0-Annexe-IntegratedComplexityTheory.md)) :
+   un $\Phi_\text{dyn}$ qui répond aux critiques classiques d'IIT (intractabilité, caractère statique,
+   absence de dynamiques temporelles, explosion combinatoire, adéquation phénoménologique) en
+   introduisant (a) une **intégration dynamique** sur des mécanismes significatifs, (b) une
+   **décomposition hiérarchique** à plusieurs échelles, et (c) des **méthodes d'approximation**
+   pour rendre le calcul praticable.
+
+2. **« Integrated Causal Trajectories »** — la méthode construite dans `ICT-Series/` (filiation
+   Levin, Hoel, Thom) : partir d'un substrat minimal (le tri auto-organisé), y exhiber
+   expérimentalement la robustesse, le délai de gratification, l'agrégation par affinité, l'émergence
+   causale multi-échelles, puis remonter vers les grandeurs que la théorie cherche à formaliser.
+
+La réconciliation tient en **une phrase** : *les trajectoires causales intégrées sont la voie
+calculable vers la théorie de la complexité intégrée.* La méthode porte le second nom, l'ambition
+porte le premier. Aucun des deux ne remplace l'autre :
+
+- la **théorie** pose le langage unificateur (ce que $\Phi_\text{dyn}$, l'énergie libre, la
+  compression cherchent à capturer) ;
+- la **méthode** construit les cas calculables qui instancient ce langage et permettent de le
+  mesurer *sans complaisance* ;
+- la **strate 5** (ICT-14 → ICT-22) ferme la boucle : sur le banc cross-substrat (ICT-15 #5090),
+  les trois scalaires fondateurs $\Phi / F / K$ se rencontrent ; l'identité MDL (ICT-16 #5099),
+  l'$\epsilon$-machine (ICT-17 #5100) et le LLM comme quatrième substrat (ICT-19 #5102) réalisent
+  littéralement la théorie fondatrice, sur des substrats où le tri ne suffit plus.
+
+Cette double lecture est assumée et documentée ici précisément parce qu'elle a longtemps été
+implicite — la série se présentait comme « Integrated Causal Trajectories » (méthode), alors que
+la théorie fondatrice parle « Integrated Complexity Theory ». Le cadrage explicite évite la
+confusion et nomme l'enjeu.
+
 ## Deux articles fondateurs
 
 La série s'appuie sur **deux publications scientifiques** — une par branche — et, pour chacune, sur
@@ -284,9 +320,19 @@ IIT/
 | **ICT-8** | [Paysages d'attracteurs & signaux précurseurs](ICT-8-AttractorLandscapesEWS.ipynb) — **strate 2**. Modèle de pâturage de May (1977), bistabilité + bifurcation pli ; *early-warning signals* (Scheffer 2009) : potentiel effectif, valeur propre → 0, variance ↑, autocorrélation ↑ (τ de Kendall), avec la leçon de protocole *sans complaisance* (amincir, détrendre) | ✅ |
 | **ICT-9** | [Agence & régénération](ICT-9-AgencyRegeneration.ipynb) — **strate 2**. Morphogenèse réaction-diffusion de Gray-Scott (Pearson 1993) : un système qui **répare** sa forme vers un point de consigne **intrinsèque** après une ablation `do(·)`, l'agence **mesurée** comme *gain de réparation* (réaction-diffusion vs diffusion pure, deux mondes contrefactuels de Pearl). *Sans complaisance* : les mesures naïves de ressemblance (pixel-à-pixel, cosinus spectral) fabriquent un signal fantôme ; seule la structure restaurée contrastée au contrôle passif tient | ✅ |
 | **ICT-10** | [Grammaire des catastrophes](ICT-10-CatastropheGrammar.ipynb) — **charnière strate 2→3**, prélude sémiophysique de R. Thom. Le squelette catastrophique (fronce, pli, fourche, hystérésis) **mesuré** : le métathéorème (le comptage d'équilibres ne change qu'aux plis, clôt la strate 2) et le **lacet de prédation** (cycle d'hystérésis à 2 catastrophes + représentant interne `p̂` qui anticipe, ouvre la strate 3). La correspondance linguistique du Ch.2 de Thom (pivots ↔ transitions de comptage ; verbe transitif SVO ↔ lacet ; anticipation ↔ `p̂`) **nommée**, avec le caveat de non-prédictivité et les barreaux du pont basse-dim → haute-dim (neurosymbolique, Lean, veille EML #4653). *Sans complaisance* : hors régime non dégénéré ($a<0$), zéro saut — fantôme | ✅ |
-| **ICT-11** | Profils d'agence causale — **strate 2**. L'agence aux échelles micro/méso/macro (lien avec la causal emergence d'ICT-5/6) | 🚧 planifié |
-| **ICT-12** | Renormalisation causale & signatures fractales — **strate 2**. L'**invariance multi-échelle** des propriétés causales comme invariance *testée*, pas comme jolie image | 🚧 planifié |
-| **ICT-Synthèse** | Réunir $\Phi$, trajectoires, bassins, transitions, réparation, émergence, invariance d'échelle et agence en un seul fil | 🚧 planifié |
+| **ICT-11** | [Profils d'agence causale](ICT-11-CausalAgencyProfiles.ipynb) — **strate 3**. L'agence de réaction-diffusion mesurée à plusieurs résolutions (micro/méso/macro) puis raccordée à l'émergence causale (Hoel, info effective, TPM à macro-variable scalaire = structure/variance du champ moyenné). *Sans complaisance* : les deux mesures d'agence se contredisent — `repair_gain` pic méso mais artefact-contaminé (score > 1, plancher de résolution), `basin_return_probability` strictement décroissante. Le raccord Hoel suit la mesure inflatée (`r≈+0.50` avec `repair_gain`) et ignore la mesure honnête (`r≈−0.14` avec `basin_return`) — suggestif mais non robuste. Verdict honnête : pas d'échelle privilégiée, l'hypothèse méso-émergente n'est pas confirmée | ✅ |
+| **ICT-12** | [Champs de valence et animats](ICT-12-ValenceFieldsAndAnimats.ipynb) — **strate 3**. Premier toy model **actantiel spatial** : des animats évoluent dans un champ de valence (source attractive + obstacles repulsifs) ; la scène actantielle de Thom cesse d'être une correspondance nommée — les **rôles deviennent des grandeurs mesurées** (capture, évasion, irréversibilité, switching). Animat **réactif** (gradient instantané) vs **anticipateur `p̂`** (extrapolation). *Sans complaisance* : `p̂` **gagne** en balistique rapide (capture x4) mais **perd** en erratique (prédictions trompées par les demi-tours) et perd sur source bruitée. Le modèle interne paie son coût là où la source échappe au réactif **et** reste prévisible — régime-dépendant, ni universellement avantageux ni ruineux | ✅ |
+| **ICT-13** | [Morphodynamique stratégique](ICT-13-AxelrodStrategicMorphodynamics.ipynb) — **strate 3**. Le dilemme du prisonnier itéré d'Axelrod (T=5, R=3, P=1, S=0) sert de morphospace stratégique : six stratégies (AllC, AllD, TFT, TFT généreuse, Pavlov, Grim) en tournoi round-robin, dynamique de réplication, bassins d'invasion. Quatre gates falsifiables mesurent la « stabilité de forme ». *Sans complaisance* : **Gate 1** TFT/Grim co-dominent (2.635) ; **Gate 2** Folk theorem analytique δ* = 0.500 vs numérique 0.550 ; **Gate 3** sous bruit d'exécution la réciprocité active (TFT) est le point de rupture (chute +0.40), Grim paradoxalement le plus robuste (+0.29) — contredit la prédiction Nowak-Sigmund ; **Gate 4** bassins d'invasion : TFT/Grim dès 2%, TFT généreuse à 34%, Pavlov/AllC jamais. Verdict honnête : la robustesse stratégique est **fonction du régime**, pas une propriété intrinsèque | ✅ |
+| **ICT-14** | [Surprise & énergie libre](ICT-14-FreeEnergySurprise.ipynb) — **strate 4**. La jambe énergie-libre du représentationnel : *free energy* et *expected free energy* comme substrat computationnel de l'anticipation, articulation avec la trajectoire $\Phi_\text{dyn}$ et le représentant interne `p̂` d'ICT-10. Voir issue #5089 | ✅ |
+| **ICT-Synthèse** | [Synthèse cross-substrat](ICT-Synthese-CrossSubstrat.ipynb) — **capstone strate 3**. Un seul appareil (la trajectoire causale intégrée) sur trois substrats (tri, Gray-Scott, Axelrod), trois échelles, trois régimes. *Sans complaisance* : chaque substrat pousse ses mesures à sa frontière et c'est précisément là que la méthode s'éprouve. Boucle de la strate 3 vers la **strate 5** : cross-substrat ouvre la possibilité de bancs partagés | ✅ |
+| **ICT-15** | IntegratedComplexity — convergence Φ/F/K sur le banc cross-substrat. Le gate de convergence des trois scalaires fondateurs (information intégrée, énergie libre, complexité de Kolmogorov) sur le squelette de Thom. *Strate 4 / charnière vers strate 5*. Voir issue #5090 | 🚧 planifié |
+| **ICT-16** | MDLTwoPartCode — le pont MDL : F (énergie libre) est la partie résiduelle du code K (Kolmogorov) + la bosse complexité-entropie. Identité MDL ↔ énergie libre. *Strate 5*. Voir issue #5099 | 🚧 planifié |
+| **ICT-17** | EpsilonMachine — états causaux, complexité statistique, entropie d'excès : le gate Crutchfield vs Hoel. L'$\epsilon$-machine comme alternative computationnelle à l'émergence causale Hoel. *Strate 5*. Voir issue #5100 | 🚧 planifié |
+| **ICT-18** | SAETrajectoires — Qwen + Qwen-Scope : des features SAE aux trajectoires d'états discrets, le substrat S4 (LLM sparse autoencoder). *Strate 5, GPU-required*. Voir issue #5101 | 🚧 planifié |
+| **ICT-19** | LLMSubstrat — le transformer comme quatrième substrat du banc cross-substrat (tri, Gray-Scott, Axelrod, LLM). Double contrôle (passif / actif). *Strate 5, GPU-required*. Voir issue #5102 | 🚧 planifié |
+| **ICT-20** | FeatureCatastrophes — calibration : changepoints, EWS et hystérésis sur transitions anodines en feature-space. *Strate 5*. Voir issue #5103 | 🚧 planifié |
+| **ICT-21** | PersonaCatastrophe — expliquer le désalignement émergent par fronce, énergie libre et MDL : jouet + mesure in-context (capstone strate 5). Voir issue #5104 | 🚧 planifié |
+| **ICT-22** | InoculationRL — réplication poids : GRPO à récompense hackable × inoculation, rewardspy, panel persona (capstone final, pont PostTraining). *Strate 5, GPU-required*. Voir issue #5105 | 🚧 planifié |
 
 ## Strate 2 — du tri transparent à la morphogenèse dynamique
 

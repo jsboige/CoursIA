@@ -69,6 +69,29 @@ Le package `ict/` est importé en relatif depuis le répertoire `ICT-Series/` : 
 
 La strate 3 se conclut sur la feuille de route de [ICT-0-Framing](ICT-0-Framing.md) par **ICT-Synthèse**.
 
+### Strate 4 — énergie libre et représentationnel (Free Energy Principle)
+
+| Document | Contenu |
+|----------|---------|
+| [ICT-14-FreeEnergySurprise](ICT-14-FreeEnergySurprise.ipynb) | Surprise & énergie libre — *la jambe représentationnelle* du triplet fondateur ($\Phi_\text{dyn}$, $F$, $K$). *Free energy* et *expected free energy* comme substrat computationnel de l'anticipation, articulation avec la trajectoire $\Phi$ d'ICT-1 et le représentant interne `p̂` d'ICT-10. Voir issue #5089 |
+
+### Strate 5 — réalisation de la théorie fondatrice (cross-substrat, MDL, LLM)
+
+Le retour à la théorie fondatrice (cf. [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md)) : les trois scalaires fondateurs $\Phi / F / K$ convergent sur un banc cross-substrat. *Planifiée, scope ICT-15..22 (#5090 #5099..#5105).*
+
+| Notebook | Sujet | Issue |
+|----------|-------|-------|
+| **ICT-15** | Convergence Φ/F/K sur le banc cross-substrat, gate de convergence sur le squelette de Thom | [#5090](https://github.com/jsboige/CoursIA/issues/5090) |
+| **ICT-16** | MDLTwoPartCode — $F$ est la partie résiduelle du code $K$ + bosse complexité-entropie | [#5099](https://github.com/jsboige/CoursIA/issues/5099) |
+| **ICT-17** | $\epsilon$-machine (Crutchfield) vs Hoel — états causaux, complexité statistique, entropie d'excès | [#5100](https://github.com/jsboige/CoursIA/issues/5100) |
+| **ICT-18** | SAE (Qwen + Qwen-Scope) — des features SAE aux trajectoires d'états discrets, substrat S4 *(GPU)* | [#5101](https://github.com/jsboige/CoursIA/issues/5101) |
+| **ICT-19** | LLM comme quatrième substrat du banc cross-substrat *(GPU)* | [#5102](https://github.com/jsboige/CoursIA/issues/5102) |
+| **ICT-20** | FeatureCatastrophes — calibration, changepoints, EWS et hystérésis en feature-space | [#5103](https://github.com/jsboige/CoursIA/issues/5103) |
+| **ICT-21** | PersonaCatastrophe — désalignement émergent par fronce, énergie libre et MDL (capstone) | [#5104](https://github.com/jsboige/CoursIA/issues/5104) |
+| **ICT-22** | InoculationRL — GRPO à récompense hackable × inoculation, panel persona (capstone final) *(GPU)* | [#5105](https://github.com/jsboige/CoursIA/issues/5105) |
+
+> La **double lecture du sigle** (« Integrated Complexity Theory » ↔ « Integrated Causal Trajectories ») est documentée dans [ICT-0-Framing § « Double lecture du sigle »](ICT-0-Framing.md#double-lecture-du-sigle). La strate 5 réalise littéralement la théorie fondatrice (identité MDL #5099, convergence $\Phi/F/K$ #5090, LLM comme substrat #5102).
+
 ## Lien avec la causalité du dépôt
 
 ICT-5 est l'un des quatre points d'ancrage du **fil rouge causalité** du dépôt (do-calculus de Pearl à travers les paradigmes : symbolique Tweety, bayésien Infer.NET / PyMC, information-théorique ICT). L'essai complet — l'échelle de la causalité L1/L2/L3 et les quatre instanciations de l'opérateur `do(·)` — vit dans le README parent : voir [Ponts causaux : le do-calculus de Pearl](../README.md#ponts-causaux--le-do-calculus-de-pearl-à-travers-les-paradigmes).
