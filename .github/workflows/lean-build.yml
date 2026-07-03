@@ -13,7 +13,7 @@ name: Lean Build (reusable)
 #         project-path:      MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean
 #         display-name:      grothendieck_lean
 #         sorry-baseline:    "0"
-#         sorry-filter-mode: prose-header   # raw | prose-header | standalone-tactic
+#         sorry-filter-mode: prose-header   # raw | prose-header | standalone-tactic | tactic
 #
 # Sorry-filter modes (chosen per project's sorry "profile"):
 #   raw               : grep -c "sorry"                          (every mention)
@@ -21,11 +21,18 @@ name: Lean Build (reusable)
 #   standalone-tactic : sorry as the sole tactic token on a line, INCLUDING the
 #                       Lean case-bullet form `· sorry` (U+00B7), which a bare
 #                       `^\s*sorry\s*$` silently dropped (blind spot, See #2747)
+#   tactic            : strip the case-bullet (·) AND any trailing inline comment
+#                       (`-- ...`), then count lines that are exactly `sorry`. This
+#                       catches the bullet+comment fixture form `· sorry -- comment`
+#                       that standalone-tactic misses, while excluding prose mentions
+#                       of "sorry" in docstrings/comments. (See #5120.)
 # Use raw only when sorry ALWAYS means tactic (no prose mentions). Use prose-header
 # when the only non-tactic mentions are "sorries"/"sorry's" in header comments.
 # Use standalone-tactic when there are MANY prose mentions of "sorry" mixed with
-# real tactic sorries (e.g. Conway block comments). Choose the mode whose baseline
-# is robust to editing comments in that project.
+# real tactic sorries (e.g. Conway block comments). Use tactic when the project's
+# real sorries carry a trailing inline comment (`· sorry -- ...`) AND prose also
+# mentions "sorry" (e.g. calibration_lean's bilingual P4 docstrings, See #5120).
+# Choose the mode whose baseline is robust to editing comments in that project.
 
 on:
   workflow_call:
@@ -43,7 +50,7 @@ on:
         type: string
         required: true
       sorry-filter-mode:
-        description: "How to count sorry: raw | prose-header | standalone-tactic"
+        description: "How to count sorry: raw | prose-header | standalone-tactic | tactic"
         type: string
         required: true
 
@@ -81,6 +88,16 @@ jobs:
                 # spot, See #2747). Strip bullet bytes (c2 b7) first so BOTH
                 # forms match in any locale (byte-exact, not UTF-8 dependent).
                 COUNT=$(tr -d '\302\267' < "$f" | grep -cE "^\s*sorry\s*$" || true) ;;
+              tactic)
+                # Like standalone-tactic but ALSO strips any trailing inline
+                # comment (`-- ...`) before matching, so the fixture form
+                # `· sorry -- comment` is counted as the tactic it is. Closes
+                # the standalone-tactic blind spot for projects whose real
+                # sorries carry an inline comment (e.g. calibration_lean P4
+                # targets). Prose mentions of "sorry" in docstrings/comments
+                # remain excluded because they are never the sole token after
+                # comment-stripping. (See #5120.)
+                COUNT=$(tr -d '\302\267' < "$f" | sed 's/--.*$//' | grep -cE "^\s*sorry\s*$" || true) ;;
               *)
                 echo "ERROR: unknown sorry-filter-mode '$MODE'"; exit 2 ;;
             esac

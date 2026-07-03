@@ -7,12 +7,17 @@ name: Lean Calibration CI
 # Migrated to the reusable lean-build.yml per ai-01 DRY decision (option 2: matrix).
 # Behavior is identical to the former inline check-sorry + build jobs.
 #
-# Sorry profile (verified 2026-06-10, raw mode, baseline=4): the 4 raw "sorry"
-# mentions in Nash.lean are 2 INTENTIONAL P4 tactic targets (L95/L96 — the
-# sorry-increase case the harness must NOT revert) + 2 prose mentions (L89/L97
-# describing them). raw mode + baseline 4 preserves the exact prior enforcement:
-# any new sorry-as-tactic raises the raw count >4 and fails. (standalone-tactic
-# would read 0 here because the P4 sorries carry a leading `·` and inline comment.)
+# Sorry profile (verified 2026-07-03, tactic mode, baseline=4): Nash.lean carries
+# 4 INTENTIONAL P4 tactic sorries (the `· sorry -- comment` fixture form, now
+# bilingual FR+EN after #5112 — 2 per language block) that the harness must NOT
+# revert, plus 6 prose mentions of "sorry" in the P4 docstrings describing the
+# sorry-increase calibration target. `raw` mode (used until #5120) counted every
+# mention, so the i18n PR #5112 doubled the prose and raised raw 4->10 = false
+# positive on a docstring-only PR. `tactic` mode strips the bullet AND the
+# trailing inline comment before matching `^\s*sorry\s*$`, so it counts exactly
+# the 4 real tactic sorries and is robust to any prose growth/shrinkage (FR/EN).
+# standalone-tactic would read 0 here (blind spot: the fixtures carry a trailing
+# comment), so it fails the negative test for a `· sorry -- comment` regression.
 
 on:
   push:
@@ -38,4 +43,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean
       display-name: calibration_lean
       sorry-baseline: "4"
-      sorry-filter-mode: raw
+      sorry-filter-mode: tactic
