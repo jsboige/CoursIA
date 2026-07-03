@@ -1,3 +1,14 @@
+# Verbatim copy of `argumentation_analysis/core/shared_state.py` from
+# the 2025-Epita-Intelligence-Symbolique project
+# (https://github.com/jsboigeEpita/2025-Epita-Intelligence-Symbolique),
+# Copyright (c) 2025 jsboigeEpita, MIT License.
+# Source commit: a8025f60 (2026-07-02) "feat(conv-c): de-templatised PM prompt +
+# designation backfill + pipeline cap (#1334 phase 3/3) (#1345)".
+# Verbatim import rationale: see NOTICE-EPITA at the root of this directory.
+#
+# Verbatim integrity: file content above this header is byte-for-byte identical
+# to the upstream source at the cited commit. No CoursIA modification
+# (downstream consumers wrap or extend, never replace the verbatim block).
 # core/shared_state.py
 import json
 from dataclasses import dataclass, field
