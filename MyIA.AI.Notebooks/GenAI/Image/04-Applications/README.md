@@ -48,7 +48,7 @@ pip install -r requirements-comfyui.txt
 
 ## Cas d'usage
 
-### 04-1 Educational Content Generation
+### 04-1 Génération de contenu pédagogique
 - **Objectif** : Automatiser la création de contenu pédagogique
 - **Technologies** : gpt-image-1 + GPT-4o + post-processing
 - **Applications** : Cours, supports de formation, illustrations
@@ -58,7 +58,7 @@ pip install -r requirements-comfyui.txt
 - **Technologies** : ComfyUI + modèles avancés
 - **Applications** : Design graphique, art numérique, prototypes
 
-### 04-3 Production Integration
+### 04-3 Intégration en production
 - **Objectif** : Intégration dans pipelines de production
 - **Technologies** : API + batch processing + monitoring
 - **Applications** : E-commerce, média, contenu à grande échelle
