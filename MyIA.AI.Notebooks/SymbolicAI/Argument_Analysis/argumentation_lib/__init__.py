@@ -261,6 +261,86 @@ def get_ranking_handler_symbol():
     return RankingHandler
 
 
+# -- Belief Revision Handler (JPype singleton, AGM belief revision) --
+def get_belief_revision_handler_symbol():
+    """Lazy import for BeliefRevisionHandler class symbol.
+
+    Note (G.9 honest caveat): `_belief_revision_handler.py` has **NO upstream
+    `argumentation_analysis.*` imports** AND **NO sibling upstream imports**
+    -- only stdlib (`jpype`, `logging`, `typing`). The class symbol is
+    therefore import-safe today (a simple
+    `from argumentation_lib._belief_revision_handler import BeliefRevisionHandler`
+    succeeds); ONLY JPype-Tweety singletons are referenced (`jpype.JClass`,
+    plus several `org.tweetyproject.logics.pl.syntax.*` and
+    `org.tweetyproject.beliefdynamics.*` FQNs).
+
+    Instantiation WILL fail at runtime until the JPype bridge singleton from
+    C184 (`argumentation_lib.initialize_jvm`) is initialized and the target
+    classes (`org.tweetyproject.logics.pl.syntax.PlBeliefSet`,
+    `org.tweetyproject.beliefdynamics.operators.RandomKernelContractionOperator`,
+    `org.tweetyproject.beliefdynamics.LeviMultipleBaseRevisionOperator`, ...)
+    are exposed by the JVM.
+
+    The lazy accessor preserves the API symmetry with C184/C185/C186a/C186b/
+    C186c accessors. Runtime usability awaits C186g (runtime bridge shim).
+    """
+    from argumentation_lib._belief_revision_handler import BeliefRevisionHandler
+    return BeliefRevisionHandler
+
+
+# -- Probabilistic Handler (JPype singleton, probabilistic argumentation) --
+def get_probabilistic_handler_symbol():
+    """Lazy import for ProbabilisticHandler class symbol.
+
+    Note (G.9 honest caveat): `_probabilistic_handler.py` has **NO upstream
+    `argumentation_analysis.*` imports** AND **NO sibling upstream imports**
+    -- only stdlib (`jpype`, `logging`, `typing`). The class symbol is
+    therefore import-safe today (a simple
+    `from argumentation_lib._probabilistic_handler import ProbabilisticHandler`
+    succeeds); ONLY JPype-Tweety singletons are referenced (`jpype.JClass`,
+    plus several `org.tweetyproject.arg.dung.syntax.*`,
+    `org.tweetyproject.math.probability.*`, and
+    `org.tweetyproject.arg.dung.reasoner.SimpleGroundedReasoner` FQNs).
+
+    Instantiation WILL fail at runtime until the JPype bridge singleton from
+    C184 (`argumentation_lib.initialize_jvm`) is initialized and the target
+    classes (`org.tweetyproject.arg.dung.syntax.DungTheory`,
+    `org.tweetyproject.math.probability.Probability`, ...) are exposed by the
+    JVM.
+
+    The lazy accessor preserves the API symmetry with C184/C185/C186a/C186b/
+    C186c accessors. Runtime usability awaits C186g (runtime bridge shim).
+    """
+    from argumentation_lib._probabilistic_handler import ProbabilisticHandler
+    return ProbabilisticHandler
+
+
+# -- Dialogue Handler (JPype singleton, Walton-Krabbe style dialogues) --
+def get_dialogue_handler_symbol():
+    """Lazy import for DialogueHandler class symbol.
+
+    Note (G.9 honest caveat): `_dialogue_handler.py` has **NO upstream
+    `argumentation_analysis.*` imports** AND **NO sibling upstream imports**
+    -- only stdlib (`jpype`, `logging`, `typing`). The class symbol is
+    therefore import-safe today (a simple
+    `from argumentation_lib._dialogue_handler import DialogueHandler` succeeds);
+    ONLY JPype-Tweety singletons are referenced (`jpype.JClass`, plus several
+    `org.tweetyproject.arg.dung.syntax.*` and
+    `org.tweetyproject.arg.dung.reasoner.SimpleGroundedReasoner` FQNs).
+
+    Instantiation WILL fail at runtime until the JPype bridge singleton from
+    C184 (`argumentation_lib.initialize_jvm`) is initialized and the target
+    classes (`org.tweetyproject.arg.dung.syntax.DungTheory`,
+    `org.tweetyproject.arg.dung.reasoner.SimpleGroundedReasoner`, ...) are
+    exposed by the JVM.
+
+    The lazy accessor preserves the API symmetry with C184/C185/C186a/C186b/
+    C186c accessors. Runtime usability awaits C186g (runtime bridge shim).
+    """
+    from argumentation_lib._dialogue_handler import DialogueHandler
+    return DialogueHandler
+
+
 # -- Tweety Bridge (JPype singleton, 12 logic handlers not vendored) --
 def get_tweety_bridge_symbol():
     """Lazy import for the TweetyBridge class symbol.
@@ -332,6 +412,9 @@ __all__ = [
     "get_adf_handler_symbol",
     "get_af_handler_symbol",
     "get_ranking_handler_symbol",
+    "get_belief_revision_handler_symbol",
+    "get_probabilistic_handler_symbol",
+    "get_dialogue_handler_symbol",
     "get_tweety_bridge_symbol",
     # reporting
     "EnhancedGlobalTraceAnalyzer", "enhanced_global_trace_analyzer",
