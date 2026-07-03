@@ -9,16 +9,17 @@ maturity: PRODUCTION=29, BETA=6, ALPHA=1, DRAFT=1
 
 [← Notebooks](../README.md) | [ML.NET (C#) →](ML.Net/README.md) | [Data Science with Agents (Python) →](DataScienceWithAgents/README.md) | [RL →](../RL/)
 
-Le monde regorge de données, mais les transformer en décisions éclairées demande plus qu'un tableur. Le Machine Learning offre un cadre systématique pour construire des modèles prédictifs à partir de données, en allant de la régression linéaire aux réseaux de neurones en passant par les systèmes de recommandation. Cette série vous forme au ML pratique avec deux stack complémentaires : **ML.NET** pour l'écosystème .NET/C# et **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs.
+Le monde regorge de données, mais les transformer en décisions éclairées demande plus qu'un tableur. Le Machine Learning offre un cadre systématique pour construire des modèles prédictifs à partir de données, en allant de la régression linéaire aux réseaux de neurones en passant par les systèmes de recommandation. Cette série vous forme au ML pratique avec trois fils complémentaires : **ML.NET** pour l'écosystème .NET/C#, **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs, et les **jumeaux de parité** qui confrontent un même concept aux deux écosystèmes.
 
 ## Pourquoi cette série
 
-Le Machine Learning est partout : recommandations Netflix, détection de spam, prévisions de vente, diagnostic médical. Mais passer de la théorie à la pratique reste un saut difficile. Cette série comble ce gap en proposant une **double approche** :
+Le Machine Learning est partout : recommandations Netflix, détection de spam, prévisions de vente, diagnostic médical. Mais passer de la théorie à la pratique reste un saut difficile. Cette série comble ce gap en proposant **trois angles d'attaque** :
 
 - **ML.NET (C#/.NET)** : Pour les développeurs déjà familiers avec l'écosystème .NET, ML.NET offre un pipeline ML natif en C#. Pas besoin d'apprendre Python pour faire du ML en entreprise. Les notebooks couvrent le pipeline complet, de `IDataView` au déploiement ONNX, avec une évaluation rigoureuse par cross-validation.
 - **Python + AI Agents** : Pour les data scientists et praticiens IA, le track Python combine les fondamentaux (NumPy, Pandas, scikit-learn) avec les agents LLM (LangChain, Google ADK). C'est le futur du data science workflow : l'automatisation par des agents capables de nettoyer, analyser et modéliser des données.
+- **Jumeaux de parité (C# ⇄ Python/scikit-learn)** : Pour saisir que les concepts ML sont universels, plusieurs notebooks avancés de la série ML.NET disposent d'un **jumeau Python** co-localisé (`*-Python.ipynb`) qui traite le **même problème** avec les outils canoniques Python (détection d'anomalies `RandomizedPca`↔`PCA`+résidu, recommandation `MatrixFactorization`↔`NMF`, séries temporelles `ForecastBySsa`↔`STL`+`SARIMA`). Voir la [feuille ML.NET](ML.Net/README.md).
 
-Avoir les deux approches permet de comprendre que le ML n'est pas lié à un langage : les concepts (features, entraînement, évaluation, généralisation) sont universels, seuls les outils différent.
+Avoir ces trois angles permet de comprendre que le ML n'est pas lié à un langage : les concepts (features, entraînement, évaluation, généralisation) sont universels, seuls les outils diffèrent.
 
 **Applications réelles couvertes** : prévisions de ventes (régression bayésienne), systèmes de recommandation (collaborative filtering), séries temporelles (forecasting), analyse de CV (NLP + agents), compétitions Kaggle (MLE-STAR pipeline).
 
