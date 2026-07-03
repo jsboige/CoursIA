@@ -525,12 +525,12 @@ Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/40
 
 | Serie | Lien | Connection |
 |-------|------|------------|
-| [ML](../ML/README.md) | Machine Learning | Les modèles de prédiction ML (régression, classification, XGBoost) s'appliquent directement aux stratégies de trading (QC-13 à QC-16) |
-| [GenAI](../GenAI/README.md) | IA générative | L'analyse de sentiment par LLM (QC-17) et les agents sémantiques (QC-18) utilisent les LLMs couverts dans GenAI/Texte |
-| [RL](../RL/README.md) | Apprentissage par renforcement | Les stratégies RL (QC-22 PPO, QC-23 DRL, QC-24 Crypto RL) prolongent les fondamentaux RL de cette série |
+| [ML](../ML/README.md) | Machine Learning | Les modèles de prédiction ML (régression, classification, XGBoost) s'appliquent directement aux stratégies de trading (QC-Py-19 à QC-Py-21) |
+| [GenAI](../GenAI/README.md) | IA générative | L'analyse de sentiment (QC-Py-17) et les signaux de trading par LLM (QC-Py-26) utilisent les LLMs couverts dans GenAI/Texte |
+| [RL](../RL/README.md) | Apprentissage par renforcement | Les stratégies RL (QC-Py-25 DQN/PPO, QC-Py-33 PPO, QC-Py-34 SAC/A2C, QC-Py-35 portfolio) prolongent les fondamentaux RL de cette série |
 | [Probas](../Probas/README.md) | Programmation probabiliste | La modélisation bayésienne des rendements et la gestion du risque s'appuient sur les modèles probabilistes de la série Probas |
 | [Search](../Search/README.md) | Recherche et optimisation | L'optimisation des hyperparamètres de stratégies (grid search, bayésienne) rejoint les techniques de recherche |
-| [ML](../ML/ML.Net/README.md) | Séries temporelles ML.NET | L'analyse technique (QC-4 à QC-7) partage les mêmes fondements que le forecasting par SSA (ML-5) |
+| [ML](../ML/ML.Net/README.md) | Séries temporelles ML.NET | L'analyse technique (QC-Py-11 Technical-Indicators) partage les mêmes fondements que le forecasting par SSA (ML-5) |
 | **Lean 4 (kelly_lean)** | **Preuves formelles** | **Le théorème de Kelly est prouvé formellement dans `kelly_lean/` (Mathlib, toolchain v4.31.0-rc1) — fondement du position sizing enseigné dans QC-Py-10** |
 
 ---
