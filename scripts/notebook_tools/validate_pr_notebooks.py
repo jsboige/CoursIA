@@ -41,6 +41,19 @@ SKIP_EXEC_KERNELS = {
 # H.3 is advisory-only for these — they can only be executed via QC Cloud.
 QC_CLOUD_PATHS = ("QuantConnect/Python", "QuantConnect/projects")
 
+# Kernels that render errors as TEXT, not as output_type=="error" (#5151).
+# Lean via lean4_jupyter/alectryon embeds the compiler's own message severity
+# in the cell output (text/plain + text/html). A `severity: error` message is
+# an unambiguous toolchain error (failed import, unknown identifier, unsolved
+# goals, ...) that the output_type=="error" check misses entirely — a whole
+# Lean notebook can be red (every cell ❌) while CI stays green, because the
+# alectryon renderer never emits a Jupyter error output. We anchor on the
+# toolchain-emitted severity string, so notebook *prose* that merely discusses
+# errors does not trip it (verified: 0 false positives on clean Lean
+# notebooks). A cell tagged "raises-exception" (the standard Jupyter/nbval
+# marker for an intentionally-erroring teaching cell) is exempt.
+TEXT_RENDERED_ERROR_SIGNATURES = ('"severity": "error"', '"severity":"error"')
+
 
 def get_changed_notebooks(base: str, paths: list[str] | None = None) -> list[Path]:
     """Get list of .ipynb files changed relative to base branch."""
@@ -75,6 +88,23 @@ def get_kernel_name(nb_path: Path) -> str:
         )
     except (json.JSONDecodeError, UnicodeDecodeError):
         return "unknown"
+
+
+def _output_text(output: dict) -> str:
+    """Concatenate the textual payload of an output so text-rendered errors
+    (Lean/alectryon) can be scanned. Covers display_data / execute_result
+    (text/plain + text/html) and stream outputs."""
+    parts = []
+    otype = output.get("output_type")
+    if otype in ("display_data", "execute_result"):
+        data = output.get("data", {})
+        for mime in ("text/plain", "text/html"):
+            v = data.get(mime, "")
+            parts.append("".join(v) if isinstance(v, list) else str(v))
+    elif otype == "stream":
+        t = output.get("text", "")
+        parts.append("".join(t) if isinstance(t, list) else str(t))
+    return " ".join(parts)
 
 
 def validate_notebook(nb_path: Path) -> dict:
@@ -123,9 +153,15 @@ def validate_notebook(nb_path: Path) -> dict:
         if not source.strip():
             continue
 
-        # Skip comment-only cells
+        # Skip comment-only cells. Comment syntax is kernel-dependent: in Lean,
+        # '#check' / '#eval' / '#print' / '#reduce' are COMMANDS (comments are
+        # '--'), so the Python-centric '#' heuristic would wrongly skip real
+        # Lean command cells — and with them any error output they carry
+        # (#5151: the failing '#print axioms' / '#check' cells were skipped;
+        # the notebook was only caught by its failing 'import' cell).
+        comment_prefix = "--" if "lean" in kernel else "#"
         lines = [l.strip() for l in source.split("\n") if l.strip()]
-        if all(l.startswith("#") for l in lines):
+        if all(l.startswith(comment_prefix) for l in lines):
             continue
 
         result["total_code"] += 1
@@ -147,8 +183,19 @@ def validate_notebook(nb_path: Path) -> dict:
                     f"cell {i}: execution_count is null (H.3 violation)"
                 )
 
-        # H.1 check: no error outputs (advisory for QC Cloud — errors expected
-        # from [REFERENCE QC] cells executed locally without QuantBook runtime)
+        # H.1 check: no error outputs. Two rendering paths:
+        #  (a) output_type == "error" — Python/IPython, .NET Interactive.
+        #      Advisory for QC Cloud reference cells (errors expected without
+        #      the QuantBook runtime).
+        #  (b) text-rendered errors — Lean (lean4_jupyter/alectryon) embeds the
+        #      compiler's `severity: error` in text output and NEVER emits
+        #      output_type=error, so (a) misses it (incident #5151: notebook
+        #      red top-to-bottom, CI green). These are ALWAYS blocking: a Lean
+        #      compile error is never "expected", and QC notebooks are Python,
+        #      so there is no overlap with the QC-advisory carve-out. Opt out
+        #      per-cell with the "raises-exception" tag for intentional demos.
+        cell_tags = cell.get("metadata", {}).get("tags", []) or []
+        raises_ok = "raises-exception" in cell_tags
         for output in cell.get("outputs", []):
             if output.get("output_type") == "error":
                 ename = output.get("ename", "Unknown")
@@ -161,6 +208,16 @@ def validate_notebook(nb_path: Path) -> dict:
                     result["errors"].append(
                         f"cell {i}: has error output — {ename}"
                     )
+            elif not raises_ok and any(
+                sig in _output_text(output)
+                for sig in TEXT_RENDERED_ERROR_SIGNATURES
+            ):
+                result["passed"] = False
+                result["errors"].append(
+                    f"cell {i}: Lean toolchain error in output "
+                    f"(severity:error — failed compile/import/proof)"
+                )
+                break  # one report per cell is enough
 
     return result
 

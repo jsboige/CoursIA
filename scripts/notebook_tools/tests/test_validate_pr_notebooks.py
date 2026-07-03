@@ -377,3 +377,93 @@ class TestValidateNotebookPaths:
         ], kernelspec={"name": "python3", "language": "python"})
         result = validate_notebook(nb)
         assert result["kernel"] == "python3"
+
+
+# ---------------------------------------------------------------------------
+# validate_notebook — Lean/alectryon text-rendered errors (H.1, #5151)
+# ---------------------------------------------------------------------------
+
+class TestValidateNotebookLeanTextErrors:
+    """Lean via lean4_jupyter/alectryon renders compile errors as TEXT
+    (display_data / execute_result), never as output_type=="error". A whole
+    Lean notebook can be red (every cell ❌) while CI stays green. The
+    detector anchors on the toolchain-emitted `severity: error` message.
+    Regression guard for #5151 (Sudoku-7b-Lean-Propagation: failed import ->
+    48 unknown-identifier + 12 unknown-constant cascade, CI all green)."""
+
+    def _lean_err_output(self) -> dict:
+        # Shape mirrors the real lean4_jupyter/alectryon output on #5151:
+        # the compiler's own JSON message is embedded in text/plain.
+        return {
+            "output_type": "display_data",
+            "data": {
+                "text/plain": [
+                    "import Sudoku.Basic\n     ──────▶ ❌ unknown namespace `Sudoku`\n",
+                    'Raw output:\n{"messages": [{"severity": "error", '
+                    '"pos": {"line": 4, "column": 5}, "data": "unknown namespace `Sudoku`"}]}',
+                ],
+            },
+        }
+
+    def test_lean_text_error_blocks_even_though_skip_exec(self, tmp_path):
+        """The #5151 case: lean4 kernel is skip_exec, but a text-rendered
+        toolchain error is BLOCKING (never advisory — Lean compile errors are
+        never 'expected', and QC notebooks are Python)."""
+        nb = _write_nb(tmp_path / "Sudoku-7b.ipynb", [
+            _code("import Sudoku.Basic\nopen Sudoku", exec_count=1,
+                  outputs=[self._lean_err_output()]),
+        ], kernelspec={"name": "lean4", "language": "lean4"})
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("Lean toolchain error" in e for e in result["errors"])
+
+    def test_lean_text_error_in_html_output(self, tmp_path):
+        """severity:error embedded in text/html is caught too."""
+        html_out = {
+            "output_type": "display_data",
+            "data": {"text/html": [
+                '<pre class="alectryon-io">... {"severity": "error", '
+                '"data": "unknown identifier"} ...</pre>'
+            ]},
+        }
+        nb = _write_nb(tmp_path / "lean.ipynb", [
+            _code("#check Foo", exec_count=1, outputs=[html_out]),
+        ], kernelspec={"name": "lean4", "language": "lean4"})
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+
+    def test_clean_lean_output_passes(self, tmp_path):
+        """A successful #check with a normal alectryon output (no severity
+        error) must PASS — no false positive."""
+        ok_out = {
+            "output_type": "display_data",
+            "data": {"text/plain": ["#check Nat\nNat : Type"]},
+        }
+        nb = _write_nb(tmp_path / "lean.ipynb", [
+            _code("#check Nat", exec_count=1, outputs=[ok_out]),
+        ], kernelspec={"name": "lean4", "language": "lean4"})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+
+    def test_raises_exception_tag_opts_out(self, tmp_path):
+        """A cell tagged 'raises-exception' (intentional error demo) is exempt
+        from the Lean text-error gate."""
+        cell = _code("import Sudoku.Basic", exec_count=1,
+                     outputs=[self._lean_err_output()])
+        cell["metadata"] = {"tags": ["raises-exception"]}
+        nb = _write_nb(tmp_path / "lean.ipynb", [cell],
+                       kernelspec={"name": "lean4", "language": "lean4"})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+
+    def test_python_checkmark_emoji_no_false_positive(self, tmp_path):
+        """A Python cell that prints a ❌ glyph in a legit result table (e.g.
+        a pass/fail summary) must NOT be flagged — the detector keys on the
+        Lean 'severity: error' string, not on the emoji."""
+        out = {"output_type": "stream", "name": "stdout",
+               "text": ["Test 1: ✅ passed\nTest 2: ❌ failed\n"]}
+        nb = _write_nb(tmp_path / "test.ipynb", [
+            _code("run_checks()", exec_count=1, outputs=[out]),
+        ])
+        result = validate_notebook(nb)
+        assert result["passed"] is True
