@@ -29,6 +29,10 @@ Les images produites atterrissent dans [`../assets/`](../assets/).
    chat neuf sur invite fictive, et des panneaux de réglages vides. Les surfaces
    qui exposeraient du contenu (listes de modèles/bases internes, canaux) restent
    **schématisées** dans [`../architecture.md`](../architecture.md), pas capturées.
+   Le script **applique cette règle par défaut** : les captures à contenu réel
+   (sélecteur de modèles, workspace, bases, canaux) sont **sautées** sauf opt-in
+   explicite `DEMO_OWUI_CAPTURE_REAL_CONTENT=1` (réservé à une instance à données
+   fictives) — la sûreté ne dépend donc pas de la seule relecture a posteriori.
 3. **Masquage** (`mask`) des zones sensibles (identité, e-mail) sur chaque image.
 4. **Revue anti-fuite de chaque PNG en PR** avant fusion — relecture humaine des
    images générées.
@@ -53,6 +57,7 @@ Variables attendues (voir [`.env.example`](.env.example)) :
 | `DEMO_OWUI_EMAIL` | E-mail du compte **non-admin** de capture |
 | `DEMO_OWUI_PASSWORD` | Mot de passe de ce compte |
 | `DEMO_OWUI_REASONING_MODEL` | *(optionnel)* nom d'un modèle « thinking » pour la capture du raisonnement en direct (v0.10) ; vide → capture sautée |
+| `DEMO_OWUI_CAPTURE_REAL_CONTENT` | *(optionnel, défaut off)* `1` pour autoriser les captures de surfaces à **contenu réel** (sélecteur de modèles, workspace, bases, canaux). À réserver à une instance à **données fictives** : par défaut ces surfaces sont **sautées** (`test.skip`) et restent schématisées dans [`../architecture.md`](../architecture.md) |
 
 ## Exécution
 

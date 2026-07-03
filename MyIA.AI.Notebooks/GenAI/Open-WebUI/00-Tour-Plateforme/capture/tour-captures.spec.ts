@@ -28,6 +28,15 @@ const PASSWORD = process.env.DEMO_OWUI_PASSWORD;
 // Optionnel : nom d'un modèle « thinking » pour la capture du raisonnement (v0.10).
 const REASONING_MODEL = process.env.DEMO_OWUI_REASONING_MODEL;
 
+// Surfaces exposant du CONTENU RÉEL d'établissement (listes de modèles/bases,
+// canaux) : NON capturées par défaut. Le principe « anti-fuite par construction »
+// (capture/README.md §2) veut qu'on ne capture QUE des surfaces sans contenu réel.
+// Opt-in EXPLICITE (=== '1') réservé à une instance à DONNÉES FICTIVES, où ces
+// surfaces deviennent sûres. Par défaut désactivé : la génération standard ne
+// produit que le sous-ensemble sûr, sans dépendre de la relecture pour écarter
+// des PNG à contenu établissement.
+const CAPTURE_REAL_CONTENT = process.env.DEMO_OWUI_CAPTURE_REAL_CONTENT === '1';
+
 // Dossier de sortie : ../assets relativement à ce fichier.
 const ASSETS = path.resolve(__dirname, '..', 'assets');
 
@@ -123,13 +132,17 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
 
     // 2 — chat : sélecteur de modèle + réponse en streaming.
     test('02 — chat & modèles', async ({ page }) => {
-      await page
-        .getByRole('button', { name: /select a model|choisir un modèle|model/i })
-        .first()
-        .click()
-        .catch(() => {}); // tolérant : la capture vaut même si l'ouverture échoue
-      await capture(page, '02-selecteur-modele.png');
-      await page.keyboard.press('Escape').catch(() => {});
+      // Le sélecteur ouvert liste des modèles réels (contenu établissement) :
+      // capture réservée à l'opt-in données fictives (CAPTURE_REAL_CONTENT).
+      if (CAPTURE_REAL_CONTENT) {
+        await page
+          .getByRole('button', { name: /select a model|choisir un modèle|model/i })
+          .first()
+          .click()
+          .catch(() => {}); // tolérant : la capture vaut même si l'ouverture échoue
+        await capture(page, '02-selecteur-modele.png');
+        await page.keyboard.press('Escape').catch(() => {});
+      }
 
       // Réponse en cours de streaming sur une invite FICTIVE (aucun contenu réel).
       // Sans envoi d'invite, l'écran resterait vide : le fichier serait mal nommé.
@@ -148,7 +161,12 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
     });
 
     // 3 — Workspace : modèles personnalisés + bases de connaissances.
+    // Contenu établissement (modèles/bases internes) : opt-in données fictives.
     test('03 — workspace', async ({ page }) => {
+      test.skip(
+        !CAPTURE_REAL_CONTENT,
+        'Surface à contenu réel (modèles/bases) — opt-in DEMO_OWUI_CAPTURE_REAL_CONTENT=1 requis (données fictives) ; sinon schématisée dans architecture.md',
+      );
       await page
         .getByRole('link', { name: /workspace|espace de travail/i })
         .first()
@@ -166,7 +184,12 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
     });
 
     // 4 — Canaux.
+    // Contenu établissement (noms de canaux) : opt-in données fictives.
     test('04 — canaux', async ({ page }) => {
+      test.skip(
+        !CAPTURE_REAL_CONTENT,
+        'Surface à contenu réel (canaux) — opt-in DEMO_OWUI_CAPTURE_REAL_CONTENT=1 requis (données fictives) ; sinon schématisée dans architecture.md',
+      );
       await page
         .getByRole('link', { name: /channel|canal|canaux/i })
         .first()
