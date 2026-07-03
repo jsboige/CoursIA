@@ -29,11 +29,13 @@ L'angle pédagogique est d'expliquer la **math du loss** avant le code pour chaq
 |---|----------|-------|-----------|--------------|----|
 | PT-01 | `PT_01_intro_post_training.ipynb` | Vue d'ensemble historique : SFT → RLHF → DPO → GRPO → RLVR | Théorique (markdown + figures) | N/A | — |
 | PT-02 | `PT_02_sft_baseline.ipynb` | Supervised Fine-Tuning baseline | `trl.SFTTrainer` | Qwen2.5-0.5B-Instruct | #1764 |
-| PT-03 | `PT_03_dpo_direct_preference.ipynb` | Direct Preference Optimization (Rafailov 2023) | `trl.DPOTrainer` | Qwen2.5-0.5B post-SFT | #1766 |
+| PT-03 | `PT_03_dpo_direct_preference.ipynb` | Direct Preference Optimization (Rafailov 2023) | `trl.DPOTrainer` | Qwen3.5-0.8B (QLoRA 4-bit) | #5078 |
 | PT-04 | `PT_04_grpo_deepseek_r1.ipynb` | Group Relative Policy Optimization (livrable clé) | `trl.GRPOTrainer` | Qwen2.5-0.5B | #1768 |
 | PT-05 | `PT_05_rlvr_verifiable_rewards.ipynb` | RL with Verifiable Rewards (math/code) | `trl.GRPOTrainer` + verifier SymPy | Qwen2.5-0.5B | #1771 |
 | PT-06 | `PT_06_eval_comparative.ipynb` | Évaluation comparative SFT vs DPO vs GRPO vs RLVR | Tableaux, chart, framework décision | tous | #1772 |
 | PT-07 | `PT_07_rewardspy_reward_hacking.ipynb` | Détecter le reward hacking (Goodhart) — observabilité reward | `rewardspy.watch`/`audit` (offline, sans GPU) | N/A (offline) | #4538 |
+
+> **Migration vers Qwen3.5 (en cours).** Qwen2.5 est *superseded* par [Qwen3.5](https://huggingface.co/Qwen/Qwen3.5-0.8B) (modèle vision-langage unifié, multimodal). **PT-03 est migré** vers Qwen3.5-0.8B (#5078) : l'évaluation DPO est désormais une vraie *forward pass* (accuracy mesurée 40 % sur 10 préférences *held-out*, vs 50 % aléatoire — le DPO n'a pas convergé sur 50 exemples, verdict honnête documenté dans le notebook) qui remplace l'ancienne accuracy *hardcodée* à 72 %. **PT-02 / PT-04 / PT-05 / PT-06** utilisent encore Qwen2.5-0.5B et restent à migrer (entraînement GPU) — les références Qwen2.5 dans le reste de ce README décrivent l'état actuel de ces notebooks. Architecture Qwen3.5 multimodale (`Qwen3_5ForConditionalGeneration`) chargée via `AutoModelForImageTextToText` (et non `AutoModelForCausalLM`).
 
 ## Progression pédagogique
 
