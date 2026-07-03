@@ -1,0 +1,86 @@
+---
+title: "Sudoku — Le laboratoire multi-paradigmes de résolution de contraintes"
+subtitle: "Série pédagogique — 19 approches du même problème, en C# .NET, Python et Lean 4"
+description: "La série Sudoku de CoursIA : un seul problème (la grille 9×9) résolu par 19 paradigmes complémentaires — backtracking, dancing links, métaheuristiques, CSP, solveurs (OR-Tools, Choco, Z3), automates symboliques, BDD, Infer.NET, réseaux de neurones, LLM, et une preuve Lean 4 de propagation. Dual-track C# .NET Interactive + Python."
+listing:
+  - id: dotnet
+    contents: "Sudoku-*-Csharp.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 18
+  - id: python
+    contents: "Sudoku-*-Python.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 18
+---
+
+::: {.series-banner}
+# Sudoku — Un problème, dix-neuf paradigmes
+
+**Le Sudoku comme fil rouge pédagogique.** La grille 9×9 est un écrin assez riche pour exercer chaque famille d'algorithmes d'IA, assez contraint pour que chaque solveur produise une solution, et assez emblématique pour qu'on reconnaisse immédiatement le problème. Cette série résout **le même Sudoku** par **19 approches complémentaires**, présentées en **double track C# .NET Interactive et Python**, jusqu'à une **preuve formelle Lean 4** de la propagation de contraintes.
+:::
+
+## Vue d'ensemble
+
+La série compte **33 notebooks** : 16 méthodes déclinées en C# .NET et Python (dual-track), plus `Sudoku-19` en Lean 4. Chaque notebook est exécuté et commité avec ses sorties (règle C.2), avec entrées/sorties réelles.
+
+| Axe pédagogique | Numéros | Méthodes |
+|-----------------|---------|----------|
+| **Fondements** | 0–2 | Environnement, Backtracking, Dancing Links (Knuth) |
+| **Métaheuristiques** | 3–5 | Algorithmes génétiques, Recuit simulé, Essaim particulaire (PSO) |
+| **CSP classique** | 6–9 | AIMA-CSP (backtracking + AC3), Norvig, Stratégies humaines, Coloration de graphe |
+| **Solveurs déclaratifs** | 10–15 | OR-Tools, Choco, Z3 (SMT), Automates symboliques, BDD, Infer.NET (probabiliste) |
+| **Apprentissage** | 16–17 | Réseau de neurones (solveur appris), LLM (prompting) |
+| **Synthèse & preuve** | 18–19 | Comparaison cross-moteurs, Propagation Lean 4 (prouvée) |
+
+**Kernels** : `.net-csharp` (track C#) · `python3` (track Python) · `lean4-wsl` (Sudoku-19) · **GPU** : non · **Prérequis** : la série Search (algorithmes de recherche) aide, mais le Sudoku-0 remet tout à plat.
+
+## Pourquoi un double track C# / Python ?
+
+Chaque méthode (du backtracking au Z3) est implémentée **deux fois**, dans le même esprit, en C# .NET Interactive et en Python. Le track C# .NET illustre l'écosystème .NET (OR-Tools .NET, Microsoft.SolverFoundation, AutomataDotNet, Infer.NET) ; le track Python colle aux usages data-science (Z3-Python, pulp, NetworkX). Comparer les deux implémentations d'un même solveur est en soi un exercice pédagogique : on y voit ce qui relève de l'algorithme (identique) et ce qui relève de l'écosystème (idiomes, perf, API).
+
+## Track C# .NET Interactive
+
+::: {#dotnet}
+:::
+
+## Track Python
+
+::: {#python}
+:::
+
+## Sudoku-19 — Propagation certifiée en Lean 4
+
+Le notebook [`Sudoku-19-Lean-Propagation.ipynb`](Sudoku-19-Lean-Propagation.ipynb) sort du dual-track pour une **preuve formelle** : la règle de propagation des contraintes (une cellule contrainte à une valeur unique n'admet aucune autre) y est démontrée en Lean 4 + Mathlib. C'est le pont vers la série SymbolicAI/Lean — la même idée de propagation, cette fois **certifiée** plutôt qu'exécutée.
+
+## Démarrage rapide
+
+```bash
+git clone https://github.com/jsboige/CoursIA.git
+cd CoursIA
+
+# Track Python
+python -m venv .venv
+source .venv/bin/activate          # ou .venv\Scripts\activate sous Windows
+pip install jupyter z3-solver networkx matplotlib
+jupyter notebook MyIA.AI.Notebooks/Sudoku/
+
+# Track C# .NET Interactive
+dotnet tool install --global Microsoft.dotnet-interactive
+jupyter kernelspec list             # vérifier la présence de .net-csharp
+```
+
+## Ressources complémentaires
+
+- **README de série** : [Sudoku/README.md](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Sudoku/README.md) — table des matières détaillée et arc narratif.
+- **Catalogue** : `COURSE_CATALOG.generated.md` — inventaire exhaustif avec statuts, kernels, prérequis.
+- **Séries connexes** : [Search](../Search/index.qmd) (CSP et métaheuristiques, fondements algorithmiques), [GameTheory](../GameTheory/index.qmd) (jeux combinatoires), [SMT/Z3 (README)](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3/README.md) (Z3, le solveur du Sudoku-12).
+
+## Pour aller plus loin
+
+Une fois les 19 approches comparées, les prolongements naturels sont :
+
+1. **Vers la preuve formelle** : Sudoku-19 (Lean 4) ouvre la série SymbolicAI/Lean — la propagation devient un théorème.
+2. **Vers les solveurs SMT** : [SMT/Z3 (README)](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3/README.md) — Z3, le moteur du Sudoku-12, appliqué à l'ordonnancement, la cryptarithmétique, les bit-vectors.
+3. **Vers la théorie des jeux** : [GameTheory](../GameTheory/index.qmd) — d'autres espaces combinatoires, d'autres critères d'optimalité.
