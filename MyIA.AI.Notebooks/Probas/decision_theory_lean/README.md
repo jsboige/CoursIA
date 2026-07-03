@@ -39,11 +39,10 @@ Notebook compagnon Lean :
 ## Statut
 
 - **Toolchain** : `leanprover/lean4:v4.30.0-rc2`
-- **Sorry** : **5** — tous dans `Gittins/GittinsTheorem.lean` (le théorème
-  d'optimalité + propriétés de l'indice). `Gittins/Discount.lean` = **0 sorry**
-  (entièrement prouvé), `Gittins/Basic.lean` = 0. Les modules **`Utility` et
-  `Coherence` entiers = 0 sorry** (entièrement prouvés, jalon ouvert documenté non
-  `sorry`-backed).
+- **Sorry** : **3** (dans `Gittins/GittinsTheorem.lean`) — voir « État honnête »
+  ci-dessous. `Gittins/Discount.lean` = **0 sorry** (entièrement prouvé),
+  `Gittins/Basic.lean` = 0. Les modules **`Utility` et `Coherence` entiers = 0
+  sorry** (entièrement prouvés, jalon ouvert documenté non `sorry`-backed).
 - **Build** : `lake build Gittins Utility Coherence` (dépend de Mathlib4)
 - **Dépendances** : Mathlib4 (`v4.30.0-rc2`) — analyse réelle pour les lemmes
   d'actualisation, structure ordonnée et affine de `ℝ` pour vNM, théorie des `Finset`
@@ -199,7 +198,7 @@ vNM, qui porte sur les *préférences* sous risque), mais purement *épistémiqu
 |---------|--------|-------|---------|
 | `Gittins/Basic.lean` | 37 | 0 | Types fondamentaux — `BanditArm`, `BanditInstance` (bras + actualisation γ), `Policy := Nat → Nat`, `RewardHistory`, `pullCount`, `empiricalMean`. Lean 4 pur, sans Mathlib. |
 | `Gittins/Discount.lean` | 107 | 0 | Actualisation géométrique **prouvée** via l'analyse réelle de Mathlib : `geometric_series_converges`, `one_minus_gamma_pos`, `present_value_constant`, `discount_monotone`. **Compagnon somme partielle finie** (PR #4252) : `geometricPartialSum γ n = ∑₀..n γ^k` avec `geometricPartialSum_zero`/`_succ` (récurrence télescopique) et `geometricPartialSum_closed` (forme close `(1−γ^n)/(1−γ)`). |
-| `Gittins/GittinsTheorem.lean` | 96 | 5 | Le théorème phare **énoncé avec sorry** : `gittinsIndex`, `gittinsPolicy` (argmax), `gittins_optimality`, `gittins_index_known_arm`, `gittins_index_monotone_discount`. (`gittins_beats_greedy` est un placeholder `: True := trivial`, pas un sorry.) |
+| `Gittins/GittinsTheorem.lean` | 145 | 3 | Théorème phare **partiellement prouvé** : `gittinsIndex` (def prouvée = `trueMean` dans le modèle à moyenne connue), `gittinsPolicy` (argmax), `gittins_index_known_arm` (**prouvé** `rfl`), `gittins_optimality` (sorry — MDP-intrinsic), `gittins_index_monotone_discount` (sorry — Float-order wart). Voir « État honnête » ci-dessous. (`gittins_beats_greedy` = placeholder `: True := trivial`, pas un sorry.) |
 | `Gittins.lean` | 19 | 0 | Imports parapluie |
 | `Utility/Basic.lean` | 91 | 0 | Primitives vNM — `Lottery` (loterie sur `Fintype`), `expectation`, mélange convexe `mix` (preuve de validité), identités affine d'espérance (`expectation_mix`, `expectation_add`, `expectation_smul`, `expectation_const`, `expectation_affine`). |
 | `Utility/Axioms.lean` | 65 | 0 | Les **quatre axiomes vNM** — `IsComplete`, `IsTransitive`, `IsIndependent`, `IsContinuous` (solvabilité des mélanges), `IsRational`, plus `StrictPref`. |
@@ -209,6 +208,38 @@ vNM, qui porte sur les *préférences* sous risque), mais purement *épistémiqu
 | `Coherence/DutchBook.lean` | 101 | 0 | **Direction constructive prouvée** (`non_additive_implies_dutch_book`, mises explicites `(1,1,−1,−1)`/inverse) + contraposée `coherent_on_implies_additive`. Réciproque (dualité LP) documentée comme jalon ouvert. |
 | `Coherence/Probability.lean` | 255 | 0 | **Cohérence mono-ticket** (PR #4193 : `single_coherent_iff_prob_bounds` — *iff* entre cohérence d'un ticket unique et bornes de probabilité `0 ≤ q ≤ 1`, via trichotomie du signe de la mise + Dutch Books explicites pour chaque borne violée) + **des poids à la cohérence** (PR #4244 : `priceFromWeights_single_coherent` — des poids additifs normalisés on dérive une fonction de prix mono-cohérente). Le `coherent_iff_probability` complet (livrets de taille arbitraire) reste ouvert. |
 | `Coherence.lean` | 33 | 0 | Imports parapluie + doc de statut |
+
+## État honnête du verrou Gittins (déc. 2026, #4039)
+
+La formalization du module `Gittins` se scinde en deux couches distinctes, l'une
+**prouvée** et l'autre **INTRINSIC** (deux barrières réelles, pas du placeholder).
+
+### Couche prouvée (modèle à moyenne connue)
+
+`BanditArm` (cf `Basic.lean`) ne porte que `trueMean : Float` — pas de
+postérieure, pas d'incertitude. Dans ce modèle l'indice de Gittins **égale la
+vraie moyenne** : c'est la valeur de retraite `λ` à laquelle jouer le bras
+indéfiniment (`μ·Σγⁿ = μ/(1−γ)`, cf `present_value_constant`) est indifférent à
+retrérer à `λ` (`λ/(1−γ)`), i.e. `λ = μ`. D'où deux sites **prouvés** :
+
+- `gittinsIndex` (def) — calibré sur `arm.trueMean` ;
+- `gittins_index_known_arm` — `sorry` → **`rfl`** (égalité définitionnelle).
+
+### Couche INTRINSIC — 3 sites sorry restants (2 barrières)
+
+| Site | Barrière | Nature |
+|------|----------|--------|
+| `V` (opérateur de valeur espérée, l.99) | **MDP-intrinsic** | Formaliser `E[Σγⁿ·r]` requiert un type de processus de récompense bandit + un opérateur d'espérance sur les distributions + une somme actualisée infinie sur `Float` (le côté `ℝ` est couvert par le `tsum` de Mathlib, ni le côté `Float` ni l'espérance) |
+| `gittins_optimality` (preuve, l.103) | **MDP-intrinsic** | Opérateur de Bellman / programmation dynamique + décomposabilité de l'indice + récurrence sur l'horizon = formalization MDP/arrêt-optimal complète |
+| `gittins_index_monotone_discount` (l.139) | **Float-order wart** | Après `simp only [gittinsIndex]` le but se réduit à `arm.trueMean ≤ arm.trueMean`. **Non prouvable tel quel** : `Float` suit IEEE 754, donc `≤` n'est pas réflexif (`NaN ≤ NaN` est faux — Lean core le documente en `Init/Data/Float.lean`), pas d'instance `Preorder Float`, aucun lemme self-`≤`. Semantiquement une moyenne de bandit est un réel (jamais `NaN`) ; une preuve propre requiert soit le coercion de `trueMean` vers `ℝ` (onde dans `Basic.lean`), soit un garde non-`NaN` + un lemme core absent. Barrière distincte, plus petite que le mur MDP |
+
+Le théorème central (`gittins_optimality`) + son opérateur `V` sont le **vrai**
+mur court-terme (MDP absent de Mathlib). Le `monotone_discount` est un
+**défaut d'API Float** séparé (pas MDP-intrinsic) — il pourrait être levé en
+faisant porter `BanditArm.trueMean : ℝ` plutôt que `Float`, mais cela
+reconfigurerait `Basic.lean` et dépasse une PR atomique (issue de suivi à ouvrir
+si on pousse la levée). Aucun des 3 n'est un placeholder : chacun documente
+**précisément** ce qui manque.
 
 ## Pourquoi le théorème d'optimalité est intractable
 
