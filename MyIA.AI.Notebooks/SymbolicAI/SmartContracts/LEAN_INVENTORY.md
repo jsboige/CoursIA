@@ -6,7 +6,7 @@ sur le modèle de [`GameTheory/LEAN_INVENTORY.md`](../../GameTheory/LEAN_INVENTO
 de l'Epic [#4038](https://github.com/jsboige/CoursIA/issues/4038) + vérification
 `firsthand`. Colonne *Sorry (production)* = métrique CI `standalone-tactic` (les mentions
 prose « 0 sorry » n'entrent pas dans ce compte ; cf.
-[`lean-ci-sorry-filter`](../../../.claude/projects/c--dev-CoursIA-2/memory/lean-ci-sorry-filter.md)).
+`lean-ci-sorry-filter`).
 
 ## Résumé
 
@@ -61,9 +61,9 @@ Axiomes `[propext, Classical.choice, Quot.sound]` (Mathlib standard, **pas de `s
 - **Mathlib v4.31.0-rc1 Finset sum binder** (documenté durably) : le binder de somme est
   unicode **`∑ x ∈ s`**, PAS le mot `in` (`∑ x in s` ne parse pas) ; extraction additive via
   `conv_lhs` + `Finset.insert_erase` ; mots-clés `to`/`from` → `src`/`dst`. Cf.
-  [`lean-finset-sum-binder-elem`](../../../.claude/projects/c--dev-CoursIA-2/memory/lean-finset-sum-binder-elem.md).
+  `lean-finset-sum-binder-elem`.
 - **WDAC workaround** (RECOVERABLE-LOCAL) : `lake exe cache get` bloqué → copie wholesale
   des oleans d'un lake frère compatible. Cf.
-  [`lean-wdac-olean-wholesale-copy`](../../../.claude/projects/c--dev-CoursIA-2/memory/lean-wdac-olean-wholesale-copy.md).
+  `lean-wdac-olean-wholesale-copy`.
 - CI : `.github/workflows/lean-erc20.yml` (`sorry-filter-mode: standalone-tactic`,
   baseline `"0"`).

@@ -7,7 +7,7 @@ vérité : corps de l'Epic
 [#4038](https://github.com/jsboige/CoursIA/issues/4038) + vérification `firsthand`. Colonne
 *Sorry (production)* = métrique CI `standalone-tactic` (les mentions prose « 0 sorry »
 n'entrent pas dans ce compte ; cf.
-[`lean-ci-sorry-filter`](../../.claude/projects/c--dev-CoursIA-2/memory/lean-ci-sorry-filter.md)).
+`lean-ci-sorry-filter`).
 
 ## Résumé
 
@@ -62,6 +62,6 @@ Prop/Fintype ; **pas de `sorryAx`**).
   (pas de conflit de symbols/namespaces).
 - **WDAC workaround** (RECOVERABLE-LOCAL) : `lake exe cache get` bloqué → copie wholesale
   `cp -r sibling/.lake` + `lake-manifest.json` d'un lake frère compatible. Cf.
-  [`lean-wdac-olean-wholesale-copy`](../../.claude/projects/c--dev-CoursIA-2/memory/lean-wdac-olean-wholesale-copy.md).
+  `lean-wdac-olean-wholesale-copy`.
 - CI : `.github/workflows/lean-sudoku.yml` (`sorry-filter-mode: standalone-tactic`,
   baseline `"0"`).
