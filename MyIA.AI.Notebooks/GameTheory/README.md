@@ -514,10 +514,10 @@ GameTheory/
 │   ├── strategies.py              # Tit-for-tat, hawks, doves, etc.
 │   ├── tournament.py              # Tournoi Axelrod
 │   └── visualization.py           # Animations populations
-├── cooperative_games_lean/        # Projet Lake jeux cooperatifs (Shapley 0 sorry, Bondareva-Shapley 1 sorry INTRACTABLE)
+├── cooperative_games_lean/        # Projet Lake jeux cooperatifs (Shapley + Bondareva-Shapley 0 sorry, cf #3954)
 ├── social_choice_lean/            # Projet Lake choix social (Arrow, Sen, Voting/Median Voter — 0 sorry)
 ├── social_choice_lean_peters/     # Projet Lake référence DominikPeters (0 sorry, toolchain v4.27.0-rc1)
-├── stable_marriage_lean/          # Projet Lake Gale-Shapley (GS COMPLETE, 3 sorry residual dans Lattice.lean)
+├── stable_marriage_lean/          # Projet Lake Gale-Shapley (GS COMPLETE, 0 sorry — énoncés faux réfutés, exists_isManOptimal prouvé)
 ├── lean_game_defs/                # Types Lean partages (pas de Lake project)
 ├── examples/
 │   ├── prisoners_dilemma.py
@@ -583,7 +583,7 @@ La théorie des jeux n'est pas qu'un objet académique : ses résultats structur
 
 ### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
-GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **cinq lakes game-théoriques phares** (toolchain `v4.31.0-rc1`, branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
+GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **cinq lakes game-théoriques phares** (toolchains détaillées dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md) — harmonisation Mathlib en cours, cf #4362 —, branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
 
 | Famille | Lake phare | Théorème | Branchement notebook |
 | --- | --- | --- | --- |
