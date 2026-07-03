@@ -63,6 +63,22 @@ def get_analysis_runner():
     from argumentation_lib._runner import AnalysisRunner
     return AnalysisRunner
 
+# -- Taxonomy Sophism Detector (Semantic Kernel heavy dep via InformalAnalysisPlugin) --
+def get_taxonomy_sophism_detector():
+    """Lazy import for the TaxonomySophismDetector.
+
+    Note: This module depends on `InformalAnalysisPlugin` from EPITA-IS upstream,
+    which is NOT vendored in this tranche (Semantic-Kernel coupled, 891 lines).
+    Instantiation will fail at runtime until Volet B etape 4 ports the SK shim.
+    The class symbol itself is import-safe (analysis only).
+    """
+    from argumentation_lib._taxonomy_sophism_detector import (
+        TaxonomySophismDetector,
+        create_unified_detector,
+        get_global_detector,
+    )
+    return TaxonomySophismDetector
+
 __all__ = [
     # config
     "LibConfig", "get_config", "DEFAULT_CONFIG",
@@ -77,6 +93,7 @@ __all__ = [
     "get_state_manager_plugin",
     # runner
     "get_analysis_runner",
+    "get_taxonomy_sophism_detector",
     # reporting
     "EnhancedGlobalTraceAnalyzer", "enhanced_global_trace_analyzer",
     "start_enhanced_pm_capture", "stop_enhanced_pm_capture",
