@@ -21,9 +21,12 @@ au contraire le cadre **pondéré non-uniforme** où l'heuristique *sert* réell
 et formalise rigoureusement **pourquoi** l'admissibilité garantit l'optimalité —
 la propriété qui distingue A* d'une simple recherche en largeur.
 
-Le notebook compagnon
-[`Exploration_non_informée_et_informée_intro.ipynb`](../Exploration_non_informée_et_informée_intro.ipynb)
-(série Search) illustre ceci en Python sur un terrain pondéré où A* exploite
+Le notebook compagnon historique
+[`Exploration_non_informée_et_informée_intro.ipynb`](../archive/Exploration_non_informée_et_informée_intro.ipynb)
+(archivé en 2026-07-03, tranche 8/8 du plan #5081) puis ses successeurs officiels
+[`Search-2-Uninformed.ipynb`](../Part1-Foundations/Search-2-Uninformed.ipynb)
+et [`Search-3-Informed.ipynb`](../Part1-Foundations/Search-3-Informed.ipynb)
+illustrent ceci en Python sur un terrain pondéré où A* exploite
 l'heuristique pour explorer moins de nœuds que BFS.
 
 ## Approche : lemme d'optimalité abstrait
@@ -214,4 +217,4 @@ Phases suivantes (suivi #4048) :
 - P. E. Hart, N. J. Nilsson, B. Raphael, *A Formal Basis for the Heuristic Determination
   of Minimum Cost Paths*, IEEE Trans. Syst. Sci. Cybern. **4**(2), 1968.
 - S. Russell, P. Norvig, *Artificial Intelligence: A Modern Approach*, §3.5 (A* Search).
-- Notebook compagnon : [`Exploration_non_informée_et_informée_intro.ipynb`](../Exploration_non_informée_et_informée_intro.ipynb).
+- Notebooks compagnons : [`Search-2-Uninformed.ipynb`](../Part1-Foundations/Search-2-Uninformed.ipynb), [`Search-3-Informed.ipynb`](../Part1-Foundations/Search-3-Informed.ipynb) (le notebook historique [`Exploration_non_informée_et_informée_intro.ipynb`](../archive/Exploration_non_informée_et_informée_intro.ipynb) est archivé depuis 2026-07-03).
