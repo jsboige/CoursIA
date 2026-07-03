@@ -38,7 +38,7 @@
 | [ML-FeatureEngineering](ML-FeatureEngineering/) | **0.571** | 10.5% | 19.6% | 2015-2026 | Avancé |
 | [RegimeSwitching](RegimeSwitching/) | **0.553** | 11.7% | 33.0% | 2008-2026 | Avancé |
 
-### Historique (Sharpe 0-0.5) — 15 stratégies
+### Historique (Sharpe 0-0.5) — 13 stratégies
 
 [Multi-Layer-EMA](Multi-Layer-EMA/) (0.928, non robuste) · [EMA-Cross-Index](EMA-Cross-Index/) (0.470) · [DualMomentumNoTLT](DualMomentumNoTLT/) (0.469) · [Adaptive-Conformal-Risk](Adaptive-Conformal-Risk/) (0.423) · [RiskParity](RiskParity/) (0.399) · [DualMomentum](DualMomentum/) (0.350) · [MeanReversion](MeanReversion/) (0.294) · [BTC-ML](BTC-ML/) (0.282) · [EMA-Cross-Crypto](EMA-Cross-Crypto/) (0.244) · [OptionsIncome](OptionsIncome/) (0.207) · [FuturesTrend](FuturesTrend/) (0.136) · [TurnOfMonth](TurnOfMonth/) (0.128) · [VIX-TermStructure](VIX-TermStructure/) (0.051)
 
