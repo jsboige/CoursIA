@@ -119,6 +119,55 @@ def get_informal_definitions_symbols():
     )
 
 
+
+# -- Tweety Bridge (JPype singleton, 12 logic handlers not vendored) --
+def get_tweety_bridge_symbol():
+    """Lazy import for the TweetyBridge class symbol.
+
+    Note (G.9 honest caveat): `tweety_bridge.py` imports 12 logic handlers
+    + `TweetyInitializer` at module level (lines 29-41 of upstream
+    `a8025f60`). None of these 13 sibling modules are vendored in
+    `argumentation_lib/` today. Therefore:
+
+    - **Class symbol import is safe today** : `from argumentation_lib.
+      _tweety_bridge import TweetyBridge` succeeds *if* the 12 handler
+      classes are stub-resolvable. In practice, the `from .pl_handler
+      import ...` lines on rows 29-40 fail because
+      `argumentation_analysis.agents.core.logic.pl_handler` is not
+      importable in this vendored context (no PYTHONPATH, no submodule).
+
+    - **Instantiation will fail at runtime** : even if the import succeeded,
+      `TweetyBridge()` would call `initialize_jvm()` which depends on
+      `argumentation_analysis.core.jvm_setup.initialize_jvm_robustly`
+      (a separate EPITA module not vendored here).
+
+    The lazy accessor preserves the API symmetry with C184/C185 accessors
+    but does **not** bypass the top-level imports (same caveat as C185).
+    Runtime usability awaits Volet B etape 4 sub-tranches C186b+ (12
+    handlers + tweety_initializer + jvm_setup bridge).
+
+    For a **fully-functional JPype bridge today**, use
+    `argumentation_lib.initialize_jvm()` (the CoursIA-native bridge via
+    `Tweety.tweety_init` — see `_jvm_compat.py`) and write the reasoning
+    glue manually. The verbatim Python is preserved here as the
+    authoritative reference contract for the future CoursIA integration.
+    """
+    from argumentation_lib._tweety_bridge import (
+        TweetyBridge,
+        TweetyBridgeSK,
+        initialize_jvm,
+        shutdown_jvm,
+        is_jvm_started,
+    )
+    return (
+        TweetyBridge,
+        TweetyBridgeSK,
+        initialize_jvm,
+        shutdown_jvm,
+        is_jvm_started,
+    )
+
+
 __all__ = [
     # config
     "LibConfig", "get_config", "DEFAULT_CONFIG",
@@ -135,6 +184,7 @@ __all__ = [
     "get_analysis_runner",
     "get_taxonomy_sophism_detector",
     "get_informal_definitions_symbols",
+    "get_tweety_bridge_symbol",
     # reporting
     "EnhancedGlobalTraceAnalyzer", "enhanced_global_trace_analyzer",
     "start_enhanced_pm_capture", "stop_enhanced_pm_capture",

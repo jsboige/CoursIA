@@ -18,6 +18,7 @@ CoursIA copy
 | `_state_manager_plugin.py`            | `argumentation_analysis/core/state_manager_plugin.py` | see git log |
 | `_taxonomy_sophism_detector.py` (442 lines) | `argumentation_analysis/agents/core/informal/taxonomy_sophism_detector.py` | a8025f60 (2026-07-02) |
 | `_informal_definitions.py` (891 lines) | `argumentation_analysis/agents/core/informal/informal_definitions.py` | a8025f60 (2026-07-02) |
+| `_tweety_bridge.py` (488 lines) | `argumentation_analysis/agents/core/logic/tweety_bridge.py` | a8025f60 (2026-07-02) |
 
 Rationale for verbatim import
 -----------------------------
@@ -139,6 +140,55 @@ preserving it byte-for-byte in `argumentation_lib/` documents the exact
 contract the shim must satisfy. The cost is a 913-line file that is
 currently dead-weight (cannot be imported); the benefit is no drift
 between this reference and the eventual shim.
+
+
+Volet B etape 4 sub-tranche C186a (tweety_bridge)
+-------------------------------------------------
+
+PR #XXXX (C186a) added `_tweety_bridge.py` as a verbatim copy of the EPITA-IS
+`tweety_bridge.py` module (488 lines at commit `a8025f60`). This module is the
+**singleton JPype bridge** that:
+
+- Manages the JVM lifecycle via `initialize_jvm()` / `shutdown_jvm()` /
+  `is_jvm_started()`.
+- Loads the TweetyProject JARs from disk and exposes the JPype-imported
+  Java classes to the rest of the application.
+- Delegates reasoning to 12 logic handler classes (`PLHandler`, `FOLHandler`,
+  `ModalHandler`, `AFHandler`, `RankingHandler`, `BipolarHandler`, `ABAHandler`,
+  `ADFHandler`, `ASPICHandler`, `BeliefRevisionHandler`, `ProbabilisticHandler`,
+  `DialogueHandler`) imported at module-level (lines 29-40).
+- Wires `TweetyInitializer` (line 41) for parser/reasoner component setup.
+
+Dependency disclosure (G.9 honest caveat): the 12 handler classes +
+`TweetyInitializer` are NOT vendored in `argumentation_lib/` today, AND the
+bridge itself depends on `argumentation_analysis.core.jvm_setup` (a separate
+EPITA module not vendored here). Therefore this file is **NOT standalone-
+importable today** : even `from argumentation_lib._tweety_bridge import
+TweetyBridge` raises `ImportError` because the top-level
+`from .pl_handler import ...` cannot resolve the sibling modules.
+
+The lazy accessor `argumentation_lib.get_tweety_bridge_symbol()` is preserved
+for API symmetry with C184 (`get_taxonomy_sophism_detector`) and C185
+(`get_informal_definitions_symbols`), but like C185, does **not** bypass the
+top-level imports. Runtime usability awaits Volet B etape 4 sub-tranches
+C186b+ which will port the 12 handlers + `TweetyInitializer` + `jvm_setup`
+bridge (the latter via CoursIA's native `_jvm_compat.py` ↔
+`Tweety.tweety_init`).
+
+**Why deliver the verbatim copy anyway** (G.9 honesty over abandonment):
+the verbatim block is the authoritative source for the eventual CoursIA
+integration. The cost is a 510-line file currently dead-weight; the
+benefit is no drift between this reference and the future shim that
+routes the 12 handlers through CoursIA's native JPype runtime.
+
+**Sub-tranche plan** :
+- **C186a** (this PR) : `tweety_bridge.py` (488L) — bridge singleton, atomic.
+- **C186b+** (future) : one or more sub-tranches porting the 12 handler
+  classes + `TweetyInitializer` + `jvm_setup` bridge, atomique par lot de
+  2-3 fichiers (catalog-pr-hygiene R3 < 3000L / < 15 fichiers).
+- **Verdict ai-01 pending** on scope exact des 12 (msg-20260703T151753-xlwuw4) :
+  Q1 liste exacte, Q2 doublon cross-stack EPIC #4667, Q3 runtime bridge
+  Python ↔ CoursIA `_jvm_compat`, Q4 sub-split atomique C186a greenlit.
 
 What this NOTICE does NOT cover
 -------------------------------
