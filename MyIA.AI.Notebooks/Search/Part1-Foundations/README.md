@@ -39,6 +39,7 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 | 9 | [Search-9-LinearProgramming](Search-9-LinearProgramming.ipynb) | Python 3 | Programmation linéaire avec PuLP, simplex, problème du transport, diet problem, PLNE | ~2h |
 | 10 | [Search-10-SymbolicAutomata](Search-10-SymbolicAutomata.ipynb) | Python 3 | Automates finis (DFA/NFA) avec automata-lib, prédicats Z3, automates symboliques | ~2h |
 | 11 | [Search-11-Metaheuristics](Search-11-Metaheuristics.ipynb) | Python 3 | PSO, ABC, SA, BRO avec MEALPy, benchmark comparatif de métaheuristiques | ~1h30 |
+| 12 | [Search-12-NetworkX](Search-12-NetworkX.ipynb) | Python 3 | Bibliothèque NetworkX : graphes, plus courts chemins, centralités, flot max, communautés, matching | ~50 min |
 
 ## Progression
 
