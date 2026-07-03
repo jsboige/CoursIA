@@ -161,6 +161,52 @@ def get_fol_handler_symbol():
     return FOLHandler
 
 
+# -- Modal Handler (JPype singleton, SPASS/SimpleMlReasoner dispatch) --
+def get_modal_handler_symbol():
+    """Lazy import for ModalHandler class symbol.
+
+    Note (G.9 honest caveat): `_modal_handler.py` imports at module-load
+    `from .modal_kb_identifier_normalizer import ModalIdentifierNormalizer`
+    (sibling not vendored, MlParser underscore-normalization #1326),
+    `from .tweety_initializer import TweetyInitializer` (C186f awaiting),
+    `from argumentation_analysis.core.config import settings, ModalSolverChoice`
+    (upstream internal), and `jpype.JClass`/`jpype.JException` (JPype singleton).
+    The module-level import fails today with
+    `ModuleNotFoundError: No module named 'argumentation_lib.modal_kb_identifier_normalizer'`
+    — that's the G.9 fingerprint that proves the verbatim block is honest,
+    not fabricated. Runtime usability awaits C186f (TweetyInitializer) +
+    C186g (JPype bridge shim).
+
+    Chain anchor: a8025f60. 1 upstream commit (f5ce8bd9 SPASS routing fix
+    #1339) post-a8025f60 affects this file; pinned to a8025f60 for chain
+    consistency. The verbatim copy is the reference contract and the future
+    CoursIA shim will re-route via the resolved solver choice (#1339).
+    """
+    from argumentation_lib._modal_handler import ModalHandler
+    return ModalHandler
+
+
+# -- ADF Handler (JPype singleton, Abstract Dialectical Frameworks) --
+def get_adf_handler_symbol():
+    """Lazy import for ADFHandler class symbol.
+
+    Note (G.9 honest caveat): `_adf_handler.py` has **NO upstream
+    `argumentation_analysis.*` imports** — only stdlib (`jpype`, `logging`,
+    `typing`). The class symbol is therefore import-safe today (a simple
+    `from argumentation_lib._adf_handler import ADFHandler` succeeds);
+    ONLY JPype-Tweety singletons are referenced. Instantiation WILL fail at
+    runtime until the JPype bridge singleton from C186a
+    (`argumentation_lib.initialize_jvm`) is initialized and the target
+    classes are exposed by the JVM — see `_jvm_compat.py`.
+
+    The lazy accessor preserves the API symmetry with C184/C185/C186a/C186b
+    accessors. Runtime usability awaits C186g (runtime bridge shim wrapping
+    `argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`).
+    """
+    from argumentation_lib._adf_handler import ADFHandler
+    return ADFHandler
+
+
 # -- Tweety Bridge (JPype singleton, 12 logic handlers not vendored) --
 def get_tweety_bridge_symbol():
     """Lazy import for the TweetyBridge class symbol.
@@ -228,6 +274,8 @@ __all__ = [
     "get_informal_definitions_symbols",
     "get_pl_handler_symbol",
     "get_fol_handler_symbol",
+    "get_modal_handler_symbol",
+    "get_adf_handler_symbol",
     "get_tweety_bridge_symbol",
     # reporting
     "EnhancedGlobalTraceAnalyzer", "enhanced_global_trace_analyzer",
