@@ -17,6 +17,7 @@ CoursIA copy
 | `_shared_state.py` (1121 lines)       | `argumentation_analysis/core/shared_state.py` | a8025f60 (2026-07-02) |
 | `_state_manager_plugin.py`            | `argumentation_analysis/core/state_manager_plugin.py` | see git log |
 | `_taxonomy_sophism_detector.py` (442 lines) | `argumentation_analysis/agents/core/informal/taxonomy_sophism_detector.py` | a8025f60 (2026-07-02) |
+| `_informal_definitions.py` (891 lines) | `argumentation_analysis/agents/core/informal/informal_definitions.py` | a8025f60 (2026-07-02) |
 
 Rationale for verbatim import
 -----------------------------
@@ -69,11 +70,10 @@ by the Argument_Analysis notebook series (e.g. the `Restitution 3 actes` noteboo
 uses `ArgumentProfile` as the in-memory shape for per-argument aggregation) and
 stripping their implementation would break the pedagogical contract.
 
-
 Volet B etape 3 sub-tranche C184 (TaxonomySophismDetector)
 -----------------------------------------------------------
 
-PR #XXXX (C184) added `_taxonomy_sophism_detector.py` as a verbatim copy of the EPITA-IS
+PR #5205 (C184) added `_taxonomy_sophism_detector.py` as a verbatim copy of the EPITA-IS
 `TaxonomySophismDetector` class. This class provides:
 
 - `get_main_branches()` -- list of depth=0/1 taxonomy branches (root + 7 first-level families)
@@ -104,6 +104,41 @@ in `__init__.py` returns the class symbol without triggering instantiation.
 upstream source at commit `a8025f60`. No CoursIA modification has been applied
 (no stub, no `pass`, no `return None`, no header rewrite inside the class).
 Only an MIT attribution header was prepended (10 LOC of comments).
+
+Volet B etape 4 sub-tranche C185 (informal_definitions)
+-------------------------------------------------------
+
+PR #XXXX (C185) added `_informal_definitions.py` as a verbatim copy of the EPITA-IS
+`informal_definitions.py` module. This module exposes:
+
+- `IdentifiedFallacy` -- Pydantic model for a single identified sophism.
+- `FallacyAnalysisResult` -- Pydantic model for analysis output.
+- `InformalAnalysisPlugin` -- `KernelFunction` wrapper that orchestrates
+  the identification + justification pipeline against the real taxonomy CSV.
+- `setup_informal_kernel(kernel)` -- registers the plugin + semantic functions
+  on a Semantic Kernel `Kernel` instance.
+- `INFORMAL_AGENT_INSTRUCTIONS` -- system-prompt template for the LLM agent.
+
+Dependency disclosure (G.9 honest caveat): this module imports `semantic_kernel`,
+`pandas`, `pydantic`, `requests` upstream, plus three EPITA-internal helpers
+(`load_csv_file`, `get_taxonomy_path`, `DATA_DIR`) that are NOT vendored in
+`argumentation_lib/`. It is therefore **NOT standalone-importable today**:
+even the module-level `import` raises `ModuleNotFoundError:
+No module named 'argumentation_analysis'` because the top-level imports
+cannot resolve. The lazy accessor
+`argumentation_lib.get_informal_definitions_symbols()` is preserved for
+API symmetry with C184 (`get_taxonomy_sophism_detector`) but does **not**
+bypass the top-level imports (unlike the C184 accessor, which only required
+a class-level symbol). The verbatim copy is preserved here as a reference
+for the future TweetyBridge shim JPype (Volet B etape 4, slice C186+) that
+will re-export these symbols through a JPype-compatible wrapper.
+
+**Why deliver the verbatim copy anyway** (G.9 honesty over abandonment):
+the verbatim block is the authoritative source for the eventual shim, and
+preserving it byte-for-byte in `argumentation_lib/` documents the exact
+contract the shim must satisfy. The cost is a 913-line file that is
+currently dead-weight (cannot be imported); the benefit is no drift
+between this reference and the eventual shim.
 
 What this NOTICE does NOT cover
 -------------------------------

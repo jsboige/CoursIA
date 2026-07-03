@@ -79,6 +79,46 @@ def get_taxonomy_sophism_detector():
     )
     return TaxonomySophismDetector
 
+
+
+# -- Informal Definitions (Semantic Kernel heavy dep via InformalAnalysisPlugin) --
+def get_informal_definitions_symbols():
+    """Lazy import for informal-definitions symbols.
+
+    Returns a tuple of the 5 public symbols exported by
+    `_informal_definitions.py`:
+
+        (InformalAnalysisPlugin, IdentifiedFallacy, FallacyAnalysisResult,
+         setup_informal_kernel, INFORMAL_AGENT_INSTRUCTIONS)
+
+    Note (G.9 honest caveat): the upstream module imports
+    `semantic_kernel`, `pandas`, `pydantic`, `requests` and three
+    EPITA-internal helpers (`load_csv_file`, `get_taxonomy_path`,
+    `DATA_DIR`) that are NOT vendored in `argumentation_lib/`. Even the
+    module-level `import` will raise `ModuleNotFoundError:
+    No module named 'argumentation_analysis'` today -- this lazy
+    accessor exists for completeness with C184's accessor pattern, but
+    C185 realizes it does not bypass the top-level imports. Runtime
+    usability awaits Volet B etape 4 (TweetyBridge shim JPype).
+    The verbatim copy is preserved here for the future shim that will
+    re-export its public symbols.
+    """
+    from argumentation_lib._informal_definitions import (
+        InformalAnalysisPlugin,
+        IdentifiedFallacy,
+        FallacyAnalysisResult,
+        setup_informal_kernel,
+        INFORMAL_AGENT_INSTRUCTIONS,
+    )
+    return (
+        InformalAnalysisPlugin,
+        IdentifiedFallacy,
+        FallacyAnalysisResult,
+        setup_informal_kernel,
+        INFORMAL_AGENT_INSTRUCTIONS,
+    )
+
+
 __all__ = [
     # config
     "LibConfig", "get_config", "DEFAULT_CONFIG",
@@ -94,6 +134,7 @@ __all__ = [
     # runner
     "get_analysis_runner",
     "get_taxonomy_sophism_detector",
+    "get_informal_definitions_symbols",
     # reporting
     "EnhancedGlobalTraceAnalyzer", "enhanced_global_trace_analyzer",
     "start_enhanced_pm_capture", "stop_enhanced_pm_capture",
