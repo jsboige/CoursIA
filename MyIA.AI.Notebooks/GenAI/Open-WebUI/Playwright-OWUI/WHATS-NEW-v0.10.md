@@ -1,41 +1,41 @@
-# Nouveautes Open WebUI v0.10 (juin-juillet 2026)
+# Nouveautés Open WebUI v0.10 (juin-juillet 2026)
 
 [← Retour Playwright-OWUI](./README.md)
 
-> **Pour qui ?** Etudiants qui suivent la serie Playwright-OWUI sur une instance
-> mise a jour en **v0.10.2** (myia et les 6 ecoles partenaires). Ce document
-> explique ce qui a change depuis la v0.9.x et ce que vous pouvez tester en bonus.
-> Le **module 06** met ces nouveautes en pratique.
+> **Pour qui ?** Étudiants qui suivent la série Playwright-OWUI sur une instance
+> mise à jour en **v0.10.2** (myia et les 6 écoles partenaires). Ce document
+> explique ce qui a changé depuis la v0.9.x et ce que vous pouvez tester en bonus.
+> Le **module 06** met ces nouveautés en pratique.
 
-## Contexte de mise a jour
+## Contexte de mise à jour
 
-La ligne **v0.10** est arrivee en trois temps :
+La ligne **v0.10** est arrivée en trois temps :
 
 - **v0.10.0** (29 juin 2026) — « plateforme agentique » : la plus grosse
-  evolution depuis la v0.8.
+  évolution depuis la v0.8.
 - **v0.10.1** (29 juin 2026) — correctif (chats en lecture seule dans des dossiers
-  partages ne forcent plus la deconnexion).
-- **v0.10.2** (1er juillet 2026) — raisonnement affiche en direct, uploads de
-  bases de connaissances qui preservent l'arborescence, memoire plus fine.
+  partagés ne forcent plus la déconnexion).
+- **v0.10.2** (1er juillet 2026) — raisonnement affiché en direct, uploads de
+  bases de connaissances qui préservent l'arborescence, mémoire plus fine.
 
 L'instance de cours et les instances partenaires (EPF, EPF-GenAI, ECE, ESG, EPITA,
 Pauwels) sont sur **v0.10.2**.
 
 ## Ce qui ne change PAS (rassurant pour vos tests existants)
 
-- **Authentification** : meme endpoint `/api/v1/auths/signin`, meme rate limit
+- **Authentification** : même endpoint `/api/v1/auths/signin`, même rate limit
   (~2 min), meme pattern `storageState`.
-- **Editeur de chat** : toujours TipTap/ProseMirror → `keyboard.type()` obligatoire
+- **Éditeur de chat** : toujours TipTap/ProseMirror → `keyboard.type()` obligatoire
   (jamais `fill()`).
-- **Selecteurs principaux** : `#chat-input`, la sidebar, le selecteur de modèles —
-  inchanges.
-- **Streaming** : meme mecanisme Server-Sent Events, meme API `/api/chat/completions`.
+- **Sélecteurs principaux** : `#chat-input`, la sidebar, le sélecteur de modèles —
+  inchangés.
+- **Streaming** : même mécanisme Server-Sent Events, même API `/api/chat/completions`.
 
-## Nouveautes majeures (opportunites de tests)
+## Nouveautés majeures (opportunités de tests)
 
-### 1. Memoire (memory) — refonte complete, sortie de beta
+### 1. Mémoire (memory) — refonte complète, sortie de beta
 
-La memoire distingue desormais le **long terme** et le **par-conversation**.
+La mémoire distingue désormais le **long terme** et le **par-conversation**.
 Chaque souvenir porte un champ **`type`** (ex. `"context"`) et un `path` optionnel.
 
 **A tester (module 06, API)** :
@@ -47,77 +47,77 @@ await deleteMemory(request, OWUI_URL, token, created.id);  // toujours nettoyer 
 Endpoints : `GET /api/v1/memories/`, `POST /api/v1/memories/add`,
 `DELETE /api/v1/memories/{id}`.
 
-> **v0.10.2** ajoute une **capture memoire plus fine** (privilegie les preferences
-> durables plutot que les evenements ponctuels) et un **reglage admin** pour garder
-> les outils memoire actifs sans injecter le contexte stocke dans les prompts.
+> **v0.10.2** ajoute une **capture mémoire plus fine** (privilégie les préférences
+> durables plutôt que les événements ponctuels) et un **réglage admin** pour garder
+> les outils mémoire actifs sans injecter le contexte stocké dans les prompts.
 
-### 2. Dossiers d'equipe (folders) — partageables
+### 2. Dossiers d'équipe (folders) — partageables
 
-Les dossiers peuvent etre **partages** avec des permissions **lecture / ecriture**
+Les dossiers peuvent être **partagés** avec des permissions **lecture / écriture**
 pour des utilisateurs ou des groupes.
 
 **A tester (module 06, API)** : CRUD via `GET/POST /api/v1/folders/` et
-`DELETE /api/v1/folders/{id}` ; le **partage** entre deux comptes est propose en
+`DELETE /api/v1/folders/{id}` ; le **partage** entre deux comptes est proposé en
 exercice (variables `OWUI_TENANT2_*`).
 
-### 3. Raisonnement streame (v0.10.2)
+### 3. Raisonnement streamé (v0.10.2)
 
 Les modèles "thinking" affichent leurs **étapes de raisonnement en direct** dans
-l'interface (bloc repliable). **A tester (module 06, UI)** : selectionner un
-modèle de raisonnement (`OWUI_REASONING_MODEL`), poser une question, verifier
+l'interface (bloc repliable). **A tester (module 06, UI)** : sélectionner un
+modèle de raisonnement (`OWUI_REASONING_MODEL`), poser une question, vérifier
 l'apparition du bloc de raisonnement — avec **skip gracieux** si le modèle n'en
-emet pas.
+émet pas.
 
 ### 4. Compaction automatique du contexte
 
-Quand une conversation approche de la limite de contexte, elle est **resumee
-automatiquement** au lieu d'etre tronquee. **A tester (module 06, UI)** : plusieurs
-tours d'affilee, le modèle **garde le fil** (test de non-regression conversation
+Quand une conversation approche de la limite de contexte, elle est **résumée
+automatiquement** au lieu d'être tronquée. **A tester (module 06, UI)** : plusieurs
+tours d'affilée, le modèle **garde le fil** (test de non-régression conversation
 longue).
 
-### 5. Uploads de connaissances qui preservent l'arborescence (v0.10.2)
+### 5. Uploads de connaissances qui préservent l'arborescence (v0.10.2)
 
 Les imports de fichiers dans une base de connaissances **conservent la structure
-des sous-dossiers** au lieu de tout aplatir. **Idee d'exercice (Module 04/06)** :
-uploader une arborescence et verifier que les chemins relatifs sont preserves.
+des sous-dossiers** au lieu de tout aplatir. **Idée d'exercice (Module 04/06)** :
+uploader une arborescence et vérifier que les chemins relatifs sont préservés.
 
 ## Nouveautes backend utiles (Module 05 — API)
 
-- **Recherche hybride native** (base de données) pour des requetes KB nettement
+- **Recherche hybride native** (base de données) pour des requêtes KB nettement
   plus rapides.
-- **Sources de recuperation externes** : interroger des systemes tiers directement
+- **Sources de récupération externes** : interroger des systèmes tiers directement
   depuis le chat.
-- **Systeme d'evenements + webhooks** : les activites de la plateforme peuvent
-  declencher des webhooks sortants.
-- **Administration centralisee de l'authentification** (LDAP et OAuth/OIDC sur une
-  page admin dediee — voir piege n°3 plus bas).
+- **Système d'événements + webhooks** : les activités de la plateforme peuvent
+  déclencher des webhooks sortants.
+- **Administration centralisée de l'authentification** (LDAP et OAuth/OIDC sur une
+  page admin dédiée — voir piège n°3 plus bas).
 - **Config via variables d'environnement** des connexions Ollama/OpenAI (v0.10.2),
-  et modèles d'arene definissables par variables d'environnement.
+  et modèles d'arène définissables par variables d'environnement.
 
-## Changements BREAKING (a connaitre)
+## Changements BREAKING (à connaître)
 
 | Changement | Impact pour vous |
 |------------|------------------|
-| **Native tool calling par defaut** (remplace le mode "legacy") | Un modèle conversationnel appele en API non-streaming peut renvoyer `tool_calls` + `content` vide. Testez le texte via l'UI (streaming), ou ciblez des modèles sans outils. |
-| **Python cote client en iframe sandbox** | L'execution Python cote navigateur tourne dans une iframe isolee → ciblez le `frameLocator`, pas le document principal. |
-| **Config d'authentification deplacee** sur une page admin dediee | Les tests qui cherchaient les reglages auth dans les paramètres generaux doivent viser la nouvelle page admin. |
-| **Migration BDD irreversible** (backup serveur obligatoire) | Pas d'impact test ; explique pourquoi on ne "revient pas en arriere" sur une instance. |
-| Renommage `ENABLE_RAG_LOCAL_WEB_FETCH` → `ENABLE_LOCAL_WEB_FETCH` | Cote deploiement uniquement. |
-| Cle You.com : `YOUCOM_API_KEY` → `YDC_API_KEY` | Cote deploiement uniquement. |
+| **Native tool calling par défaut** (remplace le mode "legacy") | Un modèle conversationnel appelé en API non-streaming peut renvoyer `tool_calls` + `content` vide. Testez le texte via l'UI (streaming), ou ciblez des modèles sans outils. |
+| **Python côté client en iframe sandbox** | L'exécution Python côté navigateur tourne dans une iframe isolée → ciblez le `frameLocator`, pas le document principal. |
+| **Config d'authentification déplacée** sur une page admin dédiée | Les tests qui cherchaient les réglages auth dans les paramètres généraux doivent viser la nouvelle page admin. |
+| **Migration BDD irréversible** (backup serveur obligatoire) | Pas d'impact test ; explique pourquoi on ne "revient pas en arrière" sur une instance. |
+| Renommage `ENABLE_RAG_LOCAL_WEB_FETCH` → `ENABLE_LOCAL_WEB_FETCH` | Côté déploiement uniquement. |
+| Cle You.com : `YOUCOM_API_KEY` → `YDC_API_KEY` | Côté déploiement uniquement. |
 
-## Pieges qui n'ont PAS change
+## Pièges qui n'ont PAS changé
 
-Les 4 pieges du README principal restent valides :
+Les 4 pièges du README principal restent valides :
 1. Modal "Quoi de neuf" (overlay) — `dismissModals()` la ferme.
-2. Editeur TipTap — `keyboard.type()` obligatoire.
+2. Éditeur TipTap — `keyboard.type()` obligatoire.
 3. Rate limiting `/api/v1/auths/signin` (~2 min) — login unique en `beforeAll`.
 4. APIs renvoyant du HTML via reverse proxy — **slash final** obligatoire.
 
-## Ou lire les details techniques
+## Où lire les détails techniques
 
 - **Changelog upstream** : https://github.com/open-webui/open-webui/blob/main/CHANGELOG.md (sections 0.10.0 → 0.10.2)
 - **Module pratique** : [`06-nouveautes-v0.10/`](./06-nouveautes-v0.10/README.md)
 
 ---
 
-*Mise a jour : 1er juillet 2026. Applique a l'instance de cours et aux 6 ecoles partenaires (v0.10.2).*
+*Mise à jour : 1er juillet 2026. Appliqué à l'instance de cours et aux 6 écoles partenaires (v0.10.2).*
