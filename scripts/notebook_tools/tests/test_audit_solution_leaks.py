@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from audit_solution_leaks import (
     audit_notebook,
     detect_commented_solution_leak,
+    detect_csharp_leak_candidates,
     detect_function_body_leak,
     detect_preresolved_cells,
     get_cells_after_exercice_md,
@@ -565,3 +566,123 @@ class TestAuditNotebook:
         types = {l["type"] for l in leaks}
         assert "function_body_leak" in types
         assert "preresolved_cell" in types
+
+
+# ---------------------------------------------------------------------------
+# C# / .NET Interactive leak candidates (#2161 blind-spot, complement to #5179)
+# ---------------------------------------------------------------------------
+# A C# notebook metadata marker so detect_csharp_leak_candidates runs.
+CSHARP_META = {
+    "kernelspec": {"name": ".net-csharp", "display_name": ".NET (C#)"},
+    "language_info": {"name": "C#"},
+}
+
+
+class TestCSharpLeakCandidates:
+    """The Python detectors only match `#`; C# uses `//`. These tests verify the
+    C# candidate layer flags cells for MANUAL review (never auto-verdicts -- the
+    example-vs-leak judgment is content-based, exercise-example-labeling rule).
+    """
+
+    def test_csharp_exercice_with_full_body_is_flagged(self, tmp_path):
+        """A `// Exercice` cell holding >3 code lines and NO stub marker is a
+        leak candidate (C# analogue of a Python function_body_leak)."""
+        src = (
+            "// Exercice : implementez le melange a 3 composantes\n"
+            "public class CyclisteBase3Composantes {\n"
+            "    var a = data[0];\n"
+            "    var b = data[1];\n"
+            "    var c = data[2];\n"
+            "    var model = Mix(a, b, c);\n"
+            "    return model;\n"
+            "}\n"
+        )
+        candidates = detect_csharp_leak_candidates([_code_cell(src)])
+        assert len(candidates) == 1
+        assert candidates[0]["type"] == "csharp_exercice_body"
+        # FLAG severity = candidate, NOT an auto-verdicted leak.
+        assert candidates[0]["severity"] == "FLAG"
+        assert candidates[0]["code_lines"] > 3
+
+    def test_csharp_exercice_with_todo_stub_is_not_flagged(self, tmp_path):
+        """A `// Exercice` cell with a TODO stub marker is a legit student stub
+        -- NOT a leak candidate. (Guards against over-flagging 302/350 real
+        C# stubs that the #5179 lesson showed are the common case.)"""
+        src = (
+            "// Exercice 1 : Lancer de trois pieces\n"
+            "// TODO etudiant : Creer trois variables booleennes\n"
+            "// TODO etudiant : Calculer la probabilite\n"
+            "bool p1 = true;\n"
+            "bool p2 = false;\n"
+        )
+        candidates = detect_csharp_leak_candidates([_code_cell(src)])
+        assert len(candidates) == 0, (
+            "C# exercice cell WITH TODO stub must NOT be flagged"
+        )
+
+    def test_csharp_exercice_with_few_lines_is_not_flagged(self, tmp_path):
+        """A `// Exercice` cell with <=3 code lines (even without TODO) is too
+        small to be a solution leak -- a real solution needs >3 logic lines."""
+        src = (
+            "// Exercice : court stub sans TODO\n"
+            "var x = 1;\n"
+            "var y = 2;\n"
+        )
+        candidates = detect_csharp_leak_candidates([_code_cell(src)])
+        assert len(candidates) == 0
+
+    def test_csharp_solution_cell_is_flagged_as_preresolved(self, tmp_path):
+        """A `// Solution` / `// Exemple resolu` cell with >3 code lines is a
+        pre-resolved candidate. It MAY be a legit worked example -- hence FLAG
+        for review, not an auto-leak verdict."""
+        src = (
+            "// Exemple resolu : factorielle recursive\n"
+            "int Factorielle(int n) {\n"
+            "    if (n <= 1) return 1;\n"
+            "    return n * Factorielle(n - 1);\n"
+            "}\n"
+            "Console.WriteLine(Factorielle(5));\n"
+        )
+        candidates = detect_csharp_leak_candidates([_code_cell(src)])
+        assert len(candidates) == 1
+        assert candidates[0]["type"] == "csharp_preresolved"
+        assert candidates[0]["severity"] == "FLAG"
+
+    def test_python_cell_is_not_double_flagged_by_csharp_layer(self, tmp_path):
+        """A Python `# Exercice` cell (not C#) must NOT be picked up by the C#
+        candidate layer -- `#` comments are not `//`. (Guards scope boundary.)"""
+        src = (
+            "# Exercice 1 : solution complete en Python\n"
+            "def solve(x):\n"
+            "    a = compute(x)\n"
+            "    b = transform(a)\n"
+            "    c = validate(b)\n"
+            "    return aggregate(a, b, c)\n"
+        )
+        candidates = detect_csharp_leak_candidates([_code_cell(src)])
+        assert len(candidates) == 0, "Python # cell must not hit the // detector"
+
+    def test_audit_notebook_only_runs_csharp_layer_on_csharp_notebooks(
+        self, tmp_path
+    ):
+        """A Python-kernel notebook with a `// Exercice`-looking cell must NOT
+        trigger the C# layer (false-positive guard: // in a Python notebook is
+        not a C# comment)."""
+        # Python kernel metadata
+        py_meta = {"kernelspec": {"name": "python3"}, "language_info": {"name": "python"}}
+        nb = {
+            "cells": [_code_cell(
+                "// Exercice : ceci n'est pas un commentaire C#\n"
+                "x = compute(data)  # mais ceci l'est, en Python\n"
+                "y = transform(x)\n"
+                "z = validate(y)\n"
+                "return aggregate(x, y, z)\n"
+            )],
+            "metadata": py_meta,
+        }
+        path = _write_nb(tmp_path, nb)
+        leaks = audit_notebook(path)
+        csharp_types = {l["type"] for l in leaks if l["type"].startswith("csharp_")}
+        assert csharp_types == set(), (
+            "C# layer must NOT run on a Python-kernel notebook"
+        )
