@@ -9,6 +9,11 @@
 
 __version__ = "0.2.0"
 
+# `sys` is read by the C186g `get_jvm_setup_compat_symbols` accessor
+# below to fetch the stdlib-only `setup_logging` proxy registered by
+# the runtime bridge shim (see `_jvm_setup_compat.py`).
+import sys
+
 # -- Configuration (zero secrets, zero model names) --
 from argumentation_lib._config import LibConfig, get_config, DEFAULT_CONFIG
 
@@ -30,6 +35,19 @@ from argumentation_lib._jvm_compat import (
     is_jvm_started,
     shutdown_jvm,
 )
+
+# -- EPITA namespace shim (C186g, See #4960) --
+# Importing this side-effect installs virtual sys.modules entries for
+# `argumentation_analysis.core.{jvm_setup,utils.logging_utils}` that
+# proxy to the CoursIA-owned `_jvm_compat` (C184) and a stdlib-only
+# `setup_logging` shim. This unblocks the verbatim upstream imports
+# inside `_tweety_initializer.py` (C186f) and the wider C186 chain
+# without vendoring the EPITA-internal `argumentation_analysis`
+# package. The import is best-effort: if it fails (e.g. JPype
+# unavailable in the env), the original G.9 ModuleNotFoundError
+# fingerprint is preserved -- the verbatim modules remain deferred
+# behind their lazy accessors.
+from argumentation_lib import _jvm_setup_compat  # noqa: F401
 
 # -- Shared state (RhetoricalAnalysisState — autoportant, zero EPITA deps) --
 from argumentation_lib._shared_state import (
@@ -424,6 +442,46 @@ def get_tweety_initializer_symbol():
     return TweetyInitializer
 
 
+# -- C186g Runtime Bridge Shim (See #4960) --
+def get_jvm_setup_compat_symbols():
+    """Lazy import for the C186g runtime bridge shim (G6 glue, NOT verbatim).
+
+    Returns the public callables of `argumentation_lib._jvm_setup_compat`:
+
+        (install_epita_namespace_shim, setup_logging)
+
+    This accessor is mostly useful for tests / debugging the shim
+    itself (the runtime side-effect is already triggered by the top-of-
+    `__init__.py` `from argumentation_lib import _jvm_setup_compat`
+    statement -- importing `argumentation_lib` alone is now sufficient
+    to make `from argumentation_lib._tweety_initializer import
+    TweetyInitializer` succeed).
+
+    Per G.9 honest caveat (NOT a verbatim port -- fabrication-prime):
+    `_jvm_setup_compat.py` is a CoursIA-owned shim, NOT a verbatim
+    upstream copy.  It registers `argumentation_analysis.core.jvm_setup`
+    and `argumentation_analysis.core.utils.logging_utils` as virtual
+    sys.modules proxies that re-export `_jvm_compat` (C184) symbols
+    and a stdlib-only `setup_logging` callable.  This satisfies the
+    verbatim upstream imports inside `_tweety_initializer.py` (C186f)
+    without vendoring the EPITA-internal `argumentation_analysis`
+    package (which we deliberately never vendored -- CoursIA's
+    `init_tweety()` infrastructure is already superior to EPITA's
+    `jvm_setup.py`, cf `_jvm_compat.py` C184 header).
+    """
+    from argumentation_lib import _jvm_setup_compat
+    # `setup_logging` lives on the proxy module registered into
+    # `sys.modules` -- not on `_jvm_setup_compat` itself.  Fetch it
+    # from there so callers receive the same function that the
+    # verbatim upstream `_tweety_initializer.py` (L47) imports.
+    setup_logging = sys.modules[
+        "argumentation_analysis.core.utils.logging_utils"
+    ].setup_logging
+    return (
+        _jvm_setup_compat.install_epita_namespace_shim,
+        setup_logging,
+    )
+
 
 __all__ = [
     # config
@@ -452,6 +510,7 @@ __all__ = [
     "get_dialogue_handler_symbol",
     "get_tweety_bridge_symbol",
     "get_tweety_initializer_symbol",
+    "get_jvm_setup_compat_symbols",
     # reporting
     "EnhancedGlobalTraceAnalyzer", "enhanced_global_trace_analyzer",
     "start_enhanced_pm_capture", "stop_enhanced_pm_capture",
