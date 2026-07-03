@@ -77,10 +77,10 @@ Refonte conduite sous la gouvernance de l'Epic-parapluie **#4427** (coordination
 | **P0** | Cadrage : fil rouge, carte de mission, capstone, acquis d'apprentissage (ce document) | **en cours** |
 | **P1** | Notebook chapeau `00-Parcours-QA-OWUI.ipynb` (narration + orchestration + exercices) | à venir |
 | **P2** | Couche notebook par module (×5), `.spec.ts` conservés en backend | à venir |
-| **P3** | Revalidation réelle sur **Open WebUI v0.9.6** (drift DOM, payload chat `chat_id`+`id`) | à venir |
+| **P3** | Revalidation réelle sur **Open WebUI v0.10.2** (drift DOM, payload chat `chat_id`+`id`) | à venir |
 | **P4** | Intégration au catalogue + fil rouge transverse (README parent, diagramme de mission) | à venir |
 
-> **Note de version.** La cible de revalidation de la suite est désormais **Open WebUI v0.9.6** (la flotte a été montée de version le 2026-06-27). Le `WHATS-NEW-v0.9.1.md` actuel et la mention « revalidée v0.9.1 » du README sont **périmés** et seront repris en Phase 3 — tant que cette revalidation n'est pas faite, aucun claim de compatibilité v0.9.6 n'est porté.
+> **Note de version.** La flotte a été montée en **Open WebUI v0.10.2** le 2026-07-01 ; la cible de revalidation de la suite est donc **v0.10.2**. Les nouveautés v0.10 sont documentées dans [`WHATS-NEW-v0.10.md`](./WHATS-NEW-v0.10.md) et couvertes par le **module 06**. Le `WHATS-NEW-v0.9.1.md` et la mention « revalidée v0.9.1 » du README restent **périmés** et seront repris en Phase 3. La revalidation de bout en bout des modules 01-05 contre v0.10.2 (drift DOM) reste l'objet de la Phase 3 — tant qu'elle n'est pas faite, aucun claim de compatibilité v0.10.2 n'est porté pour l'ensemble de la suite.
 
 ---
 
