@@ -202,7 +202,7 @@ def validate_all_endpoints():
                 # Test génération (coûteux, skip en validation)
                 results[model_name] = {
                     'status': 'SKIP',
-                    'reason': 'Image generation test skipped'
+                    'reason': 'Test de génération d\'image ignoré'
                 }
                 print(f"⏭️ {model_name} skipped (image gen)")
         
@@ -250,7 +250,7 @@ class IntelligentModelRouter:
         # Filtrage capacités
         if task_type == "vision" or has_vision:
             candidates = self.client.list_available_models(capability="vision")
-        elif task_type == "generation":
+        elif task_type == "generation":  # génération d'image
             candidates = self.client.list_available_models(capability="image_generation")
         else:
             candidates = self.client.list_available_models(capability="text")
@@ -1106,7 +1106,7 @@ class ProductionPipeline:
                         'error': 'Budget exhausted'
                     }
             
-            # 3. Execution with retry + fallback
+            # 3. Exécution avec retry + fallback
             result = self.executor.execute_with_fallback_and_retry(
                 prompt=prompt,
                 task_type=task_type,
@@ -1195,7 +1195,7 @@ class ProductionPipeline:
 
 ---
 
-## Integration Patterns CoursIA
+## Patterns d'intégration CoursIA
 
 ### Pattern 1: Educational Content Generator
 

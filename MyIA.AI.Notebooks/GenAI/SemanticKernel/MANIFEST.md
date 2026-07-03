@@ -88,7 +88,7 @@ Read all reports in order:
 ## What Each Report Contains
 
 ### TEST_REPORT_INDEX.md
-- Quick reference table
+- Tableau de référence rapide
 - Notebook summaries
 - Issue descriptions
 - Fix recommendations

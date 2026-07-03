@@ -291,7 +291,7 @@ MyIA.AI.Notebooks/GenAI/
 - API management et monitoring
 - Error handling et retry strategies
 - Production best practices
-- Integration patterns CoursIA
+- Patterns d'intégration CoursIA
 
 **Notebooks Associés** :
 - `00-3-API-Endpoints-Configuration.ipynb`
@@ -374,7 +374,7 @@ MyIA.AI.Notebooks/GenAI/
 - Représentations 3D solides
 - Illustrations concepts abstraits
 
-**Technologies** : DALL-E 3, Matplotlib Integration
+**Technologies** : DALL-E 3, intégration Matplotlib
 
 ---
 
@@ -523,7 +523,7 @@ MyIA.AI.Notebooks/GenAI/
 
 **Module 3 : Production Cours (4h)**
 8. Templates réutilisables par discipline
-9. Batch generation supports complets
+9. Génération par lots de supports complets
 10. Quality assurance pédagogique
 11. Accessibilité et inclusivité
 

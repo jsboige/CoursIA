@@ -7,7 +7,7 @@ breakdown: SemanticKernel=20
 maturity: PRODUCTION=12, BETA=3, TEMPLATE=3, ALPHA=2
 -->
 
-[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Text Generation](../Texte/README.md)
+[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Génération de texte](../Texte/README.md)
 
 Microsoft Semantic Kernel représente un tournant dans la manière de construire des applications intelligentes. Ce SDK d'orchestration agentique connecte les LLMs aux outils, données et workflows de votre système. La réponse de Microsoft à l'écosystème LangChain, Semantic Kernel transforme des applications statiques en systèmes autonomes capables de raisonnement, d'apprentissage et d'action.
 
