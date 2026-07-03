@@ -519,7 +519,7 @@ sub-tranches C186f (TweetyInitializer) and C186g (runtime bridge shim).
 Volet B etape 4 sub-tranche C186f (tweety_initializer)
 -------------------------------------------------------
 
-PR #5256 (C186f) added `_tweety_initializer.py` (365L) as a verbatim copy
+PR #5255 (C186f) added `_tweety_initializer.py` (365L) as a verbatim copy
 of the EPITA-IS `tweety_initializer.py` module at commit `a8025f60`. This
 is the **central JPype-Tweety bridge initializer** that gates the runtime
 initialization of all 12 logic handlers imported by upstream
