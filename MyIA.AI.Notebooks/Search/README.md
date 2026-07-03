@@ -202,6 +202,8 @@ Algorithmes de recherche classiques, recherche adversariale et métaheuristiques
 | 9 | [Search-9-LinearProgramming](Part1-Foundations/Search-9-LinearProgramming.ipynb) | ~2h | PuLP, simplex, transport, diet, sensibilité, PLNE | Algèbre linéaire |
 | 10 | [Search-10-SymbolicAutomata](Part1-Foundations/Search-10-SymbolicAutomata.ipynb) | ~2h | DFA/NFA (automata-lib), prédicats Z3, automates symboliques | Search-1, SymbolicAI/SMT/Z3 |
 | 11 | [Search-11-Metaheuristics](Part1-Foundations/Search-11-Metaheuristics.ipynb) | ~1h30 | PSO, ABC, SA, BRO avec MEALPy, benchmark comparatif | Search-4, Search-5 |
+| 15 | [Search-15-NetworkX](Part1-Foundations/Search-15-NetworkX.ipynb) | ~1h | `networkx` : `Graph`/`DiGraph`, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, MST, Floyd-Warshall | Search-2 |
+| 16 | [Search-16-QuikGraph](Part1-Foundations/Search-16-QuikGraph.ipynb) | ~1h | QuikGraph 2.5.0 (.NET, NuGet) : AdjacencyGraph/BidirectionalGraph, DFS/BFS, Dijkstra, Edmonds-Karp (flot max), parité C# ↔ NetworkX | Search-1, notions C#/.NET |
 
 ---
 
@@ -333,7 +335,7 @@ Cette série est **Python d'abord** pour son cœur pédagogique (recherche, CSP,
 
 | Sous-série | Notebooks | Langage | Correspondance dans l'autre langage |
 |-----------|-----------|---------|-------------------------------------|
-| [Part1-Foundations](Part1-Foundations/) | 11 (Search-1 à Search-11) | Python | Aucune |
+| [Part1-Foundations](Part1-Foundations/) | 13 (Search-1 à Search-11, Search-15, Search-16) | Python, .NET (C#) | Aucune |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python | Aucune |
 | [Part3-Advanced](Part3-Advanced/) | 3 (Search-12 à Search-14) | Python | Aucune |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 22 (MGS-1 à MGS-19 + 3 applications spécialisées) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
@@ -451,7 +453,7 @@ Search/
 ├── search_helpers.py                      # Utilitaires partages
 ├── resources/                             # Images et données
 │
-├── Part1-Foundations/                     # Search Fondamental (11 notebooks)
+├── Part1-Foundations/                     # Search Fondamental (13 notebooks)
 │   ├── Search-1-StateSpace.ipynb
 │   ├── Search-2-Uninformed.ipynb
 │   ├── Search-3-Informed.ipynb
@@ -462,7 +464,9 @@ Search/
 │   ├── Search-8-DancingLinks.ipynb
 │   ├── Search-9-LinearProgramming.ipynb
 │   ├── Search-10-SymbolicAutomata.ipynb
-│   └── Search-11-Metaheuristics.ipynb
+│   ├── Search-11-Metaheuristics.ipynb
+│   ├── Search-15-NetworkX.ipynb
+│   └── Search-16-QuikGraph.ipynb
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (9 notebooks)
 │   ├── CSP-1-Fundamentals.ipynb
