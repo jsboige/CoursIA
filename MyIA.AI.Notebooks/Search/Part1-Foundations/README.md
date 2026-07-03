@@ -39,7 +39,7 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 | 9 | [Search-9-LinearProgramming](Search-9-LinearProgramming.ipynb) | Python 3 | Programmation linéaire avec PuLP, simplex, problème du transport, diet problem, PLNE | ~2h |
 | 10 | [Search-10-SymbolicAutomata](Search-10-SymbolicAutomata.ipynb) | Python 3 | Automates finis (DFA/NFA) avec automata-lib, prédicats Z3, automates symboliques | ~2h |
 | 11 | [Search-11-Metaheuristics](Search-11-Metaheuristics.ipynb) | Python 3 | PSO, ABC, SA, BRO avec MEALPy, benchmark comparatif de métaheuristiques | ~1h30 |
-| 12 | [Search-12-NetworkX](Search-12-NetworkX.ipynb) | Python 3 | Bibliothèque NetworkX : graphes, plus courts chemins, centralités, flot max, communautés, matching | ~50 min |
+| 13 | [Search-13-QuikGraph](Search-13-QuikGraph.ipynb) | .NET (C#) | Bibliothèque de graphes QuikGraph 2.5.0 (NuGet) : AdjacencyGraph / BidirectionalGraph / UndirectedGraph, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, composantes connexes, Edmonds-Karp (flot max), parité avec NetworkX | ~1h |
 
 ## Progression
 
@@ -75,8 +75,13 @@ Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) son
 | `mealpy` | Search-11 (Métaheuristiques) |
 | `z3-solver` | Search-10 (Symbolic Automata) |
 | OpenSpiel | Search-7 (MCTS) : requiert WSL ou Linux |
+| `QuikGraph 2.5.0` (NuGet) | Search-13 (parité C#) : nécessite .NET Interactive, installable via `dotnet tool install --global Microsoft.dotnet-interactive` |
 
 Pour le setup complet, voir le [README de la série Search](../README.md).
+
+## Bibliothèques : parité Python `networkx` ↔ .NET `QuikGraph`
+
+Le notebook [Search-13-QuikGraph](Search-13-QuikGraph.ipynb) ferme la boucle côté **.NET Interactive** : il offre l'équivalent C# du notebook Python [Search-12-NetworkX](Search-12-NetworkX.ipynb), avec une table de parité structurelle entre les deux écosystèmes. La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algorithmes classiques (DFS, BFS, Dijkstra, Bellman-Ford, A\*, Edmonds-Karp, Tarjan, MST, Floyd-Warshall) et **suffit pour tous les notebooks Search 1-11** si l'on travaille en C# — son **verdict honnête** est qu'il ne fournit pas les centralités élaborées (betweenness, closeness, PageRank) ni la détection de communautés (Louvain), qu'il faut alors implémenter à la main ou brancher une autre bibliothèque.
 
 ## Ponts vers les autres séries
 
