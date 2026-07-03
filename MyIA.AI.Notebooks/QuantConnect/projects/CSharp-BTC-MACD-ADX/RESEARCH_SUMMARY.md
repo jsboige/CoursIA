@@ -307,7 +307,7 @@ Le notebook genere:
 
 ### Si recherche concluante
 
-1. **Compiler** la strategie mise a jour sur QuantConnect
+1. **Compiler** la strategie mise à jour sur QuantConnect
 2. **Lancer backtest** complet 2019-2025 via web UI
 3. **Valider metriques** vs predictions du notebook
 4. **Deployer** en paper trading si Sharpe > 0.8
@@ -319,7 +319,7 @@ Le notebook genere:
    - Machine Learning (RandomForest sur features MACD+ADX)
    - Regime switching (HMM pour detecter bull/bear)
 2. **Creer nouveau research notebook** pour approche alternative
-3. **Iterer** jusqu'a trouver strategie robuste
+3. **Itérer** jusqu'à trouver strategie robuste
 
 ## Notes Techniques
 

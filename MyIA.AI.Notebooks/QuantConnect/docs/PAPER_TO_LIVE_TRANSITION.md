@@ -176,7 +176,7 @@ Chaque position live doit avoir un stop-loss. Options :
 Si une anomalie est detectee :
 
 1. **Stop live algorithm** via MCP QC : `stop_live_algorithm(projectId=...)`
-2. **Liquidier les positions** si nécessaire : `liquidate_live_algorithm(projectId=...)`
+2. **Liquider les positions** si nécessaire : `liquidate_live_algorithm(projectId=...)`
 3. **Analyser les logs** : `read_live_logs(projectId=..., algorithmId=..., startLine=0, endLine=250)`
 4. **Corriger l'algorithme** et re-backtester avant de re-déployer
 
