@@ -1,0 +1,50 @@
+CoursIA.GSheetSync — CsvDiffEngine port from Argumentum
+======================================================
+
+This file contains a verbatim port of selected components from the
+Argumentum project (https://github.com/ArgumentumGames/Argumentum).
+
+Original work:
+  Copyright (c) 2024 Argumentum Games (https://argumentum.games)
+  Author: Jean-Sylvain Boige (jsboige@gmail.com)
+  Source: Argumentum/Generation/Converters/Argumentum.AssetConverter/GSheetSync/CsvDiffEngine.cs
+         commit ac33f607a4889d8a982093c413804ed25bef3dc0
+  Date: 2026-07-03 (port date)
+
+License:
+  Argumentum.AssetConverter is dual-licensed:
+    - GNU Lesser General Public License v3.0 (LGPL-3.0) OR
+    - AGPL-3.0 for network use
+  See Argumentum/LICENSE for the full LGPL-3.0 text.
+
+  This CoursIA port preserves the LGPL-3.0 license NOTICE. The port is
+  distributed under the same LGPL-3.0 terms as the upstream source. Any
+  modification to this file MUST be released under a compatible license.
+
+Scope of the port (tranche A, EPIC #4960 volet A):
+  - This CoursIA namespace hosts the verbatim .NET 9 port of CsvDiffEngine
+    and its unit tests. No semantic change beyond:
+      (a) Namespace change: Argumentum.AssetConverter.GSheetSync -> CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.GSheetSync
+      (b) License header preservation (LGPL-3.0 NOTICE)
+      (c) Target framework downgrade: net9.0-windows -> net9.0 (cross-platform; CsvHelper is OS-agnostic)
+      (d) Removed `UseWindowsForms=true` (Argumentum-wide flag, not relevant to this file)
+  - All other behaviors, public API, and test assertions are unchanged.
+  - Original source: see Argumentum/Generation/Converters/Argumentum.AssetConverter/GSheetSync/CsvDiffEngine.cs
+  - Original tests:  see Argumentum/Generation/Converters/Argumentum.AssetConverter.Tests/GSheetSync/CsvDiffEngineTests.cs
+                      + CsvDiffEngineEdgeCaseTests.cs (not yet ported in tranche A)
+
+Why LGPL-3.0 NOTICE matters here:
+  The C# source under CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.GSheetSync
+  is a DERIVATIVE of LGPL-3.0-licensed source. LGPL v3, section 5 (Conveying
+  Modified Source Versions) requires prominent notice of changes and
+  preservation of the licensing indication. The header comment on every
+  ported source file documents this.
+
+Wiring downstream (EPIC #4960 volet B):
+  This component will feed the #4957 CI drift-detection pipeline
+  (translation CSV drift between git revisions) and #1650 (multilingual
+  translation pipeline update).
+
+  Future tranches planned in this namespace:
+    B. OwlAdapter.cs (RDF/OWL/SKOS bridge for SemanticWeb)
+    C. DatasetUpdater/ (chunk + LLM function-calling round-trip)
