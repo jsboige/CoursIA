@@ -1,4 +1,17 @@
 /-
+  Définitions de l'équilibre de Nash en Lean 4
+  ============================================
+
+  Définit l'équilibre de Nash et les notions associées :
+  - Meilleure réponse
+  - Équilibre de Nash en stratégies pures
+  - Équilibre de Nash en stratégies mixtes
+  - Dominance stricte
+
+  Basé sur GameTheory-16-Lean-Definitions.ipynb
+
+  ---
+  English:
   Nash Equilibrium Definitions in Lean 4
   ======================================
 
@@ -13,49 +26,81 @@
 
 import Basic
 
-/-! ## Best Response -/
+/-!
+## Meilleure réponse
 
-/-- Player 1 plays a best response to s2 -/
+---
+English:
+## Best Response
+-/
+
+/-- Le joueur 1 joue une meilleure réponse face à `s2`.
+    English: Player 1 plays a best response to s2 -/
 def isBestResponse1 (g : Game2x2) (s1 : Fin 2 → Float) (s2 : Fin 2 → Float) : Prop :=
   ∀ s1' : Fin 2 → Float,
     expectedPayoff1 g s1 s2 >= expectedPayoff1 g s1' s2
 
-/-- Player 2 plays a best response to s1 -/
+/-- Le joueur 2 joue une meilleure réponse face à `s1`.
+    English: Player 2 plays a best response to s1 -/
 def isBestResponse2 (g : Game2x2) (s1 : Fin 2 → Float) (s2 : Fin 2 → Float) : Prop :=
   ∀ s2' : Fin 2 → Float,
     expectedPayoff2 g s1 s2 >= expectedPayoff2 g s1 s2'
 
-/-! ## Nash Equilibrium -/
+/-!
+## Équilibre de Nash
 
-/-- Nash equilibrium in mixed strategies: each player plays a best response -/
+---
+English:
+## Nash Equilibrium
+-/
+
+/-- Équilibre de Nash en stratégies mixtes : chaque joueur joue une meilleure réponse.
+    English: Nash equilibrium in mixed strategies: each player plays a best response -/
 def isNashEquilibrium (g : Game2x2) (s1 : Fin 2 → Float) (s2 : Fin 2 → Float) : Prop :=
   isBestResponse1 g s1 s2 ∧ isBestResponse2 g s1 s2
 
-/-- Nash equilibrium in pure strategies for 2x2 games -/
+/-- Équilibre de Nash en stratégies pures pour les jeux 2x2.
+    English: Nash equilibrium in pure strategies for 2x2 games -/
 def isPureNashEquilibrium (g : Game2x2) (a1 : Fin 2) (a2 : Fin 2) : Prop :=
-  -- Player 1 cannot improve by changing action
+  -- Le joueur 1 ne peut pas améliorer en changeant d'action
   (∀ a1' : Fin 2, g.payoff1 a1 a2 >= g.payoff1 a1' a2) ∧
-  -- Player 2 cannot improve by changing action
+  -- Le joueur 2 ne peut pas améliorer en changeant d'action
   (∀ a2' : Fin 2, g.payoff2 a1 a2 >= g.payoff2 a1 a2')
 
-/-! ## Dominance -/
+/-!
+## Dominance
 
-/-- Action a strictly dominates action a' for player 1 -/
+---
+English:
+## Dominance
+-/
+
+/-- L'action `a` domine strictement l'action `a'` pour le joueur 1.
+    English: Action a strictly dominates action a' for player 1 -/
 def strictlyDominates1 (g : Game2x2) (a a' : Fin 2) : Prop :=
   ∀ a2 : Fin 2, g.payoff1 a a2 > g.payoff1 a' a2
 
-/-- Action a weakly dominates action a' for player 1 -/
+/-- L'action `a` domine faiblement l'action `a'` pour le joueur 1.
+    English: Action a weakly dominates action a' for player 1 -/
 def weaklyDominates1 (g : Game2x2) (a a' : Fin 2) : Prop :=
   (∀ a2 : Fin 2, g.payoff1 a a2 >= g.payoff1 a' a2) ∧
   (∃ a2 : Fin 2, g.payoff1 a a2 > g.payoff1 a' a2)
 
-/-- Action a strictly dominates action a' for player 2 -/
+/-- L'action `a` domine strictement l'action `a'` pour le joueur 2.
+    English: Action a strictly dominates action a' for player 2 -/
 def strictlyDominates2 (g : Game2x2) (a a' : Fin 2) : Prop :=
   ∀ a1 : Fin 2, g.payoff2 a1 a > g.payoff2 a1 a'
 
-/-! ## Classic Games -/
+/-!
+## Jeux classiques
 
-/-- Prisoner's Dilemma: C=0 (Cooperate), D=1 (Defect) -/
+---
+English:
+## Classic Games
+-/
+
+/-- Dilemme du prisonnier : C=0 (Coopérer), D=1 (Trahir).
+    English: Prisoner's Dilemma: C=0 (Cooperate), D=1 (Defect) -/
 def prisonersDilemma : Game2x2 := {
   payoff1 := fun i j =>
     match i.val, j.val with
@@ -73,14 +118,15 @@ def prisonersDilemma : Game2x2 := {
     | _, _ => 0
 }
 
-/-- Chicken Game: Yield=0, Charge=1 -/
+/-- Jeu de la poule (Chicken) : Céder=0, Foncer=1.
+    English: Chicken Game: Yield=0, Charge=1 -/
 def chickenGame : Game2x2 := {
   payoff1 := fun i j =>
     match i.val, j.val with
     | 0, 0 => 3  -- (Yield, Yield)
     | 0, 1 => 2  -- (Yield, Charge)
     | 1, 0 => 4  -- (Charge, Yield)
-    | 1, 1 => 0  -- (Charge, Charge) - crash!
+    | 1, 1 => 0  -- (Charge, Charge) - collision !
     | _, _ => 0
   payoff2 := fun i j =>
     match i.val, j.val with
@@ -91,7 +137,8 @@ def chickenGame : Game2x2 := {
     | _, _ => 0
 }
 
-/-- Stag Hunt: Stag=0, Hare=1 -/
+/-- Chasse au cerf (Stag Hunt) : Cerf=0, Lièvre=1.
+    English: Stag Hunt: Stag=0, Hare=1 -/
 def stagHunt : Game2x2 := {
   payoff1 := fun i j =>
     match i.val, j.val with
@@ -109,7 +156,8 @@ def stagHunt : Game2x2 := {
     | _, _ => 0
 }
 
-/-- Matching Pennies (zero-sum): Heads=0, Tails=1 -/
+/-- Matching Pennies (jeu à somme nulle) : Pile=0, Face=1.
+    English: Matching Pennies (zero-sum): Heads=0, Tails=1 -/
 def matchingPennies : Game2x2 := {
   payoff1 := fun i j =>
     match i.val, j.val with
@@ -127,7 +175,13 @@ def matchingPennies : Game2x2 := {
     | _, _ => 0
 }
 
-/-! ## Action Names -/
+/-!
+## Noms d'actions
+
+---
+English:
+## Action Names
+-/
 
 def Cooperer : Fin 2 := ⟨0, by omega⟩
 def Trahir : Fin 2 := ⟨1, by omega⟩

@@ -1,4 +1,21 @@
 /-
+  Théorie des jeux combinatoires en Lean 4
+  ========================================
+
+  Introduit les notions pour les jeux combinatoires :
+  - Jeux séquentiels à deux joueurs
+  - Information parfaite
+  - Jeux à somme nulle
+  - Détermination Gagnant/Perdant
+
+  Note : pour le support complet de PGame, utiliser Mathlib :
+  import Mathlib.SetTheory.PGame.Basic
+  import Mathlib.SetTheory.Game.Nim
+
+  Basé sur GameTheory-18-Lean-CombinatorialGames.ipynb
+
+  ---
+  English:
   Combinatorial Game Theory in Lean 4
   ====================================
 
@@ -15,70 +32,105 @@
   Based on GameTheory-18-Lean-CombinatorialGames.ipynb
 -/
 
-/-! ## Simple Combinatorial Game Structures -/
+/-!
+## Structures simples de jeux combinatoires
 
-/-- A simple game tree node -/
+---
+English:
+## Simple Combinatorial Game Structures
+-/
+
+/-- Un nœud d'arbre de jeu simple.
+    English: A simple game tree node -/
 inductive GameTree where
-  | leaf : (winner : Int) → GameTree  -- 1 = player 1 wins, -1 = player 2 wins, 0 = draw
+  | leaf : (winner : Int) → GameTree  -- 1 = le joueur 1 gagne, -1 = le joueur 2 gagne, 0 = nul
   | node : (moves : List GameTree) → GameTree
 
-/-- Evaluate a game tree using minimax (player 1 = maximizer) -/
+/-- Évalue un arbre de jeu par minimax (joueur 1 = maximiseur).
+    English: Evaluate a game tree using minimax (player 1 = maximizer) -/
 def minimax : GameTree → Bool → Int
   | GameTree.leaf w, _ => w
-  | GameTree.node [], _ => 0  -- No moves = draw
+  | GameTree.node [], _ => 0  -- Aucun coup = nul
   | GameTree.node (m :: ms), isMax =>
     let first := minimax m (not isMax)
     let rest := minimax (GameTree.node ms) isMax
     if isMax then max first rest else min first rest
 
-/-! ## Nim-like Games -/
+/-!
+## Jeux de type Nim
 
-/-- A Nim heap is just a natural number -/
+---
+English:
+## Nim-like Games
+-/
+
+/-- Un tas de Nim est simplement un entier naturel.
+    English: A Nim heap is just a natural number -/
 def NimHeap := Nat
 
-/-- A Nim position is a list of heaps -/
+/-- Une position de Nim est une liste de tas.
+    English: A Nim position is a list of heaps -/
 def NimPosition := List Nat
 
-/-- XOR of all heap sizes (Sprague-Grundy value for Nim) -/
+/-- XOR de toutes les tailles de tas (valeur de Sprague-Grundy pour Nim).
+    English: XOR of all heap sizes (Sprague-Grundy value for Nim) -/
 def nimSum (pos : NimPosition) : Nat :=
   pos.foldl (· ^^^ ·) 0
 
-/-- A Nim position is winning for the player to move iff nimSum ≠ 0 -/
+/-- Une position de Nim est gagnante pour le joueur qui doit jouer ssi `nimSum ≠ 0`.
+    English: A Nim position is winning for the player to move iff nimSum ≠ 0 -/
 def isWinningNim (pos : NimPosition) : Bool :=
   nimSum pos != 0
 
-/-- Helper: enumerate a list with indices (avoids Mathlib dependency) -/
+/-- Utilitaire : énumère une liste avec ses indices (évite la dépendance Mathlib).
+    English: Helper: enumerate a list with indices (avoids Mathlib dependency) -/
 def listEnum {α : Type} (l : List α) : List (Nat × α) :=
   (List.range l.length).zip l
 
-/-- Helper: update element at index (avoids Mathlib dependency).
+/-- Utilitaire : met à jour l'élément à un indice donné (évite la dépendance Mathlib).
+    Utilise `listEnum` pour le parcours indexé.
+    English: Helper: update element at index (avoids Mathlib dependency).
     Uses listEnum for indexed traversal. -/
 def listSet {α : Type} (l : List α) (i : Nat) (x : α) : List α :=
   (listEnum l).map fun (j, a) =>
     if j == i then x else a
 
-/-- Get all valid moves from a Nim position -/
+/-- Renvoie tous les coups valides depuis une position de Nim.
+    English: Get all valid moves from a Nim position -/
 def nimMoves (pos : NimPosition) : List NimPosition :=
   (listEnum pos).flatMap fun (i, heap) =>
     (List.range heap).map fun newSize =>
       listSet pos i newSize
 
-/-! ## Two-Player Perfect Information Game -/
+/-!
+## Jeu à deux joueurs à information parfaite
 
-/-- A two-player perfect information game -/
+---
+English:
+## Two-Player Perfect Information Game
+-/
+
+/-- Un jeu à deux joueurs à information parfaite.
+    English: A two-player perfect information game -/
 structure TwoPlayerGame (State : Type) where
-  /-- Initial state -/
+  /-- État initial.
+      English: Initial state -/
   initial : State
-  /-- Check if it's player 1's turn -/
+  /-- Vérifie si c'est au tour du joueur 1.
+      English: Check if it's player 1's turn -/
   isPlayer1Turn : State → Bool
-  /-- Get available moves -/
+  /-- Renvoie les coups disponibles.
+      English: Get available moves -/
   moves : State → List State
-  /-- Check if game is over -/
+  /-- Vérifie si la partie est terminée.
+      English: Check if game is over -/
   isTerminal : State → Bool
-  /-- Get winner (1 = P1, -1 = P2, 0 = draw) -/
+  /-- Renvoie le gagnant (1 = J1, -1 = J2, 0 = nul).
+      English: Get winner (1 = P1, -1 = P2, 0 = draw) -/
   winner : State → Int
 
-/-- Check if a state is winning for the current player using backward induction -/
+/-- Vérifie si un état est gagnant pour le joueur courant par induction à rebours.
+    English: Check if a state is winning for the current player using backward induction -/
 partial def isWinning {State : Type} (game : TwoPlayerGame State) (state : State) : Bool :=
   if game.isTerminal state then
     let w := game.winner state
@@ -88,29 +140,46 @@ partial def isWinning {State : Type} (game : TwoPlayerGame State) (state : State
     if nextStates.isEmpty then false
     else nextStates.any fun s => not (isWinning game s)
 
-/-! ## Nim as a TwoPlayerGame -/
+/-!
+## Nim vu comme un TwoPlayerGame
 
-/-- Nim game instance -/
+---
+English:
+## Nim as a TwoPlayerGame
+-/
+
+/-- Instance du jeu de Nim.
+    English: Nim game instance -/
 def nimGame : TwoPlayerGame NimPosition := {
-  initial := [3, 4, 5]  -- Classic starting position
-  isPlayer1Turn := fun pos => (pos.foldl (· + ·) 0) % 2 == 1  -- Simplified
+  initial := [3, 4, 5]  -- Position de départ classique
+  isPlayer1Turn := fun pos => (pos.foldl (· + ·) 0) % 2 == 1  -- Simplifié
   moves := nimMoves
   isTerminal := fun pos => pos.all (· == 0)
-  winner := fun pos => if pos.all (· == 0) then -1 else 0  -- Last to move loses
+  winner := fun pos => if pos.all (· == 0) then -1 else 0  -- Le dernier à jouer perd
 }
 
-/-! ## Sprague-Grundy Theorem (Statement) -/
+/-!
+## Théorème de Sprague-Grundy (énoncé)
 
--- For impartial games, every position is equivalent to a Nim heap of some size.
--- This is a simplified version; full implementation requires more machinery.
+---
+English:
+## Sprague-Grundy Theorem (Statement)
+-/
 
-/-- Minimum excludant (mex) of a set of naturals.
+-- Pour les jeux impartiaux, toute position est équivalente à un tas de Nim d'une certaine taille.
+-- Ceci est une version simplifiée ; l'implémentation complète nécessite davantage de machinerie.
+
+/-- Minimum excludant (mex) d'un ensemble d'entiers naturels.
+    La valeur de Sprague-Grundy d'une position de jeu se définit via mex :
+    grundy(terminal) = 0, grundy(pos) = mex { grundy(pos') : pos' dans moves(pos) }.
+    English: Minimum excludant (mex) of a set of naturals.
     The Sprague-Grundy value of a game position is defined via mex:
     grundy(terminal) = 0, grundy(pos) = mex { grundy(pos') : pos' in moves(pos) }. -/
 def mex (s : List Nat) : Nat :=
   (List.range (s.length + 1)).find? (fun n => !s.contains n) |>.getD (s.length + 1)
 
-/-- Compute Grundy value for a simple game (partial: no memoization). -/
+/-- Calcule la valeur de Grundy pour un jeu simple (partiel : pas de mémoïsation).
+    English: Compute Grundy value for a simple game (partial: no memoization). -/
 partial def grundyValue {State : Type} [BEq State] [Hashable State]
     (moves : State → List State) (isTerminal : State → Bool) (state : State) : Nat :=
   if isTerminal state then 0
