@@ -214,3 +214,66 @@ def test_fe_report_adaptive_mode_runs_and_is_finite():
     rapport = fe.fe_anticipation_report(obs, lead=4, mode="adaptive", alpha_prec=0.3)
     for m in rapport.values():
         assert np.isfinite(m["F"])
+
+
+# --------------------------------------------------------------------------- #
+#  Surprise transitionnelle (capstone ICT-15, See #5090)                      #
+# --------------------------------------------------------------------------- #
+
+
+def test_transition_surprise_keys_and_bits():
+    cycle = [i % 4 for i in range(200)]
+    ts = fe.transition_surprise(cycle)
+    assert set(ts) == {"F", "n_train", "n_test", "alpha", "n_states"}
+    # un cycle deterministe est quasi-previsible : F proche de 0 bits
+    assert ts["F"] >= 0.0
+    assert ts["F"] < 0.5
+    assert ts["n_train"] + ts["n_test"] == 200
+
+
+def test_transition_surprise_cycle_beats_noise():
+    rng = np.random.default_rng(0)
+    cycle = [i % 4 for i in range(300)]
+    noise = list(rng.integers(0, 4, size=300))
+    fc = fe.transition_surprise(cycle)["F"]
+    fn = fe.transition_surprise(noise)["F"]
+    assert fc < fn
+    # le bruit iid sur 4 etats : F proche de log2(4) = 2 bits
+    assert fn > 1.5
+
+
+def test_transition_surprise_rejects_bad_split():
+    for bad in (0.0, 1.0, -0.1, 1.5):
+        with pytest.raises(ValueError):
+            fe.transition_surprise([0, 1, 2, 3], split=bad)
+
+
+def test_transition_surprise_short_trajectory():
+    # trajectoire trop courte : pas de crash, F peut etre nan
+    ts = fe.transition_surprise([0, 1])
+    assert "F" in ts  # ne plante pas, meme si F est nan
+
+
+def test_surprise_gain_keys():
+    rng = np.random.default_rng(1)
+    g = fe.surprise_gain([i % 4 for i in range(200)], rng, n_shuffles=5)
+    assert set(g) == {"F_real", "F_shuffled", "fe_gain", "n_shuffles", "n_states"}
+    assert g["n_shuffles"] == 5
+
+
+def test_surprise_gain_cycle_positive():
+    # un cycle est plus previsible que sa permutation -> fe_gain > 0
+    rng = np.random.default_rng(2)
+    cycle = [i % 4 for i in range(300)]
+    g = fe.surprise_gain(cycle, rng, n_shuffles=10)
+    assert g["fe_gain"] > 0.5
+    assert g["F_real"] < g["F_shuffled"]
+
+
+def test_surprise_gain_iid_near_zero():
+    # bruit iid : le shuffle ne change pas la predictibilite -> fe_gain ~ 0
+    rng = np.random.default_rng(3)
+    noise = list(rng.integers(0, 4, size=300))
+    g = fe.surprise_gain(noise, rng, n_shuffles=10)
+    assert abs(g["fe_gain"]) < 0.2
+
