@@ -30,12 +30,28 @@ from notebook_lint import scan_c1_source
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
-# Kernels that cannot be executed via Papermill in CI (skip execution check,
-# but still check C.1 and structural validity)
+# Kernels that cannot be Papermill-executed in CI. The CI re-exec gate is
+# advisory for these (no kernel to re-run), but C.1 + structural validity are
+# still enforced. NOTE: "CI can't re-run" is NOT the same as "outputs may be
+# empty" — see ALLOW_NULL_EXEC_COUNT_KERNELS for that finer distinction (#5214).
 SKIP_EXEC_KERNELS = {
     ".net-csharp", ".net-fsharp", ".net-powershell",
     "lean4", "lean4-wsl", "lean",
 }
+
+# Where a NULL execution_count is genuinely tolerated (#5214): the reviewer
+# CANNOT execute the notebook locally either. Two cases:
+#  - QC Cloud needs the QuantBook runtime (nowhere on a worker machine).
+#  - Lean is kept advisory for now (its own rendering subtleties via
+#    lean4_jupyter/alectryon, and #5214 scopes the change to .NET).
+# .NET Interactive is EXCLUDED on purpose: dotnet-interactive runs on every
+# worker machine (the 6 older Tweety ports — Dung, Aspic, 2b, 2c — are
+# committed with real execution_count + outputs as proof), so a committed
+# .NET cell MUST prove local execution (execution_count != null). The
+# incident: PRs #5194/#5199/#5202 (Tweety-3 C#) were merged with notebooks at
+# execution_count:null + outputs:[] — a C.2 violation the old advisory let
+# through because it fused "CI skip" with "outputs may be empty".
+ALLOW_NULL_EXEC_COUNT_KERNELS = {"lean4", "lean4-wsl", "lean"}
 
 # Paths that require QC Cloud (python3 kernel but need QuantBook runtime).
 # H.3 is advisory-only for these — they can only be executed via QC Cloud.
@@ -107,6 +123,18 @@ def _output_text(output: dict) -> str:
     return " ".join(parts)
 
 
+def _is_qc_cloud(rel_path: str, data: dict) -> bool:
+    """Whether a notebook can ONLY be executed via QC Cloud (so a null
+    execution_count is tolerated everywhere — CI AND local). True if the path
+    is under a QC Cloud directory OR the notebook is explicitly flagged as a
+    QC reference template (metadata.qc_reference=True, content-aware unification
+    with regression_scan.py:261 / #3776)."""
+    normalized = rel_path.replace("\\", "/")
+    if any(p in normalized for p in QC_CLOUD_PATHS):
+        return True
+    return data.get("metadata", {}).get("qc_reference") is True
+
+
 def validate_notebook(nb_path: Path) -> dict:
     """Validate a single notebook for H.1/H.3 compliance.
 
@@ -132,18 +160,22 @@ def validate_notebook(nb_path: Path) -> dict:
         return result
 
     kernel = result["kernel"]
-    skip_exec = any(k in kernel for k in SKIP_EXEC_KERNELS)
-    normalized = rel_path.replace("\\", "/")
-    skip_exec = skip_exec or any(p in normalized for p in QC_CLOUD_PATHS)
-    # Content-aware unification (#3776): a notebook explicitly flagged as a
-    # QC Cloud reference/template (metadata.qc_reference=True) is exempt from
-    # the H.3 execution_count gate for the same reason QC_CLOUD_PATHS is — it
-    # can only be executed via QC Cloud. This unifies the gate with
-    # regression_scan.py:261, which is already content-aware. Without this,
-    # the H.3 gate exempts by PATH but not by content, so a flagged reference
-    # notebook outside QuantConnect/Python|projects (e.g. partner-course
-    # examples) fails H.3 even though it is honestly non-executable-by-design.
-    skip_exec = skip_exec or data.get("metadata", {}).get("qc_reference") is True
+    # "CI cannot Papermill-execute this kernel" — the CI re-exec gate is
+    # advisory, and H.1 error outputs are advisory (expected without the
+    # kernel/runtime). Covers .NET, Lean, QC Cloud, qc_reference templates.
+    qc_cloud = _is_qc_cloud(rel_path, data)
+    ci_reexec_skipped = any(k in kernel for k in SKIP_EXEC_KERNELS) or qc_cloud
+    # "A null execution_count is tolerated" — STRICTER than ci_reexec_skipped.
+    # Only where local execution is ALSO impossible (QC Cloud needs QuantBook;
+    # Lean kept advisory for now — own rendering subtleties, out of #5214).
+    # .NET Interactive runs locally (dotnet-interactive on every worker) → a
+    # committed .NET cell MUST carry execution_count != null = EXEC_PROVED
+    # (#5214: "CI skip .NET" != "outputs may be empty"). The Tweety-3 cluster
+    # (#5194/#5199/#5202) was merged at execution_count:null + outputs:[].
+    allow_null_exec_count = (
+        any(k in kernel for k in ALLOW_NULL_EXEC_COUNT_KERNELS) or qc_cloud
+    )
+    saw_null_exec = False  # for the forensic verdict (H.5)
 
     for i, cell in enumerate(data.get("cells", [])):
         if cell.get("cell_type") != "code":
@@ -174,13 +206,20 @@ def validate_notebook(nb_path: Path) -> dict:
                 f"cell {i}: C.1 violation — '{desc}' found"
             )
 
-        # H.3 check: execution_count must not be null (skip for non-Papermill kernels)
-        if not skip_exec:
+        # H.3 check: execution_count must not be null. Advisory ONLY where local
+        # execution is impossible too (QC Cloud / Lean — allow_null_exec_count).
+        # .NET Interactive executes locally, so a null execution_count is a C.2
+        # violation (commit proof of local execution); "CI skip" is not a
+        # license to ship empty outputs (#5214).
+        if not allow_null_exec_count:
             exec_count = cell.get("execution_count")
             if exec_count is None:
+                saw_null_exec = True
                 result["passed"] = False
                 result["errors"].append(
-                    f"cell {i}: execution_count is null (H.3 violation)"
+                    f"cell {i}: execution_count is null "
+                    f"(H.3/C.2 violation — {kernel} executes locally; "
+                    f"commit execution proof, See #5214)"
                 )
 
         # H.1 check: no error outputs. Two rendering paths:
@@ -199,7 +238,7 @@ def validate_notebook(nb_path: Path) -> dict:
         for output in cell.get("outputs", []):
             if output.get("output_type") == "error":
                 ename = output.get("ename", "Unknown")
-                if skip_exec:
+                if ci_reexec_skipped:
                     result["errors"].append(
                         f"cell {i}: has error output — {ename} (advisory, QC Cloud)"
                     )
@@ -219,6 +258,16 @@ def validate_notebook(nb_path: Path) -> dict:
                 )
                 break  # one report per cell is enough
 
+    # Forensic verdict (H.5): EXEC_PROVED / STRUCTURAL_ONLY / ADVISORY_NON_EXEC.
+    # Distinguishes "real outputs present" from "structural-only / advisory" so
+    # reviewers and bots apply CHANGES_REQUESTED on the second (#5214).
+    if allow_null_exec_count:
+        result["forensic_verdict"] = "ADVISORY_NON_EXEC"
+    elif saw_null_exec:
+        result["forensic_verdict"] = "STRUCTURAL_ONLY"
+    else:
+        result["forensic_verdict"] = "EXEC_PROVED"
+
     return result
 
 
@@ -237,10 +286,6 @@ def main():
     parser.add_argument(
         "--json", action="store_true",
         help="Output results as JSON",
-    )
-    parser.add_argument(
-        "--strict", action="store_true",
-        help="Also check execution_count for non-Python kernels",
     )
     args = parser.parse_args()
 
