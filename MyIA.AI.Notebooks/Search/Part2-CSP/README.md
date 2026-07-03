@@ -38,6 +38,19 @@ Si la Partie 1 enseigne à chercher, celle-ci enseigne à modéliser — et c'es
 | 8 | [CSP-8-Temporal](CSP-8-Temporal.ipynb) | Python 3 | Algèbre d'intervalles d'Allen, Simple Temporal Problems (STP), TCSP | ~1h |
 | 9 | [CSP-9-Distributed](CSP-9-Distributed.ipynb) | Python 3 | Asynchronous Backtracking (ABT), AWC, Privacy-preserving CSP | ~1h30 |
 
+### Parité Python ⇄ .NET
+
+Quatre notebooks de cette partie existent en **binôme bilingue** : une version Python (OR-Tools CP-SAT) et une version C# / .NET, dans l'esprit de l'Epic de parité #4956. Le port .NET invoque la **vraie lib** — jamais une réimplémentation jouet : Choco-solver bridgé via IKVM (jurisprudence #4667) ou OR-Tools natif selon le terrain.
+
+| # | Python (OR-Tools CP-SAT) | .NET (C#) | Solveur .NET |
+|---|--------------------------|-----------|--------------|
+| 3 | [CSP-3-Advanced](CSP-3-Advanced.ipynb) | [CSP-3-Advanced-Csharp](CSP-3-Advanced-Csharp.ipynb) | Choco-solver via IKVM |
+| 4 | [CSP-4-Scheduling](CSP-4-Scheduling.ipynb) | [CSP-4-Scheduling-Csharp](CSP-4-Scheduling-Csharp.ipynb) | OR-Tools CP-SAT natif (+ section Choco comparative) |
+| 5 | [CSP-5-Optimization](CSP-5-Optimization.ipynb) | [CSP-5-Optimization-Csharp](CSP-5-Optimization-Csharp.ipynb) | Choco-solver via IKVM (contrainte globale `binPacking`) |
+| 7 | [CSP-7-Soft](CSP-7-Soft.ipynb) | [CSP-7-Soft-Csharp](CSP-7-Soft-Csharp.ipynb) | Choco-solver via IKVM (réification `reifyWith` / `ifThen`) |
+
+> **Pourquoi CSP-4 en OR-Tools natif plutôt que Choco ?** L'ordonnancement (`IntervalVar`, `NoOverlap`, `Cumulative`) est le terrain où CP-SAT excelle ; router cette partie vers OR-Tools C# honore le principe du *vrai outil SOTA pour le problème* (cf. #3801), là où Choco-solver serait plus lourd. Les trois autres binômes (3, 5, 7) illustrent Choco via IKVM comme levier de parité .NET pour une lib Java — y compris `binPacking`, contrainte globale dont la propagation surpasse la linéarisation BoolVar manuelle.
+
 ## Progression
 
 CSP-1 et CSP-2 sont incontournables : tout le paradigme — un modèle déclaratif, une propagation qui élague — tient dans ces deux notebooks. Au-delà, trois chemins s'offrent selon votre objectif :
