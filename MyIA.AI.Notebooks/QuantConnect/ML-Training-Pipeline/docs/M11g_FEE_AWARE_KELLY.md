@@ -95,7 +95,7 @@ non clippée, par exemple), pas sur Kelly capé.
 
 - [M11f_TX_COST_SWEEP.md](M11f_TX_COST_SWEEP.md) — fee-sweep baseline (break-even 50-100bps)
 - [M11e_ENSEMBLE.md](M11e_ENSEMBLE.md) — ensemble equal-weight DILUTION
-- [project_m11ef_ensemble_txcost.md](../../../C:/Users/MYIA/.claude/projects/d--CoursIA/memory/project_m11ef_ensemble_txcost.md) — mémoire M11e+f
+- `project_m11ef_ensemble_txcost.md` — mémoire interne M11e+f (note d'agent, hors dépôt)
 
 ## Pattern récurrent M11
 

@@ -75,7 +75,7 @@ of Symbolic Derivatives in Lean*, ITP 2025), repo
 Since its upstream license is not confirmed, **this file does not vendor their
 code**: it illustrates the intuition through **original** definitions and
 examples, with no dependency (no Mathlib). The notebook
-[`Lean-14-Finiteness-Derivatives.ipynb`](../../Lean-14-Finiteness-Derivatives.ipynb)
+[`Lean-14-Finiteness-Derivatives.ipynb`](../Lean-14-Finiteness-Derivatives.ipynb)
 develops the pedagogical presentation and the bridge to the Conway Epic #2162.
 
 ### `Regex`
