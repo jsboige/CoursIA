@@ -168,6 +168,44 @@ def get_tweety_bridge_symbol():
     )
 
 
+# -- PL Handler (JPype singleton, SK-coupled upstream) --
+def get_pl_handler_symbol():
+    """Lazy import for the PLHandler class symbol.
+
+    Note (G.9 honest caveat): `pl_handler.py` imports
+    `argumentation_analysis.core.utils.logging_utils.setup_logging`,
+    `from .tweety_initializer import TweetyInitializer`, and indirectly
+    the `argumentation_analysis.core.jvm_setup` module — none vendored in
+    `argumentation_lib/` today. Even the module-level `import` raises
+    `ModuleNotFoundError`. The lazy accessor preserves the API symmetry
+    with C184/C185/C186a accessors but, like C185, does **not** bypass
+    the top-level imports. Runtime usability awaits Volet B etape 4
+    sub-tranches C186c-f (TweetyInitializer + other handlers) and C186g
+    (runtime bridge shim).
+    """
+    from argumentation_lib._pl_handler import PLHandler
+    return PLHandler
+
+
+# -- FOL Handler (JPype singleton, SK-coupled upstream, prover9_runner dep) --
+def get_fol_handler_symbol():
+    """Lazy import for the FOLHandler class symbol.
+
+    Note (G.9 honest caveat): `fol_handler.py` imports
+    `argumentation_analysis.core.utils.logging_utils.setup_logging`,
+    `from .tweety_initializer import TweetyInitializer`, and
+    `argumentation_analysis.core.prover9_runner.run_prover9` — none
+    vendored in `argumentation_lib/` today. The verbatim body relies on
+    the external prover9 binary via this binding. Even the module-level
+    `import` raises `ModuleNotFoundError`. Runtime usability awaits
+    Volet B etape 4 sub-tranches C186f (TweetyInitializer) and C186g
+    (runtime bridge shim).
+    """
+    from argumentation_lib._fol_handler import FOLHandler
+    return FOLHandler
+
+
+
 __all__ = [
     # config
     "LibConfig", "get_config", "DEFAULT_CONFIG",
