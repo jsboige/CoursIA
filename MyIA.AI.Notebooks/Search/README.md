@@ -324,7 +324,7 @@ Cette série est **Python d'abord** pour son cœur pédagogique (recherche, CSP,
 | [Part3-Advanced](Part3-Advanced/) | 3 (Search-12 à Search-14) | Python | Aucune |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 22 (MGS-1 à MGS-19 + 3 applications spécialisées) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
 | [Applications](Applications/) | 21 | 19 Python + 2 C# | App-9 ⇄ App-9b, App-10 ⇄ App-10b (2 paires) |
-| Racine | 2 | 2 Python | CSPs_Intro, Exploration_non_informée_et_informée_intro (legacy à archiver) |
+| Racine | 0 | — | (aucun — voir [archive/](archive/) pour les anciens notebooks racine) |
 
 Le **cœur curriculaire** (Parties 1 à 3, soit 23 notebooks) est aujourd'hui exclusivement en Python ; seules deux applications disposent d'un binôme Python/C#.
 
@@ -497,8 +497,12 @@ Search/
 ├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
 ├── Part4-Metaheuristics/                  # Partie 4 (side track C# .NET 9) : README + 19 notebooks MGS-1..19 (moteur, composition, composés, benchmarks, TSP, paysages, biais central, synergie d'îles, alignement d'axes, paysages dé-biaisés, synergie conditionnelle, analyse de paysage FDC, sélection d'algorithme No-Free-Lunch, contrôle de paramètres, banc CEC consolidé, démontage du recuit) + 3 applications spécialisées (GeneticSharp-EdgeDetection, PyGad-EdgeDetection, Portfolio_Optimization_GeneticSharp) ; consomment le sous-module
 │
-├── CSPs_Intro.ipynb                       # Ancien notebook (conserve)
-└── Exploration_non_informée_et_informée_intro.ipynb # Ancien notebook (conservé)
+└── archive/                                # Notebooks racine archivés (C209 tranche 8/8 #5081) — voir archive/README.md
+    ├── README.md
+    ├── CSPs_Intro.ipynb                                  # Remplacé par Part2-CSP/CSP-1-Fundamentals.ipynb
+    ├── CSPs_Intro_output.ipynb
+    ├── Exploration_non_informée_et_informée_intro.ipynb # Remplacé par Part1-Foundations/Search-{2,3}-...
+    └── Exploration_non_informée_et_informée_intro_output.ipynb
 ```
 
 ## Progression recommandée

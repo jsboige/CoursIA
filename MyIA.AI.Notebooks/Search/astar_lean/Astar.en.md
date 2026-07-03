@@ -21,7 +21,7 @@ A pedagogical Lean 4 project (with Mathlib) formalizing the **flagship A* optima
 
 Approach: **abstract optimality lemma** (without modeling the full priority queue), as suggested by #4048. Model: weighted directed graph with non-negative edges (`NNReal`), paths as lists of vertices, admissible/consistent heuristic, `hStar` = "true optimal remaining cost" (lower bound on the cost of paths leading to the goal).
 
-Companion notebook (`Exploration_non_informée_et_informée_intro.ipynb`, Search series): pedagogical presentation + BFS-vs-A* counter-example on a weighted graph. The notebook wiring belongs to the Search series owner.
+Companion notebooks (`Search-2-Uninformed.ipynb` + `Search-3-Informed.ipynb`, Search series, Part1-Foundations): pedagogical presentation + BFS-vs-A* counter-example on a weighted graph. The historical `Exploration_non_informée_et_informée_intro.ipynb` (formerly at Search root, archived 2026-07-03 in `../archive/`) covered the same material in a single document. The notebook wiring belongs to the Search series owner.
 
 ---
 
