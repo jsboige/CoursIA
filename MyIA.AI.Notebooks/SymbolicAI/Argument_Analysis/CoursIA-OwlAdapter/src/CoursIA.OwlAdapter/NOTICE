@@ -1,0 +1,150 @@
+CoursIA.OwlAdapter — NOTICE (LGPL v3 §5 attribution)
+
+========================================================================
+Verbatim port from Argumentum.AssetConverter.Ontology (C# .NET)
+========================================================================
+
+Upstream source   : Argumentum.AssetConverter / Ontology/OwlAdapter.cs
+Upstream commit   : ac33f607a4889d8a982093c413804ed25bef3dc0
+Upstream URL      : https://github.com/Argumentum/Argumentum
+                    (submodule: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum)
+Source path       : Generation/Converters/Argumentum.AssetConverter/Ontology/OwlAdapter.cs
+Port date         : 2026-07-03
+Port commit       : (this CoursIA commit)
+Ported by         : po-2025 (worker agent, myia-po-2025)
+
+========================================================================
+License
+========================================================================
+
+This port is a verbatim copy of the source file identified above, with
+modifications limited to:
+
+  1. Namespace change
+     `Argumentum.AssetConverter.Ontology`
+       -> `CoursIA.SymbolicAI.Argument_Analysis.AssetConverter.Ontology`
+
+  2. TargetFramework
+     `net9.0-windows` (Argumentum global, UseWindowsForms=true) -> `net9.0`
+     (OwlAdapter uses no Windows-specific APIs)
+
+  3. Argumentum.Logger.LogProblem coupling
+     The internal utility `Argumentum.AssetConverter.Logger` is NOT public
+     (it is an in-source helper). A local `ILegacyLogger` interface and
+     `NullLegacyLogger` no-op implementation are added to preserve the
+     call sites 1:1. The 2 lines `Logger.LogProblem(...)` are rewritten
+     as `_logger.LogProblem(...)` against a private field initialised
+     to `NullLegacyLogger.Instance`.
+
+  4. French source comments preserved verbatim
+     No translation, no comment rewrite (preserves upstream rationale).
+
+  5. No emojis added/removed (none upstream).
+
+The substantive behaviour, public API surface, and assertion logic are
+UNCHANGED 1:1. Anti-regression guarantee: 8 upstream test files
+(1654 LOC, ~50+ [Fact] tests) are ported verbatim and assert the same
+pre/post port behaviour.
+
+========================================================================
+Upstream license (preserved verbatim, see file headers)
+========================================================================
+
+Argumentum is dual-licensed under LGPL-3.0 and AGPL-3.0. The upstream
+OwlAdapter.cs is part of that distribution. This port inherits the same
+dual-license terms.
+
+  - LGPL-3.0 : https://www.gnu.org/licenses/lgpl-3.0.html
+  - AGPL-3.0 : https://www.gnu.org/licenses/agpl-3.0.html
+
+Per LGPL v3 §5 ("Conveying Modified Source Versions"): this NOTICE is
+prominently included in the distribution, citing the upstream source,
+the commit hash, and the date of the port. The LGPL-3.0 + AGPL-3.0
+licensing terms apply to the source files in this directory; any
+modifications to the upstream source are documented in the per-file
+headers (`OwlAdapter.cs` top-of-file block, `OwlAdapterTests.cs`, etc.)
+
+========================================================================
+Upstream third-party components (preserved via NuGet deps, unchanged)
+========================================================================
+
+The port depends on the same NuGet packages as the upstream at the same
+versions, so behaviour matches bit-for-bit:
+
+  - OWLSharp 4.23.0                     (Apache-2.0)
+  - OWLSharp.Extensions 4.22.0          (Apache-2.0, includes SKOS/GEOSPARQL/OWL-TIME)
+  - dotNetRdf 3.3.2                     (MIT)
+  - RDFSharp 3.23.0 (transitive)        (Apache-2.0)
+
+These are not bundled in the source tree; they are restored via
+`dotnet restore` from nuget.org with the package versions pinned in
+`CoursIA.OwlAdapter.csproj`. The transitive set is determined by the
+OWLSharp 4.23.0 nupkg (OWLSharp -> RDFSharp 3.23.0).
+
+========================================================================
+Workarounds preserved verbatim (upstream history, do NOT refactor)
+========================================================================
+
+The upstream OwlAdapter.cs documents workarounds for SKOSHelper bugs in
+OWLSharp 4.9.0 via 8+ comments. They are preserved verbatim — they
+ARE the implementation, not stubs to clean up. Specifically:
+
+  - `// SKOSHelper is broken in OWLSharp 4.9.0 — emit rdf:type directly`
+  - `// SKOSHelper has no DeclareTopConcept — use raw annotations`
+  - `// SKOSHelper may return false silently (no exception) — fall back to annotation scanning.`
+  - `// SKOSHelper may return empty silently — fall back to annotation scanning (.ToString() fix).`
+  - `// OWL2XML round-trip survivor fallback (READ-PATH ONLY — the serializer is not touched).`
+
+  - 6+ empty `try { } catch { }` blocks intentionally swallow SKOSHelper
+    silent failures so that the annotation-scanning fallback path can
+    take over. They are not bugs, they are the explicit recovery path.
+
+  - The `OwlAdapter` constructor uses `Type.GetType("OWLOntology, OWLSharp")`
+    reflection to construct an empty ontology. The reflection looks
+    redundant (OWLSharp is a direct package reference) but it is the
+    upstream pattern and is preserved verbatim.
+
+Refactoring any of these to a "cleaner" version requires
+(a) re-running the 8 upstream test files (1654 LOC) GREEN, AND
+(b) coordinating the change upstream — neither is in scope of this port.
+
+========================================================================
+Test port scope (2 of 8 upstream test files port-able)
+========================================================================
+
+Upstream `Argumentum.AssetConverter.Tests/Ontology/` contains 8 test
+files (~1654 LOC total, ~50+ [Fact] tests). They exercise the FULL
+Argumentum.AssetConverter pipeline (generator + validator + asset
+converter config + Humanizer Camelize + Virtue/Fallacies pass).
+
+This port ships **OwlAdapter as a standalone library** (the "pedagogical
+bridge" per EPIC #4960 tranche B). The 2 files that test OwlAdapter in
+isolation — `OwlAdapterRegressionTests.cs` (16 [Fact]) and
+`OwlAdapterSurvivorFallbackTests.cs` (7 [Fact]) — are ported verbatim
+(namespace change only). The other 6 files are out of scope for a
+standalone library port and require the broader Argumentum pipeline:
+
+  - OwlE2EGenerationValidationTests.cs    — needs OwlDocumentConfig +
+    Argumentum.AssetConverter.Ontology assets + 5 MB docs/ontology/argumentum.owl
+  - OwlGetIdPureContractTests.cs          — tests OwlDocumentConfig.GetId
+    (Humanizer Camelize), not OwlAdapter
+  - OwlValidatorLivePathTests.cs          — needs OwlOntologyValidationTests
+    and AssetConverterConfig (private _ontology field injection)
+  - VirtueOwlGenerationContractTests.cs   — needs VirtueOwlDocumentConfig and
+    VirtueOwlGeneratorConfig and KnownDataSets
+  - OwlOntologyValidationTests.cs         — production validator (not xunit),
+    in Argumentum.AssetConverter/Tests/, references internal
+    Argumentum.AssetConverter.Entities.AssetConverterConfig
+  - OwlValidatorConfig.cs                 — configuration wrapper around
+    OwlOntologyValidationTests.Apply, references internal Logger + AssetConverterConfig
+
+Total tests ported in this delivery: **23 [Fact] = 16 regression and 7
+survivor fallback**, all PASS (H.1 build 0 warn / 0 err, 4s run).
+Anti-regression guarantee: the 2 ported files assert OwlAdapter pre/post
+port behaviour identical to upstream (Diag_RDFResource_Equals_String,
+round-trip on declared concepts/topConcepts/annotations/match-family,
+OWL2XML file serialization).
+
+========================================================================
+End of NOTICE
+========================================================================

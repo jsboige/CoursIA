@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <LangVersion>12.0</LangVersion>
+    <Authors>CoursIA — port verbatim from Argumentum</Authors>
+    <Copyright>Copyright (c) 2026 CoursIA. Port verbatim from Argumentum under LGPL-3.0 + AGPL-3.0 — see NOTICE.</Copyright>
+    <!--
+      xUnit1031 disabled: ToFileAsync_Writes_A_Non_Empty_OWL2XML_File is verbatim from
+      Argumentum.Tests (uses .Wait() on the Task). Refactoring it to async would diverge
+      from the pinned upstream commit (ac33f607) and break the verbatim-port contract.
+      Acceptable: test-only console process, not a sync-over-async hotpath.
+    -->
+    <NoWarn>$(NoWarn);xUnit1031</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="FluentAssertions" Version="8.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CoursIA.OwlAdapter\CoursIA.OwlAdapter.csproj" />
+  </ItemGroup>
+
+</Project>
