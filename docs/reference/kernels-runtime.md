@@ -147,6 +147,21 @@ timeout 600 /c/Users/jsboi/.conda/envs/mcp-jupyter-py310/python.exe -m papermill
 
 Un worker **oisif une demi-journée** parce que « le MCP hang » = **échec coordinateur** (coordinator-discipline Règle 4/5 : une lane ne s'arrête jamais), jamais un état worker acceptable.
 
+#### MCP execute_notebook async ignore kernel_name (bug #5211) : nbconvert CLI explicite = chemin canonique
+
+**Le MCP `execute_notebook` mode async IGNORE le paramètre `kernel_name`** et utilise le kernelspec stocké dans le notebook (typiquement `python3` = `WindowsApps\Python313`, qui n'a **pas pymc/pyphi/dowhy**) → `NameError` silencieux car la cellule d'import avale l'`ImportError`. Le mode sync honore `kernel_name` mais bloque ~10 min (risque crash session). Les deux modes MCP sont donc **inutilisables** pour forcer un kernel env-spécifique.
+
+**Décision ai-01 (msg-g5awy3, 2026-07-03) — chemin canonique de re-exec kernel-spécifique** : `jupyter nbconvert --execute --inplace --ExecutePreprocessor.kernel_name=<k>` en background (`run_in_background:true`), **JAMAIS le MCP** pour les notebooks nécessitant un env précis (coursia-ml-training, pyphi, lean4-wsl, .net-csharp). Validé firsthand sur 10 notebooks #3436 ce cycle (PyMC/IIT/Probas/GenAI/ML, 0 NameError).
+
+```bash
+# Kernel env-spécifique (force le kernel, indépendant du kernelspec stocké) :
+jupyter nbconvert --execute --to notebook --inplace \
+  --ExecutePreprocessor.kernel_name=coursia-ml-training \
+  --ExecutePreprocessor.timeout=900 <nb>.ipynb
+```
+
+**Gotcha subprocess CLI (découvert PT_07 #5245, 2026-07-03)** : si le notebook appelle un **CLI empaqueté dans l'env** via `subprocess.run(["<cli>", ...])` (ex `rewardspy`, `dot`, `lean`), le bare `jupyter nbconvert` hérite d'un PATH **sans** le `Scripts\` de l'env → `FileNotFoundError [WinError 2]`. Fix = wrapper avec **`conda run -n <env> jupyter nbconvert ...`** (active l'env = PATH complet avec `Scripts\`). Sans ça, la cellule subprocess fail même si le notebook tournait en interactif Jupyter.
+
 #### SmartContracts (8/14 groups, maj 2026-05-23)
 
 Packages installes dans mcp-jupyter-py310 : web3, py-solc-x, pycryptodome, py_ecc, phe, tenseal, mpyc, xrpl-py, python-bitcoinlib, vyper, tabulate.
