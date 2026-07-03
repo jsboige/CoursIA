@@ -130,6 +130,20 @@ test.describe('Tour de la plateforme — captures (compte de capture)', () => {
         .catch(() => {}); // tolérant : la capture vaut même si l'ouverture échoue
       await capture(page, '02-selecteur-modele.png');
       await page.keyboard.press('Escape').catch(() => {});
+
+      // Réponse en cours de streaming sur une invite FICTIVE (aucun contenu réel).
+      // Sans envoi d'invite, l'écran resterait vide : le fichier serait mal nommé.
+      // On saisit une invite neutre dans l'éditeur TipTap (#chat-input requiert
+      // keyboard.type, pas fill) puis on capture dès que la réponse de l'assistant
+      // commence à s'afficher. Sélecteurs à confirmer contre l'UI live.
+      await page.locator('#chat-input').click().catch(() => {});
+      await page.keyboard.type('Rédige un court poème sur la mer.', { delay: 8 });
+      await page.keyboard.press('Enter');
+      await page
+        .locator('[id^="message-"], .chat-assistant, [class*="assistant" i]')
+        .first()
+        .waitFor({ state: 'visible', timeout: 30_000 })
+        .catch(() => {});
       await capture(page, '02-chat-streaming.png');
     });
 
