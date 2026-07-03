@@ -7,7 +7,7 @@ Source de vérité : corps de l'Epic
 [#4041](https://github.com/jsboige/CoursIA/issues/4041)). Colonne *sorry (production)* =
 métrique CI `standalone-tactic` (les mentions prose « 0 sorry »/« sans sorry » et les
 définitions `:= sorry` non-tactique n'entrent pas dans ce compte ; cf.
-[`lean-ci-sorry-filter`](../../../../../.claude/projects/c--dev-CoursIA-2/memory/lean-ci-sorry-filter.md)).
+`lean-ci-sorry-filter`).
 
 ## Résumé
 

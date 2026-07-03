@@ -7,7 +7,7 @@ vérité : corps de l'Epic
 [#4038](https://github.com/jsboige/CoursIA/issues/4038) + vérification `firsthand`. Colonne
 *Sorry (production)* = métrique CI `standalone-tactic` (les mentions prose « 0 sorry »
 n'entrent pas dans ce compte ; cf.
-[`lean-ci-sorry-filter`](../../.claude/projects/c--dev-CoursIA-2/memory/lean-ci-sorry-filter.md)).
+`lean-ci-sorry-filter`).
 
 ## Résumé
 
@@ -71,7 +71,7 @@ laissé en `sorry`. Axiomes `[propext, Classical.choice, Quot.sound]` (Mathlib s
 - **WDAC workaround** (RECOVERABLE-LOCAL) : `lake exe cache get` bloqué (err 4551) → réutilise
   les oleans `.lake/packages/` d'un lake frère binairement compatible (`astar_lean`, même
   toolchain `v4.31.0-rc1` + même révision Mathlib). Cf.
-  [`lean-wdac-olean-wholesale-copy`](../../.claude/projects/c--dev-CoursIA-2/memory/lean-wdac-olean-wholesale-copy.md).
+  `lean-wdac-olean-wholesale-copy`.
 - **Mathlib v4.31.0-rc1 IPS-API renames** (documentés durably) : `InnerProductSpace ℝ V`
   exige `[SeminormedAddCommGroup V]` param-class ; `norm_sq_eq_inner`→`real_inner_self_eq_norm_sq` ;
   `abs_inner_le_norm`→`real_inner_le_norm` ; `inner_comm`→`real_inner_comm` ;

@@ -8,7 +8,7 @@ vérité : corps de l'Epic
 [#4041](https://github.com/jsboige/CoursIA/issues/4041)). Colonne *sorry (production)* =
 métrique CI `standalone-tactic` (les mentions prose « 0 sorry »/« sans sorry » n'entrent pas
 dans ce compte ; cf.
-[`lean-ci-sorry-filter`](../../.claude/projects/c--dev-CoursIA-2/memory/lean-ci-sorry-filter.md)).
+`lean-ci-sorry-filter`).
 
 ## Résumé
 
@@ -128,7 +128,7 @@ Index de Gittins pour les bandits manchots à escompte géométrique.
 - **WDAC workaround** : `decision_theory_lean` (cohorte v4.30.0-rc2) se construit en
   réutilisant le `.lake` d'un lake frère binairement compatible (wholesale
   `cp -r sibling/.lake` + `lake-manifest.json`, révision Mathlib identique). Cf.
-  [`lean-wdac-olean-wholesale-copy`](../../.claude/projects/c--dev-CoursIA-2/memory/lean-wdac-olean-wholesale-copy.md).
+  `lean-wdac-olean-wholesale-copy`.
 - **Coordination finitude-derivatives (#2978)** : `decision_theory_lean` Gittins est
   coordonné avec `finiteness_lean` (#3111) — pas de chevauchement (Gittins = décision
   séquentielle, finiteness = résultat de finitude standalone).

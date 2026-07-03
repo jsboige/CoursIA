@@ -7,7 +7,7 @@ vérité : corps de l'Epic
 [#4038](https://github.com/jsboige/CoursIA/issues/4038) + vérification `firsthand`. Colonne
 *Sorry (production)* = métrique CI `standalone-tactic` (les mentions prose « 0 sorry »
 n'entrent pas dans ce compte ; cf.
-[`lean-ci-sorry-filter`](../../.claude/projects/c--dev-CoursIA-2/memory/lean-ci-sorry-filter.md)).
+`lean-ci-sorry-filter`).
 
 ## Résumé
 
@@ -66,7 +66,7 @@ Axiomes `[propext, Classical.choice, Quot.sound]` (Mathlib standard, **pas de `s
 
 - **WDAC workaround** (RECOVERABLE-LOCAL) : `lake exe cache get` bloqué → réutilise les
   oleans `.lake/packages/` d'un lake frère binairement compatible. Cf.
-  [`lean-wdac-olean-wholesale-copy`](../../.claude/projects/c--dev-CoursIA-2/memory/lean-wdac-olean-wholesale-copy.md).
+  `lean-wdac-olean-wholesale-copy`.
 - **Mathlib v4.31.0-rc1 tactic learnings** (documentés durably) : `subst` sur l'égalité de
   tête d'induction élimine l'AUTRE variable → utiliser `hd` dans le corps ; lemmes de
   `head?`/`getLast?` non nommés → `simp`/`simp_all` plutôt que lemme nommé ; warnings
