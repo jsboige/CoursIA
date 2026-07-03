@@ -39,7 +39,7 @@ listing:
     sort: "filename"
     page-size: 24
   - id: dt-infer
-    contents: "DecisionTheory/Infer/Infer-*.ipynb"
+    contents: "DecisionTheory/DecInfer/Infer-*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
@@ -76,7 +76,7 @@ La série Probas comporte **4 sous-séries principales + 1 racine standalone**, 
 |------------|-----------|-------|-------|
 | **[Infer](Infer/README.md) (C#/.NET Interactive)** | 19 (+ Setup + _output.ipynb) | Infer.NET, EP/VMP | Corpus bayésien : fondations, modèles classiques (IRT, TrueSkill, LDA, HMM), frontières (causalité, GP, hiérarchiques, Kalman, change-point, survie) |
 | **[PyMC](PyMC/README.md) (Python)** | 14 (+ Setup) | PyMC, NUTS | Mêmes modèles qu'Infer, en MCMC : NUTS, diagnostics (R-hat, ESS), posterior predictive checks |
-| **[DecisionTheory/Infer](DecisionTheory/Infer/README.md) (C#/.NET)** | 10 (Lean : 2, 9) | Infer.NET + Lean 4 | Utility espérée, EVPI, MDPs, bandits, **preuves formelles Lean** de vNM et Gittins (lake `decision_theory_lean/`) |
+| **[DecisionTheory/Infer](DecisionTheory/DecInfer/README.md) (C#/.NET)** | 10 (Lean : 2, 9) | Infer.NET + Lean 4 | Utility espérée, EVPI, MDPs, bandits, **preuves formelles Lean** de vNM et Gittins (lake `decision_theory_lean/`) |
 | **[DecisionTheory/PyMC](DecisionTheory/PyMC/README.md) (Python)** | 7 | PyMC | Mêmes modèles de décision, en sampling |
 | **[DecisionTheory/Causal-Bridges](DecisionTheory/Causal-Bridges/)** | 1 | Python/Z3 | Do-Calculus, jumeaux causaux inter-domaines |
 | **Racine (standalone)** | 2 | Python | Infer-101 (intro complète Infer.NET), Pyro_RSA_Hyperbole (Pyro RSA) |
@@ -188,7 +188,7 @@ jupyter notebook MyIA.AI.Notebooks/Probas/PyMC/
 
 ## Note sur le rendu Quarto (.NET + Lean + Python)
 
-Cette page Quarto rend les **notebooks Python natifs** (PyMC + Causal-Bridges + Infer-101 + Pyro_RSA) ainsi que leurs **`*_output.ipynb`** committés (règle C.2). Les **notebooks .NET C#** (Infer/* principaux + DecisionTheory/Infer/*) et les **companions Lean 4** (`*-Lean-*`) ne sont **pas exécutés par Quarto** : leur rendu s'appuie sur les `*_output.ipynb` committés via le mode `freeze: auto` de `_quarto.yml`. Pour une exécution locale : kernel `dotnet-csharp` pour Infer.NET ; kernel Lean4 (WSL + elan) pour les companions. Ce point est la **matière de la tranche 4 #4211 (GH Actions deploy)** — un workflow dédié pourra automatiser exécution et publication, mais le **MVP actuel** se contente de freeze auto sans ré-exécution.
+Cette page Quarto rend les **notebooks Python natifs** (PyMC + Causal-Bridges + Infer-101 + Pyro_RSA) ainsi que leurs **`*_output.ipynb`** committés (règle C.2). Les **notebooks .NET C#** (Infer/* principaux + DecisionTheory/DecInfer/*) et les **companions Lean 4** (`*-Lean-*`) ne sont **pas exécutés par Quarto** : leur rendu s'appuie sur les `*_output.ipynb` committés via le mode `freeze: auto` de `_quarto.yml`. Pour une exécution locale : kernel `dotnet-csharp` pour Infer.NET ; kernel Lean4 (WSL + elan) pour les companions. Ce point est la **matière de la tranche 4 #4211 (GH Actions deploy)** — un workflow dédié pourra automatiser exécution et publication, mais le **MVP actuel** se contente de freeze auto sans ré-exécution.
 
 ## Pour aller plus loin
 
