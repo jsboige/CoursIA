@@ -47,7 +47,7 @@ such that continuing to play the arm is better than retiring with that value.
     (e.g. Beta–Bernoulli) and the optimal-stopping / Bellman machinery that is
     absent from Mathlib. That barrier is recorded at `gittins_optimality` below
     (INTRINSIC, court-terme, #4039). -/
-def gittinsIndex (arm : BanditArm) (γ : Float) (history : RewardHistory) : Float :=
+def gittinsIndex (arm : BanditArm) (γ : ℝ) (history : RewardHistory) : ℝ :=
   arm.trueMean
 
 /-!
@@ -58,17 +58,17 @@ is optimal for the discounted infinite-horizon multi-armed bandit.
 -/
 
 /-- A Gittins index policy: at each step, play the arm with highest Gittins index. -/
-def gittinsPolicy (inst : BanditInstance) (histories : Array RewardHistory) : Nat :=
+noncomputable def gittinsPolicy (inst : BanditInstance) (histories : Array RewardHistory) : Nat :=
   -- Argmax of the Gittins index over the arms (in the known-mean model this is
   -- the highest-`trueMean` arm, i.e. the greedy arm — correct for known arms).
   ((Array.range inst.arms.size).foldl
-    (fun (best : Nat × Float) i =>
+    (fun (best : Nat × ℝ) i =>
       match inst.arms[i]? with
       | none => best
       | some arm =>
         let g := gittinsIndex arm inst.discount (histories[i]?.getD [])
         if g > best.2 then (i, g) else best)
-    (0, 0.0)).1
+    (0, 0)).1
 
 /-- **Gittins Index Theorem** (Gittins 1979, Weber 1992): the Gittins index
     policy maximizes the total expected discounted reward for the multi-armed
@@ -92,10 +92,10 @@ def gittinsPolicy (inst : BanditInstance) (histories : Array RewardHistory) : Na
     ~2000–5000 lines of supporting definitions; this is left as the INTRINSIC
     court-terme target rather than a degraded workaround.
 -/
-theorem gittins_optimality {γ : Float} (hγ : 0 < γ ∧ γ < 1)
+theorem gittins_optimality {γ : ℝ} (hγ : 0 < γ ∧ γ < 1)
     (inst : BanditInstance) :
     ∀ π : Policy,
-      let V (policy : Policy) : Float :=
+      let V (policy : Policy) : ℝ :=
         sorry
       V (fun _ => gittinsPolicy inst (Array.replicate inst.arms.size []))
         ≥
@@ -114,7 +114,7 @@ the index equals `trueMean`; the remaining open question is the MDP-gated
 /-- The Gittins index of a known arm (empty history — no posterior uncertainty)
     equals its true mean. Definitional in the known-mean model: the index is
     calibrated to the retirement value `μ`, independent of `history` and `γ`. -/
-theorem gittins_index_known_arm (arm : BanditArm) (γ : Float) :
+theorem gittins_index_known_arm (arm : BanditArm) (γ : ℝ) :
     gittinsIndex arm γ [] = arm.trueMean := by
   rfl
 
@@ -126,20 +126,16 @@ theorem gittins_index_known_arm (arm : BanditArm) (γ : Float) :
     value, absent for a known arm (`discount_monotone` in `Discount.lean` captures
     the `γ`-dependence of the *discounted value* on the `ℝ` side).
 
-    **Formalization subtlety (Float-order wart, NOT MDP-intrinsic, #4039).** After
-    `simp only [gittinsIndex]` the goal reduces to `arm.trueMean ≤ arm.trueMean`.
-    This is *not* provable as stated: `Float` follows IEEE 754, so `≤` is not
-    reflexive (`NaN ≤ NaN` is false — Lean core documents this at
-    `Init/Data/Float.lean`), there is no `Preorder Float` instance, and no
-    self-`≤` lemma exists in Lean core or Mathlib. Semantically a bandit mean is a
-    real number (never `NaN`); a clean proof would require either coercing
-    `BanditArm.trueMean` to `ℝ` (ripples across `Basic.lean`) or a non-`NaN` guard
-    plus a core lemma Lean lacks. This is a distinct, smaller barrier than the
-    MDP-gated `gittins_optimality` and is left `sorry`-backed honestly. -/
-theorem gittins_index_monotone_discount (arm : BanditArm) (γ₁ γ₂ : Float)
+    **Proven (#4039 Barrier B closed).** After the `Float → ℝ` port of
+    `BanditArm.trueMean` / `BanditInstance.discount`, the goal reduces to
+    `arm.trueMean ≤ arm.trueMean` on `ℝ`, which holds by reflexivity (`le_refl`).
+    The earlier `Float`-order wart (IEEE 754 `≤` not reflexive, no `Preorder Float`
+    instance) is gone: a bandit mean is a real number, never `NaN`. -/
+theorem gittins_index_monotone_discount (arm : BanditArm) (γ₁ γ₂ : ℝ)
     (h : γ₁ ≤ γ₂) :
     gittinsIndex arm γ₁ [] ≤ gittinsIndex arm γ₂ [] := by
-  sorry
+  simp only [gittinsIndex]
+  apply le_refl
 
 /-- For the 2-armed bandit, the Gittins policy outperforms the greedy policy. -/
 theorem gittins_beats_greedy (inst : BanditInstance)

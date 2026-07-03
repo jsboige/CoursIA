@@ -1,8 +1,12 @@
+import Mathlib.Data.Real.Basic
+
 /-!
 # Basic Definitions — Multi-Armed Bandits
 
 Core types for the bandit problem: arms, instances, policies, and value functions.
-No Mathlib dependency — pure Lean 4 definitions.
+Means and discount factors are carried on `ℝ` (not `Float`) so that order laws are
+reflexive — a bandit mean is a real number, never a `NaN`. Sampled reward histories
+stay `Float` (empirical quantities); the two notions are deliberately distinct.
 -/
 
 namespace Gittins
@@ -10,14 +14,12 @@ namespace Gittins
 /-- A bandit arm characterized by its true mean reward. -/
 structure BanditArm where
   name : String
-  trueMean : Float
-  deriving Repr
+  trueMean : ℝ
 
 /-- A bandit instance: a collection of arms with a discount factor. -/
 structure BanditInstance where
   arms : Array BanditArm
-  discount : Float  -- gamma in (0, 1)
-  deriving Repr
+  discount : ℝ  -- gamma in (0, 1)
 
 /-- A policy maps each time step to the index of the arm to pull. -/
 def Policy := Nat → Nat
