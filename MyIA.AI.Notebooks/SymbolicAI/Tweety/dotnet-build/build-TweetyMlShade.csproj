@@ -9,8 +9,8 @@
     <PackageReference Include="IKVM.MSBuild" Version="8.14.0" />
   </ItemGroup>
   <ItemGroup>
-    <IkvmReference Include="tweety-aspic-full-1.30.jar">
-      <AssemblyName>org.tweetyproject.tweety-aspic</AssemblyName>
+    <IkvmReference Include="tweety-ml-full-1.30.jar">
+      <AssemblyName>org.tweetyproject.tweety-ml</AssemblyName>
       <AssemblyVersion>1.30.0.0</AssemblyVersion>
       <AssemblyFileVersion>1.30.0.0</AssemblyFileVersion>
     </IkvmReference>

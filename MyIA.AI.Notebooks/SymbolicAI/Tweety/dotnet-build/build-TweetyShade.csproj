@@ -5,8 +5,11 @@
     <RestoreAdditionalProjectSources></RestoreAdditionalProjectSources>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="IKVM" Version="8.15.0" />
-    <PackageReference Include="IKVM.MSBuild" Version="8.15.0" />
+    <Compile Include="Placeholder.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="IKVM" Version="8.14.0" />
+    <PackageReference Include="IKVM.MSBuild" Version="8.14.0" />
   </ItemGroup>
   <ItemGroup>
     <IkvmReference Include="tweety-pl-full-1.30.jar">

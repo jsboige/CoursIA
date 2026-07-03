@@ -1,57 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Standalone shade aggregator for Description Logic (DL): bundles logics-dl +
-     transitive deps (logics-commons, fol, pl, math, commons, sat4j, commons-math)
-     from local m2 into one coherent fat-jar. Clones the proven pl (#4792) / dung (#4831)
-     recipe. Advanced-Logic-Csharp (Tw-3) PR atomique Phase 4+ #4667 (DL seul ; QBF/CL
-     = ports suivants). IKVM 8.15 needs a single shade artifact to resolve cross-module
-     types. -->
+<!-- Standalone shade aggregator for Ranking Probabilistic Conditional Logic (RPCL):
+     bundles logics-rpcl + transitive deps (logics-rcl, logics-pcl, logics-pl, math,
+     sat4j.core) from local m2 into one coherent fat-jar. Clones the proven
+     advanced-logics (#5194), conditional-logics (#5199), and qbf (#5202) recipes
+     (shade aggregator with junit exclusions + IKVM 8.15 target). RPCL Csharp
+     PR atomique Phase 4+ #4667 (RPCL = ranking + probabilities sur conditionnels,
+     apres DL/CL/QBF intra Tw-3 ; prochaine sous-famille Tw-7b). IKVM 8.15 needs
+     a single shade artifact to resolve cross-module types. -->
 <project xmlns="http://maven.apache.org/POM/4.0.0">
   <modelVersion>4.0.0</modelVersion>
   <groupId>local</groupId>
-  <artifactId>tweety-advanced-logics-shade</artifactId>
+  <artifactId>tweety-rpcl-shade</artifactId>
   <version>1.30</version>
   <packaging>jar</packaging>
-  <name>Tweety advanced-logics (DL) shaded fat-jar (IKVM target)</name>
+  <name>Tweety RPCL (Ranking Probabilistic Conditional Logic) shaded fat-jar (IKVM target)</name>
 
   <dependencies>
     <dependency>
       <groupId>org.tweetyproject.logics</groupId>
-      <artifactId>dl</artifactId>
+      <artifactId>rpcl</artifactId>
       <version>1.30</version>
       <exclusions>
-        <!-- junit (incl. junit-jupiter 5.x = Java 9+ bytecode) is test-only and
-             would pollute the fat-jar with IKVM0101-rejecting classes. -->
         <exclusion>
           <groupId>junit</groupId>
           <artifactId>junit</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.junit.jupiter</groupId>
-          <artifactId>junit-jupiter</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.junit</groupId>
-          <artifactId>junit-bom</artifactId>
-        </exclusion>
-        <!-- C190 fix: isula-1.1.1 brings commons-lang3 transitive that:
-             (a) needs a .pom not present in local m2 -> Maven won't bundle it
-             (b) once bundled forces IKVM to embed all tweetyproject classes
-                 as .class resources instead of compiling them to .NET types.
-             Only 7 tweetyproject classes actually reference isula (Ant Colony
-             Optimization in math.opt.solver), used by TravelingSalesman demos.
-             DL/CL/QBF/ML/MLN/RPCL reasoners don't touch isula -> safe to drop. -->
-        <exclusion>
           <groupId>isula</groupId>
           <artifactId>isula</artifactId>
         </exclusion>
-        <!-- commons-lang3 itself is only needed by isula; without isula, lang3
-             has no users in the tweetyproject DL/CL/QBF/ML/MLN/RPCL chain. -->
         <exclusion>
           <groupId>org.apache.commons</groupId>
           <artifactId>commons-lang3</artifactId>
         </exclusion>
-        <!-- gurobi is a commercial LP solver (math.opt), unlicensed, not needed
-             by the DL/CL/QBF/ML/MLN/RPCL reasoners. Skip it. -->
         <exclusion>
           <groupId>gurobi</groupId>
           <artifactId>gurobi</artifactId>
@@ -61,7 +42,7 @@
   </dependencies>
 
   <build>
-    <finalName>tweety-advanced-logics-full-1.30</finalName>
+    <finalName>tweety-rpcl-full-1.30</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
