@@ -21,11 +21,19 @@ name: Lean Build (reusable)
 #   standalone-tactic : sorry as the sole tactic token on a line, INCLUDING the
 #                       Lean case-bullet form `· sorry` (U+00B7), which a bare
 #                       `^\s*sorry\s*$` silently dropped (blind spot, See #2747)
+#   real              : strip Lean comments (-- line + nested /- -/ block) then count
+#                       word-bounded `\bsorry\b`. Mirrors the prover harness
+#                       `count_real_sorries` (FX-6 #1453) — the repo's canonical
+#                       counter. Use when a project's prose/docstrings LEGITIMATELY
+#                       mention "sorry" (e.g. calibration_lean P4 "sorry-increase"
+#                       docstring examples, See #5120) so comment edits do not flip
+#                       the raw count.
 # Use raw only when sorry ALWAYS means tactic (no prose mentions). Use prose-header
 # when the only non-tactic mentions are "sorries"/"sorry's" in header comments.
 # Use standalone-tactic when there are MANY prose mentions of "sorry" mixed with
-# real tactic sorries (e.g. Conway block comments). Choose the mode whose baseline
-# is robust to editing comments in that project.
+# real tactic sorries (e.g. Conway block comments). Use `real` when docstring prose
+# legitimately says "sorry" (the most robust: counts exactly compiled-tactic sorries).
+# Choose the mode whose baseline is robust to editing comments in that project.
 
 on:
   workflow_call:
@@ -43,7 +51,7 @@ on:
         type: string
         required: true
       sorry-filter-mode:
-        description: "How to count sorry: raw | prose-header | standalone-tactic"
+        description: "How to count sorry: raw | prose-header | standalone-tactic | real"
         type: string
         required: true
 
@@ -81,6 +89,30 @@ jobs:
                 # spot, See #2747). Strip bullet bytes (c2 b7) first so BOTH
                 # forms match in any locale (byte-exact, not UTF-8 dependent).
                 COUNT=$(tr -d '\302\267' < "$f" | grep -cE "^\s*sorry\s*$" || true) ;;
+              real)
+                # Strip Lean line comments (-- ...) and nested block comments
+                # (/- ... -/) then count word-bounded `sorry`. Mirrors the
+                # prover harness `count_real_sorries` (FX-6 #1453), the repo's
+                # canonical counter. Catches every compiled-tactic form
+                # (`exact sorry`, `:= by sorry`, bare `sorry`, `sorry -- c`)
+                # while ignoring prose mentions in docstrings/comments. Use
+                # when docstring prose legitimately says "sorry" so comment
+                # edits do not flip the raw count (See #5120).
+                COUNT=$(awk '
+                  BEGIN { depth=0 }
+                  {
+                    line=$0; out=""; i=1; n=length(line)
+                    while (i<=n) {
+                      two = (i<n) ? substr(line,i,2) : substr(line,i,1)
+                      if (depth==0 && two=="--") { break }
+                      if (two=="/-") { depth++; i+=2; continue }
+                      if (depth>0 && two=="-/") { depth--; i+=2; continue }
+                      if (depth==0) { out = out substr(line,i,1) }
+                      i++
+                    }
+                    if (depth==0) print out
+                  }
+                ' "$f" | grep -oE '\bsorry\b' | wc -l || true) ;;
               *)
                 echo "ERROR: unknown sorry-filter-mode '$MODE'"; exit 2 ;;
             esac
