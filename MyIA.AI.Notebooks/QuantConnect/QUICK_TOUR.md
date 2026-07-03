@@ -1,6 +1,6 @@
 # QuantConnect AI Trading - Quick Tour
 
-**95+ strategies backtested | 51 notebooks Python | 20 patterns confirmés | Composite robuste (TrendWeather Sharpe aligné 0.95)**
+**95+ stratégies backtested | 51 notebooks Python | 20 patterns confirmés | Composite robuste (TrendWeather Sharpe aligné 0.95)**
 
 Cette section contient un parcours complet de trading algorithmique sur **QuantConnect LEAN**, du débutant au déploiement live. Tout est exécutable gratuitement sur le cloud QC.
 
@@ -10,13 +10,13 @@ Cette section contient un parcours complet de trading algorithmique sur **QuantC
 
 1. **[Meilleure stratégie](projects/Framework_Composite_TrendWeather/)** — Composite TrendStocks + AllWeather (Sharpe 1.156, CAGR 27.4%). Architecture Algorithm Framework modulaire : AlphaModel + PortfolioConstruction + Execution.
 
-2. **[Catalogue strategies](docs/qc_strategies_catalog.md)** — 95+ projets organisés par catégorie (Alpha, Trend Following, ML/RL, Composites). Top performers vérifiés alignés (#1630) : Long-Short Harvest (Sharpe **1.64**, PSR 98.7%), TrendWeather Composite (**0.948**, PSR 56.6%), EMATrend (**0.611**).
+2. **[Catalogue stratégies](docs/qc_strategies_catalog.md)** — 95+ projets organisés par catégorie (Alpha, Trend Following, ML/RL, Composites). Top performers vérifiés alignés (#1630) : Long-Short Harvest (Sharpe **1.64**, PSR 98.7%), TrendWeather Composite (**0.948**, PSR 56.6%), EMATrend (**0.611**).
 
 3. **[Patterns confirmés](../../docs/qc/quantconnect.md)** — 20 patterns valides sur 30+ iterations (risk-adjusted momentum, skip-month, stop-loss -8/-12%, monthly rebalancing, anti-overfitting) et 10 anti-patterns critiques (SPY Parking, backtests courts, yfinance != QC cloud).
 
 4. **[Notebooks pédagogiques](Python/)** — 51 notebooks en 8 phases progressives : fondations LEAN, universe/asset classes, risk management, Algorithm Framework, données alternatives, ML (RF/XGBoost), deep learning (LSTM/Transformers), RL et LLMs pour trading.
 
-5. **[Mapping livre Jared Broad](BOOK_MAPPING.md)** — 63 exemples du livre *Hands-On AI Trading* (2025) mappés a nos notebooks et projets. 22 strategies ML du Chapitre 6 importées.
+5. **[Mapping livre Jared Broad](BOOK_MAPPING.md)** — 63 exemples du livre *Hands-On AI Trading* (2025) mappés à nos notebooks et projets. 22 stratégies ML du Chapitre 6 importées.
 
 ## Démarrer en 5 minutes
 
@@ -24,4 +24,4 @@ Cette section contient un parcours complet de trading algorithmique sur **QuantC
 2. Copier un `main.py` depuis [projects/](projects/) dans un nouveau projet QC Lab
 3. Cliquer **Backtest** — c'est tout
 
-> Documentation complete : [README.md](README.md) | [Guide démarrage](GETTING-STARTED.md) | [Patterns QC](../../docs/qc/quantconnect.md)
+> Documentation complète : [README.md](README.md) | [Guide démarrage](GETTING-STARTED.md) | [Patterns QC](../../docs/qc/quantconnect.md)
