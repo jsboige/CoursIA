@@ -12,6 +12,12 @@ import Mathlib.Analysis.Real.Sqrt
 import Mathlib.Tactic.FinCases
 
 /-!
+# L'hypercube pour le théorème de sensibilité de Huang
+
+Ce fichier définit l'hypercube `Q n = Fin n → Bool` et sa relation d'adjacence.
+
+---
+English:
 # The hypercube for Huang's sensitivity theorem
 
 This file defines the hypercube `Q n = Fin n → Bool` and its adjacency relation.
@@ -24,6 +30,15 @@ noncomputable section
 open Bool Finset Fintype
 
 /-!
+### L'hypercube
+
+Notations :
+- `ℕ` désigne les entiers naturels (zéro inclus).
+- `Fin n` = {0, ⋯ , n - 1}.
+- `Bool` = {`true`, `false`}.
+
+---
+English:
 ### The hypercube
 
 Notations:
@@ -33,11 +48,14 @@ Notations:
 -/
 
 
-/-- The hypercube in dimension `n`. -/
+/-- L'hypercube en dimension `n`.
+    English: The hypercube in dimension `n`. -/
 abbrev Q (n : ℕ) :=
   Fin n → Bool
 
-/-- The projection from `Q n.succ` to `Q n` forgetting the first value
+/-- La projection de `Q n.succ` vers `Q n` oubliant la première valeur
+(c'est-à-dire l'image de zéro).
+    English: The projection from `Q n.succ` to `Q n` forgetting the first value
 (i.e. the image of zero). -/
 def π {n : ℕ} : Q n.succ → Q n := fun p => p ∘ Fin.succ
 
@@ -48,11 +66,13 @@ theorem ext {n} {f g : Q n} (h : ∀ x, f x = g x) : f = g := funext h
 
 variable (n : ℕ)
 
-/-- `Q 0` has a unique element. -/
+/-- `Q 0` possède un unique élément.
+    English: `Q 0` has a unique element. -/
 instance : Unique (Q 0) :=
   ⟨⟨fun _ => true⟩, by intro; ext x; fin_cases x⟩
 
-/-- `Q n` has 2^n elements. -/
+/-- `Q n` possède 2^n éléments.
+    English: `Q n` has 2^n elements. -/
 theorem card : Fintype.card (Q n) = 2 ^ n := by simp
 
 variable {n}
@@ -67,14 +87,19 @@ theorem succ_n_eq (p q : Q n.succ) : p = q ↔ p 0 = q 0 ∧ π p = π q := by
     · rw [← Fin.succ_pred x hx]
       convert congr_fun h (Fin.pred x hx)
 
-/-- The adjacency relation defining the graph structure on `Q n`:
+/-- La relation d'adjacence définissant la structure de graphe sur `Q n` :
+`p.adjacent q` s'il existe une arête de `p` vers `q` dans `Q n`.
+    English: The adjacency relation defining the graph structure on `Q n`:
 `p.adjacent q` if there is an edge from `p` to `q` in `Q n`. -/
 def adjacent {n : ℕ} (p : Q n) : Set (Q n) := { q | ∃! i, p i ≠ q i }
 
-/-- In `Q 0`, no two vertices are adjacent. -/
+/-- Dans `Q 0`, aucun couple de sommets n'est adjacent.
+    English: In `Q 0`, no two vertices are adjacent. -/
 theorem not_adjacent_zero (p q : Q 0) : q ∉ p.adjacent := by rintro ⟨v, _⟩; apply finZeroElim v
 
-/-- If `p` and `q` in `Q n.succ` have different values at zero then they are adjacent
+/-- Si `p` et `q` dans `Q n.succ` ont des valeurs différentes en zéro, alors ils sont
+adjacents ssi leurs projections sur `Q n` sont égales.
+    English: If `p` and `q` in `Q n.succ` have different values at zero then they are adjacent
 iff their projections to `Q n` are equal. -/
 theorem adj_iff_proj_eq {p q : Q n.succ} (h₀ : p 0 ≠ q 0) : q ∈ p.adjacent ↔ π p = π q := by
   constructor
@@ -89,7 +114,9 @@ theorem adj_iff_proj_eq {p q : Q n.succ} (h₀ : p 0 ≠ q 0) : q ∈ p.adjacent
     rw [← Fin.succ_pred _ hy]
     apply congr_fun heq
 
-/-- If `p` and `q` in `Q n.succ` have the same value at zero then they are adjacent
+/-- Si `p` et `q` dans `Q n.succ` ont la même valeur en zéro, alors ils sont adjacents
+ssi leurs projections sur `Q n` sont adjacentes.
+    English: If `p` and `q` in `Q n.succ` have the same value at zero then they are adjacent
 iff their projections to `Q n` are adjacent. -/
 theorem adj_iff_proj_adj {p q : Q n.succ} (h₀ : p 0 = q 0) :
     q ∈ p.adjacent ↔ π q ∈ (π p).adjacent := by
