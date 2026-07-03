@@ -68,10 +68,16 @@ flowchart LR
     P2["<b>Phase 2 — Programmation<br/>par contraintes</b> (~6h)<br/>CSP-1 … CSP-6<br/><i>Réduire l'espace<br/>plutôt que l'explorer</i><br/>backtracking → AC-3<br/>→ contraintes globales<br/>→ ordonnancement<br/>→ CP + SAT / ML / LLM"]
     P3["<b>Phase 3 — Applications<br/>&amp; frontières</b> (~18h)<br/>20 cas réels : TSP, VRP,<br/>RCPSP, Bin Packing,<br/>Wordle, Picross…<br/>+ notebooks avancés<br/>(LP, automates,<br/>souples, temporelles)"]
     BR["<b>Séries connexes</b><br/>Sudoku (DLX)<br/>SymbolicAI (Z3)<br/>GameTheory (Minimax/MCTS)<br/>RL (MCTS + DQN)"]
+    P4["<b>Side-track .NET 9</b><br/>Part 4 — Métaheuristiques<br/>composables<br/>MGS-1 … MGS-19<br/><i>reconstruire &amp; composer<br/>au-dessus de GeneticSharp</i>"]
     P1 -->|"backtracking = DFS"| P2
     P2 -->|"modélisation industrielle"| P3
     P3 -.->|"ponts"| BR
+    P1 -.->|"side-track .NET"| P4
 ```
+
+### Side-track avancé : métaheuristiques composables (Part 4, C# .NET 9)
+
+En parallèle du parcours Python, la [Partie 4 — MetaGeneticSharp](Part4-Metaheuristics/README.md) propose un **side-track .NET 9** de 19 notebooks (MGS-1 à MGS-19) qui **reconstruit et compose** les métaheuristiques au-dessus de GeneticSharp plutôt que d'importer une boîte noire. Il prolonge Search-5 (GeneticAlgorithms) et Search-11 (Métaheuristiques) et se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la grammaire de composition (jusqu'au TSP) ; **MGS-8 à 14** visualisent les paysages de fitness et mesurent la robustesse aux biais des bancs CEC (décalage, rotation, synergie d'îles) ; **MGS-15 à 18** referment la série sur l'analyse quantitative de paysage et la méta-stratégie (No-Free-Lunch, contrôle de paramètres) ; **MGS-19** démonte le recuit simulé pour éprouver l'opérateur de Metropolis seul. Optionnel pour qui vise le cœur Python, central pour qui veut *construire* ses métaheuristiques en .NET.
 
 ## Ce que chaque notebook apporte
 
@@ -106,6 +112,14 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 | 7 | CSP Soft | Contraintes souples, Fuzzy CSP : quand toutes les contraintes ne sont pas égales |
 | 8 | CSP Temporal | Allen's Interval Algebra, STP : raisonner sur le temps |
 | 9 | CSP Distributed | ABT, AWC : résoudre des CSP répartis entre agents |
+
+### Partie 3 : Recherche heuristique avancée
+
+| # | Notebook | Apport pédagogique |
+|---|----------|-------------------|
+| 12 | PatternDatabases | Heuristiques précalculées (Culberson & Schaeffer 1996, PDB additives Korf & Felner 2002) : 15-puzzle optimal via IDA* |
+| 13 | LimitedDiscrepancySearch | LDS (Harvey & Ginsberg 1995) : explorer d'abord les écarts au choix glouton, greedy vs LDS(k) vs exhaustif |
+| 14 | WeightedA* | A* pondéré (Pohl 1970) : sous-optimalité bornée par W pour accélérer sur terrain pondéré |
 
 ### Partie 4 : Métaheuristiques composables
 
