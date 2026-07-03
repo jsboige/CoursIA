@@ -51,6 +51,8 @@ Toute PR touchant `*.ipynb` **DOIT** inclure :
 3. Cellules code = `execution_count: <int>` ET `outputs: [...]` cohérents (règle C.2 CLAUDE.md)
 4. Diff ne supprime pas de cellules `# Solution` ou `# Exemple résolu` sans issue référencée (anti-régression)
 
+**Advisory `.NET execution_count` ≠ outputs vides autorisés (#5214).** La CI ne peut pas Papermill-exécuter les notebooks .NET Interactive (pas de kernel en CI) — l'advisory autorise à **sauter la ré-exécution CI**, **pas** à committer des sorties vides. `.NET Interactive` s'exécute **localement** sur chaque machine worker (`dotnet-interactive`), donc une cellule .NET committée **DOIT** porter `execution_count != null` = preuve d'exécution locale. Le validateur `scripts/notebook_tools/validate_pr_notebooks.py` FAIL désormais sur un notebook .NET avec `execution_count: null` (verdict forensique H.5 `STRUCTURAL_ONLY`), et ne tolère `null` que là où l'exécution locale est aussi impossible (QC Cloud = besoin QuantBook ; Lean = advisory propre, hors scope). Incident fondateur : PRs Tweety-3 C# (#5194/#5199/#5202) mergées avec notebooks à `execution_count: null` + `outputs: []`. Verdict attendu dans le body : `EXEC_PROVED` (outputs réels) vs `STRUCTURAL_ONLY` (refus).
+
 ### E. Documentation/Admin PRs : groupement obligatoire
 
 PRs dont le contenu = uniquement docs/README/CLAUDE.md/rules :

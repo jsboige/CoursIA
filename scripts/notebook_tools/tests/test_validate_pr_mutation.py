@@ -71,13 +71,18 @@ def _code(source, execution_count=1, outputs=None):
 
 
 class TestSkipExecOrCombination:
-    """If either condition is true, skip_exec must be True.
+    """allow_null_exec_count is an OR of (Lean kernel) | (QC Cloud). #5214 split
+    this out of ci_reexec_skipped: .NET is in SKIP_EXEC_KERNELS (CI can't re-run)
+    but NOT in allow_null_exec_count (runs locally → must prove execution).
 
-    A mutation swapping `or` to `and` would make these fail.
+    A mutation swapping `or` to `and`, or wrongly re-adding .NET to
+    ALLOW_NULL_EXEC_COUNT_KERNELS, would make these fail.
     """
 
-    def test_dotnet_kernel_skips_exec(self, tmp_path):
-        """Kernel in SKIP_EXEC_KERNELS → H.3 skipped."""
+    def test_dotnet_kernel_does_not_skip_h3(self, tmp_path):
+        """Kernel in SKIP_EXEC_KERNELS but NOT in ALLOW_NULL_EXEC_COUNT_KERNELS
+        → H.3 is enforced (#5214: .NET runs locally). A mutation that re-adds
+        .NET to the allow-null set would make this fail."""
         cell = {
             "cell_type": "code",
             "source": ["print('hi')\n"],
@@ -86,10 +91,10 @@ class TestSkipExecOrCombination:
         }
         nb = _write_nb([cell], tmp_path, kernel=".net-csharp")
         result = validate_notebook(nb)
-        # H.3 not flagged (kernel skip)
-        assert result["passed"]
+        assert not result["passed"]
         h3_errors = [e for e in result["errors"] if "H.3" in e]
-        assert h3_errors == []
+        assert len(h3_errors) == 1
+        assert result["forensic_verdict"] == "STRUCTURAL_ONLY"
 
     def test_qc_cloud_path_skips_exec(self, tmp_path):
         """Path in QC_CLOUD_PATHS → H.3 skipped, even with python3 kernel."""
@@ -724,8 +729,9 @@ class TestSkipExecKernelSubstring:
         h3 = [e for e in result["errors"] if "H.3" in e]
         assert h3 == []
 
-    def test_dotnet_fsharp_kernel_skipped(self, tmp_path):
-        """'.net-fsharp' in SKIP_EXEC_KERNELS → H.3 skipped."""
+    def test_dotnet_fsharp_kernel_enforces_h3(self, tmp_path):
+        """'.net-fsharp' is in SKIP_EXEC_KERNELS (CI can't re-run) but, like all
+        .NET Interactive kernels, runs locally → H.3 enforced (#5214)."""
         cell = {
             "cell_type": "code",
             "source": ["let x = 1\n"],
@@ -735,10 +741,11 @@ class TestSkipExecKernelSubstring:
         nb = _write_nb([cell], tmp_path, kernel=".net-fsharp")
         result = validate_notebook(nb)
         h3 = [e for e in result["errors"] if "H.3" in e]
-        assert h3 == []
+        assert len(h3) == 1
 
-    def test_dotnet_powershell_kernel_skipped(self, tmp_path):
-        """'.net-powershell' in SKIP_EXEC_KERNELS → H.3 skipped."""
+    def test_dotnet_powershell_kernel_enforces_h3(self, tmp_path):
+        """'.net-powershell' is in SKIP_EXEC_KERNELS but runs locally → H.3
+        enforced (#5214)."""
         cell = {
             "cell_type": "code",
             "source": ["Get-Date\n"],
@@ -748,7 +755,7 @@ class TestSkipExecKernelSubstring:
         nb = _write_nb([cell], tmp_path, kernel=".net-powershell")
         result = validate_notebook(nb)
         h3 = [e for e in result["errors"] if "H.3" in e]
-        assert h3 == []
+        assert len(h3) == 1
 
 
 # ---------------------------------------------------------------------------
@@ -890,20 +897,20 @@ class TestC1ScannerIntegration:
 
 
 # ---------------------------------------------------------------------------
-# Mutation test: main() --strict flag
+# Mutation test: main() exit code — .NET null exec_count fails BY DEFAULT (#5214)
 # ---------------------------------------------------------------------------
 
 
-class TestMainStrictFlag:
-    """Verify --strict flag affects behavior for non-Python kernels."""
+class TestMainDotnetStrictByDefault:
+    """A .NET notebook with execution_count=None fails by default — no opt-in
+    flag needed. #5214 made the .NET execution_count check mandatory because
+    dotnet-interactive runs locally on every worker (the old --strict opt-in
+    flag was never wired and is now removed; its intent is the default for .NET).
+    Regression guard for the Tweety-3 cluster (#5194/#5199/#5202) merged with
+    execution_count:null + outputs:[]."""
 
-    def test_strict_flag_causes_exit_1_for_dotnet_exec_none(self, tmp_path):
-        """--strict with dotnet kernel + execution_count=None → fail.
-
-        Note: current implementation does not implement --strict for H.3
-        (it only adds execution_count check for non-Python kernels).
-        This test documents expected behavior if --strict is implemented.
-        """
+    def test_dotnet_exec_none_fails_by_default(self, tmp_path):
+        """dotnet kernel + execution_count=None → exit 1, no flag required."""
         cell = {
             "cell_type": "code",
             "source": ["Console.WriteLine('hi');\n"],
@@ -911,7 +918,6 @@ class TestMainStrictFlag:
             "outputs": [],
         }
         p = _write_nb([cell], tmp_path, kernel=".net-csharp")
-        with patch("sys.argv", ["validate_pr_notebooks.py", "--strict", "origin/main", str(p)]):
+        with patch("sys.argv", ["validate_pr_notebooks.py", "origin/main", str(p)]):
             exit_code = main()
-        # Currently --strict doesn't affect H.3 skip_exec, so this passes
-        assert exit_code == 0
+        assert exit_code == 1
