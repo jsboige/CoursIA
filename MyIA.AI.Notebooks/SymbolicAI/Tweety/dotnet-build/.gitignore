@@ -1,0 +1,6 @@
+# Build artefacts — not committed (rebuilt via Maven shade + dotnet build)
+bin/
+obj/
+target/
+*.user
+*.suo
