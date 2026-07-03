@@ -79,6 +79,20 @@ EXERCISE_WORD_EN_RE = re.compile(r"\bexercises?\b", re.IGNORECASE)
 # initially mis-paired a `---` cell with the exercise code cell below it.
 MARKDOWN_HEADER_RE = re.compile(r"^\s{0,3}#{1,6}\s+(.*)", re.MULTILINE)
 
+# The exercise NUMBER a cell references, e.g. ``Exercice 3`` -> ``'3'``,
+# ``Exercice 3b`` -> ``'3b'``, ``Exercise 2`` -> ``'2'``. Used ONLY to gate
+# backward stub/header pairing (see count_exercises_in_notebook): a stub that
+# PRECEDES a header is absorbed into it only when both reference the same
+# number, so a stub belonging to the *previous* exercise in a sequential
+# layout (header N -> stub N -> header N+1) is never wrongly absorbed. The
+# optional trailing letter distinguishes ``3`` from ``3b`` (two distinct
+# exercises). Numberless references (``# Exercice : ...``) return None and are
+# left unpaired -- conservative (may leave a residual double-count, but never
+# under-counts by absorbing a foreign stub).
+EXERCISE_NUMBER_RE = re.compile(
+    r"\b(?:exercic(?:e|es)|exercises?)\s*([-+]?\d+[a-z]?)", re.IGNORECASE
+)
+
 # Stub indicators inside a code cell source (mirrors detect_solution_leaks.py +
 # the notebook-conventions C.1 patterns). An exercise cell is a STUB; a complete
 # solution is an EXAMPLE and is not counted as an exercise.
@@ -210,12 +224,32 @@ def _markdown_mentions_exercise(source: str) -> bool:
     return False
 
 
+def _exercise_number(source: str) -> str | None:
+    """Exercise number token a cell references, e.g. ``'3'`` or ``'3b'``.
+
+    Returns the first ``Exercice <n>`` / ``Exercise <n>`` capture found
+    anywhere in ``source`` (markdown header text or code comment), sign-stripped
+    and lowercased. Returns None when the cell names an exercise with NO number
+    (``# Exercice : ...``): numberless references cannot be safely pair-matched,
+    so the caller treats them as unpaired.
+    """
+    m = EXERCISE_NUMBER_RE.search(source)
+    if not m:
+        return None
+    return m.group(1).lstrip("+-").lower()
+
+
 def count_exercises_in_notebook(path: Path) -> NotebookCount:
     """Count exercises in one notebook, with per-cell evidence.
 
-    Deduplication: a markdown header at cell i followed by the matching code
-    stub at cell i+1 is ONE exercise. We pair them. A code-cell exercise with
-    no preceding markdown header is its own exercise.
+    Deduplication: an exercise may appear as BOTH a markdown header AND an
+    adjacent code stub. We pair them so it counts once. Pairing covers two
+    layouts -- the common one (header at cell i, stub at cell i+1) and the
+    "fill-in box then description" layout (stub at cell i, header at cell
+    i+1). The backward layout is gated by a matching exercise NUMBER so a stub
+    belonging to the *previous* exercise in a sequential layout (header N ->
+    stub N -> header N+1) is never absorbed. A code-cell exercise with no
+    paired header is its own exercise.
     """
     result = NotebookCount(path=path)
     try:
@@ -244,15 +278,40 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
             )
             header_cell_indices.add(i)
 
-    # Track which code cells are the paired stub of a header just above them
-    # so we do not double-count them in the second pass.
+    # Track which code cells are the paired stub of an exercise header so we
+    # do not double-count them in the second pass. A stub may sit EITHER just
+    # below its header (common) OR just above it (a "fill-in box then
+    # description" layout, where the stub at cell i precedes its own header at
+    # cell i+1). The backward direction is gated by a MATCHING EXERCISE NUMBER
+    # so we never absorb a stub that belongs to the *previous* exercise in the
+    # normal sequential layout (header N -> stub N -> header N+1): there the
+    # stub's number N differs from the following header's number N+1, so the
+    # match fails and both are counted as distinct exercises (no under-count).
     paired_code_indices: set[int] = set()
     for idx in sorted(header_cell_indices):
+        # Forward (common): the stub just below the header, within 3 cells.
         for j in range(idx + 1, min(idx + 4, len(cells))):
-            cell = cells[j]
-            if cell.get("cell_type") == "code":
+            if cells[j].get("cell_type") == "code":
                 paired_code_indices.add(j)
                 break
+        # Backward (stub-then-header layout): the nearest preceding code cell,
+        # absorbed only when it references the SAME exercise number as the
+        # header. Numberless headers/stubs are left unpaired (conservative).
+        header_source = "".join(cells[idx].get("source", []))
+        header_num = _exercise_number(header_source)
+        if header_num is None:
+            continue
+        for j in range(idx - 1, max(idx - 4, -1), -1):
+            cell = cells[j]
+            if cell.get("cell_type") != "code":
+                continue
+            stub_source = "".join(cell.get("source", []))
+            if (
+                _code_cell_mentions_exercise(stub_source)
+                and _exercise_number(stub_source) == header_num
+            ):
+                paired_code_indices.add(j)
+            break  # nearest preceding code cell is the only candidate
 
     # Second pass: code-cell exercises with NO preceding markdown header.
     for i, cell in enumerate(cells):
