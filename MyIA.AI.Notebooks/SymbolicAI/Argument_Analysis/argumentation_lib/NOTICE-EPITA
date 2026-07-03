@@ -28,6 +28,7 @@ CoursIA copy
 | `_belief_revision_handler.py` (158 lines) | `argumentation_analysis/agents/core/logic/belief_revision_handler.py` | a8025f60 (2026-07-02) |
 | `_probabilistic_handler.py` (152 lines) | `argumentation_analysis/agents/core/logic/probabilistic_handler.py` | a8025f60 (2026-07-02) |
 | `_dialogue_handler.py` (153 lines) | `argumentation_analysis/agents/core/logic/dialogue_handler.py` | a8025f60 (2026-07-02) |
+| `_tweety_initializer.py` (365 lines) | `argumentation_analysis/agents/core/logic/tweety_initializer.py` | a8025f60 (2026-07-02) |
 
 Rationale for verbatim import
 -----------------------------
@@ -431,7 +432,7 @@ sub-tranches C186f (TweetyInitializer) and C186g (runtime bridge shim).
 
 **Sub-tranche plan (after this PR)** :
 
-- **C186e** (this PR) : `belief_revision_handler.py` +
+- **C186e** (PR #5253 MERGED) : `belief_revision_handler.py` +
   `probabilistic_handler.py` + `dialogue_handler.py` = 463L.
 - **C186f** (awaiting) : `tweety_initializer.py` 365L.
 - **C186g** (awaiting) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L.
@@ -444,7 +445,7 @@ sub-tranches C186f (TweetyInitializer) and C186g (runtime bridge shim).
 Volet B etape 4 sub-tranche C186e (belief_revision + probabilistic + dialogue)
 --------------------------------------------------------------------------------
 
-PR #XXXX (C186e) added `_belief_revision_handler.py` (158L),
+PR #5253 (C186e) added `_belief_revision_handler.py` (158L),
 `_probabilistic_handler.py` (152L), and `_dialogue_handler.py` (153L) as
 verbatim copies of the EPITA-IS belief revision, probabilistic argumentation,
 and Walton-Krabbe dialogue protocol handlers at commit `a8025f60`. Together
@@ -505,7 +506,7 @@ sub-tranches C186f (TweetyInitializer) and C186g (runtime bridge shim).
 
 **Sub-tranche plan (after this PR)** :
 
-- **C186f** (awaiting) : `tweety_initializer.py` 365L -- initializer isole,
+- **C186f** (this PR) : `tweety_initializer.py` 365L -- initializer isole,
   gates C186c/C186d runtime (AFHandler + ModalHandler).
 - **C186g** (awaiting) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L
   wrapping `argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`.
@@ -515,82 +516,83 @@ sub-tranches C186f (TweetyInitializer) and C186g (runtime bridge shim).
 `weighted_handler.py`, `social_handler.py` (not imported by upstream
 `tweety_bridge.py:29-41`).
 
-Volet B etape 4 sub-tranche C186d (af_handler + ranking_handler)
-----------------------------------------------------------------
+Volet B etape 4 sub-tranche C186f (tweety_initializer)
+-------------------------------------------------------
 
-PR #XXXX (C186d) added `_af_handler.py` (234L) and `_ranking_handler.py`
-(120L) as verbatim copies of the EPITA-IS `af_handler.py` and
-`ranking_handler.py` modules at commit `a8025f60`. These are the
-**Abstract Argumentation Framework (Dung)** and **Ranking Semantics**
-core handlers for the JPype-based Tweety bridge runtime — together with
-the 8 SEMANTICS_REASONERS (preferred/grounded/stable/complete/admissible/
-conflict_free/semi_stable/stage/ideal/naive) and 12 ranking reasoners
-(categorizer/burden/discussion/counting/tuples/strategy/propagation/saf/
-counter_transitivity/probabilistic_ranking/iterated_graded_defense/
-serialisable) they cover the full Dung classical + ranking reasoning
-stack.
+PR #5255 (C186f) added `_tweety_initializer.py` (365L) as a verbatim copy
+of the EPITA-IS `tweety_initializer.py` module at commit `a8025f60`. This
+is the **central JPype-Tweety bridge initializer** that gates the runtime
+initialization of all 12 logic handlers imported by upstream
+`tweety_bridge.py:29-41` -- including the `TweetyInitializer` class, the
+FOL/PL/modal Java class pre-loading, and the singleton `_classes_loaded` /
+`_initialized_components` / `_jvm_started` state flags.
 
-Symbols exposed (2 public via lazy accessors):
+Symbols exposed (1 public via lazy accessor):
 
-- `get_af_handler_symbol()` -> `AFHandler` class (lazy import)
-- `get_ranking_handler_symbol()` -> `RankingHandler` class (lazy import)
+- `get_tweety_initializer_symbol()` -> `TweetyInitializer` class (lazy import)
 
 Verbatim integrity:
 
-- `_af_handler.py` body SHA1=`c8c468eff25256c625ddc2d4dace4f995ba3a79e`
-  (234L, no prelude, starts with `import jpype`).
-- `_ranking_handler.py` body SHA1=`da43f9777805bbaac40a7d7335b92cf7019bbd5b`
-  (120L, no prelude, starts with `"""Handler for Ranking Semantics`).
-- LF line endings (no CRLF), UTF-8 (no BOM), full upstream SHA1 == body SHA1
-  (no shebang prelude).
+- `_tweety_initializer.py` body SHA1=`ed4e60adc584ca34f96170c28f6d6f21cf449382`
+  (365L, no prelude, starts with `"""Gestionnaire d'initialisation pour
+  les composants Tweety`).
+- LF line endings (no CRLF), UTF-8 (no BOM), full upstream SHA1 == body
+  SHA1 (no shebang prelude). UTF-8 French accents (`Gestionnaire
+  d'initialisation`) preserved byte-equal (verified by automated
+  header+body build script, not hand-transcribed -- cf `build_c186f.py`
+  archive, cycle 9 lesson on `Read` tool UTF-8 corruption).
 
-Dependency disclosure (G.9 honest caveat):
+Dependency disclosure (G.9 honest caveat -- triple-disclosed):
 
-**`_af_handler.py`** imports at module-load:
+This file ships **3 EPITA-IS-internal sibling imports at module-load** that
+are NOT vendored in `argumentation_lib/`:
 
-- `from .tweety_initializer import TweetyInitializer` (sibling, sub-tranche
-  C186f awaiting)
-- `jpype.JClass`, `jpype.JException` (JPype runtime singleton,
-  sub-tranche C186g bridge shim)
-- NO upstream `argumentation_analysis.*` imports — only stdlib (`jpype`,
-  `logging`, `typing`).
+  L11: `from argumentation_analysis.core.utils.logging_utils import setup_logging`
+  L14-17:
+    `from argumentation_analysis.core.jvm_setup import (`
+    `    initialize_jvm as initialize_jvm_robustly,`
+    `)`
+  L17: `from argumentation_analysis.core.jvm_setup import shutdown_jvm, is_jvm_started`
 
-Therefore, the `AFHandler` symbol is **NOT standalone-importable today**:
-`from argumentation_lib._af_handler import AFHandler` raises
-`ModuleNotFoundError: No module named 'argumentation_lib.tweety_initializer'`
-— that is the G.9 fingerprint that proves the verbatim block is honest,
-not fabricated. (Sibling `tweety_initializer` is sub-tranche C186f awaiting
-merge; future CoursIA shim will re-route via the JPype bridge singleton.)
+Therefore this module is **NOT standalone-importable today**: even the
+module-level `import argumentation_lib._tweety_initializer` raises
+`ModuleNotFoundError: No module named 'argumentation_analysis'` because
+the top-level imports cannot resolve.
 
-**`_ranking_handler.py`** has **NO upstream `argumentation_analysis.*`
-imports AND NO sibling upstream imports** — only stdlib (`jpype`,
-`logging`, `typing`). The class symbol is therefore **import-safe today**;
-ONLY JPype-Tweety singletons are referenced (`jpype.JClass`,
-`jpype.JException`, plus 5 `org.tweetyproject.arg.*` FQNs at construction
-time).
+G.9 surface test verified:
 
-The lazy accessors `argumentation_lib.get_af_handler_symbol()` and
-`argumentation_lib.get_ranking_handler_symbol()` preserve the API symmetry
-with C184/C185/C186a/C186b/C186c accessors. The `_af_handler.py` accessor
-does **not** bypass the top-level `tweety_initializer` import (same caveat
-as C186c modal_handler); the `_ranking_handler.py` accessor is fully
-import-safe today. Runtime usability for both awaits Volet B etape 4
-sub-tranches C186f (TweetyInitializer) and C186g (runtime bridge shim).
+```python
+from argumentation_lib._tweety_initializer import TweetyInitializer  # FAIL
+# -> ModuleNotFoundError: No module named 'argumentation_analysis'
+```
+
+Failing the surface test is the G.9 fingerprint that proves the verbatim
+block is honest, not fabricated. The lazy accessor
+`argumentation_lib.get_tweety_initializer_symbol()` preserves the class
+symbol path API symmetry with C184/C185/C186a-e accessors but does **not**
+bypass the top-level imports.
+
+**Why deliver the verbatim copy anyway** (G.9 honesty over abandonment):
+the body is the authoritative source for the eventual bridge shim in
+C186g (which will re-export `setup_logging` + `initialize_jvm_robustly` /
+`shutdown_jvm` / `is_jvm_started` from a CoursIA-vendored
+`_jvm_setup_compat.py` plus the existing `_jvm_compat.py` from C184).
+Preserving it byte-for-byte in `argumentation_lib/` documents the exact
+contract the shim must satisfy. The cost is a 401-line file (36L MIT
+header + 365L body) that is currently dead-weight (cannot be imported);
+the benefit is no drift between this reference and the eventual shim.
 
 **Sub-tranche plan (after this PR)** :
 
-- **C186e** (future) : `belief_revision_handler.py` +
-  `probabilistic_handler.py` + `dialogue_handler.py` = 463L.
-- **C186f** (future) : `tweety_initializer.py` 365L -- initializer isole,
-  gates C186c/C186d runtime (AFHandler needs it at module-load time).
-- **C186g** (future) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L
-  wrapping `argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`.
+- **C186g** (awaiting) : runtime bridge shim `_jvm_shutdown_shim.py`
+  ~10L wrapping `argumentation_lib.shutdown_jvm` from C184's
+  `_jvm_compat.py` + re-export of `setup_logging` from a future
+  `_logging_utils_compat.py` (gated by user-machine JVM setup).
 
 **Excluded by ai-01 mandate** (gap NL->structured) : `bipolar_handler.py`,
 `aba_handler.py`, `aspic_handler.py`. **Out of scope** : `setaf_handler.py`,
 `weighted_handler.py`, `social_handler.py` (not imported by upstream
 `tweety_bridge.py:29-41`).
-
 What this NOTICE does NOT cover
 -------------------------------
 
