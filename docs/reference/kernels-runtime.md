@@ -1,6 +1,6 @@
 # Kernels & Runtime — Cluster CoursIA
 
-Document de reference detaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md regle H.2).
+Document de référence détaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md règle H.2).
 
 **Regle user 2026-05-07** : toute machine du cluster (ai-01, po-2023, po-2024, po-2025, po-2026) doit pouvoir executer n'importe quel notebook du depot. Reparation env > contournement (regle F, cf [env-python-reparation.md](env-python-reparation.md)).
 
@@ -24,7 +24,7 @@ Installation : `dotnet tool install --global Microsoft.dotnet-interactive` puis 
 
 Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/SemanticWeb/` (Python).
 
-### Envs Conda dedies (ai-01, reference)
+### Envs Conda dédiés (ai-01, référence)
 
 | Env | Python | Path | Usage principal |
 |-----|--------|------|-----------------|
@@ -36,7 +36,7 @@ Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/Sem
 | `e2e_test_env` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\e2e_test_env` | E2E tests |
 | `base` | 3.10+ | `C:\Users\MYIA\miniconda3` | Conda base — NE PAS modifier |
 
-### Stack ML training (coursia-ml-training, verifie 2026-05-06)
+### Stack ML training (coursia-ml-training, vérifié 2026-05-06)
 
 - Python 3.11.15
 - PyTorch 2.11.0+cu126 (CUDA 12.6 active sur RTX 4090)
@@ -65,19 +65,19 @@ python train_moe.py ...
 nohup "C:/Users/MYIA/miniconda3/envs/coursia-ml-training/python.exe" train_moe.py ... > run.log 2>&1 &
 ```
 
-### Pourquoi un env Conda dedie ?
+### Pourquoi un env Conda dédié ?
 
-Sur ai-01, le Python 3.14 systeme est instable : scipy DLL corruption recurrente, conflits pip Python 3.12 vs 3.14, `~cipy/` residus apres force-reinstall rates. L'env Conda `coursia-ml-training` est l'env de reference stable pour le training ML, configure expressement avec PyTorch CUDA pour la RTX 4090.
+Sur ai-01, le Python 3.14 système est instable : scipy DLL corruption récurrente, conflits pip Python 3.12 vs 3.14, `~cipy/` résidus après force-reinstall ratés. L'env Conda `coursia-ml-training` est l'env de référence stable pour le training ML, configuré expressément avec PyTorch CUDA pour la RTX 4090.
 
-Incident 2026-05-06 : training MoE tente directement sur Python 3.14 systeme : `scipy DLL load failed` → `sklearn force-reinstall denied`. Résolution : utiliser l'env Conda dedie. D'ou la regle F (cf [env-python-reparation.md](env-python-reparation.md)).
+Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système : `scipy DLL load failed` → `sklearn force-reinstall denied`. Résolution : utiliser l'env Conda dédié. D'où la règle F (cf [env-python-reparation.md](env-python-reparation.md)).
 
-**Reflexe coordinateur** : avant tout dispatch ML training local, verifier que le script utilise `coursia-ml-training`. Si un agent rapporte un `ImportError` ML (sklearn, scipy, torch), premier debug = "tu as utilise l'env Conda `coursia-ml-training` ?".
+**Réflexe coordinateur** : avant tout dispatch ML training local, vérifier que le script utilise `coursia-ml-training`. Si un agent rapporte un `ImportError` ML (sklearn, scipy, torch), premier debug = "tu as utilisé l'env Conda `coursia-ml-training` ?".
 
 ### po-2025 (inventaire complet, 2026-05-23)
 
 **Machine**: MSI GE76 Raider, RTX 3080 Ti Laptop 16GB, **CPU-only strict** (11 crashes GPU). Windows 11 Pro Build 26200.
 
-#### Python PATH piege
+#### Python PATH piège
 
 `python` sur PATH = MS Store Python 3.13 (`C:\Users\jsboi\AppData\Local\Microsoft\WindowsApps\...\python.exe`). Le kernel Jupyter `python3` = conda base (`C:\ProgramData\miniconda3\python.exe`). Pour papermill : utiliser **toujours** le chemin complet du binaire cible.
 
@@ -85,7 +85,7 @@ Incident 2026-05-06 : training MoE tente directement sur Python 3.14 systeme : `
 
 | Env | Python | Path | Usage |
 |-----|--------|------|-------|
-| base (ProgramData) | - | `C:\ProgramData\miniconda3` | Conda systeme |
+| base (ProgramData) | - | `C:\ProgramData\miniconda3` | Conda système |
 | base (user) | - | `C:\Users\jsboi\miniconda3` | Conda user |
 | coursia-ml-training | 3.12 | `C:\Users\jsboi\.conda\envs\...` | ML training (torch CPU-only) |
 | epita_symbolic_ai | 3.12 | `C:\Users\jsboi\.conda\envs\...` | SemanticWeb Python (rdflib, owlready2, pyshacl) |
@@ -167,7 +167,7 @@ Installation : `python SymbolicAI/SmartContracts/setup_env.py`.
 
 ### Autres machines (po-2023/24/26)
 
-Verifier qu'elles ont aussi un env Conda dedie ou un venv local equivalent. La memoire est spécifique ai-01 mais le pattern (env dedie ML) est cluster-wide. Inventorier via `conda env list` sur chaque machine.
+Vérifier qu'elles ont aussi un env Conda dédié ou un venv local équivalent. La mémoire est spécifique ai-01 mais le pattern (env dédié ML) est cluster-wide. Inventorier via `conda env list` sur chaque machine.
 
 ### GenAI GPU stack : triton-windows + bitsandbytes
 
@@ -178,7 +178,7 @@ Les notebooks GenAI GPU (ex. [Video/02-5-LTX2-Audiovisual](../../MyIA.AI.Noteboo
 | Detection CUDA par triton (`ptxas` + `cuda.h` + `cuda.lib`) | pip wheels `nvidia-cuda-nvcc-cu12` + `nvidia-cuda-runtime-cu12` |
 | Compilateur C hote pour le JIT triton (`driver.c`) + bnb | `CC` env ; triton-windows embarque un TinyCC (`triton/runtime/tcc/tcc.exe`) |
 
-**Piege Windows** : si Python et ses paquets sont en **user site-packages** (`%APPDATA%\Python\PythonXX\site-packages` — cas quand `C:\PythonXX\Lib\site-packages` exige admin), `sysconfig['platlib']` pointe sur la base. L'auto-detection de triton (`find_cuda_pip`) et de son TinyCC (`get_cc`) ratent alors. Symptomes : `RuntimeError: Failed to find CUDA` (triton) et `Failed to find C compiler. Please specify via CC` (triton + bnb).
+**Piège Windows** : si Python et ses paquets sont en **user site-packages** (`%APPDATA%\Python\PythonXX\site-packages` — cas quand `C:\PythonXX\Lib\site-packages` exige admin), `sysconfig['platlib']` pointe sur la base. L'auto-detection de triton (`find_cuda_pip`) et de son TinyCC (`get_cc`) ratent alors. Symptomes : `RuntimeError: Failed to find CUDA` (triton) et `Failed to find C compiler. Please specify via CC` (triton + bnb).
 
 **Fix sans UAC** (canonical triton-windows, prefere a un system Toolkit install) : un `usercustomize.py` en user site-packages injecte `CUDA_HOME` + `CC` au demarrage de chaque interpreteur Python. Exemple (po-2023, 2026-06-16, pour #2891) :
 
@@ -201,7 +201,7 @@ Notebooks dans `GameTheory/` et `SymbolicAI/Lean/` requierent un kernel WSL spé
 - `Python (GameTheory WSL + OpenSpiel)` pour GameTheory
 - `Python 3 (WSL)` ou `Lean 4 (WSL)` pour SymbolicAI/Lean
 
-Pieges : backslashes consommes par WSL shell, paths sans separateurs, kernel timeout 60s cold start, heredoc variables interpolees. Wrapper bash obligatoire (Python wrapper ne marche PAS).
+Pièges : backslashes consommés par WSL shell, paths sans séparateurs, kernel timeout 60s cold start, heredoc variables interpolées. Wrapper bash obligatoire (Python wrapper ne marche PAS).
 
 Detail diagnostic + workarounds : [.claude/rules/wsl-kernels.md](../../.claude/rules/wsl-kernels.md) + [docs/wsl-kernels-detail.md](wsl-kernels-detail.md).
 
@@ -223,11 +223,11 @@ Mapping avec `prover/config.py PROVIDERS` :
 - `provider="openrouter"` : backup
 - `director_provider` peut differer du `provider` worker
 
-**Pieges connus** :
+**Pièges connus** :
 
 1. Modèles powerful reasoning separent `content` et `reasoning_content` dans la reponse JSON. Le framework `agent_framework_openai` gere via `Content.from_text_reasoning()`.
 2. `finish_reason: "length"` arrive vite si `max_tokens <= 2048` sur les modèles reasoning (toute la fenetre passe en reasoning).
-3. Verifier le nom exact du modèle cote endpoint (changements silencieux possibles).
+3. Vérifier le nom exact du modèle côté endpoint (changements silencieux possibles).
 4. Ports vLLM locaux 5001/5002 sur ai-01 = surveiller dispo (escalations Cycle 20). Preferer endpoint stable si flaky.
 
 ## Training wrapper checkpoints (ai-01)
@@ -295,4 +295,4 @@ wsl -l -v
 
 ## Si un kernel manque
 
-Cf regle F (CLAUDE.md) : reparer plutot que contourner. Installer le kernel manquant, ne pas deleguer. Pour kernels privilegies (UAC), demander au user.
+Cf règle F (CLAUDE.md) : réparer plutôt que contourner. Installer le kernel manquant, ne pas déléguer. Pour kernels privilégiés (UAC), demander au user.
