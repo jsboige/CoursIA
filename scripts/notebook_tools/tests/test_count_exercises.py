@@ -192,6 +192,53 @@ class TestCodeCellOnlyExercise:
         result = count_exercises_in_notebook(nb)
         assert result.count == 1
 
+    def test_csharp_double_slash_comment_exercise_is_counted(self, tmp_path):
+        """The .NET / C# family uses ``//`` for line comments (not ``#``).
+        A stub code cell whose ``// Exercice ...`` comment names an exercise
+        with NO preceding markdown header must be counted -- historically this
+        was the canonical-tool blind-spot (agents re-discovered it ad-hoc on
+        Probas/Infer and ML.Net).
+        """
+        nb = _write_nb(
+            tmp_path / "cs.ipynb",
+            [
+                _md("# Titre C#"),
+                # C# code-cell-only exercise, no markdown header above:
+                _code(
+                    "// Exercice : backdoor adjustment\n"
+                    "// TODO etudiant : implement SCM\n"
+                    "pass"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "C# // Exercice stub (no markdown header) must count"
+        )
+        assert result.exercises[0].detected_by == "code_cell_comment"
+
+    def test_inline_csharp_comment_after_code_is_not_a_stub_marker(
+        self, tmp_path
+    ):
+        """An inline trailing ``// Exercice`` after executable code is a
+        reference, not a stub marker -- the exercise-word must be on a
+        full-line comment to count. (Guards against over-counting.)
+        """
+        nb = _write_nb(
+            tmp_path / "inline.ipynb",
+            [
+                _md("# Titre"),
+                _code(
+                    "var x = Compute();  // Exercice reference inline\n"
+                    "Console.WriteLine(x);"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 0, (
+            "Inline // Exercice after code must NOT count as a stub"
+        )
+
     def test_solution_code_cell_is_not_an_exercise(self, tmp_path):
         """A code cell whose comments mention 'Exercice' but holds a COMPLETE
         solution (not a stub) is an example, not an exercise -- not counted.
