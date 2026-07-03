@@ -1,0 +1,115 @@
+NOTICE — CoursIA `data/argumentum_virtues_taxonomy.csv`
+==============================================================================
+
+This file is a verbatim copy of upstream Argumentum's
+`Cards/Fallacies/Argumentum Virtues - Taxonomy.csv` at submodule commit
+**ac33f607a4889d8a982093c413804ed25bef3dc0**.
+
+Source repository : https://github.com/Argumentum/Argumentum
+Source path       : `Cards/Fallacies/Argumentum Virtues - Taxonomy.csv`
+Source SHA1       : c9925b85dc21495e1f8d14d65e830d83ebce8ac9
+Upstream LICENSE  : GNU Lesser General Public License v3 (LGPL-3.0)
+                    See https://www.gnu.org/licenses/lgpl-3.0.html
+                    See Argumentum `LICENSE` file at the pinned commit.
+
+License scope
+-------------
+
+Per LGPL v3 section 5 (Conveying Modified Source Versions), this file is
+distributed under the same LGPL-3.0 terms as the upstream source.
+
+**Verbatim copy**: this CoursIA data file is byte-for-byte identical to
+the upstream file at the pinned commit ac33f607 — same content, same
+encoding (UTF-8 with BOM), same number of rows (224 = 1 header + 222
+data rows + 1 tail), same 78 columns, same line endings. No CoursIA
+modifications.
+
+**Preservation rationale** (per EPIC #4960, Volet B étape 1):
+- The upstream Vertues taxonomy complements the Fallacies taxonomy
+  (sister CSV living in the same `Cards/Fallacies/` directory upstream).
+  While the Fallacies taxonomy catalogs rhetorical defects (1,408 cards),
+  the Vertues taxonomy catalogs rhetorical virtues (222 cards) — together
+  they underpin Argumentum's bidirectional argumentation card dataset.
+- CoursIA had previously NOT vendored this CSV at all — the data file
+  was entirely absent from the `data/` directory, leaving the Vertues
+  half of the Argumentum dataset undocumented in CoursIA notebooks.
+- Importing verbatim is the "PAS de doublon" approach mandated by
+  EPIC #4960 Volet B (verbatim upstream copy, no CoursIA regeneration).
+
+Schema note — Vertues vs Fallacies
+----------------------------------
+
+The Vertues CSV schema is **deliberately different** from the Fallacies
+CSV schema (both upstream, pinned at ac33f607):
+
+| Aspect | Fallacies | Vertues |
+|--------|-----------|---------|
+| Header naming | mixed (PascalCase `Family_en` + snake_case `link_en`) | snake_case unified (`family_en`, `link_en`) |
+| Card body fields | `text_/LTfr/Lfr115/example_fr/Lxfr145` (multi-field) | `title_/description_/remark_` (simplified 3-field) |
+| Multilingual | 8 langs FR/EN/RU/PT/AR/ES/ZH/FA | same 8 langs |
+| Cross-link columns | `crossLink_PredatesOn` ... `crossLink_IsRelatedTo` | same set |
+| AIF columns | `AIF_skosDirectRef/ExceptionRef/Other/MappingType` | same set |
+| Rows | 1,408 data rows (PK 0..1407) | 222 data rows (PK 0..222) |
+| Columns | 106 | 78 |
+
+Both schemas coexist upstream in the same directory (`Cards/Fallacies/`),
+so consumers must NOT assume a unified schema across the two CSVs. This
+is preserved verbatim in the CoursIA copies.
+
+LGPL-3.0 attribution obligations
+---------------------------------
+
+Per LGPL v3 section 5, when conveying verbatim copies of an LGPL-3.0
+work, you must:
+
+1. **Retain all copyright notices** and the LGPL-3.0 license text
+   (the upstream Argumentum LICENSE file applies — see submodule).
+2. **Prominently note** that this file is a verbatim copy of the
+   upstream Argumentum Vertues taxonomy, with source path, source SHA,
+   and source commit ac33f607 cited above.
+3. **Do not impose further restrictions** on the recipients' exercise
+   of rights granted by the LGPL-3.0.
+
+Verbatim copies are not "modified source versions" within the meaning
+of LGPL-3.0 section 5 (no modification occurred). The upstream commit
+SHA ac33f607 is the authoritative reference; any future CoursIA edit
+to this file must be accompanied by an update to the source SHA +
+attribution notice in this file, and the file will then become a
+"modified source version" subject to LGPL-3.0 section 5 obligations
+(prominent NOTICE + list of modifications).
+
+CoursIA submodule pointer
+-------------------------
+
+The Argumentum submodule at
+`MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum/`
+is pinned to commit **ac33f607a4889d8a982093c413804ed25bef3dc0**
+(master premerge, per user decision 2026-07-03, see EPIC #4960 Volet A
+acceptance). Re-syncing this data file against a newer submodule commit
+is a routine operation that should preserve verbatim integrity and
+update the source SHA + upstream commit citation in this NOTICE.
+
+Consumer-side BOM handling
+--------------------------
+
+The canonical file is preserved with its UTF-8 BOM (byte sequence
+`0xEF 0xBB 0xBF` at offset 0) verbatim from upstream. CoursIA consumers
+should read the file as `encoding="utf-8-sig"` (Python) or equivalent
+to strip the BOM transparently. Per ai-01 design-gate (msg
+`msg-20260703T110001-uqono0`, 2026-07-03), the BOM is part of the
+canonical content and must NOT be stripped from the source file.
+Any consumer-side compatibility fix belongs in the consumer code,
+not in the data file.
+
+See also
+--------
+
+- EPIC #4960 — `[EPIC] Argument_Analysis v3 — submodule Argumentum +
+  remontées moteur + landing essence multidimensionnelle EPITA-IS`
+- PR (this verbatim copy): see `See #4960` reference in PR body
+- Sister NOTICE: `data/NOTICE` (Fallacies verbatim copy, PR #5183)
+- Argumentum LICENSE (LGPL-3.0) at pinned commit ac33f607
+- Cards/Fallacies/Argumentum_Virtues_Face_fr.json (front face, FR)
+- Cards/Fallacies/Mindmaps/{en,fr,pt,ru}/Argumentum_Virtues_MindMap_*.*
+  (mindmap renderings in 4 languages)
+- Volet B étape 1 précédent: PR #5183 (Fallacies verbatim resync)
