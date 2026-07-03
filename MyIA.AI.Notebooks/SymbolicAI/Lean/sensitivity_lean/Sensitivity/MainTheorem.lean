@@ -12,6 +12,14 @@ import Mathlib.Tactic.ApplyFun
 import Mathlib.Tactic.FinCases
 
 /-!
+# Théorème de sensibilité de Huang (résultat principal)
+
+Ce fichier prouve le théorème principal : dans l'hypercube de dimension n ≥ 1,
+si l'on colorie plus de la moitié des sommets, alors au moins un sommet possède
+au moins √n voisins coloriés.
+
+---
+English:
 # Huang's sensitivity theorem (main result)
 
 This file proves the main theorem: in the hypercube of dimension n ≥ 1,
@@ -38,6 +46,13 @@ local notation "Card " X:70 => Finset.card (Set.toFinset X)
 variable {m : ℕ}
 
 /-!
+### La preuve principale
+
+Dans cette section, afin d'imposer que `n` soit strictement positif, nous l'écrivons
+sous la forme `m + 1` pour un certain entier naturel `m`.
+
+---
+English:
 ### The main proof
 
 In this section, in order to enforce that `n` is positive, we write it as
@@ -45,7 +60,10 @@ In this section, in order to enforce that `n` is positive, we write it as
 
 
 open Classical in
-/-- If a subset `H` of `Q (m+1)` has cardinal at least `2^m + 1` then the
+/-- Si une partie `H` de `Q (m+1)` a un cardinal au moins `2^m + 1`, alors le
+sous-espace de `V (m+1)` engendré par les vecteurs de base correspondants intersecte
+non trivialement l'image de `g m`.
+    English: If a subset `H` of `Q (m+1)` has cardinal at least `2^m + 1` then the
 subspace of `V (m+1)` spanned by the corresponding basis vectors non-trivially
 intersects the range of `g m`. -/
 theorem exists_eigenvalue (H : Set (Q m.succ)) (hH : Card H ≥ 2 ^ m + 1) :
@@ -80,7 +98,8 @@ theorem exists_eigenvalue (H : Set (Q m.succ)) (hH : Card H ≥ 2 ^ m + 1) :
   linarith
 
 open Classical in
-/-- **Huang sensitivity theorem** also known as the **Huang degree theorem** -/
+/-- **Théorème de sensibilité de Huang** également connu sous le nom de **théorème du degré de Huang**.
+    English: **Huang sensitivity theorem** also known as the **Huang degree theorem** -/
 theorem huang_degree_theorem (H : Set (Q m.succ)) (hH : Card H ≥ 2 ^ m + 1) :
     ∃ q, q ∈ H ∧ √(m + 1) ≤ Card H ∩ q.adjacent := by
   rcases exists_eigenvalue H hH with ⟨y, ⟨⟨y_mem_H, y_mem_g⟩, y_ne⟩⟩
