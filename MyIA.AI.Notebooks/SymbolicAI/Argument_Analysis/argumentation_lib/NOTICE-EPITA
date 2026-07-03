@@ -1,0 +1,89 @@
+NOTICE - EPITA-IS verbatim copies in `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/`
+========================================================================================================
+
+This directory contains verbatim copies of source files from the
+**2025-Epita-Intelligence-Symbolique** project (EPITA-IS), a pedagogical
+multi-agent argumentation analysis platform developed at EPITA.
+
+Source repository : https://github.com/jsboigeEpita/2025-Epita-Intelligence-Symbolique
+Source LICENSE    : MIT License (Copyright (c) 2025 jsboigeEpita)
+                    See https://opensource.org/licenses/MIT
+
+CoursIA copy
+------------
+
+| File in CoursIA `argumentation_lib/` | Upstream path in EPITA-IS | Upstream commit |
+|---------------------------------------|----------------------------|-----------------|
+| `_shared_state.py` (1121 lines)       | `argumentation_analysis/core/shared_state.py` | a8025f60 (2026-07-02) |
+| `_state_manager_plugin.py`            | `argumentation_analysis/core/state_manager_plugin.py` | see git log |
+
+Rationale for verbatim import
+-----------------------------
+
+Per EPIC #4960 (Volet B etape 3: "Lander l'ESSENCE de l'analyse multidimensionnelle
+EPITA-IS"), the EPITA-IS source contains the canonical
+`UnifiedAnalysisState` / `RhetoricalAnalysisState` data model (~14 dimensions:
+extraction/sources, logiques PL/FOL/modale, Dung, sophismes, qualite, contre-arguments,
+debat Walton-Krabbe, gouvernance, JTMS, etc.) plus the `ArgumentProfile` aggregated
+view. The EPIC mandates the "ESSENCE landing" pattern: extract canonical classes
+without the 306 MB of orchestration bruit, mocks, vendor JDK, etc.
+
+The two files imported verbatim here are:
+
+1. `RhetoricalAnalysisState` (lifecycle) and `ArgumentProfile` (per-argument aggregated
+   dataclass) from `_shared_state.py` -- both are **pure-Python stdlib data structures**
+   (dataclasses + Dict/List/Any typing + json + logging). No semantic-kernel, no
+   pandas, no LLM dependencies. Stable, side-effect-free, easy to verify byte-for-byte.
+
+2. `_state_manager_plugin.py` -- the Semantic Kernel plugin wrapper that exposes
+   the state to LLM agents via `@kernel_function` decorators. Included for
+   downstream parity with EPITA-IS semantics; consumers in CoursIA notebooks can
+   opt-in via `import argumentation_lib._state_manager_plugin as smp` (or be
+   refactored in a later tranche if the SK plugin contract becomes a liability).
+
+The remaining EPITA-IS source (`UnifiedAnalysisState` runtime, `TweetyBridge` JPype
+shim, the 12 logic handlers, the orchestration workflows, the 7 governance
+methods, the JTMS, the speech-to-text pipeline, the 14 `services/` adapters, etc.)
+is NOT vendored here -- the EPIC explicitly excludes the orchestration, mocks,
+UI/API/webapp, vendor JDK/Node, and 12 etudiant dossiers from the "essence" import.
+Future tranches (Volet B etapes 4-5) may add selected ports as separate, atomic
+PRs with their own NOTICE entries.
+
+Verbatim integrity
+------------------
+
+Each verbatim file begins with a MIT attribution header (this NOTICE per-file, with
+the exact upstream commit cited) followed by the byte-for-byte upstream content.
+**Any divergence from the cited upstream commit is a regression and must be
+documented in this NOTICE before commit.** CoursIA-original code that extends
+or wraps the verbatim content lives in separate files (NOT prefixed with `_`).
+
+Anti-regression discipline
+--------------------------
+
+Per CoursIA `.claude/rules/anti-regression.md`, replacing or stubbing
+the verbatim code (e.g. turning `ArgumentProfile` fields into `pass` / `return None`)
+without explicit user sign-off is forbidden. The data classes here are referenced
+by the Argument_Analysis notebook series (e.g. the `Restitution 3 actes` notebook
+uses `ArgumentProfile` as the in-memory shape for per-argument aggregation) and
+stripping their implementation would break the pedagogical contract.
+
+What this NOTICE does NOT cover
+-------------------------------
+
+- `Argumentum/` submodule (Argumentum upstream, LGPL-3.0): see submodule `LICENSE`
+  and its own NOTICE chain (`data/NOTICE`, `data/NOTICE-VIRTUES`).
+- `TweetyProject/` and `Tweety/dotnet-build/` (Tweety Jars, LGPL-2.1): see their
+  respective NOTICE entries.
+- `ext_tools/`, `libs/`, `node_modules/`, `htmlcov*` directories: vendored
+  third-party material, each with its own LICENSE.
+- Notebook execution outputs: cleared on commit per C.2/C.3 notebook conventions.
+
+Updating this NOTICE
+--------------------
+
+When a verbatim file is updated to a newer upstream commit, edit the
+"Upstream commit" column above, verify byte-for-byte identity (sha1sum), and
+update the per-file header to cite the new commit. The header update is part
+of the same atomic PR as the content update -- never commit the content
+update without the NOTICE update (and vice versa).

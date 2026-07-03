@@ -1,3 +1,12 @@
+# Verbatim copy of `argumentation_analysis/core/state_manager_plugin.py` from
+# the 2025-Epita-Intelligence-Symbolique project
+# (https://github.com/jsboigeEpita/2025-Epita-Intelligence-Symbolique),
+# Copyright (c) 2025 jsboigeEpita, MIT License.
+# Source commit: see NOTICE-EPITA at the root of this directory.
+#
+# Verbatim integrity: file content above this header is byte-for-byte identical
+# to the upstream source at the cited commit. No CoursIA modification
+# (downstream consumers wrap or extend, never replace the verbatim block).
 # core/state_manager_plugin.py
 import json
 from typing import Dict, List, Any, Optional
