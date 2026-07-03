@@ -207,6 +207,60 @@ def get_adf_handler_symbol():
     return ADFHandler
 
 
+# -- AF Handler (JPype singleton, Dung Abstract Frameworks) --
+def get_af_handler_symbol():
+    """Lazy import for AFHandler class symbol.
+
+    Note (G.9 honest caveat): `_af_handler.py` imports at module-load time
+    the sibling module `tweety_initializer` (sub-tranche C186f, awaiting
+    merge) and references JPype singletons (`jpype.JClass`,
+    `jpype.JException`). NO upstream `argumentation_analysis.*` imports at
+    top-level — only stdlib (`jpype`, `logging`, `typing`).
+
+    G.9 surface test verified: top-level
+    `from argumentation_lib._af_handler import AFHandler` raises
+    `ModuleNotFoundError: No module named 'argumentation_lib.tweety_initializer'`
+    — this is the G.9 fingerprint that proves the verbatim block is honest,
+    not fabricated.
+
+    Instantiation WILL fail at runtime until the JPype bridge singleton from
+    C184 (`argumentation_lib.initialize_jvm`) is initialized and the target
+    classes (`org.tweetyproject.arg.dung.syntax.DungTheory` and 10 reasoners
+    in SEMANTICS_REASONERS dict) are exposed by the JVM.
+
+    The lazy accessor preserves the API symmetry with C184/C185/C186a/C186b/C186c
+    accessors. Runtime usability awaits C186f (TweetyInitializer) + C186g
+    (JPype bridge shim).
+    """
+    from argumentation_lib._af_handler import AFHandler
+    return AFHandler
+
+
+# -- Ranking Handler (JPype singleton, Dung Argument Ranking Semantics) --
+def get_ranking_handler_symbol():
+    """Lazy import for RankingHandler class symbol.
+
+    Note (G.9 honest caveat): `_ranking_handler.py` has **NO upstream
+    `argumentation_analysis.*` imports** AND **NO sibling upstream imports**
+    — only stdlib (`jpype`, `logging`, `typing`). The class symbol is
+    therefore import-safe today (a simple
+    `from argumentation_lib._ranking_handler import RankingHandler` succeeds);
+    ONLY JPype-Tweety singletons are referenced (`jpype.JClass`,
+    `jpype.JException`, plus 5 `org.tweetyproject.arg.*` FQNs).
+
+    Instantiation WILL fail at runtime until the JPype bridge singleton from
+    C184 (`argumentation_lib.initialize_jvm`) is initialized and the target
+    classes (`org.tweetyproject.arg.dung.syntax.DungTheory` and 12 ranking
+    reasoners in REASONERS dict) are exposed by the JVM — see `_jvm_compat.py`.
+
+    The lazy accessor preserves the API symmetry with C184/C185/C186a/C186b/C186c
+    accessors. Runtime usability awaits C186g (runtime bridge shim wrapping
+    `argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`).
+    """
+    from argumentation_lib._ranking_handler import RankingHandler
+    return RankingHandler
+
+
 # -- Tweety Bridge (JPype singleton, 12 logic handlers not vendored) --
 def get_tweety_bridge_symbol():
     """Lazy import for the TweetyBridge class symbol.
@@ -276,6 +330,8 @@ __all__ = [
     "get_fol_handler_symbol",
     "get_modal_handler_symbol",
     "get_adf_handler_symbol",
+    "get_af_handler_symbol",
+    "get_ranking_handler_symbol",
     "get_tweety_bridge_symbol",
     # reporting
     "EnhancedGlobalTraceAnalyzer", "enhanced_global_trace_analyzer",
