@@ -47,7 +47,7 @@ Le socle des **fondations** (1-3) pose les axiomes de rationalité et la notion 
 
 ## Spécificité PyMC : Thompson Sampling par MCMC
 
-Là où l'arc [Infer.NET](../Infer/README.md) calcule les posteriors de bandits par message passing (EP/VMP, analytique), cet arc PyMC les obtient par **échantillonnage NUTS**. La valeur distinctive apparaît sur des modèles de bandits **non conjugués** (priors Beta-Bernoulli conjugués mis à part) : seul l'échantillonnage MCMC sait alors explorer le posterior, et Thompson Sampling se nourrit directement des échantillons. Le sujet d'Infer-21 (Thompson Sampling) est, côté Python, **intégré dans** [PyMC-7-Sequential](PyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC).
+Là où l'arc [Infer.NET](../Infer/README.md) calcule les posteriors de bandits par message passing (EP/VMP, analytique), cet arc PyMC les obtient par **échantillonnage NUTS**. La valeur distinctive apparaît sur des modèles de bandits **non conjugués** (priors Beta-Bernoulli conjugués mis à part) : seul l'échantillonnage MCMC sait alors explorer le posterior, et Thompson Sampling se nourrit directement des échantillons. Le sujet de [Infer-10-Thompson-Sampling](../Infer/Infer-10-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [PyMC-7-Sequential](PyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC).
 
 ## Ponts inter-series
 
