@@ -5,6 +5,7 @@ project:
     - "*.qmd"
     - "MyIA.AI.Notebooks/index.qmd"
     - "MyIA.AI.Notebooks/Search/index.qmd"
+    - "MyIA.AI.Notebooks/Sudoku/index.qmd"
     - "MyIA.AI.Notebooks/GameTheory/index.qmd"
     - "MyIA.AI.Notebooks/Probas/index.qmd"
     - "docs/index.qmd"
@@ -29,6 +30,8 @@ site:
         text: "Notebooks"
       - href: MyIA.AI.Notebooks/Search/index.qmd
         text: "Search"
+      - href: MyIA.AI.Notebooks/Sudoku/index.qmd
+        text: "Sudoku"
       - href: MyIA.AI.Notebooks/GameTheory/index.qmd
         text: "GameTheory"
       - href: MyIA.AI.Notebooks/Probas/index.qmd
