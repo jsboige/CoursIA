@@ -135,14 +135,15 @@ Appliquer ML classique au trading : classification directionnelle, régression p
 
 ---
 
-### Phase 7 : Deep Learning (3 notebooks, ~4.5h)
+### Phase 7 : Deep Learning (4 notebooks, ~6h)
 
-Deep Learning pour séries temporelles : LSTM, Transformers, Autoencoders.
+Deep Learning pour séries temporelles : LSTM, Transformers, PatchTST/iTransformer, Autoencoders.
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 22 | [QC-Py-22-Deep-Learning-LSTM](Python/QC-Py-22-Deep-Learning-LSTM.ipynb) | 90 min | LSTM time series, TensorFlow/Keras, CPU-first |
 | 23 | [QC-Py-23-Attention-Transformers](Python/QC-Py-23-Attention-Transformers.ipynb) | 90 min | Transformer architecture, multi-head attention, temporal fusion |
+| 23b | [QC-Py-23b-PatchTST-iTransformer](Python/QC-Py-23b-PatchTST-iTransformer.ipynb) | 90 min | PatchTST patching, iTransformer inverted axes, prévision financière |
 | 24 | [QC-Py-24-Autoencoders-Anomaly](Python/QC-Py-24-Autoencoders-Anomaly.ipynb) | 75 min | Autoencoders pour détection anomalies, regime change |
 
 **Objectifs** : Maîtriser deep learning pour séries temporelles, design CPU-optimized.
@@ -180,11 +181,11 @@ Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, et applicatio
 
 ## Résumé de la Progression
 
-**Total cours linéaire** : **28 notebooks Python** (QC-Py-01 à QC-Py-28, ~32 heures de contenu) + **23 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, Cloud strategies QC-Py-Cloud-*, training QC-Py-30..32, dataset workflow).
+**Total cours linéaire** : **29 notebooks Python** (QC-Py-01 à QC-Py-28 + le 23b, ~33 heures de contenu) + **24 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, Cloud strategies QC-Py-Cloud-*, training QC-Py-30..32, dataset workflow).
 
 **Répartition cours linéaire (Phases 1-8)** :
 - **18 notebooks non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
-- **10 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM, Régime) : ~13h
+- **11 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM, Régime) : ~15h
 
 **Progression pédagogique** : Maîtriser les fondations QuantConnect **avant** d'aborder le Machine Learning.
 
@@ -208,7 +209,7 @@ Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, et applicatio
 
 ## Projets de Stratégies
 
-Le dossier [`projects/`](projects/) contient **115 stratégies de trading** prêtes à backtester.
+Le dossier [`projects/`](projects/) contient **114 stratégies de trading** prêtes à backtester.
 
 ### Comment utiliser les projets
 
