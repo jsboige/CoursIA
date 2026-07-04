@@ -60,6 +60,13 @@ PRs dont le contenu = uniquement docs/README/CLAUDE.md/rules :
 - Single PR < 20 lignes : refuser systématiquement
 - Multiple READMEs sans cohérence cross-series : refuser
 
+**Feuille README (rollout #3973/#3975) — audit fichier ENTIER obligatoire.** Une PR qui met à jour un compte / une statistique / un paragraphe dans un README de série (`MyIA.AI.Notebooks/**/README.md`) DOIT prouver dans le body qu'elle a ré-audité le **fichier entier** contre le disque, pas seulement la ligne corrigée :
+- (a) `ls`/`find` count par sous-dossier cité ;
+- (b) réconciliation **disque ↔ `CATALOG-STATUS` ↔ prose** (les trois doivent s'aligner ; si le catalogue lui-même est faux, le corriger n'est pas dans le scope d'une README-PR → **signaler**, ne PAS s'aligner sur un catalogue faux) ;
+- (c) confirmation que **listes de notebooks, arbres de structure, breakdowns par sous-série** ont été vérifiés à jour.
+
+Corriger l'intro/les compteurs en laissant une **liste de notebooks obsolète 100 lignes plus bas** = `CHANGES_REQUESTED`. Le format « slim +5/−5 » du rollout ne **dispense pas** de l'audit fichier-entier ; il le **plafonne à tort** — quand une série a subi un changement structurel, la passe DOIT être fichier-entier, pas slim. Source : plainte user 2026-07-04 (PR #5345 Probas : intro corrigée, listes PyMC / arbre de structure laissés périmés). Audit associé : Tweety / GameTheory / Search (stale-body sévère), SymbolicLearning / SemanticWeb / SmartContracts (ciblé), Sudoku (trivial).
+
 ### F. Audit reassessment / "false positive" PRs
 
 Reassessment d'un audit existant **DOIT** documenter :
