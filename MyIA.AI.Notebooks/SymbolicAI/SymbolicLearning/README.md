@@ -11,9 +11,9 @@ maturity: PRODUCTION=11
 
 Comment un agent peut-il apprendre à partir de connaissances existantes plutôt que de données brutes ? Cette série explore l'apprentissage symbolique tel que décrit dans le chapitre 19 d'AIMA (Russell & Norvig), depuis l'apprentissage inductif pur (CBH, Version Space) jusqu'aux méthodes guidées par la connaissance (EBL, RBL).
 
-Le premier notebook pose les bases : représentation d'hypothèses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accélère l'apprentissage : l'apprentissage basé sur les explications (EBL) compile les théories en heuristiques opérationnelles, et l'apprentissage basé sur la pertinence (RBL) identifie les attributs déterminant via les déterminations. Le troisième notebook approfondit le RBL avec le treillis des déterminations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrième notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), les opérateurs de résolution inverse (bottom-up) et la connexion avec les knowledge graphs, jusqu'à l'ILP moderne (Popper, Learning From Failures). SL-5 reprend et mène à terme la voie bottom-up esquissée en SL-4 (LGG de Plotkin, theta-subsomption, clause bottom par entailment inverse et recherche à la Progol), faisant directement suite à FOIL. SL-6 met quatre moteurs ILP *réels* face à face — Aleph, Metagol, Popper et ∂ILP (Lernd) — sur une même tâche récursive (`ancestor/2`), pour comparer leurs machineries (entailment inverse, MIL, Learning From Failures, gradient différentiable). Les notebooks SL-7 à SL-9 ouvrent ensuite vers des méthodes contemporaines : SL-7 introduit le neuro-symbolique (T-norms différentiables, Logic Tensor Networks, DeepProbLog) ; SL-8 outille la découverte de règles sur knowledge graphs réels avec rdflib et AMIE rule mining ; SL-9 boucle LLM et vérification symbolique pour fiabiliser le raisonnement formel guidé par modèles de langage. Enfin, deux notebooks concluent la série : SL-10 change de paradigme avec l'apprentissage *actif* (l'algorithme L* d'Angluin interroge un oracle au lieu de subir un échantillon, et apprend des automates finis avec garanties de minimalité) ; SL-11 est le capstone qui assemble toute la série en un pipeline neuro-symbolique de bout en bout — du texte brut aux faits découverts, avec un LLM réel (Gemini 3.5 Flash) aux deux extrémités et le symbolique comme colonne vertébrale.
+Le premier notebook pose les bases : représentation d'hypothèses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accélère l'apprentissage : l'apprentissage basé sur les explications (EBL) compile les théories en heuristiques opérationnelles, et l'apprentissage basé sur la pertinence (RBL) identifie les attributs déterminant via les déterminations. Le troisième notebook approfondit le RBL avec le treillis des déterminations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrième notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), les opérateurs de résolution inverse (bottom-up) et la connexion avec les knowledge graphs, jusqu'à l'ILP moderne (Popper, Learning From Failures). SL-5 reprend et mène à terme la voie bottom-up esquissée en SL-4 (LGG de Plotkin, theta-subsomption, clause bottom par entailment inverse et recherche à la Progol), faisant directement suite à FOIL. SL-6 met quatre moteurs ILP *réels* face à face — Aleph, Metagol, Popper et ∂ILP (Lernd) — sur une même tâche récursive (`ancestor/2`), pour comparer leurs machineries (entailment inverse, MIL, Learning From Failures, gradient différentiable). Les notebooks SL-7 à SL-9 ouvrent ensuite vers des méthodes contemporaines : SL-7 introduit le neuro-symbolique (T-norms différentiables, Logic Tensor Networks, DeepProbLog) ; SL-8 outille la découverte de règles sur knowledge graphs réels avec rdflib et AMIE rule mining ; SL-9 boucle LLM et vérification symbolique pour fiabiliser le raisonnement formel guidé par modèles de langage. Enfin, deux notebooks concluent la série : SL-10 change de paradigme avec l'apprentissage *actif* (l'algorithme L* d'Angluin interroge un oracle au lieu de subir un échantillon, et apprend des automates finis avec garanties de minimalité) ; SL-11 est le capstone qui assemble toute la série en un pipeline neuro-symbolique de bout en bout — du texte brut aux faits découverts, avec un LLM réel (Gemini 3.5 Flash) aux deux extrémités et le symbolique comme colonne vertébrale. SL-12, ajouté à la série, explore un autre registre du neuro-symbolique : les *réseaux de portes logiques differentiables* (difflogic, Petersen NeurIPS 2022) — un modèle qui apprend des combinaisons de portes logiques par descente de gradient, puis se discretise en un circuit 100% booleen, interpretable-par-construction et ultra-rapide a l'inference.
 
-**À qui s'adresse cette série** : étudiants en IA, informaticiens intéressés par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques. Les notebooks (~10h35 total) ne nécessitent que Python 3.10+ standard library, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle), SL-6 (moteurs ILP réels : SWI-Prolog, Popper, Lernd) et SL-8 (rdflib pour les knowledge graphs) ; SL-9 et SL-11 acceptent une clé OpenRouter optionnelle (fichier `.env`) pour des appels LLM réels, avec un simulateur déterministe en repli. Une familiarité avec la logique propositionnelle suffit pour SL-1 à SL-6 et SL-10 ; SL-7, SL-9 et SL-11 supposent une intuition des réseaux de neurones et des LLMs. Ils constituent un complément théorique aux séries [Tweety](../Tweety/README.md) (argumentation computationnelle), [SemanticWeb](../SemanticWeb/README.md) (représentation de connaissances) et [ML](../../ML/README.md) (apprentissage statistique - contraste avec l'inductif symbolique).
+**À qui s'adresse cette série** : étudiants en IA, informaticiens intéressés par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques. Les notebooks (~11h20 total) ne nécessitent que Python 3.10+ standard library, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle), SL-6 (moteurs ILP réels : SWI-Prolog, Popper, Lernd) et SL-8 (rdflib pour les knowledge graphs) ; SL-9 et SL-11 acceptent une clé OpenRouter optionnelle (fichier `.env`) pour des appels LLM réels, avec un simulateur déterministe en repli. Une familiarité avec la logique propositionnelle suffit pour SL-1 à SL-6 et SL-10 ; SL-7, SL-9 et SL-11 supposent une intuition des réseaux de neurones et des LLMs. Ils constituent un complément théorique aux séries [Tweety](../Tweety/README.md) (argumentation computationnelle), [SemanticWeb](../SemanticWeb/README.md) (représentation de connaissances) et [ML](../../ML/README.md) (apprentissage statistique - contraste avec l'inductif symbolique).
 
 ## Pourquoi cette série
 
@@ -48,8 +48,8 @@ Cette série montre que les deux approches ne s'opposent pas — elles se **comp
 | Notebooks | 11 |
 | Exercices (table de pioche) | 43 |
 | Kernel | Python 3 |
-| Durée estimée | ~635 min |
-| Prérequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-8, clé OpenRouter optionnelle pour SL-9/SL-11) |
+| Durée estimée | ~680 min |
+| Prérequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-8, difflogic+torch pour SL-12, clé OpenRouter optionnelle pour SL-9/SL-11) |
 
 ## Parcours d'apprentissage
 
@@ -62,7 +62,7 @@ flowchart TD
     P3["<b>Phase 3 · Programmes logiques</b><br/>SL-4/5 · FOIL · résolution inverse · Progol<br/>clauses Horn + récursion"]
     P4["<b>Phase 4 · Moteurs ILP réels</b><br/>SL-6 · Aleph · Metagol · Popper · ∂ILP<br/>4 machineries comparées"]
     P5["<b>Phase 5 · Neuro-symbolique</b><br/>SL-7/8/9 · T-norms · KG mining · boucle LLM<br/>différentiable + vérifiable"]
-    P6(("<b>Phase 6 · Capstone</b><br/>SL-10/11 · L* actif · pipeline 6 étages<br/>LLM ↔ logique en boucle"))
+    P6(("<b>Phase 6 · Capstone</b><br/>SL-10/11/12 · L* actif · pipeline 6 étages · portes logiques differentiables<br/>LLM ↔ logique en boucle"))
     P1 -->|"bruit + disjonction<br/>non représentables"| P2
     P2 -->|"passer des attributs<br/>aux programmes"| P3
     P3 -->|"comparer les machineries<br/>sur une même tâche"| P4
@@ -90,9 +90,9 @@ Après avoir construit FOIL et Progol *de zéro*, SL-6 met quatre moteurs ILP **
 
 Cette phase explore les méthodes contemporaines à l'intersection du symbolique et du connexionniste. SL-7 introduit les T-norms différentiables, les prédicats neuronaux et les Logics Tensor Networks qui rendent la logique opérationnelle dans un gradient descent. SL-8 passe à l'échelle avec le rule mining réel sur des knowledge graphs construits avec rdflib (AMIE, complétion de graphes). SL-9 ferme la boucle avec LLMs : extraction de règles depuis du texte naturel, vérification symbolique des sorties, et boucles de rétroaction pour fiabiliser le raisonnement.
 
-### Phase 6 : Apprentissage actif et capstone (SL-10 à SL-11, ~150 min)
+### Phase 6 : Apprentissage actif et capstone (SL-10 à SL-12, ~195 min)
 
-Deux notebooks concluent la série. SL-10 inverse le rapport de l'apprenant aux données : au lieu de subir un échantillon, L* d'Angluin *choisit* ses questions (requêtes d'appartenance et d'équivalence à un oracle MAT) et apprend des automates finis déterministes prouvablement minimaux — le cadre théorique (Myhill-Nerode, fermeture et cohérence de la table d'observation) est implémenté et vérifié de zéro. SL-11 est le capstone : un pipeline neuro-symbolique en 6 étages (extraction LLM -> oracle de validation -> knowledge graph -> mining de règles -> chainage avant avec provenance -> confrontation LLM vs KG) exécute avec de vrais appels Gemini 3.5 Flash, ou chaque étage mobilise un notebook antérieur de la série — y compris une leçon d'architecture découverte dans les sorties réelles : le chaînage avant peut violer les contraintes que l'oracle impose en amont.
+Trois notebooks concluent la série. SL-10 inverse le rapport de l'apprenant aux données : au lieu de subir un échantillon, L* d'Angluin *choisit* ses questions (requêtes d'appartenance et d'équivalence à un oracle MAT) et apprend des automates finis déterministes prouvablement minimaux — le cadre théorique (Myhill-Nerode, fermeture et cohérence de la table d'observation) est implémenté et vérifié de zéro. SL-11 est le capstone : un pipeline neuro-symbolique en 6 étages (extraction LLM -> oracle de validation -> knowledge graph -> mining de règles -> chainage avant avec provenance -> confrontation LLM vs KG) exécute avec de vrais appels Gemini 3.5 Flash, ou chaque étage mobilise un notebook antérieur de la série — y compris une leçon d'architecture découverte dans les sorties réelles : le chaînage avant peut violer les contraintes que l'oracle impose en amont. SL-12 explore un autre angle du neuro-symbolique : les *réseaux de portes logiques differentiables* (difflogic, Petersen NeurIPS 2022) apprennent des combinaisons de portes logiques par descente de gradient, puis se discretisent en un circuit 100% booleen, interpretable-par-construction et ultra-rapide a l'inference.
 
 ### Parcours alternatifs
 
@@ -112,7 +112,7 @@ Pour les étudiants en informatique théorique : le cadre inductif général (SL
 
 Pour les professionnels du web sémantique et des données structurees : EBL, RBL, FOIL sur clauses Horn, puis application directe sur des knowledge graphs réels avec rdflib et AMIE. Presuppose une familiarité avec RDF/SPARQL.
 
-## Seance de restitution : la table de pioche (43 exercices)
+## Seance de restitution : la table de pioche (46 exercices)
 
 Modalite de la séance : chaque groupe choisit **un exercice** dans la table ci-dessous, le prépare, et le présente en séance. Resoudre l'exercice est le minimum attendu ; chaque exercice est assorti d'une **question-twist** (détaillée dans la cellule « Defi présentation » du notebook correspondant) qui fait partie intégrante de la présentation. Premier arrive, premier servi : annoncez votre choix pour éviter les doublons.
 
@@ -161,6 +161,9 @@ Modalite de la séance : chaque groupe choisit **un exercice** dans la table ci-
 | 41 | [SL-11](SL-11-Capstone-NeuroSymbolic.ipynb) | Ex. 2 — Politique de conflit a sources | *Truth discovery* : estimer la fiabilité des sources en même temps que les faits |
 | 42 | [SL-11](SL-11-Capstone-NeuroSymbolic.ipynb) | Ex. 3 — Le bon seuil n'existe pas | Vraie et fausse règle a confiance égale (0.67) : quel signal au-dela du seuil ? |
 | 43 | [SL-11](SL-11-Capstone-NeuroSymbolic.ipynb) | Ex. 4 — Empoisonnement bout-en-bout | Classer les defenses par étage du pipeline ; ou s'arrete la provenance ? |
+| 44 | [SL-12](SL-12-DifferentiableLogicGateNetworks.ipynb) | Ex. 1 — Variation de profondeur | Trade-off capacité vs sur-apprentissage : combien de couches pour quel régime ? |
+| 45 | [SL-12](SL-12-DifferentiableLogicGateNetworks.ipynb) | Ex. 2 — Porte favorite d'un neurone isole | Quelle porte (AND/NAND/XOR) l'apprentissage favorise-t-il pour MNIST ? |
+| 46 | [SL-12](SL-12-DifferentiableLogicGateNetworks.ipynb) | Ex. 3 — Robustesse au bruit pixel | La discretisation booleenne aide-t-elle face au bruit vs un MLP équivalent ? |
 
 Note : dans SL-7, le premier exercice de la numérotation interne est un exemple guide ; les exercices à piocher sont Ex. 2 à Ex. 5.
 
@@ -179,6 +182,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | 9 | [SL-9 - LLMs et Apprentissage Symbolique](SL-9-LLM-SymbolicLearning.ipynb) | Prompting, extraction de règles, vérification symbolique (Gemini 3.5 Flash optionnel) | 50 min |
 | 10 | [SL-10 - Apprentissage Actif d'Automates](SL-10-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 60 min |
 | 11 | [SL-11 - Capstone Neuro-Symbolique](SL-11-Capstone-NeuroSymbolic.ipynb) | Pipeline 6 étages : extraction LLM, oracle, KG, mining, inférence avec provenance, QA | 90 min |
+| 12 | [SL-12 - Réseaux de Portes Logiques Différentiables](SL-12-DifferentiableLogicGateNetworks.ipynb) | difflogic (Petersen NeurIPS 2022) : portes logiques apprises par descente de gradient, discrétisation en circuit booléen, inférence ultra-rapide | 45 min |
 
 ## Contenu détaillé
 
@@ -303,6 +307,19 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | Étage 4 - Mining | AMIE-lite : découverte de règles avec confiance standard (cf SL-4/SL-7) |
 | Étage 5 - Inférence | Chainage avant avec provenance ; le dérivé peut violer l'oracle (lecon d'architecture) |
 | Étage 6 - QA | Question 2 sauts : réponse KG (dérivation citée) vs réponse LLM seule |
+
+### SL-12-DifferentiableLogicGateNetworks.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| Motivation | Registre **discret** du neuro-symbolique (vs SL-7 continu) : neurone = porte logique binaire apprise parmi 16 |
+| Prise en main | `LogicLayer(in, out)`, `GroupSum(k, tau)`, choix device/implementation |
+| Entraînement MNIST 20x20 | Précision : ~85-92% (référence GPU, 5000 iters) ; le notebook exécute une config CPU réduite (N_ITERS=2000) -> ~79% |
+| Inspection | Distribution des 16 portes apprises par les neurones |
+| `CompiledLogicNet` | Export C compilé, ~1M images/s sur 1 core CPU (RECOVERABLE-MACHINE, gcc) |
+| Note historique | Remplace la veille `Neurosymbolic-EML/` (atome NAND continu, parité-3 dégénéré) — voir `_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/` |
+
+**Référence** : Petersen et al., *Deep Differentiable Logic Gate Networks*, NeurIPS 2022 ([arXiv 2210.08277](https://arxiv.org/abs/2210.08277)).
 
 ## Concepts clés
 
