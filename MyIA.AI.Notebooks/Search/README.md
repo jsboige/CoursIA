@@ -151,13 +151,7 @@ La série se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la gra
 
 ### Applications spécialisées (Part4-Metaheuristics)
 
-Trois notebooks d'application spécialisée complètent la Partie 4 sans relever de la série MGS numérotée (ils ne construisent pas le moteur mais l'utilisent sur des cas réels) :
-
-| Notebook | Apport pédagogique |
-|----------|-------------------|
-| [Portfolio_Optimization_GeneticSharp](Part4-Metaheuristics/Portfolio_Optimization_GeneticSharp.ipynb) | Frontière de Pareto de portefeuille : optimisation multi-objectif (rendement × risque) au-dessus de GeneticSharp |
-| [GeneticSharp-EdgeDetection](Part4-Metaheuristics/GeneticSharp-EdgeDetection.ipynb) | Détection de bords par GA (GeneticSharp) : convolution + fitness = similarité contour |
-| [PyGad-EdgeDetection](Part4-Metaheuristics/PyGad-EdgeDetection.ipynb) | Détection de bords par GA (PyGAD, Python) : même problème, autre moteur — comparaison PyGAD ⇄ GeneticSharp |
+Les notebooks d'application GA (EdgeDetection, Portfolio — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Applications/Hybrid/`](Applications/README.md) ci-dessous : **App-9 / App-9b** et **App-10 / App-10b**. La Partie 4 ne contient plus que la série MGS numérotée (MGS-1 à MGS-19).
 
 ### Applications
 
@@ -538,7 +532,7 @@ Search/
 │       └── App-18-HyperparameterTuning.ipynb
 │
 ├── MetaGeneticSharp/                      # Sous-module : metaheuristiques composables sur GeneticSharp (jsboige/MetaGeneticSharp)
-├── Part4-Metaheuristics/                  # Partie 4 (side track C# .NET 9) : README + 19 notebooks MGS-1..19 (moteur, composition, composés, benchmarks, TSP, paysages, biais central, synergie d'îles, alignement d'axes, paysages dé-biaisés, synergie conditionnelle, analyse de paysage FDC, sélection d'algorithme No-Free-Lunch, contrôle de paramètres, banc CEC consolidé, démontage du recuit) + 3 applications spécialisées (GeneticSharp-EdgeDetection, PyGad-EdgeDetection, Portfolio_Optimization_GeneticSharp) ; consomment le sous-module
+├── Part4-Metaheuristics/                  # Partie 4 (side track C# .NET 9) : README + 19 notebooks MGS-1..19 (moteur, composition, composés, benchmarks, TSP, paysages, biais central, synergie d'îles, alignement d'axes, paysages dé-biaisés, synergie conditionnelle, analyse de paysage FDC, sélection d'algorithme No-Free-Lunch, contrôle de paramètres, banc CEC consolidé, démontage du recuit) ; consomment le sous-module
 │
 └── archive/                                # Notebooks racine archivés (C209 tranche 8/8 #5081) — voir archive/README.md
     ├── README.md
