@@ -11,7 +11,7 @@ maturity: PRODUCTION=4, BETA=2
 
 Études de cas interdisciplinaires combinant plusieurs domaines de l'IA dans des projets appliqués.
 
-La force des études de cas réside dans leur capacité à **fusionner les techniques apprises en silos** : un solveur SMT (Search), un algorithme génétique (Sudoku), une ontologie OWL (SemanticWeb) et un modèle bayésien (Probas) ne valent pas grand chose isolément face à une question réelle. C'est leur combinaison, orchestrée autour d'un problème métier (diagnostic médical, protocole oncologique, dispatch énergétique), qui transforme un catalogue d'outils en **système décisionnel cohérent**. Les trois projets de cette série illustrent ce passage : chacun mobilise 3 à 4 paradigmes IA différents qui se renforcent mutuellement plutôt que de se concurrencer.
+La force des études de cas réside dans leur capacité à **fusionner les techniques apprises en silos** : un solveur SMT (Search), un algorithme génétique (Sudoku), une ontologie OWL (SemanticWeb) et un modèle bayésien (Probas) ne valent pas grand chose isolément face à une question réelle. C'est leur combinaison, orchestrée autour d'un problème métier (diagnostic médical, protocole oncologique, dispatch énergétique), qui transforme un catalogue d'outils en **système décisionnel cohérent**. Les trois projets de cette série illustrent ce passage : chacun mobilise **3 paradigmes IA** complémentaires qui se renforcent mutuellement plutôt que de se concurrencer.
 
 ## Statistiques catalogue à jour
 
@@ -22,7 +22,7 @@ La force des études de cas réside dans leur capacité à **fusionner les techn
 | [SmartGrid-Energy](SmartGrid-Energy/) | 2 (student + solution) | BETA | CP-SAT + bayésien (risque défaillance) + multi-objectif (coût/CO2) |
 | **Total** | **6 notebooks** | **PRODUCTION=4, BETA=2** | 4 paradigmes : symbolique (CSP/ontologie) + statistique (probabiliste/évolutionnaire) + recherche (A*) + optimisation (CP-SAT) |
 
-Chaque notebook fait l'objet d'une **validation par test unitaire** dans son sous-dossier `solution/` ; le template `student/` porte les stubs conformes (règle C.1 : `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et reste exécutable end-to-end. La cohérence est garantie par `requirements.txt` au racine (`numpy`, `pandas`, `z3-solver`, `pyro-ppl`, `ortools`).
+Chaque notebook solution fait l'objet d'une **validation par assertions** (cellule terminale `tests_automatises()` ou prints discriminants) dans son sous-dossier `solution/` ; le template `student/` porte les stubs conformes (règle C.1 : `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et reste exécutable end-to-end. La cohérence est garantie par `requirements.txt` au racine (`numpy`, `pandas`, `matplotlib`, `seaborn`, `z3-solver`, `rdflib`, `pyro-ppl`, `torch`, `ortools` — 9 dépendances communes aux 3 cas).
 
 ## Écosystème MCP et parenté cross-lane
 
@@ -30,7 +30,7 @@ Cette série est un **point de convergence** des autres séries du dépôt : cha
 
 | Étude de cas | [Search](../Search/README.md) | [Sudoku](../Sudoku/README.md) | [SymbolicAI](../SymbolicAI/README.md) | [Probas](../Probas/README.md) | [ML](../ML/README.md) |
 |---|---|---|---|---|---|
-| Diagnostic-Medical | A* (`Part1-Foundations`) | Génétique (notebooks 8-9) | — | — | — |
+| Diagnostic-Medical | A* (`Part1-Foundations`) | Génétique ([`Sudoku-3-Genetic-Python`](../Sudoku/Sudoku-3-Genetic-Python.ipynb)) | — | — | — |
 | Oncology-Planning | CSP / CP-SAT (`Part2-CSP`) | — | Ontologie OWL ([SemanticWeb](../SymbolicAI/SemanticWeb/README.md)) | Bayésien / Pyro | — |
 | SmartGrid-Energy | CP-SAT / OR-Tools (`Part2-CSP`) | — | — | Bayésien (risque) | — |
 
@@ -92,18 +92,23 @@ Les trois projets reposent sur un **modèle simulé** : un objet logiciel qui re
 ```text
 CaseStudies/
 ├── Diagnostic-Medical/    # Système de diagnostic multi-contraintes (A*, génétique, Z3)
+│   ├── README.md          # Fiche projet
+│   ├── subject.md         # Sujet du devoir (CC1)
 │   ├── student/           # Template étudiant
 │   ├── solution/          # Solution de référence
-│   └── data/              # Données de test
+│   └── data/              # Données de test (patients.csv, 10 patients diabète type 2)
 ├── Oncology-Planning/     # Planification oncologique (CSP, Pyro probabiliste, ontologie)
+│   ├── README.md          # Fiche projet
+│   ├── subject.md         # Sujet du devoir (CC2)
 │   ├── student/           # Template étudiant
 │   ├── solution/          # Solution de référence
-│   └── data/              # Données patients
+│   └── data/              # Données patients oncologie (patients_oncology.csv)
 ├── SmartGrid-Energy/      # Dispatch énergétique sous incertitude (CP-SAT, bayésien, multi-objectif)
+│   ├── README.md          # Fiche projet
+│   ├── subject.md         # Sujet du devoir (CC3)
 │   ├── student/           # Template étudiant
-│   ├── solution/          # Solution de référence
-│   └── subject.md         # Sujet du devoir
-└── requirements.txt       # Dépendances communes
+│   └── solution/          # Solution de référence (3 centrales, 6 heures, réseau jumeau)
+└── requirements.txt       # Dépendances communes (9 packages)
 ```
 
 ## Projets
@@ -158,7 +163,7 @@ Ordonnancement de la production électrique (unit commitment) sous incertitude r
 
 - **Manipuler des données patient** (CSV structurées, anonymisation, intégrité des CSP)
 - **Encoder un protocole thérapeutique** sous forme d'ontologie + contraintes (délais, doses, interactions)
-- **Estimer une incertitude clinique** via inférence bayésienne et amplification (`poutine.scale` en Pyro)
+- **Estimer une incertitude clinique** via inférence bayésienne stochastique variationnelle (`pyro.infer.SVI` + `Trace_ELBO` en Pyro)
 - **Construire un jumeau numérique** simulant la réaction d'un patient à une intervention
 
 ## Concepts clés transversaux
@@ -263,4 +268,4 @@ Le template étudiant (`student/`) contient le squelette du projet : classes ave
 
 ---
 
-*Version 1.2.0 — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche casestudies.*
+*Version 1.3.0 — Juillet 2026 — audit §E whole-file gate (réconciliation disque↔catalogue 6 nb + correction 5 incohérences prose : 3 paradigmes / validation par assertions / requirements.txt 9 deps / Sudoku-3 référence génétique / `SVI+Trace_ELBO` au lieu de `poutine.scale` / tree structure avec README.md+subject.md par cas). EPIC #3975 tranche casestudies.*
