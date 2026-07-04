@@ -341,7 +341,7 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 16 | Neural Network | CNN PyTorch : apprentissage de patterns visuels sur grilles |
 | 17 | LLM | LLM Solver : prompt engineering pour résolution logique, limites |
 | 18 | Comparison | Benchmark comparatif : toutes les approches sur Easy/Medium/Hard/Expert |
-| 19 | [Sudoku-19-Lean-Propagation](Sudoku-19-Lean-Propagation.ipynb) | **Companion natif** (kernel Lean) : preuve formelle 0-sorry de la soundness de la propagation (naked/hidden single, clé de voûte `peer_excludes_value`) dans le lake `sudoku_lean`, `#check` + `#print axioms` in-kernel (jonction Mathlib #2611) |
+| 19 | [Sudoku-19-Lean-Propagation](Sudoku-19-Lean-Propagation.ipynb) | **Companion natif** (kernel Lean) : preuve formelle 0-sorry de la soundness de la propagation (naked/hidden single, clé de voûte `peer_excludes_value`) dans le lake `sudoku_lean`, `#check` + `#print axioms` in-kernel — voir [#4055](https://github.com/jsboige/CoursIA/issues/4055) (création du lake) et `LEAN_INVENTORY.md` du dossier |
 
 ---
 
@@ -366,7 +366,7 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 14 | BDD | Oui | - | (C# uniquement) |
 | 15 | Infer (Probabiliste) | Oui | Oui | **NumPyro** + JAX |
 | 16 | Neural Network | - | Oui | **PyTorch** CNN |
-| 17 | LLM | - | Oui | **Semantic Kernel** |
+| 17 | LLM | - | Oui | **openai** SDK (compatible ChatCompletion API) |
 | 18 | Comparison | - | Oui | Benchmark comparatif |
 
 **Légende** : Oui = disponible, - = non applicable
@@ -462,13 +462,13 @@ Sudoku-0-Csharp (Environment - comprendre les structures)
 dotnet --version
 
 # Les packages NuGet sont installés dans les notebooks :
-# - GeneticSharp
-# - Google.OrTools
-# - Microsoft.Z3
-# - DlxLib
-# - Microsoft.ML.Probabilistic
-# - Microsoft.SemanticKernel (pour LLM)
-# - Plotly.NET
+# - GeneticSharp          (Sudoku-3 Genetic)
+# - Google.OrTools        (Sudoku-10 OR-Tools CP-SAT)
+# - Microsoft.Z3          (Sudoku-12 Z3 SMT, Sudoku-13 Symbolic Automata)
+# - DlxLib                (Sudoku-2 Dancing Links)
+# - Microsoft.ML.Probabilistic  (Sudoku-15 Infer.NET)
+# - IKVM 8.15.0           (Sudoku-11 Choco — runtime Java-sur-.NET + DLL précompilée)
+# - Plotly.NET            (visualisations, notebooks 0-15)
 ```
 
 **Note sur les outputs** : Les notebooks C# contiennent des outputs de cellule exécutées. Les notebooks avec dépendances `#!import` doivent être exécutés dans l'ordre (0 -> 1 -> 2...).
@@ -480,7 +480,7 @@ dotnet --version
 python -m venv venv
 
 # Installer les dépendances
-pip install numpy matplotlib ortools z3-solver pygad torch networkx mealpy simanneal jpype1 semantic-kernel
+pip install numpy pandas scipy matplotlib ortools z3-solver pygad simanneal mealpy networkx torch jax numpyro jpype1 openai
 ```
 
 ## Performances Attendues
@@ -560,7 +560,7 @@ Les notebooks sont adaptés de projets étudiants :
 | **Neural Network** | 4 architectures de réseaux de neurones | `Sudoku.NeuralNetwork` |
 | **PSO** | Optimisation par essaim de particules | `Sudoku.PSO` (7 fichiers) |
 | **AIMA CSP** | CSP inspiré de AIMA | `Sudoku.CspAima` |
-| **Graph Coloring** | Coloration de graphe | `Sodoku.GraphColoring` (11 fichiers) |
+| **Graph Coloring** | Coloration de graphe | `Sudoku.GraphColoring` (11 fichiers) |
 | **Choco** | 5 implémentations Choco | `Sudoku.ChocoSolvers` |
 | **LLM** | Résolution par LLM | `Sudoku.LLM-ChatGPTenzin` |
 
@@ -569,6 +569,11 @@ Les notebooks sont adaptés de projets étudiants :
 ```
 Sudoku/
 ├── README.md                              # Ce fichier
+├── LEAN_INVENTORY.md                      # Inventaire transverse des lakes Lean de la série
+├── index.qmd                              # Listing Quarto (sous-ensembles C# / Python)
+├── requirements.txt                       # Dépendances Python (16 notebooks Python)
+├── choco-solver-4.10.17-jar-with-dependencies.jar  # JAR Choco (utilisé par nb-11 Python via JPype)
+├── org.chocosolver.solver.dll             # DLL Choco précompilée (utilisée par nb-11 C# via IKVM)
 ├── Sudoku-0-Environment-Csharp.ipynb      # Classes de base C#
 ├── Sudoku-1-Backtracking-Csharp.ipynb     # Backtracking C#
 ├── Sudoku-1-Backtracking-Python.ipynb     # Backtracking Python
@@ -601,10 +606,38 @@ Sudoku/
 ├── Sudoku-16-NeuralNetwork-Python.ipynb   # Réseau de neurones Python
 ├── Sudoku-17-LLM-Python.ipynb             # LLM Solver Python
 ├── Sudoku-18-Comparison-Python.ipynb      # Benchmark comparatif Python
-└── Puzzles/                               # Fichiers de puzzles
-    ├── Sudoku_Easy51.txt
-    ├── Sudoku_hardest.txt
-    └── Sudoku_top95.txt
+├── Sudoku-19-Lean-Propagation.ipynb       # Companion Lean natif (preuve de soundness)
+├── Puzzles/                               # Fichiers de puzzles
+│   ├── Sudoku_Easy51.txt
+│   ├── Sudoku_hardest.txt
+│   └── Sudoku_top95.txt
+├── assets/                                # Ressources statiques (regex de validation sudoku)
+│   └── sudoku-unrolled.regex.txt
+├── models/                                # Modèles entraînés (RRN .pt)
+│   └── sudoku_rrn_v4_best.pt
+├── sudoku_models/                         # Checkpoints d'entraînement comparatif
+│   └── checkpoints/
+├── sudoku_lean/                           # Lake Lean 4 (preuve de propagation, 3 modules, 0 sorry)
+│   ├── Sudoku.lean                        # Umbrella
+│   ├── Sudoku/Basic.lean
+│   ├── Sudoku/Propagation.lean
+│   ├── Sudoku/ExactCover.lean
+│   ├── Sudoku.en.md
+│   ├── lakefile.lean
+│   ├── lake-manifest.json
+│   └── lean-toolchain
+├── scripts/                               # Scripts Python (entraînement thermal-safe)
+│   ├── thermal_safe_train.py
+│   └── checkpoints/
+├── CompiledModels/                        # Artefacts C# compilés (Infer.NET)
+│   ├── RobustSudokuModel.cs
+│   └── RobustSudokuModel.dll
+└── GeneratedSource/                       # Code source généré par Infer.NET
+    ├── Model0_EP.cs
+    ├── Model1_EP.cs
+    ├── Model2_EP.cs
+    ├── Model3_EP.cs
+    └── Model_EP.cs
 ```
 
 ## Ressources
@@ -621,7 +654,7 @@ Sudoku/
 - [GeneticSharp](https://github.com/giacomelli/GeneticSharp)
 - [Choco Solver](https://choco-solver.org/)
 - [Infer.NET Documentation](https://dotnet.github.io/infer/)
-- [Microsoft Semantic Kernel](https://learn.microsoft.com/en-us/semantic-kernel/)
+- [OpenAI Python SDK](https://github.com/openai/openai-python) (utilisé par Sudoku-17 LLM Solver)
 - [PyTorch](https://pytorch.org/)
 
 ## FAQ / Troubleshooting
@@ -731,4 +764,4 @@ Voir la licence du repository principal.
 
 ---
 
-*Version 1.1.0 — Juin 2026*
+*Version 1.2.0 — Juillet 2026*
