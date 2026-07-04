@@ -314,7 +314,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 |---------|---------|
 | Motivation | Registre **discret** du neuro-symbolique (vs SL-7 continu) : neurone = porte logique binaire apprise parmi 16 |
 | Prise en main | `LogicLayer(in, out)`, `GroupSum(k, tau)`, choix device/implementation |
-| Entraînement MNIST 20x20 | Adam lr=0.01 — défaut CPU 2K iters (accuracy ~80%) ; GPU 5K iters atteignable (accuracy 85-92%) |
+| Entraînement MNIST 20x20 | Précision : ~85-92% (référence GPU, 5000 iters) ; le notebook exécute une config CPU réduite (N_ITERS=2000) -> ~79% |
 | Inspection | Distribution des 16 portes apprises par les neurones |
 | `CompiledLogicNet` | Export C compilé, ~1M images/s sur 1 core CPU (RECOVERABLE-MACHINE, gcc) |
 | Note historique | Remplace la veille `Neurosymbolic-EML/` (atome NAND continu, parité-3 dégénéré) — voir `_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/` |
