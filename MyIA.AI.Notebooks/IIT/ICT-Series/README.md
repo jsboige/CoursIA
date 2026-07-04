@@ -13,7 +13,7 @@ La série [IIT](../README.md) étudie des structures causales **à un instant do
 
 ICT s'appuie sur un package léger `ict/` posé à côté de PyPhi (autonome pour les simulations et mesures, PyPhi pour les calculs IIT stricts), et s'ouvre sur deux articles fondateurs : le tri vu comme morphogenèse minimale (Zhang, Goldstein & Levin, 2025) et l'ingénierie de l'émergence multi-échelle (Jansma & Hoel, 2025).
 
-La série progresse en **deux strates**. La **strate 1** (ICT-0 à ICT-7) prend le **tri auto-organisé** comme banc d'essai entièrement transparent : trajectoires enregistrables, compétences inattendues réelles, pont vers la causal emergence. Elle bute toutefois sur trois limites — un **attracteur global unique**, un **but imposé de l'extérieur**, une **hiérarchie non générative**. La **strate 2** (ICT-8+) ouvre la *morphogenèse dynamique* sur des systèmes dont le paysage d'attracteurs est **engendré par la dynamique** (bifurcation, réaction-diffusion), levant ces limites une à une.
+La série progresse en **cinq strates**. La **strate 1** (ICT-0 à ICT-7) prend le **tri auto-organisé** comme banc d'essai entièrement transparent : trajectoires enregistrables, compétences inattendues réelles — ce travail *for free* qui, chez Levin, va « dans le sens d'une réversibilisation » — et pont vers la causal emergence. Elle bute sur trois limites — un **attracteur global unique**, un **but imposé de l'extérieur**, une **hiérarchie non générative**. La **strate 2** (ICT-8 à ICT-10) ouvre la *morphogenèse dynamique* sur des paysages d'attracteurs **engendrés par la dynamique** (bifurcation, réaction-diffusion, grammaire des catastrophes), levant ces limites une à une. La **strate 3** (ICT-11 à ICT-13) mesure des **trajectoires intégrées** régime-dépendantes (profils d'agence, champs de valence, morphodynamique stratégique). La **strate 4** (ICT-14) ajoute la jambe **représentationnelle** — énergie libre et surprise. La **strate 5** (ICT-15 à ICT-24) réalise la *théorie fondatrice* cross-substrat (convergence $\Phi/F/K$, identité MDL, LLM comme substrat) et **outille enfin la réversibilisation** — l'idée fondatrice restée implicite : forcer une trajectoire à devenir réversible et mesurer *ce qu'on perd* révèle la quantité d'agentivité qu'elle portait (ICT-18, flèche du temps & réversibilisation).
 
 > **Caractère expérimental.** ICT est une série de recherche en construction (statut ALPHA). Elle pose des mesures *sans complaisance* : chaque notebook confronte une intuition séduisante (émergence, agence, criticalité) à une mesure qui peut la **réfuter**, et signale explicitement les fantômes statistiques (signal apparent issu de degrés de liberté cachés).
 
@@ -77,18 +77,20 @@ La strate 3 se conclut sur la feuille de route de [ICT-0-Framing](ICT-0-Framing.
 
 ### Strate 5 — réalisation de la théorie fondatrice (cross-substrat, MDL, LLM)
 
-Le retour à la théorie fondatrice (cf. [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md)) : les trois scalaires fondateurs $\Phi / F / K$ convergent sur un banc cross-substrat. *Planifiée, scope ICT-15..22 (#5090 #5099..#5105).*
+Le retour à la théorie fondatrice (cf. [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md)) : les trois scalaires fondateurs $\Phi / F / K$ convergent sur un banc cross-substrat, et la **réversibilisation** — l'idée fondatrice restée implicite — y est enfin outillée (ICT-18). *Planifiée, scope ICT-15..24 (#5090 #5099..#5105 #5279).*
 
 | Notebook | Sujet | Issue |
 |----------|-------|-------|
 | **ICT-15** | Convergence Φ/F/K sur le banc cross-substrat, gate de convergence sur le squelette de Thom | [#5090](https://github.com/jsboige/CoursIA/issues/5090) |
 | **ICT-16** | MDLTwoPartCode — $F$ est la partie résiduelle du code $K$ + bosse complexité-entropie | [#5099](https://github.com/jsboige/CoursIA/issues/5099) |
 | **ICT-17** | $\epsilon$-machine (Crutchfield) vs Hoel — états causaux, complexité statistique, entropie d'excès | [#5100](https://github.com/jsboige/CoursIA/issues/5100) |
-| **ICT-18** | SAE (Qwen + Qwen-Scope) — des features SAE aux trajectoires d'états discrets, substrat S4 *(GPU)* | [#5101](https://github.com/jsboige/CoursIA/issues/5101) |
-| **ICT-19** | LLM comme quatrième substrat du banc cross-substrat *(GPU)* | [#5102](https://github.com/jsboige/CoursIA/issues/5102) |
+| **ICT-18** | Flèche du temps & réversibilisation — production d'entropie, detailed balance, « que perd-on à réversibiliser ? » (ancré ICT-3, Levin/Fridman) *(GPU-free)* | [#5279](https://github.com/jsboige/CoursIA/issues/5279) |
+| **ICT-19** | Conceptual Reservoirs — *slot réservé*, spec à venir → Epic [#4588](https://github.com/jsboige/CoursIA/issues/4588) | — |
 | **ICT-20** | FeatureCatastrophes — calibration, changepoints, EWS et hystérésis en feature-space | [#5103](https://github.com/jsboige/CoursIA/issues/5103) |
-| **ICT-21** | PersonaCatastrophe — désalignement émergent par fronce, énergie libre et MDL (capstone) | [#5104](https://github.com/jsboige/CoursIA/issues/5104) |
-| **ICT-22** | InoculationRL — GRPO à récompense hackable × inoculation, panel persona (capstone final) *(GPU)* | [#5105](https://github.com/jsboige/CoursIA/issues/5105) |
+| **ICT-21** | SAE (Qwen + Qwen-Scope) — des features SAE aux trajectoires d'états discrets, substrat S4 *(GPU)* | [#5101](https://github.com/jsboige/CoursIA/issues/5101) |
+| **ICT-22** | LLM comme quatrième substrat du banc cross-substrat *(GPU)* | [#5102](https://github.com/jsboige/CoursIA/issues/5102) |
+| **ICT-23** | PersonaCatastrophe — désalignement émergent par fronce, énergie libre et MDL (capstone) | [#5104](https://github.com/jsboige/CoursIA/issues/5104) |
+| **ICT-24** | InoculationRL — GRPO à récompense hackable × inoculation, panel persona (capstone final) *(GPU)* | [#5105](https://github.com/jsboige/CoursIA/issues/5105) |
 
 > La **double lecture du sigle** (« Integrated Complexity Theory » ↔ « Integrated Causal Trajectories ») est documentée dans [ICT-0-Framing § « Double lecture du sigle »](ICT-0-Framing.md#double-lecture-du-sigle). La strate 5 réalise littéralement la théorie fondatrice (identité MDL #5099, convergence $\Phi/F/K$ #5090, LLM comme substrat #5102).
 

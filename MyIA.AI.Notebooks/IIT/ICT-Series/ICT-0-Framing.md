@@ -57,15 +57,41 @@ porte le premier. Aucun des deux ne remplace l'autre :
   compression cherchent à capturer) ;
 - la **méthode** construit les cas calculables qui instancient ce langage et permettent de le
   mesurer *sans complaisance* ;
-- la **strate 5** (ICT-14 → ICT-22) ferme la boucle : sur le banc cross-substrat (ICT-15 #5090),
+- la **strate 5** (ICT-14 → ICT-24) ferme la boucle : sur le banc cross-substrat (ICT-15 #5090),
   les trois scalaires fondateurs $\Phi / F / K$ se rencontrent ; l'identité MDL (ICT-16 #5099),
-  l'$\epsilon$-machine (ICT-17 #5100) et le LLM comme quatrième substrat (ICT-19 #5102) réalisent
+  l'$\epsilon$-machine (ICT-17 #5100) et le LLM comme quatrième substrat (ICT-22 #5102) réalisent
   littéralement la théorie fondatrice, sur des substrats où le tri ne suffit plus.
 
 Cette double lecture est assumée et documentée ici précisément parce qu'elle a longtemps été
 implicite — la série se présentait comme « Integrated Causal Trajectories » (méthode), alors que
 la théorie fondatrice parle « Integrated Complexity Theory ». Le cadrage explicite évite la
 confusion et nomme l'enjeu.
+
+## Flèche du temps & réversibilisation — l'idée fondatrice
+
+Le panorama qui a orienté la série vers la *complexité intégrée* portait un **fil conducteur
+resté non-dit** : la **réversibilisation**. Une trajectoire qui développe une compétence
+« gratuite » (*for free*), non prévue par le mécanisme programmé, est exactement ce qu'un
+processus **à l'équilibre / réversible** (au sens du *detailed balance*) ne peut PAS produire.
+L'émergence a une **signature thermodynamique** : elle brise la symétrie temporelle. Or, jusqu'ici,
+la série mesurait l'intégration ($\Phi$), la surprise ($F$), la compression ($K$) — jamais
+l'irréversibilité elle-même. Il manquait l'**instrument de mesure** de la flèche du temps.
+
+**L'ancrage Levin / Fridman.** Dans son entretien avec Lex Fridman sur les algorithmes de tri,
+Michael Levin est fasciné par l'émergence, dans un simple tri, d'un **mécanisme algorithmique
+non programmé** — un travail supplémentaire *for free* qui va, dit-il, « dans le sens d'une
+réversibilisation ». C'est très précisément la compétence *for free* que **ICT-3**
+(`RobustnessDelayedGratification`) démontre en strate 1 : le tri « fait plus que trier ». La
+flèche du temps est ici une **flèche causale** (Reichenbach, ordre de Pearl, flèche
+thermodynamique) ; la **production d'entropie** en est la signature quantitative — la marque
+thermodynamique de l'agentivité.
+
+**Cet instrument est construit en ICT-18 — Flèche du temps & réversibilisation** ([#5279](https://github.com/jsboige/CoursIA/issues/5279),
+GPU-free). Appliqué *rétrospectivement* aux trajectoires déjà enregistrées (tri, May bistable,
+Axelrod, Gray-Scott), il répond à une question centrale et falsifiable : **« que perd-on quand
+on force une trajectoire ICT à devenir réversible ? »** La réponse, mesurée (production d'entropie
+$\sigma$, erreur de *detailed balance*, quantités effacées par la projection réversible), est la
+quantité d'agentivité / de calcul émergent que la trajectoire portait.
 
 ## Deux articles fondateurs
 
@@ -328,11 +354,13 @@ IIT/
 | **ICT-15** | IntegratedComplexity — convergence Φ/F/K sur le banc cross-substrat. Le gate de convergence des trois scalaires fondateurs (information intégrée, énergie libre, complexité de Kolmogorov) sur le squelette de Thom. *Strate 4 / charnière vers strate 5*. Voir issue #5090 | 🚧 planifié |
 | **ICT-16** | MDLTwoPartCode — le pont MDL : F (énergie libre) est la partie résiduelle du code K (Kolmogorov) + la bosse complexité-entropie. Identité MDL ↔ énergie libre. *Strate 5*. Voir issue #5099 | 🚧 planifié |
 | **ICT-17** | EpsilonMachine — états causaux, complexité statistique, entropie d'excès : le gate Crutchfield vs Hoel. L'$\epsilon$-machine comme alternative computationnelle à l'émergence causale Hoel. *Strate 5*. Voir issue #5100 | 🚧 planifié |
-| **ICT-18** | SAETrajectoires — Qwen + Qwen-Scope : des features SAE aux trajectoires d'états discrets, le substrat S4 (LLM sparse autoencoder). *Strate 5, GPU-required*. Voir issue #5101 | 🚧 planifié |
-| **ICT-19** | LLMSubstrat — le transformer comme quatrième substrat du banc cross-substrat (tri, Gray-Scott, Axelrod, LLM). Double contrôle (passif / actif). *Strate 5, GPU-required*. Voir issue #5102 | 🚧 planifié |
+| **ICT-18** | Flèche du temps & réversibilisation — l'**idée fondatrice** enfin outillée. Instrument rétrospectif GPU-free (`ict/time_arrow.py`) appliqué aux trajectoires déjà construites (tri, May, Axelrod, Gray-Scott) : distribution stationnaire, inversion temporelle, réversibilisation, production d'entropie. Question centrale : *que perd-on quand on force une trajectoire ICT à devenir réversible ?* Ancré ICT-3 (compétence *for free*) + entretien Fridman/Levin. *Strate 5, GPU-free*. Voir issue #5279 | 🚧 planifié |
+| **ICT-19** | Conceptual Reservoirs — *slot réservé*, spécification à venir (réservoirs conceptuels, mémoire cross-substrat). → Epic #4588 | 🔖 réservé |
 | **ICT-20** | FeatureCatastrophes — calibration : changepoints, EWS et hystérésis sur transitions anodines en feature-space. *Strate 5*. Voir issue #5103 | 🚧 planifié |
-| **ICT-21** | PersonaCatastrophe — expliquer le désalignement émergent par fronce, énergie libre et MDL : jouet + mesure in-context (capstone strate 5). Voir issue #5104 | 🚧 planifié |
-| **ICT-22** | InoculationRL — réplication poids : GRPO à récompense hackable × inoculation, rewardspy, panel persona (capstone final, pont PostTraining). *Strate 5, GPU-required*. Voir issue #5105 | 🚧 planifié |
+| **ICT-21** | SAETrajectoires — Qwen + Qwen-Scope : des features SAE aux trajectoires d'états discrets, le substrat S4 (LLM sparse autoencoder). *Strate 5, GPU-required*. Voir issue #5101 | 🚧 planifié |
+| **ICT-22** | LLMSubstrat — le transformer comme quatrième substrat du banc cross-substrat (tri, Gray-Scott, Axelrod, LLM). Double contrôle (passif / actif). *Strate 5, GPU-required*. Voir issue #5102 | 🚧 planifié |
+| **ICT-23** | PersonaCatastrophe — expliquer le désalignement émergent par fronce, énergie libre et MDL : jouet + mesure in-context (capstone strate 5). Voir issue #5104 | 🚧 planifié |
+| **ICT-24** | InoculationRL — réplication poids : GRPO à récompense hackable × inoculation, rewardspy, panel persona (capstone final, pont PostTraining). *Strate 5, GPU-required*. Voir issue #5105 | 🚧 planifié |
 
 ## Strate 2 — du tri transparent à la morphogenèse dynamique
 
