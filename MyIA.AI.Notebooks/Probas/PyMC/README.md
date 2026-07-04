@@ -83,6 +83,7 @@ La série illustre ce fil rouge sur plusieurs notebooks, chacun sur un cas non-c
 | 16 | [PyMC-16-Modeles-Hierarchiques](PyMC-16-Modeles-Hierarchiques.ipynb) | 50 min | Partial pooling, shrinkage, paramétrisation non-centrée, divergences/funnel |
 | 17 | [PyMC-17-Kalman-Filter](PyMC-17-Kalman-Filter.ipynb) | 55 min | Système dynamique linéaire gaussien, récursion de filtrage fermée, value-add MCMC (estimation Q/R/drift) |
 | 18 | [PyMC-18-Change-Point](PyMC-18-Change-Point.ipynb) | 50 min | Change-point bayésien, `DiscreteUniform` + `switch`, catastrophes minières (Poisson), entropie |
+| 19 | [PyMC-19-Survival-Analysis](PyMC-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, exponentiel conjugué (Gamma), Weibull `k` inféré directement (NUTS), sélection LOO (arviZ) |
 
 > **Théorie de la décision** : les notebooks décisionnels (utilité espérée, EVPI, MDPs, bandits) forment désormais une sous-série autonome dans [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (1 à 7), miroir Python de [DecisionTheory/Infer/](../DecisionTheory/DecInfer/README.md).
 
