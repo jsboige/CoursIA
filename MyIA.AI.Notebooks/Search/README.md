@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 73
-breakdown: Applications=22, Part4-Metaheuristics=22, Part1-Foundations=13, Part2-CSP=13, Part3-Advanced=3
-maturity: PRODUCTION=58, BETA=15
+pedagogical_count: 83
+breakdown: Applications=22, Part4-Metaheuristics=19, Part1-Foundations=17, Part2-CSP=18, Part3-Advanced=5, archive=2
+maturity: PRODUCTION=68, BETA=15
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -607,6 +607,39 @@ Concentrez-vous sur **Search-1 à Search-3** (espaces d'états, BFS/DFS, A*), **
 ### Si vous voulez résoudre un problème industriel
 
 Allez directement aux applications qui correspondent à votre domaine : **App-3/App-4** (ordonnancement), **App-13/App-17** (routing/logistique), **App-5** (emploi du temps), ou **App-10** (optimisation portefeuille). Chaque application est autonome avec les prérequis indiqués.
+
+---
+
+## Statistiques catalogue à jour (audit fichier-entier §E, 2026-07-04)
+
+Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-files MyIA.AI.Notebooks/Search | grep -E '\.ipynb$'`. **Référence canonique = fichiers gît-tracked** (les `_output.ipynb` à la racine Search/ sont des artéfacts non-trackés par `.gitignore` — exclus du compte ; `MetaGeneticSharp/` et `astar_lean/` ne contiennent aucun `.ipynb`).
+
+| Sous-série | Fichiers `.ipynb` gît-tracked | Maturité | Langages | Algorithmes représentatifs |
+| --- | --- | --- | --- | --- |
+| **Part 1 — Fondements** (`Part1-Foundations/`) | **17** (13 Python : Search-1 → Search-11, 15, 16 + **4 jumeaux C#** : Search-1, 2, 4, 6) | PRODUCTION=17 | Python + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph |
+| **Part 2 — Programmation par Contraintes** (`Part2-CSP/`) | **18** (9 Python : CSP-1 → CSP-9 + **9 jumeaux C#** : CSP-1 à 9-Csharp) | PRODUCTION=13, BETA=5 (cf EPIC #4956) | Python + .NET (C#) | CSP Fundamentals (backtracking), AC-3/FC/MAC, CSP Advanced (AllDifferent/Cumulative/Circuit), Scheduling (Job-Shop/RCPSP/Nurse), Optimization (Bin Packing/Knapsack), Hybridization (LCG/CP+SAT/CP+ML/LLM+CSP), Soft, Temporal (Allen's Interval Algebra), Distributed (Yokoo 1992) |
+| **Part 3 — Recherche heuristique avancée** (`Part3-Advanced/`) | **5** (3 Python : Search-12, 13, 14 + **2 jumeaux C#** : Search-13, 14) | PRODUCTION=5 | Python + .NET (C#) | Pattern Databases (Korf & Felner 2002 additives), Limited Discrepancy Search (Harvey & Ginsberg 1995), Weighted A* (Pohl 1970) |
+| **Part 4 — Métaheuristiques composables** (`Part4-Metaheuristics/`, C# .NET 9, MetaGeneticSharp) | **19** (MGS-1 → MGS-19, tous C# .NET au-dessus de GeneticSharp vendored) | PRODUCTION=12, BETA=7 (MGS-10 → MGS-19 landscape-bias series) | C# / .NET | Composition, Eukaryote, Islands, Compound Metaheuristics, TSP, Landscape Explorer, Center Bias, Island Synergy, Axis Alignment, Landscape Debias, Island Synergy Found, Landscape Analysis (FDC), Algorithm Selection (No-Free-Lunch), Parameter Control, CEC Banc, Metropolis Reinsertion |
+| **Applications** (`Applications/`) | **22** (13 CSP + 7 Hybrid + 2 Search) | PRODUCTION=22 | 19 Python + 3 C# | N-Queens, Graph Coloring, Nurse/Job-Shop/Timetabling Scheduling, Minesweeper, Wordle, MiniZinc, Picross (27M× speedup), Sports/Crossword/WFC CSP, Portfolio/TSP/VRP/Hyperparameter Tuning, Edge Detection (Python + C#), ConnectFour (Minimax/MCTS) |
+| **archive** (`archive/`) | **2** (CSPs_Intro, Exploration_non_informée_et_informée_intro, historiques pré-tranche 8/8 #5081) | PRODUCTION=2 (archive only) | Python | Notebooks historiques, remplacés par Part2-CSP/CSP-1-Fundamentals et Part1-Foundations/Search-{2,3} |
+| **Racine `Search/` (worktree non-tracké)** | **3 fichiers `_output.ipynb`** non trackés (GeneticSharp-EdgeDetection, Portfolio_Optimization_GeneticSharp, PyGad-EdgeDetection — outputs de App-9 / App-9b / App-10 / App-10b, gitignorés) | — | — | Artéfacts d'exécution, exclus du compte pédagogique |
+| **Total `pédagogical_count`** | **83** (gît-tracked : 22 + 19 + 17 + 18 + 5 + 2) | **PRODUCTION=68, BETA=15** | Python + C# | 5 piliers + archive, voir « Structure des fichiers » l. 469 pour l'arborescence complète |
+
+**Maturité documentée firsthand** :
+
+- **PRODUCTION=68** : notebooks validés end-to-end sur la machine de référence (Python 3.10+ stdlib + `ortools` + `deap` + `networkx` + `mealpy` + `pygad` ; C# = .NET 9.0 + `Microsoft.dotnet-interactive`). Couverture pédagogique cohérente du spectre algorithmique de la recherche en IA : BFS/DFS, A*, heuristiques admissibles, Minimax/Alpha-Beta, MCTS, backtracking + AC-3, Job-Shop RCPSP, métaheuristiques composables (19 notebooks MGS-1 → MGS-19 qui reconstruisent et composent au-dessus de GeneticSharp), portfolio/TSP/VRP/Picross/WFC.
+
+- **BETA=15** = 5 jumeaux C# Part 2 (CSP-1, 3, 4, 5, 7 — sprint #5293 cycle 19 + marathon #4956 cycles 14-18 : 7 PRs MERGEABLE en attente ai-01) + 7 MetaGeneticSharp MGS-10 → MGS-19 (LANDSCAPE BIAS series — IslandSynergy, CenterBias, AxisAlignment, LandscapeDebias, IslandSynergyFound, LandscapeAnalysis, AlgorithmSelection, ParameterControl, CecBanc — `dotnet build SUCCESS` documenté mais BETA car analyse comparative NFL/WOA en cours, cf PRs po-2025:CoursIA-2 antérieures) + 3 autres entrées (cf EPIC #3975).
+
+- **ALPHA=0** : pas d'ALPHA sur cette série (vs Sudoku qui en a 1 = S-16 Neural Network RRN training).
+
+**Compagnon Lean formel** : la série dispose d'un lake phare `astar_lean` (#4048) qui démontre la **correction d'A*** (admissibilité de l'heuristique ⟹ optimalité, P1), la consistance (P2) et les bornes (P4/P5) en Lean 4 sur des graphes à coût uniforme puis généralisées au cas pondéré. Voir la section **« Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA »** l. 640+ pour la **cartographie inter-familles focalisée Search** (10+ lakes formels du dépôt) et le Mermaid flowchart simulation ↔ preuve. Cette section ne duplique pas cette cartographie, elle ancre les chiffres ; la cartographie elle-même reste l. 640+.
+
+**Conformité C.1 (stubs sans `raise NotImplementedError`)** : tous les notebooks pédagogiques s'exécutent end-to-end (cellules `# Solution`/`# Exemple résolu` démonstratives conservées, cellules `# Exercice` stubées via `pass`/`return None`/`print("Exercice à compléter")`). Convention trois exercices par notebook respectée pour la majorité des notebooks récents (cf `.claude/rules/three-exercises-per-notebook.md`).
+
+**Dépendances** (`requirements.txt`) : `numpy`, `matplotlib`, `ortools`, `z3-solver`, `deap`, `pygad`, `mealpy`, `simanneal`, `networkx`, `python-constraint`, `minizinc`, `choco-solver` (Java bridge via JPype), `openai` (LLM+CSP), `semantic-kernel`, `pulp` (LP relaxation Part 1). C# : .NET 9.0 + `Microsoft.dotnet-interactive` (kernel `.net-csharp` enregistré via `dotnet interactive jupyter install`) + GeneticSharp vendored (`MetaGeneticSharp/`) + IKVM 8.15 (CSP-1/3/4/5/7 C# twin bridge).
+
+**Parité .NET ⇄ Python active (EPIC #4956 marathon)** : la Part 2 CSP est la série la plus avancée sur la parité, avec **7 binômes C#** livrés en cycles 14-18 (PR #5270 CSP-1 Fundamentals Choco 4.10.17, PR #5274 CSP-2 Consistency, PR #5275 CSP-6 Hybridization, PR #5276 CSP-8 Temporal OR-Tools natif, PR #5277 CSP-9 Distributed Yokoo 1992 from-scratch) + sprint #5293 Search-6-AdversarialSearch-Csharp 1250L. Marathon **COMPLET** côté structure (7/9 jumeaux Production-shipped ou OPEN MERGEABLE/UNSTABLE en attente ai-01) avec verdicts SOTA-OK documentés (cf règle EPIC #3801 — vrai outil, pas workaround dégradé).
 
 ---
 
