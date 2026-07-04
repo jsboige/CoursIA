@@ -425,6 +425,74 @@ SymbolicLearning/
 └── README.md                                # Cette documentation
 ```
 
+## Statistiques catalogue à jour
+
+Lecture du bloc `CATALOG-STATUS` (lignes 5-10, byte-identique à `origin/main`) :
+
+```
+series: SymbolicAI-SymbolicLearning
+pedagogical_count: 11
+breakdown: SymbolicLearning=11
+maturity: PRODUCTION=11
+```
+
+**Table 6 phases × 4 colonnes** (cohérence CATALOG-STATUS `SymbolicLearning=11`, maturité 100 % PRODUCTION) :
+
+| Phase | Notebooks | Maturité | Contenu clé |
+|-------|-----------|----------|-------------|
+| **Phase 1 — Fondations inductives** | 1 (SL-1) | PRODUCTION=1 | Current-Best-Hypothesis, Version Space, Candidate Elimination (AIMA chapitre 19) ; limites face au bruit et aux disjonctions |
+| **Phase 2 — Guidé par la connaissance** | 2 (SL-2, SL-3) | PRODUCTION=2 | EBL (Explanation-Based Learning, 4 étapes : expliquer, variabiliser, extraire, simplifier) ; RBL (Relevance-Based Learning) + treillis des déterminations + MINIMAL-CONSISTENT-DET ; comparaison RBL vs sklearn (information mutuelle) |
+| **Phase 3 — Programmes logiques (ILP)** | 2 (SL-4, SL-5) | PRODUCTION=2 | FOIL top-down + opérateurs V/W de la résolution inverse ; LGG de Plotkin, θ-subsomption, clause bottom par entailment inverse, recherche à la Progol ; pont vers knowledge graphs (AMIE, SPARQL CONSTRUCT) |
+| **Phase 4 — Moteurs ILP modernes** | 1 (SL-6) | PRODUCTION=1 | Quatre moteurs réels face à face sur `ancestor/2` : Aleph (entailment inverse), Metagol (MIL, invent. prédicats), Popper (LFF, v4.4.0 épinglé), ∂ILP Lernd (différentiable, env conda `lernd-dilp` GPL-3.0 importé) |
+| **Phase 5 — Neuro-symbolique** | 3 (SL-7, SL-8, SL-9) | PRODUCTION=3 | T-norms différentiables, LTN, DeepProbLog ; rdflib + AMIE rule mining + complétion KG + ASP clingo ; boucle LLM-symbolique d'extraction et vérification (Gemini 3.5 Flash optionnel via OpenRouter) |
+| **Phase 6 — Actif + capstone** | 2 (SL-10, SL-11) | PRODUCTION=2 | L* d'Angluin (table d'observation, requêtes MQ/EQ, Myhill-Nerode, bornes PAC) ; capstone pipeline neuro-symbolique 6 étages avec LLM réel + provenance |
+| **Total** | **11** | **PRODUCTION=11** | Python 3.10+ stdlib (sauf SL-3 sklearn+rdflib, SL-4/SL-6 SWI-Prolog+Popper kernel Linux/WSL, SL-7 rdflib, SL-9/SL-11 OpenRouter optionnel) |
+
+**Note explicite maturité 100 % PRODUCTION** : la série SymbolicLearning est l'une des rares séries du dépôt à être livrée complète en PRODUCTION sur 11 notebooks — du fait de la nature mathématiquement définie des algorithmes (AIMA chapitre 19 a des implémentations de référence stables : `aima_knowledge.py` vendored dans `référence/`) et du choix de comparer 4 moteurs ILP **réels** (SL-6) plutôt que de réimplémenter. Les notebooks s'exécutent localement avec Python 3.10+ stdlib pour SL-1/2/5/7/10, `scikit-learn`+`numpy` pour SL-3, `rdflib`+`clingo` pour SL-8, et `SWI-Prolog >= 9.1.12`+`janus_swi`+`popper-ilp==4.4.0` pour SL-4/SL-6 via kernel Linux/WSL.
+
+**Conformité C.1** (stubs sans `raise NotImplementedError`) : tous les notebooks respectent la convention notebook 2026-04-26 — patterns de stub corrects (`pass` / `print("Exercice a completer")` / `return None` / `result = None  # TODO etudiant`). La table de pioche de 43 exercices (section dédiée) couvre les angles de chaque algorithme : biais conjonctif de CBH, utility problem de Minton (EBL), borne PAC de l'oracle d'équivalence (L*), seuil de confiance pour les règles AMIE, etc. Dépendances : `requirements.txt` (scikit-learn, numpy, rdflib, clingo, python-dotenv, openai, janus_swi, setuptools < 81) + SWI-Prolog >= 9.1.12 externe (kernel Linux/WSL pour SL-4/SL-6) + conda env `lernd-dilp` (TensorFlow) pour ∂ILP. Vendored : `métagol/` (BSD-3), `aima_knowledge.py` (MIT AIMA).
+
+**Posture EPITA-IS / Argumentum** : la série SymbolicLearning n'a **pas** de port EPITA-IS Argumentum (contrairement à Argument_Analysis qui aligne 15 PRs MERGED upstream-verbatim byte-equal — voir EPIC #4960 Argumentum). C'est une série 100 % originale du dépôt, ancrée sur AIMA chapitre 19, avec choix assumé d'**inclure** la table de pioche de 43 exercices en pied de README (vs un décompte minimal) — le README fait 460 lignes, dense, cohérent avec la densité mathématique de la série.
+
+## Écosystème MCP et parenté cross-lane
+
+Trois outils d'infrastructure MCP (cohérent avec cycles 19-31) :
+
+1. **MCP Jupyter (`mcp__jupyter-papermill__*`)** — note bug #5211 (mode async ignore `kernel_name`, re-exec = `nbconvert --execute --ExecutePreprocessor.kernel_name=python3 --timeout=600`). SymbolicLearning notebooks utilisent majoritairement **kernel Python 3** (SL-1/2/3/5/7/8/9/10) ; SL-4 et SL-6 requièrent **kernel Linux/WSL** pour SWI-Prolog+Popper+Aleph+Metagol (Popper utilise `signal.SIGALRM` absent de Windows). Chaque notebook déclare son kernel en cellule metadata, et les sections indisponibles se signalent par drapeau `HAS_*` sans interrompre l'exécution.
+2. **Validation pre-commit** (`.pre-commit-config.yaml`) — `gitleaks` détecte les secrets inline ; le validateur notebook `validate_pr_notebooks.py` enforce C.1 (stubs sans `NotImplementedError`) et C.2 (notebooks commités AVEC outputs, `execution_count != null`). **Note spécifique SymbolicLearning** : les clés API LLM (`OPENROUTER_API_KEY`) vivent dans `.env` (jamais en clair dans un notebook), avec `.env.example` documenté ; sans clé, un **simulateur déterministe** prend le relais dans SL-9 et SL-11 (le notebook s'exécute intégralement, doctrine anti-théâtre : « pas de sortie maquée, pas de fallback qui prétend être un appel LLM »).
+3. **MCP QC Cloud (`mcp__qc-mcp-lite__*`)** — backtest QuantConnect partagé. SymbolicLearning n'utilise pas QC Cloud directement, mais partage avec QC la même rigueur méthodologique : **reproductibilité déterministe** (graines fixées pour les générateurs pseudo-aléatoires dans les splits train/test de SL-3, **bornes PAC documentées** pour L* d'Angluin dans SL-10), **pas de résultat maquée** (les 43 exercices de la table de pioche ont des *questions-twist* qui forcent l'étudiant à dévier du cas nominal). C'est la version **académique** de la doctrine « un résultat non vérifié n'est pas un résultat ».
+
+**Table parenté cross-lane 11 lignes × 6 colonnes** (SymbolicLearning se situe au croisement de plusieurs séries du dépôt — c'est l'une des séries les plus parentées) :
+
+| Notebook SymbolicLearning | Série parente | Pont conceptuel |
+|--------------------------|---------------|-----------------|
+| `SL-1 CBH/Version Space` | [Tweety](../Tweety/) (logique propositionnelle) + [Lean](../Lean/) (formalisation AIMA) | Les hypothèses = conjonctions de littéraux (PL) ; Candidate Elimination peut être formalisé en Lean via `Finset` pour borner le Version Space |
+| `SL-2 EBL` | [Lean](../Lean/) + [Planners](../Planners/) | L'arbre de preuve EBL **est** une tactique de preuve Lean (compiler une preuve en règle opérationnelle) ; analogue aux heuristiques de planification compilées |
+| `SL-3 déterminations` | [SemanticWeb](../SemanticWeb/) (RDFS/OWL) | RBL ↔ OWL FunctionalProperty + hasKey : parallèle direct, exposé dans la section "Web Sémantique" du notebook |
+| `SL-4 FOIL + KG + Popper` | [SemanticWeb](../SemanticWeb/) + [Tweety](../Tweety/) | AMIE rule mining sur triples RDF (SPARQL CONSTRUCT) ↔ FOIL sur clauses Horn ; Popper (LFF) ↔ ASP clingo (Tweety argument frameworks) |
+| `SL-5 Inverse Resolution + Progol` | [Tweety](../Tweety/) | θ-subsomption = subsomption logique ; entailment inverse = inverse de la résolution ; la clause bottom est un objet mathématique Tweety-nature |
+| `SL-6 4 moteurs ILP` | [Tweety](../Tweety/) + [Planners](../Planners/) + [ML](../../ML/) | Metagol (MIL, invention de prédicats) ↔ Tweety ASP ; ∂ILP différentiable ↔ heuristic learning planners ; Popper ↔ clingo ASP |
+| `SL-7 Neuro-symbolique` | [Tweety](../Tweety/) (logique floue / pondérée) + [ML](../../ML/) (réseaux neuronaux) | T-norms différentiables = logique floue ; LTN = logique tensorielle = pont Tweety pondéré ⇄ MLP |
+| `SL-8 KG mining + clingo` | [SemanticWeb](../SemanticWeb/) + [Tweety](../Tweety/) | rdflib ↔ SemanticWeb OWL ; AMIE rule mining ↔ SemanticWeb RDFS ; clingo ASP ↔ Tweety (même binaire via `scripts/install_clingo.py`) |
+| `SL-9 LLM-Symbolique` | [Argument_Analysis](../Argument_Analysis/) + [GenAI](../../GenAI/) | Boucle LLM + vérification = doctrine anti-théâtre Argument_Analysis (sentinelle `fabricated_true`) ; prompts LLM ↔ GenAI prompting structuré |
+| `SL-10 L* Angluin` | [Tweety](../Tweety/) (logique temporelle / automates) + [Lean](../Lean/) | Myhill-Nerode = théorème formalisable en Lean ; L* sur automates finis ↔ Tweety LTL/CTL (vérification de modèles) |
+| `SL-11 Capstone 6 étages` | [Argument_Analysis](../Argument_Analysis/) + [SemanticWeb](../SemanticWeb/) + [Tweety](../Tweety/) + [GenAI](../../GenAI/) | Pipeline bout-en-bout : LLM (GenAI) → extraction → oracle (Tweety ASP) → KG (SemanticWeb) → mining (AMIE = SymbolicLearning) → inférence avec provenance (Argument_Analysis Restitution_3_Actes pattern) |
+
+**Paragraphe « effet de composition — SymbolicLearning = carrefour spectre-apprentissage inter-paradigmes »** :
+
+Là où Argument_Analysis (cycle 31) déploie le **carrefour informel/formel anti-théâtre inter-couches** (lecture LLM ⇄ Tweety/Lean), SmartContracts (cycle 30) le **carrefour trust/privacy inter-séries** (confiance ⇄ confidentialité ⇄ décision collective), Planners (cycle 29) la **dualité simulation/proof intra-série** (Python ⇄ Lean sur l'admissibilité d'heuristique), SemanticWeb (cycle 28) le **carrefour données structurées** (standards W3C + GraphRAG anti-hallucination), **SymbolicLearning déploie le carrefour spectre-apprentissage inter-paradigmes** : c'est la **seule série du dépôt à aligner quatre paradigmes d'apprentissage** (inductif pur → guidé par la connaissance → ILP → neuro-symbolique) dans un **parcours en spirale 6 phases** où **chaque phase répond à une limite de la précédente** :
+
+- Phase 1 (CBH/Version Space) **limite** : sensible au bruit, ne représente pas la disjonction
+- → Phase 2 (EBL/RBL) **réponse** : la connaissance du domaine accélère (peu de données + interprétabilité)
+- → Phase 3 (FOIL/Inverse Resolution/Progol) **réponse** : passer des attributs aux programmes logiques (clauses Horn + récursion)
+- → Phase 4 (4 moteurs ILP) **réponse** : comparer les machineries sur une même tâche récursive (`ancestor/2`) — Aleph, Metagol, Popper, ∂ILP
+- → Phase 5 (T-norms/KG mining/LLM boucle) **réponse** : rigidité logique → différentiabilité + vérifiabilité
+- → Phase 6 (L* + capstone) **réponse** : opacité neuronale → provenance + apprentissage actif
+
+Le **capstone SL-11** est l'un des rares pipelines neuro-symboliques bout-en-bout du dépôt (avec vrais appels LLM Gemini 3.5 Flash, oracle de validation symbolique Tweety-nature, KG SemanticWeb-nature, mining AMIE SymbolicLearning-nature, inférence avec provenance Argument_Analysis-nature, confrontation LLM vs KG). C'est la **convergence opérationnelle** des cinq phases précédentes en une boucle où le LLM et la logique se corrigent mutuellement.
+
+**Doctrine symétrique — AIMA chapitre 19 + EPITA-IS Argumentum** : SymbolicLearning est ancrée sur AIMA chapitre 19 (Russell & Norvig, 3e/4e éd.) avec `aima_knowledge.py` vendored (référence MIT) — la cohérence algorithmique est garantie par les implémentations canoniques. Aucune série ne peut à elle seule aligner les 4 paradigmes d'apprentissage en 6 phases — c'est la **particularité structurelle** de SymbolicLearning dans le dépôt.
+
 ## Cross-séries Bridges
 
 | Série | Lien | Connection |
@@ -434,6 +502,8 @@ SymbolicLearning/
 | [Planners](../Planners/README.md) | Planification | EBL compile les théories en règles opérationnelles, similaire aux heuristiques de planification |
 | [Lean](../Lean/README.md) | Preuves formelles | L'arbre de preuve EBL est analogue aux arbres de preuve Lean 4 |
 | Lecture transversale | [La mer qui monte](../../../docs/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de représentation, certification A/B/C |
+
+**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche symboliclearning.
 
 ## Conclusion / Prochaines étapes
 
