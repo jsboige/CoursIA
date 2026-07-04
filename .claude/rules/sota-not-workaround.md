@@ -24,11 +24,7 @@ Le defaut paresseux (« ASCII art / reimplementation jouet / 'Java absent' / 'ke
 
 ### Stop & Repair — JAMAIS hand-editer une sortie de cellule (mandat user 2026-06-22)
 
-Le workaround degrade le plus insidieux est de **scrubber / hand-editer la SORTIE de cellule committee** au lieu de re-executer : redacter un chemin machine, un prefixe de cle ou un render casse directement dans le champ `outputs`. C'est la **forme ultime de regression consacree** — on presente comme « ce que le code produit » quelque chose qu'on a **trafique a la main** = falsifier la preuve d'execution = **malhonnete, BANNI**. C'est exactement la regle ancestrale **Stop & Repair** : on **repare** la cause (env/cwd, outil manquant, source qui imprime) et on **RE-EXECUTE** ; on ne maquille **jamais** la sortie.
-
-- **Seule exception : quantbooks QC.** Le MCP qc-mcp ne permet toujours PAS de les executer ; ils passent par le Research Assistant (Playwright / lean-cli) ou la manipulation manuelle des sorties est la realite acceptee.
-- **Seule normalisation toleree (PAS une sortie de cellule) : `metadata.papermill.input/output_path`** au `basename` (de preference produite propre a l'exec). Cf [secrets-hygiene.md](secrets-hygiene.md) regle 6 (triage cause : A env/cwd, B outil manquant, C source-leak — tous resolus par re-exec, jamais scrub) et [[feedback-no-cell-output-scrubbing]].
-- **Bot review** : une PR qui hand-edite une sortie de cellule (hors quantbook QC / hors `metadata.papermill`) = `CHANGES_REQUESTED`. Un `APPROVED` dessus = complaisance.
+Le workaround le plus insidieux = **scrubber / hand-editer la SORTIE de cellule committee** (redacter chemin machine / prefixe de cle / render casse dans `outputs`) au lieu de re-executer = **falsifier la preuve d'execution = malhonnete, BANNI**. On **repare la cause** (env/cwd, outil manquant, source qui imprime) et on **RE-EXECUTE** — jamais maquiller. Seules exceptions : quantbooks QC (non-executables via MCP) + `metadata.papermill.input/output_path` au `basename`. Une PR qui hand-edite une sortie hors ces deux cas = `CHANGES_REQUESTED` (`APPROVED` = complaisance). Regle complete (triage cause A/B/C + incidents) : [secrets-hygiene.md](secrets-hygiene.md) regle 6 + [[feedback-no-cell-output-scrubbing]].
 
 ## Prong B — Probleme non-trivial qui met le moteur en valeur
 
