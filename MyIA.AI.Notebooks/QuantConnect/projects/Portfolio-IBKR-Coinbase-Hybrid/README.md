@@ -1,6 +1,6 @@
-# Portfolio Hybride IBKR (50%) + Binance (50%)
+# Portfolio Hybride IBKR (50%) + Coinbase (50%)
 
-Stratégie composite multi-broker associant un sleeve actions/ETFs (IBKR compte cash) et un sleeve crypto spot (Binance), rebalancement mensuel, en piochant dans les meilleures stratégies du dépôt CoursIA.
+Stratégie composite multi-broker associant un sleeve actions/ETFs (IBKR compte cash) et un sleeve crypto spot (Coinbase — migration MiCA depuis Binance, 2026-06-28), rebalancement mensuel, en piochant dans les meilleures stratégies du dépôt CoursIA.
 
 ## Objectifs
 
@@ -21,7 +21,7 @@ Stratégie composite multi-broker associant un sleeve actions/ETFs (IBKR compte 
 | AllWeather v5 | SPY / IEF / GLD / XLP | 0.667 | 15% |
 | EMA-Cross-Alpha | SPY + ETFs sélectionnés | 0.996 | 10% |
 
-### Sleeve Binance (50%) — 3 stratégies
+### Sleeve crypto Coinbase (50%) — 3 stratégies
 
 | Sous-strat | Univers | Sharpe backtest | Pondération sleeve |
 |------------|---------|-----------------|---------------------|
@@ -168,21 +168,25 @@ Phase 3).
 - Walk-forward annual : train 5 ans → OOS 1 an, roll forward
 - Multi-seed >= 4 sur sous-strats ML (HAR-RV-J vol-target en particulier)
 - Edge >= 2σ cross-seed requis pour validation discipline (cf `feedback_multi_seed_required.md`)
-- Sweep allocation IBKR/Binance : 60/40, 50/50, 40/60, régime-adaptatif
+- Sweep allocation IBKR/Coinbase : 60/40, 50/50, 40/60, régime-adaptatif
 
 ### Phase 4 — Paper trading 30j (S3-S4)
-- Connexion paper IBKR + Binance testnet
+- **Harness livré** (`paper_harness/`, PR #3942) : sleeves `ibkr_sleeve.py` +
+  `coinbase_sleeve.py` (migration Binance → Coinbase, `binance_sleeve.py` conservé en
+  legacy pré-MiCA) + `smoke_test_*.py` par sleeve + `risk.py` (circuit breakers).
+- Connexion paper IBKR + **Coinbase sandbox** (remplace Binance testnet post-MiCA).
 - Logging quotidien : fills réels vs backtest, slippage, market impact
 - Comparison live drift vs expected returns/vol
 - **Contrainte architecturale (leçon Phase 2)** : `set_brokerage_model(IBKR)` REJETTE
   le type Crypto ("Unsupported security type") → un backtest unifié 2-broker n'est pas
   transposable tel quel en live unified. Deux approches pour Phase 4 :
-  1. **Binance-first** (recommandé, un seul nœud) : paper trader le sleeve crypto seul
-     sur Binance testnet (sleeve IBKR en backtest parallèle, agrégation manuelle) ;
+  1. **Crypto-first** (un seul nœud) : paper trader le sleeve crypto seul sur Coinbase
+     sandbox (sleeve IBKR en backtest parallèle, agrégation manuelle) ;
   2. **2 algorithms séparés** (Phase 5) : un algorithm IBKR (equities) + un algorithm
-     Binance (crypto), chacun sur son nœud QC Cloud, agrégation des P&L hors-pipeline.
-- **Gate** : credentials IBKR paper prêts côté user (mdp reset 12/06, cf #1199) ;
-  reste MAJ `.env` + test login IB Gateway avant exécution.
+     Coinbase (crypto), chacun sur son nœud QC Cloud, agrégation des P&L hors-pipeline.
+- **Gate user** : KYC Coinbase en attente (pièce d'identité à valider, user-blocker) —
+  en attendant la crypto est parquée en USDC sur Bitstamp. Credentials IBKR paper prêts
+  (mdp reset 12/06, cf #1199). Exécution Phase 4 = RECOVERABLE-USER-HAND.
 
 ### Phase 5 — Live nodes QC (S4+)
 - Déploiement sur 2 nœuds QC Cloud (1 par broker)
@@ -199,7 +203,7 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
 2. Multi-seed >= 4 parmi {0, 1, 7, 42, 99} pour les composantes ML
 3. Edge >= 2σ cross-seed obligatoire
 4. OOS strict : training jusqu'à 2022, test 2023-2025 minimum
-5. Transaction costs : 5bps IBKR equities, 10bps Binance spot, +5bps slippage market impact
+5. Transaction costs : 5bps IBKR equities, ~80bps taker Coinbase Advanced (native `CoinbaseFeeModel()`, ou override via `crypto_fee_bps`), +5bps slippage market impact
 6. Anti-survivorship : univers ETF stable (pas d'introduction posterieure aux events)
 7. Verdict honnête : BEATS / NO BEATS / INCONCLUSIVE (pas de "promising")
 
@@ -230,6 +234,10 @@ Voir [`.env.template`](./.env.template) pour la liste des variables nécessaires
   crypto 2022) reste à Sharpe 0.916. L'allocation ne change que ~5% le Sharpe OOS — le levier
   dominant est le régime, pas le mix. Multi-seed HAR-RV-J (passer du proxy au vrai modèle
   seedé M12) reste à faire pour durcir le verdict.
+- **Phase 4 (paper harness)** : livrée (`paper_harness/`, PR #3942) — sleeves IBKR +
+  Coinbase (+ legacy Binance), smoke tests par sleeve, circuit breakers (`risk.py`).
+  Exécution paper 30j **RECOVERABLE-USER-HAND** : KYC Coinbase en attente validation user
+  (intérim crypto parqué en USDC sur Bitstamp) ; credentials IBKR paper prêts (#1199).
 - Issue tracker : [#1027](https://github.com/jsboige/CoursIA/issues/1027)
 
 ## Liens
