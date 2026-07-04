@@ -4,7 +4,7 @@
 series: Sudoku
 pedagogical_count: 33
 breakdown: root=33
-maturity: PRODUCTION=30, BETA=2, ALPHA=1
+maturity: PRODUCTION=28, BETA=4, ALPHA=1
 -->
 
 [← Notebooks](../README.md) | [→ Search](../Search/README.md)
