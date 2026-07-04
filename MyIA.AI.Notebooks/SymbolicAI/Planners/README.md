@@ -678,6 +678,52 @@ Le titre annonce la planification automatique. Mais le geste que cette série en
 
 ---
 
+## Statistiques catalogue à jour
+
+Le décompte exact ci-dessous est synchronisé avec le bloc `<!-- CATALOG-STATUS -->` en tête de ce README. Toute modification d'un notebook (ajout, dépréciation, mise à jour de statut) doit s'accompagner d'une régénération du marqueur par le pipeline catalogue (cron quotidien ou bot par-PR `catalog-drift` sur `main`) — un agent sur une branche feature ne **régénère jamais** le catalogue à la main (cf règle R1 `catalog-pr-hygiene`).
+
+| Sous-série | Notebooks | Maturité | Contenu clé |
+|------------|-----------|----------|-------------|
+| **00-Environment** | 1 | PRODUCTION=1, BETA=0 | Setup `unified-planning` + OR-Tools + vérification Docker Fast Downward (port 8200) |
+| **01-Foundation** | 3 | PRODUCTION=3, BETA=0 | Triptyque État-Action-But, modèle STRIPS, syntaxe PDDL, explosion combinatoire $O(2^n)$ |
+| **02-Classical** | 4 | PRODUCTION=3, BETA=1 | Fast Downward (translator→preprocessor→search), heuristiques admissibles ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), domaines IPC (Blocks World, Logistics, Gripper, Satellite), companion Lean `5b-Lean-Relaxation` |
+| **03-Advanced** | 3 | PRODUCTION=3, BETA=0 | CP-SAT (OR-Tools), planification temporelle PDDL 2.1 (durées, parallélisme), HTN/SHOP2 (décomposition hiérarchique, HDDL) |
+| **04-NeuroSymbolic** | 3 | PRODUCTION=3, BETA=0 | LLM-Planning (génération plans depuis langage naturel, plan repair), `unified-planning` (portabilité cross-solveur), LOOP — *Learning to Plan* (state encoder + policy + value nets, 85.8% IPC coverage) |
+| **Total** | **14** | **PRODUCTION=13, BETA=1** | Python 3.9+, kernel Python 3, solveurs : Fast Downward (Docker) + OR-Tools 9.8+ + unified-planning 1.1+ |
+
+> **Note sur la maturité.** Le notebook `BETA=1` correspond à `Planners-5b-Lean-Relaxation.ipynb` (companion natif du lake `planning_lean/`) : la **preuve formelle 0-sorry** de l'admissibilité $h^{+} \leq h^{*}$ y est certifiée par `lake build` ; le statut `BETA` reflète la phase de relecture pédagogique (intégration au parcours d'apprentissage) plutôt qu'un défaut technique. Le déploiement industriel est validé.
+
+**Conformité C.1 — stubs d'exercice.** Les cellules `student/` suivent les patterns conformes (jamais `raise NotImplementedError`) : `pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`. Le notebook s'exécute end-to-end même avant résolution des exercices. Dépendances Python (cf `requirements.txt` racine) : `unified-planning>=1.1`, `networkx>=3.1`, `matplotlib>=3.7`, `numpy>=1.24`, `ortools>=9.8`, `torch>=2.0` (LOOP uniquement) ; optionnels LLM : `openai>=1.0`, `anthropic>=0.30`, `python-dotenv`, `pandas>=2.0`. **Docker** requis pour Fast Downward (port 8200). **Lean 4** (`elan`) requis pour `5b-Lean-Relaxation` via le sous-lake `planning_lean/` (toolchain `lean-toolchain` local). Côté `student/` : `pip install -r requirements.txt` puis exécution kernel Python 3 standard.
+
+---
+
+## Écosystème MCP et parenté cross-lane
+
+L'infrastructure du dépôt fournit trois familles d'outils MCP qui soutiennent cette série sans en être le sujet :
+
+1. **MCP Jupyter (`mcp__jupyter-papermill__*`)** — exécution programmée de notebooks dans un kernel Jupyter géré. **Note bug** : le mode async (`mode: "async"`) ignore `kernel_name` et bascule sur `python3` par défaut — re-exécution via `nbconvert --execute --ExecutePreprocessor.kernel_name=python3 --timeout=600` en contournement (cf issue #5211). Planners utilise Python 3 exclusivement (kernel dédié, pas d'IKVM).
+2. **Validation pre-commit** (`.pre-commit-config.yaml`) — `gitleaks` détecte les secrets inline ; le validateur notebook `validate_pr_notebooks.py` enforce C.1 (stubs sans `NotImplementedError`) et C.2 (notebooks commités AVEC outputs, `execution_count != null`). Toute PR Planners qui dégraderait l'un de ces contrats est bloquée en CI avant review.
+3. **MCP QC Cloud (`mcp__qc-mcp-lite__*`)** — backtest QuantConnect partagé inter-agents. Planners n'utilise pas QC Cloud directement, mais le notebook `Planners-12-LOOP.ipynb` (Learning to Plan) partage avec QC le même besoin de reproductibilité déterministe : un seed fixe, un benchmark reproductible, une mesure de couverture sur des jeux d'instances standardisés (IPC vs historique SPY).
+
+**Parenté cross-lane** (5 colonnes) — Planners se situe au croisement de plusieurs séries du dépôt, chacune capturant un aspect différent du « transformer un but en action » :
+
+| Notebook Planners | Série parente | Pont conceptuel |
+|-------------------|---------------|-----------------|
+| `Planners-5b-Lean-Relaxation` | [Lean math](../Lean/) (et `planning_lean/` local) | Admissibilité $h^{+}$ prouvée formellement (lake 0-sorry) ; companion natif = pont intra-série simulation/proof |
+| `Planners-7-OR-Tools` | [Search](../../Search/) (CSP-1/2/6/8/9 marathon #4956) | CP-SAT = même moteur que CSP ; planification = CSP avec variables = actions |
+| `Planners-9-HTN` | [SmartContracts](../SmartContracts/) (planification déterministe d'opérations) | HTN/SHOP2 = décomposition hiérarchique ; Smart Contracts = décomposition vérifiable de transactions |
+| `Planners-10-LLM-Planning` | [Argument_Analysis](../Argument_Analysis/) (Semantic Kernel orchestration) | LLM-Planning via SK : prompting structuré → génération de plan → validation par solveur |
+| `Planners-11-Unified-Planning` | [Lean](../Lean/) + [SemanticWeb](../SemanticWeb/) (ontologies de domaine) | Modèle PDDL ↔ ontologie OWL/SHACL : un domaine PDDL peut être annoté sémantiquement |
+| `Planners-12-LOOP` | [Probas](../../Probas/) (PyMC, Infer.NET) + [ML](../../ML/) (parité Python/.NET #4956) | Apprentissage par renforcement / imitation sur politiques de planification |
+
+**Effet de composition — Planners = carrefour action/représentation.** Là où GameTheory est le carrefour **simulation/proof inter-séries** (Python ⇄ Lean 4 sur des théorèmes économiques), Planners est le carrefour **simulation/proof intra-série** : le notebook `5b-Lean-Relaxation` et son lake `planning_lean/` natif démontrent qu'une même propriété (ici l'admissibilité d'une heuristique) peut être **observée empiriquement** dans le kernel Python 3 (notebook `5-Heuristics.ipynb`) ET **prouvée formellement** dans le kernel Lean 4 (`Admissibility.lean`). C'est le pattern de dualité rendu **interne à la série**, là où GameTheory le déploie **entre séries distinctes**. La séquence pédagogique : STRIPS → PDDL → Fast Downward → heuristiques → **preuve de l'admissibilité de la relaxation** → CP-SAT → temporel → HTN → LLM-Planning → LOOP. Le pipeline 14 notebooks aligne l'évolution paradigmatique du domaine (1971 STRIPS → 2024 Learning to Plan) sur la **frontière de preuve** (informelle → formelle).
+
+---
+
+**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche planners.
+
+---
+
 ## Licence
 
 Voir la licence du repository principal.
