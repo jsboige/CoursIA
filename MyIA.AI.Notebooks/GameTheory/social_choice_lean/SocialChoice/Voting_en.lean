@@ -1,25 +1,19 @@
 /-
-  Théorie du choix social — Définitions de vote
-  ==============================================
+  Social Choice Theory - Voting Definitions
+  ==========================================
 
-  Port de chasenorman/Formalized-Voting vers Lean 4
-  Original : https://github.com/chasenorman/Formalized-Voting
+  Port of chasenorman/Formalized-Voting to Lean 4
+  Original: https://github.com/chasenorman/Formalized-Voting
 
-  Adapté au cadre SocialChoice/Basic.lean :
-  - Utilise PrefOrder de Basic.lean au lieu de relations brutes
-  - Utilise P (préférence stricte) et I (indifférence) de Basic.lean
-  - Compatible avec Profile ι σ d'Arrow.lean
+  Adapted to our SocialChoice/Basic.lean framework:
+  - Uses PrefOrder from Basic.lean instead of raw relations
+  - Uses P (strict preference) and I (indifference) from Basic.lean
+  - Compatible with Profile ι σ from Arrow.lean
 
-  Concepts clés :
-  - Fonction de marge pour le comptage des votes par paire
-  - Gagnant/perdant de Condorcet et leurs critères
-  - Efficacité au sens de Pareto et monotonicité pour les correspondances
-    de choix social
-
-  Convention i18n (Option A ratifiée par ai-01, Epic #4980) :
-  en-têtes de section, docstrings de définition/théorème, commentaires de
-  lemme sont **français d'abord** ; le code Lean tactique (noms de tactiques,
-  lemmes Mathlib, identifiants) reste en anglais, langue canonique de Lean.
+  Key concepts:
+  - Margin function for pairwise vote counting
+  - Condorcet winner/loser and their criteria
+  - Pareto efficiency and monotonicity for Social Choice Correspondences
 -/
 
 import Mathlib.Data.Fintype.Card
@@ -33,60 +27,72 @@ import Mathlib.Tactic
 import SocialChoice.Basic
 import SocialChoice.SortedListCounting
 
-namespace SocialChoice
+namespace SocialChoice_en
+/-!
+  Social Choice Theory - Voting Definitions (EN sibling)
+  =======================================================
+
+  English mirror of `SocialChoice/Voting.lean` (FR-first canonical).
+  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
+  fichiers `.lean` distincts FR + EN siblings dans le même lake, les deux compilent.
+  Drift-CI detectable : contenu non-docstring byte-identique entre siblings.
+  Namespace sibling : `SocialChoice_en` (le FR canonique reste `SocialChoice`).
+  Pas une traduction destructive : le fichier source EN historique est préservé ici
+  verbatim depuis `aaaf0c52ae` (pre-c.220 Voting tranche 7 FR commit) ; seule la
+  ligne `namespace` diffère pour éviter la collision de declaration.
+
+  See #4980. Part of #4208 (axe E).
+-/
 
 variable {ι σ : Type*} [Fintype ι] [DecidableEq σ]
 
-/-! ## Fonction de marge -/
+/-! ## Margin Function -/
 
-/-- Marge de x sur y dans un profil :
-    |{votants préférant strictement x à y}| - |{votants préférant strictement y à x}|
-    Une marge positive signifie que x bat y en comparaison par paire. -/
+/-- The margin of x over y in a profile:
+    |{voters strictly preferring x to y}| - |{voters strictly preferring y to x}|
+    Positive margin means x beats y in pairwise comparison. -/
 noncomputable def margin (prof : ι → PrefOrder σ) (x y : σ) : ℤ :=
   haveI : (i : ι) → Decidable (P (prof i).rel x y) := fun _ => Classical.dec _
   haveI : (i : ι) → Decidable (P (prof i).rel y x) := fun _ => Classical.dec _
   ((Finset.filter (fun i => P (prof i).rel x y) Finset.univ).card : ℤ) -
     ((Finset.filter (fun i => P (prof i).rel y x) Finset.univ).card : ℤ)
 
-/-- Marge positive : x bat y en comparaison par paire -/
+/-- Positive margin: x beats y in pairwise comparison -/
 def margin_pos (prof : ι → PrefOrder σ) (x y : σ) : Prop :=
   0 < margin prof x y
 
-/-! ## Concepts de Condorcet -/
+/-! ## Condorcet Concepts -/
 
-/-- Gagnant de Condorcet : bat strictement toute autre alternative en
-    comparaison par paire -/
+/-- A Condorcet winner: strictly beats every other alternative in pairwise comparison -/
 def condorcet_winner (prof : ι → PrefOrder σ) (S : Finset σ) (x : σ) : Prop :=
   x ∈ S ∧ ∀ y ∈ S, y ≠ x → margin_pos prof x y
 
-/-- Perdant de Condorcet : perd strictement contre toute autre alternative -/
+/-- A Condorcet loser: strictly loses to every other alternative -/
 def condorcet_loser (prof : ι → PrefOrder σ) (S : Finset σ) (x : σ) : Prop :=
   x ∈ S ∧ S.card ≥ 2 ∧ ∀ y ∈ S, y ≠ x → margin_pos prof y x
 
-/-! ## Correspondance de choix social -/
+/-! ## Social Choice Correspondence -/
 
-/-- Correspondance de choix social : associe à un profil et un ensemble
-    d'alternatives les alternatives choisies -/
+/-- A Social Choice Correspondence: maps profiles and alternative sets to chosen alternatives -/
 def SCC (ι σ : Type*) [Fintype ι] [DecidableEq σ] :=
   (ι → PrefOrder σ) → Finset σ → Finset σ
 
-/-! ## Critères de vote -/
+/-! ## Voting Criteria -/
 
-/-- Critère de Condorcet : tout gagnant de Condorcet est sélectionné -/
+/-- Condorcet criterion: every Condorcet winner is selected -/
 def condorcet_criterion (f : SCC ι σ) : Prop :=
   ∀ prof S x, condorcet_winner prof S x → x ∈ f prof S
 
-/-- Critère du perdant de Condorcet : aucun perdant de Condorcet n'est sélectionné -/
+/-- Condorcet loser criterion: no Condorcet loser is selected -/
 def condorcet_loser_criterion (f : SCC ι σ) : Prop :=
   ∀ prof S x, condorcet_loser prof S x → x ∉ f prof S
 
-/-- Efficacité au sens de Pareto : si tous les votants préfèrent x à y,
-    alors y n'est pas sélectionné -/
+/-- Pareto efficiency: if all voters prefer x to y, then y is not selected -/
 def pareto_scc (f : SCC ι σ) : Prop :=
   ∀ prof S x y, x ∈ S → y ∈ S →
     (∀ i : ι, P (prof i).rel x y) → y ∉ f prof S
 
-/-- Monotonie : améliorer la position de x préserve la sélection de x -/
+/-- Monotonicity: improving x's position preserves x's selection -/
 def monotonicity (f : SCC ι σ) : Prop :=
   ∀ prof prof' S x,
     x ∈ f prof S → x ∈ S →
@@ -94,7 +100,7 @@ def monotonicity (f : SCC ι σ) : Prop :=
     (∀ i : ι, ∀ y ∈ S, ¬P (prof i).rel y x → ¬P (prof' i).rel y x) →
     x ∈ f prof' S
 
-/-! ## Propriétés de la marge -/
+/-! ## Margin Properties -/
 
 theorem margin_antisymm (prof : ι → PrefOrder σ) (x y : σ) :
     margin prof x y = - (margin prof y x) := by
@@ -116,9 +122,9 @@ theorem margin_pos_iff_neg_rev (prof : ι → PrefOrder σ) {x y : σ} :
   rw [margin_antisymm prof]
   omega
 
-/-! ## Propriétés de Condorcet -/
+/-! ## Condorcet Properties -/
 
-/-- Le gagnant de Condorcet est unique (lorsqu'il existe) -/
+/-- The Condorcet winner is unique (when it exists) -/
 theorem condorcet_winner_unique (prof : ι → PrefOrder σ) {S : Finset σ} {x y : σ}
     (hx : condorcet_winner prof S x) (hy : condorcet_winner prof S y) (hxy : x ≠ y) :
     False := by
@@ -130,7 +136,7 @@ theorem condorcet_winner_unique (prof : ι → PrefOrder σ) {S : Finset σ} {x 
   have := margin_antisymm prof x y
   linarith
 
-/-- Un gagnant de Condorcet ne peut pas être un perdant de Condorcet -/
+/-- A Condorcet winner cannot be a Condorcet loser -/
 theorem condorcet_winner_not_loser (prof : ι → PrefOrder σ) {S : Finset σ} {x : σ}
     (hw : condorcet_winner prof S x) (hl : condorcet_loser prof S x) :
     False := by
@@ -143,9 +149,9 @@ theorem condorcet_winner_not_loser (prof : ι → PrefOrder σ) {S : Finset σ} 
   have := margin_antisymm prof x y
   linarith
 
-/-! ## Unanimité et marge -/
+/-! ## Unanimity and Margin -/
 
-/-- Si tous les votants préfèrent strictement x à y, la marge est positive -/
+/-- If all voters strictly prefer x to y, the margin is positive -/
 theorem margin_pos_of_unanimous [Nonempty ι] (prof : ι → PrefOrder σ) {x y : σ}
     (h : ∀ i : ι, P (prof i).rel x y) : margin_pos prof x y := by
   unfold margin_pos
@@ -164,41 +170,40 @@ theorem margin_pos_of_unanimous [Nonempty ι] (prof : ι → PrefOrder σ) {x y 
   rw [hkey]
   exact mod_cast (Finset.card_pos.mpr Finset.univ_nonempty)
 
-/-! ## Préférences à pic unique
+/-! ## Single-Peaked Preferences
 
-Référence : Black (1948), "On the Rationale of Group Decision-making"
+Reference: Black (1948), "On the Rationale of Group Decision-making"
 
-Un classement de préférences sur un ensemble linéairement ordonné est à pic
-unique s'il existe une alternative préférée de manière unique (le pic) et
-les préférences décroissent monotoniquement en s'éloignant du pic dans les
-deux directions.
+A preference ordering over a linearly ordered set is single-peaked if there
+exists a unique most-preferred alternative (the peak) and preferences decline
+monotonically away from the peak in both directions.
 -/
 
 section SinglePeaked
 
 variable [LinearOrder σ]
 
-/-- Le pic d'une relation de préférence : l'unique élément strictement préféré -/
+/-- The peak of a preference relation: the unique strictly most-preferred element -/
 def is_peak (R : σ → σ → Prop) (p : σ) : Prop :=
   ∀ x, x ≠ p → P R p x
 
-/-- R est à pic unique de pic p sur un ensemble linéairement ordonné.
-    1. p est le pic (strictement préféré à tout le reste)
-    2. À gauche du pic : plus proche du pic est faiblement préféré (a ≤ b ≤ p → R b a)
-    3. À droite du pic : plus proche du pic est faiblement préféré (p ≤ a ≤ b → R a b) -/
+/-- R is single-peaked with peak p on a linearly ordered set.
+    1. p is the peak (strictly preferred to everything else)
+    2. Left of peak: closer to peak is weakly preferred (a ≤ b ≤ p → R b a)
+    3. Right of peak: closer to peak is weakly preferred (p ≤ a ≤ b → R a b) -/
 def single_peaked (R : σ → σ → Prop) (p : σ) : Prop :=
   is_peak R p ∧
   (∀ a b, a ≤ b → b ≤ p → R b a) ∧
   (∀ a b, p ≤ a → a ≤ b → R a b)
 
-/-- Le pic est unique -/
+/-- The peak is unique -/
 theorem single_peaked_peak_unique {R : σ → σ → Prop} {p q : σ}
     (hsp : single_peaked R p) (hsq : single_peaked R q) (hne : p ≠ q) : False := by
   have hPpq : P R p q := hsp.1 q hne.symm
   have hPqp : P R q p := hsq.1 p hne
   exact hPpq.2 hPqp.1
 
-/-- À pic unique implique que le pic est le meilleur élément (sous Reflexive R) -/
+/-- Single-peaked implies the peak is the best element (under Reflexive R) -/
 theorem single_peaked_peak_best {R : σ → σ → Prop} {p : σ} {S : Finset σ}
     (hrefl : Reflexive R) (hsp : single_peaked R p) (hpS : p ∈ S) :
     is_best_element p S R := by
@@ -207,18 +212,17 @@ theorem single_peaked_peak_best {R : σ → σ → Prop} {p : σ} {S : Finset σ
   · subst heq; exact hrefl y
   · exact (hsp.1 y heq).1
 
-/-- Un profil est à pic unique si chaque votant a des préférences à pic unique -/
+/-- A profile is single-peaked if every voter has single-peaked preferences -/
 def single_peaked_profile (prof : ι → PrefOrder σ) (peaks : ι → σ) : Prop :=
   ∀ i : ι, single_peaked (prof i).rel (peaks i)
 
-/-- R est **strictement** à pic unique de pic p sur un ensemble
-    linéairement ordonné. Renforce `single_peaked` avec monotonie stricte
-    de chaque côté du pic, éliminant l'indifférence entre alternatives
-    distinctes du même côté.
+/-- R is **strictly** single-peaked with peak p on a linearly ordered set.
+    Strengthens `single_peaked` with strict monotonicity on each side of the peak,
+    eliminating indifference between distinct alternatives on the same side.
 
-    C'est l'hypothèse nécessaire pour obtenir un gagnant de Condorcet
-    *strict* via `margin_pos` (marge positive), par opposition à la
-    garantie faible `margin ≥ 0` de `single_peaked` seul.
+    This is the hypothesis needed to obtain a *strict* Condorcet winner via
+    `margin_pos` (positive margin), as opposed to the weak `margin ≥ 0`
+    guarantee from `single_peaked` alone.
 
     Concretely:
     - `a < b ≤ p` implies `P R b a` (strictly prefer b to a, left of peak)
@@ -228,54 +232,52 @@ def strictly_single_peaked (R : σ → σ → Prop) (p : σ) : Prop :=
   (∀ a b, a < b → b ≤ p → P R b a) ∧
   (∀ a b, p ≤ a → a < b → P R a b)
 
-/-- Un profil est strictement à pic unique si chaque votant a des
-    préférences strictement à pic unique. C'est l'hypothèse standard sous
-    laquelle le théorème du votant médian donne un *gagnant de Condorcet*
-    (marge positive) plutôt qu'un simple gagnant faible de Condorcet
-    (marge non négative). -/
+/-- A profile is strictly single-peaked if every voter has strictly single-peaked
+    preferences. This is the standard hypothesis under which the median voter
+    theorem yields a *Condorcet winner* (positive margin) rather than just a
+    weak Condorcet winner (non-negative margin). -/
 def strictly_single_peaked_profile (prof : ι → PrefOrder σ) (peaks : ι → σ) : Prop :=
   ∀ i : ι, strictly_single_peaked (prof i).rel (peaks i)
 
 set_option linter.unusedSectionVars false in
-/-- Un profil strictement à pic unique est en particulier à pic unique. -/
+/-- A strictly single-peaked profile is in particular single-peaked. -/
 theorem strictly_single_peaked_profile.to_single_peaked
     {prof : ι → PrefOrder σ} {peaks : ι → σ}
     (h : strictly_single_peaked_profile prof peaks) :
     single_peaked_profile prof peaks :=
   fun i => (h i).1
 
-/-! ## Théorème du votant médian (Black 1948)
+/-! ## Median Voter Theorem (Black 1948)
 
-Pour un nombre impair de votants avec des préférences à pic unique sur un
-ensemble linéairement ordonné, le pic médian (l'élément du milieu des pics
-triés) est un gagnant de Condorcet sous règle majoritaire.
+For an odd number of voters with single-peaked preferences over a linearly
+ordered set, the median peak (the middle element of sorted peaks) is a
+Condorcet winner under majority rule.
 
-Esquisse de preuve :
-- Pour tout y < médiane : strictement plus de n/2 votants ont un pic ≥ médiane,
-  et par pic-unique ils préfèrent la médiane à y
-- Pour tout y > médiane : strictement plus de n/2 votants ont un pic ≤ médiane,
-  et par pic-unique ils préfèrent la médiane à y
+Proof sketch:
+- For any y < median: strictly more than n/2 voters have peak >= median,
+  and by single-peakedness they prefer median to y
+- For any y > median: strictly more than n/2 voters have peak <= median,
+  and by single-peakedness they prefer median to y
 -/
 
-/-- Liste triée des pics (avec doublons préservés) -/
+/-- Sorted list of peaks (with duplicates preserved) -/
 noncomputable def sorted_peaks_list (peaks : ι → σ) : List σ :=
   (Finset.univ.toList.map peaks).mergeSort (· ≤ ·)
 
-/-- Le pic médian : l'élément du milieu des pics triés.
-    Pour n impair, c'est l'unique élément du milieu. -/
+/-- The median peak: the middle element of sorted peaks.
+    For odd n, this is the unique middle element. -/
 noncomputable def median_peak [Inhabited σ] (peaks : ι → σ) : σ :=
   let s := sorted_peaks_list peaks
   s.getD (s.length / 2) default
 
-/-- **Théorème du votant médian — version hypothèses strictes (Black 1948)** :
-    Pour un nombre impair de votants avec préférences à pic unique ET
-    monotonie stricte explicite de chaque côté du pic, le pic médian est
-    un gagnant de Condorcet.
+/-- **Median Voter Theorem — Strict-hypotheses version (Black 1948)**:
+    For an odd number of voters with single-peaked preferences AND explicit
+    strict monotonicity on each side of the peak, the median peak is a
+    Condorcet winner.
 
-    C'est le lemme de travail ; `median_voter_theorem` ci-dessous emballe
-    les hypothèses de monotonie stricte dans le prédicat
-    `strictly_single_peaked_profile`. Les deux théorèmes sont équivalents
-    après dépliage. -/
+    This is the workhorse lemma; `median_voter_theorem` below packages the
+    strict-monotonicity hypotheses into the `strictly_single_peaked_profile`
+    predicate. Both theorems are equivalent after unfolding. -/
 theorem median_voter_theorem_strict [Inhabited σ] (prof : ι → PrefOrder σ) (peaks : ι → σ)
     (hsp : single_peaked_profile prof peaks)
     (hstrict_left : ∀ i a b, a < b → b ≤ peaks i → P (prof i).rel b a)
@@ -450,17 +452,18 @@ theorem median_voter_theorem_strict [Inhabited σ] (prof : ι → PrefOrder σ) 
         omega
       omega
 
-/-- **Théorème du votant médian (Black 1948)** : pour un nombre impair de votants avec
-    des préférences à pic unique **strictes**, le pic médian est un gagnant de Condorcet.
+/-- **Median Voter Theorem (Black 1948)**: For an odd number of voters with
+    **strictly** single-peaked preferences, the median peak is a Condorcet winner.
 
-    Note (Issue #973) : l'hypothèse a été renforcée de `single_peaked_profile`
-    à `strictly_single_peaked_profile`. Le `single_peaked` plus faible autorise
-    l'indifférence entre alternatives distinctes du même côté du pic,
-    ce qui est incompatible avec la conclusion de gagnant de Condorcet *strict*
-    via `margin_pos`. Sous `strictly_single_peaked_profile`, les votants ne peuvent plus
-    être indifférents entre alternatives distinctes du même côté de leur pic,
-    produisant des marges positives comme requis. Cela délègue à
-    `median_voter_theorem_strict` après extraction des composantes de monotonicité stricte. -/
+    Note (Issue #973): the hypothesis was strengthened from `single_peaked_profile`
+    to `strictly_single_peaked_profile`. The weaker `single_peaked` allows
+    indifference between distinct alternatives on the same side of the peak,
+    which is incompatible with the *strict* Condorcet winner conclusion via
+    `margin_pos`. Under `strictly_single_peaked_profile`, voters can no longer
+    be indifferent between distinct alternatives on the same side of their peak,
+    yielding positive margins as required. This delegates to
+    `median_voter_theorem_strict` after extracting the strict monotonicity
+    components. -/
 theorem median_voter_theorem (prof : ι → PrefOrder σ) (peaks : ι → σ)
     (hsp : strictly_single_peaked_profile prof peaks)
     (hodd : Odd (Fintype.card ι)) :
@@ -476,27 +479,27 @@ theorem median_voter_theorem (prof : ι → PrefOrder σ) (peaks : ι → σ)
     (fun i a b hpa hab => (hsp i).2.2 a b hpa hab)
     hodd
 
-/-! ## Robustesse stratégique sous préférences à pic unique -/
+/-! ## Strategy-Proofness under Single-Peaked Preferences -/
 
-/-- Une règle de vote f est robuste aux manipulations sur un ensemble S si aucun votant
-    ne peut changer le résultat en un qu'il préfère strictement en déclarant mensongèrement ses préférences.
-    Énoncé ici sans Function.update pour éviter DecidableEq ι :
-    pour tout profil sincère prof et profil déviant prof' qui coïncide
-    avec prof partout sauf peut-être en i, le résultat déviant n'est pas
-    strictement préféré (sous les préférences vraies) au résultat sincère. -/
+/-- A voting rule f is strategy-proof on a set S if no voter can change the
+    outcome to one they strictly prefer by misreporting their preferences.
+    Here stated without Function.update to avoid DecidableEq ι:
+    for any truthful profile prof and deviating profile prof' that agrees
+    with prof everywhere except possibly at i, the deviant outcome is not
+    strictly preferred (under the true preferences) to the truthful outcome. -/
 def strategy_proof_scc (f : SCC ι σ) (S : Finset σ) : Prop :=
   ∀ prof prof' i,
     (∀ j, j ≠ i → prof' j = prof j) →
     ¬ ∃ x y, x ∈ f prof' S ∧ y ∈ f prof S ∧ P (prof i).rel x y
 
-/-- Sous préférences strictement à pic unique, aucun votant ne peut strictement préférer
-    le pic médian à son propre pic. C'est l'intuition centrale derrière
-    la robustesse stratégique de la règle du médian : le pic est l'unique élément
-    maximal de l'ordre de préférence, donc rien (y compris la médiane)
-    ne peut lui être strictement préféré.
+/-- Under strictly single-peaked preferences, no voter can strictly prefer
+    the median peak to their own peak. This is the core insight behind
+    strategy-proofness of the median rule: the peak is the unique top
+    element of the preference ordering, so nothing (including the median)
+    can be strictly preferred to it.
 
-    Ce lemme n'exige PAS un nombre impair de votants — il porte purement
-    sur la structure des préférences. -/
+    This lemma does NOT require an odd number of voters — it is purely
+    about the preference structure. -/
 theorem peak_not_strictly_preferred_to_median [Inhabited σ]
     (prof : ι → PrefOrder σ)
     (peaks : ι → σ)
@@ -514,33 +517,33 @@ end SinglePeaked
 
 section SplitCycle
 
-/-- Un cycle dans une relation R sur une liste : le dernier élément est lié au premier,
-    formant une chaîne. -/
+/-- A cycle in a relation R over a list: the last element relates to the first,
+    forming a chain. -/
 def cycle {X : Type*} (R : X → X → Prop) (c : List X) : Prop :=
   ∃ h : c ≠ [], List.IsChain R (c.getLast h :: c)
 
-/-- Une relation est acyclique si aucun cycle n'existe. -/
+/-- A relation is acyclic if no cycles exist. -/
 def acyclic {X : Type*} (R : X → X → Prop) : Prop :=
   ∀ c : List X, ¬ cycle R c
 
-/-- Défaite en Split Cycle : x vainc y si
-    1. x bat y à majorité stricte (marge positive), ET
-    2. Il n'existe aucun cycle passant par x et y où chaque marge est ≥ marge(x,y).
-    Cela résout les cycles de Condorcet en n'acceptant que les défaites qui ne sont pas
-    « verrouillées » par un cycle plus fort. -/
+/-- Split Cycle defeat: x defeats y if
+    1. x beats y by strict majority (positive margin), AND
+    2. There is no cycle through x and y where every margin is >= margin(x,y).
+    This resolves Condorcet cycles by only accepting defeats that aren't
+    "locked out" by a stronger cycle. -/
 noncomputable def split_cycle_defeats (prof : ι → PrefOrder σ) (x y : σ) : Prop :=
   margin_pos prof x y ∧
     ¬ ∃ c : List σ, x ∈ c ∧ y ∈ c ∧
       cycle (fun a b => (margin prof x y : Int) ≤ margin prof a b) c
 
-/-- Règle Split Cycle : sélectionner toutes les alternatives qui ne sont vaincues par aucune autre.
-    Équivalent : x gagne ssi aucun y ne vainc x via split-cycle. -/
+/-- Split Cycle rule: select all alternatives that are not defeated by any other.
+    Equivalently, x wins iff no y split-cycle defeats x. -/
 noncomputable def split_cycle_scc : SCC ι σ := fun prof S => by
   classical
   exact S.filter (fun x => ∀ y ∈ S, ¬ split_cycle_defeats prof y x)
 
-/-- Split Cycle est cohérent avec Condorcet :
-    si x est un gagnant de Condorcet, x n'est vaincu par aucun cycle de split. -/
+/-- Split Cycle is Condorcet-consistent:
+    if x is a Condorcet winner, x is not split-cycle defeated by anyone. -/
 theorem split_cycle_condorcet (prof : ι → PrefOrder σ) {S : Finset σ} {x : σ}
     (hw : condorcet_winner prof S x) : x ∈ split_cycle_scc prof S := by
   classical
@@ -554,14 +557,14 @@ theorem split_cycle_condorcet (prof : ι → PrefOrder σ) {S : Finset σ} {x : 
     rw [margin_antisymm prof y x] at hpos
     linarith⟩
 
-/-- Longueur de cycle positive. -/
+/-- Cycle length is positive. -/
 theorem cycle_length_pos {X : Type*} {R : X → X → Prop} {c : List X} (hc : cycle R c) :
     0 < c.length := by
   rcases hc with ⟨h, _⟩
   exact List.length_pos_of_ne_nil h
 
-/-- Ajout d'un élément à une chaîne : si le dernier élément de la chaîne est lié à x,
-    on peut étendre la chaîne avec x. Utilise la récursion structurelle via match. -/
+/-- Appending an element to a chain: if the chain's last element relates to x,
+    we can extend the chain with x. Uses structural recursion via match. -/
 private theorem isChain_append_last {α : Type*} {R : α → α → Prop}
     {l : List α} (hne : l ≠ []) {x : α}
     (hchain : List.IsChain R l)
@@ -573,8 +576,8 @@ private theorem isChain_append_last {α : Type*} {R : α → α → Prop}
   | _ :: b :: l'', _, .cons_cons hab hrest =>
     List.IsChain.cons_cons hab (isChain_append_last (List.cons_ne_nil b l'') hrest hR)
 
-/-- La rotation d'un cycle préserve la propriété de cycle.
-    Pour `a :: l`, le cycle `IsChain R (getLast (a::l) :: a :: l)` est tourné en
+/-- Rotating a cycle preserves the cycle property.
+    For `a :: l`, the cycle `IsChain R (getLast (a::l) :: a :: l)` rotates to
     `IsChain R (a :: l ++ [a])`. -/
 theorem rotate_cycle {X : Type*} {R : X → X → Prop} {a : X} {l : List X}
     (hc : cycle R (a :: l)) : cycle R (l ++ [a]) := by
@@ -594,8 +597,8 @@ theorem rotate_cycle {X : Type*} {R : X → X → Prop} {a : X} {l : List X}
       have h := isChain_append_last (List.cons_ne_nil b l') hchain_bl hRza
       exact List.IsChain.cons_cons hRab h
 
-/-- À partir d'une chaîne `IsChain R (a :: l)`, la tête est liée à tout membre de l.
-    Utilise pairwise : `Pairwise R (a :: l)` signifie que la tête est liée à tout l. -/
+/-- From a chain `IsChain R (l.head :: l)`, the head relates to every member of l.
+    Uses pairwise: `Pairwise R (l.head :: l)` means head relates to all of l. -/
 private theorem chain_head_rel_mem {α : Type*} {R : α → α → Prop} [Trans R R R]
     {a : α} {l : List α} (hchain : List.IsChain R (a :: l))
     {x : α} (hmem : x ∈ l) : R a x := by
@@ -604,9 +607,9 @@ private theorem chain_head_rel_mem {α : Type*} {R : α → α → Prop} [Trans 
   exact hp.1 x hmem
 
 set_option linter.unusedSectionVars false in
-/-- Les cycles sont impossibles sur les ordres stricts linéaires.
-    Un cycle `getLast c :: c` sous `<` signifie que le dernier élément est lié à lui-même
-    via la chaîne, contredisant l'irréflexivité de `<`. -/
+/-- Cycles are impossible on strict linear orders.
+    A cycle `getLast c :: c` under `<` means the last element relates to itself
+    via the chain, contradicting irreflexivity of `<`. -/
 theorem lt_acyclic [LinearOrder σ] : acyclic (fun (x y : σ) => x < y) := by
   intro c hc
   rcases hc with ⟨hne, hchain⟩
@@ -617,56 +620,56 @@ theorem lt_acyclic [LinearOrder σ] : acyclic (fun (x y : σ) => x < y) := by
 
 end SplitCycle
 
-/-! ## Ensembles clones et indépendance
+/-! ## Clone Sets and Independence
 
-Un ensemble de candidats X forme un ensemble clone si chaque votant classe tous les membres de X
-dans un bloc contigu (soit tous au-dessus, soit tous en dessous de tout candidat hors de X).
-Ceci est pertinent pour les règles de vote clone-indépendantes (p. ex. Schulze, Split Cycle).
+A set of candidates X forms a clone set if every voter ranks all members of X
+in an adjacent block (either all above or all below any candidate outside X).
+This is relevant for clone-independent voting rules (e.g., Schulze, Split Cycle).
 
-Référence : DominikPeters/SocialChoiceLean `SocialChoice.Axioms.Clones`
+Reference: DominikPeters/SocialChoiceLean `SocialChoice.Axioms.Clones`
 -/
 
 section Clones
 
 variable [DecidableEq σ] [Fintype σ]
 
-/-- Un ensemble clone X dans le profil prof : chaque votant classe X en bloc contigu. -/
+/-- A clone set X in profile prof: every voter ranks X as a contiguous block. -/
 def clone_set (prof : ι → PrefOrder σ) (X : Finset σ) : Prop :=
   X.Nonempty ∧ ∀ (v : ι) (c : σ), c ∉ X →
     (∀ x ∈ X, P (prof v).rel x c) ∨ (∀ x ∈ X, P (prof v).rel c x)
 
-/-- Indépendance aux clones : remplacer tous les clones par un seul représentant
-    ne change pas le classement relatif des candidats non clones. -/
+/-- Clone independence: replacing all clones by a single representative
+    does not change the relative ranking of non-clone candidates. -/
 def clone_independence (f : SCC ι σ) : Prop :=
   ∀ prof X x, clone_set prof X → x ∈ X →
     f prof (Finset.univ \ (X.erase x)) =
       ((f prof Finset.univ).image (fun y => if y ∈ X then x else y)).filter
         (fun y => y ∈ Finset.univ \ (X.erase x))
 
-/-- Une SCC est clone-indépendante si elle satisfait l'indépendance aux clones pour tous les profils. -/
+/-- An SCC is clone-independent if it satisfies clone independence for all profiles. -/
 theorem clone_set_nonempty {prof : ι → PrefOrder σ} {X : Finset σ}
     (hc : clone_set prof X) : X.Nonempty := hc.1
 
 end Clones
 
-/-! ## Ensemble de Banks
+/-! ## Banks Set
 
-L'ensemble de Banks (Banks 1985) est un concept de solution par tournoi. Étant donné un
-tournoi majoritaire (issu des marges par paires), un gagnant de Banks est une alternative qui
-domine un sous-tournoi transitif maximal (c.-à-d. une chaîne maximale).
+The Banks set (Banks 1985) is a tournament solution concept. Given a majority
+tournament (derived from pairwise margins), a Banks winner is an alternative that
+tops some maximal transitive subtournament (i.e., some maximal chain).
 
-Référence : Banks, "Sophisticated Voting Outcomes and Agenda Control" (1985)
+Reference: Banks, "Sophisticated Voting Outcomes and Agenda Control" (1985)
 -/
 
 section BanksSet
 
-/-- Un profil induit un tournoi sur S : toute paire distincte a un gagnant majoritaire strict.
-    Cela signifie pour tous x ≠ y dans S, exactement l'un de margin(x,y) > 0 ou margin(y,x) > 0 tient. -/
+/-- A profile induces a tournament on S: every distinct pair has a strict majority winner.
+    This means for all x ≠ y in S, exactly one of margin(x,y) > 0 or margin(y,x) > 0 holds. -/
 def is_tournament (prof : ι → PrefOrder σ) (S : Finset σ) : Prop :=
   ∀ x ∈ S, ∀ y ∈ S, x ≠ y → margin_pos prof x y ∨ margin_pos prof y x
 
-/-- Une chaîne de Banks : un sous-ensemble de S totalement ordonné par la relation majoritaire,
-    et maximal (ajouter tout élément de S brise la transitivité). -/
+/-- A Banks chain: a subset of S that is totally ordered by the majority relation,
+    and is maximal (adding any element from S breaks transitivity). -/
 def banks_chain (prof : ι → PrefOrder σ) (S : Finset σ) (C : Finset σ) : Prop :=
   C ⊆ S ∧ C.Nonempty ∧
   (∀ x ∈ C, ∀ y ∈ C, x ≠ y → margin_pos prof x y ∨ margin_pos prof y x) ∧
@@ -680,25 +683,25 @@ def banks_chain (prof : ι → PrefOrder σ) (S : Finset σ) (C : Finset σ) : P
       margin_pos prof y z → (margin_pos prof x y → margin_pos prof x z) ∧
       (margin_pos prof z x → margin_pos prof y x))))
 
-/-- x est un gagnant de Banks : c'est l'élément maximal d'une certaine chaîne de Banks.
-    Être maximal signifie qu'aucun élément de la chaîne n'a une marge positive sur x. -/
+/-- x is a Banks winner: it is the maximal element of some Banks chain.
+    Being maximal means no element of the chain has a positive margin over x. -/
 def banks_winner (prof : ι → PrefOrder σ) (S : Finset σ) (x : σ) : Prop :=
   x ∈ S ∧ ∃ C : Finset σ, banks_chain prof S C ∧ x ∈ C ∧
     ∀ y ∈ C, y ≠ x → margin_pos prof x y
 
-/-- L'ensemble de Banks : tous les gagnants de Banks dans S -/
+/-- The Banks set: all Banks winners in S -/
 noncomputable def banks_set (prof : ι → PrefOrder σ) (S : Finset σ) : Finset σ := by
   classical
   exact S.filter (fun x => banks_winner prof S x)
 
-/-- L'ensemble de Banks est un sous-ensemble de S -/
+/-- The Banks set is a subset of S -/
 theorem banks_set_subset (prof : ι → PrefOrder σ) (S : Finset σ) :
     banks_set prof S ⊆ S := by
   classical
   unfold banks_set
   exact Finset.filter_subset _ _
 
-/-- Un gagnant de Condorcet est toujours dans l'ensemble de Banks -/
+/-- A Condorcet winner is always in the Banks set -/
 theorem banks_set_condorcet (prof : ι → PrefOrder σ) {S : Finset σ} {x : σ}
     (hw : condorcet_winner prof S x) :
     x ∈ banks_set prof S := by
@@ -814,41 +817,41 @@ theorem banks_set_condorcet (prof : ι → PrefOrder σ) {S : Finset σ} {x : σ
 
 end BanksSet
 
-/-! ## Vote unique transférable (STV)
+/-! ## Single Transferable Vote (STV)
 
-Le STV est un système de vote préférentiel où les votants classent les candidats, et les candidats
-sont élus en atteignant un quota. Les votes excédentaires sont transférés aux préférences suivantes, et
-le candidat ayant le moins de voix est éliminé si personne n'atteint le quota.
+STV is a preferential voting system where voters rank candidates, and candidates
+are elected by reaching a quota. Surplus votes transfer to next preferences, and
+the candidate with fewest votes is eliminated if no one reaches quota.
 
-Propriétés clés :
-- Satisfait la proportionnalité
-- Échoue à la monotonicité (Doron 1979)
-- Échoue à l'indépendance aux clones en général
+Key properties:
+- Satisfies proportionality
+- Fails monotonicity (Doron 1979)
+- Fails clone independence in general
 -/
 
 section STV
 
 variable [DecidableEq σ] [Fintype σ]
 
-/-- Quota de Droop : nombre minimal de voix pour garantir l'élection.
-    Pour n votants et k sièges : floor(n / (k+1)) + 1 -/
+/-- Droop quota: minimum votes needed to guarantee election.
+    For n voters and k seats: floor(n / (k+1)) + 1 -/
 def droop_quota (n_voters : ℕ) (n_seats : ℕ) : ℕ :=
   n_voters / (n_seats + 1) + 1
 
-/-- Compte les votes de première préférence pour x parmi les candidats restants.
-    La première préférence d'un votant est son alternative la mieux classée dans l'ensemble restant. -/
+/-- Count first-preference votes for x among remaining candidates.
+    A voter's first preference is their top-ranked alternative in the remaining set. -/
 noncomputable def first_preferences (prof : ι → PrefOrder σ) (remaining : Finset σ) (x : σ) : ℕ :=
   haveI : DecidablePred (fun i : ι => is_best_element x remaining (prof i).rel) := Classical.decPred _
   (Finset.filter (fun i => is_best_element x remaining (prof i).rel) Finset.univ).card
 
-/-- Résultat d'un tour STV -/
+/-- Result of one STV round -/
 inductive stv_round_result (σ : Type*) where
   | elected (x : σ) : stv_round_result σ
   | eliminated (x : σ) : stv_round_result σ
   | complete : stv_round_result σ
 
-/-- Une étape du STV : élire un candidat atteignant le quota, ou éliminer le plus faible.
-    Renvoie l'action à effectuer pour ce tour.
+/-- One step of STV: elect a candidate reaching quota, or eliminate the weakest.
+    Returns the action to take for this round.
     Uses classical choice for tie-breaking. -/
 noncomputable def stv_step (prof : ι → PrefOrder σ) (remaining : Finset σ)
     (already_elected : Finset σ) (quota : ℕ) (n_seats : ℕ) : stv_round_result σ := by
@@ -863,8 +866,8 @@ noncomputable def stv_step (prof : ι → PrefOrder σ) (remaining : Finset σ)
     else
       exact .eliminated (Classical.choose hne)
 
-/-- STV en tant que correspondance de choix social avec n_seats gagnants.
-    Applique itérativement stv_step jusqu'à ce que n_seats candidats soient élus. -/
+/-- STV as a Social Choice Correspondence with n_seats winners.
+    Iteratively applies stv_step until n_seats candidates are elected. -/
 noncomputable def stv_scc (n_seats : ℕ) : SCC ι σ := fun prof S =>
   let quota := droop_quota (Fintype.card ι) n_seats
   let rec loop (remaining : Finset σ) (elected : Finset σ) (fuel : ℕ) : Finset σ :=
@@ -883,5 +886,5 @@ noncomputable def stv_scc (n_seats : ℕ) : SCC ι σ := fun prof S =>
 
 end STV
 
-end SocialChoice
+end SocialChoice_en
 
