@@ -105,9 +105,9 @@ La série SymbolicLearning (11 notebooks) suit le chapitre 19 d'AIMA : induction
 
 ## Tweety - TweetyProject
 
-Série de **13 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour l'IA symbolique. Couvre les logiques formelles, la révision de croyances, l'argumentation computationnelle, le raisonnement incertain (Markov Logic) et causal.
+Série sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour l'IA symbolique. Couvre les logiques formelles, la révision de croyances, l'argumentation computationnelle, le raisonnement incertain (Markov Logic) et causal. **Double stack Python (JPype) et C#/.NET (IKVM)** — voir EPIC #4667 (Tweety .NET) pour le marathon de portage : 12 modules C# mergés en complément des 13 notebooks Python originaux.
 
-### Structure détaillée
+### Structure détaillée (Python / JPype)
 
 | # | Notebook | Contenu | Exercices | Prérequis |
 |---|----------|---------|-----------|-----------|
@@ -130,7 +130,28 @@ Série de **13 notebooks** sur [TweetyProject](https://tweetyproject.org/), bibl
 | 10 | [Tweety-10-MLN](Tweety/Tweety-10-MLN.ipynb) | Markov Logic Networks : FOL pondérée, inférence probabiliste sur formules | 3 | Java/JPype |
 | 11 | [Tweety-11-Causal](Tweety/Tweety-11-Causal.ipynb) | Raisonnement causal : do-calculus (Pearl), interventions, contrefactuels | 3 | Java/JPype |
 
-> 13/13 notebooks ont des exercices. La configuration de Tweety-1-Setup constitue l'exercice setup de la série.
+> 13/13 notebooks Python ont des exercices. La configuration de Tweety-1-Setup constitue l'exercice setup de la série.
+
+### Parité C# / .NET (EPIC #4667 — Tweety .NET via IKVM 8.14/8.15)
+
+En complément du parcours Python, **12 modules .NET C#** sont mergés dans le tronc, executés in-kernel `.net-csharp` via IKVM (DLL natives générées par shading Maven + `dotnet build`). Chaque notebook C# porte le suffixe `-Csharp` et expose les mêmes APIs TweetyProject via `Activator.CreateInstance` (IKVM efface les génériques, voir leçon C188). Tableau indicatif (catalogue fait foi pour les chiffres exacts) :
+
+| Module C# | Equivalent Python | Stack IKVM | Statut |
+|-----------|-------------------|------------|--------|
+| Tweety-2-Basic-Logics-Csharp | Tw-2 | IKVM 8.14 + Choco | MERGED |
+| Tweety-2b-Semantics-Csharp | Tw-2 (semantics) | IKVM 8.14 | MERGED |
+| Tweety-2c-FOL-Csharp | Tw-2 (FOL) | IKVM 8.14 | MERGED |
+| Tweety-3-Advanced-Logics-Csharp | Tw-3 | IKVM 8.14 | MERGED |
+| Tweety-3-Conditional-Logics-Csharp | Tw-3 (CL) | IKVM 8.14 | MERGED |
+| Tweety-3-Dung-Csharp | Tw-5 (Dung) | IKVM 8.14 | MERGED |
+| Tweety-3-ModalLogic-Csharp | Tw-3 (ML) | IKVM 8.14 | MERGED |
+| Tweety-3-QBF-Csharp | Tw-3 (QBF) | IKVM 8.14 | MERGED |
+| Tweety-4-Belief-Revision-Csharp | Tw-4 | IKVM 8.14 | MERGED |
+| Tweety-4-Aspic-Csharp | Tw-6 (ASPIC+) | IKVM 8.14 | MERGED |
+| Tweety-7b-Ranking-Probabilistic-Csharp | Tw-7b | IKVM 8.14 | MERGED |
+| Tweety-10-MLN-Csharp | Tw-10 | IKVM 8.14 | MERGED |
+
+Tw-9 Preferences (PR #5268 OPEN) et Tw-1-Setup-Csharp / Tw-11-Causal-Csharp sont en cours ou planifiés ; leur statut vit dans le tracker EPIC #4667. La documentation complète de la chaîne de build (Maven shade → `dotnet build` → nbconvert `.net-csharp`) est dans le README de chaque notebook C#.
 
 ### Technologies
 
@@ -287,7 +308,7 @@ Documentation complète : [SmartContracts/README.md](SmartContracts/README.md)
 
 ## Argument Analysis - Analyse Argumentative LLM
 
-Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. Combine détection de sophismes, formalisation logique, et validation par TweetyProject.
+Pipeline d'analyse argumentative multi-agents avec **Semantic Kernel** et LLMs. Combine détection de sophismes, formalisation logique, et validation par TweetyProject. La série intègre désormais un **port verbatim EPITA-IS (Argumentum, EPIC #4960)** : `argumentation_analysis/Argumentum/` contient les modules Python originaux (`TweetyBridge`, `PLHandler`, `FOLHandler`, `ModalHandler`, `ADFHandler`, `AFHandler`, `RankingHandler`, `TweetyInitializer`, `informal_definitions`, JVM shim) préservés avec leur NOTICE-EPITA + headers MIT, et accessibles via des **lazy accessors** (échec d'import = symbole non-instantiable aujourd'hui, importe futur-safe). PRs MERGED : #5237, #5234, #5242, #5251, #5253, #5255, #5258, #5216.
 
 > **Note** : Cette série est un projet/demo, pas un cours. Aucun exercice étudiant. Non adaptée en l'etat pour un cours structuré.
 
@@ -648,6 +669,23 @@ Oui, c'est l'approche pédagogique de la série. **Anvil** (Foundry) fournit un 
 
 ---
 
+## Parité Python / C# / Lean — différenciant structurant
+
+La famille SymbolicAI est couverte sur **trois stacks** selon les formalismes (EPIC #4667 marathon Tweety .NET + EPIC #4956 parité CSP) ; chaque ligne reflète l'état mergé dans `origin/main` au moment de cette rédaction (catalogue fait foi).
+
+| Sous-série | Python | C# / .NET | Lean 4 | Note |
+|------------|:---:|:---:|:---:|------|
+| **Tweety** (TweetyProject) | ● (13) | ● (12) | ◐ (1, Tw-5b) | Double stack Python JPype + C# IKVM in-kernel + 1 companion Lean formalisant Dung grounded |
+| **Lean** | ◐ (mixed WSL) | — | ● (21) | Trilangage Python-WSL + Lean 4 natif + Mathlib4 ; WSL obligatoire |
+| **SemanticWeb** | ● (11) | ◐ (7) | — | dotNetRDF (C#) + rdflib/pySHACL (Python) ; double parcours C#/Python |
+| **Planners** | ● (13) | ◐ (1 legacy) | ◐ (1, Planners-5b) | PDDL/CP-SAT Python + companion Lean pour la relaxation h-add |
+| **SmartContracts** | ● (27) | — | — | Pipeline Solidity/Foundry/Wagmi en Python, focus DeFi et ZK |
+| **Argument Analysis** | ● (6) | — | — | Pipeline SK multi-agents + port verbatim EPITA-IS Argumentum (couches Python) |
+| **SymbolicLearning** | ● (11) | — | — | AIMA ch. 19 induction pure + ILP + neuro-symbolique |
+| **SMT / Z3** | ● (6) | ● (18) | — | Z3-Python API complète + Z3.Linq DSL C# (missionnaires, cryptarithms, sudoku) |
+
+Légende : ● couverture large ; ◐ couverture partielle / companion ; — absent.
+
 ## Conclusion / Prochaines étapes
 
 ### Ce que cette série dessine
@@ -686,4 +724,4 @@ Voir LICENSE à la racine du dépôt pour détails.
 
 ---
 
-**Dernière mise à jour** : 2026-06-11
+**Dernière mise à jour** : 2026-07-04
