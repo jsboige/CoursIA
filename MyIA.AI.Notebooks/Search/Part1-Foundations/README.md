@@ -29,6 +29,7 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 1 | [Search-1-StateSpace](Search-1-StateSpace.ipynb) | Python 3 | Espaces d'états, formalisation (S, A, T, G), taquin, aspirateur, recherche d'itinéraire | ~40 min |
+| 1 (.NET) | [Search-1-StateSpace (C#)](Search-1-StateSpace-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : formalisation (S, A, T, G) en C# 9.0 (`SearchProblem` abstrait, `object` comme etat generique), VacuumWorld (8 etats, parcours complet), 8-Puzzle (181 440 etats), RouteFinding — port C# fidèle avec `Dictionary<TKey,TValue>`, tuples nommes (`(char pos, bool gSale, bool dSale)`) | ~40 min |
 | 2 | [Search-2-Uninformed](Search-2-Uninformed.ipynb) | Python 3 | BFS, DFS, UCS, IDDFS : comparaison des algorithmes non informés | ~50 min |
 | 2 (.NET) | [Search-2-Uninformed (C#)](Search-2-Uninformed-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : BFS (Queue<T>), DFS (Stack<T>), UCS (PriorityQueue<TElement, TPriority>), IDDFS — port C# fidèle sur le graphe des villes françaises + arbre profond 8x3 (ratio BFS/DFS = 156,1×) + BFS bidirectionnel avec reconstruction de coût | ~50 min |
 | 3 | [Search-3-Informed](Search-3-Informed.ipynb) | Python 3 | A*, Greedy, IDA*, heuristiques admissibles et consistantes | ~50 min |
