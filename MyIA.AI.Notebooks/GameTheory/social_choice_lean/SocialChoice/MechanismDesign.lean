@@ -16,6 +16,8 @@ import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Tactic
 
+namespace SocialChoice
+
 /-! ## Enchère de Vickrey à 2 enchérisseurs -/
 
 namespace VickreyTwoBidder
@@ -75,3 +77,5 @@ theorem vickrey3_truthful_bidder0 (v0 v1 v2 b0 : ℕ) :
   split_ifs <;> simp_all; omega
 
 end VickreyThreeBidder
+
+end SocialChoice
