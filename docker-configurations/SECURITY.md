@@ -7,9 +7,11 @@
 
 ## Executive Summary
 
-**20/20 containers run as root with unlimited resources.** 1 service has NO authentication at all (Qdrant). 1 service had no auth code (tts-gateway, now fixed). Remaining exposed services have auth configured but bind to 0.0.0.0.
+**20/20 containers run as root with unlimited resources.** 1 service (Qdrant) has its reverse-proxy endpoint secured but its **direct LAN port still wide-open** (re-verified 2026-07-04, see §F4). 1 service had no auth code (tts-gateway, now fixed). Remaining exposed services have auth configured but bind to 0.0.0.0.
 
-Overall risk: **HIGH**. Qdrant (vector DB) is the most critical exposure: full CRUD with no auth on port 6333. Services are accessible from the local network (0.0.0.0 bind). The IIS reverse proxy provides auth on `*.myia.io` domains, but direct port access bypasses it entirely.
+Overall risk: **HIGH**. Qdrant (vector DB) remains the most critical exposure: the IIS reverse proxy on `qdrant.myia.io` enforces auth (401 on `/collections` without a key), but **direct LAN access on port 6333 returns collection data with no auth at all** (`GET http://LAN:6333/collections` → `{"result":{"collections":[]}}`, 200). The `0.0.0.0` bind means anyone on the LAN can read/write vectors by bypassing the reverse proxy. Fix (set `QDRANT__SERVICE__API_KEY` on the Qdrant container OR bind `127.0.0.1:6333`) is a live inter-repo op on the `roo-extensions` compose — see the **Runbook** section at the top of this document and §F4.
+
+> **Re-verification 2026-07-04 (po-2023, firsthand probes).** Qdrant reverse-proxy auth = ACTIVE (`https://qdrant.myia.io/collections` → 401 "Must provide an API key"). Qdrant direct LAN port 6333 = OPEN (`http://localhost:6333/collections` → 200 with data, container `myia-qdrant` binds `0.0.0.0:6333-6334`). whisper-api / tts-api / comfyui-video reverse-proxy = 401 (secured). demucs-api / z-image reverse-proxy = 502, musicgen-api = timeout (services down — availability, not auth). Live-config fix for Qdrant LAN exposure tracked on dashboard (inter-repo `roo-extensions`).
 
 ## Audit Table
 
@@ -79,8 +81,8 @@ The IIS reverse proxy on `*.myia.io` domains provides auth, but direct LAN acces
 
 | Service | Port | Issue |
 |---------|------|-------|
-| Qdrant | 6333-6334 | Full CRUD, no API key, no auth. Anyone on LAN can read/write/delete vectors |
-| tts-gateway | 8196 | Was missing auth middleware import (FIXED in this PR — now uses shared/auth_middleware.py) |
+| Qdrant | 6333-6334 | **Re-verified 2026-07-04.** Reverse-proxy `qdrant.myia.io` = 401 (auth ACTIVE). Direct LAN `0.0.0.0:6333` = 200 with collection data, **no auth**. `QDRANT__SERVICE__API_KEY` not set server-side (else `/collections` would demand a key on direct port too). Full CRUD open on LAN. |
+| tts-gateway | 8196 | Was missing auth middleware import (FIXED in earlier PR — now uses shared/auth_middleware.py) |
 
 Note: SD Forge/SDNext/forge-turbo already have `--gradio-auth` with user/password from env vars. Whisper-webui already has `--username`/`--password` in entrypoint. These services auth is ACTIVE but they still bind 0.0.0.0 (see F3).
 
