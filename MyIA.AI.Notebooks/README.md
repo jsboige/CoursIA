@@ -4,7 +4,7 @@ CoursIA est un curriculum d'intelligence artificielle pensé comme un parcours c
 
 Deux partis pris structurent l'ensemble. D'abord une **double culture technique** : Python (PyTorch, Diffusers, PyMC, OpenSpiel) et .NET / C# (Semantic Kernel, Infer.NET, ML.NET) cohabitent au sein de notebooks exécutables, parce que l'IA appliquée se pratique dans les deux écosystèmes. Ensuite une **dualité simulation / preuve** : un concept est d'abord illustré numériquement, puis — quand c'est possible — formalisé et vérifié mécaniquement (Lean 4, Z3, vérification formelle). Chaque notebook est rédigé en français, exécutable de bout en bout, et accompagné d'exemples guidés et d'exercices pour un apprentissage en autonomie.
 
-Le catalogue rassemble plus de 500 notebooks répartis sur les onze domaines ci-dessous (le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue). Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
+Le catalogue rassemble **670 notebooks pédagogiques** répartis sur les onze domaines ci-dessous (le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue, qui fait foi). Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
 
 <!-- CATALOG-STATUS
 series: ALL
@@ -67,6 +67,28 @@ SymbolicAI
 ├── SymbolicLearning/ - ILP, neuro-symbolique, KG-LLM, automates (L*)
 └── Argument_Analysis/ - Analyse d'arguments
 ```
+
+## Parité Python / .NET / Lean — différenciant structurant
+
+Le dépôt pratique **explicitement** la double culture IA : Python (PyTorch, Diffusers, PyMC, OpenSpiel) et .NET / C# (Semantic Kernel, Infer.NET, ML.NET) y sont à égalité de traitement, et Lean 4 ancre mathématiquement les résultats phares. Ce tableau reflète l'état réel (langages dominants des notebooks par famille, marqueur `CATALOG-STATUS` source de vérité pour les volumes) :
+
+| Famille | Python | C# / .NET | Lean 4 | Note |
+|---------|:---:|:---:|:---:|------|
+| GenAI | ● | ◐ | — | Python dominant ; C# pour Semantic Kernel |
+| QuantConnect | ● | ◐ | ◐ | Python + LEAN Engine C# + `kelly_lean` |
+| SymbolicAI | ● | ◐ | ● | Trilogie complète : Python (SymbolicLearning), C# (Tweety/Z3/SW/SC), Lean (Arrow/Conway/FWT) |
+| Search | ● | ● | ◐ | Marathon parité CSP en cours (5/9 tranches livrées, EPIC #4956) |
+| Probas | ● | ● | ◐ | Infer.NET + PyMC sur mêmes modèles ; `decision_theory_lean` (Gittins) |
+| Sudoku | ● | ● | ◐ | Backtracking/DLX Python + propagation C# + lake exact-cover |
+| GameTheory | ● | — | ● | OpenSpiel Python ; `social_choice_lean` (Arrow) |
+| ML | ● | ● | ◐ | ML.NET (tutoriels) + agents Python + `learning_theory_lean` |
+| RL | ● | — | — | Stable-Baselines3 / Gym |
+| CaseStudies | ● | — | — | Projets interdisciplinaires |
+| IIT / ICT | ● | ◐ | — | PyPhi Python + Tweety C# (causalité commune) |
+
+Légende : ● = présent en masse ; ◐ = présent ciblé ; — = absent.
+
+Cette structure permet au lecteur de **basculer d'un écosystème à l'autre** sur un même concept sans repartir de zéro — c'est précisément le pont pédagogique que les parcours recommandés exploitent.
 
 ## Technologies principales
 
