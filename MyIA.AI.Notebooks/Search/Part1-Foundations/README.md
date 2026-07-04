@@ -29,6 +29,7 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 1 | [Search-1-StateSpace](Search-1-StateSpace.ipynb) | Python 3 | Espaces d'états, formalisation (S, A, T, G), taquin, aspirateur, recherche d'itinéraire | ~40 min |
+| 1 (.NET) | [Search-1-StateSpace (C#)](Search-1-StateSpace-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : formalisation (S, A, T, G) en C# 9.0 (`SearchProblem` abstrait, `object` comme etat generique), VacuumWorld (8 etats, parcours complet), 8-Puzzle (181 440 etats), RouteFinding — port C# fidèle avec `Dictionary<TKey,TValue>`, tuples nommes (`(char pos, bool gSale, bool dSale)`) | ~40 min |
 | 2 | [Search-2-Uninformed](Search-2-Uninformed.ipynb) | Python 3 | BFS, DFS, UCS, IDDFS : comparaison des algorithmes non informés | ~50 min |
 | 3 | [Search-3-Informed](Search-3-Informed.ipynb) | Python 3 | A*, Greedy, IDA*, heuristiques admissibles et consistantes | ~50 min |
 | 4 | [Search-4-LocalSearch](Search-4-LocalSearch.ipynb) | Python 3 | Hill Climbing, Simulated Annealing, Tabu Search, paysages de fitness | ~45 min |
