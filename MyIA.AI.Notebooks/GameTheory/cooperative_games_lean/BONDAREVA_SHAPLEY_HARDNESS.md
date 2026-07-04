@@ -1,120 +1,157 @@
-# Bondareva-Shapley Backward: Hardness Investigation
+# Bondareva-Shapley (sens indirect) — enquête sur la difficulté
 
-**Agent:** po-2025 | **Date:** 2026-05-12 | **Cycle:** 28 Track A
+**Agent :** po-2025 | **Date :** 2026-05-12 | **Cycle :** 28 piste A
 
-## Verdict: PARTIALLY_PROUVABLE (reclassified from HONEST_UNPROVABLE)
+## Verdict : PARTIELLEMENT_PRUVABLE (reclassé depuis HONEST_UNPROVABLE)
 
-The `bondareva_shapley_backward` sorry at `Basic.lean:234` was classified as
-HONEST_UNPROVABLE because "LP duality / Farkas' lemma is missing in Mathlib."
-This assessment is **partially outdated**: Farkas' lemma IS available since 2025
-(Dillies/Yang). LP strong duality remains absent but is NOT required for the proof.
+Le `sorry` `bondareva_shapley_backward` à `Basic.lean:234` avait été classé
+`HONEST_UNPROVABLE` au motif que « la dualité LP / le lemme de Farkas manque
+dans Mathlib ». Cette évaluation est **partiellement obsolète** : le lemme de
+Farkas EST disponible depuis 2025 (Dillies/Yang). La dualité forte LP reste
+absente mais n'est PAS requise pour la preuve.
 
-## What changed in Mathlib
+## Ce qui a changé dans Mathlib
 
-The comment in `Basic.lean:221-224` claims Mathlib lacks:
+Le commentaire de `Basic.lean:221-224` affirmait que Mathlab ne fournit pas :
 
-| Claimed missing | Actual status (Mathlib v4.28-rc1) |
-|-----------------|----------------------------------|
-| LP duality theorem | Still absent (TODO in Cone.Basic) |
-| Farkas' lemma usable on `Finset N -> R` | **Available** as `ProperCone.hyperplane_separation` |
-| `Polyhedral.cone_of_nonempty` | Still absent |
+| Élément présenté comme manquant | Statut réel (Mathlib v4.28-rc1) |
+| --- | --- |
+| Théorème de dualité LP | Toujours absent (TODO dans `Cone.Basic`) |
+| Lemme de Farkas utilisable sur `Finset N → R` | **Disponible** sous le nom `ProperCone.hyperplane_separation` |
+| `Polyhedral.cone_of_nonempty` | Toujours absent |
 
-**Key module:** `Mathlib.Analysis.Convex.Cone.Dual` (Copyright 2025 Yaël Dillies, Andrew Yang)
+**Module clé :** `Mathlib.Analysis.Convex.Cone.Dual` (Copyright 2025 Yaël
+Dillies, Andrew Yang)
 
-Provides:
-- `ProperCone.dual` — dual cone with respect to a continuous perfect pairing
-- `ProperCone.hyperplane_separation` — Farkas' lemma (separate compact convex from proper cone)
-- `ProperCone.hyperplane_separation_point` — Point version of Farkas' lemma
-- `ProperCone.dual_dual_flip` — Double dual of proper cone = itself
+Fournit :
 
-## Proof strategy (Farkas-based, no LP duality needed)
+- `ProperCone.dual` — cône dual pour un appariement parfait continu ;
+- `ProperCone.hyperplane_separation` — lemme de Farkas (sépare un convexe
+  compact d'un cône propre) ;
+- `ProperCone.hyperplane_separation_point` — version ponctuelle du lemme de
+  Farkas ;
+- `ProperCone.dual_dual_flip` — le bidual d'un cône propre est lui-même.
 
-The classical proof does NOT require LP strong duality. It only needs Farkas' lemma
-(theorem of alternatives):
+## Stratégie de preuve (basée sur Farkas, sans dualité LP)
 
-### Step 1: Formulate as feasibility
+La preuve classique n'a PAS besoin de la dualité forte LP. Elle n'utilise que
+le lemme de Farkas (théorème des alternatives).
 
-Find `x : N -> R` satisfying:
-- `sum_{i in S} x i >= v(S)` for all nonempty `S : Finset N`
-- `sum_i x i <= v(N)`
+### Étape 1 — Mise en faisabilité
 
-### Step 2: Apply Farkas' alternative theorem
+Trouver `x : N → R` vérifiant :
 
-This system is feasible iff the alternative is infeasible:
+- `∑_{i ∈ S} x i ≥ v(S)` pour toute coalition non vide `S : Finset N` ;
+- `∑_i x i ≤ v(N)`.
 
-> For all `lambda_S >= 0` and `mu >= 0`:
-> if `sum_S lambda_S * 1_{i in S} = mu` for all `i`, then `sum_S lambda_S * v(S) <= mu * v(N)`
+### Étape 2 — Application de l'alternative de Farkas
 
-### Step 3: Connect to balanced condition
+Ce système est faisable si et seulement si l'alternative est infaisable :
 
-Setting `w_S = lambda_S / mu` (when `mu > 0`), the alternative becomes:
-> For all balanced weights `w`: `sum_S w_S * v(S) <= v(N)`
+> Pour tous `λ_S ≥ 0` et `μ ≥ 0` :
+> si `∑_S λ_S · 1_{i ∈ S} = μ` pour tout `i`, alors
+> `∑_S λ_S · v(S) ≤ μ · v(N)`.
 
-This is EXACTLY the balanced condition of the game.
+### Étape 3 — Connexion avec la condition d'équilibre
 
-### Step 4: Extract core membership
+En posant `w_S = λ_S / μ` (lorsque `μ > 0`), l'alternative devient :
 
-From feasibility: `sum_i x i <= v(N)` and `sum_{i in N} x i >= v(N)`, so `sum_i x i = v(N)`.
-Combined with coalition constraints, `x` is in the Core.
+> Pour tous poids équilibrés `w` : `∑_S w_S · v(S) ≤ v(N)`.
 
-## Infrastructure gap: theorem of alternatives
+C'est EXACTEMENT la condition d'équilibre (balanced) du jeu.
 
-`ProperCone.hyperplane_separation` gives Farkas in **separation form**:
+### Étape 4 — Extraction de l'appartenance au noyau
+
+À partir de la faisabilité : `∑_i x i ≤ v(N)` et `∑_{i ∈ N} x i ≥ v(N)`,
+donc `∑_i x i = v(N)`. Combiné avec les contraintes de coalition, `x`
+appartient au noyau.
+
+## Lacune d'infrastructure : théorème des alternatives
+
+`ProperCone.hyperplane_separation` donne Farkas sous forme de **séparation** :
+
 ```
-C : ProperCone R E, K compact convex, Disjoint K C =>
-  exists f : StrongDual R E, (forall x in C, 0 <= f x) /\ forall x in K, f x < 0
+C : ProperCone R E, K convexe compact, Disjoint K C ⇒
+  ∃ f : StrongDual R E, (∀ x ∈ C, 0 ≤ f x) ∧ (∀ x ∈ K, f x < 0)
 ```
 
-The proof needs Farkas in **alternatives form**:
+La preuve requiert Farkas sous forme d'**alternatives** :
+
 ```
-Either {x | Ax >= b} has a solution, or {y >= 0 | A^T y = 0, y . b > 0} has a solution
+Soit {x | A x ≥ b} admet une solution,
+soit {y ≥ 0 | A^T y = 0, y · b > 0} admet une solution.
 ```
 
-Deriving alternatives from separation requires:
-1. Encode `{Ax >= b}` as the preimage of a proper cone under a linear map
-2. Show this preimage (or the associated cone) is proper (closed, pointed, convex)
-3. Apply `hyperplane_separation` to get the separating functional
-4. Translate back to the alternatives formulation
+Pour dériver les alternatives à partir de la séparation :
 
-**In finite dimensions** (`Fin n -> R`), all linear maps are continuous, all
-finite-dimensional subspaces are closed, so the "proper cone" conditions are
-automatic. Mathlib provides `LinearMap.continuous_of_finiteDimensional` and
+1. Coder `{A x ≥ b}` comme l'image réciproque d'un cône propre par une
+   application linéaire ;
+2. Montrer que cette image réciproque (ou le cône associé) est un cône propre
+   (fermé, pointu, convexe) ;
+3. Appliquer `hyperplane_separation` pour obtenir la fonctionnelle de
+   séparation ;
+4. Reconvertir en formulation d'alternatives.
+
+**En dimension finie** (`Fin n → R`), toutes les applications linéaires sont
+continues, tous les sous-espaces de dimension finie sont fermés, donc les
+conditions de « cône propre » sont automatiques. Mathlib fournit
+`LinearMap.continuous_of_finiteDimensional` et
 `Submodule.closed_of_finiteDimensional`.
 
-## Estimated work
+## Travail estimé
 
-| Component | Lines | Difficulty | Mathlib support |
-|-----------|-------|------------|----------------|
-| Theorem of alternatives from separation | ~60-80 | HARD | hyperplane_separation + fd continuity |
-| Coalition constraint system as proper cone | ~30-50 | MEDIUM | ProperCone, finite-dimensional |
-| Balanced ↔ alternative equivalence | ~20-30 | MEDIUM | Finset algebra, balanced def |
-| Extract core membership | ~10-20 | EASY | Core definition, sum manipulation |
-| **Total** | **~150-200** | **MEDIUM-HARD** | |
+| Composant | Lignes | Difficulté | Support Mathlib |
+| --- | --- | --- | --- |
+| Théorème des alternatives depuis la séparation | ~60-80 | DUR | `hyperplane_separation` + continuité fd |
+| Système de contraintes coalition comme cône propre | ~30-50 | MOYEN | `ProperCone`, dimension finie |
+| Équivalence équilibre ↔ alternative | ~20-30 | MOYEN | Algèbre `Finset`, définition d'équilibre |
+| Extraction de l'appartenance au noyau | ~10-20 | FACILE | Définition du noyau, manipulation de sommes |
+| **Total** | **~150-200** | **MOYEN-DUR** | |
 
-## Recommendations
+## Recommandations
 
-1. **Reclassify** `bondareva_shapley_backward` from HONEST_UNPROVABLE to
-   **WIP_HARD** (feasible, ~150-200 lines of preparatory lemmas)
-2. **Do NOT attempt now** — 150-200 lines of convex analysis infrastructure
-   is a multi-day effort, better suited for a focused sprint
-3. **Update FORMAL_STATUS.md** — change BLOCKED to WIP_HARD with the
-   Farkas-based strategy outlined here
-4. **Prerequisite:** verify `Fin N -> R` can be given `LocallyConvexSpace R`
-   and `IsContPerfPair` instances (likely yes via `Pi.topologicalSpace`)
+1. **Reclassifier** `bondareva_shapley_backward` de `HONEST_UNPROVABLE` à
+   `WIP_HARD` (réalisable, ~150-200 lignes de lemmes préparatoires).
+2. **NE PAS tenter maintenant** — 150-200 lignes d'infrastructure d'analyse
+   convexe représentent un effort de plusieurs jours, mieux adapté à un
+   sprint dédié.
+3. **Mettre à jour `FORMAL_STATUS.md`** — passer `BLOCKED` à `WIP_HARD` avec
+   la stratégie basée sur Farkas exposée ici.
+4. **Prérequis :** vérifier que `Fin N → R` peut recevoir des instances
+   `LocallyConvexSpace R` et `IsContPerfPair` (probable via
+   `Pi.topologicalSpace`).
 
-## Alternative: reduced game approach
+## Alternative : approche par jeu réduit
 
-An inductive proof on `|N|` via reduced games avoids Farkas entirely but requires:
-- Defining the Davis-Maschler reduced game
-- Proving the reduced game inherits balancedness
-- More game-theory-specific infrastructure
+Une preuve inductive sur `|N|` via les jeux réduits évite Farkas entièrement
+mais demande :
 
-This is likely MORE work than the Farkas approach since Mathlib's convex
-analysis is already well-developed.
+- Définir le jeu réduit de Davis-Maschler ;
+- Prouver que le jeu réduit hérite de la propriété d'équilibre ;
+- Plus d'infrastructure spécifique à la théorie des jeux.
 
-## References
+C'est probablement PLUS de travail que l'approche Farkas puisque l'analyse
+convexe de Mathlib est déjà bien développée.
 
-- Dillies, Y., Yang, A. (2025). `Mathlib.Analysis.Convex.Cone.Dual`
-- Bondareva, O.N. (1963). "Some Applications of Linear Programming Methods
-  to the Theory of Cooperative Games"
-- Shapley, L.S. (1967). "On Balanced Sets and Cores"
+## Références
+
+- Dillies, Y., Yang, A. (2025). `Mathlib.Analysis.Convex.Cone.Dual`.
+- Bondareva, O.N. (1963). « Some Applications of Linear Programming Methods to
+  the Theory of Cooperative Games ».
+- Shapley, L.S. (1967). « On Balanced Sets and Cores ».
+
+---
+
+## Convention i18n (Option A #4980 ratifiée par ai-01 le 2026-07-04)
+
+Ce fichier est la version **français-first** ; l'original anglais est
+préservé en [`BONDAREVA_SHAPLEY_HARDNESS.en.md`](BONDAREVA_SHAPLEY_HARDNESS.en.md)
+pour traçabilité et future publication bilingue via le moteur Argumentum
+(EPIC #1650). Les noms de lemmes Mathlib (`ProperCone.hyperplane_separation`,
+`ProperCone.dual_dual_flip`, etc.), les noms de types (`TUGame`, `Coalition`,
+`Core`), et les références bibliographiques restent en anglais — seule la
+prose pédagogique est en français.
+
+EPIC parent : #4980 (harmonisation i18n Lean). Part of #4208 (open-courseware
+public multilingue). Voir aussi [`BONDAREVA_SHAPLEY_HARDNESS.en.md`](BONDAREVA_SHAPLEY_HARDNESS.en.md)
+pour la version anglaise d'origine (po-2025, cycle 28, piste A, 2026-05-12).
