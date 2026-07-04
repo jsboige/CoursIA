@@ -1,37 +1,37 @@
 /-
-  Sorted List Counting Lemmas
-  ===========================
+  Lemmes de comptage sur listes triées
+  ====================================
 
-  Helper lemma stubs for counting elements in sorted lists relative to a pivot
-  (typically the median element at position `length / 2`).
+  Lemmes auxiliaires pour compter les éléments dans des listes triées relativement à un pivot
+  (typiquement l'élément médian à la position `length / 2`).
 
-  These lemmas factor out the structural counting argument required by
-  `Voting.lean median_voter_theorem_strict` (sorries at L355 and L385).
+  Ces lemmes factorisent l'argument structurel de comptage requis par
+  `Voting.lean median_voter_theorem_strict` (sorries aux lignes L355 et L385).
 
-  PROOF STRATEGY (factored from Voting.lean L338-L354):
-  1. Let `l` be a sorted list with pivot at position `k = l.length / 2`.
-  2. Decompose `l = take k ++ drop k`.
-  3. By sortedness, all elements in `drop k` are ≥ `l[k]`.
-  4. Therefore `l.countP (· < l[k]) ≤ (take k).length = k`.
-  5. Symmetrically, `l.countP (l[k] ≤ ·) ≥ (drop k).length = l.length - k`.
+  STRATÉGIE DE PREUVE (factorisée depuis Voting.lean L338-L354) :
+  1. Soit `l` une liste triée avec un pivot à la position `k = l.length / 2`.
+  2. Décomposer `l = take k ++ drop k`.
+  3. Par tri, tous les éléments de `drop k` sont ≥ `l[k]`.
+  4. Donc `l.countP (· < l[k]) ≤ (take k).length = k`.
+  5. Symétriquement, `l.countP (l[k] ≤ ·) ≥ (drop k).length = l.length - k`.
 
-  Once these helpers are proven, Voting.lean L355 and L385 reduce to a
-  bridging argument:
+  Une fois ces helpers prouvés, Voting.lean L355 et L385 se réduisent à un
+  argument de pont :
     A := Finset.filter (peaks i < median) Finset.univ
     A.card = (univ.toList.filter (peaks · < median)).length
            = (univ.toList.map peaks).countP (· < median)
-           = (sortedPeaksList.countP (· < median))   [by Perm.countP_eq]
-           ≤ k                                        [by countP_lt_kth_le_half]
+           = (sortedPeaksList.countP (· < median))   [par Perm.countP_eq]
+           ≤ k                                        [par countP_lt_kth_le_half]
 
-  KEY MATHLIB LEMMAS (target API):
-  - `List.Pairwise (· ≤ ·)` (sortedness primitive in current Mathlib)
+  LEMMES MATHLIB CLÉS (API cible) :
+  - `List.Pairwise (· ≤ ·)` (primitive de tri dans le Mathlib actuel)
   - `List.sorted_mergeSort` / `List.mergeSort_perm`
   - `List.Perm.countP_eq`, `List.countP_append`, `List.countP_eq_zero`
   - `List.length_take`, `List.length_drop`, `List.take_append_drop`
 
-  STATUS: stub file with lemma signatures (sorries).
-  Cycle 25 Wave 3 ai-01 backup for po-2026 Track 2.
-  Reference: dispatched in msg-20260511T233949-r0i1xs (2026-05-11).
+  STATUT : fichier avec preuves complètes (les sorries initiaux ont été comblés).
+  Cycle 25 Wave 3 ai-01 backup pour po-2026 Track 2.
+  Référence : dispatché dans msg-20260511T233949-r0i1xs (2026-05-11).
 -/
 
 import Mathlib.Data.List.Sort
@@ -42,19 +42,19 @@ namespace SocialChoice.SortedListCounting
 
 variable {α : Type*}
 
-/-! ## Counting elements relative to a sorted-list pivot -/
+/-! ## Comptage des éléments relatifs au pivot d'une liste triée -/
 
-/-- For a list `l` sorted with `(· ≤ ·)` and pivot `l[k]`, the number of
-    elements strictly less than `l[k]` is at most `k`.
+/-- Pour une liste `l` triée par `(· ≤ ·)` et un pivot `l[k]`, le nombre d'éléments
+    strictement inférieurs à `l[k]` est au plus `k`.
 
-    PROOF SKETCH (TODO po-2026 Track 2):
-    - Decompose `l = l.take k ++ l.drop k` via `List.take_append_drop`.
-    - `(l.take k).length = k` by `List.length_take` (using `hk : k < l.length`).
-    - `(l.drop k).head = l[k]` by indexing.
-    - By `Pairwise.drop` and head-of-drop reasoning, all elements of `l.drop k`
-      are `≥ l[k]`.
-    - Hence `(l.drop k).countP (· < l[k]) = 0` by `List.countP_eq_zero`.
-    - Combining via `List.countP_append` and `List.countP_le_length`:
+    ESQUISSE DE PREUVE :
+    - Décomposer `l = l.take k ++ l.drop k` via `List.take_append_drop`.
+    - `(l.take k).length = k` par `List.length_take` (en utilisant `hk : k < l.length`).
+    - `(l.drop k).head = l[k]` par indexation.
+    - Par `Pairwise.drop` et le raisonnement head-of-drop, tous les éléments de `l.drop k`
+      sont `≥ l[k]`.
+    - Donc `(l.drop k).countP (· < l[k]) = 0` par `List.countP_eq_zero`.
+    - Combinant via `List.countP_append` et `List.countP_le_length` :
         `l.countP (· < l[k]) = (l.take k).countP (· < l[k]) + 0 ≤ k`. -/
 theorem countP_lt_kth_le_half [LinearOrder α]
     {l : List α} (hsort : l.Pairwise (· ≤ ·)) {k : ℕ} (hk : k < l.length) :
@@ -84,18 +84,18 @@ theorem countP_lt_kth_le_half [LinearOrder α]
       exact List.pairwise_iff_getElem.mp hsort k (k + i) hk hki_lt hlt
   omega
 
-/-- For a list `l` sorted with `(· ≤ ·)` and pivot `l[k]`, the number of
-    elements `≥ l[k]` is at least `l.length - k`.
+/-- Pour une liste `l` triée par `(· ≤ ·)` et un pivot `l[k]`, le nombre d'éléments
+    `≥ l[k]` est au moins `l.length - k`.
 
-    Dual of `countP_lt_kth_le_half`, giving a lower bound on the
-    "right side" of the pivot.
+    Dual de `countP_lt_kth_le_half`, donnant une borne inférieure sur
+    le « côté droit » du pivot.
 
-    PROOF SKETCH (TODO po-2026 Track 2):
-    - Decompose `l = l.take k ++ l.drop k`.
-    - `(l.drop k).length = l.length - k` by `List.length_drop`.
-    - All elements of `l.drop k` are `≥ l[k]` (head + sortedness).
-    - So `(l.drop k).countP (l[k] ≤ ·) = (l.drop k).length`.
-    - Adding `(l.take k).countP (l[k] ≤ ·) ≥ 0` gives the bound. -/
+    ESQUISSE DE PREUVE :
+    - Décomposer `l = l.take k ++ l.drop k`.
+    - `(l.drop k).length = l.length - k` par `List.length_drop`.
+    - Tous les éléments de `l.drop k` sont `≥ l[k]` (head + tri).
+    - Donc `(l.drop k).countP (l[k] ≤ ·) = (l.drop k).length`.
+    - Ajouter `(l.take k).countP (l[k] ≤ ·) ≥ 0` donne la borne. -/
 theorem countP_ge_kth_ge_half_succ [LinearOrder α]
     {l : List α} (hsort : l.Pairwise (· ≤ ·)) {k : ℕ} (hk : k < l.length) :
     l.length - k ≤ l.countP (fun x => decide (l[k] ≤ x)) := by
@@ -121,11 +121,11 @@ theorem countP_ge_kth_ge_half_succ [LinearOrder α]
   rw [hdrop_all, hdrop_len]
   omega
 
-/-- Dual to `countP_ge_kth_ge_half_succ` from the left side: for a sorted list `l`
-    and pivot `l[k]`, the number of elements `≤ l[k]` is at least `k + 1`.
+/-- Dual de `countP_ge_kth_ge_half_succ` depuis le côté gauche : pour une liste triée `l`
+    et un pivot `l[k]`, le nombre d'éléments `≤ l[k]` est au moins `k + 1`.
 
-    PROOF: decompose `l = take (k+1) ++ drop (k+1)`. The first `k+1` elements
-    (positions `0..k`) are all `≤ l[k]` by sortedness, contributing `k+1`. -/
+    PREUVE : décomposer `l = take (k+1) ++ drop (k+1)`. Les `k+1` premiers éléments
+    (positions `0..k`) sont tous `≤ l[k]` par tri, contribuant `k+1`. -/
 theorem countP_le_kth_ge_half_succ [LinearOrder α]
     {l : List α} (hsort : l.Pairwise (· ≤ ·)) {k : ℕ} (hk : k < l.length) :
     k + 1 ≤ l.countP (fun x => decide (x ≤ l[k])) := by
@@ -157,14 +157,14 @@ theorem countP_le_kth_ge_half_succ [LinearOrder α]
   rw [htake_all, htake_len]
   omega
 
-/-! ## Bridge: Finset.filter cardinality ↔ List.countP
+/-! ## Pont : cardinalité de Finset.filter ↔ List.countP
 
-    To apply `countP_lt_kth_le_half` / `countP_ge_kth_ge_half_succ` to
-    `Voting.lean median_voter_theorem_strict`, we need to translate
-    `(Finset.filter p Finset.univ).card` to `l.countP (decide ∘ p)` where
+    Pour appliquer `countP_lt_kth_le_half` / `countP_ge_kth_ge_half_succ` à
+    `Voting.lean median_voter_theorem_strict`, nous devons traduire
+    `(Finset.filter p Finset.univ).card` en `l.countP (decide ∘ p)` où
     `l := (Finset.univ.toList.map peaks).mergeSort (· ≤ ·)`. -/
 
-/-- Cardinality of a Finset filter equals countP on the underlying toList. -/
+/-- La cardinalité d'un filtre Finset vaut countP sur la toList sous-jacente. -/
 theorem finset_filter_card_eq_toList_countP
     {α : Type*} [DecidableEq α] (s : Finset α) (p : α → Bool) :
     (s.filter (fun a => p a = true)).card = s.toList.countP p := by
@@ -172,9 +172,9 @@ theorem finset_filter_card_eq_toList_countP
       ← Multiset.coe_toList s.val, Multiset.coe_countP]
   simp [Finset.toList]
 
-/-- Bridge specialised for `Fintype` and the median voter setup:
-    `A.card = (univ.toList.map f).countP p` (without going through filter).
-    The `mergeSort` step is left to the caller (via `List.Perm.countP_eq`). -/
+/-- Pont spécialisé pour `Fintype` et la configuration de l'électeur médian :
+    `A.card = (univ.toList.map f).countP p` (sans passer par le filtre).
+    L'étape `mergeSort` est laissée à l'appelant (via `List.Perm.countP_eq`). -/
 theorem finset_filter_lt_card_eq_toList_map_countP
     {ι α : Type*} [Fintype ι] [DecidableEq ι] (f : ι → α) (p : α → Bool) :
     (Finset.filter (fun i => p (f i) = true) Finset.univ).card =
