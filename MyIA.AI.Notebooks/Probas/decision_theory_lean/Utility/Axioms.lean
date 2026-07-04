@@ -2,60 +2,66 @@ import Mathlib
 import Utility.Basic
 
 /-!
-# von Neumann–Morgenstern Axioms
+# Axiomes de von Neumann–Morgenstern
 
-The four axioms a preference over lotteries must satisfy to admit an
-expected-utility representation:
+Les quatre axiomes qu'une préférence sur les loteries doit satisfaire pour
+admettre une représentation en utilité espérée :
 
-1. **Completeness** — any two lotteries are comparable.
-2. **Transitivity** — preference chains do not cycle.
-3. **Independence (substitution)** — a common mixture preserves preference.
-4. **Continuity (Archimedean)** — no lottery is infinitely better or worse
-   than another; intermediate mixtures exist.
+1. **Complétude** — deux loteries quelconques sont comparables.
+2. **Transitivité** — les chaînes de préférence ne cyclent pas.
+3. **Indépendance (substitution)** — un mélange commun préserve la préférence.
+4. **Continuité (Archimédienne)** — aucune loterie n'est infiniment meilleure
+   ou pire qu'une autre ; des mélanges intermédiaires existent.
 
-A preference satisfying all four is `IsRational`.
+Une préférence satisfaisant les quatre est `IsRational`.
+
+Convention i18n (EPIC #4980, PR pilote #5303) : FR-first appliqué sur les
+en-têtes et docstrings publics. Le code tactique et les commentaires
+intra-preuve restent en anglais (références Mathlib, notation formelle).
 -/
 
 namespace Utility
 
 variable {α : Type*} [Fintype α]
 
-/-- A preference relation is a binary relation on lotteries. Read `P p q` as
-"lottery `p` is weakly preferred to lottery `q`" (p ≽ q). -/
+/-- Une relation de préférence est une relation binaire sur les loteries. Lire
+`P p q` comme « la loterie `p` est faiblement préférée à la loterie `q` » (p ≽ q). -/
 abbrev Pref (α : Type*) [Fintype α] := Lottery α → Lottery α → Prop
 
-/-- Strict preference derived from a weak one: `p ≻ q` means `p ≽ q` but not
-`q ≽ p`. -/
+/-- Préférence stricte dérivée d'une préférence faible : `p ≻ q` signifie
+`p ≽ q` mais non `q ≽ p`. -/
 def StrictPref (P : Pref α) (p q : Lottery α) : Prop := P p q ∧ ¬ P q p
 
-/-- **Completeness**: any two lotteries are comparable in at least one
-direction. -/
+/-- **Complétude** : deux loteries quelconques sont comparables dans au moins
+une direction. -/
 def IsComplete (P : Pref α) : Prop :=
   ∀ p q : Lottery α, P p q ∨ P q p
 
-/-- **Transitivity**: preference chains propagate. -/
+/-- **Transitivité** : les chaînes de préférence se propagent. -/
 def IsTransitive (P : Pref α) : Prop :=
   ∀ p q r : Lottery α, P p q → P q r → P p r
 
-/-- **Independence (substitution)**: if `p ≽ q`, then mixing both with the same
-third lottery `r` preserves the preference, for any mixing weight `t ∈ [0,1]`. -/
+/-- **Indépendance (substitution)** : si `p ≽ q`, alors mélanger les deux avec
+une même troisième loterie `r` préserve la préférence, pour tout poids de
+mélange `t ∈ [0,1]`. -/
 def IsIndependent (P : Pref α) : Prop :=
   ∀ (p q r : Lottery α) (t : ℝ) (ht0 : 0 ≤ t) (ht1 : t ≤ 1),
     P p q → P (mix t p r ht0 ht1) (mix t q r ht0 ht1)
 
-/-- **Continuity (Archimedean / mixture solvability)**: if `p ≽ q ≽ r`, then
-some convex mixture of `p` and `r` is indifferent to `q`. Equivalently, no
-lottery is infinitely better or worse than another; `q` can always be matched
-by mixing the extremes. This is the standard solvability form of the Archimedean
-axiom, equivalent to the two-witness "no lexicographic dominance" form for
-complete transitive orders. -/
+/-- **Continuité (Archimédienne / résolvabilité des mélanges)** : si
+`p ≽ q ≽ r`, alors un certain mélange convexe de `p` et `r` est indifférent à
+`q`. De manière équivalente, aucune loterie n'est infiniment meilleure ou
+pire qu'une autre ; `q` peut toujours être obtenu en mélangeant les extrêmes.
+C'est la forme standard de résolvabilité de l'axiome archimédien, équivalente
+à la forme « pas de dominance lexicographique » à deux témoins pour les ordres
+transitifs complets. -/
 def IsContinuous (P : Pref α) : Prop :=
   ∀ p q r : Lottery α,
     P p q → P q r →
       ∃ (t : ℝ) (ht0 : 0 ≤ t) (ht1 : t ≤ 1),
         P (mix t p r ht0 ht1) q ∧ P q (mix t p r ht0 ht1)
 
-/-- A **rational** preference satisfies all four VNM axioms. -/
+/-- Une préférence **rationnelle** satisfait les quatre axiomes VNM. -/
 structure IsRational (P : Pref α) : Prop where
   protected complete : IsComplete P
   protected transitive : IsTransitive P
