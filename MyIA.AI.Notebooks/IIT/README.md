@@ -274,7 +274,7 @@ IIT/
 ├── IIT-3-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
-│   ├── ICT-1..15-*.ipynb       # 15 notebooks numérotés + ICT-Synthese (2 strates : tri auto-organisé, morphogenèse dynamique)
+│   ├── ICT-*.ipynb             # 20 notebooks numérotés (1..18, 20, 23) + ICT-Synthese (5 strates, Epic #4588 — cf son README)
 │   ├── ict/                    # Package Python autonome (simulations + mesures)
 │   ├── tests/                  # Suite pytest de validation des modules ict/
 │   └── README.md               # Documentation de la série ICT
@@ -314,12 +314,15 @@ La série IIT étudie des structures causales **à un instant donné**. Une exte
 **ICT** (Integrated Causal Trajectories, Epic #4588), prolonge ce regard vers les **trajectoires**
 de structures causales : comment une organisation se maintient, se transforme, se répare, change
 d'échelle et traverse un espace de possibles ($C_0 \rightarrow C_1 \rightarrow \dots \rightarrow C_n$).
-Elle progresse en deux strates — le **tri auto-organisé** transparent (ICT-0 à ICT-7), puis la
-**morphogenèse dynamique** à paysages d'attracteurs engendrés (ICT-8+).
+Elle progresse en cinq strates — le **tri auto-organisé** transparent (strate 1, ICT-0 à ICT-7), la
+**morphogenèse dynamique** à paysages d'attracteurs engendrés (strate 2, ICT-8 à ICT-10), les
+**trajectoires intégrées** régime-dépendantes (strate 3, ICT-11 à ICT-13), la jambe
+**représentationnelle** énergie libre / surprise (strate 4, ICT-14), puis la **théorie fondatrice**
+cross-substrat et la réversibilisation outillée (strate 5, ICT-15+).
 
 ICT vit dans le sous-répertoire [`ICT-Series/`](ICT-Series/README.md), placé sous IIT pour respecter
 l'ordre de lecture (ICT prolonge IIT). **Voir son [README dédié](ICT-Series/README.md)** pour la liste
-complète des notebooks, les deux strates et le détail des mesures *sans complaisance*. La série
+complète des notebooks, les cinq strates et le détail des mesures *sans complaisance*. La série
 partage l'environnement Python d'IIT (`scripts/setup_pyphi_env.ps1`, `requirements.txt`).
 
 ## Ponts causaux : le do-calculus de Pearl à travers les paradigmes
