@@ -11,7 +11,7 @@ Stratégie trend following avec oracles multiples (MACD, RSI, Bollinger).
 - `bollinger_oracle.py` - Oracle Bollinger (position relative)
 - `research.ipynb` - Analyse SMA derivative et signaux
 
-## Concepts enseignes
+## Concepts enseignés
 - Multi-oracle scoring
 - Détection de tendance (Higher Highs, Lower Lows)
 - ATR trailing stop-loss
