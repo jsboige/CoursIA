@@ -11,6 +11,41 @@ maturity: PRODUCTION=17, BETA=3
 
 Série complète de notebooks pour explorer [TweetyProject](https://tweetyproject.org/), une bibliothèque Java pour l'intelligence artificielle symbolique. Le décompte exact des notebooks et leur maturité figurent dans le catalogue généré ci-dessous ; la série cible la version **Tweety 1.30**.
 
+## Statistiques catalogue à jour
+
+Statistiques détaillées de la sous-série Tweety, lues directement depuis le marqueur `<!-- CATALOG-STATUS -->` byte-identique (l. 5-10) — `pedagogical_count: 20, breakdown: Tweety=20, maturity: PRODUCTION=17, BETA=3` :
+
+| Sous-catégorie                                  | Notebooks       | Statut              | Paradigmes / stacks dominants                          |
+|--------------------------------------------------|-----------------|---------------------|--------------------------------------------------------|
+| Racine (Tweety-1 à Tweety-11, stack Python JPype)| 13              | PRODUCTION=11, BETA=2| Logique prop/FOL/modale/DL/QBF + Dung/ASPIC+/AGM/MLN   |
+| Variantes C#/.NET (Tw-2/2b/2c/3/4 port IKVM)     | 5               | PRODUCTION=5, BETA=0 | IKVM 8.15 (bytecode Java→.NET, sans JVM)               |
+| Sous-série préférences et vote (Tw-9 côté C#)    | 1               | BETA=1              | IKVM preferences DLL, OPEN PR #5268 (cycle 13)         |
+| TwistdReasoner (Tw-10 Causality, Tw-11 Dialog)   | 1               | PRODUCTION=1        | do-calculus Pearl + protocoles argumentatifs            |
+| **Total**                                        | **20**          | **PRODUCTION=17, BETA=3** | Python (JPype) + C#/.NET (IKVM 8.15) — double stack |
+
+**Conformité C.1** : les templates `student/` portent les stubs conformes (`pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et restent exécutables end-to-end. Les dépendances sont gérées par `requirements.txt` racine (JPype1, tweety-translate, pandas, numpy, jdk-pywrap). Le port C#/.NET (EPIC #4667) cible .NET 9.0 + IKVM 8.15 ; voir la chaîne de build dans `.github/workflows/tweety-csharp.yml` et l'inventaire détaillé dans la [Section Tweety](https://github.com/jsboige/CoursIA/issues/4667).
+
+## Écosystème MCP et parenté cross-lane
+
+Trois outils d'infrastructure MCP soutiennent l'exécution, la validation et la composition cross-séries de cette sous-série :
+
+1. **MCP Jupyter** (`mcp__jupyter-papermill__*`) — exécution programmée des notebooks via Papermill, capture des sorties, gestion du cycle de vie des kernels Python 3 et `.net-csharp`. Note : le mode async ignore `kernel_name` (bug #5211) — toujours passer par `nbconvert --execute` avec timeout pour les ré-exécutions.
+2. **Validation pre-commit** (`.pre-commit-config.yaml`) — gitleaks (anti-secrets inline, règle `os.getenv("KEY", "<literal-fallback>")` proscrit) + notebook validator (C.1/C.2 : pas de `raise NotImplementedError`, cellules code = `execution_count` + `outputs` cohérents) bloquent les PRs qui dégraderaient les contrats inter-séries.
+3. **MCP QC Cloud** (`mcp__qc-mcp-lite__*`) — backtest QuantConnect partagé pour les notebooks QC (Tw-9 vote Preferences éclaire les modèles de choix social, cf. cross-lane ci-dessous).
+
+La sous-série Tweety s'inscrit dans un **réseau cross-lane structuré** autour de l'argumentation et de la logique formelle :
+
+| Cette sous-série                  | Symétrie dans                                      | Pont pédagogique                                                                |
+|-----------------------------------|----------------------------------------------------|----------------------------------------------------------------------------------|
+| Tweety-3 (logique de description) | [SemanticWeb](../SemanticWeb/) (SW-6/SW-7 OWL)      | DL = moteur de raisonnement OWL ; même formalisme, deux écosystèmes              |
+| Tweety-3 (Dung frameworks)        | [Argument_Analysis](../Argument_Analysis/)         | Détection de sophismes via cadres de Dung + Semantic Kernel (LLM-contrôle)      |
+| Tweety-3 (logique modale/QBF)     | [Lean](../Lean/) (mathlib4)                          | Formalisation des logiques Tweety dans l'assistant de preuve Lean 4              |
+| Tweety-9 (préférences, vote)      | [GameTheory](../../GameTheory/SocialChoice/)        | Préférences individuelles → fonction de choix social (Borda, Condorcet, Arrow)   |
+| Tweety-4 (révision AGM)           | [SmartContracts](../SmartContracts/) (SC-14)       | Mise à jour de croyances → invariants Solidity, logique de révision on-chain    |
+| Tweety-11 (Causalité, do-calculus)| [ML](../../ML/) (inférence causale)                | do-calculus Pearl ↔ modèles causaux structurels (Pearl 2009)                     |
+
+**Effet de composition** : Tweety est le **carrefour logique** du dépôt — chaque sous-série partenaire (Lean, SemanticWeb, Argument_Analysis, GameTheory, SmartContracts, ML) y trouve un point d'entrée formel vers l'argumentation computationnelle. Le pipeline complet relie les **notebooks** (qui motivent la pertinence du raisonnement explicite) aux **ports C#/.NET** (qui rendent Tweety invocable sans JVM, via IKVM 8.15, EPIC #4667) et aux **lakes** (qui formalisent les théorèmes sous-jacents, ex. Arrow en Lean 4).
+
 ## Série en quelques mots
 
 **À qui s'adresse cette série** : étudiants en IA, chercheurs en argumentation computationnelle, développeurs intéressés par le raisonnement formel, et tout curieux souhaitant comprendre les bases mathématiques derrière le raisonnement explicite. Aucun prérequis en logique formelle n'est supposé : les concepts sont introduits progressivement, des opérateurs propositionnels de base jusqu'aux sémantiques d'argumentation les plus avancées.
@@ -647,6 +682,8 @@ Tweety est l'outil où **le raisonnement devient explicite et vérifiable** — 
 Le pitch de Tweety tient en un mot : **explicabilité**. Là où un LLM produit une réponse, Tweety produit un *argument* — une chaîne de raisonnement inspectable, attaquable, défendable. Les logiques changent (propositionnelle, FOL, modale, DL), les *frameworks* changent (Dung, ASPIC+, ABA), mais l'exigence reste — *raisonner de façon transparente, pas opaquement*. C'est elle que vous emportez au-delà de cette série, et c'est ce qui fait de l'IA symbolique un garde-fou naturel pour l'IA générative.
 
 ---
+
+**Version 1.2.0 — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche tweety.**
 
 ## Licence
 
