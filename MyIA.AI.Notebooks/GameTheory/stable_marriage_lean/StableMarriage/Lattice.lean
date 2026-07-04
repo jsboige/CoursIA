@@ -1,28 +1,33 @@
 /-
-  Stable Marriage - Lattice Structure on Stable Matchings
-  ========================================================
+  Mariage stable — Structure de treillis sur les mariages stables
+  ================================================================
 
-  Knuth (1976) showed that the set of stable matchings forms a lattice
-  under the "common preferences" ordering. Wu & Roth (2018) generalized
-  this to many-to-one; we specialize to the one-to-one case.
+  Knuth (1976) a montré que l'ensemble des mariages stables forme un treillis
+  sous l'ordonnancement des « préférences communes ». Wu & Roth (2018) ont généralisé
+  ceci au cas many-to-one ; nous nous spécialisons au cas one-to-one.
 
-  Key results:
-  - Stable matchings are partially ordered by man-preference
-  - The join (supremum) of two stable matchings is stable
-  - The meet (infimum) of two stable matchings is stable
-  - The set of stable matchings forms a distributive lattice
-  - The GS man-proposing output is the top (man-optimal) element
+  Résultats clés :
+  - Les mariages stables sont partiellement ordonnés par préférence des hommes
+  - Le join (supremum) de deux mariages stables est stable
+  - Le meet (infimum) de deux mariages stables est stable
+  - L'ensemble des mariages stables forme un treillis distributif
+  - La sortie GS proposée par les hommes est l'élément sommet (homme-optimal)
 
-  Reference: Knuth (1976), "Marriages Stables"
-  Reference: Wu & Roth (2018), "Lattice Structures in Stable Matching"
-  Reference: Stanley (2011), "Enumerative Combinatorics" Vol 1 (finite lattice lemma)
+  Référence : Knuth (1976), « Mariages Stables »
+  Référence : Wu & Roth (2018), « Lattice Structures in Stable Matching »
+  Référence : Stanley (2011), « Enumerative Combinatorics » Vol 1 (lemme treillis fini)
 
-  Strategy:
-  - We define μ ≤ ν iff every man prefers μ to ν (or is indifferent)
-  - join μ ν: each man gets his preferred partner between μ and ν
-  - meet μ ν: each man gets his less-preferred partner between μ and ν
-  - Wu-Roth Lemma 3.2 (one-to-one): join and meet of stable matchings are stable
-  - Stanley lemma: finite join-semilattice with min = lattice
+  Stratégie :
+  - On définit μ ≤ ν ssi chaque homme préfère μ à ν (ou est indifférent)
+  - join μ ν : chaque homme obtient sa partenaire préférée entre μ et ν
+  - meet μ ν : chaque homme obtient sa partenaire moins préférée entre μ et ν
+  - Lemme Wu-Roth 3.2 (one-to-one) : join et meet des mariages stables sont stables
+  - Lemme Stanley : join-semitreillis fini avec min = treillis
+
+  Convention i18n (Option A ratifiée par ai-01, Epic #4980) :
+  en-têtes de section, docstrings de définition/théorème, commentaires de
+  lemme sont **français d'abord** ; le code Lean tactique (noms de tactiques,
+  lemmes Mathlib, identifiants) reste en anglais, langue canonique de Lean.
 -/
 
 import Mathlib.Order.Lattice
@@ -39,12 +44,12 @@ open Function Finset Classical
 
 variable {n : Nat} [NeZero n] (prof : PrefProfile n)
 
-/-! ## Partial Order on Stable Matchings via Man-Preference -/
+/-! ## Ordre partiel sur les mariages stables via préférence des hommes -/
 
 /--
-Man-preference ordering on matchings: μ ≤ ν iff every man prefers
-his partner in μ at least as much as in ν (i.e., menPref m (μ m) ≤ menPref m (ν m)).
-Lower rank = more preferred, so μ ≤ ν means μ is man-preferred over ν.
+Ordonnancement par préférence des hommes sur les mariages : μ ≤ ν ssi chaque homme préfère
+au moins autant sa partenaire dans μ que dans ν (c.-à-d. menPref m (μ m) ≤ menPref m (ν m)).
+Rang inférieur = plus préféré, donc μ ≤ ν signifie que μ est préféré-homme à ν.
 -/
 def ManLE (μ ν : Matching n) : Prop :=
   ∀ m : Fin n, prof.menPref m (μ.spouse m) ≤ prof.menPref m (ν.spouse m)
@@ -74,10 +79,10 @@ lemma antisymm (h1 : ManLE prof μ ν) (h2 : ManLE prof ν μ) :
 
 end ManLE
 
-/-! ## Inverse Helpers (needed for join/meet bijectivity) -/
+/-! ## Helpers d'inverse (nécessaires pour la bijectivité de join/meet) -/
 
 /--
-Key fact: μ.inverse w is the unique m such that μ.spouse m = w.
+Fait clé : μ.inverse w est l'unique m tel que μ.spouse m = w.
 -/
 lemma inverse_eq_of_spouse_eq (μ : Matching n) (m w : Fin n)
     (h : μ.spouse m = w) : μ.inverse w = m := by
@@ -87,19 +92,19 @@ lemma inverse_eq_of_spouse_eq (μ : Matching n) (m w : Fin n)
   exact this
 
 /--
-Key fact: μ.spouse (μ.inverse w) = w.
+Fait clé : μ.spouse (μ.inverse w) = w.
 -/
 lemma spouse_inverse (μ : Matching n) (w : Fin n) :
     μ.spouse (μ.inverse w) = w := by
   unfold Matching.inverse
   exact Equiv.ofBijective_apply_symm_apply μ.spouse μ.bijective w
 
-/-! ## Anti-crossing Lemma (Knuth decomposition) -/
+/-! ## Lemme anti-croisement (décomposition de Knuth) -/
 
 /--
-A sound anti-crossing fragment: if the shared woman `w` is chosen by both men
-against their partners in the other stable matching, then the two men coincide.
-This is the cross-case needed for injectivity of `joinSpouse`.
+Un fragment anti-croisement sain : si la femme partagée `w` est choisie par les deux hommes
+contre leurs partenaires dans l'autre mariage stable, alors les deux hommes coïncident.
+C'est le cas croisé nécessaire pour l'injectivité de `joinSpouse`.
 -/
 lemma no_cross_if_both_choose_cross (μ ν : Matching n)
     (hμ : IsStable prof μ) (hν : IsStable prof ν)
@@ -131,34 +136,34 @@ lemma no_cross_if_both_choose_cross (μ ν : Matching n)
     Nat.le_antisymm (mod_cast hnot₂) (mod_cast hnot₁)
   exact hne ((prof.womenPref_bijective w).injective (Fin.ext heq))
 
-/-! ## Refutation of the anti-crossing conjecture (`no_cross_match`)
+/-! ## Réfutation de la conjecture anti-croisement (`no_cross_match`)
 
-Earlier versions of this file stated the following "anti-crossing lemma",
-attributed to Knuth's decomposition argument, and left its Cases A2/B as
-`sorry` after many unsuccessful proof attempts:
+Les versions antérieures de ce fichier énonçaient le « lemme anti-croisement » suivant,
+attribué à l'argument de décomposition de Knuth, et laissaient ses cas A2/B comme
+`sorry` après de nombreuses tentatives de preuve infructueuses :
 
   `no_cross_match : IsStable prof μ → IsStable prof ν →`
   `    μ.spouse m₁ = w → ν.spouse m₂ = w → μ.spouse m₂ = ν.spouse m₁`
 
-This statement is FALSE.  It would force the symmetric difference of any two
-stable matchings to decompose into 2-cycles (swaps), but rotations of length
-≥ 3 between stable matchings exist.  The kernel-checked counterexample below
-(`NoCrossCounterexample.no_cross_match_is_false`) uses the classic 3×3
-latin-square instance (Knuth 1976): the identity matching and its cyclic
-shift are both stable, yet the claimed cross-partner equality fails.  This
-explains why all proof attempts on the `sorry` branches stalled: the goals
-were unprovable.
+Cet énoncé est FAUX. Il forcerait la différence symétrique de deux mariages stables
+quelconques à se décomposer en 2-cycles (échanges), mais des rotations de longueur
+≥ 3 entre mariages stables existent. Le contre-exemple vérifié par kernel ci-dessous
+(`NoCrossCounterexample.no_cross_match_is_false`) utilise l'instance classique 3×3
+carré latin (Knuth 1976) : le mariage identité et son décalage cyclique sont tous deux
+stables, mais l'égalité croisée des partenaires échouée. Cela explique pourquoi toutes
+les tentatives de preuve sur les branches `sorry` ont stagné : les buts étaient
+improuvables.
 
-Knuth's lattice theorem does not need any anti-crossing statement: the
-weaker facts proved in this file (`no_cross_if_both_choose_cross`,
-`joinSpouse_injective`, and the counting argument in `meetSpouse_eq_of_eq`)
-suffice to show that join and meet of two stable matchings are matchings.
+Le théorème de treillis de Knuth n'a besoin d'aucun énoncé anti-croisement : les
+faits plus faibles prouvés dans ce fichier (`no_cross_if_both_choose_cross`,
+`joinSpouse_injective`, et l'argument de comptage dans `meetSpouse_eq_of_eq`)
+suffisent à montrer que join et meet de deux mariages stables sont des mariages.
 
-The statements `man_optimality_key_step` and `doctor_optimal_eq_top` that
-previously closed this file were false for the same reason (they implied
-that all stable matchings are pairwise ManLE-comparable in both directions,
-hence equal); they are refuted at the end of this file and replaced by the
-honest theorem `exists_isManOptimal`.
+Les énoncés `man_optimality_key_step` et `doctor_optimal_eq_top` qui
+clôturaient précédemment ce fichier étaient faux pour la même raison (ils impliquaient
+que tous les mariages stables sont comparables deux à deux dans les deux directions ManLE,
+donc égaux) ; ils sont réfutés à la fin de ce fichier et remplacés par
+l'honnête théorème `exists_isManOptimal`.
 -/
 
 /--
@@ -179,28 +184,28 @@ lemma isStable_of_check (μ : Matching n)
 
 namespace NoCrossCounterexample
 
-/-- Men's rankings of the 3×3 latin-square instance (Knuth 1976).
-`menPref3 m w` is the rank man `m` assigns to woman `w` (lower = preferred):
+/-- Préférences des hommes pour l'instance 3×3 du carré latin (Knuth 1976).
+`menPref3 m w` est le rang que l'homme `m` assigne à la femme `w` (plus petit = préféré) :
 m₁ : w₁ > w₂ > w₃, m₂ : w₂ > w₃ > w₁, m₃ : w₃ > w₁ > w₂. -/
 def menPref3 : Fin 3 → Fin 3 → Fin 3 := ![![0, 1, 2], ![2, 0, 1], ![1, 2, 0]]
 
-/-- Women's rankings, cyclically shifted against the men's:
+/-- Préférences des femmes, décalées cycliquement par rapport aux hommes :
 w₁ : m₂ > m₃ > m₁, w₂ : m₃ > m₁ > m₂, w₃ : m₁ > m₂ > m₃. -/
 def womenPref3 : Fin 3 → Fin 3 → Fin 3 := ![![2, 0, 1], ![1, 2, 0], ![0, 1, 2]]
 
-/-- The 3×3 latin-square preference profile. -/
+/-- Le profil de préférences du carré latin 3×3. -/
 def prof3 : PrefProfile 3 where
   menPref := menPref3
   womenPref := womenPref3
   menPref_bijective := by decide
   womenPref_bijective := by decide
 
-/-- The identity matching mᵢ ↦ wᵢ. -/
+/-- Le mariage identité mᵢ ↦ wᵢ. -/
 def M0 : Matching 3 where
   spouse := id
   bijective := Function.bijective_id
 
-/-- The cyclic-shift matching mᵢ ↦ wᵢ₊₁. -/
+/-- Le mariage décalage cyclique mᵢ ↦ wᵢ₊₁. -/
 def M1 : Matching 3 where
   spouse := ![1, 2, 0]
   bijective := by decide
@@ -212,10 +217,10 @@ lemma M1_stable : IsStable prof3 M1 :=
   isStable_of_check prof3 M1 (by decide)
 
 /--
-**Refutation** of the former `no_cross_match` lemma (its full universally
-quantified statement).  Instantiation: μ = M0 (identity), ν = M1 (shift),
-w = w₁, m₁ = m₁ (married to w₁ in M0), m₂ = m₃ (married to w₁ in M1).
-The conclusion would force `M0.spouse m₃ = M1.spouse m₁`, i.e. w₃ = w₂.
+**Réfutation** de l'ancien lemme `no_cross_match` (son énoncé universellement
+quantifié complet).  Instanciation : μ = M0 (identité), ν = M1 (décalage),
+w = w₁, m₁ = m₁ (marié à w₁ dans M0), m₂ = m₃ (marié à w₁ dans M1).
+La conclusion forcerait `M0.spouse m₃ = M1.spouse m₁`, c-à-d w₃ = w₂.
 -/
 theorem no_cross_match_is_false :
     ¬ ∀ (n : Nat) [NeZero n] (prof : PrefProfile n) (μ ν : Matching n),
@@ -228,13 +233,13 @@ theorem no_cross_match_is_false :
 
 end NoCrossCounterexample
 
-/-! ## Join and Meet Operations -/
+/-! ## Opérations de join et meet -/
 
 /--
-The join spouse function: each man gets his preferred partner between μ and ν.
-Defined as a bare function so that bijectivity can be proved separately with
-stability hypotheses. The join is NOT bijective for arbitrary matchings;
-it requires both μ and ν to be stable (anti-complementarity).
+La fonction spouse du join : chaque homme obtient sa partenaire préférée entre μ et ν.
+Définie comme une fonction nue pour que la bijectivité puisse être prouvée séparément avec
+les hypothèses de stabilité. Le join n'est PAS bijectif pour des mariages arbitraires ;
+il nécessite que μ et ν soient tous deux stables (anti-complémentarité).
 -/
 noncomputable def Matching.joinSpouse (μ ν : Matching n) (m : Fin n) : Fin n :=
   if prof.menPref m (μ.spouse m) ≤ prof.menPref m (ν.spouse m) then
@@ -243,7 +248,7 @@ noncomputable def Matching.joinSpouse (μ ν : Matching n) (m : Fin n) : Fin n :
     ν.spouse m
 
 /--
-The meet spouse function: each man gets his less-preferred partner between μ and ν.
+La fonction spouse du meet : chaque homme obtient sa partenaire moins préférée entre μ et ν.
 -/
 noncomputable def Matching.meetSpouse (μ ν : Matching n) (m : Fin n) : Fin n :=
   if prof.menPref m (μ.spouse m) ≤ prof.menPref m (ν.spouse m) then
@@ -252,10 +257,10 @@ noncomputable def Matching.meetSpouse (μ ν : Matching n) (m : Fin n) : Fin n :
     μ.spouse m
 
 /--
-Injectivity of join: if joinSpouse μ ν m₁ = joinSpouse μ ν m₂, then m₁ = m₂.
-Key insight: the cross-cases (one man picks μ-spouse, other picks ν-spouse,
-both equal same woman w) lead to a blocking-pair contradiction via stability.
-The easy cases (both men pick same matching) follow from that matching's injectivity.
+Injectivité du join : si joinSpouse μ ν m₁ = joinSpouse μ ν m₂, alors m₁ = m₂.
+Insight clé : les cas croisés (un homme choisit μ-spouse, l'autre ν-spouse,
+les deux égaux à la même femme w) mènent à une contradiction de paire bloquante via la stabilité.
+Les cas faciles (les deux hommes choisissent le même matching) découlent de l'injectivité de ce matching.
 -/
 private lemma joinSpouse_injective (μ ν : Matching n)
     (hμ : IsStable prof μ) (hν : IsStable prof ν) :
@@ -366,9 +371,9 @@ private lemma joinSpouse_injective (μ ν : Matching n)
       exact ν.bijective.1 heq
 
 /--
-The join of two STABLE matchings: each man gets his preferred partner.
-Bijectivity follows from anti-complementarity: on the woman side, the join
-acts as the meet, so no two men map to the same woman.
+Le join de deux mariages STABLES : chaque homme obtient sa partenaire préférée.
+La bijectivité découle de l'anti-complémentarité : côté femmes, le join
+agit comme le meet, donc deux hommes ne peuvent pas mapper vers la même femme.
 -/
 noncomputable def Matching.join (hμ : IsStable prof μ) (hν : IsStable prof ν) :
     Matching n where
@@ -376,9 +381,9 @@ noncomputable def Matching.join (hμ : IsStable prof μ) (hν : IsStable prof ν
   bijective := Finite.injective_iff_bijective.mp (joinSpouse_injective prof μ ν hμ hν)
 
 /--
-Each man's join/meet pair is exactly his pair of partners in `{μ, ν}`:
-either the join picks his μ-partner and the meet his ν-partner, or the
-other way around.  Purely definitional if-split; no stability needed.
+La paire join/meet de chaque homme est exactement sa paire de partenaires dans `{μ, ν}` :
+soit le join prend sa μ-partenaire et le meet sa ν-partenaire, soit
+l'inverse. Purement définitionnel par if-split ; aucune stabilité nécessaire.
 -/
 private lemma joinSpouse_meetSpouse_cases (μ ν : Matching n) (m : Fin n) :
     (μ.joinSpouse prof ν m = μ.spouse m ∧ μ.meetSpouse prof ν m = ν.spouse m) ∨
@@ -388,18 +393,17 @@ private lemma joinSpouse_meetSpouse_cases (μ ν : Matching n) (m : Fin n) :
   · exact Or.inr ⟨by simp [Matching.joinSpouse, hc], by simp [Matching.meetSpouse, hc]⟩
 
 /--
-Core of meet-injectivity, by counting — no anti-crossing lemma needed
-(the anti-crossing statement is in fact false, see
+Noyau de l'injectivité du meet, par comptage — pas besoin de lemme anti-croisement
+(l'énoncé anti-croisement est en fait faux, voir
 `NoCrossCounterexample.no_cross_match_is_false`).
 
-If two men m₁, m₂ both have meet-partner `w`, then each of them is
-`μ.inverse w` or `ν.inverse w` (a man's meet-partner is one of his own
-partners).  The join is surjective (`joinSpouse_injective` + finiteness),
-so some m₀ has join-partner `w`, and m₀ also lies in
-`{μ.inverse w, ν.inverse w}`.  In the mixed case (m₁, m₂ occupying the two
-distinct slots), m₀ coincides with one of them; but a man whose join- AND
-meet-partner are both `w` has both his μ- and ν-partner equal to `w`,
-which collapses both inverses onto him — and then m₁ and m₂ both equal him.
+Si deux hommes m₁, m₂ ont tous deux pour partenaire meet `w`, alors chacun d'eux est
+`μ.inverse w` ou `ν.inverse w` (la partenaire meet d'un homme est l'une de ses propres partenaires).
+Le join est surjectif (`joinSpouse_injective` + finitude), donc un certain m₀ a pour partenaire join `w`,
+et m₀ se trouve aussi dans `{μ.inverse w, ν.inverse w}`. Dans le cas mixte
+(m₁, m₂ occupant les deux slots distincts), m₀ coïncide avec l'un d'eux ; mais un homme
+dont les partenaires join ET meet sont tous deux `w` a ses partenaires μ et ν tous deux égaux à `w`,
+ce qui effondre les deux inverses sur lui — et alors m₁ et m₂ lui sont tous deux égaux.
 -/
 private lemma meetSpouse_eq_of_eq (μ ν : Matching n)
     (hμ : IsStable prof μ) (hν : IsStable prof ν) (w m₁ m₂ : Fin n)
@@ -450,7 +454,7 @@ private lemma meetSpouse_eq_of_eq (μ ν : Matching n)
   · exact e₁.trans e₂.symm
 
 /--
-Injectivity of meet, via the counting argument in `meetSpouse_eq_of_eq`.
+Injectivité du meet, via l'argument de comptage dans `meetSpouse_eq_of_eq`.
 -/
 private lemma meetSpouse_injective (μ ν : Matching n)
     (hμ : IsStable prof μ) (hν : IsStable prof ν) :
@@ -459,22 +463,22 @@ private lemma meetSpouse_injective (μ ν : Matching n)
   exact meetSpouse_eq_of_eq prof μ ν hμ hν (μ.meetSpouse prof ν m₂) m₁ m₂ heq rfl
 
 /--
-The meet of two STABLE matchings: each man gets his less-preferred partner.
+Le meet de deux mariages STABLES : chaque homme obtient sa partenaire moins préférée.
 -/
 noncomputable def Matching.meet (hμ : IsStable prof μ) (hν : IsStable prof ν) :
     Matching n where
   spouse := fun m => μ.meetSpouse prof ν m
   bijective := Finite.injective_iff_bijective.mp (meetSpouse_injective prof μ ν hμ hν)
 
-/-! ## Stability of Join and Meet (Wu-Roth Lemma 3.2, one-to-one case) -/
+/-! ## Stabilité du Join et du Meet (Wu-Roth Lemme 3.2, cas univoque) -/
 
 open PrefProfile
 
 /--
-Helper: if m prefers w to his join-spouse, then m prefers w to both
-his partner in μ and his partner in ν.
-The join picks the lower-ranked (more preferred) of the two partners.
-Uses joinSpouse (no stability needed).
+Helper : si m préfère w à sa join-spouse, alors m préfère w à la fois
+à sa partenaire dans μ et à sa partenaire dans ν.
+Le join choisit la partenaire de rang inférieur (plus préférée) parmi les deux.
+Utilise joinSpouse (pas de stabilité nécessaire).
 -/
 lemma join_pref_both (μ ν : Matching n) (m w : Fin n)
     (h : prof.ManPrefers m w (μ.joinSpouse prof ν m)) :
@@ -498,9 +502,9 @@ lemma join_pref_both (μ ν : Matching n) (m w : Fin n)
     exact mod_cast Nat.lt_trans ‹_› hνμ
 
 /--
-Helper: if m prefers w to his meet-spouse, then m prefers w to at least one
-of his partners in μ or ν (the less-preferred one).
-Uses meetSpouse (no stability needed).
+Helper : si m préfère w à sa meet-spouse, alors m préfère w à au moins l'une
+de ses partenaires dans μ ou ν (la moins préférée).
+Utilise meetSpouse (pas de stabilité nécessaire).
 -/
 lemma meet_pref_one (μ ν : Matching n) (m w : Fin n)
     (h : prof.ManPrefers m w (μ.meetSpouse prof ν m)) :
@@ -514,12 +518,12 @@ lemma meet_pref_one (μ ν : Matching n) (m w : Fin n)
     left; exact h
 
 /--
-Anti-complementarity of the join:
-(μ ⊔ ν).inverse w equals either μ⁻¹(w) or ν⁻¹(w).
+Anti-complémentarité du join :
+(μ ⊔ ν).inverse w est égal soit à μ⁻¹(w), soit à ν⁻¹(w).
 
-Proof: let m = (μ ⊔ ν).inverse w. The join gives m his preferred partner,
-which equals w. So either μ.spouse m = w (making m = μ⁻¹(w))
-or ν.spouse m = w (making m = ν⁻¹(w)).
+Preuve : soit m = (μ ⊔ ν).inverse w. Le join donne à m sa partenaire préférée,
+qui vaut w. Donc soit μ.spouse m = w (ce qui donne m = μ⁻¹(w)),
+soit ν.spouse m = w (ce qui donne m = ν⁻¹(w)).
 -/
 lemma join_inverse_anti (μ ν : Matching n) (hμ : IsStable prof μ) (hν : IsStable prof ν)
     (w : Fin n) :
@@ -533,11 +537,11 @@ lemma join_inverse_anti (μ ν : Matching n) (hμ : IsStable prof μ) (hν : IsS
   · right; exact (inverse_eq_of_spouse_eq ν _ w hspw).symm
 
 /--
-Anti-complementarity of the meet (woman side):
-If meet.inverse w = μ⁻¹(w), then w prefers μ⁻¹(w) to ν⁻¹(w).
-The meet on the man side acts as the join on the woman side: w gets her
-more-preferred man. If meet picked μ⁻¹(w), then ν⁻¹(w) must be less preferred.
-Requires stability of μ and ν.
+Anti-complémentarité du meet (côté femmes) :
+Si meet.inverse w = μ⁻¹(w), alors w préfère μ⁻¹(w) à ν⁻¹(w).
+Le meet côté hommes agit comme le join côté femmes : w obtient son
+homme préféré. Si le meet a choisi μ⁻¹(w), alors ν⁻¹(w) doit être moins préféré.
+Nécessite la stabilité de μ et ν.
 -/
 lemma meet_inverse_anti_pref (μ ν : Matching n)
     (hμ : IsStable prof μ) (hν : IsStable prof ν) (w : Fin n)
@@ -603,9 +607,9 @@ lemma meet_inverse_anti_pref (μ ν : Matching n)
         exact this
 
 /--
-Anti-complementarity of the meet (woman side, ν branch):
-If meet.inverse w = ν⁻¹(w), then w prefers ν⁻¹(w) to μ⁻¹(w).
-Requires stability of μ and ν.
+Anti-complémentarité du meet (côté femmes, branche ν) :
+Si meet.inverse w = ν⁻¹(w), alors w préfère ν⁻¹(w) à μ⁻¹(w).
+Nécessite la stabilité de μ et ν.
 -/
 lemma meet_inverse_anti_pref' (μ ν : Matching n)
     (hμ : IsStable prof μ) (hν : IsStable prof ν) (w : Fin n)
@@ -683,9 +687,9 @@ lemma meet_inverse_anti_pref' (μ ν : Matching n)
       rw [inverse_eq_of_spouse_eq μ _ _ hmMeet]
 
 /--
-Anti-complementarity of the meet: (μ ⊓ ν).inverse w equals either μ⁻¹(w) or ν⁻¹(w).
-Same argument as join_inverse_anti: the meet spouse of (meet.inverse w) equals w,
-and the meet picks one of the two partners.
+Anti-complémentarité du meet : (μ ⊓ ν).inverse w est égal soit à μ⁻¹(w), soit à ν⁻¹(w).
+Même argument que join_inverse_anti : la meet spouse de (meet.inverse w) vaut w,
+et le meet choisit l'une des deux partenaires.
 -/
 lemma meet_inverse_anti (μ ν : Matching n) (hμ : IsStable prof μ) (hν : IsStable prof ν)
     (w : Fin n) :
@@ -699,14 +703,14 @@ lemma meet_inverse_anti (μ ν : Matching n) (hμ : IsStable prof μ) (hν : IsS
   · left; exact (inverse_eq_of_spouse_eq μ _ w hspw).symm
 
 /--
-Wu-Roth Lemma 3.2 (one-to-one specialization):
-The join of two stable matchings is stable.
+Wu-Roth Lemme 3.2 (spécialisation univoque) :
+Le join de deux mariages stables est stable.
 
-Proof: suppose (m, w) blocks μ ⊔ ν.
-Man side: m prefers w to join-partner ⟹ m prefers w to both μ(m) and ν(m).
-Woman side: (μ ⊔ ν).inverse w is either μ⁻¹(w) or ν⁻¹(w).
-  Case μ⁻¹(w): w prefers m to μ⁻¹(w), so (m,w) blocks μ. Contradiction.
-  Case ν⁻¹(w): w prefers m to ν⁻¹(w), so (m,w) blocks ν. Contradiction.
+Preuve : supposons que (m, w) bloque μ ⊔ ν.
+Côté homme : m préfère w à la join-partenaire ⟹ m préfère w à la fois à μ(m) et ν(m).
+Côté femme : (μ ⊔ ν).inverse w est soit μ⁻¹(w), soit ν⁻¹(w).
+  Cas μ⁻¹(w) : w préfère m à μ⁻¹(w), donc (m,w) bloque μ. Contradiction.
+  Cas ν⁻¹(w) : w préfère m à ν⁻¹(w), donc (m,w) bloque ν. Contradiction.
 -/
 theorem join_isStable (μ ν : Matching n)
     (hμ : IsStable prof μ) (hν : IsStable prof ν) :
@@ -722,12 +726,12 @@ theorem join_isStable (μ ν : Matching n)
     exact hν m w ⟨hboth.2, hwpref⟩
 
 /--
-The meet of two stable matchings is stable.
+Le meet de deux mariages stables est stable.
 
-Proof: suppose (m, w) blocks μ ⊓ ν.
-Man side: m prefers w to meet-partner ⟹ m prefers w to at least one of μ(m) or ν(m).
-Woman side: (μ ⊓ ν).inverse w is either μ⁻¹(w) or ν⁻¹(w).
-  Combined, at least one of the cases gives a blocking pair for μ or ν.
+Preuve : supposons que (m, w) bloque μ ⊓ ν.
+Côté homme : m préfère w à la meet-partenaire ⟹ m préfère w à au moins l'une de μ(m) ou ν(m).
+Côté femme : (μ ⊓ ν).inverse w est soit μ⁻¹(w), soit ν⁻¹(w).
+  Combinés, au moins un des cas donne une paire bloquante pour μ ou ν.
 -/
 theorem meet_isStable (μ ν : Matching n)
     (hμ : IsStable prof μ) (hν : IsStable prof ν) :
@@ -764,38 +768,38 @@ theorem meet_isStable (μ ν : Matching n)
     · -- m prefers w to ν(m) AND w prefers m to ν⁻¹(w) → blocks ν
       exact hν m w ⟨hmν, hwpref⟩
 
-/-! ## Lattice Instance -/
+/-! ## Instance de treillis -/
 
--- TODO: Instance requires proving all lattice axioms on the subtype.
--- This needs join_isStable + meet_isStable fully proved first.
--- Will instantiate after proofs are complete.
+-- TODO : l'instance nécessite de prouver tous les axiomes de treillis sur le sous-type.
+-- Cela requiert join_isStable + meet_isStable entièrement prouvés d'abord.
+-- Sera instanciée une fois les preuves complètes.
 
-/-! ## Man-Optimality (honest version)
+/-! ## Man-optimalité (version honnête)
 
-The two statements that previously closed this file —
+Les deux énoncés qui clôturaient précédemment ce fichier —
 
   `man_optimality_key_step : menPref m' (ν.spouse m') < menPref m' (μ.spouse m') → False`
   `doctor_optimal_eq_top   : IsStable prof μ_gs → IsStable prof μ' → ManLE prof μ_gs μ'`
 
-— were FALSE as stated (their `sorry`s were unprovable): neither statement
-mentioned the Gale-Shapley algorithm, so together they claimed that ANY two
-stable matchings are ManLE-comparable in both directions, i.e. that the
-stable matching is unique.  The 3×3 latin-square instance refutes both
+— étaient FAUX tels qu'énoncés (leurs `sorry` étaient improuvables) : aucun énoncé
+ne mentionnait l'algorithme de Gale-Shapley, donc ensemble ils affirmaient que N'IMPORTE QUELS deux
+mariages stables sont comparables ManLE dans les deux directions, c-à-d que le
+mariage stable est unique. L'instance du carré latin 3×3 réfute les deux
 (`NoCrossCounterexample.man_optimality_key_step_is_false`,
 `NoCrossCounterexample.doctor_optimal_eq_top_is_false`).
 
-The honest replacement is the EXISTENCE of a man-optimal stable matching,
-`exists_isManOptimal`, proved by a minimal-weight argument on the join
-semilattice (`join_isStable`).  `gale_shapley_man_optimal` in
-GaleShapley.lean consumes it, seeded by `gale_shapley_stable`.
+Le remplacement honnête est l'EXISTENCE d'un mariage stable man-optimal,
+`exists_isManOptimal`, prouvée par un argument de poids minimal sur le join
+semilattice (`join_isStable`). `gale_shapley_man_optimal` dans
+GaleShapley.lean le consomme, ensemencé par `gale_shapley_stable`.
 -/
 
 namespace NoCrossCounterexample
 
 /--
-**Refutation** of the former `man_optimality_key_step` lemma: m₁ strictly
-prefers his M0-partner w₁ (rank 0) to his M1-partner w₂ (rank 1), and both
-matchings are stable, so no `False` can follow.
+**Réfutation** de l'ancien lemme `man_optimality_key_step` : m₁ préfère strictement
+sa M0-partenaire w₁ (rang 0) à sa M1-partenaire w₂ (rang 1), et les deux
+mariages sont stables, donc aucun `False` ne peut s'ensuivre.
 -/
 theorem man_optimality_key_step_is_false :
     ¬ ∀ (n : Nat) [NeZero n] (prof : PrefProfile n) (μ ν : Matching n),
@@ -806,9 +810,9 @@ theorem man_optimality_key_step_is_false :
   exact h 3 prof3 M1 M0 M1_stable M0_stable 0 (by decide)
 
 /--
-**Refutation** of the former `doctor_optimal_eq_top` theorem: with
-μ_gs := M1 and μ' := M0 (both stable), ManLE would require
-`menPref m₁ w₂ ≤ menPref m₁ w₁`, i.e. `1 ≤ 0`.
+**Réfutation** de l'ancien théorème `doctor_optimal_eq_top` : avec
+μ_gs := M1 et μ' := M0 (tous deux stables), ManLE requerrait
+`menPref m₁ w₂ ≤ menPref m₁ w₁`, c-à-d `1 ≤ 0`.
 -/
 theorem doctor_optimal_eq_top_is_false :
     ¬ ∀ (n : Nat) [NeZero n] (prof : PrefProfile n) (μ_gs : Matching n),
@@ -822,18 +826,17 @@ theorem doctor_optimal_eq_top_is_false :
 end NoCrossCounterexample
 
 /--
-A man-optimal stable matching exists as soon as a stable matching exists.
+Un mariage stable man-optimal existe dès qu'un mariage stable existe.
 
-Minimal-weight argument: let `W μ = Σ_m rank_m (μ.spouse m)` and pick (via
-`Nat.find`) a stable matching `μ₀` whose weight is minimal among stable
-matchings.  If some stable `ν` gave some man `m` a strictly better partner,
-the join `μ₀ ⊔ ν` would be stable (`join_isStable`), pointwise weakly
-man-better than `μ₀` (the join hands each man his preferred partner of the
-two) and strictly better for `m`, hence of strictly smaller weight —
-contradicting minimality.  So `μ₀` is man-optimal.
+Argument de poids minimal : soit `W μ = Σ_m rank_m (μ.spouse m)` et choisissons (via
+`Nat.find`) un mariage stable `μ₀` dont le poids est minimal parmi les mariages stables.
+Si un `ν` stable donnait à un homme `m` une partenaire strictement meilleure,
+le join `μ₀ ⊔ ν` serait stable (`join_isStable`), pointwise faiblement meilleur côté hommes
+que `μ₀` (le join donne à chaque homme sa partenaire préférée des deux) et strictement meilleur
+pour `m`, donc de poids strictement plus petit — contredisant la minimalité. Donc `μ₀` est man-optimal.
 
-The hypothesis is discharged by `gale_shapley_stable` in GaleShapley.lean
-(kept as a hypothesis here to avoid an import cycle).
+L'hypothèse est déchargée par `gale_shapley_stable` dans GaleShapley.lean
+(gardée comme hypothèse ici pour éviter un cycle d'import).
 -/
 theorem exists_isManOptimal (hex : ∃ μ : Matching n, IsStable prof μ) :
     ∃ μ : Matching n, IsManOptimal prof μ := by
