@@ -1,14 +1,14 @@
 /-
-  Social Choice Framework — Shared Abstractions
+  Cadre du choix social — abstractions partagées
   ==============================================
 
-  Common definitions for social choice theory: preference profiles,
-  social welfare functions, Arrow's axioms, and preference manipulation
-  helpers. Extracted from Arrow.lean so that Sen.lean and Voting.lean
-  can import these without depending on Arrow's proof machinery.
+  Définitions communes de la théorie du choix social : profils de préférence,
+  fonctions de bien-être social, axiomes d'Arrow, et utilitaires de manipulation
+  de préférences. Extrait de Arrow.lean pour que Sen.lean et Voting.lean
+  puissent importer ces définitions sans dépendre de la machinerie de preuve d'Arrow.
 
-  Reference: Amartya Sen, "Collective Choice and Social Welfare" (1970)
-  Reference: John Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005)
+  Référence : Amartya Sen, "Collective Choice and Social Welfare" (1970)
+  Référence : John Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005)
 -/
 
 import SocialChoice.Basic
@@ -17,63 +17,63 @@ import Mathlib.Tactic
 
 variable {ι : Type*} {σ : Type*} [Fintype ι] [DecidableEq ι] [DecidableEq σ]
 
-/-! ## Preference Profiles and Social Welfare Functions -/
+/-! ## Profils de préférence et fonctions de bien-être social -/
 
-/-- A preference profile assigns a preference order to each individual -/
+/-- Un profil de préférence assigne un ordre de préférence à chaque individu -/
 def Profile (ι σ : Type*) := ι → PrefOrder σ
 
-/-- A social welfare function maps profiles to social preferences -/
+/-- Une fonction de bien-être social mappe les profils vers des préférences sociales -/
 def SWF (ι σ : Type*) := Profile ι σ → PrefOrder σ
 
-/-! ## Arrow's Axioms -/
+/-! ## Axiomes d'Arrow -/
 
-/-- Weak Pareto: If everyone strictly prefers x to y, so does society -/
+/-- Pareto faible : si tout le monde préfère strictement x à y, la société aussi -/
 def weak_pareto (f : SWF ι σ) (X : Finset σ) : Prop :=
   ∀ prof : Profile ι σ, ∀ x y : σ, x ∈ X → y ∈ X →
     (∀ i : ι, P (prof i).rel x y) → P (f prof).rel x y
 
-/-- Independence of Irrelevant Alternatives (IIA) -/
+/-- Indépendance des alternatives non pertinentes (IIA) -/
 def ind_of_irr_alts (f : SWF ι σ) (X : Finset σ) : Prop :=
   ∀ prof prof' : Profile ι σ, ∀ x y : σ, x ∈ X → y ∈ X →
     (∀ i : ι, same_order' (prof i).rel (prof' i).rel x y x y) →
     same_order' (f prof).rel (f prof').rel x y x y
 
-/-- Individual d is a dictator over pair (x, y) -/
+/-- L'individu d est un dictateur sur la paire (x, y) -/
 def is_dictator_on (f : SWF ι σ) (d : ι) (x y : σ) : Prop :=
   ∀ prof : Profile ι σ, P (prof d).rel x y → P (f prof).rel x y
 
-/-- Individual d is a dictator over all pairs in X -/
+/-- L'individu d est un dictateur sur toutes les paires de X -/
 def is_dictatorship (f : SWF ι σ) (X : Finset σ) : Prop :=
   ∃ d : ι, ∀ x y : σ, x ∈ X → y ∈ X → x ≠ y → is_dictator_on f d x y
 
-/-! ## Preference Profile Manipulation
+/-! ## Manipulation de profils de préférence
 
-Inspired by ChihChengLiang/arrow's `prefer_ifs` technique:
-extract `rel` into named functions so `unfold` + `split_ifs` works in proofs.
+Inspiré par la technique `prefer_ifs` de ChihChengLiang/arrow :
+extraire `rel` dans des fonctions nommées pour que `unfold` + `split_ifs` fonctionne dans les preuves.
 -/
 
-/-- Rel helper for maketop: b at top, original ordering preserved elsewhere -/
+/-- Helper Rel pour maketop : b en tête, ordre original préservé ailleurs -/
 def maketop_rel (R : σ → σ → Prop) (b : σ) (x y : σ) : Prop :=
   if x = b then True else if y = b then False else R x y
 
-/-- Rel helper for makebot: b at bottom, original ordering preserved elsewhere -/
+/-- Helper Rel pour makebot : b en queue, ordre original préservé ailleurs -/
 def makebot_rel (R : σ → σ → Prop) (b : σ) (x y : σ) : Prop :=
   if y = b then True else if x = b then False else R x y
 
-/-- Rel helper for makeabove: places b directly above a, preserving order elsewhere.
-    Port of asouther4's makeabove — transitive for all PrefOrders.
-    Logic: b is placed just above a (if r a y then b > y, if r a x then x > b).
-    Uses [DecidableEq σ] for the outer ifs and Classical.dec for R comparisons. -/
+/-- Helper Rel pour makeabove : place b directement au-dessus de a, en préservant l'ordre ailleurs.
+    Port du makeabove d'asouther4 — transitif pour tous les PrefOrder.
+    Logique : b est placé juste au-dessus de a (si r a y alors b > y, si r a x alors x > b).
+    Utilise [DecidableEq σ] pour les ifs externes et Classical.dec pour les comparaisons R. -/
 def makeabove_rel (R : σ → σ → Prop) (a b : σ) (x y : σ) : Prop :=
   if x = b then (if y = b then True else @ite _ _ (Classical.dec (R a y)) True False)
   else if y = b then @ite _ _ (Classical.dec (R a x)) False True
   else R x y
 
-/-- PrefOrder reverse: if ¬R x y then R y x (from totality) -/
+/-- Inverse d'un PrefOrder : si ¬R x y alors R y x (par totalité) -/
 lemma PrefOrder.rel_rev {r : PrefOrder σ} {x y : σ} (h : ¬r.rel x y) : r.rel y x :=
   (r.total x y).resolve_left h
 
-/-- Make b the top-ranked alternative for individual i -/
+/-- Faire de b l'alternative la mieux classée pour l'individu i -/
 noncomputable def maketop (prof : Profile ι σ) (i : ι) (b : σ) (X : Finset σ)
     (hb : b ∈ X) : Profile ι σ :=
   fun j => if j = i then
@@ -91,7 +91,7 @@ noncomputable def maketop (prof : Profile ι σ) (i : ι) (b : σ) (X : Finset �
     }
   else prof j
 
-/-- Make b the bottom-ranked alternative for individual i -/
+/-- Faire de b l'alternative la moins bien classée pour l'individu i -/
 noncomputable def makebot (prof : Profile ι σ) (i : ι) (b : σ) (X : Finset σ)
     (hb : b ∈ X) : Profile ι σ :=
   fun j => if j = i then
@@ -109,7 +109,7 @@ noncomputable def makebot (prof : Profile ι σ) (i : ι) (b : σ) (X : Finset �
     }
   else prof j
 
-/-- Make b directly above a for individual i (port of asouther4's makeabove) -/
+/-- Placer b directement au-dessus de a pour l'individu i (port du makeabove d'asouther4) -/
 noncomputable def makeabove (prof : Profile ι σ) (i : ι) (a b : σ) : Profile ι σ :=
   fun j => if j = i then
     { rel := makeabove_rel (prof i).rel a b
@@ -149,8 +149,8 @@ noncomputable def makeabove (prof : Profile ι σ) (i : ι) (a b : σ) : Profile
     }
   else prof j
 
-/-- Makeabove parameterized by a PrefOrder (instead of a profile + individual).
-    Used to construct makeabove_all where ALL individuals are modified. -/
+/-- Makeabove paramétré par un PrefOrder (au lieu d'un profil + individu).
+    Utilisé pour construire makeabove_all où TOUS les individus sont modifiés. -/
 noncomputable def makeabove_pref (r : PrefOrder σ) (a b : σ) : PrefOrder σ :=
   { rel := makeabove_rel r.rel a b
     refl := by
@@ -185,7 +185,7 @@ noncomputable def makeabove_pref (r : PrefOrder σ) (a b : σ) : PrefOrder σ :=
       )
   }
 
-/-- Maketop parameterized by a PrefOrder. -/
+/-- Maketop paramétré par un PrefOrder. -/
 noncomputable def maketop_pref (r : PrefOrder σ) (b : σ) : PrefOrder σ :=
   { rel := maketop_rel r.rel b
     refl := by
@@ -199,7 +199,7 @@ noncomputable def maketop_pref (r : PrefOrder σ) (b : σ) : PrefOrder σ :=
       all_goals first | trivial | contradiction | exact r.trans hxy hyz
   }
 
-/-- Makebot parameterized by a PrefOrder. -/
+/-- Makebot paramétré par un PrefOrder. -/
 noncomputable def makebot_pref (r : PrefOrder σ) (b : σ) : PrefOrder σ :=
   { rel := makebot_rel r.rel b
     refl := by
@@ -213,14 +213,14 @@ noncomputable def makebot_pref (r : PrefOrder σ) (b : σ) : PrefOrder σ :=
       all_goals first | trivial | contradiction | exact r.trans hxy hyz
   }
 
-/-- Profile where ALL individuals place b directly above a (makeabove for everyone) -/
+/-- Profil où TOUS les individus placent b directement au-dessus de a (makeabove pour tous) -/
 noncomputable def makeabove_all (prof : Profile ι σ) (a b : σ) : Profile ι σ :=
   fun j => makeabove_pref (prof j) a b
 
-/-! ## Preservation Lemmas for Profile Manipulation
+/-! ## Lemmes de préservation pour la manipulation de profils
 
-When maketop/makebot/makeabove modify an individual's ranking, pairs not involving b
-are preserved. These lemmas are essential for IIA arguments.
+Quand maketop/makebot/makeabove modifient le classement d'un individu, les paires
+n'impliquant pas b sont préservées. Ces lemmes sont essentiels pour les arguments IIA.
 -/
 
 lemma maketop_rel_noteq {R : σ → σ → Prop} {a b c : σ}
@@ -239,11 +239,11 @@ lemma makeabove_rel_noteq (R : σ → σ → Prop) (a : σ) {b c d : σ}
   unfold makeabove_rel; simp [hcb, hdb]
 
 
-/-- PrefOrder: if R a x then ¬(¬R a x) -/
+/-- PrefOrder : si R a x alors ¬(¬R a x) -/
 lemma PrefOrder.rel_of_not_not {r : PrefOrder σ} {x y : σ} (h : r.rel x y) : ¬¬r.rel x y :=
   fun hn => hn h
 
-/-- Extract _noteq' variants that give P equivalences -/
+/-- Extraire les variantes _noteq' qui donnent des équivalences P -/
 lemma maketop_rel_noteq_P (R : σ → σ → Prop) {a b c : σ}
     (hab : a ≠ b) (hcb : c ≠ b) :
     (P (maketop_rel R b) a c ↔ P R a c) ∧ (P (maketop_rel R b) c a ↔ P R c a) := by
