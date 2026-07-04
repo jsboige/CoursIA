@@ -27,6 +27,8 @@
 
 import SocialChoice.Framework
 
+namespace SocialChoice
+
 variable {ι : Type*} {σ : Type*} [Fintype ι] [DecidableEq ι] [DecidableEq σ]
 
 /-! ## Positions extrémales -/
@@ -712,3 +714,5 @@ theorem no_perfect_swf (f : SWF ι σ) (X : Finset σ)
     ¬non_dictatorial f X := by
   intro hnd
   exact hnd (arrow f X hwp hind hX)
+
+end SocialChoice
