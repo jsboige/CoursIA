@@ -525,9 +525,12 @@ GameTheory/
 ├── GameTheory-1-Setup.ipynb ... GameTheory-17-MultiAgent-RL.ipynb  # 17 principaux
 ├── GameTheory-2b-Lean-Definitions.ipynb                            # Side tracks b (Lean)
 ├── GameTheory-4b-Lean-NashExistence.ipynb
+├── GameTheory-5b-Lean-Minimax.ipynb
 ├── GameTheory-8b-Lean-CombinatorialGames.ipynb
+├── GameTheory-11b-Lean-BayesianGamesExt.ipynb
 ├── GameTheory-15b-Lean-CooperativeGames.ipynb
 ├── GameTheory-4c-NashExistence-Python.ipynb                        # Side tracks c (Python)
+├── GameTheory-6c-RepeatedGames-FolkTheorem.ipynb
 ├── GameTheory-8c-CombinatorialGames-Python.ipynb
 ├── GameTheory-15c-CooperativeGames-Python.ipynb
 ├── SocialChoice/                                                   # Sous-série Choix Social
@@ -552,7 +555,9 @@ GameTheory/
 ├── social_choice_lean/            # Projet Lake choix social (Arrow, Sen, Voting/Median Voter — 0 sorry)
 ├── social_choice_lean_peters/     # Projet Lake référence DominikPeters (0 sorry, toolchain v4.27.0-rc1)
 ├── stable_marriage_lean/          # Projet Lake Gale-Shapley (GS COMPLETE, 0 sorry — énoncés faux réfutés, exists_isManOptimal prouvé)
+├── minimax_lean/                  # Projet Lake minimax (companion natif GT-5b, von Neumann/Sion 0 sorry)
 ├── lean_game_defs/                # Types Lean partages (pas de Lake project)
+├── lean_game_defs_ext/            # Types Lean partages — extension (companion GT-11b Bayesian, Vickrey 0 sorry)
 ├── examples/
 │   ├── prisoners_dilemma.py
 │   ├── topology_2x2_periodic_table.py
