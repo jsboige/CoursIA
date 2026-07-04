@@ -13,6 +13,35 @@ maturity: PRODUCTION=4, BETA=2
 
 La force des études de cas réside dans leur capacité à **fusionner les techniques apprises en silos** : un solveur SMT (Search), un algorithme génétique (Sudoku), une ontologie OWL (SemanticWeb) et un modèle bayésien (Probas) ne valent pas grand chose isolément face à une question réelle. C'est leur combinaison, orchestrée autour d'un problème métier (diagnostic médical, protocole oncologique, dispatch énergétique), qui transforme un catalogue d'outils en **système décisionnel cohérent**. Les trois projets de cette série illustrent ce passage : chacun mobilise 3 à 4 paradigmes IA différents qui se renforcent mutuellement plutôt que de se concurrencer.
 
+## Statistiques catalogue à jour
+
+| Sous-projet | Notebooks | Statut | Paradigmes mobilisés |
+|-------------|-----------|--------|----------------------|
+| [Diagnostic-Medical](Diagnostic-Medical/) | 2 (student + solution) | PRODUCTION | A* + génétique + Z3 (CSP) |
+| [Oncology-Planning](Oncology-Planning/) | 2 (student + solution) | PRODUCTION | Ontologie + CSP/OR-Tools + Pyro (Pyro probabiliste) |
+| [SmartGrid-Energy](SmartGrid-Energy/) | 2 (student + solution) | BETA | CP-SAT + bayésien (risque défaillance) + multi-objectif (coût/CO2) |
+| **Total** | **6 notebooks** | **PRODUCTION=4, BETA=2** | 4 paradigmes : symbolique (CSP/ontologie) + statistique (probabiliste/évolutionnaire) + recherche (A*) + optimisation (CP-SAT) |
+
+Chaque notebook fait l'objet d'une **validation par test unitaire** dans son sous-dossier `solution/` ; le template `student/` porte les stubs conformes (règle C.1 : `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et reste exécutable end-to-end. La cohérence est garantie par `requirements.txt` au racine (`numpy`, `pandas`, `z3-solver`, `pyro-ppl`, `ortools`).
+
+## Écosystème MCP et parenté cross-lane
+
+Cette série est un **point de convergence** des autres séries du dépôt : chaque étude de cas mobilise les couches atomiques du cursus. Le tableau ci-dessous fait la cartographie explicite des paradigmes atomiques combinés :
+
+| Étude de cas | [Search](../Search/README.md) | [Sudoku](../Sudoku/README.md) | [SymbolicAI](../SymbolicAI/README.md) | [Probas](../Probas/README.md) | [ML](../ML/README.md) |
+|---|---|---|---|---|---|
+| Diagnostic-Medical | A* (`Part1-Foundations`) | Génétique (notebooks 8-9) | — | — | — |
+| Oncology-Planning | CSP / CP-SAT (`Part2-CSP`) | — | Ontologie OWL ([SemanticWeb](../SymbolicAI/SemanticWeb/README.md)) | Bayésien / Pyro | — |
+| SmartGrid-Energy | CP-SAT / OR-Tools (`Part2-CSP`) | — | — | Bayésien (risque) | — |
+
+Trois familles d'**outils d'infrastructure** MCP rendent les projets interopérables :
+
+1. **MCP Jupyter** (`mcp__jupyter-papermill__*`) — exécution kernelisée des notebooks. Note bug #835 : ne doit **jamais** être appelé naïvement ; re-exécution = `nbconvert --execute` Bash `timeout`-wrap.
+2. **MCP QC Cloud** (`mcp__qc-mcp-lite__*`) — backtest cloud pour notebooks QuantConnect. Les CaseStudies n'en dépendent pas directement, mais le pipeline QC illustre la même discipline de composition (contraintes + incertitude + optimisation) dans un autre domaine.
+3. **Validation pre-commit** (`.pre-commit-config.yaml`) — gitleaks + notebook validator (règle C.2 : outputs cohérents) bloquent les PRs qui dégraderaient les contrats inter-séries.
+
+**Parenté cross-lane** : CaseStudies ne maintient pas un dépôt isolé, mais sert de **hub d'intégration** pour ~8 séries atomiques. Toute évolution d'une série fondamentale (nouvelle méthode de recherche dans Search, nouveau solveur dans Probas, nouveau moteur dans SymbolicAI) enrichit potentiellement les projets CaseStudies — c'est l'**effet de composition** qui justifie le découpage en couches plutôt qu'en silos.
+
 ## À qui s'adresse cette série
 
 Cette série s'adresse aux **étudiants en fin de cycle** (M1/M2 ou équivalent ingénieur) ayant déjà parcouru les séries fondamentales (Search, SymbolicAI, Probas, SemanticWeb). Elle constitue typiquement un **devoir de contrôle continu intégrateur** ou un projet de groupe couvrant plusieurs paradigmes IA dans un même livrable. La pédagogie privilégie l'**autonomie** : chaque projet propose un template étudiant minimal et une solution de référence pour autoévaluation.
@@ -234,4 +263,4 @@ Le template étudiant (`student/`) contient le squelette du projet : classes ave
 
 ---
 
-*Version 1.1.0 — Juin 2026*
+*Version 1.2.0 — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche casestudies.*
