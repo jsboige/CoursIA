@@ -30,6 +30,14 @@ Crutchfield ; Hoel), dynamique de features en panel (``feature_dynamics``,
 notebook ICT-20) et synthese (``synthesis``). La fleche du temps /
 reversibilisation (ICT-18) y outille retrospectivement la signature
 thermodynamique de l'agentivite.
+
+Strate 5 (capstone jumeau anthropique) : la **fronce de Thom** comme
+micro-analogue du desalignement emergent (``persona_cusp``, notebook
+ICT-23 ; Epic #4588 / #5104). Le substrat est un agent dont l'identite
+(p) est un parametre d'ordre, pilote par la recompense (b) et la charge
+semantique (a = -transgression * charge). L'inoculation `charge -> 0`
+aplatit la fronce et supprime la bistabilite : c'est la prediction P0
+d'#5104 (Anthropic arXiv:2511.18397, OpenAI arXiv:2506.19823).
 """
 
 from .self_sorting import Cell, Probe, SelfSortingArray, ALGOTYPES
@@ -56,6 +64,7 @@ from . import epsilon_machine
 from . import feature_dynamics
 from . import time_arrow
 from . import synthesis
+from . import persona_cusp
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -64,5 +73,5 @@ __all__ = [
     "scale_free", "early_warning", "bistable", "reaction_diffusion", "agency",
     "multiscale_agency", "catastrophe", "valence", "strategic_morphodynamics",
     "free_energy", "compression", "mdl", "epsilon_machine", "feature_dynamics",
-    "time_arrow", "synthesis",
+    "time_arrow", "synthesis", "persona_cusp",
 ]
