@@ -133,6 +133,7 @@ SmartContracts/
 ├── 05-Alternative-Chains/      # Vyper, XRP, Bitcoin, Move, Solana (5 notebooks)
 ├── 06-Real-World/              # Cross-chain, deploy testnet/mainnet (4 notebooks)
 ├── foundry-lib/                # Workspace Foundry + sous-modules (forge-std, OpenZeppelin, ERC-4337)
+├── erc20_lean/                 # Projet Lake Lean 4 (invariant de conservation ERC-20, 0 sorry, cf #4047) — 1er lake Lean de la série
 ├── mon-premier-projet/         # Projet Foundry de démarrage (squelette scaffold)
 ├── scripts/                    # Setup multi-plateforme (setup.sh, WSL, kernel Jupyter)
 ├── requirements.txt            # Dépendances Python
