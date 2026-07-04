@@ -32,6 +32,7 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 | 2 | [Search-2-Uninformed](Search-2-Uninformed.ipynb) | Python 3 | BFS, DFS, UCS, IDDFS : comparaison des algorithmes non informés | ~50 min |
 | 3 | [Search-3-Informed](Search-3-Informed.ipynb) | Python 3 | A*, Greedy, IDA*, heuristiques admissibles et consistantes | ~50 min |
 | 4 | [Search-4-LocalSearch](Search-4-LocalSearch.ipynb) | Python 3 | Hill Climbing, Simulated Annealing, Tabu Search, paysages de fitness | ~45 min |
+| 4 (.NET) | [Search-4-LocalSearch (C#)](Search-4-LocalSearch-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : Hill Climbing (steepest-ascent), Random-Restart, recuit simulé (critère de Metropolis, programmes de refroidissement), recherche tabou (liste tabou) — port C# fidèle sur paysage 1D multimodal puis N-Reines (benchmark taux de succès) | ~45 min |
 | 5 | [Search-5-GeneticAlgorithms](Search-5-GeneticAlgorithms.ipynb) | Python 3 | Sélection, crossover, mutation, DEAP/PyGAD, théorie unifiée | ~50 min |
 | 6 | [Search-6-AdversarialSearch](Search-6-AdversarialSearch.ipynb) | Python 3 | Minimax, Alpha-Beta pruning, Null-window search, tables de transposition | ~1h |
 | 6 (.NET) | [Search-6-AdversarialSearch (C#)](Search-6-AdversarialSearch-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : Minimax, Alpha-Beta (speedup 31,9×), heuristique + profondeur limitée, iterative deepening, table de transposition — port C# fidèle sur Tic-Tac-Toe (valeur du jeu = 0) | ~1h |
