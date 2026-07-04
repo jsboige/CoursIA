@@ -702,6 +702,65 @@ Les notebooks C# (suffixe `-Csharp`) utilisent GeneticSharp, OR-Tools .NET, Z3 .
 
 Les notebooks Python (suffixe `-Python`) couvrent 16 solveurs avec PyGAD, OR-Tools Python, Z3 Python, NumPyro et PyTorch. Commencez par **Sudoku-1-Backtracking-Python**, puis montez en complexité. Le notebook **18-Comparison-Python** synthétise tout.
 
+## Statistiques catalogue à jour
+
+| Sous-série / regroupement | Notebooks | Maturité | Algorithmes représentatifs |
+|---------------------------|-----------|----------|----------------------------|
+| **Niveau 1 · Recherche exhaustive** | 2 (S-1 paire miroir) | PRODUCTION=2 | Backtracking DFS simple garanti |
+| **Niveau 2 · Exploration optimisée** | 2 (S-2 paire miroir) | PRODUCTION=2 | Dancing Links (Knuth DLX) |
+| **Niveau 3 · Métaheuristiques** | 6 (S-3, S-4, S-5 × 2 langues) | PRODUCTION=6 | Genetic Algorithm, Simulated Annealing, PSO |
+| **Niveau 4 · Programmation par contraintes** | 14 (S-6, S-7, S-8, S-9, S-10, S-11 × 2 langues + S-12) | PRODUCTION=14 | AIMA CSP, Norvig propagation, Human Strategies, Graph Coloring, OR-Tools CP-SAT, Choco Solver |
+| **Niveau 5 · IA symbolique (SMT, Automates)** | 5 (S-12 + S-13 + S-14 + S-15-Csharp) | PRODUCTION=4, BETA=1 | Z3 SMT, Symbolic Automata + Z3, BDD/MDD |
+| **Niveau 6 · IA moderne / data-driven** | 5 (S-15-Python, S-16, S-17, S-18 + S-0 Environment) | PRODUCTION=4, ALPHA=1 | Infer.NET/NumPyro, CNN PyTorch, LLM Solver, Comparison benchmark |
+| **Niveau 7 · Lean formel** | 1 (S-19 companion lake `sudoku_lean`) | PRODUCTION=1 | Preuve 0-sorry de la soundness de la propagation |
+| **Total** | **33** | **PRODUCTION=30, BETA=2, ALPHA=1** | 14 algorithmes distincts + 1 companion Lean |
+
+**Maturité mixte documentée** :
+- **PRODUCTION=30** : notebooks validés end-to-end sur la machine de référence (`.net-csharp` kernel + Python 3.10+) ; sortie observable et reproductible ; couverture multi-difficulté Easy/Medium/Hard/Expert vérifiée.
+- **BETA=2** : Z3 C# (S-12) et Automates Symboliques (S-13) — notebooks fonctionnels mais bridés par les solveurs SMT Z3/AUTOMATA côté C# (bridges NuGet moins matures que les bindings Python équivalents) ; la **version Python du notebook 12** est PRODUCTION. S-13 est intrinsèquement C# (AutomataDotNet fork `jsboige/AutomataDotNet SHA cfbf436`, EPITA-IS Argumentum upstream-verbatim, EPIC #2979 fermé).
+- **ALPHA=1** : S-16 Neural Network — entraînement RRN (Recurrent Relational Network) sur RTX 3070/4090 documenté dans `## Performances Attendues` ; compromis généralisation vs garantie assumé et tabulé.
+
+**Conformité C.1 (stubs sans `raise NotImplementedError`)** : tous les notebooks s'exécutent end-to-end (cellules `# Solution` / `# Exemple résolu` démonstratives conservées, cellules `# Exercice` stubées via `pass` / `return None` / `print("Exercice à compléter")`).
+
+**Dépendances** (`requirements.txt`) : `numpy`, `matplotlib`, `ortools`, `z3-solver`, `pygad`, `torch`, `networkx`, `mealpy`, `simanneal`, `jpype1`, `semantic-kernel`. C# : .NET 9.0 + `Microsoft.dotnet-interactive` (kernel `.net-csharp` enregistré via `dotnet interactive jupyter install`). Outils externes : `choco-solver-4.10.17-jar-with-dependencies.jar` (Choco via JPype Python / IKVM C#), `org.chocosolver.solver.dll` (Choco natif C#). Lean : lake `sudoku_lean` companion (notebook 19) + `elan toolchain install stable` (Lean 4 + Mathlib #2611).
+
+**Compagnon Lean formel** : le notebook 19 (`Sudoku-19-Lean-Propagation.ipynb`) ouvre vers le lake `sudoku_lean` local — preuve 0-sorry de la **soundness de la propagation** (naked/hidden single, lemme clé `peer_excludes_value`) avec `#check` + `#print axioms` in-kernel, jonction Mathlib #2611. Symétrie avec `decision_theory_lean/` (Probas, Gittins Barrier B) et `planning_lean/` (Planners, admissibilité heuristique) et `social_choice_lean/` (GameTheory, Arrow/Sen/Voting).
+
+## Écosystème MCP et parenté cross-lane
+
+**Outils infra MCP mobilisés** :
+- **MCP Jupyter** (papermill consolidated, bug kernel Python 3 majoritaire connu #5211) : exécution end-to-end des notebooks Python (S-1, S-2, S-3, S-4, S-5, S-6, S-7, S-8, S-9, S-10, S-11, S-12, S-15, S-16, S-17, S-18). Drapeaux `HAS_Z3` / `HAS_PYGAD` / `HAS_TORCH` / `HAS_NUMPYRO` dans l'env kernel pour vérifier la disponibilité avant chaque solveur ; doctrine anti-théâtre « un solveur non installé n'est pas un solveur » symétrique à QuantConnect « un backtest sans Sharpe/CAGR/MaxDD n'est pas un backtest ».
+- **Validation pre-commit** (`gitleaks` + scan C.1 stubs + dry-run Papermill) : s'applique intégralement aux notebooks Sudoku — pas de secrets inline (les clés OpenAI pour S-17 LLM Solver transitent par `.env` / `OPENAI_API_KEY`, jamais inline), pas de `raise NotImplementedError`, pas d'`assert False`, pas de `1/0` (règle user 2026-04-26).
+- **MCP QC Cloud** (posture anti-théâtre symétrique) : non applicable directement à Sudoku (pas de stratégie QuantConnect impliquée), mais la doctrine QuantConnect « pas de backtest sans Sharpe/CAGR/MaxDD » s'applique par transposition à S-18 Comparison benchmark : **pas de benchmark sans taux de succès + temps moyen + coverage difficulté reportés** — la table `## Performances Attendues` 14 solveurs × 4 niveaux est l'incarnation de cette doctrine.
+
+**Parenté cross-lane** (12 notebooks × 14 algorithmes = 33 fichiers, **série la plus transverse du dépôt** en termes de techniques algorithmiques) :
+
+| Notebook | Parenté cross-lane |
+|----------|---------------------|
+| S-1 Backtracking | [Search](../Search/README.md) (Part1-Foundations BFS/DFS), [Planners](../SymbolicAI/Planners/README.md) (state-space search) |
+| S-2 Dancing Links | [Planners](../SymbolicAI/Planners/README.md) (Algorithm X, exact cover), [Search](../Search/README.md) (Part2-CSP couverture exacte) |
+| S-3 Genetic | [ML](../../ML/README.md) (algorithmes évolutionnistes), [Planners](../SymbolicAI/Planners/README.md) (métaheuristiques) |
+| S-4 Simulated Annealing | [ML](../../ML/README.md), [Planners](../SymbolicAI/Planners/README.md) |
+| S-5 PSO | [ML](../../ML/README.md), [Planners](../SymbolicAI/Planners/README.md) |
+| S-6 AIMA CSP | [SymbolicAI](../SymbolicAI/README.md) (CSP AIMA chapitre 6), [Search](../Search/README.md) Part2-CSP |
+| S-7 Norvig | [Search](../Search/README.md) Part2-CSP (propagation + MRV + FC), [SymbolicAI](../SymbolicAI/README.md) |
+| S-8 Human Strategies | [GameTheory](../GameTheory/README.md) (stratégies + heuristiques), [SemanticWeb](../SymbolicAI/SemanticWeb/README.md) (rules) |
+| S-9 Graph Coloring | [Search](../Search/README.md) Part2-CSP (coloration graphe), [GameTheory](../GameTheory/README.md) (graph coloring game) |
+| S-10 OR-Tools | [Search](../Search/README.md) Part3-Advanced (OR-Tools CP-SAT), [SymbolicAI/Tweety](../SymbolicAI/Tweety/README.md) (OR-Tools Java bridge) |
+| S-11 Choco | [Search](../Search/README.md) Part3-Advanced (Choco natif via JPype/IKVM), [SymbolicAI/Tweety](../SymbolicAI/Tweety/README.md) (Choco 4.10.17 IKVM) |
+| S-12 Z3 | [SymbolicAI/Tweety](../SymbolicAI/Tweety/README.md) (Z3 IKVM #4667), [SymbolicAI](../SymbolicAI/README.md) (Z3 vérif formelle), [Planners](../SymbolicAI/Planners/README.md) (Z3 SMT plan validation) |
+| S-13 Symbolic Automata | [SymbolicAI/Tweety](../SymbolicAI/Tweety/README.md) (AutomataDotNet upstream-verbatim, EPIC #2979 fermé), [SymbolicAI/Argument_Analysis](../SymbolicAI/Argument_Analysis/README.md) (automates Argumentum) |
+| S-14 BDD/MDD | [SymbolicAI](../SymbolicAI/README.md) (BDD), [GameTheory](../GameTheory/README.md) (MDD pour Social Choice) |
+| S-15 Infer/NumPyro | [Probas](../Probas/README.md) (Infer.NET .NET Interactive, factor graphs, MCMC), [ML](../../ML/README.md) (probabiliste) |
+| S-16 Neural Network | [ML](../../ML/README.md) (CNN, RNN), [GenAI](../../GenAI/README.md) (réseaux de neurones génératifs) |
+| S-17 LLM | [GenAI](../../GenAI/README.md) (LLM orchestration ComfyUI/Qwen), [SymbolicLearning](../SymbolicAI/SymbolicLearning/README.md) (LLM boucle neuro-symbolique SL-9/SL-11) |
+| S-18 Comparison | [Search](../Search/README.md) (benchmark CSP), [ML](../../ML/README.md) (benchmark) |
+| S-19 Lean Propagation | [Planners](../SymbolicAI/Planners/README.md) (`planning_lean/` admissibilité 0-sorry), [GameTheory](../GameTheory/README.md) (`social_choice_lean/` Arrow), [Probas](../Probas/README.md) (`decision_theory_lean/` Gittins) |
+
+**Sudoku = carrefour résolution-contraintes inter-paradigmes**. Le Sudoku est l'**une des rares séries du dépôt à aligner 7 paradigmes algorithmiques + 2 langues (C#/Python) + 1 langage formel (Lean) sur un seul et même problème**. C'est la **particularité structurelle unique** de cette série : un terrain commun (la grille 9×9) qui rend comparables des approches par ailleurs cloisonnées dans des champs disjoints de l'IA (exhaustif vs heuristique vs métaheuristique vs CP industriel vs SMT vs symbolique vs probabiliste vs data-driven vs formel). Là où **Planners (cycle 29)** déploie la dualité simulation/proof **intra-série** (Python ⇄ Lean sur l'admissibilité d'heuristique, via companion `5b-Lean-Relaxation.ipynb` + lake `planning_lean/`), **SmartContracts (cycle 30)** le carrefour trust/privacy **inter-séries** (Lean+Foundry+fuzzing × ZKP+HE+vote E2E × Arrow+Voting+DAOs), **Argument_Analysis (cycle 31)** le carrefour informel/formel **anti-théâtre inter-couches** (LLM ⇄ Tweety/Lean), **SymbolicLearning (cycle 32)** le carrefour **spectre-apprentissage inter-paradigmes** (4 paradigmes × 6 phases en spirale), **Sudoku déploie le carrefour résolution-contraintes inter-paradigmes algorithmiques** : la même grille 9×9 résolue par backtracking, par métaheuristique, par CP-SAT, par Z3/SMT, par automates symboliques, par inférence probabiliste, par CNN, par LLM, et prouvée formellement en Lean. La table `## Performances Attendues` (14 solveurs × 4 niveaux de difficulté) matérialise cette mise en regard empirique, garantie vs performance vs généralisation.
+
+**Compagnon Lean symétrie cross-lane** : lake `sudoku_lean` (notebook 19) = 4e lake formel du dépôt aux côtés de `planning_lean/` (Planners, admissibilité heuristique), `social_choice_lean/` (GameTheory, Arrow impossibilité), `decision_theory_lean/` (Probas, Gittins optimalité). Tous partagent la même doctrine : **prouver formellement la soundness d'un mécanisme algorithmique central**, jonction Mathlib #2611. Sudoku prouve la soundness de la **propagation** (naked/hidden single) ; Planners prouve l'**admissibilité** (h+ ≤ h*) ; GameTheory prouve l'**impossibilité d'Arrow** ; Probas prouve l'**optimalité de Gittins** (Barrier B en cours, cf EPIC #3973 audit cycle 27). 4 angles du même miroir « formaliser ce qu'on croyait comprendre intuitivement ».
+
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
@@ -732,3 +791,5 @@ Voir la licence du repository principal.
 ---
 
 *Version 1.1.0 — Juin 2026*
+
+**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche sudoku.
