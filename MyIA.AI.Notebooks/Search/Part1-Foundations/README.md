@@ -34,6 +34,7 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 | 4 | [Search-4-LocalSearch](Search-4-LocalSearch.ipynb) | Python 3 | Hill Climbing, Simulated Annealing, Tabu Search, paysages de fitness | ~45 min |
 | 5 | [Search-5-GeneticAlgorithms](Search-5-GeneticAlgorithms.ipynb) | Python 3 | Sélection, crossover, mutation, DEAP/PyGAD, théorie unifiée | ~50 min |
 | 6 | [Search-6-AdversarialSearch](Search-6-AdversarialSearch.ipynb) | Python 3 | Minimax, Alpha-Beta pruning, Null-window search, tables de transposition | ~1h |
+| 6 (.NET) | [Search-6-AdversarialSearch (C#)](Search-6-AdversarialSearch-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : Minimax, Alpha-Beta (speedup 31,9×), heuristique + profondeur limitée, iterative deepening, table de transposition — port C# fidèle sur Tic-Tac-Toe (valeur du jeu = 0) | ~1h |
 | 7 | [Search-7-MCTS-And-Beyond](Search-7-MCTS-And-Beyond.ipynb) | Python 3 | Monte Carlo Tree Search, UCB1, OpenSpiel, architecture AlphaGo (DQN+MCTS) | ~1h30 |
 | 8 | [Search-8-DancingLinks](Search-8-DancingLinks.ipynb) | Python 3 | Algorithme X de Knuth, Dancing Links (DLX), couverture exacte (Sudoku, N-Queens, Pentominoes) | ~1h30 |
 | 9 | [Search-9-LinearProgramming](Search-9-LinearProgramming.ipynb) | Python 3 | Programmation linéaire avec PuLP, simplex, problème du transport, diet problem, PLNE | ~2h |
