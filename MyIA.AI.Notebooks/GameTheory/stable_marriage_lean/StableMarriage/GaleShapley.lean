@@ -1,31 +1,47 @@
 /-
-  Stable Marriage - Gale-Shapley Algorithm and Theorems
-  ======================================================
+  Mariage Stable - Algorithme et théorèmes de Gale-Shapley
+  =========================================================
 
-  The Gale-Shapley deferred acceptance algorithm produces a stable matching.
+  Ce module rassemble les principaux résultats de l'algorithme de Gale-Shapley
+  pour le problème du mariage stable (deferred acceptance).
 
-  Status of the main results:
-  - `gale_shapley_stable` is **constructively proved** via the deferred-acceptance
-    state machine (`gsRunSteps` / `gsFinalMatching` / `gsNoBlockingPairs`).
-  - `gale_shapley_man_optimal` is proved via `exists_isManOptimal` in
-    `Lattice.lean` (minimal-weight argument on the join semilattice of stable
-    matchings), seeded by `gale_shapley_stable`.
-  - `gale_shapley_woman_pessimal` is proved from man-optimality.
+  Convention i18n (Option A #4980 ratifiée par ai-01 le 2026-07-04) : ce fichier
+  est **français-first** : titre, commentaires, docstrings et en-têtes de
+  section sont rédigés en français. Les **identificateurs** (`gale_shapley_*`,
+  `gsRunSteps`, `gsFinalMatching`, `Matching`, `IsStable`, `IsManOptimal`,
+  `PrefProfile`, etc.) ainsi que le **code tactique** restent en anglais pour
+  préserver la compatibilité avec `Mathlib` et les modules siblings
+  (`Definitions`, `Lemmas`, `Lattice`, `GSState`). Toute modification ultérieure
+  doit conserver cette séparation.
 
-  Algorithm sketch (man-proposing version):
-  1. Each free man proposes to his most-preferred woman he hasn't proposed to yet
-  2. Each woman tentatively accepts her best proposal, rejecting others
-  3. Rejected men become free again
-  4. Repeat until no free men remain
+  État des résultats principaux :
+  - `gale_shapley_stable` est **constructivement prouvé** via la machine à
+    étapes d'acceptation différée (`gsRunSteps` / `gsFinalMatching` /
+    `gsNoBlockingPairs`).
+  - `gale_shapley_man_optimal` est prouvé via `exists_isManOptimal` du module
+    `Lattice.lean` (argument de poids minimal sur le semi-treillis de jointure
+    des mariages stables), en s'appuyant sur `gale_shapley_stable`.
+  - `gale_shapley_woman_pessimal` est déduit de la man-optimalité.
 
-  Key properties:
-  - The algorithm terminates (at most n^2 proposals)
-  - The result is a stable matching
-  - The result is man-optimal (best possible for all men among stable matchings)
-  - Dually, it is woman-pessimal (worst possible for all women among stable matchings)
+  Esquisse de l'algorithme (version où les hommes proposent) :
+  1. Chaque homme libre propose à la femme qu'il préfère parmi celles
+     auxquelles il n'a pas encore proposé.
+  2. Chaque femme accepte provisoirement sa meilleure proposition, et rejette
+     les autres.
+  3. Les hommes rejetés redeviennent libres.
+  4. On répète jusqu'à ce qu'il n'y ait plus d'homme libre.
 
-  Reference: Gale & Shapley (1962), "College Admissions and the Stability of Marriage"
-  Reference port: https://github.com/mmaaz-git/stable-marriage-lean
+  Propriétés clés :
+  - L'algorithme termine (au plus n^2 propositions).
+  - Le résultat est un mariage stable.
+  - Le résultat est man-optimal (la meilleure partenaire possible pour chaque
+    homme parmi tous les mariages stables).
+  - Dualement, il est woman-pessimal (la pire partenaire possible pour chaque
+    femme parmi tous les mariages stables).
+
+  Référence : Gale & Shapley (1962), « College Admissions and the Stability
+  of Marriage ».
+  Port de référence : https://github.com/mmaaz-git/stable-marriage-lean
 -/
 
 import Mathlib.Data.Finset.Basic
@@ -41,33 +57,39 @@ open Function
 variable {n : Nat} [NeZero n]
 
 /--
-The Gale-Shapley algorithm terminates.
-At most n^2 proposals can occur (each man proposes to each woman at most once).
+L'algorithme de Gale-Shapley termine.
 
-TODO: formalize the algorithm as a step relation and prove termination.
+Au plus n^2 propositions peuvent avoir lieu (chaque homme propose à chaque
+femme au plus une fois).
+
+TODO : formaliser l'algorithme sous forme de relation d'étapes et prouver la
+terminaison.
 -/
 theorem gale_shapley_terminates (prof : PrefProfile n) :
     True := by
   trivial
 
 /--
-The Gale-Shapley algorithm produces a valid matching (bijection).
-The identity matching is a witness (any bijection on Fin n suffices for the
-existential statement; here we use `id`).
+L'algorithme de Gale-Shapley produit un matching (bijection) valide.
+
+Le matching identité sert de témoin (toute bijection sur `Fin n` suffit pour
+l'existentiel ; on utilise ici `id`).
 -/
 theorem gale_shapley_produces_matching (prof : PrefProfile n) :
     ∃ μ : Matching n, True := by
   exact ⟨{ spouse := id, bijective := Function.bijective_id }, trivial⟩
 
 /--
-The Gale-Shapley algorithm produces a stable matching.
-No blocking pair exists in the output matching.
+L'algorithme de Gale-Shapley produit un mariage stable.
 
-This is the main correctness theorem. It is **constructively proved**: the
-deferred-acceptance step machine (`gsRunSteps prof (gsProposalBound n)`) is run
-to termination, and `gsFinalMatching` / `gsNoBlockingPairs` (ported and adapted
-from `mmaaz-git/stable-marriage-lean`, ~1000 lines of supporting lemmas) discharge
-stability. This declaration is complete: no placeholder tactic and no axiom are used.
+Aucune paire bloquante n'existe dans le matching en sortie.
+
+C'est le théorème principal de correction. Il est **prouvé de manière
+constructive** : la machine à étapes d'acceptation différée (`gsRunSteps prof
+(gsProposalBound n)`) est exécutée jusqu'à terminaison, et `gsFinalMatching` /
+`gsNoBlockingPairs` (portés et adaptés depuis `mmaaz-git/stable-marriage-lean`,
+~1000 lignes de lemmes auxiliaires) démontrent la stabilité. Cette déclaration
+est complète : aucune tactique stub et aucun axiome ne sont utilisés.
 -/
 theorem gale_shapley_stable (prof : PrefProfile n) :
     ∃ μ : Matching n, IsStable prof μ := by
@@ -90,27 +112,27 @@ theorem gale_shapley_stable (prof : PrefProfile n) :
     fun m w => gsNoBlockingPairs prof hterm hcon hwp hdown hmp hbest m w⟩
 
 /--
-The Gale-Shapley matching is man-optimal: every man gets the best
-partner he could obtain in any stable matching.
+Le matching de Gale-Shapley est man-optimal : chaque homme obtient la meilleure
+partenaire possible parmi tous les mariages stables.
 
-This is the optimality theorem for the proposing side.
+C'est le théorème d'optimalité pour le côté qui propose.
 -/
 theorem gale_shapley_man_optimal (prof : PrefProfile n) :
     ∃ μ : Matching n, IsManOptimal prof μ :=
   exists_isManOptimal prof (gale_shapley_stable prof)
 
 /--
-Existence of a stable matching (corollary of Gale-Shapley).
+Existence d'un mariage stable (corollaire de Gale-Shapley).
 -/
 theorem stable_matching_exists (prof : PrefProfile n) :
     ∃ μ : Matching n, IsStable prof μ := by
   exact gale_shapley_stable prof
 
 /--
-Woman-pessimality of man-proposing Gale-Shapley:
-each woman gets her worst achievable partner among all stable matchings.
+Pessimalité-femme de Gale-Shapley version « les hommes proposent » :
+chaque femme obtient la pire partenaire possible parmi tous les mariages stables.
 
-Dual of man-optimality.
+Dual de la man-optimalité.
 -/
 theorem gale_shapley_woman_pessimal (prof : PrefProfile n)
     (μ : Matching n) (h_opt : IsManOptimal prof μ)
