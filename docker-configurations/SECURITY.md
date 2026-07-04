@@ -67,13 +67,33 @@ deploy:
       cpus: '2.0'
 ```
 
-### F3. All ports bind 0.0.0.0 (17/20 exposed)
+### F3. ~~All ports bind 0.0.0.0 (17/20 exposed)~~ — REMEDIATED on CoursIA side (re-verified 2026-07-04)
 
-17 services bind to `0.0.0.0`, accessible from any network interface. Only 3 TTS workers use internal networking.
+> **Status change (firsthand re-verification 2026-07-04, po-2023).** The 2026-05-08 finding "17/20 bind 0.0.0.0" is **substantially stale**. Live `docker ps` + compose inspection shows F3 has been remediated for **every CoursIA-managed service**: all bind `127.0.0.1` (localhost-only, not LAN-exposed). The only `0.0.0.0` exposures left are **cross-repo** (composes outside CoursIA).
 
-The IIS reverse proxy on `*.myia.io` domains provides auth, but direct LAN access on port X bypasses it entirely.
+**Verified bind state (2026-07-04):**
 
-**Fix:** Change port bindings from `0.0.0.0:PORT:PORT` to `127.0.0.1:PORT:PORT` for services behind IIS reverse proxy. Only expose services that need direct access.
+| Container | Bind (live `docker ps`) | Compose declares | Exposed to LAN? |
+|-----------|-------------------------|------------------|-----------------|
+| myia-qdrant | `0.0.0.0:6333-6334` | roo-extensions repo (cross-repo) | **YES — wide open, no auth** (see F4) |
+| claudish-proxy | `0.0.0.0:3000` | claudish repo (cross-repo) | YES — `proxyKey` empty = auth OFF (`POST /v1/messages` → 400, not 401/403) |
+| comfyui-qwen | `127.0.0.1:8188` | `127.0.0.1` | no |
+| comfyui-video | `127.0.0.1:8189` | `127.0.0.1` | no |
+| forge-turbo | `127.0.0.1:1111,127.0.0.1:17861` | `127.0.0.1` | no |
+| tts-gateway | `127.0.0.1:8196` | `127.0.0.1` | no |
+| tts-api | `127.0.0.1:8191` | `127.0.0.1` | no |
+| whisper-api | `127.0.0.1:8190` | `127.0.0.1` | no |
+| fast-downward | `127.0.0.1:8200` | `127.0.0.1` | no |
+| sd-forge-main (auto-stopped) | — | `127.0.0.1:7862` | no (when running) |
+| sdnext (auto-stopped) | — | `127.0.0.1:7861` | no (when running) |
+| demucs-api (auto-stopped) | — | `127.0.0.1` | no (when running) |
+| musicgen-api (auto-stopped) | — | `127.0.0.1` | no (when running) |
+| vllm-zimage (auto-stopped) | — | `127.0.0.1` | no (when running) |
+| whisper-webui (auto-stopped) | — | `127.0.0.1` | no (when running) |
+
+**Net result:** 0 CoursIA-managed service binds `0.0.0.0`. The two remaining LAN-exposed services (`myia-qdrant`, `claudish-proxy`) are **cross-repo** — their composes live in `roo-extensions` and `claudish` respectively, so the F3 fix for them is an inter-repo op, not a CoursIA PR. Auto-stopped services (idle-monitors) bind `127.0.0.1` per compose, so they do not regress to `0.0.0.0` when started on demand.
+
+**Original finding (2026-05-08, historical):** ~~17 services bind to `0.0.0.0`, accessible from any network interface. Only 3 TTS workers use internal networking. The IIS reverse proxy on `*.myia.io` domains provides auth, but direct LAN access on port X bypasses it entirely.~~ — **Remediated**, see verified table above.
 
 ### F4. 1 service has NO authentication, 1 had missing auth code
 
