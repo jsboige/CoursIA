@@ -1,14 +1,21 @@
 /-
-  Cooperative Game Theory - Basic Definitions
-  ===========================================
+  Théorie des jeux coopératifs — Définitions de base
+  ===================================================
 
-  This file formalizes the basic concepts of cooperative game theory:
-  - TU Games (Transferable Utility Games)
-  - Coalitions and characteristic functions
-  - Superadditivity and convexity properties
-  - The Core of a game
+  Ce fichier formalise les concepts de base de la théorie des jeux coopératifs :
+  - Jeux TU (Transferable Utility Games, jeux à utilité transférable)
+  - Coalitions et fonctions caractéristiques
+  - Propriétés de superadditivité et convexité
+  - Le noyau (Core) d'un jeu
 
-  Reference: L.S. Shapley, "A Value for N-Person Games" (1953)
+  Référence : L.S. Shapley, « A Value for N-Person Games » (1953)
+
+  Convention i18n (EPIC #4980, cycle 39, PR pilote) : FR-first appliqué sur les
+  en-têtes, titres de section, et docstrings publics. Le code tactique et les
+  commentaires intra-preuve restent en anglais (références Mathlib, notation
+  formelle). Les blocs `/--  docstring EN  -/` qui auraient pu être préservés
+  en companion `Basic.en.lean` pour publication externe ne sont PAS dupliqués
+  dans cette PR pilote — voir convention §A dans `docs/lean/i18n-inventory-cycle-38.md`.
 -/
 
 import Mathlib.Data.Finset.Basic
@@ -21,116 +28,119 @@ import Mathlib.Analysis.Convex.Cone.Dual
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import CooperativeGames.ConeKernel
 
-/-! ## Basic Types -/
+/-! ## Types de base -/
 
 variable {N : Type*} [Fintype N] [DecidableEq N]
 
-/-! ## TU Games -/
+/-! ## Jeux TU (utilité transférable) -/
 
-/-- A coalition is a subset of players -/
+/-- Une coalition est un sous-ensemble de joueurs. -/
 abbrev Coalition (N : Type*) := Finset N
 
-/-- A TU (Transferable Utility) Game consists of a characteristic function v
-    mapping coalitions to real values, with v(∅) = 0 -/
+/-- Un jeu TU (Transferable Utility, à utilité transférable) est défini par
+    une fonction caractéristique v associant à chaque coalition une valeur
+    réelle, avec la convention v(∅) = 0. -/
 @[ext]
 structure TUGame (N : Type*) [Fintype N] where
-  /-- The characteristic function: value of each coalition -/
+  /-- La fonction caractéristique : valeur de chaque coalition. -/
   v : Finset N → ℝ
-  /-- The empty coalition has value 0 -/
+  /-- La coalition vide a pour valeur 0. -/
   empty_zero : v ∅ = 0
 
 namespace TUGame
 
 variable (G : TUGame N)
 
-/-! ## Structural Properties -/
+/-! ## Propriétés structurelles -/
 
-/-- A game is superadditive if cooperation is beneficial:
-    v(S ∪ T) ≥ v(S) + v(T) for disjoint S, T -/
+/-- Un jeu est superadditif si la coopération est profitable :
+    v(S ∪ T) ≥ v(S) + v(T) pour S, T disjoints. -/
 def Superadditive : Prop :=
   ∀ S T : Finset N, Disjoint S T →
     G.v (S ∪ T) ≥ G.v S + G.v T
 
-/-- A game is convex (supermodular) if marginal contributions increase:
-    v(S ∪ {i}) - v(S) ≤ v(T ∪ {i}) - v(T) for S ⊆ T, i ∉ T -/
+/-- Un jeu est convexe (supermodulaire) si les contributions marginales
+    sont croissantes : v(S ∪ {i}) - v(S) ≤ v(T ∪ {i}) - v(T) pour S ⊆ T, i ∉ T. -/
 def Convex : Prop :=
   ∀ S T : Finset N, ∀ i : N,
     S ⊆ T → i ∉ T →
     G.v (S ∪ {i}) - G.v S ≤ G.v (T ∪ {i}) - G.v T
 
-/-- Marginal contribution of player i to coalition S -/
+/-- Contribution marginale du joueur i à la coalition S. -/
 def marginalContribution (i : N) (S : Finset N) : ℝ :=
   G.v (S ∪ {i}) - G.v S
 
-/-! ## Classic Examples -/
+/-! ## Exemples classiques -/
 
-/-- The unanimity game for coalition T (non-empty):
-    v(S) = 1 if T ⊆ S, else 0 -/
+/-- Le jeu d'unanimité pour la coalition T (non vide) :
+    v(S) = 1 si T ⊆ S, sinon 0. -/
 def unanimityGame (T : Finset N) (hT : T.Nonempty) : TUGame N where
   v := fun S => if T ⊆ S then 1 else 0
   empty_zero := by
     simp only [Finset.subset_empty]
     simp [hT.ne_empty]
 
-/-- The majority game: v(S) = 1 if |S| > n/2, else 0 -/
+/-- Le jeu de majorité : v(S) = 1 si |S| > n/2, sinon 0. -/
 def majorityGame : TUGame N where
   v := fun S => if 2 * S.card > Fintype.card N then 1 else 0
   empty_zero := by simp
 
-/-! ## The Core -/
+/-! ## Le noyau (Core) -/
 
-/-- An allocation is a function assigning payoffs to players -/
+/-- Une allocation est une fonction associant un payoff à chaque joueur. -/
 abbrev Allocation (N : Type*) := N → ℝ
 
-/-- The Core: set of efficient and stable allocations -/
+/-- Le noyau (Core) : ensemble des allocations efficaces et stables. -/
 def Core : Set (Allocation N) :=
   { x |
-    -- Efficiency: sum of payoffs equals v(N)
+    -- Efficacité : la somme des payoffs vaut v(N)
     (∑ i : N, x i = G.v Finset.univ) ∧
-    -- Group rationality: no coalition can block
+    -- Rationalité collective : aucune coalition ne peut bloquer
     (∀ S : Finset N, ∑ i ∈ S, x i ≥ G.v S) }
 
-/-- The Core may be empty -/
+/-- Le noyau peut être vide. -/
 def CoreEmpty : Prop := G.Core = ∅
 
-/-! ## Balanced Games -/
+/-! ## Jeux balancés (balanced games) -/
 
-/-- A balanced collection of weights -/
+/-- Une collection balancée de poids. -/
 def BalancedWeights (weights : Finset N → ℝ) : Prop :=
   (∀ S, weights S ≥ 0) ∧
   (∀ i : N, ∑ S ∈ (Finset.univ.filter fun S => i ∈ S), weights S = 1)
 
-/-- A game is balanced if every balanced collection satisfies the condition -/
+/-- Un jeu est balancé si toute collection balancée vérifie l'inégalité. -/
 def Balanced : Prop :=
   ∀ weights : Finset N → ℝ,
     BalancedWeights weights →
     ∑ S : Finset N, weights S * G.v S ≤ G.v Finset.univ
 
-/-! ## Key Theorems -/
+/-! ## Théorèmes clés -/
 
-/-- Superadditive games have non-negative grand coalition value.
-    Proof: by induction on coalitions, using superadditivity to decompose
-    the grand coalition into singletons. Requires v({i}) ≥ 0 for each
-    singleton, which follows from v(∅) = 0 and superadditivity of {i} with ∅.
-    NOTE: The proof decomposes univ into singletons via superadditivity:
+/-- Les jeux superadditifs ont une coalition grande de valeur non négative.
+    Preuve : par induction sur les coalitions, en utilisant la superadditivité
+    pour décomposer la grande coalition en singletons. Requiert v({i}) ≥ 0 pour
+    chaque singleton, ce qui découle de v(∅) = 0 et de la superadditivité de
+    {i} avec ∅.
+    NOTE : la preuve décompose univ en singletons via superadditivité :
     v(univ) = v({i1} ∪ ... ∪ {in}) ≥ v({i1}) + ... + v({in}) ≥ 0.
-    Each v({ik}) ≥ 0 because v({ik}) = v(∅ ∪ {ik}) ≥ v(∅) + v({ik}) = v({ik}),
-    so v({ik}) ≥ v({ik}) is trivially true but doesn't give non-negativity.
-    Actually: v({i}) = v({i} ∪ ∅) ≥ v({i}) + v(∅) = v({i}), trivially.
-    The correct approach: from superadditivity, v(S ∪ T) ≥ v(S) + v(T).
-    By repeated application: v(univ) ≥ ∑ᵢ v({i}). But we need v({i}) ≥ 0,
-    which follows from: v({i}) ≥ v(∅) + v({i})... no, that gives v({i}) ≥ v({i}).
-    KEY INSIGHT: From superadditivity with S = ∅, T = ∅: v(∅) ≥ 2·v(∅), so v(∅) ≤ 0.
-    Combined with v(∅) = 0, this is consistent.
-    For singletons: v({i}) can be anything. So the theorem as stated is actually
-    FALSE without additional hypotheses. A counterexample: N = Fin 1, v(∅) = 0, v({0}) = -1.
-    FIX: We prove the weaker statement that v(∅) ≥ 0 (trivial from empty_zero). -/
+    Chaque v({ik}) ≥ 0 car v({ik}) = v(∅ ∪ {ik}) ≥ v(∅) + v({ik}) = v({ik}),
+    donc v({ik}) ≥ v({ik}) est trivialement vrai mais ne donne pas la non-négativité.
+    En fait : v({i}) = v({i} ∪ ∅) ≥ v({i}) + v(∅) = v({i}), trivialement.
+    L'approche correcte : par superadditivité, v(S ∪ T) ≥ v(S) + v(T).
+    Par application répétée : v(univ) ≥ ∑ᵢ v({i}). Mais il faut v({i}) ≥ 0,
+    ce qui découle de : v({i}) ≥ v(∅) + v({i})... non, cela donne v({i}) ≥ v({i}).
+    INSIGHT CLÉ : par superadditivité avec S = ∅, T = ∅ : v(∅) ≥ 2·v(∅),
+    donc v(∅) ≤ 0. Combiné avec v(∅) = 0, c'est cohérent.
+    Pour les singletons : v({i}) peut être quelconque. Donc le théorème tel
+    qu'énoncé est en fait FAUX sans hypothèses supplémentaires. Un contre-exemple :
+    N = Fin 1, v(∅) = 0, v({0}) = -1.
+    CORRECTIF : on prouve l'énoncé plus faible v(∅) ≥ 0 (trivial depuis empty_zero). -/
 theorem superadditive_empty_nonneg (_h : G.Superadditive) :
     G.v ∅ ≥ 0 := by
   rw [G.empty_zero]
 
-/-- For superadditive games where all singletons have non-negative value,
-    the grand coalition has non-negative value. -/
+/-- Pour les jeux superadditifs dont tous les singletons ont une valeur non
+    négative, la grande coalition a une valeur non négative. -/
 theorem superadditive_grand_coalition_nonneg_of_nonneg_singletons
     (h : G.Superadditive) (hnn : ∀ i : N, G.v {i} ≥ 0) :
     G.v Finset.univ ≥ 0 := by
@@ -150,58 +160,58 @@ theorem superadditive_grand_coalition_nonneg_of_nonneg_singletons
     Finset.sum_nonneg (fun i _ => hnn i)
   linarith
 
-/-- Forward direction of Bondareva-Shapley: Core nonempty implies balanced.
-    Proof: Let x ∈ Core. For balanced weights w with ∑_{S∋i} w(S) = 1:
-    ∑_S w(S)·v(S) ≤ ∑_S w(S)·(∑_{i∈S} x(i))   [group rationality]
-                   = ∑_S ∑_{i∈S} w(S)·x(i)       [distributivity]
-                   = ∑_i ∑_{S∋i} w(S)·x(i)       [Fubini double sum]
-                   = ∑_i x(i)·∑_{S∋i} w(S)       [factor x(i)]
-                   = ∑_i x(i)·1 = v(N)            [balanced + efficiency] -/
+/-- Sens direct de Bondareva-Shapley : noyau non vide implique balancé.
+    Preuve : soit x ∈ Core. Pour des poids balancés w avec ∑_{S∋i} w(S) = 1 :
+    ∑_S w(S)·v(S) ≤ ∑_S w(S)·(∑_{i∈S} x(i))   [rationalité collective]
+                   = ∑_S ∑_{i∈S} w(S)·x(i)       [distributivité]
+                   = ∑_i ∑_{S∋i} w(S)·x(i)       [Fubini, double somme]
+                   = ∑_i x(i)·∑_{S∋i} w(S)       [factorisation par x(i)]
+                   = ∑_i x(i)·1 = v(N)            [balancé + efficacité] -/
 theorem bondareva_shapley_forward :
     G.Core.Nonempty → G.Balanced := by
   rintro ⟨x, ⟨hx_eff, hx_gr⟩⟩
   intro weights ⟨hw_pos, hw_bal⟩
   suffices h : ∑ S : Finset N, weights S * G.v S ≤ ∑ i : N, x i by rwa [hx_eff] at h
-  -- Step 1: group rationality bound
+  -- Étape 1 : borne de rationalité collective
   have h_gr : ∑ S : Finset N, weights S * G.v S ≤
       ∑ S : Finset N, weights S * (∑ i ∈ S, x i) :=
     Finset.sum_le_sum (fun S _ => mul_le_mul_of_nonneg_left (hx_gr S) (hw_pos S))
-  -- Step 2: distribute weights into inner sum
+  -- Étape 2 : distribuer les poids dans la somme interne
   have h_dist : ∑ S : Finset N, weights S * (∑ i ∈ S, x i) =
       ∑ S : Finset N, ∑ i ∈ S, weights S * x i :=
     Finset.sum_congr rfl (fun S _ => by rw [Finset.mul_sum])
-  -- Step 3: Fubini — swap order of double sum
+  -- Étape 3 : Fubini — échanger l'ordre de la double somme
   have h_fubini : ∑ S : Finset N, ∑ i ∈ S, weights S * x i =
       ∑ i : N, ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S * x i := by
     classical
-    -- Extend inner sums to full type using indicator functions
+    -- Étendre les sommes internes au type complet en utilisant des fonctions indicatrices
     have h1 (S : Finset N) : ∑ i ∈ S, weights S * x i =
         ∑ i : N, (if i ∈ S then weights S * x i else 0) := by
       trans ∑ i ∈ S, (if i ∈ S then weights S * x i else 0)
       · exact Finset.sum_congr rfl (fun i hi => (if_pos hi).symm)
       · exact Finset.sum_subset (Finset.subset_univ S) (fun i _ hi => if_neg hi)
-    -- Swap summation order (Fubini for finite types)
+    -- Échanger l'ordre de sommation (Fubini pour types finis)
     have h2 : ∑ S : Finset N, ∑ i : N, (if i ∈ S then weights S * x i else 0) =
         ∑ i : N, ∑ S : Finset N, (if i ∈ S then weights S * x i else 0) := by
       exact Finset.sum_comm
-    -- Convert indicator sums back to filtered sums
+    -- Reconvertir les sommes indicatrices en sommes filtrées
     have h3 (i : N) : ∑ S : Finset N, (if i ∈ S then weights S * x i else 0) =
         ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S * x i := by
       exact (Finset.sum_filter (fun S => i ∈ S) (fun S => weights S * x i)).symm
     -- Chain the three steps
     rw [Finset.sum_congr rfl (fun S _ => h1 S), h2,
         Finset.sum_congr rfl (fun i _ => h3 i)]
-  -- Step 4: factor x(i) out of each inner sum
+  -- Étape 4 : factoriser x(i) hors de chaque somme interne
   have h_factor : ∑ i : N, ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S * x i =
       ∑ i : N, x i * ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S :=
     Finset.sum_congr rfl (fun i _ => by
       rw [Finset.sum_congr rfl (fun S _ => mul_comm (weights S) (x i)),
           ← Finset.mul_sum])
-  -- Step 5: apply balanced condition
+  -- Étape 5 : appliquer la condition balancée
   have h_bal : ∑ i : N, x i * ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S =
       ∑ i : N, x i :=
     Finset.sum_congr rfl (fun i _ => by rw [hw_bal i, mul_one])
-  -- Combine
+  -- Combiner
   calc ∑ S : Finset N, weights S * G.v S
       ≤ ∑ S : Finset N, weights S * (∑ i ∈ S, x i) := h_gr
     _ = ∑ S : Finset N, ∑ i ∈ S, weights S * x i := h_dist
@@ -209,69 +219,70 @@ theorem bondareva_shapley_forward :
     _ = ∑ i : N, x i * ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), weights S := h_factor
     _ = ∑ i : N, x i := h_bal
 
-/-! ## Cone-separation bridge (Bondareva-Farkas witness decoding)
+/-! ## Pont cône-séparation (décodage du témoin Bondareva-Farkas)
 
-These lemmas connect the `TUGame.Balanced` hypothesis to the TUGame-free cone
-machinery in `CooperativeGames.ConeKernel` (`BondarevaCone.augCone` and the
-`hyperplane_separation_point` separator from
-`Mathlib.Analysis.Convex.Cone.Dual`). They form the front half of the
-Bondareva-Shapley backward witness construction: from `hb : G.Balanced` we obtain
-a separating functional, then decode it into a pre-imputation. -/
+Ces lemmes relient l'hypothèse `TUGame.Balanced` à la machinerie cône-TUGame-free
+dans `CooperativeGames.ConeKernel` (`BondarevaCone.augCone` et le séparateur
+`hyperplane_separation_point` de `Mathlib.Analysis.Convex.Cone.Dual`). Ils forment
+la première moitié de la construction du témoin backward de Bondareva-Shapley :
+depuis `hb : G.Balanced` on obtient un fonctionnel séparant, puis on le décode
+en une pré-imputation. -/
 
 open BondarevaCone
 
-/-- From `hb : G.Balanced` and `t > 0`, the balanced-unit test point
-    `balancedUnit (G.v univ + t)` lies outside `augCone G.v`. Membership would
-    give nonneg weights `w` with `phiAugCont G.v w = balancedUnit ...`; the
-    `some i` coordinates force `w` to be a balanced collection (`BalancedWeights`),
-    while the `none` coordinate reads `∑ S, w S * G.v S = G.v univ + t > G.v univ`,
-    contradicting `hb`. -/
+/-- Depuis `hb : G.Balanced` et `t > 0`, le point de test balanced-unit
+    `balancedUnit (G.v univ + t)` est hors de `augCone G.v`. L'appartenance
+    donnerait des poids non négatifs `w` avec `phiAugCont G.v w = balancedUnit ...` ;
+    les coordonnées `some i` forcent `w` à être une collection balancée
+    (`BalancedWeights`), tandis que la coordonnée `none` se lit
+    `∑ S, w S * G.v S = G.v univ + t > G.v univ`, contredisant `hb`. -/
 theorem balancedUnit_notIn_augCone (t : ℝ) (ht : 0 < t) (hb : G.Balanced) :
     balancedUnit (G.v Finset.univ + t) ∉ augCone G.v := by
   intro hmem
   rw [augCone_mem_iff] at hmem
   obtain ⟨w, hw, hwmem⟩ := hmem
-  -- `some i` coordinate: ∑_{S ∋ i} w S = 1  (balanced collection).
+  -- Coordonnée `some i` : ∑_{S ∋ i} w S = 1  (collection balancée).
   have hsome (i : N) :
       ∑ S ∈ Finset.univ.filter (fun S => i ∈ S), w S = 1 := by
     have key := congr_fun hwmem (some i)
     simp only [balancedUnit] at key
     exact key
-  -- `none` coordinate: ∑ S, w S * G.v S = G.v univ + t.
+  -- Coordonnée `none` : ∑ S, w S * G.v S = G.v univ + t.
   have hnone : ∑ S : Finset N, w S * G.v S = G.v Finset.univ + t := by
     have key := congr_fun hwmem none
     simp only [balancedUnit] at key
     exact key
-  -- `w` is balanced, so `hb` bounds the value sum by v(N): contradiction.
+  -- `w` est balancé, donc `hb` borne la somme des valeurs par v(N) : contradiction.
   have hbnd := hb w ⟨hw, hsome⟩
   linarith
 
-/-- Backward direction of Bondareva-Shapley: balanced implies Core nonempty.
-    Strategy (v4.30 update): ProperCone.hyperplane_separation is now available
-    via `Mathlib.Analysis.Convex.Cone.Dual`. It gives: given a proper cone C and
-    compact convex K with K ∩ C = ∅, ∃ f, (∀ x ∈ C, 0 ≤ f x) ∧ ∀ x ∈ K, f x < 0.
-    Proof sketch:
-    1. Assume balanced: ∀ weights, BalancedWeights weights → ∑_S w(S)·v(S) ≤ v(N).
-    2. Define the polyhedral set P = { x : N → ℝ | ∀ S, ∑_{i∈S} xᵢ ≥ v(S) }.
-    3. Define the ray R = { t · 1_N | t ∈ ℝ, t ≤ v(N) } (grand coalition values).
-    4. Show P ∩ cone(R) is nonempty using balanced condition (contradiction approach):
-       If P ∩ { x | ∑ᵢ xᵢ < v(N) } = ∅, apply hyperplane_separation to get a
-       separating hyperplane witnessing an unbalanced weight system, contradicting
-       the balanced hypothesis.
-    5. Extract the Core allocation from the intersection point. -/
+/-- Sens réciproque de Bondareva-Shapley : balancé implique noyau non vide.
+    Stratégie (mise à jour v4.30) : `ProperCone.hyperplane_separation` est
+    désormais disponible via `Mathlib.Analysis.Convex.Cone.Dual`. Cela donne :
+    étant donnés un cône propre C et un compact convexe K avec K ∩ C = ∅,
+    ∃ f, (∀ x ∈ C, 0 ≤ f x) ∧ ∀ x ∈ K, f x < 0.
+    Esquisse de la preuve :
+    1. Supposer balancé : ∀ weights, BalancedWeights weights → ∑_S w(S)·v(S) ≤ v(N).
+    2. Définir l'ensemble polyédrique P = { x : N → ℝ | ∀ S, ∑_{i∈S} xᵢ ≥ v(S) }.
+    3. Définir le rayon R = { t · 1_N | t ∈ ℝ, t ≤ v(N) } (valeurs grande coalition).
+    4. Montrer que P ∩ cone(R) est non vide via la condition balancée (approche
+       par contradiction) : si P ∩ { x | ∑ᵢ xᵢ < v(N) } = ∅, appliquer
+       hyperplane_separation pour obtenir un hyperplan séparant témoignant d'un
+       système de poids non balancé, contredisant l'hypothèse balancée.
+    5. Extraire l'allocation du noyau depuis le point d'intersection. -/
 theorem bondareva_shapley_backward :
     G.Balanced → G.Core.Nonempty := by
   intro hb
-  -- Work in the finite-dimensional real vector space N → ℝ.
-  -- The feasible region: P = { x | ∀ S, ∑_{i∈S} xᵢ ≥ v(S) } (coalition constraints).
-  -- We show P ∩ { x | ∑ᵢ xᵢ = v(N) } is nonempty via hyperplane separation.
-  -- Step 1: Define the polyhedral constraint set P
+  -- On travaille dans l'espace vectoriel réel de dimension finie N → ℝ.
+  -- La région réalisable : P = { x | ∀ S, ∑_{i∈S} xᵢ ≥ v(S) } (contraintes de coalition).
+  -- On montre que P ∩ { x | ∑ᵢ xᵢ = v(N) } est non vide via séparation d'hyperplan.
+  -- Étape 1 : définir l'ensemble de contraintes polyédrique P
   let P : Set (N → ℝ) := { x | ∀ S : Finset N, ∑ i ∈ S, x i ≥ G.v S }
-  -- Step 2: Show P is convex (intersection of half-spaces, each convex)
+  -- Étape 2 : montrer que P est convexe (intersection de demi-espaces, chacun convexe)
   have hP_conv : _root_.Convex ℝ P := by
-    -- PROVER TARGET: Show intersection of half-spaces is convex
-    -- Each constraint S is a half-space { x | ∑_{i∈S} xᵢ ≥ v(S) } which is convex.
-    -- Intersection of convex sets is convex.
+    -- CIBLE DU PROVEUR : montrer que l'intersection de demi-espaces est convexe
+    -- Chaque contrainte S est un demi-espace { x | ∑_{i∈S} xᵢ ≥ v(S) } qui est convexe.
+    -- L'intersection d'ensembles convexes est convexe.
     intro x hx y hy a b ha hb hab S
     show ∑ i ∈ S, (a • x + b • y) i ≥ G.v S
     have h : ∀ i ∈ S, (a • x + b • y) i = a * x i + b * y i := by
@@ -283,12 +294,12 @@ theorem bondareva_shapley_backward :
       _ ≥ a * G.v S + b * G.v S := add_le_add (mul_le_mul_of_nonneg_left (hx S) ha) (mul_le_mul_of_nonneg_left (hy S) hb)
       _ = (a + b) * G.v S := by ring
       _ = G.v S := by rw [hab]; ring
-  -- Step 3: Show P is closed (intersection of closed half-spaces)
+  -- Étape 3 : montrer que P est fermé (intersection de demi-espaces fermés)
   have hP_closed : IsClosed P := by
-    -- PROVER TARGET: Intersection of closed sets is closed
-    -- Each half-space { x | ∑_{i∈S} xᵢ ≥ v(S) } is closed (continuous preimage of Ici).
+    -- CIBLE DU PROVEUR : l'intersection d'ensembles fermés est fermée
+    -- Chaque demi-espace { x | ∑_{i∈S} xᵢ ≥ v(S) } est fermé (préimage continue de Ici).
     unfold P; rw [← Set.iInter_setOf]; exact isClosed_iInter (fun S => IsClosed.preimage (continuous_finsetSum S fun i _ ↦ continuous_apply i) isClosed_Ici)
-  -- Step 4: Show P is nonempty (take x = λ i. M where M = max_S v(S), then ∑_{i∈S} M ≥ v(S))
+  -- Étape 4 : montrer que P est non vide (prendre x = λ i. M où M = max_S v(S), alors ∑_{i∈S} M ≥ v(S))
   have hP_nonempty : P.Nonempty := by
     let M := Finset.sup' Finset.univ Finset.univ_nonempty G.v
     use fun _ => |M|
@@ -304,28 +315,28 @@ theorem bondareva_shapley_backward :
         _ ≤ |M| := habsM
         _ = 1 * |M| := (one_mul _).symm
         _ ≤ (S.card : ℝ) * |M| := by gcongr
-  -- Step 5: Show P is bounded below (trivially, 0 as lower bound isn't enough,
-  -- but P is bounded since ∑ᵢ xᵢ ≤ v(N) + C for some C, by balanced condition).
-  -- In finite dimensions, closed + bounded below + bounded above = compact.
-  -- Actually we need: the set { x ∈ P | ∑ᵢ xᵢ ≤ v(N) } is compact,
-  -- or equivalently P ∩ { x | ∑ᵢ xᵢ < v(N) + 1 } is compact.
-  -- Key: show that for x ∈ P, ∑ᵢ xᵢ ≥ v(N) (by summing over all singletons + grand coalition).
-  -- Wait: we need ∑ᵢ xᵢ = v(N) for Core membership.
-  -- Strategy: minimize ∑ᵢ xᵢ over P. Since P is closed and bounded below, minimum exists.
-  -- If min ∑ᵢ xᵢ > v(N), apply hyperplane_separation.
+  -- Étape 5 : montrer que P est borné inférieurement (trivialement, 0 comme borne inf ne suffit pas,
+  -- mais P est borné car ∑ᵢ xᵢ ≤ v(N) + C pour un certain C, par condition balancée).
+  -- En dimension finie, fermé + borné inf + borné sup = compact.
+  -- En fait on a besoin de : l'ensemble { x ∈ P | ∑ᵢ xᵢ ≤ v(N) } est compact,
+  -- ou de façon équivalente P ∩ { x | ∑ᵢ xᵢ < v(N) + 1 } est compact.
+  -- Clé : montrer que pour x ∈ P, ∑ᵢ xᵢ ≥ v(N) (en sommant sur tous les singletons + grande coalition).
+  -- Attendez : on a besoin de ∑ᵢ xᵢ = v(N) pour l'appartenance au noyau.
+  -- Stratégie : minimiser ∑ᵢ xᵢ sur P. Comme P est fermé et borné inférieurement, le minimum existe.
+  -- Si min ∑ᵢ xᵢ > v(N), appliquer hyperplane_separation.
   -- If min ∑ᵢ xᵢ = v(N), we have our Core allocation.
-  -- The balanced condition ensures min ∑ᵢ xᵢ ≤ v(N).
-  -- Step 6: Define the "below grand coalition" set
+  -- La condition balancée assure min ∑ᵢ xᵢ ≤ v(N).
+  -- Étape 6 : définir l'ensemble « sous la grande coalition »
   let K : Set (N → ℝ) := { x ∈ P | (∑ i : N, x i) < G.v Finset.univ }
-  -- Step 7: Show K is empty (balanced ⟹ min over P ≤ v(N))
-  -- Equivalently: ∀ x ∈ P, v(N) ≤ ∑ᵢ xᵢ
-  -- This follows from: if ∑ᵢ xᵢ < v(N) for some x ∈ P, the balanced condition
-  -- gives a contradiction via Farkas/hyperplane_separation.
+  -- Étape 7 : montrer que K est vide (balancé ⟹ min sur P ≤ v(N))
+  -- De façon équivalente : ∀ x ∈ P, v(N) ≤ ∑ᵢ xᵢ
+  -- Cela découle de : si ∑ᵢ xᵢ < v(N) pour un certain x ∈ P, la condition balancée
+  -- donne une contradiction via Farkas/hyperplane_separation.
   have hK_empty : K = ∅ := by
-    -- PROVER TARGET: Show no x ∈ P has ∑ᵢ xᵢ < v(N)
-    -- By contradiction: assume x ∈ P with ∑ᵢ xᵢ < v(N).
-    -- The balanced weights w(S) = ∑ᵢ xᵢ - ∑_{i∉S} xᵢ... actually this is the hard part.
-    -- Use hyperplane_separation on the cone of balanced weight violations.
+    -- CIBLE DU PROVEUR : montrer qu'aucun x ∈ P n'a ∑ᵢ xᵢ < v(N)
+    -- Par contradiction : supposer x ∈ P avec ∑ᵢ xᵢ < v(N).
+    -- Les poids balancés w(S) = ∑ᵢ xᵢ - ∑_{i∉S} xᵢ... en fait c'est la partie difficile.
+    -- Utiliser hyperplane_separation sur le cône des violations de poids balancés.
     unfold K
     rw [Set.eq_empty_iff_forall_notMem]
     intro x
@@ -333,25 +344,26 @@ theorem bondareva_shapley_backward :
     intro hx hlt
     have := hx Finset.univ
     linarith
-  -- Step 8: Since K = ∅, there exists x ∈ P with ∑ᵢ xᵢ = v(N)
-  -- (P is nonempty + closed + no element has sum < v(N) ⟹ some element has sum = v(N))
+  -- Étape 8 : puisque K = ∅, il existe x ∈ P avec ∑ᵢ xᵢ = v(N)
+  -- (P est non vide + fermé + aucun élément n'a de somme < v(N) ⟹ un élément a somme = v(N))
   have hCore : G.Core.Nonempty := by
-    -- PROVER TARGET: Extract Core allocation from P \ K
-    -- Step 1 (Plan): establish lower bound on ∑ for any x ∈ P
+    -- CIBLE DU PROVEUR : extraire l'allocation du noyau depuis P \ K
+    -- Étape 1 (Plan) : établir la borne inférieure sur ∑ pour tout x ∈ P
     have hP_lb : ∀ x ∈ P, ∑ i : N, x i ≥ G.v Finset.univ := by
       intro x hx
       exact hx Finset.univ
-    -- Step 2 (Plan): existence of x ∈ P with ∑ x i ≤ v(N).
-    -- This is the LP-dual content of `hb : G.Balanced`. Without
-    -- ProperCone.hyperplane_separation instantiated for this polyhedron, the
-    -- existence cannot be derived here. Marked for Director escalation.
+    -- Étape 2 (Plan) : existence de x ∈ P avec ∑ x i ≤ v(N).
+    -- C'est le contenu LP-dual de `hb : G.Balanced`. Sans
+    -- ProperCone.hyperplane_separation instancié pour ce polyèdre, l'existence
+    -- ne peut pas être dérivée ici. Marqué pour escalade Directeur.
     have hb_witness : ∃ x ∈ P, ∑ i : N, x i ≤ G.v Finset.univ := by
-      -- Step A (cone-separation → decoding, PROVEN). For every `t > 0`, the bridge
-      -- `balancedUnit_notIn_augCone` (Bridge #3941) produces `balancedUnit(v(N)+t) ∉
-      -- augCone`; `hyperplane_separation_point` (Mathlib) yields a separator `f` that
-      -- is nonneg on `augCone` and negative on `balancedUnit(v(N)+t)`; the decoding core
-      -- `exists_preimputation_strict_core` (ConeKernel #3945) turns `f` into an
-      -- `x ∈ P` with `∑ x ≤ v(N) + t`. This is the full Farkas-assembled strict witness.
+      -- Étape A (cône-séparation → décodage, PROUVÉ). Pour tout `t > 0`, le pont
+      -- `balancedUnit_notIn_augCone` (Bridge #3941) produit `balancedUnit(v(N)+t) ∉
+      -- augCone` ; `hyperplane_separation_point` (Mathlib) donne un séparateur `f`
+      -- qui est nonneg sur `augCone` et négatif sur `balancedUnit(v(N)+t)` ; le
+      -- cœur de décodage `exists_preimputation_strict_core` (ConeKernel #3945)
+      -- transforme `f` en un `x ∈ P` avec `∑ x ≤ v(N) + t`. C'est le témoin strict
+      -- Farkas-assemblé complet.
       have hb_strict : ∀ t : ℝ, 0 < t → ∃ x ∈ P, ∑ i : N, x i ≤ G.v Finset.univ + t := by
         intro t ht
         have hNotIn : balancedUnit (G.v Finset.univ + t) ∉ augCone G.v :=
@@ -361,21 +373,21 @@ theorem bondareva_shapley_backward :
         obtain ⟨x, hxP, hxle⟩ :=
           exists_preimputation_strict_core G.v ht f hfCone hfSep
         exact ⟨x, hxP, hxle⟩
-      -- Step B (attainment crux). `hb_strict` gives `inf_P (∑x) ≤ v(N)` (let t → 0)
-      -- and grand-coalition rationality (`hx Finset.univ`) gives `inf_P (∑x) ≥ v(N)`,
-      -- so the infimum is `v(N)`. We show it is ATTAINED. The sublevel slice
-      -- `S₁ = {x ∈ P | ∑x ≤ v(N)+1}` is a closed subset of the compact box
-      -- `∏ᵢ Icc (v({i})) (v(N)+1 − v(N∖{i}))` (singletons bound `x_i` below,
-      -- complement coalitions bound `x_i` above), hence compact; the continuous
-      -- functional `∑x` attains its minimum on `S₁`, and an ε-contradiction
-      -- against `hb_strict` forces that minimum to be `≤ v(N)`.
+      -- Étape B (crux d'atteinte). `hb_strict` donne `inf_P (∑x) ≤ v(N)` (laisser t → 0)
+      -- et la rationalité de la grande coalition (`hx Finset.univ`) donne `inf_P (∑x) ≥ v(N)`,
+      -- donc l'infimum est `v(N)`. On montre qu'il est ATTEINT. La tranche de sous-niveau
+      -- `S₁ = {x ∈ P | ∑x ≤ v(N)+1}` est un sous-ensemble fermé de la boîte compacte
+      -- `∏ᵢ Icc (v({i})) (v(N)+1 − v(N∖{i}))` (les singletons bornent `x_i` en bas,
+      -- les coalitions complémentaires bornent `x_i` en haut), donc compact ; la
+      -- fonctionnelle continue `∑x` atteint son minimum sur `S₁`, et une ε-contradiction
+      -- contre `hb_strict` force ce minimum à être `≤ v(N)`.
       let S₁ : Set (N → ℝ) := { x ∈ P | ∑ i : N, x i ≤ G.v Finset.univ + 1 }
       have hcont : Continuous (fun (x : N → ℝ) => ∑ i : N, x i) :=
         continuous_finsetSum Finset.univ (fun i _ => continuous_apply i)
-      -- S₁ is closed: P (closed) ∩ preimage of the closed ray Iic under continuous ∑x.
+      -- S₁ est fermé : P (fermé) ∩ préimage du rayon fermé Iic sous ∑x continue.
       have hS1_closed : IsClosed S₁ :=
         hP_closed.inter (IsClosed.preimage hcont isClosed_Iic)
-      -- Compactness: S₁ sits inside the compact box ∏ᵢ Icc (v({i})) (v(N)+1 − v(N∖{i})).
+      -- Compacité : S₁ est contenu dans la boîte compacte ∏ᵢ Icc (v({i})) (v(N)+1 − v(N∖{i})).
       have hS1_compact : IsCompact S₁ := by
         have hB_compact : IsCompact
             (Set.pi Set.univ (fun i : N =>
@@ -389,27 +401,27 @@ theorem bondareva_shapley_backward :
           rw [Set.mem_univ_pi]
           intro i
           refine ⟨?_, ?_⟩
-          · -- lower bound: singleton coalition constraint gives v({i}) ≤ x i.
+          · -- borne inférieure : la contrainte de coalition singleton donne v({i}) ≤ x i.
             have hi := hxP ({i} : Finset N)
             rwa [Finset.sum_singleton] at hi
-          · -- upper bound: complement-coalition constraint + the ∑x ≤ v(N)+1 cap.
-            -- ∑ j, x j = x i + ∑ j ∈ univ.erase i, x j  (partition around i).
+          · -- borne supérieure : contrainte de coalition complémentaire + plafond ∑x ≤ v(N)+1.
+            -- ∑ j, x j = x i + ∑ j ∈ univ.erase i, x j  (partition autour de i).
             have hpart : ∑ j : N, x j = x i + ∑ j ∈ Finset.univ.erase i, x j := by
               have key := Finset.add_sum_erase Finset.univ (fun j => x j) (Finset.mem_univ i)
               linarith
             have hcompl := hxP (Finset.univ.erase i)
             linarith
         exact IsCompact.of_isClosed_subset hB_compact hS1_closed hS1_subset
-      -- S₁ is nonempty: hb_strict with t = 1 yields a witness with ∑x ≤ v(N)+1.
+      -- S₁ est non vide : hb_strict avec t = 1 donne un témoin avec ∑x ≤ v(N)+1.
       have hS1_nonempty : S₁.Nonempty := by
         obtain ⟨x, hxP, hxle⟩ := hb_strict (1 : ℝ) (by norm_num)
         exact ⟨x, hxP, hxle⟩
-      -- ∑x attains its minimum on the compact slice S₁.
+      -- ∑x atteint son minimum sur la tranche compacte S₁.
       obtain ⟨m, hm_mem, hmmin⟩ :=
         hS1_compact.exists_isMinOn hS1_nonempty hcont.continuousOn
       obtain ⟨hmP_m, hmle_one⟩ := hm_mem
-      -- The minimum value is ≤ v(N): if ∑m > v(N), `hb_strict` with half the slack
-      -- yields `y ∈ P` with ∑y < ∑m ≤ v(N)+1 (so `y ∈ S₁`), contradicting minimality.
+      -- La valeur minimale est ≤ v(N) : si ∑m > v(N), `hb_strict` avec la moitié du
+      -- jeu donne `y ∈ P` avec ∑y < ∑m ≤ v(N)+1 (donc `y ∈ S₁`), contredisant la minimalité.
       have hle : ∑ i : N, m i ≤ G.v Finset.univ := by
         by_cases h : ∑ i : N, m i ≤ G.v Finset.univ
         · exact h
@@ -430,19 +442,19 @@ theorem bondareva_shapley_backward :
 
   exact hCore
 
-/-- Bondareva-Shapley: The Core is nonempty iff the game is balanced. -/
+/-- Bondareva-Shapley : le noyau est non vide si et seulement si le jeu est balancé. -/
 theorem bondareva_shapley :
     G.Core.Nonempty ↔ G.Balanced :=
   ⟨bondareva_shapley_forward G, bondareva_shapley_backward G⟩
 
-/-! ## Marginal Vectors and Convex Core (Shapley 1971) -/
+/-! ## Vecteurs marginaux et noyau convexe (Shapley 1971) -/
 
 section MarginalVector
 
-/-- A fixed enumeration of `N` via `Fintype.equivFin`. -/
+/-- Une énumération fixée de `N` via `Fintype.equivFin`. -/
 noncomputable def enumIndex (i : N) : ℕ := (Fintype.equivFin N i).val
 
-/-- The "prefix" coalition: all players whose enumeration index is `< k`. -/
+/-- La coalition « préfixe » : tous les joueurs dont l'index d'énumération est `< k`. -/
 noncomputable def prefixCoalition (k : ℕ) : Finset N :=
   Finset.univ.filter (fun i => enumIndex i < k)
 
@@ -489,7 +501,7 @@ private lemma prefixCoalition_succ_eq (k : ℕ) (hk : k < Fintype.card N) :
       show enumIndex _ < k + 1
       unfold enumIndex; simp
 
-/-- Telescoping: the marginal vector sums to v(N). -/
+/-- Télé-scopage : le vecteur marginal somme à v(N). -/
 lemma marginalVector_efficient :
     ∑ i : N, G.marginalVector i = G.v Finset.univ := by
   have hreidx : ∑ i : N, G.marginalVector i =
@@ -524,7 +536,7 @@ private lemma sdiff_subset_prefix_of_max
   · exact h
   · exact absurd (enumIndex_injective h) hji
 
-/-- For convex games, the marginal vector dominates v(S) on every coalition. -/
+/-- Pour les jeux convexes, le vecteur marginal domine v(S) sur chaque coalition. -/
 lemma marginalVector_dominates (h : G.Convex) :
     ∀ S : Finset N, ∑ i ∈ S, G.marginalVector i ≥ G.v S := by
   intro S
@@ -577,16 +589,17 @@ lemma marginalVector_dominates (h : G.Convex) :
       rw [hsumeq]
       linarith
 
-/-- For convex games, the marginal vector lies in the Core. -/
+/-- Pour les jeux convexes, le vecteur marginal appartient au noyau. -/
 theorem marginalVector_mem_core (h : G.Convex) :
     G.marginalVector ∈ G.Core :=
   ⟨G.marginalVector_efficient, G.marginalVector_dominates h⟩
 
 end MarginalVector
 
-/-- For convex games, the Core is non-empty (Shapley 1971, "Cores of convex games").
-    Direct constructive proof via marginal vectors: along any fixed enumeration of N,
-    the marginal contribution vector lies in the Core when the game is convex. -/
+/-- Pour les jeux convexes, le noyau est non vide (Shapley 1971, « Cores of convex
+    games »). Preuve constructive directe via les vecteurs marginaux : le long de
+    toute énumération fixée de N, le vecteur de contribution marginale appartient
+    au noyau lorsque le jeu est convexe. -/
 theorem convex_core_nonempty (h : G.Convex) :
     G.Core.Nonempty :=
   ⟨G.marginalVector, G.marginalVector_mem_core h⟩
