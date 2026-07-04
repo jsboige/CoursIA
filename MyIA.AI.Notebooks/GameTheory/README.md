@@ -28,6 +28,40 @@ Les deux approches se nourrissent mutuellement. Le notebook Python montre *pourq
 
 Au-delà de la théorie classique, cette série couvre les **applications contemporaines** qui utilisent la théorie des jeux en production : enchères VCG pour la publicité en ligne (milliards de transactions/jour), systèmes de matching (Gale-Shapley pour les affectations étudiant-hôpital), IA de poker (Libratus/Pluribus), et gouvernance on-chain (DAO, vote vérifiable).
 
+## Statistiques catalogue à jour
+
+Le marqueur `CATALOG-STATUS` (l. 5-10) reflète l'état du dépôt au moment du commit. Les chiffres ci-dessous sont lus **byte-identique** depuis ce marqueur, conformément à la règle `catalog-pr-hygiene` (le catalogue n'est jamais régénéré sur une branche feature — c'est le cron quotidien `catalog-cron.yml` qui le maintient sur `main`).
+
+| Sous-série | Notebooks | Statut | Paradigmes dominants |
+|------------|-----------|--------|----------------------|
+| Racine (fil principal + side tracks `b` Lean + `c` Python) | 24 | PRODUCTION=21, BETA=3 | Nashpy/OpenSpiel/Z3 (Python), Lean 4 (side tracks `b`) |
+| Sous-série [SocialChoice/](SocialChoice/) | 4 | PRODUCTION=4, BETA=0 | Lean 4 (Arrow, Sen) + SAT/Z3 (UNSAT) + simulation Condorcet/Borda |
+| **Total** | **28** | **PRODUCTION=25, BETA=3** | Python pur + Lean 4 (5 side tracks `b` 0-sorry) |
+
+Les side tracks Lean (2b, 4b, 5b, 8b, 11b, 15b) prouvent les grands théorèmes (Nash via Brouwer/Kakutani, minimax via Sion, Vickrey, PGame/Sprague-Grundy, axiomes Shapley) avec **0 `sorry` sur les théorèmes majeurs** (cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ; harmonisation Mathlib en cours, #4362). Les `student/` éventuels portent des stubs conformes (règle C.1 — `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et restent exécutables end-to-end. Dépendances Python : voir `MyIA.AI.Notebooks/requirements.txt` à la racine (nashpy, networkx, numpy, matplotlib, z3-solver).
+
+## Écosystème MCP et parenté cross-lane
+
+Cette série mobilise plusieurs couches de l'écosystème MCP du cluster, et entretient des parentés transversales fortes avec d'autres familles du dépôt :
+
+**Outils d'infrastructure MCP** :
+
+1. **MCP Jupyter** (`mcp__jupyter-papermill__*`) — exécution cell-by-cell des notebooks Python (Nashpy, OpenSpiel, Z3). Note bug #835 : JAMAIS appel naïf (re-exécution = `nbconvert --execute` Bash `timeout`-wrap).
+2. **WSL Lean 4 kernel** (`scripts/notebook_tools/wsl_papermill.py --kernel lean4-wsl`) — exécution INSIDE WSL pour les side tracks `b` (cf `.claude/rules/wsl-kernels.md`). Wrapper Python `~/.lean4-kernel-wrapper.py` (v5) gère la conversion Windows→WSL paths et permissions NTFS. L'ancien wrapper bash est **OBSOLÈTE**.
+3. **Validation pre-commit** (`.pre-commit-config.yaml`) — gitleaks + notebook validator bloquent les PRs qui dégraderaient les contrats inter-séries (notamment les stubs C.1 et les outputs C.2).
+
+**Parenté cross-lane** (cross-liens inter-séries actifs) :
+
+| Cette série | Symétrie dans | Pont pédagogique |
+|-------------|---------------|------------------|
+| Lean 4 (Arrow, Sen, Shapley, Vickrey) | [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) | Même toolchain WSL, partage de Mathlib ; notebooks `social_choice_lean` prouvent ce que `social_choice_lean_peters` référence (D. Peters, MIT) |
+| Multi-Agent RL (NFSP, PSRO, AlphaZero) | [RL](../RL/README.md) | Stratégies d'équilibre *apprises* par interaction plutôt que calculées (cf notebook 17) |
+| Arbres de jeu, induction arrière, MCTS | [Search](../README.md) | Minimax (notebook 5) ↔ CSP-8-Temporal (Allen), P/N positions ↔ `Search-9-SatPlan-Symbolic` |
+| Mécanismes VCG, matching Gale-Shapley | [SymbolicAI/SmartContracts](../SymbolicAI/SmartContracts/README.md) | Gouvernance on-chain (DAO, vote vérifiable) ; le design de mécanismes se prolonge en smart contracts |
+| Encodage SAT/Z3 d'Arrow | [SymbolicAI/SMT/Z3](../SymbolicAI/SMT/Z3/README.md) | Outil Z3 partagé ; notebook SC-04 exploite la même API que NB-06 (witness generation Automata) |
+
+**Effet de composition** : GameTheory sert de **carrefour** entre simulation numérique (Nashpy, OpenSpiel, Z3) et formalisation (Lean 4). Toute avancée d'une série partenaire enrichit potentiellement les notebooks GameTheory — par exemple, un nouveau théorème prouvé en Lean côté SymbolicAI/Lean peut être cité depuis `LEANS_INVENTORY.md` ou ouvrir un nouveau side track `b`. Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Gale-Shapley) aux **lakes** (qui prouvent — Arrow, Bondareva-Shapley, Gale-Shapley existence et optimalité côté proposant), avec 5 lakes game-théoriques phares et **0 sorry sur les théorèmes majeurs**.
+
 ## Objectifs d'apprentissage
 
 À l'issue de cette série, vous serez capable de :
@@ -663,4 +697,4 @@ Voir la licence du repository principal.
 
 ---
 
-*Version 1.1.0 — Juin 2026*
+*Version 1.2.0 — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche gametheory.*
