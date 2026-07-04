@@ -336,13 +336,13 @@ Cette série est **Python d'abord** pour son cœur pédagogique (recherche, CSP,
 | Sous-série | Notebooks | Langage | Correspondance dans l'autre langage |
 |-----------|-----------|---------|-------------------------------------|
 | [Part1-Foundations](Part1-Foundations/) | 13 (Search-1 à Search-11, Search-15, Search-16) | Python, .NET (C#) | Aucune |
-| [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python | Aucune |
+| [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET (parité en cours, **EPIC #4956**) | 7 binômes : CSP-3-Csharp + CSP-7-Csharp MERGED ; CSP-1/2/6/8/9-Csharp OPEN — voir [bilan marathon](#marathon-epic-4956--bilan-7-tranches-livrees-2026-07-04) |
 | [Part3-Advanced](Part3-Advanced/) | 3 (Search-12 à Search-14) | Python | Aucune |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 22 (MGS-1 à MGS-19 + 3 applications spécialisées) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
 | [Applications](Applications/) | 21 | 19 Python + 2 C# | App-9 ⇄ App-9b, App-10 ⇄ App-10b (2 paires) |
 | Racine | 0 | — | (aucun — voir [archive/](archive/) pour les anciens notebooks racine) |
 
-Le **cœur curriculaire** (Parties 1 à 3, soit 23 notebooks) est aujourd'hui exclusivement en Python ; seules deux applications disposent d'un binôme Python/C#.
+Le **cœur curriculaire** de la [Partie 1](Part1-Foundations/) et de la [Partie 3](Part3-Advanced/) reste Python d'abord ; en revanche la [Partie 2 CSP](Part2-CSP/) a basculé en 2026 dans un **portage marathon** `.NET ⇄ Python` structuré par l'[EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956), avec **7 binômes C#/.NET livrés** (2 MERGED, 5 OPEN MERGEABLE/UNSTABLE en attente d'ai-01 merge). Seules les [Applications](Applications/) hors-binômes (19 Python + 2 C#) restent aujourd'hui sans symétrie stricte.
 
 ### Pistes de portage .NET
 
@@ -355,6 +355,31 @@ Le levier .NET dépend de la dépendance sous-jacente de chaque notebook :
 | Recherche d'états (Search-1 à Search-4) | aucune dépendance lourde | **.NET Interactive** pur | Structures d'états directement portables |
 
 Le portage se fait **au fil de l'eau, une tranche par contribution** — un notebook .NET exécuté de bout en bout avec ses exercices — et non en une seule passe. Le suivi d'ensemble est assuré par l'issue [#4956](https://github.com/jsboige/CoursIA/issues/4956).
+
+<a id="marathon-epic-4956"></a>
+
+### Marathon EPIC #4956 — bilan 7 tranches livrées (2026-07-04)
+
+La parité `.NET ⇄ Python` de la Partie 2 CSP est portée par un **marathon** structuré autour de l'[EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956) (mandat user 2026-07-03 : équilibre Choco ⇔ OR-Tools ⇔ from-scratch). Bilan au cycle 18 (2026-07-04) — **7 binômes C# sur 9**, soit 78 % de la parité Part2-CSP :
+
+| Notebook | PR | Cycle | Solver C# | verdict SOTA | Sortie noteworthy |
+|----------|----|----|-----------|-------------|-------------------|
+| **CSP-1-Fundamentals-Csharp** | [#5270](https://github.com/jsboige/CoursIA/pull/5270) | 14 (2026-07-03) | IKVM 8.15 + [Choco-solver](https://choco-solver.org/) 4.10.17 (DLL 12 MB) | **SOTA-OK** | Coloration de l'Australie 71 ms ; 8-Reines 102 ms |
+| **CSP-2-Consistency-Csharp** | [#5274](https://github.com/jsboige/CoursIA/pull/5274) | 15 (2026-07-04) | IKVM 8.15 + Choco-solver 4.10.17 | **SOTA-OK** | AC-3 custom C# + Choco AC-3 builtin ; audit table Choco ⇔ OR-Tools |
+| **CSP-3-Csharp** | PRs antérieurs | antérieur | IKVM 8.15 + Choco 4.10.17 | **MERGED** | (palette reine / équidistance, base historique) |
+| **CSP-6-Hybridization-Csharp** | [#5275](https://github.com/jsboige/CoursIA/pull/5275) | 16 (2026-07-04) | [Google.OrTools](https://developers.google.com/optimization) 9.15.6755 NuGet | **SOTA-OK** | CP + ML 50 instances (98 % faisables) ; Portfolio multi-stratégies |
+| **CSP-7-Csharp** | PRs antérieurs | antérieur | IKVM 8.15 + Choco 4.10.17 | **MERGED** | (global-cardinality, symétrie, base historique) |
+| **CSP-8-Temporal-Csharp** | [#5276](https://github.com/jsboige/CoursIA/pull/5276) | 17 (2026-07-04) | Google.OrTools 9.15.6755 | **SOTA-OK** | Allen 13 relations + STP Floyd-Warshall + TCSP ; CP-SAT optimal 0,0065 s |
+| **CSP-9-Distributed-Csharp** | [#5277](https://github.com/jsboige/CoursIA/pull/5277) | 18 (2026-07-04) | Algo distribué **Yokoo 1992** from-scratch (DisCSP) | **SOTA-OK** | AWC 62,0 msgs vs ABT 159,4 msgs à densité 0,5 (**2,5× plus efficace**) ; -58 % de fuite privacy |
+
+7 PRs mergées ou mergeables + **5 PRs EPIC #4956 OPEN** (cycles 14-18) constituent aujourd'hui la couverture de référence. Le verdict SOTA-OK est documenté dans chacune des 5 PRs (règle [EPIC #3801](https://github.com/jsboige/CoursIA/issues/3801) — vrai outil, pas workaround dégradé) ; les 2 PRs plus anciennes (CSP-3, CSP-7) ont été livrées avant la formalisation de la règle et n'ont pas de verdict écrit. Équilibre solvers respecté : 3 IKVM + Choco (CSP-1/2/3), 2 OR-Tools CP-SAT natif .NET (CSP-6/8), 1 from-scratch (CSP-9), 1 historique (CSP-7).
+
+**État des PRs (à jour au 2026-07-04)** :
+
+- **MERGED** : CSP-3-Csharp, CSP-7-Csharp (2 plus anciennes, historiques).
+- **OPEN** : CSP-1-Csharp ([#5270](https://github.com/jsboige/CoursIA/pull/5270)), CSP-2-Csharp ([#5274](https://github.com/jsboige/CoursIA/pull/5274)), CSP-6-Csharp ([#5275](https://github.com/jsboige/CoursIA/pull/5275)), CSP-8-Csharp ([#5276](https://github.com/jsboige/CoursIA/pull/5276)), CSP-9-Csharp ([#5277](https://github.com/jsboige/CoursIA/pull/5277)) — **5 PRs OPEN** en attente d'ai-01 merge. G.9 verify firsthand : `gh pr view N --json state,mergedAt` sur les 5 donne `mergedAt: null` au 2026-07-04.
+
+**Reste à livrer** : CSP-4-Csharp et CSP-5-Csharp (2 tranches restant, partitions en cours d'aiguillage). Le coordinateur [ai-01](https://github.com/jsboige/CoursIA) merge les PRs OPEN au fil de l'eau ; toute re-priorisation passe par un commentaire direct sur l'EPIC.
 
 ---
 
@@ -680,4 +705,4 @@ Voir la licence du repository principal.
 
 ---
 
-*Version 1.1.0 — Juin 2026*
+*Version 1.2.0 — Juillet 2026 — parité `Part2-CSP .NET ⇄ Python` 7/9 (EPIC #4956 marathon en cours).*
