@@ -1,68 +1,85 @@
 /-
-  Paradoxe libéral de Sen
-  ========================
+  Sen's Liberal Paradox
+  =====================
 
-  Port de asouther4/lean-social-choice vers Lean 4
+  Port of asouther4/lean-social-choice to Lean 4
 
-  Le théorème d'impossibilité de Sen montre qu'aucune procédure de décision sociale
-  ne peut simultanément satisfaire :
-  1. Le critère de Pareto faible
-  2. Le libéralisme minimal (certains individus sont décisifs sur certaines paires)
-  3. Un domaine non restreint
+  Sen's impossibility theorem shows that no social decision procedure
+  can simultaneously satisfy:
+  1. Weak Pareto criterion
+  2. Minimal liberalism (some individuals are decisive over some pairs)
+  3. Unrestricted domain
 
-  C'est un résultat fondamental montrant la tension entre efficacité et liberté.
+  This is a fundamental result showing tension between efficiency and liberty.
 -/
 
 import SocialChoice.Framework
 import Mathlib.Tactic
 
+namespace SocialChoice_en
+/-!
+  Sen's Liberal Paradox (EN sibling)
+  ==================================
+
+  English mirror of `SocialChoice/Sen.lean` (FR-first canonical).
+  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
+  fichiers `.lean` distincts FR + EN siblings dans le même lake, les deux compilent.
+  Drift-CI detectable : contenu non-docstring byte-identique entre siblings.
+  Namespace sibling : `SocialChoice_en` (le FR canonique reste `SocialChoice`).
+  Pas une traduction destructive : le fichier source EN historique est préservé ici
+  verbatim depuis `aaaf0c52ae` (pre-c.215 Sen tranche 5 FR commit) ; seule la
+  ligne `namespace` diffère pour éviter la collision de declaration top-level.
+
+  See #4980. Part of #4208 (axe E).
+-/
+
 variable {ι : Type*} {σ : Type*} [Fintype ι] [DecidableEq ι] [DecidableEq σ]
 
-/-! ## Libéralisme minimal -/
+/-! ## Minimal Liberalism -/
 
-/-- L'individu i est décisif sur la paire (x, y) :
-    la société suit la préférence stricte de i dans les deux directions.
-    Conforme à Sen 1970 et Holliday/Norman/Pacuit 2021 (bidirectionnel). -/
+/-- Individual i is decisive over the pair (x, y):
+    Society follows i's strict preference in both directions.
+    Conforms to Sen 1970 and Holliday/Norman/Pacuit 2021 (bidirectional). -/
 def is_decisive_over (f : SWF ι σ) (i : ι) (x y : σ) : Prop :=
   (∀ prof : Profile ι σ, P (prof i).rel x y → P (f prof).rel x y) ∧
   (∀ prof : Profile ι σ, P (prof i).rel y x → P (f prof).rel y x)
 
-/-- Libéralisme minimal : au moins deux individus ont chacun au moins une
-    paire sur laquelle ils sont décisifs -/
+/-- Minimal liberalism: At least two individuals each have at least one
+    pair over which they are decisive -/
 def minimal_liberal (f : SWF ι σ) (X : Finset σ) : Prop :=
   ∃ i j : ι, i ≠ j ∧
     (∃ x y : σ, x ∈ X ∧ y ∈ X ∧ x ≠ y ∧ is_decisive_over f i x y) ∧
     (∃ x y : σ, x ∈ X ∧ y ∈ X ∧ x ≠ y ∧ is_decisive_over f j x y)
 
--- Domaine non restreint : la SWF accepte tout profil
--- (Ceci est implicite dans notre définition de SWF)
+-- Unrestricted domain: The SWF accepts any profile
+-- (This is implicit in our definition of SWF)
 
-/-! ## Construction du paradoxe de Sen -/
+/-! ## Sen's Paradox Construction -/
 
--- Un profil de préférence qui démontre le paradoxe :
--- Prude préfère (pas-lire, pas-lire) > (lu-par-autre, pas-lire) > (lire, lu-par-autre)
--- Lewd préfère (lu-par-autre, lire) > (lire, pas-lire) > (pas-lire, pas-lire)
+-- A preference profile that demonstrates the paradox:
+-- Prude prefers (not-read, not-read) > (read-by-other, not-read) > (read, read-by-other)
+-- Lewd prefers (read-by-other, read) > (read, not-read) > (not-read, not-read)
 
-/-! ## Théorème d'impossibilité de Sen -/
+/-! ## Sen's Impossibility Theorem -/
 
 /--
-Paradoxe libéral de Sen :
-il n'existe aucune fonction de bien-être social qui satisfait à la fois
-Pareto faible et Libéralisme minimal pour tous les profils de préférence.
-ESQUISSE DE PREUVE :
-de minimal_liberal, on tire deux individus i, j avec des paires décisives :
-  i est décisif sur (x, y), j est décisif sur (z, w).
-Ces paires peuvent se chevaucher. La construction standard utilise :
-  i décisif sur (a, b), j décisif sur (b, c) (ou paires disjointes).
-Cas 1 (chevauchement) : i décisif sur (a,b), j décisif sur (b,c).
-  Construire un profil où i préfère a > b (exerce son droit → société : a > b)
-  et j préfère b > c (exerce son droit → société : b > c)
-  et tout le monde préfère c > a (Pareto → société : c > a).
-  Cycle : a > b > c > a. Aucun élément meilleur n'existe.
-Cas 2 (disjoint) : i décisif sur (a,b), j décisif sur (c,d).
-  Construction de cycle similaire en utilisant les quatre alternatives.
-  Requiert |X| >= 4 dans ce cas (garanti par hX : 3 ≤ |X| seulement
-  donne 3, donc la preuve utilise le cas chevauchant). -/
+Sen's Liberal Paradox:
+There exists no social welfare function that satisfies both
+Weak Pareto and Minimal Liberalism for all preference profiles.
+PROOF SKETCH:
+From minimal_liberal, get two individuals i, j with decisive pairs:
+  i is decisive over (x, y), j is decisive over (z, w).
+These pairs may overlap. The standard construction uses:
+  i decisive over (a, b), j decisive over (b, c) (or disjoint pairs).
+Case 1 (overlapping): i decisive over (a,b), j decisive on (b,c).
+  Construct prof where i prefers a > b (exercises right → society: a > b)
+  and j prefers b > c (exercises right → society: b > c)
+  and everyone prefers c > a (Pareto → society: c > a).
+  Cycle: a > b > c > a. No best element exists.
+Case 2 (disjoint): i decisive over (a,b), j decisive over (c,d).
+  Similar cycle construction using the four alternatives.
+  Requires |X| >= 4 in this case (guaranteed by hX : 3 ≤ |X| only
+  gives 3, so the proof uses the overlapping case). -/
 theorem sen_impossibility (f : SWF ι σ) (X : Finset σ)
     (hne : (2 : ℕ) ≤ Fintype.card ι)
     (hX : 3 ≤ X.card)
@@ -71,12 +88,12 @@ theorem sen_impossibility (f : SWF ι σ) (X : Finset σ)
     ∃ prof : Profile ι σ, ¬∃ best : σ, is_best_element best X (f prof).rel := by
   obtain ⟨i, j, hij, ⟨a, b, ha, hb, hab, hi_dec⟩, ⟨c, d, hc, hd, hcd, hj_dec⟩⟩ := hml
   by_cases hbc : b = c
-  · -- Chevauchement : i décisif sur (a,b), j décisif sur (b,d) puisque b=c
+  · -- Overlapping: i decisive on (a,b), j decisive on (b,d) since b=c
     subst hbc
-    -- Sous-cas : a = d signifie les deux décisifs sur des paires partageant b, avec a=d
+    -- Sub-case: a = d means both decisive on pairs sharing b, with a=d
     by_cases had : a = d
-    · -- a=d : i sur (a,b), j sur (b,a). Construire le profil : i préfère a>b, j préfère b>a
-      -- La société obtient P a b et P b a → contradiction
+    · -- a=d: i on (a,b), j on (b,a). Build profile: i prefers a>b, j prefers b>a
+      -- Society gets P a b and P b a → contradiction
       subst had
       let base : PrefOrder σ := ⟨fun _ _ => True, fun _ => trivial,
         fun _ _ => Or.inl trivial, fun _ _ _ _ _ => trivial⟩
@@ -95,8 +112,8 @@ theorem sen_impossibility (f : SWF ι σ) (X : Finset σ)
         show maketop_rel (fun _ _ ↦ True) b b a ∧ ¬maketop_rel (fun _ _ ↦ True) b a b
         simp [maketop_rel, hab])
       exact hPa_b.2 hPb_a.1
-    · -- a≠d, b≠d : chevauchement avec i sur (a,b), j sur (b,d)
-      -- Cycle : P a b (i décisif), P b d (j décisif), P d a (Pareto)
+    · -- a≠d, b≠d: overlapping with i on (a,b), j on (b,d)
+      -- Cycle: P a b (i decisive), P b d (j decisive), P d a (Pareto)
       have hbd : b ≠ d := hcd
       let base : PrefOrder σ := ⟨fun _ _ => True, fun _ => trivial,
         fun _ _ => Or.inl trivial, fun _ _ _ _ _ => trivial⟩
@@ -122,11 +139,11 @@ theorem sen_impossibility (f : SWF ι σ) (X : Finset σ)
       have hPd_a : P (f prof).rel d a := hwp prof d a hd ha hAll_d_a
       have hPad := P_trans (f prof).trans hPa_b hPb_d
       exact hPad.2 hPd_a.1
-  · -- b≠c : i sur (a,b), j sur (c,d) avec b≠c
+  · -- b≠c: i on (a,b), j on (c,d) with b≠c
     have hcb : c ≠ b := fun h => hbc h.symm
     by_cases had : a = d
-    · -- a=d : i sur (a,b), j sur (c,a) — chevauchement compatible en chaîne (a partagé dans
-      -- des positions différentes : 1er dans la paire de i, 2nd dans celle de j). Cycle : a>b (i), b>c (Pareto), c>a (j)
+    · -- a=d: i on (a,b), j on (c,a) — chain-compatible overlap (a shared in
+      -- different positions: 1st in i's pair, 2nd in j's). Cycle: a>b (i), b>c (Pareto), c>a (j)
       subst had
       have hca : c ≠ a := hcd
       let base : PrefOrder σ := ⟨fun _ _ => True, fun _ => trivial,
@@ -151,12 +168,12 @@ theorem sen_impossibility (f : SWF ι σ) (X : Finset σ)
             hab, hab.symm, hca, hca.symm, hcb_local]
       have hPb_c : P (f prof).rel b c := hwp prof b c hb hc hAll_b_c
       exact (P_trans (f prof).trans hPa_b hPb_c).2 hPc_a.1
-    · -- a≠d, b≠c : la décisivité bidirectionnelle nous permet de gérer les cas de bifurcation
+    · -- a≠d, b≠c: bidirectional decisiveness lets us handle fork cases
       by_cases hac : a = c
-      · -- a=c (bifurcation) : i sur (a,b), j sur (a,d) avec j bidirectionnel sur (d,a).
+      · -- a=c (fork): i on (a,b), j on (a,d) with bidirectional j on (d,a).
         subst hac
         by_cases hbd_check : b = d
-        · -- b=d signifie les deux décisifs sur (a,b) : contradiction sur la même paire
+        · -- b=d means both decisive on (a,b): same pair contradiction
           subst hbd_check
           let base : PrefOrder σ := ⟨fun _ _ => True, fun _ => trivial,
             fun _ _ => Or.inl trivial, fun _ _ _ _ _ => trivial⟩
@@ -174,7 +191,7 @@ theorem sen_impossibility (f : SWF ι σ) (X : Finset σ)
             show maketop_rel (fun _ _ ↦ True) b b a ∧ ¬maketop_rel (fun _ _ ↦ True) b a b
             simp [maketop_rel, hab, hab.symm])
           exact hPa_b.2 hPb_a.1
-        · -- b≠d : cycle a>b (i.1), b>d (Pareto), d>a (j.2)
+        · -- b≠d: Cycle a>b (i.1), b>d (Pareto), d>a (j.2)
           have hbd_ne : b ≠ d := fun h => hbd_check h
           let base : PrefOrder σ := ⟨fun _ _ => True, fun _ => trivial,
             fun _ _ => Or.inl trivial, fun _ _ _ _ _ => trivial⟩
@@ -201,10 +218,10 @@ theorem sen_impossibility (f : SWF ι σ) (X : Finset σ)
                 hab, hab.symm, hbd_ne, hcd, hcd.symm]; exact fun h => hbd_ne h.symm
           have hPb_d : P (f prof).rel b d := hwp prof b d hb hd hAll_b_d
           exact (P_trans (f prof).trans hPa_b hPb_d).2 hPd_a.1
-      · -- a≠c, b≠c, a≠d : examiner la bifurcation b=d
+      · -- a≠c, b≠c, a≠d: check b=d fork
         by_cases hbd2 : b = d
-        · -- b=d (bifurcation) : après subst, d→b. i sur (a,b), j sur (c,b) bidirectionnel.
-          -- Cycle : c>b (j.1), b>a (i.2), a>c (Pareto)
+        · -- b=d (fork): after subst, d→b. i on (a,b), j on (c,b) bidirectional.
+          -- Cycle: c>b (j.1), b>a (i.2), a>c (Pareto)
           subst hbd2
           have hac' : ¬a = c := hac
           let base : PrefOrder σ := ⟨fun _ _ => True, fun _ => trivial,
@@ -234,9 +251,9 @@ theorem sen_impossibility (f : SWF ι σ) (X : Finset σ)
                 hac', hca, hab, hcd]
           have hPa_c : P (f prof).rel a c := hwp prof a c ha hc hAll_a_c
           exact (P_trans (f prof).trans hPc_b hPb_a).2 hPa_c.1
-        · -- Tous distincts : cycle à 4 éléments a>b>c>d>a en utilisant 4 alternatives
-          -- i sur (a,b) bidirectionnel, j sur (c,d) bidirectionnel
-          -- Cycle : a>b (i.1), b>c (Pareto), c>d (j.1), d>a (Pareto)
+        · -- All distinct: 4-cycle a>b>c>d>a using 4 alternatives
+          -- i on (a,b) bidirectional, j on (c,d) bidirectional
+          -- Cycle: a>b (i.1), b>c (Pareto), c>d (j.1), d>a (Pareto)
           let base : PrefOrder σ := ⟨fun _ _ => True, fun _ => trivial,
             fun _ _ => Or.inl trivial, fun _ _ _ _ _ => trivial⟩
           let prof : Profile ι σ := fun k =>
@@ -277,18 +294,18 @@ theorem sen_impossibility (f : SWF ι σ) (X : Finset σ)
           exact (P_trans (f prof).trans hPa_b hPb_c).2
             (P_trans (f prof).trans hPc_d hPd_a).1
 
-/-! ## Exemple : le paradoxe de la lecture du livre -/
+/-! ## Example: The Book Reading Paradox -/
 
-/-- Exemple classique avec Prude (p) et Lewd (l) choisissant qui lit un livre
-    Alternatives : np (personne ne lit), pr (prude lit), lr (lewd lit) -/
+/-- Classic example with Prude (p) and Lewd (l) choosing who reads a book
+    Alternatives: np (no one reads), pr (prude reads), lr (lewd reads) -/
 
--- Le paradoxe surgit parce que :
--- 1. Prude est décisif sur (pr, lr) : préfère ne pas lire si Lewd lit
--- 2. Lewd est décisif sur (np, lr) : préfère lire plutôt que personne
--- 3. Tous deux sont d'accord (Pareto) : (np, pr) — mieux si Prude lit que personne
+-- The paradox arises because:
+-- 1. Prude is decisive over (pr, lr): prefers not to read if Lewd reads
+-- 2. Lewd is decisive over (np, lr): prefers to read rather than no one
+-- 3. Both agree (Pareto): (np, pr) - better if Prude reads than no one
 --
--- Ceci crée un cycle : np > pr (Pareto), pr > lr (Prude), lr > np (Lewd)
--- Aucune fonction de choix social ne peut briser ce cycle
+-- This creates a cycle: np > pr (Pareto), pr > lr (Prude), lr > np (Lewd)
+-- No social choice function can break this cycle
 
 theorem book_paradox_demonstrates_sen
     (prude lewd : ι) (hne : prude ≠ lewd)
@@ -304,10 +321,10 @@ theorem book_paradox_demonstrates_sen
   have ⟨hnppr, hprlr, hnp_lr⟩ := hdist
   let base : PrefOrder σ := ⟨fun _ _ => True, fun _ => trivial,
     fun _ _ => Or.inl trivial, fun _ _ _ _ _ => trivial⟩
-  -- Construction du profil :
-  --   Prude : np en haut, lr en bas → P np pr, P pr lr
-  --   Lewd : lr en haut, pr en bas → P lr np, P np pr
-  --   Autres : np en haut → P np pr
+  -- Profile construction:
+  --   Prude: np top, lr bottom → P np pr, P pr lr
+  --   Lewd: lr top, pr bottom → P lr np, P np pr
+  --   Others: np top → P np pr
   let prof : Profile ι σ := fun i =>
     if i = prude then
       maketop_pref (makebot_pref base lr) np
@@ -316,7 +333,7 @@ theorem book_paradox_demonstrates_sen
     else
       maketop_pref base np
   use prof
-  -- Étape 1 : tout le monde préfère np > pr (Pareto faible)
+  -- Step 1: Everyone prefers np > pr (Weak Pareto)
   have hpr_np : pr ≠ np := fun h => hnppr h.symm
   have hlr_np : lr ≠ np := fun h => hnp_lr h.symm
   have hpr_lr : pr ≠ lr := hprlr
@@ -332,13 +349,13 @@ theorem book_paradox_demonstrates_sen
       simp [P, maketop_pref, maketop_rel, hpr_np]
   have hPnpPr : P (f prof).rel np pr := hwp prof np pr
     (by rw [hX]; simp) (by rw [hX]; simp) hAllNpPr
-  -- Étape 2 : Prude préfère pr > lr (décisif)
+  -- Step 2: Prude prefers pr > lr (decisive)
   have hPrudePrLr : P (prof prude).rel pr lr := by
     unfold prof; simp only [hne]
     simp [P, maketop_pref, maketop_rel, makebot_pref, makebot_rel, hpr_np, hlr_np, hpr_lr]
   have hPprLr : P (f prof).rel pr lr :=
     hprude.1 prof hPrudePrLr
-  -- Étape 3 : Lewd préfère lr > np (décisif)
+  -- Step 3: Lewd prefers lr > np (decisive)
   have hLewdLrNp : P (prof lewd).rel lr np := by
     unfold prof; simp only [hne.symm]
     simp [P, maketop_pref, maketop_rel, makebot_pref, makebot_rel, hnp_lr]
@@ -346,13 +363,15 @@ theorem book_paradox_demonstrates_sen
     hlewd.1 prof hLewdLrNp
   exact ⟨hPnpPr, hPprLr, hPlrNp⟩
 
-/-! ## Approches de résolution -/
+/-! ## Resolution Approaches -/
 
--- Le paradoxe de Sen a conduit à diverses approches de résolution :
--- 1. Restreindre le domaine (tous les profils ne sont pas autorisés)
--- 2. Affaiblir Pareto (Pareto conditionnel)
--- 3. Affaiblir le libéralisme (libéralisme conditionnel)
--- 4. Approches procédurales (les droits comme formes de jeu)
+-- Sen's paradox has led to various resolution approaches:
+-- 1. Restricting the domain (not all profiles allowed)
+-- 2. Weakening Pareto (conditional Pareto)
+-- 3. Weakening liberalism (conditional liberalism)
+-- 4. Procedural approaches (rights as game forms)
 
--- Le paradoxe reste philosophiquement important car il montre
--- une tension fondamentale entre efficacité et droits individuels.
+-- The paradox remains philosophically important as it shows
+-- a fundamental tension between efficiency and individual rights.
+
+end SocialChoice_en
