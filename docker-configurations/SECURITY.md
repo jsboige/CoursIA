@@ -1,9 +1,33 @@
 # Docker GenAI Security Audit
 
-**Date:** 2026-05-08
- **Issue:** #808
+**Date:** 2026-05-08 (runbook rotation ajouté 2026-07-04, issue #16)
+ **Issue:** #808 / #16
 **Auditor:** po-2023 (Claude Code)
 **Scope:** 20 containers on po-2023 (RTX 3080 Ti + RTX 3090)
+
+## Runbook — rotation d'un secret (1 commande)
+
+Tout secret **partagé** (clés API, tokens service↔client) vit dans `.secrets/master.env` (gitignored, source unique). La rotation se fait en **un render + un restart** — jamais d'édition éparpillée à la main.
+
+```bash
+# 1. Éditer la source unique
+$EDITOR .secrets/master.env                      # ex: QDRANT_API_KEY=<nouvelle valeur>
+
+# 2. Propager vers tous les .env consommateurs (idempotent)
+python scripts/secrets/render_envs.py
+
+# 3. Vérifier 0 drift (gate local, exit 1 si écart)
+python scripts/secrets/render_envs.py --check
+
+# 4. Redémarrer le container côté SERVEUR (OBLIGATOIRE — ComfyUI-Login
+#    régénère son hash bcrypt au restart, pas à chaud ; Qdrant relit
+#    QDRANT__SERVICE__API_KEY au startup)
+docker compose -f docker-configurations/services/<svc>/docker-compose.yml restart
+```
+
+**Spécificité Qdrant (cross-repo) :** la compose Qdrant vit dans `roo-extensions` (autre repo), pas CoursIA. Le côté **client** (`QDRANT_API_KEY`, notebooks CoursIA) est centralisé dans `master.env` via `SECRET_KEYS` → rotation auto côté notebooks. Le côté **serveur** (`QDRANT__SERVICE__API_KEY`, double underscore) reste une op manuelle inter-repo sur `roo-extensions` (même valeur que le client). Détail convention client/serveur : [docs/genai/secrets-management.md](../docs/genai/secrets-management.md).
+
+**Mots de passe par instance** (`COMFYUI_PASSWORD`, `FORGE_PASSWORD`, `WHISPER_*_PASSWORD`) NE sont PAS centralisés (un par container) — leur drift est prévenu par la règle du restart + self-check entrypoint, pas par render. Cf [docs/genai/secrets-management.md](../docs/genai/secrets-management.md).
 
 ## Executive Summary
 
@@ -113,7 +137,7 @@ API keys are passed via `.env` files and `environment:` blocks in docker-compose
 
 ### Next Steps (requires separate PR or manual ops)
 
-1. **Qdrant auth:** Add `QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}` to environment + `.env` (Qdrant compose not in this repo — managed externally)
+1. **Qdrant auth (serveur) :** Add `QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}` to environment + `.env` — compose Qdrant dans `roo-extensions` (autre repo), op manuelle inter-repo. Le côté **client** (`QDRANT_API_KEY`, notebooks CoursIA) est désormais centralisé dans `master.env` via `SECRET_KEYS` (render_envs.py) — rotation auto côté notebooks, cf runbook en tête de ce document.
 2. **Bind 127.0.0.1:** Change port bindings for services behind IIS reverse proxy
 
 ### Medium Priority (2-4h, requires testing)

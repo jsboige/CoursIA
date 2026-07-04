@@ -6,7 +6,7 @@
 
 ```
 .secrets/master.env                    <- SOURCE UNIQUE (éditer ici)
-   HF_TOKEN, OPENAI_API_KEY, COMFYUI_VIDEO_TOKEN, ... (18 clés partagées)
+   HF_TOKEN, OPENAI_API_KEY, COMFYUI_VIDEO_TOKEN, QDRANT_API_KEY, ... (19 clés partagées)
 
 scripts/secrets/render_envs.py
    --bootstrap   one-shot : lit les .env éparpillés, écrit master.env
@@ -53,10 +53,20 @@ python scripts/secrets/render_envs.py --check
 | LLM APIs payantes | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY` | notebooks | Oui (facturation) |
 | Hubs / git | `CIVITAI_TOKEN`, `GITHUB_TOKEN` = `GITHUB_ACCESS_TOKEN` | services + notebooks | Oui |
 | Client API keys (server↔client) | `WHISPER_API_KEY`, `VLLM_API_KEY`, `TTS_API_KEY`, `QWEN_ASR_API_KEY`, `MUSICGEN_API_KEY`, `DEMUCS_API_KEY`, `FUNASR_API_KEY` | 1 service + notebooks | Moyen |
+| Qdrant vector DB (client) | `QDRANT_API_KEY` | notebooks RAG / SemanticKernel / Argument_Analysis | Moyen (flip serveur = op inter-repo roo-extensions) |
 | Tokens client ComfyUI | `COMFYUI_VIDEO_TOKEN`, `COMFYUI_API_TOKEN` | notebooks → services ComfyUI | Moyen |
 | Session | `SECRET_KEY` | 1 service | Oui |
 
 **Alias :** `HF_TOKEN`/`HUGGINGFACE_TOKEN` et `GITHUB_TOKEN`/`GITHUB_ACCESS_TOKEN` désignent le MÊME secret sous deux noms (services vs notebooks). Le render écrit la même valeur des deux côtés ; le bootstrap vérifie leur cohérence (abort si divergence).
+
+### Qdrant — convention client vs serveur (cross-repo)
+
+Qdrant expose la **même** clé API sous **deux noms** selon le côté :
+
+- **Serveur** Qdrant — `QDRANT__SERVICE__API_KEY` (double underscore, convention `config.yaml` Qdrant). Vit dans la compose `roo-extensions` (autre repo). **Non centralisé** ici : le flip de valeur est une op inter-repo manuelle.
+- **Client** (notebooks CoursIA) — `QDRANT_API_KEY` (simple underscore, convention des clients `qdrant-client`). Vit dans `MyIA.AI.Notebooks/GenAI/.env`. **Centralisé** dans `SECRET_KEYS` (render_envs.py).
+
+Les deux noms **doivent porter la même valeur** (sinon 401 côté client). Centraliser le côté client CoursIA permet aux notebooks de suivre la rotation sans action manuelle : `edit master.env → render_envs.py` propage vers `GenAI/.env`. Le **flip de la valeur côté serveur** (rotation effective, Qdrant redémarre avec la nouvelle clé) reste une opération manuelle inter-repo sur `roo-extensions` — tracker séparément, cf [SECURITY.md](../../docker-configurations/SECURITY.md).
 
 ## Secrets par instance (NON centralisés — config service)
 

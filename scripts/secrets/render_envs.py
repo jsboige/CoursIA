@@ -73,6 +73,13 @@ SECRET_KEYS: frozenset[str] = frozenset({
     "WHISPER_API_KEY", "VLLM_API_KEY", "TTS_API_KEY",
     "QWEN_ASR_API_KEY", "MUSICGEN_API_KEY", "DEMUCS_API_KEY",
     "FUNASR_API_KEY",
+    # Qdrant vector DB -- CLIENT side (notebooks RAG / SemanticKernel / Argument).
+    # NB: the Qdrant SERVER reads the SAME value under the double-underscore name
+    # ``QDRANT__SERVICE__API_KEY`` (config.yaml convention). The server compose
+    # lives in the ``roo-extensions`` repo (NOT CoursIA); only the CLIENT key is
+    # centralized here so notebook consumers stay in lock-step with the server on
+    # rotation. Both names MUST carry the same value.
+    "QDRANT_API_KEY",
     # OWUI native API (NB-20, #417) + TTS multi-voice gateway (#16, po-2023)
     "OWUI_API_KEY", "TTS_GATEWAY_API_KEY",
     # ComfyUI client tokens (notebook client <-> service must agree)
