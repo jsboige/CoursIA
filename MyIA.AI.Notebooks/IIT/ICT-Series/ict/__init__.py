@@ -16,6 +16,20 @@ notebook ICT-8 ; May 1977 ; Scheffer et al. 2009), puis **agence morphologique**
 reparation de forme apres ablation par reaction-diffusion (``reaction_diffusion``
 + ``agency``, notebook ICT-9 ; Gray & Scott 1983 ; Pearson 1993 ; Mordvintsev
 et al. 2020 ; Levin).
+
+Strate 3 (agentivite et valence) : morphodynamique strategique et signature
+de valence (``strategic_morphodynamics``, ``valence``, ``multiscale_agency``,
+``catastrophe``, notebooks ICT-11..13 ; Axelrod 1984 ; Thom 1972).
+
+Strate 4 (energie libre) : le principe d'energie libre comme lecture unifiee
+de l'agentivite morphologique (``free_energy``, notebook ICT-14 ; Friston).
+
+Strate 5 (theorie fondatrice cross-substrat) : compression et longueur de
+description minimale (``compression``, ``mdl``, ``epsilon_machine`` ;
+Crutchfield ; Hoel), dynamique de features en panel (``feature_dynamics``,
+notebook ICT-20) et synthese (``synthesis``). La fleche du temps /
+reversibilisation (ICT-18) y outille retrospectivement la signature
+thermodynamique de l'agentivite.
 """
 
 from .self_sorting import Cell, Probe, SelfSortingArray, ALGOTYPES
@@ -31,9 +45,14 @@ from . import early_warning
 from . import bistable
 from . import reaction_diffusion
 from . import agency
+from . import multiscale_agency
 from . import catastrophe
+from . import valence
+from . import strategic_morphodynamics
 from . import free_energy
 from . import compression
+from . import mdl
+from . import epsilon_machine
 from . import feature_dynamics
 from . import synthesis
 
@@ -42,5 +61,7 @@ __all__ = [
     "GrazingModel", "GrayScott",
     "sorting_metrics", "trajectories", "causal_emergence", "tpm_estimation",
     "scale_free", "early_warning", "bistable", "reaction_diffusion", "agency",
-    "catastrophe", "free_energy", "compression", "feature_dynamics", "synthesis",
+    "multiscale_agency", "catastrophe", "valence", "strategic_morphodynamics",
+    "free_energy", "compression", "mdl", "epsilon_machine", "feature_dynamics",
+    "synthesis",
 ]

@@ -2,7 +2,7 @@
 
 Outille le notebook **ICT-20 — FeatureCatastrophes** : la calibration de
 methode (changepoints, EWS, hysteresis) sur des **transitions anodines** dans
-un espace de features, **avant** la lecture chargee d'ICT-21 (PersonaCatastrophe).
+un espace de features, **avant** la lecture chargee d'ICT-23 (PersonaCatastrophe).
 
 Pourquoi un adaptateur, pas une reinvention
 --------------------------------------------
@@ -25,13 +25,13 @@ un detecteur de changepoint *complementaire* :
 * :func:`simulate_neutral_transition` -- generateur de **panel synthetique**
   : trajectoire AR(1) avec saut de moyenne a un indice connu, controle du
   rapport signal/bruit. C'est le substrat de la calibration GPU-free : quand
-  les traces reelles ICT-18 (#5101) seront disponibles, on remplacera ce
+  les traces reelles ICT-21 (#5101) seront disponibles, on remplacera ce
   generateur par leur chargement, mais toute la chaine EWS/CUSUM/heredite
   reste inchangee.
 * :func:`hysteresis_residual` -- mesure de **retour a la ligne de base** sur
   une boucle aller-retour (forward puis backward). Toute hysteresis residuelle
   est un **fond de non-retour de l'instrument**, a soustraire de la lecture
-  ICT-21 (Gate bonus du cahier des charges).
+  ICT-23 (Gate bonus du cahier des charges).
 
 Numpy uniquement (comme le reste du package leger ``ict``). Pas de scipy,
 pas de ruptures, pas de statsmodels : tout est ecrit a la main et teste
@@ -41,7 +41,7 @@ References
 ----------
 * Scheffer M. et al., *Early-warning signals for critical transitions*,
   Nature 461 (2009) -- les EWS que nous calibrons ici sur transitions
-  anodines avant la lecture chargee d'ICT-21.
+  anodines avant la lecture chargee d'ICT-23.
 * Page E.S., *Continuous Inspection Schemes*, Biometrika 41 (1954) -- CUSUM.
 * Thom R., *Stabilite structurelle et morphogenese* (1972) -- la sensibilite
   aux parametres de controle qui motive ``changepoint_argmax_derivative``.
@@ -325,7 +325,7 @@ def hysteresis_residual(
 
     Un residu nul = parcours reversible (pas d'hysteresis instrinseque de
     la methode). Un residu non nul = **fond de non-retour de l'instrument**,
-    a soustraire lors de la lecture ICT-21 (Gate bonus du cahier des charges).
+    a soustraire lors de la lecture ICT-23 (Gate bonus du cahier des charges).
 
     Parametres
     ----------
