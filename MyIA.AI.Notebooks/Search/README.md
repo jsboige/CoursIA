@@ -66,7 +66,7 @@ Les 21 notebooks d'applications illustrent chaque concept sur des cas réels : p
 flowchart LR
     P1["<b>Phase 1 — Fondements</b> (~7h)<br/>Search-1 … Search-7<br/><i>Trois paradigmes :</i><br/>• exploration systématique<br/>&nbsp;&nbsp;(BFS, UCS, A*)<br/>• optimisation locale<br/>&nbsp;&nbsp;(SA, Tabu, GA)<br/>• recherche dans les jeux<br/>&nbsp;&nbsp;(Minimax, MCTS)"]
     P2["<b>Phase 2 — Programmation<br/>par contraintes</b> (~6h)<br/>CSP-1 … CSP-6<br/><i>Réduire l'espace<br/>plutôt que l'explorer</i><br/>backtracking → AC-3<br/>→ contraintes globales<br/>→ ordonnancement<br/>→ CP + SAT / ML / LLM"]
-    P3["<b>Phase 3 — Applications<br/>&amp; frontières</b> (~18h)<br/>20 cas réels : TSP, VRP,<br/>RCPSP, Bin Packing,<br/>Wordle, Picross…<br/>+ notebooks avancés<br/>(LP, automates,<br/>souples, temporelles)"]
+    P3["<b>Phase 3 — Applications<br/>&amp; frontières</b> (~18h)<br/>21 cas réels : TSP, VRP,<br/>RCPSP, Bin Packing,<br/>Wordle, Picross…<br/>+ notebooks avancés<br/>(LP, automates,<br/>souples, temporelles)"]
     BR["<b>Séries connexes</b><br/>Sudoku (DLX)<br/>SymbolicAI (Z3)<br/>GameTheory (Minimax/MCTS)<br/>RL (MCTS + DQN)"]
     P4["<b>Side-track .NET 9</b><br/>Part 4 — Métaheuristiques<br/>composables<br/>MGS-1 … MGS-19<br/><i>reconstruire &amp; composer<br/>au-dessus de GeneticSharp</i>"]
     P1 -->|"backtracking = DFS"| P2

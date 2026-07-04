@@ -182,7 +182,7 @@ Probas/
 ├── PyMC/                # Port PyMC : bayésien (1-13) + inférence causale (14)
 │   ├── PyMC-1-Setup.ipynb ... PyMC-13-Debugging.ipynb, PyMC-14-Causal-Inference.ipynb
 │   └── (port en cours d'enrichissement)
-├── decision_theory_lean/        # Projet Lake (racine série) : escompte géométrique + théorème de Gittins ; accueillera VNM (#4049) + Dutch Book (#4050)
+├── decision_theory_lean/        # Projet Lake (racine série) : escompte géométrique + théorème de Gittins ; héberge VNM (#4049 MERGED via PR #4250) + Coherence/Dutch Book (#4150 MERGED via PR #4193)
 ├── Infer/                       # Corpus bayésien Infer.NET (19 notebooks)
 │   ├── Infer-1-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb
 │   ├── README.md                # Documentation détaillée de la série bayésienne
