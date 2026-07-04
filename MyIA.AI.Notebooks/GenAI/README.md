@@ -318,3 +318,53 @@ Pour le troubleshooting avancé (timeout Papermill, OOM GPU, .NET), consultez le
 | **TTS** | Text-to-Speech : synthétiser la voix depuis du texte | Audio |
 | **ComfyUI** | Interface visuelle pour chaîner les modèles génératifs en workflows | Image, Video |
 | **Playwright** | Framework de test E2E pour applications web GenAI | Playwright-OWUI |
+
+<a id="stack-self-hosted-vs-cloud"></a>
+
+## Stack self-hosted ⇄ Cloud API — différenciant pédagogique
+
+La série GenAI a un parti pris structurant que les autres hubs n'ont pas : **chaque notebook déclare explicitement quelle infrastructure il exécute**. La légende utilisée dans le tableau ci-dessous :
+
+| Légende | Signification | Trade-off |
+|---------|---------------|-----------|
+| **● self-hosted** | Modèle open-source exécuté via Docker local (ComfyUI/Qwen/Whisper/MusicGen/Forge) | Gratuit, contrôle total, GPU RTX 3090 dédiée requise |
+| **◐ Cloud API** | API propriétaire (OpenAI/Anthropic/HuggingFace) | Coût par token/image, zéro GPU, qualité par défaut élevée |
+| **◯ Hybride** | Les deux chemins sont démontrés (au choix selon contexte) | Notebooks basculent automatiquement si `.env` configuré |
+
+Cette partition traverse les **13 sous-séries** GenAI (141 notebooks) et structure le déploiement concret :
+
+| Sous-série | Notebooks | Stack dominante | Service / modèle phare |
+|------------|-----------|-----------------|------------------------|
+| [00-GenAI-Environment](00-GenAI-Environment/) | 6 | ◯ Hybride | Docker Compose : ComfyUI/Qwen, Whisper, MusicGen, Forge |
+| [Image](Image/) | 17 | ◯ Hybride | **Qwen Image Edit** (self-hosted) ⇄ **gpt-image-1** (Cloud) |
+| [Audio](Audio/) | 30 | ◯ Hybride | **Whisper V3** + **Kokoro TTS** (self-hosted) ⇄ **OpenAI TTS** (Cloud) |
+| [Video](Video/) | 17 | ◯ Hybride | **HunyuanVideo** + **Wan** (self-hosted) ⇄ **Sora** (Cloud) |
+| [Texte](Texte/) | 20 | ◐ Cloud API | **GPT-4o-mini** (~0,15 $/M tokens) ; Structured Outputs + Function Calling |
+| [SemanticKernel](SemanticKernel/) | 20 | ◯ Hybride | SDK Microsoft .NET 9 + plugins Python ; orchestration multi-agents |
+| [FineTuning](FineTuning/) | 5 | ● self-hosted | **LoRA/QLoRA/SFT/DPO** sur GPU local ; PEFT + Transformers |
+| [PostTraining](PostTraining/) | 7 | ● self-hosted | **SFT/GRPO/RLVR** (rewardspy 0.1.0 git install) |
+| [CaseStudies](CaseStudies/) | 4 | ◯ Hybride | Projets étudiants bout-en-bout |
+| [Open-WebUI](Open-WebUI/) | 7 | ◯ Hybride | Plateforme Open WebUI + Playwright E2E (30+ tests) |
+| [Vibe-Coding](Vibe-Coding/) | 6 | ◯ Hybride | **Claude Code** + **Roo Code** ; agents cluster fleet |
+| [RAG-et-Memoire-Semantique](RAG-et-Memoire-Semantique/) | 1 | ● self-hosted | **Qdrant** + embeddings + grounding SDDD |
+| [racine](.) | 1 | ◯ Hybride | Index général |
+
+**Le principe à retenir** : un notebook GenAI n'est jamais « juste un appel API ». Il montre **comment l'API s'intègre dans une stack self-hosted** (Docker Compose, GPU partagé, monitoring) et **comment basculer entre les deux** selon le contexte (budget, latence, qualité, conformité). Cette discipline d'**hybridation systématique** est ce qui distingue la série d'un tutoriel API classique.
+
+**Self-hosted ⇄ orchestration cluster** : la stack ComfyUI/Qwen est elle-même orchestrée par `scripts/genai-stack/genai.py` (validation pre-commit + état services). Voir [docs/genai/genai-services.md](../../docs/genai/genai-services.md) pour le détail par service, modèle, GPU et quantization (ComfyUI Qwen Phase 29 — VAE 16 channels, scheduler `beta`, CFG 1.0, `TextEncodeQwenImageEdit`).
+
+## Écosystème MCP et notebooks GPU
+
+Les notebooks GenAI exposent trois familles d'**outils d'infrastructure** que les autres séries n'ont pas :
+
+| Outil | Rôle | Référence |
+|-------|------|-----------|
+| **MCP Jupyter** (`mcp__jupyter-papermill__*`) | Exécution kernelisée des notebooks (Python, .NET Interactive, WSL). NB : bug #835 connu — `mcp__jupyter-papermill__*` ne doit **jamais** être appelé naïvement ; re-exécution = `nbconvert --execute` Bash `timeout`-wrap (cf règle F du [CLAUDE.md](../../CLAUDE.md#f-environnement--reparer-ne-jamais-contourner-hard)). | [CLAUDE.md](../../CLAUDE.md) |
+| **MCP GenAI hosting** (`scripts/genai-stack/genai.py`) | Validation pre-commit de l'environnement GenAI (services Docker, .env, secrets) | `.claude/rules/genai-config.md` |
+| **MCP QC Cloud** (`mcp__qc-mcp-lite__*`) | Backtest cloud pour notebooks QuantConnect — pas de re-exec locale fictive | [docs/qc/quantconnect.md](../../docs/qc/quantconnect.md) |
+
+**Notebooks GPU-only** : certains notebooks Image/Video sont CUDA-requis (ComfyUI/Qwen) et ne s'exécutent que sur les machines GPU du cluster (po-2023 et po-2024 typiquement). Sur machine CPU-only, ces notebooks sont documentés explicitement et la re-exécution est routée via dashboard workspace + dispatch. Cf règle `F` du [CLAUDE.md](../../CLAUDE.md#f-environnement--reparer-ne-jamais-contourner-hard) — **réparer, jamais contourner**.
+
+---
+
+*Version 1.2.0 — Juillet 2026 — section « Stack self-hosted ⇄ Cloud API » ajoutée (différenciant pédagogique structurant) + section « Écosystème MCP et notebooks GPU » (rappel outils cluster). ÉpIC #4959 tranche 4/3+ (rollout hubs P0).*
