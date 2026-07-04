@@ -54,6 +54,7 @@ from . import compression
 from . import mdl
 from . import epsilon_machine
 from . import feature_dynamics
+from . import time_arrow
 from . import synthesis
 
 __all__ = [
@@ -63,5 +64,5 @@ __all__ = [
     "scale_free", "early_warning", "bistable", "reaction_diffusion", "agency",
     "multiscale_agency", "catastrophe", "valence", "strategic_morphodynamics",
     "free_energy", "compression", "mdl", "epsilon_machine", "feature_dynamics",
-    "synthesis",
+    "time_arrow", "synthesis",
 ]
