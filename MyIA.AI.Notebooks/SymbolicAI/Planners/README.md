@@ -131,6 +131,8 @@ SymbolicAI/Planners/
 │   ├── Planners-10-LLM-Planning.ipynb   # LLM + Planning
 │   ├── Planners-11-Unified-Planning.ipynb # Interface unifiée
 │   └── Planners-12-LOOP.ipynb           # Learning to Plan
+├── planning_lean/                        # Projet Lake Lean 4 (preuve formelle 0-sorry de l'admissibilité de la relaxation h+ <= h*, cf Planners-5b)
+├── requirements.txt                      # Dépendances Python (unified-planning, Fast Downward, etc.)
 └── archive/
     └── Fast-Downward-Legacy.ipynb       # Version archivée
 ```
