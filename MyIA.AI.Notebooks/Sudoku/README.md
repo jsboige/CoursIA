@@ -739,9 +739,9 @@ Les notebooks Python (suffixe `-Python`) couvrent 16 solveurs avec PyGAD, OR-Too
 |----------|---------------------|
 | S-1 Backtracking | [Search](../Search/README.md) (Part1-Foundations BFS/DFS), [Planners](../SymbolicAI/Planners/README.md) (state-space search) |
 | S-2 Dancing Links | [Planners](../SymbolicAI/Planners/README.md) (Algorithm X, exact cover), [Search](../Search/README.md) (Part2-CSP couverture exacte) |
-| S-3 Genetic | [ML](../../ML/README.md) (algorithmes évolutionnistes), [Planners](../SymbolicAI/Planners/README.md) (métaheuristiques) |
-| S-4 Simulated Annealing | [ML](../../ML/README.md), [Planners](../SymbolicAI/Planners/README.md) |
-| S-5 PSO | [ML](../../ML/README.md), [Planners](../SymbolicAI/Planners/README.md) |
+| S-3 Genetic | [ML](../ML/README.md) (algorithmes évolutionnistes), [Planners](../SymbolicAI/Planners/README.md) (métaheuristiques) |
+| S-4 Simulated Annealing | [ML](../ML/README.md), [Planners](../SymbolicAI/Planners/README.md) |
+| S-5 PSO | [ML](../ML/README.md), [Planners](../SymbolicAI/Planners/README.md) |
 | S-6 AIMA CSP | [SymbolicAI](../SymbolicAI/README.md) (CSP AIMA chapitre 6), [Search](../Search/README.md) Part2-CSP |
 | S-7 Norvig | [Search](../Search/README.md) Part2-CSP (propagation + MRV + FC), [SymbolicAI](../SymbolicAI/README.md) |
 | S-8 Human Strategies | [GameTheory](../GameTheory/README.md) (stratégies + heuristiques), [SemanticWeb](../SymbolicAI/SemanticWeb/README.md) (rules) |
@@ -751,10 +751,10 @@ Les notebooks Python (suffixe `-Python`) couvrent 16 solveurs avec PyGAD, OR-Too
 | S-12 Z3 | [SymbolicAI/Tweety](../SymbolicAI/Tweety/README.md) (Z3 IKVM #4667), [SymbolicAI](../SymbolicAI/README.md) (Z3 vérif formelle), [Planners](../SymbolicAI/Planners/README.md) (Z3 SMT plan validation) |
 | S-13 Symbolic Automata | [SymbolicAI/Tweety](../SymbolicAI/Tweety/README.md) (AutomataDotNet upstream-verbatim, EPIC #2979 fermé), [SymbolicAI/Argument_Analysis](../SymbolicAI/Argument_Analysis/README.md) (automates Argumentum) |
 | S-14 BDD/MDD | [SymbolicAI](../SymbolicAI/README.md) (BDD), [GameTheory](../GameTheory/README.md) (MDD pour Social Choice) |
-| S-15 Infer/NumPyro | [Probas](../Probas/README.md) (Infer.NET .NET Interactive, factor graphs, MCMC), [ML](../../ML/README.md) (probabiliste) |
-| S-16 Neural Network | [ML](../../ML/README.md) (CNN, RNN), [GenAI](../../GenAI/README.md) (réseaux de neurones génératifs) |
-| S-17 LLM | [GenAI](../../GenAI/README.md) (LLM orchestration ComfyUI/Qwen), [SymbolicLearning](../SymbolicAI/SymbolicLearning/README.md) (LLM boucle neuro-symbolique SL-9/SL-11) |
-| S-18 Comparison | [Search](../Search/README.md) (benchmark CSP), [ML](../../ML/README.md) (benchmark) |
+| S-15 Infer/NumPyro | [Probas](../Probas/README.md) (Infer.NET .NET Interactive, factor graphs, MCMC), [ML](../ML/README.md) (probabiliste) |
+| S-16 Neural Network | [ML](../ML/README.md) (CNN, RNN), [GenAI](../GenAI/README.md) (réseaux de neurones génératifs) |
+| S-17 LLM | [GenAI](../GenAI/README.md) (LLM orchestration ComfyUI/Qwen), [SymbolicLearning](../SymbolicAI/SymbolicLearning/README.md) (LLM boucle neuro-symbolique SL-9/SL-11) |
+| S-18 Comparison | [Search](../Search/README.md) (benchmark CSP), [ML](../ML/README.md) (benchmark) |
 | S-19 Lean Propagation | [Planners](../SymbolicAI/Planners/README.md) (`planning_lean/` admissibilité 0-sorry), [GameTheory](../GameTheory/README.md) (`social_choice_lean/` Arrow), [Probas](../Probas/README.md) (`decision_theory_lean/` Gittins) |
 
 **Sudoku = carrefour résolution-contraintes inter-paradigmes**. Le Sudoku est l'**une des rares séries du dépôt à aligner 7 paradigmes algorithmiques + 2 langues (C#/Python) + 1 langage formel (Lean) sur un seul et même problème**. C'est la **particularité structurelle unique** de cette série : un terrain commun (la grille 9×9) qui rend comparables des approches par ailleurs cloisonnées dans des champs disjoints de l'IA (exhaustif vs heuristique vs métaheuristique vs CP industriel vs SMT vs symbolique vs probabiliste vs data-driven vs formel). Là où **Planners (cycle 29)** déploie la dualité simulation/proof **intra-série** (Python ⇄ Lean sur l'admissibilité d'heuristique, via companion `5b-Lean-Relaxation.ipynb` + lake `planning_lean/`), **SmartContracts (cycle 30)** le carrefour trust/privacy **inter-séries** (Lean+Foundry+fuzzing × ZKP+HE+vote E2E × Arrow+Voting+DAOs), **Argument_Analysis (cycle 31)** le carrefour informel/formel **anti-théâtre inter-couches** (LLM ⇄ Tweety/Lean), **SymbolicLearning (cycle 32)** le carrefour **spectre-apprentissage inter-paradigmes** (4 paradigmes × 6 phases en spirale), **Sudoku déploie le carrefour résolution-contraintes inter-paradigmes algorithmiques** : la même grille 9×9 résolue par backtracking, par métaheuristique, par CP-SAT, par Z3/SMT, par automates symboliques, par inférence probabiliste, par CNN, par LLM, et prouvée formellement en Lean. La table `## Performances Attendues` (14 solveurs × 4 niveaux de difficulté) matérialise cette mise en regard empirique, garantie vs performance vs généralisation.
