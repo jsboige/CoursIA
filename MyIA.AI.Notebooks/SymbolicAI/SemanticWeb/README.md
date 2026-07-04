@@ -439,7 +439,7 @@ cp .env.example .env
 | Technologie | Version | Notebooks | Rôle |
 |-------------|---------|-----------|------|
 | dotNetRDF | 3.4.1 | SW-1 à SW-7 | Core RDF/SPARQL en .NET |
-| rdflib | 7.5.0 | Sidetracks, SW-8 à SW-12 | Core RDF/SPARQL en Python |
+| rdflib | 7.5.0 | Sidetracks, SW-8 à SW-13 | Core RDF/SPARQL en Python |
 | pySHACL | 0.27.0 | SW-8 | Validation SHACL |
 | OWLReady2 | 0.50+ | SW-7b, SW-11 | Manipulation ontologies |
 | SPARQLWrapper | 2.0+ | SW-5b | Requêtes endpoints distants |
