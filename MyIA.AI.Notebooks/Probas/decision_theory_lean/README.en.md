@@ -31,11 +31,12 @@ Lean companion notebook:
 
 ## Status
 
-- **Toolchain**: `leanprover/lean4:v4.30.0-rc2`
-- **Sorry**: **5** — all in `Gittins/GittinsTheorem.lean` (the optimality theorem +
-  index properties). `Gittins/Discount.lean` = **0 sorry** (fully proven),
-  `Gittins/Basic.lean` = 0. The **entire `Utility` and `Coherence` modules = 0 sorry**
-  (fully proven, open milestones documented, not `sorry`-backed).
+- **Toolchain**: `leanprover/lean4:v4.31.0-rc1`
+- **Sorry**: **2** — both in `gittins_optimality` (`Gittins/GittinsTheorem.lean`).
+  `Gittins/Discount.lean` = **0 sorry** (fully proven), `Gittins/Basic.lean` = 0.
+  `gittins_index_known_arm` and `gittins_index_monotone_discount` = **0 sorry** (proven,
+  the latter via the `Float→ℝ` port PR #5272). The **entire `Utility` and `Coherence`
+  modules = 0 sorry** (fully proven, open milestones documented, not `sorry`-backed).
 - **Build**: `lake build Gittins Utility Coherence` (depends on Mathlib4)
 - **Dependencies**: Mathlib4 (`v4.30.0-rc2`) — real analysis for the discount lemmas,
   the ordered and affine structure of `ℝ` for vNM, `Finset` / inclusion–exclusion for
@@ -58,9 +59,13 @@ The formalization is split into a **proven** layer and a **stated** layer:
   `one_div_le_one_div_of_le`, sidestepping the missing `tsum_le_tsum` on bare `ℝ`
   in Mathlib v4.30.0-rc2.
 - **Stated, intractable** (`GittinsTheorem.lean`): `gittinsIndex` (optimal
-  stopping), `gittins_optimality` (the central theorem — the index policy
-  maximizes expected discounted reward), `gittins_index_known_arm`,
-  `gittins_index_monotone_discount`. All `sorry`.
+  stopping), `gittins_optimality` (the central theorem — the index policy maximizes
+  expected discounted reward). The **2 residual `sorry`** are in the assembly of
+  `gittins_optimality` (optimal-stopping fixed point + limit passage over the horizon);
+  this is **barrier A** (MDP/Bellman), research-level.
+- **Proven** (`GittinsTheorem.lean`): `gittins_index_known_arm` (index of a known arm)
+  and `gittins_index_monotone_discount` (γ-monotonicity of the index, PR #5272 via the
+  `Float→ℝ` port that closed **barrier B** Float-order).
 
 ## Modules
 
@@ -68,7 +73,7 @@ The formalization is split into a **proven** layer and a **stated** layer:
 |------|-------|-------|---------|
 | `Gittins/Basic.lean` | 37 | 0 | Core types — `BanditArm`, `BanditInstance` (arms + discount γ), `Policy := Nat → Nat`, `RewardHistory`, `pullCount`, `empiricalMean`. Pure Lean 4, no Mathlib. |
 | `Gittins/Discount.lean` | 107 | 0 | Geometric discounting **proven** via Mathlib real analysis: `geometric_series_converges`, `one_minus_gamma_pos`, `present_value_constant`, `discount_monotone`. **Finite partial-sum companion** (PR #4252): `geometricPartialSum γ n` with `_zero`/`_succ` (telescoping recurrence) and `_closed` (closed form `(1−γ^n)/(1−γ)`). |
-| `Gittins/GittinsTheorem.lean` | 96 | 5 | The marquee theorem **stated with sorry**: `gittinsIndex`, `gittinsPolicy` (argmax), `gittins_optimality`, `gittins_index_known_arm`, `gittins_index_monotone_discount`. (`gittins_beats_greedy` is a `: True := trivial` placeholder, not a sorry.) |
+| `Gittins/GittinsTheorem.lean` | 145 | 2 | The marquee theorem **partially proven**: `gittinsIndex` (def proven = `trueMean` in the known-mean model), `gittinsPolicy` (argmax), `gittins_index_known_arm` (**proven** `rfl`), `gittins_index_monotone_discount` (**proven** PR #5272 — `Float→ℝ` port, barrier B closed), `gittins_optimality` (sorry — MDP-intrinsic). (`gittins_beats_greedy` is a `: True := trivial` placeholder, not a sorry.) |
 | `Gittins.lean` | 19 | 0 | Umbrella imports |
 | `Utility/Basic.lean` | 91 | 0 | vNM primitives — `Lottery` (lottery on `Fintype`), `expectation`, convex `mix`, affine expectation identities (`expectation_mix`, `expectation_add`, `expectation_smul`, `expectation_const`, `expectation_affine`). |
 | `Utility/Axioms.lean` | 65 | 0 | The **four vNM axioms** — `IsComplete`, `IsTransitive`, `IsIndependent`, `IsContinuous` (mixture solvability), `IsRational`, plus `StrictPref`. |
