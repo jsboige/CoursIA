@@ -149,7 +149,7 @@ La série se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la gra
 | 18 | MGS-18 CecBanc | Banc CEC consolidé : combiner décalage (MGS-10) et rotation (MGS-12) — robuste à chaque biais séparément l'est-il au biais combiné ? |
 | 19 | [MGS-19 MetropolisReinsertion](Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb) | Démontage du recuit simulé : isoler `MetropolisReinsertion` du compound `SimulatedAnnealing` et le greffer seul sur un GA — verdict honnête négatif, le bénéfice du recuit tient au couplage perturbation+acceptation |
 
-### Applications spécialisées (Part4-Metaheuristics)
+### Applications GA spécialisées → `Applications/Hybrid/`
 
 Les notebooks d'application GA (EdgeDetection, Portfolio — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Applications/Hybrid/`](Applications/README.md) ci-dessous : **App-9 / App-9b** et **App-10 / App-10b**. La Partie 4 ne contient plus que la série MGS numérotée (MGS-1 à MGS-19).
 
@@ -332,7 +332,7 @@ Cette série est **Python d'abord** pour son cœur pédagogique (recherche, CSP,
 | [Part1-Foundations](Part1-Foundations/) | 13 (Search-1 à Search-11, Search-15, Search-16) | Python, .NET (C#) | Aucune |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET (parité en cours, **EPIC #4956**) | 7 binômes : CSP-3-Csharp + CSP-7-Csharp MERGED ; CSP-1/2/6/8/9-Csharp OPEN — voir [bilan marathon](#marathon-epic-4956--bilan-7-tranches-livrees-2026-07-04) |
 | [Part3-Advanced](Part3-Advanced/) | 3 (Search-12 à Search-14) | Python | Aucune |
-| [Part4-Metaheuristics](Part4-Metaheuristics/) | 22 (MGS-1 à MGS-19 + 3 applications spécialisées) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
+| [Part4-Metaheuristics](Part4-Metaheuristics/) | 19 (MGS-1 à MGS-19) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
 | [Applications](Applications/) | 21 | 19 Python + 2 C# | App-9 ⇄ App-9b, App-10 ⇄ App-10b (2 paires) |
 | Racine | 0 | — | (aucun — voir [archive/](archive/) pour les anciens notebooks racine) |
 
