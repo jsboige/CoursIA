@@ -30,6 +30,7 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 |---|----------|--------|---------|-------|
 | 1 | [Search-1-StateSpace](Search-1-StateSpace.ipynb) | Python 3 | Espaces d'états, formalisation (S, A, T, G), taquin, aspirateur, recherche d'itinéraire | ~40 min |
 | 2 | [Search-2-Uninformed](Search-2-Uninformed.ipynb) | Python 3 | BFS, DFS, UCS, IDDFS : comparaison des algorithmes non informés | ~50 min |
+| 2 (.NET) | [Search-2-Uninformed (C#)](Search-2-Uninformed-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : BFS (Queue<T>), DFS (Stack<T>), UCS (PriorityQueue<TElement, TPriority>), IDDFS — port C# fidèle sur le graphe des villes françaises + arbre profond 8x3 (ratio BFS/DFS = 156,1×) + BFS bidirectionnel avec reconstruction de coût | ~50 min |
 | 3 | [Search-3-Informed](Search-3-Informed.ipynb) | Python 3 | A*, Greedy, IDA*, heuristiques admissibles et consistantes | ~50 min |
 | 4 | [Search-4-LocalSearch](Search-4-LocalSearch.ipynb) | Python 3 | Hill Climbing, Simulated Annealing, Tabu Search, paysages de fitness | ~45 min |
 | 4 (.NET) | [Search-4-LocalSearch (C#)](Search-4-LocalSearch-Csharp.ipynb) | .NET (C#) | **Jumeau .NET** : Hill Climbing (steepest-ascent), Random-Restart, recuit simulé (critère de Metropolis, programmes de refroidissement), recherche tabou (liste tabou) — port C# fidèle sur paysage 1D multimodal puis N-Reines (benchmark taux de succès) | ~45 min |
