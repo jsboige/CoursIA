@@ -1,13 +1,17 @@
 /-
-  Stable Marriage - Definitions
-  ==============================
+  Mariage stable — Définitions
+  =============================
 
-  Core types and definitions for the stable marriage problem.
-  We model n men and n women (both as Fin n), each with strict preference
-  rankings over the opposite set.
+  Types et définitions fondamentaux pour le problème du mariage stable.
+  On modélise n hommes et n femmes (tous deux via `Fin n`), chacun muni d'un
+  ordre de préférence strict sur l'ensemble opposé.
 
-  A matching is a bijection between men and women.
-  A matching is stable iff no blocking pair exists.
+  Un couplage (matching) est une bijection entre hommes et femmes.
+  Un couplage est stable si et seulement si aucune paire bloquante
+  (blocking pair) n'existe.
+
+  Convention i18n (cf #4980) : en-têtes et docstrings en français,
+  noms de symboles Lean et tactiques préservés en anglais (compatibilité Mathlib).
 -/
 
 import Mathlib.Data.Finset.Basic
@@ -18,25 +22,25 @@ open Finset Function
 
 variable {n : Nat} [NeZero n]
 
-/-- A man is identified by Fin n -/
+/-- Un homme est identifié par `Fin n` -/
 abbrev Man (n : Nat) := Fin n
 
-/-- A woman is identified by Fin n -/
+/-- Une femme est identifiée par `Fin n` -/
 abbrev Woman (n : Nat) := Fin n
 
 /--
-A preference ordering for a person over the opposite set.
-Represented as a function mapping each candidate to a rank (lower = preferred).
-Strict preference means the ranking function is injective.
+Profil de préférence d'une personne sur l'ensemble opposé.
+Représenté par une fonction associant à chaque candidat son rang (plus petit = préféré).
+La préférence stricte signifie que la fonction de classement est injective.
 -/
 structure PrefProfile (n : Nat) [NeZero n] where
-  /-- Men's preferences: each man ranks all women -/
+  /-- Préférences des hommes : chaque homme classe toutes les femmes -/
   menPref : Fin n → Fin n → Fin n
-  /-- Women's preferences: each woman ranks all men -/
+  /-- Préférences des femmes : chaque femme classe tous les hommes -/
   womenPref : Fin n → Fin n → Fin n
-  /-- Each man's ranking is a permutation (bijective) -/
+  /-- Le classement de chaque homme est une permutation (bijectif) -/
   menPref_bijective : ∀ m, Bijective (menPref m)
-  /-- Each woman's ranking is a permutation (bijective) -/
+  /-- Le classement de chaque femme est une permutation (bijectif) -/
   womenPref_bijective : ∀ w, Bijective (womenPref w)
 
 namespace PrefProfile
@@ -44,27 +48,29 @@ namespace PrefProfile
 variable {n : Nat} [NeZero n] (prof : PrefProfile n)
 
 /--
-Man `m` prefers woman `w1` over woman `w2` iff w1 has a lower rank.
-Since menPref m is a bijection Fin n → Fin n, lower = more preferred.
+L'homme `m` préfère la femme `w1` à la femme `w2` si et seulement si `w1`
+a un rang plus petit. Puisque `menPref m` est une bijection `Fin n → Fin n`,
+un rang plus petit signifie plus préférée.
 -/
 def manPrefers (m : Fin n) (w1 w2 : Fin n) : Bool :=
   prof.menPref m w1 < prof.menPref m w2
 
 /--
-Woman `w` prefers man `m1` over man `m2` iff m1 has a lower rank.
+La femme `w` préfère l'homme `m1` à l'homme `m2` si et seulement si `m1`
+a un rang plus petit.
 -/
 def womanPrefers (w : Fin n) (m1 m2 : Fin n) : Bool :=
   prof.womenPref w m1 < prof.womenPref w m2
 
 /--
-Man `m` strictly prefers woman `w1` to woman `w2`.
-Prop-valued version for theorem statements.
+L'homme `m` préfère strictement la femme `w1` à la femme `w2`.
+Version Prop-valued pour les énoncés de théorèmes.
 -/
 def ManPrefers (m : Fin n) (w1 w2 : Fin n) : Prop :=
   prof.menPref m w1 < prof.menPref m w2
 
 /--
-Woman `w` strictly prefers man `m1` to man `m2`.
+La femme `w` préfère strictement l'homme `m1` à l'homme `m2`.
 -/
 def WomanPrefers (w : Fin n) (m1 m2 : Fin n) : Prop :=
   prof.womenPref w m1 < prof.womenPref w m2
@@ -72,27 +78,29 @@ def WomanPrefers (w : Fin n) (m1 m2 : Fin n) : Prop :=
 end PrefProfile
 
 /--
-A matching is a bijection from men to women (perfect matching).
+Un couplage (matching) est une bijection des hommes vers les femmes
+(couplage parfait).
 -/
 structure Matching (n : Nat) [NeZero n] where
-  /-- Map each man to his matched woman -/
+  /-- Associe chaque homme à sa femme appariée -/
   spouse : Fin n → Fin n
-  /-- The matching is bijective (each woman matched to exactly one man) -/
+  /-- Le couplage est bijectif (chaque femme est appariée à exactement un homme) -/
   bijective : Bijective spouse
 
 namespace Matching
 
 variable {n : Nat} [NeZero n] (μ : Matching n)
 
-/-- Get the inverse: which man is matched to woman w -/
+/-- Récupère l'inverse : quel homme est apparié à la femme `w` -/
 noncomputable def inverse (w : Fin n) : Fin n :=
   (Equiv.ofBijective μ.spouse μ.bijective).symm w
 
 end Matching
 
 /--
-A blocking pair for matching μ under preference profile prof:
-a man m and woman w who both prefer each other to their current partners.
+Paire bloquante pour le couplage `μ` sous le profil de préférence `prof` :
+un homme `m` et une femme `w` qui se préfèrent mutuellement à leurs partenaires
+actuels.
 -/
 def IsBlockingPair (prof : PrefProfile n) (μ : Matching n)
     (m : Fin n) (w : Fin n) : Prop :=
@@ -100,14 +108,14 @@ def IsBlockingPair (prof : PrefProfile n) (μ : Matching n)
   prof.WomanPrefers w m (μ.inverse w)
 
 /--
-A matching is stable iff no blocking pair exists.
+Un couplage est stable si et seulement si aucune paire bloquante n'existe.
 -/
 def IsStable (prof : PrefProfile n) (μ : Matching n) : Prop :=
   ∀ m w, ¬ IsBlockingPair prof μ m w
 
 /--
-A matching is man-optimal iff every man gets their best possible partner
-among all stable matchings.
+Un couplage est optimal pour les hommes si et seulement si chaque homme
+obtient sa meilleure partenaire possible parmi tous les couplages stables.
 -/
 def IsManOptimal (prof : PrefProfile n) (μ : Matching n) : Prop :=
   IsStable prof μ ∧
