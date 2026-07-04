@@ -277,6 +277,35 @@ Le pipeline mobilise un vocabulaire issu de trois traditions — la rhétorique 
 | **Value-gates (VG-1..VG-4)** | Quatre gardes déterministes qui notent si la synthèse finale est *groundée* (elle cite ses artefacts via `[artifact:champ:id]`) ou *boilerplate* (template vide). | 4-capstone |
 | **Pipeline hybride LLM + solveur** | Architecture où le LLM gère l'extraction informelle (floue, contextuelle) et le solveur formel garantit la cohérence ; aucune des deux couches ne suffit seule. | 3-orchestration |
 
+## Statistiques catalogue à jour
+
+Lecture `CATALOG-STATUS` byte-identique (l. 3-8) :
+
+```
+series: SymbolicAI-Argument_Analysis
+pedagogical_count: 17
+breakdown: Argument_Analysis=17
+maturity: PRODUCTION=12, BETA=4, ALPHA=1
+```
+
+| Sous-série | Notebooks | Maturité | Contenu clé |
+|------------|-----------|----------|-------------|
+| **00-Setup** | 2 | PRODUCTION=2, BETA=0 | Chargement env (JDK 17 portable via `install_jdk_portable.py`, 76 JARs Tweety, démarrage JVM fail-loud + smoke test), config `OPENAI_API_KEY` + `GLOBAL_LLM_SERVICE` |
+| **01-Pipeline agentique (Agentic-N)** | 8 | PRODUCTION=4, BETA=4 | Pipeline principal 0 → 1 → 2 → 3 → 4 (capstone) → 5 (JTMS), agents legacy `*_agent` marqués BETA (semantic_kernel standalone, superseded par SK intégré dans Agentic-N) |
+| **02-Argumentation computationnelle** | 4 | PRODUCTION=4, BETA=0 | Dung AF sémantiques grounded/preferred/stable reconstruites de zéro, Ranking semantics (h-Categoriser + fardeau), Multi_Backend_Routing avec sentinelle « décider ou échouer bruyamment » (Tweety + prouveurs externes EProver/Mace4), Formal_Richness_Matrix anti-théâtre (4 classes de verdict) |
+| **03-Restitution honnête** | 1 | PRODUCTION=1, BETA=0 | `Restitution_3_Actes` : scaffold déterministe pur stdlib (evidence réel-en-état, bande de verdict *gated*, gate de lisibilité §4) + narration LLM *gated* (SDK OpenAI, clé via `GenAI/.env`, prompts conduits, fail-loud sans clé) |
+| **04-Interface & widgets** | 1 | PRODUCTION=0, BETA=0, ALPHA=1 | `UI_configuration` : ipywidgets exploratoires (état alpha — interphase optionnelle, le pipeline reste utilisable sans via `Executor`) |
+| **05-Orchestration batch** | 1 | PRODUCTION=1, BETA=0 | `Executor` : point d'entrée unique Papermill/MCP, mode `BATCH_MODE=true` configurable via `.env`, sortie JSON `output/analysis_report.json` |
+| **Total** | **17** | **PRODUCTION=12, BETA=4, ALPHA=1** | Python 3.9+, kernel Python 3, JDK 17 portable (auto-install), TweetyProject Java/JPype, Semantic Kernel Python, OpenAI SDK, ontologies OWL (data/) |
+
+**Note explicite maturité mixte** : le statut BETA sur les 4 agents legacy (`*_agent`) reflète leur **supersession par le pipeline Agentic-N intégré** (Semantic Kernel absorbé dans `Agentic-3-orchestration` + `Agentic-4-capstone`), pas un défaut technique — les notebooks legacy restent fonctionnels et servent de référence historique. Le statut ALPHA sur `UI_configuration` marque une **exploration widgets** non bloquante : le pipeline de production ne dépend pas de l'UI, le mode batch via `Executor` suffit. La maturité **PRODUCTION=12** couvre l'intégralité du pipeline critique (extraction → formalisation → validation Tweety → orchestration → JTMS → Dung/Ranking → routing → matrice → restitution → batch), ce qui rend la série immédiatement opérationnelle pour des cas d'usage réels (modération, fact-checking, audit LLM).
+
+**Conformité C.1 (stubs sans erreur volontaire)** : tous les notebooks utilisent les patterns conformes (`pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`) — **jamais** `raise NotImplementedError` / `assert False` / `1/0` (règle C.1 user 2026-04-26). Le notebook s'exécute de bout en bout même avec les exercices non complétés (mode batch `COMPLETE_VALIDATED` dégradé en `PARTIAL_VALIDATED` sur stub, jamais en exception).
+
+**Dépendances `requirements.txt`** : `semantic-kernel>=0.4`, `openai>=1.0`, `python-dotenv>=1.0`, `jpype1>=1.5`, `pandas>=2.0`, `numpy>=1.24`, `matplotlib>=3.7`. Outils externes : **JDK 17** (auto-install via `install_jdk_portable.py`, pas d'installation système requise), **TweetyProject JARs** (76 JARs, pré-téléchargés dans `libs/`), **OpenAI API** (clé via `.env`, jamais de literal-inline).
+
+**EPITA-IS Argumentum (EPIC #4960)** : la série est livrée upstream-verbatim avec **15 PRs MERGED** (cycle 11 EPITA-IS partitions Symbolique) — le contenu d'`Argument_Analysis_Agentic-*.ipynb` reproduit byte-equal les notebooks source EPITA sous licence MIT/EPITA. C'est la **garantie de complétude** la plus forte du dépôt : la chaîne d'argumentation est **fidèle au syllabus EPITA-IS 2025-2026** sans réécriture locale.
+
 ## Ponts avec les autres séries
 
 | Série | Connexion | Détails |
@@ -288,6 +317,32 @@ Le pipeline mobilise un vocabulaire issu de trois traditions — la rhétorique 
 [La mer qui monte](../../../docs/grothendieckian-lens.md) : une grille de lecture grothendieckienne du dépôt — l'analyse d'argumentation comme changement de représentation vers le vérifiable : du langage naturel aux sémantiques formelles qu'on peut interroger.
 
 > **Note** : Le pipeline s'exécute de bout en bout. L'`Executor` (point d'entrée Papermill/MCP) produit une validation `COMPLETE_VALIDATED` à 100 % (1 argument identifié, 4 sophismes, 1 belief set formel, 10 requêtes au solveur).
+
+## Écosystème MCP et parenté cross-lane
+
+**3 outils d'infrastructure MCP** (cohérent avec cycles 19-30 hubs) :
+
+1. **MCP Jupyter (`mcp__jupyter-papermill__*`)** — note bug #5211 (mode async ignore `kernel_name`, re-exec = `nbconvert --execute --ExecutePreprocessor.kernel_name=python3 --timeout=600`). Argument_Analysis utilise **kernel Python 3 uniquement** (Semantic Kernel = package Python, pas de kernel .NET natif requis ; JDK 17 portable est un exécutable subprocess, pas un kernel Jupyter).
+2. **Validation pre-commit** (`.pre-commit-config.yaml`) — `gitleaks` détecte les secrets inline (clé OpenAI, mnemonic wallet, paths absolus) ; le validateur notebook `validate_pr_notebooks.py` enforce C.1 (stubs sans `NotImplementedError`) et C.2 (notebooks commités AVEC outputs, `execution_count != null`). **Note spécifique Argument_Analysis** : le fichier `.env` (`OPENAI_API_KEY`, `GLOBAL_LLM_SERVICE`, `BATCH_MODE`) doit vivre dans `.gitignore`, jamais en clair dans un notebook ou une cellule — la clé OpenAI est particulièrement sensible (compte facturé).
+3. **MCP QC Cloud (`mcp__qc-mcp-lite__*`)** — backtest QuantConnect partagé. Argument_Analysis n'utilise pas QC Cloud directement, mais partage avec QC la même doctrine **anti-théâtre** : la matrice `Formal_Richness_Matrix` classifie les solveurs en 4 verdicts (substantive / honest-absent / unavailable / théâtre), doctrine symétrique au principe QuantConnect « pas de backtest sans Sharpe/CAGR/MaxDD reportés ». Les deux convergent : **un résultat non vérifié n'est pas un résultat**.
+
+**Table parenté cross-lane 6 colonnes** (Argument_Analysis se situe au croisement de plusieurs séries du dépôt) :
+
+| Notebook Argument_Analysis | Série parente | Pont conceptuel |
+|---------------------------|---------------|-----------------|
+| `Agentic-1-informal` (taxonomie 1406 nœuds, 7 familles de sophismes) + `Agentic-2-formal` (Tweety) | [Tweety](../Tweety/) (JPype, sémantiques Dung, FOL, Modal) | TweetyProject = solveur formel unique, JPype = pont Python/Java ; Argument_Analysis consomme les API Tweety comme backend de validation |
+| `Agentic-2-formal` (PL/FOL/Modal/Dung) | [Lean](../Lean/) (preuves formelles, tactiques) | Formalisation logique = même paradigme que tactiques Lean ; frontière informel/formel analogue à proof/script |
+| `Dung_AF_Semantics`, `Ranking_Semantics` | [Tweety](../Tweety/) (Tweety-5 argumentation abstraite) + [GameTheory](../../GameTheory/) (`social_choice_lean/` Voting.lean) | Sémantiques de Dung (grounded/preferred/stable) = même fondement mathématique que Voting (Banks sets, monotonie STV) |
+| `Agentic-3-orchestration` (Semantic Kernel) | [Argument_Analysis/Argumentum](../../Argument_Analysis/Argumentum/) + [Argument_Analysis/CoursIA-OwlAdapter](../../Argument_Analysis/CoursIA-OwlAdapter/) (EPITA-IS verbatim ports) | Orchestration agentique = même architecture que Semantic Kernel orchestrant prompts ; Argumentum = ports upstream byte-equal |
+| `Restitution_3_Actes` (narration LLM *gated*) | [GenAI](../../GenAI/) (Text/Image/Audio/Video, self-hosted + Cloud) | Restitution LLM = même besoin de **séparation lisibilité/honnêteté** que GenAI Text : le LLM génère, le scaffold déterministe garantit la grounding |
+| `Multi_Backend_Routing`, `Formal_Richness_Matrix` (sentinelle anti-théâtre) | [Search](../../Search/) (CSP/SMT/Z3) + [SemanticWeb](../SemanticWeb/) (OWL/SHACL raisonneurs) | Routage multi-solveur avec sentinelle « décider ou échouer bruyamment » analogue à CSP marathon EPIC #4956 ; classification 4-verdicts symétrique aux solveurs OWL (consistent / inconsistent / unknown / timeout) |
+| `Agentic-5-jtms` (Truth Maintenance System) | [Lean](../Lean/) (logique constructive) + [SemanticWeb](../SemanticWeb/) (incohérence OWL détection) | JTMS = raisonnement non-monotone étiquetage IN/OUT, analogue à propagation de contraintes Lean + détection d'incohérence SHACL |
+
+**Paragraphe « effet de composition — Argument_Analysis = carrefour informel/formel anti-théâtre »** :
+
+Là où Planners (cycle 29) est le carrefour **simulation/proof intra-série** (Python ⇄ Lean 4 sur l'admissibilité d'heuristique, cycle 29) et SmartContracts (cycle 30) est le carrefour **trust/privacy inter-séries** (confiance + confidentialité + décision collective), Argument_Analysis est le carrefour **informel/formel anti-théâtre inter-couches** : la **lecture de texte** (couche LLM, floue/contextuelle), la **formalisation logique** (couche PL/FOL/Modal, médium), et la **vérification formelle** (couche Tweety/Lean, tranchante/certaine) doivent collaborer SANS que l'une simule ce que l'autre fait réellement. Cette doctrine — incarnée par `Restitution_3_Actes` (scaffold déterministe + LLM *gated*), `Multi_Backend_Routing` (sentinelle « décider ou échouer bruyamment »), `Formal_Richness_Matrix` (4 classes de verdict anti-théâtre), et le mode fail-loud de `Agentic-2-formal` — est **la doctrine anti-théâtre du dépôt** : aucun notebook ne fait passer une simulation pour un résultat, aucune sortie n'est maquée pour embellir un échec.
+
+Le pipeline 17 notebooks aligne l'évolution paradigmatique de l'argumentation computationnelle (1995 Dung AF → 2019 framework hybrides LLM + solveur) sur la **frontière de vérifiabilité** (extraction brute → taxonomie → formalisation → validation SAT → restitution grounded). Chaque notebook est un maillon de la chaîne *lire → formaliser → vérifier → restituer honnêtement*.
 
 ## Conclusion / Prochaines étapes
 
@@ -337,3 +392,7 @@ Le titre annonce l'analyse d'arguments. Mais le geste que cette série enseigne 
 ## Licence
 
 Voir la licence du repository principal.
+
+---
+
+**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche argument_analysis.
