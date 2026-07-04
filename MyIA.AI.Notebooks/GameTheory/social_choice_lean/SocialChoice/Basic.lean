@@ -1,14 +1,14 @@
 /-
-  Social Choice Theory - Basic Definitions
-  =========================================
+  Théorie du choix social — Définitions fondamentales
+  ====================================================
 
-  Port of asouther4/lean-social-choice to Lean 4
-  Original: https://github.com/asouther4/lean-social-choice
+  Port de asouther4/lean-social-choice vers Lean 4
+  Original : https://github.com/asouther4/lean-social-choice
 
-  Core definitions for social choice theory:
-  - Strict preference (P) and indifference (I)
-  - Preference orders and quasi-orders
-  - Choice sets and maximal elements
+  Définitions fondamentales de la théorie du choix social :
+  - Préférence stricte (P) et indifférence (I)
+  - Ordres de préférence et quasi-ordres
+  - Ensembles de choix et éléments maximaux
 -/
 
 import Mathlib.Data.Finset.Basic
@@ -18,7 +18,7 @@ import Mathlib.Tactic
 
 variable {σ : Type*} {ι : Type*} [DecidableEq σ]
 
-/-! ## Finset Utility Lemmas -/
+/-! ## Lemmes utilitaires sur les Finset -/
 
 lemma exists_distinct_mem_of_ne_singleton {s : Finset σ} {a : σ}
     (hs₁ : s.Nonempty) (hs₂ : s ≠ {a}) : ∃ b ∈ s, b ≠ a := by
@@ -51,24 +51,24 @@ lemma exists_third_distinct_mem {s : Finset σ} {a b : σ}
   obtain ⟨c, hc, hcb⟩ := exists_second_distinct_mem h2 hb'
   exact ⟨c, Finset.mem_of_mem_erase hc, Finset.ne_of_mem_erase hc, hcb⟩
 
-/-! ## Strict Preference and Indifference -/
+/-! ## Préférence stricte et indifférence -/
 
-/-- Strict preference: x is strictly preferred to y under R -/
+/-- Préférence stricte : x est strictement préféré à y selon R -/
 def P (R : σ → σ → Prop) (x y : σ) : Prop := R x y ∧ ¬R y x
 
-/-- Indifference: x and y are equally ranked under R -/
+/-- Indifférence : x et y sont classés à égalité selon R -/
 def I (R : σ → σ → Prop) (x y : σ) : Prop := R x y ∧ R y x
 
-/-- Two orderings agree on a pair of alternatives -/
+/-- Deux ordres coïncident sur une paire d'alternatives -/
 def same_order (R R' : σ → σ → Prop) (x y x' y' : σ) : Prop :=
   ((R x y ↔ R' x' y') ∧ (R y x ↔ R' y' x')) ∧
   (P R x y ↔ P R' x' y') ∧ (P R y x ↔ P R' y' x')
 
-/-- Simplified same_order for strict preferences only -/
+/-- Variante simplifiée de same_order pour les préférences strictes uniquement -/
 def same_order' (R R' : σ → σ → Prop) (x y x' y' : σ) : Prop :=
   (P R x y ↔ P R' x' y') ∧ (P R y x ↔ P R' y' x')
 
-/-! ## Transitivity Lemmas -/
+/-! ## Lemmes de transitivité -/
 
 lemma I_trans {R : σ → σ → Prop} {x y z : σ}
     (htrans : Transitive R) (h1 : I R x y) (h2 : I R y z) : I R x z :=
@@ -101,51 +101,51 @@ lemma nP_of_nR {R : σ → σ → Prop} {x y : σ} (h : ¬R x y) : ¬P R x y :=
 lemma false_of_P_self {R : σ → σ → Prop} {x : σ} (h : P R x x) : False :=
   h.2 h.1
 
-/-! ## Same Order Equivalence for Total Orders -/
+/-! ## Équivalence same_order pour les ordres totaux -/
 
-/-- For total orders, R x y ↔ ¬P R y x -/
+/-- Pour les ordres totaux, R x y ↔ ¬P R y x -/
 lemma R_iff_nP_rev {R : σ → σ → Prop} {x y : σ} (hR : Total R) :
     R x y ↔ ¬P R y x :=
   ⟨fun h hp => hp.2 h, R_of_nP_total hR⟩
 
-/-- For total orders, same_order and same_order' are equivalent -/
+/-- Pour les ordres totaux, same_order et same_order' sont équivalents -/
 lemma same_order_iff_same_order' {R R' : σ → σ → Prop} {x y : σ}
     (hR : Total R) (hR' : Total R') :
     same_order R R' x y x y ↔ same_order' R R' x y x y := by
   refine ⟨fun h => h.2, fun h => ?_⟩
   refine ⟨⟨⟨fun hxy => ?_, fun hxy => ?_⟩, ⟨fun hyx => ?_, fun hyx => ?_⟩⟩, h⟩
-  · -- R x y → R' x y: via ¬P R y x → ¬P R' y x
+  · -- R x y → R' x y : via ¬P R y x → ¬P R' y x
     exact (R_iff_nP_rev hR').mpr (mt h.2.mpr ((R_iff_nP_rev hR).mp hxy))
   · -- R' x y → R x y
     exact (R_iff_nP_rev hR).mpr (mt h.2.mp ((R_iff_nP_rev hR').mp hxy))
-  · -- R y x → R' y x: via ¬P R x y → ¬P R' x y
+  · -- R y x → R' y x : via ¬P R x y → ¬P R' x y
     exact (R_iff_nP_rev hR').mpr (mt h.1.mpr ((R_iff_nP_rev hR).mp hyx))
   · -- R' y x → R y x
     exact (R_iff_nP_rev hR).mpr (mt h.1.mp ((R_iff_nP_rev hR').mp hyx))
 
-/-! ## Choice Sets and Maximal Elements -/
+/-! ## Ensembles de choix et éléments maximaux -/
 
-/-- x is a maximal element of S under R: nothing in S is strictly better -/
+/-- x est un élément maximal de S selon R : aucun élément de S n'est strictement préféré -/
 def is_maximal_element (x : σ) (S : Finset σ) (R : σ → σ → Prop) : Prop :=
   ∀ y ∈ S, ¬P R y x
 
-/-- x is a best element of S under R: x is at least as good as everything -/
+/-- x est un meilleur élément de S selon R : x est au moins aussi bon que tout élément -/
 def is_best_element (x : σ) (S : Finset σ) (R : σ → σ → Prop) : Prop :=
   ∀ y ∈ S, R x y
 
-/-- The maximal set: all maximal elements of S -/
+/-- L'ensemble maximal : tous les éléments maximaux de S -/
 noncomputable def maximal_set (S : Finset σ) (R : σ → σ → Prop) : Finset σ :=
   haveI : DecidablePred (fun x => is_maximal_element x S R) := Classical.decPred _
   S.filter (fun x => is_maximal_element x S R)
 
-/-- The choice set: all best elements of S -/
+/-- L'ensemble de choix : tous les meilleurs éléments de S -/
 noncomputable def choice_set (S : Finset σ) (R : σ → σ → Prop) : Finset σ :=
   haveI : DecidablePred (fun x => is_best_element x S R) := Classical.decPred _
   S.filter (fun x => is_best_element x S R)
 
-/-! ## Quasi-Order Structure -/
+/-! ## Structure de quasi-ordre -/
 
-/-- A quasi-order is reflexive and transitive -/
+/-- Un quasi-ordre est réflexif et transitif -/
 structure QuasiOrder (α : Type*) where
   rel : α → α → Prop
   refl : Reflexive rel
@@ -154,9 +154,9 @@ structure QuasiOrder (α : Type*) where
 instance (α : Type*) : CoeFun (QuasiOrder α) (fun _ => α → α → Prop) :=
   ⟨fun r => r.rel⟩
 
-/-! ## Preference Order Structure -/
+/-! ## Structure d'ordre de préférence -/
 
-/-- A preference order is reflexive, total, and transitive -/
+/-- Un ordre de préférence est réflexif, total et transitif -/
 structure PrefOrder (α : Type*) where
   rel : α → α → Prop
   refl : Reflexive rel
@@ -166,38 +166,38 @@ structure PrefOrder (α : Type*) where
 instance (α : Type*) : CoeFun (PrefOrder α) (fun _ => α → α → Prop) :=
   ⟨fun r => r.rel⟩
 
-/-! ## Compatibility -/
+/-! ## Compatibilité -/
 
-/-- Q₁ is a subrelation of Q₂ -/
+/-- Q₁ est une sous-relation de Q₂ -/
 def is_subrelation (Q₁ Q₂ : QuasiOrder σ) : Prop :=
   ∀ x y : σ, (Q₁ x y → Q₂ x y) ∧ ((Q₁ x y ∧ ¬Q₁ y x) → ¬Q₂ y x)
 
-/-- Q is compatible with R: Q extends to R preserving strict preferences -/
+/-- Q est compatible avec R : Q s'étend à R en préservant les préférences strictes -/
 def is_compatible (Q : QuasiOrder σ) (R : PrefOrder σ) : Prop :=
   ∀ x y : σ, (Q x y → R x y) ∧ ((Q x y ∧ ¬Q y x) → ¬R y x)
 
-/-! ## Acyclicality -/
+/-! ## Acyclicité -/
 
-/-- R is acyclical if there are no strict preference cycles -/
+/-- R est acyclique s'il n'existe aucun cycle de préférences strictes -/
 def acyclical (R : σ → σ → Prop) : Prop :=
   ∀ x : σ, ¬Relation.TransGen (P R) x x
 
-/-! ## Key Theorems -/
+/-! ## Théorèmes-clés -/
 
-/-- Best elements are maximal -/
+/-- Les meilleurs éléments sont maximaux -/
 theorem best_is_maximal {x : σ} {S : Finset σ} {R : σ → σ → Prop}
     (hx : is_best_element x S R) : is_maximal_element x S R := by
   intro y hy hPyx
   exact hPyx.2 (hx y hy)
 
-/-- Choice set is subset of maximal set -/
+/-- L'ensemble de choix est un sous-ensemble de l'ensemble maximal -/
 theorem choice_subset_maximal (S : Finset σ) (R : σ → σ → Prop) :
     choice_set S R ⊆ maximal_set S R := by
   intro x hx
   simp only [choice_set, maximal_set, Finset.mem_filter] at hx ⊢
   exact ⟨hx.1, best_is_maximal hx.2⟩
 
-/-- For total quasi-orders (i.e. preference orders), choice and maximal sets coincide -/
+/-- Pour les quasi-ordres totaux (c.-à-d. les ordres de préférence), les ensembles de choix et maximaux coïncident -/
 theorem choice_eq_maximal_of_quasi {S : Finset σ} {Q : QuasiOrder σ}
     (hS : S.Nonempty) (htot : Total Q.rel) :
     choice_set S Q.rel = maximal_set S Q.rel := by
