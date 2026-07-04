@@ -28,6 +28,7 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 | 6b | [rl_6b_actor_critic](rl_6b_actor_critic.ipynb) | Actor-Critic (A2C) depuis zéro, advantage, entropy bonus | 45-50 min |
 | 6c | [rl_6c_ppo_from_scratch](rl_6c_ppo_from_scratch.ipynb) | PPO depuis zéro, clipped surrogate, GAE, comparaison A2C vs PPO | 45-50 min |
 | 6d | [rl_6d_sac_from_scratch](rl_6d_sac_from_scratch.ipynb) | SAC depuis zéro, maximum entropy RL, twin Q-networks, auto-température | 45-50 min |
+| 6e | [rl_6e_grpo_from_scratch](rl_6e_grpo_from_scratch.ipynb) | GRPO depuis zéro (DeepSeek-R1), avantage relatif intra-groupe (sans critic), clip PPO + KL vs référence, portefeuille synthétique multi-seed | 45-50 min |
 | 7 | [rl_7_multi_agent_rl](rl_7_multi_agent_rl.ipynb) | Multi-Agent RL, PettingZoo, IQL | 45-50 min |
 | 8 | [rl_8_model_based_dyna_q](rl_8_model_based_dyna_q.ipynb) | Model-based RL : Dyna-Q, Dyna-Q+, planification, rollouts | 45-50 min |
 | 9 | [rl_9_offline_rl](rl_9_offline_rl.ipynb) | RL offline : Behavior Cloning, erreur d'extrapolation, BCQ-lite | 50-55 min |
@@ -456,6 +457,7 @@ RL/
 ├── rl_6b_actor_critic.ipynb
 ├── rl_6c_ppo_from_scratch.ipynb
 ├── rl_6d_sac_from_scratch.ipynb
+├── rl_6e_grpo_from_scratch.ipynb
 ├── rl_7_multi_agent_rl.ipynb
 ├── rl_8_model_based_dyna_q.ipynb
 ├── rl_9_offline_rl.ipynb
