@@ -117,7 +117,7 @@ La crypto `pycryptodome` et `phe` est réellement exécutée dans les outputs co
 
 - **Quitter la EVM** : la suite est [05-Alternative-Chains](../05-Alternative-Chains/README.md) (SC-18 à SC-22), qui élargit le horizon à Vyper, XRP, Bitcoin, Move et Solana.
 - **Le capstone** : [06-Real-World / SC-26](../06-Real-World/SC-26-Final-Project.ipynb) réutilisera directement ZKP (SC-15) et Paillier (SC-16) dans une DApp de vote complète — ces primitives prennent tout leur sens assemblées.
-- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les six sous-séries — celle-ci est le socle cryptographique.
+- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries — celle-ci est le socle cryptographique.
 
 ### Le fil rouge
 

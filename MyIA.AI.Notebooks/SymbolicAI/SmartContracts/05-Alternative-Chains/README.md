@@ -117,7 +117,7 @@ La signature pédagogique est multi-langage (Vyper, Bitcoin Script, Move, Rust p
 
 - **Le déploiement réel** : la suite est [06-Real-World](../06-Real-World/README.md) (SC-23 à SC-26), qui confronte ces modèles à des réseaux publics (testnets, mainnets L2) et les assemble dans un capstone.
 - **Revenir sur Ethereum** : après avoir vu UTXO, ressources et paradigmes alternatifs, relire [01-Solidity-Foundation](../01-Solidity-Foundation/README.md) — le modèle Account/EVM apparaît alors comme *un* choix, non *le* choix.
-- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les six sous-séries — celle-ci est le décentrement comparatif.
+- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries — celle-ci est le décentrement comparatif.
 
 ### Le fil rouge
 

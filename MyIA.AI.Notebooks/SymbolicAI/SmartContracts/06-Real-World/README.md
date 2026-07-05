@@ -127,7 +127,7 @@ Ces notebooks supposent des clés API et private keys lues depuis l'environnemen
 
 - **Le retour aux fondamentaux** : après ce capstone, la série est complète. Le meilleur approfondissement est de reprendre un notebook fondateur ([SC-0](../00-Foundations/SC-0-Cypherpunk-Origins.ipynb) ou [SC-3](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb)) — les primitives et la syntaxe se comprennent autrement une fois qu'on a déployé et sécurisé un système réel.
 - **Au-delà des smart contracts** : [SymbolicAI/Lean](../../Lean/README.md) prolonge l'idéal de vérification (cf SC-14) vers la preuve mathématique ; [GameTheory/SocialChoice](../../../GameTheory/SocialChoice/README.md) approfondit les fondations théoriques du vote (cf SC-9/SC-17, capstone SC-26).
-- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les six sous-séries — celle-ci clôt le parcours SC-0 → SC-26.
+- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries — celle-ci clôt le parcours SC-0 → SC-26.
 
 ### Le fil rouge
 

@@ -68,7 +68,7 @@ Cette sous-série d'ouverture vous a posé les **deux socles** sur lesquels tout
 
 - **Solidity par la pratique** : la suite immédiate est [01-Solidity-Foundation](../01-Solidity-Foundation/README.md) (SC-3 Solidity Basics et au-delà), qui exploite l'environnement désormais opérationnel pour écrire de vrais contrats — variables, fonctions, modifiers, événements, héritage.
 - **Approfondir les primitives** : [SC-0-Cypherpunk-Origins](SC-0-Cypherpunk-Origins.ipynb) mérite d'être repris après avoir écrit des contrats en Solidity — la théorie du hachage et de Merkle prend tout son sens quand on manipule `keccak256` et le stockage d'un contrat.
-- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les six sous-séries (Foundations, Solidity, Foundry-Testing, Privacy/Cryptography, Alternative-Chains, Real-World) — cette sous-série n'est que le seuil.
+- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries (Foundations, Solidity Fondements, Solidity Avancé, Foundry-Testing, Privacy/Cryptography, Alternative-Chains, Real-World) — cette sous-série n'est que le seuil.
 
 ### Le fil rouge
 
