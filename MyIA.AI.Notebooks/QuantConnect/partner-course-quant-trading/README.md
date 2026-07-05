@@ -156,6 +156,20 @@ Le répertoire `examples/` contient des projets validés avec des backtests posi
 
 ---
 
+## Kit de Transition — Stratégies ML & Framework
+
+Le répertoire [`kit-transitoire/`](kit-transitoire/README.md) regroupe **trois stratégies progressives de rotation sectorielle** (univers de 9 ETFs `XLK`..`XLRE`), chacune livrée avec un `main.py` déployable sur QC Cloud et un notebook de recherche QuantBook (`research.ipynb`) documentant les itérations et le calibrage. Backtests validés sur 2015-2024.
+
+| # | Stratégie | Type | Sharpe | CAGR | Max DD |
+|---|-----------|------|--------|------|--------|
+| 01 | **ML RandomForest** | Classification (14 features, ré-entraînement mensuel) | 0.556 | 11.43 % | 17.2 % |
+| 02 | **ML XGBoost** | Régression (20 features, ré-entraînement bi-hebdomadaire) | 0.521 | 12.81 % | 39.1 % |
+| 03 | **Framework Composite** | Alpha Models (`SectorMomentum` + `Defensive`, `MultiStrategyPCM` 70/30, `MaxDrawdownCircuitBreaker` 15 %) | 0.376 | 7.60 % | 20.6 % |
+
+Les trois stratégies partagent un filtre baissier (`SPY < SMA200` -> max 2 positions) et illustrent la progression pédagogique : ML supervisé -> ML avancé avec features riches -> architecture QC Framework propre (alpha models + PCM + risk). Documentation détaillée et comparaison complète : [`kit-transitoire/README.md`](kit-transitoire/README.md).
+
+---
+
 ## Notebooks de Recherche (QuantBook)
 
 Cinq projets Researcher avec des notebooks QuantBook opérationnels pour explorer les données QC Cloud :
@@ -272,7 +286,7 @@ Les exemples et templates couvrent **4 classes d'actifs** et **8+ concepts de tr
 
 ## Notebooks Compagnons
 
-28 notebooks Python progressifs dans `../Python/` (QC-Py-01 à QC-Py-28) :
+La série Python progressive dans [`../Python/`](../Python/README.md) (notebooks `QC-Py-*`) accompagne ce cours partenaire. Elle couvre l'écosystème QC de bout en bout, du premier algorithme au déploiement live :
 
 1. **Setup** : compte, IDE, premier algorithme
 2. **Fondations** : API, Resolution, Consolidators, QuantBook
@@ -281,6 +295,8 @@ Les exemples et templates couvrent **4 classes d'actifs** et **8+ concepts de tr
 5. **Framework** : Alpha, Portfolio Construction, Risk, Execution
 6. **ML/AI** : Features, modèles, ObjectStore, RL, NLP
 7. **Production** : paper trading, live, monitoring
+
+Le catalogue détaillé et les comptes à jour (les notebooks `QC-Py-*` continuent de croître) se trouvent dans le README canonique [`../Python/README.md`](../Python/README.md).
 
 ---
 
