@@ -139,6 +139,7 @@ Les notebooks NON EXÉCUTÉS doivent être exécutés (kernel local pour les ind
 | [QC-Py-21-Portfolio-Optimization-ML](QC-Py-21-Portfolio-Optimization-ML.ipynb) | Optimisation ML de portefeuille |
 | [QC-Py-22-Deep-Learning-LSTM](QC-Py-22-Deep-Learning-LSTM.ipynb) | Réseaux LSTM pour séries temporelles |
 | [QC-Py-23-Attention-Transformers](QC-Py-23-Attention-Transformers.ipynb) | Transformers, attention mechanism |
+| [QC-Py-23b-PatchTST-iTransformer](QC-Py-23b-PatchTST-iTransformer.ipynb) | PatchTST, iTransformer — transformers spécialisés séries temporelles |
 | [QC-Py-24-Autoencoders-Anomaly](QC-Py-24-Autoencoders-Anomaly.ipynb) | Détection d'anomalies, autoencodeurs |
 | [QC-Py-25-Reinforcement-Learning](QC-Py-25-Reinforcement-Learning.ipynb) | RL, DQN, environnement trading |
 | [QC-Py-26-LLM-Trading-Signals](QC-Py-26-LLM-Trading-Signals.ipynb) | LLM pour signaux de trading |
