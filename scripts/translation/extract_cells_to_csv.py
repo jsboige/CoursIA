@@ -94,7 +94,11 @@ def extract_notebook(nb_path: Path, repo_root: Path, src_lang: str) -> list[dict
         row["cell_type"] = cell_type
         row["src_lang"] = src_lang
         row["src_hash"] = cell_hash(text)
-        # Pivot : on dépose le texte + son hash dans la colonne pivot.
+        # Pivot : on dépose le texte + son hash dans la colonne pivot. À l'extraction
+        # initiale (T1) le pivot EST la source, donc hash_{src_lang} == src_hash par
+        # construction (c'est intentionnel, pas une invariance à tester). Les vrais
+        # invariants sont : (a) déterminisme byte-identique sur re-run, (b) en T2,
+        # hash_{src_lang} != hash_{autre_lang} quand les textes diffèrent.
         row[f"text_{src_lang}"] = text
         row[f"hash_{src_lang}"] = row["src_hash"]
         rows.append(row)
@@ -105,14 +109,16 @@ def iter_notebooks(target: Path) -> list[Path]:
     """Résout un fichier .ipynb ou un répertoire en liste de notebooks.
 
     Exclut les artefacts `_output.ipynb` (sorties Papermill) et les variantes
-    `_agent.ipynb` (auto-générées, hors périmètre traduction).
+    `_agent.ipynb` (auto-générées, hors périmètre traduction). On utilise
+    `endswith` (et non un substring `in`) pour ne pas exclure par erreur un
+    notebook légitime comme `foo_output.ipynb`.
     """
     if target.is_file():
         return [target]
     return sorted(
         p
         for p in target.rglob("*.ipynb")
-        if "_output.ipynb" not in p.name and not p.name.endswith("_agent.ipynb")
+        if not p.name.endswith("_output.ipynb") and not p.name.endswith("_agent.ipynb")
     )
 
 
@@ -160,7 +166,11 @@ def main() -> int:
         print(f"WARNING : 0 cellules extraites de {len(notebooks)} notebook(s).", file=sys.stderr)
         return 1
 
-    out = args.output.open("w", encoding="utf-8", newline="") if args.output else sys.stdout
+    out = sys.stdout
+    if args.output:
+        # Crée le répertoire parent si nécessaire (sinon open() lève FileNotFoundError).
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        out = args.output.open("w", encoding="utf-8", newline="")
     try:
         writer = csv.DictWriter(out, fieldnames=COLUMNS, quoting=csv.QUOTE_MINIMAL)
         writer.writeheader()
