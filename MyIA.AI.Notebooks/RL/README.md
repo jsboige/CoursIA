@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: RL
-pedagogical_count: 16
-breakdown: root=16
-maturity: PRODUCTION=15, BETA=1
+pedagogical_count: 17
+breakdown: root=17
+maturity: PRODUCTION=16, BETA=1
 -->
 
 Le Reinforcement Learning (apprentissage par renforcement) est la branche de l'IA qui apprend à un agent à prendre des décisions optimales par l'essai et l'erreur, en recevant des récompenses ou des pénalités de son environnement. C'est la technologie derrière AlphaGo, les robots de Boston Dynamics, les systèmes de recommandation de Netflix, et les voitures autonomes. Là où l'apprentissage supervisé prédit à partir d'exemples étiquetés et l'apprentissage non supervisé découvre des structures, le RL **agit** : il choisit des actions, observe leurs conséquences, et s'améliore itérativement.

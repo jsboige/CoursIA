@@ -8,9 +8,9 @@ Le catalogue rassemble **670 notebooks pédagogiques** répartis sur les onze do
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 685
-breakdown: SymbolicAI=168, GenAI=141, QuantConnect=105, Search=73, Probas=53, ML=40, Sudoku=33, GameTheory=28, IIT=22, RL=16, CaseStudies=6
-maturity: PRODUCTION=520, BETA=110, ALPHA=45, DRAFT=6, TEMPLATE=4
+total: 703
+breakdown: SymbolicAI=169, GenAI=141, QuantConnect=105, Search=82, Probas=58, ML=40, Sudoku=33, GameTheory=28, IIT=24, RL=17, CaseStudies=6
+maturity: PRODUCTION=534, BETA=115, ALPHA=45, DRAFT=5, TEMPLATE=4
 -->
 
 Dernière mise à jour : 2026-06-11
