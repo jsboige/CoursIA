@@ -55,8 +55,11 @@ Cette série sert les cours d'introduction au Machine Learning appliqué. Elle s
 ML/
 ├── ML.Net/                           # Tutoriels ML.NET (C#)
 │   ├── ML-1-Introduction.ipynb
+│   ├── ML-1-Introduction-Python.ipynb   # jumeau scikit-learn (regression/logistique) ⇄ ML.NET pipeline
 │   ├── ML-2-Data&Features.ipynb
+│   ├── ML-2-Data&Features-Python.ipynb   # jumeau scikit-learn (ColumnTransformer) ⇄ IDataView/Transforms
 │   ├── ML-3-Entrainement&AutoML.ipynb
+│   ├── ML-3-Entrainement-Python.ipynb   # jumeau scikit-learn (SDCA/LightGBM ⇄ Linear/GradientBoosting)
 │   ├── ML-4-Evaluation.ipynb
 │   ├── ML-5-TimeSeries.ipynb
 │   ├── ML-5-TimeSeries-Python.ipynb   # jumeau scikit-learn (STL+SARIMA) ⇄ ForecastBySsa
@@ -64,6 +67,7 @@ ML/
 │   ├── ML-7-Recommendation.ipynb
 │   ├── ML-7-Recommendation-Python.ipynb   # jumeau scikit-learn (NMF) ⇄ MatrixFactorization
 │   ├── ML-8-Clustering.ipynb
+│   ├── ML-8-Clustering-Python.ipynb   # jumeau scikit-learn (KMeans) ⇄ K-Means ML.NET
 │   ├── ML-9-Anomaly-Detection.ipynb
 │   ├── ML-9-Anomaly-Detection-Python.ipynb   # jumeau scikit-learn (PCA+résidu) ⇄ RandomizedPca
 │   ├── TP-prevision-ventes.ipynb
@@ -85,8 +89,11 @@ Pipeline ML.NET complet en C#, de l'introduction à l'évaluation avancée : du 
 | # | Notebook | Contenu | Focus |
 |---|----------|---------|-------|
 | 1 | [ML-1-Introduction](ML.Net/ML-1-Introduction.ipynb) | Hello ML.NET World, pipeline de base | Fondamentaux |
+| 1-Py | [ML-1-Introduction-Python](ML.Net/ML-1-Introduction-Python.ipynb) | **Jumeau Python** : pipeline ML.NET ⇄ scikit-learn (régression + classification) | Parité .NET⇄Python |
 | 2 | [ML-2-Data&Features](ML.Net/ML-2-Data&Features.ipynb) | IDataView, TextLoader, encodage | Préparation données |
+| 2-Py | [ML-2-Data&Features-Python](ML.Net/ML-2-Data&Features-Python.ipynb) | **Jumeau Python** : `IDataView`/Transforms ⇄ `ColumnTransformer`+`Pipeline` (scikit-learn) | Parité .NET⇄Python |
 | 3 | [ML-3-Entrainement&AutoML](ML.Net/ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML | Entraînement |
+| 3-Py | [ML-3-Entrainement-Python](ML.Net/ML-3-Entrainement-Python.ipynb) | **Jumeau Python** : SDCA/LightGBM/AutoML ⇄ `LinearRegression`/`GradientBoosting`/`GridSearchCV` | Parité .NET⇄Python |
 | 4 | [ML-4-Evaluation](ML.Net/ML-4-Evaluation.ipynb) | Cross-validation, métriques, PFI | Évaluation |
 | 5 | [ML-5-TimeSeries](ML.Net/ML-5-TimeSeries.ipynb) | Forecasts temporelles, windowing | Séries temporelles |
 | 5-Py | [ML-5-TimeSeries-Python](ML.Net/ML-5-TimeSeries-Python.ipynb) | **Jumeau Python** : `ForecastBySsa` ⇄ `STL`+`SARIMA` (statsmodels) | Parité .NET⇄Python |
@@ -94,6 +101,7 @@ Pipeline ML.NET complet en C#, de l'introduction à l'évaluation avancée : du 
 | 7 | [ML-7-Recommendation](ML.Net/ML-7-Recommendation.ipynb) | Système de recommandation | Recommandations |
 | 7-Py | [ML-7-Recommendation-Python](ML.Net/ML-7-Recommendation-Python.ipynb) | **Jumeau Python** : `MatrixFactorization` ⇄ `NMF` (scikit-learn) | Parité .NET⇄Python |
 | 8 | [ML-8-Clustering](ML.Net/ML-8-Clustering.ipynb) | K-Means, segmentation RFM, méthode du coude | Non-supervisé |
+| 8-Py | [ML-8-Clustering-Python](ML.Net/ML-8-Clustering-Python.ipynb) | **Jumeau Python** : `ClusteringCatalog` ⇄ `KMeans` scikit-learn + méthode du coude | Parité .NET⇄Python |
 | 9 | [ML-9-Anomaly-Detection](ML.Net/ML-9-Anomaly-Detection.ipynb) | Randomized PCA, AUC, seuil de décision | Détection d'anomalies |
 | 9-Py | [ML-9-Anomaly-Detection-Python](ML.Net/ML-9-Anomaly-Detection-Python.ipynb) | **Jumeau Python** : `RandomizedPca` ⇄ `PCA`+résidu (scikit-learn) | Parité .NET⇄Python |
 | TP | [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) | Régression bayésienne (Infer.NET) | Application pratique |
