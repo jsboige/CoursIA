@@ -68,6 +68,35 @@ Qdrant expose la **même** clé API sous **deux noms** selon le côté :
 
 Les deux noms **doivent porter la même valeur** (sinon 401 côté client). Centraliser le côté client CoursIA permet aux notebooks de suivre la rotation sans action manuelle : `edit master.env → render_envs.py` propage vers `GenAI/.env`. Le **flip de la valeur côté serveur** (rotation effective, Qdrant redémarre avec la nouvelle clé) reste une opération manuelle inter-repo sur `roo-extensions` — tracker séparément, cf [SECURITY.md](../../docker-configurations/SECURITY.md).
 
+### WHISPER_API_KEY — convention client ↔ service + propagation cross-repos
+
+`WHISPER_API_KEY` est un **bearer token partagé** entre le service `whisper-api` (po-2023, port 8190) et ses consommateurs — notebooks CoursIA ET **plusieurs workspaces cross-repo**. Comme Qdrant, sa rotation a deux volets : CoursIA (automatisé) et cross-repo (manuel).
+
+**Côté CoursIA (automatisé via `render_envs.py`) :** `WHISPER_API_KEY` est dans `SECRET_KEYS` et `whisper-api/.env` est un `TARGET_ENV` (glob `services/*/.env`). La rotation suit le [runbook canonique](#rotation-dun-secret-procédure-canonique) ci-dessus — `edit master.env → render_envs.py → docker compose restart whisper-api`. Le compose injecte `API_KEY=${WHISPER_API_KEY:-}` ; l'auth est active (vérifié 2026-07-05 : `POST /v1/audio/transcriptions` sans bearer → 401).
+
+**Côté cross-repo (propagation manuelle) :** le même token est consommé par des workspaces hors CoursIA. Après rotation CoursIA, propager la nouvelle valeur à chaque consommateur (RooSync privé ou édition du `.env`/config local du workspace) :
+
+| Workspace | Usage | Méthode de propagation |
+|-----------|-------|------------------------|
+| `roo-extensions` | sk-agent MCP speech-to-text | config MCP / `.env` local |
+| `myia-open-webui` | Web UI STT | `.env` / config |
+| `hermes-agent` (**repo public**) | pipeline ASR | ⚠️ **JAMAIS dans le repo public** — env var runtime ou RooSync privé (cf incident 2026-05-16 ci-dessous) |
+| `nanoclaw` | pipeline ASR | config locale (cf `nanoclaw-asr-dependency`) |
+
+> Cette liste reflète les consommateurs connus à la dernière rotation (2026-05). **Vérifier le déploiement courant** avant de rotater — un nouveau consommateur aurait pu être ajouté.
+
+**Vérification post-rotation (sur po-2023, après restart du container) :**
+
+```bash
+# Token manquant → 401 (auth active, requête refusée)
+curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8190/v1/audio/transcriptions
+
+# Token valide → 500 (auth passe, mais pas de fichier audio = attendu)
+curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer <nouveau_token>" -X POST http://localhost:8190/v1/audio/transcriptions
+```
+
+**Incident fondateur (hermes-agent, 2026-05-16) :** un `WHISPER_API_KEY` a fuité via un `.env.example` commité dans le repo **public** `jsboige/hermes-agent`. Résolution : token rotaté, container restarté, fuite corrigée côté hermes-agent. **Règle dure :** dans tout repo public, utiliser des placeholders (`YOUR_API_KEY_HERE`), jamais la valeur réelle — même dans un `.env.example`. Cet incident motive le ⚠️ sur la ligne `hermes-agent` ci-dessus.
+
 ## Secrets par instance (NON centralisés — config service)
 
 Ces secrets sont légitimement **différents par instance** (un mot de passe par container). Ils restent dans le `.env` de leur service et ne sont jamais collapsés :
@@ -97,7 +126,6 @@ Diagnostic erroné "drift bcrypt / plaintext perdu" sur `comfyui-video` → dema
 ## À faire (phase 2, optionnel)
 
 - Brancher `render_envs.py --check` en pre-commit local (hook `pre-commit`, pas CI — `.env` absents du checkout CI).
-- Documenter la rotation `WHISPER_API_KEY` (le token du reverse-proxy IIS `whisper-api.myia.io`) dans la procédure — actuellement dans `docker-configurations/services/whisper-api/.env` + propagation cross-repos (cf mémoire `whisper-token-rotation.md`).
 - Étendre `master.env` aux tokens cross-repos (roo-extensions, hermes-agent) via un master partagé si besoin.
 
 ## Voir aussi
