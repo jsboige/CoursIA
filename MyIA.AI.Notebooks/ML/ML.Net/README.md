@@ -35,7 +35,7 @@ Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : p
 |---|----------|---------|-------|
 | 1 | [ML-1-Introduction](ML-1-Introduction.ipynb) | Hello ML.NET World, pipeline de base · *jumeau [Python](ML-1-Introduction-Python.ipynb)* | 30-40 min |
 | 2 | [ML-2-Data&Features](ML-2-Data&Features.ipynb) | IDataView, TextLoader, encodage · *jumeau [Python](ML-2-Data&Features-Python.ipynb)* | 40-50 min |
-| 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML | 45-60 min |
+| 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML · *jumeau [Python](ML-3-Entrainement-Python.ipynb)* | 45-60 min |
 | 4 | [ML-4-Evaluation](ML-4-Evaluation.ipynb) | Cross-validation, métriques, PFI | 40-50 min |
 
 ### Fonctionnalités avancées (ML-5 à ML-9)
@@ -45,7 +45,7 @@ Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : p
 | 5 | [ML-5-TimeSeries](ML-5-TimeSeries.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | [ML-5-Python](ML-5-TimeSeries-Python.ipynb) — STL + SARIMA | 45-60 min |
 | 6 | [ML-6-ONNX](ML-6-ONNX.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | — (pont inter-langage, par nature .NET-centrique) | 45-60 min |
 | 7 | [ML-7-Recommendation](ML-7-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-7-Python](ML-7-Recommendation-Python.ipynb) — NMF | 45-60 min |
-| 8 | [ML-8-Clustering](ML-8-Clustering.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | — (déjà couvert en Python : [2.6-Clustering](../DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb)) | 45-60 min |
+| 8 | [ML-8-Clustering](ML-8-Clustering.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | [ML-8-Python](ML-8-Clustering-Python.ipynb) — KMeans scikit-learn + méthode du coude | 45-60 min |
 | 9 | [ML-9-Anomaly-Detection](ML-9-Anomaly-Detection.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | [ML-9-Python](ML-9-Anomaly-Detection-Python.ipynb) — PCA + erreur de reconstruction | 45-60 min |
 
 ### TP Pratique
