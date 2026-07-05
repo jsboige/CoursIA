@@ -12,7 +12,7 @@ Trois extensions complètent le panorama. La couverture exacte et les Dancing Li
 
 ## Pourquoi cette partie
 
-Cette partie est l'alphabet de toute la série : la formalisation en espace d'états, le backtracking et les heuristiques qu'on y construit sont réutilisés tels quels par la programmation par contraintes (Partie 2) et par les 21 notebooks d'application. Mais son véritable enseignement est un réflexe d'ingénieur : chaque algorithme y est présenté comme un compromis — complétude contre mémoire, garantie contre temps de calcul, exploration contre exploitation — et jamais comme une recette. C'est ce réflexe, plus que tel ou tel algorithme, qui distingue celui qui applique une bibliothèque de celui qui choisit une stratégie.
+Cette partie est l'alphabet de toute la série : la formalisation en espace d'états, le backtracking et les heuristiques qu'on y construit sont réutilisés tels quels par la programmation par contraintes (Partie 2) et par les 22 notebooks d'application. Mais son véritable enseignement est un réflexe d'ingénieur : chaque algorithme y est présenté comme un compromis — complétude contre mémoire, garantie contre temps de calcul, exploration contre exploitation — et jamais comme une recette. C'est ce réflexe, plus que tel ou tel algorithme, qui distingue celui qui applique une bibliothèque de celui qui choisit une stratégie.
 
 ## Objectifs d'apprentissage
 
@@ -133,7 +133,7 @@ Le véritable enseignement, au-delà du catalogue d'algorithmes, est un **réfle
 ### Prochaines étapes
 
 - **La programmation par contraintes** : la suite naturelle est la [Partie 2 (CSP)](../Part2-CSP/README.md), qui réutilise le backtracking et les heuristiques de cette partie pour propager des contraintes plutôt que d'énumérer — la réduction de l'espace de recherche y devient systématique plutôt qu'heuristique.
-- **Les applications** : les [21 notebooks d'application](../Applications/README.md) (détection de contours, TSP, VRP, optimisation de portefeuille, hyperparameter tuning) mobilisent directement les métaheuristiques et la recherche locale vues ici sur des problèmes réels.
+- **Les applications** : les [22 notebooks d'application](../Applications/README.md) (détection de contours, TSP, VRP, optimisation de portefeuille, hyperparameter tuning) mobilisent directement les métaheuristiques et la recherche locale vues ici sur des problèmes réels.
 - **Les ponts vers les autres séries** : les Dancing Links irriguent [Sudoku](../../Sudoku/README.md), Minimax et MCTS se prolongent dans [GameTheory](../../GameTheory/README.md) (OpenSpiel) puis [RL](../../RL/README.md) (politiques apprises), et les prédicats Z3 de Search-10 ouvrent sur [SymbolicAI](../../SymbolicAI/README.md). Reprendre un de ces ponts après avoir posé les fondations de la recherche donne aux primitives une nouvelle profondeur.
 - **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties et les applications — celle-ci est le socle commun.
 
