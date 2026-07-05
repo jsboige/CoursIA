@@ -102,8 +102,8 @@ flowchart TD
         P3["<b>Phase 3</b><br/>Notebooks 13-17<br/>frontières : CFR, mécanismes, RL"]
         P1 --> P2 --> P3
     end
-    LEAN["<b>Fil transversal Lean (b)</b><br/>2b · 4b · 8b · 15b<br/>preuve formelle des grands théorèmes"]
-    PYC["<b>Fil transversal Python (c)</b><br/>4c · 8c · 15c<br/>variantes &amp; visualisations"]
+    LEAN["<b>Fil transversal Lean (b)</b><br/>2b · 4b · 5b · 8b · 11b · 15b<br/>preuve formelle des grands théorèmes"]
+    PYC["<b>Fil transversal Python (c)</b><br/>4c · 6c · 8c · 15c<br/>variantes &amp; visualisations"]
     SC["<b>Sous-série SocialChoice</b><br/>SC-01 → SC-04<br/>Arrow · Sen · vote · SAT/Z3"]
     FIL -.->|"formalise"| LEAN
     FIL -.->|"approfondit"| PYC
@@ -551,11 +551,13 @@ GameTheory/
 │   ├── strategies.py              # Tit-for-tat, hawks, doves, etc.
 │   ├── tournament.py              # Tournoi Axelrod
 │   └── visualization.py           # Animations populations
-├── cooperative_games_lean/        # Projet Lake jeux cooperatifs (Shapley + Bondareva-Shapley 0 sorry, cf #3954)
+├── cooperative_games_lean/        # Projet Lake jeux cooperatifs (Shapley + Bondareva-Shapley 0 sorry)
 ├── social_choice_lean/            # Projet Lake choix social (Arrow, Sen, Voting/Median Voter — 0 sorry)
 ├── social_choice_lean_peters/     # Projet Lake référence DominikPeters (0 sorry, toolchain v4.27.0-rc1)
 ├── stable_marriage_lean/          # Projet Lake Gale-Shapley (GS COMPLETE, 0 sorry — énoncés faux réfutés, exists_isManOptimal prouvé)
 ├── minimax_lean/                  # Projet Lake minimax (companion natif GT-5b, von Neumann/Sion 0 sorry)
+├── repeated_games_lean/           # Projet Lake jeux répétés (compagnon formel GT-6c, grim-trigger — build en cours, cf STATUS.md)
+├── conway_cgt_lean/               # Visite guidée Lean (vihdzp/combinatorial-games, #check) — compagnon GT-8/8b
 ├── lean_game_defs/                # Types Lean partages (pas de Lake project)
 ├── lean_game_defs_ext/            # Types Lean partages — extension (companion GT-11b Bayesian, Vickrey 0 sorry)
 ├── examples/
@@ -626,11 +628,13 @@ GameTheory occupe une place à part dans la couche Lean : c'est la famille qui a
 
 | Famille | Lake phare | Théorème | Branchement notebook |
 | --- | --- | --- | --- |
-| **GameTheory** (choix social) | `social_choice_lean` (cf. `arrow_lean`) | Théorème d'impossibilité d'Arrow + caractérisation Sen + valeur de Shapley (résolu 0 sorry) | Notebooks 16b (Arrow), Argument_Analysis |
+| **GameTheory** (choix social) | `social_choice_lean` (cf. `arrow_lean`) | Théorème d'impossibilité d'Arrow + caractérisation Sen + valeur de Shapley (résolu 0 sorry) | Notebooks SC-01/SC-02 (Arrow, Sen), Argument_Analysis |
 | **GameTheory** (équilibres) | `minimax_lean` (Sion) | Existence d'un équilibre en stratégies mixtes via point fixe (Brouwer-Sion) | GameTheory-5b-Lean-Minimax (companion natif) |
 | **GameTheory** (design) | `lean_game_defs_ext` | Vickrey (enchère au second prix = stratégie dominante), théorème de révélation | GameTheory-11b-Lean-BayesianGamesExt |
-| **GameTheory** (coopératif) | `cooperative_games_lean` (Bondareva-Shapley) | Bondareva-Shapley résolu 0 sorry (#3954), Core non-vide sous balanced | Notebooks 13-14 (coalitions, valeur de Shapley) |
-| **GameTheory** (matching) | `stable_marriage_lean` | Gale-Shapley : existence + optimalité côté proposant | Notebooks 16a-2 (stable matching) |
+| **GameTheory** (coopératif) | `cooperative_games_lean` (Bondareva-Shapley) | Bondareva-Shapley résolu 0 sorry, Core non-vide sous balanced | Notebooks 15/15b (coalitions, valeur de Shapley) |
+| **GameTheory** (matching) | `stable_marriage_lean` | Gale-Shapley : existence + optimalité côté proposant | Notebook 16 (MechanismDesign : stable matching) |
+| **GameTheory** (jeux répétés) | `repeated_games_lean` | Stratégie grim-trigger (compagnon formel GT-6c) — *en cours* (build + sorries résiduels, cf STATUS.md) | Notebook 6c (RepeatedGames-FolkTheorem) |
+| **GameTheory** (jeux combinatoires) | `conway_cgt_lean` | Visite guidée (`#check`) de la théorie des jeux combinatoires (vihdzp/combinatorial-games) | Notebooks 8/8b (CombinatorialGames, Sprague-Grundy) |
 | **Search** (cross-famille) | `astar_lean` (cf. `#4048`) | Consistance + heuristique admissible = optimalité | Search-13 (A*), branchement par preuve de correction |
 | **QuantConnect** (cross-famille) | `kelly_lean` (cf. `#4052`) | Kelly `g(f) ≤ g(f*)` + unicité | QC-Py-10 Risk Management, branchement par fraction risquée |
 
@@ -648,7 +652,7 @@ flowchart LR
         L1["social_choice_lean<br/>impossibilité"]
         L2["minimax_lean<br/>Sion"]
         L3["lean_game_defs_ext<br/>Vickrey"]
-        L4["cooperative_games_lean<br/>0 sorry #3954"]
+        L4["cooperative_games_lean<br/>0 sorry"]
         L5["stable_marriage_lean<br/>Gale-Shapley"]
         L6["repeated_games_lean<br/>grim_trigger"]
     end
@@ -666,7 +670,7 @@ flowchart LR
     style L6 fill:#e8f5e9
 ```
 
-Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Lemke-Howson, Gale-Shapley via `stable_marriage_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, Gale-Shapley existence et optimalité côté proposant). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
+Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
 
 Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [hub QuantConnect ↔ `kelly_lean`](../QuantConnect/README.md) (PR #5047), [hub central P0 ↔ Lean inter-familles](../README.md) (PR #5049), [hub SymbolicAI Lean](../SymbolicAI/Lean/README.md).
 
