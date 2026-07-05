@@ -80,6 +80,7 @@ La série illustre ce fil rouge sur plusieurs notebooks, chacun sur un cas non-c
 | 12 | [PyMC-12-Recommenders](PyMC-12-Recommenders.ipynb) | 60 min | Factorisation de matrices, recommandation |
 | 13 | [PyMC-13-Debugging](PyMC-13-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics NUTS, convergence |
 | 14 | [PyMC-14-Causal-Inference](PyMC-14-Causal-Inference.ipynb) | 65 min | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
+| 15 | [PyMC-15-Sparse-Gaussian-Process](PyMC-15-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens (prior sur fonctions), noyau RBF, classification GP probit, frontière non linéaire, length-scale apprise |
 | 16 | [PyMC-16-Modeles-Hierarchiques](PyMC-16-Modeles-Hierarchiques.ipynb) | 50 min | Partial pooling, shrinkage, paramétrisation non-centrée, divergences/funnel |
 | 17 | [PyMC-17-Kalman-Filter](PyMC-17-Kalman-Filter.ipynb) | 55 min | Système dynamique linéaire gaussien, récursion de filtrage fermée, value-add MCMC (estimation Q/R/drift) |
 | 18 | [PyMC-18-Change-Point](PyMC-18-Change-Point.ipynb) | 50 min | Change-point bayésien, `DiscreteUniform` + `switch`, catastrophes minières (Poisson), entropie |
