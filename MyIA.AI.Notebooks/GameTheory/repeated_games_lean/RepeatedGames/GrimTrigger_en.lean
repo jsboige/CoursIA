@@ -33,6 +33,7 @@ import RepeatedGames.Discounting_en
 
 namespace RepeatedGames_en
 
+open RepeatedGames
 open PDAction
 
 /-! ## Grim trigger strategy -/

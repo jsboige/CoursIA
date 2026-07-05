@@ -31,6 +31,7 @@ import RepeatedGames.Stage
 namespace RepeatedGames_en
 
 open Real
+open RepeatedGames
 
 /-- Geometric series: for `δ ∈ [0, 1)`, `Σ' n, δⁿ = (1 − δ)⁻¹`. -/
 lemma geom_sum {δ : ℝ} (h0 : 0 ≤ δ) (h1 : δ < 1) :
