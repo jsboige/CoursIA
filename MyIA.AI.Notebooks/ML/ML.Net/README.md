@@ -34,7 +34,7 @@ Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : p
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 1 | [ML-1-Introduction](ML-1-Introduction.ipynb) | Hello ML.NET World, pipeline de base · *jumeau [Python](ML-1-Introduction-Python.ipynb)* | 30-40 min |
-| 2 | [ML-2-Data&Features](ML-2-Data&Features.ipynb) | IDataView, TextLoader, encodage | 40-50 min |
+| 2 | [ML-2-Data&Features](ML-2-Data&Features.ipynb) | IDataView, TextLoader, encodage · *jumeau [Python](ML-2-Data&Features-Python.ipynb)* | 40-50 min |
 | 3 | [ML-3-Entrainement&AutoML](ML-3-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML | 45-60 min |
 | 4 | [ML-4-Evaluation](ML-4-Evaluation.ipynb) | Cross-validation, métriques, PFI | 40-50 min |
 
