@@ -4,8 +4,8 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 169
-breakdown: Lean=28, SmartContracts=27, Tweety=27, SMT=24, Argument_Analysis=18, SemanticWeb=18, Planners=14, SymbolicLearning=12, root=1
+pedagogical_count: 171
+breakdown: Lean=28, SmartContracts=27, Tweety=27, SMT=24, Argument_Analysis=18, SemanticWeb=18, Planners=15, SymbolicLearning=12, root=1
 maturity: PRODUCTION=145, BETA=23, ALPHA=1
 -->
 
@@ -62,7 +62,7 @@ Deux séries applicatives indépendantes exploitent les formalismes des phases p
 
 ### Parcours alternatif : Pont LLM (Argument Analysis, ~4h)
 
-Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (6 notebooks) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
+Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (18 notebooks : 12 modules `Argument_Analysis_*` Argumentum/EPITA-IS + 6 notebooks `Agentic-*` orchestration) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
 
 ### Parcours alternatif : Apprentissage symbolique (SymbolicLearning, ~9h30)
 
@@ -329,7 +329,7 @@ Documentation complète : [Argument_Analysis/README.md](Argument_Analysis/README
 
 ## SymbolicLearning - Apprentissage Symbolique
 
-Série de **11 notebooks** Python sur l'apprentissage symbolique (AIMA ch. 19) : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), moteurs ILP modernes réels (Aleph, Metagol, Popper, dILP), apprentissage actif d'automates (L* d'Angluin), et intégration neuro-symbolique jusqu'au capstone LLM + knowledge graph.
+Série de **12 notebooks** Python sur l'apprentissage symbolique (AIMA ch. 19) : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), moteurs ILP modernes réels (Aleph, Metagol, Popper, dILP), apprentissage actif d'automates (L* d'Angluin), intégration neuro-symbolique (T-norms, LTN, DeepProbLog, KG mining, LLM-driven rule extraction) jusqu'au capstone LLM + knowledge graph + SL-12 DifferentiableLogicGateNetworks (réseaux de portes logiques différenciables).
 
 ### Structure détaillée
 
@@ -347,7 +347,7 @@ Série de **11 notebooks** Python sur l'apprentissage symbolique (AIMA ch. 19) :
 | 10 | [SL-10-ActiveAutomataLearning](SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 4 | SL-1 |
 | 11 | [SL-11-Capstone-NeuroSymbolic](SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb) | Pipeline neuro-symbolique 6 étages, LLM réel aux deux extrémités | 4 | SL-7 a SL-9 |
 
-> 11/11 notebooks ont des exercices — 43 au total, organisés en table de pioche pour la séance de restitution (chaque exercice est assorti d'une question-twist).
+> 12/12 notebooks ont des exercices — répartis entre Version Space (SL-1), EBL/RBL (SL-2-3), ILP (SL-4-6), NeuroSymbolique (SL-7), KG mining (SL-8), LLM-symbolique (SL-9), Active Automata Learning L* (SL-10), capstone neuro-symbolique (SL-11), DifferentiableLogicGateNetworks (SL-12).
 
 Documentation complète : [SymbolicLearning/README.md](SymbolicLearning/README.md)
 
@@ -370,15 +370,16 @@ Le notebook Z3 inaugure la série [SMT/Z3/](SMT/Z3/README.md) (SMT declaratif vi
 
 ```
 SymbolicAI/
-├── Tweety/                    # Serie TweetyProject (13 notebooks)
-│   ├── Tweety-1-Setup.ipynb ... Tweety-9-Preferences.ipynb
+├── Tweety/                    # Serie TweetyProject (27 notebooks : 14 Python/JPype + 12 C#/IKVM EPIC #4667 + 1 _probes)
+│   ├── Tweety-1-Setup.ipynb ... Tweety-11-Causal.ipynb
+│   ├── Tweety-*-Csharp.ipynb  # Modules .NET mergés via IKVM 8.14/8.15
 │   ├── tweety_init.py         # Module d'initialisation partage
 │   ├── libs/                  # JARs TweetyProject (35 modules)
 │   ├── ext_tools/             # Clingo, SPASS, EProver
 │   └── README.md
 │
-├── Lean/                      # Serie Lean 4 (21 notebooks)
-│   ├── Lean-1-Setup.ipynb ... Lean-16f-Conway-Free-Will-Theorem.ipynb
+├── Lean/                      # Serie Lean 4 (28 notebooks : 18 proof natifs + 10 companions Python/WSL)
+│   ├── Lean-1-Setup.ipynb ... Lean-18-Search-AStar-Optimality.ipynb
 │   ├── lean_runner.py         # Backend Python multi-mode
 │   ├── scripts/               # Installation, validation WSL
 │   └── README.md
@@ -389,10 +390,10 @@ SymbolicAI/
 │   ├── RDF.Net-Legacy/      # Notebook original (référence historique)
 │   └── README.md
 │
-├── Planners/                  # Planification automatique (14 notebooks)
+├── Planners/                  # Planification automatique (15 notebooks : 14 actifs + 1 archive Fast-Downward-Legacy)
 │   ├── 00-Environment/       # Setup
 │   ├── 01-Foundation/        # Introduction, PDDL Basics, State Space
-│   ├── 02-Classical/         # State Space, Fast-Downward, Heuristics, Domains
+│   ├── 02-Classical/         # Fast-Downward, Heuristics, Lean Relaxation, Domains
 │   ├── 03-Advanced/          # OR-Tools, Temporal, HTN
 │   ├── 04-NeuroSymbolic/     # LLM-Planning, Unified-Planning, LOOP
 │   └── README.md
@@ -407,21 +408,24 @@ SymbolicAI/
 │   ├── 06-Real-World/         # SC-23 a SC-26 (Cross-chain, Deploy, Project)
 │   └── README.md
 │
-├── Argument_Analysis/         # Analyse argumentative (6 notebooks, demo)
+├── Argument_Analysis/         # Analyse argumentative (18 notebooks : 12 Argumentum EPITA-IS + 6 Agentic demo)
 │   ├── Argument_Analysis_Agentic-0-init.ipynb ... UI_configuration.ipynb
+│   ├── Argument_Analysis_ArgumentProfile.ipynb ... Restitution_3_Actes.ipynb
+│   │   # 12 modules Argumentum/EPITA-IS verbatim port EPIC #4960 MERGED
+│   ├── argumentation_analysis/Argumentum/   # submodule source verbatim
 │   └── README.md
 │
-├── SymbolicLearning/          # Apprentissage symbolique (11 notebooks)
-│   ├── SL-1-LogicalLearning.ipynb ... SL-11-Capstone-NeuroSymbolic.ipynb
+├── SymbolicLearning/          # Apprentissage symbolique (12 notebooks)
+│   ├── SL-1-LogicalLearning.ipynb ... SL-12-DifferentiableLogicGateNetworks.ipynb
 │   ├── reference/             # Notes AIMA ch. 19
 │   └── README.md
 │
 ├── SMT/                       # Solveurs SMT (Satisfiability Modulo Theories)
-│   ├── Z3/                     # Serie Z3.Linq C# (SMT declaratif via LINQ)
+│   ├── Z3/                     # Serie Z3.Linq C# (SMT declaratif via LINQ) (18 notebooks)
 │   │   ├── 01_Linq2Z3_Intro.ipynb ... 18_Einsteins_Riddle.ipynb
 │   │   └── README.md
-│   ├── Z3-Python/              # Serie z3-py (API complete imperative)
-│   │   ├── Z3-Python-01-Introduction.ipynb ... Z3-Python-03-Tactics.ipynb
+│   ├── Z3-Python/              # Serie z3-py (API complete imperative) (6 notebooks)
+│   │   ├── Z3-Python-01-Introduction.ipynb ... Z3-Python-06-Advanced-Optimization.ipynb
 │   │   └── README.md
 │   └── README.md              # Chapeau SMT
 ├── OR-tools-Stiegler.ipynb    # Optimisation LP
@@ -570,26 +574,31 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 
 ---
 
-## Audit Qualité (mars 2026)
+## Audit Qualité (juillet 2026 — §E whole-file)
 
-### Couverture exercices (mise à jour 11 juin 2026)
+### Couverture exercices (réconciliation disque ↔ catalogue, mise à jour 5 juillet 2026)
 
 | Série | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
-| SmartContracts | 27 | 27 (100%) | 0 | Complet |
-| SemanticWeb | 18 | 16 (89%) | 2 (Setup + Legacy) | Complet |
-| Lean | 21 | 20 (95%) | 1 (Setup) | Complet |
-| Planners | 13 | 12 (92%) | 1 (Setup) | Complet |
-| Tweety | 10 | 10 (100%) | 0 | Complet |
-| SymbolicLearning | 11 | 11 (100%) | 0 | Complet |
-| Argument Analysis | 6 | 0 (0%) | 6 (demo) | N/A |
+| Tweety (Python/JPype + C#/.NET) | 27 | 14 Python / 12 Csharp (≥96%) | 1 Probe (non pédagogique) | Très bon |
+| Lean (proofs natifs + companions Python) | 28 | 26 (93%) | 2 (Lean-1-Setup + Lean-7b-Examples) | Très bon |
+| SemanticWeb (C# + Python) | 18 | 16 (89%) | 2 (Setup + RDF.Net-Legacy) | Très bon |
+| Planners (PDDL classique + neuro-symbolique) | 15 | 14 (93%) | 1 (Planners-0-Setup) | Très bon |
+| SmartContracts | 27 | 27 (100%) | 0 | Excellent |
+| Argument Analysis (Argumentum + Agentic demo) | 18 | 0 (0%) | 18 (demo, no exercices) | N/A (projet) |
+| SymbolicLearning (AIMA ch. 19 + SL-12 differentiable logic gates) | 12 | 12 (100%) | 0 | Excellent |
+| SMT/Z3 (C# Linq2Z3) | 18 | 18 (100%) | 0 | Excellent |
+| SMT/Z3-Python | 6 | 6 (100%) | 0 | Excellent |
 
-**Total** : 95/105 notebooks de contenu avec exercices (90%). Les notebooks sans exercices sont les notebooks de setup/configuration (SW-1, Planners-0, Lean-1), le notebook legacy (RDF.Net), et la série demo Argument Analysis (6 notebooks).
+**Total** : 131/150 notebooks de contenu pédagogique avec exercices (87%). Les notebooks sans exercices sont uniquement les notebooks de setup (SW-1-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Tweety-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (RDF.Net-Legacy, Argument_Analysis_*), et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du 5 juillet 2026 (post-#5390, post-EPIC #4667 Tweety .NET marathon, post-EPIC #4960 Argumentum EPITA-IS landing).
 
-### Problèmes restants
+### Problèmes connus (juillet 2026)
 
-- **Lean-11-TorchLean** : 11 code cells sans outputs (kernel lean4 natif, erreurs PyTorch dtype)
-- **SmartContracts** : Certains notebooks sans section prérequis dans le header
+- **Lean-11-TorchLean** : code cells sans outputs (kernel lean4 natif, timeouts PyTorch IBP sur certaines plateformes GPU-only)
+- **SmartContracts** : SC-21-Move-Sui nécessite compilation Sui CLI (warning sur Windows natif)
+- **Argument Analysis EPITA-IS verbatim port** : imports peuvent échouer (lazy accessors, échec d'import → symbole non-instantiable aujourd'hui)
+- **Tweety `_probes`** : `Tweety-IKVM-Init-Probe.ipynb` est un probe de diagnostic IKVM, non pédagogique
+- **SymbolicLearning SL-12** : DifferentiableLogicGateNetworks livré récemment (PR #5375), kernels DiffLogic en cours de stabilisation
 
 ---
 
