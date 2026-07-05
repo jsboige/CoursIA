@@ -30,8 +30,8 @@ Jusqu'à la restructure (#4725), la théorie de la décision était imbriquée d
 
 ```mermaid
 flowchart TD
-    A["<b>Fondations</b> (1-3)<br/>axiomes vNM · utilité de l'argent<br/>aversion au risque"]
-    B["<b>Multi-attributs & réseaux</b> (4-5)<br/>MAUT · diagrammes d'influence"]
+    A["<b>Fondations</b> (1-2)<br/>axiomes vNM · utilité de l'argent<br/>aversion au risque"]
+    B["<b>Multi-attributs & réseaux</b> (3-4)<br/>MAUT · diagrammes d'influence"]
     C["<b>Valeur & robustesse</b> (5-6)<br/>EVPI/EVSI · Minimax/regret"]
     D["<b>Séquentiel & bandits</b> (7)<br/>MDPs · Thompson Sampling MCMC"]
     BAY["Corpus bayésien<br/>../../PyMC/ (posteriors)"]
@@ -55,7 +55,7 @@ Là où l'arc [Infer.NET](../DecInfer/README.md) calcule les posteriors de bandi
 | --- | --- | --- |
 | [Corpus bayésien PyMC](../../PyMC/README.md) | Posteriors (Beta, gaussiennes) | Le posterior est l'input de la politique de décision |
 | [Arc décision Infer.NET](../DecInfer/README.md) | DecInfer-1 à DecInfer-10 | Même arc décision en C# (message passing EP/VMP), avec companions Lean 4 (vNM, Gittins) |
-| [Inférence causale DecPyMC-14](../../PyMC/PyMC-14-Causal-Inference.ipynb) | `do(·)` de Pearl | L'intervention comme transformation de modèle avant la décision |
+| [Inférence causale PyMC-14](../../PyMC/PyMC-14-Causal-Inference.ipynb) | `do(·)` de Pearl | L'intervention comme transformation de modèle avant la décision |
 | [Lake `decision_theory_lean`](../../decision_theory_lean/) | Formalisation | Preuves formelles Lean 4 (vNM sound, Gittins) — companions côté Infer.NET |
 | [GameTheory](../../../GameTheory/README.md) | Décision sous incertitude | Miroir : adversaire rationnel vs processus stochastique |
 | [RL](../../../RL/README.md) | MDPs (DecPyMC-7) | L'agent apprend la politique par interaction |
