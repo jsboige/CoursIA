@@ -53,6 +53,15 @@ jobs:
           # Si bump futur → changer ici + changer .claude/CLAUDE.md si besoin.
           version: 1.7.32
 
+      - name: Regenerate README render list
+        # _quarto.yml porte une liste render: EXPLICITE de tous les README.md
+        # (Quarto 1.7 n'étend pas le glob **/README.md sur les sous-répertoires).
+        # On régénère cette liste avant le render pour que les nouveaux READMEs
+        # ajoutés depuis la dernière synchro apparaissent sur le site sans commit
+        # manuel de _quarto.yml (Axe C #4211). Idempotent ; archives et libs
+        # vendored exclues (cf. scripts/regen_quarto_render.py).
+        run: python scripts/regen_quarto_render.py
+
       - name: Render Quarto site
         # `freeze: auto` (dans _quarto.yml) => Quarto n'exécute PAS les notebooks .ipynb.
         # Les .ipynb sont juste copiés dans _site/ avec leurs outputs embedded
