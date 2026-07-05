@@ -1,8 +1,8 @@
 # Repeated Games — Lean (compagnon formel GT-6c)
 
 > **Compagnon formel** du notebook pédagogique [GameTheory-6c](../GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) (`Jeux répétés` — Dilemme du prisonnier itéré).
-> Série GameTheory a déjà 4 lakes (`cooperative_games`, `minimax`, `social_choice`, `stable_marriage`).
-> Aucun ne couvrait les jeux répétés — ce companion comble le manque avec le théorème-phare de la **stratégie grim-trigger**.
+> Série GameTheory regroupe 7 lakes (`conway_cgt`, `cooperative_games`, `knot`, `minimax`, `repeated_games`, `social_choice`, `stable_marriage`).
+> Aucun autre ne couvrait les jeux répétés — ce companion comble le manque avec le théorème-phare de la **stratégie grim-trigger**.
 
 ## Théorème-phare
 
@@ -47,8 +47,8 @@ flowchart TD
 | Module | Rôle | Statut théorique |
 |--------|------|------------------|
 | `RepeatedGames.Stage` | PD paramétrique, actions C/D, payoffs, défault > cooperate en stage game | FORMAL-CERTIFIED (0 sorry) |
-| `RepeatedGames.Discounting` | Facteur d'actualisation, sommes géométriques, lemme de réécriture du seuil | 1 sorry (cible prover BG) |
-| `RepeatedGames.GrimTrigger` | Stratégie grim, théorème-phare `grim_trigger_sustains_iff`, corollaire NE | 2 sorries (cibles primaires prover BG) |
+| `RepeatedGames.Discounting` | Facteur d'actualisation, sommes géométriques, lemme de réécriture du seuil | FORMAL-CERTIFIED (0 sorry) |
+| `RepeatedGames.GrimTrigger` | Stratégie grim, théorème-phare `grim_trigger_sustains_iff`, corollaire NE | FORMAL-CERTIFIED (0 sorry — théorème-phare certified) |
 | `RepeatedGames.Folk` (STRETCH) | Folk theorem actualisé (Fudenberg–Maskin 1986) | Sorries tolérés (stretch) |
 
 ## Pont ICT-13 (#4879)
