@@ -830,13 +830,15 @@ var posterior = moteur.Infer<DistributionType>(variable);
 
 ```
 Infer/
-+-- Infer-1-Setup.ipynb ... Infer-17-Kalman-Filter.ipynb
-+-- Infer-9-Lean-Gittins.ipynb    # Companion Lean 4 (preuves formelles Gittins)
++-- Infer-1-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb   # 19 notebooks (Infer-9 = Topic-Models)
 +-- Infer-Glossary.md
 +-- FactorGraphHelper.cs          # Helper pour visualisation Graphviz
 +-- README.md
++-- data/                         # Datasets (murder_mystery.json, matches.csv, skills_quiz.csv, ...)
 +-- scripts/                      # Scripts de maintenance
 ```
+
+> Le companion Lean 4 (preuves formelles de l'indice de Gittins) vit dans l'arc théorie de la décision : [`../DecisionTheory/DecInfer/DecInfer-9-Lean-Gittins.ipynb`](../DecisionTheory/DecInfer/DecInfer-9-Lean-Gittins.ipynb) (post-renumérotation #5200).
 
 ## Domaines d'Application
 
