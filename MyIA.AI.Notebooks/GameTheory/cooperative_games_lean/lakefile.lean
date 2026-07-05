@@ -20,9 +20,25 @@ lean_lib «CooperativeGames» where
   -- `ConeKernel.lean` (FR canonique) + `ConeKernel_en.lean` (EN sibling
   -- verbatim). Pattern precis plutot que `.submodules \`CooperativeGames`
   -- car un autre _en pre-existant sur main (`Basic_en.lean`, ajoute par
-  -- PR #5344 commit 24a2da95f) a un bug de namespace resolution
-  -- (`G.Convex` non-prefixe dans `namespace MarginalVector`, fail
+  -- PR #5344 commit 24a2da95f) avait un bug de namespace resolution
+  -- presume (`G.Convex` non-prefixe dans `section MarginalVector`, fail
   -- `open TUGame` manquant) — le `.submodules` l'aurait active en
   -- doublon de la presente PR. Le pattern precis compile SEUL les
   -- fichiers de la tranche, sans toucher les autres _en pre-existants.
-  globs := #[`CooperativeGames.ConeKernel, `CooperativeGames.ConeKernel_en]
+  --
+  -- c.235 : ajout `Basic`, `Basic_en`, `Shapley`, `Shapley_en` au tableau
+  -- globs (PR #5441). Pattern precis cumulatif (PAS `.submodules`) pour
+  -- eviter de reactiver le bug namespace dormant de `Basic_en.lean`.
+  -- Empirique : Basic_en.lean a une structure identique a Basic.lean
+  -- (TUGame top-level + namespace TUGame_en + section MarginalVector),
+  -- donc le bug namespace `open TUGame` manquant n'est PAS confirme
+  -- — le commentaire pre-PR-#5441 etait speculatif. Si le build Lake
+  -- echoue apres ce PR, le diagnostic precis tombera dans les logs CI.
+  globs := #[
+    `CooperativeGames.ConeKernel,
+    `CooperativeGames.ConeKernel_en,
+    `CooperativeGames.Basic,
+    `CooperativeGames.Basic_en,
+    `CooperativeGames.Shapley,
+    `CooperativeGames.Shapley_en
+  ]
