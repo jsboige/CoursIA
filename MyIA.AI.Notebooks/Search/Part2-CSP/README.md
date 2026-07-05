@@ -94,7 +94,7 @@ Pour le setup complet, voir le [README de la série Search](../README.md).
 | Solveur CP-SAT trop lent sur les grandes instances | Préférer les contraintes globales (AllDifferent, Cumulative) aux contraintes binaires équivalentes ; utiliser LNS (CSP-3) |
 | Comment choisir entre CP-SAT et un solveur SAT ? | CP-SAT pour les contraintes globales et l'optimisation (objectif), SAT pour la décision pure ; CSP-6 détaille les compromis |
 | CSP-9 : les algorithmes distribués ne convergent pas | Vérifier que le réseau de contraintes est un arbre, ou utiliser AWC (Weak-Commitment) au lieu d'ABT |
-| Où sont les applications concrètes ? | Voir [Applications](../Applications/README.md) : 21 notebooks (N-Queens, Nurse Scheduling, VRP, TSP...) |
+| Où sont les applications concrètes ? | Voir [Applications](../Applications/README.md) : 22 notebooks (N-Queens, Nurse Scheduling, VRP, TSP...) |
 
 ## Ponts vers SymbolicAI
 
@@ -134,7 +134,7 @@ CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
 | Série | Lien | Relation |
 | ------- | ------ | ---------- |
 | [Partie 1 : Search](../Part1-Foundations/README.md) | Fondamentaux | Prérequis : backtracking, heuristiques |
-| [Applications](../Applications/README.md) | 21 notebooks d'application | Mise en pratique des CSP |
+| [Applications](../Applications/README.md) | 22 notebooks d'application | Mise en pratique des CSP |
 | [Search (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global |
 | [Sudoku](../../Sudoku/) | Résolution par contraintes | Application directe des CSP |
 | [SymbolicAI/SMT/Z3](../../SymbolicAI/SMT/Z3/README.md) | Solveur SMT | CSP-6 (LCG) et automates symboliques |
@@ -170,7 +170,7 @@ Le véritable enseignement est une **sensibilité à la modélisation** : le mê
 
 ### Prochaines étapes
 
-- **Les applications** : les [21 notebooks d'application](../Applications/README.md) (N-Queens, Nurse Scheduling, VRP, TSP, Picross, Minesweeper CSP) mettent en pratique CP-SAT sur des problèmes concrets avec benchmark baseline-comparison.
+- **Les applications** : les [22 notebooks d'application](../Applications/README.md) (N-Queens, Nurse Scheduling, VRP, TSP, Picross, Minesweeper CSP) mettent en pratique CP-SAT sur des problèmes concrets avec benchmark baseline-comparison.
 - **Vers le raisonnement symbolique** : la modélisation déclarative de cette partie est le premier contact avec un mode de raisonnement qu'approfondissent [Z3/SMT](../../SymbolicAI/SMT/Z3/README.md) (SMT solving), les [Planners](../../SymbolicAI/Planners/) (PDDL, HTN) et [Tweety](../../SymbolicAI/Tweety/) (logique formelle) côté SymbolicAI. CSP-6 (LCG) fait explicitement le pont vers SAT.
 - **Retour aux fondamentaux** : après avoir vu la puissance de la propagation, reprendre [Search-2 (backtracking)](../Part1-Foundations/Search-2-Uninformed.ipynb) — le DFS y apparaît comme un cas particulier de CSP sans propagation, et l'on mesure le saut qu'apportent AC-3/MAC.
 - **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties et les applications — celle-ci est le socle déclaratif qui prolonge la Partie 1 (recherche) et prépare la Partie 4 (métaheuristiques) et les Applications.
