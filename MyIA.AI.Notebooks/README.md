@@ -64,6 +64,7 @@ SymbolicAI
 ├── Lean/ - Theorem proving, LeanDojo, hommages (Grothendieck, Conway, FWT)
 ├── Planners/ - PDDL, Fast-Downward, OR-Tools, LLM planning
 ├── Tweety/ - Logiques classiques, argumentation
+├── SMT/ - Z3, Satisfiability Modulo Theories (LINQ C# + Python)
 ├── SymbolicLearning/ - ILP, neuro-symbolique, KG-LLM, automates (L*)
 └── Argument_Analysis/ - Analyse d'arguments
 ```
