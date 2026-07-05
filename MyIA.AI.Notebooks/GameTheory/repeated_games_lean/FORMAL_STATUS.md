@@ -1,6 +1,15 @@
 # Repeated Games Lean — Formal Verification Status
 
-> **Statut honnête au 2026-07-02 (cycle 7, J2 tranche en cours)** : la branche `feature/4880-repeated-games-lean` contient les fichiers-sources complets (Stage, Discounting, GrimTrigger, Folk + entry-point + manifest), mais **le `lake build` cold-rebuild complet n'a pas été exécuté dans la fenêtre de ce cycle** (le cold-rebuild Mathlib mutualisé est ~16 238 oleans, 60+ min — intractable dans la fenêtre de session interactif MiniMax M3).
+**Mise à jour 2026-07-05 (post-#5362)** : les 4 sorries GrimTrigger + le sorry Discounting (`discount_threshold_rewrite`) sont **clos**. État courant vérifié firsthand (line-by-line, docstring-aware) :
+
+- `Stage.lean` : **0 sorry** · `Discounting.lean` (+`_en`) : **0 sorry** · `GrimTrigger.lean` (+`_en`) : **0 sorry** (théorème-phare `grim_trigger_sustains_iff` certified) · `Folk.lean` : **1 sorry STRETCH** (`folk_theorem_discounted` L33, toléré).
+- `lake build` SUCCESS post-#5362 : 2953 jobs, oleans `_en` produits (commit `df07e1e60`).
+
+Les sections « Per-File Status » ci-dessous reflètent le **snapshot cycle 7 (2026-07-02)** conservé comme historique de la tranche ; les comptes de sorry y sont STALE (Discounting « 1 sorry », GrimTrigger « 4 sorries » — voir les valeurs courantes ci-dessus).
+
+---
+
+> **Snapshot historique au 2026-07-02 (cycle 7, J2 tranche en cours)** : la branche `feature/4880-repeated-games-lean` contient les fichiers-sources complets (Stage, Discounting, GrimTrigger, Folk + entry-point + manifest), mais **le `lake build` cold-rebuild complet n'a pas été exécuté dans la fenêtre de ce cycle** (le cold-rebuild Mathlib mutualisé est ~16 238 oleans, 60+ min — intractable dans la fenêtre de session interactif MiniMax M3).
 >
 > Le PR #4920 (commit `05ae9d8988155c727cb5284cf8a8cebf2499e3ff`) avait déjà livré GrimTrigger 0-sorry `lake build` SUCCESS pour la **tranche 1** — c'est cette base mergée dans `main` que la J2 tranche Folk.lean vient compléter comme stretch optionnel (#4880 critère de clôture 1 = grim, déjà couvert par #4920 ; le Folk reste au catalogue comme STRETCH OPEN).
 

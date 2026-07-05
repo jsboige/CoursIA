@@ -1,7 +1,7 @@
 # Repeated Games — Lean (formal companion of GT-6c)
 
 > **Formal companion** of the pedagogical notebook [GameTheory-6c](../GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) (`Repeated Games` — Iterated prisoner's dilemma).
-> This companion fills the gap in the GameTheory series (which already has 4 Lean lakes: `cooperative_games`, `minimax`, `social_choice`, `stable_marriage`).
+> This companion fills the gap in the GameTheory series (which has 7 Lean lakes: `conway_cgt`, `cooperative_games`, `knot`, `minimax`, `repeated_games`, `social_choice`, `stable_marriage`).
 
 ## Headline theorem
 
@@ -29,8 +29,8 @@ For an infinitely repeated game, discount factor δ ∈ [0,1), real parameters `
 | Module | Role | Theorem status |
 |--------|------|----------------|
 | `RepeatedGames.Stage` | Parametric PD, actions C/D, payoffs, default > cooperate in stage game | FORMAL-CERTIFIED (0 sorry) |
-| `RepeatedGames.Discounting` | Discount factor, geometric sums, threshold rewrite lemma | 1 sorry (prover BG target) |
-| `RepeatedGames.GrimTrigger` | Grim strategy, headline theorem `grim_trigger_sustains_iff`, NE corollary | 2 sorries (prover BG primary targets) |
+| `RepeatedGames.Discounting` | Discount factor, geometric sums, threshold rewrite lemma | FORMAL-CERTIFIED (0 sorry) |
+| `RepeatedGames.GrimTrigger` | Grim strategy, headline theorem `grim_trigger_sustains_iff`, NE corollary | FORMAL-CERTIFIED (0 sorry — headline theorem certified) |
 | `RepeatedGames.Folk` (STRETCH) | Discounted Folk theorem (Fudenberg–Maskin 1986) | Sorries tolerated (stretch) |
 
 ## ICT-13 bridge
