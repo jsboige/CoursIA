@@ -128,6 +128,17 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 | Reparameterization | Trick pour gradient dans l'action |
 | Pendulum-v1 | Environnement continu de référence |
 
+### Notebook 6e - GRPO depuis zéro
+
+| Section | Contenu |
+|---------|---------|
+| Avantage relatif sans critic | Group Relative Policy Optimization (DeepSeek-R1), baseline de groupe au lieu d'un réseau critique |
+| Portfolio synthétique | Environnement auto-contenu, signal de récompense reproductible multi-seed |
+| Actor seul | Réseau de politique unique sans critic (contrairement à PPO/A2C/SAC) |
+| Mise à jour GRPO | Avantage intra-groupe + clip PPO + pénalité KL vs politique de référence |
+| Boucle multi-seed | Entraînement multi-seed, verdict de stabilité |
+| GRPO vs PPO/SAC | Ce que change le paradigme sans critic |
+
 ### Notebook 7 - Apprentissage Multi-Agent
 
 | Section | Contenu |
