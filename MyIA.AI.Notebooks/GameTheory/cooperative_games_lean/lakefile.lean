@@ -16,13 +16,17 @@ lean_lib «CooperativeGames» where
   -- Includes: TU games, Shapley value, Core, Voting games
   --
   -- i18n FR-first (EPIC #4980 ratif 2026-07-04 11:58Z, comment-4881909354) :
-  -- Globs precis ciblant UNIQUEMENT les fichiers de cette tranche :
-  -- `ConeKernel.lean` (FR canonique) + `ConeKernel_en.lean` (EN sibling
-  -- verbatim). Pattern precis plutot que `.submodules \`CooperativeGames`
+  -- Globs precis par tranche (FR canonique + EN sibling verbatim),
+  -- etendu incrementalement au fur et a mesure que les _en siblings
+  -- sont livres (cycle c.234 : ajout de `Shapley`+`Shapley_en` post-#5419).
+  -- Pattern precis plutot que `.submodules \`CooperativeGames`
   -- car un autre _en pre-existant sur main (`Basic_en.lean`, ajoute par
   -- PR #5344 commit 24a2da95f) a un bug de namespace resolution
   -- (`G.Convex` non-prefixe dans `namespace MarginalVector`, fail
   -- `open TUGame` manquant) — le `.submodules` l'aurait active en
-  -- doublon de la presente PR. Le pattern precis compile SEUL les
-  -- fichiers de la tranche, sans toucher les autres _en pre-existants.
-  globs := #[`CooperativeGames.ConeKernel, `CooperativeGames.ConeKernel_en]
+  -- doublon des presentes PRs. Le pattern precis compile SEUL les
+  -- fichiers des tranches livrees, sans toucher les autres _en pre-existants.
+  globs := #[
+    `CooperativeGames.ConeKernel, `CooperativeGames.ConeKernel_en,
+    `CooperativeGames.Shapley, `CooperativeGames.Shapley_en
+  ]
