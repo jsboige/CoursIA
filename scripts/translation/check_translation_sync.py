@@ -60,9 +60,7 @@ def cell_hash(text: str) -> str:
 def load_notebook_cells(nb_path: Path) -> dict[str, str] | None:
     """Retourne {cell_id: hash} pour un notebook, ou None si illisible."""
     try:
-        import json as _json
-
-        nb = _json.loads(nb_path.read_text(encoding="utf-8"))
+        nb = json.loads(nb_path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     cells: dict[str, str] = {}

@@ -54,13 +54,26 @@ jobs:
             echo "drift=none" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          REPORT="$(python scripts/translation/check_translation_sync.py translations --check --repo-root . 2>/dev/null)"
-          COUNT="$(echo "$REPORT" | python -c 'import sys,json; print(json.load(sys.stdin)["anomaly_count"])' 2>/dev/null || echo 0)"
+          # Capture stdout (JSON report) and stderr (diagnostics) separately.
+          # A drift detector that crashes must announce itself, NOT stay silent
+          # behind 2>/dev/null and report a false "all in sync".
+          STDERR_FILE="$(mktemp)"
+          REPORT="$(python scripts/translation/check_translation_sync.py translations --check --repo-root . 2>"$STDERR_FILE")"
+          SCRIPT_EXIT=$?
+          STDERR_CONTENT="$(cat "$STDERR_FILE")"
+          rm -f "$STDERR_FILE"
+          # Distinguish a script crash from a legitimately empty report.
+          if [ "$SCRIPT_EXIT" -ne 0 ] || ! echo "$REPORT" | python -c 'import sys,json; json.load(sys.stdin)' 2>/dev/null; then
+            echo "::warning title=Translation drift check (broken)::The drift detector itself failed (exit $SCRIPT_EXIT, non-JSON stdout). A false 'all in sync' cannot be trusted. Investigate the job log. Stderr: $STDERR_CONTENT"
+            echo "drift=broken" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          COUNT="$(echo "$REPORT" | python -c 'import sys,json; print(json.load(sys.stdin)["anomaly_count"])')"
           if [ "$COUNT" = "0" ]; then
             echo "::notice title=Translation sync::All translation CSVs in sync with notebooks. No drift."
             echo "drift=none" >> "$GITHUB_OUTPUT"
           else
-            SUMMARY="$(echo "$REPORT" | python -c 'import sys,json; from collections import Counter; d=json.load(sys.stdin); print(", ".join(f"{v}={n}" for v,n in Counter(a["verdict"] for a in d["anomalies"]).items()))' 2>/dev/null || echo "see report")"
+            SUMMARY="$(echo "$REPORT" | python -c 'import sys,json; from collections import Counter; d=json.load(sys.stdin); print(", ".join(f"{v}={n}" for v,n in Counter(a["verdict"] for a in d["anomalies"]).items()))')"
             echo "::notice title=Translation drift (informational)::$COUNT drift(s) detected ($SUMMARY). This does NOT block the PR. Re-translation is proposed here but executed manually by an agent (Argumentum motor, #4957 §3). See JSON report in the job log."
             echo "$REPORT"
             echo "drift=detected" >> "$GITHUB_OUTPUT"
