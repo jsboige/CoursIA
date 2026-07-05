@@ -29,6 +29,9 @@ scripts/
 │   ├── install-ffmpeg.ps1       # Installation FFmpeg Windows
 │   └── install-ffmpeg.sh        # Installation FFmpeg Linux/macOS
 │
+├── translation/                 # Synchro traduction multilingue (#4957 / #1650)
+│   └── extract_cells_to_csv.py  # Extraction cellules -> CSV (drift-detection)
+│
 ├── tests/                       # Tests unitaires
 │
 └── validate_lean11.py           # Validation Lean11
@@ -78,6 +81,26 @@ python scripts/genai-stack/genai.py gpu
 ```
 
 Voir [genai-stack/README.md](genai-stack/README.md) pour la documentation complete.
+
+### extract_cells_to_csv.py (Synchro traduction)
+
+Extrait les cellules d'un notebook ou d'une série vers le CSV de synchro traduction
+(`translations/<famille>/<série>.csv`), source de vérité de l'alignement multilingue.
+Schéma ratified #4957 §1 : `notebook, cell_id, cell_type, src_lang, src_hash, text_<lang>, hash_<lang>`
+(8 langues EN/FR/ES/AR/FA/ZH/RU/PT). Les hashes bidirectionnels rendent la désynchronisation
+détectable mécaniquement (source modifiée sans retraduction, ou traduction éditée à la main).
+
+```bash
+# Extraire le CSV initial d'une série (langue pivot fr, #1650 Phase 0.5)
+python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ \
+    -o translations/symbolicai/argument_analysis.csv
+
+# Un seul notebook (POC / schema review)
+python scripts/translation/extract_cells_to_csv.py notebook.ipynb -o poc.csv
+```
+
+Le script est la couche T1 de l'infrastructure #4957 ; le drift-detection CI (T2) et la
+resync par le moteur Argumentum (T3, gated #1650 Phase 1) viennent dans les tranches suivantes.
 
 ## Installation
 
