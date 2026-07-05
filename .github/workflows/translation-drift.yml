@@ -1,0 +1,71 @@
+name: Translation Drift Check
+
+# Purpose: DETECT (non-blocking, read-only) when a notebook source or one of its
+# translations drifts out of sync with the translation CSV
+# (translations/<famille>/<série>.csv, Epic #4957 / #1650). The CSV is the source
+# of truth for the multilingual alignment maintained by extract_cells_to_csv.py.
+#
+# This job is intentionally NON-BLOCKING and READ-ONLY — same philosophy as
+# catalog-drift.yml. It surfaces drift as a notice annotation so reviewers see
+# it, but never writes to a branch and never fails the PR gate. The actual
+# re-translation is PROPOSED by this check but EXECUTED manually by an agent
+# (running the Argumentum datasetupdater motor on flagged rows, #4957 §3) —
+# never an auto-commit LLM in CI.
+#
+# See #4957 (infra design) and #1650 (multilingual translation epic).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'translations/**'
+      - 'scripts/translation/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  translation-drift:
+    name: "Translation drift (read-only)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Non-blocking: --check always exits 0. Drift is surfaced as a notice
+      # annotation + JSON report. Pre-T1 (no translations/ committed yet) the
+      # script reports "0 CSV, nothing to verify" and the job is green.
+      - name: Detect translation drift
+        id: drift
+        run: |
+          if [ ! -d translations ]; then
+            echo "::notice title=Translation drift (informational)::No translations/ directory yet (pre-T1 phase, #4957). Nothing to verify."
+            echo "drift=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          REPORT="$(python scripts/translation/check_translation_sync.py translations --check --repo-root . 2>/dev/null)"
+          COUNT="$(echo "$REPORT" | python -c 'import sys,json; print(json.load(sys.stdin)["anomaly_count"])' 2>/dev/null || echo 0)"
+          if [ "$COUNT" = "0" ]; then
+            echo "::notice title=Translation sync::All translation CSVs in sync with notebooks. No drift."
+            echo "drift=none" >> "$GITHUB_OUTPUT"
+          else
+            SUMMARY="$(echo "$REPORT" | python -c 'import sys,json; from collections import Counter; d=json.load(sys.stdin); print(", ".join(f"{v}={n}" for v,n in Counter(a["verdict"] for a in d["anomalies"]).items()))' 2>/dev/null || echo "see report")"
+            echo "::notice title=Translation drift (informational)::$COUNT drift(s) detected ($SUMMARY). This does NOT block the PR. Re-translation is proposed here but executed manually by an agent (Argumentum motor, #4957 §3). See JSON report in the job log."
+            echo "$REPORT"
+            echo "drift=detected" >> "$GITHUB_OUTPUT"
+          fi
+
+      # This job is always green. Drift is surfaced as a notice annotation only.
+      - name: Done (non-blocking, read-only)
+        run: echo "Translation drift check complete (non-blocking, read-only)."
