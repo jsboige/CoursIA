@@ -540,16 +540,16 @@ SemanticWeb/
 
 Les graphes de connaissances RDF/OWL (SW-1 à SW-6) fournissent des représentations riches du monde que les planificateurs PDDL (Planners-2 à Planners-9) peuvent exploiter :
 
-- **Ontologies OWL (SW-4/5) et domaines PDDL (Planners-6)** : les ontologies définissent les types et relations du domaine ; les fichiers PDDL définissent les actions et contraintes. Les deux formalisent la sémantique d'un domaine pour le raisonnement automatique.
-- **SPARQL (SW-3) + planification** : les requêtes SPARQL sur un graphe de connaissances peuvent générer les états initiaux et buts d'un problème de planification.
+- **Ontologies OWL (SW-7) et domaines PDDL (Planners-6)** : les ontologies définissent les types et relations du domaine ; les fichiers PDDL définissent les actions et contraintes. Les deux formalisent la sémantique d'un domaine pour le raisonnement automatique.
+- **SPARQL (SW-4) + planification** : les requêtes SPARQL sur un graphe de connaissances peuvent générer les états initiaux et buts d'un problème de planification.
 - **GraphRAG (SW-12) + LLM Planning (Planners-10)** : le RAG basé sur les graphes de connaissances améliore la génération de plans par les LLMs en fournissant un contexte structuré.
 
 ### SemanticWeb et Tweety (Logique et Argumentation)
 
 Les logiques de description (OWL) et les logiques classiques (Tweety) partagent des fondements communs :
 
-- **OWL-DL (SW-4/5) et logique propositionnelle/FOL (Tweety-2/3)** : OWL-DL est une logique de description décidable, fragment de la logique du premier ordre. Les SAT solvers de Tweety complètent les raisonneurs OWL (HermiT, Pellet).
-- **SHACL (SW-7) et validation** : les contraintes SHACL sur les graphes RDF sont analogues aux contraintes logiques de Tweety. Les deux approches valident la cohérence de bases de connaissances.
+- **OWL-DL (SW-7) et logique propositionnelle/FOL (Tweety-2/3)** : OWL-DL est une logique de description décidable, fragment de la logique du premier ordre. Les SAT solvers de Tweety complètent les raisonneurs OWL (HermiT, Pellet).
+- **SHACL (SW-8) et validation** : les contraintes SHACL sur les graphes RDF sont analogues aux contraintes logiques de Tweety. Les deux approches valident la cohérence de bases de connaissances.
 - **Raisonnement monotone (OWL) vs non-monotone (Tweety-6/7)** : les ontologies OWL font du raisonnement monotone (ajout de faits ne rétracte rien) ; Tweety explore le raisonnement non-monotone (defeasible, priorité).
 
 ### SemanticWeb et Lean (Vérification Formelle)
@@ -563,7 +563,7 @@ La vérification de cohérence des ontologies OWL est une forme de vérification
 
 Les smart contracts et le web sémantique convergent dans les données décentralisées :
 
-- **Graphes de connaissances on-chain** : les NFTs ERC-721 (SC-7) avec métadonnées JSON-LD (SW-8) créent des graphes de connaissances décentralisés. Les DID (Decentralized Identifiers) utilisent RDF pour l'identité auto-souveraine.
+- **Graphes de connaissances on-chain** : les NFTs ERC-721 (SC-7) avec métadonnées JSON-LD (SW-9) créent des graphes de connaissances décentralisés. Les DID (Decentralized Identifiers) utilisent RDF pour l'identité auto-souveraine.
 - **Oracle data integration** : les oracles blockchain (SC-8 DeFi) peuvent servir de sources RDF pour enrichir les graphes de connaissances en temps réel.
 
 ---
