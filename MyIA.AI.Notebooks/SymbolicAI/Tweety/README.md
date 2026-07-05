@@ -68,7 +68,7 @@ Les notebooks utilisent **deux implémentations** pour exécuter TweetyProject, 
 
 | Implémentation           | Stack                          | Kernel        | JVM requise ?                     | Notebooks                                                                                                                               |
 | ------------------------ | ------------------------------ | ------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **Python** (originelle)  | JPype (pont Java↔Python)       | Python 3      | Oui (JDK téléchargé par le setup) | `Tweety-1` à `Tweety-11` (13 notebooks)                                                                                                 |
+| **Python** (originelle)  | JPype (pont Java↔Python)       | Python 3      | Oui (JDK téléchargé par le setup) | `Tweety-1` à `Tweety-11` (12 notebooks)                                                                                                 |
 | **C#/.NET** (port natif) | IKVM 8.15 (bytecode Java→.NET) | `.net-csharp` | **Non** (runtime IKVM pur .NET)   | `Tweety-2-Basic-Logics-Csharp`, `Tweety-2b-Semantics-Csharp`, `Tweety-2c-FOL-Csharp`, `Tweety-3-Dung-Csharp`, `Tweety-4-Aspic-Csharp`   |
 
 Les deux implémentations couvrent les mêmes concepts fondamentaux (logique propositionnelle, sémantique des mondes possibles, logique du premier ordre, argumentation de Dung) ; le port C# les expose **sans JVM**, directement dans le runtime .NET, ce qui les rend exécutables côté .NET Interactive comme n'importe quel notebook C#. Les notebooks `-Csharp` vivent **à côté** de leurs homologues Python (pas dans un sous-dossier), pour faciliter la comparaison des deux stacks sur un même concept. Voir EPIC [#4667](https://github.com/jsboige/CoursIA/issues/4667).
@@ -175,6 +175,7 @@ Pour les praticiens intéressés par les applications multi-agents :
 | **Fondations** |
 | 1  | [Tweety-1-Setup](Tweety-1-Setup.ipynb)    | Configuration JVM, JARs, outils externes                       | 20 min  | Python |
 | 2  | [Tweety-2-Basic-Logics](Tweety-2-Basic-Logics.ipynb) | Logique Propositionnelle et FOL                          | 45 min  | Python |
+| 2a | [Tweety-2-Basic-Logics-Csharp](Tweety-2-Basic-Logics-Csharp.ipynb) | Logique propositionnelle .NET (IKVM, port pilot #4792) | 30 min | C# PROD |
 | 2b | [Tweety-2b-Semantics-Csharp](Tweety-2b-Semantics-Csharp.ipynb) | Sémantique propositionnelle .NET (mondes possibles)  | 30 min  | C# BETA |
 | 2c | [Tweety-2c-FOL-Csharp](Tweety-2c-FOL-Csharp.ipynb) | FOL porté .NET (IKVM)                                    | 30 min  | C# BETA |
 | 3  | [Tweety-3-Advanced-Logics](Tweety-3-Advanced-Logics.ipynb) | DL, Modale, QBF, Conditionnelle                      | 40 min  | Python |
@@ -203,11 +204,11 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 10c | [Tweety-10-MLN-Csharp](Tweety-10-MLN-Csharp.ipynb) | MLN porté .NET (IKVM, c.188 PR #5209)                | 30 min  | C# PROD |
 | 11 | [Tweety-11-Causal](Tweety-11-Causal.ipynb) | Raisonnement causal : do-calculus, interventions, contrefactuels | 50 min  | Python |
 
-**Durée totale estimée** : ~13h (Python) + ~6h (C#/.NET). Le tableau ci-dessus couvre les **26 notebooks principaux** (13 Python + 13 C#/.NET) ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4 avec 5 fichiers `.lean` du dossier `Argumentation/` : Basic, Characteristic, Extensions, Fundamental, Grounded).
+**Durée totale estimée** : ~13h (Python) + ~6h (C#/.NET). Le tableau ci-dessus couvre les **26 notebooks principaux** (12 Python + 13 C#/.NET + 1 Lean companion) ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4 avec 5 fichiers `.lean` du dossier `Argumentation/` : Basic, Characteristic, Extensions, Fundamental, Grounded).
 
 ## En quoi chaque notebook est unique
 
-Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — couvrant les **26 notebooks principaux** (13 Python + 12 C#/.NET + 1 Lean companion) :
+Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — couvrant les **26 notebooks principaux** (12 Python + 13 C#/.NET + 1 Lean companion) :
 
 | #  | Notebook                      | Concept clé enseigné                                                    |
 |----|-------------------------------|--------------------------------------------------------------------------|
