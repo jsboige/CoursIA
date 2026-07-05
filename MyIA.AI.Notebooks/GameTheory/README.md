@@ -102,8 +102,8 @@ flowchart TD
         P3["<b>Phase 3</b><br/>Notebooks 13-17<br/>frontières : CFR, mécanismes, RL"]
         P1 --> P2 --> P3
     end
-    LEAN["<b>Fil transversal Lean (b)</b><br/>2b · 4b · 8b · 15b<br/>preuve formelle des grands théorèmes"]
-    PYC["<b>Fil transversal Python (c)</b><br/>4c · 8c · 15c<br/>variantes &amp; visualisations"]
+    LEAN["<b>Fil transversal Lean (b)</b><br/>2b · 4b · 5b · 8b · 11b · 15b<br/>preuve formelle des grands théorèmes"]
+    PYC["<b>Fil transversal Python (c)</b><br/>4c · 6c · 8c · 15c<br/>variantes &amp; visualisations"]
     SC["<b>Sous-série SocialChoice</b><br/>SC-01 → SC-04<br/>Arrow · Sen · vote · SAT/Z3"]
     FIL -.->|"formalise"| LEAN
     FIL -.->|"approfondit"| PYC
