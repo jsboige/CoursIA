@@ -90,7 +90,12 @@ Suivez le même modèle dans les deux stacks pour comparer les approches :
 | Classification | Infer-7 | PyMC-7 | Bayes Point Machine vs régression logistique |
 | Model sélection | Infer-8 | PyMC-8 | Bayes Factors vs LOO/Pareto-SMI |
 | Topic modeling | Infer-9 | PyMC-9 | VMP vs NUTS sur variables latentes |
+| Crowdsourcing | Infer-10 | PyMC-10 | Worker models EP vs MCMC agrégation |
+| Séquences (HMM) | Infer-11 | PyMC-11 | Forward-backward exact vs échantillonné |
+| Recommenders | Infer-12 | PyMC-12 | Factorisation bayésienne statique vs MCMC |
 | Debugging | Infer-13 | PyMC-13 | ShowFactorGraph vs trace plot diagnostics |
+| Causal Inference | Infer-14 | PyMC-14 | do-calculus message passing vs pm.do MCMC |
+| GP sparse | Infer-15 | PyMC-15 | EP marginal vs NUTS sur géométrie latente |
 
 #### Parcours applications (modèles concrets, ~6h)
 
@@ -122,7 +127,7 @@ Si vous préférez Python au C#, commencez par Infer-101.ipynb (introduction sta
 
 #### Parcours PyMC complet (26 notebooks, ~17h)
 
-Les notebooks PyMC portent les modèles Infer.NET en Python avec PyMC et l'échantillonnage NUTS : le corpus bayésien dans `PyMC/` (fondations 1-3, modèles classiques 4-13, inférence causale 14, frontières 16-19 : hiérarchiques, filtre de Kalman, change-point, analyse de survie ; GP reporté en 15) et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7). Ils constituent un excellent complément pour comparer les approches d'inférence (message passing vs MCMC) et rejoindre l'écosystème Python data science. La progression suit la même structure pédagogique en 3 phases que la série Infer.NET.
+Les notebooks PyMC portent les modèles Infer.NET en Python avec PyMC et l'échantillonnage NUTS : le corpus bayésien dans `PyMC/` (fondations 1-3, modèles classiques 4-13, inférence causale 14, processus gaussien épars 15, frontières 16-19 : hiérarchiques, filtre de Kalman, change-point, analyse de survie) et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7). Ils constituent un excellent complément pour comparer les approches d'inférence (message passing vs MCMC) et rejoindre l'écosystème Python data science. La progression suit la même structure pédagogique en 3 phases que la série Infer.NET.
 
 ## Quel stack choisir ?
 
@@ -179,17 +184,22 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 Probas/
 ├── Infer-101.ipynb              # Introduction Python/C# (standalone)
 ├── Pyro_RSA_Hyperbole.ipynb     # Pragmatique linguistique (Python)
-├── PyMC/                # Port PyMC : bayésien (1-13) + inférence causale (14) + frontières (16-19)
-│   ├── PyMC-1-Setup.ipynb ... PyMC-14-Causal-Inference.ipynb, PyMC-16..19 (frontières ; 15 GP reporté)
+├── GeneratedSource/             # Sources Infer.NET compilées (Model0_EP.cs ... Model10_VMP.cs)
+├── PyMC/                # Port PyMC : bayésien (1-13) + inférence causale (14) + GP épars (15) + frontières (16-19)
+│   ├── PyMC-1-Setup.ipynb ... PyMC-19-Survival-Analysis.ipynb (15 GP livre)
+│   ├── README.md                # Documentation détaillée de la série PyMC
 │   └── (port en cours d'enrichissement)
 ├── decision_theory_lean/        # Projet Lake (racine série) : escompte géométrique + théorème de Gittins ; héberge VNM (#4049 MERGED via PR #4250) + Coherence/Dutch Book (#4150 MERGED via PR #4193)
 ├── Infer/                       # Corpus bayésien Infer.NET (19 notebooks)
 │   ├── Infer-1-Setup.ipynb ... Infer-19-Survival-Analysis.ipynb
 │   ├── README.md                # Documentation détaillée de la série bayésienne
-│   └── scripts/
+│   ├── Infer-Glossary.md        # Glossaire des termes Infer.NET
+│   ├── FactorGraphHelper.cs     # Helper visualisation graphes de facteurs
+│   ├── Model_*.gv / .svg        # Graphviz export des modèles
+│   └── scripts/                 # test_notebooks.py + setup_environment.ps1
 └── DecisionTheory/              # Arc théorie de la décision (#4725) : Infer.NET + PyMC (miroirs) + pont causal
-    ├── Infer/                   # Infer-1-Utility ... Infer-10-Thompson (+ companions Lean 2/9)
-    ├── PyMC/                    # PyMC-1-Decision ... PyMC-7-Sequential
+    ├── DecInfer/                # DecInfer-1-Utility-Foundations ... DecInfer-10-Thompson-Sampling (+ companions Lean 2/9)
+    ├── PyMC/                    # DecPyMC-1-Utility-Foundations ... DecPyMC-7-Sequential (renommés post-#5081)
     └── Causal-Bridges/          # Do-Calculus-Bridge : pont unifié des 4 séries causales (Pearl, dowhy)
 ```
 
@@ -214,14 +224,14 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 11 | Séquences | HMM, detection de régimes, forward-backward, motifs temporels |
 | 12 | Recommenders | Factorisation matricielle bayésienne, Click Model |
 | 13 | Debugging | EP vs VMP, diagnostic de divergence, ShowFactorGraph, ShowSchedule |
-| 14 | Décision Foundations | Axiomes VNM, loteries, théorème de représentation, calibration U |
-| 15 | Décision Utility-Money | CARA, CRRA, aversion au risque, paradoxe Saint-Petersbourg |
-| 16 | Décision Multi-Attribute | MAUT, SMART, swing weights, décisions multi-critères |
-| 17 | Décision Networks | Diagrammes d'influence, politique optimale, inférence + décision |
-| 18 | Décision Value-Info | EVPI, EVSI, valeur de l'information, when-to-test |
-| 19 | Décision Expert-Systems | Minimax, Minimax Regret, robustesse face à l'incertitude |
-| 20 | Décision Sequential | MDPs, itération valeur/politique, bandits, POMDPs |
-| 20b | Lean Gittins | Formalisation Lean 4 : identités d'escompte prouvées, optimalité de Gittins énoncée |
+| 14 | Causal Inference | do-calculus de Pearl, backdoor/front-door, paradoxe de Simpson |
+| 15 | Sparse Gaussian Process | EP sur géométrie latente GP, comparaison NUTS > 15min |
+| 16 | Modèles Hiérarchiques | Partial pooling, shrinkage, paramétrisation non-centrée |
+| 17 | Kalman Filter | Système dynamique linéaire gaussien, filtrage fermé |
+| 18 | Change-Point | `DiscreteUniform` + `switch`, détection de rupture bayésienne |
+| 19 | Survival Analysis | Exponentiel conjugué (Gamma), Weibull `k` inféré, sélection LOO |
+
+> **Note** : l'arc **théorie de la décision** (10 notebooks) vit désormais dans [`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) (renumérotation 1-10 post-#5081), voir tableau dédié ci-dessous.
 
 ### Série PyMC
 
@@ -240,13 +250,14 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 11 | Séquences | HMM MCMC, forward-backward avec échantillonnage |
 | 12 | Recommenders | Factorisation matricielle bayésienne MCMC |
 | 13 | Debugging | Trace plots, R-hat, effective sample size, bonnes pratiques MCMC |
-| 14 | Décision Foundations | Axiomes VNM en PyMC, loteries, décision bayésienne |
-| 15 | Décision Utility-Money | CARA/CRRA en PyMC, calibration utilité, aversion au risque |
-| 16 | Décision Multi-Attribute | MAUT avec PyMC, multi-criteria décision making |
-| 17 | Décision Networks | Réseaux de décision MCMC, politiques optimales |
-| 18 | Décision Value-Info | EVPI/EVSI en PyMC, valeur informationnelle |
-| 19 | Décision Expert-Systems | Minimax/Minimax Regret robuste avec PyMC |
-| 20 | Décision Sequential | MDPs MCMC, bandits, POMDPs |
+| 14 | Causal Inference | `pm.do`, do-calculus de Pearl, contrefactuel bayésien |
+| 15 | Sparse Gaussian Process | NUTS sur géométrie latente (cf. asymétrie structurelle Infer-15 EP) |
+| 16 | Modèles Hiérarchiques | Shrinkage bayésien, divergences NUTS sur le funnel |
+| 17 | Kalman Filter | Value-add MCMC (estimation jointe Q/R/drift) |
+| 18 | Change-Point | Switch bayésien, catastrophes minières (Poisson) |
+| 19 | Survival Analysis | Weibull inféré directement, sélection LOO arviZ |
+
+> **Note** : l'arc **théorie de la décision** PyMC (7 notebooks) vit dans [`DecisionTheory/PyMC/`](DecisionTheory/PyMC/README.md) (renommés `DecPyMC-1..7` post-#5081), voir tableau dédié ci-dessous.
 
 ## Notebooks racine (Python)
 
@@ -286,9 +297,9 @@ La série se scinde en deux arcs : le **corpus bayésien** (19 notebooks, [`Infe
 
 Les 37 notebooks Infer.NET sont détaillés individuellement dans [*Ce que chaque notebook apporte*](#ce-que-chaque-notebook-apporte) ci-dessous (apport pédagogique par notebook) ; le contenu exhaustif — patterns avancés, exercices corrigés — vit dans [Infer/README.md](Infer/README.md), [DecisionTheory/DecInfer/README.md](DecisionTheory/DecInfer/README.md) et [DecisionTheory/PyMC/README.md](DecisionTheory/PyMC/README.md).
 
-## Série PyMC (18 corpus notebooks, Python + 7 extraits DecisionTheory/PyMC)
+## Série PyMC (19 corpus notebooks, Python + 7 extraits DecisionTheory/PyMC)
 
-Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La progression suit les mêmes phases que la série Infer.NET : le corpus bayésien dans `PyMC/` (fondations 1-3, modèles classiques 4-13, inférence causale 14, frontières 16-19 : hiérarchiques, filtre de Kalman, change-point, survie ; GP reporté en 15) et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7).
+Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La progression suit les mêmes phases que la série Infer.NET : le corpus bayésien dans `PyMC/` (fondations 1-3, modèles classiques 4-13, inférence causale 14, processus gaussien épars 15, frontières 16-19 : hiérarchiques, filtre de Kalman, change-point, survie) et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7).
 
 ### Phase 1 — Fondations (notebooks 1-3, ~2h)
 
@@ -333,12 +344,13 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 |---|----------|-------|
 | 14 | [PyMC-14-Causal-Inference](PyMC/PyMC-14-Causal-Inference.ipynb) | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
 
-### Phase 5 — Frontières bayésiennes (notebooks 16-19, ~3.5h)
+### Phase 5 — Frontières bayésiennes (notebooks 15-19, ~3.5h)
 
-> Ports Python des frontières bayésiennes de la série Infer (modèles hiérarchiques, filtre de Kalman, change-point, analyse de survie). Le notebook 15 (processus gaussiens) est reporté : NUTS > 15 min sur la géométrie latente du GP, asymétrie structurelle légitime avec l'EP d'Infer.NET (cf. [PyMC/README.md](PyMC/README.md)).
+> Ports Python des frontières bayésiennes de la série Infer (GP sparse 15, modèles hiérarchiques 16, filtre de Kalman 17, change-point 18, analyse de survie 19). Le notebook PyMC-15 (processus gaussiens) tourne en `> 15 min` sur la géométrie latente — asymétrie structurelle assumée avec l'EP rapide d'Infer.NET (cf. [PyMC/README.md](PyMC/README.md)).
 
 | # | Notebook | Sujet |
 |---|----------|-------|
+| 15 | [PyMC-15-Sparse-Gaussian-Process](PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb) | Processus gaussien épars, NUTS sur inducing points, asymétrie structurelle avec Infer-15 EP |
 | 16 | [PyMC-16-Modeles-Hierarchiques](PyMC/PyMC-16-Modeles-Hierarchiques.ipynb) | Partial pooling bayésien, shrinkage, paramétrisation non-centrée, divergences NUTS comme diagnostic du funnel |
 | 17 | [PyMC-17-Kalman-Filter](PyMC/PyMC-17-Kalman-Filter.ipynb) | Système dynamique linéaire gaussien, récursion de filtrage fermée, value-add MCMC (estimation jointe Q/R/drift) |
 | 18 | [PyMC-18-Change-Point](PyMC/PyMC-18-Change-Point.ipynb) | Change-point bayésien, `DiscreteUniform` + `switch`, catastrophes minières (Poisson), entropie |
@@ -421,12 +433,12 @@ pip install pyro-ppl torch matplotlib numpy
 
 | Domaine | Notebooks |
 |---------|-----------|
-| Jeux vidéo | 6 (TrueSkill) |
-| Éducation | 5 (IRT), 14 |
-| NLP | 9 (LDA) |
-| Médecine | 4, 7, 17-19 |
-| Finance | 11, 15, 20 |
-| E-commerce | 12 |
+| Jeux vidéo | Infer-6, PyMC-6 (TrueSkill) |
+| Éducation | Infer-5, PyMC-5 (IRT) |
+| NLP | Infer-9, PyMC-9 (LDA) |
+| Médecine | Infer-4, Infer-7, Infer-17, Infer-18, Infer-19 (réseaux bayésiens, Kalman, change-point, survie) |
+| Finance | Infer-11 (HMM régimes), DecInfer-3 (CARA/CRRA), DecInfer-8 (MDPs) |
+| E-commerce | Infer-10, Infer-12, PyMC-10, PyMC-12 (crowdsourcing, recommenders) |
 
 ### Exemples concrets
 
