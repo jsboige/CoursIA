@@ -1,45 +1,56 @@
 /-
-  Théorème d'impossibilité d'Arrow
-  ================================
+  Arrow's Impossibility Theorem
+  =============================
 
-  Port de asouther4/lean-social-choice vers Lean 4
-  Original : https://github.com/asouther4/lean-social-choice
+  Port of asouther4/lean-social-choice to Lean 4
+  Original: https://github.com/asouther4/lean-social-choice
 
-  Ce fichier prouve le théorème d'impossibilité d'Arrow en suivant
-  l'approche élégante de Geanakoplos (2005).
+  This file proves Arrow's Impossibility Theorem following
+  Geanakoplos's (2005) elegant proof approach.
 
-  Résultat principal : Toute fonction de bien-être social sur au moins
-  3 alternatives qui satisfait le Pareto faible et l'indépendance des
-  alternatives non pertinentes doit être une dictature.
+  Main result: Any social welfare function with at least 3 alternatives
+  that satisfies Weak Pareto and Independence of Irrelevant Alternatives
+  must be a dictatorship.
 
-  Structure de la preuve :
-  1. Lemme extrémal : si tous placent b en position extrémale, la société aussi
-  2. Existence d'un pivot : chaque alternative a un individu pivot
-  3. Extension dictatoriale : les pivots deviennent dictateurs sur certaines paires
-  4. Dictature complète : un dictateur partiel devient dictateur total
-
-  Convention i18n (Option A ratifiée par ai-01, Epic #4980) :
-  en-têtes de section, docstrings de définition/théorème, commentaires de
-  lemme et PROOF SKETCH sont **français d'abord** ; le code Lean tactique
-  (noms de tactiques, lemmes Mathlib, identifiants) reste en anglais, langue
-  canonique de Lean/Mathlib. Référence : option A ratifiée par ai-01.
+  Proof structure:
+  1. Extremal Lemma: If all place b extremally, society does too
+  2. Pivot existence: Every alternative has a pivotal individual
+  3. Dictatorial extension: Pivots become dictators over pairs
+  4. Complete dictatorship: Partial dictator becomes full dictator
 -/
 
 import SocialChoice.Framework
 
+namespace SocialChoice_en
+/-!
+  Arrow's Impossibility Theorem (EN sibling)
+  ==========================================
+
+  English mirror of `SocialChoice/Arrow.lean` (FR-first canonical).
+  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
+  fichiers `.lean` distincts FR + EN siblings dans le même lake, les deux compilent.
+  Drift-CI detectable : contenu non-docstring byte-identique entre siblings.
+  Namespace sibling : `SocialChoice_en` (le FR canonique reste `SocialChoice`).
+  Pas une traduction destructive : le fichier source EN historique est préservé ici
+  verbatim depuis `aaaf0c52ae` (pre-c.219 Arrow tranche 6 FR commit) ; seule la
+  ligne `namespace` diffère pour éviter la collision de declaration top-level.
+
+  See #4980. Part of #4208 (axe E).
+-/
+
 variable {ι : Type*} {σ : Type*} [Fintype ι] [DecidableEq ι] [DecidableEq σ]
 
-/-! ## Positions extrémales -/
+/-! ## Extremal Positions -/
 
-/-- b est strictement le meilleur dans le classement de l'individu i sur X -/
+/-- b is strictly best in individual i's ordering over X -/
 def is_strictly_best (R : σ → σ → Prop) (b : σ) (X : Finset σ) : Prop :=
   b ∈ X ∧ ∀ a ∈ X, a ≠ b → P R b a
 
-/-- b est strictement le pire dans le classement de l'individu i sur X -/
+/-- b is strictly worst in individual i's ordering over X -/
 def is_strictly_worst (R : σ → σ → Prop) (b : σ) (X : Finset σ) : Prop :=
   b ∈ X ∧ ∀ a ∈ X, a ≠ b → P R a b
 
-/-- b est en position extrémale (meilleur ou pire) -/
+/-- b is in an extremal position (best or worst) -/
 def is_extremal (R : σ → σ → Prop) (b : σ) (X : Finset σ) : Prop :=
   is_strictly_best R b X ∨ is_strictly_worst R b X
 
@@ -106,81 +117,81 @@ lemma is_strictly_best.is_extremal {R : σ → σ → Prop} {b : σ} {X : Finset
 lemma is_strictly_worst.is_extremal {R : σ → σ → Prop} {b : σ} {X : Finset σ}
     (h : is_strictly_worst R b X) : is_extremal R b X := Or.inr h
 
-/-! ## Lemmes auxiliaires pour les preuves extrémales et de pivot
+/-! ## Helper Lemmas for Extremal / Pivot Proofs
 
-Ces lemmes sont adaptés des preuves Lean 3 originales de asouther4.
+These are adapted from asouther4's original Lean 3 proofs.
 -/
 
-/-- maketop_rel rend b strictement le meilleur -/
+/-- maketop_rel makes b strictly best -/
 lemma is_strictly_best_maketop_rel {R : σ → σ → Prop} {b : σ} {X : Finset σ}
     (hb : b ∈ X) (hR : Reflexive R) :
     is_strictly_best (maketop_rel R b) b X := by
   refine ⟨hb, fun a ha hab => ?_⟩
   simp [P, maketop_rel, hab]
 
-/-- makebot_rel rend b strictement le pire -/
+/-- makebot_rel makes b strictly worst -/
 lemma is_strictly_worst_makebot_rel {R : σ → σ → Prop} {b : σ} {X : Finset σ}
     (hb : b ∈ X) (hR : Reflexive R) :
     is_strictly_worst (makebot_rel R b) b X := by
   refine ⟨hb, fun a ha hab => ?_⟩
   simp [P, makebot_rel, hab]
 
-/-- makeabove_above : dans makeabove r a b, b est strictement au-dessus de a -/
+/-- makeabove_above: In makeabove r a b, b is strictly above a -/
 lemma makeabove_above {r : PrefOrder σ} {a b : σ} (hab : a ≠ b) :
     P (makeabove_rel r.rel a b) b a := by
   unfold makeabove_rel P; simp [hab, r.refl a]
 
-/-- makeabove_above' : si r a c alors dans makeabove r a b, b est strictement au-dessus de c -/
+/-- makeabove_above': If r a c then in makeabove r a b, b is strictly above c -/
 lemma makeabove_above' {r : PrefOrder σ} {a b c : σ} (hcb : c ≠ b) (hr : r.rel a c) :
     P (makeabove_rel r.rel a b) b c := by
   unfold makeabove_rel P; simp [hcb, hr]
 
-/-- makeabove_below : si ¬r a c alors dans makeabove r a b, c est strictement au-dessus de b -/
+/-- makeabove_below: If ¬r a c then in makeabove r a b, c is strictly above b -/
 lemma makeabove_below {r : PrefOrder σ} {a b c : σ} (hcb : c ≠ b) (hr : ¬r.rel a c) :
     P (makeabove_rel r.rel a b) c b := by
   unfold makeabove_rel P; simp [hcb, hr]
 
-/-- Si tout le monde place b strictement au meilleur, la société aussi (Pareto faible) -/
+/-- If everyone places b strictly best, society places b strictly best (Weak Pareto) -/
 theorem is_strictly_best_of_forall_is_strictly_best {f : SWF ι σ} {X : Finset σ} {b : σ}
     (hb : b ∈ X) (hwp : weak_pareto f X) {prof : Profile ι σ}
     (htop : ∀ i, is_strictly_best (prof i).rel b X) :
     is_strictly_best (f prof).rel b X :=
   ⟨hb, fun a ha hab => hwp prof b a hb ha (fun i => (htop i).2 a ha hab)⟩
 
-/-- Si tout le monde place b strictement au pire, la société aussi (Pareto faible) -/
+/-- If everyone places b strictly worst, society places b strictly worst (Weak Pareto) -/
 theorem is_strictly_worst_of_forall_is_strictly_worst {f : SWF ι σ} {X : Finset σ} {b : σ}
     (hb : b ∈ X) (hwp : weak_pareto f X) {prof : Profile ι σ}
     (hbot : ∀ i, is_strictly_worst (prof i).rel b X) :
     is_strictly_worst (f prof).rel b X :=
   ⟨hb, fun a ha hab => hwp prof a b ha hb (fun i => (hbot i).2 a ha hab)⟩
 
-/-! ## Pivot -/
+/-! ## Pivotality -/
 
-/-- Données témoins pour la pivotité. À valeur de type pour que les
-    projections de champs (par exemple .hothers) produisent des fonctions. -/
+/-- Witness data for pivotality. Type-valued so that field projections
+    (e.g. .hothers) produce proper functions. -/
 structure PivotalData (f : SWF ι σ) (X : Finset σ) (n : ι) (b : σ) : Type _ where
   prof : Profile ι σ
   prof' : Profile ι σ
-  /-- Les préférences des autres sont identiques entre prof et prof' -/
+  /-- Others' preferences identical between prof and prof' -/
   hothers : ∀ j : ι, j ≠ n → prof' j = prof j
-  /-- Tout le monde place b en position extrémale dans prof -/
+  /-- Everyone places b extremally in prof -/
   hall : ∀ i : ι, is_extremal (prof i).rel b X
-  /-- Tout le monde place b en position extrémale dans prof' -/
+  /-- Everyone places b extremally in prof' -/
   hall' : ∀ i : ι, is_extremal (prof' i).rel b X
-  /-- n a b au pire dans prof -/
+  /-- n has b worst in prof -/
   hworst : is_strictly_worst (prof n).rel b X
-  /-- n a b au meilleur dans prof' -/
+  /-- n has b best in prof' -/
   hbest : is_strictly_best (prof' n).rel b X
-  /-- la société classe b au pire -/
+  /-- society ranks b worst -/
   hsoc_worst : is_strictly_worst (f prof).rel b X
-  /-- la société classe b au meilleur -/
+  /-- society ranks b best -/
   hsoc_best : is_strictly_best (f prof').rel b X
 
-/-- L'individu n est pivot pour l'alternative b. -/
+/-- Individual n is pivotal for alternative b. -/
 def is_pivotal (f : SWF ι σ) (X : Finset σ) (n : ι) (b : σ) : Prop :=
   Nonempty (PivotalData f X n b)
 
-/-- Dérive l'accord par paires à partir de l'égalité des profils pour les autres. -/
+/-- Derive pairwise agreement from profile equality for others. -/
 def apply_hothers {ι σ : Type*} {n : ι}
     {prof prof' : Profile ι σ}
     (h : ∀ j : ι, j ≠ n → prof' j = prof j)
@@ -188,22 +199,20 @@ def apply_hothers {ι σ : Type*} {n : ι}
     (prof j).rel x y ↔ (prof' j).rel x y := by
   rw [h j hj]
 
-/-! ## Lemmes clés -/
+/-! ## Key Lemmas -/
 
-/-- Lemme extrémal : si tous les individus placent b en position extrémale,
-    la société le fait aussi.
-    ESQUISSE DE PREUVE (Geanakoplos 2005) :
-    Supposons par contradiction que la société ne classe ni au meilleur
-    ni au pire b. Alors ∃ a, c ∈ X avec a ≠ b, c ≠ b, a ≠ c tels que
-    P(f prof) a b (la société préfère a à b) et P(f prof) b c (la société
-    préfère b à c). Puisque tous les individus classent b en position
-    extrémale, chacun le classe soit au-dessus soit en-dessous à la fois
-    de a et de c. Par IIA, le classement de la société sur (a,b) ne dépend
-    que des classements individuels sur (a,b). De même pour (b,c). Comme
-    chaque individu a le même classement relatif de (a,b) que de (a,c)
-    (au-dessus ou en-dessous de b dans les deux), Pareto sur les paires
-    où tout le monde s'accorde donne une contradiction : la société ne peut
-    pas classer a > b > c si tout le monde place b en extrémité. -/
+/-- Extremal Lemma: If all individuals place b extremally, so does society.
+    PROOF SKETCH (Geanakoplos 2005):
+    Suppose for contradiction that society ranks b neither best nor worst.
+    Then ∃ a, c ∈ X with a ≠ b, c ≠ b, a ≠ c such that
+    P(f prof) a b (society prefers a to b) and P(f prof) b c (society prefers b to c).
+    Since all individuals rank b extremally, each ranks b either above both
+    a and c, or below both a and c.
+    By IIA, society's ranking of (a,b) depends only on individual rankings of (a,b).
+    Similarly for (b,c). Since every individual has the same relative ranking
+    of (a,b) as (a,c) (both above or both below b), Pareto on the pairs
+    where everyone agrees gives a contradiction: society cannot rank a > b > c
+    if everyone places b at an extreme. -/
 theorem extremal_lemma (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X)
     (hX : 3 ≤ X.card) (b : σ) (hb : b ∈ X)
@@ -274,17 +283,16 @@ theorem extremal_lemma (f : SWF ι σ) (X : Finset σ)
   have Rac' : (f prof').rel a c := (f prof').trans Rab' Rbc'
   exact (hwp prof' c a hc ha fun j => makeabove_above hac).2 Rac'
 
-/-- Existence d'un pivot : pour toute alternative, il existe un individu pivot.
-    ESQUISSE DE PREUVE (Geanakoplos 2005) :
-    On énumère les individus comme i₁, ..., iₘ. On construit les profils :
-    - prof⁰ : tout le monde place b au bas → la société classe b au pire (par Pareto)
-    - profᵏ : i₁,...,iₖ placent b en haut, les autres en bas
-    - profᵐ : tout le monde place b en haut → la société classe b au meilleur (par Pareto)
-    Par le lemme extrémal, pour chaque profᵏ, la société classe b en position
-    extrémale. Comme prof⁰ a b au pire et profᵐ a b au meilleur, il doit y
-    avoir un certain k où la société bascule du pire au meilleur. Alors iₖ
-    est pivot.
-    REMARQUE : nécessite une énumération finie des individus (Fintype ι). -/
+/-- Existence of pivot: For any alternative, there exists a pivotal individual.
+    PROOF SKETCH (Geanakoplos 2005):
+    Enumerate individuals as i₁, ..., iₘ. Construct profiles:
+    - prof⁰: everyone places b at bottom → society ranks b worst (by Pareto)
+    - profᵏ: i₁,...,iₖ place b at top, rest at bottom
+    - profᵐ: everyone places b at top → society ranks b best (by Pareto)
+    By the extremal lemma, for each profᵏ, society ranks b extremally.
+    Since prof⁰ has b worst and profᵐ has b best, there must be some k where
+    society flips from worst to best. Then iₖ is pivotal.
+    NOTE: Requires finite enumeration of individuals (Fintype ι). -/
 theorem pivot_exists (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X)
     (hX : 3 ≤ X.card) (b : σ) (hb : b ∈ X) :
@@ -405,16 +413,15 @@ theorem pivot_exists (f : SWF ι σ) (X : Finset σ)
         exact absurd hsoc_best (is_strictly_worst.not_strictly_best hsoc'worst (Nat.le_of_lt (Nat.lt_of_lt_of_le (by norm_num) hX)) hb)
   exact hinduction D.card D prof (Eq.refl D.card) hD_worst hDcomp_best hext hsoc_worst
 
-/-- Un individu pivot est un dictateur sur les paires n'impliquant pas b.
-    Port du third_step de asouther4.
-    Étant donné n pivot pour b, on montre que n dicte sur (c,a) où c,a ≠ b.
-    PREUVE : on construit Q' où n utilise makeabove (b au-dessus de a),
-    les autres utilisent makebot/maketop à partir du profil de pivotité
-    prof₀. Alors :
+/-- A pivotal individual is a dictator over pairs not involving b.
+    Port of asouther4's third_step.
+    Given n pivotal for b, show n dictates over (c,a) where c,a ≠ b.
+    PROOF: Construct Q' where n uses makeabove (b above a), others use
+    makebot/maketop based on pivotality profile prof₀. Then:
     P(f prof) c a ← IIA(prof,Q') ← P(f Q') c a
     P(f Q') c a ← trans ← P(f Q') c b ∧ P(f Q') b a
-    P(f Q') c b ← IIA(prof₀,Q') ← P(f prof₀) c b (société b au pire)
-    P(f Q') b a ← IIA(prof₁,Q') ← P(f prof₁) b a (société b au meilleur) -/
+    P(f Q') c b ← IIA(prof₀,Q') ← P(f prof₀) c b (society b-worst)
+    P(f Q') b a ← IIA(prof₁,Q') ← P(f prof₁) b a (society b-best) -/
 theorem pivot_is_dictator_except_b (f : SWF ι σ) (X : Finset σ)
     (hind : ind_of_irr_alts f X)
     (b : σ) (hb : b ∈ X)
@@ -593,13 +600,12 @@ theorem pivot_is_dictator_except_b (f : SWF ι σ) (X : Finset σ)
     P_trans (f Q').trans hPfQ'cb hPfQ'ba
   exact hIIA_ca.1.mpr hPfQ'ca
 
-/-- Un dictateur sur toutes les paires sauf celles impliquant b est en
-    fait un dictateur complet.
-    Preuve via l'unicité du pivot (fourth_step de asouther4) :
-    Pour tout c ∈ X, ∃ j pivot pour c. Si j ≠ n, on dérive une contradiction
-    en utilisant les profils de pivotité de n et la dictature de j sur les
-    paires n'impliquant pas c. Donc j = n, donc n est pivot pour c, et
-    donc dictateur sur (b,y) via pivot_is_dictator_except_b. -/
+/-- A dictator over all pairs except those involving b is actually a full dictator.
+    Proof via pivot uniqueness (asouther4's fourth_step):
+    For any c ∈ X, ∃ j pivotal for c. If j ≠ n, derive contradiction using
+    n's pivotal profiles and j's dictatorship on pairs not involving c.
+    Therefore j = n, so n is pivotal for c, hence dictator on (b,y) via pivot_is_dictator_except_b.
+    -/
 theorem partial_dictator_is_full_dictator (f : SWF ι σ) (X : Finset σ)
     (hind : ind_of_irr_alts f X)
     (hwp : weak_pareto f X)
@@ -680,13 +686,12 @@ theorem partial_dictator_is_full_dictator (f : SWF ι σ) (X : Finset σ)
     · -- x ≠ b, y ≠ b: direct from hn
       exact hn x y hx hy hxb hyb hxy
 
-/-! ## Théorème principal -/
+/-! ## Main Theorem -/
 
 /--
-Théorème d'impossibilité d'Arrow :
-Toute fonction de bien-être social sur au moins 3 alternatives qui satisfait
-le Pareto faible et l'indépendance des alternatives non pertinentes doit
-être une dictature.
+Arrow's Impossibility Theorem:
+Any social welfare function over at least 3 alternatives that satisfies
+Weak Pareto and Independence of Irrelevant Alternatives must be a dictatorship.
 -/
 theorem arrow (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X) (hX : 3 ≤ X.card) :
@@ -699,16 +704,17 @@ theorem arrow (f : SWF ι σ) (X : Finset σ)
   have h4 := partial_dictator_is_full_dictator f X hind hwp hX b hb n hn h3
   exact ⟨n, h4⟩
 
-/-! ## Conséquences -/
+/-! ## Consequences -/
 
-/-- Non-dictature : aucun individu unique ne détermine tout -/
+/-- Non-dictatorship: No single individual determines everything -/
 def non_dictatorial (f : SWF ι σ) (X : Finset σ) : Prop :=
   ¬is_dictatorship f X
 
-/-- Théorème d'Arrow sous forme négative : aucune SWF ne satisfait les
-    trois propriétés souhaitables -/
+/-- Arrow's theorem in negative form: No SWF satisfies all three desirable properties -/
 theorem no_perfect_swf (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X) (hX : 3 ≤ X.card) :
     ¬non_dictatorial f X := by
   intro hnd
   exact hnd (arrow f X hwp hind hX)
+
+end SocialChoice_en
