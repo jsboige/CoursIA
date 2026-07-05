@@ -4,7 +4,7 @@ CoursIA est un curriculum d'intelligence artificielle pensé comme un parcours c
 
 Deux partis pris structurent l'ensemble. D'abord une **double culture technique** : Python (PyTorch, Diffusers, PyMC, OpenSpiel) et .NET / C# (Semantic Kernel, Infer.NET, ML.NET) cohabitent au sein de notebooks exécutables, parce que l'IA appliquée se pratique dans les deux écosystèmes. Ensuite une **dualité simulation / preuve** : un concept est d'abord illustré numériquement, puis — quand c'est possible — formalisé et vérifié mécaniquement (Lean 4, Z3, vérification formelle). Chaque notebook est rédigé en français, exécutable de bout en bout, et accompagné d'exemples guidés et d'exercices pour un apprentissage en autonomie.
 
-Le catalogue rassemble **670 notebooks pédagogiques** répartis sur les onze domaines ci-dessous (le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue, qui fait foi). Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
+Le catalogue rassemble **703 notebooks pédagogiques** répartis sur les onze domaines ci-dessous (le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue, qui fait foi). Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
 
 <!-- CATALOG-STATUS
 series: ALL
@@ -13,7 +13,7 @@ breakdown: SymbolicAI=169, GenAI=141, QuantConnect=105, Search=82, Probas=58, ML
 maturity: PRODUCTION=534, BETA=115, ALPHA=45, DRAFT=5, TEMPLATE=4
 -->
 
-Dernière mise à jour : 2026-06-11
+Dernière mise à jour : 2026-07-05
 
 ## Vue d'ensemble
 
