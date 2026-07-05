@@ -13,7 +13,7 @@ Cette série de notebooks introduit la **Planification Automatique**, une branch
 
 La planification répond à une question différente de celle de l'apprentissage : non pas « que prédire ? » mais « **que faire ?** ». À partir d'un modèle du monde — un état initial, des actions avec leurs préconditions et effets, un but — un planificateur cherche automatiquement une suite d'actions qui mène au but. C'est une technologie éprouvée : elle pilote des robots (manipulation, navigation), optimise la logistique et l'ordonnancement, et a dirigé des engins spatiaux autonomes (Remote Agent sur Deep Space 1, planification d'activités des rovers martiens). Le langage **PDDL** a standardisé la manière de décrire ces problèmes, donnant naissance à tout un écosystème de solveurs comparables. La planification connaît aujourd'hui un regain d'intérêt avec les LLMs, comme moyen de doter les modèles de langage d'une capacité d'action vérifiable et orientée vers un but.
 
-**14 notebooks** | **5 parties** | **~8h**
+**14 notebooks** | **5 parties** | **~10h**
 
 **À qui s'adresse cette série** : étudiants en IA, ingénieurs en robotique et logistique, développeurs souhaitant intégrer la planification symbolique dans leurs applications. Aucun prérequis en planification : les concepts sont introduits progressivement depuis les fondements STRIPS jusqu'aux approches neuro-symboliques modernes.
 
@@ -22,7 +22,7 @@ La planification répond à une question différente de celle de l'apprentissage
 | Statistique | Valeur |
 |-------------|--------|
 | Notebooks | 14 (1 setup + 3 foundation + 4 classical dont 1 companion Lean + 3 advanced + 3 neuro-symbolic) |
-| Durée totale | ~8h |
+| Durée totale | ~10h |
 | Langage | Python 3.9+ |
 | Kernel | Python 3 |
 | Solveurs | Fast Downward, OR-Tools CP-SAT, unified-planning |
@@ -132,9 +132,18 @@ SymbolicAI/Planners/
 │   ├── Planners-11-Unified-Planning.ipynb # Interface unifiée
 │   └── Planners-12-LOOP.ipynb           # Learning to Plan
 ├── planning_lean/                        # Projet Lake Lean 4 (preuve formelle 0-sorry de l'admissibilité de la relaxation h+ <= h*, cf Planners-5b)
+│   ├── README.md                          # Documentation du lake (FR)
+│   ├── Planning.en.md                     # Companion EN (i18n tranche 8, #5013)
+│   ├── Planning/                          # Modules Lean (sous-dossier Lake)
+│   │   ├── Strips.lean                    # Modèle STRIPS (state, action, step/stepR)
+│   │   ├── Relaxation.lean                # run/runR, atteignabilité monotone
+│   │   └── Admissibility.lean             # relaxed_plan_admissible (h⁺ ≤ h\*) — flagship
+│   ├── lakefile.lean                      # Manifeste Lake (toolchain v4.31.0-rc1 + Mathlib)
+│   ├── lake-manifest.json                 # Snapshots dépendances (Mathlib, plausible, ...)
+│   └── lean-toolchain                     # Pinning toolchain Lean 4
 ├── requirements.txt                      # Dépendances Python (unified-planning, Fast Downward, etc.)
 └── archive/
-    └── Fast-Downward-Legacy.ipynb       # Version archivée
+    └── Fast-Downward-Legacy.ipynb       # Version archivée (1 notebook hors compteur pédagogique)
 ```
 
 ## Objectifs d'apprentissage
@@ -199,7 +208,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 |---|----------|--------|---------|-------|
 | 4 | [Planners-4-Fast-Downward](02-Classical/Planners-4-Fast-Downward.ipynb) | Python | Architecture FD, Docker, A*, GBFS, EHC, heuristiques | 45 min |
 | 5 | [Planners-5-Heuristics](02-Classical/Planners-5-Heuristics.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min |
-| 5b | [Planners-5b-Lean-Relaxation](02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel (UNLOCK c.127, jonction Mathlib #2611) | 45 min |
+| 5b | [Planners-5b-Lean-Relaxation](02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel (cf [#4053](https://github.com/jsboige/CoursIA/issues/4053) création du lake / PR #4168, companion natif) | 45 min |
 | 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
 
 ### Partie 3 : Approches Avancées ([03-Advanced/](03-Advanced/README.md))
@@ -695,7 +704,7 @@ Le décompte exact ci-dessous est synchronisé avec le bloc `<!-- CATALOG-STATUS
 
 > **Note sur la maturité.** Le notebook `BETA=1` correspond à `Planners-5b-Lean-Relaxation.ipynb` (companion natif du lake `planning_lean/`) : la **preuve formelle 0-sorry** de l'admissibilité $h^{+} \leq h^{*}$ y est certifiée par `lake build` ; le statut `BETA` reflète la phase de relecture pédagogique (intégration au parcours d'apprentissage) plutôt qu'un défaut technique. Le déploiement industriel est validé.
 
-**Conformité C.1 — stubs d'exercice.** Les cellules `student/` suivent les patterns conformes (jamais `raise NotImplementedError`) : `pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`. Le notebook s'exécute end-to-end même avant résolution des exercices. Dépendances Python (cf `requirements.txt` racine) : `unified-planning>=1.1`, `networkx>=3.1`, `matplotlib>=3.7`, `numpy>=1.24`, `ortools>=9.8`, `torch>=2.0` (LOOP uniquement) ; optionnels LLM : `openai>=1.0`, `anthropic>=0.30`, `python-dotenv`, `pandas>=2.0`. **Docker** requis pour Fast Downward (port 8200). **Lean 4** (`elan`) requis pour `5b-Lean-Relaxation` via le sous-lake `planning_lean/` (toolchain `lean-toolchain` local). Côté `student/` : `pip install -r requirements.txt` puis exécution kernel Python 3 standard.
+**Conformité C.1 — stubs d'exercice.** Les cellules de chaque notebook suivent les patterns conformes (jamais `raise NotImplementedError`) : `pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`. Chaque notebook s'exécute end-to-end même avant résolution des exercices. Dépendances Python (cf `requirements.txt` racine) : `unified-planning>=1.1`, `networkx>=3.1`, `matplotlib>=3.7`, `numpy>=1.24`, `ortools>=9.8`, `torch>=2.0` (LOOP uniquement) ; optionnels LLM : `openai>=1.0`, `anthropic>=0.30`, `python-dotenv`, `pandas>=2.0`. **Docker** requis pour Fast Downward (port 8200). **Lean 4** (`elan`) requis pour `5b-Lean-Relaxation` via le sous-lake `planning_lean/` (toolchain `lean-toolchain` local). Côté pratique : `pip install -r requirements.txt` puis exécution kernel Python 3 standard. **Note : Planners ne contient pas de variante `student/` dédiée** (à la différence de Tweety ou Sudoku) ; les exercices sont intégrés directement dans les notebooks de la série, sous les labels `# Exercice` / `# Exemple guide` conformément à la convention contenu-based.
 
 ---
 
@@ -722,7 +731,7 @@ L'infrastructure du dépôt fournit trois familles d'outils MCP qui soutiennent 
 
 ---
 
-**Version 1.2.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche planners.
+**Version 1.3.0** — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane + audit §E whole-file gate (incohérences stale-issue-ref #2611, tree héritage `planning_lean/`, fossil citation `student/`, version bump mineur). EPIC #3975 tranche planners.
 
 ---
 
