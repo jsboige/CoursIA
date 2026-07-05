@@ -111,7 +111,7 @@ Cette sous-série a une signature pédagogique particulière : le code Solidity 
 
 - **Appliquer la preuve à la confidentialité** : la suite est [04-Privacy-Cryptography](../04-Privacy-Cryptography/README.md) (SC-15 à SC-17), où la rigueur formelle des protocoles cryptographiques (ZKP, chiffrement homomorphe) devient centrale.
 - **Approfondir la preuve formelle** : [SymbolicAI/Lean](../../Lean/README.md) développe le même paradigme (spécifier puis prouver) dans un cadre mathématique pur — CVL et Lean sont deux instances du même idéal de vérification.
-- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les six sous-séries — celle-ci est le garde-fous qualité.
+- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries — celle-ci est le garde-fous qualité.
 
 ### Le fil rouge
 

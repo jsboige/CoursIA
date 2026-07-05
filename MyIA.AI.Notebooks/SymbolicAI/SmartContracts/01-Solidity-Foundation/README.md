@@ -102,7 +102,7 @@ Chaque concept est illustré par un contrat compilé et déployé **réellement*
 
 - **Standards et cas d'usage réels** : la suite immédiate est [02-Solidity-Advanced](../02-Solidity-Advanced/README.md) (SC-7 à SC-11), qui construit sur ces fondamentaux — ERC-20/721/1155, primitives DeFi, gouvernance DAO, account abstraction, assistance LLM.
 - **Revenir aux fondations** : si la théorie du gas et des data locations (SC-4) reste abstraite, reprenez [SC-0-Cypherpunk-Origins](../00-Foundations/SC-0-Cypherpunk-Origins.ipynb) — comprendre *pourquoi* une blockchain fait payer chaque opération éclaire le modèle économique de la EVM.
-- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les six sous-séries — celle-ci n'est que le socle du langage.
+- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries — celle-ci n'est que le socle du langage.
 
 ### Le fil rouge
 

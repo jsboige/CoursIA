@@ -115,7 +115,7 @@ Comme la sous-série 01, chaque concept est illustré par un contrat compilé et
 
 - **Tester ce qu'on a construit** : la suite immédiate est [03-Foundry-Testing](../03-Foundry-Testing/README.md) (SC-12 à SC-14) — tests, fuzzing d'invariants et vérification formelle. On ne peut déployer en production des standards ERC et des pools DeFi sans une assurance sur leurs propriétés.
 - **Approfondir la gouvernance** : SC-9 (DAO) mérite d'être relu après [GameTheory/SocialChoice](../../../GameTheory/SocialChoice/README.md) — le théorème d'Arrow y est prouvé formellement, et éclaire les limites de tout système de vote on-chain.
-- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les six sous-séries — celle-ci est le cœur applicatif.
+- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries — celle-ci est le cœur applicatif.
 
 ### Le fil rouge
 
