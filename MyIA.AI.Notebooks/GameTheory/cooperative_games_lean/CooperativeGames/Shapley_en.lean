@@ -24,7 +24,7 @@
 import CooperativeGames.Basic_en
 import Mathlib.Data.Nat.Choose.Sum
 
-open TUGame
+open TUGame_en
 
 namespace CooperativeGames_en
 
