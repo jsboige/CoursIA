@@ -355,7 +355,7 @@ IIT/
 | **ICT-16** | MDLTwoPartCode — le pont MDL : F (énergie libre) est la partie résiduelle du code K (Kolmogorov) + la bosse complexité-entropie. Identité MDL ↔ énergie libre. *Strate 5*. Voir issue #5099 | 🚧 planifié |
 | **ICT-17** | EpsilonMachine — états causaux, complexité statistique, entropie d'excès : le gate Crutchfield vs Hoel. L'$\epsilon$-machine comme alternative computationnelle à l'émergence causale Hoel. *Strate 5*. Voir issue #5100 | 🚧 planifié |
 | **ICT-18** | Flèche du temps & réversibilisation — l'**idée fondatrice** enfin outillée. Instrument rétrospectif GPU-free (`ict/time_arrow.py`) appliqué aux trajectoires déjà construites (tri, May, Axelrod, Gray-Scott) : distribution stationnaire, inversion temporelle, réversibilisation, production d'entropie. Question centrale : *que perd-on quand on force une trajectoire ICT à devenir réversible ?* Ancré ICT-3 (compétence *for free*) + entretien Fridman/Levin. *Strate 5, GPU-free*. Voir issue #5279 | 🚧 planifié |
-| **ICT-19** | Conceptual Reservoirs — *slot réservé*, spécification à venir (réservoirs conceptuels, mémoire cross-substrat). → Epic #4588 | 🔖 réservé |
+| **ICT-19** | **Batterie de l'ENJEU** — construire la seconde batterie (auto-maintien / retour-au-bassin après `do(·)`) que ICT-18 nomme *hors de sa portée*, et la fusionner à la batterie MOYEN d'ICT-18 sur les substrats S1-S5 (Gray-Scott S4 = agent, S5 = pur dissipateur = contrôle négatif obligatoire). Cadrage B verrouillé (user 2026-07-06). Ancré sur la triade **moyen / fin / enjeu** du reframe #5352. GPU-free. Spec cadrage : #5483 — livrable cible : #5489. *Strate 5, GPU-free*. → Epic #4588 | 🚧 planifié |
 | **ICT-20** | FeatureCatastrophes — calibration : changepoints, EWS et hystérésis sur transitions anodines en feature-space. *Strate 5*. Voir issue #5103 | 🚧 planifié |
 | **ICT-21** | SAETrajectoires — Qwen + Qwen-Scope : des features SAE aux trajectoires d'états discrets, le substrat S4 (LLM sparse autoencoder). *Strate 5, GPU-required*. Voir issue #5101 | 🚧 planifié |
 | **ICT-22** | LLMSubstrat — le transformer comme quatrième substrat du banc cross-substrat (tri, Gray-Scott, Axelrod, LLM). Double contrôle (passif / actif). *Strate 5, GPU-required*. Voir issue #5102 | 🚧 planifié |
@@ -426,6 +426,63 @@ est le fil conducteur de la série. C'est aussi la traduction concrète de la th
 laquelle *les revendications cognitives sont des revendications de protocole* (cf. la section
 **« Pourquoi parler de compétences ? »** ci-dessus) : une compétence n'est créditée à un modèle
 qu'au vu de ce qu'une expérience explicite en mesure.
+
+## ICT-19 — squelette de spec (cadrage B, voir #5483)
+
+ICT-19 construit la **seconde batterie** (celle de l'**ENJEU**) qu'ICT-18 nomme *hors de sa portée*
+dans son reframe #5352 (triade **moyen / fin / enjeu**), puis la **fusionne** à la batterie MOYEN
+d'ICT-18 sur le banc de substrats S1-S5 de l'ICT-Synthèse.
+
+### Périmètre (cadrage B, auto-maintien seul)
+
+- **Batterie MOYEN** (empruntée ICT-18) — production d'entropie / réversibilisation thermodynamique
+  (`ict/time_arrow.py`) : la *seule* grandeur `I_thermo` mesure.
+- **Batterie ENJEU** (à construire) — mesure opérationnelle d'**auto-maintien** : retour au bassin
+  attracteur `B` après une perturbation contrefactuelle `do(x ← x + δ)` (Pearl, fil rouge
+  causalité ICT-5). `I_stake` = distance normalisée parcourue vers `B` (gain de réparation).
+- **Livrable = PAIRE** `{I_thermo, I_stake}`, **pas indice agrégé**.
+
+### Substrats (réutilisés de l'ICT-Synthèse, zéro nouveau substrat)
+
+- **S1** (ICT-2 tri) — auto-organisé, point de consigne faible.
+- **S2** (ICT-8 bistable) — deux bassins, pas de défense d'un point de consigne.
+- **S3** (ICT-13 Axelrod) — réplicateur stratégique, équilibre de population.
+- **S4** (ICT-9 Gray-Scott) — *l'agent* : dissipe *et* défend un point de consigne via la
+  compétition Tu/Snell-Scott.
+- **S5** — *pur dissipateur*, contrôle négatif **obligatoire** : système qui dissipe sans enjeu
+  (réaction-diffusion hors-régime, ou chaîne markovienne stationnaire sans maintenance).
+
+### Gates falsifiables
+
+- **Gate ENJEU-1** : `I_stake(S4) > I_stake(S5) + marge`, avec `I_thermo(S4) ≈ I_thermo(S5)`
+  (l'ICT-18 Gate 7 montre déjà que le MOYEN seul allume S4 et S5 à égalité). La PAIRE doit donc
+  *séparer* l'agent du pur dissipateur là où le MOYEN seul ne le peut pas.
+- **Gate ENJEU-2** (graduation) : `I_stake(S4) > {S3, S1} > S2 > S5`.
+
+### Distinction sémantique (critique)
+
+- **Réversibilité thermodynamique** (detailed balance, `σ=0`) = le **MOYEN** que `I_thermo` mesure.
+- **Réversibilité comportementale** (récupérabilité cinématique de l'espace d'états,
+  ICT-2/3/9, Levin *competency for free*) = la **FIN** que la lutte thermodynamique poursuit —
+  *pas* un second axe à mesurer. Le retour au bassin `B` après `do(·)` est précisément **la
+  manifestation opérationnelle de cette récupérabilité**, là où la production d'entropie en est
+  le coût.
+
+### Contraintes
+
+- **GPU-free** (chaînes de Markov + ODE + reaction-diffusion 2D petit champ, kernel CPU).
+- **Contrôle négatif obligatoire** (S5) : sans lui, la batterie ne prouve rien ; c'est
+  l'ingrédient nommément manqué d'ICT-18, désormais comblé.
+- **Résultat nul honnête** : si ENJEU-1 échoue, le verdict est *négatif* — pas maquillé en succès.
+- Notebook exécuté CPU, outputs C.2 réels, 0 `raise NotImplementedError` (C.1), ≥3 exercices
+  (return-to-basin / repair-gain / extension substrat), prose FR.
+
+### Liens cadrage ICT-19
+
+- Issue de cadrage : **#5483** — décision user 2026-07-06 (cadrage B verrouillé).
+- Issue d'implémentation : **#5489** — acceptance criteria + livrables.
+- Reframe parent : **#5352** — triade moyen / fin / enjeu (ICT-18 v2).
+- Epic : **#4588** — registre des livrables ICT.
 
 ## Voir aussi
 
