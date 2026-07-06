@@ -91,6 +91,26 @@ jobs:
 
     - name: Lake build
       run: |
-        set -o pipefail   # propagate lake's exit code through `| tail` (see lean-build.yml fix, 2026-06-14)
+        set -o pipefail   # propagate lake's exit code through pipes (see lean-build.yml fix, 2026-06-14)
         lake exe cache get || true
-        lake -R build 2>&1 | tail -20
+        # Capture full lake output to a log file. A bare `| tail -N` HID the real
+        # error (build-graph resolution failure OR mid-build compile error).
+        # Run build, then ALWAYS dump the error context so CI shows the cause.
+        # GitHub Actions doesn't reliably flush a grouped block, so dump the log
+        # unconditionally with separate steps. Incident: #5553 globs pointed at a
+        # non-existent `SmokeTest` module (actual file `_SmokeTest.lean`), which
+        # failed build-graph resolution with no file:line error (2026-07-06).
+        set +e
+        lake -R build > lake-build.log 2>&1
+        BUILD_EXIT=$?
+        set -e
+        echo "===== Lake build exit code: $BUILD_EXIT ====="
+        if [ "$BUILD_EXIT" -ne 0 ]; then
+          echo "===== Lines matching compile errors (file:line:col: error:) ====="
+          grep -E ":[0-9]+:[0-9]+: error:" lake-build.log || echo "(no file:line:col: errors — likely build-graph/module-resolution failure)"
+          echo "===== Lines mentioning FAIL/error/nonexistent ====="
+          grep -iE "error|fail|unknown|cannot|nonexistent|no such" lake-build.log | grep -viE "warning|linter" | head -40 || echo "(none)"
+          echo "===== Last 50 lines of build log ====="
+          tail -50 lake-build.log
+          exit "$BUILD_EXIT"
+        fi
