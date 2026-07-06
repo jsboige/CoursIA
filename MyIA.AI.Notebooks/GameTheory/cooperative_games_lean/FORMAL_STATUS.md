@@ -4,7 +4,7 @@
 
 | Item | Value |
 |------|-------|
-| Lean toolchain | `leanprover/lean4:v4.30.0-rc2` |
+| Lean toolchain | `leanprover/lean4:v4.31.0-rc1` |
 | Mathlib | pinned via lake-manifest.json |
 | Total sorry | **0** |
 | Honest unprovable (in Mathlib) | **0** |
