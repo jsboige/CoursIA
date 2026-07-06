@@ -1,8 +1,8 @@
 # Search - Applications
 
-C'est ici que la série Search se confronte au réel. Les 22 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (métaheuristiques et algorithmes génétiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents.
+C'est ici que la série Search se confronte au réel. Les 23 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (métaheuristiques et algorithmes génétiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-9b, App-10b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
 
-Sous-série de **22 notebooks** | **~14h55** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `minizinc`, `optuna`)
+Sous-série de **23 notebooks** | **~15h30** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
 
 ## Pourquoi cette sous-série
 
@@ -31,8 +31,8 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 ```text
 Applications/
 ├── Search/     # Applications purement Search (2 notebooks)
-├── CSP/        # Applications CSP (13 notebooks)
-└── Hybrid/     # Metaheuristiques / GA (7 notebooks)
+├── CSP/        # Applications CSP (14 notebooks : 13 Python + 1 twin C#)
+└── Hybrid/     # Metaheuristiques / GA (7 notebooks : 5 Python + 2 twins C#)
 ```
 
 ```mermaid
@@ -70,6 +70,7 @@ Le gros de la sous-série, et un panorama de ce que la programmation par contrai
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
 | 1 | [App-1-NQueens](CSP/App-1-NQueens.ipynb) | ~30 min | Backtracking, Min-Conflicts, OR-Tools | Classique |
+| 1b | [App-1b-NQueens-CSharp](CSP/App-1b-NQueens-CSharp.ipynb) | ~35 min | Twin C# : Backtracking (simple/MRV/FC), Min-Conflicts, énumération + symétrie D4 | Classique |
 | 2 | [App-2-GraphColoring](CSP/App-2-GraphColoring.ipynb) | ~45 min | Greedy, DSATUR, CP-SAT, départements | Projet étudiant |
 | 3 | [App-3-NurseScheduling](CSP/App-3-NurseScheduling.ipynb) | ~60 min | Hard/soft constraints, CP-SAT | Projet étudiant |
 | 4 | [App-4-JobShopScheduling](CSP/App-4-JobShopScheduling.ipynb) | ~60 min | Intervalles, précédences, makespan | Projet étudiant |
@@ -115,6 +116,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | Notebook | Fondations requises | Dépendances |
 |----------|--------------------|-------------|
 | App-1 NQueens | CSP-1 (Fundamentals) | - |
+| App-1b NQueens (C#) | CSP-1 (Fundamentals) | dotnet-interactive |
 | App-2 GraphColoring | CSP-1, CSP-2 | networkx |
 | App-3 NurseScheduling | CSP-3, CSP-4 | ortools |
 | App-4 JobShopScheduling | CSP-3, CSP-4 | ortools |
