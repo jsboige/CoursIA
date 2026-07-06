@@ -125,6 +125,7 @@ flowchart TD
 | 4c | [GameTheory-4c-NashExistence-Python](GameTheory-4c-NashExistence-Python.ipynb) | Python | Illustrations numériques point fixe | 35 min |
 | 4c | [GameTheory-4c-NashExistence-Csharp](GameTheory-4c-NashExistence-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — Brouwer point fixe + Matching Pennies, from-scratch, parité #4956 | 45 min |
 | 5 | [GameTheory-5-ZeroSum-Minimax](GameTheory-5-ZeroSum-Minimax.ipynb) | Python | Théorème minimax, LP primal/dual, Von Neumann | 40 min |
+| 5 (C#) | [GameTheory-5-ZeroSum-Minimax-Csharp](GameTheory-5-ZeroSum-Minimax-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : **simplexe from-scratch** (Dantzig, règle de Bland) + dualité LP, Matching Pennies/RPS/Blotto (See #4956) | 45 min |
 | 5b | [GameTheory-5b-Lean-Minimax](GameTheory-5b-Lean-Minimax.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de von Neumann dans le lake `minimax_lean` (Sion), `#check` + `#print axioms` in-kernel — voir [#4054](https://github.com/jsboige/CoursIA/issues/4054) (création du lake) et `LEAN_INVENTORY.md` du dossier | 45 min |
 | 6 | [GameTheory-6-EvolutionTrust](GameTheory-6-EvolutionTrust.ipynb) | Python | Tournoi Axelrod, tit-for-tat, replicator dynamics | 65 min |
 | 6c | [GameTheory-6c-RepeatedGames-FolkTheorem](GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) | Python | Compagnon **formel** de GT-6 : horizon fini (effondrement par induction arrière), horizon infini, grim trigger, condition $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement IR faisable est SPNE pour $\delta$ assez proche de 1) | 45 min |
@@ -542,6 +543,7 @@ GameTheory/
 ├── GameTheory-8c-CombinatorialGames-Python.ipynb
 ├── GameTheory-15c-CooperativeGames-Python.ipynb
 ├── GameTheory-11-BayesianGames-Csharp.ipynb                     # Twin .NET/C# (marathon #4956, Prong B)
+├── GameTheory-5-ZeroSum-Minimax-Csharp.ipynb                    # Twin C# simplexe from-scratch (marathon #4956, Prong B)
 ├── SocialChoice/                                                   # Sous-série Choix Social
 │   ├── 01-Arrow-Impossibility-Theorem.ipynb
 │   ├── 02-Lean-SocialChoice-Formal.ipynb
