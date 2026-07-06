@@ -271,6 +271,7 @@ Problèmes du monde réel adaptés de projets étudiants.
 | 10 | [App-15-SportsScheduling](Applications/CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
 | 11 | [App-16-Crossword-CSP](Applications/CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
 | 12 | [App-19-ProceduralGeneration-WFC](Applications/CSP/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
+| 12 (C#) | [App-19-ProceduralGeneration-WFC-Csharp](Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
 
 ### Applications Hybrides / Métaheuristiques (`Applications/Hybrid/`)
 
@@ -524,7 +525,8 @@ Search/
 │   │   ├── App-15-SportsScheduling.ipynb
 │   │   ├── App-16-Crossword-CSP.ipynb
 │   │   ├── App-16-Crossword-CSP-Csharp.ipynb   # Twin C# backtracking + forward-checking from-scratch (marathon #4956, Prong B)
-│   │   └── App-19-ProceduralGeneration-WFC.ipynb
+│   │   ├── App-19-ProceduralGeneration-WFC.ipynb
+│   │   └── App-19-ProceduralGeneration-WFC-Csharp.ipynb
 │   │
 │   └── Hybrid/                            # Metaheuristiques (7 notebooks)
 │       ├── App-9-EdgeDetection.ipynb
