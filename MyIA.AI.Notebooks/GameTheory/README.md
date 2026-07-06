@@ -144,6 +144,7 @@ flowchart TD
 | 9 | [GameTheory-9-BackwardInduction](GameTheory-9-BackwardInduction.ipynb) | Python | Induction arrière, mille-pattes, escalade | 55 min |
 | 9 (C#) | [GameTheory-9-BackwardInduction-Csharp](GameTheory-9-BackwardInduction-Csharp.ipynb) | .NET (C#) | Twin C# du 9 : induction arrière from-scratch, Entry/Centipede/War-of-Attrition/Chain-Store (See #4956) | 40 min |
 | 10 | [GameTheory-10-ForwardInduction-SPE](GameTheory-10-ForwardInduction-SPE.ipynb) | Python | Induction avant, SPE, menaces crédibles | 60 min |
+| 10 (C#) | [GameTheory-10-ForwardInduction-SPE-Csharp](GameTheory-10-ForwardInduction-SPE-Csharp.ipynb) | .NET (C#) | Twin C# du 10 : SPE/backward-induction from-scratch, menaces crédibles, trembling-hand (ε), forward induction (Cho-Kreps), burn money (See #4956) | 60 min |
 | 11 | [GameTheory-11-BayesianGames](GameTheory-11-BayesianGames.ipynb) | Python | Jeux bayésiens, information incomplète | 55 min |
 | 11 (C#) | [GameTheory-11-BayesianGames-Csharp](GameTheory-11-BayesianGames-Csharp.ipynb) | C# (.NET) | Twin .NET de 11 (marathon #4956) : jeux bayésiens from-scratch (BCL seule), Cournot résolu analytiquement (déterminant = 6, indépendant du prior) | 65 min |
 | 11b | [GameTheory-11b-Lean-BayesianGamesExt](GameTheory-11b-Lean-BayesianGamesExt.ipynb) | Lean 4 | Companion natif : théorème de Vickrey (enchère au second prix) prouvé 0-sorry dans le lake `lean_game_defs_ext` (module Bayesian, sans Mathlib) | 50 min |
@@ -549,6 +550,7 @@ GameTheory/
 ├── GameTheory-5-ZeroSum-Minimax-Csharp.ipynb                    # Twin C# simplexe from-scratch (marathon #4956, Prong B)
 ├── GameTheory-4-NashEquilibrium-Csharp.ipynb                    # Twin C# NE pur/mixte + support enum (Gauss) from-scratch (marathon #4956, Prong B)
 ├── GameTheory-7-ExtensiveForm-Csharp.ipynb                      # Twin C# arbre de jeu + infosets from-scratch (marathon #4956, Prong B)
+├── GameTheory-10-ForwardInduction-SPE-Csharp.ipynb              # Twin C# SPE/backward-induction + trembling-hand + forward induction + burn money (marathon #4956)
 ├── SocialChoice/                                                   # Sous-série Choix Social
 │   ├── 01-Arrow-Impossibility-Theorem.ipynb
 │   ├── 02-Lean-SocialChoice-Formal.ipynb
