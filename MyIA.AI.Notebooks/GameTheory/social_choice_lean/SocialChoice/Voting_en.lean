@@ -25,7 +25,7 @@ import Mathlib.Order.Defs.LinearOrder
 import Mathlib.Tactic
 
 import SocialChoice.Basic
-import SocialChoice.SortedListCounting
+import SocialChoice.SortedListCounting_en
 
 namespace SocialChoice_en
 /-!
