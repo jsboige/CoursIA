@@ -4,8 +4,8 @@
 
 | Item | Value |
 |------|-------|
-| Lean toolchain | `leanprover/lean4:v4.30.0-rc2` |
-| Mathlib | `v4.30.0-rc2` |
+| Lean toolchain | `leanprover/lean4:v4.31.0-rc1` |
+| Mathlib | `v4.31.0-rc1` |
 | Sorry count | **0** (all production files) |
 | Last verified | 2026-05-26 |
 
