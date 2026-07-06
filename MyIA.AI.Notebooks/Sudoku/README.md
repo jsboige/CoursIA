@@ -9,7 +9,7 @@ maturity: PRODUCTION=28, BETA=4, ALPHA=1
 
 [← Notebooks](../README.md) | [→ Search](../Search/README.md)
 
-Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. Les 33 notebooks couvrent **13 paires miroir C#/Python** (algorithmes comparables dans les deux langages), **3 notebooks C# uniquement** (13-SymbolicAutomata, 14-BDD, 0-Environment), **3 notebooks Python uniquement** (16-NeuralNetwork, 17-LLM, 18-Comparison-benchmark) et **1 companion Lean natif** ([Sudoku-19](Sudoku-19-Lean-Propagation.ipynb), preuve formelle de la propagation de contraintes). Cette structure laisse à chaque étudiant le choix de son langage sur la majorité des algorithmes.
+Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. Les 34 notebooks couvrent **14 paires miroir C#/Python** (algorithmes comparables dans les deux langages), **2 notebooks C# uniquement** (14-BDD, 0-Environment), **3 notebooks Python uniquement** (16-NeuralNetwork, 17-LLM, 18-Comparison-benchmark) et **1 companion Lean natif** ([Sudoku-19](Sudoku-19-Lean-Propagation.ipynb), preuve formelle de la propagation de contraintes). Cette structure laisse à chaque étudiant le choix de son langage sur la majorité des algorithmes.
 
 **À qui s'adresse cette série** : étudiants en informatique (L2-M2) découvrant les paradigmes algorithmiques, candidats à des entretiens techniques, et enseignants cherchant un fil rouge pédagogique. Les notebooks Python ne nécessitent que Python 3.10+. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en IA : les concepts sont introduits depuis le backtracking.
 
@@ -600,6 +600,7 @@ Sudoku/
 ├── Sudoku-12-Z3-Csharp.ipynb              # Z3 SMT C#
 ├── Sudoku-12-Z3-Python.ipynb              # Z3 SMT Python
 ├── Sudoku-13-SymbolicAutomata-Csharp.ipynb # Automates symboliques C#
+├── Sudoku-13-SymbolicAutomata-Python.ipynb # Twin Python (regex, Z3, récursion (?&rec))
 ├── Sudoku-14-BDD-Csharp.ipynb             # BDD/MDD C#
 ├── Sudoku-15-Infer-Csharp.ipynb           # Infer.NET C#
 ├── Sudoku-15-Infer-Python.ipynb           # NumPyro Python
