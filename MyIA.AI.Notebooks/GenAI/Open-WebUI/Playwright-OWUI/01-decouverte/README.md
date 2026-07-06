@@ -4,7 +4,7 @@
 
 ## Objectifs pédagogiques
 
-A la fin de ce module, vous serez capable de :
+À la fin de ce module, vous serez capable de :
 
 - Installer Playwright et comprendre son architecture
 - Écrire un premier test E2E sur une application web réelle
@@ -14,14 +14,14 @@ A la fin de ce module, vous serez capable de :
 
 ## Prérequis
 
-- Node.js 18+ installe
+- Node.js 18+ installé
 - Une instance Open WebUI accessible (fournie par l'enseignant ou locale)
-- VS Code avec l'extension Playwright recommandee
-- Fichier `.env` configure (voir `.env.example` a la racine)
+- VS Code avec l'extension Playwright recommandée
+- Fichier `.env` configuré (voir `.env.example` à la racine)
 
 ## Durée estimée
 
-**2 a 3 heures**
+**2 à 3 heures**
 
 ## Contenu du module
 
@@ -29,7 +29,7 @@ A la fin de ce module, vous serez capable de :
 
 **Pourquoi Playwright ?**
 - Framework de test E2E par Microsoft, multi-navigateurs (Chromium, Firefox, WebKit)
-- Auto-wait intelligent : attend automatiquement que les elements soient visibles/cliquables
+- Auto-wait intelligent : attend automatiquement que les éléments soient visibles/cliquables
 - Mode trace et video pour le débogage
 - API simple et TypeScript-native
 
@@ -45,8 +45,8 @@ projet/
 
 **Sélecteurs — par ordre de préférence :**
 1. **IDs** : `#chat-input` — Les plus stables
-2. **Roles ARIA** : `button[aria-label="..."]` — Accessibles et resilients
-3. **getByRole/getByText** : Semantiques, recommandes par Playwright
+2. **Roles ARIA** : `button[aria-label="..."]` — Accessibles et résilients
+3. **getByRole/getByText** : Sémantiques, recommandés par Playwright
 4. **Classes CSS** : `.chat-user` — Fragiles, dernier recours
 
 ### Partie pratique
@@ -62,14 +62,14 @@ Le fichier `01-decouverte.spec.ts` contient 4 exercices progressifs :
 
 ### Exercices supplémentaires
 
-1. **Modifier un sélecteur** : Remplacez un sélecteur CSS par un `getByRole()` equivalent
-2. **Ajouter un test** : Verifiez que le bouton "Nouveau Chat" est visible
+1. **Modifier un sélecteur** : Remplacez un sélecteur CSS par un `getByRole()` équivalent
+2. **Ajouter un test** : Vérifiez que le bouton "Nouveau Chat" est visible
 3. **Mode debug** : Lancez `npm run test:debug` et utilisez le Playwright Inspector
 
 ## Commandes
 
 ```bash
-# Installer les dependances
+# Installer les dépendances
 npm install
 
 # Installer les navigateurs Playwright
@@ -88,9 +88,9 @@ PWDEBUG=1 npx playwright test --grep "01" --headed
 npm run report
 ```
 
-## Points cles a retenir
+## Points clés à retenir
 
-- Playwright attend automatiquement les elements (auto-wait) — pas besoin de `sleep()`
-- `storageState` permet de réutiliser une session authentifiee sans se reconnecter a chaque test
-- Préférez les sélecteurs semantiques (roles, labels) aux sélecteurs CSS fragiles
+- Playwright attend automatiquement les éléments (auto-wait) — pas besoin de `sleep()`
+- `storageState` permet de réutiliser une session authentifiée sans se reconnecter à chaque test
+- Préférez les sélecteurs sémantiques (roles, labels) aux sélecteurs CSS fragiles
 - Le mode `--headed` est indispensable pour comprendre ce que fait le test visuellement
