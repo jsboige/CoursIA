@@ -12,7 +12,6 @@
   `namespace` diffère pour éviter la collision de declaration.
 
   See #4980. Part of #4208 (axe E).
--/
 
   The Gale-Shapley deferred acceptance algorithm produces a stable matching.
 
