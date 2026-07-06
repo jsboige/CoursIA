@@ -36,7 +36,7 @@
   Reference: John Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005)
 -/
 
-import SocialChoice.Basic
+import SocialChoice.Basic_en
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Tactic
 
