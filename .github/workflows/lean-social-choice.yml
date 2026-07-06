@@ -91,11 +91,20 @@ jobs:
 
     - name: Lake build
       run: |
-        set -o pipefail   # propagate lake's exit code through `| tail` (see lean-build.yml fix, 2026-06-14)
+        set -o pipefail   # propagate lake's exit code through pipes (see lean-build.yml fix, 2026-06-14)
         lake exe cache get || true
-        # tail -20 masked real compile errors emitted mid-log (only the final
-        # "build failed" + linter warnings survived). Bumped to tail -200 so the
-        # Lean error context (file:line + message) stays visible for diagnosis.
-        # Incident: social_choice #5553 globs exposed _en errors hidden as orphan
-        # false-greens, but tail-20 hid WHICH module failed (2026-07-06).
-        lake -R build 2>&1 | tail -200
+        # Capture full lake output to a log file. A bare `| tail -N` HID the real
+        # compile error: lake emits the file:line error mid-build, then continues
+        # compiling other modules (printing their linter warnings), then prints
+        # "build failed" at the very end — so any tail keeps only the trailing
+        # warnings + "build failed", not the error. On failure we grep the error
+        # context (lines matching `<file>:<line>:<col>: error:`) so the faulty
+        # module is visible in the CI log. Incident: #5553 globs exposed _en
+        # errors hidden as orphan false-greens, tail hid which module (2026-07-06).
+        lake -R build > lake-build.log 2>&1 || {
+          echo "===== Lake build FAILED — compile errors (first 60) ====="
+          grep -nE ":[0-9]+:[0-9]+: error:" lake-build.log | head -60
+          echo "===== Last 40 lines of build log ====="
+          tail -40 lake-build.log
+          exit 1
+        }
