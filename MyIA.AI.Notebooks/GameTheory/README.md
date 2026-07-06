@@ -135,6 +135,7 @@ flowchart TD
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 7 | [GameTheory-7-ExtensiveForm](GameTheory-7-ExtensiveForm.ipynb) | Python | Arbres de jeu, infosets, stratégies | 50 min |
+| 7 (C#) | [GameTheory-7-ExtensiveForm-Csharp](GameTheory-7-ExtensiveForm-Csharp.ipynb) | .NET (C#) | Twin C# du 7 : **arbre de jeu + infosets + noeuds de nature from-scratch** + conversion forme extensive→normale (See #4956) | 50 min |
 | 8 | [GameTheory-8-CombinatorialGames](GameTheory-8-CombinatorialGames.ipynb) | Python | Positions P/N, Nim, Grundy, Sprague-Grundy | 55 min |
 | 8 (C#) | [GameTheory-8-CombinatorialGames-Csharp](GameTheory-8-CombinatorialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 8 : **classification P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy** from-scratch, BCL .NET 9 (See #4956) | 45 min |
 | 8b | [GameTheory-8b-Lean-CombinatorialGames](GameTheory-8b-Lean-CombinatorialGames.ipynb) | Lean 4 | PGame mathlib, Nim formel | 50 min |
@@ -546,6 +547,7 @@ GameTheory/
 ├── GameTheory-11-BayesianGames-Csharp.ipynb                     # Twin .NET/C# (marathon #4956, Prong B)
 ├── GameTheory-5-ZeroSum-Minimax-Csharp.ipynb                    # Twin C# simplexe from-scratch (marathon #4956, Prong B)
 ├── GameTheory-8-CombinatorialGames-Csharp.ipynb                 # Twin C# P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy (marathon #4956)
+├── GameTheory-7-ExtensiveForm-Csharp.ipynb                      # Twin C# arbre de jeu + infosets from-scratch (marathon #4956, Prong B)
 ├── SocialChoice/                                                   # Sous-série Choix Social
 │   ├── 01-Arrow-Impossibility-Theorem.ipynb
 │   ├── 02-Lean-SocialChoice-Formal.ipynb

@@ -16,3 +16,5 @@ lean_lib «Sensitivity» where
   -- Original authors: Reid Barton, Johan Commelin, Jesse Michael Han,
   --   Chris Hughes, Robert Y. Lewis, Patrick Massot
   -- Apache 2.0 license preserved
+  -- `globs` (not default roots) so `lake build` auto-discovers `*_en` siblings (#4980).
+  globs := #[.submodules `Sensitivity]

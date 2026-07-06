@@ -19,7 +19,7 @@
   4. Complete dictatorship: Partial dictator becomes full dictator
 -/
 
-import SocialChoice.Framework
+import SocialChoice.Framework_en
 
 namespace SocialChoice_en
 /-!
@@ -105,8 +105,8 @@ lemma is_extremal.is_strictly_best {R : σ → σ → Prop} {b : σ} {X : Finset
   | Or.inr hworst => absurd hworst h
 
 lemma is_extremal.is_strictly_worst {R : σ → σ → Prop} {b : σ} {X : Finset σ}
-    (hextr : is_extremal R b X) (h : ¬_root_.is_strictly_best R b X) :
-    _root_.is_strictly_worst R b X :=
+    (hextr : is_extremal R b X) (h : ¬SocialChoice_en.is_strictly_best R b X) :
+    SocialChoice_en.is_strictly_worst R b X :=
   match hextr with
   | Or.inl hbest => absurd hbest h
   | Or.inr hworst => hworst
