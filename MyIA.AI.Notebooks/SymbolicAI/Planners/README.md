@@ -122,6 +122,7 @@ SymbolicAI/Planners/
 ├── 02-Classical/
 │   ├── Planners-4-Fast-Downward.ipynb   # A*, heuristiques
 │   ├── Planners-5-Heuristics.ipynb      # h-add, h-max, h-FF
+│   ├── Planners-5-Heuristics-Csharp.ipynb # Twin C# h-max/h-add/h-FF/landmarks (See #4956)
 │   ├── Planners-5b-Lean-Relaxation.ipynb # Companion Lean 4 : preuve h+ <= h*
 │   └── Planners-6-Domains.ipynb         # Domaines classiques
 ├── 03-Advanced/
@@ -210,6 +211,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 |---|----------|--------|---------|-------|
 | 4 | [Planners-4-Fast-Downward](02-Classical/Planners-4-Fast-Downward.ipynb) | Python | Architecture FD, Docker, A*, GBFS, EHC, heuristiques | 45 min |
 | 5 | [Planners-5-Heuristics](02-Classical/Planners-5-Heuristics.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min |
+| 5 (C#) | [Planners-5-Heuristics-Csharp](02-Classical/Planners-5-Heuristics-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : h-max/h-add/h-FF/landmarks from-scratch, démo non-admissibilité h^add (See #4956) | 40 min |
 | 5b | [Planners-5b-Lean-Relaxation](02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel (cf [#4053](https://github.com/jsboige/CoursIA/issues/4053) création du lake / PR #4168, companion natif) | 45 min |
 | 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
 
