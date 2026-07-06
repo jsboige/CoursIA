@@ -209,7 +209,7 @@ Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, et applicatio
 
 ## Projets de Stratégies
 
-Le dossier [`projects/`](projects/) contient **114 stratégies de trading** prêtes à backtester.
+Le dossier [`projects/`](projects/) contient le catalogue complet des stratégies de trading prêtes à backtester, classées par robustesse (Robuste / Historique / Exploratoire / ML-DL-RL). Le compte exact et la classification à jour se trouvent dans le README canonique [`projects/README.md`](projects/README.md).
 
 ### Comment utiliser les projets
 
@@ -252,13 +252,15 @@ Le dossier **partner-course-quant-trading/** contient des exemples de recherche 
 ```
 partner-course-quant-trading/
 ├── examples/           # Projets d'exemples du professeur
+├── kit-transitoire/    # 3 stratégies ML/Framework progressives (RandomForest, XGBoost, Framework Composite)
+├── scripts/            # Scripts utilitaires du cours
 ├── templates/          # Templates pour projets étudiants
 │   ├── starter/        # Niveau débutant
 │   ├── intermediate/   # Niveau intermédiaire
 │   └── advanced/       # Niveau avancé
 ```
 
-Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/README.md) pour le détail des exemples et templates.
+Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/README.md) pour le détail des exemples, du kit de transition et des templates.
 
 ---
 
