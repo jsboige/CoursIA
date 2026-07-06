@@ -26,6 +26,8 @@ Cette série est construite sur une **dualité délibérée simulation/preuve** 
 
 Les deux approches se nourrissent mutuellement. Le notebook Python montre *pourquoi* l'équilibre de Nash est plausible ; le notebook Lean prouve *qu'il existe forcément*. Le notebook SocialChoice/01 montre qu'Arrow est *contre-intuitif* ; `Arrow.lean` prouve qu'il est *inévitable*.
 
+**Parité .NET** : le notebook [GameTheory-4c-NashExistence-Csharp.ipynb](GameTheory-4c-NashExistence-Csharp.ipynb) est le jumeau C# (.NET Interactive) de la version Python 4c — implémentation from-scratch des mêmes algorithmes (point fixe de Brouwer par itération, projection sur le simplexe, regret matching / meilleure réponse perturbée, dynamique de convergence vers Nash sur Matching Pennies) en C# pur (pas de lib externe, matplotlib → visualisation ASCII/console). Marathon parité .NET ⇄ Python (#4956), EPIC #3801 Prong B.
+
 Au-delà de la théorie classique, cette série couvre les **applications contemporaines** qui utilisent la théorie des jeux en production : enchères VCG pour la publicité en ligne (milliards de transactions/jour), systèmes de matching (Gale-Shapley pour les affectations étudiant-hôpital), IA de poker (Libratus/Pluribus), et gouvernance on-chain (DAO, vote vérifiable).
 
 ## Statistiques catalogue à jour
@@ -121,6 +123,7 @@ flowchart TD
 | 4 | [GameTheory-4-NashEquilibrium](GameTheory-4-NashEquilibrium.ipynb) | Python | Nash pur/mixte, Lemke-Howson, analyse paramétrique | 60 min |
 | 4b | [GameTheory-4b-Lean-NashExistence](GameTheory-4b-Lean-NashExistence.ipynb) | Lean 4 | Brouwer, Kakutani, preuve existence Nash | 55 min |
 | 4c | [GameTheory-4c-NashExistence-Python](GameTheory-4c-NashExistence-Python.ipynb) | Python | Illustrations numériques point fixe | 35 min |
+| 4c | [GameTheory-4c-NashExistence-Csharp](GameTheory-4c-NashExistence-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — Brouwer point fixe + Matching Pennies, from-scratch, parité #4956 | 45 min |
 | 5 | [GameTheory-5-ZeroSum-Minimax](GameTheory-5-ZeroSum-Minimax.ipynb) | Python | Théorème minimax, LP primal/dual, Von Neumann | 40 min |
 | 5b | [GameTheory-5b-Lean-Minimax](GameTheory-5b-Lean-Minimax.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de von Neumann dans le lake `minimax_lean` (Sion), `#check` + `#print axioms` in-kernel — voir [#4054](https://github.com/jsboige/CoursIA/issues/4054) (création du lake) et `LEAN_INVENTORY.md` du dossier | 45 min |
 | 6 | [GameTheory-6-EvolutionTrust](GameTheory-6-EvolutionTrust.ipynb) | Python | Tournoi Axelrod, tit-for-tat, replicator dynamics | 65 min |
@@ -532,6 +535,7 @@ GameTheory/
 ├── GameTheory-11b-Lean-BayesianGamesExt.ipynb
 ├── GameTheory-15b-Lean-CooperativeGames.ipynb
 ├── GameTheory-4c-NashExistence-Python.ipynb                        # Side tracks c (Python 4 : 4c, 6c, 8c, 15c)
+├── GameTheory-4c-NashExistence-Csharp.ipynb                        # Jumeau C# (.NET Interactive) — Brouwer point fixe + Matching Pennies, parité #4956
 ├── GameTheory-6c-RepeatedGames-FolkTheorem.ipynb
 ├── GameTheory-8c-CombinatorialGames-Python.ipynb
 ├── GameTheory-15c-CooperativeGames-Python.ipynb
