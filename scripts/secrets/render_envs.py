@@ -51,6 +51,12 @@ MASTER_ENV = REPO_ROOT / ".secrets" / "master.env"
 TARGET_ENVS = [
     *sorted((REPO_ROOT / "docker-configurations" / "services").glob("*/.env")),
     REPO_ROOT / "MyIA.AI.Notebooks" / "GenAI" / ".env",
+    # Lean prover harness: agent_tests/prover/config.py loads this .env.
+    # Centralizes MISTRAL_API_KEY (Leanstral trial, #5475) + ANTHROPIC_API_KEY
+    # so rotation = edit master.env + render (cf #16 "rotation facile").
+    # Only keys present in master.env are rewritten; the prover's own
+    # ZAI/LOCAL/OPENROUTER config (absent from master) is left untouched.
+    REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / ".env",
 ]
 
 # Keys whose VALUE is a shared secret and must be synced from master.env.
@@ -66,7 +72,7 @@ SECRET_KEYS: frozenset[str] = frozenset({
     # Hugging Face (aliased -- same logical token, two names)
     "HF_TOKEN", "HUGGINGFACE_TOKEN",
     # Paid LLM APIs (centrally managed, rotation-sensitive)
-    "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "OPENROUTER_API_KEY",
+    "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "MISTRAL_API_KEY",
     # Model hubs / git
     "CIVITAI_TOKEN", "GITHUB_TOKEN", "GITHUB_ACCESS_TOKEN",
     # Per-service client API keys (server defines the value; clients must match)
