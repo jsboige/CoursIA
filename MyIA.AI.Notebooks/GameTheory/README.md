@@ -156,6 +156,7 @@ flowchart TD
 | 15b | [GameTheory-15b-Lean-CooperativeGames](GameTheory-15b-Lean-CooperativeGames.ipynb) | Lean 4 | Axiomes Shapley formels, Core | 55 min |
 | 15c | [GameTheory-15c-CooperativeGames-Python](GameTheory-15c-CooperativeGames-Python.ipynb) | Python | Exemples avancés (Glove Game, politique) | 40 min |
 | 16 | [GameTheory-16-MechanismDesign](GameTheory-16-MechanismDesign.ipynb) | Python | Principe de révélation, VCG, matching | 65 min |
+| 16 (C#) | [GameTheory-16-MechanismDesign-Csharp](GameTheory-16-MechanismDesign-Csharp.ipynb) | .NET (C#) | Twin C# du 16 : **enchères Vickrey 1er/2nd prix + VCG (règle de Clarke) + Gale-Shapley (stable matching) + double auction** from-scratch, BCL .NET 9 (See #4956) | 50 min |
 | SC-01 | [SocialChoice/01-Arrow-Impossibility-Theorem](SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) | Python | Arrow : preuve formelle vs simulation | 45 min |
 | SC-02 | [SocialChoice/02-Lean-SocialChoice-Formal](SocialChoice/02-Lean-SocialChoice-Formal.ipynb) | Lean 4 + Python | Arrow, Sen, Électeur Médian, tour Peters | 70 min |
 | SC-03 | [SocialChoice/03-Voting-Methods](SocialChoice/03-Voting-Methods.ipynb) | Python | Condorcet, Borda, Copeland, modèle Downs | 45 min |
@@ -544,6 +545,7 @@ GameTheory/
 ├── GameTheory-15c-CooperativeGames-Python.ipynb
 ├── GameTheory-11-BayesianGames-Csharp.ipynb                     # Twin .NET/C# (marathon #4956, Prong B)
 ├── GameTheory-5-ZeroSum-Minimax-Csharp.ipynb                    # Twin C# simplexe from-scratch (marathon #4956, Prong B)
+├── GameTheory-16-MechanismDesign-Csharp.ipynb                   # Twin C# Vickrey + VCG (Clarke) + Gale-Shapley + double auction (marathon #4956)
 ├── SocialChoice/                                                   # Sous-série Choix Social
 │   ├── 01-Arrow-Impossibility-Theorem.ipynb
 │   ├── 02-Lean-SocialChoice-Formal.ipynb
