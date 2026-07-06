@@ -117,7 +117,8 @@ SymbolicAI/Planners/
 ├── 01-Foundation/
 │   ├── Planners-1-Introduction.ipynb    # Concepts, STRIPS
 │   ├── Planners-2-PDDL-Basics.ipynb     # Syntaxe PDDL
-│   └── Planners-3-State-Space.ipynb     # Espaces d'états
+│   ├── Planners-3-State-Space.ipynb     # Espaces d'états
+│   └── Planners-3-State-Space-Csharp.ipynb # Twin C# BFS/DFS/Greedy/A* (See #4956)
 ├── 02-Classical/
 │   ├── Planners-4-Fast-Downward.ipynb   # A*, heuristiques
 │   ├── Planners-5-Heuristics.ipynb      # h-add, h-max, h-FF
@@ -201,6 +202,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 1 | [Planners-1-Introduction](01-Foundation/Planners-1-Introduction.ipynb) | Python | Concepts, modèle STRIPS, triptyque État-Action-But | 30 min |
 | 2 | [Planners-2-PDDL-Basics](01-Foundation/Planners-2-PDDL-Basics.ipynb) | Python | Syntaxe PDDL, domaines, problèmes, prédicats, actions | 40 min |
 | 3 | [Planners-3-State-Space](01-Foundation/Planners-3-State-Space.ipynb) | Python | Espaces d'états, graphes de recherche, explosion combinatoire | 35 min |
+| 3 | [Planners-3-State-Space-Csharp](01-Foundation/Planners-3-State-Space-Csharp.ipynb) | .NET (C#) | Twin C# du 3 : BFS/DFS/Greedy/A* from-scratch, terrain pondéré (See #4956) | 35 min |
 
 ### Partie 2 : Planification Classique ([02-Classical/](02-Classical/README.md))
 
