@@ -52,6 +52,7 @@ import StableMarriage.Definitions
 namespace StableMarriage_en
 
 open Function Finset Classical
+open StableMarriage
 
 variable {n : Nat} [NeZero n] (prof : PrefProfile n)
 
