@@ -1,7 +1,7 @@
 # lean_game_defs_ext — Jeux bayésiens en Lean 4 (core uniquement)
 
 Formalisation des jeux bayésiens finis à deux joueurs (espaces de types
-de Harsanyi) en Lean 4 **sans Mathlib** (toolchain `v4.30.0-rc2`, core
+de Harsanyi) en Lean 4 **sans Mathlib** (toolchain `v4.31.0-rc1`, core
 uniquement — évite la mutualisation des checkouts Mathlib, cf #2611).
 Compagnon formel de `GameTheory-11-BayesianGames.ipynb`. Phase 1 de
 l'Epic #2610.
