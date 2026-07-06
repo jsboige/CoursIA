@@ -14,7 +14,7 @@ The Stable Marriage Problem: given n men and n women, each with a strict prefere
 | `StableMarriage/GaleShapley.lean` | Termination, stability, `man_optimal`, `woman_pessimal` | 0 |
 | `StableMarriage/Lattice.lean` | Knuth lattice, refutations, `exists_isManOptimal` | 0 |
 
-**Total**: 0 production sorry. `lake build StableMarriage` SUCCESS. Toolchain `v4.30.0-rc2`.
+**Total**: 0 production sorry. `lake build StableMarriage` SUCCESS. Toolchain `v4.31.0-rc1`.
 
 ## Theorems (status)
 
@@ -71,7 +71,7 @@ grep -c sorry StableMarriage/*.lean
 This project is a **complete, 0-`sorry`** Lean 4 formalization of the **Gale-Shapley
 Stable Marriage Theorem** (1962) and the **Knuth lattice structure** of its stable
 matchings. All twelve headline results are CLOSED (`lake build StableMarriage`
-SUCCESS, toolchain `v4.30.0-rc2`).
+SUCCESS, toolchain `v4.31.0-rc1`).
 
 ### What is proven
 
