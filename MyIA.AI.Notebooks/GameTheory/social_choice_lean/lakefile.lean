@@ -42,5 +42,5 @@ lean_lib «SocialChoice» where
     `SocialChoice.Sen, `SocialChoice.Sen_en,
     `SocialChoice.SortedListCounting, `SocialChoice.SortedListCounting_en,
     `SocialChoice.Voting, `SocialChoice.Voting_en,
-    `SocialChoice.SmokeTest
+    `SocialChoice._SmokeTest
   ]

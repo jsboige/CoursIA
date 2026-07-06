@@ -94,17 +94,23 @@ jobs:
         set -o pipefail   # propagate lake's exit code through pipes (see lean-build.yml fix, 2026-06-14)
         lake exe cache get || true
         # Capture full lake output to a log file. A bare `| tail -N` HID the real
-        # compile error: lake emits the file:line error mid-build, then continues
-        # compiling other modules (printing their linter warnings), then prints
-        # "build failed" at the very end — so any tail keeps only the trailing
-        # warnings + "build failed", not the error. On failure we grep the error
-        # context (lines matching `<file>:<line>:<col>: error:`) so the faulty
-        # module is visible in the CI log. Incident: #5553 globs exposed _en
-        # errors hidden as orphan false-greens, tail hid which module (2026-07-06).
-        lake -R build > lake-build.log 2>&1 || {
-          echo "===== Lake build FAILED — compile errors (first 60) ====="
-          grep -nE ":[0-9]+:[0-9]+: error:" lake-build.log | head -60
-          echo "===== Last 40 lines of build log ====="
-          tail -40 lake-build.log
-          exit 1
-        }
+        # error (build-graph resolution failure OR mid-build compile error).
+        # Run build, then ALWAYS dump the error context so CI shows the cause.
+        # GitHub Actions doesn't reliably flush a grouped block, so dump the log
+        # unconditionally with separate steps. Incident: #5553 globs pointed at a
+        # non-existent `SmokeTest` module (actual file `_SmokeTest.lean`), which
+        # failed build-graph resolution with no file:line error (2026-07-06).
+        set +e
+        lake -R build > lake-build.log 2>&1
+        BUILD_EXIT=$?
+        set -e
+        echo "===== Lake build exit code: $BUILD_EXIT ====="
+        if [ "$BUILD_EXIT" -ne 0 ]; then
+          echo "===== Lines matching compile errors (file:line:col: error:) ====="
+          grep -E ":[0-9]+:[0-9]+: error:" lake-build.log || echo "(no file:line:col: errors — likely build-graph/module-resolution failure)"
+          echo "===== Lines mentioning FAIL/error/nonexistent ====="
+          grep -iE "error|fail|unknown|cannot|nonexistent|no such" lake-build.log | grep -viE "warning|linter" | head -40 || echo "(none)"
+          echo "===== Last 50 lines of build log ====="
+          tail -50 lake-build.log
+          exit "$BUILD_EXIT"
+        fi
