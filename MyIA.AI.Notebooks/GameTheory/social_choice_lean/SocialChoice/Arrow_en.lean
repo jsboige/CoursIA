@@ -19,7 +19,7 @@
   4. Complete dictatorship: Partial dictator becomes full dictator
 -/
 
-import SocialChoice.Framework
+import SocialChoice.Framework_en
 
 namespace SocialChoice_en
 /-!

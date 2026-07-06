@@ -24,7 +24,7 @@ import Mathlib.Data.Finset.Powerset
 import Mathlib.Order.Defs.LinearOrder
 import Mathlib.Tactic
 
-import SocialChoice.Basic
+import SocialChoice.Basic_en
 import SocialChoice.SortedListCounting_en
 
 namespace SocialChoice_en
