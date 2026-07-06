@@ -128,6 +128,7 @@ flowchart TD
 | 5 (C#) | [GameTheory-5-ZeroSum-Minimax-Csharp](GameTheory-5-ZeroSum-Minimax-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : **simplexe from-scratch** (Dantzig, règle de Bland) + dualité LP, Matching Pennies/RPS/Blotto (See #4956) | 45 min |
 | 5b | [GameTheory-5b-Lean-Minimax](GameTheory-5b-Lean-Minimax.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de von Neumann dans le lake `minimax_lean` (Sion), `#check` + `#print axioms` in-kernel — voir [#4054](https://github.com/jsboige/CoursIA/issues/4054) (création du lake) et `LEAN_INVENTORY.md` du dossier | 45 min |
 | 6 | [GameTheory-6-EvolutionTrust](GameTheory-6-EvolutionTrust.ipynb) | Python | Tournoi Axelrod, tit-for-tat, replicator dynamics | 65 min |
+| 6 (C#) | [GameTheory-6-EvolutionTrust-Csharp](GameTheory-6-EvolutionTrust-Csharp.ipynb) | .NET (C#) | Twin C# du 6 : **moteur IPD + tournoi Axelrod + replicator dynamics from-scratch** (BCL .NET 9, 0 NuGet), 7 stratégies (TitForTat/Grudger/Pavlov/...), Euler ODE (See #4956) | 55 min |
 | 6c | [GameTheory-6c-RepeatedGames-FolkTheorem](GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) | Python | Compagnon **formel** de GT-6 : horizon fini (effondrement par induction arrière), horizon infini, grim trigger, condition $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement IR faisable est SPNE pour $\delta$ assez proche de 1) | 45 min |
 
 ### Partie 2 : Jeux dynamiques et raisonnement stratégique (Notebooks 7-12)
