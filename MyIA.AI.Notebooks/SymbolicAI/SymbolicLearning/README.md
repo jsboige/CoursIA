@@ -213,6 +213,8 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 
 > **Parité .NET** : [SL-2-KnowledgeBasedLearning-Csharp.ipynb](SL-2-KnowledgeBasedLearning-Csharp.ipynb) est le jumeau C# (.NET Interactive) — EBL (chaînage avant + unification, arbre de preuve, variabilisation) et RBL (vérification de détermination) implémentés from-scratch, sans lib ML. Marathon parité .NET ⇄ Python (#4956).
 
+> **Parité .NET** : [SL-5-InverseResolution-Csharp.ipynb](SL-5-InverseResolution-Csharp.ipynb) est le jumeau C# (.NET Interactive) — LGG (Plotkin), θ-subsomption (skolemisation + backtracking), clause bottom (saturation bornée + variabilisation), recherche Progol (score `p−L`) implémentés from-scratch, sans lib ML. Marathon parité .NET ⇄ Python (#4956).
+
 ### SL-3-RelevanceLearning.ipynb
 
 | Section | Contenu |
@@ -433,6 +435,7 @@ SymbolicLearning/
 ├── SL-3-RelevanceLearning.ipynb             # Treillis, MINIMAL-CONSISTENT-DET, RBL vs sklearn
 ├── SL-4-InductiveLogicProgramming.ipynb     # FOIL, résolution inverse, knowledge graphs
 ├── SL-5-InverseResolution.ipynb             # LGG, theta-subsomption, clause bottom, Progol
+├── SL-5-InverseResolution-Csharp.ipynb      # Jumeau C# (.NET Interactive) — LGG + clause bottom + Progol, parité #4956
 ├── SL-6-ModernILP.ipynb                     # Aleph, Metagol, Popper, dILP (Lernd) — moteurs réels
 ├── SL-7-NeuroSymbolic.ipynb                 # T-norms, LTN, DeepProbLog
 ├── SL-8-KnowledgeGraphs-ILP.ipynb           # rdflib, AMIE rule mining
