@@ -61,6 +61,7 @@ ML/
 │   ├── ML-3-Entrainement&AutoML.ipynb
 │   ├── ML-3-Entrainement-Python.ipynb   # jumeau scikit-learn (SDCA/LightGBM ⇄ Linear/GradientBoosting)
 │   ├── ML-4-Evaluation.ipynb
+│   ├── ML-4-Evaluation-Python.ipynb   # jumeau scikit-learn (cross_val_score + permutation_importance) ⇄ cross-validation/PFI
 │   ├── ML-5-TimeSeries.ipynb
 │   ├── ML-5-TimeSeries-Python.ipynb   # jumeau scikit-learn (STL+SARIMA) ⇄ ForecastBySsa
 │   ├── ML-6-ONNX.ipynb
