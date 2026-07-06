@@ -515,6 +515,7 @@ Search/
 │   │   ├── App-4-JobShopScheduling.ipynb
 │   │   ├── App-5-Timetabling.ipynb
 │   │   ├── App-6-Minesweeper.ipynb
+│   │   ├── App-6-Minesweeper-Csharp.ipynb
 │   │   ├── App-7-Wordle.ipynb
 │   │   ├── App-8-MiniZinc.ipynb
 │   │   ├── App-11-Picross.ipynb

@@ -76,6 +76,7 @@ Le gros de la sous-série, et un panorama de ce que la programmation par contrai
 | 4 | [App-4-JobShopScheduling](CSP/App-4-JobShopScheduling.ipynb) | ~60 min | Intervalles, précédences, makespan | Projet étudiant |
 | 5 | [App-5-Timetabling](CSP/App-5-Timetabling.ipynb) | ~50 min | MiniZinc + OR-Tools | Projet étudiant |
 | 6 | [App-6-Minesweeper](CSP/App-6-Minesweeper.ipynb) | ~50 min | CSP + probabilités + LLM | Projet étudiant |
+| 6 | [App-6-Minesweeper-Csharp](CSP/App-6-Minesweeper-Csharp.ipynb) | ~50 min | **Jumeau C#** — CSP backtracking from-scratch + probabilités, parité #4956 | Jumeau .NET |
 | 7 | [App-7-Wordle](CSP/App-7-Wordle.ipynb) | ~45 min | Filtrage CSP + théorie de l'information | Projet étudiant |
 | 8 | [App-8-MiniZinc](CSP/App-8-MiniZinc.ipynb) | ~50 min | Syntaxe MiniZinc, contraintes globales | Nouveau |
 | 9 | [App-11-Picross](CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : 27Mx speedup CP-SAT | Projet étudiant |
