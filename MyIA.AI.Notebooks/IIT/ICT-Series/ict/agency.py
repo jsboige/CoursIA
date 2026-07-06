@@ -84,6 +84,32 @@ def structure(V: np.ndarray) -> float:
     return float(np.var(V))
 
 
+def local_structure(V: np.ndarray, mask: np.ndarray) -> float:
+    """Structure spatiale restreinte a une region (masque booleen).
+
+    Variance de ``V`` sur les seules cellules selectionnees par ``mask`` (un
+    tableau booleen de meme forme que ``V``, typiquement produit par
+    :func:`disk_mask` ou :func:`quadrant_mask`). C'est le complement local de
+    :func:`structure` : quand on ablate une sous-region du champ (cf
+    :func:`ablate`), la variance **globale** bouge a peine (l'ablation d'un
+    disque de rayon 8 dans un champ 32x32 ne change que ~8% des cellules) et
+    ne capte donc pas la perte de motif. La variance **locale au masque**
+    tombe a zero apres ablation (les cellules sont uniformisees a ``V=0``) et
+    remonte si la dynamique regenere un motif a cet endroit -- c'est
+    l'observable qu'il faut pour mesurer la reparation *in situ* apres une
+    intervention ``do(.)`` (Pearl), fil rouge ICT-9 et batterie ENJEU d'ICT-19.
+
+    Retourne ``0.0`` si le masque est vide ou ne selectionne qu'une seule
+    cellule (variance non definie).
+    """
+    V = np.asarray(V, dtype=float)
+    mask = np.asarray(mask, dtype=bool)
+    vals = V[mask]
+    if vals.size < 2:
+        return 0.0
+    return float(np.var(vals))
+
+
 def spatial_autocorrelation(field: np.ndarray) -> float:
     """Auto-correlation spatiale au decalage 1 (moyenne des deux axes, bords periodiques).
 
