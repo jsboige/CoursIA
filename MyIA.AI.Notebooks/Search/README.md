@@ -521,6 +521,7 @@ Search/
 │   │   ├── App-11-Picross.ipynb
 │   │   ├── App-15-SportsScheduling.ipynb
 │   │   ├── App-16-Crossword-CSP.ipynb
+│   │   ├── App-16-Crossword-CSP-Csharp.ipynb   # Twin C# backtracking + forward-checking from-scratch (marathon #4956, Prong B)
 │   │   └── App-19-ProceduralGeneration-WFC.ipynb
 │   │
 │   └── Hybrid/                            # Metaheuristiques (7 notebooks)
