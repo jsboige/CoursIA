@@ -93,4 +93,9 @@ jobs:
       run: |
         set -o pipefail   # propagate lake's exit code through `| tail` (see lean-build.yml fix, 2026-06-14)
         lake exe cache get || true
-        lake -R build 2>&1 | tail -20
+        # tail -20 masked real compile errors emitted mid-log (only the final
+        # "build failed" + linter warnings survived). Bumped to tail -200 so the
+        # Lean error context (file:line + message) stays visible for diagnosis.
+        # Incident: social_choice #5553 globs exposed _en errors hidden as orphan
+        # false-greens, but tail-20 hid WHICH module failed (2026-07-06).
+        lake -R build 2>&1 | tail -200
