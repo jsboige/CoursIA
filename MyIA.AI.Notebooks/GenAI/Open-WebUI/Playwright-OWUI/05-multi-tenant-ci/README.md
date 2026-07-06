@@ -4,50 +4,50 @@
 
 ## Objectifs pédagogiques
 
-A la fin de ce module, vous serez capable de :
+À la fin de ce module, vous serez capable de :
 
 - Tester des APIs REST directement avec Playwright (sans navigateur)
 - Comprendre l'architecture multi-tenant d'Open WebUI
-- Vérifier l'isolation des donnees entre tenants
+- Vérifier l'isolation des données entre tenants
 - Valider le partage de ressources (KBs, modèles) entre instances
-- Integrer les tests Playwright dans un pipeline CI/CD
+- Intégrer les tests Playwright dans un pipeline CI/CD
 
 ## Durée estimée
 
-**3 a 4 heures**
+**3 à 4 heures**
 
 ## Contenu du module
 
 ### Partie théorique
 
 **Tests API vs Tests UI :**
-Playwright n'est pas limite aux interactions navigateur.
-Sa classe `APIRequestContext` permet de faire des requetes HTTP directes.
+Playwright n'est pas limité aux interactions navigateur.
+Sa classe `APIRequestContext` permet de faire des requêtes HTTP directes.
 
 ```typescript
-// Test UI (lent, mais teste l'experience utilisateur)
+// Test UI (lent, mais teste l'expérience utilisateur)
 await page.goto('/admin');
 await expect(page.getByText('Users')).toBeVisible();
 
-// Test API (rapide, teste les donnees et la logique metier)
+// Test API (rapide, teste les données et la logique métier)
 const response = await request.get('/api/v1/users');
 const users = await response.json();
 expect(users.length).toBeGreaterThan(0);
 ```
 
 **Quand utiliser l'API vs le navigateur :**
-| Scenario | Approche |
+| Scénario | Approche |
 |----------|----------|
 | Vérifier un rendu visuel | Navigateur (page) |
-| Comparer des donnees entre instances | API (request) |
+| Comparer des données entre instances | API (request) |
 | Tester l'authentification | Les deux |
 | Vérifier la performance | API + metrics |
 
 **Architecture multi-tenant :**
-Chaque "tenant" est une instance independante d'Open WebUI :
-- Base de donnees PostgreSQL séparée
-- Configuration independante (modèles, fonctions, users)
-- Certaines ressources partagees (KBs via Qdrant, modèles LLM)
+Chaque "tenant" est une instance indépendante d'Open WebUI :
+- Base de données PostgreSQL séparée
+- Configuration indépendante (modèles, fonctions, users)
+- Certaines ressources partagées (KBs via Qdrant, modèles LLM)
 
 ### Partie pratique
 
@@ -57,9 +57,9 @@ Chaque "tenant" est une instance independante d'Open WebUI :
 | Modèles API | Lister les modèles via API | `request.get()`, headers |
 | KBs API | Lister les knowledge bases via API | Pagination API |
 | Multi-tenant auth | Authentification sur deux instances | Isolation |
-| KB partagees | Vérifier le partage de KBs | Comparison cross-tenant |
-| Modèles identiques | Vérifier la parite des modèles | Assertions en boucle |
-| Isolation donnees | Vérifier l'isolation des users | Sécurité multi-tenant |
+| KB partagées | Vérifier le partage de KBs | Comparison cross-tenant |
+| Modèles identiques | Vérifier la parité des modèles | Assertions en boucle |
+| Isolation données | Vérifier l'isolation des users | Sécurité multi-tenant |
 
 ## Commandes
 
@@ -101,7 +101,7 @@ jobs:
 ### Bonnes pratiques CI/CD
 
 1. **Secrets** : Ne jamais hardcoder les credentials — utiliser les secrets CI
-2. **Retries** : Activer 1-2 retries en CI (reseaux instables)
+2. **Retries** : Activer 1-2 retries en CI (réseaux instables)
 3. **Rapports** : Toujours uploader le rapport HTML comme artefact
 4. **Timeouts** : Augmenter les timeouts en CI (machines plus lentes)
 5. **Screenshots** : `only-on-failure` pour le débogage post-mortem
