@@ -204,8 +204,9 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 10 | [Tweety-10-MLN](Tweety-10-MLN.ipynb)       | Markov Logic Networks (FOL pondérée)                      | 50 min  | Python |
 | 10c | [Tweety-10-MLN-Csharp](Tweety-10-MLN-Csharp.ipynb) | MLN porté .NET (IKVM, c.188 PR #5209)                | 30 min  | C# PROD |
 | 11 | [Tweety-11-Causal](Tweety-11-Causal.ipynb) | Raisonnement causal : do-calculus, interventions, contrefactuels | 50 min  | Python |
+| 11c | [Tweety-11-Causal-Csharp](Tweety-11-Causal-Csharp.ipynb) | Twin C# moteur causal booléen from-scratch (do-operator, contrefactuel) | 35 min  | C# PROD |
 
-**Durée totale estimée** : ~13h (Python) + ~6h (C#/.NET). Le tableau ci-dessus couvre les **27 notebooks principaux** (12 Python + 14 C#/.NET + 1 Lean companion) ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4 avec 5 fichiers `.lean` du dossier `Argumentation/` : Basic, Characteristic, Extensions, Fundamental, Grounded).
+**Durée totale estimée** : ~13h (Python) + ~7h (C#/.NET). Le tableau ci-dessus couvre les **29 notebooks principaux** (12 Python + 16 C#/.NET + 1 Lean companion) ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4 avec 5 fichiers `.lean` du dossier `Argumentation/` : Basic, Characteristic, Extensions, Fundamental, Grounded).
 
 ## En quoi chaque notebook est unique
 
@@ -356,6 +357,7 @@ Tweety/
 ├── Tweety-10-MLN.ipynb                           # Markov Logic Networks
 ├── Tweety-10-MLN-Csharp.ipynb                    # MLN .NET (IKVM)
 ├── Tweety-11-Causal.ipynb                        # do-calculus Pearl
+├── Tweety-11-Causal-Csharp.ipynb                 # Twin C# moteur causal from-scratch (marathon #4956, Prong B)
 ├── libs/                                          # JARs Tweety (42 : 39 modules 1.30 + 3 deps)
 ├── jdk-17-portable/                               # JDK Zulu (téléchargé auto)
 ├── scripts/

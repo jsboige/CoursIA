@@ -129,7 +129,8 @@ SymbolicAI/Planners/
 ├── 03-Advanced/
 │   ├── Planners-7-OR-Tools.ipynb        # CP-SAT
 │   ├── Planners-8-Temporal.ipynb        # Planification temporelle
-│   └── Planners-9-HTN.ipynb             # Planification hiérarchique
+│   ├── Planners-9-HTN.ipynb             # Planification hiérarchique
+│   └── Planners-9-HTN-Csharp.ipynb      # Twin C# SHOP2 HTN solver from-scratch (See #4956)
 ├── 04-NeuroSymbolic/
 │   ├── Planners-10-LLM-Planning.ipynb   # LLM + Planning
 │   ├── Planners-11-Unified-Planning.ipynb # Interface unifiée
@@ -224,6 +225,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 7 | [Planners-7-OR-Tools](03-Advanced/Planners-7-OR-Tools.ipynb) | Python | CP-SAT, programmation par contraintes, scheduling | 45 min |
 | 8 | [Planners-8-Temporal](03-Advanced/Planners-8-Temporal.ipynb) | Python | PDDL 2.1, durées, parallélisme, ordonnancement | 40 min |
 | 9 | [Planners-9-HTN](03-Advanced/Planners-9-HTN.ipynb) | Python | Hierarchical Task Networks, méthodes, décomposition | 45 min |
+| 9 (C#) | [Planners-9-HTN-Csharp](03-Advanced/Planners-9-HTN-Csharp.ipynb) | .NET (C#) | Twin C# du 9 : solveur HTN SHOP2 from-scratch (State/Pred, Methods, backtracking), domaines Logistics + Cafe (See #4956) | 40 min |
 
 ### Partie 4 : Neuro-Symbolique ([04-NeuroSymbolic/](04-NeuroSymbolic/README.md))
 
