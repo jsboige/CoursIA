@@ -1,8 +1,8 @@
 # Search - Applications
 
-C'est ici que la série Search se confronte au réel. Les 23 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (métaheuristiques et algorithmes génétiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-9b, App-10b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
+C'est ici que la série Search se confronte au réel. Les 24 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (métaheuristiques et algorithmes génétiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-11b, App-9b, App-10b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
 
-Sous-série de **23 notebooks** | **~15h30** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
+Sous-série de **24 notebooks** | **~16h10** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
 
 ## Pourquoi cette sous-série
 
@@ -31,7 +31,7 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 ```text
 Applications/
 ├── Search/     # Applications purement Search (2 notebooks)
-├── CSP/        # Applications CSP (14 notebooks : 13 Python + 1 twin C#)
+├── CSP/        # Applications CSP (15 notebooks : 13 Python + 2 twins C#)
 └── Hybrid/     # Metaheuristiques / GA (7 notebooks : 5 Python + 2 twins C#)
 ```
 
@@ -76,9 +76,11 @@ Le gros de la sous-série, et un panorama de ce que la programmation par contrai
 | 4 | [App-4-JobShopScheduling](CSP/App-4-JobShopScheduling.ipynb) | ~60 min | Intervalles, précédences, makespan | Projet étudiant |
 | 5 | [App-5-Timetabling](CSP/App-5-Timetabling.ipynb) | ~50 min | MiniZinc + OR-Tools | Projet étudiant |
 | 6 | [App-6-Minesweeper](CSP/App-6-Minesweeper.ipynb) | ~50 min | CSP + probabilités + LLM | Projet étudiant |
+| 6 | [App-6-Minesweeper-Csharp](CSP/App-6-Minesweeper-Csharp.ipynb) | ~50 min | **Jumeau C#** — CSP backtracking from-scratch + probabilités, parité #4956 | Jumeau .NET |
 | 7 | [App-7-Wordle](CSP/App-7-Wordle.ipynb) | ~45 min | Filtrage CSP + théorie de l'information | Projet étudiant |
 | 8 | [App-8-MiniZinc](CSP/App-8-MiniZinc.ipynb) | ~50 min | Syntaxe MiniZinc, contraintes globales | Nouveau |
 | 9 | [App-11-Picross](CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : 27Mx speedup CP-SAT | Projet étudiant |
+| 9b | [App-11b-Picross-CSharp](CSP/App-11b-Picross-CSharp.ipynb) | ~40 min | Twin C# : énumération de motifs, propagation par intersection (point fixe), naïf vs propagation | Classique |
 | 10 | [App-15-SportsScheduling](CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
 | 11 | [App-16-Crossword-CSP](CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
 | 12 | [App-19-ProceduralGeneration-WFC](CSP/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
@@ -125,6 +127,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | App-7 Wordle | CSP-1, CSP-2 | - |
 | App-8 MiniZinc | CSP-3 | minizinc |
 | App-11 Picross | CSP-3, Search-8 (DLX) | ortools |
+| App-11b Picross (C#) | CSP-1, CSP-3 (Propagation) | dotnet-interactive |
 | App-15 SportsScheduling | CSP-3, CSP-4 | ortools |
 | App-16 Crossword-CSP | CSP-1, CSP-2 | ortools |
 | App-19 ProceduralGeneration-WFC | CSP-1, CSP-3 | ortools, numpy, matplotlib |
