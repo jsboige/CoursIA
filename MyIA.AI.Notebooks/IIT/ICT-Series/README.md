@@ -85,7 +85,7 @@ Le retour à la théorie fondatrice (cf. [ICT-0-Annexe](ICT-0-Annexe-IntegratedC
 | **ICT-16** | MDLTwoPartCode — $F$ est la partie résiduelle du code $K$ + bosse complexité-entropie | [#5099](https://github.com/jsboige/CoursIA/issues/5099) |
 | **ICT-17** | $\epsilon$-machine (Crutchfield) vs Hoel — états causaux, complexité statistique, entropie d'excès | [#5100](https://github.com/jsboige/CoursIA/issues/5100) |
 | **ICT-18** | Flèche du temps & réversibilisation — production d'entropie, detailed balance, « que perd-on à réversibiliser ? » (ancré ICT-3, Levin/Fridman) *(GPU-free)* | [#5279](https://github.com/jsboige/CoursIA/issues/5279) |
-| **ICT-19** | Conceptual Reservoirs — *slot réservé*, spec à venir → Epic [#4588](https://github.com/jsboige/CoursIA/issues/4588) | — |
+| **ICT-19** | 🚧 Batterie de l'ENJEU (auto-maintien vs pur dissipateur) — seconde batterie d'ICT-18, GPU-free, paire `(I_thermo, I_stake)` qui sépare l'agent (Gray-Scott S4) du pur dissipateur (S5). Spec squelette → [#4588 (commentaire)](https://github.com/jsboige/CoursIA/issues/4588) | [#5489](https://github.com/jsboige/CoursIA/issues/5489) |
 | **ICT-20** | FeatureCatastrophes — calibration, changepoints, EWS et hystérésis en feature-space | [#5103](https://github.com/jsboige/CoursIA/issues/5103) |
 | **ICT-21** | SAE (Qwen + Qwen-Scope) — des features SAE aux trajectoires d'états discrets, substrat S4 *(GPU)* | [#5101](https://github.com/jsboige/CoursIA/issues/5101) |
 | **ICT-22** | LLM comme quatrième substrat du banc cross-substrat *(GPU)* | [#5102](https://github.com/jsboige/CoursIA/issues/5102) |
