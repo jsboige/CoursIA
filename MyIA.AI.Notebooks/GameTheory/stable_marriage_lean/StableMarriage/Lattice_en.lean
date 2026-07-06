@@ -32,6 +32,7 @@ import Mathlib.Data.Fin.VecNotation
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Tactic.Common
 import StableMarriage.Definitions
+import StableMarriage.Lattice
 
 /-
   Stable Marriage - Lattice Structure on Stable Matchings (EN sibling)
@@ -52,6 +53,7 @@ import StableMarriage.Definitions
 namespace StableMarriage_en
 
 open Function Finset Classical
+open StableMarriage
 
 variable {n : Nat} [NeZero n] (prof : PrefProfile n)
 
