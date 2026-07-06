@@ -45,6 +45,23 @@ PROVIDERS = {
                               "anthropic/claude-haiku-4.5"),
         }
     },
+    # Leanstral 1.5 (Mistral, Lean-specialized MoE 119B/6B-active, Apache-2.0,
+    # free API) — A/B candidate vs glm-5.1 on our research-level sorries
+    # (issue #5475, EPIC #3801 axe-2 SOTA). Added 2026-07-06.
+    # OpenAI-compat confirmed (ai-01 curl /v1/models -> HTTP 200). Model-id is
+    # the alias `labs-leanstral-1-5` (NOT `leanstral-1-5` which 404s — piège #4
+    # llm-endpoints.md). For a reproducible A/B, pin the snapshot
+    # `labs-leanstral-1-5-1` by overriding MISTRAL_CHAT_MODEL_ID in .env.
+    # Leanstral is a thinking model (reasoning:true) so the reasoning_content
+    # handling already in place for zai/glm applies — re-verify at smoke-test.
+    "mistral": {
+        "base_url": os.getenv("MISTRAL_BASE_URL", "https://api.mistral.ai/v1"),
+        "api_key": os.getenv("MISTRAL_API_KEY", ""),
+        "models": {
+            "reasoning": os.getenv("MISTRAL_CHAT_MODEL_ID", "labs-leanstral-1-5"),
+            "fast": os.getenv("MISTRAL_FAST_MODEL_ID", "labs-leanstral-1-5"),
+        }
+    },
 }
 
 SHAPLEY_IMPORTS = """import Mathlib.Data.Finset.Basic
