@@ -197,6 +197,7 @@ Algorithmes de recherche classiques, recherche adversariale et métaheuristiques
 | 10 | [Search-10-SymbolicAutomata](Part1-Foundations/Search-10-SymbolicAutomata.ipynb) | ~2h | DFA/NFA (automata-lib), prédicats Z3, automates symboliques | Search-1, SymbolicAI/SMT/Z3 |
 | 11 | [Search-11-Metaheuristics](Part1-Foundations/Search-11-Metaheuristics.ipynb) | ~1h30 | PSO, ABC, SA, BRO avec MEALPy, benchmark comparatif | Search-4, Search-5 |
 | 15 | [Search-15-NetworkX](Part1-Foundations/Search-15-NetworkX.ipynb) | ~1h | `networkx` : `Graph`/`DiGraph`, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, MST, Floyd-Warshall | Search-2 |
+| 15 (C#) | [Search-15-NetworkX-Csharp](Part1-Foundations/Search-15-NetworkX-Csharp.ipynb) | ~1h | Twin C# du 15 : graphes from-scratch (adjacency list, BFS/DFS, Dijkstra, centralités degré/closeness/betweenness/PageRank, Ford-Fulkerson max-flow) (See #4956) | Search-2, notions C#/.NET |
 | 16 | [Search-16-QuikGraph](Part1-Foundations/Search-16-QuikGraph.ipynb) | ~1h | QuikGraph 2.5.0 (.NET, NuGet) : AdjacencyGraph/BidirectionalGraph, DFS/BFS, Dijkstra, Edmonds-Karp (flot max), parité C# ↔ NetworkX | Search-1, notions C#/.NET |
 
 ---
@@ -485,6 +486,7 @@ Search/
 │   ├── Search-10-SymbolicAutomata.ipynb
 │   ├── Search-11-Metaheuristics.ipynb
 │   ├── Search-15-NetworkX.ipynb
+│   ├── Search-15-NetworkX-Csharp.ipynb   # Twin C# graphes from-scratch (BFS/DFS, Dijkstra, centralités, Ford-Fulkerson) (See #4956)
 │   └── Search-16-QuikGraph.ipynb
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (18 notebooks : 9 Python + 9 jumeaux C#)
