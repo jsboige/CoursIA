@@ -4,7 +4,7 @@ Lean 4 formalization of cooperative game theory (Shapley value, core).
 
 ## Status
 
-- **Toolchain**: v4.30.0-rc2
+- **Toolchain**: v4.31.0-rc1
 - **Sorry count**: **0** -- the Bondareva-Shapley theorem is proved in both directions
 - **Build**: `lake build CooperativeGames` -- SUCCESS
 - **Dependencies**: Mathlib4
@@ -71,7 +71,7 @@ characterisation.
 This project formalizes cooperative game theory in Lean 4 — the **Shapley value**
 (closed, 0 `sorry`) and the **Core** with the **Bondareva-Shapley theorem** (0 `sorry`,
 proved in both directions). It builds with `lake build CooperativeGames` on Mathlib4
-(toolchain `v4.30.0-rc2`).
+(toolchain `v4.31.0-rc1`).
 
 ### What is proven
 

@@ -4,7 +4,7 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 
 ## Status
 
-- **Toolchain**: v4.30.0-rc2
+- **Toolchain**: v4.31.0-rc1
 - **Sorry count**: 4 (all in `HashlifeCorrectness.lean` — P4 double-nine inductive step [2] + P5 large-n jump [2], Epic #2162). Three P4 sub-lemmas are now proven sorry-free (see § "Game of Life" below)
 - **Build**: `lake build Conway` -- SUCCESS (3352 jobs)
 - **Dependencies**: Mathlib4
