@@ -25,3 +25,5 @@ package «finiteness» where
 lean_lib «Finiteness» where
   -- `Finiteness.Basic` : inductive Regex minimale + dérivée de Brzozowski +
   -- exemples illustrant la finitude de l'espace des dérivées.
+  -- `globs` (not default roots) so `lake build` auto-discovers `*_en` siblings (#4980).
+  globs := #[.submodules `Finiteness]
