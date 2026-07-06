@@ -1,5 +1,5 @@
 import Mathlib
-import Utility.Basic_en
+import Utility.Basic
 import Utility.Axioms_en
 
 /-!
@@ -30,6 +30,12 @@ Cross-references:
 -/
 
 namespace Utility_en
+
+-- `Axioms_en` imports FR `Utility.Basic` + `open Utility` (convention c.212 finding 1 :
+-- EN sibling referencing base types uses the FR base module). To keep the EN mirror
+-- type-consistent with `Utility_en.StrictPref`/`IsComplete`/... (which are themselves
+-- typed over FR `Utility.Lottery`), this file resolves base names to `Utility.*` too.
+open Utility
 
 variable {α : Type*} [Fintype α]
 
