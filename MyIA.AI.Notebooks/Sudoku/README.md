@@ -363,7 +363,7 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 11 | Choco | Oui | Oui | **JPype** + Choco JAR |
 | 12 | Z3 | Oui | Oui | **z3-solver** |
 | 13 | Symbolic Automata | Oui | - | (C# uniquement) |
-| 14 | BDD | Oui | - | (C# uniquement) |
+| 14 | BDD | Oui | Oui | Hand-rolled (parité C# ⇄ Python) |
 | 15 | Infer (Probabiliste) | Oui | Oui | **NumPyro** + JAX |
 | 16 | Neural Network | - | Oui | **PyTorch** CNN |
 | 17 | LLM | - | Oui | **openai** SDK (compatible ChatCompletion API) |
@@ -389,6 +389,7 @@ Les notebooks suivants sont disponibles dans les deux langages pour comparaison 
 | 10 | OR-Tools | [Sudoku-10-ORTools-Csharp](Sudoku-10-ORTools-Csharp.ipynb) | [Sudoku-10-ORTools-Python](Sudoku-10-ORTools-Python.ipynb) | CP-SAT solveur |
 | 11 | Choco | [Sudoku-11-Choco-Csharp](Sudoku-11-Choco-Csharp.ipynb) | [Sudoku-11-Choco-Python](Sudoku-11-Choco-Python.ipynb) | CP industrielle |
 | 12 | Z3 | [Sudoku-12-Z3-Csharp](Sudoku-12-Z3-Csharp.ipynb) | [Sudoku-12-Z3-Python](Sudoku-12-Z3-Python.ipynb) | SMT solveur |
+| 14 | BDD/MDD | [Sudoku-14-BDD-Csharp](Sudoku-14-BDD-Csharp.ipynb) | [Sudoku-14-BDD-Python](Sudoku-14-BDD-Python.ipynb) | Diagrammes de décision hand-rolled (parité) |
 | 15 | Infer (Probabiliste) | [Sudoku-15-Infer-Csharp](Sudoku-15-Infer-Csharp.ipynb) | [Sudoku-15-Infer-Python](Sudoku-15-Infer-Python.ipynb) | Inférence bayésienne |
 
 ## Algorithmes Couverts
@@ -601,6 +602,7 @@ Sudoku/
 ├── Sudoku-12-Z3-Python.ipynb              # Z3 SMT Python
 ├── Sudoku-13-SymbolicAutomata-Csharp.ipynb # Automates symboliques C#
 ├── Sudoku-14-BDD-Csharp.ipynb             # BDD/MDD C#
+├── Sudoku-14-BDD-Python.ipynb             # BDD/MDD Python (jumeau, parité hand-rolled)
 ├── Sudoku-15-Infer-Csharp.ipynb           # Infer.NET C#
 ├── Sudoku-15-Infer-Python.ipynb           # NumPyro Python
 ├── Sudoku-16-NeuralNetwork-Python.ipynb   # Réseau de neurones Python
