@@ -209,6 +209,8 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | EBL - Efficacité | Opérationalité vs généralité, prolifération de règles |
 | RBL - Introduction | Déterminations, vérification fonctionnelle, réduction d'espace (approfondi dans SL-3) |
 
+> **Parité .NET** : [SL-2-KnowledgeBasedLearning-Csharp.ipynb](SL-2-KnowledgeBasedLearning-Csharp.ipynb) est le jumeau C# (.NET Interactive) — EBL (chaînage avant + unification, arbre de preuve, variabilisation) et RBL (vérification de détermination) implémentés from-scratch, sans lib ML. Marathon parité .NET ⇄ Python (#4956).
+
 ### SL-3-RelevanceLearning.ipynb
 
 | Section | Contenu |
@@ -425,6 +427,7 @@ Le treillis des déterminations croît exponentiellement avec le nombre d'attrib
 SymbolicLearning/
 ├── SL-1-LogicalLearning.ipynb              # CBH, Version Space
 ├── SL-2-KnowledgeBasedLearning.ipynb        # EBL, RBL
+├── SL-2-KnowledgeBasedLearning-Csharp.ipynb # Jumeau C# (.NET Interactive) — EBL + RBL, parité #4956
 ├── SL-3-RelevanceLearning.ipynb             # Treillis, MINIMAL-CONSISTENT-DET, RBL vs sklearn
 ├── SL-4-InductiveLogicProgramming.ipynb     # FOIL, résolution inverse, knowledge graphs
 ├── SL-5-InverseResolution.ipynb             # LGG, theta-subsomption, clause bottom, Progol
