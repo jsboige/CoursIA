@@ -168,4 +168,4 @@ theorem gale_shapley_woman_pessimal (prof : PrefProfile n)
     rw [hm'def, hinv_eq] at hgt
     exact Nat.lt_irrefl _ (mod_cast hgt)
 
-end StableMarriage
+end StableMarriage_en
