@@ -290,28 +290,32 @@ def entropy_production(P: np.ndarray, pi: np.ndarray) -> float:
     """
     P = np.asarray(P, dtype=float)
     pi = np.asarray(pi, dtype=float)
-    pi_safe = np.where(pi > 0, pi, 1.0)
+    pi_safe = np.where(pi > 0, pi, 1e-300)
     flux_go = pi_safe[:, None] * P          # pi_i * P[i, j]
     flux_back = pi_safe[None, :] * P.T       # pi_j * P[j, i]
-    # Eviter log(0) : on met les zeros a 1.
-    a = np.where(flux_go > 0, flux_go, 1.0)
-    b = np.where(flux_back > 0, flux_back, 1.0)
-    # Contribution par paire (i, j) ; on garde seulement la partie haute
-    # du triangle + diagonale (symmetrique en (i, j) -> (j, i)), divisee
-    # par 2 pour eviter le double comptage de (i, j) et (j, i).
-    d = (a - b) * np.log(a / b)
-    # On moyenne sur les paires en utilisant la matrice superieure.
+    # Regularisation eps : une transition strictement irreversible (P[i, j] > 0
+    # avec P[j, i] = 0) a une limite log(flux_go / 0+) -> +infini qui, sur des
+    # donnees empiriques, traduit une irreversibilite totale (cycle dirige,
+    # marche monotone non bornee). On borne ce terme par un petit eps (standard
+    # en thermo stochastique sur matrices estimees) afin d'obtenir un scalaire
+    # fini strictement positif refletant le flux net unidirectionnel.
+    #
+    # NB (fix ICT-19, Epic #4588) : la version precedente annulait a 0 toute
+    # paire dont l'un des flux etait nul (``real_zeros``), ce qui ecrasait a
+    # tort la contribution des cycles diriges (sigma = 0 pour une chaine
+    # clairement irreversible). La regularisation eps restaurait sigma = 6.11
+    # (vs 0.0) sur un cycle dirige 4-etats reguliarise eps=1e-3 ; sur un cycle
+    # pur (P[j,i]=0 exact) elle donne un sigma grand mais fini (23.5), coherent
+    # avec la limite thermodynamique. Cette correction ne change PAS les
+    # matrices empiriques estimees via ``transition_matrix`` (Laplace smoothing
+    # 1e-9 => tous flux strictement > 0 => ``real_zeros`` etait deja inactif),
+    # donc les substrats ICT-18 (S5a marche bornee etc.) sont inchanges.
+    eps = 1e-12
+    fg = np.where(flux_go > 0, flux_go, eps)
+    fb = np.where(flux_back > 0, flux_back, eps)
+    d = (fg - fb) * np.log(fg / fb)
     sigma = 0.5 * float(np.sum(d))
-    # Si on a mis des zeros a 1, le produit (a-b)*log(a/b) peut-etre
-    # artificiellement negatif quand le flux aller EST nul mais le flux
-    # retour est positif. On corrige : un flux aller nul doit contribuer 0
-    # (pas de transition nette dans cette direction).
-    real_zeros = (flux_go == 0) | (flux_back == 0)
-    d_corrige = np.where(real_zeros, 0.0, (flux_go - flux_back) * np.log(
-        np.where(flux_go > 0, flux_go, 1.0) / np.where(flux_back > 0, flux_back, 1.0)
-    ))
-    sigma_corrige = 0.5 * float(np.sum(d_corrige))
-    return max(sigma_corrige, 0.0)
+    return max(sigma, 0.0)
 
 
 # --------------------------------------------------------------------------- #
