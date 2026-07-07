@@ -26,7 +26,7 @@ Cette série est construite sur une **dualité délibérée simulation/preuve** 
 
 Les deux approches se nourrissent mutuellement. Le notebook Python montre *pourquoi* l'équilibre de Nash est plausible ; le notebook Lean prouve *qu'il existe forcément*. Le notebook SocialChoice/01 montre qu'Arrow est *contre-intuitif* ; `Arrow.lean` prouve qu'il est *inévitable*.
 
-**Parité .NET** : le notebook [GameTheory-4c-NashExistence-Csharp.ipynb](GameTheory-4c-NashExistence-Csharp.ipynb) est le jumeau C# (.NET Interactive) de la version Python 4c — implémentation from-scratch des mêmes algorithmes (point fixe de Brouwer par itération, projection sur le simplexe, regret matching / meilleure réponse perturbée, dynamique de convergence vers Nash sur Matching Pennies) en C# pur (pas de lib externe, matplotlib → visualisation ASCII/console). Marathon parité .NET ⇄ Python (#4956), EPIC #3801 Prong B.
+**Parité .NET** : la série dispose d'un ensemble substantiel de **jumeaux C# (.NET Interactive)** couvrant tout le fil principal — du calcul d'équilibres (Nash pur/mixte par élimination de Gauss en GT-4, simplexe de Dantzig en GT-5) aux jeux répétés (IPD + Folk Theorem en GT-6/6c), jeux combinatoires (Sprague-Grundy, Wythoff en GT-8/8c), information incomplète (CFR sur Kuhn Poker en GT-13), jeux coopératifs (Shapley/Banzhaf en GT-15/15c), conception de mécanismes (Vickrey/VCG/Gale-Shapley en GT-16) jusqu'au **choix social** (méthodes de vote et paradoxe de Condorcet en SC-03). Chaque jumeau implémente les algorithmes **from-scratch en C# pur** (BCL .NET 9, zéro dépendance externe, matplotlib → rendu ASCII/console), démontrant que la théorie se code sans librairie dédiée. Marathon parité .NET ⇄ Python (#4956), EPIC #3801 Prong B — voir le tableau « Ce que chaque notebook apporte » pour la liste exhaustive.
 
 Au-delà de la théorie classique, cette série couvre les **applications contemporaines** qui utilisent la théorie des jeux en production : enchères VCG pour la publicité en ligne (milliards de transactions/jour), systèmes de matching (Gale-Shapley pour les affectations étudiant-hôpital), IA de poker (Libratus/Pluribus), et gouvernance on-chain (DAO, vote vérifiable).
 
@@ -173,6 +173,7 @@ flowchart TD
 | SC-01 | [SocialChoice/01-Arrow-Impossibility-Theorem](SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) | Python | Arrow : preuve formelle vs simulation | 45 min |
 | SC-02 | [SocialChoice/02-Lean-SocialChoice-Formal](SocialChoice/02-Lean-SocialChoice-Formal.ipynb) | Lean 4 + Python | Arrow, Sen, Électeur Médian, tour Peters | 70 min |
 | SC-03 | [SocialChoice/03-Voting-Methods](SocialChoice/03-Voting-Methods.ipynb) | Python | Condorcet, Borda, Copeland, modèle Downs | 45 min |
+| SC-03 (C#) | [SocialChoice/03-Voting-Methods-Csharp](SocialChoice/03-Voting-Methods-Csharp.ipynb) | .NET (C#) | Twin C# du SC-03 : **Plurality/Borda/Copeland/Condorcet/IRV from-scratch** (BCL .NET 9, 0 NuGet), paradoxe de Condorcet (cycle A>B>C), théorème d'Arrow (violation IIA démontrée déterministement), théorème de l'électeur median (See #4956) | 45 min |
 | SC-04 | [SocialChoice/04-Computational-Aggregation-SAT-Z3](SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) | Python | Arrow encodé en SAT + Z3, UNSAT, relaxation | 60 min |
 | 17 | [GameTheory-17-MultiAgent-RL](GameTheory-17-MultiAgent-RL.ipynb) | Python | NFSP, PSRO, AlphaZero intro | 55 min |
 
