@@ -47,6 +47,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 | 03 | [Tactiques et théories](Z3-Python-03-Tactics.ipynb) | `Tactic`, `BitVec`, `Array` | ~35 min | PRODUCTION |
 | 03ᶜˢ | [Tactiques et théories (twin C# .NET)](Z3-Python-03-Tactics-Csharp.ipynb) | Parité .NET : tactiques, `BitVec`, `Array` via `Microsoft.Z3` (NuGet) | ~35 min | PRODUCTION |
 | 04 | [Chaînes et expressions régulières](Z3-Python-04-Strings-Regex.ipynb) | `String`, `Re` (théorie des chaînes Z3) | ~30 min | PRODUCTION |
+| 04ᶜˢ | [Chaînes et expressions régulières (twin C# .NET)](Z3-Python-04-Strings-Regex-Csharp.ipynb) | Parité .NET : théorie des chaînes, regex via `Microsoft.Z3` (NuGet) | ~30 min | PRODUCTION |
 | 05 | [Quantificateurs et preuves](Z3-Python-05-Quantifiers-Proofs.ipynb) | `ForAll`, `Exists`, preuves par réfutation, `unknown` | ~35 min | PRODUCTION |
 | 06 | [Optimisation avancée](Z3-Python-06-Advanced-Optimization.ipynb) | Pareto, objectifs multiples, `Optimize` hiérarchique, MaxSAT | ~40 min | PRODUCTION |
 
