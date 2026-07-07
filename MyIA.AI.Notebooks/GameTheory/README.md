@@ -143,6 +143,7 @@ flowchart TD
 | 8 (C#) | [GameTheory-8-CombinatorialGames-Csharp](GameTheory-8-CombinatorialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 8 : **classification P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy** from-scratch, BCL .NET 9 (See #4956) | 45 min |
 | 8b | [GameTheory-8b-Lean-CombinatorialGames](GameTheory-8b-Lean-CombinatorialGames.ipynb) | Lean 4 | PGame mathlib, Nim formel | 50 min |
 | 8c | [GameTheory-8c-CombinatorialGames-Python](GameTheory-8c-CombinatorialGames-Python.ipynb) | Python | Approfondissement jeux combinatoires | 40 min |
+| 8c (C#) | [GameTheory-8c-CombinatorialGames-Csharp](GameTheory-8c-CombinatorialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 8c : **périodicité Grundy (Guy 1996) + Wythoff (Beatty/nombre d'or) + jeux composites (Sprague-Grundy) + Chomp (Gale)** from-scratch, BCL .NET 9 (See #4956) | 40 min |
 | 9 | [GameTheory-9-BackwardInduction](GameTheory-9-BackwardInduction.ipynb) | Python | Induction arrière, mille-pattes, escalade | 55 min |
 | 9 (C#) | [GameTheory-9-BackwardInduction-Csharp](GameTheory-9-BackwardInduction-Csharp.ipynb) | .NET (C#) | Twin C# du 9 : induction arrière from-scratch, Entry/Centipede/War-of-Attrition/Chain-Store (See #4956) | 40 min |
 | 10 | [GameTheory-10-ForwardInduction-SPE](GameTheory-10-ForwardInduction-SPE.ipynb) | Python | Induction avant, SPE, menaces crédibles | 60 min |
@@ -552,6 +553,7 @@ GameTheory/
 ├── GameTheory-4c-NashExistence-Csharp.ipynb                        # Jumeau C# (.NET Interactive) — Brouwer point fixe + Matching Pennies, parité #4956
 ├── GameTheory-6c-RepeatedGames-FolkTheorem.ipynb
 ├── GameTheory-8c-CombinatorialGames-Python.ipynb
+├── GameTheory-8c-CombinatorialGames-Csharp.ipynb                  # Jumeau C# (.NET Interactive) — Wythoff/Chomp/périodicité Grundy from-scratch, parité #4956
 ├── GameTheory-15c-CooperativeGames-Python.ipynb
 ├── GameTheory-11-BayesianGames-Csharp.ipynb                     # Twin .NET/C# (marathon #4956, Prong B)
 ├── GameTheory-12-ReputationGames-Csharp.ipynb                   # Twin C# réputation (Kreps-Wilson + KMRW + Crawford-Sobel) from-scratch (marathon #4956, Prong B)
