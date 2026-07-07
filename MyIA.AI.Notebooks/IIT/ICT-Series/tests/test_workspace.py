@@ -410,3 +410,89 @@ def test_event_triggered_battery_short_window_handled_gracefully():
     out = ws.event_triggered_battery(states, [0], window=1, rng=rng, n_shuffles=3)
     assert out["n_events"] == 1
     # le per-event est marque court (ec_gain=0 convention) -- pas de crash
+
+
+# --------------------------------------------------------------------------- #
+# Gardes anti-regression (portes de #5640 sur directive ai-01 + numpy-only)
+# --------------------------------------------------------------------------- #
+def test_emergence_gain_is_not_redefined_in_workspace():
+    """``ict.workspace`` n'expose pas ``emergence_gain`` localement.
+
+    Garde-fou anti-regression : si un futur dev copie ``emergence_gain`` dans
+    ``workspace.py`` (au lieu de l'importer depuis :mod:`ict.synthesis`), ce
+    test echoue immediatement. C'est l'acceptance #5635 (reutilisation VERBATIM
+    par import, pas par copie). Porte depuis #5640 (session miroir) sur
+    directive ai-01 (msg-20260707T135024-m2ohdn).
+    """
+    assert not hasattr(ws, "emergence_gain"), (
+        "ict.workspace definit emergence_gain localement -- INTERDIT "
+        "(acceptance #5635). Importer depuis ict.synthesis plutot que redefinir."
+    )
+    # Reciproque : synthesis.emergence_gain reste la source canonique.
+    from ict import synthesis
+    assert hasattr(synthesis, "emergence_gain")
+    assert callable(synthesis.emergence_gain)
+
+
+def test_workspace_module_is_numpy_only():
+    """Garde numpy-only : ``ict.workspace`` ne doit JAMAIS importer torch/scipy/transformers.
+
+    Invariant HARD #5635 (architecture) : torch confine au pipeline d'extraction
+    #5101, ``workspace.py`` = numpy-only. Ce test casse si quelqu'un ajoute un
+    import interdit au top-level. On extrait les lignes d'import reelles (pas
+    les mentions dans les docstrings) pour eviter les faux positifs.
+    """
+    import inspect
+    import ict.workspace as wmod
+    src = inspect.getsource(wmod)
+    top_imports = [ln.strip() for ln in src.splitlines()
+                   if ln.strip().startswith(("import ", "from "))]
+    joined = " ".join(top_imports)
+    for banned in ("torch", "scipy", "transformers", "tensorflow", "sklearn"):
+        assert banned not in joined, (
+            f"import {banned} interdit dans ict.workspace (numpy-only, #5635): {joined}"
+        )
+
+
+# --------------------------------------------------------------------------- #
+# Validation defensive (couvre les ValueError existantes des primitives)
+# --------------------------------------------------------------------------- #
+def test_concentration_series_rejects_non_2d():
+    """acts 1-D ou 3-D leve ValueError (la signature documente (T, K))."""
+    with pytest.raises(ValueError, match="2-D"):
+        ws.concentration_series(np.zeros(10), metric="gini")
+    with pytest.raises(ValueError, match="2-D"):
+        ws.concentration_series(np.zeros((10, 4, 3)), metric="gini")
+
+
+def test_concentration_series_rejects_unknown_metric():
+    """metric inconnu leve ValueError explicite (pas de comportement silencieux)."""
+    acts = np.ones((10, 4))
+    with pytest.raises(ValueError, match="metric inconnu"):
+        ws.concentration_series(acts, metric="bogus")
+
+
+def test_lagged_influence_rejects_non_2d_and_bad_lag():
+    """Validation defensive de la forme et du retard max."""
+    with pytest.raises(ValueError, match="2-D"):
+        ws.lagged_influence(np.zeros(10), max_lag=3)
+    acts = np.ones((10, 4))
+    with pytest.raises(ValueError, match="max_lag >= 1"):
+        ws.lagged_influence(acts, max_lag=0)
+
+
+def test_workspace_candidates_rejects_bad_top_fraction():
+    """top_fraction hors ]0, 1] leve ValueError."""
+    fanout = np.array([5.0, 3.0, 1.0])
+    with pytest.raises(ValueError, match="top_fraction"):
+        ws.workspace_candidates(fanout, top_fraction=0.0)
+    with pytest.raises(ValueError, match="top_fraction"):
+        ws.workspace_candidates(fanout, top_fraction=1.5)
+
+
+def test_event_triggered_battery_rejects_bad_window():
+    """window < 1 leve ValueError (demi-largeur doit etre positive)."""
+    states = list(range(20))
+    rng = np.random.default_rng(0)
+    with pytest.raises(ValueError, match="window >= 1"):
+        ws.event_triggered_battery(states, [5], window=0, rng=rng, n_shuffles=2)
