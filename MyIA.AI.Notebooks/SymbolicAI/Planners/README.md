@@ -122,6 +122,7 @@ SymbolicAI/Planners/
 │   └── Planners-3-State-Space-Csharp.ipynb # Twin C# BFS/DFS/Greedy/A* (See #4956)
 ├── 02-Classical/
 │   ├── Planners-4-Fast-Downward.ipynb   # A*, heuristiques
+│   ├── Planners-4-Fast-Downward-Csharp.ipynb # Twin C# SAS+/A*/GBFS/EHC from-scratch (See #4956)
 │   ├── Planners-5-Heuristics.ipynb      # h-add, h-max, h-FF
 │   ├── Planners-5-Heuristics-Csharp.ipynb # Twin C# h-max/h-add/h-FF/landmarks (See #4956)
 │   ├── Planners-5b-Lean-Relaxation.ipynb # Companion Lean 4 : preuve h+ <= h*
@@ -129,6 +130,7 @@ SymbolicAI/Planners/
 ├── 03-Advanced/
 │   ├── Planners-7-OR-Tools.ipynb        # CP-SAT
 │   ├── Planners-8-Temporal.ipynb        # Planification temporelle
+│   ├── Planners-8-Temporal-Csharp.ipynb # Twin C# Allen + STN + RCPSP-lite from-scratch (See #4956)
 │   ├── Planners-9-HTN.ipynb             # Planification hiérarchique
 │   └── Planners-9-HTN-Csharp.ipynb      # Twin C# SHOP2 HTN solver from-scratch (See #4956)
 ├── 04-NeuroSymbolic/
@@ -213,6 +215,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 4 | [Planners-4-Fast-Downward](02-Classical/Planners-4-Fast-Downward.ipynb) | Python | Architecture FD, Docker, A*, GBFS, EHC, heuristiques | 45 min |
+| 4 (C#) | [Planners-4-Fast-Downward-Csharp](02-Classical/Planners-4-Fast-Downward-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : planificateur SAS+ from-scratch (prevail/pre/eff), A\*/GBFS/EHC, h^max/h^FF par RPG, domaines Ferry + Logistics (See #4956) | 45 min |
 | 5 | [Planners-5-Heuristics](02-Classical/Planners-5-Heuristics.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min |
 | 5 (C#) | [Planners-5-Heuristics-Csharp](02-Classical/Planners-5-Heuristics-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : h-max/h-add/h-FF/landmarks from-scratch, démo non-admissibilité h^add (See #4956) | 40 min |
 | 5b | [Planners-5b-Lean-Relaxation](02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel (cf [#4053](https://github.com/jsboige/CoursIA/issues/4053) création du lake / PR #4168, companion natif) | 45 min |
@@ -224,6 +227,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 |---|----------|--------|---------|-------|
 | 7 | [Planners-7-OR-Tools](03-Advanced/Planners-7-OR-Tools.ipynb) | Python | CP-SAT, programmation par contraintes, scheduling | 45 min |
 | 8 | [Planners-8-Temporal](03-Advanced/Planners-8-Temporal.ipynb) | Python | PDDL 2.1, durées, parallélisme, ordonnancement | 40 min |
+| 8 (C#) | [Planners-8-Temporal-Csharp](03-Advanced/Planners-8-Temporal-Csharp.ipynb) | .NET (C#) | Twin C# du 8 : PDDL 2.1 actions duratives + algèbre d'Allen (13 relations) + STN Floyd-Warshall + RCPSP-lite glouton + Gantt ASCII from-scratch (See #4956) | 40 min |
 | 9 | [Planners-9-HTN](03-Advanced/Planners-9-HTN.ipynb) | Python | Hierarchical Task Networks, méthodes, décomposition | 45 min |
 | 9 (C#) | [Planners-9-HTN-Csharp](03-Advanced/Planners-9-HTN-Csharp.ipynb) | .NET (C#) | Twin C# du 9 : solveur HTN SHOP2 from-scratch (State/Pred, Methods, backtracking), domaines Logistics + Cafe (See #4956) | 40 min |
 

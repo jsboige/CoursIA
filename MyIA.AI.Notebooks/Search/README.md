@@ -474,7 +474,7 @@ Search/
 ├── search_helpers.py                      # Utilitaires partages
 ├── resources/                             # Images et données
 │
-├── Part1-Foundations/                     # Search Fondamental (18 notebooks : 13 Python + 5 jumeaux C#)
+├── Part1-Foundations/                     # Search Fondamental (27 notebooks : 13 Python + 14 jumeaux C#)
 │   ├── Search-1-StateSpace.ipynb
 │   ├── Search-2-Uninformed.ipynb
 │   ├── Search-3-Informed.ipynb
@@ -501,7 +501,7 @@ Search/
 │   ├── CSP-8-Temporal.ipynb
 │   └── CSP-9-Distributed.ipynb
 │
-├── Part3-Advanced/                       # Recherche heuristique avancée (5 notebooks : 3 Python + 2 jumeaux C#)
+├── Part3-Advanced/                       # Recherche heuristique avancée (6 notebooks : 3 Python + 3 jumeaux C#)
 │   ├── Search-12-PatternDatabases.ipynb
 │   ├── Search-13-LimitedDiscrepancySearch.ipynb
 │   └── Search-14-WeightedAstar.ipynb
@@ -622,18 +622,18 @@ Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-fi
 
 | Sous-série | Fichiers `.ipynb` gît-tracked | Maturité | Langages | Algorithmes représentatifs |
 | --- | --- | --- | --- | --- |
-| **Part 1 — Fondements** (`Part1-Foundations/`) | **18** (13 Python : Search-1 → Search-11, 15, 16 + **5 jumeaux C#** : Search-1, 2, 3, 4, 6) | PRODUCTION=17, BETA=1 (Search-3-Csharp récent) | Python + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph |
+| **Part 1 — Fondements** (`Part1-Foundations/`) | **27** (13 Python : Search-1 → Search-11, 15, 16 + **14 jumeaux C#** : Search-1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 15-NetworkX + 11-Part2/3/4) | PRODUCTION=26, BETA=1 (Search-3-Csharp récent) | Python + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph |
 | **Part 2 — Programmation par Contraintes** (`Part2-CSP/`) | **18** (9 Python : CSP-1 → CSP-9 + **9 jumeaux C#** : CSP-1 à 9-Csharp) | PRODUCTION=13, BETA=5 (cf EPIC #4956) | Python + .NET (C#) | CSP Fundamentals (backtracking), AC-3/FC/MAC, CSP Advanced (AllDifferent/Cumulative/Circuit), Scheduling (Job-Shop/RCPSP/Nurse), Optimization (Bin Packing/Knapsack), Hybridization (LCG/CP+SAT/CP+ML/LLM+CSP), Soft, Temporal (Allen's Interval Algebra), Distributed (Yokoo 1992) |
-| **Part 3 — Recherche heuristique avancée** (`Part3-Advanced/`) | **5** (3 Python : Search-12, 13, 14 + **2 jumeaux C#** : Search-13, 14) | PRODUCTION=5 | Python + .NET (C#) | Pattern Databases (Korf & Felner 2002 additives), Limited Discrepancy Search (Harvey & Ginsberg 1995), Weighted A* (Pohl 1970) |
+| **Part 3 — Recherche heuristique avancée** (`Part3-Advanced/`) | **6** (3 Python : Search-12, 13, 14 + **3 jumeaux C#** : Search-12, 13, 14) | PRODUCTION=6 | Python + .NET (C#) | Pattern Databases (Korf & Felner 2002 additives), Limited Discrepancy Search (Harvey & Ginsberg 1995), Weighted A* (Pohl 1970) |
 | **Part 4 — Métaheuristiques composables** (`Part4-Metaheuristics/`, C# .NET 9, MetaGeneticSharp) | **19** (MGS-1 → MGS-19, tous C# .NET au-dessus de GeneticSharp vendored) | PRODUCTION=12, BETA=7 (MGS-10 → MGS-19 landscape-bias series) | C# / .NET | Composition, Eukaryote, Islands, Compound Metaheuristics, TSP, Landscape Explorer, Center Bias, Island Synergy, Axis Alignment, Landscape Debias, Island Synergy Found, Landscape Analysis (FDC), Algorithm Selection (No-Free-Lunch), Parameter Control, CEC Banc, Metropolis Reinsertion |
-| **Applications** (`Applications/`) | **22** (13 CSP + 7 Hybrid + 2 Search) | PRODUCTION=22 | 20 Python + 2 C# | N-Queens, Graph Coloring, Nurse/Job-Shop/Timetabling Scheduling, Minesweeper, Wordle, MiniZinc, Picross (27M× speedup), Sports/Crossword/WFC CSP, Portfolio/TSP/VRP/Hyperparameter Tuning, Edge Detection (Python + C#), ConnectFour (Minimax/MCTS) |
+| **Applications** (`Applications/`) | **29** (19 CSP + 8 Hybrid + 2 Search) | PRODUCTION=29 | 20 Python + 9 C# | N-Queens, Graph Coloring, Nurse/Job-Shop/Timetabling Scheduling, Minesweeper, Wordle, MiniZinc, Picross (27M× speedup), Sports/Crossword/WFC CSP, Portfolio/TSP/VRP/Hyperparameter Tuning, Edge Detection (Python + C#), ConnectFour (Minimax/MCTS) |
 | **archive** (`archive/`) | **2** (CSPs_Intro, Exploration_non_informée_et_informée_intro, historiques pré-tranche 8/8 #5081) | PRODUCTION=2 (archive only) | Python | Notebooks historiques, remplacés par Part2-CSP/CSP-1-Fundamentals et Part1-Foundations/Search-{2,3} |
 | **Racine `Search/` (worktree non-tracké)** | **3 fichiers `_output.ipynb`** non trackés (GeneticSharp-EdgeDetection, Portfolio_Optimization_GeneticSharp, PyGad-EdgeDetection — outputs de App-9 / App-9b / App-10 / App-10b, gitignorés) | — | — | Artéfacts d'exécution, exclus du compte pédagogique |
-| **Total `pédagogical_count`** | **83** (gît-tracked : 22 + 19 + 17 + 18 + 5 + 2) | **PRODUCTION=68, BETA=15** | Python + C# | 5 piliers + archive, voir « Structure des fichiers » l. 469 pour l'arborescence complète |
+| **Total `pédagogical_count`** | **101** (gît-tracked : 29 + 19 + 27 + 18 + 6 + 2) | **PRODUCTION=86, BETA=15** | Python + C# | 5 piliers + archive, voir « Structure des fichiers » l. 469 pour l'arborescence complète |
 
 **Maturité documentée firsthand** :
 
-- **PRODUCTION=68** : notebooks validés end-to-end sur la machine de référence (Python 3.10+ stdlib + `ortools` + `deap` + `networkx` + `mealpy` + `pygad` ; C# = .NET 9.0 + `Microsoft.dotnet-interactive`). Couverture pédagogique cohérente du spectre algorithmique de la recherche en IA : BFS/DFS, A*, heuristiques admissibles, Minimax/Alpha-Beta, MCTS, backtracking + AC-3, Job-Shop RCPSP, métaheuristiques composables (19 notebooks MGS-1 → MGS-19 qui reconstruisent et composent au-dessus de GeneticSharp), portfolio/TSP/VRP/Picross/WFC.
+- **PRODUCTION=86** : notebooks validés end-to-end sur la machine de référence (Python 3.10+ stdlib + `ortools` + `deap` + `networkx` + `mealpy` + `pygad` ; C# = .NET 9.0 + `Microsoft.dotnet-interactive`). Couverture pédagogique cohérente du spectre algorithmique de la recherche en IA : BFS/DFS, A*, heuristiques admissibles, Minimax/Alpha-Beta, MCTS, backtracking + AC-3, Job-Shop RCPSP, métaheuristiques composables (19 notebooks MGS-1 → MGS-19 qui reconstruisent et composent au-dessus de GeneticSharp), portfolio/TSP/VRP/Picross/WFC.
 
 - **BETA=15** = 5 jumeaux C# Part 2 (CSP-1, 3, 4, 5, 7 — sprint #5293 cycle 19 + marathon #4956 cycles 14-18 : 7 PRs MERGEABLE en attente ai-01) + 7 MetaGeneticSharp MGS-10 → MGS-19 (LANDSCAPE BIAS series — IslandSynergy, CenterBias, AxisAlignment, LandscapeDebias, IslandSynergyFound, LandscapeAnalysis, AlgorithmSelection, ParameterControl, CecBanc — `dotnet build SUCCESS` documenté mais BETA car analyse comparative NFL/WOA en cours, cf PRs po-2025:CoursIA-2 antérieures) + 3 autres entrées (cf EPIC #3975).
 
@@ -722,7 +722,7 @@ flowchart LR
     class LA,LM,LP,LK,LG,LB lean
 ```
 
-La double culture **simulation + preuve formelle** est précisément ce que la [cartographie AIMA 3-level du hub central P0](../README.md#lean) (#5045 MERGED) articule : « instinct algorithmique ↔ méta-analyse ↔ preuve formelle ». Le hub Search ancre le **premier niveau (instinct)** par ses 82 notebooks Python/C# (64 Python + 18 jumeaux C#) et le **deuxième niveau (méta-analyse)** par les benchmarks comparatifs (App-13 TSP, App-18 hyperparameter tuning, MGS-16 No-Free-Lunch) ; le **troisième niveau (preuve formelle)** arrive ici via `astar_lean`, qui démontre ce que les simulations Search-3/Search-14 ne peuvent que suggérer empiriquement : qu'une heuristique admissible **garantit** l'optimalité d'A\*, et qu'une heuristique consistente (P2) **garantit** que le premier chemin trouvé est déjà optimal (sans réouverture).
+La double culture **simulation + preuve formelle** est précisément ce que la [cartographie AIMA 3-level du hub central P0](../README.md#lean) (#5045 MERGED) articule : « instinct algorithmique ↔ méta-analyse ↔ preuve formelle ». Le hub Search ancre le **premier niveau (instinct)** par ses 101 notebooks Python/C# (47 Python + 54 C#) et le **deuxième niveau (méta-analyse)** par les benchmarks comparatifs (App-13 TSP, App-18 hyperparameter tuning, MGS-16 No-Free-Lunch) ; le **troisième niveau (preuve formelle)** arrive ici via `astar_lean`, qui démontre ce que les simulations Search-3/Search-14 ne peuvent que suggérer empiriquement : qu'une heuristique admissible **garantit** l'optimalité d'A\*, et qu'une heuristique consistente (P2) **garantit** que le premier chemin trouvé est déjà optimal (sans réouverture).
 
 Sans cette section, le chainage vers ML (perceptron 0 sorry comme borne duale de la convergence A\* sur graphes pondérés), QC (Kelly, borné inférieurement par l'arbitrage risque/rendement), GameTheory (Arrow, posant les conditions sur les procédures de vote), Probas (PAC iter-2, formalisant pourquoi un échantillon suffit) et SymbolicAI (argumentation, formalisant la sémantique preferred) restait invisible depuis Search.
 

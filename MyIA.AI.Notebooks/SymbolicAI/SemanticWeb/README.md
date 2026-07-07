@@ -147,7 +147,7 @@ Cette partie pose les fondations du Web Sémantique en utilisant l'écosystème 
 |---|----------|-------|------------------|
 | 1 | **SW-1-CSharp-Setup** | 20 min | - |
 | 2 | **SW-2-CSharp-RDFBasics** | 45 min | SW-2b-Python-RDFBasics |
-| 3 | **SW-3-CSharp-GraphOperations** | 50 min | - |
+| 3 | **SW-3-CSharp-GraphOperations** | 50 min | SW-3b-Python-GraphOperations |
 | 4 | **SW-4-CSharp-SPARQL** | 45 min | SW-4b-Python-SPARQL |
 
 #### SW-1-CSharp-Setup : Premier pas dans le Web Sémantique (20 min)
@@ -205,7 +205,7 @@ Cette partie étend vos compétences aux données du Web ouvert et aux ontologie
 | # | Notebook | Durée | Sidetrack Python |
 |---|----------|-------|------------------|
 | 5 | **SW-5-CSharp-LinkedData** | 50 min | SW-5b-Python-LinkedData |
-| 6 | **SW-6-CSharp-RDFS** | 40 min | - |
+| 6 | **SW-6-CSharp-RDFS** | 40 min | SW-6b-Python-RDFS |
 | 7 | **SW-7-CSharp-OWL** | 50 min | SW-7b-Python-OWL |
 
 #### SW-5-CSharp-LinkedData : DBpedia, Wikidata et Requêtes Fédérées (50 min)
@@ -246,13 +246,14 @@ OWL (Web Ontology Language) étend RDFS avec des constructeurs logiques puissant
 
 ---
 
-### Partie 3 : Standards Modernes (Python uniquement)
+### Partie 3 : Standards Modernes (Python, avec jumeau C# SW-8)
 
-Cette partie couvre les standards modernes du Web Sémantique, exclusivement en Python (écosystème dominant pour l'IA).
+Cette partie couvre les standards modernes du Web Sémantique. L'écosystème Python (rdflib, pySHACL, owlready2) y domine, complété par un jumeau C# / dotNetRDF pour SHACL (parité .NET ⇄ Python, marathon #4956).
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 8 | **SW-8-Python-SHACL** | 45 min | Validation de données avec pySHACL |
+| 8 (C#) | **SW-8-CSharp-SHACL** | 45 min | Jumeau .NET de SW-8 : validation SHACL avec dotNetRDF (`VDS.RDF.Shacl`) |
 | 9 | **SW-9-Python-JSONLD** | 40 min | Données structurées pour le web |
 | 10 | **SW-10-Python-RDFStar** | 40 min | RDF 1.2, annotations et provenance |
 
@@ -277,6 +278,8 @@ JSON-LD est le pont entre le monde JSON des développeurs web et le Web Sémanti
 - Compactage et expansion JSON-LD avec `jsonld` Python
 - Rich snippets Google : 73% des résultats utilisent des données structurées
 - Cas d'usage : e-commerce (Produit), articles (Article), organisations (Organization)
+
+> **Twin C# disponible** : [SW-9-CSharp-JSONLD](SW-9-CSharp-JSONLD.ipynb) — JSON-LD via dotNetRDF (`JsonLdParser`/`JsonLdWriter`, `TripleStore`). Compagnon cross-langage du notebook Python `rdflib` + `pyld` sur le même standard W3C JSON-LD 1.1 (marathon parité .NET ⇄ Python #4956, Prong B).
 
 #### SW-10-Python-RDFStar : Annotations et Provenance (40 min)
 
@@ -482,15 +485,19 @@ SemanticWeb/
 ├── SW-2-CSharp-RDFBasics.ipynb
 ├── SW-2b-Python-RDFBasics.ipynb     # Sidetrack
 ├── SW-3-CSharp-GraphOperations.ipynb
+├── SW-3b-Python-GraphOperations.ipynb   # Sidetrack
 ├── SW-4-CSharp-SPARQL.ipynb
 ├── SW-4b-Python-SPARQL.ipynb        # Sidetrack
 ├── SW-5-CSharp-LinkedData.ipynb
 ├── SW-5b-Python-LinkedData.ipynb    # Sidetrack
 ├── SW-6-CSharp-RDFS.ipynb
+├── SW-6b-Python-RDFS.ipynb           # Sidetrack
 ├── SW-7-CSharp-OWL.ipynb
 ├── SW-7b-Python-OWL.ipynb           # Sidetrack
+├── SW-8-CSharp-SHACL.ipynb           # Jumeau .NET de SW-8 (dotNetRDF.SHACL, marathon #4956)
 ├── SW-8-Python-SHACL.ipynb
 ├── SW-9-Python-JSONLD.ipynb
+├── SW-9-CSharp-JSONLD.ipynb         # Twin C# (marathon #4956 Prong B)
 ├── SW-10-Python-RDFStar.ipynb
 ├── SW-11-Python-KnowledgeGraphs.ipynb
 ├── SW-12-Python-GraphRAG.ipynb
