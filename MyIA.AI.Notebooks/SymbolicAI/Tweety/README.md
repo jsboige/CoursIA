@@ -13,18 +13,19 @@ Série complète de notebooks pour explorer [TweetyProject](https://tweetyprojec
 
 ## Statistiques catalogue à jour
 
-Statistiques détaillées de la sous-série Tweety, lues directement depuis le marqueur `<!-- CATALOG-STATUS -->` byte-identique (l. 5-10) — `pedagogical_count: 26, breakdown: Tweety=26, maturity: PRODUCTION=21, BETA=4, DRAFT=1` :
+Statistiques détaillées de la sous-série Tweety, lues directement depuis le marqueur `<!-- CATALOG-STATUS -->` byte-identique (l. 5-10) — `pedagogical_count: 32, breakdown: Tweety=32, maturity: PRODUCTION=26, BETA=6` (le détail par sous-catégorie est en cours d'audit et sera prochainement ré-aligné sur le marqueur) :
 
-| Sous-catégorie        |  NB | Statut                       |
-|-----------------------|-----|------------------------------|
-| Python (Tw-1 à 11)    |  13 | PROD=12, BETA=1              |
-| C#/.NET IKVM          |  13 | PROD=9, BETA=3, DRAFT=1      |
-| **Total**             |**26**|**PROD=21, BETA=4, DRAFT=1** |
+| Sous-catégorie        |    NB | Statut                       |
+|-----------------------|-------|------------------------------|
+| Python (Tw-1..5b, 11) |    13 | PROD=12, BETA=1              |
+| C#/.NET IKVM          |    18 | PROD=15, BETA=2, DRAFT=1     |
+| Probe `_probes/`      |     1 | BETA                         |
+| Total                 |    32 | PROD=26, BETA=6              |
 
 Détails paradigmes/stacks :
 
 - **Python (JPype 13 nb)** : PL/FOL/DL/ML/QBF/CL/Dung/ASPIC+/AGM/MLN/do-calculus Pearl — double stack sur Tw-3 (DL+Modale+QBF), Tw-4 (Belief Revision), Tw-7b (Ranking), Tw-9 (vote/préférences), Tw-10 (MLN), Tw-11 (causal). BETA=1 sur `Tweety-5b-Lean-Argumentation` (companion kernel Lean 4, voir `argumentation_lean/`).
-- **C#/.NET (IKVM 8.14, 12 nb)** : bytecode Java→.NET downgrade Java 15→8 (post-C190 `JvmDowngrader`), sans JVM. BETA=2 (`Tweety-2-Basic-Logics-Csharp`, `Tweety-4-Belief-Revision-Csharp`), DRAFT=1 = BROKEN (`Tweety-3-Advanced-Logics-Csharp`, conflits de noms sur `logics.ml` + `logics.cl` + `logics.qbf` simultanés dans la même DLL).
+- **C#/.NET (IKVM 8.14, 18 nb)** : bytecode Java→.NET downgrade Java 15→8 (post-C190 `JvmDowngrader`), sans JVM. BETA=2 (`Tweety-2-Basic-Logics-Csharp`, `Tweety-4-Belief-Revision-Csharp`), DRAFT=1 = BROKEN (`Tweety-3-Advanced-Logics-Csharp`, conflits de noms sur `logics.ml` + `logics.cl` + `logics.qbf` simultanés dans la même DLL).
 - **Probe (`_probes/Tweety-IKVM-Init-Probe`, 1 nb)** : IKVM init smoke-test BETA.
 
 **Conformité C.1** : les notebooks exposent des stubs conformes (`pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et restent exécutables end-to-end. Les dépendances sont gérées par `requirements.txt` racine (JPype1, tweety-translate, pandas, numpy, jdk-pywrap). Le port C#/.NET (EPIC #4667) cible .NET 9.0 + IKVM 8.14 (post-C190 JvmDowngrader Java 15→8) ; voir la chaîne de build dans `.github/workflows/tweety-csharp.yml` et l'inventaire détaillé dans la [Section Tweety](https://github.com/jsboige/CoursIA/issues/4667). Le seul notebook C# à maturité DRAFT est `Tweety-3-Advanced-Logics-Csharp` (statut BROKEN : héritage des conflits de noms de classes IKVM 8.14 sur `logics.ml` + `logics.cl` + `logics.qbf` simultanés).
@@ -68,10 +69,17 @@ Les notebooks utilisent **deux implémentations** pour exécuter TweetyProject, 
 
 | Implémentation           | Stack                          | Kernel        | JVM requise ?                     | Notebooks                                                                                                                               |
 | ------------------------ | ------------------------------ | ------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **Python** (originelle)  | JPype (pont Java↔Python)       | Python 3      | Oui (JDK téléchargé par le setup) | `Tweety-1` à `Tweety-11` (12 notebooks)                                                                                                 |
+| **Python** (originelle)  | JPype (pont Java↔Python)       | Python 3      | Oui (JDK téléchargé par le setup) | `Tweety-1` à `Tweety-11` (+ `Tweety-5b-Lean-Argumentation` companion Lean 4, soit **13 notebooks**)                                    |
 | **C#/.NET** (port natif) | IKVM 8.15 (bytecode Java→.NET) | `.net-csharp` | **Non** (runtime IKVM pur .NET)   | `Tweety-2-Basic-Logics-Csharp`, `Tweety-2b-Semantics-Csharp`, `Tweety-2c-FOL-Csharp`, `Tweety-3-Dung-Csharp`, `Tweety-4-Aspic-Csharp`   |
 
 Les deux implémentations couvrent les mêmes concepts fondamentaux (logique propositionnelle, sémantique des mondes possibles, logique du premier ordre, argumentation de Dung) ; le port C# les expose **sans JVM**, directement dans le runtime .NET, ce qui les rend exécutables côté .NET Interactive comme n'importe quel notebook C#. Les notebooks `-Csharp` vivent **à côté** de leurs homologues Python (pas dans un sous-dossier), pour faciliter la comparaison des deux stacks sur un même concept. Voir EPIC [#4667](https://github.com/jsboige/CoursIA/issues/4667).
+
+**Schéma de numérotation C# (clarification, cf. [#5642](https://github.com/jsboige/CoursIA/issues/5642), mandat #5081)** : la série Tweety mêle deux conventions de nommage pour le port C# :
+
+- **Twin par numéro** : `Tweety-N-<Topic>-Csharp` jumelle le notebook Python `Tweety-N-<Topic>` (ex. `Tweety-2-Basic-Logics` + `-Csharp`, `Tweety-5-Abstract-Argumentation` + `-Csharp`). Le `-Csharp` apparaît à côté du Python pour la comparaison stack-à-stack.
+- **Extension C#-only par suffixe lettre** : `Tweety-2b-Semantics-Csharp`, `Tweety-2c-FOL-Csharp`, `Tweety-3-Conditional-Logics-Csharp`, `Tweety-3-ModalLogic-Csharp`, `Tweety-3-QBF-Csharp` sont des extensions logiques pures sous le bloc 3 (Advanced Logics).
+
+**Cas Dung(3) / Aspic(4) — particularité** : `Tweety-3-Dung-Csharp` et `Tweety-4-Aspic-Csharp` sont des extensions C#-only de **l'argumentation computationnelle** placées sous les numéros 3 (logique) et 4 (révision AGM) **par proximité chronologique d'implémentation** (la première vague du port C# a démarré avant la renumérotation narrative #5081). **Ces deux notebooks seront migrés à terme** vers `Tweety-5c-Dung-Csharp` (à côté de `Tweety-5-Abstract-Argumentation`) et `Tweety-6c-Aspic-Csharp` (à côté de `Tweety-6-Structured-Argumentation`) — voir #5642 pour la roadmap de renommage. En attendant, la coexistence (Dung sous 3, ASPIC+ sous 4) est documentée comme intentionnelle et pedagogiquement défendable (comparaison directe stack-à-stack entre Python et C# possible).
 
 À l'heure des modèles statistiques et des LLMs, pourquoi étudier ces logiques symboliques ? Parce qu'elles apportent ce que l'apprentissage seul ne garantit pas : un raisonnement **explicite, vérifiable et explicable**. L'argumentation computationnelle (cadres de Dung, ASPIC+, ABA) modélise la façon dont des agents confrontent des arguments, gèrent les contradictions et aboutissent à des conclusions justifiées — avec des applications en raisonnement juridique, en aide à la décision, en négociation multi-agents, et de plus en plus comme couche de contrôle au-dessus des LLMs (détecter les incohérences, structurer un débat). La révision de croyances (AGM) formalise comment un agent rationnel met à jour ses connaissances face à une information nouvelle ou contradictoire. L'intérêt de TweetyProject est de réunir tous ces formalismes sous un même toit : on expérimente d'une logique à l'autre sans avoir à réimplémenter chaque solveur.
 
@@ -95,7 +103,7 @@ Cette série ne propose pas de choisir l'un ou l'autre, mais de **comprendre les
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 13 |
+| Notebooks | 32 (13 Python + 18 C# + 1 probe) |
 | Cellules totales | ~430 |
 | Durée estimée | ~6h (tutorat) |
 | Kernel | Python 3 (JPype/Java) |
