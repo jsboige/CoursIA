@@ -122,7 +122,7 @@ jupyter notebook solution/Diagnostic-Medical.ipynb
 1. Exécuter toutes les cellules (`Cell → Run All`)
 2. Vérifier que tous les tests passent
 3. Comparer avec les travaux étudiants
-4. Utiliser la grille d'évaluation du fichier `enonce/sujet.md`
+4. Utiliser la grille d'évaluation du fichier `subject.md`
 
 ### Données de test
 
@@ -243,12 +243,12 @@ Chaque cellule à remplir ou compléter sera évaluée pour constituer la note f
 
 À la fin de ce devoir, vous aurez acquis :
 
-✅ Maîtrise des algorithmes de recherche informée (A*)
-✅ Compréhension de la programmation par contraintes (Z3)
-✅ Pratique des algorithmes génétiques
-✅ Application de l'IA au domaine biomédical
-✅ Analyse de complexité et optimisation
-✅ Documentation technique et tests
+- **Maîtrise** des algorithmes de recherche informée (A*)
+- **Compréhension** de la programmation par contraintes (Z3)
+- **Pratique** des algorithmes génétiques
+- **Application** de l'IA au domaine biomédical
+- **Analyse** de complexité et optimisation
+- **Documentation** technique et tests
 
 ## Conclusion
 
