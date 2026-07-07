@@ -194,6 +194,7 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 6  | [Tweety-6-Structured-Argumentation](Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP                            | 60 min  | Python |
 | 6c | [Tweety-6-Structured-Argumentation-Csharp](Tweety-6-Structured-Argumentation-Csharp.ipynb) | Twin C# ASPIC+ from-scratch (BCL, pas IKVM ; DeLP/ABA/ASP conceptuel) | 35 min | C# PROD |
 | 7a | [Tweety-7a-Extended-Frameworks](Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended             | 50 min  | Python |
+| 7ac | [Tweety-7a-Extended-Frameworks-Csharp](Tweety-7a-Extended-Frameworks-Csharp.ipynb) | Twin C# ADF/SetAF/EAF/VAF from-scratch (BCL, Kleene 3-valued, 0 jpype/JVM ; See #4956) | 55 min | C# PROD |
 | 7b | [Tweety-7b-Ranking-Probabilistic](Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking Semantics, Probabiliste                   | 40 min  | Python |
 | 7bc | [Tweety-7b-Ranking-Probabilistic-Csharp](Tweety-7b-Ranking-Probabilistic-Csharp.ipynb) | Ranking/Probabiliste .NET (IKVM, c.179 PR #5231) | 30 min  | C# PROD |
 | **Applications** |
@@ -350,6 +351,7 @@ Tweety/
 ├── Tweety-6-Structured-Argumentation.ipynb       # ASPIC+, DeLP, ABA, ASP
 ├── Tweety-6-Structured-Argumentation-Csharp.ipynb # Twin C# ASPIC+ from-scratch (BCL)
 ├── Tweety-7a-Extended-Frameworks.ipynb           # ADF, Bipolar, WAF, SAF
+├── Tweety-7a-Extended-Frameworks-Csharp.ipynb    # Twin C# ADF/SetAF/EAF/VAF from-scratch (BCL, 0 JVM)
 ├── Tweety-7b-Ranking-Probabilistic.ipynb         # Ranking Semantics
 ├── Tweety-7b-Ranking-Probabilistic-Csharp.ipynb  # Ranking/Probabiliste .NET
 ├── Tweety-8-Agent-Dialogues.ipynb                # Agents, dialogues, loteries
