@@ -32,13 +32,12 @@ Au-delà de la théorie classique, cette série couvre les **applications contem
 
 ## Statistiques catalogue à jour
 
-Le marqueur `CATALOG-STATUS` (l. 5-10) reflète l'état du dépôt au moment du commit. Les chiffres ci-dessous sont lus **byte-identique** depuis ce marqueur, conformément à la règle `catalog-pr-hygiene` (le catalogue n'est jamais régénéré sur une branche feature — c'est le cron quotidien `catalog-cron.yml` qui le maintient sur `main`).
+Le marqueur `CATALOG-STATUS` en tête de fichier **fait foi pour les comptes et la maturité** — il est régénéré quotidiennement par le cron `catalog-cron.yml` sur `main`, jamais à la main sur une branche (règle `catalog-pr-hygiene`). La composition structurelle de la série est la suivante :
 
-| Sous-série | Notebooks | Statut | Paradigmes dominants |
-|------------|-----------|--------|----------------------|
-| Racine (fil principal + side tracks `b` Lean + `c` Python) | 27 | PRODUCTION=24, BETA=3 | Nashpy/OpenSpiel/Z3 (Python), Lean 4 (side tracks `b`) |
-| Sous-série [SocialChoice/](SocialChoice/) | 4 | PRODUCTION=4, BETA=0 | Lean 4 (Arrow, Sen) + SAT/Z3 (UNSAT) + simulation Condorcet/Borda |
-| **Total** | **31** | **PRODUCTION=28, BETA=3** | Python pur + Lean 4 (6 side tracks `b` 0-sorry) |
+| Sous-série | Composition | Paradigmes dominants |
+|------------|-----------|----------------------|
+| Racine | Fil principal GT-1 à GT-17 en **binômes Python ⇄ C#** (marathon #4956), side tracks `b` Lean (2b, 4b, 5b, 8b, 11b, 15b), side tracks `c` en binômes (4c, 8c, 15c) | Nashpy/OpenSpiel/Z3 (Python), BCL from-scratch (C#), Lean 4 (side tracks `b`) |
+| Sous-série [SocialChoice/](SocialChoice/) | SC-01 à SC-04, dont SC-01 (Arrow) et SC-03 (Voting) en binômes Python ⇄ C# | Lean 4 (Arrow, Sen) + SAT/Z3 (UNSAT) + simulation Condorcet/Borda |
 
 Les side tracks Lean (2b, 4b, 5b, 8b, 11b, 15b) prouvent les grands théorèmes (Nash via Brouwer/Kakutani, minimax via Sion, Vickrey, PGame/Sprague-Grundy, axiomes Shapley) avec **0 `sorry` sur les théorèmes majeurs** (cf [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ; harmonisation Mathlib en cours, #4362). Les `student/` éventuels portent des stubs conformes (règle C.1 — `pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et restent exécutables end-to-end. Dépendances Python : voir `MyIA.AI.Notebooks/requirements.txt` à la racine (nashpy, networkx, numpy, matplotlib, z3-solver).
 
@@ -62,7 +61,7 @@ Cette série mobilise plusieurs couches de l'écosystème MCP du cluster, et ent
 | Mécanismes VCG, matching Gale-Shapley | [SymbolicAI/SmartContracts](../SymbolicAI/SmartContracts/README.md) | Gouvernance on-chain (DAO, vote vérifiable) ; le design de mécanismes se prolonge en smart contracts |
 | Encodage SAT/Z3 d'Arrow | [SymbolicAI/SMT/Z3](../SymbolicAI/SMT/Z3/README.md) | Outil Z3 partagé ; notebook SC-04 exploite la même API que NB-06 (witness generation Automata) |
 
-**Effet de composition** : GameTheory sert de **carrefour** entre simulation numérique (Nashpy, OpenSpiel, Z3) et formalisation (Lean 4). Toute avancée d'une série partenaire enrichit potentiellement les notebooks GameTheory — par exemple, un nouveau théorème prouvé en Lean côté SymbolicAI/Lean peut être cité depuis [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ou ouvrir un nouveau side track `b`. Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Gale-Shapley) aux **lakes** (qui prouvent — Arrow, Bondareva-Shapley, Gale-Shapley existence et optimalité côté proposant), avec 7 lakes game-théoriques phares et **0 sorry sur les théorèmes majeurs**.
+**Effet de composition** : GameTheory sert de **carrefour** entre simulation numérique (Nashpy, OpenSpiel, Z3) et formalisation (Lean 4). Toute avancée d'une série partenaire enrichit potentiellement les notebooks GameTheory — par exemple, un nouveau théorème prouvé en Lean côté SymbolicAI/Lean peut être cité depuis [LEAN_INVENTORY.md](LEAN_INVENTORY.md) ou ouvrir un nouveau side track `b`. Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Gale-Shapley) aux **lakes** (qui prouvent — Arrow, Bondareva-Shapley, Gale-Shapley existence et optimalité côté proposant), avec **8 lakes game-théoriques en propre** (plus le lake de référence externe `social_choice_lean_peters`) et **0 sorry sur les théorèmes majeurs**.
 
 ## Objectifs d'apprentissage
 
@@ -243,6 +242,8 @@ Chaque notebook adopte la même trame pédagogique — introduction motivée, pl
 | SC-03 | Voting-Methods | ~43 | 3 | **COMPLET** |
 | SC-04 | Computational-Aggregation-SAT-Z3 | ~66 | 2 | **COMPLET** |
 | 17 | MultiAgent-RL | ~35 | 3 | **COMPLET** |
+
+**Jumeaux C#** : le tableau ci-dessus liste les notebooks Python/Lean de référence. Chaque notebook du fil principal (GT-2 à GT-17, plus 4c/8c/15c et SC-01/SC-03) dispose en outre d'un **jumeau C#** (`*-Csharp.ipynb`, 23 fichiers) livré par le marathon parité #4956 — algorithmes from-scratch en BCL .NET 9, voir la section « Parité .NET » en tête de fichier.
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens
@@ -604,8 +605,8 @@ GameTheory/
 ├── social_choice_lean/            # Projet Lake choix social (Arrow, Sen, Voting/Median Voter — 0 sorry)
 ├── social_choice_lean_peters/     # Projet Lake référence DominikPeters (0 sorry, toolchain v4.27.0-rc1)
 ├── stable_marriage_lean/          # Projet Lake Gale-Shapley (GS COMPLETE, 0 sorry — énoncés faux réfutés, exists_isManOptimal prouvé)
-├── lean_game_defs/                # Types Lean partages (pas de Lake project)
-├── lean_game_defs_ext/            # Types Lean étendus (Vickrey, Bayesian — pas de Lake project)
+├── lean_game_defs/                # Projet Lake : types Lean partagés (lakefile.toml)
+├── lean_game_defs_ext/            # Projet Lake : types étendus (Vickrey 0 sorry, Bayesian — lakefile.toml)
 ├── scripts/                       # Scripts d'installation (WSL Lean, OpenSpiel)
 ├── examples/
 │   ├── prisoners_dilemma.py
@@ -682,7 +683,7 @@ La théorie des jeux n'est pas qu'un objet académique : ses résultats structur
 
 ### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
-GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **sept lakes game-théoriques phares** (toolchains détaillées dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md) — harmonisation Mathlib en cours, cf #4362 —, branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
+GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **huit lakes game-théoriques en propre** — dont les sept phares cartographiés ci-dessous, plus `lean_game_defs` (types partagés) et le lake de référence externe `social_choice_lean_peters` (toolchains détaillées dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md) — harmonisation Mathlib en cours, cf #4362 —, branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
 
 | Famille | Lake phare | Théorème | Branchement notebook |
 | --- | --- | --- | --- |
@@ -691,7 +692,7 @@ GameTheory occupe une place à part dans la couche Lean : c'est la famille qui a
 | **GameTheory** (design) | `lean_game_defs_ext` | Vickrey (enchère au second prix = stratégie dominante), théorème de révélation | GameTheory-11b-Lean-BayesianGamesExt |
 | **GameTheory** (coopératif) | `cooperative_games_lean` (Bondareva-Shapley) | Bondareva-Shapley résolu 0 sorry (#3954), Core non-vide sous balanced | Notebooks 15-15b (coopératif, valeur de Shapley) |
 | **GameTheory** (matching) | `stable_marriage_lean` | Gale-Shapley : existence + optimalité côté proposant | Notebooks 16-2 (matching, Gale-Shapley) |
-| **GameTheory** (jeux répétés) | `repeated_games_lean` | Stratégie grim-trigger (compagnon formel GT-6c) — *en cours* (build + sorries résiduels, cf STATUS.md) | Notebook 6c (RepeatedGames-FolkTheorem) |
+| **GameTheory** (jeux répétés) | `repeated_games_lean` | Stratégie grim-trigger **certifiée 0 sorry** (compagnon formel GT-6c, cf #4880) ; stretch restant : théorème Folk complet (`Folk.lean`) | Notebook 6c (RepeatedGames-FolkTheorem) |
 | **GameTheory** (jeux combinatoires) | `conway_cgt_lean` | Visite guidée (`#check`) de la théorie des jeux combinatoires (Conway CGT) | Notebooks 8/8b (CombinatorialGames, Sprague-Grundy) |
 | **Search** (cross-famille) | `astar_lean` (cf. `#4048`) | Consistance + heuristique admissible = optimalité | Search-13 (A*), branchement par preuve de correction |
 | **QuantConnect** (cross-famille) | `kelly_lean` (cf. `#4052`) | Kelly `g(f) ≤ g(f*)` + unicité | QC-Py-10 Risk Management, branchement par fraction risquée |
@@ -764,4 +765,4 @@ Voir la licence du repository principal.
 
 ---
 
-*Version 1.3.0 — Juillet 2026 — audit §E whole-file gate : réconciliation disque↔catalogue 31 nb, 7 lakes, correction lake #2611→#4054. EPIC #3975 tranche gametheory.*
+*Version 1.4.0 — Juillet 2026 (2026-07-07) — passe ascendante feuilles→hub : intégration du marathon parité C# #4956 (binômes GT-2..17 + SocialChoice), 8 lakes en propre + peters, grim-trigger certifié, comptes délégués au marqueur CATALOG-STATUS.*

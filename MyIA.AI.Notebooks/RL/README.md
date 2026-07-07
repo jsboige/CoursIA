@@ -228,6 +228,7 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 | **A2C** | On-policy | 2, 6b | Actor-Critic depuis zéro et via SB3 |
 | **GAE** | Advantage | 6c | Generalized Advantage Estimation |
 | **SAC** | Off-policy | 3, 6d | Actions continues, maximum entropy |
+| **GRPO** | On-policy (critic-free) | 6e | Avantage relatif au groupe — l'algorithme RL de DeepSeek-R1, pont vers le RLHF |
 | **DDPG** | Off-policy | 3 | Actions continues |
 | **HER** | Replay strategy | 3 | Goal-conditioned tasks |
 | **Epsilon-greedy** | Exploration | 4 | Stratégie d'exploration basique |
@@ -262,6 +263,7 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 | CliffWalking-v1 | Grille, compromis risque/récompense | 5 |
 | TicTacToe-v3 | Jeu à somme nulle | 7 |
 | Dyna Maze / Blocking Maze | Grilles déterministes et changeantes (numpy pur) | 8, 9 |
+| Portefeuille synthétique | Allocation d'actifs, auto-contenu (PyTorch pur, aucune donnée externe) | 6e |
 
 ## Prerequisites
 
@@ -270,7 +272,7 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 - Python intermédiaire (classes, numpy)
 - Concepts RL de base (agent, environnement, reward)
 - Pas d'expérience RL préalable nécessaire pour le notebook 1
-- Bases PyTorch pour les notebooks 6, 6b, 6c, 6d (tenseurs, autograd, Module)
+- Bases PyTorch pour les notebooks 6, 6b, 6c, 6d, 6e (tenseurs, autograd, Module)
 
 ### Installation
 
@@ -287,7 +289,7 @@ pip install highway-env moviepy
 
 # Pour le notebook 4 (bandits — pas de dépendance supplémentaire)
 
-# Pour les notebooks 6, 6b, 6c, 6d (DQN, REINFORCE, A2C, PPO, SAC)
+# Pour les notebooks 6, 6b, 6c, 6d, 6e (DQN, REINFORCE, A2C, PPO, SAC, GRPO)
 pip install torch
 
 # Pour le notebook 7 (multi-agent)
@@ -303,7 +305,7 @@ pip install "pettingzoo[classic]>=1.24.0"
 | numpy | latest | Calcul numérique |
 | pandas | >=2.0 | Tableaux de résultats (notebook 5) |
 | matplotlib | latest | Visualisation |
-| torch | latest | Réseaux de neurones (notebooks 6, 6b, 6c, 6d) |
+| torch | latest | Réseaux de neurones (notebooks 6, 6b, 6c, 6d, 6e) |
 | pettingzoo | >=1.24.0 | Multi-agent (notebook 7) |
 | highway-env | latest | Parking-v0 (notebook 3) |
 | moviepy | latest | Enregistrement vidéo |
@@ -317,10 +319,11 @@ Notebook 1 (Bases SB3)
 Notebook 4 (Bandits) ---> Notebook 5 (MDP / Q-Learning) ---> Notebook 6 (DQN / REINFORCE)
     |                                                          |
     v                                                          v
-Notebook 2 (Production features)                           Notebook 6b (A2C) ---> Notebook 6c (PPO)
+Notebook 2 (Production features)                           Notebook 6b (A2C) ---> Notebook 6c (PPO) ---> Notebook 6d (SAC) ---> Notebook 6e (GRPO)
     |                                                                               |
     v                                                                               v
-Notebook 3 (Goal-conditioned RL)                                                 Notebook 7 (Multi-Agent)
+Notebook 3 (Goal-conditioned RL)                                                 Notebook 7 (Multi-Agent) ---> Notebooks 8-13
+                                                                                 (model-based, offline, shaping, POMDP, distributionnel, curiosité/RND)
 ```
 
 | Objectif | Notebooks |
@@ -345,9 +348,9 @@ Le notebook 3 introduit les tâches à objectifs (goal-conditioned RL) avec l'al
 
 Le notebook 4 pose la question fondatrice du RL : comment choisir entre explorer de nouvelles options et exploiter ce qui fonctionne déjà ? Vous implémenterez des stratégies d'exploration (epsilon-greedy, decaying epsilon, Thompson Sampling) sur un problème de bandits manchots et comparerez leur regret cumulé.
 
-**Phase 4 : Les maths sous le capot (~9h, notebooks 5-12)**
+**Phase 4 : Les maths sous le capot (~10h, notebooks 5-13)**
 
-Les notebooks 5 à 12 quittent le framework pour implémenter les algorithmes depuis zéro. Le notebook 5 formalise le problème RL (MDP, équation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe à l'échelle avec les réseaux de neurones : DQN et REINFORCE implémentés en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mécanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanément, coopèrent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modèle du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset figé (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naïf, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au problème du reward sparse : comment guider l'agent quand la récompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accélère la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulté progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatisé. Le notebook 11 aborde la partial observability : l'agent ne voit plus l'état vrai mais une observation bruitée. Le Tiger Problem (Cassandra 1994) illustre le POMDP, le belief tracking (filtre bayésien) maintient une estimation de l'état caché, et le Q-MDP approximation montre les limites de l'approche tabulaire. Le notebook 12 enrichit l'objectif lui-même : au lieu d'apprendre l'espérance du retour comme un DQN, C51 (Categorical DQN, Bellemare et al. 2017) apprend sa **distribution complète** $Z(s,a)$ sur un support à atomes fixes, via une projection catégorielle de la cible de Bellman — ce qui débloque les politiques sensibles au risque (CVaR) impossibles avec une valeur scalaire, et ouvre la lignée QR-DQN / IQN / Rainbow.
+Les notebooks 5 à 12 quittent le framework pour implémenter les algorithmes depuis zéro. Le notebook 5 formalise le problème RL (MDP, équation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe à l'échelle avec les réseaux de neurones : DQN et REINFORCE implémentés en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mécanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 6e clôt la lignée policy-gradient avec **GRPO** (Group Relative Policy Optimization, l'algorithme d'entraînement RL de DeepSeek-R1) : l'avantage y est estimé par comparaison au sein d'un groupe de rollouts, sans réseau critique — le pont le plus direct de la série vers le RLHF des LLMs. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanément, coopèrent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modèle du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset figé (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naïf, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au problème du reward sparse : comment guider l'agent quand la récompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accélère la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulté progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatisé. Le notebook 11 aborde la partial observability : l'agent ne voit plus l'état vrai mais une observation bruitée. Le Tiger Problem (Cassandra 1994) illustre le POMDP, le belief tracking (filtre bayésien) maintient une estimation de l'état caché, et le Q-MDP approximation montre les limites de l'approche tabulaire. Le notebook 12 enrichit l'objectif lui-même : au lieu d'apprendre l'espérance du retour comme un DQN, C51 (Categorical DQN, Bellemare et al. 2017) apprend sa **distribution complète** $Z(s,a)$ sur un support à atomes fixes, via une projection catégorielle de la cible de Bellman — ce qui débloque les politiques sensibles au risque (CVaR) impossibles avec une valeur scalaire, et ouvre la lignée QR-DQN / IQN / Rainbow. Le notebook 13 termine sur l'exploration par motivation intrinsèque : RND (Random Network Distillation) transforme l'erreur de prédiction d'un réseau cible figé en bonus de nouveauté, débloquant les récompenses parcimonieuses hors de portée d'epsilon-greedy.
 
 ## Concepts clés
 
@@ -373,6 +376,7 @@ Les notebooks 5 à 12 quittent le framework pour implémenter les algorithmes de
 | **Maximum entropy RL** | Maximisation récompense + entropie | 6d |
 | **SAC** | Soft Actor-Critic, off-policy continu | 6d |
 | **Twin Q-networks** | Double critique anti-surestimation | 6d |
+| **GRPO** | Avantage relatif au groupe, sans critique — l'algorithme RLHF de DeepSeek-R1 | 6e |
 | **Policy gradient** | Optimisation directe de la politique | 6 |
 | **Multi-agent** | Plusieurs agents apprenant simultanément | 7 |
 | **Model-based RL** | Apprendre un modèle du monde et planifier dessus | 8 |
@@ -411,7 +415,7 @@ L'apprentissage **supervisé** apprend à partir de données étiquetées (entr�
 
 ### Faut-il un GPU pour les notebooks ?
 
-Non. Les notebooks 1-4 (SB3 intro, wrappers, bandits, DQN from scratch) et 7-8 (multi-agent, curriculum) tournent sur CPU avec les environnements simples (CartPole, MountainCar). Les notebooks 5-6 (Policy Gradient, PPO from scratch) bénéficient d'un GPU pour les réseaux plus profonds mais restent exécutables en CPU (plus lent). Environnements Atari (optionnel) : GPU recommandé.
+Non. Les notebooks 1-5 (SB3, wrappers, goal-conditioned, bandits, tabulaire) tournent sur CPU. Les notebooks deep from scratch (6 DQN/REINFORCE, 6b A2C, 6c PPO, 6d SAC, 6e GRPO, 12 C51, 13 RND) utilisent des réseaux volontairement compacts pour rester exécutables en CPU — un GPU accélère mais n'est pas requis. Environnements Atari (optionnel) : GPU recommandé.
 
 ### Qu'est-ce qu'un MDP et pourquoi est-ce central ?
 
@@ -526,4 +530,4 @@ Voir la licence du repository principal.
 
 ---
 
-*Version 1.1.0 — Juin 2026*
+*Version 1.2.0 — Juillet 2026*

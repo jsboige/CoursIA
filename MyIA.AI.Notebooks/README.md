@@ -4,7 +4,7 @@ CoursIA est un curriculum d'intelligence artificielle pensé comme un parcours c
 
 Deux partis pris structurent l'ensemble. D'abord une **double culture technique** : Python (PyTorch, Diffusers, PyMC, OpenSpiel) et .NET / C# (Semantic Kernel, Infer.NET, ML.NET) cohabitent au sein de notebooks exécutables, parce que l'IA appliquée se pratique dans les deux écosystèmes. Ensuite une **dualité simulation / preuve** : un concept est d'abord illustré numériquement, puis — quand c'est possible — formalisé et vérifié mécaniquement (Lean 4, Z3, vérification formelle). Chaque notebook est rédigé en français, exécutable de bout en bout, et accompagné d'exemples guidés et d'exercices pour un apprentissage en autonomie.
 
-Le catalogue rassemble **703 notebooks pédagogiques** répartis sur les onze domaines ci-dessous (le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue, qui fait foi). Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
+Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répartis sur les onze domaines ci-dessous — le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue ci-dessous, régénéré quotidiennement, qui fait foi. Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
 
 <!-- CATALOG-STATUS
 series: ALL
@@ -13,31 +13,31 @@ breakdown: SymbolicAI=197, GenAI=141, QuantConnect=105, Search=105, Probas=58, M
 maturity: PRODUCTION=589, BETA=138, ALPHA=45, DRAFT=4, TEMPLATE=4
 -->
 
-Dernière mise à jour : 2026-07-05
+Dernière mise à jour : 2026-07-07
 
 ## Vue d'ensemble
 
 **[GenAI](GenAI/README.md)** — Tout ce qui se génère : images (SDXL, Flux, Qwen), audio — du TTS au pipeline complet d'audiobook —, vidéo, et le travail des LLMs (RAG, raisonnement, fine-tuning LoRA). La série a un parti pris d'atelier : on ne se contente pas d'appeler des APIs, on héberge les modèles soi-même sur une stack Docker dédiée ([00-GenAI-Environment](GenAI/00-GenAI-Environment/README.md)), ce qui change tout à ce qu'on comprend de leurs coûts et de leurs limites. Elle culmine avec l'orchestration Semantic Kernel, quatre études de cas étudiantes et les ateliers de vibe-coding (Claude Code, Roo Code).
 
-**[QuantConnect](QuantConnect/README.md)** — Le ML appliqué à un domaine qui ne pardonne pas : les marchés. Un cours Python progressif mène du premier backtest à un portefeuille de 49 stratégies (GARCH, Kelly, ensembles), implémentant 18 des 19 exemples du livre *Hands-On AI Trading*. La leçon transversale vaut bien au-delà de la finance : une discipline de validation — walk-forward, multi-seed, coûts de transaction — sans laquelle tout résultat de ML est une illusion d'optique.
+**[QuantConnect](QuantConnect/README.md)** — Le ML appliqué à un domaine qui ne pardonne pas : les marchés. Un cours Python progressif mène du premier backtest à un portefeuille de 49 stratégies (GARCH, Kelly, ensembles), implémentant 18 des 19 exemples du livre *Hands-On AI Trading*. La leçon transversale vaut bien au-delà de la finance : une discipline de validation — walk-forward, multi-seed, coûts de transaction — sans laquelle tout résultat de ML est une illusion d'optique. Le pipeline d'entraînement associé (ML-Training-Pipeline) en est la démonstration grandeur nature : sur une échelle de complexité de treize architectures (du Ridge au Decision Transformer), **une seule** bat le baseline après validation multi-seed — un verdict d'honnêteté que la série assume comme résultat pédagogique à part entière.
 
 **[SymbolicAI](SymbolicAI/README.md)** — Le pôle « comprendre et prouver » du dépôt, et sa série la plus vaste : preuves formelles Lean 4 (théorème d'Arrow, Kochen-Specker, hommages à Grothendieck et Conway), smart contracts Solidity testés et déployés sur testnet, Web sémantique RDF/SPARQL, logiques d'argumentation (Tweety), planification PDDL et apprentissage symbolique (ILP, automates, neuro-symbolique). C'est ici que la dualité simulation / preuve prend sa forme la plus aboutie : ce que les autres séries calculent, celle-ci cherche à le certifier.
 
 **[Search](Search/README.md)** — Comment trouver une aiguille dans une botte de foin exponentielle ? Des algorithmes classiques (BFS, A*, Minimax, MCTS) à la programmation par contraintes (CP-SAT) et aux métaheuristiques, la série déroule un fil unique — réduire l'espace de recherche — et le confronte à 22 applications réelles adaptées de projets étudiants, de la planification d'infirmiers à la génération procédurale de niveaux.
 
-**[Probas](Probas/README.md)** — Raisonner avec l'incertitude plutôt que contre elle. La série a une particularité unique dans le dépôt : les mêmes modèles probabilistes y vivent deux fois, en Infer.NET (graphes de facteurs, C#) et en PyMC (MCMC, Python) — deux langues pour une même théorie bayésienne, dont la comparaison est elle-même instructive. Un volet Lean 4 (indice de Gittins) pousse jusqu'à la preuve.
+**[Probas](Probas/README.md)** — Raisonner avec l'incertitude plutôt que contre elle. La série a une particularité unique dans le dépôt : les mêmes modèles probabilistes y vivent deux fois, en Infer.NET (graphes de facteurs, C#) et en PyMC (MCMC, Python) — deux langues pour une même théorie bayésienne, dont la comparaison est elle-même instructive. Un **arc décision** de dix notebooks (utilité espérée vNM → bandits → indice de Gittins → Thompson Sampling), lui aussi doublé Infer.NET/PyMC, pousse jusqu'à la preuve avec deux compagnons Lean 4 (axiomes vNM, Gittins).
 
 **[Sudoku](Sudoku/README.md)** — Et si l'on prenait un seul problème et qu'on lui appliquait toutes les méthodes ? Backtracking, propagation de contraintes, Dancing Links, jusqu'aux réseaux de neurones (CNN et MLP comparés à budget de paramètres comparable) : le Sudoku sert de banc d'essai contrôlé où approches symboliques et neuronales se mesurent sur exactement le même terrain.
 
 **[GameTheory](GameTheory/README.md)** — Que devient l'optimisation quand les autres aussi optimisent ? Jeux combinatoires avec OpenSpiel, équilibres à la von Neumann, et un volet formel singulier : les théorèmes du choix social (Arrow, Sen, la valeur de Shapley) portés en Lean 4 — démontrés mécaniquement, pas seulement énoncés.
 
-**[ML](ML/README.md)** — Le machine learning classique, sans folklore : tutoriels ML.NET (classification, régression, clustering) côté C#, agents Python pour la data science côté Python. C'est le socle de méthode sur lequel GenAI et QuantConnect construisent.
+**[ML](ML/README.md)** — Le machine learning classique, sans folklore : tutoriels ML.NET (classification, régression, clustering) côté C#, agents Python pour la data science côté Python — et des **jumeaux de parité** notebook par notebook (évaluation sklearn ⇄ ML.NET, export ONNX skl2onnx ⇄ OnnxTransformer) qui font toucher du doigt ce que les deux écosystèmes partagent et ce qui les distingue. C'est le socle de méthode sur lequel GenAI et QuantConnect construisent.
 
-**[RL](RL/README.md)** — Apprendre en agissant : Stable-Baselines3, environnements Gym, PPO et SAC — et l'évaluation honnête de ce que valent réellement les politiques apprises.
+**[RL](RL/README.md)** — Apprendre en agissant : Stable-Baselines3, environnements Gym — et un arc *from scratch* en PyTorch pur qui reconstruit DQN, PPO, SAC puis **GRPO**, l'algorithme critic-free de DeepSeek-R1, le tout exécutable sur CPU. Avec, en fil rouge, l'évaluation honnête de ce que valent réellement les politiques apprises.
 
 **[CaseStudies](CaseStudies/README.md)** — Des études de cas interdisciplinaires où plusieurs séries convergent sur un même problème : diagnostic médical assisté par LLM, planification oncologique, analyse de sentiments.
 
-**[IIT](IIT/README.md)** — La plus spéculative : la théorie de l'information intégrée et la mesure Phi (PyPhi) appliquées à des réseaux logiques — où l'on calcule, littéralement, des candidats quantitatifs à une mesure de la conscience. La série prolonge le Phi *statique* vers les **trajectoires** causales avec l'extension **ICT** (*Integrated Causal Trajectories*) : tri auto-organisé comme morphogenèse, émergence causale multi-échelles (Hoel, *Causal Emergence 2.0*). Elle rejoint ainsi le fil rouge **causalité** du dépôt, où le même opérateur `do(·)` de Pearl s'instancie à travers quatre paradigmes — symbolique (Tweety), message passing (Infer.NET), MCMC (PyMC) et théorie de l'information (ICT).
+**[IIT](IIT/README.md)** — La plus spéculative : la théorie de l'information intégrée et la mesure Phi (PyPhi) appliquées à des réseaux logiques — où l'on calcule, littéralement, des candidats quantitatifs à une mesure de la conscience. La série prolonge le Phi *statique* vers les **trajectoires** causales avec l'extension **ICT** (*Integrated Causal Trajectories*) : tri auto-organisé comme morphogenèse, émergence causale multi-échelles (Hoel, *Causal Emergence 2.0*). Le banc cross-substrat de l'ICT atteint désormais un **transformer réel** : les activations d'un LLM, lues à travers un autoencodeur parcimonieux (SAE), deviennent un quatrième substrat mesurable aux côtés des automates, du tri et du jeu de la vie — et un axe *Global Workspace* (broadcast, ignition — module `ict/workspace.py`) confronte désormais empiriquement IIT et GWT sur ces mêmes traces, faisant du pont entre les deux grandes théories de la conscience une question **falsifiable** plutôt qu'un débat d'école. La série rejoint ainsi le fil rouge **causalité** du dépôt, où le même opérateur `do(·)` de Pearl s'instancie à travers quatre paradigmes — symbolique (Tweety), message passing (Infer.NET), MCMC (PyMC) et théorie de l'information (ICT).
 
 ### Progression pédagogique
 
@@ -47,11 +47,14 @@ GenAI
 ├── Image/ - Génération d'images (SDXL, Qwen, Flux)
 ├── Audio/ - STT, TTS, music, pipeline audiobook FishAudio S2-Pro
 ├── Video/ - Génération vidéo, animation
-├── Texte/ - LLMs, RAG, reasoning
+├── Texte/ - LLMs, RAG, reasoning, arc agentique + test-time compute
 ├── SemanticKernel/ - SDK Microsoft
 ├── FineTuning/ - Fine-tuning LoRA, adapters
+├── PostTraining/ - Chaîne SOTA : SFT, DPO, GRPO, RLVR
 ├── CaseStudies/ - Études de cas étudiants
-└── Vibe-Coding/ - Claude-Code + Roo-Code
+├── Open-WebUI/ - Plateforme OWUI + série QA Playwright E2E
+├── Vibe-Coding/ - Claude-Code + Roo-Code + Claw-Systems + Claudish
+└── RAG-et-Memoire-Semantique/ - Qdrant, embeddings, grounding SDDD
 
 QuantConnect
 ├── Python/ - Cours progressifs QC-Py (fondamentaux → stratégies)
@@ -78,27 +81,38 @@ Le dépôt pratique **explicitement** la double culture IA : Python (PyTorch, Di
 | GenAI | ● | ◐ | — | Python dominant ; C# pour Semantic Kernel |
 | QuantConnect | ● | ◐ | ◐ | Python + LEAN Engine C# + `kelly_lean` |
 | SymbolicAI | ● | ◐ | ● | Trilogie complète : Python (SymbolicLearning), C# (Tweety/Z3/SW/SC), Lean (Arrow/Conway/FWT) |
-| Search | ● | ● | ◐ | Marathon parité CSP en cours (5/9 tranches livrées, EPIC #4956) |
-| Probas | ● | ● | ◐ | Infer.NET + PyMC sur mêmes modèles ; `decision_theory_lean` (Gittins) |
+| Search | ● | ● | ◐ | Parité CSP livrée — marathon jumeaux accompli (EPIC #4956) |
+| Probas | ● | ● | ◐ | Infer.NET + PyMC sur mêmes modèles ; `decision_theory_lean` (VNM + Gittins) |
 | Sudoku | ● | ● | ◐ | Backtracking/DLX Python + propagation C# + lake exact-cover |
-| GameTheory | ● | — | ● | OpenSpiel Python ; `social_choice_lean` (Arrow) |
-| ML | ● | ● | ◐ | ML.NET (tutoriels) + agents Python + `learning_theory_lean` |
+| GameTheory | ● | ◐ | ● | OpenSpiel Python + jumeau C# (MARL) ; `social_choice_lean` (Arrow) |
+| ML | ● | ● | ◐ | ML.NET (tutoriels) + jumeaux Python (sklearn, ONNX) + `learning_theory_lean` |
 | RL | ● | — | — | Stable-Baselines3 / Gym |
 | CaseStudies | ● | — | — | Projets interdisciplinaires |
 | IIT / ICT | ● | ◐ | — | PyPhi Python + Tweety C# (causalité commune) |
 
 Légende : ● = présent en masse ; ◐ = présent ciblé ; — = absent.
 
-Cette structure permet au lecteur de **basculer d'un écosystème à l'autre** sur un même concept sans repartir de zéro — c'est précisément le pont pédagogique que les parcours recommandés exploitent.
+Cette structure permet au lecteur de **basculer d'un écosystème à l'autre** sur un même concept sans repartir de zéro — c'est précisément le pont pédagogique que les parcours recommandés exploitent. La parité n'est pas un vœu : elle a été construite **jumeau par jumeau** — même problème, même pédagogie, deux écosystèmes — au fil de campagnes systématiques (marathon CSP #4956, twins ML, MARL C#), chaque jumeau étant exécuté de bout en bout avant d'entrer au catalogue.
+
+## Un dépôt vivant — maintenu par une flotte d'agents
+
+CoursIA a une particularité assumée, qui fait partie de ce qu'il enseigne : son développement et sa maintenance quotidienne sont assurés par une **flotte d'agents IA coordonnée multi-machines** (Claude Code), sous revue humaine. Concrètement :
+
+- le **catalogue** ([`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md)) est régénéré chaque jour par l'automatisation — c'est lui qui fait foi sur les volumes et la maturité, jamais la prose ;
+- chaque notebook modifié est **ré-exécuté avant merge** (Papermill / nbconvert) : les sorties committées sont des preuves d'exécution réelles, pas des maquettes ;
+- les PRs croisent des **revues indépendantes** (humains et bots) avec des critères anti-complaisance écrits — preuves d'exécution exigées, anti-régression sur les preuves formelles, refus des contournements dégradés quand l'outil réel est installable ;
+- les leçons d'incidents deviennent des **règles versionnées** (`.claude/rules/`), relues à chaque session par les agents eux-mêmes.
+
+Le dépôt sert ainsi doublement de support de cours : par son contenu, et comme étude de cas grandeur nature d'**ingénierie logicielle agentique** — dont la série [Vibe-Coding](GenAI/Vibe-Coding/README.md) documente les pratiques.
 
 ## Technologies principales
 
 ### AI/ML
-- **OpenAI**: GPT-4o, GPT-5, DALL-E 3
+- **OpenAI**: GPT-4o, GPT-5, gpt-image-1
 - **Anthropic**: Claude (via API / Claude Code)
-- **Hugging Face**: Transformers, Diffusers
+- **Hugging Face**: Transformers, Diffusers, TRL
 - **Microsoft**: Semantic Kernel, .NET 9
-- **Locaux**: vLLM, Ollama, Qwen 2.5, Chronos
+- **Locaux**: vLLM, Ollama, Qwen 2.5/3.5, Chronos
 
 ### QuantConnect / Finance
 - **LEAN Engine**: Backtesting, live trading, optimisation
@@ -211,7 +225,7 @@ Les notebooks les plus exigeants, mais ceux où le dépôt dit ce qu'il a de plu
 
 #### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
-Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette promesse par une **couche de 23 lakes Lean 4 / Mathlib** (toolchain `v4.31.0-rc1`, ~900 théorèmes-lemmes, ~130 sorry WIP) qui ancre mathématiquement les résultats phares des séries. Pas une anthologie de devoirs formalisés : **un théorème-phare par famille**, validé mécaniquement, et **branché sur les notebooks** qui l'enseignent ou l'utilisent. Cartographie inter-familles :
+Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette promesse par une **couche de 23 lakes Lean 4 / Mathlib** (toolchain `v4.31.0-rc1`, ~900 théorèmes-lemmes ; les chantiers `sorry` résiduels sont suivis par un harnais de preuve automatisé) qui ancre mathématiquement les résultats phares des séries. Pas une anthologie de devoirs formalisés : **un théorème-phare par famille**, validé mécaniquement, et **branché sur les notebooks** qui l'enseignent ou l'utilisent. Cartographie inter-familles :
 
 | Famille | Lake phare | Théorème | Branchement notebook |
 |---------|-----------|----------|----------------------|
