@@ -120,7 +120,9 @@ flowchart TD
 | 2 | [GameTheory-2-NormalForm](GameTheory-2-NormalForm.ipynb) | Python | Matrices de gains, dominance, best response | 45 min |
 | 2b | [GameTheory-2b-Lean-Definitions](GameTheory-2b-Lean-Definitions.ipynb) | Lean 4 | Formalisation Game2x2, stratégies, Nash | 45 min |
 | 3 | [GameTheory-3-Topology2x2](GameTheory-3-Topology2x2.ipynb) | Python | Classification Robinson-Goforth, table périodique | 55 min |
+| 3b | [GameTheory-3-Topology2x2-Csharp](GameTheory-3-Topology2x2-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — topologie ordinale from-scratch : permutations, swaps de rangs, BFS swap-path, Nash, classification des 576 jeux (parité #4956) | 50 min |
 | 4 | [GameTheory-4-NashEquilibrium](GameTheory-4-NashEquilibrium.ipynb) | Python | Nash pur/mixte, Lemke-Howson, analyse paramétrique | 60 min |
+| 4 (C#) | [GameTheory-4-NashEquilibrium-Csharp](GameTheory-4-NashEquilibrium-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : **NE pur (best-response mutuelle) + mixte 2x2 (indifférence) + support enumeration from-scratch (élimination de Gauss)**, Matching Pennies/BoS/Stag Hunt/PD/RPS (See #4956) | 50 min |
 | 4b | [GameTheory-4b-Lean-NashExistence](GameTheory-4b-Lean-NashExistence.ipynb) | Lean 4 | Brouwer, Kakutani, preuve existence Nash | 55 min |
 | 4c | [GameTheory-4c-NashExistence-Python](GameTheory-4c-NashExistence-Python.ipynb) | Python | Illustrations numériques point fixe | 35 min |
 | 4c | [GameTheory-4c-NashExistence-Csharp](GameTheory-4c-NashExistence-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — Brouwer point fixe + Matching Pennies, from-scratch, parité #4956 | 45 min |
@@ -135,7 +137,9 @@ flowchart TD
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 7 | [GameTheory-7-ExtensiveForm](GameTheory-7-ExtensiveForm.ipynb) | Python | Arbres de jeu, infosets, stratégies | 50 min |
+| 7 (C#) | [GameTheory-7-ExtensiveForm-Csharp](GameTheory-7-ExtensiveForm-Csharp.ipynb) | .NET (C#) | Twin C# du 7 : **arbre de jeu + infosets + noeuds de nature from-scratch** + conversion forme extensive→normale (See #4956) | 50 min |
 | 8 | [GameTheory-8-CombinatorialGames](GameTheory-8-CombinatorialGames.ipynb) | Python | Positions P/N, Nim, Grundy, Sprague-Grundy | 55 min |
+| 8 (C#) | [GameTheory-8-CombinatorialGames-Csharp](GameTheory-8-CombinatorialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 8 : **classification P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy** from-scratch, BCL .NET 9 (See #4956) | 45 min |
 | 8b | [GameTheory-8b-Lean-CombinatorialGames](GameTheory-8b-Lean-CombinatorialGames.ipynb) | Lean 4 | PGame mathlib, Nim formel | 50 min |
 | 8c | [GameTheory-8c-CombinatorialGames-Python](GameTheory-8c-CombinatorialGames-Python.ipynb) | Python | Approfondissement jeux combinatoires | 40 min |
 | 9 | [GameTheory-9-BackwardInduction](GameTheory-9-BackwardInduction.ipynb) | Python | Induction arrière, mille-pattes, escalade | 55 min |
@@ -544,6 +548,9 @@ GameTheory/
 ├── GameTheory-15c-CooperativeGames-Python.ipynb
 ├── GameTheory-11-BayesianGames-Csharp.ipynb                     # Twin .NET/C# (marathon #4956, Prong B)
 ├── GameTheory-5-ZeroSum-Minimax-Csharp.ipynb                    # Twin C# simplexe from-scratch (marathon #4956, Prong B)
+├── GameTheory-4-NashEquilibrium-Csharp.ipynb                    # Twin C# NE pur/mixte + support enum (Gauss) from-scratch (marathon #4956, Prong B)
+├── GameTheory-8-CombinatorialGames-Csharp.ipynb                 # Twin C# P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy (marathon #4956)
+├── GameTheory-7-ExtensiveForm-Csharp.ipynb                      # Twin C# arbre de jeu + infosets from-scratch (marathon #4956, Prong B)
 ├── SocialChoice/                                                   # Sous-série Choix Social
 │   ├── 01-Arrow-Impossibility-Theorem.ipynb
 │   ├── 02-Lean-SocialChoice-Formal.ipynb

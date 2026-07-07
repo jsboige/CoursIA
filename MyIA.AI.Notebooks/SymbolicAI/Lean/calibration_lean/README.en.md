@@ -4,7 +4,7 @@ Prover calibration targets for benchmarking the multi-agent Lean prover.
 
 ## Status
 
-- **Toolchain**: v4.30.0-rc2
+- **Toolchain**: v4.31.0-rc1
 - **Sorry count**: 0 production (all 4 calibration targets proved; previous "4 sorry" claim matched docstring text inside `/-- ... -/` blocks, not actual `sorry` terms)
 - **Build**: `lake build Calibration` -- SUCCESS
 - **Dependencies**: Mathlib4
@@ -33,7 +33,7 @@ Prover calibration targets for benchmarking the multi-agent Lean prover.
 This project is a **calibration suite** for the multi-agent Lean prover: four
 textbook-style proof targets (C / D / E / F) in `Calibration/Nash.lean`, all
 **proved with 0 `sorry`** (`lake build Calibration` SUCCESS, toolchain
-`v4.30.0-rc2`).
+`v4.31.0-rc1`).
 
 ### Why it exists
 

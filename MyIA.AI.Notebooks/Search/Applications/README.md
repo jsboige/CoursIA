@@ -1,8 +1,8 @@
 # Search - Applications
 
-C'est ici que la série Search se confronte au réel. Les 26 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (métaheuristiques et algorithmes génétiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-4b, App-6, App-9b, App-10b, App-11b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
+C'est ici que la série Search se confronte au réel. Les 28 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (métaheuristiques et algorithmes génétiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-3b, App-4b, App-6-Csharp, App-9b, App-10b, App-11b, App-17b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
 
-Sous-série de **26 notebooks** | **~16h10** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
+Sous-série de **28 notebooks** | **~16h10** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
 
 ## Pourquoi cette sous-série
 
@@ -31,8 +31,8 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 ```text
 Applications/
 ├── Search/     # Applications purement Search (2 notebooks)
-├── CSP/        # Applications CSP (17 notebooks : 13 Python + 4 twins C#)
-└── Hybrid/     # Metaheuristiques / GA (7 notebooks : 5 Python + 2 twins C#)
+├── CSP/        # Applications CSP (18 notebooks : 13 Python + 5 twins C#)
+└── Hybrid/     # Metaheuristiques / GA (8 notebooks : 5 Python + 3 twins C#)
 ```
 
 ```mermaid
@@ -42,7 +42,7 @@ flowchart LR
     P4["<b>Partie 4 — Métaheuristiques</b><br/>SA, GA, ACO, recuit"]
     S["<b>Applications Search</b> (2)<br/>ConnectFour : Minimax,<br/>MCTS, DQN-RL"]
     C["<b>Applications CSP</b> (13)<br/>N-Queens, GraphColoring,<br/>Nurse/JobShop, Minesweeper,<br/>Wordle, Picross, WFC,<br/>Sudoku..."]
-    H["<b>Applications Hybrides</b> (7)<br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter"]
+    H["<b>Applications Hybrides</b> (8)<br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter"]
     P1 --> S
     P2 --> C
     P4 --> H
@@ -73,6 +73,7 @@ Le gros de la sous-série, et un panorama de ce que la programmation par contrai
 | 1b | [App-1b-NQueens-CSharp](CSP/App-1b-NQueens-CSharp.ipynb) | ~35 min | Twin C# : Backtracking (simple/MRV/FC), Min-Conflicts, énumération + symétrie D4 | Classique |
 | 2 | [App-2-GraphColoring](CSP/App-2-GraphColoring.ipynb) | ~45 min | Greedy, DSATUR, CP-SAT, départements | Projet étudiant |
 | 3 | [App-3-NurseScheduling](CSP/App-3-NurseScheduling.ipynb) | ~60 min | Hard/soft constraints, CP-SAT | Projet étudiant |
+| 3b | [App-3b-NurseScheduling-CSharp](CSP/App-3b-NurseScheduling-CSharp.ipynb) | ~45 min | **Jumeau C#** — glouton, backtracking, min-conflicts from-scratch (modélisation 1 var/slot, optimisation préférences), parité #4956 | Jumeau .NET |
 | 4 | [App-4-JobShopScheduling](CSP/App-4-JobShopScheduling.ipynb) | ~60 min | Intervalles, précédences, makespan | Projet étudiant |
 | 4b | [App-4b-JobShopScheduling-CSharp](CSP/App-4b-JobShopScheduling-CSharp.ipynb) | ~45 min | **Jumeau C#** — dispatching heuristics (SPT/LPT/MOR/MWKR/FIFO) + branch-and-bound optimal from-scratch (énumération active + élagage), Gantt ASCII, parité #4956 | Jumeau .NET |
 | 5 | [App-5-Timetabling](CSP/App-5-Timetabling.ipynb) | ~50 min | MiniZinc + OR-Tools | Projet étudiant |
@@ -101,6 +102,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | 4 | [App-10b-Portfolio-CSharp](Hybrid/App-10b-Portfolio-CSharp.ipynb) | ~30 min | GeneticSharp (C#) | Existant |
 | 5 | [App-13-TSP-Metaheuristics](Hybrid/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
 | 6 | [App-17-VRP-Logistics](Hybrid/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
+| 6b | [App-17b-VRP-Logistics-CSharp](Hybrid/App-17b-VRP-Logistics-Csharp.ipynb) | ~50 min | Twin C# : Nearest-Neighbor, cheapest-insertion, 2-opt, recuit simulé (métaheuristiques from-scratch) | Jumeau .NET |
 | 7 | [App-18-HyperparameterTuning](Hybrid/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
 
 ---
@@ -143,6 +145,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | App-10b Portfolio | Search-5 (GA) | GeneticSharp (.NET) |
 | App-13 TSP-Metaheuristics | Search-4, Search-5 | ortools |
 | App-17 VRP-Logistics | Search-4, Search-5, CSP-3 | ortools |
+| App-17b VRP-Logistics (C#) | Search-4 (LocalSearch), Search-5 (SA) | dotnet-interactive |
 | App-18 HyperparameterTuning | Search-4, Search-5 | optuna, scikit-learn |
 
 ---
