@@ -9,12 +9,12 @@ Supports de cours pour l'apprentissage du trading algorithmique avec QuantConnec
 
 | Type | Count | Description |
 |------|-------|-------------|
-| **(a)** quantbook QC Cloud | 16 | QuantBook research or cloud-deploy descriptors (inclut Cloud-06-PCA-StatArb, Cloud-07-TemporalCNN ajoutés 2026-05) |
+| **(a)** quantbook QC Cloud | 18 | QuantBook research or cloud-deploy descriptors (inclut Cloud-06-PCA-StatArb, Cloud-07-TemporalCNN ajoutés 2026-05, Cloud-08-ValueFactor-ZScore, Cloud-09-OptionWheel ajoutés 2026-06) |
 | **(b)** research companion | 2 | QuantBook research paired with a course notebook |
 | **(c)** standalone research | 6 | Local yfinance/sklearn training |
 | **(d)** pedagogical placeholder | 33 | Course material with embedded QCAlgorithm strings |
 
-> Récapitulatif : 16+2+6+33 = 57 entrées de classification. Le nombre total de fichiers `.ipynb` dans le dossier est **53** : la différence reflète les notebooks classés dans plusieurs catégories (ex. course material exécuté localement = (c)+(d)). Voir [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md) pour la classification détaillée.
+> Récapitulatif : 18+2+6+33 = 59 entrées de classification. Le nombre total de fichiers `.ipynb` dans le dossier est **55** : la différence reflète les notebooks classés dans plusieurs catégories (ex. course material exécuté localement = (c)+(d)). Voir [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md) pour la classification détaillée.
 
 Full classification: [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md)
 
