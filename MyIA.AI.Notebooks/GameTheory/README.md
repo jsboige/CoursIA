@@ -162,6 +162,7 @@ flowchart TD
 | 14 | [GameTheory-14-DifferentialGames](GameTheory-14-DifferentialGames.ipynb) | Python | Boucle ouverte/fermée, Stackelberg | 60 min |
 | 14 (C#) | [GameTheory-14-DifferentialGames-Csharp](GameTheory-14-DifferentialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 14 : **RK4 from-scratch** (remplace scipy.solve_ivp), **Riccati couplée backward** pour LQ feedback, Cournot/Stackelberg closed-form, poursuite-evasion (Isaacs) modelisée en RK4 (See #4956) | 60 min |
 | 15 | [GameTheory-15-CooperativeGames](GameTheory-15-CooperativeGames.ipynb) | Python | Shapley, Core, Bondareva-Shapley | 65 min |
+| 15 (C#) | [GameTheory-15-CooperativeGames-Csharp](GameTheory-15-CooperativeGames-Csharp.ipynb) | .NET (C#) | Twin C# du 15 : Shapley (permutations), Banzhaf (swing), core, convexité, airport game from-scratch (See #4956) | 65 min |
 | 15b | [GameTheory-15b-Lean-CooperativeGames](GameTheory-15b-Lean-CooperativeGames.ipynb) | Lean 4 | Axiomes Shapley formels, Core | 55 min |
 | 15c | [GameTheory-15c-CooperativeGames-Python](GameTheory-15c-CooperativeGames-Python.ipynb) | Python | Exemples avancés (Glove Game, politique) | 40 min |
 | 16 | [GameTheory-16-MechanismDesign](GameTheory-16-MechanismDesign.ipynb) | Python | Principe de révélation, VCG, matching | 65 min |
@@ -561,6 +562,7 @@ GameTheory/
 ├── GameTheory-8-CombinatorialGames-Csharp.ipynb                 # Twin C# P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy (marathon #4956)
 ├── GameTheory-7-ExtensiveForm-Csharp.ipynb                      # Twin C# arbre de jeu + infosets from-scratch (marathon #4956, Prong B)
 ├── GameTheory-14-DifferentialGames-Csharp.ipynb                 # Twin C# jeux différentiels : RK4 + Riccati from-scratch, pursuit-evasion (marathon #4956, Prong B)
+├── GameTheory-15-CooperativeGames-Csharp.ipynb                  # Twin C# Shapley + Banzhaf + core + convexité + airport game from-scratch (marathon #4956)
 ├── GameTheory-10-ForwardInduction-SPE-Csharp.ipynb              # Twin C# SPE/backward-induction + trembling-hand + forward induction + burn money (marathon #4956)
 ├── SocialChoice/                                                   # Sous-série Choix Social
 │   ├── 01-Arrow-Impossibility-Theorem.ipynb
