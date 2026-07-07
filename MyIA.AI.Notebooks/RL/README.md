@@ -15,6 +15,17 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs souhaitant ajouter des capacités décisionnelles à leurs applications, et chercheurs en automatique ou robotique. Prérequis : Python intermédiaire et bases en calculus (gradients). Aucune expérience RL préalable nécessaire pour le notebook 1.
 
+## Aperçu — l'apprentissage par renforcement en images
+
+Le RL se comprend mieux en voyant l'agent apprendre. Les six visualisations ci-dessous, extraites des notebooks de la série, suivent la progression des fondements aux frontières : du bandit multi-bras à l'exploration par curiosité, en passant par les MDP, le reward shaping, les POMDP et le RL distributionnel. Sorties d'exécution **réelles** (non régénérées pour l'illustration, règle C.3), downscalées à ≤1200 px et ≤200 ko (politique EPIC #5654). Provenance exacte dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
+| | | |
+|:--:|:--:|:--:|
+| <img src="assets/readme/rl4-bandits.png" width="290" alt="Bandits multi-bras : courbes de regret et comparaison exploration/exploitation entre stratégies (epsilon-greedy, UCB, Thompson)."> | <img src="assets/readme/rl5-mdp-qlearning.png" width="290" alt="MDP et Q-Learning : grille de valeurs d'action apprises par programmation dynamique et Q-Learning tabulaire."> | <img src="assets/readme/rl10-reward-shaping.png" width="290" alt="Reward shaping : impact de la forme de récompense sur la vitesse et la stabilité d'apprentissage de l'agent."> |
+| [rl_4 — Multi-Armed Bandits](rl_4_multi_armed_bandits.ipynb) | [rl_5 — MDP / Q-Learning](rl_5_mdp_dp_qlearning.ipynb) | [rl_10 — Reward Shaping](rl_10_reward_shaping.ipynb) |
+| <img src="assets/readme/rl11-pomdp.png" width="290" alt="POMDP : apprentissage sous observation partielle, croyances sur l'état caché reconstruites depuis l'historique."> | <img src="assets/readme/rl12-distributional.png" width="290" alt="RL distributionnel : la valeur estimée est une distribution complète (pas juste l'espérance), capturant l'incertitude."> | <img src="assets/readme/rl13-curiosity.png" width="290" alt="Exploration par curiosité : récompense intrinsèque mesurant la nouveauté pousse l'agent vers des états inconnus."> |
+| [rl_11 — POMDP](rl_11_pomdp.ipynb) | [rl_12 — Distributional RL](rl_12_distributional_rl.ipynb) | [rl_13 — Curiosity](rl_13_curiosity_exploration.ipynb) |
+
 ## Notebooks
 
 | # | Notebook | Contenu | Durée |
