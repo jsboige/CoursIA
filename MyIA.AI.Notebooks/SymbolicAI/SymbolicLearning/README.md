@@ -184,6 +184,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | 6 (C#) | [SL-6 - Moteurs ILP (Twin C#)](SL-6-ModernILP-Csharp.ipynb) | **Jumeau C#** — FOIL relationnel from-scratch (FOIL_Gain de Quinlan, couverture extensionnelle par backtracking, récursion `ancestor/2` = cas de base + pas récursif), benchmark profondeur 5-20, verdict SOTA des 4 moteurs externes (Aleph/Metagol/Popper=RECOVERABLE-MACHINE, ∂ILP=INTRINSIC) (See #4956) | 45 min |
 | 7 | [SL-7 - Intégration Neuro-Symbolique](SL-7-NeuroSymbolic.ipynb) | T-norms, prédicats neuronaux, LTN, DeepProbLog | 55 min |
 | 8 | [SL-8 - ILP Moderne et Knowledge Graphs](SL-8-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, complétion KG, ASP avec clingo | 55 min |
+| 8 (C#) | [SL-8 - KG mining (Twin C#)](SL-8-KnowledgeGraphs-ILP-Csharp.ipynb) | **Jumeau C#** — KG familial dotNetRDF 3.4.1, AMIE rule mining from-scratch (clauses Horn 1-2 atomes, JOIN relationnel subject-indexé), PCA confidence, complétion KG 5→14, saturation fixpoint, arbre généalogique ASCII (See #4956) | 50 min |
 | 9 | [SL-9 - LLMs et Apprentissage Symbolique](SL-9-LLM-SymbolicLearning.ipynb) | Prompting, extraction de règles, vérification symbolique (Gemini 3.5 Flash optionnel) | 50 min |
 | 10 | [SL-10 - Apprentissage Actif d'Automates](SL-10-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 60 min |
 | 10 (C#) | [SL-10 - L* Angluin (Twin C#)](SL-10-ActiveAutomataLearning-Csharp.ipynb) | **Jumeau C#** — DFA, ObservationTable (S/E/T), requêtes MQ/EQ, conjecture DFA, contre-exemple (Angluin/Maler-Pnueli), oracle bruité + L* borné, forward sum-product + agrégation d'evidence from-scratch (See #4956) | 60 min |
@@ -286,6 +287,8 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | AMIE rule mining | Découverte de règles de Horn sur KG |
 | Complétion | Inférence de nouveaux triples |
 | ASP avec clingo | Validation croisée de la complétion, récursion (`ancestorOf`), contraintes d'intégrité (pont série Tweety) |
+
+> **Parité .NET** : [SL-8-KnowledgeGraphs-ILP-Csharp.ipynb](SL-8-KnowledgeGraphs-ILP-Csharp.ipynb) est le jumeau C# (.NET Interactive) — KG familial (14 personnes, 47 triples) construit avec dotNetRDF 3.4.1, AMIE rule mining **from-scratch** (clauses Horn 1-2 atomes, JOIN relationnel par subject-indexing, PCA confidence), complétion de graphe (+9 triples `grandparentOf`, 5→14) et saturation fixpoint (ré-application Datalog non-récursive, 0 nouveau triple : point fixe atteint dès la complétion). Vérdict SOTA du twin Python : rdflib/dotNetRDF=SOTA-OK, clingo ASP=INTRINSIC en .NET (récursion/réparation = principalement un solveur externe). Marathon parité .NET ⇄ Python (#4956).
 
 ### SL-9-LLM-SymbolicLearning.ipynb
 
@@ -450,6 +453,7 @@ SymbolicLearning/
 ├── SL-6-ModernILP-Csharp.ipynb            # Jumeau C# (.NET Interactive) — FOIL relationnel + récursion ancestor/2, parité #4956
 ├── SL-7-NeuroSymbolic.ipynb                 # T-norms, LTN, DeepProbLog
 ├── SL-8-KnowledgeGraphs-ILP.ipynb           # rdflib, AMIE rule mining
+├── SL-8-KnowledgeGraphs-ILP-Csharp.ipynb    # Jumeau C# (.NET Interactive) — dotNetRDF KG + AMIE from-scratch + PCA + saturation, parité #4956
 ├── SL-9-LLM-SymbolicLearning.ipynb          # LLMs + vérification symbolique (Gemini 3.5 Flash optionnel)
 ├── SL-10-ActiveAutomataLearning.ipynb        # L* d'Angluin, apprentissage actif d'automates
 ├── SL-10-ActiveAutomataLearning-Csharp.ipynb # Jumeau C# (.NET Interactive) — L* d'Angluin (DFA/ObservationTable/MQ-EQ/forward) from-scratch, parité #4956
