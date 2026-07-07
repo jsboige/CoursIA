@@ -205,7 +205,7 @@ Cette partie étend vos compétences aux données du Web ouvert et aux ontologie
 | # | Notebook | Durée | Sidetrack Python |
 |---|----------|-------|------------------|
 | 5 | **SW-5-CSharp-LinkedData** | 50 min | SW-5b-Python-LinkedData |
-| 6 | **SW-6-CSharp-RDFS** | 40 min | - |
+| 6 | **SW-6-CSharp-RDFS** | 40 min | SW-6b-Python-RDFS |
 | 7 | **SW-7-CSharp-OWL** | 50 min | SW-7b-Python-OWL |
 
 #### SW-5-CSharp-LinkedData : DBpedia, Wikidata et Requêtes Fédérées (50 min)
@@ -487,6 +487,7 @@ SemanticWeb/
 ├── SW-5-CSharp-LinkedData.ipynb
 ├── SW-5b-Python-LinkedData.ipynb    # Sidetrack
 ├── SW-6-CSharp-RDFS.ipynb
+├── SW-6b-Python-RDFS.ipynb           # Sidetrack
 ├── SW-7-CSharp-OWL.ipynb
 ├── SW-7b-Python-OWL.ipynb           # Sidetrack
 ├── SW-8-Python-SHACL.ipynb
