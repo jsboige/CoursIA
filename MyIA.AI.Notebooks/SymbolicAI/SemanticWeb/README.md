@@ -19,10 +19,12 @@ Chiffres lus directement depuis le marqueur `CATALOG-STATUS` byte-identique (l. 
 
 | Sous-catégorie | Notebooks | Statut | Paradigmes / stacks dominants |
 |----------------|-----------|--------|-------------------------------|
-| Fondations RDF/OWL (.NET C# avec dotNetRDF, SW-1 à SW-7) | 7 | PRODUCTION=7, BETA=0 | Triplet RDF, graphe nommé, SPARQL, RDFS, OWL (HermiT), raisonneur DL |
-| Standards modernes (Python rdflib/pySHACL/owlready2, SW-8 à SW-13 + SW-12 GraphRAG) | 7 | PRODUCTION=7, BETA=0 | SHACL Advanced, JSON-LD 1.1, RDF-Star, KG + kglab, GraphRAG (Microsoft anti-hallucination), comparaisons raisonneurs |
-| Sidetracks Python miroirs (SW-2b/4b/5b/7b) | 4 | PRODUCTION=4, BETA=0 | Équivalent Python des notebooks .NET — rdflib + owlready2 |
-| **Total** | **18** | **PRODUCTION=18, BETA=0** | Double stack .NET C# (dotNetRDF) / Python (rdflib, pySHACL, owlready2, kglab) — 100% production |
+| Fondations RDF/OWL — .NET C# (dotNetRDF, SW-1 à SW-7) | 7 | PRODUCTION=7 | Triplet RDF, graphe nommé, SPARQL, RDFS, OWL (HermiT), raisonneur DL |
+| Fondations RDF/OWL — miroirs Python (SW-2b à SW-7b, rdflib/owlready2) | 6 | PRODUCTION=6 | Équivalent Python des notebooks .NET fondations — rdflib + owlready2 |
+| Standards modernes — .NET C# (SW-8 SHACL, SW-9 JSON-LD, SW-10 RDF-Star, SW-11 KG, SW-13 Reasoners) | 5 | PRODUCTION=5 | SHACL, JSON-LD 1.1, RDF-Star, KG, raisonneurs (dotNetRDF) |
+| Standards modernes — Python (SW-8 à SW-13 : SHACL, JSON-LD, RDF-Star, KG, GraphRAG, Reasoners) | 6 | PRODUCTION=6 | SHACL pySHACL, JSON-LD 1.1, RDF-Star, KG + kglab, GraphRAG (anti-hallucination), comparaisons raisonneurs |
+| Setup / legacy .NET (RDF.Net) | 1 | PRODUCTION=1 | Démonstration RDF.Net historique |
+| **Total** | **25** | **PRODUCTION=25** | Double stack .NET C# (dotNetRDF) / Python (rdflib, pySHACL, owlready2, kglab) — parité marathon #4956 |
 
 **Conformité C.1 — stubs d'exercice sans erreur volontaire** : les templates `student/` portent les stubs conformes (`pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`) — **jamais** `raise NotImplementedError`, `assert False` ou `1/0`. Dépendances Python : `rdflib`, `pySHACL`, `owlready2`, `kglib`, `SPARQLWrapper` (cf `requirements.txt` racine). Dépendances .NET : `dotNetRDF` + .NET 9.0 + .NET Interactive. La double stack .NET/Python reflète le mandat EPIC #3975 : un même raisonnement rendu par deux runtimes (ici, dotNetRDF côté C# typé, rdflib côté Python expressif), la parité devenant un objet d'étude en soi.
 
@@ -68,7 +70,7 @@ flowchart BT
     KG --> GRAG["<b>GraphRAG</b><br/>ancrer les LLMs"]
 ```
 
-La série propose délibérément deux stacks : **.NET C#** (SW-1 à SW-7) pour les fondations avec dotNetRDF (typed, performant, intégré à l'écosystème CoursIA), et **Python** (SW-8 à SW-13) pour les standards modernes et l'IA. Les sidetracks Python (SW-2b, 4b, 5b, 7b) offrent un miroir des notebooks C# en Python.
+La série propose délibérément deux stacks en parité (.NET ⇄ Python, marathon #4956) : **.NET C#** avec dotNetRDF (fondations SW-1 à SW-7, standards modernes SW-8/9/10/11/13) et **Python** avec rdflib/pySHACL/owlready2 (miroirs fondations SW-2b à SW-7b, standards modernes SW-8 à SW-13). Les sidetracks Python (SW-2b, 3b, 4b, 5b, 6b, 7b) offrent un miroir des notebooks C# fondations en Python.
 
 ## Concepts clés
 
@@ -90,10 +92,11 @@ La série propose délibérément deux stacks : **.NET C#** (SW-1 à SW-7) pour 
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks principaux | 12 + 1 bonus |
-| Sidetracks Python | 4 optionnels |
-| Durée totale | ~10h + 45min (bonus) |
-| Langages | .NET C# (1-7), Python (8-13) |
+| Notebooks .NET C# (dotNetRDF) | 13 (fondations SW-1..7, standards SW-8/9/10/11/13, setup RDF.Net) |
+| Notebooks Python (rdflib/pySHACL/owlready2/kglab) | 12 (miroirs SW-2b..7b, standards SW-8..13) |
+| Total | 25 notebooks (parité marathon #4956) |
+| Durée totale | ~10h (parcours principal), +4h (twins optionnels) |
+| Langages | .NET C# + Python |
 | Niveau | Débutant à avancé |
 
 > **Nouvelle convention** : Tous les noms de notebooks incluent explicitement le langage (`CSharp` ou `Python`) pour une identification immédiate.
@@ -103,10 +106,10 @@ La série propose délibérément deux stacks : **.NET C#** (SW-1 à SW-7) pour 
 ## Quick Start
 
 ```bash
-# Python (notebooks SW-2b, SW-4b, SW-8 a SW-12)
+# Python (notebooks SW-2b a SW-7b, SW-8 a SW-13)
 pip install rdflib pySHACL owlready2 kglab SPARQLWrapper
 
-# .NET (notebooks SW-1 a SW-7)
+# .NET (notebooks SW-1 a SW-7, jumeaux C# SW-8/9/10/11/13)
 dotnet restore
 
 # Premier notebook recommandé (Python) :
@@ -123,7 +126,7 @@ Aucune API key requise pour les notebooks fondamentaux (SW-1 à SW-11). SW-12 (G
 ## Progression recommandée
 
 ### Parcours principal
-Suivez les notebooks **SW-1 à SW-12** dans l'ordre numérique pour une progression logique des concepts.
+Suivez les notebooks **SW-1 à SW-13** dans l'ordre numérique pour une progression logique des concepts.
 
 ### Sidetracks Python (optionnels)
 Les sidetracks marqués `b-Python` sont des notebooks complémentaires qui présentent l'équivalent Python des concepts .NET. Ils sont **optionnels** mais recommandés si vous souhaitez travailler avec Python plutôt qu'avec .NET.
@@ -131,8 +134,10 @@ Les sidetracks marqués `b-Python` sont des notebooks complémentaires qui prés
 | Sidetrack | Notebook principal | Contenu |
 |-----------|-------------------|---------|
 | SW-2b-Python-RDFBasics | SW-2-CSharp-RDFBasics | RDF en Python avec rdflib |
+| SW-3b-Python-GraphOperations | SW-3-CSharp-GraphOperations | Graphes RDF en Python avec rdflib |
 | SW-4b-Python-SPARQL | SW-4-CSharp-SPARQL | SPARQL en Python avec rdflib |
 | SW-5b-Python-LinkedData | SW-5-CSharp-LinkedData | DBpedia/Wikidata avec SPARQLWrapper |
+| SW-6b-Python-RDFS | SW-6-CSharp-RDFS | RDFS en Python avec rdflib/owlready2 |
 | SW-7b-Python-OWL | SW-7-CSharp-OWL | Ontologies OWL avec OWLReady2 |
 
 ---
@@ -373,7 +378,7 @@ Ce notebook bonus compare différents raisonneurs OWL (owlrl, HermiT, reasonable
 
 Si vous n'avez pas d'environnement .NET, vous pouvez suivre uniquement les notebooks Python :
 
-1. **SW-2b** (RDF Basics Python) → **SW-4b** (SPARQL Python) → **SW-5b** (Linked Data Python) → **SW-7b** (OWL Python) : les 4 sidetracks couvrent les fondamentaux avec rdflib.
+1. **SW-2b** (RDF Basics Python) → **SW-3b** (Graph Ops Python) → **SW-4b** (SPARQL Python) → **SW-5b** (Linked Data Python) → **SW-6b** (RDFS Python) → **SW-7b** (OWL Python) : les 6 sidetracks couvrent les fondamentaux avec rdflib/owlready2.
 2. Puis **SW-8** (SHACL) → **SW-9** (JSON-LD) → **SW-10** (RDF-Star) → **SW-11** (KG) → **SW-12** (GraphRAG) : les standards modernes et l'IA.
 
 ### Parcours data engineer (~3h)
