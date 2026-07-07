@@ -4,7 +4,7 @@ CoursIA est un curriculum d'intelligence artificielle pensé comme un parcours c
 
 Deux partis pris structurent l'ensemble. D'abord une **double culture technique** : Python (PyTorch, Diffusers, PyMC, OpenSpiel) et .NET / C# (Semantic Kernel, Infer.NET, ML.NET) cohabitent au sein de notebooks exécutables, parce que l'IA appliquée se pratique dans les deux écosystèmes. Ensuite une **dualité simulation / preuve** : un concept est d'abord illustré numériquement, puis — quand c'est possible — formalisé et vérifié mécaniquement (Lean 4, Z3, vérification formelle). Chaque notebook est rédigé en français, exécutable de bout en bout, et accompagné d'exemples guidés et d'exercices pour un apprentissage en autonomie.
 
-Le catalogue rassemble **703 notebooks pédagogiques** répartis sur les onze domaines ci-dessous (le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue, qui fait foi). Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
+Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répartis sur les onze domaines ci-dessous — le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue ci-dessous, régénéré quotidiennement, qui fait foi. Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
 
 <!-- CATALOG-STATUS
 series: ALL
@@ -13,7 +13,7 @@ breakdown: SymbolicAI=197, GenAI=141, QuantConnect=105, Search=105, Probas=58, M
 maturity: PRODUCTION=589, BETA=138, ALPHA=45, DRAFT=4, TEMPLATE=4
 -->
 
-Dernière mise à jour : 2026-07-05
+Dernière mise à jour : 2026-07-07
 
 ## Vue d'ensemble
 
@@ -37,7 +37,7 @@ Dernière mise à jour : 2026-07-05
 
 **[CaseStudies](CaseStudies/README.md)** — Des études de cas interdisciplinaires où plusieurs séries convergent sur un même problème : diagnostic médical assisté par LLM, planification oncologique, analyse de sentiments.
 
-**[IIT](IIT/README.md)** — La plus spéculative : la théorie de l'information intégrée et la mesure Phi (PyPhi) appliquées à des réseaux logiques — où l'on calcule, littéralement, des candidats quantitatifs à une mesure de la conscience. La série prolonge le Phi *statique* vers les **trajectoires** causales avec l'extension **ICT** (*Integrated Causal Trajectories*) : tri auto-organisé comme morphogenèse, émergence causale multi-échelles (Hoel, *Causal Emergence 2.0*). Elle rejoint ainsi le fil rouge **causalité** du dépôt, où le même opérateur `do(·)` de Pearl s'instancie à travers quatre paradigmes — symbolique (Tweety), message passing (Infer.NET), MCMC (PyMC) et théorie de l'information (ICT).
+**[IIT](IIT/README.md)** — La plus spéculative : la théorie de l'information intégrée et la mesure Phi (PyPhi) appliquées à des réseaux logiques — où l'on calcule, littéralement, des candidats quantitatifs à une mesure de la conscience. La série prolonge le Phi *statique* vers les **trajectoires** causales avec l'extension **ICT** (*Integrated Causal Trajectories*) : tri auto-organisé comme morphogenèse, émergence causale multi-échelles (Hoel, *Causal Emergence 2.0*). Le banc cross-substrat de l'ICT atteint désormais un **transformer réel** : les activations d'un LLM, lues à travers un autoencodeur parcimonieux (SAE), deviennent un quatrième substrat mesurable aux côtés des automates, du tri et du jeu de la vie — et un axe *Global Workspace* (broadcast, ignition) est en construction pour confronter empiriquement IIT et GWT sur le même objet. La série rejoint ainsi le fil rouge **causalité** du dépôt, où le même opérateur `do(·)` de Pearl s'instancie à travers quatre paradigmes — symbolique (Tweety), message passing (Infer.NET), MCMC (PyMC) et théorie de l'information (ICT).
 
 ### Progression pédagogique
 
@@ -78,10 +78,10 @@ Le dépôt pratique **explicitement** la double culture IA : Python (PyTorch, Di
 | GenAI | ● | ◐ | — | Python dominant ; C# pour Semantic Kernel |
 | QuantConnect | ● | ◐ | ◐ | Python + LEAN Engine C# + `kelly_lean` |
 | SymbolicAI | ● | ◐ | ● | Trilogie complète : Python (SymbolicLearning), C# (Tweety/Z3/SW/SC), Lean (Arrow/Conway/FWT) |
-| Search | ● | ● | ◐ | Marathon parité CSP en cours (5/9 tranches livrées, EPIC #4956) |
+| Search | ● | ● | ◐ | Parité CSP livrée — marathon jumeaux accompli (EPIC #4956) |
 | Probas | ● | ● | ◐ | Infer.NET + PyMC sur mêmes modèles ; `decision_theory_lean` (Gittins) |
 | Sudoku | ● | ● | ◐ | Backtracking/DLX Python + propagation C# + lake exact-cover |
-| GameTheory | ● | — | ● | OpenSpiel Python ; `social_choice_lean` (Arrow) |
+| GameTheory | ● | ◐ | ● | OpenSpiel Python + jumeau C# (MARL) ; `social_choice_lean` (Arrow) |
 | ML | ● | ● | ◐ | ML.NET (tutoriels) + agents Python + `learning_theory_lean` |
 | RL | ● | — | — | Stable-Baselines3 / Gym |
 | CaseStudies | ● | — | — | Projets interdisciplinaires |
@@ -89,7 +89,18 @@ Le dépôt pratique **explicitement** la double culture IA : Python (PyTorch, Di
 
 Légende : ● = présent en masse ; ◐ = présent ciblé ; — = absent.
 
-Cette structure permet au lecteur de **basculer d'un écosystème à l'autre** sur un même concept sans repartir de zéro — c'est précisément le pont pédagogique que les parcours recommandés exploitent.
+Cette structure permet au lecteur de **basculer d'un écosystème à l'autre** sur un même concept sans repartir de zéro — c'est précisément le pont pédagogique que les parcours recommandés exploitent. La parité n'est pas un vœu : elle a été construite **jumeau par jumeau** — même problème, même pédagogie, deux écosystèmes — au fil de campagnes systématiques (marathon CSP #4956, twins ML, MARL C#), chaque jumeau étant exécuté de bout en bout avant d'entrer au catalogue.
+
+## Un dépôt vivant — maintenu par une flotte d'agents
+
+CoursIA a une particularité assumée, qui fait partie de ce qu'il enseigne : son développement et sa maintenance quotidienne sont assurés par une **flotte d'agents IA coordonnée multi-machines** (Claude Code), sous revue humaine. Concrètement :
+
+- le **catalogue** ([`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md)) est régénéré chaque jour par l'automatisation — c'est lui qui fait foi sur les volumes et la maturité, jamais la prose ;
+- chaque notebook modifié est **ré-exécuté avant merge** (Papermill / nbconvert) : les sorties committées sont des preuves d'exécution réelles, pas des maquettes ;
+- les PRs croisent des **revues indépendantes** (humains et bots) avec des critères anti-complaisance écrits — preuves d'exécution exigées, anti-régression sur les preuves formelles, refus des contournements dégradés quand l'outil réel est installable ;
+- les leçons d'incidents deviennent des **règles versionnées** (`.claude/rules/`), relues à chaque session par les agents eux-mêmes.
+
+Le dépôt sert ainsi doublement de support de cours : par son contenu, et comme étude de cas grandeur nature d'**ingénierie logicielle agentique** — dont la série [Vibe-Coding](GenAI/Vibe-Coding/README.md) documente les pratiques.
 
 ## Technologies principales
 
@@ -211,7 +222,7 @@ Les notebooks les plus exigeants, mais ceux où le dépôt dit ce qu'il a de plu
 
 #### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
-Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette promesse par une **couche de 23 lakes Lean 4 / Mathlib** (toolchain `v4.31.0-rc1`, ~900 théorèmes-lemmes, ~130 sorry WIP) qui ancre mathématiquement les résultats phares des séries. Pas une anthologie de devoirs formalisés : **un théorème-phare par famille**, validé mécaniquement, et **branché sur les notebooks** qui l'enseignent ou l'utilisent. Cartographie inter-familles :
+Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette promesse par une **couche de 23 lakes Lean 4 / Mathlib** (toolchain `v4.31.0-rc1`, ~900 théorèmes-lemmes ; les chantiers `sorry` résiduels sont suivis par un harnais de preuve automatisé) qui ancre mathématiquement les résultats phares des séries. Pas une anthologie de devoirs formalisés : **un théorème-phare par famille**, validé mécaniquement, et **branché sur les notebooks** qui l'enseignent ou l'utilisent. Cartographie inter-familles :
 
 | Famille | Lake phare | Théorème | Branchement notebook |
 |---------|-----------|----------|----------------------|

@@ -4,7 +4,7 @@
 
 CoursIA est une collection de notebooks Jupyter interactifs couvrant l'ensemble du spectre de l'IA : algorithmes de recherche, résolution par contraintes, raisonnement formel, théorie des jeux, programmation probabiliste, machine learning, IA générative multimodale et trading algorithmique.
 
-Les notebooks sont disponibles en Python, C# (.NET Interactive) et Lean 4. Chaque série suit une progression pédagogique, des concepts fondamentaux vers les applications avancées. La plupart fonctionnent en local sans configuration ; les clés API se concentrent sur GenAI, QuantConnect et les volets LLM de quelques séries (section Configuration).
+Les notebooks sont disponibles en Python, C# (.NET Interactive) et Lean 4. Beaucoup existent en **jumeaux C#/Python** — même concept, même pédagogie, deux écosystèmes — fruit d'une campagne de parité systématique. Chaque série suit une progression pédagogique, des concepts fondamentaux vers les applications avancées. La plupart fonctionnent en local sans configuration ; les clés API se concentrent sur GenAI, QuantConnect et les volets LLM de quelques séries (section Configuration).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -30,7 +30,7 @@ MyIA.AI.Notebooks/
   RL/              -> Reinforcement Learning (PPO, DQN, Stable Baselines3)
   Probas/          -> Programmation probabiliste (Infer.NET,PyMC, Pyro)
   GameTheory/      -> Théorie des jeux, équilibres de Nash, mechanism design, social choice
-  IIT/             -> Théorie de l'information intégrée (Tononi, PyPhi)
+  IIT/             -> Information intégrée (Tononi, PyPhi) + banc ICT : trajectoires causales, du tri au LLM
   CaseStudies/     -> Études de cas interdisciplinaires
   SymbolicAI/      -> Raisonnement formel (Lean 4, Tweety, Semantic Web, Smart Contracts, Planners, Symbolic Learning)
   GenAI/           -> IA générative (Image, Audio, Video, Texte, Semantic Kernel, Vibe Coding) -- la plus grande série
@@ -48,7 +48,7 @@ MyIA.AI.Notebooks/
 
 **Avancé** -- SymbolicAI (Lean, SmartContracts), QuantConnect (stratégies ML/DL), GenAI Video/Audio. Pour les étudiants à l'aise avec les fondamentaux qui veulent aller plus loin.
 
-**Recherche** -- ML Training Pipeline (forecasting, GNN), SymbolicAI (preuves formelles Lean 4), Infer.NET (programmation probabiliste avancée).
+**Recherche** -- ML Training Pipeline (forecasting, GNN), SymbolicAI (preuves formelles Lean 4), Infer.NET (programmation probabiliste avancée), IIT/ICT (émergence causale, du tri au LLM).
 
 Pour le détail notebook par notebook -- cinq parcours thématiques triés par maturité -- voir [PARCOURS.md](PARCOURS.md).
 
@@ -60,7 +60,9 @@ Le dépôt couvre un spectre large de l'IA, des algorithmes classiques aux modè
 
 - **Multi-langages, multi-écosystèmes** : Python pour le machine learning et l'IA générative, C# pour l'écosystème Microsoft (ML.NET, Infer.NET, Semantic Kernel), Lean 4 pour la vérification formelle. Chaque langage est employé là où il excelle, pas par défaut.
 - **Du fondamental à la recherche** : les séries partent des algorithmes de base (BFS, A*, backtracking) et vont jusqu'à des sujets de pointe -- transformers pour le forecasting financier, agents de preuve autonomes, intégration neuro-symbolique, deep learning multimodal.
-- **Preuves formelles** : au-delà des exercices, les séries Lean et GameTheory mécanisent des théorèmes phares en Lean 4 -- théorème de sensibilité, théorème de Kochen-Specker, théorème du libre arbitre de Conway-Kochen, formalisations des théorèmes d'Arrow et de Sen -- avec des hommages aux mathématiques de Grothendieck et de Conway.
+- **Preuves formelles** : au-delà des exercices, les séries Lean et GameTheory mécanisent des théorèmes phares en Lean 4 -- théorème de sensibilité, théorème de Kochen-Specker, théorème du libre arbitre de Conway-Kochen, formalisations des théorèmes d'Arrow et de Sen -- avec des hommages aux mathématiques de Grothendieck et de Conway. L'ensemble forme une couche de plus de vingt lakes Lean 4 / Mathlib, avec un théorème-phare par famille branché sur les notebooks qui l'enseignent.
+- **Une série de recherche vivante** : le banc ICT (extension de la théorie de l'information intégrée) mesure des gains d'émergence causale, de surprise et de compression sur des substrats de complexité croissante -- automates cellulaires, algorithmes de tri, jeu de la vie, et désormais les features SAE d'un vrai LLM -- jusqu'à un pont empirique en construction entre information intégrée et Global Workspace.
+- **Un dépôt maintenu par des agents** : la maintenance quotidienne (exécution des notebooks, validation, catalogue régénéré chaque jour, revues croisées) est assurée par une flotte d'agents IA coordonnée multi-machines, sous revue humaine -- le dépôt est à la fois un cours d'IA et une démonstration grandeur nature d'ingénierie agentique ([détail](MyIA.AI.Notebooks/README.md#un-dépôt-vivant--maintenu-par-une-flotte-dagents)).
 - **Données et marchés réels** : les notebooks QuantConnect s'appuient sur des données de marché réelles (yfinance, framework LEAN) ; le pipeline d'entraînement ML valide ses modèles par walk-forward strict et multi-seed sur un panier de cryptomonnaies.
 - **IA générative déployable** : les notebooks GenAI fonctionnent au choix sur des APIs cloud (OpenAI, Anthropic) ou sur des modèles locaux servis par une infrastructure Docker GPU (Qwen, FLUX, ComfyUI, Whisper, MusicGen).
 - **Agents et LLMs transverses** : assistants de preuve, agents de data science autonomes, planification pilotée par LLM, GraphRAG et boucles LLM-vérification symbolique tissent un fil rouge entre les séries.
@@ -160,7 +162,7 @@ Comment des agents rationnels interagissent-ils quand le résultat de chacun dé
 
 Au-delà du tableau noir, ces résultats structurent l'économie numérique : les enchères VCG fondent la publicité en ligne de Google et Meta à l'échelle de milliards de transactions par jour, l'algorithme de Gale-Shapley affecte étudiants aux écoles et internes aux hôpitaux -- un mécanisme couronné par le prix Nobel d'économie 2012 -- et la Counterfactual Regret Minimization a permis aux machines de battre les meilleurs joueurs de poker. GameTheory est ainsi un carrefour : elle prolonge la théorie de la décision de **Probas** vers l'interaction stratégique, alimente le **RL** par son volet multi-agent, irrigue **SmartContracts** par le vote vérifiable et la gouvernance, et partage avec **SymbolicAI** l'exigence de la preuve vérifiée par la machine.
 
-Python (Nashpy, OpenSpiel, Z3) et Lean 4 | [README détaillé](MyIA.AI.Notebooks/GameTheory/README.md)
+Python (Nashpy, OpenSpiel, Z3), C# et Lean 4 | [README détaillé](MyIA.AI.Notebooks/GameTheory/README.md)
 
 ### ML -- Machine Learning
 
@@ -232,13 +234,15 @@ Python | [README détaillé](MyIA.AI.Notebooks/RL/README.md)
 
 ### IIT -- Théorie de l'Information Intégrée
 
-La conscience est-elle mesurable ? La théorie de l'information intégrée, proposée par Giulio Tononi, répond oui : un système est conscient dans la mesure où il intègre de l'information de manière irréductible, et cette quantité porte un nom et une valeur calculable -- **Phi**. C'est une série courte mais singulière : on y manipule un formalisme précis, calculable avec **PyPhi** (la bibliothèque de référence du laboratoire Tononi), pour une grandeur que l'on croit d'ordinaire réservée à la philosophie. Son fil conducteur est exactement cette tension : calculer rigoureusement une mesure de la conscience tout en gardant un esprit critique sur ce qu'elle signifie vraiment.
+La conscience est-elle mesurable ? La théorie de l'information intégrée, proposée par Giulio Tononi, répond oui : un système est conscient dans la mesure où il intègre de l'information de manière irréductible, et cette quantité porte un nom et une valeur calculable -- **Phi**. C'est la série la plus spéculative du dépôt, et l'une de celles qui ont le plus grandi : partie d'un noyau PyPhi (la bibliothèque de référence du laboratoire Tononi), elle s'est prolongée en un véritable programme de recherche interne, la série **ICT**. Son fil conducteur reste le même : calculer rigoureusement des mesures candidates de l'intégration et de l'émergence, tout en gardant un esprit critique sur ce qu'elles signifient vraiment.
 
 **Calculer Phi -- du réseau causal à la géométrie de l'information** -- On part de circuits binaires élémentaires : une matrice de transition décrit les règles d'évolution du système, et le calcul de Phi sur un petit réseau XOR rend concrète la notion d'intégration irréductible. La structure cause-effet révèle comment un système spécifie sa propre géométrie informationnelle. Un second temps déconstruit le calcul : partition d'information minimale (MIP) pour localiser le maillon faible, répertoires cause-effet, mécanismes maximalement irréductibles (MICE), et distinction entre le Phi du système entier et le phi d'un mécanisme isolé. L'extension à des réseaux plus grands fait surgir une explosion combinatoire qui rend le calcul exact intractable dès qu'on dépasse une poignée de noeuds -- d'où le coarse-graining comme stratégie d'approximation, et un aperçu des évolutions récentes vers IIT 4.0.
 
 **De la mesure aux débats -- ce que Phi engage** -- L'IIT n'est pas qu'une spéculation : ses principes ont inspiré le Perturbational Complexity Index, une mesure clinique (stimulation magnétique transcrânienne plus EEG) qui distingue empiriquement les états conscients des états inconscients chez des patients non communicants. Elle s'oppose frontalement aux théories du Global Workspace dans des tests adversariaux sur données réelles. Et elle touche directement l'IA : un réseau purement feed-forward -- comme l'inférence d'un grand modèle de langage classique -- a un Phi nul, car l'information y transite sans boucle causale intégrée ; il calcule sans "être". Une critique publique retentissante (une lettre ouverte la qualifiant de pseudoscience) fait de l'IIT un cas d'école pour interroger les critères de scientificité d'une théorie de l'esprit.
 
-Cette série dialogue avec **Probas** et **GameTheory**, dont elle partage les concepts de causalité et d'interaction, et avec **RL** : la distinction feed-forward contre récurrent, qui annule ou non Phi, éclaire le choix d'architecture d'un agent. Le constat qu'un modèle de langage feed-forward a un Phi nul prolonge enfin les discussions sur la conscience artificielle qui traversent **GenAI**.
+**ICT -- des états aux trajectoires, jusqu'au LLM** -- L'extension [ICT](MyIA.AI.Notebooks/IIT/ICT-Series/README.md) (*Integrated Causal Trajectories*), développée dans le dépôt même, déplace la question : au lieu de mesurer l'intégration d'un *état*, elle mesure ce qu'une **trajectoire** de système fait émerger causalement au fil du temps. Sa batterie réunit trois gains complémentaires -- émergence causale (le niveau macro prédit-il mieux que le micro, à la Hoel), surprise transitionnelle (énergie libre) et compression (MDL) -- chacun crédité seulement s'il dépasse à la fois un mélange aléatoire et un modèle-contrôle. Ce banc d'essai s'applique à des substrats de complexité croissante : automates cellulaires élémentaires, algorithmes de tri vus comme morphogenèse, jeu de la vie, et désormais un **transformer réel** dont les activations, lues à travers un autoencodeur parcimonieux (SAE), deviennent des trajectoires d'états discrets mesurables. L'étape en cours vise la confrontation empirique des deux grandes théories rivales : détecter dans le même substrat les signatures du Global Workspace (broadcast, ignition) et vérifier si elles co-localisent avec les pics de complexité intégrée -- un pont falsifiable entre IIT et GWT, où un résultat négatif (dissociation) serait tout aussi instructif qu'une convergence.
+
+Cette série dialogue avec **Probas** et **GameTheory**, dont elle partage les concepts de causalité et d'interaction, et avec **RL** : la distinction feed-forward contre récurrent, qui annule ou non Phi, éclaire le choix d'architecture d'un agent. L'ICT rejoint le fil rouge **causalité** du dépôt -- le même opérateur `do(·)` de Pearl s'instancie dans Tweety (symbolique), Infer.NET (message passing), PyMC (MCMC) et ICT (théorie de l'information). Le constat qu'un modèle de langage feed-forward a un Phi nul prolonge enfin les discussions sur la conscience artificielle qui traversent **GenAI** -- que l'ICT reprend désormais par la mesure plutôt que par le débat.
 
 Python | [README détaillé](MyIA.AI.Notebooks/IIT/README.md)
 
