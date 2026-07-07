@@ -147,7 +147,7 @@ Cette partie pose les fondations du Web Sémantique en utilisant l'écosystème 
 |---|----------|-------|------------------|
 | 1 | **SW-1-CSharp-Setup** | 20 min | - |
 | 2 | **SW-2-CSharp-RDFBasics** | 45 min | SW-2b-Python-RDFBasics |
-| 3 | **SW-3-CSharp-GraphOperations** | 50 min | - |
+| 3 | **SW-3-CSharp-GraphOperations** | 50 min | SW-3b-Python-GraphOperations |
 | 4 | **SW-4-CSharp-SPARQL** | 45 min | SW-4b-Python-SPARQL |
 
 #### SW-1-CSharp-Setup : Premier pas dans le Web Sémantique (20 min)
@@ -485,6 +485,7 @@ SemanticWeb/
 ├── SW-2-CSharp-RDFBasics.ipynb
 ├── SW-2b-Python-RDFBasics.ipynb     # Sidetrack
 ├── SW-3-CSharp-GraphOperations.ipynb
+├── SW-3b-Python-GraphOperations.ipynb   # Sidetrack
 ├── SW-4-CSharp-SPARQL.ipynb
 ├── SW-4b-Python-SPARQL.ipynb        # Sidetrack
 ├── SW-5-CSharp-LinkedData.ipynb
