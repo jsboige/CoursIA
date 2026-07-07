@@ -130,6 +130,7 @@ SymbolicAI/Planners/
 │   └── Planners-6-Domains-Csharp.ipynb  # Twin C# STRIPS from-scratch (BFS, Block World/Hanoi/Gripper) (See #4956)
 ├── 03-Advanced/
 │   ├── Planners-7-OR-Tools.ipynb        # CP-SAT
+│   ├── Planners-7-OR-Tools-Csharp.ipynb # Twin C# Job-Shop CP solver from-scratch (propagation + backtracking) (See #4956)
 │   ├── Planners-8-Temporal.ipynb        # Planification temporelle
 │   ├── Planners-8-Temporal-Csharp.ipynb # Twin C# Allen + STN + RCPSP-lite from-scratch (See #4956)
 │   ├── Planners-9-HTN.ipynb             # Planification hiérarchique
@@ -228,6 +229,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
 | 7 | [Planners-7-OR-Tools](03-Advanced/Planners-7-OR-Tools.ipynb) | Python | CP-SAT, programmation par contraintes, scheduling | 45 min |
+| 7 (C#) | [Planners-7-OR-Tools-Csharp](03-Advanced/Planners-7-OR-Tools-Csharp.ipynb) | .NET (C#) | Twin C# du 7 : solveur CP Job-Shop from-scratch (propagation au plus tôt + backtracking disjonctif), instance ft3 (makespan optimal 11 = OR-Tools) + N-Reines, Gantt ASCII (See #4956) | 45 min |
 | 8 | [Planners-8-Temporal](03-Advanced/Planners-8-Temporal.ipynb) | Python | PDDL 2.1, durées, parallélisme, ordonnancement | 40 min |
 | 8 (C#) | [Planners-8-Temporal-Csharp](03-Advanced/Planners-8-Temporal-Csharp.ipynb) | .NET (C#) | Twin C# du 8 : PDDL 2.1 actions duratives + algèbre d'Allen (13 relations) + STN Floyd-Warshall + RCPSP-lite glouton + Gantt ASCII from-scratch (See #4956) | 40 min |
 | 9 | [Planners-9-HTN](03-Advanced/Planners-9-HTN.ipynb) | Python | Hierarchical Task Networks, méthodes, décomposition | 45 min |
