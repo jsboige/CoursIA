@@ -151,6 +151,7 @@ flowchart TD
 | 11 (C#) | [GameTheory-11-BayesianGames-Csharp](GameTheory-11-BayesianGames-Csharp.ipynb) | C# (.NET) | Twin .NET de 11 (marathon #4956) : jeux bayésiens from-scratch (BCL seule), Cournot résolu analytiquement (déterminant = 6, indépendant du prior) | 65 min |
 | 11b | [GameTheory-11b-Lean-BayesianGamesExt](GameTheory-11b-Lean-BayesianGamesExt.ipynb) | Lean 4 | Companion natif : théorème de Vickrey (enchère au second prix) prouvé 0-sorry dans le lake `lean_game_defs_ext` (module Bayesian, sans Mathlib) | 50 min |
 | 12 | [GameTheory-12-ReputationGames](GameTheory-12-ReputationGames.ipynb) | Python | Jeux de réputation, signaling | 50 min |
+| 12 (C#) | [GameTheory-12-ReputationGames-Csharp](GameTheory-12-ReputationGames-Csharp.ipynb) | C# (.NET) | Twin .NET de 12 (marathon #4956) : chain-store (Selten) + Crawford-Sobel cheap talk + Kreps-Wilson réputation (Bayes) + KMRW PD répété + PBE, from-scratch (BCL seule) | 55 min |
 
 ### Partie 3 : Algorithmes et applications avancées (Notebooks 13-17)
 
@@ -550,6 +551,7 @@ GameTheory/
 ├── GameTheory-8c-CombinatorialGames-Python.ipynb
 ├── GameTheory-15c-CooperativeGames-Python.ipynb
 ├── GameTheory-11-BayesianGames-Csharp.ipynb                     # Twin .NET/C# (marathon #4956, Prong B)
+├── GameTheory-12-ReputationGames-Csharp.ipynb                   # Twin C# réputation (Kreps-Wilson + KMRW + Crawford-Sobel) from-scratch (marathon #4956, Prong B)
 ├── GameTheory-5-ZeroSum-Minimax-Csharp.ipynb                    # Twin C# simplexe from-scratch (marathon #4956, Prong B)
 ├── GameTheory-4-NashEquilibrium-Csharp.ipynb                    # Twin C# NE pur/mixte + support enum (Gauss) from-scratch (marathon #4956, Prong B)
 ├── GameTheory-16-MechanismDesign-Csharp.ipynb                   # Twin C# Vickrey + VCG (Clarke) + Gale-Shapley + double auction (marathon #4956)
