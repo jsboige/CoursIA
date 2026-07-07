@@ -126,7 +126,8 @@ SymbolicAI/Planners/
 │   ├── Planners-5-Heuristics.ipynb      # h-add, h-max, h-FF
 │   ├── Planners-5-Heuristics-Csharp.ipynb # Twin C# h-max/h-add/h-FF/landmarks (See #4956)
 │   ├── Planners-5b-Lean-Relaxation.ipynb # Companion Lean 4 : preuve h+ <= h*
-│   └── Planners-6-Domains.ipynb         # Domaines classiques
+│   ├── Planners-6-Domains.ipynb         # Domaines classiques
+│   └── Planners-6-Domains-Csharp.ipynb  # Twin C# STRIPS from-scratch (BFS, Block World/Hanoi/Gripper) (See #4956)
 ├── 03-Advanced/
 │   ├── Planners-7-OR-Tools.ipynb        # CP-SAT
 │   ├── Planners-8-Temporal.ipynb        # Planification temporelle
@@ -220,6 +221,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 5 (C#) | [Planners-5-Heuristics-Csharp](02-Classical/Planners-5-Heuristics-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : h-max/h-add/h-FF/landmarks from-scratch, démo non-admissibilité h^add (See #4956) | 40 min |
 | 5b | [Planners-5b-Lean-Relaxation](02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel (cf [#4053](https://github.com/jsboige/CoursIA/issues/4053) création du lake / PR #4168, companion natif) | 45 min |
 | 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
+| 6 (C#) | [Planners-6-Domains-Csharp](02-Classical/Planners-6-Domains-Csharp.ipynb) | .NET (C#) | Twin C# du 6 : planificateur STRIPS from-scratch (modèle Atom/Action/State, BFS forward + anti-cycle), domaines Block World + Hanoï + Gripper (See #4956) | 45 min |
 
 ### Partie 3 : Approches Avancées ([03-Advanced/](03-Advanced/README.md))
 
