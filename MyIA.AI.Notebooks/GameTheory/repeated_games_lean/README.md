@@ -1,7 +1,7 @@
 # Repeated Games — Lean (compagnon formel GT-6c)
 
 > **Compagnon formel** du notebook pédagogique [GameTheory-6c](../GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) (`Jeux répétés` — Dilemme du prisonnier itéré).
-> Série GameTheory regroupe 7 lakes (`conway_cgt`, `cooperative_games`, `knot`, `minimax`, `repeated_games`, `social_choice`, `stable_marriage`).
+> Série GameTheory regroupe 7 lakes (`conway_cgt`, `cooperative_games`, `minimax`, `repeated_games`, `social_choice`, `social_choice_lean_peters`, `stable_marriage`).
 > Aucun autre ne couvrait les jeux répétés — ce companion comble le manque avec le théorème-phare de la **stratégie grim-trigger**.
 
 ## Théorème-phare

@@ -1,7 +1,7 @@
 # Repeated Games — Lean (formal companion of GT-6c)
 
 > **Formal companion** of the pedagogical notebook [GameTheory-6c](../GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) (`Repeated Games` — Iterated prisoner's dilemma).
-> This companion fills the gap in the GameTheory series (which has 7 Lean lakes: `conway_cgt`, `cooperative_games`, `knot`, `minimax`, `repeated_games`, `social_choice`, `stable_marriage`).
+> This companion fills the gap in the GameTheory series (which has 7 Lean lakes: `conway_cgt`, `cooperative_games`, `minimax`, `repeated_games`, `social_choice`, `social_choice_lean_peters`, `stable_marriage`).
 
 ## Headline theorem
 
