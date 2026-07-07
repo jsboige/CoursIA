@@ -74,25 +74,25 @@ Tous les scripts principaux sont situés dans le dossier `/scripts`. Ils sont fo
 
 ## Documentation Complete
 
-Toute la documentation du projet est centralisee dans le repertoire `/docs`. Nous vous invitons a commencer par le [document d'introduction](docs/INTRODUCTION.md) pour une exploration guidee.
+Toute la documentation du projet est centralisée dans le répertoire `/docs`. Nous vous invitons à commencer par le [document d'introduction](docs/INTRODUCTION.md) pour une exploration guidée.
 
 ## Connexions cross-series
 
-Cette application illustre des concepts abordes dans plusieurs series du cursus :
+Cette application illustre des concepts abordés dans plusieurs séries du cursus :
 
-| Serie | Concept | Connection |
-|-------|---------|------------|
+| Série | Concept | Connexion |
+|-------|---------|-----------|
 | **GameTheory** | Gale-Shapley / Hospital-Resident | L'algorithme Stable utilise la variante Hospital-Resident de Gale-Shapley pour un appariement stable. Cf. `social_choice_lean/` et les notebooks GameTheory-15x. |
-| **GenAI** | Embeddings semantiques + RAG | Les algorithmes semantiques utilisent OpenAI `text-embedding-3-small` via Semantic Kernel, avec persistance ChromaDB (vector store). |
-| **ML** | Classification / Matching | Le matching par mot-cles est une baseline de classification supervisee. |
+| **GenAI** | Embeddings sémantiques + RAG | Les algorithmes sémantiques utilisent OpenAI `text-embedding-3-small` via Semantic Kernel, avec persistance ChromaDB (vector store). |
+| **ML** | Classification / Matching | Le matching par mot-clés est une baseline de classification supervisée. |
 
 ## Origine
 
-Cette application a ete developpee sous orchestration Roo comme extension avancee de l'atelier elementaire `01-matching-cv` dans `Ateliers avances/`. La trace d'orchestration n'a pas ete conservee, donc la valeur pedagogique est limitee a l'illustration de ce qui est possible avec davantage de sessions d'orchestration.
+Cette application a été développée sous orchestration Roo comme extension avancée de l'atelier élémentaire `01-matching-cv` dans `Ateliers avances/`. La trace d'orchestration n'a pas été conservée, donc la valeur pédagogique est limitée à l'illustration de ce qui est possible avec davantage de sessions d'orchestration.
 
 ## Configuration
 
-Copier `.env.example` en `.env` et renseigner votre cle API OpenAI :
+Copier `.env.example` en `.env` et renseigner votre clé API OpenAI :
 
 ```bash
 cp .env.example .env
