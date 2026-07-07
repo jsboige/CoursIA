@@ -9,7 +9,7 @@ maturity: PRODUCTION=30, BETA=4, ALPHA=1
 
 [← Notebooks](../README.md) | [→ Search](../Search/README.md)
 
-Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. Les 36 notebooks couvrent **15 paires miroir C#/Python** (algorithmes comparables dans les deux langages, dont la paire comparative 18-Comparison), **2 notebooks C# uniquement** (14-BDD, 0-Environment), **2 notebooks Python uniquement** (16-NeuralNetwork, 17-LLM) et **1 companion Lean natif** ([Sudoku-19](Sudoku-19-Lean-Propagation.ipynb), preuve formelle de la propagation de contraintes). Cette structure laisse à chaque étudiant le choix de son langage sur la majorité des algorithmes.
+Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. La série couvre **16 paires miroir C#/Python** (notebooks 1 à 15 et le benchmark comparatif 18 — mêmes algorithmes dans les deux langages), **1 notebook C# uniquement** (0-Environment, classes de base), **2 notebooks Python uniquement** (16-NeuralNetwork, 17-LLM) et **1 companion Lean natif** ([Sudoku-19](Sudoku-19-Lean-Propagation.ipynb), preuve formelle de la propagation de contraintes). Cette structure laisse à chaque étudiant le choix de son langage sur la quasi-totalité des algorithmes.
 
 **À qui s'adresse cette série** : étudiants en informatique (L2-M2) découvrant les paradigmes algorithmiques, candidats à des entretiens techniques, et enseignants cherchant un fil rouge pédagogique. Les notebooks Python ne nécessitent que Python 3.10+. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en IA : les concepts sont introduits depuis le backtracking.
 
@@ -362,12 +362,12 @@ Chaque notebook introduit une technique de résolution spécifique. Le tableau c
 | 10 | OR-Tools | Oui | Oui | **ortools** CP-SAT |
 | 11 | Choco | Oui | Oui | **JPype** + Choco JAR |
 | 12 | Z3 | Oui | Oui | **z3-solver** |
-| 13 | Symbolic Automata | Oui | - | (C# uniquement) |
+| 13 | Symbolic Automata | Oui | Oui | regex `(?&rec)` + **z3-solver** (parité C# ⇄ Python) |
 | 14 | BDD | Oui | Oui | Hand-rolled (parité C# ⇄ Python) |
 | 15 | Infer (Probabiliste) | Oui | Oui | **NumPyro** + JAX |
 | 16 | Neural Network | - | Oui | **PyTorch** CNN |
 | 17 | LLM | - | Oui | **openai** SDK (compatible ChatCompletion API) |
-| 18 | Comparison | - | Oui | Benchmark comparatif |
+| 18 | Comparison | Oui | Oui | Benchmark comparatif |
 
 **Légende** : Oui = disponible, - = non applicable
 
@@ -389,8 +389,10 @@ Les notebooks suivants sont disponibles dans les deux langages pour comparaison 
 | 10 | OR-Tools | [Sudoku-10-ORTools-Csharp](Sudoku-10-ORTools-Csharp.ipynb) | [Sudoku-10-ORTools-Python](Sudoku-10-ORTools-Python.ipynb) | CP-SAT solveur |
 | 11 | Choco | [Sudoku-11-Choco-Csharp](Sudoku-11-Choco-Csharp.ipynb) | [Sudoku-11-Choco-Python](Sudoku-11-Choco-Python.ipynb) | CP industrielle |
 | 12 | Z3 | [Sudoku-12-Z3-Csharp](Sudoku-12-Z3-Csharp.ipynb) | [Sudoku-12-Z3-Python](Sudoku-12-Z3-Python.ipynb) | SMT solveur |
+| 13 | Symbolic Automata | [Sudoku-13-SymbolicAutomata-Csharp](Sudoku-13-SymbolicAutomata-Csharp.ipynb) | [Sudoku-13-SymbolicAutomata-Python](Sudoku-13-SymbolicAutomata-Python.ipynb) | Automates symboliques : .NET vs regex récursive + Z3 |
 | 14 | BDD/MDD | [Sudoku-14-BDD-Csharp](Sudoku-14-BDD-Csharp.ipynb) | [Sudoku-14-BDD-Python](Sudoku-14-BDD-Python.ipynb) | Diagrammes de décision hand-rolled (parité) |
 | 15 | Infer (Probabiliste) | [Sudoku-15-Infer-Csharp](Sudoku-15-Infer-Csharp.ipynb) | [Sudoku-15-Infer-Python](Sudoku-15-Infer-Python.ipynb) | Inférence bayésienne |
+| 18 | Comparison | [Sudoku-18-Comparison-Csharp](Sudoku-18-Comparison-Csharp.ipynb) | [Sudoku-18-Comparison-Python](Sudoku-18-Comparison-Python.ipynb) | Benchmark multi-paradigmes dans chaque écosystème |
 
 ## Algorithmes Couverts
 
@@ -408,8 +410,8 @@ Les notebooks suivants sont disponibles dans les deux langages pour comparaison 
 | **OR-Tools CP-SAT** | CP industrielle | Très rapide | Garantie | 10 | 10 |
 | **Choco Solver** | CP industrielle | Rapide | Garantie | 11 | 11 |
 | **Z3 SMT** | Satisfiabilité | Rapide | Garantie | 12 | 12 |
-| **Symbolic Automata** | Automates + SMT | Rapide | Garantie | 13 | - |
-| **BDD/MDD** | Diagrammes décision | Moyen | Garantie | 14 | - |
+| **Symbolic Automata** | Automates + SMT | Rapide | Garantie | 13 | 13 |
+| **BDD/MDD** | Diagrammes décision | Moyen | Garantie | 14 | 14 |
 | **Infer.NET/NumPyro** | Inférence probabiliste | Expérimental | Variable | 15 | 15 |
 | **Réseau de Neurones** | Deep Learning | Rapide (inférence) | Approx. | - | 16 |
 | **LLM Solver** | LLM | Variable | ~10-30% | - | 17 |
@@ -608,6 +610,7 @@ Sudoku/
 ├── Sudoku-15-Infer-Python.ipynb           # NumPyro Python
 ├── Sudoku-16-NeuralNetwork-Python.ipynb   # Réseau de neurones Python
 ├── Sudoku-17-LLM-Python.ipynb             # LLM Solver Python
+├── Sudoku-18-Comparison-Csharp.ipynb      # Benchmark comparatif C#
 ├── Sudoku-18-Comparison-Python.ipynb      # Benchmark comparatif Python
 ├── Sudoku-19-Lean-Propagation.ipynb       # Companion Lean natif (preuve de soundness)
 ├── Puzzles/                               # Fichiers de puzzles
@@ -732,7 +735,7 @@ Suivez l'ordre numérique : 0-5 (exhaustif et métaheuristiques), puis 6-12 (CSP
 
 ### Si vous venez du C# / .NET
 
-Les notebooks C# (suffixe `-Csharp`) utilisent GeneticSharp, OR-Tools .NET, Z3 .NET et Infer.NET. Commencez par le parcours C# complet (0-15). Les notebooks Python peuvent servir de référence de comparaison.
+Les notebooks C# (suffixe `-Csharp`) utilisent GeneticSharp, OR-Tools .NET, Z3 .NET et Infer.NET. Commencez par le parcours C# complet (0-15), puis synthétisez avec le benchmark **18-Comparison-Csharp**. Les notebooks Python peuvent servir de référence de comparaison.
 
 ### Si vous venez du Python / data science
 
@@ -745,7 +748,7 @@ Les notebooks Python (suffixe `-Python`) couvrent 16 solveurs avec PyGAD, OR-Too
 Cette série a utilisé le Sudoku comme **banc d'essai unique** pour comparer, sur un même problème NP-complet, sept paradigmes algorithmiques radicalement différents. L'arc pédagogique suit une progression naturelle :
 
 - **Le geste fondateur** — poser qu'un problème computationnel peut s'attaquer par des voies très différentes : énumération exhaustive (backtracking), métaheuristiques (recuit simulé, algorithmes génétiques), programmation par contraintes (CP-SAT, OR-Tools), satisfiabilité modulaire (Z3/SMT), inférence probabiliste (NumPyro, Infer.NET), et approches data-driven (réseaux de neurones, LLM). Le Sudoku n'est pas l'objectif : c'est le **terrain commun** qui rend les paradigmes comparables.
-- **Le double langage** — l'approche miroir C#/Python (13 paires miroir, soit 26 notebooks) ancre une leçon concrète : les mêmes algorithmes se transposent d'un écosystème à l'autre. GeneticSharp ↔ PyGAD, OR-Tools .NET ↔ OR-Tools Python, Z3 .NET ↔ Z3 Python. Le concept précède l'outil.
+- **Le double langage** — l'approche miroir C#/Python (16 paires miroir, du backtracking au benchmark comparatif) ancre une leçon concrète : les mêmes algorithmes se transposent d'un écosystème à l'autre. GeneticSharp ↔ PyGAD, OR-Tools .NET ↔ OR-Tools Python, Z3 .NET ↔ Z3 Python. Le concept précède l'outil.
 - **Le compromis fondamental** — chaque paradigme paie un prix différent. Les solveurs exacts (DLX, Norvig, CP-SAT, Z3) **garantissent** la solution mais au coût d'une recherche combinatoire. Les métaheuristiques sont plus rapides en moyenne sans garantie. Les approches neuronales **généralisent** mais échouent sur les instances difficiles. Le notebook 18 (Comparison) synthétise ces compromis : garantie vs performance vs généralisation.
 
 La thèse pratique est honnête : il n'existe pas de « meilleur solveur » dans l'absolu — il existe un solveur adapté à chaque contexte (garantie requise, temps imparti, données disponibles), et savoir le choisir est précisément ce que cette série enseigne.

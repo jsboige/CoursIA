@@ -11,7 +11,7 @@ Ce parcours vous forme à la maîtrise de l'IA générative dans toute sa divers
 
 ## Pourquoi ce parcours ?
 
-L'IA générative a transformé la création de contenu en 2024-2026. Un développeur qui sait piloter DALL-E pour générer une illustration, Whisper pour transcrire un podcast, MusicGen pour composer un fond sonore, et orchestrer tout cela via des agents autonomes, possède un avantage décisif sur le marché. Ce parcours ne se contente pas d'énumérer des APIs : il vous apprend à **comprendre** les modèles (leurs forces, leurs limites, leurs pièges), à **comparer** les approches (open-source vs cloud, local vs API), et à **combiner** les modalités dans des pipelines réels.
+L'IA générative a transformé la création de contenu en 2024-2026. Un développeur qui sait piloter gpt-image-1 pour générer une illustration, Whisper pour transcrire un podcast, MusicGen pour composer un fond sonore, et orchestrer tout cela via des agents autonomes, possède un avantage décisif sur le marché. Ce parcours ne se contente pas d'énumérer des APIs : il vous apprend à **comprendre** les modèles (leurs forces, leurs limites, leurs pièges), à **comparer** les approches (open-source vs cloud, local vs API), et à **combiner** les modalités dans des pipelines réels.
 
 ## Structure
 
@@ -66,7 +66,7 @@ Cette série couvre le spectre complet de l'audio IA : reconnaissance vocale (Wh
 
 ### Video - Comprendre, générer et produire
 
-La vidéo est la modalité la plus exigeante en ressources mais aussi la plus spectaculaire. On commence par comprendre des vidéos existantes (GPT-5, Qwen-VL), puis on génère (HunyuanVideo, Wan, Sora). Les notebooks d'orchestration combinent compréhension et génération dans des workflows de production vidéo. La série couvre aussi le surcadrage d'images (ESRGAN) et la synchronisation audio-vidéo.
+La vidéo est la modalité la plus exigeante en ressources mais aussi la plus spectaculaire. On commence par comprendre des vidéos existantes (GPT-5, Qwen-VL), puis on génère (HunyuanVideo, Wan, Sora, et LTX-2 pour la génération **audiovisuelle jointe** — image et son synchronisés dans un même passage de diffusion). Les notebooks d'orchestration combinent compréhension et génération dans des workflows de production vidéo. La série couvre aussi le surcadrage d'images (ESRGAN) et la synchronisation audio-vidéo.
 
 **Fil rouge** : créer une vidéo pédagogique automatisée depuis un script texte.
 
@@ -76,7 +76,7 @@ La vidéo est la modalité la plus exigeante en ressources mais aussi la plus sp
 
 ### Texte - Maîtriser les LLMs et les APIs OpenAI
 
-Le texte est le socle de toute interaction avec l'IA générative. Cette série va au-delà du simple "prompt engineering" : structured outputs pour des réponses fiables, function calling pour connecter les LLMs à vos outils, RAG pour injecter de la connaissance externe, code interpreter pour l'exécution dynamique, et les modèles de raisonnement (o-series) pour les tâches complexes. Les derniers notebooks couvrent les patterns de production et les LLMs locaux.
+Le texte est le socle de toute interaction avec l'IA générative. Cette série va au-delà du simple "prompt engineering" : structured outputs pour des réponses fiables, function calling pour connecter les LLMs à vos outils, RAG pour injecter de la connaissance externe, code interpreter pour l'exécution dynamique, et les modèles de raisonnement (o-series) pour les tâches complexes. Le milieu de série couvre les patterns de production et les LLMs locaux (llama.cpp, quantization, vLLM). Le dernier tiers (notebooks 13-18) forme un arc **agentique et test-time compute** : orchestration d'agents, mémoire persistante, Tree-of-Thoughts, scaling du calcul à l'inférence et raisonnement natif vs scaling ; les notebooks 19-20 raccordent le tout à la plateforme [Open WebUI](Open-WebUI/README.md) (orchestration et API native, endpoints authentifiés live).
 
 [README complet](Texte/README.md) | ~10h
 
@@ -100,7 +100,7 @@ Un modèle généraliste ne connaît pas votre domaine, et le ré-entraîner de 
 
 ### PostTraining - La chaîne SOTA du post-entraînement
 
-Là où FineTuning donne la boîte à outils, PostTraining en est le **pendant théorique et SOTA (2024-2025)** : il remonte toute la chaîne conceptuelle du post-entraînement — SFT vers RLHF, DPO, GRPO, puis RLVR. Ces 7 notebooks prennent le parti d'expliquer d'abord la *mathématique du loss*, puis l'intuition, puis l'implémentation (TRL/HuggingFace) — l'ordre inverse des tutoriels habituels. Le fil rouge reproduit les techniques récentes, jusqu'au raisonnement à la Deepseek-R1 (janvier 2025), sur de **petits** modèles (Qwen2.5-0.5B/1.5B) qui tiennent sur un GPU 8 Go, avec évaluation comparative et détection du *reward hacking*. À suivre après FineTuning pour la profondeur méthodologique.
+Là où FineTuning donne la boîte à outils, PostTraining en est le **pendant théorique et SOTA (2024-2025)** : il remonte toute la chaîne conceptuelle du post-entraînement — SFT vers RLHF, DPO, GRPO, puis RLVR. Ces 7 notebooks prennent le parti d'expliquer d'abord la *mathématique du loss*, puis l'intuition, puis l'implémentation (TRL/HuggingFace) — l'ordre inverse des tutoriels habituels. Le fil rouge reproduit les techniques récentes, jusqu'au raisonnement à la Deepseek-R1 (janvier 2025), sur de **petits** modèles qui tiennent sur un GPU 8 Go, avec évaluation comparative et détection du *reward hacking* — la série migre progressivement de Qwen2.5-0.5B/1.5B vers Qwen3.5-0.8B (PT-03 déjà migré, #5078 : évaluation DPO en vraie *forward pass* au lieu d'une métrique codée en dur). À suivre après FineTuning pour la profondeur méthodologique.
 
 [README complet](PostTraining/README.md)
 
@@ -108,7 +108,7 @@ Là où FineTuning donne la boîte à outils, PostTraining en est le **pendant t
 
 ### Vibe-Coding - Développer avec des agents IA
 
-Le "vibe coding" est la compétence la plus demandée de 2026 : décrire ce qu'on veut à un agent IA et le laisser écrire, tester et déployer le code. Cette série couvre les deux outils majeurs du marché : Claude Code (Anthropic) et Roo Code (communautaire). Chaque outil est abordé en 5 modules, de la découverte à l'automatisation avancée.
+Le "vibe coding" est la compétence la plus demandée de 2026 : décrire ce qu'on veut à un agent IA et le laisser écrire, tester et déployer le code. Cette série couvre les deux outils majeurs du marché : Claude Code (Anthropic) et Roo Code (communautaire), chacun abordé en 5 modules, de la découverte à l'automatisation avancée. Deux modules d'infrastructure complètent le tableau : **Claw-Systems** (agents autonomes conteneurisés — les bots reviewers Hermes/NanoClaw qui auditent réellement les PRs de ce dépôt) et **Claudish** (proxy multi-provider qui fait tourner Claude Code sur des modèles alternatifs).
 
 [README complet](Vibe-Coding/README.md) | ~30h
 
@@ -345,9 +345,11 @@ Cette partition traverse les **13 sous-séries** GenAI (141 notebooks) et struct
 | [PostTraining](PostTraining/) | 7 | ● self-hosted | **SFT/GRPO/RLVR** (rewardspy 0.1.0 git install) |
 | [CaseStudies](CaseStudies/) | 4 | ◯ Hybride | Projets étudiants bout-en-bout |
 | [Open-WebUI](Open-WebUI/) | 7 | ◯ Hybride | Plateforme Open WebUI + Playwright E2E (30+ tests) |
-| [Vibe-Coding](Vibe-Coding/) | 6 | ◯ Hybride | **Claude Code** + **Roo Code** ; agents cluster fleet |
+| [Vibe-Coding](Vibe-Coding/) | 6 | ◯ Hybride | **Claude Code** + **Roo Code** ; **Claw-Systems** (bots Hermes/NanoClaw) + **Claudish** (proxy multi-provider) |
 | [RAG-et-Memoire-Semantique](RAG-et-Memoire-Semantique/) | 1 | ● self-hosted | **Qdrant** + embeddings + grounding SDDD |
 | [racine](.) | 1 | ◯ Hybride | Index général |
+
+**LLMs texte : le chemin self-hosted existe aussi.** La ligne Texte est ◐ Cloud API en dominante, mais les notebooks 10-12 (llama.cpp, quantization GPTQ/AWQ, vLLM) montrent comment servir localement les mêmes capacités — c'est exactement la voie que le cluster CoursIA emprunte en production, avec ses propres endpoints vLLM internes qui alimentent les sous-agents des workflows d'automatisation.
 
 **Le principe à retenir** : un notebook GenAI n'est jamais « juste un appel API ». Il montre **comment l'API s'intègre dans une stack self-hosted** (Docker Compose, GPU partagé, monitoring) et **comment basculer entre les deux** selon le contexte (budget, latence, qualité, conformité). Cette discipline d'**hybridation systématique** est ce qui distingue la série d'un tutoriel API classique.
 
@@ -367,4 +369,4 @@ Les notebooks GenAI exposent trois familles d'**outils d'infrastructure** que le
 
 ---
 
-*Version 1.2.0 — Juillet 2026 — section « Stack self-hosted ⇄ Cloud API » ajoutée (différenciant pédagogique structurant) + section « Écosystème MCP et notebooks GPU » (rappel outils cluster). ÉpIC #4959 tranche 4/3+ (rollout hubs P0).*
+*Version 1.3.0 — Juillet 2026 — blurbs sous-domaines actualisés (LTX-2 audiovisuel, arc agentique Texte 13-20, Claw-Systems/Claudish, migration Qwen3.5 PT-03 #5078, chemin LLM self-hosted). Voir #4959.*

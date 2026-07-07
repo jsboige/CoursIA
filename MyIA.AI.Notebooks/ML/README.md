@@ -65,6 +65,7 @@ ML/
 │   ├── ML-5-TimeSeries.ipynb
 │   ├── ML-5-TimeSeries-Python.ipynb   # jumeau scikit-learn (STL+SARIMA) ⇄ ForecastBySsa
 │   ├── ML-6-ONNX.ipynb
+│   ├── ML-6-ONNX-Python.ipynb   # jumeau skl2onnx+onnxruntime ⇄ OnnxTransformer
 │   ├── ML-7-Recommendation.ipynb
 │   ├── ML-7-Recommendation-Python.ipynb   # jumeau scikit-learn (NMF) ⇄ MatrixFactorization
 │   ├── ML-8-Clustering.ipynb
@@ -100,6 +101,7 @@ Pipeline ML.NET complet en C#, de l'introduction à l'évaluation avancée : du 
 | 5 | [ML-5-TimeSeries](ML.Net/ML-5-TimeSeries.ipynb) | Forecasts temporelles, windowing | Séries temporelles |
 | 5-Py | [ML-5-TimeSeries-Python](ML.Net/ML-5-TimeSeries-Python.ipynb) | **Jumeau Python** : `ForecastBySsa` ⇄ `STL`+`SARIMA` (statsmodels) | Parité .NET⇄Python |
 | 6 | [ML-6-ONNX](ML.Net/ML-6-ONNX.ipynb) | Export ONNX, inférence en production | Déploiement |
+| 6-Py | [ML-6-ONNX-Python](ML.Net/ML-6-ONNX-Python.ipynb) | **Jumeau Python** : `skl2onnx` export + `onnxruntime` inférence ⇄ `OnnxTransformer` (ML.NET) | Parité .NET⇄Python |
 | 7 | [ML-7-Recommendation](ML.Net/ML-7-Recommendation.ipynb) | Système de recommandation | Recommandations |
 | 7-Py | [ML-7-Recommendation-Python](ML.Net/ML-7-Recommendation-Python.ipynb) | **Jumeau Python** : `MatrixFactorization` ⇄ `NMF` (scikit-learn) | Parité .NET⇄Python |
 | 8 | [ML-8-Clustering](ML.Net/ML-8-Clustering.ipynb) | K-Means, segmentation RFM, méthode du coude | Non-supervisé |

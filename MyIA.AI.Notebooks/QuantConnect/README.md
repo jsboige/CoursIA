@@ -181,7 +181,7 @@ Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, et applicatio
 
 ## Résumé de la Progression
 
-**Total cours linéaire** : **29 notebooks Python** (QC-Py-01 à QC-Py-28 + le 23b, ~33 heures de contenu) + **24 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, Cloud strategies QC-Py-Cloud-*, training QC-Py-30..32, dataset workflow).
+**Total cours linéaire** : **29 notebooks Python** (QC-Py-01 à QC-Py-28 + le 23b, ~33 heures de contenu) + **24 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, Cloud strategies QC-Py-Cloud-*, training QC-Py-30..32, dataset workflow), plus 2 notebooks de recherche utilitaires (`research_*.ipynb`).
 
 **Répartition cours linéaire (Phases 1-8)** :
 - **18 notebooks non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
@@ -230,18 +230,18 @@ Le dossier [`projects/`](projects/) contient le catalogue complet des stratégie
 
 ---
 
-## 4-Type Notebook Classification
+## Classification des notebooks en quatre types
 
-Each notebook in the QC tree falls into one of four types:
+Chaque notebook de l'**arbre QC complet** (Python, C#, partner-course, pipeline ML) relève d'un des quatre types d'exécution :
 
-| Type | Label | Execution | Count |
-|------|-------|-----------|-------|
-| **(a)** | quantbook QC Cloud | QC Cloud only | 59 |
-| **(b)** | research linked to quantbook | QC Cloud + local | ~76 |
-| **(c)** | standalone research | Local (yfinance/sklearn) | 24 |
-| **(d)** | pedagogical placeholder | Read-only / copy-paste | 33 |
+| Type | Nature | Exécution | Compte |
+|------|--------|-----------|--------|
+| **(a)** | quantbook QC Cloud | QC Cloud uniquement | 59 |
+| **(b)** | recherche liée à un quantbook | QC Cloud + local | ~76 |
+| **(c)** | recherche autonome | Local (yfinance/sklearn) | 24 |
+| **(d)** | placeholder pédagogique | Lecture seule / copier-coller | 33 |
 
-See [docs/archive/qc-strategies-status.md](../../docs/archive/qc-strategies-status.md) for the exhaustive classification.
+Classification exhaustive : [docs/archive/qc-strategies-status.md](../../docs/archive/qc-strategies-status.md). Le [README Python](Python/README.md) donne la variante restreinte aux seuls notebooks Python — les comptes des deux tableaux diffèrent donc par construction (périmètres différents), pas par erreur.
 
 ## Cours partenaire — Exemples de Recherche
 
@@ -264,10 +264,10 @@ Voir [partner-course-quant-trading/README.md](partner-course-quant-trading/READM
 
 ---
 
-## Transient Directories
+## Répertoires transitoires
 
-| Directory | Status | Description |
-|-----------|--------|-------------|
+| Répertoire | Statut | Description |
+|------------|--------|-------------|
 | `_pending_execution/` | Local-only | Transient QuantBook workspace (untracked local files); committed placeholder purged |
 | `projects/_archive/` | Purged | Dedup-archive removed; canonical strategies retained in `projects/` (commit `#1815`, `#1627`) |
 | `_archive/` | Purged | Superseded reports moved to `docs/audits/` (commit `#1626`) |
@@ -376,7 +376,7 @@ Techniquement oui (QC supporte les brokers live : IBKR, Binance, etc.), mais **p
 
 ### Comment choisir une première stratégie ?
 
-Pour débuter : **EMA-Cross-Stocks** (Sharpe 0.872, débutant) ou **AllWeather** (Sharpe 0.667, débutant). Ces stratégies sont simples, robustes, et pédagogiques. Les stratégies avancées (BTC-ML, Framework_Composite) ont des Sharpes plus élevés mais requièrent une compréhension plus profonde des risques.
+Pour débuter : **EMA-Cross-Stocks** (Sharpe 0.872 catalogue, 0.891 sur fenêtre alignée 2018-2025 — cf. tableau Top 5 ci-dessous ; débutant) ou **AllWeather** (Sharpe 0.667, débutant). Ces stratégies sont simples, robustes, et pédagogiques. Les stratégies avancées (BTC-ML, Framework_Composite) ont des Sharpes plus élevés mais requièrent une compréhension plus profonde des risques.
 
 ### Quelle est la différence entre Sharpe et CAGR ?
 
@@ -409,7 +409,7 @@ LEAN est le moteur de production de QuantConnect : il gère les données corpora
 
 `QuantBook` est l'API interactive de QuantConnect pour les notebooks Jupyter. Elle permet de charger des données, calculer des indicateurs, et analyser des résultats sans écrire un algorithme complet. Un `QCAlgorithm` est la version production avec des callbacks (`OnData`, `OnEndOfDay`), un portefeuille, et un moteur d'exécution. Les notebooks de cette série utilisent `QuantBook` pour l'exploration ; les projets utilisent `QCAlgorithm` pour le backtesting.
 
-## Free Tier vs Paid
+## Free tier vs offre payante
 
 | Fonctionnalité | Free Tier | Paid (Team/Premium) |
 |----------------|-----------|---------------------|
@@ -452,7 +452,7 @@ Après completion de cette série, vous maîtriserez :
 
 ## Stratégies Vérifiées — Baselines Comparatives
 
-Les 50+ projets du dossier `projects/` ont été backtestés sur des périodes standardisées via QC Cloud API. Le tableau ci-dessous présente les **meilleures performances vérifiées** (Sharpe, CAGR, MaxDD, PSR) : [catalogue complet](../../docs/qc/qc-comparative-backtests.md).
+Les projets du dossier `projects/` (compte et classification à jour : [`projects/README.md`](projects/README.md)) ont été backtestés sur des périodes standardisées via QC Cloud API. Le tableau ci-dessous présente les **meilleures performances vérifiées** (Sharpe, CAGR, MaxDD, PSR) : [catalogue complet](../../docs/qc/qc-comparative-backtests.md).
 
 ```mermaid
 flowchart TD
@@ -497,9 +497,20 @@ Le **fil rouge** de la série : un Sharpe spectaculaire en backtest court est pr
 
 ---
 
+## ML-Training-Pipeline — l'échelle de complexité des modèles
+
+Le sous-projet [`ML-Training-Pipeline/`](ML-Training-Pipeline/README.md) applique la même rigueur méthodologique (walk-forward, multi-seed, Diebold-Mariano) à une question systématique : **quelle complexité de modèle apporte réellement un edge en trading ?** Deux campagnes structurent la réponse :
+
+- **La « Ladder » (#1409, complète)** : une échelle de modèles de complexité croissante — baselines linéaires, arbres, LSTM, Transformers, jusqu'au **Decision Transformer**, seul modèle à battre significativement les baselines (**BEATS sur 24/26 seeds**). L'enseignement central : les modèles **action-based** (qui apprennent directement la politique de trading) surclassent les modèles **forecast-based** (qui prédisent le rendement puis en dérivent une action) — la prédiction de prix est le maillon faible, pas la décision.
+- **Le « Curriculum V2 »** : un balayage de familles de modèles sur des tâches de volatilité et de régime, dont ne survivent que **4 KEEPERS** validés : S3 HMM régime (+0.669 Sharpe vs baseline), S4 Inverse-vol Ridge (+0.325), M12 HAR-RV-J (prévision de volatilité avec sauts) et M15 LSTM-RV. Tout le reste — y compris des architectures réputées (TFT, DLinear) — ne bat pas les baselines une fois les coûts appliqués.
+
+Le détail (registre des runs, checkpoints, notebooks de recherche `m*_research.ipynb`, curriculum) vit dans [`ML-Training-Pipeline/README.md`](ML-Training-Pipeline/README.md), [`CURRICULUM.md`](ML-Training-Pipeline/CURRICULUM.md) et [`REGISTRY.md`](ML-Training-Pipeline/REGISTRY.md). Ce pipeline alimente aussi le dimensionnement Kelly HMM-regime du pont Lean ci-dessous.
+
+---
+
 ## Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
-Le dépôt ne se limite pas aux notebooks Python : il embarque une **couche de preuves Lean 4** qui ancre mathématiquement les résultats phares des séries. Le bridge QuantConnect ↔ Lean est [`kelly_lean`](kelly_lean/) — un lake Lean 4 (Mathlib, toolchain `v4.31.0-rc1`) qui prouve l'**optimalité du critère de Kelly** pour le *position sizing*. Le théorème : pour un pari de Bernoulli (probabilité `p` de gain, cote nette `b`, `q = 1 − p`), la fraction optimale du capital à risquer est
+Le dépôt ne se limite pas aux notebooks Python : il embarque une **couche de preuves Lean 4** qui ancre mathématiquement les résultats phares des séries. Le bridge QuantConnect ↔ Lean est [`kelly_lean`](kelly_lean/) — un lake Lean 4 (Mathlib, toolchain `v4.31.0-rc1`), **intégralement bilingue** (modules `Bet`/`Growth`/`Kelly` en français + miroirs `_en`, cf. convention i18n Lean du dépôt), qui prouve l'**optimalité du critère de Kelly** pour le *position sizing*. Le théorème : pour un pari de Bernoulli (probabilité `p` de gain, cote nette `b`, `q = 1 − p`), la fraction optimale du capital à risquer est
 
 > **f\* = (b·p − q) / b**
 
@@ -564,4 +575,4 @@ Le fil rouge : **la rigueur méthodologique**. Le catalogue de 36 baselines vér
 
 ---
 
-*Version 1.1.0 - Juin 2026*
+*Version 1.2.0 — Juillet 2026*
