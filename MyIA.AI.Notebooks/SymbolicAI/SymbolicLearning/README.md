@@ -185,6 +185,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | 8 | [SL-8 - ILP Moderne et Knowledge Graphs](SL-8-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, complétion KG, ASP avec clingo | 55 min |
 | 9 | [SL-9 - LLMs et Apprentissage Symbolique](SL-9-LLM-SymbolicLearning.ipynb) | Prompting, extraction de règles, vérification symbolique (Gemini 3.5 Flash optionnel) | 50 min |
 | 10 | [SL-10 - Apprentissage Actif d'Automates](SL-10-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 60 min |
+| 10 (C#) | [SL-10 - L* Angluin (Twin C#)](SL-10-ActiveAutomataLearning-Csharp.ipynb) | **Jumeau C#** — DFA, ObservationTable (S/E/T), requêtes MQ/EQ, conjecture DFA, contre-exemple (Angluin/Maler-Pnueli), oracle bruité + L* borné, forward sum-product + agrégation d'evidence from-scratch (See #4956) | 60 min |
 | 11 | [SL-11 - Capstone Neuro-Symbolique](SL-11-Capstone-NeuroSymbolic.ipynb) | Pipeline 6 étages : extraction LLM, oracle, KG, mining, inférence avec provenance, QA | 90 min |
 | 12 | [SL-12 - Réseaux de Portes Logiques Différentiables](SL-12-DifferentiableLogicGateNetworks.ipynb) | difflogic (Petersen NeurIPS 2022) : portes logiques apprises par descente de gradient, discrétisation en circuit booléen, inférence ultra-rapide | 45 min |
 
@@ -303,6 +304,8 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | Contre-exemples | Traitement, raffinement, convergence vers le DFA minimal |
 | Oracle échantillonné | Équivalence approchée par tirage, lien PAC |
 | Théorie | Myhill-Nerode, minimalité, bornes sur le nombre de requêtes |
+
+> **Parité .NET** : [SL-10-ActiveAutomataLearning-Csharp.ipynb](SL-10-ActiveAutomataLearning-Csharp.ipynb) est le jumeau C# (.NET Interactive) — L\* d'Angluin implémenté from-scratch (DFA, ObservationTable S/E/T, requêtes d'appartenance et d'équivalence, conjecture, contre-exemples Angluin/Maler-Pnueli, oracle d'équivalence échantillonné PAC, oracle bruité + L\* borné, algorithme forward sum-product et agrégation d'evidence), BCL .NET 9 seule (0 NuGet). Marathon parité .NET ⇄ Python (#4956).
 
 ### SL-11-Capstone-NeuroSymbolic.ipynb
 
@@ -445,6 +448,7 @@ SymbolicLearning/
 ├── SL-8-KnowledgeGraphs-ILP.ipynb           # rdflib, AMIE rule mining
 ├── SL-9-LLM-SymbolicLearning.ipynb          # LLMs + vérification symbolique (Gemini 3.5 Flash optionnel)
 ├── SL-10-ActiveAutomataLearning.ipynb        # L* d'Angluin, apprentissage actif d'automates
+├── SL-10-ActiveAutomataLearning-Csharp.ipynb # Jumeau C# (.NET Interactive) — L* d'Angluin (DFA/ObservationTable/MQ-EQ/forward) from-scratch, parité #4956
 ├── SL-11-Capstone-NeuroSymbolic.ipynb       # Capstone : pipeline neuro-symbolique 6 étages
 ├── .env.example                             # Modèle de configuration LLM (OpenRouter)
 ├── requirements.txt                         # Dépendances optionnelles
