@@ -261,15 +261,21 @@ def _optimize_with_pil(raw: bytes, max_dim: int) -> tuple:
             img = img.convert("RGBA")
         w, h = img.size
         scale = min(1.0, max_dim / max(w, h)) if max(w, h) > 0 else 1.0
+        buf = io.BytesIO()
         if scale < 1.0:
+            # Downscale OBLIGATOIRE : la borne ``max_dim`` est dure (politique
+            # EPIC #5654) et independante du poids. On retient l'image
+            # downscaled meme si le PNG re-encode est plus lourd que le raw.
             img = img.resize(
                 (max(1, int(w * scale)), max(1, int(h * scale))),
                 Image.LANCZOS,
             )
-        buf = io.BytesIO()
+            img.save(buf, format="PNG", optimize=True)
+            return buf.getvalue(), True
+        # Pas de downscale necessaire (image deja <= max_dim) : on ne retient
+        # la recompression que si elle allegit effectivement le fichier.
         img.save(buf, format="PNG", optimize=True)
         out = buf.getvalue()
-        # On ne retient l'optimise que s'il est effectivement plus leger.
         return (out, True) if len(out) < len(raw) else (raw, True)
     except Exception:
         return raw, False

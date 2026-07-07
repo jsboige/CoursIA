@@ -16,6 +16,17 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 2. **Comparer** les approches (backtracking vs CP-SAT vs métaheuristiques) sur des instances concrètes
 3. **Évaluer** les compromis performance/qualité entre méthodes exactes et approchées
 
+## Aperçu — quelques problèmes résolus visuellement
+
+Les applications ne se contentent pas de « tourner » : elles produisent des **visualisations** qui rendent la résolution concrète. Six exemples extraits des notebooks de la sous-série — sorties d'exécution **réelles** (non régénérées pour l'illustration, règle C.3), downscalées à ≤1200 px et ≤200 ko (politique EPIC #5654). Provenance exacte de chaque figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
+| | | |
+|:--:|:--:|:--:|
+| <img src="assets/readme/app1-nqueens-board.png" width="290" alt="Plateau des 8 reines : solution où aucune reine ne menace une autre, disposée sur un échiquier."> | <img src="assets/readme/app2-graphcoloring-map.png" width="300" alt="Carte colorée : chaque département reçoit une couleur distincte de ses voisins (coloration de graphe)."> | <img src="assets/readme/app11-picross-grid.png" width="290" alt="Grille de Picross (nonogramme) résolue : les cases noircies révèlent une image par propagation de contraintes."> |
+| [App-1 — N-Queens](CSP/App-1-NQueens.ipynb) | [App-2 — Coloration de graphe](CSP/App-2-GraphColoring.ipynb) | [App-11 — Picross](CSP/App-11-Picross.ipynb) |
+| <img src="assets/readme/app3-nurseschedule-planning.png" width="300" alt="Planning de gardes infirmières : grille horaire satisfaisant contraintes dures et préférences douces."> | <img src="assets/readme/app15-sports-calendar.png" width="290" alt="Calendrier sportif équilibré : répartition des matchs respectant équité, contraintes TV et déplacements."> | <img src="assets/readme/app19-wfc-tiles.png" width="290" alt="Niveau généré par Wave Function Collapse : pavage procédural contraint par les règles d'adjacence des tuiles."> |
+| [App-3 — Nurse Scheduling](CSP/App-3-NurseScheduling.ipynb) | [App-15 — Sports Scheduling](CSP/App-15-SportsScheduling.ipynb) | [App-19 — WFC](CSP/App-19-ProceduralGeneration-WFC.ipynb) |
+
 ## FAQ / Troubleshooting
 
 | Problème | Solution |
