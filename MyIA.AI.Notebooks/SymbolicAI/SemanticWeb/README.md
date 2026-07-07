@@ -256,6 +256,7 @@ Cette partie couvre les standards modernes du Web Sémantique. L'écosystème Py
 | 8 (C#) | **SW-8-CSharp-SHACL** | 45 min | Jumeau .NET de SW-8 : validation SHACL avec dotNetRDF (`VDS.RDF.Shacl`) |
 | 9 | **SW-9-Python-JSONLD** | 40 min | Données structurées pour le web |
 | 10 | **SW-10-Python-RDFStar** | 40 min | RDF 1.2, annotations et provenance |
+| 10 (C#) | **SW-10-CSharp-RDFStar** | 40 min | Jumeau .NET de SW-10 : réification + annotations de confiance avec dotNetRDF (`Graph`, `TripleStore`, graphes nommés) |
 
 #### SW-8-Python-SHACL : Validation de Qualité des Données (45 min)
 
@@ -291,6 +292,8 @@ RDF-Star (RDF 1.2) permet d'exprimer des statements à propos de statements, ess
 - Syntaxe Turtle-Star et N-Triples-Star
 - SPARQL-Star : requêtes sur les quoted triples
 - rdflib support expérimental RDF-Star
+
+> **Twin C# disponible** : [SW-10-CSharp-RDFStar](SW-10-CSharp-RDFStar.ipynb) — réification classique (4 triplets `rdf:Statement` par fait annoté), annotations de confiance/source et graphes nommés via dotNetRDF (`Graph(IRefNode)`, `TripleStore`, `SparqlQueryParser`). Compagnon cross-langage du notebook Python `rdflib` sur la même thématique RDF-Star/provenance (marathon parité .NET ⇄ Python #4956, Prong B).
 
 ---
 
@@ -499,6 +502,7 @@ SemanticWeb/
 ├── SW-9-Python-JSONLD.ipynb
 ├── SW-9-CSharp-JSONLD.ipynb         # Twin C# (marathon #4956 Prong B)
 ├── SW-10-Python-RDFStar.ipynb
+├── SW-10-CSharp-RDFStar.ipynb       # Twin C# (marathon #4956 Prong B)
 ├── SW-11-Python-KnowledgeGraphs.ipynb
 ├── SW-12-Python-GraphRAG.ipynb
 ├── SW-13-Python-Reasoners.ipynb     # Bonus
