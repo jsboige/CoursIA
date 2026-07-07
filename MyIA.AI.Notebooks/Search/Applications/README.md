@@ -1,6 +1,6 @@
 # Search - Applications
 
-C'est ici que la série Search se confronte au réel. Les 37 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (métaheuristiques et algorithmes génétiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-Csharp, App-7b, App-9b, App-10b, App-11b, App-13b, App-14-CSharp, App-15b, App-16-CSharp, App-17b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
+C'est ici que la série Search se confronte au réel. Les 37 notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (métaheuristiques et algorithmes génétiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-Csharp, App-7b, App-9b, App-10b, App-11b, App-12b, App-13b, App-14-CSharp, App-15b, App-16-CSharp, App-17b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
 
 Sous-série de **37 notebooks** | **~19h00** | Python 3.10+ (`ortools`, `deap`, `mealpy`, `minizinc`, `optuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#
 
@@ -30,7 +30,7 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 
 ```text
 Applications/
-├── Search/     # Applications purement Search (3 notebooks : 2 Python + 1 twin C#)
+├── Search/     # Applications purement Search (4 notebooks : 2 Python + 2 twins C#)
 ├── CSP/        # Applications CSP (24 notebooks : 13 Python + 11 twins C#)
 └── Hybrid/     # Metaheuristiques / GA (9 notebooks : 5 Python + 4 twins C#)
 ```
@@ -59,6 +59,7 @@ Deux notebooks autour du Puissance 4, le banc d'essai idéal de la recherche adv
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
 | 1 | [App-12-ConnectFour](Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : Minimax, MCTS, DQN-RL | Projet étudiant |
+| 1b | [App-12-ConnectFour-CSharp](Search/App-12-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
 | 2 | [App-14-ConnectFour-Adversarial](Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
 | 2b | [App-14-ConnectFour-Adversarial-CSharp](Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
@@ -123,6 +124,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | App-12 ConnectFour | Search-3 (A*), Search-4 (LocalSearch) |
 | App-14 ConnectFour-Adversarial | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
 | App-14-CSharp | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
+| App-12-CSharp | Search-6 (AdversarialSearch), Search-7 (MCTS) |
 
 ### Applications CSP
 
