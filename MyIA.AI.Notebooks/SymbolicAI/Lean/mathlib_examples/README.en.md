@@ -4,7 +4,7 @@ Basic Mathlib usage examples for the SymbolicAI/Lean series.
 
 ## Status
 
-- **Toolchain**: v4.27.0
+- **Toolchain**: v4.31.0-rc1
 - **Sorry count**: 0
 - **Build**: `lake build MathLibExamples` -- SUCCESS
 - **Dependencies**: Mathlib4
