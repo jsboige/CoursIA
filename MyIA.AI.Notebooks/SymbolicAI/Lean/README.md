@@ -275,7 +275,7 @@ elan show
 | **AlphaProof** (DeepMind) | Médaille d'argent IMO 2024 |
 | **Harmonic Aristotle** | Résolution Erdos #124 variant (~30 ans ouvert) en 6h |
 | **DeepSeek-Prover** | Résolution de problèmes Erdos 379, 987, 730, 198 |
-| **Mathlib4** v4.27.0-rc1 | 4M+ lignes, utilisé par Terry Tao |
+| **Mathlib4** v4.31.0-rc1 | 4M+ lignes, utilisé par Terry Tao |
 
 ## Notes techniques
 
