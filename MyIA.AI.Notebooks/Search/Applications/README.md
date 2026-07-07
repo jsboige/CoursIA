@@ -30,7 +30,7 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 
 ```text
 Applications/
-├── Search/     # Applications purement Search (2 notebooks)
+├── Search/     # Applications purement Search (3 notebooks : 2 Python + 1 twin C#)
 ├── CSP/        # Applications CSP (23 notebooks : 13 Python + 10 twins C#)
 └── Hybrid/     # Metaheuristiques / GA (9 notebooks : 5 Python + 4 twins C#)
 ```
