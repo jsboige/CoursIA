@@ -62,8 +62,8 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 12 | [Infer-12-Recommenders](Infer-12-Recommenders.ipynb) | 60 min | Factorisation, Click Model |
 | 13 | [Infer-13-Debugging](Infer-13-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
 | 14 | [Infer-14-Causal-Inference](Infer-14-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
-| 15 | [Infer-15-Sparse-Gaussian-Process](Infer-15-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens, noyau RBF, classification non-linéaire, sparse GP |
-| 16 | [Infer-16-Modeles-Hierarchiques](Infer-16-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
+| 15 | [Infer-15-Modeles-Hierarchiques](Infer-15-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
+| 16 | [Infer-16-Sparse-Gaussian-Process](Infer-16-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens, noyau RBF, classification non-linéaire, sparse GP |
 | 17 | [Infer-17-Kalman-Filter](Infer-17-Kalman-Filter.ipynb) | 55 min | Filtre de Kalman, système dynamique linéaire gaussien, conjugaison, EP exacte |
 | 18 | [Infer-18-Change-Point](Infer-18-Change-Point.ipynb) | 50 min | Détection de rupture, DiscreteUniform, ForEach + If/IfNot sur plage, EP, Poisson |
 | 19 | [Infer-19-Survival-Analysis](Infer-19-Survival-Analysis.ipynb) | 50 min | Analyse de survie, Exponentielle conjugée (Gamma), Weibull par transformée, S(t) forme fermée |
@@ -589,13 +589,13 @@ Cette extraction clarifie les deux fils du corpus Probas : la **modélisation ba
 
 ---
 
-## Modèles Non-Linéaires (Notebook 15)
+## Modèles Non-Linéaires (Notebook 16)
 
-### Infer-15 : Processus Gaussiens et frontières non-linéaires
+### Infer-16 : Processus Gaussiens et frontières non-linéaires
 
 Prolongement naturel de la classification bayésienne : là où [Infer-7](Infer-7-Classification.ipynb) (Bayes Point Machine) trace un **hyperplan**, le processus gaussien place un **prior sur des fonctions** (noyau RBF) et infère une frontière **courbe** et **incertaine**.
 
-**Durée** : 55 min | **Prérequis** : [Infer-7-Classification](Infer-7-Classification.ipynb) (BPM, modèle probit), [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb)
+**Durée** : 55 min | **Prérequis** : [Infer-7-Classification](Infer-7-Classification.ipynb) (BPM, modèle probit), [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb), [Infer-15-Modeles-Hierarchiques](Infer-15-Modeles-Hierarchiques.ipynb) (prior partagé = plus robuste qu'un prior isolé)
 
 **Objectifs** :
 
@@ -608,22 +608,28 @@ Prolongement naturel de la classification bayésienne : là où [Infer-7](Infer-
 **Concepts clés** :
 
 | Concept | Formule / API | Description |
-| --------- | --------------- | ------------- |
+| 
+
+---
+
+
+
+------ | --------------- | ------------- |
 | Prior sur fonctions | `Variable<IFunction>.Random(prior)` | Distribution sur $f$, pas sur un vecteur de poids |
 | Noyau RBF | $k(x,x') = \exp(-\lVert x-x'\rVert^2 / 2\ell^2)$ | Covariance décroissant avec la distance |
 | Modèle probit | $y_j = [f(x_j) + \varepsilon_j > 0]$ | Score = fonction (non-linéaire), bruit gaussien |
 | Sparse GP | `SparseGPFixed(gp, basis)` | Approximation sur $m$ points inducteurs, coût $O(nm^2)$ |
 | Full GP | basis = inputs ($m = n$) | Équivalent au GP non-sparse, coût $O(n^3)$ |
 
-**Positionnement** : [Infer-7](Infer-7-Classification.ipynb) introduisait le **Bayes Point Machine** (hyperplan séparateur, marginalisation sur les poids). Infer-15 en est le complément **non-linéaire** : le GP infère une fonction $f$ tirée d'un processus gaussien, capable de frontières courbes. La démonstration sur un dataset « donut » (disque intérieur + anneau extérieur, **non-séparable linéairement**) prouve que le GP résout ce que le BPM ne peut pas — 16/16 sur le training, avec une incertitude calibrée (P ≈ 0.5 à mi-rayon, la zone d'indécision). La comparaison sparse (4 inducteurs) vs full (16) illustre le continuum coût-exactitude.
+**Positionnement** : [Infer-7](Infer-7-Classification.ipynb) introduisait le **Bayes Point Machine** (hyperplan séparateur, marginalisation sur les poids). Infer-16 en est le complément **non-linéaire** : le GP infère une fonction $f$ tirée d'un processus gaussien, capable de frontières courbes. La démonstration sur un dataset « donut » (disque intérieur + anneau extérieur, **non-séparable linéairement**) prouve que le GP résout ce que le BPM ne peut pas — 16/16 sur le training, avec une incertitude calibrée (P ≈ 0.5 à mi-rayon, la zone d'indécision). La comparaison sparse (4 inducteurs) vs full (16) illustre le continuum coût-exactitude.
 
 **Applications** : classification non-linéaire, régression avec incertitude calibrée, géostatistique (krigeage), optimisation bayésienne (l'acquisition exploite le posterior GP).
 
 ---
 
-## Modèles Hiérarchiques (Notebook 16)
+## Modèles Hiérarchiques (Notebook 15)
 
-### Infer-16 : Modèles Hiérarchiques Bayésiens
+### Infer-15 : Modèles Hiérarchiques Bayésiens
 
 Cas d'école du **pooling partiel** : quand les données sont **structurées en groupes** (élèves dans des classes, patients dans des hôpitaux, mesures répétées), ni le *complete pooling* (un seul paramètre global qui gomme la variabilité entre groupes) ni le *no pooling* (un paramètre indépendant par groupe qui surajuste les groupes clairsemés) ne sont satisfaisants. La solution bayésienne donne à chaque groupe son propre paramètre `theta[c]`, mais tous tirés d'une **loi de population commune** `(mu, tau)` — les groupes mal informés **rétractent** (*shrinkage*) vers la moyenne globale.
 
@@ -640,13 +646,19 @@ Cas d'école du **pooling partiel** : quand les données sont **structurées en 
 **Concepts clés** :
 
 | Concept | Formule / API | Description |
-| --------- | --------------- | ------------- |
+| 
+
+---
+
+
+
+------ | --------------- | ------------- |
 | Prior de population | `mu ~ Gaussian(0, grand)`, `tau ~ Gamma` | Loi commune dont chaque groupe est tiré |
 | Effet de groupe | `theta[c] = GaussianFromMeanAndPrecision(mu, tau).ForEach(c)` | Un paramètre par groupe, partagé |
 | Indexation | `y[i] ~ Gaussian(theta[classOfI[i]], obsPrec)` | Rattachement observation → groupe |
 | Shrinkage | `theta[c]` ↔ compromis données/moyenne | Plus fort pour les groupes clairsemés |
 
-**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) effleurait le modèle Rats (8 laboratoires) en deux cellules ; Infer-16 en fait un traitement dédié et **démonstratif** — données synthétiques avec **vrais effets connus**, comparaison **no-pool vs partial-pool** mesurée en MSE de récupération. Le gain net (hierarchique bat le no-pooling) et la rétraction visible sur les groupes clairsemés prouvent que le prior de population partagé **emprunte de la force statistique aux voisins** — exactement le paradigme pour lequel Infer.NET (EP analytique sur gaussiennes, `VariableArray` + indexation) est un moteur natif, sans recours au MCMC.
+**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) effleurait le modèle Rats (8 laboratoires) en deux cellules ; Infer-15 en fait un traitement dédié et **démonstratif** — données synthétiques avec **vrais effets connus**, comparaison **no-pool vs partial-pool** mesurée en MSE de récupération. Le gain net (hierarchique bat le no-pooling) et la rétraction visible sur les groupes clairsemés prouvent que le prior de population partagé **emprunte de la force statistique aux voisins** — exactement le paradigme pour lequel Infer.NET (EP analytique sur gaussiennes, `VariableArray` + indexation) est un moteur natif, sans recours au MCMC.
 
 **Applications** : estimations par établissement/classe, essais multi-centres, mesures répétées par sujet, modèles de recommandation (cf [Infer-12](Infer-12-Recommenders.ipynb)), régressions à coefficients variables par groupe.
 

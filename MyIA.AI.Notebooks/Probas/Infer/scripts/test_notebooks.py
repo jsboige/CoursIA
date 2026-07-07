@@ -37,8 +37,8 @@ NOTEBOOKS_CORE = [
     "Infer-13-Debugging.ipynb",
     # Bayesian frontières (gap-closure: anciens 22-25 -> 14-17)
     "Infer-14-Causal-Inference.ipynb",
-    "Infer-15-Sparse-Gaussian-Process.ipynb",
-    "Infer-16-Modeles-Hierarchiques.ipynb",
+    "Infer-15-Modeles-Hierarchiques.ipynb",
+    "Infer-16-Sparse-Gaussian-Process.ipynb",
     "Infer-17-Kalman-Filter.ipynb",
 ]
 
