@@ -88,7 +88,7 @@ Cette application illustre des concepts abordés dans plusieurs séries du cursu
 
 ## Origine
 
-Cette application a été développée sous orchestration Roo comme extension avancée de l'atelier élémentaire `01-matching-cv` dans `Ateliers avancés/`. La trace d'orchestration n'a pas été conservée, donc la valeur pédagogique est limitée à l'illustration de ce qui est possible avec davantage de sessions d'orchestration.
+Cette application a été développée sous orchestration Roo comme extension avancée de l'atelier élémentaire `01-matching-cv` dans [`Ateliers avancés/01-matching-cv`](../../GenAI/Vibe-Coding/Roo-Code/Ateliers%20avanc%C3%A9s/01-matching-cv/). La trace d'orchestration n'a pas été conservée, donc la valeur pédagogique est limitée à l'illustration de ce qui est possible avec davantage de sessions d'orchestration.
 
 ## Configuration
 
