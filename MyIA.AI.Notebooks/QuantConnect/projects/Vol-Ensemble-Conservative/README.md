@@ -2,7 +2,7 @@
 
 **Classe d'actifs :** Multi-actifs (Actions, Obligations, Matières premières)
 
-**Cloud project ID :** Voir `config.json` (local-id : 818573377)
+**Cloud project ID :** `33248352` (voir `config.json`, local-id : `209093652`)
 
 ## Description
 
@@ -16,7 +16,7 @@ lean backtest --algorithm Vol-Ensemble-Conservative/main.py
 ```
 
 ### QC Cloud
-Ouvrir le projet cloud (local-id : 818573377), compiler et lancer un backtest.
+Ouvrir le projet cloud (project-id : `33248352`), compiler et lancer un backtest.
 
 ## Métriques de backtest
 
