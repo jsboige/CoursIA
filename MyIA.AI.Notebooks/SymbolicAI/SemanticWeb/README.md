@@ -246,13 +246,14 @@ OWL (Web Ontology Language) étend RDFS avec des constructeurs logiques puissant
 
 ---
 
-### Partie 3 : Standards Modernes (Python uniquement)
+### Partie 3 : Standards Modernes (Python, avec jumeau C# SW-8)
 
-Cette partie couvre les standards modernes du Web Sémantique, exclusivement en Python (écosystème dominant pour l'IA).
+Cette partie couvre les standards modernes du Web Sémantique. L'écosystème Python (rdflib, pySHACL, owlready2) y domine, complété par un jumeau C# / dotNetRDF pour SHACL (parité .NET ⇄ Python, marathon #4956).
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 8 | **SW-8-Python-SHACL** | 45 min | Validation de données avec pySHACL |
+| 8 (C#) | **SW-8-CSharp-SHACL** | 45 min | Jumeau .NET de SW-8 : validation SHACL avec dotNetRDF (`VDS.RDF.Shacl`) |
 | 9 | **SW-9-Python-JSONLD** | 40 min | Données structurées pour le web |
 | 10 | **SW-10-Python-RDFStar** | 40 min | RDF 1.2, annotations et provenance |
 
@@ -489,6 +490,7 @@ SemanticWeb/
 ├── SW-6-CSharp-RDFS.ipynb
 ├── SW-7-CSharp-OWL.ipynb
 ├── SW-7b-Python-OWL.ipynb           # Sidetrack
+├── SW-8-CSharp-SHACL.ipynb           # Jumeau .NET de SW-8 (dotNetRDF.SHACL, marathon #4956)
 ├── SW-8-Python-SHACL.ipynb
 ├── SW-9-Python-JSONLD.ipynb
 ├── SW-10-Python-RDFStar.ipynb
