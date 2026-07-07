@@ -32,7 +32,7 @@ garantit la qualité*.
 | Parcours | Angle | Format | État |
 |----------|-------|--------|------|
 | **[Tour de la plateforme](00-Tour-Plateforme/README.md)** | « À quoi sert Open WebUI et comment l'utilise-t-on ? » | Markdown pédagogique + captures d'écran annotées | 🟡 Narratif disponible — captures live à venir (Epic #4433) |
-| **[Série QA Playwright-OWUI](Playwright-OWUI/README.md)** | « Comment teste-t-on une plateforme GenAI de bout en bout ? » | Notebooks + specs Playwright (5 modules) | ✅ Disponible |
+| **[Série QA Playwright-OWUI](Playwright-OWUI/README.md)** | « Comment teste-t-on une plateforme GenAI de bout en bout ? » | Notebooks + specs Playwright (6 modules) | ✅ Disponible |
 
 ### [Tour de la plateforme](00-Tour-Plateforme/README.md)
 
@@ -48,9 +48,10 @@ des champs sensibles) une fois le tenant de démonstration en ligne — voir
 
 ### Série QA Playwright-OWUI
 
-Une série de 5 modules qui apprend à écrire des tests end-to-end sur Open WebUI
+Une série de 6 modules qui apprend à écrire des tests end-to-end sur Open WebUI
 avec Playwright : découverte et sélecteurs, navigation & authentification, chat
-& streaming, RAG / outils MCP / canaux, puis isolation multi-tenant et CI/CD.
+& streaming, RAG / outils MCP / canaux, isolation multi-tenant et CI/CD,
+puis les nouveautés v0.10 (mémoire, dossiers d'équipe, raisonnement streamé).
 
 ➡️ **[Ouvrir la série Playwright-OWUI](Playwright-OWUI/README.md)**
 
