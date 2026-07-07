@@ -59,8 +59,14 @@ EXCLUDE_MARKERS = (
 def git_tracked_readmes() -> list[str]:
     """Return repo-relative POSIX paths of every git-tracked README.md,
     excluding vendored and archived subtrees."""
+    # `-c core.quotePath=false`: without it, git quotes non-ASCII paths
+    # (accents/spaces) as "\303\251..." AND wraps them in double-quotes under
+    # CI's default core.quotePath=true. The emitter below wraps again -> doubled
+    # quotes ("" ... "") -> broken YAML in _quarto.yml (CI Quarto Pages Deploy
+    # failure since 2026-07-05). Forcing false yields raw UTF-8 paths, so the
+    # single wrap below stays valid YAML on every machine (CI or local).
     out = subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "ls-files", "*README.md"],
+        ["git", "-C", str(REPO_ROOT), "-c", "core.quotePath=false", "ls-files", "*README.md"],
         capture_output=True, text=True, check=True,
     )
     paths = []
