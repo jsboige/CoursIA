@@ -66,6 +66,7 @@ from . import time_arrow
 from . import synthesis
 from . import persona_cusp
 from . import stake
+from . import workspace
 
 __all__ = [
     "Cell", "Probe", "SelfSortingArray", "KinSortingArray", "ALGOTYPES",
@@ -74,5 +75,5 @@ __all__ = [
     "scale_free", "early_warning", "bistable", "reaction_diffusion", "agency",
     "multiscale_agency", "catastrophe", "valence", "strategic_morphodynamics",
     "free_energy", "compression", "mdl", "epsilon_machine", "feature_dynamics",
-    "time_arrow", "synthesis", "persona_cusp", "stake",
+    "time_arrow", "synthesis", "persona_cusp", "stake", "workspace",
 ]
