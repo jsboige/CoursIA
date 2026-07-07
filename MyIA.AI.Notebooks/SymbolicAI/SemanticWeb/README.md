@@ -20,9 +20,9 @@ Chiffres lus directement depuis le marqueur `CATALOG-STATUS` byte-identique (l. 
 | Sous-catégorie | Notebooks | Statut | Paradigmes / stacks dominants |
 |----------------|-----------|--------|-------------------------------|
 | Fondations RDF/OWL (.NET C# avec dotNetRDF, SW-1 à SW-7) | 7 | PRODUCTION=7, BETA=0 | Triplet RDF, graphe nommé, SPARQL, RDFS, OWL (HermiT), raisonneur DL |
-| Standards modernes (Python rdflib/pySHACL/owlready2, SW-8 à SW-13 + SW-12 GraphRAG) | 7 | PRODUCTION=7, BETA=0 | SHACL Advanced, JSON-LD 1.1, RDF-Star, KG + kglab, GraphRAG (Microsoft anti-hallucination), comparaisons raisonneurs |
-| Sidetracks Python miroirs (SW-2b/4b/5b/7b) | 4 | PRODUCTION=4, BETA=0 | Équivalent Python des notebooks .NET — rdflib + owlready2 |
-| **Total** | **18** | **PRODUCTION=18, BETA=0** | Double stack .NET C# (dotNetRDF) / Python (rdflib, pySHACL, owlready2, kglab) — 100% production |
+| Standards modernes (Python rdflib/pySHACL/owlready2, SW-8 à SW-13 + GraphRAG + twins C# SW-8/9/10) | 9 | PRODUCTION=9, BETA=0 | SHACL Advanced, JSON-LD 1.1, RDF-Star, KG + kglab, GraphRAG (Microsoft anti-hallucination), comparaisons raisonneurs |
+| Sidetracks Python miroirs (SW-2b/3b/4b/5b/6b/7b) | 6 | PRODUCTION=6, BETA=0 | Équivalent Python des notebooks .NET — rdflib + owlready2 |
+| **Total** | **22** | **PRODUCTION=22, BETA=0** | Double stack .NET C# (dotNetRDF) / Python (rdflib, pySHACL, owlready2, kglab) — 100% production |
 
 **Conformité C.1 — stubs d'exercice sans erreur volontaire** : les templates `student/` portent les stubs conformes (`pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`) — **jamais** `raise NotImplementedError`, `assert False` ou `1/0`. Dépendances Python : `rdflib`, `pySHACL`, `owlready2`, `kglib`, `SPARQLWrapper` (cf `requirements.txt` racine). Dépendances .NET : `dotNetRDF` + .NET 9.0 + .NET Interactive. La double stack .NET/Python reflète le mandat EPIC #3975 : un même raisonnement rendu par deux runtimes (ici, dotNetRDF côté C# typé, rdflib côté Python expressif), la parité devenant un objet d'étude en soi.
 
@@ -68,7 +68,7 @@ flowchart BT
     KG --> GRAG["<b>GraphRAG</b><br/>ancrer les LLMs"]
 ```
 
-La série propose délibérément deux stacks : **.NET C#** (SW-1 à SW-7) pour les fondations avec dotNetRDF (typed, performant, intégré à l'écosystème CoursIA), et **Python** (SW-8 à SW-13) pour les standards modernes et l'IA. Les sidetracks Python (SW-2b, 4b, 5b, 7b) offrent un miroir des notebooks C# en Python.
+La série propose délibérément deux stacks : **.NET C#** (SW-1 à SW-7) pour les fondations avec dotNetRDF (typed, performant, intégré à l'écosystème CoursIA), et **Python** (SW-8 à SW-13) pour les standards modernes et l'IA. Les sidetracks Python (SW-2b, 3b, 4b, 5b, 6b, 7b) offrent un miroir des notebooks C# en Python.
 
 ## Concepts clés
 
