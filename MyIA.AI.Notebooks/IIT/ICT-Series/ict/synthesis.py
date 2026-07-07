@@ -229,3 +229,71 @@ def rank_consistency(summary: dict, key_a: str = "ei_real",
         "kendall_tau": tau,
         "consistent": bool(tau > 0.999),
     }
+
+
+# --------------------------------------------------------------- substrat S4 (LLM, ICT-22)
+def sae_substrate_states(npz_path, feature_ids, sets=None, q: float = 0.5):
+    """Trajectoire d'etats discrets du substrat S4 (LLM, traces SAE ICT-21).
+
+    Quatrieme substrat du banc cross-substrat (ICT-22, #5102) : un transformer
+    traitant du texte. On consomme les traces SAE top-k committers (GPU-free,
+    produites par ``scripts/extract_sae_traces.py`` au sens d'ICT-21) -- un
+    ``.npz`` par variante (``trained``, ``control``).
+
+    Le pipeline, identique a ICT-21 : on materialise le panel dense pour les
+    ``feature_ids`` donnees (typiquement les features differentielles de
+    ``sae_traces.differential_features``, selectionnees sur la variante
+    ``trained`` PUIS gerees figees pour le controle ``control`` -- le meme
+    capteur pour les deux variantes), on binarise au quantile ``q`` des valeurs
+    positives, et on encode chaque pas de temps (token) en un etat entier par
+    bit-packing (``sae_traces.states_from_panel``). La trajectoire concatenee
+    sur tous les jeux de prompts (ou sur ``sets`` restreints -- utile pour le
+    multi-jeux de Gate 12) est directement consommable par
+    ``cross_substrate_summary`` / ``emergence_gain``.
+
+    Le choix de la taille du panel doit rester **grossier** (cf. docstring du
+    module) : ``greedy_apportionment`` coute ~O(k^2) par echelle ou k est le
+    nombre d'etats distincts observes, et le bit-packing sur K features engendre
+    jusqu'a 2^K etats possibles. Un panel de ~8-10 features differentielles
+    tient l'espace d'etats observé dans la dizaine/la centaine (tractable),
+    comme les coarse-grainings de S1/S2/S3.
+
+    Retro-compatible : fonction additive, ``cross_substrate_summary`` et les
+    tests existants sont inchanges. Les imports ``sae_traces`` sont locaux pour
+    ne pas creer de dependance dur quand le substrat S4 n'est pas utilise.
+
+    Parametres
+    ----------
+    npz_path : str | Path
+        Chemin vers un ``.npz`` de traces SAE (schema ICT-21).
+    feature_ids : array-like d'entiers
+        Features du panel (communes a toutes les variantes comparees).
+    sets : sequence de str | None
+        Jeux de prompts a concatener (defaut : tous, dans l'ordre lexicographique).
+    q : float
+        Quantile de binarisation des valeurs positives (defaut 0.5).
+
+    Retourne
+    --------
+    list[int]
+        Suite d'etats consecutifs (un par token), labels entiers hachables.
+    """
+    from pathlib import Path
+
+    from . import sae_traces as ST
+
+    tr = ST.load_traces(Path(npz_path))
+    feature_ids = np.asarray(feature_ids)
+    panels = ST.acts_topk_panels(tr, feature_ids)
+    all_sets = sorted({s for s, _ in tr["prompts"]})
+    keep = list(sets) if sets is not None else all_sets
+    chunks = []
+    for s in keep:
+        idxs = sorted(i for (ss, i) in tr["prompts"] if ss == s)
+        for i in idxs:
+            chunks.append(panels[(s, i)])
+    if not chunks:
+        raise ValueError(f"Aucun panel pour sets={keep} dans {npz_path}")
+    dense = np.concatenate(chunks, axis=0)
+    bits = ST.binarize_quantile(dense, q=q)
+    return [int(v) for v in ST.states_from_panel(bits)]

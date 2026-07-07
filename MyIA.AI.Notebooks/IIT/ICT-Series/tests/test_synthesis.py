@@ -187,3 +187,78 @@ def test_rank_consistency_works_with_capstone_keys():
     rc_fe = S.rank_consistency(summary, key_a="fe_gain", key_b="k_gain")
     assert abs(rc_fe["kendall_tau"] - 1.0) < 1e-12
 
+
+# --------------------------------------------------------------------------- #
+#  ICT-22 (#5102) : substrat S4 (LLM) via sae_substrate_states                #
+# --------------------------------------------------------------------------- #
+
+import json  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+from ict import sae_traces as st  # noqa: E402
+
+_SAE_D = 60
+_SAE_K = 5
+_SAE_T = 30
+
+
+def _write_synthetic_sae_npz(path):
+    """Deux jeux x 2 prompts. Feature 7 active seulement dans setA, feature 13
+    seulement dans setB (discriminantes inter-jeux), feature 2 partout
+    (forte en absolu, non differentielle). Schema ICT-21."""
+    rng = np.random.default_rng(0)
+    arrays = {}
+    for set_name, planted, val in (("setA", 7, 5.0), ("setB", 13, 4.0)):
+        for i in range(2):
+            ids = rng.integers(20, _SAE_D, size=(_SAE_T, _SAE_K)).astype(np.int32)
+            vals = rng.uniform(0.05, 0.3, size=(_SAE_T, _SAE_K)).astype(np.float16)
+            ids[:, 0] = 2
+            vals[:, 0] = 10.0
+            ids[:, 1] = planted
+            vals[:, 1] = val
+            arrays[f"{set_name}__{i}__topk_ids"] = ids
+            arrays[f"{set_name}__{i}__topk_vals"] = vals
+            arrays[f"{set_name}__{i}__tokens"] = np.array(
+                [f"tok{t}" for t in range(_SAE_T)], dtype=str)
+    arrays["__meta__"] = np.array(json.dumps(
+        {"d_sae": _SAE_D, "k": _SAE_K, "layer": 16, "variant": "synthetic"}))
+    np.savez_compressed(path, **arrays)
+    return path
+
+
+def test_sae_substrate_states_shape_and_types(tmp_path):
+    npz = _write_synthetic_sae_npz(tmp_path / "sae.npz")
+    tr = st.load_traces(npz)
+    feats = st.differential_features(tr, k=2)
+    states = S.sae_substrate_states(npz, feats)
+    # 4 prompts (2 jeux x 2) x _SAE_T tokens
+    assert len(states) == 4 * _SAE_T
+    assert all(isinstance(s, int) for s in states)
+    assert min(states) >= 0
+
+
+def test_sae_substrate_states_sets_filter(tmp_path):
+    npz = _write_synthetic_sae_npz(tmp_path / "sae.npz")
+    tr = st.load_traces(npz)
+    feats = st.differential_features(tr, k=2)
+    all_states = S.sae_substrate_states(npz, feats)
+    setA = S.sae_substrate_states(npz, feats, sets=["setA"])
+    # restreindre a un jeu divise la longueur par le nombre de jeux (2)
+    assert len(setA) == len(all_states) // 2
+    assert len(setA) == 2 * _SAE_T
+
+
+def test_sae_substrate_states_feeds_cross_substrate_summary(tmp_path):
+    # S4 (LLM) entre au banc cross-substrat au meme titre que S1/S2/S3
+    npz = _write_synthetic_sae_npz(tmp_path / "sae.npz")
+    tr = st.load_traces(npz)
+    feats = st.differential_features(tr, k=2)
+    s4 = S.sae_substrate_states(npz, feats)
+    rng = np.random.default_rng(0)
+    summary = S.cross_substrate_summary(
+        {"S4_LLM": s4, "temoin_cycle": _deterministic_cycle(60)}, rng, n_shuffles=3)
+    assert set(summary) == {"S4_LLM", "temoin_cycle"}
+    for entry in summary.values():
+        for key in ("ec_gain", "fe_gain", "k_gain", "credited"):
+            assert key in entry
+
