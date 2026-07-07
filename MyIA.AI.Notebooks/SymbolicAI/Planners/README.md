@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Planners
-pedagogical_count: 16
-breakdown: Planners=16
-maturity: PRODUCTION=15, BETA=1
+pedagogical_count: 23
+breakdown: Planners=23
+maturity: PRODUCTION=21, BETA=2
 -->
 
 Cette série de notebooks introduit la **Planification Automatique**, une branche fondamentale de l'IA qui génère des séquences d'actions pour atteindre des objectifs.
