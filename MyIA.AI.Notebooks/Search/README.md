@@ -254,6 +254,7 @@ Problèmes du monde réel adaptés de projets étudiants.
 |---|----------|-------|---------|--------|
 | 1 | [App-12-ConnectFour](Applications/Search/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : 8 algorithmes IA (Minimax, MCTS, DQN-RL) | Projet étudiant |
 | 2 | [App-14-ConnectFour-Adversarial](Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
+| 2b | [App-14-ConnectFour-Adversarial-CSharp](Applications/Search/App-14-ConnectFour-Adversarial-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
 ### Applications CSP (`Applications/CSP/`)
 
@@ -507,9 +508,10 @@ Search/
 │   └── Search-14-WeightedAstar.ipynb
 │
 ├── Applications/
-│   ├── Search/                            # Applications Search (2 notebooks)
+│   ├── Search/                            # Applications Search (3 notebooks)
 │   │   ├── App-12-ConnectFour.ipynb
-│   │   └── App-14-ConnectFour-Adversarial.ipynb
+│   │   ├── App-14-ConnectFour-Adversarial.ipynb
+│   │   └── App-14-ConnectFour-Adversarial-CSharp.ipynb
 │   │
 │   ├── CSP/                               # Applications CSP (13 notebooks)
 │   │   ├── App-1-NQueens.ipynb
