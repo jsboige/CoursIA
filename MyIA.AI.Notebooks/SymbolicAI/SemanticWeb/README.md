@@ -279,6 +279,8 @@ JSON-LD est le pont entre le monde JSON des développeurs web et le Web Sémanti
 - Rich snippets Google : 73% des résultats utilisent des données structurées
 - Cas d'usage : e-commerce (Produit), articles (Article), organisations (Organization)
 
+> **Twin C# disponible** : [SW-9-CSharp-JSONLD](SW-9-CSharp-JSONLD.ipynb) — JSON-LD via dotNetRDF (`JsonLdParser`/`JsonLdWriter`, `TripleStore`). Compagnon cross-langage du notebook Python `rdflib` + `pyld` sur le même standard W3C JSON-LD 1.1 (marathon parité .NET ⇄ Python #4956, Prong B).
+
 #### SW-10-Python-RDFStar : Annotations et Provenance (40 min)
 
 RDF-Star (RDF 1.2) permet d'exprimer des statements à propos de statements, essentiel pour les annotations, la provenance et la confiance.
@@ -494,6 +496,7 @@ SemanticWeb/
 ├── SW-8-CSharp-SHACL.ipynb           # Jumeau .NET de SW-8 (dotNetRDF.SHACL, marathon #4956)
 ├── SW-8-Python-SHACL.ipynb
 ├── SW-9-Python-JSONLD.ipynb
+├── SW-9-CSharp-JSONLD.ipynb         # Twin C# (marathon #4956 Prong B)
 ├── SW-10-Python-RDFStar.ipynb
 ├── SW-11-Python-KnowledgeGraphs.ipynb
 ├── SW-12-Python-GraphRAG.ipynb
