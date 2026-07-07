@@ -51,7 +51,7 @@ LEAN_TOOLCHAIN_FILE="$CW/lean-toolchain"
 if [ -f "$LEAN_TOOLCHAIN_FILE" ]; then
   LEAN_TOOLCHAIN=$(cat "$LEAN_TOOLCHAIN_FILE" | tr -d '\n\r ')
 else
-  LEAN_TOOLCHAIN="leanprover/lean4:v4.30.0-rc2"
+  LEAN_TOOLCHAIN="leanprover/lean4:v4.31.0-rc1"
 fi
 
 elan run "$LEAN_TOOLCHAIN" lean "$SNIPPET" 2>&1
