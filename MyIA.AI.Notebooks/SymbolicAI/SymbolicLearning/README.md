@@ -181,6 +181,7 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | 4 (C#) | [SL-4 - ILP (Twin C#)](SL-4-InductiveLogicProgramming-Csharp.ipynb) | **Jumeau C#** — FOIL (gain Quinlan) + résolution inverse (V/W) + unification from-scratch, mini-KG (See #4956) | 50 min |
 | 5 | [SL-5 - Résolution Inverse et Progol](SL-5-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 60 min |
 | 6 | [SL-6 - Moteurs ILP modernes](SL-6-ModernILP.ipynb) | Aleph, Metagol, Popper, ∂ILP (Lernd) sur `ancestor/2` (moteurs réels) | 65 min |
+| 6 (C#) | [SL-6 - Moteurs ILP (Twin C#)](SL-6-ModernILP-Csharp.ipynb) | **Jumeau C#** — FOIL relationnel from-scratch (FOIL_Gain de Quinlan, couverture extensionnelle par backtracking, récursion `ancestor/2` = cas de base + pas récursif), benchmark profondeur 5-20, verdict SOTA des 4 moteurs externes (Aleph/Metagol/Popper=RECOVERABLE-MACHINE, ∂ILP=INTRINSIC) (See #4956) | 45 min |
 | 7 | [SL-7 - Intégration Neuro-Symbolique](SL-7-NeuroSymbolic.ipynb) | T-norms, prédicats neuronaux, LTN, DeepProbLog | 55 min |
 | 8 | [SL-8 - ILP Moderne et Knowledge Graphs](SL-8-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, complétion KG, ASP avec clingo | 55 min |
 | 9 | [SL-9 - LLMs et Apprentissage Symbolique](SL-9-LLM-SymbolicLearning.ipynb) | Prompting, extraction de règles, vérification symbolique (Gemini 3.5 Flash optionnel) | 50 min |
@@ -264,6 +265,8 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | dILP (Lernd) | ILP différentiable, descente de gradient, tolérance au bruit (env conda dédié, GPL-3.0) |
 | Synthèse | Quatre machineries pour un même concept ; forces et angles morts |
 | Exercices | Direction de mode (Aleph), `grandparent` non récursif, robustesse au bruit (dILP) |
+
+> **Parité .NET** : [SL-6-ModernILP-Csharp.ipynb](SL-6-ModernILP-Csharp.ipynb) est le jumeau C# (.NET Interactive) — FOIL relationnel from-scratch (FOIL_Gain de Quinlan, recherche dans le graphe de raffinement, couverture extensionnelle par backtracking, récursion `ancestor/2` via les clauses déjà apprises), benchmark de scalabilité (profondeur 5-20), et verdict SOTA des 4 moteurs externes du twin Python (Aleph/Metagol/Popper=RECOVERABLE-MACHINE Prolog/ASP, ∂ILP=INTRINSIC TensorFlow). Marathon parité .NET ⇄ Python (#4956).
 
 ### SL-7-NeuroSymbolic.ipynb
 
@@ -444,6 +447,7 @@ SymbolicLearning/
 ├── SL-5-InverseResolution.ipynb             # LGG, theta-subsomption, clause bottom, Progol
 ├── SL-5-InverseResolution-Csharp.ipynb      # Jumeau C# (.NET Interactive) — LGG + clause bottom + Progol, parité #4956
 ├── SL-6-ModernILP.ipynb                     # Aleph, Metagol, Popper, dILP (Lernd) — moteurs réels
+├── SL-6-ModernILP-Csharp.ipynb            # Jumeau C# (.NET Interactive) — FOIL relationnel + récursion ancestor/2, parité #4956
 ├── SL-7-NeuroSymbolic.ipynb                 # T-norms, LTN, DeepProbLog
 ├── SL-8-KnowledgeGraphs-ILP.ipynb           # rdflib, AMIE rule mining
 ├── SL-9-LLM-SymbolicLearning.ipynb          # LLMs + vérification symbolique (Gemini 3.5 Flash optionnel)
