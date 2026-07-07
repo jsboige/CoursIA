@@ -167,6 +167,7 @@ flowchart TD
 | 15 (C#) | [GameTheory-15-CooperativeGames-Csharp](GameTheory-15-CooperativeGames-Csharp.ipynb) | .NET (C#) | Twin C# du 15 : Shapley (permutations), Banzhaf (swing), core, convexité, airport game from-scratch (See #4956) | 65 min |
 | 15b | [GameTheory-15b-Lean-CooperativeGames](GameTheory-15b-Lean-CooperativeGames.ipynb) | Lean 4 | Axiomes Shapley formels, Core | 55 min |
 | 15c | [GameTheory-15c-CooperativeGames-Python](GameTheory-15c-CooperativeGames-Python.ipynb) | Python | Exemples avancés (Glove Game, politique) | 40 min |
+| 15c (C#) | [GameTheory-15c-CooperativeGames-Csharp](GameTheory-15c-CooperativeGames-Csharp.ipynb) | .NET (C#) | Twin C# du 15c : Shapley (permutations), Banzhaf (swing), Core vide (majorité 3-joueurs), Mini-ONU, convexité from-scratch (See #4956) | 40 min |
 | 16 | [GameTheory-16-MechanismDesign](GameTheory-16-MechanismDesign.ipynb) | Python | Principe de révélation, VCG, matching | 65 min |
 | 16 (C#) | [GameTheory-16-MechanismDesign-Csharp](GameTheory-16-MechanismDesign-Csharp.ipynb) | .NET (C#) | Twin C# du 16 : **enchères Vickrey 1er/2nd prix + VCG (règle de Clarke) + Gale-Shapley (stable matching) + double auction** from-scratch, BCL .NET 9 (See #4956) | 50 min |
 | SC-01 | [SocialChoice/01-Arrow-Impossibility-Theorem](SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) | Python | Arrow : preuve formelle vs simulation | 45 min |
@@ -567,6 +568,7 @@ GameTheory/
 ├── GameTheory-7-ExtensiveForm-Csharp.ipynb                      # Twin C# arbre de jeu + infosets from-scratch (marathon #4956, Prong B)
 ├── GameTheory-14-DifferentialGames-Csharp.ipynb                 # Twin C# jeux différentiels : RK4 + Riccati from-scratch, pursuit-evasion (marathon #4956, Prong B)
 ├── GameTheory-15-CooperativeGames-Csharp.ipynb                  # Twin C# Shapley + Banzhaf + core + convexité + airport game from-scratch (marathon #4956)
+├── GameTheory-15c-CooperativeGames-Csharp.ipynb                 # Twin C# du 15c : Shapley (permutations) + Banzhaf + Core vide (majorité) + Mini-ONU + convexité from-scratch (marathon #4956, Prong B)
 ├── GameTheory-10-ForwardInduction-SPE-Csharp.ipynb              # Twin C# SPE/backward-induction + trembling-hand + forward induction + burn money (marathon #4956)
 ├── SocialChoice/                                                   # Sous-série Choix Social
 │   ├── 01-Arrow-Impossibility-Theorem.ipynb
