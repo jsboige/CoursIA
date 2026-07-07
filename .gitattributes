@@ -6,6 +6,18 @@
 COURSE_CATALOG.generated.json text eol=lf
 MyIA.AI.Notebooks/README.md text eol=lf
 MyIA.AI.Notebooks/*/README.md text eol=lf
+# Source/config files that are consumed by Linux/WSL tooling (Lean lakes,
+# shell scripts, env files) MUST be LF — a CRLF shebang (e.g. "#!/bin/bash\r")
+# breaks WSL with "bad interpreter", and CRLF in .lean breaks lake on Linux.
+# Pattern "L268": the Edit tool on Windows flips LF->CRLF intermittently when
+# no explicit eol rule is set. Found 5x (i18n *.en.md c.268, *.sh + .env c.281).
+*.lean text eol=lf
+*.sh text eol=lf
+.env text eol=lf
+.env.example text eol=lf
+*.en.md text eol=lf
+# Lean lake manifests are JSON consumed cross-platform; keep LF.
+lake-manifest.json text eol=lf
 # Git LFS tracking for model files referenced by notebooks
 *.pt filter=lfs diff=lfs merge=lfs -text
 *.pkl filter=lfs diff=lfs merge=lfs -text
