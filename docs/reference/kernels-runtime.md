@@ -29,6 +29,7 @@ Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/Sem
 | Env | Python | Path | Usage principal |
 |-----|--------|------|-----------------|
 | **coursia-ml-training** | 3.11.15 | `C:\Users\MYIA\miniconda3\envs\coursia-ml-training` | ML training (PyTorch CUDA 12.6 RTX 4090, sklearn, scipy, hmmlearn, pyarrow) |
+| **coursia-sae** | 3.12.13 | `C:\Users\MYIA\miniconda3\envs\coursia-sae` | Traces SAE / substrat LLM série ICT (ICT-21+, #5643) : torch 2.12 CUDA 12.6, transformers 5.x. Extraction GPU = `CUDA_VISIBLE_DEVICES=2` obligatoire (cf Quick Reference GPU) |
 | `mcp-jupyter` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\mcp-jupyter` | MCP Jupyter server (kernels Python du MCP) |
 | `epita_symbolic_ai` | 3.10+ | `C:\Users\MYIA\.conda\envs\epita_symbolic_ai` | EPITA SymbolicAI : `rdflib`, `owlready2`, `reasonable`, `pyshacl` |
 | `epita_symbolic_ai_sherlock` | 3.10+ | `C:\Users\MYIA\.conda\envs\epita_symbolic_ai_sherlock` | Variante Sherlock |
