@@ -18,11 +18,15 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | # | Notebook | Titre | Durée | Status |
 |---|----------|-------|-------|--------|
 | SC-01 | [01-Arrow-Impossibility-Theorem](01-Arrow-Impossibility-Theorem.ipynb) | Théorème d'Arrow : Preuve Formelle et Simulation | 45 min | COMPLET |
+| SC-01 (C#) | [01-Arrow-Impossibility-Theorem-Csharp](01-Arrow-Impossibility-Theorem-Csharp.ipynb) | **Jumeau C#** — parité .NET du SC-01 (théorème d'Arrow) implémenté from-scratch en C# (.NET Interactive) (See #4956) | 45 min | PARITÉ |
 | SC-02 | [02-Lean-SocialChoice-Formal](02-Lean-SocialChoice-Formal.ipynb) | Choix Social Formel en Lean 4 (Arrow, Sen, Électeur Médian, Tour Peters) | 80 min | COMPLET |
 | SC-03 | [03-Voting-Methods](03-Voting-Methods.ipynb) | Méthodes de Vote et Paradoxes (Condorcet, Borda, Copeland, Downs) | 35 min | COMPLET |
+| SC-03 (C#) | [03-Voting-Methods-Csharp](03-Voting-Methods-Csharp.ipynb) | **Jumeau C#** — parité .NET du SC-03 (méthodes de vote) implémenté from-scratch en C# (.NET Interactive) (See #4956) | 35 min | PARITÉ |
 | SC-04 | [04-Computational-Aggregation-SAT-Z3](04-Computational-Aggregation-SAT-Z3.ipynb) | Agrégation Computationnelle : SAT et Z3 | 45 min | COMPLET |
 
 **Durée totale** : ~3h25
+
+> **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01) et [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ils ne sont pas comptés dans le `pedagogical_count` (ce sont des miroirs de parité, pas des notebooks pédagogiques distincts).
 
 ## Parcours d'apprentissage
 
