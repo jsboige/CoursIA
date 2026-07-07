@@ -304,6 +304,7 @@ Cette partie connecte le Web Sémantique avec l'IA moderne, notamment les LLMs e
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 11 | **SW-11-Python-KnowledgeGraphs** | 55 min | Construction et visualisation de KGs |
+| 11 (C#) | **SW-11-CSharp-KnowledgeGraphs** | 45 min | Jumeau .NET : construction KG (dotNetRDF), SPARQL, adjacence/BFS, qualité, centralité |
 | 12 | **SW-12-Python-GraphRAG** | 50 min | KG + LLMs pour le RAG |
 | **Bonus** | **SW-13-Python-Reasoners** | 45 min | Comparaison raisonneurs OWL |
 | 13 (C#) | **SW-13-Reasoners-CSharp** | 40 min | Jumeau .NET : raisonnement RDFS forward-chaining avec dotNetRDF (`StaticRdfsReasoner`) |
@@ -318,6 +319,8 @@ Ce notebook pratique vous guide dans la construction d'un graphe de connaissance
 - OWLReady2 : manipulation d'ontologies Python, raisonnement HermiT
 - Visualisation avec NetworkX et pyvis : graphes interactifs HTML
 - Patterns de modélisation : entités, relations, attributs
+
+> **Twin C# disponible** : [SW-11-CSharp-KnowledgeGraphs](SW-11-CSharp-KnowledgeGraphs.ipynb) — construction d'un Knowledge Graph avec dotNetRDF (`Graph`, `Assert`, TurtleFormatter), requêtage SPARQL (`ExecuteQuery` : SELECT, agrégats, GROUP_CONCAT), adjacence from-scratch + BFS, métriques de qualité (orphelins, complétude, cohérence range), centralité de degré. Compagnon cross-langage du notebook Python (rdflib + networkx + kglab) sur la même thématique KG (marathon parité .NET ⇄ Python #4956, Prong B). Verdict SOTA honnête : le cœur (construction RDF, SPARQL, parcours graphe, qualité, centralité) est SOTA-OK (vrai moteur dotNetRDF, adjacence/BFS réimplémentée) ; pyvis (interactif web) et kglab (surcouche Python) sont INTRINSIC ; HermiT (OWL 2 DL complet, Java) est RECOVERABLE-MACHINE — documenté in-notebook.
 
 #### SW-12-Python-GraphRAG : KG + LLMs pour le RAG (50 min)
 
