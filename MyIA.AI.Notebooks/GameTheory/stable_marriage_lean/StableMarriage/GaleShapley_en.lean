@@ -12,7 +12,6 @@
   `namespace` diffère pour éviter la collision de declaration.
 
   See #4980. Part of #4208 (axe E).
--/
 
   The Gale-Shapley deferred acceptance algorithm produces a stable matching.
 
@@ -48,7 +47,8 @@ import StableMarriage.Lattice
 
 namespace StableMarriage_en
 
-open Function
+open Function Finset Classical
+open StableMarriage
 
 variable {n : Nat} [NeZero n]
 
@@ -168,4 +168,4 @@ theorem gale_shapley_woman_pessimal (prof : PrefProfile n)
     rw [hm'def, hinv_eq] at hgt
     exact Nat.lt_irrefl _ (mod_cast hgt)
 
-end StableMarriage
+end StableMarriage_en

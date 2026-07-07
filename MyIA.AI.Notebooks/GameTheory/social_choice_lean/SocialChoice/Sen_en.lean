@@ -13,7 +13,7 @@
   This is a fundamental result showing tension between efficiency and liberty.
 -/
 
-import SocialChoice.Framework
+import SocialChoice.Framework_en
 import Mathlib.Tactic
 
 namespace SocialChoice_en

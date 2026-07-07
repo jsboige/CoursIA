@@ -1,6 +1,6 @@
 ---
 title: "CC3 - Ordonnancement Energetique sous Incertitude"
-description: "Etude de cas - Ordonnancement de la production energetique d'un reseau electrique sous incertitude renouvelable"
+description: "Etude de cas - Ordonnancement de la production énergétique d'un réseau électrique sous incertitude renouvelable"
 author: "EPF IA / CoursIA"
 date: "2026-07-01"
 version: "1.0.0"
@@ -15,7 +15,7 @@ points: "20"
 ### Objectifs pedagogiques
 
 Cette etude de cas evalue votre capacité a **composer plusieurs paradigmes d'IA** pour resoudre un
-probleme metier réel de la transition energetique : decider, heure par heure, quelles centrales activer
+problème métier réel de la transition énergétique : decider, heure par heure, quelles centrales activer
 et a quel niveau de production (*unit commitment* / dispatch) pour satisfaire la demande electrique tout
 en minimisant le cout et les emissions de CO2.
 
@@ -24,11 +24,11 @@ en minimisant le cout et les emissions de CO2.
 - Inference probabiliste (modèle bayesien de l'incertitude renouvelable)
 - Optimisation multi-objectif (cout + CO2 + risque, front de Pareto)
 - Architecture en couches : filtrer (contraintes) avant de modeliser (incertitude) avant d'optimiser
-- Application sectorielle (reseau electrique, transition energetique)
+- Application sectorielle (réseau électrique, transition énergétique)
 
 ### Contexte du probleme
 
-Un operateur de reseau electrique doit, pour chaque heure de la journee, decider quelles centrales
+Un opérateur de réseau électrique doit, pour chaque heure de la journée, decider quelles centrales
 pilotables activer (charbon, gaz, hydro) et a quel niveau de production, afin de satisfaire la demande
 des consommateurs. La difficulté vient de trois facteurs combines :
 
@@ -39,11 +39,11 @@ des consommateurs. La difficulté vient de trois facteurs combines :
    intermediaire ; l'hydro est propre mais capacité limitee.
 
 Une seule technique ne suffit pas : un solveur deterministe ignore l'incertitude, un modèle probabiliste
-seul ne respecte pas les contraintes physiques. Le systeme doit les **composer dans le bon ordre**.
+seul ne respecte pas les contraintes physiques. Le système doit les **composer dans le bon ordre**.
 
 ### Le jumeau numerique
 
-On dispose d'un modèle de reseau (`PowerNetwork`) representant :
+On dispose d'un modèle de réseau (`PowerNetwork`) representant :
 - 3 centrales pilotables : Charbon (50-400 MW, 30 EUR/MWh, 900 kg/MWh), Gaz (20-250 MW, 60 EUR/MWh,
   400 kg/MWh), Hydro (0-150 MW, 10 EUR/MWh, 0 kg/MWh)
 - une demande horaire sur 6 heures : [500, 520, 480, 540, 600, 580] MW
@@ -60,7 +60,7 @@ On dispose d'un modèle de reseau (`PowerNetwork`) representant :
 
 ### Exercices d'extension
 
-Apres les 4 couches de base, 3 exercices approfondissent le systeme :
+Après les 4 couches de base, 3 exercices approfondissent le système :
 
 - **Exercice 1 (reserve tournante n-1)** : ajouter une contrainte de securite — la reserve disponible
   doit couvrir la perte de la plus grosse centrale en service.
@@ -87,11 +87,11 @@ Apres les 4 couches de base, 3 exercices approfondissent le systeme :
 | Exercices (au choix, 1 minimum) | 3 | Implementation + analyse |
 | **Total** | **20** | |
 
-### Concepts cles transversaux
+### Concepts clés transversaux
 
 - **Composition ordonnee** des paradigmes : l'ordre importe (filtrer > modeliser > optimiser)
-- **Jumeau numerique** : modèle de reseau reactif aux decisions de dispatch
-- **Incertitude vs contraintes** : un systeme trop rigide ignore l'aléatoire ; trop flou, il ignore la physique
+- **Jumeau numerique** : modèle de réseau réactif aux décisions de dispatch
+- **Incertitude vs contraintes** : un système trop rigide ignore l'aléatoire ; trop flou, il ignore la physique
 - **Multi-objectif** : pas de solution unique optimale, mais un compromis (front de Pareto)
 
 Cf [README CaseStudies](../README.md) pour le principe d'integration et les etudes de cas associees.

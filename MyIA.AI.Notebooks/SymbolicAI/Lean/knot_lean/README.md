@@ -5,27 +5,30 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
 Epic #2874 (Phase 5 en cours). Toolchain `v4.31.0-rc1`.
 
-## État des sorries (vérifié 2026-07-03, 17 réels — 15 + 2 du transfer backward PARTIEL #3124, `num` prouvé)
+## État des sorries (vérifié 2026-07-06, 16 réels — 14 + 2 du transfer backward PARTIEL #3124, `num` prouvé)
 
 Deux comptes, selon le filtre :
 
 | Fichier | sorry réels | sorry (prose, CI) |
 |---------|------------|-------------------|
 | `Knots/Basic.lean` | 0 | 1 |
-| `Knots/Reidemeister.lean` | 2 | 2 |
+| `Knots/Reidemeister.lean` | 1 | 2 |
 | `Knots/Invariant.lean` | 5 | 6 |
 | `Knots/Conway.lean` | 8 | 11 |
 | `Knots/Lidman.lean` | 2 | 4 |
 | `Knots/MathlibPrerequisites.lean` | 0 | 2 |
-| **Total** | **17** | **26** |
+| **Total** | **16** | **26** |
 
 - **sorry réels** (`exact sorry`, `:= sorry`, `:= by sorry`) = ce qui manque
-  vraiment comme preuve. **17** au total — 15 stables + **2 du transfer backward
+  vraiment comme preuve. **16** au total — 14 stables + **2 du transfer backward
   PARTIEL `tricolorable_backward` (#3124)** : sous-buts `fox`/`col` laissés en
   sorry après décomposition (`num` PROUVÉ par parité `wf`, cf. § Phase 5 ;
   cœur `hcolPres` prouvé). Un sorry de scaffolding Lidman (diagramme L39) a été
   éliminé par **#4899** (PD-code 11n102 depuis KnotInfo, MERGED 2026-07-02) :
   Lidman passe de 3 à 2 réels.
+- **Reidemeister.lean à 1 sorry réel** (recompté firsthand 2026-07-06 :
+  stable à 1 depuis juin — `exact sorry` L549 seul ; la version précédente
+  du README surcomptait à 2).
 - **sorry prose** (toute ligne contenant `sorry`, filtre CI `prose-header`) =
   **26** actuellement. La CI `lean-knot.yml` gate à `sorry-baseline: "28"`
   (mode prose-header) : marge de 2 après #3163 (`num`) et #4899 (Lidman), la

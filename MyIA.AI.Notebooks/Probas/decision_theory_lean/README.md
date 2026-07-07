@@ -45,6 +45,11 @@ Notebook compagnon Lean :
   `gittins_index_monotone_discount` = **0 sorry** (prouvés, ce dernier via le port
   `Float→ℝ` PR #5272). Les modules **`Utility` et `Coherence` entiers = 0 sorry**
   (entièrement prouvés, jalon ouvert documenté non `sorry`-backed).
+- **i18n (#4980)** : les 3 modules `Gittins` existent en siblings FR + EN
+  (`Basic_en`/`Discount_en`/`GittinsTheorem_en`, `namespace Gittins_en`), preuves
+  byte-identiques (les 2 INTRINSIC sorries de `gittins_optimality` sont mirorrés
+  fidèlement — d'où le total lake standalone-sorry = 4). `Utility` et `Coherence`
+  disposent aussi de leurs siblings EN.
 - **Build** : `lake build Gittins Utility Coherence` (dépend de Mathlib4)
 - **Dépendances** : Mathlib4 (`v4.30.0-rc2`) — analyse réelle pour les lemmes
   d'actualisation, structure ordonnée et affine de `ℝ` pour vNM, théorie des `Finset`
@@ -222,7 +227,7 @@ La formalization du module `Gittins` se scinde en deux couches distinctes, l'une
 
 ### Couche prouvée (modèle à moyenne connue)
 
-`BanditArm` (cf `Basic.lean`) ne porte que `trueMean : Float` — pas de
+`BanditArm` (cf `Basic.lean`) ne porte que `trueMean : ℝ` — pas de
 postérieure, pas d'incertitude. Dans ce modèle l'indice de Gittins **égale la
 vraie moyenne** : c'est la valeur de retraite `λ` à laquelle jouer le bras
 indéfiniment (`μ·Σγⁿ = μ/(1−γ)`, cf `present_value_constant`) est indifférent à

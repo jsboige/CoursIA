@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 82
-breakdown: Applications=22, Part4-Metaheuristics=19, Part1-Foundations=18, Part2-CSP=18, Part3-Advanced=5
-maturity: PRODUCTION=64, BETA=18
+pedagogical_count: 91
+breakdown: Part1-Foundations=26, Applications=22, Part4-Metaheuristics=19, Part2-CSP=18, Part3-Advanced=6
+maturity: PRODUCTION=69, BETA=22
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -197,6 +197,7 @@ Algorithmes de recherche classiques, recherche adversariale et métaheuristiques
 | 10 | [Search-10-SymbolicAutomata](Part1-Foundations/Search-10-SymbolicAutomata.ipynb) | ~2h | DFA/NFA (automata-lib), prédicats Z3, automates symboliques | Search-1, SymbolicAI/SMT/Z3 |
 | 11 | [Search-11-Metaheuristics](Part1-Foundations/Search-11-Metaheuristics.ipynb) | ~1h30 | PSO, ABC, SA, BRO avec MEALPy, benchmark comparatif | Search-4, Search-5 |
 | 15 | [Search-15-NetworkX](Part1-Foundations/Search-15-NetworkX.ipynb) | ~1h | `networkx` : `Graph`/`DiGraph`, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, MST, Floyd-Warshall | Search-2 |
+| 15 (C#) | [Search-15-NetworkX-Csharp](Part1-Foundations/Search-15-NetworkX-Csharp.ipynb) | ~1h | Twin C# du 15 : graphes from-scratch (adjacency list, BFS/DFS, Dijkstra, centralités degré/closeness/betweenness/PageRank, Ford-Fulkerson max-flow) (See #4956) | Search-2, notions C#/.NET |
 | 16 | [Search-16-QuikGraph](Part1-Foundations/Search-16-QuikGraph.ipynb) | ~1h | QuikGraph 2.5.0 (.NET, NuGet) : AdjacencyGraph/BidirectionalGraph, DFS/BFS, Dijkstra, Edmonds-Karp (flot max), parité C# ↔ NetworkX | Search-1, notions C#/.NET |
 
 ---
@@ -270,6 +271,7 @@ Problèmes du monde réel adaptés de projets étudiants.
 | 10 | [App-15-SportsScheduling](Applications/CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
 | 11 | [App-16-Crossword-CSP](Applications/CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
 | 12 | [App-19-ProceduralGeneration-WFC](Applications/CSP/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
+| 12 (C#) | [App-19-ProceduralGeneration-WFC-Csharp](Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
 
 ### Applications Hybrides / Métaheuristiques (`Applications/Hybrid/`)
 
@@ -485,6 +487,7 @@ Search/
 │   ├── Search-10-SymbolicAutomata.ipynb
 │   ├── Search-11-Metaheuristics.ipynb
 │   ├── Search-15-NetworkX.ipynb
+│   ├── Search-15-NetworkX-Csharp.ipynb   # Twin C# graphes from-scratch (BFS/DFS, Dijkstra, centralités, Ford-Fulkerson) (See #4956)
 │   └── Search-16-QuikGraph.ipynb
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (18 notebooks : 9 Python + 9 jumeaux C#)
@@ -515,12 +518,15 @@ Search/
 │   │   ├── App-4-JobShopScheduling.ipynb
 │   │   ├── App-5-Timetabling.ipynb
 │   │   ├── App-6-Minesweeper.ipynb
+│   │   ├── App-6-Minesweeper-Csharp.ipynb
 │   │   ├── App-7-Wordle.ipynb
 │   │   ├── App-8-MiniZinc.ipynb
 │   │   ├── App-11-Picross.ipynb
 │   │   ├── App-15-SportsScheduling.ipynb
 │   │   ├── App-16-Crossword-CSP.ipynb
-│   │   └── App-19-ProceduralGeneration-WFC.ipynb
+│   │   ├── App-16-Crossword-CSP-Csharp.ipynb   # Twin C# backtracking + forward-checking from-scratch (marathon #4956, Prong B)
+│   │   ├── App-19-ProceduralGeneration-WFC.ipynb
+│   │   └── App-19-ProceduralGeneration-WFC-Csharp.ipynb
 │   │
 │   └── Hybrid/                            # Metaheuristiques (7 notebooks)
 │       ├── App-9-EdgeDetection.ipynb

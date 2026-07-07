@@ -45,7 +45,7 @@ abbrev Coalition (N : Type*) := Finset N
 /-- A TU (Transferable Utility) Game consists of a characteristic function v
     mapping coalitions to real values, with v(∅) = 0 -/
 @[ext]
-structure TUGame (N : Type*) [Fintype N] where
+structure TUGame_en (N : Type*) [Fintype N] where
   /-- The characteristic function: value of each coalition -/
   v : Finset N → ℝ
   /-- The empty coalition has value 0 -/
@@ -53,7 +53,7 @@ structure TUGame (N : Type*) [Fintype N] where
 
 namespace TUGame_en
 
-variable (G : TUGame N)
+variable (G : TUGame_en N)
 
 /-! ## Structural Properties -/
 
@@ -78,14 +78,14 @@ def marginalContribution (i : N) (S : Finset N) : ℝ :=
 
 /-- The unanimity game for coalition T (non-empty):
     v(S) = 1 if T ⊆ S, else 0 -/
-def unanimityGame (T : Finset N) (hT : T.Nonempty) : TUGame N where
+def unanimityGame (T : Finset N) (hT : T.Nonempty) : TUGame_en N where
   v := fun S => if T ⊆ S then 1 else 0
   empty_zero := by
     simp only [Finset.subset_empty]
     simp [hT.ne_empty]
 
 /-- The majority game: v(S) = 1 if |S| > n/2, else 0 -/
-def majorityGame : TUGame N where
+def majorityGame : TUGame_en N where
   v := fun S => if 2 * S.card > Fintype.card N then 1 else 0
   empty_zero := by simp
 
@@ -475,7 +475,7 @@ private lemma enumIndex_injective : Function.Injective (enumIndex : N → ℕ) :
   intro a b hab
   exact (Fintype.equivFin N).injective (Fin.ext hab)
 
-variable (G : TUGame N)
+variable (G : TUGame_en N)
 
 /-- Marginal vector along the fixed enumeration. -/
 noncomputable def marginalVector : Allocation N := fun i =>

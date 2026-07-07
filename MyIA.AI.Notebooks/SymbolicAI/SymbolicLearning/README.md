@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SymbolicLearning
-pedagogical_count: 12
-breakdown: SymbolicLearning=12
-maturity: PRODUCTION=12
+pedagogical_count: 14
+breakdown: SymbolicLearning=14
+maturity: PRODUCTION=13, BETA=1
 -->
 
 Comment un agent peut-il apprendre à partir de connaissances existantes plutôt que de données brutes ? Cette série explore l'apprentissage symbolique tel que décrit dans le chapitre 19 d'AIMA (Russell & Norvig), depuis l'apprentissage inductif pur (CBH, Version Space) jusqu'aux méthodes guidées par la connaissance (EBL, RBL).
@@ -14,6 +14,8 @@ Comment un agent peut-il apprendre à partir de connaissances existantes plutôt
 Le premier notebook pose les bases : représentation d'hypothèses comme conjonctions de contraintes, algorithmes Current-Best-Hypothesis et Candidate Elimination (Version Space), et leurs limites face au bruit et aux concepts disjonctifs. Le second notebook montre comment la connaissance du domaine accélère l'apprentissage : l'apprentissage basé sur les explications (EBL) compile les théories en heuristiques opérationnelles, et l'apprentissage basé sur la pertinence (RBL) identifie les attributs déterminant via les déterminations. Le troisième notebook approfondit le RBL avec le treillis des déterminations, l'algorithme MINIMAL-CONSISTENT-DET et une comparaison avec sklearn. Le quatrième notebook couvre la programmation logique inductive (ILP) : l'algorithme FOIL (top-down), les opérateurs de résolution inverse (bottom-up) et la connexion avec les knowledge graphs, jusqu'à l'ILP moderne (Popper, Learning From Failures). SL-5 reprend et mène à terme la voie bottom-up esquissée en SL-4 (LGG de Plotkin, theta-subsomption, clause bottom par entailment inverse et recherche à la Progol), faisant directement suite à FOIL. SL-6 met quatre moteurs ILP *réels* face à face — Aleph, Metagol, Popper et ∂ILP (Lernd) — sur une même tâche récursive (`ancestor/2`), pour comparer leurs machineries (entailment inverse, MIL, Learning From Failures, gradient différentiable). Les notebooks SL-7 à SL-9 ouvrent ensuite vers des méthodes contemporaines : SL-7 introduit le neuro-symbolique (T-norms différentiables, Logic Tensor Networks, DeepProbLog) ; SL-8 outille la découverte de règles sur knowledge graphs réels avec rdflib et AMIE rule mining ; SL-9 boucle LLM et vérification symbolique pour fiabiliser le raisonnement formel guidé par modèles de langage. Enfin, deux notebooks concluent la série : SL-10 change de paradigme avec l'apprentissage *actif* (l'algorithme L* d'Angluin interroge un oracle au lieu de subir un échantillon, et apprend des automates finis avec garanties de minimalité) ; SL-11 est le capstone qui assemble toute la série en un pipeline neuro-symbolique de bout en bout — du texte brut aux faits découverts, avec un LLM réel (Gemini 3.5 Flash) aux deux extrémités et le symbolique comme colonne vertébrale. SL-12, ajouté à la série, explore un autre registre du neuro-symbolique : les *réseaux de portes logiques differentiables* (difflogic, Petersen NeurIPS 2022) — un modèle qui apprend des combinaisons de portes logiques par descente de gradient, puis se discretise en un circuit 100% booleen, interpretable-par-construction et ultra-rapide a l'inference.
 
 **À qui s'adresse cette série** : étudiants en IA, informaticiens intéressés par le raisonnement symbolique, et chercheurs en apprentissage automatique souhaitant comprendre les approches non-statistiques. Les notebooks (~11h20 total) ne nécessitent que Python 3.10+ standard library, sauf SL-3 (scikit-learn + numpy pour la comparaison RBL / information mutuelle), SL-6 (moteurs ILP réels : SWI-Prolog, Popper, Lernd) et SL-8 (rdflib pour les knowledge graphs) ; SL-9 et SL-11 acceptent une clé OpenRouter optionnelle (fichier `.env`) pour des appels LLM réels, avec un simulateur déterministe en repli. Une familiarité avec la logique propositionnelle suffit pour SL-1 à SL-6 et SL-10 ; SL-7, SL-9 et SL-11 supposent une intuition des réseaux de neurones et des LLMs. Ils constituent un complément théorique aux séries [Tweety](../Tweety/README.md) (argumentation computationnelle), [SemanticWeb](../SemanticWeb/README.md) (représentation de connaissances) et [ML](../../ML/README.md) (apprentissage statistique - contraste avec l'inductif symbolique).
+
+**Parité .NET** : le notebook [SL-1-LogicalLearning-Csharp.ipynb](SL-1-LogicalLearning-Csharp.ipynb) est le jumeau C# (.NET Interactive) de SL-1 — implémentation from-scratch des mêmes algorithmes (CBH + Candidate Elimination) en C# pur (type system + `HashSet<>`, pas de lib externe). Marathon parité .NET ⇄ Python (#4956).
 
 ## Pourquoi cette série
 
@@ -174,7 +176,9 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | 1 | [SL-1 - Apprentissage Logique](SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 50 min |
 | 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (déterminations) | 45 min |
 | 3 | [SL-3 - Apprentissage Basé sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des déterminations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |
+| 3 (C#) | [SL-3 - RBL (Twin C#)](SL-3-RelevanceLearning-Csharp.ipynb) | **Jumeau C#** — Treillis des déterminations, MINIMAL-CONSISTENT-DET (BFS), PAC bound, information mutuelle from-scratch (See #4956) | 50 min |
 | 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, résolution inverse, clauses Horn, knowledge graphs, Popper (LFF) | 55 min |
+| 4 (C#) | [SL-4 - ILP (Twin C#)](SL-4-InductiveLogicProgramming-Csharp.ipynb) | **Jumeau C#** — FOIL (gain Quinlan) + résolution inverse (V/W) + unification from-scratch, mini-KG (See #4956) | 50 min |
 | 5 | [SL-5 - Résolution Inverse et Progol](SL-5-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 60 min |
 | 6 | [SL-6 - Moteurs ILP modernes](SL-6-ModernILP.ipynb) | Aleph, Metagol, Popper, ∂ILP (Lernd) sur `ancestor/2` (moteurs réels) | 65 min |
 | 7 | [SL-7 - Intégration Neuro-Symbolique](SL-7-NeuroSymbolic.ipynb) | T-norms, prédicats neuronaux, LTN, DeepProbLog | 55 min |
@@ -208,6 +212,10 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 | EBL - Implémentation | Classe ArithmeticEBL complète |
 | EBL - Efficacité | Opérationalité vs généralité, prolifération de règles |
 | RBL - Introduction | Déterminations, vérification fonctionnelle, réduction d'espace (approfondi dans SL-3) |
+
+> **Parité .NET** : [SL-2-KnowledgeBasedLearning-Csharp.ipynb](SL-2-KnowledgeBasedLearning-Csharp.ipynb) est le jumeau C# (.NET Interactive) — EBL (chaînage avant + unification, arbre de preuve, variabilisation) et RBL (vérification de détermination) implémentés from-scratch, sans lib ML. Marathon parité .NET ⇄ Python (#4956).
+
+> **Parité .NET** : [SL-5-InverseResolution-Csharp.ipynb](SL-5-InverseResolution-Csharp.ipynb) est le jumeau C# (.NET Interactive) — LGG (Plotkin), θ-subsomption (skolemisation + backtracking), clause bottom (saturation bornée + variabilisation), recherche Progol (score `p−L`) implémentés from-scratch, sans lib ML. Marathon parité .NET ⇄ Python (#4956).
 
 ### SL-3-RelevanceLearning.ipynb
 
@@ -425,9 +433,13 @@ Le treillis des déterminations croît exponentiellement avec le nombre d'attrib
 SymbolicLearning/
 ├── SL-1-LogicalLearning.ipynb              # CBH, Version Space
 ├── SL-2-KnowledgeBasedLearning.ipynb        # EBL, RBL
+├── SL-2-KnowledgeBasedLearning-Csharp.ipynb # Jumeau C# (.NET Interactive) — EBL + RBL, parité #4956
 ├── SL-3-RelevanceLearning.ipynb             # Treillis, MINIMAL-CONSISTENT-DET, RBL vs sklearn
+├── SL-3-RelevanceLearning-Csharp.ipynb # Jumeau C# (.NET Interactive) — Treillis + MINIMAL-CONSISTENT-DET + PAC + MI, parité #4956
 ├── SL-4-InductiveLogicProgramming.ipynb     # FOIL, résolution inverse, knowledge graphs
+├── SL-4-InductiveLogicProgramming-Csharp.ipynb  # Jumeau C# (.NET Interactive) — FOIL + V/W + unification, parité #4956
 ├── SL-5-InverseResolution.ipynb             # LGG, theta-subsomption, clause bottom, Progol
+├── SL-5-InverseResolution-Csharp.ipynb      # Jumeau C# (.NET Interactive) — LGG + clause bottom + Progol, parité #4956
 ├── SL-6-ModernILP.ipynb                     # Aleph, Metagol, Popper, dILP (Lernd) — moteurs réels
 ├── SL-7-NeuroSymbolic.ipynb                 # T-norms, LTN, DeepProbLog
 ├── SL-8-KnowledgeGraphs-ILP.ipynb           # rdflib, AMIE rule mining

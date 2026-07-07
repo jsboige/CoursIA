@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Tweety
-pedagogical_count: 27
-breakdown: Tweety=27
-maturity: PRODUCTION=22, BETA=5
+pedagogical_count: 28
+breakdown: Tweety=28
+maturity: PRODUCTION=24, BETA=4
 -->
 
 Série complète de notebooks pour explorer [TweetyProject](https://tweetyproject.org/), une bibliothèque Java pour l'intelligence artificielle symbolique. Le décompte exact des notebooks et leur maturité figurent dans le catalogue généré ci-dessous ; la série cible la version **Tweety 1.30**.
@@ -192,6 +192,7 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 5  | [Tweety-5-Abstract-Argumentation](Tweety-5-Abstract-Argumentation.ipynb) | Dung AF, Sémantiques, CF2, Génération         | 55 min  | Python |
 | 5b | [Tweety-5b-Lean-Argumentation](Tweety-5b-Lean-Argumentation.ipynb) | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Dung dans le lake `argumentation_lean` (grounded = point fixe Knaster–Tarski), `#check` + `#print axioms` in-kernel (UNLOCK c.127, jonction Mathlib #2611) | 45 min  | Lean BETA |
 | 6  | [Tweety-6-Structured-Argumentation](Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP                            | 60 min  | Python |
+| 6c | [Tweety-6-Structured-Argumentation-Csharp](Tweety-6-Structured-Argumentation-Csharp.ipynb) | Twin C# ASPIC+ from-scratch (BCL, pas IKVM ; DeLP/ABA/ASP conceptuel) | 35 min | C# PROD |
 | 7a | [Tweety-7a-Extended-Frameworks](Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended             | 50 min  | Python |
 | 7b | [Tweety-7b-Ranking-Probabilistic](Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking Semantics, Probabiliste                   | 40 min  | Python |
 | 7bc | [Tweety-7b-Ranking-Probabilistic-Csharp](Tweety-7b-Ranking-Probabilistic-Csharp.ipynb) | Ranking/Probabiliste .NET (IKVM, c.179 PR #5231) | 30 min  | C# PROD |
@@ -203,12 +204,13 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 10 | [Tweety-10-MLN](Tweety-10-MLN.ipynb)       | Markov Logic Networks (FOL pondérée)                      | 50 min  | Python |
 | 10c | [Tweety-10-MLN-Csharp](Tweety-10-MLN-Csharp.ipynb) | MLN porté .NET (IKVM, c.188 PR #5209)                | 30 min  | C# PROD |
 | 11 | [Tweety-11-Causal](Tweety-11-Causal.ipynb) | Raisonnement causal : do-calculus, interventions, contrefactuels | 50 min  | Python |
+| 11c | [Tweety-11-Causal-Csharp](Tweety-11-Causal-Csharp.ipynb) | Twin C# moteur causal booléen from-scratch (do-operator, contrefactuel) | 35 min  | C# PROD |
 
-**Durée totale estimée** : ~13h (Python) + ~6h (C#/.NET). Le tableau ci-dessus couvre les **26 notebooks principaux** (12 Python + 13 C#/.NET + 1 Lean companion) ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4 avec 5 fichiers `.lean` du dossier `Argumentation/` : Basic, Characteristic, Extensions, Fundamental, Grounded).
+**Durée totale estimée** : ~13h (Python) + ~7h (C#/.NET). Le tableau ci-dessus couvre les **29 notebooks principaux** (12 Python + 16 C#/.NET + 1 Lean companion) ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4 avec 5 fichiers `.lean` du dossier `Argumentation/` : Basic, Characteristic, Extensions, Fundamental, Grounded).
 
 ## En quoi chaque notebook est unique
 
-Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — couvrant les **26 notebooks principaux** (12 Python + 13 C#/.NET + 1 Lean companion) :
+Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — couvrant les **27 notebooks principaux** (12 Python + 14 C#/.NET + 1 Lean companion) :
 
 | #  | Notebook                      | Concept clé enseigné                                                    |
 |----|-------------------------------|--------------------------------------------------------------------------|
@@ -345,6 +347,7 @@ Tweety/
 ├── Tweety-5-Abstract-Argumentation.ipynb         # Dung, sémantiques, CF2
 ├── Tweety-5b-Lean-Argumentation.ipynb            # Companion kernel Lean 4
 ├── Tweety-6-Structured-Argumentation.ipynb       # ASPIC+, DeLP, ABA, ASP
+├── Tweety-6-Structured-Argumentation-Csharp.ipynb # Twin C# ASPIC+ from-scratch (BCL)
 ├── Tweety-7a-Extended-Frameworks.ipynb           # ADF, Bipolar, WAF, SAF
 ├── Tweety-7b-Ranking-Probabilistic.ipynb         # Ranking Semantics
 ├── Tweety-7b-Ranking-Probabilistic-Csharp.ipynb  # Ranking/Probabiliste .NET
@@ -354,6 +357,7 @@ Tweety/
 ├── Tweety-10-MLN.ipynb                           # Markov Logic Networks
 ├── Tweety-10-MLN-Csharp.ipynb                    # MLN .NET (IKVM)
 ├── Tweety-11-Causal.ipynb                        # do-calculus Pearl
+├── Tweety-11-Causal-Csharp.ipynb                 # Twin C# moteur causal from-scratch (marathon #4956, Prong B)
 ├── libs/                                          # JARs Tweety (42 : 39 modules 1.30 + 3 deps)
 ├── jdk-17-portable/                               # JDK Zulu (téléchargé auto)
 ├── scripts/

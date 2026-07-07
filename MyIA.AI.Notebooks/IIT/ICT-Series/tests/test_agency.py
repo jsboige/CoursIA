@@ -62,6 +62,54 @@ def test_structure_increases_with_contrast():
     assert agency.structure(contrasted) > agency.structure(flat)
 
 
+def test_local_structure_uniform_region_is_zero():
+    """Une region uniforme a une local_structure nulle (comme structure globale)."""
+    V = np.full((10, 10), 0.42)
+    mask = agency.disk_mask(10, cx=5, cy=5, radius=3)
+    assert agency.local_structure(V, mask) == pytest.approx(0.0)
+
+
+def test_local_structure_captures_contrast_in_region():
+    """local_structure capte le contraste restreint au masque (motif local)."""
+    rng = np.random.default_rng(0)
+    V = np.full((20, 20), 0.5)
+    mask = agency.disk_mask(20, cx=10, cy=10, radius=4)
+    V[mask] = rng.choice([0.0, 1.0], size=mask.sum())
+    assert agency.local_structure(V, mask) > 0.1
+    elsewhere = agency.disk_mask(20, cx=0, cy=0, radius=3)
+    assert agency.local_structure(V, elsewhere) == pytest.approx(0.0)
+
+
+def test_local_structure_drops_to_zero_after_ablation():
+    """Le cas d'usage ICT-9/ICT-19 : apres ablate(mask), local_structure(mask) -> 0.
+
+    C'est le complement local que structure() globale ne capte pas : ablater
+    un disque de rayon 8 dans un champ 32x32 change a peine la variance globale
+    mais annule la variance locale au masque.
+    """
+    rng = np.random.default_rng(123)
+    V = rng.choice([0.0, 1.0], size=(32, 32))
+    mask = agency.disk_mask(32, cx=16, cy=16, radius=8)
+    before = agency.local_structure(V, mask)
+    assert before > 0.1
+    U = np.full((32, 32), 1.0)
+    _, V_abl = agency.ablate(U, V, mask)
+    after = agency.local_structure(V_abl, mask)
+    assert after == pytest.approx(0.0)
+    assert abs(agency.structure(V) - agency.structure(V_abl)) < 0.05
+
+
+def test_local_structure_empty_or_single_mask_is_zero():
+    """Masque vide ou single-cell -> variance non definie -> 0.0."""
+    V = np.full((6, 6), 0.5)
+    V[0, 0] = 1.0
+    empty = np.zeros((6, 6), dtype=bool)
+    assert agency.local_structure(V, empty) == 0.0
+    single = np.zeros((6, 6), dtype=bool)
+    single[3, 3] = True
+    assert agency.local_structure(V, single) == 0.0
+
+
 def test_pattern_distance_zero_for_identical():
     a = np.random.default_rng(0).standard_normal((12, 12))
     assert agency.pattern_distance(a, a) == pytest.approx(0.0)

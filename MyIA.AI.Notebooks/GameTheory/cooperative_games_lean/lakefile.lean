@@ -16,13 +16,14 @@ lean_lib «CooperativeGames» where
   -- Includes: TU games, Shapley value, Core, Voting games
   --
   -- i18n FR-first (EPIC #4980 ratif 2026-07-04 11:58Z, comment-4881909354) :
-  -- Globs precis ciblant UNIQUEMENT les fichiers de cette tranche :
-  -- `ConeKernel.lean` (FR canonique) + `ConeKernel_en.lean` (EN sibling
-  -- verbatim). Pattern precis plutot que `.submodules \`CooperativeGames`
-  -- car un autre _en pre-existant sur main (`Basic_en.lean`, ajoute par
-  -- PR #5344 commit 24a2da95f) a un bug de namespace resolution
-  -- (`G.Convex` non-prefixe dans `namespace MarginalVector`, fail
-  -- `open TUGame` manquant) — le `.submodules` l'aurait active en
-  -- doublon de la presente PR. Le pattern precis compile SEUL les
-  -- fichiers de la tranche, sans toucher les autres _en pre-existants.
-  globs := #[`CooperativeGames.ConeKernel, `CooperativeGames.ConeKernel_en]
+  -- Globs precis par tranche livree (FR canonique + EN sibling). Le namespace
+  -- bug dormant de `Basic_en.lean` (PR #5344 commit 24a2da95f : `structure TUGame`
+  -- global mais defs dans `namespace TUGame_en` -> dot-notation `G.Core` cassée)
+  -- est desormais FIXE (rename `structure TUGame` -> `structure TUGame_en`,
+  -- miroir exact du FR), donc `Basic_en` rejoint les globs.
+  -- `Shapley`/`Shapley_en` restent EXCLUS : `Shapley_en.lean` (2035L) a des bugs
+  -- residuels (`sorry` + `introN failed` + refs `TUGame` a migrer vers `TUGame_en`)
+  -- au-dela du namespace — PR dediee separee requise (fix path #5441 comment).
+  -- Pattern precis plutot que `.submodules \`CooperativeGames` pour ne pas
+  -- activer `Shapley_en` broken en doublon.
+  globs := #[`CooperativeGames.Basic_en, `CooperativeGames.ConeKernel, `CooperativeGames.ConeKernel_en]

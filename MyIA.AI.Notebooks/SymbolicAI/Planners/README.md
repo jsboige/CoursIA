@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Planners
-pedagogical_count: 14
-breakdown: Planners=14
-maturity: PRODUCTION=13, BETA=1
+pedagogical_count: 16
+breakdown: Planners=16
+maturity: PRODUCTION=15, BETA=1
 -->
 
 Cette série de notebooks introduit la **Planification Automatique**, une branche fondamentale de l'IA qui génère des séquences d'actions pour atteindre des objectifs.
@@ -117,16 +117,20 @@ SymbolicAI/Planners/
 ├── 01-Foundation/
 │   ├── Planners-1-Introduction.ipynb    # Concepts, STRIPS
 │   ├── Planners-2-PDDL-Basics.ipynb     # Syntaxe PDDL
-│   └── Planners-3-State-Space.ipynb     # Espaces d'états
+│   ├── Planners-2-PDDL-Basics-Csharp.ipynb # Twin C# STRIPS+grounding+BFS (See #4956)
+│   ├── Planners-3-State-Space.ipynb     # Espaces d'états
+│   └── Planners-3-State-Space-Csharp.ipynb # Twin C# BFS/DFS/Greedy/A* (See #4956)
 ├── 02-Classical/
 │   ├── Planners-4-Fast-Downward.ipynb   # A*, heuristiques
 │   ├── Planners-5-Heuristics.ipynb      # h-add, h-max, h-FF
+│   ├── Planners-5-Heuristics-Csharp.ipynb # Twin C# h-max/h-add/h-FF/landmarks (See #4956)
 │   ├── Planners-5b-Lean-Relaxation.ipynb # Companion Lean 4 : preuve h+ <= h*
 │   └── Planners-6-Domains.ipynb         # Domaines classiques
 ├── 03-Advanced/
 │   ├── Planners-7-OR-Tools.ipynb        # CP-SAT
 │   ├── Planners-8-Temporal.ipynb        # Planification temporelle
-│   └── Planners-9-HTN.ipynb             # Planification hiérarchique
+│   ├── Planners-9-HTN.ipynb             # Planification hiérarchique
+│   └── Planners-9-HTN-Csharp.ipynb      # Twin C# SHOP2 HTN solver from-scratch (See #4956)
 ├── 04-NeuroSymbolic/
 │   ├── Planners-10-LLM-Planning.ipynb   # LLM + Planning
 │   ├── Planners-11-Unified-Planning.ipynb # Interface unifiée
@@ -200,7 +204,9 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 |---|----------|--------|---------|-------|
 | 1 | [Planners-1-Introduction](01-Foundation/Planners-1-Introduction.ipynb) | Python | Concepts, modèle STRIPS, triptyque État-Action-But | 30 min |
 | 2 | [Planners-2-PDDL-Basics](01-Foundation/Planners-2-PDDL-Basics.ipynb) | Python | Syntaxe PDDL, domaines, problèmes, prédicats, actions | 40 min |
+| 2 (C#) | [Planners-2-PDDL-Basics-Csharp](01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb) | .NET (C#) | Twin C# du 2 : planificateur STRIPS from-scratch (modèle typé, grounding, BFS forward), domaines Logistics + Gripper (See #4956) | 40 min |
 | 3 | [Planners-3-State-Space](01-Foundation/Planners-3-State-Space.ipynb) | Python | Espaces d'états, graphes de recherche, explosion combinatoire | 35 min |
+| 3 | [Planners-3-State-Space-Csharp](01-Foundation/Planners-3-State-Space-Csharp.ipynb) | .NET (C#) | Twin C# du 3 : BFS/DFS/Greedy/A* from-scratch, terrain pondéré (See #4956) | 35 min |
 
 ### Partie 2 : Planification Classique ([02-Classical/](02-Classical/README.md))
 
@@ -208,6 +214,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 |---|----------|--------|---------|-------|
 | 4 | [Planners-4-Fast-Downward](02-Classical/Planners-4-Fast-Downward.ipynb) | Python | Architecture FD, Docker, A*, GBFS, EHC, heuristiques | 45 min |
 | 5 | [Planners-5-Heuristics](02-Classical/Planners-5-Heuristics.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min |
+| 5 (C#) | [Planners-5-Heuristics-Csharp](02-Classical/Planners-5-Heuristics-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : h-max/h-add/h-FF/landmarks from-scratch, démo non-admissibilité h^add (See #4956) | 40 min |
 | 5b | [Planners-5b-Lean-Relaxation](02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel (cf [#4053](https://github.com/jsboige/CoursIA/issues/4053) création du lake / PR #4168, companion natif) | 45 min |
 | 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
 
@@ -218,6 +225,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 7 | [Planners-7-OR-Tools](03-Advanced/Planners-7-OR-Tools.ipynb) | Python | CP-SAT, programmation par contraintes, scheduling | 45 min |
 | 8 | [Planners-8-Temporal](03-Advanced/Planners-8-Temporal.ipynb) | Python | PDDL 2.1, durées, parallélisme, ordonnancement | 40 min |
 | 9 | [Planners-9-HTN](03-Advanced/Planners-9-HTN.ipynb) | Python | Hierarchical Task Networks, méthodes, décomposition | 45 min |
+| 9 (C#) | [Planners-9-HTN-Csharp](03-Advanced/Planners-9-HTN-Csharp.ipynb) | .NET (C#) | Twin C# du 9 : solveur HTN SHOP2 from-scratch (State/Pred, Methods, backtracking), domaines Logistics + Cafe (See #4956) | 40 min |
 
 ### Partie 4 : Neuro-Symbolique ([04-NeuroSymbolic/](04-NeuroSymbolic/README.md))
 
