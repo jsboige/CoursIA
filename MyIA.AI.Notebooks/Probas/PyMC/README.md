@@ -62,6 +62,17 @@ La série illustre ce fil rouge sur plusieurs notebooks, chacun sur un cas non-c
 4. **Appliquer** l'inférence bayésienne à des problèmes concrets (ranking, classification, recommandation)
 5. **Intégrer** inférence probabiliste et théorie de la décision (EVPI, MDPs, bandits)
 
+## Aperçu — l'inférence bayésienne en images
+
+PyMC ne produit pas une prédiction ponctuelle mais une **distribution postérieure complète**. Les six visualisations ci-dessous, extraites des notebooks de la série, illustrent cette différence : chaque estimateur vient avec son incertitude quantifiée. Sorties d'exécution **réelles** (non régénérées pour l'illustration, règle C.3), downscalées à ≤1200 px et ≤200 ko (politique EPIC #5654). Provenance exacte dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
+| | | |
+|:--:|:--:|:--:|
+| <img src="assets/readme/pymc2-gaussian-mixtures.png" width="300" alt="Mélange de gaussiennes : composantes et poids ajustés par inférence bayésienne sur données multimodales."> | <img src="assets/readme/pymc5-irt-curves.png" width="250" alt="Courbes de réponse aux items (IRT) : probabilité de bonne réponse selon la compétence latente."> | <img src="assets/readme/pymc13-mcmc-diagnostics.png" width="300" alt="Diagnostics MCMC : traces, R-hat et ESS vérifient la convergence avant confiance au posterior."> |
+| [PyMC-2 — Gaussian Mixtures](PyMC-2-Gaussian-Mixtures.ipynb) | [PyMC-5 — IRT](PyMC-5-Skills-IRT.ipynb) | [PyMC-13 — Debugging](PyMC-13-Debugging.ipynb) |
+| <img src="assets/readme/pymc11-sequences.png" width="290" alt="Inférence sur séquences : chaîne de Markov cachée dont états et transitions sont reconstruits depuis les observations."> | <img src="assets/readme/pymc12-recommenders.png" width="300" alt="Système de recommandation bayésien : facteurs latents estimés avec intervalles de crédibilité."> | <img src="assets/readme/pymc15-sparse-gp.png" width="300" alt="Processus gaussien creux : prédiction avec bandes d'incertitude et inducteurs réduisant le coût."> |
+| [PyMC-11 — Séquences](PyMC-11-Sequences.ipynb) | [PyMC-12 — Recommenders](PyMC-12-Recommenders.ipynb) | [PyMC-15 — Sparse GP](PyMC-15-Sparse-Gaussian-Process.ipynb) |
+
 ## Vue d'ensemble
 
 | # | Notebook | Durée | Concepts |
