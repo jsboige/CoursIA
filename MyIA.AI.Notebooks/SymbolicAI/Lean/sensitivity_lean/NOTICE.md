@@ -5,7 +5,7 @@ Formalization of Hao Huang's sensitivity theorem in Lean 4.
 ## Source
 
 This is a dust-off (re-port) of `mathlib4/Archive/Sensitivity.lean`,
-adapted for Mathlib v4.30.0-rc2 with pedagogical decomposition.
+adapted for Mathlib v4.31.0-rc1 with pedagogical decomposition.
 
 Original authors: Reid Barton, Johan Commelin, Jesse Michael Han,
 Chris Hughes, Robert Y. Lewis, Patrick Massot.
