@@ -306,6 +306,7 @@ Cette partie connecte le Web Sémantique avec l'IA moderne, notamment les LLMs e
 | 11 | **SW-11-Python-KnowledgeGraphs** | 55 min | Construction et visualisation de KGs |
 | 12 | **SW-12-Python-GraphRAG** | 50 min | KG + LLMs pour le RAG |
 | **Bonus** | **SW-13-Python-Reasoners** | 45 min | Comparaison raisonneurs OWL |
+| 13 (C#) | **SW-13-Reasoners-CSharp** | 40 min | Jumeau .NET : raisonnement RDFS forward-chaining avec dotNetRDF (`StaticRdfsReasoner`) |
 
 #### SW-11-Python-KnowledgeGraphs : Construction et Visualisation (55 min)
 
@@ -339,6 +340,8 @@ Ce notebook bonus compare différents raisonneurs OWL (owlrl, HermiT, reasonable
 - reasonable : Rust + Python bindings, OWL 2 RL, performance native
 - Growl : C (vérifié Z3), OWL 2 RL, installation manuelle
 - Benchmark temps d'exécution : Python vs. compilé
+
+> **Twin C# disponible** : [SW-13-Reasoners-CSharp](SW-13-Reasoners-CSharp.ipynb) — raisonnement RDFS forward-chaining avec dotNetRDF (`StaticRdfsReasoner.Apply`, `SimpleN3RulesReasoner`), materialisation des inferences (sous-classes, domain/range) et benchmark sur ontologie croissante. Compagnon cross-langage du notebook Python (owlrl/HermiT/reasonable) sur la même thématique d'inférence (marathon parité .NET ⇄ Python #4956, Prong B). Verdict SOTA honnête : la couche RDFS est SOTA-OK (vrai moteur .NET) ; OWL 2 DL complet (HermiT/Pellet, Java) est RECOVERABLE-MACHINE — documenté in-notebook.
 
 ---
 
@@ -506,6 +509,7 @@ SemanticWeb/
 ├── SW-11-Python-KnowledgeGraphs.ipynb
 ├── SW-12-Python-GraphRAG.ipynb
 ├── SW-13-Python-Reasoners.ipynb     # Bonus
+├── SW-13-Reasoners-CSharp.ipynb     # Twin C# (marathon #4956 Prong B)
 ├── movie_kg_interactive.html        # Livrable interactif SW-11 (pyvis)
 └── RDF.Net-Legacy/                  # Archive C# RDF.NET (pré-migration Python)
     ├── RDF.Net.ipynb                # Notebook .NET historique
