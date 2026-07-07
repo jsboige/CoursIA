@@ -35,7 +35,7 @@ Avoir ces trois angles permet de comprendre que le ML n'est pas lié à un langa
 
 ## Parcours d'apprentissage
 
-### Track A : ML.NET (.NET/C#, 13 notebooks C# ⇄ Python + TP, ~7h)
+### Track A : ML.NET (.NET/C#, 9 notebooks C# ML-1 à ML-9 et leurs 9 jumeaux Python + 1 TP capstone, ~7h)
 
 Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introduisent ML.NET et la préparation de données (IDataView, encodage). Le notebook 3 couvre l'entraînement (SDCA, LightGBM, AutoML). Le notebook 4 est crucial : évaluation rigoureuse par cross-validation et Permutation Feature Importance. Les notebooks 5-7 abordent les séries temporelles, l'export ONNX pour la production, et les systèmes de recommandation. Les notebooks 8-9 ouvrent sur l'apprentissage non-supervisé : clustering K-Means (segmentation RFM, méthode du coude) puis détection d'anomalies par Randomized PCA (maintenance prédictive, choix du seuil de décision). Le TP final (prévision de ventes) combine ML.NET et Infer.NET pour une régression bayésienne. Ce track présuppose .NET 9.0 + dotnet-interactive.
 
