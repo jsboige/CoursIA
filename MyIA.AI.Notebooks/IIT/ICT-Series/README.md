@@ -77,7 +77,7 @@ La strate 3 se conclut sur la feuille de route de [ICT-0-Framing](ICT-0-Framing.
 
 ### Strate 5 — réalisation de la théorie fondatrice (cross-substrat, MDL, LLM)
 
-Le retour à la théorie fondatrice (cf. [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md)) : les trois scalaires fondateurs $\Phi / F / K$ convergent sur un banc cross-substrat, et la **réversibilisation** — l'idée fondatrice restée implicite — y est enfin outillée (ICT-18). *Livrée jusqu'à ICT-20 et ICT-23 ; ICT-21 (substrat SAE) en cours de merge, ICT-24 (module `ict/workspace.py`) livré, ICT-22 et ICT-25 (GPU) gated. Scope ICT-15..25 (#5090 #5099..#5105 #5279 #5635).*
+Le retour à la théorie fondatrice (cf. [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md)) : les trois scalaires fondateurs $\Phi / F / K$ convergent sur un banc cross-substrat, et la **réversibilisation** — l'idée fondatrice restée implicite — y est enfin outillée (ICT-18). *Livrée jusqu'à ICT-24 — ICT-15 à ICT-18, ICT-20, ICT-21 (substrat SAE, mergé #5643), ICT-23 (fronce Thom, #5351) et ICT-24 (module `ict/workspace.py`, mergé #5641) sont livrés ; ICT-22 (LLM comme quatrième substrat, GPU-free) en cours de merge via PR #5658 ; ICT-19 (batterie de l'ENJEU) et ICT-25 (GPU) restent gated. Scope ICT-15..25 (#5090 #5099..#5105 #5279 #5635).*
 
 | Notebook | Sujet | Issue |
 |----------|-------|-------|
