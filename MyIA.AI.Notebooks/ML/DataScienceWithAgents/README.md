@@ -24,7 +24,7 @@ La formation couvre deux stacks complémentaires :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 25 (7 LangChain + 10 ADK + 2 fondations Python + 6 fondations ML) |
+| Notebooks | 27 (7 LangChain + 10 ADK + 2 fondations Python + 8 fondations ML) |
 | Kernel | Python 3.11+ |
 | Durée totale | ~7 jours |
 
