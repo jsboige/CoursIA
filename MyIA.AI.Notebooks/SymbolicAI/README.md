@@ -11,15 +11,16 @@ maturity: PRODUCTION=165, BETA=31, ALPHA=1
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.
 
-Vous y découvrirez sept domaines complémentaires. Le **Web Sémantique** (RDF, SPARQL, OWL) montre comment structurer les connaissances du web pour les rendre exploitables par les machines. La **vérification formelle** avec Lean 4 vous apprend à écrire des preuves mathématiques vérifiées par un ordinateur. L'**argumentation computationnelle** (TweetyProject) modélise le débat et la délibération. La **planification automatique** résout des problèmes concrets de logistique et d'ordonnancement. Les **smart contracts** relient la cryptographie et la logique formelle aux blockchains. L'**analyse argumentative** avec les LLMs jette un pont entre l'IA symbolique et l'IA neuronale. Et l'**apprentissage symbolique** (AIMA ch. 19) montre comment un agent apprend à partir de connaissances existantes plutôt que de données brutes, jusqu'aux pipelines neuro-symboliques couplés aux LLMs. Chaque sous-série est autonome, mais ensemble elles dessinent une vision cohérente de l'IA symbolique moderne.
+Vous y découvrirez huit domaines complémentaires. Le **Web Sémantique** (RDF, SPARQL, OWL) montre comment structurer les connaissances du web pour les rendre exploitables par les machines. La **vérification formelle** avec Lean 4 vous apprend à écrire des preuves mathématiques vérifiées par un ordinateur. L'**argumentation computationnelle** (TweetyProject) modélise le débat et la délibération. La **résolution SMT** (Z3, satisfiability modulo theories) automatise la décision sous contraintes — cryptarithmes, planification, vérification de propriétés. La **planification automatique** résout des problèmes concrets de logistique et d'ordonnancement. Les **smart contracts** relient la cryptographie et la logique formelle aux blockchains. L'**analyse argumentative** avec les LLMs jette un pont entre l'IA symbolique et l'IA neuronale. Et l'**apprentissage symbolique** (AIMA ch. 19) montre comment un agent apprend à partir de connaissances existantes plutôt que de données brutes, jusqu'aux pipelines neuro-symboliques couplés aux LLMs. Chaque sous-série est autonome, mais ensemble elles dessinent une vision cohérente de l'IA symbolique moderne.
 
-**Carte de la famille** — les sept sous-séries et leurs ponts (formalismes fondamentaux → applications → ponts neuro-symboliques) :
+**Carte de la famille** — les huit sous-séries et leurs ponts (formalismes fondamentaux → applications → ponts neuro-symboliques) :
 
 ```mermaid
 flowchart TD
     TW["Tweety<br/>Argumentation + logiques<br/>(Dung, ASPIC+, AGM, Pearl)"]
     SW["SemanticWeb<br/>Connaissance du web<br/>(RDF, SPARQL, OWL, SHACL)"]
     LEAN["Lean<br/>Preuve formelle<br/>(Mathlib4, types dependants)"]
+    SMT["SMT / Z3<br/>Décision sous contraintes<br/>(SAT modulo theories, optimisation)"]
     PL["Planners<br/>Planification<br/>(PDDL, Fast-Downward, CP-SAT)"]
     SC["SmartContracts<br/>Blockchain + crypto<br/>(Solidity, DeFi, ZK)"]
     AA["Argument Analysis<br/>Pont LLM (sophismes, SK)"]
@@ -28,6 +29,8 @@ flowchart TD
     TW -->|"generalise en representation"| SW
     TW -.->|"companion natif (Tweety-5b)"| LEAN
     LEAN -.->|"companion (planners_lean)"| PL
+    SMT -.->|"meme solveur Z3"| PL
+    LEAN -->|"verification de proprietes"| SMT
     TW --> AA
     SW -->|"GraphRAG / linked data"| AA
     AA --> SL
@@ -36,7 +39,7 @@ flowchart TD
     classDef app fill:#e6f4ea,stroke:#188038
     classDef bridge fill:#fef7e0,stroke:#f9ab00
     class TW,SW,LEAN found
-    class PL,SC app
+    class SMT,PL,SC app
     class AA,SL bridge
 ```
 
@@ -699,7 +702,7 @@ Légende : ● couverture large ; ◐ couverture partielle / companion ; — abs
 
 ### Ce que cette série dessine
 
-Les sept domaines ci-dessus ne sont pas sept sujets indépendants : ils forment un **pipeline complet du raisonnement symbolique**, du représentationnel au certifié. L'architecture implicite du parcours :
+Les huit domaines ci-dessus ne sont pas huit sujets indépendants : ils forment un **pipeline complet du raisonnement symbolique**, du représentationnel au certifié. L'architecture implicite du parcours :
 
 - **Représenter** la connaissance (Tweety : logiques formelles ; SemanticWeb : RDF/OWL/SHACL pour le web de données).
 - **Raisonner** dessus (Tweety : argumentation, révision de croyances ; SMT/Z3 : décision automatique par contraintes).
