@@ -198,6 +198,7 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 7bc | [Tweety-7b-Ranking-Probabilistic-Csharp](Tweety-7b-Ranking-Probabilistic-Csharp.ipynb) | Ranking/Probabiliste .NET (IKVM, c.179 PR #5231) | 30 min  | C# PROD |
 | **Applications** |
 | 8  | [Tweety-8-Agent-Dialogues](Tweety-8-Agent-Dialogues.ipynb) | Agents, Dialogues argumentatifs, Loteries            | 35 min  | Python |
+| 8c | [Tweety-8-Agent-Dialogues-Csharp](Tweety-8-Agent-Dialogues-Csharp.ipynb) | Twin C# dialogues argumentatifs from-scratch (BCL .NET, pas IKVM/JVM ; Dung AF + agents + protocole Claim/Argue/Concede/Retract + loterie argumentative Monte-Carlo) | 35 min | C# PROD |
 | 9  | [Tweety-9-Preferences](Tweety-9-Preferences.ipynb) | Préférences, Théorie du vote                          | 30 min  | Python |
 | 9c | [Tweety-9-Preferences-Csharp](Tweety-9-Preferences-Csharp.ipynb) | Préférences .NET (IKVM, c.180 PR #5268)            | 30 min  | C# PROD |
 | **Synthèse** |
