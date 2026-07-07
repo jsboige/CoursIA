@@ -2024,6 +2024,86 @@ def cmd_normalize_source_charsplit(args):
     return 0
 
 
+# --------------------------------------------------------------------------- #
+#  figures-list / figures-extract (EPIC #5654 P0 — illustration des READMEs)   #
+# --------------------------------------------------------------------------- #
+def cmd_figures_list(args):
+    """Inventorie les figures PNG des outputs de notebooks d'une serie.
+
+    Source 1 de la doctrine #5654 : figures DEJA commitees comme preuve
+    d'execution. Aucune image n'est extraite ; on produit le gisement pour
+    choisir les illustrations en P1/P2.
+    """
+    from extract_readme_figures import list_figures, MAX_BYTES_DEFAULT
+    repo_root = get_repo_root()
+    serie_path = Path(args.serie)
+    if not serie_path.is_absolute():
+        # accepte un nom de serie (ex. "RL") resolu depuis la racine notebooks
+        candidate = repo_root / "MyIA.AI.Notebooks" / args.serie
+        if candidate.is_dir():
+            serie_path = candidate
+    try:
+        inv = list_figures(serie_path, relative_to=repo_root)
+    except FileNotFoundError as exc:
+        print_error(str(exc))
+        return 1
+    if args.json:
+        print(json.dumps(inv, indent=2, ensure_ascii=False))
+        return 0
+    print_section(f"FIGURES - {inv['serie']} ({inv['root']})")
+    print(f"  {inv['n_figures']} figures PNG dans "
+          f"{inv['n_notebooks_with_figures']} notebooks "
+          f"({inv['total_bytes'] / 1024.0:.1f} KB total)")
+    over = 0
+    for r in inv["figures"]:
+        dims = f"{r['width']}x{r['height']}" if r["width"] else "?x?"
+        flag = " [>200KB]" if r["over_weight"] else ""
+        if r["over_weight"]:
+            over += 1
+        nb_name = Path(r["notebook"]).name
+        print(f"    {nb_name} cell {r['cell_index']} out {r['output_index']} "
+              f"- {dims} - {r['bytes'] / 1024.0:.1f} KB{flag}")
+    if over:
+        print_warning(
+            f"{over} figure(s) au-dessus du plafond {MAX_BYTES_DEFAULT // 1024} KB "
+            f"(seront optimisees a l'extraction si PIL present)")
+    return 0
+
+
+def cmd_figures_extract(args):
+    """Extrait une figure PNG d'une cellule vers assets/readme/ + MANIFEST.md.
+
+    Le path ``notebook`` et l'option ``--serie-root`` acceptent un path absolu,
+    un repo-relatif complet (``MyIA.AI.Notebooks/RL/x.ipynb``) ou un serie-relatif
+    (``RL/x.ipynb``), via :func:`resolve_repo_path` (robuste quel que soit le cwd).
+    """
+    from extract_readme_figures import extract_figure, resolve_repo_path
+    repo_root = get_repo_root()
+    nb_path = resolve_repo_path(args.notebook, repo_root)
+    serie_root = (resolve_repo_path(args.serie_root, repo_root)
+                  if args.serie_root else None)
+    out_path = Path(args.output)
+    try:
+        entry = extract_figure(
+            nb_path, args.cell, args.output_index, out_path, args.alt,
+            max_dim=args.max_dim, max_bytes=args.max_bytes,
+            serie_root=serie_root)
+    except (ValueError, FileNotFoundError) as exc:
+        print_error(str(exc))
+        return 1
+    opt_tag = "PIL optimise" if entry["used_pil"] else "raw (PIL absent)"
+    print_ok(
+        f"Extrait : {entry['output']} "
+        f"({entry['bytes'] / 1024.0:.1f} KB, {opt_tag})")
+    print(f"  source : {Path(entry['notebook']).name} "
+          f"cellule {entry['cell_index']} output {entry['output_index']}")
+    if entry["over_weight"]:
+        print_warning(
+            "Figure au-dessus du plafond poids - revoir le downscale "
+            "ou selectionner une autre figure")
+    return 0
+
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -2126,6 +2206,36 @@ def main():
     p_cs.add_argument('--verbose', '-v', action='store_true')
     p_cs.add_argument('--json', action='store_true')
 
+    # figures-list command (EPIC #5654 P0 — inventaire des figures de notebooks)
+    p_fl = subparsers.add_parser(
+        'figures-list',
+        help='Inventory PNG figures committed in notebook outputs (EPIC #5654)')
+    p_fl.add_argument('serie',
+                      help='Serie name (e.g. RL) or path under MyIA.AI.Notebooks/')
+    p_fl.add_argument('--json', action='store_true',
+                      help='Machine-readable JSON inventory')
+
+    # figures-extract command (EPIC #5654 P0 — extraction + MANIFEST provenance)
+    p_fe = subparsers.add_parser(
+        'figures-extract',
+        help='Extract a PNG figure from a notebook cell to assets/readme/ + MANIFEST (#5654)')
+    p_fe.add_argument('notebook',
+                      help='Notebook path or path under MyIA.AI.Notebooks/')
+    p_fe.add_argument('--cell', type=int, required=True,
+                      help='Cell index holding the figure output')
+    p_fe.add_argument('--output-index', type=int, default=0,
+                      help='Output index within the cell (default: 0)')
+    p_fe.add_argument('--output', '-o', required=True,
+                      help='Output PNG path (convention: <Serie>/assets/readme/<name>.png)')
+    p_fe.add_argument('--alt', required=True,
+                      help='French alt-text (accessibility, mandatory, EPIC #5654 HARD)')
+    p_fe.add_argument('--max-dim', type=int, default=1200,
+                      help='Max dimension in px for PIL downscale (default: 1200)')
+    p_fe.add_argument('--max-bytes', type=int, default=204800,
+                      help='Weight cap in bytes (default: 200 KB, EPIC #5654 HARD)')
+    p_fe.add_argument('--serie-root',
+                      help='Serie root for relative path in MANIFEST (default: absolute)')
+
     args = parser.parse_args()
 
     if not args.command:
@@ -2141,6 +2251,8 @@ def main():
         'golden-set': cmd_golden_set,
         'normalize-source-newlines': cmd_normalize_source_newlines,
         'normalize-source-charsplit': cmd_normalize_source_charsplit,
+        'figures-list': cmd_figures_list,
+        'figures-extract': cmd_figures_extract,
     }
 
     return commands[args.command](args)
