@@ -41,6 +41,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 | # | Notebook | Sujet | Durée | Statut |
 |---|----------|-------|------|--------|
 | 01 | [Introduction](Z3-Python-01-Introduction.ipynb) | `Solver`, `Int`/`Bool`/`Real`, sat/unsat, `Optimize` | ~30 min | PRODUCTION |
+| 01ᶜˢ | [Introduction (twin C# .NET)](Z3-Python-01-Introduction-Csharp.ipynb) | Parité .NET : même moteur Z3 via `Microsoft.Z3` (NuGet) | ~30 min | PRODUCTION |
 | 02 | [Sudoku](Z3-Python-02-Sudoku.ipynb) | Sudoku comme CSP, `Distinct`, visualisation matplotlib | ~25 min | PRODUCTION |
 | 03 | [Tactiques et théories](Z3-Python-03-Tactics.ipynb) | `Tactic`, `BitVec`, `Array` | ~35 min | PRODUCTION |
 | 04 | [Chaînes et expressions régulières](Z3-Python-04-Strings-Regex.ipynb) | `String`, `Re` (théorie des chaînes Z3) | ~30 min | PRODUCTION |
