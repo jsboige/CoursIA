@@ -12,6 +12,25 @@ Long-only top-2 momentum currencies vs USD, monthly rebalance. Signal is inverte
 
 **Structural limitation:** G10 FX momentum earns ~1-2% CAGR vs T-bill ~2.5% average in 2018-2026. Extended start to 2013 for better regime coverage.
 
+## Figures du notebook de recherche
+
+Le notebook [`research.ipynb`](research.ipynb) teste six hypothèses sur le momentum FX : momentum pur (H1), long-only vs long/short (H3), réduction à 4 paires pour limiter la corrélation (H4), filtre DXY vs SPY SMA200 (H5), filtre de volatilité par régime (H6), puis synthèse de la configuration optimale. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+
+<table>
+<tr>
+<td align="center"><img src="assets/readme/forex-h1-momentum.png" alt="H1 momentum FX" width="420"/><br/><sub>H1 — le momentum FX pur fonctionne-t-il ?</sub></td>
+<td align="center"><img src="assets/readme/forex-h3-longshort.png" alt="H3 long-only vs L/S" width="420"/><br/><sub>H3 — long-only vs long/short</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/forex-h4-4pairs.png" alt="H4 réduction 4 paires" width="420"/><br/><sub>H4 — réduction à 4 paires (moins de corrélation)</sub></td>
+<td align="center"><img src="assets/readme/forex-h5-dxy.png" alt="H5 filtre DXY" width="420"/><br/><sub>H5 — filtre DXY vs SPY SMA200</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/forex-h6-vol.png" alt="H6 filtre volatilité" width="420"/><br/><sub>H6 — filtre de volatilité (régime)</sub></td>
+<td align="center"><img src="assets/readme/forex-synthese.png" alt="Synthèse configuration optimale" width="420"/><br/><sub>Synthèse — meilleure configuration</sub></td>
+</tr>
+</table>
+
 ## How to Run
 
 **Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ForexCarry"`
