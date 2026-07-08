@@ -203,3 +203,53 @@ avant flip (impacte `tts-multi.myia.io`).
 
 **Bloqueur user** : le secret de la clé gateway doit être saisi **manuellement** dans
 les `.env` gitignorés (hook `block-secrets.py` interdit l'édition agent). Voir P1.
+
+---
+
+## 8. F1 Root-hardening containers — plan proposé (greenlight ai-01 requis)
+
+**Scope** : durcissement Docker des conteneurs GenAI (non-root, `cap_drop`,
+`no-new-privileges`). **Recon firsthand** (`grep` des directives dans tous les
+`docker-configurations/services/*/docker-compose.yml`, 2026-07-08) :
+
+- `read_only: true` **déjà présent** sur la majorité des APIs stateless
+  (`whisper-api`, `tts-api`, `tts-multi`, `musicgen-api`, `demucs-api`,
+  `qwen-asr-api`, `funasr-api`, `comfyui-qwen`, `orchestrator`) — défense en
+  profondeur partiellement appliquée.
+- **`user:` non-root** : seul `vllm-zimage` (`user: "1000:1000"`) ; tous les autres
+  tournent **en root** par défaut.
+- **`cap_drop: [ALL]`** : **aucun** conteneur.
+- **`security_opt: no-new-privileges`** : **aucun** conteneur.
+
+### Classification par tier de risque (grounded dans les compose réels)
+
+| Tier | Conteneurs | Directives proposées | Risque |
+|---|---|---|---|
+| **A — stateless local-only** (sûr) | `whisper-api`, `tts-api`, `musicgen-api`, `demucs-api`, `qwen-asr-api`, `funasr-api`, `fast-downward` | `cap_drop: [ALL]`, `security_opt: [no-new-privileges:true]`, `user:` non-root si l'image le supporte | **Faible** — pas de GPU, pas de binding `0.0.0.0`, déjà `read_only`. Vérif : container redémarre + endpoint sain. |
+| **B — GPU / stateful image** (à scoper avec soin) | `comfyui-qwen`, `comfyui-video`, `forge-turbo`, `sd-forge-main`, `vllm-zimage` | `no-new-privileges` OK ; **`cap_drop: [ALL]` CASSERA CUDA** (les capacités `CAP_SYS_ADMIN`/device access du NVIDIA Container Toolkit sont requises) ; `user:` non-root exige permissions `/dev/nvidia*` + montage `tmpfs` pour `~/.config` | **Élevé** — un cap_drop mal calibré = stack GenAI GPU à l'arrêt. Ne **pas** éditer sans test de redémarrage conteneur-par-conteneur. |
+| **C — cross-machine / persistant** (gated) | `myia-qdrant` (volumes), `claudish-proxy` (proxy cluster) | `no-new-privileges` + `cap_drop` applicables, MAIS flip d'auth = coordination cluster (cf. §5, §6-P2) | **Coordination ai-01** — ne pas toucher seul. |
+
+### Pourquoi ce plan et pas des edits directs (this cycle)
+
+Les conteneurs GenAI sont pilotés par **16 idle-monitors** (auto-STOP/restart) et
+l'auth ComfyUI-Login régénère son hash bcrypt **au restart seulement** (cf.
+[secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md)). Un `cap_drop` ou
+`user:` mal calibré sur un conteneur GPU = redémarrage en boucle invisible
+(idle-monitor masque le crash), stack GenIA indisponible pour tout le cluster.
+Le présent §8 est donc un **plan à greenlight** : ai-01 choisit le tier à exécuter,
+le worker applique **conteneur par conteneur** avec vérification d'endpoint après
+chaque redémarrage.
+
+### Procédure d'application (quand greenlight obtenu)
+
+1. **Tier A d'abord** (risque faible) : un conteneur à la fois, ajouter
+   `cap_drop: [ALL]` + `security_opt: [no-new-privileges:true]`, `docker compose up -d`,
+   vérifier `curl /health` = 200.
+2. **Tier B** : `no-new-privileges` seul d'abord (sans casser CUDA), puis tests
+   `user:` non-root avec `group_add` pour `/dev/nvidia*`. **Jamais** `cap_drop: [ALL]`
+   sans validation que le toolkit NVIDIA conserve l'accès GPU.
+3. **Tier C** : Escalader ai-01 (déjà tracé §6-P2 + `auth-flip-runbook.md`).
+
+> **Action demandée à ai-01** : greenlight sur (a) Tier A complet, (b) Tier B
+> `no-new-privileges` seul, ou (c) report. Aucun edit de compose sur la stack GPU
+> shared sans confirmation explicite.
