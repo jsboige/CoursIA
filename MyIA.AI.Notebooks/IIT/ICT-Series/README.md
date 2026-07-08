@@ -17,6 +17,23 @@ La série progresse en **cinq strates**. La **strate 1** (ICT-0 à ICT-7) prend 
 
 > **Caractère expérimental.** ICT est une série de recherche en construction (statut ALPHA). Elle pose des mesures *sans complaisance* : chaque notebook confronte une intuition séduisante (émergence, agence, criticalité) à une mesure qui peut la **réfuter**, et signale explicitement les fantômes statistiques (signal apparent issu de degrés de liberté cachés).
 
+## Aperçu — les trajectoires causales intégrées en images
+
+Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #5654). Elles balayent l'arc des quatre strates stables de la série : du tri auto-organisé et des trajectoires de $\Phi$ (strate 1) aux paysages d'attracteurs et à la morphogenèse dynamique (strate 2), puis aux trajectoires intégrées régime-dépendantes (strate 3) et à la jambe énergétique-libre (strate 4). La provenance exacte de chaque figure est documentée dans `assets/readme/MANIFEST.md`.
+
+<table>
+<tr>
+<td align="center"><b>Trajectoires de Φ (S1)</b><br><a href="ICT-1-PhiTrajectories.ipynb"><img width="290" alt="Trajectoires de Phi : paysage de Phi et suivi le long d'un attracteur (pulsations), photographie IIT mise en mouvement avec le vrai PyPhi." src="assets/readme/ict1-phitrajectories.png"></a></td>
+<td align="center"><b>Tri auto-organisé (S1)</b><br><a href="ICT-2-SelfSortingMorphogenesis.ipynb"><img width="290" alt="Tri auto-organisé comme morphogenèse : trajectoire dans le morphospace, robustesse aux cellules défectueuses et auto-réparation." src="assets/readme/ict2-selfsorting.png"></a></td>
+<td align="center"><b>Paysage d'attracteurs (S2)</b><br><a href="ICT-8-AttractorLandscapesEWS.ipynb"><img width="290" alt="Paysages d'attracteurs et signaux précurseurs : bistabilité, bifurcation pli et early-warning signals sur le modèle de pâturage de May." src="assets/readme/ict8-attractor.png"></a></td>
+</tr>
+<tr>
+<td align="center"><b>Agence Gray-Scott (S2)</b><br><a href="ICT-9-AgencyRegeneration.ipynb"><img width="290" alt="Agence et régénération : morphogenèse réaction-diffusion de Gray-Scott, ablation puis contraste de deux mondes contrefactuels (régénération vs dissolution)." src="assets/readme/ict9-gray-scott.png"></a></td>
+<td align="center"><b>Morphodynamique stratégique (S3)</b><br><a href="ICT-13-AxelrodStrategicMorphodynamics.ipynb"><img width="290" alt="Morphodynamique stratégique d'Axelrod : tournoi de stratégies du dilemme du prisonnier itéré, dynamique de réplication et bassins d'invasion." src="assets/readme/ict13-axelrod.png"></a></td>
+<td align="center"><b>Énergie libre & surprise (S4)</b><br><a href="ICT-14-FreeEnergySurprise.ipynb"><img width="290" alt="Surprise et énergie libre : free energy et expected free energy comme substrat computationnel de l'anticipation, jambe représentationnelle du triplet fondateur." src="assets/readme/ict14-freeenergy.png"></a></td>
+</tr>
+</table>
+
 ## Prérequis & environnement
 
 ICT partage l'environnement Python de la série IIT (PyPhi 1.2.0, Python 3.9). Le setup et les dépendances sont mutualisés au niveau du répertoire parent :
