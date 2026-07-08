@@ -260,6 +260,27 @@ jupyter kernelspec list  # doit montrer .net-csharp
 | **Trainer** | Algorithme d'apprentissage |
 | **Transformer** | Transformation de données |
 
+## Galerie
+
+Visualisations réelles des concepts ML (régression, séries temporelles, clustering), extraites des notebooks **Python** de la série (parité marathon #4956 — mêmes concepts rendus côté C# ML.NET et côté Python scikit-learn).
+
+<table>
+<tr>
+<td align="center"><img src="assets/readme/ml-regression.png" alt="Nuage de points avec droite de régression linéaire" width="400"/><br/><sub>Régression linéaire — données et ajustement (<a href="ML-1-Introduction-Python.ipynb">ML-1</a>)</sub></td>
+<td align="center"><img src="assets/readme/ml-ts-series.png" alt="Série temporelle de ventes" width="400"/><br/><sub>Série temporelle — ventes brutes (<a href="ML-5-TimeSeries-Python.ipynb">ML-5</a>)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/ml-ts-stl.png" alt="Décomposition STL : tendance, saisonnalité et résidus" width="400"/><br/><sub>Décomposition STL — tendance / saisonnalité / résidu (<a href="ML-5-TimeSeries-Python.ipynb">ML-5</a>)</sub></td>
+<td align="center"><img src="assets/readme/ml-ts-forecast.png" alt="Prévision de la série temporelle sur le jeu de test" width="400"/><br/><sub>Prévision sur le jeu de test (<a href="ML-5-TimeSeries-Python.ipynb">ML-5</a>)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/ml-clustering.png" alt="Partition de données en clusters par K-means" width="400"/><br/><sub>Clustering K-means — partition (<a href="ML-8-Clustering-Python.ipynb">ML-8</a>)</sub></td>
+<td align="center"><img src="assets/readme/ml-coude.png" alt="Méthode du coude pour choisir le nombre de clusters K" width="400"/><br/><sub>Méthode du coude — choix de K (<a href="ML-8-Clustering-Python.ipynb">ML-8</a>)</sub></td>
+</tr>
+</table>
+
+Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Parcours recommandé
 
 ### Parcours fondamental (débutant)
