@@ -51,6 +51,14 @@ flowchart LR
 
 La différence fondatrice : le ML classique produit un **point**, la programmation probabiliste produit une **distribution** (en bleu). Cette incertitude native se propage jusqu'à la décision — on maximise l'utilité espérée `E[U]`, pas un seul score.
 
+### De la distribution à l'utilité : pourquoi la courbe est concave
+
+La maximisation de `E[U]` repose sur une hypothèse centrale de la théorie de la décision sous incertitude : l'utilité est une fonction **concave** de la richesse. Trois familles classiques l'incarnent (logarithmique, racine CARA, puissance CRRA), illustrées ci-dessous — chacune traduit l'utilité marginale décroissante (chaque euro supplémentaire apporte moins d'utilité que le précédent), fondement de l'aversion au risque :
+
+![Trois fonctions d'utilité classiques (logarithmique, racine CARA, puissance CRRA) traçant l'utilité U en fonction de la richesse x : toutes concaves, illustrant l'utilité marginale décroissante — chaque euro supplémentaire apporte moins d'utilité que le précédent, fondement de la théorie de la décision sous incertitude (Pratt 1964, Arrow 1965). Extrait du notebook DecPyMC-2-Utility-Money.](assets/readme/probas-utility-functions.png)
+
+*Source : [`DecPyMC-2-Utility-Money.ipynb`](DecisionTheory/PyMC/DecPyMC-2-Utility-Money.ipynb) (cellule « Diminishing marginal utility »), track DecisionTheory/PyMC.*
+
 ## Objectifs d'apprentissage
 
 À l'issue de cette série, vous serez capable de :
