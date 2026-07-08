@@ -1,4 +1,4 @@
-# `astar_lean` — Optimalité de A* en Lean 4
+# `search_lean` — Optimalité de A* en Lean 4
 
 Mini-projet Lean 4 (avec [Mathlib](https://github.com/leanprover-community/mathlib4))
 formalisant le **théorème phare d'optimalité de A*** : une heuristique *admissible*

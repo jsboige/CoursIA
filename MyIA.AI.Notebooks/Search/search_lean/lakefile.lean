@@ -24,7 +24,7 @@ archivé en 2026-07-03 dans `archive/`) couvrait le même contenu en un document
 unique. Le câblage du notebook revient au propriétaire de la série Search.
 -/
 
-package «astar_lean» where
+package «search_lean» where
   leanOptions := #[⟨`autoImplicit, false⟩]
 
 require mathlib from git

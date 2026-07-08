@@ -69,7 +69,7 @@ laissé en `sorry`. Axiomes `[propext, Classical.choice, Quot.sound]` (Mathlib s
 ## Notes transverses
 
 - **WDAC workaround** (RECOVERABLE-LOCAL) : `lake exe cache get` bloqué (err 4551) → réutilise
-  les oleans `.lake/packages/` d'un lake frère binairement compatible (`astar_lean`, même
+  les oleans `.lake/packages/` d'un lake frère binairement compatible (`search_lean`, même
   toolchain `v4.31.0-rc1` + même révision Mathlib). Cf.
   `lean-wdac-olean-wholesale-copy`.
 - **Mathlib v4.31.0-rc1 IPS-API renames** (documentés durably) : `InnerProductSpace ℝ V`

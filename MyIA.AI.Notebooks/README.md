@@ -232,7 +232,7 @@ Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette
 | **SymbolicAI** (Tweety) | `argumentation_lean` | Théorèmes d'extension (Dung) + pragmatique Walton-Krabbe (cf. `#4046`) | Notebook Tweety + Argument_Analysis |
 | **SymbolicAI** (Lean) | `bondareva_lean` (résolu 0 sorry), `knot_lean` (GF(3) Path B), `fwt_lean` | Bondareva-Shapley, nœud trinôme, Fermat | SymbolicAI/Lean/Grothendieck + Conway |
 | **SymbolicAI** (SC) | `erc20_lean` | Pas de réentrance ERC-20 (cf. `#4047`) | SmartContracts/Erc20 |
-| **Search** | `astar_lean` | Consistance + heuristique admissible = optimalité (cf. `#4048`) | Search-13 (A*), Part3-Advanced |
+| **Search** | `search_lean` | Consistance + heuristique admissible = optimalité (cf. `#4048`) | Search-13 (A*), Part3-Advanced |
 | **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | DecisionTheory/DecInfer-1..2 (VNM) + DecInfer-9 (Gittins) |
 | **QuantConnect** | `kelly_lean` | Kelly `g(f) ≤ g(f*)` + unicité (cf. `#4052`) | QuantConnect QC-Py-10 Risk Management |
 | **GameTheory** | `social_choice_lean` (Arrow) | Théorème d'impossibilité d'Arrow (cf. `arrow_lean`) | GameTheory/16b-* Choix social |
@@ -248,7 +248,7 @@ flowchart LR
         N6[GameTheory Vote social]
     end
     subgraph LEAN["Lakes Lean 4 (preuve)"]
-        L1["astar_lean<br/>optimalité"]
+        L1["search_lean<br/>optimalité"]
         L2["argumentation_lean<br/>extensions Dung"]
         L3["decision_theory_lean<br/>VNM"]
         L4["kelly_lean<br/>unicité"]

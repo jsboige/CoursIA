@@ -4,7 +4,7 @@ import Mathlib
 # Astar.Graph — weighted graphs, paths, cost of a path
 
 English mirror of `AStar/Graph.lean` (FR-first canonical), tranche 1 EPIC #4980
-(astar_lean). Convention i18n Lean ratified by ai-01 (2026-07-04, #4980
+(search_lean). Convention i18n Lean ratified by ai-01 (2026-07-04, #4980
 comment-4881909354): distinct FR + EN sibling files in the same lake, both
 compile; namespace `Astar_en` (anti-collision with FR `Astar`); non-docstring
 content byte-identical (CI drift-detectable); EN docstrings manually translated.

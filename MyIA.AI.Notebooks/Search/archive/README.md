@@ -25,7 +25,7 @@ Ce répertoire contient les anciennes versions des notebooks Python qui se trouv
 
 - **Part1-Foundations/** : 11 notebooks (Search-1 à Search-11), couverture exhaustive incluant uninformed + informed + variantes (IDA*, SMA*, RBFS) + benchmarks.
 - **Part2-CSP/** : 9 notebooks (CSP-1 à CSP-9), couverture CSPs du fondamental aux techniques avancées (AC-3, forward checking, MAC, recherche locale).
-- **Recherche linéaire dans la racine** : `find MyIA.AI.Notebooks/Search/ -maxdepth 1 -name "*.ipynb" -not -path "*/archive/*"` ne renvoie plus que les sous-répertoires `Part1-Foundations/`, `Part2-CSP/`, `Part3-Advanced/`, `Part4-Metaheuristics/`, `astar_lean/`, `archive/` (C204-PR #5187) et (C205-PR #5193) ont déjà migré les autres familles.
+- **Recherche linéaire dans la racine** : `find MyIA.AI.Notebooks/Search/ -maxdepth 1 -name "*.ipynb" -not -path "*/archive/*"` ne renvoie plus que les sous-répertoires `Part1-Foundations/`, `Part2-CSP/`, `Part3-Advanced/`, `Part4-Metaheuristics/`, `search_lean/`, `archive/` (C204-PR #5187) et (C205-PR #5193) ont déjà migré les autres familles.
 
 ## Référence historique
 

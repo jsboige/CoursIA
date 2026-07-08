@@ -711,7 +711,7 @@ GameTheory occupe une place à part dans la couche Lean : c'est la famille qui a
 | **GameTheory** (matching) | `stable_marriage_lean` | Gale-Shapley : existence + optimalité côté proposant | Notebooks 16-2 (matching, Gale-Shapley) |
 | **GameTheory** (jeux répétés) | `repeated_games_lean` | Stratégie grim-trigger **certifiée 0 sorry** (compagnon formel GT-6c, cf #4880) ; stretch restant : théorème Folk complet (`Folk.lean`) | Notebook 6c (RepeatedGames-FolkTheorem) |
 | **GameTheory** (jeux combinatoires) | `conway_cgt_lean` | Visite guidée (`#check`) de la théorie des jeux combinatoires (Conway CGT) | Notebooks 8/8b (CombinatorialGames, Sprague-Grundy) |
-| **Search** (cross-famille) | `astar_lean` (cf. `#4048`) | Consistance + heuristique admissible = optimalité | Search-13 (A*), branchement par preuve de correction |
+| **Search** (cross-famille) | `search_lean` (cf. `#4048`) | Consistance + heuristique admissible = optimalité | Search-13 (A*), branchement par preuve de correction |
 | **QuantConnect** (cross-famille) | `kelly_lean` (cf. `#4052`) | Kelly `g(f) ≤ g(f*)` + unicité | QC-Py-10 Risk Management, branchement par fraction risquée |
 
 ```mermaid

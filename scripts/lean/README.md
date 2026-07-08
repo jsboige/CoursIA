@@ -75,7 +75,7 @@ GameTheory/stable_marriage_lean
 ML/learning_theory_lean
 Probas/decision_theory_lean
 QuantConnect/kelly_lean
-Search/astar_lean
+Search/search_lean
 Sudoku/sudoku_lean
 SymbolicAI/Lean/calibration_lean
 SymbolicAI/Lean/conway_lean

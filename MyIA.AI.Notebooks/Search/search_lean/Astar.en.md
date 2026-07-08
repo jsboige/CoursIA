@@ -1,13 +1,13 @@
 # Astar — English documentation companion
 
 > **Convention.** This file is the **English translation of docstrings** in the
-> `astar_lean` lake. It is a **non-compiled Markdown companion** to the Lean 4
+> `search_lean` lake. It is a **non-compiled Markdown companion** to the Lean 4
 > sources — the **French `.lean` source remains the single source of truth** and
 > is unchanged. Tactical `--` comments inside proof bodies are **not** mirrored
 > (they remain French-only, tactic-bound). Module docstrings (`/-! ... -/`) and
 > per-declaration docstrings (`/-- ... -/`) are translated.
 >
-> Source lake: [`MyIA.AI.Notebooks/Search/astar_lean/`](./).
+> Source lake: [`MyIA.AI.Notebooks/Search/search_lean/`](./).
 > Companion convention: PR #4980 rollout, option B (user decision 2026-07-02),
 > pilot = PR #4998 (sudoku_lean). See #1650 (multilingual documentation EPIC).
 

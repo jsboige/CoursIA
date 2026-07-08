@@ -329,7 +329,7 @@ project:
     - "MyIA.AI.Notebooks/README.md"
     - "MyIA.AI.Notebooks/RL/README.md"
     - "MyIA.AI.Notebooks/Search/Applications/README.md"
-    - "MyIA.AI.Notebooks/Search/astar_lean/README.md"
+    - "MyIA.AI.Notebooks/Search/search_lean/README.md"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/README.md"
     - "MyIA.AI.Notebooks/Search/Part2-CSP/README.md"
     - "MyIA.AI.Notebooks/Search/Part3-Advanced/README.md"

@@ -13,7 +13,7 @@ n'entrent pas dans ce compte ; cf.
 
 | Lake | Toolchain | sorry (production) | Modules | Notebook câblé | Classe | Suivi |
 |------|-----------|--------------------:|--------:|---------------:|--------|-------|
-| `astar_lean` | v4.31.0-rc1 | 0 | 5 | 0¹ | PEDA/REF | #4048, #4038, #3801 |
+| `search_lean` | v4.31.0-rc1 | 0 | 5 | 0¹ | PEDA/REF | #4048, #4038, #3801 |
 | **Total** | — | **0** | **5** | — | — | — |
 
 ¹ Aucun notebook Lean dédié. Companion conceptuel = la série **Search** (CSP/Foundations,
@@ -26,7 +26,7 @@ dégénère en BFS.
 
 ## Par lake
 
-### astar_lean — PEDAGOGIQUE / REFERENCE
+### search_lean — PEDAGOGIQUE / REFERENCE
 
 **Objectif** : correction de l'algorithme A* sous une heuristique **admissible** puis
 **consistante**. Lake de la série Search (roadmap #4038 Tier 1, #4048), déployé en 3 phases
