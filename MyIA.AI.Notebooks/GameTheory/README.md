@@ -74,6 +74,23 @@ Cette série mobilise plusieurs couches de l'écosystème MCP du cluster, et ent
 5. **Raisonner** sur l'agrégation collective : Arrow, Sen, Condorcet/Borda/Copeland, encodage SAT/Z3
 6. **Formaliser** ces résultats en Lean 4 — du point fixe de Brouwer à l'axiomatique de Shapley et à la preuve d'Arrow
 
+## Aperçu — la théorie des jeux en images
+
+Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #5654). Elles balayent l'arc de la série : de la topologie des jeux 2×2 (forme normale) aux équilibres parfaits en sous-jeux (forme extensive), jusqu'aux dynamiques d'apprentissage multi-agents et à l'attribution cooperative par la valeur de Shapley. La provenance exacte de chaque figure est documentée dans `assets/readme/MANIFEST.md`.
+
+<table>
+<tr>
+<td align="center"><b>Panorama & forme normale</b><br><a href="GameTheory-1-Setup.ipynb"><img width="290" alt="Mise en place : panorama des interactions stratégiques et des outils de la théorie des jeux." src="assets/readme/gt1-setup.png"></a></td>
+<td align="center"><b>Topologie 2×2</b><br><a href="GameTheory-2-NormalForm.ipynb"><img width="290" alt="Forme normale : topologie des jeux 2x2 et classification stratégique (coordination, duel, asymétrie)." src="assets/readme/gt2-normalform.png"></a></td>
+<td align="center"><b>Équilibre parfait (SPE)</b><br><a href="GameTheory-10-ForwardInduction-SPE.ipynb"><img width="290" alt="Induction avant : équilibre parfait en sous-jeux sur la forme extensive d'un jeu séquentiel." src="assets/readme/gt10-spe.png"></a></td>
+</tr>
+<tr>
+<td align="center"><b>Information imparfaite (CFR)</b><br><a href="GameTheory-13-ImperfectInfo-CFR.ipynb"><img width="290" alt="Information imparfaite : arbre de jeu et Counterfactual Regret Minimization (CFR) pour le poker." src="assets/readme/gt13-cfr.png"></a></td>
+<td align="center"><b>Valeur de Shapley</b><br><a href="GameTheory-15-CooperativeGames.ipynb"><img width="290" alt="Jeux coopératifs : valeur de Shapley et son attribution équitable aux joueurs selon leurs contributions marginales." src="assets/readme/gt15-shapley.png"></a></td>
+<td align="center"><b>Apprentissage multi-agent</b><br><a href="GameTheory-17-MultiAgent-RL.ipynb"><img width="290" alt="Apprentissage multi-agent : dynamiques de convergence d'agents en reinforcement learning (MARL)." src="assets/readme/gt17-marl.png"></a></td>
+</tr>
+</table>
+
 ## Parcours d'apprentissage
 
 ### Phase 1 : Jeux statiques et équilibres (Notebooks 1-6 + side tracks b/c, ~8h30)
