@@ -33,6 +33,23 @@ Avoir ces trois angles permet de comprendre que le ML n'est pas lié à un langa
 4. **Intégrer** des agents LLM dans un workflow data science (analyse automatisée, parsing, recommandation)
 5. **Déployer** un modèle en production (export ONNX, interop Python/.NET, BigQuery ML)
 
+## Aperçu — le machine learning en images
+
+Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #5654). Elles balayent les trois fils de la série : les fondations Python (Pandas, visualisation), le pipeline ML.NET (régression, séries temporelles, clustering) et l'angle émergent des agents data-science (Google ADK). La provenance exacte de chaque figure est documentée dans `assets/readme/MANIFEST.md`.
+
+<table>
+<tr>
+<td align="center"><b>Fondations Pandas</b><br><a href="DataScienceWithAgents/PythonAgentsForDataScience/Day1/Labs/Lab1-PythonForDataScience.ipynb"><img width="290" alt="Fondations Python pour la data science : visualisation exploratoire des ventes (graphiques Matplotlib) sur un échantillon tabulaire." src="assets/readme/lab1-foundations.png"></a></td>
+<td align="center"><b>Visualisation (Seaborn)</b><br><a href="DataScienceWithAgents/PythonAgentsForDataScience/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb"><img width="290" alt="Visualisation de données : évolution journalière du chiffre d'affaires agrégé, tracée avec Seaborn sur un dataframe Pandas." src="assets/readme/lab5-viz.png"></a></td>
+<td align="center"><b>Régression (scikit-learn)</b><br><a href="ML.Net/ML-1-Introduction-Python.ipynb"><img width="290" alt="Régression linéaire : droite apprise par scikit-learn superposée aux données d'entraînement et de test (prix immobiliers)." src="assets/readme/ml1-intro.png"></a></td>
+</tr>
+<tr>
+<td align="center"><b>Séries temporelles (STL)</b><br><a href="ML.Net/ML-5-TimeSeries-Python.ipynb"><img width="290" alt="Décomposition STL d'une série temporelle : signal observé, tendance, composante saisonnière (période 7 hebdomadaire) et résidus." src="assets/readme/ml5-timeseries.png"></a></td>
+<td align="center"><b>Clustering (K-Means)</b><br><a href="ML.Net/ML-8-Clustering-Python.ipynb"><img width="290" alt="Clustering K-Means : restitution des 3 segments cachés (Dormants, Réguliers, VIP) sans supervision, projetés sur deux variables." src="assets/readme/ml8-clustering.png"></a></td>
+<td align="center"><b>Agent data-science (ADK)</b><br><a href="DataScienceWithAgents/AgenticDataScience/Day4-Foundations/Lab9-First-ADK-Agent.ipynb"><img width="290" alt="Premier agent ADK : un agent du Agent Development Kit génère et exécute du code Matplotlib (revenu par produit) via sa boucle d'outils." src="assets/readme/lab9-adk.png"></a></td>
+</tr>
+</table>
+
 ## Parcours d'apprentissage
 
 ### Track A : ML.NET (.NET/C#, 9 notebooks C# ML-1 à ML-9 et leurs 9 jumeaux Python + 1 TP capstone, ~7h)
