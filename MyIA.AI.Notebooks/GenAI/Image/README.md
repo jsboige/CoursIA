@@ -21,6 +21,23 @@ L'objectif fil rouge de cette série est de construire un système capable de pr
 
 La structure détaillée (notebooks par niveau, contenu, services utilisés) est listée plus bas. Le décompte canonique réside dans `CATALOG-STATUS.json` du dépôt.
 
+## Aperçu — la génération d'images en images
+
+Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #5654). Elles couvrent les quatre familles de la série : génération cloud (DALL-E 3, GPT-5), modèles locaux avancés (SD XL Turbo, FLUX.1, Lumina2), édition d'images existantes (Qwen Image Edit) et orchestration de workflows multi-nœuds via ComfyUI. La provenance exacte de chaque figure est documentée dans `assets/readme/MANIFEST.md`.
+
+<table>
+<tr>
+<td align="center"><b>DALL-E 3 (cloud)</b><br><a href="01-Foundation/01-1-OpenAI-DALL-E-3.ipynb"><img width="290" alt="Couverture : portrait illustré généré par DALL-E 3 depuis un prompt textuel." src="assets/readme/dalle3-cover.webp"></a></td>
+<td align="center"><b>SD XL Turbo (local)</b><br><a href="01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb"><img width="290" alt="Image SD XL Turbo : génération locale rapide via ComfyUI sur GPU auto-hébergé." src="assets/readme/forge-sdxl-turbo.webp"></a></td>
+<td align="center"><b>Qwen Image Edit</b><br><a href="01-Foundation/01-5-Qwen-Image-Edit.ipynb"><img width="290" alt="Édition Qwen Image Edit : panneau avant/après d'inpainting sur une zone masquée." src="assets/readme/qwen-edit-panel.png"></a></td>
+</tr>
+<tr>
+<td align="center"><b>FLUX.1 (avancé)</b><br><a href="02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb"><img width="290" alt="Génération FLUX.1 : rendu photo-réaliste haute qualité avec contrôle de prompt avancé." src="assets/readme/flux1-advanced.webp"></a></td>
+<td align="center"><b>Z-Image / Lumina2</b><br><a href="02-Advanced/02-4-Z-Image-Lumina2.ipynb"><img width="290" alt="Z-Image / Lumina2 : génération diffuse alternative, comparée aux modèles précédents." src="assets/readme/lumina2-zimage.webp"></a></td>
+<td align="center"><b>Workflow ComfyUI</b><br><a href="03-Orchestration/03-2-Workflow-Orchestration.ipynb"><img width="290" alt="Workflow ComfyUI orchestré : chaîne de nœuds (Sampler, VAE, upscaler) pour un pipeline de production." src="assets/readme/workflow-orchestration.png"></a></td>
+</tr>
+</table>
+
 ## Structure
 
 ```
