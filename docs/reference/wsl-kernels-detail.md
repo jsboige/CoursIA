@@ -88,17 +88,17 @@ Le wrapper Python v6 `~/.lean4-kernel-wrapper.py` (source dans le dépôt : `MyI
 - `#check Sensitivity.f_squared` → `(f n) ((f n) v) = ↑n • v`
 - `#print axioms Sensitivity.huang_degree_theorem` → **depends on axioms: [propext, Classical.choice, Quot.sound]** (0 sorry, pas de `sorryAx`)
 
-**Prérequis** : (1) le wrapper v6 (`find_lake_root` chdir vers le lakefile ancêtre) pour que le kernel hérite le cwd du lake, (2) un repl binaire matchant la toolchain du lake (`~/.elan/bin/repl` est stable-locked ; rc1/rc2 lakes ont besoin d'un repl matché), (3) le patch `lean4_jupyter/repl.py` `launch()`. Le script `scripts/lean/setup_native_lean4_import.py` automatise le patch (idempotent + backup) + le build de repl par toolchain (`build-repl v4.30.0-rc2` / `v4.31.0-rc1`).
+**Prérequis** : (1) le wrapper v6 (`find_lake_root` chdir vers le lakefile ancêtre) pour que le kernel hérite le cwd du lake, (2) un repl binaire matchant la toolchain du lake (`~/.elan/bin/repl` est stable-locked ; rc1/rc2 lakes ont besoin d'un repl matché), (3) le fork `jsboige/lean4_jupyter@v0.0.1-native-import` qui intègre le patch `lean4_jupyter/repl.py` `launch()` (direct-launch REPL + `LEAN_PATH`). Le script `scripts/lean/setup_native_lean4_import.py` automatise l'install du fork + le build de repl par toolchain (`build-repl v4.30.0-rc2` / `v4.31.0-rc1`).
 
 **Setup** :
 
 ```powershell
+python scripts/lean/setup_native_lean4_import.py install      # install fork jsboige/lean4_jupyter@v0.0.1-native-import (durable — remplace patch)
 python scripts/lean/setup_native_lean4_import.py status        # état patch + repl toolchains
 python scripts/lean/setup_native_lean4_import.py build-repl v4.30.0-rc2   # build+install repl matché (~2 min)
-python scripts/lean/setup_native_lean4_import.py patch         # patch repl.py (idempotent)
 ```
 
-**Note durabilité (gate ai-01/user)** : le patch modifie le package pip `lean4_jupyter` (perdu au prochain `pip install`). Solution durable = fork lean4_jupyter ou PR upstream. Le script rend le patch reproductible (idempotent, backup `.bak.native`), mais c'est un débloqueur local, pas une solution upstream.
+**Note durabilité — RÉSOLU (fork `jsboige/lean4_jupyter@v0.0.1-native-import`, #4394)** : le fork intègre le patch direct-launch directement dans `lean4_jupyter/repl.py`, donc il **survit à un `pip install`/reinstall propre** (le gap de durabilité antérieur est fermé). Le sous-script `install` fait `pip install --force-reinstall --no-deps git+https://github.com/jsboige/lean4_jupyter.git@v0.0.1-native-import` dans le venv `~/.lean4-venv`. Le sous-script `patch` (in-place, idempotent + backup `.bak.native`) reste disponible comme **fallback offline** (machine sans accès GitHub), mais n'est plus le chemin canonique. Source unique du patch : les constantes `REPL_PY_ORIGINAL` / `REPL_PY_PATCH` du setup script, reflétées dans le fork — `status` détecte le patch par le marqueur `_find_lake_root` quelle que soit la voie d'install.
 
 ### Diagnostic manuel (commandes)
 

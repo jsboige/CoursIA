@@ -25,7 +25,8 @@ stable-locked; rc1/rc2 lakes need a matched REPL — see ``build-repl``).
 USAGE
 -----
     python scripts/lean/setup_native_lean4_import.py status        # what's patched/installed
-    python scripts/lean/setup_native_lean4_import.py patch         # patch repl.py (idempotent, backup)
+    python scripts/lean/setup_native_lean4_import.py install       # install durable fork (replaces in-place patch)
+    python scripts/lean/setup_native_lean4_import.py patch         # [legacy] patch repl.py in-place (offline fallback)
     python scripts/lean/setup_native_lean4_import.py build-repl v4.30.0-rc2
     python scripts/lean/setup_native_lean4_import.py --check
 
@@ -47,6 +48,13 @@ REPL_TOOLCHAIN_TAGS = {
     "v4.30.0-rc2": "repl-4.30.0-rc2",
     "v4.31.0-rc1": "repl-4.31.0-rc1",
 }
+# Durable fork of utensil/lean4_jupyter baking the direct-launch patch directly into
+# repl.py (survives a clean ``pip install``/reinstall, closing the durability gap of the
+# in-place ``patch``). The fork repl.py is the single runtime source of the patch; the
+# ``REPL_PY_PATCH`` constant below mirrors it verbatim for the legacy offline fallback.
+# See issue #4394.
+FORK_URL = "git+https://github.com/jsboige/lean4_jupyter.git"
+FORK_TAG = "v0.0.1-native-import"
 # Marker present in repl.py once patched (idempotency check).
 PATCH_MARKER = "_find_lake_root"
 
@@ -142,6 +150,30 @@ def _find_repl_py():
     return path or None
 
 
+def cmd_install():
+    """Install the durable fork ``jsboige/lean4_jupyter@v0.0.1-native-import`` into the
+    WSL lean4 venv. The fork bakes the direct-launch patch into ``lean4_jupyter/repl.py``
+    itself, so native Mathlib-lake import survives a clean reinstall — this replaces the
+    in-place ``patch`` (which was lost on every ``pip install``)."""
+    spec = f"{FORK_URL}@{FORK_TAG}"
+    # --force-reinstall: the patched fork must replace any prior upstream lean4_jupyter.
+    # --no-deps: pexpect etc. are already satisfied in ~/.lean4-venv; avoid dependency churn.
+    cmd = f"~/.lean4-venv/bin/pip install --force-reinstall --no-deps {spec}"
+    print(f"installing durable fork {spec} ...")
+    r = _wsl(cmd, timeout=300)
+    print((r.stdout or r.stderr or "").strip()[-1200:])
+    rp = _find_repl_py()
+    if not rp:
+        print("ERROR: lean4_jupyter/repl.py not found after install", file=sys.stderr)
+        return 1
+    chk = _wsl(f"grep -q '{PATCH_MARKER}' {rp} && echo PATCHED || echo UNPATCHED", timeout=20)
+    state = chk.stdout.strip()
+    print("post-install patch state:", state)
+    rc = _wsl(f"/home/*/.lean4-venv/bin/python3 -m py_compile {rp} && echo OK", timeout=30)
+    print("py_compile:", (rc.stdout or rc.stderr or "").strip())
+    return 0 if state == "PATCHED" else 1
+
+
 def cmd_status():
     rp = _find_repl_py()
     print("== native lean4-wsl Mathlib import — status ==")
@@ -228,13 +260,15 @@ def cmd_build_repl(tag):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("command", nargs="?", choices=["status", "patch", "build-repl"],
+    ap.add_argument("command", nargs="?", choices=["install", "status", "patch", "build-repl"],
                     default="status")
     ap.add_argument("tag", nargs="?", help="toolchain tag for build-repl (e.g. v4.30.0-rc2)")
     ap.add_argument("--check", action="store_true", help="alias for status")
     args = ap.parse_args()
     if args.check or args.command == "status":
         return cmd_status()
+    if args.command == "install":
+        return cmd_install()
     if args.command == "patch":
         return cmd_patch()
     if args.command == "build-repl":
