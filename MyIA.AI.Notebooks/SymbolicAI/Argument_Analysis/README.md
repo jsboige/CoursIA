@@ -281,26 +281,21 @@ Le pipeline mobilise un vocabulaire issu de trois traditions — la rhétorique 
 
 ## Statistiques catalogue à jour
 
-Lecture `CATALOG-STATUS` byte-identique (l. 3-8) :
-
-```
-series: SymbolicAI-Argument_Analysis
-pedagogical_count: 17
-breakdown: Argument_Analysis=17
-maturity: PRODUCTION=12, BETA=4, ALPHA=1
-```
+Lecture `CATALOG-STATUS` byte-identique (l. 3-8) : la valeur canonique `pedagogical_count: 18` (et non un re-affichage dérivé) est la **source de vérité** ; le breakdown par sous-série ci-dessous ré-aligne la prose sur le marqueur canonique header (catalog-pr-hygiene R1 = marqueur canonique byte-identique, pas de re-affichage dérivé).
 
 | Sous-série | Notebooks | Maturité | Contenu clé |
 |------------|-----------|----------|-------------|
-| **00-Setup** | 2 | PRODUCTION=2, BETA=0 | Chargement env (JDK 17 portable via `install_jdk_portable.py`, 76 JARs Tweety, démarrage JVM fail-loud + smoke test), config `OPENAI_API_KEY` + `GLOBAL_LLM_SERVICE` |
+| **00-Setup** | 2 | PRODUCTION=2, BETA=0 | Chargement env (JDK 17 portable via `install_jdk_portable.py`, 76 JARs Tweety, démarrage JVM fail-loud + smoke test), config `OPENAI_API_KEY` + `GLOBAL_LLM_SERVICE` ; représenté par `Agentic-0-init` + `Agentic-0-init_agent` |
 | **01-Pipeline agentique (Agentic-N)** | 8 | PRODUCTION=4, BETA=4 | Pipeline principal 0 → 1 → 2 → 3 → 4 (capstone) → 5 (JTMS), agents legacy `*_agent` marqués BETA (semantic_kernel standalone, superseded par SK intégré dans Agentic-N) |
-| **02-Argumentation computationnelle** | 4 | PRODUCTION=4, BETA=0 | Dung AF sémantiques grounded/preferred/stable reconstruites de zéro, Ranking semantics (h-Categoriser + fardeau), Multi_Backend_Routing avec sentinelle « décider ou échouer bruyamment » (Tweety + prouveurs externes EProver/Mace4), Formal_Richness_Matrix anti-théâtre (4 classes de verdict) |
+| **02-Argumentation computationnelle** | 5 | PRODUCTION=5, BETA=0 | Dung AF sémantiques grounded/preferred/stable reconstruites de zéro, Ranking semantics (h-Categoriser + fardeau), Multi_Backend_Routing avec sentinelle « décider ou échouer bruyamment » (Tweety + prouveurs externes EProver/Mace4), Formal_Richness_Matrix anti-théâtre (4 classes de verdict), ArgumentProfile (modélisation d'arguments + attaques) |
 | **03-Restitution honnête** | 1 | PRODUCTION=1, BETA=0 | `Restitution_3_Actes` : scaffold déterministe pur stdlib (evidence réel-en-état, bande de verdict *gated*, gate de lisibilité §4) + narration LLM *gated* (SDK OpenAI, clé via `GenAI/.env`, prompts conduits, fail-loud sans clé) |
 | **04-Interface & widgets** | 1 | PRODUCTION=0, BETA=0, ALPHA=1 | `UI_configuration` : ipywidgets exploratoires (état alpha — interphase optionnelle, le pipeline reste utilisable sans via `Executor`) |
 | **05-Orchestration batch** | 1 | PRODUCTION=1, BETA=0 | `Executor` : point d'entrée unique Papermill/MCP, mode `BATCH_MODE=true` configurable via `.env`, sortie JSON `output/analysis_report.json` |
-| **Total** | **17** | **PRODUCTION=12, BETA=4, ALPHA=1** | Python 3.9+, kernel Python 3, JDK 17 portable (auto-install), TweetyProject Java/JPype, Semantic Kernel Python, OpenAI SDK, ontologies OWL (data/) |
+| **Total** | **18** | **PRODUCTION=13, BETA=4, ALPHA=1** | Python 3.9+, kernel Python 3, JDK 17 portable (auto-install), TweetyProject Java/JPype, Semantic Kernel Python, OpenAI SDK, ontologies OWL (data/) |
 
-**Note explicite maturité mixte** : le statut BETA sur les 4 agents legacy (`*_agent`) reflète leur **supersession par le pipeline Agentic-N intégré** (Semantic Kernel absorbé dans `Agentic-3-orchestration` + `Agentic-4-capstone`), pas un défaut technique — les notebooks legacy restent fonctionnels et servent de référence historique. Le statut ALPHA sur `UI_configuration` marque une **exploration widgets** non bloquante : le pipeline de production ne dépend pas de l'UI, le mode batch via `Executor` suffit. La maturité **PRODUCTION=12** couvre l'intégralité du pipeline critique (extraction → formalisation → validation Tweety → orchestration → JTMS → Dung/Ranking → routing → matrice → restitution → batch), ce qui rend la série immédiatement opérationnelle pour des cas d'usage réels (modération, fact-checking, audit LLM).
+> **Note d'audit §E** : la table **« Statistiques catalogue à jour »** a été re-alignée sur le marqueur canonique `CATALOG-STATUS` (l. 3-8, `pedagogical_count: 18`, `maturity: PRODUCTION=13, BETA=4, ALPHA=1`). Le re-affichage dérivé `pedagogical_count: 17` présent dans la version précédente était un **artefact de re-génération locale non canonique** (catalog-pr-hygiene R1 = JAMAIS régénérer un second marqueur sur la branche) ; la **source de vérité** reste le marqueur header. Le breakdown par sous-série passe de 17 → 18 par ajout explicite d'`ArgumentProfile` dans 02-Argumentation computationnelle (qui était omis, faussant le compte). Si un futur passage du cron `catalog-cron.yml` ré-aligne différemment, le résultat sera visible dans la CI par-PR `catalog-drift.yml` — **on ne re-génère PAS sur cette branche**.
+
+**Note explicite maturité mixte** : le statut BETA sur les 4 agents legacy (`*_agent`) reflète leur **supersession par le pipeline Agentic-N intégré** (Semantic Kernel absorbé dans `Agentic-3-orchestration` + `Agentic-4-capstone`), pas un défaut technique — les notebooks legacy restent fonctionnels et servent de référence historique. Le statut ALPHA sur `UI_configuration` marque une **exploration widgets** non bloquante : le pipeline de production ne dépend pas de l'UI, le mode batch via `Executor` suffit. La maturité **PRODUCTION=13** couvre l'intégralité du pipeline critique (extraction → formalisation → validation Tweety → orchestration → JTMS → Dung/Ranking → routing → matrice → restitution → batch), ce qui rend la série immédiatement opérationnelle pour des cas d'usage réels (modération, fact-checking, audit LLM).
 
 **Conformité C.1 (stubs sans erreur volontaire)** : tous les notebooks utilisent les patterns conformes (`pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`) — **jamais** `raise NotImplementedError` / `assert False` / `1/0` (règle C.1 user 2026-04-26). Le notebook s'exécute de bout en bout même avec les exercices non complétés (mode batch `COMPLETE_VALIDATED` dégradé en `PARTIAL_VALIDATED` sur stub, jamais en exception).
 
