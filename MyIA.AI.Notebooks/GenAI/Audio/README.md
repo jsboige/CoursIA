@@ -25,6 +25,25 @@ Là où les séries Texte et Image traitent des signaux discrets (tokens, pixels
 
 L'objectif fil rouge de cette série est de construire un podcast entièrement généré par IA. Chaque niveau apporte une brique supplémentaire : TTS pour donner une voix au contenu (niveau 1), clonage vocal et musique pour l'identité sonore (niveau 2), pipelines STT vers LLM vers TTS pour l'assemblage (niveau 3), et workflows de production pour le déploiement (niveau 4).
 
+## Aperçu — la génération audio en images
+
+Six visualisations extraites des notebooks illustrent l'arc complet de la série, du signal audio brut et de son spectre jusqu'à la séparation de sources par Demucs et aux benchmarks de voix TTS en production.
+
+<table>
+<tr>
+<td align="center"><b>1 · Signal audio</b><br><a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio1-waveform.png" width="290" alt="Forme d'onde : échantillonnage d'un signal audio continu et visualisation temporelle."></a></td>
+<td align="center"><b>2 · Spectre</b><br><a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio2-spectrogram.png" width="290" alt="Spectrogramme et MFCC : décomposition temps-fréquence du signal pour la reconnaissance vocale."></a></td>
+<td align="center"><b>3 · STT/TTS</b><br><a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio3-stt-tts.png" width="290" alt="Reconnaissance (STT) et synthèse (TTS) : transcription et génération vocale appliquées au même flux."></a></td>
+</tr>
+<tr>
+<td align="center"><b>4 · Demucs</b><br><a href="02-Advanced/02-4-Demucs-Source-Separation.ipynb"><img src="assets/readme/audio4-demucs.png" width="290" alt="Séparation de sources : Demucs isole voix, batterie, basse et autre à partir d'un mix stéréo."></a></td>
+<td align="center"><b>5 · Multi-modèles</b><br><a href="03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb"><img src="assets/readme/audio5-multimodel.png" width="290" alt="Comparaison de modèles audio : plusieurs voies STT/TTS évaluées côte à côte dans un pipeline."></a></td>
+<td align="center"><b>6 · Benchmark TTS</b><br><a href="04-Applications/04-7-TTS-Voice-Benchmark.ipynb"><img src="assets/readme/audio6-tts-benchmark.png" width="290" alt="Benchmark de voix TTS : qualité, naturel et latence comparés en vue d'un déploiement en production."></a></td>
+</tr>
+</table>
+
+Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Structure
 
 ```
