@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Sudoku
-pedagogical_count: 35
-breakdown: root=35
-maturity: PRODUCTION=30, BETA=4, ALPHA=1
+pedagogical_count: 36
+breakdown: root=36
+maturity: PRODUCTION=30, BETA=5, ALPHA=1
 -->
 
 [← Notebooks](../README.md) | [→ Search](../Search/README.md)

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory-SocialChoice
-pedagogical_count: 4
-breakdown: SocialChoice=4
-maturity: PRODUCTION=3, BETA=1
+pedagogical_count: 7
+breakdown: SocialChoice=7
+maturity: PRODUCTION=4, BETA=2, ALPHA=1
 -->
 
 La théorie du choix social étudie comment agréger des préférences individuelles en une décision collective. Ses résultats les plus célèbres sont des **théorèmes d'impossibilité** : le théorème d'Arrow (1951) montre qu'aucune règle de vote ne peut satisfaire simultanément des axiomes "raisonnables" (Pareto, IIA, non-dictature) dès que 3 alternatives ou plus sont en jeu ; le théorème de Sen (1970) démontre un conflit fondamental entre liberté individuelle et efficacité collective.
