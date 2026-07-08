@@ -23,10 +23,11 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-03 | [03-Voting-Methods](03-Voting-Methods.ipynb) | Méthodes de Vote et Paradoxes (Condorcet, Borda, Copeland, Downs) | 35 min | COMPLET |
 | SC-03 (C#) | [03-Voting-Methods-Csharp](03-Voting-Methods-Csharp.ipynb) | **Jumeau C#** — parité .NET du SC-03 (méthodes de vote) implémenté from-scratch en C# (.NET Interactive) (See #4956) | 35 min | PARITÉ |
 | SC-04 | [04-Computational-Aggregation-SAT-Z3](04-Computational-Aggregation-SAT-Z3.ipynb) | Agrégation Computationnelle : SAT et Z3 | 45 min | COMPLET |
+| SC-04 (C#) | [04-Computational-Aggregation-SAT-Z3-Csharp](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) | **Jumeau C#** — parité .NET du SC-04 (agrégation SAT/Z3) implémenté from-scratch en C# (.NET Interactive) (See #4956) | 45 min | PARITÉ |
 
 **Durée totale** : ~3h25
 
-> **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01) et [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ils ne sont pas comptés dans le `pedagogical_count` (ce sont des miroirs de parité, pas des notebooks pédagogiques distincts).
+> **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) et [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ils ne sont pas comptés dans le `pedagogical_count` (ce sont des miroirs de parité, pas des notebooks pédagogiques distincts).
 
 ## Parcours d'apprentissage
 
