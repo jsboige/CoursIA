@@ -53,6 +53,16 @@ Cette série montre que les deux approches ne s'opposent pas — elles se **comp
 | Durée estimée | ~680 min |
 | Prérequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-8, difflogic+torch pour SL-12, clé OpenRouter optionnelle pour SL-9/SL-11) |
 
+## Galerie — la série en trois figures
+
+Trois sorties réelles extraites des outputs committés des notebooks (EPIC #5654, provenance tracée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md)). Chacune illustre une capacité distinctive d'un moteur symbolique ou neuro-symbolique de la série.
+
+| Figure | Notebook source | Ce qu'elle montre |
+|--------|-----------------|-------------------|
+| ![Comparaison des 4 moteurs ILP sur ancestor/2](assets/readme/sl6-modernilp.png) | [SL-6-ModernILP.ipynb](SL-6-ModernILP.ipynb) (cell. 18) | Les **4 moteurs ILP réels** — Aleph (entailment inverse), Metagol (MIL), Popper (Learning From Failures), ∂ILP (différentiable) — face à face sur la même tâche récursive `ancestor/2`. On voit les clauses apprises par chaque moteur : la comparaison des machineries est l'objet même du notebook. |
+| ![Automate minimal appris par L*](assets/readme/sl10-angluin-lstar.png) | [SL-10-ActiveAutomataLearning.ipynb](SL-10-ActiveAutomataLearning.ipynb) (cell. 39) | L'**automate fini minimal** appris par l'algorithme L* d'Angluin — l'agent *interroge* un oracle (membership + équivalence) plutôt que de subir un échantillon, avec garantie de minimalité. Changement de paradigme : apprentissage *actif* vs passif. |
+| ![Réseau de portes logiques différentiables](assets/readme/sl12-difflogic.png) | [SL-12-DifferentiableLogicGateNetworks.ipynb](SL-12-DifferentiableLogicGateNetworks.ipynb) (cell. 11) | Un **réseau de portes logiques différentiables** (Petersen, NeurIPS 2022) : entraîné par descente de gradient sur des combinaisons de portes, puis discrétisé en un circuit booléen 100 % interprétable-par-construction. L'autre versant du neuro-symbolique. |
+
 ## Parcours d'apprentissage
 
 Le parcours progresse en six phases où **chacune répond à une limite de la précédente** — le bruit motive le recours à la connaissance, la rigidité logique motive la différentiabilité, l'opacité motive la provenance (thèse détaillée en conclusion) :
