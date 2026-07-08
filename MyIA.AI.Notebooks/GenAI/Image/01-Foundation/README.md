@@ -15,6 +15,27 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
 | Durée estimée | ~3-4h |
 | GPU requis | 0-29GB |
 
+## Aperçu — les modèles de base en images
+
+Ce module pose les fondamentaux : génération via API cloud (DALL-E 3), génération locale auto-hébergée (Stable Diffusion via Forge), et édition ciblée d'une image existante (Qwen Image Edit). La galerie ci-dessous présente des sorties réelles extraites des notebooks.
+
+<table>
+<tr>
+<td align="center"><img src="assets/readme/img1-dalle3.webp" alt="Génération DALL-E 3 via API OpenAI" width="400"/><br/><sub>DALL-E 3 API (01-1)</sub></td>
+<td align="center"><img src="assets/readme/img1-forge-gen.webp" alt="Génération SD XL Turbo via Forge" width="400"/><br/><sub>SD Forge (01-4)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/img1-forge-gen2.webp" alt="Génération SD Forge — variante" width="400"/><br/><sub>SD Forge variante (01-4)</sub></td>
+<td align="center"><img src="assets/readme/img1-forge-gen3.webp" alt="Génération SD Forge — composition" width="400"/><br/><sub>SD Forge composition (01-4)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/img1-qwen-edit.png" alt="Édition Qwen Image Edit — avant" width="400"/><br/><sub>Qwen Edit (01-5)</sub></td>
+<td align="center"><img src="assets/readme/img1-qwen-edit2.png" alt="Édition Qwen Image Edit — panorama" width="400"/><br/><sub>Qwen Edit panorama (01-5)</sub></td>
+</tr>
+</table>
+
+Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Notebooks
 
 | # | Notebook | Contenu | Service | VRAM |
