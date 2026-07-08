@@ -25,6 +25,25 @@ La thèse est volontairement classique : on ne peut évaluer ce qu'un agent gén
 | [2.7-Modeles-Non-Parametriques](2.7-Modeles-Non-Parametriques.ipynb) | SVM à noyau et k plus proches voisins | **Le kernel trick rendu visible** (linéaire vs RBF sur demi-lunes) | synthétique `make_moons` + réel `load_breast_cancer` |
 | [2.8-Theorie-PAC](2.8-Theorie-PAC.ipynb) | Théorie PAC : sample complexity et dimension VC | **La borne PAC prédit l'empirique** (m_min théorique vs courbe d'erreur) | synthétique `make_*` |
 
+## Aperçu — les concepts-phare en images
+
+Six figures extraites des notebooks rendent visible chacun des concepts-phare de la série, du surapprentissage rendu observable jusqu'à la structure retrouvée par l'ACP.
+
+<table>
+<tr>
+<td align="center"><b>2.1 · Surapprentissage</b><br><a href="2.1-Workflow-ML.ipynb"><img src="assets/readme/ml21-overfitting.png" width="290" alt="Surapprentissage rendu visible : la courbe de score (train vs test) diverge quand la profondeur de l'arbre croît."></a></td>
+<td align="center"><b>2.2 · Learning rate</b><br><a href="2.2-Descente-de-gradient.ipynb"><img src="assets/readme/ml22-learning-rate.png" width="290" alt="Effet du learning rate : trois régimes (trop lent, bon, divergent) sur la même fonction de coût."></a></td>
+<td align="center"><b>2.3 · Sigmoïde</b><br><a href="2.3-Regression-lineaire-logistique.ipynb"><img src="assets/readme/ml23-sigmoid.png" width="290" alt="Régression logistique : la sigmoïde transforme le score linéaire en probabilité (OLS vs MLE)."></a></td>
+</tr>
+<tr>
+<td align="center"><b>2.4 · Frontière</b><br><a href="2.4-Arbres-Forets-Ensembles.ipynb"><img src="assets/readme/ml24-frontiere.png" width="290" alt="Forêt aléatoire : la frontière de décision, escalier d'un arbre seul vs lissage par l'ensemble."></a></td>
+<td align="center"><b>2.5 · Courbe ROC</b><br><a href="2.5-Biais-Variance-CV-ROC.ipynb"><img src="assets/readme/ml25-roc.png" width="290" alt="Courbe ROC et AUC : le coût du seuil, arbitrage entre faux positifs et faux négatifs."></a></td>
+<td align="center"><b>2.6 · ACP</b><br><a href="2.6-Clustering-KMeans-PCA.ipynb"><img src="assets/readme/ml26-pca.png" width="290" alt="Réduction de dimension (ACP) : structure des chiffres retrouvée sans étiquettes en 2 composantes."></a></td>
+</tr>
+</table>
+
+Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, output, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## L'arc pédagogique
 
 Le fil rouge de la série : on pose le **workflow**, on ouvre les **boîtes noires** (descente de gradient, fonction de lien), on élargit la **famille de modèles** (linéaire/logistique, arbres, ensembles, SVM à noyau et k-NN), on formalise l'**évaluation** (biais-variance, validation croisée, ROC), puis l'on bascule en **non supervisé** (clustering, ACP), avant de clore par le **cadre théorique** (théorie PAC, dimension VC). Chaque notebook rend visible un concept-phare distinct.
