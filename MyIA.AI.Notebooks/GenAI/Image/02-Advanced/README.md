@@ -15,6 +15,27 @@ Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5
 | Durée estimée | ~5-7h |
 | GPU requis | 5-29GB |
 
+## Aperçu — les modèles avancés en images
+
+Ce module explore quatre familles de modèles de pointe. La galerie ci-dessous présente des sorties réelles extraites des notebooks : édition ciblée (Qwen Image Edit), génération photoréaliste (FLUX-1), prototypage rapide (Z-Image/Lumina2) et quantification extrême pour matériel modeste (Bonsai ternaire 1,58-bit).
+
+<table>
+<tr>
+<td align="center"><img src="assets/readme/img2-qwen-edit.png" alt="Édition Qwen Image Edit — panorama avant/après" width="400"/><br/><sub>Qwen Image Edit (02-1)</sub></td>
+<td align="center"><img src="assets/readme/img2-flux-gen.webp" alt="Génération FLUX-1 — image photoréaliste" width="400"/><br/><sub>FLUX-1 génération (02-2)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/img2-qwen-edit2.webp" alt="Édition Qwen — variante de prompt" width="400"/><br/><sub>Qwen Edit variante (02-1)</sub></td>
+<td align="center"><img src="assets/readme/img2-zimage-lumina.webp" alt="Génération Z-Image/Lumina2 — prototypage rapide" width="400"/><br/><sub>Z-Image/Lumina2 (02-4)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/img2-flux-gen2.png" alt="Génération FLUX-1 — composition alternative" width="400"/><br/><sub>FLUX-1 composition (02-2)</sub></td>
+<td align="center"><img src="assets/readme/img2-bonsai-ternary.png" alt="Bonsai ternaire 1,58-bit — génération efficace" width="400"/><br/><sub>Bonsai 1,58-bit (02-5)</sub></td>
+</tr>
+</table>
+
+Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Notebooks
 
 | # | Notebook | Contenu | Service | VRAM |
