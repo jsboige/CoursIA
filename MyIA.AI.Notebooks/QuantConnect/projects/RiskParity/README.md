@@ -11,6 +11,25 @@
 | Max Drawdown | 20.9 % |
 | Période | 2015-2026 |
 
+## Figures du notebook de recherche
+
+Le notebook [`research.ipynb`](research.ipynb) documente l'analyse complète de la parité de risque : exploration des actifs, inverse-volatility weighting (H1), backtest (H2), impact de TLT en 2020-2023 (H3), sensibilité au lookback de volatilité (H4) et analyse par régime de marché. La stratégie atteint un plafond structurel (Sharpe 0.399) — contre-exemple pédagogique. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+
+<table>
+<tr>
+<td align="center"><img src="assets/readme/rp-exploration.png" alt="Exploration des actifs" width="420"/><br/><sub>Exploration — analyse des actifs (§2)</sub></td>
+<td align="center"><img src="assets/readme/rp-h1-inversevol.png" alt="H1 inverse-vol" width="420"/><br/><sub>H1 — inverse-volatility weighting (égalisation des contributions)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/rp-h2-backtest.png" alt="H2 backtest risk parity" width="420"/><br/><sub>H2 — backtest risk parity</sub></td>
+<td align="center"><img src="assets/readme/rp-h3-tlt.png" alt="H3 impact TLT 2020-2023" width="420"/><br/><sub>H3 — impact de TLT en 2020-2023 (hausse des taux)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/rp-h4-lookback.png" alt="H4 lookback volatilité" width="420"/><br/><sub>H4 — sensibilité au lookback de volatilité</sub></td>
+<td align="center"><img src="assets/readme/rp-regime.png" alt="Analyse par régime" width="420"/><br/><sub>Régimes — analyse par régime de marché (§7)</sub></td>
+</tr>
+</table>
+
 ## Pourquoi cette stratégie a atteint un plafond
 
 ### Cause racine : anti-pattern en marché haussier
