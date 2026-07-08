@@ -18,7 +18,7 @@ The goal is to give learners a curated entry point into:
 
 ## Structure
 
-The formalization spans **23 modules (Parts 1-23, 3182 lines, 0 sorry)**, imported
+The formalization spans **24 modules (Parts 1-24, ~3350 lines, 0 sorry)**, imported
 in order by the umbrella `Grothendieck.lean`. Each module self-numbers via its header
 (`Grothendieck tribute — Part N`).
 
@@ -47,21 +47,22 @@ in order by the umbrella `Grothendieck.lean`. Each module self-numbers via its h
 | 21 | `Grothendieck/MayerVietorisSquare.lean` | Mayer-Vietoris squares | 195 |
 | 22 | `Grothendieck/SheafCohomology/MayerVietoris.lean` | Mayer-Vietoris long exact sequence | 164 |
 | 23 | `Grothendieck/SheafCohomology/Cech.lean` | Čech cohomology | 123 |
+| 24 | `Grothendieck/YonedaLemma.lean` | The Yoneda lemma (embedding, equivalence, naturality, fully-faithful, coyoneda) | 168 |
 
-The extension (Parts 6-23) was developed under Issue #2159 / Epic #1646 and is
-**complete**: all 23 modules merged, 0 `sorry`, 0 axiom added.
+The extension (Parts 6-24) was developed under Issue #2159 / Epic #1646 and is
+**complete**: all 24 modules merged, 0 `sorry`, 0 axiom added.
 
 ## Build
 
 ```bash
 # From this directory (WSL required)
 lake build Grothendieck
-# Builds all 23 modules (3182 lines)
+# Builds all 24 modules (~3350 lines)
 ```
 
 ## Sorry count
 
-**0 sorry, 0 axiom** — all 23 modules are complete at creation (Parts 1-23 merged).
+**0 sorry, 0 axiom** — all 24 modules are complete at creation (Parts 1-24 merged).
 
 ## Toolchain
 
@@ -90,9 +91,9 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 
 ## Conclusion
 
-This tribute is a **complete pedagogical tour** (23 modules, 3182 lines, 0 `sorry`,
+This tribute is a **complete pedagogical tour** (24 modules, ~3350 lines, 0 `sorry`,
 0 axiom added) showing how Grothendieck's language — sites, sheaves,
-sheafification, points, cohomology — already lives in Mathlib 4. It is
+sheafification, points, cohomology, Yoneda — already lives in Mathlib 4. It is
 deliberately **not** a formalization of EGA/SGA; it is a curated index that lets
 learners see the library through Grothendieckian eyes.
 
