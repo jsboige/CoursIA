@@ -603,13 +603,13 @@ maturity: PRODUCTION=27
 
 | Sous-série | Notebooks | Maturité | Contenu clé |
 |------------|-----------|----------|-------------|
-| **00-Foundations** | 4 | PRODUCTION=4, BETA=0 | Cryptographie primitive (hachage, Merkle, signatures, PoW), cypherpunks (Diffie-Hellman, Schnorr, ECDSA), gouvernance distribuée, histoire BTC/ETH |
-| **01-Solidity-Foundation** | 5 | PRODUCTION=5, BETA=0 | Solidity types/contrôles/Storage, héritage, ERC-20/ERC-721/ERC-1155, Foundry/Anvil local, déploiement et tests unitaires |
+| **00-Foundations** | 3 | PRODUCTION=3, BETA=0 | Cryptographie primitive (hachage, Merkle, signatures, PoW), cypherpunks (Diffie-Hellman, Schnorr, ECDSA), gouvernance distribuée, histoire BTC/ETH |
+| **01-Solidity-Foundation** | 4 | PRODUCTION=4, BETA=0 | Solidity types/contrôles/Storage, héritage, ERC-20/ERC-721/ERC-1155, Foundry/Anvil local, déploiement et tests unitaires |
 | **02-Solidity-Advanced** | 5 | PRODUCTION=5, BETA=0 | DeFi (DEX/AMM, lending, oracles), gouvernance DAO (ERC-20 snapshot, Governor Timelock), NFT avancé (royalties, ERC-2981), staking, LLM-assisted contracts |
 | **03-Foundry-Testing** | 3 | PRODUCTION=3, BETA=0 | Fuzzing Foundry (invariant testing, Echidna), tests intégration cross-contrats, **SC-14 vérification formelle (Certora + SMTChecker)** |
-| **04-Privacy-Cryptography** | 4 | PRODUCTION=4, BETA=0 | Zero-Knowledge Proofs (zk-SNARKs Groth16, Plonk, Halo2), chiffrement homomorphe (Paillier, BFV/BGV), vote E2E vérifiable (ElectionGuard, MACI) |
-| **05-Alternative-Chains** | 3 | PRODUCTION=3, BETA=0 | Vyper (alternative EVM), XRP Ledger (modèle UTXO différent), Bitcoin Script (limites intentionnelles), Move (Aptos/Sui resource-oriented), Solana (BPF parallèle) |
-| **06-Real-World** | 3 | PRODUCTION=3, BETA=0 | Cross-chain bridges (atomic swap, IBC, LayerZero), déploiement testnet/mainnet (Goerli/Sepolia), **SC-26 Final Project capstone** |
+| **04-Privacy-Cryptography** | 3 | PRODUCTION=3, BETA=0 | Zero-Knowledge Proofs (zk-SNARKs Groth16, Plonk, Halo2), chiffrement homomorphe (Paillier, BFV/BGV), vote E2E vérifiable (ElectionGuard, MACI) |
+| **05-Alternative-Chains** | 5 | PRODUCTION=5, BETA=0 | Vyper (alternative EVM), XRP Ledger (modèle UTXO différent), Bitcoin Script (limites intentionnelles), Move (Aptos/Sui resource-oriented), Solana (BPF parallèle) |
+| **06-Real-World** | 4 | PRODUCTION=4, BETA=0 | Cross-chain bridges (atomic swap, IBC, LayerZero), déploiement testnet/mainnet (Goerli/Sepolia), **SC-26 Final Project capstone** |
 | **Total** | **27** | **PRODUCTION=27** | Python 3.9+ (web3.py), Solidity ^0.8.x, Foundry stable (forge/anvil/cast), kernel Python 3 (exécution) |
 
 **Note explicite maturité 100% PRODUCTION** : la série SmartContracts est l'une des séries les plus matures du dépôt. Les 27 notebooks sont validés pour exécution locale (Foundry toolchain installée, Anvil local sur port 8545) et déploiement testnet (Goerli/Sepolia via Infura/Alchemy). Le seul prérequis non-Python est Foundry (`curl -L https://foundry.paradigm.xyz | bash` puis `foundryup`) qui installe `forge`/`anvil`/`cast`/`chisel` — toolchain SOTA-OK pour le développement Solidity professionnel.
