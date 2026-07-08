@@ -95,7 +95,7 @@ Suivez le même modèle dans les deux stacks pour comparer les approches :
 | Recommenders | Infer-12 | PyMC-12 | Factorisation bayésienne statique vs MCMC |
 | Debugging | Infer-13 | PyMC-13 | ShowFactorGraph vs trace plot diagnostics |
 | Causal Inference | Infer-14 | PyMC-14 | do-calculus message passing vs pm.do MCMC |
-| GP sparse | Infer-15 | PyMC-15 | EP marginal vs NUTS sur géométrie latente |
+| Modèles hiérarchiques | Infer-15 | PyMC-16 | Pooling partiel, shrinkage EP vs paramétrisation non-centrée NUTS (funnel) |
 
 #### Parcours applications (modèles concrets, ~6h)
 
@@ -253,8 +253,8 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 12 | Recommenders | Factorisation matricielle bayésienne MCMC |
 | 13 | Debugging | Trace plots, R-hat, effective sample size, bonnes pratiques MCMC |
 | 14 | Causal Inference | `pm.do`, do-calculus de Pearl, contrefactuel bayésien |
-| 15 | Sparse Gaussian Process | NUTS sur géométrie latente (cf. asymétrie structurelle Infer-15 EP) |
-| 16 | Modèles Hiérarchiques | Shrinkage bayésien, divergences NUTS sur le funnel |
+| 15 | Modèles Hiérarchiques | Shrinkage bayésien, divergences NUTS sur le funnel (cf. asymétrie structurelle Infer-15 EP) |
+| 16 | Sparse Gaussian Process | NUTS sur géométrie latente (cf. asymétrie structurelle Infer-16 EP) |
 | 17 | Kalman Filter | Value-add MCMC (estimation jointe Q/R/drift) |
 | 18 | Change-Point | Switch bayésien, catastrophes minières (Poisson) |
 | 19 | Survival Analysis | Weibull inféré directement, sélection LOO arviZ |
@@ -348,11 +348,11 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 
 ### Phase 5 — Frontières bayésiennes (notebooks 15-19, ~3.5h)
 
-> Ports Python des frontières bayésiennes de la série Infer (GP sparse 15, modèles hiérarchiques 16, filtre de Kalman 17, change-point 18, analyse de survie 19). Le notebook PyMC-15 (processus gaussiens) tourne en `> 15 min` sur la géométrie latente — asymétrie structurelle assumée avec l'EP rapide d'Infer.NET (cf. [PyMC/README.md](PyMC/README.md)).
+> Ports Python des frontières bayésiennes de la série Infer (modèles hiérarchiques 15, GP sparse 16, filtre de Kalman 17, change-point 18, analyse de survie 19). Le notebook PyMC-15 (processus gaussiens) tourne en `> 15 min` sur la géométrie latente — asymétrie structurelle assumée avec l'EP rapide d'Infer.NET (cf. [PyMC/README.md](PyMC/README.md)).
 
 | # | Notebook | Sujet |
 |---|----------|-------|
-| 15 | [PyMC-15-Sparse-Gaussian-Process](PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb) | Processus gaussien épars, NUTS sur inducing points, asymétrie structurelle avec Infer-15 EP |
+| 15 | [PyMC-15-Sparse-Gaussian-Process](PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb) | Processus gaussien épars, NUTS sur inducing points, asymétrie structurelle avec Infer-16 EP |
 | 16 | [PyMC-16-Modeles-Hierarchiques](PyMC/PyMC-16-Modeles-Hierarchiques.ipynb) | Partial pooling bayésien, shrinkage, paramétrisation non-centrée, divergences NUTS comme diagnostic du funnel |
 | 17 | [PyMC-17-Kalman-Filter](PyMC/PyMC-17-Kalman-Filter.ipynb) | Système dynamique linéaire gaussien, récursion de filtrage fermée, value-add MCMC (estimation jointe Q/R/drift) |
 | 18 | [PyMC-18-Change-Point](PyMC/PyMC-18-Change-Point.ipynb) | Change-point bayésien, `DiscreteUniform` + `switch`, catastrophes minières (Poisson), entropie |
