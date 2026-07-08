@@ -103,6 +103,50 @@ La série propose délibérément deux stacks en parité (.NET ⇄ Python, marat
 
 ---
 
+## Galerie de figures
+
+Les figures ci-dessous illustrent la progression pédagogique de la série : du **graphe de connaissances brut** (SW-11) au **pipeline GraphRAG complet** (SW-12) jusqu'au **raisonneur OWL appliquant l'inférence** (SW-13). Chaque PNG est extrait directement d'un output commited d'un notebook (cf. `assets/readme/MANIFEST.md` pour la provenance exacte `notebook + cell + output`).
+
+### Graphe de connaissances RDF (SW-11, rdflib)
+
+`SW-11-Python-KnowledgeGraphs.ipynb` construit un graphe RDF à partir d'une ontologie FOAF, puis le visualise via deux layouts distincts (spectral + force-directed). Le graphe illustre les classes, propriétés et instances interconnectées — la brique élémentaire d'un KG opérationnel.
+
+![Graphe RDF SW-11 layout spectral](assets/readme/sw11_kg_c46_o0.png)
+
+*Graphe de connaissance RDF généré par SW-11 (rdflib) : classes, propriétés et instances interconnectées après parsing d'une ontologie FOAF.*
+
+![Graphe RDF SW-11 layout force-directed](assets/readme/sw11_kg_c71_o0.png)
+
+*Visualisation du même graphe RDF avec un layout différent (force-directed) mettant en évidence les clusters sémantiques.*
+
+### GraphRAG — Retrieval-Augmented Generation ancré sur KG (SW-12)
+
+`SW-12-Python-GraphRAG.ipynb` implémente le pipeline Microsoft GraphRAG : chunking des documents en sous-graphes entity-centric, détection de communautés Leiden, puis synthèse multi-niveau. C'est l'anti-hallucination par excellence : un LLM ancré sur des faits RDF vérifiables.
+
+![Indexation GraphRAG chunking entity-centric](assets/readme/sw12_graphrag_c18_o0.png)
+
+*Indexation GraphRAG : chunking des documents en sous-graphes entity-centric pour retrieval contextuel (Microsoft GraphRAG).*
+
+![Communautés Leiden sur le graphe](assets/readme/sw12_graphrag_c30_o1.png)
+
+*Communautés Leiden détectées dans le graphe : partition hiérarchique des entités pour synthèse multi-niveau.*
+
+### Raisonneurs RDFS/OWL (SW-13, owlrl)
+
+`SW-13-Python-Reasoners.ipynb` applique l'inférence RDFS sur un graphe de démonstration via `owlrl`. Les figures montrent la matérialisation des triples inférés (`subClassOf`, `domain`, `range`, `rdf:type`) — la couche logique qui transforme un graphe déclaratif en connaissances déductibles.
+
+![Reasoning RDFS - matérialisation](assets/readme/sw13_reasoner_c49_o0.png)
+
+*Reasoning RDFS owlrl : propagation des triples inférés (subClassOf, domain, range) sur un graphe de démonstration.*
+
+![Comparaison avant/après raisonnement](assets/readme/sw13_reasoner_c52_o0.png)
+
+*Comparaison avant/après raisonnement : matérialisation des implications logiques (rdf:type, rdfs:subClassOf).*
+
+> **Convention d'accessibilité** : Toutes les figures portent un `alt-text` français (régénérés via `extract_readme_figures.py`, EPIC #5654). Poids total ≈ 626 KB (≤ 1.5 MB borne), max-dim 1200 px (≤ 1200 px borne), max fichier 163 KB (≤ 200 KB borne).
+
+---
+
 ## Quick Start
 
 ```bash
