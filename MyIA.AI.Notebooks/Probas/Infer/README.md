@@ -608,13 +608,7 @@ Prolongement naturel de la classification bayésienne : là où [Infer-7](Infer-
 **Concepts clés** :
 
 | Concept | Formule / API | Description |
-| 
-
----
-
-
-
------- | --------------- | ------------- |
+| --------- | --------------- | ------------- |
 | Prior sur fonctions | `Variable<IFunction>.Random(prior)` | Distribution sur $f$, pas sur un vecteur de poids |
 | Noyau RBF | $k(x,x') = \exp(-\lVert x-x'\rVert^2 / 2\ell^2)$ | Covariance décroissant avec la distance |
 | Modèle probit | $y_j = [f(x_j) + \varepsilon_j > 0]$ | Score = fonction (non-linéaire), bruit gaussien |
@@ -646,13 +640,7 @@ Cas d'école du **pooling partiel** : quand les données sont **structurées en 
 **Concepts clés** :
 
 | Concept | Formule / API | Description |
-| 
-
----
-
-
-
------- | --------------- | ------------- |
+| --------- | --------------- | ------------- |
 | Prior de population | `mu ~ Gaussian(0, grand)`, `tau ~ Gamma` | Loi commune dont chaque groupe est tiré |
 | Effet de groupe | `theta[c] = GaussianFromMeanAndPrecision(mu, tau).ForEach(c)` | Un paramètre par groupe, partagé |
 | Indexation | `y[i] ~ Gaussian(theta[classOfI[i]], obsPrec)` | Rattachement observation → groupe |
