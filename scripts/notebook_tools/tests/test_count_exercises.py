@@ -307,6 +307,63 @@ class TestCodeCellOnlyExercise:
         )
         assert result.exercises[0].detected_by == "code_cell_comment"
 
+    def test_csharp_scaffolded_exercise_todo_with_code_is_counted(
+        self, tmp_path
+    ):
+        """A scaffolded C# exercise -- ``// Exercice N`` + ``// TODO etudiant``
+        ABOVE a partial class skeleton (multiple code lines) -- is a student
+        stub, NOT a solution. The ``// TODO`` line-comment marker must classify
+        it as a stub even though it has more than one effective code line (the
+        ``<= 1 effective code-line`` rule alone misses it).
+
+        Regression for ``Search-11-Metaheuristics-Csharp`` cells 24-26 (ABC /
+        inertia-schedule / Schwefel): each ``// Exercice N`` + ``// TODO etudiant``
+        + partial skeleton was silently under-counted, so the notebook read as
+        1 exercise instead of its real 3.
+        """
+        nb = _write_nb(
+            tmp_path / "scaffold.ipynb",
+            [
+                _md("# Titre C#"),
+                _code(
+                    "// Exercice 1 : Artificial Bee Colony (ABC).\n"
+                    "// TODO etudiant : implementez ABC (phases employe/onlooker/scout)\n"
+                    "public class ABC\n"
+                    "{\n"
+                    "    public double[] Best;\n"
+                    "    public double BestFitness = double.MaxValue;\n"
+                    "}\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "Scaffolded C# exercise (// TODO + multi-line skeleton) must count"
+        )
+        assert result.exercises[0].detected_by == "code_cell_comment"
+
+    def test_csharp_interpolated_console_writeline_exercice_is_counted(
+        self, tmp_path
+    ):
+        """``Console.WriteLine($"Exercice ...")`` (C# interpolated string) is a
+        stub marker. The ``$?`` in the pattern accepts the optional interpolation
+        sigil -- the quote-only variant missed ``$"Exercice"`` (idiomatic C#).
+        """
+        nb = _write_nb(
+            tmp_path / "interp.ipynb",
+            [
+                _md("# Titre"),
+                _code(
+                    "// Exercice 2 : comparer schedules d'inertie.\n"
+                    'Console.WriteLine($"Exercice 2 a completer : fitness");\n'
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            'C# interpolated Console.WriteLine($"Exercice ...") must count'
+        )
+
     def test_inline_csharp_comment_after_code_is_not_a_stub_marker(
         self, tmp_path
     ):

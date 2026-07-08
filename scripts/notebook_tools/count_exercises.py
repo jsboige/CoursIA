@@ -108,9 +108,20 @@ STUB_PATTERNS = [
     re.compile(r'print\(["\']Exercice[s]? a completer', re.IGNORECASE),
     re.compile(r"^\s*pass\s*$", re.MULTILINE),
     re.compile(r"\breturn\s+None\b"),
+    # TODO / Indice markers. Python/F#/Lean use `#`, C# / .NET Interactive
+    # use `//`. A scaffolded C# exercise (class skeleton + `// TODO etudiant`
+    # + multiple code lines) is a student stub, not a solution: without the
+    # `//` form it escaped the `<= 1 effective code-line` rule and was
+    # silently under-counted (e.g. Search-11-Metaheuristics-Csharp cells
+    # 24-26, each `// Exercice N` + `// TODO etudiant` + partial skeleton).
     re.compile(r"#\s*TODO", re.IGNORECASE),
+    re.compile(r"//\s*TODO", re.IGNORECASE),
     re.compile(r"#\s*Indice", re.IGNORECASE),
-    re.compile(r'Console\.WriteLine\(["\']Exercice', re.IGNORECASE),
+    re.compile(r"//\s*Indice", re.IGNORECASE),
+    # `$?` accepts both regular (`"..."`) and interpolated (`$"..."`) strings:
+    # `Console.WriteLine($"Exercice 2 a completer ...")` is the idiomatic C#
+    # interpolated form and was not matched by the quote-only variant.
+    re.compile(r'Console\.WriteLine\(\$?["\']Exercice', re.IGNORECASE),
     re.compile(r"^\s*result\s*=\s*None\b", re.MULTILINE | re.IGNORECASE),
     re.compile(r"^\s*raise\s+NotImplementedError", re.MULTILINE),
     re.compile(r"^\s*assert\s+False\b", re.MULTILINE),
