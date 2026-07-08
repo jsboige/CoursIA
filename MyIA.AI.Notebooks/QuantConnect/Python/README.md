@@ -97,6 +97,25 @@ Les notebooks NON EXÉCUTÉS doivent être exécutés (kernel local pour les ind
 
 ---
 
+## Aperçu — le trading quantitatif en images
+
+Six visualisations extraites des notebooks illustrent l'arc complet de la série, depuis le workflow de recherche QuantBook et les corrélations glissantes multi-actifs jusqu'à la gestion des risques, l'analyse de backtest, la validation walk-forward du machine learning et l'entraînement d'agents de renforcement profond.
+
+<table>
+<tr>
+<td align="center"><b>04 · Recherche</b><br><a href="QC-Py-04-Research-Workflow.ipynb"><img src="assets/readme/quantpy04-research-buyhold.png" width="290" alt="Workflow de recherche QuantBook : comparaison visuelle d'une stratégie SMA contre le buy-and-hold sur SPY."></a></td>
+<td align="center"><b>08 · Multi-actifs</b><br><a href="QC-Py-08-Multi-Asset-Strategies.ipynb"><img src="assets/readme/quantpy08-rolling-corr.png" width="290" alt="Corrélations glissantes : évolution temporelle de la corrélation entre deux actifs, instable en période de stress."></a></td>
+<td align="center"><b>10 · Risque</b><br><a href="QC-Py-10-Risk-Portfolio-Management.ipynb"><img src="assets/readme/quantpy10-stoploss.png" width="290" alt="Gestion des risques : comparaison visuelle des types de stop-loss (fixe, trailing, volatilité) sur un prix simulé."></a></td>
+</tr>
+<tr>
+<td align="center"><b>12 · Backtest</b><br><a href="QC-Py-12-Backtesting-Analysis.ipynb"><img src="assets/readme/quantpy12-backtest-scatter.png" width="290" alt="Analyse de backtest : scatter des rendements quotidiens stratégie vs benchmark, profil risque/rendement."></a></td>
+<td align="center"><b>19 · ML walk-forward</b><br><a href="QC-Py-19-ML-Supervised-Classification.ipynb"><img src="assets/readme/quantpy19-walkforward.png" width="290" alt="Validation walk-forward : accuracy par fold avec fenêtre de train glissante, simulation du trading réel avec retrain périodique."></a></td>
+<td align="center"><b>32 · RL (DQN)</b><br><a href="QC-Py-32-RL-DQN-Trading.ipynb"><img src="assets/readme/quantpy32-dqn-training.png" width="290" alt="Entraînement DQN : récompenses par épisode et courbes d'apprentissage de l'agent de renforcement profond (exploration vs exploitation)."></a></td>
+</tr>
+</table>
+
+Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Phase 1 : Fondations LEAN (QC-Py-01 à 04)
 
 | Notebook | Contenu |
