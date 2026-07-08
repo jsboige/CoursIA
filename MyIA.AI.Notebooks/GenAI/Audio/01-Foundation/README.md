@@ -15,6 +15,26 @@ Ce module couvre les fondamentaux du traitement audio par IA : reconnaissance vo
 | Durée estimée | ~3-4h |
 | GPU requis | 0-10GB |
 
+## Aperçu — les bases audio en images
+
+Ce module pose les fondamentaux du traitement audio : synthèse vocale (TTS), reconnaissance vocale (STT), et opérations de base sur le signal. La galerie ci-dessous présente le **pipeline d'analyse audio** (forme d'onde → spectrogramme → MFCC → caractéristiques) extrait du notebook fondationnel [01-3](01-3-Basic-Audio-Operations.ipynb) — les briques techniques pour comprendre ce que manipulent les modèles TTS et STT.
+
+<table>
+<tr>
+<td align="center"><img src="assets/readme/aud1-waveform.png" alt="Forme d'onde (waveform) du signal audio" width="400"/><br/><sub>Forme d'onde (01-3)</sub></td>
+<td align="center"><img src="assets/readme/aud1-spectrogram.webp" alt="Spectrogramme — décomposition temps-fréquence" width="400"/><br/><sub>Spectrogramme (01-3)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/aud1-mfcc.png" alt="MFCC — coefficients cepstraux mel" width="400"/><br/><sub>MFCC (01-3)</sub></td>
+<td align="center"><img src="assets/readme/aud1-mfcc2.png" alt="MFCC — carte de chaleur des coefficients" width="400"/><br/><sub>MFCC heatmap (01-3)</sub></td>
+</tr>
+<tr>
+<td align="center" colspan="2"><img src="assets/readme/aud1-features.png" alt="Extraction de caractéristiques audio" width="500"/><br/><sub>Extraction de caractéristiques (01-3)</sub></td>
+</tr>
+</table>
+
+Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Notebooks
 
 | # | Notebook | Contenu | Service | VRAM |
