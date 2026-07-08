@@ -18,6 +18,8 @@ Supports de cours pour l'apprentissage du trading algorithmique avec QuantConnec
 
 Full classification: [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md)
 
+> **Note — écarts de classification 4-types (hub vs feuille)** : la classification ci-dessus (a/b/c/d) classe les notebooks Python du dossier par **modalité d'exécution** (quantbook QC Cloud, research companion, standalone local, placeholder pédagogique). Le dossier [`projects/`](../projects/) — catalogué dans [`projects/README.md`](../projects/README.md) et référencé depuis le hub [`QuantConnect/README.md`](../README.md) — utilise un 4-types **distinct** par **robustesse** (Robuste / Historique / Exploratoire / ML-DL-RL). Les deux classifications ont des **périmètres disjoints** : ce dossier = supports de cours (notebooks pédagogiques), `projects/` = stratégies déployables (code backtest). Toute lecture transversale doit garder cette distinction à l'esprit : un notebook (c) « standalone research » n'est pas pour autant une stratégie de production, et inversement un projet « Robuste » n'a pas forcément de notebook pédagogique ici. Alignement non forcé volontairement (cf. note tracker `#5661`).
+
 ---
 
 ## État réel d'exécution (audit 2026-05-05, mise à jour 2026-07-02)
