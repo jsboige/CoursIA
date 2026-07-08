@@ -11,6 +11,21 @@
 | Max Drawdown | **33.6 %** | Pire que le remplacement |
 | Période | 2015-2026 | |
 
+## Figures du notebook de recherche
+
+Le notebook [`research.ipynb`](research.ipynb) documente l'analyse du dual momentum : exploration, comparaison des drawdowns entre configurations, robustesse au lookback (H2) et comparaison du Sharpe. La stratégie est remplacée par DualMomentumNoTLT (échec de TLT en 2022) — contre-exemple pédagogique. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+
+<table>
+<tr>
+<td align="center"><img src="assets/readme/dm-exploration.png" alt="Analyse exploratoire" width="420"/><br/><sub>Exploration — analyse exploratoire (§2)</sub></td>
+<td align="center"><img src="assets/readme/dm-drawdown.png" alt="Comparaison drawdowns" width="420"/><br/><sub>Drawdown — comparaison entre configurations</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/dm-h2-lookback.png" alt="H2 robustesse lookback" width="420"/><br/><sub>H2 — robustesse par lookback period</sub></td>
+<td align="center"><img src="assets/readme/dm-sharpe.png" alt="Comparaison Sharpe" width="420"/><br/><sub>Sharpe — comparaison entre configurations</sub></td>
+</tr>
+</table>
+
 ## Pourquoi cette stratégie a été remplacée
 
 ### Cause racine : échec du TLT (obligations long terme) en risk-off
