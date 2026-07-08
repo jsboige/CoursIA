@@ -3,7 +3,7 @@
 > **Issue parente** : [#1621 EPIC Consolidation QC/Trading](https://github.com/jsboige/CoursIA/issues/1621) (mandat user 2026-05-27).
 > **Partition** : `po-2024:CoursIA` (QC). **Tranche 1** (livrable incrémental — l'EPIC demande explicitement « un sujet par PR, ne pas tout faire d'un coup »).
 
-Ce document est le **point d'entrée unique** pour un visiteur qui découvre les 112 stratégies sous `MyIA.AI.Notebooks/QuantConnect/projects/`. Il cartographie les stratégies, leur type, leur source de données, et — là où l'évidence existe — leur statut (alive / superseded / needs-improvement / à confirmer).
+Ce document est le **point d'entrée unique** pour un visiteur qui découvre les 111 stratégies sous `MyIA.AI.Notebooks/QuantConnect/projects/` (112 entrées brutes, dont `_docs/` qui n'est pas une stratégie). Il cartographie les stratégies, leur type, leur source de données, et — là où l'évidence existe — leur statut (alive / superseded / needs-improvement / à confirmer).
 
 ## Méthodologie (honnête)
 
@@ -74,7 +74,7 @@ Les stratégies ci-dessus sont la **tranche 1 vérifiée**. Les ~100 stratégies
 | Vol / Régime / Risk | 8 | `Vol-GARCH-Target`, `VIX-TermStructure`, `RegimeSwitching`, `Markov-Regime-Detection`, `Adaptive-Conformal-Risk`, `InverseVolatility-Rank` |
 | Autres | variable | `BTC-ML`, `GraphSAGE-MultiAsset-Ranking`, `HAR-RV-J-Kelly`, `PuppiesOfTheDow-QC`, `TermStructureCommodities-QC`, `TurnOfMonth`, `TradingCosts-Optimization`, … |
 
-**Liste exhaustive** : `git ls-tree -d --name-only origin/main MyIA.AI.Notebooks/QuantConnect/projects/` (112 entrées, `_docs` exclu).
+**Liste exhaustive** : `git ls-tree -d --name-only origin/main MyIA.AI.Notebooks/QuantConnect/projects/` (112 entrées brutes, dont `_docs/` — soit **111 stratégies** ; `Research-Executor` est un harness d'exécution, pas une stratégie, cf. note ci-dessus).
 
 ## Travaux connexes
 
