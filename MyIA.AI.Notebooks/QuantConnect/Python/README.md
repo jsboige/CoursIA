@@ -14,7 +14,9 @@ Supports de cours pour l'apprentissage du trading algorithmique avec QuantConnec
 | **(c)** standalone research | 6 | Local yfinance/sklearn training |
 | **(d)** pedagogical placeholder | 33 | Course material with embedded QCAlgorithm strings |
 
-> Récapitulatif : 18+2+6+33 = 59 entrées de classification. Le nombre total de fichiers `.ipynb` dans le dossier est **55** : la différence reflète les notebooks classés dans plusieurs catégories (ex. course material exécuté localement = (c)+(d)). Voir [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md) pour la classification détaillée.
+**Récapitulatif** : 18+2+6+33 = 59 entrées de classification. Le nombre total de fichiers `.ipynb` dans le dossier est **55** : la différence reflète les notebooks classés dans plusieurs catégories (ex. course material exécuté localement = (c)+(d)). Voir [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md) pour la classification détaillée.
+
+> **Note — écarts de classification 4-types (hub vs feuille)** : la classification ci-dessus (a/b/c/d) classe les notebooks Python du dossier par **modalité d'exécution** (quantbook QC Cloud, research companion, standalone local, placeholder pédagogique). Le dossier [`projects/`](../projects/) — catalogué dans [`projects/README.md`](../projects/README.md) et référencé depuis le hub [`QuantConnect/README.md`](../README.md) — utilise un 4-types **distinct** par **robustesse** (Robuste / Historique / Exploratoire / ML-DL-RL). Les deux classifications ont des **périmètres disjoints** : ce dossier = supports de cours (notebooks pédagogiques), `projects/` = stratégies déployables (code backtest). Toute lecture transversale doit garder cette distinction à l'esprit : un notebook (c) « standalone research » n'est pas pour autant une stratégie de production, et inversement un projet « Robuste » n'a pas forcément de notebook pédagogique ici. Alignement non forcé volontairement (cf. note tracker `#5661`).
 
 Full classification: [docs/archive/qc-strategies-status.md](../../../docs/archive/qc-strategies-status.md)
 
