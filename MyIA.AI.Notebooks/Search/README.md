@@ -634,7 +634,7 @@ Allez directement aux applications qui correspondent à votre domaine : **App-3/
 
 ## Statistiques catalogue à jour (audit fichier-entier §E, 2026-07-07)
 
-Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-files MyIA.AI.Notebooks/Search | grep -E '\.ipynb$'`. **Référence canonique = fichiers gît-tracked** (les `_output.ipynb` sont des artéfacts non-trackés par `.gitignore` — exclus du compte ; `MetaGeneticSharp/` et `astar_lean/` ne contiennent aucun `.ipynb`). La répartition de maturité (PRODUCTION/BETA) est portée par le marqueur `CATALOG-STATUS` en tête de fichier, régénéré quotidiennement par l'automatisation.
+Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-files MyIA.AI.Notebooks/Search | grep -E '\.ipynb$'`. **Référence canonique = fichiers gît-tracked** (les `_output.ipynb` sont des artéfacts non-trackés par `.gitignore` — exclus du compte ; `MetaGeneticSharp/` et `search_lean/` ne contiennent aucun `.ipynb`). La répartition de maturité (PRODUCTION/BETA) est portée par le marqueur `CATALOG-STATUS` en tête de fichier, régénéré quotidiennement par l'automatisation.
 
 | Sous-série | Fichiers `.ipynb` gît-tracked | Langages | Algorithmes représentatifs |
 | --- | --- | --- | --- |
@@ -650,7 +650,7 @@ Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-fi
 
 - **ALPHA=0** : pas d'ALPHA sur cette série (vs Sudoku qui en a 1 = S-16 Neural Network RRN training).
 
-**Compagnon Lean formel** : la série dispose d'un lake phare `astar_lean` (#4048) qui démontre la **correction d'A*** (admissibilité de l'heuristique ⟹ optimalité, P1), la consistance (P2) et les bornes (P4/P5) en Lean 4 sur des graphes à coût uniforme puis généralisées au cas pondéré. Voir la section **« Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA »** l. 640+ pour la **cartographie inter-familles focalisée Search** (10+ lakes formels du dépôt) et le Mermaid flowchart simulation ↔ preuve. Cette section ne duplique pas cette cartographie, elle ancre les chiffres ; la cartographie elle-même reste l. 640+.
+**Compagnon Lean formel** : la série dispose d'un lake phare `search_lean` (#4048) qui démontre la **correction d'A*** (admissibilité de l'heuristique ⟹ optimalité, P1), la consistance (P2) et les bornes (P4/P5) en Lean 4 sur des graphes à coût uniforme puis généralisées au cas pondéré. Voir la section **« Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA »** l. 640+ pour la **cartographie inter-familles focalisée Search** (10+ lakes formels du dépôt) et le Mermaid flowchart simulation ↔ preuve. Cette section ne duplique pas cette cartographie, elle ancre les chiffres ; la cartographie elle-même reste l. 640+.
 
 **Conformité C.1 (stubs sans `raise NotImplementedError`)** : tous les notebooks pédagogiques s'exécutent end-to-end (cellules `# Solution`/`# Exemple résolu` démonstratives conservées, cellules `# Exercice` stubées via `pass`/`return None`/`print("Exercice à compléter")`). Convention trois exercices par notebook respectée pour la majorité des notebooks récents (cf `.claude/rules/three-exercises-per-notebook.md`).
 
@@ -689,15 +689,15 @@ La recherche en IA propose un changement de regard sur la résolution de problè
 
 ### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
-Le hub Search alignait une riche prose sur la double approche *exploration systématique / réduction par contraintes*, mais ne posait pas de **cartographie Lean 4 inter-familles formalisée**. Le search algorithmique a pourtant un lake phare : [`astar_lean` (#4048)](https://github.com/jsboige/CoursIA/issues/4048), où la correction d'A\* (admissibilité de l'heuristique ⟹ optimalité), la consistance de l'heuristique (P2) et les bornes sur la complexité (P4/P5) sont démontrées en Lean 4 sur des graphes à coût uniforme puis généralisées au cas pondéré.
+Le hub Search alignait une riche prose sur la double approche *exploration systématique / réduction par contraintes*, mais ne posait pas de **cartographie Lean 4 inter-familles formalisée**. Le search algorithmique a pourtant un lake phare : [`search_lean` (#4048)](https://github.com/jsboige/CoursIA/issues/4048), où la correction d'A\* (admissibilité de l'heuristique ⟹ optimalité), la consistance de l'heuristique (P2) et les bornes sur la complexité (P4/P5) sont démontrées en Lean 4 sur des graphes à coût uniforme puis généralisées au cas pondéré.
 
-`grep -E "cartographie|inter-familles"` dans le hub Search = **0 occurrence** avant cette PR. La même section livrée c.194-c.196 sur les hubs [GameTheory](../GameTheory/README.md) (#5050), [Probas](../Probas/README.md) (#5053) et [ML](../ML/README.md) (#5054) reçoit une table focalisée + un Mermaid flowchart ; le hub Search doit donc renvoyer la balle avec une **vue locale focalisée Search/astar_lean**, pas un copier-coller.
+`grep -E "cartographie|inter-familles"` dans le hub Search = **0 occurrence** avant cette PR. La même section livrée c.194-c.196 sur les hubs [GameTheory](../GameTheory/README.md) (#5050), [Probas](../Probas/README.md) (#5053) et [ML](../ML/README.md) (#5054) reçoit une table focalisée + un Mermaid flowchart ; le hub Search doit donc renvoyer la balle avec une **vue locale focalisée Search/search_lean**, pas un copier-coller.
 
 | Famille | Lake phare | Théorème / brique | Branchement notebook |
 |---------|-----------|-------------------|----------------------|
-| Search / Part 1 | `astar_lean` (#4048) | A\* admissibilité → optimalité (P1) | [Search-3-Informed](Part1-Foundations/Search-3-Informed.ipynb) (A\*, heuristique admissible) |
-| Search / Part 3 | `astar_lean` | A\* consistance d'heuristique (P2) + relaxation pondérée | [Search-14-WeightedAstar](Part3-Advanced/Search-14-WeightedAstar.ipynb) (Weighted A\*, Pohl 1970) |
-| Search / Part 4 | `astar_lean` | Pattern DB additives (Korf & Felner 2002) | [Search-12-PatternDatabases](Part3-Advanced/Search-12-PatternDatabases.ipynb) |
+| Search / Part 1 | `search_lean` (#4048) | A\* admissibilité → optimalité (P1) | [Search-3-Informed](Part1-Foundations/Search-3-Informed.ipynb) (A\*, heuristique admissible) |
+| Search / Part 3 | `search_lean` | A\* consistance d'heuristique (P2) + relaxation pondérée | [Search-14-WeightedAstar](Part3-Advanced/Search-14-WeightedAstar.ipynb) (Weighted A\*, Pohl 1970) |
+| Search / Part 4 | `search_lean` | Pattern DB additives (Korf & Felner 2002) | [Search-12-PatternDatabases](Part3-Advanced/Search-12-PatternDatabases.ipynb) |
 | ML | `learning_theory_lean` (#5054) | Novikoff perceptron 0 sorry #4140 | [`Perceptron.lean`](../ML/learning_theory_lean/Perceptron/Perceptron.lean) (lake, pas notebook pédagogique) |
 | Probas | `decision_theory_lean` (#5053) | Concentration uniforme + Hoeffding (PAC iter-2) | [Infer-3-Factor-Graphs](../Probas/Infer/Infer-3-Factor-Graphs.ipynb) (factor graphs + PAC) |
 | QC | `kelly_lean` (#5047) | Kelly criterion + mean-variance bound | [QC-Py-10-Risk-Portfolio-Management](../QuantConnect/Python/QC-Py-10-Risk-Portfolio-Management.ipynb) (Kelly sizing) |
@@ -715,7 +715,7 @@ flowchart LR
         S7["Search-7<br/>MCTS + UCB1"]
     end
     subgraph LEAN["Preuves formelles (Lean 4)"]
-        LA["astar_lean<br/>A* admissibilité<br/>P1/P2/P4/P5"]
+        LA["search_lean<br/>A* admissibilité<br/>P1/P2/P4/P5"]
         LM["learning_theory_lean<br/>Novikoff perceptron<br/>0 sorry #4140"]
         LP["decision_theory_lean<br/>PAC iter-2<br/>uniform concentration"]
         LK["kelly_lean<br/>Kelly + MV bound"]
@@ -733,7 +733,7 @@ flowchart LR
     class LA,LM,LP,LK,LG,LB lean
 ```
 
-La double culture **simulation + preuve formelle** est précisément ce que la [cartographie AIMA 3-level du hub central P0](../README.md#lean) (#5045 MERGED) articule : « instinct algorithmique ↔ méta-analyse ↔ preuve formelle ». Le hub Search ancre le **premier niveau (instinct)** par ses 114 notebooks Python/C# (parité complète #4956, marqueur `CATALOG-STATUS` faisant foi) et le **deuxième niveau (méta-analyse)** par les benchmarks comparatifs (App-13 TSP, App-18 hyperparameter tuning, MGS-16 No-Free-Lunch) ; le **troisième niveau (preuve formelle)** arrive ici via `astar_lean`, qui démontre ce que les simulations Search-3/Search-14 ne peuvent que suggérer empiriquement : qu'une heuristique admissible **garantit** l'optimalité d'A\*, et qu'une heuristique consistente (P2) **garantit** que le premier chemin trouvé est déjà optimal (sans réouverture).
+La double culture **simulation + preuve formelle** est précisément ce que la [cartographie AIMA 3-level du hub central P0](../README.md#lean) (#5045 MERGED) articule : « instinct algorithmique ↔ méta-analyse ↔ preuve formelle ». Le hub Search ancre le **premier niveau (instinct)** par ses 114 notebooks Python/C# (parité complète #4956, marqueur `CATALOG-STATUS` faisant foi) et le **deuxième niveau (méta-analyse)** par les benchmarks comparatifs (App-13 TSP, App-18 hyperparameter tuning, MGS-16 No-Free-Lunch) ; le **troisième niveau (preuve formelle)** arrive ici via `search_lean`, qui démontre ce que les simulations Search-3/Search-14 ne peuvent que suggérer empiriquement : qu'une heuristique admissible **garantit** l'optimalité d'A\*, et qu'une heuristique consistente (P2) **garantit** que le premier chemin trouvé est déjà optimal (sans réouverture).
 
 Sans cette section, le chainage vers ML (perceptron 0 sorry comme borne duale de la convergence A\* sur graphes pondérés), QC (Kelly, borné inférieurement par l'arbitrage risque/rendement), GameTheory (Arrow, posant les conditions sur les procédures de vote), Probas (PAC iter-2, formalisant pourquoi un échantillon suffit) et SymbolicAI (argumentation, formalisant la sémantique preferred) restait invisible depuis Search.
 

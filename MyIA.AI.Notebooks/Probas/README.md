@@ -553,7 +553,7 @@ Le notebook `Infer-101.ipynb` est le seul à mélanger les deux kernels. Il util
 
 ### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
-Cette série ancre mathématiquement ses résultats phares dans un assistant de preuve, en partenariat avec les autres familles du dépôt. La programmation probabiliste ne se contente pas de **calculer** des densités, des utilités espérées et des bornes de généralisation — elle les **prouve**. Le tableau ci-dessous croise les notebooks Probas avec les **lakes Lean 4** qui certifient leurs théorèmes, et signale les passerelles vers les autres hubs (`QC` ↔ `kelly_lean`, `GameTheory` ↔ `social_choice_lean` Arrow, `Search` ↔ `astar_lean`, `SymbolicAI` ↔ `argumentation_lean`).
+Cette série ancre mathématiquement ses résultats phares dans un assistant de preuve, en partenariat avec les autres familles du dépôt. La programmation probabiliste ne se contente pas de **calculer** des densités, des utilités espérées et des bornes de généralisation — elle les **prouve**. Le tableau ci-dessous croise les notebooks Probas avec les **lakes Lean 4** qui certifient leurs théorèmes, et signale les passerelles vers les autres hubs (`QC` ↔ `kelly_lean`, `GameTheory` ↔ `social_choice_lean` Arrow, `Search` ↔ `search_lean`, `SymbolicAI` ↔ `argumentation_lean`).
 
 | Famille                  | Lake phare                       | Théorème                                                                          | Branchement notebook                                                |
 | ---                      | ---                              | ---                                                                               | ---                                                                  |
@@ -563,7 +563,7 @@ Cette série ancre mathématiquement ses résultats phares dans un assistant de 
 | Probas (DecisionTheory)  | `decision_theory_lean` Peters    | Indice de Gittins, identités d'escompte (`0 sorry`, ref `v4.27.0-rc1`)            | DecInfer-9 (companion Lean)                                          |
 | QC ↔ Probas              | `kelly_lean` `#4052`             | Fraction risquée `f* = μ−σ²/2` sous log-bienveillance (`0 sorry`, `#4164 SHIPPED`) | notebook `kelly-criterion`                                           |
 | GameTheory ↔ Probas      | `social_choice_lean`             | Impossibilité d'Arrow (5 axiomes ⇒ dictature)                                     | hub GameTheory notebook 16a                                          |
-| Search ↔ Probas          | `astar_lean` `#4048`             | Consistance heuristique `h ≤ h*` ⇒ optimalité `A*`                                 | hub Search notebook `A*` phases 1-3 (`#4090 SHIPPED`)                |
+| Search ↔ Probas          | `search_lean` `#4048`             | Consistance heuristique `h ≤ h*` ⇒ optimalité `A*`                                 | hub Search notebook `A*` phases 1-3 (`#4090 SHIPPED`)                |
 | SymbolicAI ↔ Probas      | `argumentation_lean`             | Extension Dung (`grounded`/`preferred`/`stable`) par cadre formel                 | hub SymbolicAI/Tweety notebook AF-Dung                               |
 
 ```mermaid

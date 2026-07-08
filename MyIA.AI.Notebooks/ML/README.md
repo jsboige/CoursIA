@@ -240,7 +240,7 @@ La section ci-dessus focusse sur le **lake phare** `learning_theory_lean` (Novik
 | QuantConnect | `kelly_lean` | Kelly criterion Growth MERGED #5003, Calmar/IR/MDD #4223 / #4164 | `02-ML-Cours` lien finance/ML : allocation optimale sous i.i.d. |
 | GameTheory | `social_choice_lean` | Arrow impossibilité, Sen, Voting | `02-ML-Cours` 2.7 ensembles (vote d'ensemble ≅ agrégation préférences) |
 | GameTheory | `cooperative_games_lean` | Bondareva-Shapley 0 sorry #3954 (noyau, attributions) | `02-ML-Cours` Shapley values (feature importance ≅ valeur de Shapley) |
-| Search | `astar_lean` | Phase 1-3 SHIPPED #4090 / #4142 OPEN / #4144 OPEN | `02-ML-Cours` 2.4 descente de gradient / arêtes de coût ≅ heuristique admissible |
+| Search | `search_lean` | Phase 1-3 SHIPPED #4090 / #4142 OPEN / #4144 OPEN | `02-ML-Cours` 2.4 descente de gradient / arêtes de coût ≅ heuristique admissible |
 | SymbolicAI | `argumentation_lean` | Extension Dung (complète, préférée, stable, fondée) | `02-ML-Cours` 2.5 / 02-ML-Cours 2.7 débat ≅ framework d'argumentation |
 
 ```mermaid
@@ -259,7 +259,7 @@ flowchart LR
         L3["decision_theory_lean — VNM 0 sorry #4049 + Coherence #4150"]
         L4["kelly_lean — Growth #5003 / #4223 / #4164"]
         L5["social_choice_lean + cooperative_games_lean — Arrow + Bondareva-Shapley"]
-        L6["astar_lean + argumentation_lean — heuristique + Dung"]
+        L6["search_lean + argumentation_lean — heuristique + Dung"]
     end
     NB1 -. "marge γ ⊥ rayon R ⟹ convergence" .-> L1
     NB2 -. "ERM minimise erreur empirique" .-> L3
