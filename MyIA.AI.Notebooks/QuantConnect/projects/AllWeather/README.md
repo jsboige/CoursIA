@@ -31,6 +31,25 @@ Portfolio multi-asset inspiré de Ray Dalio (Bridgewater Associates).
 | Max Drawdown | ~-15% à -20% |
 | Volatilité | ~8-10% |
 
+## Figures du notebook de recherche
+
+Le notebook [`research.ipynb`](research.ipynb) déroule l'analyse complète : exploration des rendements et volatilités par actif, puis quatre hypothèses testées (static vs risk parity vs tactical, rôle de DBC, fréquence de rebalancement, overlay SMA200), synthèse par comparaison des configurations et exploration de la grille de paramètres. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+
+<table>
+<tr>
+<td align="center"><img src="assets/readme/aw-exploration.png" alt="Exploration rendements/volatilité par actif" width="420"/><br/><sub>Exploration — rendements &amp; volatilité annualisés par actif</sub></td>
+<td align="center"><img src="assets/readme/aw-h1-parity.png" alt="H1 Static vs Risk Parity vs Tactical" width="420"/><br/><sub>H1 — Static vs Risk Parity vs Tactical</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/aw-h3-rebalance.png" alt="H3 fréquence de rebalancement" width="420"/><br/><sub>H3 — fréquence de rebalancement</sub></td>
+<td align="center"><img src="assets/readme/aw-h4-sma200.png" alt="H4 overlay SMA200" width="420"/><br/><sub>H4 — overlay tactique SMA200</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/aw-comparison.png" alt="Comparaison Sharpe/drawdown" width="420"/><br/><sub>Comparaison — Sharpe &amp; drawdown par configuration</sub></td>
+<td align="center"><img src="assets/readme/aw-grid-optimal.png" alt="Grille de paramètres optimale" width="420"/><br/><sub>Grille optimale — exploration des paramètres</sub></td>
+</tr>
+</table>
+
 ## Fichiers
 
 ```
