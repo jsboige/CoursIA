@@ -48,6 +48,27 @@ Exemples concrets d'utilisation des notebooks GenAI Image dans différents domai
 4. **Post-processing** : Amélioration et édition si nécessaire
 5. **Intégration** : Utilisation dans le support final
 
+## Galerie
+
+Sorties réelles des notebooks d'exemple, couvrant les trois domaines éducatifs : [history-geography](history-geography.ipynb) (cartes et reconstitutions historiques), [literature-visual](literature-visual.ipynb) (illustrations de textes littéraires) et [science-diagrams](science-diagrams.ipynb) (schémas et diagrammes scientifiques).
+
+<table>
+<tr>
+<td align="center"><img src="assets/readme/imgex-hist1.webp" alt="Reconstitution historique générée par GenAI" width="400"/><br/><sub>Histoire-Géographie — reconstitution de scène (<a href="history-geography.ipynb">notebook</a>)</sub></td>
+<td align="center"><img src="assets/readme/imgex-hist2.webp" alt="Carte historique générée par GenAI" width="400"/><br/><sub>Histoire-Géographie — carte et annotations (<a href="history-geography.ipynb">notebook</a>)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/imgex-hist3.webp" alt="Vestige ou site historique généré par GenAI" width="400"/><br/><sub>Histoire-Géographie — vestige archéologique (<a href="history-geography.ipynb">notebook</a>)</sub></td>
+<td align="center"><img src="assets/readme/imgex-lit1.webp" alt="Illustration d'un passage littéraire générée par GenAI" width="400"/><br/><sub>Littérature — illustration de texte (<a href="literature-visual.ipynb">notebook</a>)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/imgex-lit2.webp" alt="Couverture ou visuel narratif littéraire généré par GenAI" width="400"/><br/><sub>Littérature — visuel narratif (<a href="literature-visual.ipynb">notebook</a>)</sub></td>
+<td align="center"><img src="assets/readme/imgex-sci.webp" alt="Diagramme scientifique généré par GenAI" width="400"/><br/><sub>Sciences — diagramme technique (<a href="science-diagrams.ipynb">notebook</a>)</sub></td>
+</tr>
+</table>
+
+Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Ressources
 
 - [Documentation Image principale](../README.md)
