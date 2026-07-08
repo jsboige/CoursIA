@@ -89,6 +89,29 @@ Le projet `social_choice_lean_peters/` (DominikPeters, Lean 4 + Mathlib) formali
 | **Gibbard-Satterthwaite** | Toute règle de vote non-dictatoriale est manipulable (pour 3+ candidats) |
 | **Split Cycle** | Règle de vote la plus fine satisfaisant Condorcet + acyclicité |
 
+## Galerie
+
+Visualisations réelles de la théorie du choix social, des axiomes d'Arrow (limite axiomatique) aux méthodes de vote (Condorcet, paradoxe de Sen, électeur médian, modèle de Downs) puis à l'agrégation computationnelle par solveur SAT/Z3.
+
+<table>
+<tr>
+<td align="center" colspan="2"><img src="assets/readme/sc-arrow.png" alt="Synthèse visuelle des axiomes du théorème d'impossibilité d'Arrow" width="640"/><br/><sub>Synthèse des axiomes d'Arrow — théorème d'impossibilité (<a href="01-Arrow-Impossibility-Theorem.ipynb">01-Arrow</a>)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/sc-condorcet.png" alt="Détermination du vainqueur de Condorcet sur un profil de préférences" width="400"/><br/><sub>Vainqueur de Condorcet (<a href="03-Voting-Methods.ipynb">03-Voting</a>)</sub></td>
+<td align="center"><img src="assets/readme/sc-sen.png" alt="Visualisation du paradoxe du libéral parétien de Sen" width="400"/><br/><sub>Paradoxe de Sen — libéral parétien (<a href="03-Voting-Methods.ipynb">03-Voting</a>)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/sc-median.png" alt="Théorème de l'électeur médian : convergence vers le centre" width="400"/><br/><sub>Théorème de l'électeur médian (<a href="03-Voting-Methods.ipynb">03-Voting</a>)</sub></td>
+<td align="center"><img src="assets/readme/sc-downs.png" alt="Simulation du modèle de Downs : convergence vers le centre" width="400"/><br/><sub>Modèle de Downs — convergence (<a href="03-Voting-Methods.ipynb">03-Voting</a>)</sub></td>
+</tr>
+<tr>
+<td align="center" colspan="2"><img src="assets/readme/sc-z3-sat.png" alt="Agrégation computationnelle des préférences via un solveur SAT/Z3" width="560"/><br/><sub>Agrégation computationnelle par SAT/Z3 (<a href="04-Computational-Aggregation-SAT-Z3.ipynb">04-Z3</a>)</sub></td>
+</tr>
+</table>
+
+Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Navigation
 
 - **Série parente** : [GameTheory](../README.md) (théorie des jeux, Nash, Shapley, design de mécanismes)
