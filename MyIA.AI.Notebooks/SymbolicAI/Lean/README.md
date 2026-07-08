@@ -11,6 +11,23 @@ maturity: PRODUCTION=23, BETA=5
 
 Cette série introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel basé sur la théorie des types dépendants. Le fil rouge va des fondations (types dépendants, mode tactique, Mathlib) vers l'état de l'art : assistance aux preuves par LLM et vérification formelle de réseaux de neurones, ports de théorèmes phares (théorème de Kochen-Specker / 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen ; finitude des dérivées symboliques de Brzozowski), théorie des nœuds (mouvements de Reidemeister, tricolorabilité de Fox, noeud de Conway et preuve de Piccirillo), et hommages aux mathématiciens (Grothendieck et le langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre).
 
+## Aperçu — Lean en images
+
+Six visualisations extraites des notebooks illustrent l'arc de la série : de l'assistance aux preuves par LLM et la vérification formelle de réseaux de neurones jusqu'aux automates de Conway (Game of Life) et à la théorie des nœuds (définition, nœud de Conway, invariants). Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
+
+<table>
+<tr>
+<td align="center"><b>Assistance LLM</b><br><a href="Lean-7b-Examples.ipynb"><img src="assets/readme/lean-llm-examples.png" width="290" alt="Assistance LLM : interprétation visualisée d'une solution de preuve."></a></td>
+<td align="center"><b>TorchLean (IBP)</b><br><a href="Lean-11-TorchLean-Python.ipynb"><img src="assets/readme/lean-torchlean.png" width="290" alt="TorchLean : propagation IBP pour la vérification formelle de réseaux de neurones."></a></td>
+<td align="center"><b>Conway Game of Life</b><br><a href="Lean-16b-Conway-Game-of-Life-Lean.ipynb"><img src="assets/readme/lean-conway-gol.png" width="290" alt="Conway Game of Life : le self-replicator Gemini (Andrew Wade, 2010)."></a></td>
+</tr>
+<tr>
+<td align="center"><b>Nœud mathématique</b><br><a href="Lean-17-Knots-a-Conway-and-Proofs.ipynb"><img src="assets/readme/lean-knot-conway.png" width="290" alt="Théorie des nœuds : qu'est-ce qu'un nœud mathématique ?"></a></td>
+<td align="center"><b>Nœud de Conway (11n34)</b><br><a href="Lean-17-Knots-a-Conway-and-Proofs.ipynb"><img src="assets/readme/lean-knot-piccirillo.png" width="290" alt="Le nœud de Conway (11n34) — schéma."></a></td>
+<td align="center"><b>Alexander &amp; sliceness</b><br><a href="Lean-17-Knots-b-Invariants-Companion.ipynb"><img src="assets/readme/lean-knot-invariants.png" width="290" alt="Polynôme d'Alexander et sliceness — le critère de Conway."></a></td>
+</tr>
+</table>
+
 ## Navigation
 
 Tous les notebooks incluent une **barre de navigation** en haut et en bas permettant de passer facilement d'un notebook à l'autre. Chaque notebook contient également un **Plan** avec des liens ancres vers chaque section.
