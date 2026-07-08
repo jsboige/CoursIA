@@ -2,6 +2,27 @@
 
 Pipeline d'entraînement complet pour modèles ML sur données financières OHLCV. Conçu pour l'entraînement GPU avec validation CPU en dry-run. Tous les scripts GPU utilisent l'entraînement sécurisé thermiquement via `shared/gpu_training.py` (MAX_TEMP=80C, AMP, batch_thermal_check).
 
+## Aperçu — la diversité méthodologique du pipeline en images
+
+Les notebooks de ce répertoire explorent une gamme de familles de modèles — du HAR économétrique aux Transformers à attention — appliqués à la prévision de la variance réalisée et à la détection de régimes. La galerie ci-dessous présente six sorties de diagnostic extraites des notebooks de recherche ; la plupart documentent des **résultats négatifs** (prévisions pures, sophistication structurelle qui nuit, dilution d'ensemble), reflet honnête du ladder expérimental.
+
+<table>
+<tr>
+<td align="center"><img src="assets/readme/mltp-hmm-regime.png" alt="Détection de régimes HMM — probabilités postérieures par état" width="380"/><br/><sub>HMM regime-switching (m5)</sub></td>
+<td align="center"><img src="assets/readme/mltp-har-rv.png" alt="Décomposition de sauts HAR-RV-J — variance réalisée continue vs discontinue" width="380"/><br/><sub>HAR-RV-J sauts (m12)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/mltp-dlinear-vol.png" alt="Prévision DLinear — DL linéaire vs baseline HAR" width="380"/><br/><sub>DLinear-vol (m4)</sub></td>
+<td align="center"><img src="assets/readme/mltp-lstm-vol.png" alt="Prévision Log-LSTM — mémoire séquentielle pour la variance réalisée" width="380"/><br/><sub>Log-LSTM RV (m15)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/mltp-tft-vol.png" alt="Attention temporelle TFT — pondération des variables d'entrée" width="380"/><br/><sub>TFT attention (m9)</sub></td>
+<td align="center"><img src="assets/readme/mltp-ensemble.png" alt="Diagnostic d'ensemble HAR-Kelly — dilution des performances" width="380"/><br/><sub>Ensemble HAR-Kelly (m11e)</sub></td>
+</tr>
+</table>
+
+Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Classification type (c) — standalone
 
 Les notebooks de ce répertoire sont des **recherches indépendantes (c)** — analyses utilisant des données locales (yfinance, sklearn, PyTorch), sans dépendance QuantConnect Cloud.
