@@ -111,7 +111,7 @@
       "configFile": "lakefile.toml"
     }
   ],
-  "name": "conway",
+  "name": "grothendieck",
   "lakeDir": ".lake",
   "fixedToolchain": false
 }
