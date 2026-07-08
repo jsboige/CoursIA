@@ -23,6 +23,25 @@ Comment résoudre un Sudoku ? Cette série explore les techniques de résolution
 4. **Evaluer** les compromis garantie vs performance vs généralisation pour choisir une stratégie de résolution
 5. **Mesurer** empiriquement les performances de chaque approche (temps, taux de succès, échelle de difficulté)
 
+## Aperçu — cinq approches algorithmiques en images
+
+Six visualisations extraites des notebooks illustrent l'arc complet de la série, depuis le backtracking exhaustif et la convergence des métaheuristiques jusqu'à la résolution par contraintes (Choco), l'apprentissage neuronal et le benchmark croisé des solveurs.
+
+<table>
+<tr>
+<td align="center"><b>1 · Backtracking</b><br><a href="Sudoku-1-Backtracking-Python.ipynb"><img src="assets/readme/sudoku1-backtracking.png" width="290" alt="Backtracking : visualisation d'une grille de Sudoku avec code couleur distinguant les valeurs initiales des valeurs trouvées par le solveur exhaustif."></a></td>
+<td align="center"><b>3 · Génétique</b><br><a href="Sudoku-3-Genetic-Python.ipynb"><img src="assets/readme/sudoku3-genetic.png" width="290" alt="Algorithme génétique : courbe de convergence du meilleur fitness au fil des générations."></a></td>
+<td align="center"><b>11 · Choco (CSP)</b><br><a href="Sudoku-11-Choco-Python.ipynb"><img src="assets/readme/sudoku11-choco.png" width="290" alt="Programmation par contraintes : grille résolue par le solveur Choco via la modélisation CSP."></a></td>
+</tr>
+<tr>
+<td align="center"><b>16 · MLP (entraînement)</b><br><a href="Sudoku-16-NeuralNetwork-Python.ipynb"><img src="assets/readme/sudoku16-nn-training.png" width="290" alt="Réseau de neurones dense : courbes d'entraînement du MLP sur 20 epochs, écart entre précision par case et précision par grille."></a></td>
+<td align="center"><b>16 · MLP (erreurs)</b><br><a href="Sudoku-16-NeuralNetwork-Python.ipynb"><img src="assets/readme/sudoku16-nn-errors.png" width="290" alt="Carte d'erreurs : identification des cases les plus difficiles à prédire pour le modèle neuronal."></a></td>
+<td align="center"><b>18 · Benchmark</b><br><a href="Sudoku-18-Comparison-Python.ipynb"><img src="assets/readme/sudoku18-comparison.png" width="290" alt="Comparaison des solveurs : temps moyen de résolution par niveau de difficulté en échelle logarithmique."></a></td>
+</tr>
+</table>
+
+Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Pourquoi étudier le Sudoku en IA ?
 
 Le Sudoku est bien plus qu'un simple jeu de grilles : c'est un **paradigme fondamental** de l'informatique et de l'intelligence artificielle. Son étude révèle des concepts essentiels qui s'appliquent à de nombreux problèmes reels.
