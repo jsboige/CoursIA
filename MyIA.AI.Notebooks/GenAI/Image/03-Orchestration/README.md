@@ -69,6 +69,26 @@ Input → Model Selection → Processing → Output
   Benchmark   Router      Pipeline  Validation
 ```
 
+## Galerie
+
+Sorties réelles des notebooks : comparatif multi-modèles ([03-1](03-1-Multi-Model-Comparison.ipynb)) et étapes d'un workflow d'orchestration ([03-2](03-2-Workflow-Orchestration.ipynb)).
+
+<table>
+<tr>
+<td align="center" colspan="2"><img src="assets/readme/img3-multimodel.webp" alt="Grille comparant les sorties de plusieurs modèles d'image sur un même prompt" width="720"/><br/><sub>Comparatif multi-modèles sur un même prompt (DALL-E 3, GPT-5, Qwen, FLUX...) — <a href="03-1-Multi-Model-Comparison.ipynb">03-1</a></sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/img3-workflow1.png" alt="Diagramme d'un workflow d'orchestration d'image, étape 1" width="400"/><br/><sub>Workflow d'orchestration — étape 1 (<a href="03-2-Workflow-Orchestration.ipynb">03-2</a>)</sub></td>
+<td align="center"><img src="assets/readme/img3-workflow2.png" alt="Diagramme d'un workflow d'orchestration d'image, étape 2" width="400"/><br/><sub>Workflow d'orchestration — étape 2 (<a href="03-2-Workflow-Orchestration.ipynb">03-2</a>)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/img3-workflow3.png" alt="Diagramme d'un pipeline ComfyUI pour l'image" width="400"/><br/><sub>Pipeline ComfyUI — nœuds de traitement (<a href="03-2-Workflow-Orchestration.ipynb">03-2</a>)</sub></td>
+<td align="center"><img src="assets/readme/img3-workflow4.png" alt="Diagramme d'un workflow multi-étapes d'image" width="400"/><br/><sub>Workflow — assemblage multi-étapes (<a href="03-2-Workflow-Orchestration.ipynb">03-2</a>)</sub></td>
+</tr>
+</table>
+
+Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Ressources
 
 - [Documentation Image principale](../README.md)
