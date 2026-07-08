@@ -19,11 +19,11 @@ Le but est d'offrir aux apprenants un point d'entrée curaté vers :
 
 ## Structure
 
-La formalisation couvre **23 modules (Parties 1-23, 3182 lignes, 0 sorry)**,
+La formalisation couvre **24 modules (Parties 1-24, ~3350 lignes, 0 sorry)**,
 importés dans l'ordre par le parapluie `Grothendieck.lean`. Chaque module se
 numérote lui-même via son en-tête (`Grothendieck tribute — Part N`).
 
-*La trajectoire pédagogique des 23 modules — des sites et cribles jusqu'à la cohomologie, avec schémas/Zariski et carte Mathlib en ancrage :*
+*La trajectoire pédagogique des 24 modules — des sites et cribles jusqu'à la cohomologie, avec schémas/Zariski et carte Mathlib en ancrage :*
 
 ```mermaid
 flowchart LR
@@ -62,22 +62,23 @@ flowchart LR
 | 21 | `Grothendieck/MayerVietorisSquare.lean` | Carrés de Mayer-Vietoris | 195 |
 | 22 | `Grothendieck/SheafCohomology/MayerVietoris.lean` | Suite exacte longue de Mayer-Vietoris | 164 |
 | 23 | `Grothendieck/SheafCohomology/Cech.lean` | Cohomologie de Čech | 123 |
+| 24 | `Grothendieck/YonedaLemma.lean` | Le lemme de Yoneda (plongement, équivalence, naturalité, pleinement fidèle, coyoneda) | 168 |
 
-L'extension (Parties 6-23) a été développée sous l'Issue #2159 / Epic #1646 et
-est **complète** : tous les 23 modules mergés, 0 `sorry`, 0 axiome ajouté.
+L'extension (Parties 6-24) a été développée sous l'Issue #2159 / Epic #1646 et
+est **complète** : tous les 24 modules mergés, 0 `sorry`, 0 axiome ajouté.
 
 ## Build
 
 ```bash
 # Depuis ce répertoire (WSL requis)
 lake build Grothendieck
-# Compile les 23 modules (3182 lignes)
+# Compile les 24 modules (~3350 lignes)
 ```
 
 ## Compte de sorry
 
-**0 sorry, 0 axiome** — tous les 23 modules sont complets à la création
-(Parties 1-23 mergées).
+**0 sorry, 0 axiome** — tous les 24 modules sont complets à la création
+(Parties 1-24 mergées).
 
 ## Toolchain
 
@@ -106,9 +107,9 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 
 ## Conclusion
 
-Cet hommage est une **visite pédagogique complète** (23 modules, 3182 lignes,
+Cet hommage est une **visite pédagogique complète** (24 modules, ~3350 lignes,
 0 `sorry`, 0 axiome ajouté) montrant comment le langage de Grothendieck — sites,
-faisceaux, faisceautisation, points, cohomologie — vit déjà dans Mathlib 4. Ce
+faisceaux, faisceautisation, points, cohomologie, Yoneda — vit déjà dans Mathlib 4. Ce
 n'est délibérément **pas** une formalisation d'EGA/SGA ; c'est un index curaté
 qui laisse les apprenants voir la bibliothèque à travers des yeux grothendieckiens.
 
@@ -118,8 +119,8 @@ Les modules tracent un chemin cohérent : **sites et cribles** (Parties 1, 6, 8,
 11, 12, 16) → **faisceaux, séparation et transfert** (7, 9, 10, 17) →
 **faisceautisation et son exactitude à gauche** (13, 14) → **points et familles
 conservatrices** (15, 19) → **cohomologie des faisceaux, Mayer-Vietoris et Čech**
-(20-23), avec **schémas et site de Zariski** (2, 3) et une **carte Mathlib** (4)
-ancrant la visite à la bibliothèque qu'elle indexe.
+(20-23), avec **schémas et site de Zariski** (2, 3), une **carte Mathlib** (4)
+et le **lemme de Yoneda** (24) ancrant la visite à la bibliothèque qu'elle indexe.
 
 *La construction verticale « faisceau » — chaque couche bâtie sur la précédente, de la donnée du site jusqu'à la cohomologie :*
 
