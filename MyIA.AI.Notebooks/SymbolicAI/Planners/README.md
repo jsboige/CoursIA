@@ -41,6 +41,23 @@ flowchart TD
     P3 -->|"doter le symbolique d'apprentissage"| P4
 ```
 
+## Aperçu — la planification automatique en images
+
+Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #5654). Elles balayent l'arc des quatre phases de la série : de l'explosion combinatoire de l'espace d'états (Fondations) aux heuristiques guidant la recherche (Classique), jusqu'à la planification temporelle et contraintiste (Avancées) et à l'intégration neuro-symbolique (Neuro-Symbolique). La provenance exacte de chaque figure est documentée dans `assets/readme/MANIFEST.md`.
+
+<table>
+<tr>
+<td align="center"><b>Explosion de l'espace d'états</b><br><a href="01-Foundation/Planners-3-State-Space.ipynb"><img width="290" alt="Espace d'états : explosion combinatoire de la recherche aveugle dans un graphe d'états PDDL, motivant le recours aux heuristiques." src="assets/readme/planners3-statespace.png"></a></td>
+<td align="center"><b>Arbre de recherche</b><br><a href="01-Foundation/Planners-3-State-Space.ipynb"><img width="290" alt="Arbre de recherche : parcours de l'espace d'états et illustration du facteur de branchement et de la profondeur de but." src="assets/readme/planners3-searchtree.png"></a></td>
+<td align="center"><b>Heuristiques (A*)</b><br><a href="02-Classical/Planners-5-Heuristics.ipynb"><img width="290" alt="Heuristiques de recherche : comparaison de A* et de ses variantes guidant l'exploration vers le but pour réduire l'exploration." src="assets/readme/planners5-heuristics.png"></a></td>
+</tr>
+<tr>
+<td align="center"><b>Solveur OR-Tools</b><br><a href="03-Advanced/Planners-7-OR-Tools.ipynb"><img width="290" alt="OR-Tools : planification par modèle CP-SAT et résolution de problèmes PDDL via un solveur industriel à grande échelle." src="assets/readme/planners7-ortools.png"></a></td>
+<td align="center"><b>Planification temporelle</b><br><a href="03-Advanced/Planners-8-Temporal.ipynb"><img width="290" alt="Planification temporelle : chronologie d'actions avec durées et contraintes de scheduling sur un réseau temporel." src="assets/readme/planners8-temporal.png"></a></td>
+<td align="center"><b>Boucle neuro-symbolique</b><br><a href="04-NeuroSymbolic/Planners-12-LOOP.ipynb"><img width="290" alt="Neuro-symbolique (LOOP) : intégration d'un apprentissage dans la boucle de planification symbolique pour adapter l'heuristique." src="assets/readme/planners12-loop.png"></a></td>
+</tr>
+</table>
+
 ## Parcours d'apprentissage
 
 ### Phase 1 : Fondations (Notebooks 1-3, ~2h)
