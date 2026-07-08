@@ -15,6 +15,25 @@ La vidéo combine quatre difficultés simultanées que les autres modalités tra
 
 L'objectif fil rouge de cette série est de construire un pipeline capable de transformer un script texte en vidéo pédagogique animée. Chaque niveau apporte une brique : compréhension vidéo pour analyser les séquences (niveau 1), modèles génératifs pour créer du mouvement (niveau 2), orchestration pour assembler le pipeline (niveau 3), et workflows de production pour le déploiement (niveau 4).
 
+## Aperçu — la vidéo par IA en images
+
+Six figures extraites des notebooks illustrent la chaîne complète, depuis l'extraction de frames et l'upscaling jusqu'à la génération text-to-video et les workflows de production.
+
+<table>
+<tr>
+<td align="center"><b>01-1 · Frames</b><br><a href="01-Foundation/01-1-Video-Operations-Basics.ipynb"><img src="assets/readme/video1-frames.png" width="290" alt="Extraction de frames : découpe d'une vidéo en images clés avec decord pour l'analyse."></a></td>
+<td align="center"><b>01-4 · ESRGAN</b><br><a href="01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb"><img src="assets/readme/video4-esrgan.png" width="290" alt="Upscaling ESRGAN : comparaison basse résolution avant/après agrandissement par réseau."></a></td>
+<td align="center"><b>01-5 · AnimateDiff</b><br><a href="01-Foundation/01-5-AnimateDiff-Introduction.ipynb"><img src="assets/readme/video5-animatediff.png" width="290" alt="Génération text-to-video AnimateDiff : animation produite depuis un prompt textuel."></a></td>
+</tr>
+<tr>
+<td align="center"><b>02-4 · SVD</b><br><a href="02-Advanced/02-4-SVD-Image-to-Video.ipynb"><img src="assets/readme/video-svd.png" width="290" alt="Stable Video Diffusion : animation d'une image statique en séquence vidéo."></a></td>
+<td align="center"><b>04-2 · Style</b><br><a href="04-Applications/04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/video-creative-style.png" width="290" alt="Transfert de style vidéo : application du style d'une image de référence à chaque frame."></a></td>
+<td align="center"><b>04-3 · Sora</b><br><a href="04-Applications/04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/video-sora-cost.png" width="290" alt="Sora (cloud) vs local : comparaison de coût selon le volume de génération vidéo."></a></td>
+</tr>
+</table>
+
+Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, output, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Progression par niveau
 
 ### 01-Foundation - Comprendre la vidéo avant de la générer
