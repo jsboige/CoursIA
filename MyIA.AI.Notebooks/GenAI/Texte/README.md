@@ -189,6 +189,22 @@ flowchart TD
     T1 --> T2 --> T3 --> T4 --> T5
 ```
 
+## Galerie
+
+Courbes réelles issues de l'arc test-time scaling (Tier 5) : les figures clés de la théorie du scaling de calcul à l'inférence, extraites des notebooks [16_Scaling_Test_Time_Compute](16_Scaling_Test_Time_Compute.ipynb) et [17_Native_Reasoning_vs_Scaling](17_Native_Reasoning_vs_Scaling.ipynb).
+
+<table>
+<tr>
+<td align="center"><img src="assets/readme/texte-scaling-passk.png" alt="Courbes de scaling pass@k par bucket de budget compute" width="400"/><br/><sub>Scaling <code>pass@k</code> par bucket — Snell 2024 (<a href="16_Scaling_Test_Time_Compute.ipynb">16</a>)</sub></td>
+<td align="center"><img src="assets/readme/texte-bon-vs-reflex.png" alt="Comparaison Best-of-N parallèle vs Réflexion séquentielle, frontière compute-optimal" width="400"/><br/><sub>Best-of-N parallèle vs Réflexion séquentielle — frontière compute-optimal (<a href="16_Scaling_Test_Time_Compute.ipynb">16</a>)</sub></td>
+</tr>
+<tr>
+<td align="center" colspan="2"><img src="assets/readme/texte-reason-vs-scale.png" alt="Raisonnement natif des modèles vs scaling de calcul hand-rolled" width="500"/><br/><sub>Raisonnement natif vs scaling de calcul hand-rolled (<a href="17_Native_Reasoning_vs_Scaling.ipynb">17</a>)</sub></td>
+</tr>
+</table>
+
+Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## FAQ
 
 ### Chat Completions vs Responses API — laquelle utiliser ?
