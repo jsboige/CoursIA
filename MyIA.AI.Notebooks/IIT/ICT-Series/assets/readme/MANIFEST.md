@@ -37,3 +37,9 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 - **Source** : notebook `ICT-14-FreeEnergySurprise.ipynb` (cellule 4, output 0)
 - **Alt-text (FR)** : Surprise et énergie libre : free energy et expected free energy comme substrat computationnel de l'anticipation, jambe représentationnelle du triplet fondateur.
 - **Poids** : 132.0 KB (natif)
+
+## ict16-mdl-bosse.png
+
+- **Source** : notebook `ICT-16-MDLTwoPartCode.ipynb` (cellule 11, output 0)
+- **Alt-text (FR)** : Bosse complexite-entropie (Crutchfield-Feldman 1998) : la complexite statistique (longueur de code du modele, en bits) passe par un maximum a entropie intermediaire, entre le determinisme (H->0, C->0) et le bruit iid (H->H1, C->0). Nuage des trajectoires echantillonnees + mediane lissee par bucket + marqueur du pic.
+- **Poids** : 57.0 KB (PIL optimise)

@@ -19,7 +19,7 @@ La série progresse en **cinq strates**. La **strate 1** (ICT-0 à ICT-7) prend 
 
 ## Aperçu — les trajectoires causales intégrées en images
 
-Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #5654). Elles balayent l'arc des quatre strates stables de la série : du tri auto-organisé et des trajectoires de $\Phi$ (strate 1) aux paysages d'attracteurs et à la morphogenèse dynamique (strate 2), puis aux trajectoires intégrées régime-dépendantes (strate 3) et à la jambe énergétique-libre (strate 4). La provenance exacte de chaque figure est documentée dans `assets/readme/MANIFEST.md`.
+Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #5654). Elles balayent l'arc des quatre strates stables de la série : du tri auto-organisé et des trajectoires de $\Phi$ (strate 1) aux paysages d'attracteurs et à la morphogenèse dynamique (strate 2), puis aux trajectoires intégrées régime-dépendantes (strate 3) et à la jambe énergétique-libre (strate 4) et à la jambe de compression MDL avec sa bosse complexité-entropie (strate 5). La provenance exacte de chaque figure est documentée dans `assets/readme/MANIFEST.md`.
 
 <table>
 <tr>
@@ -31,6 +31,9 @@ Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #
 <td align="center"><b>Agence Gray-Scott (S2)</b><br><a href="ICT-9-AgencyRegeneration.ipynb"><img width="290" alt="Agence et régénération : morphogenèse réaction-diffusion de Gray-Scott, ablation puis contraste de deux mondes contrefactuels (régénération vs dissolution)." src="assets/readme/ict9-gray-scott.png"></a></td>
 <td align="center"><b>Morphodynamique stratégique (S3)</b><br><a href="ICT-13-AxelrodStrategicMorphodynamics.ipynb"><img width="290" alt="Morphodynamique stratégique d'Axelrod : tournoi de stratégies du dilemme du prisonnier itéré, dynamique de réplication et bassins d'invasion." src="assets/readme/ict13-axelrod.png"></a></td>
 <td align="center"><b>Énergie libre & surprise (S4)</b><br><a href="ICT-14-FreeEnergySurprise.ipynb"><img width="290" alt="Surprise et énergie libre : free energy et expected free energy comme substrat computationnel de l'anticipation, jambe représentationnelle du triplet fondateur." src="assets/readme/ict14-freeenergy.png"></a></td>
+</tr>
+<tr>
+<td align="center" colspan="3"><b>Bosse complexité-entropie / MDL (S5)</b><br><a href="ICT-16-MDLTwoPartCode.ipynb"><img width="435" alt="Bosse complexité-entropie (Crutchfield-Feldman 1998) : la complexité statistique (longueur de code du modèle, en bits) passe par un maximum à entropie intermédiaire, entre le déterminisme (H vers 0, C vers 0) et le bruit iid (H vers H1, C vers 0). Nuage des trajectoires échantillonnées + médiane lissée par bucket + marqueur du pic." src="assets/readme/ict16-mdl-bosse.png"></a></td>
 </tr>
 </table>
 
