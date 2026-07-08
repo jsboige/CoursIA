@@ -15,6 +15,27 @@ Ce module couvre les fondamentaux de la vidéo par IA : opérations vidéo, comp
 | Durée estimée | ~4-6h |
 | GPU requis | 0-12GB |
 
+## Aperçu — les bases vidéo en images
+
+Ce module pose les fondamentaux : opérations techniques (ffmpeg, moviepy), compréhension vidéo (GPT-5, Qwen-VL), amélioration de qualité (ESRGAN) et génération de mouvement (AnimateDiff). La galerie ci-dessous présente des aperçus extraits des notebooks.
+
+<table>
+<tr>
+<td align="center"><img src="assets/readme/vid1-ops.png" alt="Opérations vidéo de base — aperçu des frames" width="400"/><br/><sub>Opérations de base (01-1)</sub></td>
+<td align="center"><img src="assets/readme/vid1-gpt5.png" alt="Compréhension vidéo GPT-5 — analyse" width="400"/><br/><sub>Compréhension GPT-5 (01-2)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/vid1-qwen-vl.png" alt="Analyse vidéo Qwen-VL — annotation" width="400"/><br/><sub>Analyse Qwen-VL (01-3)</sub></td>
+<td align="center"><img src="assets/readme/vid1-esrgan.png" alt="Enhancement ESRGAN — upscale" width="400"/><br/><sub>Enhancement ESRGAN (01-4)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/vid1-esrgan2.png" alt="Enhancement ESRGAN — panorama" width="400"/><br/><sub>ESRGAN panorama (01-4)</sub></td>
+<td align="center"><img src="assets/readme/vid1-animatediff.png" alt="Génération AnimateDiff — animation" width="400"/><br/><sub>AnimateDiff (01-5)</sub></td>
+</tr>
+</table>
+
+Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Notebooks
 
 | # | Notebook | Contenu | Service | VRAM |
