@@ -70,6 +70,26 @@ Input → Model Router → Processing → Output
   Analysis  Selection   Pipeline  Validation
 ```
 
+## Galerie
+
+Sorties réelles des notebooks : workflow d'orchestration vidéo ([03-2](03-2-Video-Workflow-Orchestration.ipynb)) et workflow ComfyUI de génération vidéo ([03-3](03-3-ComfyUI-Video-Workflows.ipynb)).
+
+<table>
+<tr>
+<td align="center"><img src="assets/readme/vid3-workflow1.webp" alt="Diagramme d'un workflow d'orchestration vidéo" width="400"/><br/><sub>Workflow d'orchestration vidéo — vue d'ensemble (<a href="03-2-Video-Workflow-Orchestration.ipynb">03-2</a>)</sub></td>
+<td align="center"><img src="assets/readme/vid3-workflow2.webp" alt="Panorama d'un pipeline vidéo multi-étapes" width="400"/><br/><sub>Workflow vidéo — panorama du pipeline (<a href="03-2-Video-Workflow-Orchestration.ipynb">03-2</a>)</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="assets/readme/vid3-frame1.webp" alt="Frame vidéo générée, étape 1 du workflow" width="400"/><br/><sub>Frame vidéo générée — étape 1 (<a href="03-2-Video-Workflow-Orchestration.ipynb">03-2</a>)</sub></td>
+<td align="center"><img src="assets/readme/vid3-frame2.webp" alt="Frame vidéo générée, étape 2 du workflow" width="400"/><br/><sub>Frame vidéo générée — étape 2 (<a href="03-2-Video-Workflow-Orchestration.ipynb">03-2</a>)</sub></td>
+</tr>
+<tr>
+<td align="center" colspan="2"><img src="assets/readme/vid3-comfyui.webp" alt="Workflow ComfyUI de bout en bout pour la génération vidéo" width="640"/><br/><sub>Workflow ComfyUI — génération vidéo de bout en bout (<a href="03-3-ComfyUI-Video-Workflows.ipynb">03-3</a>)</sub></td>
+</tr>
+</table>
+
+Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Ressources
 
 - [Documentation Video principale](../README.md)
