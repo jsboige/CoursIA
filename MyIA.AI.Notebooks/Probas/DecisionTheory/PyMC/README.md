@@ -26,6 +26,25 @@ Jusqu'à la restructure (#4725), la théorie de la décision était imbriquée d
 
 **Durée totale** : ~6h
 
+## Aperçu — la décision sous incertitude en images
+
+Six figures extraites des notebooks illustrent l'arc décisionnel, depuis les distributions d'utilité d'investissement jusqu'à la valeur de l'information et aux bandits bayésiens Thompson Sampling.
+
+<table>
+<tr>
+<td align="center"><b>2 · Investissement</b><br><a href="DecPyMC-2-Utility-Money.ipynb"><img src="assets/readme/dt2-investment.png" width="290" alt="Choix d'investissement : distributions postérieures de rendement comparées entre trois actifs."></a></td>
+<td align="center"><b>3 · Multi-attributs</b><br><a href="DecPyMC-3-Multi-Attribute.ipynb"><img src="assets/readme/dt3-multiattribute.png" width="290" alt="Décision multi-attributs sous incertitude : Monte Carlo sur plusieurs critères en compétition."></a></td>
+<td align="center"><b>5 · EVPI</b><br><a href="DecPyMC-5-Value-Information.ipynb"><img src="assets/readme/dt5-evpi-heatmap.png" width="290" alt="Valeur de l'information (EVPI) : carte de chaleur selon la probabilité de pétrole et le gain."></a></td>
+</tr>
+<tr>
+<td align="center"><b>5 · Convergence MC</b><br><a href="DecPyMC-5-Value-Information.ipynb"><img src="assets/readme/dt5-mc-convergence.png" width="290" alt="Convergence de l'estimateur Monte Carlo de l'EVPI vers sa valeur analytique."></a></td>
+<td align="center"><b>6 · Système expert</b><br><a href="DecPyMC-6-Expert-Systems.ipynb"><img src="assets/readme/dt6-expert-graph.png" width="290" alt="Système expert multi-sources : graphe de décision combinant avis et règles de décision."></a></td>
+<td align="center"><b>7 · Thompson</b><br><a href="DecPyMC-7-Sequential.ipynb"><img src="assets/readme/dt7-thompson.png" width="290" alt="Thompson Sampling bayésien : courbes de regret et convergence des bandits MCMC."></a></td>
+</tr>
+</table>
+
+Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, output, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Progression Pédagogique
 
 ```mermaid
