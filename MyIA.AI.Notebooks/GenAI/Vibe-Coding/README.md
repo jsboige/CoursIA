@@ -9,7 +9,7 @@ maturity: PRODUCTION=6
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Claude Discovery](Claude-Code/01-decouverte/README.md)
 
-Cette série couvre les ateliers de **vibe-coding** : décrire ce que vous voulez construire en langage naturel, et l'IA écrit le code. Deux assistants majeurs sont couverts (Claude Code et Roo Code), avec des exercices progressifs allant de la découverte a l'automatisation avancée, plus un module d'agents autonomes (Claw Systems).
+Cette série couvre les ateliers de **vibe-coding** : décrire ce que vous voulez construire en langage naturel, et l'IA écrit le code. Deux assistants majeurs sont couverts (Claude Code et Roo Code), avec des exercices progressifs allant de la découverte à l'automatisation avancée, plus un module d'agents autonomes (Claw Systems).
 
 ## Structure du répertoire
 
@@ -80,7 +80,7 @@ Framework de codage IA avec interface VS Code uniquement. Idéal pour les début
 # Creer son workspace
 ./Scripts/prepare-workspaces.ps1 -UserName "VotreNom"
 
-# Nettoyer apres la formation
+# Nettoyer après la formation
 ./Scripts/clean-workspaces.ps1 -UserName "VotreNom"
 ```
 
@@ -117,7 +117,7 @@ Le répertoire `docs/` contient :
 
 | Document | Description |
 |----------|-------------|
-| [INTRO-GENAI.md](docs/INTRO-GENAI.md) | Introduction pratique a l'IA générative |
+| [INTRO-GENAI.md](docs/INTRO-GENAI.md) | Introduction pratique à l'IA générative |
 | [Claude-Code/docs/](Claude-Code/docs/) | Documentation Claude Code (installation, concepts, aide-mémoire) |
 | [Roo-Code/docs/](Roo-Code/docs/) | Documentation Roo Code (installation, guide) |
 | [activites/](docs/activites/) | Activités pédagogiques |
