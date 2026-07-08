@@ -24,6 +24,25 @@ Si la Partie 1 enseigne à chercher, celle-ci enseigne à modéliser — et c'es
 4. **Composer** CSP avec SAT, ML et LLM pour des solutions hybrides (LCG, CP+ML, LLM+CSP)
 5. **Étendre** le cadre classique aux contraintes souples, temporelles et distribuées
 
+## Aperçu — la programmation par contraintes en images
+
+Six visualisations extraites des notebooks illustrent l'arc complet de cette partie, depuis le backtracking enrichi d'heuristiques jusqu'à la propagation AC-3, aux contraintes globales d'OR-Tools, à l'ordonnancement industriel, à la Lazy Clause Generation et aux contraintes temporelles d'Allen.
+
+<table>
+<tr>
+<td align="center"><b>1 · Backtracking + MRV</b><br><a href="CSP-1-Fundamentals.ipynb"><img src="assets/readme/csp1-backtracking-tree.png" width="290" alt="Arbre de backtracking pour le problème des 4 reines : exploration avec heuristique MRV (Minimum Remaining Values), montrant l'élagage des branches invalides dès la première variable contrainte."></a></td>
+<td align="center"><b>2 · Propagation AC-3</b><br><a href="CSP-2-Consistency.ipynb"><img src="assets/readme/csp2-ac3-propagation.png" width="290" alt="Propagation de contraintes AC-3 sur un réseau de contraintes binaires : réduction des domaines par arc-cohérence, l'espace de recherche se resserre avant tout essai de valeur."></a></td>
+<td align="center"><b>3 · Contraintes globales</b><br><a href="CSP-3-Advanced.ipynb"><img src="assets/readme/csp3-global-constraints.png" width="290" alt="Contrainte globale AllDifferent d'OR-Tools CP-SAT sur un problème de type Sudoku : le propagateur spécialisé élague en quelques millisecondes ce qu'un backtracking naïf mettrait des heures à parcourir."></a></td>
+</tr>
+<tr>
+<td align="center"><b>4 · Ordonnancement</b><br><a href="CSP-4-Scheduling.ipynb"><img src="assets/readme/csp4-jobshop-gantt.png" width="290" alt="Diagramme de Gantt d'un ordonnancement Job-Shop (JSSP) résolu par CP-SAT avec IntervalVar et NoOverlap : chevauchement optimal des opérations sur les machines."></a></td>
+<td align="center"><b>6 · Lazy Clause Generation</b><br><a href="CSP-6-Hybridization.ipynb"><img src="assets/readme/csp6-lazy-clause-generation.png" width="290" alt="Lazy Clause Generation (LCG) : le solveur CP apprend des clauses SAT en cours de route, visualisation des clauses apprises qui coupent l'espace de recherche lors des retours arrière."></a></td>
+<td align="center"><b>8 · Algèbre d'Allen</b><br><a href="CSP-8-Temporal.ipynb"><img src="assets/readme/csp8-allen-algebra.png" width="290" alt="Algèbre d'intervalles d'Allen : les 13 relations temporelles de base entre deux intervalles (avant, après, pendant, etc.) et leur composition pour raisonner sur des contraintes de temps qualitatif."></a></td>
+</tr>
+</table>
+
+Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Notebooks
 
 | # | Notebook | Kernel | Contenu | Durée |
