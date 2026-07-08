@@ -24,6 +24,25 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 4. **Appliquer** la recherche adversariale (Minimax, Alpha-Beta, MCTS) aux jeux à deux joueurs
 5. **Comparer** les métaheuristiques sur des benchmarks réels et justifier le choix d'un algorithme
 
+## Aperçu — la recherche en IA en images
+
+Six visualisations extraites des notebooks illustrent l'arc complet de cette partie, depuis la formalisation d'un problème en graphe d'états jusqu'aux métaheuristiques comparées et aux plus courts chemins sur réseaux.
+
+<table>
+<tr>
+<td align="center"><b>1 · Espace d'états</b><br><a href="Search-1-StateSpace.ipynb"><img src="assets/readme/search1-statespace.png" width="290" alt="Espace d'états : modélisation d'un problème comme un graphe d'états et de transitions explorables."></a></td>
+<td align="center"><b>2 · BFS vs DFS</b><br><a href="Search-2-Uninformed.ipynb"><img src="assets/readme/search2-bfs-dfs.png" width="290" alt="BFS vs DFS : ordre d'expansion comparé d'un parcours en largeur et en profondeur sur un arbre."></a></td>
+<td align="center"><b>3 · Recherche A*</b><br><a href="Search-3-Informed.ipynb"><img src="assets/readme/search3-astar.png" width="290" alt="Recherche informée (A*) : l'heuristique guide l'exploration du 8-puzzle vers le but en réduisant les nœuds développés."></a></td>
+</tr>
+<tr>
+<td align="center"><b>11 · Métaheuristiques</b><br><a href="Search-11-Metaheuristics.ipynb"><img src="assets/readme/search11-metaheuristics.png" width="290" alt="Métaheuristiques : comparaison du recuit simulé, des algorithmes génétiques et de l'essaim particulaire."></a></td>
+<td align="center"><b>11 · Convergence</b><br><a href="Search-11-Metaheuristics.ipynb"><img src="assets/readme/search11-convergence.png" width="290" alt="Convergence métaheuristique : impact de la taille de population sur la qualité de la solution."></a></td>
+<td align="center"><b>15 · Réseaux</b><br><a href="Search-15-NetworkX.ipynb"><img src="assets/readme/search15-networkx.png" width="290" alt="Graphes avec NetworkX : plus court chemin (Dijkstra vs A*) sur un réseau routier régional."></a></td>
+</tr>
+</table>
+
+Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
 ## Notebooks
 
 | # | Notebook | Kernel | Contenu | Durée |
