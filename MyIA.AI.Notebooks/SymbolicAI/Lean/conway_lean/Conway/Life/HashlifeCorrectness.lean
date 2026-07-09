@@ -1716,7 +1716,7 @@ independent, difficulty-ranked prover target (grignotable one-per-session).
 | `p4_double_nine_shape`     | P4.1 (structural) | The 9 sub-cells `n_i` tile `c` and each has level `k+1` + is wf |
 | `p4_wave1_ih`              | P4.2 (IH application) | Each `r_i = hashlifeResultAux (k+1) n_i` matches `evolve 2^(k-1)` on the `n_i` window (by IH at level `k`) |
 | `p4_wave2_ih`              | P4.3 (IH application) | Each `out_* = hashlifeResultAux (k+1) q_*` matches `evolve 2^(k-1)` on the `q_*` window (by IH at level `k`) |
-| `p4_half_steps_compose`    | P4.4 (compositional, hardest) | Wave1 ∘ Wave2 = `2^k` generations via `step_light_cone` (P2, proven) — the boundary of each sub-cell does not leak because the live region stays inside the centered window |
+| ~~`p4_half_steps_compose`~~ | P4.4 (compositional) — **SUBSUMED** | The pure `evolve` half-step composition is `evolve_add` (L2353) + `evolve_half_step` (L2370), both proven sorry-free; the wave-assembly obligation is carried by the residual `sorry` of `p4_succ_membership`. The standalone `: True` placeholder theorem was deleted (N2-bis) as a vacuous dup of an already-closed obligation |
 
 Once all four are proven, `p4_succ_membership` glues them. The ordering
 P4.1 → P4.2 → P4.3 → P4.4 reflects dependency: P4.2/P4.3 need P4.1's shape
@@ -1799,7 +1799,7 @@ private theorem node16_level (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se
     opaque binders + one level hypothesis), the `hashlifeResultAux_succ_node`
     if-condition `(node16).level == 2` is false for `k ≥ 1` (the node level is
     `k + 2 ≥ 3`). Proven standalone because stating/rewriting `(node16).level`
-    INLINE inside `p4_succ_membership`'s rich context (post `_h1`/`_h2`/`_h3`/`_h4`
+    INLINE inside `p4_succ_membership`'s rich context (post `_h1`/`_h2`/`_h3`
     obtain of 16 gc's) whnf-diverges (the c.142 pathology). Applying this helper
     there keeps the level term inferred, never re-elaborated — the opaque-binder
     pattern of c.139/c.143. -/
@@ -2339,10 +2339,13 @@ of milestones with clear interfaces (the same methodology that isolated
   `centralCorrect q_j (k-1)` facts from P4.3 (`p4_wave2_ih`) to conclude the
   pointwise membership agreement that `p4_succ_membership` needs.
 
-Until S3–S4 are closed, `p4_half_steps_compose` remains the `True` placeholder
-(it is consumed by `p4_succ_membership` only structurally); S1 (composition)
-and S2 (no-leak) are now closed, so the remaining open surface is the
-sub-cell-coverage + assembly argument (S3, S4). -/
+S1 (composition) and S2 (no-leak) are closed; the remaining open surface is
+the sub-cell-coverage + assembly argument (S3, S4), carried by the residual
+`sorry` of `p4_succ_membership`. The standalone `p4_half_steps_compose`
+theorem (former `: True` placeholder) was deleted in N2-bis: its pure-evolve
+content is exactly `evolve_add` + `evolve_half_step` (both proven), and its
+wave-assembly content is exactly the S3/S4 residual, so it duplicated an
+already-closed obligation — a vacuous placeholder (G.2). -/
 
 /-- **S1** (CLOSED): `evolve (a + b) g = evolve a (evolve b g)`.
 
@@ -2457,23 +2460,12 @@ private theorem window_cone_in_domain (k : Nat) (p q : Int × Int)
   refine ⟨?_, ?_, ?_, ?_⟩
   all_goals linarith
 
-/-- **P4.4** (compositional, hardest): the two half-steps compose — wave 1
-    (advancing `2^(k-1)` generations) followed by wave 2 (another `2^(k-1)`)
-    equals `evolve (2^k)` on the centered window, because the boundary of
-    each sub-cell does not leak into the live region (light-cone lemma P2,
-    `step_light_cone`, proven above). Difficulty: P4.4 (research-level).
-
-    **Balisage (c.145)**: decomposed into S1 (CLOSED, `evolve_add`) + S2/S3/S4
-    sub-sorries — see the section docstring above. Until S2–S4 close, this
-    remains the `True` placeholder consumed structurally by `p4_succ_membership`. -/
-theorem p4_half_steps_compose
-    (c : MacroCell) (k : Nat) (hwf : c.wf = true) (hk : c.level = k + 2) : True := by
-  sorry
-
 /-- **P4 entry point**: the pointwise membership biconditional for the
     inductive step. Glues `p4_double_nine_shape` (P4.1), `p4_wave1_ih`
-    (P4.2), `p4_wave2_ih` (P4.3), and `p4_half_steps_compose` (P4.4). Once
-    the four sub-lemmas are proven, this function produces the
+    (P4.2), and `p4_wave2_ih` (P4.3). The P4.4 half-step composition is
+    subsumed by the closed lemmas `evolve_add` (L2353) + `evolve_half_step`
+    (L2370) and the wave-assembly residual carried in this proof body's own
+    `sorry`. Once the residual closes, this function produces the
     `∀ p, p ∈ ... ↔ p ∈ ...` hypothesis that `p4_ext_bridge` consumes.
 
     **Pointwise-proof balisage (c.147)** — the residual `sorry` after `intro p`
@@ -2504,7 +2496,6 @@ noncomputable def p4_succ_membership
   have _h1 := p4_double_nine_shape c k hwf hk
   have _h2 := p4_wave1_ih c k hwf hk hk1 ih
   have _h3 := p4_wave2_ih c k hwf hk hk1 ih
-  have _h4 := p4_half_steps_compose c k hwf hk
   intro p
   -- LHS assembly (c.156). The 3 G3 gates (hcnode, hashlifeResultAux_succ_node,
   -- if_neg) now compose through the whnf wall, exposing the `node out_*`
@@ -2805,28 +2796,29 @@ both hypotheses `(hwf : (padCenter2 c).wf = true)` and
 from `c.wf = true` and `1 ≤ c.level`. The "wf composition lift residual"
 dispatched 2026-06-15 09:59Z is now structurally closed on both axes.
 
-**Residual obstacle chain (4 `sorry` total: L2471, L2536, L2853, L2862).**
+**Residual obstacle chain (3 `sorry` total: L2527, L2855, L2864).**
 
-  `p5_large_n_jump`            (L2852, re-signed to real target — proof body `sorry` at L2853)
-    └→ `hashlifeResult_central_correct`  (L2555 — P4 entry point)
-         └→ inductive `succ k` arm of P4 — residual `sorry`s:
-              · `p4_half_steps_compose`  (L2470, P4.4 placeholder `True` — see note)
-              · wave-glue residual       (L2536, succ-arm composition)
+  `p5_large_n_jump`            (L2852, re-signed to real target — proof body `sorry` at L2855)
+    └→ `hashlifeResult_central_correct`  (L2546 — P4 entry point)
+         └→ inductive `succ k` arm of P4 — 1 residual `sorry`:
+              · wave-glue residual       (L2527, succ-arm composition + assembly)
             (the shape/IH sub-lemmas `p4_double_nine_shape` L1744, `p4_wave1_ih_step`
-            L2108, `p4_wave2_ih_step` L2146 carry no `sorry` in the current file)
+            L2108, `p4_wave2_ih_step` L2146 carry no `sorry`; the P4.4 half-step
+            composition is closed via `evolve_add`/`evolve_half_step` — see note)
 
 The P4 inductive step is **research-level, multi-cycle**. The base case `k = 0`
 of P4 is already fully proven (`hashlifeResult_central_correct_base`, L1648,
 shape lemmas + `2^16` `native_decide`).
 
-**Note on `p4_half_steps_compose` (L2470, P4.4).** The pure evolve half-step
-composition is already closed (`evolve_add` L2353, `evolve_half_step` L2370), so
-re-signing this placeholder to a raw-evolve statement would be vacuously provable
-(gaming the sorry count). The genuine P4.4 content — the hashlife wave
-decomposition on the centered window — is the wave-glue residual at L2536. So
-`p4_half_steps_compose` is, as stated, redundant: its honest treatment is either
-deletion (sorry 4→3) or a re-statement tied to the hashlife wave structure
-(coordinator call). Left as `True` placeholder pending that call.
+**Note on P4.4 (SUPPRESSED in N2-bis, 2026-07-09).** The standalone
+`p4_half_steps_compose` theorem was a `: True` placeholder. Its pure-evolve
+half-step content is exactly `evolve_add` (L2353) + `evolve_half_step` (L2370),
+both already proven sorry-free; its wave-assembly content is exactly the
+wave-glue residual (L2527). Re-signing it would either duplicate L2527 or be
+vacuously provable (gaming the sorry count, G.2), so the coordinator greenlit
+its **deletion** (sorry 4→3) together with its unused `have _h4` consumer in
+`p4_succ_membership`. P4.4 is now carried by `evolve_add`/`evolve_half_step`
+(closed) + the L2527 residual.
 
 **Independently provable sub-claim (sorry-free additive grain, P4-free).**
 
@@ -2846,7 +2838,7 @@ real conclusion
   `(h : BoxAssezGrand g n) (hbig : n ≥ jumpSize (gridToMacroCellWithOffset g).2.level) →`
   `  evolveHashlifeFast n g = evolve n g`
 
-with the proof body still `sorry` (L2853) pending the P4 unlock. The obstacle
+with the proof body still `sorry` (L2855) pending the P4 unlock. The obstacle
 remains structural-on-P4, not local-on-P5. -/
 
 /-- **P5.2** (compositional, blocked on P4): when `n ≥ 2^(k-2)`,
