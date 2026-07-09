@@ -6,13 +6,16 @@ Cross-directory inventory of all Lean 4 formalization projects under `GameTheory
 
 | Directory | Toolchain | Production sorry | Modules | Status |
 |-----------|-----------|-----------------|---------|--------|
-| `stable_marriage_lean` | v4.30.0-rc2 | 0 | 5 files | COMPLETE |
-| `cooperative_games_lean` | v4.30.0-rc2 | 0 | 3 files | COMPLETE |
-| `social_choice_lean` | v4.30.0-rc2 | 0 | 7 files | COMPLETE |
+| `stable_marriage_lean` | v4.31.0-rc1 | 0 | 5 files | COMPLETE |
+| `cooperative_games_lean` | v4.31.0-rc1 | 0 | 3 files | COMPLETE |
+| `social_choice_lean` | v4.31.0-rc1 | 0 | 7 files | COMPLETE |
 | `social_choice_lean_peters` | v4.27.0-rc1 | 0 | 1 file | Reference only |
+| `repeated_games_lean` | v4.31.0-rc1 | 0 (1 stretch) | 4 files | COMPLETE (Folk stretch) |
 | `minimax_lean` | v4.31.0-rc1 | 0 | 2 files | COMPLETE |
+| `lean_game_defs` | v4.31.0-rc1 | 0 | 6 files | COMPLETE (shared defs) |
+| `lean_game_defs_ext` | v4.31.0-rc1 | 0 | 11 files | COMPLETE |
 | `conway_cgt_lean` | v4.31.0-rc1 | 0 | 1 file | Reference tour |
-| **Total** | — | **0** | **19 files** | — |
+| **Total** | — | **0** (+1 stretch) | **39 files** | — |
 
 Note: `_GoalExtract.lean` (former prover test file) has been removed from the repo. `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) is a pedagogical example, not production.
 
@@ -28,7 +31,7 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 **Objective**: Formalize the Gale-Shapley stable marriage algorithm and its lattice-theoretic properties.
 
-**Toolchain**: v4.30.0-rc2 | **Dependencies**: Mathlib4
+**Toolchain**: v4.31.0-rc1 | **Dependencies**: Mathlib4
 
 | File | sorry | Description |
 |------|-------|-------------|
@@ -56,7 +59,7 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 **Objective**: Formalize cooperative game theory (Shapley value, core).
 
-**Toolchain**: v4.30.0-rc2 | **Dependencies**: Mathlib4
+**Toolchain**: v4.31.0-rc1 | **Dependencies**: Mathlib4
 
 | File | sorry | Description |
 |------|-------|-------------|
@@ -74,7 +77,7 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 **Objective**: Port asouther4/lean-social-choice (Lean 3) to Lean 4. Arrow, Sen, Voting, Mechanism Design.
 
-**Toolchain**: v4.30.0-rc2 | **Dependencies**: Mathlib4
+**Toolchain**: v4.31.0-rc1 | **Dependencies**: Mathlib4
 
 | File | sorry | Description |
 |------|-------|-------------|
@@ -109,7 +112,26 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 ---
 
-### 5. minimax_lean
+### 5. repeated_games_lean
+
+**Objective**: Formalize repeated games — the iterated Prisoner's Dilemma with discounting, grim-trigger strategy, and the Folk theorem (sustainable payoffs).
+
+**Toolchain**: v4.31.0-rc1 | **Dependencies**: Mathlib4
+
+| File | sorry | Description |
+|------|-------|-------------|
+| `RepeatedGames/Stage.lean` | 0 | Stage game, Prisoner's Dilemma (PDAction), `defection_strictly_dominates`, `temptation_gt_reward` |
+| `RepeatedGames/Discounting.lean` | 0 | Discount factor δ, geometric sums, `discount_threshold_rewrite` |
+| `RepeatedGames/GrimTrigger.lean` | 0 | Grim strategy, **`grim_trigger_sustains_iff`** (theorem-phare, FORMAL-CERTIFIED), NE corollary |
+| `RepeatedGames/Folk.lean` | 1 (stretch) | `folk_theorem_discounted` / `folk_theorem_boundary` — 1 sorry stretch (toléré, #4880) |
+
+**Build**: `lake build RepeatedGames` — SUCCESS (2953 jobs, post-#5362) | **COMPLETE: 0 sorry on the theorem-phare; Folk stretch OPEN**
+
+**Status**: `grim_trigger_sustains_iff` (sustains a subgame-perfect Nash iff δ ≥ threshold) is fully proved 0 sorry. The Folk theorem (`folk_theorem_discounted`) carries 1 stretch sorry, tolerated per #4880 (grim already covers the closure criterion). See [`repeated_games_lean/FORMAL_STATUS.md`](repeated_games_lean/FORMAL_STATUS.md).
+
+---
+
+### 6. minimax_lean
 
 **Objective**: Formalize the two-player zero-sum game minimax setting — payoff bilinearity and continuity as the foundation for von Neumann's minimax theorem.
 
@@ -128,7 +150,52 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 ---
 
-### 6. conway_cgt_lean
+### 7. lean_game_defs
+
+**Objective**: Shared game-theoretic type definitions (normal-form games, Bayesian games, combinatorial games, social choice, regret) — the foundational layer reused by the GT Lean notebooks. Self-contained (core Lean only, zero Mathlib dependency).
+
+**Toolchain**: v4.31.0-rc1 | **Dependencies**: Lean core (Mathlib-free)
+
+| File | sorry | Description |
+|------|-------|-------------|
+| `LeanGameDefs/Basic.lean` | 0 | NormalFormGame / FiniteGame core types |
+| `LeanGameDefs/Nash.lean` | 0 | Nash equilibrium definitions |
+| `LeanGameDefs/Bayesian.lean` | 0 | Bayesian game types |
+| `LeanGameDefs/Combinatorial.lean` | 0 | Combinatorial game types |
+| `LeanGameDefs/SocialChoice.lean` | 0 | Social choice primitives (`dictatorship_satisfies_pareto`, `dictatorship_satisfies_iia`) |
+| `LeanGameDefs/Regret.lean` | 0 | Regret / minimax-regret definitions |
+
+**Build**: `lake build LeanGameDefs` — SUCCESS (CI `lean-game-defs.yml`) | **COMPLETE: 0 sorry, Mathlib-free**
+
+**Status**: Infrastructural definitions layer (2 theorems verifying dictatorship axioms). Added `lakefile.toml` + CI per ai-01 review on PR #2752 (these shared defs were previously shipped without a build harness, #2673). Backend for the GT Lean notebooks that reference these types. `lean_game_defs_ext` (next) extends it with Bayesian mechanism-design proofs.
+
+---
+
+### 8. lean_game_defs_ext
+
+**Objective**: Bayesian games & mechanism design — Vickrey truthfulness, Bayesian-Nash equilibrium, auctions, reputation. Extension of `lean_game_defs` (shared definitions), Mathlib-free.
+
+**Toolchain**: v4.31.0-rc1 | **Dependencies**: Lean core (Mathlib-free)
+
+| File | sorry | Description |
+|------|-------|-------------|
+| `Bayesian/Types.lean` | 0 | Bayesian game type definitions |
+| `Bayesian/Bayesian.lean` | 0 | Bayesian-Nash equilibrium framework |
+| `Bayesian/Vickrey.lean` | 0 | Vickrey (second-price auction) truthfulness theorem |
+| `Bayesian/Auction.lean` | 0 | Auction mechanisms |
+| `Bayesian/BNE.lean` | 0 | Bayesian-Nash equilibrium refinement |
+| `Bayesian/Information.lean` + `InfoGames.lean` | 0 | Information structures, info games |
+| `Bayesian/Reputation.lean` | 0 | Reputation dynamics |
+| `Bayesian/Max.lean` + `Sum.lean` | 0 | Max/sum helpers |
+| `Bayesian/Examples.lean` | 0 | Worked examples |
+
+**Build**: `lake build` — SUCCESS | **COMPLETE: 0 sorry, no Mathlib**
+
+**Status**: Vickrey truthfulness (second-price auction dominant strategy = truthful bidding) proved 0 sorry, Mathlib-free. Backend for the Lean-11b BayesianGamesExt companion notebook.
+
+---
+
+### 9. conway_cgt_lean
 
 **Objective**: Reference tour of combinatorial game theory (surreal numbers, partizan games, nimbers) using Mathlib's `SetTheory.Surreal` / `PGame` / `Game` / `Nimber`. Inspired by `vihdzp/combinatorial-games` and Conway's *On Numbers and Games*.
 
