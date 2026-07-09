@@ -434,6 +434,109 @@ class TestCodeCellOnlyExercise:
 
 
 # ---------------------------------------------------------------------------
+# Lean (``--`` line comment) detection -- mirrors the C# ``//`` tests above.
+# ---------------------------------------------------------------------------
+
+class TestLeanDoubleDashCommentExercise:
+    def test_lean_double_dash_comment_exercise_is_counted(self, tmp_path):
+        """Lean 4 / Haskell line comments use ``--`` (not ``#`` or ``//``).
+        A stub code cell whose ``-- Exercice ...`` comment names an exercise
+        with NO preceding markdown header must be counted -- historically the
+        canonical tool was blind to the entire Lean family (GameTheory-Lean
+        ``-- Exercice N`` stubs), re-discovered ad-hoc notebook by notebook.
+        """
+        nb = _write_nb(
+            tmp_path / "lean.ipynb",
+            [
+                _md("# Titre Lean"),
+                # Lean code-cell-only exercise, no markdown header above:
+                _code(
+                    "-- Exercice : Shapley value for n = 3\n"
+                    "-- TODO etudiant : calculer phi_i\n"
+                    "sorry\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "Lean -- Exercice stub (no markdown header) must count"
+        )
+        assert result.exercises[0].detected_by == "code_cell_comment"
+
+    def test_lean_scaffolded_exercise_todo_with_code_is_counted(
+        self, tmp_path
+    ):
+        """A scaffolded Lean exercise -- ``-- Exercice N`` + ``-- TODO etudiant``
+        ABOVE a partial formalisation skeleton (multiple lines, each a ``--``
+        comment) -- is a student stub, NOT a solution. The ``-- TODO`` marker
+        must classify it as a stub; without the ``--`` comment-stripping the
+        ``<= 1 effective code-line`` rule counted every ``--`` comment line as
+        code and the cell escaped stub classification.
+
+        Regression for ``SocialChoice/02-Lean-SocialChoice-Formal`` cells
+        32-34 (Pareto / Condorcet / median): each ``-- EXERCICE N`` +
+        ``-- TODO etudiant`` + formalisation skeleton was silently
+        under-counted, so the notebook read as 1 exercise instead of its
+        real 4 (markdown header + 3 code stubs).
+        """
+        nb = _write_nb(
+            tmp_path / "lean_scaffold.ipynb",
+            [
+                _md("# Theorie du choix social"),
+                _md("## Exercice 1 : Pareto"),
+                _code(
+                    "-- Exercice 1 : verifier le respect de Pareto\n"
+                    "-- Soit 2 individus et 3 alternatives.\n"
+                    "-- TODO etudiant : prouver le resultat\n"
+                    "--   etape 1 : appliquer la definition\n"
+                    "theorem pareto_respected : True := by trivial\n"
+                ),
+                _md("## Exercice 2 : Condorcet"),
+                _code(
+                    "-- Exercice 2 : cycle de Condorcet\n"
+                    "-- 3 electeurs, 3 alternatives.\n"
+                    "-- TODO etudiant : calculer les marges\n"
+                    "theorem condorcet_cycle : True := by trivial\n"
+                ),
+                _md("## Exercice 3 : electeur median"),
+                _code(
+                    "-- Exercice 3 : preferences unimodales\n"
+                    "-- TODO etudiant : verifier le vainqueur\n"
+                    "theorem median_winner : True := by trivial\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "3 scaffolded Lean -- Exercice stubs must each count"
+        )
+
+    def test_lean_solution_code_cell_is_not_an_exercise(self, tmp_path):
+        """A Lean code cell whose ``-- Exercice`` comment sits ABOVE a COMPLETE
+        proof (not a stub) is an example, not an exercise -- not counted,
+        mirroring ``test_solution_code_cell_is_not_an_exercise`` for the
+        Python form.
+        """
+        solution = (
+            "-- Exercice 1 : preuve complete\n"
+            "-- Demonstration du theoreme.\n"
+            "theorem foo (n : Nat) : n + 0 = n := by\n"
+            "  rw [Nat.add_zero]\n"
+        )
+        nb = _write_nb(
+            tmp_path / "lean_sol.ipynb",
+            [
+                _md("# Titre Lean"),
+                _code(solution),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 0, (
+            "Lean -- Exercice above a complete proof is an example, not counted"
+        )
+
+
+# ---------------------------------------------------------------------------
 # Stub classification
 # ---------------------------------------------------------------------------
 

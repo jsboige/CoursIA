@@ -118,6 +118,17 @@ STUB_PATTERNS = [
     re.compile(r"//\s*TODO", re.IGNORECASE),
     re.compile(r"#\s*Indice", re.IGNORECASE),
     re.compile(r"//\s*Indice", re.IGNORECASE),
+    # Lean 4 / Haskell line comments use ``--``. A scaffolded Lean exercise
+    # (``-- Exercice N`` + ``-- TODO etudiant`` + partial skeleton) is a student
+    # stub, not a solution: without the ``--`` form it escaped both STUB_PATTERNS
+    # and the ``<= 1 effective code-line`` rule (Lean comment lines were counted
+    # as code lines), so Lean notebooks were silently under-counted (e.g.
+    # GameTheory/SocialChoice/02-Lean-SocialChoice-Formal cells 32-34, each
+    # ``-- EXERCICE N`` + ``-- TODO etudiant`` + formalisation skeleton; and
+    # GameTheory-2b/4b/15b-Lean ``-- Exercice N`` stubs). Analogous to the C#
+    # ``//`` blind-spot fixed in #5179, now closed for the Lean family.
+    re.compile(r"--\s*TODO", re.IGNORECASE),
+    re.compile(r"--\s*Indice", re.IGNORECASE),
     # `$?` accepts both regular (`"..."`) and interpolated (`$"..."`) strings:
     # `Console.WriteLine($"Exercice 2 a completer ...")` is the idiomatic C#
     # interpolated form and was not matched by the quote-only variant.
@@ -200,6 +211,11 @@ def _is_stub_code(source: str) -> bool:
         if ln.strip()
         and not ln.strip().startswith("#")
         and not ln.strip().startswith("//")
+        # Lean 4 / Haskell line comments start with ``--``; without this they
+        # were counted as effective code lines, so a Lean stub cell full of
+        # ``--`` scaffold comments read as multi-line "code" and escaped the
+        # ``<= 1 effective code-line`` rule.
+        and not ln.strip().startswith("--")
     ]
     code_lines = [
         ln for ln in lines
@@ -213,19 +229,23 @@ def _code_cell_mentions_exercise(source: str) -> bool:
     """A code cell whose comments name an exercise.
 
     Language-agnostic comment detection: a full-line comment is one whose
-    stripped form starts with ``#`` (Python / F# / Lean) OR ``//`` (C# /
-    .NET Interactive). Inline trailing comments (``code // Exercice``) are
-    intentionally NOT matched -- a stub marker is a full-line comment, not a
-    reference buried after executable code.
+    stripped form starts with ``#`` (Python / F#) OR ``//`` (C# /
+    .NET Interactive) OR ``--`` (Lean 4 / Haskell). Inline trailing comments
+    (``code // Exercice``) are intentionally NOT matched -- a stub marker is a
+    full-line comment, not a reference buried after executable code.
 
     Historically this only matched ``#``, which made every C# notebook blind
     to ``// Exercice N`` stubs (the .NET family uses ``//``). Agents then
     re-discovered the undercount ad-hoc, notebook by notebook (Probas/Infer,
     ML.Net). Matching ``//`` here closes that blind-spot at the source.
+    Matching ``--`` closes the analogous Lean blind-spot (GameTheory-Lean
+    ``-- Exercice N`` stubs were invisible to the canonical tool).
     """
     comments = [
         ln for ln in source.split("\n")
-        if ln.strip().startswith("#") or ln.strip().startswith("//")
+        if ln.strip().startswith("#")
+        or ln.strip().startswith("//")
+        or ln.strip().startswith("--")
     ]
     blob = "\n".join(comments)
     return bool(EXERCISE_WORD_RE.search(blob) or EXERCISE_WORD_EN_RE.search(blob))
