@@ -274,7 +274,7 @@ IIT/
 ├── IIT-3-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
-│   ├── ICT-*.ipynb             # Notebooks numérotés 1..21 et 23 + raffinement ICT-19 + ICT-Synthese (5 strates, Epic #4588 — cf son README)
+│   ├── ICT-*.ipynb             # Notebooks numérotés 1..23 + raffinement ICT-19 + ICT-Synthese (5 strates, Epic #4588 — cf son README)
 │   ├── ict/                    # Package Python autonome (simulations + mesures)
 │   ├── tests/                  # Suite pytest de validation des modules ict/
 │   └── README.md               # Documentation de la série ICT
