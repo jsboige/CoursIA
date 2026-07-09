@@ -51,6 +51,14 @@ flowchart LR
 
 La différence fondatrice : le ML classique produit un **point**, la programmation probabiliste produit une **distribution** (en bleu). Cette incertitude native se propage jusqu'à la décision — on maximise l'utilité espérée `E[U]`, pas un seul score.
 
+### De la distribution à l'utilité : pourquoi la courbe est concave
+
+La maximisation de `E[U]` repose sur une hypothèse centrale de la théorie de la décision sous incertitude : l'utilité est une fonction **concave** de la richesse. Trois fonctions fondamentales l'illustrent ci-dessous — racine carrée `√x`, logarithme `ln(x)` (toutes deux concaves) et fonction linéaire `x` (neutre au risque, en référence) — chacune traduisant l'utilité marginale décroissante (chaque euro supplémentaire apporte moins d'utilité que le précédent pour les courbes concaves), fondement de l'aversion au risque :
+
+![Trois fonctions d'utilité fondamentales sur trois panneaux côte-à-côte : racine carrée U(x)=√x (concave), logarithme U(x)=ln(x) (concave), et linéaire U(x)=x (neutre au risque, en référence) — montrant l'utilité marginale décroissante : les deux courbes concaves s'aplatissent quand la richesse x augmente (chaque euro supplémentaire apporte moins d'utilité que le précédent), tandis que la linéaire reste constante (aversion nulle). Fondement de la théorie de la décision sous incertitude (Pratt 1964, Arrow 1965). Extrait du notebook DecPyMC-2-Utility-Money, cellule « Démonstration numérique : utilité marginale décroissante ».](assets/readme/probas-utility-functions.png)
+
+*Source : [`DecPyMC-2-Utility-Money.ipynb`](DecisionTheory/PyMC/DecPyMC-2-Utility-Money.ipynb) (cellule 10 « Démonstration numérique : utilité marginale décroissante », index toutes-cellules), track DecisionTheory/PyMC.*
+
 ## Objectifs d'apprentissage
 
 À l'issue de cette série, vous serez capable de :
