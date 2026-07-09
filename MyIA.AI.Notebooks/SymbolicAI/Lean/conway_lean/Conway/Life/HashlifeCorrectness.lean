@@ -2805,25 +2805,33 @@ both hypotheses `(hwf : (padCenter2 c).wf = true)` and
 from `c.wf = true` and `1 ≤ c.level`. The "wf composition lift residual"
 dispatched 2026-06-15 09:59Z is now structurally closed on both axes.
 
-**Residual obstacle chain.**
+**Residual obstacle chain (4 `sorry` total: L2471, L2536, L2853, L2862).**
 
-  `p5_large_n_jump`            (L1646, currently `: True` placeholder)
-    └→ `hashlifeResult_central_correct`  (L1412 — P4 entry point)
-         └→ inductive `succ k` arm of P4 — five `sorry`s:
-              ├ `p4_double_nine_shape`   (L1344, P4.1: 9-cell tiling shape)
-              ├ `p4_wave1_ih`            (L1354, P4.2: first IH wave)
-              ├ `p4_wave2_ih`            (L1364, P4.3: second IH wave)
-              ├ `p4_half_steps_compose`  (L1375, P4.4: `step_light_cone` chained)
-              └ `p4_succ_membership`     (L1393, glue: pointwise biconditional)
+  `p5_large_n_jump`            (L2852, re-signed to real target — proof body `sorry` at L2853)
+    └→ `hashlifeResult_central_correct`  (L2555 — P4 entry point)
+         └→ inductive `succ k` arm of P4 — residual `sorry`s:
+              · `p4_half_steps_compose`  (L2470, P4.4 placeholder `True` — see note)
+              · wave-glue residual       (L2536, succ-arm composition)
+            (the shape/IH sub-lemmas `p4_double_nine_shape` L1744, `p4_wave1_ih_step`
+            L2108, `p4_wave2_ih_step` L2146 carry no `sorry` in the current file)
 
 The P4 inductive step is **research-level, multi-cycle**. The base case `k = 0`
-of P4 is already fully proven (`hashlifeResult_central_correct_base`, L1259,
+of P4 is already fully proven (`hashlifeResult_central_correct_base`, L1648,
 shape lemmas + `2^16` `native_decide`).
+
+**Note on `p4_half_steps_compose` (L2470, P4.4).** The pure evolve half-step
+composition is already closed (`evolve_add` L2353, `evolve_half_step` L2370), so
+re-signing this placeholder to a raw-evolve statement would be vacuously provable
+(gaming the sorry count). The genuine P4.4 content — the hashlife wave
+decomposition on the centered window — is the wave-glue residual at L2536. So
+`p4_half_steps_compose` is, as stated, redundant: its honest treatment is either
+deletion (sorry 4→3) or a re-statement tied to the hashlife wave structure
+(coordinator call). Left as `True` placeholder pending that call.
 
 **Independently provable sub-claim (sorry-free additive grain, P4-free).**
 
-The proof plan (L1588-1591) states "the jump expands the bounding box by at
-most `2^(k-2)`, within the padding margin", so the claim
+The proof plan states "the jump expands the bounding box by at most `2^(k-2)`,
+within the padding margin", so the claim
 
   `BoxAssezGrand g n → n ≥ jumpSize ... → BoxAssezGrand (jumpResult g) (n - jumpSize ...)`
 
@@ -2832,14 +2840,14 @@ It does **not** depend on `hashlifeResult_central_correct` and can be discharged
 via decidable evaluation + `Nat` arithmetic. This is a natural next sorry-free
 additive grain on the P5.2 frame, queueable behind the P4 verrou unlock.
 
-**Placeholder defect.** `p5_large_n_jump : True` (L1646) is vacuously typed —
-the real target is something like
+**Re-signed target (N2, 2026-07-09).** `p5_large_n_jump` (L2852) now carries the
+real conclusion
 
   `(h : BoxAssezGrand g n) (hbig : n ≥ jumpSize (gridToMacroCellWithOffset g).2.level) →`
   `  evolveHashlifeFast n g = evolve n g`
 
-When the P4 verrou unlocks, both the signature AND the proof body need to be
-filled in. Until then the obstacle remains structural-on-P4, not local-on-P5. -/
+with the proof body still `sorry` (L2853) pending the P4 unlock. The obstacle
+remains structural-on-P4, not local-on-P5. -/
 
 /-- **P5.2** (compositional, blocked on P4): when `n ≥ 2^(k-2)`,
     `evolveHashlifeFast n g` makes one Hashlife jump of `2^(k-2)` generations
@@ -2849,7 +2857,9 @@ filled in. Until then the obstacle remains structural-on-P4, not local-on-P5. -/
     cells into the live region, and `box_assez_grand` is preserved through the
     recursion. Difficulty: P5.2 (research-level; **blocked until P4
     inductive step proven**). -/
-theorem p5_large_n_jump (n : Nat) (g : Grid) (h : BoxAssezGrand g n) : True := by
+theorem p5_large_n_jump (n : Nat) (g : Grid) (h : BoxAssezGrand g n)
+    (hbig : n ≥ jumpSize (gridToMacroCellWithOffset g).2.level) :
+    evolveHashlifeFast n g = evolve n g := by
   sorry
 
 /-- **P5.3** (glue): the full induction on `n`, with a case split on
