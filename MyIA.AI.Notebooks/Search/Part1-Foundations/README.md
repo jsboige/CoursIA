@@ -6,6 +6,10 @@ Comment passer d'une énumération exhaustive à une exploration intelligemment 
 
 Le parcours s'ouvre sur une idée simple et étonnamment puissante : avant de résoudre un problème, il faut le poser. Search-1 montre qu'un taquin, un aspirateur-robot et une recherche d'itinéraire sont un seul et même objet mathématique — un espace d'états (S, A, T, G) — et que cette formalisation suffit à rendre le problème calculable. Search-2 lance alors l'exploration à l'aveugle : BFS garantit l'optimal mais explose en mémoire, DFS file droit mais peut se perdre, et leurs variantes (UCS, IDDFS) négocient chacune un compromis différent entre garantie et coût. Search-3 apporte la réponse classique à cette explosion : une heuristique — une estimation du chemin restant — et l'algorithme A*, dont l'optimalité tient à une propriété fine, l'admissibilité, que le notebook prend le temps d'éprouver plutôt que de la postuler.
 
+Cette formalisation se voit : le **monde de l'aspirateur** (Search-1) se ramène à un espace d'états de huit nœuds — la position de l'aspirateur croisée à la propreté des deux pièces — reliés par des transitions colorées selon l'action exécutée (aspirer, aller à gauche, aller à droite). C'est ce graphe qu'explorent ensuite tous les algorithmes de la partie.
+
+[![Espace d'états du monde de l'aspirateur : 8 états en grille, transitions colorées par action](assets/readme/search1-statespace.png)](Search-1-StateSpace.ipynb)
+
 La suite change deux fois de point de vue. Quand seule la destination compte — pas le chemin —, la recherche locale (Search-4) abandonne l'arbre d'exploration pour naviguer de voisin en voisin dans un paysage de fitness, quitte à accepter temporairement de moins bonnes solutions pour s'échapper des optima locaux (recuit simulé, recherche tabou). Les algorithmes génétiques (Search-5) généralisent le procédé : une population entière explore en parallèle, sélection et croisement faisant émerger les bonnes solutions. Et quand l'environnement riposte — un adversaire joue contre vous —, la recherche devient un jeu : Minimax et l'élagage Alpha-Beta (Search-6), puis Monte Carlo Tree Search (Search-7), qui remplace l'évaluation experte par la simulation statistique et mène jusqu'à l'architecture d'AlphaGo.
 
 Trois extensions complètent le panorama. La couverture exacte et les Dancing Links de Knuth (Search-8), structure de données spectaculaire qui résout Sudoku, N-Queens et Pentominoes par simple manipulation de pointeurs. La programmation linéaire (Search-9), qui troque le discret pour le continu et résout en quelques lignes de PuLP des problèmes de transport et de régime alimentaire. Les automates symboliques (Search-10), où les transitions deviennent des prédicats Z3 — premier pont vers l'IA symbolique. Search-11 referme la partie en confrontant les métaheuristiques (PSO, ABC, recuit) sur des benchmarks communs : l'occasion de constater qu'aucune ne domine partout, et d'apprendre à choisir.
@@ -23,25 +27,6 @@ Cette partie est l'alphabet de toute la série : la formalisation en espace d'é
 3. **Concevoir et évaluer** des heuristiques admissibles et consistantes pour guider la recherche
 4. **Appliquer** la recherche adversariale (Minimax, Alpha-Beta, MCTS) aux jeux à deux joueurs
 5. **Comparer** les métaheuristiques sur des benchmarks réels et justifier le choix d'un algorithme
-
-## Aperçu — la recherche en IA en images
-
-Six visualisations extraites des notebooks illustrent l'arc complet de cette partie, depuis la formalisation d'un problème en graphe d'états jusqu'aux métaheuristiques comparées et aux plus courts chemins sur réseaux.
-
-<table>
-<tr>
-<td align="center"><b>1 · Espace d'états</b><br><a href="Search-1-StateSpace.ipynb"><img src="assets/readme/search1-statespace.png" width="290" alt="Espace d'états : modélisation d'un problème comme un graphe d'états et de transitions explorables."></a></td>
-<td align="center"><b>2 · BFS vs DFS</b><br><a href="Search-2-Uninformed.ipynb"><img src="assets/readme/search2-bfs-dfs.png" width="290" alt="BFS vs DFS : ordre d'expansion comparé d'un parcours en largeur et en profondeur sur un arbre."></a></td>
-<td align="center"><b>3 · Recherche A*</b><br><a href="Search-3-Informed.ipynb"><img src="assets/readme/search3-astar.png" width="290" alt="Recherche informée (A*) : l'heuristique guide l'exploration du 8-puzzle vers le but en réduisant les nœuds développés."></a></td>
-</tr>
-<tr>
-<td align="center"><b>11 · Métaheuristiques</b><br><a href="Search-11-Metaheuristics.ipynb"><img src="assets/readme/search11-metaheuristics.png" width="290" alt="Métaheuristiques : comparaison du recuit simulé, des algorithmes génétiques et de l'essaim particulaire."></a></td>
-<td align="center"><b>11 · Convergence</b><br><a href="Search-11-Metaheuristics.ipynb"><img src="assets/readme/search11-convergence.png" width="290" alt="Convergence métaheuristique : impact de la taille de population sur la qualité de la solution."></a></td>
-<td align="center"><b>15 · Réseaux</b><br><a href="Search-15-NetworkX.ipynb"><img src="assets/readme/search15-networkx.png" width="290" alt="Graphes avec NetworkX : plus court chemin (Dijkstra vs A*) sur un réseau routier régional."></a></td>
-</tr>
-</table>
-
-Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Notebooks
 
@@ -111,7 +96,11 @@ Pour le setup complet, voir le [README de la série Search](../README.md).
 
 ## Bibliothèques : parité Python `networkx` ↔ .NET `QuikGraph`
 
-Le notebook [Search-16-QuikGraph](Search-16-QuikGraph.ipynb) ferme la boucle côté **.NET Interactive** : il offre l'équivalent C# du notebook Python [Search-15-NetworkX](Search-15-NetworkX.ipynb), avec une table de parité structurelle entre les deux écosystèmes. La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algorithmes classiques (DFS, BFS, Dijkstra, Bellman-Ford, A\*, Edmonds-Karp, Tarjan, MST, Floyd-Warshall) et **suffit pour tous les notebooks Search 1-11** si l'on travaille en C# — son **verdict honnête** est qu'il ne fournit pas les centralités élaborées (betweenness, closeness, PageRank) ni la détection de communautés (Louvain), qu'il faut alors implémenter à la main ou brancher une autre bibliothèque.
+Le notebook [Search-16-QuikGraph](Search-16-QuikGraph.ipynb) ferme la boucle côté **.NET Interactive** : il offre l'équivalent C# du notebook Python [Search-15-NetworkX](Search-15-NetworkX.ipynb), avec une table de parité structurelle entre les deux écosystèmes. Le notebook Python modélise par exemple un réseau routier 5×5 : les arêtes sont colorées par poids (du jaune au rouge) et le plus court chemin — identique pour Dijkstra et A\* — y est tracé en rouge entre la source (en vert) et la destination (en rouge).
+
+[![Réseau routier 5×5 : arêtes pondérées colorées, plus court chemin Dijkstra en rouge](assets/readme/search15-networkx.png)](Search-15-NetworkX.ipynb)
+
+La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algorithmes classiques (DFS, BFS, Dijkstra, Bellman-Ford, A\*, Edmonds-Karp, Tarjan, MST, Floyd-Warshall) et **suffit pour tous les notebooks Search 1-11** si l'on travaille en C# — son **verdict honnête** est qu'il ne fournit pas les centralités élaborées (betweenness, closeness, PageRank) ni la détection de communautés (Louvain), qu'il faut alors implémenter à la main ou brancher une autre bibliothèque.
 
 > **Note de numérotation.** Les **bibliothèques de graphes** portent les numéros **15-16** (`Search-15-NetworkX` en Python, `Search-16-QuikGraph` en .NET), volontairement hors de la plage 1-11 des algorithmes fondamentaux et hors de la plage 12-14 réservée à la [Partie 3](../Part3-Advanced/README.md) (heuristiques avancées : `Search-12-PatternDatabases`, `Search-13-LimitedDiscrepancySearch`, `Search-14-WeightedAstar`). Chaque numéro désigne désormais un notebook unique.
 
@@ -151,6 +140,22 @@ Cette première partie a posé **l'alphabet de la recherche en IA**. L'arc péda
 - **La recherche locale et évolutive** (Search-4, Search-5, Search-11) — abandonner l'arbre d'exploration pour naviguer de voisin en voisin dans un paysage de fitness, accepter temporairement de dégrader (recuit simulé, tabou), puis laisser une population entière explorer en parallèle (génétiques, PSO, ABC). Le benchmark comparatif de Search-11 enseigne le **no-free-lunch** : aucune métaheuristique ne domine partout.
 - **La recherche dans les jeux** (Search-6, Search-7) — quand l'environnement riposte, la recherche devient adversariale : Minimax et l'élagage Alpha-Beta, puis Monte Carlo Tree Search, qui remplace l'évaluation experte par la simulation statistique et mène jusqu'à l'architecture d'AlphaGo.
 - **Trois extensions** (Search-8, Search-9, Search-10) — les Dancing Links de Knuth pour la couverture exacte, la programmation linéaire (du discret au continu via PuLP), et les automates symboliques où les transitions deviennent des prédicats Z3 — premier pont vers l'IA symbolique.
+
+Deux de ces familles se donnent à voir dans les figures extraites des notebooks. La **recherche systématique** oppose d'abord les stratégies à l'aveugle : sur un même arbre binaire, l'écart d'expansion entre BFS (par niveaux) et DFS (en profondeur) saute aux yeux dès qu'on numérote les nœuds par ordre d'exploration.
+
+[![BFS vs DFS : deux arbres binaires, nœuds numérotés par ordre d'exploration](assets/readme/search2-bfs-dfs.png)](Search-2-Uninformed.ipynb)
+
+Dès qu'une heuristique est disponible, A* exploite ce savoir pour prioriser les états prometteurs : sur le 8-puzzle, chaque état développé est annoté de ses coûts `g` (déjà parcouru), `h` (estimé par distance de Manhattan) et `f = g + h`, et l'optimum est atteint en explorant peu de nœuds.
+
+[![Progression d'A* sur le 8-puzzle : états successifs annotés g/h/f](assets/readme/search3-astar.png)](Search-3-Informed.ipynb)
+
+Côté **recherche locale et évolutive**, le benchmark comparatif de Search-11 confirme le *no-free-lunch* : aucune métaheuristique ne domine partout, que ce soit en fitness atteinte (échelle log) ou en temps de calcul.
+
+[![Comparaison des métaheuristiques : fitness (log) et temps, par algorithme et fonction](assets/readme/search11-metaheuristics.png)](Search-11-Metaheuristics.ipynb)
+
+L'étude du paramètre clé, la taille de population PSO, quantifie alors l'arbitrage entre qualité de la solution et coût de calcul.
+
+[![Impact de la taille de population PSO : fitness et temps](assets/readme/search11-convergence.png)](Search-11-Metaheuristics.ipynb)
 
 Le véritable enseignement, au-delà du catalogue d'algorithmes, est un **réflexe d'ingénieur** : chaque méthode y est présentée comme un compromis — complétude contre mémoire, garantie contre temps de calcul, exploration contre exploitation — et jamais comme une recette universelle.
 
