@@ -56,7 +56,7 @@ Strategies de trading algorithmique avec QuantConnect, pipeline ML (Transformer,
 | 1 | Infer-1-Setup : Introduction et Installation | ALPHA | Oui |
 | 2 | Infer-10-Crowdsourcing : Agregation de Labels et Fiabil | ALPHA | Oui |
 | 3 | Infer-11-Sequences : Hidden Markov Models et Series Tem | ALPHA | Oui |
-| 4 | Infer-12-Recommenders : Systemes de Recommandation | ALPHA | Oui |
+| 4 | Infer-15-Recommenders : Systemes de Recommandation | ALPHA | Oui |
 | 5 | Infer-13-Debugging : Troubleshooting et Bonnes Pratique | ALPHA | Oui |
 | 6 | Infer-14-Decision-Utility-Foundations : Axiomes et Fond | PRODUCTION | Oui |
 | 7 | Infer-15-Decision-Utility-Money : Utilite de l'Argent e | ALPHA | Oui |
