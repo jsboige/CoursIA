@@ -1,112 +1,47 @@
-# Continue - Resume Work
+# Continue - Cycle worker
 
-Resume work from GitHub issues OR local memory — reads context, checks state, picks next task, starts working.
+Reprendre le travail sur cette lane : lire les directives coordinateur, choisir la prochaine tache, livrer une PR, reporter. C'est le prompt du cron worker (30 min staggered). **Un worker ne lance JAMAIS `/coordinate`** (lecon #1502) : pas de merge, pas de `gh auth switch`, pas de close d'issue d'autrui.
 
 ## Workflow
 
-### Phase 1 : Charger le contexte (30s)
+### Phase 1 : Contexte (30s)
 
 1. Lire `MEMORY.md` (auto-memory) pour l'etat des sessions precedentes
+2. `git checkout main && git pull --ff-only` — repartir d'un main courant (les branches feature se rebasent frais, cf [catalog-pr-hygiene](../rules/catalog-pr-hygiene.md))
+3. `git status` — si l'arbre partage est sale (WIP d'une autre session), travailler en **worktree isole** : `git worktree add ../CoursIA-<sujet> -b feature/<sujet> origin/main`. Ne jamais stasher/toucher le WIP d'autrui.
 
-2. **Option A - GitHub issues** (si applicable):
+### Phase 1.5 : Tour RooSync (obligatoire, AVANT de travailler)
 
-   - `git status` et `git log --oneline -5` pour l'etat du depot
-   - `gh issue list --state open` pour les issues ouvertes
+1. **Inbox DM en PREMIER** : `roosync_messages(action:"inbox", status:"unread")` — le DM est le canal de decision du coordinateur, il survit a la condensation du dashboard.
+2. **Dashboard workspace** : `roosync_dashboard(action:"read", type:"workspace", section:"all")` — chercher les `[DISPATCH→inbox]` et les steers de MA lane (`machine:workspace`). Si la machine a une lane CoursIA-2, lire aussi ce dashboard pour cette lane.
+3. **Filtrage workspace** : traiter UNIQUEMENT les messages adresses a cette lane ou cette machine ; ignorer les autres workspaces.
+4. Missions coordinateur (ai-01) HIGH/URGENT = priorite sur les taches locales. Accuser reception (reply DM ou dashboard).
 
-3. **Option B - Memoires locales** (si pas d'issue GitHub):
+### Phase 2 : Choisir la tache
 
-   - Lire `.claude/memory/*.md` pour les taches en cours
-   - Identifier les fichiers memoire pertinents (ex: `issue-XX-*.md`)
+**P0 — Missions coordinateur** : DM HIGH/URGENT, puis steers dashboard de ma lane.
 
-### Phase 1.5 : Tour de coordination RooSync (obligatoire)
+**P1 — Travail en cours** : tache `[CLAIMED]` par cette lane non terminee, deep-queue de la lane si posee sur le dashboard.
 
-**TOUJOURS executer avant de commencer le travail**, pour detecter les nouvelles missions du coordinateur.
+**P2 — Pool global (auto-alimentation, JAMAIS d'idle)** : `gh issue list --state open` **en entier, cross-lane** — la lane est une etiquette de reporting, pas une frontiere de travail. Prendre n'importe quelle issue techniquement executable (autre famille, autre langage : rien n'est "le turf d'un autre"), poser `[CLAIMED] <#N> — <machine:workspace> <ts>` sur le dashboard AVANT de commencer, livrer. Regles completes : [proactive-coordination.md](../rules/proactive-coordination.md) (>=1 PR/wakeup = PLANCHER, variete R6, "rien a faire" avec >0 issues ouvertes = echec de methode).
 
-1. **Lire l'inbox RooSync** : `roosync_read` mode=inbox, status=unread
-2. **Lire le dashboard workspace** : `roosync_dashboard` action=read, type=workspace
-3. **Verifier le heartbeat** cluster : `roosync_inventory` type=heartbeat
+### Phase 3 : Travailler et livrer
 
-**Filtrage workspace OBLIGATOIRE** :
-- Traiter UNIQUEMENT les messages adressés à ce workspace (CoursIA) ou à cette machine
-- IGNORER les messages adressés à d'autres workspaces (roo-extensions, etc.) — ce n'est pas votre travail
-- Si un message est marqué pour un autre workspace, le marquer lu sans action
+- Une PR = un sujet ([catalog-pr-hygiene](../rules/catalog-pr-hygiene.md) : catalogue byte-identique a main, `Closes #N` seulement si l'issue est entierement resolue, sinon `See #N`).
+- Notebooks : C.1 (pas d'erreur volontaire), C.2 (commit AVEC outputs, re-exec des cellules modifiees), H.3 (pre-commit) — cf [notebook-conventions.md](../rules/notebook-conventions.md).
+- Vrai outil SOTA, jamais workaround degrade ([sota-not-workaround.md](../rules/sota-not-workaround.md)) ; env casse = reparer, pas contourner (regle F).
+- Skills/sous-agents specialises quand ils existent : [docs/reference/subagents-reference.md](../../docs/reference/subagents-reference.md).
 
-**Si des missions ou messages HIGH/URGENT existent** (pour CE workspace uniquement) :
-- Lire le message complet avec `roosync_read` mode=message
-- Les missions du coordinateur (ai-01) ont priorite sur les taches locales
-- Repondre accusant reception sur le dashboard
+### Phase 4 : Avant de terminer (obligatoire)
 
-**Presenter le statut coordination dans le resume** :
-```text
-## Coordination RooSync
-- Messages non-lus: {N} (URGENT: {N}, HIGH: {N})
-- Missions actives: {liste}
-- Prochaine action coordinateur: {description ou "aucune"}
-```
-
-### Phase 2 : Identifier la prochaine tache (30s)
-
-**Priorite 0 - Missions coordinateur** (si messages RooSync HIGH/URGENT):
-1. Missions URGENT du coordinateur ai-01
-2. Missions HIGH du coordinateur ai-01
-3. Taches demandees via dashboard workspace
-
-**Priorite 1 - GitHub** (si issues existent):
-
-1. **Issue en cours** : Si une issue a un commentaire recent "IN_PROGRESS"
-2. **BROKEN strategies** : Issues label `priority-high`
-3. **NEEDS_IMPROVEMENT** : Issues label `priority-medium`
-4. **Documentation/Infrastructure** : Quand le code est traite
-
-**Priorite 2 - Memoires Locales** (si pas d'issue GitHub):
-
-1. Chercher `.claude/memory/*.md` avec des taches en cours
-2. Identifier la tache `in_progress` ou la plus ancienne `pending`
-3. Lire le fichier memoire pour le contexte complet
-
-### Phase 3 : Presenter et commencer
-
-Afficher un resume concis :
-
-```text
-## Session Resume
-- Mode: {COORDINATION / GITHUB / LOCAL_MEMORY}
-- Source: {Mission RooSync / Issue #XX / Fichier memoire}
-- Dernier commit: {hash} {message}
-- Prochaine tache: {description}
-- Etat: {in_progress / pending / completed}
-```
-
-Puis commencer a travailler :
-
-**Si Mission coordinateur** :
-- Executer les instructions du message RooSync
-- Reporter les resultats sur le dashboard workspace
-- Repondre au coordinateur via RooSync a la fin
-
-**Si GitHub issue** :
-
-- QuantConnect strategy : `/qc-iterative-improve #{XX}`
-- README/Documentation : Lire et rediger
-- Infrastructure : Mettre a jour fichiers skill/agent
-
-**Si Memoire locale** :
-- Restaurer la todo list depuis le memoire
-- Continuer depuis la tache `in_progress` ou `pending`
-- Executer les commandes specifiees dans le memoire
-
-### Phase 4 : Avant de terminer
-
-1. **Coordination** : Mettre a jour le dashboard workspace avec le progres
-2. **GitHub** : Commenter/fermer l'issue
-3. **Local** : Mettre a jour le fichier memoire avec le progres
-4. Mettre a jour `MEMORY.md` avec les lecons apprises
-5. Si --commit demande : commit les changements
+1. **Commit + PR AVANT le rapport** — jamais de [DONE] sur un travail non commite.
+2. `[DONE]` lane-specific sur le dashboard workspace (resume : livrable, PR#, residuel). Une PR livree ne clot pas la session : re-piocher si la fenetre le permet.
+3. Bloqueur necessitant une action user : tag `[ASK USER]` separe du [DONE], repete a CHAQUE fin de session ([user-blocker-signaling](../rules/user-blocker-signaling.md)).
+4. Repondre au DM coordinateur si une mission a ete traitee.
+5. MAJ `MEMORY.md` si lecon durable (les PR#/SHA ephemeres vont au dashboard, pas en memoire).
 
 ## Notes
 
-- Cette commande est **sans parametre** : elle choisit automatiquement la tache suivante
-- **Phase 1.5 obligatoire** : toujours verifier RooSync avant de commencer
-- L'etat persiste via : RooSync dashboard + issues GitHub + MEMORY.md + .claude/memory/*.md
-- Pour forcer une tache specifique, utiliser le skill approprie directement
-- Utiliser pour reprendre apres saturation de contexte ou nouveau demarrage
+- Commande **sans parametre** : elle choisit automatiquement la tache suivante.
+- Etat persistant : dashboards RooSync + issues GitHub + MEMORY.md.
+- Jamais d'etat terminal-idle ("rien a faire", "await dispatch", "lane exhausted") : le pool global est toujours ouvert.
