@@ -62,6 +62,9 @@ Le parcours débute par le notebook 1 qui présente l'écosystème ML.NET et con
 
 Le notebook 2 plonge dans la préparation des données — l'étape la plus chronophage en pratique. Vous apprendrez à manipuler `IDataView`, la structure colonnaire performante de ML.NET, à charger des fichiers CSV, à encoder des variables catégorielles, à gérer les valeurs manquantes, et à concaténer des features. Ce notebook utilise le dataset taxi-fare pour un exercice concret de prédiction de prix immobiliers.
 
+![Régression linéaire : prix d'une maison selon sa taille — droite apprise sur 8 points d'entraînement (cercles bleus) avec 8 points test (carrés orange), évaluation par hold-out et prédiction unique (étoile rouge, 2.5 kpi → 2.76)](assets/readme/ml-regression.png)
+*Figure extraite du jumeau Python ML-1-Introduction-Python (cellule 17, output 0). La relation linéaire entre la taille (en milliers de pieds carrés) et le prix (en centaines de milliers de dollars) est apprise sur un split entraînement/test explicite ; l'étoile rouge matérialise une prédiction ponctuelle (2.5 kpi → 2.76). Le pipeline ML.NET `IDataView` → `EstimatorChain` produit la même droite côté C# — limitation illustrative assumée : la figure documente le concept de régression linéaire et la mécanique split/prédiction, pas le code ML.NET lui-même (voir cellules 9-22 de `ML-1-Introduction.ipynb`).*
+
 Le notebook 3 introduit l'entraînement proprement dit. Vous découvrirez SDCA (Stochastic Dual Coordinate Ascent) pour la régression linéaire, LightGBM pour les problèmes non linéaires, et surtout l'AutoML de ML.NET qui automatise la recherche d'hyperparamètres et la sélection d'algorithme. Vous verrez aussi les dangers du surapprentissage et comment l'arrêter précocement.
 
 Le notebook 4 est le plus dense (82 cellules) et le plus crucial : évaluation rigoureuse. Vous apprendrez à mesurer un modèle avec R², MAE, RMSE, à utiliser la validation croisée pour estimer la généralisation, et à expliquer les prédictions avec la Permutation Feature Importance (PFI) et le Feature Contribution Calculation (FCC). Ce notebook transforme un "modèle qui marche" en un modèle que vous comprenez et pouvez justifier.
@@ -70,11 +73,26 @@ Le notebook 4 est le plus dense (82 cellules) et le plus crucial : évaluation r
 
 Le notebook 5 aborde les séries temporelles avec `ForecastBySsa` (Singular Spectrum Analysis), un algorithme qui détecte automatiquement les tendances et saisonnalités. Vous travaillerez sur un dataset de ventes quotidiennes, apprendrez à détecter des anomalies par écart à la moyenne mobile, à quantifier l'incertitude via les intervalles de confiance, et à comparer plusieurs configurations de prévision. Ce notebook est directement applicable à la prévision de ventes, de charge serveur, ou de demande produit.
 
+![Ventes quotidiennes 2023-2024 — série brute avec split Train|Test matérialisé par une ligne pointillée rouge au 2024-01-01](assets/readme/ml-ts-series.png)
+*Figure extraite du jumeau Python ML-5-TimeSeries-Python (cellule 7, output 0). La série journalière court sur 2023-01 → 2025-01 (deux ans), valeurs de 50 à 250 ventes/jour, avec un split explicite Train|Test au 2024-01-01 (matérialisé en rouge pointillé). On y lit la tendance haussière de fond et la saisonnalité hebdomadaire superposée — les deux ingredients que `ForecastBySsa` et la décomposition STL cherchent à séparer.*
+
+![Décomposition STL sur la série d'entraînement (période = 7 jours) — 4 panneaux : Observé, Tendance, Saisonnalité, Bruit/Résidu](assets/readme/ml-ts-stl.png)
+*Figure extraite du jumeau Python ML-5-TimeSeries-Python (cellule 11, output 0). La décomposition STL sépare la série Observée en trois composantes additives : Tendance (croissance lente 105 → 155 sur 2023), Saisonnalité (cycle hebdomadaire d'amplitude ±35), Bruit/Résidu (écart ±20, stationnaire). La période 7 jours est explicite dans le titre de la figure. La décomposition permet d'attaquer le forecast composante par composante plutôt que sur le signal brut — limitation illustrative assumée : la figure montre la décomposition Python (statsmodels), pas la sortie `ForecastBySsa` côté ML.NET (le résultat conceptuel est équivalent mais l'API diffère ; voir cellules 9-18 de `ML-5-TimeSeries.ipynb`).*
+
+![Prévision SARIMA vs réel sur les 90 premiers jours de 2024 — ventes réelles, prévision, intervalle de confiance 95%](assets/readme/ml-ts-forecast.png)
+*Figure extraite du jumeau Python ML-5-TimeSeries-Python (cellule 20, output 0). Sur la fenêtre de test (2024-01-01 → 2024-04-01, soit 90 jours), la prévision SARIMA (orange) suit la réalité (bleu) avec un intervalle de confiance 95% (zone orange pâle) qui capture l'essentiel de la variabilité — l'écart-type grandit aux extrema, signature d'un modèle qui reconnaît l'incertitude. La figure compare explicitement `statsmodels SARIMA` côté Python, pas `ForecastBySsa` côté ML.NET ; les deux approches traitent la saisonnalité 7 jours mais la décomposition du signal diffère. Limitation illustrative assumée : un forecast réussi sur 90 jours n'est pas un forecast réussi sur 90 jours avec un seul hyperparamètre — la robustesse multi-seed + walk-forward est traitée dans les cellules 22-28 du notebook ML-5-TimeSeries-Python.*
+
 Le notebook 6 présente l'interopérabilité ONNX — le pont entre l'écosystème Python et .NET. Vous apprendrez à charger des modèles exportés depuis scikit-learn ou PyTorch, à exporter un modèle ML.NET vers ONNX, et même à utiliser des modèles Hugging Face (BERT, Whisper) via ONNX Runtime. Le notebook montre un workflow complet : R&D en Python, export ONNX, déploiement en production dans une application .NET. C'est le chapitre "déploiement en entreprise" du parcours.
 
 Le notebook 7 explore les systèmes de recommandation — un domaine où ML.NET brille vraiment en production. Vous implémenterez la factorisation matricielle (collaborative filtering), apprendrez à générer des recommendations Top-N, à mesurer la qualité avec Precision@K et NDCG, et à gérer le "cold start problem" (nouveaux utilisateurs ou items sans historique). Deux exemples concrets : recommandation de films et recommandation e-commerce.
 
 Les notebooks 8 et 9 couvrent l'apprentissage **non-supervisé**. Le notebook 8 (K-Means) partitionne les clients en segments naturels sans étiquettes, via la distance euclidienne — il illustre pourquoi la normalisation y est indispensable. Le notebook 9 (Randomized PCA) répond à une question différente : étant donné un régime de fonctionnement normal, quels points s'en écartent assez pour être des anomalies ? Le cas d'usage est la **maintenance prédictive** (capteurs industriels), et l'accent est mis sur le choix du **seuil de décision** (compromis détection / fausse alarme) — une problématique opérationnelle qui n'apparaît ni en classification (ML-3) ni en clustering (ML-8).
+
+![Clustering K-Means sur données RFM — vérité terrain (Dormants/Réguliers/VIP) à gauche, clusters retrouvés par K-Means à droite](assets/readme/ml-clustering.png)
+*Figure extraite du jumeau Python ML-8-Clustering-Python (cellule 12, output 0). Deux panneaux côte-à-côte : à gauche la vérité terrain (générée par mixture gaussienne puis cachée à l'algorithme), à droite les clusters retrouvés par K-Means (K=3). Les axes sont Frequency (achats/mois, 0-30) × Monetary (EUR, 0-700). Les trois segments Dormants (rouge, <5 achats/mois, <100 EUR), Réguliers (vert, 5-15 achats, 100-300 EUR), VIP (bleu, 15+ achats, 300+ EUR) sont correctement identifiés — limitation illustrative assumée : la figure documente la capacité distinctive de K-Means à retrouver une partition linéairement séparable dans l'espace RFM normalisé, pas les cas réels où les segments se chevauchent ou ne sont pas gaussiens (voir cellules 13-18 du notebook pour les limites et les métriques Davies-Bouldin / silhouette).*
+
+![Méthode du coude combinée avec Davies-Bouldin pour choisir K=3 — double axe Y : inertie (AverageDistance) et Davies-Bouldin](assets/readme/ml-coude.png)
+*Figure extraite du jumeau Python ML-8-Clustering-Python (cellule 16, output 1). La méthode du coude trace l'inertie intra-cluster (AverageDistance, axe Y gauche, 0.10-0.26) en fonction du nombre K de clusters (X, 2 à 6) — la cassure nette à K=3 correspond au « coude ». Le second axe Y (Davies-Bouldin, 0.45-0.80, rouge pointillé) trace simultanément l'indice de séparation des clusters ; son minimum à K=3 corrobore le choix du coude. La ligne pointillée verticale marque le K optimal. Limitation illustrative assumée : le coude est net ici parce que les données sont des mixtures gaussiennes bien séparées ; sur données réelles bruitées, le coude peut être diffus et le Davies-Bouldin diverger du coude visuel — voir cellules 14-16 du notebook pour la décision finale.*
 
 ### Phase 3 : TP Capstone (~1h)
 
@@ -259,27 +277,6 @@ jupyter kernelspec list  # doit montrer .net-csharp
 | **Pipeline** | Enchaînement de transformations |
 | **Trainer** | Algorithme d'apprentissage |
 | **Transformer** | Transformation de données |
-
-## Galerie
-
-Visualisations réelles des concepts ML (régression, séries temporelles, clustering), extraites des notebooks **Python** de la série (parité marathon #4956 — mêmes concepts rendus côté C# ML.NET et côté Python scikit-learn).
-
-<table>
-<tr>
-<td align="center"><img src="assets/readme/ml-regression.png" alt="Nuage de points avec droite de régression linéaire" width="400"/><br/><sub>Régression linéaire — données et ajustement (<a href="ML-1-Introduction-Python.ipynb">ML-1</a>)</sub></td>
-<td align="center"><img src="assets/readme/ml-ts-series.png" alt="Série temporelle de ventes" width="400"/><br/><sub>Série temporelle — ventes brutes (<a href="ML-5-TimeSeries-Python.ipynb">ML-5</a>)</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/ml-ts-stl.png" alt="Décomposition STL : tendance, saisonnalité et résidus" width="400"/><br/><sub>Décomposition STL — tendance / saisonnalité / résidu (<a href="ML-5-TimeSeries-Python.ipynb">ML-5</a>)</sub></td>
-<td align="center"><img src="assets/readme/ml-ts-forecast.png" alt="Prévision de la série temporelle sur le jeu de test" width="400"/><br/><sub>Prévision sur le jeu de test (<a href="ML-5-TimeSeries-Python.ipynb">ML-5</a>)</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/ml-clustering.png" alt="Partition de données en clusters par K-means" width="400"/><br/><sub>Clustering K-means — partition (<a href="ML-8-Clustering-Python.ipynb">ML-8</a>)</sub></td>
-<td align="center"><img src="assets/readme/ml-coude.png" alt="Méthode du coude pour choisir le nombre de clusters K" width="400"/><br/><sub>Méthode du coude — choix de K (<a href="ML-8-Clustering-Python.ipynb">ML-8</a>)</sub></td>
-</tr>
-</table>
-
-Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Parcours recommandé
 
