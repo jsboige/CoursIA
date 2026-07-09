@@ -30,17 +30,59 @@ LEAN_SCRIPTS = REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "script
 
 WSL_DISTRO = "Ubuntu"
 
+# Regex + helper mirror scripts/notebook_tools/wsl_papermill.py:win_to_wsl_path
+# (kept local to avoid a cross-directory import; identical logic, #2871 part 2).
+import re as _re
+_WIN_DRIVE_RE = _re.compile(r"^([A-Za-z]:)[\\/](.*)$")
+
+
+def _win_to_wsl_path(win_path: str) -> str:
+    """Convert a Windows path (``C:\\dev\\repo``) to its WSL mount form
+    (``/mnt/c/dev/repo``). WSL ``bash`` strips backslashes from args, so passing
+    a raw Windows path to ``wsl -- bash <winpath>`` yields ``C:devrepo`` ->
+    file-not-found (incident po-2024 c.355 lean4-wsl setup, exit 127). A path
+    without a drive prefix is returned unchanged.
+    """
+    m = _WIN_DRIVE_RE.match(win_path)
+    if not m:
+        return win_path
+    drive = m.group(1)[0].lower()
+    rest = m.group(2).replace("\\", "/")
+    return f"/mnt/{drive}/{rest}"
+
 
 def _detect_wsl_distro():
-    """Detect default WSL distro, fallback to 'Ubuntu'."""
+    """Detect default WSL distro, fallback to 'Ubuntu'.
+
+    `wsl -l -q` emits UTF-16LE on Windows (null byte between every ASCII char),
+    so reading it with ``text=True`` yields e.g. ``'U\\x00b\\x00u\\x00n\\x00t\\x00u'``
+    -- a string with embedded nulls. Passing that to ``subprocess.run(["wsl",
+    "-d", distro, ...])`` crashes ``CreateProcess`` with ``ValueError: embedded
+    null character`` (incident po-2024 c.355 lean4-wsl setup). Decode bytes
+    robustly instead: try UTF-16LE first (WSL's actual output), strip the nulls
+    as a belt-and-suspenders fallback, then split on newlines.
+    """
     try:
         result = subprocess.run(
-            ["wsl", "-l", "-q"], capture_output=True, text=True, timeout=10,
+            ["wsl", "-l", "-q"], capture_output=True, timeout=10,
         )
-        if result.returncode == 0 and result.stdout.strip():
-            lines = [l.strip() for l in result.stdout.splitlines() if l.strip()]
-            if lines:
-                return lines[0]
+        if result.returncode != 0:
+            return "Ubuntu"
+        # WSL -l -q is UTF-16LE with BOM on recent Windows; decode defensively.
+        raw = result.stdout
+        text = None
+        if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
+            text = raw.decode("utf-16", errors="ignore")
+        elif b"\x00" in raw:
+            # UTF-16LE without BOM: every other byte is 0x00 for ASCII distro names.
+            text = raw.decode("utf-16-le", errors="ignore")
+        else:
+            text = raw.decode("utf-8", errors="ignore")
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        if lines:
+            # Final guard: reject any name with a stray null (corrupt decode).
+            name = lines[0]
+            return name if "\x00" not in name else "Ubuntu"
     except Exception:
         pass
     return "Ubuntu"
@@ -55,9 +97,10 @@ def step_wsl_install():
     if not script.exists():
         print(f"ERROR: {script} not found")
         return False
-    print(f"Running: wsl -d {WSL_DISTRO} -- bash {script}")
+    wsl_script = _win_to_wsl_path(str(script))
+    print(f"Running: wsl -d {WSL_DISTRO} -- bash {wsl_script}")
     result = subprocess.run(
-        ["wsl", "-d", WSL_DISTRO, "--", "bash", str(script)],
+        ["wsl", "-d", WSL_DISTRO, "--", "bash", wsl_script],
         cwd=str(REPO_ROOT),
     )
     if result.returncode != 0:
