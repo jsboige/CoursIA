@@ -53,16 +53,6 @@ Cette série montre que les deux approches ne s'opposent pas — elles se **comp
 | Durée estimée | ~680 min |
 | Prérequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-8, difflogic+torch pour SL-12, clé OpenRouter optionnelle pour SL-9/SL-11) |
 
-## Galerie — la série en trois figures
-
-Trois sorties réelles extraites des outputs committés des notebooks (EPIC #5654, provenance tracée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md)). Chacune illustre une capacité distinctive d'un moteur symbolique ou neuro-symbolique de la série.
-
-| Figure | Notebook source | Ce qu'elle montre |
-|--------|-----------------|-------------------|
-| ![Comparaison des 4 moteurs ILP sur ancestor/2](assets/readme/sl6-modernilp.png) | [SL-6-ModernILP.ipynb](SL-6-ModernILP.ipynb) (cell. 18) | Les **4 moteurs ILP réels** — Aleph (entailment inverse), Metagol (MIL), Popper (Learning From Failures), ∂ILP (différentiable) — face à face sur la même tâche récursive `ancestor/2`. On voit les clauses apprises par chaque moteur : la comparaison des machineries est l'objet même du notebook. |
-| ![Automate minimal appris par L*](assets/readme/sl10-angluin-lstar.png) | [SL-10-ActiveAutomataLearning.ipynb](SL-10-ActiveAutomataLearning.ipynb) (cell. 39) | L'**automate fini minimal** appris par l'algorithme L* d'Angluin — l'agent *interroge* un oracle (membership + équivalence) plutôt que de subir un échantillon, avec garantie de minimalité. Changement de paradigme : apprentissage *actif* vs passif. |
-| ![Réseau de portes logiques différentiables](assets/readme/sl12-difflogic.png) | [SL-12-DifferentiableLogicGateNetworks.ipynb](SL-12-DifferentiableLogicGateNetworks.ipynb) (cell. 11) | Un **réseau de portes logiques différentiables** (Petersen, NeurIPS 2022) : entraîné par descente de gradient sur des combinaisons de portes, puis discrétisé en un circuit booléen 100 % interprétable-par-construction. L'autre versant du neuro-symbolique. |
-
 ## Parcours d'apprentissage
 
 Le parcours progresse en six phases où **chacune répond à une limite de la précédente** — le bruit motive le recours à la connaissance, la rigidité logique motive la différentiabilité, l'opacité motive la provenance (thèse détaillée en conclusion) :
@@ -98,13 +88,28 @@ SL-4 fait le pont entre apprentissage automatique et intelligence artificielle s
 
 Après avoir construit FOIL et Progol *de zéro*, SL-6 met quatre moteurs ILP **réels** face à face sur une même tâche récursive (`ancestor/2`, la clôture transitive de `parent`) : **Aleph** (entailment inverse, la lignée Progol), **Metagol** (Meta-Interpretive Learning, avec invention de prédicats), **Popper** (Learning From Failures) et **∂ILP** (ILP différentiable via Lernd). Chaque moteur apprend le même concept par une machinerie différente — recherche symbolique exacte, métarègles, contraintes ASP, descente de gradient — ce qui rend visibles leurs forces et leurs angles morts (sensibilité à la direction des modes, invention de prédicats, tolérance au bruit). Le ∂ILP différentiable amorce naturellement la phase neuro-symbolique suivante.
 
+![Convergence du moteur ∂ILP/Lernd sur la tâche `ancestor/2`](assets/readme/sl6-modernilp.png)
+*La courbe d'entropie croisée du moteur différentiable chute en une dizaine d'étapes d'optimisation — la signature d'un apprentissage par descente de gradient, distincte de la recherche symbolique exacte d'Aleph, de la métarègle de Metagol, ou des contraintes ASP de Popper. Les trois autres moteurs sont comparés dans le notebook (clauses apprises, scores, temps) mais leurs sorties ne sont pas rendues visuellement ici — limitation illustrative assumée : une seule figure rendues pour quatre moteurs, le reste vit dans le notebook.*
+
 ### Phase 5 : Intégration neuro-symbolique (SL-7 à SL-9, ~160 min)
 
 Cette phase explore les méthodes contemporaines à l'intersection du symbolique et du connexionniste. SL-7 introduit les T-norms différentiables, les prédicats neuronaux et les Logics Tensor Networks qui rendent la logique opérationnelle dans un gradient descent. SL-8 passe à l'échelle avec le rule mining réel sur des knowledge graphs construits avec rdflib (AMIE, complétion de graphes). SL-9 ferme la boucle avec LLMs : extraction de règles depuis du texte naturel, vérification symbolique des sorties, et boucles de rétroaction pour fiabiliser le raisonnement.
 
 ### Phase 6 : Apprentissage actif et capstone (SL-10 à SL-12, ~195 min)
 
-Trois notebooks concluent la série. SL-10 inverse le rapport de l'apprenant aux données : au lieu de subir un échantillon, L* d'Angluin *choisit* ses questions (requêtes d'appartenance et d'équivalence à un oracle MAT) et apprend des automates finis déterministes prouvablement minimaux — le cadre théorique (Myhill-Nerode, fermeture et cohérence de la table d'observation) est implémenté et vérifié de zéro. SL-11 est le capstone : un pipeline neuro-symbolique en 6 étages (extraction LLM -> oracle de validation -> knowledge graph -> mining de règles -> chainage avant avec provenance -> confrontation LLM vs KG) exécute avec de vrais appels Gemini 3.5 Flash, ou chaque étage mobilise un notebook antérieur de la série — y compris une leçon d'architecture découverte dans les sorties réelles : le chaînage avant peut violer les contraintes que l'oracle impose en amont. SL-12 explore un autre angle du neuro-symbolique : les *réseaux de portes logiques differentiables* (difflogic, Petersen NeurIPS 2022) apprennent des combinaisons de portes logiques par descente de gradient, puis se discretisent en un circuit 100% booleen, interpretable-par-construction et ultra-rapide a l'inference.
+Trois notebooks concluent la série.
+
+**SL-10 — Apprentissage actif d'automates** inverse le rapport de l'apprenant aux données : au lieu de subir un échantillon, L* d'Angluin *choisit* ses questions (requêtes d'appartenance et d'équivalence à un oracle MAT) et apprend des automates finis déterministes prouvablement minimaux — le cadre théorique (Myhill-Nerode, fermeture et cohérence de la table d'observation) est implémenté et vérifié de zéro. Le notebook explore aussi la version bruitée du problème (oracle bruité + vote majoritaire type Rivest-Schapire + agrégation d'évidence forward sum-product), montrant que la garantie de minimalité tient tant que le ratio signal/bruit reste favorable.
+
+![Agrégation bayésienne de preuves : k observations indépendantes d'un mot corrompu](assets/readme/sl10-angluin-lstar.png)
+*L'exactitude de reconnaissance vs le nombre d'observations bruitées agrégées par vote majoritaire (epsilon = 0,20 et 0,30). Le plafond « DFA dur, 1 observation » en pointillés matérialise la baseline sans agrégation. L'automate fini minimal lui-même (l'objet du notebook, voir cellules 20-30) n'est pas rendu visuellement ici — limitation illustrative assumée : la figure documente l'extension probabiliste de L*, pas l'automate de Myhill-Nerode.*
+
+**SL-11 — Capstone neuro-symbolique** assemble toute la série en un pipeline en 6 étages (extraction LLM -> oracle de validation -> knowledge graph -> mining de règles -> chainage avant avec provenance -> confrontation LLM vs KG) qui exécute avec de vrais appels Gemini 3.5 Flash, ou chaque étage mobilise un notebook antérieur de la série — y compris une leçon d'architecture découverte dans les sorties réelles : le chaînage avant peut violer les contraintes que l'oracle impose en amont.
+
+**SL-12 — Réseaux de portes logiques différentiables** explore un autre angle du neuro-symbolique : les *réseaux de portes logiques differentiables* (difflogic, Petersen NeurIPS 2022) apprennent des combinaisons de portes logiques par descente de gradient sur MNIST 20×20, puis se discretisent en un circuit 100% booleen, interpretable-par-construction et ultra-rapide a l'inference.
+
+![Courbes d'entraînement MNIST 20×20 d'un réseau de portes logiques différentiables](assets/readme/sl12-difflogic.png)
+*La CrossEntropyLoss chute de 2,3 à ~1,2 en 600 itérations de descente de gradient ; l'accuracy train (sub-échantillonné) monte à ~0,74 et le test (pointillés rouges) est à 0,79. Le circuit booléen final, lui — l'objet conceptuel du notebook, le réseau de portes logiques discrétisé — n'est pas rendu visuellement ici. Limitation illustrative assumée : la figure documente la convergence du modèle, pas sa structure discrétisée ; voir cellules 11-17 du notebook pour le détail architectural.*
 
 ### Parcours alternatifs
 
