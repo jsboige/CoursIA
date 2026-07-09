@@ -20,13 +20,13 @@ All 20 notebooks in `D:\dev\CoursIA\MyIA.AI.Notebooks\Probas\Infer\` had their s
 | Infer-2-Gaussian-Mixtures | 0b71b238 |
 | Infer-3-Factor-Graphs | ab0e007e |
 | Infer-4-Bayesian-Networks | 628e4ed2 |
-| Infer-5-Skills-IRT | acede045 |
+| Infer-7-Skills-IRT | acede045 |
 | Infer-8-TrueSkill | 579661f9 |
-| Infer-7-Classification | 7a615707 |
+| Infer-9-Classification | 7a615707 |
 | Infer-10-Model-Selection | 72aac374 |
-| Infer-9-Topic-Models | 1452f2aa |
+| Infer-11-Topic-Models | 1452f2aa |
 | Infer-13-Crowdsourcing | 9df317ec |
-| Infer-11-Sequences | 087a352c |
+| Infer-14-Sequences | 087a352c |
 | Infer-15-Recommenders | 3e3a7357 |
 | Infer-6-Debugging | cell-0 (older format) |
 | Infer-14 to Infer-20 | Already had correct (X/20) numbering |
