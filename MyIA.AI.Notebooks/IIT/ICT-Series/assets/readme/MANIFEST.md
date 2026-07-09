@@ -17,10 +17,10 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 - **Source** : notebook `ICT-2-SelfSortingMorphogenesis.ipynb` (cellule 7, output 0)
 - **Strate** : 1 (tri auto-organisé)
-- **Contenu réel vérifié** : 2 panneaux côte-à-côte, **morphogenèse générative** par réaction-diffusion (Gray-Scott). Panneau gauche : `t=0 : germe localisé` (carré rouge centré sur fond bleu sombre uniforme). Panneau droit : `t=6000 : motif auto-entretenu` (structure=0.0095, ~25 taches rougeâtres disposées en grille décalée, sur fond noir).
-- **Alt-text (FR)** : Morphogenèse générative : t=0 (germe localisé en rouge sur fond bleu sombre) à gauche, t=6000 (motif auto-entretenu de ~25 taches rougeâtres, structure=0.0095) à droite.
+- **Contenu réel vérifié** : 2 panneaux côte-à-côte mesurant le **tri auto-organisé** d'une séquence par un automate minimal. **Panneau gauche** : `Inversions (désordre global)`, axe X `pas` (0 à ~220), axe Y `inversions` (0 à 60), courbe rouge décroissante monotone de 60 à 0 (signature d'un tri efficace : le nombre de paires désordonnées chute vers 0). **Panneau droite** : `Sortedness vs erreur de monotonie`, axe X `pas` (0 à ~210), axe Y (0 à 1.0) ; courbe verte = `sortedness` (0.5→1.0 croissante, monotonie globale), courbe orange = `erreur de monotonie (locale)` (~0.5→0 décroissante avec fluctuations, monotonie locale). Les deux panneaux convergent : la séquence devient globalement ET localement monotone.
+- **Alt-text (FR)** : Métriques de tri auto-organisé : gauche « Inversions (désordre global) » 60→0 en ~220 pas, droite « Sortedness vs erreur de monotonie » (sortedness 0.5→1.0 croissante verte, erreur locale orange qui décroît).
 - **Poids** : 40.2 KB (natif)
-- **Ce qui n'est PAS dans la figure** : la robustesse aux cellules défectueuses, l'auto-réparation après ablation, le délai de gratification, les impasses chimériques — toutes traitées dans ICT-3 et ICT-4 (figures distinctes).
+- **Ce qui n'est PAS dans la figure** : (a) la **dynamique Gray-Scott** sous-jacente (la morphogenèse Gray-Scott elle-même est rendue dans `ict9-gray-scott.png`) ; (b) la **robustesse aux cellules défectueuses** et l'**auto-réparation après ablation**, traitées dans ICT-3 et ICT-4 (figures distinctes).
 
 ## ict8-attractor.png
 
@@ -35,11 +35,10 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 - **Source** : notebook `ICT-9-AgencyRegeneration.ipynb` (cellule 3, output 0)
 - **Strate** : 2 (agence et régénération)
-- **Contenu réel vérifié** : 2 panneaux. **Gauche** : `Inversions (désordre global)`, axe X `pas` (0 à ~220), axe Y `inversions` (0 à 60), courbe rouge décroissante monotone de 60 à 0 (signature d'un tri efficace). **Droite** : `Sortedness vs erreur de monotonie`, axe X `pas` (0 à ~210), axe Y (0 à 1.0) ; courbe verte = `sortedness` (0.5→1.0 croissante), courbe orange = `erreur de monotonie (locale)` (~0.5→0 décroissante avec fluctuations).
-- **Alt-text (FR)** : Métriques d'auto-réparation : gauche « Inversions (désordre global) » 60→0 en ~220 pas, droite « Sortedness vs erreur de monotonie » (sortedness 0.5→1.0 croissante, erreur locale qui décroît).
+- **Contenu réel vérifié** : 2 panneaux côte-à-côte illustrant la **morphogenèse générative** par réaction-diffusion (Gray-Scott, Pearson 1993). Le titre interne est « Morphogenèse générative : la réaction-diffusion engendre un attracteur de forme ». **Panneau gauche** : `t=0 : germe localisé` (carré rouge centré sur fond bleu sombre uniforme). **Panneau droit** : `t=6000 : motif auto-entretenu` (structure=0.0095, ~25 taches rougeâtres disposées en grille décalée, sur fond noir). C'est la **dynamique de référence** qu'ICT-9 soumet ensuite à l'ablation `do(·)` pour mesurer le gain de réparation (`repair_gain`).
+- **Alt-text (FR)** : Morphogenèse générative (Gray-Scott) : t=0 (germe localisé en rouge sur fond bleu sombre) à gauche, t=6000 (motif auto-entretenu de ~25 taches rougeâtres, structure=0.0095) à droite.
 - **Poids** : 51.8 KB (natif)
-- **Ce qui n'est PAS dans la figure** : (a) la dynamique Gray-Scott elle-même, qui est rendue dans `ict2-selfsorting.png` ; (b) le `repair_gain` formel (RD vs diffusion, mesure contrefactuelle) qui est calculé dans une cellule séparée.
-- **Dette de nommage (disclose)** : le nom de fichier `ict9-gray-scott.png` est **trompeur** — la figure illustre les **métriques de réparation** (inversions / sortedness), pas une dynamique Gray-Scott. Le nom de fichier est conservé par compatibilité avec la table d'extraction.
+- **Ce qui n'est PAS dans la figure** : (a) les **métriques de tri auto-organisé** (inversions / sortedness), qui sont rendues dans `ict2-selfsorting.png` ; (b) le `repair_gain` formel (RD vs diffusion, mesure contrefactuelle) et l'ablation `do(·)`, qui sont calculés dans des cellules séparées du notebook avec leur propre figure dédiée.
 
 ## ict13-axelrod.png
 
