@@ -53,11 +53,11 @@ La différence fondatrice : le ML classique produit un **point**, la programmati
 
 ### De la distribution à l'utilité : pourquoi la courbe est concave
 
-La maximisation de `E[U]` repose sur une hypothèse centrale de la théorie de la décision sous incertitude : l'utilité est une fonction **concave** de la richesse. Trois familles classiques l'incarnent (logarithmique, racine CARA, puissance CRRA), illustrées ci-dessous — chacune traduit l'utilité marginale décroissante (chaque euro supplémentaire apporte moins d'utilité que le précédent), fondement de l'aversion au risque :
+La maximisation de `E[U]` repose sur une hypothèse centrale de la théorie de la décision sous incertitude : l'utilité est une fonction **concave** de la richesse. Trois fonctions fondamentales l'illustrent ci-dessous — racine carrée `√x`, logarithme `ln(x)` (toutes deux concaves) et fonction linéaire `x` (neutre au risque, en référence) — chacune traduisant l'utilité marginale décroissante (chaque euro supplémentaire apporte moins d'utilité que le précédent pour les courbes concaves), fondement de l'aversion au risque :
 
-![Trois fonctions d'utilité classiques (logarithmique, racine CARA, puissance CRRA) traçant l'utilité U en fonction de la richesse x : toutes concaves, illustrant l'utilité marginale décroissante — chaque euro supplémentaire apporte moins d'utilité que le précédent, fondement de la théorie de la décision sous incertitude (Pratt 1964, Arrow 1965). Extrait du notebook DecPyMC-2-Utility-Money.](assets/readme/probas-utility-functions.png)
+![Trois fonctions d'utilité fondamentales sur trois panneaux côte-à-côte : racine carrée U(x)=√x (concave), logarithme U(x)=ln(x) (concave), et linéaire U(x)=x (neutre au risque, en référence) — montrant l'utilité marginale décroissante : les deux courbes concaves s'aplatissent quand la richesse x augmente (chaque euro supplémentaire apporte moins d'utilité que le précédent), tandis que la linéaire reste constante (aversion nulle). Fondement de la théorie de la décision sous incertitude (Pratt 1964, Arrow 1965). Extrait du notebook DecPyMC-2-Utility-Money, cellule « Démonstration numérique : utilité marginale décroissante ».](assets/readme/probas-utility-functions.png)
 
-*Source : [`DecPyMC-2-Utility-Money.ipynb`](DecisionTheory/PyMC/DecPyMC-2-Utility-Money.ipynb) (cellule « Diminishing marginal utility »), track DecisionTheory/PyMC.*
+*Source : [`DecPyMC-2-Utility-Money.ipynb`](DecisionTheory/PyMC/DecPyMC-2-Utility-Money.ipynb) (cellule 10 « Démonstration numérique : utilité marginale décroissante », index toutes-cellules), track DecisionTheory/PyMC.*
 
 ## Objectifs d'apprentissage
 
