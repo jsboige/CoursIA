@@ -74,36 +74,45 @@ Cette série mobilise plusieurs couches de l'écosystème MCP du cluster, et ent
 5. **Raisonner** sur l'agrégation collective : Arrow, Sen, Condorcet/Borda/Copeland, encodage SAT/Z3
 6. **Formaliser** ces résultats en Lean 4 — du point fixe de Brouwer à l'axiomatique de Shapley et à la preuve d'Arrow
 
-## Aperçu — la théorie des jeux en images
-
-Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #5654). Elles balayent l'arc de la série : de la topologie des jeux 2×2 (forme normale) aux équilibres parfaits en sous-jeux (forme extensive), jusqu'aux dynamiques d'apprentissage multi-agents et à l'attribution cooperative par la valeur de Shapley. La provenance exacte de chaque figure est documentée dans `assets/readme/MANIFEST.md`.
-
-<table>
-<tr>
-<td align="center"><b>Panorama & forme normale</b><br><a href="GameTheory-1-Setup.ipynb"><img width="290" alt="Mise en place : panorama des interactions stratégiques et des outils de la théorie des jeux." src="assets/readme/gt1-setup.png"></a></td>
-<td align="center"><b>Topologie 2×2</b><br><a href="GameTheory-2-NormalForm.ipynb"><img width="290" alt="Forme normale : topologie des jeux 2x2 et classification stratégique (coordination, duel, asymétrie)." src="assets/readme/gt2-normalform.png"></a></td>
-<td align="center"><b>Équilibre parfait (SPE)</b><br><a href="GameTheory-10-ForwardInduction-SPE.ipynb"><img width="290" alt="Induction avant : équilibre parfait en sous-jeux sur la forme extensive d'un jeu séquentiel." src="assets/readme/gt10-spe.png"></a></td>
-</tr>
-<tr>
-<td align="center"><b>Information imparfaite (CFR)</b><br><a href="GameTheory-13-ImperfectInfo-CFR.ipynb"><img width="290" alt="Information imparfaite : arbre de jeu et Counterfactual Regret Minimization (CFR) pour le poker." src="assets/readme/gt13-cfr.png"></a></td>
-<td align="center"><b>Valeur de Shapley</b><br><a href="GameTheory-15-CooperativeGames.ipynb"><img width="290" alt="Jeux coopératifs : valeur de Shapley et son attribution équitable aux joueurs selon leurs contributions marginales." src="assets/readme/gt15-shapley.png"></a></td>
-<td align="center"><b>Apprentissage multi-agent</b><br><a href="GameTheory-17-MultiAgent-RL.ipynb"><img width="290" alt="Apprentissage multi-agent : dynamiques de convergence d'agents en reinforcement learning (MARL)." src="assets/readme/gt17-marl.png"></a></td>
-</tr>
-</table>
-
 ## Parcours d'apprentissage
+
+Les figures qui ponctuent ce parcours sont extraites des sorties réelles des notebooks (EPIC #5654) ; chacune est réintégrée en regard du concept qu'elle illustre, et sa provenance exacte (notebook et cellule) est documentée dans `assets/readme/MANIFEST.md`.
 
 ### Phase 1 : Jeux statiques et équilibres (Notebooks 1-6 + side tracks b/c, ~8h30)
 
-Le parcours commence par le setup (Nashpy, OpenSpiel) et les jeux sous forme normale (matrices de gains, dominance, meilleure réponse). Le notebook 3 (Topology2x2) classifie les jeux 2x2 selon la table périodique de Robinson-Goforth, une perspective géométrique unique. Les notebooks 4-4b-4c plongent dans l'équilibre de Nash : calcul en stratégies pures et mixtes, algorithme de Lemke-Howson, et preuve formelle d'existence via Brouwer et Kakutani en Lean 4. Le notebook 5 (ZeroSum) démontre le théorème minimax et la dualité LP. Le notebook 6 (EvolutionTrust) montre comment la coopération émerge dans les tournois itérés (Axelrod, replicator dynamics). Son companion **6c** (RepeatedGames-FolkTheorem) formalise cette intuition : horizon fini → effondrement par induction arrière, horizon infini → grim trigger, condition de crédibilité $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement faisable et individuellement rationnel est soutenable comme SPNE pour $\delta$ assez proche de 1). À l'issue de cette phase, vous comprenez les trois piliers : Nash, minimax, et évolution.
+Le parcours commence par le setup (Nashpy, OpenSpiel) et les jeux sous forme normale (matrices de gains, dominance, meilleure réponse). Le notebook 3 (Topology2x2) classifie les jeux 2x2 selon la table périodique de Robinson-Goforth, une perspective géométrique unique. Les notebooks 4-4b-4c plongent dans l'équilibre de Nash : calcul en stratégies pures et mixtes, algorithme de Lemke-Howson, et preuve formelle d'existence via Brouwer et Kakutani en Lean 4. Le notebook 5 (ZeroSum) démontre le théorème minimax et la dualité LP. Le notebook 6 (EvolutionTrust) montre comment la coopération émerge dans les tournois itérés (Axelrod, replicator dynamics). Son companion **6c** (RepeatedGames-FolkTheorem) formalise cette intuition : horizon fini → effondrement par induction arrière, horizon infini → grim trigger, condition de crédibilité $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement faisable et individuellement rationnel est soutenable comme SPNE pour $\delta$ assez proche de 1). À l'issue de cette phase, vous comprenez les trois piliers : Nash, minimax, et évolution. Les deux figures suivantes, toutes deux bâties sur l'exemple canonique du Dilemme du Prisonnier, illustrent les deux gestes fondateurs de cette phase : **représenter** un jeu, puis le **résoudre**.
+
+![Matrice de gains 2×2 du Dilemme du Prisonnier ; la case (Défaire, Défaire) = (1, 1) est encadrée en bleu comme unique équilibre de Nash.](assets/readme/gt1-setup.png)
+
+*`GameTheory-1-Setup` — représenter un jeu sous forme normale : la matrice des gains du Dilemme du Prisonnier. Chaque case porte le couple (gain Ligne, gain Colonne) ; la case (Défaire, Défaire) = (1, 1), encadrée en bleu, est l'unique équilibre de Nash — bien que (Coopérer, Coopérer) = (3, 3) soit collectivement supérieur.*
+
+![Le même jeu résolu par la méthode des meilleures réponses : soulignements bleus (joueur Ligne), rouges (joueur Colonne), case verte à leur intersection.](assets/readme/gt2-normalform.png)
+
+*`GameTheory-2-NormalForm` — résoudre un jeu : on souligne la meilleure réponse de chaque joueur (bleu = joueur Ligne, rouge = joueur Colonne). La seule case où les deux soulignements coïncident (en vert) est l'équilibre de Nash — la lecture graphique de la dominance vue à gauche.*
 
 ### Phase 2 : Jeux dynamiques et information incomplète (Notebooks 7-12 + side tracks b/c, ~7h45)
 
 La Phase 2 enrichit le modèle avec le temps et l'incertitude. Les notebooks 7-9 couvrent les jeux extensifs (arbres de jeu, ensembles d'information), les jeux combinatoires (Nim, Sprague-Grundy, avec formalisation Lean), et l'induction arrière (mille-pattes, escalade). Les notebooks 10-12 abordent les concepts subtils : induction avant et sous-jeux parfaits, jeux bayésiens (information incomplète, types, croyances), et jeux de réputation (signaling, engagement). Cette phase présuppose la Phase 1 (Nash, matrices de gains).
 
+![Arbre d'un jeu séquentiel (choix Out/In puis Stag/Hare) et raisonnement d'induction avant menant au SPE (In, Stag, Stag) → (4, 4).](assets/readme/gt10-spe.png)
+
+*`GameTheory-10-ForwardInduction-SPE` — l'induction avant sur la forme extensive. L'ensemble d'information de J2 (ellipse pointillée) l'empêche de distinguer les deux nœuds ; mais en jouant « In » plutôt que l'option extérieure « Out » (garantie de 2), J1 révèle son intention de jouer Stag. Ce raisonnement « brûle » l'équilibre (Hare, Hare) et sélectionne le sous-jeu parfait (In, Stag, Stag) de valeur (4, 4).*
+
 ### Phase 3 : Frontières — algorithmes, coopération, mécanismes (Notebooks 13-17 + sous-série SocialChoice + side tracks b/c, ~10h30)
 
-La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) introduit Counterfactual Regret Minimization et ses variantes (MCCFR, Deep CFR), au cœur du poker AI moderne. Le notebook 14 (Differential Games) explore les jeux continus (Stackelberg, boucle ouverte/fermée). Les notebooks 15-15b-15c couvrent la théorie coopérative : valeur de Shapley (avec axiomes formels en Lean), Core, Bondareva-Shapley. Le notebook 16 et la sous-série [SocialChoice/](SocialChoice/) constituent le bloc le plus riche : design de mécanismes (révélation, VCG), choix social (Arrow, Sen en Lean), et encodage SAT/Z3 des impossibilités. Le notebook 17 (Multi-Agent RL) relie la théorie des jeux à l'apprentissage par renforcement (NFSP, PSRO, AlphaZero).
+La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) introduit Counterfactual Regret Minimization et ses variantes (MCCFR, Deep CFR), au cœur du poker AI moderne. Le notebook 14 (Differential Games) explore les jeux continus (Stackelberg, boucle ouverte/fermée). Les notebooks 15-15b-15c couvrent la théorie coopérative : valeur de Shapley (avec axiomes formels en Lean), Core, Bondareva-Shapley. Le notebook 16 et la sous-série [SocialChoice/](SocialChoice/) constituent le bloc le plus riche : design de mécanismes (révélation, VCG), choix social (Arrow, Sen en Lean), et encodage SAT/Z3 des impossibilités. Le notebook 17 (Multi-Agent RL) relie la théorie des jeux à l'apprentissage par renforcement (NFSP, PSRO, AlphaZero). Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un équilibre en information imparfaite (CFR), la stabilité coopérative (Core et Shapley), et la convergence d'agents en auto-apprentissage.
+
+![CFR sur le poker de Kuhn : à gauche la valeur du jeu converge vers le Nash −0,0556 en 10 000 itérations, à droite les probabilités de mise par carte (J/Q/K) rejoignent le Nash théorique (étoiles).](assets/readme/gt13-cfr.png)
+
+*`GameTheory-13-ImperfectInfo-CFR` — le Counterfactual Regret Minimization sur le poker de Kuhn. À gauche, la moyenne mobile (rouge) de l'utilité de J1 converge vers la valeur de Nash du jeu (−0,0556, pointillé vert) malgré le bruit par itération. À droite, les probabilités de mise apprises pour chaque carte (J/Q/K) rejoignent les étoiles du Nash théorique — l'algorithme reconstruit le bluff optimal sans jamais connaître la stratégie adverse.*
+
+![Simplexe des allocations d'un jeu coopératif à 3 firmes (v(N) = 9) : le Core en vert, la valeur de Shapley marquée d'une étoile rouge au centre.](assets/readme/gt15-shapley.png)
+
+*`GameTheory-15-CooperativeGames` — la répartition d'une valeur commune v(N) = 9 entre trois firmes A, B, C. Chaque point du triangle est un partage ; les points verts forment le **Core** (les partages qu'aucune coalition ne peut contester), et l'étoile rouge est la **valeur de Shapley** — ici confortablement à l'intérieur du Core, donc stable.*
+
+![Apprentissage multi-agent sur Pierre-Feuille-Ciseaux : à gauche l'exploitabilité (le self-play naïf oscille, le fictitious play décroît), à droite les fréquences convergent vers le Nash uniforme.](assets/readme/gt17-marl.png)
+
+*`GameTheory-17-MultiAgent-RL` — deux dynamiques d'apprentissage sur Pierre-Feuille-Ciseaux. À gauche (échelle log), le self-play naïf reste exploitable en oscillant, tandis que le fictitious play voit son exploitabilité décroître régulièrement. À droite, les fréquences Rock/Paper/Scissors du fictitious play convergent vers le Nash uniforme (1/3, 1/3, 1/3, pointillé) — la convergence de Robinson (1951) en action.*
 
 ## Structure
 
