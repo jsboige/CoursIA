@@ -198,7 +198,7 @@ et l'indicatrice `ind` comme réel.
 
 Cette formalisation répond à la question fondatrice de toute la série `Probas` :
 **pourquoi des probabilités (additives, normalisées) ?** Les notebooks d'inférence
-bayésienne (Infer-5, PyMC-14) manipulent des distributions postérieures comme des
+bayésienne (Infer-5, PyMC-5) manipulent des distributions postérieures comme des
 probabilités au sens de Kolmogorov ; le théorème de cohérence justifie ce cadre
 comme **le seul exempt d'arbitrage** — un fondement non utilitaire (contrairement à
 vNM, qui porte sur les *préférences* sous risque), mais purement *épistémique*.
