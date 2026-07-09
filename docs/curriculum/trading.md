@@ -55,7 +55,7 @@ Strategies de trading algorithmique avec QuantConnect, pipeline ML (Transformer,
 |---|----------|----------|------------|
 | 1 | Infer-1-Setup : Introduction et Installation | ALPHA | Oui |
 | 2 | Infer-13-Crowdsourcing : Agregation de Labels et Fiabil | ALPHA | Oui |
-| 3 | Infer-11-Sequences : Hidden Markov Models et Series Tem | ALPHA | Oui |
+| 3 | Infer-14-Sequences : Hidden Markov Models et Series Tem | ALPHA | Oui |
 | 4 | Infer-15-Recommenders : Systemes de Recommandation | ALPHA | Oui |
 | 5 | Infer-6-Debugging : Troubleshooting et Bonnes Pratique | ALPHA | Oui |
 | 6 | Infer-14-Decision-Utility-Foundations : Axiomes et Fond | PRODUCTION | Oui |
@@ -68,11 +68,11 @@ Strategies de trading algorithmique avec QuantConnect, pipeline ML (Transformer,
 | 13 | Infer-20-Decision-Sequential : MDPs, Bandits et POMDPs | ALPHA | Oui |
 | 14 | Infer-3-Factor-Graphs : Graphes de Facteurs et Inferenc | ALPHA | Oui |
 | 15 | Infer-4-Bayesian-Networks : Reseaux Bayesiens Classique | ALPHA | Oui |
-| 16 | Infer-5-Skills-IRT : Evaluation de Competences et Psych | ALPHA | Oui |
+| 16 | Infer-7-Skills-IRT : Evaluation de Competences et Psych | ALPHA | Oui |
 | 17 | Infer-8-TrueSkill : Systeme de Classement et Apprentiss | ALPHA | Oui |
-| 18 | Infer-7-Classification : Classification Bayesienne | ALPHA | Oui |
+| 18 | Infer-9-Classification : Classification Bayesienne | ALPHA | Oui |
 | 19 | Infer-10-Model-Selection : Selection et Comparaison de M | ALPHA | Oui |
-| 20 | Infer-9-Topic-Models : Latent Dirichlet Allocation (LDA | ALPHA | Oui |
+| 20 | Infer-11-Topic-Models : Latent Dirichlet Allocation (LDA | ALPHA | Oui |
 
 ## QuantConnect/Python (15 notebooks)
 

@@ -93,16 +93,16 @@ Suivez le même modèle dans les deux stacks pour comparer les approches :
 |---------|-----------|------|----------------------|
 | Fondations | Infer-1 → 2 → 3 | PyMC-1 → 2 → 3 | EP/VMP (exact) vs NUTS (MCMC) |
 | Réseaux bayésiens | Infer-4 | PyMC-4 | Compilation statique vs échantillonnage dynamique |
-| IRT (compétences) | Infer-5 | PyMC-5 | Variable.If vs pm.Bernoulli |
+| IRT (compétences) | Infer-7 | PyMC-5 | Variable.If vs pm.Bernoulli |
 | TrueSkill | Infer-8 | PyMC-6 | Message passing exact vs MCMC approximatif |
-| Classification | Infer-7 | PyMC-7 | Bayes Point Machine vs régression logistique |
+| Classification | Infer-9 | PyMC-7 | Bayes Point Machine vs régression logistique |
 | Model sélection | Infer-10 | PyMC-8 | Bayes Factors vs LOO/Pareto-SMI |
-| Topic modeling | Infer-9 | PyMC-9 | VMP vs NUTS sur variables latentes |
+| Topic modeling | Infer-11 | PyMC-9 | VMP vs NUTS sur variables latentes |
 | Crowdsourcing | Infer-13 | PyMC-10 | Worker models EP vs MCMC agrégation |
-| Séquences (HMM) | Infer-11 | PyMC-11 | Forward-backward exact vs échantillonné |
+| Séquences (HMM) | Infer-14 | PyMC-11 | Forward-backward exact vs échantillonné |
 | Recommenders | Infer-15 | PyMC-12 | Factorisation bayésienne statique vs MCMC |
 | Debugging | Infer-6 | PyMC-13 | ShowFactorGraph vs trace plot diagnostics |
-| Causal Inference | Infer-14 | PyMC-14 | do-calculus message passing vs pm.do MCMC |
+| Causal Inference | Infer-5 | PyMC-14 | do-calculus message passing vs pm.do MCMC |
 | Modèles hiérarchiques | Infer-12 | PyMC-16 | Pooling partiel, shrinkage EP vs paramétrisation non-centrée NUTS (funnel) |
 
 #### Parcours applications (modèles concrets, ~6h)
@@ -110,11 +110,11 @@ Suivez le même modèle dans les deux stacks pour comparer les approches :
 Si vous préférez commencer par les cas d'usage, suivez cet ordre :
 
 1. **TrueSkill** (Infer-8 / PyMC-6) : classement bayésien, application Xbox Live
-2. **IRT** (Infer-5 / PyMC-5) : évaluation de compétences, application GMAT
+2. **IRT** (Infer-7 / PyMC-5) : évaluation de compétences, application GMAT
 3. **Crowdsourcing** (Infer-13 / PyMC-10) : agrégation de labels, application Mechanical Turk
 4. **Recommenders** (Infer-15 / PyMC-12) : factorisation matricielle bayésienne
-5. **LDA** (Infer-9 / PyMC-9) : découverte de thèmes dans des corpus textuels
-6. **HMM** (Infer-11 / PyMC-11) : régimes cachés en finance et traitement du signal
+5. **LDA** (Infer-11 / PyMC-9) : découverte de thèmes dans des corpus textuels
+6. **HMM** (Infer-14 / PyMC-11) : régimes cachés en finance et traitement du signal
 
 #### Parcours décision (théorie de la décision, ~7h)
 
@@ -183,7 +183,7 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 | Juste découvrir la programmation probabiliste | **Infer-101.ipynb** (standalone, 45 min) |
 | Comprendre les graphes de facteurs | **Infer-3** (Monty Hall, Murder Mystery) |
 | Un premier modèle qui marche | **Infer-101** ou **PyMC-1-Setup** |
-| Application concrète rapide | **Infer-8 TrueSkill** ou **Infer-9 LDA** |
+| Application concrète rapide | **Infer-8 TrueSkill** ou **Infer-11 LDA** |
 | Comparer les deux approches | Suivre la table "inférence comparée" ci-dessus |
 | Production data science | **PyMC** (écosystème Python, NUTS, arviz) |
 | Apprentissage embarqué / temps réel | **Infer.NET** (compilation statique = inférence rapide) |
@@ -373,7 +373,7 @@ La causalité est traitée à **quatre endroits** du dépôt, chacun avec son mo
 | Série | Moteur | Angle causal |
 |-------|--------|--------------|
 | [Tweety-11-Causal](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | Tweety (.NET, logique) | modèle causal structurel, opérateur `do`, contrefactuels |
-| [Infer-14-Causal-Inference](Infer/Infer-14-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
+| [Infer-5-Causal-Inference](Infer/Infer-5-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
 | [PyMC-14-Causal-Inference](PyMC/PyMC-14-Causal-Inference.ipynb) | PyMC (MCMC) | backdoor, front-door, contrefactuel bayésien |
 | [ICT-5](../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-6-SortingToTPM-CausalEmergence.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
 
@@ -444,10 +444,10 @@ pip install pyro-ppl torch matplotlib numpy
 | Domaine | Notebooks |
 |---------|-----------|
 | Jeux vidéo | Infer-6, PyMC-6 (TrueSkill) |
-| Éducation | Infer-5, PyMC-5 (IRT) |
-| NLP | Infer-9, PyMC-9 (LDA) |
-| Médecine | Infer-4, Infer-7, Infer-17, Infer-18, Infer-19 (réseaux bayésiens, Kalman, change-point, survie) |
-| Finance | Infer-11 (HMM régimes), DecInfer-3 (CARA/CRRA), DecInfer-8 (MDPs) |
+| Éducation | Infer-7, PyMC-5 (IRT) |
+| NLP | Infer-11, PyMC-9 (LDA) |
+| Médecine | Infer-4, Infer-9, Infer-17, Infer-18, Infer-19 (réseaux bayésiens, Kalman, change-point, survie) |
+| Finance | Infer-14 (HMM régimes), DecInfer-3 (CARA/CRRA), DecInfer-8 (MDPs) |
 | E-commerce | Infer-10, Infer-15, PyMC-10, PyMC-12 (crowdsourcing, recommenders) |
 
 ### Exemples concrets

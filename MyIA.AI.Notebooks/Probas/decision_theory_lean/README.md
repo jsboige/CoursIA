@@ -126,7 +126,7 @@ définis dans `Utility/Axioms.lean`.
 La formalisation est le **fondement théorique des décisions** prises dans les
 notebooks d'inférence bayésienne de la série `Probas` :
 
-- **Infer-14** (Infer.NET) : les utilités à *moyenne a posteriori* calculées là sont
+- **Infer-5** (Infer.NET) : les utilités à *moyenne a posteriori* calculées là sont
   une instance de `expectation` sur une **postérieure bayésienne** ; la
   représentation vNM justifie de **classer les actions par utilité espérée**.
 - **PyMC-1** (PyMC) : les estimations d'utilité espérée par **échantillonnage de la
@@ -198,7 +198,7 @@ et l'indicatrice `ind` comme réel.
 
 Cette formalisation répond à la question fondatrice de toute la série `Probas` :
 **pourquoi des probabilités (additives, normalisées) ?** Les notebooks d'inférence
-bayésienne (Infer-14, PyMC-14) manipulent des distributions postérieures comme des
+bayésienne (Infer-5, PyMC-14) manipulent des distributions postérieures comme des
 probabilités au sens de Kolmogorov ; le théorème de cohérence justifie ce cadre
 comme **le seul exempt d'arbitrage** — un fondement non utilitaire (contrairement à
 vNM, qui porte sur les *préférences* sous risque), mais purement *épistémique*.
@@ -286,6 +286,6 @@ programmation probabiliste Infer.NET à la formalisation Lean.
 ## Voir aussi
 
 - **PR #2911** — `discount_monotone` prouvé en forme close (sorry 1→0)
-- **`Probas/Infer/`** — série probabiliste Infer.NET (inférence bayésienne, priors conjugués) ; **Infer-14** = utilité espérée sous postérieure bayésienne
+- **`Probas/Infer/`** — série probabiliste Infer.NET (inférence bayésienne, priors conjugués) ; **Infer-5** = utilité espérée sous postérieure bayésienne
 - **`Probas/PyMC/`** — série PyMC ; **PyMC-1** = utilité espérée par échantillonnage de postérieure
 - **Epic #2651** — audit README/structure (série Lean)
