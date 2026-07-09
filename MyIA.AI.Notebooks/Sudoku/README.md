@@ -23,24 +23,9 @@ Comment résoudre un Sudoku ? Cette série explore les techniques de résolution
 4. **Evaluer** les compromis garantie vs performance vs généralisation pour choisir une stratégie de résolution
 5. **Mesurer** empiriquement les performances de chaque approche (temps, taux de succès, échelle de difficulté)
 
-## Aperçu — cinq approches algorithmiques en images
+## Aperçu — cinq familles d'approches
 
-Six visualisations extraites des notebooks illustrent l'arc complet de la série, depuis le backtracking exhaustif et la convergence des métaheuristiques jusqu'à la résolution par contraintes (Choco), l'apprentissage neuronal et le benchmark croisé des solveurs.
-
-<table>
-<tr>
-<td align="center"><b>1 · Backtracking</b><br><a href="Sudoku-1-Backtracking-Python.ipynb"><img src="assets/readme/sudoku1-backtracking.png" width="290" alt="Backtracking : visualisation d'une grille de Sudoku avec code couleur distinguant les valeurs initiales des valeurs trouvées par le solveur exhaustif."></a></td>
-<td align="center"><b>3 · Génétique</b><br><a href="Sudoku-3-Genetic-Python.ipynb"><img src="assets/readme/sudoku3-genetic.png" width="290" alt="Algorithme génétique : courbe de convergence du meilleur fitness au fil des générations."></a></td>
-<td align="center"><b>11 · Choco (CSP)</b><br><a href="Sudoku-11-Choco-Python.ipynb"><img src="assets/readme/sudoku11-choco.png" width="290" alt="Programmation par contraintes : grille résolue par le solveur Choco via la modélisation CSP."></a></td>
-</tr>
-<tr>
-<td align="center"><b>16 · MLP (entraînement)</b><br><a href="Sudoku-16-NeuralNetwork-Python.ipynb"><img src="assets/readme/sudoku16-nn-training.png" width="290" alt="Réseau de neurones dense : courbes d'entraînement du MLP sur 20 epochs, écart entre précision par case et précision par grille."></a></td>
-<td align="center"><b>16 · MLP (erreurs)</b><br><a href="Sudoku-16-NeuralNetwork-Python.ipynb"><img src="assets/readme/sudoku16-nn-errors.png" width="290" alt="Carte d'erreurs : identification des cases les plus difficiles à prédire pour le modèle neuronal."></a></td>
-<td align="center"><b>18 · Benchmark</b><br><a href="Sudoku-18-Comparison-Python.ipynb"><img src="assets/readme/sudoku18-comparison.png" width="290" alt="Comparaison des solveurs : temps moyen de résolution par niveau de difficulté en échelle logarithmique."></a></td>
-</tr>
-</table>
-
-Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+La série traverse cinq grandes familles algorithmiques, des méthodes exhaustives aux modèles appris : recherche et Dancing Links (niveaux 1-2), métaheuristiques (niveau 3), programmation par contraintes (niveau 4), IA symbolique SAT/SMT (niveau 5) puis IA data-driven (niveau 6). Chaque famille est illustrée par une figure extraite du notebook correspondant, insérée dans la section qui en commente le concept ; la provenance détaillée (cellule source, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Pourquoi étudier le Sudoku en IA ?
 
@@ -205,6 +190,10 @@ flowchart TD
 - **Données abondantes, généralisation souhaitée** : Réseau de neurones
 - **Pas d'algorithme connu, intuition humaine** : LLM
 
+Le benchmark du notebook 18 quantifie ces arbitrages : pour chaque solveur, le **temps moyen de résolution** est mesuré sur quatre niveaux de difficulté (Easy, Medium, Hard, Expert), en échelle logarithmique. L'écart entre solveurs exacts et heuristiques, et la pente avec la difficulté, rendent concret le tableau « vitesse vs garantie » ci-dessus.
+
+[![Benchmark : diagramme en barres groupées du temps moyen (ms, échelle log) par solveur et niveau de difficulté Easy/Medium/Hard/Expert](assets/readme/sudoku18-comparison.png)](Sudoku-18-Comparison-Python.ipynb)
+
 ---
 
 ## Parcours d'Apprentissage Recommandés
@@ -280,6 +269,10 @@ flowchart TD
 - L'ordre d'exploration (heuristique de choix) impacte drastiquement les performances
 - Dancing Links montre que les structures de données peuvent transformer un algorithme
 
+Le solveur exhaustif remplit la grille case par case en revenant sur ses pas à chaque impasse. La figure ci-dessous montre une grille **9×9** où un code couleur distingue les valeurs initiales (données du puzzle) des valeurs trouvées par le solveur — le backtracking parvient à compléter toute la grille.
+
+[![Backtracking : grille 9×9 résolue, valeurs initiales colorées différemment des valeurs trouvées](assets/readme/sudoku1-backtracking.png)](Sudoku-1-Backtracking-Python.ipynb)
+
 **Pièges courants** :
 - Confondre complexité moyenne et pire cas
 - Négliger l'importance de l'heuristique de choix (MRV)
@@ -292,6 +285,10 @@ flowchart TD
 - Ils ne garantissent pas la solution mais sont souvent très efficaces
 - Le paramétrage (taux de mutation, température, etc.) est crucial et délicat
 
+L'algorithme génétique fait évoluer une population de grilles par croisement et mutation, mesurant la qualité par le **nombre d'erreurs** (conflits de ligne/colonne/bloc). La courbe ci-dessous trace cette fitness au fil des générations — elle descend vers zéro quand la population converge vers une grille valide.
+
+[![Algorithme génétique : nombre d'erreurs par grille en fonction du numéro de génération, décroissant vers zéro](assets/readme/sudoku3-genetic.png)](Sudoku-3-Genetic-Python.ipynb)
+
 **Pièges courants** :
 - Attendre une garantie de solution
 - Mal régler les hyperparamètres
@@ -303,6 +300,10 @@ flowchart TD
 - On déclare les contraintes, le solveur fait le reste
 - OR-Tools et Choco sont des outils industriels très optimisés
 - La propagation de contraintes est la clé de l'efficacité
+
+Avec Choco, on modélise le Sudoku comme 81 variables d'un problème CSP (une par case, domaine 1-9) reliées par les contraintes « tous différents » sur chaque ligne, colonne et bloc. Le solveur propage ces contraintes puis branche jusqu'à la grille résolue ci-dessous — même résultat final que le backtracking, mais obtenu par déclaration plutôt que par énumération explicite.
+
+[![Programmation par contraintes : grille 9×9 résolue par le solveur Choco](assets/readme/sudoku11-choco.png)](Sudoku-11-Choco-Python.ipynb)
 
 **Pièges courants** :
 - Sur-contraindre (pas de solution) ou sous-contraindre (trop de solutions)
@@ -327,6 +328,14 @@ flowchart TD
 - Les réseaux de neurones apprennent des patterns mais sans garantie
 - Les LLM utilisent des connaissances implicites du web
 - Ces approches sont complémentaires, non concurrentes, des méthodes symboliques
+
+Un MLP dense entraîné à prédire les chiffres des cases vides converge en quelques epochs mais plafonne : sur le graphe d'entraînement ci-dessous, la perte baisse mais la précision par grille (toutes les cases justes simultanément) reste quasi nulle — l'écart entre « deviner une case » et « résoudre toute la grille » capture la limite d'une approche case-par-case sans propagation de contraintes.
+
+[![MLP : courbes de perte et de précision sur 20 epochs, précision par grille proche de zéro malgré une précision par case montante](assets/readme/sudoku16-nn-training.png)](Sudoku-16-NeuralNetwork-Python.ipynb)
+
+En projetant les erreurs sur une grille 9×9 (ci-dessous), on voit que le modèle ne se trompe pas uniformément : certaines positions sont systématiquement plus difficiles. La carte de chaleur agrège les erreurs de prédiction par case sur tout le jeu de test.
+
+[![Carte de chaleur 9×9 des erreurs de prédiction du CNN, avec le nombre d'erreurs par case et les séparateurs de bloc](assets/readme/sudoku16-nn-errors.png)](Sudoku-16-NeuralNetwork-Python.ipynb)
 
 **Pièges courants** :
 - Attendre 100% de succès des modèles appris
