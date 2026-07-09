@@ -1,10 +1,10 @@
 # Playwright-OWUI - Tests E2E pédagogiques pour Open WebUI
 
 <!-- CATALOG-STATUS
-series: GenAI-Playwright-OWUI
-pedagogical_count: 0
-breakdown: 
-maturity: 
+series: GenAI-Open-WebUI
+pedagogical_count: 7
+breakdown: Open-WebUI=7
+maturity: PRODUCTION=6, BETA=1
 -->
 
 [← Documentation GenAI](../../README.md) | [↑ Open-WebUI](../README.md) | [→ Vibe-Coding](../../Vibe-Coding/README.md)
