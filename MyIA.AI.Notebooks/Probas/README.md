@@ -225,16 +225,16 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 2 | Gaussian Mixtures | Distributions continues, mélanges gaussiens, estimation de params |
 | 3 | Factor Graphs | Monty Hall + Murder Mystery : inférence discrète, Variable.If/Case |
 | 4 | Bayesian Networks | Wet Grass, CPT, D-separation, explaining away, inférence causale |
-| 5 | Skills (IRT) | Modélisation de compétences (DINA), évaluation adaptative |
-| 6 | TrueSkill | Ranking bayésien, online learning, rating conservatif (mu - 3*sigma) |
-| 7 | Classification | Bayes Point Machine, classification probit, tests A/B bayésiens |
-| 8 | Model Sélection | Bayes Factors, evidence marginale, ARD (Automatic Relevance Détermination) |
-| 9 | Topic Models | LDA, Dirichlet, prior asymétrique pour briser la symétrie VMP |
-| 10 | Crowdsourcing | Worker models, communautés d'annotateurs, aggregation de labels |
-| 11 | Séquences | HMM, detection de régimes, forward-backward, motifs temporels |
+| 5 | Causal Inference | do-calculus de Pearl, backdoor/front-door, paradoxe de Simpson |
+| 6 | Debugging | EP vs VMP, diagnostic de divergence, ShowFactorGraph, ShowSchedule |
+| 7 | Skills (IRT) | Modélisation de compétences (DINA), évaluation adaptative |
+| 8 | TrueSkill | Ranking bayésien, online learning, rating conservatif (mu - 3*sigma) |
+| 9 | Classification | Bayes Point Machine, classification probit, tests A/B bayésiens |
+| 10 | Model Sélection | Bayes Factors, evidence marginale, ARD (Automatic Relevance Détermination) |
+| 11 | Topic Models | LDA, Dirichlet, prior asymétrique pour briser la symétrie VMP |
 | 12 | Modèles Hiérarchiques | Partial pooling, shrinkage, paramétrisation non-centrée |
-| 13 | Debugging | EP vs VMP, diagnostic de divergence, ShowFactorGraph, ShowSchedule |
-| 14 | Causal Inference | do-calculus de Pearl, backdoor/front-door, paradoxe de Simpson |
+| 13 | Crowdsourcing | Worker models, communautés d'annotateurs, aggregation de labels |
+| 14 | Séquences | HMM, detection de régimes, forward-backward, motifs temporels |
 | 15 | Recommenders | Factorisation matricielle bayésienne, Click Model |
 | 16 | Sparse Gaussian Process | EP sur géométrie latente GP, comparaison NUTS > 15min |
 | 17 | Kalman Filter | Système dynamique linéaire gaussien, filtrage fermé |
@@ -443,24 +443,24 @@ pip install pyro-ppl torch matplotlib numpy
 
 | Domaine | Notebooks |
 |---------|-----------|
-| Jeux vidéo | Infer-6, PyMC-6 (TrueSkill) |
+| Jeux vidéo | Infer-8, PyMC-6 (TrueSkill) |
 | Éducation | Infer-7, PyMC-5 (IRT) |
 | NLP | Infer-11, PyMC-9 (LDA) |
 | Médecine | Infer-4, Infer-9, Infer-17, Infer-18, Infer-19 (réseaux bayésiens, Kalman, change-point, survie) |
 | Finance | Infer-14 (HMM régimes), DecInfer-3 (CARA/CRRA), DecInfer-8 (MDPs) |
-| E-commerce | Infer-10, Infer-15, PyMC-10, PyMC-12 (crowdsourcing, recommenders) |
+| E-commerce | Infer-13, Infer-15, PyMC-10, PyMC-12 (crowdsourcing, recommenders) |
 
 ### Exemples concrets
 
 Derrière chaque modèle de la série se cache un système réel déjà en production :
 
-- **TrueSkill** (notebook 6) est l'algorithme que Microsoft utilise pour apparier des millions de joueurs sur Xbox Live : il maintient pour chaque joueur une compétence *gaussienne* (moyenne + incertitude) mise à jour après chaque partie, généralisant l'Elo des échecs aux jeux en équipe.
-- **Item Response Theory** (notebook 5) est le moteur des tests adaptatifs comme le GMAT ou le GRE : la difficulté de chaque question est calibrée probabilistiquement, et le test s'ajuste en temps réel au niveau estimé du candidat.
-- **Les réseaux bayésiens** (notebooks 4, 7) fondent les systèmes d'aide au diagnostic médical (de QMR-DT aux outils modernes) et le filtrage anti-spam : ils propagent l'incertitude entre symptômes, causes et observations.
-- **LDA / topic models** (notebook 9) structurent automatiquement de grands corpus — découverte de thématiques dans des archives de presse, cartographie de la littérature scientifique, analyse de tickets support.
-- **Les HMM** (notebook 11) détectent les régimes cachés : phases de marche en finance, reconnaissance de la parole, segmentation de séquences biologiques.
-- **Les systèmes de recommandation bayésiens** (notebook 12) sont la version « avec barre d'incertitude » du collaborative filtering de Netflix ou Amazon — utile pour décider quand explorer un nouvel item plutôt que d'exploiter une préférence connue.
-- **Le crowdsourcing** (notebook 10) modélise la fiabilité de chaque annotateur (Mechanical Turk, labellisation de datasets) pour reconstruire la vérité terrain malgré des votes bruités.
+- **TrueSkill** (notebook 8) est l'algorithme que Microsoft utilise pour apparier des millions de joueurs sur Xbox Live : il maintient pour chaque joueur une compétence *gaussienne* (moyenne + incertitude) mise à jour après chaque partie, généralisant l'Elo des échecs aux jeux en équipe.
+- **Item Response Theory** (notebook 7) est le moteur des tests adaptatifs comme le GMAT ou le GRE : la difficulté de chaque question est calibrée probabilistiquement, et le test s'ajuste en temps réel au niveau estimé du candidat.
+- **Les réseaux bayésiens** (notebooks 4, 9) fondent les systèmes d'aide au diagnostic médical (de QMR-DT aux outils modernes) et le filtrage anti-spam : ils propagent l'incertitude entre symptômes, causes et observations.
+- **LDA / topic models** (notebook 11) structurent automatiquement de grands corpus — découverte de thématiques dans des archives de presse, cartographie de la littérature scientifique, analyse de tickets support.
+- **Les HMM** (notebook 14) détectent les régimes cachés : phases de marche en finance, reconnaissance de la parole, segmentation de séquences biologiques.
+- **Les systèmes de recommandation bayésiens** (notebook 15) sont la version « avec barre d'incertitude » du collaborative filtering de Netflix ou Amazon — utile pour décider quand explorer un nouvel item plutôt que d'exploiter une préférence connue.
+- **Le crowdsourcing** (notebook 13) modélise la fiabilité de chaque annotateur (Mechanical Turk, labellisation de datasets) pour reconstruire la vérité terrain malgré des votes bruités.
 - **La théorie de la décision et les MDPs** (arc [`DecisionTheory/`](DecisionTheory/)) relient la série au contrôle séquentiel : gestion de stocks, maintenance prédictive, et passerelle directe vers le [reinforcement learning](../RL/).
 
 ## Installation
