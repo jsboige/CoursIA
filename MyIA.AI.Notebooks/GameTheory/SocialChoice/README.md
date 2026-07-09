@@ -91,22 +91,22 @@ Le projet `social_choice_lean_peters/` (DominikPeters, Lean 4 + Mathlib) formali
 
 ## Galerie
 
-Visualisations réelles de la théorie du choix social, des axiomes d'Arrow (limite axiomatique) aux méthodes de vote (Condorcet, paradoxe de Sen, électeur médian, modèle de Downs) puis à l'agrégation computationnelle par solveur SAT/Z3.
+Visualisations réelles de la théorie du choix social : une synthèse des axiomes d'Arrow (limite axiomatique), le cycle de Condorcet et le paradoxe de Sen (méthodes de vote), la convergence vers l'électeur médian (théorème médian + modèle de Downs), puis l'illustration de l'impossibilité et de l'explosion combinatoire à l'agrégation computationnelle.
 
 <table>
 <tr>
-<td align="center" colspan="2"><img src="assets/readme/sc-arrow.png" alt="Synthèse visuelle des axiomes du théorème d'impossibilité d'Arrow" width="640"/><br/><sub>Synthèse des axiomes d'Arrow — théorème d'impossibilité (<a href="01-Arrow-Impossibility-Theorem.ipynb">01-Arrow</a>)</sub></td>
+<td align="center" colspan="2"><img src="assets/readme/sc-arrow.png" alt="Diagramme à 3 panneaux : barres vert SATISFAIT / rouge VIOLE pour 3 règles de vote (Borda, Pluralité, Dictature) × 3 axiomes (Pareto, IIA, Non-dictature)" width="640"/><br/><sub><b>Synthèse des axiomes d'Arrow</b> (<a href="01-Arrow-Impossibility-Theorem.ipynb">01-Arrow</a>) — 3 panneaux (Borda / Pluralité / Dictature), chacun 3 barres (Pareto, IIA, Non-dictature) vert « SATISFAIT » / rouge « VIOLÉ » : aucune règle ne satisfait les 3 axiomes simultanément</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="assets/readme/sc-condorcet.png" alt="Détermination du vainqueur de Condorcet sur un profil de préférences" width="400"/><br/><sub>Vainqueur de Condorcet (<a href="03-Voting-Methods.ipynb">03-Voting</a>)</sub></td>
-<td align="center"><img src="assets/readme/sc-sen.png" alt="Visualisation du paradoxe du libéral parétien de Sen" width="400"/><br/><sub>Paradoxe de Sen — libéral parétien (<a href="03-Voting-Methods.ipynb">03-Voting</a>)</sub></td>
+<td align="center"><img src="assets/readme/sc-condorcet.png" alt="Graphe orienté à 3 noeuds A B C formant un cycle (A→B→C→A), illustration du paradoxe de Condorcet : aucun vainqueur" width="400"/><br/><sub><b>Cycle de Condorcet</b> (<a href="03-Voting-Methods.ipynb">03-Voting</a>) — graphe orienté A→B→C→A (layout circulaire) : le majority pairwise crée un cycle, donc <i>aucun vainqueur</i> n'émerge (le résultat lui-même, pas une détermination de gagnant)</sub></td>
+<td align="center"><img src="assets/readme/sc-sen.png" alt="3 noeuds a b c avec flèches vertes (Liberté), rouge (Pareto) et orange pointillée (contradiction par transitivité)" width="400"/><br/><sub><b>Paradoxe de Sen</b> (<a href="03-Voting-Methods.ipynb">03-Voting</a>) — 3 noeuds (a, b, c), flèches vertes « Liberté » (Prude c&gt;a, Lewd b&gt;c), flèche rouge « Pareto » (a&gt;b), flèche orange pointillée « Transitivité » (b&gt;a) révélant la contradiction Liberté vs Pareto</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="assets/readme/sc-median.png" alt="Théorème de l'électeur médian : convergence vers le centre" width="400"/><br/><sub>Théorème de l'électeur médian (<a href="03-Voting-Methods.ipynb">03-Voting</a>)</sub></td>
-<td align="center"><img src="assets/readme/sc-downs.png" alt="Simulation du modèle de Downs : convergence vers le centre" width="400"/><br/><sub>Modèle de Downs — convergence (<a href="03-Voting-Methods.ipynb">03-Voting</a>)</sub></td>
+<td align="center"><img src="assets/readme/sc-median.png" alt="2 panneaux : histogramme de distribution des pics de préférence avec ligne médiane rouge + courbes d'utilité unimodales de 3 électeurs" width="400"/><br/><sub><b>Théorème de l'électeur médian</b> (<a href="03-Voting-Methods.ipynb">03-Voting</a>) — 2 panneaux : histogramme des pics de préférence (ligne pointillée rouge = médiane) + courbes d'utilité unimodales de 3 électeurs (l'utilité = −distance au pic)</sub></td>
+<td align="center"><img src="assets/readme/sc-downs.png" alt="2 panneaux : histogramme des électeurs avec positions initiales/finales des partis + trajectoires des 2 partis convergeant vers l'électeur médian" width="400"/><br/><sub><b>Modèle de Downs</b> (<a href="03-Voting-Methods.ipynb">03-Voting</a>) — 2 panneaux : histogramme des électeurs (lignes verticales positions initiales/finales des partis gauche/droite) + trajectoires des 2 partis (bleu gauche / rouge droite) convergeant vers l'électeur médian (vert pointillé) sur 20 rounds</sub></td>
 </tr>
 <tr>
-<td align="center" colspan="2"><img src="assets/readme/sc-z3-sat.png" alt="Agrégation computationnelle des préférences via un solveur SAT/Z3" width="560"/><br/><sub>Agrégation computationnelle par SAT/Z3 (<a href="04-Computational-Aggregation-SAT-Z3.ipynb">04-Z3</a>)</sub></td>
+<td align="center" colspan="2"><img src="assets/readme/sc-z3-sat.png" alt="2 panneaux : diagramme de l'intersection vide des contraintes d'Arrow (cercles Pareto/IIA/Non-dictature) + courbe semi-log d'explosion combinatoire des profils" width="560"/><br/><sub><b>Illustration de l'agrégation computationnelle</b> (<a href="04-Computational-Aggregation-SAT-Z3.ipynb">04-Z3</a>) — 2 panneaux : diagramme conceptuel des cercles de contraintes Pareto/IIA/Non-dictature à <b>intersection vide</b> + courbe semi-log du nombre de profils <code>(m!)^k</code> explosant avec le nombre d'alternatives (illustration conceptuelle, non une sortie du solveur Z3)</sub></td>
 </tr>
 </table>
 
