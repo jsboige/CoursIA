@@ -12,7 +12,7 @@ points: "20"
 # CC1 - IA Exploratoire et Symbolique
 ## Système de Diagnostic Médical Multi-Contraintes pour le Diabète de Type 2
 
-### 🎯 Objectifs Pédagogiques
+### Objectifs Pédagogiques
 
 Ce devoir vise à évaluer votre maîtrise des concepts fondamentaux de l'intelligence artificielle exploratoire et symbolique à travers une application concrète dans le domaine biomédical. Vous développerez un système de diagnostic intelligent qui combine trois approches complémentaires :
 
@@ -24,7 +24,7 @@ Ce devoir vise à évaluer votre maîtrise des concepts fondamentaux de l'intell
 - Application biomédicale (diabète type 2)
 - Documentation technique et communication
 
-### 📋 Contexte du Problème
+### Contexte du Problème
 
 Le diabète de type 2 représente un défi de santé publique majeur, nécessitant une approche de diagnostic personnalisée qui combine :
 - **Analyse multi-dimensionnelle** : Glycémie, HbA1c, symptômes, antécédents
@@ -36,7 +36,7 @@ Votre système doit intégrer trois approches algorithmiques complémentaires :
 2. **Optimisation Génétique** : Algorithme évolutionnaire pour personnaliser les seuils diagnostiques
 3. **Validation par Contraintes** : Solveur Z3 pour valider les protocoles thérapeutiques
 
-### 📊 Données du Problème
+### Données du Problème
 
 #### Structure Patient
 ```python
@@ -94,7 +94,7 @@ protocoles_diabete_type2 = {
 }
 ```
 
-### 🎯 Objectifs à Réaliser
+### Objectifs à Réaliser
 
 #### Partie 1 : Agent de Diagnostic Basique (6 points)
 Implémenter un système de diagnostic qui évalue les patients selon les règles cliniques standards :
@@ -120,7 +120,7 @@ Intégrer un solveur de contraintes pour valider les protocoles thérapeutiques 
 2. **Solveur Z3** : Utilisation de Z3 pour la résolution efficace
 3. **Validation** : Vérification des protocoles selon les contraintes
 
-### 📋 Exemples de Données
+### Exemples de Données
 
 #### Cas de Test 1 : Situation Simple
 ```python
@@ -150,7 +150,7 @@ patients_complexes = [
 ]
 ```
 
-### 🛠️ Environnement Technique
+### Environnement Technique
 
 #### Langages et Librairies
 - **Python 3.8+** requis
@@ -167,7 +167,7 @@ patients_complexes = [
 - **Mémoire utilisée** : <200MB pour 1000 patients
 - **Portabilité** : Code compatible Windows/Linux/macOS
 
-### 📊 Barème d'Évaluation
+### Barème d'Évaluation
 
 | Critère | Points | Détails d'Évaluation |
 |----------|---------|-------------------|
@@ -214,7 +214,7 @@ patients_complexes = [
 - Analyse absente ou erronée
 - Documentation manquante
 
-### 📚 Références
+### Références
 
 #### Théorie
 - **Russell & Norvig**, *Artificial Intelligence: A Modern Approach*, Chapitres 1, 3, 4, 6
@@ -232,7 +232,7 @@ patients_complexes = [
 - **WHO Diabetes Guidelines** : Standards internationaux pour le diagnostic
 - **Medical Constraint Systems** : Littérature sur les applications CSP en santé
 
-### 📝 Livrables Attendus
+### Livrables Attendus
 
 1. **CC1-Diagnostic-Medical.ipynb** : Notebook template à compléter par les étudiants
 2. **data/patients.csv** : Données de test pour valider les implémentations
@@ -242,13 +242,13 @@ patients_complexes = [
    - Justification des choix algorithmiques
    - Mesures et graphiques
 
-### ⏰ Calendrier
+### Calendrier
 
 - **Date de remise** : 21 jours après la publication du sujet
 - **Pénalité de retard** : -1 point par jour de retard
 - **Format de remise** : Archive ZIP avec tous les livrables
 
-### 🚀 Extensions Possibles
+### Extensions Possibles
 
 #### Pour Étudiants Avancés
 - **Apprentissage Automatique** : Optimisation des heuristiques par machine learning
