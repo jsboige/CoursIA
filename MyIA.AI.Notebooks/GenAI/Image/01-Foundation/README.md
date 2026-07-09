@@ -21,16 +21,16 @@ Ce module pose les fondamentaux : génération via API cloud (DALL-E 3), génér
 
 <table>
 <tr>
-<td align="center"><img src="assets/readme/img1-dalle3.webp" alt="Génération DALL-E 3 via API OpenAI" width="400"/><br/><sub>DALL-E 3 API (01-1)</sub></td>
-<td align="center"><img src="assets/readme/img1-forge-gen.webp" alt="Génération SD XL Turbo via Forge" width="400"/><br/><sub>SD Forge (01-4)</sub></td>
+<td align="center"><img src="assets/readme/img1-dalle3.webp" alt="Paysage urbain futuriste au coucher de soleil avec voitures volantes et lumières néon généré par gpt-image-1" width="400"/><br/><sub><b>gpt-image-1 : paysage urbain futuriste</b> (<a href="01-1-OpenAI-DALL-E-3.ipynb">01-1</a>) — ville futuriste au coucher de soleil, voitures volantes, néons reflétés sur immeubles de verre, hologrammes (généré en 19s via API OpenAI, 1024×1024 requis puis redimensionné à 746×789 pour la galerie)</sub></td>
+<td align="center"><img src="assets/readme/img1-forge-gen.webp" alt="Paysage de montagne serein au coucher de soleil, éclairage golden hour, photoréaliste, généré par SDXL Turbo via Forge" width="400"/><br/><sub><b>SDXL Turbo : paysage de montagne au coucher de soleil</b> (<a href="01-4-Forge-SD-XL-Turbo.ipynb">01-4</a>) — « golden hour », photoréaliste (512×512 généré, redimensionné à 761×789 pour la galerie, premier exemple de génération locale via Forge)</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="assets/readme/img1-forge-gen2.webp" alt="Génération SD Forge — variante" width="400"/><br/><sub>SD Forge variante (01-4)</sub></td>
-<td align="center"><img src="assets/readme/img1-forge-gen3.webp" alt="Génération SD Forge — composition" width="400"/><br/><sub>SD Forge composition (01-4)</sub></td>
+<td align="center"><img src="assets/readme/img1-forge-gen2.webp" alt="Ville futuriste la nuit, lumières néon, style cyberpunk, générée en 4 steps SDXL Turbo" width="400"/><br/><sub><b>SDXL Turbo : ville cyberpunk nocturne</b> (<a href="01-4-Forge-SD-XL-Turbo.ipynb">01-4</a>) — « a futuristic city at night, neon lights, cyberpunk style », démonstration du mode 4-steps Turbo (qualité acceptable en ~18s)</sub></td>
+<td align="center"><img src="assets/readme/img1-forge-gen3.webp" alt="Forêt mystique aux champignons lumineux générée avec seed fixe 42 pour reproductibilité" width="400"/><br/><sub><b>SDXL Turbo : forêt mystique (seed 42)</b> (<a href="01-4-Forge-SD-XL-Turbo.ipynb">01-4</a>) — « a mystical forest with glowing mushrooms », technique de génération reproductible (seed fixe 42 → même résultat garanti à chaque exécution)</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="assets/readme/img1-qwen-edit.png" alt="Édition Qwen Image Edit — avant" width="400"/><br/><sub>Qwen Edit (01-5)</sub></td>
-<td align="center"><img src="assets/readme/img1-qwen-edit2.png" alt="Édition Qwen Image Edit — panorama" width="400"/><br/><sub>Qwen Edit panorama (01-5)</sub></td>
+<td align="center"><img src="assets/readme/img1-qwen-edit.png" alt="Génération hello-world de Qwen Image Edit (modèle Qwen 2.5-VL) via workflow ComfyUI" width="400"/><br/><sub><b>Qwen Image Edit : génération hello-world</b> (<a href="01-5-Qwen-Image-Edit.ipynb">01-5</a>) — premier workflow ComfyUI (Qwen Image Edit 2509), génération de test (~277s, ~29 GB VRAM) attestant que le service est joignable</sub></td>
+<td align="center"><img src="assets/readme/img1-qwen-edit2.png" alt="Workflow image-to-image Qwen (VAE 16 canaux + CLIP sd3 + UNET fp8 + ModelSamplingAuraFlow shift 3.0 + CFGNorm 1.0) sur image placeholder" width="400"/><br/><sub><b>Qwen Image Edit : workflow image-to-image</b> (<a href="01-5-Qwen-Image-Edit.ipynb">01-5</a>) — architecture Phase 29 (VAE 16-ch + CLIP sd3 + UNET fp8 + ModelSamplingAuraFlow shift=3.0 + CFGNorm 1.0), édition img2img (~170s)</sub></td>
 </tr>
 </table>
 
