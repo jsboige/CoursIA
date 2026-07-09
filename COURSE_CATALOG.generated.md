@@ -1,6 +1,6 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-07-08 06:14
+Generated: 2026-07-09 07:09
 Total notebooks: 803
 
 ## Status Summary
@@ -13,9 +13,9 @@ Total notebooks: 803
 ## Maturity Summary
 
 - **PRODUCTION**: 601
-- **BETA**: 148
+- **BETA**: 149
 - **TEMPLATE**: 4
-- **ALPHA**: 46
+- **ALPHA**: 45
 - **DRAFT**: 4
 
 ## By Series
@@ -166,7 +166,7 @@ Total notebooks: 803
 | 140 | Pipeline Video de Production | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 141 | GenAI E2E Quant Validation | Python 3 | READY | BETA | 30min | po-2025 |
 
-### Search (112 notebooks) — READY:112 | BETA:28, PRODUCTION:84
+### Search (112 notebooks) — READY:112 | BETA:27, PRODUCTION:85
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -212,7 +212,7 @@ Total notebooks: 803
 | 40 | App-14 - Connect Four : Benchmark Adversarial Sear | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 41 | Search-1 : Espaces d'etats et formalisation de pro | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 42 | Search-1 : Espaces d'etats et formulation de probl | Python 3 | READY | PRODUCTION | 45min | po-2025 |
-| 43 | Search-10 (C#) : Automates Finis Classiques — jume | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 43 | Search-10 (C#) : Automates Finis Classiques — jume | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
 | 44 | Search-10 : Automates Symboliques avec Z3 | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 45 | Search-11 (C#) : Metaheuristiques — Optimisation p | .NET (C#) | READY | PRODUCTION | 45min | po-2025 |
 | 46 | Search-11-Metaheuristiques : Optimisation avec MEA | Python 3 | READY | PRODUCTION | 45min | po-2025 |
@@ -653,7 +653,7 @@ Total notebooks: 803
 | 104 | Research QuantBook: VIX-TermStructure (Short Volat | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 105 | Top-4 Sharpe > 0.5 Strategies: OOS Deep-Dive (Issu | Python 3 | READY | PRODUCTION | 15min | po-2026 |
 
-### GameTheory (50 notebooks) — READY:50 | ALPHA:1, BETA:13, PRODUCTION:36
+### GameTheory (50 notebooks) — READY:50 | BETA:14, PRODUCTION:36
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -687,7 +687,7 @@ Total notebooks: 803
 | 28 | GameTheory-4-NashEquilibrium (C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 29 | GameTheory-4-NashEquilibrium | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
 | 30 | GameTheory 4b - Theoreme d'Existence de Nash (Lean | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
-| 31 | GameTheory 4c - Théorème d'Existence de Nash (C#) | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 31 | GameTheory 4c - Théorème d'Existence de Nash (C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 32 | GameTheory 4c - Theoreme d'Existence de Nash (Pyth | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 33 | GameTheory-5-ZeroSum-Minimax (Twin C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 34 | GameTheory-5-ZeroSum-Minimax | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
@@ -705,7 +705,7 @@ Total notebooks: 803
 | 46 | SocialChoice 02 - Choix Social Formel en Lean 4 | Lean 4 (WSL) | READY | BETA | 45min | po-2024 |
 | 47 | SocialChoice 03 : Methodes de Vote et Paradoxes (t | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
 | 48 | SocialChoice 03 - Methodes de Vote et Paradoxes | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 49 | SocialChoice 04 : Agregation Computationnelle - SA | .NET (C#) | READY | ALPHA | 45min | po-2024 |
+| 49 | SocialChoice 04 : Agregation Computationnelle - SA | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 50 | SocialChoice 04 - Agregation Computationnelle : SA | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 
 ### Sudoku (36 notebooks) — DEMO:2, READY:34 | ALPHA:1, BETA:5, PRODUCTION:30
@@ -749,7 +749,7 @@ Total notebooks: 803
 | 35 | Notebook 9: Résolution de Sudoku par Coloration de | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 36 | Sudoku-9 : Coloration de Graphe (Python) | Python 3 | READY | PRODUCTION | 30min | po-2023 |
 
-### Probas (58 notebooks) — READY:58 | BETA:4, PRODUCTION:54
+### Probas (58 notebooks) — READY:58 | BETA:5, PRODUCTION:53
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -778,8 +778,8 @@ Total notebooks: 803
 | 23 | Infer-12-Recommenders : Systemes de Recommandation | .NET (C#) | READY | PRODUCTION | 1h | po-2023 |
 | 24 | Infer-13-Debugging : Troubleshooting et Bonnes Pra | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 25 | Infer-14-Causal-Inference : Inférence Causale et d | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 26 | Infer-15-Sparse-Gaussian-Process : Processus Gauss | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
-| 27 | 16. Modèles Hiérarchiques Bayésiens — Pooling Part | .NET (C#) | READY | BETA | 30min | po-2023 |
+| 26 | 15. Modèles Hiérarchiques Bayésiens — Pooling Part | .NET (C#) | READY | BETA | 30min | po-2023 |
+| 27 | Infer-16-Sparse-Gaussian-Process : Processus Gauss | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 28 | Infer-17 — Filtre de Kalman : systèmes dynamiques  | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 | 29 | Infer-18 — Détection de Rupture (Change-Point) : i | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 | 30 | Infer-19 — Analyse de survie / fiabilite bayesienn | .NET (C#) | READY | BETA | 45min | po-2023 |

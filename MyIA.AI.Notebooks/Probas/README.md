@@ -4,7 +4,7 @@
 series: Probas
 pedagogical_count: 58
 breakdown: Infer=19, PyMC=19, DecisionTheory=18, root=2
-maturity: PRODUCTION=54, BETA=4
+maturity: PRODUCTION=53, BETA=5
 -->
 
 [← Notebooks](../README.md) | [Série Infer (C#) →](Infer/README.md) | [Série PyMC (Python) →](PyMC/README.md) | [GameTheory →](../GameTheory/README.md)
