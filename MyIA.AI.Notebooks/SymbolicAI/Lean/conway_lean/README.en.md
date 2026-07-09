@@ -5,7 +5,7 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 ## Status
 
 - **Toolchain**: v4.31.0-rc1
-- **Sorry count**: 4 (all in `HashlifeCorrectness.lean` — P4 double-nine inductive step [2] + P5 large-n jump [2], Epic #2162). Three P4 sub-lemmas are now proven sorry-free (see § "Game of Life" below)
+- **Sorry count**: 3 (all in `HashlifeCorrectness.lean` — P4 double-nine wave-glue residual `p4_succ_membership` [1] + P5 large-n jump [2], Epic #2162). Three P4 sub-lemmas are now proven sorry-free (see § "Game of Life" below). The P4.4 `p4_half_steps_compose` placeholder was deleted: its pure-evolve composition is already closed (`evolve_add` + `evolve_half_step`), its wave-glue content carried by the `p4_succ_membership` residual
 - **Build**: `lake build Conway` -- SUCCESS (3352 jobs)
 - **Dependencies**: Mathlib4
 
@@ -38,7 +38,7 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 | `Conway/Life/Computation.lean` | 0 | Hashlife cross-validation (6 + 6 fast), eater1 still-life (1), glider composition (5) |
 | `Conway/Life/HashlifeMemo.lean` | 0 | Memoized Hashlife for community pillar witnesses (OTCA 35K, UnitCell 4096, Gemini 33M) |
 | `Conway/Life/Pillars.lean` | 0 | Community-witness theorem scaffolding (4 pillars) |
-| `Conway/Life/HashlifeCorrectness.lean` | 4 | Bounded correctness `hashlife_correct`; P4/P5 prover targets (Epic #1453, #2162) |
+| `Conway/Life/HashlifeCorrectness.lean` | 3 | Bounded correctness `hashlife_correct`; P4/P5 prover targets (Epic #1453, #2162) |
 
 ### Phase 3 — Free Will Theorem (Epic #1651, COMPLETE)
 
@@ -79,17 +79,20 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 - **Memoized Hashlife**: Community pillar witnesses (OTCA 35K gen, UnitCell 4096 gen, Gemini 33M gen)
 - **HashlifeCorrectness**: bounded correctness `hashlife_correct`, decomposed P1-P5
   - **P1-P3 proven** (base case `k=0` via `2^16 native_decide`, PR #2810)
-  - **P4 inductive step** (2 sorry): decomposed by #2975 scaffolding into five sub-lemmas.
+  - **P4 inductive step** (1 residual sorry): decomposed by #2975 scaffolding into sub-lemmas.
     Three are now **proven sorry-free** with real statements — `p4_double_nine_shape`
     (structural existence of the nine quadrants of a double-nine cell), `p4_wave1_ih` and
     `p4_wave2_ih` (propagation of `centralCorrect` via the induction hypothesis over the two
-    waves). Remaining: `p4_half_steps_compose` (`: True` placeholder, light-cone double-nine
-    half-step composition) + glue `p4_succ_membership` (the real pointwise biconditional after
-    `intro p`). Research-level double-nine light-cone composition, whnf-hard — reserved for a
-    dedicated multi-cycle effort. The sub-lemmas' real statements live in their docstrings —
-    restate + prove, do not eliminate as `True`.
+    waves). The P4.4 `p4_half_steps_compose` placeholder (`: True`) was **deleted** (N2-bis):
+    its pure-evolve half-step composition is exactly the closed `evolve_add` + `evolve_half_step`,
+    and its wave-assembly content is carried by the **1 residual sorry** of glue
+    `p4_succ_membership` (the real pointwise biconditional after `intro p`). Research-level
+    double-nine light-cone composition, whnf-hard — reserved for a dedicated multi-cycle effort.
+    The sub-lemmas' real statements live in their docstrings — restate + prove, do not eliminate
+    as `True`.
   - **P5 large-n** (2 sorry): `p5_small_n_fallback` **PROVEN** (PR #2984); `p5_large_n_jump`
-    (P5.2, `: True` placeholder, blocked on P4) + `p5_inductive_step` large-n branch (P5.3
+    (P5.2, re-signed to its real target `evolveHashlifeFast n g = evolve n g`, body `sorry`,
+    blocked on P4) + `p5_inductive_step` large-n branch (P5.3
     glue) remain. Base `n=0` proven (`hashlife_correct_base_zero` #2898,
     `evolveHashlifeFastAux_zero_n` #2901).
 
@@ -121,7 +124,7 @@ Ce workspace formalise en Lean 4 trois facettes de l'oeuvre de John Conway, des 
 
 ### État honnête du verrou HashlifeCorrectness
 
-Le théorème central `hashlife_correct` (borné par l'hypothèse de padding `BoxAssezGrand`) n'est **pas encore prouvé en pleine généralité** : il reste **4 `sorry`** dans `HashlifeCorrectness.lean`. Le socle est solide — cas de base `k=0` prouvé (`2^16 native_decide`), cas de base `n=0` prouvé, P1/P2/P3 (padding, light-cone, locality) prouvés, `p5_small_n_fallback` prouvé, et trois des cinq sous-lemmes P4 (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`) désormais prouvés sorry-free — mais le pas inductif P4 (double-nine decomposition, 2 sorry résiduels : `p4_half_steps_compose` + colle `p4_succ_membership`) et le grand-n P5 (2 sorry, bloqué sur P4) sont **research-level**. Ce sont les cibles du BG-prover (`agent_tests/prover/`), pas des grains bornés : la composition light-cone multi-vagues résiste à l'automatisation tactique courante. Les scaffolds P4 (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`, `p4_half_steps_compose`, `p4_succ_membership`) énoncent précisément chaque sous-but dans leurs docstrings.
+Le théorème central `hashlife_correct` (borné par l'hypothèse de padding `BoxAssezGrand`) n'est **pas encore prouvé en pleine généralité** : il reste **3 `sorry`** dans `HashlifeCorrectness.lean`. Le socle est solide — cas de base `k=0` prouvé (`2^16 native_decide`), cas de base `n=0` prouvé, P1/P2/P3 (padding, light-cone, locality) prouvés, `p5_small_n_fallback` prouvé, et trois des sous-lemmes P4 (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`) désormais prouvés sorry-free — mais le pas inductif P4 (double-nine decomposition, 1 sorry résiduel : colle `p4_succ_membership` — le placeholder `p4_half_steps_compose` a été supprimé, sa composition pure-evolve étant close via `evolve_add`+`evolve_half_step`) et le grand-n P5 (2 sorry, bloqué sur P4) sont **research-level**. Ce sont les cibles du BG-prover (`agent_tests/prover/`), pas des grains bornés : la composition light-cone multi-vagues résiste à l'automatisation tactique courante. Les scaffolds P4 (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`, `p4_succ_membership`) énoncent précisément chaque sous-but dans leurs docstrings.
 
 ### Leçons méthodologiques
 
