@@ -5,7 +5,7 @@ package decision_theory_lean where
   leanOptions := #[⟨`autoImplicit, false⟩, ⟨`pp.unicode.fun, true⟩]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.30.0-rc2"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.31.0-rc1"
 
 -- Convention i18n EPIC #4980 (ratifiée user 04/07, finding 2 ai-01) :
 -- `globs` (et non `roots`) pour que `lake build` auto-découvre les siblings
