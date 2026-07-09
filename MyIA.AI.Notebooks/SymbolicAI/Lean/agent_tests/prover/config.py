@@ -187,6 +187,15 @@ CONWAY_KS_IMPORTS = """import Mathlib.Data.Real.Basic
 import Mathlib.Data.Fin.Basic
 import Mathlib.Tactic
 """
+CONWAY_HASHLIFE_FILE = (
+    CONWAY_DIR / "Conway" / "Life" / "HashlifeCorrectness.lean"
+    if CONWAY_DIR.exists() else None
+)
+CONWAY_HASHLIFE_IMPORTS = """import Conway.Life
+import Conway.Life.GridCanonical
+import Conway.Life.MacroCell
+import Conway.Life.Hashlife
+"""
 
 # ── HONEST sorrys registry (DO NOT TOUCH) ──
 # Some sorrys document genuine theoretical impossibility — they are NOT bugs to
@@ -1741,6 +1750,33 @@ DEMOS = {
             "Replace the placeholder at L1318 of Shapley.lean."
         ),
         "difficulty": "medium",
+    },
+    62: {
+        "name": "HASHLIFE_P4_SUCC_MEMBERSHIP",
+        "file": str(CONWAY_HASHLIFE_FILE) if CONWAY_HASHLIFE_FILE else "",
+        "line": 2536,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "p4_succ_membership",
+        "theorem": "p4_succ_membership",
+        "imports": CONWAY_HASHLIFE_IMPORTS,
+        "description": (
+            "BG-prover target (hashlife nibble plan #3846, N3): residual sorry in\n"
+            "noncomputable def p4_succ_membership (declared L2498 of\n"
+            "HashlifeCorrectness.lean). The whnf wall is already traversed at\n"
+            "L2520-2531 (node16_level_ne_two -> rw [if_neg hne2] ->\n"
+            "rw [mem_toGrid_node]); what remains is the offset-matching assembly:\n"
+            "prove each `out_*.toGrid (off_*, off_*)` membership via\n"
+            "centralCorrect_mem (gate G2, merged #4812) plus the induction\n"
+            "hypothesis `centralCorrect q_* (k-1)` extracted from `_h3`, bridged\n"
+            "through evolve_half_step + evolve_add (gate G1, merged #4787).\n"
+            "Watch the offset arithmetic: sub-results live at scale\n"
+            "2^out_*.level while the goal is at 2^k, and the IH is at level k-1\n"
+            "versus the goal's level k. Available merged gates:\n"
+            "quad_partition_bounds (#4787), toGrid_shift_between (#4797),\n"
+            "centralCorrect_mem_shift (#4812), evolve_cone_agree (#4892).\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "hard",
     },
 }
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
