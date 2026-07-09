@@ -4,7 +4,7 @@
 
 Arc autonome de **théorie de la décision bayésienne** en Infer.NET : 10 notebooks qui prolongent la modélisation probabiliste (le corpus bayésien [`../../Infer/`](../../Infer/README.md)) jusqu'au **choix d'action sous incertitude**. Un posterior n'est pas une fin — c'est l'**input** d'une politique optimale. Cette série formalise ce passage, de l'utilité espérée aux processus markoviens, jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
 
-**Prérequis** : le corpus bayésien [`../../Infer/`](../../Infer/README.md) (notamment [Infer-4-Bayesian-Networks](../../Infer/Infer-4-Bayesian-Networks.ipynb), [Infer-5-Skills-IRT](../../Infer/Infer-5-Skills-IRT.ipynb) pour les posteriors Beta). Aucun prérequis en théorie de la décision : les axiomes de Von Neumann-Morgenstern sont introduits ex nihilo.
+**Prérequis** : le corpus bayésien [`../../Infer/`](../../Infer/README.md) (notamment [Infer-4-Bayesian-Networks](../../Infer/Infer-4-Bayesian-Networks.ipynb), [Infer-7-Skills-IRT](../../Infer/Infer-7-Skills-IRT.ipynb) pour les posteriors Beta). Aucun prérequis en théorie de la décision : les axiomes de Von Neumann-Morgenstern sont introduits ex nihilo.
 
 **Stack** : Infer.NET (.NET 9.0 + dotnet-interactive), EP/VMP par défaut. Deux notebooks companions (2, 9) utilisent le **kernel Lean 4** (WSL) et le lake [`decision_theory_lean`](../../decision_theory_lean/).
 
@@ -107,7 +107,7 @@ Systèmes experts (architecture, historique) ; décision sous **incertitude sév
 
 ### DecInfer-10 : Thompson Sampling bayésien
 
-**Durée** : 60 min | **Prérequis** : [Infer-5 bayésien](../../Infer/Infer-5-Skills-IRT.ipynb) (posterior Beta), Infer-8 (bandits, ε-greedy, UCB1)
+**Durée** : 60 min | **Prérequis** : [Infer-5 bayésien](../../Infer/Infer-7-Skills-IRT.ipynb) (posterior Beta), Infer-8 (bandits, ε-greedy, UCB1)
 
 Le **bandit multi-bras** vu comme un programme probabiliste Infer.NET : le moteur d'inférence (EP/VMP) calcule le posterior Beta-Bernoulli de chaque bras plutôt que d'appliquer la formule conjuguée à la main. **Thompson Sampling** : jouer le bras dont l'échantillon posterior est le plus élevé. Mesure du **regret cumulé** face à ε-greedy et UCB1 (Thompson exploite l'incertitude posterior). Extension au **best-arm identification**. La généralisation à des modèles non conjugués (où seule l'inférence approchée sait calculer le posterior) justifie l'usage du moteur.
 
