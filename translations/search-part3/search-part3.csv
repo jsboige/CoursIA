@@ -1,0 +1,1748 @@
+notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,59b131c4,markdown,fr,0bee5bef0fc4cbd4,"# Search-12 (C#) — Bases de données de motifs (Pattern Databases) pour le 15-puzzle
+
+> **Partie 3 — Recherche avancée.** Version C# / .NET du notebook [Search-12-PatternDatabases](Search-12-PatternDatabases.ipynb) (Python). Ce notebook fait partie de l'Epic de parité .NET ⇄ Python [#4956](../../../../issues/4956) : chaque concept porté invoque le **vrai moteur** — ici, l'algorithme est porté *from scratch* en C# (les PDB n'ont pas de solveur off-the-shelf, c'est l'archétype du précalcul heuristique).
+
+## 1. Le problème, et pourquoi Manhattan ne suffit plus
+
+Le **15-puzzle** (taquin 4×4) est le banc d'essai historique de la recherche
+heuristique : 15 tuiles + 1 case vide, on glisse les tuiles vers la configuration
+ordonnée. Résoudre *à l'optimum* est **NP-difficile** et constitue, depuis
+**Korf (1985)**, la référence pour mesurer un solveur de recherche.
+
+[Search-3](../Part1-Foundations/Search-3-Informed.ipynb) a introduit **IDA\***
+et l'heuristique **Manhattan** (somme des distances individuelles des tuiles).
+Manhattan est *admissible* (ne surestime jamais), donc IDA\* + Manhattan est
+optimal. Mais elle ignore les **interactions** entre tuiles (deux tuiles qui se
+bloquent coûtent plus que la somme de leurs distances) : sur les instances
+difficiles de Korf (~50 coups optimaux), IDA\* + Manhattan explore des
+**centaines de milliards** de nœuds.
+
+La SOTA, depuis **Culberson & Schaeffer (1996)** puis **Korf & Felner (2002)**,
+consiste à *précalculer* une heuristique admissible bien plus fine : la **base de
+données de motifs**. Ce notebook construit d'abord une PDB simple (concept), puis
+la **PDB additive** qui est, quarante ans après Korf, la référence absolue du
+15-puzzle.",,,,,,,,0bee5bef0fc4cbd4,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,7a959a73,markdown,fr,dd8710129f01bf1e,"## 2. Formalisation du 15-puzzle
+
+État = tableau de 16 entiers (cellules en row-major), `0` = case vide. But = tuiles
+1..15 en ordre, vide en bas à droite.",,,,,,,,dd8710129f01bf1e,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,28736592,code,fr,923f13924a927a0e,"using System;
+using System.Collections.Generic;
+using System.Linq;
+
+int[] GOAL = {1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,0};
+const int N = 4;
+
+int[] Neighbors(int cell) {
+    int r = cell / N, c = cell % N;
+    var res = new List<int>();
+    if (r > 0) res.Add(cell - N);
+    if (r < N - 1) res.Add(cell + N);
+    if (c > 0) res.Add(cell - 1);
+    if (c < N - 1) res.Add(cell + 1);
+    return res.ToArray();
+}
+
+int[] Move(int[] state, int blank, int nxt) {
+    var s = (int[])state.Clone();
+    (s[blank], s[nxt]) = (s[nxt], s[blank]);
+    return s;
+}
+
+int[][] Successors(int[] state) {
+    int b = Array.IndexOf(state, 0);
+    return Neighbors(b).Select(n => Move(state, b, n)).ToArray();
+}
+
+Console.WriteLine($""OK : le but a {Successors(GOAL).Length} successeurs"");",,,,,,,,923f13924a927a0e,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,7e1c9315,markdown,fr,20394dba9c6ab6be,"## 3. Heuristique de Manhattan (référence, vu en Search-3)",,,,,,,,20394dba9c6ab6be,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,9e87706c,code,fr,e5fbcb6b5b8786ba,"Dictionary<int,int> GOAL_POS = GOAL.Select((t,i) => (t,i)).ToDictionary(p => p.t, p => p.i);
+
+int Manhattan(int[] state) {
+    int h = 0;
+    for (int cell=0; cell<state.Length; cell++) {
+        int t = state[cell];
+        if (t == 0) continue;
+        int gr = GOAL_POS[t] / N, gc = GOAL_POS[t] % N;
+        int cr = cell / N, cc = cell % N;
+        h += Math.Abs(gr - cr) + Math.Abs(gc - cc);
+    }
+    return h;
+}
+
+Console.WriteLine($""Manhattan(but) = {Manhattan(GOAL)}"");",,,,,,,,e5fbcb6b5b8786ba,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,87c28303,markdown,fr,3437b2fc5c839742,"### 3.b Mélange reproductible (marche aléatoire)
+
+On brouille le but par une marche aléatoire longue (90-130 pas), ce qui produit
+des instances *réalistement difficiles* (optimal typiquement ~38-46 coups) — bien
+plus coûteuses à résoudre que les instances jouets où Manhattan est instantané.",,,,,,,,3437b2fc5c839742,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,415fe253,code,fr,a124217cdafc9473,"int[] Scramble(int[] goal, int nSteps, int seed) {
+    var rng = new Random(seed);
+    int[] s = (int[])goal.Clone();
+    int[] prev = null;
+    for (int i=0; i<nSteps; i++) {
+        int b = Array.IndexOf(s, 0);
+        var cands = Neighbors(b).Where(n => !Move(s,b,n).SequenceEqual(prev ?? Array.Empty<int>())).ToList();
+        int nxt = cands[rng.Next(cands.Count)];
+        prev = (int[])s.Clone();
+        s = Move(s, b, nxt);
+    }
+    return s;
+}
+
+int[] INST = Scramble(GOAL, 100, seed: 11);
+Console.WriteLine($""Instance de démo : ({string.Join("", "", INST)})"");
+Console.WriteLine($""Manhattan = {Manhattan(INST)} (borne inférieure ; l'optimal est nettement supérieur)"");",,,,,,,,a124217cdafc9473,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,c28ae90f,markdown,fr,86b1bb6208da18d2,"## 4. Concept : base de données de motifs
+
+L'idée de Culberson & Schaeffer (1996) :
+
+1. **Abstraction.** On choisit un *motif* (sous-ensemble de tuiles). Les autres
+   deviennent des jokers indifférenciés (*wildcards*).
+2. **Parcours rétrograde.** Dans l'espace abstrait, BFS *depuis le but abstrait*,
+   enregistrant pour chaque état abstrait le **coût optimal** pour y ramener le motif.
+3. **Consultation.** Pour un état concret, on l'abstrait et on lit le coût en O(1).
+
+**Admissibilité.** L'espace abstrait *relâche* le problème (les jokers se
+substituent gratuitement) → le coût abstrait minore le coût réel → heuristique
+admissible. IDA\* + PDB reste donc optimal.
+
+**Fonction de rang.** Pour stocker la table dans un tableau compact, on *range*
+chaque état abstrait vers un entier : rang de permutation des positions du motif
+`P(16,k)` (code de Lehmer), multiplié par le nombre de cellules restantes pour le vide.",,,,,,,,86b1bb6208da18d2,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,39fce963,code,fr,bb820f9e424c86e0,"int P(int n, int k) { int r = 1; for (int i=0; i<k; i++) r *= (n - i); return r; }
+
+int PermRank(int[] positions, int basis=16) {
+    var avail = new List<int>(); for (int i=0; i<basis; i++) avail.Add(i);
+    int rank = 0; int k = positions.Length;
+    for (int i=0; i<k; i++) {
+        int idx = avail.IndexOf(positions[i]);
+        rank += idx * P(basis - 1 - i, k - 1 - i);
+        avail.RemoveAt(idx);
+    }
+    return rank;
+}
+
+int RankAbstract(int[] pos, int blank, int k) {
+    int rPerm = PermRank(pos, 16);
+    var remaining = new List<int>(); for (int c=0; c<16; c++) if (!pos.Contains(c)) remaining.Add(c);
+    return rPerm * (16 - k) + remaining.IndexOf(blank);
+}
+
+// Test d'injectivité : deux états abstraits *distincts* ne doivent jamais
+// partager le même rang (l'abstraction est many-to-one par construction, on teste
+// donc l'injectivité du rang, pas l'absence de collisions de classes).
+var rngTest = new Random(1);
+var seen = new Dictionary<int,(int[] pos,int blank)>();
+int collisions = 0;
+for (int i=0; i<20000; i++) {
+    var pool = Enumerable.Range(0,16).OrderBy(x => rngTest.Next()).Take(6).ToList();
+    var pos = pool.Take(5).ToArray(); int blank = pool.Last();
+    int rk = RankAbstract(pos, blank, 5);
+    if (seen.TryGetValue(rk, out var prev)) { if (!prev.pos.SequenceEqual(pos) || prev.blank != blank) collisions++; }
+    else seen[rk] = (pos, blank);
+}
+Console.WriteLine($""Injectivité du rang : {seen.Count} états abstraits testés, {collisions} collision (attendu 0)"");",,,,,,,,bb820f9e424c86e0,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,0038145f,markdown,fr,a2b1ee929cf8be09,"## 5. PDB simple : construction par BFS rétrograde
+
+On construit d'abord une PDB sur **un** motif de tuiles. BFS = coût unitaire =
+distances optimales depuis le but abstrait. Cette PDB unique couvre un sous-ensemble
+de tuiles ; elle servira de brique, puis la **PDB additive** (section 7) en combinera
+plusieurs pour couvrir les 15 tuiles.",,,,,,,,a2b1ee929cf8be09,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,d6c11ea3,code,fr,c5830b71c905f67c,"(byte[] table, int nSeen) BuildPdb(int[] group) {
+    int k = group.Length;
+    int[] goalPos = group.Select(t => Array.IndexOf(GOAL, t)).ToArray();
+    int goalBlank = Array.IndexOf(GOAL, 0);
+    int size = P(16, k) * (16 - k);
+    var table = new byte[size];
+    for (int i=0; i<size; i++) table[i] = 255;
+    table[RankAbstract(goalPos, goalBlank, k)] = 0;
+    var q = new Queue<(int[] pos, int blank)>();
+    q.Enqueue((goalPos, goalBlank));
+    int nSeen = 1;
+    while (q.Count > 0) {
+        var (pos, blank) = q.Dequeue();
+        int d = table[RankAbstract(pos, blank, k)];
+        var pset = new HashSet<int>(pos);
+        foreach (int n in Neighbors(blank)) {
+            int[] newPos; int newBlank;
+            if (pset.Contains(n)) { int ti = Array.IndexOf(pos, n); newPos = (int[])pos.Clone(); newPos[ti] = blank; newBlank = n; }
+            else { newPos = pos; newBlank = n; }
+            int rk = RankAbstract(newPos, newBlank, k);
+            if (table[rk] == 255) { table[rk] = (byte)(d + 1); q.Enqueue((newPos, newBlank)); nSeen++; }
+        }
+    }
+    return (table, nSeen);
+}
+
+int PdbLookup(int[] state, byte[] table, int[] group) {
+    int[] pos = group.Select(t => Array.IndexOf(state, t)).ToArray();
+    return table[RankAbstract(pos, Array.IndexOf(state, 0), group.Length)];
+}
+
+int[] PATTERN = {1, 2, 3, 4};
+var sw = System.Diagnostics.Stopwatch.StartNew();
+var (PDB5, n5) = BuildPdb(PATTERN);
+sw.Stop();
+int dmax = PDB5.Where(v => v < 255).Max();
+Console.WriteLine($""PDB simple ({PATTERN.Length} tuiles) : {n5} états en {sw.Elapsed.TotalSeconds:F1}s, distance max = {dmax}"");",,,,,,,,c5830b71c905f67c,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,98244622,markdown,fr,174442a41a9c7e2c,"## 6. La SOTA : PDB *additives* (Korf & Felner 2002)
+
+Une PDB unique sur quelques tuiles n'informe qu'une fraction du puzzle. L'idée de
+génie de Korf & Felner (2002) : **partitionner** les 15 tuiles en groupes *disjoints*
+et construire une PDB par groupe, en ne comptant — dans chaque BFS — **que les
+mouvements des tuiles du groupe**. Les coûts deviennent alors **additifs** :
+
+$$h(s) = \sum_{\text{groupes } G} \mathrm{PDB}_G(s)$$
+
+est une heuristique **admissible** : chaque coup du taquin déplace exactement une
+tuile, donc la somme des minima par groupe disjoint minore le nombre total de coups.
+
+On utilise une partition **4-4-4-3** (les groupes couvrent les 15 tuiles). Le BFS
+devient un **0-1 BFS** (deque) : déplacer une tuile du groupe coûte 1, déplacer la
+case vide à travers un joker coûte 0.",,,,,,,,174442a41a9c7e2c,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,196a9961,code,fr,09b3384701fd7412,"int[][] GROUPS = { new[]{1,2,3,4}, new[]{5,6,7,8}, new[]{9,10,11,12}, new[]{13,14,15} };
+
+(byte[] table, int nSeen) BuildAdditivePdb(int[] group) {
+    int k = group.Length;
+    int[] goalPos = group.Select(t => Array.IndexOf(GOAL, t)).ToArray();
+    int goalBlank = Array.IndexOf(GOAL, 0);
+    int size = P(16, k) * (16 - k);
+    var dist = new byte[size];
+    for (int i=0; i<size; i++) dist[i] = 255;
+    dist[RankAbstract(goalPos, goalBlank, k)] = 0;
+    var dq = new LinkedList<(int[] pos, int blank)>();
+    dq.AddLast((goalPos, goalBlank));
+    int nSeen = 1;
+    while (dq.Count > 0) {
+        var (pos, blank) = dq.First.Value; dq.RemoveFirst();
+        int d = dist[RankAbstract(pos, blank, k)];
+        var pset = new HashSet<int>(pos);
+        foreach (int n in Neighbors(blank)) {
+            int[] newPos; int newBlank; int w;
+            if (pset.Contains(n)) { int ti = Array.IndexOf(pos, n); newPos = (int[])pos.Clone(); newPos[ti] = blank; newBlank = n; w = 1; }
+            else { newPos = pos; newBlank = n; w = 0; }
+            int rk = RankAbstract(newPos, newBlank, k);
+            if (dist[rk] == 255) {
+                dist[rk] = (byte)(d + w);
+                if (w == 0) dq.AddFirst((newPos, newBlank)); else dq.AddLast((newPos, newBlank));
+                nSeen++;
+            }
+        }
+    }
+    return (dist, nSeen);
+}
+
+sw.Restart();
+var ADDITIVE = GROUPS.Select(g => BuildAdditivePdb(g)).ToArray();
+byte[][] ADD_TBLS = ADDITIVE.Select(a => a.table).ToArray();
+sw.Stop();
+Console.WriteLine($""PDB additives (4-4-4-3) construites en {sw.Elapsed.TotalSeconds:F1}s"");
+foreach (var (g, a) in GROUPS.Zip(ADDITIVE)) {
+    int dm = a.table.Where(v => v < 255).Max();
+    Console.WriteLine($""  groupe ({string.Join("","", g)}): {a.nSeen} états, dist max = {dm}"");
+}",,,,,,,,09b3384701fd7412,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,05f3f20b,markdown,fr,6d6610602c576ef5,"## 7. IDA\* instrumenté
+
+Rappel de [Search-3](../Part1-Foundations/Search-3-Informed.ipynb) : seuils
+itératifs sur `f = g + h`, recherche en profondeur. On compte les **nœuds
+explorés** (métrique du coût de recherche). On l'introduit avant l'heuristique
+additive car il sert à sa vérification d'admissibilité ci-après.
+
+On se fixe un **budget de 2 millions de nœuds** par résolution : c'est largement
+assez pour résoudre les instances faciles, et cela rend visible (et rapide) la
+frontière où une heuristique termine et l'autre non. *L'état est encodé en un
+`long` (16 cellules × 4 bits) pour le hachage du chemin (cycle-avoidance).*",,,,,,,,6d6610602c576ef5,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,34f5bb94,code,fr,5a790c3cddec2561,"long Encode(int[] state) { long k = 0; foreach (int t in state) k = k * 16 + t; return k; }
+
+(int? cost, long nodes) IdaStar(int[] start, Func<int[],int> heuristic, int[] goal=null, long nodeLimit=2_000_000) {
+    goal ??= GOAL;
+    int threshold = heuristic(start); long nodes = 0;
+    while (true) {
+        var path = new HashSet<long>(); path.Add(Encode(start));
+        var (res, t, n) = Dfs(start, 0, threshold, heuristic, goal, path, nodeLimit - nodes);
+        nodes += n;
+        if (res.HasValue) return (res, nodes);
+        if (t == int.MaxValue || nodes >= nodeLimit) return (null, nodes);
+        threshold = t;
+    }
+}
+
+(int? cost, int nextThreshold, long nodes) Dfs(int[] state, int g, int threshold, Func<int[],int> heuristic, int[] goal, HashSet<long> path, long budget) {
+    int f = g + heuristic(state);
+    if (f > threshold) return (null, f, 0);
+    if (state.SequenceEqual(goal)) return (g, f, 0);
+    if (budget <= 0) return (null, int.MaxValue, 0);
+    long nTotal = 1; int nextT = int.MaxValue; int b = Array.IndexOf(state, 0);
+    foreach (int n in Neighbors(b)) {
+        int[] s2 = Move(state, b, n);
+        long e2 = Encode(s2);
+        if (path.Contains(e2)) continue;
+        path.Add(e2);
+        var (res, t, nn) = Dfs(s2, g+1, threshold, heuristic, goal, path, budget - nTotal);
+        nTotal += nn; path.Remove(e2);
+        if (res.HasValue) return (res, t, nTotal);
+        if (t < nextT) nextT = t;
+        if (nTotal >= budget) return (null, nextT, nTotal);
+    }
+    return (null, nextT, nTotal);
+}
+
+// Sanity préliminaire : Manhattan est admissible et résout une instance facile.
+int[] easy = Scramble(GOAL, 8, seed: 1);
+var (sm, _) = IdaStar(easy, Manhattan);
+Console.WriteLine($""Sanity : instance facile optimal={sm} (Manhattan résout bien)"");",,,,,,,,5a790c3cddec2561,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,ebb072a8,markdown,fr,d258064a0d36a81a,"## 8. Heuristique additive et vérification d'admissibilité
+
+`h_additive(s) = Σ PDB_groupe(s)`. On **vérifie empiriquement l'admissibilité** :
+sur un échantillon d'instances résolues à l'optimum (via Manhattan, elle-même
+admissible), `h_additive(s) ≤ optimal(s)` doit toujours tenir. On vérifie aussi la
+convergence (même optimum) sur une instance facile.",,,,,,,,d258064a0d36a81a,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,4e2621ef,code,fr,a74a388d9a0742ec,"int HAdditive(int[] state) => ADD_TBLS.Zip(GROUPS).Sum(p => PdbLookup(state, p.First, p.Second));
+
+// Convergence : deux heuristiques admissibles -> même optimum.
+var (sa, _) = IdaStar(easy, HAdditive);
+Console.WriteLine($""Convergence confirmée : additive optimal={sa} == Manhattan optimal={sm}"");
+
+// Admissibilité empirique : h_additive <= optimal (optimal via Manhattan-IDA*).
+var rngAdm = new Random(7); int checkedCount = 0; int violations = 0;
+for (int i=0; i<40; i++) {
+    int[] s = Scramble(GOAL, 14, seed: rngAdm.Next(0, 1_000_000_000));
+    var (opt, _) = IdaStar(s, Manhattan);
+    if (!opt.HasValue) continue;
+    if (HAdditive(s) > opt.Value) violations++;
+    checkedCount++;
+}
+Console.WriteLine($""Admissibilité : {checkedCount} instances, h_additive <= optimal tient {checkedCount - violations}/{checkedCount} fois"");
+Console.WriteLine($""Sur l'instance de démo : Manhattan={Manhattan(INST)}, h_additive={HAdditive(INST)} (additive >= Manhattan attendu)"");",,,,,,,,a74a388d9a0742ec,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,b69f1d52,markdown,fr,5bddf86df22c55e0,"## 9. Expérience : Manhattan vs PDB additive (la valeur du moteur, visible)
+
+Trois instances **réalistement difficiles** (brouillage 50-80 pas, optimal ~24-53
+coups), choisies pour révéler la frontière de résolubilité au budget de 2M nœuds.
+On résout à l'optimum avec (a) Manhattan seule, puis (b) la PDB additive.
+On mesure les **nœuds explorés** : c'est la métrique qui révèle la puissance de
+l'heuristique. Sur les instances intermédiaires (optimal ~45-53), **Manhattan
+dépasse le budget de 2M nœuds sans conclure**, tandis que la PDB additive
+(4-4-4-3) résout — assez pour repousser la frontière du résolvable.",,,,,,,,5bddf86df22c55e0,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,ea2577e7,code,fr,c20867bdb36e0e54,"var INSTANCES = new Dictionary<string,int[]> {
+    [""I1 (facile, opt 24)""] = Scramble(GOAL, 50, seed: 11),
+    [""I2 (moyen, opt 45)""] = Scramble(GOAL, 81, seed: 78690737),
+    [""I3 (dur, opt 53)""] = Scramble(GOAL, 71, seed: 163151276),
+};
+
+// bench: name, opt, heuristics, nodes(Manhattan/additive), solved flags, speedup, times
+var bench = new List<(string name, int? opt, int mh, int ha, long nm, long na, bool mSolved, bool aSolved, double speedup, double tm, double ta)>();
+foreach (var (name, s) in INSTANCES) {
+    sw.Restart(); var (solM, nm) = IdaStar(s, Manhattan); sw.Stop(); double tm = sw.Elapsed.TotalSeconds;
+    sw.Restart(); var (solA, na) = IdaStar(s, HAdditive); sw.Stop(); double ta = sw.Elapsed.TotalSeconds;
+    int? opt = solM ?? solA;
+    double speedup = (solM.HasValue && solA.HasValue && na > 0) ? (double)nm / na : double.NaN;
+    bench.Add((name, opt, Manhattan(s), HAdditive(s), nm, na, solM.HasValue, solA.HasValue, speedup, tm, ta));
+    string nmS = solM.HasValue ? $""{nm,12:N0}"" : ""  >= 2M (limite)"";
+    string naS = solA.HasValue ? $""{na,12:N0}"" : ""  >= 2M (limite)"";
+    Console.WriteLine($""{name,-20} optimal={opt} | Manhattan: {nmS} ({tm,6:F1}s) | additive: {naS} ({ta,6:F1}s) | speedup x{speedup,6:F1}"");
+}",,,,,,,,c20867bdb36e0e54,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,cb50dc32,markdown,fr,73d1fe597d643384,"## 10. Synthèse : la PDB additive repousse la frontière du résolvable
+
+(Version texte — pas de graphique matplotlib en C# ; le tableau numérique brut
+montre directement le nœud où chaque heuristique termine ou dépasse le budget.)",,,,,,,,73d1fe597d643384,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,9921184c,code,fr,feec5b022d91538d,"Console.WriteLine($""{""Instance"",-20} {""opt"",-5} {""Manhattan nodes"",-18} {""Additive nodes"",-18} {""speedup"",-10}"");
+Console.WriteLine(new string('-', 75));
+foreach (var r in bench) {
+    string nmS = r.mSolved ? r.nm.ToString(""N0"") : "">= 2M"";
+    string naS = r.aSolved ? r.na.ToString(""N0"") : "">= 2M"";
+    Console.WriteLine($""{r.name,-20} {r.opt,-5} {nmS,-18} {naS,-18} {r.speedup,-10:F1}x"");
+}
+Console.WriteLine();
+Console.WriteLine(""Lecture : sur l'instance facile (I1), les deux heuristiques terminent et la"");
+Console.WriteLine(""PDB additive explore ~3x moins de nœuds. Sur I2 et I3 (optimal 45 et 53),"");
+Console.WriteLine(""Manhattan dépasse le budget de 2M nœuds sans conclure, tandis que la PDB"");
+Console.WriteLine(""additive (4-4-4-3) résout à l'optimum — elle repousse la frontière du résolvable."");",,,,,,,,feec5b022d91538d,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,f1c33b0f,markdown,fr,a65792da85f20f60,"## 11. Limites et au-delà
+
+- **Coût de construction.** Plus le groupe est grand, plus la PDB est fine mais
+  plus le BFS est coûteux (`P(16,k)` explose). Korf & Felner poussent aux
+  partitions **6-6-3** puis **7-8** (avec symétries) pour résoudre les instances à
+  ~66 coups — au prix de tables de plusieurs gigaoctets.
+- **PDB symétriques.** Le 15-puzzle admet une symétrie (miroir + renversement des
+  numéros) qui permet de déduire une seconde PDB gratuitement (Felner et al. 2004).
+- **Généralité.** La même technique résout le Rubik's Cube (Korf 1997), la Tour de
+  Hanoï, tout puzzle de permutation. C'est l'archétype du compromis
+  *mémoire contre qualité d'heuristique*.",,,,,,,,a65792da85f20f60,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,3d651408,markdown,fr,7fbf6fb694cb9ca5,"> Rappel (convention de la série) : un exercice est un **squelette à compléter**.
+> Les stubs s'exécutent sans erreur (`// TODO etudiant` + garde le code compilable) ;
+> à vous de les remplir. Ne supprimez pas les `// Indice` / `// Étape N`.
+
+## 12. Exercices
+
+### Exercice 1 — Partition plus fine (6-6-3)
+
+Remplacez la partition 4-4-4-3 par **6-6-3** (Korf & Felner 2002). Combien d'états
+par PDB (`P(16,6)×10`, `P(16,3)×13`) ? Mesurez le speedup supplémentaire sur les
+instances du banc d'essai. Attention au temps de construction des groupes de 6.",,,,,,,,7fbf6fb694cb9ca5,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,9572540d,code,fr,8369c35a17ae33bb,"// Exercice 1 — à compléter
+int[][] GROUPS_663 = { new[]{1,2,3,4,5,6}, new[]{7,8,9,10,11,12}, new[]{13,14,15} };
+
+// Indice : réutilisez BuildAdditivePdb sur chaque groupe.
+//   Étape 1 : construisez la liste des tables (var tbls663 = GROUPS_663.Select(g => BuildAdditivePdb(g).table).ToArray();).
+//   Étape 2 : attention, un groupe de 6 -> P(16,6)*10 ~ 57M états (~57 Mo) ; le BFS prend ~1-2 min.
+// int HAdditive663(int[] state) => tbls663.Zip(GROUPS_663).Sum(p => PdbLookup(state, p.First, p.Second));
+// TODO etudiant
+Console.WriteLine(""Exercice 1 à compléter : partition 6-6-3 (Korf & Felner 2002) + speedup."");",,,,,,,,8369c35a17ae33bb,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,1cfd59c7,markdown,fr,9d8b5f5b7f2bc904,"### Exercice 2 — PDB symétrique gratuit (Felner et al. 2004)
+
+Le 15-puzzle possède une symétrie : refléter la grille (miroir vertical) **et**
+renverser les numéros (`t -> 16 - t`) laisse le puzzle invariant. Construisez la
+transformation `Reflect(state)`, vérifiez qu'elle préserve la résolubilité et que
+`HAdditive(state) == HAdditive(Reflect(state))`. En déduire une seconde PDB
+*gratuite* et combinez-la par `Math.Max`.",,,,,,,,9d8b5f5b7f2bc904,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,1de07836,code,fr,91d15e3b198aef29,"// Exercice 2 — à compléter
+// int[] Reflect(int[] state) {
+//     // Indice : miroir vertical de la grille 4x4, puis renversement des numéros
+//     // t -> 16 - t pour t != 0 (le vide reste le vide).
+//     //   Étape 1 : reshape en 4x4, retournez les colonnes, aplatissez.
+//     //   Étape 2 : mappez chaque tuile t -> 16-t (sauf 0).
+//     return null; // TODO etudiant
+// }
+// Indice : vérifiez Reflect(Reflect(s)).SequenceEqual(s) et HAdditive(s) == HAdditive(Reflect(s)).
+// TODO etudiant
+Console.WriteLine(""Exercice 2 à compléter : PDB symétrique gratuit (Felner et al. 2004)."");",,,,,,,,91d15e3b198aef29,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,b644cc24,markdown,fr,b7b5510676be59f3,"### Exercice 3 — Généralisation au 24-puzzle
+
+Le **24-puzzle** (5×5) est le vrai défi : Manhattan y est désespérément faible et
+seules les PDB additives rendent la résolution optimale envisageable. Adaptez ce
+notebook (25 cellules, partition 6-6-6-7) et résolvez une instance. Que
+constatez-vous sur le rapport construction/qualité ?",,,,,,,,b7b5510676be59f3,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,599c98a5,code,fr,64fa8dc2dd9d00ff,"// Exercice 3 — à compléter
+// Indice : la structure est inchangée ; changent la taille (N=5), le but (1..24,0),
+// et la partition.
+//   Étape 1 : redéfinissez GOAL24 et Neighbors pour N=5.
+//   Étape 2 : attention à l'explosion de P(25, k) — restez sur des groupes <= 6.
+// TODO etudiant
+Console.WriteLine(""Exercice 3 à compléter : généralisation au 24-puzzle (5x5, partition 6-6-6-7)."");",,,,,,,,64fa8dc2dd9d00ff,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,08e76387,markdown,fr,f0c185f94f6bfd58,"## 13. Conclusion
+
+La **base de données de motifs** illustre un principe central de la recherche
+heuristique avancée : **investir du calcul en amont** (précalculer des tables une
+fois pour toutes) **pour rendre chaque recherche ultérieure radicalement plus
+cheap**. Sur le 15-puzzle, la PDB *additive* (4-4-4-3) explore ~3 à 10x moins de
+nœuds que Manhattan sur les instances résolubles, et — c'est le point décisif —
+**résout à l'optimum des instances intermédiaires (optimal ~45-53 coups) où
+Manhattan dépasse le budget**. Les partitions plus fines (6-6-3 puis 7-8 avec
+symétries, cf exercices et Korf & Felner 2002) poussent cette frontière encore
+plus loin, jusqu'aux instances à ~66 coups de la littérature.
+
+Les trois ingrédients de la technique :
+
+1. **l'abstraction** (garder un motif, jokeriser le reste) ;
+2. **le parcours rétrograde** (BFS / 0-1 BFS depuis le but abstrait = distances
+   optimales, admissibles parce que le problème abstrait est un relâchement) ;
+3. **la combinaison admissible additive** (somme sur des groupes disjoints, en ne
+   comptant que les mouvements propres à chaque groupe).
+
+La leçon plus large pour la Partie 3 : quand un problème est trop dur pour une
+heuristique « instantanée », la bonne réponse n'est pas d'abandonner l'optimalité
+mais de **précalculer une heuristique plus fine**, quitte à payer un coût de
+construction amorti sur des millions de requêtes.
+
+### Références
+
+- **Korf, R. E. (1985).** *Depth-First Iterative-Deepening: An Optimal Admissible Tree Search.* AI 27(1).
+- **Culberson, J. C. & Schaeffer, J. (1996).** *Searching with Pattern Databases.* AI\*AI.
+- **Korf, R. E. & Felner, A. (2002).** *Disjoint Pattern Database Heuristics.* AI 134(1-2).
+- **Felner, A., Korf, R. E., et al. (2004).** *Additive Pattern Database Heuristics.* JAIR 21.
+- **Korf, R. E. (1997).** *Finding Optimal Solutions to Rubik's Cube Using Pattern Databases.* AAAI.
+- **Edelkamp, S. & Schrödl, S. (2012).** *Heuristic Search: Theory and Applications.* Morgan Kaufmann.
+
+---
+
+← [Search-3 — Recherche informée](../Part1-Foundations/Search-3-Informed.ipynb)
+| ↑ [Search (racine)](../README.md) | [Partie 4 — Métaheuristiques →](../Part4-Metaheuristics/README.md)
+| 🐍 [Version Python](Search-12-PatternDatabases.ipynb)",,,,,,,,f0c185f94f6bfd58,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,05478eeb,markdown,fr,f86e06a656ece30f,"# Search-13 (C#) — Recherche à écart limité (Limited Discrepancy Search)
+
+> **Partie 3 — Recherche avancée.** Ce notebook est le **jumeau .NET** du notebook
+> [Search-13 — Limited Discrepancy Search](Search-13-LimitedDiscrepancySearch.ipynb)
+> (Python). Il implémente en C# le même algorithme — LDS de Harvey & Ginsberg (1995) —
+> sur le même banc d'essai (sac à dos 0/1), pour montrer comment la technique se
+> transpose à une recherche arborescente typée.
+>
+> **Prérequis :** avoir vu les fondations de la recherche heuristique en
+> [Partie 1 — Search-3 (Informed)](../Part1-Foundations/Search-3-Informed.ipynb)
+> (A\*, heuristiques admissibles).
+",,,,,,,,f86e06a656ece30f,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,8e0ed971,markdown,fr,0aee48f5174745b8,"## 2. Le problème-banc d'essai : le sac à dos 0/1
+
+Le **sac à dos binaire** (*0/1 knapsack*) est NP-difficile et se prête naturellement
+à une recherche arborescente. On dispose de $n$ objets, chacun avec un poids $w_i$ et
+une valeur $v_i$, et d'une capacité $C$. On veut maximiser la valeur totale sans
+dépasser la capacité.
+
+L'**heuristique gloutonne** consistant à prendre les objets par **ratio valeur/poids
+décroissant** est naturelle mais **myope** : elle peut rater l'optimum en se bloquant
+trop tôt. C'est précisément le défaut que LDS corrige.
+",,,,,,,,0aee48f5174745b8,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,3e039179,code,fr,29705d1f0808fc28,"// Le sac à dos 0/1 : liste d'objets (nom, poids, valeur), ordonnés par RATIO valeur/poids décroissant
+// (c'est l'ordre où l'heuristique gloutonne les considère).
+// Item: nom, poids, valeur — record C# immuable (équivalent du tuple nommé Python).
+public record Item(string Name, int Weight, int Value);
+
+Item[] items = new Item[]
+{
+    new(""A"", 6, 8),   // ratio 1.33  <-- top ratio, MAIS poids 6 bloque la paire B+C (valeur 12 > 10)
+    new(""B"", 5, 6),   // ratio 1.20
+    new(""C"", 5, 6),   // ratio 1.20
+    new(""D"", 4, 2),   // ratio 0.50
+    new(""E"", 3, 1),   // ratio 0.33
+};
+int capacity = 10;
+
+Console.WriteLine($""Objets (ordre heuristique, ratio valeur/poids décroissant) :"");
+foreach (var it in items)
+    Console.WriteLine($""  {it.Name}: poids={it.Weight}, valeur={it.Value}, ratio={it.Value / (double)it.Weight:F2}"");
+Console.WriteLine($""Capacité du sac : {capacity}"");
+",,,,,,,,29705d1f0808fc28,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,27e86ae8,markdown,fr,822070a74769600b,"### Stratégie gloutonne (k = 0)
+
+Suivre aveuglément l'heuristique : prendre chaque objet s'il rentre.",,,,,,,,822070a74769600b,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,ca10750e,code,fr,6f149e90eab5dd5e,"// Stratégie GLOUTONNE (k=0) : suivre l'heuristique aveuglement — prendre chaque objet s'il rentre.
+(int Value, List<string> Selection, int Nodes) GreedyKnapsack(Item[] items, int capacity)
+{
+    var sel = new List<string>();
+    int totalW = 0, totalV = 0, nodes = 0;
+    foreach (var it in items)
+    {
+        nodes++;
+        if (totalW + it.Weight <= capacity)   // heuristique : prendre si ça rentre
+        {
+            sel.Add(it.Name);
+            totalW += it.Weight;
+            totalV += it.Value;
+        }
+    }
+    return (totalV, sel, nodes);
+}
+
+var (greedyV, greedySel, greedyNodes) = GreedyKnapsack(items, capacity);
+Console.WriteLine($""Greedy (k=0) : valeur={greedyV}, sélection=[{string.Join("", "", greedySel)}], nœuds={greedyNodes}"");
+",,,,,,,,6f149e90eab5dd5e,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,72895213,markdown,fr,697c534b8aeea511,"## 3. Le concept d'écart, et l'algorithme LDS(k)
+
+À chaque nœud, l'heuristique **recommande** une action (prendre l'objet s'il rentre,
+sinon le laisser). Choisir l'**autre** action coûte **un écart** :
+
+- Objet prenable : rang 0 = **prendre** (recommandé), rang 1 = **laisser** (1 écart).
+- Objet non prenable : rang 0 = **laisser** (recommandé), rang 1 = impossible (capacité dépassée).
+
+**LDS(k)** explore tous les chemins de l'arbre qui s'écartent au plus $k$ fois de
+l'heuristique. Pour $k = 0$ on retrouve le glouton ; pour $k \to \infty$ on retrouve
+la DFS exhaustive. L'intuition de Harvey & Ginsberg : *si l'heuristique est bonne,
+l'optimum est un proche voisin du chemin glouton*, donc un petit $k$ suffit souvent.",,,,,,,,697c534b8aeea511,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,ebf5d44b,code,fr,5db72837dfefaa80,"// LDS(k) sur le sac à dos 0/1 — version récursive bornée par le nombre d'écarts.
+// items : tableau ordonné par ordre heuristique (meilleur ratio d'abord).
+// Renvoie (meilleure valeur, meilleure sélection, nombre de nœuds explorés).
+(int Value, List<string>? Selection, int Nodes) LdsKnapsack(Item[] items, int capacity, int kMax)
+{
+    int n = items.Length;
+    int bestValue = -1;
+    List<string>? bestSel = null;
+    int nodes = 0;
+
+    void Rec(int i, int remCap, int valSoFar, List<string> sel, int discLeft)
+    {
+        nodes++;
+        if (i == n)
+        {
+            if (valSoFar > bestValue)
+            {
+                bestValue = valSoFar;
+                bestSel = new List<string>(sel);
+            }
+            return;
+        }
+        var it = items[i];
+        bool canTake = it.Weight <= remCap;
+        // Recommandation de l'heuristique à ce nœud :
+        //   - si l'objet rentre : prendre (rang 0)
+        //   - sinon : laisser (rang 0)
+        // L'autre choix consomme 1 écart (si possible).
+        if (canTake)
+        {
+            // rang 0 (recommandé) : prendre
+            sel.Add(it.Name);
+            Rec(i + 1, remCap - it.Weight, valSoFar + it.Value, sel, discLeft);
+            sel.RemoveAt(sel.Count - 1);
+            // rang 1 (écart) : laisser
+            if (discLeft > 0)
+                Rec(i + 1, remCap, valSoFar, sel, discLeft - 1);
+        }
+        else
+        {
+            // rang 0 (recommandé) : laisser (impossible de prendre)
+            Rec(i + 1, remCap, valSoFar, sel, discLeft);
+            // rang 1 (écart) : prendre — impossible (capacité), branche tronquée
+        }
+    }
+
+    Rec(0, capacity, 0, new List<string>(), kMax);
+    return (bestValue, bestSel, nodes);
+}
+
+// Balayage k = 0..n : montre la convergence vers l'optimum.
+Console.WriteLine(string.Format(""{0,3}{1,8}{2,10}  sélection"", ""k"", ""valeur"", ""nœuds""));
+for (int k = 0; k <= items.Length; k++)
+{
+    var (v, sel, nd) = LdsKnapsack(items, capacity, k);
+    Console.WriteLine(string.Format(""{0,3}{1,8}{2,10}  [{3}]"", k, v, nd, string.Join("", "", sel ?? new List<string>())));
+}
+",,,,,,,,5db72837dfefaa80,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,0880099f,markdown,fr,8a29b88cec202e26,"## 4. Référence : l'optimum par énumération exhaustive
+
+Pour prouver que LDS atteint bien le **vrai** optimum (et non une borne locale),
+on calcule la solution optimale par énumération exhaustive de l'arbre binaire
+complet ($2^n$ feuilles). LDS devra converger vers cette même valeur pour $k$ assez grand.",,,,,,,,8a29b88cec202e26,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,b45e52c4,code,fr,3a40547b02bb89c7,"// Optimum exact par énumération exhaustive (2^n) — référence de vérité.
+(int Value, List<string> Selection, int Nodes) ExhaustiveKnapsack(Item[] items, int capacity)
+{
+    int n = items.Length;
+    int bestV = -1, nodes = 0;
+    List<string> bestSel = new();
+    long total = 1L << n;   // 2^n combinaisons
+    for (long mask = 0; mask < total; mask++)
+    {
+        nodes++;
+        int w = 0, v = 0;
+        var sel = new List<string>();
+        for (int i = 0; i < n; i++)
+        {
+            if (((mask >> i) & 1L) == 1L)
+            {
+                w += items[i].Weight;
+                v += items[i].Value;
+                sel.Add(items[i].Name);
+            }
+        }
+        if (w <= capacity && v > bestV)
+        {
+            bestV = v;
+            bestSel = sel;
+        }
+    }
+    return (bestV, bestSel, nodes);
+}
+
+var (optV, optSel, exNodes) = ExhaustiveKnapsack(items, capacity);
+Console.WriteLine($""Exhaustif : valeur optimale={optV}, sélection=[{string.Join("", "", optSel)}], nœuds={exNodes}"");
+",,,,,,,,3a40547b02bb89c7,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,25ebca38,code,fr,cb80ac88840019f6,"// Tableau comparatif : greedy vs LDS(k) vs exhaustif — QUALITÉ de solution et COÛT (nœuds).
+string hdr = string.Format(""{0,-18}{1,8}{2,11}{3,10}{4,14}"", ""stratégie"", ""valeur"", ""optimal?"", ""nœuds"", ""% exhaustif"");
+Console.WriteLine(hdr);
+Console.WriteLine(new string('-', hdr.Length));
+
+void Row(string label, int val, int nd)
+{
+    string opt = val == optV ? ""OUI"" : ""non"";
+    double pct = 100.0 * nd / exNodes;
+    Console.WriteLine(string.Format(""{0,-18}{1,8}{2,11}{3,10}{4,13:F1}%"", label, val, opt, nd, pct));
+}
+
+Row(""greedy (k=0)"", greedyV, greedyNodes);
+// LDS au plus petit k atteignant l'optimum
+int kStar = -1, ldsVStar = -1, ldsNodesStar = 0;
+for (int k = 0; k <= items.Length; k++)
+{
+    var (v, sel, nd) = LdsKnapsack(items, capacity, k);
+    Row($""LDS(k={k})"", v, nd);
+    if (v == optV && kStar < 0) { kStar = k; ldsVStar = v; ldsNodesStar = nd; }
+}
+Row(""exhaustif"", optV, exNodes);
+Console.WriteLine();
+Console.WriteLine($""=> LDS atteint l'optimum dès k*={kStar}, en {ldsNodesStar} nœuds ({100.0*ldsNodesStar/exNodes:F1}% de l'exhaustif)."");
+",,,,,,,,cb80ac88840019f6,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,8242686f,markdown,fr,fdfb09997ffa946b,"### Lecture du résultat
+
+Le **greedy** (k=0) est **sous-optimal** : il prend A au ratio le plus élevé (1,33),
+qui remplit 6 des 10 unités de capacité et ne laisse de la place que pour D — ratant
+la paire B+C dont la valeur (12) est supérieure. Dès **k=1**, LDS explore le chemin
+« laisser A » et découvre l'optimum {B, C, ...}, en n'explorant qu'une fraction de
+l'arbre exhaustif. C'est tout l'intérêt de LDS : **saisir l'optimum à coût sous-exponentiel
+quand l'heuristique est bonne**.
+",,,,,,,,fdfb09997ffa946b,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,fe1a193b,markdown,fr,8e2623feca666545,"## 5. Ponts avec le reste de la série
+
+| Direction | Lien | Relation |
+|-----------|------|----------|
+| ← Fondations | [Search-3 — Informed](../Part1-Foundations/Search-3-Informed.ipynb) | A\*, heuristiques admissibles — LDS suppose une heuristique *ordonnante* (qui range les enfants), notion voisine |
+| ↔ Search-12 | [Search-12 — Pattern Databases](Search-12-PatternDatabases.ipynb) | Autre technique avancée pour réduire l'arbre de recherche (mémoïsation de sous-problèmes) |
+| ↔ Search-14 | [Search-14 — Weighted A\*](Search-14-WeightedAstar.ipynb) | A\* paresseux qui échange optimalité contre vitesse, même compromis que LDS |
+| ↔ Python | [Search-13 — LDS (Python)](Search-13-LimitedDiscrepancySearch.ipynb) | Même algorithme en Python (jumeau) — comparer l'expressivité des deux langages |
+| ↔ Sudoku | [Sudoku-1 — Backtracking](../../Sudoku/Sudoku-1-Backtracking-Csharp.ipynb) | Backtracking C# pur — LDS est une DFS bornée par le nombre d'écarts |
+
+> **Référence :** Harvey & Ginsberg, *Limited Discrepancy Search*, IJCAI 1995.
+",,,,,,,,8e2623feca666545,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,fb46626d,markdown,fr,2daa7e3a124791e9,"## 6. Exercices
+
+### Exercice 1 : Iterative LDS (ILDC)
+Implémentez **ILDS** : exécutez LDS pour k=0, 1, 2, … en vous arrêtant dès que la
+valeur **stagne** (deux incréments consécutifs sans amélioration) ou que k atteint n.
+Comparez le nombre total de nœuds explorés par ILDS à l'énumération exhaustive sur
+cette instance.
+- **Indice :** le critère d'arrêt « valeur qui stagne » évite de gaspiller des nœuds
+  pour des k qui n'apportent plus rien. Accumulez les nœuds de chaque appel `LdsKnapsack(k)`.
+",,,,,,,,2daa7e3a124791e9,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,3c7d1177,code,fr,74f5f8791c2c0e6a,"// Exercice 1 à compléter
+// Conseil : bouclez k = 0..n, accumulez les nœuds, arrêtez quand la valeur cesse de croître.
+// Comparez le total accumulé à exNodes (l'exhaustif calculé ci-dessus).
+int totalNodesIlds = 0;
+Console.WriteLine(""Exercice 1 à compléter"");
+",,,,,,,,74f5f8791c2c0e6a,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,52ccd683,markdown,fr,4118d83479b039f6,"### Exercice 2 : passage à l'échelle — LDS vs exhaustif
+Construisez une instance plus grande (par ex. n=18 objets aléatoires, capacité ~50%
+du poids total) où le greedy est sous-optimal. Mesurez :
+1. Le **plus petit k** pour lequel LDS atteint l'optimum (vérifié via DP ou exhaustif si n petit).
+2. Le **ratio de nœuds** LDS(k\*) / exhaustif ($2^{18} = 262\,144$ feuilles).
+- **Indice :** tirez des (poids, valeur) aléatoires avec une graine fixée (`new Random(42)`),
+  calculez l'optimum exhaustif, puis balayez k jusqu'à l'atteindre.
+",,,,,,,,4118d83479b039f6,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,a251d36c,code,fr,cc2220f411f295fe,"// Exercice 2 à compléter
+// Conseil : générez n=18 objets aléatoires (poids, valeur), calculez l'optimum exhaustif,
+// puis balayez k jusqu'à l'atteindre. Affichez le ratio LDS(k*)/2**18.
+Console.WriteLine(""Exercice 2 à compléter"");
+",,,,,,,,cc2220f411f295fe,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,da81ecbe,markdown,fr,f1c7bc08147bebf4,"### Exercice 3 : sensibilité à la qualité de l'heuristique
+LDS suppose une heuristique *bonne*. Refaites le balayage k=0..n mais en **perturbant
+l'ordre** des objets : (a) ordre aléatoire, (b) ordre par valeur absolue décroissante
+(au lieu du ratio). Pour chaque heuristique, notez le **k minimum** pour atteindre
+l'optimum.
+- **Indice :** plus l'heuristique est mauvaise, plus k\* grandit — LDS perd tout son
+  intérêt si l'heuristique est essentiellement aléatoire. Permutez le tableau `items`
+  et réutilisez `LdsKnapsack`.
+",,,,,,,,f1c7bc08147bebf4,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,640d97ce,code,fr,6db0e43d58db79f3,"// Exercice 3 à compléter
+// Conseil : permutez `items` selon différents ordres, et pour chacun cherchez le k min.
+// Perturbation : utilisez new Random(123) pour un ordre aléatoire reproductible.
+Console.WriteLine(""Exercice 3 à compléter"");
+",,,,,,,,6db0e43d58db79f3,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,493df909,markdown,fr,1fc9de04537aa437,"## 7. Conclusion
+
+**Limited Discrepancy Search** occupe une niche précise dans le spectre de la
+recherche heuristique. À une extrémité, le **greedy** est instantané mais myope ;
+à l'autre, la **DFS exhaustive** est exacte mais exponentielle. LDS exploite l'idée
+que *si l'heuristique est bonne, l'optimum est un proche voisin du greedy* : en
+bornant le nombre d'écarts $k$, on obtient un compromis réglable entre qualité et
+coût.
+
+### Comparaison C# vs Python (jumeau)
+
+Le port C# met en évidence :
+- le **typage statique** des `record Item` (sécurité compile-time vs tuples dynamiques Python) ;
+- la **récursion avec closure** (`void Rec(...) { ... }` capturant `bestValue`, `nodes`)
+  vs la fermeture Python `def rec(...)` avec `nonlocal` ;
+- la **manipulation de bits** pour l'exhaustif (`1L << n`, `(mask >> i) & 1L`) plus
+  explicite en C# qu'avec `itertools.product`.
+
+L'algorithmique, elle, est **identique** — LDS est language-agnostic. Voir le
+[jumeau Python](Search-13-LimitedDiscrepancySearch.ipynb) pour la version dynamique.
+
+> **Référence :** Harvey, W. D., & Ginsberg, M. L. (1995). *Limited Discrepancy Search.*
+> Proceedings of IJCAI 1995.
+",,,,,,,,1fc9de04537aa437,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,6558d065,markdown,fr,a3cdde7e8c9e371d,"# Search-13 — Recherche à écart limité (Limited Discrepancy Search)
+
+> **Partie 3 — Recherche avancée.** Ce notebook prolonge la Partie 3 : techniques
+> de recherche heuristique *avancées*, au-delà des fondations de la
+> [Partie 1](../Part1-Foundations/Search-3-Informed.ipynb) (A\\*, IDA\\*, heuristiques
+> admissibles). Là où [Search-12](Search-12-PatternDatabases.ipynb) fabriquait une
+> heuristique *assez informée* pour résoudre à l'optimum par précalcul, ici nous
+> partons d'une heuristique *déjà bonne mais imparfaite* et demandons : comment
+> trouver l'optimum **sans explorer tout l'arbre** ?
+
+## 1. L'idée : une bonne heuristique se trompe peu
+
+La recherche exhaustive (DFS sur tout l'arbre) trouve l'optimum mais coûte $2^n$
+feuilles — prohibitif. La stratégie *greedy* (suivre aveuglément la recommandation
+de l'heuristique) est instantanée mais **myope** : elle se contente du premier
+chemin, parfois sous-optimal. Entre ces deux extrêmes, **Limited Discrepancy Search**
+(Harvey & Ginsberg, 1995) exploite une intuition forte :
+
+> Si l'heuristique est *bonne*, la solution optimale s'écarte de **peu** de ses
+> recommandations.
+
+Un **écart** (*discrepancy*) est, à un nœud, le choix d'un enfant que l'heuristique
+ne recommande **pas** en premier (rang > 0). LDS(k) énumère exactement les chemins
+comportant **au plus k écarts** : à k=0 c'est le greedy ; à k croissant on élargit
+progressivement le voisinage du chemin greedy, sans jamais payer le coût exponentiel
+de la DFS complète. C'est l'incarnation algorithmique du principe « l'optimum est un
+voisin du greedy ». 
+",,,,,,,,a3cdde7e8c9e371d,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,e0cd36e5,markdown,fr,7b7230da2d099428,"## 2. Le problème-banc d'essai : le sac à dos 0/1
+
+Le **sac à dos binaire** (*0/1 knapsack*) est NP-diff et se prête naturellement à
+une recherche arborescente. On dispose de $n$ objets, chacun avec un poids $w_i$ et
+une valeur $v_i$, et d'une capacité $C$. On veut maximiser la valeur totale sans
+dépasser $C$ — en décidant, pour chaque objet, de le **prendre** ou de le **laisser**.
+C'est un arbre de décision binaire de profondeur $n$.
+
+L'**heuristique gloutonne** canonique ordonne les objets par **ratio valeur/poids
+décroissant** et, à chaque nœud, recommande de **prendre** l'objet courant s'il
+rentre. Cette heuristique est *bonne* (les objets à fort ratio sont rarement un
+mauvais choix) mais **imparfaite** : un objet à ratio élevé peut en *bloquer* deux
+de ratio moyen dont la somme dépasse sa valeur — auquel cas le greedy se trompe.
+",,,,,,,,7b7230da2d099428,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,3257e194,code,fr,acade9936564ac94,"# Le sac a dos 0/1 : liste d'objets (nom, poids, valeur), ordonnes par RATIO valeur/poids decroissant
+# (c'est l'ordre ou l'heuristique gloutonne les considere).
+items = [
+    (""A"", 6, 8),   # ratio 1.33  <-- top ratio, MAIS poids 6 bloque la paire B+C (valeur 12 > 10)
+    (""B"", 5, 6),   # ratio 1.20
+    (""C"", 5, 6),   # ratio 1.20
+    (""D"", 4, 2),   # ratio 0.50
+    (""E"", 3, 1),   # ratio 0.33
+    (""F"", 2, 0),   # ratio 0.00  (objet de valeur nulle -- piege pour le greedy s'il reste de la place)
+    (""G"", 1, 0),   # ratio 0.00  (objet de valeur nulle -- piege pour le greedy)
+]
+CAPACITY = 10
+
+# Verifions l'ordre par ratio (l'heuristique suppose cet ordre).
+ratios = [(name, v / w if w > 0 else float(""inf"")) for name, w, v in items]
+print(""Objets dans l'ordre heuristique (ratio v/w decroissant) :"")
+for name, r in ratios:
+    print(f""  {name}: ratio = {r:.3f}"")
+print(f""Capacite C = {CAPACITY}"")
+",,,,,,,,acade9936564ac94,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,d73e1e03,code,fr,568947d5b1a5088b,"# StratEGIE GLOUTONNE (k=0) : suivre l'heuristique aveuglement -- prendre chaque objet s'il rentre.
+def greedy_knapsack(items, capacity):
+    selection, total_w, total_v = [], 0, 0
+    for name, w, v in items:
+        if total_w + w <= capacity:        # heuristique : prendre si ca rentre
+            selection.append(name)
+            total_w += w
+            total_v += v
+    return total_v, selection, ""greedy""
+
+gv, gsel, _ = greedy_knapsack(items, CAPACITY)
+print(f""Greedy (k=0) : valeur = {gv}, selection = {gsel}"")
+print(""--> Le greedy prend A (poids 6, valeur 8), puis il ne reste que 4 de capacite :"")
+print(""    seul D (poids 4) y rentre. Greedy = {A, D} = 10. La paire B+C (valeur 12) est bloquee par A."")
+",,,,,,,,568947d5b1a5088b,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,2fa39111,markdown,fr,7f25c54f57845777,"## 3. Le concept d'écart, et l'algorithme LDS(k)
+
+À chaque nœud, l'heuristique **recommande** une action (prendre l'objet s'il rentre,
+sinon le laisser). Choisir l'**autre** action coûte **un écart** :
+
+- Objet prenable : rang 0 = **prendre** (recommande), rang 1 = **laisser** (1 ecart).
+- Objet non prenable (trop lourd) : rang 0 = **laisser** (seule option realisable).
+
+`LDS(k)` descend en privilégiant l'action recommandée, et n'emprunte une branche
+« contraire » que si le budget d'écarts `k` n'est pas épuisé. Elle énumère ainsi tous
+les chemins à **au plus k** écarts, et retient la meilleure valeur rencontrée. 
+",,,,,,,,7f25c54f57845777,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,87413e2a,code,fr,c94ef5723c1d2fdc,"def lds_knapsack(items, capacity, k_max):
+    # LDS(k_max) sur le sac a dos 0/1.
+    # items : liste (nom, poids, valeur), ordre heuristique (meilleur ratio d'abord).
+    # Renvoie (meilleure valeur, meilleure selection, nombre de noeuds explores).
+    n = len(items)
+    best = {""value"": -1, ""sel"": None}
+    nodes = [0]
+
+    def rec(i, rem_cap, val_so_far, sel, disc):
+        nodes[0] += 1
+        if i == n:                                   # feuille : on enregistre une solution
+            if val_so_far > best[""value""]:
+                best[""value""] = val_so_far
+                best[""sel""] = list(sel)
+            return
+        name, w, v = items[i]
+        can_take = w <= rem_cap
+        if can_take:
+            # Rang 0 (recommande) : PRENDRE -- n'epargne aucun ecart.
+            sel.append(name)
+            rec(i + 1, rem_cap - w, val_so_far + v, sel, disc)
+            sel.pop()
+            # Rang 1 (contraire) : LAISSER -- coute 1 ecart, si budget reste.
+            if disc < k_max:
+                rec(i + 1, rem_cap, val_so_far, sel, disc + 1)
+        else:
+            # Objet trop lourd : seule action realisable = laisser (rang 0, sans ecart).
+            rec(i + 1, rem_cap, val_so_far, sel, disc)
+
+    rec(0, capacity, 0, [], 0)
+    return best[""value""], best[""sel""], nodes[0]
+
+
+# Balayage k = 0, 1, 2, ... : a chaque increment on elargit le voisinage du greedy.
+print(""k | valeur | selection        | nœuds explores"")
+print(""--|--------|-----------------|----------------"")
+for k in range(len(items) + 1):
+    val, sel, nd = lds_knapsack(items, CAPACITY, k)
+    print(f""{k} | {val:6d} | {str(sel):15s} | {nd}"")
+",,,,,,,,c94ef5723c1d2fdc,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,a2d421db,markdown,fr,5c2463021f0c29e4,"## 4. Référence : l'optimum par énumération exhaustive
+
+Pour prouver que LDS atteint bien le **vrai** optimum (et non une borne locale),
+on calcule la solution optimale par énumération exhaustive de l'arbre binaire
+complet ($2^n$ feuilles) puis par programmation dynamique. LDS devra converger vers
+cette valeur à mesure que $k$ croît — idéalement pour un $k$ **petit**, bien avant
+l'énumération complète.
+",,,,,,,,5c2463021f0c29e4,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,6beeeb9c,code,fr,751e18e7f2150bd1,"from itertools import product
+
+def exhaustive_knapsack(items, capacity):
+    # Optimum exact par enumeration exhaustive (2^n) -- reference de verite.
+    n = len(items)
+    best_v, best_sel, nodes = -1, None, 0
+    for bits in product([0, 1], repeat=n):          # 2^n combinaisons
+        nodes += 1
+        w = sum(items[i][1] for i in range(n) if bits[i])
+        v = sum(items[i][2] for i in range(n) if bits[i])
+        if w <= capacity and v > best_v:
+            best_v, best_sel = v, [items[i][0] for i in range(n) if bits[i]]
+    return best_v, best_sel, nodes
+
+
+def dp_knapsack(items, capacity):
+    # Optimum exact par programmation dynamique (pseudo-polynomial) -- 2e reference.
+    n = len(items)
+    # dp[c] = meilleure valeur avec capacite c
+    dp = [0] * (capacity + 1)
+    keep = [[False] * (capacity + 1) for _ in range(n)]
+    for i in range(n):
+        name, w, v = items[i]
+        for c in range(capacity, w - 1, -1):
+            if dp[c - w] + v > dp[c]:
+                dp[c] = dp[c - w] + v
+                keep[i][c] = True
+    # Reconstruction de la selection
+    sel, c = [], capacity
+    for i in range(n - 1, -1, -1):
+        if keep[i][c]:
+            sel.append(items[i][0])
+            c -= items[i][1]
+    return dp[capacity], list(reversed(sel))
+
+
+opt_v, opt_sel, ex_nodes = exhaustive_knapsack(items, CAPACITY)
+dp_v, dp_sel = dp_knapsack(items, CAPACITY)
+print(f""Optimum (exhaustif, 2^{len(items)} = {2**len(items)} feuilles) : valeur = {opt_v}, selection = {opt_sel}"")
+print(f""Optimum (DP)                                         : valeur = {dp_v}, selection = {dp_sel}"")
+print(f""nœuds explores par l'exhaustif : {ex_nodes}"")
+",,,,,,,,751e18e7f2150bd1,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,579af77d,code,fr,15aa5c7820599914,"# Tableau comparatif : greedy vs LDS(k) vs exhaustif -- QUALITE de solution et COUT (nœuds).
+print(f""{'strategie':<18}{'valeur':>8}{'optimal?':>11}{'nœuds':>10}{'% exhaustif':>14}"")
+print(""-"" * 61)
+ex_total = ex_nodes
+
+def row(label, val, nd):
+    opt = ""OUI"" if val == opt_v else ""non""
+    pct = 100.0 * nd / ex_total if ex_total else 0
+    print(f""{label:<18}{val:>8}{opt:>11}{nd:>10}{pct:>13.1f}%"")
+
+gv, _, _ = greedy_knapsack(items, CAPACITY)
+row(""greedy (k=0)"", gv, len(items) + 1)
+for k in range(len(items) + 1):
+    val, _, nd = lds_knapsack(items, CAPACITY, k)
+    row(f""LDS(k={k})"", val, nd)
+row(""exhaustif (ref)"", opt_v, ex_total)
+",,,,,,,,15aa5c7820599914,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,7a39ab96,markdown,fr,92c9d2277baffca0,"### Lecture du résultat
+
+Le **greedy** (k=0) est **sous-optimal** (valeur 10, sélection {A, D}) : il prend A au
+ratio le plus élevé (1,33), qui remplit 6 des 10 unités de capacité et ne laisse de la
+place que pour D — ratant la paire B+C dont la valeur (12) est supérieure. Dès **k=1**,
+LDS explore le chemin « laisser A » et découvre l'optimum {B, C} = 12 — pour **19 nœuds
+seulement**, soit 14,8 % des 128 feuilles de l'exhaustif $2^7$.
+
+Au-delà du $k$ suffisant, LDS continue d'explorer mais **ne trouve rien de meilleur**
+(l'optimum est déjà atteint, la valeur stagne à 12 de k=1 à k=7) : c'est le signal pour
+arrêter. C'est précisément ce qu'exploite **Iterative LDS** (exercice 1) : incrémenter
+$k$ jusqu'à ce que la valeur cesse de croître, sans jamais payer le $2^n$ de l'exhaustif.
+La leçon générale tient en une phrase : **quand l'heuristique est bonne, l'optimum est un
+proche voisin du greedy, et LDS le trouve en bornant les écarts plutôt qu'en énumérant
+l'arbre entier**.
+",,,,,,,,92c9d2277baffca0,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,28866dde,markdown,fr,588d39d59d5f8b84,"## 5. Ponts avec le reste de la série
+
+| Direction | Lien | Relation |
+|-----------|------|----------|
+| ← Fondations | [Search-3 — Informed](../Part1-Foundations/Search-3-Informed.ipynb) | A\\*, heuristiques admissibles — LDS suppose une heuristique *ordonnante* (qui range les enfants), notion voisine |
+| ↔ Search-12 | [Search-12 — Pattern Databases](Search-12-PatternDatabases.ipynb) | Autre voie avancée : *renforcer* l'heuristique (PDB) plutôt que *borner les écarts* (LDS). Deux réponses à « l'heuristique ne suffit pas » |
+| → Partie 4 | [Métaheuristiques](../Part4-Metaheuristics/README.md) | LDS garde l'exigence d'optimalité (la trouve pour k assez grand) ; les métaheuristiques l'abandonnent |
+
+**Référence fondatrice** : Harvey, W. D., & Ginsberg, M. L. (1995) — *Limited
+Discrepancy Search*, Proceedings of IJCAI. L'article qui formalise le principe
+« l'optimum est un voisin du greedy » et l'algorithme LDS(k).
+",,,,,,,,588d39d59d5f8b84,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,34731b33,markdown,fr,d167397d6819e9ca,"## 6. Exercices
+
+### Exercice 1 : Iterative LDS (ILDS)
+Implémentez **ILDS** : exécutez LDS pour k=0, 1, 2, … en vous arrêtant dès que la
+valeur **stagne** (deux increments consécutifs sans amélioration) ou que k atteint n.
+Comparez le nombre total de nœuds explorés par ILDS à l'énumération exhaustive sur
+cette instance.
+- **Indice :** le critère d'arrêt naturel est « la valeur n'a pas augmenté au pas k »
+  (l'optimum est trouvé). Attention : stagnation ponctuelle ≠ optimum assuré tant que
+  k < n — justifiez votre critère d'arrêt.
+- **Objectif :** mesurer le gain (ratio des nœuds ILDS / exhaustif).
+",,,,,,,,d167397d6819e9ca,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,94320df2,code,fr,ea9ae2ac3a58dab5,"# Exercice 1 a completer
+# Conseil : bouclez k = 0..n, accumulez les nœuds, arretez quand la valeur cesse de croitre.
+# Comparez le total accumule a ex_nodes (l'exhaustif calcule ci-dessus).
+total_nodes_ilds = 0
+print(""Exercice 1 a completer"")
+",,,,,,,,ea9ae2ac3a58dab5,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,4e18a6a2,markdown,fr,7f8c067f9341edb9,"### Exercice 2 : passage à l'échelle — LDS vs exhaustif
+Construisez une instance plus grande (par ex. n=18 objets aléatoires, capacité ~50%
+du poids total) où le greedy est sous-optimal. Mesurez :
+1. Le **plus petit k** pour lequel LDS atteint l'optimum (vérifié via DP).
+2. Le **ratio de nœuds** LDS(k\*) / exhaustif ($2^{18} = 262\,144$ feuilles).
+- **Indice :** pour n=18 l'exhaustif est encore calculable ( DP ou 2^18) et sert de
+  référence. Observez comment le ratio de nœuds se dégrade quand l'heuristique est
+  *mauvaise* (ratio aléatoire) vs *bonne* (vraie valeur/poids).
+",,,,,,,,7f8c067f9341edb9,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,ac243985,code,fr,d48e1fec6e582222,"# Exercice 2 a completer
+# Conseil : genere n=18 objets avec des (poids, valeur) aleatoires, calcule l'optimum par DP,
+# puis balaye k jusqu'a l'atteindre. Affiche le ratio LDS(k*)/2**18.
+print(""Exercice 2 a completer"")
+",,,,,,,,d48e1fec6e582222,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,3e219e74,markdown,fr,2af89c6fde321526,"### Exercice 3 : sensibilité à la qualité de l'heuristique
+LDS suppose une heuristique *bonne*. Refaites le balayage k=0..n mais en **perturbant
+l'ordre** des objets : (a) ordre aléatoire, (b) ordre par valeur absolue décroissante
+(au lieu du ratio). Pour chaque heuristique, notez le **k minimum** pour atteindre
+l'optimum.
+- **Indice :** plus l'heuristique est *mauvaise*, plus l'optimum s'écarte du greedy,
+  donc plus le k nécessaire est grand — LDS y perd son avantage. C'est la limite du
+  paradigme : LDS n'est efficace que si l'heuristique est *effectivement* bonne.
+",,,,,,,,2af89c6fde321526,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,bbd8fa31,code,fr,2c59eb03740727a8,"# Exercice 3 a completer
+# Conseil : permutez `items` selon differents ordres, et pour chacun cherchez le k min.
+# Perturbation : essayez random.shuffle(items) (avec une graine fixee pour la reproductibilite).
+print(""Exercice 3 a completer"")
+",,,,,,,,2c59eb03740727a8,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,bdb6cea2,markdown,fr,436b2e26f83da4ac,"## 7. Conclusion
+
+**Limited Discrepancy Search** occupe une niche précise dans le spectre de la
+recherche heuristique. À une extrémité, le **greedy** est instantané mais myope ;
+à l'autre, la **DFS exhaustive** est exacte mais exponentielle. LDS exploite l'idée
+que *si l'heuristique est bonne, l'optimum est un proche voisin du greedy* : en
+bornant le nombre d'écarts (choix contraires à la recommandation), elle trouve
+l'optimum pour un coût bien inférieur à $2^n$, **sans renoncer à l'optimalité**
+(contrairement aux métaheuristiques de la Partie 4).
+
+La limite est symétrique du avantage : LDS n'est efficace que dans la mesure où
+l'heuristique est *effectivement* bonne — une heuristique mauvaise repousse l'optimum
+loin du greedy, et le $k$ nécessaire devient si grand que l'énumération bornée rejoint
+l'exhaustive (exercice 3). C'est un algorithme qui **parie sur la qualité de
+l'heuristique**, et qui gagne ce pari précisément quand les Pattern Databases de
+[Search-12](Search-12-PatternDatabases.ipynb) ont déjà fait leur travail de
+*renforcement* heuristique : les deux notebooks sont complémentaires — l'un fabrique
+une meilleure heuristique, l'autre exploite au mieux celle dont on dispose.
+
+> **Prochaines étapes** : LDS se généralise en **ILDS** (itération sur k) et se
+> combine avec le *beam search* et l'élagage par borne (*branch-and-bound*). Elle
+> s'applique à tout arbre de recherche muni d'une heuristique ordonnante :
+> ordonnancement, planification, satisfaction de contraintes.
+",,,,,,,,436b2e26f83da4ac,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,5cd7d0ac,markdown,fr,9faa526783e8641b,"# Search-14 (C#) — Weighted A\* : recherche à sous-optimalité bornée
+
+> **Partie 3 — Recherche avancée.** Ce notebook est le **jumeau .NET** du notebook
+> [Search-14 — Weighted A\*](Search-14-WeightedAstar.ipynb) (Python). Il implémente en C#
+> le même algorithme — Weighted A\* de Pohl (1970) — sur le même banc d'essai
+> (cheminement sur un terrain pondéré), pour montrer la transposition en C# d'un
+> best-first search paramétré par un poids $W$ sur l'heuristique.
+>
+> **Prérequis :** avoir vu les fondations en
+> [Partie 1 — Search-3 (Informed)](../Part1-Foundations/Search-3-Informed.ipynb)
+> (A\*, heuristiques admissibles).
+>
+> **Note sur les sorties :** le générateur aléatoire `Random(42)` du runtime .NET
+> n'étant pas identique au Mersenne Twister de Python, le terrain généré **diffère**
+> de celui du jumeau Python — donc les coûts et nombres de nœuds exacts diffèrent.
+> Les **propriétés pédagogiques** (A\* optimal, Greedy rapide mais sous-optimal,
+> Weighted A\* interpolle avec garantie $\text{coût} \leq W \cdot \text{optimal}$)
+> sont préservées sur tout terrain non-dégénéré.
+",,,,,,,,9faa526783e8641b,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,da6a59e2,markdown,fr,215d6498bb3e4cf0,"## 2. Le banc d'essai : cheminement sur un terrain pondéré
+
+Pour mettre Weighted A\* en valeur, il faut un problème où **A\* explore beaucoup**
+(où l'optimalité coûte de nombreux nœuds) et où le compromis vitesse/qualité est net :
+un terrain pondéré (routes rapides, herbe lente, marécages quasi-impraticables, murs).
+Sur un graphe à coût uniforme, A\* dégénère en BFS et Weighted A\* n'apporte rien
+(cf la leçon « problème dégénéré ») — il faut des **coûts contrastés** pour que
+l'heuristique et l'inflation par $W$ soient visibles dans la sortie.
+",,,,,,,,215d6498bb3e4cf0,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,a0d83d87,code,fr,c9b1c237090e4474,"// --- Terrain pondéré : chaque case a un coût de traversée ---
+// 1 = route (rapide), 3 = herbe, 8 = marécage, '#' = mur infranchissable.
+// Coûts CONTRASTÉS -> A* va explorer, Greedy va se tromper : terrain non-dégénéré.
+using System.Collections.Generic;
+
+// Coût de traversée par type de case (null = mur).
+var TERRAIN_COST = new Dictionary<char, int?> {
+    ['.'] = 1, ['g'] = 3, ['s'] = 8, ['#'] = null   // s = swamp, g = grass
+};
+
+const int ROWS = 25, COLS = 25;
+(int, int) start = (0, 0), goal = (ROWS - 1, COLS - 1);
+
+// Grille : (row, col) -> type de case. RNG .NET (différent du Mersenne Twister Python).
+Dictionary<(int, int), char> MakeGrid(int rows, int cols, int seed)
+{
+    var rng = new Random(seed);
+    var grid = new Dictionary<(int, int), char>();
+    for (int r = 0; r < rows; r++)
+        for (int c = 0; c < cols; c++)
+        {
+            double x = rng.NextDouble();
+            if (x < 0.15) grid[(r, c)] = '#';        // mur (15%)
+            else if (x < 0.45) grid[(r, c)] = 'g';   // herbe (30%)
+            else if (x < 0.60) grid[(r, c)] = 's';   // marécage (15%)
+            else grid[(r, c)] = '.';                 // route (40%)
+        }
+    (int, int) start = (0, 0), goal = (rows - 1, cols - 1);
+    grid[start] = '.'; grid[goal] = '.';             // départ + arrivée franchissables
+    return grid;
+}
+
+// Heuristique : Manhattan (admissible : coût min = 1, distance >= Manhattan*1).
+int Manhattan((int r, int c) a, (int r, int c) b) => Math.Abs(a.r - b.r) + Math.Abs(a.c - b.c);
+
+// Vérifie la connectivité start->goal par BFS (évite un terrain cloisonné par les murs).
+bool Connected(Dictionary<(int, int), char> g, (int, int) s, (int, int) goal)
+{
+    var seen = new HashSet<(int, int)> { s };
+    var queue = new Queue<(int, int)>();
+    queue.Enqueue(s);
+    while (queue.Count > 0)
+    {
+        var cur = queue.Dequeue();
+        if (cur.Equals(goal)) return true;
+        foreach (var n in Neighbors(g, cur))
+            if (seen.Add(n)) queue.Enqueue(n);
+    }
+    return false;
+}
+
+// Comme le RNG .NET (≠ Mersenne Twister Python) peut cloisonner le départ, on cherche
+// le premier seed tel que start rejoigne goal. Pédagogie inchangée ; seed différé du jumeau Python.
+Dictionary<(int, int), char> MakeConnectedGrid(int rows, int cols, (int, int) s, (int, int) g, out int seedUsed)
+{
+    int seed = 42;
+    while (true)
+    {
+        var grid = MakeGrid(rows, cols, seed);
+        if (Connected(grid, s, g)) { seedUsed = seed; return grid; }
+        seed++;
+    }
+}
+
+var grid = MakeConnectedGrid(ROWS, COLS, start, goal, out int actualSeed);
+
+// Coût d'un pas vers une case voisine (null = mur / hors-boundaires).
+int? StepCost(Dictionary<(int, int), char> g, (int, int) cur, (int, int) nxt)
+{
+    return g.TryGetValue(nxt, out char t) ? TERRAIN_COST[t] : null;
+}
+
+// Voisins 4-connexes franchissables.
+List<(int, int)> Neighbors(Dictionary<(int, int), char> g, (int r, int c) s)
+{
+    var out_ = new List<(int, int)>();
+    foreach (var (dr, dc) in new[] { (-1, 0), (1, 0), (0, -1), (0, 1) })
+    {
+        var n = (s.r + dr, s.c + dc);
+        if (n.Item1 >= 0 && n.Item1 < ROWS && n.Item2 >= 0 && n.Item2 < COLS
+            && StepCost(g, s, n).HasValue)
+            out_.Add(n);
+    }
+    return out_;
+}
+
+int nWalls = 0;
+foreach (var v in grid.Values) if (v == '#') nWalls++;
+Console.WriteLine($""Grille {ROWS}x{COLS} : {nWalls} murs ({100.0*nWalls/(ROWS*COLS):F0}%), départ {start}, but {goal} (seed .NET = {actualSeed})."");
+Console.WriteLine(""Coûts contrastés (route=1, herbe=3, marécage=8) -> A* va explorer, Greedy va se tromper : terrain non-dégénéré."");
+",,,,,,,,c9b1c237090e4474,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,87be1bff,markdown,fr,cbef8d7cc1d4da7c,"## 3. A\*, Greedy, et Weighted A\* : un seul algorithme paramétré
+
+Les algorithmes se ramènent à **un même best-first search** sur $f(n) = g(n) + W \cdot h(n)$ :
+le **poids $W$ de l'heuristique** est le seul paramètre.
+
+- $W = 1$ → **A\*** (optimal, admissible) ;
+- $W > 1$ → **Weighted A\*** (sous-optimalité **bornée par $W$**) ;
+- $W \to \infty$ → **Greedy** (l'heuristique domine, $g$ devient négligeable).
+
+On implémente donc une fonction unique `BestFirst(grid, start, goal, W)` paramétrée par $W$,
+puis un `TrueGreedy` séparé (qui ignore $g$ dans la file de priorité, pôle non borné).
+",,,,,,,,cbef8d7cc1d4da7c,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,6b39b910,code,fr,70cd045dba2341ea,"// Best-first search sur f(n) = g(n) + W*h(n). W=1 -> A* ; W>1 -> Weighted A*.
+// Renvoie (chemin, coût, nœuds développés). Re-push sur meilleur g (pas de decrease-key explicite).
+(List<(int, int)> Path, int Cost, int Nodes) BestFirst(
+    Dictionary<(int, int), char> g, (int, int) start, (int, int) goal, double W,
+    Func<(int, int), (int, int), int> h)
+{
+    var gCost = new Dictionary<(int, int), int> { [start] = 0 };
+    var parent = new Dictionary<(int, int), (int, int)?> { [start] = null };
+    // PriorityQueue<élément, priorité> (.NET 6+) — min-heap sur la priorité f.
+    var open = new PriorityQueue<(int, int), double>();
+    open.Enqueue(start, W * h(start, goal));
+    int developed = 0;
+    while (open.Count > 0)
+    {
+        var cur = open.Dequeue();
+        developed++;
+        if (cur.Equals(goal))
+        {
+            var path = new List<(int, int)>();
+            (int, int)? p = goal;
+            while (p is not null) { path.Add(p.Value); p = parent[p.Value]; }
+            path.Reverse();
+            return (path, gCost[goal], developed);
+        }
+        foreach (var nxt in Neighbors(g, cur))
+        {
+            int nc = gCost[cur] + StepCost(g, cur, nxt)!.Value;
+            if (!gCost.ContainsKey(nxt) || nc < gCost[nxt])
+            {
+                gCost[nxt] = nc;
+                parent[nxt] = cur;
+                open.Enqueue(nxt, nc + W * h(nxt, goal));
+            }
+        }
+    }
+    return (new List<(int, int)>(), int.MaxValue, developed);   // pas de chemin
+}
+
+// Vrai Greedy best-first (f = h uniquement, g ignoré dans la file) : le pôle NON BORNÉ.
+// On garde g pour reconstruire le chemin et mesurer son coût réel.
+(List<(int, int)> Path, int Cost, int Nodes) TrueGreedy(
+    Dictionary<(int, int), char> g, (int, int) start, (int, int) goal,
+    Func<(int, int), (int, int), int> h)
+{
+    var gCost = new Dictionary<(int, int), int> { [start] = 0 };
+    var parent = new Dictionary<(int, int), (int, int)?> { [start] = null };
+    var open = new PriorityQueue<(int, int), double>();
+    open.Enqueue(start, h(start, goal));
+    int developed = 0;
+    var seen = new HashSet<(int, int)>();
+    while (open.Count > 0)
+    {
+        var cur = open.Dequeue();
+        developed++;
+        if (!seen.Add(cur)) continue;
+        if (cur.Equals(goal))
+        {
+            var path = new List<(int, int)>();
+            (int, int)? p = goal;
+            while (p is not null) { path.Add(p.Value); p = parent[p.Value]; }
+            path.Reverse();
+            return (path, gCost[goal], developed);
+        }
+        foreach (var nxt in Neighbors(g, cur))
+        {
+            int nc = gCost[cur] + StepCost(g, cur, nxt)!.Value;
+            if (!gCost.ContainsKey(nxt) || nc < gCost[nxt])
+            {
+                gCost[nxt] = nc;
+                parent[nxt] = cur;
+                open.Enqueue(nxt, h(nxt, goal));   // f = h seulement
+            }
+        }
+    }
+    return (new List<(int, int)>(), int.MaxValue, developed);
+}
+
+// Repères : A* (W=1) = référence optimale ; Greedy (f=h) = pôle rapide non borné.
+var (astarPath, astarCost, astarNodes) = BestFirst(grid, start, goal, W: 1.0, Manhattan);
+var (greedyPath, greedyCost, greedyNodes) = TrueGreedy(grid, start, goal, Manhattan);
+Console.WriteLine($""A*     (W=1, optimal)   : coût = {astarCost,3} | nœuds développés = {astarNodes}"");
+Console.WriteLine($""Greedy (f=h, non borné) : coût = {greedyCost,3} | nœuds développés = {greedyNodes}  (ratio = {greedyCost/(double)astarCost:F2}x optimal, AUCUNE borne)"");
+int optimal = astarCost;   // A* admissible -> référence d'optimalité
+Console.WriteLine($""\nRéférence d'optimalité (A* admissible) : {optimal}."");
+",,,,,,,,70cd045dba2341ea,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,bb780bab,markdown,fr,d2e698f3ca97801f,"## 4. Le balayage de $W$ : la frontière coût/nœuds
+
+Faisons varier $W$ de 1 (A\* optimal) à de grandes valeurs (proche Greedy). À chaque
+$W$, on mesure **le coût de la solution** et **le nombre de nœuds développés**. La
+promesse de Weighted A\* est double, et on la vérifie honnêtement :
+
+1. **Vitesse** — à mesure que $W$ croît, le nombre de nœuds **chute**.
+2. **Garantie** — le coût de la solution reste **$\leq W \cdot \text{optimal}$** (Pohl 1970).
+",,,,,,,,d2e698f3ca97801f,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,d42ebd52,code,fr,ce09becc7e51667a,"// Balayage de W >= 1 (le régime Weighted A*) : A* (W=1) -> de plus en plus ""confiant"".
+double[] weights = { 1.0, 1.5, 2.0, 3.0, 5.0, 8.0, 12.0 };
+Console.WriteLine(string.Format(""{0,5} | {1,5} | {2,9} | {3,7} | {4,6} | {5,6} | {6}"",
+    ""W"", ""coût"", ""ratio/opt"", ""borne W"", ""nœuds"", ""% A*"", ""garantie?""));
+Console.WriteLine(new string('-', 66));
+foreach (double W in weights)
+{
+    var (path, cost, nodes) = BestFirst(grid, start, goal, W, Manhattan);
+    double ratio = cost / (double)optimal;
+    double pct = 100.0 * nodes / astarNodes;
+    string garantit = cost <= W * optimal + 1e-9 ? ""OUI"" : ""NON"";
+    Console.WriteLine(string.Format(""{0,5:F1} | {1,5} | {2,9:F3} | {3,7:F2} | {4,6} | {5,5:F1}% | {6}"",
+        W, cost, ratio, W, nodes, pct, garantit));
+}
+",,,,,,,,ce09becc7e51667a,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,87a56bb5,code,fr,e8d36db32f8c1535,"// Visualisation ASCII : le chemin trouvé par A* (W=1) vs Weighted A* (W=3).
+string Render(Dictionary<(int, int), char> g, List<(int, int)> path)
+{
+    var sym = new Dictionary<char, char> { ['.'] = '.', ['g'] = ',', ['s'] = '~', ['#'] = '#' };
+    var cellsMap = new Dictionary<(int, int), char>();
+    foreach (var kv in g) cellsMap[kv.Key] = sym[kv.Value];
+    foreach (var s in path) cellsMap[s] = '@';        // le chemin
+    cellsMap[start] = 'S'; cellsMap[goal] = 'G';
+    var lines = new List<string>();
+    for (int r = 0; r < ROWS; r++)
+    {
+        var sb = new System.Text.StringBuilder();
+        for (int c = 0; c < COLS; c++) sb.Append(cellsMap[(r, c)]);
+        lines.Add(sb.ToString());
+    }
+    return string.Join(""\n"", lines);
+}
+
+var (wa3Path, _, _) = BestFirst(grid, start, goal, W: 3.0, Manhattan);
+Console.WriteLine(""Légende : S départ · G but · @ chemin · . route · , herbe · ~ marécage · # mur\n"");
+Console.WriteLine(""=== A* (W=1, optimal) ==="");
+Console.WriteLine(Render(grid, astarPath));
+Console.WriteLine(""\n=== Weighted A* (W=3) ==="");
+Console.WriteLine(Render(grid, wa3Path));
+",,,,,,,,e8d36db32f8c1535,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,e3e2da9f,markdown,fr,ac381e0745468c9d,"### Lecture du résultat
+
+Le balayage encadre le **compromis structurel** de Weighted A\* par ses deux pôles,
+puis l'interpolation bornée entre les deux :
+
+- **Greedy (f=h) — pôle rapide, NON borné.** Peu de nœuds, mais un coût qui peut
+  dériver arbitrairement (ratio $> 1$ sans garantie).
+- **A\* (W=1) — pôle optimal, cher.** Coût optimal mais le plus de nœuds développés.
+- **Weighted A\* ($W > 1$) — interpolation bornée.** À mesure que $W$ croît, le nombre
+  de nœuds **chute**, tandis que le coût reste **$\leq W \cdot \text{optimal}$**
+  (colonne « garantie » = OUI tant que l'heuristique reste admissible).
+
+C'est tout l'intérêt : **échanger une garantie d'optimalité contre un gain de vitesse,
+de façon paramétrable**.
+",,,,,,,,ac381e0745468c9d,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,c4f966c4,markdown,fr,16a8322963b80682,"## 5. Pourquoi ça marche : la garantie de sous-optimalité bornée
+
+La garantie $\text{coût} \leq W \cdot \text{optimal}$ repose sur une idée simple. En
+gonflant l'heuristique par $W$, on rend la recherche **plus confiante** dans l'estimation
+$h$ : elle « fonce » vers le but en s'autorisant à développer moins de nœuds latéraux.
+Le prix de cette confiance est qu'on peut manquer le chemin optimal — mais le facteur
+d'inflation $W$ **borne exactement** de combien on peut dévier.
+
+Formellement (Pohl 1970) : si $h$ est admissible ($h \leq h^*$), alors la solution
+retournée par Weighted A\* a un coût $\leq W \cdot C^*$, où $C^*$ est le coût optimal.
+",,,,,,,,16a8322963b80682,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,c741c424,markdown,fr,d4f8d4dd39a68c80,"## 6. Ponts avec le reste de la série
+
+| Direction | Lien | Relation |
+|-----------|------|----------|
+| ↔ Search-12 | [Search-12 — Pattern Databases](Search-12-PatternDatabases.ipynb) | Autre réponse à « l'optimum est dur » : *renforcer* l'heuristique (rester optimal) vs ici *relâcher* l'optimalité |
+| ↔ Search-13 | [Search-13 — LDS](Search-13-LimitedDiscrepancySearch.ipynb) | LDS *borne les écarts* à l'heuristique (rester optimal) ; Weighted A\* *relâche* l'optimalité — même constat, stratégies opposées |
+| ↔ Search-13 (C#) | [Search-13 — LDS (C#)](Search-13-LimitedDiscrepancySearch-Csharp.ipynb) | Jumeau .NET de LDS — même triptyque en C# |
+| ← Fondations | [Search-3 — Informed](../Part1-Foundations/Search-3-Informed.ipynb) | A\*, heuristiques admissibles — Weighted A\* en est la généralisation pondérée |
+| ↔ Python | [Search-14 — Weighted A\* (Python)](Search-14-WeightedAstar.ipynb) | Même algorithme en Python (jumeau) |
+
+> **Référence :** Pohl, I. (1970). *Heuristic Search Viewed as Path Finding in a Graph.*
+> Artificial Intelligence 1(3-4). Origine de Weighted A\* et de la garantie $W$-bornée.
+",,,,,,,,d4f8d4dd39a68c80,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,01136e51,markdown,fr,20885cd30856fcc9,"## 7. Exercices
+
+### Exercice 1 : courbe de Pareto coût/nœuds
+Tracez (ou affichez en ASCII) la **frontière de Pareto** : en abscisse le nombre de nœuds
+développés, en ordonnée le ratio coût/optimal, un point par valeur de $W \in [1, 12]$.
+Identifiez le « genou » (knee) — la valeur de $W$ au-delà de laquelle gagner encore en
+vitesse coûte cher en qualité.
+- **Indice :** le genou est le point d'inflexion : avant, on gagne beaucoup de nœuds pour
+  peu de qualité perdue ; après, le ratio coûte/optimal grimpe vite. Reprenez le balayage
+  avec un pas plus fin (ex. `[1, 1.2, 1.5, 2, 2.5, 3, 4, 6, 9, 12]`).
+",,,,,,,,20885cd30856fcc9,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,44043fac,code,fr,8bbc1aca48ece398,"// Exercice 1 à compléter
+// Conseil : reprenez le balayage ci-dessus (weights plus fin), collectez (nodes, ratio)
+// pour chaque W, et repérez le ""genou"" de la frontière de Pareto.
+Console.WriteLine(""Exercice 1 à compléter"");
+",,,,,,,,8bbc1aca48ece398,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,1ef7ebed,markdown,fr,65bf25f6e9f90643,"### Exercice 2 : sensibilité à l'heuristique (admissible vs inadmissible)
+Refaitez le balayage de $W$ avec une heuristique **inadmissible** (par ex. Manhattan
+**sans** tenir compte du coût minimal : $h$ sur-estimé d'un facteur 2 dès le départ).
+Vérifiez que la **garantie** $\text{coût} \leq W \cdot \text{optimal}$ est alors **violée**.
+- **Indice :** la garantie suppose $h$ admissible. Avec `h_bad = 2 * Manhattan`, le
+  « W effectif » devient $W \cdot 2$, et la borne théorique n'est plus tenue.
+",,,,,,,,65bf25f6e9f90643,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,f6af45af,code,fr,c8d43358048d1766,"// Exercice 2 à compléter
+// Conseil : définissez HBad(s) = 2*Manhattan(s, goal) (inadmissible), relancez le balayage,
+// et cherchez un W où cost > W*optimal (garantie violée).
+Console.WriteLine(""Exercice 2 à compléter"");
+",,,,,,,,c8d43358048d1766,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,433f3010,markdown,fr,3eef9ed0c23822b0,"### Exercice 3 : Anytime Repairing A\* (ARA\*)
+Implémentez une version **anytime** : démarrez avec un grand $W_0$ (solution rapide),
+puis **décrémentez** $W$ par petits pas en **réutilisant** la liste OPEN déjà construite,
+jusqu'à $W=1$ (solution optimale). À chaque étape, affichez le coût courant et le temps
+écoulé — l'utilisateur peut s'arrêter quand il est satisfait.
+- **Indice :** l'idée de Likhachev et al. (2003) est que la OPEN d'un $W$ donné contient
+  déjà la quasi-totalité du travail pour le $W$ suivant. Bouclez $W = W_0, W_0 - \delta, \dots, 1$.
+",,,,,,,,3eef9ed0c23822b0,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,88e0bda4,code,fr,d8d9cc90193c8eb2,"// Exercice 3 à compléter
+// Conseil : bouclez W = W0, W0-step, ..., 1. À chaque W, re-triez l'OPEN existante par la
+// nouvelle clé f=g+W*h (ou réinsérez), développez jusqu'au but, affichez (W, coût, t).
+Console.WriteLine(""Exercice 3 à compléter"");
+",,,,,,,,d8d9cc90193c8eb2,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,080af778,markdown,fr,d52dc870a88440e2,"## 8. Conclusion
+
+**Weighted A\*** referme le triptyque de la Partie 3. Face à un problème où A\* optimal
+explore trop de nœuds, on dispose de trois leviers : **renforcer** l'heuristique
+([Search-12](Search-12-PatternDatabases.ipynb), PDB), **borner les écarts** à l'heuristique
+([Search-13](Search-13-LimitedDiscrepancySearch.ipynb), LDS) — qui préservent l'optimalité —
+ou, sujet de ce notebook, **relâcher l'optimalité de façon contrôlée** (Weighted A\*) :
+accepter une solution au plus $W$ fois l'optimal pour explorer bien moins de nœuds.
+
+### Comparaison C# vs Python (jumeau)
+
+Le port C# met en évidence :
+- le **`PriorityQueue<TElement, TPriority>`** natif .NET 6+ vs le module `heapq` de Python
+  (min-heap dans les deux cas, sémantique identique) ;
+- les **tuples value types** `(int, int)` comme clés de `Dictionary` (égalité/hachage
+  automatiques via `ValueTuple`) vs les tuples Python ;
+- le **typage statique** des signatures (`Func<(int,int),(int,int),int>` pour l'heuristique)
+  vs la simplesse dynamique de Python.
+
+L'algorithmique, elle, est **identique** — Weighted A\* est language-agnostic. Voir le
+[jumeau Python](Search-14-WeightedAstar.ipynb) pour la version dynamique (et des chiffres
+exacts sur un terrain Mersenne-Twister).
+
+> **Référence :** Pohl, I. (1970). *Heuristic Search Viewed as Path Finding in a Graph.*
+> Artificial Intelligence 1(3-4).
+",,,,,,,,d52dc870a88440e2,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,e2ad45f9,markdown,fr,55e5a772605be3f5,"# Search-14 — Weighted A\* : recherche à sous-optimalité bornée
+
+> **Partie 3 — Recherche avancée.** Ce notebook complète le **triptyque** de la
+> Partie 3 sur la question « l'heuristique ne suffit pas à résoudre à l'optimum ».
+> Là où [Search-12](Search-12-PatternDatabases.ipynb) *renforce* l'heuristique (PDB)
+> et [Search-13](Search-13-LimitedDiscrepancySearch.ipynb) *borne les écarts* (LDS) —
+> toutes deux **en gardant l'optimalité** — voici la troisième réponse : **renoncer
+> (partiellement) à l'optimalité pour gagner en vitesse**, mais de façon *contrôlée*.
+
+## 1. L'idée : payer l'optimalité pour acheter de la vitesse
+
+[Search-3 (Informed)](../Part1-Foundations/Search-3-Informed.ipynb) a posé le
+compromis fondateur : **A\*** (admissible) est optimal mais peut explorer beaucoup
+de nœuds ; **Greedy** (sans `g`) est rapide mais peut renvoyer une solution
+carrément mauvaise. Entre l'optimalité chère et la gloutonnerie aveugle, existe-t-il
+un **juste milieu garanti** ?
+
+**Weighted A\*** (Pohl, 1970) répond oui. On garde la structure d'A\*, mais on
+**inflate l'heuristique** par un facteur $W \geq 1$ :
+
+$$f(n) = g(n) + W \cdot h(n)$$
+
+- $W = 1$ : on retrouve A\* (optimal, mais explore beaucoup).
+- $W \to \infty$ : on tend vers Greedy (rapide, mais sous-optimal sans garantie).
+- $1 < W < \infty$ : **Weighted A\***, qui explore bien moins de nœuds qu'A\* tout en
+  garantissant une solution de coût **au pire $W$ fois l'optimal** (sous-optimalité
+  bornée par $W$).
+
+C'est le compromis « bon citizen » : on sait exactement jusqu'où on dérive de
+l'optimum, et on l'échange contre un gain de nœuds qui peut être de plusieurs ordres
+de grandeur.
+",,,,,,,,55e5a772605be3f5,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,7a448daa,markdown,fr,8dd16c3749e532ab,"## 2. Le banc d'essai : cheminement sur un terrain pondéré
+
+Pour mettre Weighted A\* en valeur, il faut un problème où **A\* explore beaucoup**
+(où l'optimalité coûte de nombreux nœuds) et où le compromis vitesse/qualité est net :
+un terrain pondéré (routes rapides, herbe lente, marécages quasi-impraticables, murs). Sur un graphe à coût uniforme, A\*
+dégenère en BFS et Weighted A\* n'apporte rien (cf la leçon « problème dégénéré ») —
+il faut des **coûts contrastés** pour que l'heuristique et l'inflation discriminent.
+",,,,,,,,8dd16c3749e532ab,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,32a831be,code,fr,545f474e69298068,"import heapq
+import random
+from itertools import product
+
+# --- Terrain pondere : chaque case a un cout de traversee ---
+# 1 = route (rapide), 3 = herbe, 8 = marécage, '#' = mur infranchissable.
+# Coûts CONTRASTES -> A* explore beaucoup, Greedy se trompe (non-dégenéré).
+TERRAIN_COST = {""."": 1, ""g"": 3, ""s"": 8, ""#"": None}   # s = swamp, g = grass
+
+def make_grid(rows, cols, seed=42):
+    rng = random.Random(seed)
+    grid = {}
+    for r, c in product(range(rows), range(cols)):
+        x = rng.random()
+        if x < 0.15:
+            grid[(r, c)] = ""#""          # mur (15%)
+        elif x < 0.45:
+            grid[(r, c)] = ""g""          # herbe (30%)
+        elif x < 0.60:
+            grid[(r, c)] = ""s""          # marécage (15%)
+        else:
+            grid[(r, c)] = "".""          # route (40%)
+    # garantir départ + arrivée franchissables
+    start, goal = (0, 0), (rows - 1, cols - 1)
+    grid[start], grid[goal] = ""."", "".""
+    return grid
+
+ROWS, COLS = 25, 25
+grid = make_grid(ROWS, COLS, seed=42)
+start, goal = (0, 0), (ROWS - 1, COLS - 1)
+
+def step_cost(grid, cur, nxt):
+    t = grid.get(nxt, ""#"")
+    return TERRAIN_COST.get(t)          # None si mur
+
+def neighbors(grid, s):
+    r, c = s
+    out = []
+    for dr, dc in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+        n = (r + dr, c + dc)
+        if 0 <= n[0] < ROWS and 0 <= n[1] < COLS and step_cost(grid, s, n) is not None:
+            out.append(n)
+    return out
+
+# Heuristique : Manhattan (admissible : min cost = 1, distance >= Manhattan*1).
+def manhattan(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+n_walls = sum(1 for v in grid.values() if v == ""#"")
+print(f""Grille {ROWS}x{COLS} : {n_walls} murs ({100*n_walls/(ROWS*COLS):.0f}%), ""
+      f""départ {start}, but {goal}."")
+print(""Coûts contrastés (route=1, herbe=3, marécage=8) -> A* va explorer, ""
+      ""Greedy va se tromper : terrain non-dégénéré."")
+",,,,,,,,545f474e69298068,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,d6cf6e5e,markdown,fr,e72a7ca522a4e6e3,"## 3. A\*, Greedy, et Weighted A\* : un seul algorithme paramétré
+
+Les algorithmes se ramènent à **un même best-first search** sur $f(n) = g(n) + W \cdot h(n)$ :
+le **poids $W$ de l'heuristique** est le seul paramètre. $W=1$ → A\* (optimal) ; $W>1$ →
+Weighted A\* (sous-optimalité **bornée par $W$**) ; $W \to \infty$ → Greedy (l'heuristique
+domine, $g$ devient négligeable). À noter : $W=0$ donne $f=g$, c'est-à-dire **Dijkstra/UCS**
+(optimal mais aveugle à l'heuristique) — pas Greedy ; le vrai Greedy ($f=h$, $g$ ignoré) est
+traité à part comme pôle non borné. On instrumente le **nombre de nœuds développés** (coût
+de la recherche) et le **coût de la solution trouvée** (sa qualité).
+",,,,,,,,e72a7ca522a4e6e3,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,aa008f41,code,fr,f356f0e4895a65a3,"def best_first(grid, start, goal, W, h=manhattan):
+    # f(n) = g(n) + W*h(n). W=1 -> A* ; W>1 -> Weighted A* (borne W).
+    g = {start: 0}
+    parent = {start: None}
+    open_h = [(W * h(start, goal), start)]      # file de priorité sur f
+    developed = 0
+    while open_h:
+        _, cur = heapq.heappop(open_h)
+        developed += 1
+        if cur == goal:
+            # reconstruire le chemin
+            path = []
+            while cur is not None:
+                path.append(cur)
+                cur = parent[cur]
+            return list(reversed(path)), g[goal], developed
+        for nxt in neighbors(grid, cur):
+            nc = g[cur] + step_cost(grid, cur, nxt)
+            if nxt not in g or nc < g[nxt]:
+                g[nxt] = nc
+                parent[nxt] = cur
+                heapq.heappush(open_h, (nc + W * h(nxt, goal), nxt))
+    return None, float(""inf""), developed     # pas de chemin
+
+# Vrai Greedy best-first (f = h uniquement, g ignore) : le pole NON BORNE.
+# On garde g pour reconstruire le chemin et mesurer son cout reel.
+def true_greedy(grid, start, goal, h=manhattan):
+    g = {start: 0}; parent = {start: None}
+    open_h = [(h(start, goal), start)]
+    developed = 0; seen = set()
+    while open_h:
+        _, cur = heapq.heappop(open_h); developed += 1
+        if cur in seen: continue
+        seen.add(cur)
+        if cur == goal:
+            path = []
+            while cur is not None: path.append(cur); cur = parent[cur]
+            return list(reversed(path)), g[goal], developed
+        for nxt in neighbors(grid, cur):
+            nc = g[cur] + step_cost(grid, cur, nxt)
+            if nxt not in g or nc < g[nxt]:
+                g[nxt] = nc; parent[nxt] = cur
+                heapq.heappush(open_h, (h(nxt, goal), nxt))   # f = h seulement
+    return None, float(""inf""), developed
+
+# Repères : A* (W=1) = référence optimale ; Greedy (f=h) = pôle rapide non borné.
+astar_path, astar_cost, astar_nodes = best_first(grid, start, goal, W=1)
+greedy_path, greedy_cost, greedy_nodes = true_greedy(grid, start, goal)
+print(f""A*     (W=1, optimal)   : coût = {astar_cost:3d} | nœuds développés = {astar_nodes}"")
+print(f""Greedy (f=h, non borné) : coût = {greedy_cost:3d} | nœuds développés = {greedy_nodes}""
+      f""  (ratio = {greedy_cost/astar_cost:.2f}× optimal, AUCUNE borne)"")
+optimal = astar_cost   # A* admissible -> référence d'optimalité
+print(f""\nRéférence d'optimalité (A* admissible) : {optimal}."")
+",,,,,,,,f356f0e4895a65a3,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,3e57df18,markdown,fr,d2e698f3ca97801f,"## 4. Le balayage de $W$ : la frontière coût/nœuds
+
+Faisons varier $W$ de 1 (A\* optimal) à de grandes valeurs (proche Greedy). À chaque
+$W$, on mesure **le coût de la solution** et **le nombre de nœuds développés**. La
+promesse de Weighted A\* est double, et on la vérifie honnêtement :
+
+1. **Vitesse** — à mesure que $W$ croît, le nombre de nœuds **chute**.
+2. **Garantie** — le coût de la solution reste **$\leq W \cdot \text{optimal}$** (Pohl 1970).
+",,,,,,,,d2e698f3ca97801f,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,02135c13,code,fr,f100098062819728,"# Balayage de W >= 1 (le régime Weighted A*) : A* (W=1) -> de plus en plus ""confiant"".
+# Greedy (f=h, pôle non borné) a déjà été mesuré ci-dessus ; ici on explore la BORNE W.
+weights = [1.0, 1.5, 2.0, 3.0, 5.0, 8.0, 12.0]
+print(f""{'W':>5} | {'coût':>5} | {'ratio/opt':>9} | {'borne W':>7} | {'nœuds':>6} | {'% A*':>6} | garantie?"")
+print(""-"" * 66)
+rows = []
+for W in weights:
+    path, cost, nodes = best_first(grid, start, goal, W=W)
+    ratio = cost / optimal
+    pct = 100.0 * nodes / astar_nodes
+    garantit = ""OUI"" if cost <= W * optimal + 1e-9 else ""NON""
+    print(f""{W:5.1f} | {cost:5d} | {ratio:9.3f} | {W:7.2f} | {nodes:6d} | {pct:5.1f}% | {garantit}"")
+    rows.append((W, cost, ratio, nodes, pct))
+",,,,,,,,f100098062819728,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,08771ac8,code,fr,4578e6d43b5d7bb6,"# Visualisation ASCII : le chemin trouvé par A* (W=1) vs Weighted A* (W=3) vs Greedy (W=0).
+def render(grid, path):
+    sym = {""."": ""."", ""g"": "","", ""s"": ""~"", ""#"": ""#""}
+    cells_map = {s: sym[t] for s, t in grid.items()}
+    for s in path:
+        cells_map[s] = ""@""        # le chemin
+    cells_map[start] = ""S""; cells_map[goal] = ""G""
+    lines = []
+    for r in range(ROWS):
+        lines.append("""".join(cells_map[(r, c)] for c in range(COLS)))
+    return ""\n"".join(lines)
+
+wa3_path, _, _ = best_first(grid, start, goal, W=3.0)
+print(""Légende : S départ · G but · @ chemin · . route · , herbe · ~ marécage · # mur\n"")
+print(""=== A* (W=1, optimal) ==="")
+print(render(grid, astar_path))
+print(""\n=== Weighted A* (W=3) ==="")
+print(render(grid, wa3_path))
+",,,,,,,,4578e6d43b5d7bb6,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,1cc5b9ec,markdown,fr,52af29add4f273ef,"### Lecture du résultat
+
+Les repères et le balayage encadrent le **compromis structurel** de Weighted A\* par ses
+deux pôles, puis l'interpolation bornée entre les deux :
+
+- **Greedy (f=h) — pôle rapide, NON borné.** Seulement **60 nœuds**, mais un coût de
+  **143 (1,83× l'optimal)**. Greedy « fonce » vers le but : parfois il tombe juste, parfois
+  (comme ici) très mal — on n'a **aucune garantie** sur sa dérive, qui peut être arbitraire.
+- **A\* (W=1) — pôle optimal, cher.** Coût **78 (optimal garanti)**, mais **472 nœuds** :
+  c'est le prix de l'optimalité stricte, A\* explore largement autour du chemin pour prouver
+  qu'aucun meilleur n'existe.
+- **Weighted A\* (1 < W) — l'interpolation bornée.** C'est tout l'intérêt : à $W=2$, on
+  retrouve **le coût optimal (78)** en ne développant que **80 nœuds (17 % d'A\*)** — un gain
+  quasi gratuit. À $W=3$, **57 nœuds (12 %)** pour un coût **89 (1,14× l'optimal)**. La
+  colonne « garantie » confirme partout : $\text{coût} \leq W \cdot \text{optimal}$.
+
+La **frontière de Pareto** se lit ainsi : choisir $W$, c'est choisir un point sur la courbe
+coût/nœuds. Un $W$ modeste ($2$ à $3$) capture l'essentiel du gain de vitesse pour une dérive
+qualité négligeable — tandis que Greedy, lui, abandonne toute borne sur la sienne.
+
+La carte ASCII montre l'effet visuel : A\* ($W=1$) contourne méthodiquement les zones coûteuses
+(chemin optimal), tandis que Weighted A\* ($W=3$) « coupe » à travers des cases un peu plus
+chères pour aller plus droit — un chemin légèrement plus cher (89 vs 78), trouvé en développant
+**8 fois moins** de nœuds (57 vs 472).
+",,,,,,,,52af29add4f273ef,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,18929ec5,markdown,fr,4f83455a782b35e2,"## 5. Pourquoi ça marche : la garantie de sous-optimalité bornée
+
+La garantie $\text{coût} \leq W \cdot \text{optimal}$ repose sur une idée simple. En
+gonflant l'heuristique par $W$, on rend la recherche **plus confiante** dans l'estimation
+$h : elle « fonce » vers le but en s'autorisant à développer moins de nœuds latéraux.
+Le prix de cette confiance est qu'on peut manquer le chemin optimal — mais le facteur
+d'inflation $W$ **borne exactement** de combien on peut dévier.
+
+Formellement (Pohl 1970) : si $h$ est **admissible** ($h \leq h^*$, vrai coût), alors la
+solution de Weighted A\* avec facteur $W$ a un coût au plus $W \cdot C^*$, où $C^*$ est le
+coût optimal. La preuve suit la même structure que l'optimalité d'A\* : au moment où le
+but est développé, son $f$-valeur est bornée par $W \cdot C^*$ via les nœuds sur le chemin
+optimal, dont l'$f$ gonflé reste sous ce seuil.
+
+Conséquences pratiques :
+- **Choisir $W$, c'est choisir le budget d'erreur acceptable.** Si on tolère une solution
+  10 % trop chère, $W = 1{,}1$ suffit — souvent avec un gain de nœuds déjà notable.
+- **L'heuristique doit rester admissible.** Gonfler une heuristique *déjà inadmissible*
+  n'offre plus de garantie — Weighted A\* suppose un $h$ honnête qu'on choisit de
+  sur-pondérer.
+- **Anytime** — on peut démarrer avec un grand $W$ (solution rapide, grossière) puis le
+  réduire progressivement en réutilisant la recherche, pour raffiner vers l'optimal
+  (Anytime Repairing A\*, Likhachev 2003 — exercice 3).
+",,,,,,,,4f83455a782b35e2,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,c1edf769,markdown,fr,107b0b0719f2f702,"## 6. Ponts avec le reste de la série
+
+| Direction | Lien | Relation |
+|-----------|------|----------|
+| ↔ Search-12 | [Search-12 — Pattern Databases](Search-12-PatternDatabases.ipynb) | Autre réponse à « l'optimum est dur » : *renforcer* l'heuristique (rester optimal) vs ici *relâcher* l'optimalité |
+| ↔ Search-13 | [Search-13 — Limited Discrepancy Search](Search-13-LimitedDiscrepancySearch.ipynb) | LDS *borne les écarts* à l'heuristique (rester optimal) ; Weighted A\* *relâche* l'optimalité — deux axes orthogonaux |
+| ← Partie 1 | [Search-3 — Informed](../Part1-Foundations/Search-3-Informed.ipynb) | A\*, admissibilité, Greedy : les deux extrémités ($W=1$ et $W=0$) que Weighted A\* interpole |
+| → Partie 4 | [Métaheuristiques](../Part4-Metaheuristics/README.md) | Weighted A\* garde une *borne* sur la qualité ; les métaheuristiques l'abandonnent totalement |
+
+**Triptyque de la Partie 3** — trois réponses à « l'heuristique ne suffit pas à résoudre à
+l'optimum » : **renforcer** l'heuristique (Search-12, PDB), **borner les écarts**
+(Search-13, LDS), **relâcher** l'optimalité (Search-14, Weighted A\*).
+
+**Référence fondatrice** : Pohl, I. (1970) — *Heuristic Search Viewed as Path Finding in a
+Graph*, Artificial Intelligence 1(3-4). Première formalisation de Weighted A\* et de sa
+garantie de sous-optimalité bornée par le facteur d'inflation $W$.
+",,,,,,,,107b0b0719f2f702,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,35ec125a,markdown,fr,94ce6593a1bc077c,"## 7. Exercices
+
+### Exercice 1 : courbe de Pareto coût/nœuds
+Tracez (ou affichez en ASCII) la **frontière de Pareto** : en abscisse le nombre de nœuds
+développés, en ordonnée le ratio coût/optimal, un point par valeur de $W \in [1, 12]$.
+Identifiez le « genou » (knee) — la valeur de $W$ au-delà de laquelle gagner encore en
+vitesse coûte cher en qualité.
+- **Indice :** le genou est typiquement autour de $W \in [2, 3]$. Justifiez pourquoi
+  l'utilité marginale d'augmenter $W$ décroît (les nœuds économisés s'amenuisent, la
+  dérive quality s'accumule).
+",,,,,,,,94ce6593a1bc077c,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,f9a035e8,code,fr,3e6a49bc070d1dab,"# Exercice 1 a completer
+# Conseil : reprenez le balayage ci-dessus (weights plus fin, ex. [1, 1.2, 1.5, 2, 2.5, 3, 4, 6, 9, 12]),
+# collectez (nodes, ratio) pour chaque W, et repérez le ""genou"" de la frontière de Pareto.
+print(""Exercice 1 a completer"")
+",,,,,,,,3e6a49bc070d1dab,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,574ea9f5,markdown,fr,a31739a783a91e7a,"### Exercice 2 : sensibilité à l'heuristique (admissible vs inadmissible)
+Refaitez le balayage de $W$ avec une heuristique **inadmissible** (par ex. Manhattan
+**sans** tenir compte du coût minimal : ou $h$ sur-estimé d'un facteur 2 dès le départ).
+Vérifiez que la **garantie** $\text{coût} \leq W \cdot \text{optimal}$ est alors **violée**.
+- **Indice :** la garantie suppose $h$ admissible. Avec un $h$ déjà inadmissible, l'inflation
+  par $W$ aggrave la triche et la borne n'a plus de raison de tenir. C'est pourquoi Weighted
+  A\* part toujours d'une heuristique *honnête*.
+",,,,,,,,a31739a783a91e7a,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,10ee8db4,code,fr,37d53665b2c6b597,"# Exercice 2 a completer
+# Conseil : définissez h_bad(s) = 2*manhattan(s, goal) (inadmissible), relancez le balayage,
+# et cherchez un W où cost > W*optimal (garantie violée).
+print(""Exercice 2 a completer"")
+",,,,,,,,37d53665b2c6b597,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,a6bdf4a5,markdown,fr,1e114157fe9fccea,"### Exercice 3 : Anytime Repairing A\* (ARA\*)
+Implémentez une version **anytime** : démarrez avec un grand $W_0$ (solution rapide),
+puis **décrémentez** $W$ par petits pas en **réutilisant** la liste OPEN déjà construite,
+jusqu'à $W=1$ (solution optimale). À chaque étape, affichez le coût courant et le temps
+écoulé — l'utilisateur peut s'arrêter quand il est satisfait.
+- **Indice :** ARA\* (Likhachev, Gordon & Thrun, 2003) réutilise l'OPEN en mettant juste à
+  jour les clés $f = g + W \cdot h$ quand $W$ change, sans tout recalculer. L'intérêt :
+  une solution **immédiate** qui s'améliore avec le budget temps. C'est l'usage typique de
+  Weighted A\* en robotique (planification de mouvement sous contrainte temps-réel).
+",,,,,,,,1e114157fe9fccea,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,613a2af1,code,fr,78dd83d4965e49e4,"# Exercice 3 a completer
+# Conseil : boucle W = W0, W0-step, ... 1. À chaque W, re-triez l'OPEN existante par la
+# nouvelle clé f=g+W*h (ou réinsérez), développez jusqu'au but, affichez (W, coût, t).
+print(""Exercice 3 a completer"")
+",,,,,,,,78dd83d4965e49e4,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,9e40bafd,markdown,fr,3eba37985af2b8f0,"## 8. Conclusion
+
+**Weighted A\*** referme le triptyque de la Partie 3. Face à un problème où A\* optimal
+explore trop de nœuds, on dispose de trois leviers : **renforcer** l'heuristique
+([Search-12](Search-12-PatternDatabases.ipynb), PDB), **borner les écarts** à l'heuristique
+([Search-13](Search-13-LimitedDiscrepancySearch.ipynb), LDS) — qui préservent l'optimalité —
+ou, sujet de ce notebook, **relâcher l'optimalité de façon contrôlée** (Weighted A\*). Ce
+troisième levier est le plus radical et souvent le plus efficace en pratique : on accepte
+une solution au plus $W$ fois l'optimal, et on gagne en échange un facteur de nœuds qui peut
+être énorme.
+
+La leçon générale est un **compromis explicite qualité/vitesse** : contrairement à Greedy
+(dérive non bornée) ou aux métaheuristiques de la [Partie 4](../Part4-Metaheuristics/README.md)
+(aucune garantie), Weighted A\* offre une **borne de qualité paramétrable**. Choisir $W$,
+c'est choisir son budget d'erreur — un compromis honnête, quantitatif, et qui se raffine en
+*anytime* (ARA\*) quand on veut se rapprocher de l'optimal avec le temps restant.
+
+> **Au-delà** : Weighted A\* est la brique de base de la planification sous contrainte
+> temps-réel (robotique, jeux vidéo) et se combine aux PDB (heuristique forte ET relâchée)
+> et au branch-and-bound borné. C'est le point où la série bascule de « garantir l'optimal »
+> à « garantir une qualité calculable » — justo avant que la Partie 4 n'abandonne toute
+> garantie.
+",,,,,,,,3eba37985af2b8f0,,,,,,,
