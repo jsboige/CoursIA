@@ -32,6 +32,12 @@ abbrev Pref (α : Type*) [Fintype α] := Lottery α → Lottery α → Prop
 `p ≽ q` mais non `q ≽ p`. -/
 def StrictPref (P : Pref α) (p q : Lottery α) : Prop := P p q ∧ ¬ P q p
 
+/-- Indifférence dérivée d'une préférence faible : `p ~ q` signifie `p ≽ q`
+**et** `q ≽ p` (chaque loterie est faiblement préférée à l'autre). C'est la
+jumelle symétrique de `StrictPref` : ensemble elles décomposent une préférence
+complète en son squelette strict et sa relation d'indifférence. -/
+def Indiff (P : Pref α) (p q : Lottery α) : Prop := P p q ∧ P q p
+
 /-- **Complétude** : deux loteries quelconques sont comparables dans au moins
 une direction. -/
 def IsComplete (P : Pref α) : Prop :=
