@@ -53,14 +53,14 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 3 | [Infer-3-Factor-Graphs](Infer-3-Factor-Graphs.ipynb) | 45 min | Inférence discrète, Monty Hall |
 | 4 | [Infer-4-Bayesian-Networks](Infer-4-Bayesian-Networks.ipynb) | 55 min | CPT, D-séparation, causalité |
 | 5 | [Infer-5-Skills-IRT](Infer-5-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many |
-| 6 | [Infer-6-TrueSkill](Infer-6-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes |
+| 6 | [Infer-6-Debugging](Infer-6-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
 | 7 | [Infer-7-Classification](Infer-7-Classification.ipynb) | 50 min | BPM, régression logistique, A/B |
-| 8 | [Infer-8-Model-Selection](Infer-8-Model-Selection.ipynb) | 45 min | Evidence, Bayes factors, ARD |
+| 8 | [Infer-8-TrueSkill](Infer-8-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes |
 | 9 | [Infer-9-Topic-Models](Infer-9-Topic-Models.ipynb) | 60 min | LDA, documents-topics-mots |
-| 10 | [Infer-10-Crowdsourcing](Infer-10-Crowdsourcing.ipynb) | 55 min | Workers, communautés, agrégation |
+| 10 | [Infer-10-Model-Selection](Infer-10-Model-Selection.ipynb) | 45 min | Evidence, Bayes factors, ARD |
 | 11 | [Infer-11-Sequences](Infer-11-Sequences.ipynb) | 65 min | HMM, séries temporelles, motifs |
 | 12 | [Infer-12-Modeles-Hierarchiques](Infer-12-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
-| 13 | [Infer-13-Debugging](Infer-13-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
+| 13 | [Infer-13-Crowdsourcing](Infer-13-Crowdsourcing.ipynb) | 55 min | Workers, communautés, agrégation |
 | 14 | [Infer-14-Causal-Inference](Infer-14-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
 | 15 | [Infer-15-Recommenders](Infer-15-Recommenders.ipynb) | 60 min | Factorisation, Click Model |
 | 16 | [Infer-16-Sparse-Gaussian-Process](Infer-16-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens, noyau RBF, classification non-linéaire, sparse GP |
@@ -263,7 +263,7 @@ Les notebooks 4-6 couvrent les modèles bayésiens classiques : réseaux, compé
 
 ---
 
-### Infer-6 : TrueSkill
+### Infer-8 : TrueSkill
 
 **Durée** : 50 min | **Prérequis** : Notebook 2
 
@@ -331,7 +331,7 @@ Les notebooks 7-8 couvrent la classification bayésienne et la sélection de mod
 
 ---
 
-### Infer-8 : Sélection de Modèles
+### Infer-10 : Sélection de Modèles
 
 **Durée** : 50 min | **Prérequis** : Notebook 7
 
@@ -399,7 +399,7 @@ Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, séqu
 
 ---
 
-### Infer-10 : Crowdsourcing
+### Infer-13 : Crowdsourcing
 
 **Durée** : 55 min | **Prérequis** : Notebook 4
 
@@ -501,7 +501,7 @@ Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, séqu
 
 ## Référence (Notebook 13)
 
-### Infer-13 : Debugging et Bonnes Pratiques
+### Infer-6 : Debugging et Bonnes Pratiques
 
 **Durée** : 60 min | **Prérequis** : Tous les notebooks précédents
 
@@ -685,7 +685,7 @@ Le **filtre de Kalman** (Kalman, 1960) est l'analogue à état **continu** du HM
 
 Le **point de rupture** (*change-point*) modélise une série qui suit un régime stable, puis **bascule** une seule fois vers un autre régime à un instant `cp` inconnu. Contrairement au HMM d'[Infer-11](Infer-11-Sequences.ipynb) (état discret récurrent) et au filtre de Kalman d'[Infer-17](Infer-17-Kalman-Filter.ipynb) (état continu récurrent), l'inconnue n'est pas une trajectoire d'états mais **un unique entier** — l'indice de la rupture. L'idiome Infer.NET : un *a priori* `Variable.DiscreteUniform(N)` sur `cp`, une sélection de vraisemblance `Variable.If(block.Index <= cp)` / `IfNot` à l'intérieur d'un `Variable.ForEach` sur la plage temporelle, et le moteur **EP** qui retourne un postérieur **`Discrete`** sur la localisation de la rupture.
 
-**Durée** : 50 min | **Prérequis** : [Infer-11-Sequences](Infer-11-Sequences.ipynb) (`Variable.ForEach`), [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb) (conjugaison), [Infer-8-Model-Selection](Infer-8-Model-Selection.ipynb) (Bayes factors)
+**Durée** : 50 min | **Prérequis** : [Infer-11-Sequences](Infer-11-Sequences.ipynb) (`Variable.ForEach`), [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb) (conjugaison), [Infer-10-Model-Selection](Infer-10-Model-Selection.ipynb) (Bayes factors)
 
 **Objectifs** :
 
@@ -900,7 +900,7 @@ Infer/
 
 ## FAQ / Troubleshooting
 
-Pour un guide complet, voir [Infer-13-Debugging](Infer-13-Debugging.ipynb).
+Pour un guide complet, voir [Infer-6-Debugging](Infer-6-Debugging.ipynb).
 
 | Problème | Solution |
 | --- | --- |
