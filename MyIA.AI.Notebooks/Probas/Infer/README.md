@@ -59,10 +59,10 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 9 | [Infer-9-Topic-Models](Infer-9-Topic-Models.ipynb) | 60 min | LDA, documents-topics-mots |
 | 10 | [Infer-10-Crowdsourcing](Infer-10-Crowdsourcing.ipynb) | 55 min | Workers, communautés, agrégation |
 | 11 | [Infer-11-Sequences](Infer-11-Sequences.ipynb) | 65 min | HMM, séries temporelles, motifs |
-| 12 | [Infer-12-Recommenders](Infer-12-Recommenders.ipynb) | 60 min | Factorisation, Click Model |
+| 12 | [Infer-12-Modeles-Hierarchiques](Infer-12-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
 | 13 | [Infer-13-Debugging](Infer-13-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
 | 14 | [Infer-14-Causal-Inference](Infer-14-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
-| 15 | [Infer-15-Modeles-Hierarchiques](Infer-15-Modeles-Hierarchiques.ipynb) | 50 min | Modèles hiérarchiques, pooling partiel, shrinkage, VariableArray indexé |
+| 15 | [Infer-15-Recommenders](Infer-15-Recommenders.ipynb) | 60 min | Factorisation, Click Model |
 | 16 | [Infer-16-Sparse-Gaussian-Process](Infer-16-Sparse-Gaussian-Process.ipynb) | 55 min | Processus gaussiens, noyau RBF, classification non-linéaire, sparse GP |
 | 17 | [Infer-17-Kalman-Filter](Infer-17-Kalman-Filter.ipynb) | 55 min | Filtre de Kalman, système dynamique linéaire gaussien, conjugaison, EP exacte |
 | 18 | [Infer-18-Change-Point](Infer-18-Change-Point.ipynb) | 50 min | Détection de rupture, DiscreteUniform, ForEach + If/IfNot sur plage, EP, Poisson |
@@ -466,7 +466,7 @@ Les notebooks 9-12 couvrent les modèles avancés : topics, crowdsourcing, séqu
 
 ---
 
-### Infer-12 : Systèmes de Recommandation
+### Infer-15 : Systèmes de Recommandation
 
 **Durée** : 70 min | **Prérequis** : Notebook 7
 
@@ -595,7 +595,7 @@ Cette extraction clarifie les deux fils du corpus Probas : la **modélisation ba
 
 Prolongement naturel de la classification bayésienne : là où [Infer-7](Infer-7-Classification.ipynb) (Bayes Point Machine) trace un **hyperplan**, le processus gaussien place un **prior sur des fonctions** (noyau RBF) et infère une frontière **courbe** et **incertaine**.
 
-**Durée** : 55 min | **Prérequis** : [Infer-7-Classification](Infer-7-Classification.ipynb) (BPM, modèle probit), [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb), [Infer-15-Modeles-Hierarchiques](Infer-15-Modeles-Hierarchiques.ipynb) (prior partagé = plus robuste qu'un prior isolé)
+**Durée** : 55 min | **Prérequis** : [Infer-7-Classification](Infer-7-Classification.ipynb) (BPM, modèle probit), [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb), [Infer-12-Modeles-Hierarchiques](Infer-12-Modeles-Hierarchiques.ipynb) (prior partagé = plus robuste qu'un prior isolé)
 
 **Objectifs** :
 
@@ -623,7 +623,7 @@ Prolongement naturel de la classification bayésienne : là où [Infer-7](Infer-
 
 ## Modèles Hiérarchiques (Notebook 15)
 
-### Infer-15 : Modèles Hiérarchiques Bayésiens
+### Infer-12 : Modèles Hiérarchiques Bayésiens
 
 Cas d'école du **pooling partiel** : quand les données sont **structurées en groupes** (élèves dans des classes, patients dans des hôpitaux, mesures répétées), ni le *complete pooling* (un seul paramètre global qui gomme la variabilité entre groupes) ni le *no pooling* (un paramètre indépendant par groupe qui surajuste les groupes clairsemés) ne sont satisfaisants. La solution bayésienne donne à chaque groupe son propre paramètre `theta[c]`, mais tous tirés d'une **loi de population commune** `(mu, tau)` — les groupes mal informés **rétractent** (*shrinkage*) vers la moyenne globale.
 
@@ -646,9 +646,9 @@ Cas d'école du **pooling partiel** : quand les données sont **structurées en 
 | Indexation | `y[i] ~ Gaussian(theta[classOfI[i]], obsPrec)` | Rattachement observation → groupe |
 | Shrinkage | `theta[c]` ↔ compromis données/moyenne | Plus fort pour les groupes clairsemés |
 
-**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) effleurait le modèle Rats (8 laboratoires) en deux cellules ; Infer-15 en fait un traitement dédié et **démonstratif** — données synthétiques avec **vrais effets connus**, comparaison **no-pool vs partial-pool** mesurée en MSE de récupération. Le gain net (hierarchique bat le no-pooling) et la rétraction visible sur les groupes clairsemés prouvent que le prior de population partagé **emprunte de la force statistique aux voisins** — exactement le paradigme pour lequel Infer.NET (EP analytique sur gaussiennes, `VariableArray` + indexation) est un moteur natif, sans recours au MCMC.
+**Positionnement** : le notebook [Infer-4](Infer-4-Bayesian-Networks.ipynb) effleurait le modèle Rats (8 laboratoires) en deux cellules ; Infer-12 en fait un traitement dédié et **démonstratif** — données synthétiques avec **vrais effets connus**, comparaison **no-pool vs partial-pool** mesurée en MSE de récupération. Le gain net (hierarchique bat le no-pooling) et la rétraction visible sur les groupes clairsemés prouvent que le prior de population partagé **emprunte de la force statistique aux voisins** — exactement le paradigme pour lequel Infer.NET (EP analytique sur gaussiennes, `VariableArray` + indexation) est un moteur natif, sans recours au MCMC.
 
-**Applications** : estimations par établissement/classe, essais multi-centres, mesures répétées par sujet, modèles de recommandation (cf [Infer-12](Infer-12-Recommenders.ipynb)), régressions à coefficients variables par groupe.
+**Applications** : estimations par établissement/classe, essais multi-centres, mesures répétées par sujet, modèles de recommandation (cf [Infer-15](Infer-15-Recommenders.ipynb)), régressions à coefficients variables par groupe.
 
 ---
 

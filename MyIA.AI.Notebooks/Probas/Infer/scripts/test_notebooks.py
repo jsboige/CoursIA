@@ -33,11 +33,11 @@ NOTEBOOKS_CORE = [
     "Infer-9-Topic-Models.ipynb",
     "Infer-10-Crowdsourcing.ipynb",
     "Infer-11-Sequences.ipynb",
-    "Infer-12-Recommenders.ipynb",
+    "Infer-15-Recommenders.ipynb",
     "Infer-13-Debugging.ipynb",
     # Bayesian frontières (gap-closure: anciens 22-25 -> 14-17)
     "Infer-14-Causal-Inference.ipynb",
-    "Infer-15-Modeles-Hierarchiques.ipynb",
+    "Infer-12-Modeles-Hierarchiques.ipynb",
     "Infer-16-Sparse-Gaussian-Process.ipynb",
     "Infer-17-Kalman-Filter.ipynb",
 ]
