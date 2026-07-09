@@ -108,16 +108,19 @@ STUB_PATTERNS = [
     re.compile(r'print\(["\']Exercice[s]? a completer', re.IGNORECASE),
     re.compile(r"^\s*pass\s*$", re.MULTILINE),
     re.compile(r"\breturn\s+None\b"),
-    # TODO / Indice markers. Python/F#/Lean use `#`, C# / .NET Interactive
-    # use `//`. A scaffolded C# exercise (class skeleton + `// TODO etudiant`
-    # + multiple code lines) is a student stub, not a solution: without the
-    # `//` form it escaped the `<= 1 effective code-line` rule and was
-    # silently under-counted (e.g. Search-11-Metaheuristics-Csharp cells
-    # 24-26, each `// Exercice N` + `// TODO etudiant` + partial skeleton).
+    # TODO / Indice markers. Python/F# use `#`, C# / .NET Interactive use
+    # `//`, Lean 4 uses `--`. A scaffolded exercise (skeleton + `<comment> TODO
+    # etudiant` + multiple code lines) is a student stub, not a solution:
+    # without the comment form it escaped the `<= 1 effective code-line` rule
+    # and was silently under-counted (e.g. Search-11-Metaheuristics-Csharp
+    # cells 24-26 `// Exercice N` + `// TODO etudiant` + partial skeleton;
+    # GameTheory Lean series `-- Exercice N :` + `-- TODO etudiant` + prose).
     re.compile(r"#\s*TODO", re.IGNORECASE),
     re.compile(r"//\s*TODO", re.IGNORECASE),
+    re.compile(r"--\s*TODO", re.IGNORECASE),
     re.compile(r"#\s*Indice", re.IGNORECASE),
     re.compile(r"//\s*Indice", re.IGNORECASE),
+    re.compile(r"--\s*Indice", re.IGNORECASE),
     # `$?` accepts both regular (`"..."`) and interpolated (`$"..."`) strings:
     # `Console.WriteLine($"Exercice 2 a completer ...")` is the idiomatic C#
     # interpolated form and was not matched by the quote-only variant.
@@ -200,6 +203,7 @@ def _is_stub_code(source: str) -> bool:
         if ln.strip()
         and not ln.strip().startswith("#")
         and not ln.strip().startswith("//")
+        and not ln.strip().startswith("--")
     ]
     code_lines = [
         ln for ln in lines
@@ -213,19 +217,24 @@ def _code_cell_mentions_exercise(source: str) -> bool:
     """A code cell whose comments name an exercise.
 
     Language-agnostic comment detection: a full-line comment is one whose
-    stripped form starts with ``#`` (Python / F# / Lean) OR ``//`` (C# /
-    .NET Interactive). Inline trailing comments (``code // Exercice``) are
-    intentionally NOT matched -- a stub marker is a full-line comment, not a
-    reference buried after executable code.
+    stripped form starts with ``#`` (Python / F#), ``//`` (C# / .NET
+    Interactive), OR ``--`` (Lean 4). Inline trailing comments
+    (``code // Exercice``) are intentionally NOT matched -- a stub marker is
+    a full-line comment, not a reference buried after executable code.
 
     Historically this only matched ``#``, which made every C# notebook blind
     to ``// Exercice N`` stubs (the .NET family uses ``//``). Agents then
     re-discovered the undercount ad-hoc, notebook by notebook (Probas/Infer,
-    ML.Net). Matching ``//`` here closes that blind-spot at the source.
+    ML.Net). Matching ``//`` here closes that blind-spot at the source, and
+    matching ``--`` does the same for Lean notebooks whose exercise stubs live
+    in ``-- Exercice N : ...`` comments (e.g. GameTheory/02-Lean-SocialChoice
+    ``-- EXERCICE 4/5/6``, GameTheory-2b/4b/8b/15b-Lean series).
     """
     comments = [
         ln for ln in source.split("\n")
-        if ln.strip().startswith("#") or ln.strip().startswith("//")
+        if ln.strip().startswith("#")
+        or ln.strip().startswith("//")
+        or ln.strip().startswith("--")
     ]
     blob = "\n".join(comments)
     return bool(EXERCISE_WORD_RE.search(blob) or EXERCISE_WORD_EN_RE.search(blob))

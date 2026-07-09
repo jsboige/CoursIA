@@ -307,6 +307,39 @@ class TestCodeCellOnlyExercise:
         )
         assert result.exercises[0].detected_by == "code_cell_comment"
 
+    def test_lean_double_dash_comment_exercise_is_counted(self, tmp_path):
+        """Lean 4 uses ``--`` for line comments (not ``#``). A stub code cell
+        whose ``-- Exercice ...`` comment names an exercise with NO preceding
+        markdown header must be counted -- historically the canonical tool was
+        blind to Lean ``--`` stubs (it only matched ``#`` and ``//``), so agents
+        re-discovered the undercount ad-hoc.
+
+        Regression for ``GameTheory/SocialChoice/02-Lean-SocialChoice-Formal``
+        (``-- EXERCICE 4/5/6`` in cells 32-34) and the GameTheory-2b/4b/8b/15b-Lean
+        series (``-- Exercice N :`` stubs): each was silently under-counted, so
+        these notebooks read as sub-threshold despite carrying real exercises.
+        """
+        nb = _write_nb(
+            tmp_path / "lean.ipynb",
+            [
+                _md("# Titre Lean"),
+                # Lean code-cell-only exercise, no markdown header above.
+                # Uppercase EXERCICE exercises the case-insensitive word regex.
+                # The `-- TODO etudiant` marker mirrors the `// TODO etudiant`
+                # idiom the real GameTheory Lean series uses (e.g. SocialChoice/02
+                # cells 32-34).
+                _code(
+                    "-- EXERCICE : verifier le cycle de Condorcet\n"
+                    "-- TODO etudiant : construire un profil cyclique\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "Lean -- Exercice stub (no markdown header) must count"
+        )
+        assert result.exercises[0].detected_by == "code_cell_comment"
+
     def test_csharp_scaffolded_exercise_todo_with_code_is_counted(
         self, tmp_path
     ):
