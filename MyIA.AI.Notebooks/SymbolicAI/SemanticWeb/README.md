@@ -103,45 +103,45 @@ La série propose délibérément deux stacks en parité (.NET ⇄ Python, marat
 
 ---
 
-## Galerie de figures
+## Figures clés de la série
 
-Les figures ci-dessous illustrent la progression pédagogique de la série : du **graphe de connaissances brut** (SW-11) au **pipeline GraphRAG complet** (SW-12) jusqu'au **raisonneur OWL appliquant l'inférence** (SW-13). Chaque PNG est extrait directement d'un output commited d'un notebook (cf. `assets/readme/MANIFEST.md` pour la provenance exacte `notebook + cell + output`).
+Les figures ci-dessous illustrent la progression pédagogique : un **graphe de connaissances interrogé en SPARQL** (SW-11), un **graphe d'entités extraites par LLM + communautés par modularité** (SW-12), puis des **benchmarks de raisonneurs OWL** (SW-13). Chaque PNG est extrait directement d'un output commited d'un notebook (cf. `assets/readme/MANIFEST.md` pour la provenance exacte `notebook + cell + output` et le contenu réel de chaque figure).
 
 ### Graphe de connaissances RDF (SW-11, rdflib)
 
-`SW-11-Python-KnowledgeGraphs.ipynb` construit un graphe RDF à partir d'une ontologie FOAF, puis le visualise via deux layouts distincts (spectral + force-directed). Le graphe illustre les classes, propriétés et instances interconnectées — la brique élémentaire d'un KG opérationnel.
+`SW-11-Python-KnowledgeGraphs.ipynb` construit un graphe RDF (vocabulaire `schema.org`), l'interroge en SPARQL (`UNION` sur `actor` / `genre` / `director`) et visualise le sous-graphe filtré par réalisateur. Les figures montrent deux sous-graphes extraits par requête SPARQL — la brique élémentaire d'un KG opérationnel.
 
-![Graphe RDF SW-11 layout spectral](assets/readme/sw11_kg_c46_o0.png)
+![Sous-graphe RDF filtré par réalisateur (Christopher Nolan) — graphe orienté schema.org Movie](assets/readme/sw11_kg_c46_o0.png)
 
-*Graphe de connaissance RDF généré par SW-11 (rdflib) : classes, propriétés et instances interconnectées après parsing d'une ontologie FOAF.*
+*SW-11 : sous-graphe orienté filtré par SPARQL sur les films de **Christopher Nolan** (cellule 46) — noeuds colorés par type (Film / Personne / Genre), arêtes orientées étiquetées par relation (`director`, `actor`, `genre`).*
 
-![Graphe RDF SW-11 layout force-directed](assets/readme/sw11_kg_c71_o0.png)
+![Sous-graphe RDF filtré par réalisateur (Quentin Tarantino, Exercice 2)](assets/readme/sw11_kg_c71_o0.png)
 
-*Visualisation du même graphe RDF avec un layout différent (force-directed) mettant en évidence les clusters sémantiques.*
+*SW-11 (Exercice 2, cellule 71) : même requête SPARQL ré-aimée sur les films de **Quentin Tarantino** — la taille des noeuds-films est **proportionnelle à la note** (`aggregateRating`), illustrant un enrichissement du graphe de base.*
 
 ### GraphRAG — Retrieval-Augmented Generation ancré sur KG (SW-12)
 
-`SW-12-Python-GraphRAG.ipynb` implémente le pipeline Microsoft GraphRAG : chunking des documents en sous-graphes entity-centric, détection de communautés Leiden, puis synthèse multi-niveau. C'est l'anti-hallucination par excellence : un LLM ancré sur des faits RDF vérifiables.
+`SW-12-Python-GraphRAG.ipynb` implémente le pipeline Microsoft GraphRAG : extraction LLM des entités et relations d'un corpus, construction du graphe de connaissances, puis détection de communautés par modularité pour la synthèse multi-niveau. C'est l'anti-hallucination par excellence : un LLM ancré sur des faits RDF vérifiables.
 
-![Indexation GraphRAG chunking entity-centric](assets/readme/sw12_graphrag_c18_o0.png)
+![Graphe orienté des entités extraites par LLM, noeuds colorés par type et arêtes étiquetées](assets/readme/sw12_graphrag_c18_o0.png)
 
-*Indexation GraphRAG : chunking des documents en sous-graphes entity-centric pour retrieval contextuel (Microsoft GraphRAG).*
+*SW-12 (cellule 18) : **graphe orienté des entités extraites par LLM** (filmographie Nolan) — noeuds colorés par type d'entité (Person / Movie / Organization / Award / Genre / Concept), arêtes orientées étiquetées par la relation extraite.*
 
-![Communautés Leiden sur le graphe](assets/readme/sw12_graphrag_c30_o1.png)
+![Communautés détectées par modularité gloutonne (networkx) sur le graphe non-dirigé](assets/readme/sw12_graphrag_c30_o1.png)
 
-*Communautés Leiden détectées dans le graphe : partition hiérarchique des entités pour synthèse multi-niveau.*
+*SW-12 (cellule 30) : **détection de communautés par modularité gloutonne** (`networkx.algorithms.community.greedy_modularity_communities` sur le graphe non-dirigé) — chaque couleur = une communauté, partition des entités pour la synthèse multi-niveau.*
 
 ### Raisonneurs RDFS/OWL (SW-13, owlrl)
 
-`SW-13-Python-Reasoners.ipynb` applique l'inférence RDFS sur un graphe de démonstration via `owlrl`. Les figures montrent la matérialisation des triples inférés (`subClassOf`, `domain`, `range`, `rdf:type`) — la couche logique qui transforme un graphe déclaratif en connaissances déductibles.
+`SW-13-Python-Reasoners.ipynb` compare plusieurs raisonneurs OWL sur un même graphe via `owlrl`. Les figures ne montrent pas le graphe inféré lui-même mais des **benchmarks quantitatifs** de l'inférence — le coût et le rendement de la couche logique qui transforme un graphe déclaratif en connaissances déductibles.
 
-![Reasoning RDFS - matérialisation](assets/readme/sw13_reasoner_c49_o0.png)
+![Bar chart : temps d'exécution des raisonneurs OWL](assets/readme/sw13_reasoner_c49_o0.png)
 
-*Reasoning RDFS owlrl : propagation des triples inférés (subClassOf, domain, range) sur un graphe de démonstration.*
+*SW-13 (cellule 49) : **diagramme en barres des temps d'exécution** des raisonneurs OWL (Y = secondes, un raisonneur par barre) — benchmark comparatif du coût de calcul de l'inférence.*
 
-![Comparaison avant/après raisonnement](assets/readme/sw13_reasoner_c52_o0.png)
+![Bar chart : nombre de triples inférés par raisonneur (profil OWL 2 RL)](assets/readme/sw13_reasoner_c52_o0.png)
 
-*Comparaison avant/après raisonnement : matérialisation des implications logiques (rdf:type, rdfs:subClassOf).*
+*SW-13 (cellule 52) : **diagramme en barres du nombre de triples inférés** par raisonneur (Y = nombre de triples, profil OWL 2 RL) — comparaison du rendement de l'inférence entre raisonneurs, pas une matérialisation des triples eux-mêmes.*
 
 > **Convention d'accessibilité** : Toutes les figures portent un `alt-text` français (régénérés via `extract_readme_figures.py`, EPIC #5654). Poids total ≈ 626 KB (≤ 1.5 MB borne), max-dim 1200 px (≤ 1200 px borne), max fichier 163 KB (≤ 200 KB borne).
 
