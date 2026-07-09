@@ -27,6 +27,6 @@ All 20 notebooks in `D:\dev\CoursIA\MyIA.AI.Notebooks\Probas\Infer\` had their s
 | Infer-9-Topic-Models | 1452f2aa |
 | Infer-10-Crowdsourcing | 9df317ec |
 | Infer-11-Sequences | 087a352c |
-| Infer-12-Recommenders | 3e3a7357 |
+| Infer-15-Recommenders | 3e3a7357 |
 | Infer-13-Debugging | cell-0 (older format) |
 | Infer-14 to Infer-20 | Already had correct (X/20) numbering |

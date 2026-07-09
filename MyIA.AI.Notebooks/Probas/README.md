@@ -100,10 +100,10 @@ Suivez le même modèle dans les deux stacks pour comparer les approches :
 | Topic modeling | Infer-9 | PyMC-9 | VMP vs NUTS sur variables latentes |
 | Crowdsourcing | Infer-10 | PyMC-10 | Worker models EP vs MCMC agrégation |
 | Séquences (HMM) | Infer-11 | PyMC-11 | Forward-backward exact vs échantillonné |
-| Recommenders | Infer-12 | PyMC-12 | Factorisation bayésienne statique vs MCMC |
+| Recommenders | Infer-15 | PyMC-12 | Factorisation bayésienne statique vs MCMC |
 | Debugging | Infer-13 | PyMC-13 | ShowFactorGraph vs trace plot diagnostics |
 | Causal Inference | Infer-14 | PyMC-14 | do-calculus message passing vs pm.do MCMC |
-| Modèles hiérarchiques | Infer-15 | PyMC-16 | Pooling partiel, shrinkage EP vs paramétrisation non-centrée NUTS (funnel) |
+| Modèles hiérarchiques | Infer-12 | PyMC-16 | Pooling partiel, shrinkage EP vs paramétrisation non-centrée NUTS (funnel) |
 
 #### Parcours applications (modèles concrets, ~6h)
 
@@ -112,7 +112,7 @@ Si vous préférez commencer par les cas d'usage, suivez cet ordre :
 1. **TrueSkill** (Infer-6 / PyMC-6) : classement bayésien, application Xbox Live
 2. **IRT** (Infer-5 / PyMC-5) : évaluation de compétences, application GMAT
 3. **Crowdsourcing** (Infer-10 / PyMC-10) : agrégation de labels, application Mechanical Turk
-4. **Recommenders** (Infer-12 / PyMC-12) : factorisation matricielle bayésienne
+4. **Recommenders** (Infer-15 / PyMC-12) : factorisation matricielle bayésienne
 5. **LDA** (Infer-9 / PyMC-9) : découverte de thèmes dans des corpus textuels
 6. **HMM** (Infer-11 / PyMC-11) : régimes cachés en finance et traitement du signal
 
@@ -232,11 +232,11 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 9 | Topic Models | LDA, Dirichlet, prior asymétrique pour briser la symétrie VMP |
 | 10 | Crowdsourcing | Worker models, communautés d'annotateurs, aggregation de labels |
 | 11 | Séquences | HMM, detection de régimes, forward-backward, motifs temporels |
-| 12 | Recommenders | Factorisation matricielle bayésienne, Click Model |
+| 12 | Modèles Hiérarchiques | Partial pooling, shrinkage, paramétrisation non-centrée |
 | 13 | Debugging | EP vs VMP, diagnostic de divergence, ShowFactorGraph, ShowSchedule |
 | 14 | Causal Inference | do-calculus de Pearl, backdoor/front-door, paradoxe de Simpson |
-| 15 | Sparse Gaussian Process | EP sur géométrie latente GP, comparaison NUTS > 15min |
-| 16 | Modèles Hiérarchiques | Partial pooling, shrinkage, paramétrisation non-centrée |
+| 15 | Recommenders | Factorisation matricielle bayésienne, Click Model |
+| 16 | Sparse Gaussian Process | EP sur géométrie latente GP, comparaison NUTS > 15min |
 | 17 | Kalman Filter | Système dynamique linéaire gaussien, filtrage fermé |
 | 18 | Change-Point | `DiscreteUniform` + `switch`, détection de rupture bayésienne |
 | 19 | Survival Analysis | Exponentiel conjugué (Gamma), Weibull `k` inféré, sélection LOO |
@@ -261,8 +261,8 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 12 | Recommenders | Factorisation matricielle bayésienne MCMC |
 | 13 | Debugging | Trace plots, R-hat, effective sample size, bonnes pratiques MCMC |
 | 14 | Causal Inference | `pm.do`, do-calculus de Pearl, contrefactuel bayésien |
-| 15 | Modèles Hiérarchiques | Shrinkage bayésien, divergences NUTS sur le funnel (cf. asymétrie structurelle Infer-15 EP) |
-| 16 | Sparse Gaussian Process | NUTS sur géométrie latente (cf. asymétrie structurelle Infer-16 EP) |
+| 15 | Sparse Gaussian Process | NUTS sur géométrie latente (cf. asymétrie structurelle Infer-16 EP) |
+| 16 | Modèles Hiérarchiques | Shrinkage bayésien, divergences NUTS sur le funnel (cf. asymétrie structurelle Infer-12 EP) |
 | 17 | Kalman Filter | Value-add MCMC (estimation jointe Q/R/drift) |
 | 18 | Change-Point | Switch bayésien, catastrophes minières (Poisson) |
 | 19 | Survival Analysis | Weibull inféré directement, sélection LOO arviZ |
@@ -448,7 +448,7 @@ pip install pyro-ppl torch matplotlib numpy
 | NLP | Infer-9, PyMC-9 (LDA) |
 | Médecine | Infer-4, Infer-7, Infer-17, Infer-18, Infer-19 (réseaux bayésiens, Kalman, change-point, survie) |
 | Finance | Infer-11 (HMM régimes), DecInfer-3 (CARA/CRRA), DecInfer-8 (MDPs) |
-| E-commerce | Infer-10, Infer-12, PyMC-10, PyMC-12 (crowdsourcing, recommenders) |
+| E-commerce | Infer-10, Infer-15, PyMC-10, PyMC-12 (crowdsourcing, recommenders) |
 
 ### Exemples concrets
 
