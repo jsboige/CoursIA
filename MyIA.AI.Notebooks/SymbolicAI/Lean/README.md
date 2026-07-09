@@ -335,9 +335,13 @@ Lean/
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md
 ├── .env.example
+├── sensitivity_lean/               # Théorème de sensibilité (Huang 2019, companion Lean-12/12b) - 0 sorry 0 axiome, Lake build natif (jonction Mathlib)
+├── finiteness_lean/                # Finitude des dérivées de Brzozowski (companion Lean-14) - 0 sorry, Lake build
 ├── conway_lean/                    # Conway tribute workspace (0 sorry, Lake build)
 ├── grothendieck_lean/              # Grothendieck tribute workspace (0 sorry, Lake build)
 ├── knot_lean/                      # Knot theory workspace (théorie des nœuds, companion Lean-17a/b, sorries résiduels documentés, Lake build)
+├── calibration_lean/               # Cibles de calibration du prouveur multi-agents (Epic #1453, P1-P5) - 0 sorry, Lake build
+├── mathlib_examples/               # Smoke test Mathlib (ring/linarith/omega/rw, 4 buts) - 0 sorry, Lake build
 ├── agent_tests/                    # Prover daemon (autonomous Lean proof)
 │   ├── multi_agent_proof.py        # CLI principal
 │   ├── lean_server.py              # Serveur Lean LSP
