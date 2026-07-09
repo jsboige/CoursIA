@@ -1,10 +1,10 @@
 # ICT — Integrated Causal Trajectories
 
 <!-- CATALOG-STATUS
-series: ICT
-pedagogical_count: 0
-breakdown: 
-maturity: 
+series: IIT-ICT-Series
+pedagogical_count: 25
+breakdown: ICT-Series=25
+maturity: BETA=17, PRODUCTION=7, ALPHA=1
 -->
 
 [← IIT](../README.md) | [↑ Notebooks](../../README.md) | [→ Probas](../../Probas/README.md)
@@ -19,7 +19,7 @@ La série progresse en **cinq strates**. La **strate 1** (ICT-0 à ICT-7) prend 
 
 ## Aperçu — les trajectoires causales intégrées en images
 
-Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #5654). Elles balayent l'arc des quatre strates stables de la série : du tri auto-organisé et des trajectoires de $\Phi$ (strate 1) aux paysages d'attracteurs et à la morphogenèse dynamique (strate 2), puis aux trajectoires intégrées régime-dépendantes (strate 3) et à la jambe énergétique-libre (strate 4) et à la jambe de compression MDL avec sa bosse complexité-entropie (strate 5). La provenance exacte de chaque figure est documentée dans `assets/readme/MANIFEST.md`.
+Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #5654). Elles balayent l'arc des cinq strates de la série : du tri auto-organisé et des trajectoires de $\Phi$ (strate 1) aux paysages d'attracteurs et à la morphogenèse dynamique (strate 2), puis aux trajectoires intégrées régime-dépendantes (strate 3) et à la jambe énergétique-libre (strate 4) et à la jambe de compression MDL avec sa bosse complexité-entropie (strate 5). La provenance exacte de chaque figure est documentée dans `assets/readme/MANIFEST.md`.
 
 <table>
 <tr>
@@ -87,7 +87,7 @@ Le package `ict/` est importé en relatif depuis le répertoire `ICT-Series/` : 
 | [ICT-12-ValenceFieldsAndAnimats](ICT-12-ValenceFieldsAndAnimats.ipynb) | Champs de valence et animats — *rôles mesurés, modèle interne payant ou ruineux ?* Premier toy model **actantiel spatial** : des animats évoluent dans un champ de valence (source attractive + obstacles repulsifs) ; la scène actantielle de Thom cesse d'être une correspondance nommée — les **rôles deviennent des grandeurs mesurées** (capture, évasion, irréversibilité, switching). Deux animats : le **réactif** suit le gradient instantané (persistance spatiale), l'**anticipateur `p̂`** extrapole le point d'interception. *Sans complaisance* : `p̂` **gagne** en balistique rapide (capture x4, le réactif laggué ne suit pas) mais **perd** en erratique (prédictions trompées par les demi-tours) et perd en anticipation sur source bruitée (la vitesse EMA amplifie le bruit de position). Le modèle interne paie son coût là où la source échappe au réactif **et** reste prévisible — régime-dépendant, ni universellement avantageux ni ruineux (contrôle d'ablation : la marche aléatoire ne porte aucune signature de rôle) |
 | [ICT-13-AxelrodStrategicMorphodynamics](ICT-13-AxelrodStrategicMorphodynamics.ipynb) | Morphodynamique stratégique — *une stratégie est-elle une forme stable ?* Dernier cran de la strate 3 avant la synthèse. Le dilemme du prisonnier itéré d'Axelrod (paiements canoniques $T=5, R=3, P=1, S=0$) sert de morphospace stratégique : six stratégies (AllC, AllD, TFT, TFT généreuse, Pavlov, Grim) confrontées en tournoi round-robin, dynamique de réplication, bassins d'invasion. *Sans complaisance* : quatre gates falsifiables mesurent la « stabilité de forme ». **Gate 1** — TFT et Grim **co-dominent** le tournoi (2.635) devant AllD (2.313, dernier). **Gate 2** — le seuil de coopération soutenable colle au Folk theorem : $\delta^\star$ analytique $(T-R)/(T-P) = 0.500$ vs croisement numérique $0.550$. **Gate 3** — sous bruit d'exécution, la **réciprocité active (TFT) est le point de rupture** (chute la plus forte, $+0.40$) tandis que la rétaliation inflexible de **Grim est paradoxalement la plus robuste** ($+0.29$) — ce qui **contredit** la prédiction Nowak-Sigmund (TFT généreuse / Pavlov les plus tolérantes) sur ces paiements. **Gate 4** — bassins d'invasion contre AllD résident : TFT/Grim envahissent dès $2\,\%$ de fraction initiale, TFT généreuse à $34\,\%$, Pavlov et AllC **jamais** ($1.0$). Verdict honnête : la robustesse stratégique est **fonction du régime** (bruit, structure de paiements), pas une propriété intrinsèque de la stratégie — la « forme stable » n'existe qu'au sein d'un environnement donné |
 
-La strate 3 se conclut sur la feuille de route de [ICT-0-Framing](ICT-0-Framing.md) par **ICT-Synthèse**.
+La strate 3 se conclut par son capstone [ICT-Synthese-CrossSubstrat](ICT-Synthese-CrossSubstrat.ipynb) : un seul appareil (la trajectoire causale intégrée) appliqué à trois substrats (tri, Gray-Scott, Axelrod), qui ouvre le banc partagé repris par la strate 5.
 
 ### Strate 4 — énergie libre et représentationnel (Free Energy Principle)
 
@@ -97,19 +97,19 @@ La strate 3 se conclut sur la feuille de route de [ICT-0-Framing](ICT-0-Framing.
 
 ### Strate 5 — réalisation de la théorie fondatrice (cross-substrat, MDL, LLM)
 
-Le retour à la théorie fondatrice (cf. [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md)) : les trois scalaires fondateurs $\Phi / F / K$ convergent sur un banc cross-substrat, et la **réversibilisation** — l'idée fondatrice restée implicite — y est enfin outillée (ICT-18). *Livrée jusqu'à ICT-24 — ICT-15 à ICT-18, ICT-20, ICT-21 (substrat SAE, mergé #5643), ICT-22 (LLM comme quatrième substrat, mergé #5658), ICT-23 (fronce Thom, #5351) et ICT-24 (module `ict/workspace.py`, mergé #5641) sont livrés ; ICT-19 (batterie de l'ENJEU) et ICT-25 (GPU) restent gated. Scope ICT-15..25 (#5090 #5099..#5105 #5279 #5635).*
+Le retour à la théorie fondatrice (cf. [ICT-0-Annexe](ICT-0-Annexe-IntegratedComplexityTheory.md)) : les trois scalaires fondateurs $\Phi / F / K$ convergent sur un banc cross-substrat, et la **réversibilisation** — l'idée fondatrice restée implicite — y est enfin outillée (ICT-18). *Notebooks ICT-15 à ICT-23 tous livrés et exécutés — dont ICT-19 (batterie de l'ENJEU, #5526, raffinée par [ICT-19-EnjeuBattery-Raffinement](ICT-19-EnjeuBattery-Raffinement.ipynb) #5728 : mesure S4 Gray-Scott en espace de champ, `repair_gain` +0.82±0.27), ICT-21 (substrat SAE, mergé #5643) et ICT-22 (LLM comme quatrième substrat, mergé #5658). Pour ICT-24, le module `ict/workspace.py` est livré (#5641) mais le notebook WorkspaceIgnition reste ouvert (#5635) ; ICT-25 (GPU) reste gated (#5105). Scope ICT-15..25 (#5090 #5099..#5105 #5279 #5635).*
 
 | Notebook | Sujet | Issue |
 |----------|-------|-------|
-| **ICT-15** | Convergence Φ/F/K sur le banc cross-substrat, gate de convergence sur le squelette de Thom | [#5090](https://github.com/jsboige/CoursIA/issues/5090) |
-| **ICT-16** | MDLTwoPartCode — $F$ est la partie résiduelle du code $K$ + bosse complexité-entropie | [#5099](https://github.com/jsboige/CoursIA/issues/5099) |
-| **ICT-17** | $\epsilon$-machine (Crutchfield) vs Hoel — états causaux, complexité statistique, entropie d'excès | [#5100](https://github.com/jsboige/CoursIA/issues/5100) |
-| **ICT-18** | Flèche du temps & réversibilisation — production d'entropie, detailed balance, « que perd-on à réversibiliser ? » (ancré ICT-3, Levin/Fridman) *(GPU-free)* | [#5279](https://github.com/jsboige/CoursIA/issues/5279) |
-| **ICT-19** | **Batterie de l'ENJEU** — auto-maintien vs pur dissipateur, retour-au-bassin après `do(·)` sur Gray-Scott S4 — cadrage B verrouillé (user 2026-07-06), voir spec [#5483](https://github.com/jsboige/CoursIA/issues/5483) → Epic [#4588](https://github.com/jsboige/CoursIA/issues/4588) | [#5483](https://github.com/jsboige/CoursIA/issues/5483) (spec) |
-| **ICT-20** | FeatureCatastrophes — calibration, changepoints, EWS et hystérésis en feature-space | [#5103](https://github.com/jsboige/CoursIA/issues/5103) |
-| **ICT-21** | SAE (Qwen + Qwen-Scope) — des features SAE aux trajectoires d'états discrets, substrat S4 *(GPU)* | [#5101](https://github.com/jsboige/CoursIA/issues/5101) |
-| **ICT-22** | LLM comme quatrième substrat du banc cross-substrat *(GPU)* | [#5102](https://github.com/jsboige/CoursIA/issues/5102) |
-| **ICT-23** | PersonaCatastrophe — désalignement émergent par fronce, énergie libre et MDL (capstone) | [#5104](https://github.com/jsboige/CoursIA/issues/5104) |
+| [ICT-15-IntegratedComplexity](ICT-15-IntegratedComplexity.ipynb) | Convergence Φ/F/K sur le banc cross-substrat, gate de convergence sur le squelette de Thom | [#5090](https://github.com/jsboige/CoursIA/issues/5090) |
+| [ICT-16-MDLTwoPartCode](ICT-16-MDLTwoPartCode.ipynb) | $F$ est la partie résiduelle du code $K$ + bosse complexité-entropie | [#5099](https://github.com/jsboige/CoursIA/issues/5099) |
+| [ICT-17-EpsilonMachine](ICT-17-EpsilonMachine.ipynb) | $\epsilon$-machine (Crutchfield) vs Hoel — états causaux, complexité statistique, entropie d'excès | [#5100](https://github.com/jsboige/CoursIA/issues/5100) |
+| [ICT-18-ArrowOfTimeReversibilization](ICT-18-ArrowOfTimeReversibilization.ipynb) | Flèche du temps & réversibilisation — production d'entropie, detailed balance, « que perd-on à réversibiliser ? » (ancré ICT-3, Levin/Fridman) *(GPU-free)* | [#5279](https://github.com/jsboige/CoursIA/issues/5279) |
+| [ICT-19-EnjeuBattery](ICT-19-EnjeuBattery.ipynb) | **Batterie de l'ENJEU** — auto-maintien vs pur dissipateur, retour-au-bassin après `do(·)` sur Gray-Scott S4 (cadrage B, spec [#5483](https://github.com/jsboige/CoursIA/issues/5483)) ; raffinée par [ICT-19-EnjeuBattery-Raffinement](ICT-19-EnjeuBattery-Raffinement.ipynb) (#5728 : mesure S4 en espace de champ, résout le faux nul) | [#5489](https://github.com/jsboige/CoursIA/issues/5489) |
+| [ICT-20-FeatureCatastrophes](ICT-20-FeatureCatastrophes.ipynb) | Calibration — changepoints, EWS et hystérésis en feature-space | [#5103](https://github.com/jsboige/CoursIA/issues/5103) |
+| [ICT-21-SAETrajectoires](ICT-21-SAETrajectoires.ipynb) | SAE (Qwen + Qwen-Scope) — des features SAE aux trajectoires d'états discrets, substrat S4 *(GPU)* | [#5101](https://github.com/jsboige/CoursIA/issues/5101) |
+| [ICT-22-LLMSubstrat](ICT-22-LLMSubstrat.ipynb) | LLM comme quatrième substrat du banc cross-substrat *(GPU)* | [#5102](https://github.com/jsboige/CoursIA/issues/5102) |
+| [ICT-23-PersonaCatastrophe](ICT-23-PersonaCatastrophe.ipynb) | Désalignement émergent par fronce, énergie libre et MDL (capstone) | [#5104](https://github.com/jsboige/CoursIA/issues/5104) |
 | **ICT-24** | WorkspaceIgnition — l'axe *Global Workspace* (Dehaene, Baars) comme cinquième jambe : module `ict/workspace.py` (série de concentration Gini, événements d'ignition persistants, influence retardée, profil de fan-out, candidats workspace, batterie event-triggered réutilisant `synthesis.emergence_gain`) *(GPU-free)* | [#5635](https://github.com/jsboige/CoursIA/issues/5635) |
 | **ICT-25** | InoculationRL — GRPO à récompense hackable × inoculation, panel persona (capstone final) *(GPU)* | [#5105](https://github.com/jsboige/CoursIA/issues/5105) |
 
