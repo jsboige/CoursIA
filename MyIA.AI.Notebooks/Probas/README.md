@@ -94,14 +94,14 @@ Suivez le même modèle dans les deux stacks pour comparer les approches :
 | Fondations | Infer-1 → 2 → 3 | PyMC-1 → 2 → 3 | EP/VMP (exact) vs NUTS (MCMC) |
 | Réseaux bayésiens | Infer-4 | PyMC-4 | Compilation statique vs échantillonnage dynamique |
 | IRT (compétences) | Infer-5 | PyMC-5 | Variable.If vs pm.Bernoulli |
-| TrueSkill | Infer-6 | PyMC-6 | Message passing exact vs MCMC approximatif |
+| TrueSkill | Infer-8 | PyMC-6 | Message passing exact vs MCMC approximatif |
 | Classification | Infer-7 | PyMC-7 | Bayes Point Machine vs régression logistique |
-| Model sélection | Infer-8 | PyMC-8 | Bayes Factors vs LOO/Pareto-SMI |
+| Model sélection | Infer-10 | PyMC-8 | Bayes Factors vs LOO/Pareto-SMI |
 | Topic modeling | Infer-9 | PyMC-9 | VMP vs NUTS sur variables latentes |
-| Crowdsourcing | Infer-10 | PyMC-10 | Worker models EP vs MCMC agrégation |
+| Crowdsourcing | Infer-13 | PyMC-10 | Worker models EP vs MCMC agrégation |
 | Séquences (HMM) | Infer-11 | PyMC-11 | Forward-backward exact vs échantillonné |
 | Recommenders | Infer-15 | PyMC-12 | Factorisation bayésienne statique vs MCMC |
-| Debugging | Infer-13 | PyMC-13 | ShowFactorGraph vs trace plot diagnostics |
+| Debugging | Infer-6 | PyMC-13 | ShowFactorGraph vs trace plot diagnostics |
 | Causal Inference | Infer-14 | PyMC-14 | do-calculus message passing vs pm.do MCMC |
 | Modèles hiérarchiques | Infer-12 | PyMC-16 | Pooling partiel, shrinkage EP vs paramétrisation non-centrée NUTS (funnel) |
 
@@ -109,9 +109,9 @@ Suivez le même modèle dans les deux stacks pour comparer les approches :
 
 Si vous préférez commencer par les cas d'usage, suivez cet ordre :
 
-1. **TrueSkill** (Infer-6 / PyMC-6) : classement bayésien, application Xbox Live
+1. **TrueSkill** (Infer-8 / PyMC-6) : classement bayésien, application Xbox Live
 2. **IRT** (Infer-5 / PyMC-5) : évaluation de compétences, application GMAT
-3. **Crowdsourcing** (Infer-10 / PyMC-10) : agrégation de labels, application Mechanical Turk
+3. **Crowdsourcing** (Infer-13 / PyMC-10) : agrégation de labels, application Mechanical Turk
 4. **Recommenders** (Infer-15 / PyMC-12) : factorisation matricielle bayésienne
 5. **LDA** (Infer-9 / PyMC-9) : découverte de thèmes dans des corpus textuels
 6. **HMM** (Infer-11 / PyMC-11) : régimes cachés en finance et traitement du signal
@@ -183,7 +183,7 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 | Juste découvrir la programmation probabiliste | **Infer-101.ipynb** (standalone, 45 min) |
 | Comprendre les graphes de facteurs | **Infer-3** (Monty Hall, Murder Mystery) |
 | Un premier modèle qui marche | **Infer-101** ou **PyMC-1-Setup** |
-| Application concrète rapide | **Infer-6 TrueSkill** ou **Infer-9 LDA** |
+| Application concrète rapide | **Infer-8 TrueSkill** ou **Infer-9 LDA** |
 | Comparer les deux approches | Suivre la table "inférence comparée" ci-dessus |
 | Production data science | **PyMC** (écosystème Python, NUTS, arviz) |
 | Apprentissage embarqué / temps réel | **Infer.NET** (compilation statique = inférence rapide) |
@@ -627,7 +627,7 @@ La thèse pratique est honnête : un modèle probabiliste est plus lourd à bât
 - **Passer à la décision séquentielle** : les MDP de l'arc décision ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) ou [`DecisionTheory/PyMC/`](DecisionTheory/PyMC/README.md)) préparent directement [RL](../RL/README.md), où l'agent **apprend** la politique optimale par interaction plutôt que de la calculer hors ligne — la frontière naturelle entre inférence probabiliste et apprentissage par renforcement.
 - **Croiser la théorie des jeux** : [GameTheory](../GameTheory/README.md) partage la notion de **décision sous incertitude**, mais l'incertitude y vient d'un adversaire rationnel plutôt que d'un processus stochastique. Les fonctions d'utilité multi-attributs trouvent leur miroir dans le choix social et l'utilité collective.
 - **Revenir au ML appliqué** : le [TP prévision de ventes](../ML/ML.Net/TP-prevision-ventes.ipynb) de la série ML est une porte d'entrée — il traite la régression bayésienne comme cas d'application ; cette série en donne le langage complet (distributions, facteurs, inférence).
-- Pour la pratique : reprenez un même modèle (par exemple TrueSkill, Infer-6 / PyMC-6) dans les deux stacks, comparez les intervalles de crédibilité, et observez comment EP (déterministe) et NUTS (stochastique) convergent vers des conclusions cohérentes — c'est l'exercice le plus formateur pour saisir le champ d'application de chaque approche.
+- Pour la pratique : reprenez un même modèle (par exemple TrueSkill, Infer-8 / PyMC-6) dans les deux stacks, comparez les intervalles de crédibilité, et observez comment EP (déterministe) et NUTS (stochastique) convergent vers des conclusions cohérentes — c'est l'exercice le plus formateur pour saisir le champ d'application de chaque approche.
 
 ### Le fil rouge
 
