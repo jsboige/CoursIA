@@ -121,7 +121,12 @@ STUB_PATTERNS = [
     # `$?` accepts both regular (`"..."`) and interpolated (`$"..."`) strings:
     # `Console.WriteLine($"Exercice 2 a completer ...")` is the idiomatic C#
     # interpolated form and was not matched by the quote-only variant.
-    re.compile(r'Console\.WriteLine\(\$?["\']Exercice', re.IGNORECASE),
+    # `display(...)` (not `Console.WriteLine`) is the .NET Interactive idiom for
+    # stub markers: `Console.WriteLine` is SWALLOWED in headless papermill, so
+    # authors use `display("Exercice ... a completer")` instead. Without the
+    # `display` form, such stubs were under-counted (e.g. GameTheory-5 cell Ex2,
+    # `display("Exercice 2 a completer ...")` with no `// TODO`/`// Indice`).
+    re.compile(r'(?:Console\.WriteLine|display)\(\$?["\']Exercice', re.IGNORECASE),
     re.compile(r"^\s*result\s*=\s*None\b", re.MULTILINE | re.IGNORECASE),
     re.compile(r"^\s*raise\s+NotImplementedError", re.MULTILINE),
     re.compile(r"^\s*assert\s+False\b", re.MULTILINE),

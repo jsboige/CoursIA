@@ -364,6 +364,32 @@ class TestCodeCellOnlyExercise:
             'C# interpolated Console.WriteLine($"Exercice ...") must count'
         )
 
+    def test_csharp_display_fn_exercice_is_counted(self, tmp_path):
+        """``display("Exercice ...")`` (the .NET Interactive ``display`` helper,
+        not ``Console.WriteLine``) is a stub marker. Authors use ``display(...)``
+        because ``Console.WriteLine`` is swallowed in headless papermill. A stub
+        cell that carries ``display("Exercice ... a completer")`` but neither
+        ``// TODO`` nor ``// Indice`` must still be counted.
+
+        Regression for ``GameTheory-5-ZeroSum-Minimax-Csharp`` Ex2, whose stub
+        marker ``display("Exercice 2 a completer ...")`` was silently
+        under-counted (notebook read as 2 exercises instead of its real 3).
+        """
+        nb = _write_nb(
+            tmp_path / "display.ipynb",
+            [
+                _md("# Titre C#"),
+                _code(
+                    "// Exercice 2 : verifier le theoreme minimax.\n"
+                    'display("Exercice 2 a completer : matrice 3x3 -> SolveMatrixGame");\n'
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "display(\"Exercice ...\") stub (no // TODO / // Indice) must count"
+        )
+
     def test_inline_csharp_comment_after_code_is_not_a_stub_marker(
         self, tmp_path
     ):
