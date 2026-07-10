@@ -583,23 +583,23 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 
 ## Audit Qualité (juillet 2026 — §E whole-file)
 
-### Couverture exercices (réconciliation disque ↔ catalogue, mise à jour 5 juillet 2026)
+### Couverture exercices (réconciliation disque ↔ catalogue, mise à jour 10 juillet 2026)
 
 | Série | Notebooks | Avec exercices | Sans exercices | Status |
 |-------|-----------|----------------|----------------|--------|
-| Tweety (Python/JPype + C#/.NET) | 27 | 14 Python / 12 Csharp (≥96%) | 1 Probe (non pédagogique) | Très bon |
+| Tweety (Python/JPype + C#/.NET) | 32 | 31 pédagogiques (13 Python + 18 C# jumeaux) | 1 Probe (`_probes/Tweety-IKVM-Init-Probe`, non pédagogique) | Très bon |
 | Lean (proofs natifs + companions Python) | 28 | 26 (93%) | 2 (Lean-1-Setup + Lean-7b-Examples) | Très bon |
-| SemanticWeb (C# + Python) | 18 | 16 (89%) | 2 (Setup + RDF.Net-Legacy) | Très bon |
-| Planners (PDDL classique + neuro-symbolique) | 15 | 14 (93%) | 1 (Planners-0-Setup) | Très bon |
+| SemanticWeb (C# + Python) | 25 | 24 pédagogiques (12 Python + 12 C# jumeaux) | 1 (RDF.Net-Legacy) | Très bon |
+| Planners (PDDL classique + neuro-symbolique) | 24 | 22 pédagogiques (13 Python + 9 C# jumeaux) | 2 (Planners-0-Setup + `archive/Fast-Downward-Legacy`) | Très bon |
 | SmartContracts | 27 | 27 (100%) | 0 | Excellent |
-| Argument Analysis (Argumentum + Agentic demo) | 18 | 0 (0%) | 18 (demo, no exercices) | N/A (projet) |
-| SymbolicLearning (AIMA ch. 19 + SL-12 differentiable logic gates) | 12 | 12 (100%) | 0 | Excellent |
+| Argument Analysis (Argumentum + Agentic demo) | 21 | 17 (81%) | 4 (Argument_Analysis_Agentic-0-init + 3 Agentic demo) | N/A (projet) |
+| SymbolicLearning (AIMA ch. 19 + SL-12 differentiable logic gates) | 22 | 20 pédagogiques (12 Python + 8 C# jumeaux) | 2 (`_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`, archives) | Excellent |
 | SMT/Z3 (C# Linq2Z3) | 18 | 18 (100%) | 0 | Excellent |
-| SMT/Z3-Python | 6 | 6 (100%) | 0 | Excellent |
+| SMT/Z3-Python | 12 | 12 (100%, 6 Python + 6 C# jumeaux) | 0 | Excellent |
 
-**Total** : 131/150 notebooks de contenu pédagogique avec exercices (87%). Les notebooks sans exercices sont uniquement les notebooks de setup (SW-1-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Tweety-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (RDF.Net-Legacy, Argument_Analysis_*), et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du 5 juillet 2026 (post-#5390, post-EPIC #4667 Tweety .NET marathon, post-EPIC #4960 Argumentum EPITA-IS landing).
+**Total** : 207/209 notebooks pédagogiques (99%) — soit 209 fichiers `.ipynb` (hors `_output` gitignored), après déduction 1 Probe Tweety (`_probes/Tweety-IKVM-Init-Probe`), 2 archives SymbolicLearning (`_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`), et 1 archive Planners (`archive/Fast-Downward-Legacy`). Les notebooks sans exercices sont uniquement les notebooks de setup (Tweety-1-Setup, SW-1-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (Lean-7b-Examples, RDF.Net-Legacy), les archives précurseurs EML, et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du **10 juillet 2026** (post-#5894 SocialChoice figures sweep, post-EPIC #4956 parité marathon en cours, post-EPIC #4960 Argumentum EPITA-IS landing, post-PR #5345/#5390 Probas & SocialChoice README rolls).
 
-> **Note (07/07)** : cet instantané précède la fin du marathon parité #4956, qui porte depuis Tweety à 32 notebooks (18 C#), Planners à 23 actifs (9 jumeaux C#), SemanticWeb à 23 (11 C#), Z3-Python à 12 (6 jumeaux) et SymbolicLearning à 19 (7 jumeaux C#). Pour les comptes courants, le marqueur `CATALOG-STATUS` (régénéré quotidiennement) fait foi.
+> **Note (10/07)** : réconciliation whole-file audit §E post-#5894 (SocialChoice sweep), post-fin marathon parité #4956 (Tweety 32 = 13 Python + 18 C# + 1 probe, SemanticWeb 25 = 12 Python + 12 C# + 1 RDF.Net-Legacy, SMT/Z3-Python 12 = 6 Python + 6 C# jumeaux, Planners 23 actifs = 13 Python + 9 C# jumeaux + 0-Setup + 1 archive Fast-Downward-Legacy, SymbolicLearning 20 = 12 Python + 8 C# jumeaux + 2 archives EML, Argument_Analysis 21 = 17 Python pédagogiques + 4 Agentic demo). Pour les comptes courants, le marqueur `<!-- CATALOG-STATUS -->` (régénéré quotidiennement par `.github/workflows/catalog-cron.yml`) fait foi.
 
 ### Problèmes connus (juillet 2026)
 
