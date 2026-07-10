@@ -23,3 +23,5 @@
 
 import StableMarriage.Definitions
 import StableMarriage.Definitions_en
+import StableMarriage.GSState
+import StableMarriage.GSState_en
