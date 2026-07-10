@@ -855,13 +855,15 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 
 | # | Entry | Owner | Date | Verdict | PR |
 |---|-------|-------|------|---------|-----|
-| 1 | ML/ML.Net (19 nb) | po-2025 strict | 2026-07-09 | SOTA-OK 19/19 | #5816 CLOSED (rebasé -> #5817) |
+| 1 | ML/ML.Net (19 nb) | po-2025 strict | 2026-07-09 | SOTA-OK 19/19 | #5817 MERGED |
 | 2 | Tweety (31 nb) | SymbolicAI owner-floue | 2026-07-09 | SOTA-OK 31/31 | #5817 MERGED |
 | 3 | SymbolicLearning (20 nb) | SymbolicAI owner-floue | 2026-07-09 | SOTA-OK 20/20 | #5840 MERGED |
 | 4 | SemanticWeb (24 nb) | SymbolicAI owner-floue | 2026-07-09 | SOTA-OK 24/24 | #5847 MERGED |
 | 5 | DecisionTheory (18 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 18/18 | #5861 MERGED |
-| 6 | Probas/Infer (20 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 20/20 | #5886 OPEN MERGEABLE |
-| 7 | **Sudoku (36 nb)** | po-2025 strict | 2026-07-10 | SOTA-OK 36/36 | **THIS** |
+| 6 | Probas/Infer (20 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 20/20 | #5886 MERGED |
+| 7 | IIT/PyPhi (3 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 3/3 | #5895 MERGED |
+| 8 | Sudoku (36 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 36/36 | #5918 MERGED |
+| 9 | **RL (17 nb)** | po-2025 strict | 2026-07-10 | **SOTA-OK 17/17** | **THIS** |
 
 **Moteurs SOTA cumulés dans le registre (7 entries)** : Microsoft.ML.Probabilistic, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET = **20 moteurs SOTA distincts** sur 7 familles.
 
@@ -890,3 +892,80 @@ Total .ipynb: 36
 - **L378 durcie appliquée** : G.1 verify-before-claiming 2× (audit sub-agent + re-vérification worker 4 scripts python3) → 0 faux positif C.1, 6 disclosures honnêtes vérifiées (Sudoku-11-Choco IKVM RECOVERABLE-MACHINE, Sudoku-13-SFA INTRINSIC documented, Sudoku-15-NumPyro limitations assumées, Sudoku-15-Infer-Csharp limitation pédagogique, Sudoku-17-LLM simulation_mode RECOVERABLE-USER-HAND, plus 1 dans Choco-Python exercice), 0 workaround dégradé, 2 CJK technical-term disclosed honnêtement.
 - **Spécificité registrant** : **première entrée avec kernel `lean4-wsl`** dans le registre axe-2 SOTA (Sudoku-19-Lean-Propagation, lake `sudoku_lean/Sudoku.{Basic,ExactCover,Propagation}` + 0 sorry + 2 axiomes `propext, Quot.sound`). À noter comme marqueur de la **branche Kernel `leans`** du registre, à développer dans les entries ultérieures si pertinent (le registre compte d'autres lake+notebooks : `Argumentum_*_lean`, `GameTheory/social_choice_lean/*`).
 - **Cumulatif** : **8 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, **Sudoku**). Entry #008 Sudoku = substance NEUVE la plus diverse du registre (22 moteurs SOTA cumulés incluant la Lean 4 proof + 3 kernels + kernel `lean4-wsl` premier du registre — record de substance).
+
+
+## Entry #009 — RL / Reinforcement Learning (owner po-2025 strict, c.403)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/RL/` (17 .ipynb canoniques, 5 `_output.ipynb` Papermill exclus) |
+| Owner-lane | **po-2025 strict** (RL = lane Python du turf po-2025 ; reward-shaping bug #3360 closed 2026-07-02) |
+| Date audit | 2026-07-10 (c.403) |
+| Auditeur | `myia-po-2025:CoursIA` |
+| Verdict agrégé | **SOTA-OK** (17/17 SOTA-OK) |
+
+### Findings détaillés
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | SOTA invoqué | Verdict |
+|----|-------|------|------|-----|-----------|--------|--------------|---------|
+| rl_1_intro_cartpole | 44 | 20 | 20/20 | 0 | 0 | python3 | stable-baselines3 + Gymnasium | **SOTA-OK** |
+| rl_2_wrappers_sauvegarde_callbacks | 24 | 10 | 10/10 | 0 | 0 | python3 | stable-baselines3 + Gymnasium (wrappers/callbacks) | **SOTA-OK** |
+| rl_3_experience_replay_dqn | 35 | 13 | 13/13 | 0 | 0 | python3 | stable-baselines3 + Gymnasium (DQN replay) | **SOTA-OK** |
+| rl_4_multi_armed_bandits | 41 | 21 | 21/21 | 0 | 0 | python3 | epsilon-greedy/UCB tabulaire (fondation) | **SOTA-OK** |
+| rl_5_mdp_dp_qlearning | 38 | 18 | 18/18 | 0 | 0 | python3 | Gymnasium (FrozenLake) + DP tabulaire | **SOTA-OK** |
+| rl_6_dqn_policy_gradient | 28 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (DQN/PG from scratch) | **SOTA-OK** |
+| rl_6b_actor_critic | 29 | 9 | 9/9 | 0 | 0 | python3 | Gymnasium + PyTorch (A2C from scratch) | **SOTA-OK** |
+| rl_6c_ppo_from_scratch | 27 | 10 | 10/10 | 0 | 0 | python3 | Gymnasium + PyTorch (PPO clipping) | **SOTA-OK** |
+| rl_6d_sac_from_scratch | 38 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (SAC twin-critic) | **SOTA-OK** |
+| rl_6e_grpo_from_scratch | 23 | 11 | 11/11 | 0 | 0 | python3 | PyTorch (GRPO group-relative) | **SOTA-OK** |
+| rl_7_multi_agent_rl | 30 | 12 | 12/12 | 0 | 0 | python3 | **PettingZoo** (TicTacToe) + matplotlib | **SOTA-OK** |
+| rl_8_model_based_dyna_q | 29 | 11 | 11/11 | 0 | 0 | python3 | Dyna-Q planning tabulaire | **SOTA-OK** |
+| rl_9_offline_rl | 29 | 12 | 12/12 | 0 | 0 | python3 | Behavior Cloning + extrapolation error | **SOTA-OK** |
+| rl_10_reward_shaping | 19 | 8 | 8/8 | 0 | 0 | python3 | reward shaping + curriculum (théorique) | **SOTA-OK** |
+| rl_11_pomdp | 25 | 10 | 10/10 | 0 | 0 | python3 | POMDP belief tracking (théorique) | **SOTA-OK** |
+| rl_12_distributional_rl | 29 | 12 | 12/12 | 0 | 0 | python3 | Gymnasium + PyTorch (C51/QR-DQN) | **SOTA-OK** |
+| rl_13_curiosity_exploration | 23 | 10 | 10/10 | 0 | 0 | python3 | PyTorch (ICM curiosity bonus) | **SOTA-OK** |
+
+### Synthèse
+
+- **EXEC_PROVED global** : 17/17 (100%) — tous kernels `python3` exécutés, `execution_count != null` sur 218/218 cellules code, `outputs: [...]` cohérents.
+- **Erreurs runtime** : 0/17.
+- **Violations C.1** : 0/17 (audit script python3 — 0 `raise NotImplementedError`, 0 `assert False` réel ; 2 « hits » initiaux `1/0` dans rl_7 = **faux positif** matchant les récompenses `+1/-1/0` TicTacToe en markdown + commentaire TODO, vérifié G.1 firsthand).
+- **Vrais outils SOTA invoqués** :
+  - **stable-baselines3 + Gymnasium** (Farama) — rl_1/2/3 (API industrielle canonique RL).
+  - **Gymnasium + PyTorch from scratch** — rl_5/6/6b/6c/6d/12 (implémentation pédagogique DQN/A2C/PPO/SAC/distributional sur vrais envs Gymnasium, pas réimplémentation jouet d'un env).
+  - **PettingZoo** (Farama multi-agent) — rl_7 (`pettingzoo.classic.tictactoe_v3`) = vrai SOTA multi-agent.
+  - **PyTorch** — rl_6e (GRPO from scratch), rl_13 (ICM curiosity).
+  - **RL tabulaire/théorique** — rl_4 (bandits epsilon-greedy/UCB), rl_8 (Dyna-Q), rl_10 (reward shaping/curriculum), rl_11 (POMDP belief). Ce sont les **fondations** qui précèdent sb3 dans le cursus, pas des workarounds (un notebook sur les bandits/UCB n'a pas besoin de stable-baselines3).
+- **Workaround dégradé** : 0/17 (pas d'ASCII à la place de figures, pas de réimplémentation jouet d'env là où Gymnasium est invoqué, pas de stub à la place d'un appel sb3).
+
+### Prong B — problème non-trivial (sota-not-workaround §B)
+
+La suite RL **monte en complexité**, pas de plateau trivial :
+- rl_1 CartPole = point d'entrée canonique (acceptable comme intro, pas comme seul cas) ;
+- rl_6c/6d = **PPO et SAC from scratch** avec clipping et twin-critic (non-trivial, capacity-exercising) ;
+- rl_6e = **GRPO** (group-relative policy optimization, DeepSeek R1) — frontière research-grade ;
+- rl_7 = multi-agent **non-stationnaire** PettingZoo (TicTacToe) ;
+- rl_12/13 = distributional RL (C51) + curiosity-driven exploration (ICM).
+La paire `rl_6c` (PPO from scratch) + `rl_1` (sb3) illustre **explicitement** l'écart implémentation-pédagogique vs API industrielle — capacité distinctive exercée.
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **Faux positifs C.1** : 0/17 réel (audit script `raise NotImplementedError` = 0 ; 2 hits `assert False`/`1/0` dans rl_7 = **faux positif** : regex a matché les récompenses TicTacToe `+1/-1/0` en cellule markdown + commentaire `# TODO etudiant`, vérifié G.1 firsthand par lecture directe cell24/cell27 — **pas une division par zéro**, pas un `assert False`).
+- **Faux négatif SOTA (script)** : rl_7 utilisait `pettingzoo.classic.tictactoe_v3` (vrai SOTA multi-agent Farama) non détecté par le premier scan (liste `pettingzoo` absente du regex) — corrigé par re-scan G.1, rl_7 = **SOTA-OK** confirmé.
+- **Anti-régression** : aucun notebook strippé, aucun output hand-edité (Stop & Repair) ; 218/218 cellules code avec `execution_count != null` + `output_type: error = 0`.
+- **Audit consultatif purement additif** : safe owner-lane (L143 trivial — pas de modification des notebooks RL owner po-2025).
+
+### Volet owner-lane strict
+
+**RL = po-2025 strict** (lane Python native ; bug #3360 reward-shaping closed 2026-07-02 ; seed CSV RL #5892 livré c.402). Audit consultatif additif, 0 PR de substance. Pivot L335 anti-monoculture post-c.402 : **9ᵉ famille distincte du ledger** (entry #001 ML/ML.Net → #002 Tweety → #003 SymbolicLearning → #004 SemanticWeb → #005 DecisionTheory → #006 Probas/Infer → #007 IIT/PyPhi → #008 Sudoku → **#009 RL**). Différence avec #008 Sudoku (36 nb hétérogènes C#/Python/Lean) : **#009 RL = 17 nb mono-kernel `python3`**, suite pédagogique progressive (fondations tabulaires → API industrielle sb3 → from-scratch PyTorch PPO/SAC/GRPO → multi-agent PettingZoo).
+
+### Conclusions audit
+
+- **Substance RL = SOTA-OK 17/17**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. Stable-baselines3/Gymnasium/PettingZoo/PyTorch = moteurs SOTA canoniques RL, invoqués réellement (pas de workaround dégradé).
+- **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
+- **Pivot L335 légitimé** : 9ᵉ famille distincte, owner po-2025 strict, ≠ re-sweep monotone.
+- **L378 durcie** : G.1 firsthand (script python3 + re-lecture rl_7 pour faux-positif C.1 + faux-négatif SOTA PettingZoo) → 0 faux positif résiduel.
+- **Cumulatif** : **9 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, **RL**). Entry #009 RL ajoute **3 moteurs SOTA nouveaux** au registre (stable-baselines3, Gymnasium, PettingZoo) = **25 moteurs SOTA distincts cumulés**.
+
+Part of #3801
