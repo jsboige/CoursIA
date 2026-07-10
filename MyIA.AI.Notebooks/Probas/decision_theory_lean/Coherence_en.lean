@@ -21,19 +21,25 @@ sure loss. Coherence therefore *forces* the probability axioms.
   single-ticket sense (no single-ticket Dutch Book) **iff** it satisfies the
   probability bounds `0 ≤ q A ≤ 1`, `q ∅ = 0`, `q univ = 1`. Each violated axiom
   admits an explicit single-ticket Dutch Book (`single_dutch_book_of_neg/high/pos_empty/univ_lt`),
-  0 `sorry`.
+  0 `sorry`. Plus the **four-ticket converse** for prices derived from
+  probabilistic weights (`priceFromWeights_coherent_on`), via the expectation
+  argument `E_p[gain] = 0` (`sum_weights_mul_ind` → `expected_ticket_gain_zero` →
+  `expected_ieGain_zero` → contradiction on a charged state, `exists_pos_weight`).
 
 ## Status
 - Proved without `sorry`: the constructive direction (inclusion–exclusion
   violation ⟹ Dutch Book with explicit stakes `(1,1,−1,−1)` or the converse),
-  coherence ⟹ additivity on two events, and the **complete single-book
-  characterization** (`single_coherent_iff_prob_bounds`, 0 `sorry`, axioms
-  `[propext, Classical.choice, Quot.sound]`).
-- Open (next milestone): the full `coherent_iff_probability` (arbitrary-size
-  books, via the measure reconstruction `q A = Σ_{ω ∈ A} q {ω}` then the
-  expectation argument, or hyperplane separation / LP duality in finite
-  dimension). The single-book version delivered here is its tractable core (Lean
-  feasibility "MEDIUM", cf #4050).
+  coherence ⟹ additivity on two events, the **complete single-book
+  characterization** (`single_coherent_iff_prob_bounds`, axioms
+  `[propext, Classical.choice, Quot.sound]`), and the **four-ticket converse for
+  true probabilities** (`priceFromWeights_coherent_on`: no four-ticket book
+  arbitrages a price derived from non-negative weights summing to 1).
+- Open (next milestone): the full `coherent_iff_probability` — arbitrary-size
+  books on an ARBITRARY coherent price, via the measure reconstruction
+  `q A = Σ_{ω ∈ A} q {ω}` (showing that a coherent price is necessarily of the
+  form `priceFromWeights`), or hyperplane separation / LP duality in finite
+  dimension. The single-book and four-tickets-on-weights versions delivered here
+  are its tractable core (Lean feasibility "MEDIUM", cf #4050).
 
 ## Cross-references
 - `Utility` (same lake): von Neumann–Morgenstern expected-utility representation —

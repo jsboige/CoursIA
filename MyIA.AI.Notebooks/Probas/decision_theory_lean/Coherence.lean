@@ -21,19 +21,25 @@ perte sûre. La cohérence *force* donc les axiomes de probabilité.
   mono-livret (aucun Dutch Book à un seul ticket) **ssi** elle satisfait les bornes de
   probabilité `0 ≤ q A ≤ 1`, `q ∅ = 0`, `q univ = 1`. Chaque axiome violé admet un
   Dutch Book explicite à un seul ticket (`single_dutch_book_of_neg/high/pos_empty/univ_lt`),
-  0 `sorry`.
+  0 `sorry`. Plus la **réciproque quatre-tickets** pour les prix issus de poids
+  probabilistes (`priceFromWeights_coherent_on`), par l'argument d'espérance
+  `E_p[gain] = 0` (`sum_weights_mul_ind` → `expected_ticket_gain_zero` →
+  `expected_ieGain_zero` → contradiction sur un état chargé, `exists_pos_weight`).
 
 ## Statut
 - Prouvé sans `sorry` : la direction constructive (violation de l'inclusion–exclusion
   ⟹ Dutch Book avec mises explicites `(1,1,−1,−1)` ou l'inverse), la cohérence ⟹
-  additivité sur deux événements, et la **caractérisation mono-livret** complète
-  (`single_coherent_iff_prob_bounds`, 0 `sorry`, axiomes `[propext, Classical.choice,
-  Quot.sound]`).
-- Ouvert (jalon suivant) : le `coherent_iff_probability` **complet** (livrets de taille
-  arbitraire, via la reconstruction de la mesure `q A = Σ_{ω ∈ A} q {ω}` puis l'argument
-  d'espérance, ou la séparation d'hyperplans / dualité LP en dimension finie). La version
-  mono-livret livrée ici en constitue le noyau tractable (faisabilité Lean « MOYENNE »,
-  cf #4050).
+  additivité sur deux événements, la **caractérisation mono-livret** complète
+  (`single_coherent_iff_prob_bounds`, axiomes `[propext, Classical.choice, Quot.sound]`),
+  et la **réciproque quatre-tickets pour les vraies probabilités**
+  (`priceFromWeights_coherent_on` : aucun livret à quatre tickets n'arbitre un prix issu
+  de poids non négatifs sommant à 1).
+- Ouvert (jalon suivant) : le `coherent_iff_probability` **complet** — livrets de taille
+  arbitraire sur un prix cohérent QUELCONQUE, via la reconstruction de la mesure
+  `q A = Σ_{ω ∈ A} q {ω}` (montrer qu'un prix cohérent est nécessairement de la forme
+  `priceFromWeights`), ou la séparation d'hyperplans / dualité LP en dimension finie.
+  Les versions mono-livret et quatre-tickets-sur-poids livrées ici en constituent le
+  noyau tractable (faisabilité Lean « MOYENNE », cf #4050).
 
 ## Références croisées
 - `Utility` (même lake) : représentation d'utilité espérée vNM — l'autre fondation

@@ -26,11 +26,13 @@ sur le signe de la mise `s` :
 Réciproquement, sous les bornes de probabilité, aucune mise `s` ne rend `s (𝟙_A − q A) < 0`
 en tout état (disjonction `s < 0` / `s = 0` / `s > 0`).
 
-**Cadrage honnête (G.3/G.9).** Le `coherent_iff_probability` COMPLET (livrets de taille
-arbitraire, via la reconstruction de la mesure `q A = Σ_{ω ∈ A} q {ω}` puis l'argument
-d'espérance) reste un jalon suivant ; on livre ici la caractérisation mono-livret et son
-identité avec les bornes de probabilité, 0 `sorry`. Voir de Finetti (1937), *La prévision :
-ses lois logiques, ses sources subjectives*.
+**Cadrage honnête (G.3/G.9).** On livre ici, 0 `sorry` : la caractérisation mono-livret et
+son identité avec les bornes de probabilité, puis — pour les prix **issus de poids**
+(`priceFromWeights`) — la réciproque **quatre-tickets** par l'argument d'espérance
+`E_p[gain] = 0` (`priceFromWeights_coherent_on`). Le `coherent_iff_probability` COMPLET
+(livrets de taille arbitraire sur un prix cohérent QUELCONQUE, via la reconstruction de la
+mesure `q A = Σ_{ω ∈ A} q {ω}`) reste un jalon suivant. Voir de Finetti (1937),
+*La prévision : ses lois logiques, ses sources subjectives*.
 -/
 
 namespace Coherence
@@ -251,5 +253,93 @@ lemma priceFromWeights_single_coherent (p : Ω → ℝ) [Nonempty Ω]
     (hnn : ∀ ω, (0:ℝ) ≤ p ω) (hsum : ∑ ω, p ω = 1) :
     SingleCoherent (priceFromWeights p) :=
   (single_coherent_iff_prob_bounds _).mpr (priceFromWeights_probBounds p hnn hsum)
+
+/-! ## Réciproque quatre-tickets : l'argument d'espérance `E_p[gain] = 0`
+
+`priceFromWeights_additive` établit que les prix issus de poids satisfont l'identité
+d'inclusion–exclusion, mais l'additivité seule ne donne PAS `CoherentOn` : la contraposée
+de `coherent_on_implies_additive` dit « non additive ⟹ non cohérente », pas la réciproque.
+On prouve ici directement que **tout livret à quatre tickets contre un prix issu de poids
+probabilistes est inarbitrable**, par l'argument d'espérance annoncé dans `DutchBook.lean` :
+
+1. Le prix d'un ticket est son espérance : `E_p[𝟙_E] = q E` (`sum_weights_mul_ind`).
+2. Chaque ticket est donc un pari équitable : `E_p[𝟙_E − q E] = 0`
+   (`expected_ticket_gain_zero`).
+3. Par linéarité, le gain du livret complet est d'espérance nulle : `E_p[ieGain] = 0`
+   (`expected_ieGain_zero`).
+4. Un gain partout strictement négatif aurait une espérance strictement négative dès
+   qu'un état porte un poids `> 0` — et `Σ p = 1` en garantit un (`exists_pos_weight`).
+   Contradiction : aucun arbitrage n'existe (`priceFromWeights_coherent_on`).
+-/
+
+/-- **Le prix est l'espérance de l'indicatrice.** Pour un prix issu de poids,
+    `Σ_ω p ω · 𝟙_E ω = q E` : la somme pondérée de l'indicatrice sur tous les états se
+    restreint exactement aux états de `E`. -/
+lemma sum_weights_mul_ind (p : Ω → ℝ) (E : Event Ω) :
+    ∑ ω, p ω * ind E ω = priceFromWeights p E := by
+  simp only [priceFromWeights, ind, mul_ite, mul_one, mul_zero]
+  rw [Finset.sum_ite_mem, Finset.univ_inter]
+
+/-- **Chaque ticket est un pari équitable.** Le gain unitaire `𝟙_E − q E` d'un ticket
+    payé à son espérance est d'espérance nulle : `Σ_ω p ω · (𝟙_E ω − q E) = 0`. -/
+lemma expected_ticket_gain_zero (p : Ω → ℝ) (hsum : ∑ ω, p ω = 1) (E : Event Ω) :
+    ∑ ω, p ω * (ind E ω - priceFromWeights p E) = 0 := by
+  simp only [mul_sub]
+  rw [Finset.sum_sub_distrib, sum_weights_mul_ind p E, ← Finset.sum_mul, hsum,
+    one_mul, sub_self]
+
+/-- **Espérance nulle du livret complet.** Par linéarité de l'espérance, le gain
+    `ieGain` du livret à quatre tickets (mises quelconques `sA sB sAB sAU`) contre un prix
+    issu de poids probabilistes est d'espérance nulle. C'est l'argument d'espérance
+    `E_p[gain] = 0` annoncé dans `DutchBook.lean`. -/
+lemma expected_ieGain_zero (p : Ω → ℝ) (hsum : ∑ ω, p ω = 1) (A B : Event Ω)
+    (sA sB sAB sAU : ℝ) :
+    ∑ ω, p ω * ieGain (priceFromWeights p) A B sA sB sAB sAU ω = 0 := by
+  have hexp : ∀ ω : Ω, p ω * ieGain (priceFromWeights p) A B sA sB sAB sAU ω
+      = sA * (p ω * (ind A ω - priceFromWeights p A))
+        + sB * (p ω * (ind B ω - priceFromWeights p B))
+        + sAB * (p ω * (ind (A ∩ B) ω - priceFromWeights p (A ∩ B)))
+        + sAU * (p ω * (ind (A ∪ B) ω - priceFromWeights p (A ∪ B))) := fun ω => by
+    simp only [ieGain]; ring
+  simp only [hexp]
+  rw [Finset.sum_add_distrib, Finset.sum_add_distrib, Finset.sum_add_distrib,
+    ← Finset.mul_sum, ← Finset.mul_sum, ← Finset.mul_sum, ← Finset.mul_sum,
+    expected_ticket_gain_zero p hsum A, expected_ticket_gain_zero p hsum B,
+    expected_ticket_gain_zero p hsum (A ∩ B), expected_ticket_gain_zero p hsum (A ∪ B)]
+  ring
+
+omit [DecidableEq Ω] in
+/-- **Une distribution charge au moins un état.** Si `Σ p = 1`, un poids strictement
+    positif existe — sinon la somme serait `≤ 0`. (Rend `[Nonempty Ω]` superflu ici :
+    la normalisation fournit elle-même le témoin.) -/
+lemma exists_pos_weight (p : Ω → ℝ) (hsum : ∑ ω, p ω = 1) : ∃ ω, 0 < p ω := by
+  by_contra hne
+  have hle : ∑ ω, p ω ≤ 0 :=
+    Finset.sum_nonpos fun ω _ => not_lt.mp fun h => hne ⟨ω, h⟩
+  linarith
+
+/-- **Une vraie probabilité est cohérente (quatre tickets).** Aucun livret à quatre
+    tickets, quelles que soient les mises, n'arbitre un prix issu de poids probabilistes :
+    `CoherentOn (priceFromWeights p) A B` pour tous événements `A B`. C'est la réciproque
+    quatre-tickets du cadre `DutchBook.lean`, par l'argument d'espérance : si le gain était
+    strictement négatif en tout état, son espérance — nulle par `expected_ieGain_zero` —
+    serait strictement négative sur l'état chargé fourni par `exists_pos_weight`. -/
+theorem priceFromWeights_coherent_on (p : Ω → ℝ) (hnn : ∀ ω, (0:ℝ) ≤ p ω)
+    (hsum : ∑ ω, p ω = 1) (A B : Event Ω) :
+    CoherentOn (priceFromWeights p) A B := by
+  intro sA sB sAB sAU harb
+  obtain ⟨ω₀, hω₀⟩ := exists_pos_weight p hsum
+  have hzero := expected_ieGain_zero p hsum A B sA sB sAB sAU
+  have hneg : ∑ ω, p ω * ieGain (priceFromWeights p) A B sA sB sAB sAU ω < 0 := by
+    have hle : ∀ ω ∈ (Finset.univ : Finset Ω),
+        p ω * ieGain (priceFromWeights p) A B sA sB sAB sAU ω ≤ 0 :=
+      fun ω _ => by nlinarith [hnn ω, le_of_lt (harb ω)]
+    have hlt : p ω₀ * ieGain (priceFromWeights p) A B sA sB sAB sAU ω₀ < 0 :=
+      mul_neg_of_pos_of_neg hω₀ (harb ω₀)
+    calc ∑ ω, p ω * ieGain (priceFromWeights p) A B sA sB sAB sAU ω
+        < ∑ _ω : Ω, (0:ℝ) :=
+          Finset.sum_lt_sum hle ⟨ω₀, Finset.mem_univ ω₀, hlt⟩
+      _ = 0 := Finset.sum_const_zero
+  linarith
 
 end Coherence
