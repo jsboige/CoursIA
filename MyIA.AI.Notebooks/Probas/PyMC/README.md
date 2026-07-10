@@ -99,7 +99,7 @@ PyMC ne produit pas une prédiction ponctuelle mais une **distribution postérie
 
 > **Théorie de la décision** : les notebooks décisionnels (utilité espérée, EVPI, MDPs, bandits) forment désormais une sous-série autonome dans [DecisionTheory/PyMC/](../DecisionTheory/PyMC/README.md) (1 à 7), miroir Python de [DecisionTheory/Infer/](../DecisionTheory/DecInfer/README.md).
 
-> **Numérotation** : le notebook **14** (inférence causale) porte ce numéro par **parité** avec son jumeau C# [Infer-5-Causal-Inference](../Infer/Infer-5-Causal-Inference.ipynb). Le sujet de [Infer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [PyMC-7-Sequential](../DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
+> **Numérotation** : la série PyMC est **numérotée 1:1** avec son jumeau C# Infer (PyMC-5 ↔ Infer-5 = inférence causale, PyMC-14 ↔ Infer-14 = séquences, etc.) pour faciliter la comparaison des deux moteurs sur les mêmes modèles. Le sujet de [Infer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [PyMC-7-Sequential](../DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) (section bandits bayésiens MCMC) — d'où l'absence d'un PyMC-21 distinct.
 
 > **Ponts causaux** : [PyMC-5](PyMC-5-Causal-Inference.ipynb) est le maillon **MCMC** d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau **message passing** en C# [Infer-5](../Infer/Infer-5-Causal-Inference.ipynb) (Infer.NET, EP/VMP), le jumeau symbolique [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb). Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
@@ -112,7 +112,7 @@ flowchart TD
     P3["<b>Classification & sélection</b> (7-8)<br/>A/B tests · evidence · ARD"]
     P4["<b>Modèles avancés</b> (9-12)<br/>LDA · crowdsourcing · HMM · reco"]
     P5["<b>Référence</b> (13)<br/>Debugging NUTS · convergence"]
-    P6["<b>Inférence causale</b> (14)<br/>do-calculus · pm.do · backdoor/front-door"]
+    P6["<b>Inférence causale</b> (5)<br/>do-calculus · pm.do · backdoor/front-door"]
     P1 --> P2 --> P3 --> P4
     P4 --> P6
     P5 -.->|"diagnostics<br/>à tout moment"| P2

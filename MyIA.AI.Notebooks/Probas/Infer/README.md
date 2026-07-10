@@ -558,7 +558,7 @@ Cette extraction clarifie les deux fils du corpus Probas : la **modélisation ba
 ---
 
 
-## Inférence Causale (Notebook 14)
+## Inférence Causale (Notebook 5)
 
 ### Infer-5 : Inférence Causale et do-calculus
 
