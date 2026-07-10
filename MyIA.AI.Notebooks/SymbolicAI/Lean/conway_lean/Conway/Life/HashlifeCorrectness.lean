@@ -187,6 +187,43 @@ def BoxAssezGrand (g : Grid) (n : Nat) : Prop := box_assez_grand g n = true
 instance (g : Grid) (n : Nat) : Decidable (BoxAssezGrand g n) :=
   inferInstanceAs (Decidable (box_assez_grand g n = true))
 
+/-! ### n-aware margin predicate (`box_assez_grandN`) — P5 redesign gate N1
+
+The n-aware dual of `box_assez_grand` over `gridFrameN n g` (padding `max 2 n`,
+see `MacroCell.gridFrameN`). Unlike the fixed-`gridFrame` version — which is
+unsatisfiable for `n > 2` (`boxAssezGrand_nonempty_le_two`) — this predicate is
+satisfiable for `n` arbitrarily large, because the `max 2 n` padding guarantees
+each live cell `max 2 n ≥ n` cells of margin by construction. The witnesses
+below exhibit `n = 3 > 2` for the single-cell grid: `box_assez_grandN` holds
+where `box_assez_grand` provably fails — the concrete dual of the unsat cap
+that `gridFrameN` breaks (issue #3846). -/
+
+/-- The "box assez grand" predicate over the n-aware frame `gridFrameN n g`
+    (light-cone margin `≥ n` on all four sides), n-aware analog of
+    `box_assez_grand`. -/
+def box_assez_grandN (g : Grid) (n : Nat) : Bool :=
+  let ((r0, c0), lvl) := gridFrameN n g
+  let sz : Int := 2^lvl
+  g.all (fun (r, c) => cellMargin r0 c0 sz n r c)
+
+/-- Propositional version of `box_assez_grandN` for theorem statements. -/
+def BoxAssezGrandN (g : Grid) (n : Nat) : Prop := box_assez_grandN g n = true
+
+/-- Anti-vacuity witness (dual of the `boxAssezGrand_nonempty_le_two` unsat
+    cap): the n-aware predicate `box_assez_grandN` is *satisfiable* for
+    `n = 3 > 2` on the single-cell grid. With `gridFrameN 3 [(0,0)]` the
+    padding is `max 2 3 = 3`, giving margin `3 ≥ 3` on every side, so the
+    large-`n` light-cone hypothesis holds where the fixed-2 `gridFrame` could
+    not (issue #3846, gate N1). -/
+theorem box_assez_grandN_single_cell_3 : box_assez_grandN [(0, 0)] 3 = true := by
+  native_decide
+
+/-- Honest contrast: the *fixed-`gridFrame`* predicate provably *fails* for the
+    same grid at `n = 3` — confirming the duality is non-vacuous
+    (`box_assez_grandN` breaks exactly what `box_assez_grand` cannot satisfy). -/
+theorem box_assez_grand_single_cell_3_false : box_assez_grand [(0, 0)] 3 = false := by
+  native_decide
+
 /-! ### Monotonicity of `box_assez_grand` in the padding parameter
 
 A grid that admits `n` cells of margin also admits any smaller amount `m ≤ n`:
