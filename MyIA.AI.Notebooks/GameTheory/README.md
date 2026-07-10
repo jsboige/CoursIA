@@ -213,7 +213,7 @@ Les **side tracks** approfondissent les concepts du notebook principal :
 |-------|------|-------------|
 | **b** | Lean 4 | Formalisation mathématique, preuves formelles |
 | **c** | Python | Approfondissement, exemples avancés, visualisations |
-| **SC** | Mixte | Sous-série [SocialChoice/](SocialChoice/) : Arrow, Sen, SAT, Z3 (4 notebooks) |
+| **SC** | Mixte | Sous-série [SocialChoice/](SocialChoice/) : Arrow, Sen, SAT, Z3 (**7 notebooks** : SC-01 à SC-04 + 3 jumeaux C# livrés par marathon parité #4956) |
 
 **Organisation** :
 - Chaque notebook principal inclut des liens vers ses side tracks
