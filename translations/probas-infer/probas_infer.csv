@@ -7030,6 +7030,335 @@ Ce notebook a presente les systemes de recommandation bayesiens : factorisation 
 | GaussianFromMeanAndPrecision | Generation des notes a partir de l'affinite |
 
 > **Lecon pratique** : La factorisation bayesienne regularise naturellement via les priors, mais necessite suffisamment de donnees. Le Click Model illustre la fusion optimale de sources de fiabilite variable en ponderant automatiquement selon precision inferee.",,,,,,,,baa5d8087a35126b,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,dfaeec11,markdown,fr,052f143d9a879a79,"# Infer-16-Sparse-Gaussian-Process : Processus Gaussiens et frontières non-linéaires
+
+**Série** : Programmation Probabiliste avec Infer.NET (23)
+**Durée estimée** : 55 minutes
+**Prérequis** : [Infer-9-Classification](Infer-9-Classification.ipynb) (Bayes Point Machine), [Infer-2-Gaussian-Mixtures](Infer-2-Gaussian-Mixtures.ipynb), [Infer-12-Modeles-Hierarchiques](Infer-12-Modeles-Hierarchiques.ipynb) (comprendre pourquoi un prior partagé est plus robuste qu'un prior isolé)
+
+---
+
+## Objectifs
+
+- Comprendre le **processus gaussien** comme une distribution sur des fonctions
+- Construire un prior via un **noyau** (kernel RBF / squared-exponential)
+- Implémenter la **classification GP** (modèle probit) sur des données non linéairement séparables
+- Mesurer le rôle du **basis set** (points inducteurs) dans l'approximation sparse
+- Contraster avec le Bayes Point Machine (Infer-9) : frontière linéaire vs non linéaire
+
+---
+
+## Navigation
+
+| Précédent | Suivant |
+|-----------|--------|
+| [Infer-15-Recommenders](Infer-15-Recommenders.ipynb) | [Infer-17-Kalman-Filter](Infer-17-Kalman-Filter.ipynb) |
+
+---",,,,,,,,052f143d9a879a79,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,5a7cb1c5,markdown,fr,31aedff17ca7cb7a,"## 1. Configuration
+
+Cette section prepare l'environnement Infer.NET. Le processus gaussien necessite les espaces de noms `.Distributions`, `.Distributions.Kernels` (noyaux) et `.Math` (Vector).",,,,,,,,31aedff17ca7cb7a,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,4b73d1b9,code,fr,791b8e8dbecd93c6,"#r ""nuget: Microsoft.ML.Probabilistic""
+#r ""nuget: Microsoft.ML.Probabilistic.Compiler""
+
+using Microsoft.ML.Probabilistic;
+using Microsoft.ML.Probabilistic.Distributions;
+using Microsoft.ML.Probabilistic.Distributions.Kernels;
+using Microsoft.ML.Probabilistic.Math;
+using Microsoft.ML.Probabilistic.Models;
+using Microsoft.ML.Probabilistic.Algorithms;
+using Microsoft.ML.Probabilistic.Compiler;
+
+Console.WriteLine(""Infer.NET pret pour les processus gaussiens."");",,,,,,,,791b8e8dbecd93c6,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,af760d9e,markdown,fr,5a869819000c1c89,Chargement du helper de visualisation des graphes de facteurs (reutilise dans toute la serie).,,,,,,,,5a869819000c1c89,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,33c265a2,code,fr,58e8efb63209cc3a,"#load ""FactorGraphHelper.cs""
+
+if (FactorGraphHelper.IsGraphvizAvailable())
+    Console.WriteLine(""Graphviz disponible - les graphes de facteurs seront affiches automatiquement."");
+else
+    Console.WriteLine(""Graphviz non installe - utilisez viz-js.com pour visualiser les fichiers .gv generes."");",,,,,,,,58e8efb63209cc3a,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,bd21eb8b,markdown,fr,47bd2d42a1c6c666,"## 2. Motivation : au-dela de la frontiere lineaire
+
+[Infer-9](Infer-9-Classification.ipynb) introduisait le **Bayes Point Machine** : un classifieur qui marginalise sur tous les hyperplans separateurs. Mais un hyperplan est **lineaire** dans l'espace des features. Des qu'il faut une frontiere **courbe**, le BPM est impuissant.
+
+**Exemple canonique : le ""donut"".** Deux classes organisees en cercles concentriques -- la classe positive forme un anneau exterieur, la classe negative un disque interieur. Aucune droite (aucun hyperplan) ne peut separer ces deux classes, parce que chaque demi-plan coupe forcement l'une et l'autre.
+
+| Approche | Frontiere | Donut |
+|----------|-----------|-------|
+| BPM (Infer-9) | Hyperplan | **Echec** (lineaire) |
+| GP (ce notebook) | Courbe quelconque | **Succes** (noyau RBF) |
+
+Le processus gaussien resout ce probleme en placant un **prior sur des fonctions** : au lieu d'inferer un vecteur de poids $\mathbf{w}$ (qui definit un hyperplan), on infere une **fonction** $f$ tireee d'un processus gaussien, puis on classifie via un modele probit $y = \mathbb{1}[f(\mathbf{x}) > 0]$.",,,,,,,,47bd2d42a1c6c666,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,2ead9dd4,markdown,fr,2dbab404f8b10b94,"## 3. Un prior sur des fonctions
+
+Un **processus gaussien** est defini par deux objets :
+
+- une **fonction moyenne** $m(\mathbf{x})$ (souvent constante, ici nulle) ;
+- un **noyau de covariance** $k(\mathbf{x}, \mathbf{x}')$ qui dit a quel point deux points sont correlles.
+
+Le noyau **squared-exponential** (RBF) decroche avec la distance :
+
+$$k(\mathbf{x}, \mathbf{x}') = \exp\left(-\frac{\|\mathbf{x}-\mathbf{x}'\|^2}{2\ell^2}\right)$$
+
+ou $\ell$ est la **longueur de correlation** : deux points proches ($\|\mathbf{x}-\mathbf{x}'\| \ll \ell$) ont des valeurs de $f$ quasi-egales ; deux points eloignes ($\gg \ell$) sont decorreles. C'est cette coherence locale qui produit des frontieres **lisses** plutot que du bruit.",,,,,,,,2dbab404f8b10b94,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,cf840d55,code,fr,dc6dc36ccba58212,"// Le prior gaussien sur les fonctions : moyenne nulle + noyau RBF.
+GaussianProcess gpPrior = new GaussianProcess(
+    new ConstantFunction(0),      // moyenne m(x) = 0
+    new SquaredExponential(0));   // noyau RBF k(x,x') = exp(-||x-x'||^2 / 2)
+
+Console.WriteLine(""Prior GP defini."");
+Console.WriteLine($""  Moyenne : ConstantFunction(0)"");
+Console.WriteLine($""  Noyau  : SquaredExponential (RBF)"");
+
+// Un noyau mesure la similitude entre deux points. La table ci-dessous montre
+// la covariance RBF entre quelques points du plan -- proche de 1 quand les
+// points coincident, decroissant vers 0 avec la distance.
+Vector[] probes = {
+    Vector.FromArray(0.0, 0.0),
+    Vector.FromArray(0.5, 0.0),
+    Vector.FromArray(1.0, 0.0),
+    Vector.FromArray(2.0, 0.0)
+};
+Console.WriteLine(""\nCovariance RBF depuis l'origine (0,0) :"");
+foreach (var p in probes)
+{
+    double d = Math.Sqrt(p[0]*p[0] + p[1]*p[1]);
+    double cov = Math.Exp(-0.5 * d * d);
+    Console.WriteLine($""  vers {p} (distance {d:F2}) : k = {cov:F4}"");
+}",,,,,,,,dc6dc36ccba58212,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,d83aeee8,markdown,fr,75dde62359cc8d68,"**Lecture** : la covariance decroit exponentiellement avec la distance. Un point eloigne de 2 unites est deja quasi-decorrele de l'origine -- ses valeurs de $f$ sont donc independantes. Cette decroissance est ce qui rend le GP **local** : la frontiere ne peut pas osciller sauvagement, elle est contrainte par la coherence que le noyau impose.",,,,,,,,75dde62359cc8d68,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,be0e6d0f,markdown,fr,d3936065e74e22bb,"## 4. Le dataset ""donut"" (non lineairement separable)
+
+Construisons les donnees : un disque interieur (classe negative) entoure d'un anneau (classe positive).",,,,,,,,d3936065e74e22bb,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,3b67d2be,code,fr,6dd11f952a1fe50f,"// Dataset ""donut"" : disque interieur (false) + anneau exterieur (true).
+// Aucun hyperplan ne separe ces deux classes.
+var rnd = new System.Random(7);
+var inputsList = new System.Collections.Generic.List<Vector>();
+var outputsList = new System.Collections.Generic.List<bool>();
+
+// Disque interieur : rayon ~ 0.3-0.6  => classe false
+for (int i = 0; i < 8; i++)
+{
+    double r = 0.30 + 0.30 * rnd.NextDouble();
+    double t = 2.0 * Math.PI * rnd.NextDouble();
+    inputsList.Add(Vector.FromArray(r * Math.Cos(t), r * Math.Sin(t)));
+    outputsList.Add(false);
+}
+// Anneau exterieur : rayon ~ 1.2-1.5 => classe true
+for (int i = 0; i < 8; i++)
+{
+    double r = 1.20 + 0.30 * rnd.NextDouble();
+    double t = 2.0 * Math.PI * rnd.NextDouble();
+    inputsList.Add(Vector.FromArray(r * Math.Cos(t), r * Math.Sin(t)));
+    outputsList.Add(true);
+}
+
+Vector[] inputsDonut = inputsList.ToArray();
+bool[] outputsDonut = outputsList.ToArray();
+
+Console.WriteLine($""Dataset donut : {inputsDonut.Length} points"");
+Console.WriteLine($""  Classe false (disque interieur) : {outputsDonut.Count(b => !b)} points"");
+Console.WriteLine($""  Classe true  (anneau exterieur) : {outputsDonut.Count(b => b)} points"");
+Console.WriteLine(""\nPremiers points :"");
+for (int i = 0; i < 4; i++)
+    Console.WriteLine($""  x{i} = {inputsDonut[i]} -> classe {outputsDonut[i]}"");",,,,,,,,6dd11f952a1fe50f,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,d3a90bd5,markdown,fr,c19e525d4423bc34,"### Pourquoi le BPM echouerait ici
+
+Un BPM (Infer-9) cherche un hyperplan $\mathbf{w}^T\mathbf{x} - b = 0$. Quelle que soit la direction $\mathbf{w}$, la demi-droite coupe a la fois le disque interieur et l'anneau exterieur : il classera forcement faux une partie des points. La non-separabilite lineaire est totale. C'est precisement le cas ou un GP excelle.",,,,,,,,c19e525d4423bc34,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,c94de04f,markdown,fr,36929cf59d7653d4,"## 5. Le modele : classification GP (probit)
+
+On assemble le modele en suivant le meme schelet probit qu'Infer-9, mais en remplacant le score lineaire $\mathbf{w}^T\mathbf{x}$ par une **fonction** $f(\mathbf{x})$ tiree du processus gaussien :
+
+$$y_j = \mathbb{1}[f(\mathbf{x}_j) + \epsilon_j > 0], \qquad \epsilon_j \sim \mathcal{N}(0, 0.1)$$
+
+ou $f$ est un GP sparse (approxime sur un **basis set** de points induiseurs).",,,,,,,,36929cf59d7653d4,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,d82138ea,code,fr,6efc76b971d72ab4,"// Modele : classification GP probit sur le donut.
+
+// 1. Prior sparse sur la fonction f.
+Variable<SparseGP> prior = Variable.New<SparseGP>().Named(""prior"");
+Variable<IFunction> f = Variable<IFunction>.Random(prior).Named(""f"");
+
+// 2. Observations.
+VariableArray<Vector> x = Variable.Observed(inputsDonut).Named(""x"");
+Range j = x.Range.Named(""j"");
+VariableArray<bool> y = Variable.Observed(outputsDonut, j).Named(""y"");
+
+// 3. Modele probit : score = f(x_j), bruite gaussien, seuil a 0.
+Variable<double> score = Variable.FunctionEvaluate(f, x[j]);
+y[j] = (Variable.GaussianFromMeanAndVariance(score, 0.1) > 0);
+
+// 4. Prior GP + basis (grille de points induiseurs couvrant le plan).
+GaussianProcess gp = new GaussianProcess(new ConstantFunction(0), new SquaredExponential(0));
+Vector[] basis = new Vector[] {
+    Vector.FromArray(-1.5, -1.5), Vector.FromArray(0.0, -1.5), Vector.FromArray(1.5, -1.5),
+    Vector.FromArray(-1.5,  0.0), Vector.FromArray(0.0,  0.0), Vector.FromArray(1.5,  0.0),
+    Vector.FromArray(-1.5,  1.5), Vector.FromArray(0.0,  1.5), Vector.FromArray(1.5,  1.5)
+};
+prior.ObservedValue = new SparseGP(new SparseGPFixed(gp, basis));
+
+// 5. Inference EP.
+InferenceEngine engine = new InferenceEngine(new ExpectationPropagation());
+engine.Compiler.CompilerChoice = CompilerChoice.Roslyn;
+engine.ShowProgress = false;
+engine.ShowFactorGraph = true;
+
+SparseGP sgp = engine.Infer<SparseGP>(f);
+Console.WriteLine(""Posterior SparseGP inferer."");
+Console.WriteLine($""  Basis set : {basis.Length} points induiseurs"");",,,,,,,,6efc76b971d72ab4,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,72b6a51e,code,fr,8eed6a0c382e5d4f,"// Visualisation du graphe de facteurs du classifieur GP.
+display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));",,,,,,,,8eed6a0c382e5d4f,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,a1377147,markdown,fr,9bba8bdb75d5a528,"### Lecture du graphe
+
+Le graphe de facteurs montre la structure : la variable $f$ (une fonction, pas un scalaire) est connectee a chaque observation via le facteur `FunctionEvaluate`. Le prior `SparseGP` repose $f$ sur le basis de 9 points. L'EP propage les messages a travers cette chaine pour produire le posterior sur $f$.",,,,,,,,9bba8bdb75d5a528,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,86593ca7,markdown,fr,bf8173a4d9573ce7,"## 6. Predictions avec incertitude
+
+Le posterior `SparseGP` permet d'evaluer $f$ en tout nouveau point via `Marginal`. On peut ainsi tracer la **frontiere de decision** (la ou $f$ change de signe) et la **confiance** (distance a 0).",,,,,,,,bf8173a4d9573ce7,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,d9367afd,code,fr,092c2bd12198eedf,"// Predictions sur le training set + quelques points test.
+Console.WriteLine(""=== Predictions sur le training set ==="");
+int correct = 0;
+for (int i = 0; i < outputsDonut.Length; i++)
+{
+    Gaussian post = sgp.Marginal(inputsDonut[i]);
+    double postMean = post.GetMean();
+    bool pred = postMean > 0.0;
+    if (pred == outputsDonut[i]) correct++;
+    Console.WriteLine($""  x{i} {inputsDonut[i],20} : f={post,30} pred={pred} reel={outputsDonut[i]}"");
+}
+Console.WriteLine($""\nExactitude training : {correct}/{outputsDonut.Length} = {100.0*correct/outputsDonut.Length:F1}%"");",,,,,,,,092c2bd12198eedf,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,01b7cfd8,code,fr,3164fde9515a088a,"// Test sur des points nouveaux : au centre (doit etre false), a mi-rayon (incertain),
+// sur l'anneau (doit etre true), loin (true).
+Vector[] testPoints = {
+    Vector.FromArray(0.0, 0.0),     // centre du disque -> false attendu
+    Vector.FromArray(0.9, 0.0),     // entre les deux -> zone d'incertitude
+    Vector.FromArray(1.3, 0.0),     // anneau -> true attendu
+    Vector.FromArray(0.0, 1.4)      // anneau (haut) -> true attendu
+};
+Console.WriteLine(""=== Predictions sur points test ==="");
+foreach (var tp in testPoints)
+{
+    Gaussian post = sgp.Marginal(tp);
+    double p = MMath.NormalCdf(post.GetMean() / Math.Sqrt(post.GetVariance() + 0.1));
+    Console.WriteLine($""  {tp,16} : E[f]={post.GetMean():+0.000;-0.000} P(classe=true)={p:F3}"");
+}",,,,,,,,3164fde9515a088a,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,e087534a,markdown,fr,314415401f6ede13,"### Analyse
+
+- Le **centre** du donut est correctement classe `false` ($E[f] < 0$) bien qu'aucune donnee ne soit exactement la -- la coherence du noyau propage la classe du disque interieur vers le centre.
+- La **zone d'incertitude** (mi-rayon, entre le disque et l'anneau) montre une probabilite proche de 0.5 : le GP sait qu'il ne sait pas.
+- L'**anneau** est correctement `true`.
+
+C'est le comportement que le BPM (lineaire) ne peut pas reproduire : il n'y a pas d'hyperplan qui vaut `false` au centre et `true` tout autour. Le GP, lui, a appris une frontiere **circulaire**.",,,,,,,,314415401f6ede13,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,1da7c819,markdown,fr,52e4a48ee5421f79,"## 7. Sparse : le role du basis set
+
+Un GP ""full"" evalue la fonction sur **tous** les points d'entrainement, ce qui coute $O(n^3)$. L'approximation **sparse** remplace ce jeu complet par un petit **basis set** de $m$ points induiseurs : le cout tombe a $O(nm^2)$, controlable par le choix de $m$.
+
+> La doc Infer.NET precise : *« If the basis set is exactly the set of inputs, then the distribution is equivalent to a full (non-sparse) Gaussian Process. »* Le sparse est donc un vrai continu, pas une variante degradee -- avec $m = n$ on retrouve le GP exact.
+
+Comparons deux tailles de basis : peu d'inducteurs (sparse agressif) vs basis = tous les inputs (full).",,,,,,,,52e4a48ee5421f79,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,988cf81e,code,fr,edba0941cb8605ec,"// Comparaison : basis sparse (4 points) vs basis = tous les inputs (full).
+Vector[] basisSparse = new Vector[] {
+    Vector.FromArray(0.0, 0.0), Vector.FromArray(1.3, 0.0),
+    Vector.FromArray(-1.3, 0.0), Vector.FromArray(0.0, 1.3)
+};
+
+GaussianProcess gp2 = new GaussianProcess(new ConstantFunction(0), new SquaredExponential(0));
+
+// (a) Sparse avec peu de points induiseurs.
+Variable<SparseGP> priorSparse = Variable.New<SparseGP>().Named(""priorSparse"");
+Variable<IFunction> fSparse = Variable<IFunction>.Random(priorSparse).Named(""fSparse"");
+VariableArray<Vector> xS = Variable.Observed(inputsDonut).Named(""xS"");
+Range jS = xS.Range.Named(""jS"");
+VariableArray<bool> yS = Variable.Observed(outputsDonut, jS).Named(""yS"");
+Variable<double> scoreS = Variable.FunctionEvaluate(fSparse, xS[jS]);
+yS[jS] = (Variable.GaussianFromMeanAndVariance(scoreS, 0.1) > 0);
+priorSparse.ObservedValue = new SparseGP(new SparseGPFixed(gp2, basisSparse));
+
+var engSparse = new InferenceEngine(new ExpectationPropagation());
+engSparse.Compiler.CompilerChoice = CompilerChoice.Roslyn;
+engSparse.ShowProgress = false;
+SparseGP sgpSparse = engSparse.Infer<SparseGP>(fSparse);
+
+// (b) ""Full"" : basis = tous les inputs (n = 16).
+Variable<SparseGP> priorFull = Variable.New<SparseGP>().Named(""priorFull"");
+Variable<IFunction> fFull = Variable<IFunction>.Random(priorFull).Named(""fFull"");
+VariableArray<Vector> xF = Variable.Observed(inputsDonut).Named(""xF"");
+Range jF = xF.Range.Named(""jF"");
+VariableArray<bool> yF = Variable.Observed(outputsDonut, jF).Named(""yF"");
+Variable<double> scoreF = Variable.FunctionEvaluate(fFull, xF[jF]);
+yF[jF] = (Variable.GaussianFromMeanAndVariance(scoreF, 0.1) > 0);
+priorFull.ObservedValue = new SparseGP(new SparseGPFixed(gp2, inputsDonut));
+
+var engFull = new InferenceEngine(new ExpectationPropagation());
+engFull.Compiler.CompilerChoice = CompilerChoice.Roslyn;
+engFull.ShowProgress = false;
+SparseGP sgpFull = engFull.Infer<SparseGP>(fFull);
+
+// Exactitude des deux.
+int EvalAcc(SparseGP sgp, Vector[] xs, bool[] ys)
+{
+    int c = 0;
+    for (int i = 0; i < ys.Length; i++)
+        if ((sgp.Marginal(xs[i]).GetMean() > 0) == ys[i]) c++;
+    return c;
+}
+Console.WriteLine(""=== Sparse vs Full ==="");
+Console.WriteLine($""  Sparse (basis=4 induiseurs)  : {EvalAcc(sgpSparse, inputsDonut, outputsDonut)}/{outputsDonut.Length}"");
+Console.WriteLine($""  Full   (basis=16=inputs)     : {EvalAcc(sgpFull, inputsDonut, outputsDonut)}/{outputsDonut.Length}"");
+Console.WriteLine(""\nLes deux separnt le donut -- le sparse economise du calcul sans casser la separabilite."");",,,,,,,,edba0941cb8605ec,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,df70355d,markdown,fr,2122981cb2a5fdc0,"### Lecture : pourquoi le sparse marche ici
+
+Le donut est une structure **globale** (un cercle), capturable meme par peu de points induiseurs bien places. Le sparse est le plus rentable quand le signal est lisse a grande echelle (peu de degres de liberte effectifs) ; il perd en precision quand la frontiere oscille finement. Le basis set est un **biais-variance** : trop peu d'inducteurs sous-ajustent, trop = cout full sans gain.
+
+| Basis | Cout | Risque |
+|-------|------|--------|
+| Petit ($m \ll n$) | $O(nm^2)$ economique | Sous-ajustement si frontiere fine |
+| $m = n$ (full) | $O(n^3)$ | Exact mais cher",,,,,,,,2122981cb2a5fdc0,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,62d03a23,markdown,fr,16e22e3f835fc078,"## 8. Exercices
+
+### Exercice 1 : Longueur de correlation
+
+Le noyau `SquaredExponential(0)` utilise une longueur de correlation par defaut. Observez comment une **longueur trop courte** (frontiere herissee, surajustement) ou **trop longue** (frontiere trop lisse, sous-ajustement) degrade la classification.",,,,,,,,16e22e3f835fc078,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,22d5c99a,code,fr,56dcb29999b35c35,"// Exercice : influer sur la longueur de correlation du noyau.
+// Indice : le constructeur SquaredExponential accepte des parametres de scale.
+// Essayez plusieurs valeurs et mesurez l'exactitude training.
+// Console.WriteLine($""length=... : {acc}/{n}"");
+Console.WriteLine(""Exercice a completer : longueur de correlation du noyau"");",,,,,,,,56dcb29999b35c35,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,d62dc3c6,markdown,fr,d144a6acf2accb62,"### Exercice 2 : Donut bruite
+
+Ajoutez du bruit aux etiquettes (quelques points du disque etiquetes `true`, et reciproquement). Le GP gere-t-il le bruit mieux qu'un classifieur deterministe ? Quantifiez la **confiance** (P proche de 0.5) sur les points contredits.",,,,,,,,d144a6acf2accb62,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,a19e5b0f,code,fr,57df578458793546,"// Exercice : flippez 2 etiquettes et re-inferez. Observez P(classe) sur les points bruites.
+// Indice : construire un nouveau tableau outputsNoisy avec 2 valeurs inversee.
+Console.WriteLine(""Exercice a completer : robustesse au bruit du GP"");",,,,,,,,57df578458793546,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,7bc55930,markdown,fr,a46b348885775f6a,"### Exercice 3 : Donnees lineairement separables
+
+Construisez un dataset **lineairement** separable (deux amas de part et d'autre d'une droite). Comparez le GP au BPM (reutilisez `SimpleBPM` d'Infer-9) : sur un probleme simple, le GP est-il utile, ou le BPM suffit-il ?",,,,,,,,a46b348885775f6a,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,49346eac,code,fr,d67d2ffac0deae53,"// Exercice : dataset lineairement separable -> GP vs BPM (Infer-9).
+// Indice : deux amas centres en (-1,-1) et (+1,+1).
+// Question : sur un cas lineaire, le GP apporte-t-il plus que le BPM ?
+Console.WriteLine(""Exercice a completer : GP vs BPM sur cas lineaire"");",,,,,,,,d67d2ffac0deae53,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,81601e3e,markdown,fr,fc3b803de59568e4,"### GP vs BPM (Infer-9)
+
+| Aspect | BPM (Infer-9) | GP (Infer-16) |
+|--------|---------------|---------------|
+| Paramètre | Vecteur de poids $\mathbf{w}$ | Fonction $f$ |
+| Frontière | Hyperplan (linéaire) | Courbe quelconque |
+| Donut | **Échec** | **Succès** |
+| Coût | Linéaire en $n$ | $O(nm^2)$ (sparse) |
+| Quand l'utiliser | Données linéairement séparables | Frontières non linéaires |
+
+### Distributions utilisées
+
+| Distribution | Rôle |
+|--------------|------|
+| `SparseGP` | Prior et posterior sur la fonction $f$ |
+| `Gaussian` | Score bruité (probit) + marginal posterior en chaque point |
+| `Bernoulli` | (Implicite) prediction de classe via `NormalCdf` |
+
+> **Leçon** : le GP est l'outil naturel quand la frontière de décision est non linéaire ET qu'on veut une **incertitude calibrée**. Pour un cas linéaire, le BPM (Infer-9) reste plus simple et plus rapide. Le processus gaussien n'est pas un remplacement universel — c'est un **complément** qui étend la boîte à outils bayésienne au non-linéaire, au prix d'un noyau à choisir et d'un basis à calibrer.
+
+### Ponts dans la série
+
+- **Pont hiérarchique** ([Infer-12-Modeles-Hierarchiques](Infer-12-Modeles-Hierarchiques.ipynb)) : la longueur d'échelle $\ell$ du noyau RBF est un hyperparamètre ; un GP qui apprendrait une longueur par groupe d'inputs est, structurellement, un modèle hiérarchique sur ces hyperparamètres. Ce notebook, en restant à $\ell$ fixée, montre d'abord le mécanisme bayésien avant d'envisager sa généralisation hiérarchique.
+- **Suivant** ([Infer-17-Kalman-Filter](Infer-17-Kalman-Filter.ipynb)) : le GP est le pendant **statique** (covariance dans l'espace des entrées) du modèle d'état markovien (covariance dans le temps). Tous deux sont résolus exactement par EP dans la famille gaussienne — Kalman est le GP temporel, en quelque sorte.",,,,,,,,fc3b803de59568e4,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb,56307ca7,markdown,fr,d86af33276cec371,"# Infer-17 — Filtre de Kalman : systèmes dynamiques linéaires gaussiens
 
 > **Série Infer.NET (25).** Ce notebook étend [Infer-14 (Séquences / HMM)](Infer-14-Sequences.ipynb)
@@ -11419,7 +11748,7 @@ Ce notebook a couvert les reseaux bayesiens : structure DAG, CPT, D-separation, 
 | Gamma | Priors sur precisions |
 
 > **Apport des reseaux bayesiens** : Ils permettent le raisonnement abductif (des effets vers les causes), essentiel pour le diagnostic medical, le debogage et l'analyse causale. La distinction observation vs intervention (do-calculus de Pearl) est fondamentale pour la science des donnees.",,,,,,,,10f613c1a94bf54b,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,1a12413d2cab,markdown,fr,81bd06982d5e7110,"# Infer-5-Causal-Inference : Inférence Causale et do-calculus
+MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,1a12413d2cab,markdown,fr,9d0a3ccab161fabd,"# Infer-5-Causal-Inference : Inférence Causale et do-calculus
 
 **Serie** : Programmation Probabiliste avec Infer.NET (22/23)
 **Duree estimee** : 65 minutes
@@ -11442,8 +11771,8 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,1a12413d2cab,markd
 |-----------|---------|
 | [Infer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) | (fin de la serie) |
 
-> **Pont inter-series (constellation causale)** : le do-calculus de Pearl se decline en **plusieurs paradigmes** dans ce depot, et ce notebook en est le versant **probabiliste distributionnel** (.NET/Infer.NET) -- les effets causaux y sont **calcules** par mutilation de graphe. Le jumeau **Python/PyMC** porte les mêmes exemples (barometre, Sprinkler) via l'opérateur natif `pm.do` : voir [PyMC-14-Causal-Inference](../PyMC/PyMC-14-Causal-Inference.ipynb), ainsi que la demo historique `P(Cloudy|do(Rain))` dans [PyMC-4-Bayesian-Networks](../PyMC/PyMC-4-Bayesian-Networks.ipynb). Enfin, le traitement **symbolique** (Java/Tweety, raisonneur contrefactuel propositionnel) est dans [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb). La section **Constellation causale** en fin de notebook cartographie ces quatre implementations (y compris l'emergence causale a l'echelle, [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb)).
-",,,,,,,,81bd06982d5e7110,,,,,,,
+> **Pont inter-series (constellation causale)** : le do-calculus de Pearl se decline en **plusieurs paradigmes** dans ce depot, et ce notebook en est le versant **probabiliste distributionnel** (.NET/Infer.NET) -- les effets causaux y sont **calcules** par mutilation de graphe. Le jumeau **Python/PyMC** porte les mêmes exemples (barometre, Sprinkler) via l'opérateur natif `pm.do` : voir [PyMC-5-Causal-Inference](../PyMC/PyMC-5-Causal-Inference.ipynb), ainsi que la demo historique `P(Cloudy|do(Rain))` dans [PyMC-4-Bayesian-Networks](../PyMC/PyMC-4-Bayesian-Networks.ipynb). Enfin, le traitement **symbolique** (Java/Tweety, raisonneur contrefactuel propositionnel) est dans [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb). La section **Constellation causale** en fin de notebook cartographie ces quatre implementations (y compris l'emergence causale a l'echelle, [ICT-5](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb)).
+",,,,,,,,9d0a3ccab161fabd,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,1a5627132eb9,markdown,fr,37586ca24bf11a26,"## 1. Pourquoi la causalite ? — L'echelle de Pearl
 
 La probabilite seule repond aux questions d'**association**. Mais de nombreuses questions pratiques sont **causales** :
@@ -11914,20 +12243,20 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,1f39b5a055ca,code,
 // Etape 2 : coder des CPT produisant un renversement
 // Etape 3 : montrer P(Y|X) agrege != P(Y|do(X)) et expliquer le mecanisme
 Console.WriteLine(""Exercice 4 a completer : concevoir un paradoxe de Simpson (renversement agrege vs conditionnel)."");",,,,,,,,0a1082939dc996ba,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,infer22-constell-bridge,markdown,fr,9e99490b083f5f22,"## Constellation causale -- le do-calculus en quatre paradigmes
+MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,infer22-constell-bridge,markdown,fr,e1482782d5f0d2f7,"## Constellation causale -- le do-calculus en quatre paradigmes
 
 Le do-calculus de Pearl (1995, 2000) est un **calcul formel independant du langage** : les trois regles d'identification d'un effet causal ne dependent pas de l'implementation. Ce depot le met en oeuvre dans **quatre paradigmes** distincts, qui choisissent chacun ce qu'ils **calculent** versus ce sur quoi ils **raisonnent**.
 
 | Paradigme | Moteur / langage | Idiome du `do(X)` | Notebook | Ce qu'il apporte |
 |-----------|------------------|-------------------|----------|------------------|
 | **Probabiliste distributionnel** | Infer.NET (C#) | **Mutilation de graphe** : `Variable.Bernoulli(1.0)` force la valeur et coupe l'arc parent | ce notebook | Effet causal **calcule** par message passing deterministe (EP/VMP) sur le graphe mutile |
-| **Probabiliste (transformation)** | PyMC (Python) | Opérateur natif `pm.do` : l'intervention est une **transformation de modele de premiere classe** | [PyMC-14](../PyMC/PyMC-14-Causal-Inference.ipynb) | `do` rebranche comme un opérateur du langage probabiliste |
+| **Probabiliste (transformation)** | PyMC (Python) | Opérateur natif `pm.do` : l'intervention est une **transformation de modele de premiere classe** | [PyMC-5](../PyMC/PyMC-5-Causal-Inference.ipynb) | `do` rebranche comme un opérateur du langage probabiliste |
 | **Symbolique propositionnel** | Tweety (Java) | **Raisonneur contrefactuel** : logique classique, preuves argumentatives (pas de probabilites) | [Tweety-11](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | Raisonnement **qualitatif** : ""X cause-t-il Y ?"" sans chiffres |
 | **Emergence causale (echelle)** | PyPhi (Python) | **Intervention sur la partition** : `do_coarse_grain` / `do_blackbox` force une echelle macro et mesure l'information effective (EI) | [ICT-5-CausalEmergence](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb) | Le `do` s'applique a l'**echelle** : quelle description (micro vs macro) est causalement la plus forte (Hoel 2013, Jansma & Hoel 2025) |
 
 **Valeurs croisees (verification inter-paradigme).** Sur le **même** exemple du barometre (confondeur `BassePression -> {Barometre, Storm}`), les deux versants probabilistes **recoupent** exactement :
 
-| Quantite | Infer.NET (ce notebook, sec 3) | PyMC-14 |
+| Quantite | Infer.NET (ce notebook, sec 3) | PyMC-5 |
 |----------|-------------------------------|---------|
 | `P(Storm | Barometre baisse)` (observation) | **0,656** | **0,656** |
 | `P(Storm | do(Barometre baisse))` (intervention) | **0,310** | **0,310** |
@@ -11936,8 +12265,8 @@ L'effondrement de la correlation (`0,656 -> 0,310`) lorsqu'on passe de l'observa
 
 **L'angle ICT (emergence causale).** Le quatrieme paradigme, [ICT-5-CausalEmergence](../../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb), deplace la question : au lieu d'intervenir sur une **variable** (`do(X=x)`), il intervient sur l'**echelle de description** (`do_coarse_grain`) et mesure quelle partition (micro vs macro) maximise l'**information effective**. C'est le même opérateur d'intervention de Pearl, applique a la granularite du modele plutot qu'a la valeur d'un noeud -- d'ou l'expression *emergence causale* (la macro peut être causalement plus forte que la micro).
 
-**Ce qu'il faut retenir.** Quatre implementations, **un seul do-calculus**. Le paradigme Infer.NET met l'accent sur la **structure** (mutiler le graphe = une operation que le moteur d'inference execute) ; PyMC met l'accent sur la **composabilite** (`do` comme transformation de modele) ; Tweety met l'accent sur le **raisonnement** (causalite sans nombres) ; ICT (PyPhi) met l'accent sur l'**echelle** (intervenir sur la partition, pas sur la variable). Choisir l'un ou l'autre, c'est choisir ce que l'on veut : des probabilites deterministes (message passing), du sampling flexible, des preuves qualitatives, ou identifier la bonne echelle de description.",,,,,,,,9e99490b083f5f22,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,41d4daeba16c,markdown,fr,db6d2c3f61507781,"## 12. Synthese
+**Ce qu'il faut retenir.** Quatre implementations, **un seul do-calculus**. Le paradigme Infer.NET met l'accent sur la **structure** (mutiler le graphe = une operation que le moteur d'inference execute) ; PyMC met l'accent sur la **composabilite** (`do` comme transformation de modele) ; Tweety met l'accent sur le **raisonnement** (causalite sans nombres) ; ICT (PyPhi) met l'accent sur l'**echelle** (intervenir sur la partition, pas sur la variable). Choisir l'un ou l'autre, c'est choisir ce que l'on veut : des probabilites deterministes (message passing), du sampling flexible, des preuves qualitatives, ou identifier la bonne echelle de description.",,,,,,,,e1482782d5f0d2f7,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,41d4daeba16c,markdown,fr,791741e79ed93346,"## 12. Synthese
 
 | Niveau | Question | Opérateur | Méthode Infer.NET |
 |--------|----------|-----------|-------------------|
@@ -11957,7 +12286,7 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,41d4daeba16c,markd
 - **Backdoor et front-door rendent l'effet causal identifiable** a partir de donnees observationnelles, sous conditions graphiques — formalisees par le do-calculus (Pearl 1995), complet (Shpitser & Pearl 2006).
 
 ### Pour aller plus loin
-- **[Notebook-pont — du graphe causal au do-calculus](../DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb)** : l'armature formelle unifiée de Pearl (échelle + 3 règles) exécutée sur l'outil de référence `dowhy` (identification backdoor/front-door + estimation + réfutation), qui relie cette série à Tweety-11, PyMC-14 et ICT-5.
+- **[Notebook-pont — du graphe causal au do-calculus](../DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb)** : l'armature formelle unifiée de Pearl (échelle + 3 règles) exécutée sur l'outil de référence `dowhy` (identification backdoor/front-door + estimation + réfutation), qui relie cette série à Tweety-11, PyMC-5 et ICT-5.
 
 - **Pont symbolique** : [Tweety-11-Causal](../../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) traite le `do()` et les contrefactuels en **Java/Tweety** (raisonnement propositionnel) — même echelle de Pearl, paradigme different.
 - **Pont Python** : [PyMC-4-Bayesian-Networks](../PyMC/PyMC-4-Bayesian-Networks.ipynb) demontre la même distinction `P(Cloudy|Rain)` vs `P(Cloudy|do(Rain))` en MCMC.
@@ -11965,7 +12294,7 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,41d4daeba16c,markd
 
 ---
 
-[← Infer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) | [Retour a la serie](README.md)",,,,,,,,db6d2c3f61507781,,,,,,,
+[← Infer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) | [Retour a la serie](README.md)",,,,,,,,791741e79ed93346,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-6-Debugging.ipynb,ac9ac32a,markdown,fr,9139805b9aa08b6f,"# Infer-6-Debugging : Troubleshooting et Bonnes Pratiques
 
 **Serie** : Programmation Probabiliste avec Infer.NET (6/20)  
