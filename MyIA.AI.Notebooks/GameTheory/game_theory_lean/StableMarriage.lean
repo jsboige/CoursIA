@@ -27,3 +27,5 @@ import StableMarriage.GSState
 import StableMarriage.GSState_en
 import StableMarriage.Lemmas
 import StableMarriage.Lemmas_en
+import StableMarriage.Lattice
+import StableMarriage.Lattice_en
