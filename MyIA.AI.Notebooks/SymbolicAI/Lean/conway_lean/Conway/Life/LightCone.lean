@@ -76,5 +76,26 @@ theorem mem_lightCone_of_chebyshev_le (p q : Int × Int) (t : Nat)
   unfold manhattan
   omega
 
+/-! ## Translation invariance: shifting the center shifts the cone
+
+The light cone is translation-equivariant: membership of `q` in `lightCone p t`
+depends only on the displacement `q - p`, not on the absolute position `p`. This
+is the Grid-level counterpart of the `toGrid` offset-shift machinery in
+`HashlifeCorrectness` (`toGrid_shift`, `toGrid_shift_between`), and is the
+structural fact needed to relate the light cone before and after a `hashlifeJump`
+shifts the grid by `jumpResultOff` in `evolveHashlifeFastAux`. The cone is an
+isometry of the Manhattan metric, so its shape is preserved under translation. -/
+theorem lightCone_translate (p q : Int × Int) (t : Nat) :
+    q ∈ lightCone p t ↔ (q.1 - p.1, q.2 - p.2) ∈ lightCone (0, 0) t := by
+  constructor
+  · intro h
+    apply mem_lightCone_of_manhattan_le (0, 0) _ t
+    have hm := manhattan_le_of_mem_lightCone p q t h
+    unfold manhattan at *; omega
+  · intro h
+    apply mem_lightCone_of_manhattan_le p q t
+    have hm := manhattan_le_of_mem_lightCone (0, 0) _ t h
+    unfold manhattan at *; omega
+
 end Life
 end Conway
