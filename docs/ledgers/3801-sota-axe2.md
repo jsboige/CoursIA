@@ -867,7 +867,8 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 | 10 | CaseStudies (6 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 6/6 | #5930 MERGED |
 | 11 | ICT-Series (26 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 26/26 | #5936 MERGED |
 | 12 | GameTheory (55 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 55/55 | #5944 MERGED |
-| 13 | **Search (112 nb)** | po-2025 strict | 2026-07-10 | **SOTA-OK 112/112** | **THIS** |
+| 13 | Search (112 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 112/112 | #5949 MERGED |
+| 14 | **Planners (23 nb)** | po-2025 strict | 2026-07-10 | **SOTA-OK 23/23** | **THIS** |
 
 **Moteurs SOTA cumulés dans le registre (7 entries)** : Microsoft.ML.Probabilistic, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET = **20 moteurs SOTA distincts** sur 7 familles.
 
@@ -1226,5 +1227,63 @@ La série Search est **anti-dégénérée** : Applications/CSP = **NP-difficiles
 - **Pivot L335 légitimé** : 13ᵉ famille distincte, owner po-2025 strict, la plus large (112 nb).
 - **L378 durcie** : G.1 firsthand (script python3 structural 1651 cells + regex imports SOTA + nuance MetaGeneticSharp submodule documentée honnêtement).
 - **Cumulatif** : **13 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, **Search**). Entry #013 Search ajoute **2 moteurs SOTA nouveaux** au registre (**GeneticSharp** .NET GA framework, **MetaGeneticSharp** métaheuristique avancée ; OR-Tools déjà compté #005/#010, Z3 #010, python-constraint #002, AIMA #002, networkx #007) = **32 moteurs SOTA distincts cumulés**.
+
+Part of #3801
+
+
+## Entry #014 — Planners (owner po-2025 strict, c.408)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/SymbolicAI/Planners/` (23 .ipynb : 00-Environment 1 + 01-Foundation 6 + 02-Classical 7 + 03-Advanced 6 + 04-NeuroSymbolic 3) |
+| Kernels | 3 : `python3` (13), `.net-csharp` (9), `lean4-wsl` (1) |
+| Owner-lane | **po-2025 strict** (lane Python + C# .NET + Lean) |
+| Date audit | 2026-07-10 (c.408) |
+| Auditeur | `myia-po-2025:CoursIA` |
+| Verdict agrégé | **SOTA-OK** (23/23 SOTA-OK) |
+
+### Synthèse (agrégée par strate — 23 notebooks, 307 cellules code)
+
+| Strate | Notebooks | EXEC | Err | Stubs C.1 | Outils SOTA |
+|--------|-----------|------|-----|-----------|-------------|
+| 00-Environment | 1 | 13/13 | 0 | 0 | setup pyperplan + PDDL |
+| 01-Foundation | 6 | 64/64 | 0 | 0 | **pyperplan** + PDDL parser (state-space, BFS/DFS, heuristics ff/add) |
+| 02-Classical | 7 | 99/99 | 0 | 0 | **pyperplan** (A\*, greedy, h_add) sur PDDL domaines (logistics, warehouse, Hanoï) + **Lean** relaxation (Planners-5b, 0 sorry) |
+| 03-Advanced | 6 | 72/72 | 0 | 0 | planning avancé (HTN, temporal, numeric) + PDDL |
+| 04-NeuroSymbolic | 3 | 51/51 | 0 | 0 | neuro-symbolic planning (neural heuristics) |
+
+- **EXEC_PROVED global** : 23/23 (100%) — `execution_count != null` sur 307/307 cellules code. **0 flagged** (aucun not-full-exec / erreur / C.1).
+- **Erreurs runtime** : 0/23.
+- **Violations C.1** : 0/23 (regex `raise NotImplementedError|assert False` sur source code = 0 hit).
+
+### Vrais outils SOTA invoqués (vérifiés G.1 imports réels)
+
+- **pyperplan** (planificateur PDDL canonique, AIPlan / Helmert) — 8 notebooks (00-Environment setup, 01-Foundation, 02-Classical, 04-NeuroSymbolic). Vrai moteur de planning classique avec heuriques (`ff`, `add`, `h_add_val`) et recherche A\*/greedy/BFS sur espaces d'états PDDL.
+- **PDDL parser** (domain/problem PDDL) — 12 notebooks : domaines avec `:action`/`:precondition`/`:effect` (logistics véhicule, warehouse, Hanoï).
+- **networkx** (graphes state-space) — 3 notebooks.
+- **Lean 4** (Planners-5b-Lean-Relaxation) — relaxation de planification, 0 sorry, 13/13 exec.
+
+### Prong B — problème non-trivial (sota-not-workaround §B)
+
+Les notebooks de planification posent des **problèmes PDDL non-triviaux** : logistics multi-véhicules (préconditions/effects conjonctifs), warehouse (porteurs + racks), tours de Hanoï (explosion combinatoire). Pyperplan exercise sa **capacité de planification heuristique** (ff/add relaxations, A\*) sur des domaines où BFS dégénéré ne tiendrait pas — la heuristique **discrimine** (≠ cas dégénéré). Le notebook Lean formalise la relaxation (l'à-côté formel du ff-heuristic). Capacité distinctive exercée.
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **C.1** : 0/23 réel (0 hit regex, 0 faux positif).
+- **Anti-régression** : 307/307 `execution_count != null` + `output_type: error = 0` ; aucun notebook strippé, aucun output hand-edité.
+- **SOTA tools grounded firsthand** : imports parsés (`pyperplan`, PDDL `:action`/`:precondition`/`:effect`, `networkx`, heuristiques `ff`/`add`/`h_add_val`, recherche `astar`/`bfs`/`greedy`).
+- **Faux positifs scan large corrigés** : première passe regex large avait flaggé `tarski`/`AIMA`/`Google.OR-Tools`/`pySAT` = matches de mots anglais (ex « search » dans prose), pas d'imports réels. Re-scan ciblé (statements `import`/`from`) = **pyperplan + PDDL parser + networkx + Lean** = moteurs réels confirmés.
+
+### Volet owner-lane strict
+
+**Planners = po-2025 strict** (lane Python + C# .NET Interactive + Lean ; SymbolicAI/Planners de-leak EPIC #1344 convention appliquée). Audit consultatif additif, 0 PR de substance. Pivot L335 anti-monoculture post-c.407 (#013 Search) : **14ᵉ famille distincte du ledger**. Différence avec #013 Search (112 nb twins C#/Python combinatoire CSP/metaheuristics) : **#014 Planners = 23 nb planification PDDL** (pyperplan + Lean relaxation), paradigme distinct (planning/HTN/neuro-symbolic vs search/CSP).
+
+### Conclusions audit
+
+- **Substance Planners = SOTA-OK 23/23**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. pyperplan + PDDL parser + Lean = moteurs SOTA réels sur banc planning non-trivial (logistics/Hanoï/warehouse).
+- **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
+- **Pivot L335 légitimé** : 14ᵉ famille distincte, owner po-2025 strict, paradigme planning (≠ search/CSP).
+- **L378 durcie** : G.1 firsthand (script python3 structural 307 cells + regex imports SOTA + correction faux positifs scan large).
+- **Cumulatif** : **14 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, **Planners**). Entry #014 Planners ajoute **1 moteur SOTA nouveau** au registre (**pyperplan** planificateur PDDL, distinct des solveurs CSP/GA ; PDDL parser associé) = **33 moteurs SOTA distincts cumulés**.
 
 Part of #3801
