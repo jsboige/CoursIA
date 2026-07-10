@@ -9,6 +9,8 @@ breakdown: Tweety=32, SMT=30, Lean=28, SmartContracts=27, SemanticWeb=25, Planne
 maturity: PRODUCTION=172, BETA=34, ALPHA=1
 -->
 
+> **Note sur les comptes.** Le bloc ci-dessus est un marqueur autoritatif : `<!-- CATALOG-STATUS -->` est régénéré quotidiennement par la CI (`.github/workflows/catalog-cron.yml`, 03:37 UTC) sur `main` — pour toute vérification courante du nombre de notebooks et de la maturité, **le catalogue fait foi**. La prose pédagogique ci-dessous mentionne des chiffres précis (ex. « 12 notebooks Python », « 8 jumeaux C# ») qui peuvent dériver localement ; la table « Audit Qualité » (§E) au bas de ce fichier et les READMEs de chaque sous-série ([Tweety](Tweety/README.md), [Lean](Lean/README.md), [SemanticWeb](SemanticWeb/README.md), [Planners](Planners/README.md), [SmartContracts](SmartContracts/README.md), [Argument_Analysis](Argument_Analysis/README.md), [SymbolicLearning](SymbolicLearning/README.md)) sont les sources canoniques pour les détails de chaque sous-série.
+
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.
 
 Vous y découvrirez huit domaines complémentaires. Le **Web Sémantique** (RDF, SPARQL, OWL) montre comment structurer les connaissances du web pour les rendre exploitables par les machines. La **vérification formelle** avec Lean 4 vous apprend à écrire des preuves mathématiques vérifiées par un ordinateur. L'**argumentation computationnelle** (TweetyProject) modélise le débat et la délibération. La **résolution SMT** (Z3, satisfiability modulo theories) automatise la décision sous contraintes — cryptarithmes, planification, vérification de propriétés. La **planification automatique** résout des problèmes concrets de logistique et d'ordonnancement. Les **smart contracts** relient la cryptographie et la logique formelle aux blockchains. L'**analyse argumentative** avec les LLMs jette un pont entre l'IA symbolique et l'IA neuronale. Et l'**apprentissage symbolique** (AIMA ch. 19) montre comment un agent apprend à partir de connaissances existantes plutôt que de données brutes, jusqu'aux pipelines neuro-symboliques couplés aux LLMs. Chaque sous-série est autonome, mais ensemble elles dessinent une vision cohérente de l'IA symbolique moderne.
@@ -65,7 +67,7 @@ Deux séries applicatives indépendantes exploitent les formalismes des phases p
 
 ### Parcours alternatif : Pont LLM (Argument Analysis, ~4h)
 
-Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (18 notebooks : 10 `Agentic-*` d'orchestration — 6 principaux + 4 traces d'exécution `_agent` — et 8 notebooks d'analyse Dung/ranking/routage/restitution, adossés au port verbatim des sources Argumentum EPITA-IS, EPIC #4960) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
+Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (21 notebooks : 10 `Agentic-*` d'orchestration — 6 principaux + 4 traces d'exécution `_agent` — et 11 notebooks d'analyse Dung/ranking/routage/restitution, adossés au port verbatim des sources Argumentum EPITA-IS, EPIC #4960) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
 
 ### Parcours alternatif : Apprentissage symbolique (SymbolicLearning, ~9h30)
 
@@ -223,7 +225,7 @@ Documentation complète : [Lean/README.md](Lean/README.md)
 
 ## SemanticWeb - Web Sémantique
 
-Série de **23 notebooks** sur le Web Sémantique (12 Python + 11 C#, dont les jumeaux SW-8/9/10/13 et les side-tracks SW-3b/SW-6b du marathon parité #4956), combinant **.NET C#** (dotNetRDF) et **Python** (rdflib). Double parcours C#/Python pour les concepts fondamentaux.
+Série de **24 notebooks** sur le Web Sémantique (12 Python + 12 C#, dont les jumeaux SW-8/9/10/13 et les side-tracks SW-3b/SW-6b du marathon parité #4956), combinant **.NET C#** (dotNetRDF) et **Python** (rdflib). Double parcours C#/Python pour les concepts fondamentaux.
 
 ### Structure détaillée
 
@@ -332,7 +334,7 @@ Documentation complète : [Argument_Analysis/README.md](Argument_Analysis/README
 
 ## SymbolicLearning - Apprentissage Symbolique
 
-Série de **12 notebooks** Python sur l'apprentissage symbolique (AIMA ch. 19) : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), moteurs ILP modernes réels (Aleph, Metagol, Popper, dILP), apprentissage actif d'automates (L* d'Angluin), intégration neuro-symbolique (T-norms, LTN, DeepProbLog, KG mining, LLM-driven rule extraction) jusqu'au capstone LLM + knowledge graph + SL-12 DifferentiableLogicGateNetworks (réseaux de portes logiques différenciables).
+Série de **20 notebooks** (12 Python + 8 jumeaux C# from-scratch, BCL-only) sur l'apprentissage symbolique (AIMA ch. 19) : induction pure (Version Space), apprentissage guidé par la connaissance (EBL, RBL), programmation logique inductive (FOIL, résolution inverse, Progol), moteurs ILP modernes réels (Aleph, Metagol, Popper, dILP), apprentissage actif d'automates (L* d'Angluin), intégration neuro-symbolique (T-norms, LTN, DeepProbLog, KG mining, LLM-driven rule extraction) jusqu'au capstone LLM + knowledge graph + SL-12 DifferentiableLogicGateNetworks (réseaux de portes logiques différenciables).
 
 ### Structure détaillée
 
@@ -353,7 +355,7 @@ Série de **12 notebooks** Python sur l'apprentissage symbolique (AIMA ch. 19) :
 
 > 12/12 notebooks ont des exercices — répartis entre Version Space (SL-1), EBL/RBL (SL-2-3), ILP (SL-4-6), NeuroSymbolique (SL-7), KG mining (SL-8), LLM-symbolique (SL-9), Active Automata Learning L* (SL-10), capstone neuro-symbolique (SL-11), DifferentiableLogicGateNetworks (SL-12).
 >
-> **Jumeaux C# from-scratch** (BCL-only, marathon parité #4956) : SL-1/2/3/4/5/10-Csharp + SL-6-ModernILP-Csharp (FOIL relationnel sur `ancestor/2`, mergé 07/07) — mêmes algorithmes réimplémentés sans dépendance externe, pour comparer les écosystèmes.
+> **Jumeaux C# from-scratch** (BCL-only, marathon parité #4956) : SL-1/2/3/4/5/8/10-Csharp + SL-6-ModernILP-Csharp (FOIL relationnel sur `ancestor/2`, mergé 07/07) — mêmes algorithmes réimplémentés sans dépendance externe, pour comparer les écosystèmes.
 
 Documentation complète : [SymbolicLearning/README.md](SymbolicLearning/README.md)
 
@@ -390,13 +392,13 @@ SymbolicAI/
 │   ├── scripts/               # Installation, validation WSL
 │   └── README.md
 │
-├── SemanticWeb/               # Web semantique (23 notebooks : 12 Python + 11 C#)
+├── SemanticWeb/               # Web semantique (24 notebooks : 12 Python + 12 C#)
 │   ├── SW-1-CSharp-Setup.ipynb ... SW-13-Python-Reasoners.ipynb
 │   ├── data/                 # Fichiers RDF, OWL, SHACL, JSON-LD
 │   ├── RDF.Net-Legacy/      # Notebook original (référence historique)
 │   └── README.md
 │
-├── Planners/                  # Planification automatique (24 notebooks : 13 Python + 9 jumeaux C# + companion Lean 5b + 1 archive)
+├── Planners/                  # Planification automatique (23 notebooks : 13 Python + 9 jumeaux C# + 0-Setup + 1 archive Fast-Downward-Legacy)
 │   ├── 00-Environment/       # Setup
 │   ├── 01-Foundation/        # Introduction, PDDL Basics, State Space
 │   ├── 02-Classical/         # Fast-Downward, Heuristics, Lean Relaxation, Domains
@@ -414,14 +416,14 @@ SymbolicAI/
 │   ├── 06-Real-World/         # SC-23 a SC-26 (Cross-chain, Deploy, Project)
 │   └── README.md
 │
-├── Argument_Analysis/         # Analyse argumentative (18 notebooks : 10 Agentic + 8 analytiques ; sources Argumentum verbatim EPIC #4960)
+├── Argument_Analysis/         # Analyse argumentative (21 notebooks : 10 Agentic + 11 analytiques ; sources Argumentum verbatim EPIC #4960)
 │   ├── Argument_Analysis_Agentic-0-init.ipynb ... UI_configuration.ipynb
 │   ├── Argument_Analysis_ArgumentProfile.ipynb ... Restitution_3_Actes.ipynb
 │   │   # 12 modules Argumentum/EPITA-IS verbatim port EPIC #4960 MERGED
 │   ├── argumentation_analysis/Argumentum/   # submodule source verbatim
 │   └── README.md
 │
-├── SymbolicLearning/          # Apprentissage symbolique (12 notebooks Python + 7 jumeaux C#)
+├── SymbolicLearning/          # Apprentissage symbolique (20 notebooks : 12 Python + 8 jumeaux C#)
 │   ├── SL-1-LogicalLearning.ipynb ... SL-12-DifferentiableLogicGateNetworks.ipynb
 │   ├── SL-*-Csharp.ipynb       # Jumeaux from-scratch BCL-only (marathon #4956)
 │   ├── reference/             # Notes AIMA ch. 19
@@ -695,11 +697,11 @@ La famille SymbolicAI est couverte sur **trois stacks** selon les formalismes (E
 |------------|:---:|:---:|:---:|------|
 | **Tweety** (TweetyProject) | ● (13) | ● (18) | ◐ (1, Tw-5b) | Double stack Python JPype + C# IKVM in-kernel (EPICs #4667 + #4956) + 1 companion Lean formalisant Dung grounded |
 | **Lean** | ◐ (mixed WSL) | — | ● (21) | Trilangage Python-WSL + Lean 4 natif + Mathlib4 ; WSL obligatoire |
-| **SemanticWeb** | ● (12) | ◐ (11) | — | dotNetRDF (C#) + rdflib/pySHACL (Python) ; jumeaux SW-8/9/10/13 + side-tracks 3b/6b (#4956) |
+| **SemanticWeb** | ● (12) | ◐ (12) | — | dotNetRDF (C#) + rdflib/pySHACL (Python) ; jumeaux SW-8/9/10/13 + side-tracks 3b/6b (#4956) |
 | **Planners** | ● (13) | ◐ (9 jumeaux) | ◐ (1, Planners-5b) | PDDL/CP-SAT Python + jumeaux C# 1-9 (#4956) + companion Lean pour la relaxation h-add |
 | **SmartContracts** | ● (27) | — | ◐ (lake `erc20_lean`) | Pipeline Solidity/Foundry/Wagmi en Python, focus DeFi et ZK ; invariant de conservation ERC-20 prouvé (0 sorry, bilingue FR/EN) |
-| **Argument Analysis** | ● (18) | — | — | Pipeline SK multi-agents + port verbatim EPITA-IS Argumentum (couches Python) |
-| **SymbolicLearning** | ● (12) | ◐ (7 jumeaux) | — | AIMA ch. 19 induction pure + ILP + neuro-symbolique ; jumeaux from-scratch BCL-only dont SL-6c FOIL |
+| **Argument Analysis** | ● (21) | — | — | Pipeline SK multi-agents + port verbatim EPITA-IS Argumentum (couches Python) |
+| **SymbolicLearning** | ● (12) | ◐ (8 jumeaux) | — | AIMA ch. 19 induction pure + ILP + neuro-symbolique ; jumeaux from-scratch BCL-only dont SL-6c FOIL |
 | **SMT / Z3** | ● (6) | ● (24) | — | Z3-Python API complète + 6 jumeaux C# (#4956) + Z3.Linq DSL C# 18 nb (missionnaires, cryptarithms, sudoku) |
 
 Légende : ● couverture large ; ◐ couverture partielle / companion ; — absent.
