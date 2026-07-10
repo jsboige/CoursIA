@@ -619,6 +619,75 @@ theorem gridFrame_contains_g (g : Grid) (p : Int × Int) (hp : p ∈ g) :
     unfold MacroCell.inRegion
     refine ⟨?_, ?_, ?_, ?_⟩ <;> omega
 
+/-! ### n-aware framing (`gridFrameN`) — P5 redesign gate N1 (issue #3846)
+
+The fixed-2 padding of `gridFrame` caps the light-cone margin at 2 (see
+`boxAssezGrand_nonempty_le_two` in `HashlifeCorrectness`): with `r0 := rMin - 2`,
+the topmost live cell has margin exactly 2, so `BoxAssezGrand g n` forces
+`n ≤ 2` and is *unsatisfiable* for large `n`. This is the structural root of
+the P5 large-`n` obstruction.
+
+`gridFrameN n g` generalizes the padding to `max 2 n`, so the light-cone
+margin is at least `max 2 n ≥ n` *by construction*. The margin hypothesis
+then becomes satisfiable for every `n` (not just `n ≤ 2`) — see the witness
+`box_assez_grandN_single_cell_3` in `HashlifeCorrectness`, the honest dual of
+the `boxAssezGrand_nonempty_le_two` unsat cap. N1 keeps `evolveHashlifeFast`
+unchanged; N2 threads this frame through the loop without re-framing. -/
+
+/-- Like `gridFrame` but with padding `max 2 n` (instead of the fixed `2`) on
+    each side, so the light-cone margin is at least `max 2 n ≥ n`. Returns
+    `((0, 0), 0)` for the empty grid. (P5 redesign, issue #3846, gate N1.) -/
+def gridFrameN (n : Nat) (g : Grid) : (Int × Int) × Nat :=
+  match g with
+  | []      => ((0, 0), 0)
+  | _ :: _ =>
+    let rMin := gridRowMin g
+    let rMax := gridRowMax g
+    let cMin := gridColMin g
+    let cMax := gridColMax g
+    let pad  := max 2 n
+    let r0 := rMin - pad
+    let c0 := cMin - pad
+    let height := (rMax - rMin + 1 + 2 * pad).toNat
+    let width  := (cMax - cMin + 1 + 2 * pad).toNat
+    let side   := max height width
+    let lvl    := MacroCell.ceilLog2 side
+    ((r0, c0), lvl)
+
+/-- For every live cell `p ∈ g`, the frame chosen by `gridFrameN n g` contains
+    `p` (containment bridge, n-aware analog of `gridFrame_contains_g`). -/
+theorem gridFrameN_contains_g (n : Nat) (g : Grid) (p : Int × Int) (hp : p ∈ g) :
+    let ((r0, c0), lvl) := gridFrameN n g
+    MacroCell.inRegion p r0 c0 lvl := by
+  cases g with
+  | nil => simp at hp
+  | cons p₀ ps =>
+    have hrMin : gridRowMin (p₀ :: ps) ≤ p.1 := gridRowMin_le_of_mem _ _ hp
+    have hrMax : p.1 ≤ gridRowMax (p₀ :: ps) := le_gridRowMax_of_mem _ _ hp
+    have hcMin : gridColMin (p₀ :: ps) ≤ p.2 := gridColMin_le_of_mem _ _ hp
+    have hcMax : p.2 ≤ gridColMax (p₀ :: ps) := le_gridColMax_of_mem _ _ hp
+    have hrnn : gridRowMin (p₀ :: ps) ≤ gridRowMax (p₀ :: ps) :=
+      gridRowMin_le_gridRowMax _ (List.cons_ne_nil _ _)
+    have hcnn : gridColMin (p₀ :: ps) ≤ gridColMax (p₀ :: ps) :=
+      gridColMin_le_gridColMax _ (List.cons_ne_nil _ _)
+    simp only [gridFrameN]
+    set rMin := gridRowMin (p₀ :: ps)
+    set rMax := gridRowMax (p₀ :: ps)
+    set cMin := gridColMin (p₀ :: ps)
+    set cMax := gridColMax (p₀ :: ps)
+    set pad := max 2 n
+    set height := (rMax - rMin + 1 + 2 * pad).toNat
+    set width := (cMax - cMin + 1 + 2 * pad).toNat
+    set side := max height width
+    set lvl := MacroCell.ceilLog2 side
+    have hspec : (2 ^ lvl : Nat) ≥ side := MacroCell.ceilLog2_spec side
+    have hh : height ≤ side := Nat.le_max_left _ _
+    have hw : width ≤ side := Nat.le_max_right _ _
+    have hnn_r : 0 ≤ rMax - rMin + 1 + 2 * pad := by omega
+    have hnn_c : 0 ≤ cMax - cMin + 1 + 2 * pad := by omega
+    unfold MacroCell.inRegion
+    refine ⟨?_, ?_, ?_, ?_⟩ <;> omega
+
 /-- Convert a `Grid` to a `MacroCell`, returning the chosen offset so that
     `MacroCell.toGrid offset (gridToMacroCell g) = g`. -/
 def gridToMacroCellWithOffset (g : Grid) : (Int × Int) × MacroCell :=
