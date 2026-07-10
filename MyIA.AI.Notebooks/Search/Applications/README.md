@@ -16,17 +16,6 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 2. **Comparer** les approches (backtracking vs CP-SAT vs métaheuristiques) sur des instances concrètes
 3. **Évaluer** les compromis performance/qualité entre méthodes exactes et approchées
 
-## Aperçu — quelques problèmes résolus visuellement
-
-Les applications ne se contentent pas de « tourner » : elles produisent des **visualisations** qui rendent la résolution concrète. Six exemples extraits des notebooks de la sous-série — sorties d'exécution **réelles** (non régénérées pour l'illustration, règle C.3), downscalées à ≤1200 px et ≤200 ko (politique EPIC #5654). Provenance exacte de chaque figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
-
-| | | |
-|:--:|:--:|:--:|
-| <img src="assets/readme/app1-nqueens-board.png" width="290" alt="Plateau des 8 reines : solution où aucune reine ne menace une autre, disposée sur un échiquier."> | <img src="assets/readme/app2-graphcoloring-map.png" width="300" alt="Carte colorée : chaque département reçoit une couleur distincte de ses voisins (coloration de graphe)."> | <img src="assets/readme/app11-picross-grid.png" width="290" alt="Grille de Picross (nonogramme) résolue : les cases noircies révèlent une image par propagation de contraintes."> |
-| [App-1 — N-Queens](CSP/App-1-NQueens.ipynb) | [App-2 — Coloration de graphe](CSP/App-2-GraphColoring.ipynb) | [App-11 — Picross](CSP/App-11-Picross.ipynb) |
-| <img src="assets/readme/app3-nurseschedule-planning.png" width="300" alt="Planning de gardes infirmières : grille horaire satisfaisant contraintes dures et préférences douces."> | <img src="assets/readme/app15-sports-calendar.png" width="290" alt="Calendrier sportif équilibré : répartition des matchs respectant équité, contraintes TV et déplacements."> | <img src="assets/readme/app19-wfc-tiles.png" width="290" alt="Niveau généré par Wave Function Collapse : pavage procédural contraint par les règles d'adjacence des tuiles."> |
-| [App-3 — Nurse Scheduling](CSP/App-3-NurseScheduling.ipynb) | [App-15 — Sports Scheduling](CSP/App-15-SportsScheduling.ipynb) | [App-19 — WFC](CSP/App-19-ProceduralGeneration-WFC.ipynb) |
-
 ## FAQ / Troubleshooting
 
 | Problème | Solution |
@@ -79,6 +68,32 @@ Deux notebooks autour du Puissance 4, le banc d'essai idéal de la recherche adv
 ## Applications CSP (`CSP/`)
 
 Le gros de la sous-série, et un panorama de ce que la programmation par contraintes sait faire dès qu'on sort du manuel : des classiques fondateurs (N-Queens, coloration de graphes) aux problèmes d'ordonnancement réalistes (infirmiers, job-shop, emplois du temps, calendriers sportifs), en passant par des terrains plus inattendus — le démineur qui mêle contraintes et probabilités, Wordle lu comme un problème d'information, le Picross qui sert de leçon de vitesse, et la génération procédurale de niveaux par Wave Function Collapse.
+
+Les classiques fondateurs d'abord : les N-Queens (App-1) — le banc d'essai canonique de la recherche avec contraintes, ici résolu sur 8 reines par la solution connue que toute la littérature partage :
+
+[![Échiquier 8×8 avec une solution connue des 8-Reines : aucune paire de reines ne se menace](assets/readme/app1-nqueens-board.png)](CSP/App-1-NQueens.ipynb)
+
+La coloration de graphes (App-2) part, elle, du graphe d'adjacence des départements français métropolitains — encore sans couleur assignée ici, le tracé sert de support à l'illustration de la contrainte de différence par frontière :
+
+[![Graphe d'adjacence des départements français métropolitains (101 sommets), colorié après résolution CP-SAT](assets/readme/app2-graphcoloring-map.png)](CSP/App-2-GraphColoring.ipynb)
+
+Viennent ensuite les problèmes d'ordonnancement réalistes. Le planning infirmier (App-3) montre 15 infirmières réparties sur 28 jours, avec les créneaux Matin/Après-midi/Nuit, les jours de repos et les week-ends marqués en rouge :
+
+[![Planning de gardes : 15 infirmières sur 28 jours, créneaux M/A/N/Repos, week-ends en rouge, équité des charges](assets/readme/app3-nurseschedule-planning.png)](CSP/App-3-NurseScheduling.ipynb)
+
+Le calendrier sportif (App-15) commence, lui, par ses données brutes : la matrice des distances entre les six villes de la ligue, à partir de laquelle le solveur équilibre les déplacements :
+
+[![Matrice des distances entre les 6 villes de la ligue (entrée du calendrier sportif App-15)](assets/readme/app15-sports-calendar.png)](CSP/App-15-SportsScheduling.ipynb)
+
+Enfin, deux terrains où la modélisation est tout le travail. Le Picross (App-11) sert de leçon de vitesse : un puzzle 5×5 présenté avec ses indices de lignes et de colonnes — la grille encore vierge, à laisser au solveur CP-SAT le soin de noircir :
+
+[![Puzzle Picross 5x5 avec indices de lignes/colonnes (énoncé) : grille à résoudre par propagation de contraintes](assets/readme/app11-picross-grid.png)](CSP/App-11-Picross.ipynb)
+
+La génération procédurale de niveaux (App-19) encode le Wave Function Collapse en CP-SAT — un niveau OPTIMAL produit par le solveur, avec un héros, trois ennemis, une clé et un coffre, sur un pavage de tuiles mur / sol / eau / porte / herbe :
+
+[![Niveau WFC généré par CP-SAT : tuiles wall/floor/water/door/grass, héros, 3 ennemis, clé, coffre](assets/readme/app19-wfc-tiles.png)](CSP/App-19-ProceduralGeneration-WFC.ipynb)
+
+*Figures : sorties d'exécution réelles extraites des notebooks (non régénérées, règle C.3), downscalées ≤1200 px / ≤200 ko (EPIC #5654) — provenance détaillée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).*
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
