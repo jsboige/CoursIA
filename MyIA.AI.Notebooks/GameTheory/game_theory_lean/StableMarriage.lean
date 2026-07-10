@@ -29,3 +29,5 @@ import StableMarriage.Lemmas
 import StableMarriage.Lemmas_en
 import StableMarriage.Lattice
 import StableMarriage.Lattice_en
+import StableMarriage.GaleShapley
+import StableMarriage.GaleShapley_en
