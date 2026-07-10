@@ -97,5 +97,70 @@ theorem lightCone_translate (p q : Int × Int) (t : Nat) :
     have hm := manhattan_le_of_mem_lightCone (0, 0) _ t h
     unfold manhattan at *; omega
 
+/-! ## Chebyshev (chessboard) distance and the tight locality cone
+
+The *tight* Game-of-Life locality is governed by the Chebyshev (L∞) distance:
+one B3/S23 generation reaches exactly the Moore neighborhood (Chebyshev radius
+1), so `t` generations reach Chebyshev radius `t`. The `lightCone` machinery
+above uses the Manhattan (L1) distance, which over-approximates the tight reach
+by a factor of 2 — `step_light_cone` demands Manhattan radius `2 * t`. The
+lemmas below formalize the Chebyshev cone structure that a *tight* single-jump
+correctness proof chains through:
+
+- the cone fits in a margin-`t` box (**margin sufficiency** — the geometric fact
+  that makes the `padCenter2` margin `2^k` sufficient for a single jump of `2^k`
+  generations: the tight Chebyshev reach `2^k` fits exactly in a margin-`2^k`
+  box, whereas the loose Manhattan-`2^k` light cone would need `2^(k+1)`); and
+- the tight cone is contained in the loose Manhattan-`2*t` light cone.
+
+These are the elementary distance facts; they do not yet assert anything about
+`evolve` (the locality statement `step_light_cone` lives in `HashlifeCorrectness`).
+Epic #3846 (Hashlife correctness infrastructure, N2 tight-locality groundwork). -/
+
+/-- Chebyshev (chessboard / L∞) distance between two cells: the larger of the
+    absolute coordinate displacements. -/
+def chebDist (p q : Int × Int) : Nat :=
+  max (Int.natAbs (q.1 - p.1)) (Int.natAbs (q.2 - p.2))
+
+/-- Reflexivity: a cell is at Chebyshev distance 0 from itself. -/
+theorem chebDist_self (p : Int × Int) : chebDist p p = 0 := by
+  unfold chebDist; omega
+
+/-- Symmetry: the Chebyshev distance is invariant under swapping the two cells. -/
+theorem chebDist_comm (p q : Int × Int) : chebDist p q = chebDist q p := by
+  unfold chebDist; omega
+
+/-- Monotonicity in the radius: a larger radius weakly contains the cone. -/
+theorem chebDist_le_trans {t₁ t₂ : Nat} (h : t₁ ≤ t₂) {p q : Int × Int}
+    (hd : chebDist p q ≤ t₁) : chebDist p q ≤ t₂ := hd.trans h
+
+/-- Margin sufficiency: a cell within Chebyshev radius `t` of `p` lies in the
+    margin-`t` box — each coordinate is within `t` of `p`'s coordinate. This is
+    the geometric reason a box margin of `t` (e.g. `padCenter2`'s `2^k` margin
+    at a level advancing `2^k` generations) covers the *tight* Chebyshev-`t`
+    reach, even though that same margin `t` does not cover the *loose*
+    Manhattan-`t` light cone (which reaches `2 * t`). -/
+theorem coord_bound_of_chebDist_le (p q : Int × Int) (t : Nat)
+    (h : chebDist p q ≤ t) :
+    Int.natAbs (q.1 - p.1) ≤ t ∧ Int.natAbs (q.2 - p.2) ≤ t := by
+  unfold chebDist at h
+  omega
+
+/-- Tight ⊆ loose (distance form): Chebyshev radius `t` is bounded by Manhattan
+    radius `2 * t`, because each coordinate displacement is `≤ t` and the
+    Manhattan distance is their sum. -/
+theorem manhattan_le_of_chebDist_le (p q : Int × Int) (t : Nat)
+    (h : chebDist p q ≤ t) : manhattan p q ≤ 2 * t := by
+  unfold chebDist at h
+  unfold manhattan
+  omega
+
+/-- A cell within Chebyshev radius `t` lies in the Manhattan-`(2*t)` light cone.
+    This is the bridge from the tight Chebyshev reach to the loose
+    `lightCone p (2 * t)` radius that `step_light_cone` operates on. -/
+theorem mem_lightCone_of_chebDist_le (p q : Int × Int) (t : Nat)
+    (h : chebDist p q ≤ t) : q ∈ lightCone p (2 * t) :=
+  mem_lightCone_of_manhattan_le p q (2 * t) (manhattan_le_of_chebDist_le p q t h)
+
 end Life
 end Conway
