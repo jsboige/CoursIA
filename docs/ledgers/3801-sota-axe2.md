@@ -863,8 +863,9 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 | 6 | Probas/Infer (20 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 20/20 | #5886 MERGED |
 | 7 | IIT/PyPhi (3 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 3/3 | #5895 MERGED |
 | 8 | Sudoku (36 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 36/36 | #5918 MERGED |
-| 9 | RL (17 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 17/17 | #5925 OPEN |
-| 10 | **CaseStudies (6 nb)** | po-2025 strict | 2026-07-10 | **SOTA-OK 6/6** | **THIS** |
+| 9 | RL (17 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 17/17 | #5925 MERGED |
+| 10 | CaseStudies (6 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 6/6 | #5930 MERGED |
+| 11 | **ICT-Series (26 nb)** | po-2025 strict | 2026-07-10 | **SOTA-OK 26/26** | **THIS** |
 
 **Moteurs SOTA cumulés dans le registre (7 entries)** : Microsoft.ML.Probabilistic, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET = **20 moteurs SOTA distincts** sur 7 familles.
 
@@ -1036,5 +1037,63 @@ Les 3 études de cas sont des **problèmes OR/AI réels non triviaux**, pas des 
 - **Pivot L335 légitimé** : 10ᵉ famille distincte, owner po-2025 strict, ≠ re-sweep monotone.
 - **L378 durcie** : G.1 firsthand (script python3 + lecture directe cellules solution pour confirmer chaque moteur SOTA réel).
 - **Cumulatif** : **10 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, **CaseStudies**). Entry #010 CaseStudies ajoute **1 moteur SOTA nouveau** au registre (**Pyro** probabilistic programming, distingué de PyMC/NumPyro) = **26 moteurs SOTA distincts cumulés**.
+
+Part of #3801
+
+
+## Entry #011 — ICT-Series (owner po-2025 strict, c.405)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/IIT/ICT-Series/` (26 .ipynb : ICT-1→24 + 2 variantes ICT-19 + ICT-Synthese) |
+| Strates | Strate 1-2 fondatrice (tri auto-organisé, morphogenèse) → strate 3 (trajectoires) → strate 4 (free energy) → strate 5 (théorie fondatrice cross-substrat, Φ/F/K convergence, LLM substrat, workspace) |
+| Owner-lane | **po-2025 strict** (lane Python, owner strate 5 Epic #4588) |
+| Date audit | 2026-07-10 (c.405) |
+| Auditeur | `myia-po-2025:CoursIA` |
+| Verdict agrégé | **SOTA-OK** (26/26 SOTA-OK) |
+
+### Synthèse (agrégée par strate — 26 notebooks, 280 cellules code)
+
+| Strate | Notebooks | EXEC | Err | Stubs C.1 | Outils SOTA |
+|--------|-----------|------|-----|-----------|-------------|
+| 1 (tri/morphogenèse) | ICT-1→7, ICT-9 | 90/90 | 0 | 0 | PyPhi (ICT-1/5/6) + numpy + matplotlib + `ict` package |
+| 2 (attracteurs/calibration) | ICT-8→10, ICT-20 | 46/46 | 0 | 0 | numpy + matplotlib (catastrophe grammar, EWS) |
+| 3 (trajectoires intégrées) | ICT-11→13 | 35/35 | 0 | 0 | numpy + matplotlib (valence, Axelrod strategic morphodynamics) |
+| 4 (free energy / MDL) | ICT-14→17 | 38/38 | 0 | 0 | numpy + scipy (MDL ICT-16, epsilon-machine ICT-17) |
+| 5 (théorie fondatrice) | ICT-15, ICT-18→19, ICT-21→24, ICT-Synthese | 71/71 | 0 | 0 | **`ict` package** + PyPhi + **torch** (ICT-21 SAE, ICT-24 workspace) |
+
+- **EXEC_PROVED global** : 26/26 (100%) — tous kernels exécutés, `execution_count != null` sur 280/280 cellules code.
+- **Erreurs runtime** : 0/26.
+- **Violations C.1** : 0/26 (audit script — 2 « hits » `raise NotImplementedError` dans ICT-16/ICT-17 = **faux positif** : le texte est dans du **markdown** qui explique la règle C.1 elle-même — « notebooks JAMAIS de `raise NotImplementedError`, on utilise `pass`/`print`/`return None` » — vérifié G.1 firsthand par lecture directe cell14/cell17).
+
+### Vrais outils SOTA invoqués (vérifiés G.1)
+
+- **`ict` package** (librairie ICT originale du projet, `ICT-Series/ict/`) — modules substantiels : `sae_traces`, `synthesis`, `causal_emergence`, `tpm_estimation`, `self_sorting` (`SelfSortingArray`), `bistable` (`GrazingModel`), `strategic_morphodynamics`, `time_arrow`, `stake`, `agency` (`repair_gain`, `time_to_recover`). C'est l'appareil canonique de la strate 5 (Epic #4588), pas du numpy-only.
+- **PyPhi** (Mayner et al., IIT 3.0) — ICT-1/5/6 (trajectoires Φ, causal emergence, TPM).
+- **torch** — ICT-21 (SAE trajectories sur LLM activations), ICT-24 (workspace ignition, GPU-gated mais exécutable CPU sur le seed).
+- numpy + scipy + matplotlib — banc cross-substrat (tri, bistable, Axelrod, Gray-Scott).
+
+### Prong B — problème non-trivial (sota-not-workaround §B)
+
+La série ICT n'est **pas** une démo jouet : ICT-Synthese applique **5 substrats hétérogènes** (tri auto-organisé, bistable de May, Axelrod, SAE LLM, Gray-Scott) au même appareil (Φ/F/K + réversibilisation + ENJEU) et **teste l'invariance numérique** — verdict honnête documenté (Φ et F covarient, K diverge). ICT-21 mesure les trajectoires SAE sur un vrai LLM. ICT-24 outille le *global workspace*. Le banc est **discriminant** (les substrats ne se classent pas identiquement sur les 3 jambes) = capacité distinctive exercée, pas un cas dégénéré.
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **Faux positifs C.1** : 0/26 réel (les 2 hits markdown = la règle C.1 citée dans la prose pédagogique, pas du code).
+- **Anti-régression** : aucun notebook strippé, aucun output hand-edité (Stop & Repair) ; 280/280 cellules `execution_count != null` + `output_type: error = 0`.
+- **Audit consultatif purement additif** : safe owner-lane (L143 — pas de modification des notebooks ICT owner po-2025).
+- **`ict` package confirmé firsthand** : `ls ICT-Series/ict/` = 10+ modules Python réels, imports vérifiés dans ICT-21/ICT-Synthese (`from ict import synthesis/sae_traces/causal_emergence/...`).
+
+### Volet owner-lane strict
+
+**ICT-Series = po-2025 strict** (lane Python native, owner strate 5 Epic #4588 ; ICT-19 nav fix #5919 MERGED, J-Lens Track S #5681 couches #1/#2 livrées). Audit consultatif additif, 0 PR de substance. Pivot L335 anti-monoculture post-c.404 (#010 CaseStudies) : **11ᵉ famille distincte du ledger**. Différence avec #007 IIT/PyPhi (3 nb IIT-1/2/3 intro) : **#011 ICT-Series = 26 nb strate 1-5 complète** (la série canonique, ≠ les 3 notebooks d'intro PyPhi).
+
+### Conclusions audit
+
+- **Substance ICT-Series = SOTA-OK 26/26**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. `ict` package (librairie originale) + PyPhi + torch = moteurs SOTA réels sur banc cross-substrat discriminant.
+- **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
+- **Pivot L335 légitimé** : 11ᵉ famille distincte, owner po-2025 strict.
+- **L378 durcie** : G.1 firsthand (script python3 + lecture markdown pour résoudre les 2 faux positifs C.1 + `ls ict/` pour confirmer le package).
+- **Cumulatif** : **11 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, **ICT-Series**). Entry #011 ICT-Series ajoute **1 moteur SOTA nouveau** au registre (**`ict` package** — librairie originale de théorie de complexité intégrée, distincte de PyPhi) = **27 moteurs SOTA distincts cumulés**.
 
 Part of #3801
