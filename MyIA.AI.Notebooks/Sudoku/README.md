@@ -7,6 +7,16 @@ breakdown: root=36
 maturity: PRODUCTION=30, BETA=5, ALPHA=1
 -->
 
+> **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (36 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :
+>
+> **17 C# + 18 Python + 1 Lean 4 = 36 notebooks canoniques ✓** (44 fichiers `*.ipynb` au total sur disque = 36 canoniques + 8 `_output.ipynb` artefacts Papermill commités couvrant 8 notebooks Python : Choco 11, Infer 15, NN 16, LLM 17, DancingLinks 2, Genetic 3, PSO 5, GraphColoring 9).
+>
+> Sudoku est un cas de **mixité JUMEAUX C#/Python dominante** (15 paires strictes 1-14 + 1 paradigme-comparable 15 Infer.NET/NumPyro + 1 benchmark 18, soit 17 entrées à 2 langages) avec **1 companion Lean natif intra-hub** (`Sudoku-19-Lean-Propagation.ipynb`, lake `sudoku_lean` 0-sorry). C'est une **variante L392 #4** : contrairement à QC (#5917) où Lean est isolé dans une sous-série dédiée `kelly_lean/`, et contrairement à ML (#5915) / Probas (#5916) où la mixité kernel est intra-série, ici la mixité jumeaux domine largement et le notebook tiers (Lean) est intra-hub sans sous-série dédiée.
+>
+> Les counts obsolètes `16 notebooks Python` (L605) et `16 solveurs` (L770) ont été réconciliés sur la valeur disk-truth de **18 notebooks Python canoniques** dans cette PR.
+>
+> **Régénération du marqueur** : `catalog-cron.yml` (cron quotidien 03:37 UTC sur `main`, commit `[skip ci]` par `github-actions[bot]`) — le bloc ci-dessus est régénéré automatiquement, ne pas le modifier manuellement sur une branche feature (catalog-pr-hygiene R1).
+
 [← Notebooks](../README.md) | [→ Search](../Search/README.md)
 
 Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. La série couvre **16 paires miroir C#/Python** (notebooks 1 à 15 et le benchmark comparatif 18 — mêmes algorithmes dans les deux langages), **1 notebook C# uniquement** (0-Environment, classes de base), **2 notebooks Python uniquement** (16-NeuralNetwork, 17-LLM) et **1 companion Lean natif** ([Sudoku-19](Sudoku-19-Lean-Propagation.ipynb), preuve formelle de la propagation de contraintes). Cette structure laisse à chaque étudiant le choix de son langage sur la quasi-totalité des algorithmes.
@@ -602,7 +612,7 @@ Sudoku/
 ├── README.md                              # Ce fichier
 ├── LEAN_INVENTORY.md                      # Inventaire transverse des lakes Lean de la série
 ├── index.qmd                              # Listing Quarto (sous-ensembles C# / Python)
-├── requirements.txt                       # Dépendances Python (16 notebooks Python)
+├── requirements.txt                       # Dépendances Python (18 notebooks Python canoniques, dont 16 paires miroir C#/Python + 2 only-Python : NN 16 + LLM 17)
 ├── choco-solver-4.10.17-jar-with-dependencies.jar  # JAR Choco (utilisé par nb-11 Python via JPype)
 ├── org.chocosolver.solver.dll             # DLL Choco précompilée (utilisée par nb-11 C# via IKVM)
 ├── Sudoku-0-Environment-Csharp.ipynb      # Classes de base C#
@@ -767,7 +777,7 @@ Les notebooks C# (suffixe `-Csharp`) utilisent GeneticSharp, OR-Tools .NET, Z3 .
 
 ### Si vous venez du Python / data science
 
-Les notebooks Python (suffixe `-Python`) couvrent 16 solveurs avec PyGAD, OR-Tools Python, Z3 Python, NumPyro et PyTorch. Commencez par **Sudoku-1-Backtracking-Python**, puis montez en complexité. Le notebook **18-Comparison-Python** synthétise tout.
+Les notebooks Python (suffixe `-Python`) couvrent 18 solveurs avec PyGAD, OR-Tools Python, Z3 Python, NumPyro et PyTorch. Commencez par **Sudoku-1-Backtracking-Python**, puis montez en complexité. Le notebook **18-Comparison-Python** synthétise tout.
 
 ## Conclusion / Prochaines étapes
 
