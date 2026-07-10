@@ -51,11 +51,41 @@ flowchart TD
 
 ### Étape 1 : Le théorème d'Arrow par la simulation (SC-01, 45 min)
 
-Le notebook SC-01 introduit les trois axiomes d'Arrow (Pareto faible, IIA, non-dictature) en les testant empiriquement sur des règles de vote usuelles (Borda, pluralité, dictature). Il suit la structure de la preuve de Geanakoplos (2005) -- lemme extrémal, existence du pivot, dictateur partiel -- et l'illustre pas à pas en Python. La conclusion montre pourquoi la preuve formelle couvre une infinité de cas que la simulation ne peut atteindre.
+Le notebook SC-01 introduit les trois axiomes d'Arrow (Pareto faible, IIA, non-dictature) en les testant empiriquement sur des règles de vote usuelles (Borda, pluralité, dictature). Il suit la structure de la preuve de Geanakoplos (2005) -- lemme extrémal, existence du pivot, dictateur partiel -- et l'illustre pas à pas en Python. Le test empirique rend la triple contrainte tangible : chaque axiome pris isolément est satisfait par au moins une règle, mais aucune règle ne les satisfait tous les trois à la fois.
+
+![Test empirique des trois axiomes d'Arrow sur trois règles de vote](assets/readme/sc-arrow.png)
+
+*Sortie du SC-01 : trois panneaux (Borda, Pluralité, Dictature), chacun portant trois barres — Pareto, IIA, Non-dictature — en vert « SATISFAIT » ou rouge « VIOLÉ ». Borda et Pluralité respectent Pareto et la non-dictature mais violent l'IIA ; la Dictature satisfait Pareto et l'IIA mais viole la non-dictature. Aucun panneau n'est entièrement vert : la simulation matérialise l'impossibilité qu'Arrow démontre pour toute règle.*
+
+La conclusion du notebook montre alors pourquoi la preuve formelle couvre une infinité de cas que la simulation ne peut qu'échantillonner.
 
 ### Étape 2 : Méthodes de vote et paradoxes (SC-03, 35 min)
 
-Le notebook SC-03 implémente les règles de vote classiques (pluralité, Borda, Copeland), illustre le paradoxe de Condorcet et l'exemple de Lady Chatterley (théorème de Sen), puis montre la convergence vers l'électeur médian dans le modèle de Downs (1957). Ce notebook est le compagnon Python du formalisme Lean du SC-02.
+Le notebook SC-03 implémente les règles de vote classiques (pluralité, Borda, Copeland) et déroule les paradoxes qui les minent, avant de montrer les conditions sous lesquelles un vainqueur cohérent réapparaît. Ce notebook est le compagnon Python du formalisme Lean du SC-02.
+
+Le premier paradoxe est celui de **Condorcet** : la comparaison par paires à la majorité peut produire un cycle, si bien qu'aucune alternative ne bat toutes les autres.
+
+![Cycle de Condorcet entre trois alternatives](assets/readme/sc-condorcet.png)
+
+*Sortie du SC-03 : les trois alternatives A, B, C disposées en triangle, reliées par les arêtes du tournoi majoritaire (graphe orienté). Le cycle qu'elles forment est le résultat lui-même — aucun sommet ne domine les deux autres, donc aucun vainqueur de Condorcet n'existe.*
+
+Le **théorème de Sen** (1970) exhibe un conflit d'une autre nature — entre liberté individuelle et efficacité parétienne — sur l'exemple de Lady Chatterley.
+
+![Paradoxe de Sen : liberté individuelle contre optimalité de Pareto](assets/readme/sc-sen.png)
+
+*Sortie du SC-03 : trois états sociaux a, b, c. Deux flèches vertes pleines encodent la liberté individuelle (le Prude décide c>a, le Lecteur décide b>c) ; une flèche orange pointillée horizontale porte l'étiquette Pareto (a>b, en rouge), tandis que la transitivité imposerait b>a (étiquette orange). Les relations forment un cycle a>b>c>a : les préférences collectives se contredisent, la liberté minimale et Pareto sont incompatibles.*
+
+À l'inverse, le **théorème de l'électeur médian** restaure l'existence d'un vainqueur dès que les préférences sont unimodales sur un axe unique.
+
+![Théorème de l'électeur médian : préférences unimodales et position médiane](assets/readme/sc-median.png)
+
+*Sortie du SC-03, deux panneaux : à gauche, l'histogramme des pics de préférence des électeurs avec la médiane (ligne pointillée rouge, ici à la position 5) ; à droite, trois courbes d'utilité unimodales (une par électeur), où l'utilité décroît linéairement avec la distance au pic. Sous cette hypothèse, la position médiane bat toute autre en duel majoritaire.*
+
+Le modèle de **Downs** (1957) en tire une prédiction politique : deux partis en concurrence pour les voix convergent vers l'électeur médian.
+
+![Modèle de Downs : convergence des deux partis vers l'électeur médian](assets/readme/sc-downs.png)
+
+*Sortie du SC-03, deux panneaux : à gauche, la distribution des électeurs avec les positions initiales (Gauche = 2, Droite = 8) et finales (toutes deux ≈ 4,8) des partis ; à droite, les trajectoires du parti de gauche (bleu, montant) et de droite (rouge, descendant) qui convergent en une vingtaine de rounds vers la médiane (vert pointillé). La compétition électorale aspire les deux partis vers le centre.*
 
 ### Étape 3 : Preuve formelle en Lean 4 (SC-02, 80 min)
 
@@ -63,7 +93,11 @@ Le notebook SC-02 formalise les préférences, les axiomes d'Arrow et de Sen, et
 
 ### Étape 4 : Vérification mécanique par SAT et Z3 (SC-04, 45 min)
 
-Le notebook SC-04 encode les théorèmes d'Arrow et de Sen comme des problèmes SAT (PySAT) et SMT (Z3). Le résultat UNSAT des solveurs constitue une preuve mécanique de l'impossibilité. Il compare les approches SAT (variables booléennes, clauses CNF) et SMT (variables entières, rangs sociaux), et analyse la relaxation des axiomes (chaque paire d'axiomes est réalisable).
+Le notebook SC-04 encode les théorèmes d'Arrow et de Sen comme des problèmes SAT (PySAT) et SMT (Z3). Le résultat UNSAT des solveurs constitue une preuve mécanique de l'impossibilité. Il compare les approches SAT (variables booléennes, clauses CNF) et SMT (variables entières, rangs sociaux), et analyse la relaxation des axiomes (chaque paire d'axiomes est réalisable). L'impossibilité se lit alors de deux façons complémentaires — conceptuellement comme une intersection vide de contraintes, et concrètement comme une explosion du nombre de profils à vérifier.
+
+![Agrégation computationnelle : intersection vide des axiomes et explosion combinatoire des profils](assets/readme/sc-z3-sat.png)
+
+*Illustration conceptuelle du SC-04 (et non une sortie du solveur), deux panneaux : à gauche, le diagramme de Venn des trois contraintes Pareto / IIA / Non-dictature dont l'intersection centrale est marquée « VIDE » ; à droite, la courbe semi-log du nombre de profils `(m!)^k` croissant avec le nombre d'alternatives `m` et d'électeurs `k` — 36 profils pour 2 électeurs et 3 alternatives, 216 pour 3 électeurs — avec l'annotation « Arrow ne s'applique pas » au point m = 2, seuil en deçà duquel le théorème est muet.*
 
 ## Formalisations Lean
 
@@ -89,28 +123,7 @@ Le projet `social_choice_lean_peters/` (DominikPeters, Lean 4 + Mathlib) formali
 | **Gibbard-Satterthwaite** | Toute règle de vote non-dictatoriale est manipulable (pour 3+ candidats) |
 | **Split Cycle** | Règle de vote la plus fine satisfaisant Condorcet + acyclicité |
 
-## Galerie
-
-Visualisations réelles de la théorie du choix social : une synthèse des axiomes d'Arrow (limite axiomatique), le cycle de Condorcet et le paradoxe de Sen (méthodes de vote), la convergence vers l'électeur médian (théorème médian + modèle de Downs), puis l'illustration de l'impossibilité et de l'explosion combinatoire à l'agrégation computationnelle.
-
-<table>
-<tr>
-<td align="center" colspan="2"><img src="assets/readme/sc-arrow.png" alt="Diagramme à 3 panneaux : barres vert SATISFAIT / rouge VIOLE pour 3 règles de vote (Borda, Pluralité, Dictature) × 3 axiomes (Pareto, IIA, Non-dictature)" width="640"/><br/><sub><b>Synthèse des axiomes d'Arrow</b> (<a href="01-Arrow-Impossibility-Theorem.ipynb">01-Arrow</a>) — 3 panneaux (Borda / Pluralité / Dictature), chacun 3 barres (Pareto, IIA, Non-dictature) vert « SATISFAIT » / rouge « VIOLÉ » : aucune règle ne satisfait les 3 axiomes simultanément</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/sc-condorcet.png" alt="Graphe orienté à 3 noeuds A B C formant un cycle (A→B→C→A), illustration du paradoxe de Condorcet : aucun vainqueur" width="400"/><br/><sub><b>Cycle de Condorcet</b> (<a href="03-Voting-Methods.ipynb">03-Voting</a>) — graphe orienté A→B→C→A (layout circulaire) : le majority pairwise crée un cycle, donc <i>aucun vainqueur</i> n'émerge (le résultat lui-même, pas une détermination de gagnant)</sub></td>
-<td align="center"><img src="assets/readme/sc-sen.png" alt="3 noeuds a b c avec flèches vertes (Liberté), rouge (Pareto) et orange pointillée (contradiction par transitivité)" width="400"/><br/><sub><b>Paradoxe de Sen</b> (<a href="03-Voting-Methods.ipynb">03-Voting</a>) — 3 noeuds (a, b, c), flèches vertes « Liberté » (Prude c&gt;a, Lewd b&gt;c), flèche rouge « Pareto » (a&gt;b), flèche orange pointillée « Transitivité » (b&gt;a) révélant la contradiction Liberté vs Pareto</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/sc-median.png" alt="2 panneaux : histogramme de distribution des pics de préférence avec ligne médiane rouge + courbes d'utilité unimodales de 3 électeurs" width="400"/><br/><sub><b>Théorème de l'électeur médian</b> (<a href="03-Voting-Methods.ipynb">03-Voting</a>) — 2 panneaux : histogramme des pics de préférence (ligne pointillée rouge = médiane) + courbes d'utilité unimodales de 3 électeurs (l'utilité = −distance au pic)</sub></td>
-<td align="center"><img src="assets/readme/sc-downs.png" alt="2 panneaux : histogramme des électeurs avec positions initiales/finales des partis + trajectoires des 2 partis convergeant vers l'électeur médian" width="400"/><br/><sub><b>Modèle de Downs</b> (<a href="03-Voting-Methods.ipynb">03-Voting</a>) — 2 panneaux : histogramme des électeurs (lignes verticales positions initiales/finales des partis gauche/droite) + trajectoires des 2 partis (bleu gauche / rouge droite) convergeant vers l'électeur médian (vert pointillé) sur 20 rounds</sub></td>
-</tr>
-<tr>
-<td align="center" colspan="2"><img src="assets/readme/sc-z3-sat.png" alt="2 panneaux : diagramme de l'intersection vide des contraintes d'Arrow (cercles Pareto/IIA/Non-dictature) + courbe semi-log d'explosion combinatoire des profils" width="560"/><br/><sub><b>Illustration de l'agrégation computationnelle</b> (<a href="04-Computational-Aggregation-SAT-Z3.ipynb">04-Z3</a>) — 2 panneaux : diagramme conceptuel des cercles de contraintes Pareto/IIA/Non-dictature à <b>intersection vide</b> + courbe semi-log du nombre de profils <code>(m!)^k</code> explosant avec le nombre d'alternatives (illustration conceptuelle, non une sortie du solveur Z3)</sub></td>
-</tr>
-</table>
-
-Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+> Les six figures de cette sous-série sont intégrées ci-dessus dans le **Parcours d'apprentissage**, chacune adjacente à l'étape qui traite le concept qu'elle illustre (Arrow en Étape 1 ; Condorcet, Sen, électeur médian et Downs en Étape 2 ; agrégation SAT/Z3 en Étape 4). Provenance, dimensions et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Navigation
 
