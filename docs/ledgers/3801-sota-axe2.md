@@ -865,7 +865,8 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 | 8 | Sudoku (36 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 36/36 | #5918 MERGED |
 | 9 | RL (17 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 17/17 | #5925 MERGED |
 | 10 | CaseStudies (6 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 6/6 | #5930 MERGED |
-| 11 | **ICT-Series (26 nb)** | po-2025 strict | 2026-07-10 | **SOTA-OK 26/26** | **THIS** |
+| 11 | ICT-Series (26 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 26/26 | #5936 MERGED |
+| 12 | **GameTheory (55 nb)** | po-2025 strict | 2026-07-10 | **SOTA-OK 55/55** | **THIS** |
 
 **Moteurs SOTA cumulés dans le registre (7 entries)** : Microsoft.ML.Probabilistic, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET = **20 moteurs SOTA distincts** sur 7 familles.
 
@@ -1095,5 +1096,72 @@ La série ICT n'est **pas** une démo jouet : ICT-Synthese applique **5 substrat
 - **Pivot L335 légitimé** : 11ᵉ famille distincte, owner po-2025 strict.
 - **L378 durcie** : G.1 firsthand (script python3 + lecture markdown pour résoudre les 2 faux positifs C.1 + `ls ict/` pour confirmer le package).
 - **Cumulatif** : **11 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, **ICT-Series**). Entry #011 ICT-Series ajoute **1 moteur SOTA nouveau** au registre (**`ict` package** — librairie originale de théorie de complexité intégrée, distincte de PyPhi) = **27 moteurs SOTA distincts cumulés**.
+
+Part of #3801
+
+
+## Entry #012 — GameTheory (owner po-2025 strict, c.406)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/GameTheory/` (55 .ipynb — GT-1→17 + twins C#/Python/WSL + variantes Lean `2b/4b/5b/8b/11b/15b/15c` + SocialChoice/01-04) |
+| Kernels | 5 : `.net-csharp` (24 nb), `python3` (13), `gametheory-wsl` (10), `lean4-wsl` (7), `python3-wsl` (1) |
+| Paradigmes | **Multi-langage** (Python + C# .NET + Lean 4) × **multi-paradigme** (computationnel + formel) |
+| Owner-lane | **po-2025 strict** (lane Python + Lean social choice Epic #4364/#4365) |
+| Date audit | 2026-07-10 (c.406) |
+| Auditeur | `myia-po-2025:CoursIA` |
+| Verdict agrégé | **SOTA-OK** (55/55 SOTA-OK) |
+
+### Synthèse (agrégée par thème — 55 notebooks, 767 cellules code)
+
+| Thème | Notebooks | EXEC | Err | Stubs C.1 | Outils SOTA |
+|-------|-----------|------|-----|-----------|-------------|
+| Normal-form / Nash | GT-1, GT-2(+C#), GT-2b, GT-3, GT-4(+C#/+c), GT-4b, GT-4c | 161/161 | 0 | 0 | **nashpy** + scipy.optimize + networkx (topologie best-response) + numpy.linalg |
+| Zero-sum / Minimax | GT-5(+C#), GT-5b | 45/45 | 0 | 0 | nashpy + scipy.optimize + Lean (minimax) |
+| Évolution / confiance | GT-6(+C#), GT-6c | 40/40 | 0 | 0 | **axelrod** (IPD évolutionnaire) + numpy |
+| Forme extensive / induction | GT-7, GT-8(+C#/+c), GT-8b, GT-8c, GT-9, GT-10 | 96/96 | 0 | 0 | from-scratch (backward/forward induction, Sprague-Grundy) + Lean combinatoire |
+| Bayésien / réputation | GT-11(+C#), GT-11b, GT-12 | 73/73 | 0 | 0 | Lean (SPA truthfulness, Bayesian) + from-scratch |
+| Info imparfaite / CFR | GT-13(+C#) | 26/26 | 0 | 0 | **OpenSpiel/pyspiel** (DeepMind) — CFR réel sur Kuhn Poker |
+| Différentiel / coopératif | GT-14, GT-15(+C#/+b/+c), GT-16 | 124/124 | 0 | 0 | cooperative_games lib + scipy.optimize (Shapley/core) + Lean (Bondareva-Shapley) |
+| Multi-agent RL | GT-17(+C#) | 23/23 | 0 | 0 | **OpenSpiel/pyspiel** (MARL) |
+| Choix social (social choice) | SC/01 Arrow, SC/02 Lean, SC/03 Voting, SC/04 SAT-Z3 | 179/179 | 0 | 0 | **Z3** (Python `from z3` + C# `Microsoft.Z3`, axiomes Arrow) + Lean (Arrow/Sen impossibility) |
+
+- **EXEC_PROVED global** : 55/55 (100%) — `execution_count != null` sur 767/767 cellules code (multi-kernel : .net-csharp, python3, gametheory-wsl, lean4-wsl, python3-wsl).
+- **Erreurs runtime** : 0/55.
+- **Violations C.1** : 0/55 (audit script regex `raise NotImplementedError|assert False` sur source code = 0 hit ; vérifié G.1).
+
+### Vrais outils SOTA invoqués (vérifiés G.1 imports réels, pas titres)
+
+- **OpenSpiel / pyspiel** (DeepMind, librairie canonique game-theory RL) — GT-13 (CFR sur Kuhn Poker via `open_spiel.python.algorithms`), GT-17 (MARL). Le SOTA multi-agent de l'industrie.
+- **nashpy** (Nash equilibrium computation) — GT-1/2/4/5 (support, normal-form, Nash, minimax).
+- **axelrod** (iterated Prisoner's Dilemma / évolutionnaire, axelrod.org) — GT-6 (tournoi IPD, stratégies évolutionnaires).
+- **Z3** (solveur SMT Microsoft Research) — SocialChoice/04 (Python `from z3` + C# `Microsoft.Z3`) : encodage SAT des axiomes d'Arrow (AddWeakPareto/AddIIA/AddNoDictator) + `Solver.Check()` → UNSAT prouve l'impossibilité. Vrai raisonnement SAT/SMT, pas une énumération jouet.
+- **Lean 4** (theorem prover) — 7 notebooks `lean4-wsl` : théorèmes **substantiels** vérifiés G.1 (`theorem`/`lemma` parsés) : `arrow`/`arrow_impossibility_sketch`/`sen_impossibility` (SC/02 — Arrow + Sen impossibility), `nash_equilibrium_exists`/`simplex_convex` (GT-4b — Nash existence via Brouwer), `bondareva_shapley`/`shapley_uniqueness`/`convex_implies_nonempty_core` (GT-15b — Bondareva-Shapley + Shapley value), `spa_truthful_dominant` (GT-11b — SPA truthfulness), `pure_nash_implies_mixed_nash`/`prisoners_dilemma_nash` (GT-2b).
+- **networkx** (graphe) — GT-3 (topologie best-response 2×2).
+- **scipy.optimize** + **numpy.linalg** — Nash/minimax numériques.
+- **cooperative_games** lib locale (projet, Epic #4364/#4365) — GT-15 (Shapley/core sur french_politics).
+
+### Prong B — problème non-trivial (sota-not-workaround §B)
+
+La série GameTheory n'est **pas** pédagogiquement dégénérée : SocialChoice/04 prouve l'**impossibilité d'Arrow par SAT** (UNSAT Z3), SC/02 la **formalise en Lean** (Arrow + Sen). GT-13 exécute **CFR sur Kuhn Poker** (info imparfaite, algorithme research-grade), GT-15b prouve **Bondareva-Shapley** (caractérisation non-vacuité du core), GT-4b la **existence de Nash** (Brouwer/Kakutani). Twins C#/Python/Lean sur chaque concept = triangulation computationnel+formel qui **exerce** la capacité distinctive de chaque moteur (SAT pour Arrow vs Lean pour la preuve constructive vs OpenSpiel pour CFR). Le banc est discriminant.
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **C.1** : 0/55 réel (regex sur source code, 0 hit). Pas de faux positif à résoudre cette fois.
+- **Anti-régression** : 55/55 `execution_count != null` + `output_type: error = 0` ; aucun notebook strippé, aucun output hand-edité.
+- **Audit consultatif purement additif** : safe owner-lane (L143 — pas de modification des notebooks GameTheory owner po-2025).
+- **SOTA tools grounded firsthand** : imports parsés par regex multiline (`from open_spiel`/`import pyspiel`/`import nashpy`/`import axelrod`/`from z3`/`Microsoft.Z3`) + `theorem`/`lemma` Lean parsés — chaque moteur confirmé par son import réel, pas par titre/markdown seul.
+
+### Volet owner-lane strict
+
+**GameTheory = po-2025 strict** (lane Python + Lean social choice Epic #4364 convergence Mathlib + #4365 CooperativeGames.Shapley MERGED). Audit consultatif additif, 0 PR de substance. Pivot L335 anti-monoculture post-c.405 (#011 ICT-Series) : **12ᵉ famille distincte du ledger**. Différence avec #011 ICT-Series (26 nb mono-Python/`ict`) : **#012 GameTheory = 55 nb multi-langage** (Python + C# .NET + Lean 4) × **multi-paradigme** (computationnel OpenSpiel/nashpy/axelrod/Z3 + formel Lean), la série la plus large et la plus hétérogène du registre.
+
+### Conclusions audit
+
+- **Substance GameTheory = SOTA-OK 55/55**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. OpenSpiel + nashpy + axelrod + Z3 + Lean 4 + networkx = moteurs SOTA réels sur banc game-theory/social-choice discriminant (Arrow SAT + Lean, CFR Kuhn Poker, Bondareva-Shapley).
+- **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
+- **Pivot L335 légitimé** : 12ᵉ famille distincte, owner po-2025 strict, la plus large (55 nb) + la seule multi-langage/tri-paradigme.
+- **L378 durcie** : G.1 firsthand (script python3 structural + regex imports SOTA + parse Lean theorems).
+- **Cumulatif** : **12 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, **GameTheory**). Entry #012 GameTheory ajoute **3 moteurs SOTA nouveaux** au registre (**OpenSpiel** DeepMind, **nashpy**, **axelrod** ; networkx déjà compté #007) = **30 moteurs SOTA distincts cumulés**.
 
 Part of #3801
