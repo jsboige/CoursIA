@@ -5,7 +5,7 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 ## Status
 
 - **Toolchain**: v4.31.0-rc1
-- **Sorry count**: 3 (all in `HashlifeCorrectness.lean` — P4 double-nine wave-glue residual `p4_succ_membership` [1] + P5 large-n jump [2], Epic #2162). Three P4 sub-lemmas are now proven sorry-free (see § "Game of Life" below). The P4.4 `p4_half_steps_compose` placeholder was deleted: its pure-evolve composition is already closed (`evolve_add` + `evolve_half_step`), its wave-glue content carried by the `p4_succ_membership` residual
+- **Sorry count**: 3 (all in `HashlifeCorrectness.lean` — P4 double-nine wave-glue residual `p4_succ_membership` [1] + P5 large-n jump [2], Epic #2162). Three P4 sub-lemmas are now proven sorry-free (see § "Game of Life" below). The P4.4 `p4_half_steps_compose` placeholder was deleted: its pure-evolve composition is already closed (`evolve_add` + `evolve_half_step`), its wave-glue content carried by the `p4_succ_membership` residual. **Audit N1 (PR #5853, ai-01 2026-07-09)**: the initial frame sub-claim (`BoxAssezGrand` ∩ `n ≥ jumpSize`) is **VACUOUS on non-empty grids** (`p5_large_n_hyps_unsat`: padding 2 of `gridFrame` ∧ `lvl ≥ 3` ⇒ `n ≤ 2 ∧ js ≥ 8`). **Design gate ai-01 (#3846, 2026-07-10)**: redesign `gridFrame` for `n`-dependent padding, port the `(off, mc)` state through the `evolveHashlifeFastAux` loop without intermediate re-framing, restate the "margin ≥ remaining n, preserved by jump" invariant. The proof debt (#3846) remains the BG-prover target and the coordinated architectural redesign scope.
 - **Build**: `lake build Conway` -- SUCCESS (3352 jobs)
 - **Dependencies**: Mathlib4
 
