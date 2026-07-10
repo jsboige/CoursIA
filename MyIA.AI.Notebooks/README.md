@@ -6,6 +6,8 @@ Deux partis pris structurent l'ensemble. D'abord une **double culture technique*
 
 Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répartis sur les onze domaines ci-dessous — le décompte exact par série est tenu à jour automatiquement dans le marqueur de catalogue ci-dessous, régénéré quotidiennement, qui fait foi. Une bonne porte d'entrée : **GenAI** pour la création assistée par IA, **QuantConnect** pour le ML appliqué à un domaine concret, ou **Search / GameTheory / SymbolicAI** pour les fondements algorithmiques et formels.
 
+> **À propos des nombres cités dans ce hub** : les **volumes** (notebooks par série, maturité, breakdown) sont *uniquement* ceux du marqueur `CATALOG-STATUS` ci-dessous — c'est lui qui fait foi, pas la prose (leçon #2572 : un compte en dur qui dérive avec le temps est une source de désalignement silencieux). En revanche, les **claims techniques précis** — exemples du livre *Hands-On AI Trading* implémentés, nombre d'architectures testées dans le Ladder ML-Training-Pipeline, lake phare par famille, volumétrie Lean — restent *dans la prose* parce qu'ils sont **spécifiques et stables**, vérifiés à la main dans les README de série correspondants ; un renvoi explicite est ajouté quand c'est utile.
+
 <!-- CATALOG-STATUS
 series: ALL
 total: 806
@@ -13,17 +15,19 @@ breakdown: SymbolicAI=207, GenAI=141, Search=112, QuantConnect=105, Probas=58, G
 maturity: PRODUCTION=605, BETA=148, ALPHA=45, DRAFT=4, TEMPLATE=4
 -->
 
+<sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est refusée par `catalog-guard.yml` (catalog-pr-hygiene R1).*</sub>
+
 Dernière mise à jour : 2026-07-07
 
 ## Vue d'ensemble
 
 **[GenAI](GenAI/README.md)** — Tout ce qui se génère : images (SDXL, Flux, Qwen), audio — du TTS au pipeline complet d'audiobook —, vidéo, et le travail des LLMs (RAG, raisonnement, fine-tuning LoRA). La série a un parti pris d'atelier : on ne se contente pas d'appeler des APIs, on héberge les modèles soi-même sur une stack Docker dédiée ([00-GenAI-Environment](GenAI/00-GenAI-Environment/README.md)), ce qui change tout à ce qu'on comprend de leurs coûts et de leurs limites. Elle culmine avec l'orchestration Semantic Kernel, quatre études de cas étudiantes et les ateliers de vibe-coding (Claude Code, Roo Code).
 
-**[QuantConnect](QuantConnect/README.md)** — Le ML appliqué à un domaine qui ne pardonne pas : les marchés. Un cours Python progressif mène du premier backtest à un portefeuille de 49 stratégies (GARCH, Kelly, ensembles), implémentant 18 des 19 exemples du livre *Hands-On AI Trading*. La leçon transversale vaut bien au-delà de la finance : une discipline de validation — walk-forward, multi-seed, coûts de transaction — sans laquelle tout résultat de ML est une illusion d'optique. Le pipeline d'entraînement associé (ML-Training-Pipeline) en est la démonstration grandeur nature : sur une échelle de complexité de treize architectures (du Ridge au Decision Transformer), **une seule** bat le baseline après validation multi-seed — un verdict d'honnêteté que la série assume comme résultat pédagogique à part entière.
+**[QuantConnect](QuantConnect/README.md)** — Le ML appliqué à un domaine qui ne pardonne pas : les marchés. Un cours Python progressif mène du premier backtest à un portefeuille de stratégies cataloguées (cf. breakdown `QuantConnect=105` du marqueur et l'inventaire [`docs/qc/qc-strategies-status.md`](../docs/qc/qc-strategies-status.md) pour la classification 4-types + statut best-guess de chaque projet). Les algorithmes emblématiques — GARCH, Kelly, ensembles — y côtoient 18 des 19 exemples du livre *Hands-On AI Trading*. La leçon transversale vaut bien au-delà de la finance : une discipline de validation — walk-forward, multi-seed, coûts de transaction — sans laquelle tout résultat de ML est une illusion d'optique. Le pipeline d'entraînement associé (ML-Training-Pipeline) en est la démonstration grandeur nature : un **Ladder** d'architectures testées (cf. [QC README — section ML-Training-Pipeline](QuantConnect/README.md)) dont seule une fraction bat le baseline après validation multi-seed — un verdict d'honnêteté que la série assume comme résultat pédagogique à part entière.
 
 **[SymbolicAI](SymbolicAI/README.md)** — Le pôle « comprendre et prouver » du dépôt, et sa série la plus vaste : preuves formelles Lean 4 (théorème d'Arrow, Kochen-Specker, hommages à Grothendieck et Conway), smart contracts Solidity testés et déployés sur testnet, Web sémantique RDF/SPARQL, logiques d'argumentation (Tweety), planification PDDL et apprentissage symbolique (ILP, automates, neuro-symbolique). C'est ici que la dualité simulation / preuve prend sa forme la plus aboutie : ce que les autres séries calculent, celle-ci cherche à le certifier.
 
-**[Search](Search/README.md)** — Comment trouver une aiguille dans une botte de foin exponentielle ? Des algorithmes classiques (BFS, A*, Minimax, MCTS) à la programmation par contraintes (CP-SAT) et aux métaheuristiques, la série déroule un fil unique — réduire l'espace de recherche — et le confronte à 22 applications réelles adaptées de projets étudiants, de la planification d'infirmiers à la génération procédurale de niveaux.
+**[Search](Search/README.md)** — Comment trouver une aiguille dans une botte de foin exponentielle ? Des algorithmes classiques (BFS, A*, Minimax, MCTS) à la programmation par contraintes (CP-SAT) et aux métaheuristiques, la série déroule un fil unique — réduire l'espace de recherche — et le confronte à des applications réelles adaptées de projets étudiants (cf. [Search/Applications/](Search/Applications/) pour l'inventaire à jour — NQueens, planification d'infirmiers, ordonnancement d'atelier, VRP logistique, génération procédurale de niveaux, etc.).
 
 **[Probas](Probas/README.md)** — Raisonner avec l'incertitude plutôt que contre elle. La série a une particularité unique dans le dépôt : les mêmes modèles probabilistes y vivent deux fois, en Infer.NET (graphes de facteurs, C#) et en PyMC (MCMC, Python) — deux langues pour une même théorie bayésienne, dont la comparaison est elle-même instructive. Un **arc décision** de dix notebooks (utilité espérée vNM → bandits → indice de Gittins → Thompson Sampling), lui aussi doublé Infer.NET/PyMC, pousse jusqu'à la preuve avec deux compagnons Lean 4 (axiomes vNM, Gittins).
 
@@ -59,17 +63,59 @@ GenAI
 QuantConnect
 ├── Python/ - Cours progressifs QC-Py (fondamentaux → stratégies)
 ├── projects/ - Stratégies backtestées et ML (GARCH, Kelly, ensemble)
-└── ML-Training-Pipeline/ - Pipeline training thermal-safe
+├── ML-Training-Pipeline/ - Pipeline training thermal-safe + Ladder 13 arch.
+└── partner-course-quant-trading/ - Cours partenaire Hands-On AI Trading
 
 SymbolicAI
-├── SmartContracts/ - Solidity, Web3, blockchain
+├── SmartContracts/ - Solidity, Web3, blockchain (ERC-20, ERC-721)
 ├── SemanticWeb/ - RDF, SPARQL, OWL, C# + Python
 ├── Lean/ - Theorem proving, LeanDojo, hommages (Grothendieck, Conway, FWT)
 ├── Planners/ - PDDL, Fast-Downward, OR-Tools, LLM planning
-├── Tweety/ - Logiques classiques, argumentation
+├── Tweety/ - Logiques classiques, argumentation (Dung, Walton-Krabbe)
 ├── SMT/ - Z3, Satisfiability Modulo Theories (LINQ C# + Python)
 ├── SymbolicLearning/ - ILP, neuro-symbolique, KG-LLM, automates (L*)
 └── Argument_Analysis/ - Analyse d'arguments
+
+Search
+├── Part1-Foundations/ - BFS, A*, Minimax, MCTS (agents et espaces d'états)
+├── Part2-CSP/ - Propagation de contraintes, CP-SAT
+├── Part3-Advanced/ - CSP avancés, automates symboliques
+├── Part4-Metaheuristics/ - Génétique, recuit, essaims, MGS
+├── Applications/ - Projets réels (planning, routage, niveaux)
+└── search_lean/ - Lake d'optimalité A* (consistance + heuristique)
+
+Probas
+├── Infer/ - 19 notebooks Infer.NET (graphes de facteurs, C#)
+├── PyMC/ - 19 notebooks PyMC (MCMC, Python) — miroir Infer
+├── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson)
+├── Causal-Bridges/ - do(·) Pearl cross-paradigmes
+└── decision_theory_lean/ - Axiomes VNM + Gittins (Lean 4)
+
+Sudoku
+└── (à plat) - 19 problèmes × N méthodes : Backtracking → CNN/LLM
+    ├── 1..9 méthodologies (Python + C# jumeaux)
+    └── 10..19 spécialisations (Z3, OR-Tools, Choco, Lean, LLM, NN)
+
+GameTheory
+├── (à plat) - 17 notebooks : Nash, Minimax, Coopétition, MARL, Mechanism Design
+├── SocialChoice/ - Arrow, Sen, Condorcet (Lean 4)
+└── game_theory_lean + *_lean/ - 8 lakes (Arrow, Shapley, Conway, Stable Marriage…)
+
+ML
+├── ML.Net/ - Tutoriels ML.NET C# (classification, régression, clustering)
+└── DataScienceWithAgents/ - Agents Python sklearn + ONNX jumeaux
+
+RL
+└── (à plat) - rl_1..13 : DQN, PPO, SAC, GRPO (DeepSeek-R1) from scratch
+
+CaseStudies
+├── Diagnostic-Medical/ - LLM-assisted diagnosis
+├── Oncology-Planning/ - Planification oncologique
+└── SmartGrid-Energy/ - Optimisation énergétique
+
+IIT
+├── ICT-Series/ - Integrated Causal Trajectories (4 substrats : tri, Gray-Scott, Axelrod, transformer+SAE)
+└── (à plat) - 3 notebooks PyPhi : Intro, Advanced, Coarse-Graining Phi
 ```
 
 ## Parité Python / .NET / Lean — différenciant structurant
@@ -117,11 +163,11 @@ Le dépôt sert ainsi doublement de support de cours : par son contenu, et comme
 ### QuantConnect / Finance
 - **LEAN Engine**: Backtesting, live trading, optimisation
 - **sklearn / XGBoost / PyTorch**: Modèles ML financiers
-- **QuantConnect Cloud**: 95 projets, backtests cloud
-- **Hands-On AI Trading**: 18/19 exemples du livre implémentés
+- **QuantConnect Cloud**: projets et backtests cloud (volume exact → [CATALOG-STATUS](#catalog-status) ci-dessus + [hub QuantConnect](QuantConnect/README.md))
+- **Hands-On AI Trading**: 18/19 exemples du livre implémentés (cf. [QC README](QuantConnect/README.md) pour le détail)
 
 ### Infrastructure
-- **Docker**: ComfyUI (29GB VRAM), services GenAI
+- **Docker**: services GenAI (cf. [00-GenAI-Environment](GenAI/00-GenAI-Environment/README.md) pour la stack complète)
 - **MCP**: Jupyter automation, QuantConnect MCP server
 - **Papermill**: Exécution batch
 
@@ -139,7 +185,7 @@ Le dépôt sert ainsi doublement de support de cours : par son contenu, et comme
 - Python 3.10+ avec venv
 - .NET 9.0 SDK
 - Docker (services GenAI)
-- 24GB+ VRAM (recommandé pour GenAI)
+- VRAM : recommandée pour la série GenAI (cf. [00-GenAI-Environment/README.md](GenAI/00-GenAI-Environment/README.md) pour les profils GPU par sous-série) ; non requise pour les séries Search/Sudoku/ML/RL/Probas/QC/SymbolicAI (CPU-only pour la plupart)
 
 ### Installation
 ```bash
@@ -225,7 +271,7 @@ Les notebooks les plus exigeants, mais ceux où le dépôt dit ce qu'il a de plu
 
 #### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
-Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette promesse par une **couche de 23 lakes Lean 4 / Mathlib** (toolchain `v4.31.0-rc1`, ~900 théorèmes-lemmes ; les chantiers `sorry` résiduels sont suivis par un harnais de preuve automatisé) qui ancre mathématiquement les résultats phares des séries. Pas une anthologie de devoirs formalisés : **un théorème-phare par famille**, validé mécaniquement, et **branché sur les notebooks** qui l'enseignent ou l'utilisent. Cartographie inter-familles :
+Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette promesse par une **couche de lakes Lean 4 / Mathlib** (cf. inventaire à jour dans [SymbolicAI/Lean/README.md](SymbolicAI/Lean/README.md) — la toolchain utilisée est documentée en en-tête de ce README, pas dans ce hub) qui ancre mathématiquement les résultats phares des séries. Pas une anthologie de devoirs formalisés : **un théorème-phare par famille**, validé mécaniquement, et **branché sur les notebooks** qui l'enseignent ou l'utilisent. Cartographie inter-familles :
 
 | Famille | Lake phare | Théorème | Branchement notebook |
 |---------|-----------|----------|----------------------|
