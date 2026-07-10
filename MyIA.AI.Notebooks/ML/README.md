@@ -117,9 +117,9 @@ Pipeline ML.NET complet en C#, de l'introduction à l'évaluation avancée : du 
 ### Trois figures du track ML.NET (scikit-learn, statsmodels)
 
 [![Régression linéaire (ML-1) : droite de régression verte apprise par scikit-learn superposée aux données d'entraînement (cercles bleus) et de test (carrés oranges) — l'étoile rouge matérialise la prédiction pour une maison de 2,5 milliers de pieds carrés (~2,76 centaines de milliers de dollars).](assets/readme/ml1-intro.png)](ML.Net/ML-1-Introduction-Python.ipynb)
-*ML-1 — Régression linéaire prix/surface (scikit-learn). On observe que les points `Test` (oranges) s'éloignent de la droite pour les grandes surfaces (> 6 milliers de pieds carrés) : le modèle linéaire sous-extrapole les grandes maisons, ce que la métrique R² seule ne signalera pas.*
+*ML-1 — Régression linéaire prix/surface (scikit-learn). On observe que les points `Test` (oranges) s'éloignent de la droite au-delà de ~4 milliers de pieds carrés : le modèle linéaire sous-extrapole les grandes maisons, ce que la métrique R² seule ne signalera pas.*
 
-[![Décomposition STL d'une série temporelle de ventes (ML-5) : quatre panneaux superposés — Observé (oscillations bruitées autour de 100-180), Tendance (courbe orange lisse montant de ~110 début 2023 à ~160 fin 2023), Saisonnalité (sinusoïde verte d'amplitude ~40, période 7 jours), Bruit (résidu rose, amplitude ~±25).](assets/readme/ml5-timeseries.png)](ML.Net/ML-5-TimeSeries-Python.ipynb)
+[![Décomposition STL d'une série temporelle de ventes (ML-5) : quatre panneaux superposés — Observé (oscillations bruitées entre ~60 et ~190), Tendance (courbe orange lisse montant de ~110 début 2023 à ~160 fin 2023), Saisonnalité (sinusoïde verte d'amplitude ~40, période 7 jours), Bruit (résidu rouge, amplitude ~±25).](assets/readme/ml5-timeseries.png)](ML.Net/ML-5-TimeSeries-Python.ipynb)
 *ML-5 — Décomposition STL (`statsmodels.tsa.seasonal_decompose`, période 7). La saisonnalité hebdomadaire se lit immédiatement (amplitude ±40), et la tendance capture la croissance sous-jacente (~+50 sur 12 mois). Le TP-prevision-ventes s'appuie sur ce découpage pour combiner signal et saisonnalité.*
 
 [![Clustering K-Means (ML-8) en deux panneaux : à gauche la vérité terrain (3 segments Dormants/Réguliers/VIP sur l'axe Frequency × Monetary) ; à droite les clusters 0/1/2 retrouvés par K-Means — on observe que les labels K-Means ne s'alignent PAS avec les segments sémantiques (Cluster 0 ≠ Dormants) : K-Means segmente l'espace géométrique, pas la sémantique métier.](assets/readme/ml8-clustering.png)](ML.Net/ML-8-Clustering-Python.ipynb)
@@ -155,10 +155,10 @@ Formation complète en Data Science Python enrichie d'agents IA. Vous commencere
 *Lab1 — Pandas & Matplotlib : visualisation exploratoire des ventes (20 jours, série temporelle + barres par catégorie). Cette figure introduit le double-outil Pandas + Matplotlib qu'utilisent ensuite tous les notebooks ML du track.*
 
 [![Visualisation Seaborn (Lab5) : courbe de l'évolution du chiffre d'affaires journalier entre le 01-10 et le 04-10, décroissance de ~760 à ~230 puis remontée à ~480.](assets/readme/lab5-viz.png)](DataScienceWithAgents/PythonAgentsForDataScience/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb)
-*Lab5 — Seaborn : la décroissance brutale (760→230 sur 24h) signale un trou de données ou un pic isolé — le notebook la commente comme un artefact à investiguer plutôt qu'un trend. Seaborn ajoute le lissage et la mise en forme, mais l'insight reste dans la séquence temporelle.*
+*Lab5 — Seaborn : chiffre d'affaires journalier sur quatre jours — chute de ~760 à ~230 le premier jour, plateau, puis remontée à ~480. Sur une fenêtre aussi courte, aucune tendance ne peut en être déduite : la figure illustre le style Seaborn (grille, mise en forme) appliqué à un DataFrame Pandas.*
 
 [![Agent ADK (Lab9) : diagramme en barres du revenu total par produit — Gadget Y (~46 000) > Widget B (~44 500) > Gadget X (~34 000) > Widget A (~27 500).](assets/readme/lab9-adk.png)](DataScienceWithAgents/AgenticDataScience/Day4-Foundations/Lab9-First-ADK-Agent.ipynb)
-*Lab9 — Premier agent ADK : l'agent a généré et exécuté le code Matplotlib qui produit cette figure, en autonomie à partir d'une requête en langage naturel (« compare le revenu par produit »). L'insight (Gadget Y bat Widget A de 70%) provient du tri décroissant que l'agent a ajouté spontanément.*
+*Lab9 — Premier agent ADK : l'agent a généré et exécuté le code Matplotlib qui produit cette figure, à partir de la requête « Crée un graphique à barres montrant le revenu par produit. Utilise matplotlib. » (cellule 17). Le tri décroissant (`sort_values(ascending=False)`) n'était pas demandé : l'agent l'a ajouté spontanément, ce qui rend l'insight (Gadget Y bat Widget A de ~70%) immédiatement lisible.*
 
 ### Socle ML canonique (02-ML-Cours)
 
@@ -238,7 +238,7 @@ C'est le **pendant prouvé** des notebooks de classification linéaire (`ML.Net/
 
 ### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
 
-La section ci-dessus focusse sur le **lake phare** `learning_theory_lean` (Novikoff perceptron). Le différenciant CoursIA tient à la **cartographie inter-familles** : chaque notebook ML (simulation/expérimentation) peut être doublé par un *lake* (preuve formelle) chez au moins une autre famille — décision, choix social,分配 équitable, recherche de chemin. Cette double culture (empirique ML.NET / scikit-learn ↔ formelle Lean 4 / Mathlib) ancre mathématiquement les notebooks qui *montrent* par les résultats des *preuves* qu'ils invoquent.
+La section ci-dessus focusse sur le **lake phare** `learning_theory_lean` (Novikoff perceptron). Le différenciant CoursIA tient à la **cartographie inter-familles** : chaque notebook ML (simulation/expérimentation) peut être doublé par un *lake* (preuve formelle) chez au moins une autre famille — décision, choix social, partage équitable, recherche de chemin. Cette double culture (empirique ML.NET / scikit-learn ↔ formelle Lean 4 / Mathlib) ancre mathématiquement les notebooks qui *montrent* par les résultats des *preuves* qu'ils invoquent.
 
 | Famille | Lake phare | Théorème | Branchement notebook ML |
 | --- | --- | --- | --- |

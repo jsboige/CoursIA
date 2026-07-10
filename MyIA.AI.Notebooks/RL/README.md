@@ -19,8 +19,6 @@ Cette série couvre les **fondements théoriques** (bandits, MDP, équation de B
 
 Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent la progression des fondements aux frontières : des bandits multi-bras à l'exploration par curiosité, en passant par les MDP, le reward shaping, les POMDP et le RL distributionnel. Sorties d'exécution **réelles** (règle C.3 — non régénérées pour l'illustration). Elles sont **réintégrées in-situ** dans la section qui en commente le concept ; la provenance exacte (cellule source, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
-> **Note honnête — dette de fabrication (EPIC #5654)** : à l'audit (lecture directe des PNG, pas de la légende), on observe que les fichiers `rl4-bandits.png` et `rl5-mdp-qlearning.png` semblent **intervertis** : `rl4-bandits.png` affiche une courbe de convergence Q-Learning sur FrozenLake, et `rl5-mdp-qlearning.png` affiche la convergence de bandits multi-bras. Les légendes ci-dessous sont **fidèles au contenu réel du PNG** (règle L378 durcie), pas au nom de fichier. PR de fix séparé à ouvrir pour ré-extraire les PNG dans le bon ordre.
-
 ## Notebooks
 
 | # | Notebook | Contenu | Durée |
@@ -83,15 +81,8 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | Stratégies intelligentes | Decaying epsilon-greedy, Thompson Sampling |
 | Analyse | Comparaison regret, visualisation des estimations |
 
-> ⚠️ **Avertissement légende (dette de fabrication EPIC #5654)** : le fichier `rl4-bandits.png` du dossier `assets/readme/` n'illustre PAS (à l'audit) le notebook 4 — il affiche une courbe de convergence Q-Learning sur FrozenLake (typique du notebook 5). Légende ci-dessous fidèle au **contenu réel du PNG**, pas au nom de fichier. Fix de ré-extraction dans un PR séparé.
-
-<p align="center"><img src="assets/readme/rl4-bandits.png" width="640" alt="Convergence Q-Learning sur FrozenLake : courbe de récompense cumulée par épisode, décroissance de l'erreur TD, politique greedy finale."></p>
-<p align="center"><em>Sortie d'exécution du notebook 5 (MDP / Q-Learning) — malgré le nom de fichier rl4-bandits.png, ce PNG illustre la convergence Q-Learning tabulaire sur FrozenLake. PR de ré-extraction à ouvrir pour rétablir la concordance nom-contenu.</em></p>
-
-> ⚠️ **Avertissement légende symétrique** : le fichier `rl5-mdp-qlearning.png` n'illustre PAS (à l'audit) le notebook 5 — il affiche la convergence de stratégies bandit multi-bras (epsilon-greedy vs UCB vs Thompson). Légende ci-dessous fidèle au contenu réel.
-
-<p align="center"><img src="assets/readme/rl5-mdp-qlearning.png" width="640" alt="Convergence bandit multi-bras : courbes de regret cumulé comparant epsilon-greedy, UCB1 et Thompson Sampling, avec convergence des estimations de moyenne vers les vraies valeurs des bras."></p>
-<p align="center"><em>Sortie d'exécution du notebook 4 (Bandits) — malgré le nom de fichier rl5-mdp-qlearning.png, ce PNG illustre la convergence des stratégies bandit. Symétrique de l'avertissement rl4 ci-dessus, fix groupé dans un PR séparé.</em></p>
+<p align="center"><img src="assets/readme/rl4-bandits.png" width="640" alt="Bandits multi-bras : fréquence de sélection du meilleur bras (moyenne mobile 50) sur 2000 pas, comparant Greedy, epsilon-greedy (0.1 et 0.01), UCB (c=2) et une politique aléatoire, avec la baseline 1/10 en pointillés."></p>
+<p align="center"><em>Sortie d'exécution du notebook 4 — convergence vers le meilleur bras : sur cet horizon de 2000 pas, Greedy monte vite vers ~80% de sélections correctes, epsilon-greedy(0.1) se stabilise vers ~70%, tandis qu'epsilon-greedy(0.01) et UCB(c=2) progressent encore (~50%) ; la politique aléatoire reste à la baseline 1/10.</em></p>
 
 ### Notebook 5 - MDP, Programmation Dynamique et Q-Learning
 
@@ -102,6 +93,9 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | Policy Iteration | Évaluation + amélioration de politique |
 | Q-Learning tabulaire | Apprentissage model-free, $\varepsilon$-greedy |
 | FrozenLake / CliffWalking | Environnements discrets |
+
+<p align="center"><img src="assets/readme/rl5-mdp-qlearning.png" width="640" alt="Convergence du Q-Learning sur FrozenLake : récompense moyenne (fenêtre glissante de 500 épisodes) en fonction de l'épisode, courbe croissant de 0 à environ 0.9 sur ~4500 épisodes."></p>
+<p align="center"><em>Sortie d'exécution du notebook 5 — le Q-Learning tabulaire converge sur FrozenLake : la récompense moyenne lissée passe de 0 à ~0.9, signe que la politique apprise atteint l'objectif dans la grande majorité des épisodes.</em></p>
 
 ### Notebook 6 - DQN et Policy Gradient
 
@@ -200,8 +194,8 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | Pont RLHF | Reward model appris, contrainte KL, DPO, inverse RL |
 | Exercices | Ablation potentiels, phases curriculum, biais du shaping naïf |
 
-<p align="center"><img src="assets/readme/rl10-reward-shaping.png" width="640" alt="Reward shaping : comparaison de la vitesse de convergence entre baseline (récompense sparse), potential-based shaping (Ng 1999) et curriculum learning (start progressif). Courbes de récompense cumulée par épisode."></p>
-<p align="center"><em>Sortie d'exécution du notebook 10 — illustration de l'accélération de convergence par potential-based shaping et curriculum, conforme à la cellule Comparaison du notebook (épisodes pour atteindre la politique optimale : potential ep 50, curriculum ep 122, baseline ep 190).</em></p>
+<p align="center"><img src="assets/readme/rl10-reward-shaping.png" width="640" alt="Reward shaping : vitesse d'apprentissage comparée sur quatre variantes — baseline (récompense sparse), potential-based shaping (Ng 1999), shaping heuristique et curriculum learning. Return en moyenne mobile 50 par épisode, seuil de convergence à -30 en pointillés."></p>
+<p align="center"><em>Sortie d'exécution du notebook 10 — potential-based et heuristique atteignent le seuil MA-50 ≥ -30 dès l'épisode 50, le curriculum à l'épisode 122, la baseline à l'épisode 190 (cellule Comparaison du notebook) ; les quatre courbes rejoignent ensuite le même plateau (~-15).</em></p>
 
 ### Notebook 11 - POMDP : Partial Observability et Belief Tracking
 
@@ -215,8 +209,8 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | Comparaison | 5 seeds, impact de la précision d'observation, pont DRQN/PPO+LSTM |
 | Exercices | Impact précision, nombre optimal d'écoutes, Tiger 3 portes |
 
-<p align="center"><img src="assets/readme/rl11-pomdp.png" width="640" alt="POMDP Tiger Problem : évolution de la croyance P(tigre-à-gauche) au fil des observations bruitées (écoute à 85% de précision), avec marqueurs des actions Listen/Open prises par la politique."></p>
-<p align="center"><em>Sortie d'exécution du notebook 11 — filtre bayésien de croyance sur le Tiger Problem : la masse de probabilité migre vers 0 ou 1 selon les observations Listen, l'agent choisit quand ouvrir selon le seuil de croyance (cassandra 1994).</em></p>
+<p align="center"><img src="assets/readme/rl11-pomdp.png" width="640" alt="POMDP Tiger Problem : diagramme en barres comparant la récompense moyenne de six méthodes sur 5 seeds, avec barres d'erreur — Random (-46.0), Open immédiat (-6.2), Listen x1 (-7.8), Listen x2 (-8.3), Q-MDP (-11.8), Belief Q (-8.0)."></p>
+<p align="center"><em>Sortie d'exécution du notebook 11 — récompense moyenne par méthode sur le Tiger Problem (5 seeds) : agir au hasard est catastrophique (-46.0), toutes les politiques informées — ouverture immédiate, écoutes fixes, Q-MDP, Q-Learning sur croyance discrétisée — se tiennent entre -6.2 et -11.8.</em></p>
 
 ### Notebook 12 - RL distributionnel : C51 (Categorical DQN)
 
@@ -230,8 +224,8 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | C51 vs DQN | Tableau comparatif, lignée QR-DQN / IQN / Rainbow |
 | Exercices | QR-DQN (quantile regression), sensibilité du support, politique sensible au risque (CVaR) |
 
-<p align="center"><img src="assets/readme/rl12-distributional.png" width="640" alt="C51 sur CartPole-v1 : courbe de récompense par épisode (convergence vers 500 vers ~8000 pas) + distribution catégorielle Z(s,a) apprise pour l'action optimale (51 atomes sur support fixe)."></p>
-<p align="center"><em>Sortie d'exécution du notebook 12 — apprentissage C51 sur CartPole-v1 : la distribution de retour apprise par action (histogramme à 51 atomes) est visualisée en fin d'entraînement, comparée à la valeur scalaire Q = E[Z].</em></p>
+<p align="center"><img src="assets/readme/rl12-distributional.png" width="640" alt="C51 sur CartPole-v1 : courbe d'apprentissage — retour par épisode (bleu clair), moyenne glissante sur 20 épisodes (rouge, culminant vers ~160), baseline aléatoire (~20) en pointillés, sur environ 300 épisodes."></p>
+<p align="center"><em>Sortie d'exécution du notebook 12 — l'agent C51 (Categorical DQN, 51 atomes) dépasse nettement la baseline aléatoire sur CartPole-v1 : la moyenne glissante monte jusqu'à ~160 sur cet entraînement court (~300 épisodes), sans atteindre le plafond de 500 de l'environnement.</em></p>
 
 ### Notebook 13 - Exploration par curiosité : Random Network Distillation (RND)
 
@@ -245,7 +239,7 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | Comparaison | RND vs comptage tabulaire / pseudo-comptage / ICM, problème de la noisy-TV, réglage du taux du prédicteur |
 | Exercices | Effet de beta, normalisation du bonus intrinsèque (Welford), limites de la curiosité (longueur de chaîne) |
 
-<p align="center"><img src="assets/readme/rl13-curiosity.png" width="640" alt="RND (Random Network Distillation) sur chaîne MDP-piège : à gauche, courbe de récompense extrinsèque comparant epsilon-greedy (~0.10, bloqué) vs RND (~0.96) ; à droite, heatmap de visite des états montrant que RND parcourt toute la chaîne."></p>
+<p align="center"><img src="assets/readme/rl13-curiosity.png" width="640" alt="RND (Random Network Distillation) sur chaîne MDP-piège : à gauche, récompense extrinsèque lissée par épisode — epsilon-greedy bloqué sur le piège (~0.10), RND atteint la grande récompense (~0.96) vers l'épisode 200 ; à droite, histogramme des visites d'états — epsilon-greedy concentré sur l'état 0 (~63%), RND réparti sur toute la chaîne (états 0 à 16)."></p>
 <p align="center"><em>Sortie d'exécution du notebook 13 — exploration par curiosité sur le benchmark chaîne-piège (Burda et al. 2018) : RND atteint la grande récompense distale là où epsilon-greedy plafonne sur l'appât proximal. Le ratio inconnu/visité initial (~1969x) chute à mesure que le prédicteur RND est entraîné.</em></p>
 
 ## Algorithmes couverts
