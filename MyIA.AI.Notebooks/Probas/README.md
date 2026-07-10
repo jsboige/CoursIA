@@ -93,28 +93,28 @@ Suivez le même modèle dans les deux stacks pour comparer les approches :
 |---------|-----------|------|----------------------|
 | Fondations | Infer-1 → 2 → 3 | PyMC-1 → 2 → 3 | EP/VMP (exact) vs NUTS (MCMC) |
 | Réseaux bayésiens | Infer-4 | PyMC-4 | Compilation statique vs échantillonnage dynamique |
-| IRT (compétences) | Infer-7 | PyMC-5 | Variable.If vs pm.Bernoulli |
-| TrueSkill | Infer-8 | PyMC-6 | Message passing exact vs MCMC approximatif |
-| Classification | Infer-9 | PyMC-7 | Bayes Point Machine vs régression logistique |
-| Model sélection | Infer-10 | PyMC-8 | Bayes Factors vs LOO/Pareto-SMI |
-| Topic modeling | Infer-11 | PyMC-9 | VMP vs NUTS sur variables latentes |
-| Crowdsourcing | Infer-13 | PyMC-10 | Worker models EP vs MCMC agrégation |
-| Séquences (HMM) | Infer-14 | PyMC-11 | Forward-backward exact vs échantillonné |
-| Recommenders | Infer-15 | PyMC-12 | Factorisation bayésienne statique vs MCMC |
-| Debugging | Infer-6 | PyMC-13 | ShowFactorGraph vs trace plot diagnostics |
-| Causal Inference | Infer-5 | PyMC-14 | do-calculus message passing vs pm.do MCMC |
-| Modèles hiérarchiques | Infer-12 | PyMC-16 | Pooling partiel, shrinkage EP vs paramétrisation non-centrée NUTS (funnel) |
+| IRT (compétences) | Infer-7 | PyMC-7 | Variable.If vs pm.Bernoulli |
+| TrueSkill | Infer-8 | PyMC-8 | Message passing exact vs MCMC approximatif |
+| Classification | Infer-9 | PyMC-9 | Bayes Point Machine vs régression logistique |
+| Model sélection | Infer-10 | PyMC-10 | Bayes Factors vs LOO/Pareto-SMI |
+| Topic modeling | Infer-11 | PyMC-11 | VMP vs NUTS sur variables latentes |
+| Crowdsourcing | Infer-13 | PyMC-13 | Worker models EP vs MCMC agrégation |
+| Séquences (HMM) | Infer-14 | PyMC-14 | Forward-backward exact vs échantillonné |
+| Recommenders | Infer-15 | PyMC-15 | Factorisation bayésienne statique vs MCMC |
+| Debugging | Infer-6 | PyMC-6 | ShowFactorGraph vs trace plot diagnostics |
+| Causal Inference | Infer-5 | PyMC-5 | do-calculus message passing vs pm.do MCMC |
+| Modèles hiérarchiques | Infer-12 | PyMC-12 | Pooling partiel, shrinkage EP vs paramétrisation non-centrée NUTS (funnel) |
 
 #### Parcours applications (modèles concrets, ~6h)
 
 Si vous préférez commencer par les cas d'usage, suivez cet ordre :
 
-1. **TrueSkill** (Infer-8 / PyMC-6) : classement bayésien, application Xbox Live
-2. **IRT** (Infer-7 / PyMC-5) : évaluation de compétences, application GMAT
-3. **Crowdsourcing** (Infer-13 / PyMC-10) : agrégation de labels, application Mechanical Turk
-4. **Recommenders** (Infer-15 / PyMC-12) : factorisation matricielle bayésienne
-5. **LDA** (Infer-11 / PyMC-9) : découverte de thèmes dans des corpus textuels
-6. **HMM** (Infer-14 / PyMC-11) : régimes cachés en finance et traitement du signal
+1. **TrueSkill** (Infer-8 / PyMC-8) : classement bayésien, application Xbox Live
+2. **IRT** (Infer-7 / PyMC-7) : évaluation de compétences, application GMAT
+3. **Crowdsourcing** (Infer-13 / PyMC-13) : agrégation de labels, application Mechanical Turk
+4. **Recommenders** (Infer-15 / PyMC-15) : factorisation matricielle bayésienne
+5. **LDA** (Infer-11 / PyMC-11) : découverte de thèmes dans des corpus textuels
+6. **HMM** (Infer-14 / PyMC-14) : régimes cachés en finance et traitement du signal
 
 #### Parcours décision (théorie de la décision, ~7h)
 
@@ -324,15 +324,15 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 | # | Notebook | Sujet |
 |---|----------|-------|
 | 4 | [PyMC-4-Bayesian-Networks](PyMC/PyMC-4-Bayesian-Networks.ipynb) | Réseaux bayésiens, CPTs |
-| 5 | [PyMC-5-Skills-IRT](PyMC/PyMC-5-Skills-IRT.ipynb) | Item Response Theory, modèles de compétences |
-| 6 | [PyMC-6-TrueSkill](PyMC/PyMC-6-TrueSkill.ipynb) | Classement, TrueSkill |
-| 7 | [PyMC-7-Classification](PyMC/PyMC-7-Classification.ipynb) | Classification bayésienne |
-| 8 | [PyMC-8-Model-Sélection](PyMC/PyMC-8-Model-Selection.ipynb) | Sélection de modèles, Bayes Factors |
-| 9 | [PyMC-9-Topic-Models](PyMC/PyMC-9-Topic-Models.ipynb) | LDA, Dirichlet priors |
-| 10 | [PyMC-10-Crowdsourcing](PyMC/PyMC-10-Crowdsourcing.ipynb) | Agrégation de labels, workers, communautés |
-| 11 | [PyMC-11-Séquences](PyMC/PyMC-11-Sequences.ipynb) | HMM, chaînes de Markov cachées, séquences temporelles |
-| 12 | [PyMC-12-Recommenders](PyMC/PyMC-12-Recommenders.ipynb) | Systèmes de recommandation bayésiens, factorisation |
-| 13 | [PyMC-13-Debugging](PyMC/PyMC-13-Debugging.ipynb) | Troubleshooting MCMC, diagnostics NUTS, bonnes pratiques |
+| 5 | [PyMC-7-Skills-IRT](PyMC/PyMC-7-Skills-IRT.ipynb) | Item Response Theory, modèles de compétences |
+| 6 | [PyMC-8-TrueSkill](PyMC/PyMC-8-TrueSkill.ipynb) | Classement, TrueSkill |
+| 7 | [PyMC-9-Classification](PyMC/PyMC-9-Classification.ipynb) | Classification bayésienne |
+| 8 | [PyMC-8-Model-Sélection](PyMC/PyMC-10-Model-Selection.ipynb) | Sélection de modèles, Bayes Factors |
+| 9 | [PyMC-11-Topic-Models](PyMC/PyMC-11-Topic-Models.ipynb) | LDA, Dirichlet priors |
+| 10 | [PyMC-13-Crowdsourcing](PyMC/PyMC-13-Crowdsourcing.ipynb) | Agrégation de labels, workers, communautés |
+| 11 | [PyMC-11-Séquences](PyMC/PyMC-14-Sequences.ipynb) | HMM, chaînes de Markov cachées, séquences temporelles |
+| 12 | [PyMC-15-Recommenders](PyMC/PyMC-15-Recommenders.ipynb) | Systèmes de recommandation bayésiens, factorisation |
+| 13 | [PyMC-6-Debugging](PyMC/PyMC-6-Debugging.ipynb) | Troubleshooting MCMC, diagnostics NUTS, bonnes pratiques |
 
 ### Phase 3 — Théorie de la décision (sous-série DecisionTheory/PyMC/, ~6h)
 
@@ -352,16 +352,16 @@ Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au 
 
 | # | Notebook | Sujet |
 |---|----------|-------|
-| 14 | [PyMC-14-Causal-Inference](PyMC/PyMC-14-Causal-Inference.ipynb) | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
+| 14 | [PyMC-5-Causal-Inference](PyMC/PyMC-5-Causal-Inference.ipynb) | do-calculus de Pearl, `pm.do`, backdoor/front-door, paradoxe de Simpson, contrefactuel |
 
 ### Phase 5 — Frontières bayésiennes (notebooks 15-19, ~3.5h)
 
-> Ports Python des frontières bayésiennes de la série Infer (modèles hiérarchiques 15, GP sparse 16, filtre de Kalman 17, change-point 18, analyse de survie 19). Le notebook PyMC-15 (processus gaussiens) tourne en `> 15 min` sur la géométrie latente — asymétrie structurelle assumée avec l'EP rapide d'Infer.NET (cf. [PyMC/README.md](PyMC/README.md)).
+> Ports Python des frontières bayésiennes de la série Infer (modèles hiérarchiques 15, GP sparse 16, filtre de Kalman 17, change-point 18, analyse de survie 19). Le notebook PyMC-16 (processus gaussiens) tourne en `> 15 min` sur la géométrie latente — asymétrie structurelle assumée avec l'EP rapide d'Infer.NET (cf. [PyMC/README.md](PyMC/README.md)).
 
 | # | Notebook | Sujet |
 |---|----------|-------|
-| 15 | [PyMC-15-Sparse-Gaussian-Process](PyMC/PyMC-15-Sparse-Gaussian-Process.ipynb) | Processus gaussien épars, NUTS sur inducing points, asymétrie structurelle avec Infer-16 EP |
-| 16 | [PyMC-16-Modeles-Hierarchiques](PyMC/PyMC-16-Modeles-Hierarchiques.ipynb) | Partial pooling bayésien, shrinkage, paramétrisation non-centrée, divergences NUTS comme diagnostic du funnel |
+| 15 | [PyMC-16-Sparse-Gaussian-Process](PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb) | Processus gaussien épars, NUTS sur inducing points, asymétrie structurelle avec Infer-16 EP |
+| 16 | [PyMC-12-Modeles-Hierarchiques](PyMC/PyMC-12-Modeles-Hierarchiques.ipynb) | Partial pooling bayésien, shrinkage, paramétrisation non-centrée, divergences NUTS comme diagnostic du funnel |
 | 17 | [PyMC-17-Kalman-Filter](PyMC/PyMC-17-Kalman-Filter.ipynb) | Système dynamique linéaire gaussien, récursion de filtrage fermée, value-add MCMC (estimation jointe Q/R/drift) |
 | 18 | [PyMC-18-Change-Point](PyMC/PyMC-18-Change-Point.ipynb) | Change-point bayésien, `DiscreteUniform` + `switch`, catastrophes minières (Poisson), entropie |
 | 19 | [PyMC-19-Survival-Analysis](PyMC/PyMC-19-Survival-Analysis.ipynb) | Analyse de survie, exponentiel conjugué (Gamma), forme Weibull `k` inférée directement (NUTS), sélection LOO (arviZ) |
@@ -374,7 +374,7 @@ La causalité est traitée à **quatre endroits** du dépôt, chacun avec son mo
 |-------|--------|--------------|
 | [Tweety-11-Causal](../SymbolicAI/Tweety/Tweety-11-Causal.ipynb) | Tweety (.NET, logique) | modèle causal structurel, opérateur `do`, contrefactuels |
 | [Infer-5-Causal-Inference](Infer/Infer-5-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
-| [PyMC-14-Causal-Inference](PyMC/PyMC-14-Causal-Inference.ipynb) | PyMC (MCMC) | backdoor, front-door, contrefactuel bayésien |
+| [PyMC-5-Causal-Inference](PyMC/PyMC-5-Causal-Inference.ipynb) | PyMC (MCMC) | backdoor, front-door, contrefactuel bayésien |
 | [ICT-5](../IIT/ICT-Series/ICT-5-CausalEmergence.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-6-SortingToTPM-CausalEmergence.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
 
 Ce que le pont ajoute par rapport aux quatre notebooks pris isolément : la théorie du do-calculus posée une bonne fois, vérifiée sur `dowhy` à effet connu, et la distinction explicite entre **causalité interventionniste** (Pearl) et **émergence causale** (Hoel).
@@ -443,12 +443,12 @@ pip install pyro-ppl torch matplotlib numpy
 
 | Domaine | Notebooks |
 |---------|-----------|
-| Jeux vidéo | Infer-8, PyMC-6 (TrueSkill) |
-| Éducation | Infer-7, PyMC-5 (IRT) |
-| NLP | Infer-11, PyMC-9 (LDA) |
+| Jeux vidéo | Infer-8, PyMC-8 (TrueSkill) |
+| Éducation | Infer-7, PyMC-7 (IRT) |
+| NLP | Infer-11, PyMC-11 (LDA) |
 | Médecine | Infer-4, Infer-9, Infer-17, Infer-18, Infer-19 (réseaux bayésiens, Kalman, change-point, survie) |
 | Finance | Infer-14 (HMM régimes), DecInfer-3 (CARA/CRRA), DecInfer-8 (MDPs) |
-| E-commerce | Infer-13, Infer-15, PyMC-10, PyMC-12 (crowdsourcing, recommenders) |
+| E-commerce | Infer-13, Infer-15, PyMC-13, PyMC-15 (crowdsourcing, recommenders) |
 
 ### Exemples concrets
 
@@ -536,7 +536,7 @@ Le notebook `Infer-101.ipynb` est le seul à mélanger les deux kernels. Il util
 
 - Augmentez `target_energy` et `adapt_delta` (défaut 0.8 → essai 0.95).
 - Vérifiez le `R-hat` (devrait être < 1.01 pour toutes les variables).
-- Consultez [PyMC-13-Debugging](PyMC/PyMC-13-Debugging.ipynb) pour des diagnostics détaillés (trace plots, effective sample size, tree depth).
+- Consultez [PyMC-6-Debugging](PyMC/PyMC-6-Debugging.ipynb) pour des diagnostics détaillés (trace plots, effective sample size, tree depth).
 
 ## Ressources
 
@@ -627,7 +627,7 @@ La thèse pratique est honnête : un modèle probabiliste est plus lourd à bât
 - **Passer à la décision séquentielle** : les MDP de l'arc décision ([`DecisionTheory/DecInfer/`](DecisionTheory/DecInfer/README.md) ou [`DecisionTheory/PyMC/`](DecisionTheory/PyMC/README.md)) préparent directement [RL](../RL/README.md), où l'agent **apprend** la politique optimale par interaction plutôt que de la calculer hors ligne — la frontière naturelle entre inférence probabiliste et apprentissage par renforcement.
 - **Croiser la théorie des jeux** : [GameTheory](../GameTheory/README.md) partage la notion de **décision sous incertitude**, mais l'incertitude y vient d'un adversaire rationnel plutôt que d'un processus stochastique. Les fonctions d'utilité multi-attributs trouvent leur miroir dans le choix social et l'utilité collective.
 - **Revenir au ML appliqué** : le [TP prévision de ventes](../ML/ML.Net/TP-prevision-ventes.ipynb) de la série ML est une porte d'entrée — il traite la régression bayésienne comme cas d'application ; cette série en donne le langage complet (distributions, facteurs, inférence).
-- Pour la pratique : reprenez un même modèle (par exemple TrueSkill, Infer-8 / PyMC-6) dans les deux stacks, comparez les intervalles de crédibilité, et observez comment EP (déterministe) et NUTS (stochastique) convergent vers des conclusions cohérentes — c'est l'exercice le plus formateur pour saisir le champ d'application de chaque approche.
+- Pour la pratique : reprenez un même modèle (par exemple TrueSkill, Infer-8 / PyMC-8) dans les deux stacks, comparez les intervalles de crédibilité, et observez comment EP (déterministe) et NUTS (stochastique) convergent vers des conclusions cohérentes — c'est l'exercice le plus formateur pour saisir le champ d'application de chaque approche.
 
 ### Le fil rouge
 
