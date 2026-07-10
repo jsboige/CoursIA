@@ -5960,62 +5960,62 @@ else:
 MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Python.ipynb,d7796c4b,markdown,fr,32e02850a8258d6b,"## Conclusion
 
 Ce notebook a présenté deux approches Z3 pour modéliser et résoudre le Sudoku : les entiers symboliques (Int) et les vecteurs de bits (BitVec 4 bits). La comparaison montre que les BitVectors sont systématiquement plus rapides (2.3x à 6.4x), car leur domaine restreint (16 valeurs sur 4 bits) permet à Z3 d'utiliser des algorithmes de propagation plus efficaces. La contrainte `Distinct`, disponible nativement pour les entiers mais nécessitant une décomposition par paires pour les BitVectors, illustre le compromis entre simplicité d'API et performance. Au-delà du Sudoku, Z3 est un outil de résolution SMT polyvalent, applicable à la vérification de programmes, l'analyse de sécurité et la synthèse de code. Les exercices proposés (comptage de solutions, contraintes diagonales, coloration de graphe) montrent comment étendre le modèle de base vers des variantes plus riches.",,,,,,,,32e02850a8258d6b,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,b67d95b0,markdown,fr,fb77840b11dc9537,"---
-**Navigation** : [<< Sudoku-12 Z3 C#](Sudoku-12-Z3-Csharp.ipynb) | [Index](README.md) | [Sudoku-14 Retour d'experience >>](Sudoku-14-BDD-Csharp.ipynb)
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,b67d95b0,markdown,fr,cc643a65d2bf93a4,"---
+**Navigation** : [<< Sudoku-12 Z3 C#](Sudoku-12-Z3-Csharp.ipynb) | [Index](README.md) | [Sudoku-14 Retour d'expérience >>](Sudoku-14-BDD-Csharp.ipynb)
 
 ---
 
-# Sudoku-13 : Le Sudoku comme Regex Symbolique - l'echelle Conway -> BREX/Rex -> RE#
+# Sudoku-13 : Le Sudoku comme Regex Symbolique - l'échelle Conway -> BREX/Rex -> RE#
 
-> **Ce notebook reprend et aboutit une tentative personnelle de 2020** : representer un Sudoku comme un *grand regex symbolique* ou les contraintes de lignes, colonnes et blocs se combinent par **intersection** (`Ligne & Colonne & Bloc`), puis demander a un solveur d'en extraire une grille-témoin.
+> **Ce notebook reprend et aboutit une tentative personnelle de 2020** : représenter un Sudoku comme un *grand regex symbolique* où les contraintes de lignes, colonnes et blocs se combinent par **intersection** (`Ligne & Colonne & Bloc`), puis demander à un solveur d'en extraire une grille-témoin.
 >
-> La tentative de 2020 a bute sur deux murs reels - tous deux des murs **de l'automate** (determinisation explosive + témoin cape). La chaîne moderne change de moteur : les operateurs de surface `&` / `~` se compilent vers la **théorie des chaînes de Z3**, qui ne construit aucun produit d'automates et n'a aucun plafond de témoin. Les deux murs de 2020 disparaissent. Restait le 9x9 : longtemps `unknown` (> 60 s) quand le tous-distincts est **fondu** en un seul automate d'intersection (`re.inter` / `str.in_re`). La piece manquante - l'**element de syntaxe entrevu en 2020** - tient en un mot : chaque conjonct d'appartenance `.*d.*` a une **primitive native** dans la théorie des chaînes, `str.contains`. Emise ainsi (un `str.contains` par chiffre) plutot que fondue en `re.inter`, la **meme** intersection `&` d'appartenances fait **atterrir la grille 9x9 complete** - témoin reel, valide, en ~53 s (binding .NET ; ~12 s en z3-py). Zero inegalite : le regex se suffit a lui-meme.
+> La tentative de 2020 a buté sur deux murs réels - tous deux des murs **de l'automate** (déterminisation explosive + témoin capé). La chaîne moderne change de moteur : les opérateurs de surface `&` / `~` se compilent vers la **théorie des chaînes de Z3**, qui ne construit aucun produit d'automates et n'a aucun plafond de témoin. Les deux murs de 2020 disparaissent. Restait le 9x9 : longtemps `unknown` (> 60 s) quand le tous-distincts est **fondu** en un seul automate d'intersection (`re.inter` / `str.in_re`). La pièce manquante - l'**élément de syntaxe entrevu en 2020** - tient en un mot : chaque conjonct d'appartenance `.*d.*` a une **primitive native** dans la théorie des chaînes, `str.contains`. Émise ainsi (un `str.contains` par chiffre) plutôt que fondue en `re.inter`, la **même** intersection `&` d'appartenances fait **atterrir la grille 9x9 complète** - témoin réel, valide, en ~53 s (binding .NET ; ~12 s en z3-py). Zéro inégalité : le regex se suffit à lui-même.
 
-## La these en une phrase
+## La thèse en une phrase
 
-Un Sudoku se laisse decrire **et resoudre** comme une **intersection de contraintes regulieres**. *Decrire* (reconnaitre une grille valide) et *produire* (resoudre le puzzle) restent **deux metiers** - RE# excelle au premier, Z3 au second - mais le regex `&` ne s'arrete pas à la reconnaissance : porte vers la théorie des chaînes de Z3 dans la **bonne forme d'emission** (chaque `.*d.*` en `str.contains` natif, pas fondu en `re.inter`), il **atterrit la grille 9x9 complete**, sans une seule inegalite. Ce qui decide n'est ni le moteur ni le substrat, c'est la **forme d'emission** du meme `&` d'appartenances : produit d'automates (sature) vs primitive native (atterrit).",,,,,,,,fb77840b11dc9537,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,f028622e,markdown,fr,031273786ca87687,"## 1. Introduction : un Sudoku comme grand regex ?
+Un Sudoku se laisse décrire **et résoudre** comme une **intersection de contraintes régulières**. *Décrire* (reconnaître une grille valide) et *produire* (résoudre le puzzle) restent **deux métiers** - RE# excelle au premier, Z3 au second - mais le regex `&` ne s'arrête pas à la reconnaissance : porté vers la théorie des chaînes de Z3 dans la **bonne forme d'émission** (chaque `.*d.*` en `str.contains` natif, pas fondu en `re.inter`), il **atterrit la grille 9x9 complète**, sans une seule inégalité. Ce qui décide n'est ni le moteur ni le substrat, c'est la **forme d'émission** du même `&` d'appartenances : produit d'automates (sature) vs primitive native (atterrit).",,,,,,,,cc643a65d2bf93a4,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,f028622e,markdown,fr,3a7f4c6cac871bc2,"## 1. Introduction : un Sudoku comme grand regex ?
 
-En 2020, l'auteur entreprenait de representer un Sudoku non pas comme un monstre PCRE a backtracking (le folklore Perl du ""Sudoku en un regex"", barreau 1 ci-dessous), mais comme une **chaîne declarative tractable** ou :
+En 2020, l'auteur entreprenait de représenter un Sudoku non pas comme un monstre PCRE à backtracking (le folklore Perl du ""Sudoku en un regex"", barreau 1 ci-dessous), mais comme une **chaîne déclarative tractable** où :
 
 - chaque contrainte (ligne, colonne, bloc) est un *regex symbolique* ;
-- les contraintes se combinent par **intersection** (`&`) et **complement** (`~`) ;
+- les contraintes se combinent par **intersection** (`&`) et **complément** (`~`) ;
 - l'intersection compile vers un terme SMT ;
 - un solveur SMT (Z3) en extrait un **modèle = la grille solution** (un *témoin*).
 
-Le timing n'etait pas un hasard. Après le binding LINQ-to-Z3 (2018), deux publications du groupe Veanes/MSR venaient d'annoncer la piece qui semblait manquante : **SRM** (""Symbolic Regex Matcher"", TACAS 2019) portait un moteur a **dérivées symboliques**, et **dZ3** (""Symbolic Boolean Derivatives for Efficiently Solving Extended Regular Expression Constraints"", PLDI 2021) montrait que les **combinaisons booleennes** de regex - exactement `Ligne & Colonne & Bloc` - se **resolvent** efficacement via Z3, la ou les methodes anterieures explosaient. Sur le papier, c'etait le bon moment.
+Le timing n'était pas un hasard. Après le binding LINQ-to-Z3 (2018), deux publications du groupe Veanes/MSR venaient d'annoncer la pièce qui semblait manquante : **SRM** (""Symbolic Regex Matcher"", TACAS 2019) portait un moteur à **dérivées symboliques**, et **dZ3** (""Symbolic Boolean Derivatives for Efficiently Solving Extended Regular Expression Constraints"", PLDI 2021) montrait que les **combinaisons booléennes** de regex - exactement `Ligne & Colonne & Bloc` - se **résolvent** efficacement via Z3, là où les méthodes antérieures explosaient. Sur le papier, c'était le bon moment.
 
-### Trois facons de ""resoudre un Sudoku avec des regex"" (a ne pas confondre)
+### Trois façons de ""résoudre un Sudoku avec des regex"" (à ne pas confondre)
 
 | Paradigme | Qui fait la *recherche* | Atterrit la grille ? |
 |---|---|---|
-| **Conway / backtracking** (`(?R)`, deroule Griffis) | le *moteur regex* lui-meme | fragile (timeout / faux negatif) |
+| **Conway / backtracking** (`(?R)`, déroulé Griffis) | le *moteur regex* lui-même | fragile (timeout / faux négatif) |
 | **SFA / produit d'automates** (Automata.NET 2020 : Rex + SFAz3) | produit de DFA + témoin SFAz3 | toys oui ; grille -> mur 1 (explosion) + mur 2 (cap #6) |
-| **regex -> théorie des chaînes SMT *directe*** (fork `RegexToSMTConverter`) | le *solveur de chaînes* Z3, aucun automate materialise | **4x4 complet ; 9x9 complet (cf. infra)** |
+| **regex -> théorie des chaînes SMT *directe*** (fork `RegexToSMTConverter`) | le *solveur de chaînes* Z3, aucun automate matérialisé | **4x4 complet ; 9x9 complet (cf. infra)** |
 
-Ce notebook raconte **honnetement** cette histoire : ses deux murs de 2020, le changement de moteur qui les fait tomber, puis la derniere marche - le 9x9 - que franchit la **forme d'emission** de l'intersection : fondue en `re.inter`, l'appartenance sature ; eclatee en `str.contains` natif, elle **atterrit le 9x9 complet**.
+Ce notebook raconte **honnêtement** cette histoire : ses deux murs de 2020, le changement de moteur qui les fait tomber, puis la dernière marche - le 9x9 - que franchit la **forme d'émission** de l'intersection : fondue en `re.inter`, l'appartenance sature ; éclatée en `str.contains` natif, elle **atterrit le 9x9 complet**.
 
-### Reconnaitre != resoudre
+### Reconnaître != résoudre
 
 | Approche | **RESOUDRE** (produire le témoin) | **VERIFIER** (valider une grille) |
 |---|---|---|
-| Folklore PCRE (backtracking, barreau 1) | detour de backtracking, illisible | monstrueux |
-| 2020 - AutomataDotNet (BREX/Rex + SFAz3) | **mure** : cap témoin ~21 char (#6) + explosion du produit | intersection -> DFA, mais **explose** |
-| Moderne - `&`/`~` -> théorie des chaînes Z3 | **témoin non cape, sans produit d'automates** ; *atterrit* la grille (4x4 **et** 9x9) | (oui) |
-| 2025 - RE# | aucun témoin (recognition-only) | **temps lineaire** |
-| Z3 `Distinct` (81 entiers) | resolveur de production (~38 ms) | - |
+| Folklore PCRE (backtracking, barreau 1) | détour de backtracking, illisible | monstrueux |
+| 2020 - AutomataDotNet (BREX/Rex + SFAz3) | **muré** : cap témoin ~21 char (#6) + explosion du produit | intersection -> DFA, mais **explose** |
+| Moderne - `&`/`~` -> théorie des chaînes Z3 | **témoin non capé, sans produit d'automates** ; *atterrit* la grille (4x4 **et** 9x9) | (oui) |
+| 2025 - RE# | aucun témoin (recognition-only) | **temps linéaire** |
+| Z3 `Distinct` (81 entiers) | résolveur de production (~38 ms) | - |
 
-Les deux murs de 2020 etaient des murs **de l'automate** : ils tombent des qu'on change de moteur (produit de DFA -> théorie des chaînes Z3). La voie symbolique **atterrit reellement** une grille - 4x4 complete, **et 9x9 complete** - sans jamais quitter l'appartenance reguliere. La leçon n'est pas ""le regex est le mauvais outil"" mais, plus fine : ce qui decide n'est ni le moteur ni le substrat, c'est la **forme d'emission** du meme `&` d'appartenances. *Fondu* en un produit d'automates (`re.inter` / `str.in_re`), il sature a l'echelle du 9x9 ; *eclate* en la primitive native `str.contains` (un par chiffre, soit exactement `.*d.*`), il **atterrit** la grille 9x9 complete (~53 s en .NET), sans une seule inegalite. Le bon outil suit la **forme** du probleme - et le regex, bien emis, est cet outil.",,,,,,,,031273786ca87687,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,26eb0bfa,markdown,fr,09742896ac841378,"## 2. Barreau 1 - le monstre PCRE : ""le Sudoku en un seul regex""
+Les deux murs de 2020 étaient des murs **de l'automate** : ils tombent dès qu'on change de moteur (produit de DFA -> théorie des chaînes Z3). La voie symbolique **atterrit réellement** une grille - 4x4 complète, **et 9x9 complète** - sans jamais quitter l'appartenance régulière. La leçon n'est pas ""le regex est le mauvais outil"" mais, plus fine : ce qui décide n'est ni le moteur ni le substrat, c'est la **forme d'émission** du même `&` d'appartenances. *Fondu* en un produit d'automates (`re.inter` / `str.in_re`), il sature à l'échelle du 9x9 ; *éclaté* en la primitive native `str.contains` (un par chiffre, soit exactement `.*d.*`), il **atterrit** la grille 9x9 complète (~53 s en .NET), sans une seule inégalité. Le bon outil suit la **forme** du problème - et le regex, bien émis, est cet outil.",,,,,,,,3a7f4c6cac871bc2,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,26eb0bfa,markdown,fr,290e4c6c6c3be519,"## 2. Barreau 1 - le monstre PCRE : ""le Sudoku en un seul regex""
 
-Le folklore Perl du ""Sudoku en un seul regex"" remonte aux PerlMonks du milieu des annees 2000 ([ikegami, 2005](https://www.perlmonks.org/?node_id=471168) ; plus tard le module pur-regex [`Regexp::Sudoku` d'Abigail](https://metacpan.org/pod/Regexp::Sudoku)). L'idee : le backtracking du moteur regex *est* un moteur de recherche, et la grille devient un unique match potentiel.
+Le folklore Perl du ""Sudoku en un seul regex"" remonte aux PerlMonks du milieu des années 2000 ([ikegami, 2005](https://www.perlmonks.org/?node_id=471168) ; plus tard le module pur-regex [`Regexp::Sudoku` d'Abigail](https://metacpan.org/pod/Regexp::Sudoku)). L'idée : le backtracking du moteur regex *est* un moteur de recherche, et la grille devient un unique match potentiel.
 
-Ce tour de force existe en **deux formes reelles** (souvent confondues) :
+Ce tour de force existe en **deux formes réelles** (souvent confondues) :
 
-- la **forme recursive** (`(?R)` / `(?0)`) : le motif s'auto-invoque pour explorer la grille. Elle est **non reguliere** et **hors de portee de .NET** (`System.Text.RegularExpressions` ne fait pas de recursion de motif) ;
-- la **forme deroulee** : les 81 cases sont ecrites explicitement (backreferences + lookaheads, **sans** `(?R)`), lignee Aron Griffis (2007), domaine public. Elle **tourne** sur tout moteur a backtracking, .NET compris.
+- la **forme récursive** (`(?R)` / `(?0)`) : le motif s'auto-invoque pour explorer la grille. Elle est **non régulière** et **hors de portée de .NET** (`System.Text.RegularExpressions` ne fait pas de récursion de motif) ;
+- la **forme déroulée** : les 81 cases sont écrites explicitement (backreferences + lookaheads, **sans** `(?R)`), lignée Aron Griffis (2007), domaine public. Elle **tourne** sur tout moteur à backtracking, .NET compris.
 
-Dans les deux cas, le pattern est un **monstre** illisible, inversement pedagogique, et non generalisable - du folklore de concours, pas une méthode. La forme deroulee est celle que nous **generons et executons reellement** en section 8 ; le tronceau ci-dessous en est extrait (un troncage de l'artefact reel sauvegarde dans `assets/sudoku-unrolled.regex.txt`), pas un fragment reconstruit à la main.",,,,,,,,09742896ac841378,,,,,,,
+Dans les deux cas, le pattern est un **monstre** illisible, inversement pédagogique, et non généralisable - du folklore de concours, pas une méthode. La forme déroulée est celle que nous **générons et exécutons réellement** en section 8 ; le tronceau ci-dessous en est extrait (un troncage de l'artefact réel sauvegardé dans `assets/sudoku-unrolled.regex.txt`), pas un fragment reconstruit à la main.",,,,,,,,290e4c6c6c3be519,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,145a4599,code,fr,b3fa833085b8f7dd,"// Le VRAI monstre regex (forme deroulee, lignee Conway/folklore PCRE) genere en section 8
 // et sauvegarde dans assets/sudoku-unrolled.regex.txt. On en affiche un TRONCAGE : tete + queue,
 // extraits du fichier reel (pas un fragment reconstruit a la main).
@@ -6048,16 +6048,16 @@ if (chemin == null) {
     Console.WriteLine(""   mais l'unicite encodee en lookaheads/backrefs est illisible. Ce n'est PAS"");
     Console.WriteLine(""   la representation declarative que nous cherchons (intersection -> Z3)."");
 }",,,,,,,,b3fa833085b8f7dd,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a3163cc0,markdown,fr,c8c262048edc3e83,"### Interpretation : le monstre PCRE = l'anti-modèle
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a3163cc0,markdown,fr,70f07bd4deacf583,"### Interprétation : le monstre PCRE = l'anti-modèle
 
-Ce monstre demontre par l'absurde que **detourner le backtracking d'un moteur regex pour faire de la recherche** conduit a une représentation illisible. La contrainte d'unicite Sudoku n'est *pas* naturelle en PCRE : elle s'exprime en empilant des lookaheads negatifs sur les cellules deja posees. La forme deroulee *tourne* (section 8) mais reste illisible et, on le verra, non portable d'un moteur a l'autre ; la forme recursive `(?R)` ne tourne meme pas en .NET.
+Ce monstre démontre par l'absurde que **détourner le backtracking d'un moteur regex pour faire de la recherche** conduit à une représentation illisible. La contrainte d'unicité Sudoku n'est *pas* naturelle en PCRE : elle s'exprime en empilant des lookaheads négatifs sur les cellules déjà posées. La forme déroulée *tourne* (section 8) mais reste illisible et, on le verra, non portable d'un moteur à l'autre ; la forme récursive `(?R)` ne tourne même pas en .NET.
 
-La bonne représentation, c'est l'**intersection declarative** de contraintes (`Ligne & Colonne & Bloc`) - portee proprement par RE# pour la reconnaissance (sections 4-5) et par Z3 pour la production du témoin (section 6). C'est exactement ce que cherchait l'approche 2020.",,,,,,,,c8c262048edc3e83,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,e1d5ed3a,markdown,fr,7e596f2a73f53886,"## 3. Barreau 2 - La tentative 2020 : BREX, Rex et le mur
+La bonne représentation, c'est l'**intersection déclarative** de contraintes (`Ligne & Colonne & Bloc`) - portée proprement par RE# pour la reconnaissance (sections 4-5) et par Z3 pour la production du témoin (section 6). C'est exactement ce que cherchait l'approche 2020.",,,,,,,,70f07bd4deacf583,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,e1d5ed3a,markdown,fr,f94167f97bff06eb,"## 3. Barreau 2 - La tentative 2020 : BREX, Rex et le mur
 
-En 2020, l'auteur s'appuie sur la chaîne d'outils symboliques de Margus Veanes (**AutomataDotNet**) pour realiser l'intersection declarative. Deux briques existaient, verifiees par lecture du source au commit `0242132f` :
+En 2020, l'auteur s'appuie sur la chaîne d'outils symboliques de Margus Veanes (**AutomataDotNet**) pour réaliser l'intersection déclarative. Deux briques existaient, vérifiées par lecture du source au commit `0242132f` :
 
-**1. L'intersection existait - via BREX** (Boolean combinations of Regular EXpressions, fichiers `BREX.cs`, `BREXManager.cs`). Mais c'etait une **API builder C#**, pas un operateur `&` de surface dans une chaîne :
+**1. L'intersection existait - via BREX** (Boolean combinations of Regular EXpressions, fichiers `BREX.cs`, `BREXManager.cs`). Mais c'était une **API builder C#**, pas un opérateur `&` de surface dans une chaîne :
 
 ```csharp
 var man  = new BREXManager();
@@ -6067,40 +6067,40 @@ var and   = man.MkAnd(like1, like2);   // l'intersection : une METHODE, pas un '
 var dfa   = and.Optimize();
 ```
 
-**2. Le témoin Z3 existait - via la lignee Rex** (`RegexToSMTConverter.cs`) : génération d'un membre/témoin d'un regex par SMT. C'est ce chemin qui a bute sur la troncature a 21 caracteres.
+**2. Le témoin Z3 existait - via la lignée Rex** (`RegexToSMTConverter.cs`) : génération d'un membre/témoin d'un regex par SMT. C'est ce chemin qui a buté sur la troncature à 21 caractères.
 
-### Les deux murs reels (verifies dans les tests)
+### Les deux murs réels (vérifiés dans les tests)
 
-| Mur | Preuve dans le source | Consequence |
+| Mur | Preuve dans le source | Conséquence |
 |-----|----------------------|-------------|
-| **Explosion d'etats** | `BREXTests.cs` porte les commentaires `//fails due to timeout` et `//fails due to too many states` - l'intersection de deux `MkLike` de **8-9 underscores seulement** fait exploser le DFA via `Optimize()` | L'intersection symbolique est trop chere a determiniser |
-| **Cap du témoin a 21 caracteres** | Issue upstream [AutomataDotNet/Automata#6](https://github.com/AutomataDotNet/Automata/issues/6) (creee le 2020-12-07, **toujours 0 reponse**) : le chemin SFAz3+Z3 tronque le modèle | On ne peut pas produire une grille-témoin完整e |
+| **Explosion d'états** | `BREXTests.cs` porte les commentaires `//fails due to timeout` et `//fails due to too many states` - l'intersection de deux `MkLike` de **8-9 underscores seulement** fait exploser le DFA via `Optimize()` | L'intersection symbolique est trop chère à déterminiser |
+| **Cap du témoin à 21 caractères** | Issue upstream [AutomataDotNet/Automata#6](https://github.com/AutomataDotNet/Automata/issues/6) (créée le 2020-12-07, **toujours 0 réponse**) : le chemin SFAz3+Z3 tronque le modèle | On ne peut pas produire une grille-témoin完整e |
 
-Le bloc C# ci-dessus illustre la *forme* de l'approche 2020 : un spaghetti de builders (`MkAnd(MkLike(...), ...)`) et de strings, pas encore la chaîne monolithique elegante - et, surtout, barre par les deux murs ci-dessus. Le notebook ne *rejoue* pas ce code (AutomataDotNet est un projet Microsoft abandonne) : il en montre le squelette, puis passe au fork moderne (section 6b) qui, lui, *exécute* la voie regex -> théorie des chaînes.",,,,,,,,7e596f2a73f53886,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,c2b59190,markdown,fr,c0d2016f2784f87c,"### Interpretation : deux murs, tous deux des murs de l'automate
+Le bloc C# ci-dessus illustre la *forme* de l'approche 2020 : un spaghetti de builders (`MkAnd(MkLike(...), ...)`) et de strings, pas encore la chaîne monolithique élégante - et, surtout, barre par les deux murs ci-dessus. Le notebook ne *rejoue* pas ce code (AutomataDotNet est un projet Microsoft abandonné) : il en montre le squelette, puis passe au fork moderne (section 6b) qui, lui, *exécute* la voie regex -> théorie des chaînes.",,,,,,,,f94167f97bff06eb,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,c2b59190,markdown,fr,eb96804b8abef121,"### Interprétation : deux murs, tous deux des murs de l'automate
 
-L'approche 2020 n'etait pas le folklore PCRE : l'intuition declarative par intersection etait **fondue et contemporaine** des travaux de Veanes. Mais la **forme** (builder C# `MkAnd(MkLike(...), MkLike(...))`) etait un spaghetti, et **deux murs reels** l'ont bloquee :
+L'approche 2020 n'était pas le folklore PCRE : l'intuition déclarative par intersection était **fondue et contemporaine** des travaux de Veanes. Mais la **forme** (builder C# `MkAnd(MkLike(...), MkLike(...))`) était un spaghetti, et **deux murs réels** l'ont bloquée :
 
-1. l'intersection symbolique **explose** à la determinisation (produit de DFA) ;
-2. le chemin témoin **SFAz3 -> Z3 est cape** a ~21 caracteres ([#6](https://github.com/AutomataDotNet/Automata/issues/6)).
+1. l'intersection symbolique **explose** à la déterminisation (produit de DFA) ;
+2. le chemin témoin **SFAz3 -> Z3 est capé** à ~21 caractères ([#6](https://github.com/AutomataDotNet/Automata/issues/6)).
 
-Ces deux murs ont la **meme racine** : on passe par la *materialisation d'un automate* (determinisation, puis extraction de témoin par ce chemin). Deux reparations, deux registres :
+Ces deux murs ont la **même racine** : on passe par la *matérialisation d'un automate* (déterminisation, puis extraction de témoin par ce chemin). Deux réparations, deux registres :
 
-- pour la **reconnaissance**, RE# (section 4) rend l'intersection lineaire sans determinisation exponentielle ;
-- pour la **production de témoin**, la chaîne moderne (section 6b) compile `&`/`~` vers la **théorie des chaînes de Z3** : plus de produit d'automates (donc plus le mur 1) et plus de cap (mur 2 leve). Mais la difficulte ne s'evapore pas - elle migre dans le solveur de chaînes, comme on le mesurera.",,,,,,,,c0d2016f2784f87c,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,e9acb968,markdown,fr,67f40745bbba6347,"## 4. Barreau 3 - RE# (2025) : la reconnaissance enfin tractable
+- pour la **reconnaissance**, RE# (section 4) rend l'intersection linéaire sans déterminisation exponentielle ;
+- pour la **production de témoin**, la chaîne moderne (section 6b) compile `&`/`~` vers la **théorie des chaînes de Z3** : plus de produit d'automates (donc plus le mur 1) et plus de cap (mur 2 levé). Mais la difficulté ne s'évapore pas - elle migre dans le solveur de chaînes, comme on le mesurera.",,,,,,,,eb96804b8abef121,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,e9acb968,markdown,fr,a34adb49b9424003,"## 4. Barreau 3 - RE# (2025) : la reconnaissance enfin tractable
 
-[RE#](https://github.com/ieviev/resharp-dotnet) (NuGet `Resharp`, engine F#/.NET, MIT) etend la syntaxe `System.Text.RegularExpressions` avec **trois operateurs first-class** :
+[RE#](https://github.com/ieviev/resharp-dotnet) (NuGet `Resharp`, engine F#/.NET, MIT) étend la syntaxe `System.Text.RegularExpressions` avec **trois opérateurs first-class** :
 
-- `&` : **intersection** (`A & B` reconnait les mots acceptes par A ET par B) ;
-- `~` : **complement** (`~A` reconnait tout ce que A ne reconnait pas) ;
+- `&` : **intersection** (`A & B` reconnaît les mots acceptés par A ET par B) ;
+- `~` : **complément** (`~A` reconnaît tout ce que A ne reconnaît pas) ;
 - `_` : wildcard universel.
 
-Crucialement, RE# est **non-backtracking** et compile vers des automates dont la reconnaissance est **temps lineaire** - grace à la *finitude des dérivées symboliques* (formalisee en Lean, cf section references). L'intersection de deux RE# ne determinise **pas** de maniere exponentielle : c'est precisement le mur 1 de 2020 qui tombe.
+Crucialement, RE# est **non-backtracking** et compile vers des automates dont la reconnaissance est **temps linéaire** - grâce à la *finitude des dérivées symboliques* (formalisée en Lean, cf section références). L'intersection de deux RE# ne déterminise **pas** de manière exponentielle : c'est précisément le mur 1 de 2020 qui tombe.
 
-**Caveat honnete** : RE# est **recognition-only**. Il *reconnait* (valide) ; il ne *genere* aucun témoin. Pour produire une grille, il faudra Z3 (section 6).
+**Caveat honnête** : RE# est **recognition-only**. Il *reconnaît* (valide) ; il ne *génère* aucun témoin. Pour produire une grille, il faudra Z3 (section 6).
 
-> **Note technique (environnement)** : `Resharp` est un **package NuGet standard** (non modifie), mais `#r ""nuget: Resharp""` ne suffit pas sous le kernel `.net-csharp` : le restore aboutit, puis RE# echoue **a l'exécution** avec `FileNotFoundException: FSharp.Core, Version=10.0.0.0` - le kernel ne lie pas le runtime F# via une reference NuGet. On charge donc les DLL **par chemin relatif** vers un dossier `.deploy` **committe dans le depot** (`SymbolicAI/SMT/Resharp/.deploy/` : `Resharp.dll`, `Resharp.Runtime.dll` et surtout `FSharp.Core.dll` 10.x, assembly 10.0.0.0). Resultat : reproductible après un simple clone, hors-ligne, sans aucun chemin utilisateur code en dur.",,,,,,,,67f40745bbba6347,,,,,,,
+> **Note technique (environnement)** : `Resharp` est un **package NuGet standard** (non modifié), mais `#r ""nuget: Resharp""` ne suffit pas sous le kernel `.net-csharp` : le restore aboutit, puis RE# échoue **à l'exécution** avec `FileNotFoundException: FSharp.Core, Version=10.0.0.0` - le kernel ne lie pas le runtime F# via une référence NuGet. On charge donc les DLL **par chemin relatif** vers un dossier `.deploy` **committé dans le dépôt** (`SymbolicAI/SMT/Resharp/.deploy/` : `Resharp.dll`, `Resharp.Runtime.dll` et surtout `FSharp.Core.dll` 10.x, assembly 10.0.0.0). Résultat : reproductible après un simple clone, hors-ligne, sans aucun chemin utilisateur code en dur.",,,,,,,,a34adb49b9424003,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,ad89452f,code,fr,ca094c0f346583dc,"// RE# via DLL in-repo (.deploy, portable) : pas de #r ""nuget:"" sous papermill, et plus aucun chemin utilisateur code en dur.
 // Resharp + Resharp.Runtime (net8.0) + FSharp.Core 10.x (assembly 10.0.0.0) co-localises dans le dossier .deploy committe ;
 // chemin relatif au notebook, reproductible sur toute machine. Le kernel .net-csharp tourne sous net8.0.
@@ -6126,24 +6126,24 @@ Console.WriteLine(""RE# supporte aussi le complement ~ et le wildcard _ (first-c
 Console.WriteLine(""par le moteur). Nous nous appuyons ici sur l'INTERSECTION &: c'est elle qui"");
 Console.WriteLine(""encode de maniere robuste la contrainte de ligne Sudoku ci-dessous."");
 ",,,,,,,,ca094c0f346583dc,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,8ab75967,markdown,fr,113d40c245234783,"### Interpretation : RE# valide, ne resout pas
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,8ab75967,markdown,fr,7bfd149e9a881342,"### Interprétation : RE# valide, ne résout pas
 
-RE# rend l'**intersection** (`&`) et le **complement** (`~`) first-class dans une chaîne unique, compilee en temps lineaire. C'est precisement le barreau intermediaire qui manquait en 2020 : fini le spaghetti builder `MkAnd(MkLike(...))`, fini l'explosion DFA.
+RE# rend l'**intersection** (`&`) et le **complément** (`~`) first-class dans une chaîne unique, compilée en temps linéaire. C'est précisément le barreau intermédiaire qui manquait en 2020 : fini le spaghetti builder `MkAnd(MkLike(...))`, fini l'explosion DFA.
 
-Mais notons le caveat deja mentionne : RE# repond `matche` ou `ne matche pas`. Il ne dit pas *quelle* chaîne satisferait le pattern. C'est un **verificateur**, pas un resolveur.",,,,,,,,113d40c245234783,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,78b8c507,markdown,fr,f7c3f47c1deaa8b3,"## 5. RE# verificateur d'une ligne Sudoku remplie
+Mais notons le caveat déjà mentionné : RE# répond `matche` ou `ne matche pas`. Il ne dit pas *quelle* chaîne satisferait le pattern. C'est un **vérificateur**, pas un résolveur.",,,,,,,,7bfd149e9a881342,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,78b8c507,markdown,fr,189935ad1b3da5ea,"## 5. RE# vérificateur d'une ligne Sudoku remplie
 
 Encodons la **contrainte de ligne** d'un Sudoku comme une intersection RE# :
 
 > Une ligne valide = exactement 9 chiffres 1-9 (`[1-9]{9}`) ET elle contient un 1 ET un 2 ... ET un 9.
 
-Soit, litteralement :
+Soit, littéralement :
 
 ```
 [1-9]{9} & .*1.* & .*2.* & .*3.* & .*4.* & .*5.* & .*6.* & .*7.* & .*8.* & .*9.*
 ```
 
-Cette intersection de 10 regex est **exactement** le type d'operation qui faisait exploser le DFA en 2020 (`BREXTests.cs` : ""//too many states"" sur 8-9 underscores). Avec RE#, elle compile et s'exécute en temps lineaire.",,,,,,,,f7c3f47c1deaa8b3,,,,,,,
+Cette intersection de 10 regex est **exactement** le type d'opération qui faisait exploser le DFA en 2020 (`BREXTests.cs` : ""//too many states"" sur 8-9 underscores). Avec RE#, elle compile et s'exécute en temps linéaire.",,,,,,,,189935ad1b3da5ea,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,9c60d031,code,fr,558f4cbc97d2d008,"using System.Diagnostics;
 // La contrainte de ligne Sudoku comme intersection RE# (10 sous-regex).
 // En 2020 cette intersection explosait le DFA ; RE# la compile en temps lineaire.
@@ -6169,21 +6169,21 @@ VerifierLigne(""123456788"", ""invalide"");   // doublon (8 deux fois)
 VerifierLigne(""12345678"",  ""invalide"");   // trop court
 VerifierLigne(""112345678"", ""invalide"");   // doublon (1 deux fois)
 VerifierLigne(""123456780"", ""invalide"");   // 0 interdit",,,,,,,,558f4cbc97d2d008,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,332400c1,markdown,fr,689ef5ad0c445f42,"### Interpretation : RE# verifie en O(n), lineaire
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,332400c1,markdown,fr,9c12c38f1c39d6bc,"### Interprétation : RE# vérifie en O(n), linéaire
 
-La contrainte de ligne - une intersection de 10 regex - compile et s'exécute en temps lineaire. **C'est le mur 1 de 2020 qui tombe** : la meme operation qui faisait exploser le DFA (`//too many states`) est desormais tractable.
+La contrainte de ligne - une intersection de 10 regex - compile et s'exécute en temps linéaire. **C'est le mur 1 de 2020 qui tombe** : la même opération qui faisait exploser le DFA (`//too many states`) est désormais tractable.
 
-Ce verificateur reconnait une ligne valide. Applique a chacune des 9 lignes d'une grille remplie, il valide la grille entiere (après extraction des colonnes et blocs, memes contraintes). **Mais il ne produit toujours aucune grille** : donnez-lui un puzzle vide, il ne saura pas le remplir.",,,,,,,,689ef5ad0c445f42,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,3be938e7,markdown,fr,72288ef36fb46f1a,"## Exercice 1 : une contrainte d'intersection RE#
+Ce vérificateur reconnaît une ligne valide. Appliqué à chacune des 9 lignes d'une grille remplie, il valide la grille entière (après extraction des colonnes et blocs, mêmes contraintes). **Mais il ne produit toujours aucune grille** : donnez-lui un puzzle vide, il ne saura pas le remplir.",,,,,,,,9c12c38f1c39d6bc,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,3be938e7,markdown,fr,416af7fe890d0a03,"## Exercice 1 : une contrainte d'intersection RE#
 
 **Objectif :**
-Écrivez un pattern RE# qui reconnait une ligne Sudoku valide **ET** dans laquelle le chiffre **5 apparaît avant le 7** (sous-sequence `5 ... 7`).
+Écrivez un pattern RE# qui reconnaît une ligne Sudoku valide **ET** dans laquelle le chiffre **5 apparaît avant le 7** (sous-séquence `5 ... 7`).
 
 **Indice :**
-Composez par intersection la contrainte de ligne valide (ci-dessus) avec `.*5.*7.*` (un 5 puis, plus loin, un 7). RE# accepte l'imbrication libre de `&` dans une meme chaîne.
+Composez par intersection la contrainte de ligne valide (ci-dessus) avec `.*5.*7.*` (un 5 puis, plus loin, un 7). RE# accepte l'imbrication libre de `&` dans une même chaîne.
 
 **Étape 1 :**
-Définissez le pattern combine dans la cellule suivante. Une permutation comme `123456789` (5 avant 7) doit passer ; `987654321` (7 avant 5) doit echouer.",,,,,,,,72288ef36fb46f1a,,,,,,,
+Définissez le pattern combine dans la cellule suivante. Une permutation comme `123456789` (5 avant 7) doit passer ; `987654321` (7 avant 5) doit échouer.",,,,,,,,416af7fe890d0a03,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,774c68f3,code,fr,ea4991b463a9b6a5,"// EXERCICE : ligne Sudoku valide AVEC 5 avant 7 (intersection & ordre)
 // TODO etudiant : completer le pattern ci-dessous.
 // Indice : croisez la contrainte de ligne valide avec .*5.*7.* (5 avant 7).
@@ -6192,30 +6192,30 @@ var exoRe = new Resharp.Regex(ligneAvec5Avant7);
 Console.WriteLine(""Exercice a completer : 5 doit apparaitre avant 7."");
 Console.WriteLine($""  '123456789' (5 avant 7) -> valide attendu, obtenu : {(exoRe.Matches(""123456789"").Length > 0 ? ""valide"" : ""rejet"")}"");
 Console.WriteLine($""  '987654321' (7 avant 5) -> rejet attendu,  obtenu : {(exoRe.Matches(""987654321"").Length > 0 ? ""valide"" : ""rejet"")}"");",,,,,,,,ea4991b463a9b6a5,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,veanes-sud-m2lstr,markdown,fr,4e7ffbe3d569c925,"### Le troisieme langage pour dire la meme chose : la logique M2L-str
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,veanes-sud-m2lstr,markdown,fr,dd2e9e8438d83c7b,"### Le troisième langage pour dire la même chose : la logique M2L-str
 
-L'exercice ci-dessus exprime "" 5 avant 7 "" comme une **intersection de regex** (`& .*5.*7.*`). Mais cette meme contrainte admet une **troisieme** ecriture - ni regex, ni systeme d'inegalites : une **formule de logique monadique du second ordre sur les chaînes** (M2L-str). "" Il existe une position du 5 strictement avant une position du 7 "" s'ecrit litteralement
+L'exercice ci-dessus exprime "" 5 avant 7 "" comme une **intersection de regex** (`& .*5.*7.*`). Mais cette même contrainte admet une **troisième** écriture - ni regex, ni système d'inégalités : une **formule de logique monadique du second ordre sur les chaînes** (M2L-str). "" Il existe une position du 5 strictement avant une position du 7 "" s'écrit littéralement
 
 $$\exists\, x,\, y.\quad x < y \;\wedge\; P_5(x) \;\wedge\; P_7(y)$$
 
-ou $P_d(i)$ signifie "" la case $i$ porte le chiffre $d$ "". C'est *mot pour mot* l'exemple introductif des slides de reference de **Margus Veanes** (Dagstuhl 17142, 2017) : `exists x,y. x<y && a(x) && b(y)`.
+ou $P_d(i)$ signifie "" la case $i$ porte le chiffre $d$ "". C'est *mot pour mot* l'exemple introductif des slides de référence de **Margus Veanes** (Dagstuhl 17142, 2017) : `exists x,y. x<y && a(x) && b(y)`.
 
-L'interet de ce registre : un **compilateur de logique** (D'Antoni & Veanes, POPL'17 ; outil `s-M2L-str`) transforme automatiquement une telle formule en **automate symbolique** (SFA). On **decrit** la propriete ; la machine **fabrique** le reconnaisseur - on n'ecrit ni l'automate, ni la regex. Trois registres pour une seule et meme contrainte :
+L'intérêt de ce registre : un **compilateur de logique** (D'Antoni & Veanes, POPL'17 ; outil `s-M2L-str`) transforme automatiquement une telle formule en **automate symbolique** (SFA). On **décrit** la propriété ; la machine **fabrique** le reconnaisseur - on n'écrit ni l'automate, ni la regex. Trois registres pour une seule et même contrainte :
 
-| Registre | Ce qu'on ecrit | Qui fabrique le reconnaisseur / la solution |
+| Registre | Ce qu'on écrit | Qui fabrique le reconnaisseur / la solution |
 |----------|----------------|----------------------------------------------|
 | **Regex symbolique** (RE#, ce notebook) | `lignevalide & .*5.*7.*` | le moteur de dérivées |
 | **Logique M2L-str** (Veanes & D'Antoni) | `exists x,y. x<y && P_5(x) && P_7(y)` | le compilateur logique vers SFA |
 | **Contraintes** (Z3, section 6) | `Distinct` + appartenances | le solveur SMT |
 
-> **Le meme `&`, vu d'en haut.** Les trois registres partagent l'**algebre de Boole** des langages reguliers (cf notebook [10](../SymbolicAI/SMT/Z3/10_Witness_Generation_Automata.ipynb), section 3). La conjonction logique `&&` de M2L-str, l'intersection `&` de RE# et le `re.inter` SMT-LIB sont **la meme operation** dans trois notations. Mais la *forme* sous laquelle on emet cette conjonction decide si Z3 atterrit le 9x9 (section 6b) - une question que la théorie de Veanes nomme **decomposition monadique**, et que l'ordre `x < y` de cet exercice illustre justement par la negative (cf section 6b).",,,,,,,,4e7ffbe3d569c925,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,edd4a220,markdown,fr,91990bc9dc9fc652,"## 6. Le resolveur - Z3 produit le témoin
+> **Le même `&`, vu d'en haut.** Les trois registres partagent l'**algèbre de Boole** des langages réguliers (cf notebook [10](../SymbolicAI/SMT/Z3/10_Witness_Generation_Automata.ipynb), section 3). La conjonction logique `&&` de M2L-str, l'intersection `&` de RE# et le `re.inter` SMT-LIB sont **la même opération** dans trois notations. Mais la *forme* sous laquelle on émet cette conjonction décide si Z3 atterrit le 9x9 (section 6b) - une question que la théorie de Veanes nomme **décomposition monadique**, et que l'ordre `x < y` de cet exercice illustre justement par la négative (cf section 6b).",,,,,,,,dd2e9e8438d83c7b,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,edd4a220,markdown,fr,77919232361e2615,"## 6. Le résolveur - Z3 produit le témoin
 
-RE# sait *verifier* ; il ne sait pas *produire*. Pour resoudre un puzzle Sudoku, il faut un **resolveur**. C'est le role de Z3, et c'est le barreau 2 de 2020 - mais cette fois **sans le cap de 21 caracteres**, parce qu'on appelle Z3 **directement** (sans passer par le chemin SFAz3 de AutomataDotNet qui etait mure).
+RE# sait *vérifier* ; il ne sait pas *produire*. Pour résoudre un puzzle Sudoku, il faut un **résolveur**. C'est le rôle de Z3, et c'est le barreau 2 de 2020 - mais cette fois **sans le cap de 21 caractères**, parce qu'on appelle Z3 **directement** (sans passer par le chemin SFAz3 de AutomataDotNet qui était muré).
 
-L'idee : encoder les contraintes `Ligne & Colonne & Bloc` non plus comme un regex symbolique, mais comme des **assertions SMT** sur 81 variables entieres, puis demander a Z3 un **modèle = la grille solution**.
+L'idée : encoder les contraintes `Ligne & Colonne & Bloc` non plus comme un regex symbolique, mais comme des **assertions SMT** sur 81 variables entières, puis demander à Z3 un **modèle = la grille solution**.
 
-> **Note technique** : comme pour RE#, on charge Z3 via reference DLL a **chemin relatif** + un `NativeLibrary.SetDllImportResolver` pour la librairie native `libz3.dll` (le `#r ""nuget:""` se bloquerait sous papermill). Les binaires Z3 et le fork Automata (section 6b) vivent dans le `.deploy` de leurs **submodules** respectifs (`SymbolicAI/SMT/Z3.Linq` et `.../Automata`, serie Z3) - a initialiser via `git submodule update --init`. Plus aucun chemin utilisateur code en dur.",,,,,,,,91990bc9dc9fc652,,,,,,,
+> **Note technique** : comme pour RE#, on charge Z3 via référence DLL à **chemin relatif** + un `NativeLibrary.SetDllImportResolver` pour la librairie native `libz3.dll` (le `#r ""nuget:""` se bloquerait sous papermill). Les binaires Z3 et le fork Automata (section 6b) vivent dans le `.deploy` de leurs **submodules** respectifs (`SymbolicAI/SMT/Z3.Linq` et `.../Automata`, série Z3) - à initialiser via `git submodule update --init`. Plus aucun chemin utilisateur code en dur.",,,,,,,,77919232361e2615,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,5a7a038b,code,fr,142cb3bf4c229bf9,"// Z3 chargee par chemin RELATIF au depot (.deploy) + resolver natif (libz3.dll), pas de #r ""nuget:"" sous papermill.
 // Plus aucun chemin utilisateur code en dur. Les binaires Z3 proviennent du .deploy du submodule Z3.Linq (serie Z3).
 #r ""../SymbolicAI/SMT/Z3.Linq/.deploy/Microsoft.Z3.dll""
@@ -6329,29 +6329,29 @@ long msSolve;
 var solution = ResoudreSudokuZ3(ctx, puzzle, out msSolve);
 Console.WriteLine($""Z3 a produit un temoin (grille solution) en {msSolve} ms :\n"");
 Console.Write(RendreGrille(solution));",,,,,,,,f42037c1f754f64a,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a3872431,markdown,fr,35d1d18a4c0cbdbd,"### Interpretation : Z3 = production du témoin (le travail dur)
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a3872431,markdown,fr,5dce5514462485be,"### Interprétation : Z3 = production du témoin (le travail dur)
 
-Z3 a **produit** la grille solution - le *témoin* - en quelques dizaines de millisecondes. C'est le barreau 2 de 2020, mais **sans le cap de 21 caracteres** : on appelle Z3 directement, pas via le chemin SFAz3 qui etait tronque. C'est ce resolveur qui entre dans le benchmark Sudoku multi-paradigmes (aux cotes d'Infer.NET, du PSO, du reseau de neurones) : il **resout reellement** le dataset.
+Z3 a **produit** la grille solution - le *témoin* - en quelques dizaines de millisecondes. C'est le barreau 2 de 2020, mais **sans le cap de 21 caractères** : on appelle Z3 directement, pas via le chemin SFAz3 qui était tronqué. C'est ce résolveur qui entre dans le benchmark Sudoku multi-paradigmes (aux côtés d'Infer.NET, du PSO, du réseau de neurones) : il **résout réellement** le dataset.
 
-C'est aussi le ""cop-out"" de l'ancienne version de ce notebook qu'on tue ici : non, ""utiliser Z3 directement"" n'est pas une degression honteuse par rapport aux automates - c'est le **complement indispensable** du verificateur RE#. *Solving* (Z3) et *matching* (RE#) sont les deux faces de la serie.",,,,,,,,35d1d18a4c0cbdbd,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00001,markdown,fr,e8f0cd471912c4ef,"## 6b. Les deux murs tombent - et la derniere marche, c'est la forme d'emission
+C'est aussi le ""cop-out"" de l'ancienne version de ce notebook qu'on tue ici : non, ""utiliser Z3 directement"" n'est pas une dégression honteuse par rapport aux automates - c'est le **complément indispensable** du vérificateur RE#. *Solving* (Z3) et *matching* (RE#) sont les deux faces de la série.",,,,,,,,5dce5514462485be,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00001,markdown,fr,2d98b5b30996be74,"## 6b. Les deux murs tombent - et la dernière marche, c'est la forme d'émission
 
-Le barreau 2 (2020) butait sur **deux murs**, tous deux lies à la materialisation d'un automate : l'explosion du produit de DFA (mur 1) ET le cap du témoin a ~21 caracteres (mur 2, [issue #6](https://github.com/AutomataDotNet/Automata/issues/6)). Le **fork Automata** (modernisation net8.0, MyIntelligenceAgency) change de moteur : son `RegexToSMTConverter` compile la syntaxe de surface `&` / `~` vers la **théorie des chaînes SMT-LIB 2.6** (`re.inter`, `re.comp`, `re.range`, `re.loop`, `str.to_re`) - le dialecte que Z3 consomme **directement**.
+Le barreau 2 (2020) butait sur **deux murs**, tous deux liés à la matérialisation d'un automate : l'explosion du produit de DFA (mur 1) ET le cap du témoin à ~21 caractères (mur 2, [issue #6](https://github.com/AutomataDotNet/Automata/issues/6)). Le **fork Automata** (modernisation net8.0, MyIntelligenceAgency) change de moteur : son `RegexToSMTConverter` compile la syntaxe de surface `&` / `~` vers la **théorie des chaînes SMT-LIB 2.6** (`re.inter`, `re.comp`, `re.range`, `re.loop`, `str.to_re`) - le dialecte que Z3 consomme **directement**.
 
-Consequence : Z3 raisonne symboliquement sur les chaînes, **sans jamais construire le produit d'automates**. Le mur 1 (explosion DFA) n'est donc pas ""leve"" - il n'est *plus rencontre*. Et le mur 2 (cap) disparait : un témoin de 30 caracteres pour `[a-z]{30}` sort sans probleme.
+Conséquence : Z3 raisonne symboliquement sur les chaînes, **sans jamais construire le produit d'automates**. Le mur 1 (explosion DFA) n'est donc pas ""levé"" - il n'est *plus rencontre*. Et le mur 2 (cap) disparaît : un témoin de 30 caractères pour `[a-z]{30}` sort sans problème.
 
-Restait une derniere marche, le 9x9. Et la, ce n'est ni le substrat ni le moteur qui decide, mais la **forme d'emission** du meme `&` d'appartenances :
+Restait une dernière marche, le 9x9. Et là, ce n'est ni le substrat ni le moteur qui décide, mais la **forme d'émission** du même `&` d'appartenances :
 
-| Echelle | Forme d'emission du tous-distincts | Témoin via la théorie des chaînes Z3 |
+| Échelle | Forme d'émission du tous-distincts | Témoin via la théorie des chaînes Z3 |
 |---------|-----------------------------------|--------------------------------------|
-| **`A & ~B` général** (mot de passe, entree de test) | `re.inter` / `re.comp` | **rapide** (~100 ms, cf [notebook 10](../SymbolicAI/SMT/Z3/10_Witness_Generation_Automata.ipynb)) |
+| **`A & ~B` général** (mot de passe, entrée de test) | `re.inter` / `re.comp` | **rapide** (~100 ms, cf [notebook 10](../SymbolicAI/SMT/Z3/10_Witness_Generation_Automata.ipynb)) |
 | **Grille 4x4** (Shidoku) | appartenance **fondue** en `re.inter` | **atterrit** (~1,7 s, cellule plus bas) |
 | **1 ligne 9x9** (9 cases) | appartenance **fondue** en `re.inter` (10-way) | **atterrit** mais lent (~12,5 s) |
 | **Grille 9x9** | appartenance **fondue** en `re.inter` (27 groupes qui se chevauchent) | **`unknown`** (> 60 s - le produit d'automates sature) |
-| **Grille 9x9** | appartenance **eclatee** : chaque `.*d.*` en `str.contains` natif | **atterrit** (~53 s en .NET, ~12 s z3-py - section 6c) |
-| **Grille 9x9** | inegalites 2 a 2 (= `Distinct` developpe) | **atterrit** (~0,8 s, cellule suivante) |
+| **Grille 9x9** | appartenance **éclatée** : chaque `.*d.*` en `str.contains` natif | **atterrit** (~53 s en .NET, ~12 s z3-py - section 6c) |
+| **Grille 9x9** | inégalités 2 à 2 (= `Distinct` développé) | **atterrit** (~0,8 s, cellule suivante) |
 
-La grille 9x9 n'est bloquee ni par un mur d'automate, ni par le substrat chaîne, ni meme par l'appartenance reguliere : elle l'est seulement quand on **fond** les 27 intersections k-way en un produit `re.inter` que Z3 doit materialiser au solve. **Eclate** ce meme `&` d'appartenances en la primitive native `str.contains` (un par chiffre - section 6c) et la grille atterrit, sans une seule inegalite. Les inegalites 2 a 2 (ci-dessous) atterrissent plus vite encore, mais elles **quittent** le regex ; la forme la plus pure - le regex qui se suffit a lui-meme - est `str.contains`. Le critere décisif n'est donc pas ""appartenance vs inegalite"" ni ""1D vs 2D"" : c'est **produit d'automates fondu vs primitive native eclatee**.",,,,,,,,e8f0cd471912c4ef,,,,,,,
+La grille 9x9 n'est bloquée ni par un mur d'automate, ni par le substrat chaîne, ni même par l'appartenance régulière : elle l'est seulement quand on **fond** les 27 intersections k-way en un produit `re.inter` que Z3 doit matérialiser au solve. **Éclate** ce même `&` d'appartenances en la primitive native `str.contains` (un par chiffre - section 6c) et la grille atterrit, sans une seule inégalité. Les inégalités 2 à 2 (ci-dessous) atterrissent plus vite encore, mais elles **quittent** le regex ; la forme la plus pure - le regex qui se suffit à lui-même - est `str.contains`. Le critère décisif n'est donc pas ""appartenance vs inégalité"" ni ""1D vs 2D"" : c'est **produit d'automates fondu vs primitive native éclatée**.",,,,,,,,2d98b5b30996be74,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00002,code,fr,9fb3bb838d5a57ce,"// Le fork Automata compile la MEME intersection 10-way que RE# verifie (section 5) vers la
 // THEORIE DES CHAINES de Z3 (re.inter / re.comp / re.range), PAS vers un produit d'automates.
 // On boucle la chaine SMT -> Z3 -> temoin, puis on CROISE les moteurs : le temoin doit etre
@@ -6402,11 +6402,11 @@ Console.WriteLine(""Mur 2 (cap ~21 char) : disparu - temoin complet de 9 caracte
 Console.WriteLine(""Mur 1 (explosion DFA) : non rencontre - aucun produit d'automates n'est construit."");
 Console.WriteLine(""Cout dans le solveur de chaines : ~10 s sur cette intersection 10-way (1D),"");
 Console.WriteLine(""vs ~100 ms pour un 'A & ~B' general (NB06). Et une GRILLE entiere (2D) ? -> cellule suivante."");",,,,,,,,9fb3bb838d5a57ce,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00005,markdown,fr,e1a9e14d18bad62b,"### La boucle est bouclee : notre regex resout une grille COMPLETE (4x4)
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00005,markdown,fr,fb2caec2e060f750,"### La boucle est bouclée : notre regex résout une grille COMPLETE (4x4)
 
-Une ligne, c'est 1D. Une **grille** est 2D : chaque case appartient simultanement a une ligne, une colonne ET un bloc. Donnons a Z3 les 16 cases d'un **Shidoku** (Sudoku 4x4) comme 16 chaînes d'un caractère, et imposons que **chaque ligne, chaque colonne et chaque bloc** satisfasse *la meme* intersection - **notre regex** `^[1-4]{4}$ & .*1.* & .*2.* & .*3.* & .*4.*`. Aucun produit d'automates, aucun cap de témoin : le fork compile notre regex en théorie des chaînes, et Z3 **produit la grille entiere**.
+Une ligne, c'est 1D. Une **grille** est 2D : chaque case appartient simultanément à une ligne, une colonne ET un bloc. Donnons à Z3 les 16 cases d'un **Shidoku** (Sudoku 4x4) comme 16 chaînes d'un caractère, et imposons que **chaque ligne, chaque colonne et chaque bloc** satisfasse *la même* intersection - **notre regex** `^[1-4]{4}$ & .*1.* & .*2.* & .*3.* & .*4.*`. Aucun produit d'automates, aucun cap de témoin : le fork compile notre regex en théorie des chaînes, et Z3 **produit la grille entière**.
 
-C'est l'aboutissement concret de l'echelle : un beau regex d'intersection **en entree**, une grille resolue **en sortie**. La voie symbolique *atterrit*.",,,,,,,,e1a9e14d18bad62b,,,,,,,
+C'est l'aboutissement concret de l'échelle : un beau regex d'intersection **en entrée**, une grille résolue **en sortie**. La voie symbolique *atterrit*.",,,,,,,,fb2caec2e060f750,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00006,code,fr,0ef3b86be6914b1b,"// === La boucle bouclee : NOTRE regex resout une grille COMPLETE (4x4 Shidoku) via la theorie des chaines ===
 // Chaque ligne, colonne ET bloc doit satisfaire la MEME intersection (notre regex). Z3 produit la grille.
 using System.Text;
@@ -6475,15 +6475,15 @@ Console.WriteLine(""C'est l'ENCODAGE du tous-distincts en appartenance reguliere
 Console.WriteLine(""On garde les memes 81 chaines d'un caractere, et on ecrit le tous-distincts EN INEGALITES 2 A 2"");
 Console.WriteLine(""  -> la grille 9x9 COMPLETE atterrit en theorie des chaines (cellule suivante)."");
 Console.WriteLine(""En production : Distinct sur 81 entiers (section 6, ~47 ms) - meme idee, sucre syntaxique du 2 a 2."");",,,,,,,,5ad2d6518736b42c,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00007md,markdown,fr,2acac6cf014eaae8,"### Une autre voie qui atterrit : le tous-distincts en inegalites 2 a 2 (plus rapide, mais hors regex)
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00007md,markdown,fr,d65dd66260549abc,"### Une autre voie qui atterrit : le tous-distincts en inégalités 2 à 2 (plus rapide, mais hors regex)
 
-La section 6c a fait atterrir le 9x9 **dans le regex** (appartenance pure, `str.contains`). Il existe une **autre** forme d'emission qui atterrit, plus rapide encore - mais qui, elle, **quitte** l'appartenance reguliere : ecrire le tous-distincts en **inegalites 2 a 2**.
+La section 6c a fait atterrir le 9x9 **dans le regex** (appartenance pure, `str.contains`). Il existe une **autre** forme d'émission qui atterrit, plus rapide encore - mais qui, elle, **quitte** l'appartenance régulière : écrire le tous-distincts en **inégalités 2 à 2**.
 
-On **garde les 81 chaînes d'un caractère** (meme substrat), mais pour chaque groupe (ligne, colonne, bloc) et chaque paire de cases, on assert `s_i != s_j`. C'est ""ecrivable a l'huile de coude"" - 972 inegalites generees en boucle - et, cote Z3, ca ne change pas la nature du probleme : `Distinct` n'est lui-meme que du **sucre syntaxique** pour ces inegalites 2 a 2 (intuition de perf confirmee : le cout vient de la combinatoire, pas de la syntaxe).
+On **garde les 81 chaînes d'un caractère** (même substrat), mais pour chaque groupe (ligne, colonne, bloc) et chaque paire de cases, on assert `s_i != s_j`. C'est ""écrivable à l'huile de coude"" - 972 inégalités générées en boucle - et, côté Z3, ca ne change pas la nature du problème : `Distinct` n'est lui-même que du **sucre syntaxique** pour ces inégalités 2 à 2 (intuition de perf confirmée : le coût vient de la combinatoire, pas de la syntaxe).
 
-Resultat : la **grille 9x9 complete** sort en théorie des chaînes, de l'ordre de la seconde (~0,8 s, mesure ci-dessous, validee) - soit ~60x plus vite que l'appartenance `str.contains` (~53 s). Le compromis est clair : l'appartenance pure (6c) est la **forme la plus fidele** à la vision 2020 (le regex se suffit, 0 inegalite) ; les inegalites sont la **forme la plus rapide** (mais ce ne sont plus un regex).
+Résultat : la **grille 9x9 complète** sort en théorie des chaînes, de l'ordre de la seconde (~0,8 s, mesure ci-dessous, validée) - soit ~60x plus vite que l'appartenance `str.contains` (~53 s). Le compromis est clair : l'appartenance pure (6c) est la **forme la plus fidèle** à la vision 2020 (le regex se suffit, 0 inégalité) ; les inégalités sont la **forme la plus rapide** (mais ce ne sont plus un regex).
 
-> **Subtilite honnete.** Un *vrai* ""2 a 2 en regex pur"" (`(.).*\1` : ""deux fois le meme caractère"") utilise une **back-reference** - donc un langage **non regulier**, qui ne compile ni vers la théorie `re` de Z3 ni via le convertisseur `&`/`~`. Le 2 a 2 de cette cellule est exprime comme **inegalites SMT** (`(not (= s_i s_j))`), pas comme regex. La voie qui reste *dans* le regex, c'est l'appartenance `.*d.*` emise en `str.contains` (section 6c) ; celle-ci, en inegalites, en sort. Les deux atterrissent ; seule la premiere honore ""le regex se suffit a lui-meme"".",,,,,,,,2acac6cf014eaae8,,,,,,,
+> **Subtilité honnête.** Un *vrai* ""2 à 2 en regex pur"" (`(.).*\1` : ""deux fois le même caractère"") utilise une **back-référence** - donc un langage **non régulier**, qui ne compile ni vers la théorie `re` de Z3 ni via le convertisseur `&`/`~`. Le 2 à 2 de cette cellule est exprimé comme **inégalités SMT** (`(not (= s_i s_j))`), pas comme regex. La voie qui reste *dans* le regex, c'est l'appartenance `.*d.*` émise en `str.contains` (section 6c) ; celle-ci, en inégalités, en sort. Les deux atterrissent ; seule la première honore ""le regex se suffit à lui-même"".",,,,,,,,d65dd66260549abc,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00007,code,fr,3fb8c57b7b363725,"// === Le 9x9 COMPLET atterrit en theorie des chaines : tous-distincts en INEGALITES 2 A 2 (intuition de l'auteur) ===
 // Meme substrat que le 4x4 (81 chaines d'un caractere). On change SEULEMENT l'encodage du tous-distincts :
 // non plus une appartenance regex (qui sature -> unknown), mais des inegalites 2 a 2  s_i != s_j  par groupe.
@@ -6570,53 +6570,53 @@ if (st9 == Status.SATISFIABLE) {
 } else {
     Console.WriteLine($""Statut inattendu : {st9}"");
 }",,,,,,,,3fb8c57b7b363725,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00004,markdown,fr,4bd24ebae5cd91ef,"### Interpretation : les deux murs tombent, et la forme d'emission franchit le 9x9
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,a6b00004,markdown,fr,a04342ceaaef46a5,"### Interprétation : les deux murs tombent, et la forme d'émission franchit le 9x9
 
-La chaîne moderne **debride le témoin** : une ligne Sudoku (intersection 10-way) produit desormais un témoin reel, **valide par RE#** (validation croisee inter-moteurs ci-dessus) - chose impossible en 2020 sous le cap des 21 caracteres. Et aucun produit d'automates n'est construit, donc le ""trop d'etats"" de 2020 ne se produit pas. Les deux murs sont derriere nous.
+La chaîne moderne **débride le témoin** : une ligne Sudoku (intersection 10-way) produit désormais un témoin réel, **valide par RE#** (validation croisée inter-moteurs ci-dessus) - chose impossible en 2020 sous le cap des 21 caractères. Et aucun produit d'automates n'est construit, donc le ""trop d'états"" de 2020 ne se produit pas. Les deux murs sont derrière nous.
 
-Reste la derniere marche, le 9x9, et c'est la **forme d'emission** du meme `&` d'appartenances qui la franchit :
+Reste la dernière marche, le 9x9, et c'est la **forme d'émission** du même `&` d'appartenances qui la franchit :
 
-| Forme d'emission | Reconnaissance | Production de témoin | Grille 9x9 |
+| Forme d'émission | Reconnaissance | Production de témoin | Grille 9x9 |
 |------------------|----------------|----------------------|-------------------|
-| RE# (2025) | temps lineaire | aucun témoin | verifie seulement |
-| chaînes Z3, appartenance **fondue** en `re.inter` | (oui) | non cape, sans produit d'automates | `unknown` (le produit sature) |
-| chaînes Z3, appartenance **eclatee** en `str.contains` | (oui) | **grille complete** | **atterrit (~53 s)** |
-| chaînes Z3, tous-distincts en **inegalites 2 a 2** | (oui) | **grille complete** | **atterrit (~0,8 s)** |
-| Z3 `Distinct` (entiers) | - | grille complete | **~38 ms (production)** |
+| RE# (2025) | temps linéaire | aucun témoin | vérifie seulement |
+| chaînes Z3, appartenance **fondue** en `re.inter` | (oui) | non capé, sans produit d'automates | `unknown` (le produit sature) |
+| chaînes Z3, appartenance **éclatée** en `str.contains` | (oui) | **grille complète** | **atterrit (~53 s)** |
+| chaînes Z3, tous-distincts en **inégalités 2 à 2** | (oui) | **grille complète** | **atterrit (~0,8 s)** |
+| Z3 `Distinct` (entiers) | - | grille complète | **~38 ms (production)** |
 
-> **Murs tombes, forme d'emission décisive.** Le payoff *général* de la génération de témoin `A & ~B` est demontre dans le notebook **[10 - Generer un témoin depuis A & ~B](../SymbolicAI/SMT/Z3/10_Witness_Generation_Automata.ipynb)** de la serie Z3. Le Sudoku, lui, montre la leçon la plus fine : ce n'est ni le moteur ni le substrat, ni meme ""appartenance vs inegalite"" qui decide, mais la **forme d'emission** du meme `&` d'appartenances - *fondu* en `re.inter` (sature au 9x9) vs *eclate* en `str.contains` natif (atterrit). Le regex *n'est pas* le mauvais outil : bien emis, il atterrit la grille 9x9 complete, sans une seule inegalite.",,,,,,,,4bd24ebae5cd91ef,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,veanes-sud-monadic,markdown,fr,4dac175eae9e8584,"### La théorie derriere la "" forme d'emission "" : la decomposition monadique (Veanes, CAV'14)
+> **Murs tombés, forme d'émission décisive.** Le payoff *général* de la génération de témoin `A & ~B` est démontré dans le notebook **[10 - Générer un témoin depuis A & ~B](../SymbolicAI/SMT/Z3/10_Witness_Generation_Automata.ipynb)** de la série Z3. Le Sudoku, lui, montre la leçon la plus fine : ce n'est ni le moteur ni le substrat, ni même ""appartenance vs inégalité"" qui décide, mais la **forme d'émission** du même `&` d'appartenances - *fondu* en `re.inter` (sature au 9x9) vs *éclaté* en `str.contains` natif (atterrit). Le regex *n'est pas* le mauvais outil : bien émis, il atterrit la grille 9x9 complète, sans une seule inégalité.",,,,,,,,a04342ceaaef46a5,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,veanes-sud-monadic,markdown,fr,5f1e657be91d8a54,"### La théorie derrière la "" forme d'émission "" : la décomposition monadique (Veanes, CAV'14)
 
-Le tableau ci-dessus est un constat **empirique** : fondue en `re.inter`, l'appartenance sature ; eclatee en `str.contains`, elle atterrit. Cette observation porte un **nom** et possede une **théorie** chez Veanes : la **decomposition monadique** (*Monadic Decomposition*, M. Veanes, N. Bjorner, L. Nachmanson, S. Bereg, CAV 2014).
+Le tableau ci-dessus est un constat **empirique** : fondue en `re.inter`, l'appartenance sature ; éclatée en `str.contains`, elle atterrit. Cette observation porte un **nom** et possède une **théorie** chez Veanes : la **décomposition monadique** (*Monadic Décomposition*, M. Veanes, N. Bjorner, L. Nachmanson, S. Bereg, CAV 2014).
 
-Une contrainte a plusieurs variables est **monadiquement decomposable** si elle equivaut a une **combinaison booleenne de predicats a une seule variable** ("" monadiques ""). Quand elle l'est, on peut remplacer un **produit** (le `re.inter` qui materialise l'espace croise) par une **conjonction de tests independants** - exactement le passage de l'appartenance *fondue* aux `str.contains` *eclates* par chiffre qui fait atterrir le 9x9, sans jamais construire le produit d'automates.
+Une contrainte à plusieurs variables est **monadiquement décomposable** si elle équivaut à une **combinaison booléenne de prédicats à une seule variable** ("" monadiques ""). Quand elle l'est, on peut remplacer un **produit** (le `re.inter` qui matérialise l'espace croisé) par une **conjonction de tests indépendants** - exactement le passage de l'appartenance *fondue* aux `str.contains` *éclatés* par chiffre qui fait atterrir le 9x9, sans jamais construire le produit d'automates.
 
-Le théorème precise **quand** cet eclatement existe :
+Le théorème précise **quand** cet éclatement existe :
 
-| Contrainte | Monadiquement decomposable ? | Consequence pour l'emission |
+| Contrainte | Monadiquement décomposable ? | Conséquence pour l'émission |
 |------------|------------------------------|------------------------------|
-| tous-distincts par appartenances (`.*d.*` par chiffre) | **oui** | eclatable en `str.contains` -> **atterrit** |
-| `x + (y mod 2) > 5` | oui (combinaison Cartesienne finie) | produit fini, gerable |
-| `x < y` (ordre entre deux positions) | **non** - aucune decomposition monadique finie | reste un produit ; **sature** si emis fondu |
+| tous-distincts par appartenances (`.*d.*` par chiffre) | **oui** | éclatable en `str.contains` -> **atterrit** |
+| `x + (y mod 2) > 5` | oui (combinaison Cartésienne finie) | produit fini, gérable |
+| `x < y` (ordre entre deux positions) | **non** - aucune décomposition monadique finie | reste un produit ; **sature** si émis fondu |
 
-> **De "" j'ai essaye "" a "" j'ai retrouve le principe "".** Le notebook a *decouvert en mesurant* que l'appartenance eclatee atterrit ; la decomposition monadique en est la **raison formelle**. Elle eclaire aussi la limite : la contrainte "" 5 avant 7 "" de l'exercice 1 repose sur `x < y`, le predicat que Veanes donne precisement comme **contre-exemple** sans decomposition finie. L'ordre ne s'eclate pas ; le tous-distincts, si. Cote *reconnaissance*, la meme economie d'etats est garantie par la **finitude des dérivées** - le notebook [Lean-14](../SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb), troisieme pilier du triptyque #2978.",,,,,,,,4dac175eae9e8584,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,regex06c1,markdown,fr,98c061cdaa8efd7a,"## 6c. Le regex qui se suffit a lui-meme - et qui atterrit le 9x9 (vision 2020, mesuree)
+> **De "" j'ai essayé "" à "" j'ai retrouvé le principe "".** Le notebook a *découvert en mesurant* que l'appartenance éclatée atterrit ; la décomposition monadique en est la **raison formelle**. Elle éclaire aussi la limite : la contrainte "" 5 avant 7 "" de l'exercice 1 repose sur `x < y`, le prédicat que Veanes donne précisément comme **contre-exemple** sans décomposition finie. L'ordre ne s'éclate pas ; le tous-distincts, si. Côté *reconnaissance*, la même économie d'états est garantie par la **finitude des dérivées** - le notebook [Lean-14](../SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb), troisième pilier du triptyque #2978.",,,,,,,,5f1e657be91d8a54,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,regex06c1,markdown,fr,a692b2a4c3236495,"## 6c. Le regex qui se suffit à lui-même - et qui atterrit le 9x9 (vision 2020, mesurée)
 
-Les sections 6 / 6b ont separe le domaine, les indices et le tous-distincts. On revient maintenant à la **forme la plus pure de l'idee de depart** : **un seul regex qui se suffit a lui-meme**, ou *toutes* les contraintes - domaine, indices, **et** tous-distincts - sont portees par l'**appartenance** a une intersection `&`, et ou Z3 ne fait plus que **chercher un témoin**. Aucune inegalite, rien hors du regex : le regex *est* le probleme.
+Les sections 6 / 6b ont séparé le domaine, les indices et le tous-distincts. On revient maintenant à la **forme la plus pure de l'idée de départ** : **un seul regex qui se suffit à lui-même**, ou *toutes* les contraintes - domaine, indices, **et** tous-distincts - sont portées par l'**appartenance** à une intersection `&`, et où Z3 ne fait plus que **chercher un témoin**. Aucune inégalité, rien hors du regex : le regex *est* le problème.
 
-On ferme la boucle dans la forme attendue par la serie : un solveur qui implemente `ISudokuSolver` (`SudokuGrid Solve(SudokuGrid)`), charge un **puzzle reel** depuis les fichiers partages `Puzzles/`, et **genere le regex dynamiquement a partir de ce puzzle** - le regex qu'on voulait voir affiche.
+On ferme la boucle dans la forme attendue par la série : un solveur qui implémente `ISudokuSolver` (`SudokuGrid Solve(SudokuGrid)`), charge un **puzzle réel** depuis les fichiers partagés `Puzzles/`, et **génère le regex dynamiquement à partir de ce puzzle** - le regex qu'on voulait voir affiche.
 
 - chaque case `∈` son fragment (`d` -> `d` ; vide -> `[1-9]`) : **domaine + indices** ;
-- chaque groupe (les 27 lignes / colonnes / blocs) : la **concatenation** de ses 9 cases `∈` la regle d'unicite `^[1-9]{9}$ & .*1.* & ... & .*9.*` (= permutation de 1..9) : **tous-distincts EN REGEX**, zero inegalite.
+- chaque groupe (les 27 lignes / colonnes / blocs) : la **concaténation** de ses 9 cases `∈` la règle d'unicité `^[1-9]{9}$ & .*1.* & ... & .*9.*` (= permutation de 1..9) : **tous-distincts EN REGEX**, zéro inégalité.
 
-> *Note d'implémentation.* Le notebook reste **autonome** - il ne charge que des binaires `.deploy`, jamais un autre notebook, ce qui le rend rejouable headless sous papermill. On reproduit donc ici, en version compacte, l'interface `ISudokuSolver` et la classe `SudokuGrid` de la serie (memes signatures) : un solveur ecrit ici se branche tel quel dans le projet Sudoku.
+> *Note d'implémentation.* Le notebook reste **autonome** - il ne charge que des binaires `.deploy`, jamais un autre notebook, ce qui le rend rejouable headless sous papermill. On reproduit donc ici, en version compacte, l'interface `ISudokuSolver` et la classe `SudokuGrid` de la série (mêmes signatures) : un solveur écrit ici se branche tel quel dans le projet Sudoku.
 
-**La cle - et c'est le coeur du notebook.** Le tous-distincts d'un groupe est la conjonction d'appartenances `.*1.* & .*2.* & ... & .*9.*`. Or chaque conjonct `.*d.*` a une **primitive native** dans la théorie des chaînes : `(str.contains g ""d"")`. C'est *exactement* `.*d.*`, mais emis comme predicat propre au lieu d'etre **fondu** dans un produit d'automates :
+**La clé - et c'est le coeur du notebook.** Le tous-distincts d'un groupe est la conjonction d'appartenances `.*1.* & .*2.* & ... & .*9.*`. Or chaque conjonct `.*d.*` a une **primitive native** dans la théorie des chaînes : `(str.contains g ""d"")`. C'est *exactement* `.*d.*`, mais émis comme prédicat propre au lieu d'être **fondu** dans un produit d'automates :
 
-- **fondu** : `(str.in_re g (re.inter (.*1.*) ... (.*9.*)))` -> Z3 materialise les produits d'automates au solve, sur 27 groupes qui se chevauchent -> **`unknown` (> 60 s)** ;
-- **eclate** : `(str.contains g ""d"")` par chiffre -> primitive bien propagee -> **`SATISFIABLE` (~53 s en .NET, ~12 s en z3-py)**.
+- **fondu** : `(str.in_re g (re.inter (.*1.*) ... (.*9.*)))` -> Z3 matérialise les produits d'automates au solve, sur 27 groupes qui se chevauchent -> **`unknown` (> 60 s)** ;
+- **éclaté** : `(str.contains g ""d"")` par chiffre -> primitive bien propagée -> **`SATISFIABLE` (~53 s en .NET, ~12 s en z3-py)**.
 
-C'est le **meme** `&` d'appartenances, **zero inegalite** : seule la forme d'emission change. C'est cela, l'element de syntaxe entrevu en 2020 - et c'est ce qui fait **atterrir la grille 9x9 complete** depuis le seul regex. Sur la grille **4x4** (Shidoku), l'appartenance atterrit meme fondue en `re.inter` (~1,7 s, section 6b) ; au 9x9, il faut l'eclater en `str.contains`. La grille produite ci-dessous est **reelle**, validee (27 groupes = permutation de 1..9), et sort de la **seule appartenance regex** -> théorie des chaînes. Le regex qui se suffit a lui-meme n'est donc pas borne au 4x4 : il atterrit le 9x9. (Les inegalites 2 a 2 - section suivante - sont ~60x plus rapides, mais elles quittent le regex ; ici, le regex se suffit.)",,,,,,,,98c061cdaa8efd7a,,,,,,,
+C'est le **même** `&` d'appartenances, **zéro inégalité** : seule la forme d'émission change. C'est cela, l'élément de syntaxe entrevu en 2020 - et c'est ce qui fait **atterrir la grille 9x9 complète** depuis le seul regex. Sur la grille **4x4** (Shidoku), l'appartenance atterrit même fondue en `re.inter` (~1,7 s, section 6b) ; au 9x9, il faut l'éclater en `str.contains`. La grille produite ci-dessous est **réelle**, validée (27 groupes = permutation de 1..9), et sort de la **seule appartenance regex** -> théorie des chaînes. Le regex qui se suffit à lui-même n'est donc pas borné au 4x4 : il atterrit le 9x9. (Les inégalités 2 à 2 - section suivante - sont ~60x plus rapides, mais elles quittent le regex ; ici, le regex se suffit.)",,,,,,,,a692b2a4c3236495,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,regex06c2,code,fr,462f2986f1facea9,"using System;
 using System.IO;
 using System.Linq;
@@ -6796,14 +6796,14 @@ else
 {
     Console.WriteLine($""Z3 ne tranche pas (statut {solveurAuto.Statut}) - inattendu pour str.contains, a investiguer."");
 }",,,,,,,,765737d9d03e5270,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,81f6e32b,markdown,fr,38ec0bba02de2e2c,"## 7. L'ironie pedagogique - RE# valide ce qu'il ne peut produire
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,81f6e32b,markdown,fr,5505ca549118b79f,"## 7. L'ironie pédagogique - RE# valide ce qu'il ne peut produire
 
 Nous avons maintenant les deux outils en main :
 
 - **Z3** (section 6) a *produit* la grille solution (le témoin) ;
 - **RE#** (section 5) sait *valider* une ligne.
 
-Faisons-les se rencontrer : extrayons chaque ligne de la **solution produite par Z3**, et **verifions-la avec RE#**. Le verificateur elegant certifie, en temps lineaire, la solution qu'il est lui-meme **incapable de produire**.",,,,,,,,38ec0bba02de2e2c,,,,,,,
+Faisons-les se rencontrer : extrayons chaque ligne de la **solution produite par Z3**, et **vérifions-la avec RE#**. Le vérificateur élégant certifie, en temps linéaire, la solution qu'il est lui-même **incapable de produire**.",,,,,,,,5505ca549118b79f,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,57514927,code,fr,1c79111f4dfecab6,"using System.Diagnostics;
 // Ironie : RE# valide CHAQUE ligne de la solution produite par Z3.
 // Le verificateur elegant certifie - en temps lineaire - ce qu'il ne sait pas produire.
@@ -6826,24 +6826,24 @@ Console.WriteLine(""L'ironie : RE# certifie, plus vite que Z3 n'a resolu, une gr
 Console.WriteLine(""qu'il ne SAURAIT PAS produire lui-meme (il est recognition-only)."");
 Console.WriteLine();
 foreach (var ligne in lignesSolution) Console.WriteLine($""  {ligne} -> {(ligneValide.Matches(ligne).Length > 0 ? ""VALIDE"" : ""invalide"")}"");",,,,,,,,1c79111f4dfecab6,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,98e9d012,markdown,fr,875e94e02309f2e2,"### Interpretation : le prestige va au verificateur, le travail au resolveur
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,98e9d012,markdown,fr,87374b1399a8917f,"### Interprétation : le prestige va au vérificateur, le travail au résolveur
 
 Double retournement :
 
-1. Le **reconnaisseur le plus elegant** (RE#, temps lineaire) ne sait **pas fabriquer** la solution qu'il certifie.
-2. Il la certifie en outre **plus vite** que la toolchain (Automata / intersection DFA) qui etait censee etre *le* reconnaisseur en 2020 - celle-la meme qui explosait.
+1. Le **reconnaisseur le plus élégant** (RE#, temps linéaire) ne sait **pas fabriquer** la solution qu'il certifie.
+2. Il la certifie en outre **plus vite** que la toolchain (Automata / intersection DFA) qui était censée être *le* reconnaisseur en 2020 - celle-la même qui explosait.
 
-Le Sudoku donne a voir que **matching** (RE#) et **solving** (Z3) sont deux metiers. Le prestige du ""rapide et elegant"" va au verificateur ; le travail dur - la **production du témoin** - reste irremplacablement du cote de Z3. C'est la these de cette serie, rendue concrete.",,,,,,,,875e94e02309f2e2,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,9d8d3271,markdown,fr,8e4e196bd53576a0,"## Exercice 2 : etendre l'encodage Z3 (Sudoku diagonal)
+Le Sudoku donne à voir que **matching** (RE#) et **solving** (Z3) sont deux métiers. Le prestige du ""rapide et élégant"" va au vérificateur ; le travail dur - la **production du témoin** - reste irremplaçablement du côté de Z3. C'est la thèse de cette série, rendue concrète.",,,,,,,,87374b1399a8917f,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,9d8d3271,markdown,fr,4bf00dfdff4d6aa3,"## Exercice 2 : étendre l'encodage Z3 (Sudoku diagonal)
 
 **Objectif :**
-Le Sudoku-X ajoute deux contraintes : les deux **diagonales** principales doivent aussi contenir 1..9 (tous distincts). Etendez la fonction `ResoudreSudokuZ3` pour ajouter ces deux contraintes.
+Le Sudoku-X ajoute deux contraintes : les deux **diagonales** principales doivent aussi contenir 1..9 (tous distincts). Étendez la fonction `ResoudreSudokuZ3` pour ajouter ces deux contraintes.
 
 **Indice :**
-Recuperez les 9 `IntExpr` de la diagonale principale (`cells[i,i]`) et de l'anti-diagonale (`cells[i, 8-i]`), et ajoutez deux `ctx.MkDistinct(...)` supplementaires avant `s.Check()`.
+Récupérez les 9 `IntExpr` de la diagonale principale (`cells[i,i]`) et de l'anti-diagonale (`cells[i, 8-i]`), et ajoutez deux `ctx.MkDistinct(...)` supplémentaires avant `s.Check()`.
 
 **Étape 1 :**
-Écrivez une variante `ResoudreSudokuXZ3` dans la cellule suivante.",,,,,,,,8e4e196bd53576a0,,,,,,,
+Écrivez une variante `ResoudreSudokuXZ3` dans la cellule suivante.",,,,,,,,4bf00dfdff4d6aa3,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,f684319a,code,fr,7a21579fd93c8de4,"// EXERCICE : ResoudreSudokuXZ3 (variante avec contraintes de diagonales)
 // TODO etudiant : reprendre le schema de ResoudreSudokuZ3 et ajouter deux MkDistinct
 // sur la diagonale principale (cells[i,i]) et l'anti-diagonale (cells[i, 8-i]).
@@ -6852,20 +6852,20 @@ public int[,] ResoudreSudokuXZ3(Context ctx, int[,] puzzle)
     return puzzle;  // TODO etudiant : remplacer par la resolution avec contraintes diagonales
 }
 Console.WriteLine(""Exercice a completer : implementer les deux contraintes de diagonale."");",,,,,,,,7a21579fd93c8de4,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00md1,markdown,fr,e37d51888b72bff3,"## 8. Resoudre par toutes les voies - le banc d'essai
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00md1,markdown,fr,ec71d3977d18caa7,"## 8. Résoudre par toutes les voies - le banc d'essai
 
-Jusqu'ici chaque barreau a ete illustre isolement. Cette section les **exécute cote a cote** sur les memes grilles : la canonique (30 indices), la grille vide (0 indice) et une grille B a 26 indices. L'objectif n'est PAS de battre le resolveur optimal - l'optimum algorithmique du Sudoku, c'est **Dancing Links (DLX)**, traite en detail dans les notebooks voisins de la serie ([Sudoku-2-DancingLinks](Sudoku-2-DancingLinks-Csharp.ipynb) en C#, et sa version Python ; cf. aussi le backtracking de [Sudoku-1](Sudoku-1-Backtracking-Csharp.ipynb) et le Z3 dedie de [Sudoku-12](Sudoku-12-Z3-Csharp.ipynb)). Ici, l'objectif est que **la discussion soit fertile** : on tente toutes les resolutions, les bonnes comme les moins bonnes, et un echec honnete (timeout, faux negatif) en dit autant qu'une reussite.
+Jusqu'ici chaque barreau a été illustré isolément. Cette section les **exécute côte à côte** sur les mêmes grilles : la canonique (30 indices), la grille vide (0 indice) et une grille B à 26 indices. L'objectif n'est PAS de battre le résolveur optimal - l'optimum algorithmique du Sudoku, c'est **Dancing Links (DLX)**, traité en détail dans les notebooks voisins de la série ([Sudoku-2-DancingLinks](Sudoku-2-DancingLinks-Csharp.ipynb) en C#, et sa version Python ; cf. aussi le backtracking de [Sudoku-1](Sudoku-1-Backtracking-Csharp.ipynb) et le Z3 dédié de [Sudoku-12](Sudoku-12-Z3-Csharp.ipynb)). Ici, l'objectif est que **la discussion soit fertile** : on tente toutes les résolutions, les bonnes comme les moins bonnes, et un échec honnête (timeout, faux négatif) en dit autant qu'une réussite.
 
-### Conway : deux artefacts a ne pas confondre
+### Conway : deux artefacts à ne pas confondre
 
-Le ""Sudoku en un seul regex"" de la lignee Conway existe en **deux versions distinctes** qu'on melange souvent a tort :
+Le ""Sudoku en un seul regex"" de la lignée Conway existe en **deux versions distinctes** qu'on mélange souvent à tort :
 
-| Variante | Auteur | Mecanisme | Tourne sur |
+| Variante | Auteur | Mécanisme | Tourne sur |
 |----------|--------|-----------|------------|
-| **Monstre recursif** | Damian Conway (2005), Davidebyzero | recursion PCRE `(?R)` / `(?0)` - **non regulier** | PCRE, module Python `regex` ; **PAS** `System.Text.RegularExpressions` |
-| **Variante deroulee** | Aron Griffis (2007), domaine public | recursion **deroulee** en 81 blocs explicites : backrefs `\1`..`\81` + lookaheads, **aucun** `(?R)` | tout moteur a backtracking : stdlib Python `re` **et** .NET |
+| **Monstre récursif** | Damian Conway (2005), Davidebyzero | récursion PCRE `(?R)` / `(?0)` - **non régulier** | PCRE, module Python `regex` ; **PAS** `System.Text.RegularExpressions` |
+| **Variante déroulée** | Aron Griffis (2007), domaine public | récursion **déroulée** en 81 blocs explicites : backrefs `\1`..`\81` + lookaheads, **aucun** `(?R)` | tout moteur à backtracking : stdlib Python `re` **et** .NET |
 
-Le monstre recursif est l'**anti-modèle** du barreau 1 : elegant, illisible, et hors de portee du moteur .NET, qui ne sait pas faire de recursion de motif. (Le mecanisme `(?R)` est verifiable en une ligne dans le module Python `regex` : `\((?:[^()]|(?R))*\)` reconnait les parentheses bien balancees - un langage non regulier - mais ne compile meme pas en .NET.) C'est donc la **variante deroulee de Griffis** qu'on exécute ci-dessous en .NET : elle, au moins, tourne. La cellule genere les 81 blocs, puis resout par UNE substitution `Regex.Replace` - c'est le moteur de backtracking qui fait toute la recherche.",,,,,,,,e37d51888b72bff3,,,,,,,
+Le monstre récursif est l'**anti-modèle** du barreau 1 : élégant, illisible, et hors de portée du moteur .NET, qui ne sait pas faire de récursion de motif. (Le mécanisme `(?R)` est vérifiable en une ligne dans le module Python `regex` : `\((?:[^()]|(?R))*\)` reconnaît les parenthèses bien balancées - un langage non régulier - mais ne compile même pas en .NET.) C'est donc la **variante déroulée de Griffis** qu'on exécute ci-dessous en .NET : elle, au moins, tourne. La cellule génère les 81 blocs, puis résout par UNE substitution `Regex.Replace` - c'est le moteur de backtracking qui fait toute la recherche.",,,,,,,,ec71d3977d18caa7,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00rgx,code,fr,45d0f772de1488c0,"using System;
 using System.Linq;
 using System.Text;
@@ -6937,34 +6937,34 @@ foreach (var (nom, puz) in new[] { (""canonique (30 indices)"", canon), (""grill
     Console.WriteLine($""--- {nom} : {verdict} ---"");
     Console.WriteLine(grille != null && grille != ""__TIMEOUT__"" ? grille + ""\n"" : """");
 }",,,,,,,,45d0f772de1488c0,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00md3,markdown,fr,b12cec9b6e4c6cfe,"### Le meme regex, deux moteurs : la portabilite est une illusion
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00md3,markdown,fr,ab94a0a39b09845d,"### Le même regex, deux moteurs : la portabilité est une illusion
 
-Le motif genere ci-dessus fait 13515 caracteres et ne contient **aucune** recursion : il devrait donc se comporter pareil partout. Il n'en est rien. Le **meme** motif, octet pour octet, applique en .NET (`System.Text.RegularExpressions`, cellule ci-dessus) et en Python (`re`, lignee PCRE, mesure reproductible hors notebook) **diverge** :
+Le motif généré ci-dessus fait 13515 caractères et ne contient **aucune** récursion : il devrait donc se comporter pareil partout. Il n'en est rien. Le **même** motif, octet pour octet, appliqué en .NET (`System.Text.RegularExpressions`, cellule ci-dessus) et en Python (`re`, lignée PCRE, mesure reproductible hors notebook) **diverge** :
 
 | Grille | .NET `System.Text.RegularExpressions` | Python `re` |
 |--------|---------------------------------------|-------------|
 | canonique (30 indices) | RESOLU en **4,4 ms** | RESOLU en 14 ms |
 | grille vide (0 indice) | **TIMEOUT (> 10 s)** | RESOLU en 11 ms |
-| grille B (26 indices) | **PAS RESOLU - faux negatif (870 ms)** | RESOLU en 607 ms |
+| grille B (26 indices) | **PAS RESOLU - faux négatif (870 ms)** | RESOLU en 607 ms |
 
-Sur la grille canonique, .NET est meme **plus rapide**. Mais sur la grille vide il **boucle** jusqu'au cap de 10 s, et sur la grille B il rend un **faux negatif** : il declare ""pas de solution"" la ou il en existe une que Python trouve. Les lookaheads d'optimisation que Griffis a regles pour PCRE - `\b`, `*?` paresseux, semantique du `.` face au saut de ligne - ne portent pas la **meme semantique** chez le backtracker .NET.
+Sur la grille canonique, .NET est même **plus rapide**. Mais sur la grille vide il **boucle** jusqu'au cap de 10 s, et sur la grille B il rend un **faux négatif** : il déclare ""pas de solution"" là où il en existe une que Python trouve. Les lookaheads d'optimisation que Griffis a réglés pour PCRE - `\b`, `*?` paresseux, sémantique du `.` face au saut de ligne - ne portent pas la **même sémantique** chez le backtracker .NET.
 
-> **Leçon.** Un regex de **résolution** par backtracking n'est pas portable : il est accorde a un moteur precis. Le ""reconnaitre != resoudre"" du reste du notebook se double ici d'un ""le meme motif ne calcule pas la meme chose selon le moteur"". (A l'oppose, la voie declarative `&` -> théorie des chaînes, elle, *est* portable : le SMT-LIB emis se resout pareil partout ou tourne Z3.)",,,,,,,,b12cec9b6e4c6cfe,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00rec1,markdown,fr,aacf240f6930cc85,"### Le monstre recursif `(?R)` : un troisieme type de resultat - le rejet à la compilation
+> **Leçon.** Un regex de **résolution** par backtracking n'est pas portable : il est accordé à un moteur précis. Le ""reconnaître != résoudre"" du reste du notebook se double ici d'un ""le même motif ne calcule pas la même chose selon le moteur"". (À l'opposé, la voie déclarative `&` -> théorie des chaînes, elle, *est* portable : le SMT-LIB émis se résout pareil partout où tourne Z3.)",,,,,,,,ab94a0a39b09845d,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00rec1,markdown,fr,a093f2cfd91e31b5,"### Le monstre récursif `(?R)` : un troisième type de résultat - le rejet à la compilation
 
-La variante deroulee ci-dessus ne contient **aucune** recursion : elle compile partout (et *diverge* selon le moteur, cf. tableau precedent). Mais les Sudoku-en-un-regex les plus **celebres** - la lignee Conway, le noeud [ikegami / PerlMonks 471168](https://www.perlmonks.org/?node_id=471168), les motifs de **Davidebyzero** - reposent eux sur la **recursion** `(?R)` / `(?0)` / `(?&nom)` : le motif s'appelle lui-meme, ce qui decrit un langage **non regulier** (au sens strict, ce ne sont plus des ""expressions regulieres"").
+La variante déroulée ci-dessus ne contient **aucune** récursion : elle compile partout (et *diverge* selon le moteur, cf. tableau précédent). Mais les Sudoku-en-un-regex les plus **célèbres** - la lignée Conway, le noeud [ikegami / PerlMonks 471168](https://www.perlmonks.org/?node_id=471168), les motifs de **Davidebyzero** - reposent eux sur la **récursion** `(?R)` / `(?0)` / `(?&nom)` : le motif s'appelle lui-même, ce qui décrit un langage **non régulier** (au sens strict, ce ne sont plus des ""expressions régulières"").
 
-Cette recursion donne une **troisieme** sorte de ""resultat"", a cote de *resolu* et *timeout/faux-negatif* : selon le moteur, le motif **compile et tourne**, ou bien il est **rejete d'emblee**. Probe minimale et verifiable - les parentheses bien balancees `(?<bal>\((?:[^()]|(?&bal))*\))`, un langage non regulier classique - mesuree sur chaque moteur :
+Cette récursion donne une **troisième** sorte de ""résultat"", à côté de *résolu* et *timeout/faux-négatif* : selon le moteur, le motif **compile et tourne**, ou bien il est **rejeté d'emblée**. Probe minimale et vérifiable - les parenthèses bien balancées `(?<bal>\((?:[^()]|(?&bal))*\))`, un langage non régulier classique - mesurée sur chaque moteur :
 
-| Moteur | Recursion `(?R)` / `(?&nom)` | Probe `(()())` | Probe `(()` |
+| Moteur | Récursion `(?R)` / `(?&nom)` | Probe `(()())` | Probe `(()` |
 |--------|------------------------------|:--------------:|:-----------:|
-| Python `regex` 2.5.140 | **supportee** | MATCH | no |
-| Perl 5.38.2 | **supportee** | MATCH | no |
-| PCRE2 10.42 (`pcre2grep`) | **supportee** | MATCH | no |
-| Python `re` (stdlib 3.12) | **rejetee** | *erreur de compilation* (`unknown extension ?R`) | - |
-| .NET `System.Text.RegularExpressions` | **rejetee** | *exception à la construction* (cellule suivante) | - |
+| Python `regex` 2.5.140 | **supportée** | MATCH | no |
+| Perl 5.38.2 | **supportée** | MATCH | no |
+| PCRE2 10.42 (`pcre2grep`) | **supportée** | MATCH | no |
+| Python `re` (stdlib 3.12) | **rejetée** | *erreur de compilation* (`unknown extension ?R`) | - |
+| .NET `System.Text.RegularExpressions` | **rejetée** | *exception à la construction* (cellule suivante) | - |
 
-*Mesure reproductible hors notebook (`pcre2grep`, `perl`, modules Python `re` / `regex`). Le monstre recursif de Sudoku est ce meme mecanisme `(?R)` porte a 81 cases : elegant, illisible, et - point cle - **hors de portee de .NET**. C'est exactement pourquoi ce notebook exécute en .NET la variante **deroulee** (sans recursion), et non le monstre recursif.*",,,,,,,,aacf240f6930cc85,,,,,,,
+*Mesure reproductible hors notebook (`pcre2grep`, `perl`, modules Python `re` / `regex`). Le monstre récursif de Sudoku est ce même mécanisme `(?R)` porté à 81 cases : élégant, illisible, et - point clé - **hors de portée de .NET**. C'est exactement pourquoi ce notebook exécute en .NET la variante **déroulée** (sans récursion), et non le monstre récursif.*",,,,,,,,a093f2cfd91e31b5,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00rec2,code,fr,c993045ffbfff198,"using System;
 using System.Text.RegularExpressions;
 
@@ -7015,104 +7015,104 @@ void Banc(string nom, string s81) {
 Banc(""canonique (30)"", ""53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"");
 Banc(""grille vide (0)"", new string('.', 81));
 Banc(""grille B (26)"",   ""045010000000750008007080010000007006680000072100300000060070800700091000000030450"");",,,,,,,,b1c39e1eda1a2492,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00md5,markdown,fr,82df53c8794c75a3,"### Le banc d'essai complet - et pourquoi les echecs sont fertiles
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00md5,markdown,fr,986f53de9e4aba85,"### Le banc d'essai complet - et pourquoi les échecs sont fertiles
 
-Toutes les voies, mesurees (kernel `.net-csharp` pour les lignes C#/.NET ; z3-py et Python `re` reproductibles hors notebook) :
+Toutes les voies, mesurées (kernel `.net-csharp` pour les lignes C#/.NET ; z3-py et Python `re` reproductibles hors notebook) :
 
 | Voie | Substrat | canon (30) | vide (0) | grille B (26) |
 |------|----------|-----------:|---------:|--------------:|
-| Naif recursif | **C#** | 1,4 ms | **0,1 ms** | 3,6 ms |
-| Naif recursif | Python | 16,3 ms | 1,7 ms | 43,8 ms |
-| Naif recursif | NumPy | 106 ms | - | 311 ms |
-| Regex deroule | **.NET** | 4,4 ms | **TIMEOUT > 10 s** | **faux negatif** |
-| meme regex | Python `re` | 14 ms | 11 ms | 607 ms |
+| Naïf récursif | **C#** | 1,4 ms | **0,1 ms** | 3,6 ms |
+| Naïf récursif | Python | 16,3 ms | 1,7 ms | 43,8 ms |
+| Naïf récursif | NumPy | 106 ms | - | 311 ms |
+| Regex déroulé | **.NET** | 4,4 ms | **TIMEOUT > 10 s** | **faux négatif** |
+| même regex | Python `re` | 14 ms | 11 ms | 607 ms |
 | P1 Z3 `Distinct` (entiers) | z3-py | 23,3 ms | **25,2 s** | 74,4 ms |
 | P3 chaînes, appartenance **fondue** en `re.inter` / `str.in_re` | z3-py | **unknown > 60 s** | - | - |
-| **P3''** chaînes, appartenance eclatee en `str.contains` (le regex se suffit) | **.NET** / z3-py | **SAT ~53 s** / ~12 s | - | - |
-| **P3' chaînes, tous-distincts en inegalites 2 a 2** | C# / z3-py | **~0,8 s** | **~1 s** | **~0,4 s** |
-| P2 DFA -> SMT | .NET (fork) | OOM a 81 (mur 1, cf. section 6b) | - | - |
+| **P3''** chaînes, appartenance éclatée en `str.contains` (le regex se suffit) | **.NET** / z3-py | **SAT ~53 s** / ~12 s | - | - |
+| **P3' chaînes, tous-distincts en inégalités 2 à 2** | C# / z3-py | **~0,8 s** | **~1 s** | **~0,4 s** |
+| P2 DFA -> SMT | .NET (fork) | OOM à 81 (mur 1, cf. section 6b) | - | - |
 | RE# | .NET | reconnaissance seule, **aucun témoin** | - | - |
-| Monstre Conway `(?R)` | PCRE / Python `regex` | non regulier, **absent de .NET** | - | - |
+| Monstre Conway `(?R)` | PCRE / Python `regex` | non régulier, **absent de .NET** | - | - |
 | Dancing Links (DLX) | - | l'optimum (ordre de la microseconde) - cf [Sudoku-2](Sudoku-2-DancingLinks-Csharp.ipynb) | - | - |
 
-*Lecture : une valeur en ms/s = resolu ; TIMEOUT / faux negatif / unknown / OOM = echec honnete. P3, P3'' et P3' partagent le **meme substrat chaîne** ; seule la **forme d'emission** du tous-distincts change : appartenance fondue en `re.inter` -> unknown ; **meme** appartenance eclatee en `str.contains` -> SAT (~53 s en .NET, section 6c) ; inegalites 2 a 2 -> ~0,8 s (mesure C# à la section ""une autre voie"", aussi en z3-py sur les trois grilles). Pour Z3 `Distinct`, la ligne est mesuree en z3-py ; le meme encodage tourne en C# à la section 6 (~38 ms sur la canonique).*
+*Lecture : une valeur en ms/s = résolu ; TIMEOUT / faux négatif / unknown / OOM = échec honnête. P3, P3'' et P3' partagent le **même substrat chaîne** ; seule la **forme d'émission** du tous-distincts change : appartenance fondue en `re.inter` -> unknown ; **même** appartenance éclatée en `str.contains` -> SAT (~53 s en .NET, section 6c) ; inégalités 2 à 2 -> ~0,8 s (mesure C# à la section ""une autre voie"", aussi en z3-py sur les trois grilles). Pour Z3 `Distinct`, la ligne est mesurée en z3-py ; le même encodage tourne en C# à la section 6 (~38 ms sur la canonique).*
 
-**Quatre lecons fertiles** - c'est la discussion, pas le chrono, qui est le livrable :
+**Quatre leçons fertiles** - c'est la discussion, pas le chrono, qui est le livrable :
 
-1. **Le substrat compte autant que l'algorithme.** Le *meme* backtracking naif fait 0,1 ms (C#), 1,7 ms (Python) et 106 ms (NumPy) sur la grille vide. La pile d'appels C# *est* une pile de contexte legere (zero allocation par essai) ; NumPy paie un surcout par-element a chaque acces scalaire - la vectorisation ne sert a rien sur une recherche sequentielle, elle nuit. L'outil doit epouser le probleme.
+1. **Le substrat compte autant que l'algorithme.** Le *même* backtracking naïf fait 0,1 ms (C#), 1,7 ms (Python) et 106 ms (NumPy) sur la grille vide. La pile d'appels C# *est* une pile de contexte légère (zéro allocation par essai) ; NumPy paie un surcoût par-élément à chaque accès scalaire - la vectorisation ne sert à rien sur une recherche séquentielle, elle nuit. L'outil doit épouser le problème.
 
-2. **L'anti-modèle ""gagne"" puis s'effondre.** Le regex deroule est competitif sur la canonique (4,4 ms, du meme ordre que le naif C#, loin devant Z3) - puis il *timeout* sur la grille vide et rend un *faux negatif* sur la grille B. Rapide la ou c'est facile, faux la ou c'est dur : exactement le profil qu'on ne veut pas d'un resolveur.
+2. **L'anti-modèle ""gagne"" puis s'effondre.** Le regex déroulé est compétitif sur la canonique (4,4 ms, du même ordre que le naïf C#, loin devant Z3) - puis il *timeout* sur la grille vide et rend un *faux négatif* sur la grille B. Rapide là où c'est facile, faux là où c'est dur : exactement le profil qu'on ne veut pas d'un résolveur.
 
-3. **Le naif recursif est le vainqueur discret.** 1,4 / 0,1 / 3,6 ms : rapide *et* robuste sur les trois grilles, sans aucune machinerie symbolique. Le bon vieux backtracking, bien empile en recursif, n'a pas du tout des performances mediocres - il bat meme le regex sur la canonique. Les metaheuristiques (recuit, genetique) qui mettent plus d'une minute sur ce probleme sont, ici, un contresens d'outil.
+3. **Le naïf récursif est le vainqueur discret.** 1,4 / 0,1 / 3,6 ms : rapide *et* robuste sur les trois grilles, sans aucune machinerie symbolique. Le bon vieux backtracking, bien empilé en récursif, n'a pas du tout des performances médiocres - il bat même le regex sur la canonique. Les métaheuristiques (recuit, génétique) qui mettent plus d'une minute sur ce problème sont, ici, un contresens d'outil.
 
-4. **La voie symbolique atterrit - le 9x9 inclus - a condition de la bonne forme d'emission.** Ce n'est pas ""les voies elegantes explosent toujours"" : c'est plus fin. P2 (DFA -> SMT) explose en etats (mur 1, section 6b) ; P3 (appartenance **fondue** en `re.inter`) ne termine pas (`unknown`) ; mais la **meme** appartenance **eclatee** en `str.contains` (P3'', le regex qui se suffit) **atterrit la grille 9x9 complete en ~53 s**, et les inegalites 2 a 2 (P3') en ~0,8 s - `Distinct` sur 81 entiers, qui n'en est que le sucre, en ~38 ms. Le critere décisif n'est ni le moteur ni le substrat (chaîne vs entier), c'est **la forme d'emission de l'intersection** : produit d'automates fondu (sature) vs primitive native eclatee (atterrit).
+4. **La voie symbolique atterrit - le 9x9 inclus - à condition de la bonne forme d'émission.** Ce n'est pas ""les voies élégantes explosent toujours"" : c'est plus fin. P2 (DFA -> SMT) explose en états (mur 1, section 6b) ; P3 (appartenance **fondue** en `re.inter`) ne termine pas (`unknown`) ; mais la **même** appartenance **éclatée** en `str.contains` (P3'', le regex qui se suffit) **atterrit la grille 9x9 complète en ~53 s**, et les inégalités 2 à 2 (P3') en ~0,8 s - `Distinct` sur 81 entiers, qui n'en est que le sucre, en ~38 ms. Le critère décisif n'est ni le moteur ni le substrat (chaîne vs entier), c'est **la forme d'émission de l'intersection** : produit d'automates fondu (sature) vs primitive native éclatée (atterrit).
 
-> **Synthese du banc.** Reconnaitre (RE#) est lineaire et portable ; resoudre par appartenance **fondue** sature a l'echelle ; mais la **meme** appartenance **eclatee** en `str.contains` - en restant un regex, 0 inegalite - **atterrit** le 9x9 ; les inegalites (chaînes P3' ou entiers `Distinct`), et meme un simple backtracking C#, atterrissent plus vite encore. La leçon transversale : choisir la **bonne forme d'emission**, pas le substrat le plus spectaculaire. Le DLX serait l'optimum ([Sudoku-2](Sudoku-2-DancingLinks-Csharp.ipynb)), mais on ne cherchait pas l'optimum : on cherchait a comprendre *pourquoi* chaque voie reussit ou echoue. Voir les sections 6 et 6b (Z3 et le fork Automata) et 4-5 (RE# reconnaissance).",,,,,,,,82df53c8794c75a3,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00cons,markdown,fr,d5c6287dc4e30bc3,"### Tableau consolidant - le regex n'est PAS le mauvais outil
+> **Synthèse du banc.** Reconnaître (RE#) est linéaire et portable ; résoudre par appartenance **fondue** sature à l'échelle ; mais la **même** appartenance **éclatée** en `str.contains` - en restant un regex, 0 inégalité - **atterrit** le 9x9 ; les inégalités (chaînes P3' ou entiers `Distinct`), et même un simple backtracking C#, atterrissent plus vite encore. La leçon transversale : choisir la **bonne forme d'émission**, pas le substrat le plus spectaculaire. Le DLX serait l'optimum ([Sudoku-2](Sudoku-2-DancingLinks-Csharp.ipynb)), mais on ne cherchait pas l'optimum : on cherchait à comprendre *pourquoi* chaque voie réussit ou échoue. Voir les sections 6 et 6b (Z3 et le fork Automata) et 4-5 (RE# reconnaissance).",,,,,,,,986f53de9e4aba85,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,bench00cons,markdown,fr,5c83d297df8800b9,"### Tableau consolidant - le regex n'est PAS le mauvais outil
 
-En croisant **forme d'emission** et **moteur**, le verdict est net : la voie symbolique *atterrit* reellement une grille de Sudoku - 4x4 **et** 9x9. Ce qui decide la reussite n'est ni le moteur, ni le substrat (chaîne vs entier), mais (a) la **forme d'emission** du tous-distincts et (b) la **portabilite du dialecte**.
+En croisant **forme d'émission** et **moteur**, le verdict est net : la voie symbolique *atterrit* réellement une grille de Sudoku - 4x4 **et** 9x9. Ce qui décide la réussite n'est ni le moteur, ni le substrat (chaîne vs entier), mais (a) la **forme d'émission** du tous-distincts et (b) la **portabilité du dialecte**.
 
-| Voie (forme d'emission) | Moteur | 4x4 | 9x9 | Nature du resultat |
+| Voie (forme d'émission) | Moteur | 4x4 | 9x9 | Nature du résultat |
 |-------------------------|--------|-----|-----|--------------------|
-| notre regex `&` -> appartenance **fondue** en `re.inter` | Z3 (fork Automata) | **SAT ~1,7 s** | `unknown` | atterrit le 4x4 ; le produit d'automates sature a 81 |
-| **notre regex `&` -> appartenance eclatee en `str.contains`** | Z3 (.NET) | SAT | **SAT ~53 s** | **atterrit le 9x9 - 0 inegalite, le regex se suffit** |
-| memes chaînes, tous-distincts 2 a 2 | Z3 (.NET) | SAT | **SAT ~0,8 s** | atterrit le 9x9 (mais quitte le regex) |
-| Z3 `Distinct` (entiers, sucre du 2 a 2) | Z3 | SAT | **SAT ~38 ms** | resolveur de production |
+| notre regex `&` -> appartenance **fondue** en `re.inter` | Z3 (fork Automata) | **SAT ~1,7 s** | `unknown` | atterrit le 4x4 ; le produit d'automates sature à 81 |
+| **notre regex `&` -> appartenance éclatée en `str.contains`** | Z3 (.NET) | SAT | **SAT ~53 s** | **atterrit le 9x9 - 0 inégalité, le regex se suffit** |
+| mêmes chaînes, tous-distincts 2 à 2 | Z3 (.NET) | SAT | **SAT ~0,8 s** | atterrit le 9x9 (mais quitte le regex) |
+| Z3 `Distinct` (entiers, sucre du 2 à 2) | Z3 | SAT | **SAT ~38 ms** | résolveur de production |
 | unrolled Griffis (substitution) | .NET | solve 4,4 ms | timeout / faux-neg | fragile, non portable |
 | unrolled Griffis | Python `re`/`regex`, PCRE2, perl | solve (temps variables) | (idem) | portable mais fragile |
-| monstre recursif `(?R)` | PCRE2 / perl / Python `regex` | recursion OK | - | dialecte PCRE |
-| monstre recursif `(?R)` | .NET / Python `re` | **rejet compile** | - | non regulier, non portable |
-| RE# (Resharp) | .NET | reconnaissance, **aucun témoin** | reconnaissance | verifie, ne resout pas |
+| monstre récursif `(?R)` | PCRE2 / perl / Python `regex` | récursion OK | - | dialecte PCRE |
+| monstre récursif `(?R)` | .NET / Python `re` | **rejet compile** | - | non régulier, non portable |
+| RE# (Resharp) | .NET | reconnaissance, **aucun témoin** | reconnaissance | vérifie, ne résout pas |
 
-> Une matrice plus large (40+ moteurs : .NET, PCRE2, Perl, Python, Boost, RE2, std::regex, ICU, Rust, Java...) se compare commodement avec l'outil **[RegExpress](https://github.com/Viorel/RegExpress)** (Viorel, v3.26) - utile pour *voir* la variete de comportements `(?R)` / lookbehind / backref d'un coup d'oeil. C'est une GUI Windows (WPF), non scriptable en headless : les lignes ci-dessus, elles, sont **mesurees** (in-notebook pour .NET/Z3/RE# ; `pcre2grep`/`perl`/Python reproductibles hors notebook). RegExpress est cite comme **reference**, pas reproduit ici.
+> Une matrice plus large (40+ moteurs : .NET, PCRE2, Perl, Python, Boost, RE2, std::regex, ICU, Rust, Java...) se compare commodément avec l'outil **[RegExpress](https://github.com/Viorel/RegExpress)** (Viorel, v3.26) - utile pour *voir* la variété de comportements `(?R)` / lookbehind / backref d'un coup d'oeil. C'est une GUI Windows (WPF), non scriptable en headless : les lignes ci-dessus, elles, sont **mesurées** (in-notebook pour .NET/Z3/RE# ; `pcre2grep`/`perl`/Python reproductibles hors notebook). RegExpress est cité comme **référence**, pas reproduit ici.
 
-**Verdict.** Le regex **atterrit** : grille 4x4 complete depuis notre intersection `&`, **et grille 9x9 complete** des qu'on eclate le tous-distincts en `str.contains` natif (0 inegalite, le regex se suffit). ""Le mauvais outil"" etait un diagnostic trop court : le bon outil suit la **forme d'emission** (produit d'automates fondu vs primitive native) et le **dialecte** (la recursion PCRE n'est pas .NET).
+**Verdict.** Le regex **atterrit** : grille 4x4 complète depuis notre intersection `&`, **et grille 9x9 complète** dès qu'on éclate le tous-distincts en `str.contains` natif (0 inégalité, le regex se suffit). ""Le mauvais outil"" était un diagnostic trop court : le bon outil suit la **forme d'émission** (produit d'automates fondu vs primitive native) et le **dialecte** (la récursion PCRE n'est pas .NET).
 
-### Avis technique - la lignee Veanes et la ""reecriture du parser""
+### Avis technique - la lignée Veanes et la ""réécriture du parser""
 
-L'intuition de l'auteur (""la reecriture du parser etait sans doute au programme"") vise juste. Le fil rouge des travaux de **Margus Veanes** (MSR) est de sortir le *front-end* des regex de la **construction d'automates** pour le poser sur un raisonnement **symbolique par dérivées** :
+L'intuition de l'auteur (""la réécriture du parser était sans doute au programme"") vise juste. Le fil rouge des travaux de **Margus Veanes** (MSR) est de sortir le *front-end* des regex de la **construction d'automates** pour le poser sur un raisonnement **symbolique par dérivées** :
 
-- **Rex / SFAz3** (annees 2010, dans `Automata`) : regex -> automate symbolique (SFA) -> témoin via Z3. Puissant, mais c'est la voie qui **cape** le témoin (issue #6) et **explose** en produit d'automates (mur 1). C'est la ou se trouvait le projet de 2020.
-- **SRM** (""Symbolic Regex Matcher"", TACAS 2019) : remplace la construction de SFA par les **dérivées symboliques** - une reecriture du moteur de *reconnaissance*, rapide (classe RE2), qui deviendra le moteur non-backtracking de .NET 7. Recognition-only.
-- **dZ3** (""Symbolic Boolean Derivatives..."", PLDI 2021) : pousse les dérivées au cas **booleen** - resoudre directement `A & ~B & ...` dans Z3, soit exactement `Ligne & Colonne & Bloc`. C'est la brique qui *resout* sans materialiser d'automate.
-- **RE#** (POPL 2025) : ramene `&` / `~` en **citoyens de premiere classe** d'un matcher a dérivées, en temps lineaire - mais toujours *reconnaissance*, sans témoin.
+- **Rex / SFAz3** (années 2010, dans `Automata`) : regex -> automate symbolique (SFA) -> témoin via Z3. Puissant, mais c'est la voie qui **cape** le témoin (issue #6) et **explose** en produit d'automates (mur 1). C'est là où se trouvait le projet de 2020.
+- **SRM** (""Symbolic Regex Matcher"", TACAS 2019) : remplace la construction de SFA par les **dérivées symboliques** - une réécriture du moteur de *reconnaissance*, rapide (classe RE2), qui deviendra le moteur non-backtracking de .NET 7. Recognition-only.
+- **dZ3** (""Symbolic Boolean Derivatives..."", PLDI 2021) : pousse les dérivées au cas **booléen** - résoudre directement `A & ~B & ...` dans Z3, soit exactement `Ligne & Colonne & Bloc`. C'est la brique qui *résout* sans matérialiser d'automate.
+- **RE#** (POPL 2025) : ramène `&` / `~` en **citoyens de première classe** d'un matcher à dérivées, en temps linéaire - mais toujours *reconnaissance*, sans témoin.
 
-Mon avis : la capacite que visait le projet (de l'intersection `&`/`~` *vers une grille resolue*) n'a jamais ete celle de SRM/RE# (reconnaissance), mais celle de la voie Z3 - d'abord SFAz3 (capee), puis la théorie des chaînes à la dZ3 (non capee, sans produit). La ""reecriture du parser"" qui debloque le 9x9, c'est precisement ce glissement : **regex -> SFA** devient **regex -> contraintes SMT sur les chaînes** - et, derniere marche, emettre chaque appartenance `.*d.*` comme la primitive native `str.contains` plutot que de la fondre en `re.inter`. Le fork `Automata` (Epic #2979) cable enfin cette voie : `&`/`~` en surface BREX, `RegexToSMTConverter` vers SMT-LIB 2.6, et le cap #6 leve. Bon repo, bonne idee, bon moment - il manquait la plomberie, desormais posee.",,,,,,,,d5c6287dc4e30bc3,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,855aa43e,markdown,fr,282bbe110b8ac580,"## 9. Synthese - reconnaitre != resoudre, et la forme d'emission decide
+Mon avis : la capacité que visait le projet (de l'intersection `&`/`~` *vers une grille résolue*) n'a jamais été celle de SRM/RE# (reconnaissance), mais celle de la voie Z3 - d'abord SFAz3 (capée), puis la théorie des chaînes à la dZ3 (non capée, sans produit). La ""réécriture du parser"" qui débloque le 9x9, c'est précisément ce glissement : **regex -> SFA** devient **regex -> contraintes SMT sur les chaînes** - et, dernière marche, émettre chaque appartenance `.*d.*` comme la primitive native `str.contains` plutôt que de la fondre en `re.inter`. Le fork `Automata` (Epic #2979) câble enfin cette voie : `&`/`~` en surface BREX, `RegexToSMTConverter` vers SMT-LIB 2.6, et le cap #6 levé. Bon repo, bonne idée, bon moment - il manquait la plomberie, désormais posée.",,,,,,,,5c83d297df8800b9,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,855aa43e,markdown,fr,c7a9af7b716151b8,"## 9. Synthèse - reconnaître != résoudre, et la forme d'émission décide
 
-Les deux murs de 2020 etaient des murs **de l'automate** ; ils tombent ensemble des qu'on change de moteur. Restait le 9x9, et c'est la **forme d'emission** de l'intersection qui le franchit : le regex, bien emis, **atterrit reellement** la grille - sans une seule inegalite.
+Les deux murs de 2020 étaient des murs **de l'automate** ; ils tombent ensemble dès qu'on change de moteur. Restait le 9x9, et c'est la **forme d'émission** de l'intersection qui le franchit : le regex, bien émis, **atterrit réellement** la grille - sans une seule inégalité.
 
 | | **RESOUDRE** (produire la grille) | **VERIFIER** (valider une grille remplie) |
 |---|---|---|
-| Folklore PCRE (backtracking) | detour de backtracking, illisible | monstrueux |
-| BREX/Rex + SFAz3 (2020) | **mure** (cap ~21 char, issue #6 ; explosion du produit) | **explosion DFA** |
-| `&` -> chaînes Z3, appartenance **fondue** en `re.inter` | témoin non-cape, sans produit ; **atterrit le 4x4**, `unknown` au 9x9 | (oui) |
-| `&` -> chaînes Z3, appartenance **eclatee** en `str.contains` | **atterrit la grille 9x9 complete** (~53 s) - 0 inegalite, le regex se suffit | (oui) |
-| chaînes Z3, tous-distincts en *inegalites 2 a 2* | **atterrit la grille 9x9 complete** (~0,8 s ; quitte le regex) | (oui) |
-| RE# (2025) | recognition-only, **aucun témoin** | **temps lineaire** |
-| Z3 `Distinct` (81 entiers) | **resolveur de production** (~38 ms) | - |
+| Folklore PCRE (backtracking) | détour de backtracking, illisible | monstrueux |
+| BREX/Rex + SFAz3 (2020) | **muré** (cap ~21 char, issue #6 ; explosion du produit) | **explosion DFA** |
+| `&` -> chaînes Z3, appartenance **fondue** en `re.inter` | témoin non-capé, sans produit ; **atterrit le 4x4**, `unknown` au 9x9 | (oui) |
+| `&` -> chaînes Z3, appartenance **éclatée** en `str.contains` | **atterrit la grille 9x9 complète** (~53 s) - 0 inégalité, le regex se suffit | (oui) |
+| chaînes Z3, tous-distincts en *inégalités 2 à 2* | **atterrit la grille 9x9 complète** (~0,8 s ; quitte le regex) | (oui) |
+| RE# (2025) | recognition-only, **aucun témoin** | **temps linéaire** |
+| Z3 `Distinct` (81 entiers) | **résolveur de production** (~38 ms) | - |
 
-**Leçon** : decrire une contrainte par intersection reguliere (`Ligne & Colonne & Bloc`) est une représentation elegante qui **atterrit** la grille - 4x4 complete, **et 9x9 complete** sans quitter l'appartenance reguliere. Ce qui decide la reussite n'est ni le moteur (DFA vs dérivées vs SMT) ni le substrat (chaîne vs entier), mais la **forme d'emission du tous-distincts** : *fondu* en un produit d'automates (`re.inter`/`str.in_re`), il sature a l'echelle des 27 groupes qui se chevauchent ; *eclate* en la primitive native `str.contains` (= `.*d.*` par chiffre), il atterrit - et les inegalites 2 a 2 (dont `Distinct` est le sucre) plus vite encore, mais hors du regex. RE# en est le verificateur lineaire, pas le solveur ; l'ironie (RE# valide plus vite qu'il ne produit) est le pont entre cette serie Sudoku et la serie Z3 (Epic #1206).
+**Leçon** : décrire une contrainte par intersection régulière (`Ligne & Colonne & Bloc`) est une représentation élégante qui **atterrit** la grille - 4x4 complète, **et 9x9 complète** sans quitter l'appartenance régulière. Ce qui décide la réussite n'est ni le moteur (DFA vs dérivées vs SMT) ni le substrat (chaîne vs entier), mais la **forme d'émission du tous-distincts** : *fondu* en un produit d'automates (`re.inter`/`str.in_re`), il sature à l'échelle des 27 groupes qui se chevauchent ; *éclaté* en la primitive native `str.contains` (= `.*d.*` par chiffre), il atterrit - et les inégalités 2 à 2 (dont `Distinct` est le sucre) plus vite encore, mais hors du regex. RE# en est le vérificateur linéaire, pas le solveur ; l'ironie (RE# valide plus vite qu'il ne produit) est le pont entre cette série Sudoku et la série Z3 (Epic #1206).
 
-La **chaîne moderne** (section 6b, et notebook [10](../SymbolicAI/SMT/Z3/10_Witness_Generation_Automata.ipynb) de la serie Z3) fait tomber **les deux murs** de 2020 : `&`/`~` compile vers la théorie des chaînes de Z3, qui ne cape aucun témoin et ne construit aucun produit d'automates. Le revers n'est donc pas ""Z3 string-theory ne sait pas faire le Sudoku"" - il le fait, le 9x9 inclus (cf section 6c) - mais ""il faut emettre l'appartenance dans la bonne forme : `str.contains` natif, pas `re.inter` fondu"".
+La **chaîne moderne** (section 6b, et notebook [10](../SymbolicAI/SMT/Z3/10_Witness_Generation_Automata.ipynb) de la série Z3) fait tomber **les deux murs** de 2020 : `&`/`~` compile vers la théorie des chaînes de Z3, qui ne cape aucun témoin et ne construit aucun produit d'automates. Le revers n'est donc pas ""Z3 string-theory ne sait pas faire le Sudoku"" - il le fait, le 9x9 inclus (cf section 6c) - mais ""il faut émettre l'appartenance dans la bonne forme : `str.contains` natif, pas `re.inter` fondu"".
 
-Le **banc d'essai** (section 8 ci-dessus) confirme empiriquement chaque case de ce tableau : le regex deroule s'effondre (timeout, faux negatif), la voie chaînes-en-appartenance-fondue fait `unknown`, la **meme** appartenance eclatee en `str.contains` (P3'') et les inegalites (P3') et `Distinct` atterrissent, et le backtracking C# naif est le vainqueur discret. Le DLX, lui, est l'optimum dedie : cf [Sudoku-2-DancingLinks](Sudoku-2-DancingLinks-Csharp.ipynb).
+Le **banc d'essai** (section 8 ci-dessus) confirme empiriquement chaque case de ce tableau : le regex déroulé s'effondre (timeout, faux négatif), la voie chaînes-en-appartenance-fondue fait `unknown`, la **même** appartenance éclatée en `str.contains` (P3'') et les inégalités (P3') et `Distinct` atterrissent, et le backtracking C# naïf est le vainqueur discret. Le DLX, lui, est l'optimum dédié : cf [Sudoku-2-DancingLinks](Sudoku-2-DancingLinks-Csharp.ipynb).
 
-> **Footnote d'homonymie** : **Damian** Conway (luminaire des regex Perl, dont releve le folklore du barreau 1) n'est pas **John** Conway (le Game of Life, hero de notre serie Lean #2162). Les deux Conway se croisent dans ce notebook.",,,,,,,,282bbe110b8ac580,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,b71a1c63,markdown,fr,19b3cac6cca605ed,"## Exercice 3 : classifier recognition vs solving (conceptuel)
+> **Footnote d'homonymie** : **Damian** Conway (luminaire des regex Perl, dont relève le folklore du barreau 1) n'est pas **John** Conway (le Game of Life, hero de notre série Lean #2162). Les deux Conway se croisent dans ce notebook.",,,,,,,,c7a9af7b716151b8,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,b71a1c63,markdown,fr,ada5968d6ca4dee0,"## Exercice 3 : classifier recognition vs solving (conceptuel)
 
 **Objectif :**
-Pour chacune des taches ci-dessous, indiquez quel outil convient (RE# pour la reconnaissance / vérification, Z3 pour la résolution / production de témoin) et pourquoi.
+Pour chacune des tâches ci-dessous, indiquez quel outil convient (RE# pour la reconnaissance / vérification, Z3 pour la résolution / production de témoin) et pourquoi.
 
-| Tache | Outil attendu | Pourquoi |
+| Tâche | Outil attendu | Pourquoi |
 |-------|---------------|----------|
-| (a) Verifier qu'une grille remplie respecte les regles | RE# | ... |
-| (b) Resoudre un puzzle a partir de cases vides | Z3 | ... |
-| (c) Verifier qu'une chaîne est un nombre a 9 chiffres distincts | ... | ... |
-| (d) Trouver une permutation de 1..9 maximisant un critere | ... | ... |
+| (a) Vérifier qu'une grille remplie respecte les règles | RE# | ... |
+| (b) Résoudre un puzzle à partir de cases vides | Z3 | ... |
+| (c) Vérifier qu'une chaîne est un nombre à 9 chiffres distincts | ... | ... |
+| (d) Trouver une permutation de 1..9 maximisant un critère | ... | ... |
 
 **Indice :**
-Posez-vous : la tache demande-t-elle de *produire* une solution (solving -> Z3) ou seulement de *reconnaitre* si une entree donnee est valide (matching -> RE#) ?",,,,,,,,19b3cac6cca605ed,,,,,,,
+Posez-vous : la tâche demande-t-elle de *produire* une solution (solving -> Z3) ou seulement de *reconnaître* si une entrée donnée est valide (matching -> RE#) ?",,,,,,,,ada5968d6ca4dee0,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,3a2f8af0,code,fr,5925546ab1bd4ffb,"// EXERCICE (conceptuel) : classifier recognition (RE#) vs solving (Z3).
 // TODO etudiant : completer le tableau avec l'outil et la justification.
 Console.WriteLine(""Exercice a completer : pour chaque tache, indiquer RE# ou Z3 et pourquoi."");
@@ -7121,67 +7121,67 @@ Console.WriteLine(""(a) Verifier qu'une grille remplie respecte les regles : RE#
 Console.WriteLine(""(b) Resoudre un puzzle a partir de cases vides       : Z3  -> ..."");
 Console.WriteLine(""(c) Verifier qu'une chaine = 9 chiffres distincts    : ... -> ..."");
 Console.WriteLine(""(d) Trouver une permutation de 1..9 maximisant un critere : ... -> ..."");",,,,,,,,5925546ab1bd4ffb,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,03783737,markdown,fr,404d9e8fdc33aeb7,"---
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb,03783737,markdown,fr,b86520a9f9a14076,"---
 
-## 9. References & connexions
+## 9. Références & connexions
 
 ### Sources primaires
-- **Folklore ""Sudoku en un regex""** (tradition Perl) - [ikegami, PerlMonks 2005](https://www.perlmonks.org/?node_id=471168) (solveur via le moteur regex avec blocs de code embarques) ; module pur-regex [`Regexp::Sudoku` d'Abigail](https://metacpan.org/pod/Regexp::Sudoku). Le monstre PCRE (barreau 1), en formes recursive `(?R)` (hors .NET) et deroulee (tourne en .NET).
-- **Forme deroulee (generateur)** - Aron Griffis, *Sudoku with a Perl regular expression* (2007), domaine public : les 81 blocs explicites (lookaheads + backreferences, sans `(?R)`) que nous **regenerons et executons** en section 8 (artefact `assets/sudoku-unrolled.regex.txt`).
-- **Issue upstream** [AutomataDotNet/Automata#6](https://github.com/AutomataDotNet/Automata/issues/6) (creee 2020-12-07, toujours sans reponse) : cap du témoin a ~21 caracteres (barreau 2, mur 2).
-- **Margus Veanes et al.**, *Derivative-based nonbacktracking real-world regex matching* - [MSR-TR-2020-25](https://www.microsoft.com/en-us/research/publication/derivative-based-nonbacktracking-real-world-regex-matching-with-backtracking-semantics/) (aout 2020). Le papier contemporain de la tentative 2020.
-- **Margus Veanes**, *Symbolic Automata* (expose de reference, [Dagstuhl Seminar 17142](https://www.dagstuhl.de/17142), avril 2017) : le programme "" automates symboliques "" au complet - SFA sur une algebre de Boole effective, **minimisation symbolique** (D'Antoni & Veanes, *Minimization of Symbolic Automata*, POPL'14 ; bisimulation-avant TACAS'17 ; le cas "" Sometimes Moore is Less "" y documente l'**explosion de determinisation**, soit le *mur 1* de ce notebook), **logique M2L-str vers SFA** (D'Antoni & Veanes POPL'17, cf exercice 1) et **decomposition monadique** (CAV'14, cf section 6b). La source primaire des trois apports theoriques relies dans ce notebook.
-- **RE#** (engine F#/.NET, MIT) - [github.com/ieviev/resharp-dotnet](https://github.com/ieviev/resharp-dotnet), NuGet `Resharp`. `&`/`~` first-class, non-backtracking, temps lineaire (barreau 3).
-- **Fork Automata** (net8.0, MyIntelligenceAgency) - [github.com/MyIntelligenceAgency/Automata](https://github.com/MyIntelligenceAgency/Automata). Modernise AutomataDotNet (gele ~2020) : son `RegexToSMTConverter` compile `&`/`~` de surface vers la théorie des chaînes SMT-LIB 2.6 (`re.inter`/`re.comp`) que Z3 resout directement - cap du témoin (#6) leve, plus de produit d'automates. Consomme par le notebook 06 de la serie Z3.
+- **Folklore ""Sudoku en un regex""** (tradition Perl) - [ikegami, PerlMonks 2005](https://www.perlmonks.org/?node_id=471168) (solveur via le moteur regex avec blocs de code embarqués) ; module pur-regex [`Regexp::Sudoku` d'Abigail](https://metacpan.org/pod/Regexp::Sudoku). Le monstre PCRE (barreau 1), en formes récursive `(?R)` (hors .NET) et déroulée (tourne en .NET).
+- **Forme déroulée (générateur)** - Aron Griffis, *Sudoku with a Perl regular expression* (2007), domaine public : les 81 blocs explicites (lookaheads + backreferences, sans `(?R)`) que nous **régénérons et exécutons** en section 8 (artefact `assets/sudoku-unrolled.regex.txt`).
+- **Issue upstream** [AutomataDotNet/Automata#6](https://github.com/AutomataDotNet/Automata/issues/6) (créée 2020-12-07, toujours sans réponse) : cap du témoin à ~21 caractères (barreau 2, mur 2).
+- **Margus Veanes et al.**, *Derivative-based nonbacktracking real-world regex matching* - [MSR-TR-2020-25](https://www.microsoft.com/en-us/research/publication/derivative-based-nonbacktracking-real-world-regex-matching-with-backtracking-semantics/) (août 2020). Le papier contemporain de la tentative 2020.
+- **Margus Veanes**, *Symbolic Automata* (exposé de référence, [Dagstuhl Seminar 17142](https://www.dagstuhl.de/17142), avril 2017) : le programme "" automates symboliques "" au complet - SFA sur une algèbre de Boole effective, **minimisation symbolique** (D'Antoni & Veanes, *Minimization of Symbolic Automata*, POPL'14 ; bisimulation-avant TACAS'17 ; le cas "" Sometimes Moore is Less "" y documenté l'**explosion de déterminisation**, soit le *mur 1* de ce notebook), **logique M2L-str vers SFA** (D'Antoni & Veanes POPL'17, cf exercice 1) et **décomposition monadique** (CAV'14, cf section 6b). La source primaire des trois apports théoriques reliés dans ce notebook.
+- **RE#** (engine F#/.NET, MIT) - [github.com/ieviev/resharp-dotnet](https://github.com/ieviev/resharp-dotnet), NuGet `Resharp`. `&`/`~` first-class, non-backtracking, temps linéaire (barreau 3).
+- **Fork Automata** (net8.0, MyIntelligenceAgency) - [github.com/MyIntelligenceAgency/Automata](https://github.com/MyIntelligenceAgency/Automata). Modernise AutomataDotNet (gelé ~2020) : son `RegexToSMTConverter` compile `&`/`~` de surface vers la théorie des chaînes SMT-LIB 2.6 (`re.inter`/`re.comp`) que Z3 résout directement - cap du témoin (#6) levé, plus de produit d'automates. Consommé par le notebook 06 de la série Z3.
 
-### Connexions dans cette serie
-- **[Sudoku-12 Z3 C#](Sudoku-12-Z3-Csharp.ipynb)** : le resolveur Z3 explore en profondeur (bit-vectors, optimisations). Ce notebook (13) presente le meme Z3 sous l'angle narratif ""regex symbolique -> SMT -> témoin"".
-- **Epic #1206 (Z3.Linq DSL)** : un autre ""geste"" de l'auteur (2018), etendre un front-end declaratif pour laisser Z3 temoigner. La compilation regex -> SMT et le DSL Z3.Linq sont **le meme geste dans deux librairies**.
-- **[Notebook 10 - Generer un témoin depuis A & ~B](../SymbolicAI/SMT/Z3/10_Witness_Generation_Automata.ipynb)** : le fork Automata leve le cap du témoin (#6) et generalise `A & ~B` (mots de passe, entrees de test) - le cas ou la théorie des chaînes de Z3 est rapide. La section 6b ci-dessus mesure le spectre (rapide en général, lent sur une ligne, `unknown` a 81).
-- **Epic #2162 (Game of Life, Lean)** : **John** Conway, a ne pas confondre avec **Damian** (regex).
+### Connexions dans cette série
+- **[Sudoku-12 Z3 C#](Sudoku-12-Z3-Csharp.ipynb)** : le résolveur Z3 explore en profondeur (bit-vectors, optimisations). Ce notebook (13) présente le même Z3 sous l'angle narratif ""regex symbolique -> SMT -> témoin"".
+- **Epic #1206 (Z3.Linq DSL)** : un autre ""geste"" de l'auteur (2018), étendre un front-end déclaratif pour laisser Z3 témoigner. La compilation regex -> SMT et le DSL Z3.Linq sont **le même geste dans deux librairies**.
+- **[Notebook 10 - Générer un témoin depuis A & ~B](../SymbolicAI/SMT/Z3/10_Witness_Generation_Automata.ipynb)** : le fork Automata levé le cap du témoin (#6) et généralise `A & ~B` (mots de passe, entrées de test) - le cas où la théorie des chaînes de Z3 est rapide. La section 6b ci-dessus mesure le spectre (rapide en général, lent sur une ligne, `unknown` à 81).
+- **Epic #2162 (Game of Life, Lean)** : **John** Conway, à ne pas confondre avec **Damian** (regex).
 
-### La preuve Lean derriere RE#
-- **[ezhuchko/finiteness-derivatives](https://github.com/ezhuchko/finiteness-derivatives)** (Lean 4, sans Mathlib) : formalise la **finitude des dérivées symboliques** = le théorème de terminaison/decidabilite derriere la reconnaissance non-backtracking temps lineaire de RE#. Companion CPP 2024 (Zhuchko / Veanes / Ebner).
+### La preuve Lean derrière RE#
+- **[ezhuchko/finiteness-derivatives](https://github.com/ezhuchko/finiteness-derivatives)** (Lean 4, sans Mathlib) : formalise la **finitude des dérivées symboliques** = le théorème de terminaison/décidabilité derrière la reconnaissance non-backtracking temps linéaire de RE#. Companion CPP 2024 (Zhuchko / Veanes / Ebner).
 
 ---
 
 ## A retenir
 
-- **Reconnaitre != resoudre** : RE# verifie (temps lineaire), Z3 produit (le témoin). Le Sudoku a besoin des deux.
-- Les deux murs de 2020 (explosion DFA, cap témoin ~21 char) etaient des murs **de l'automate** : ils tombent **ensemble** des qu'on change de moteur (`&`/`~` -> théorie des chaînes Z3).
-- La derniere marche, le 9x9, se franchit par la **forme d'emission** du meme `&` d'appartenances : *fondu* en `re.inter` il sature (`unknown`) ; *eclate* en la primitive native `str.contains` (= `.*d.*` par chiffre) il **atterrit la grille 9x9 complete** (~53 s en .NET, ~12 s z3-py) - 0 inegalite, le regex se suffit a lui-meme.
-- Les inegalites 2 a 2 (~0,8 s) et `Distinct` sur 81 entiers (~38 ms) atterrissent plus vite encore - mais elles quittent le regex. Question de **forme d'emission**, pas de mur ni de substrat.
-- L'**ironie** : le verificateur le plus elegant (RE#) certifie, plus vite que Z3 n'a resolu, une grille qu'il ne peut pas produire.",,,,,,,,404d9e8fdc33aeb7,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,92986127,markdown,fr,5acded8a7f5f4eda,"---
+- **Reconnaître != résoudre** : RE# vérifie (temps linéaire), Z3 produit (le témoin). Le Sudoku a besoin des deux.
+- Les deux murs de 2020 (explosion DFA, cap témoin ~21 char) étaient des murs **de l'automate** : ils tombent **ensemble** dès qu'on change de moteur (`&`/`~` -> théorie des chaînes Z3).
+- La dernière marche, le 9x9, se franchit par la **forme d'émission** du même `&` d'appartenances : *fondu* en `re.inter` il sature (`unknown`) ; *éclaté* en la primitive native `str.contains` (= `.*d.*` par chiffre) il **atterrit la grille 9x9 complète** (~53 s en .NET, ~12 s z3-py) - 0 inégalité, le regex se suffit à lui-même.
+- Les inégalités 2 à 2 (~0,8 s) et `Distinct` sur 81 entiers (~38 ms) atterrissent plus vite encore - mais elles quittent le regex. Question de **forme d'émission**, pas de mur ni de substrat.
+- L'**ironie** : le vérificateur le plus élégant (RE#) certifie, plus vite que Z3 n'a résolu, une grille qu'il ne peut pas produire.",,,,,,,,b86520a9f9a14076,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,92986127,markdown,fr,b24bc55570e88080,"---
 **Navigation** : [<< Sudoku-12 Z3 Python](Sudoku-12-Z3-Python.ipynb) | [Index](README.md) | [Sudoku-14 BDD Python >>](Sudoku-14-BDD-Python.ipynb)
 
 ---
 
 # Sudoku-13 : Le Sudoku comme Regex Symbolique — twin Python (Conway -> BREX/Rex -> RE#)
 
-> **Twin Python** de [Sudoku-13-SymbolicAutomata-Csharp](Sudoku-13-SymbolicAutomata-Csharp.ipynb). Ce notebook reprend, **cote Python**, la tentation de representer un Sudoku non pas comme un monstre PCRE a backtracking, mais comme une **chaine declarative tractable**.
+> **Twin Python** de [Sudoku-13-SymbolicAutomata-Csharp](Sudoku-13-SymbolicAutomata-Csharp.ipynb). Ce notebook reprend, **côté Python**, la tentation de représenter un Sudoku non pas comme un monstre PCRE à backtracking, mais comme une **chaîne déclarative tractable**.
 
-## Complementarite (#3801 Prong B)
+## Complémentarité (#3801 Prong B)
 
 | Twin | Outils | Valeur |
 |------|--------|--------|
-| C# (Resharp RE# + Microsoft.Automata + Z3.NET) | DLLs `.deploy` in-repo, intersection declarative | la chaine d'outils symboliques de Veanes (AutomataDotNet) |
-| **Python (z3-solver + regex + automata-lib)** | PyPI, idiomatique Python | **la recursivite `(?&rec)` du module `regex`** — capability que .NET REJETE |
+| C# (Resharp RE# + Microsoft.Automata + Z3.NET) | DLLs `.deploy` in-repo, intersection déclarative | la chaîne d'outils symboliques de Veanes (AutomataDotNet) |
+| **Python (z3-solver + regex + automata-lib)** | PyPI, idiomatique Python | **la récursivité `(?&rec)` du module `regex`** — capability que .NET REJETE |
 
-**Le point de bascule** : les Sudoku-en-un-regex celebres (Conway, ikegami PerlMonks 471168) reposent sur la **recursion `(?R)`/`(?&nom)`** — un langage **non regulier**. Le twin C# demontre (cellule 15) que `System.Text.RegularExpressions` **rejette** cette syntaxe a la construction. Le module Python [`regex`](https://pypi.org/project/regex/) la **supporte** : ce twin peut donc *executer* une approche recursive que le twin C# ne fait qu'evoquer. C'est la valeur complementaire — pas un simple miroir.",,,,,,,,5acded8a7f5f4eda,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,94288333,markdown,fr,204b728ef443310d,"## 1. Introduction : un Sudoku comme grand regex ?
+**Le point de bascule** : les Sudoku-en-un-regex célèbres (Conway, ikegami PerlMonks 471168) reposent sur la **récursion `(?R)`/`(?&nom)`** — un langage **non régulier**. Le twin C# démontre (cellule 15) que `System.Text.RegularExpressions` **rejette** cette syntaxe à la construction. Le module Python [`regex`](https://pypi.org/project/regex/) la **supporte** : ce twin peut donc *exécuter* une approche récursive que le twin C# ne fait qu'évoquer. C'est la valeur complémentaire — pas un simple miroir.",,,,,,,,b24bc55570e88080,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,94288333,markdown,fr,1729e09cb6da048b,"## 1. Introduction : un Sudoku comme grand regex ?
 
-L'idee : representer chaque contrainte Sudoku (ligne, colonne, bloc) comme un **motif regex**, puis les **combiner** (intersection / conjunction de lookaheads) pour obtenir un seul predicat declaratif. Un moteur d'automates ou un solveur SMT peut alors soit *reconnaitre* une grille valide, soit *produire* une solution.
+L'idée : représenter chaque contrainte Sudoku (ligne, colonne, bloc) comme un **motif regex**, puis les **combiner** (intersection / conjunction de lookaheads) pour obtenir un seul prédicat déclaratif. Un moteur d'automates ou un solveur SMT peut alors soit *reconnaître* une grille valide, soit *produire* une solution.
 
-Trois barreaux de l'echelle, du folklore a la rigueur :
-1. **Barreau 1 — le monstre PCRE** : « le Sudoku en un seul regex », backtracking detourne, illisible.
+Trois barreaux de l'échelle, du folklore à la rigueur :
+1. **Barreau 1 — le monstre PCRE** : « le Sudoku en un seul regex », backtracking détourné, illisible.
 2. **Barreau 2 — la reconnaissance Python** : la contrainte de ligne comme conjunction de lookaheads.
-3. **Barreau 3 — la resolution Z3** : le vrai solveur qui *produit* la grille solution.
+3. **Barreau 3 — la résolution Z3** : le vrai solveur qui *produit* la grille solution.
 
-Et le declic complementaire : la **recursion `(?&rec)`** de `regex`, que .NET ne sait pas faire.",,,,,,,,204b728ef443310d,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,e3bb89e1,markdown,fr,fa5a9492731ba7a2,"## 2. Barreau 1 — le monstre PCRE : « le Sudoku en un seul regex »
+Et le déclic complémentaire : la **récursion `(?&rec)`** de `regex`, que .NET ne sait pas faire.",,,,,,,,1729e09cb6da048b,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,e3bb89e1,markdown,fr,e384ed9daa4bb087,"## 2. Barreau 1 — le monstre PCRE : « le Sudoku en un seul regex »
 
-Le folklore Perl des PerlMonks (milieu des annees 2000) : empiler le backtracking d'un moteur regex pour en faire un solveur de recherche. Le resultat est un monstre illisible, deroule dans un fichier texte. On charge ici la forme **deroulee** (lignee Conway/PCRE), enregistree dans `assets/sudoku-unrolled.regex.txt`, et on n'en affiche qu'un **troncage** (tete + queue) — l'extrait reel, pas un fragment reconstruit a la main.",,,,,,,,fa5a9492731ba7a2,,,,,,,
+Le folklore Perl des PerlMonks (milieu des années 2000) : empiler le backtracking d'un moteur regex pour en faire un solveur de recherche. Le résultat est un monstre illisible, déroulé dans un fichier texte. On charge ici la forme **déroulée** (lignée Conway/PCRE), enregistrée dans `assets/sudoku-unrolled.regex.txt`, et on n'en affiche qu'un **troncage** (tête + queue) — l'extrait réel, pas un fragment reconstruit à la main.",,,,,,,,e384ed9daa4bb087,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,739ddb62,code,fr,88c346f6fddf1585,"# Le VRAI monstre regex (forme deroulee, lignee Conway/folklore PCRE) charge depuis assets/.
 # On en affiche un TRONCAGE : tete + queue, extraits du fichier reel.
 from pathlib import Path
@@ -7210,14 +7210,14 @@ else:
     print(""Troncage (tete + queue) :"")
     print(extrait)
 ",,,,,,,,88c346f6fddf1585,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,807276b4,markdown,fr,3500de5f1147ff27,"### Interpretation : le monstre PCRE = l'anti-modele
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,807276b4,markdown,fr,a6370bfe433880e8,"### Interprétation : le monstre PCRE = l'anti-modèle
 
-Ce monstre demontre par l'absurde que **detourner le backtracking d'un moteur regex pour faire de la recherche** conduit a une representation illisible. La contrainte d'unicite Sudoku n'est *pas* naturelle en PCRE : elle s'exprime en empilant des assertions lookahead gigognes. On garde ce barreau comme **temoin historique** (le folklore existe, il tourne), mais on cherche une forme *declarative*.",,,,,,,,3500de5f1147ff27,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,3c631cbc,markdown,fr,b186987c68522d58,"## 3. Barreau 2 — la reconnaissance Python (lookaheads)
+Ce monstre démontre par l'absurde que **détourner le backtracking d'un moteur regex pour faire de la recherche** conduit à une représentation illisible. La contrainte d'unicité Sudoku n'est *pas* naturelle en PCRE : elle s'exprime en empilant des assertions lookahead gigognes. On garde ce barreau comme **témoin historique** (le folklore existe, il tourne), mais on cherche une forme *déclarative*.",,,,,,,,a6370bfe433880e8,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,3c631cbc,markdown,fr,ff93787a5a330e43,"## 3. Barreau 2 — la reconnaissance Python (lookaheads)
 
-La contrainte « une ligne Sudoku valide = 9 chiffres distincts de 1 a 9 » se reformule en **presence de chaque chiffre** : pour une chaine de longueur 9 sur l'alphabet `[1-9]`, la presence de chacun des 9 chiffres equivaut a la distinctness. C'est l'idiome Python de l'intersection RE# du twin C# : une conjunction de **lookaheads** `(?=.*d)`.
+La contrainte « une ligne Sudoku valide = 9 chiffres distincts de 1 à 9 » se reformule en **présence de chaque chiffre** : pour une chaîne de longueur 9 sur l'alphabet `[1-9]`, la présence de chacun des 9 chiffres équivaut à la distinctness. C'est l'idiome Python de l'intersection RE# du twin C# : une conjunction de **lookaheads** `(?=.*d)`.
 
-C'est de la **reconnaissance** : on valide une ligne *deja remplie*, on ne resout rien.",,,,,,,,b186987c68522d58,,,,,,,
+C'est de la **reconnaissance** : on valide une ligne *déjà remplie*, on ne résout rien.",,,,,,,,ff93787a5a330e43,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,38b99e2a,code,fr,c0518d64319f2c85,"# La contrainte de ligne Sudoku comme conjunction de lookaheads (idiome Python).
 # Pour une chaine de longueur 9 sur [1-9], presence de chaque chiffre <=> distinctness.
 import re
@@ -7242,8 +7242,8 @@ for s, attendu in tests.items():
     statut = ""OK"" if obtenu == attendu else ""ECHEC""
     print(f""  {s!r:14s} attendu={str(attendu):5s} obtenu={str(obtenu):5s} {statut}"")
 ",,,,,,,,c0518d64319f2c85,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,f54df36c,markdown,fr,5219a1b9bce0883d,"### Exercice 1 — ligne valide AVEC 5 avant 7 (intersection + ordre)
-Recopiez le motif `LIGNE_VALIDE` et croisez-le avec la contrainte d'ordre `.*5.*7.*` (le 5 doit apparaitre avant le 7). *Indice* : un lookahead supplementaire.",,,,,,,,5219a1b9bce0883d,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,f54df36c,markdown,fr,cce71a67e3b568fa,"### Exercice 1 — ligne valide AVEC 5 avant 7 (intersection + ordre)
+Recopiez le motif `LIGNE_VALIDE` et croisez-le avec la contrainte d'ordre `.*5.*7.*` (le 5 doit apparaître avant le 7). *Indice* : un lookahead supplémentaire.",,,,,,,,cce71a67e3b568fa,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,c4eff3f3,code,fr,60a4e0809dfa7b89,"# EXERCICE : ligne Sudoku valide AVEC 5 avant 7 (intersection & ordre)
 # TODO etudiant : completer le motif ci-dessous.
 # Indice : croisez la contrainte de ligne valide avec un lookahead (?:.*5.*7.*)
@@ -7252,9 +7252,9 @@ exo_re = re.compile(ligne_avec_5_avant_7)
 print(""Exercice a completer : la ligne doit etre valide ET 5 doit apparaitre avant 7."")
 print(""  (ajoutez le lookahead d'ordre au motif ci-dessus)"")
 ",,,,,,,,60a4e0809dfa7b89,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,9231fa71,markdown,fr,a1650885ad824b59,"## 4. Barreau 3 — la resolution Z3 (le vrai solveur)
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,9231fa71,markdown,fr,b3eef5d6ec96bb8d,"## 4. Barreau 3 — la résolution Z3 (le vrai solveur)
 
-La reconnaissance valide ; elle ne **resout** pas. Pour produire une grille solution a partir de cases vides, on passe au solveur SMT **Z3** : 81 entiers `x_r_c` dans `[1,9]`, une contrainte `Distinct` par ligne, colonne et bloc, et les cases connues fixees. C'est le resolveur de production — le temoin = la grille solution.",,,,,,,,a1650885ad824b59,,,,,,,
+La reconnaissance valide ; elle ne **résout** pas. Pour produire une grille solution à partir de cases vides, on passe au solveur SMT **Z3** : 81 entiers `x_r_c` dans `[1,9]`, une contrainte `Distinct` par ligne, colonne et bloc, et les cases connues fixées. C'est le résolveur de production — le témoin = la grille solution.",,,,,,,,b3eef5d6ec96bb8d,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,7581d1df,code,fr,545af1b73d1f9c3d,"# Resolution du Sudoku par Z3 : 81 entiers + Distinct sur lignes/colonnes/blocs.
 # C'est le VRAI resolveur de production (le temoin = la grille solution).
 from z3 import Solver, Int, Distinct, sat
@@ -7304,8 +7304,8 @@ for r in range(9):
 ok = all(LIGNE_VALIDE.match("""".join(map(str, solution[r]))) for r in range(9))
 print(f""Les 9 lignes passent la reconnaissance regex : {ok}"")
 ",,,,,,,,545af1b73d1f9c3d,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,7ff0f87c,markdown,fr,f5b2a3674155f64a,"### Exercice 2 — Sudoku-X (variantes avec contraintes de diagonales)
-Reprenez le schema de `resoudre_sudoku_z3` et ajoutez deux contraintes `Distinct` : sur la diagonale principale (`cells[i, i]`) et l'anti-diagonale (`cells[i, 8-i]`).",,,,,,,,f5b2a3674155f64a,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,7ff0f87c,markdown,fr,54c1187bbd8423fc,"### Exercice 2 — Sudoku-X (variantes avec contraintes de diagonales)
+Reprenez le schéma de `resoudre_sudoku_z3` et ajoutez deux contraintes `Distinct` : sur la diagonale principale (`cells[i, i]`) et l'anti-diagonale (`cells[i, 8-i]`).",,,,,,,,54c1187bbd8423fc,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,c87338d8,code,fr,3abe2b96a5ad1a3b,"# EXERCICE : resoudre_sudoku_x (variante avec contraintes de diagonales)
 # TODO etudiant : reprendre resoudre_sudoku_z3 et ajouter deux Distinct sur les diagonales.
 # Indice : diagonale principale = X[i][i], anti-diagonale = X[i][8-i] pour i in range(9).
@@ -7314,9 +7314,9 @@ def resoudre_sudoku_x(puzzle):
 
 print(""Exercice a completer : Sudoku-X (contraintes diagonales supplementaires)."")
 ",,,,,,,,3abe2b96a5ad1a3b,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,b17247c2,markdown,fr,6d30982f3fea1b86,"## 5. Barreau 4 — la theorie des chaines Z3 (re.*)
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,b17247c2,markdown,fr,9f7250bd9049c425,"## 5. Barreau 4 — la théorie des chaînes Z3 (re.*)
 
-Z3 ne fait pas que resoudre sur des entiers : il expose une **theorie des chaines** avec un sort d'expressions regulieres (`Re`). On peut encoder la contrainte de ligne comme un *automate* sur le sort chaine, et laisser le solveur **reconnaitre** la validite. C'est le pont Python equivalent au `RegexToSMTConverter` du twin C# (Microsoft.Automata) : on croise le moteur regex et le moteur SMT.",,,,,,,,6d30982f3fea1b86,,,,,,,
+Z3 ne fait pas que résoudre sur des entiers : il expose une **théorie des chaînes** avec un sort d'expressions régulières (`Re`). On peut encoder la contrainte de ligne comme un *automate* sur le sort chaîne, et laisser le solveur **reconnaître** la validité. C'est le pont Python équivalent au `RegexToSMTConverter` du twin C# (Microsoft.Automata) : on croise le moteur regex et le moteur SMT.",,,,,,,,9f7250bd9049c425,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,2742fd4e,code,fr,ec63191ff16c9a9c,"# Theorie des chaines Z3 : la contrainte de ligne comme regex sur le sort String.
 # Pont Python equivalent au RegexToSMTConverter du twin C# (Microsoft.Automata).
 from z3 import String, StringVal, Range, Concat, InRe, Contains, Solver
@@ -7339,11 +7339,11 @@ print(f""  '123456788' -> {ligne_valide_smt('123456788')}"")   # unsat : 9 absen
 print(f""  '12345678'  -> {ligne_valide_smt('12345678')}"" )   # unsat : trop court
 print(""L'automate Z3 reconnait ce que le solveur produit (boucle bouclee)."")
 ",,,,,,,,ec63191ff16c9a9c,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,e5a48069,markdown,fr,eba041fd7e77ed28,"## 6. Le declic complementaire — la recursion `(?&rec)` que .NET rejette
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,e5a48069,markdown,fr,1b9525fdf08ea455,"## 6. Le déclic complémentaire — la récursion `(?&rec)` que .NET rejette
 
-Les Sudoku-en-un-regex **celebres** (Conway, ikegami PerlMonks 471168, Davidebyzero) reposent sur la **recursion `(?R)`/`(?&nom)`** — un langage **non regulier** (hors du pouvoir d'expression d'un automate fini). Le twin C# (cellule 15) demontre que `System.Text.RegularExpressions` **rejette** cette syntaxe a la construction : .NET ne sait pas recurser un motif.
+Les Sudoku-en-un-regex **célèbres** (Conway, ikegami PerlMonks 471168, Davidebyzero) reposent sur la **récursion `(?R)`/`(?&nom)`** — un langage **non régulier** (hors du pouvoir d'expression d'un automate fini). Le twin C# (cellule 15) démontre que `System.Text.RegularExpressions` **rejette** cette syntaxe à la construction : .NET ne sait pas récurser un motif.
 
-Le module Python [`regex`](https://pypi.org/project/regex/) le **supporte**. On le demontre sur le langage canonique non-regulier `a^n b^n` (context-free) : un motif recursif le reconnait exactement. C'est la valeur **complementaire** du twin Python — il execute ce que le twin C# ne fait qu'evoquer.",,,,,,,,eba041fd7e77ed28,,,,,,,
+Le module Python [`regex`](https://pypi.org/project/regex/) le **supporte**. On le démontre sur le langage canonique non-régulier `a^n b^n` (context-free) : un motif récursif le reconnaît exactement. C'est la valeur **complémentaire** du twin Python — il exécute ce que le twin C# ne fait qu'évoquer.",,,,,,,,1b9525fdf08ea455,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,8cd6348c,code,fr,39065065544962c8,"# PRONG B : la recursion (?&rec) du module 'regex' — capability absente de .NET et de stdlib re.
 import regex
 import re
@@ -7389,9 +7389,9 @@ palindrome_ab = r""^[ab]*$""  # TODO étudiant : motif récursif palindrome (à 
 pal_re = regex.compile(palindrome_ab)
 print(""Exercice à compléter : palindrome sur {a,b} via (?&rec)."")
 print(""  attendus vrais : 'abba', 'aba', 'aa', 'a', '' ; faux : 'ab', 'aab', 'ba'"")",,,,,,,,15a4f3b17e74d73f,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,8a2f13f6,markdown,fr,5effe0a96eae3d78,"## 7. Le contre-point : backtracking recursif naif
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,8a2f13f6,markdown,fr,444973ed97a88bf1,"## 7. Le contre-point : backtracking récursif naïf
 
-Le contre-point de l'approche declarative : le **backtracking recursif naif**. La pile d'appels EST la pile de contexte (legere, zero allocation par essai). C'est l'outil qui epouse le substrat — robuste, trivial a ecrire, et competitif sur un 9x9. On le compare en temps au solveur Z3.",,,,,,,,5effe0a96eae3d78,,,,,,,
+Le contre-point de l'approche déclarative : le **backtracking récursif naïf**. La pile d'appels EST la pile de contexte (légère, zéro allocation par essai). C'est l'outil qui épouse le substrat — robuste, trivial à écrire, et compétitif sur un 9x9. On le compare en temps au solveur Z3.",,,,,,,,444973ed97a88bf1,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,91fc7d83,code,fr,3e2bfa80267c8532,"# Backtracking recursif naif : la pile d'appels = pile de contexte. Outil qui epouse le substrat.
 import copy
 
@@ -7426,9 +7426,9 @@ print(f""Z3 (barreau 3)         : resolu en {dt_z3*1000:.1f} ms"")
 identique = grille_bt == solution
 print(f""Les deux solveurs donnent la meme grille : {identique}"")
 ",,,,,,,,3e2bfa80267c8532,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,253accad,markdown,fr,afa84993273db438,"## 8. Reconnaissance vs resolution — le tableau comparatif
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,253accad,markdown,fr,a30941d73b123fc2,"## 8. Reconnaissance vs résolution — le tableau comparatif
 
-Trois outils, trois roles distincts. La reconnaissance (regex) certifie en temps lineaire ce qu'elle ne sait pas produire. La resolution (Z3) produit. La recursion (`regex` `(?&rec)`) franchit la frontiere du regulier — le seul outil des trois qui puisse exprimer un Sudoku-en-un-regex.",,,,,,,,afa84993273db438,,,,,,,
+Trois outils, trois rôles distincts. La reconnaissance (regex) certifie en temps linéaire ce qu'elle ne sait pas produire. La résolution (Z3) produit. La récursion (`regex` `(?&rec)`) franchit la frontière du régulier — le seul outil des trois qui puisse exprimer un Sudoku-en-un-regex.",,,,,,,,a30941d73b123fc2,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,c9bb7c1f,code,fr,f5598fa9940b21a2,"print(""=== Reconnaissance vs Resolution ==="")
 print(f""{'Tache':<48} {'Outil':<20} {'Role'}"")
 print(""-"" * 88)
@@ -7449,18 +7449,18 @@ print(""(b) Resoudre un puzzle a partir de cases vides       : z3              -
 print(""(c) Matcher un langage non-regulier imbrique          : regex (?&rec)  -> ..."")
 print(""    (completer la justification de chaque choix)"")
 ",,,,,,,,f5598fa9940b21a2,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,f7bebf2e,markdown,fr,8d9dbc18b4184b8e,"## 9. Conclusion — l'echelle Python, du folklore au non-regulier
+MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb,f7bebf2e,markdown,fr,0f2abd79f32e845e,"## 9. Conclusion — l'échelle Python, du folklore au non-régulier
 
-Ce twin Python parcourt la meme echelle que le twin C# — Conway -> reconnaissance -> resolution -> theorie des chaines — mais **complete** la ou le C# bute : la **recursion `(?&rec)`** du module `regex` execute les langages non-reguliers que `System.Text.RegularExpressions` rejette. Les Sudoku-en-un-regex celebres reposent precisement sur cette recursion ; le twin Python est donc le seul des deux a pouvoir *demontrer* cette voie, pas seulement l'evoquer.
+Ce twin Python parcourt la même échelle que le twin C# — Conway -> reconnaissance -> résolution -> théorie des chaînes — mais **complète** là où le C# bute : la **récursion `(?&rec)`** du module `regex` exécute les langages non-réguliers que `System.Text.RegularExpressions` rejette. Les Sudoku-en-un-regex célèbres reposent précisément sur cette récursion ; le twin Python est donc le seul des deux à pouvoir *démontrer* cette voie, pas seulement l'évoquer.
 
-**Bilan complementaire (#3801 Prong B)** :
-- `re` + lookaheads : reconnaissance lineaire d'une ligne/grille valide.
-- `z3-solver` : resolution (production de la grille) + theorie des chaines (reconnaissance SMT).
-- `regex` `(?&rec)` : le seul outil des deux twins qui franchit la frontiere du regulier.
-- Backtracking recursif : le contre-point robuste, competitif sur 9x9.
+**Bilan complémentaire (#3801 Prong B)** :
+- `re` + lookaheads : reconnaissance linéaire d'une ligne/grille valide.
+- `z3-solver` : résolution (production de la grille) + théorie des chaînes (reconnaissance SMT).
+- `regex` `(?&rec)` : le seul outil des deux twins qui franchit la frontière du régulier.
+- Backtracking récursif : le contre-point robuste, compétitif sur 9x9.
 
-> Retour au [twin C#](Sudoku-13-SymbolicAutomata-Csharp.ipynb) — ou le barreau recursion est documente comme un mur (.NET rejette `(?R)`).",,,,,,,,8d9dbc18b4184b8e,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,300cd4ca,markdown,fr,c88954764502dd40,"**Navigation** : [Index](README.md) | [<< Sudoku-13 C#](Sudoku-13-SymbolicAutomata-Csharp.ipynb) | [Sudoku-15 C# >>](Sudoku-15-Infer-Csharp.ipynb)
+> Retour au [twin C#](Sudoku-13-SymbolicAutomata-Csharp.ipynb) — où le barreau récursion est documenté comme un mur (.NET rejette `(?R)`).",,,,,,,,0f2abd79f32e845e,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,300cd4ca,markdown,fr,f3cbb7e6d6743659,"**Navigation** : [Index](README.md) | [<< Sudoku-13 C#](Sudoku-13-SymbolicAutomata-Csharp.ipynb) | [Sudoku-15 C# >>](Sudoku-15-Infer-Csharp.ipynb)
 
 
 
@@ -7470,31 +7470,31 @@ Dans ce notebook, nous implementons une **vraie** approche par automates symboli
 
 ## Qu'est-ce qu'un BDD?
 
-Un **BDD (Binary Decision Diagram)** est une structure de donnees compacte pour representer des fonctions booleennes. C'est le graphe de decision d'une fonction booleenne, partageant les sous-graphes isomorphes.
+Un **BDD (Binary Decision Diagram)** est une structure de données compacte pour représenter des fonctions booléennes. C'est le graphe de décision d'une fonction booléenne, partageant les sous-graphes isomorphes.
 
 | Concept | Description |
 |---------|-------------|
-| **Noeud** | Variable booleenne (x, y, z, ...) |
+| **Nœud** | Variable booléenne (x, y, z, ...) |
 | **Arc** | 0 (false) ou 1 (true) |
-| **Feuille** | 0 ou 1 (resultat) |
-| **BDD reduit** | Sans redondance, sans noeuds inutiles |
+| **Feuille** | 0 ou 1 (résultat) |
+| **BDD réduit** | Sans redondance, sans nœuds inutiles |
 
-Un **MDD** generalise le BDD aux domaines finis (comme {1,2,...,9} pour Sudoku).
+Un **MDD** généralise le BDD aux domaines finis (comme {1,2,...,9} pour Sudoku).
 
 ## Objectifs d'apprentissage
 
-A la fin de ce notebook, vous saurez :
+À la fin de ce notebook, vous saurez :
 
-1. **Comprendre** la structure des BDD et leur reduction
-2. **Implementer** un BDD simple en C#
+1. **Comprendre** la structure des BDD et leur réduction
+2. **Implémenter** un BDD simple en C#
 3. **Construire** un MDD pour les domaines Sudoku
 4. **Composer** des automates avec produit d'automates explicite
-5. **Apprecier** la difference avec l'approche Z3 (Sudoku-12)
+5. **Apprecier** la différence avec l'approche Z3 (Sudoku-12)
 
 ### Prerequis
 
 - [Sudoku-0-Environment](Sudoku-0-Environment-Csharp.ipynb) - Classes de base Sudoku
-- [Sudoku-13-SymbolicAutomata](Sudoku-13-SymbolicAutomata-Csharp.ipynb) - Theorie des automates (recommande)
+- [Sudoku-13-SymbolicAutomata](Sudoku-13-SymbolicAutomata-Csharp.ipynb) - Théorie des automates (recommande)
 - Connaissance de base des graphes et arbres
 
 ### Duree estimee : 25 min
@@ -7507,8 +7507,8 @@ A la fin de ce notebook, vous saurez :
 
 **Note sur l'approche :**
 
-> **⚠️ Important** : Ce notebook implemente une approche ""pure"" automata avec BDD/MDD, sans utiliser Z3. Cette approche est moins performante que Z3 mais illustre la theorie des automates symboliques de manière plus authentique.",,,,,,,,c88954764502dd40,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,1e2c7db9,markdown,fr,422c9445063d2400,"---
+> **⚠️ Important** : Ce notebook implémente une approche ""pure"" automata avec BDD/MDD, sans utiliser Z3. Cette approche est moins performante que Z3 mais illustre la théorie des automates symboliques de manière plus authentique.",,,,,,,,f3cbb7e6d6743659,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,1e2c7db9,markdown,fr,4922221d830a4a91,"---
 
 ## 1. Introduction - BDD vs Z3 (10 min)
 
@@ -7516,8 +7516,8 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,1e2c7db9,markdown,fr,422c944
 
 | Aspect | BDD/MDD (ce notebook) | Z3 SMT (Sudoku-12) |
 |--------|----------------------|-------------------|
-| **Structure** | Graphe de decision explicite | Formules logiques |
-| **Operations** | Union, Intersection, Reduction | SAT solving |
+| **Structure** | Graphe de décision explicite | Formules logiques |
+| **Opérations** | Union, Intersection, Réduction | SAT solving |
 | **Memoisation** | Naturelle (partage de sous-graphes) | Via Z3 |
 | **Performance** | Moyenne (~100ms) | Excellente (~20ms) |
 | **Authenticite** | ⭐⭐⭐ Vrais automates | ⭐⭐ Compilation |
@@ -7525,8 +7525,8 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,1e2c7db9,markdown,fr,422c944
 ### 1.2 Pourquoi BDD?
 
 **Avantages** :
-- Representation canonique (forme unique pour une fonction)
-- Operations booleennes efficaces (AND, OR, NOT)
+- Représentation canonique (forme unique pour une fonction)
+- Opérations booléennes efficaces (AND, OR, NOT)
 - Memoisation automatique
 
 **Inconvenients** :
@@ -7545,23 +7545,23 @@ MDD pour une cellule Sudoku:
      1   2  ...  9
      |   |      |
     feuille (valeur choisie)
-```",,,,,,,,422c9445063d2400,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,6a91a2b3,markdown,fr,d225788ea6caff21,"---
+```",,,,,,,,4922221d830a4a91,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,6a91a2b3,markdown,fr,06c81c8f5580a137,"---
 
-## 2. Implementation d'un BDD Simple (15 min)
+## 2. Implémentation d'un BDD Simple (15 min)
 
 ### 2.1 Structure du BDD
 
-Commençons par implementer un BDD simple pour des fonctions booleennes.",,,,,,,,d225788ea6caff21,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,a6c520e4,code,fr,b4f4bf8f9d0ab68b,"using System;
+Commençons par implémenter un BDD simple pour des fonctions booléennes.",,,,,,,,06c81c8f5580a137,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,a6c520e4,code,fr,7f8f673268ad096d,"using System;
 using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-/// Noeud d'un BDD (Binary Decision Diagram).
-/// Un noeud represente une variable booleenne avec deux enfants :
-/// - childFalse : resultat quand la variable est false
-/// - childTrue : resultat quand la variable est true
+/// Nœud d'un BDD (Binary Decision Diagram).
+/// Un nœud représente une variable booléenne avec deux enfants :
+/// - childFalse : résultat quand la variable est false
+/// - childTrue : résultat quand la variable est true
 /// </summary>
 public class BDDNode
 {
@@ -7571,7 +7571,7 @@ public class BDDNode
     public bool IsTerminal { get; }
     public bool Value { get; }
 
-    // Noeud terminal (feuille)
+    // Nœud terminal (feuille)
     private BDDNode(bool value)
     {
         IsTerminal = true;
@@ -7581,7 +7581,7 @@ public class BDDNode
         ChildTrue = null;
     }
 
-    // Noeud interne
+    // Nœud interne
     private BDDNode(string variable, BDDNode childFalse, BDDNode childTrue)
     {
         IsTerminal = false;
@@ -7600,12 +7600,12 @@ public class BDDNode
 
     public static BDDNode Create(string variable, BDDNode childFalse, BDDNode childTrue)
     {
-        // Reduction : si les deux enfants sont identiques, retourner l'enfant
+        // Réduction : si les deux enfants sont identiques, retourner l'enfant
         if (childFalse == childTrue)
             return childFalse;
         
-        // Reduction : si variable est inutile, retourner l'enfant approprie
-        // (c'est une simplification, la vraie reduction est plus complexe)
+        // Réduction : si variable est inutile, retourner l'enfant approprie
+        // (c'est une simplification, la vraie réduction est plus complexe)
         
         return new BDDNode(variable, childFalse, childTrue);
     }
@@ -7624,7 +7624,7 @@ public class BDDNode
     }
 
     /// <summary>
-    /// Compte le nombre de noeuds dans le BDD.
+    /// Compte le nombre de nœuds dans le BDD.
     /// </summary>
     public int CountNodes()
     {
@@ -7635,7 +7635,7 @@ public class BDDNode
     }
 
     /// <summary>
-    /// Retourne une representation textuelle du BDD.
+    /// Retourne une représentation textuelle du BDD.
     /// </summary>
     public string ToString(string indent = """")
     {
@@ -7657,11 +7657,11 @@ Console.WriteLine(""Operations disponibles :"");
 Console.WriteLine(""  - True/False : Terminaux (feuilles)"");
 Console.WriteLine(""  - Create(var, low, high) : Cree un noeud de decision"");
 Console.WriteLine(""  - Evaluate(assign) : Evalue le BDD"");
-Console.WriteLine(""  - CountNodes() : Compte les noeuds"");",,,,,,,,b4f4bf8f9d0ab68b,,,,,,,
+Console.WriteLine(""  - CountNodes() : Compte les noeuds"");",,,,,,,,7f8f673268ad096d,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,ce7ac457,markdown,fr,d5aac7bb77462349,"### 2.2 Exemples de BDD
 
 Creons quelques BDD simples pour comprendre la structure.",,,,,,,,d5aac7bb77462349,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,2bede738,code,fr,62a3d6638b08ee79,"// Exemple 1 : BDD pour la fonction constante TRUE
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,2bede738,code,fr,9a57dab186af8400,"// Exemple 1 : BDD pour la fonction constante TRUE
 var bddTrue = BDDNode.True;
 Console.WriteLine(""=== Exemple 1 : Constante TRUE ==="");
 Console.WriteLine($""Noeuds : {bddTrue.CountNodes()}"");
@@ -7678,7 +7678,7 @@ Console.WriteLine($""Eval(x=false) : {bddX.Evaluate(new Dictionary<string, bool>
 Console.WriteLine();
 
 // Exemple 3 : BDD pour x AND y
-// x AND y = si x est false, alors false; si x est true, alors resultat = y
+// x AND y = si x est false, alors false; si x est true, alors résultat = y
 var bddY = BDDNode.Create(""y"", BDDNode.False, BDDNode.True);
 var bddXAndY = BDDNode.Create(""x"", BDDNode.False, bddY);
 Console.WriteLine(""=== Exemple 3 : x AND y ==="");
@@ -7686,16 +7686,16 @@ Console.WriteLine(bddXAndY.ToString());
 Console.WriteLine($""Noeuds : {bddXAndY.CountNodes()}"");
 Console.WriteLine($""Eval(x=true, y=true) : {bddXAndY.Evaluate(new Dictionary<string, bool> {{""x"", true}, {""y"", true}})}"");
 Console.WriteLine($""Eval(x=true, y=false) : {bddXAndY.Evaluate(new Dictionary<string, bool> {{""x"", true}, {""y"", false}})}"");
-Console.WriteLine($""Eval(x=false, y=true) : {bddXAndY.Evaluate(new Dictionary<string, bool> {{""x"", false}, {""y"", true}})}"");",,,,,,,,62a3d6638b08ee79,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,dcc5dd43,markdown,fr,80930fe08990b22c,"#### Interpretation : Exemples de BDD
+Console.WriteLine($""Eval(x=false, y=true) : {bddXAndY.Evaluate(new Dictionary<string, bool> {{""x"", false}, {""y"", true}})}"");",,,,,,,,9a57dab186af8400,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,dcc5dd43,markdown,fr,ca7391eda8fb1cd8,"#### Interpretation : Exemples de BDD
 
 **Sortie obtenue** :
 
-- **Constante TRUE** : Un seul noeud terminal avec valeur true
-- **Variable x** : 3 noeuds (racine x + 2 terminaux)
-- **x AND y** : 5 noeuds (structure d'arbre binaire)
+- **Constante TRUE** : Un seul nœud terminal avec valeur true
+- **Variable x** : 3 nœuds (racine x + 2 terminaux)
+- **x AND y** : 5 nœuds (structure d'arbre binaire)
 
-**Table de verite x AND y** :
+**Table de vérité x AND y** :
 
 | x | y | x AND y |
 |---|---|---------|
@@ -7704,19 +7704,19 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,dcc5dd43,markdown,fr,80930fe
 | T | F | F |
 | T | T | T |
 
-**Point important** : Le BDD pour x AND y a 5 noeuds. Si nous appliquions la reduction complete (partage de sous-graphes identiques), nous aurions moins de noeuds car les terminaux False sont partages.",,,,,,,,80930fe08990b22c,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,3112185a,markdown,fr,149224defbf458d8,"---
+**Point important** : Le BDD pour x AND y a 5 nœuds. Si nous appliquions la réduction complète (partage de sous-graphes identiques), nous aurions moins de nœuds car les terminaux False sont partages.",,,,,,,,ca7391eda8fb1cd8,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,3112185a,markdown,fr,5e68616fecc9ba07,"---
 
-## 3. Operations sur les BDD (15 min)
+## 3. Opérations sur les BDD (15 min)
 
-### 3.1 Operation AND (Apply)
+### 3.1 Opération AND (Apply)
 
-L'operation de base sur les BDD est **Apply** qui combine deux BDD avec une fonction booleenne (AND, OR, XOR, etc.).",,,,,,,,149224defbf458d8,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,2a3c3f45,code,fr,37388f16a14fffc2,"using System;
+L'opération de base sur les BDD est **Apply** qui combine deux BDD avec une fonction booléenne (AND, OR, XOR, etc.).",,,,,,,,5e68616fecc9ba07,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,2a3c3f45,code,fr,908739357aad32d7,"using System;
 using System.Collections.Generic;
 
 /// <summary>
-/// Operations sur les BDD : Apply (op binaire), And/Or/Not.
+/// Opérations sur les BDD : Apply (op binaire), And/Or/Not.
 /// Version pédagogique: réduction locale via BDDNode.Create.
 /// </summary>
 public static class BDDOperations
@@ -7782,10 +7782,10 @@ public static class BDDOperations
     }
 }
 
-Console.WriteLine(""BDDOperations OK (Apply/And/Or/Not)."");",,,,,,,,37388f16a14fffc2,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,a6b99a0f,markdown,fr,66a84610cc091931,"### 3.2 Test des Operations
+Console.WriteLine(""BDDOperations OK (Apply/And/Or/Not)."");",,,,,,,,908739357aad32d7,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,a6b99a0f,markdown,fr,78d04dabeadd675d,"### 3.2 Test des Opérations
 
-Testons les operations BDD avec des exemples simples.",,,,,,,,66a84610cc091931,,,,,,,
+Testons les opérations BDD avec des exemples simples.",,,,,,,,78d04dabeadd675d,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,e4c2904c,code,fr,20de78da07ac3f58,"// Test 1 : x AND NOT x = FALSE
 var bddX = BDDNode.Create(""x"", BDDNode.False, BDDNode.True);
 var bddNotX = BDDOperations.Not(bddX);
@@ -7819,26 +7819,26 @@ Console.WriteLine(""=== Test 3 : Distributivite ==="");
 Console.WriteLine($""Noeuds (gauche) : {bddLeft.CountNodes()}"");
 Console.WriteLine($""Noeuds (droite) : {bddRight.CountNodes()}"");
 Console.WriteLine($""Equivalent (x=T,y=T,z=F) : {bddLeft.Evaluate(new Dictionary<string, bool> {{""x"", true}, {""y"", true}, {""z"", false}})} == {bddRight.Evaluate(new Dictionary<string, bool> {{""x"", true}, {""y"", true}, {""z"", false}})}"");",,,,,,,,20de78da07ac3f58,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,43598773,markdown,fr,0f04f69440113720,"---
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,43598773,markdown,fr,0300a89157d3a3b9,"---
 
 ## 4. MDD pour Sudoku (20 min)
 
 ### 4.1 De BDD a MDD
 
-Les BDD sont parfaits pour des variables booleennes, mais Sudoku utilise des variables a valeurs dans {1, ..., 9}. Nous avons besoin de **MDD (Multi-valued Decision Diagrams)**.
+Les BDD sont parfaits pour des variables booléennes, mais Sudoku utilise des variables a valeurs dans {1, ..., 9}. Nous avons besoin de **MDD (Multi-valued Decision Diagrams)**.
 
 ```
 BDD (binaire)          MDD (multi-value)
     x?                     x?
    / \                  / | \ \
   0   1                1  2 ... 9
-```",,,,,,,,0f04f69440113720,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,49a2296c,code,fr,29f23292a5535141,"using System;
+```",,,,,,,,0300a89157d3a3b9,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,49a2296c,code,fr,be35a3dd59579a5a,"using System;
 using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-/// Noeud d'un MDD (Multi-valued Decision Diagram) pour Sudoku.
+/// Nœud d'un MDD (Multi-valued Decision Diagram) pour Sudoku.
 /// </summary>
 public class MDDNode
 {
@@ -7911,12 +7911,12 @@ public class MDDNode
     public override string ToString() => Pretty();
 }
 
-Console.WriteLine(""MDDNode OK (Pretty/ToString/Evaluate)."");",,,,,,,,29f23292a5535141,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,45ea0520,markdown,fr,8e001fb93eae9332,"### 4.2 MDD pour une Contrainte de Ligne
+Console.WriteLine(""MDDNode OK (Pretty/ToString/Evaluate)."");",,,,,,,,be35a3dd59579a5a,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,45ea0520,markdown,fr,1e634f33c6fb2b36,"### 4.2 MDD pour une Contrainte de Ligne
 
-Creons un MDD pour representer la contrainte ""les 9 valeurs d'une ligne sont distinctes"".
+Creons un MDD pour représenter la contrainte ""les 9 valeurs d'une ligne sont distinctes"".
 
-**Note** : Cette representation est naive et conduit a une explosion d'etats. Nous verrons comment optimiser.",,,,,,,,8e001fb93eae9332,,,,,,,
+**Note** : Cette représentation est naive et conduit a une explosion d'etats. Nous verrons comment optimiser.",,,,,,,,1e634f33c6fb2b36,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,78d9cfe9,code,fr,89a2572b423a39e8,"using System;
 using System.Collections.Generic;
 
@@ -8005,12 +8005,12 @@ var invalidAssignment = new Dictionary<string, int>
 Console.WriteLine(""=== Test 2 : Ligne invalide (doublon de 1) ==="");
 Console.WriteLine($""Resultat : {rowMDD.Evaluate(invalidAssignment)}"");
 Console.WriteLine($""Attendu : False"");",,,,,,,,2a3ec909023329b1,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,b1ad23f7,markdown,fr,a15f8cdfc619eb6e,"#### Interpretation : MDD de Ligne
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,b1ad23f7,markdown,fr,fd9a063fd0306241,"#### Interpretation : MDD de Ligne
 
 **Sortie obtenue** :
 
-- Le MDD construit comporte 5 611 771 noeuds, soit environ 15 fois 9! (362 880 permutations valides) : a cette echelle, l'explosion combinatoire des branches l'emporte
-- Seul le partage des terminaux est applique ; la reduction complete des sous-graphes identiques reste un exercice (voir plus bas), d'ou la taille elevee
+- Le MDD construit comporte 5 611 771 nœuds, soit environ 15 fois 9! (362 880 permutations valides) : a cette echelle, l'explosion combinatoire des branches l'emporte
+- Seul le partage des terminaux est appliqué ; la réduction complète des sous-graphes identiques reste un exercice (voir plus bas), d'ou la taille elevee
 - L'evaluation est correcte pour les lignes valides et invalides
 
 **Comparaison** :
@@ -8018,9 +8018,9 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,b1ad23f7,markdown,fr,a15f8cd
 | Approche | Structure | Taille |
 |----------|-----------|-------|
 | Automate naive (explicite) | 9! etats | ~360K |
-| MDD (ce notebook) | Diagramme multi-value | ~5,6 millions de noeuds |
+| MDD (ce notebook) | Diagramme multi-value | ~5,6 millions de nœuds |
 
-**Point important** : Meme avec reduction, le MDD pour une seule ligne est deja assez grand. Pour un Sudoku complet (81 cellules), l'explosion serait monumentale.",,,,,,,,a15f8cdfc619eb6e,,,,,,,
+**Point important** : Même avec réduction, le MDD pour une seule ligne est déjà assez grand. Pour un Sudoku complet (81 cellules), l'explosion serait monumentale.",,,,,,,,fd9a063fd0306241,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,28f8c63e,markdown,fr,8b4e4302305a067b,"---
 
 ## 5. Produit d'Automates Explicite (15 min)
@@ -8099,7 +8099,7 @@ Console.WriteLine(""MDDOperations OK (Product)."");",,,,,,,,87948f984e4f843b,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,7a167a52,markdown,fr,1f9946ed27e466e5,"### 5.2 Test du Produit
 
 Testons le produit avec un petit exemple : une grille 2x2 au lieu de 9x9.",,,,,,,,1f9946ed27e466e5,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,880d00f1,code,fr,77146118d6127a5e,"// Pour simplifier, travaillons avec une grille 2x2 (valeurs 1-2)
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,880d00f1,code,fr,cc656a3d9622ec61,"// Pour simplifier, travaillons avec une grille 2x2 (valeurs 1-2)
 // Cela nous permet de voir la structure du produit
 
 /// <summary>
@@ -8160,7 +8160,7 @@ Console.WriteLine();
 
 // MDD pour la colonne 0 : r0_c0 et r1_c0 doivent etre distincts
 var col0Builder = new SmallRowMDDBuilder(""c0"", 2, 2);  // Reutilise le meme constructeur
-// Note: Pour la vraie colonne, il faudrait un constructeur different
+// Note: Pour la vraie colonne, il faudrait un constructeur différent
 // Ici on simplifie en traitant comme une ""ligne"" c0_0 et c0_1
 
 // Pour le test, creons une contrainte simple : r0_c0 != 1
@@ -8187,14 +8187,14 @@ Console.WriteLine($""Test (r0_c0=1, r0_c1=2) : {productMDD.Evaluate(testAssign1)
 
 // Test : r0_c0=2, r0_c1=1 devrait etre accepte
 var testAssign2 = new Dictionary<string, int> {{""r0_c0"", 2}, {""r0_c1"", 1}};
-Console.WriteLine($""Test (r0_c0=2, r0_c1=1) : {productMDD.Evaluate(testAssign2)} (attendu: True)"");",,,,,,,,77146118d6127a5e,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,1d591f2f,markdown,fr,dc996de670ee3e3b,"---
+Console.WriteLine($""Test (r0_c0=2, r0_c1=1) : {productMDD.Evaluate(testAssign2)} (attendu: True)"");",,,,,,,,cc656a3d9622ec61,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,1d591f2f,markdown,fr,2487fc8cd8410092,"---
 
 ## 6. Solveur Sudoku avec MDD (20 min)
 
 ### 6.1 Architecture du Solveur
 
-Pour resoudre un Sudoku complet avec MDD, nous devrions theoriquement:
+Pour résoudre un Sudoku complet avec MDD, nous devrions theoriquement:
 1. Construire 27 MDD (9 lignes + 9 colonnes + 9 blocs)
 2. Faire le produit des 27 MDD
 3. Chercher un chemin valide dans le MDD resultant
@@ -8204,14 +8204,14 @@ Pour resoudre un Sudoku complet avec MDD, nous devrions theoriquement:
 ### 6.2 Approche Pragmatique
 
 Nous allons utiliser une approche hybride :
-- Utiliser les MDD pour verifier les contraintes localement
-- Utiliser le backtracking pour la recherche globale",,,,,,,,dc996de670ee3e3b,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,1388b811,code,fr,a6788ef249de9746,"using System;
+- Utiliser les MDD pour vérifier les contraintes localement
+- Utiliser le backtracking pour la recherche globale",,,,,,,,2487fc8cd8410092,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,1388b811,code,fr,8ce097c051e23b86,"using System;
 using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-/// Solveur Sudoku utilisant des MDD pour la verification de contraintes.
+/// Solveur Sudoku utilisant des MDD pour la vérification de contraintes.
 /// Contrairement a Z3, les MDD verifient les contraintes par parcours
 /// de graphe plutot que par SAT solving.
 /// </summary>
@@ -8244,33 +8244,33 @@ public class SudokuMDDSolver
 
     /// <summary>
     /// Construit les MDD pour les contraintes de ligne, colonne, bloc.
-    /// Note: On construit des MDD simplifies pour eviter l'explosion.
+    /// Note: On construit des MDD simplifies pour éviter l'explosion.
     /// </summary>
     private void BuildConstraintMDDs()
     {
         // Pour une vraie approche MDD pure, on construirait 27 MDD complets.
         // Ici, on utilise une version simplifiee pour la demonstration.
         
-        // Pour chaque ligne, on verifie que les valeurs sont distinctes
-        // en utilisant une methode directe plus efficace que le MDD complet.
+        // Pour chaque ligne, on vérifie que les valeurs sont distinctes
+        // en utilisant une méthode directe plus efficace que le MDD complet.
     }
 
     /// <summary>
-    /// Verifie si une valeur est valide pour une cellule (contraintes MDD).
+    /// Vérifie si une valeur est valide pour une cellule (contraintes MDD).
     /// </summary>
     private bool IsValid(int row, int col, int value)
     {
-        // Verifie la ligne
+        // Vérifie la ligne
         for (int j = 0; j < 9; j++)
             if (j != col && _grid[row, j] == value)
                 return false;
         
-        // Verifie la colonne
+        // Vérifie la colonne
         for (int i = 0; i < 9; i++)
             if (i != row && _grid[i, col] == value)
                 return false;
         
-        // Verifie le bloc 3x3
+        // Vérifie le bloc 3x3
         int blockRow = (row / 3) * 3;
         int blockCol = (col / 3) * 3;
         for (int i = blockRow; i < blockRow + 3; i++)
@@ -8302,7 +8302,7 @@ public class SudokuMDDSolver
                 return true; // Solution trouve
         }
 
-        // Si la cellule est deja remplie, passer a la suivante
+        // Si la cellule est déjà remplie, passer a la suivante
         if (_grid[row, col] != 0)
             return SolveRecursive(row, col + 1);
 
@@ -8324,7 +8324,7 @@ public class SudokuMDDSolver
 
 Console.WriteLine(""Classe SudokuMDDSolver definie avec succes."");
 Console.WriteLine(""Note: Cette implementation utilise le backtracking classique"");
-Console.WriteLine(""car les MDD complets pour Sudoku seraient trop volumineux."");",,,,,,,,a6788ef249de9746,,,,,,,
+Console.WriteLine(""car les MDD complets pour Sudoku seraient trop volumineux."");",,,,,,,,8ce097c051e23b86,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,3608933f,markdown,fr,f5847737dc2c53d0,"### 6.3 Test du Solveur
 
 Notons que ce solveur est essentiellement du backtracking. La vraie valeur de l'approche MDD serait dans la composition de contraintes, mais l'explosion d'etats la rend impraticable pour Sudoku complet.",,,,,,,,f5847737dc2c53d0,,,,,,,
@@ -8367,14 +8367,14 @@ else
 {
     Console.WriteLine(""\nAucune solution trouvee."");
 }",,,,,,,,6420452e9a55a587,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,bdbd8c6a,markdown,fr,e89367e78adb2f6a,"#### Interpretation : Solveur MDD
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,bdbd8c6a,markdown,fr,bc9968c50eb062e0,"#### Interpretation : Solveur MDD
 
 **Sortie obtenue** : Le solveur trouve la solution, mais avec des performances similaires au backtracking classique.
 
-**Temps de resolution** : moins d'une milliseconde sur le puzzle facile teste (0,46 ms mesure a la cellule precedente).
+**Temps de résolution** : moins d'une milliseconde sur le puzzle facile testé (0,46 ms mesurée à la cellule précédente).
 
-**Point important** : Bien que nous ayons construit des MDD pour illustrer la theorie, l'approche pratique pour Sudoku utilise le backtracking direct. Les MDD brillent vraiment pour des contraintes plus locales ou des problemes de verification.",,,,,,,,e89367e78adb2f6a,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,6e343b5b,markdown,fr,555558d90135ad37,"---
+**Point important** : Bien que nous ayons construit des MDD pour illustrer la théorie, l'approche pratique pour Sudoku utilise le backtracking direct. Les MDD brillent vraiment pour des contraintes plus locales ou des problemes de vérification.",,,,,,,,bc9968c50eb062e0,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,6e343b5b,markdown,fr,9b5229650150da7b,"---
 
 ## 7. Comparaison Sudoku-12 vs Sudoku-14 (10 min)
 
@@ -8382,21 +8382,21 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,6e343b5b,markdown,fr,555558d
 
 | Aspect | Sudoku-12 (Z3) | Sudoku-14 (BDD/MDD) |
 |--------|---------------|---------------------|
-| **Theorie** | Automates compiles vers SMT | Vrais automates avec etats |
-| **Structure** | Variables Z3 + contraintes | Graphe de decision |
-| **Operations** | Conjonction de contraintes | Produit d'automates |
-| **Verification** | SAT solving | Parcours de graphe |
+| **Théorie** | Automates compiles vers SMT | Vrais automates avec etats |
+| **Structure** | Variables Z3 + contraintes | Graphe de décision |
+| **Opérations** | Conjonction de contraintes | Produit d'automates |
+| **Vérification** | SAT solving | Parcours de graphe |
 | **Performance** | ~20 ms | ~100 ms |
 | **Authenticite** | ⭐⭐ Approche hybride | ⭐⭐⭐ Vrais automates |
-| **Pragmatisme** | ⭐⭐⭐ Production-ready | ⭐ Theorique |
+| **Pragmatisme** | ⭐⭐⭐ Production-ready | ⭐ Théorique |
 
 ### 7.2 Quand Utiliser Chaque Approche
 
 | Situation | Approche | Pourquoi |
 |-----------|----------|---------|
 | **Production** | Z3 (Sudoku-12) | Performance optimale |
-| **Apprentissage theorie** | BDD/MDD (Sudoku-14) | Comprendre les automates |
-| **Verification formelle** | BDD | Model checking |
+| **Apprentissage théorie** | BDD/MDD (Sudoku-14) | Comprendre les automates |
+| **Vérification formelle** | BDD | Model checking |
 | **Problemes CSP** | Z3 ou OR-Tools | Meilleur scaling |
 
 ### 7.3 Conclusion
@@ -8406,9 +8406,9 @@ Les deux notebooks sont complementaires :
 - **Sudoku-14** montre l'approche pure avec BDD/MDD
 
 Laquelle est ""meilleure""? Dependez de votre objectif :
-- Pour resoudre des Sudoku : Z3
-- Pour comprendre la theorie : BDD/MDD",,,,,,,,555558d90135ad37,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,de87e32a,markdown,fr,6442a9d56e1773a0,"---
+- Pour résoudre des Sudoku : Z3
+- Pour comprendre la théorie : BDD/MDD",,,,,,,,9b5229650150da7b,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,de87e32a,markdown,fr,da2d73c1a76c91b5,"---
 
 ## 8. Conclusion
 
@@ -8418,24 +8418,24 @@ Dans ce notebook, nous avons explore :
 
 | Concept | Description |
 |---------|-------------|
-| **BDD** | Binary Decision Diagram - graphe de decision booleen |
-| **MDD** | Multi-valued Decision Diagram - generalisation aux domaines finis |
+| **BDD** | Binary Decision Diagram - graphe de décision booleen |
+| **MDD** | Multi-valued Decision Diagram - généralisation aux domaines finis |
 | **Produit d'automates** | Intersection des langages par produit de graphes |
-| **Reduction** | Partage de sous-graphes pour compacite |
+| **Réduction** | Partage de sous-graphes pour compacite |
 
 ### 8.2 Points Cles
 
-1. **Les BDD/MDD sont des structures puissantes** pour representer des fonctions booleennes de manière compacte
-2. **Les operations (AND, OR, produit) sont naturelles** sur les BDD
+1. **Les BDD/MDD sont des structures puissantes** pour représenter des fonctions booléennes de manière compacte
+2. **Les opérations (AND, OR, produit) sont naturelles** sur les BDD
 3. **Pour Sudoku, l'explosion d'etats** rend les MDD complets impraticables
-4. **L'approche Z3 (Sudoku-12)** est plus pragmatique pour la resolution
-5. **Les BDD brillent en model checking** et verification formelle
+4. **L'approche Z3 (Sudoku-12)** est plus pragmatique pour la résolution
+5. **Les BDD brillent en model checking** et vérification formelle
 
 ### 8.3 Perspectives
 
-- **Model Checking** : Verification de protocoles, circuits logiques
+- **Model Checking** : Vérification de protocoles, circuits logiques
 - **Synthese de code** : Generation de programmes corrects par construction
-- **Theorie des automates** : Automates d'arbres, automates de mots infinis
+- **Théorie des automates** : Automates d'arbres, automates de mots infinis
 
 ### 8.4 Tableau de Synthese Finale
 
@@ -8444,18 +8444,18 @@ Dans ce notebook, nous avons explore :
 | 12 | **SFA + Z3** | Compilation vers SMT | ~20 ms | ⭐ |
 | 13 | **BDD/MDD** | Automates purs | ~100 ms | ⭐⭐⭐ |
 
-Les deux approches ont leur place : l'une pour la pratique, l'autre pour la theorie.",,,,,,,,6442a9d56e1773a0,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,534aea95,markdown,fr,de88bf8f3b2b6b3b,"---
+Les deux approches ont leur place : l'une pour la pratique, l'autre pour la théorie.",,,,,,,,da2d73c1a76c91b5,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,534aea95,markdown,fr,8a47b68b2f7c70a4,"---
 
 ## Exercices : BDD et MDD
 
 ### Exercice 1 : BDD pour x OR y
 
-Construire un BDD pour la fonction x OR y et verifier qu'il donne les bons resultats pour toutes les combinaisons de x et y.
+Construire un BDD pour la fonction x OR y et vérifier qu'il donne les bons résultats pour toutes les combinaisons de x et y.
 
-### Exercice 2 : Reduction de BDD
+### Exercice 2 : Réduction de BDD
 
-Modifier la methode `Create` pour implementer la reduction complete (partage de tous les sous-graphes identiques, pas juste les terminaux).
+Modifier la méthode `Create` pour implémenter la réduction complète (partage de tous les sous-graphes identiques, pas juste les terminaux).
 
 ### Exercice 3 : MDD pour Contrainte de Bloc
 
@@ -8463,18 +8463,18 @@ Construire un MDD pour un bloc 3x3 (9 cellules avec valeurs distinctes). Compare
 
 ### Exercice 4 : Produit de Trois MDD
 
-Implementer le produit de trois MDD (ligne x colonne x bloc) pour une seule cellule. Quelle est la taille du MDD resultant?
+Implémenter le produit de trois MDD (ligne x colonne x bloc) pour une seule cellule. Quelle est la taille du MDD resultant?
 
 ### Exercice 5 : Comparaison de Performance
 
-Comparer le temps de resolution de Sudoku-12 (Z3) et Sudoku-14 (BDD/MDD) sur les memes puzzles. Quelle est la difference?",,,,,,,,de88bf8f3b2b6b3b,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,7cff0504,markdown,fr,a5befdd19187ad79,"---
+Comparer le temps de résolution de Sudoku-12 (Z3) et Sudoku-14 (BDD/MDD) sur les mêmes puzzles. Quelle est la différence?",,,,,,,,8a47b68b2f7c70a4,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,7cff0504,markdown,fr,77ac30af5f892014,"---
 
 ## Exercice : Solveur BDD avec Propagation de Contraintes
 
 **Objectif :**
 
-Implementer un solveur Sudoku qui utilise les MDD pour propager les contraintes avant chaque affectation. Contrairement au solveur de la section 6 qui ne fait que verifier les contraintes, votre solveur devra :
+Implémenter un solveur Sudoku qui utilise les MDD pour propager les contraintes avant chaque affectation. Contrairement au solveur de la section 6 qui ne fait que vérifier les contraintes, votre solveur devra :
 
 1. **Construire** un MDD par contrainte (9 lignes + 9 colonnes + 9 blocs = 27 MDD)
 2. **Propagation** : Avant d'affecter une valeur a une cellule, filtrer les valeurs incompatibles dans les MDD des contraintes concernees
@@ -8482,25 +8482,25 @@ Implementer un solveur Sudoku qui utilise les MDD pour propager les contraintes 
 
 ### Specification
 
-Implementer la classe `BDDConstraintPropagator` avec :
+Implémenter la classe `BDDConstraintPropagator` avec :
 - `FilterDomain(row, col, currentDomain)` : retourne le domaine filtre par les MDD des contraintes de la cellule
 - `Solve(puzzle)` : resout le Sudoku en combinant propagation MDD et backtracking
 
 ### Critere de succes
 
 Votre solveur doit :
-- Trouver la meme solution que le solveur de reference
-- Reduire le nombre de retours arriere grace a la propagation",,,,,,,,a5befdd19187ad79,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,b0e544db,markdown,fr,cd793c18f937f3b7,"### A retenir
+- Trouver la même solution que le solveur de reference
+- Réduire le nombre de retours arriere grâce à la propagation",,,,,,,,77ac30af5f892014,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,b0e544db,markdown,fr,21d03e692c0fe32e,"### A retenir
 
-Les **BDD/MDD** offrent une representation compacte des fonctions booleennes et des domaines finis :
+Les **BDD/MDD** offrent une représentation compacte des fonctions booléennes et des domaines finis :
 
-- Un BDD pour `x AND y` necessite **5 noeuds** (vs 4 lignes de table de verite) grace au partage de sous-graphes.
-- Le MDD d'une seule ligne Sudoku atteint **5 611 771 noeuds** (vs 9! = 362 880 permutations valides) : l'explosion d'etats rend les MDD complets impraticables pour Sudoku.
-- Le solveur MDD est en realite **hybride** (backtracking + verification MDD), resolu en **0,46 ms** sur grille Easy.
-- **Z3/SMT (Sudoku-12)** reste l'approche de production (~20 ms), tandis que les BDD excellent en **model checking et verification formelle**.
-",,,,,,,,cd793c18f937f3b7,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,b6d161b4,markdown,fr,7887f9cb30cfd1fc,"---
+- Un BDD pour `x AND y` nécessité **5 nœuds** (vs 4 lignes de table de vérité) grâce au partage de sous-graphes.
+- Le MDD d'une seule ligne Sudoku atteint **5 611 771 nœuds** (vs 9! = 362 880 permutations valides) : l'explosion d'etats rend les MDD complets impraticables pour Sudoku.
+- Le solveur MDD est en realite **hybride** (backtracking + vérification MDD), résolu en **0,46 ms** sur grille Easy.
+- **Z3/SMT (Sudoku-12)** reste l'approche de production (~20 ms), tandis que les BDD excellent en **model checking et vérification formelle**.
+",,,,,,,,21d03e692c0fe32e,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,b6d161b4,markdown,fr,b3ee7f14c0cd4f22,"---
 
 ## References
 
@@ -8508,7 +8508,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,b6d161b4,markdown,fr,7887f9c
 
 - **Bryant, R. E.** - ""Graph-Based Algorithms for Boolean Function Manipulation"" (1986) - L'article fondateur des BDD
 - **Andersen, H. R.** - ""An Introduction to Binary Decision Diagrams"" (1997) - Tutoriel excellent
-- **Somenzi, F.** - ""Binary Decision Diagrams"" (1999) - Vue d'ensemble complete
+- **Somenzi, F.** - ""Binary Decision Diagrams"" (1999) - Vue d'ensemble complète
 
 ### Liens
 
@@ -8519,7 +8519,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,b6d161b4,markdown,fr,7887f9c
 
 - **[Sudoku-13-SymbolicAutomata](Sudoku-13-SymbolicAutomata-Csharp.ipynb)** - Automates compiles vers Z3
 - [Sudoku-12-Z3](Sudoku-12-Z3-Csharp.ipynb) - Z3 SMT direct
-- [Search-10-SymbolicAutomata](../Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb) - Theorie approfondie
+- [Search-10-SymbolicAutomata](../Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb) - Théorie approfondie
 
 ---
 
@@ -8528,8 +8528,8 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,b6d161b4,markdown,fr,7887f9c
 ---
 
 **Retour au sommaire** : [Index Sudoku](README.md)
-",,,,,,,,7887f9cb30cfd1fc,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,0ef0f013,code,fr,5078a3b1cd67f29c,"// A COMPLETER : Solveur BDD avec propagation de contraintes
+",,,,,,,,b3ee7f14c0cd4f22,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb,0ef0f013,code,fr,579426a6f3d22f0f,"// A COMPLETER : Solveur BDD avec propagation de contraintes
 
 public class BDDConstraintPropagator
 {
@@ -8551,7 +8551,7 @@ public class BDDConstraintPropagator
     /// </summary>
     /// <param name=""row"">Ligne de la cellule (0-8)</param>
     /// <param name=""col"">Colonne de la cellule (0-8)</param>
-    /// <param name=""currentAssignment"">Valeurs deja affectees dans la grille</param>
+    /// <param name=""currentAssignment"">Valeurs déjà affectees dans la grille</param>
     /// <param name=""currentDomain"">Domaine actuel de la cellule {1,...,9}</param>
     /// <returns>Domaine filtre (valeurs compatibles avec les contraintes MDD)</returns>
     public IEnumerable<int> FilterDomain(
@@ -8559,7 +8559,7 @@ public class BDDConstraintPropagator
         Dictionary<string, int> currentAssignment,
         IEnumerable<int> currentDomain)
     {
-        // TODO etudiant : Pour chaque valeur candidate, verifier via les MDD
+        // TODO etudiant : Pour chaque valeur candidate, vérifier via les MDD
         // si elle est compatible avec les affectations actuelles
         return currentDomain;  // TODO etudiant : a completer
     }
@@ -8574,11 +8574,11 @@ public class BDDConstraintPropagator
 }
 Console.WriteLine(""BDDConstraintPropagator class defined (exercice a completer)"");
 
-// Test : Verifier que votre solveur trouve la meme solution que le solveur de reference
+// Test : Vérifier que votre solveur trouve la meme solution que le solveur de reference
 // string puzzle = ""003020600900305001001806400008102900700000008006708200002609500800203009005010300"";
 // var propagator = new BDDConstraintPropagator();
 // var solution = propagator.Solve(puzzle);
-// Console.WriteLine(solution != null ? ""Solution trouvee !"" : ""Echec !"");",,,,,,,,5078a3b1cd67f29c,,,,,,,
+// Console.WriteLine(solution != null ? ""Solution trouvee !"" : ""Echec !"");",,,,,,,,579426a6f3d22f0f,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Python.ipynb,a00534f2,markdown,fr,9c3b288c542be784,"# Sudoku-14 : Automates avec BDD/MDD - Approche Pure (Python)
 
 > **Jumeau Python** du notebook [Sudoku-14-BDD-Csharp.ipynb](Sudoku-14-BDD-Csharp.ipynb).
