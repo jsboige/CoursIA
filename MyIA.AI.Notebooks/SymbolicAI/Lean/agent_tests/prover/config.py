@@ -12,6 +12,41 @@ load_dotenv(_parent / ".env")
 
 LEAN_PROJECT_DIR = os.getenv("LEAN_PROJECT_DIR")
 
+
+def _workspace_root() -> Path | None:
+    """Return the ``MyIA.AI.Notebooks/`` root that hosts THIS ``config.py``.
+
+    The harness ships inside the CoursIA-2 layout (../prover/config.py under
+    MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/) but is also run from a
+    parallel ``C:\\dev\\CoursIA`` checkout that has identical git content
+    but different inodes. Hardcoding ``C:\\dev\\CoursIA\\...`` would silently
+    edit the WRONG tree whenever the user invokes the harness from CoursIA-2.
+
+    Instead of pinning a drive letter, walk the ancestor chain looking for
+    the first ``MyIA.AI.Notebooks/`` that exists. When one is found, the
+    harness's path constants resolve RELATIVE to the actual workspace, so a
+    BG-iter edit lands in the tree whose git history the operator is on.
+
+    Returns ``None`` if no ``MyIA.AI.Notebooks/`` ancestor exists — the
+    caller falls back to the legacy drive-letter candidates.
+    """
+    p = Path(__file__).resolve().parent
+    for ancestor in p.parents:
+        if ancestor.name == "MyIA.AI.Notebooks" and ancestor.exists():
+            return ancestor
+    return None
+
+
+_WORKSPACE_ROOT = _workspace_root()
+
+
+def _workspace_relative(rel: str) -> Path | None:
+    """Resolve ``rel`` (forward-slash, relative to MyIA.AI.Notebooks/) if a
+    workspace root was found, else ``None`` (caller treats as a miss)."""
+    if _WORKSPACE_ROOT is None:
+        return None
+    return _WORKSPACE_ROOT.joinpath(*rel.split("/"))
+
 PROVIDERS = {
     "zai": {
         "base_url": os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/coding/paas/v4"),
@@ -74,6 +109,14 @@ import CooperativeGames.Basic
 """
 
 _COOPERATIVE_GAMES_CANDIDATES = [
+    # Workspace-relative entry, preferred when the harness is run from
+    # CoursIA-2 (a separate physical checkout of this repo). Ancestor
+    # walk in `_workspace_root()` keeps both layouts working without
+    # touching this list whenever the repo moves.
+    _workspace_relative("GameTheory/cooperative_games_lean"),
+    # Legacy drive-letter fallbacks. Order preserved: C:\dev\CoursIA is
+    # the historical default and a sibling tree to whatever the harness
+    # is invoked from on the same drive.
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
     Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
     Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
@@ -88,6 +131,7 @@ SHAPLEY_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Shapley.lean" if CO
 BASIC_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Basic.lean" if COOPERATIVE_GAMES_DIR.exists() else None
 
 _SOCIAL_CHOICE_CANDIDATES = [
+    _workspace_relative("GameTheory/social_choice_lean"),
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
     Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
     Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
@@ -108,6 +152,7 @@ import SocialChoice.Definitions
 
 # ── Stable Marriage ──
 _STABLE_MARRIAGE_CANDIDATES = [
+    _workspace_relative("GameTheory/stable_marriage_lean"),
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
     Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
     Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
@@ -144,6 +189,7 @@ import StableMarriage.Definitions
 # ── Calibration (Epic #1452) ──
 # Relocated from GameTheory to SymbolicAI/Lean (issue #1764)
 _CALIBRATION_CANDIDATES = [
+    _workspace_relative("SymbolicAI/Lean/calibration_lean"),
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\calibration_lean"),
     Path(r"D:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\calibration_lean"),
     Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\calibration_lean"),
@@ -160,6 +206,7 @@ import Mathlib.Tactic
 # ── Conway calibration (Epic #1453) ──
 # Conway hommage series relocated 2026-05-28: was MyIA.AI.Notebooks/GameTheory/conway_lean.
 _CONWAY_CANDIDATES = [
+    _workspace_relative("SymbolicAI/Lean/conway_lean"),
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
     Path(r"D:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
     Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
