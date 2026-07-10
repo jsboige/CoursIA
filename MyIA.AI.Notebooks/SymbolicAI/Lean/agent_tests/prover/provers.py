@@ -674,6 +674,11 @@ class MultiAgentSorryProver:
         session_start = time.time()
         self.trace.start_session_span(demo["name"], "multi")
         proof_found = False
+        # #5869: provider-outage circuit-breaker verdict, surfaced from the
+        # final ProofMessage so the result dict (and *_result.json) can tell
+        # "provider was down" apart from "no tactical progress".
+        provider_outage = False
+        provider_failures = 0
         try:
             # Build-credited wall-clock supervisor (user mandate 2026-06-21:
             # "mettre en pause le timer de mesure pendant les builds"). A single
@@ -718,6 +723,8 @@ class MultiAgentSorryProver:
                 final_msg = initial_msg
 
             proof_found = getattr(final_msg, 'proof_found', False)
+            provider_outage = getattr(final_msg, 'provider_outage', False)
+            provider_failures = getattr(final_msg, 'provider_failures', 0)
         except _asyncio.TimeoutError:
             try:
                 _bs = _LeanVerifier._total_build_seconds - _build_at_start
@@ -911,6 +918,14 @@ class MultiAgentSorryProver:
             # from an actual sorry reduction. Without this, both report
             # success=True and consumers cannot tell them apart.
             "structural_progress": structural_progress,
+            # #5869: provider-outage circuit-breaker verdict. True when the
+            # workflow terminated because the LLM provider failed
+            # PROVIDER_OUTAGE_BREAKER consecutive hops (workflow.py) — the run
+            # never got to work, which is NOT `no_progress`.
+            # `provider_failures` is the total count of failed provider hops
+            # (forensic; each hop already covered its in-hop retries).
+            "provider_outage": provider_outage,
+            "provider_failures": provider_failures,
             # FX-6 (#1453): diagnostic fields for the statement-mutation guard.
             "verified_tactic_count": verified_tactic_count,
             **({"flag": "STMT_MUTATION_FALSE_SUCCESS"} if stmt_mutation else {}),

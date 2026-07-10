@@ -51,12 +51,24 @@ DEFAULT_AGENT_TIMEOUT_S = 600
 # Transient-error retry policy. Forensic analysis of prover traces
 # (traces/*.spans.jsonl) showed whole iterations lost to TRANSIENT provider
 # errors (HTTP 5xx, connection reset/aborted, read/connect timeouts) that
-# crashed an agent mid-run with no retry. Retries are bounded: 2 attempts with
-# short exponential backoff (2s, 4s). Note: a 404 is NOT transient — it means a
-# bad/missing model_id (config bug) — and must NOT be retried (see
+# crashed an agent mid-run with no retry. Retries are bounded: 5 attempts with
+# exponential backoff 1s/2s/4s/8s/16s, capped at
+# TRANSIENT_RETRY_BACKOFF_CAP_S (#5869). Note: a 404 is NOT transient — it
+# means a bad/missing model_id (config bug) — and must NOT be retried (see
 # `_is_transient_error`).
-TRANSIENT_RETRY_MAX = 2
-TRANSIENT_RETRY_BACKOFF_S = (2.0, 4.0)
+TRANSIENT_RETRY_MAX = 5
+TRANSIENT_RETRY_BACKOFF_CAP_S = 60.0
+
+# Provider-outage circuit-breaker (#5869). Forensic trace
+# multi_custom_HashlifeCorrectness_L2636 (2026-07-10): openrouter died at
+# +601s and the TacticAgent hop failed ~20 times in 1.5s — each ~50ms
+# round-trip incremented msg.iteration, burned the whole proof budget and
+# polluted the verdict as `no_progress` although no tactic was ever attempted
+# after the outage. After this many CONSECUTIVE failed provider hops (each one
+# already covering TRANSIENT_RETRY_MAX in-hop retries with backoff), the run
+# terminates cleanly with the dedicated `provider_outage` verdict instead of
+# spinning.
+PROVIDER_OUTAGE_BREAKER = 3
 
 # P1 stagnation hard-cap (Epic #1453). The compile tool (tools.py) computes
 # the number of consecutive Δ0 compiles — a build that succeeds but does NOT
@@ -72,6 +84,16 @@ TRANSIENT_RETRY_BACKOFF_S = (2.0, 4.0)
 # that ignores the signal for this many consecutive Δ0 compiles is yielded
 # rather than left to waste compute.
 DELTA0_STAGNATION_HARDCAP = 6
+
+
+def _transient_backoff_s(attempt: int) -> float:
+    """Exponential backoff for transient provider retries (#5869).
+
+    1s, 2s, 4s, 8s, 16s ... doubling each attempt, capped at
+    TRANSIENT_RETRY_BACKOFF_CAP_S so a long retry chain never sleeps more
+    than the cap between two attempts.
+    """
+    return min(2.0 ** (attempt - 1), TRANSIENT_RETRY_BACKOFF_CAP_S)
 
 
 def _is_transient_error(exc: BaseException) -> bool:
@@ -111,6 +133,13 @@ def _is_transient_error(exc: BaseException) -> bool:
         "500", "502", "503", "504",
         "internal server error", "bad gateway",
         "service unavailable", "gateway timeout",
+        # agent_framework wraps provider errors as
+        # "<Client> service failed" (forensic L2636: the openrouter outage
+        # surfaced as "OpenAIChatCompletionClient service failed", missed
+        # every marker below and fell into the no-sleep else branch). The
+        # 4xx guard above still rejects wrapped config errors that mention
+        # their status.
+        "service failed",
         "connection reset", "connection aborted", "connection refused",
         "connectionreset", "connectionerror",
         "read timeout", "connect timeout", "timed out", "timeout",
@@ -150,6 +179,15 @@ class ProofMessage:
     is_structural_progress: bool = False
     diagnosis_reason: Optional[str] = None
     agent_opinion: str = ""
+    # #5869 provider-outage accounting: a transport failure is NOT tactic
+    # work. `provider_failures` counts failed provider hops over the whole
+    # run (forensic); `consecutive_provider_failures` drives the
+    # circuit-breaker and resets on any successful agent call;
+    # `provider_outage` is set when the breaker trips so the runner can emit
+    # a verdict distinct from `no_progress`.
+    provider_failures: int = 0
+    consecutive_provider_failures: int = 0
+    provider_outage: bool = False
 
 
 class AgentExecutor(Executor):
@@ -304,6 +342,12 @@ class AgentExecutor(Executor):
             len(self._state.tactic_history)
             if self._state and hasattr(self._state, "tactic_history") else 0
         )
+        # #5869: set True when the provider hop definitively failed (transient
+        # retries exhausted, or a non-transient provider error) — feeds the
+        # iteration refund + circuit-breaker below. Context-window overflows
+        # are NOT provider failures (the provider answered; the request was
+        # too large).
+        _provider_failed = False
         try:
             response = await self._agent.run(content)
             response_text = self._extract_response_text(response)
@@ -363,9 +407,7 @@ class AgentExecutor(Executor):
                 response_text = None
                 _last_exc = e
                 for _attempt in range(1, TRANSIENT_RETRY_MAX + 1):
-                    _backoff = TRANSIENT_RETRY_BACKOFF_S[
-                        min(_attempt - 1, len(TRANSIENT_RETRY_BACKOFF_S) - 1)
-                    ]
+                    _backoff = _transient_backoff_s(_attempt)
                     _retry_msg = (
                         f"[retry] transient provider error "
                         f"(attempt {_attempt}/{TRANSIENT_RETRY_MAX}): "
@@ -391,6 +433,7 @@ class AgentExecutor(Executor):
                     # Retries exhausted (or a non-transient error surfaced) —
                     # fall through to the existing failure handling, do NOT
                     # swallow the error silently.
+                    _provider_failed = True
                     response_text = f"Agent error: {_last_exc}"
                     if self._trace:
                         self._trace.log(
@@ -398,12 +441,53 @@ class AgentExecutor(Executor):
                             content=str(_last_exc)[:200],
                         )
             else:
+                _provider_failed = True
                 response_text = f"Agent error: {e}"
                 if self._trace:
                     self._trace.log(
                         agent=self._agent.name, role="error",
                         content=str(e)[:200],
                     )
+
+        # #5869: provider-failure accounting + circuit-breaker. A transport
+        # failure is NOT a tactic attempt — refund the iteration incremented
+        # at entry so an outage cannot drain the proof budget (forensic
+        # L2636: ~20 "iterations" burned in 1.5s while openrouter was down,
+        # verdict polluted as no_progress). The breaker bounds the refund
+        # loop: after PROVIDER_OUTAGE_BREAKER consecutive failed hops the run
+        # terminates with the dedicated `provider_outage` verdict. A flapping
+        # provider still terminates: successful hops keep advancing
+        # msg.iteration toward max_iterations, and the wall-clock cap in
+        # provers.py bounds the session either way.
+        if _provider_failed:
+            msg.iteration = max(0, msg.iteration - 1)
+            msg.provider_failures += 1
+            msg.consecutive_provider_failures += 1
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="provider_failure",
+                    content=(f"provider hop failed "
+                             f"({msg.consecutive_provider_failures}/"
+                             f"{PROVIDER_OUTAGE_BREAKER} consecutive, "
+                             f"{msg.provider_failures} total), "
+                             f"iteration refunded to {msg.iteration}"),
+                )
+            if msg.consecutive_provider_failures >= PROVIDER_OUTAGE_BREAKER:
+                msg.provider_outage = True
+                msg.error = response_text[:500]
+                msg.error_type = "provider_outage"
+                if self._trace:
+                    self._trace.log(
+                        agent=self._agent.name, role="provider_outage_breaker",
+                        content=(f"{msg.consecutive_provider_failures} "
+                                 f"consecutive provider failures >= "
+                                 f"{PROVIDER_OUTAGE_BREAKER}, terminating run "
+                                 f"with provider_outage"),
+                    )
+                await ctx.yield_output(msg)
+                return
+        else:
+            msg.consecutive_provider_failures = 0
 
         # Detect "burned response" — thinking models sometimes spend their entire
         # output budget in `reasoning_content` and emit no visible parts.
@@ -1272,6 +1356,13 @@ class MergeSearchExecutor(Executor):
             intractable_reason=base.intractable_reason,
             director_calls=base.director_calls,
             absent_identifiers=base.absent_identifiers,
+            # #5869: keep provider-failure accounting across the fan-in —
+            # dropping it here would silently re-arm the circuit-breaker.
+            provider_failures=max(m.provider_failures for m in messages),
+            consecutive_provider_failures=max(
+                m.consecutive_provider_failures for m in messages
+            ),
+            provider_outage=any(m.provider_outage for m in messages),
         )
         if self._trace:
             n = len(messages)

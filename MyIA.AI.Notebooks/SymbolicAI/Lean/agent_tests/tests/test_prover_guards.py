@@ -2077,3 +2077,232 @@ def test_refuse_true_placeholder_goal_none_on_real_goal(tmp_path, monkeypatch):
     f = tmp_path / "Real.lean"
     f.write_text(_TRUE_GOAL_FILE, encoding="utf-8")
     assert _refuse_true_placeholder_goal(str(f), 3, "demo") is None
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #5869 (2026-07-10) — provider-outage backoff + circuit-breaker + iteration
+# accounting.
+#
+# Forensic trace multi_custom_HashlifeCorrectness_L2636: openrouter died at
+# +601s and the TacticAgent hop failed ~20 times in 1.5s — each ~50ms
+# round-trip incremented msg.iteration, burned the whole proof budget and
+# polluted the verdict as `no_progress` although no tactic was ever attempted
+# after the outage. Three fixes, all pinned here offline:
+#   1. "service failed" (agent_framework's wrapped provider error) is now a
+#      transient marker -> bounded in-hop retries with exponential backoff
+#      instead of an instant no-sleep re-loop.
+#   2. A provider hop that definitively fails REFUNDS the iteration it
+#      incremented at entry (transport failure != tactic work).
+#   3. After PROVIDER_OUTAGE_BREAKER consecutive failed hops the run yields
+#      with error_type="provider_outage", distinct from no_progress.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def _failing_agent(name="TacticAgent", exc=None):
+    """An agent whose `.run` always raises the given provider error."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    if exc is None:
+        exc = RuntimeError("OpenAIChatCompletionClient service failed: 503")
+
+    agent = MagicMock()
+    agent.name = name
+    agent.run = AsyncMock(side_effect=exc)
+    return agent
+
+
+def _success_then_fail_agent(name="TacticAgent", fail_exc=None):
+    """Succeeds once, then raises on every subsequent call."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    if fail_exc is None:
+        fail_exc = RuntimeError("OpenAIChatCompletionClient service failed: 503")
+
+    agent = MagicMock()
+    agent.name = name
+    agent.run = AsyncMock(side_effect=[
+        MagicMock(messages=[MagicMock(text="ran")]),
+        fail_exc, fail_exc, fail_exc, fail_exc, fail_exc,
+    ])
+    return agent
+
+
+@pytest.fixture
+def no_sleep(monkeypatch):
+    """Patch asyncio.sleep inside the workflow module so backoff is instant
+    in tests (otherwise the breaker test alone would sleep ~30s)."""
+    from unittest.mock import AsyncMock
+    import prover.workflow as wf
+
+    monkeypatch.setattr(wf.asyncio, "sleep", AsyncMock())
+    return wf.asyncio.sleep
+
+
+def test_service_failed_is_now_transient():
+    """The wrapped provider error from forensic L2636 must classify as
+    transient so it enters the bounded retry path, not the no-sleep loop."""
+    from prover.workflow import _is_transient_error
+
+    assert _is_transient_error(
+        RuntimeError("OpenAIChatCompletionClient service failed: 503")
+    ) is True
+
+
+def test_service_failed_with_4xx_status_still_not_transient():
+    """The 4xx guard still wins: a wrapped error mentioning a real config
+    status (404/401/403) is NOT retried even if it also says 'service failed'."""
+    from prover.workflow import _is_transient_error
+
+    # 'service failed' string present, but a 404 status code on the exc.
+    class _Err(Exception):
+        status_code = 404
+
+    _Err.__str__ = lambda self: "OpenAIChatCompletionClient service failed"
+    assert _is_transient_error(_Err()) is False
+
+
+def test_transient_backoff_is_exponential_capped():
+    """Backoff doubles 1/2/4/8/16s then holds at the cap."""
+    from prover.workflow import _transient_backoff_s, TRANSIENT_RETRY_BACKOFF_CAP_S
+
+    assert _transient_backoff_s(1) == 1.0
+    assert _transient_backoff_s(2) == 2.0
+    assert _transient_backoff_s(3) == 4.0
+    assert _transient_backoff_s(4) == 8.0
+    assert _transient_backoff_s(5) == 16.0
+    assert _transient_backoff_s(20) == TRANSIENT_RETRY_BACKOFF_CAP_S
+
+
+def test_provider_failure_refunds_iteration_and_counts(no_sleep):
+    """A single failed provider hop refunds the iteration it incremented and
+    bumps the failure counters — the budget is NOT burned by a transport error."""
+    from prover.workflow import AgentExecutor, ProofMessage
+
+    state = ProofState(theorem_statement="t")
+    ex = AgentExecutor(_failing_agent(), state=state)
+    msg = ProofMessage(content="x", iteration=4, max_iterations=10)
+
+    ctx = _run_handle(ex, msg)
+
+    # iteration refunded back to 4 (the +1 at entry was undone).
+    assert msg.iteration == 4, f"expected refund to 4, got {msg.iteration}"
+    assert msg.provider_failures == 1
+    assert msg.consecutive_provider_failures == 1
+    assert msg.provider_outage is False  # one failure does not trip the breaker
+    # Not yet at the breaker threshold -> message flows on (no yield here).
+    ctx.yield_output.assert_not_awaited()
+
+
+def test_circuit_breaker_trips_at_threshold(no_sleep):
+    """After PROVIDER_OUTAGE_BREAKER consecutive failed hops the run yields with
+    error_type='provider_outage' and does not keep calling the dead provider."""
+    from prover.workflow import (
+        AgentExecutor, ProofMessage, PROVIDER_OUTAGE_BREAKER,
+    )
+
+    state = ProofState(theorem_statement="t")
+    agent = _failing_agent()
+    ex = AgentExecutor(agent, state=state)
+
+    msg = ProofMessage(content="x", max_iterations=10)
+    for _ in range(PROVIDER_OUTAGE_BREAKER):
+        ctx = _run_handle(ex, msg)
+
+    assert msg.provider_outage is True
+    assert msg.error_type == "provider_outage"
+    assert msg.consecutive_provider_failures == PROVIDER_OUTAGE_BREAKER
+    # Budget intact: the three failures refunded their entry increments.
+    assert msg.iteration == 0, f"expected 0 burned iterations, got {msg.iteration}"
+    # The final hop yielded the outage verdict.
+    assert ctx.yield_output.await_count >= 1
+
+
+def test_budget_intact_across_full_outage(no_sleep):
+    """Simulating the L2636 incident: a provider that fails on EVERY hop. The
+    iteration budget must stay intact and the run must terminate via the breaker
+    (not via the iteration cap with a `no_progress` mislabel)."""
+    from prover.workflow import (
+        AgentExecutor, ProofMessage, PROVIDER_OUTAGE_BREAKER, TRANSIENT_RETRY_MAX,
+    )
+
+    state = ProofState(theorem_statement="t")
+    agent = _failing_agent()
+    ex = AgentExecutor(agent, state=state)
+    msg = ProofMessage(content="x", max_iterations=10)
+
+    # Drive hops until the breaker yields. Cap the loop well above the
+    # breaker threshold so a broken (non-terminating) breaker is caught.
+    for _ in range(PROVIDER_OUTAGE_BREAKER + 5):
+        _run_handle(ex, msg)
+        if msg.provider_outage:
+            break
+
+    assert msg.provider_outage is True, "breaker should have terminated the run"
+    assert msg.iteration == 0, "no real tactic attempt -> budget fully intact"
+    # Each failed hop ran the initial call + its in-hop retry chain
+    # (TRANSIENT_RETRY_MAX retries) before giving up.
+    assert agent.run.await_count == PROVIDER_OUTAGE_BREAKER * (1 + TRANSIENT_RETRY_MAX)
+
+
+def test_success_resets_consecutive_failure_counter(no_sleep):
+    """A flapping provider that succeeds between failures never trips the
+    breaker: any successful hop resets consecutive_provider_failures to 0."""
+    from prover.workflow import AgentExecutor, ProofMessage
+
+    state = ProofState(theorem_statement="t")
+    # succeeds, then fails, then fails (2 consecutive, below threshold of 3).
+    agent = _success_then_fail_agent()
+    ex = AgentExecutor(agent, state=state)
+    msg = ProofMessage(content="x", max_iterations=10)
+
+    _run_handle(ex, msg)  # hop 1: success -> resets counter
+    assert msg.consecutive_provider_failures == 0
+    _run_handle(ex, msg)  # hop 2: failure
+    assert msg.consecutive_provider_failures == 1
+    assert msg.provider_outage is False
+    _run_handle(ex, msg)  # hop 3: failure (2 consecutive)
+    assert msg.consecutive_provider_failures == 2
+    assert msg.provider_outage is False  # still below breaker
+
+
+def test_context_window_error_is_not_a_provider_failure(no_sleep):
+    """A context-length overflow is a request-size issue, not a provider outage:
+    it must NOT refund the iteration or trip the breaker."""
+    from prover.workflow import AgentExecutor, ProofMessage
+
+    state = ProofState(theorem_statement="t")
+    agent = _failing_agent(
+        exc=RuntimeError("This model's maximum context length is 128000 tokens "
+                         "(context_length_exceeded)."))
+    ex = AgentExecutor(agent, state=state)
+    msg = ProofMessage(content="x", iteration=3, max_iterations=10)
+
+    _run_handle(ex, msg)
+
+    assert msg.provider_failures == 0
+    assert msg.provider_outage is False
+    assert msg.consecutive_provider_failures == 0
+    # Context overflow is real attempted work (truncation retry) -> the entry
+    # iteration increment (3 -> 4) is NOT refunded.
+    assert msg.iteration == 4
+
+
+def test_result_kind_provider_outage_when_outage_flag_set():
+    """_derive_result_kind surfaces provider_outage, distinct from no_progress,
+    but real progress (sorry_decreased) still outranks the outage flag."""
+    from prover.run_prover_bg import _derive_result_kind
+
+    # Outage, no progress, no structural progress -> provider_outage.
+    assert _derive_result_kind(
+        {"provider_outage": True, "provider_failures": 3}, 4, 4
+    ) == "provider_outage"
+    # Outage BUT sorry dropped -> still harvestable (sorry_decreased wins).
+    assert _derive_result_kind(
+        {"provider_outage": True, "provider_failures": 3}, 2, 4
+    ) == "sorry_decreased"
+    # No outage, no progress -> legacy no_progress.
+    assert _derive_result_kind({}, 4, 4) == "no_progress"
+    # Crashed outranks everything (result carries an error key).
+    assert _derive_result_kind(
+        {"provider_outage": True, "error": "boom"}, 4, 4
+    ) == "crashed"
