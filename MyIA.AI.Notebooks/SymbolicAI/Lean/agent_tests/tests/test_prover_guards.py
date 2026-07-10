@@ -1135,6 +1135,150 @@ def test_delta0_hardcap_ignored_when_proof_found():
 
 
 # ──────────────────────────────────────────────────────────────────────────
+# #5869 — provider-outage circuit-breaker. A dead LLM provider makes every
+# agent.run() raise a transport/service error. Before the guard the harness
+# spun at ~50ms/iteration and burned the WHOLE budget in <2s with zero proof
+# progress. The guard adds: exponential backoff, a consecutive-failure
+# circuit-breaker (>=3 -> terminal provider_outage yield), and an iteration
+# refund so transport errors don't consume budget.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def _outage_agent(name="TacticAgent", exc_msg="OpenAIChatCompletionClient service failed"):
+    """An agent whose .run always raises a transport/service error (the
+    forensic signature of the #5869 burn loop)."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    agent = MagicMock()
+    agent.name = name
+    agent.run = AsyncMock(side_effect=RuntimeError(exc_msg))
+    return agent
+
+
+def test_provider_outage_detector_classifies_signatures():
+    """_is_provider_outage_error catches the SK wrapper + transient errors,
+    but NOT a 404 config bug (which _is_transient_error already excludes)."""
+    from prover.workflow import _is_provider_outage_error, _is_transient_error
+
+    assert _is_provider_outage_error(
+        RuntimeError("OpenAIChatCompletionClient service failed"))
+    assert _is_provider_outage_error(ConnectionError("connection closed by peer"))
+    # transient errors are a subset — still classified as outage-relevant
+    assert _is_provider_outage_error(RuntimeError("upstream 503 service unavailable"))
+    # a 404 config bug is NOT a dead provider, even wrapped in transport prose
+    assert not _is_provider_outage_error(RuntimeError("model not found (404)"))
+    assert not _is_transient_error(RuntimeError("model not found (404)"))
+
+
+def test_provider_outage_circuit_break_trips_on_third_failure(monkeypatch):
+    """Pre-seeded at 2 failures, the 3rd agent.run failure trips the breaker:
+    handle yields terminal output, latches state.provider_outage, and refunds
+    the iteration (budget intact)."""
+    from prover.workflow import (
+        AgentExecutor, ProofMessage, PROVIDER_OUTAGE_THRESHOLD,
+    )
+
+    state = ProofState(theorem_statement="t")
+    state.consecutive_provider_failures = PROVIDER_OUTAGE_THRESHOLD - 1
+    agent = _outage_agent()
+    ex = AgentExecutor(agent, state=state)
+    msg = ProofMessage(content="x", max_iterations=10)
+    ctx = _run_handle(ex, msg)
+
+    ctx.yield_output.assert_awaited_once()      # terminal yield (ends the run)
+    assert state.provider_outage is True        # latched
+    # Budget intact: iteration was incremented then refunded (no real attempt)
+    assert msg.iteration == 0
+    agent.run.assert_awaited_once()             # the failing call happened
+
+
+def test_provider_outage_budget_intact_across_five_failures(monkeypatch):
+    """Outage ×5: across 5 handler passes the iteration budget stays intact
+    (every transport error is refunded) and provider_outage is latched from
+    the 3rd pass on. Backoff zeroed so the test is fast."""
+    import prover.workflow as wf
+    from prover.workflow import AgentExecutor, ProofMessage
+    monkeypatch.setattr(wf, "PROVIDER_OUTAGE_BACKOFF_S", (0.0,) * 7)
+
+    state = ProofState(theorem_statement="t")
+    agent = _outage_agent()
+    ex = AgentExecutor(agent, state=state)
+    msg = ProofMessage(content="x", max_iterations=10)
+
+    for i in range(5):
+        before = msg.iteration
+        _run_handle(ex, msg)
+        # Budget never consumed by a transport error (refund every pass)
+        assert msg.iteration == before, f"pass {i+1}: iteration drifted {before}->{msg.iteration}"
+    assert state.provider_outage is True
+    assert state.consecutive_provider_failures == 5
+
+
+def test_provider_outage_below_threshold_no_trip(monkeypatch):
+    """First failure (n=1 < 3): no circuit-break, no terminal yield — the error
+    is surfaced as 'Agent error' text, the counter increments, budget refunded."""
+    import prover.workflow as wf
+    monkeypatch.setattr(wf, "PROVIDER_OUTAGE_BACKOFF_S", (0.0,) * 7)
+
+    from prover.workflow import AgentExecutor, ProofMessage
+
+    state = ProofState(theorem_statement="t")
+    agent = _outage_agent()
+    ex = AgentExecutor(agent, state=state)
+    msg = ProofMessage(content="x", max_iterations=10)
+    ctx = _run_handle(ex, msg)
+
+    ctx.yield_output.assert_not_awaited()
+    assert state.provider_outage is False
+    assert state.consecutive_provider_failures == 1
+    assert msg.iteration == 0  # refunded, budget intact
+
+
+def test_provider_outage_counter_resets_on_success():
+    """A successful agent.run() clears the consecutive-outage counter so a
+    transient blip does not accumulate to a false trip."""
+    from unittest.mock import AsyncMock, MagicMock
+    from prover.workflow import AgentExecutor, ProofMessage
+
+    state = ProofState(theorem_statement="t")
+    state.consecutive_provider_failures = 2
+    agent = MagicMock()
+    agent.name = "TacticAgent"
+    agent.run = AsyncMock(return_value=MagicMock(messages=[MagicMock(text="ok")]))
+    ex = AgentExecutor(agent, state=state)
+    _run_handle(ex, ProofMessage(content="x"))
+
+    assert state.consecutive_provider_failures == 0
+    assert state.provider_outage is False
+
+
+def test_genuine_error_does_not_trip_circuit_break(monkeypatch):
+    """A non-provider logic error (not transport/outage) preserves the original
+    behavior: no refund, no circuit-break count, no terminal yield."""
+    from unittest.mock import AsyncMock, MagicMock
+    import prover.workflow as wf
+    monkeypatch.setattr(wf, "PROVIDER_OUTAGE_BACKOFF_S", (0.0,) * 7)
+
+    from prover.workflow import AgentExecutor, ProofMessage
+
+    state = ProofState(theorem_statement="t")
+    agent = MagicMock()
+    agent.name = "TacticAgent"
+    # A plain KeyError is a logic bug, not a provider failure
+    agent.run = AsyncMock(side_effect=KeyError("malformed agent payload"))
+    ex = AgentExecutor(agent, state=state)
+    msg = ProofMessage(content="x", max_iterations=10)
+    msg.iteration = 3  # pretend we are mid-budget
+    ctx = _run_handle(ex, msg)
+
+    ctx.yield_output.assert_not_awaited()
+    assert state.provider_outage is False
+    assert state.consecutive_provider_failures == 0  # not counted
+    # NOT refunded: iteration was consumed by a real (non-transport) failure path
+    assert msg.iteration == 4
+
+
+# ──────────────────────────────────────────────────────────────────────────
 # P5/P4 (Epic #1453, 2026-05-29 forensic) — pre-screen documented-intractable
 # targets BEFORE spawning agents.
 #

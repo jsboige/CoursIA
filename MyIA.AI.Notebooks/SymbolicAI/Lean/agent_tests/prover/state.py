@@ -99,6 +99,16 @@ class ProofState:
     # Lets workflow executors force-route a stuck session without re-deriving it.
     consecutive_delta0_compiles: int = 0
 
+    # Provider-outage circuit-breaker (#5869). consecutive_provider_failures is
+    # incremented by AgentExecutor on every transport/service error from
+    # agent.run() and reset on a successful call. On reaching the threshold
+    # (workflow.PROVIDER_OUTAGE_THRESHOLD), provider_outage is latched True and
+    # the message is yielded as terminal output — provers.py breaks and
+    # run_prover_bg surfaces a distinct 'provider_outage' verdict so a dead
+    # provider is not re-harvested as a failed proof. See workflow._on_provider_failure.
+    consecutive_provider_failures: int = 0
+    provider_outage: bool = False
+
     # B.3: Explicit attack plan set by CoordinatorAgent
     plan: List[str] = field(default_factory=list)
     plan_phase: int = 0  # Current step in the plan

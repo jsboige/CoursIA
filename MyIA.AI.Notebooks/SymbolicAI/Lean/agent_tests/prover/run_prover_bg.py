@@ -143,6 +143,13 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     #   no_progress      -> diagnostic data only
     if isinstance(result, dict) and result.get("error"):
         result_kind = "crashed"
+    elif isinstance(result, dict) and result.get("provider_outage"):
+        # #5869: the LLM provider was unreachable (>=3 consecutive transport
+        # failures). Ranked ABOVE sorry_decreased/structural_only so a dead
+        # run is never re-harvested as proof progress. DISTINCT from crashed
+        # (a harness exception) — here the workflow ended cleanly via the
+        # circuit-breaker yield, it just could not reach the model.
+        result_kind = "provider_outage"
     elif final_sorry < original_sorry:
         result_kind = "sorry_decreased"
     elif isinstance(result, dict) and result.get("structural_progress"):
@@ -160,7 +167,12 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     # SUCCESS/FAILED label from the boolean to match the prover's own internal
     # RESULT line (provers.py:880/1580).
     _success = bool(result.get("success")) if isinstance(result, dict) else False
-    print(f"RESULT: {'SUCCESS' if _success else 'FAILED'}")
+    # #5869: provider_outage is a distinct terminal state — the run did not
+    # fail to prove, the provider was unreachable. Label it OUTAGE so a human
+    # scanning logs does not mistake it for a proof failure.
+    _label = ("OUTAGE" if result_kind == "provider_outage"
+              else "SUCCESS" if _success else "FAILED")
+    print(f"RESULT: {_label}")
     print(f"  Verdict: {result_kind}")
     print(f"  Sorry: {original_sorry} → {final_sorry}")
     _actual_iters = result.get("iterations") if isinstance(result, dict) else None
@@ -191,8 +203,12 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         "sorry_delta": final_sorry - original_sorry,
         "sorry_reduction": original_sorry - final_sorry,  # positif = progres (lecture non ambigue)
         # Canonical verdict (see derivation above): sorry_decreased |
-        # structural_only | no_progress | crashed | already_solved.
+        # structural_only | no_progress | crashed | provider_outage |
+        # already_solved.
         "result_kind": result_kind,
+        # #5869: explicit boolean mirror of the verdict so downstream forensic
+        # aggregators can filter dead-provider runs without string-matching.
+        "provider_outage": result_kind == "provider_outage",
         "elapsed_s": round(elapsed, 1),
         "result": result,
         "trace_file": trace_path,

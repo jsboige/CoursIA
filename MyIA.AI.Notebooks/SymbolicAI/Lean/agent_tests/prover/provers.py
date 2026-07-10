@@ -911,6 +911,11 @@ class MultiAgentSorryProver:
             # from an actual sorry reduction. Without this, both report
             # success=True and consumers cannot tell them apart.
             "structural_progress": structural_progress,
+            # #5869: provider-outage circuit-breaker. True when the workflow
+            # terminated early because the LLM provider was unreachable (>=3
+            # consecutive transport failures). Distinct from a genuine proof
+            # failure so a coordinator does not re-harvest a dead run.
+            "provider_outage": bool(getattr(state, "provider_outage", False)),
             # FX-6 (#1453): diagnostic fields for the statement-mutation guard.
             "verified_tactic_count": verified_tactic_count,
             **({"flag": "STMT_MUTATION_FALSE_SUCCESS"} if stmt_mutation else {}),

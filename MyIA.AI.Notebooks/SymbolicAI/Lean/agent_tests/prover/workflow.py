@@ -58,6 +58,26 @@ DEFAULT_AGENT_TIMEOUT_S = 600
 TRANSIENT_RETRY_MAX = 2
 TRANSIENT_RETRY_BACKOFF_S = (2.0, 4.0)
 
+# Provider-outage circuit-breaker (#5869). A dead provider (rate-limited
+# gateway, network partition, expired key, or the Semantic Kernel
+# ``OpenAIChatCompletionClient service failed`` transport wrapper) makes every
+# agent.run() raise a transport/service error. Before this guard the harness
+# spun at ~50ms/iteration: the non-transient ``else`` branch of handle()'s
+# except returned an "Agent error: …" string with NO sleep, and msg.iteration
+# had already been consumed at the top of handle(), so a single outage burned
+# the ENTIRE iteration budget in <2s with zero proof progress (forensic trace:
+# 20 loops of "OpenAIChatCompletionClient service failed" in 1.5s, budget
+# 20->0, 0 sorry touched). Three guards, all in handle()'s except block:
+#   1. exponential backoff on every provider failure (kills the spin),
+#   2. a shared consecutive-failure counter (state.consecutive_provider_failures,
+#      reset on a successful call) with a circuit-breaker threshold — on trip,
+#      state.provider_outage is latched and handle() yields the message as
+#      terminal output, ending the workflow run,
+#   3. iteration refund on pure transport errors so the budget stays intact.
+# run_prover_bg.py then surfaces a distinct 'provider_outage' verdict.
+PROVIDER_OUTAGE_THRESHOLD = 3
+PROVIDER_OUTAGE_BACKOFF_S = (1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 60.0)
+
 # P1 stagnation hard-cap (Epic #1453). The compile tool (tools.py) computes
 # the number of consecutive Δ0 compiles — a build that succeeds but does NOT
 # reach a new sorry-count low — and mirrors it to
@@ -119,6 +139,37 @@ def _is_transient_error(exc: BaseException) -> bool:
     return any(marker in msg for marker in transient_markers)
 
 
+def _is_provider_outage_error(exc: BaseException) -> bool:
+    """Broad provider/transport failure detector for the circuit-breaker (#5869).
+
+    Superset of ``_is_transient_error``: that one is strict (only specific
+    5xx / connection-reset / timeout markers) so the bounded retry path does
+    not hammer a 404 config bug. This detector ALSO catches transport-layer
+    failures that carry no status_code and no recognized marker word — most
+    notably the Semantic Kernel ``OpenAIChatCompletionClient service failed``
+    wrapper raised when the underlying httpx call dies mid-request, which was
+    the exact forensic signature of the #5869 burn loop. Everything matched
+    here counts toward the circuit-breaker; a 404 / 4xx config error still
+    does NOT (genuine bug, not a dead provider).
+    """
+    if _is_transient_error(exc):
+        return True
+    msg = str(exc).lower()
+    # Defensive: a config bug (404/4xx) wrapped in a transport message is
+    # still a config bug — never a dead provider.
+    if any(code in msg for code in (" 404", "404 ", "not found",
+                                    " 401", " 403", " 422",
+                                    "unauthorized", "forbidden")):
+        return False
+    return any(m in msg for m in (
+        "service failed", "service unavailable",
+        "chatcompletionclient",            # SK wrapper signature
+        "connection error", "connection closed", "connection broken",
+        "max retries exceeded",
+        "remote protocol error", "incomplete chunked read",
+    ))
+
+
 @dataclass
 class ProofMessage:
     """Message flowing between agents in the workflow."""
@@ -170,6 +221,63 @@ class AgentExecutor(Executor):
         # P1 (Epic #1453): hard ceiling on consecutive Δ0 compiles; see
         # DELTA0_STAGNATION_HARDCAP. Read live from state on every iteration.
         self._delta0_stagnation_hardcap = DELTA0_STAGNATION_HARDCAP
+
+    async def _on_provider_failure(self, msg: "ProofMessage", exc: BaseException,
+                                    role: str) -> bool:
+        """Record a provider/transport failure: backoff + circuit-break + refund.
+
+        Called from handle()'s except block when ``agent.run()`` failed with a
+        provider/transport error (transient retries exhausted, or a
+        non-transient outage like the SK ``service failed`` wrapper). Guards
+        (#5869):
+
+        * Increments ``state.consecutive_provider_failures`` (shared across
+          agents, reset on a successful call).
+        * Refunds ``msg.iteration``: handle() incremented it BEFORE the attempt,
+          but a transport error means no real tactic was tried, so the budget
+          must stay intact (acceptance: 'budget intact' on a mocked outage).
+        * On reaching PROVIDER_OUTAGE_THRESHOLD, latches
+          ``state.provider_outage`` and returns True so the caller yields the
+          message as terminal output (which ends the workflow run). No backoff
+          on the trip itself — we are terminating, not retrying.
+        * Below the threshold, sleeps an exponential backoff indexed by the
+          failure count to kill the ~50ms spin, then returns False so handle()
+          re-routes (the coordinator may recover or re-dispatch).
+
+        Returns True iff the circuit-breaker tripped (caller MUST yield+return).
+        """
+        if self._state is not None:
+            n = getattr(self._state, "consecutive_provider_failures", 0) + 1
+            self._state.consecutive_provider_failures = n
+        else:
+            n = 1
+        # Refund the iteration consumed at the top of handle(): a transport
+        # error means no real tactic attempt, so the budget stays intact.
+        msg.iteration = max(0, msg.iteration - 1)
+        if n >= PROVIDER_OUTAGE_THRESHOLD:
+            if self._state is not None:
+                self._state.provider_outage = True
+                self._state.last_error = str(exc)[:300]
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name,
+                    role="provider_outage_circuit_break",
+                    content=(f"consecutive provider failures={n} >= "
+                             f"{PROVIDER_OUTAGE_THRESHOLD}: circuit-break OPEN, "
+                             f"yielding provider_outage. exc={repr(exc)[:160]}"),
+                )
+            return True
+        backoff = PROVIDER_OUTAGE_BACKOFF_S[
+            min(n - 1, len(PROVIDER_OUTAGE_BACKOFF_S) - 1)
+        ]
+        if self._trace:
+            self._trace.log(
+                agent=self._agent.name, role=role,
+                content=(f"provider failure #{n}/{PROVIDER_OUTAGE_THRESHOLD}: "
+                         f"{repr(exc)[:160]}; backoff {backoff}s"),
+            )
+        await asyncio.sleep(backoff)
+        return False
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
@@ -304,9 +412,11 @@ class AgentExecutor(Executor):
             len(self._state.tactic_history)
             if self._state and hasattr(self._state, "tactic_history") else 0
         )
+        _provider_ok = False
         try:
             response = await self._agent.run(content)
             response_text = self._extract_response_text(response)
+            _provider_ok = True  # provider answered -> clear outage counter (#5869)
         except Exception as e:
             # P3 (V5): context-window overflow handler. Fast models (Critic,
             # Search) have smaller context windows than reasoning models.
@@ -341,6 +451,7 @@ class AgentExecutor(Executor):
                 try:
                     response = await self._agent.run(_trunc_header + _truncated)
                     response_text = self._extract_response_text(response)
+                    _provider_ok = True
                 except Exception as e2:
                     # Second failure — produce minimal recovery signal
                     response_text = (
@@ -380,6 +491,7 @@ class AgentExecutor(Executor):
                     try:
                         response = await self._agent.run(content)
                         response_text = self._extract_response_text(response)
+                        _provider_ok = True
                         break
                     except Exception as e_retry:
                         _last_exc = e_retry
@@ -389,21 +501,50 @@ class AgentExecutor(Executor):
                             break
                 if response_text is None:
                     # Retries exhausted (or a non-transient error surfaced) —
-                    # fall through to the existing failure handling, do NOT
-                    # swallow the error silently.
+                    # count toward the circuit-breaker; do NOT swallow silently.
                     response_text = f"Agent error: {_last_exc}"
                     if self._trace:
                         self._trace.log(
                             agent=self._agent.name, role="transient_retry_failed",
                             content=str(_last_exc)[:200],
                         )
+                    if _is_provider_outage_error(_last_exc) and await self._on_provider_failure(
+                            msg, _last_exc, "transient_retry_failed"):
+                        await ctx.yield_output(msg)
+                        return
+            elif _is_provider_outage_error(e):
+                # Non-transient transport/provider failure (e.g. the Semantic
+                # Kernel 'OpenAIChatCompletionClient service failed' wrapper
+                # that carries no 5xx/reset/timeout marker). Not retried here —
+                # the strict _is_transient_error path owns bounded retry — but
+                # it still counts toward the circuit-breaker and earns an
+                # exponential backoff to kill the ~50ms spin (#5869).
+                response_text = f"Agent error: {e}"
+                if self._trace:
+                    self._trace.log(
+                        agent=self._agent.name, role="provider_outage",
+                        content=str(e)[:200],
+                    )
+                if await self._on_provider_failure(msg, e, "provider_outage"):
+                    await ctx.yield_output(msg)
+                    return
             else:
+                # Genuine agent/logic error (not a provider outage): preserve
+                # the original behavior — no iteration refund, no circuit-break
+                # count, just route the error text to the next agent.
                 response_text = f"Agent error: {e}"
                 if self._trace:
                     self._trace.log(
                         agent=self._agent.name, role="error",
                         content=str(e)[:200],
                     )
+
+        # A successful agent.run() means the provider is alive — clear the
+        # consecutive-outage counter so transient blips don't accumulate to a
+        # false trip (#5869). Reached only on the non-terminal paths above.
+        if _provider_ok and self._state and getattr(
+                self._state, "consecutive_provider_failures", 0):
+            self._state.consecutive_provider_failures = 0
 
         # Detect "burned response" — thinking models sometimes spend their entire
         # output budget in `reasoning_content` and emit no visible parts.
