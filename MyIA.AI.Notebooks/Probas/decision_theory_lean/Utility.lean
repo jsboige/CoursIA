@@ -15,13 +15,15 @@ representation theorem.
 - `Utility.Axioms`: completeness, transitivity, independence, continuity;
   `IsRational` bundles the four vNM axioms.
 - `Utility.Representation`: `IsExpectedUtilityRep`, the sound direction
-  (representation ⟹ rationality, proved sorry-free), and affine stability
-  (uniqueness up to positive affine transformation). The existence direction
-  is documented as an open milestone.
+  (representation ⟹ rationality, proved sorry-free), affine stability
+  (uniqueness up to positive affine transformation), and the order-theoretic
+  algebra of `≻` / `~` (strict order, equivalence relation, trichotomy). The
+  existence direction is documented as an open milestone.
 
 ## Status
 - Proved sorry-free: expectation algebra, all four axioms under a
-  representation, affine stability.
+  representation, affine stability, and the order-theoretic algebra of strict
+  preference and indifference (strict order + equivalence + trichotomy).
 - Open (next milestone): the existence direction `IsRational P → ∃ u,
   IsExpectedUtilityRep u P` (the substantive Herstein–Milnor theorem).
 

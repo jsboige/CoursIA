@@ -220,6 +220,99 @@ theorem strict_irrefl (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u
 
 end StrictAndIndifference
 
+section OrderAlgebra
+
+/-!
+## The order-theoretic algebra of a represented preference
+
+`rep_strict_iff` and `rep_indifference_iff` transport a represented preference
+onto the order of `ℝ`. Consequently the strict part `≻` inherits the structure
+of a strict order (irreflexive — already shown in `StrictAndIndifference` —,
+asymmetric, transitive), the indifference part `~` inherits that of an
+equivalence relation, and the two interleave: a strict step absorbs an adjacent
+indifferent step. Each proof below is the corresponding elementary fact about
+`<` / `=` on `ℝ`, pulled back through the representation. Together they close the
+trichotomy that `StrictAndIndifference` opens. -/
+
+/-- **Indifference matches equality of expected utility.** Restatement of
+`rep_indifference_iff` through the named relation `Indiff`; the two are the same
+conjunction definitionally, so the proof is the earlier equivalence verbatim. -/
+theorem rep_indiff_iff (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
+    (p q : Lottery α) :
+    Indiff P p q ↔ expectation p u = expectation q u :=
+  rep_indifference_iff u P h p q
+
+/-- **Strict preference is asymmetric**: `p ≻ q` forbids `q ≻ p`, because
+`E_p > E_q` excludes `E_q > E_p`. -/
+theorem strict_asymm (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
+    {p q : Lottery α} (hpq : StrictPref P p q) : ¬ StrictPref P q p := by
+  rw [rep_strict_iff u P h] at hpq ⊢
+  intro hqp
+  linarith
+
+/-- **Strict preference is transitive**: `p ≻ q` and `q ≻ r` give `p ≻ r`,
+chaining `E_p > E_q > E_r`. With `strict_irrefl` and `strict_asymm`, `≻` is a
+strict order. -/
+theorem strict_trans (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
+    {p q r : Lottery α} (hpq : StrictPref P p q) (hqr : StrictPref P q r) :
+    StrictPref P p r := by
+  rw [rep_strict_iff u P h] at hpq hqr ⊢
+  linarith
+
+/-- **Indifference is reflexive**: every lottery is indifferent to itself
+(`E_p = E_p`). -/
+theorem indiff_refl (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
+    (p : Lottery α) : Indiff P p p := by
+  rw [rep_indiff_iff u P h]
+
+/-- **Indifference is symmetric**: `p ~ q` gives `q ~ p` (equality is
+symmetric). -/
+theorem indiff_symm (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
+    {p q : Lottery α} (hpq : Indiff P p q) : Indiff P q p := by
+  rw [rep_indiff_iff u P h] at hpq ⊢
+  linarith
+
+/-- **Indifference is transitive**: `p ~ q` and `q ~ r` give `p ~ r`
+(`E_p = E_q = E_r`). With reflexivity and symmetry, `~` is an equivalence
+relation on lotteries. -/
+theorem indiff_trans (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
+    {p q r : Lottery α} (hpq : Indiff P p q) (hqr : Indiff P q r) :
+    Indiff P p r := by
+  rw [rep_indiff_iff u P h] at hpq hqr ⊢
+  linarith
+
+/-- **A strict step absorbs a following indifferent step**: `p ≻ q` and `q ~ r`
+give `p ≻ r` (`E_p > E_q = E_r`). -/
+theorem strict_indiff_trans (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
+    {p q r : Lottery α} (hpq : StrictPref P p q) (hqr : Indiff P q r) :
+    StrictPref P p r := by
+  rw [rep_strict_iff u P h] at hpq ⊢
+  rw [rep_indiff_iff u P h] at hqr
+  linarith
+
+/-- **An indifferent step absorbs a following strict step**: `p ~ q` and `q ≻ r`
+give `p ≻ r` (`E_p = E_q > E_r`). -/
+theorem indiff_strict_trans (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
+    {p q r : Lottery α} (hpq : Indiff P p q) (hqr : StrictPref P q r) :
+    StrictPref P p r := by
+  rw [rep_indiff_iff u P h] at hpq
+  rw [rep_strict_iff u P h] at hqr ⊢
+  linarith
+
+/-- **Trichotomy**: under a representation any two lotteries fall into at least
+one of `p ≻ q`, `q ≻ p`, `p ~ q`. Exhaustiveness is the trichotomy of `<` on
+`E_p, E_q`; the three cases are moreover mutually exclusive (`strict_asymm`
+rules out the reverse strict, and a strict preference forces `E_p ≠ E_q`). -/
+theorem rep_trichotomy (u : α → ℝ) (P : Pref α) (h : IsExpectedUtilityRep u P)
+    (p q : Lottery α) :
+    StrictPref P p q ∨ StrictPref P q p ∨ Indiff P p q := by
+  rcases lt_trichotomy (expectation p u) (expectation q u) with hlt | heq | hgt
+  · exact Or.inr (Or.inl ((rep_strict_iff u P h q p).mpr hlt))
+  · exact Or.inr (Or.inr ((rep_indiff_iff u P h p q).mpr heq))
+  · exact Or.inl ((rep_strict_iff u P h p q).mpr hgt)
+
+end OrderAlgebra
+
 /-!
 ## Existence direction — OPEN milestone
 
