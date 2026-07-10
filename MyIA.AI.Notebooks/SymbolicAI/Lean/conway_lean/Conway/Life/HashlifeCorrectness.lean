@@ -3003,7 +3003,34 @@ theorem p5_large_n_jump (n : Nat) (g : Grid) (h : BoxAssezGrand g n)
 
 /-- **P5.3** (glue): the full induction on `n`, with a case split on
     `n < 2^(k-2)` (P5.1) vs `n ≥ 2^(k-2)` (P5.2). Stays `sorry` until both
-    sub-lemmas are proven. -/
+    sub-lemmas are proven.
+
+    **P5 vacuity analysis (c.307a, 2026-07-10)**: on non-empty grids, the
+    hypotheses of the `¬ hsmall` branch are jointly unsatisfiable — see
+    `p5_large_n_hyps_unsat` (L425). Concretely:
+    - `BoxAssezGrand g n` caps `n ≤ 2` (`boxAssezGrand_nonempty_le_two`,
+      proven L358);
+    - `n ≥ jumpSize (gridToMacroCellWithOffset g).2.level` requires
+      `n ≥ 8` (`jumpSize_gridLevel_ge_eight`, proven L411).
+    The conjunction `2 ≤ n ∧ n ≥ 8` is impossible. Hence the large-n arm
+    is vacuous on non-empty grids, and `hashlife_correct` would be proven
+    if the empty-grid arm (`g = []`) is closed separately (by direct unfold
+    of `evolveHashlifeFastAux` on `g = []`, which takes the guard-false
+    direct `evolve n g` arm because empty grids yield a level-0 MacroCell
+    whose `lvl ≥ 2` guard is false).
+
+    **Honest disclosure**: this vacuity closure is STRUCTURAL, not
+    operational. It proves `hashlife_correct` (the bounded correctness
+    theorem) WITHOUT actually exercising a Hashlife jump on non-empty
+    grids — `box_assez_grand` is too tight (padding margin = 2 cells) to
+    allow `n ≥ 8`. The genuine P5.2 jump-step correctness
+    (`p5_large_n_jump`, L2999) remains an open sorry, gated on the P4 unlock
+    per the section header at L2982. The vacuity closure demonstrates that
+    `hashlife_correct`'s STATEMENT is satisfiable on canonical witness
+    patterns (`hashlife_correct_implies_block_4` / `_glider_8`), but the
+    theorem needs a SATISFIABILITY REDESIGN (`box_assez_grand` → a weaker
+    hypothesis that allows `n ≥ 8`) before the genuine P5 jump can be
+    proven. -/
 theorem p5_inductive_step (n : Nat) (g : Grid) (h : BoxAssezGrand g n) :
     evolveHashlifeFast n g = evolve n g := by
   by_cases hsmall : n < jumpSize (gridToMacroCellWithOffset g).2.level
