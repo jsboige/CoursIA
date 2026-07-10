@@ -16,13 +16,20 @@ require mathlib from git
 --
 -- Skeleton c.299 (po-2026) : structure lake validee SANS deplacer aucun
 -- module. Les absorptions de modules suivront en PR dediees (c.300+).
--- A ce stade, le seul `lean_lib` est `StableMarriage` (vide, juste pour
--- valider le wiring) ; aucun import reel de `stable_marriage_lean/...`
--- pour eviter couplage circular lake (chaque absorption = PR separe).
+--
+-- c.306 (po-2026) : ajout d'un second `lean_lib CooperativeGames` qui suit
+-- le pattern `decision_theory_lean` (cf `Probas/decision_theory_lean/lakefile.lean`
+-- ou `Gittins`/`Utility`/`Coherence` cohabitent comme libs distinctes du
+-- meme package `decision_theory_lean`). Cela valide la structure multi-lib
+-- du lake cible sans coupler `StableMarriage` et `CooperativeGames`
+-- (chaque lib reste un point d'entree independant vers Mathlib).
 --
 -- Convention i18n EPIC #4980 (cf decision_theory_lean precedent) :
 -- `globs` (et non `roots`) avec suffixe `.*` pour auto-decouvrir siblings `_en`.
--- Aplicable des qu'un premier module absorbe arrive (c.300+).
 @[default_target]
 lean_lib StableMarriage where
   globs := #[`StableMarriage.*]
+
+@[default_target]
+lean_lib CooperativeGames where
+  globs := #[`CooperativeGames.*]
