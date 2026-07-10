@@ -203,5 +203,99 @@ theorem chebDist_le_succ_iff (p q : Int × Int) (t : Nat) :
 theorem chebDist_le_succ (p q : Int × Int) (t : Nat) (h : chebDist p q ≤ t) :
     chebDist p q ≤ t + 1 := h.trans (Nat.le_succ t)
 
+/-! ## Tight Chebyshev reach — the Game-of-Life speed of light
+
+The fundamental TIGHT locality result, stated as a *reach* theorem: after `t`
+generations, a cell alive at `evolve t g` lies within Chebyshev distance `t` of
+some initially alive cell of `g`. This is the speed-of-light bound — strictly
+sharper than the Manhattan-`2*t` light cone demanded by `step_light_cone`. It
+wires the set-level growth (`chebDist_le_succ_iff`, one Moore shell adds
+Chebyshev-1) into the B3/S23 semantics: `candidates g = g ++ g.flatMap
+mooreNeighbors` is exactly the Chebyshev-1 dilation of the alive set, so each
+`step` grows the reachable region by exactly one Moore shell. Epic #3846, N2
+step 2. Sorry-free. -/
+
+/-- Bridge between `isAlive` (Boolean membership) and List membership. -/
+theorem isAlive_true_iff_mem (g : Grid) (p : Int × Int) :
+    isAlive g p = true ↔ p ∈ g := by
+  rw [isAlive]; exact List.elem_iff
+
+/-- A Moore neighbor of `p` is at Chebyshev distance at most 1 — the tight
+    bound (vs `manhattan_moore_le_two`'s loose `≤ 2`). -/
+theorem chebDist_le_one_of_moore (p q : Int × Int)
+    (hq : q ∈ mooreNeighbors p) : chebDist p q ≤ 1 := by
+  unfold chebDist mooreNeighbors at *
+  simp only [List.mem_cons] at hq
+  rcases hq with h | h | h | h | h | h | h | h | h
+  · have hd1 : q.1 - p.1 = -1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = -1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 0 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = -1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 0 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 0 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 0 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · simp at h
+
+/-- **Tight GoL speed of light (reach form).** If `q` is alive after `t`
+    generations of evolution from `g`, then `q` is within Chebyshev radius `t`
+    of some initially-alive cell of `g`.
+
+    Proof by induction on `t`:
+    - Base `t = 0`: `evolve 0 g = g`, witness `p = q`, `chebDist q q = 0`.
+    - Step `t = n + 1`: `isAlive (evolve (n+1) g) q = aliveNext (evolve n g) q`
+      (by `isAlive_step_eq_aliveNext`), and `aliveNext … = true` puts
+      `q ∈ candidates (evolve n g)`. Membership splits (`List.mem_append`) into:
+      (a) `q ∈ evolve n g` — `q` alive at gen `n`, so the IH gives a witness
+      within `chebDist ≤ n ≤ n+1`; or (b) `q ∈ (evolve n g).flatMap mooreNeighbors`
+      — some `r` alive at gen `n` with `q ∈ mooreNeighbors r`, so the IH gives a
+      witness within `chebDist p r ≤ n`, `chebDist_le_one_of_moore` gives
+      `chebDist r q ≤ 1`, and the triangle inequality yields `≤ n+1`. -/
+theorem evolve_reach_chebyshev (t : Nat) (g : Grid) (q : Int × Int)
+    (h_alive : isAlive (evolve t g) q = true) :
+    ∃ p, isAlive g p = true ∧ chebDist p q ≤ t := by
+  induction t generalizing q with
+  | zero =>
+    simp only [evolve_zero] at h_alive
+    exact ⟨q, h_alive, (chebDist_self q).le⟩
+  | succ n ih =>
+    simp only [evolve_succ] at h_alive
+    rw [isAlive_step_eq_aliveNext] at h_alive
+    have hmem : q ∈ candidates (evolve n g) :=
+      aliveNext_true_mem_candidates (evolve n g) q h_alive
+    unfold candidates at hmem
+    rw [List.mem_append] at hmem
+    rcases hmem with h_self | h_nbr
+    · -- (a) q alive at gen n: IH directly
+      have hq : isAlive (evolve n g) q = true :=
+        (isAlive_true_iff_mem (evolve n g) q).mpr h_self
+      obtain ⟨p, hp, hcheb⟩ := ih q hq
+      exact ⟨p, hp, hcheb.trans (Nat.le_succ n)⟩
+    · -- (b) q is a Moore neighbor of some r alive at gen n
+      rw [List.mem_flatMap] at h_nbr
+      obtain ⟨r, hr_mem, hrq⟩ := h_nbr
+      have hr : isAlive (evolve n g) r = true :=
+        (isAlive_true_iff_mem (evolve n g) r).mpr hr_mem
+      obtain ⟨p, hp, hpr⟩ := ih r hr
+      refine ⟨p, hp, ?_⟩
+      have hrq_cheb : chebDist r q ≤ 1 := chebDist_le_one_of_moore r q hrq
+      exact (chebDist_triangle p q r).trans (add_le_add hpr hrq_cheb)
+
 end Life
 end Conway
