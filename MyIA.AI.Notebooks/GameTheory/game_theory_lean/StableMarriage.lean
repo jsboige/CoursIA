@@ -7,9 +7,9 @@
 
   - `StableMarriage.Definitions`      (absorbe c.300)
   - `StableMarriage.GSState`          (c.301)
-  - `StableMarriage.Lemmas`           (c.302)
-  - `StableMarriage.GaleShapley`      (c.303)
-  - `StableMarriage.Lattice`          (c.304)
+  - `StableMarriage.Lemmas`           (c.302/c.303)
+  - `StableMarriage.GaleShapley`      (c.304)
+  - `StableMarriage.Lattice`          (c.305)
 
   La suppression des fichiers source dans `stable_marriage_lean/`
   interviendra en c.305 (PR dediee `debt`/`regression-accepted`,
@@ -25,3 +25,5 @@ import StableMarriage.Definitions
 import StableMarriage.Definitions_en
 import StableMarriage.GSState
 import StableMarriage.GSState_en
+import StableMarriage.Lemmas
+import StableMarriage.Lemmas_en
