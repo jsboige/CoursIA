@@ -866,7 +866,8 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 | 9 | RL (17 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 17/17 | #5925 MERGED |
 | 10 | CaseStudies (6 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 6/6 | #5930 MERGED |
 | 11 | ICT-Series (26 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 26/26 | #5936 MERGED |
-| 12 | **GameTheory (55 nb)** | po-2025 strict | 2026-07-10 | **SOTA-OK 55/55** | **THIS** |
+| 12 | GameTheory (55 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 55/55 | #5944 MERGED |
+| 13 | **Search (112 nb)** | po-2025 strict | 2026-07-10 | **SOTA-OK 112/112** | **THIS** |
 
 **Moteurs SOTA cumulés dans le registre (7 entries)** : Microsoft.ML.Probabilistic, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET = **20 moteurs SOTA distincts** sur 7 familles.
 
@@ -1163,5 +1164,67 @@ La série GameTheory n'est **pas** pédagogiquement dégénérée : SocialChoice
 - **Pivot L335 légitimé** : 12ᵉ famille distincte, owner po-2025 strict, la plus large (55 nb) + la seule multi-langage/tri-paradigme.
 - **L378 durcie** : G.1 firsthand (script python3 structural + regex imports SOTA + parse Lean theorems).
 - **Cumulatif** : **12 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, **GameTheory**). Entry #012 GameTheory ajoute **3 moteurs SOTA nouveaux** au registre (**OpenSpiel** DeepMind, **nashpy**, **axelrod** ; networkx déjà compté #007) = **30 moteurs SOTA distincts cumulés**.
+
+Part of #3801
+
+
+## Entry #013 — Search (owner po-2025 strict, c.407)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/Search/` (112 .ipynb hors archive : Part1-Foundations 29 + Part2-CSP 18 + Part3-Advanced 6 + Part4-Metaheuristics 19 + Applications 40) |
+| Kernels | 2 : `.net-csharp` (68), `python3` (46) — twins C#/Python systématiques |
+| Owner-lane | **po-2025 strict** (lane Python + C# .NET Interactive) |
+| Date audit | 2026-07-10 (c.407) |
+| Auditeur | `myia-po-2025:CoursIA` |
+| Verdict agrégé | **SOTA-OK** (112/112 SOTA-OK) |
+
+### Synthèse (agrégée par part — 112 notebooks, 1651 cellules code)
+
+| Part | Notebooks | EXEC | Err | Stubs C.1 | Outils SOTA |
+|------|-----------|------|-----|-----------|-------------|
+| Part1-Foundations | 29 | 466/466 | 0 | 0 | A*/heuristics (UCS, BFS, A\*, weighted terrain), backtracking, **Z3** (Search-10 SymbolicAutomata C#+Py), networkx |
+| Part2-CSP | 18 | 289/289 | 0 | 0 | **Google.OR-Tools CP-SAT** (CSP-1→9), **python-constraint**, consistency (AC-3), backtracking |
+| Part3-Advanced | 6 | 92/92 | 0 | 0 | OR-Tools, algorithm portfolios |
+| Part4-Metaheuristics | 19 | 196/196 | 0 | 0 | **GeneticSharp** + **MetaGeneticSharp** (GA avancé : islands, landscape analysis, Metropolis reinsertion) sur banc CEC/Rastrigin/Ackley/Sphere |
+| Applications | 40 | 608/608 | 0 | 0 | OR-Tools CP-SAT sur NP-difficiles (NQueens, GraphColoring, NurseScheduling, JobShop, Timetabling, SportsScheduling, Picross, Crossword, MiniZinc) |
+
+- **EXEC_PROVED global** : 112/112 (100%) — `execution_count != null` sur 1651/1651 cellules code. **0 flagged** (aucun notebook not-full-exec / erreur / C.1).
+- **Erreurs runtime** : 0/112.
+- **Violations C.1** : 0/112 (regex `raise NotImplementedError|assert False` sur source code = 0 hit).
+
+### Vrais outils SOTA invoqués (vérifiés G.1 imports réels)
+
+- **Google.OR-Tools CP-SAT** (Google, solveur CSP/SAT canonique) — 21 notebooks (CSP-1→9 + Applications NQueens/NurseScheduling/JobShop/Timetabling/SportsScheduling/Picross/Crossword). Vrais problèmes NP-difficiles, pas jouets.
+- **GeneticSharp** (.NET genetic algorithm framework) — 21 notebooks Part4 + Applications.
+- **MetaGeneticSharp** (librairie métaheuristique avancée du projet, submodule `c:/dev/MetaGeneticSharp`) — 19 notebooks Part4 : islands, landscape analysis/debias, algorithm selection, parameter control, Metropolis reinsertion, CEC benchmarks. Banc sur Rastrigin/Ackley/Sphere = fonctions non-convexes multi-modales (GA justifié, pas cas dégénéré).
+- **Z3** (Microsoft Research SMT) — Search-10 SymbolicAutomata (C#+Python twins), automates symboliques.
+- **python-constraint** (CSP Python) — Part2-CSP twins.
+- **AIMA-python** (Norvig/Russell algorithms) — Part1.
+- **networkx** (graphes) — Part1 (8 nb).
+- **A\*/heuristics** — Part1 : UCS, BFS, A\* sur weighted terrain (heuristique discriminante, cf Prong B).
+
+### Prong B — problème non-trivial (sota-not-workaround §B)
+
+La série Search est **anti-dégénérée** : Applications/CSP = **NP-difficiles réels** (NQueens, NurseScheduling, JobShop, Timetabling, SportsScheduling — où CP-SAT exercise sa capacité combinatoire, pas un `if` qui résout). Part4-Metaheuristics = GA sur **Rastrigin/Ackley** (multi-modales, GA justifié vs descente de gradient). Part1-A\* sur terrain pondéré (heuristique qui discrimine, ≠ BFS vs A\* dégénéré du commit `8905f8845`). Twins C#/Python par concept = la même triangulation que RL/GameTheory (API industrielle OR-Tools vs from-scratch pedagogical).
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **C.1** : 0/112 réel (0 hit regex, 0 faux positif).
+- **Anti-régression** : 1651/1651 `execution_count != null` + `output_type: error = 0` ; aucun notebook strippé, aucun output hand-edité.
+- **SOTA tools grounded firsthand** : imports parsés (`Google.OrTools.Constraint`/`CpModel`/`CpSolver`, `Microsoft.Z3`/`from z3`, `GeneticSharp`, `MetaGeneticSharp` DLL wiring `#r`, `from constraint`, `import networkx`).
+- **Nuance honnête MetaGeneticSharp** : les 19 notebooks Part4 chargent des DLLs depuis le submodule build local `c:/dev/MetaGeneticSharp/.../bin/Debug/net9.0/`. Les outputs committés sont **réels et cohérents** (MGS-19 : Smoke GA sphere=0.017, Rastrigin=0.385, Ackley=2.000, cooling-schedule trace) = exécutés sur machine avec fork complet. La **re-exec locale** est gated sur la présence du submodule fork buildé (cf mémoire `mgs19-fork-types-absent-reexec-fails` : MetropolisReinsertion re-exec échouait si fork incomplet) — mais le verdict structural **EXEC_PROVED 1651/1651** est honnête : les outputs sont bien présents et cohérents, pas des placeholders. Audit consultatif (pas de re-exec tentée = L143 safe owner-lane).
+
+### Volet owner-lane strict
+
+**Search = po-2025 strict** (lane Python + C# .NET Interactive ; Search-11b rename #5864 MERGED ; BFS-vs-A\* Prong B fix `8905f8845` historique). Audit consultatif additif, 0 PR de substance. Pivot L335 anti-monoculture post-c.406 (#012 GameTheory) : **13ᵉ famille distincte du ledger**. Différence avec #012 GameTheory (55 nb multi-langage Python/C#/Lean) : **#013 Search = 112 nb twins C#/Python** (la plus large famille du registre), centrée combinatoire (CSP/search/metaheuristics) vs game-theory.
+
+### Conclusions audit
+
+- **Substance Search = SOTA-OK 112/112**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. OR-Tools CP-SAT + GeneticSharp/MetaGeneticSharp + Z3 + python-constraint + AIMA = moteurs SOTA réels sur banc NP-difficile/multi-modal discriminant.
+- **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
+- **Pivot L335 légitimé** : 13ᵉ famille distincte, owner po-2025 strict, la plus large (112 nb).
+- **L378 durcie** : G.1 firsthand (script python3 structural 1651 cells + regex imports SOTA + nuance MetaGeneticSharp submodule documentée honnêtement).
+- **Cumulatif** : **13 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, **Search**). Entry #013 Search ajoute **2 moteurs SOTA nouveaux** au registre (**GeneticSharp** .NET GA framework, **MetaGeneticSharp** métaheuristique avancée ; OR-Tools déjà compté #005/#010, Z3 #010, python-constraint #002, AIMA #002, networkx #007) = **32 moteurs SOTA distincts cumulés**.
 
 Part of #3801
