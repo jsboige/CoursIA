@@ -6,9 +6,35 @@ Au lieu de concevoir un algorithme d'exploration, que se passe-t-il si l'on déc
 
 Les deux premiers notebooks installent le socle. CSP-1 pose le modèle (X, D, C) — variables, domaines, contraintes — et montre que le backtracking de la Partie 1, enrichi de deux heuristiques de bon sens (choisir d'abord la variable la plus contrainte, essayer d'abord la valeur la moins contraignante), résout déjà des problèmes non triviaux. CSP-2 introduit l'idée qui fait la puissance du paradigme : la propagation. Plutôt que de découvrir une impasse en s'y enfonçant, AC-3 et MAC élaguent les valeurs impossibles avant même de les essayer — l'espace de recherche se réduit de lui-même, par simple déduction locale.
 
+Ces deux idées se voient sur le fil rouge de la partie, la coloration de l'Australie. CSP-1 en pose le **graphe de contraintes** : sept variables — les États — reliées par une contrainte de différence par frontière, chacune dotée d'un domaine de trois couleurs (la Tasmanie, sans voisin, flotte hors du graphe) :
+
+[![Graphe de contraintes de la coloration de l'Australie : 7 variables aux domaines de taille 3, la Tasmanie isolée](assets/readme/csp1-backtracking-tree.png)](CSP-1-Fundamentals.ipynb)
+
+CSP-2 montre ensuite la propagation à l'œuvre sur le même graphe : une fois WA fixée à Rouge, AC-3 réduit les domaines de SA et NT à {Vert, Bleu} avant tout essai de valeur — la déduction locale a resserré l'espace de recherche :
+
+[![Propagation AC-3 sur la coloration de l'Australie, avant/après : WA fixée à Rouge, domaines de SA et NT réduits à Vert-Bleu](assets/readme/csp2-ac3-propagation.png)](CSP-2-Consistency.ipynb)
+
 La montée en puissance occupe les quatre notebooks suivants. CSP-3 passe aux contraintes globales (AllDifferent, Cumulative, Circuit), ces contraintes de haut niveau pour lesquelles les solveurs embarquent des propagateurs spécialisés — c'est là que CP-SAT se met à résoudre en quelques millisecondes ce qu'un backtracking naïf mettrait des heures à parcourir. CSP-4 et CSP-5 appliquent l'arsenal aux deux grands classiques industriels : l'ordonnancement (Job-Shop, RCPSP, planification d'infirmiers) et l'optimisation combinatoire (Bin Packing, Knapsack, portefeuille). CSP-6, le notebook le plus avancé, ouvre le capot : la Lazy Clause Generation explique pourquoi CP-SAT s'appelle ainsi — un solveur CP qui apprend des clauses SAT en cours de route — et les hybridations CP+ML et LLM+CSP esquissent ce que devient la discipline à l'ère des grands modèles : le langage naturel comme interface de modélisation, le solveur comme garant.
 
+Trois de ces jalons s'illustrent directement. La contrainte globale `Cumulative` (CSP-3) ordonnance quatre tâches sous une capacité de deux machines — le Gantt optimal, et un profil de charge qui sature la capacité presque partout :
+
+[![Contrainte globale Cumulative : ordonnancement optimal de 4 tâches sur 2 machines, Gantt et profil de charge saturant la capacité 2](assets/readme/csp3-global-constraints.png)](CSP-3-Advanced.ipynb)
+
+CSP-4 passe au Job-Shop : trois jobs s'entrelacent sur trois machines via `IntervalVar` et `NoOverlap`, pour un makespan optimal de 11 :
+
+[![Diagramme de Gantt d'un Job-Shop résolu par CP-SAT : 3 jobs entrelacés sur 3 machines, makespan 11](assets/readme/csp4-jobshop-gantt.png)](CSP-4-Scheduling.ipynb)
+
+Le benchmark de parallélisation de CSP-6 rappelle enfin qu'aucun mécanisme n'est magique : sur un N-Queens 12 résolu en quelques millisecondes, passer de 1 à 4 workers n'apporte aucune accélération — le surcoût de coordination l'emporte et le speedup réel reste sous 1×, loin de l'idéal linéaire :
+
+[![Parallélisation CP-SAT sur N-Queens 12 : temps de résolution et speedup restant sous 1x avec 1, 2 puis 4 workers](assets/readme/csp6-lazy-clause-generation.png)](CSP-6-Hybridization.ipynb)
+
 Les trois derniers notebooks desserrent chacun une hypothèse du cadre classique : et si toutes les contraintes n'avaient pas le même poids (CSP-7, contraintes souples) ? Et si les variables étaient des intervalles de temps (CSP-8, algèbre d'Allen) ? Et si personne ne détenait le problème en entier (CSP-9, résolution distribuée et préservation de la vie privée) ?
+
+L'algèbre d'Allen (CSP-8) donne le vocabulaire de ce temps qualitatif : treize relations de base entre deux intervalles. La figure extraite du notebook n'en rend toutefois **que cinq visibles** (before, meets, overlaps, during, equals) — le tracé des huit autres vignettes est défaillant dans la sortie actuelle du notebook ; limitation illustrative assumée, en attendant une correction du tracé et une ré-exécution :
+
+[![Relations d'Allen entre deux intervalles : rendu partiel, 5 des 13 vignettes tracées (before, meets, overlaps, during, equals)](assets/readme/csp8-allen-algebra.png)](CSP-8-Temporal.ipynb)
+
+*Figures : sorties d'exécution réelles extraites des notebooks (non régénérées, règle C.3), downscalées ≤1200 px / ≤200 ko (EPIC #5654) — provenance détaillée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).*
 
 ## Pourquoi cette partie
 
@@ -23,25 +49,6 @@ Si la Partie 1 enseigne à chercher, celle-ci enseigne à modéliser — et c'es
 3. **Exploiter** les contraintes globales (AllDifferent, Cumulative, Circuit) pour les problèmes industriels
 4. **Composer** CSP avec SAT, ML et LLM pour des solutions hybrides (LCG, CP+ML, LLM+CSP)
 5. **Étendre** le cadre classique aux contraintes souples, temporelles et distribuées
-
-## Aperçu — la programmation par contraintes en images
-
-Six visualisations extraites des notebooks illustrent l'arc complet de cette partie, depuis le backtracking enrichi d'heuristiques jusqu'à la propagation AC-3, aux contraintes globales d'OR-Tools, à l'ordonnancement industriel, à la Lazy Clause Generation et aux contraintes temporelles d'Allen.
-
-<table>
-<tr>
-<td align="center"><b>1 · Backtracking + MRV</b><br><a href="CSP-1-Fundamentals.ipynb"><img src="assets/readme/csp1-backtracking-tree.png" width="290" alt="Arbre de backtracking pour le problème des 4 reines : exploration avec heuristique MRV (Minimum Remaining Values), montrant l'élagage des branches invalides dès la première variable contrainte."></a></td>
-<td align="center"><b>2 · Propagation AC-3</b><br><a href="CSP-2-Consistency.ipynb"><img src="assets/readme/csp2-ac3-propagation.png" width="290" alt="Propagation de contraintes AC-3 sur un réseau de contraintes binaires : réduction des domaines par arc-cohérence, l'espace de recherche se resserre avant tout essai de valeur."></a></td>
-<td align="center"><b>3 · Contraintes globales</b><br><a href="CSP-3-Advanced.ipynb"><img src="assets/readme/csp3-global-constraints.png" width="290" alt="Contrainte globale AllDifferent d'OR-Tools CP-SAT sur un problème de type Sudoku : le propagateur spécialisé élague en quelques millisecondes ce qu'un backtracking naïf mettrait des heures à parcourir."></a></td>
-</tr>
-<tr>
-<td align="center"><b>4 · Ordonnancement</b><br><a href="CSP-4-Scheduling.ipynb"><img src="assets/readme/csp4-jobshop-gantt.png" width="290" alt="Diagramme de Gantt d'un ordonnancement Job-Shop (JSSP) résolu par CP-SAT avec IntervalVar et NoOverlap : chevauchement optimal des opérations sur les machines."></a></td>
-<td align="center"><b>6 · Lazy Clause Generation</b><br><a href="CSP-6-Hybridization.ipynb"><img src="assets/readme/csp6-lazy-clause-generation.png" width="290" alt="Lazy Clause Generation (LCG) : le solveur CP apprend des clauses SAT en cours de route, visualisation des clauses apprises qui coupent l'espace de recherche lors des retours arrière."></a></td>
-<td align="center"><b>8 · Algèbre d'Allen</b><br><a href="CSP-8-Temporal.ipynb"><img src="assets/readme/csp8-allen-algebra.png" width="290" alt="Algèbre d'intervalles d'Allen : les 13 relations temporelles de base entre deux intervalles (avant, après, pendant, etc.) et leur composition pour raisonner sur des contraintes de temps qualitatif."></a></td>
-</tr>
-</table>
-
-Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Notebooks
 
