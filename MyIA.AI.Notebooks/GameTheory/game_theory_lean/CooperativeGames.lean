@@ -3,13 +3,14 @@
   =====================================================================
 
   Ce module agrege les sous-modules FR absorbes depuis
-  `cooperative_games_lean/CooperativeGames/` (c.306, cette PR) :
+  `cooperative_games_lean/CooperativeGames/` :
 
-  - `CooperativeGames.Basic`        (FR, namespace `TUGame`)
+  - `CooperativeGames.Basic`        (FR, namespace `TUGame`)        — c.306
   - `CooperativeGames.ConeKernel`   (FR, namespace `BondarevaCone`,
-    importe transitivement par `Basic`)
+    importe transitivement par `Basic`)                             — c.306
+  - `CooperativeGames.Shapley`      (FR, namespace `ShapleyValue`)  — c.307b
 
-  Les siblings EN sont **exprès non importes ici** pour eviter une
+  Les siblings EN restent **exprès non importes ici** pour eviter une
   collision top-level sur l'abbrev `Coalition` declaree dans Basic.lean
   ET Basic_en.lean (chacun `abbrev Coalition (N : Type*) := Finset N`,
   0 reference interne, jamais documente comme semantiquement distincte —
@@ -25,14 +26,20 @@
   Coherence}.lean` (lakefile `globs := #[<Lib>.*]` auto-devoile les
   siblings `_en` sans aggregator EN separe).
 
-  Les modules `CooperativeGames.Shapley` et `CooperativeGames.Shapley_en`
-  restent EXCLUS du `globs := #[`CooperativeGames.*]` du lakefile
-  (cf `cooperative_games_lean/lakefile.lean` precedent) : bugs residuels
-  documentes (`sorry` + `introN failed` + refs `TUGame` a migrer vers
-  `TUGame_en`). Absorption separee gated sur resolution de la dette.
+  **Mise a jour c.307b (2026-07-10)** : absorption `CooperativeGames.Shapley`
+  ajoutee (FR-only, namespace `ShapleyValue`, 0 sorry tactique, build
+  CooperativeGames SUCCESS 8495 jobs firsthand). Le sibling EN
+  (`CooperativeGames.Shapley_en`) reste EXCLUS : verifier le commit de
+  cette PR revele qu'il reference `TUGame N` (FR namespace) au lieu de
+  `TUGame_en` (malgre `open TUGame_en` a L27) sur ~25+ sites (L36, 47,
+  50, 57, 61, 68, 72, 79, 92, 110, 186, 200, 207, 326, 419, etc.) —
+  bug que l'historique c.234-c.235 documentait comme resolu mais qui
+  persiste en realite. Absorption `Shapley_en` gated sur fix (sed
+  `TUGame` -> `TUGame_en` sur ces sites) en PR dediee ulterieure.
+  Cf anti-regression protocol 4 etapes.
 
   La suppression des fichiers source dans `cooperative_games_lean/`
-  interviendra en c.308 (PR dediee `debt`/`regression-accepted`,
+  interviendra en c.308+ (PR dediee `debt`/`regression-accepted`,
   cf anti-regression protocol 4 etapes).
 
   Convention i18n (EPIC #4980 ratifiee user 2026-07-04) : les
@@ -43,3 +50,4 @@
 
 import CooperativeGames.Basic
 import CooperativeGames.ConeKernel
+import CooperativeGames.Shapley
