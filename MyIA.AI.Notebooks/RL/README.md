@@ -9,6 +9,14 @@ breakdown: root=17
 maturity: PRODUCTION=16, BETA=1
 -->
 
+> **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (17 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :
+>
+> **17 Python = python/python3 = 17/17 mono-kernel Python 100% ✓** (17 fichiers `*.ipynb` canoniques au total sur disque — aucun `_output.ipynb` Papermill dans ce hub, exécution via MCP Jupyter `nbconvert --execute --to notebook` ou `jupyter nbconvert --execute --inplace`).
+>
+> RL est un cas de **mono-kernel Python 100%** : tous les algorithmes (DQN, REINFORCE, A2C, PPO, SAC, GRPO, Dyna-Q, BCQ offline, reward shaping, POMDP belief tracker, C51 distributional, RND curiosity) sont implémentés en Python, soit via PyTorch / Stable Baselines3 / Gymnasium, soit from-scratch en NumPy + PyTorch. C'est une **variante L392 #6 NEW** : contrairement à ML (#5915) qui a des jumeaux C#/Python intra-sous-série, Probas (#5916) qui a une mixité intra-série multi-paradigme (.NET C# + Python), QC (#5917) cloisonnée par sous-série, et Sudoku (#5918 / c.388) qui a une mixité jumeaux dominante + 1 compagnon Lean intra-hub, RL a une **uniformité mono-paradigme** avec 7 moteurs SOTA distincts (PyTorch, NumPy, matplotlib, Stable Baselines3, Gymnasium, highway_env, PettingZoo) — registre EPIC #3801 entry #009 (PR #5922 — collision avec PR canonique utilisateur #5925, await ai-01 decision).
+>
+> **Régénération du marqueur** : `catalog-cron.yml` (cron quotidien 03:37 UTC sur `main`, commit `[skip ci]` par `github-actions[bot]`) — le bloc ci-dessus est régénéré automatiquement, ne pas le modifier manuellement sur une branche feature (catalog-pr-hygiene R1).
+
 Le Reinforcement Learning (apprentissage par renforcement) est la branche de l'IA qui apprend à un agent à prendre des décisions optimales par l'essai et l'erreur, en recevant des récompenses ou des pénalités de son environnement. C'est la technologie derrière AlphaGo, les robots de Boston Dynamics, les systèmes de recommandation de Netflix, et les voitures autonomes. Là où l'apprentissage supervisé prédit à partir d'exemples étiquetés et l'apprentissage non supervisé découvre des structures, le RL **agit** : il choisit des actions, observe leurs conséquences, et s'améliore itérativement.
 
 Cette série couvre les **fondements théoriques** (bandits, MDP, équation de Bellman, Q-Learning), les **algorithmes avec réseaux de neurones** (DQN, Policy Gradient, PPO) et les **frameworks de production** (Stable Baselines3). Vous commencerez par entraîner un agent en quelques lignes avec un framework industriel, puis vous implémenterez les mêmes algorithmes depuis zéro pour comprendre ce qui se cache sous le capot.
@@ -426,7 +434,7 @@ Les notebooks 5 à 12 quittent le framework pour implémenter les algorithmes de
 - **Compatible Windows** : Pas de dépendance xvfb
 - **Débutant-friendly** : Progression pédagogique
 - **Production-ready** : Checkpointing, monitoring (notebooks 1-3)
-- **From scratch** : Implémentations sans framework (notebooks 4-7)
+- **From scratch** : Implémentations sans framework (granularité variable : tabulaire 4-5, deep PyTorch 6-6e, multi-agent 7, model-based 8, offline 9, shaping 10, belief tracker POMDP 11, distributional 12, curiosité 13)
 - **Exercices** : Manipulations et explorations dans chaque notebook
 
 ## FAQ
@@ -437,7 +445,7 @@ L'apprentissage **supervisé** apprend à partir de données étiquetées (entr�
 
 ### Faut-il un GPU pour les notebooks ?
 
-Non. Les notebooks 1-5 (SB3, wrappers, goal-conditioned, bandits, tabulaire) tournent sur CPU. Les notebooks deep from scratch (6 DQN/REINFORCE, 6b A2C, 6c PPO, 6d SAC, 6e GRPO, 12 C51, 13 RND) utilisent des réseaux volontairement compacts pour rester exécutables en CPU — un GPU accélère mais n'est pas requis. Environnements Atari (optionnel) : GPU recommandé.
+Non. Les notebooks 1-5 (SB3, wrappers, goal-conditioned, bandits, tabulaire) tournent sur CPU. Les notebooks deep from scratch (6 DQN/REINFORCE, 6b A2C, 6c PPO, 6d SAC, 6e GRPO, **8 Dyna-Q model-based**, **9 BCQ offline**, **10 reward shaping**, **11 POMDP belief tracker**, 12 C51 distributional, 13 RND curiosity) utilisent des réseaux volontairement compacts pour rester exécutables en CPU — un GPU accélère mais n'est pas requis. Environnements Atari (optionnel) : GPU recommandé.
 
 ### Qu'est-ce qu'un MDP et pourquoi est-ce central ?
 
