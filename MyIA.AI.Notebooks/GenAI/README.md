@@ -7,6 +7,8 @@ breakdown: Audio=30, SemanticKernel=20, Texte=20, Image=17, Video=17, Open-WebUI
 maturity: PRODUCTION=101, BETA=30, ALPHA=5, TEMPLATE=3, DRAFT=2
 -->
 
+> **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit `[skip ci]` par `github-actions[bot]`). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README — par exemple si une sous-série a reçu de nouveaux notebooks mergés après la dernière régénération —, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage.
+
 Ce parcours vous forme à la maîtrise de l'IA générative dans toute sa diversité : générer des images, synthétiser la voix, composer de la musique, produire des vidéos, orchestrer des agents autonomes, et déployer des applications en production. Chaque modalité suit une progression en quatre niveaux, du premier pas avec une API jusqu'aux pipelines multi-modèles de production. Les décomptes par sous-domaine et la maturité de chaque notebook se lisent dans le marqueur `CATALOG-STATUS` en tête de ce fichier.
 
 ## Pourquoi ce parcours ?
@@ -331,12 +333,12 @@ La série GenAI a un parti pris structurant que les autres hubs n'ont pas : **ch
 | **◐ Cloud API** | API propriétaire (OpenAI/Anthropic/HuggingFace) | Coût par token/image, zéro GPU, qualité par défaut élevée |
 | **◯ Hybride** | Les deux chemins sont démontrés (au choix selon contexte) | Notebooks basculent automatiquement si `.env` configuré |
 
-Cette partition traverse les **13 sous-séries** GenAI (141 notebooks) et structure le déploiement concret :
+Cette partition traverse les **13 entrées** du marqueur `CATALOG-STATUS` ci-dessus (12 sous-séries + le notebook racine d'index) et structure le déploiement concret. Les volumes détaillés par sous-série et par maturité restent dans ce marqueur autoritatif ; le tableau ci-dessous récapitule la même information sous l'angle pédagogique **« qui consomme quoi »** plutôt que « qui contient combien » :
 
 | Sous-série | Notebooks | Stack dominante | Service / modèle phare |
 |------------|-----------|-----------------|------------------------|
 | [00-GenAI-Environment](00-GenAI-Environment/) | 6 | ◯ Hybride | Docker Compose : ComfyUI/Qwen, Whisper, MusicGen, Forge |
-| [Image](Image/) | 17 | ◯ Hybride | **Qwen Image Edit** (self-hosted) ⇄ **gpt-image-1** (Cloud) |
+| [Image](Image/) | 20 | ◯ Hybride | **Qwen Image Edit** (self-hosted) ⇄ **gpt-image-1** (Cloud) |
 | [Audio](Audio/) | 30 | ◯ Hybride | **Whisper V3** + **Kokoro TTS** (self-hosted) ⇄ **OpenAI TTS** (Cloud) |
 | [Video](Video/) | 17 | ◯ Hybride | **HunyuanVideo** + **Wan** (self-hosted) ⇄ **Sora** (Cloud) |
 | [Texte](Texte/) | 20 | ◐ Cloud API | **GPT-4o-mini** (~0,15 $/M tokens) ; Structured Outputs + Function Calling |
