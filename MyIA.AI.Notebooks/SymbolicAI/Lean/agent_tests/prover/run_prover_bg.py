@@ -28,6 +28,35 @@ TRACES_DIR = Path(__file__).parent / "traces"
 TRACES_DIR.mkdir(exist_ok=True)
 
 
+def _derive_result_kind(result, final_sorry: int, original_sorry: int) -> str:
+    """Canonical run verdict, ranked by what a coordinator does next.
+
+    Forensic #1453 (2026-07-02): a run's outcome was scattered across 4 fields
+    (result.status, sorry_delta, structural_progress, error) and every consumer
+    re-derived its own verdict — the ai-01 harvest step included.
+      sorry_decreased  -> harvest: branch + PR (textual sorry count dropped)
+      structural_only  -> keep iterating: decomposition landed, count did not drop
+      crashed          -> postmortem the harness, not the proof
+      provider_outage  -> the LLM provider died mid-run (circuit-breaker,
+                          #5869): the prover never got to work — retry when
+                          the provider is back, do NOT read as tactical failure
+      no_progress      -> diagnostic data only
+
+    Real progress outranks the outage flag: a run that lowered the sorry count
+    (or landed a decomposition) before the provider died is still a harvest —
+    the outage remains visible via result["provider_failures"].
+    """
+    if isinstance(result, dict) and result.get("error"):
+        return "crashed"
+    if final_sorry < original_sorry:
+        return "sorry_decreased"
+    if isinstance(result, dict) and result.get("structural_progress"):
+        return "structural_only"
+    if isinstance(result, dict) and result.get("provider_outage"):
+        return "provider_outage"
+    return "no_progress"
+
+
 def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
                mode: str = "multi", iterations: int = 8,
                provider: str = "zai", local_provider: str = "local",
@@ -133,22 +162,7 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
     final = Path(filepath).read_text(encoding="utf-8")
     final_sorry = count_real_sorries(final)
 
-    # Forensic #1453 (2026-07-02): a run's outcome was scattered across 4 fields
-    # (result.status, sorry_delta, structural_progress, error) and every consumer
-    # re-derived its own verdict — the ai-01 harvest step included. One canonical
-    # verdict, ranked by what a coordinator does next:
-    #   sorry_decreased  -> harvest: branch + PR (textual sorry count dropped)
-    #   structural_only  -> keep iterating: decomposition landed, count did not drop
-    #   crashed          -> postmortem the harness, not the proof
-    #   no_progress      -> diagnostic data only
-    if isinstance(result, dict) and result.get("error"):
-        result_kind = "crashed"
-    elif final_sorry < original_sorry:
-        result_kind = "sorry_decreased"
-    elif isinstance(result, dict) and result.get("structural_progress"):
-        result_kind = "structural_only"
-    else:
-        result_kind = "no_progress"
+    result_kind = _derive_result_kind(result, final_sorry, original_sorry)
 
     trace_name = f"{mode}_{name.replace(' ', '_')}_{provider}"
     trace_path = trace.save(trace_name)
@@ -190,8 +204,9 @@ def run_prover(demo_num: int = None, filepath: str = None, line: int = None,
         # Convention: sorry_delta = final - original. POSITIF = REGRESSION (plus de sorry), NEGATIF = progres. Oppose a tools.py (original - current). Forensic #1453 2026-06-23.
         "sorry_delta": final_sorry - original_sorry,
         "sorry_reduction": original_sorry - final_sorry,  # positif = progres (lecture non ambigue)
-        # Canonical verdict (see derivation above): sorry_decreased |
-        # structural_only | no_progress | crashed | already_solved.
+        # Canonical verdict (see _derive_result_kind): sorry_decreased |
+        # structural_only | provider_outage | no_progress | crashed |
+        # already_solved.
         "result_kind": result_kind,
         "elapsed_s": round(elapsed, 1),
         "result": result,
