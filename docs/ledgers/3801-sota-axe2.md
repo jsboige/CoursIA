@@ -863,7 +863,8 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 | 6 | Probas/Infer (20 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 20/20 | #5886 MERGED |
 | 7 | IIT/PyPhi (3 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 3/3 | #5895 MERGED |
 | 8 | Sudoku (36 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 36/36 | #5918 MERGED |
-| 9 | **RL (17 nb)** | po-2025 strict | 2026-07-10 | **SOTA-OK 17/17** | **THIS** |
+| 9 | RL (17 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 17/17 | #5925 OPEN |
+| 10 | **CaseStudies (6 nb)** | po-2025 strict | 2026-07-10 | **SOTA-OK 6/6** | **THIS** |
 
 **Moteurs SOTA cumulés dans le registre (7 entries)** : Microsoft.ML.Probabilistic, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET = **20 moteurs SOTA distincts** sur 7 familles.
 
@@ -967,5 +968,73 @@ La paire `rl_6c` (PPO from scratch) + `rl_1` (sb3) illustre **explicitement** l'
 - **Pivot L335 légitimé** : 9ᵉ famille distincte, owner po-2025 strict, ≠ re-sweep monotone.
 - **L378 durcie** : G.1 firsthand (script python3 + re-lecture rl_7 pour faux-positif C.1 + faux-négatif SOTA PettingZoo) → 0 faux positif résiduel.
 - **Cumulatif** : **9 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, **RL**). Entry #009 RL ajoute **3 moteurs SOTA nouveaux** au registre (stable-baselines3, Gymnasium, PettingZoo) = **25 moteurs SOTA distincts cumulés**.
+
+Part of #3801
+
+
+## Entry #010 — CaseStudies (owner po-2025 strict, c.404)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/CaseStudies/` (6 .ipynb — 3 études de cas × {solution,student}) |
+| Études de cas | **Diagnostic-Médical** (diabète), **Oncology-Planning** (chimiothérapie), **SmartGrid-Energy** (dispatch électrique) |
+| Owner-lane | **po-2025 strict** (Python EPF IA Biomédicale, config auteur EPF) |
+| Date audit | 2026-07-10 (c.404) |
+| Auditeur | `myia-po-2025:CoursIA` |
+| Verdict agrégé | **SOTA-OK** (6/6 SOTA-OK) |
+
+### Findings détaillés
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | SOTA invoqué | Verdict |
+|----|-------|------|------|-----|-----------|--------|--------------|---------|
+| Diagnostic-Medical/solution | 33 | 16 | 16/16 | 0 | 0 | python3 | Z3 (protocole thérapeutique) + A* (recherche diagnostic) + algo génétique (seuils) + pandas | **SOTA-OK** |
+| Diagnostic-Medical/student | 27 | 13 | 13/13 | 0 | 0 | python3 | stubs exercices (C.1 `result = None # TODO etudiant`) | **SOTA-OK** |
+| Oncology-Planning/solution | 28 | 11 | 11/11 | 0 | 0 | python3 | rdflib (KG interactions) + OR-Tools CP-SAT (planning chimio) + Pyro (Bayésien SVI) + torch | **SOTA-OK** |
+| Oncology-Planning/student | 21 | 8 | 8/8 | 0 | 0 | python3 | stubs exercices (C.1) | **SOTA-OK** |
+| SmartGrid-Energy/solution | 20 | 8 | 8/8 | 0 | 0 | python3 | OR-Tools CP-SAT (unit commitment) + scipy (incertitude gaussienne erfc) + multi-objectif | **SOTA-OK** |
+| SmartGrid-Energy/student | 20 | 8 | 8/8 | 0 | 0 | python3 | stubs exercices (C.1) | **SOTA-OK** |
+
+### Synthèse
+
+- **EXEC_PROVED global** : 6/6 (100%) — tous kernels `python3` exécutés, `execution_count != null` sur 64/64 cellules code, `outputs: [...]` cohérents.
+- **Erreurs runtime** : 0/6.
+- **Violations C.1** : 0/6 (stubs exercices = pattern conforme `result = None  # TODO etudiant`, pas `raise NotImplementedError` ; vérifié G.1 firsthand).
+- **Structure pédagogique solution/student** : chaque étude de cas = 1 notebook **solution** (worked examples + exercices d'extension) + 1 notebook **student** (stubs). Cohabitation exemple/exercice conforme [exercise-example-labeling] — les solutions NE DOIVENT PAS être stubbées, les students NE DOIVENT PAS être résolues. Vérifié : solutions = implémentations réelles, students = stubs.
+- **Vrais outils SOTA invoqués** (vérifiés G.1 lecture directe du code) :
+  - **Z3** (Diagnostic-Médical cell 11-12) — solveur de contraintes SMT pour validation des protocoles thérapeutiques (métformine/insuline, booléens + contraintes).
+  - **A\*** (Diagnostic-Médical cell 6-7) — recherche de diagnostic par coût via `heapq` min-heap, états `EtatDiagnostic`.
+  - **Algorithme génétique** (Diagnostic-Médical cell 9-10) — optimisation des seuils diagnostiques (`ChromosomeDiagnostic`, 6 gènes, population 30, 50 générations).
+  - **rdflib** (Oncology cell 2-3) — base de connaissances RDF des interactions médicamenteuses (néphrotoxicité, incompatibilités), raisonnement sur graphe sémantique.
+  - **OR-Tools CP-SAT** (Oncology cell 5 + SmartGrid cell 1) — planning de chimiothérapie (cycles, capacité) + unit commitment électrique (dispatch par contraintes).
+  - **Pyro** (Oncology cell 7-9) — inférence bayésienne du profil patient (Résistant/Normal/Sensible) via SVI + Trace_ELBO, prédiction du risque de neutropénie.
+  - **torch** (Oncology) — backend tensor pour Pyro.
+  - **scipy** (SmartGrid cell 3) — incertitude gaussienne (`erfc` survivor function) pour probabilité de défaillance du réseau.
+- **Workaround dégradé** : 0/6 (pas d'ASCII à la place de figures, pas de réimplémentation jouet d'un solveur — Z3/CP-SAT/Pyro invoqués réellement).
+
+### Prong B — problème non-trivial (sota-not-workaround §B)
+
+Les 3 études de cas sont des **problèmes OR/AI réels non triviaux**, pas des cas dégénérés :
+- **Diagnostic-Médical** = diagnostic multi-paradigme (règles + A* + GA + Z3) — un seul solveur ne couvre pas le problème, d'où la combinaison légitime.
+- **Oncology-Planning** = raisonnement sur KG + CP-SAT + Bayésien = 3 instruments orthogonaux (logique, optimisation combinatoire, incertitude). La conjunction est la substance, pas un simple CP-SAT.
+- **SmartGrid-Energy** = unit commitment (NP-difficile) + incertitude renouvelable + multi-objectif (coût/CO2/risque) — le dispatch économique seul serait dégénéré, l'analyse comparative 3-stratégies (cell 7) exerce la capacité distinctive de CP-SAT.
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **Faux positifs C.1** : 0/6 (audit script python3 — 0 `raise NotImplementedError`, 0 `assert False` ; `# TODO etudiant` = pattern conforme C.1).
+- **Anti-régression** : aucun notebook strippé, aucun output hand-edité (Stop & Repair) ; 64/64 cellules code `execution_count != null` + `output_type: error = 0`.
+- **Audit consultatif purement additif** : safe owner-lane (L143 — pas de modification des notebooks CaseStudies owner po-2025).
+- **SOTA tools grounded firsthand** : lecture directe des cellules code solution (cell 1-15 Diagnostic, cell 1-10 Oncology, cell 0-7 SmartGrid) — chaque moteur SOTA confirmé par son import + appel réel, pas par titre/markdown seul.
+
+### Volet owner-lane strict
+
+**CaseStudies = po-2025 strict** (config `auteur: EPF IA Biomédicale`, lane Python). Audit consultatif additif, 0 PR de substance. Pivot L335 anti-monoculture post-c.403 (#009 RL) : **10ᵉ famille distincte du ledger**. Différence avec #009 RL (17 nb mono-kernel Python, suite pédagogique) : **#010 CaseStudies = 6 nb appliqués multi-moteurs** (problèmes réels biomédicaux/énergie), chaque étude de cas combinant 3-4 moteurs SOTA orthogonaux.
+
+### Conclusions audit
+
+- **Substance CaseStudies = SOTA-OK 6/6**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. Z3 + OR-Tools CP-SAT + Pyro + rdflib + torch + scipy = moteurs SOTA réels invoqués sur problèmes OR/AI non triviaux.
+- **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
+- **Pivot L335 légitimé** : 10ᵉ famille distincte, owner po-2025 strict, ≠ re-sweep monotone.
+- **L378 durcie** : G.1 firsthand (script python3 + lecture directe cellules solution pour confirmer chaque moteur SOTA réel).
+- **Cumulatif** : **10 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, **CaseStudies**). Entry #010 CaseStudies ajoute **1 moteur SOTA nouveau** au registre (**Pyro** probabilistic programming, distingué de PyMC/NumPyro) = **26 moteurs SOTA distincts cumulés**.
 
 Part of #3801
