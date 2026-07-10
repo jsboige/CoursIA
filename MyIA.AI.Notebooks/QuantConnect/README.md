@@ -32,6 +32,22 @@ La série couvre huit phases progressives. Les **fondements** (phases 1-4) maît
 
 ---
 
+## Carte du matériel QC
+
+Le matériel QuantConnect se répartit en **5 zones** — un visiteur y navigue selon son objectif :
+
+| Zone | Contenu | Entrée |
+|------|---------|--------|
+| **`Python/`** | 53 notebooks pédagogiques QC-Py-* (8 phases, ci-dessous) | [README Python](Python/README.md) |
+| **`projects/`** | 112 stratégies déployables (`main.py` + `research.ipynb`), statut best-guess inventorié | [docs/qc/qc-strategies-status.md](../../docs/qc/qc-strategies-status.md) · [README projects](projects/README.md) |
+| **`research/`** | Recherche autonome standalone (données locales, pas de QC Cloud requis) | [README research](research/README.md) |
+| **`partner-course-quant-trading/`** | Exemples de recherche avancée du cours partenaire | [README cours partenaire](partner-course-quant-trading/README.md) |
+| **`ML-Training-Pipeline/`** | Pipeline ML training (Kelly HMM-regime fee-aware, RL, transformers) | [README ML pipeline](ML-Training-Pipeline/README.md) |
+
+Pour l'inventaire et le statut (alive / superseded / needs-improvement / à confirmer) des **112 stratégies**, voir [`docs/qc/qc-strategies-status.md`](../../docs/qc/qc-strategies-status.md). Les baselines vérifiées (Sharpe/CAGR/MaxDD) sont dans [`docs/qc/qc-comparative-backtests.md`](../../docs/qc/qc-comparative-backtests.md).
+
+---
+
 ## Structure de la Série
 
 ### Phase 1 : Fondations LEAN (4 notebooks, ~4.5h)
@@ -241,7 +257,7 @@ Chaque notebook de l'**arbre QC complet** (Python, C#, partner-course, pipeline 
 | **(c)** | recherche autonome | Local (yfinance/sklearn) | 24 |
 | **(d)** | placeholder pédagogique | Lecture seule / copier-coller | 33 |
 
-Classification exhaustive : [docs/archive/qc-strategies-status.md](../../docs/archive/qc-strategies-status.md). Le [README Python](Python/README.md) donne la variante restreinte aux seuls notebooks Python — les comptes des deux tableaux diffèrent donc par construction (périmètres différents), pas par erreur.
+Classification exhaustive : [docs/qc/qc-strategies-status.md](../../docs/qc/qc-strategies-status.md) (méthodologie + table 4-types + inventaire complet des 112 stratégies `projects/` en statut best-guess). Le [README Python](Python/README.md) donne la variante restreinte aux seuls notebooks Python — les comptes des deux tableaux diffèrent donc par construction (périmètres différents), pas par erreur.
 
 ## Cours partenaire — Exemples de Recherche
 
