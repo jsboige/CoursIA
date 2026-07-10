@@ -7,6 +7,16 @@ breakdown: Python=53, projects=49, ML-Training-Pipeline=2, kelly_lean=1
 maturity: PRODUCTION=59, ALPHA=36, BETA=7, DRAFT=2, TEMPLATE=1
 -->
 
+> **Note éditoriale — counts kernels par sous-série** : Le marqueur CATALOG-STATUS agrégé ci-dessus reste **autoritatif** pour la décomposition par **sous-série** (Python / projects / ML-Training-Pipeline / kelly_lean). En revanche, pour les décomptes par **kernel** (Python vs Lean 4) **au sein** d'une sous-série — c'est-à-dire la répartition technique par interpréteur —, **ce README reste autoritatif** car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé. Cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks :
+>
+> - **`Python/` (parcours QC-Py-*)** : 53/53 = **Python** (mono-langage, QuantConnect Cloud + kernel local Jupyter) — *kernel Python majoritaire, aucun piège sémantique C#*.
+> - **`ML-Training-Pipeline/`** : 14/14 = **Python** (PyTorch / Stable-Baselines3 / Walk-Forward).
+> - **`kelly_lean/`** : 7/7 = **Lean 4** (preuve formelle Kelly HMM-regime fee-aware) — *mono-paradigme Lean* : prouve les invariants algébriques du critère de Kelly pour le sizing position-aware des régimes HMM, complémentaire aux notebooks Python ML.
+>
+> Le hub QuantConnect a donc une **particularité intra-hub : parcours Python pur + sous-série Lean 4 isolée** (variante de la doctrine L392 « hub mixité kernel intra-sous-série » appliquée à un cas où Python domine largement, avec Lean isolé dans une sous-série distincte). La phrase L260 « périmètres différents, pas par erreur » documente précisément cette asymétrie.
+>
+> **Régénération du marqueur** : ce bloc est régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (03:37 UTC daily sur `main`, commit `[skip ci]` par `github-actions[bot]`). Toute divergence ponctuelle entre les counts agrégés et la réalité disk est documentée dans `docs/qc/qc-strategies-status.md` (autoritatif pour `projects/`) ou dans la note ci-dessus (autoritative pour les kernels intra-sous-série).
+
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ CaseStudies](../CaseStudies/README.md)
 
 Le trading algorithmique transforme les marchés financiers : aujourd'hui, plus de 60% des volumes aux États-Unis sont générés par des algorithmes. Cette série vous apprend à construire, tester et déployer vos propres stratégies de trading automatisées sur la plateforme **QuantConnect LEAN** — un framework open-source utilisé par des milliers de quants professionnels. Le parcours va des fondements (lifecycle d'un algorithme, gestion des données) aux frontières de l'IA (Transformers, RL, LLMs pour signaux de trading).
@@ -39,12 +49,12 @@ Le matériel QuantConnect se répartit en **5 zones** — un visiteur y navigue 
 | Zone | Contenu | Entrée |
 |------|---------|--------|
 | **`Python/`** | 53 notebooks pédagogiques QC-Py-* (8 phases, ci-dessous) | [README Python](Python/README.md) |
-| **`projects/`** | 112 stratégies déployables (`main.py` + `research.ipynb`), statut best-guess inventorié | [docs/qc/qc-strategies-status.md](../../docs/qc/qc-strategies-status.md) · [README projects](projects/README.md) |
+| **`projects/`** | 112 entrées brutes (101 stratégies déployables `main.py` + 11 autres : 5 recherches, 2 stubs, 2 templates, 2 BROKEN pédagogiques), statut best-guess inventorié | [docs/qc/qc-strategies-status.md](../../docs/qc/qc-strategies-status.md) · [README projects](projects/README.md) |
 | **`research/`** | Recherche autonome standalone (données locales, pas de QC Cloud requis) | [README research](research/README.md) |
 | **`partner-course-quant-trading/`** | Exemples de recherche avancée du cours partenaire | [README cours partenaire](partner-course-quant-trading/README.md) |
 | **`ML-Training-Pipeline/`** | Pipeline ML training (Kelly HMM-regime fee-aware, RL, transformers) | [README ML pipeline](ML-Training-Pipeline/README.md) |
 
-Pour l'inventaire et le statut (alive / superseded / needs-improvement / à confirmer) des **112 stratégies**, voir [`docs/qc/qc-strategies-status.md`](../../docs/qc/qc-strategies-status.md). Les baselines vérifiées (Sharpe/CAGR/MaxDD) sont dans [`docs/qc/qc-comparative-backtests.md`](../../docs/qc/qc-comparative-backtests.md).
+Pour l'inventaire et le statut (alive / superseded / needs-improvement / à confirmer) des **112 entrées brutes** (= 111 stratégies effectives, `_docs/` exclus — `qc-strategies-status.md` L8), voir [`docs/qc/qc-strategies-status.md`](../../docs/qc/qc-strategies-status.md). Les baselines vérifiées (Sharpe/CAGR/MaxDD) sont dans [`docs/qc/qc-comparative-backtests.md`](../../docs/qc/qc-comparative-backtests.md).
 
 ---
 
@@ -197,7 +207,7 @@ Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, et applicatio
 
 ## Résumé de la Progression
 
-**Total cours linéaire** : **29 notebooks Python** (QC-Py-01 à QC-Py-28 + le 23b, ~33 heures de contenu) + **24 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, Cloud strategies QC-Py-Cloud-*, training QC-Py-30..32, dataset workflow), plus 2 notebooks de recherche utilitaires (`research_*.ipynb`).
+**Total cours linéaire** : **29 notebooks Python** (QC-Py-01 à QC-Py-28 + le 23b, ~33 heures de contenu) + **24 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, **15** Cloud strategies QC-Py-Cloud-01..09, training QC-Py-30..32, dataset workflow), plus 2 notebooks de recherche utilitaires (`research_*.ipynb`).
 
 **Répartition cours linéaire (Phases 1-8)** :
 - **18 notebooks non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
@@ -257,7 +267,7 @@ Chaque notebook de l'**arbre QC complet** (Python, C#, partner-course, pipeline 
 | **(c)** | recherche autonome | Local (yfinance/sklearn) | 24 |
 | **(d)** | placeholder pédagogique | Lecture seule / copier-coller | 33 |
 
-Classification exhaustive : [docs/qc/qc-strategies-status.md](../../docs/qc/qc-strategies-status.md) (méthodologie + table 4-types + inventaire complet des 112 stratégies `projects/` en statut best-guess). Le [README Python](Python/README.md) donne la variante restreinte aux seuls notebooks Python — les comptes des deux tableaux diffèrent donc par construction (périmètres différents), pas par erreur.
+Classification exhaustive : [docs/qc/qc-strategies-status.md](../../docs/qc/qc-strategies-status.md) (méthodologie + table 4-types + inventaire complet des 112 entrées brutes sous `projects/` en statut best-guess, dont 111 stratégies effectives alignées sur le doc canonique L8). Le [README Python](Python/README.md) donne la variante restreinte aux seuls notebooks Python — les comptes des deux tableaux diffèrent donc par construction (périmètres différents), pas par erreur.
 
 ## Cours partenaire — Exemples de Recherche
 
