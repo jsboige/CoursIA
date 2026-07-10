@@ -283,6 +283,115 @@ theorem box_assez_grand_not_vacuous :
 theorem box_assez_grand_single_cell_2 : box_assez_grand [(0, 0)] 2 = true := by
   native_decide
 
+/-! ### Structural satisfiability bound (N1 audit, 2026-07-09)
+
+The sanity witnesses below (`BoxAssezGrand block 2`, glider, blinker, …)
+observe that the strengthened predicate only holds for `n ≤ 2` on the
+canonical patterns. The lemmas of this section prove that this bound is
+**structural in `gridFrame`, not pattern-specific**: for *every* non-empty
+grid, `gridFrame` anchors the domain at `r0 := rMin - 2` (fixed 2-cell
+padding), so the topmost live cell has top margin exactly `2`, and
+`cellMargin` demands `r0 + n ≤ r` — hence `BoxAssezGrand g n → n ≤ 2`.
+
+Meanwhile `gridFrame` picks `side ≥ 5` (1-cell bounding box + 4 padding), so
+the MacroCell level is ≥ 3 and `jumpSize = 2^lvl ≥ 8`. Consequences for the
+P5.2 plan (see the obstacle scan before `p5_large_n_jump`):
+
+- the hypotheses of `p5_large_n_jump` (`BoxAssezGrand g n` **and**
+  `n ≥ jumpSize …`) are **jointly unsatisfiable on non-empty grids**
+  (`p5_large_n_hyps_unsat` below) — the large-`n` arm of `p5_inductive_step`
+  is reachable only for `g = []`;
+- the sketched N1 frame lemma ("the jump preserves `BoxAssezGrand` through
+  the recursion") is **vacuous as stated** — same trap as the deleted
+  `p4_half_steps_compose` placeholder (N2-bis, G.2 gaming);
+- a `padGrid`-style helper adding live sentinel cells (the N5 sketch) cannot
+  fix satisfiability: whichever cell ends up topmost after padding *still*
+  has top margin exactly `2` by construction of `gridFrame`. The honest
+  unlock is a `gridFrame`/`box_assez_grand` redesign (e.g. padding parameter
+  dependent on `n`) — design gate, ai-01.
+
+These lemmas are *diagnostic*: like `box_assez_grand_not_vacuous` (c.148),
+they document a geometric property of the current definitions so the P5 plan
+can be re-scoped honestly instead of closed vacuously. -/
+
+/-- **Structural cap on the padding parameter**: for any non-empty grid,
+    `BoxAssezGrand g n` forces `n ≤ 2`. The topmost live cell (witnessed by
+    `gridRowMin_mem`) has top margin exactly `2` in the frame chosen by
+    `gridFrame` (`r0 = rMin - 2`), and `cellMargin` requires `r0 + n ≤ r`. -/
+theorem boxAssezGrand_nonempty_le_two (g : Grid) (n : Nat)
+    (hg : g ≠ []) (h : BoxAssezGrand g n) : n ≤ 2 := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    obtain ⟨p, hp, hmin⟩ := gridRowMin_mem (p₀ :: ps) (List.cons_ne_nil p₀ ps)
+    unfold BoxAssezGrand at h
+    simp only [box_assez_grand, gridFrame, List.all_eq_true] at h
+    obtain ⟨r, c⟩ := p
+    obtain ⟨h1, _h2, _h3, _h4⟩ :=
+      (cellMargin_true_iff _ _ _ _ _ _).mp (h (r, c) hp)
+    -- h1 : gridRowMin (p₀ :: ps) - 2 + n ≤ r, and hmin : r = gridRowMin (p₀ :: ps)
+    simp only at hmin
+    omega
+
+/-- Arithmetic helper: `ceilLog2 s ≥ 3` as soon as `s ≥ 5` (since
+    `2^2 = 4 < 5 ≤ 2^(ceilLog2 s)` by `ceilLog2_spec`). -/
+theorem ceilLog2_ge_three_of_ge_five (s : Nat) (h5 : 5 ≤ s) :
+    3 ≤ ceilLog2 s := by
+  by_contra hlt
+  push_neg at hlt
+  have hspec : s ≤ 2 ^ ceilLog2 s := ceilLog2_spec s
+  have hle : 2 ^ ceilLog2 s ≤ 2 ^ 2 :=
+    Nat.pow_le_pow_right (by norm_num) (by omega)
+  omega
+
+/-- The MacroCell level chosen by `gridToMacroCellWithOffset` is the
+    `gridFrame` level (the builder preserves the requested level,
+    `level_buildFromGrid`). -/
+theorem gridToMacroCellWithOffset_level (g : Grid) :
+    (gridToMacroCellWithOffset g).2.level = (gridFrame g).2 := by
+  rcases hfg : gridFrame g with ⟨⟨r0, c0⟩, lvl⟩
+  simp only [gridToMacroCellWithOffset, hfg, level_buildFromGrid]
+
+/-- For any non-empty grid, the `gridFrame` level is at least `3`: the frame
+    side is `max height width ≥ 5` (inclusive bounding box + 4 cells of
+    padding), and `ceilLog2 5 = 3`. -/
+theorem gridFrame_level_ge_three (g : Grid) (hg : g ≠ []) :
+    3 ≤ (gridFrame g).2 := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    have hrr : gridRowMin (p₀ :: ps) ≤ gridRowMax (p₀ :: ps) :=
+      gridRowMin_le_gridRowMax _ (List.cons_ne_nil _ _)
+    simp only [gridFrame]
+    apply ceilLog2_ge_three_of_ge_five
+    have h5 : 5 ≤ (gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat := by
+      omega
+    omega
+
+/-- For any non-empty grid, the Hashlife jump is at least `8` generations:
+    the `gridFrame` level is ≥ 3 (`gridFrame_level_ge_three`) and
+    `jumpSize lvl = 2^lvl` is monotone. -/
+theorem jumpSize_gridLevel_ge_eight (g : Grid) (hg : g ≠ []) :
+    8 ≤ jumpSize (gridToMacroCellWithOffset g).2.level := by
+  rw [gridToMacroCellWithOffset_level]
+  have h3 : 3 ≤ (gridFrame g).2 := gridFrame_level_ge_three g hg
+  unfold jumpSize
+  calc (8 : Nat) = 2 ^ 3 := by norm_num
+    _ ≤ 2 ^ (gridFrame g).2 := Nat.pow_le_pow_right (by norm_num) h3
+
+/-- **The P5.2 hypotheses are jointly unsatisfiable on non-empty grids.**
+    `BoxAssezGrand g n` caps `n ≤ 2` (`boxAssezGrand_nonempty_le_two`) while
+    the jump guard requires `n ≥ jumpSize ≥ 8` (`jumpSize_gridLevel_ge_eight`).
+    See the section docstring: closing the P5 sorries through this vacuity
+    would prove `hashlife_correct` without any Hashlife jump ever being
+    exercised — the theorem statement needs a satisfiability redesign first. -/
+theorem p5_large_n_hyps_unsat (g : Grid) (n : Nat) (hg : g ≠ [])
+    (h : BoxAssezGrand g n)
+    (hbig : n ≥ jumpSize (gridToMacroCellWithOffset g).2.level) : False := by
+  have h2 := boxAssezGrand_nonempty_le_two g n hg h
+  have h8 := jumpSize_gridLevel_ge_eight g hg
+  omega
+
 /-! ## P0. Light-cone warm-up lemmas (prover ramp)
 
 Elementary facts about `manhattan` and `lightCone` that feed the **base case**
@@ -2820,17 +2929,18 @@ its **deletion** (sorry 4→3) together with its unused `have _h4` consumer in
 `p4_succ_membership`. P4.4 is now carried by `evolve_add`/`evolve_half_step`
 (closed) + the L2527 residual.
 
-**Independently provable sub-claim (sorry-free additive grain, P4-free).**
-
-The proof plan states "the jump expands the bounding box by at most `2^(k-2)`,
-within the padding margin", so the claim
+**N1 frame sub-claim — AUDITED VACUOUS (2026-07-09).** The previously sketched
+grain
 
   `BoxAssezGrand g n → n ≥ jumpSize ... → BoxAssezGrand (jumpResult g) (n - jumpSize ...)`
 
-is a purely geometric/arithmetic statement on the `box_assez_grand` predicate.
-It does **not** depend on `hashlifeResult_central_correct` and can be discharged
-via decidable evaluation + `Nat` arithmetic. This is a natural next sorry-free
-additive grain on the P5.2 frame, queueable behind the P4 verrou unlock.
+was audited before proving: its hypotheses are **jointly unsatisfiable on
+non-empty grids** (`p5_large_n_hyps_unsat`, proved in the "Structural
+satisfiability bound" section above — `BoxAssezGrand g n` caps `n ≤ 2` while
+`jumpSize ≥ 8`). Proving it "via decidable evaluation + Nat arithmetic" would
+land another vacuous placeholder (the `p4_half_steps_compose` trap, N2-bis).
+The frame lemma only becomes meaningful after the `gridFrame`/`box_assez_grand`
+satisfiability redesign (design gate, ai-01) — re-scope it then.
 
 **Re-signed target (N2, 2026-07-09).** `p5_large_n_jump` (L2852) now carries the
 real conclusion

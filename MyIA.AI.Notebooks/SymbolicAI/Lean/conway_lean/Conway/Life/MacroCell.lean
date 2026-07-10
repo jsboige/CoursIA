@@ -533,6 +533,37 @@ theorem gridColMin_le_gridColMax (g : Grid) (hg : g ≠ []) :
     le_gridColMax_of_mem _ _ (by simp)
   omega
 
+/-- Generic helper: a `foldl` of `min` (via `proj`) is *attained* — the result
+    is either the seed `acc` or the projection of some element of the list.
+    Companion to `foldl_proj_min_le_seed`/`foldl_proj_min_le_of_mem` (those give
+    the `≤` bounds; this one gives the witness). -/
+theorem foldl_proj_min_attained (ps : Grid) (proj : Int × Int → Int) (acc : Int) :
+    ps.foldl (fun m q => min m (proj q)) acc = acc ∨
+      ∃ p ∈ ps, ps.foldl (fun m q => min m (proj q)) acc = proj p := by
+  induction ps generalizing acc with
+  | nil => left; rfl
+  | cons q qs ih =>
+    simp only [List.foldl_cons]
+    rcases ih (min acc (proj q)) with h | ⟨p, hp, hval⟩
+    · rcases le_total acc (proj q) with hle | hle
+      · left; rw [h]; omega
+      · right; exact ⟨q, by simp, by rw [h]; omega⟩
+    · right; exact ⟨p, by simp [hp], hval⟩
+
+/-- The row minimum of a non-empty grid is *attained* by some live cell:
+    there is a `p ∈ g` with `p.1 = gridRowMin g`. This is the witness form of
+    `gridRowMin_le_of_mem` (needed to extract the topmost live cell, e.g. for
+    the structural satisfiability bound on `box_assez_grand`). -/
+theorem gridRowMin_mem (g : Grid) (hg : g ≠ []) :
+    ∃ p ∈ g, p.1 = gridRowMin g := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridRowMin]
+    rcases foldl_proj_min_attained ps (·.1) p₀.1 with h | ⟨p, hp, hval⟩
+    · exact ⟨p₀, by simp, h.symm⟩
+    · exact ⟨p, by simp [hp], hval.symm⟩
+
 /-- Compute a suitable `(offset, level)` so that the square of side
     `2 ^ level` placed at `offset` strictly contains the bounding box of
     `g` plus a 2-cell padding on each side. Returns `((0, 0), 0)` for the
