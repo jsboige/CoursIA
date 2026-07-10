@@ -33,22 +33,9 @@ Avoir ces trois angles permet de comprendre que le ML n'est pas lié à un langa
 4. **Intégrer** des agents LLM dans un workflow data science (analyse automatisée, parsing, recommandation)
 5. **Déployer** un modèle en production (export ONNX, interop Python/.NET, BigQuery ML)
 
-## Aperçu — le machine learning en images
+## Figures — extraites des sorties réelles des notebooks
 
-Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #5654). Elles balayent les trois fils de la série : les fondations Python (Pandas, visualisation), le pipeline ML.NET (régression, séries temporelles, clustering) et l'angle émergent des agents data-science (Google ADK). La provenance exacte de chaque figure est documentée dans `assets/readme/MANIFEST.md`.
-
-<table>
-<tr>
-<td align="center"><b>Fondations Pandas</b><br><a href="DataScienceWithAgents/PythonAgentsForDataScience/Day1/Labs/Lab1-PythonForDataScience.ipynb"><img width="290" alt="Fondations Python pour la data science : visualisation exploratoire des ventes (graphiques Matplotlib) sur un échantillon tabulaire." src="assets/readme/lab1-foundations.png"></a></td>
-<td align="center"><b>Visualisation (Seaborn)</b><br><a href="DataScienceWithAgents/PythonAgentsForDataScience/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb"><img width="290" alt="Visualisation de données : évolution journalière du chiffre d'affaires agrégé, tracée avec Seaborn sur un dataframe Pandas." src="assets/readme/lab5-viz.png"></a></td>
-<td align="center"><b>Régression (scikit-learn)</b><br><a href="ML.Net/ML-1-Introduction-Python.ipynb"><img width="290" alt="Régression linéaire : droite apprise par scikit-learn superposée aux données d'entraînement et de test (prix immobiliers)." src="assets/readme/ml1-intro.png"></a></td>
-</tr>
-<tr>
-<td align="center"><b>Séries temporelles (STL)</b><br><a href="ML.Net/ML-5-TimeSeries-Python.ipynb"><img width="290" alt="Décomposition STL d'une série temporelle : signal observé, tendance, composante saisonnière (période 7 hebdomadaire) et résidus." src="assets/readme/ml5-timeseries.png"></a></td>
-<td align="center"><b>Clustering (K-Means)</b><br><a href="ML.Net/ML-8-Clustering-Python.ipynb"><img width="290" alt="Clustering K-Means : restitution des 3 segments cachés (Dormants, Réguliers, VIP) sans supervision, projetés sur deux variables." src="assets/readme/ml8-clustering.png"></a></td>
-<td align="center"><b>Agent data-science (ADK)</b><br><a href="DataScienceWithAgents/AgenticDataScience/Day4-Foundations/Lab9-First-ADK-Agent.ipynb"><img width="290" alt="Premier agent ADK : un agent du Agent Development Kit génère et exécute du code Matplotlib (revenu par produit) via sa boucle d'outils." src="assets/readme/lab9-adk.png"></a></td>
-</tr>
-</table>
+Six figures illustrent les trois fils de la série : les fondations Python (Pandas, visualisation), le pipeline ML.NET (régression, séries temporelles, clustering) et l'angle émergent des agents data-science (Google ADK). Elles sont **réintégrées in-situ** dans les sections qui en commentent le concept — chacune en regard du notebook qu'elle illustre. La provenance exacte (cellule source, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Parcours d'apprentissage
 
@@ -127,6 +114,17 @@ Pipeline ML.NET complet en C#, de l'introduction à l'évaluation avancée : du 
 | 9-Py | [ML-9-Anomaly-Detection-Python](ML.Net/ML-9-Anomaly-Detection-Python.ipynb) | **Jumeau Python** : `RandomizedPca` ⇄ `PCA`+résidu (scikit-learn) | Parité .NET⇄Python |
 | TP | [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) | Régression bayésienne (Infer.NET) | Application pratique |
 
+### Trois figures du track ML.NET (scikit-learn, statsmodels)
+
+[![Régression linéaire (ML-1) : droite de régression verte apprise par scikit-learn superposée aux données d'entraînement (cercles bleus) et de test (carrés oranges) — l'étoile rouge matérialise la prédiction pour une maison de 2,5 milliers de pieds carrés (~2,76 centaines de milliers de dollars).](assets/readme/ml1-intro.png)](ML.Net/ML-1-Introduction-Python.ipynb)
+*ML-1 — Régression linéaire prix/surface (scikit-learn). On observe que les points `Test` (oranges) s'éloignent de la droite pour les grandes surfaces (> 6 milliers de pieds carrés) : le modèle linéaire sous-extrapole les grandes maisons, ce que la métrique R² seule ne signalera pas.*
+
+[![Décomposition STL d'une série temporelle de ventes (ML-5) : quatre panneaux superposés — Observé (oscillations bruitées autour de 100-180), Tendance (courbe orange lisse montant de ~110 début 2023 à ~160 fin 2023), Saisonnalité (sinusoïde verte d'amplitude ~40, période 7 jours), Bruit (résidu rose, amplitude ~±25).](assets/readme/ml5-timeseries.png)](ML.Net/ML-5-TimeSeries-Python.ipynb)
+*ML-5 — Décomposition STL (`statsmodels.tsa.seasonal_decompose`, période 7). La saisonnalité hebdomadaire se lit immédiatement (amplitude ±40), et la tendance capture la croissance sous-jacente (~+50 sur 12 mois). Le TP-prevision-ventes s'appuie sur ce découpage pour combiner signal et saisonnalité.*
+
+[![Clustering K-Means (ML-8) en deux panneaux : à gauche la vérité terrain (3 segments Dormants/Réguliers/VIP sur l'axe Frequency × Monetary) ; à droite les clusters 0/1/2 retrouvés par K-Means — on observe que les labels K-Means ne s'alignent PAS avec les segments sémantiques (Cluster 0 ≠ Dormants) : K-Means segmente l'espace géométrique, pas la sémantique métier.](assets/readme/ml8-clustering.png)](ML.Net/ML-8-Clustering-Python.ipynb)
+*ML-8 — Clustering K-Means sur données RFM (scikit-learn). Le notebook démontre la **limitation sémantique** du K-Means non supervisé : les segments de clientèle (Dormants/Réguliers/VIP) sont des catégories métier, pas des clusters géométriques. La concordance parfaite n'est possible que par chance — d'où l'intérêt d'un *mapping* a posteriori (et des méthodes supervisées dès qu'on connaît les segments).*
+
 ### Installation ML.NET
 
 ```bash
@@ -150,6 +148,17 @@ Formation complète en Data Science Python enrichie d'agents IA. Vous commencere
 |----------|---------|
 | [1.2-NumPy](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | Arrays, vectorisation, opérations |
 | [1.3-Pandas](DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | DataFrames, filtrage, manipulation |
+
+#### Trois figures du track Data Science (Pandas, Seaborn, ADK)
+
+[![Fondations Pandas (Lab1) en deux panneaux — à gauche les ventes journalières du Widget A sur 20 jours (janvier 2024), courbe oscillant entre 123 et 188 ; à droite les ventes moyennes par catégorie en barres (Accessoires ≈ 45, Électronique ≈ 130, Premium ≈ 225).](assets/readme/lab1-foundations.png)](DataScienceWithAgents/PythonAgentsForDataScience/Day1/Labs/Lab1-PythonForDataScience.ipynb)
+*Lab1 — Pandas & Matplotlib : visualisation exploratoire des ventes (20 jours, série temporelle + barres par catégorie). Cette figure introduit le double-outil Pandas + Matplotlib qu'utilisent ensuite tous les notebooks ML du track.*
+
+[![Visualisation Seaborn (Lab5) : courbe de l'évolution du chiffre d'affaires journalier entre le 01-10 et le 04-10, décroissance de ~760 à ~230 puis remontée à ~480.](assets/readme/lab5-viz.png)](DataScienceWithAgents/PythonAgentsForDataScience/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb)
+*Lab5 — Seaborn : la décroissance brutale (760→230 sur 24h) signale un trou de données ou un pic isolé — le notebook la commente comme un artefact à investiguer plutôt qu'un trend. Seaborn ajoute le lissage et la mise en forme, mais l'insight reste dans la séquence temporelle.*
+
+[![Agent ADK (Lab9) : diagramme en barres du revenu total par produit — Gadget Y (~46 000) > Widget B (~44 500) > Gadget X (~34 000) > Widget A (~27 500).](assets/readme/lab9-adk.png)](DataScienceWithAgents/AgenticDataScience/Day4-Foundations/Lab9-First-ADK-Agent.ipynb)
+*Lab9 — Premier agent ADK : l'agent a généré et exécuté le code Matplotlib qui produit cette figure, en autonomie à partir d'une requête en langage naturel (« compare le revenu par produit »). L'insight (Gadget Y bat Widget A de 70%) provient du tri décroissant que l'agent a ajouté spontanément.*
 
 ### Socle ML canonique (02-ML-Cours)
 
