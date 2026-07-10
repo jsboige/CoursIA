@@ -1,9 +1,11 @@
 """Extraction de traces J-Lens pour ICT-24 (strate 5, #5681 Track S) — Qwen3.5-9B-Base.
 
-# UNTESTED -- CPU-drafted. Env po-2025 = torch 2.11.0+cpu (pas de GPU). A valider et
-# executer sur GPU2 d'ai-01 (CUDA_VISIBLE_DEVICES=2 STRICT, inférence pure). Contrat
-# ai-01 (msg-20260710T085245) : "tu prépares, j'exécute" -- ai-01 valide l'API jlens
-# au build et tourne le stage full ; ce draft n'est JAMAIS mergé/exécuté en l'état.
+# BUILD-VALIDATED 2026-07-10 par ai-01 sur GPU2 (CUDA_VISIBLE_DEVICES=2 STRICT,
+# env coursia-sae torch 2.12.1+cu126, jlens 0.1.0 officiel). Contrat "tu prépares
+# (po-2025), j'exécute (ai-01)" honoré : l'API jlens est confirmée au build (points
+# [CONFIRM] 1 & 2 résolus, cf infra), smoke + stage full trained/control tournés.
+# fit du lens 9B-Base = n=458 (garde-fou #2 #5681). Traces produites :
+# traces/ict24_jlens_layer16_{trained,control}.npz (miroir des SAE ict21_*).
 
 Miroir de :mod:`extract_sae_traces` (#5101) pour le tête-à-tête SAE <-> J-space
 (#5681 Track S) : le SEUL modele (Qwen3.5-9B-Base) pour lequel les DEUX appareils
@@ -53,20 +55,19 @@ Divergence sémantique honnete vs SAE (a porter dans le verdict ICT-24)
   de co-location), MAIS le verdict doit rapporter que le tête-à-tête compare deux
   natures differentes (features SAE exactes vs token logits lens approximés).
 
-Points a CONFIRMER par ai-01 au build GPU2 (lead strate-5, cf #5681)
---------------------------------------------------------------------
-Ces points dépendent du comportement exact du package ``jlens`` (non exécutable
-sur po-2025 CPU-only). Chacun est marqué ``[CONFIRM]`` dans le code.
+Points CONFIRMÉS par ai-01 au build GPU2 (lead strate-5, cf #5681)
+-----------------------------------------------------------------
+Ces points dépendaient du comportement exact du package ``jlens`` (non exécutable
+sur po-2025 CPU-only). Statut au build 2026-07-10 (run réel GPU2) :
 
-1. ``positions=None`` vs ``positions=list(range(T))`` : le README montre
-   ``positions=[-2]`` (liste explicite). Pour un readout sur TOUS les tokens, on
-   passe la liste complète ``[0..T-1]`` (calculée après tokenisation). Vérifier que
-   ``apply`` accepte bien une liste de toutes les positions (sinon l'API peut
-   exiger un sentinel -- à confirmer au build).
-2. Structure de retour : ``lens_logits[layer]`` supposé shape ``[T, vocab]`` ou
-   liste de tenseurs ``[vocab]`` par position. Le code gère les deux via un
-   ``torch.as_tensor`` + reshape ; vérifier le shape réel au build et ajuster.
-3. Cohérence sémantique avec la couche #2 (:mod:`ict.jlens_traces`) qui documente
+1. CONFIRMÉ : ``lens.apply(model, text, positions=list(range(T)))`` accepte la liste
+   complète des positions ; le readout couvre tous les tokens (T_eff == T sur les 20
+   traces, aucune troncature observée).
+2. CONFIRMÉ : ``lens_logits[layer]`` est indexable et ``torch.topk`` produit des
+   token logits sensés (max ~24 en trained vs ~14 en control -- l'ablation par
+   permutation seedée dégrade la lecture, signature attendue).
+3. Décision de lead strate-5 (NON résolue au build, c'est un choix, pas un bug) :
+   cohérence sémantique avec la couche #2 (:mod:`ict.jlens_traces`) qui documente
    "directions singulières principales / troncature rang-k". L'API ``jlens.apply``
    retourne des TOKEN LOGITS (topk = token ids), pas une SVD exposée de la matrice
    jacobienne ``J_l``. Si le tête-à-tête veut les DIRECTIONS singulières (SVD de
@@ -129,7 +130,9 @@ DEFAULT_MODEL = "Qwen/Qwen3.5-9B-Base"
 # Hub neuronpedia publie des lens pré-ajustés (cf matrice de disponibilité #5681) :
 # le 9B-Base est le SEUL modèle avec SAE ET lens publiés.
 DEFAULT_LENS_REPO = "neuronpedia/jacobian-lens"
-DEFAULT_LENS_FILENAME = "qwen3.5-9b-pt/Qwen3.5-9B-Base_jacobian_lens.pt"
+# Structure réelle du repo (confirmée au build ai-01 via list_repo_files) :
+# <model-dir>/jlens/<dataset>/<Model>_jacobian_lens.pt
+DEFAULT_LENS_FILENAME = "qwen3.5-9b-pt/jlens/Salesforce-wikitext/Qwen3.5-9B-Base_jacobian_lens.pt"
 
 
 def parse_args() -> argparse.Namespace:
@@ -154,20 +157,22 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def probe_lens_fit_n(lens_repo: str, lens_dir: str) -> int | None:
+def probe_lens_fit_n(lens_repo: str, lens_filename: str) -> int | None:
     """Best-effort : reporte le ``n`` du fit du lens (garde-fou #2 de #5681).
 
-    Le dossier lens 9B embarque un ``convergence.csv`` ; le 4B une variante
-    ``_n1000`` (fit 1000 prompts). Reporter ce ``n`` dans ``__meta__`` honore le
-    garde-fou "vérifier au build le n du fit 9B, le reporter". Best-effort : si le
-    fichier est absent ou illisible, retourne ``None`` (ne fait pas échouer le run).
+    Le dossier lens 9B embarque un ``<Model>_convergence.csv`` (préfixé modèle,
+    confirmé au build : ``Qwen3.5-9B-Base_convergence.csv``, à côté du ``.pt``).
+    Reporter ce ``n`` dans ``__meta__`` honore le garde-fou "vérifier au build le n
+    du fit 9B, le reporter". Best-effort : si le fichier est absent ou illisible,
+    retourne ``None`` (ne fait pas échouer le run).
     """
     try:
         from huggingface_hub import hf_hub_download
         import csv
         import io
-        # Le convergence.csv vit a cote du .pt (meme sous-dossier lens_dir).
-        fname = f"{lens_dir}/convergence.csv" if lens_dir else "convergence.csv"
+        # Le convergence.csv vit a cote du .pt, meme basename model-prefixe :
+        # <...>/<Model>_jacobian_lens.pt -> <...>/<Model>_convergence.csv
+        fname = lens_filename.replace("_jacobian_lens.pt", "_convergence.csv")
         path = hf_hub_download(lens_repo, fname)
         rows = list(csv.DictReader(open(path, encoding="utf-8")))
         if not rows:
@@ -208,19 +213,19 @@ def jlens_readout_topk(lens, model, tokenizer, text: str, layer: int, k: int):
     le logit brut (les tokens les plus "illuminés" par le workspace a cette couche
     et cette position).
 
-    ``[CONFIRM point 1/2]`` : ``positions`` doit couvrir toutes les positions du
-    prompt. On tokenise d'abord pour connaitre ``T``, puis on passe
-    ``positions=list(range(T))``. Si l'API exige un autre format, ajuster au build.
+    ``positions`` couvre toutes les positions du prompt : on tokenise d'abord pour
+    connaitre ``T``, puis on passe ``positions=list(range(T))`` (format confirmé au
+    build GPU2 2026-07-10).
     """
     # T = nombre de tokens du prompt (pour construire la liste de positions).
     enc = tokenizer(text, return_tensors="pt")
     T = enc["input_ids"].shape[1]
 
-    # [CONFIRM point 1] readout sur TOUTES les positions (top-k/token).
+    # Confirmé au build : readout sur TOUTES les positions (top-k/token).
     positions = list(range(T))
     lens_logits, _model_logits, _ = lens.apply(model, text, positions=positions)
 
-    # [CONFIRM point 2] lens_logits[layer] suppose [T, vocab] (ou list de [vocab]).
+    # Confirmé au build : lens_logits[layer] indexable, topk produit des token logits.
     layer_logits = lens_logits[layer]
     layer_logits = torch.as_tensor(layer_logits).to(torch.float32)
     if layer_logits.ndim == 1:           # [vocab] -> [1, vocab] (une seule position)
@@ -250,8 +255,6 @@ def main() -> None:
     hf = transformers.AutoModelForCausalLM.from_pretrained(args.model, **cfg_kwargs).to(device)
     hf.eval()
     tokenizer = transformers.AutoTokenizer.from_pretrained(args.model)
-    # Rapporte le n du fit du lens (garde-fou #2 de #5681) avant de l'utiliser.
-    lens_dir = str(Path(args.lens_filename).parent)
     d_model = getattr(hf.config, "hidden_size", None)
     n_layers = getattr(hf.config, "num_hidden_layers", None)
     vocab_size = hf.config.vocab_size
@@ -274,7 +277,7 @@ def main() -> None:
     print(f"[jlens] HF model wrappé via jlens.from_hf.")
 
     lens = load_jlens(args.lens_repo, args.lens_filename)
-    lens_fit_n = probe_lens_fit_n(args.lens_repo, lens_dir)
+    lens_fit_n = probe_lens_fit_n(args.lens_repo, args.lens_filename)
     print(f"[lens] fit n={lens_fit_n} (garde-fou #2 #5681)")
 
     sets = PROMPT_SETS
