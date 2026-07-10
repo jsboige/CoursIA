@@ -162,5 +162,46 @@ theorem mem_lightCone_of_chebDist_le (p q : Int × Int) (t : Nat)
     (h : chebDist p q ≤ t) : q ∈ lightCone p (2 * t) :=
   mem_lightCone_of_manhattan_le p q (2 * t) (manhattan_le_of_chebDist_le p q t h)
 
+/-! ## Chebyshev triangle inequality and cone growth by a Moore step
+
+The foundational metric fact (`chebDist_triangle`) and the **tight-cone growth
+theorem** named by ai-01's N2 greenlight: a cell lies in the Chebyshev-`(t+1)`
+cone of `p` iff one can reach it from the Chebyshev-`t` cone via a single Moore
+neighborhood step. This is the inductive engine of the tight-locality statement
+(after one B3/S23 generation, reach expands by exactly one Moore shell), and the
+reason the tight Chebyshev reach grows linearly with `t` rather than as `2*t`.
+-/
+
+/-- Triangle inequality for the Chebyshev distance. -/
+theorem chebDist_triangle (p q r : Int × Int) :
+    chebDist p q ≤ chebDist p r + chebDist r q := by
+  unfold chebDist
+  omega
+
+/-- The Chebyshev cone grows by exactly one Moore step: `q` is within Chebyshev
+    radius `t+1` of `p` iff there is a cell `r` within Chebyshev radius `t` of `p`
+    that is a Moore neighbor of `q` (Chebyshev radius `≤ 1`). Forward direction
+    steps from `q` toward `p` by one unit in each nonzero coordinate; backward
+    direction is the triangle inequality. This is the additive-growth lemma that
+    underpins the tight `t`-step locality (one Moore shell per generation). -/
+theorem chebDist_le_succ_iff (p q : Int × Int) (t : Nat) :
+    chebDist p q ≤ t + 1 ↔
+      ∃ r : Int × Int, chebDist p r ≤ t ∧ chebDist r q ≤ 1 := by
+  constructor
+  · -- forward: step from `q` toward `p` by one unit in each nonzero coordinate
+    intro h
+    unfold chebDist at h
+    refine ⟨(q.1 - if q.1 - p.1 = 0 then 0 else if 0 < q.1 - p.1 then 1 else -1,
+             q.2 - if q.2 - p.2 = 0 then 0 else if 0 < q.2 - p.2 then 1 else -1), ?_, ?_⟩
+    all_goals unfold chebDist; omega
+  · -- backward: triangle inequality
+    rintro ⟨r, hr, hq⟩
+    exact (chebDist_triangle p q r).trans (add_le_add hr hq)
+
+/-- The tight Chebyshev cone is nested in its successor: radius `t` ⊆ radius
+    `t+1`. Corollary of `chebDist_le_succ_iff` (or directly `Nat.le_succ`). -/
+theorem chebDist_le_succ (p q : Int × Int) (t : Nat) (h : chebDist p q ≤ t) :
+    chebDist p q ≤ t + 1 := h.trans (Nat.le_succ t)
+
 end Life
 end Conway
