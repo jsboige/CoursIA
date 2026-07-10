@@ -6624,11 +6624,11 @@ MEALPy offre une interface uniforme pour 100+ metaheuristiques, facilite les com
 - Yang, X.-S. (2010). Nature-Inspired Metaheuristic Algorithms (2nd ed.). Luniver Press.
 
 ",,,,,,,,239630f973ace767,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b01,markdown,fr,b87be5391c154f34,"# Search-11 (Part 2) : Particle Swarm Optimization (C# / .NET) — Tranche 2 : PSO
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b01,markdown,fr,95b32aa8a88db88e,"# Search-11b (Part 2) : Particle Swarm Optimization (C# / .NET) — Tranche 2 : PSO
 
-**Navigation** : [<< Search-11 tranche 1 (SA)](Search-11-Metaheuristiques-Csharp.ipynb) | [Search-11 Python](Search-11-Metaheuristics.ipynb) | [Index](../README.md)
+**Navigation** : [<< Search-11b tranche 1 (SA)](Search-11b-Metaheuristiques-Deep.ipynb) | [Search-11 Python](Search-11-Metaheuristics.ipynb) | [Index](../README.md)
 
-**Suite de la [tranche 1](Search-11-Metaheuristiques-Csharp.ipynb)** (recuit simulé). Cette **tranche 2** présente le **Particle Swarm Optimization (PSO)** — une métaheuristique d'**essaim** (population-based) radicalement différente du recuit simulé (trajectoire unique). Chaque particule **communique** sa meilleure trouvaille aux autres : l'intelligence collective émerge d'interactions locales.
+**Suite de la [tranche 1](Search-11b-Metaheuristiques-Deep.ipynb)** (recuit simulé). Cette **tranche 2** présente le **Particle Swarm Optimization (PSO)** — une métaheuristique d'**essaim** (population-based) radicalement différente du recuit simulé (trajectoire unique). Chaque particule **communique** sa meilleure trouvaille aux autres : l'intelligence collective émerge d'interactions locales.
 
 ## Complémentarité (.NET from-scratch ↔ Python/MEALPy), pas workaround (#3801)
 
@@ -6654,8 +6654,8 @@ Pas d'équivalent NuGet maintenu et didactique à MEALPy en .NET. Le twin .NET d
 
 ### Durée estimée : 40 minutes
 
-> **Note** : Le PSO (Kennedy & Eberhart, 1995) s'inspire des **bancs de poissons** et **nuées d'oiseaux**. Aucune particule n'est intelligente seule, mais l'essaim converge collectivement vers les bonnes régions en **partageant l'information**. C'est un modèle d'**intelligence en essaim** (swarm intelligence), à l'opposé de la descente individuelle.",,,,,,,,b87be5391c154f34,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b02,code,fr,d8ec6972f4bbe1f3,"// Setup : aucune dépendance externe — PSO from-scratch, uniquement la BCL .NET.
+> **Note** : Le PSO (Kennedy & Eberhart, 1995) s'inspire des **bancs de poissons** et **nuées d'oiseaux**. Aucune particule n'est intelligente seule, mais l'essaim converge collectivement vers les bonnes régions en **partageant l'information**. C'est un modèle d'**intelligence en essaim** (swarm intelligence), à l'opposé de la descente individuelle.",,,,,,,,95b32aa8a88db88e,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b02,code,fr,d8ec6972f4bbe1f3,"// Setup : aucune dépendance externe — PSO from-scratch, uniquement la BCL .NET.
 using Microsoft.DotNet.Interactive;
 using System;
 using System.Collections.Generic;
@@ -6666,7 +6666,7 @@ using System.Text;
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 string FI(double x, string fmt=""F4"") => x.ToString(fmt, CultureInfo.InvariantCulture);
 ""Environnement prêt — Particle Swarm Optimization from-scratch (BCL .NET seule)."".Display();",,,,,,,,d8ec6972f4bbe1f3,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b03,markdown,fr,014f7cd267d17ec8,"## 1. Trajectoire unique vs essaim
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b03,markdown,fr,014f7cd267d17ec8,"## 1. Trajectoire unique vs essaim
 
 Le **recuit simulé** (tranche 1) maintient **une seule solution** qu'il perturbe itérativement. Le **PSO** maintient un **essaim** de $N$ particules, chacune avec une **position** $x_i$ et une **vitesse** $v_i$. Les particules se souviennent de leur **meilleure position personnelle** ($p_i$, personal best) et partagent la **meilleure position globale** ($g$, global best).
 
@@ -6678,7 +6678,7 @@ Le **recuit simulé** (tranche 1) maintient **une seule solution** qu'il perturb
 | Acceptation dégradation | probabiliste (Metropolis) | continue (toujours, via vitesse) |
 
 Le PSO n'a **pas** de critère d'acceptation probabiliste : il déplace toutes ses particules à chaque itération, guidées par $p_i$ et $g$.",,,,,,,,014f7cd267d17ec8,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b04,markdown,fr,3bfa1795d6d1121c,"## 2. Fonctions de benchmark (rappel tranche 1)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b04,markdown,fr,3bfa1795d6d1121c,"## 2. Fonctions de benchmark (rappel tranche 1)
 
 On reprend les benchmarks de la tranche 1 :
 
@@ -6688,7 +6688,7 @@ $$f(x) = \sum_i x_i^2, \quad x^* = \mathbf{0}, \quad f(x^*) = 0$$
 ### Rastrigin (multimodal, non-convexe)
 $$f(x) = 10n + \sum_i \left( x_i^2 - 10\cos(2\pi x_i) \right), \quad x^* = \mathbf{0}, \quad f(x^*) = 0$$
 **Multimodal très raboteux** (beaucoup d'optima locaux), un seul minimum global en $\mathbf{0}$. Test discriminant : PSO doit échapper aux optima locaux grâce à l'exploration collective.",,,,,,,,3bfa1795d6d1121c,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b05,code,fr,b8b6446648e07a20,"// Fonctions de benchmark (self-contained, cf. tranche 1).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b05,code,fr,b8b6446648e07a20,"// Fonctions de benchmark (self-contained, cf. tranche 1).
 static double Sphere(double[] x) => x.Select(xi => xi * xi).Sum();
 
 static double Rastrigin(double[] x)
@@ -6710,7 +6710,7 @@ sb.AppendLine($""Rastrigin(0,0) = {Rastrigin(origin):F6}  (attendu 0)"");
 var rough = new double[] { 3.0, -2.0 };
 sb.AppendLine($""Rastrigin(3,-2) = {Rastrigin(rough):F6}  (point raboteux hors optimum)"");
 sb.ToString().Display();",,,,,,,,b8b6446648e07a20,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b06,markdown,fr,f553ed1b144d58fe,"## 3. La dynamique PSO — théorie
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b06,markdown,fr,f553ed1b144d58fe,"## 3. La dynamique PSO — théorie
 
 À chaque itération, la particule $i$ met à jour sa **vitesse** puis sa **position** :
 
@@ -6732,10 +6732,10 @@ où :
 ### Équilibre exploration/exploitation
 
 Un $w$ **élevé** favorise l'exploration (la vitesse domine, l'essaim balaye large). Un $w$ **faible** favorise l'exploitation (les termes cognitif/social dominent, convergence rapide). Souvent on **décline** $w$ linéairement (élevé au début, faible à la fin) — schéma d'inertie adaptatif.",,,,,,,,f553ed1b144d58fe,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b07,markdown,fr,236eba89344a320a,"## 4. Implémentation from-scratch du PSO
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b07,markdown,fr,236eba89344a320a,"## 4. Implémentation from-scratch du PSO
 
 L'implémentation maintient un tableau de particules (position, vitesse, personal best). À chaque itération : mise à jour des vitesses, déplacement, évaluation, mise à jour de $p_i$ et $g$.",,,,,,,,236eba89344a320a,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b08,code,fr,747c4b44326e2e29,"// Particle Swarm Optimization (PSO) from-scratch.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b08,code,fr,747c4b44326e2e29,"// Particle Swarm Optimization (PSO) from-scratch.
 //   f        : fonction objectif a minimiser
 //   dim      : dimension
 //   nParts   : taille de l'essaim (nombre de particules)
@@ -6803,7 +6803,7 @@ static (double[] gbest, double fbest, List<double> history) PSO(
     return (gbest, fbest, history);
 }
 ""PSO prêt (inertie w + cognitif c1 + social c2, bornage par rebond doux)."".Display();",,,,,,,,747c4b44326e2e29,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b09,code,fr,cb1dd35ee6d6f617,"// PSO sur Sphere (unimodal) : sanity check, doit approcher 0.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b09,code,fr,cb1dd35ee6d6f617,"// PSO sur Sphere (unimodal) : sanity check, doit approcher 0.
 var rng = new Random(42);
 var (gbest_sph, fbest_sph, hist_sph) = PSO(Sphere, dim: 2, nParts: 30, iters: 100,
     w: 0.7, c1: 1.5, c2: 1.5, rng);
@@ -6815,10 +6815,10 @@ sb.AppendLine($""Meilleur f(x)     : {FI(fbest_sph)}  (optimum global = 0)"");
 sb.AppendLine($""Distance à 0      : {FI(Math.Sqrt(gbest_sph[0]*gbest_sph[0]+gbest_sph[1]*gbest_sph[1]))}"");
 sb.AppendLine($""Itérations         : {hist_sph.Count - 1}"");
 sb.ToString().Display();",,,,,,,,cb1dd35ee6d6f617,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b10,markdown,fr,24649724a097b086,"### Interprétation : Sphere
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b10,markdown,fr,24649724a097b086,"### Interprétation : Sphere
 
 Sur Sphere (convexe, un seul minimum), PSO converge très vite vers l'origine : l'essaim entier est attiré par le puits de potentiel. C'est le **sanity check** — l'essaim ne peut pas échouer sur un problème unimodal. L'intérêt du PSO se révèle sur les paysages **multimodaux**.",,,,,,,,24649724a097b086,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b11,code,fr,4be3cfbff921149b,"// PSO sur Rastrigin (multimodal) : le vrai test.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b11,code,fr,4be3cfbff921149b,"// PSO sur Rastrigin (multimodal) : le vrai test.
 var rng = new Random(42);
 var (gbest_ras, fbest_ras, hist_ras) = PSO(Rastrigin, dim: 2, nParts: 30, iters: 200,
     w: 0.7, c1: 1.5, c2: 1.5, rng);
@@ -6833,17 +6833,17 @@ sb.AppendLine(""Convergence (best global tous les 40 itérations) :"");
 for (int i = 0; i < hist_ras.Count; i += 40)
     sb.AppendLine($""  itération {i,3} : best f = {FI(hist_ras[i])}"");
 sb.ToString().Display();",,,,,,,,4be3cfbff921149b,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b12,markdown,fr,5e18742c3e8b0a42,"### Interprétation : Rastrigin — PSO vs descente pure
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b12,markdown,fr,5e18742c3e8b0a42,"### Interprétation : Rastrigin — PSO vs descente pure
 
 Rastrigin est parsemé d'optima locaux (la partie $-10\cos(2\pi x_i)$ crée des oscillations). Une **descente pure** s'y piège ; le **recuit simulé** (tranche 1) s'en sort par acceptation probabiliste de dégradations.
 
 Le **PSO** s'en sort autrement : grâce à l'**essaim**, si une particule découvre un meilleur bassin, l'information **se propage** (terme social $c_2 r_2 (g - x_i)$ tire tout l'essaim vers $g$). C'est l'**intelligence collective** : la diversité de l'essaim explore plusieurs bassins simultanément, et le partage d'information focalise progressivement tout le monde sur le meilleur.
 
 > **Sensibilité** : si $w$ est trop élevé, l'essaim **diverge** (les vitesses explosent). Si $c_2$ domine trop tôt, l'essaim **converge prématurément** vers un optimum local (toutes les particules se ruent sur le premier $g$ trouvé). L'équilibre $w, c_1, c_2$ est crucial.",,,,,,,,5e18742c3e8b0a42,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b13,markdown,fr,1117db7dd1e43e1f,"## 5. Schéma d'inertie adaptatif (inertie déclinante)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b13,markdown,fr,1117db7dd1e43e1f,"## 5. Schéma d'inertie adaptatif (inertie déclinante)
 
 Une amélioration classique : faire **décliner** $w$ linéairement de $w_{\max}$ à $w_{\min}$ sur les itérations. Au début ($w$ élevé) : **exploration** large. À la fin ($w$ faible) : **exploitation** fine. C'est l'équivalent PSO du schéma de température du recuit simulé.",,,,,,,,1117db7dd1e43e1f,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b14,code,fr,fd46fecc8a2deefd,"// Variante PSO avec inertie declinee lineairement (w_max -> w_min sur les iterations).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b14,code,fr,fd46fecc8a2deefd,"// Variante PSO avec inertie declinee lineairement (w_max -> w_min sur les iterations).
 static (double[] gbest, double fbest, List<double> history) PSODeclining(
     Func<double[], double> f, int dim, int nParts, int iters,
     double wMax, double wMin, double c1, double c2, Random rng)
@@ -6904,36 +6904,36 @@ sb.AppendLine($""Inertie déclinante (0.9->0.4) : best f = {FI(fDecl)}"");
 sb.AppendLine();
 sb.AppendLine("">>> L'inertie déclinante explore large au début, raffine à la fin."");
 sb.ToString().Display();",,,,,,,,fd46fecc8a2deefd,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b15,markdown,fr,dafb363f1b197d02,"### Interprétation : schéma d'inertie
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b15,markdown,fr,dafb363f1b197d02,"### Interprétation : schéma d'inertie
 
 Le schéma déclinant **commence par explorer** (inertie 0.9 = vitesses préservées, l'essaim balaye large) puis **termine en exploitant** (inertie 0.4 = vitesses amorties, convergence fine vers le meilleur bassin). Sur Rastrigin, cela aide à **échapper aux optima locaux** en début de course puis à **préciser** la solution en fin.
 
 Ce compromis exploration→exploitation est **le même concept** que le schéma de température du recuit simulé (tranche 1) — deux algorithmes différents, un même principe sous-jacent.",,,,,,,,dafb363f1b197d02,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b16,markdown,fr,0ff2f7abb2ed5b24,"### Exercice 1 : Coefficients cognitif vs social
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b16,markdown,fr,0ff2f7abb2ed5b24,"### Exercice 1 : Coefficients cognitif vs social
 
 PSO est sensible au ratio $c_1/c_2$. Complétez le stub pour comparer sur Rastrigin : (a) $c_1 = 2.5, c_2 = 0.5$ (fortement cognitif — chaque particule truste son $p_i$), (b) $c_1 = 0.5, c_2 = 2.5$ (fortement social — l'essaim se rue sur $g$), (c) $c_1 = c_2 = 1.5$ (équilibré). Lequel donne le meilleur $f(x)$ final ? Lequel converge le plus vite ? Interprétez.",,,,,,,,0ff2f7abb2ed5b24,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b17,code,fr,381897e8095b5185,"// Exercice 1 : comparaison coefficients cognitif/social (étudiant à compléter)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b17,code,fr,381897e8095b5185,"// Exercice 1 : comparaison coefficients cognitif/social (étudiant à compléter)
 // Indice 1 : reset rng = new Random(42) avant chaque run pour isoler l'effet de c1/c2.
 // Indice 2 : garder w=0.7 fixe, varier seulement (c1, c2) parmi (2.5,0.5), (0.5,2.5), (1.5,1.5).
 // TODO étudiant
 ""Exercice 1 à compléter — comparer c1/c2 = (2.5,0.5) / (0.5,2.5) / (1.5,1.5) sur Rastrigin."".Display();",,,,,,,,381897e8095b5185,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b18,markdown,fr,2edbbbf243ce0249,"### Exercice 2 : Taille de l'essaim
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b18,markdown,fr,2edbbbf243ce0249,"### Exercice 2 : Taille de l'essaim
 
 Complétez le stub pour tester $N \in \{10, 30, 100, 300\}$ particules sur Rastrigin (mêmes itérations, même seed). Un grand essaim explore-t-il mieux ? À partir de quel $N$ le gain marginal devient-il négligeable ? Tracez le best final en fonction de $N$.",,,,,,,,2edbbbf243ce0249,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b19,code,fr,1ecd6e1b908d7656,"// Exercice 2 : impact de la taille de l'essaim (étudiant à compléter)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b19,code,fr,1ecd6e1b908d7656,"// Exercice 2 : impact de la taille de l'essaim (étudiant à compléter)
 // Indice : boucler sur nParts in {10, 30, 100, 300}, reset rng avant chaque run, collecter fbest.
 // TODO étudiant
 int[] sizes = { 10, 30, 100, 300 };
 ""Exercice 2 à compléter — sweep taille d'essaim {10,30,100,300} sur Rastrigin."".Display();",,,,,,,,1ecd6e1b908d7656,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b20,markdown,fr,7ec86c7df0c19470,"### Exercice 3 : Dimension
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b20,markdown,fr,7ec86c7df0c19470,"### Exercice 3 : Dimension
 
 Reprenez le sweep de la tranche 1 (exercice dimension) pour PSO : testez $\mathrm{dim} \in \{2, 5, 10, 20\}$ sur Rastrigin à taille d'essaim fixe. PSO se dégrade-t-il plus ou moins vite que SA quand la dimension augmente ? C'est le phénomène de **malédiction de la dimension** — l'essaim a de plus en plus de mal à couvrir l'espace.",,,,,,,,7ec86c7df0c19470,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b21,code,fr,3de9f9c7a958f9f0,"// Exercice 3 : impact de la dimension (étudiant à compléter)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b21,code,fr,3de9f9c7a958f9f0,"// Exercice 3 : impact de la dimension (étudiant à compléter)
 // Indice : boucler sur dim in {2,5,10,20}, reset rng avant chaque run, augmenter iters pour les grandes dims.
 // TODO étudiant
 int[] dims = { 2, 5, 10, 20 };
 ""Exercice 3 à compléter — sweep dimension {2,5,10,20} sur Rastrigin (comparer dégradation vs SA tranche 1)."".Display();",,,,,,,,3de9f9c7a958f9f0,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part2.ipynb,s11b22,markdown,fr,c09e72bcd75c6122,"## 6. Conclusion (tranche 2)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb,s11b22,markdown,fr,c09e72bcd75c6122,"## 6. Conclusion (tranche 2)
 
 Cette tranche 2 a présenté le **Particle Swarm Optimization** — la métaheuristique d'essaim, complémentaire du recuit simulé (trajectoire unique) de la tranche 1.
 
@@ -6966,17 +6966,17 @@ Cette tranche 2 a présenté le **Particle Swarm Optimization** — la métaheur
 ---
 
 *Tranche 2 du twin .NET⇄Python (#4956 marathon). PSO = 2e algorithme (après SA). from-scratch = la valeur pédagogique, complémentaire à MEALPy.*",,,,,,,,c09e72bcd75c6122,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,8a32b364,markdown,fr,e2ccc03b0adf4b5d,"# Search-11-Metaheuristiques-Csharp-Part3 : Artificial Bee Colony (ABC) from-scratch
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,8a32b364,markdown,fr,a5fe29c11b38a2cb,"# Search-11b-Metaheuristiques-Deep-Part3 : Artificial Bee Colony (ABC) from-scratch
 
-**Navigation** : [<< Tranche 2 PSO](Search-11-Metaheuristiques-Csharp-Part2.ipynb) | [Twin Python MEALPy](Search-11-Metaheuristics.ipynb) | [Tranche 4 Benchmark >>](Search-11-Metaheuristiques-Csharp-Part4.ipynb)
+**Navigation** : [<< Tranche 2 PSO](Search-11b-Metaheuristiques-Deep-Part2.ipynb) | [Twin Python MEALPy](Search-11-Metaheuristics.ipynb) | [Tranche 4 Benchmark >>](Search-11b-Metaheuristiques-Deep-Part4.ipynb)
 
 **Tranche 3** du twin .NET du notebook Python [Search-11-Metaheuristics](Search-11-Metaheuristics.ipynb) (MEALPy). Apres le **recuit simule** (tranche 1, trajectoire unique, Metropolis) et le **Particle Swarm Optimization** (tranche 2, essaim de particules, vitesse/inertie), cette **tranche 3 = Artificial Bee Colony (ABC)** — une autre metaheuristique d'essaim, fondee sur le **comportement de butinage des abeilles** (Karaboga, 2005).
 
 L'idee centrale : la colonie se divise en **trois types d'abeilles aux roles distincts**, et l'information sur la qualite des sources de nourriture circule via la **danse** (un mecanisme de selection probabiliste). Comme pour PSO, il s'agit d'une methode **population-based**, mais la dynamique coopérative est radicalement differente (pas de vitesse, pas de personal/global best, mais un système de rôles + compteur d'essai + abandon).
 
 **Stack technique** : BCL .NET seule, **0 NuGet**. Implementation **from-scratch** complete de l'algorithme ABC. Kernel `.net-csharp` (.NET Interactive).
-",,,,,,,,e2ccc03b0adf4b5d,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,33568780,markdown,fr,270ea28ba62d5fa9,"## Algorithme (ABC, Karaboga 2005)
+",,,,,,,,a5fe29c11b38a2cb,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,33568780,markdown,fr,270ea28ba62d5fa9,"## Algorithme (ABC, Karaboga 2005)
 
 Une **source de nourriture** = une solution candidate $x_i$ avec sa valeur $f(x_i)$ et un **compteur d'essai** `trial_i` (nombre de fois ou l'abeille n'a pas reussi a l'ameliorer).
 
@@ -6995,11 +6995,11 @@ Si une source $x_i$ depasse la **limite d'abandon** `limit` (son `trial_i` est t
 
 > **Contraste avec PSO** : PSO propage le meilleur global via le **terme social** dans la vitesse ; ABC maintient la diversite via le **compteur d'essai + abandon scout**. Deux strategies d'essaim differentes pour echapper aux optima locaux.
 ",,,,,,,,270ea28ba62d5fa9,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,f44a9d4d,markdown,fr,f0bb486bc1adf6ba,"## 1. Setup et helpers
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,f44a9d4d,markdown,fr,f0bb486bc1adf6ba,"## 1. Setup et helpers
 
 Helpers de formatage invariant (pour eviter la collision virgule-decimale FR / virgule-tuple dans les sorties — une source recurrente de bugs d'affichage en culture FR, cf tranche 2).
 ",,,,,,,,f0bb486bc1adf6ba,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,d8ace6c3,code,fr,335a9ec4f26bd319,"using System;
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,d8ace6c3,code,fr,335a9ec4f26bd319,"using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -7010,7 +7010,7 @@ static string FV(double[] xs, string fmt = ""F4"") => ""["" + string.Join("", ""
 
 Console.WriteLine(""Setup OK — .NET Interactive kernel, BCL seule."");
 ",,,,,,,,335a9ec4f26bd319,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,c21cf521,markdown,fr,0d3f0c6863e897cb,"## 2. Fonctions de benchmark
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,c21cf521,markdown,fr,0d3f0c6863e897cb,"## 2. Fonctions de benchmark
 
 Comme pour les tranches precedentes, on definit deux fonctions test :
 
@@ -7019,7 +7019,7 @@ Comme pour les tranches precedentes, on definit deux fonctions test :
 
 **Pourquoi Rosenbrock est non-trivial** : la vallee est etroite et courbe (en forme de banane). Les algorithmes de descente pure se cognent contre les parois ; il faut **suivre la vallee**. C'est un excellent test pour distinguer un bon optimiseur d'un naif — la ou Sphere ne distingue rien (tout converge).
 ",,,,,,,,0d3f0c6863e897cb,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,50b3b68d,code,fr,09e063ba7803af4d,"// Fonctions de benchmark.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,50b3b68d,code,fr,09e063ba7803af4d,"// Fonctions de benchmark.
 
 static double Sphere(double[] x) {
     double s = 0;
@@ -7045,7 +7045,7 @@ Console.WriteLine($""Sphere(0,0,0)       = {FI(Sphere(x0), ""F4"")}  (attendu 0)
 Console.WriteLine($""Rosenbrock(1,1,1)   = {FI(Rosenbrock(x1), ""F6"")}  (attendu 0)"");
 Console.WriteLine($""Rosenbrock(1.2,1.0) = {FI(Rosenbrock(new double[]{1.2, 1.0}), ""F4"")}  (non-optimal, >0)"");
 ",,,,,,,,09e063ba7803af4d,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,9908ffd5,markdown,fr,5565e3847ea13bd9,"## 3. Moteur ABC from-scratch
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,9908ffd5,markdown,fr,5565e3847ea13bd9,"## 3. Moteur ABC from-scratch
 
 Implementation complete de l'algorithme ABC (Karaboga 2005). Une **source de nourriture** est representee par sa position `X`, sa valeur `F`, et son compteur d'essai `Trial`. Le moteur fait tourner les trois phases (employed, onlooker, scout) et memorise la meilleure source rencontree.
 
@@ -7054,7 +7054,7 @@ Implementation complete de l'algorithme ABC (Karaboga 2005). Une **source de nou
 - La probabilite de selection onlooker utilise $\text{fit} = 1/(1+f)$ (transformation de la minimisation en maximisation de fitness, robuste a $f \geq 0$).
 - Le **scout** ne declenche que si `trial > limit` — c'est le gardien de l'exploration globale.
 ",,,,,,,,5565e3847ea13bd9,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,fc65b4c3,code,fr,846637409a5200d9,"// Moteur Artificial Bee Colony (Karaboga 2005) — from-scratch, BCL seule.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,fc65b4c3,code,fr,846637409a5200d9,"// Moteur Artificial Bee Colony (Karaboga 2005) — from-scratch, BCL seule.
 
 const double LO = -5.0, HI = 10.0;  // bornes Rosenbrock (cf twin Python MEALPy)
 
@@ -7135,11 +7135,11 @@ static (double[] gbest, double fbest, List<double> history) ABC(
 
 Console.WriteLine(""Moteur ABC compile."");
 ",,,,,,,,846637409a5200d9,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,97f886fb,markdown,fr,7310da4df418f441,"## 4. Sanity check — ABC sur Sphere
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,97f886fb,markdown,fr,7310da4df418f441,"## 4. Sanity check — ABC sur Sphere
 
 Avant de tester sur Rosenbrock, verifions qu'ABC converge bien vers l'optimum global sur Sphere (unimodal). Si ABC ne converge pas sur Sphere, il y a un bug dans le moteur.
 ",,,,,,,,7310da4df418f441,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,b98f1018,code,fr,5455433bec8a8111,"// Sanity : ABC sur Sphere (unimodal). Doit converger vers 0.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,b98f1018,code,fr,5455433bec8a8111,"// Sanity : ABC sur Sphere (unimodal). Doit converger vers 0.
 var rng1 = new Random(42);
 int dim = 10, SN = 50, maxCycles = 200, limit = 50;
 
@@ -7152,17 +7152,17 @@ Console.WriteLine($""  Optimal attendu    : [0, ..., 0], f = 0"");
 Console.WriteLine($""  f(initial)         : {FI(hist_s[0], ""F4"")}"");
 Console.WriteLine($""  f(final)           : {FI(hist_s[^1], ""F6"")}"");
 ",,,,,,,,5455433bec8a8111,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,2c1a75fe,markdown,fr,5d97625ddcf33beb,"### Interpretation — ABC sur Sphere
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,2c1a75fe,markdown,fr,5d97625ddcf33beb,"### Interpretation — ABC sur Sphere
 
 Sphere etant unimodal (un seul minimum global, pas d'optima locaux), ABC doit converger vers $f \approx 0$. C'est le cas : la phase employed rapproche progressivement les sources, les onlookers concentrent l'effort sur les meilleures, et le scout n'a presque pas a intervenir (pas d'optima locaux a fuir). Sanity OK — le moteur est correct.
 ",,,,,,,,5d97625ddcf33beb,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,439880a5,markdown,fr,150562554d76a676,"## 5. Cas non-trivial — ABC sur Rosenbrock (vallee etroite)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,439880a5,markdown,fr,150562554d76a676,"## 5. Cas non-trivial — ABC sur Rosenbrock (vallee etroite)
 
 Maintenant le vrai test : Rosenbrock, dont la **vallee etroite et courbe** piege les optimiseurs naifs. Le twin Python MEALPy trouve une solution proche de $[1, \dots, 1]$ ($f=0$). Verifions que notre implementation from-scratch fait de meme.
 
 **Parametres** (alignes sur le twin Python) : `dim=10`, `SN=50` sources, `maxCycles=200`, `limit=50`, bornes `[-5, 10]`.
 ",,,,,,,,150562554d76a676,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,392dfb9e,code,fr,3871af2557118254,"// ABC sur Rosenbrock (vallee etroite) — le cas non-trivial.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,392dfb9e,code,fr,3871af2557118254,"// ABC sur Rosenbrock (vallee etroite) — le cas non-trivial.
 var rng2 = new Random(7);
 var (gbest_r, fbest_r, hist_r) = ABC(Rosenbrock, dim, SN, maxCycles, limit, rng2);
 
@@ -7177,7 +7177,7 @@ for (int i = 0; i < hist_r.Count; i += 40) {
 }
 Console.WriteLine($""  cycle {hist_r.Count - 1,3} : f = {FI(hist_r[^1], ""F6"")}  (final)"");
 ",,,,,,,,3871af2557118254,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,7eead2d2,markdown,fr,ed296817c1d42880,"### Interpretation — ABC sur Rosenbrock
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,7eead2d2,markdown,fr,ed296817c1d42880,"### Interpretation — ABC sur Rosenbrock
 
 ABC atteint une solution dans la **vallee** (f ~ 2.3 sur cette seed), mais **ne converge pas a l'optimum exact** en 200 cycles. C'est un resultat honnete : Rosenbrock est **notoirement difficile pour ABC**, car la vallee etroite et courbe demande de suivre un chemin precis que le mecanisme scout (sauts aleatoires) n'oriente pas bien. La trajectoire (60 000 → 2.3) montre une descente rapide puis un **plateau** typique.
 
@@ -7193,11 +7193,11 @@ ABC atteint une solution dans la **vallee** (f ~ 2.3 sur cette seed), mais **ne 
 2. Le parametre `limit` est determinant : le sweep suivant montre qu'un `limit` **grand** (abandon rare) aide sur Rosenbrock, contrairement a l'intuition.
 3. **Comparaison avec PSO** (tranche 2) : PSO via le **terme social** (propagation du global best) suit mieux la vallee ; ABC via le **systeme de roles** a plus de mal. Deux strategies differentes, des forces differentes.
 ",,,,,,,,ed296817c1d42880,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,531d470c,markdown,fr,3a7a7f8ead5d0ac9,"## 6. Effet du parametre `limit` (equilibre exploration/exploitation)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,531d470c,markdown,fr,3a7a7f8ead5d0ac9,"## 6. Effet du parametre `limit` (equilibre exploration/exploitation)
 
 Le seul parametre critique d'ABC est `limit` (seuil d'abandon d'une source). Illustrons son impact en faisant varier sa valeur : un `limit` petit declenche beaucoup d'abandons (exploration forte), un `limit` grand laisse les sources tranquilles (exploitation forte).
 ",,,,,,,,3a7a7f8ead5d0ac9,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,d8358eeb,code,fr,c088da2df3f7901a,"// Sweep du parametre limit sur Rosenbrock.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,d8358eeb,code,fr,c088da2df3f7901a,"// Sweep du parametre limit sur Rosenbrock.
 Console.WriteLine(""Effet de 'limit' sur la qualite finale (Rosenbrock, dim=10, moyenne sur 3 seeds) :"");
 Console.WriteLine(""  limit | f moyen       | std"");
 Console.WriteLine(""  ------|---------------|----------"");
@@ -7219,11 +7219,11 @@ Console.WriteLine(""Lecture : limit=5 (abandon agressif) casse la convergence (f
 Console.WriteLine(""Sur Rosenbrock, un limit GRAND (abandon rare) est meilleur : les sources ont"");
 Console.WriteLine(""le temps d'explorer la vallee avant abandon — limite de l'intuition naive."");
 ",,,,,,,,c088da2df3f7901a,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,741c0835,markdown,fr,3e818d6a2e2d7d7b,"## 7. Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,741c0835,markdown,fr,3e818d6a2e2d7d7b,"## 7. Exercices
 
 Trois exercices pour aller plus loin. Chaque stub est conforme a la regle C.1 (pas d'erreur volontaire) — le notebook s'execute de bout en bout meme exercices non completes.
 ",,,,,,,,3e818d6a2e2d7d7b,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,723c90c1,markdown,fr,3e04b92db32350b9,"### Exercice 1 — Effet de la taille de colonie `SN`
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,723c90c1,markdown,fr,3e04b92db32350b9,"### Exercice 1 — Effet de la taille de colonie `SN`
 
 **Enonce** : Etudiez l'effet de la taille de colonie `SN` (nombre de sources) sur la convergence d'ABC sur Rosenbrock. Testez `SN` dans `{10, 30, 50, 100, 200}` (fixez `maxCycles=200`, `limit=50`, moyenne sur 3 seeds).
 
@@ -7231,12 +7231,12 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Par
 
 **Indice** : Reutilisez le sweep de `limit` comme patron, remplacez la boucle sur `limits` par une boucle sur `SN`. Mesurez aussi le temps avec `System.Diagnostics.Stopwatch`.
 ",,,,,,,,3e04b92db32350b9,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,d9baa9cb,code,fr,e08b37d8d515cf01,"// Exercice 1 — Effet de la taille de colonie SN sur Rosenbrock.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,d9baa9cb,code,fr,e08b37d8d515cf01,"// Exercice 1 — Effet de la taille de colonie SN sur Rosenbrock.
 // TODO etudiant : sweep de SN dans {10, 30, 50, 100, 200}, moyenne sur 3 seeds,
 // reportez f moyen + temps (ms) par SN. Identifiez le point de rendements marginaux.
 Console.WriteLine(""Exercice 1 a completer : sweep de SN sur Rosenbrock."");
 ",,,,,,,,e08b37d8d515cf01,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,30d2c196,markdown,fr,b825000f2035619a,"### Exercice 2 — ABC vs PSO vs SA sur Rosenbrock (comparaison)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,30d2c196,markdown,fr,b825000f2035619a,"### Exercice 2 — ABC vs PSO vs SA sur Rosenbrock (comparaison)
 
 **Enonce** : Comparez ABC (cette tranche), PSO (tranche 2) et SA (tranche 1) sur Rosenbrock en dimension 10. Pour chaque algorithme, reportez la meilleure valeur trouvee sur 5 seeds, le nombre d'evaluations de fonction, et le temps.
 
@@ -7246,12 +7246,12 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Par
 
 **Indice** : Comptez les evaluations en ajoutant un compteur global incremente dans `Sphere`/`Rosenbrock` (ou un wrapper).
 ",,,,,,,,b825000f2035619a,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,9eaee180,code,fr,5db1bf5c011a80de,"// Exercice 2 — Comparaison ABC vs PSO vs SA sur Rosenbrock.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,9eaee180,code,fr,5db1bf5c011a80de,"// Exercice 2 — Comparaison ABC vs PSO vs SA sur Rosenbrock.
 // TODO etudiant : recuperez les 3 moteurs (ABC ici, PSO tranche 2, SA tranche 1),
 // meme budget d'evaluations, 5 seeds, tableau f moyen + std + temps.
 Console.WriteLine(""Exercice 2 a completer : comparaison ABC/PSO/SA sur Rosenbrock."");
 ",,,,,,,,5db1bf5c011a80de,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,7a943c84,markdown,fr,04a39e70ea1e1721,"### Exercice 3 — ABC sur une fonction multimodale (Rastrigin)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,7a943c84,markdown,fr,04a39e70ea1e1721,"### Exercice 3 — ABC sur une fonction multimodale (Rastrigin)
 
 **Enonce** : Testez ABC sur **Rastrigin** (fortement multimodale, beaucoup d'optima locaux) : $f(x) = 10n + \sum_i [x_i^2 - 10\cos(2\pi x_i)]$, minimum $f=0$ en $x=0$. Comparez la capacite d'ABC a echapper aux optima locaux avec celle de PSO (tranche 2 utilisait deja Rastrigin).
 
@@ -7261,12 +7261,12 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Par
 
 **Indice** : Rastrigin a des optima locaux regulierement espaces. La phase scout d'ABC est-elle plus efficace que le terme social de PSO pour en sortir ?
 ",,,,,,,,04a39e70ea1e1721,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,312b1c2a,code,fr,968863025c1db3a7,"// Exercice 3 — ABC sur Rastrigin (multimodale).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,312b1c2a,code,fr,968863025c1db3a7,"// Exercice 3 — ABC sur Rastrigin (multimodale).
 // TODO etudiant : implementez Rastrigin, lancez ABC dessus (5 seeds),
 // comparez le taux de succes avec PSO (tranche 2).
 Console.WriteLine(""Exercice 3 a completer : ABC sur Rastrigin, comparaison avec PSO."");
 ",,,,,,,,968863025c1db3a7,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part3.ipynb,be1913ff,markdown,fr,0857b0060982e7d4,"## 8. Conclusion — Tranche 3 ABC
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb,be1913ff,markdown,fr,0857b0060982e7d4,"## 8. Conclusion — Tranche 3 ABC
 
 **Ce que nous avons appris** :
 
@@ -7294,17 +7294,17 @@ Les **trois strategies** reussissent sur Rosenbrock, mais par des mecanismes coo
 
 *Implementation from-scratch, BCL .NET seule, 0 NuGet. Twin du notebook Python MEALPy [Search-11-Metaheuristics](Search-11-Metaheuristics.ipynb). Marathon #4956.*
 ",,,,,,,,0857b0060982e7d4,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,f93eb6d7,markdown,fr,6ce994ff8282fb31,"# Search-11-Metaheuristiques-Csharp-Part4 : Benchmark Comparatif (capstone)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,f93eb6d7,markdown,fr,cb6f520d2f1b99ca,"# Search-11b-Metaheuristiques-Deep-Part4 : Benchmark Comparatif (capstone)
 
-**Navigation** : [<< Tranche 3 ABC](Search-11-Metaheuristiques-Csharp-Part3.ipynb) | [Twin Python MEALPy](Search-11-Metaheuristics.ipynb)
+**Navigation** : [<< Tranche 3 ABC](Search-11b-Metaheuristiques-Deep-Part3.ipynb) | [Twin Python MEALPy](Search-11-Metaheuristics.ipynb)
 
 **Tranche 4 (FINALE)** du twin .NET du notebook Python [Search-11-Metaheuristics](Search-11-Metaheuristics.ipynb) (MEALPy). Apres le **recuit simule** (tranche 1, trajectoire unique, Metropolis), le **PSO** (tranche 2, essaim, vitesse/inertie) et l'**ABC** (tranche 3, essaim a roles, employed/onlooker/scout), cette **tranche 4 = le benchmark comparatif capstone** qui synthesize les trois metaheuristiques sur un panel de fonctions test.
 
 L'ideee : maintenant que nous avons compris chaque algorithme individuellement (tranches 1-3), la question naturelle est — **lequel choisir pour un probleme donne ?** Il n'y a pas de reponse universelle (no free lunch). Ce notebook apporte la reponse empirique : on lance les trois algorithmes sur quatre fonctions aux paysages opposes (unimodal vs multimodal, vallée etroite vs optima locaux nombreux), avec plusieurs seeds, et on identifie le **meilleur algorithme par type de paysage**.
 
 **Stack technique** : BCL .NET seule, **0 NuGet**. Implementation **from-scratch** des trois algorithmes (re-definis de maniere self-contained). Kernel `.net-csharp`.
-",,,,,,,,6ce994ff8282fb31,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,83807cb1,markdown,fr,10536d4c4494e75d,"## No Free Lunch — pourquoi comparer ?
+",,,,,,,,cb6f520d2f1b99ca,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,83807cb1,markdown,fr,10536d4c4494e75d,"## No Free Lunch — pourquoi comparer ?
 
 Le theoreme **No Free Lunch** (Wolpert & Macready, 1997) dit que, moyennes sur TOUS les problemes possibles, toutes les metaheuristiques ont les memes performances. Consequence : **aucun algorithme n'est universellement meilleur**. Le choix depend du **paysage** du probleme :
 
@@ -7317,11 +7317,11 @@ Le theoreme **No Free Lunch** (Wolpert & Macready, 1997) dit que, moyennes sur T
 
 Ce benchmark **verifie empiriquement** ces intuitions sur quatre fonctions representatives.
 ",,,,,,,,10536d4c4494e75d,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,6d2b6583,markdown,fr,90edb8182cfea408,"## 1. Setup et helpers invariant
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,6d2b6583,markdown,fr,90edb8182cfea408,"## 1. Setup et helpers invariant
 
 Helper de formatage invariant (culture-independant) — evite la collision virgule-decimale FR / virgule-tuple dans les sorties.
 ",,,,,,,,90edb8182cfea408,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,c8be2958,code,fr,3704c69c4a3e347a,"using System;
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,c8be2958,code,fr,3704c69c4a3e347a,"using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -7331,7 +7331,7 @@ static string FV(double[] xs, string fmt = ""F3"") => ""["" + string.Join("", ""
 
 Console.WriteLine(""Setup OK — kernel .net-csharp, BCL seule."");
 ",,,,,,,,3704c69c4a3e347a,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,3860fc1b,markdown,fr,f026912eef8b1fe9,"## 2. Quatre fonctions de benchmark
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,3860fc1b,markdown,fr,f026912eef8b1fe9,"## 2. Quatre fonctions de benchmark
 
 Quatre fonctions aux paysages deliberement opposes :
 
@@ -7344,7 +7344,7 @@ Quatre fonctions aux paysages deliberement opposes :
 
 Ces quatre couvrent les grandes classes de paysages — un bon benchmark ne teste pas qu'un seul type.
 ",,,,,,,,f026912eef8b1fe9,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,f05033e0,code,fr,98c71d937b7c7b14,"// Quatre fonctions de benchmark, paysages opposes. Bornes [-5, 10] (cf twin Python).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,f05033e0,code,fr,98c71d937b7c7b14,"// Quatre fonctions de benchmark, paysages opposes. Bornes [-5, 10] (cf twin Python).
 const double LO = -5.0, HI = 10.0;
 
 static double Sphere(double[] x) {
@@ -7387,7 +7387,7 @@ Console.WriteLine($""  Rastrigin(0)   = {FI(Rastrigin(x0), ""F6"")}  (attendu 0)
 Console.WriteLine($""  Rosenbrock(1)  = {FI(Rosenbrock(x1), ""F6"")}  (attendu 0)"");
 Console.WriteLine($""  Ackley(0)      = {FI(Ackley(x0), ""F6"")}  (attendu 0)"");
 ",,,,,,,,98c71d937b7c7b14,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,9b106aaf,markdown,fr,495214cb87754489,"## 3. Les trois algorithmes (re-definis de maniere compacte)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,9b106aaf,markdown,fr,495214cb87754489,"## 3. Les trois algorithmes (re-definis de maniere compacte)
 
 Les trois metaheuristiques des tranches 1-3, re-ecrites de maniere compacte et self-contained. Chacune expose la meme signature : `(fonction, dim, seed) -> (best_x, best_f)` pour pouvoir les brancher dans le benchmark.
 
@@ -7395,7 +7395,7 @@ Les trois metaheuristiques des tranches 1-3, re-ecrites de maniere compacte et s
 - **PSO** (tranche 2) : essaim, vitesse `w*v + c1*r1*(p_i-x) + c2*r2*(g-x)`, inertie + cognitif + social.
 - **ABC** (tranche 3) : essaim a roles, employed/onlooker/scout, compteur d'essai, roulette wheel `fit=1/(1+f)`.
 ",,,,,,,,495214cb87754489,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,0fb1cfb7,code,fr,ea72f4ba3906e356,"// === SA (tranche 1, compact) — trajectoire unique + Metropolis ===
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,0fb1cfb7,code,fr,ea72f4ba3906e356,"// === SA (tranche 1, compact) — trajectoire unique + Metropolis ===
 static (double[] x, double f) SA(Func<double[], double> f, int dim, int seed,
         int iters = 3000, double T0 = 100.0, double Tend = 0.01) {
     var rng = new Random(seed);
@@ -7496,13 +7496,13 @@ static (double[] x, double f) ABC(Func<double[], double> f, int dim, int seed,
 
 Console.WriteLine(""Trois algorithmes compiles : SA, PSO, ABC."");
 ",,,,,,,,ea72f4ba3906e356,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,5e72348e,markdown,fr,679cbf59fc11a99c,"## 4. Harness de benchmark (multi-seed)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,5e72348e,markdown,fr,679cbf59fc11a99c,"## 4. Harness de benchmark (multi-seed)
 
 Le harness lance chaque algorithme sur chaque fonction avec plusieurs seeds, et agrège les resultats (moyenne et ecart-type de la meilleure valeur trouvee). On utilise un **budget d'evaluations comparable** : SA ~3000 evals (3000 iters × 1 trajectoire), PSO/ABC ~3000 evals (30 particules × 100 cycles). C'est une comparaison **equitable en budget** — le facteur discriminant est la **strategie**, pas le nombre d'evals.
 
 **Dimension** = 5 (modeste pour garder un runtime raisonnable en notebook pedagogique). **Seeds** = {1, 7, 42} (3 seeds pour les statistiques).
 ",,,,,,,,679cbf59fc11a99c,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,700cc1f5,code,fr,098e4d06f31febfc,"// Harness de benchmark : 3 algos × 4 fonctions × 3 seeds.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,700cc1f5,code,fr,098e4d06f31febfc,"// Harness de benchmark : 3 algos × 4 fonctions × 3 seeds.
 int dim = 5;
 int[] seeds = { 1, 7, 42 };
 var funcs = new (string name, Func<double[], double> f)[] {
@@ -7526,11 +7526,11 @@ foreach (var (fname, f) in funcs) {
 }
 Console.WriteLine(""Benchmark termine : 3 algos × 4 fonctions × 3 seeds = 36 runs."");
 ",,,,,,,,098e4d06f31febfc,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,72f8cb50,markdown,fr,18101a91521cc730,"## 5. Resultats — tableau comparatif
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,72f8cb50,markdown,fr,18101a91521cc730,"## 5. Resultats — tableau comparatif
 
 Pour chaque fonction, on reporte la moyenne et l'ecart-type de la meilleure valeur sur 3 seeds, et on **identifie le gagnant** (algorithme avec la plus basse moyenne). Les ecarts-types petits = convergence stable cross-seed ; grands = sensibilite a l'initialisation.
 ",,,,,,,,18101a91521cc730,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,fda5f007,code,fr,19745167dc449fb5,"// Tableau comparatif + identification du gagnant par fonction.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,fda5f007,code,fr,19745167dc449fb5,"// Tableau comparatif + identification du gagnant par fonction.
 Console.WriteLine($""Benchmark (dim={dim}, seeds={{{string.Join("", "", seeds)}}}, f-optimal = 0 pour toutes)"");
 Console.WriteLine();
 Console.WriteLine(""  "" + ""Fonction"".PadLeft(12) + "" | "" + ""SA (moy et std)"".PadLeft(22) + "" | "" + ""PSO (moy et std)"".PadLeft(22) + "" | "" + ""ABC (moy et std)"".PadLeft(22) + "" | "" + ""Gagnant"".PadLeft(8));
@@ -7555,7 +7555,7 @@ foreach (var (fname, _) in funcs) {
     Console.WriteLine($""  {fname,12} | {Cell(m[""SA""]),22} | {Cell(m[""PSO""]),22} | {Cell(m[""ABC""]),22} | {Winner(fname),8}"");
 }
 ",,,,,,,,19745167dc449fb5,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,10da61c8,markdown,fr,c6011f36ddc5018f,"### Lecture du tableau — ce que disent les resultats
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,10da61c8,markdown,fr,c6011f36ddc5018f,"### Lecture du tableau — ce que disent les resultats
 
 La lecture doit etre **honnête vis-a-vis des chiffres observes** (pas d'affirmations genereuses). Points cles :
 
@@ -7566,11 +7566,11 @@ La lecture doit etre **honnête vis-a-vis des chiffres observes** (pas d'affirma
 
 **Lecon empirique** : meme si un algorithme domine sur ce panel, la **marge varie fortement selon le paysage**, et la **variance cross-seed** revele la robustesse. C'est le VRAI enseignement du No Free Lunch — non pas qu'un autre algo gagnerait ailleurs, mais que **la confiance dans un resultat depend du paysage et de la stabilite**.
 ",,,,,,,,c6011f36ddc5018f,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,203a4143,markdown,fr,2a5552f62790c53a,"## 6. Taux de succes (convergence a l'optimum)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,203a4143,markdown,fr,2a5552f62790c53a,"## 6. Taux de succes (convergence a l'optimum)
 
 Une autre facette : a quelle frequence chaque algorithme **atteint-il l'optimum** (seuil $f < 10^{-3}$) sur les seeds ? Un bon algorithme ne fait pas que baisser f en moyenne — il **converge fiablement**.
 ",,,,,,,,2a5552f62790c53a,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,c9167259,code,fr,d058d2502dda89e0,"// Taux de succes : frequence ou f < 1e-3 sur les seeds.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,c9167259,code,fr,d058d2502dda89e0,"// Taux de succes : frequence ou f < 1e-3 sur les seeds.
 double threshold = 1e-3;
 Console.WriteLine($""Taux de succes (f < 1e-3 = convergence) sur {seeds.Length} seeds :"");
 Console.WriteLine();
@@ -7584,11 +7584,11 @@ foreach (var (fname, _) in funcs) {
     Console.WriteLine($""  {fname,12} | {FI(100.0 * sa / seeds.Length, ""F0"") + ""%"",8} | {FI(100.0 * pso / seeds.Length, ""F0"") + ""%"",8} | {FI(100.0 * abc / seeds.Length, ""F0"") + ""%"",8}"");
 }
 ",,,,,,,,d058d2502dda89e0,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,a816b50e,markdown,fr,6994aee4a59e52c6,"## 7. Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,a816b50e,markdown,fr,6994aee4a59e52c6,"## 7. Exercices
 
 Trois exercices pour aller plus loin. Chaque stub est conforme a la regle C.1 (pas d'erreur volontaire).
 ",,,,,,,,6994aee4a59e52c6,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,b2d02ac1,markdown,fr,53d4f865512a634e,"### Exercice 1 — Effet de la dimension (malédiction)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,b2d02ac1,markdown,fr,53d4f865512a634e,"### Exercice 1 — Effet de la dimension (malédiction)
 
 **Enonce** : Etudiez l'effet de la dimension `dim` sur les trois algorithmes. Testez `dim` dans `{2, 5, 10, 20}` sur Rosenbrock (3 seeds). Reportez f moyen par algorithme et par dimension.
 
@@ -7596,11 +7596,11 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Par
 
 **Indice** : Reutilisez le harness de benchmark, remplacez la boucle sur les fonctions par une boucle sur `dim`. Observez comment f-moyen croit avec dim.
 ",,,,,,,,53d4f865512a634e,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,e0adcff5,code,fr,802a3b4809a5f828,"// Exercice 1 — Effet de la dimension sur Rosenbrock (SA vs PSO vs ABC).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,e0adcff5,code,fr,802a3b4809a5f828,"// Exercice 1 — Effet de la dimension sur Rosenbrock (SA vs PSO vs ABC).
 // TODO etudiant : sweep dim dans {2, 5, 10, 20}, 3 seeds, reportez f moyen par algo.
 Console.WriteLine(""Exercice 1 a completer : effet de la dimension sur Rosenbrock."");
 ",,,,,,,,802a3b4809a5f828,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,c63bdacb,markdown,fr,672c2d8edd1c403d,"### Exercice 2 — Ajouter un 4e algorithme (BRO / bat)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,c63bdacb,markdown,fr,672c2d8edd1c403d,"### Exercice 2 — Ajouter un 4e algorithme (BRO / bat)
 
 **Enonce** : Le twin Python MEALPy compare aussi **BRO** (Brownian-based Optimization) ou l'algorithme des **chauves-souris** (Bat Algorithm). Implementez un de ces deux algorithmes from-scratch et ajoutez-le au benchmark.
 
@@ -7610,11 +7610,11 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Par
 
 **Indice** : Bat Algorithm = positions + vitesses + frequence/pulse (analogue au sonar), proche de PSO.
 ",,,,,,,,672c2d8edd1c403d,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,4ab98a52,code,fr,5f1eab5176aa5308,"// Exercice 2 — Ajouter BRO ou Bat Algorithm au benchmark.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,4ab98a52,code,fr,5f1eab5176aa5308,"// Exercice 2 — Ajouter BRO ou Bat Algorithm au benchmark.
 // TODO etudiant : implementez un 4e algo, meme signature, ajoutez au harness.
 Console.WriteLine(""Exercice 2 a completer : ajout d'un 4e algorithme (BRO/Bat)."");
 ",,,,,,,,5f1eab5176aa5308,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,59c2cccc,markdown,fr,0c195bcd7198bd54,"### Exercice 3 — Budget equivalent (comparaison equitable)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,59c2cccc,markdown,fr,0c195bcd7198bd54,"### Exercice 3 — Budget equivalent (comparaison equitable)
 
 **Enonce** : La comparaison ci-dessus n'est pas totalement equitable : SA fait 500 evals, PSO/ABC font ~3000 evals. Refaites le benchmark en fixant un **budget d'evaluations de fonction** identique (ex: 3000 evals pour chaque algorithme) et observez si le classement change.
 
@@ -7622,11 +7622,11 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Par
 
 **Indice** : Comptez les evaluations via un compteur global incremente dans chaque fonction. Ajustez les parametres (iters SA, pop×cycles essaim) pour egaliser le total.
 ",,,,,,,,0c195bcd7198bd54,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,3e048eda,code,fr,1c8326499eaf7939,"// Exercice 3 — Comparaison a budget d'evaluations equivalent.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,3e048eda,code,fr,1c8326499eaf7939,"// Exercice 3 — Comparaison a budget d'evaluations equivalent.
 // TODO etudiant : comptez les evals, egalisez le budget (3000 evals), recomparez.
 Console.WriteLine(""Exercice 3 a completer : comparaison a budget equivalent."");
 ",,,,,,,,1c8326499eaf7939,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Part4.ipynb,590c3b88,markdown,fr,406046af4a83c919,"## 8. Conclusion — Capstone du marathon Search-11
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb,590c3b88,markdown,fr,406046af4a83c919,"## 8. Conclusion — Capstone du marathon Search-11
 
 **Ce que nous avons appris** :
 
@@ -7651,11 +7651,11 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp-Par
 
 *Implementation from-scratch, BCL .NET seule, 0 NuGet. Capstone du marathon Search-11 (#4956). Twin du notebook Python MEALPy [Search-11-Metaheuristics](Search-11-Metaheuristics.ipynb).*
 ",,,,,,,,406046af4a83c919,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c01,markdown,fr,aa15289ce03d2b78,"# Search-11 : Métaheuristiques d'optimisation (C# / .NET) — Tranche 1 : Recuit simulé
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c01,markdown,fr,d73622ea1b4d2cc3,"# Search-11b : Métaheuristiques d'optimisation (C# / .NET) — Tranche 1 : Recuit simulé
 
 **Navigation** : [<< Search-10 SymbolicAutomata](Search-10-SymbolicAutomata-Csharp.ipynb) | [Index](../README.md)
 
-**Twin .NET du notebook [Search-11-Metaheuristiques](Search-11-Metaheuristics.ipynb) (Python/MEALPy).** Ce notebook est le port fidèle en C#/.NET, **implémentant les métaheuristiques from-scratch**.
+**Twin .NET du notebook [Search-11-Metaheuristics](Search-11-Metaheuristics.ipynb) (Python/MEALPy).** Ce notebook est le port fidèle en C#/.NET, **implémentant les métaheuristiques from-scratch**.
 
 ## Complémentarité (.NET ↔ Python), pas workaround (#3801)
 
@@ -7680,8 +7680,8 @@ Il n'existe pas d'équivalent NuGet maintenu et didactique à MEALPy en .NET. Le
 
 ### Durée estimée : 45 minutes
 
-> **Note** : Le recuit simulé (Kirkpatrick, Gelatt, Vecchi, 1983) s'inspire de la thermodynamique : en refroidissant lentement un métal, ses atomes trouvent un état d'énergie minimale. L'algorithme autorise ponctuellement des mouvements qui *dégradent* la solution, avec une probabilité décroissant avec la température — c'est l'anti-dote au piège des optima locaux.",,,,,,,,aa15289ce03d2b78,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c02,code,fr,5714ee06ef5397ba,"// Setup : aucune dépendance externe — algos from-scratch, uniquement la BCL .NET.
+> **Note** : Le recuit simulé (Kirkpatrick, Gelatt, Vecchi, 1983) s'inspire de la thermodynamique : en refroidissant lentement un métal, ses atomes trouvent un état d'énergie minimale. L'algorithme autorise ponctuellement des mouvements qui *dégradent* la solution, avec une probabilité décroissant avec la température — c'est l'anti-dote au piège des optima locaux.",,,,,,,,d73622ea1b4d2cc3,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c02,code,fr,5714ee06ef5397ba,"// Setup : aucune dépendance externe — algos from-scratch, uniquement la BCL .NET.
 using Microsoft.DotNet.Interactive;
 using System;
 using System.Collections.Generic;
@@ -7692,7 +7692,7 @@ using System.Text;
 // PRNG déterministe (seed fixe) pour reproductibilité pédagogique.
 var rng = new Random(42);
 ""Environnement prêt — métaheuristiques from-scratch (BCL .NET seule)."".Display();",,,,,,,,5714ee06ef5397ba,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c03,markdown,fr,b4242c2f1319d673,"## 1. Exploration vs Exploitation
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c03,markdown,fr,b4242c2f1319d673,"## 1. Exploration vs Exploitation
 
 L'optimisation d'une fonction $f: \mathbb{R}^n \to \mathbb{R}$ cherche $x^* = \arg\min f(x)$. Deux forces antagoniques :
 
@@ -7704,7 +7704,7 @@ Les **métaheuristiques** sont des heuristiques génériques qui orchestrent ce 
 ### Pourquoi SA n'est pas une descente
 
 Une descente pure (greedy hill-climbing) n'accepte **jamais** un voisin moins bon. Sur une fonction multimodale (plusieurs vallées), elle reste bloquée dans la première vallée trouvée. Le recuit simulé, grâce au critère de Metropolis, peut **escalader** temporairement une colline pour atteindre une vallée plus profonde.",,,,,,,,b4242c2f1319d673,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c04,markdown,fr,0548be51a117b668,"## 2. Fonctions de benchmark
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c04,markdown,fr,0548be51a117b668,"## 2. Fonctions de benchmark
 
 Pour valider SA, nous utilisons deux fonctions classiques de l'optimisation continue :
 
@@ -7715,7 +7715,7 @@ Facile : un seul minimum global, toute descente y arrive.
 ### Ackley (multimodal, non-convexe)
 $$f(x) = -20 \exp\left(-0.2 \sqrt{\tfrac{1}{n}\sum x_i^2}\right) - \exp\left(\tfrac{1}{n}\sum \cos(2\pi x_i)\right) + 20 + e$$
 **Difficile** : paysage raboteux avec une infinité d'optima locaux, mais un seul minimum global en $\mathbf{0}$. Une descente pure s'y piège ; c'est le test discriminant pour SA.",,,,,,,,0548be51a117b668,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c05,code,fr,09d60b240d1c6ce2,"// Fonctions de benchmark (dim n quelconque).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c05,code,fr,09d60b240d1c6ce2,"// Fonctions de benchmark (dim n quelconque).
 static double Sphere(double[] x) =>
     x.Select(xi => xi * xi).Sum();
 
@@ -7740,7 +7740,7 @@ sb.AppendLine($""Ackley(0,0) = {Ackley(origin):F6}  (attendu ≈ 0)"");
 var rough = new double[] { 2.5, -1.3 };
 sb.AppendLine($""Ackley(2.5,-1.3) = {Ackley(rough):F6}  (point raboteux hors optimum)"");
 sb.ToString().Display();",,,,,,,,09d60b240d1c6ce2,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c06,markdown,fr,3ba70edc302bbe87,"## 3. Le recuit simulé — théorie
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c06,markdown,fr,3ba70edc302bbe87,"## 3. Le recuit simulé — théorie
 
 L'algorithme maintient une **solution courante** $x$ et une **température** $T$ qui décroît. À chaque itération :
 
@@ -7754,10 +7754,10 @@ L'algorithme maintient une **solution courante** $x$ et une **température** $T$
 ### Le critère de Metropolis — intuition
 
 À haute température ($T \to \infty$), $\exp(-\Delta/T) \to 1$ : **tout mouvement est accepté** (exploration pure). À basse température ($T \to 0$), $\exp(-\Delta/T) \to 0$ : **seules les améliorations sont acceptées** (exploitation = descente). Le schéma de refroidissement orchestre la transition exploration → exploitation.",,,,,,,,3ba70edc302bbe87,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c07,markdown,fr,1efa59365154ea4f,"## 4. Implémentation from-scratch du recuit simulé
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c07,markdown,fr,1efa59365154ea4f,"## 4. Implémentation from-scratch du recuit simulé
 
 L'implémentation est volontairement explicite (pas de framework) : chaque étape (voisinage, Metropolis, refroidissement) est lisible. Le voisinage est une perturbation gaussienne bornée dans le domaine.",,,,,,,,1efa59365154ea4f,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c08,code,fr,24272451d605388e,"// Recuit simulé (Simulated Annealing) from-scratch.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c08,code,fr,24272451d605388e,"// Recuit simulé (Simulated Annealing) from-scratch.
 //   f        : fonction objectif à minimiser
 //   dim      : dimension du problème
 //   T0       : température initiale
@@ -7811,7 +7811,7 @@ static (double[] bestX, double bestF, List<double> history) SimulatedAnnealing(
     return (bestX, bestF, history);
 }
 ""Implémentation SA prête (Box-Muller, Metropolis, refroidissement géométrique)."".Display();",,,,,,,,24272451d605388e,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c09,code,fr,63516ae52097decc,"// SA sur Sphere (unimodal) — sanity check : doit approcher 0.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c09,code,fr,63516ae52097decc,"// SA sur Sphere (unimodal) — sanity check : doit approcher 0.
 rng = new Random(42);  // reset seed pour reproductibilité
 var (bestX_sph, bestF_sph, hist_sph) = SimulatedAnnealing(
     Sphere, dim: 2, T0: 10.0, alpha: 0.92, iters: 50, steps: 200, rng);
@@ -7823,10 +7823,10 @@ sb.AppendLine($""Meilleur f(x)     : {bestF_sph:F6}  (optimum global = 0)"");
 sb.AppendLine($""Distance à 0      : {Math.Sqrt(bestX_sph[0]*bestX_sph[0]+bestX_sph[1]*bestX_sph[1]):F6}"");
 sb.AppendLine($""Paliers de température : {hist_sph.Count}"");
 sb.ToString().Display();",,,,,,,,63516ae52097decc,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c10,markdown,fr,b8c95d2832f29b1d,"### Interprétation : Sphere
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c10,markdown,fr,b8c95d2832f29b1d,"### Interprétation : Sphere
 
 SA converge facilement vers l'origine sur Sphere (fonction convexe) : l'optimum global est aussi le seul minimum, aucune possibilité de piège. C'est le **sanity check** — si SA échouait ici, l'implémentation serait buguée. Le recuit simulé est conçu pour les paysages difficiles ; sur un problème facile, il se comporte comme une descente.",,,,,,,,b8c95d2832f29b1d,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c11,code,fr,4d3dcbdc40107290,"// SA sur Ackley (multimodal) — le vrai test. Une descente pure s'y échouerait.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c11,code,fr,4d3dcbdc40107290,"// SA sur Ackley (multimodal) — le vrai test. Une descente pure s'y échouerait.
 rng = new Random(42);
 var (bestX_ack, bestF_ack, hist_ack) = SimulatedAnnealing(
     Ackley, dim: 2, T0: 10.0, alpha: 0.92, iters: 50, steps: 200, rng);
@@ -7841,17 +7841,17 @@ sb.AppendLine(""Convergence (best f(x) tous les 25 paliers) :"");
 for (int i = 0; i < hist_ack.Count; i += 25)
     sb.AppendLine($""  palier {i,3} : best f = {hist_ack[i]:F6}"");
 sb.ToString().Display();",,,,,,,,4d3dcbdc40107290,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c12,markdown,fr,14b9761ba081b317,"### Interprétation : Ackley — SA vs descente pure
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c12,markdown,fr,14b9761ba081b317,"### Interprétation : Ackley — SA vs descente pure
 
 Ackley est le test discriminant : son paysage est parsemé d'optima locaux, et seul $\mathbf{0}$ est le minimum global. Une **descente pure** (hill-climbing greedy) s'arrête au premier optimum local rencontré — typiquement $f \approx 2$ à $6$, jamais $0$.
 
 SA s'en sort parce qu'au début (haute $T$), il **accepte des dégradations** et peut escalader une colline pour atteindre un meilleur bassin. La convergence vers $f \approx 0$ (ou très proche) démontre que le **critère de Metropolis** a rempli son rôle : exploration initiale, puis exploitation finale.
 
 > **Sensibilité** : si $\alpha$ est trop grand (refroidissement rapide), SA se comporte comme une descente et reste piégé. Si $\alpha$ est trop petit (refroidissement lent), cela converge mais coûte plus d'itérations. C'est le compromis exploration/exploitation incarné dans un seul paramètre.",,,,,,,,14b9761ba081b317,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c13,markdown,fr,d1b40e7ba8c27476,"### Exercice 1 : Schéma de refroidissement
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c13,markdown,fr,d1b40e7ba8c27476,"### Exercice 1 : Schéma de refroidissement
 
 SA est très sensible au facteur de refroidissement $\alpha$. Complétez le stub pour comparer $\alpha \in \{0.80, 0.92, 0.99\}$ sur Ackley (mêmes `iters`/`steps`/seed). Quel $\alpha$ donne le meilleur $f(x)$ final ? Lequel converge le plus vite ? Interprétez le compromis.",,,,,,,,d1b40e7ba8c27476,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c14,code,fr,7cdccb0aa6893062,"// Exercice 1 : comparaison de schémas de refroidissement (étudiant à compléter)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c14,code,fr,7cdccb0aa6893062,"// Exercice 1 : comparaison de schémas de refroidissement (étudiant à compléter)
 // Indice 1 : reset rng = new Random(42) avant chaque run pour isoler l'effet de alpha.
 // Indice 2 : collecter bestF final pour chaque alpha dans un tableau, afficher en table texte.
 // Étape 1 : boucler sur alpha in {0.80, 0.92, 0.99}
@@ -7860,25 +7860,25 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipy
 double[] alphas = { 0.80, 0.92, 0.99 };
 // TODO étudiant : comparer les schémas de refroidissement
 ""Exercice 1 à compléter — comparer alpha = 0.80 / 0.92 / 0.99 sur Ackley."".Display();",,,,,,,,7cdccb0aa6893062,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c15,markdown,fr,cf90113fe398259e,"### Exercice 2 : Température initiale
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c15,markdown,fr,cf90113fe398259e,"### Exercice 2 : Température initiale
 
 La température initiale $T_0$ contrôle l'intensité de l'exploration. Complétez le stub pour comparer $T_0 \in \{0.1, 5, 50\}$ sur Ackley avec $\alpha = 0.92$. Une $T_0$ trop basse empêche-t-elle l'évasion des optima locaux ? Une $T_0$ trop haute gaspille-t-elle des itérations en exploration aléatoire ?",,,,,,,,cf90113fe398259e,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c16,code,fr,c97a26052979fa00,"// Exercice 2 : impact de la température initiale (étudiant à compléter)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c16,code,fr,c97a26052979fa00,"// Exercice 2 : impact de la température initiale (étudiant à compléter)
 // Indice : T0 bas =exploitation tôt (piège local possible), T0 haut = exploration prolongée.
 double[] T0s = { 0.1, 5.0, 50.0 };
 // TODO étudiant : comparer T0 = 0.1 / 5 / 50 sur Ackley (alpha=0.92)
 ""Exercice 2 à compléter — comparer T0 = 0.1 / 5 / 50 sur Ackley."".Display();",,,,,,,,c97a26052979fa00,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c17,markdown,fr,e34598df7a902c25,"### Exercice 3 : Amplitude du voisinage
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c17,markdown,fr,e34598df7a902c25,"### Exercice 3 : Amplitude du voisinage
 
 L'amplitude de la perturbation gaussienne (ici `0.05 * (HI-LO)`) contrôle la portée d'un pas. Complétez le stub pour tester des amplitudes $\in \{0.01, 0.05, 0.20\}$ (modifiez le facteur dans `SimulatedAnnealing` ou ajoutez un paramètre). Une amplitude trop petite empêche-t-elle de franchir les collines d'Ackley ? Trop grande saute-t-elle l'optimum ?",,,,,,,,e34598df7a902c25,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c18,code,fr,fdb230e389020402,"// Exercice 3 : impact de l'amplitude du voisinage (étudiant à compléter)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c18,code,fr,fdb230e389020402,"// Exercice 3 : impact de l'amplitude du voisinage (étudiant à compléter)
 // Indice : l'amplitude est le facteur 0.05 dans cand[i] += gauss * (HI-LO) * 0.05.
 // Étape 1 : paramétrer l'amplitude (ajouter un arg à SimulatedAnnealing, ou recopier avec un facteur)
 // Étape 2 : tester amplitude in {0.01, 0.05, 0.20} sur Ackley
 double[] amps = { 0.01, 0.05, 0.20 };
 // TODO étudiant : comparer l'amplitude du voisinage
 ""Exercice 3 à compléter — comparer amplitude = 0.01 / 0.05 / 0.20 sur Ackley."".Display();",,,,,,,,fdb230e389020402,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristiques-Csharp.ipynb,s11c19,markdown,fr,1363698cb6c9b844,"## 5. Conclusion (tranche 1)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb,s11c19,markdown,fr,1363698cb6c9b844,"## 5. Conclusion (tranche 1)
 
 Cette tranche a posé les fondations des métaheuristiques en C#/.NET via le **recuit simulé from-scratch**.
 
@@ -11404,13 +11404,87 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,b9f5f010,co
                         max_frontier, elapsed, explored_order)
 print(""Fonction uniform_cost_search definie (UCS)"")",,,,,,,,ec1092dc4b2b6f4f,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,dh1xok4wczj,markdown,fr,34f21e5ee5440f5b,Appliquons UCS a notre probleme de reference et comparons avec les resultats de BFS.,,,,,,,,34f21e5ee5440f5b,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,53f6b1a6,code,fr,e1043309fb6e3f33,"# --- Application de UCS au probleme Bordeaux -> Strasbourg ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,53f6b1a6,code,fr,aa6e6fd129661d74,"# --- Application de UCS au probleme Bordeaux -> Strasbourg ---
 
 print(""UCS : Bordeaux -> Strasbourg"")
 print(""="" * 60)
 result_ucs = uniform_cost_search(problem_bs, verbose=True)
-result_ucs.display()",,,,,,,,e1043309fb6e3f33,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,04c1e915,markdown,fr,4a4541cd855c06dd,"### Interpretation - UCS trouve le chemin optimal
+result_ucs.display()
+print(""\nNOTE : sur Bordeaux -> Strasbourg, BFS et UCS trouvent le MEME chemin."")
+print(""C'est un cas ou couts et nombre d'etapes coincident : l'avantage de UCS sur les couts n'est pas visible."")
+print(""Voir le trajet Paris -> Rennes ci-dessous, ou UCS divise le cout par deux."")
+",,,,,,,,aa6e6fd129661d74,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,9d296b92,markdown,fr,ea28ee8db927ef07,"### Quand l'avantage de cout de UCS devient visible : Paris -> Rennes
+
+Sur le trajet Bordeaux -> Strasbourg, BFS et UCS ont trouve le meme chemin
+(1075 km en 2 etapes). Le resultat est correct — il est meme instructif —
+mais il ne montre **pas** l'avantage propre de UCS : sur ce graphe, l'arc
+le moins cher entre deux villes est generalement aussi le plus court en
+nombre d'etapes, donc BFS (profondeur minimale) et UCS (cout minimal)
+convergent.
+
+Prenons **Paris -> Rennes**. Depuis Paris, deux chemins en 2 etapes existent :
+
+| Chemin | Etapes | Cout (km) |
+|--------|--------|----------|
+| Paris -> Lille -> Rennes | 2 | 225 + 600 = **825** |
+| Paris -> Nantes -> Rennes | 2 | 385 + 110 = **495** |
+
+Meme longueur, couts divises par ~1,7. BFS, qui ne raisonne qu'en nombre
+de sauts, traite les deux chemins comme equivalents et developpe le premier
+qu'il rencontre dans l'ordre du graphe (Lille avant Nantes). UCS, lui, suit
+le front `g(n)` : 495 < 825, donc il developpe la frontiere Nantes avant
+Lille et trouve le chemin 40% moins cher. **C'est ici que l'optimalite en
+cout de UCS devient visible dans la sortie.**
+",,,,,,,,ea28ee8db927ef07,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,d4c90f28,code,fr,9561c13cd94321fb,"# --- Cas discriminant : Paris -> Rennes (UCS divise le cout par deux) ---
+
+import pandas as pd
+
+problem_pr = GraphProblem('Paris', 'Rennes', france_graph)
+
+print(""Comparaison : BFS vs UCS sur Paris -> Rennes"")
+print(""="" * 70)
+
+result_bfs_pr = breadth_first_search(problem_pr, verbose=True)
+result_ucs_pr = uniform_cost_search(problem_pr, verbose=True)
+
+comparison_pr_df = pd.DataFrame([
+    {
+        'Algorithme': 'BFS',
+        'Chemin': ' -> '.join(result_bfs_pr.path),
+        'Cout (km)': result_bfs_pr.cost,
+        'Longueur': len(result_bfs_pr.path) - 1,
+        'Noeuds explores': result_bfs_pr.nodes_expanded,
+        'Temps (ms)': f""{result_bfs_pr.elapsed_ms:.2f}"",
+    },
+    {
+        'Algorithme': 'UCS',
+        'Chemin': ' -> '.join(result_ucs_pr.path),
+        'Cout (km)': result_ucs_pr.cost,
+        'Longueur': len(result_ucs_pr.path) - 1,
+        'Noeuds explores': result_ucs_pr.nodes_expanded,
+        'Temps (ms)': f""{result_ucs_pr.elapsed_ms:.2f}"",
+    },
+])
+
+print(comparison_pr_df.to_string(index=False))
+
+print(""\n"" + ""="" * 70)
+if result_bfs_pr.cost > result_ucs_pr.cost:
+    diff = result_bfs_pr.cost - result_ucs_pr.cost
+    pct = (diff / result_ucs_pr.cost) * 100
+    print(f""UCS a trouve un chemin {diff:.0f} km plus court ({pct:.1f}% de moins)."")
+    print(""BFS a developpe Lille en premier (premier voisin alphabetique) et s'est"")
+    print(""arrete la : 225 + 600 = 825 km. UCS, en suivant le cout cumule g(n), a"")
+    print(""developpe Nantes en premier et trouve 385 + 110 = 495 km. Meme nombre"")
+    print(""d'etapes, mais UCS est garanti optimal en cout."")
+elif result_bfs_pr.cost == result_ucs_pr.cost:
+    print(""NOTE : BFS egale UCS sur ce trajet (tie)."")
+else:
+    print(""NOTE : BFS strictement meilleur (ne devrait pas arriver)."")
+",,,,,,,,9561c13cd94321fb,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,04c1e915,markdown,fr,0ad0cf22f0cf3e2a,"### Interpretation - UCS trouve le chemin optimal
 
 **Sortie obtenue** : UCS explore les noeuds par **cout croissant**, garantissant l'optimalite.
 
@@ -11425,7 +11499,13 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,04c1e915,ma
 2. Le chemin trouve est garanti **optimal en distance** (km)
 3. L'ordre d'exploration depend des couts : une ville eloignee en etapes peut etre exploree tot si elle est accessible par une route courte
 
-> **Point important** : Quand les couts sont identiques (tous egaux a 1), UCS se comporte exactement comme BFS.",,,,,,,,4a4541cd855c06dd,,,,,,,
+> **Point important** : Quand les couts sont identiques (tous egaux a 1), UCS se comporte exactement comme BFS.
+**Exemple discriminant (Paris -> Rennes)** : BFS trouve `Paris -> Lille -> Rennes` (825 km)
+et UCS trouve `Paris -> Nantes -> Rennes` (495 km) — **meme nombre d'etapes** mais UCS
+ecarte 40% de cout. La capacite de UCS a selectionner le chemin le moins cher n'est pas
+visible sur Bordeaux -> Strasbourg (ou BFS ≡ UCS) ; elle devient visible sur ce trajet ou
+plusieurs chemins de meme longueur existent avec des couts tres differents.
+",,,,,,,,0ad0cf22f0cf3e2a,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb,c1bf61c6,code,fr,4e058c4ab3708e2a,"# Visualisation du resultat UCS
 draw_france_graph(france_graph, france_coords,
                   path=result_ucs.path,
@@ -13593,7 +13673,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb,comparison-se
 
 Comparons les deux algorithmes sur le même problème pour observer leurs différences de comportement et de performance.
 ",,,,,,,,66034602f315d416,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb,comparison-greedy-astar,code,fr,30e056b0744bdea9,"# --- Comparaison Greedy vs A* ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb,comparison-greedy-astar,code,fr,1ff719187ac28d40,"# --- Comparaison Greedy vs A* ---
 
 print(""Comparaison : Greedy vs A*"")
 print(""="" * 70)
@@ -13626,12 +13706,68 @@ print(comparison_df.to_string(index=False))
 
 print(""\n"" + ""="" * 70)
 if result_greedy.cost <= result_astar.cost:
-    print(""NOTE : Greedy a trouve un chemin de meme cout qu'A* (coincidence !)"")
+    print(""NOTE : sur ce trajet, Greedy egale A* -- mais rien ne le garantit."")
+    print(""Voir le trajet Nice -> Bordeaux ci-dessous, ou Greedy se fait piéger."")
 else:
     diff = result_greedy.cost - result_astar.cost
     pct = (diff / result_astar.cost) * 100
-    print(f""Greedy a trouve un chemin {diff:.0f} km plus long ({pct:.1f}% de plus)."")",,,,,,,,30e056b0744bdea9,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb,comparison-interpretation,markdown,fr,af8553106aa8c064,"### Interprétation : Greedy n'est pas optimal
+    print(f""Greedy a trouve un chemin {diff:.0f} km plus long ({pct:.1f}% de plus)."")",,,,,,,,1ff719187ac28d40,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb,6ab7895c,markdown,fr,61c1546306d75a6f,"### Quand Greedy se fait piéger : Nice → Bordeaux
+
+Sur le trajet Bordeaux → Strasbourg, Greedy a eu de la chance : la géométrie
+« à vol d'oiseau » coïncidait avec le réseau routier. Ce n'est **pas garanti**.
+
+Prenons **Nice → Bordeaux**. Depuis Nice, l'heuristique rend Grenoble et Lyon
+*séduisants* : leur latitude est proche de celle de Bordeaux, donc $h$ y est
+faible. Greedy plonge alors vers l'intérieur des terres — mais il n'existe pas
+de bonne route vers l'ouest depuis Lyon : il faut *remonter* par Paris. A*, en
+tenant compte du coût déjà dépensé ($g$), emprunte la route côtière
+Nice → Marseille → Toulouse → Bordeaux. C'est ici que l'**optimalité garantie**
+de A* devient visible dans la sortie.
+",,,,,,,,61c1546306d75a6f,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb,ca315179,code,fr,231c6d236a3ba457,"# --- Cas discriminant : Nice -> Bordeaux (Greedy tombe dans un piege) ---
+
+problem_nb = GraphProblem('Nice', 'Bordeaux', france_graph)
+h_to_bordeaux = make_heuristic('Bordeaux', france_coords)
+
+print(""Comparaison : Greedy vs A* sur Nice -> Bordeaux"")
+print(""="" * 70)
+
+result_greedy_nb = greedy_best_first_search(problem_nb, h_to_bordeaux)
+result_astar_nb = a_star_search(problem_nb, h_to_bordeaux)
+
+comparison_nb_df = pd.DataFrame([
+    {
+        'Algorithme': 'Greedy',
+        'Chemin': ' -> '.join(result_greedy_nb.path),
+        'Cout (km)': result_greedy_nb.cost,
+        'Longueur': len(result_greedy_nb.path) - 1,
+        'Noeuds explores': result_greedy_nb.nodes_expanded,
+        'Temps (ms)': f""{result_greedy_nb.elapsed_ms:.2f}"",
+    },
+    {
+        'Algorithme': 'A*',
+        'Chemin': ' -> '.join(result_astar_nb.path),
+        'Cout (km)': result_astar_nb.cost,
+        'Longueur': len(result_astar_nb.path) - 1,
+        'Noeuds explores': result_astar_nb.nodes_expanded,
+        'Temps (ms)': f""{result_astar_nb.elapsed_ms:.2f}"",
+    },
+])
+
+print(comparison_nb_df.to_string(index=False))
+
+print(""\n"" + ""="" * 70)
+if result_greedy_nb.cost > result_astar_nb.cost:
+    diff = result_greedy_nb.cost - result_astar_nb.cost
+    pct = (diff / result_astar_nb.cost) * 100
+    print(f""Greedy a trouve un chemin {diff:.0f} km plus long ({pct:.1f}% de plus)."")
+    print(""A* garantit l'optimalite ; Greedy, non : il a suivi l'heuristique vers"")
+    print(""l'interieur des terres (Grenoble, Lyon) au lieu de longer la cote."")
+else:
+    print(""NOTE : Greedy egale A* sur ce trajet."")
+",,,,,,,,231c6d236a3ba457,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb,comparison-interpretation,markdown,fr,5c15f75be7bb05d2,"### Interprétation : Greedy n'est pas optimal
 
 **Sortie obtenue** : Le tableau compare les résultats de Greedy et A*.
 
@@ -13641,8 +13777,8 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb,comparison-in
 | Nœuds explorés | Généralement moins | Peut être plus |
 | Qualité solution | Variable | Toujours optimale |
 
-**Leçon fondamentale** : Greedy peut être plus rapide mais risque de trouver une solution sous-optimale. A* est un peu plus coûteux en exploration mais garantit l'optimalité.
-",,,,,,,,af8553106aa8c064,,,,,,,
+**Leçon fondamentale** : Greedy peut être plus rapide mais risque de trouver une solution sous-optimale. A* est un peu plus coûteux en exploration mais garantit l'optimalité. Le trajet **Nice → Bordeaux** l'illustre concrètement : Greedy y paie **75 % de trajet en plus** (1490 km contre 850 km) en se laissant piéger par l'heuristique, là où A* reste optimal.
+",,,,,,,,5c15f75be7bb05d2,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-3-Informed.ipynb,ida-section,markdown,fr,1bc6f44d35c05864,"## 5. IDA* (Iterative Deepening A*)
 
 ### Principe
