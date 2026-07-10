@@ -8,9 +8,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 803
-breakdown: SymbolicAI=204, GenAI=141, Search=112, QuantConnect=105, Probas=58, GameTheory=50, ML=46, Sudoku=36, IIT=28, RL=17, CaseStudies=6
-maturity: PRODUCTION=601, BETA=149, ALPHA=45, DRAFT=4, TEMPLATE=4
+total: 806
+breakdown: SymbolicAI=207, GenAI=141, Search=112, QuantConnect=105, Probas=58, GameTheory=50, ML=46, Sudoku=36, IIT=28, RL=17, CaseStudies=6
+maturity: PRODUCTION=605, BETA=148, ALPHA=45, DRAFT=4, TEMPLATE=4
 -->
 
 Dernière mise à jour : 2026-07-07
