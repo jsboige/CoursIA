@@ -2306,3 +2306,180 @@ def test_result_kind_provider_outage_when_outage_flag_set():
     assert _derive_result_kind(
         {"provider_outage": True, "error": "boom"}, 4, 4
     ) == "crashed"
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #5891 (2026-07-10) — config.py path-resolution: ancestor-walk for
+# MyIA.AI.Notebooks/, with drive-letter fallbacks.
+#
+# The harness ships inside the CoursIA-2 layout (../prover/config.py under
+# MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/). C:\dev\CoursIA\ is a
+# separate physical checkout of the same repo with identical git content
+# but different inodes. Before the fix, _COOPERATIVE_GAMES_CANDIDATES and
+# its four siblings hardcoded `C:\dev\CoursIA\...`, so a BG-iter run from
+# CoursIA-2 would silently edit the WRONG tree and a PR on CoursIA-2
+# would not pick up the change.
+#
+# The fix walks `Path(__file__).resolve().parents` for the first ancestor
+# named "MyIA.AI.Notebooks" that exists, prepends the resulting workspace-
+# relative path to each candidate list, and keeps the drive-letter
+# fallbacks as a safety net (so a harness copy dropped elsewhere still
+# works).
+#
+# These tests pin the contract offline: no Lake build needed, no real
+# file I/O beyond reading the candidate paths the module already exposes.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_workspace_root_walks_to_myia_ai_notebooks():
+    """_workspace_root() finds the MyIA.AI.Notebooks ancestor of config.py.
+
+    In a normal CoursIA-2 checkout the ancestor chain is:
+      .../prover -> .../agent_tests -> .../Lean -> .../SymbolicAI
+              -> .../MyIA.AI.Notebooks
+    The first name=="MyIA.AI.Notebooks" that exists() wins.
+    """
+    from prover.config import _workspace_root, _WORKSPACE_ROOT
+
+    assert _WORKSPACE_ROOT is not None, (
+        "the harness lives inside MyIA.AI.Notebooks/ — _workspace_root() "
+        "must find it via the ancestor walk"
+    )
+    assert _WORKSPACE_ROOT.name == "MyIA.AI.Notebooks"
+    assert _WORKSPACE_ROOT.exists()
+    # Same value across calls (cached at import).
+    assert _workspace_root() == _WORKSPACE_ROOT
+
+
+def test_workspace_relative_joins_to_workspace_root():
+    """Forward-slash relative strings resolve under the workspace root."""
+    from prover.config import _workspace_relative, _WORKSPACE_ROOT
+
+    p = _workspace_relative("GameTheory/cooperative_games_lean")
+    assert p == _WORKSPACE_ROOT / "GameTheory" / "cooperative_games_lean"
+    assert p.exists(), (
+        "the workspace-relative entry for cooperative_games_lean must "
+        "resolve to a real directory on a normal CoursIA-2 layout"
+    )
+
+
+def test_workspace_relative_returns_none_when_no_root(monkeypatch):
+    """A None _WORKSPACE_ROOT degrades to None (caller treats as miss)."""
+    import prover.config as cfg
+
+    monkeypatch.setattr(cfg, "_WORKSPACE_ROOT", None)
+    assert cfg._workspace_relative("GameTheory/cooperative_games_lean") is None
+
+
+def test_path_constants_resolve_to_active_workspace():
+    """Every FILE constant resolves into the active workspace, not a sibling.
+
+    On CoursIA-2, none of SHAPLEY_FILE / VOTING_FILE / GALESHAPLEY_FILE /
+    NASH_CALIBRATION_FILE / CONWAY_NIM_FILE / COOPERATIVE_GAMES_DIR /
+    SOCIAL_CHOICE_DIR / STABLE_MARRIAGE_DIR / CALIBRATION_DIR / CONWAY_DIR
+    must point at C:\\dev\\CoursIA\\ (a separate physical checkout) when
+    the harness is run from C:\\dev\\CoursIA-2.
+    """
+    import re
+    from prover.config import (
+        SHAPLEY_FILE, VOTING_FILE, GALESHAPLEY_FILE,
+        NASH_CALIBRATION_FILE, CONWAY_NIM_FILE,
+        COOPERATIVE_GAMES_DIR, SOCIAL_CHOICE_DIR,
+        STABLE_MARRIAGE_DIR, CALIBRATION_DIR, CONWAY_DIR,
+    )
+
+    # The legacy hardcoded form "C:\dev\CoursIA\..." (no -2) is the wrong
+    # tree. The fix is to prefer a workspace-relative entry first.
+    WRONG_TREE = re.compile(r"C:\\dev\\CoursIA\\")
+    REAL_TREE = re.compile(r"C:\\dev\\CoursIA-2\\")
+
+    paths = {
+        "COOPERATIVE_GAMES_DIR": COOPERATIVE_GAMES_DIR,
+        "SOCIAL_CHOICE_DIR": SOCIAL_CHOICE_DIR,
+        "STABLE_MARRIAGE_DIR": STABLE_MARRIAGE_DIR,
+        "CALIBRATION_DIR": CALIBRATION_DIR,
+        "CONWAY_DIR": CONWAY_DIR,
+        "SHAPLEY_FILE": SHAPLEY_FILE,
+        "VOTING_FILE": VOTING_FILE,
+        "GALESHAPLEY_FILE": GALESHAPLEY_FILE,
+        "NASH_CALIBRATION_FILE": NASH_CALIBRATION_FILE,
+        "CONWAY_NIM_FILE": CONWAY_NIM_FILE,
+    }
+    for name, p in paths.items():
+        s = str(p)
+        # A wrong-tree leak: the legacy fallback was selected because the
+        # workspace-relative entry was missing or non-existent.
+        assert not WRONG_TREE.search(s) or "CoursIA-2" in s, (
+            f"{name}={s} still points to C:\\dev\\CoursIA\\ — the harness "
+            f"would silently edit the wrong tree (the bug #5891)"
+        )
+        # And: every constant must point at a real file/dir.
+        assert p.exists(), f"{name}={s} does not exist after resolution"
+        # And on this layout, the workspace-relative (CoursIA-2) entry won.
+        assert REAL_TREE.search(s), (
+            f"{name}={s} should resolve into the active CoursIA-2 workspace"
+        )
+
+
+def test_candidates_list_prefers_workspace_relative_entry():
+    """The workspace-relative path is listed FIRST in each candidate list.
+
+    `next((p for p in CANDIDATES if p.exists()), ...)` is order-sensitive.
+    Prepending the workspace-relative entry ensures the active workspace
+    wins over the drive-letter fallbacks.
+    """
+    from prover.config import (
+        _COOPERATIVE_GAMES_CANDIDATES,
+        _SOCIAL_CHOICE_CANDIDATES,
+        _STABLE_MARRIAGE_CANDIDATES,
+        _CALIBRATION_CANDIDATES,
+        _CONWAY_CANDIDATES,
+    )
+
+    for lst in (
+        _COOPERATIVE_GAMES_CANDIDATES,
+        _SOCIAL_CHOICE_CANDIDATES,
+        _STABLE_MARRIAGE_CANDIDATES,
+        _CALIBRATION_CANDIDATES,
+        _CONWAY_CANDIDATES,
+    ):
+        assert len(lst) >= 2, "each candidate list keeps its legacy fallbacks"
+        first = str(lst[0])
+        # First entry is workspace-relative (CoursIA-2 path) on this layout.
+        assert "CoursIA-2" in first, (
+            f"first candidate should be workspace-relative, got {first}"
+        )
+        # Drive-letter fallbacks still present.
+        legacy_paths = [str(p) for p in lst[1:]]
+        assert any(r"C:\dev\CoursIA\MyIA.AI.Notebooks" in s for s in legacy_paths), (
+            "drive-letter fallbacks must remain as a safety net"
+        )
+
+
+def test_legacy_fallback_still_works_when_no_workspace_root(monkeypatch):
+    """If _WORKSPACE_ROOT is None, the legacy drive-letter list still resolves.
+
+    Defends the safety-net path: a harness copy dropped outside the
+    CoursIA layout (e.g. into a standalone dir without MyIA.AI.Notebooks/
+    ancestor) must keep working via the original candidates.
+    """
+    import prover.config as cfg
+    from pathlib import Path
+
+    # Pretend no workspace root was found.
+    monkeypatch.setattr(cfg, "_WORKSPACE_ROOT", None)
+    # Remove the workspace-relative first entry from the candidate list so
+    # resolution falls back to the drive-letter list (mirrors what
+    # _workspace_root()==None would produce).
+    monkeypatch.setattr(cfg, "_COOPERATIVE_GAMES_CANDIDATES", [
+        Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
+        Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
+    ])
+    cfg.COOPERATIVE_GAMES_DIR = next(
+        (p for p in cfg._COOPERATIVE_GAMES_CANDIDATES if p.exists()),
+        cfg._COOPERATIVE_GAMES_CANDIDATES[0],
+    )
+    # On this Windows host, C:\dev\CoursIA exists — the legacy path resolves.
+    assert cfg.COOPERATIVE_GAMES_DIR.exists(), (
+        "legacy drive-letter fallback must still resolve to a real path"
+    )
