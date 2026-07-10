@@ -7,6 +7,8 @@ breakdown: DataScienceWithAgents=27, ML.Net=19
 maturity: PRODUCTION=40, BETA=5, ALPHA=1
 -->
 
+> **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit `[skip ci]` par `github-actions[bot]`). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README — par exemple si une sous-série a reçu de nouveaux notebooks mergés après la dernière régénération —, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage. Pour les **décomptes par kernel** (Python vs C#/.NET) au sein d'une sous-série, ce README reste autoritatif car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé.
+
 [← Notebooks](../README.md) | [ML.NET (C#) →](ML.Net/README.md) | [Data Science with Agents (Python) →](DataScienceWithAgents/README.md) | [RL →](../RL/)
 
 Le monde regorge de données, mais les transformer en décisions éclairées demande plus qu'un tableur. Le Machine Learning offre un cadre systématique pour construire des modèles prédictifs à partir de données, en allant de la régression linéaire aux réseaux de neurones en passant par les systèmes de recommandation. Cette série vous forme au ML pratique avec trois fils complémentaires : **ML.NET** pour l'écosystème .NET/C#, **Python Data Science with Agents** pour les pipelines modernes enrichis de LLMs, et les **jumeaux de parité** qui confrontent un même concept aux deux écosystèmes.
@@ -39,7 +41,7 @@ Six figures illustrent les trois fils de la série : les fondations Python (Pand
 
 ## Parcours d'apprentissage
 
-### Track A : ML.NET (.NET/C#, 9 notebooks C# ML-1 à ML-9 et leurs 9 jumeaux Python + 1 TP capstone, ~7h)
+### Track A : ML.NET (.NET/C#, 10 notebooks C# — 9 du parcours ML-1 à ML-9 + 1 TP capstone — et leurs 9 jumeaux Python scikit-learn, ~7h)
 
 Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introduisent ML.NET et la préparation de données (IDataView, encodage). Le notebook 3 couvre l'entraînement (SDCA, LightGBM, AutoML). Le notebook 4 est crucial : évaluation rigoureuse par cross-validation et Permutation Feature Importance. Les notebooks 5-7 abordent les séries temporelles, l'export ONNX pour la production, et les systèmes de recommandation. Les notebooks 8-9 ouvrent sur l'apprentissage non-supervisé : clustering K-Means (segmentation RFM, méthode du coude) puis détection d'anomalies par Randomized PCA (maintenance prédictive, choix du seuil de décision). Le TP final (prévision de ventes) combine ML.NET et Infer.NET pour une régression bayésienne. Ce track présuppose .NET 9.0 + dotnet-interactive.
 
