@@ -13,42 +13,6 @@ Le Web Sémantique est la promesse d'un Web où les machines comprennent la sign
 
 **À qui s'adresse cette série** : développeurs web curieux du sens caché dans leurs données, data scientists voulant structurer leurs pipelines, et étudiants en IA souhaitant comprendre comment les graphes de connaissances ancrent les LLMs. Aucun prérequis en logique formelle. Le décompte exact des notebooks et leur maturité figurent dans le catalogue généré ci-dessous.
 
-## Statistiques catalogue à jour
-
-Chiffres lus directement depuis le marqueur `CATALOG-STATUS` byte-identique (l. 5-10) — partition cohérente avec `MyIA.AI.Notebooks/SymbolicAI/README.md` (EPIC #3975).
-
-| Sous-catégorie | Notebooks | Statut | Paradigmes / stacks dominants |
-|----------------|-----------|--------|-------------------------------|
-| Fondations RDF/OWL — .NET C# (dotNetRDF, SW-1 à SW-7) | 7 | PRODUCTION=7 | Triplet RDF, graphe nommé, SPARQL, RDFS, OWL (HermiT), raisonneur DL |
-| Fondations RDF/OWL — miroirs Python (SW-2b à SW-7b, rdflib/owlready2) | 6 | PRODUCTION=6 | Équivalent Python des notebooks .NET fondations — rdflib + owlready2 |
-| Standards modernes — .NET C# (SW-8 SHACL, SW-9 JSON-LD, SW-10 RDF-Star, SW-11 KG, SW-13 Reasoners) | 5 | PRODUCTION=5 | SHACL, JSON-LD 1.1, RDF-Star, KG, raisonneurs (dotNetRDF) |
-| Standards modernes — Python (SW-8 à SW-13 : SHACL, JSON-LD, RDF-Star, KG, GraphRAG, Reasoners) | 6 | PRODUCTION=6 | SHACL pySHACL, JSON-LD 1.1, RDF-Star, KG + kglab, GraphRAG (anti-hallucination), comparaisons raisonneurs |
-| Setup / legacy .NET (RDF.Net) | 1 | PRODUCTION=1 | Démonstration RDF.Net historique |
-| **Total** | **25** | **PRODUCTION=25** | Double stack .NET C# (dotNetRDF) / Python (rdflib, pySHACL, owlready2, kglab) — parité marathon #4956 |
-
-**Conformité C.1 — stubs d'exercice sans erreur volontaire** : les templates `student/` portent les stubs conformes (`pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`) — **jamais** `raise NotImplementedError`, `assert False` ou `1/0`. Dépendances Python : `rdflib`, `pySHACL`, `owlready2`, `kglib`, `SPARQLWrapper` (cf `requirements.txt` racine). Dépendances .NET : `dotNetRDF` + .NET 9.0 + .NET Interactive. La double stack .NET/Python reflète le mandat EPIC #3975 : un même raisonnement rendu par deux runtimes (ici, dotNetRDF côté C# typé, rdflib côté Python expressif), la parité devenant un objet d'étude en soi.
-
-## Écosystème MCP et parenté cross-lane
-
-Trois outils d'infrastructure MCP soutiennent l'exécution, la validation et le partage des notebooks de cette série :
-
-1. **MCP Jupyter** (`mcp__jupyter-papermill__*`) — exécution programmée des notebooks Python (SW-8 à SW-13, sidetracks `b`). Note bug connu #5211 : `kernel_name` est ignoré en mode async ; pour une ré-exécution robuste utiliser `nbconvert --execute --ExecutePreprocessor.kernel_name=python3 --timeout=600`.
-2. **Validation pre-commit** (`.pre-commit-config.yaml`) — gitleaks (anti-secrets inline `os.getenv("KEY", "<literal-fallback>")`) + notebook validator C.1/C.2 (pas de `raise NotImplementedError`, cellules code = `execution_count` + `outputs` cohérents) bloquent les PRs qui dégraderaient les contrats inter-séries.
-3. **MCP QC Cloud** (`mcp__qc-mcp-lite__*`) — backtest QuantConnect partagé. La série GraphRAG (SW-12) partage avec QuantConnect le même besoin de traçabilité : un graphe de connaissances ancré sur des faits financiers vérifiables, un notebook QC ancré sur des ticks auditable.
-
-La série SemanticWeb est le **carrefour données structurées** du dépôt — chaque sous-série partenaire y trouve un point d'entrée formel vers la représentation des connaissances et le raisonnement_symbolique.
-
-| Cette sous-série | Symétrie dans | Pont pédagogique |
-|------------------|----------------|-------------------|
-| SW-7 (OWL / logique de description) | [Tweety](../Tweety/) (Tweety-3 DL) | DL = moteur de raisonnement OWL ; même formalisme, deux écosystèmes (HermiT côté Java, dotNetRDF côté .NET) |
-| SW-11 (Graphe de connaissances) | [Planners](../Planners/) (PDDL) | Un KG décrit le monde que les planificateurs peuvent exploiter — SPARQL ↔ PDDL extraction |
-| SW-12 (GraphRAG anti-hallucination) | [Argument_Analysis](../Argument_Analysis/) (Semantic Kernel memory backend) | Même besoin : ancrer un LLM sur des faits vérifiables via un KG RDF |
-| SW-8 (SHACL validation) | [Lean](../Lean/) (mathlib4) | Les shapes SHACL sont des invariants sur les données ; Lean pousse cette idée à son terme — prouver la correction d'un programme |
-| SW-9 (JSON-LD NFTs ERC-721) | [SmartContracts](../SmartContracts/) (SC-7 Token Standards) | Identité auto-souveraine (DID), blockchains et RDF — graphe décentralisé |
-| SW-12 (GraphRAG garde-fou LLM) | [GenAI](../../GenAI/) (Qwen 2.5-VL, ComfyUI) | GraphRAG = anti-hallucination par KG ; GenAI = génération visuelle/texte — la fiabilité passe par les graphes de connaissances |
-
-**Effet de composition** : SemanticWeb est l'**assise du Web et de l'IA fiable** dans le dépôt. Le pipeline complet relie les **notebooks** (.NET C# typés pour les fondations RDF/OWL, Python expressifs pour SHACL/JSON-LD/RDF-Star/GraphRAG) aux **standards W3C** (RDF, SPARQL, OWL, SHACL, JSON-LD, RDF-Star) et aux **lakes** (Lean 4 formalise les invariants SHACL, Argument_Analysis orchestre un KG via Semantic Kernel, SmartContracts marient RDF+DID+blockchain). Là où Tweety est le carrefour **logique**, où GameTheory est le carrefour **simulation/proof**, où CaseStudies est le carrefour **intégration**, SemanticWeb est le carrefour **données structurées — du triplet RDF au GraphRAG anti-hallucination**.
-
 ## Pourquoi cette série
 
 Le Web Sémantique a traversé des cycles de hype et de désillusion. En 2001, Tim Berners-Lee en faisait la couverture de *Scientific American*. En 2010, les données liées semblaient une niche académique. En 2024, GraphRAG (Microsoft) a montré que les graphes de connaissances RDF pouvaient ancrer les LLMs sur des faits vérifiables : le Web Sémantique devenait un garde-fou pour l'IA générative.
@@ -660,6 +624,42 @@ Le titre de Berners-Lee en 2001 promettait un Web compris par les machines. Ving
 ---
 
 *Version 1.2.0 — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche semanticweb.*
+
+## Statistiques catalogue à jour
+
+Chiffres lus directement depuis le marqueur `CATALOG-STATUS` byte-identique (l. 5-10) — partition cohérente avec `MyIA.AI.Notebooks/SymbolicAI/README.md` (EPIC #3975).
+
+| Sous-catégorie | Notebooks | Statut | Paradigmes / stacks dominants |
+|----------------|-----------|--------|-------------------------------|
+| Fondations RDF/OWL — .NET C# (dotNetRDF, SW-1 à SW-7) | 7 | PRODUCTION=7 | Triplet RDF, graphe nommé, SPARQL, RDFS, OWL (HermiT), raisonneur DL |
+| Fondations RDF/OWL — miroirs Python (SW-2b à SW-7b, rdflib/owlready2) | 6 | PRODUCTION=6 | Équivalent Python des notebooks .NET fondations — rdflib + owlready2 |
+| Standards modernes — .NET C# (SW-8 SHACL, SW-9 JSON-LD, SW-10 RDF-Star, SW-11 KG, SW-13 Reasoners) | 5 | PRODUCTION=5 | SHACL, JSON-LD 1.1, RDF-Star, KG, raisonneurs (dotNetRDF) |
+| Standards modernes — Python (SW-8 à SW-13 : SHACL, JSON-LD, RDF-Star, KG, GraphRAG, Reasoners) | 6 | PRODUCTION=6 | SHACL pySHACL, JSON-LD 1.1, RDF-Star, KG + kglab, GraphRAG (anti-hallucination), comparaisons raisonneurs |
+| Setup / legacy .NET (RDF.Net) | 1 | PRODUCTION=1 | Démonstration RDF.Net historique |
+| **Total** | **25** | **PRODUCTION=25** | Double stack .NET C# (dotNetRDF) / Python (rdflib, pySHACL, owlready2, kglab) — parité marathon #4956 |
+
+**Conformité C.1 — stubs d'exercice sans erreur volontaire** : les templates `student/` portent les stubs conformes (`pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`) — **jamais** `raise NotImplementedError`, `assert False` ou `1/0`. Dépendances Python : `rdflib`, `pySHACL`, `owlready2`, `kglib`, `SPARQLWrapper` (cf `requirements.txt` racine). Dépendances .NET : `dotNetRDF` + .NET 9.0 + .NET Interactive. La double stack .NET/Python reflète le mandat EPIC #3975 : un même raisonnement rendu par deux runtimes (ici, dotNetRDF côté C# typé, rdflib côté Python expressif), la parité devenant un objet d'étude en soi.
+
+## Écosystème MCP et parenté cross-lane
+
+Trois outils d'infrastructure MCP soutiennent l'exécution, la validation et le partage des notebooks de cette série :
+
+1. **MCP Jupyter** (`mcp__jupyter-papermill__*`) — exécution programmée des notebooks Python (SW-8 à SW-13, sidetracks `b`). Note bug connu #5211 : `kernel_name` est ignoré en mode async ; pour une ré-exécution robuste utiliser `nbconvert --execute --ExecutePreprocessor.kernel_name=python3 --timeout=600`.
+2. **Validation pre-commit** (`.pre-commit-config.yaml`) — gitleaks (anti-secrets inline `os.getenv("KEY", "<literal-fallback>")`) + notebook validator C.1/C.2 (pas de `raise NotImplementedError`, cellules code = `execution_count` + `outputs` cohérents) bloquent les PRs qui dégraderaient les contrats inter-séries.
+3. **MCP QC Cloud** (`mcp__qc-mcp-lite__*`) — backtest QuantConnect partagé. La série GraphRAG (SW-12) partage avec QuantConnect le même besoin de traçabilité : un graphe de connaissances ancré sur des faits financiers vérifiables, un notebook QC ancré sur des ticks auditable.
+
+La série SemanticWeb est le **carrefour données structurées** du dépôt — chaque sous-série partenaire y trouve un point d'entrée formel vers la représentation des connaissances et le raisonnement_symbolique.
+
+| Cette sous-série | Symétrie dans | Pont pédagogique |
+|------------------|----------------|-------------------|
+| SW-7 (OWL / logique de description) | [Tweety](../Tweety/) (Tweety-3 DL) | DL = moteur de raisonnement OWL ; même formalisme, deux écosystèmes (HermiT côté Java, dotNetRDF côté .NET) |
+| SW-11 (Graphe de connaissances) | [Planners](../Planners/) (PDDL) | Un KG décrit le monde que les planificateurs peuvent exploiter — SPARQL ↔ PDDL extraction |
+| SW-12 (GraphRAG anti-hallucination) | [Argument_Analysis](../Argument_Analysis/) (Semantic Kernel memory backend) | Même besoin : ancrer un LLM sur des faits vérifiables via un KG RDF |
+| SW-8 (SHACL validation) | [Lean](../Lean/) (mathlib4) | Les shapes SHACL sont des invariants sur les données ; Lean pousse cette idée à son terme — prouver la correction d'un programme |
+| SW-9 (JSON-LD NFTs ERC-721) | [SmartContracts](../SmartContracts/) (SC-7 Token Standards) | Identité auto-souveraine (DID), blockchains et RDF — graphe décentralisé |
+| SW-12 (GraphRAG garde-fou LLM) | [GenAI](../../GenAI/) (Qwen 2.5-VL, ComfyUI) | GraphRAG = anti-hallucination par KG ; GenAI = génération visuelle/texte — la fiabilité passe par les graphes de connaissances |
+
+**Effet de composition** : SemanticWeb est l'**assise du Web et de l'IA fiable** dans le dépôt. Le pipeline complet relie les **notebooks** (.NET C# typés pour les fondations RDF/OWL, Python expressifs pour SHACL/JSON-LD/RDF-Star/GraphRAG) aux **standards W3C** (RDF, SPARQL, OWL, SHACL, JSON-LD, RDF-Star) et aux **lakes** (Lean 4 formalise les invariants SHACL, Argument_Analysis orchestre un KG via Semantic Kernel, SmartContracts marient RDF+DID+blockchain). Là où Tweety est le carrefour **logique**, où GameTheory est le carrefour **simulation/proof**, où CaseStudies est le carrefour **intégration**, SemanticWeb est le carrefour **données structurées — du triplet RDF au GraphRAG anti-hallucination**.
 
 ## Licence
 

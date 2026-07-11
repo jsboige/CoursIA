@@ -11,46 +11,6 @@ maturity: PRODUCTION=26, BETA=6
 
 Série complète de notebooks pour explorer [TweetyProject](https://tweetyproject.org/), une bibliothèque Java pour l'intelligence artificielle symbolique. Le décompte exact des notebooks et leur maturité figurent dans le catalogue généré ci-dessous ; la série cible la version **Tweety 1.30**.
 
-## Statistiques catalogue à jour
-
-Statistiques détaillées de la sous-série Tweety, lues directement depuis le marqueur `<!-- CATALOG-STATUS -->` byte-identique (l. 5-10) — `pedagogical_count: 32, breakdown: Tweety=32, maturity: PRODUCTION=26, BETA=6` (le détail par sous-catégorie est en cours d'audit et sera prochainement ré-aligné sur le marqueur) :
-
-| Sous-catégorie        |    NB | Statut                       |
-|-----------------------|-------|------------------------------|
-| Python (Tw-1..5b, 11) |    13 | PROD=12, BETA=1              |
-| C#/.NET IKVM          |    18 | PROD=15, BETA=2, DRAFT=1     |
-| Probe `_probes/`      |     1 | BETA                         |
-| Total                 |    32 | PROD=26, BETA=6              |
-
-Détails paradigmes/stacks :
-
-- **Python (JPype 13 nb)** : PL/FOL/DL/ML/QBF/CL/Dung/ASPIC+/AGM/MLN/do-calculus Pearl — double stack sur Tw-3 (DL+Modale+QBF), Tw-4 (Belief Revision), Tw-7b (Ranking), Tw-9 (vote/préférences), Tw-10 (MLN), Tw-11 (causal). BETA=1 sur `Tweety-5b-Lean-Argumentation` (companion kernel Lean 4, voir `argumentation_lean/`).
-- **C#/.NET (IKVM 8.14, 18 nb)** : bytecode Java→.NET downgrade Java 15→8 (post-C190 `JvmDowngrader`), sans JVM. BETA=2 (`Tweety-2-Basic-Logics-Csharp`, `Tweety-4-Belief-Revision-Csharp`), DRAFT=1 = BROKEN (`Tweety-3-Advanced-Logics-Csharp`, conflits de noms sur `logics.ml` + `logics.cl` + `logics.qbf` simultanés dans la même DLL).
-- **Probe (`_probes/Tweety-IKVM-Init-Probe`, 1 nb)** : IKVM init smoke-test BETA.
-
-**Conformité C.1** : les notebooks exposent des stubs conformes (`pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et restent exécutables end-to-end. Les dépendances sont gérées par `requirements.txt` racine (JPype1, tweety-translate, pandas, numpy, jdk-pywrap). Le port C#/.NET (EPIC #4667) cible .NET 9.0 + IKVM 8.14 (post-C190 JvmDowngrader Java 15→8) ; voir la chaîne de build dans `.github/workflows/tweety-csharp.yml` et l'inventaire détaillé dans la [Section Tweety](https://github.com/jsboige/CoursIA/issues/4667). Le seul notebook C# à maturité DRAFT est `Tweety-3-Advanced-Logics-Csharp` (statut BROKEN : héritage des conflits de noms de classes IKVM 8.14 sur `logics.ml` + `logics.cl` + `logics.qbf` simultanés).
-
-## Écosystème MCP et parenté cross-lane
-
-Trois outils d'infrastructure MCP soutiennent l'exécution, la validation et la composition cross-séries de cette sous-série :
-
-1. **MCP Jupyter** (`mcp__jupyter-papermill__*`) — exécution programmée des notebooks via Papermill, capture des sorties, gestion du cycle de vie des kernels Python 3 et `.net-csharp`. Note : le mode async ignore `kernel_name` (bug #5211) — toujours passer par `nbconvert --execute` avec timeout pour les ré-exécutions.
-2. **Validation pre-commit** (`.pre-commit-config.yaml`) — gitleaks (anti-secrets inline, règle `os.getenv("KEY", "<literal-fallback>")` proscrit) + notebook validator (C.1/C.2 : pas de `raise NotImplementedError`, cellules code = `execution_count` + `outputs` cohérents) bloquent les PRs qui dégraderaient les contrats inter-séries.
-3. **MCP QC Cloud** (`mcp__qc-mcp-lite__*`) — backtest QuantConnect partagé pour les notebooks QC (Tw-9 vote Preferences éclaire les modèles de choix social, cf. cross-lane ci-dessous).
-
-La sous-série Tweety s'inscrit dans un **réseau cross-lane structuré** autour de l'argumentation et de la logique formelle :
-
-| Cette sous-série                  | Symétrie dans                                      | Pont pédagogique                                                                |
-|-----------------------------------|----------------------------------------------------|----------------------------------------------------------------------------------|
-| Tweety-3 (logique de description) | [SemanticWeb](../SemanticWeb/) (SW-6/SW-7 OWL)      | DL = moteur de raisonnement OWL ; même formalisme, deux écosystèmes              |
-| Tweety-3 (Dung frameworks)        | [Argument_Analysis](../Argument_Analysis/)         | Détection de sophismes via cadres de Dung + Semantic Kernel (LLM-contrôle)      |
-| Tweety-3 (logique modale/QBF)     | [Lean](../Lean/) (mathlib4)                          | Formalisation des logiques Tweety dans l'assistant de preuve Lean 4              |
-| Tweety-9 (préférences, vote)      | [GameTheory](../../GameTheory/SocialChoice/)        | Préférences individuelles → fonction de choix social (Borda, Condorcet, Arrow)   |
-| Tweety-4 (révision AGM)           | [SmartContracts](../SmartContracts/) (SC-14)       | Mise à jour de croyances → invariants Solidity, logique de révision on-chain    |
-| Tweety-11 (Causalité, do-calculus)| [ML](../../ML/) (inférence causale)                | do-calculus Pearl ↔ modèles causaux structurels (Pearl 2009)                     |
-
-**Effet de composition** : Tweety est le **carrefour logique** du dépôt — chaque sous-série partenaire (Lean, SemanticWeb, Argument_Analysis, GameTheory, SmartContracts, ML) y trouve un point d'entrée formel vers l'argumentation computationnelle. Le pipeline complet relie les **notebooks** (qui motivent la pertinence du raisonnement explicite) aux **ports C#/.NET** (qui rendent Tweety invocable sans JVM, via IKVM 8.15, EPIC #4667) et aux **lakes** (qui formalisent les théorèmes sous-jacents, ex. Arrow en Lean 4).
-
 ## Série en quelques mots
 
 **À qui s'adresse cette série** : étudiants en IA, chercheurs en argumentation computationnelle, développeurs intéressés par le raisonnement formel, et tout curieux souhaitant comprendre les bases mathématiques derrière le raisonnement explicite. Aucun prérequis en logique formelle n'est supposé : les concepts sont introduits progressivement, des opérateurs propositionnels de base jusqu'aux sémantiques d'argumentation les plus avancées.
@@ -741,6 +701,46 @@ Le pitch de Tweety tient en un mot : **explicabilité**. Là où un LLM produit 
 ---
 
 **Version 1.2.0 — Juillet 2026 — section Statistiques catalogue à jour + section Écosystème MCP et parenté cross-lane. EPIC #3975 tranche tweety.**
+
+## Statistiques catalogue à jour
+
+Statistiques détaillées de la sous-série Tweety, lues directement depuis le marqueur `<!-- CATALOG-STATUS -->` byte-identique (l. 5-10) — `pedagogical_count: 32, breakdown: Tweety=32, maturity: PRODUCTION=26, BETA=6` (le détail par sous-catégorie est en cours d'audit et sera prochainement ré-aligné sur le marqueur) :
+
+| Sous-catégorie        |    NB | Statut                       |
+|-----------------------|-------|------------------------------|
+| Python (Tw-1..5b, 11) |    13 | PROD=12, BETA=1              |
+| C#/.NET IKVM          |    18 | PROD=15, BETA=2, DRAFT=1     |
+| Probe `_probes/`      |     1 | BETA                         |
+| Total                 |    32 | PROD=26, BETA=6              |
+
+Détails paradigmes/stacks :
+
+- **Python (JPype 13 nb)** : PL/FOL/DL/ML/QBF/CL/Dung/ASPIC+/AGM/MLN/do-calculus Pearl — double stack sur Tw-3 (DL+Modale+QBF), Tw-4 (Belief Revision), Tw-7b (Ranking), Tw-9 (vote/préférences), Tw-10 (MLN), Tw-11 (causal). BETA=1 sur `Tweety-5b-Lean-Argumentation` (companion kernel Lean 4, voir `argumentation_lean/`).
+- **C#/.NET (IKVM 8.14, 18 nb)** : bytecode Java→.NET downgrade Java 15→8 (post-C190 `JvmDowngrader`), sans JVM. BETA=2 (`Tweety-2-Basic-Logics-Csharp`, `Tweety-4-Belief-Revision-Csharp`), DRAFT=1 = BROKEN (`Tweety-3-Advanced-Logics-Csharp`, conflits de noms sur `logics.ml` + `logics.cl` + `logics.qbf` simultanés dans la même DLL).
+- **Probe (`_probes/Tweety-IKVM-Init-Probe`, 1 nb)** : IKVM init smoke-test BETA.
+
+**Conformité C.1** : les notebooks exposent des stubs conformes (`pass` / `return None` / `print("Exercice à compléter")` / jamais `raise NotImplementedError`) et restent exécutables end-to-end. Les dépendances sont gérées par `requirements.txt` racine (JPype1, tweety-translate, pandas, numpy, jdk-pywrap). Le port C#/.NET (EPIC #4667) cible .NET 9.0 + IKVM 8.14 (post-C190 JvmDowngrader Java 15→8) ; voir la chaîne de build dans `.github/workflows/tweety-csharp.yml` et l'inventaire détaillé dans la [Section Tweety](https://github.com/jsboige/CoursIA/issues/4667). Le seul notebook C# à maturité DRAFT est `Tweety-3-Advanced-Logics-Csharp` (statut BROKEN : héritage des conflits de noms de classes IKVM 8.14 sur `logics.ml` + `logics.cl` + `logics.qbf` simultanés).
+
+## Écosystème MCP et parenté cross-lane
+
+Trois outils d'infrastructure MCP soutiennent l'exécution, la validation et la composition cross-séries de cette sous-série :
+
+1. **MCP Jupyter** (`mcp__jupyter-papermill__*`) — exécution programmée des notebooks via Papermill, capture des sorties, gestion du cycle de vie des kernels Python 3 et `.net-csharp`. Note : le mode async ignore `kernel_name` (bug #5211) — toujours passer par `nbconvert --execute` avec timeout pour les ré-exécutions.
+2. **Validation pre-commit** (`.pre-commit-config.yaml`) — gitleaks (anti-secrets inline, règle `os.getenv("KEY", "<literal-fallback>")` proscrit) + notebook validator (C.1/C.2 : pas de `raise NotImplementedError`, cellules code = `execution_count` + `outputs` cohérents) bloquent les PRs qui dégraderaient les contrats inter-séries.
+3. **MCP QC Cloud** (`mcp__qc-mcp-lite__*`) — backtest QuantConnect partagé pour les notebooks QC (Tw-9 vote Preferences éclaire les modèles de choix social, cf. cross-lane ci-dessous).
+
+La sous-série Tweety s'inscrit dans un **réseau cross-lane structuré** autour de l'argumentation et de la logique formelle :
+
+| Cette sous-série                  | Symétrie dans                                      | Pont pédagogique                                                                |
+|-----------------------------------|----------------------------------------------------|----------------------------------------------------------------------------------|
+| Tweety-3 (logique de description) | [SemanticWeb](../SemanticWeb/) (SW-6/SW-7 OWL)      | DL = moteur de raisonnement OWL ; même formalisme, deux écosystèmes              |
+| Tweety-3 (Dung frameworks)        | [Argument_Analysis](../Argument_Analysis/)         | Détection de sophismes via cadres de Dung + Semantic Kernel (LLM-contrôle)      |
+| Tweety-3 (logique modale/QBF)     | [Lean](../Lean/) (mathlib4)                          | Formalisation des logiques Tweety dans l'assistant de preuve Lean 4              |
+| Tweety-9 (préférences, vote)      | [GameTheory](../../GameTheory/SocialChoice/)        | Préférences individuelles → fonction de choix social (Borda, Condorcet, Arrow)   |
+| Tweety-4 (révision AGM)           | [SmartContracts](../SmartContracts/) (SC-14)       | Mise à jour de croyances → invariants Solidity, logique de révision on-chain    |
+| Tweety-11 (Causalité, do-calculus)| [ML](../../ML/) (inférence causale)                | do-calculus Pearl ↔ modèles causaux structurels (Pearl 2009)                     |
+
+**Effet de composition** : Tweety est le **carrefour logique** du dépôt — chaque sous-série partenaire (Lean, SemanticWeb, Argument_Analysis, GameTheory, SmartContracts, ML) y trouve un point d'entrée formel vers l'argumentation computationnelle. Le pipeline complet relie les **notebooks** (qui motivent la pertinence du raisonnement explicite) aux **ports C#/.NET** (qui rendent Tweety invocable sans JVM, via IKVM 8.15, EPIC #4667) et aux **lakes** (qui formalisent les théorèmes sous-jacents, ex. Arrow en Lean 4).
 
 ## Licence
 
