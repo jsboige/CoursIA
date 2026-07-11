@@ -19,7 +19,8 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 ## img3-multimodel.webp
 
 - **Source** : notebook `03-1-Multi-Model-Comparison.ipynb` (cellule 8, output 2) — comparaison côte à côte SDXL Lightning-4step (Forge) vs Z-Image/Lumina-2 (ComfyUI)
-- **Alt-text (FR)** : Comparaison côte à côte de deux modèles d'image (SDXL Lightning-4step et Z-Image/Lumina-2) sur un même prompt
+- **Contenu réel vérifié** (audit G.1 juillet 2026, doctrine #5780) : grille *« SDXL Lightning-4step (16.11s) 512×512 »* et *« Z-Image (409.86s) 1024×1024 »* sur le même prompt *« A cute robot playing chess in a park, sunlight, detailed »*. Le panneau gauche montre un robot au rendu painterly/blueprint (peinture acrylique rouge, échiquier stylisé, rayures verticales blanches/noires en arrière-plan) généré en 16 s par SDXL Lightning-4step ; le panneau droit montre un robot photoréaliste blanc aux yeux cyan lumineux, échiquier bois posé sur l'herbe d'un parc verdoyant baigné de lumière chaude, généré en 410 s par Z-Image/Qwen Image Edit fp8. **170 314 couleurs uniques ≫ floor placeholder (~330)** sur l'image RGBA — preuve SOTA-OK des deux moteurs. La différence de durée (~25×) illustre le compromis vitesse/qualité entre SDXL few-step distilled et Z-Image/Lumina-2 full-step : choix pédagogique canonique pour un notebook de comparaison multi-modèles.
+- **Alt-text (FR)** : Comparaison côte à côte de deux modèles d'image (SDXL Lightning-4step et Z-Image/Lumina-2) sur un même prompt — robot jouant aux échecs, l'un stylisé l'autre photoréaliste
 - **Poids** : 53 Ko (WebP q88, depuis PNG 601 Ko)
 
 ## img3-workflow1.webp
