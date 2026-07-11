@@ -44,11 +44,39 @@ def test_get_verifier_instantiates_without_lean_project():
     """get_verifier() must not crash when project_dir is set explicitly."""
     from prover import verifier as vmod
 
-    # Reset module-level singleton so each test starts clean.
-    vmod._verifier = None
+    # Reset per-project cache so each test starts clean. (Previously this
+    # was a single `_verifier = None`; the cache is now a dict keyed by
+    # project_dir, see verifier.py module docstring + See #1453.)
+    vmod._verifiers.clear()
     v = vmod.get_verifier(project_dir="/tmp/dummy-not-real")
     assert v is not None
     assert v.project_dir == "/tmp/dummy-not-real"
+
+
+def test_get_verifier_cross_project_no_lockin():
+    """Regression: distinct project_dirs must yield distinct verifier instances.
+
+    Before the fix, the module held a single `_verifier` singleton bound to
+    the first caller's `project_dir`; a second `get_verifier(pd_b)` returned
+    that same instance (locked to pd_a), silently building pd_a's files in
+    pd_b's name. The per-project_dir dict cache closes this gap (See #1453).
+    """
+    from prover import verifier as vmod
+
+    vmod._verifiers.clear()
+    v_a = vmod.get_verifier(project_dir="/tmp/dummy-proj-a")
+    v_b = vmod.get_verifier(project_dir="/tmp/dummy-proj-b")
+    # Distinct instances bound to distinct projects.
+    assert v_a is not v_b
+    assert v_a.project_dir == "/tmp/dummy-proj-a"
+    assert v_b.project_dir == "/tmp/dummy-proj-b"
+    # Idempotent on the same path: re-asking for proj_a returns the same object.
+    assert vmod.get_verifier(project_dir="/tmp/dummy-proj-a") is v_a
+    # Cross-project reset doesn't disturb unrelated entries.
+    vmod.reset_verifier(project_dir="/tmp/dummy-proj-a")
+    assert vmod.get_verifier(project_dir="/tmp/dummy-proj-a") is not v_a
+    assert vmod.get_verifier(project_dir="/tmp/dummy-proj-b") is v_b
+    vmod._verifiers.clear()
 
 
 # ──────────────────────────────────────────────────────────────────────────
