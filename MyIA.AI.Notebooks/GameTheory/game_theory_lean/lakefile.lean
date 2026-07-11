@@ -24,6 +24,16 @@ require mathlib from git
 -- du lake cible sans coupler `StableMarriage` et `CooperativeGames`
 -- (chaque lib reste un point d'entree independant vers Mathlib).
 --
+-- c.357 (po-2023) : absorption `SocialChoice` (Arrow + Sen + Voting + Framework
+-- + Basic + MechanismDesign + SortedListCounting, FR+EN i18n EPIC #4980).
+-- 16 fichiers (7 modules FR + 7 siblings _en + 1 _SmokeTest + 1 root
+-- SocialChoice.lean) deplaces byte-identique depuis `social_choice_lean/`
+-- vers `game_theory_lean/SocialChoice/`. Lake source `social_choice_lean/`
+-- reste en place (docs + lakefile + manifest archives) pour ne pas casser
+-- les refs notebooks existantes ; sera archive en follow-up post-merge.
+-- Prochaine absorption prevue : `social_choice_lean_peters` (v4.27 -> v4.31,
+-- INTRINSIC documente si port depasse budget cf sota-not-workaround).
+--
 -- Convention i18n EPIC #4980 (cf decision_theory_lean precedent) :
 -- `globs` (et non `roots`) avec suffixe `.*` pour auto-decouvrir siblings `_en`.
 @[default_target]
@@ -33,3 +43,7 @@ lean_lib StableMarriage where
 @[default_target]
 lean_lib CooperativeGames where
   globs := #[`CooperativeGames.*]
+
+@[default_target]
+lean_lib SocialChoice where
+  globs := #[`SocialChoice.*]
