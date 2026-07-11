@@ -13,6 +13,51 @@
   - Finite colorings of graphs (Fintype, Fin n coloring)
   - Minimization over equivalence classes
 -/
+/-
+  `Knots.Invariant` — invariants des nœuds (3-colorabilité, nombre de croisements)
+  ============================================================================
+
+  Invariant de nœud = grandeur attachée à un nœud qui est préservée par
+  mouvement de Reidemeister (R1/R2/R3). Ce sous-module scaffolde :
+
+  1. **3-colorabilité (Fox 1962)** — le plus accessible des invariants non
+     triviaux : un diagramme de nœud est 3-coloriable si chaque arc peut
+     être colorié avec une des trois couleurs (rouge, bleu, vert) de sorte
+     qu'à chaque croisement, soit les trois arcs portent la même couleur,
+     soit les trois portent des couleurs deux à deux distinctes, ET au
+     moins deux couleurs sont effectivement utilisées. Le trèfle (trefoil)
+     est 3-coloriable, la figure-eight ne l'est pas.
+
+  2. **Bornes sur le nombre de croisements** (`crossingNumber`) — minorant
+     effectif obtenu en énumérant les diagrammes réduits d'un nombre donné
+     de croisements et en élimant ceux isotropes au nœud trivial.
+
+  3. **Nombre de dénouement** (`unknottingNumber`, définition seulement,
+     `sorry`) — minimum de mouvements R1 nécessaires pour réduire le nœud
+     au trivial ; invariant notoirement difficile à calculer (NP-difficile
+     dans le cas général, cf Lackenby 2015 poly-time).
+
+  **Path B (invariant classique, mandat 2026-06-23)** : on impose la
+  **continuité de l'arc over** à chaque croisement (les deux extrémités
+  `e2` et `e4` du strand over portent la même couleur), par opposition au
+  modèle permissif antérieur qui coloriait les arêtes indépendamment et
+  faisait dériver la 3-colorabilité sur la figure-eight. La conjonction
+  « continuité over + règle de Fox » restaure l'invariant classique.
+
+  **Prérequis Mathlib** :
+  - `Fintype`, `Fin n` pour les coloriages finis
+  - Minimisation sur classes d'équivalence (`Inf`, `sInf`)
+
+  **i18n** : extension bilingue FR/EN inline du sous-module (cf c.373
+  `Knots.lean` racine pour le pattern d'agrégateur bilingue ; c.375 a
+  couvert les 5 autres sous-modules `Basic`/`Conway`/`Lidman`/
+  `MathlibPrerequisites`/`Reidemeister` ; c.376 ferme la couverture 6/6
+  du sous-lac `knot_lean`). La section anglaise ci-dessus est préservée
+  verbatim ; la section française est ajoutée en miroir pour la
+  convention #4980 ratifiée 2026-07-04.
+
+  Epic #2874, Phase 1–2.
+-/
 
 import Knots.Basic
 import Knots.Reidemeister
