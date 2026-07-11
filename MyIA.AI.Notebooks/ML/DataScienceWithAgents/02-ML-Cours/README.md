@@ -27,20 +27,31 @@ La thèse est volontairement classique : on ne peut évaluer ce qu'un agent gén
 
 ## Aperçu — les concepts-phare en images
 
-Six figures extraites des notebooks rendent visible chacun des concepts-phare de la série, du surapprentissage rendu observable jusqu'à la structure retrouvée par l'ACP.
+La série ne se contente pas d'ajuster des modèles : chaque chapitre **rend visible** un concept distinct, dans une figure extraite des sorties réelles des notebooks. Les voici replacées dans leur progression pédagogique — chacune illustre la capacité distinctive d'une technique et l'exerce sur un cas non trivial.
 
-<table>
-<tr>
-<td align="center"><b>2.1 · Surapprentissage</b><br><a href="2.1-Workflow-ML.ipynb"><img src="assets/readme/ml21-overfitting.png" width="290" alt="Surapprentissage rendu visible : la courbe de score (train vs test) diverge quand la profondeur de l'arbre croît."></a></td>
-<td align="center"><b>2.2 · Learning rate</b><br><a href="2.2-Descente-de-gradient.ipynb"><img src="assets/readme/ml22-learning-rate.png" width="290" alt="Effet du learning rate : trois régimes (trop lent, bon, divergent) sur la même fonction de coût."></a></td>
-<td align="center"><b>2.3 · Sigmoïde</b><br><a href="2.3-Regression-lineaire-logistique.ipynb"><img src="assets/readme/ml23-sigmoid.png" width="290" alt="Régression logistique : la sigmoïde transforme le score linéaire en probabilité (OLS vs MLE)."></a></td>
-</tr>
-<tr>
-<td align="center"><b>2.4 · Frontière</b><br><a href="2.4-Arbres-Forets-Ensembles.ipynb"><img src="assets/readme/ml24-frontiere.png" width="290" alt="Forêt aléatoire : la frontière de décision, escalier d'un arbre seul vs lissage par l'ensemble."></a></td>
-<td align="center"><b>2.5 · Courbe ROC</b><br><a href="2.5-Biais-Variance-CV-ROC.ipynb"><img src="assets/readme/ml25-roc.png" width="290" alt="Courbe ROC et AUC : le coût du seuil, arbitrage entre faux positifs et faux négatifs."></a></td>
-<td align="center"><b>2.6 · ACP</b><br><a href="2.6-Clustering-KMeans-PCA.ipynb"><img src="assets/readme/ml26-pca.png" width="290" alt="Réduction de dimension (ACP) : structure des chiffres retrouvée sans étiquettes en 2 composantes."></a></td>
-</tr>
-</table>
+**[2.1 — Le surapprentissage, rendu observable.](2.1-Workflow-ML.ipynb)** On balaie la profondeur d'un arbre de décision de 1 à 25 et l'on trace, côte à côte, le score d'entraînement et le score de test. Tant que la profondeur reste modeste, les deux courbes suivent la même trajectoire ; passé un seuil, elles se séparent, et l'écart ne cesse de grandir à mesure que le modèle mémorise le bruit de l'entraînement. Ce geste diagnostique — voir le surapprentissage plutôt que le subir — est le fil rouge du workflow ML.
+
+<p align="center"><a href="2.1-Workflow-ML.ipynb"><img src="assets/readme/ml21-overfitting.png" width="540" alt="Surapprentissage rendu visible : la courbe de score (train vs test) diverge quand la profondeur de l'arbre croît."></a></p>
+
+**[2.2 — Trois régimes de learning rate.](2.2-Descente-de-gradient.ipynb)** On ouvre la boîte noire de `fit()` en lançant la descente de gradient sur la même fonction de coût avec trois pas d'apprentissage. L'un converge trop lentement, le second trouve le minimum sans errer, le troisième oscille puis s'envole : la frontière entre une bonne convergence et la divergence tient à un seul scalaire, le *learning rate*.
+
+<p align="center"><a href="2.2-Descente-de-gradient.ipynb"><img src="assets/readme/ml22-learning-rate.png" width="540" alt="Effet du learning rate : trois régimes (trop lent, bon, divergent) sur la même fonction de coût."></a></p>
+
+**[2.3 — Une sigmoïde plutôt qu'une droite.](2.3-Regression-lineaire-logistique.ipynb)** À partir des mêmes étiquettes binaires, on ajuste d'abord une droite (moindres carrés, OLS), puis une sigmoïde (maximum de vraisemblance, MLE). La droite sort du cadre dès qu'elle doit prédire une probabilité ; la sigmoïde écrase le score linéaire dans [0, 1] et donne à chaque point sa probabilité d'appartenir à la classe — c'est tout l'écart entre régression linéaire et logistique.
+
+<p align="center"><a href="2.3-Regression-lineaire-logistique.ipynb"><img src="assets/readme/ml23-sigmoid.png" width="540" alt="Régression logistique : la sigmoïde transforme le score linéaire en probabilité (OLS vs MLE)."></a></p>
+
+**[2.4 — La frontière, de l'escalier au lissage.](2.4-Arbres-Forets-Ensembles.ipynb)** Sur le jeu de cancer du sein, on trace la frontière de décision d'un arbre unique, puis celle d'une forêt aléatoire. L'arbre seul découpe l'espace en escaliers rigides, sensible au bruit ; l'ensemble moyenne ces coupes et lisse la frontière. C'est la réduction de variance rendue géométrique — la raison pour laquelle les forêts battent l'arbre isolé.
+
+<p align="center"><a href="2.4-Arbres-Forets-Ensembles.ipynb"><img src="assets/readme/ml24-frontiere.png" width="560" alt="Forêt aléatoire : la frontière de décision, escalier d'un arbre seul vs lissage par l'ensemble."></a></p>
+
+**[2.5 — Le coût d'un seuil.](2.5-Biais-Variance-CV-ROC.ipynb)** La courbe ROC balaye tous les seuils de décision possibles et échange les faux positifs contre les faux négatifs ; l'aire sous la courbe (AUC) résume ce compromis en un nombre. Mais le bon seuil n'est pas celui qui maximise l'AUC : il dépend du coût métier d'un faux négatif (rater un cancer) face à un faux positif. La figure impose cette lecture économique de la décision.
+
+<p align="center"><a href="2.5-Biais-Variance-CV-ROC.ipynb"><img src="assets/readme/ml25-roc.png" width="540" alt="Courbe ROC et AUC : le coût du seuil, arbitrage entre faux positifs et faux négatifs."></a></p>
+
+**[2.6 — La structure retrouvée sans étiquettes.](2.6-Clustering-KMeans-PCA.ipynb)** Sur les chiffres manuscrits, sans jamais fournir les étiquettes, l'analyse en composantes principales projette les images en deux dimensions — et les amas qui émergent suivent déjà les classes de chiffres. C'est la promesse de l'apprentissage non supervisé : retrouver la structure latente que les étiquettes confirmeraient a posteriori.
+
+<p align="center"><a href="2.6-Clustering-KMeans-PCA.ipynb"><img src="assets/readme/ml26-pca.png" width="560" alt="Réduction de dimension (ACP) : structure des chiffres retrouvée sans étiquettes en 2 composantes."></a></p>
 
 Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, output, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
