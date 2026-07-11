@@ -303,6 +303,28 @@ pip install jpype1 requests tqdm clingo z3-solver python-sat
 | **Z3** | SMT solver, MARCO | `pip install z3-solver` |
 | **PySAT** | SAT/MaxSAT moderne | `pip install python-sat` |
 
+## Installation
+
+### Packages Python requis
+
+```bash
+pip install jpype1 requests tqdm clingo z3-solver python-sat
+```
+
+### Vérification de l'environnement
+
+```bash
+# Lancer le notebook de setup
+jupyter notebook Tweety-1-Setup.ipynb
+# Exécuter toutes les cellules — il télécharge JDK, JARs, outils externes
+
+# Ou utiliser le script de validation
+cd scripts
+python verify_all_tweety.py --quick
+```
+
+JDK 17 et les 42 JARs (39 modules TweetyProject 1.30 + 3 dépendances externes : args4j, commons-math, sat4j) sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
+
 ## Architecture
 
 ```
@@ -529,28 +551,6 @@ flowchart LR
 ```
 
 **Extension grounded** : `C` n'est attaqué par personne → **accepté** ; `B` est attaqué par l'accepté `C` → **rejeté** ; `A` n'est attaqué que par le rejeté `B` → **accepté**. D'où `{A, C}`. La règle se tient en une phrase : *un argument est acceptable si tous ses attaquants sont eux-mêmes défaits*. Les sémantiques preferred/stable, les cycles (CF2) et le raisonnement causal du notebook 5 raffinent ce même calcul.
-
-## Installation
-
-### Packages Python requis
-
-```bash
-pip install jpype1 requests tqdm clingo z3-solver python-sat
-```
-
-### Vérification de l'environnement
-
-```bash
-# Lancer le notebook de setup
-jupyter notebook Tweety-1-Setup.ipynb
-# Exécuter toutes les cellules — il télécharge JDK, JARs, outils externes
-
-# Ou utiliser le script de validation
-cd scripts
-python verify_all_tweety.py --quick
-```
-
-JDK 17 et les 42 JARs (39 modules TweetyProject 1.30 + 3 dépendances externes : args4j, commons-math, sat4j) sont téléchargés automatiquement par le notebook de setup. Aucune installation système requise.
 
 ## Validation des Notebooks
 
