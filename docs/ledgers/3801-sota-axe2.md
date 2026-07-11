@@ -1228,6 +1228,78 @@ La série Search est **anti-dégénérée** : Applications/CSP = **NP-difficiles
 - **L378 durcie** : G.1 firsthand (script python3 structural 1651 cells + regex imports SOTA + nuance MetaGeneticSharp submodule documentée honnêtement).
 - **Cumulatif** : **13 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, **Search**). Entry #013 Search ajoute **2 moteurs SOTA nouveaux** au registre (**GeneticSharp** .NET GA framework, **MetaGeneticSharp** métaheuristique avancée ; OR-Tools déjà compté #005/#010, Z3 #010, python-constraint #002, AIMA #002, networkx #007) = **32 moteurs SOTA distincts cumulés**.
 
+## Entry #015 — Argument_Analysis (SymbolicAI, owner po-2023, c.108)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/` (17 .ipynb pédagogiques racine) |
+| Owner-lane | **po-2023** (lead série 5-NB, #3028 Rung 2-formal livré ; [CLAIMED] dashboard 23:09Z, post-pivot po-2025 → SAE↔J-space) |
+| Date audit | 2026-07-11 (c.108) |
+| Auditeur | `myia-po-2023:CoursIA` |
+| Verdict agrégé | **SOTA-OK** (17/17 SOTA-OK) |
+
+### Findings détaillés
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | SOTA invoqué (grep ground truth) | SOTA verdict |
+|----|-------|------|------|-----|-----------|--------|----------------------------------|--------------|
+| Agentic-0-init | 13 | 5 | 5/5 | 0 | 0 | python3 | TweetyProject (JPype), SemanticKernel | **SOTA-OK** |
+| Agentic-1-informal | 22 | 8 | 8/8 | 0 | 0 | python3 | — (pipeline LLM extraction) | **SOTA-OK** |
+| Agentic-2-formal | 24 | 8 | 8/8 | 0 | 0 | python3 | TweetyProject (ASPIC+/Dung, JPype) | **SOTA-OK** |
+| Agentic-3-orchestration | 28 | 10 | 10/10 | 0 | 0 | python3 | SemanticKernel (AgentGroupChat) | **SOTA-OK** |
+| Agentic-4-capstone | 29 | 14 | 14/14 | 0 | 0 | python3 | SemanticKernel | **SOTA-OK** |
+| Agentic-5-jtms | 25 | 9 | 9/9 | 0 | 0 | python3 | — (JTMS reasoning) | **SOTA-OK** |
+| ArgumentProfile | 28 | 13 | 13/13 | 0 | 0 | python3 | — | **SOTA-OK** |
+| Dung_AF_Semantics | 24 | 10 | 10/10 | 0 | 0 | python3 | — (Dung semantics theory) | **SOTA-OK** |
+| Executor | 29 | 9 | 9/9 | 0 | 0 | python3 | SemanticKernel, TweetyProject, OpenAI | **SOTA-OK** |
+| Formal_Richness_Matrix | 22 | 9 | 9/9 | 0 | 0 | python3 | — | **SOTA-OK** |
+| Multi_Backend_Routing | 17 | 10 | 10/10 | 0 | 0 | python3 | TweetyProject (multi-backends, JPype) | **SOTA-OK** |
+| Ontology_AIF | 24 | 8 | 8/8 | 0 | 0 | python3 | networkx (AF graphe) | **SOTA-OK** |
+| Ontology_CrossLinks | 26 | 11 | 11/11 | 0 | 0 | python3 | — | **SOTA-OK** |
+| Ontology_Virtues | 26 | 9 | 9/9 | 0 | 0 | python3 | networkx | **SOTA-OK** |
+| Ranking_Semantics | 24 | 10 | 10/10 | 0 | 0 | python3 | TweetyProject (rankings) | **SOTA-OK** |
+| Restitution_3_Actes | 35 | 14 | 14/14 | 0 | 0 | python3 | OpenAI | **SOTA-OK** |
+| UI_configuration | 25 | 8 | 8/8 | 0 | 0 | python3 | — | **SOTA-OK** |
+
+### Synthèse
+
+- **EXEC_PROVED global** : 17/17 (100%) — `execution_count != null` sur 165/165 cellules code. **0 flagged**.
+- **Erreurs runtime** : 0/17.
+- **Violations C.1** : 0/17 (regex `raise NotImplementedError|assert False|/0` sur source code = 0 hit).
+
+### Vrais outils SOTA invoqués (vérifiés G.1 imports réels, grep ground truth)
+
+- **TweetyProject via JPype/JVM** (argumentation formelle Java) — 5 notebooks : `org.tweetyproject.arg.{aspic,delp,dung.reasoner,rankings}`, `org.tweetyproject.beliefdynamics` (AGM belief revision). `jpype.startJVM`/`JClass` = vraie inversion JVM, pas prose. (Déjà compté entry #002 Tweety.)
+- **Microsoft Semantic Kernel** (orchestration agentique .NET/Python) — 4 notebooks : `from semantic_kernel.agents import {ChatCompletionAgent, AgentGroupChat, Agent}`, `semantic_kernel.functions.kernel_function`. **NOUVEAU moteur SOTA du registre** (absent des entries #001-#013).
+- **OpenAI SDK** (via connecteurs SK) — 2 notebooks (Executor, Restitution_3_Actes). (Déjà compté.)
+- **networkx** (graphes Dung AF / ontologie AIF) — 2 notebooks (Ontology_AIF, Ontology_Virtues). (Déjà compté #007/#013.)
+
+### Prong B — problème non-trivial (sota-not-workaround §B)
+
+La série Argument_Analysis est **anti-dégénérée** : le problème posé (analyser un texte argumentatif → carte logique formelle validée par solveur, + détection systématique de sophismes) **exerce la capacité distinctive de chaque moteur** :
+- TweetyProject ASPIC+/Dung = sémantiques d'acceptabilité (grounded/complete/preferred/stable) — non résolvable par un `if`, exige la théorie de l'argumentation abstraite.
+- AGM belief dynamics = révision de croyances (contraction/expansion) — opérateurs non-triviaux.
+- Semantic Kernel AgentGroupChat = orchestration multi-agents (informel→formel→verdict) — pattern hybride LLM + solveur, ≠ appel LLM unique.
+≠ cas dégénéré où le SOTA équivaut à une baseline triviale.
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **C.1** : 0/17 réel (0 hit regex, 0 faux positif).
+- **Anti-régression** : 165/165 `execution_count != null` + `output_type: error = 0` ; aucun notebook strippé, aucun output hand-edité.
+- **SOTA tools grounded firsthand** : pattern initial `semantic_kernel` manquait 4 notebooks (corrigé via `grep -c semantic_kernel` ground truth par fichier) ; TweetyProject confirmé invocation réelle (`org.tweetyproject.*` + `jpype.startJVM`), pas mention prose.
+- **Discrepancy CATALOG-STATUS honnête** : le README déclare `pedagogical_count: 18`, l'audit mécanique compte **17 notebooks pédagogiques racine** (21 .ipynb racine − 4 variants `_agent` exclus). L'écart (1) provient vraisemblablement du comptage d'un variant `_agent`/`_output` dans le CATALOG ; non-bloquant pour le verdict SOTA. À corriger dans une PR catalogue dédiée (hors scope, cf [catalog-pr-hygiene.md] — le catalogue appartient à l'automatisation).
+- **Re-exec non tentée** : la série exige OpenAI API + JPype/JVM (76 jars Tweety) = exécution lourde. Audit consultatif additif (L143 safe owner-lane) : outputs committés **réels et cohérents** (EXEC_PROVED 165/165), pas de placeholders.
+
+### Volet owner-lane
+
+**Argument_Analysis = po-2023** (lead série, [CLAIMED] 23:09Z post-pivot po-2025 → SAE↔J-space 22:59Z ; diligence anti-collision #5869 : `gh pr list --state all --search Argument_Analysis` = 0 PR SOTA en vol, 0 collision). Audit consultatif additif, 0 PR de substance. **15ᵉ famille distincte du ledger** (variété R6 : SymbolicAI ≠ GenAI/accents des 3 cycles précédents po-2023).
+
+### Conclusions audit
+
+- **Substance Argument_Analysis = SOTA-OK 17/17**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. TweetyProject (ASPIC+/DeLP/Dung/AGM) + Microsoft Semantic Kernel (orchestration agentique) + OpenAI + networkx = moteurs SOTA réels sur banc argumentation formelle discriminant.
+- **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
+- **L378 durcie** : G.1 firsthand (script python3 structural 165 cells + grep ground truth imports SOTA + discrepancy CATALOG documentée honnêtement).
+- **Cumulatif** : **15 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, **Argument_Analysis**). Entry #015 ajoute **1 moteur SOTA nouveau** au registre (**Microsoft Semantic Kernel** ; TweetyProject déjà compté #002, OpenAI #009, networkx #007) = **34 moteurs SOTA distincts cumulés**.
+
 Part of #3801
 
 
