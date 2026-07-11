@@ -223,7 +223,12 @@ pour éviter de retélécharger `~3 GB` à chaque incrément.
 > `sorry`/`decide`/`native_decide`, le sibling `_en` à la logique byte-identique
 > build OK, et la CI Linux est verte) — c'est un flake d'élaboration proche du
 > plafond de stack Windows (1 MB par défaut), via le bloc local `letI`/`haveI
-> IsTrans` répété 3× dans `gsChooseMax`. Pour le cold build §1 pré-merge
+> IsTrans` répété 3× dans `gsChooseMax`.
+>
+> Deux mitigations complémentaires : **(structurel)** la PR #6149 (po-2023)
+> extrait la preuve `IsTrans` 3× dupliquée en un seul lemme top-level
+> `gsMenPref_trans` (byte-identité anti-§D, +40/−49), réduisant la profondeur
+> d'élaboration de 3× à 1× ; **(modality)** pour le cold build §1 pré-merge
 > ([lean-merge-discipline](../../../.claude/rules/lean-merge-discipline.md)),
 > utiliser **WSL** (stack Linux 8 MB par défaut), comme `learning_theory_lean`
 > et `knot_lean`. La CI Linux reste autoritaire côté correction.
