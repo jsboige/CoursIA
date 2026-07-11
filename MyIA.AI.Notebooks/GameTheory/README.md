@@ -81,6 +81,54 @@ La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) 
 
 *`GameTheory-17-MultiAgent-RL` — deux dynamiques d'apprentissage sur Pierre-Feuille-Ciseaux. À gauche (échelle log), le self-play naïf reste exploitable en oscillant, tandis que le fictitious play voit son exploitabilité décroître régulièrement. À droite, les fréquences Rock/Paper/Scissors du fictitious play convergent vers le Nash uniforme (1/3, 1/3, 1/3, pointillé) — la convergence de Robinson (1951) en action.*
 
+## Progression recommandée
+
+### Découvreur (fondements statiques, ~5h)
+
+Commencez par les notebooks 1 (Setup) et 2 (NormalForm) pour comprendre les matrices de gains et la dominance stratégique. Le notebook 4 (NashEquilibrium) introduit le concept central de la série : l'équilibre de Nash, pur et mixte. Le notebook 5 (ZeroSum-Minimax) complète avec le théorème minimax de Von Neumann et la programmation linéaire. Ces quatre notebooks suffisent pour comprendre les bases de la théorie des jeux non-coopératifs.
+
+### Praticien (jeux dynamiques et Lean, ~10h)
+
+Poursuivez avec les jeux dynamiques : notebook 7 (formes extensives), 9 (induction arrière), 10 (induction avant et SPE). Le notebook 6 (EvolutionTrust) offre une pause rafraîchissante avec le tournoi d'Axelrod. Les side tracks Lean (2b, 4b) vous initient à la formalisation des résultats en assistant de preuve. À ce stade, vous êtes capable de modéliser des interactions stratégiques complexes et de les vérifier formellement.
+
+### Expert (applications avancées et choix social, ~19h)
+
+Les notebooks 13 (CFR), 15 (jeux coopératifs, Shapley), et 16 (design de mécanismes, Arrow) ouvrent les frontières de la discipline. La sous-série [SocialChoice/](SocialChoice/) (4 notebooks) approfondit le théorème d'Arrow via Lean, SAT et Z3. Le notebook 17 (Multi-Agent RL) fait le pont avec l'apprentissage par renforcement.
+
+### Parcours alternatifs
+
+#### Parcours formalisation Lean uniquement (~4h)
+
+Si vous venez de la série [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) et voulez voir la théorie des jeux sous l'angle formel :
+
+1. **2b** (Lean Definitions) : Game2x2, stratégies mixtes
+2. **4b** (Nash Existence) : Brouwer, Kakutani, preuve d'existence
+3. **8b** (Combinatorial Games) : PGame Mathlib, Nim, Sprague-Grundy
+4. **15b** (Cooperative Games) : Axiomes Shapley, Core
+5. **SC-02** (SocialChoice Formal) : Arrow, Sen, Median Voter en Lean
+
+Ce parcours suppose une familiarité avec Lean 4 (tactiques basiques, types inductifs). Les notebooks Python correspondants (2, 4, 8, 15, SC-01) fournissent l'intuition mais ne sont pas des prérequis.
+
+#### Parcours applications réelles (~6h)
+
+Si vous préférez les cas d'usage aux fondements théoriques :
+
+1. **5** (ZeroSum) : programmation linéaire, dualité, trading
+2. **6** (EvolutionTrust) : émergence de la coopération, biologie
+3. **13** (CFR) : poker AI, regret minimization
+4. **16** (MechanismDesign) : enchères VCG, allocation de ressources
+5. **SC-03** (Voting) : Condorcet, Borda, modèles électoraux
+
+#### Parcours informatique théorique (~5h)
+
+Si votre intérêt est l'algorithmique et la complexité :
+
+1. **2** (NormalForm) : matrices de gains, dominance
+2. **4** (NashEquilibrium) : Lemke-Howson, PPAD-complétude
+3. **8** (CombinatorialGames) : Sprague-Grundy, nimbers
+4. **13** (CFR) : contre-factual regret, convergence
+5. **SC-04** (SAT/Z3) : encodage de théorèmes en SAT, UNSAT proofs
+
 ## Structure
 
 La série s'articule autour d'un **fil principal** qui suit la maturation historique de la discipline — des jeux statiques (matrices de gains, Nash, minimax) vers les jeux dynamiques (formes extensives, induction, information incomplète) puis les frontières contemporaines (CFR pour le poker, mécanismes, choix social, RL multi-agent). Ce fil est doublé de deux fils transversaux optionnels : un **fil de formalisation Lean 4** (side tracks *b*), qui prouve mécaniquement les grands théorèmes au lieu de seulement les illustrer, et un **fil Python d'approfondissement** (side tracks *c*) pour les variantes et visualisations avancées. La sous-série **[SocialChoice/](SocialChoice/)** prolonge le bloc « agrégation des préférences » avec une étude dédiée d'Arrow, Sen et des méthodes de vote, en confrontant preuve formelle, simulation et encodage SAT/Z3.
@@ -299,54 +347,6 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | SC-02 | Lean-SocialChoice | Arrow + Sen + Median Voter + Peters en Lean, 0 sorry |
 | SC-03 | Voting-Methods | Condorcet, Borda, Copeland, modèle Downs, paradoxe élection |
 | SC-04 | Computational-Aggregation | Arrow encodé en SAT + Z3, UNSAT, relaxation partielle |
-
-## Progression recommandée
-
-### Découvreur (fondements statiques, ~5h)
-
-Commencez par les notebooks 1 (Setup) et 2 (NormalForm) pour comprendre les matrices de gains et la dominance stratégique. Le notebook 4 (NashEquilibrium) introduit le concept central de la série : l'équilibre de Nash, pur et mixte. Le notebook 5 (ZeroSum-Minimax) complète avec le théorème minimax de Von Neumann et la programmation linéaire. Ces quatre notebooks suffisent pour comprendre les bases de la théorie des jeux non-coopératifs.
-
-### Praticien (jeux dynamiques et Lean, ~10h)
-
-Poursuivez avec les jeux dynamiques : notebook 7 (formes extensives), 9 (induction arrière), 10 (induction avant et SPE). Le notebook 6 (EvolutionTrust) offre une pause rafraîchissante avec le tournoi d'Axelrod. Les side tracks Lean (2b, 4b) vous initient à la formalisation des résultats en assistant de preuve. À ce stade, vous êtes capable de modéliser des interactions stratégiques complexes et de les vérifier formellement.
-
-### Expert (applications avancées et choix social, ~19h)
-
-Les notebooks 13 (CFR), 15 (jeux coopératifs, Shapley), et 16 (design de mécanismes, Arrow) ouvrent les frontières de la discipline. La sous-série [SocialChoice/](SocialChoice/) (4 notebooks) approfondit le théorème d'Arrow via Lean, SAT et Z3. Le notebook 17 (Multi-Agent RL) fait le pont avec l'apprentissage par renforcement.
-
-### Parcours alternatifs
-
-#### Parcours formalisation Lean uniquement (~4h)
-
-Si vous venez de la série [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) et voulez voir la théorie des jeux sous l'angle formel :
-
-1. **2b** (Lean Definitions) : Game2x2, stratégies mixtes
-2. **4b** (Nash Existence) : Brouwer, Kakutani, preuve d'existence
-3. **8b** (Combinatorial Games) : PGame Mathlib, Nim, Sprague-Grundy
-4. **15b** (Cooperative Games) : Axiomes Shapley, Core
-5. **SC-02** (SocialChoice Formal) : Arrow, Sen, Median Voter en Lean
-
-Ce parcours suppose une familiarité avec Lean 4 (tactiques basiques, types inductifs). Les notebooks Python correspondants (2, 4, 8, 15, SC-01) fournissent l'intuition mais ne sont pas des prérequis.
-
-#### Parcours applications réelles (~6h)
-
-Si vous préférez les cas d'usage aux fondements théoriques :
-
-1. **5** (ZeroSum) : programmation linéaire, dualité, trading
-2. **6** (EvolutionTrust) : émergence de la coopération, biologie
-3. **13** (CFR) : poker AI, regret minimization
-4. **16** (MechanismDesign) : enchères VCG, allocation de ressources
-5. **SC-03** (Voting) : Condorcet, Borda, modèles électoraux
-
-#### Parcours informatique théorique (~5h)
-
-Si votre intérêt est l'algorithmique et la complexité :
-
-1. **2** (NormalForm) : matrices de gains, dominance
-2. **4** (NashEquilibrium) : Lemke-Howson, PPAD-complétude
-3. **8** (CombinatorialGames) : Sprague-Grundy, nimbers
-4. **13** (CFR) : contre-factual regret, convergence
-5. **SC-04** (SAT/Z3) : encodage de théorèmes en SAT, UNSAT proofs
 
 ## Quick Start
 
