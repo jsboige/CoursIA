@@ -27,22 +27,20 @@ L'objectif fil rouge de cette série est de construire un podcast entièrement g
 
 ## Aperçu — la génération audio en images
 
-Six visualisations extraites des notebooks illustrent l'arc complet de la série, du signal audio brut et de son spectre jusqu'à la séparation de sources par Demucs et aux benchmarks de voix TTS en production.
+Quatre visualisations extraites des notebooks illustrent l'arc complet de la série, du signal audio brut à la séparation de sources par Demucs et aux benchmarks de voix TTS en production. Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, poids, alt-text, audit G.1) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 <table>
 <tr>
-<td align="center"><b>1 · Signal audio</b><br><a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio1-waveform.png" width="290" alt="Forme d'onde : échantillonnage d'un signal audio continu et visualisation temporelle."></a></td>
-<td align="center"><b>2 · Spectre</b><br><a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio2-spectrogram.png" width="290" alt="Spectrogramme et MFCC : décomposition temps-fréquence du signal pour la reconnaissance vocale."></a></td>
-<td align="center"><b>3 · STT/TTS</b><br><a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio3-stt-tts.png" width="290" alt="Reconnaissance (STT) et synthèse (TTS) : transcription et génération vocale appliquées au même flux."></a></td>
+<td align="center"><b>1 · Signal audio</b><br><a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio1-waveform.png" width="320" alt="Forme d'onde : échantillonnage d'un signal audio continu et visualisation temporelle."></a></td>
+<td align="center"><b>2 · STT/TTS (partiel)</b><br><a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio3-stt-tts.png" width="320" alt="Reconnaissance (STT) et synthèse (TTS) : transcription et génération vocale appliquées au même flux."></a></td>
 </tr>
 <tr>
-<td align="center"><b>4 · Demucs</b><br><a href="02-Advanced/02-4-Demucs-Source-Separation.ipynb"><img src="assets/readme/audio4-demucs.png" width="290" alt="Séparation de sources : Demucs isole voix, batterie, basse et autre à partir d'un mix stéréo."></a></td>
-<td align="center"><b>5 · Multi-modèles</b><br><a href="03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb"><img src="assets/readme/audio5-multimodel.png" width="290" alt="Comparaison de modèles audio : plusieurs voies STT/TTS évaluées côte à côte dans un pipeline."></a></td>
-<td align="center"><b>6 · Benchmark TTS</b><br><a href="04-Applications/04-7-TTS-Voice-Benchmark.ipynb"><img src="assets/readme/audio6-tts-benchmark.png" width="290" alt="Benchmark de voix TTS : qualité, naturel et latence comparés en vue d'un déploiement en production."></a></td>
+<td align="center"><b>3 · Demucs</b><br><a href="02-Advanced/02-4-Demucs-Source-Separation.ipynb"><img src="assets/readme/audio4-demucs.png" width="320" alt="Séparation de sources : Demucs isole voix, batterie, basse et autre à partir d'un mix stéréo."></a></td>
+<td align="center"><b>4 · Benchmark TTS</b><br><a href="04-Applications/04-7-TTS-Voice-Benchmark.ipynb"><img src="assets/readme/audio6-tts-benchmark.png" width="320" alt="Benchmark de voix TTS : qualité, naturel et latence comparés en vue d'un déploiement en production."></a></td>
 </tr>
 </table>
 
-Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+> **Note d'audit (2026-07-10, doctrine #5780).** Deux images du MANIFEST ont été déclassées à la suite d'un audit G.1 firsthand : `audio2-spectrogram.png` montre en réalité un benchmark latence/taille kokoro vs openai/tts-1 (pas un spectrogramme), et `audio5-multimodel.png` montre des caractéristiques librosa d'un seul échantillon (spectral centroid, bandwidth, RMS, ZCR — pas une comparaison multi-modèles). Elles restent dans le MANIFEST à titre de traçabilité mais ne sont plus promues dans cette galerie. La figure « STT/TTS » reste partielle : seul le volet STT (large-v3-turbo, 0.47 s) est validé ; les trois sous-figures TTS portent la mention « Pas de resultats TTS » dans l'environnement de test ayant produit l'image. Ces contraintes seront levées dans une vague de re-exécution planifiée (#5780).
 
 ## Structure
 
