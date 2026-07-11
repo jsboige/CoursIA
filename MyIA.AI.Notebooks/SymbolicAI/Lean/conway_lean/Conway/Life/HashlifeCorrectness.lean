@@ -69,6 +69,16 @@ import Conway.Life
 import Conway.Life.GridCanonical
 import Conway.Life.MacroCell
 import Conway.Life.Hashlife
+-- EPIC #3846 cycle-break (ai-01 design-gate msg-...338lw8, 2026-07-11): the pure
+-- Chebyshev geometry (`chebDist` family + `window_cheb_cone_in_domain`) now lives
+-- in `Conway.Life.ConeGeometry` (Mathlib only). This import makes
+-- `window_cheb_cone_in_domain` referenceable from the P5 `p5_large_n_jump` path
+-- WITHOUT the circular reverse-import that would arise if it stayed in
+-- `LightCone` (which imports this module). The proof-body wire (closing the
+-- `p5_large_n_jump` sorry via the tight cone bound) is the next N2 step; this
+-- import is the cycle-break enabler, cycle-free because `ConeGeometry` imports
+-- Mathlib only.
+import Conway.Life.ConeGeometry
 
 namespace Conway
 namespace Life
