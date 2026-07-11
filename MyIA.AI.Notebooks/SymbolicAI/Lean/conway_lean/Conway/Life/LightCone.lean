@@ -347,5 +347,65 @@ theorem evolve_reach_within_padCenter2_margin (k : Nat) (hk : 1 ≤ k)
   have hmargin := padCenter2_margin_ge_jumpReach k hk
   exact ⟨p, hp, hb1.trans hmargin, hb2.trans hmargin⟩
 
-end Life
-end Conway
+/-! ## W3 tight cone-in-domain: Chebyshev-tight locality stays in the domain
+
+The tight Chebyshev analog of `window_cone_in_domain` (the **S2** closed lemma in
+`HashlifeCorrectness`, which used the *loose* Manhattan cone `manhattan p q ≤ 2^k`).
+For a point `p` in the centered window `[2^k, 2^k + 2^(k+1))²` (the region a
+Hashlife result covers), any cell `q` within **Chebyshev** radius `2^k` — the
+*tight* GoL speed-of-light cone, strictly smaller than the loose Manhattan-`2^k`
+cone (a Chebyshev-`t` ball fits in a Manhattan-`2t` ball, not the reverse) — stays
+inside the full MacroCell domain `[0, 2^(k+2))²`.
+
+This is the missing tight locality bound for the N2 redesign arc (EPIC #3846, W3).
+The loose `window_cone_in_domain` demanded Manhattan-`2^k` agreement, over-
+approximating the real reach by a factor of 2; the tight version demands only
+Chebyshev-`2^k` agreement (the actual one-Moore-shell-per-generation reach
+formalized by `evolve_reach_chebyshev`). Because Chebyshev distance bounds each
+coordinate directly, the proof is **simpler** than the loose analog: it consumes
+`coord_bound_of_chebDist_le` (per-coordinate bound immediately) rather than
+bridging through `manhattan_deviation`. No `hashlifeResultAux`, no whnf wall —
+pure `Int` window arithmetic. Sorry-free.
+
+Wiring note (architectural): `LightCone` imports `HashlifeCorrectness`, so the
+reverse import needed for the P5 `p5_large_n_jump` path to consume this lemma is
+**circular** as-is. The lemma is stated over plain `Int × Int` precisely so it can
+be extracted to a shared geometry module when the P5 wire is done (a dependency-
+cycle break = architectural step, ai-01's call). The proof substance is delivered
+here, independent of the P4 mono-verrou. -/
+theorem window_cheb_cone_in_domain (k : Nat) (p q : Int × Int)
+    (hp1_lo : (2^k : Int) ≤ p.1) (hp1_hi : p.1 < 2^k + 2^(k+1))
+    (hp2_lo : (2^k : Int) ≤ p.2) (hp2_hi : p.2 < 2^k + 2^(k+1))
+    (hc : chebDist p q ≤ 2^k) :
+    (0 : Int) ≤ q.1 ∧ q.1 < 2^(k+2) ∧ (0 : Int) ≤ q.2 ∧ q.2 < 2^(k+2) := by
+  -- Chebyshev radius bounds each coordinate directly (no manhattan bridge).
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q (2^k) hc
+  -- `coord_bound_of_chebDist_le` types its bounds as `Nat` (`Int.natAbs ... ≤
+  -- 2^k`); the window hypotheses below use native-Int `(2^k : Int)` (`HPower`).
+  -- Bridge the Nat-bound to an `Int.abs`-typed bound (mirroring the loose
+  -- analog's `manhattan_deviation` output, which is already Int-typed), then
+  -- unify the atoms via `Nat.cast_pow`.
+  have hk_pow : (↑((2:Nat)^k) : Int) = (2^k : Int) := Nat.cast_pow 2 k
+  have hq1' : |q.1 - p.1| ≤ (2^k : Int) := by
+    rw [hk_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq1
+  have hq2' : |q.2 - p.2| ≤ (2^k : Int) := by
+    rw [hk_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq2
+  -- Power facts in pure `Nat`, lifted to `Int` (linarith reads the atoms).
+  have hpe1 : (2^(k+1) : Int) = 2 * (2^k : Int) := by
+    have h : (2 : Nat)^(k+1) = 2 * (2 : Nat)^k := by
+      rw [show (k + 1 : Nat) = Nat.succ k from rfl, Nat.pow_succ, Nat.mul_comm]
+    exact_mod_cast h
+  have hpe2 : (2^(k+2) : Int) = 4 * (2^k : Int) := by
+    have h1 : (2 : Nat)^(k+1) = 2 * (2 : Nat)^k := by
+      rw [show (k + 1 : Nat) = Nat.succ k from rfl, Nat.pow_succ, Nat.mul_comm]
+    have h2 : (2 : Nat)^(k+2) = 2 * (2 : Nat)^(k+1) := by
+      rw [show (k + 2 : Nat) = Nat.succ (k + 1) from rfl, Nat.pow_succ, Nat.mul_comm]
+    have h : (2 : Nat)^(k+2) = 4 * (2 : Nat)^k := by rw [h2, h1]; ring
+    exact_mod_cast h
+  -- `Int.abs` bound unpacked into a two-sided `Int` clamp on `q.i - p.i`.
+  obtain ⟨hq1lo, hq1hi⟩ := abs_le.mp hq1'
+  obtain ⟨hq2lo, hq2hi⟩ := abs_le.mp hq2'
+  -- Rewrite every power occurrence into a multiple of the single atom `2^k`.
+  rw [hpe1] at hp1_hi hp2_hi
+  rw [hpe2]
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> linarith
