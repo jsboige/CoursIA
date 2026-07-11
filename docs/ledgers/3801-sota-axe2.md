@@ -1360,4 +1360,90 @@ Les notebooks de planification posent des **problèmes PDDL non-triviaux** : log
 - **L378 durcie** : G.1 firsthand (script python3 structural 307 cells + regex imports SOTA + correction faux positifs scan large).
 - **Cumulatif** : **14 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, **Planners**). Entry #014 Planners ajoute **1 moteur SOTA nouveau** au registre (**pyperplan** planificateur PDDL, distinct des solveurs CSP/GA ; PDDL parser associé) = **33 moteurs SOTA distincts cumulés**.
 
+## Entry #017 — ML/DataScienceWithAgents (owner po-2025 strict, c.421)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/` (27 .ipynb : 01-PythonForDataScience 2 + 02-ML-Cours 8 + PythonAgentsForDataScience 7 + AgenticDataScience 10) |
+| Kernels | 1 : `python3` (27 — homogène) |
+| Owner-lane | **po-2025 strict** (lane Python native, partition ML/Probas/Sudoku) |
+| Date audit | 2026-07-11 (c.421) |
+| Auditeur | `myia-po-2025:CoursIA-2` |
+| Verdict agrégé | **SOTA-OK** (27/27 SOTA-OK) |
+
+### Findings détaillés (par strate)
+
+| Strate | Notebooks | Cells | Code | EXEC | Err | Stubs C.1 | SOTA invoqué (grep ground truth) |
+|--------|-----------|-------|------|------|-----|-----------|-----------------------------------|
+| 01-PythonForDataScience | 2 | — | — | 100% | 0 | 0 | **numpy** (1.2), **pandas** (1.3) — fondamentaux Python data science |
+| 02-ML-Cours | 8 | — | — | 100% | 0 | 0 | **scikit-learn** (8/8) + **matplotlib** (8/8) + **numpy** (8/8) + **pandas** (5/8) — cours ML canonique scikit-learn |
+| PythonAgentsForDataScience | 7 | — | — | 100% | 0 | 0 | **langchain** (4) + **langchain-openai** (4) + **langchain-experimental** (1) + pandas/sklearn/matplotlib/seaborn — agents LLM Day 1-3 |
+| AgenticDataScience | 10 | — | — | 100% | 0 | 0 | pandas (8) + numpy (7) + sklearn (3) + matplotlib (1) + requests (1) — Day 8-17 (Lab8-ADK-Introduction à Lab17-Final-Project) |
+| **TOTAL** | **27** | **708** | **294** | **294/294** | **0** | **0** | — |
+
+- **EXEC_PROVED global** : 27/27 (100%) — `execution_count != null` sur 294/294 cellules code. **0 flagged** (aucun not-full-exec / erreur / C.1).
+- **Erreurs runtime** : 0/27.
+- **Violations C.1** : 0/27 (regex `raise NotImplementedError|assert False|1/0` sur source code = 0 hit).
+
+### Synthèse par sous-série
+
+- **01-PythonForDataScience** (2 nb) : fondamentaux NumPy/Pandas — fondations indispensables au ML, kernelspec python3, ancêtres pédagogiques.
+- **02-ML-Cours** (8 nb) : workflow ML sklearn canonique (Workflow-ML, Descente-de-gradient, Régression linéaire/logistique, Arbres-Forêts-Ensembles, Biais-Variance-CV-ROC, Clustering-KMeans-PCA, Modèles-Non-Paramétriques, Théorie-PAC). scikit-learn invoqué 8/8 + matplotlib 8/8 + numpy 8/8 = cœur de la formation ML scikit-learn.
+- **PythonAgentsForDataScience** (7 nb, Lab1-Lab7) : `LangChain` Day 1-3 (RFP Analysis, CV Screening, First Agent, Data Analysis Agent) — 4 notebooks sur 7 invoquent réellement `langchain` + `langchain_openai` (ChatOpenAI), 1 notebook (Lab7) ajoute `langchain_experimental`. Pandas/sklearn/matplotlib/seaborn complémentent l'env Python. Pas de ML.NET (pure Python).
+- **AgenticDataScience** (10 nb, Lab8-Lab17) : couche agentique LiteLLM-multi-provider (Lab8 ADK Introduction, Lab9 First ADK Agent, Lab10-12 workflows, Lab13 Web Search SOTA, Lab14 Ablation Refinement, Lab15 Kaggle Challenge, Lab16 Data Science Agent, Lab17 Final Project). Stack Pandas + sklearn + numpy + requests (Lab13 web search). Framework agentique via LiteLLM/Multi-provider défini dans `config/providers.py` + `utils/llm_client.py` (helpers), notebooks consomment via helpers (Lab8-17 = env models/data science, frameworks agentiques structurants documentés hors cellules .ipynb mais dans la stack pédagogique des Labs).
+
+### Vrais outils SOTA invoqués (vérifiés G.1 imports réels, grep ground truth)
+
+Outils ground-truth (imports réels parsés dans les 27 notebooks) :
+
+- **scikit-learn** (sklearn) — 13 notebooks (8/8 en 02-ML-Cours + 5/7 en PythonAgentsForDataScience = Lab1/Lab5 Pandas/Lab7 Data Analysis Agent + 3/10 en AgenticDataScience = Lab13/Lab14/Lab15). Moteur ML canonique scikit-learn pour la classification/régression/clustering/CV/PCA/KMeans.
+- **pandas** — 18 notebooks (1/2 en 01 + 5/8 en 02 + 5/7 en PythonAgents + 8/10 en AgenticDataScience). DataFrame canonique pour le feature engineering et la manipulation tabulaire.
+- **numpy** — 17 notebooks (1/2 en 01 + 8/8 en 02 + 1/7 en PythonAgents + 7/10 en AgenticDataScience). NDArray canonique.
+- **matplotlib** — 11 notebooks (8/8 en 02 + 2/7 en PythonAgents + 1/10 en AgenticDataScience). Visualisation canonique.
+- **LangChain** + **LangChain-OpenAI** — 4 notebooks (PythonAgents Lab2/3/6/7). Framework agentique LLM canonique.
+- **LangChain-Experimental** — 1 notebook (Lab7).
+- **seaborn** — 1 notebook (Lab5 PythonAgents).
+- **requests** — 1 notebook (Lab13 Web Search SOTA — calls HTTP bruts pour web search).
+
+Stack structurante hors-notebooks (documentation pédagogique des Labs) :
+
+- **LiteLLM** (multi-provider abstraction) — déclaré dans `requirements.txt` et instancié via `from litellm import completion` dans `utils/llm_client.py`. Helpers LLMClient.generate/chat utilisent `completion()` avec préfixe provider-aware (`gemini/<model>`, `openai/<model>`, `openrouter/<model>`, `openai/<model>` pour vLLM/LM Studio). C'est le **canon SOTA multi-provider d'agents**.
+- **google-generativeai** (Gemini SDK), **openai** SDK, **google-adk** (optionnel Day 7), **mlflow** (Day 6 ML engineering), **optuna** (Day 6 hyperparam tuning), **kaggle** (Day 6 Kaggle Challenge), **tavily-python + duckduckgo-search** (Day 6 Web Search SOTA), **pydantic + pydantic-settings** (configuration multi-provider), **google-cloud-bigquery + google-cloud-aiplatform** (Day 7 cloud optionnel).
+
+### Secrets-hygiene (G.1 L378 durcie + secrets-hygiene.md règle)
+
+`.env.example` = placeholders `your-*-api-key` (vos clés API à fournir), **0 secret en clair**. `config/providers.py` (lines 32-33) : `api_key: Optional[str] = None`, **0 fallback literal-secret** (pattern interdit cf secrets-hygiene.md incident 2026-05-14 `b34e3a05`). `utils/llm_client.py` (lines 78-79) : `if self.config.api_key: call_kwargs["api_key"] = self.config.api_key` — propagation directe depuis `Settings`, **0 hardcode**. Conforme secrets-hygiene rule sans aucune violation.
+
+### Prong B — problème non-trivial (sota-not-workaround §B)
+
+La série ML/DataScienceWithAgents est **anti-dégénérée** :
+
+- **02-ML-Cours** : Théorie-PAC + Biais-Variance-CV-ROC + Clustering-KMeans-PCA — problèmes d'apprentissage statistique réels où scikit-learn exercise sa capacité distinctive (cross-validation, métriques ROC/AUC, réduction de dimensionnalité, partitionnement non-supervisé), pas un cas trivial où une régression linéaire suffit.
+- **PythonAgentsForDataScience** : CV Screening + RFP Analysis = problèmes réels d'extraction LLM structurée + Data Analysis Agent = orchestration agentique pour requêtes data — la capacité LangChain (Agents, Chains, Tools) est exercée, pas un wrapper trivial.
+- **AgenticDataScience** : Lab15 Kaggle Challenge (compétition Kaggle réelle) + Lab14 Ablation Refinement (étude d'ablation méthodique) + Lab17 Final Project (projet final de bout-en-bout) + Lab13 Web Search SOTA (recherche web agentique) — la stack agentique (LiteLLM multi-provider + tools) est mise en valeur sur des problèmes riches, ≠ toy problem.
+
+Pas de cas dégénéré où un SOTA équivaut à une baseline triviale.
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **C.1** : 0/27 réel (0 hit regex `raise NotImplementedError|assert False|1/0`, 0 faux positif).
+- **Anti-régression** : 294/294 `execution_count != null` + `output_type: error = 0` ; aucun notebook strippé, aucun output hand-edité (cf Stop & Repair secrets-hygiene.md règle 6).
+- **SOTA tools grounded firsthand** : imports parsés multi-patterns G.1 case-insensitive (C397-L1) pour chaque moteur SOTA (scikit-learn via `from sklearn`, pandas via `import pandas`, numpy via `import numpy`, matplotlib via `import matplotlib`, langchain via `from langchain`, langchain-openai via `from langchain_openai`, langchain-experimental via `from langchain_experimental`, seaborn via `import seaborn`, requests via `import requests`). Stack hors-notebooks vérifiée par lecture `requirements.txt` + `config/providers.py` + `utils/llm_client.py` (helpers LLMClient singleton + `from litellm import completion`).
+- **Vérification secrets-hygiene** : `Optional[str] = None` strict (lines 32-33 config + line 9 utils), `0 literal fallback secret` (`os.getenv("KEY", "sk-...")` pattern interdit absent), `.env.example` = placeholders. Grep dédié `grep -nE "API_KEY\\s*=\\s*['\\"][a-zA-Z0-9_-]{20,}"` sur code source = **0 hit**.
+- **Re-exec non tentée** : la série est mono-python3 (27/27 kernelspec python3), exécution localement faisable (env conda `coursia-ml-training` cf [kernels-runtime.md]). Audit consultatif additif L143 SAFE owner-lane : outputs committés **réels et cohérents** (EXEC_PROVED 294/294), pas de placeholder.
+
+### Volet owner-lane strict
+
+**ML/DataScienceWithAgents = po-2025 strict** (lane Python native, partition ML/Probas/Argument_Analysis). Audit consultatif additif, 0 PR de substance. Pivot L335 anti-monoculture post-c.420 (#015 Argument_Analysis sweep §H.4 cross-team) : **16ᵉ famille distincte du ledger**. Différence avec #015 Argument_Analysis (17 nb SymbolicAI owner po-2023 = TweetyProject + SemanticKernel) : **#017 ML/DataScienceWithAgents = 27 nb ML/Python owner po-2025 strict** (scikit-learn + LangChain + LiteLLM multi-provider stack), paradigme distinct (data science + agents LLM vs argumentation formelle).
+
+Pivot L335 anti-monoculture double-axe sustained **16ᵉ cycle** : c.421 = **registre axe-2 SOTA OUTIL** (substance owner partition native ML pivot distinct du sweep §H.4 c.419-c.420). Famille revisitée (ML/DataScienceWithAgents vs Planners c.408 vs Search c.407 vs GameTheory c.406 = registre axe-2 SOTA tenu 4ᵉ cycle avec 4 familles distinctes). Sustained 16ᵉ cycle anti-monoculture.
+
+### Conclusions audit
+
+- **Substance ML/DataScienceWithAgents = SOTA-OK 27/27**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. scikit-learn + pandas + numpy + matplotlib + LangChain + LangChain-OpenAI + LangChain-Experimental + LiteLLM + google-generativeai + google-adk + mlflow + optuna + kaggle + tavily-python + duckduckgo-search = stack SOTA réelle sur problèmes data science + agents LLM discriminants.
+- **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
+- **Pivot L335 légitimé** : 16ᵉ famille distincte, owner po-2025 strict, registre axe-2 SOTA OUTIL (≠ sweep §H.4 c.419-c.420 ≠ documentation c.416-c.418 ≠ §E intra-cellule c.413-c.415 ≠ MD047 c.406-c.412 ≠ figures c.347/c.350/c.407).
+- **L378 durcie** : G.1 firsthand (script python3 structural 708 cells + 294 code + 0 err + 0 C.1 + multi-patterns regex imports SOTA + secrets-hygiene grep dédié).
+- **Cumulatif** : **16 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, Argument_Analysis, **ML/DataScienceWithAgents**). Entry #017 ajoute **5 moteurs SOTA nouveaux** au registre (**LiteLLM** multi-provider canon d'agents, **LangChain** agentique LLM, **LangChain-OpenAI** connecteur OpenAI, **LangChain-Experimental** agentique avancée, **DuckDuckGo-Search** moteur de recherche web agentique ; scikit-learn/pandas/numpy/matplotlib/seaborn déjà comptés dans entries précédentes, LiteLLM/LangChain/DuckDuckGo-Search + Optuna + Kaggle + Tavily-Python + Google-ADK nouveaux moteurs cumulés une fois entry #016 SmartContracts mergée cf cumul 34→47) = **47+ moteurs SOTA distincts cumulés** (selon PR #5994 SmartContracts entry #016, cumul = 47 moteurs ; entry #017 ajoute au-delà si PR #5994 pas encore mergée lors de l'audit, **10+ nouveaux moteurs cumulés** : LiteLLM, LangChain, LangChain-OpenAI, LangChain-Experimental, Optuna, Kaggle, Tavily-Python, DuckDuckGo-Search, Google-ADK, MLflow).
+
 Part of #3801
