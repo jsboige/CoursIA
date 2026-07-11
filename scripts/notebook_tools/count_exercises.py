@@ -141,6 +141,21 @@ STUB_PATTERNS = [
     re.compile(r"^\s*result\s*=\s*None\b", re.MULTILINE | re.IGNORECASE),
     re.compile(r"^\s*raise\s+NotImplementedError", re.MULTILINE),
     re.compile(r"^\s*assert\s+False\b", re.MULTILINE),
+    # "a completer" / "to complete" LINE-COMMENT stub markers. A scaffolded
+    # cell whose comment line is itself the marker -- ``# A COMPLETER``,
+    # ``// a completer``, ``-- à compléter`` -- is a student stub, but this
+    # phrase is not one of the TODO/Indice/pass/return markers above, so a
+    # multi-line skeleton cell bearing only such a comment escaped STUB_PATTERNS
+    # and was under-counted (e.g. Search-11 cell 43: ``# A COMPLETER`` + a
+    # truncated ``problem_profit = Problem(`` skeleton). The phrase must be the
+    # LEADING content of the comment (right after the ``#``/``//``/``--`` marker,
+    # optional parenthesis): a mid-sentence ``# ... la cellule est a completer``
+    # in a worked solution's prose is NOT a stub marker and must not match.
+    # Accented and English forms covered.
+    re.compile(
+        r"^\s*(?:#|//|--)\s*\(?[ \t]*(?:a compl[eé]ter|to complete)\b",
+        re.IGNORECASE | re.MULTILINE,
+    ),
 ]
 
 
