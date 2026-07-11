@@ -223,8 +223,8 @@ pour éviter de retélécharger `~3 GB` à chaque incrément.
 | [`conway_cgt_lean/`](../conway_cgt_lean/) | Lake séparé (vihdzp/combinatorial-games) | Théorie des jeux combinatoires (PGame, surréels, nimbers) — Mathlib-only via `SetTheory.PGame` |
 | [`social_choice_lean/`](../social_choice_lean/) | **Absorbé** (PR #6058 mergée) | Contenu (Arrow / Sen / Voting, FR + EN) déplacé sous `game_theory_lean/SocialChoice/` ; dossier conservé comme tombstone |
 | [`social_choice_lean_peters/`](../social_choice_lean_peters/) | Lake séparé (pinné commit `d679d950` Peters) | Gibbard-Satterthwaite, Duggan-Schwartz — divergence de rev attendra la convergence v4.31.0-rc1 |
-| [`cooperative_games_lean/`](../cooperative_games_lean/) | **Supprimé** (c.306, contenu intégralement absorbé dans `game_theory_lean/CooperativeGames/`) | — |
-| [`stable_marriage_lean/`](../stable_marriage_lean/) | **Supprimé** (c.305 finalisation + PR #5971 doublon) | — |
+| [`cooperative_games_lean/`](../cooperative_games_lean/) | **Absorbé** — contenu sous `game_theory_lean/CooperativeGames/` (Basic / ConeKernel / Shapley, FR + EN) ; Lake standalone encore présent | — |
+| `stable_marriage_lean/` | **Supprimé** (c.305 finalisation + PR #5971 doublon) | — |
 | [`lean_game_defs/`](../lean_game_defs/) | Couche introductive (pas un Lake) | 6 fichiers `.lean` de **référence** pour copier-coller dans les notebooks d'enseignement ; 0 sorries, Mathlib-free |
 | [`decision_theory_lean/`](../../Probas/decision_theory_lean/) | Modèle architectural | `lean_lib Gittins`/`Utility`/`Coherence` cohabitent comme libs distinctes du même package — **modèle** suivi ici |
 
