@@ -1468,6 +1468,38 @@ class AutonomousProver:
                           f"Stopping to preserve budget.", flush=True)
                     break
 
+                # P4 (#1453 forensic, c.317b): BUILD-FAIL stagnation guard.
+                # The P2 guard above only fires on the SUCCESS branch of compile()
+                # — _record_sorry_count is gated on success=True (tools.py:1822).
+                # When every iteration is a BUILD-FAIL (provider stuck editing the
+                # file without compiling, or a single bad edit cascade that breaks
+                # every subsequent build), _consecutive_delta0 stays 0 forever and
+                # this guard never fires. Mirror the B2_RETROSPECTIVE.md B2c
+                # _cumulative_fails pattern (multi-agent path workflow.py) for
+                # the autonomous path. Threshold 12 ≈ 12 × ~90s/compile = ~18 min
+                # of stuck BUILD-FAIL signal — short enough to fail-fast, long
+                # enough to absorb normal provider flakiness. Audit pattern L386
+                # (c.316): post-fix #6096 added a wall-clock cap but did NOT audit
+                # whether the existing stagnation guards cover the BUILD-FAIL case.
+                # This branch closes the audit gap.
+                FAIL_STREAK_HARDCAP = 12
+                if tactic_tools._consecutive_compile_fail >= FAIL_STREAK_HARDCAP:
+                    print(f"  BUILD-FAIL STAGNATION: {tactic_tools._consecutive_compile_fail} "
+                          f"consecutive compile() failures (hardcap={FAIL_STREAK_HARDCAP}). "
+                          f"Stopping to preserve budget — provider stuck on edits that "
+                          f"break the build.", flush=True)
+                    try:
+                        self.trace.log(
+                            agent="AutonomousProver", role="buildfail_stagnation",
+                            content=(f"P4 BUILD-FAIL stagnation: "
+                                     f"consecutive_compile_fail="
+                                     f"{tactic_tools._consecutive_compile_fail} >= "
+                                     f"{FAIL_STREAK_HARDCAP}; stopping"),
+                        )
+                    except Exception:
+                        pass  # tracing best-effort
+                    break
+
                 # B.9: HITL — ask for human hint when stuck
                 if self.hitl_enabled and state.consecutive_failures >= self.hitl_threshold:
                     print(f"\n  [HITL] {state.consecutive_failures} echecs consecutifs. "

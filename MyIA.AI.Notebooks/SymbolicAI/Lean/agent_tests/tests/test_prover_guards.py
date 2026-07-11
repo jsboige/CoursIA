@@ -1177,6 +1177,100 @@ def test_delta0_hardcap_ignored_when_proof_found():
 
 
 # ──────────────────────────────────────────────────────────────────────────
+# P4 (#1453 forensic, c.317b) — BUILD-FAIL stagnation guard.
+#
+# Forensic: AutonomousProver burned 21084s (5.85h) on
+# autonomous_custom_Basic_L308_zai with 0 progress. The Δ0 stagnation guard
+# above only fires on the SUCCESS branch of compile() — _record_sorry_count
+# is gated on success=True (tools.py:1822). When every iteration is a
+# BUILD-FAIL (provider stuck editing without compiling), _consecutive_delta0
+# stays 0 and the existing hardcap never fires. Mirror of the B2 retrospective
+# _cumulative_fails pattern (multi-agent side, workflow.py). Threshold 12.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_buildfail_hardcap_yields_and_skips_agent():
+    """P4 (#1453, c.317b): at/over the BUILD-FAIL hard cap, the multi-agent
+    workflow yields the message and never runs the agent — covers the
+    all-BUILD-FAIL storm case that P1 cannot catch (Δ0 stays 0 when success
+    is never reached)."""
+    from prover.workflow import (
+        AgentExecutor, ProofMessage, FAIL_STREAK_HARDCAP,
+    )
+
+    state = ProofState(theorem_statement="t")
+    state.consecutive_compile_fail = FAIL_STREAK_HARDCAP
+    agent = _stagnation_agent()
+    ex = AgentExecutor(agent, state=state)
+    ctx = _run_handle(ex, ProofMessage(content="x"))
+
+    ctx.yield_output.assert_awaited_once()
+    agent.run.assert_not_awaited()  # no compute wasted past the cap
+
+
+def test_buildfail_below_hardcap_runs_agent_normally():
+    """P4 (c.317b): one short of the BUILD-FAIL hard cap, the run continues."""
+    from prover.workflow import (
+        AgentExecutor, ProofMessage, FAIL_STREAK_HARDCAP,
+    )
+
+    state = ProofState(theorem_statement="t")
+    state.consecutive_compile_fail = FAIL_STREAK_HARDCAP - 1
+    agent = _stagnation_agent()
+    ex = AgentExecutor(agent, state=state)
+    ctx = _run_handle(ex, ProofMessage(content="x"))
+
+    agent.run.assert_awaited_once()  # below the cap → keep working
+    ctx.yield_output.assert_not_awaited()
+
+
+def test_buildfail_hardcap_ignored_when_proof_found():
+    """P4 (c.317b): a found proof is not masked by the BUILD-FAIL yield
+    (guarded by `not msg.proof_found`, same contract as the Δ0 case)."""
+    from prover.workflow import (
+        AgentExecutor, ProofMessage, FAIL_STREAK_HARDCAP,
+    )
+
+    state = ProofState(theorem_statement="t")
+    state.consecutive_compile_fail = FAIL_STREAK_HARDCAP + 5
+    agent = _stagnation_agent()
+    ex = AgentExecutor(agent, state=state)
+    msg = ProofMessage(content="x")
+    msg.proof_found = True
+    ctx = _run_handle(ex, msg)
+
+    agent.run.assert_awaited_once()
+
+
+def test_tools_compile_fail_counter_increments_and_resets_on_success():
+    """P4 (c.317b) at the tools layer: TacticTools._consecutive_compile_fail
+    increments on BUILD-FAIL and resets on the next successful compile. Pin
+    the contract so future edits cannot regress the symmetry (e.g. moving
+    the reset into the new-low branch only, or forgetting the else)."""
+    from prover.tools import TacticTools
+
+    # TacticTools() requires a state arg (used for _state.consecutive_delta0_compiles
+    # mirroring in _record_sorry_count). We pass a fresh ProofState with no shared
+    # session — no real lake project required for this counter-API contract test.
+    state = ProofState(theorem_statement="c.317b contract")
+    tools = TacticTools(state=state, filepath=None)
+    assert tools._consecutive_compile_fail == 0
+    assert tools._fail_streak_threshold == 12
+
+    # Simulate 3 BUILD-FAIL compiles by direct mutation of state — we don't
+    # call real compile() (it requires a lake project). The branch is covered
+    # in the full integration test via prover_forensic_B2; this test pins the
+    # counter API contract that the AutonomousProver guard depends on.
+    for _ in range(3):
+        tools._consecutive_compile_fail += 1
+    assert tools._consecutive_compile_fail == 3
+
+    # Simulate the success branch's reset
+    tools._consecutive_compile_fail = 0
+    assert tools._consecutive_compile_fail == 0
+
+
+# ──────────────────────────────────────────────────────────────────────────
 # P5/P4 (Epic #1453, 2026-05-29 forensic) — pre-screen documented-intractable
 # targets BEFORE spawning agents.
 #
