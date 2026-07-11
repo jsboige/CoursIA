@@ -34,6 +34,21 @@ require mathlib from git
 -- Prochaine absorption prevue : `social_choice_lean_peters` (v4.27 -> v4.31,
 -- INTRINSIC documente si port depasse budget cf sota-not-workaround).
 --
+-- c.371 (po-2023) : absorption `RepeatedGames` (Stage + GrimTrigger + Discounting
+-- + Folk, FR+EN i18n EPIC #4980). 9 fichiers (4 modules FR + 4 siblings _en +
+-- 1 root RepeatedGames.lean) deplaces byte-identique depuis `repeated_games_lean/`
+-- vers `game_theory_lean/RepeatedGames/`. Lake source `repeated_games_lean/`
+-- reste en place (docs + lakefile + manifest archives), pattern identique a
+-- c.357 pour `social_choice_lean/`. Theoreme-phare `grim_trigger_sustains_iff`
+-- (delta >= threshold, 0 sorry) + 1 stretch `folk_theorem_discounted` (5+5 sorry
+-- documentes, BG prover stretch tolerate cf #4880).
+-- 4ᵉ cohorte `lean_lib` cohabite : StableMarriage + CooperativeGames +
+-- SocialChoice + **RepeatedGames** = 4 lean_lib du meme package `game_theory_lean`,
+-- modele `decision_theory_lean` (Gittins/Utility/Coherence). Lake build gated
+-- par une machine >=16 GB RAM libre (RECOVERABLE-MACHINE documente cf sota-not-workaround).
+-- Prochaines absorptions prevues : `conway_cgt_lean` (CGT, separabilite discutable)
+-- ou laisser autonome (anti god-lake).
+--
 -- Convention i18n EPIC #4980 (cf decision_theory_lean precedent) :
 -- `globs` (et non `roots`) avec suffixe `.*` pour auto-decouvrir siblings `_en`.
 --
@@ -63,3 +78,18 @@ lean_lib CooperativeGames where
 @[default_target]
 lean_lib SocialChoice where
   globs := #[`SocialChoice.*]
+
+@[default_target]
+lean_lib RepeatedGames where
+  -- Repeated Games Library for Lean 4
+  -- Includes: stage game (Prisoner's Dilemma), discounting, grim trigger
+  -- Theorem phare: grim_trigger_sustains_iff (one-shot deviation principle)
+  globs := #[`RepeatedGames.*]
+
+@[default_target]
+lean_lib RepeatedGames where
+  -- Repeated Games Library for Lean 4
+  -- Includes: stage game (Prisoner's Dilemma), discounting, grim trigger
+  -- Theorem phare: grim_trigger_sustains_iff (one-shot deviation principle)
+  globs := #[`RepeatedGames.*]
+>>>>>>> ad1ef27c7 (feat(lean,#4365): absorb RepeatedGames (Stage+Discounting+GrimTrigger+Folk FR+EN) into game_theory_lean — anti-proliferation GT 6->2 (c.371))
