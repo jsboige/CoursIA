@@ -350,13 +350,33 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
             break  # nearest preceding code cell is the only candidate
 
     # Second pass: code-cell exercises with NO preceding markdown header.
+    #
+    # A stub cell qualifies when it MENTIONS an exercise and IS a stub. The
+    # mention check has two layers: (1) the comment-aware `_code_cell_mentions_
+    # exercise` (a full-line comment names the exercise), AND (2) a broader
+    # full-source scan for the exercise word. Layer (2) catches stubs whose
+    # exercise reference is NOT in a `#`/`//`/`--` comment -- e.g. a C#
+    # `display("Exercice 2 a completer ...")` or Python `print("Exercice ...")
+    # stub marker, or a stub whose `# Partie N` / `# Etape` header carries no
+    # "exercice" word at all but the cell prints one (SC-26-Final-Project
+    # Parties 2/3/4). Layer (2) is safe because pass-2 still requires
+    # `_is_stub_code`, so a complete solution mentioning "exercice" in prose is
+    # never counted; and `paired_code_indices` (built in the unchanged
+    # pairing pass) already excludes header-paired stubs, so this only adds
+    # genuinely-unpaired stubs -- monotonic non-decrease per notebook by
+    # construction (pairing is untouched, the disjunct only widens detection).
     for i, cell in enumerate(cells):
         if cell.get("cell_type") != "code":
             continue
         if i in paired_code_indices:
             continue
         source = "".join(cell.get("source", []))
-        if _code_cell_mentions_exercise(source) and _is_stub_code(source):
+        mentions_exercise = (
+            _code_cell_mentions_exercise(source)
+            or bool(EXERCISE_WORD_RE.search(source))
+            or bool(EXERCISE_WORD_EN_RE.search(source))
+        )
+        if mentions_exercise and _is_stub_code(source):
             result.exercises.append(
                 ExerciseHit(
                     cell_index=i,

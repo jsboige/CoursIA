@@ -217,6 +217,45 @@ class TestCodeCellOnlyExercise:
         # The header is the canonical representative; the stub is absorbed.
         assert all(h.detected_by == "markdown_header" for h in result.exercises)
 
+    def test_stub_with_print_exercice_marker_no_comment_is_counted(
+        self, tmp_path
+    ):
+        """Trap case (#6051 Bug 4): a stub code cell whose exercise reference is
+        NOT in a ``#``/``//``/``--`` comment -- e.g. a ``print("Exercice ... a
+        completer")`` / ``display(...)`` stub marker, or a ``# Partie N`` /
+        ``# Etape`` scaffold whose only "exercice" word lives in a print
+        statement. The comment-aware ``_code_cell_mentions_exercise`` misses it;
+        the broadened full-source scan in pass-2 must catch it (genuine case:
+        SC-26-Final-Project Parties 2/3/4, reported 0 for 3 real stubs).
+        """
+        nb = _write_nb(
+            tmp_path / "print_marker.ipynb",
+            [
+                _md("# Titre"),
+                _md("### Partie 1 : Chiffrement"),
+                _code(
+                    "# Partie 2 : Paillier\n"
+                    "# Etape: Implementer le chiffrement\n"
+                    "# Indice: voir SC-16\n"
+                    'pass  # Etape: Implementez\n'
+                    'print("Exercice a completer")'
+                ),
+                _md("### Partie 3 : ZKP"),
+                _code(
+                    "# Partie 3 : Preuve\n"
+                    "# TODO\n"
+                    'display("Exercice 3 a completer")\n'
+                    "pass"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 2, (
+            "Stub cells whose exercise word is only in a print/display marker "
+            "(not a #/// //-- comment) must be counted via the broadened scan"
+        )
+        assert all(h.detected_by == "code_cell_comment" for h in result.exercises)
+
     def test_stub_preceding_different_number_header_is_not_absorbed(
         self, tmp_path
     ):
