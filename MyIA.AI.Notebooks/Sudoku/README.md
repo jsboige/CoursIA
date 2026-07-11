@@ -37,6 +37,100 @@ Comment résoudre un Sudoku ? Cette série explore les techniques de résolution
 
 La série traverse cinq grandes familles algorithmiques, des méthodes exhaustives aux modèles appris : recherche et Dancing Links (niveaux 1-2), métaheuristiques (niveau 3), programmation par contraintes (niveau 4), IA symbolique SAT/SMT (niveau 5) puis IA data-driven (niveau 6). Chaque famille est illustrée par une figure extraite du notebook correspondant, insérée dans la section qui en commente le concept ; la provenance détaillée (cellule source, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
+## Parcours d'Apprentissage Recommandés
+
+### Parcours Débutant : Comprendre les Fondamentaux
+
+**Objectif** : Maîtriser la recherche exhaustive et comprendre pourquoi elle est insuffisante.
+
+**Notebooks recommandés** :
+1. `Sudoku-0-Environment-Csharp` ou comprendre la structure des données
+2. `Sudoku-1-Backtracking-Csharp` (ou Python) : Premier algorithme de résolution
+3. `Sudoku-7-Norvig-Csharp` : Voir comment la propagation accélère drastiquement
+
+**Pourquoi cet ordre ?**
+- Le notebook 0 établit le vocabulaire et les structures de base
+- Le notebook 1 montre l'approche naïve et ses limitations
+- Le notebook 7 démontre qu'une simple optimisation (propagation) peut donner des gains de 100x
+
+**Clés de compréhension** :
+- L'espace de recherche du Sudoku est immense : 9^81 configurations possibles
+- Le backtracking explore cet espace intelligemment mais peut encore être lent
+- La propagation de contraintes réduit l'espace avant même de chercher
+
+### Parcours Intermédiaire : Explorer les Paradigmes
+
+**Objectif** : Comprendre que différentes philosophies de résolution existent et ont chacune leurs forces.
+
+**Notebooks recommandés** :
+1. `Sudoku-3-Genetic-Csharp` (ou Python) : Découvrir les métaheuristiques
+2. `Sudoku-9-GraphColoring-Csharp` (ou Python) : Voir le Sudoku comme un problème de graphe
+3. `Sudoku-10-ORTools-Csharp` (ou Python) : Utiliser un outil industriel
+
+**Pourquoi cet ordre ?**
+- Le notebook 3 montre qu'on peut "abandonner" la garantie pour la vitesse
+- Le notebook 9 change complètement de perspective (théorie des graphes)
+- Le notebook 10 introduit l'approche déclarative moderne
+
+**Clés de compréhension** :
+- Les métaheuristiques sont puissantes mais non déterministes
+- Reformuler un problème peut révéler des algorithmes optimaux
+- Les outils industriels encapsulent des décennies de recherche
+
+### Parcours Avance : Maîtriser l'IA Symbolique et Data-Driven
+
+**Objectif** : Utiliser les outils de pointe de l'IA moderne.
+
+**Notebooks recommandés** :
+1. `Sudoku-12-Z3-Csharp` (ou Python) : Satisfiabilité modulaire
+2. `Sudoku-16-NeuralNetwork-Python` : Apprentissage profond
+3. `Sudoku-17-LLM-Python` : Grands modèles de langage
+4. `Sudoku-18-Comparison-Python` : Benchmark comparatif final
+
+**Pourquoi cet ordre ?**
+- Le notebook 12 montre l'apogée de l'IA symbolique (outils de vérification formelle)
+- Le notebook 16 introduit l'apprentissage : le modèle apprend à résoudre
+- Le notebook 17 teste les limites des LLM sur un problème logique pur
+- Le notebook 18 synthétise toutes les approches
+
+**Clés de compréhension** :
+- Z3 représente des décennies d'optimisation en raisonnement automatique
+- Les réseaux de neurones peuvent apprendre des heuristiques mais ne garantissent rien
+- Les LLM sont surprenants : ils peuvent résoudre des Sudokus sans algorithme explicite
+- Le choix de l'approche dépend du contexte : garantie vs vitesse vs généralisation
+
+---
+
+## Prérequis
+
+### C# (.NET Interactive)
+
+```bash
+# .NET 9.0 requis
+dotnet --version
+
+# Les packages NuGet sont installés dans les notebooks :
+# - GeneticSharp          (Sudoku-3 Genetic)
+# - Google.OrTools        (Sudoku-10 OR-Tools CP-SAT)
+# - Microsoft.Z3          (Sudoku-12 Z3 SMT, Sudoku-13 Symbolic Automata)
+# - DlxLib                (Sudoku-2 Dancing Links)
+# - Microsoft.ML.Probabilistic  (Sudoku-15 Infer.NET)
+# - IKVM 8.15.0           (Sudoku-11 Choco — runtime Java-sur-.NET + DLL précompilée)
+# - Plotly.NET            (visualisations, notebooks 0-15)
+```
+
+**Note sur les outputs** : Les notebooks C# contiennent des outputs de cellule exécutées. Les notebooks avec dépendances `#!import` doivent être exécutés dans l'ordre (0 -> 1 -> 2...).
+
+### Python
+
+```bash
+# Creer un environnement
+python -m venv venv
+
+# Installer les dépendances
+pip install numpy pandas scipy matplotlib ortools z3-solver pygad simanneal mealpy networkx torch jax numpyro jpype1 openai
+```
+
 ## Pourquoi étudier le Sudoku en IA ?
 
 Le Sudoku est bien plus qu'un simple jeu de grilles : c'est un **paradigme fondamental** de l'informatique et de l'intelligence artificielle. Son étude révèle des concepts essentiels qui s'appliquent à de nombreux problèmes reels.
@@ -203,70 +297,6 @@ flowchart TD
 Le benchmark du notebook 18 quantifie ces arbitrages : pour chaque solveur, le **temps moyen de résolution** est mesuré sur quatre niveaux de difficulté (Easy, Medium, Hard, Expert), en échelle logarithmique. L'écart entre solveurs exacts et heuristiques, et la pente avec la difficulté, rendent concret le tableau « vitesse vs garantie » ci-dessus.
 
 [![Benchmark : diagramme en barres groupées du temps moyen (ms, échelle log) par solveur et niveau de difficulté Easy/Medium/Hard/Expert](assets/readme/sudoku18-comparison.png)](Sudoku-18-Comparison-Python.ipynb)
-
----
-
-## Parcours d'Apprentissage Recommandés
-
-### Parcours Débutant : Comprendre les Fondamentaux
-
-**Objectif** : Maîtriser la recherche exhaustive et comprendre pourquoi elle est insuffisante.
-
-**Notebooks recommandés** :
-1. `Sudoku-0-Environment-Csharp` ou comprendre la structure des données
-2. `Sudoku-1-Backtracking-Csharp` (ou Python) : Premier algorithme de résolution
-3. `Sudoku-7-Norvig-Csharp` : Voir comment la propagation accélère drastiquement
-
-**Pourquoi cet ordre ?**
-- Le notebook 0 établit le vocabulaire et les structures de base
-- Le notebook 1 montre l'approche naïve et ses limitations
-- Le notebook 7 démontre qu'une simple optimisation (propagation) peut donner des gains de 100x
-
-**Clés de compréhension** :
-- L'espace de recherche du Sudoku est immense : 9^81 configurations possibles
-- Le backtracking explore cet espace intelligemment mais peut encore être lent
-- La propagation de contraintes réduit l'espace avant même de chercher
-
-### Parcours Intermédiaire : Explorer les Paradigmes
-
-**Objectif** : Comprendre que différentes philosophies de résolution existent et ont chacune leurs forces.
-
-**Notebooks recommandés** :
-1. `Sudoku-3-Genetic-Csharp` (ou Python) : Découvrir les métaheuristiques
-2. `Sudoku-9-GraphColoring-Csharp` (ou Python) : Voir le Sudoku comme un problème de graphe
-3. `Sudoku-10-ORTools-Csharp` (ou Python) : Utiliser un outil industriel
-
-**Pourquoi cet ordre ?**
-- Le notebook 3 montre qu'on peut "abandonner" la garantie pour la vitesse
-- Le notebook 9 change complètement de perspective (théorie des graphes)
-- Le notebook 10 introduit l'approche déclarative moderne
-
-**Clés de compréhension** :
-- Les métaheuristiques sont puissantes mais non déterministes
-- Reformuler un problème peut révéler des algorithmes optimaux
-- Les outils industriels encapsulent des décennies de recherche
-
-### Parcours Avance : Maîtriser l'IA Symbolique et Data-Driven
-
-**Objectif** : Utiliser les outils de pointe de l'IA moderne.
-
-**Notebooks recommandés** :
-1. `Sudoku-12-Z3-Csharp` (ou Python) : Satisfiabilité modulaire
-2. `Sudoku-16-NeuralNetwork-Python` : Apprentissage profond
-3. `Sudoku-17-LLM-Python` : Grands modèles de langage
-4. `Sudoku-18-Comparison-Python` : Benchmark comparatif final
-
-**Pourquoi cet ordre ?**
-- Le notebook 12 montre l'apogée de l'IA symbolique (outils de vérification formelle)
-- Le notebook 16 introduit l'apprentissage : le modèle apprend à résoudre
-- Le notebook 17 teste les limites des LLM sur un problème logique pur
-- Le notebook 18 synthétise toutes les approches
-
-**Clés de compréhension** :
-- Z3 représente des décennies d'optimisation en raisonnement automatique
-- Les réseaux de neurones peuvent apprendre des heuristiques mais ne garantissent rien
-- Les LLM sont surprenants : ils peuvent résoudre des Sudokus sans algorithme explicite
-- Le choix de l'approche dépend du contexte : garantie vs vitesse vs généralisation
 
 ---
 
@@ -492,36 +522,6 @@ Sudoku-0-Csharp (Environment - comprendre les structures)
     +---> Niveau 6 : Sudoku-16/17-Python (NN + LLM)
     |
     +---> Niveau 7 : Sudoku-18-Comparison-Python
-```
-
-## Prérequis
-
-### C# (.NET Interactive)
-
-```bash
-# .NET 9.0 requis
-dotnet --version
-
-# Les packages NuGet sont installés dans les notebooks :
-# - GeneticSharp          (Sudoku-3 Genetic)
-# - Google.OrTools        (Sudoku-10 OR-Tools CP-SAT)
-# - Microsoft.Z3          (Sudoku-12 Z3 SMT, Sudoku-13 Symbolic Automata)
-# - DlxLib                (Sudoku-2 Dancing Links)
-# - Microsoft.ML.Probabilistic  (Sudoku-15 Infer.NET)
-# - IKVM 8.15.0           (Sudoku-11 Choco — runtime Java-sur-.NET + DLL précompilée)
-# - Plotly.NET            (visualisations, notebooks 0-15)
-```
-
-**Note sur les outputs** : Les notebooks C# contiennent des outputs de cellule exécutées. Les notebooks avec dépendances `#!import` doivent être exécutés dans l'ordre (0 -> 1 -> 2...).
-
-### Python
-
-```bash
-# Creer un environnement
-python -m venv venv
-
-# Installer les dépendances
-pip install numpy pandas scipy matplotlib ortools z3-solver pygad simanneal mealpy networkx torch jax numpyro jpype1 openai
 ```
 
 ## Performances Attendues
