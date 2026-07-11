@@ -84,6 +84,14 @@ PROVIDER_OUTAGE_BREAKER = 3
 # that ignores the signal for this many consecutive Δ0 compiles is yielded
 # rather than left to waste compute.
 DELTA0_STAGNATION_HARDCAP = 6
+# P4 (#1453 forensic, c.317b): BUILD-FAIL stagnation hardcap. Mirror of the
+# autonomous path's FAIL_STREAK_HARDCAP in provers.py. The Δ0 hardcap above
+# only fires on *successful* compiles that don't make progress (success branch
+# in tools.py:1822). When every iteration is a BUILD-FAIL, the counter never
+# moves and this guard never fires. Yielding here frees the iteration budget
+# for a fresh attempt instead of letting the workflow burn compute on a stuck
+# storm. Threshold 12 ≈ 18 min — same rationale as provers.py.
+FAIL_STREAK_HARDCAP = 12
 
 
 def _transient_backoff_s(attempt: int) -> float:
@@ -208,6 +216,11 @@ class AgentExecutor(Executor):
         # P1 (Epic #1453): hard ceiling on consecutive Δ0 compiles; see
         # DELTA0_STAGNATION_HARDCAP. Read live from state on every iteration.
         self._delta0_stagnation_hardcap = DELTA0_STAGNATION_HARDCAP
+        # P4 (#1453 forensic, c.317b): hard ceiling on consecutive BUILD-FAIL
+        # compiles — mirror of FAIL_STREAK_HARDCAP in provers.py (autonomous
+        # path). Covers the case where every iteration is a BUILD-FAIL storm
+        # and the Δ0 counter cannot move (gated on success=True in tools.py).
+        self._fail_streak_hardcap = FAIL_STREAK_HARDCAP
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
@@ -271,6 +284,29 @@ class AgentExecutor(Executor):
                     content=(f"consecutive_delta0_compiles={_delta0} >= "
                              f"hardcap={self._delta0_stagnation_hardcap}, "
                              f"yielding to stop no-progress waste"),
+                )
+            await ctx.yield_output(msg)
+            return
+
+        # P4 (#1453 forensic, c.317b): BUILD-FAIL stagnation hard-cap. Mirror of
+        # provers.py FAIL_STREAK_HARDCAP — the Δ0 guard above only fires on the
+        # SUCCESS branch of compile(). When every iteration is a BUILD-FAIL
+        # (provider stuck, edit-then-crash loop), _delta0 stays 0 and the guard
+        # above never fires. Forensic: provider "zai" 4800s stalls can blow the
+        # entire session when every iteration builds but fails. Yield here to
+        # free the iteration budget for a fresh attempt, same rationale as Δ0.
+        _fail_streak = (
+            getattr(self._state, "consecutive_compile_fail", 0)
+            if self._state else 0
+        )
+        if (not msg.proof_found
+                and _fail_streak >= self._fail_streak_hardcap):
+            if self._trace:
+                self._trace.log(
+                    agent=self._agent.name, role="buildfail_stagnation_yield",
+                    content=(f"consecutive_compile_fail={_fail_streak} >= "
+                             f"hardcap={self._fail_streak_hardcap}, "
+                             f"yielding to stop stuck-BUILD-FAIL storm waste"),
                 )
             await ctx.yield_output(msg)
             return

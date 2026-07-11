@@ -98,6 +98,13 @@ class ProofState:
     # compiles that did not reach a new sorry-count low (Delta0-stagnation).
     # Lets workflow executors force-route a stuck session without re-deriving it.
     consecutive_delta0_compiles: int = 0
+    # P4 (#1453 forensic, c.317b): mirrored from TacticTools.compile() —
+    # consecutive compile() failures (success=False). P2 only fires on
+    # success-branch execution; an all-BUILD-FAIL storm leaves P2 at 0 forever
+    # even though the session is burning compute. Mirrored here so the multi-
+    # agent workflow path can read the same counter and yield on a stuck storm
+    # the same way it yields on a stuck-stagnation loop (#5869 #1453).
+    consecutive_compile_fail: int = 0
 
     # B.3: Explicit attack plan set by CoordinatorAgent
     plan: List[str] = field(default_factory=list)
@@ -169,6 +176,7 @@ class ProofState:
             "error_count": self.error_count,
             "best_sorry_count": self.best_sorry_count,
             "consecutive_delta0_compiles": self.consecutive_delta0_compiles,
+            "consecutive_compile_fail": self.consecutive_compile_fail,  # P4 (c.317b)
             "discovered_lemmas": list(self.discovered_lemmas),
             "plan": list(self.plan),
             "plan_phase": self.plan_phase,
@@ -192,6 +200,7 @@ class ProofState:
         self.error_count = cp["error_count"]
         self.best_sorry_count = cp["best_sorry_count"]
         self.consecutive_delta0_compiles = cp.get("consecutive_delta0_compiles", 0)
+        self.consecutive_compile_fail = cp.get("consecutive_compile_fail", 0)  # P4 (c.317b)
         self.discovered_lemmas = cp["discovered_lemmas"]
         self.plan = cp["plan"]
         self.plan_phase = cp["plan_phase"]

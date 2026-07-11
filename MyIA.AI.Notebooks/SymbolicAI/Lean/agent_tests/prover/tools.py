@@ -659,6 +659,24 @@ class TacticTools:
         # directive and auto-restores best_content if available.
         self._consecutive_regressions: int = 0
         self._regression_cap: int = 2
+        # P4 (#1453 forensic, c.317b): BUILD-FAIL stagnation guard. The P2/P3
+        # Δ0 counters above only increment on SUCCESSFUL compiles — they cannot
+        # fire when EVERY iteration is a BUILD-FAIL (typical of a stuck provider
+        # that edits the file without compiling, or a provider returning edits
+        # that consistently break the build). Forensic trace: autonomous_zai
+        # L308 burned 21084s (5.85h) with 0 successful compiles; DELTA0_HARDCAP=6
+        # (provers.py:1390) never triggered because the counter only moves on
+        # success. Counter increments on every compile() where success=False
+        # and resets on the first successful build (regardless of progress, since
+        # "the build is back online" is itself meaningful recovery). Threshold
+        # 12 ≈ 12 × ~90s/compile = ~18 min of stuck-BUILD-FAIL signal — short
+        # enough to fail-fast, long enough to absorb provider-side flakiness.
+        # Mirrors B2_RETROSPECTIVE.md B2c _cumulative_fails pattern (workflow.py
+        # multi-agent side); extended here to the autonomous path. L386 audit
+        # pattern: post-fix #6096 added a wall-clock guard but did NOT audit
+        # whether the existing stagnation guards cover the new invariant surface.
+        self._consecutive_compile_fail: int = 0
+        self._fail_streak_threshold: int = 12
         self._original_file_size: int = 0
         self._original_content: Optional[str] = None
         # Decomposition budget: how many new sorries the agents may introduce
@@ -983,9 +1001,12 @@ class TacticTools:
         without going through compile's _record_sorry_count(). Without this reset,
         the stagnation counter keeps counting pre-verify compiles and may trigger
         premature stagnation on the next tactic loop. Mirrors into shared state.
+        P4 (c.317b): also reset _consecutive_compile_fail — proof_found implies a
+        successful build chain, which is the strongest possible BUILD-FAIL reset.
         """
         self._consecutive_delta0 = 0
         self._consecutive_regressions = 0  # P3: proof found resets regression
+        self._consecutive_compile_fail = 0  # P4 (c.317b): BUILD-FAIL also resets on proof_found
         if self._state is not None:
             self._state.consecutive_delta0_compiles = 0
 
@@ -1012,6 +1033,7 @@ class TacticTools:
                 self._consecutive_regressions = 0  # same as min, not a regression
         if self._state is not None:
             self._state.consecutive_delta0_compiles = self._consecutive_delta0
+            self._state.consecutive_compile_fail = self._consecutive_compile_fail  # P4 (c.317b)
 
     def _build_check_or_revert(self, original_content: str, operation: str
                                ) -> Optional[Dict]:
@@ -1819,7 +1841,15 @@ class TacticTools:
         stagnation = False
         regression = False
         directive = None
+        buildfail_stagnation = False
         if success:
+            # P4 (c.317b): A successful compile (regardless of progress) is the
+            # strongest possible "the build chain is healthy again" signal — reset
+            # the BUILD-FAIL streak here, not just in _record_sorry_count's new-low
+            # branch. Without this, even ONE successful compile after a long
+            # BUILD-FAIL storm would leave the streak high enough to trigger
+            # premature stop on the next fail (which is normal provider flakiness).
+            self._consecutive_compile_fail = 0
             self._record_sorry_count(sorry_count)
             stagnation = self._consecutive_delta0 >= self._stagnation_threshold
             # P3 (#1453 forensic): oscillation detection. When sorry count
@@ -1854,6 +1884,32 @@ class TacticTools:
                     f"reference_docs for a lemma, or request Director guidance. Do "
                     f"NOT submit another minor variant."
                 )
+        else:
+            # P4 (#1453 forensic, c.317b): BUILD-FAIL stagnation. The P2 guard
+            # above only fires on *successful* compiles that don't make progress.
+            # When EVERY iteration is a BUILD-FAIL (stuck provider, edit-then-
+            # crash loop, lake manifest drift after a deep-3 file edit), the
+            # success branch never runs, _record_sorry_count is never called,
+            # and _consecutive_delta0 stays 0 — DELTA0_HARDCAP=6 (provers.py:1390)
+            # never fires. Forensic: autonomous_custom_Basic_L308_zai burned
+            # 21084s (5.85h, 10 iterations, sorry_delta=0) entirely on BUILD-FAIL.
+            # Mirror B2_RETROSPECTIVE.md B2c _cumulative_fails pattern (multi-agent
+            # path) for the autonomous path. Threshold 12 ≈ 18 min of stuck signal.
+            self._consecutive_compile_fail += 1
+            buildfail_stagnation = (
+                self._consecutive_compile_fail >= self._fail_streak_threshold
+            )
+            if buildfail_stagnation:
+                directive = (
+                    f"BUILD-FAIL STAGNATION: {self._consecutive_compile_fail} "
+                    f"consecutive compile() failures without a single successful "
+                    f"build (hardcap={self._fail_streak_threshold}). The provider "
+                    f"is stuck on edits that break the build — likely a syntax "
+                    f"or tactic misuse, not a proof gap. STOP editing the file, "
+                    f"revert to the last build-OK content if available, and "
+                    f"either request Director guidance or yield to free the "
+                    f"iteration budget."
+                )
 
         if check_axioms and success:
             module_name = relative_path.replace("/", ".").replace("\\", ".")
@@ -1876,6 +1932,11 @@ class TacticTools:
                 _tags.append("STAGNATION")
             if regression:
                 _tags.append(f"REGRESSION({self._consecutive_regressions})")
+            if buildfail_stagnation:
+                _tags.append(f"BUILD-FAIL-STAGNATION({self._consecutive_compile_fail})")
+            elif self._consecutive_compile_fail > 0:
+                # Annotate non-zero BUILD-FAIL streak even when not yet at threshold
+                _tags.append(f"failstreak={self._consecutive_compile_fail}")
             _tag_str = " ".join(_tags)
             self._trace.log(
                 agent="TacticAgent", role="compile",
@@ -1902,6 +1963,8 @@ class TacticTools:
             "stagnation": stagnation,
             "regression": regression,
             "consecutive_regressions": self._consecutive_regressions,
+            "consecutive_compile_fail": self._consecutive_compile_fail,  # P4 (c.317b)
+            "buildfail_stagnation": buildfail_stagnation,  # P4 (c.317b)
             "directive": directive,
             "error_count": len(errors), "errors": errors[:10],
             "compile_time_s": round(duration, 1),
