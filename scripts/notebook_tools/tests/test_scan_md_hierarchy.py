@@ -126,6 +126,31 @@ def test_clean_aligned_table_not_flagged():
     assert not _has_collapsed_markdown(clean)
 
 
+def test_clean_table_without_trailing_pipes_not_flagged():
+    """GFM allows tables without trailing pipes (`|---|---`, no closing `|`).
+
+    Regression guard: an earlier version of CLEAN_SEP_LINE_RE required a trailing
+    pipe and false-positived on these, caught on Sudoku-6 cell 1 (a valid table).
+    """
+    clean = (
+        "| Composant | Description | Taille\n"
+        "|-----------|-------------|-------\n"
+        "| **Variables** | $X_{i,j}$ | 81\n"
+        "| **Domaines** | $D_{i,j}$ | 9\n"
+    )
+    assert not _has_collapsed_markdown(clean)
+
+
+def test_clean_table_no_trailing_pipe_and_aligned_not_flagged():
+    """Mix: no trailing pipe + alignment colons is still a clean separator."""
+    clean = (
+        "| Algo | Type\n"
+        "|:-----|----:\n"
+        "| BT   | Recherche\n"
+    )
+    assert not _has_collapsed_markdown(clean)
+
+
 def test_clean_fence_with_table_inside_not_flagged():
     """A fenced code block documenting a table (newlines intact) is clean."""
     clean = (

@@ -75,9 +75,12 @@ TABLE_SEP_FRAGMENT_RE = re.compile(r'\|[\s-]*-{2,}')
 # A clean GFM separator/alignment ROW on its own line, optionally blockquote
 # prefixed (`> |---|---|` is a legit blockquoted table, NOT collapsed). The line
 # is made ONLY of pipes / dashes / colons / spaces (after an optional `>`), with
-# at least one dash run and bounded by pipes. A collapsed cell has its separator
-# glued to other content on the same physical line, so NO line matches this.
-CLEAN_SEP_LINE_RE = re.compile(r'^\s*>?\s*\|[\s:|-]*-{2,}[\s:|-]*\|\s*$')
+# a leading pipe and at least one dash run. The trailing pipe is OPTIONAL: GFM
+# allows tables without trailing pipes (`| a | b` / `|---|---`), which are NOT
+# collapsed — requiring a trailing pipe would false-positive on those (caught on
+# Sudoku-6 cell 1, a valid no-trailing-pipe table). A collapsed cell has its
+# separator glued to other content on the same physical line, so NO line matches.
+CLEAN_SEP_LINE_RE = re.compile(r'^\s*>?\s*\|[\s:|-]*-{2,}[\s:|-]*\|?\s*$')
 
 
 def _has_collapsed_markdown(cell_text):
