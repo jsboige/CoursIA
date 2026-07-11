@@ -121,25 +121,6 @@ Fondations (SC-0-2) + Solidity basique (SC-3-6) + Testing avancé (SC-12-14) + V
 | Comprendre DeFi | SC-7-8-9 | 2h30 |
 | Gouvernance DAO | SC-9-10-17 | 2h |
 
-## Structure
-
-```text
-SmartContracts/
-├── 00-Foundations/              # Histoire + Setup (3 notebooks)
-├── 01-Solidity-Foundation/     # Fondements Solidity (4 notebooks)
-├── 02-Solidity-Advanced/       # Solidity avancé (5 notebooks)
-├── 03-Foundry-Testing/         # Tests et sécurité (3 notebooks)
-├── 04-Privacy-Cryptography/    # ZKP, HE, Vote E2E (3 notebooks)
-├── 05-Alternative-Chains/      # Vyper, XRP, Bitcoin, Move, Solana (5 notebooks)
-├── 06-Real-World/              # Cross-chain, deploy testnet/mainnet (4 notebooks)
-├── foundry-lib/                # Workspace Foundry + sous-modules (forge-std, OpenZeppelin, ERC-4337)
-├── erc20_lean/                 # Projet Lake Lean 4 (invariant de conservation ERC-20, 0 sorry, cf #4047) — 1er lake Lean de la série
-├── mon-premier-projet/         # Projet Foundry de démarrage (squelette scaffold)
-├── scripts/                    # Setup multi-plateforme (setup.sh, WSL, kernel Jupyter)
-├── requirements.txt            # Dépendances Python
-└── setup_env.py                # Orchestrateur Python (--setup / --check / --start-anvil)
-```
-
 ## Parcours recommande
 
 ```
@@ -178,6 +159,25 @@ SmartContracts/
 | 4 | Cacher des données sur blockchain publique | ZKP + chiffrement homomorphique fonctionnels |
 | 5 | Comprendre les architectures alternatives | Contracts déployés sur Vyper/XRP/Bitcoin/Move/Solana |
 | 6 | Déployer en production | Contrat sur testnet/mainnet + projet capstone |
+
+## Structure
+
+```text
+SmartContracts/
+├── 00-Foundations/              # Histoire + Setup (3 notebooks)
+├── 01-Solidity-Foundation/     # Fondements Solidity (4 notebooks)
+├── 02-Solidity-Advanced/       # Solidity avancé (5 notebooks)
+├── 03-Foundry-Testing/         # Tests et sécurité (3 notebooks)
+├── 04-Privacy-Cryptography/    # ZKP, HE, Vote E2E (3 notebooks)
+├── 05-Alternative-Chains/      # Vyper, XRP, Bitcoin, Move, Solana (5 notebooks)
+├── 06-Real-World/              # Cross-chain, deploy testnet/mainnet (4 notebooks)
+├── foundry-lib/                # Workspace Foundry + sous-modules (forge-std, OpenZeppelin, ERC-4337)
+├── erc20_lean/                 # Projet Lake Lean 4 (invariant de conservation ERC-20, 0 sorry, cf #4047) — 1er lake Lean de la série
+├── mon-premier-projet/         # Projet Foundry de démarrage (squelette scaffold)
+├── scripts/                    # Setup multi-plateforme (setup.sh, WSL, kernel Jupyter)
+├── requirements.txt            # Dépendances Python
+└── setup_env.py                # Orchestrateur Python (--setup / --check / --start-anvil)
+```
 
 ## Progression
 
