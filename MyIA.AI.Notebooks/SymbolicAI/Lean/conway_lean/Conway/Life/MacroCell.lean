@@ -688,6 +688,39 @@ theorem gridFrameN_contains_g (n : Nat) (g : Grid) (p : Int × Int) (hp : p ∈ 
     unfold MacroCell.inRegion
     refine ⟨?_, ?_, ?_, ?_⟩ <;> omega
 
+/-- `gridFrameN n g` reduces to `gridFrame g` when `n ≤ 2`: the n-aware padding
+    `max 2 n` equals the fixed padding `2`, so both frames coincide. This is the
+    reduction bridge showing `gridFrameN` strictly generalizes `gridFrame` — it
+    lets existing `gridFrame`-based results transfer to the n-aware frame for
+    small `n` (N3 threading, issue #3846). -/
+theorem gridFrameN_le_two_eq_gridFrame (n : Nat) (g : Grid) (hn : n ≤ 2) :
+    gridFrameN n g = gridFrame g := by
+  have hpad : max 2 n = 2 := by omega
+  cases g with
+  | nil => rfl
+  | cons p₀ ps =>
+    -- Establish non-negativity of the row/col spans directly (no `set` aliases,
+    -- so `omega` connects these facts to the goal terms `gridRowMin _` etc.).
+    have hrnn : gridRowMin (p₀ :: ps) ≤ gridRowMax (p₀ :: ps) :=
+      gridRowMin_le_gridRowMax _ (List.cons_ne_nil _ _)
+    have hcnn : gridColMin (p₀ :: ps) ≤ gridColMax (p₀ :: ps) :=
+      gridColMin_le_gridColMax _ (List.cons_ne_nil _ _)
+    simp only [gridFrameN, gridFrame, hpad, Nat.cast_two]
+    -- Both frames now have padding 2; the only residual difference is
+    -- `+ 1 + 2*2` (gridFrameN) vs `+ 5` (gridFrame) in the height/width, a
+    -- pure Int arithmetic identity. The offset pair `(r0, c0)` matches by `rfl`.
+    -- Close the offset pair `(r0, c0)` by `Prod.ext` + `rfl` (no `congr` on the
+    -- subtraction, which would over-decompose). The level equality reduces to
+    -- the height/width `toNat` identities `(x + 1 + 2*2).toNat = (x + 5).toNat`,
+    -- which `omega` closes using the non-negativity facts above.
+    refine Prod.ext ?_ ?_
+    · rfl
+    · have hH : (gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 1 + 2 * 2).toNat
+                  = (gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 5).toNat := by omega
+      have hW : (gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 1 + 2 * 2).toNat
+                  = (gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat := by omega
+      rw [hH, hW]
+
 /-- Convert a `Grid` to a `MacroCell`, returning the chosen offset so that
     `MacroCell.toGrid offset (gridToMacroCell g) = g`. -/
 def gridToMacroCellWithOffset (g : Grid) : (Int × Int) × MacroCell :=
