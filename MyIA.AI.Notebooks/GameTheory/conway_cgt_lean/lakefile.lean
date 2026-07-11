@@ -36,3 +36,5 @@ require CombinatorialGames from git
 @[default_target]
 lean_lib «CGTTour» where
   -- Tour of vihdzp/combinatorial-games results
+  -- Convention i18n #4980: globs for sibling CGTTour_en.lean auto-discovery
+  globs := #[`CGTTour.*]
