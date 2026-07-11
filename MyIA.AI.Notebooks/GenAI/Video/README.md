@@ -17,22 +17,7 @@ L'objectif fil rouge de cette série est de construire un pipeline capable de tr
 
 ## Aperçu — la vidéo par IA en images
 
-Six figures extraites des notebooks illustrent la chaîne complète, depuis l'extraction de frames et l'upscaling jusqu'à la génération text-to-video et les workflows de production.
-
-<table>
-<tr>
-<td align="center"><b>01-1 · Frames</b><br><a href="01-Foundation/01-1-Video-Operations-Basics.ipynb"><img src="assets/readme/video1-frames.png" width="290" alt="Extraction de frames : découpe d'une vidéo en images clés avec decord pour l'analyse."></a></td>
-<td align="center"><b>01-4 · ESRGAN</b><br><a href="01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb"><img src="assets/readme/video4-esrgan.png" width="290" alt="Upscaling ESRGAN : comparaison basse résolution avant/après agrandissement par réseau."></a></td>
-<td align="center"><b>01-5 · AnimateDiff</b><br><a href="01-Foundation/01-5-AnimateDiff-Introduction.ipynb"><img src="assets/readme/video5-animatediff.png" width="290" alt="Génération text-to-video AnimateDiff : animation produite depuis un prompt textuel."></a></td>
-</tr>
-<tr>
-<td align="center"><b>02-4 · SVD</b><br><a href="02-Advanced/02-4-SVD-Image-to-Video.ipynb"><img src="assets/readme/video-svd.png" width="290" alt="Stable Video Diffusion : animation d'une image statique en séquence vidéo."></a></td>
-<td align="center"><b>04-2 · Style</b><br><a href="04-Applications/04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/video-creative-style.png" width="290" alt="Transfert de style vidéo : application du style d'une image de référence à chaque frame."></a></td>
-<td align="center"><b>04-3 · Sora</b><br><a href="04-Applications/04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/video-sora-cost.png" width="290" alt="Sora (cloud) vs local : comparaison de coût selon le volume de génération vidéo."></a></td>
-</tr>
-</table>
-
-Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, output, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+Chacun des quatre niveaux de la série rend visible un geste technique distinct, dans une figure extraite des sorties réelles des notebooks : l'extraction de frames et le surcadrage par réseau (Fondations), l'animation d'une image statique (Avancé), puis les workflows créatifs et l'arbitrage coût cloud/local (Applications). Plutôt qu'une galerie séparée du propos, ces figures accompagnent ci-dessous le récit **niveau par niveau**, au plus près du concept qu'elles illustrent. La provenance exacte de chaque figure (cellule, output, poids, alt-text) est documentée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Prérequis
 
@@ -65,6 +50,12 @@ winget install FFmpeg
 
 On ne peut pas créer ce qu'on ne comprend pas. Ce niveau pose les bases techniques (codecs, ffmpeg, moviepy) et introduit la compréhension vidéo par IA : décomposer une séquence en scènes, répondre à des questions sur le contenu, analyser le mouvement. Vous découvrirez aussi le surcadrage d'images (ESRGAN) et l'interpolation de frames (RIFE) pour améliorer la qualité visuelle. À la fin de ce niveau, vous savez analyser une vidéo existante et en extraire des informations structurelles.
 
+<p align="center"><a href="01-Foundation/01-1-Video-Operations-Basics.ipynb"><img src="assets/readme/video1-frames.png" width="540" alt="Extraction de frames : découpe d'une vidéo en images clés avec decord pour l'analyse."></a></p>
+
+<p align="center"><a href="01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb"><img src="assets/readme/video4-esrgan.png" width="540" alt="Upscaling ESRGAN : comparaison basse résolution avant/après agrandissement par réseau."></a></p>
+
+<p align="center"><a href="01-Foundation/01-5-AnimateDiff-Introduction.ipynb"><img src="assets/readme/video5-animatediff.png" width="560" alt="Génération text-to-video AnimateDiff : animation produite depuis un prompt textuel."></a></p>
+
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [01-1-Video-Operations-Basics](01-Foundation/01-1-Video-Operations-Basics.ipynb) | moviepy, ffmpeg, decord, codecs | Local | 0 |
@@ -76,6 +67,8 @@ On ne peut pas créer ce qu'on ne comprend pas. Ce niveau pose les bases techniq
 ### 02-Advanced - Générer du mouvement à partir de texte ou d'images
 
 Ce niveau explore les modèles génératifs vidéo : HunyuanVideo pour la qualité cinématographique (malgré ses 24 GB de VRAM), LTX-Video pour la génération rapide sur des configurations modestes, Wan pour les prompts multilingues, et Stable Video Diffusion pour animer une image existante. Chaque modèle a ses forces et ses limites — le but est de les connaître pour choisir le bon outil au bon moment. Le notebook 02-5 introduit en outre LTX-2 (Lightricks 22B), le seul modèle de la série qui génère vidéo **et audio synchronisés** en une seule passe de diffusion (quantization obligatoire : `fp8-cast` via ltx-pipelines — borderline sur 24 GB — ou GGUF Q4 via ComfyUI en production, ~14-24 GB VRAM).
+
+<p align="center"><a href="02-Advanced/02-4-SVD-Image-to-Video.ipynb"><img src="assets/readme/video-svd.png" width="540" alt="Stable Video Diffusion : animation d'une image statique en séquence vidéo."></a></p>
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -98,6 +91,10 @@ Un seul modèle ne suffit pas pour une production vidéo complète. Ce niveau co
 ### 04-Applications - Du pipeline à la production
 
 Les trois derniers notebooks et le notebook de synchronisation audio-vidéo concluent le parcours en abordant des cas d'usage réels : génération automatique de contenus éducatifs, workflows créatifs (transfert de style, clips musicaux), et l'API Sora 2 d'OpenAI pour la génération cloud. Le pipeline final intègre tout ce qui a été appris dans un système bout-en-bout.
+
+<p align="center"><a href="04-Applications/04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/video-creative-style.png" width="540" alt="Transfert de style vidéo : application du style d'une image de référence à chaque frame."></a></p>
+
+<p align="center"><a href="04-Applications/04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/video-sora-cost.png" width="560" alt="Sora (cloud) vs local : comparaison de coût selon le volume de génération vidéo."></a></p>
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
