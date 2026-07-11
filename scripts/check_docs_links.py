@@ -204,9 +204,15 @@ def check_link(target: str, source_path: Path, root: Path = REPO_ROOT) -> bool:
 
     # Must be within root (safety: no escaping outside the repo)
     try:
-        resolved.relative_to(root)
+        rel_posix = resolved.relative_to(root).as_posix()
     except ValueError:
         return False
+
+    # Links into a git submodule are valid regardless of checkout state: CI uses
+    # submodules: false, so the mount dir may be absent. Submodule content is
+    # third-party — its presence is not this repo's concern to verify.
+    if any(rel_posix == sm or rel_posix.startswith(sm + "/") for sm in SUBMODULE_PATHS):
+        return True
 
     return resolved.exists()
 
