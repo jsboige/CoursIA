@@ -5,7 +5,7 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 ## Status
 
 - **Toolchain**: v4.31.0-rc1
-- **Sorry count**: 3 (all in `HashlifeCorrectness.lean` — P4 double-nine wave-glue residual `p4_succ_membership` [1] + P5 large-n jump [2], Epic #2162). Three P4 sub-lemmas are now proven sorry-free (see § "Game of Life" below). The P4.4 `p4_half_steps_compose` placeholder was deleted: its pure-evolve composition is already closed (`evolve_add` + `evolve_half_step`), its wave-glue content carried by the `p4_succ_membership` residual. **Audit N1 (PR #5853, ai-01 2026-07-09)**: the initial frame sub-claim (`BoxAssezGrand` ∩ `n ≥ jumpSize`) is **VACUOUS on non-empty grids** (`p5_large_n_hyps_unsat`: padding 2 of `gridFrame` ∧ `lvl ≥ 3` ⇒ `n ≤ 2 ∧ js ≥ 8`). **Design gate ai-01 (#3846, 2026-07-10)**: redesign `gridFrame` for `n`-dependent padding, port the `(off, mc)` state through the `evolveHashlifeFastAux` loop without intermediate re-framing, restate the "margin ≥ remaining n, preserved by jump" invariant. The proof debt (#3846) remains the BG-prover target and the coordinated architectural redesign scope.
+- **Sorry count**: 2 (all in `HashlifeCorrectness.lean` — P4 double-nine wave-glue residual `window_cone_in_domain` [1] + P5 large-n jump `p5_large_n_jump` [1], Epic #2162). Several P4 sub-lemmas and additive ingredients are proven sorry-free (see § "Game of Life" below). `p5_inductive_step` (P5.3 glue) was closed by c.310 PR #5998 via vacuous-arm split (design gate #3846): on non-empty grids, the `¬ hsmall` branch is jointly unsatisfiable with `BoxAssezGrand`, hence vacuous by construction. The P4.4 `p4_half_steps_compose` placeholder was deleted: its pure-evolve composition is already closed (`evolve_add` + `evolve_half_step`), its wave-glue content carried by the `window_cone_in_domain` residual. **Audit N1 (PR #5853, ai-01 2026-07-09)**: the initial frame sub-claim (`BoxAssezGrand` ∩ `n ≥ jumpSize`) is **VACUOUS on non-empty grids** (`p5_large_n_hyps_unsat`: padding 2 of `gridFrame` ∧ `lvl ≥ 3` ⇒ `n ≤ 2 ∧ js ≥ 8`). **Design gate ai-01 (#3846, 2026-07-10)**: redesign `gridFrame` for `n`-dependent padding, port the `(off, mc)` state through the `evolveHashlifeFastAux` loop without intermediate re-framing, restate the "margin ≥ remaining n, preserved by jump" invariant. The proof debt (#3846) remains the BG-prover target and the coordinated architectural redesign scope.
 - **Build**: `lake build Conway` -- SUCCESS (3352 jobs)
 - **Dependencies**: Mathlib4
 
@@ -23,6 +23,7 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 | `Conway/Nim.lean` | 0 | Nim game theory |
 | `Conway/Angel.lean` | 0 | Angel problem |
 | `Conway/CollatzLike.lean` | 0 | Collatz-like functions and undecidability (`native_decide`) |
+| `Conway/MathlibMap.lean` | 0 | Mathlib pinned-snapshot satellite — what Mathlib provides for Conway's work |
 
 ### Phase 2 — Game of Life (Epic #1647, IN PROGRESS)
 
@@ -34,11 +35,13 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 | `Conway/Life/RLE.lean` | 0 | RLE pattern parser + glider/LWSS/pulsar/Gosper gun, 8 `native_decide` proofs |
 | `Conway/Life/MacroCell.lean` | 0 | Quadtree datatype + `toGrid`/`buildFromGrid` round-trip + `wf` predicate |
 | `Conway/Life/Hashlife.lean` | 0 | `step4x4` + `hashlifeResult` recursive + `padCenter2` + `hashlifeJump` + `evolveHashlifeFast` |
+| `Conway/Life/LightCone.lean` | 0 | Light-cone geometry satellite — sorry-free lemmas on `manhattan`/`lightCone` bridging `HashlifeCorrectness` |
 | `Conway/Life/GridCanonical.lean` | 0 | `sortDedup` canonical forms, lex-sorted uniqueness, grid equality via canonical form |
 | `Conway/Life/Computation.lean` | 0 | Hashlife cross-validation (6 + 6 fast), eater1 still-life (1), glider composition (5) |
 | `Conway/Life/HashlifeMemo.lean` | 0 | Memoized Hashlife for community pillar witnesses (OTCA 35K, UnitCell 4096, Gemini 33M) |
+| `Conway/Life/HashlifeMarginDemo.lean` | 0 | Runnable P5 redesign demo (#3846) — n-aware framing margin around `MacroCell`/`HashlifeCorrectness` |
 | `Conway/Life/Pillars.lean` | 0 | Community-witness theorem scaffolding (4 pillars) |
-| `Conway/Life/HashlifeCorrectness.lean` | 3 | Bounded correctness `hashlife_correct`; P4/P5 prover targets (Epic #1453, #2162) |
+| `Conway/Life/HashlifeCorrectness.lean` | 2 | Bounded correctness `hashlife_correct`; P4/P5 prover targets (Epic #1453, #2162) |
 
 ### Phase 3 — Free Will Theorem (Epic #1651, COMPLETE)
 
@@ -79,21 +82,27 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 - **Memoized Hashlife**: Community pillar witnesses (OTCA 35K gen, UnitCell 4096 gen, Gemini 33M gen)
 - **HashlifeCorrectness**: bounded correctness `hashlife_correct`, decomposed P1-P5
   - **P1-P3 proven** (base case `k=0` via `2^16 native_decide`, PR #2810)
-  - **P4 inductive step** (1 residual sorry): decomposed by #2975 scaffolding into sub-lemmas.
-    Three are now **proven sorry-free** with real statements — `p4_double_nine_shape`
-    (structural existence of the nine quadrants of a double-nine cell), `p4_wave1_ih` and
-    `p4_wave2_ih` (propagation of `centralCorrect` via the induction hypothesis over the two
-    waves). The P4.4 `p4_half_steps_compose` placeholder (`: True`) was **deleted** (N2-bis):
-    its pure-evolve half-step composition is exactly the closed `evolve_add` + `evolve_half_step`,
-    and its wave-assembly content is carried by the **1 residual sorry** of glue
-    `p4_succ_membership` (the real pointwise biconditional after `intro p`). Research-level
-    double-nine light-cone composition, whnf-hard — reserved for a dedicated multi-cycle effort.
-    The sub-lemmas' real statements live in their docstrings — restate + prove, do not eliminate
-    as `True`.
-  - **P5 large-n** (2 sorry): `p5_small_n_fallback` **PROVEN** (PR #2984); `p5_large_n_jump`
-    (P5.2, re-signed to its real target `evolveHashlifeFast n g = evolve n g`, body `sorry`,
-    blocked on P4) + `p5_inductive_step` large-n branch (P5.3
-    glue) remain. Base `n=0` proven (`hashlife_correct_base_zero` #2898,
+  - **P4 inductive step** (1 residual sorry on `window_cone_in_domain`): decomposed by #2975
+    scaffolding into sub-lemmas. Several are now **proven sorry-free** with real statements
+    — `p4_double_nine_shape` (structural existence of the nine quadrants of a double-nine
+    cell), `p4_wave1_ih` and `p4_wave2_ih` (propagation of `centralCorrect` via the induction
+    hypothesis over the two waves), `p4_ext_bridge`, plus the additive ingredients closed in
+    cycles 145-160 (`evolve_add`, `evolve_half_step`, `centralCorrect_mem_shift`,
+    `evolve_cone_agree`). The P4.4 `p4_half_steps_compose` placeholder (`: True`) was
+    **deleted** (N2-bis): its pure-evolve half-step composition is exactly the closed
+    `evolve_add` + `evolve_half_step`, and its wave-assembly content is carried by the
+    **1 residual sorry** on `window_cone_in_domain` (private helper declared at L2629) — the
+    real offset-matching G3 assembly: characterize super-cell `q_*` membership in the four
+    quadrant offsets via `centralCorrect_mem` (G2) + the bridging `evolve_half_step`/
+    `step_light_cone` (G3). Research-level double-nine light-cone composition, whnf-hard —
+    reserved for a dedicated multi-cycle effort. The sub-lemmas' real statements live in
+    their docstrings — restate + prove, do not eliminate as `True`.
+  - **P5 large-n** (1 residual sorry): `p5_small_n_fallback` **PROVEN** (PR #2984);
+    `evolve_dead_of_cone_dead` (P5.2 contrapositive, #4574) **proven sorry-free**;
+    `p5_inductive_step` (P5.3 glue) **PROVEN** by c.310 PR #5998 via vacuous-arm split
+    (non-empty branch closed by `p5_large_n_hyps_unsat`, empty branch by direct unfold).
+    Remaining: `p5_large_n_jump` (P5.2, `evolveHashlifeFast n g = evolve n g`, body `sorry`,
+    blocked on P4). Base `n=0` proven (`hashlife_correct_base_zero` #2898,
     `evolveHashlifeFastAux_zero_n` #2901).
 
 ### Kochen-Specker + Free Will Theorem (Phase 3, PROVED)
@@ -114,29 +123,29 @@ Kochen-Specker contradiction.
 
 ## Conclusion
 
-Ce workspace formalise en Lean 4 trois facettes de l'oeuvre de John Conway, des algorithmes classiques (Phase 1) au calcul universel du Jeu de la Vie (Phase 2) jusqu'au fondement quantique (Phase 3, Free Will Theorem). Le fil conducteur est la **certification formelle** : chaque résultat est un théorème prouvé, pas une simulation.
+This workspace formalizes in Lean 4 three facets of John Conway's work, from classical algorithms (Phase 1) to the universal computation of the Game of Life (Phase 2) up to the quantum foundation (Phase 3, Free Will Theorem). The through-line is **formal certification**: every result is a proven theorem, not a simulation.
 
-### Ce que ce formalisme démontre
+### What this formalism demonstrates
 
-- **Les algorithmes classiques** (Doomsday, FRACTRAN, Look-and-Say, Nim, Angel, Collatz) sont prouvés sur leurs instances finies via `native_decide` ou par arguments combinatoires directs (`decide`, `omega`, parité pour Kochen-Specker). Aucun `sorry`.
-- **Le Jeu de la Vie comme moteur de calcul** : règles B3/S23, vaisseaux (LWSS/MWSS/HWSS), oscillateurs (blinker, pulsar p3, pentadecathlon p15), et la méthode Hashlife à accélération exponentielle. La cross-validation sur 12 patterns + eater1 + compositions de planeurs confirme que l'implémentation rapide `evolveHashlifeFast` agree avec la référence `evolve` sur tous les cas testés.
-- **Le Free Will Theorem** (Conway-Kochen 2006/2009) est prouvé depuis les trois axiomes physiques SPIN + TWIN + MIN, en se réduisant à la contradiction 18-vecteurs de Kochen-Specker (Cabello et al. 1996). Phase 3 COMPLETE, sorry-free.
+- **Classical algorithms** (Doomsday, FRACTRAN, Look-and-Say, Nim, Angel, Collatz) are proven on their finite instances via `native_decide` or by direct combinatorial arguments (`decide`, `omega`, parity for Kochen-Specker). Zero `sorry`.
+- **The Game of Life as a computational engine**: B3/S23 rules, spaceships (LWSS/MWSS/HWSS), oscillators (blinker, pulsar p3, pentadecathlon p15), and the Hashlife method with exponential speedup. Cross-validation on 12 patterns + eater1 + glider compositions confirms that the fast implementation `evolveHashlifeFast` agrees with the `evolve` reference on all tested cases.
+- **The Free Will Theorem** (Conway-Kochen 2006/2009) is proven from the three physically motivated axioms SPIN + TWIN + MIN, reducing to the 18-vector Kochen-Specker contradiction (Cabello et al. 1996). Phase 3 COMPLETE, sorry-free.
 
-### État honnête du verrou HashlifeCorrectness
+### Honest state of the HashlifeCorrectness lock
 
-Le théorème central `hashlife_correct` (borné par l'hypothèse de padding `BoxAssezGrand`) n'est **pas encore prouvé en pleine généralité** : il reste **3 `sorry`** dans `HashlifeCorrectness.lean`. Le socle est solide — cas de base `k=0` prouvé (`2^16 native_decide`), cas de base `n=0` prouvé, P1/P2/P3 (padding, light-cone, locality) prouvés, `p5_small_n_fallback` prouvé, et trois des sous-lemmes P4 (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`) désormais prouvés sorry-free — mais le pas inductif P4 (double-nine decomposition, 1 sorry résiduel : colle `p4_succ_membership` — le placeholder `p4_half_steps_compose` a été supprimé, sa composition pure-evolve étant close via `evolve_add`+`evolve_half_step`) et le grand-n P5 (2 sorry, bloqué sur P4) sont **research-level**. Ce sont les cibles du BG-prover (`agent_tests/prover/`), pas des grains bornés : la composition light-cone multi-vagues résiste à l'automatisation tactique courante. Les scaffolds P4 (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`, `p4_succ_membership`) énoncent précisément chaque sous-but dans leurs docstrings.
+The central theorem `hashlife_correct` (bounded by the padding hypothesis `BoxAssezGrand`) is **not yet proven in full generality**: **2 `sorry`** remain in `HashlifeCorrectness.lean`. The foundation is solid — base case `k=0` proven (`2^16 native_decide`), base case `n=0` proven, P1/P2/P3 (padding, light-cone, locality) proven, `p5_small_n_fallback` proven, `p5_inductive_step` (P5.3 glue) proven by c.310 PR #5998 via vacuous-arm split, the P4 sub-lemmas (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`, `p4_ext_bridge`) proven sorry-free, plus the additive ingredients closed in cycles 145-160 (`evolve_add`, `evolve_half_step`, `centralCorrect_mem_shift`, `evolve_cone_agree`) and the P5.2 contrapositive (`evolve_dead_of_cone_dead`) — but the P4 inductive step (offset-matching G3 assembly, 1 residual sorry on `window_cone_in_domain` — private helper declared at L2629, the `p4_half_steps_compose` placeholder has been deleted, its pure-evolve composition already closed via `evolve_add`+`evolve_half_step`) and P5 large-n (`p5_large_n_jump`, blocked on P4) are **research-level**. These are the BG-prover (`agent_tests/prover/`) targets, not bounded grains: the multi-wave light-cone composition resists current tactical automation. The P4 scaffolds state each sub-goal precisely in their docstrings.
 
-### Leçons méthodologiques
+### Methodological lessons
 
-- **`List (Int × Int)` + prédicats `Bool` + `native_decide`** est l'encodage qui passe pour les grilles ; l'encodage `Finset` est bloqué par `Quot.lift`/`Eq.rec`.
-- **Le concept "intractable" cache souvent un énoncé faux** : la même intuition que pour la percée Lattice (7→0) s'applique — le contre-exemple certifié `p4_unrestricted_counterexample` montre qu'une forme d'énoncé non restreinte est fausse, orientant vers la bonne hypothèse `MacroCell.wf`.
-- **Les ingrédients additifs sorry-free** (level/wf preservation, `box_assez_grand` arithmetic) s'accumulent derrière le verrou et seront mobilisables quand P4 cédera.
+- **`List (Int × Int)` + `Bool` predicates + `native_decide`** is the encoding that passes for grids; the `Finset` encoding is blocked by `Quot.lift`/`Eq.rec`.
+- **The "intractable" concept often hides a false statement**: the same intuition as for the Lattice breakthrough (7→0) applies — the certified counter-example `p4_unrestricted_counterexample` shows that an unrestricted statement form is false, pointing toward the correct `MacroCell.wf` hypothesis.
+- **The sorry-free additive ingredients** (level/wf preservation, `box_assez_grand` arithmetic) accumulate behind the lock and will be deployable once P4 yields.
 
-### Prochaines étapes
+### Next steps
 
-1. **BG-prover sur P4** : attaquer le pas inductif double-nine via le harness multi-agent (`agent_tests/prover/`), en s'appuyant sur les scaffolds docstring-restated.
-2. **Sub-claim géométrique sorry-free** : le bound `gridBoundingBox (g').2 ≤ gridBoundingBox g .2 + 2 * jumpSize` (light-cone growth) est un grain additif sur la frame P5.2, dischargeable par arithmétique `Nat` une fois le cas light-cone borué — queueable derrière le verrou P4.
-3. **Extension des témoins** : ajouter des motifs HashlifeMemo supplémentaires (community pillars) pour renforcer le socle `native_decide`.
+1. **BG-prover on P4**: attack the double-nine inductive step via the multi-agent harness (`agent_tests/prover/`), leaning on the docstring-restated scaffolds.
+2. **Sorry-free geometric sub-claim**: the bound `gridBoundingBox (g').2 ≤ gridBoundingBox g .2 + 2 * jumpSize` (light-cone growth) is an additive grain on the P5.2 frame, dischargeable by `Nat` arithmetic once the light-cone case is bounded — queuable behind the P4 lock.
+3. **Witness extension**: add additional HashlifeMemo patterns (community pillars) to strengthen the `native_decide` foundation.
 
 ## Notes
 
