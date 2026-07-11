@@ -67,50 +67,6 @@ La série propose délibérément deux stacks en parité (.NET ⇄ Python, marat
 
 ---
 
-## Figures clés de la série
-
-Les figures ci-dessous illustrent la progression pédagogique : un **graphe de connaissances interrogé en SPARQL** (SW-11), un **graphe d'entités extraites par LLM + communautés par modularité** (SW-12), puis des **benchmarks de raisonneurs OWL** (SW-13). Chaque PNG est extrait directement d'un output commited d'un notebook (cf. `assets/readme/MANIFEST.md` pour la provenance exacte `notebook + cell + output` et le contenu réel de chaque figure).
-
-### Graphe de connaissances RDF (SW-11, rdflib)
-
-`SW-11-Python-KnowledgeGraphs.ipynb` construit un graphe RDF (vocabulaire `schema.org`), l'interroge en SPARQL (`UNION` sur `actor` / `genre` / `director`) et visualise le sous-graphe filtré par réalisateur. Les figures montrent deux sous-graphes extraits par requête SPARQL — la brique élémentaire d'un KG opérationnel.
-
-![Sous-graphe RDF filtré par réalisateur (Christopher Nolan) — graphe orienté schema.org Movie](assets/readme/sw11_kg_c46_o0.png)
-
-*SW-11 : sous-graphe orienté filtré par SPARQL sur les films de **Christopher Nolan** (cellule 46) — noeuds colorés par type (Film / Personne / Genre), arêtes orientées étiquetées par relation (`director`, `actor`, `genre`).*
-
-![Sous-graphe RDF filtré par réalisateur (Quentin Tarantino, Exercice 2)](assets/readme/sw11_kg_c71_o0.png)
-
-*SW-11 (Exercice 2, cellule 71) : même requête SPARQL ré-aimée sur les films de **Quentin Tarantino** — la taille des noeuds-films est **proportionnelle à la note** (`aggregateRating`), illustrant un enrichissement du graphe de base.*
-
-### GraphRAG — Retrieval-Augmented Generation ancré sur KG (SW-12)
-
-`SW-12-Python-GraphRAG.ipynb` implémente le pipeline Microsoft GraphRAG : extraction LLM des entités et relations d'un corpus, construction du graphe de connaissances, puis détection de communautés par modularité pour la synthèse multi-niveau. C'est l'anti-hallucination par excellence : un LLM ancré sur des faits RDF vérifiables.
-
-![Graphe orienté des entités extraites par LLM, noeuds colorés par type et arêtes étiquetées](assets/readme/sw12_graphrag_c18_o0.png)
-
-*SW-12 (cellule 18) : **graphe orienté des entités extraites par LLM** (filmographie Nolan) — noeuds colorés par type d'entité (Person / Movie / Organization / Award / Genre / Concept), arêtes orientées étiquetées par la relation extraite.*
-
-![Communautés détectées par modularité gloutonne (networkx) sur le graphe non-dirigé](assets/readme/sw12_graphrag_c30_o1.png)
-
-*SW-12 (cellule 30) : **détection de communautés par modularité gloutonne** (`networkx.algorithms.community.greedy_modularity_communities` sur le graphe non-dirigé) — chaque couleur = une communauté, partition des entités pour la synthèse multi-niveau.*
-
-### Raisonneurs RDFS/OWL (SW-13, owlrl)
-
-`SW-13-Python-Reasoners.ipynb` compare plusieurs raisonneurs OWL sur un même graphe via `owlrl`. Les figures ne montrent pas le graphe inféré lui-même mais des **benchmarks quantitatifs** de l'inférence — le coût et le rendement de la couche logique qui transforme un graphe déclaratif en connaissances déductibles.
-
-![Bar chart : temps d'exécution des raisonneurs OWL](assets/readme/sw13_reasoner_c49_o0.png)
-
-*SW-13 (cellule 49) : **diagramme en barres des temps d'exécution** des raisonneurs OWL (Y = secondes, un raisonneur par barre) — benchmark comparatif du coût de calcul de l'inférence.*
-
-![Bar chart : nombre de triples inférés par raisonneur (profil OWL 2 RL)](assets/readme/sw13_reasoner_c52_o0.png)
-
-*SW-13 (cellule 52) : **diagramme en barres du nombre de triples inférés** par raisonneur (Y = nombre de triples, profil OWL 2 RL) — comparaison du rendement de l'inférence entre raisonneurs, pas une matérialisation des triples eux-mêmes.*
-
-> **Convention d'accessibilité** : Toutes les figures portent un `alt-text` français (régénérés via `extract_readme_figures.py`, EPIC #5654). Poids total ≈ 626 KB (≤ 1.5 MB borne), max-dim 1200 px (≤ 1200 px borne), max fichier 163 KB (≤ 200 KB borne).
-
----
-
 ## Quick Start
 
 ```bash
@@ -376,6 +332,19 @@ Ce notebook pratique vous guide dans la construction d'un graphe de connaissance
 
 > **Twin C# disponible** : [SW-11-CSharp-KnowledgeGraphs](SW-11-CSharp-KnowledgeGraphs.ipynb) — construction d'un Knowledge Graph avec dotNetRDF (`Graph`, `Assert`, TurtleFormatter), requêtage SPARQL (`ExecuteQuery` : SELECT, agrégats, GROUP_CONCAT), adjacence from-scratch + BFS, métriques de qualité (orphelins, complétude, cohérence range), centralité de degré. Compagnon cross-langage du notebook Python (rdflib + networkx + kglab) sur la même thématique KG (marathon parité .NET ⇄ Python #4956, Prong B). Verdict SOTA honnête : le cœur (construction RDF, SPARQL, parcours graphe, qualité, centralité) est SOTA-OK (vrai moteur dotNetRDF, adjacence/BFS réimplémentée) ; pyvis (interactif web) et kglab (surcouche Python) sont INTRINSIC ; HermiT (OWL 2 DL complet, Java) est RECOVERABLE-MACHINE — documenté in-notebook.
 
+**Figures — sous-graphes RDF interrogés en SPARQL.** `SW-11-Python-KnowledgeGraphs.ipynb`
+construit un graphe RDF (vocabulaire `schema.org`), l'interroge en SPARQL (`UNION` sur `actor` /
+`genre` / `director`) et visualise le sous-graphe filtré par réalisateur — la brique élémentaire
+d'un KG opérationnel :
+
+![Sous-graphe RDF filtré par réalisateur (Christopher Nolan) — graphe orienté schema.org Movie](assets/readme/sw11_kg_c46_o0.png)
+
+*SW-11 : sous-graphe orienté filtré par SPARQL sur les films de **Christopher Nolan** (cellule 46) — noeuds colorés par type (Film / Personne / Genre), arêtes orientées étiquetées par relation (`director`, `actor`, `genre`).*
+
+![Sous-graphe RDF filtré par réalisateur (Quentin Tarantino, Exercice 2)](assets/readme/sw11_kg_c71_o0.png)
+
+*SW-11 (Exercice 2, cellule 71) : même requête SPARQL ré-aimée sur les films de **Quentin Tarantino** — la taille des noeuds-films est **proportionnelle à la note** (`aggregateRating`), illustrant un enrichissement du graphe de base.*
+
 #### SW-12-Python-GraphRAG : KG + LLMs pour le RAG (50 min)
 
 GraphRAG combine les graphes de connaissances avec les LLMs pour un Retrieval-Augmented Generation structuré. Ce notebook présente l'approche de Microsoft GraphRAG.
@@ -386,6 +355,19 @@ GraphRAG combine les graphes de connaissances avec les LLMs pour un Retrieval-Au
 - LeMay-Huan framework : KG + LLM pour question answering
 - Implémentation avec OpenAI/Anthropic APIs
 - Comparaison RAP vectoriel vs. RAP structuré (GraphRAG)
+
+**Figures — pipeline GraphRAG en action.** `SW-12-Python-GraphRAG.ipynb` implémente le pipeline
+Microsoft GraphRAG : extraction LLM des entités et relations d'un corpus, construction du graphe
+de connaissances, puis détection de communautés par modularité pour la synthèse multi-niveau.
+C'est l'anti-hallucination par excellence : un LLM ancré sur des faits RDF vérifiables :
+
+![Graphe orienté des entités extraites par LLM, noeuds colorés par type et arêtes étiquetées](assets/readme/sw12_graphrag_c18_o0.png)
+
+*SW-12 (cellule 18) : **graphe orienté des entités extraites par LLM** (filmographie Nolan) — noeuds colorés par type d'entité (Person / Movie / Organization / Award / Genre / Concept), arêtes orientées étiquetées par la relation extraite.*
+
+![Communautés détectées par modularité gloutonne (networkx) sur le graphe non-dirigé](assets/readme/sw12_graphrag_c30_o1.png)
+
+*SW-12 (cellule 30) : **détection de communautés par modularité gloutonne** (`networkx.algorithms.community.greedy_modularity_communities` sur le graphe non-dirigé) — chaque couleur = une communauté, partition des entités pour la synthèse multi-niveau.*
 
 #### SW-13-Python-Reasoners (Bonus) : Benchmarks et Performances (45 min)
 
@@ -399,6 +381,21 @@ Ce notebook bonus compare différents raisonneurs OWL (owlrl, HermiT, reasonable
 - Benchmark temps d'exécution : Python vs. compilé
 
 > **Twin C# disponible** : [SW-13-Reasoners-CSharp](SW-13-Reasoners-CSharp.ipynb) — raisonnement RDFS forward-chaining avec dotNetRDF (`StaticRdfsReasoner.Apply`, `SimpleN3RulesReasoner`), materialisation des inferences (sous-classes, domain/range) et benchmark sur ontologie croissante. Compagnon cross-langage du notebook Python (owlrl/HermiT/reasonable) sur la même thématique d'inférence (marathon parité .NET ⇄ Python #4956, Prong B). Verdict SOTA honnête : la couche RDFS est SOTA-OK (vrai moteur .NET) ; OWL 2 DL complet (HermiT/Pellet, Java) est RECOVERABLE-MACHINE — documenté in-notebook.
+
+**Figures — benchmarks quantitatifs des raisonneurs OWL.** `SW-13-Python-Reasoners.ipynb` compare
+plusieurs raisonneurs OWL sur un même graphe via `owlrl`. Les figures ne montrent pas le graphe
+inféré lui-même mais des **benchmarks quantitatifs** de l'inférence — le coût et le rendement de la
+couche logique qui transforme un graphe déclaratif en connaissances déductibles :
+
+![Bar chart : temps d'exécution des raisonneurs OWL](assets/readme/sw13_reasoner_c49_o0.png)
+
+*SW-13 (cellule 49) : **diagramme en barres des temps d'exécution** des raisonneurs OWL (Y = secondes, un raisonneur par barre) — benchmark comparatif du coût de calcul de l'inférence.*
+
+![Bar chart : nombre de triples inférés par raisonneur (profil OWL 2 RL)](assets/readme/sw13_reasoner_c52_o0.png)
+
+*SW-13 (cellule 52) : **diagramme en barres du nombre de triples inférés** par raisonneur (Y = nombre de triples, profil OWL 2 RL) — comparaison du rendement de l'inférence entre raisonneurs, pas une matérialisation des triples eux-mêmes.*
+
+> **Convention d'accessibilité** : Toutes les figures portent un `alt-text` français (régénérés via `extract_readme_figures.py`, EPIC #5654). Poids total ≈ 626 KB (≤ 1.5 MB borne), max-dim 1200 px (≤ 1200 px borne), max fichier 163 KB (≤ 200 KB borne).
 
 ---
 
