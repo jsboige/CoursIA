@@ -17,30 +17,15 @@
   - O. Bondareva, « Some applications of linear programming to cooperative games » (1963)
   - L.S. Shapley, « On balanced sets and cores » (1967)
 
-  ---
-
-  Cooperative Game Theory Library
-  ===============================
-
-  A Lean 4 library for cooperative game theory, formalizing:
-  - TU (Transferable Utility) Games
-  - The Shapley Value and its axioms
-  - The Core and stability concepts
-  - Voting games and power indices
-
-  Main Modules:
-  - CooperativeGames.Basic: TUGame, coalitions, Core, convexity
-  - CooperativeGames.Shapley: Shapley axioms, value, uniqueness
-
-  References:
-  - L.S. Shapley, "A Value for N-Person Games" (1953)
-  - O. Bondareva, "Some applications of linear programming to cooperative games" (1963)
-  - L.S. Shapley, "On balanced sets and cores" (1967)
-
   Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier root
-  aggregator est bilingue inline (FR canonique d'abord, EN en miroir).
-  Les modules substantiels (`CooperativeGames.Basic`, `CooperativeGames.Shapley`,
-  ...) vivent dans des fichiers siblings `_en.lean` séparés.
+  aggregator est **FR canonique** uniquement. Le miroir anglais vit dans le
+  sibling `CooperativeGames_en.lean` (namespace `CooperativeGames_en`),
+  conformément au **modèle sibling pair** ratifié par user le 2026-07-04
+  (cf `code-style.md` §Lean i18n, ligne 35 ; Option B rejetée : coût double
+  + drift FR/EN + biais qualité). Les modules substantiels
+  (`CooperativeGames.Basic`, `CooperativeGames.Shapley`, ...) vivent dans
+  des fichiers siblings `_en.lean` séparés, auto-découverts par le
+  `globs := #[...]` du lakefile.
 -/
 
 import CooperativeGames.Basic
