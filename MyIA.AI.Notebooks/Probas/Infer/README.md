@@ -74,6 +74,74 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 
 **Ressource complémentaire** : [Glossaire](Infer-Glossary.md) - Définitions des termes techniques
 
+## Prérequis
+
+- .NET 9.0 ou supérieur
+- .NET Interactive / Polyglot Notebooks
+- VS Code avec extension Polyglot Notebooks (recommandé)
+- Graphviz (optionnel, pour visualisation des factor graphs)
+
+## Installation
+
+### 1. .NET SDK 9.0+
+
+```bash
+# Installer depuis https://dotnet.microsoft.com/download
+# Vérifier l'installation
+dotnet --version
+```
+
+### 2. Kernel dotnet-interactive
+
+```bash
+dotnet tool install -g Microsoft.dotnet-interactive
+dotnet interactive jupyter install
+```
+
+### 3. Ou utiliser le script PowerShell (recommandé)
+
+```bash
+# Installe dotnet-interactive, papermill et enregistre les kernels :
+cd MyIA.AI.Notebooks/Probas/Infer/scripts
+.\setup_environment.ps1
+```
+
+### 4. Extension VS Code
+
+Installer l'extension "Polyglot Notebooks" depuis le marketplace VS Code.
+
+### 5. Packages NuGet (automatique)
+
+Chaque notebook inclut les références nécessaires :
+
+```csharp
+#r "nuget: Microsoft.ML.Probabilistic"
+#r "nuget: Microsoft.ML.Probabilistic.Compiler"
+```
+
+### 6. Graphviz (optionnel)
+
+Pour les visualisations de factor graphs dans les notebooks 11, 14-20 :
+
+```bash
+# Windows (chocolatey)
+choco install graphviz
+
+# Ou téléchargement direct depuis https://graphviz.org/download/
+```
+
+### Vérification
+
+```bash
+jupyter kernelspec list  # doit afficher .net-csharp et python3
+```
+
+### Tester tous les notebooks
+
+```bash
+python MyIA.AI.Notebooks/Probas/Infer/scripts/test_notebooks.py --validate-only
+```
+
 ## Progression Pédagogique
 
 ```mermaid
@@ -709,74 +777,6 @@ Le **point de rupture** (*change-point*) modélise une série qui suit un régim
 **Applications** : contrôle qualité (dérive de production), finance (changement de régime de marché), épidémiologie, surveillance de capteurs, datation d'événements structurels en sciences sociales et climatiques.
 
 ---
-
-## Prérequis
-
-- .NET 9.0 ou supérieur
-- .NET Interactive / Polyglot Notebooks
-- VS Code avec extension Polyglot Notebooks (recommandé)
-- Graphviz (optionnel, pour visualisation des factor graphs)
-
-## Installation
-
-### 1. .NET SDK 9.0+
-
-```bash
-# Installer depuis https://dotnet.microsoft.com/download
-# Vérifier l'installation
-dotnet --version
-```
-
-### 2. Kernel dotnet-interactive
-
-```bash
-dotnet tool install -g Microsoft.dotnet-interactive
-dotnet interactive jupyter install
-```
-
-### 3. Ou utiliser le script PowerShell (recommandé)
-
-```bash
-# Installe dotnet-interactive, papermill et enregistre les kernels :
-cd MyIA.AI.Notebooks/Probas/Infer/scripts
-.\setup_environment.ps1
-```
-
-### 4. Extension VS Code
-
-Installer l'extension "Polyglot Notebooks" depuis le marketplace VS Code.
-
-### 5. Packages NuGet (automatique)
-
-Chaque notebook inclut les références nécessaires :
-
-```csharp
-#r "nuget: Microsoft.ML.Probabilistic"
-#r "nuget: Microsoft.ML.Probabilistic.Compiler"
-```
-
-### 6. Graphviz (optionnel)
-
-Pour les visualisations de factor graphs dans les notebooks 11, 14-20 :
-
-```bash
-# Windows (chocolatey)
-choco install graphviz
-
-# Ou téléchargement direct depuis https://graphviz.org/download/
-```
-
-### Vérification
-
-```bash
-jupyter kernelspec list  # doit afficher .net-csharp et python3
-```
-
-### Tester tous les notebooks
-
-```bash
-python MyIA.AI.Notebooks/Probas/Infer/scripts/test_notebooks.py --validate-only
-```
 
 ## Concepts Clés Infer.NET
 
