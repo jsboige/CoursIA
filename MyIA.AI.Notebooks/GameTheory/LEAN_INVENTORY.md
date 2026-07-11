@@ -6,7 +6,7 @@ Cross-directory inventory of all Lean 4 formalization projects under `GameTheory
 
 | Directory | Toolchain | Production sorry | Modules | Status |
 |-----------|-----------|-----------------|---------|--------|
-| `stable_marriage_lean` | v4.31.0-rc1 | 0 | 5 files | COMPLETE |
+| `game_theory_lean` | v4.31.0-rc1 | 3 (Lattice) | CooperativeGames + StableMarriage | COMPLETE (EPIC #4365) |
 | `cooperative_games_lean` | v4.31.0-rc1 | 0 | 3 files | COMPLETE |
 | `social_choice_lean` | v4.31.0-rc1 | 0 | 7 files | COMPLETE |
 | `social_choice_lean_peters` | v4.27.0-rc1 | 0 | 1 file | Reference only |
@@ -27,9 +27,11 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 ## Directories
 
-### 1. stable_marriage_lean
+### 1. game_theory_lean
 
-**Objective**: Formalize the Gale-Shapley stable marriage algorithm and its lattice-theoretic properties.
+**EPIC #4365 (phase 4)**: multi-module target lake. `StableMarriage` was absorbed from the now-removed `stable_marriage_lean/` (PRs #5904/#5905/#5910/#5911/#5913) and `CooperativeGames` from `cooperative_games_lean/`. The standalone `stable_marriage_lean/` checkout has been removed (content fully preserved here — byte-identical or FR-harmonized ahead copies).
+
+**Objective**: Formalize cooperative game theory (Shapley, core) and the Gale-Shapley stable marriage algorithm with its lattice-theoretic properties.
 
 **Toolchain**: v4.31.0-rc1 | **Dependencies**: Mathlib4
 
@@ -228,7 +230,7 @@ Note: `_GoalExtract.lean` (former prover test file) has been removed from the re
 
 | Project                | Decision | Reasoning                                                      |
 |------------------------|----------|----------------------------------------------------------------|
-| stable_marriage_lean   | COMPLETE | 0 sorry. Former false statements refuted, honest `exists_isManOptimal` proved. |
+| game_theory_lean       | COMPLETE | 3 sorry (Lattice, Knuth lattice stretch). StableMarriage: former false statements refuted, honest `exists_isManOptimal` proved. Absorbed standalone `stable_marriage_lean/` (EPIC #4365). |
 | cooperative_games_lean | COMPLETE | 0 sorry. Bondareva-Shapley proven (#3954) via compact-slice Weierstrass; hCore bypassed without added axiom. |
 | social_choice_lean     | N/A      | COMPLETE (0 sorry). MechanismDesign added (#1469).             |
 | social_choice_lean_peters | N/A   | Reference only (pinned v4.27.0-rc1).                           |

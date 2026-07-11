@@ -149,7 +149,7 @@ de Banzhaf bruts. Cette lignée power-index (`dummy_banzhaf_raw_zero` #4011 →
 
 - Le théorème de Bondareva-Shapley est clos dans les deux directions (`forward` + `backward`), **0 sorry**. La direction `←` extrayait une allocation du Cœur par un argument de Farkas / séparation d'hyperplan sur un cône ; cet argument, longtemps tagué **INTRACTABLE**, est désormais construit et prouvé dans `CooperativeGames/ConeKernel.lean` (cône augmenté `augCone`, lemme dual `augCone_dual_iff`, séparateur `separatingFunctional_none_neg`, décodage du témoin `exists_preimputation_strict_core`)
 - Arc de preuve : PR #3933 (noyau ConeKernel, TUGame-free) → #3941 (pont `balancedUnit`) → #3945 (cœur du décodage) → #3951 (câblage du pipeline) → #3954 (sorry 1→0). `hb_witness` est désormais un `have` certifié (`Basic.lean:348`)
-- Lié à `stable_marriage_lean/` (théorie des appariements comme jeu coopératif)
+- Lié au module StableMarriage (`game_theory_lean/`, EPIC #4365 — théorie des appariements comme jeu coopératif)
 
 ## Conclusion
 
@@ -200,5 +200,5 @@ plan d'origine reste documenté dans
   Shapley (1953), *A Value for n-Person Games*.
 - **Plan actif** : [`docs/BONDAREVA_FARKAS_PLAN.md`](docs/BONDAREVA_FARKAS_PLAN.md)
   et [`FORMAL_STATUS.md`](FORMAL_STATUS.md).
-- **Lié** : [`stable_marriage_lean/`](../stable_marriage_lean/) (appariement Gale-Shapley)
+- **Lié** : [module StableMarriage](../game_theory_lean/) (appariement Gale-Shapley, EPIC #4365)
   et [`social_choice_lean/`](../social_choice_lean/) (Arrow / Sen).

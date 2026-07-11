@@ -44,7 +44,7 @@ import Mathlib.SetTheory.Game.Nim
 
 ## Relation aux autres projets Lean de GameTheory
 
-- [stable_marriage_lean/](../stable_marriage_lean/) — Projet Lake indépendant (formalisation Gale-Shapley).
+- [game_theory_lean/](../game_theory_lean/) — Projet Lake multi-module (StableMarriage = formalisation Gale-Shapley, EPIC #4365).
 - [social_choice_lean/](../social_choice_lean/) — Projet Lake indépendant (Arrow / Sen / électeur médian, port de asouther4/lean-social-choice).
 - [social_choice_lean_peters/](../social_choice_lean_peters/) — Projet Lake indépendant pinné sur le commit `d679d950` de Peters (Gibbard-Satterthwaite, Duggan-Schwartz).
 - [cooperative_games_lean/](../cooperative_games_lean/) — Projet Lake indépendant (valeur de Shapley, cœur, nucléolus).
@@ -62,7 +62,7 @@ flowchart TD
     PROJ["Projets Lake — preuves formelles<br/>chacun vendore ses définitions adaptées"]
     SC["social_choice_lean/<br/>Arrow · Sen · électeur médian"]
     COOP["cooperative_games_lean/<br/>Shapley · Cœur · Banzhaf"]
-    SM["stable_marriage_lean/<br/>Gale-Shapley"]
+    SM["game_theory_lean/<br/>StableMarriage (Gale-Shapley)"]
     CGT["conway_cgt_lean/<br/>surréels · nimbers (via Mathlib)"]
 
     NOTEBOOKS -->|"copier-coller"| INTRO
@@ -133,7 +133,7 @@ plutôt que de la redéfinir ici.
 - **Projets compilables** (chacun vendore ses propres définitions adaptées aux preuves) :
   [`social_choice_lean/`](../social_choice_lean/) (Arrow / Sen / électeur médian),
   [`cooperative_games_lean/`](../cooperative_games_lean/) (valeur de Shapley, Cœur),
-  [`stable_marriage_lean/`](../stable_marriage_lean/) (Gale-Shapley).
+  [`game_theory_lean/`](../game_theory_lean/) (module StableMarriage, Gale-Shapley, EPIC #4365).
 - **Visite CGT** : [`conway_cgt_lean/`](../conway_cgt_lean/) — surréels, nimbers via
   `vihdzp/combinatorial-games`.
 - **Configuration du kernel** : [scripts/README.md](../scripts/README.md) et

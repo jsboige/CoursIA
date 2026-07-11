@@ -64,7 +64,7 @@ characterisation.
 
 - The Bondareva-Shapley theorem is closed in both directions (`forward` + `backward`), **0 sorry**. The `←` direction extracted a Core allocation via a Farkas / hyperplane-separation argument over a cone; this argument, long tagged **INTRACTABLE**, is now constructed and proved in `CooperativeGames/ConeKernel.lean` (augmented cone `augCone`, dual lemma `augCone_dual_iff`, separator `separatingFunctional_none_neg`, witness decoding `exists_preimputation_strict_core`)
 - Proof arc: PR #3933 (ConeKernel kernel, TUGame-free) → #3941 (`balancedUnit` bridge) → #3945 (decoding core) → #3951 (pipeline wiring) → #3954 (sorry 1→0). `hb_witness` is now a certified `have` (`Basic.lean:348`)
-- Related to `stable_marriage_lean/` (matching theory as cooperative game)
+- Related to `game_theory_lean/` (StableMarriage module, EPIC #4365 — matching theory as cooperative game)
 
 ## Conclusion
 
@@ -115,5 +115,5 @@ plan remains documented in
   Shapley (1953), *A Value for n-Person Games*.
 - **Active plan**: [`docs/BONDAREVA_FARKAS_PLAN.md`](docs/BONDAREVA_FARKAS_PLAN.md)
   and [`FORMAL_STATUS.md`](FORMAL_STATUS.md).
-- **Related**: [`stable_marriage_lean/`](../stable_marriage_lean/) (Gale-Shapley
-  matching) and [`social_choice_lean/`](../social_choice_lean/) (Arrow / Sen).
+- **Related**: [StableMarriage module](../game_theory_lean/) (Gale-Shapley
+  matching, EPIC #4365) and [`social_choice_lean/`](../social_choice_lean/) (Arrow / Sen).

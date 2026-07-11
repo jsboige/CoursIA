@@ -2,8 +2,8 @@
   GameTheory.StableMarriage — root aggregator (EPIC #4365 phase 4)
   ================================================================
 
-  Ce module agregera les 5 sous-modules absorbes depuis
-  `stable_marriage_lean/StableMarriage/` :
+  Ce module regroupe les 5 sous-modules absorbes depuis l'ancien
+  `stable_marriage_lean/StableMarriage/` (desormais supprime) :
 
   - `StableMarriage.Definitions`      (absorbe c.300)
   - `StableMarriage.GSState`          (c.301)
@@ -11,9 +11,10 @@
   - `StableMarriage.GaleShapley`      (c.304)
   - `StableMarriage.Lattice`          (c.305)
 
-  La suppression des fichiers source dans `stable_marriage_lean/`
-  interviendra en c.305 (PR dediee `debt`/`regression-accepted`,
-  cf anti-regression protocol 4 etapes).
+  La suppression du checkout `stable_marriage_lean/` est effective
+  (EPIC #4365 phase 4 ; protocol anti-regression 4 etapes respecte :
+  contenu integralement preserve ici, lake build SUCCESS, 0 sorry net
+  introduit). Refs prose/CI/inventaire mises a jour vers game_theory_lean.
 
   Convention i18n (EPIC #4980 ratifiee user 2026-07-04) : les
   sous-modules `.lean` et leurs siblings `_en.lean` (namespace

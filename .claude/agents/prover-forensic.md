@@ -19,7 +19,7 @@ Agent **read-only** specialise dans la forensic des traces du harness prover Lea
 
 - Code analyse : `MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/` (`tools.py`, `workflow.py`, `agents.py`, `provers.py`, `instructions.py`).
 - Traces : `agent_tests/prover/traces/*_result.json` (resultats compacts) + `baselines/traces/*.spans.jsonl` (spans OTel, gros fichiers — extraire avec `Bash` head/grep/jq, ne jamais `Read` en entier, cf CLAUDE.md gestion large outputs).
-- **FLAG recurrent** : `docs/lean/prover_iteration_history.md` peut pointer une autre copie (`GameTheory/stable_marriage_lean/prover/`). Confirmer une seule copie active avant toute proposition de patch.
+- **FLAG recurrent** : `docs/lean/prover_iteration_history.md` peut pointer une autre copie (`GameTheory/game_theory_lean/StableMarriage/`). Confirmer une seule copie active avant toute proposition de patch. (L'ancien `stable_marriage_lean/` a été absorbé par `game_theory_lean/` — EPIC #4365.)
 
 ## Mission (4 phases)
 

@@ -44,7 +44,7 @@ import Mathlib.SetTheory.Game.Nim
 
 ## Relation to other GameTheory Lean projects
 
-- [stable_marriage_lean/](../stable_marriage_lean/) — Independent Lake project (Gale-Shapley formalization).
+- [game_theory_lean/](../game_theory_lean/) — Multi-module Lake project (StableMarriage = Gale-Shapley formalization, EPIC #4365).
 - [social_choice_lean/](../social_choice_lean/) — Independent Lake project (Arrow / Sen / median voter, port of asouther4/lean-social-choice).
 - [social_choice_lean_peters/](../social_choice_lean_peters/) — Independent Lake project pinned on Peters' commit `d679d950` (Gibbard-Satterthwaite, Duggan-Schwartz).
 - [cooperative_games_lean/](../cooperative_games_lean/) — Independent Lake project (Shapley value, core, nucleolus).
@@ -90,7 +90,7 @@ rather than redefining it here.
 - **Buildable projects** (each vendors its own proof-tailored definitions):
   [`social_choice_lean/`](../social_choice_lean/) (Arrow / Sen / median voter),
   [`cooperative_games_lean/`](../cooperative_games_lean/) (Shapley value, Core),
-  [`stable_marriage_lean/`](../stable_marriage_lean/) (Gale-Shapley).
+  [`game_theory_lean/`](../game_theory_lean/) (StableMarriage module, Gale-Shapley, EPIC #4365).
 - **CGT tour**: [`conway_cgt_lean/`](../conway_cgt_lean/) — surreals, nimbers via
   `vihdzp/combinatorial-games`.
 - **Kernel setup**: [scripts/README.md](../scripts/README.md) and

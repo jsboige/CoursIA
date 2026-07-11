@@ -520,7 +520,7 @@ Si l'encodage SAT d'Arrow (SC-04) semble trivial, vérifiez que le nombre de vot
 
 ### Les projets Lake Lean ne buildent pas
 
-Chaque sous-dossier Lean (`social_choice_lean/`, `cooperative_games_lean/`, `stable_marriage_lean/`, etc.) est un projet Lake indépendant. Pour builder :
+Chaque sous-dossier Lean (`social_choice_lean/`, `cooperative_games_lean/`, `game_theory_lean/`, etc.) est un projet Lake indépendant. Pour builder :
 
 ```bash
 cd MyIA.AI.Notebooks/GameTheory/social_choice_lean
@@ -630,7 +630,7 @@ GameTheory/
 ├── repeated_games_lean/           # Projet Lake jeux répétés (grim trigger, cf #4880)
 ├── social_choice_lean/            # Projet Lake choix social (Arrow, Sen, Voting/Median Voter — 0 sorry)
 ├── social_choice_lean_peters/     # Projet Lake référence DominikPeters (0 sorry, toolchain v4.27.0-rc1)
-├── stable_marriage_lean/          # Projet Lake Gale-Shapley (GS COMPLETE, 0 sorry — énoncés faux réfutés, exists_isManOptimal prouvé)
+├── game_theory_lean/              # Projet Lake multi-module (CooperativeGames + StableMarriage absorbés, EPIC #4365 — Gale-Shapley COMPLETE, exists_isManOptimal prouvé)
 ├── lean_game_defs/                # Projet Lake : types Lean partagés (lakefile.toml)
 ├── lean_game_defs_ext/            # Projet Lake : types étendus (Vickrey 0 sorry, Bayesian — lakefile.toml)
 ├── scripts/                       # Scripts d'installation (WSL Lean, OpenSpiel)
@@ -717,7 +717,7 @@ GameTheory occupe une place à part dans la couche Lean : c'est la famille qui a
 | **GameTheory** (équilibres) | `minimax_lean` (Sion) | Existence d'un équilibre en stratégies mixtes via point fixe (Brouwer-Sion) | GameTheory-5b-Lean-Minimax (companion natif) |
 | **GameTheory** (design) | `lean_game_defs_ext` | Vickrey (enchère au second prix = stratégie dominante), théorème de révélation | GameTheory-11b-Lean-BayesianGamesExt |
 | **GameTheory** (coopératif) | `cooperative_games_lean` (Bondareva-Shapley) | Bondareva-Shapley résolu 0 sorry (#3954), Core non-vide sous balanced | Notebooks 15-15b (coopératif, valeur de Shapley) |
-| **GameTheory** (matching) | `stable_marriage_lean` | Gale-Shapley : existence + optimalité côté proposant | Notebooks 16-2 (matching, Gale-Shapley) |
+| **GameTheory** (matching) | `game_theory_lean` (StableMarriage) | Gale-Shapley : existence + optimalité côté proposant | Notebooks 16-2 (matching, Gale-Shapley) |
 | **GameTheory** (jeux répétés) | `repeated_games_lean` | Stratégie grim-trigger **certifiée 0 sorry** (compagnon formel GT-6c, cf #4880) ; stretch restant : théorème Folk complet (`Folk.lean`) | Notebook 6c (RepeatedGames-FolkTheorem) |
 | **GameTheory** (jeux combinatoires) | `conway_cgt_lean` | Visite guidée (`#check`) de la théorie des jeux combinatoires (Conway CGT) | Notebooks 8/8b (CombinatorialGames, Sprague-Grundy) |
 | **Search** (cross-famille) | `search_lean` (cf. `#4048`) | Consistance + heuristique admissible = optimalité | Search-13 (A*), branchement par preuve de correction |
@@ -738,7 +738,7 @@ flowchart LR
         L2["minimax_lean<br/>Sion"]
         L3["lean_game_defs_ext<br/>Vickrey"]
         L4["cooperative_games_lean<br/>0 sorry #3954"]
-        L5["stable_marriage_lean<br/>Gale-Shapley"]
+        L5["game_theory_lean<br/>StableMarriage (Gale-Shapley)"]
         L6["repeated_games_lean<br/>grim_trigger"]
     end
     N1 -. "impossibilité prouvée" .-> L1
@@ -755,7 +755,7 @@ flowchart LR
     style L6 fill:#e8f5e9
 ```
 
-Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley via `stable_marriage_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
+Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley via `game_theory_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
 
 Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [hub QuantConnect ↔ `kelly_lean`](../QuantConnect/README.md) (PR #5047), [hub central P0 ↔ Lean inter-familles](../README.md) (PR #5049), [hub SymbolicAI Lean](../SymbolicAI/Lean/README.md).
 
