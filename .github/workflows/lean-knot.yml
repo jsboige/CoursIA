@@ -12,7 +12,8 @@ name: Lean Knot CI
 #
 # Uses the shared lean-build.yml reusable workflow.
 #
-# Sorry profile (verified 2026-06-23, prose-header mode, baseline=28):
+# Sorry profile (verified 2026-06-23, prose-header mode; baseline raised 28→30
+# on 2026-07-11 by #6171):
 # knot_lean's real sorries are INLINE (`exact sorry`, `:= sorry`,
 # `sorry -- comment`), never bare `sorry` on its own line. The standalone-tactic
 # filter (`^\s*sorry\s*$`) counts 0 here and would catch no regression, so we
@@ -36,6 +37,17 @@ name: Lean Knot CI
 #                                  mutation — scaffolding)
 #   - Lidman.lean:               5 (11n102 unknotting number = 2 — Heegaard-Floer)
 #   - MathlibPrerequisites.lean: 2 (prose: index of missing Mathlib)
+# #6171 (2026-07-11) raised the baseline 28→30: +2 prose mentions of "sorry" in
+# the bilingual FR+EN inline docstrings of the Knots/ sub-module extension
+# (documenting the Phase-1 scaffolding: "sorry permanent", "sorry commentés",
+# "chaque sorry"). Verified 0 new tactic sorries (PR is +143/-0 docstrings only;
+# all real tactic sorries pre-exist on main and are counted in the 28 above).
+# Prose-header mode flags prose mentions by design (strict); raising the
+# baseline is the workflow-sanctioned mechanism (see "Raising this baseline
+# requires a documented justification in the PR body"). A durable fix is to
+# switch knot_lean to `real` mode (strip comments then word-bound sorry) in a
+# follow-up CI PR, per lean-build.yml's guidance for projects whose docstrings
+# legitimately reference "sorry".
 # Raising this baseline requires a documented justification in the PR body.
 
 on:
@@ -61,5 +73,5 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
       display-name: knot_lean
-      sorry-baseline: "28"
+      sorry-baseline: "30"
       sorry-filter-mode: prose-header
