@@ -35,20 +35,47 @@ Portfolio multi-asset inspiré de Ray Dalio (Bridgewater Associates).
 
 Le notebook [`research.ipynb`](research.ipynb) déroule l'analyse complète : exploration des rendements et volatilités par actif, puis quatre hypothèses testées (static vs risk parity vs tactical, rôle de DBC, fréquence de rebalancement, overlay SMA200), synthèse par comparaison des configurations et exploration de la grille de paramètres. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
-<table>
-<tr>
-<td align="center"><img src="assets/readme/aw-exploration.png" alt="Exploration rendements/volatilité par actif" width="420"/><br/><sub>Exploration — rendements &amp; volatilité annualisés par actif</sub></td>
-<td align="center"><img src="assets/readme/aw-h1-parity.png" alt="H1 Static vs Risk Parity vs Tactical" width="420"/><br/><sub>H1 — Static vs Risk Parity vs Tactical</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/aw-h3-rebalance.png" alt="H3 fréquence de rebalancement" width="420"/><br/><sub>H3 — fréquence de rebalancement</sub></td>
-<td align="center"><img src="assets/readme/aw-h4-sma200.png" alt="H4 overlay SMA200" width="420"/><br/><sub>H4 — overlay tactique SMA200</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/aw-comparison.png" alt="Comparaison Sharpe/drawdown" width="420"/><br/><sub>Comparaison — Sharpe &amp; drawdown par configuration</sub></td>
-<td align="center"><img src="assets/readme/aw-grid-optimal.png" alt="Grille de paramètres optimale" width="420"/><br/><sub>Grille optimale — exploration des paramètres</sub></td>
-</tr>
-</table>
+**Exploration.** L'analyse commence par les rendements et volatilités annualisés de chaque actif — la base sur laquelle toute allocation se construit :
+
+<p align="center">
+  <img src="assets/readme/aw-exploration.png" alt="Exploration rendements/volatilité par actif" width="420"/><br>
+  <em>Exploration — rendements &amp; volatilité annualisés par actif.</em>
+</p>
+
+**H1 — Static vs Risk Parity vs Tactical.** Trois schémas d'allocation sont confrontés : poids fixes, parité de risque, et allocation tactique :
+
+<p align="center">
+  <img src="assets/readme/aw-h1-parity.png" alt="H1 Static vs Risk Parity vs Tactical" width="420"/><br>
+  <em>H1 — Static vs Risk Parity vs Tactical.</em>
+</p>
+
+**H3 — Fréquence de rebalancement.** L'impact de la fréquence (mensuelle, trimestrielle, annuelle) sur la performance et le coût de transaction :
+
+<p align="center">
+  <img src="assets/readme/aw-h3-rebalance.png" alt="H3 fréquence de rebalancement" width="420"/><br>
+  <em>H3 — fréquence de rebalancement.</em>
+</p>
+
+**H4 — Overlay tactique SMA200.** Un overlay SMA200 réduit l'exposition lors des tendances baissières :
+
+<p align="center">
+  <img src="assets/readme/aw-h4-sma200.png" alt="H4 overlay SMA200" width="420"/><br>
+  <em>H4 — overlay tactique SMA200.</em>
+</p>
+
+**Synthèse.** La comparaison des configurations par Sharpe et drawdown résume les trade-offs entre rendement ajusté du risque et profondeur des replis :
+
+<p align="center">
+  <img src="assets/readme/aw-comparison.png" alt="Comparaison Sharpe/drawdown" width="420"/><br>
+  <em>Comparaison — Sharpe &amp; drawdown par configuration.</em>
+</p>
+
+**Grille de paramètres.** Enfin, l'exploration de la grille des paramètres identifie la zone optimale :
+
+<p align="center">
+  <img src="assets/readme/aw-grid-optimal.png" alt="Grille de paramètres optimale" width="420"/><br>
+  <em>Grille optimale — exploration des paramètres.</em>
+</p>
 
 ## Fichiers
 
