@@ -4,7 +4,7 @@
 
 ## Série en quelques mots
 
-L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série complète de **12 notebooks** (z3-solver + matplotlib), de la satisfaction de contraintes à l'optimisation avancée, à l'ordonnancement combinatoire, aux énigmes logiques (CSP), à l'arithmétique symbolique (cryptarithmes), à la coloration de graphe (NP-complet), à la modélisation de grilles 2D (tableaux imbriqués, carrés latins et magiques) et au pont déclaratif avec la série sœur Z3.Linq (C#).
+L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série complète de **13 notebooks** (z3-solver + matplotlib), de la satisfaction de contraintes à l'optimisation avancée, à l'ordonnancement combinatoire, aux énigmes logiques (CSP), à l'arithmétique symbolique (cryptarithmes), à la coloration de graphe (NP-complet), à la modélisation de grilles 2D (tableaux imbriqués, carrés latins et magiques), à l'optimisation réaliste d'un meal-planner hebdomadaire (matrice booléenne `jours × plats`) et au pont déclaratif avec la série sœur Z3.Linq (C#).
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
 
@@ -58,6 +58,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 | 10 | [Cryptarithmes (SEND + MORE = MONEY)](Z3-Python-10-Cryptarithmetic.ipynb) | `Int`, `Distinct`, équation positionnelle, propagation vs brute force, retenues déduites | ~25 min | PRODUCTION |
 | 11 | [Coloration de graphe (Petersen)](Z3-Python-11-Graph-Coloring.ipynb) | `Int` par sommet, contraintes d'arêtes `!=`, recherche linéaire du nombre chromatique, `unsat` = preuve d'optimalité | ~30 min | PRODUCTION |
 | 15 | [Tableaux imbriqués et grilles 2D](Z3-Python-15-Nested-Arrays-2D.ipynb) | Grille 2D déclarative (`Distinct`/`Sum`) vs brute (`Array` de `Array`, `Store`/`Select`), carré latin, Sudoku 4×4, carré magique | ~30 min | PRODUCTION |
+| 16 | [Meal-Planner déclaratif](Z3-Python-16-Meal-Planner.ipynb) | Menu équilibré (index / énumération / booléen), `Optimize.minimize` du coût, plan hebdomadaire matriciel `jours × plats` vs glouton | ~35 min | PRODUCTION |
 
 ### Fil pédagogique
 
@@ -73,6 +74,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 10. **Notebook 10** généralise à l'**arithmétique symbolique sur entiers** avec les cryptarithmes (`SEND + MORE = MONEY`) : chaque lettre est un `Int` dans `{0..9}`, `Distinct` impose l'unicité, et l'équation positionnelle (`1000·S + 100·E + …`) est résolue par propagation — Z3 trouve l'unique solution (`9567 + 1085 = 10652`) en millisecondes tandis que la brute force énumère `P(10,8) = 1 814 400` candidats (~9 s), illustrant le gain du paradigme déclaratif
 11. **Notebook 11** aborde la **coloration de graphe** (NP-complet) sur le graphe de Petersen : une variable `Int` par sommet, des contraintes d'arêtes `C_a != C_b`, et une **recherche linéaire sur k** qui trouve le nombre chromatique `chi = 3` **et le prouve minimal** (`k = 2` → `unsat`). Là où le glouton first-fit hésite (3 ou 4 couleurs selon l'ordre) sans jamais certifier l'optimum, le verdict `unsat` de Z3 est une **preuve formelle** d'impossibilité — la double capacité (trouver ET prouver) est le cœur de l'apport SMT en optimisation combinatoire
 12. **Notebook 15** étend la modélisation du **scalaire à la grille 2D** : un carré latin, un Sudoku 4×4 et un carré magique s'écrivent comme des listes de listes de `Int` contraintes par `Distinct` (lignes/colonnes/blocs) et `Sum` (constante magique 15). Le notebook confronte l'encodage déclaratif (idiomatique z3-py) à l'encodage brut de la théorie des tableaux (`Array` de `Array`, `Store`/`Select` imbriqués) — rendant visible ce que le binding C# Z3.Linq masque derrière son DSL `Theorem<Grid>`. *(Les notebooks 12-14, en cours d'intégration, couvrent l'arithmétique réelle, les noyaux UNSAT et les bit-vectors.)*
+13. **Notebook 16** applique la programmation par contraintes à l'**optimisation réaliste d'un meal-planner** : trois encodages d'un même problème (index, énumération, booléen) montrent que l'approche booléenne (`If(sel_i, val_i, 0)`) rend native la relation sélection-caractéristique. `Optimize.minimize` trouve le menu équilibré de coût minimal en un appel, puis une **matrice booléenne `jours × plats`** produit un plan hebdomadaire (fenêtre kcal/jour + variété globale) que ne sait pas énumérer une heuristique gloutonne — la combinatoire fenêtre × variété n'est pas compositionnelle. C'est le terrain où le solveur démontre sa valeur face à un algorithme impératif naïf.
 
 ## Concepts clés
 
@@ -81,12 +83,13 @@ La série manipule un vocabulaire précis hérité de la programmation par contr
 | Concept | Description | Notebook |
 |---------|-------------|----------|
 | **Solveur SMT (Z3)** | Décide la satisfiabilité d'une formule sur des *théories* (entiers, réels, vecteurs de bits, tableaux, chaînes), pas seulement sur des booléens. | 01 |
-| **`Solver` vs `Optimize`** | `Solver` répond sat/unsat (le problème a-t-il une solution ?) ; `Optimize` ajoute un objectif à maximiser ou minimiser sous contraintes. | 01, 06 |
+| **`Solver` vs `Optimize`** | `Solver` répond sat/unsat (le problème a-t-il une solution ?) ; `Optimize` ajoute un objectif à maximiser ou minimiser sous contraintes. | 01, 06, 16 |
 | **`sat` / `unsat` / `unknown`** | Les trois verdicts de `check()` : il existe un modèle / aucune solution / le solveur ne tranche pas (théorie non décidable, timeout). | 01 |
 | **Modèle** | L'assignation concrète des variables qui satisfait les contraintes, obtenu via `s.model()`. Un seul exemple parmi les solutions possibles, à n'appeler que sur `sat`. | 01 |
 | **Noyau d'insatisfiabilité** | Sous-ensemble minimal de contraintes responsable d'un `unsat` (`unsat_core()`), qui pointe exactement ce qu'il faut assouplir pour rendre le problème réalisable. | 01 |
 | **Assertion / contrainte** | Une formule ajoutée au solveur via `s.add(...)`. Dite *dure* (hard) par défaut : elle doit être satisfaite. | 01 |
 | **`Distinct`** | Contrainte « tous différents » sur un ensemble de variables, raccourci central pour modéliser un Sudoku, un N-reines ou tout CSP d'exclusivité sans énumérer les inégalités deux à deux. | 02 |
+| **Exactement-un booléen** | Encodage « exactement un choisi » par variables `Bool` : `Or(...)` (au-moins-un) + exclusion pairwise `Implies(x_i, Not(x_j))` (au-plus-un). Couplé à `If(sel_i, val_i, 0)` pour les sommes conditionnelles (caractéristiques activées par la sélection). | 16 |
 | **`BitVec`** | Vecteur de bits pour l'arithmétique modulaire (modéliser un overflow, un registre, une primitive cryptographique). | 03 |
 | **`Array`** | Tableau symbolique fonctionnel (théorie des tableaux : select/store) manipulé comme une valeur, pas comme un effet de bord. | 03, 15 |
 | **Tactique** | Transformation du problème avant résolution (`simplify`, `Then`, `OrElse`) pour guider le solveur vers une réponse plus rapide. | 03 |
@@ -141,7 +144,7 @@ Le pattern « décrire les contraintes, laisser le solveur résoudre » s'appliq
 
 - **Résolution de puzzles et CSP** : Sudoku, N-reines, cryptarithmes, carrés latins et magiques — modélisation déclarative (`Distinct`, `And`, `Or`, `Sum`), sans écrire de backtracking à la main. Le notebook 02 en fait l'expérience sur le Sudoku, le notebook 15 sur les grilles 2D (carré latin, carré magique). Comparer avec les 10 autres approches algorithmiques de la [série Sudoku](../../../Sudoku/README.md).
 - **Ordonnancement (scheduling)** : placer des tâches dans le temps sous contraintes de précédence, de ressources et de fenêtres (notebook 08, job-shop ; exercice 2 du notebook 01). Le solveur trouve un planning réalisable, ou retourne le noyau d'insatisfiabilité qui pointe les contraintes conflictuelles.
-- **Allocation de ressources** : maximiser un gain ou minimiser un coût sous bornes et exclusivités (notebook 01, exercice 3 ; notebook 06). `Optimize` traitera directement la fonction objectif.
+- **Allocation de ressources** : maximiser un gain ou minimiser un coût sous bornes et exclusivités (notebook 01, exercice 3 ; notebook 06 ; notebook 16, meal-planner à coût minimal). `Optimize` traitera directement la fonction objectif.
 - **Vérification de programmes** : prouver qu'un code respecte sa spécification (absence d'overflow entiers via `BitVec`, invariants de boucle, propriétés de sûreté) — l'usage industriel historique de Z3 en analyse statique et model-checking.
 - **Configuration** : sélectionner des options compatibles (catalogue produit, planning d'emplois du temps) parmi un ensemble de contraintes d'exclusion et de cardinalité. MaxSAT (notebook 06) permet de relâcher les préférences les moins importantes quand tout n'est pas satisfaisable.
 - **Cryptanalyse et sécurité** : raisonner sur des schémas via `BitVec` (trouver des collisions, des contre-exemples à une propriété cryptographique, des attaques symboliques sur des protocoles).
