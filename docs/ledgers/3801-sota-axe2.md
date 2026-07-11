@@ -1905,4 +1905,75 @@ Le ML-Training-Pipeline pose une question de recherche **genuinely non-trivial**
 - **Cumulatif** : entry #021 = sous-famille **ML-Training-Pipeline** (EPIC #1454) du QuantConnect — complète entry #020 (QC-Py plateforme). Ajoute au registre axe-2 le pattern **deux-tier formation-GPU/analyse-notebook** (distinct du bimodal QC-Py `[REFERENCE QC]`/analytics) + les moteurs **Chronos/Kronos foundation models** + **arch GARCH** + **hmmlearn HMM**. Le registre compte désormais entries #001-#018 + #020 + #021 (entry #019 Lean 4 PR #6050 toujours OPEN).
 - **Mandat Substance > Sweep honoré** : audit SOTA axe-2 = registre substance (≠ doc-hygiène cappé 1/lane/jour), grain deep ai-01 DECIDED exécuté.
 
+## Entry #023 — GenAI/Image (owner po-2024 strict, c.43)
+
+Famille `MyIA.AI.Notebooks/GenAI/Image/` = **20 notebooks de génération d'images** répartis en 4 niveaux pédagogiques + examples : `01-Foundation` (5 : OpenAI DALL-E/GPT-image, opérations basiques, Forge SDXL-Turbo, Qwen-Image-Edit) / `02-Advanced` (5 : Qwen-Edit-2509, FLUX.1, Stable-Diffusion-3.5, Z-Image-Lumina2, Bonsai-Image-Ternary) / `03-Orchestration` (3 : multi-modèle, workflow, perf) / `04-Applications` (4 : éducatif, créatif, production, cross-stitch) + `examples` (3 : histoire, littérature, science). **Entry = family manquante du registre** : GenAI/Texte (#022, ma PR #6152 OPEN) couvre la génération de texte ; GenAI/Image|Audio|Video restaient hors-registre. Audit read-only, vérification firsthand par script python3 sur les 20 .ipynb + lecture directe de chaque notebook (moteur dominant) + grep SOTA imports/refs/services. Worktree `feature/c43-ledger-genai-image` off `origin/main` `df87952b8` (shared tree sale, worktree isolé règle Phase 1). **Numérotation #023** : #019 Lean 4 (PR #6050 OPEN) + #022 GenAI/Texte (PR #6152 OPEN) en attente de merge ai-01 → prochain slot libre = #023.
+
+### Métrique (vérifiée firsthand par le worker, script python3 inline sur les 20 .ipynb)
+
+| Métrique | Valeur | Méthode de vérification |
+|----------|--------|--------------------------|
+| Notebooks totaux | **20** | `glob('GenAI/Image/**/*.ipynb')` = 20 fichiers (hors `_output`) |
+| Cellules totales | **533** | Script python3 sommation `len(cells)` |
+| Cellules code | **257** | `cell_type == 'code'` |
+| Cellules code `execution_count != null` | **257/257 = 100%** | Script python3 — **taux exec maximal** (record registre au pair avec ML-Training-Pipeline #021) |
+| Cellules code `execution_count == null` | **0/257** | Script python3 — AUCUNE cellule non-exécutée |
+| Erreurs `output_type: error` | **0** | Script python3 — 0 occurrence sur les 20 .ipynb |
+| Violations C.1 (`raise NotImplementedError` / `assert False` / `1/0`) | **0** | `grep -nE` sur les 20 .ipynb = 0 hit |
+| Secrets inline (`sk-`/`ghp_`/`AIza`) | **0** | Script python3 regex = 0 hit |
+| `os.getenv` avec literal-secret-default | **0** | Script python3 = 0 hit (28 getenv-benign-default = model names + URLs publiques, bénins) |
+| CJK cosmétique (caractères chinois/japonais) | **0** | Script python3 regex `[一-鿿぀-ヿ]` = 0 hit |
+| Kernelspec | **python3 (20/20)** | metadata kernelspec — kernel uniforme |
+
+### Architecture bimodale — insight central de l'audit (parallèle au QC-Py #020)
+
+La famille GenAI/Image présente une **architecture bimodale cloud/self-hosted**, vérité de terrain vérifiée cellule-par-cellule :
+
+1. **Tier cloud API (RECOVERABLE-USER-HAND, 10/20 notebooks)** : génération via SDK cloud. **OpenAI image API** (`client.images.generate`, DALL-E 3, gpt-image-1) — notebooks 01-1/01-2/01-3, 04-1/04-2/04-3, examples×3 (histoire/littérature/science). L'exécution réelle exige une clé API OpenAI (cloud). Outputs committés = vraies générations DALL-E (EXEC_PROVED), pas de stub.
+2. **Tier self-hosted GPU (RECOVERABLE-MACHINE, 12/20 notebooks)** : génération via **ComfyUI** (workflow à nœuds, API HTTP `/prompt` ports 8188/17861) + **Forge** (backend SD WebUI, port 7860) + **diffusers** local (FLUX.1, Stable-Diffusion-3.5, Z-Image-Lumina2, SDXL-Turbo, Bonsai-Image-Ternary, Qwen-Image-Edit). L'exécution réelle exige l'infra GenAI Docker (po-2023) ou un GPU local. **7/20 notebooks** portent la signature d'API ComfyUI/Forge (`class_type`/`/sdapi/v1`/`/prompt`/port). Cf `docs/genai/genai-services.md` pour l'architecture Qwen/Lumina/Forge/ComfyUI.
+
+**Pas de workaround dégradé** : aucun notebook ne committe un ASCII-art ou une réimplémentation jouet à la place d'une vraie génération. Les outputs sont de vraies images générées (EXEC_PROVED 257/257). Le verdict RECOVERABLE-MACHINE/USER-HAND reflète le routing (service self-hosted vs cloud API), PAS un défaut — exactement comme le bimodal QC-Py `[REFERENCE QC]` (mémoire feedback-qc-cloud-exec-modalities).
+
+### SOTA Prong A — verdicts cités
+
+| Notebook | Engine dominant | Verdict |
+|----------|-----------------|---------|
+| 01-1-OpenAI-DALL-E-3 | OpenAI image API | **RECOVERABLE-USER-HAND** (cloud key) |
+| 01-2-GPT-5-Image-Generation | OpenAI gpt-image | **RECOVERABLE-USER-HAND** |
+| 01-3-Basic-Image-Operations | OpenAI + diffusers | **SOTA-OK / RECOVERABLE-USER-HAND** |
+| 01-4-Forge-SD-XL-Turbo | Forge (SD WebUI) | **RECOVERABLE-MACHINE** (self-hosted) |
+| 01-5-Qwen-Image-Edit | ComfyUI + Qwen-Image | **RECOVERABLE-MACHINE** |
+| 02-1-Qwen-Image-Edit-2509 | ComfyUI + Qwen | **RECOVERABLE-MACHINE** |
+| 02-2-FLUX-1-Advanced-Generation | diffusers FLUX.1 | **RECOVERABLE-MACHINE** (GPU) |
+| 02-3-Stable-Diffusion-3-5 | diffusers SD3.5 | **RECOVERABLE-MACHINE** |
+| 02-4-Z-Image-Lumina2 | diffusers Lumina2 | **RECOVERABLE-MACHINE** |
+| 02-5-Bonsai-Image-Ternary | ComfyUI + diffusers | **RECOVERABLE-MACHINE** |
+| 03-1-Multi-Model-Comparison | ComfyUI + multi | **RECOVERABLE-MACHINE** |
+| 03-2-Workflow-Orchestration | ComfyUI + Forge + OpenAI | **RECOVERABLE-MACHINE / USER-HAND** |
+| 03-3-Performance-Optimization | diffusers | **RECOVERABLE-MACHINE** |
+| 04-1/2/3-Educational/Creative/Production | OpenAI image | **RECOVERABLE-USER-HAND** |
+| 04-4-Cross-Stitch-Pattern-Maker | ComfyUI + diffusers | **RECOVERABLE-MACHINE** |
+| examples (history/literature/science) | OpenAI image | **RECOVERABLE-USER-HAND** |
+
+**SOTA engines nouveaux pour le registre** : **ComfyUI** (workflow node-based diffusion, ports 8188/17861) + **Forge** (SD WebUI backend, port 7860) + **HuggingFace diffusers** (FLUX.1 / SD3.5 / Lumina2 / SDXL-Turbo backends) + **Qwen-Image** (Alibaba) + **Replicate/Stability-AI** (cloud alt). OpenAI SDK déjà compté (#021/#022). LoRA (11 notebooks) + ControlNet/inpainting/img2img = techniques de diffusion exercées.
+
+### Prong B (non-trivialité) — **DISCRIMINATING, exercice multi-capacité**
+
+La série GenAI/Image est **anti-dégénérée** : chaque notebook exerce une **capacité distinctive** de son moteur, pas une baseline triviale :
+- **Multi-modèle comparison** (03-1) : 5 moteurs (dalle3/forge-sdxl/qwen-edit/flux/lumina) confrontés sur le même prompt → la capacité comparative est visible dans la sortie (portrait vs inpainting vs photo-réaliste vs diffuse).
+- **Workflow orchestration** (03-2) : pipeline multi-étapes ComfyUI (txt2img→ControlNet→upscale) — pas de single-call trivial.
+- **Inpainting / img2img / Qwen-Image-Edit** (01-5/02-1) : édition conditionnée d'image — exige un modèle d'inpainting/edit, pas juste txt2img.
+- **Z-Image-Lumina2 + Bonsai-Ternary** (02-4/02-5) : architectures de diffusion avancées (Lumina2 flag-attention, Bonsai ternary quantization) — pas un SD vanilla.
+≠ cas dégénéré où la génération équivaut à un retour de constante.
+
+**Gap non-bloquant pour le verdict SOTA** : 17/20 notebooks ont <3 exercices (rollout #2161 non saturé pour GenAI/Image). C'est une **opportunité d'enrichissement future**, pas un défaut SOTA — les notebooks eux-mêmes sont SOTA-OK (EXEC_PROVED, vraies générations). Tracking via #2161, hors scope de cet audit.
+
+### Synthèse
+
+- **EXEC_PROVED global** : 20/20 (100%, **257/257 cells**) — taux exec **maximal**, aucun `[REFERENCE QC]` (GenAI services ≠ QC Cloud modalité).
+- **Substance GenAI/Image = riche et SOTA-OK**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + secrets-hygiene + Stop & Repair. Architecture bimodale cloud (OpenAI) / self-hosted GPU (ComfyUI/Forge/diffusers) documentée. 5 SOTA engines nouveaux pour le registre.
+- **Pas de fix nécessaire** : audit consultatif additif, 0 PR de substance sur les notebooks. Safe owner-lane (audit read-only, po-2025 travaille les figures #5780 sur les README — 0 collision, audit n'y touche pas).
+- **Cumulatif** : entry #023 = **nouvelle famille GenAI/Image** (vs GenAI/Texte #022, vs ML-Training-Pipeline #021) — complète la couverture GenAI du registre. Anti-monoculture R6 : GenAI/Image (famille image-gen) ≠ 3 audits précédents axes différents. GenAI/Audio + GenAI/Video restent à auditer (family manquantes suivantes).
+- **Résiduel** : entry #023 PR en attente review/merge ai-01. #019 Lean + #022 GenAI/Texte en attente également — séquence fusion ai-01.
+
 Part of #3801
