@@ -1,19 +1,16 @@
 # IIT - Integrated Information Theory
 
-<!-- CATALOG-STATUS
-series: IIT
-pedagogical_count: 30
-breakdown: ICT-Series=27, root=3
-maturity: BETA=19, PRODUCTION=10, ALPHA=1
--->
-
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ Probas](../Probas/README.md)
+
+## Hook — pourquoi cette série
 
 La conscience est-elle mesurable ? La Théorie de l'Information Intégrée (IIT), proposée par Giulio Tononi, répond oui : un système est conscient dans la mesure où il intègre de l'information de manière non réductible. Plus formellement, la quantité de conscience d'un système correspond à la valeur **Phi** (big Phi), qui mesure le degré d'intégration causale irréductible. Cette série vous apprend à calculer cette mesure avec **PyPhi**, la bibliothèque de référence du laboratoire Tononi, et à explorer la géométrie informationnelle des systèmes complexes.
 
 Le premier notebook couvre le spectre fondamental : construction de graphes causaux binaires, calcul des Transition Probability Matrices (TPM), définition des sous-systèmes, extraction des Cause-Effect Structures (CES), et exploration des macro-sous-systèmes. Le second approfondit les aspects avancés : partitionnement MIP, répertoires cause-effet, MICE, comparaison big Phi vs small phi, réseaux élargis à 4+ nœuds, coarse-graining et aperçu IIT 4.0. Le troisième est consacré au **coarse-graining et à la question de l'échelle du $\Phi$** : il opérationnalise le module `pyphi.macro` (information efficace de Hoel, énumération des regroupements, comparaison micro/macro) et examine honnêtement la prédiction de *causal emergence*.
 
-**À qui s'adresse cette série** : étudiants en sciences cognitives, neuroscience computationnelle, et philosophie de l'esprit. Les notebooks (~60-90 min chacun) nécessitent Python 3.9 avec `pyphi` (installé via conda env dédié). Une familiarité avec les graphes et la logique booléenne suffit. Il constitue un complément théorique aux séries [Probas](../Probas/README.md) (modèles probabilistes) et [GameTheory](../GameTheory/README.md) (systèmes multi-agents), avec lesquelles il partage les concepts de causalité et d'interaction.
+## À qui s'adresse cette série
+
+Étudiants en sciences cognitives, neuroscience computationnelle, et philosophie de l'esprit. Les notebooks (~60-90 min chacun) nécessitent Python 3.9 avec `pyphi` (installé via conda env dédié). Une familiarité avec les graphes et la logique booléenne suffit. Il constitue un complément théorique aux séries [Probas](../Probas/README.md) (modèles probabilistes) et [GameTheory](../GameTheory/README.md) (systèmes multi-agents), avec lesquelles il partage les concepts de causalité et d'interaction.
 
 ## Objectifs d'apprentissage
 
@@ -68,44 +65,42 @@ Le deuxième notebook déconstruit le calcul de Phi : vous manipulez les biparti
 
 Le troisième notebook opérationnalise le module `pyphi.macro` resté conceptuel jusque-là : vous mesurez l'**information efficace** (EI) de Hoel, énumérez les regroupements (coarse-grain) possibles d'un réseau, et comparez $\Phi$ à l'échelle micro et macro sur l'exemple canonique de pyphi. Surtout, il examine **honnêtement** la prédiction contre-intuitive de *causal emergence* (Hoel 2013) : pourquoi le $\Phi$ macro ne dépasse le $\Phi$ micro que sur des réseaux probabilistes où le coarse-grain filtre du bruit, et pas sur des toys déterministes. Les 3 exercices portent sur la dégénérescence (réseau AND), l'énumération des regroupements et le test d'une hypothèse d'emergence.
 
-## Contenu détaillé
+## Prérequis
 
-### IIT-1-IntroToPyPhi.ipynb
+### Connaissances requises
 
-| Section | Contenu |
-|---------|---------|
-| Installation | `pip install pyphi`, vérification de la version de la bibliothèque |
-| Réseaux | Réseau XOR 3-nœuds de référence, inspection des `node_labels` |
-| TPM | Conversion *state-by-node*, dimensions de la matrice de transition |
-| Sous-systèmes & Φ | Calcul de Φ d'un sous-système à un état donné, boucle sur plusieurs états |
-| États inaccessibles | Validation via `StateUnreachableError`, option `VALIDATE_SUBSYSTEM_STATES` |
-| CES | `pyphi.compute.ces`, décompte des concepts d'un sous-système |
-| Causation actuelle | Liens causaux d'une transition (`account`), mécanisme d'un concept |
-| Macro-sous-systèmes | Coarse-graining, blackboxing (section conceptuelle) |
+- Python de base (imports, fonctions, tableaux)
+- Logique booléenne (états binaires 0, 1)
+- Notions de théorie des graphes (nœuds, connexions)
 
-### IIT-2-AdvancedTopics.ipynb
+### Environnement Python
 
-| Section | Contenu |
-|---------|---------|
-| Rappels | Réseau XOR 3-nœuds, reprise des concepts du notebook 1 |
-| Partitionnement MIP | `bipartition`, décompte des partitions, interprétation de la coupe minimale |
-| Répertoires cause-effet | Répertoires cause, effet et non-perturbé d'un mécanisme donné |
-| MICE et concepts | MICE du mécanisme {A,B}, décompte des concepts de la CES |
-| Big Phi vs Small Phi | Big Phi au niveau système (SIA) face au small phi d'un mécanisme (MICE) |
-| Réseaux élargis | Réseau 4-nœuds en anneau (XOR cyclique), Φ sur système élargi |
-| Performance | Timing du calcul de CES, module `pyphi.macro` |
-| IIT 4.0 | Concept-Style SIA, limites computationnelles, débats |
+```bash
+# Automated setup (creates conda env + registers kernel)
+powershell -File scripts/setup_pyphi_env.ps1
 
-### IIT-3-CoarseGrainingMacroPhi.ipynb
+# Manual setup (Python 3.9 required for PyPhi 1.2.0)
+conda create --name pyphi python=3.9 -y
+conda activate pyphi
+pip install pyphi==1.2.0 numpy scipy ipykernel
+python -m ipykernel install --user --name pyphi --display-name "Python 3 (PyPhi/IIT)"
+```
 
-| Section | Contenu |
-|---------|---------|
-| Setup | Configuration mono-cœur déterministe de `pyphi.macro` |
-| Échelle micro | Réseau copy 3-nœuds, information efficace (EI) et $\Phi$ de référence |
-| Méthode coarse-grain | `all_partitions` : énumération des regroupements possibles |
-| Échelle macro | Exemple canonique `macro_network`, $\Phi$ coarse-grained |
-| Comparaison micro/macro | $\Phi$ macro vs $\Phi$ micro, interprétation honnête de l'emergence |
-| Causal emergence | Hoel 2013 : pourquoi l'emergence positive n'est ni automatique ni garantie |
+### Dépendances
+
+| Package | Version | Utilisation |
+|---------|---------|-------------|
+| pyphi | 1.2.0+ | Calculs IIT |
+| numpy | 1.21.6+ | Calcul numérique |
+| scipy | 0.13.3+ | Fonctions scientifiques |
+
+## Limitations connues
+
+| Problème | Cause | Solution |
+|----------|-------|----------|
+| `ImportError: cannot import name 'Iterable'` | PyPhi 1.2.0 utilise `collections.Iterable` (supprimé Python 3.10+) | Utiliser Python 3.9 (`conda create -n pyphi python=3.9`) |
+| StateUnreachableError | États inaccessibles | Configuration `VALIDATE_SUBSYSTEM_STATES` |
+| Performance | Phi calcul intensif pour grands réseaux | Limiter taille des réseaux |
 
 ## Concepts clés
 
@@ -145,42 +140,44 @@ flowchart TD
     BIGMIP --> PHI
 ```
 
-## Prérequis
+## Contenu détaillé
 
-### Connaissances requises
+### IIT-1-IntroToPyPhi.ipynb
 
-- Python de base (imports, fonctions, tableaux)
-- Logique booléenne (états binaires 0, 1)
-- Notions de théorie des graphes (nœuds, connexions)
+| Section | Contenu |
+|---------|---------|
+| Installation | `pip install pyphi`, vérification de la version de la bibliothèque |
+| Réseaux | Réseau XOR 3-nœuds de référence, inspection des `node_labels` |
+| TPM | Conversion *state-by-node*, dimensions de la matrice de transition |
+| Sous-systèmes & Φ | Calcul de Φ d'un sous-système à un état donné, boucle sur plusieurs états |
+| États inaccessibles | Validation via `StateUnreachableError`, option `VALIDATE_SUBSYSTEM_STATES` |
+| CES | `pyphi.compute.ces`, décompte des concepts d'un sous-système |
+| Causation actuelle | Liens causaux d'une transition (`account`), mécanisme d'un concept |
+| Macro-sous-systèmes | Coarse-graining, blackboxing (section conceptuelle) |
 
-### Environnement Python
+### IIT-2-AdvancedTopics.ipynb
 
-```bash
-# Automated setup (creates conda env + registers kernel)
-powershell -File scripts/setup_pyphi_env.ps1
+| Section | Contenu |
+|---------|---------|
+| Rappels | Réseau XOR 3-nœuds, reprise des concepts du notebook 1 |
+| Partitionnement MIP | `bipartition`, décompte des partitions, interprétation de la coupe minimale |
+| Répertoires cause-effet | Répertoires cause, effet et non-perturbé d'un mécanisme donné |
+| MICE et concepts | MICE du mécanisme {A,B}, décompte des concepts de la CES |
+| Big Phi vs Small Phi | Big Phi au niveau système (SIA) face au small phi d'un mécanisme (MICE) |
+| Réseaux élargis | Réseau 4-nœuds en anneau (XOR cyclique), Φ sur système élargi |
+| Performance | Timing du calcul de CES, module `pyphi.macro` |
+| IIT 4.0 | Concept-Style SIA, limites computationnelles, débats |
 
-# Manual setup (Python 3.9 required for PyPhi 1.2.0)
-conda create --name pyphi python=3.9 -y
-conda activate pyphi
-pip install pyphi==1.2.0 numpy scipy ipykernel
-python -m ipykernel install --user --name pyphi --display-name "Python 3 (PyPhi/IIT)"
-```
+### IIT-3-CoarseGrainingMacroPhi.ipynb
 
-### Dépendances
-
-| Package | Version | Utilisation |
-|---------|---------|-------------|
-| pyphi | 1.2.0+ | Calculs IIT |
-| numpy | 1.21.6+ | Calcul numérique |
-| scipy | 0.13.3+ | Fonctions scientifiques |
-
-## Limitations connues
-
-| Problème | Cause | Solution |
-|----------|-------|----------|
-| `ImportError: cannot import name 'Iterable'` | PyPhi 1.2.0 utilise `collections.Iterable` (supprimé Python 3.10+) | Utiliser Python 3.9 (`conda create -n pyphi python=3.9`) |
-| StateUnreachableError | États inaccessibles | Configuration `VALIDATE_SUBSYSTEM_STATES` |
-| Performance | Phi calcul intensif pour grands réseaux | Limiter taille des réseaux |
+| Section | Contenu |
+|---------|---------|
+| Setup | Configuration mono-cœur déterministe de `pyphi.macro` |
+| Échelle micro | Réseau copy 3-nœuds, information efficace (EI) et $\Phi$ de référence |
+| Méthode coarse-grain | `all_partitions` : énumération des regroupements possibles |
+| Échelle macro | Exemple canonique `macro_network`, $\Phi$ coarse-grained |
+| Comparaison micro/macro | $\Phi$ macro vs $\Phi$ micro, interprétation honnête de l'emergence |
+| Causal emergence | Hoel 2013 : pourquoi l'emergence positive n'est ni automatique ni garantie |
 
 ## Théorie IIT
 
@@ -252,39 +249,6 @@ Pas au-delà de ~5-7 nœuds en pratique. Le nombre de bipartitions à évaluer c
 
 Oui, mais avec caveats. PyPhi est la référence pour IIT 3.0, mais IIT 4.0 (2024+) introduit des changements fondamentaux dans le calcul de Phi. Pour un projet de recherche, vérifier la version de la théorie que vous suivez et consulter la [documentation PyPhi](https://pyphi.readthedocs.io/en/stable/) pour les limitations actuelles.
 
-## Ressources
-
-### Documentation PyPhi
-
-- [PyPhi Documentation officielle](https://pyphi.readthedocs.io/en/stable/)
-- [PyPhi GitHub](https://github.com/wmayner/pyphi)
-- [Exemples PyPhi](https://github.com/wmayner/pyphi/tree/master/examples)
-
-### Fondements théoriques
-
-- Tononi, G. (2008) - *Consciousness as Integrated Information*
-- Oizumi, M., Albantakis, L., Tononi, G. (2014) - *From the Phenomenology to the Mechanisms of Consciousness*
-
-## Structure des fichiers
-
-```
-IIT/
-├── IIT-1-IntroToPyPhi.ipynb           # Notebook 1 : introduction
-├── IIT-2-AdvancedTopics.ipynb         # Notebook 2 : sujets avances
-├── IIT-3-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
-├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
-│   ├── ICT-0-Framing.md        # Cadrage de la série ICT
-│   ├── ICT-*.ipynb             # Notebooks numérotés 1..23 + raffinement ICT-19 + ICT-Synthese (5 strates, Epic #4588 — cf son README)
-│   ├── ict/                    # Package Python autonome (simulations + mesures)
-│   ├── tests/                  # Suite pytest de validation des modules ict/
-│   └── README.md               # Documentation de la série ICT
-├── requirements.txt            # Dépendances Python (partagées IIT + ICT)
-├── scripts/
-│   ├── setup_pyphi_env.ps1     # Setup conda env + kernel (partagé IIT + ICT)
-│   └── build_notebook.py       # Script de construction notebook 2
-└── README.md                   # Cette documentation
-```
-
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
@@ -308,7 +272,44 @@ La thèse est vertigineuse et honnêtement présentée : si IIT a raison, la con
 
 IIT propose un changement de regard radical : ne plus demander « qu'est-ce que la conscience ? » mais **« combien de conscience ce système intègre-t-il ? »**. La série vous a donné l'outil (PyPhi) et le formalisme (Phi, CES, MIP) pour transformer une question philosophique en un calcul — en gardant à l'esprit qu'aucune mesure, aussi élégante soit-elle, ne clôt à elle seule le débat sur ce que c'est que d'être un système qui ressent quelque chose.
 
-## Extension : la série ICT (Integrated Causal Trajectories)
+---
+
+## Annexes
+
+### Structure des fichiers
+
+```
+IIT/
+├── IIT-1-IntroToPyPhi.ipynb           # Notebook 1 : introduction
+├── IIT-2-AdvancedTopics.ipynb         # Notebook 2 : sujets avances
+├── IIT-3-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
+├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
+│   ├── ICT-0-Framing.md        # Cadrage de la série ICT
+│   ├── ICT-*.ipynb             # Notebooks numérotés 1..23 + raffinement ICT-19 + ICT-Synthese (5 strates, Epic #4588 — cf son README)
+│   ├── ict/                    # Package Python autonome (simulations + mesures)
+│   ├── tests/                  # Suite pytest de validation des modules ict/
+│   └── README.md               # Documentation de la série ICT
+├── requirements.txt            # Dépendances Python (partagées IIT + ICT)
+├── scripts/
+│   ├── setup_pyphi_env.ps1     # Setup conda env + kernel (partagé IIT + ICT)
+│   └── build_notebook.py       # Script de construction notebook 2
+└── README.md                   # Cette documentation
+```
+
+### Ressources
+
+#### Documentation PyPhi
+
+- [PyPhi Documentation officielle](https://pyphi.readthedocs.io/en/stable/)
+- [PyPhi GitHub](https://github.com/wmayner/pyphi)
+- [Exemples PyPhi](https://github.com/wmayner/pyphi/tree/master/examples)
+
+#### Fondements théoriques
+
+- Tononi, G. (2008) - *Consciousness as Integrated Information*
+- Oizumi, M., Albantakis, L., Tononi, G. (2014) - *From the Phenomenology to the Mechanisms of Consciousness*
+
+### Extension : la série ICT (Integrated Causal Trajectories)
 
 La série IIT étudie des structures causales **à un instant donné**. Une extension expérimentale,
 **ICT** (Integrated Causal Trajectories, Epic #4588), prolonge ce regard vers les **trajectoires**
@@ -332,7 +333,7 @@ complète des notebooks, les cinq strates et le détail des mesures *sans compla
 partage l'environnement Python d'IIT (`scripts/setup_pyphi_env.ps1`, `requirements.txt`) ; la jambe
 SAE (ICT-21 et suivants) utilise en plus un environnement conda dédié (`coursia-sae`).
 
-## Ponts causaux : le do-calculus de Pearl à travers les paradigmes
+### Ponts causaux : le do-calculus de Pearl à travers les paradigmes
 
 Quatre séries du dépôt abordent la **causalité** — non pas la corrélation, mais la question
 « que se passe-t-il si j'**interviens** ? ». Elles le font dans des paradigmes radicalement
@@ -385,10 +386,17 @@ et lever le paradoxe de Simpson ; finir par l'**information-théorique**
 
 *Voir #4208 (surfaçage des différenciants du dépôt) et l'Epic ICT #4588.*
 
-## Licence
+### Licence
 
 Voir la licence du repository principal.
 
 ---
 
 *Version 1.3.0 — Juillet 2026*
+
+<!-- CATALOG-STATUS
+series: IIT
+pedagogical_count: 30
+breakdown: ICT-Series=27, root=3
+maturity: BETA=19, PRODUCTION=10, ALPHA=1
+-->
