@@ -56,7 +56,6 @@ project:
     - "MyIA.AI.Notebooks/GameTheory/social_choice_lean/README.md"
     - "MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters/README.md"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/README.md"
-    - "MyIA.AI.Notebooks/GameTheory/stable_marriage_lean/README.md"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/README.md"
     - "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/README.md"
     - "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/README.md"

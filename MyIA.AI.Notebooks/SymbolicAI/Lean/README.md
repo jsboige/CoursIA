@@ -419,7 +419,7 @@ Les notebooks GameTheory side tracks (16b-16f) formalisent en Lean 4 des résult
 | théorème de Sen (libéralisme) | `social_choice_lean/SocialChoice/Sen.lean` | 16e | 0 sorry (bidirectionnel) |
 | Valeur de Shapley | `cooperative_games_lean/CooperativeGames/Shapley.lean` | 16b | 1 sorry (en cours) |
 | Modèles de vote (Banks, STV) | `social_choice_lean/SocialChoice/Voting.lean` | 16f | 4 sorry (open problems) |
-| Gale-Shapley (stable marriage) | `stable_marriage_lean/StableMarriage/GaleShapley.lean` | (pas de notebook dédié) | 2 sorry / 5 théorèmes. `gale_shapley_stable` CLOSED via mmaaz upstream (PR #1181). `man_optimal` + `woman_pessimal` OPEN (Knuth 1976 lattice, Wu-Roth 2018 — ~5-8j Mathlib). |
+| Gale-Shapley (stable marriage) | `game_theory_lean/StableMarriage/GaleShapley.lean` | (pas de notebook dédié) | 2 sorry / 5 théorèmes. `gale_shapley_stable` CLOSED via mmaaz upstream (PR #1181). `man_optimal` + `woman_pessimal` OPEN (Knuth 1976 lattice, Wu-Roth 2018 — ~5-8j Mathlib). |
 
 Le notebook Lean-5 (tactiques) et Lean-6 (Mathlib) sont des prérequis directs pour les side tracks Lean de GameTheory.
 
