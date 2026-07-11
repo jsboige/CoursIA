@@ -17,22 +17,47 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 ## Aperçu — les cas d'usage production vidéo en images
 
-Ce niveau met en oeuvre les workflows complets : génération automatique de contenu éducatif, workflows créatifs, génération cloud via l'API Sora, et pipeline de production bout-en-bout. La galerie ci-dessous présente des aperçus de frames extraits des notebooks.
+Ce niveau met en oeuvre les workflows complets : génération automatique de contenu éducatif, workflows créatifs, génération cloud via l'API Sora, et pipeline de production bout-en-bout. Les aperçus de frames ci-dessous, regroupés par cas d'usage, illustrent chaque workflow.
 
-<table>
-<tr>
-<td align="center"><img src="assets/readme/vid4-educational.png" alt="Génération vidéo éducative — aperçu des frames" width="400"/><br/><sub>Vidéo éducative (04-1)</sub></td>
-<td align="center"><img src="assets/readme/vid4-creative.png" alt="Workflow créatif vidéo — séquence générée" width="400"/><br/><sub>Workflow créatif (04-2)</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/vid4-creative2.png" alt="Workflow créatif — variante de composition" width="400"/><br/><sub>Créatif variante (04-2)</sub></td>
-<td align="center"><img src="assets/readme/vid4-sora.png" alt="Génération Sora via API cloud" width="400"/><br/><sub>Sora API cloud (04-3)</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/vid4-sora2.png" alt="Génération Sora — aperçu alternatif" width="400"/><br/><sub>Sora variante (04-3)</sub></td>
-<td align="center"><img src="assets/readme/vid4-pipeline.png" alt="Pipeline vidéo production — orchestration" width="400"/><br/><sub>Pipeline production (04-4)</sub></td>
-</tr>
-</table>
+### Vidéo éducative (04-1)
+
+Génération automatique de contenu pédagogique : le workflow produit des séquences de frames illustrant un concept, prêtes à être intégrées dans un module de cours.
+
+<p align="center">
+  <img src="assets/readme/vid4-educational.png" alt="Génération vidéo éducative — aperçu des frames" width="480"/>
+</p>
+
+### Workflows créatifs (04-2)
+
+Composition créative assistée : séquences générées et leurs variantes de composition, montrant comment le workflow explore différentes mises en scène à partir d'un même prompt.
+
+<p align="center">
+  <img src="assets/readme/vid4-creative.png" alt="Workflow créatif vidéo — séquence générée" width="480"/>
+</p>
+
+<p align="center">
+  <img src="assets/readme/vid4-creative2.png" alt="Workflow créatif — variante de composition" width="480"/>
+</p>
+
+### Génération cloud via l'API Sora (04-3)
+
+Appel à l'API Sora pour la génération cloud, avec aperçus des sorties et de leurs variantes alternatives.
+
+<p align="center">
+  <img src="assets/readme/vid4-sora.png" alt="Génération Sora via API cloud" width="480"/>
+</p>
+
+<p align="center">
+  <img src="assets/readme/vid4-sora2.png" alt="Génération Sora — aperçu alternatif" width="480"/>
+</p>
+
+### Pipeline de production bout-en-bout (04-4)
+
+Orchestration complète : du prompt à la vidéo finale, enchaînant génération, post-traitement et assemblage dans un pipeline reproductible.
+
+<p align="center">
+  <img src="assets/readme/vid4-pipeline.png" alt="Pipeline vidéo production — orchestration" width="480"/>
+</p>
 
 Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
