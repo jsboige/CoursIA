@@ -90,12 +90,42 @@ def _api_post(path: str, data: Optional[dict] = None) -> dict:
     return payload
 
 
+def _parse_int(value: Any) -> int:
+    """Parse a QC statistics string to int.
+
+    QC statistics values are strings ('318', '1,234', '-'); '-' is the
+    'not applicable' marker (a 0-trade backtest shows '-' for several fields).
+    Returns 0 for None, '', '-', or anything unparseable.
+    """
+    if value is None:
+        return 0
+    text = str(value).strip().replace(",", "")
+    if text in ("", "-", "nan", "NaN", "None"):
+        return 0
+    try:
+        return int(float(text))
+    except (ValueError, TypeError):
+        return 0
+
+
 def _extract_stats(bt: dict) -> dict:
     stats = bt.get("statistics", {}) or {}
+    runtime_stats = bt.get("runtimeStatistics", {}) or {}
     # Surface runtime errors so a failed backtest is diagnosable without a
     # separate raw dump (QC returns 'error' + 'stacktrace' on Runtime Error).
     error = bt.get("error") or ""
     stacktrace = bt.get("stacktrace") or ""
+    # totalOrders is NOT reliably at the top level of the QC backtests/read
+    # object: on completed backtests it is null there. The authoritative count
+    # lives in statistics['Total Orders'] (a string like '318'). The top-level
+    # field is only used as a fallback for summary/list responses that omit the
+    # statistics dict. Without this, a real strategy that placed 318 orders is
+    # reported as totalOrders=0 and falsely diagnosed as 'never traded'.
+    total_orders_raw = stats.get("Total Orders")
+    if total_orders_raw not in (None, "", "-"):
+        total_orders = _parse_int(total_orders_raw)
+    else:
+        total_orders = bt.get("totalOrders") or 0
     result = {
         "backtestId": bt.get("backtestId", ""),
         "name": bt.get("name", ""),
@@ -103,19 +133,28 @@ def _extract_stats(bt: dict) -> dict:
         "created": bt.get("created", ""),
         "completed": bt.get("completed", ""),
         "tradeableDates": bt.get("tradeableDates", 0),
-        "totalOrders": bt.get("totalOrders") or 0,
+        "totalOrders": total_orders,
         "equity": bt.get("equity", {}),
         "statistics": {
             "sharpeRatio": stats.get("Sharpe Ratio", "-"),
             "compoundingAnnualReturn": stats.get("Compounding Annual Return", "-"),
             "drawdown": stats.get("Drawdown", "-"),
-            "totalNetProfit": stats.get("Total Net Profit", "-"),
+            # QC's statistics dict keys net profit as 'Net Profit' (a
+            # percentage like '76.088%'), NOT 'Total Net Profit' — the latter
+            # is a runtimeStatistics label and never appears in statistics.
+            "totalNetProfit": stats.get("Net Profit", "-"),
             "probabilisticSharpeRatio": stats.get(
                 "Probabilistic Sharpe Ratio", "-"
             ),
         },
         "progress": bt.get("progress", 0),
     }
+    # Surface the dollar-denominated net profit from runtimeStatistics (e.g.
+    # '$59,745.60') alongside the percentage figure in statistics — useful for
+    # diagnosis and disambiguates the '%' return from an absolute PnL.
+    runtime_profit = runtime_stats.get("Net Profit")
+    if runtime_profit:
+        result["statistics"]["netProfitAbsolute"] = runtime_profit
     if error or stacktrace:
         # 'error' and 'stacktrace' are often identical; keep both but cap size.
         result["error"] = error[:1200]
