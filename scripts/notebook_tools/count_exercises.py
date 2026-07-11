@@ -69,8 +69,27 @@ EXCLUDE_DIRS = {
 
 # \bexercice\b anywhere in the line, case-insensitive, French or English form.
 # Matches `### Exercice 1`, `## 8. Exercice`, `### Exercice - ...`, `### Exercise`.
+# Used for CODE-cell comment detection (broad: a code stub's comment is always an
+# instance reference; plural section headers do not appear as code comments).
 EXERCISE_WORD_RE = re.compile(r"\bexercic(?:e|es)\b", re.IGNORECASE)
 EXERCISE_WORD_EN_RE = re.compile(r"\bexercises?\b", re.IGNORECASE)
+
+# SINGULAR-only forms for MARKDOWN instance-header counting (#6051). A markdown
+# header is one EXERCISE INSTANCE only when it names a singular exercise
+# (`### Exercice 1`, `## 8. Exercice`, `### Exercise`). A PLURAL section header
+# (`## 9. Exercices`, `## Exercises`) groups exercises without being one -- it
+# must NOT count as an instance NOR steal the forward-pairing of the next code
+# cell (Bug 2: `## 9. Exercices` was forward-pairing the real Exercice 1 stub,
+# so the section header stood in for the exercise and hid the real count).
+# `\bexercice\b` does not match `exercices` (no word boundary between `e` and
+# `s`), so these cleanly separate singular instances from plural sections.
+EXERCISE_INSTANCE_RE = re.compile(r"\bexercice\b", re.IGNORECASE)
+EXERCISE_INSTANCE_EN_RE = re.compile(r"\bexercise\b", re.IGNORECASE)
+# Plural-only detection (a markdown header whose exercise word is ONLY plural is
+# a section, not an instance). Used to decide whether a header cell that mentions
+# the exercise word carries any real instance.
+EXERCISE_SECTION_RE = re.compile(r"\bexercices\b", re.IGNORECASE)
+EXERCISE_SECTION_EN_RE = re.compile(r"\bexercises\b", re.IGNORECASE)
 
 # An ATX markdown header line starts with `#` (1-6 hashes) followed by a space
 # and the header text. We deliberately do NOT match Setext headers (underlines
@@ -260,6 +279,36 @@ def _markdown_mentions_exercise(source: str) -> bool:
     return False
 
 
+def _markdown_instance_header_lines(source: str) -> list[str]:
+    """Markdown header texts that each name a SINGULAR exercise instance.
+
+    Returns one entry per INSTANCE header line, so a single markdown cell that
+    groups several exercise statements under sub-headers (`### Exercice 1`,
+    `### Exercice 2`, `### Exercice 3`) yields 3 instances, not 1 (#6051 Bug 1:
+    such a grouped cell was under-counted because pass 1 added one hit per CELL).
+
+    PLURAL section headers (`## 9. Exercices`, `## Exercises`) are excluded:
+    a section groups exercises without being one. A header line is an instance
+    only when it carries a SINGULAR exercise word. This also prevents a plural
+    section header from acting as a header cell that forward-pairs the next code
+    cell (Bug 2: the section `## 9. Exercices` stole the real Exercice 1 stub).
+
+    A line that contains BOTH a plural and a singular form is treated as an
+    instance (the singular reference dominates): e.g. ``## Exercices : Exercice 1
+    recapitulatif`` still counts. A line with ONLY the plural is a section.
+    """
+    instances: list[str] = []
+    for m in MARKDOWN_HEADER_RE.finditer(source):
+        header_text = m.group(1)
+        has_singular = bool(
+            EXERCISE_INSTANCE_RE.search(header_text)
+            or EXERCISE_INSTANCE_EN_RE.search(header_text)
+        )
+        if has_singular:
+            instances.append(header_text)
+    return instances
+
+
 def _exercise_number(source: str) -> str | None:
     """Exercise number token a cell references, e.g. ``'3'`` or ``'3b'``.
 
@@ -297,13 +346,22 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
 
     cells = nb.get("cells", [])
 
-    # First pass: detect markdown-header exercises and their paired code stub.
+    # First pass: detect markdown-header exercises, counting ONE instance per
+    # SINGULAR exercise header LINE (not per cell). A markdown cell that groups
+    # several exercise statements (`### Exercice 1`, `### Exercice 2`, ...) under
+    # sub-headers therefore yields N instances, not 1 (#6051 Bug 1). PLURAL
+    # section headers (`## 9. Exercices`) carry no instance and do NOT make the
+    # cell a header cell -- so they neither count nor forward-pair the next code
+    # cell (Bug 2: the section used to steal the real Exercice 1 stub below it).
     header_cell_indices: set[int] = set()
     for i, cell in enumerate(cells):
         if cell.get("cell_type") != "markdown":
             continue
         source = "".join(cell.get("source", []))
-        if _markdown_mentions_exercise(source):
+        instance_lines = _markdown_instance_header_lines(source)
+        if not instance_lines:
+            continue
+        for _line in instance_lines:
             result.exercises.append(
                 ExerciseHit(
                     cell_index=i,
@@ -312,7 +370,7 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
                     detected_by="markdown_header",
                 )
             )
-            header_cell_indices.add(i)
+        header_cell_indices.add(i)
 
     # Track which code cells are the paired stub of an exercise header so we
     # do not double-count them in the second pass. A stub may sit EITHER just
