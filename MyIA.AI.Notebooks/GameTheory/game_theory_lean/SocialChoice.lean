@@ -43,7 +43,6 @@ Référence Lean 4 (DominikPeters) :
 https://github.com/DominikPeters/SocialChoiceLean
 
 Voir l'issue #4980 (i18n Lean FR+EN, EPIC ratifiée par le user le 2026-07-04).
--/
 
 ---
 
