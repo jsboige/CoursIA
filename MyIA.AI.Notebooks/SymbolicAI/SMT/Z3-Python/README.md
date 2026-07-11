@@ -4,7 +4,7 @@
 
 ## Série en quelques mots
 
-L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série complète de **11 notebooks** (z3-solver + matplotlib), de la satisfaction de contraintes à l'optimisation avancée, à l'ordonnancement combinatoire, aux énigmes logiques (CSP), à l'arithmétique symbolique (cryptarithmes), à la coloration de graphe (NP-complet) et au pont déclaratif avec la série sœur Z3.Linq (C#).
+L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série complète de **12 notebooks** (z3-solver + matplotlib), de la satisfaction de contraintes à l'optimisation avancée, à l'ordonnancement combinatoire, aux énigmes logiques (CSP), à l'arithmétique symbolique (cryptarithmes), à la coloration de graphe (NP-complet), à la modélisation de grilles 2D (tableaux imbriqués, carrés latins et magiques) et au pont déclaratif avec la série sœur Z3.Linq (C#).
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
 
@@ -57,6 +57,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 | 09 | [L'énigme d'Einstein (Zebra puzzle)](Z3-Python-09-Enigme-Einstein.ipynb) | Encodage par position, `Distinct`, adjacences, satisfiabilité vs optimisation, unicité prouvée | ~30 min | PRODUCTION |
 | 10 | [Cryptarithmes (SEND + MORE = MONEY)](Z3-Python-10-Cryptarithmetic.ipynb) | `Int`, `Distinct`, équation positionnelle, propagation vs brute force, retenues déduites | ~25 min | PRODUCTION |
 | 11 | [Coloration de graphe (Petersen)](Z3-Python-11-Graph-Coloring.ipynb) | `Int` par sommet, contraintes d'arêtes `!=`, recherche linéaire du nombre chromatique, `unsat` = preuve d'optimalité | ~30 min | PRODUCTION |
+| 15 | [Tableaux imbriqués et grilles 2D](Z3-Python-15-Nested-Arrays-2D.ipynb) | Grille 2D déclarative (`Distinct`/`Sum`) vs brute (`Array` de `Array`, `Store`/`Select`), carré latin, Sudoku 4×4, carré magique | ~30 min | PRODUCTION |
 
 ### Fil pédagogique
 
@@ -71,6 +72,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 9. **Notebook 09** illustre la **satisfiabilité** pure (versus l'optimisation du 08) sur l'énigme d'Einstein : l'encodage par position (25 variables entières) transforme un puzzle qualitatif en contraintes arithmétiques (`Distinct`, égalités, adjacences), et `Solver` trouve l'unique solution en quelques millisecondes là où la brute force affronte (5!)^5 = 24,9 milliards de combinaisons — l'unicité est **prouvée** par négation (`unsat`)
 10. **Notebook 10** généralise à l'**arithmétique symbolique sur entiers** avec les cryptarithmes (`SEND + MORE = MONEY`) : chaque lettre est un `Int` dans `{0..9}`, `Distinct` impose l'unicité, et l'équation positionnelle (`1000·S + 100·E + …`) est résolue par propagation — Z3 trouve l'unique solution (`9567 + 1085 = 10652`) en millisecondes tandis que la brute force énumère `P(10,8) = 1 814 400` candidats (~9 s), illustrant le gain du paradigme déclaratif
 11. **Notebook 11** aborde la **coloration de graphe** (NP-complet) sur le graphe de Petersen : une variable `Int` par sommet, des contraintes d'arêtes `C_a != C_b`, et une **recherche linéaire sur k** qui trouve le nombre chromatique `chi = 3` **et le prouve minimal** (`k = 2` → `unsat`). Là où le glouton first-fit hésite (3 ou 4 couleurs selon l'ordre) sans jamais certifier l'optimum, le verdict `unsat` de Z3 est une **preuve formelle** d'impossibilité — la double capacité (trouver ET prouver) est le cœur de l'apport SMT en optimisation combinatoire
+12. **Notebook 15** étend la modélisation du **scalaire à la grille 2D** : un carré latin, un Sudoku 4×4 et un carré magique s'écrivent comme des listes de listes de `Int` contraintes par `Distinct` (lignes/colonnes/blocs) et `Sum` (constante magique 15). Le notebook confronte l'encodage déclaratif (idiomatique z3-py) à l'encodage brut de la théorie des tableaux (`Array` de `Array`, `Store`/`Select` imbriqués) — rendant visible ce que le binding C# Z3.Linq masque derrière son DSL `Theorem<Grid>`. *(Les notebooks 12-14, en cours d'intégration, couvrent l'arithmétique réelle, les noyaux UNSAT et les bit-vectors.)*
 
 ## Concepts clés
 
@@ -86,7 +88,7 @@ La série manipule un vocabulaire précis hérité de la programmation par contr
 | **Assertion / contrainte** | Une formule ajoutée au solveur via `s.add(...)`. Dite *dure* (hard) par défaut : elle doit être satisfaite. | 01 |
 | **`Distinct`** | Contrainte « tous différents » sur un ensemble de variables, raccourci central pour modéliser un Sudoku, un N-reines ou tout CSP d'exclusivité sans énumérer les inégalités deux à deux. | 02 |
 | **`BitVec`** | Vecteur de bits pour l'arithmétique modulaire (modéliser un overflow, un registre, une primitive cryptographique). | 03 |
-| **`Array`** | Tableau symbolique fonctionnel (théorie des tableaux : select/store) manipulé comme une valeur, pas comme un effet de bord. | 03 |
+| **`Array`** | Tableau symbolique fonctionnel (théorie des tableaux : select/store) manipulé comme une valeur, pas comme un effet de bord. | 03, 15 |
 | **Tactique** | Transformation du problème avant résolution (`simplify`, `Then`, `OrElse`) pour guider le solveur vers une réponse plus rapide. | 03 |
 | **Contrainte dure vs souple** | Dure : doit être satisfaite. Souple (*soft*) : une violation est tolérée moyennant une pénalité, quand on ne peut pas tout satisfaire. | 06 |
 | **MaxSAT** | Relaxation des contraintes dures en contraintes souples via des variables booléennes, pour satisfaire un maximum de contraintes simultanément. | 06 |
@@ -137,7 +139,7 @@ pip install -r requirements.txt
 
 Le pattern « décrire les contraintes, laisser le solveur résoudre » s'applique dès qu'un problème se réduit à un système de contraintes sur des variables. Les exercices de la série en couvrent plusieurs, et l'usage industriel de Z3 en couvre d'autres :
 
-- **Résolution de puzzles et CSP** : Sudoku, N-reines, cryptarithmes — modélisation déclarative (`Distinct`, `And`, `Or`), sans écrire de backtracking à la main. Le notebook 02 en fait l'expérience sur le Sudoku. Comparer avec les 10 autres approches algorithmiques de la [série Sudoku](../../../Sudoku/README.md).
+- **Résolution de puzzles et CSP** : Sudoku, N-reines, cryptarithmes, carrés latins et magiques — modélisation déclarative (`Distinct`, `And`, `Or`, `Sum`), sans écrire de backtracking à la main. Le notebook 02 en fait l'expérience sur le Sudoku, le notebook 15 sur les grilles 2D (carré latin, carré magique). Comparer avec les 10 autres approches algorithmiques de la [série Sudoku](../../../Sudoku/README.md).
 - **Ordonnancement (scheduling)** : placer des tâches dans le temps sous contraintes de précédence, de ressources et de fenêtres (notebook 08, job-shop ; exercice 2 du notebook 01). Le solveur trouve un planning réalisable, ou retourne le noyau d'insatisfiabilité qui pointe les contraintes conflictuelles.
 - **Allocation de ressources** : maximiser un gain ou minimiser un coût sous bornes et exclusivités (notebook 01, exercice 3 ; notebook 06). `Optimize` traitera directement la fonction objectif.
 - **Vérification de programmes** : prouver qu'un code respecte sa spécification (absence d'overflow entiers via `BitVec`, invariants de boucle, propriétés de sûreté) — l'usage industriel historique de Z3 en analyse statique et model-checking.
