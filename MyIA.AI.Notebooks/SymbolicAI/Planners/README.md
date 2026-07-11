@@ -43,20 +43,7 @@ flowchart TD
 
 ## Aperçu — la planification automatique en images
 
-Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #5654). Elles balayent l'arc des quatre phases de la série : de l'explosion combinatoire de l'espace d'états (Fondations) aux heuristiques guidant la recherche (Classique), jusqu'à la planification temporelle et contraintiste (Avancées) et à l'intégration neuro-symbolique (Neuro-Symbolique). La provenance exacte de chaque figure est documentée dans `assets/readme/MANIFEST.md`.
-
-<table>
-<tr>
-<td align="center"><b>Explosion de l'espace d'états</b><br><a href="01-Foundation/Planners-3-State-Space.ipynb"><img width="290" alt="Espace d'états : explosion combinatoire de la recherche aveugle dans un graphe d'états PDDL, motivant le recours aux heuristiques." src="assets/readme/planners3-statespace.png"></a></td>
-<td align="center"><b>Arbre de recherche</b><br><a href="01-Foundation/Planners-3-State-Space.ipynb"><img width="290" alt="Arbre de recherche : parcours de l'espace d'états et illustration du facteur de branchement et de la profondeur de but." src="assets/readme/planners3-searchtree.png"></a></td>
-<td align="center"><b>Heuristiques (A*)</b><br><a href="02-Classical/Planners-5-Heuristics.ipynb"><img width="290" alt="Heuristiques de recherche : comparaison de A* et de ses variantes guidant l'exploration vers le but pour réduire l'exploration." src="assets/readme/planners5-heuristics.png"></a></td>
-</tr>
-<tr>
-<td align="center"><b>Solveur OR-Tools</b><br><a href="03-Advanced/Planners-7-OR-Tools.ipynb"><img width="290" alt="OR-Tools : planification par modèle CP-SAT et résolution de problèmes PDDL via un solveur industriel à grande échelle." src="assets/readme/planners7-ortools.png"></a></td>
-<td align="center"><b>Planification temporelle</b><br><a href="03-Advanced/Planners-8-Temporal.ipynb"><img width="290" alt="Planification temporelle : chronologie d'actions avec durées et contraintes de scheduling sur un réseau temporel." src="assets/readme/planners8-temporal.png"></a></td>
-<td align="center"><b>Boucle neuro-symbolique</b><br><a href="04-NeuroSymbolic/Planners-12-LOOP.ipynb"><img width="290" alt="Neuro-symbolique (LOOP) : intégration d'un apprentissage dans la boucle de planification symbolique pour adapter l'heuristique." src="assets/readme/planners12-loop.png"></a></td>
-</tr>
-</table>
+Chacune des quatre phases de la série rend visible un concept distinct, dans une figure extraite des sorties réelles des notebooks (EPIC #5654) : l'explosion combinatoire de l'espace d'états (Fondations), les heuristiques qui guident la recherche (Classique), la planification temporelle et contraintiste (Avancées), puis l'intégration neuro-symbolique (Neuro-Symbolique). Plutôt qu'une galerie séparée du propos, ces figures accompagnent ci-dessous le récit **phase par phase**, au plus près du concept qu'elles illustrent. La provenance exacte de chaque figure (cellule, output, poids, alt-text) est documentée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Parcours d'apprentissage
 
@@ -64,17 +51,29 @@ Les figures ci-dessous sont extraites des sorties réelles des notebooks (EPIC #
 
 La série débute par le notebook Setup (0) qui configure automatiquement l'environnement : installation de `unified-planning`, OR-Tools, vérification de Docker et lancement du conteneur Fast Downward. Le notebook 1 (Introduction) présente le triptyque fondamental État-Action-But, le modèle STRIPS (1971) avec ses hypothèses — statique, déterministe, observable, discret, instantané — et le contexte historique depuis Fikes & Nilsson jusqu'aux LLMs modernes. Le notebook 2 (PDDL-Basics) plonge dans la syntaxe PDDL : domaines, problèmes, types, prédicats, actions, préconditions et effets. Le notebook 3 (State-Space) explore l'explosion combinatoire ($O(2^n)$ prédicats) et la nécessité des heuristiques pour guider la recherche dans l'espace d'états. À l'issue de cette phase, vous savez modéliser un problème en PDDL et comprendre pourquoi la recherche aveugle ne suffit pas.
 
+<p align="center"><a href="01-Foundation/Planners-3-State-Space.ipynb"><img src="assets/readme/planners3-statespace.png" width="540" alt="Espace d'états : explosion combinatoire de la recherche aveugle dans un graphe d'états PDDL, motivant le recours aux heuristiques."></a></p>
+
+<p align="center"><a href="01-Foundation/Planners-3-State-Space.ipynb"><img src="assets/readme/planners3-searchtree.png" width="540" alt="Arbre de recherche : parcours de l'espace d'états et illustration du facteur de branchement et de la profondeur de but."></a></p>
+
 ### Phase 2 : Planification Classique (Notebooks 4-6, ~3h)
 
 Les notebooks 4 à 6 constituent le cœur technique de la série. Le notebook 4 (Fast-Downward) présente l'architecture en trois étapes de Fast Downward (translator PDDL→SAS+, preprocessor C++, search C++) et montre comment l'exécuter via Docker et unified-planning. Les algorithmes de recherche (A*, Greedy, EHC) y sont testés sur Blocks World et Logistics. Le notebook 5 (Heuristics) approfondit la théorie : classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), comparaison expérimentale des heuristiques sur le nombre de nœuds expansés, et guide de sélection. Le notebook **5b** (Lean-Relaxation) est un **companion natif** au kernel Lean 4 : il prouve formellement, sans `sorry`, l'admissibilité de la relaxation $h^{+} \leq h^{*}$ dans le lake `planning_lean` — la certification mathématique de la propriété que le notebook 5 constate empiriquement. Le notebook 6 (Domains) couvre les domaines standards de l'IPC (Blocks World, Logistics, Gripper, Satellite) avec des problèmes de complexité croissante. À l'issue, vous pouvez configurer un planificateur optimal, choisir l'heuristique adéquate, et modéliser n'importe quel domaine IPC.
+
+<p align="center"><a href="02-Classical/Planners-5-Heuristics.ipynb"><img src="assets/readme/planners5-heuristics.png" width="540" alt="Heuristiques de recherche : comparaison de A* et de ses variantes guidant l'exploration vers le but pour réduire l'exploration."></a></p>
 
 ### Phase 3 : Approches Avancées (Notebooks 7-9, ~3h)
 
 La planification classique épuise ses limites dès que les problèmes deviennent trop grands pour l'exploration d'états. Les notebooks 7 à 9 proposent des alternatives. Le notebook 7 (OR-Tools) introduit la programmation par contraintes avec CP-SAT de Google OR-Tools : modélisation de contraintes (all-different, cumulative, table), scheduling, et optimisation multi-objectif. Le notebook 8 (Temporal) étend au domaine temporel avec PDDL 2.1 : durées d'actions, parallélisme, contraintes temporelles simples et denses, ordonnancement de tâches. Le notebook 9 (HTN) présente la planification hiérarchique (Task Networks) : tâches primitives vs abstraites, méthodes de décomposition, langage HDDL, solveur inspiré de SHOP2, et comparaison avec STRIPS. À l'issue, vous disposez de trois paradigmes complémentaires pour les problèmes qui dépassent la planification classique.
 
+<p align="center"><a href="03-Advanced/Planners-7-OR-Tools.ipynb"><img src="assets/readme/planners7-ortools.png" width="540" alt="OR-Tools : planification par modèle CP-SAT et résolution de problèmes PDDL via un solveur industriel à grande échelle."></a></p>
+
+<p align="center"><a href="03-Advanced/Planners-8-Temporal.ipynb"><img src="assets/readme/planners8-temporal.png" width="560" alt="Planification temporelle : chronologie d'actions avec durées et contraintes de scheduling sur un réseau temporel."></a></p>
+
 ### Phase 4 : Neuro-Symbolique (Notebooks 10-12, ~3h)
 
 La dernière partie explore la frontière entre IA symbolique et apprentissage profond. Le notebook 10 (LLM-Planning) montre comment les Large Language Models peuvent générer des plans à partir de descriptions en langage naturel, le prompting pour la planification, et le plan repair. Le notebook 11 (Unified-Planning) détaille l'interface unifiée `unified-planning` : connexion à plusieurs solveurs en quelques lignes, comparaison croisée des performances, et portabilité du modèle PDDL entre moteurs. Le notebook 12 (LOOP) introduit le paradigme **Learning to Plan** : architecture LOOP (state encoder, policy network, value network), encodage PDDL en tenseurs (one-hot, GNN), entraînement par imitation et renforcement, résultats sur benchmarks IPC (85.8% coverage), et comparaison avec KRCL. Ce notebook conclut la série avec les tendances futures : foundation models, meta-learning, inverse reinforcement learning.
+
+<p align="center"><a href="04-NeuroSymbolic/Planners-12-LOOP.ipynb"><img src="assets/readme/planners12-loop.png" width="560" alt="Neuro-symbolique (LOOP) : intégration d'un apprentissage dans la boucle de planification symbolique pour adapter l'heuristique."></a></p>
 
 ### Parcours alternatifs
 
