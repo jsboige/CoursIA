@@ -84,6 +84,35 @@ flowchart LR
     W1 --> W2 --> W3 --> W4 --> W5 --> W6 --> W7 --> W8 --> W9 --> W10
 ```
 
+## Configuration requise
+
+Le kernel `dotnet-interactive` installé (**1.0.707101**, hôte .NET moderne) **charge nativement les assemblies `net9.0`** — vérifié par exécution : MGS-6 (qui référence `MetaGeneticSharp.Extensions` net9.0), MGS-18 et MGS-19 s'exécutent verts sur ce kernel. Les notebooks MGS se répartissent sur deux TFM :
+
+- **MGS-1 à MGS-5** (Introduction, Composition, Eukaryote, Islands, Compound) ne consomment que `MetaGeneticSharp.Domain` + `Infrastructure` + `GeneticSharp`. Ils référencent les **DLL `net8.0`**, chargées par rétro-compat sur le kernel actuel (qui supporte net8.0/net9.0/net10).
+- **MGS-6 à MGS-9** (Benchmarks, TSP, Landscape, Everest) dépendent en plus de `MetaGeneticSharp.Extensions` (SkiaSharp / `System.Drawing.Common`). Ils référencent les DLL `net9.0` et **s'exécutent sur le kernel actuel** (MGS-6 vérifié vert). *Sur l'ancien kernel 1.0.552801 (hôte net8.0-only), ils restaient bloqués* (follow-up historique désormais non requis sur le kernel actuel).
+
+Règle : pas de contournement, installer l'environnement complet :
+
+```powershell
+# 1. .NET SDK (9.0 requis pour le fork source ; 8.0/10.0 optionnels)
+dotnet --version
+
+# 2. dotnet-interactive (kernel Jupyter pour C#, hôte .NET moderne >= 1.0.707101)
+dotnet tool install --global Microsoft.dotnet-interactive
+dotnet interactive jupyter install
+
+# 3. Sous-modules + build du fork (les notebooks chargent les DLL par #r absolu)
+cd MyIA.AI.Notebooks/Search/MetaGeneticSharp
+git submodule update --init --recursive
+dotnet build                      # build net9.0 (fork source ; DLLs pour MGS-6..18)
+```
+
+> **Bins `net8.0` pour MGS-1..5.** Le fork est actuellement single-TFM `net9.0`, donc `-p:TargetFramework=net8.0` échoue (le `project.assets.json` restauré ne contient que la cible net9.0). Pour produire `Domain` + `Infrastructure` en `net8.0` (référencés par MGS-1..5, chargés par rétro-compat sur le kernel actuel), il faut soit retargeter temporairement le `.csproj` en `net8.0` puis `dotnet build`, soit — solution propre — multi-targeter le fork en `<TargetFrameworks>net8.0;net9.0</TargetFrameworks>` (follow-up sur le fork, `Extensions`/SkiaSharp restant net9.0-only). Les bins référencés par MGS-1..5 doivent exister sous `src/MetaGeneticSharp.Domain/bin/Debug/net8.0/`.
+
+Les notebooks chargent les DLL via `#r "c:/dev/MetaGeneticSharp/..."` (chemin du checkout de travail du fork). **MGS-1..5** pointent sur `src/MetaGeneticSharp.Domain/bin/Debug/net8.0/` (4 DLL : GeneticSharp.Domain, GeneticSharp.Infrastructure.Framework, MetaGeneticSharp.Domain, MetaGeneticSharp.Infrastructure) ; **MGS-6..14** pointent sur `src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/` (Extensions + SkiaSharp + System.Drawing.Common). Les résultats numériques des notebooks MGS-1 à MGS-9 sont **stochastiques** (le RNG du framework n'y est pas seedé) : les outputs committés sont une exécution valide, les valeurs varient d'une exécution à l'autre. **MGS-10** fait exception : le banc y est **seedé** (`FastRandomRandomization.ResetSeed(masterSeed)` ancre le RNG global une fois avant la suite), de sorte que les chiffres de la table de biais central sont **reproduisibles** d'une exécution à l'autre. **MGS-11** aussi : il appelle `FastRandomRandomization.ResetSeed(42)` avant chaque banc, son verdict est **reproductible** (caveat : graine unique, pas un banc multi-graines). **MGS-12** de même : il reseed le RNG avant chaque paire optimiseur (rotationné vs non), de sorte que les deltas committés sont reproductibles (caveat : dimension 2 et budget large → $\Delta \approx 0$ pour tous ; révéler l'effet *opérateur* demande une dimension plus élevée, cf exercice 2). **MGS-14** aussi : il est **multi-seed** (5 graines, `FastRandomRandomization.ResetSeed` avant chaque archipel), son verdict (synergie robuste sur Ackley, pas de synergie sur Rastrigin) est **reproduisible** d'une exécution à l'autre. **MGS-17** de même : il est **multi-seed** (5 graines {7,42,99,123,777}, `FastRandomRandomization.ResetSeed` avant chaque course), et comme le `DynamicProbability` est une fonction **déterministe** de la génération / de l'index individu (pas de RNG interne), les chiffres du tableau de comparaison (self-adaptatif 9,944 sur Rastrigin, etc.) sont **reproduisibles** d'une exécution à l'autre. **MGS-19** de même : il est **multi-seed** (3 graines {7,42,99}, `FastRandomRandomization.ResetSeed` avant chaque course), de sorte que le banc Metropolis-vs-Pairwise (Sphere, Rastrigin, Ackley) et la limite frozen sont **reproduisibles** d'une exécution à l'autre.
+
+Règle C.2 : les notebooks sont committés **avec leurs outputs** (exécution réelle, kernel .NET).
+
 ## Parcours détaillé
 
 ### 1 — Introduction
@@ -185,35 +214,6 @@ La thèse est **structurelle** : les biais isolés de MGS-10 et MGS-12 **se comp
 MGS-10 confrontait le **recuit simulé** comme une boîte noire. Mais dans le fork, `SimulatedAnnealing` n'est pas un monolithe : c'est un **composé** assemblant une **perturbation gaussienne** (le croisement qui produit un voisin de l'individu courant) et une **réinsertion de Metropolis** (`MetropolisReinsertion`) qui accepte ou rejette ce voisin selon le critère $P = \exp(\Delta / T_k)$. MGS-19 **débranche** ce deuxième ingrédient et le rebranche **seul** sur un GA standard (croisement de recombinaison `UniformCrossover`, pas perturbation), via l'injection `ga.Reinsertion = reins`. C'est la thèse « composants > métaphores » poussée jusqu'au **démontage du recuit lui-même** : la métaphore thermodynamique est-elle indivisible, ou l'opérateur de survie est-il réutilisable ailleurs ?
 
 Le banc isole l'effet de la **règle d'acceptation** à appariement constant : cinq configurations (`FitnessBasedPairwiseReinsertion` contrôle greedy, trois `MetropolisReinsertion` à températures froide/moyenne/chaude, `FitnessBasedElitistReinsertion` référence μ+λ) partagent le même croisement, la même mutation, la même sélection — seul le critère de survie varie. Budget commun (NFE = 5000, dim 5, 3 graines seedées → chiffres reproduisibles) sur Sphere (témoin neutre unimodal), Rastrigin et Ackley (multimodales). **Verdict honnête (résultat négatif, G.9)** : sur Sphere, l'annealing ne sert à rien (témoin neutre attendu) et le réglage chaud dégrade (≈ 0,10 contre ≈ 0,01) ; sur Rastrigin et Ackley, **aucun** réglage Metropolis n'améliore le contrôle greedy pairwise — le plus chaud est le **pire**. L'hypothèse naturelle (accepter des enfants moins bons aide à franchir les cols) est **réfutée**. L'explication la plus plausible est sémantique : dans SA l'enfant est un **voisin** du parent, donc accepter un moins bon voisin = explorer le voisinage ; ici l'enfant est un **recombinant** de deux parents (mosaïque par gène), donc accepter un recombinant moins bon n'est pas une exploration — c'est du bruit. **Le bénéfice du recuit réside dans le couplage** perturbation+acceptation, pas dans l'acceptation seule. C'est la leçon « composants > métaphores » dans sa forme la plus exigeante : on PEUT démonter SA, l'opérateur isolé FONCTIONNE sur le vrai moteur — mais il ne porte pas, à lui seul, le bénéfice du tout (écho de la synergie conditionnelle de MGS-11/14 : la composition n'est magique ni assemblée ni désassemblée). Une **limite frozen** (T→0 ⇒ règle greedy), vérifiée sur le témoin lisse Sphere (résidu = divergence de trajectoire RNG, non un effet d'acceptation), referme la cohérence. Trois exercices prolongent (schedule lent vs rapide, recombiner la perturbation pour restaurer le couplage, composition insulaire de l'opérateur).
-
-## Configuration requise
-
-Le kernel `dotnet-interactive` installé (**1.0.707101**, hôte .NET moderne) **charge nativement les assemblies `net9.0`** — vérifié par exécution : MGS-6 (qui référence `MetaGeneticSharp.Extensions` net9.0), MGS-18 et MGS-19 s'exécutent verts sur ce kernel. Les notebooks MGS se répartissent sur deux TFM :
-
-- **MGS-1 à MGS-5** (Introduction, Composition, Eukaryote, Islands, Compound) ne consomment que `MetaGeneticSharp.Domain` + `Infrastructure` + `GeneticSharp`. Ils référencent les **DLL `net8.0`**, chargées par rétro-compat sur le kernel actuel (qui supporte net8.0/net9.0/net10).
-- **MGS-6 à MGS-9** (Benchmarks, TSP, Landscape, Everest) dépendent en plus de `MetaGeneticSharp.Extensions` (SkiaSharp / `System.Drawing.Common`). Ils référencent les DLL `net9.0` et **s'exécutent sur le kernel actuel** (MGS-6 vérifié vert). *Sur l'ancien kernel 1.0.552801 (hôte net8.0-only), ils restaient bloqués* (follow-up historique désormais non requis sur le kernel actuel).
-
-Règle : pas de contournement, installer l'environnement complet :
-
-```powershell
-# 1. .NET SDK (9.0 requis pour le fork source ; 8.0/10.0 optionnels)
-dotnet --version
-
-# 2. dotnet-interactive (kernel Jupyter pour C#, hôte .NET moderne >= 1.0.707101)
-dotnet tool install --global Microsoft.dotnet-interactive
-dotnet interactive jupyter install
-
-# 3. Sous-modules + build du fork (les notebooks chargent les DLL par #r absolu)
-cd MyIA.AI.Notebooks/Search/MetaGeneticSharp
-git submodule update --init --recursive
-dotnet build                      # build net9.0 (fork source ; DLLs pour MGS-6..18)
-```
-
-> **Bins `net8.0` pour MGS-1..5.** Le fork est actuellement single-TFM `net9.0`, donc `-p:TargetFramework=net8.0` échoue (le `project.assets.json` restauré ne contient que la cible net9.0). Pour produire `Domain` + `Infrastructure` en `net8.0` (référencés par MGS-1..5, chargés par rétro-compat sur le kernel actuel), il faut soit retargeter temporairement le `.csproj` en `net8.0` puis `dotnet build`, soit — solution propre — multi-targeter le fork en `<TargetFrameworks>net8.0;net9.0</TargetFrameworks>` (follow-up sur le fork, `Extensions`/SkiaSharp restant net9.0-only). Les bins référencés par MGS-1..5 doivent exister sous `src/MetaGeneticSharp.Domain/bin/Debug/net8.0/`.
-
-Les notebooks chargent les DLL via `#r "c:/dev/MetaGeneticSharp/..."` (chemin du checkout de travail du fork). **MGS-1..5** pointent sur `src/MetaGeneticSharp.Domain/bin/Debug/net8.0/` (4 DLL : GeneticSharp.Domain, GeneticSharp.Infrastructure.Framework, MetaGeneticSharp.Domain, MetaGeneticSharp.Infrastructure) ; **MGS-6..14** pointent sur `src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/` (Extensions + SkiaSharp + System.Drawing.Common). Les résultats numériques des notebooks MGS-1 à MGS-9 sont **stochastiques** (le RNG du framework n'y est pas seedé) : les outputs committés sont une exécution valide, les valeurs varient d'une exécution à l'autre. **MGS-10** fait exception : le banc y est **seedé** (`FastRandomRandomization.ResetSeed(masterSeed)` ancre le RNG global une fois avant la suite), de sorte que les chiffres de la table de biais central sont **reproduisibles** d'une exécution à l'autre. **MGS-11** aussi : il appelle `FastRandomRandomization.ResetSeed(42)` avant chaque banc, son verdict est **reproductible** (caveat : graine unique, pas un banc multi-graines). **MGS-12** de même : il reseed le RNG avant chaque paire optimiseur (rotationné vs non), de sorte que les deltas committés sont reproductibles (caveat : dimension 2 et budget large → $\Delta \approx 0$ pour tous ; révéler l'effet *opérateur* demande une dimension plus élevée, cf exercice 2). **MGS-14** aussi : il est **multi-seed** (5 graines, `FastRandomRandomization.ResetSeed` avant chaque archipel), son verdict (synergie robuste sur Ackley, pas de synergie sur Rastrigin) est **reproduisible** d'une exécution à l'autre. **MGS-17** de même : il est **multi-seed** (5 graines {7,42,99,123,777}, `FastRandomRandomization.ResetSeed` avant chaque course), et comme le `DynamicProbability` est une fonction **déterministe** de la génération / de l'index individu (pas de RNG interne), les chiffres du tableau de comparaison (self-adaptatif 9,944 sur Rastrigin, etc.) sont **reproduisibles** d'une exécution à l'autre. **MGS-19** de même : il est **multi-seed** (3 graines {7,42,99}, `FastRandomRandomization.ResetSeed` avant chaque course), de sorte que le banc Metropolis-vs-Pairwise (Sphere, Rastrigin, Ackley) et la limite frozen sont **reproduisibles** d'une exécution à l'autre.
-
-Règle C.2 : les notebooks sont committés **avec leurs outputs** (exécution réelle, kernel .NET).
 
 ## Conventions
 
