@@ -99,6 +99,21 @@ Le notebook SC-04 encode les théorèmes d'Arrow et de Sen comme des problèmes 
 
 *Illustration conceptuelle du SC-04 (et non une sortie du solveur), deux panneaux : à gauche, le diagramme de Venn des trois contraintes Pareto / IIA / Non-dictature dont l'intersection centrale est marquée « VIDE » ; à droite, la courbe semi-log du nombre de profils `(m!)^k` croissant avec le nombre d'alternatives `m` et d'électeurs `k` — 36 profils pour 2 électeurs et 3 alternatives, 216 pour 3 électeurs — avec l'annotation « Arrow ne s'applique pas » au point m = 2, seuil en deçà duquel le théorème est muet.*
 
+## Prerequisites
+
+- Python 3.10+ avec numpy, matplotlib, networkx (notebooks 01, 03, 04)
+- pysat et z3-solver pour le notebook 04
+- Lean 4 + kernel WSL pour le notebook 02 (cf [README parent](../README.md))
+
+## Installation
+
+```bash
+pip install -r ../requirements.txt
+pip install pysat z3-solver
+```
+
+Pour le notebook 02 (Lean 4) : suivre les instructions dans [README parent](../README.md#notebooks-lean-4-2b-4b-8b-15b).
+
 ## Formalisations Lean
 
 Les notebooks SC-01 et SC-02 renvoient au projet Lake `social_choice_lean/` qui contient les preuves complètes :
@@ -132,21 +147,6 @@ Le projet `social_choice_lean_peters/` (DominikPeters, Lean 4 + Mathlib) formali
 - **SymbolicAI/Lean** : [README Lean](../../SymbolicAI/Lean/README.md) pour les prérequis Lean 4
 
 ---
-
-## Prerequisites
-
-- Python 3.10+ avec numpy, matplotlib, networkx (notebooks 01, 03, 04)
-- pysat et z3-solver pour le notebook 04
-- Lean 4 + kernel WSL pour le notebook 02 (cf [README parent](../README.md))
-
-## Installation
-
-```bash
-pip install -r ../requirements.txt
-pip install pysat z3-solver
-```
-
-Pour le notebook 02 (Lean 4) : suivre les instructions dans [README parent](../README.md#notebooks-lean-4-2b-4b-8b-15b).
 
 ## Ressources
 
