@@ -27,30 +27,10 @@ import Gittins.GittinsTheorem
   - J.C. Gittins et D.M. Jones, « A dynamic allocation index for the
     discounted multiarmed bandit problem » (1974)
 
-  ---
-
-  # Gittins Index — Formal Verification
-
-  This library formalizes key concepts of the Gittins Index theorem
-  for multi-armed bandits with geometric discounting.
-
-  ## Contents
-  - `Gittins.Basic`: Bandit arm types, policy, value function
-  - `Gittins.Discount`: Geometric discount identities (proved)
-  - `Gittins.GittinsTheorem`: Gittins Index definition and optimality (sorry)
-
-  ## Status
-  - Proved lemmas: geometric convergence, present value, discount monotonicity
-  - Sorry statements: Gittins optimality theorem, index computation
-
-  ## References
-  - J.C. Gittins, "Bandit Processes and Dynamic Allocation Indices" (1979)
-  - J.C. Gittins and D.M. Jones, "A dynamic allocation index for the
-    discounted multiarmed bandit problem" (1974)
-
-  Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier root
-  aggregator est bilingue inline (FR canonique d'abord, EN en miroir).
-  Les modules substantiels (`Gittins.Basic`, `Gittins.Discount`,
-  `Gittins.GittinsTheorem`) vivent dans des fichiers siblings `_en.lean`
-  séparés lorsque pertinent (cf. #4980 Phase 0.5).
+Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier root
+aggregator est FR-first canonique. Le miroir anglais vit dans
+`Gittins_en.lean` (sibling pair ratifié 2026-07-04, conforme à
+`.claude/rules/code-style.md` §Lean i18n). Les modules substantiels
+(`Gittins.Basic`, `Gittins.Discount`, `Gittins.GittinsTheorem`) restent
+dans leurs fichiers siblings `_en.lean` déjà présents sous `Gittins/`.
 -/
