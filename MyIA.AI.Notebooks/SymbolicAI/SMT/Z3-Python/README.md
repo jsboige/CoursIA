@@ -4,7 +4,7 @@
 
 ## Série en quelques mots
 
-L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série complète de **7 notebooks** (z3-solver + matplotlib), de la satisfaction de contraintes à l'optimisation avancée et au pont déclaratif avec la série sœur Z3.Linq (C#).
+L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série complète de **8 notebooks** (z3-solver + matplotlib), de la satisfaction de contraintes à l'optimisation avancée, à l'ordonnancement combinatoire et au pont déclaratif avec la série sœur Z3.Linq (C#).
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
 
@@ -53,6 +53,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 | 06 | [Optimisation avancée](Z3-Python-06-Advanced-Optimization.ipynb) | Pareto, objectifs multiples, `Optimize` hiérarchique, MaxSAT | ~40 min | PRODUCTION |
 | 06ᶜˢ | [Optimisation avancée (twin C# .NET)](Z3-Python-06-Advanced-Optimization-Csharp.ipynb) | Parité .NET : `MkOptimize`, `MkMaximize`/`MkMinimize`, front de Pareto, `AssertSoft` (MaxSAT) via `Microsoft.Z3` (NuGet) | ~40 min | PRODUCTION |
 | 07 | [Du style déclaratif LINQ au solveur Z3](Z3-Python-07-Style-Declaratif-Linq.ipynb) | Pont C# Z3.Linq ↔ pyz3 : `assert_and_track`, `unsat_core`, coloration de graphe (Australie) | ~30 min | PRODUCTION |
+| 08 | [Ordonnancement (Job-Shop Scheduling)](Z3-Python-08-Ordonnancement.ipynb) | `Optimize.minimize`, contrainte disjonctive `Or(...)`, makespan minimal, diagramme de Gantt | ~35 min | PRODUCTION |
 
 ### Fil pédagogique
 
@@ -63,6 +64,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 5. **Notebook 05** aborde les quantificateurs (`ForAll`, `Exists`) et la notion de preuve formelle par réfutation (une formule est valide si sa négation est insatisfiable), avec le cas honnête `unknown`
 6. **Notebook 06** explore l'optimisation avancée : contraintes hiérarchiques pondérées, objectifs multiples, front de Pareto et MaxSAT (contraintes souples)
 7. **Notebook 07** fait le pont avec la série sœur C# Z3.Linq : il montre que l'idiome déclaratif LINQ (`where`/`select`) et l'API impérative pyz3 (`s.add`) expriment la même intention, puis exploite le noyau d'insatisfiabilité (`unsat_core`) et la coloration de graphe (carte d'Australie) pour révéler où le déclaratif surpasse l'impératif
+8. **Notebook 08** applique l'optimisation à l'ordonnancement de tâches (job-shop scheduling, NP-difficile) : la contrainte disjonctive `Or(s_a + d_a ≤ s_b, s_b + d_b ≤ s_a)` (exclusion mutuelle sur une machine) et l'objectif de makespan minimal (`Optimize.minimize`) révèlent où le solveur surpasse une heuristique gloutonne FIFO — l'optimum trouvé (8 h) écrase le glouton (14 h)
 
 ## Concepts clés
 
@@ -105,7 +107,7 @@ Les **trois verdicts** de `check()` appellent trois postures distinctes — c'es
 |--------|--------|
 | **Python 3.10+** | [Download](https://www.python.org/downloads/) |
 | **z3-solver** | `pip install z3-solver` |
-| **matplotlib** | `pip install matplotlib` (visualisation, notebook 02) |
+| **matplotlib** | `pip install matplotlib` (visualisation, notebooks 02 et 08) |
 | **Kernel Jupyter** | `python3` |
 
 > Les notebooks sont autonomes : les imports sont inclus dans la cellule de setup de chaque notebook. Le package s'appelle `z3-solver` (et non `z3`).
@@ -130,7 +132,7 @@ pip install -r requirements.txt
 Le pattern « décrire les contraintes, laisser le solveur résoudre » s'applique dès qu'un problème se réduit à un système de contraintes sur des variables. Les exercices de la série en couvrent plusieurs, et l'usage industriel de Z3 en couvre d'autres :
 
 - **Résolution de puzzles et CSP** : Sudoku, N-reines, cryptarithmes — modélisation déclarative (`Distinct`, `And`, `Or`), sans écrire de backtracking à la main. Le notebook 02 en fait l'expérience sur le Sudoku. Comparer avec les 10 autres approches algorithmiques de la [série Sudoku](../../../Sudoku/README.md).
-- **Ordonnancement (scheduling)** : placer des tâches dans le temps sous contraintes de précédence, de ressources et de fenêtres (notebook 01, exercice 2). Le solveur trouve un planning réalisable, ou retourne le noyau d'insatisfiabilité qui pointe les contraintes conflictuelles.
+- **Ordonnancement (scheduling)** : placer des tâches dans le temps sous contraintes de précédence, de ressources et de fenêtres (notebook 08, job-shop ; exercice 2 du notebook 01). Le solveur trouve un planning réalisable, ou retourne le noyau d'insatisfiabilité qui pointe les contraintes conflictuelles.
 - **Allocation de ressources** : maximiser un gain ou minimiser un coût sous bornes et exclusivités (notebook 01, exercice 3 ; notebook 06). `Optimize` traitera directement la fonction objectif.
 - **Vérification de programmes** : prouver qu'un code respecte sa spécification (absence d'overflow entiers via `BitVec`, invariants de boucle, propriétés de sûreté) — l'usage industriel historique de Z3 en analyse statique et model-checking.
 - **Configuration** : sélectionner des options compatibles (catalogue produit, planning d'emplois du temps) parmi un ensemble de contraintes d'exclusion et de cardinalité. MaxSAT (notebook 06) permet de relâcher les préférences les moins importantes quand tout n'est pas satisfaisable.
