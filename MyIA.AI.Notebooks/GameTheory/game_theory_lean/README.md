@@ -7,8 +7,8 @@ Shapley, cône de Bondareva-Shapley, décomposition de Möbius). Issu du
 **regroupement EPIC #4365 « anti-prolifération GameTheory »** qui a ramené
 six projets Lake distincts à **deux cibles** (game_theory_lean +
 conway_cgt_lean), ce dépôt absorbe progressivement les modules
-historiquement分散és dans `social_choice_lean/`, `cooperative_games_lean/`,
-`stable_marriage_lean/` (supprimé depuis) et `social_choice_lean_petters/`
+historiquement dispersés dans `social_choice_lean/`, `cooperative_games_lean/`,
+`stable_marriage_lean/` (supprimé depuis) et `social_choice_lean_peters/`
 en un seul package multi-`lean_lib` aligné sur le modèle éprouvé de
 `decision_theory_lean`.
 
@@ -23,7 +23,7 @@ en un seul package multi-`lean_lib` aligné sur le modèle éprouvé de
   anglaise ne sont prouvables, pas un oubli)
 - **Lignes** : 11 099 (FR + EN confondus, modules frères)
 - **CI** : `lean-social-choice.yml` ne build PAS ce projet (cf
-  [lean-merge-discipline.md](.claude/rules/lean-merge-discipline.md) — seul
+  [lean-merge-discipline.md](../../../.claude/rules/lean-merge-discipline.md) — seul
   `lake build <module>` local fait foi)
 - **Compilation locale** : `lake build` SUCCESS documenté dans les PRs
   c.299–c.308 (8 500 jobs olean au dernier passage Shapley FR+EN, PR #5940)
@@ -31,7 +31,7 @@ en un seul package multi-`lean_lib` aligné sur le modèle éprouvé de
 ## Pourquoi ce Lake existe
 
 Le track Lean de GameTheory accueillait six projets Lake avant le regroupement :
-`social_choice_lean/`, `social_choice_lean_petters/`,
+`social_choice_lean/`, `social_choice_lean_peters/`,
 `cooperative_games_lean/`, `stable_marriage_lean/`, `repeated_games_lean/`,
 `minimax_lean/`. Cette prolifération entraînait trois pathologies :
 
@@ -86,7 +86,7 @@ Chaque sous-module est livré en **siblings FR + EN** distincts, avec
 namespace suffixé (`StableMarriage` ↔ `StableMarriage_en`, etc.) pour
 éviter les collisions de noms au top-level (notamment l'`abbrev Coalition`
 de `CooperativeGames.Basic` qui existe en FR et en EN — voir
-[code-style.md](.claude/rules/code-style.md) §Lean i18n). Le pattern
+[code-style.md](../../../.claude/rules/code-style.md) §Lean i18n). Le pattern
 `globs := #[<Lib>.*]` du `lakefile.lean` garantit que la CI **découvre
 automatiquement** les deux langues à chaque build, et la **drift-detection**
 signale toute divergence FR/EN.
@@ -142,8 +142,7 @@ Trois sous-modules FR + leurs siblings EN, absorbés depuis l'ancien
 - `bondareva_shapley_backward` — réciproque : tout jeu du cœur est
   équilibré
 - `bondareva_shapley` — **équivalence** (théorème fondateur de
-  Bondareva-Shapley, 1963) ; voir
-  [lean-bondareva-polyhedral-closed-gap](file:../../../docs/lean/lean-bondareva-polyhedral-closed-gap.md)
+  Bondareva-Shapley, 1963)
 - `marginalVector_mem_core` — le vecteur de contributions marginales est
   dans le cœur
 - `convex_core_nonempty` — le cœur est non-vide pour tout jeu équilibré
@@ -173,9 +172,7 @@ Trois sous-modules FR + leurs siblings EN, absorbés depuis l'ancien
 `bondareva_shapley_backward` = `bondareva_shapley`) vit dans
 `CooperativeGames.ConeKernel` où la machinerie `BondarevaCone.augCone`
 (cône augmenté) + le **séparateur** (`separatingFunctional_none_neg`)
-sont introduits. Le plan détaillé et le journal de remplissage des
-trous sont dans
-[docs/BONDAREVA_FARKAS_PLAN.md](../../../../docs/lean/BONDAREVA_FARKAS_PLAN.md).
+sont introduits.
 
 ## Quatre axiomes de Shapley — formalisation
 
@@ -217,17 +214,15 @@ lake exe cache get
 ```
 
 Le cache Mathlib est partagé au niveau du dépôt (via `lake exe cache get`)
-pour éviter de retélécharger `~3 GB` à chaque incrément. Sur Windows,
-attention à la copie `NTFS junction` documentée dans
-[lean-wdac-olean-wholesale-copy](../../../../docs/lean/lean-wdac-olean-wholesale-copy.md).
+pour éviter de retélécharger `~3 GB` à chaque incrément.
 
 ## Relation aux autres projets Lean de GameTheory
 
 | Projet | Statut | Raison de la séparation |
 |--------|--------|-------------------------|
 | [`conway_cgt_lean/`](../conway_cgt_lean/) | Lake séparé (vihdzp/combinatorial-games) | Théorie des jeux combinatoires (PGame, surréels, nimbers) — Mathlib-only via `SetTheory.PGame` |
-| [`social_choice_lean/`](../social_choice_lean/) | Lake séparé (pinné v4.30.0-rc2) | Non encore absorbé — PR #6058 OPEN MERGEABLE UNSTABLE post c.369b fix, blocage par build lake |
-| [`social_choice_lean_petters/`](../social_choice_lean_petters/) | Lake séparé (pinné commit `d679d950` Peters) | Gibbard-Satterthwaite, Duggan-Schwartz — divergence de rev attendra la convergence v4.31.0-rc1 |
+| [`social_choice_lean/`](../social_choice_lean/) | **Absorbé** (PR #6058 mergée) | Contenu (Arrow / Sen / Voting, FR + EN) déplacé sous `game_theory_lean/SocialChoice/` ; dossier conservé comme tombstone |
+| [`social_choice_lean_peters/`](../social_choice_lean_peters/) | Lake séparé (pinné commit `d679d950` Peters) | Gibbard-Satterthwaite, Duggan-Schwartz — divergence de rev attendra la convergence v4.31.0-rc1 |
 | [`cooperative_games_lean/`](../cooperative_games_lean/) | **Supprimé** (c.306, contenu intégralement absorbé dans `game_theory_lean/CooperativeGames/`) | — |
 | [`stable_marriage_lean/`](../stable_marriage_lean/) | **Supprimé** (c.305 finalisation + PR #5971 doublon) | — |
 | [`lean_game_defs/`](../lean_game_defs/) | Couche introductive (pas un Lake) | 6 fichiers `.lean` de **référence** pour copier-coller dans les notebooks d'enseignement ; 0 sorries, Mathlib-free |
@@ -238,19 +233,19 @@ attention à la copie `NTFS junction` documentée dans
 - [`GameTheory/README.md`](../README.md) — vue d'ensemble du track
   GameTheory (OpenSpiel + Lean)
 - [`social_choice_lean/README.md`](../social_choice_lean/README.md) —
-  l'autre Lake GameTheory encore séparé (Arrow / Sen / électeur médian)
+  tombstone du Lake désormais absorbé sous `SocialChoice/` (Arrow / Sen / électeur médian)
 - [`lean_game_defs/README.md`](../lean_game_defs/README.md) — la couche
   introductive (pas un Lake, juste des définitions à copier-coller)
 - [`scripts/README.md`](../scripts/README.md) — configuration du kernel
   Lean 4 WSL
-- [`.claude/rules/lean-merge-discipline.md`](../../../../.claude/rules/lean-merge-discipline.md) —
+- [`.claude/rules/lean-merge-discipline.md`](../../../.claude/rules/lean-merge-discipline.md) —
   règle **HARD** : `lake build SUCCESS` local avant merge + BG iter
   systématique post-PR/msg po-2026
-- [`.claude/rules/anti-regression.md`](../../../../.claude/rules/anti-regression.md) —
+- [`.claude/rules/anti-regression.md`](../../../.claude/rules/anti-regression.md) —
   protocoles anti-régression Lean (incidents fondateurs : 2026-04-24
   Arrow.lean 9 preuves → sorry)
-- [`docs/lean/`](../../../../docs/lean/) — itérations prover, plan
-  Bondareva-Farkas, diagnostic intractable, LLM endpoints
+- [`docs/lean/`](../../../docs/lean/) — itérations prover, diagnostic
+  intractable, LLM endpoints
 - EPIC **#4365** — anti-prolifération GameTheory (6 → 2 cibles)
 - EPIC **#4980** — convention i18n FR/EN sibling pair pour lakes
   destinés à publication
@@ -274,10 +269,11 @@ multi-lib retenu est calqué sur `decision_theory_lean/` (modèle éprouvé
 c.299–c.308), avec deux `lean_lib` distincts (`StableMarriage` +
 `CooperativeGames`) qui cohabitent sans coupler leurs imports Mathlib.
 **État actuel** : squelette posé en c.299, remplissage incrémental c.300
-→ c.308, doublon `stable_marriage_lean/` supprimé via PR #5971 ; les
-absorptions suivantes (social_choice_lean, social_choice_lean_petters)
-sont des **PRs dédiées** trackées séparément et pinnées sur la
-convergence v4.31.0-rc1 de Mathlib.
+→ c.308, doublon `stable_marriage_lean/` supprimé via PR #5971,
+`social_choice_lean/` absorbé sous `SocialChoice/` via PR #6058 ;
+l'absorption restante (`social_choice_lean_peters/`) reste une **PR
+dédiée** trackée séparément et pinnée sur la convergence v4.31.0-rc1
+de Mathlib.
 
 ### Ce qu'il couvre
 
@@ -302,9 +298,9 @@ sans couplage d'imports Mathlib).
 
 ### Où aller ensuite
 
-- **Modules à absorber** : `social_choice_lean/` (PR #6058 OPEN
-  MERGEABLE UNSTABLE), `social_choice_lean_petters/` (convergence
-  Mathlib v4.31.0-rc1 attendue), `repeated_games_lean/`,
+- **Déjà absorbé** : `social_choice_lean/` → `SocialChoice/` (PR #6058,
+  mergée). **Modules restant à absorber** : `social_choice_lean_peters/`
+  (convergence Mathlib v4.31.0-rc1 attendue), `repeated_games_lean/`,
   `minimax_lean/` — chacun fait l'objet d'une **PR dédiée** suivant le
   même protocole anti-régression 4 étapes que les PRs c.299–c.308.
 - **Couche introductive** : [`lean_game_defs/`](../lean_game_defs/) pour
@@ -313,4 +309,4 @@ sans couplage d'imports Mathlib).
 - **CGT** : [`conway_cgt_lean/`](../conway_cgt_lean/) pour la théorie
   des jeux combinatoires (PGame, surréels, nimbers via Mathlib).
 - **Configuration du kernel Lean** : [`scripts/README.md`](../scripts/README.md)
-  et [`.claude/rules/wsl-kernels.md`](../../../../.claude/rules/wsl-kernels.md).
+  et [`.claude/rules/wsl-kernels.md`](../../../.claude/rules/wsl-kernels.md).
