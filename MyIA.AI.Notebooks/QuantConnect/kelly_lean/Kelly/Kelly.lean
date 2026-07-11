@@ -252,7 +252,7 @@ theorem growthGrad_zero_neg_iff (β : Bet) :
 theorem kellyFrac_eq_zero_iff (β : Bet) :
     kellyFrac β = 0 ↔ β.b * β.p - q β = 0 := by
   unfold kellyFrac
-  rw [div_eq_iff₀ β.hb_pos.ne', zero_mul]
+  rw [div_eq_zero_iff, or_iff_left β.hb_pos.ne']
 
 /-- **Edge nul siff Kelly nulle** : la pente initiale `g'(0)` est nulle exactement
     quand `f* = 0`. Le cas neutre où ne rien miser est optimal — frontière entre les
