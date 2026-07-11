@@ -41,6 +41,70 @@ This means that, for the domains most closely associated with Conway's
 
 -/
 
+/-
+  `Conway.MathlibMap` — les mathématiques de Conway dans Mathlib
+  ==================================================================
+  Module satellite qui cartographie ce que **Mathlib 4 fournit réellement**
+  dans sa version épinglée (`54f98fd6`, 2026-05-15) en lien avec les
+  contributions de John Horton Conway. Il accompagne nos propres
+  ré-implantations sous `Conway/` (Life, Angel, Doomsday, Fractran,
+  LookAndSay, Nim, FWT).
+
+  ### Note historique — retrait CGT (Mathlib PR #35550, 2026-02-20)
+
+  Mathlib **contenait autrefois** des modules étendus de théorie
+  combinatoire des jeux sous `Mathlib.SetTheory` :
+
+  - `Surreal.Basic` / `Surreal.Dyadic` / `Surreal.Multiplication`
+  - `PGame.Basic` / `PGame.Order` / `PGame.Algebra`
+  - `Game.Basic` / `Game.Birthday` / `Game.State` / `Game.Short`
+  - `Game.Impartial` / `Game.Nim` / `Game.Domineering` / `Game.Ordinal`
+  - `Nimber.Basic` / `Nimber.Field`
+
+  Ces modules ont été retirés par la PR #35550 (« remove deprecated
+  material from CGT »), qui notait qu'ils étaient dépréciés depuis
+  6 mois. Sur notre version épinglée (mai 2026), aucun ne survit.
+
+  Cela signifie que, pour les domaines les plus directement associés
+  à *On Numbers and Games* de Conway (nombres surréels, jeux partisans,
+  Sprague-Grundy), **notre projet constitue l'implémentation de
+  référence** (voir `Conway.Nim`, `Conway.Life`, etc.) plutôt que
+  Mathlib.
+
+  ### Ce que Mathlib FOURNIT (domaines conway-adjacents)
+
+  1. **Arithmétique ordinale** (`SetTheory.Ordinal.*`) : fondement de
+     la construction des « anniversaires » (birthdays) pour les
+     nombres surréels de Conway. Inclut la forme normale de Cantor
+     (`Ordinal.CNF`), l'exponentiation ordinale, les points fixes.
+  2. **Groupes de Coxeter** (`GroupTheory.Coxeter.*`) : travaux de
+     Conway sur les groupes de Coxeter et leurs interprétation
+     géométriques.
+  3. **Addition de jeux** (`Order.GameAdd`) : une relation abstraite
+     qui modélise la relation de sous-jeu en théorie combinatoire des
+     jeux.
+
+  ### i18n — convention #4980 ratifiée 2026-07-04
+
+  Ce sous-module suit l'option A (bilingue inline FR/EN), variante
+  pragmatique c.377 (deux blocs `/` top-level distincts, sans `---`
+  interne, analogue à c.376) : le bloc EN existant est préservé
+  verbatim ci-dessus, le bloc FR miroir est ajouté juste après sans
+  séparateur `---`. Convention sibling pair (`<Foo>_en.lean` à part)
+  réservée aux modules de substance (cf c.374 `Astar_en.lean`) ;
+  pour les modules satellites de cartographie comme `MathlibMap`,
+  l'inline FR+EN est le bon compromis (peu de code, deux langues
+  côte à côte).
+
+  Cross-références : c.373 `knot_lean/Knots.lean` racine bilingue,
+  c.374 `search_lean/Astar_en.lean` sibling pair, c.375 `knot_lean`
+  sous-modules 5/6 bilingues, c.376 `Knots/Invariant.lean`
+  bilingue (sixième et dernier, saturation locale du lac `knot_lean`
+  fermée à 6/6), **c.377 `Conway/MathlibMap.lean` (initie le
+  rollout `conway_lean`, registre ≠ knot_lean, PIVOT L335
+  post-saturation locale)**.
+-/
+
 import Mathlib.SetTheory.Ordinal.CantorNormalForm
 import Mathlib.GroupTheory.Coxeter.Basic
 import Mathlib.Order.GameAdd
