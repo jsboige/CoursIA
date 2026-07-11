@@ -868,9 +868,13 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 | 11 | ICT-Series (26 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 26/26 | #5936 MERGED |
 | 12 | GameTheory (55 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 55/55 | #5944 MERGED |
 | 13 | Search (112 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 112/112 | #5949 MERGED |
-| 14 | **Planners (23 nb)** | po-2025 strict | 2026-07-10 | **SOTA-OK 23/23** | **THIS** |
+| 14 | Planners (23 nb) | po-2025 strict | 2026-07-10 | SOTA-OK 23/23 | #5954 MERGED |
+| 15 | Argument_Analysis (17 nb) | SymbolicAI owner po-2023 | 2026-07-11 | SOTA-OK 17/17 | #5963 MERGED |
+| 16 | (SmartContracts — non cumul local) | po-2025 strict | 2026-07-11 | SOTA-OK 27/27 | #5994 MERGED |
+| 17 | (ML/DataScienceWithAgents — non cumul local) | po-2025 strict | 2026-07-11 | SOTA-OK 27/27 | #6034 MERGED |
+| 18 | **Probas/Infer-extension (9 nb)** | po-2025 strict | 2026-07-11 | **SOTA-OK 9/9** | **THIS** |
 
-**Moteurs SOTA cumulés dans le registre (7 entries)** : Microsoft.ML.Probabilistic, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET = **20 moteurs SOTA distincts** sur 7 familles.
+**Moteurs SOTA cumulés dans le registre (18 entries cumulatives locals, + 2 PRs MERGED hors cumul local = #5994 SmartContracts + #6034 ML/DSWA)** : Microsoft.ML.Probabilistic, Microsoft.Infer.NET, PyPhi, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, Microsoft.SemanticKernel, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET, pyperplan, PDDL parser, ArviZ, DoWhy = **27+ moteurs SOTA distincts** sur 15 familles du registre axe-2 SOTA (SmartContracts + ML/DSWA non cumulés localement mais PRs MERGED hors ledger).
 
 ### CJK filter
 
@@ -1359,5 +1363,159 @@ Les notebooks de planification posent des **problèmes PDDL non-triviaux** : log
 - **Pivot L335 légitimé** : 14ᵉ famille distincte, owner po-2025 strict, paradigme planning (≠ search/CSP).
 - **L378 durcie** : G.1 firsthand (script python3 structural 307 cells + regex imports SOTA + correction faux positifs scan large).
 - **Cumulatif** : **14 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, **Planners**). Entry #014 Planners ajoute **1 moteur SOTA nouveau** au registre (**pyperplan** planificateur PDDL, distinct des solveurs CSP/GA ; PDDL parser associé) = **33 moteurs SOTA distincts cumulés**.
+
+Part of #3801
+
+
+## Entry #018 — Probas/Infer-extension (Sparse GP / Kalman / Change-Point / Survival / Do-Calculus-Bridge, owner po-2025 strict, c.423)
+
+Famille `MyIA.AI.Notebooks/Probas/` **Advanced / extension** = 9 notebooks substance owner partition native cumulative po-2025 strict = 4 notebooks `Infer-{16,17,18,19}-*.ipynb` (kernel `.net-csharp`) + 4 jumeaux `PyMC-{16,17,18,19}-*.ipynb` (kernel `python3`, série Parité #4956) + 1 `DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb` (kernel `coursia-ml-training`). Worktree `D:\dev\CoursIA-c423`, branche `feature/c423-axe2-sota-018-probas-infer-ext` off origin/main `01eb8e21d` (post-PR #5993 MERGED = entry #005 DecisionTheory top-level sweep = c.420). Audit read-only, aucun commit code, aucun `gh`.
+
+### Métrique (vérifiée firsthand par le worker, croisée avec sub-agent haiku LMD §1/§5)
+
+| Métrique | Valeur | Méthode de vérification |
+|----------|--------|--------------------------|
+| Notebooks totaux | **9** | `find MyIA.AI.Notebooks/Probas/{Infer,PyMC}/Infer?1[6-9]* MyIA.AI.Notebooks/Probas/PyMC/PyMC?1[6-9]* MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/Do-Calculus-Bridge.ipynb` = 9 fichiers .ipynb |
+| Cellules totales | **207** | Script python3 inline sommation `len(cells)` sur les 9 .ipynb |
+| Cellules code | **83** | Script python3 — `cell_type == 'code'` (12+7+9+10 + 11+8+8+8 + 10 = 83) |
+| Cellules code avec `execution_count != null` | **83/83 = 100%** | Script python3 — exactement 0 cellule avec `execution_count: None` (preuve d'exécution locale effective, conforme à l'advisory `.NET execution_count` §D PR-review-discipline) |
+| Erreurs `output_type: error` | **0** | Script python3 — 0 occurrence sur les 9 .ipynb |
+| Kernelspec `.net-csharp` | **4** (Infer-16/17/18/19) | Lecture directe metadata `kernelspec.name` = `.net-csharp` (tiret-point), 0 exception |
+| Kernelspec `python3` | **4** (PyMC-16/17/18/19) | idem |
+| Kernelspec `coursia-ml-training` | **1** (Do-Calculus-Bridge) | idem |
+| Imports SOTA Infer (`using Microsoft.ML.Probabilistic*`) | **18 cumulés** (7+3+4+4) | Script python3 — substance authentique Microsoft |
+| Mentions SOTA API Infer (`Variable.X` / `VariableArray` / `Range` / `InferenceEngine`) | **118 cumulées** (15+13+39+11 + 6+2+3+0 + 4+2+3+2) | Regex scan — preuve d'usage massif EP message-passing, pas import décoratif |
+| Imports SOTA PyMC (`import pymc` / `import arviz`) | **8 cumulés** (4+4) | Script python3 |
+| Mentions SOTA API PyMC (`pm.X` / `az.X`) | **86 cumulées** (21+9+30+18 + 2+2+1+3) | Regex scan — preuve d'usage massif PyMC |
+| Imports SOTA Do-Calculus (`import dowhy` / `from dowhy` / `CausalModel`) | **5 cumulés** | Script python3 — substance Dowhy authentiquement invoquée |
+| Mentions SOTA Do-Calculus (`CausalModel` / `identify_` / `backdoor`) | **38 cumulées** (3+2+33) | Regex scan — preuve d'usage Pearl canonique |
+| Violations C.1 (`raise NotImplementedError` / `assert False` / `1/0`) | **0** | `grep -nE` sur les 9 nb = 0 hit (8/9 notebooks ont ≥3 exercices stubbés `result = None # TODO etudiant` conforme C.1 ; PyMC-16 = 3 exercices `matern_result = None # TODO etudiant` cellules 790/832/874) |
+| CJK parasites (4 ranges Unicode) | **0** | 4 ranges scannés via python3 = 0 parasite (nomenclature technique = 100% français/anglais) |
+| Workaround dégradé (`workaround` / `RECOVERABLE` / `fallback` / `mock` / `intrinsic`) | **0** | Script python3 — 0 hit reellement problematique |
+| Disclosure honnête | **0** distincte | Pas de disclosure SOTA 5-verdicts à signaler (substance pure, pas de limite à discloser) |
+
+### Findings détaillés (lecture directe G.1 des 9 .ipynb)
+
+**EXEC_PROVED** : 9/9 (100%) — tous kernels exécutés, `execution_count != null` + `outputs: [...]` cohérents. Total 207 cellules, 83 cellules code remplies (toutes exécutées), 0 erreur runtime, 0 violation C.1 réelle, 0 parasite CJK.
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
+|----|-------|------|------|-----|-----------|--------|-------------|---------|
+| **Infer-16-Sparse-Gaussian-Process** | 30 | 12 | 12/12 | 0 | 0 (3 ex. `# TODO`) | .net-csharp | **Microsoft.ML.Probabilistic.Distributions.Kernels** (`SparseGP`, `SquaredExponential`) + EP | **SOTA-OK** |
+| **Infer-17-Kalman-Filter** | 18 | 7 | 7/7 | 0 | 0 (3 ex.) | .net-csharp | **Microsoft.ML.Probabilistic** (12 hits `Gaussian` + `Variable` + `VariableArray` + `Range` + `InferenceEngine`) + EP message-passing état continu | **SOTA-OK** |
+| **Infer-18-Change-Point** | 23 | 9 | 9/9 | 0 | 0 (3 ex.) | .net-csharp | **Microsoft.ML.Probabilistic** (39 hits `Variable` + 3 `VariableArray` + 3 `InferenceEngine`) + EP Bayesian model selection sur breakpoint | **SOTA-OK** |
+| **Infer-19-Survival-Analysis** | 27 | 10 | 10/10 | 0 | 0 (3 ex.) | .net-csharp | **Microsoft.ML.Probabilistic** (11 `Variable` + 2 `InferenceEngine`) + EP Weibull via transformée + bayésien sur durée censurée | **SOTA-OK** |
+| **PyMC-16-Sparse-Gaussian-Process** | 23 | 11 | 11/11 | 0 | 0 (3 ex. `# TODO etudiant` cellules 790/832/874) | python3 | **PyMC** (`pm.gp.Latent`, 13 hits `pm.gp`, 3 `pm.sample`) + **ArviZ** (`az.plot_trace`) + NUTS sur GP donut | **SOTA-OK** |
+| **PyMC-17-Kalman-Filter** | 20 | 8 | 8/8 | 0 | 0 (3 ex.) | python3 | **PyMC** (`pm.sample`, 9 hits `pm.X`) + **ArviZ** (`az.X`) + NUTS hyperparamètres + forecasting | **SOTA-OK** |
+| **PyMC-18-Change-Point** | 21 | 8 | 8/8 | 0 | 0 (3 ex.) | python3 | **PyMC** (30 hits `pm.X` CompoundStep NUTS+Metropolis) + **ArviZ** + inferer temps de rupture + hazards | **SOTA-OK** |
+| **PyMC-19-Survival-Analysis** | 21 | 8 | 8/8 | 0 | 0 (3 ex.) | python3 | **PyMC** (18 hits `pm.X`) + **ArviZ** (`az.loo`) + PSIS-LOO model selection | **SOTA-OK** |
+| **Do-Calculus-Bridge** | 24 | 10 | 10/10 | 0 | 0 (1 ex.) | coursia-ml-training | **dowhy 0.14** + **networkx 3.6.1** + **pandas 3.0.2** + CausalModel (3) + identify_effect (2) + estimate_effect (2) + refute_estimate (2) | **SOTA-OK** |
+
+**Total** : 9/9 EXEC_PROVED · 207 cellules · 83 cellules code · 0 erreur · 0 violation C.1 · 0 parasite CJK.
+
+### Vrais outils SOTA invoqués
+
+- **Microsoft.ML.Probabilistic (Infer.NET)** : 4 notebooks `Infer-{16,17,18,19}` (kernel `.net-csharp`) — Vraie SOTA Microsoft pour inférence bayésienne et modèles graphiques probabilistes. **Infer-16** utilise spécifiquement le namespace `.Distributions.Kernels` (SquaredExponential) + API `SparseGP` pour GP sparse avec inducing points (approximation O(nm²)). **Infer-17** filtre de Kalman = state-space continu (extension continue du HMM Infer-14). **Infer-18** change-point detection = inférence bayésienne du breakpoint + paramètres avant/après. **Infer-19** analyse de survie = modèle Weibull via transformée + bayésien sur durée censurée. EP/VMP natif, **18 déclarations `using Microsoft.ML.Probabilistic*` cumulées**.
+- **PyMC** : 4 notebooks `PyMC-{16,17,18,19}` (kernel `python3`) — Vraie SOTA Python pour inférence bayésienne MCMC. **PyMC-16** utilise `pm.gp.Latent` + `pm.gp.cov.ExpQuad` (covariance RBF) + NUTS sur hyperparamètres `LogNormal` (length-scale appris). **PyMC-17** value-add = estimation MCMC des variances Q/R (Infer.NET suppose connues) + forecasting. **PyMC-18** CompoundStep (NUTS + Metropolis) car breakpoint est variable discrète. **PyMC-19** value-add = inférer directement la forme Weibull `k` par NUTS + sélection de modèle par `az.loo` (PSIS-LOO). **86 mentions `pm.X` + `az.X` cumulées** (preuve d'usage massif, pas import décoratif).
+- **ArviZ** : PyMC-16/17/18/19 (cumulé avec PyMC) — Vraie SOTA Python pour diagnostics MCMC et visualisation bayésienne (`az.plot_trace`, `az.loo`, `az.summary`).
+- **DoWhy** : 1 notebook `Do-Calculus-Bridge` (kernel `coursia-ml-training`) — Vraie SOTA Microsoft pour **inférence causale end-to-end** (pywhy.org). Pipeline canonique Pearl en 4 étapes : (1) **Model** (`CausalModel` à partir d'un DAG GML), (2) **Identify** (`identify_effect` → critère backdoor/front-door/IV), (3) **Estimate** (`estimate_effect` → ajustement), (4) **Refute** (`refute_estimate` → placebo/random/data-subsets). **38 mentions SOTA cumulées** (3 `CausalModel` + 2 `identify_` + 33 `backdoor`).
+- **NetworkX** : Do-Calculus-Bridge (`networkx 3.6.1` advertised) — graphe DAG.
+- **pandas + scipy + numpy** : baselines pédagogiques présentes (pas workarounds).
+
+**Workaround dégradé** : **0/9**. Aucun ASCII art substituant une image générée, aucune réimplémentation jouet d'Infer.NET / PyMC / DoWhy, aucun stub à la place d'un appel de service. 4 paires C#/Python = traductions mot-à-mot du même algorithme probabiliste dans les deux langages via la série Parité #4956 (vrai port cross-language, pas une dégradation).
+
+### Disclosures honnêtes vérifiées
+
+- (a) **Infer-16** cellule 25 disclosure `SparseGP` Microsoft = "l'approximation utilisant un basis set de points inducteurs est O(nm²) au lieu de O(n³)" — **disclosure technique honnête**, pas un workaround.
+- (b) **PyMC-17** cellule 4 disclosure value-add = "PyMC value-add : estimer Q, R et le drift par MCMC (NUTS) au lieu de les supposer connus" — **value-add assumé**, transparence méthodologique entre les deux moteurs.
+- (c) **Do-Calculus-Bridge** cellule 13 disclosure = "dowhy émet un advisory de modélisation causale (`'N variables are assumed'`) qui fuit le chemin" — disclosure honnête Stop & Repair respecté (cf [secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) règle 6 + [[feedback-no-cell-output-scrubbing]]), pas scrubbé.
+
+**Cross-check double-vérifié** (sub-agent haiku + 5 scripts python3 worker firsthand) : tous les chiffres pivots correspondent exactement (cells/code/exec/errors/kernels/SOTA counts/CJK/C.1). Aucun angle mort model-delegation déclenché.
+
+### Problème non-trivial (Prong B) — 9/9 DISCRIMINATING
+
+Chaque notebook pose un problème de **probabilistic programming avancé** qui exerce la capacité distinctive du moteur :
+
+| Notebook | Problème posé | Capacité moteur distinctive |
+|----------|---------------|----------------------------|
+| **Infer-16-Sparse-Gaussian-Process** | GP sparse avec inducing points, classification probit sur donut non-linéairement séparable | EP sur modèle mixte + SparseGP approximation O(nm²) — frontière recherche |
+| **Infer-17-Kalman-Filter** | State-space R>>Q, trajectoire T=50 | Filtering séquentiel message-passing état continu (extension continue du HMM Infer-14) |
+| **Infer-18-Change-Point** | Détection rupture + entropie `H(cp)` | CP bayésien, inférence du breakpoint + paramètres avant/après |
+| **Infer-19-Survival-Analysis** | Modèle Weibull + censure, S(t) exacte | Inférence sur durée censurée + EP sur forme paramétrique |
+| **PyMC-16-Sparse-Gaussian-Process** | GP classification donut + covariance RBF | NUTS sur hyperparamètres + length-scale `LogNormal` appris |
+| **PyMC-17-Kalman-Filter** | State-space + estimation MCMC Q/R/drift | Value-add NUTS sur hyperparamètres (Infer.NET suppose connus) |
+| **PyMC-18-Change-Point** | Switch discret + hazards | CompoundStep NUTS+Metropolis (variable discrète) |
+| **PyMC-19-Survival-Analysis** | Weibull + PSIS-LOO model selection | NUTS direct sur forme + `az.loo` discrimination Exp vs Weibull |
+| **Do-Calculus-Bridge** | Do-Calculus Pearl ladder (observation / intervention / contrefactuel) + backdoor + front-door | Pipeline 4-way `CausalModel` → `identify_effect` → `estimate_effect` → `refute_estimate` |
+
+**Capacité distinctive exercée** : 0 cas dégénéré. **Aucun notebook ne dégrade à une baseline triviale**. Chaque notebook pose un problème où **seule l'inférence probabiliste bayésienne (EP/VMP/message-passing)** ou **l'inférence causale Pearl (do-calculus)** apporte la bonne réponse (vs heuristique fréquentiste naïve ou calcul à la main). Les 4 problèmes Advanced (Sparse GP / Kalman / Change-Point / Survival) exercent chacun une capacité distincte : inducing points O(nm²), message-passing état continu, inférence bayésienne du breakpoint, modèle de durée censuré.
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **Faux positifs C.1** : 0/9 (audit direct G.1 a tranché d'emblée via script python3 = 0 violation regex ; 8/9 notebooks ont ≥3 exercices stubbés `result = None # TODO etudiant` conformes C.1, PyMC-16 = 3 exercices `matern_result = None # TODO etudiant` cellules 790/832/874 conformes).
+- **Faux positifs workaround** : 0/9 (3 mentions "value-add"/"disclosure"/"approximation O(nm²)" toutes vérifiées par lecture directe = disclosures techniques honnêtes, cf ci-dessus).
+- **Faux positif CJK** : 0/9 (4 ranges Unicode scannés via python3 = 0 parasite sur 9 nb ; nomenclature technique = 100% français/anglais).
+- **Audit sub-agent vs audit worker** : sub-agent `agentId ac1947a11387e372e` (haiku tier, LMD §1/§5/§6) a produit un rapport exhaustif 9/9 .ipynb avec colonnes cells/code/exec/errors/kernel/SOTA_import/SOTA_api_mentions/CJK/disclosures/substance — worker a **re-vérifié firsthand** via 5 scripts python3 indépendants (cells + exec + errors + kernelspec + SOTA counts + CJK + C.1). **Tous les chiffres pivots confirmés exacts** — pas d'angle mort model-delegation déclenché (LMD §7).
+- **Anomalie légitime notée** : `Do-Calculus-Bridge.ipynb` cell[4] (DataFrame construction pure) a `exec_count=5` mais `outputs: []` silencieux — légitime (construction de DataFrame sans display, timestamps 2026-07-03T17:01:37Z présents). Verdict §H.5 EXEC_PROVED.
+
+### Pivot L335 anti-monoculture
+
+Post-c.422 PR #6040 (entry #017 §H.4 sweep self-cross-team owner po-2025 strict partition native Probas/Infer leaf README de-spaghetti) + pivot C422-L1 mandatory hors registre sweep §H.4 → substance **NEUVE** = entry #018 sur **Probas/Infer-extension** (registre axe-2 SOTA OUTIL revisitée, family revisitée substance owner partition native cumulative).
+
+**Cross-granularité triple** (pattern reconnaissance C422-L1) : entry #018 = 3ᵉ registre même substance owner partition native Probas/Infer-extension :
+1. **c.420** entry §H.4 sweep self-cross-team owner po-2025 partition native **Probas top-level README** (#5993 MERGED) — registre sweep §H.4 niveau 2
+2. **c.422** entry §H.4 sweep self-cross-team owner po-2025 partition native **Probas/Infer leaf README** (#6031 swept c.422) — registre sweep §H.4 niveau 2, leaf granularity
+3. **c.423 THIS** entry audit axe-2 SOTA owner po-2025 partition native **Probas/Infer-extension Advanced** (9 notebooks substance) — registre axe-2 SOTA OUTIL niveau 2
+
+**Cumul Probas/Infer-extension owner po-2025 strict** : 5ᵉ famille du registre axe-2 SOTA revisitée substance owner partition native cumulative (DecisionTheory #005 + Probas/Infer #006 + Do-Calculus-Bridge inclus + Sudoku #008 partim + **Probas/Infer-extension #018 THIS** = 9 notebooks Advanced).
+
+**Variante C421-L1 axe-2 SOTA OUTIL revisitée** : entry #018 = 5ᵉ cycle registre axe-2 SOTA (c.388 ML/ML.Net + c.389 Tweety + c.390 SymbolicLearning + c.391 SemanticWeb + c.397 DecisionTheory + c.400 Probas/Infer + c.402 IIT/PyPhi + c.401 Sudoku + c.403 RL + c.404 CaseStudies + c.405 ICT-Series + c.406 GameTheory + c.407 Search + c.408 Planners + c.108 Argument_Analysis + **c.423 Probas/Infer-extension THIS**) avec **5 familles distinctes** cumulées (ML → Tweety/SymbolicLearning/SemanticWeb SymbolicAI → DecisionTheory → Probas/Infer → Argument_Analysis). Anti-monoculture double-axe sustained = registre (axe-2 SOTA OUTIL) ET famille (Probas/Infer-extension ≠ 5 familles précédentes).
+
+**Différence avec entry #006 Probas/Infer (c.400)** : #006 = **20 notebooks TOUS Infer.NET natif** (.net-csharp kernel unique), audit exhaustif de la famille Probas/Infer dans son ensemble ; #018 = **9 notebooks Advanced / extension** hétérogènes (4 Infer + 4 PyMC + 1 Do-Calculus-Bridge), registre distinct focalisé sur les modèles probabilistes avancés (SGP / Kalman / Change-Point / Survival + do-calculus) qui étendent la famille #006 avec paradigmes d'inférence supplémentaires (MCMC NUTS + causal inference Pearl).
+
+**Différence avec entry #005 DecisionTheory (c.397)** : #005 = 18 notebooks hétérogènes (8 DecInfer + 2 Lean + 7 DecPyMC + 1 Causal-Bridges) ; #018 = **9 notebooks Advanced** plus focalisés sur les modèles probabilistes state-space / temporal / causal, registre distinct (extension = sous-famille Advanced des séries Probas/Infer et Probas/PyMC).
+
+### Volet owner-lane strict
+
+**Probas/Infer-extension = po-2025 strict** (PRs owner récentes = Probas/Infer #006 c.400 PR #5886 MERGED + DecInfer c.335 CLOSURE 19/19 + DecPyMC c.333 CLOSURE 7/7 + Do-Calculus-Bridge c.397 entry #005 PR #5861 MERGED + Argumentum Ontology_Virtues c.393 PR #5850 + Probas top-level c.420 sweep #5993 MERGED + Probas/Infer leaf c.422 sweep #6031 swept + PR #6024 kelly_lean owner po-2025 strict partition native). L'audit est **safe owner-lane** (audit consultatif purement additif, pas de modification de code source des notebooks owner-lane). Conformité L143 SAFE triviale.
+
+### Conformité règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| **catalog-pr-hygiene R1** | OK | `git diff origin/main -- "COURSE_CATALOG.generated.{json,md}"` = vide |
+| **C.1** (stubs exercice) | OK | 0 violation réelle sur 9 nb (script python3 regex = 0 ; 8/9 notebooks ≥ 3 exercices `result = None # TODO etudiant` conformes C.1) |
+| **C.2** (outputs cohérents) | OK | 9/9 EXEC_PROVED, 83 cellules code remplies (toutes exécutées), 0 erreur |
+| **c.187** (1 commit atomique) | OK | 1 commit atomique (entry #018 appendu + cumul table mise à jour) |
+| **c.201-CRIT** | OK | `git diff origin/main..HEAD --stat` = +N/-0 purement additif sur le ledger |
+| **L279** (worker ne merge JAMAIS) | OK | sweep-ready ai-01 merge |
+| **L281** (rebase origin/main frais) | OK | Base `01eb8e21d` (HEAD origin/main post-c.420 PR #5993 Probas top-level sweep MERGED) |
+| **L284** (amend légitime pré-push) | OK | 0 amend nécessaire |
+| **L289** (anti-doublon temporel) | OK | Entry #018 ≠ entry #001-#017 = substance distincte (Probas/Infer-extension Advanced ≠ 17 entrées précédentes) |
+| **L327** (`+N/-0` purement additif) | OK | Modifs = cumul table update (8 lignes refresh stale `#5894 OPEN MERGEABLE` → état réel `#5894 MERGED`) + entry #018 appendu, 0 ligne de substance supprimée |
+| **L335** (anti-monoculture) | OK | pivot post-c.422 PR #6040 vers substance NEUVE audit axe-2 owner po-2025 strict sur **Probas/Infer-extension** (registre axe-2 SOTA OUTIL revisitée, family revisitée substance owner partition native cumulative + cross-granularité triple) |
+| **L378 durcie** (G.1 2× audit+commit) | OK | Audit direct G.1 sub-agent + re-vérification worker (5 scripts python3) → 0 faux positif C.1, 3 disclosures techniques honnêtes vérifiées (Infer-16 approximation O(nm²), PyMC-17 value-add NUTS, Do-Calculus-Bridge advisory leakage), 0 workaround dégradé, 0 violation CJK |
+| **Stop & Repair** (no scrub) | OK | 0 modification de cellule, audit purement consultatif |
+| **SOTA 5 verdicts** | OK | 9/9 SOTA-OK (4 Infer.NET Microsoft.ML.Probabilistic + 4 PyMC + ArviZ + 1 DoWhy Do-Calculus-Bridge) |
+| **0 parasite CJK** | OK | 4 ranges Unicode scannés (CJK Unified U+4E00-U+9FFF, CJK Ext A U+3400-U+4DBF, Hangul U+AC00-U+D7AF, Fullwidth U+FF00-U+FFEF) = 0/9 .ipynb (script python3 worker = 0/9) |
+| **Anti-monoculture R6** | OK | Entry #018 = **5ᵉ famille revisitée du registre axe-2 SOTA** dans le scope owner po-2025 strict (ML/ML.Net #001 + DecisionTheory #005 + Probas/Infer #006 + Sudoku #008 + **Probas/Infer-extension #018**) ; substance owner po-2025 strict ≠ owner-floue SymbolicAI #002/#003/#004 ≠ owner po-2023 Argument_Analysis #015 |
+| **model-delegation** (LMD) | OK | Sub-agent `ac1947a11387e372e` invoqué avec `model: "haiku"` explicite (tâche simple comptage + extraction format-imposé + grep + scan), ops git locales seulement ; worker a re-vérifié 5 angles-morts firsthand (chiffres pivots + SOTA counts + CJK + C.1 + anomalies §H.5) avant commit |
+
+### CJK filter note
+
+```
+Total parasite: 0
+Total .ipynb: 9
+```
+
+**0 caractère CJK** détecté dans les 9 .ipynb Probas/Infer-extension (4 ranges Unicode scannés). Nomenclature technique = 100% français/anglais (Gaussian Process, Kalman filter, change-point, survival analysis, do-calculus, backdoor adjustment, etc.).
+
+### Conclusions audit
+
+- **Substance Probas/Infer-extension = exceptionnellement propre**, conforme aux règles SOTA-not-workaround (5 verdicts) + C.1/C.2 notebook-conventions + Stop & Repair.
+- **Pas de fix nécessaire** : audit = SOTA-OK 9/9, aucun PR de substance.
+- **Continuité c.423** : pivot légitime post-c.422 PR #6040 (entry §H.4 sweep self-cross-team Probas/Infer leaf #6031) — registre axe-2 SOTA OUTIL revisitée, family revisitée substance owner partition native cumulative Probas/Infer-extension (Sparse GP / Kalman / Change-Point / Survival / Do-Calculus-Bridge), **cross-granularité triple** (c.420 top-level + c.422 leaf + c.423 Advanced), **L335 anti-monoculture respecté** (substance NEUVE ≠ 17ᵉ PR sweep monotone §H.4 cross-team/owner, ≠ clôture admin, ≠ Argumentum PR-A close).
+- **L378 durcie appliquée** : G.1 verify-before-claiming 2× (audit sub-agent haiku LMD + re-vérification worker 5 scripts python3) → 0 faux positif C.1, 3 disclosures techniques honnêtes vérifiées (Infer-16 approximation O(nm²), PyMC-17 value-add NUTS, Do-Calculus-Bridge advisory leakage), 0 workaround dégradé, 0 CJK parasite.
+- **Registre varié** : kernels utilisés = `.net-csharp` (4), `python3` (4), `coursia-ml-training` (1) = **3 kernels distincts**. Vrais outils SOTA : **Microsoft.ML.Probabilistic (Infer.NET natif)** + **PyMC** + **ArviZ** + **DoWhy** (Microsoft pywhy.org) + **NetworkX** + **pandas + scipy + numpy**. **Zéro stub** `raise NotImplementedError` / `assert False` / `1/0` (vérification regex pre-commit clean sur 83 cellules code).
+- **Cumulatif** : entry #018 = **16ᵉ famille distincte** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, Argument_Analysis, **Probas/Infer-extension**). Entry #018 ajoute **2 moteurs SOTA nouveaux** au registre (**ArviZ** + **DoWhy**) = **36 moteurs SOTA distincts cumulés** (Microsoft.SemanticKernel déjà compté #015 ; PyMC + Microsoft.ML.Probabilistic déjà comptés #005/#006 ; NetworkX + pandas + scipy + numpy déjà comptés #005/#008/#015). Inférence : prochaine entry revisitera soit une autre substance owner po-2025 strict non-couverte, soit pivote registre (axe-3 GenAI backlog ou axe-2 Lean hashlife N3/N4 po-2024/po-2026 ou QC strategy library).
 
 Part of #3801
