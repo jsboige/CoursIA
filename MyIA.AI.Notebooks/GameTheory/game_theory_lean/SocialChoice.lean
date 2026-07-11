@@ -1,4 +1,4 @@
-/-!
+/--
 # SocialChoice — Théorie du choix social (Arrow + Sen + Voting)
 
 Bibliothèque de théorie du choix social formalisée en Lean 4 (Mathlib), inspirée
