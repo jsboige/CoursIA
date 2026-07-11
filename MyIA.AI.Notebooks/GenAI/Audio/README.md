@@ -27,20 +27,9 @@ L'objectif fil rouge de cette série est de construire un podcast entièrement g
 
 ## Aperçu — la génération audio en images
 
-Quatre visualisations extraites des notebooks illustrent l'arc complet de la série, du signal audio brut à la séparation de sources par Demucs et aux benchmarks de voix TTS en production. Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, poids, alt-text, audit G.1) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+Plutôt qu'une galerie séparée du propos, chaque niveau ci-dessous est illustré par une sortie réelle de notebook (EPIC #5654), placée au plus près du concept qu'elle démontre : la forme d'onde d'un signal brut, la reconnaissance vocale par Whisper, la séparation de sources par Demucs, ou l'espace de features d'un benchmark TTS. La provenance exacte de chaque figure (notebook source, cellule, poids) et l'audit G.1 firsthand figurent dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
-<table>
-<tr>
-<td align="center"><b>1 · Signal audio</b><br><a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio1-waveform.png" width="320" alt="Forme d'onde : échantillonnage d'un signal audio continu et visualisation temporelle."></a></td>
-<td align="center"><b>2 · STT/TTS (partiel)</b><br><a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio3-stt-tts.png" width="320" alt="Reconnaissance (STT) et synthèse (TTS) : transcription et génération vocale appliquées au même flux."></a></td>
-</tr>
-<tr>
-<td align="center"><b>3 · Demucs</b><br><a href="02-Advanced/02-4-Demucs-Source-Separation.ipynb"><img src="assets/readme/audio4-demucs.png" width="320" alt="Séparation de sources : Demucs isole voix, batterie, basse et autre à partir d'un mix stéréo."></a></td>
-<td align="center"><b>4 · Benchmark TTS</b><br><a href="04-Applications/04-7-TTS-Voice-Benchmark.ipynb"><img src="assets/readme/audio6-tts-benchmark.png" width="320" alt="Benchmark de voix TTS : qualité, naturel et latence comparés en vue d'un déploiement en production."></a></td>
-</tr>
-</table>
-
-> **Note d'audit (2026-07-10, doctrine #5780).** Deux images du MANIFEST ont été déclassées à la suite d'un audit G.1 firsthand : `audio2-spectrogram.png` montre en réalité un benchmark latence/taille kokoro vs openai/tts-1 (pas un spectrogramme), et `audio5-multimodel.png` montre des caractéristiques librosa d'un seul échantillon (spectral centroid, bandwidth, RMS, ZCR — pas une comparaison multi-modèles). Elles restent dans le MANIFEST à titre de traçabilité mais ne sont plus promues dans cette galerie. La figure « STT/TTS » reste partielle : seul le volet STT (large-v3-turbo, 0.47 s) est validé ; les trois sous-figures TTS portent la mention « Pas de resultats TTS » dans l'environnement de test ayant produit l'image. Ces contraintes seront levées dans une vague de re-exécution planifiée (#5780).
+> **Note d'audit (2026-07-10, doctrine #5780).** Deux images du MANIFEST ont été déclassées à la suite d'un audit G.1 firsthand : `audio2-spectrogram.png` (benchmark latence/taille kokoro vs openai/tts-1, pas un spectrogramme) et `audio5-multimodel.png` (caractéristiques librosa d'un seul échantillon, pas une comparaison multi-modèles). Elles restent dans le MANIFEST à titre de traçabilité mais ne sont plus promues. La figure « STT/TTS » reste partielle : seul le volet STT est validé (détail auprès de la figure en 01-Foundation).
 
 ## Structure
 
@@ -58,6 +47,13 @@ Audio/
 
 Avant de produire un podcast, il faut maîtriser les deux briques de base : la synthèse vocale (TTS) pour générer de la parole, et la reconnaissance vocale (STT) pour transcrire des fichiers audio existants. Ce niveau commence par les API cloud (simples et immédiates), puis passe en local GPU pour l'autonomie et le contrôle fin. À la fin de ce niveau, vous savez faire parler une machine et comprendre de la parole.
 
+La première brique est le signal lui-même : un tableau d'amplitudes échantillonné dans le temps. Le notebook [01-3](01-Foundation/01-3-Basic-Audio-Operations.ipynb) charge un échantillon avec `librosa` et en trace la forme d'onde, révélant la structure alternée de silence et de parole :
+
+<p align="center">
+  <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio1-waveform.png" width="320" alt="Forme d'onde : échantillonnage d'un signal audio continu et visualisation temporelle."></a><br>
+  <em>Sortie du notebook <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb">01-3</a> : forme d'onde d'un échantillon de parole — l'amplitude (±0,4) fluctue entre silences et phonèmes sur ~12 s.</em>
+</p>
+
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [01-1-OpenAI-TTS-Intro](01-Foundation/01-1-OpenAI-TTS-Intro.ipynb) | API TTS (6 voix, formats, vitesse) | OpenAI API | 0 |
@@ -65,6 +61,13 @@ Avant de produire un podcast, il faut maîtriser les deux briques de base : la s
 | [01-3-Basic-Audio-Operations](01-Foundation/01-3-Basic-Audio-Operations.ipynb) | librosa, spectrogrammes, MFCC, pydub | Local | 0 |
 | [01-4-Whisper-Local](01-Foundation/01-4-Whisper-Local.ipynb) | Whisper V3 Turbo local, batch | Local GPU | ~10 GB |
 | [01-5-Kokoro-TTS-Local](01-Foundation/01-5-Kokoro-TTS-Local.ipynb) | Kokoro 82M, TTS légère | Local GPU | ~2 GB |
+
+Une fois le signal compris, les deux briques opérationnelles sont la transcription (STT) et la synthèse (TTS). Le panneau ci-dessous montre le volet STT validé — Whisper `large-v3-turbo` restituant le texte en 0,47 s — mais les trois sous-figures TTS portent la mention « Pas de resultats TTS » dans l'environnement de test ayant produit l'image ; ce volet reste à re-exécuter :
+
+<p align="center">
+  <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/audio3-stt-tts.png" width="340" alt="Reconnaissance vocale (STT) validée par Whisper large-v3-turbo ; volet TTS non abouti dans l'environnement de test (sous-figures vides)."></a><br>
+  <em>Sortie du notebook <a href="01-Foundation/01-3-Basic-Audio-Operations.ipynb">01-3</a> : grille 2×2 — STT validé (en haut à gauche), volet TTS en attente de re-exécution.</em>
+</p>
 
 ### 02-Advanced - Voix, Musique & Séparation
 
@@ -81,6 +84,13 @@ Un podcast de qualité demande une voix naturelle et une identité sonore distin
 | [02-7-Song-Generation](02-Advanced/02-7-Song-Generation.ipynb) | YuE vs SongGeneration 2, chansons complètes | Local GPU | 10-24 GB |
 | [02-8-Expressive-TTS](02-Advanced/02-8-Expressive-TTS.ipynb) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
 | [02-9-AceStep-Music-Generation](02-Advanced/02-9-AceStep-Music-Generation.ipynb) | ACE-Step v1.5, text-to-song multilingue | Local GPU | <4 GB |
+
+La séparation de sources en est l'exemple le plus visuel : plutôt que de régénérer, Demucs ([02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb)) décompose un mix stéréo en quatre stems (batterie, basse, autre, voix) et en mesure l'énergie RMS :
+
+<p align="center">
+  <a href="02-Advanced/02-4-Demucs-Source-Separation.ipynb"><img src="assets/readme/audio4-demucs.png" width="360" alt="Séparation de sources : Demucs isole voix, batterie, basse et autre à partir d'un mix stéréo."></a><br>
+  <em>Sortie du notebook <a href="02-Advanced/02-4-Demucs-Source-Separation.ipynb">02-4</a> : Demucs v4 reconstruit les quatre stems (DRUMS/BASS/OTHER/VOCALS) avec leur niveau RMS respectif.</em>
+</p>
 
 ### 03-Orchestration - Multi-modèles & Temps réel
 
@@ -111,6 +121,13 @@ Application directe : les notebooks de ce niveau mettent en œuvre des workflows
 | [04-11-Generation-TTS](04-Applications/04-11-Generation-TTS.ipynb) | Génération TTS multi-voix Kokoro | Kokoro TTS | ~2 GB |
 | [04-12-Compilation-Audio](04-Applications/04-12-Compilation-Audio.ipynb) | FFmpeg concat + normalisation | FFmpeg | 0 |
 | [04-13-Audiobook-FishAudio-S2Pro](04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb) | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~2 GB |
+
+Le notebook [04-7](04-Applications/04-7-TTS-Voice-Benchmark.ipynb) compare les voix TTS dans l'espace de features — ci-dessous, les coefficients MFCC (et leurs dérivées Δ) d'un échantillon du benchmark, qui caractérisent le timbre et la dynamique de chaque voix plutôt que de prétendre à un classement de qualité subjectif :
+
+<p align="center">
+  <a href="04-Applications/04-7-TTS-Voice-Benchmark.ipynb"><img src="assets/readme/audio6-tts-benchmark.png" width="340" alt="Coefficients MFCC d'un échantillon du benchmark TTS : représentation du timbre et de la dynamique dans l'espace de features."></a><br>
+  <em>Sortie du notebook <a href="04-Applications/04-7-TTS-Voice-Benchmark.ipynb">04-7</a> : heatmaps MFCC d'un échantillon — la comparaison des voix se lit dans cet espace de features.</em>
+</p>
 
 ## Technologies
 
