@@ -216,6 +216,18 @@ lake exe cache get
 Le cache Mathlib est partagé au niveau du dépôt (via `lake exe cache get`)
 pour éviter de retélécharger `~3 GB` à chaque incrément.
 
+> **Cold build modality (§1, See #6140).** Un `lake -R build` cold sur
+> `lean.exe` Windows-native peut crasher sur `StableMarriage.GSState`
+> (`0xC0000409` `STATUS_STACK_BUFFER_OVERRUN`). Diagnostic firsthand : ce
+> n'est **pas** une régression de preuve (le fichier ne contient aucun
+> `sorry`/`decide`/`native_decide`, le sibling `_en` à la logique byte-identique
+> build OK, et la CI Linux est verte) — c'est un flake d'élaboration proche du
+> plafond de stack Windows (1 MB par défaut), via le bloc local `letI`/`haveI
+> IsTrans` répété 3× dans `gsChooseMax`. Pour le cold build §1 pré-merge
+> ([lean-merge-discipline](../../../.claude/rules/lean-merge-discipline.md)),
+> utiliser **WSL** (stack Linux 8 MB par défaut), comme `learning_theory_lean`
+> et `knot_lean`. La CI Linux reste autoritaire côté correction.
+
 ## Relation aux autres projets Lean de GameTheory
 
 | Projet | Statut | Raison de la séparation |
