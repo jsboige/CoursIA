@@ -8,11 +8,11 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 - **Alt-text (FR)** : Paysage de fitness analytique : heatmap de la fonction Sphere (rouge = haut, cyan = bas), l'optimum global en clair au centre.
 - **Poids** : 23.0 KB (natif 420×320)
 
-## mgs8-convergence.png
+## mgs8-convergence.gif
 
-- **Source** : notebook `MGS-8-LandscapeExplorer.ipynb` (cellule 20, output 0)
-- **Alt-text (FR)** : Convergence du GA : la population (BlueViolet) et le meilleur individu (Aqua) se contractent génération après génération vers l'optimum du paysage.
-- **Poids** : 75.6 KB (natif 360×270)
+- **Source** : notebook `MGS-8-LandscapeExplorer.ipynb` (cellule 22, output 0 — GIF animé `SkiaLandscapeRenderer.EncodeAnimatedGif` réassemblant les 7 snapshots de la cellule 20, générations {1, 5, 10, 18, 28, 40, 55})
+- **Alt-text (FR)** : Convergence du GA (flipbook animé) : le nuage de population (BlueViolet) et le meilleur individu courant (Aqua) se contractent génération après génération vers le minimum global (origine), sur Rastrigin multimodal.
+- **Poids** : 255.2 KB (GIF89a animé, 7 frames, natif 360×270, déjà quantifié à 64 couleurs par SkiaSharp)
 
 ## mgs9-everest.png
 
