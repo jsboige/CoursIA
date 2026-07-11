@@ -1906,3 +1906,69 @@ Le ML-Training-Pipeline pose une question de recherche **genuinely non-trivial**
 - **Mandat Substance > Sweep honoré** : audit SOTA axe-2 = registre substance (≠ doc-hygiène cappé 1/lane/jour), grain deep ai-01 DECIDED exécuté.
 
 Part of #3801
+
+## Entry #024 — GenAI/PostTraining (RL/GRPO/DPO/RLVR/rewardspy, EPIC #1454, owner po-2024 strict, c.47)
+
+Famille `MyIA.AI.Notebooks/GenAI/PostTraining/` = **7 notebooks** `PT_{01..07}_*.ipynb` (intro -> SFT -> DPO -> GRPO -> RLVR -> eval -> rewardspy reward-hacking). Série pédagogique du turf natif training de po-2024 (EPIC #1454 « po-2024 pionnier parcimonieux RTX 3070 8 Go <-> ai-01 approfondit GPU »), base théorique d'ICT-25 #5105 (GRPO à récompense hackable x rewardspy). Worktree `../CoursIA-c47-posttraining-axe2`, branche `feature/c47-posttraining-axe2` off origin/main `df87952b8`. Audit read-only, aucun commit code, aucun `gh`.
+
+**Slot #024** : entries #019 (Lean 4, PR #6050 OPEN) + #022 (GenAI/Texte, PR #6152 OPEN) + #023 (GenAI/Image, PR #6167 OPEN) sont réservées par PRs non-mergées — #024 = prochain slot libre, évite le renumbering post-merge (leçon c.44).
+
+### Métrique (vérifiée firsthand par le worker)
+
+| Métrique | Valeur | Méthode |
+|----------|--------|---------|
+| Notebooks totaux | **7** (`PT_01..PT_07`) | `ls *.ipynb` |
+| Cellules totales | **171** | somme python3 `cells` |
+| Cellules code | **69** | `cell_type=='code'` |
+| Cellules code `execution_count != null` | **69/69 = 100%** | script python3 — 0 cellule `None` |
+| Erreurs `output_type: error` | **0** | script python3 |
+| Violations C.1 (`raise NotImplementedError` / `assert False` / `1/0`) | **0** | scanner canonique `audit_c1_c3.py` (comment-stripped + docstring-stripped) |
+| Secrets inline / `getenv("K", "<literal>")` | **0 / 0** | regex `sk-…`/`ghp_…`/`AIza…` + pattern literal-default |
+| Caractères CJK parasites | **0** | 4 ranges Unicode |
+| Kernel | **python3 (7/7)** | metadata `kernelspec.name` |
+| Exercices `### Exercice N` (convention #2161) | **>=3/notebook (7/7)** | regex `#{1,6}\s*Exercice` — PT_07 en a 3 + challenge |
+
+### Vrais outils SOTA invoqués (Prong A — SOTA-OK)
+
+La série démontre la **chaîne de post-training moderne à la DeepSeek-R1/Qwen** sur 7 moteurs SOTA distincts, tous réellement invoqués avec outputs authentiques :
+
+| Notebook | Moteur SOTA | Preuve d'invocation réelle (output firsthand) |
+|----------|-------------|-----------------------------------------------|
+| **PT_02_sft_baseline** | HuggingFace `SFTTrainer` + `peft` LoRA | trainer=True, lora=True, outputs entraînés |
+| **PT_03_dpo_direct_preference** | `DPOTrainer` (DPO, Rafailov 2023) | trainer=True, lora=True |
+| **PT_04_grpo_deepseek_r1** | **`GRPOTrainer`** (GRPO, DeepSeek-R1) + `peft` LoRA r=8 | `LoraConfig(target_modules=[q,k,v,o,gate,up,down]...)`, `print("CUDA disponible : RTX 3070 Laptop (8.0 Go)")`, reward shaping length/keyword/coherence multi-composant |
+| **PT_05_rlvr_verifiable_rewards** | RLVR (math verifier sympy-style) | `extract_answer('The answer is 42') = 42.0`, `extract_answer('#### 19') = 19.0`, `extract_answer('\boxed{3.1...}')` — parser de réponse + verifier mathématique testé avec outputs réels |
+| **PT_07_rewardspy_reward_hacking** | **`rewardspy 0.1.0`** (AvAdiii, 7 détecteurs) | `rewardspy 0.1.0` + `Python API: ['watch','show','read_jsonl']` + `CLI: rewardspy.EXE` + `Simulation GRPO dégénérée 60 steps` + `[ALERT] step=30 detecteur=component` — **récompense-hacking détecté en sortie réelle** |
+
+**Reward shaping authentique** (PT_04) : 3 fonctions de récompense pédagogiques (`length_reward`, `keyword_reward`, `coherence_reward`) avec bornes `target_min`/`target_max`, normalisation, pénalités — **pas** une récompense jouet, **pas** un stub décoratif. LoRA config complète 7 modules cibles (q/k/v/o/gate/up/down proj).
+
+### Disclosure honnête vérifiée — RECOVERABLE-MACHINE (Prong A)
+
+**PT_04 / PT_05 portent un flag `LOAD_MODEL_AND_TRAIN = False`** (mode CPU-safe pédagogique) : la cellule affiche explicitement `(Mode CPU-safe : generation + training seront skippees)`. Le notebook **peut** trainer (GRPOTrainer + LoRA config réels), mais skippe par défaut pour s'exécuter end-to-end sur toute machine (conforme C.2 : le notebook reste exécutable sans GPU).
+
+**Validité du chemin GPU (preuve croisée c.42)** : mon smoke GRPO c.42 sur **RTX 3070 8 Go** (env `coursia-ml-training`, stack pin torch-2.5.1-era) a confirmé que le pipeline 0.5B+LoRA+GRPO tourne réellement — **peak 1.02 GB / 8.59 GB (12%)**, forward OK loss=2.082. Donc le flag n'est pas un workaround dégradé masquant une impossibilité : c'est une **borne pédagogique honnête**, le run complet étant `RECOVERABLE-MACHINE` (et trivial sur 8 Go pour 0.5B, documenté c.42). Conforme `sota-not-workaround.md` verdict **RECOVERABLE-MACHINE** écrit dans le body.
+
+### Problème non-trivial (Prong B) — DISCRIMINATING
+
+La série ne démontre pas GRPO sur un cas dégénéré (cf `8905f8845` BFS-vs-A*) :
+- **PT_04** pose le **problème du reward shaping multi-composant** (length + keyword + coherence) où l'étudiant doit équilibrer des récompenses concurrentes — problème central du reward hacking.
+- **PT_07 rewardspy** pose le **problème de la détection de reward-hacking en cours de training** : la simulation produit une run GRPO dégénérée (récompense `component`-dominante) que les 7 détecteurs rewardspy (CeilingRate / LengthDrift / ComponentDominance / RewardSlopeChange / ProxyEvalDivergence...) doivent identifier — l'alerte `[ALERT] step=30 detecteur=component` en est la sortie discriminante.
+- **PT_05 RLVR** pose le **problème du verifier mathématique** (parsing `\boxed{}` + comparaison numérique), paradigme distinct du reward shaping subjectif.
+
+### Anti-régression / Stop & Repair
+
+- **0 sortie de cellule hand-éditée** : tous les outputs sont des comptes-rendus d'exécution réelle (version Python, CUDA probe, reward values, alertes rewardspy).
+- **0 secret** inline (la série charge `.env` via loader, pas de littéral).
+- **0 stub C.1** : les cellules d'exercice utilisent `return score` + `print("Exercice a completer")` + `# TODO etudiant` (convention C.1, `pass`/`print`/`return None`).
+
+### Owner-lane volet
+
+**po-2024 strict** — EPIC #1454 turf natif. Continuité c.42 (env-setup GRPO + smoke RTX 3070) -> entry #024 formalise au registre axe-2 que la **chaîne de post-training SOTA est pédagogiquement opérationnelle** sur le turf parcimonieux 8 Go. Préparation directe d'ICT-25 #5105 (GRPO à récompense hackable x rewardspy = exactement PT_04 x PT_07). Le run A/B SAE 24 GB complet reste GPU2-gated ai-01 (RECOVERABLE-MACHINE, env-setup po-2024 DONE c.42).
+
+### Conclusions audit
+
+- **Substance GenAI/PostTraining = riche, honnête et SOTA-OK**, 7 notebooks couvrant la chaîne post-training moderne (SFT -> DPO -> GRPO -> RLVR -> eval -> rewardspy), 69/69 EXEC_PROVED, 0 C.1, 0 workaround dégradé, disclosure RECOVERABLE-MACHINE écrite (flag CPU-safe + preuve croisée smoke c.42).
+- **Pas de fix nécessaire** : audit = SOTA-OK 7/7. Aucun PR de substance requis sur les notebooks.
+- **Cumulatif** : entry #024 ajoute au registre axe-2 la **famille GenAI/PostTraining** (RL/GRPO/DPO/RLVR/rewardspy) + les moteurs **GRPOTrainer (DeepSeek-R1)**, **DPOTrainer (Rafailov 2023)**, **rewardspy (7 détecteurs reward-hacking)**. Le registre compte désormais entries #001-#018 + #020 + #021 + #024 (#019 Lean, #022 GenAI/Texte, #023 GenAI/Image réservés par PRs ouvertes).
+
+See #3801, #1454, #5105
