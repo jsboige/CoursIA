@@ -101,22 +101,31 @@ Les notebooks NON EXÉCUTÉS doivent être exécutés (kernel local pour les ind
 
 ## Aperçu — le trading quantitatif en images
 
-Six visualisations extraites des notebooks illustrent l'arc complet de la série, depuis le workflow de recherche QuantBook et les corrélations glissantes multi-actifs jusqu'à la gestion des risques, l'analyse de backtest, la validation walk-forward du machine learning et l'entraînement d'agents de renforcement profond.
+Chaque notebook de la série rend visible un geste quantitatif distinct, dans une figure extraite des sorties réelles des notebooks. Plutôt qu'une galerie séparée du propos, ces figures sont replacées ci-dessous dans leur progression pédagogique — du premier backtest QuantBook aux agents de renforcement profond — au plus près du concept qu'elles illustrent. La provenance détaillée (cellule, poids, alt-text) est documentée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
-<table>
-<tr>
-<td align="center"><b>04 · Recherche</b><br><a href="QC-Py-04-Research-Workflow.ipynb"><img src="assets/readme/quantpy04-research-buyhold.png" width="290" alt="Workflow de recherche QuantBook : comparaison visuelle d'une stratégie SMA contre le buy-and-hold sur SPY."></a></td>
-<td align="center"><b>08 · Multi-actifs</b><br><a href="QC-Py-08-Multi-Asset-Strategies.ipynb"><img src="assets/readme/quantpy08-rolling-corr.png" width="290" alt="Corrélations glissantes : évolution temporelle de la corrélation entre deux actifs, instable en période de stress."></a></td>
-<td align="center"><b>10 · Risque</b><br><a href="QC-Py-10-Risk-Portfolio-Management.ipynb"><img src="assets/readme/quantpy10-stoploss.png" width="290" alt="Gestion des risques : comparaison visuelle des types de stop-loss (fixe, trailing, volatilité) sur un prix simulé."></a></td>
-</tr>
-<tr>
-<td align="center"><b>12 · Backtest</b><br><a href="QC-Py-12-Backtesting-Analysis.ipynb"><img src="assets/readme/quantpy12-backtest-scatter.png" width="290" alt="Analyse de backtest : scatter des rendements quotidiens stratégie vs benchmark, profil risque/rendement."></a></td>
-<td align="center"><b>19 · ML walk-forward</b><br><a href="QC-Py-19-ML-Supervised-Classification.ipynb"><img src="assets/readme/quantpy19-walkforward.png" width="290" alt="Validation walk-forward : accuracy par fold avec fenêtre de train glissante, simulation du trading réel avec retrain périodique."></a></td>
-<td align="center"><b>32 · RL (DQN)</b><br><a href="QC-Py-32-RL-DQN-Trading.ipynb"><img src="assets/readme/quantpy32-dqn-training.png" width="290" alt="Entraînement DQN : récompenses par épisode et courbes d'apprentissage de l'agent de renforcement profond (exploration vs exploitation)."></a></td>
-</tr>
-</table>
+**[04 — Le workflow de recherche QuantBook.](QC-Py-04-Research-Workflow.ipynb)** Le `QuantBook` autorise l'exploration interactive avant l'algorithmation : on y confronte une stratégie simple (croisement de moyennes mobiles) au buy-and-hold de référence sur SPY. La courbe de capital révèle quand la stratégie bat le marché passivement et quand elle le suit — le premier geste de la recherche quantitative.
 
-Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+<p align="center"><a href="QC-Py-04-Research-Workflow.ipynb"><img src="assets/readme/quantpy04-research-buyhold.png" width="540" alt="Workflow de recherche QuantBook : comparaison visuelle d'une stratégie SMA contre le buy-and-hold sur SPY."></a></p>
+
+**[08 — Corrélations glissantes, ou la faillite du modèle statique.](QC-Py-08-Multi-Asset-Strategies.ipynb)** La corrélation moyenne entre deux actifs cache sa vérité : elle évolue dans le temps et s'effondre précisément lors des périodes de stress où la diversification était censée protéger le portefeuille. La corrélation glissante rend ce risque visible — pourquoi l'allocation statique est un leurre.
+
+<p align="center"><a href="QC-Py-08-Multi-Asset-Strategies.ipynb"><img src="assets/readme/quantpy08-rolling-corr.png" width="540" alt="Corrélations glissantes : évolution temporelle de la corrélation entre deux actifs, instable en période de stress."></a></p>
+
+**[10 — Le coût d'un stop-loss.](QC-Py-10-Risk-Portfolio-Management.ipynb)** Protéger une position a un prix. Les stops fixes coupent net, les stops trailing suivent la hausse mais se déclenchent sur le bruit, les stops volatilité s'adaptent au régime de marché. Sur un même prix simulé, les trois types laissent des traces différentes — choisir un stop, c'est choisir quel risque on accepte.
+
+<p align="center"><a href="QC-Py-10-Risk-Portfolio-Management.ipynb"><img src="assets/readme/quantpy10-stoploss.png" width="540" alt="Gestion des risques : comparaison visuelle des types de stop-loss (fixe, trailing, volatilité) sur un prix simulé."></a></p>
+
+**[12 — Le profil risque-rendement d'un backtest.](QC-Py-12-Backtesting-Analysis.ipynb)** La richesse d'un backtest ne tient pas dans un seul Sharpe : le scatter des rendements quotidiens de la stratégie contre son benchmark expose la dispersion, les queues et la fréquence des bons et mauvais jours. C'est la signature statistique complète du comportement de la stratégie.
+
+<p align="center"><a href="QC-Py-12-Backtesting-Analysis.ipynb"><img src="assets/readme/quantpy12-backtest-scatter.png" width="540" alt="Analyse de backtest : scatter des rendements quotidiens stratégie vs benchmark, profil risque/rendement."></a></p>
+
+**[19 — La validation walk-forward, ou l'honnêteté temporelle.](QC-Py-19-ML-Supervised-Classification.ipynb)** Un modèle entraîné une fois puis testé sur tout l'échantillon triche avec le temps. La validation walk-forward décale une fenêtre d'entraînement puis re-teste, fold après fold, en mimant le retrain périodique qu'exige un trading réel. L'accuracy par fold révèle la robustesse — ou l'effondrement — hors échantillon.
+
+<p align="center"><a href="QC-Py-19-ML-Supervised-Classification.ipynb"><img src="assets/readme/quantpy19-walkforward.png" width="540" alt="Validation walk-forward : accuracy par fold avec fenêtre de train glissante, simulation du trading réel avec retrain périodique."></a></p>
+
+**[32 — L'agent qui apprend à trader.](QC-Py-32-RL-DQN-Trading.ipynb)** Le deep reinforcement learning entraîne un agent par essais et erreurs : chaque épisode ajuste sa politique pour maximiser la récompense cumulée. La courbe des récompenses par épisode montre la transition de l'exploration vers l'exploitation — le moment où l'agent cesse de tâtonner et commence à exploiter ce qu'il a appris.
+
+<p align="center"><a href="QC-Py-32-RL-DQN-Trading.ipynb"><img src="assets/readme/quantpy32-dqn-training.png" width="560" alt="Entraînement DQN : récompenses par épisode et courbes d'apprentissage de l'agent de renforcement profond (exploration vs exploitation)."></a></p>
 
 ## Phase 1 : Fondations LEAN (QC-Py-01 à 04)
 
