@@ -90,6 +90,14 @@ CaseStudies/
 └── requirements.txt       # Dépendances communes (9 packages)
 ```
 
+## Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+Dépendances principales : numpy, pandas, matplotlib, seaborn, z3-solver, pyro-ppl, ortools
+
 ## Projets
 
 ### Diagnostic Médical
@@ -210,14 +218,6 @@ L'arc pédagogique parcourt trois idées qui se renforcent :
 ### Le fil rouge
 
 Au-delà des techniques, la leçon transversale est une **discipline de l'architecture** : savoir reconnaître, face à un problème réel, quelle partie relève d'une contrainte dure (à déléguer à un solveur), quelle partie d'une incertitude irréductible (à confier à un modèle probabiliste), quelle partie d'une optimisation (à résoudre par recherche ou apprentissage) — et surtout, dans quel *ordre* les composer. Cette compétence de décomposition et de composition n'appartient à aucune série prise isolément ; c'est précisément ce qu'une étude de cas interdisciplinaire cherche à forger, et ce qui distingue un praticien capable de confronter un problème métier réel d'un spécialiste d'un seul paradigme.
-
-## Installation
-
-```bash
-pip install -r requirements.txt
-```
-
-Dépendances principales : numpy, pandas, matplotlib, seaborn, z3-solver, pyro-ppl, ortools
 
 ## FAQ
 
