@@ -170,6 +170,11 @@ def scan_file(filepath: Path) -> list[LinkRef]:
         if in_code_block:
             continue
 
+        # Strip inline code spans (`...`): their contents render as literal text,
+        # so a [text](target) inside backticks is not a clickable link. This avoids
+        # false positives on format templates in review ledgers, e.g. `[Foo](...)`.
+        line = re.sub(r"`[^`]*`", "", line)
+
         for match in LINK_PATTERN.finditer(line):
             text = match.group(1)
             target = match.group(2)
