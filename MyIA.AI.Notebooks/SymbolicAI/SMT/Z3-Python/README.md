@@ -4,7 +4,7 @@
 
 ## Série en quelques mots
 
-L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série complète de **6 notebooks** (z3-solver + matplotlib), de la satisfaction de contraintes à l'optimisation avancée.
+L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série complète de **7 notebooks** (z3-solver + matplotlib), de la satisfaction de contraintes à l'optimisation avancée et au pont déclaratif avec la série sœur Z3.Linq (C#).
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
 
@@ -52,6 +52,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 | 05ᶜˢ | [Quantificateurs et preuves (twin C# .NET)](Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb) | Parité .NET : `MkForall`, `MkExists`, réfutation, `ReasonUnknown` via `Microsoft.Z3` (NuGet) | ~35 min | PRODUCTION |
 | 06 | [Optimisation avancée](Z3-Python-06-Advanced-Optimization.ipynb) | Pareto, objectifs multiples, `Optimize` hiérarchique, MaxSAT | ~40 min | PRODUCTION |
 | 06ᶜˢ | [Optimisation avancée (twin C# .NET)](Z3-Python-06-Advanced-Optimization-Csharp.ipynb) | Parité .NET : `MkOptimize`, `MkMaximize`/`MkMinimize`, front de Pareto, `AssertSoft` (MaxSAT) via `Microsoft.Z3` (NuGet) | ~40 min | PRODUCTION |
+| 07 | [Du style déclaratif LINQ au solveur Z3](Z3-Python-07-Style-Declaratif-Linq.ipynb) | Pont C# Z3.Linq ↔ pyz3 : `assert_and_track`, `unsat_core`, coloration de graphe (Australie) | ~30 min | PRODUCTION |
 
 ### Fil pédagogique
 
@@ -61,6 +62,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 4. **Notebook 04** introduit la théorie des chaînes : `String`, `Contains`, `IndexOf`, `Replace`, et les expressions régulières (`Re`, `Star`, `Range`, `InRe`)
 5. **Notebook 05** aborde les quantificateurs (`ForAll`, `Exists`) et la notion de preuve formelle par réfutation (une formule est valide si sa négation est insatisfiable), avec le cas honnête `unknown`
 6. **Notebook 06** explore l'optimisation avancée : contraintes hiérarchiques pondérées, objectifs multiples, front de Pareto et MaxSAT (contraintes souples)
+7. **Notebook 07** fait le pont avec la série sœur C# Z3.Linq : il montre que l'idiome déclaratif LINQ (`where`/`select`) et l'API impérative pyz3 (`s.add`) expriment la même intention, puis exploite le noyau d'insatisfiabilité (`unsat_core`) et la coloration de graphe (carte d'Australie) pour révéler où le déclaratif surpasse l'impératif
 
 ## Concepts clés
 
