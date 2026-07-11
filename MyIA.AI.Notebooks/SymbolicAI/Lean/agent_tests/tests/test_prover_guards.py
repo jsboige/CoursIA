@@ -180,6 +180,20 @@ def test_multi_agent_prover_accepts_workflow_timeout():
     assert "workflow_timeout_s" in sig.parameters
 
 
+def test_autonomous_prover_accepts_workflow_timeout():
+    """c.316 (#1453 forensic): AutonomousProver.prove_sorry exposes a
+    wall-clock cap, mirroring MultiAgentSorryProver. Without this, zai slow
+    calls + DELTA0_HARDCAP-fires-only-on-successful-builds led to 5.85h
+    sessions with 0 progress (autonomous_custom_Basic_L308_zai trace)."""
+    import inspect
+    from prover.provers import AutonomousProver
+
+    sig = inspect.signature(AutonomousProver.prove_sorry)
+    assert "workflow_timeout_s" in sig.parameters
+    # Default must be None so the env var override is honored.
+    assert sig.parameters["workflow_timeout_s"].default is None
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # P4 — set_attack_plan integration (B.3)
 # ──────────────────────────────────────────────────────────────────────────

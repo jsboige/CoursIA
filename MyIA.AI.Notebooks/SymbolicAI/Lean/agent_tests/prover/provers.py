@@ -5,6 +5,7 @@ AutonomousProver uses a single agent with full editing powers.
 """
 
 import json
+import os
 import re
 import time
 from pathlib import Path
@@ -1015,7 +1016,13 @@ class AutonomousProver:
                     # hard cap kills pathological hangs with generous headroom.
                     # Routes through the ContextVar-safe asyncio.wait branch
                     # below. Pass agent_timeout_s=0 explicitly to disable.
-                    strategic_hints: str = "", agent_timeout_s: int = 900) -> dict:
+                    strategic_hints: str = "", agent_timeout_s: int = 900,
+                    # c.316 (#1453 forensic): wall-clock cap (seconds) on the
+                    # autonomous session. Default None → 45-min CEILING_S
+                    # (matches MultiAgentSorryProver.prove_sorry). Pass 0 to
+                    # disable (tests / interactive runs). Build time is
+                    # credited — see wallclock check inside _run_session.
+                    workflow_timeout_s: Optional[float] = None) -> dict:
         # Same OTel wiring as MultiAgentSorryProver — single-agent runs benefit
         # just as much from a durable span log of LLM-tool interactions.
         otel_session = f"auto_{demo['name']}_{self.provider}_{int(time.time())}"
@@ -1201,11 +1208,73 @@ class AutonomousProver:
         proof_tactics_found = []  # Lean-9 _proof_tactics_found tracking
         self.trace.start_session_span(demo["name"], self.config_label)
 
+        # c.316 (#1453 forensic): wall-clock cap for the autonomous loop. The
+        # multi-agent path has a 45-min reasoning-budget supervisor at
+        # provers.py:660+ with build-time credit (PER_UNIT_S=2700, CEILING_S=2700),
+        # but AutonomousProver had no equivalent — zai slow calls (600s/iteration)
+        # plus DELTA0_HARDCAP that only fires on successful builds burned 5-6h per
+        # session (e.g. autonomous_custom_Basic_L308_zai = 21084s, 0 progress).
+        # Mirror the multi-agent pattern: per-iteration wall-clock check that
+        # terminates the loop if reasoning time exceeds the cap. Build time is
+        # CREDITED (deducted from elapsed) so genuine compile waits don't eat
+        # the budget — tactic_tools.compile() is the dominant build cost.
+        # Default 45-min cap (CEILING_S) — same as MultiAgentSorryProver. Set
+        # to 0 to disable (tests / interactive runs); set via env override.
+        _AUTONOMOUS_CEILING_S = int(os.environ.get(
+            "PROVER_AUTONOMOUS_TIMEOUT_S", "2700"))
+        _wallclock_cap = (
+            _AUTONOMOUS_CEILING_S if workflow_timeout_s is None
+            else min(workflow_timeout_s, _AUTONOMOUS_CEILING_S)
+        )
+        _session_start = time.time()
+        # Track build time so we can credit it. AutonomousProver goes through
+        # tactic_tools.compile(), not the verifier's lake-build path, so we sum
+        # compile() durations instead of _LeanVerifier._total_build_seconds.
+        _build_credit_s = 0.0
+        _wallclock_capped = False  # set if wall-clock cap triggers early break
+
         async def _run_session():
             nonlocal compile_data, context_history, proof_tactics_found, final_build_ok
+            nonlocal _build_credit_s, _wallclock_capped
             loop = asyncio.get_event_loop()
 
             for iteration in range(1, max_iterations + 1):
+                # c.316 wall-clock check: terminate if reasoning time exceeds cap.
+                # Reasoning time = elapsed_wall - build_time_credited. If exceeded,
+                # break cleanly and let the final-verification block run on whatever
+                # state we have (best_content / current content). This is the
+                # autonomous equivalent of the multi-agent `_asyncio.wait_for`
+                # supervisor — but per-iteration polling instead of 30s polling,
+                # because the autonomous loop is sequential (no concurrent tasks
+                # to shield from cancellation).
+                if _wallclock_cap > 0:
+                    elapsed = time.time() - _session_start
+                    reasoning_s = elapsed - _build_credit_s
+                    if reasoning_s > _wallclock_cap:
+                        print(
+                            f"  WALL-CLOCK CAP: reasoning_s={reasoning_s:.0f}s "
+                            f"> cap={_wallclock_cap}s "
+                            f"(build_credit={_build_credit_s:.0f}s, "
+                            f"iter={iteration}/{max_iterations}). "
+                            f"Stopping to preserve budget.",
+                            flush=True,
+                        )
+                        try:
+                            self.trace.log(
+                                agent="AutonomousProver",
+                                role="wallclock_cap",
+                                content=(
+                                    f"elapsed={elapsed:.0f}s reasoning_s="
+                                    f"{reasoning_s:.0f}s build_credit="
+                                    f"{_build_credit_s:.0f}s cap={_wallclock_cap}s "
+                                    f"iter={iteration}/{max_iterations} "
+                                    f"sorry={count_real_sorries(Path(filepath).read_text(encoding='utf-8'))}"
+                                ),
+                            )
+                        except Exception:
+                            pass  # Tracing is best-effort, don't fail on log errors
+                        _wallclock_capped = True
+                        break
                 state.iteration = iteration
                 iter_start = time.time()
                 print(f"\n--- Iteration {iteration}/{max_iterations} ---", flush=True)
@@ -1300,7 +1369,12 @@ class AutonomousProver:
 
                 # Auto-compile after each iteration
                 current_sorry = count_real_sorries(Path(filepath).read_text(encoding="utf-8"))
+                # c.316 build-time accounting: wrap compile() so the wall-clock
+                # cap credits build time (matches MultiAgent pattern at
+                # provers.py:692 where _build_at_start = verifier-total-build).
+                _compile_started = time.time()
                 compile_str = tactic_tools.compile()
+                _build_credit_s += time.time() - _compile_started
                 try:
                     compile_data = json.loads(compile_str)
                 except json.JSONDecodeError:
