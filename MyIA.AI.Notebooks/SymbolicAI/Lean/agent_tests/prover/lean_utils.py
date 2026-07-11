@@ -26,6 +26,40 @@ _HONEST_SORRY_RE = re.compile(
 _SORRY_TOKEN_RE = re.compile(r"\bsorry\b")
 
 
+def _has_lakefile(p: Path) -> bool:
+    """True if directory ``p`` holds a Lake manifest (lakefile.lean/.toml)."""
+    return (p / "lakefile.lean").exists() or (p / "lakefile.toml").exists()
+
+
+def resolve_lake_module(filepath) -> Tuple[str, str]:
+    """Resolve the Lake project root and dotted module name for a ``.lean`` file.
+
+    Walks up from the file's directory to the nearest directory holding a
+    lakefile, then builds the import path from that root. For
+    ``conway_lean/Conway/Life/HashlifeCorrectness.lean`` this returns
+    ``(".../conway_lean", "Conway.Life.HashlifeCorrectness")``.
+
+    The prover's legacy assumption (``project_dir = <file>.parent.parent`` and
+    ``module = <subdir>.<stem>``) only holds for files directly under the top
+    package (e.g. ``Conway/Nim.lean``); it breaks for deeper files, yielding a
+    project dir with no lakefile and a module name missing its package prefix.
+    This helper replaces that assumption. If no lakefile is found on the way up,
+    it falls back to the legacy depth-2 derivation so callers keep working on
+    non-Lake or oddly-laid-out trees.
+    """
+    p = Path(filepath).resolve()
+    stem = p.stem
+    cur = p.parent
+    prefix = []
+    while cur != cur.parent and not _has_lakefile(cur):
+        prefix.insert(0, cur.name)
+        cur = cur.parent
+    if _has_lakefile(cur):
+        return str(cur), ".".join(prefix + [stem])
+    # Fallback: legacy depth-2 assumption (no lakefile found).
+    return str(p.parent.parent), f"{p.parent.name}.{stem}"
+
+
 def strip_lean_comments(content: str) -> str:
     """Strip Lean line comments (``--``) and nested block comments (``/- -/``).
 

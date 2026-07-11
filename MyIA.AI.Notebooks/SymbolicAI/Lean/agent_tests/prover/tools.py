@@ -483,11 +483,15 @@ class SearchTools:
         """Search Mathlib using Lean LSP via exact?/apply? tactics."""
         try:
             from .verifier import get_verifier
-            project_dir = str(Path(self._filepath).parent.parent)
-            verifier = get_verifier(project_dir)
-            subdir = Path(self._filepath).parent.name
-            stem = Path(self._filepath).stem
-            module_name = f"{subdir}.{stem}"
+            from .lean_utils import resolve_lake_module
+            # Resolve the real Lake root + dotted module by walking up to the
+            # lakefile. The legacy `parent.parent` / `<subdir>.<stem>` derivation
+            # silently broke for files nested deeper than the top package (e.g.
+            # `Conway/Life/HashlifeCorrectness.lean` -> module `Life.Hashlife...`
+            # missing the `Conway.` prefix), so `import <module>` failed and every
+            # LSP search returned zero suggestions.
+            lake_root, module_name = resolve_lake_module(self._filepath)
+            verifier = get_verifier(lake_root)
 
             results = []
             for tactic in ["exact?", "apply?"]:
@@ -501,7 +505,16 @@ class SearchTools:
                         "source": f"lsp_{tactic}",
                     })
             return results
-        except Exception:
+        except Exception as e:
+            # Do not swallow silently: a dead LSP channel used to look identical
+            # to "no lemmas found". Surface it in the trace for diagnosis.
+            if self._trace:
+                self._trace.log(
+                    agent="SearchAgent", role="tool",
+                    content=f"_search_via_lsp failed: {type(e).__name__}: {e}",
+                    duration_s=0.0, tool_name="search_via_lsp",
+                    tool_result="error",
+                )
             return []
 
     def search_local_lemmas(self) -> str:
