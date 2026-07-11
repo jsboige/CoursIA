@@ -1,4 +1,11 @@
-/--
+import SocialChoice.Basic
+import SocialChoice.Framework
+import SocialChoice.Arrow
+import SocialChoice.Sen
+import SocialChoice.Voting
+import SocialChoice.SortedListCounting
+
+/-!
 # SocialChoice — Théorie du choix social (Arrow + Sen + Voting)
 
 Bibliothèque de théorie du choix social formalisée en Lean 4 (Mathlib), inspirée
@@ -101,10 +108,3 @@ PR #5883 MERGED 2026-07-10), `RepeatedGames.lean` (c.356, PR #6048 MERGED
 vivent dans des fichiers siblings `_en.lean` séparés (cf. #4980 Phase 0.5, décision
 user ratifiée 2026-07-04 sur la paire FR-canonical-first + EN-mirror-second).
 -/
-
-import SocialChoice.Basic
-import SocialChoice.Framework
-import SocialChoice.Arrow
-import SocialChoice.Sen
-import SocialChoice.Voting
-import SocialChoice.SortedListCounting
