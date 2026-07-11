@@ -540,37 +540,62 @@ Assurez-vous que `lean --version` correspond à la toolchain spécifiée dans `l
 
 ```
 GameTheory/
-├── GameTheory-1-Setup.ipynb ... GameTheory-17-MultiAgent-RL.ipynb  # 17 principaux
-├── GameTheory-2b-Lean-Definitions.ipynb                            # Side tracks b (Lean 6 : 2b, 4b, 5b, 8b, 11b, 15b)
+├── GameTheory-1-Setup.ipynb                        # 17 notebooks principaux (Python, fil rouge 1→17)
+├── GameTheory-2-NormalForm.ipynb
+├── GameTheory-2-NormalForm-Csharp.ipynb            # Jumeau C# (.NET Interactive, parité #4956) — forme normale + Nash from-scratch (Tranche 1)
+├── GameTheory-2-NormalForm-Csharp-Part2.ipynb      #   Tranche 2 du jumeau C# NormalForm
+├── GameTheory-3-Topology2x2.ipynb
+├── GameTheory-3-Topology2x2-Csharp.ipynb           # Jumeau C# — classification ordinale 2×2 from-scratch
+├── GameTheory-4-NashEquilibrium.ipynb
+├── GameTheory-4-NashEquilibrium-Csharp.ipynb       # Jumeau C# — NE pur/mixte + support enum (Gauss) from-scratch (marathon #4956)
+├── GameTheory-5-ZeroSum-Minimax.ipynb
+├── GameTheory-5-ZeroSum-Minimax-Csharp.ipynb       # Jumeau C# — simplexe from-scratch (marathon #4956)
+├── GameTheory-6-EvolutionTrust.ipynb
+├── GameTheory-6-EvolutionTrust-Csharp.ipynb        # Jumeau C# — tournoi d'Axelrod from-scratch
+├── GameTheory-7-ExtensiveForm.ipynb
+├── GameTheory-7-ExtensiveForm-Csharp.ipynb         # Jumeau C# — arbre de jeu + infosets from-scratch (marathon #4956)
+├── GameTheory-8-CombinatorialGames.ipynb
+├── GameTheory-8-CombinatorialGames-Csharp.ipynb    # Jumeau C# — P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy (marathon #4956)
+├── GameTheory-9-BackwardInduction.ipynb
+├── GameTheory-9-BackwardInduction-Csharp.ipynb     # Jumeau C# — induction arrière + sous-jeux
+├── GameTheory-10-ForwardInduction-SPE.ipynb
+├── GameTheory-10-ForwardInduction-SPE-Csharp.ipynb # Jumeau C# — SPE/backward-induction + trembling-hand + forward induction + burn money (marathon #4956)
+├── GameTheory-11-BayesianGames.ipynb
+├── GameTheory-11-BayesianGames-Csharp.ipynb        # Jumeau C# — jeux bayésiens & croyances (marathon #4956)
+├── GameTheory-12-ReputationGames.ipynb
+├── GameTheory-12-ReputationGames-Csharp.ipynb      # Jumeau C# — réputation (Kreps-Wilson + KMRW + Crawford-Sobel) from-scratch (marathon #4956)
+├── GameTheory-13-ImperfectInfo-CFR.ipynb
+├── GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb    # Jumeau C# — CFR/CFR+ regret-matching from-scratch (marathon #4956)
+├── GameTheory-14-DifferentialGames.ipynb
+├── GameTheory-14-DifferentialGames-Csharp.ipynb    # Jumeau C# — jeux différentiels : RK4 + Riccati from-scratch, pursuit-evasion (marathon #4956)
+├── GameTheory-15-CooperativeGames.ipynb
+├── GameTheory-15-CooperativeGames-Csharp.ipynb     # Jumeau C# — Shapley + Banzhaf + core + convexité + airport game from-scratch (marathon #4956)
+├── GameTheory-16-MechanismDesign.ipynb
+├── GameTheory-16-MechanismDesign-Csharp.ipynb      # Jumeau C# — Vickrey + VCG (Clarke) + Gale-Shapley + double auction (marathon #4956)
+├── GameTheory-17-MultiAgent-RL.ipynb
+├── GameTheory-17-MultiAgent-RL-Csharp.ipynb        # Jumeau C# — Self-Play, FP, NFSP, PSRO
+├── GameTheory-2b-Lean-Definitions.ipynb            # Side tracks b — formalisation Lean 4 (6 notebooks : 2b, 4b, 5b, 8b, 11b, 15b)
 ├── GameTheory-4b-Lean-NashExistence.ipynb
 ├── GameTheory-5b-Lean-Minimax.ipynb
 ├── GameTheory-8b-Lean-CombinatorialGames.ipynb
 ├── GameTheory-11b-Lean-BayesianGamesExt.ipynb
 ├── GameTheory-15b-Lean-CooperativeGames.ipynb
-├── GameTheory-4c-NashExistence-Python.ipynb                        # Side tracks c (Python 4 : 4c, 6c, 8c, 15c)
-├── GameTheory-4c-NashExistence-Csharp.ipynb                        # Jumeau C# (.NET Interactive) — Brouwer point fixe + Matching Pennies, parité #4956
+├── GameTheory-4c-NashExistence-Python.ipynb        # Side tracks c — approfondissement (Python 4c, 6c, 8c, 15c)
+├── GameTheory-4c-NashExistence-Csharp.ipynb        #   Jumeau C# (.NET Interactive) — Brouwer point fixe + Matching Pennies (parité #4956)
 ├── GameTheory-6c-RepeatedGames-FolkTheorem.ipynb
-├── GameTheory-6c-RepeatedGames-FolkTheorem-Csharp.ipynb                  # Jumeau C# (.NET Interactive) — grim trigger/TFT/Folk Theorem from-scratch, parité #4956
+├── GameTheory-6c-RepeatedGames-FolkTheorem-Csharp.ipynb  #   Jumeau C# — grim trigger/TFT/Folk Theorem from-scratch (parité #4956)
 ├── GameTheory-8c-CombinatorialGames-Python.ipynb
-├── GameTheory-8c-CombinatorialGames-Csharp.ipynb                  # Jumeau C# (.NET Interactive) — Wythoff/Chomp/périodicité Grundy from-scratch, parité #4956
+├── GameTheory-8c-CombinatorialGames-Csharp.ipynb   #   Jumeau C# — Wythoff/Chomp/périodicité Grundy from-scratch (parité #4956)
 ├── GameTheory-15c-CooperativeGames-Python.ipynb
-├── GameTheory-11-BayesianGames-Csharp.ipynb                     # Twin .NET/C# (marathon #4956, Prong B)
-├── GameTheory-12-ReputationGames-Csharp.ipynb                   # Twin C# réputation (Kreps-Wilson + KMRW + Crawford-Sobel) from-scratch (marathon #4956, Prong B)
-├── GameTheory-5-ZeroSum-Minimax-Csharp.ipynb                    # Twin C# simplexe from-scratch (marathon #4956, Prong B)
-├── GameTheory-4-NashEquilibrium-Csharp.ipynb                    # Twin C# NE pur/mixte + support enum (Gauss) from-scratch (marathon #4956, Prong B)
-├── GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb                # Twin C# CFR/CFR+ regret-matching from-scratch (marathon #4956, Prong B)
-├── GameTheory-16-MechanismDesign-Csharp.ipynb                   # Twin C# Vickrey + VCG (Clarke) + Gale-Shapley + double auction (marathon #4956)
-├── GameTheory-8-CombinatorialGames-Csharp.ipynb                 # Twin C# P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy (marathon #4956)
-├── GameTheory-7-ExtensiveForm-Csharp.ipynb                      # Twin C# arbre de jeu + infosets from-scratch (marathon #4956, Prong B)
-├── GameTheory-14-DifferentialGames-Csharp.ipynb                 # Twin C# jeux différentiels : RK4 + Riccati from-scratch, pursuit-evasion (marathon #4956, Prong B)
-├── GameTheory-15-CooperativeGames-Csharp.ipynb                  # Twin C# Shapley + Banzhaf + core + convexité + airport game from-scratch (marathon #4956)
-├── GameTheory-15c-CooperativeGames-Csharp.ipynb                 # Twin C# du 15c : Shapley (permutations) + Banzhaf + Core vide (majorité) + Mini-ONU + convexité from-scratch (marathon #4956, Prong B)
-├── GameTheory-10-ForwardInduction-SPE-Csharp.ipynb              # Twin C# SPE/backward-induction + trembling-hand + forward induction + burn money (marathon #4956)
-├── SocialChoice/                                                   # Sous-série Choix Social
+├── GameTheory-15c-CooperativeGames-Csharp.ipynb    #   Jumeau C# — Shapley (permutations) + Banzhaf + Core vide (majorité) + Mini-ONU + convexité from-scratch (parité #4956)
+├── SocialChoice/                                   # Sous-série Choix Social (4 notebooks × 2 langues, parité #4956)
 │   ├── 01-Arrow-Impossibility-Theorem.ipynb
+│   ├── 01-Arrow-Impossibility-Theorem-Csharp.ipynb
 │   ├── 02-Lean-SocialChoice-Formal.ipynb
 │   ├── 03-Voting-Methods.ipynb
-│   └── 04-Computational-Aggregation-SAT-Z3.ipynb
+│   ├── 03-Voting-Methods-Csharp.ipynb
+│   ├── 04-Computational-Aggregation-SAT-Z3.ipynb
+│   ├── 04-Computational-Aggregation-SAT-Z3-Csharp.ipynb
 │   └── README.md
 ├── README.md
 ├── INVENTORY.md                            # Inventaire notebooks
