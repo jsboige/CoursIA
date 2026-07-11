@@ -28,22 +28,31 @@ Jusqu'à la restructuration de la série, la théorie de la décision était imb
 
 ## Aperçu — la décision sous incertitude en images
 
-Six figures extraites des notebooks illustrent l'arc décisionnel, depuis les distributions d'utilité d'investissement jusqu'à la valeur de l'information et aux bandits bayésiens Thompson Sampling.
+Chaque notebook de l'arc rend visible un geste décisionnel distinct, dans une figure extraite des sorties réelles des notebooks. Plutôt qu'une galerie séparée du propos, ces figures sont replacées ci-dessous dans leur progression pédagogique — du posterior d'utilité aux bandits bayésiens MCMC — au plus près du concept qu'elles illustrent. La provenance détaillée (cellule, output, poids, alt-text) est documentée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
-<table>
-<tr>
-<td align="center"><b>2 · Investissement</b><br><a href="DecPyMC-2-Utility-Money.ipynb"><img src="assets/readme/dt2-investment.png" width="290" alt="Choix d'investissement : distributions postérieures de rendement comparées entre trois actifs."></a></td>
-<td align="center"><b>3 · Multi-attributs</b><br><a href="DecPyMC-3-Multi-Attribute.ipynb"><img src="assets/readme/dt3-multiattribute.png" width="290" alt="Décision multi-attributs sous incertitude : Monte Carlo sur plusieurs critères en compétition."></a></td>
-<td align="center"><b>5 · EVPI</b><br><a href="DecPyMC-5-Value-Information.ipynb"><img src="assets/readme/dt5-evpi-heatmap.png" width="290" alt="Valeur de l'information (EVPI) : carte de chaleur selon la probabilité de pétrole et le gain."></a></td>
-</tr>
-<tr>
-<td align="center"><b>5 · Convergence MC</b><br><a href="DecPyMC-5-Value-Information.ipynb"><img src="assets/readme/dt5-mc-convergence.png" width="290" alt="Convergence de l'estimateur Monte Carlo de l'EVPI vers sa valeur analytique."></a></td>
-<td align="center"><b>6 · Système expert</b><br><a href="DecPyMC-6-Expert-Systems.ipynb"><img src="assets/readme/dt6-expert-graph.png" width="290" alt="Système expert multi-sources : graphe de décision combinant avis et règles de décision."></a></td>
-<td align="center"><b>7 · Thompson</b><br><a href="DecPyMC-7-Sequential.ipynb"><img src="assets/readme/dt7-thompson.png" width="290" alt="Thompson Sampling bayésien : courbes de regret et convergence des bandits MCMC."></a></td>
-</tr>
-</table>
+**[2 — Décider, ce n'est pas maximiser l'espérance.](DecPyMC-2-Utility-Money.ipynb)** Devant trois actifs aux rendements incertains, l'espérance seule ne tranche pas : c'est toute la *distribution* postérieure des rendements qui décide. Un agent aversif au risque replie son choix sur la queue gauche ; un agent neutre regarde la moyenne. Les distributions superposées rendent visible pourquoi deux décideurs rationnels peuvent choisir différemment.
 
-Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, output, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+<p align="center"><a href="DecPyMC-2-Utility-Money.ipynb"><img src="assets/readme/dt2-investment.png" width="540" alt="Choix d'investissement : distributions postérieures de rendement comparées entre trois actifs."></a></p>
+
+**[3 — Le compromis multi-attributs sous incertitude.](DecPyMC-3-Multi-Attribute.ipynb)** Aucun critère unique ne résume une décision réelle : coût, qualité, délai, risque sont en compétition. Une simulation de Monte Carlo sur chaque critère, pondérée par des *swing weights*, expose les trade-offs et la zone de non-dominance — là où aucune option ne bat toutes les autres sur tous les axes.
+
+<p align="center"><a href="DecPyMC-3-Multi-Attribute.ipynb"><img src="assets/readme/dt3-multiattribute.png" width="540" alt="Décision multi-attributs sous incertitude : Monte Carlo sur plusieurs critères en compétition."></a></p>
+
+**[5 — Combien vaut l'information parfaite ?](DecPyMC-5-Value-Information.ipynb)** L'EVPI (Expected Value of Perfect Information) mesure le gain espéré si l'on levait toute l'incertitude avant de décider. La carte de chaleur, selon la probabilité d'un gisement et le gain associé, révèle les régions où acheter l'information paie et celles où elle est sans valeur — le pont entre incertitude et valeur monétaire.
+
+<p align="center"><a href="DecPyMC-5-Value-Information.ipynb"><img src="assets/readme/dt5-evpi-heatmap.png" width="540" alt="Valeur de l'information (EVPI) : carte de chaleur selon la probabilité de pétrole et le gain."></a></p>
+
+**[5 — La convergence de l'estimateur Monte Carlo.](DecPyMC-5-Value-Information.ipynb)** L'EVPI n'a pas toujours de forme analytique fermée : on l'approche par Monte Carlo. La courbe de convergence montre l'estimateur se stabiliser vers la valeur analytique à mesure que croît le nombre d'échantillons — la preuve empirique que la simulation rejoint la théorie, et la quantité d'échantillons nécessaire pour s'y fier.
+
+<p align="center"><a href="DecPyMC-5-Value-Information.ipynb"><img src="assets/readme/dt5-mc-convergence.png" width="540" alt="Convergence de l'estimateur Monte Carlo de l'EVPI vers sa valeur analytique."></a></p>
+
+**[6 — Composer avis experts et règles en un graphe de décision.](DecPyMC-6-Expert-Systems.ipynb)** Quand plusieurs sources d'avis (capteurs, experts, règles) doivent converger vers une action, le graphe de décision formalise leur combinaison. Chaque nœud pondère une incertitude ou une préférence ; l'arc de décision agrège le tout sous un critère (Minimax, regret) — rendre lisible un processus qui, sans formalisation, resterait opaque.
+
+<p align="center"><a href="DecPyMC-6-Expert-Systems.ipynb"><img src="assets/readme/dt6-expert-graph.png" width="540" alt="Système expert multi-sources : graphe de décision combinant avis et règles de décision."></a></p>
+
+**[7 — Thompson Sampling : le bandit qui apprend.](DecPyMC-7-Sequential.ipynb)** Face à des bras aux récompenses inconnues, Thompson Sampling échantillonne une action selon la probabilité qu'elle soit optimale, puis met à jour son posterior après chaque essai. La courbe de regret, qui croît puis s'aplatit, est la signature d'un apprentissage bayésien réussi : on exploite de plus en plus les meilleurs bras tout en continuant d'explorer.
+
+<p align="center"><a href="DecPyMC-7-Sequential.ipynb"><img src="assets/readme/dt7-thompson.png" width="560" alt="Thompson Sampling bayésien : courbes de regret et convergence des bandits MCMC."></a></p>
 
 ## Progression Pédagogique
 
