@@ -3094,9 +3094,33 @@ theorem p5_large_n_jump (n : Nat) (g : Grid) (h : BoxAssezGrand g n)
     proven. -/
 theorem p5_inductive_step (n : Nat) (g : Grid) (h : BoxAssezGrand g n) :
     evolveHashlifeFast n g = evolve n g := by
-  by_cases hsmall : n < jumpSize (gridToMacroCellWithOffset g).2.level
-  · exact p5_small_n_fallback n g hsmall
-  · sorry
+  by_cases hg : g = []
+  · -- Empty grid: both sides definitionally `[]`.
+    -- `evolveHashlifeFast n [] = evolveHashlifeFastAux n n []`, which unfolds
+    -- to `evolve n []` after the `0 >= 2` guard fails on `gridFrame []`'s
+    -- level-0 MacroCell. `evolve n []` is `step^[n] []`, and `step [] = []`
+    -- via `candidates [] = []`. So both sides are `[]`. The unfolding
+    -- reduces to `rfl` after `simp` normalizes the auxiliary definitions.
+    subst hg
+    unfold evolveHashlifeFast
+    cases n with
+    | zero => simp [evolveHashlifeFastAux, evolve]
+    | succ k =>
+      -- `evolveHashlifeFastAux (k+1) (k+1) []` falls into the `fuel+1, n, g`
+      -- branch. Inside, `gridToMacroCellWithOffset []` returns a level-0
+      -- MacroCell, so `lvl >= 2` is false and we take the else branch
+      -- (`evolve (k+1) []`). Lean reduces the `if` since `0 >= 2` is `false`.
+      simp [evolveHashlifeFastAux, gridToMacroCellWithOffset, gridFrame,
+            buildFromGrid, MacroCell.level]
+  · -- Non-empty grid: case-split on `hsmall`.
+    by_cases hsmall : n < jumpSize (gridToMacroCellWithOffset g).2.level
+    · exact p5_small_n_fallback n g hsmall
+    · -- `¬ hsmall` on a non-empty grid: the P5.2 hypotheses are jointly
+      -- unsatisfiable (vacuous arm — see `p5_large_n_hyps_unsat`, c.307a
+      -- disclosure). Reconstruct `n ≥ jumpSize` and discharge via `False.elim`.
+      have hbig : n ≥ jumpSize (gridToMacroCellWithOffset g).2.level :=
+        Nat.not_lt.mp hsmall
+      exact (p5_large_n_hyps_unsat g n hg h hbig).elim
 
 
 /-- **Hashlife correctness (bounded)**: under the padding hypothesis
