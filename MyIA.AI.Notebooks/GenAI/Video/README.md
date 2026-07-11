@@ -34,6 +34,31 @@ Six figures extraites des notebooks illustrent la chaîne complète, depuis l'ex
 
 Chaque figure renvoie au notebook dont elle est extraite ; la provenance détaillée (cellule, output, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
+## Prérequis
+
+### API Keys
+
+```bash
+# Dans GenAI/.env
+OPENAI_API_KEY=sk-...
+COMFYUI_AUTH_TOKEN=...
+```
+
+### GPU (pour notebooks locaux)
+
+- **Minimum** : 4 GB VRAM (Real-ESRGAN, RIFE)
+- **Recommandé** : 12+ GB VRAM (AnimateDiff, LTX-Video)
+- **Optimal** : 24 GB VRAM (HunyuanVideo, Wan, tous les notebooks)
+
+### FFmpeg
+
+FFmpeg doit être installé sur le système :
+
+```bash
+# Windows (via winget)
+winget install FFmpeg
+```
+
 ## Progression par niveau
 
 ### 01-Foundation - Comprendre la vidéo avant de la générer
@@ -146,31 +171,6 @@ flowchart TD
 | **LTX-2 (Lightricks)** | 02-5 | GPU ~14-24 GB VRAM (GGUF Q4 / fp8-cast) |
 | **ComfyUI Video** | 03-3 | Docker, nodes vidéo |
 | **OpenAI Sora 2** | 04-3 | `OPENAI_API_KEY` |
-
-## Prérequis
-
-### API Keys
-
-```bash
-# Dans GenAI/.env
-OPENAI_API_KEY=sk-...
-COMFYUI_AUTH_TOKEN=...
-```
-
-### GPU (pour notebooks locaux)
-
-- **Minimum** : 4 GB VRAM (Real-ESRGAN, RIFE)
-- **Recommandé** : 12+ GB VRAM (AnimateDiff, LTX-Video)
-- **Optimal** : 24 GB VRAM (HunyuanVideo, Wan, tous les notebooks)
-
-### FFmpeg
-
-FFmpeg doit être installé sur le système :
-
-```bash
-# Windows (via winget)
-winget install FFmpeg
-```
 
 ## Parcours recommandé
 
