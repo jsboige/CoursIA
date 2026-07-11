@@ -1816,9 +1816,99 @@ La famille QC-Py **exerce des capacités distinctives** du moteur QuantConnect, 
 
 Part of #3801
 
-## Entry #021 — GenAI/Texte (LLM orchestration, owner po-2024 strict, c.41)
+## Entry #021 — QuantConnect/ML-Training-Pipeline (EPIC #1454, owner po-2024 strict, c.420)
 
-Famille `MyIA.AI.Notebooks/GenAI/Texte/` = **20 notebooks** `1_OpenAI_Intro`..`20_OWUI_Native_API`, substance owner partition native **po-2024 strict** (GenAI/Texte = lane po-2024, mandat #2161 ; dashboard « Assignations Substance : po-2024 = GenAI/Texte »). **Rotation R6** : c.40 = QC-Py (registre ledger, famille QC, PR #6144 MERGED) → c.41 = GenAI/Texte (famille GenAI, lane po-2024). Worktree `c:\dev\CoursIA-c41-axe2`, branche `feature/c41-ledger-021-genai-texte` off `origin/main` (`35dd1c8e1`, post-#6144). Audit read-only, aucun commit code, aucun `gh`. **Numérotation #021** : #019 Lean (PR #6050 OPEN) encore en vol — collision-guard `gh pr list --search "entry 021"` = empty.
+Famille `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/` = **14 notebooks de recherche ML/DL** (HAR/HMM/LSTM/DLinear/TFT/Decision-Transformer/momentum/trend), substance owner **po-2024 strict** (EPIC **#1454** « Training & Post-Training — trading + RL/PPO + GenAI, po-2024 pionnier ⇄ ai-01 approfondit »). **Entry = grain deep ai-01 R5 DECIDED** (msg-20260711T155236-qtoglx : « axe-2 SOTA audit EPIC #3801 famille QC, tu es pionnier ML/training #1454 ») — entry #020 ayant couvert `QuantConnect/Python/` (QC-Py 53 nb), la sous-famille **ML-Training-Pipeline** (mon turf #1454) restait à auditer. Audit read-only, vérification firsthand par script python3 sur les 14 .ipynb + lecture directe des 4 notebooks DL-nommés + grep des 40 scripts torch d'entraînement. Worktree `feature/c420-ledger-021-mltraining` off `origin/main`. **Numérotation #021 (pas #019)** : collision-avoidance — entry #019 = Lean 4 toujours en vol (PR #6050 OPEN, non-merged, `gh pr view 6050` G.1 beforehand), #020 = QC-Py landed.
+
+### Métrique (vérifiée firsthand par le worker, script python3 inline sur les 14 .ipynb)
+
+| Métrique | Valeur | Méthode de vérification |
+|----------|--------|--------------------------|
+| Notebooks totaux | **14** | `glob('ML-Training-Pipeline/*.ipynb')` = 14 fichiers (hors `_output`) |
+| Cellules totales | **264** | Script python3 sommation `len(cells)` |
+| Cellules code | **118** | `cell_type == 'code'` |
+| Cellules code `execution_count != null` | **118/118 = 100%** | Script python3 — **taux exec maximal**, tous notebooks exécutés localement |
+| Cellules code `execution_count == null` | **0/118** | Script python3 — AUCUNE cellule non-exécutée (contrairement QC-Py 276 exec_null `[REFERENCE QC]`) |
+| Cellules code à `outputs: []` vides | **9** (legit) | Script python3 — **toutes vérifiées légites** : `research_l1/l2/l3` c5-c8 = `def`-fonctions (return None, pas de print → pas d'output) + 1 « Exercice 3 (analyse, pas de code) ». exec_count SET, pas de sortie car `def`/analyse. **Pas de stripped output C.2**. |
+| Erreurs `output_type: error` | **0** | Script python3 — 0 occurrence sur les 14 .ipynb |
+| Kernelspec `python3` | **14/14** | Lecture directe metadata `kernelspec.name` — kernel uniforme (analytics tier) |
+| Violations C.1 (`raise NotImplementedError` / `assert False` / `1/0`) | **0** | `grep -nE` sur les 14 .ipynb = 0 hit |
+| Workaround dégradé (`workaround` / `mock` / `fake` / `dummy` / `simulated`) | **0** | Script python3 = 0 hit problématique |
+
+### Architecture d'exécution deux-tier — insight central de l'audit (distinct du bimodal QC-Py #020)
+
+La famille ML-Training-Pipeline présente une **architecture deux-tier formation/analyse**, vérité de terrain vérifiée cellule-par-cellule + script-par-script :
+
+1. **Tier formation GPU (SOTA-OK, 40 scripts torch dans `scripts/`)** : l'entraînement DL réel vit dans des scripts Python dédiés (GPU), pas dans les notebooks. **Vérifié firsthand** — `grep -lE "import torch" scripts/*.py` = **40 scripts torch**, dont :
+   - **m15_lstm_rv.py** (699L) : `class LSTMVolModel(nn.Module)` avec `nn.LSTM` + `nn.Linear` — Log-LSTM Hochreiter
+   - **dlinear_vol.py** (517L) : `class DLinearVol(nn.Module)`, `import torch`, `nn.Linear` — DLinear Zeng et al. AAAI 2023
+   - **train_tft.py** : TFT Lim et al. 2021 (d_model=64, n_heads=4, lstm_layers=1)
+   - **sweep_l4_decision_transformer.py** : Decision Transformer Chen et al. 2021 (642K params, d_model=128, nhead=4, 3 layers, context=20)
+   - **run_stage2_patchtst_itransformer.py**, **train_itransformer.py**, **train_transformer.py**, **compare_mamba_transformer.py** : PatchTST/iTransformer/Mamba state-of-the-art
+   - **eval_chronos_bolt.py**, **eval_kronos_zeroshot.py** : Chronos/Kronos zero-shot foundation models (Amazon)
+   - **multiscale_gnn_model.py**, **moe_experts.py** : GNN + MoE architectures
+   Ces scripts tournent sur GPU et dumpent **results JSON** (`scripts/results/*/results.json` + `outputs/tft_m9_*/results.json`) — **preuve l'entraînement a tourné**.
+
+2. **Tier analyse research (SOTA-OK, 14 notebooks)** : les notebooks chargent les results JSON pré-calculés et font l'**analyse statistique rigoureuse** — numpy/pandas/matplotlib/scipy + tests formels. **Disclosure honnête** dans la cellule même : « Les résultats (84 combinaisons) sont pré-calculés par `scripts/m15_lstm_rv.py` » (m15 c1). **Ce n'est PAS un workaround** — c'est la séparation formation-GPU/analyse-notebook, architecture plus rigoureuse que « train-in-notebook » car reproductible et GPU-externalisée.
+
+### Prong B (non-trivialité) — **EXCELLENT, cas d'école anti-trivial**
+
+Le ML-Training-Pipeline pose une question de recherche **genuinely non-trivial** : la **courbe d'expressivité** — un modèle DL plus expressif bat-il une baseline simple sur des données crypto limitées ? Répondue honnêtement avec méthodologie rigoureuse (multi-seed ≥4, walk-forward 5-fold expanding-window, test de Diebold-Mariano HAC Newey-West, edge ≥2σ) :
+
+| Modèle | Params | Angle | Verdict | Honnêteté |
+|--------|--------|-------|---------|-----------|
+| M12 HAR-RV-J (OLS) | 7 | stratégie (Sharpe) | **BEATS, déployé** | déployé en prod |
+| M4 DLinear | 22 | prévision (MSE) | **5/21 BEATS** (BTC-dominant) | DM test, p<1e-9 |
+| M15 Log-LSTM h=32 | 4769 | stratégie (Sharpe) | **BEATS 61.9% (52/84), keeper non-déployé** | barrière inference prod documentée |
+| M9 TFT | 110801 | prévision (DirAcc) | **0/6 BEATS, edge NÉGATIF** | **DOCUMENTED FAILURE** — DirAcc 0.4993 = pile-ou-face, diagnostic overfitting fold-1 |
+
+**Conclusion de recherche honnête** : succès **anti-corrélé au nombre de paramètres** — l'OLS 7p est déployé, le Transformer 110Kp ne bat pas le pile-ou-face. C'est l'anti-trivial-problem mandate (sota-not-workaround Prong B) à son meilleur : un problème de recherche réel (expressivité vs généralisation sur données limitées) où le SOTA est exercé ET évalué avec verdict honnête incluant un échec documenté. Aucune baseline triviale (BFS-vs-A* dégénérescence) — chaque modèle est une architecture publiée (OLS, DLinear, LSTM, TFT, Decision Transformer) évaluée sur un benchmark multi-actif.
+
+### SOTA Prong A — verdicts cités
+
+| Notebook | Cells/Code/EXEC | SOTA tools | Verdict |
+|----------|-----------------|------------|---------|
+| ML-Research-Template | 14/8/8 | ta, numpy, pandas, matplotlib | **SOTA-OK** (template) |
+| hmm_alpha_research | 65/27/27 | ta, numpy, pandas, **hmmlearn**, sklearn, matplotlib | **SOTA-OK** (HMM réel) |
+| m3_har_asymmetric_semivariance | 16/8/8 | pandas, ta, numpy | **SOTA-OK** (HAR asym.) |
+| m4_dlinear_vol_research | 10/4/4 | numpy, pandas, matplotlib | **SOTA-OK** (analyse DLinear GPU) |
+| m5_hmm_regime_research | 12/5/5 | numpy, pandas, matplotlib | **SOTA-OK** (régime HMM) |
+| m9_tft_vol_research | 12/5/5 | numpy, pandas, matplotlib | **SOTA-OK** (analyse TFT GPU, échec documenté) |
+| m11e_ensemble_research | 12/5/5 | numpy, pandas, matplotlib | **SOTA-OK** (ensemble) |
+| m12_har_rv_j_research | 12/5/5 | numpy, pandas, matplotlib | **SOTA-OK** (HAR-RV-J, modèle déployé) |
+| m15_lstm_rv_research | 12/5/5 | numpy, pandas, matplotlib | **SOTA-OK** (analyse LSTM GPU) |
+| research_l1_tsmom | 20/8/8 | numpy, pandas | **SOTA-OK** (TSMOM, 3 def legit) |
+| research_l2_dual_momentum | 20/8/8 | numpy, pandas | **SOTA-OK** (cross-section+DM) |
+| research_l3_trend | 21/9/9 | numpy, pandas, matplotlib | **SOTA-OK** (trend long-horizon) |
+| research_l4_decision_transformer | 13/6/6 | **ta**, numpy, pandas, **arch**, matplotlib | **SOTA-OK** (analyse DT GPU, BEATS 24/26) |
+| research_what_dl_can_predict | 25/15/15 | **arch**, ta, numpy, pandas | **SOTA-OK** (GARCH, DL-predictability) |
+
+### Synthèse
+
+- **EXEC_PROVED global** : 14/14 (100%) — taux exec **maximal**, supérieur à QC-Py (64%) car aucun `[REFERENCE QC]` (analytics-only tier, formation externalisée GPU).
+- **Erreurs runtime** : 0/14.
+- **Violations C.1** : 0/14.
+- **Vrais outils SOTA invoqués** :
+  - **Tier formation** (40 scripts GPU) : PyTorch (`nn.Module`, `nn.LSTM`, `nn.Linear`), HuggingFace transformers, DLinear/TFT/Decision-Transformer/PatchTST/iTransformer/Mamba architectures, Chronos/Kronos foundation models, GNN, MoE
+  - **Tier analyse** (14 notebooks) : numpy, pandas, matplotlib, scipy, **arch** (GARCH), **hmmlearn** (HMM), **ta** (technical analysis), scikit-learn, Diebold-Mariano (HAC Newey-West)
+- **Workaround dégradé** : 0/14 (pas d'ASCII, pas de réimplémentation jouet, pas de fake DL — le DL est réel dans les scripts GPU, l'analyse est réelle dans les notebooks).
+- **Problème non-trivial** (Prong B) : **EXCELLENT** — courbe d'expressivité multi-architecture (OLS→DLinear→LSTM→TFT→DT) avec verdicts honnêtes incluant échec documenté (M9 TFT 0/6 BEATS).
+
+### Owner-lane volet
+
+**po-2024 strict** — EPIC #1454 « Training & Post-Training, po-2024 pionnier ⇄ ai-01 approfondit ». ML-Training-Pipeline = turf natif ML/training de po-2024. Grain deep ai-01 R5 DECIDED (msg-20260711T155236-qtoglx : « axe-2 SOTA audit EPIC #3801 famille QC, tu es pionnier ML/training #1454 »). Entry #020 (QC-Py) avait couvert la couche plateforme ; entry #021 couvre la couche **ML/training** (EPIC #1454). Continuité c.420 post-#6131 MERGED (Part4 user-request) + #4364 phantom confirmé + ICT-25 #5105 retiré.
+
+### Conclusions audit
+
+- **Substance QuantConnect/ML-Training-Pipeline = riche, rigoureuse et honnête**, 14 notebooks de recherche en architecture deux-tier formation-GPU/analyse-notebook, conforme aux règles SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair.
+- **Pas de fix nécessaire** : audit = SOTA-OK 14/14 (118/118 EXEC_PROVED, taux exec maximal), formation DL réelle (40 scripts torch GPU), analyse rigoureuse (DM-test HAC, multi-seed ≥4, walk-forward), verdicts honnêtes incluant échec documenté. Aucun PR de substance.
+- **Registre varié** : kernel uniforme `python3` (14/14 — analytics tier). Vrais outils SOTA distinctifs : **PyTorch** (formation GPU) + **transformers/Chronos/Kronos** (foundation models) + **arch** (GARCH) + **hmmlearn** (HMM) + **ta** (technical analysis). **Zéro stub** C.1, **zéro workaround** dégradé. Citations académiques réelles (Hochreiter LSTM, Zeng AAAI 2023, Lim 2021, Chen 2021).
+- **Cumulatif** : entry #021 = sous-famille **ML-Training-Pipeline** (EPIC #1454) du QuantConnect — complète entry #020 (QC-Py plateforme). Ajoute au registre axe-2 le pattern **deux-tier formation-GPU/analyse-notebook** (distinct du bimodal QC-Py `[REFERENCE QC]`/analytics) + les moteurs **Chronos/Kronos foundation models** + **arch GARCH** + **hmmlearn HMM**. Le registre compte désormais entries #001-#018 + #020 + #021 (entry #019 Lean 4 PR #6050 toujours OPEN).
+- **Mandat Substance > Sweep honoré** : audit SOTA axe-2 = registre substance (≠ doc-hygiène cappé 1/lane/jour), grain deep ai-01 DECIDED exécuté.
+
+## Entry #022 — GenAI/Texte (LLM orchestration, owner po-2024 strict, c.41)
+
+Famille `MyIA.AI.Notebooks/GenAI/Texte/` = **20 notebooks** `1_OpenAI_Intro`..`20_OWUI_Native_API`, substance owner partition native **po-2024 strict** (GenAI/Texte = lane po-2024, mandat #2161 ; dashboard « Assignations Substance : po-2024 = GenAI/Texte »). **Rotation R6** : c.40 = QC-Py (registre ledger, famille QC, PR #6144 MERGED) → c.41 = GenAI/Texte (famille GenAI, lane po-2024). Worktree `c:\dev\CoursIA-c41-axe2`, branche `feature/c41-ledger-021-genai-texte` off `origin/main` (`35dd1c8e1`, post-#6144). Audit read-only, aucun commit code, aucun `gh`. **Numérotation #022** : #019 Lean (PR #6050 OPEN) encore en vol + #021 QuantConnect/ML-Training-Pipeline landed sur main (PR #6150 MERGED, ai-01) → renumerotée de #021 → #022 (collision #021 résolue au rebase). Collision-guard `gh pr list --search "entry 021"` = empty.
 
 ### Métrique (vérifiée firsthand par le worker, script python3 inline sur les 20 .ipynb)
 
@@ -1905,7 +1995,7 @@ La famille GenAI/Texte **exerce des capacités LLM distinctives** couvrant tout 
 
 ### Owner-lane volet
 
-**po-2024 strict** — GenAI/Texte = lane native de po-2024 (mandat #2161, dashboard « Assignations Substance : po-2024 = GenAI/Texte »). Entry #016 SmartContracts (c.11) + #020 QuantConnect/Python (c.40, MERGED) déjà livrés par po-2024 ; entry #021 GenAI/Texte consolide la lane LLM. **Continuité c.41** : rotation R6 (c.40 QC-Py ledger → c.41 GenAI/Texte ledger, famille QC→GenAI). #2161 exo-enrichment GenAI/Texte = SATURÉ (20/20 nb ont ≥3 exercices, scanner FP `###` vs `##` catché firsthand sur 12_Test_Time_Scaling — G.1 save anti-duplicate-framing).
+**po-2024 strict** — GenAI/Texte = lane native de po-2024 (mandat #2161, dashboard « Assignations Substance : po-2024 = GenAI/Texte »). Entry #016 SmartContracts (c.11) + #020 QuantConnect/Python (c.40, MERGED) déjà livrés par po-2024 ; entry #022 GenAI/Texte consolide la lane LLM. **Continuité c.41** : rotation R6 (c.40 QC-Py ledger → c.41 GenAI/Texte ledger, famille QC→GenAI). #2161 exo-enrichment GenAI/Texte = SATURÉ (20/20 nb ont ≥3 exercices, scanner FP `###` vs `##` catché firsthand sur 12_Test_Time_Scaling — G.1 save anti-duplicate-framing).
 
 ### Conclusions audit
 
@@ -1913,8 +2003,11 @@ La famille GenAI/Texte **exerce des capacités LLM distinctives** couvrant tout 
 - **Pas de fix nécessaire** : audit = SOTA-OK 20/20 (268/268 exec, real LLM stream outputs), 0 workaround dégradé, 0 secret inline. 1 cosmetic note (10_LocalLlama pip-path, catégorie A).
 - **Continuité c.41** : rotation R6 honorée (famille GenAI vs c.40 QC, registre axe-2 EPIC #3801 mandat coordinator R5). #2161 GenAI/Texte enrichment saturé vérifié firsthand (scanner FP catché).
 - **L378 durcie appliquée** : G.1 verify-before-claiming 2× (re-vérification worker firsthand — scanner `### Exercice` FP catché sur 12_Test_Time_Scaling qui utilise `## Exercice`, 0 faux positif C.1, secrets-hygiene 36 getenv-defaults classés model-names/URLs bénins) → 0 workaround dégradé, 4 disclosures honnêtes (USER-HAND cloud ×11, MACHINE local ×9, secrets clean, Pydantic workaround disclosed).
-- **Collision-avoidance** : entry **#021** (collision-guard `gh pr list --search "entry 021"` = empty ; #019 Lean #6050 en vol).
+- **Collision-avoidance** : entry **#022** (post #021 ML-Training landed, collision-guard `gh pr list --search "entry 021"` = empty ; #019 Lean #6050 en vol).
 - **Registre varié** : kernel `python3` (20). Vrais outils SOTA : **OpenAI Python SDK** + **Ollama/local Llama** + **Microsoft.SemanticKernel** + **Pydantic** + **OpenRouter** + **Open WebUI API**. **Zéro stub** C.1 sur 268 cellules code.
-- **Cumulatif** : entry #021 = **nouvelle famille distincte** dans le registre axe-2 SOTA (**GenAI/Texte** — orchestration LLM). Ajoute **2 moteurs SOTA nouveaux** au registre (**OpenAI Python SDK** + **Ollama/local Llama** ; SemanticKernel/Pydantic déjà #015, Anthropic SDK nouveau). Le registre compte désormais entries #001-#021 (entry #019 Lean 4 #6050 OPEN en vol). Inférence : prochaine entry revisitera soit GenAI/Image-Audio-Video (autres sous-familles GenAI), soit ML/ML-Training-Pipeline, soit axe-2 Lean hashlife N3/N4.
+- **Cumulatif** : entry #022 = **nouvelle famille distincte** dans le registre axe-2 SOTA (**GenAI/Texte** — orchestration LLM). Ajoute **2 moteurs SOTA nouveaux** au registre (**OpenAI Python SDK** + **Ollama/local Llama** ; SemanticKernel/Pydantic déjà #015, Anthropic SDK nouveau). Le registre compte désormais entries #001-#018 + #020 (QC-Py) + #021 (QC/ML-Training, ai-01) + #022 (GenAI/Texte, THIS) ; entry #019 Lean 4 #6050 OPEN en vol. Inférence : prochaine entry revisitera soit GenAI/Image-Audio-Video (autres sous-familles GenAI), soit ML/ML-Training-Pipeline, soit axe-2 Lean hashlife N3/N4.
+
+Part of #3801
+
 
 Part of #3801

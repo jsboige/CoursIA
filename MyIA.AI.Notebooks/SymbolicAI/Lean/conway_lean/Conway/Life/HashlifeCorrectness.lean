@@ -228,10 +228,84 @@ def BoxAssezGrandN (g : Grid) (n : Nat) : Prop := box_assez_grandN g n = true
 theorem box_assez_grandN_single_cell_3 : box_assez_grandN [(0, 0)] 3 = true := by
   native_decide
 
+/-- **Universal large-`n` non-vacuity (gate W1, issue #3846)**: the n-aware
+    predicate `box_assez_grandN` holds for the single-cell grid at *every* `n`.
+    This is the constructive dual of the `boxAssezGrand_nonempty_le_two` unsat
+    cap: the fixed frame forces `n ≤ 2`, the n-aware frame `gridFrameN` admits
+    every `n` because it pads by `max 2 n ≥ n` on all sides. The single-cell
+    extremes are all `0`, so the frame offset is `-(max 2 n)`; after unfolding,
+    the four `cellMargin` bounds reduce to `n ≤ max 2 n` (top/left, free from
+    `le_max_right`) and `max 2 n + n < 2^lvl` (bottom/right), where
+    `2^lvl ≥ 1 + 2·(max 2 n) ≥ (max 2 n) + n + 1` by `ceilLog2_spec`. The
+    `Int`/`Nat`-cast between the goal's `(2 : Int) ^ lvl` and the `Nat` spec is
+    bridged by `exact_mod_cast`. -/
+theorem box_assez_grandN_single_cell (n : Nat) : box_assez_grandN [(0, 0)] n = true := by
+  have hrMin : gridRowMin [(0, 0)] = 0 := by native_decide
+  have hrMax : gridRowMax [(0, 0)] = 0 := by native_decide
+  have hcMin : gridColMin [(0, 0)] = 0 := by native_decide
+  have hcMax : gridColMax [(0, 0)] = 0 := by native_decide
+  simp only [box_assez_grandN, gridFrameN, hrMin, hrMax, hcMin, hcMax,
+      List.all_cons, List.all_nil, Bool.and_true, max_self, Int.sub_self]
+  set pad := max 2 n with hpad
+  set side := (0 + 1 + 2 * (pad : Int)).toNat
+  have hpn : n ≤ pad := le_max_right 2 n
+  have hside : side = 1 + 2 * pad := by omega
+  have hspec : 2 ^ ceilLog2 side ≥ side := ceilLog2_spec side
+  have hbig : (2 : Int) ^ ceilLog2 side ≥ pad + n + 1 := by
+    have hnat : 2 ^ ceilLog2 side ≥ pad + n + 1 := by omega
+    exact_mod_cast hnat
+  rw [cellMargin_true_iff]
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> omega
+
 /-- Honest contrast: the *fixed-`gridFrame`* predicate provably *fails* for the
     same grid at `n = 3` — confirming the duality is non-vacuous
     (`box_assez_grandN` breaks exactly what `box_assez_grand` cannot satisfy). -/
 theorem box_assez_grand_single_cell_3_false : box_assez_grand [(0, 0)] 3 = false := by
+  native_decide
+
+/-! #### Large-`n` non-vacuity (P5 redesign gate W1, issue #3846)
+
+The `n = 3` witnesses above only exhibit non-vacuity at the exact threshold
+where the fixed frame fails. The P5 large-`n` correctness target is only
+*meaningful* when the padding hypothesis is satisfiable at large `n`: restating
+`hashlife_correct` over `BoxAssezGrandN` (the n-aware frame) is vacuous unless
+`BoxAssezGrandN g n` is realizable for `n ≥ 8`. The `native_decide` witnesses
+below exhibit this concretely at `n = 8` — exactly the regime where the
+fixed-frame `box_assez_grand` is unsatisfiable (`n ≤ 2` cap of
+`boxAssezGrand_nonempty_le_two`) — on the single-cell grid and on the canonical
+`block` / `glider` patterns. Because `gridFrameN n g` pads by `max 2 n ≥ n` on
+every side, every live cell carries margin `≥ n` *by construction*, so
+`box_assez_grandN` holds at any `n` (the constructive universal
+`∀ n, box_assez_grandN [(0,0)] n = true` is the natural next target — it bridges
+through `cellMargin_true_iff` to the four margin bounds discharged by
+`ceilLog2_spec` + `omega`, the exact dual of `boxAssezGrand_nonempty_le_two`;
+slated for a focused cycle, as the `Int`/`Nat`-cast elaboration of the
+`gridFrameN` term needs interactive development). -/
+
+/-- Concrete large-`n` non-vacuity witness (gate W1): `box_assez_grandN` holds at
+    `n = 8` on the single-cell grid — exactly the regime where the fixed-frame
+    `box_assez_grand` is unsatisfiable (`n = 8 > 2`). -/
+theorem box_assez_grandN_single_cell_8 : box_assez_grandN [(0, 0)] 8 = true := by
+  native_decide
+
+/-- Large-`n` non-vacuity on a real still-life: the 2×2 `block` carries margin
+    `≥ 8` on every side under `gridFrameN 8` (padding `max 2 8 = 8`), so the
+    n-aware predicate holds at `n = 8` where `box_assez_grand block 8` cannot
+    (gate W1). -/
+theorem box_assez_grandN_block_8 : box_assez_grandN block 8 = true := by
+  native_decide
+
+/-- Large-`n` non-vacuity on a real spaceship: the `glider` (3×3 bounding box)
+    carries margin `≥ 8` on every side under `gridFrameN 8`, so the n-aware
+    predicate holds at `n = 8` (gate W1). -/
+theorem box_assez_grandN_glider_8 : box_assez_grandN glider 8 = true := by
+  native_decide
+
+/-- Honest contrast at the large-`n` regime: the fixed-`gridFrame` predicate
+    provably *fails* at `n = 8` (the `n ≤ 2` cap of
+    `boxAssezGrand_nonempty_le_two`), confirming the n-aware predicate breaks
+    exactly what the fixed one cannot satisfy. -/
+theorem box_assez_grand_single_cell_8_false : box_assez_grand [(0, 0)] 8 = false := by
   native_decide
 
 /-! ### Monotonicity of `box_assez_grand` in the padding parameter
