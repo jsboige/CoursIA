@@ -1801,17 +1801,17 @@ DEMOS = {
     62: {
         "name": "HASHLIFE_P4_SUCC_MEMBERSHIP",
         "file": str(CONWAY_HASHLIFE_FILE) if CONWAY_HASHLIFE_FILE else "",
-        "line": 2527,
+        "line": 2673,
         "sorry_type": "sorry_replacement",
         "theorem_name": "p4_succ_membership",
         "theorem": "p4_succ_membership",
         "imports": CONWAY_HASHLIFE_IMPORTS,
         "description": (
             "BG-prover target (hashlife nibble plan #3846, N3): residual sorry in\n"
-            "noncomputable def p4_succ_membership (declared L2490 of\n"
-            "HashlifeCorrectness.lean). The whnf wall is already traversed at\n"
-            "L2519-2530 (node16_level_ne_two -> rw [if_neg hne2] ->\n"
-            "rw [mem_toGrid_node]); what remains is the offset-matching assembly:\n"
+            "noncomputable def p4_succ_membership (declared L2636, residual sorry\n"
+            "L2673 of HashlifeCorrectness.lean). The whnf wall is already traversed\n"
+            "around L2648-2665 (node16_level_ne_two L2660 -> rw [if_neg hne2] L2663\n"
+            "-> rw [mem_toGrid_node]); what remains is the offset-matching assembly:\n"
             "prove each `out_*.toGrid (off_*, off_*)` membership via\n"
             "centralCorrect_mem (gate G2, merged #4812) plus the induction\n"
             "hypothesis `centralCorrect q_* (k-1)` extracted from `_h3`, bridged\n"

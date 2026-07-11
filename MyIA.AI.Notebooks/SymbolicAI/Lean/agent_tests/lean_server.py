@@ -72,6 +72,28 @@ def _resolve_lake_command(extra_args: List[str], cwd: str = None) -> Tuple[List[
     return ["lake", *extra_args], env
 
 
+def _has_lakefile(p: Path) -> bool:
+    """True if directory ``p`` holds a Lake manifest (lakefile.lean/.toml)."""
+    return (p / "lakefile.lean").exists() or (p / "lakefile.toml").exists()
+
+
+def _find_lake_root(start: Path) -> Optional[Path]:
+    """Walk up from ``start`` to the nearest directory holding a lakefile.
+
+    Returns the Lake root, or ``None`` if none is found before the filesystem
+    root. Used to re-root callers that derived a too-deep ``project_dir`` from
+    a nested file path (e.g. ``conway_lean/Conway`` for a ``Conway/Life/*``
+    file, which holds no lakefile).
+    """
+    cur = start
+    while True:
+        if _has_lakefile(cur):
+            return cur
+        if cur == cur.parent:
+            return None
+        cur = cur.parent
+
+
 class LeanVerifier:
     """Verify Lean 4 files using lake build with content-hash caching.
 
@@ -133,9 +155,6 @@ class LeanVerifier:
         # `relative_path` with the directory names we passed (so the module name
         # resolves to `Conway.Life.HashlifeCorrectness`). Backward-compatible: a
         # project_dir that already holds the lakefile is used unchanged.
-        def _has_lakefile(p: Path) -> bool:
-            return (p / "lakefile.lean").exists() or (p / "lakefile.toml").exists()
-
         if not _has_lakefile(project):
             cur = project
             prefix = []
@@ -372,38 +391,31 @@ class LeanVerifier:
             dict with 'success', 'suggestions' (list of found proofs), 'raw_output'
         """
         project = Path(self.project_dir)
-        short_name = module_name.split(".")[-1]
+        # The persistent verifier singleton is pinned to whatever project_dir the
+        # first caller passed — for a nested file that is a too-deep dir with no
+        # lakefile (e.g. `conway_lean/Conway`). `verify_project_file` re-roots per
+        # call, so `search_lean` self-heals the same way. Walk up to the real Lake
+        # root (no-op when project already holds a lakefile).
+        if not _has_lakefile(project):
+            root = _find_lake_root(project)
+            if root is not None:
+                project = root
+
+        # Feed the search snippet to `lake env lean --stdin` — the same fast path
+        # `verify_project_file`/`check_axioms` use. The prior implementation wrote a
+        # temp module inside the source tree and ran `lake build <module>`, which
+        # forces Lake to traverse the whole dependency graph (Mathlib) before
+        # elaborating: on a heavy project that overruns the timeout and returns zero
+        # suggestions every time (root cause of `actual_iterations: 0` on the P4/P5
+        # traces). `lake env lean` sets LEAN_PATH from the build dir, so `import`
+        # resolves against prebuilt oleans with no graph walk (~4 s vs 120 s here).
         snippet = (
             f"import {module_name}\n"
             f"example : {goal} := by\n"
             f"  {tactic}\n"
         )
-
-        # Derive temp file from module_name (e.g. "Grothendieck.Calibration"
-        # -> project/Grothendieck/_LeanSearch.lean). Falls back to scanning
-        # subdirectories if the derived path doesn't exist.
-        module_parts = module_name.split(".")
-        if len(module_parts) > 1:
-            tmp_file = project / module_parts[0] / "_LeanSearch.lean"
-        else:
-            tmp_file = project / "SocialChoice" / "_LeanSearch.lean"
-        if not tmp_file.parent.exists():
-            for subdir in project.iterdir():
-                if subdir.is_dir() and (subdir / "lakefile.lean").exists():
-                    continue
-                if subdir.is_dir():
-                    tmp_file = subdir / "_LeanSearch.lean"
-                    break
-
+        cmd, env = _resolve_lake_command(["env", "lean", "--stdin"], cwd=str(project))
         try:
-            tmp_file.write_text(snippet, encoding="utf-8")
-
-            relative = tmp_file.relative_to(project)
-            module = str(relative).replace("/", ".").replace("\\", ".")
-            if module.endswith(".lean"):
-                module = module[:-5]
-
-            cmd, env = _resolve_lake_command(["build", module], cwd=str(project))
             result = subprocess.run(
                 cmd,
                 cwd=str(project),
@@ -411,11 +423,10 @@ class LeanVerifier:
                 text=True,
                 timeout=120,
                 env=env,
+                input=snippet,
             )
-
             output = result.stdout + "\n" + result.stderr
             suggestions = self._extract_suggestions(output, tactic)
-
             return {
                 "success": len(suggestions) > 0,
                 "suggestions": suggestions,
@@ -430,26 +441,45 @@ class LeanVerifier:
                 "error": str(e),
                 "raw_output": "",
             }
-        finally:
-            try:
-                tmp_file.unlink()
-            except OSError:
-                pass
 
     @staticmethod
     def _extract_suggestions(output: str, tactic: str) -> list:
         """Extract proof suggestions from exact?/apply? output."""
+        def _clean(s: str) -> str:
+            # Drop a leading "[apply]"/"[exact]" tag Lean prepends to the tactic.
+            s = s.strip()
+            if s.startswith("[") and "]" in s:
+                s = s[s.index("]") + 1:].strip()
+            return s.rstrip(",").strip()
+
         suggestions = []
-        for line in output.split("\n"):
-            line = line.strip()
+        lines = output.split("\n")
+        for i, raw in enumerate(lines):
+            line = raw.strip()
             if "Try this:" in line:
-                proof = line.split("Try this:")[-1].strip()
-                suggestions.append({"tactic": proof, "source": tactic})
-            elif tactic == "exact?" and "exact " in line and "error" not in line.lower():
-                proof = line.strip().rstrip(",")
-                if proof.startswith("exact "):
-                    suggestions.append({"tactic": proof, "source": "exact?"})
-        return list({s["tactic"]: s for s in suggestions}.values())
+                after = line.split("Try this:")[-1].strip()
+                if after:
+                    suggestions.append({"tactic": _clean(after), "source": tactic})
+                    continue
+                # Two-line form: "Try this:" alone, tactic on the next non-empty,
+                # non-diagnostic line (e.g. "  [apply] exact True.intro").
+                for nxt in lines[i + 1:]:
+                    n = nxt.strip()
+                    if not n:
+                        continue
+                    if n.lower().startswith(("warning:", "error:")) or ": error:" in n:
+                        break
+                    suggestions.append({"tactic": _clean(n), "source": tactic})
+                    break
+            elif tactic in ("exact?", "apply?") and "error" not in line.lower():
+                cand = _clean(line)
+                if cand.startswith(("exact ", "apply ", "refine ")):
+                    suggestions.append({"tactic": cand, "source": tactic})
+        uniq = {}
+        for s in suggestions:
+            if s["tactic"]:
+                uniq.setdefault(s["tactic"], s)
+        return list(uniq.values())
 
     @staticmethod
     def _extract_axioms(output: str) -> list:
