@@ -220,6 +220,296 @@ flowchart TD
 
 **Durée totale** : ~26h45 (avec side tracks b/c et sous-série SocialChoice complète)
 
+## Prerequisites
+
+- Connaissances de base en logique et mathématiques
+- Familiarité avec Python (numpy, matplotlib)
+- Pour notebooks Lean (b) : Installation Lean 4 + kernel WSL (voir série Lean)
+- Pour notebooks 13-17 : APIs optionnelles (OpenAI pour AlphaZero)
+
+## Installation
+
+### Installation rapide (Python standard - notebooks 1-12, 14-16)
+
+```bash
+pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
+# Note: open_spiel échouera sur Windows (nécessite WSL) - c'est normal pour la majorité des notebooks
+```
+
+### Notebooks nécessitant WSL (Windows uniquement)
+
+GT-13 (CFR/OpenSpiel) et GT-17 (Multi-Agent RL) nécessitent le kernel `Python (GameTheory WSL + OpenSpiel)` :
+
+```bash
+# 1. Dans WSL Ubuntu
+cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
+bash setup_wsl_openspiel.sh
+```
+
+```powershell
+# 2. Côté Windows (PowerShell)
+cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
+.\setup_wsl_kernel.ps1
+```
+
+### Notebooks Lean 4 (2b, 4b, 8b, 15b)
+
+Ces notebooks nécessitent le kernel `Lean 4 (WSL)` :
+
+```bash
+# 1. Dans WSL Ubuntu
+cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
+bash setup_wsl_lean4.sh    # installe elan + Lean 4 + REPL + lean4_jupyter
+```
+
+```powershell
+# 2. Côté Windows (PowerShell)
+cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
+.\setup_lean4_kernel.ps1   # enregistre le kernel lean4-wsl
+```
+
+### Vérification
+
+```bash
+jupyter kernelspec list
+# Doit montrer : python3, gametheory-wsl (optionnel), lean4-wsl (optionnel)
+```
+
+Pour les détails et le dépannage, voir [install_wsl_kernel.md](install_wsl_kernel.md).
+
+### Configuration API (optionnel)
+
+```bash
+cp .env.example .env
+# Éditer .env et ajouter les clés API si nécessaire
+```
+
+## Concepts clés
+
+| Concept | Description |
+|---------|-------------|
+| **Équilibre de Nash** | Profil de stratégies où aucun joueur ne gagne à dévier unilatéralement |
+| **Minimax** | Stratégie qui minimise la perte maximale (jeux à somme nulle) |
+| **Positions P/N** | Positions perdantes (Previous) et gagnantes (Next) en jeux combinatoires |
+| **Sprague-Grundy** | Théorème unifiant l'analyse des jeux combinatoires impartiaux |
+| **CFR** | Counterfactual Regret Minimization - convergence vers Nash |
+| **SPE** | Subgame Perfect Equilibrium - Nash crédible dans tout sous-jeu |
+| **Valeur de Shapley** | Répartition équitable des gains en jeu coopératif |
+| **Core** | Ensemble des allocations stables en jeu coopératif |
+| **Théorème d'Arrow** | Impossibilité d'agrégation parfaite des préférences |
+
+## Ce que chaque notebook apporte
+
+Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun.
+
+### Fil principal (Python)
+
+| # | Notebook | Apport pédagogique |
+|---|----------|-------------------|
+| 1 | Setup | Installation Nashpy/OpenSpiel, premier dilemme du prisonnier |
+| 2 | NormalForm | Matrices de gains, dominance, meilleure réponse, équilibre pur |
+| 3 | Topology2x2 | Classification géométrique des 144 jeux 2x2 (Robinson-Goforth) |
+| 4 | NashEquilibrium | Nash mixte, Lemke-Howson, analyse paramétrique, support enumeration |
+| 5 | ZeroSum-Minimax | Théorème minimax, dualité LP, programmation linéaire pour jeux |
+| 6 | EvolutionTrust | Tournoi Axelrod, tit-for-tat, replicator dynamics, émergence coopération |
+| 6c | RepeatedGames-FolkTheorem | Compagnon formel de GT-6 : Folk Theorem (horizon fini vs infini), condition de crédibilité du grim trigger $\delta \geq (T-R)/(T-P)$, comparaison grim trigger vs tit-for-tat (seuil de patience), ensemble faisable et IR |
+| 7 | ExtensiveForm | Arbres de jeu, ensembles d'information, stratégies comportementales |
+| 8 | CombinatorialGames | Positions P/N, Nim, Grundy values, théorème Sprague-Grundy |
+| 9 | BackwardInduction | Induction arrière, mille-pattes, escalade, engagement |
+| 10 | ForwardInduction-SPE | Induction avant, sous-jeux parfaits, menaces crédibles |
+| 11 | BayesianGames | Types, croyances, équilibre bayésien, information incomplète |
+| 12 | ReputationGames | Signaling, engagement, réputation, cheap talk |
+| 13 | ImperfectInfo-CFR | CFR vanilla, MCCFR, Deep CFR, poker AI |
+| 14 | DifferentialGames | Jeux continus, Stackelberg, boucle ouverte/fermée |
+| 15 | CooperativeGames | Valeur de Shapley, Core, Bondareva-Shapley |
+| 16 | MechanismDesign | Principe de révélation, VCG, matching, enchères |
+| 17 | MultiAgent-RL | NFSP, PSRO, AlphaZero intro, lien vers RL |
+
+### Side tracks Lean 4 (formalisation)
+
+| # | Notebook | Apport pédagogique |
+|---|----------|-------------------|
+| 2b | Lean-Definitions | Formalisation Game2x2, stratégies mixtes, Nash en Lean |
+| 4b | Lean-NashExistence | Brouwer, Kakutani, preuve existence Nash |
+| 5b | Lean-Minimax | Théorème minimax (von Neumann/Sion) prouvé 0-sorry, lake `minimax_lean` |
+| 8b | Lean-CombinatorialGames | PGame Mathlib, Nim formel, Sprague-Grundy |
+| 11b | Lean-BayesianGamesExt | Théorème de Vickrey (enchère au second prix) prouvé 0-sorry, lake `lean_game_defs_ext` |
+| 15b | Lean-CooperativeGames | Axiomes Shapley formels, Core, Bondareva-Shapley |
+
+### Side tracks Python (approfondissement)
+
+| # | Notebook | Apport pédagogique |
+|---|----------|-------------------|
+| 4c | NashExistence-Python | Illustrations numériques point fixe, visualisation convergence |
+| 6c | RepeatedGames-FolkTheorem | Compagnon formel de GT-6 : horizon fini vs infini, condition de crédibilité du grim trigger $\delta \geq (T-R)/(T-P)$, Folk Theorem |
+| 8c | CombinatorialGames-Python | Variantes avancées (Wythoff, Chomp), visualisations |
+| 15c | CooperativeGames-Python | Exemples avancés (Glove Game, politique française) |
+
+### Sous-série SocialChoice (4 notebooks)
+
+| # | Notebook | Apport pédagogique |
+|---|----------|-------------------|
+| SC-01 | Arrow-Impossibility | Preuve d'Arrow (Geonakoplos), simulation, interprétation |
+| SC-02 | Lean-SocialChoice | Arrow + Sen + Median Voter + Peters en Lean, 0 sorry |
+| SC-03 | Voting-Methods | Condorcet, Borda, Copeland, modèle Downs, paradoxe élection |
+| SC-04 | Computational-Aggregation | Arrow encodé en SAT + Z3, UNSAT, relaxation partielle |
+
+## Applications du monde réel
+
+La théorie des jeux n'est pas qu'un objet académique : ses résultats structurent des pans entiers de l'économie numérique et des politiques publiques. Quelques exemples directement liés aux notebooks de la série :
+
+- **Enchères et enchères de spectre** (notebooks 11 et 16) — les mécanismes VCG et leurs dérivés fondent les enchères publicitaires de Google et Meta (des milliards de transactions/jour) ainsi que les ventes de fréquences télécom orchestrées par les États, où le design du mécanisme se chiffre en milliards.
+- **Marchés d'appariement** (notebooks 15 et 16) — l'algorithme de Gale-Shapley et la valeur de Shapley sont au cœur de l'affectation des étudiants aux écoles (New York, Boston), des internes aux hôpitaux (NRMP), et des dons d'organes par échanges croisés ; prix Nobel d'économie 2012 (Roth & Shapley).
+- **IA de poker et bluff optimal** (notebook 13, CFR) — Counterfactual Regret Minimization a permis à Libratus et Pluribus de battre les meilleurs joueurs humains au Texas Hold'em, première résolution d'un jeu majeur à information imparfaite.
+- **Systèmes de vote et gouvernance** (sous-série SocialChoice) — le théorème d'Arrow et les méthodes de Condorcet/Borda éclairent le choix d'un mode de scrutin, du vote citoyen aux DAO blockchain (cf. cross-series SmartContracts).
+- **Coopération et évolution** (notebook 6) — le tournoi d'Axelrod et les dynamiques de replication modélisent l'émergence de la coopération en biologie, en relations internationales et dans les protocoles de réseaux pair-à-pair.
+- **Régulation et dissuasion** (notebooks 10-12) — l'induction arrière, les jeux de réputation et le signaling formalisent la crédibilité des menaces, des banques centrales (politique monétaire) à la stratégie concurrentielle.
+
+### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
+
+GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **huit lakes game-théoriques en propre** — dont les sept phares cartographiés ci-dessous, plus `lean_game_defs` (types partagés) et le lake de référence externe `social_choice_lean_peters` (toolchains détaillées dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md) — harmonisation Mathlib en cours, cf #4362 —, branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
+
+| Famille | Lake phare | Théorème | Branchement notebook |
+| --- | --- | --- | --- |
+| **GameTheory** (choix social) | `social_choice_lean` (cf. `arrow_lean`) | Théorème d'impossibilité d'Arrow + caractérisation Sen + valeur de Shapley (résolu 0 sorry) | Notebooks 16b (Arrow), Argument_Analysis |
+| **GameTheory** (équilibres) | `minimax_lean` (Sion) | Existence d'un équilibre en stratégies mixtes via point fixe (Brouwer-Sion) | GameTheory-5b-Lean-Minimax (companion natif) |
+| **GameTheory** (design) | `lean_game_defs_ext` | Vickrey (enchère au second prix = stratégie dominante), théorème de révélation | GameTheory-11b-Lean-BayesianGamesExt |
+| **GameTheory** (coopératif) | `cooperative_games_lean` (Bondareva-Shapley) | Bondareva-Shapley résolu 0 sorry (#3954), Core non-vide sous balanced | Notebooks 15-15b (coopératif, valeur de Shapley) |
+| **GameTheory** (matching) | `game_theory_lean` (StableMarriage) | Gale-Shapley : existence + optimalité côté proposant | Notebooks 16-2 (matching, Gale-Shapley) |
+| **GameTheory** (jeux répétés) | `repeated_games_lean` | Stratégie grim-trigger **certifiée 0 sorry** (compagnon formel GT-6c, cf #4880) ; stretch restant : théorème Folk complet (`Folk.lean`) | Notebook 6c (RepeatedGames-FolkTheorem) |
+| **GameTheory** (jeux combinatoires) | `conway_cgt_lean` | Visite guidée (`#check`) de la théorie des jeux combinatoires (Conway CGT) | Notebooks 8/8b (CombinatorialGames, Sprague-Grundy) |
+| **Search** (cross-famille) | `search_lean` (cf. `#4048`) | Consistance + heuristique admissible = optimalité | Search-13 (A*), branchement par preuve de correction |
+| **QuantConnect** (cross-famille) | `kelly_lean` (cf. `#4052`) | Kelly `g(f) ≤ g(f*)` + unicité | QC-Py-10 Risk Management, branchement par fraction risquée |
+
+```mermaid
+flowchart LR
+    subgraph SIM["Notebooks GameTheory (simulation)"]
+        N1["Arrow Vote social"]
+        N2["Minimax Sion"]
+        N3["Vickrey Bayesian"]
+        N4["Shapley Core"]
+        N5["Gale-Shapley matching"]
+        N6["Repeated games grim"]
+    end
+    subgraph LEAN["Lakes Lean 4 (preuve)"]
+        L1["social_choice_lean<br/>impossibilité"]
+        L2["minimax_lean<br/>Sion"]
+        L3["lean_game_defs_ext<br/>Vickrey"]
+        L4["cooperative_games_lean<br/>0 sorry #3954"]
+        L5["game_theory_lean<br/>StableMarriage (Gale-Shapley)"]
+        L6["repeated_games_lean<br/>grim_trigger"]
+    end
+    N1 -. "impossibilité prouvée" .-> L1
+    N2 -. "existence point fixe" .-> L2
+    N3 -. "stratégie dominante" .-> L3
+    N4 -. "balanced ⟹ Core non-vide" .-> L4
+    N5 -. "optimalité proposant" .-> L5
+    N6 -. "stabilité sous menace" .-> L6
+    style L1 fill:#e8f5e9
+    style L2 fill:#e8f5e9
+    style L3 fill:#e8f5e9
+    style L4 fill:#e8f5e9
+    style L5 fill:#e8f5e9
+    style L6 fill:#e8f5e9
+```
+
+Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley via `game_theory_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
+
+Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [hub QuantConnect ↔ `kelly_lean`](../QuantConnect/README.md) (PR #5047), [hub central P0 ↔ Lean inter-familles](../README.md) (PR #5049), [hub SymbolicAI Lean](../SymbolicAI/Lean/README.md).
+
+## FAQ / Troubleshooting
+
+### J'ai un Windows, est-ce que je peux suivre toute la série ?
+
+Oui. Les notebooks 1-12 et 14-16 tournent en Python natif sur Windows (Nashpy, numpy, matplotlib). Les notebooks 13 (CFR/OpenSpiel) et 17 (Multi-Agent RL) nécessitent WSL car OpenSpiel ne compile pas nativement sous Windows. Les side tracks Lean (2b, 4b, 8b, 15b) nécessitent aussi WSL pour le kernel `lean4-wsl`. Les scripts d'installation sont dans `scripts/` (voir section Installation).
+
+### Quel est le pré-requis mathématique minimum ?
+
+Algèbre linéaire de base (multiplication de matrices, vecteurs) et probabilités (espérance, loi uniforme). Les concepts de théorie des jeux (Nash, minimax, Shapley) sont introduits progressivement depuis zéro. Aucun prérequis en théorie des jeux n'est nécessaire.
+
+### Faut-il faire les notebooks Lean (side tracks b) ?
+
+Non. Les side tracks Lean sont optionnels et indépendants. Ils sont destinés aux étudiants qui veulent comprendre ce que signifie « prouver » un résultat mathématique dans un assistant de preuve. Le fil principal (Python) suffit pour maîtriser les concepts. Si vous n'avez jamais touché à Lean, commencez par la série [SymbolicAI/Lean](../SymbolicAI/Lean/README.md).
+
+### Quelle est la différence entre Nash pur et Nash mixte ?
+
+Un équilibre de Nash **pur** est un choix déterministe (chaque joueur choisit une seule stratégie). Un équilibre de Nash **mixte** autorise les probabilités (chaque joueur randomise entre plusieurs stratégies avec certaines probabilités). Le notebook 4 (NashEquilibrium) couvre les deux cas et montre que tout jeu fini a au moins un équilibre de Nash mixte (théorème de Nash, 1951).
+
+### Je suis bloqué sur un exercice Lean, où trouver de l'aide ?
+
+Consultez d'abord le notebook [Lean-1-Setup](../SymbolicAI/Lean/Lean-1-Setup.ipynb) pour vérifier votre environnement. La documentation Lean 4 officielle ([Theorem Proving in Lean 4](https://lean-lang.org/theorem_proving_in_lean4/)) est la référence principale. Les exercices Lean de cette série sont conçus pour être accessibles avec les tactiques introduites dans les notebooks ; il n'est pas nécessaire de connaître Mathlib en détail.
+
+### open_spiel échoue à l'installation sur Windows
+
+OpenSpiel ne compile pas nativement sur Windows. C'est attendu — seuls les notebooks 13 (CFR) et 17 (Multi-Agent RL) en ont besoin. Pour les notebooks 1-12 et 14-16, installez seulement `nashpy` et `z3-solver` :
+
+```bash
+pip install nashpy z3-solver matplotlib numpy
+```
+
+Pour GT-13/17 : utilisez le kernel `gametheory-wsl` (WSL Ubuntu) via `scripts/setup_wsl_openspiel.sh`.
+
+### Le kernel lean4-wsl ne démarre pas (timeout)
+
+Le premier démarrage du kernel Lean 4 via WSL peut prendre 30-60 secondes (cold start). Si le kernel timeout :
+
+1. Vérifiez que WSL Ubuntu est opérationnel : `wsl -d Ubuntu -- echo OK`
+2. Vérifiez le wrapper : `wsl -d Ubuntu -- test -f ~/.lean4-kernel-wrapper.py && echo OK`
+3. Relancez le kernel. Si ça persiste, voir [wsl-kernels.md](../../.claude/rules/wsl-kernels.md) pour le diagnostic complet.
+
+### Nashpy retourne plusieurs équilibres
+
+C'est normal : un jeu peut avoir plusieurs équilibres de Nash (en stratégies pures et/ou mixtes). Nashpy les retourne tous. Le notebook 4 explique comment les interpréter et filtrer (équilibres Pareto-dominants, équilibre en stratégies pures privilégié).
+
+### Les calculs d'équilibres sont très lents
+
+La complexité croît exponentiellement avec le nombre de stratégies. Pour les jeux 3x3 et au-delà, Lemke-Howson peut être lent. Alternatives :
+
+- Utilisez `nashpy` avec l'option `method="support-enumeration"` pour les petits jeux
+- Pour les grands jeux, le notebook 13 (CFR) approche l'équilibre par itération
+- Vérifiez que vous n'avez pas une inversion de lignes/colonnes dans la matrice de gains
+
+### Z3/SAT retourne UNSAT trop rapidement
+
+Si l'encodage SAT d'Arrow (SC-04) semble trivial, vérifiez que le nombre de votants et d'alternatives est suffisant dans vos paramètres. L'impossibilité d'Arrow émerge à partir de 3 alternatives et 2 votants — en dessous, le solveur peut trouver une satisfaction.
+
+### Les projets Lake Lean ne buildent pas
+
+Chaque sous-dossier Lean (`social_choice_lean/`, `cooperative_games_lean/`, `game_theory_lean/`, etc.) est un projet Lake indépendant. Pour builder :
+
+```bash
+cd MyIA.AI.Notebooks/GameTheory/social_choice_lean
+lake build
+```
+
+Assurez-vous que `lean --version` correspond à la toolchain spécifiée dans `lean-toolchain` (généralement `stable`). Si les dépendances échouent, essayez `lake exe cache get` puis `lake build`.
+
+## Conclusion / Prochaines étapes
+
+### Ce que vous avez appris
+
+Cette série vous a fait traverser le **langage mathématique de la stratégie** — la modélisation des situations où le résultat d'une décision dépend des choix des autres, de l'enchère à la négociation commerciale, de l'élection au poker. L'arc pédagogique :
+
+- **Le geste fondateur** — modéliser une interaction stratégique sous forme normale (matrices de gains, dominance, meilleure réponse) ou extensive (arbres, ensembles d'information, menaces crédibles), puis y lire la *rationalité* : qu'est-ce qu'un agent peut déduire des croyances d'autrui ? Cette formalisation est le socle commun, du dilemme du prisonnier au design de mécanismes.
+- **La double dualité, délibérément juxtaposée** — d'abord **simulation *vs* preuve** : le notebook Python *montre pourquoi* l'équilibre de Nash est plausible (il émerge des interactions répétées), tandis que le notebook Lean *certifie qu'il existe forcément* (Brouwer/Kakutani, Arrow, Shapley — 0 `sorry` sur les théorèmes majeurs). Ensuite **coopératif *vs* non-coopératif** : d'un côté Nash, minimax et SPE (que joue chaque agent égoïste), de l'autre Shapley, Core et Bondareva-Shapley (comment répartir équitablement la valeur collective). Les deux approches se nourrissent mutuellement.
+- **L'instrument** — Nashpy et OpenSpiel pour la simulation (Lemke-Howson, CFR/Deep CFR, tournois Axelrod, *replicator dynamics*), Z3 pour encoder les impossibilités en SAT, et Lean 4 pour la preuve formelle vérifiée par la machine — du point fixe de Brouwer à l'axiomatique de Shapley et à la preuve d'Arrow.
+- **La finesse** — que la théorie des jeux n'est pas qu'un objet académique mais structure l'économie numérique et les politiques publiques : les mécanismes VCG fondent les enchères publicitaires (des milliards de transactions/jour) et les ventes de spectres télécom ; Gale-Shapley est au cœur de l'affectation étudiants-hôpitaux (prix Nobel 2012) ; CFR a permis à Libratus/Pluribus de résoudre le poker ; le théorème d'Arrow éclaire le choix d'un mode de scrutin, des élections citoyennes aux DAO blockchain.
+
+La thèse est puissante et honnêtement présentée : la théorie des jeux occupe une *position charnière* — point de rencontre entre l'optimisation (maximiser son gain), la logique (raisonner sur les croyances d'autrui) et l'informatique (algorithmes de résolution, formalisation en assistant de preuve) — et aucune autre discipline ne combine ces trois dimensions avec autant de profondeur mathématique et d'applications concrètes.
+
+### Prochaines étapes
+
+- **Approfondir la formalisation** : la série [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) est le prolongement naturel des side tracks Lean (*b*) — elle développe les compétences de preuve (tactiques, types inductifs, Mathlib) qui sous-tendent `Arrow.lean`, `Shapley.lean` et la preuve d'existence de Nash via Brouwer/Kakutani. L'inventaire complet des toolchains, builds et `sorry` résiduels est dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md).
+- **Élargir à l'apprentissage et à la recherche** : [RL](../RL/README.md) (Multi-Agent RL, notebook 17 : NFSP, PSRO, AlphaZero) reprend la théorie des jeux sous l'angle de l'apprentissage — où les stratégies d'équilibre ne sont plus calculées mais *apprises* par interaction ; [Search](../README.md) (Minimax, MCTS) partage les arbres de jeu et l'induction arrière.
+- **Franchir le cap applications** : la sous-série [SocialChoice/](SocialChoice/) (Arrow, Sen, voting, SAT/Z3) et le notebook 16 (MechanismDesign : VCG, matching) ouvrent sur le *design de mécanismes* — comment concevoir des règles d'interaction qui poussent les agents égoïstes vers des résultats collectivement souhaitables. Le pont vers [SmartContracts](../SymbolicAI/SmartContracts/README.md) relie ces mécanismes à la gouvernance on-chain (DAO, vote vérifiable).
+- Pour la pratique : reprenez le notebook 6 (EvolutionTrust) et le tournoi d'Axelrod — comment la coopération *émerge-t-elle* de l'égoïsme même ? Puis confrontez cette intuition au notebook SC-01, où la preuve d'Arrow montre que certaines formes d'agrégation parfaite sont *mathématiquement impossibles*. C'est la tension vivante de la série : l'émergence optimiste *vs* l'impossibilité démontrée.
+
+### Le fil rouge
+
+La théorie des jeux propose un changement de regard sur la décision : ne plus demander « quelle est la meilleure action ? » mais **« quelle est la meilleure action sachant que les autres agents, tout aussi rationnels que moi, raisonnent de même ? »**. La série vous a donné le formalisme (formes normale et extensive, Nash/SPE/minimax/Shapley), la double validation (simulation numérique *et* preuve formelle vérifiée), et le sens des applications (enchères, matching, poker, vote) pour transformer une interaction stratégique en un équilibre analysable — en gardant à l'esprit que cette discipline, couronnée de sept prix Nobel d'économie entre 1994 et 2020, reste l'un des cadres les plus puissants pour penser la coopération, la compétition et la conception des règles du jeu.
+
+---
+
 ## Navigation et Side Tracks
 
 Les **side tracks** approfondissent les concepts du notebook principal :
@@ -292,62 +582,6 @@ Tous les notebooks incluent :
 - Tableaux recapitulatifs
 - Exercices avec solutions complètes
 
-## Ce que chaque notebook apporte
-
-Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun.
-
-### Fil principal (Python)
-
-| # | Notebook | Apport pédagogique |
-|---|----------|-------------------|
-| 1 | Setup | Installation Nashpy/OpenSpiel, premier dilemme du prisonnier |
-| 2 | NormalForm | Matrices de gains, dominance, meilleure réponse, équilibre pur |
-| 3 | Topology2x2 | Classification géométrique des 144 jeux 2x2 (Robinson-Goforth) |
-| 4 | NashEquilibrium | Nash mixte, Lemke-Howson, analyse paramétrique, support enumeration |
-| 5 | ZeroSum-Minimax | Théorème minimax, dualité LP, programmation linéaire pour jeux |
-| 6 | EvolutionTrust | Tournoi Axelrod, tit-for-tat, replicator dynamics, émergence coopération |
-| 6c | RepeatedGames-FolkTheorem | Compagnon formel de GT-6 : Folk Theorem (horizon fini vs infini), condition de crédibilité du grim trigger $\delta \geq (T-R)/(T-P)$, comparaison grim trigger vs tit-for-tat (seuil de patience), ensemble faisable et IR |
-| 7 | ExtensiveForm | Arbres de jeu, ensembles d'information, stratégies comportementales |
-| 8 | CombinatorialGames | Positions P/N, Nim, Grundy values, théorème Sprague-Grundy |
-| 9 | BackwardInduction | Induction arrière, mille-pattes, escalade, engagement |
-| 10 | ForwardInduction-SPE | Induction avant, sous-jeux parfaits, menaces crédibles |
-| 11 | BayesianGames | Types, croyances, équilibre bayésien, information incomplète |
-| 12 | ReputationGames | Signaling, engagement, réputation, cheap talk |
-| 13 | ImperfectInfo-CFR | CFR vanilla, MCCFR, Deep CFR, poker AI |
-| 14 | DifferentialGames | Jeux continus, Stackelberg, boucle ouverte/fermée |
-| 15 | CooperativeGames | Valeur de Shapley, Core, Bondareva-Shapley |
-| 16 | MechanismDesign | Principe de révélation, VCG, matching, enchères |
-| 17 | MultiAgent-RL | NFSP, PSRO, AlphaZero intro, lien vers RL |
-
-### Side tracks Lean 4 (formalisation)
-
-| # | Notebook | Apport pédagogique |
-|---|----------|-------------------|
-| 2b | Lean-Definitions | Formalisation Game2x2, stratégies mixtes, Nash en Lean |
-| 4b | Lean-NashExistence | Brouwer, Kakutani, preuve existence Nash |
-| 5b | Lean-Minimax | Théorème minimax (von Neumann/Sion) prouvé 0-sorry, lake `minimax_lean` |
-| 8b | Lean-CombinatorialGames | PGame Mathlib, Nim formel, Sprague-Grundy |
-| 11b | Lean-BayesianGamesExt | Théorème de Vickrey (enchère au second prix) prouvé 0-sorry, lake `lean_game_defs_ext` |
-| 15b | Lean-CooperativeGames | Axiomes Shapley formels, Core, Bondareva-Shapley |
-
-### Side tracks Python (approfondissement)
-
-| # | Notebook | Apport pédagogique |
-|---|----------|-------------------|
-| 4c | NashExistence-Python | Illustrations numériques point fixe, visualisation convergence |
-| 6c | RepeatedGames-FolkTheorem | Compagnon formel de GT-6 : horizon fini vs infini, condition de crédibilité du grim trigger $\delta \geq (T-R)/(T-P)$, Folk Theorem |
-| 8c | CombinatorialGames-Python | Variantes avancées (Wythoff, Chomp), visualisations |
-| 15c | CooperativeGames-Python | Exemples avancés (Glove Game, politique française) |
-
-### Sous-série SocialChoice (4 notebooks)
-
-| # | Notebook | Apport pédagogique |
-|---|----------|-------------------|
-| SC-01 | Arrow-Impossibility | Preuve d'Arrow (Geonakoplos), simulation, interprétation |
-| SC-02 | Lean-SocialChoice | Arrow + Sen + Median Voter + Peters en Lean, 0 sorry |
-| SC-03 | Voting-Methods | Condorcet, Borda, Copeland, modèle Downs, paradoxe élection |
-| SC-04 | Computational-Aggregation | Arrow encodé en SAT + Z3, UNSAT, relaxation partielle |
-
 ## Quick Start
 
 ```bash
@@ -364,137 +598,6 @@ Pour les notebooks Lean (2b, 4b, 8b, 15b) : installer le kernel `Lean 4 (WSL)` v
 Pour GT-13/17 (OpenSpiel) : installer le kernel `GameTheory WSL` via `scripts/setup_wsl_openspiel.sh`.
 
 ---
-
-## Prerequisites
-
-- Connaissances de base en logique et mathématiques
-- Familiarité avec Python (numpy, matplotlib)
-- Pour notebooks Lean (b) : Installation Lean 4 + kernel WSL (voir série Lean)
-- Pour notebooks 13-17 : APIs optionnelles (OpenAI pour AlphaZero)
-
-## Installation
-
-### Installation rapide (Python standard - notebooks 1-12, 14-16)
-
-```bash
-pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
-# Note: open_spiel échouera sur Windows (nécessite WSL) - c'est normal pour la majorité des notebooks
-```
-
-### Notebooks nécessitant WSL (Windows uniquement)
-
-GT-13 (CFR/OpenSpiel) et GT-17 (Multi-Agent RL) nécessitent le kernel `Python (GameTheory WSL + OpenSpiel)` :
-
-```bash
-# 1. Dans WSL Ubuntu
-cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
-bash setup_wsl_openspiel.sh
-```
-
-```powershell
-# 2. Côté Windows (PowerShell)
-cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
-.\setup_wsl_kernel.ps1
-```
-
-### Notebooks Lean 4 (2b, 4b, 8b, 15b)
-
-Ces notebooks nécessitent le kernel `Lean 4 (WSL)` :
-
-```bash
-# 1. Dans WSL Ubuntu
-cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
-bash setup_wsl_lean4.sh    # installe elan + Lean 4 + REPL + lean4_jupyter
-```
-
-```powershell
-# 2. Côté Windows (PowerShell)
-cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
-.\setup_lean4_kernel.ps1   # enregistre le kernel lean4-wsl
-```
-
-### Vérification
-
-```bash
-jupyter kernelspec list
-# Doit montrer : python3, gametheory-wsl (optionnel), lean4-wsl (optionnel)
-```
-
-Pour les détails et le dépannage, voir [install_wsl_kernel.md](install_wsl_kernel.md).
-
-### Configuration API (optionnel)
-
-```bash
-cp .env.example .env
-# Éditer .env et ajouter les clés API si nécessaire
-```
-
-## FAQ / Troubleshooting
-
-### J'ai un Windows, est-ce que je peux suivre toute la série ?
-
-Oui. Les notebooks 1-12 et 14-16 tournent en Python natif sur Windows (Nashpy, numpy, matplotlib). Les notebooks 13 (CFR/OpenSpiel) et 17 (Multi-Agent RL) nécessitent WSL car OpenSpiel ne compile pas nativement sous Windows. Les side tracks Lean (2b, 4b, 8b, 15b) nécessitent aussi WSL pour le kernel `lean4-wsl`. Les scripts d'installation sont dans `scripts/` (voir section Installation).
-
-### Quel est le pré-requis mathématique minimum ?
-
-Algèbre linéaire de base (multiplication de matrices, vecteurs) et probabilités (espérance, loi uniforme). Les concepts de théorie des jeux (Nash, minimax, Shapley) sont introduits progressivement depuis zéro. Aucun prérequis en théorie des jeux n'est nécessaire.
-
-### Faut-il faire les notebooks Lean (side tracks b) ?
-
-Non. Les side tracks Lean sont optionnels et indépendants. Ils sont destinés aux étudiants qui veulent comprendre ce que signifie « prouver » un résultat mathématique dans un assistant de preuve. Le fil principal (Python) suffit pour maîtriser les concepts. Si vous n'avez jamais touché à Lean, commencez par la série [SymbolicAI/Lean](../SymbolicAI/Lean/README.md).
-
-### Quelle est la différence entre Nash pur et Nash mixte ?
-
-Un équilibre de Nash **pur** est un choix déterministe (chaque joueur choisit une seule stratégie). Un équilibre de Nash **mixte** autorise les probabilités (chaque joueur randomise entre plusieurs stratégies avec certaines probabilités). Le notebook 4 (NashEquilibrium) couvre les deux cas et montre que tout jeu fini a au moins un équilibre de Nash mixte (théorème de Nash, 1951).
-
-### Je suis bloqué sur un exercice Lean, où trouver de l'aide ?
-
-Consultez d'abord le notebook [Lean-1-Setup](../SymbolicAI/Lean/Lean-1-Setup.ipynb) pour vérifier votre environnement. La documentation Lean 4 officielle ([Theorem Proving in Lean 4](https://lean-lang.org/theorem_proving_in_lean4/)) est la référence principale. Les exercices Lean de cette série sont conçus pour être accessibles avec les tactiques introduites dans les notebooks ; il n'est pas nécessaire de connaître Mathlib en détail.
-
-### open_spiel échoue à l'installation sur Windows
-
-OpenSpiel ne compile pas nativement sur Windows. C'est attendu — seuls les notebooks 13 (CFR) et 17 (Multi-Agent RL) en ont besoin. Pour les notebooks 1-12 et 14-16, installez seulement `nashpy` et `z3-solver` :
-
-```bash
-pip install nashpy z3-solver matplotlib numpy
-```
-
-Pour GT-13/17 : utilisez le kernel `gametheory-wsl` (WSL Ubuntu) via `scripts/setup_wsl_openspiel.sh`.
-
-### Le kernel lean4-wsl ne démarre pas (timeout)
-
-Le premier démarrage du kernel Lean 4 via WSL peut prendre 30-60 secondes (cold start). Si le kernel timeout :
-
-1. Vérifiez que WSL Ubuntu est opérationnel : `wsl -d Ubuntu -- echo OK`
-2. Vérifiez le wrapper : `wsl -d Ubuntu -- test -f ~/.lean4-kernel-wrapper.py && echo OK`
-3. Relancez le kernel. Si ça persiste, voir [wsl-kernels.md](../../.claude/rules/wsl-kernels.md) pour le diagnostic complet.
-
-### Nashpy retourne plusieurs équilibres
-
-C'est normal : un jeu peut avoir plusieurs équilibres de Nash (en stratégies pures et/ou mixtes). Nashpy les retourne tous. Le notebook 4 explique comment les interpréter et filtrer (équilibres Pareto-dominants, équilibre en stratégies pures privilégié).
-
-### Les calculs d'équilibres sont très lents
-
-La complexité croît exponentiellement avec le nombre de stratégies. Pour les jeux 3x3 et au-delà, Lemke-Howson peut être lent. Alternatives :
-
-- Utilisez `nashpy` avec l'option `method="support-enumeration"` pour les petits jeux
-- Pour les grands jeux, le notebook 13 (CFR) approche l'équilibre par itération
-- Vérifiez que vous n'avez pas une inversion de lignes/colonnes dans la matrice de gains
-
-### Z3/SAT retourne UNSAT trop rapidement
-
-Si l'encodage SAT d'Arrow (SC-04) semble trivial, vérifiez que le nombre de votants et d'alternatives est suffisant dans vos paramètres. L'impossibilité d'Arrow émerge à partir de 3 alternatives et 2 votants — en dessous, le solveur peut trouver une satisfaction.
-
-### Les projets Lake Lean ne buildent pas
-
-Chaque sous-dossier Lean (`social_choice_lean/`, `cooperative_games_lean/`, `game_theory_lean/`, etc.) est un projet Lake indépendant. Pour builder :
-
-```bash
-cd MyIA.AI.Notebooks/GameTheory/social_choice_lean
-lake build
-```
-
-Assurez-vous que `lean --version` correspond à la toolchain spécifiée dans `lean-toolchain` (généralement `stable`). Si les dépendances échouent, essayez `lake exe cache get` puis `lake build`.
 
 ## Ressources externes
 
@@ -673,109 +776,6 @@ python scripts/verify_notebooks.py MyIA.AI.Notebooks/GameTheory --quick
 # Exécution complète (mode batch)
 BATCH_MODE=true python scripts/verify_notebooks.py MyIA.AI.Notebooks/GameTheory
 ```
-
-## Concepts clés
-
-| Concept | Description |
-|---------|-------------|
-| **Équilibre de Nash** | Profil de stratégies où aucun joueur ne gagne à dévier unilatéralement |
-| **Minimax** | Stratégie qui minimise la perte maximale (jeux à somme nulle) |
-| **Positions P/N** | Positions perdantes (Previous) et gagnantes (Next) en jeux combinatoires |
-| **Sprague-Grundy** | Théorème unifiant l'analyse des jeux combinatoires impartiaux |
-| **CFR** | Counterfactual Regret Minimization - convergence vers Nash |
-| **SPE** | Subgame Perfect Equilibrium - Nash crédible dans tout sous-jeu |
-| **Valeur de Shapley** | Répartition équitable des gains en jeu coopératif |
-| **Core** | Ensemble des allocations stables en jeu coopératif |
-| **Théorème d'Arrow** | Impossibilité d'agrégation parfaite des préférences |
-
-## Applications du monde réel
-
-La théorie des jeux n'est pas qu'un objet académique : ses résultats structurent des pans entiers de l'économie numérique et des politiques publiques. Quelques exemples directement liés aux notebooks de la série :
-
-- **Enchères et enchères de spectre** (notebooks 11 et 16) — les mécanismes VCG et leurs dérivés fondent les enchères publicitaires de Google et Meta (des milliards de transactions/jour) ainsi que les ventes de fréquences télécom orchestrées par les États, où le design du mécanisme se chiffre en milliards.
-- **Marchés d'appariement** (notebooks 15 et 16) — l'algorithme de Gale-Shapley et la valeur de Shapley sont au cœur de l'affectation des étudiants aux écoles (New York, Boston), des internes aux hôpitaux (NRMP), et des dons d'organes par échanges croisés ; prix Nobel d'économie 2012 (Roth & Shapley).
-- **IA de poker et bluff optimal** (notebook 13, CFR) — Counterfactual Regret Minimization a permis à Libratus et Pluribus de battre les meilleurs joueurs humains au Texas Hold'em, première résolution d'un jeu majeur à information imparfaite.
-- **Systèmes de vote et gouvernance** (sous-série SocialChoice) — le théorème d'Arrow et les méthodes de Condorcet/Borda éclairent le choix d'un mode de scrutin, du vote citoyen aux DAO blockchain (cf. cross-series SmartContracts).
-- **Coopération et évolution** (notebook 6) — le tournoi d'Axelrod et les dynamiques de replication modélisent l'émergence de la coopération en biologie, en relations internationales et dans les protocoles de réseaux pair-à-pair.
-- **Régulation et dissuasion** (notebooks 10-12) — l'induction arrière, les jeux de réputation et le signaling formalisent la crédibilité des menaces, des banques centrales (politique monétaire) à la stratégie concurrentielle.
-
-### Pont vers les Preuves Formelles (Lean 4) — différenciant CoursIA
-
-GameTheory occupe une place à part dans la couche Lean : c'est la famille qui aligne le plus directement simulation numérique et preuve formelle. Le Niveau 3 promet de « prouver ce qu'on a calculé » ; cette série tient la promesse par **huit lakes game-théoriques en propre** — dont les sept phares cartographiés ci-dessous, plus `lean_game_defs` (types partagés) et le lake de référence externe `social_choice_lean_peters` (toolchains détaillées dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md) — harmonisation Mathlib en cours, cf #4362 —, branchés sur les notebooks qui les enseignent ou les utilisent). Cartographie inter-familles :
-
-| Famille | Lake phare | Théorème | Branchement notebook |
-| --- | --- | --- | --- |
-| **GameTheory** (choix social) | `social_choice_lean` (cf. `arrow_lean`) | Théorème d'impossibilité d'Arrow + caractérisation Sen + valeur de Shapley (résolu 0 sorry) | Notebooks 16b (Arrow), Argument_Analysis |
-| **GameTheory** (équilibres) | `minimax_lean` (Sion) | Existence d'un équilibre en stratégies mixtes via point fixe (Brouwer-Sion) | GameTheory-5b-Lean-Minimax (companion natif) |
-| **GameTheory** (design) | `lean_game_defs_ext` | Vickrey (enchère au second prix = stratégie dominante), théorème de révélation | GameTheory-11b-Lean-BayesianGamesExt |
-| **GameTheory** (coopératif) | `cooperative_games_lean` (Bondareva-Shapley) | Bondareva-Shapley résolu 0 sorry (#3954), Core non-vide sous balanced | Notebooks 15-15b (coopératif, valeur de Shapley) |
-| **GameTheory** (matching) | `game_theory_lean` (StableMarriage) | Gale-Shapley : existence + optimalité côté proposant | Notebooks 16-2 (matching, Gale-Shapley) |
-| **GameTheory** (jeux répétés) | `repeated_games_lean` | Stratégie grim-trigger **certifiée 0 sorry** (compagnon formel GT-6c, cf #4880) ; stretch restant : théorème Folk complet (`Folk.lean`) | Notebook 6c (RepeatedGames-FolkTheorem) |
-| **GameTheory** (jeux combinatoires) | `conway_cgt_lean` | Visite guidée (`#check`) de la théorie des jeux combinatoires (Conway CGT) | Notebooks 8/8b (CombinatorialGames, Sprague-Grundy) |
-| **Search** (cross-famille) | `search_lean` (cf. `#4048`) | Consistance + heuristique admissible = optimalité | Search-13 (A*), branchement par preuve de correction |
-| **QuantConnect** (cross-famille) | `kelly_lean` (cf. `#4052`) | Kelly `g(f) ≤ g(f*)` + unicité | QC-Py-10 Risk Management, branchement par fraction risquée |
-
-```mermaid
-flowchart LR
-    subgraph SIM["Notebooks GameTheory (simulation)"]
-        N1["Arrow Vote social"]
-        N2["Minimax Sion"]
-        N3["Vickrey Bayesian"]
-        N4["Shapley Core"]
-        N5["Gale-Shapley matching"]
-        N6["Repeated games grim"]
-    end
-    subgraph LEAN["Lakes Lean 4 (preuve)"]
-        L1["social_choice_lean<br/>impossibilité"]
-        L2["minimax_lean<br/>Sion"]
-        L3["lean_game_defs_ext<br/>Vickrey"]
-        L4["cooperative_games_lean<br/>0 sorry #3954"]
-        L5["game_theory_lean<br/>StableMarriage (Gale-Shapley)"]
-        L6["repeated_games_lean<br/>grim_trigger"]
-    end
-    N1 -. "impossibilité prouvée" .-> L1
-    N2 -. "existence point fixe" .-> L2
-    N3 -. "stratégie dominante" .-> L3
-    N4 -. "balanced ⟹ Core non-vide" .-> L4
-    N5 -. "optimalité proposant" .-> L5
-    N6 -. "stabilité sous menace" .-> L6
-    style L1 fill:#e8f5e9
-    style L2 fill:#e8f5e9
-    style L3 fill:#e8f5e9
-    style L4 fill:#e8f5e9
-    style L5 fill:#e8f5e9
-    style L6 fill:#e8f5e9
-```
-
-Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley via `game_theory_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
-
-Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [hub QuantConnect ↔ `kelly_lean`](../QuantConnect/README.md) (PR #5047), [hub central P0 ↔ Lean inter-familles](../README.md) (PR #5049), [hub SymbolicAI Lean](../SymbolicAI/Lean/README.md).
-
-## Conclusion / Prochaines étapes
-
-### Ce que vous avez appris
-
-Cette série vous a fait traverser le **langage mathématique de la stratégie** — la modélisation des situations où le résultat d'une décision dépend des choix des autres, de l'enchère à la négociation commerciale, de l'élection au poker. L'arc pédagogique :
-
-- **Le geste fondateur** — modéliser une interaction stratégique sous forme normale (matrices de gains, dominance, meilleure réponse) ou extensive (arbres, ensembles d'information, menaces crédibles), puis y lire la *rationalité* : qu'est-ce qu'un agent peut déduire des croyances d'autrui ? Cette formalisation est le socle commun, du dilemme du prisonnier au design de mécanismes.
-- **La double dualité, délibérément juxtaposée** — d'abord **simulation *vs* preuve** : le notebook Python *montre pourquoi* l'équilibre de Nash est plausible (il émerge des interactions répétées), tandis que le notebook Lean *certifie qu'il existe forcément* (Brouwer/Kakutani, Arrow, Shapley — 0 `sorry` sur les théorèmes majeurs). Ensuite **coopératif *vs* non-coopératif** : d'un côté Nash, minimax et SPE (que joue chaque agent égoïste), de l'autre Shapley, Core et Bondareva-Shapley (comment répartir équitablement la valeur collective). Les deux approches se nourrissent mutuellement.
-- **L'instrument** — Nashpy et OpenSpiel pour la simulation (Lemke-Howson, CFR/Deep CFR, tournois Axelrod, *replicator dynamics*), Z3 pour encoder les impossibilités en SAT, et Lean 4 pour la preuve formelle vérifiée par la machine — du point fixe de Brouwer à l'axiomatique de Shapley et à la preuve d'Arrow.
-- **La finesse** — que la théorie des jeux n'est pas qu'un objet académique mais structure l'économie numérique et les politiques publiques : les mécanismes VCG fondent les enchères publicitaires (des milliards de transactions/jour) et les ventes de spectres télécom ; Gale-Shapley est au cœur de l'affectation étudiants-hôpitaux (prix Nobel 2012) ; CFR a permis à Libratus/Pluribus de résoudre le poker ; le théorème d'Arrow éclaire le choix d'un mode de scrutin, des élections citoyennes aux DAO blockchain.
-
-La thèse est puissante et honnêtement présentée : la théorie des jeux occupe une *position charnière* — point de rencontre entre l'optimisation (maximiser son gain), la logique (raisonner sur les croyances d'autrui) et l'informatique (algorithmes de résolution, formalisation en assistant de preuve) — et aucune autre discipline ne combine ces trois dimensions avec autant de profondeur mathématique et d'applications concrètes.
-
-### Prochaines étapes
-
-- **Approfondir la formalisation** : la série [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) est le prolongement naturel des side tracks Lean (*b*) — elle développe les compétences de preuve (tactiques, types inductifs, Mathlib) qui sous-tendent `Arrow.lean`, `Shapley.lean` et la preuve d'existence de Nash via Brouwer/Kakutani. L'inventaire complet des toolchains, builds et `sorry` résiduels est dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md).
-- **Élargir à l'apprentissage et à la recherche** : [RL](../RL/README.md) (Multi-Agent RL, notebook 17 : NFSP, PSRO, AlphaZero) reprend la théorie des jeux sous l'angle de l'apprentissage — où les stratégies d'équilibre ne sont plus calculées mais *apprises* par interaction ; [Search](../README.md) (Minimax, MCTS) partage les arbres de jeu et l'induction arrière.
-- **Franchir le cap applications** : la sous-série [SocialChoice/](SocialChoice/) (Arrow, Sen, voting, SAT/Z3) et le notebook 16 (MechanismDesign : VCG, matching) ouvrent sur le *design de mécanismes* — comment concevoir des règles d'interaction qui poussent les agents égoïstes vers des résultats collectivement souhaitables. Le pont vers [SmartContracts](../SymbolicAI/SmartContracts/README.md) relie ces mécanismes à la gouvernance on-chain (DAO, vote vérifiable).
-- Pour la pratique : reprenez le notebook 6 (EvolutionTrust) et le tournoi d'Axelrod — comment la coopération *émerge-t-elle* de l'égoïsme même ? Puis confrontez cette intuition au notebook SC-01, où la preuve d'Arrow montre que certaines formes d'agrégation parfaite sont *mathématiquement impossibles*. C'est la tension vivante de la série : l'émergence optimiste *vs* l'impossibilité démontrée.
-
-### Le fil rouge
-
-La théorie des jeux propose un changement de regard sur la décision : ne plus demander « quelle est la meilleure action ? » mais **« quelle est la meilleure action sachant que les autres agents, tout aussi rationnels que moi, raisonnent de même ? »**. La série vous a donné le formalisme (formes normale et extensive, Nash/SPE/minimax/Shapley), la double validation (simulation numérique *et* preuve formelle vérifiée), et le sens des applications (enchères, matching, poker, vote) pour transformer une interaction stratégique en un équilibre analysable — en gardant à l'esprit que cette discipline, couronnée de sept prix Nobel d'économie entre 1994 et 2020, reste l'un des cadres les plus puissants pour penser la coopération, la compétition et la conception des règles du jeu.
-
----
 
 ## Statistiques catalogue à jour
 
