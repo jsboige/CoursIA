@@ -39,6 +39,27 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 | Durée estimée | ~4-5h |
 | API requise | OpenAI |
 
+## Prérequis
+
+### Python
+
+```bash
+pip install semantic-kernel openai python-dotenv jpype1
+```
+
+### Java
+
+JDK 17+ requis (auto-télécharge via `install_jdk_portable.py`).
+
+### Configuration
+
+```bash
+# Dans .env
+OPENAI_API_KEY=sk-...
+GLOBAL_LLM_SERVICE=openai
+BATCH_MODE=false
+```
+
 ## Notebooks
 
 | # | Notebook | Contenu | Rôle |
@@ -208,27 +229,6 @@ jupyter notebook Argument_Analysis_Agentic-0-init.ipynb
 > **Note** : JDK 17+ est requis mais auto-télécharge via `install_jdk_portable.py` (pas d'installation système).
 
 ---
-
-## Prérequis
-
-### Python
-
-```bash
-pip install semantic-kernel openai python-dotenv jpype1
-```
-
-### Java
-
-JDK 17+ requis (auto-télécharge via `install_jdk_portable.py`).
-
-### Configuration
-
-```bash
-# Dans .env
-OPENAI_API_KEY=sk-...
-GLOBAL_LLM_SERVICE=openai
-BATCH_MODE=false
-```
 
 ## Structure des fichiers
 
