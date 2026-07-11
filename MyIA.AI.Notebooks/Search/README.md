@@ -79,39 +79,6 @@ flowchart LR
 
 En parallèle du parcours Python, la [Partie 4 — MetaGeneticSharp](Part4-Metaheuristics/README.md) propose un **side-track .NET 9** de 19 notebooks (MGS-1 à MGS-19) qui **reconstruit et compose** les métaheuristiques au-dessus de GeneticSharp plutôt que d'importer une boîte noire. Il prolonge Search-5 (GeneticAlgorithms) et Search-11 (Métaheuristiques) et se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la grammaire de composition (jusqu'au TSP) ; **MGS-8 à 14** visualisent les paysages de fitness et mesurent la robustesse aux biais des bancs CEC (décalage, rotation, synergie d'îles) ; **MGS-15 à 18** referment la série sur l'analyse quantitative de paysage et la méta-stratégie (No-Free-Lunch, contrôle de paramètres) ; **MGS-19** démonte le recuit simulé pour éprouver l'opérateur de Metropolis seul. Optionnel pour qui vise le cœur Python, central pour qui veut *construire* ses métaheuristiques en .NET.
 
-## Prérequis
-
-### Python
-
-```bash
-# Creer un environnement
-python -m venv venv
-# Ou: conda create -n search python=3.10
-
-# Installer les dependances
-pip install -r requirements.txt
-```
-
-### C# (.NET Interactive) - pour side tracks uniquement
-
-```bash
-# .NET 9.0 requis
-dotnet --version
-
-# Les packages NuGet sont installes dans les notebooks :
-# - GeneticSharp
-# - SkiaSharp (visualisation)
-```
-
-### MiniZinc (optionnel, pour App-8)
-
-```bash
-# Installer MiniZinc IDE depuis https://www.minizinc.org/
-# Puis: pip install minizinc
-```
-
----
-
 ## Ce que chaque notebook apporte
 
 Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun.
@@ -657,6 +624,39 @@ Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-fi
 **Dépendances** (`requirements.txt`) : `numpy`, `matplotlib`, `ortools`, `z3-solver`, `deap`, `pygad`, `mealpy`, `simanneal`, `networkx`, `python-constraint`, `minizinc`, `choco-solver` (Java bridge via JPype), `openai` (LLM+CSP), `semantic-kernel`, `pulp` (LP relaxation Part 1). C# : .NET 9.0 + `Microsoft.dotnet-interactive` (kernel `.net-csharp` enregistré via `dotnet interactive jupyter install`) + GeneticSharp vendored (`MetaGeneticSharp/`) + IKVM 8.15 (CSP-1/3/4/5/7 C# twin bridge).
 
 **Parité .NET ⇄ Python active (EPIC #4956 marathon)** : la Part 2 CSP est la série la plus avancée sur la parité, avec **7 binômes C#** livrés en cycles 14-18 (PR #5270 CSP-1 Fundamentals Choco 4.10.17, PR #5274 CSP-2 Consistency, PR #5275 CSP-6 Hybridization, PR #5276 CSP-8 Temporal OR-Tools natif, PR #5277 CSP-9 Distributed Yokoo 1992 from-scratch) + sprint #5293 Search-6-AdversarialSearch-Csharp 1250L. Marathon **COMPLET** côté structure (7/9 jumeaux Production-shipped ou OPEN MERGEABLE/UNSTABLE en attente ai-01) avec verdicts SOTA-OK documentés (cf règle EPIC #3801 — vrai outil, pas workaround dégradé).
+
+---
+
+## Prérequis
+
+### Python
+
+```bash
+# Creer un environnement
+python -m venv venv
+# Ou: conda create -n search python=3.10
+
+# Installer les dependances
+pip install -r requirements.txt
+```
+
+### C# (.NET Interactive) - pour side tracks uniquement
+
+```bash
+# .NET 9.0 requis
+dotnet --version
+
+# Les packages NuGet sont installes dans les notebooks :
+# - GeneticSharp
+# - SkiaSharp (visualisation)
+```
+
+### MiniZinc (optionnel, pour App-8)
+
+```bash
+# Installer MiniZinc IDE depuis https://www.minizinc.org/
+# Puis: pip install minizinc
+```
 
 ---
 
