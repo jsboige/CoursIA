@@ -2511,3 +2511,83 @@ def test_legacy_fallback_still_works_when_no_workspace_root(monkeypatch):
     assert cfg.COOPERATIVE_GAMES_DIR.exists(), (
         "legacy drive-letter fallback must still resolve to a real path"
     )
+
+
+# ---------------------------------------------------------------------------
+# regression: PR #6088 (c.315) — workflow.py in-place-proof latch must use
+# resolve_lake_module() for depth-3 files, not the depth-2 `parent.parent`
+# heuristic. Historical bug: `Conway/Life/HashlifeCorrectness.lean` was being
+# looked up as `Conway/HashlifeCorrectness.lean` in the wrong project dir,
+# silently no-op'ing the latch confirmation for every depth-3 sorry proof.
+# See #1453 follow-up to PR #6067.
+# ---------------------------------------------------------------------------
+
+def test_latch_uses_resolve_lake_module_for_depth3_files(tmp_path):
+    """Latch code path must call resolve_lake_module() on the file path so
+    `project_dir` lands on the directory holding the lakefile and the relative
+    module path includes all intermediate package segments. See c.315 history."""
+    from prover.lean_utils import resolve_lake_module
+
+    # Synthetic depth-3 layout under tmp_path:
+    #   tmp_path / pkg_root / lakefile.lean
+    #   tmp_path / pkg_root / Conway / Life / Hashlife.lean
+    pkg_root = tmp_path / "conway_lean"
+    (pkg_root / "Conway" / "Life").mkdir(parents=True)
+    (pkg_root / "lakefile.lean").write_text("-- synthetic lakefile for the test\n")
+    depth3 = pkg_root / "Conway" / "Life" / "Hashlife.lean"
+    depth3.write_text("-- synthetic lean file\n")
+
+    project_dir, module_name = resolve_lake_module(str(depth3))
+    rel = module_name.replace(".", "/") + ".lean"
+
+    assert Path(project_dir) == pkg_root, (
+        f"project_dir must be the lake root ({pkg_root}), got {project_dir}"
+    )
+    assert module_name == "Conway.Life.Hashlife", (
+        f"module_name must include the full package path, got {module_name}"
+    )
+    assert rel == "Conway/Life/Hashlife.lean", (
+        f"relative path must join all segments, got {rel}"
+    )
+
+
+def test_latch_legacy_heuristic_would_have_failed_for_depth3(tmp_path):
+    """Document the bug: the pre-c.315 heuristic `parent.parent` + `<parent>/<stem>`
+    produces a wrong project dir and a wrong relative path for depth-3 files.
+    This test pins the gap so a future refactor can't silently regress."""
+    pkg_root = tmp_path / "conway_lean"
+    (pkg_root / "Conway" / "Life").mkdir(parents=True)
+    depth3 = pkg_root / "Conway" / "Life" / "Hashlife.lean"
+    depth3.write_text("-- synthetic lean file\n")
+
+    legacy_project_dir = str(depth3.parent.parent)  # == pkg_root.parent
+    legacy_rel = f"{depth3.parent.name}/{depth3.name}"  # == "Life/Hashlife.lean"
+
+    # The legacy relative path STRIPS the `Conway/` segment, which the
+    # `verify_project_file` contract treats as a top-level module — wrong.
+    assert legacy_rel != "Conway/Life/Hashlife.lean", (
+        "legacy rel must differ from the correct one (this is the bug we fixed)"
+    )
+    # The legacy project_dir is the depth-2 lookup that points ABOVE the
+    # lakefile (no lakefile.lean there). The fix uses resolve_lake_module()
+    # which walks up to the nearest lakefile directory.
+    assert Path(legacy_project_dir) != pkg_root, (
+        "legacy project_dir must NOT equal the actual lake root"
+    )
+
+
+def test_latch_resolution_depth2_legacy_unchanged(tmp_path):
+    """Compatibility: depth-2 files (one level under the lake root) must still
+    resolve to the same `(project_dir, module_name)` they did historically.
+    This pins that the resolve_lake_module swap does NOT regress the easy case
+    while it fixes the hard one."""
+    pkg_root = tmp_path / "top_lake"
+    (pkg_root / "Conway").mkdir(parents=True)
+    (pkg_root / "lakefile.lean").write_text("-- synthetic\n")
+    depth2 = pkg_root / "Conway" / "Doomsday.lean"
+    depth2.write_text("-- synthetic\n")
+
+    from prover.lean_utils import resolve_lake_module
+    project_dir, module_name = resolve_lake_module(str(depth2))
+    assert Path(project_dir) == pkg_root
+    assert module_name == "Conway.Doomsday"

@@ -893,6 +893,7 @@ class VerifyExecutor(Executor):
         try:
             from pathlib import Path as _LatchPath
             from .verifier import get_verifier as _latch_get_verifier
+            from .lean_utils import resolve_lake_module as _latch_resolve
             _latch_fp = self._sorry_ctx.filepath
             _latch_cur = _LatchPath(_latch_fp).read_text(encoding="utf-8")
             _latch_lines = _latch_cur.split("\n")
@@ -908,10 +909,17 @@ class VerifyExecutor(Executor):
             )
             _latch_now = count_real_sorries(_latch_cur)
             if _latch_line_clear and _latch_now < _latch_orig:
-                _latch_verifier = _latch_get_verifier(
-                    str(_LatchPath(_latch_fp).parent.parent))
-                _latch_rel = (f"{_LatchPath(_latch_fp).parent.name}/"
-                              f"{_LatchPath(_latch_fp).name}")
+                # Resolve the correct Lake project + dotted module name for this
+                # file (walks up to the nearest lakefile). Replaces the legacy
+                # depth-2 heuristic `parent.parent` + `<parent>/<stem>` which
+                # breaks for files deeper than 2 levels under the package root
+                # (e.g. `Conway/Life/HashlifeCorrectness.lean` was being built
+                # as `Conway/HashlifeCorrectness.lean` in the wrong project dir
+                # — silently no-op'ing the latch confirmation for every depth-3
+                # sorry proof). See #1453 follow-up to PR #6067.
+                _latch_project, _latch_module = _latch_resolve(_latch_fp)
+                _latch_verifier = _latch_get_verifier(_latch_project)
+                _latch_rel = _latch_module.replace(".", "/") + ".lean"
                 _latch_build = _latch_verifier.verify_project_file(_latch_rel)
                 # Build-aware re-count: a passing build can still emit
                 # "declaration uses sorry" warnings when the agent swapped an
