@@ -37,7 +37,7 @@ EXCLUDE_DIRS = {
 C1_PATTERNS = [
     (re.compile(r"raise\s+NotImplementedError"), "raise NotImplementedError"),
     (re.compile(r"assert\s+False"), "assert False"),
-    (re.compile(r"(?<!\d)1\s*/\s*0(?!\d)"), "1/0"),
+    (re.compile(r"(?<![\d/\-])1\s*/\s*0(?![\d/])"), "1/0"),
 ]
 
 

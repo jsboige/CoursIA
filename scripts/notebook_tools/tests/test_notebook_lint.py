@@ -189,6 +189,38 @@ class TestScanC1Source:
         hits = scan_c1_source("raise ValueError('bad input')")
         assert hits == []
 
+    def test_csharp_throw_not_implemented_flagged(self):
+        """C# `throw new NotImplementedException()` is the idiomatic stub and
+        the C# equivalent of Python's raise NotImplementedError (#C1, .NET).
+        Found via a Tweety-10 investigation (c.334): the shared detector was
+        Python-pattern-only, so .NET stubs could violate C.1 undetected.
+        """
+        hits = scan_c1_source("throw new NotImplementedException();")
+        assert len(hits) == 1
+        assert "NotImplementedException" in hits[0][1]
+
+    def test_csharp_throw_system_qualified_flagged(self):
+        """Fully-qualified `throw new System.NotImplementedException()` flagged."""
+        hits = scan_c1_source("throw new System.NotImplementedException();")
+        assert len(hits) == 1
+
+    def test_csharp_not_supported_not_flagged(self):
+        """NotSupportedException is a DIFFERENT, legitimate exception (read-only
+        collections, unsupported operations) — must NOT be flagged."""
+        hits = scan_c1_source("throw new NotSupportedException();")
+        assert hits == []
+
+    def test_csharp_catch_not_implemented_not_flagged(self):
+        """Handling a NotImplementedException (catch) is NOT a stub — the throw
+        form is required to flag."""
+        hits = scan_c1_source("catch (NotImplementedException ex) { }")
+        assert hits == []
+
+    def test_csharp_throw_not_implemented_in_comment_not_flagged(self):
+        """Commented-out C# throw is not executable (#5261 comment-awareness)."""
+        hits = scan_c1_source("// throw new NotImplementedException();")
+        assert hits == []
+
 
 # ---------------------------------------------------------------------------
 # check_c1
@@ -450,8 +482,9 @@ class TestLintNotebook:
 # ---------------------------------------------------------------------------
 
 class TestC1Patterns:
-    def test_three_patterns(self):
-        assert len(C1_PATTERNS) == 3
+    def test_four_patterns(self):
+        # Python (raise NotImplementedError, assert False, 1/0) + C# throw.
+        assert len(C1_PATTERNS) == 4
 
     def test_pattern_tuples(self):
         for pattern, desc in C1_PATTERNS:
@@ -464,3 +497,4 @@ class TestC1Patterns:
         assert "raise NotImplementedError" in descs
         assert "assert False" in descs
         assert "1/0" in descs
+        assert any("NotImplementedException" in d for d in descs)
