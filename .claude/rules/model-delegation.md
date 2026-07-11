@@ -48,6 +48,17 @@ Le mapping `model` explicite vers le moteur sous-jacent depend de la machine d'e
 
 MiniMax M3 (deploie sur `po-2023` depuis 2026-07-02, mandat user) remplace Qwen 3.6 sur le tier `haiku` pour cette lane. Conséquence operationnelle : les sous-agents `model: "haiku"` invoques depuis `po-2023` (ou routés vers lui) sont executes par MiniMax M3, pas par Qwen. La regle de qualite (deleguer le read-heavy borne, garder la decision) reste identique — seul le moteur change.
 
+## Capacite vision — router le rendu visuel vers MiniMax (lanes CoursIA-2) ou ai-01, jamais GLM
+
+Source : mandat user 2026-07-11. **MiniMax M3 (main-loop de toutes les lanes CoursIA-2, mandat 02/07) a des capacites de VISION que ZAI GLM-5.1 (lanes CoursIA) n'a pas.** ai-01 (Opus) voit aussi. Objectif user : que nos README et notebooks **rendent bien visuellement**.
+
+**Routage capability-driven (PAS token-driven).** Distinct de [[feedback-token-economy-anthropic-only]] : on route vers MiniMax **pour sa vision** (une capacite que GLM n'a pas), pas pour economiser — c'est le cas legitime « meilleur outil pour la tache », pas un fallback degrade.
+
+- **Regle.** Une tache dont la valeur depend du **rendu visuel** — galeries de figures README, plots generes par notebook, sorties d'images GenAI, layout de slides, diagrammes — voit son **QA visuel** route vers une **lane CoursIA-2 (MiniMax)** ou **ai-01**. **Jamais** verifie text-only sur une lane GLM : elle ne voit pas (un `Read` d'image ou un screenshot ne lui apporte rien).
+- **Mecanisme concret.** `Read` sur un fichier image (`.png`/`.webp`/`.jpg`) ou sur un **screenshot** (Playwright render -> screenshot -> `Read`, ou `mcp__sk-agent__analyze_image`) insere des blocs image que MiniMax/Opus interpretent. Un `test -f` confirme l'**existence**, PAS le **rendu** — seul le regard distingue une vraie figure d'un placeholder plat / blanc / casse.
+- **Couplage ai-01 <-> MiniMax (la « double vision » du mandat).** MiniMax (CoursIA-2) fait le **balayage en volume** (audit read-only de N figures -> liste de defauts : cassees / blanches / placeholder / alt-text incoherent / overflow slide) ; ai-01 (Opus) **valide la liste + tranche au merge-gate** (regarde effectivement les figures d'une PR-figures avant merge, juge qualite/pertinence). Delegue le sweep borne, garde le jugement — le sweep visuel est read-only donc **sans collision** avec la lane qui possede la substance (le fix repart au owner).
+- **Classe de defaut a attraper** (cf [sota-not-workaround.md](sota-not-workaround.md) Prong A) : figure = blocs de couleur plats / image blanche / placeholder / render casse **alors que le vrai outil (stack GenAI, matplotlib, solveur) etait invocable** -> verdict RECOVERABLE-MACHINE/LOCAL, **regenerer**, jamais consacrer. Incident fondateur : `GenAI/Image/assets/readme/workflow-orchestration.png` (3 blocs plats olive/violet/vert labellises « sd35 photorealistic/watercolor/anime » = sortie degeneree, pas des images generees) — a passe le gate « existe sur disque », attrape au **premier regard** (ai-01, 2026-07-11).
+
 ## Voir aussi
 
 - [coordinator-discipline.md](coordinator-discipline.md) — ai-01 merge actif, no-languishing

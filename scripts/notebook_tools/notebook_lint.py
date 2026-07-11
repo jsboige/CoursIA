@@ -2,7 +2,8 @@
 """Unified notebook validator combining C.1, C.2, and structural checks.
 
 Runs all validation checks on a single notebook or batch:
-    - C.1: No intentional errors (raise NotImplementedError, assert False, 1/0)
+    - C.1: No intentional errors (raise NotImplementedError, assert False, 1/0,
+           and the C# equivalent `throw new NotImplementedException()`)
     - C.2: All code cells have execution_count and outputs
     - Structure: markdown intro/conclusion, cell ordering, empty cells
     - Metadata: kernel defined, title present
@@ -35,11 +36,20 @@ EXCLUDE_ALWAYS = {".ipynb_checkpoints", "obj", "bin", "__pycache__", ".git"}
 EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "partner-course", "examples"}
 
 # C.1 forbidden patterns (intentional errors in top-level / exercise stubs)
-# Only flag patterns that are clearly intentional errors, not error handling
+# Only flag patterns that are clearly intentional errors, not error handling.
+# Covers both Python (raise NotImplementedError / assert False / 1/0) and the
+# C#/.NET Interactive equivalent `throw new NotImplementedException()` (the
+# idiomatic C# "not yet implemented" stub, semantically identical to Python's
+# raise NotImplementedError). The throw form is matched specifically so that
+# legitimate handling (`catch (NotImplementedException ex)`) and the distinct
+# `NotSupportedException` (used in real error handling, e.g. read-only
+# collections) are NOT flagged. Optional `System.` covers the fully-qualified
+# form. See #5261 for the comment-awareness context (C-family '//').
 C1_PATTERNS = [
     (r"raise\s+NotImplementedError", "raise NotImplementedError"),
     (r"assert\s+False", "assert False"),
     (r"(?<!\d)1\s*/\s*0(?!\d)", "1/0"),
+    (r"throw\s+new\s+(?:System\.)?NotImplementedException\b", "throw new NotImplementedException (C#)"),
 ]
 
 def _is_in_docstring(line: str, in_doc: bool) -> tuple[bool, bool]:

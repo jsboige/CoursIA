@@ -35,40 +35,11 @@ import Utility.Representation
   - PyMC-1 (PyMC) : estimation de l'utilité espérée par échantillonnage
     a posteriori.
 
-  ---
-
-  # Decision Theory — von Neumann–Morgenstern Expected Utility
-
-  Formalisation of the decision-theoretic foundations of expected utility:
-  lotteries, the four vNM rationality axioms, and the expected-utility
-  representation theorem.
-
-  ## Contents
-  - `Utility.Basic`: lotteries (finite-support distributions), expectation,
-    convex mixtures, affine identities (proved, sorry-free).
-  - `Utility.Axioms`: completeness, transitivity, independence, continuity;
-    `IsRational` bundles the four vNM axioms.
-  - `Utility.Representation`: `IsExpectedUtilityRep`, the sound direction
-    (representation ⟹ rationality, proved sorry-free), affine stability
-    (uniqueness up to positive affine transformation), and the order-theoretic
-    algebra of `≻` / `~` (strict order, equivalence relation, trichotomy). The
-    existence direction is documented as an open milestone.
-
-  ## Status
-  - Proved sorry-free: expectation algebra, all four axioms under a
-    representation, affine stability, and the order-theoretic algebra of strict
-    preference and indifference (strict order + equivalence + trichotomy).
-  - Open (next milestone): the existence direction `IsRational P → ∃ u,
-    IsExpectedUtilityRep u P` (the substantive Herstein–Milnor theorem).
-
-  ## Cross-references
-  - Infer-14 (Infer.NET): Bayesian expected utility under posterior uncertainty.
-  - PyMC-1 (PyMC): expected-utility estimation by posterior sampling.
-
   Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier root
-  aggregator est bilingue inline (FR canonique d'abord, EN en miroir),
-  conformément au pattern canonique `Gittins.lean` du même lake. Les modules
-  substantiels (`Utility.Basic`, `Utility.Axioms`, `Utility.Representation`)
-  vivent dans des fichiers siblings `_en.lean` séparés, auto-découverts par
-  le `globs := #[`Utility.*]` du lakefile.
+  aggregator est **FR canonique**, avec son miroir anglais dans le fichier
+  sibling `Utility_en.lean` (modèle sibling pair ratifié 2026-07-04, cf
+  `code-style.md` §Lean i18n). Les modules substantiels (`Utility.Basic`,
+  `Utility.Axioms`, `Utility.Representation`) vivent dans des fichiers
+  siblings `_en.lean` séparés (auto-découverts par le
+  `globs := #[`Utility.*]` du lakefile).
 -/

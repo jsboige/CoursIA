@@ -28,6 +28,49 @@ La formation couvre deux stacks complémentaires :
 | Kernel | Python 3.11+ |
 | Durée totale | ~7 jours |
 
+## Public cible
+
+- Analystes de données souhaitant intégrer l'IA
+- Data scientists intéressés par les agents
+- Développeurs Python intermédiaires
+
+## Objectifs d'apprentissage
+
+À l'issue de cette série, vous serez capable de :
+
+1. **Construire** un agent LLM avec LangChain (tools, chains, memory) et l'appliquer à des tâches data science concrètes
+2. **Évaluer** quand un agent autonome accélère le travail d'analyse vs une approche manuelle
+3. **Orchestrer** des systèmes multi-agents avec Google ADK (planner-coder, DS-STAR, MLE-STAR)
+4. **Configurer** un pipeline multi-provider (Gemini, OpenAI, vLLM local) via LiteLLM
+5. **Déployer** un agent data science en production (BigQuery, BQML, GCP)
+
+## Quel parcours choisir
+
+### Parcours analyste data science (~3 jours)
+
+Labs 1-7 en séquence. Acquérir les bases Pandas, puis construire des agents LangChain pour automatiser l'analyse de données.
+
+1. Lab 1 -> révision Pandas/Matplotlib/Scikit-Learn
+2. Labs 2-3 -> agents documentaires (RFP, CV)
+3. Labs 4-7 -> data wrangling + agents d'analyse
+
+### Parcours ingénieur ML agentique (~4 jours)
+
+Labs 8-17 en séquence. Monter en complexité avec les frameworks Google ADK et les systèmes multi-agents.
+
+1. Labs 8-9 -> architecture ADK, premier agent
+2. Labs 10-12 -> DS-STAR (data science autonome)
+3. Labs 13-15 -> MLE-STAR (Kaggle, optimisation)
+4. Labs 16-17 -> production (BigQuery, projet final)
+
+### Parcours complet (~7 jours)
+
+Tous les labs en séquence, des fondations NumPy/Pandas jusqu'au déploiement GCP.
+
+### Parcours rapide (~1 jour)
+
+Labs 1 + 6 + 8. Découvrir le pipeline data science, construire un premier agent LangChain, puis un premier agent ADK. Les trois labs les plus représentatifs pour une première prise en main.
+
 ## Structure
 
 ```
@@ -107,6 +150,51 @@ Documentation complète : [02-ML-Cours/README.md](02-ML-Cours/README.md)
 | 6 | [Lab6-First-Agent](PythonAgentsForDataScience/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | Construction d'un agent simple |
 | 7 | [Lab7-Data-Analysis-Agent](PythonAgentsForDataScience/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | Agent pour DataFrames |
 
+## Track AgenticDataScience (Days 4-7)
+
+Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider.
+
+### Day 4 - ADK Foundations (Labs 8-9)
+
+| Lab | Notebook | Objectif |
+|-----|----------|----------|
+| 8 | [ADK-Introduction](AgenticDataScience/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
+| 9 | [First-ADK-Agent](AgenticDataScience/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
+
+### Day 5 - DS-STAR (Labs 10-12)
+
+| Lab | Notebook | Objectif |
+|-----|----------|----------|
+| 10 | [File-Analyzer](AgenticDataScience/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
+| 11 | [Planner-Coder-Loop](AgenticDataScience/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
+| 12 | [DS-Star-Workshop](AgenticDataScience/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
+
+### Day 6 - MLE-STAR (Labs 13-15)
+
+| Lab | Notebook | Objectif |
+|-----|----------|----------|
+| 13 | [Web-Search-SOTA](AgenticDataScience/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Recherche de modèles SOTA |
+| 14 | [Ablation-Refinement](AgenticDataScience/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Optimisation ciblée |
+| 15 | [Kaggle-Challenge](AgenticDataScience/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Compétition Kaggle |
+
+### Day 7 - Production (Labs 16-17)
+
+| Lab | Notebook | Objectif |
+|-----|----------|----------|
+| 16 | [Data-Science-Agent](AgenticDataScience/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Agent BigQuery/BQML |
+| 17 | [Final-Project](AgenticDataScience/Day7-Production/Lab17-Final-Project.ipynb) | Projet intégré |
+
+### Technologies AgenticDataScience
+
+| Catégorie | Technologies |
+|-----------|--------------|
+| **Abstraction** | LiteLLM (multi-provider) |
+| **Google ADK** | google-adk, google-generativeai |
+| **Providers** | Gemini 3.1, vLLM, OpenAI, OpenRouter |
+| **Cloud (Day 7)** | BigQuery, Vertex AI, BQML |
+
+Documentation complète : [AgenticDataScience/README.md](AgenticDataScience/README.md)
+
 ## Technologies
 
 | Catégorie | Technologies |
@@ -138,16 +226,6 @@ pip install langchain langchain-openai langchain-experimental python-dotenv
 OPENAI_API_KEY=sk-...
 ```
 
-## Objectifs d'apprentissage
-
-À l'issue de cette série, vous serez capable de :
-
-1. **Construire** un agent LLM avec LangChain (tools, chains, memory) et l'appliquer à des tâches data science concrètes
-2. **Évaluer** quand un agent autonome accélère le travail d'analyse vs une approche manuelle
-3. **Orchestrer** des systèmes multi-agents avec Google ADK (planner-coder, DS-STAR, MLE-STAR)
-4. **Configurer** un pipeline multi-provider (Gemini, OpenAI, vLLM local) via LiteLLM
-5. **Déployer** un agent data science en production (BigQuery, BQML, GCP)
-
 ## Concepts clés
 
 | Concept | Description |
@@ -156,39 +234,6 @@ OPENAI_API_KEY=sk-...
 | **Tool** | Fonction appelable par l'agent |
 | **Chain** | Séquence d'opérations LLM |
 | **Memory** | Contexte conversationnel |
-
-## Public cible
-
-- Analystes de données souhaitant intégrer l'IA
-- Data scientists intéressés par les agents
-- Développeurs Python intermédiaires
-
-## Quel parcours choisir
-
-### Parcours analyste data science (~3 jours)
-
-Labs 1-7 en séquence. Acquérir les bases Pandas, puis construire des agents LangChain pour automatiser l'analyse de données.
-
-1. Lab 1 -> révision Pandas/Matplotlib/Scikit-Learn
-2. Labs 2-3 -> agents documentaires (RFP, CV)
-3. Labs 4-7 -> data wrangling + agents d'analyse
-
-### Parcours ingénieur ML agentique (~4 jours)
-
-Labs 8-17 en séquence. Monter en complexité avec les frameworks Google ADK et les systèmes multi-agents.
-
-1. Labs 8-9 -> architecture ADK, premier agent
-2. Labs 10-12 -> DS-STAR (data science autonome)
-3. Labs 13-15 -> MLE-STAR (Kaggle, optimisation)
-4. Labs 16-17 -> production (BigQuery, projet final)
-
-### Parcours complet (~7 jours)
-
-Tous les labs en séquence, des fondations NumPy/Pandas jusqu'au déploiement GCP.
-
-### Parcours rapide (~1 jour)
-
-Labs 1 + 6 + 8. Découvrir le pipeline data science, construire un premier agent LangChain, puis un premier agent ADK. Les trois labs les plus représentatifs pour une première prise en main.
 
 ## FAQ / Troubleshooting
 
@@ -277,51 +322,6 @@ Certains agents produisent des outputs longs. Vérifier :
 - [Pandas Documentation](https://pandas.pydata.org/docs/)
 - [LangChain Documentation](https://python.langchain.com/)
 - [OpenAI Cookbook](https://cookbook.openai.com/)
-
-## Track AgenticDataScience (Days 4-7)
-
-Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider.
-
-### Day 4 - ADK Foundations (Labs 8-9)
-
-| Lab | Notebook | Objectif |
-|-----|----------|----------|
-| 8 | [ADK-Introduction](AgenticDataScience/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
-| 9 | [First-ADK-Agent](AgenticDataScience/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
-
-### Day 5 - DS-STAR (Labs 10-12)
-
-| Lab | Notebook | Objectif |
-|-----|----------|----------|
-| 10 | [File-Analyzer](AgenticDataScience/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
-| 11 | [Planner-Coder-Loop](AgenticDataScience/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
-| 12 | [DS-Star-Workshop](AgenticDataScience/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
-
-### Day 6 - MLE-STAR (Labs 13-15)
-
-| Lab | Notebook | Objectif |
-|-----|----------|----------|
-| 13 | [Web-Search-SOTA](AgenticDataScience/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Recherche de modèles SOTA |
-| 14 | [Ablation-Refinement](AgenticDataScience/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Optimisation ciblée |
-| 15 | [Kaggle-Challenge](AgenticDataScience/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Compétition Kaggle |
-
-### Day 7 - Production (Labs 16-17)
-
-| Lab | Notebook | Objectif |
-|-----|----------|----------|
-| 16 | [Data-Science-Agent](AgenticDataScience/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Agent BigQuery/BQML |
-| 17 | [Final-Project](AgenticDataScience/Day7-Production/Lab17-Final-Project.ipynb) | Projet intégré |
-
-### Technologies AgenticDataScience
-
-| Catégorie | Technologies |
-|-----------|--------------|
-| **Abstraction** | LiteLLM (multi-provider) |
-| **Google ADK** | google-adk, google-generativeai |
-| **Providers** | Gemini 3.1, vLLM, OpenAI, OpenRouter |
-| **Cloud (Day 7)** | BigQuery, Vertex AI, BQML |
-
-Documentation complète : [AgenticDataScience/README.md](AgenticDataScience/README.md)
 
 ## Conclusion / Prochaines étapes
 

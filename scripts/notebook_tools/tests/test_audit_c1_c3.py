@@ -134,6 +134,12 @@ class TestC1Patterns:
         # Should NOT match 21/0 or 1/07 (digits adjacent)
         assert not p.search("21/0")
         assert not p.search("1/07")
+        # Should NOT match reward-notation slash-lists (win/loss/draw),
+        # e.g. "+1/-1/0" or "1/0/0" — the "/" is a delimiter, not division.
+        assert not p.search("+1/-1/0")
+        assert not p.search("1/-1/0")
+        assert not p.search("1/0/0")
+        assert not p.search("1/-1/0 pour victoire J1/J2/nul")
 
     def test_no_false_positive_on_variants(self):
         p0, p1, p2 = [p for p, _ in C1_PATTERNS]
