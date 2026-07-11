@@ -205,6 +205,43 @@ Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, et applicatio
 
 ---
 
+## Configuration
+
+### Variables d'environnement (.env)
+
+Copiez `.env.example` vers `.env` et configurez :
+
+```bash
+# Authentification QuantConnect Cloud
+QC_API_USER_ID=your_user_id_here
+QC_API_ACCESS_TOKEN=your_access_token_here
+
+# APIs IA/ML (optionnel, pour notebooks 17, 26)
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+HUGGINGFACE_TOKEN=hf_...
+
+# NewsAPI (gratuit, pour notebook 17)
+NEWSAPI_KEY=your_newsapi_key_here
+```
+
+### Dépendances Python
+
+```bash
+# Créer environnement virtuel
+python -m venv venv
+venv\Scripts\activate  # Windows
+source venv/bin/activate  # Linux/macOS
+
+# Installer dépendances
+pip install -r requirements.txt
+
+# Installer kernel Jupyter
+python -m ipykernel install --user --name=quantconnect --display-name "Python (QuantConnect)"
+```
+
+---
+
 ## Résumé de la Progression
 
 **Total cours linéaire** : **29 notebooks Python** (QC-Py-01 à QC-Py-28 + le 23b, ~33 heures de contenu) + **24 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, **15** Cloud strategies QC-Py-Cloud-01..09, training QC-Py-30..32, dataset workflow), plus 2 notebooks de recherche utilitaires (`research_*.ipynb`).
@@ -354,43 +391,6 @@ Documentation détaillée : [`shared/SHARED_LIBRARY.md`](shared/SHARED_LIBRARY.m
 - [QuantConnect Forum](https://www.quantconnect.com/forum)
 - [LEAN Discussions](https://github.com/QuantConnect/Lean/discussions)
 - [CoursIA Main README](../../README.md)
-
----
-
-## Configuration
-
-### Variables d'environnement (.env)
-
-Copiez `.env.example` vers `.env` et configurez :
-
-```bash
-# Authentification QuantConnect Cloud
-QC_API_USER_ID=your_user_id_here
-QC_API_ACCESS_TOKEN=your_access_token_here
-
-# APIs IA/ML (optionnel, pour notebooks 17, 26)
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-HUGGINGFACE_TOKEN=hf_...
-
-# NewsAPI (gratuit, pour notebook 17)
-NEWSAPI_KEY=your_newsapi_key_here
-```
-
-### Dépendances Python
-
-```bash
-# Créer environnement virtuel
-python -m venv venv
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/macOS
-
-# Installer dépendances
-pip install -r requirements.txt
-
-# Installer kernel Jupyter
-python -m ipykernel install --user --name=quantconnect --display-name "Python (QuantConnect)"
-```
 
 ---
 
