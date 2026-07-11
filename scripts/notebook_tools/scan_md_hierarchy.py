@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
-"""Audit notebook markdown cells for typographic-hierarchy pathologies.
+"""Audit notebook markdown cells for typographic pathologies.
 
 Detects (source-level, render-agnostic):
+  - COLLAPSED-MARKDOWN: a markdown cell whose newlines were stripped, gluing a
+    heading + prose + GFM table rows (`| col ||---|`) + fenced code onto ONE
+    line. Renders as broken text (the #3966 "mal affiche" / "titres
+    difficilement visibles" defect). Signature: the cell contains a table
+    separator fragment (`|` + 2+ dashes) but NO line is a clean GFM separator
+    row (i.e. the separator is glued to other content, not on its own line).
+    NOT caught by the heading checks below — a collapsed cell still parses as
+    valid headings; the table structure is what breaks. See #3966.
   - HINT-AS-HEADING: a heading line (#..######) whose text reads like a hint/step/
     comment/aside (Indice, Astuce, Etape, Conseil, TODO, Note, Remarque, Attention,
     Solution, Exemple...) -> renders in a LARGE font when it should be small/body.
@@ -60,6 +68,59 @@ STEP_COMPOUND_RE = re.compile(
 RAPPEL_REFERENCE_RE = re.compile(
     r'^rappel\s+.*\d',
     re.IGNORECASE)
+# --- COLLAPSED-MARKDOWN detection (#3966) ---
+# A GFM table separator fragment: a pipe followed (after optional spaces) by a
+# run of 2+ dashes. Presence means "the cell contains a table separator SOMEWHERE".
+TABLE_SEP_FRAGMENT_RE = re.compile(r'\|[\s-]*-{2,}')
+# A clean GFM separator/alignment ROW on its own line, optionally blockquote
+# prefixed (`> |---|---|` is a legit blockquoted table, NOT collapsed). The line
+# is made ONLY of pipes / dashes / colons / spaces (after an optional `>`), with
+# a leading pipe and at least one dash run. The trailing pipe is OPTIONAL: GFM
+# allows tables without trailing pipes (`| a | b` / `|---|---`), which are NOT
+# collapsed — requiring a trailing pipe would false-positive on those (caught on
+# Sudoku-6 cell 1, a valid no-trailing-pipe table). A collapsed cell has its
+# separator glued to other content on the same physical line, so NO line matches.
+CLEAN_SEP_LINE_RE = re.compile(r'^\s*>?\s*\|[\s:|-]*-{2,}[\s:|-]*\|?\s*$')
+
+
+def _strip_fenced_code(cell_text):
+    """Blank out fenced-code-block CONTENTS so code is invisible to the detector.
+
+    A file tree (`sensitivity_lean/\n|-- lakefile`) or an ASCII payoff diagram
+    inside a ``` / ~~~ fence is CODE, not a markdown table — its `|--` must NOT
+    trigger the table-separator fragment. Fences are tracked line-by-line via
+    FENCE_RE; fence-marker lines are kept, code lines between them are blanked.
+
+    A truly COLLAPSED cell (newlines stripped, the fence opener ``` glued to a
+    heading like `### Archi \`\`\` ...`) has no real fence structure: the glued
+    line does not START with ``` (FENCE_RE is anchored), so nothing is blanked
+    and the glued table fragment is still detected -> correct (true positive
+    preserved). See Lean-12 cell 16 FP (#3966).
+    """
+    out = []
+    in_fence = False
+    for line in cell_text.split('\n'):
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+            out.append(line)  # keep the fence-marker line itself
+            continue
+        out.append('' if in_fence else line)
+    return '\n'.join(out)
+
+
+def _has_collapsed_markdown(cell_text):
+    """True if a markdown cell's table structure is collapsed (#3966).
+
+    The cell contains a GFM table-separator fragment but none of its lines is a
+    clean separator row -> the separator (and the rows around it) are glued onto
+    one line by a newline-strip event. Fenced code is blanked first so file
+    trees / ASCII art are not mistaken for table fragments. ``cell_text`` is the
+    raw joined source (newlines preserved, NOT splitlines-normalized).
+    """
+    stripped = _strip_fenced_code(cell_text)
+    if not TABLE_SEP_FRAGMENT_RE.search(stripped):
+        return False
+    return not any(CLEAN_SEP_LINE_RE.match(line) for line in stripped.split('\n'))
 
 def scan_notebook(path):
     try:
@@ -72,9 +133,20 @@ def scan_notebook(path):
     for ci, cell in enumerate(nb.get('cells', [])):
         if cell.get('cell_type') != 'markdown':
             continue
-        src = cell.get('source', [])
-        if isinstance(src, str):
-            src = src.splitlines(keepends=False)
+        raw = cell.get('source', [])
+        # cell_text preserves original newlines (collapsed-markdown detection
+        # needs to know whether the separator is on its own line); src is the
+        # splitlines-normalized list used by the heading loop below.
+        if isinstance(raw, str):
+            cell_text = raw
+            src = raw.splitlines(keepends=False)
+        else:
+            cell_text = ''.join(raw)
+            src = raw
+        # COLLAPSED-MARKDOWN (#3966): table separator glued on one line.
+        if _has_collapsed_markdown(cell_text):
+            findings.append({'kind': 'COLLAPSED-MARKDOWN', 'cell': ci, 'level': 0,
+                             'text': cell_text[:90].replace('\n', ' ')})
         is_first_md = not first_md_seen
         first_md_seen = True
         in_fence = False

@@ -4,24 +4,37 @@ Pipeline d'entraînement complet pour modèles ML sur données financières OHLC
 
 ## Aperçu — la diversité méthodologique du pipeline en images
 
-Les notebooks de ce répertoire explorent une gamme de familles de modèles — du HAR économétrique aux Transformers à attention — appliqués à la prévision de la variance réalisée et à la détection de régimes. La galerie ci-dessous présente six sorties de diagnostic extraites des notebooks de recherche ; la plupart documentent des **résultats négatifs** (prévisions pures, sophistication structurelle qui nuit, dilution d'ensemble), reflet honnête du ladder expérimental.
+Les notebooks de ce répertoire explorent une gamme de familles de modèles — du HAR économétrique aux Transformers à attention — appliqués à la prévision de la variance réalisée et à la détection de régimes. Plutôt qu'une galerie séparée du propos, les six sorties de diagnostic ci-dessous sont présentées par paradigme, au plus près de la question qu'elles tranchent ; la plupart documentent des **résultats négatifs** (prévisions pures, sophistication structurelle qui nuit, dilution d'ensemble), reflet honnête du ladder expérimental. Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
-<table>
-<tr>
-<td align="center"><img src="assets/readme/mltp-hmm-regime.png" alt="Détection de régimes HMM — probabilités postérieures par état" width="380"/><br/><sub>HMM regime-switching (m5)</sub></td>
-<td align="center"><img src="assets/readme/mltp-har-rv.png" alt="Décomposition de sauts HAR-RV-J — variance réalisée continue vs discontinue" width="380"/><br/><sub>HAR-RV-J sauts (m12)</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/mltp-dlinear-vol.png" alt="Prévision DLinear — DL linéaire vs baseline HAR" width="380"/><br/><sub>DLinear-vol (m4)</sub></td>
-<td align="center"><img src="assets/readme/mltp-lstm-vol.png" alt="Prévision Log-LSTM — mémoire séquentielle pour la variance réalisée" width="380"/><br/><sub>Log-LSTM RV (m15)</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/mltp-tft-vol.png" alt="Attention temporelle TFT — pondération des variables d'entrée" width="380"/><br/><sub>TFT attention (m9)</sub></td>
-<td align="center"><img src="assets/readme/mltp-ensemble.png" alt="Diagnostic d'ensemble HAR-Kelly — dilution des performances" width="380"/><br/><sub>Ensemble HAR-Kelly (m11e)</sub></td>
-</tr>
-</table>
+### Détection de régimes et structure de la variance
 
-Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+Deux diagnostics ouvrent le ladder : la **détection de régimes** par HMM et la **structure de la variance** par HAR-RV-J. Le HMM ([m5](m5_hmm_regime_research.ipynb)) produit les probabilités postérieures par état (bull/bear/neutral/vol) ; le HAR-RV-J ([m12](m12_har_rv_j_research.ipynb)) décompose la variance réalisée en composante continue et sauts discontinus :
+
+<p align="center">
+  <a href="m5_hmm_regime_research.ipynb"><img src="assets/readme/mltp-hmm-regime.png" alt="Détection de régimes HMM — probabilités postérieures par état" width="380"/></a>
+  <a href="m12_har_rv_j_research.ipynb"><img src="assets/readme/mltp-har-rv.png" alt="Décomposition de sauts HAR-RV-J — variance réalisée continue vs discontinue" width="380"/></a><br>
+  <em>Sorties des notebooks <a href="m5_hmm_regime_research.ipynb">m5</a> (gauche, cellule 6) et <a href="m12_har_rv_j_research.ipynb">m12</a> (droite, cellule 6) : régimes HMM et décomposition HAR-RV-J de la variance.</em>
+</p>
+
+### Prévisions de volatilité : DL linéaire vs séquentiel
+
+Sur la prévision de variance réalisée, le **DLinear** ([m4](m4_dlinear_vol_research.ipynb)) teste si un simple réseau linéaire bat la baseline HAR — un résultat négatif typique (la sophistication linéaire n'apporte pas gain net). Le **Log-LSTM** ([m15](m15_lstm_rv_research.ipynb)) explore la piste de la mémoire séquentielle :
+
+<p align="center">
+  <a href="m4_dlinear_vol_research.ipynb"><img src="assets/readme/mltp-dlinear-vol.png" alt="Prévision DLinear — DL linéaire vs baseline HAR" width="380"/></a>
+  <a href="m15_lstm_rv_research.ipynb"><img src="assets/readme/mltp-lstm-vol.png" alt="Prévision Log-LSTM — mémoire séquentielle pour la variance réalisée" width="380"/></a><br>
+  <em>Sorties des notebooks <a href="m4_dlinear_vol_research.ipynb">m4</a> (gauche, cellule 6) et <a href="m15_lstm_rv_research.ipynb">m15</a> (droite, cellule 6) : prévisions DLinear et Log-LSTM de la variance réalisée.</em>
+</p>
+
+### Attention temporelle et diagnostic d'ensemble
+
+Enfin, le **TFT** ([m9](m9_tft_vol_research.ipynb)) apporte l'attention temporelle (pondération des variables d'entrée), tandis que le diagnostic d'**ensemble HAR-Kelly** ([m11e](m11e_ensemble_research.ipynb)) illustre un résultat négatif central : la dilution des performances quand on combine des experts :
+
+<p align="center">
+  <a href="m9_tft_vol_research.ipynb"><img src="assets/readme/mltp-tft-vol.png" alt="Attention temporelle TFT — pondération des variables d'entrée" width="380"/></a>
+  <a href="m11e_ensemble_research.ipynb"><img src="assets/readme/mltp-ensemble.png" alt="Diagnostic d'ensemble HAR-Kelly — dilution des performances" width="380"/></a><br>
+  <em>Sorties des notebooks <a href="m9_tft_vol_research.ipynb">m9</a> (gauche, cellule 6) et <a href="m11e_ensemble_research.ipynb">m11e</a> (droite, cellule 6) : attention TFT et diagnostic d'ensemble HAR-Kelly.</em>
+</p>
 
 ## Classification type (c) — standalone
 
