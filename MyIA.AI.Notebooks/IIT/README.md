@@ -217,7 +217,7 @@ flowchart TD
 L'IIT n'est pas qu'une spéculation philosophique : elle a engendré des outils utilisés en clinique et alimente l'un des débats les plus vifs des neurosciences.
 
 - **Mesure clinique de la conscience.** Le *Perturbational Complexity Index* (PCI), inspiré des principes de l'IIT, est utilisé pour évaluer la conscience chez des patients non communicants (coma, état végétatif, anesthésie). Le protocole "zap-and-zip" (stimulation TMS + EEG, compression de la réponse) distingue empiriquement les états conscients des états inconscients — une retombée concrète et reproductible d'une théorie de la conscience.
-- **Une théorie concurrente.** L'IIT s'oppose frontalement aux théories de type *Global Workspace* (Dehaene, Baars), qui font de la conscience une diffusion globale de l'information plutôt qu'une intégration causale locale. Des programmes de tests adversariaux (collaboration Templeton) confrontent leurs prédictions sur des données réelles. La série [ICT](ICT-Series/README.md) (strate 5) opérationnalise ce débat dans le dépôt : un pont **IIT ↔ GWT falsifiable** est en construction sur traces d'activations réelles de LLM (module `ict/workspace.py`, mesures d'espace de travail global sur trajectoires SAE).
+- **Une théorie concurrente.** L'IIT s'oppose frontalement aux théories de type *Global Workspace* (Dehaene, Baars), qui font de la conscience une diffusion globale de l'information plutôt qu'une intégration causale locale. Des programmes de tests adversariaux (collaboration Templeton) confrontent leurs prédictions sur des données réelles. La série [ICT](ICT-Series/README.md) (strate 5) opérationnalise ce débat dans le dépôt : un pont **IIT ↔ GWT falsifiable** testé sur traces d'activations réelles de LLM (module `ict/workspace.py`, mesures d'espace de travail global sur trajectoires SAE) — [ICT-24](ICT-Series/ICT-24-WorkspaceIgnition.ipynb) (Gates 22-23, #5875) conclut à une **dissociation** : les pics d'intégration créditée et les événements d'ignition workspace ne co-localisent pas sur S4, les deux théories capturant des choses différentes (négatif honnête tout aussi informatif qu'une co-localisation).
 - **Enjeu pour l'IA.** L'IIT prédit qu'un réseau purement *feed-forward* (comme l'inférence d'un LLM classique) a un Phi nul : il calcule sans "être" conscient, faute de boucles causales intégrées. Cette thèse est centrale dans les discussions sur la conscience artificielle.
 - **Controverse.** Le calcul exact de Phi est computationnellement intractable au-delà de petits réseaux (d'où le coarse-graining du notebook), et la théorie a fait l'objet d'une critique publique retentissante (lettre ouverte de 2023 la qualifiant de "pseudoscience") — un cas d'école pour discuter des critères de scientificité d'une théorie de l'esprit.
 
@@ -322,10 +322,12 @@ Elle progresse en cinq strates — le **tri auto-organisé** transparent (strate
 cross-substrat et la réversibilisation outillée (strate 5, ICT-15 et suivants).
 
 La strate 5 est désormais **ancrée sur un substrat réel** : ICT-21 extrait des trajectoires SAE
-(*sparse autoencoders*) sur les activations d'un LLM (Qwen), et le module `ict/workspace.py` pose
-l'infrastructure d'un **pont falsifiable IIT ↔ GWT** — mesurer un « espace de travail global »
-(*ignition*, *broadcast*) sur les mêmes traces que celles où l'on mesure l'intégration, pour
-confronter empiriquement les deux théories rivales de la section « Portée scientifique » ci-dessus.
+(*sparse autoencoders*) sur les activations d'un LLM (Qwen), et le module `ict/workspace.py` réalise
+un **pont falsifiable IIT ↔ GWT** — mesurer un « espace de travail global »
+(*ignition*, *broadcast*) sur les mêmes traces que celles où l'on mesure l'intégration. La
+confrontation empirique est livrée : [ICT-24](ICT-Series/ICT-24-WorkspaceIgnition.ipynb) (Gates 22-23,
+#5875) conclut à une **dissociation** — les deux théories rivales de la section « Portée scientifique »
+ci-dessus ne co-localisent pas leurs prédictions sur S4 (négatif honnête).
 
 ICT vit dans le sous-répertoire [`ICT-Series/`](ICT-Series/README.md), placé sous IIT pour respecter
 l'ordre de lecture (ICT prolonge IIT). **Voir son [README dédié](ICT-Series/README.md)** pour la liste
