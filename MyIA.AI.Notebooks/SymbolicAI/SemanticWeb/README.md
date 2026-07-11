@@ -150,6 +150,47 @@ Les sidetracks marqués `b-Python` sont des notebooks complémentaires qui prés
 
 ---
 
+## Prérequis
+
+### Pour les notebooks .NET (SW-1 à SW-7)
+
+- .NET SDK 9.0+
+- .NET Interactive (Jupyter kernel)
+- VS Code avec Polyglot Notebooks (recommandé)
+
+### Pour les notebooks Python (SW-8 à SW-13 et sidetracks)
+
+- Python 3.10+
+- pip install -r requirements.txt
+
+### Pour le notebook 12 (GraphRAG)
+
+- Clé API OpenAI ou Anthropic (voir `.env.example`)
+
+## Installation
+
+### 1. Environnement .NET
+
+```bash
+dotnet tool install -g Microsoft.dotnet-interactive
+dotnet interactive jupyter install
+```
+
+### 2. Environnement Python
+
+```bash
+python -m venv venv
+venv\Scripts\activate  # Windows
+pip install -r requirements.txt
+```
+
+### 3. Configuration API (optionnel, pour SW-12)
+
+```bash
+cp .env.example .env
+# Éditer .env avec vos clés API
+```
+
 ## Structure détaillée des notebooks
 
 ### Partie 1 : Fondations RDF (.NET C#)
@@ -417,47 +458,6 @@ Pour les personnes créant des ontologies et des vocabulaires :
 La série SemanticWeb illustre un mouvement profond du dépôt CoursIA : **prendre des données non-structurées et les re-représenter dans un cadre vérifiable**. RDF donne un sens formel à du JSON, OWL ajoute le raisonnement, SHACL ajoute la validation, GraphRAG ancre les LLMs sur des faits. Ce geste — trouver la représentation où le problème se dissout — traverse toutes les séries du dépôt, des CSP (Search) aux preuves Lean (SymbolicAI). La clé de lecture [La mer qui monte](../../../docs/grothendieckian-lens.md) développe ce fil conducteur.
 
 ---
-
-## Prérequis
-
-### Pour les notebooks .NET (SW-1 à SW-7)
-
-- .NET SDK 9.0+
-- .NET Interactive (Jupyter kernel)
-- VS Code avec Polyglot Notebooks (recommandé)
-
-### Pour les notebooks Python (SW-8 à SW-13 et sidetracks)
-
-- Python 3.10+
-- pip install -r requirements.txt
-
-### Pour le notebook 12 (GraphRAG)
-
-- Clé API OpenAI ou Anthropic (voir `.env.example`)
-
-## Installation
-
-### 1. Environnement .NET
-
-```bash
-dotnet tool install -g Microsoft.dotnet-interactive
-dotnet interactive jupyter install
-```
-
-### 2. Environnement Python
-
-```bash
-python -m venv venv
-venv\Scripts\activate  # Windows
-pip install -r requirements.txt
-```
-
-### 3. Configuration API (optionnel, pour SW-12)
-
-```bash
-cp .env.example .env
-# Éditer .env avec vos clés API
-```
 
 ## Technologies et versions
 
