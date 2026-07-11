@@ -1,3 +1,8 @@
+import Astar.Graph
+import Astar.Heuristic
+import Astar.Optimality
+import Astar.Consistency
+
 /-!
 # Astar — root of the `search_lean` sub-lake (A* optimality)
 
@@ -53,8 +58,3 @@ of #4980, piloted in `sudoku_lean` PR #4998).
   optimality guarantee, in direct alignment with the proofs in
   `Astar.Optimality` and `Astar.Consistency`.
 -/
-
-import Astar.Graph
-import Astar.Heuristic
-import Astar.Optimality
-import Astar.Consistency
