@@ -1,6 +1,6 @@
 # Théorie de la Décision Bayésienne (Infer.NET)
 
-[← Série Probas](../../README.md) | [Corpus bayésien Infer (C#) →](../../Infer/README.md) | [Lake Lean `decision_theory_lean` →](../../decision_theory_lean/)
+[← Série Probas](../../README.md) | [↑ Arc Théorie de la Décision](../README.md) | [Corpus bayésien Infer (C#) →](../../Infer/README.md) | [Lake Lean `decision_theory_lean` →](../../decision_theory_lean/)
 
 Arc autonome de **théorie de la décision bayésienne** en Infer.NET : 10 notebooks qui prolongent la modélisation probabiliste (le corpus bayésien [`../../Infer/`](../../Infer/README.md)) jusqu'au **choix d'action sous incertitude**. Un posterior n'est pas une fin — c'est l'**input** d'une politique optimale. Cette série formalise ce passage, de l'utilité espérée aux processus markoviens, jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
 
@@ -10,7 +10,7 @@ Arc autonome de **théorie de la décision bayésienne** en Infer.NET : 10 noteb
 
 ## Pourquoi un arc autonome
 
-Jusqu'à la restructure (#4725), la théorie de la décision était imbriquée dans le corpus bayésien Infer (notebooks 14-21), ce qui masquait la **dualité des deux fils** : *modéliser l'incertitude* (inférence bayésienne) vs *décider face à l'incertitude* (théorie de la décision). L'extraction dans [`DecisionTheory/Infer/`](./) rend ces deux arcs **physiquement indépendants** tout en préservant le continuum pédagogique (le fil décision s'appuie sur les posteriors du corpus bayésien). Le lake [`decision_theory_lean`](../../decision_theory_lean/), à la **racine de la série Probas**, reste visible des deux pistes (Infer.NET et PyMC).
+Jusqu'à la restructuration de la série, la théorie de la décision était imbriquée dans le corpus bayésien Infer (notebooks 14-21), ce qui masquait la **dualité des deux fils** : *modéliser l'incertitude* (inférence bayésienne) vs *décider face à l'incertitude* (théorie de la décision). L'extraction dans [`DecisionTheory/Infer/`](./) rend ces deux arcs **physiquement indépendants** tout en préservant le continuum pédagogique (le fil décision s'appuie sur les posteriors du corpus bayésien). Le lake [`decision_theory_lean`](../../decision_theory_lean/), à la **racine de la série Probas**, reste visible des deux pistes (Infer.NET et PyMC).
 
 ## Vue d'ensemble
 
