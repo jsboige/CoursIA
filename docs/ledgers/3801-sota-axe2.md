@@ -1906,3 +1906,80 @@ Le ML-Training-Pipeline pose une question de recherche **genuinely non-trivial**
 - **Mandat Substance > Sweep honoré** : audit SOTA axe-2 = registre substance (≠ doc-hygiène cappé 1/lane/jour), grain deep ai-01 DECIDED exécuté.
 
 Part of #3801
+
+## Entry #022 — QuantConnect/partner-course-quant-trading (Kit compagnon Jared Broad, EPIC #1621, owner po-2024 strict, c.421)
+
+Famille `MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/` = **14 notebooks canoniques** (sur 28 .ipynb ; 14 artefacts `_output`/`output_v*`/backtests datés/checkpoints filtrés comme non-canonicals), substance owner **po-2024 strict** (EPIC **#1621** « Consolidation QC/Trading » ; cf CLAUDE.md « Livre référence : *Hands-On AI Trading* (Jared Broad), sponsorisé tier Trading Firm »). **Entry = suite du grain deep ai-01 R5** (msg-20260711T155236-qtoglx : « axe-2 SOTA audit EPIC #3801 famille QC, 1 entrée ledger/cycle ») — entry #020 (QC-Py plateforme) → entry #021 (ML-Training-Pipeline #1454) → **entry #022 (partner-course compagnon EPIC #1621)**. Audit read-only, vérification firsthand par script python3 sur les 14 .ipynb canoniques. Worktree `feature/c421-ledger-022-partner-course`. **Numérotation #022** : collision-avoidance — entry #019 Lean 4 PR #6050 toujours OPEN (`gh pr view 6050` G.1 beforehand).
+
+### Métrique (vérifiée firsthand par le worker, script python3 inline sur les 14 .ipynb canoniques)
+
+| Métrique | Valeur | Méthode de vérification |
+|----------|--------|--------------------------|
+| Notebooks canoniques | **14** (sur 28 total, 14 artefacts filtrés) | `glob('**/*.ipynb')` puis filtre `_output`/`output_v`/backtests/checkpoints/`_executor`/`_archive` |
+| Cellules totales | **209** | Script python3 sommation `len(cells)` |
+| Cellules code | **119** | `cell_type == 'code'` |
+| Cellules code `execution_count != null` | **62/119 = 52%** | Script python3 — couche analytics localement exécutée (numpy/pandas/sklearn/xgboost/matplotlib) |
+| Cellules code `execution_count == null` | **57/119** | Script python3 = cellules quantbook QC Cloud des 7 `lean-workspace/*-Researcher` (modalité QC Cloud, cf #020 `Cloud-*` seeds) |
+| Erreurs `output_type: error` | **0** | Script python3 — 0 occurrence sur les 14 .ipynb |
+| Kernelspec `python3` | **13** | Lecture directe metadata |
+| Kernelspec `csharp` | **1** (BTC-MACD-ADX-Researcher) | idem — quantbook C# exécuté (5/5 cells exec) |
+| API QuantBook (`QuantBook` / `qb.`) | **13/14 nb** | Regex — quantbook QC research massivement invoqué |
+| Imports plateforme (`AlgorithmImports`) | **12/14 nb** | Regex `\bAlgorithmImports\b` |
+| Violations C.1 (`raise NotImplementedError` / `assert False` / `1/0`) | **0** | `grep -nE` sur les 14 .ipynb = 0 hit |
+
+### Architecture d'exécution bimodale — pattern de #020 réaffirmé (analytics + quantbook QC Cloud)
+
+La famille partner-course présente la **même architecture bimodale que QC-Py #020** (analytics SOTA-OK + plateforme QC RECOVERABLE-MACHINE by design), vérifiée cellule-par-cellule + structure-répertoire :
+
+1. **Couche analytics (SOTA-OK, 62 cellules exec)** : les notebooks `examples/` + `kit-transitoire/` (6 notebooks) à exécution locale réelle — `pandas`/`numpy`/`sklearn`/`xgboost`/`matplotlib` + `QuantBook` pour le pull data. **Exemples** : `examples/Crypto-MultiCanal/research.ipynb` 15/24 exec (9 exec_null = pull data QC), `examples/Sector-Momentum/{deep_research_optimization,research_robustness}` 6/6 exec, `kit-transitoire/01-ML-RandomForest` 11/11 exec (sklearn), `kit-transitoire/02-ML-XGBoost` 10/10 exec (xgboost), `kit-transitoire/03-Framework-Composite` 9/9 exec.
+
+2. **Couche quantbook QC Cloud (RECOVERABLE-MACHINE by design, 57 cellules exec_null)** : les 7 notebooks `lean-workspace/*-Researcher` (Multi-Layer-EMA, Option-Wheel, Sector-Momentum, BTC-ML, ETF-Pairs) sont des **quantbooks** `from AlgorithmImports import *` + `qb = QuantBook()` + `qb.history(...)` exécutés sur **QC Lab / QC Cloud**, pas localement. **Ce n'est PAS un défaut C.2** — c'est la **modalité d'exécution QC Cloud documentée** (mémoire `feedback-qc-cloud-exec-modalities` + CLAUDE.md QuantConnect « Quantbooks = exigence d'execution via QC Cloud »). Aucun moteur QC n'est installable localement. **Vérifié firsthand** : `Multi-Layer-EMA-Researcher/research.ipynb` c1-c7 = grid search réel (EMA periods fast/slow, RSI thresholds, stop-loss/trailing-stop, correlation BTC/ETH/LTC) — code substantive, pas un stub, disclosure honnête (markdown c0 documente l'objectif). Pas de stripped output.
+
+### Prong B (non-trivialité) — **CONFORME, stratégies de trading réelles multi-niveau**
+
+partner-course est un **cours partenaire QC structuré multi-niveau** (templates starter/intermediate/advanced, kit-transitoire ML progressif, lean-workspace research). Chaque notebook pose une **stratégie de trading réelle non-triviale** :
+- **Sector rotation ML** (RandomForest classification, XGBoost régression, Framework-Composite QC alpha models) — grid search multi-paramètres, walk-forward
+- **Multi-Layer-EMA optimization** (grid search EMA fast/slow + RSI + Bollinger + stop-loss/trailing-stop + correlation analysis)
+- **Option-Wheel research**, **BTC-MACD-ADX**, **ETF-Pairs trading**, **Crypto multi-canal**, **Trend-following**
+Capacités distinctives du moteur QC exercées (QuantBook data pull, QC Framework alpha models, AlgorithmImports). Aucune baseline triviale.
+
+### SOTA Prong A — verdicts cités
+
+| Notebook (chemin court) | Cells/Code/EXEC | SOTA tools | Verdict |
+|-------------------------|-----------------|------------|---------|
+| examples/Crypto-MultiCanal/research | 51/24/15 | pandas, numpy, **qb.**, matplotlib, AlgorithmImports | **SOTA-OK** (9 exec_null = pull data QC) |
+| examples/Sector-Momentum/deep_research_optimization | 13/6/6 | numpy, pandas, matplotlib | **SOTA-OK** |
+| examples/Sector-Momentum/research_robustness | 12/6/6 | numpy, matplotlib, pandas | **SOTA-OK** |
+| kit-transitoire/01-ML-RandomForest/research | 18/11/11 | **qb.**, **sklearn**, QuantBook, AlgorithmImports | **SOTA-OK** (ML réel) |
+| kit-transitoire/02-ML-XGBoost/research | 18/10/10 | **qb.**, **sklearn**, QuantBook, AlgorithmImports | **SOTA-OK** (XGBoost réel) |
+| kit-transitoire/03-Framework-Composite/research | 18/9/9 | **qb.**, QuantBook, AlgorithmImports | **SOTA-OK** (Framework QC) |
+| lean-workspace/BTC-MACD-ADX-Researcher/Research | 12/5/5 (csharp) | **QuantConnect**, qb., QuantBook | **SOTA-OK** (quantbook C# exec) |
+| lean-workspace/BTC-ML-Researcher/research | 12/10/0 | sklearn, QuantBook, qb., AlgorithmImports | **RECOVERABLE-MACHINE** (quantbook QC Cloud) |
+| lean-workspace/BTC-ML-Researcher/ETF-Pairs/research | 2/1/0 | qb., QuantBook | **RECOVERABLE-MACHINE** (quantbook QC Cloud) |
+| lean-workspace/Multi-Layer-EMA-Researcher/research | 11/9/0 | qb., QuantBook, AlgorithmImports | **RECOVERABLE-MACHINE** (quantbook QC Cloud) |
+| lean-workspace/Option-Wheel-Researcher/research | 12/8/0 | qb., QuantBook, AlgorithmImports | **RECOVERABLE-MACHINE** (quantbook QC Cloud) |
+| lean-workspace/Sector-Momentum-Researcher/research | 14/10/0 | qb., QuantBook, AlgorithmImports | **RECOVERABLE-MACHINE** (quantbook QC Cloud) |
+| lean-workspace/Sector-Momentum-Researcher/sector_momentum_research | 10/5/0 | qb., QuantBook, AlgorithmImports | **RECOVERABLE-MACHINE** (quantbook QC Cloud) |
+| lean-workspace/Sector-Momentum-Researcher/sector_momentum_research_v2 | 6/5/0 | QuantBook, qb., AlgorithmImports | **RECOVERABLE-MACHINE** (quantbook QC Cloud) |
+
+### Synthèse
+
+- **EXEC_PROVED global** : couche analytics 62 cells exec (SOTA-OK) + couche quantbook 57 cells exec_null (RECOVERABLE-MACHINE by design, modalité QC Cloud). **0 erreur**, **0 violation C.1**.
+- **Vrais outils SOTA invoqués** : **QuantConnect Algorithm framework** + **QuantBook API** (13/14 nb) + **scikit-learn** + **XGBoost** + numpy/pandas/matplotlib. Kernel `python3` (13) + `csharp` (1, quantbook C# exécuté).
+- **Workaround dégradé** : 0/14 (pas d'ASCII, pas de stub, pas de fake — les quantbooks exec_null sont la modalité QC Cloud documentée, pas un workaround maquillé).
+- **Problème non-trivial** (Prong B) : CONFORME — stratégies de trading réelles multi-niveau (sector rotation ML, EMA optimization grid search, option wheel, pairs trading).
+
+### Owner-lane volet
+
+**po-2024 strict** — EPIC #1621 « Consolidation QC/Trading ». partner-course-quant-trading = kit compagnon Jared Broad (livre *Hands-On AI Trading*), turf QC de po-2024. Suite du grain deep ai-01 R5 (msg-20260711T155236-qtoglx) : famille QC auditée progressivement (#020 QC-Py plateforme → #021 ML-Training #1454 → #022 partner-course #1621). Continuité c.421 post-#6141 MERGED (Einstein forensic) + #6150 MERGED (entry #021).
+
+### Conclusions audit
+
+- **Substance QuantConnect/partner-course-quant-trading = riche et honnête**, 14 notebooks canoniques en architecture bimodale (analytics SOTA-OK + quantbook QC RECOVERABLE-MACHINE by design), cours partenaire multi-niveau sponsorisé Jared Broad, conforme aux règles SOTA-not-workaround (5 verdicts) + C.1/C.2 (modalité QC Cloud) + Stop & Repair.
+- **Pas de fix nécessaire** : audit = SOTA-OK (62 cells analytics EXEC_PROVED) + RECOVERABLE-MACHINE honnête pour la couche quantbook QC (57 cells exec_null = modalité QC Cloud documentée). Aucun PR de substance.
+- **Note structurelle (hors scope audit, signalée)** : le répertoire contient 14 artefacts non-canonicals (`output_v2`, backtests datés, `_executor`, `check_data`, `_archive`) à curer dans une PR de nettoyage future — hors scope axe-2 SOTA (audit focus notebooks canoniques).
+- **Registre varié** : kernels `python3` (13) + `csharp` (1) = 2 kernels. Vrais outils SOTA distinctifs : **QuantConnect framework** + **QuantBook** + **scikit-learn** + **XGBoost**. **Zéro stub** C.1, **zéro workaround** dégradé.
+- **Cumulatif** : entry #022 = 3ᵉ famille QC auditée (partner-course compagnon EPIC #1621) après #020 (QC-Py) + #021 (ML-Training). Le registre compte désormais entries #001-#018 + #020-#022 (entry #019 Lean 4 PR #6050 toujours OPEN). **Bilan famille QC complète** : plateforme QC-Py + ML/training + kit compagnon = axe-2 SOTA QC clos pour po-2024.
+- **Mandat Substance > Sweep honoré** : audit SOTA axe-2 = registre substance (≠ doc-hygiène cappé 1/lane/jour), grain deep ai-01 R5 « 1 entrée/cycle » exécuté.
+
+Part of #3801, #1621
