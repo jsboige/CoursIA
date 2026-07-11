@@ -198,4 +198,35 @@ theorem kelly_unique (β : Bet) (f : ℝ) (hf : Feasible β f) (hfne : f ≠ kel
       _ = 0 := by rw [hgrad0, mul_zero]
   linarith
 
+/-! ## 8. Critère pratique : parier ssi l'edge est positif
+
+La règle de décision opérationnelle du critère de Kelly : la fraction optimale
+`f*` est **strictement positive exactement quand le pari est favorable**
+(`b·p − q > 0`). Inversement, un pari défavorable (`b·p − q < 0`) donne `f* < 0` :
+le maximiseur bascule côté short. Le cas neutre `b·p − q = 0` (pari actuariellement
+équitable) donne `f* = 0` : ne rien parer est optimal. Cette équivalence de signe
+est l'incarnation formelle de la prose de `Growth.lean` (§« edge » `g'(0) = b·p − q`).
+-/
+
+/-- **Fraction de Kelly positive ssi pari favorable** : `f* > 0` exactement quand
+    l'« edge » `b·p − q` est strictement positif (le pari est avantageux, `b·p > q`).
+    C'est le critère pratique de Kelly — ne miser côté long que si l'on a un
+    avantage mathématique. Suit directement de `f* = (b·p − q)/b` avec `b > 0` :
+    le signe de la fraction égale celui du numérateur. -/
+theorem kellyFrac_pos_iff (β : Bet) :
+    0 < kellyFrac β ↔ 0 < β.b * β.p - q β := by
+  unfold kellyFrac
+  rw [lt_div_iff₀ β.hb_pos, zero_mul]
+
+/-- **Edge positif ssi Kelly positive** : le gradient du log-croissance en `f = 0`
+    (l'« edge » `g'(0) = b·p − q`, cf `growthGrad_zero`) est strictement positif
+    exactement quand la fraction optimale `f*` l'est. Concrétise formellement la
+    règle de décision « miser ssi `g'(0) > 0` » : la pente initiale du log-croissance
+    signe la direction de la mise optimale (long si positive, short si négative,
+    flat si nulle). -/
+theorem growthGrad_zero_pos_iff (β : Bet) :
+    0 < growthGrad β 0 ↔ 0 < kellyFrac β := by
+  rw [growthGrad_zero, kellyFrac_pos_iff]
+  constructor <;> intro h <;> linarith [mul_comm β.p β.b]
+
 end KellyLean

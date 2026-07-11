@@ -198,4 +198,34 @@ theorem kelly_unique (β : Bet) (f : ℝ) (hf : Feasible β f) (hfne : f ≠ kel
       _ = 0 := by rw [hgrad0, mul_zero]
   linarith
 
+/-! ## 8. Practical criterion: bet iff the edge is positive
+
+The operational decision rule of the Kelly criterion: the optimal fraction `f*` is
+**strictly positive exactly when the bet is favorable** (`b·p − q > 0`). Conversely,
+an unfavorable bet (`b·p − q < 0`) yields `f* < 0`: the maximizer flips to the short
+side. The neutral case `b·p − q = 0` (actuarially fair bet) yields `f* = 0`: staking
+nothing is optimal. This sign equivalence is the formal counterpart of the prose in
+`Growth.lean` (§ the "edge" `g'(0) = b·p − q`).
+-/
+
+/-- **Kelly fraction positive iff bet is favorable**: `f* > 0` exactly when the
+    "edge" `b·p − q` is strictly positive (the bet is advantageous, `b·p > q`). This
+    is Kelly's practical criterion — only bet the long side if one holds a
+    mathematical edge. Follows directly from `f* = (b·p − q)/b` with `b > 0`: the sign
+    of the fraction equals that of the numerator. -/
+theorem kellyFrac_pos_iff (β : Bet) :
+    0 < kellyFrac β ↔ 0 < β.b * β.p - q β := by
+  unfold kellyFrac
+  rw [lt_div_iff₀ β.hb_pos, zero_mul]
+
+/-- **Positive edge iff positive Kelly**: the log-growth gradient at `f = 0` (the
+    "edge" `g'(0) = b·p − q`, cf `growthGrad_zero`) is strictly positive exactly when
+    the optimal fraction `f*` is. Formally realizes the decision rule "bet iff
+    `g'(0) > 0`": the initial slope of the log-growth signs the direction of the
+    optimal stake (long if positive, short if negative, flat if zero). -/
+theorem growthGrad_zero_pos_iff (β : Bet) :
+    0 < growthGrad β 0 ↔ 0 < kellyFrac β := by
+  rw [growthGrad_zero, kellyFrac_pos_iff]
+  constructor <;> intro h <;> linarith [mul_comm β.p β.b]
+
 end KellyLean_en
