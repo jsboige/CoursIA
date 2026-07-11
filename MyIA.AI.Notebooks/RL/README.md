@@ -49,6 +49,93 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | 12 | [rl_12_distributional_rl](rl_12_distributional_rl.ipynb) | RL distributionnel : C51 (Categorical DQN) depuis zéro, projection catégorielle, politique CVaR | 50-55 min |
 | 13 | [rl_13_curiosity_exploration](rl_13_curiosity_exploration.ipynb) | Exploration par curiosité (RND), motivation intrinsèque, piège d'exploitation | 35-40 min |
 
+## Parcours recommandé
+
+```
+Notebook 1 (Bases SB3)
+    |
+    v
+Notebook 4 (Bandits) ---> Notebook 5 (MDP / Q-Learning) ---> Notebook 6 (DQN / REINFORCE)
+    |                                                          |
+    v                                                          v
+Notebook 2 (Production features)                           Notebook 6b (A2C) ---> Notebook 6c (PPO) ---> Notebook 6d (SAC) ---> Notebook 6e (GRPO)
+    |                                                                               |
+    v                                                                               v
+Notebook 3 (Goal-conditioned RL)                                                 Notebook 7 (Multi-Agent) ---> Notebooks 8-13
+                                                                                 (model-based, offline, shaping, POMDP, distributionnel, curiosité/RND)
+```
+
+| Objectif | Notebooks |
+|----------|-----------|
+| Découverte rapide | 1 uniquement |
+| Exploration et bandits | 4 + 13 (curiosité / RND) |
+| Fondations SB3 | 1 + 2 + 3 |
+| Fondements théoriques | 4 + 5 + 6 + 7 + 8 |
+| Maîtrise complète | 1 à 13 |
+
+### Parcours d'apprentissage
+
+**Phase 1 : Prise en main production (~1h, notebooks 1-2)**
+
+Le notebook 1 pose les bases : vous installez Stable Baselines3, créez votre premier agent PPO sur CartPole, et visualisez ses performances. En 30 minutes, vous avez un agent entraîné qui équilibre un bâton. Le notebook 2 enrichit cette base avec les outils de production : wrappers pour modifier les environnements, callbacks pour monitorer l'entraînement, et multiprocessing pour accélérer les expériences.
+
+**Phase 2 : Problèmes avancés (~1.5h, notebook 3)**
+
+Le notebook 3 introduit les tâches à objectifs (goal-conditioned RL) avec l'algorithme HER (Hindsight Experience Replay). Vous résoudrez un problème de parking autonome où l'agent doit atteindre une position cible. C'est le passage de "équilibrer un bâton" à "garer une voiture" — un saut qualitatif qui montre la puissance du RL.
+
+**Phase 3 : Exploration et bandits (~30min, notebook 4)**
+
+Le notebook 4 pose la question fondatrice du RL : comment choisir entre explorer de nouvelles options et exploiter ce qui fonctionne déjà ? Vous implémenterez des stratégies d'exploration (epsilon-greedy, decaying epsilon, Thompson Sampling) sur un problème de bandits manchots et comparerez leur regret cumulé.
+
+**Phase 4 : Les maths sous le capot (~10h, notebooks 5-13)**
+
+Les notebooks 5 à 12 quittent le framework pour implémenter les algorithmes depuis zéro. Le notebook 5 formalise le problème RL (MDP, équation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe à l'échelle avec les réseaux de neurones : DQN et REINFORCE implémentés en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mécanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 6e clôt la lignée policy-gradient avec **GRPO** (Group Relative Policy Optimization, l'algorithme d'entraînement RL de DeepSeek-R1) : l'avantage y est estimé par comparaison au sein d'un groupe de rollouts, sans réseau critique — le pont le plus direct de la série vers le RLHF des LLMs. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanément, coopèrent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modèle du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset figé (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naïf, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au problème du reward sparse : comment guider l'agent quand la récompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accélère la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulté progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatisé. Le notebook 11 aborde la partial observability : l'agent ne voit plus l'état vrai mais une observation bruitée. Le Tiger Problem (Cassandra 1994) illustre le POMDP, le belief tracking (filtre bayésien) maintient une estimation de l'état caché, et le Q-MDP approximation montre les limites de l'approche tabulaire. Le notebook 12 enrichit l'objectif lui-même : au lieu d'apprendre l'espérance du retour comme un DQN, C51 (Categorical DQN, Bellemare et al. 2017) apprend sa **distribution complète** $Z(s,a)$ sur un support à atomes fixes, via une projection catégorielle de la cible de Bellman — ce qui débloque les politiques sensibles au risque (CVaR) impossibles avec une valeur scalaire, et ouvre la lignée QR-DQN / IQN / Rainbow. Le notebook 13 termine sur l'exploration par motivation intrinsèque : RND (Random Network Distillation) transforme l'erreur de prédiction d'un réseau cible figé en bonus de nouveauté, débloquant les récompenses parcimonieuses hors de portée d'epsilon-greedy.
+
+## Prerequisites
+
+### Connaissances requises
+
+- Python intermédiaire (classes, numpy)
+- Concepts RL de base (agent, environnement, reward)
+- Pas d'expérience RL préalable nécessaire pour le notebook 1
+- Bases PyTorch pour les notebooks 6, 6b, 6c, 6d, 6e (tenseurs, autograd, Module)
+
+### Installation
+
+```bash
+# Environnement Python
+python -m venv venv
+venv\Scripts\activate  # Windows
+
+# Dépendances de base (notebooks 1-4)
+pip install "stable-baselines3[extra]>=2.0.0a4" gymnasium numpy pandas matplotlib
+
+# Pour le notebook 3 (parking environment)
+pip install highway-env moviepy
+
+# Pour le notebook 4 (bandits — pas de dépendance supplémentaire)
+
+# Pour les notebooks 6, 6b, 6c, 6d, 6e (DQN, REINFORCE, A2C, PPO, SAC, GRPO)
+pip install torch
+
+# Pour le notebook 7 (multi-agent)
+pip install "pettingzoo[classic]>=1.24.0"
+```
+
+### Dépendances
+
+| Package | Version | Utilisation |
+|---------|---------|-------------|
+| stable-baselines3 | >=2.0.0a4 | Algorithmes RL (notebooks 1-3) |
+| gymnasium | latest | Interface environnements |
+| numpy | latest | Calcul numérique |
+| pandas | >=2.0 | Tableaux de résultats (notebook 5) |
+| matplotlib | latest | Visualisation |
+| torch | latest | Réseaux de neurones (notebooks 6, 6b, 6c, 6d, 6e) |
+| pettingzoo | >=1.24.0 | Multi-agent (notebook 7) |
+| highway-env | latest | Parking-v0 (notebook 3) |
+| moviepy | latest | Enregistrement vidéo |
+
 ## Contenu détaillé
 
 ### Notebook 1 - Introduction avec PPO et CartPole
@@ -294,93 +381,6 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | TicTacToe-v3 | Jeu à somme nulle | 7 |
 | Dyna Maze / Blocking Maze | Grilles déterministes et changeantes (numpy pur) | 8, 9 |
 | Portefeuille synthétique | Allocation d'actifs, auto-contenu (PyTorch pur, aucune donnée externe) | 6e |
-
-## Prerequisites
-
-### Connaissances requises
-
-- Python intermédiaire (classes, numpy)
-- Concepts RL de base (agent, environnement, reward)
-- Pas d'expérience RL préalable nécessaire pour le notebook 1
-- Bases PyTorch pour les notebooks 6, 6b, 6c, 6d, 6e (tenseurs, autograd, Module)
-
-### Installation
-
-```bash
-# Environnement Python
-python -m venv venv
-venv\Scripts\activate  # Windows
-
-# Dépendances de base (notebooks 1-4)
-pip install "stable-baselines3[extra]>=2.0.0a4" gymnasium numpy pandas matplotlib
-
-# Pour le notebook 3 (parking environment)
-pip install highway-env moviepy
-
-# Pour le notebook 4 (bandits — pas de dépendance supplémentaire)
-
-# Pour les notebooks 6, 6b, 6c, 6d, 6e (DQN, REINFORCE, A2C, PPO, SAC, GRPO)
-pip install torch
-
-# Pour le notebook 7 (multi-agent)
-pip install "pettingzoo[classic]>=1.24.0"
-```
-
-### Dépendances
-
-| Package | Version | Utilisation |
-|---------|---------|-------------|
-| stable-baselines3 | >=2.0.0a4 | Algorithmes RL (notebooks 1-3) |
-| gymnasium | latest | Interface environnements |
-| numpy | latest | Calcul numérique |
-| pandas | >=2.0 | Tableaux de résultats (notebook 5) |
-| matplotlib | latest | Visualisation |
-| torch | latest | Réseaux de neurones (notebooks 6, 6b, 6c, 6d, 6e) |
-| pettingzoo | >=1.24.0 | Multi-agent (notebook 7) |
-| highway-env | latest | Parking-v0 (notebook 3) |
-| moviepy | latest | Enregistrement vidéo |
-
-## Parcours recommandé
-
-```
-Notebook 1 (Bases SB3)
-    |
-    v
-Notebook 4 (Bandits) ---> Notebook 5 (MDP / Q-Learning) ---> Notebook 6 (DQN / REINFORCE)
-    |                                                          |
-    v                                                          v
-Notebook 2 (Production features)                           Notebook 6b (A2C) ---> Notebook 6c (PPO) ---> Notebook 6d (SAC) ---> Notebook 6e (GRPO)
-    |                                                                               |
-    v                                                                               v
-Notebook 3 (Goal-conditioned RL)                                                 Notebook 7 (Multi-Agent) ---> Notebooks 8-13
-                                                                                 (model-based, offline, shaping, POMDP, distributionnel, curiosité/RND)
-```
-
-| Objectif | Notebooks |
-|----------|-----------|
-| Découverte rapide | 1 uniquement |
-| Exploration et bandits | 4 + 13 (curiosité / RND) |
-| Fondations SB3 | 1 + 2 + 3 |
-| Fondements théoriques | 4 + 5 + 6 + 7 + 8 |
-| Maîtrise complète | 1 à 13 |
-
-### Parcours d'apprentissage
-
-**Phase 1 : Prise en main production (~1h, notebooks 1-2)**
-
-Le notebook 1 pose les bases : vous installez Stable Baselines3, créez votre premier agent PPO sur CartPole, et visualisez ses performances. En 30 minutes, vous avez un agent entraîné qui équilibre un bâton. Le notebook 2 enrichit cette base avec les outils de production : wrappers pour modifier les environnements, callbacks pour monitorer l'entraînement, et multiprocessing pour accélérer les expériences.
-
-**Phase 2 : Problèmes avancés (~1.5h, notebook 3)**
-
-Le notebook 3 introduit les tâches à objectifs (goal-conditioned RL) avec l'algorithme HER (Hindsight Experience Replay). Vous résoudrez un problème de parking autonome où l'agent doit atteindre une position cible. C'est le passage de "équilibrer un bâton" à "garer une voiture" — un saut qualitatif qui montre la puissance du RL.
-
-**Phase 3 : Exploration et bandits (~30min, notebook 4)**
-
-Le notebook 4 pose la question fondatrice du RL : comment choisir entre explorer de nouvelles options et exploiter ce qui fonctionne déjà ? Vous implémenterez des stratégies d'exploration (epsilon-greedy, decaying epsilon, Thompson Sampling) sur un problème de bandits manchots et comparerez leur regret cumulé.
-
-**Phase 4 : Les maths sous le capot (~10h, notebooks 5-13)**
-
-Les notebooks 5 à 12 quittent le framework pour implémenter les algorithmes depuis zéro. Le notebook 5 formalise le problème RL (MDP, équation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe à l'échelle avec les réseaux de neurones : DQN et REINFORCE implémentés en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mécanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 6e clôt la lignée policy-gradient avec **GRPO** (Group Relative Policy Optimization, l'algorithme d'entraînement RL de DeepSeek-R1) : l'avantage y est estimé par comparaison au sein d'un groupe de rollouts, sans réseau critique — le pont le plus direct de la série vers le RLHF des LLMs. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanément, coopèrent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modèle du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset figé (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naïf, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au problème du reward sparse : comment guider l'agent quand la récompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accélère la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulté progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatisé. Le notebook 11 aborde la partial observability : l'agent ne voit plus l'état vrai mais une observation bruitée. Le Tiger Problem (Cassandra 1994) illustre le POMDP, le belief tracking (filtre bayésien) maintient une estimation de l'état caché, et le Q-MDP approximation montre les limites de l'approche tabulaire. Le notebook 12 enrichit l'objectif lui-même : au lieu d'apprendre l'espérance du retour comme un DQN, C51 (Categorical DQN, Bellemare et al. 2017) apprend sa **distribution complète** $Z(s,a)$ sur un support à atomes fixes, via une projection catégorielle de la cible de Bellman — ce qui débloque les politiques sensibles au risque (CVaR) impossibles avec une valeur scalaire, et ouvre la lignée QR-DQN / IQN / Rainbow. Le notebook 13 termine sur l'exploration par motivation intrinsèque : RND (Random Network Distillation) transforme l'erreur de prédiction d'un réseau cible figé en bonus de nouveauté, débloquant les récompenses parcimonieuses hors de portée d'epsilon-greedy.
 
 ## Concepts clés
 
