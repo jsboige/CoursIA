@@ -4,7 +4,7 @@
 
 ## Série en quelques mots
 
-L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série complète de **8 notebooks** (z3-solver + matplotlib), de la satisfaction de contraintes à l'optimisation avancée, à l'ordonnancement combinatoire et au pont déclaratif avec la série sœur Z3.Linq (C#).
+L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série complète de **11 notebooks** (z3-solver + matplotlib), de la satisfaction de contraintes à l'optimisation avancée, à l'ordonnancement combinatoire, aux énigmes logiques (CSP), à l'arithmétique symbolique (cryptarithmes), à la coloration de graphe (NP-complet) et au pont déclaratif avec la série sœur Z3.Linq (C#).
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
 
@@ -54,6 +54,9 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 | 06ᶜˢ | [Optimisation avancée (twin C# .NET)](Z3-Python-06-Advanced-Optimization-Csharp.ipynb) | Parité .NET : `MkOptimize`, `MkMaximize`/`MkMinimize`, front de Pareto, `AssertSoft` (MaxSAT) via `Microsoft.Z3` (NuGet) | ~40 min | PRODUCTION |
 | 07 | [Du style déclaratif LINQ au solveur Z3](Z3-Python-07-Style-Declaratif-Linq.ipynb) | Pont C# Z3.Linq ↔ pyz3 : `assert_and_track`, `unsat_core`, coloration de graphe (Australie) | ~30 min | PRODUCTION |
 | 08 | [Ordonnancement (Job-Shop Scheduling)](Z3-Python-08-Ordonnancement.ipynb) | `Optimize.minimize`, contrainte disjonctive `Or(...)`, makespan minimal, diagramme de Gantt | ~35 min | PRODUCTION |
+| 09 | [L'énigme d'Einstein (Zebra puzzle)](Z3-Python-09-Enigme-Einstein.ipynb) | Encodage par position, `Distinct`, adjacences, satisfiabilité vs optimisation, unicité prouvée | ~30 min | PRODUCTION |
+| 10 | [Cryptarithmes (SEND + MORE = MONEY)](Z3-Python-10-Cryptarithmetic.ipynb) | `Int`, `Distinct`, équation positionnelle, propagation vs brute force, retenues déduites | ~25 min | PRODUCTION |
+| 11 | [Coloration de graphe (Petersen)](Z3-Python-11-Graph-Coloring.ipynb) | `Int` par sommet, contraintes d'arêtes `!=`, recherche linéaire du nombre chromatique, `unsat` = preuve d'optimalité | ~30 min | PRODUCTION |
 
 ### Fil pédagogique
 
@@ -65,6 +68,9 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 6. **Notebook 06** explore l'optimisation avancée : contraintes hiérarchiques pondérées, objectifs multiples, front de Pareto et MaxSAT (contraintes souples)
 7. **Notebook 07** fait le pont avec la série sœur C# Z3.Linq : il montre que l'idiome déclaratif LINQ (`where`/`select`) et l'API impérative pyz3 (`s.add`) expriment la même intention, puis exploite le noyau d'insatisfiabilité (`unsat_core`) et la coloration de graphe (carte d'Australie) pour révéler où le déclaratif surpasse l'impératif
 8. **Notebook 08** applique l'optimisation à l'ordonnancement de tâches (job-shop scheduling, NP-difficile) : la contrainte disjonctive `Or(s_a + d_a ≤ s_b, s_b + d_b ≤ s_a)` (exclusion mutuelle sur une machine) et l'objectif de makespan minimal (`Optimize.minimize`) révèlent où le solveur surpasse une heuristique gloutonne FIFO — l'optimum trouvé (8 h) écrase le glouton (14 h)
+9. **Notebook 09** illustre la **satisfiabilité** pure (versus l'optimisation du 08) sur l'énigme d'Einstein : l'encodage par position (25 variables entières) transforme un puzzle qualitatif en contraintes arithmétiques (`Distinct`, égalités, adjacences), et `Solver` trouve l'unique solution en quelques millisecondes là où la brute force affronte (5!)^5 = 24,9 milliards de combinaisons — l'unicité est **prouvée** par négation (`unsat`)
+10. **Notebook 10** généralise à l'**arithmétique symbolique sur entiers** avec les cryptarithmes (`SEND + MORE = MONEY`) : chaque lettre est un `Int` dans `{0..9}`, `Distinct` impose l'unicité, et l'équation positionnelle (`1000·S + 100·E + …`) est résolue par propagation — Z3 trouve l'unique solution (`9567 + 1085 = 10652`) en millisecondes tandis que la brute force énumère `P(10,8) = 1 814 400` candidats (~9 s), illustrant le gain du paradigme déclaratif
+11. **Notebook 11** aborde la **coloration de graphe** (NP-complet) sur le graphe de Petersen : une variable `Int` par sommet, des contraintes d'arêtes `C_a != C_b`, et une **recherche linéaire sur k** qui trouve le nombre chromatique `chi = 3` **et le prouve minimal** (`k = 2` → `unsat`). Là où le glouton first-fit hésite (3 ou 4 couleurs selon l'ordre) sans jamais certifier l'optimum, le verdict `unsat` de Z3 est une **preuve formelle** d'impossibilité — la double capacité (trouver ET prouver) est le cœur de l'apport SMT en optimisation combinatoire
 
 ## Concepts clés
 
