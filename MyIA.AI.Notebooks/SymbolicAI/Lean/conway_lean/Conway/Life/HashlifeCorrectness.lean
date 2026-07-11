@@ -1060,6 +1060,67 @@ theorem padCenter2_correct_block_level1 :
     (padCenter2 c).toCellsAux (-3 : Int) (-3 : Int) = c.toCellsAux 0 0 := by
   native_decide
 
+/-! ### N2 step 3 bridge: `padCenter2` margin ≥ Chebyshev jump reach
+
+The geometric precondition for `p5_large_n_jump`: the `padCenter2`
+margin `(3·2^(k-1))` strictly contains the Hashlife jump reach
+(`2^k`) for any level-`k ≥ 1` MacroCell. Proving this eliminates the
+last geometric question before `p5_large_n_jump` can be assembled:
+
+    a level-`k` MacroCell has side `2^k`; padded by 2 levels it has
+    side `2^(k+2) = 4·2^k`; the per-side margin is `(4·2^k - 2^k)/2
+    = 3·2^(k-1)`. The Hashlife jump size is `jumpSize k = 2^k`, and
+    by `evolve_reach_chebyshev` (lightCone.lean L270-298, N2 step 2),
+    any cell alive after `2^k` generations lies within Chebyshev
+    distance `2^k` of an initial cell. Since `2^k ≤ 3·2^(k-1)` for
+    `k ≥ 1`, the Chebyshev reach fits inside the margin with a factor
+    of 3/2 to spare.
+
+This is the **pure-arithmetic half** of the light-cone ↔ padding
+bridge. It is independently provable (no coordinate hypotheses, no
+`MacroCell` arguments), so it can be wired into `p5_large_n_jump`
+once the P4 inductive step (`p4_succ_membership`) closes.
+
+Sorry-free, additive, no existing sorries modified (§D anti-regression
+safe). EPIC #3846 (N2 step 3, research-Long dedicated session). -/
+
+/-- **Pad-margin ≥ jump-reach** (pure arithmetic, sorry-free).
+    For a level-`k ≥ 1` MacroCell, the per-side `padCenter2` margin
+    `3·2^(k-1)` is strictly larger than the Hashlife jump size `2^k`
+    — i.e. the margin contains the Chebyshev reach of the jump.
+    Equivalently, the side length `4·2^k` of the padded cell exceeds
+    the jump reach `2·2^k` (Chebyshev radius `2^k` doubled) by a
+    factor of 2.
+
+    Proof: distribute `3 = 1 + 2`, reduce goal to
+    `2^k ≤ 2^(k-1) + 2·2^(k-1)`, then rewrite
+    `2·2^(k-1) = 2^((k-1)+1) = 2^k` via `pow_succ'` and the
+    `(k-1)+1 = k` linear fact (the only piece `omega` closes here;
+    the actual power rewrite is not linear, hence explicit). Finally
+    `Nat.add_comm` puts the goal in the form `2^k ≤ 2^k + 2^(k-1)`,
+    closed by `Nat.le_add_right`. -/
+theorem padCenter2_margin_ge_jumpReach (k : Nat) (hk : 1 ≤ k) :
+    (2 : Nat)^k ≤ (3 : Nat) * (2 : Nat)^(k - 1) := by
+  have hk_eq : (k - 1) + 1 = k := by omega
+  rw [show (3 : Nat) = 1 + 2 from rfl, Nat.add_mul, Nat.one_mul]
+  have h2k : (2 : Nat) * (2 : Nat)^(k - 1) = (2 : Nat)^k := by
+    rw [← pow_succ', hk_eq]
+  rw [h2k, Nat.add_comm]
+  exact Nat.le_add_right _ _
+
+/-- **Strict margin headroom** (consequence of the above).
+    The margin exceeds the reach by exactly `2^(k-1)` cells per side —
+    a 50% headroom over the tight Chebyshev-`2^k` ball. -/
+theorem padCenter2_margin_strictly_gt_jumpReach (k : Nat) (hk : 1 ≤ k) :
+    (2 : Nat)^k < (3 : Nat) * (2 : Nat)^(k - 1) := by
+  have hk_eq : (k - 1) + 1 = k := by omega
+  rw [show (3 : Nat) = (1 : Nat) + 2 from rfl, Nat.add_mul, Nat.one_mul]
+  have h2k : (2 : Nat) * (2 : Nat)^(k - 1) = (2 : Nat)^k := by
+    rw [← pow_succ', hk_eq]
+  rw [h2k, Nat.add_comm]
+  apply Nat.lt_add_of_pos_right
+  exact Nat.two_pow_pos (k - 1)
+
 /-! ## Well-formedness of MacroCells
 
 `MacroCell.level` only walks the `nw` spine, so `c.level = k + 2` does
