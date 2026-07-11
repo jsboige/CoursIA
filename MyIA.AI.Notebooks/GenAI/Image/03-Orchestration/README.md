@@ -48,7 +48,7 @@ pip install -r requirements-comfyui.txt
 
 ### Multi-Model Comparison
 - **Critères** : Qualité, vitesse, ressources, contrôle
-- **Modèles comparés** : DALL-E 3, GPT-5, Qwen, FLUX, SD 3.5, Z-Image
+- **Modèles comparés** : SDXL Lightning-4step (Forge), Z-Image/Lumina-2 (ComfyUI)
 - **Métriques** : PSNR, SSIM, temps de génération, coût
 
 ### Workflow Orchestration
