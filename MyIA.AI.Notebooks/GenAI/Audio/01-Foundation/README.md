@@ -17,23 +17,7 @@ Ce module couvre les fondamentaux du traitement audio par IA : reconnaissance vo
 
 ## Aperçu — les bases audio en images
 
-Ce module pose les fondamentaux du traitement audio : synthèse vocale (TTS), reconnaissance vocale (STT), et opérations de base sur le signal. La galerie ci-dessous présente le **pipeline d'analyse audio** (forme d'onde → spectrogramme → MFCC → caractéristiques) extrait du notebook fondationnel [01-3](01-3-Basic-Audio-Operations.ipynb) — les briques techniques pour comprendre ce que manipulent les modèles TTS et STT.
-
-<table>
-<tr>
-<td align="center"><img src="assets/readme/aud1-waveform.png" alt="Forme d'onde (waveform) du signal audio" width="400"/><br/><sub>Forme d'onde (01-3)</sub></td>
-<td align="center"><img src="assets/readme/aud1-spectrogram.webp" alt="Spectrogramme — décomposition temps-fréquence" width="400"/><br/><sub>Spectrogramme (01-3)</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/aud1-mfcc.png" alt="MFCC — coefficients cepstraux mel" width="400"/><br/><sub>MFCC (01-3)</sub></td>
-<td align="center"><img src="assets/readme/aud1-mfcc2.png" alt="MFCC — carte de chaleur des coefficients" width="400"/><br/><sub>MFCC heatmap (01-3)</sub></td>
-</tr>
-<tr>
-<td align="center" colspan="2"><img src="assets/readme/aud1-features.png" alt="Extraction de caractéristiques audio" width="500"/><br/><sub>Extraction de caractéristiques (01-3)</sub></td>
-</tr>
-</table>
-
-Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+Ce module pose les fondamentaux du traitement audio : synthèse vocale (TTS), reconnaissance vocale (STT), et opérations de base sur le signal. Plutôt qu'une galerie séparée du propos, les sorties du **pipeline d'analyse audio** (forme d'onde → spectrogramme → MFCC → caractéristiques) extraites du notebook fondationnel [01-3](01-3-Basic-Audio-Operations.ipynb) sont présentées ci-dessous en séquence narrative — les briques techniques pour comprendre ce que manipulent les modèles TTS et STT. Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Notebooks
 
@@ -44,6 +28,41 @@ Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/read
 | 3 | [01-3-Basic-Audio-Operations](01-3-Basic-Audio-Operations.ipynb) | librosa, spectrogrammes, MFCC, pydub | Local | 0 |
 | 4 | [01-4-Whisper-Local](01-4-Whisper-Local.ipynb) | Whisper V3 Turbo local, batch | Local GPU | ~10 GB |
 | 5 | [01-5-Kokoro-TTS-Local](01-5-Kokoro-TTS-Local.ipynb) | Kokoro 82M, TTS légère | Local GPU | ~2 GB |
+
+**[01-3](01-3-Basic-Audio-Operations.ipynb) — Le pipeline d'analyse audio.** Ce notebook est le seul du module à produire des visualisations : il déroule la chaîne de transformations qui révèle la structure d'un signal audio, du domaine temporel brut jusqu'aux caractéristiques exploitables par les modèles. Chaque étape ci-dessous correspond à une cellule du notebook.
+
+**Étape 1 — Forme d'onde.** Le point de départ : l'amplitude du signal échantillonnée dans le temps. On y lit directement la structure alternée de silence et de parole :
+
+<p align="center">
+  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-waveform.png" alt="Forme d'onde (waveform) du signal audio" width="480"/></a><br>
+  <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 12) : forme d'onde — l'amplitude en fonction du temps.</em>
+</p>
+
+**Étape 2 — Spectrogramme.** Une transformée temps-fréquence (FFT) décompose ce signal en ses composantes spectrales : l'axe vertical devient la fréquence, l'intensité codant l'énergie. C'est la représentation qu'utilisent de nombreux modèles de speech :
+
+<p align="center">
+  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-spectrogram.webp" alt="Spectrogramme — décomposition temps-fréquence" width="420"/></a><br>
+  <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 15) : spectrogramme — décomposition temps-fréquence du même signal.</em>
+</p>
+
+**Étape 3 — MFCC.** Les coefficients cepstraux dans l'échelle mel (MFCC) condensent le spectrogramme en un petit nombre de coefficients qui captent le timbre perceptuel — la représentation de référence pour STT et classification audio. Deux vues complémentaires : la courbe des coefficients et la carte de chaleur :
+
+<p align="center">
+  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-mfcc.png" alt="MFCC — coefficients cepstraux mel" width="460"/></a><br>
+  <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 20, sortie 1) : MFCC — coefficients cepstraux mel.</em>
+</p>
+
+<p align="center">
+  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-mfcc2.png" alt="MFCC — carte de chaleur des coefficients" width="460"/></a><br>
+  <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 20, sortie 3) : MFCC en carte de chaleur — même information, vue alternative.</em>
+</p>
+
+**Étape 4 — Extraction de caractéristiques.** Aboutissement du pipeline : les descripteurs extraits (centroid spectral, RMS, ZCR…) alimentent directement les comparaisons et benchmarks des niveaux suivants :
+
+<p align="center">
+  <a href="01-3-Basic-Audio-Operations.ipynb"><img src="assets/readme/aud1-features.png" alt="Extraction de caractéristiques audio" width="480"/></a><br>
+  <em>Sortie du notebook <a href="01-3-Basic-Audio-Operations.ipynb">01-3</a> (cellule 28) : extraction des caractéristiques audio — le pipeline complet résumé.</em>
+</p>
 
 ## Prérequis
 

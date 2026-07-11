@@ -182,7 +182,7 @@ class TestExtractStats:
                 "Sharpe Ratio": "1.234",
                 "Compounding Annual Return": "12.5%",
                 "Drawdown": "8.3%",
-                "Total Net Profit": "$10,000",
+                "Net Profit": "$10,000",
                 "Probabilistic Sharpe Ratio": "0.95",
             },
         }
@@ -232,6 +232,55 @@ class TestExtractStats:
         """totalOrders could be None/0 from QC API."""
         result = _extract_stats({"totalOrders": None})
         assert result["totalOrders"] == 0
+
+    def test_real_qc_payload_orders_not_lost(self):
+        """Regression (verified firsthand against QC backtests/read c.332): a
+        completed backtest has totalOrders=null at the top level and the real
+        count lives in statistics['Total Orders']. The old code read the
+        top-level field and reported 0 — a strategy that placed 318 orders was
+        falsely diagnosed as 'never traded' (cf issue #6192). statistics is the
+        authoritative source."""
+        bt = {
+            "backtestId": "33286487",
+            "name": "1630-DualMomentum-aligned",
+            "status": "Completed.",
+            "totalOrders": None,  # QC returns null here, NOT the count
+            "tradeableDates": 1761,
+            "statistics": {
+                "Total Orders": "318",
+                "Net Profit": "76.088%",
+                "Sharpe Ratio": "0.35",
+                "Compounding Annual Return": "8.413%",
+                "Drawdown": "14.900%",
+                "Probabilistic Sharpe Ratio": "1.719%",
+            },
+            "runtimeStatistics": {
+                "Net Profit": "$59,745.60",
+                "Return": "76.09 %",
+            },
+        }
+        result = _extract_stats(bt)
+        assert result["totalOrders"] == 318  # NOT 0
+        assert result["statistics"]["totalNetProfit"] == "76.088%"  # NOT "-"
+        assert result["statistics"]["netProfitAbsolute"] == "$59,745.60"
+        assert result["statistics"]["sharpeRatio"] == "0.35"
+
+    def test_zero_orders_in_statistics_stays_zero(self):
+        """A genuinely 0-trade backtest (statistics['Total Orders']='0' or '-')
+        must still report 0 — preserves the real 0-trade signal that the
+        regression guard above must not mask."""
+        assert _extract_stats(
+            {"statistics": {"Total Orders": "0"}}
+        )["totalOrders"] == 0
+        assert _extract_stats(
+            {"statistics": {"Total Orders": "-"}}
+        )["totalOrders"] == 0
+
+    def test_total_orders_parses_thousands_separator(self):
+        """QC formats large counts with commas ('1,234') — must parse to int."""
+        assert _extract_stats(
+            {"statistics": {"Total Orders": "1,234"}}
+        )["totalOrders"] == 1234
 
     def test_surfaces_runtime_error(self):
         """A failed backtest must surface error/stacktrace for diagnosis."""

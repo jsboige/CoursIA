@@ -37,36 +37,6 @@ Comment résoudre un Sudoku ? Cette série explore les techniques de résolution
 
 La série traverse cinq grandes familles algorithmiques, des méthodes exhaustives aux modèles appris : recherche et Dancing Links (niveaux 1-2), métaheuristiques (niveau 3), programmation par contraintes (niveau 4), IA symbolique SAT/SMT (niveau 5) puis IA data-driven (niveau 6). Chaque famille est illustrée par une figure extraite du notebook correspondant, insérée dans la section qui en commente le concept ; la provenance détaillée (cellule source, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
-## Prérequis
-
-### C# (.NET Interactive)
-
-```bash
-# .NET 9.0 requis
-dotnet --version
-
-# Les packages NuGet sont installés dans les notebooks :
-# - GeneticSharp          (Sudoku-3 Genetic)
-# - Google.OrTools        (Sudoku-10 OR-Tools CP-SAT)
-# - Microsoft.Z3          (Sudoku-12 Z3 SMT, Sudoku-13 Symbolic Automata)
-# - DlxLib                (Sudoku-2 Dancing Links)
-# - Microsoft.ML.Probabilistic  (Sudoku-15 Infer.NET)
-# - IKVM 8.15.0           (Sudoku-11 Choco — runtime Java-sur-.NET + DLL précompilée)
-# - Plotly.NET            (visualisations, notebooks 0-15)
-```
-
-**Note sur les outputs** : Les notebooks C# contiennent des outputs de cellule exécutées. Les notebooks avec dépendances `#!import` doivent être exécutés dans l'ordre (0 -> 1 -> 2...).
-
-### Python
-
-```bash
-# Creer un environnement
-python -m venv venv
-
-# Installer les dépendances
-pip install numpy pandas scipy matplotlib ortools z3-solver pygad simanneal mealpy networkx torch jax numpyro jpype1 openai
-```
-
 ## Parcours d'Apprentissage Recommandés
 
 ### Parcours Débutant : Comprendre les Fondamentaux
@@ -588,6 +558,36 @@ Les expériences suivantes ont été conduites sur GPU (RTX 3070 Laptop 8GB et R
 1. **Volume de données > taille du modèle** : Passer de 106K à 400K puzzles fait sauter la précision de 33.5% à 83.5%, alors qu'augmenter les paramètres de 162K à 619K n'apporte rien sur petit dataset
 2. **Curriculum learning** : Pas de bénéfice démontré ici. La stratégie progressive ralentit l'apprentissage et provoque des oscillations
 3. **RRN vs solveurs classiques** : Même à 99.7% de succès, le RRN reste un approximateur -- les solveurs exacts (OR-Tools, Norvig) garantissent 100% et sont plus rapides en inférence
+
+## Prérequis
+
+### C# (.NET Interactive)
+
+```bash
+# .NET 9.0 requis
+dotnet --version
+
+# Les packages NuGet sont installés dans les notebooks :
+# - GeneticSharp          (Sudoku-3 Genetic)
+# - Google.OrTools        (Sudoku-10 OR-Tools CP-SAT)
+# - Microsoft.Z3          (Sudoku-12 Z3 SMT, Sudoku-13 Symbolic Automata)
+# - DlxLib                (Sudoku-2 Dancing Links)
+# - Microsoft.ML.Probabilistic  (Sudoku-15 Infer.NET)
+# - IKVM 8.15.0           (Sudoku-11 Choco — runtime Java-sur-.NET + DLL précompilée)
+# - Plotly.NET            (visualisations, notebooks 0-15)
+```
+
+**Note sur les outputs** : Les notebooks C# contiennent des outputs de cellule exécutées. Les notebooks avec dépendances `#!import` doivent être exécutés dans l'ordre (0 -> 1 -> 2...).
+
+### Python
+
+```bash
+# Creer un environnement
+python -m venv venv
+
+# Installer les dépendances
+pip install numpy pandas scipy matplotlib ortools z3-solver pygad simanneal mealpy networkx torch jax numpyro jpype1 openai
+```
 
 ## Sources des Projets Étudiants
 
