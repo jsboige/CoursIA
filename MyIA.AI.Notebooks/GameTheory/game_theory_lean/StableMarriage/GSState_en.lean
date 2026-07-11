@@ -83,8 +83,9 @@ def gsMenPrefLE (m : Fin n) (w1 w2 : Fin n) : Prop :=
     / `gsChooseMax_maximal`), forcing Lean to re-elaborate the same syntactic
     tree 3 times — Windows stack exhaustion during cold `lake -R build`
     (`0xC0000409` STATUS_STACK_BUFFER_OVERRUN in `lean.exe` on ai-01 §1
-    pre-merge). FR canonical owns this lemma; EN sibling references it via
-    `open StableMarriage` so the elaboration cache is shared. -/
+    pre-merge). The EN sibling owns its own byte-identical copy of this lemma
+    (same extraction as FR canonical); the 3 `haveI := gsMenPref_trans prof m`
+    sites reference it unqualified, mirroring the FR canonical self-reference. -/
 lemma gsMenPref_trans (m : Fin n) : IsTrans (Fin n) (gsMenPrefLE prof m) :=
   ⟨fun a b c hab hbc => by
     cases hab with
@@ -97,7 +98,7 @@ lemma gsMenPref_trans (m : Fin n) : IsTrans (Fin n) (gsMenPrefLE prof m) :=
 noncomputable def gsChooseMax (σ : GSState prof) (m : Fin n)
     (h : (gsCandidates prof σ m).Nonempty) : Fin n :=
   letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩
-  haveI := StableMarriage.gsMenPref_trans prof m
+  haveI := gsMenPref_trans prof m
   Classical.choose ((gsCandidates prof σ m).exists_maximal h)
 
 noncomputable def gsStepWith (σ : GSState prof) (m w : Fin n) : GSState prof :=
@@ -146,7 +147,7 @@ lemma gsChooseMax_mem (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
     gsChooseMax prof σ m h ∈ gsCandidates prof σ m := by
   unfold gsChooseMax
   letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩
-  haveI := StableMarriage.gsMenPref_trans prof m
+  haveI := gsMenPref_trans prof m
   obtain ⟨hmem, -⟩ := Classical.choose_spec (Finset.exists_maximal h)
   exact hmem
 
@@ -158,7 +159,7 @@ lemma gsChooseMax_maximal (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
     gsMenPrefLE prof m w (gsChooseMax prof σ m h) := by
   unfold gsChooseMax
   letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩
-  haveI := StableMarriage.gsMenPref_trans prof m
+  haveI := gsMenPref_trans prof m
   set c := Classical.choose (Finset.exists_maximal h) with hc
   obtain ⟨-, hmax⟩ := Classical.choose_spec (Finset.exists_maximal h)
   have htri := Nat.lt_trichotomy (prof.menPref m w) (prof.menPref m c)
