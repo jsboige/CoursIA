@@ -4,7 +4,7 @@
 series: SymbolicAI-Argument_Analysis
 pedagogical_count: 21
 breakdown: Argument_Analysis=21
-maturity: PRODUCTION=16, BETA=4, ALPHA=1
+maturity: PRODUCTION=15, BETA=5, ALPHA=1
 -->
 
 [← SmartContracts](../SmartContracts/README.md) | [↑ SymbolicAI](../README.md) | [SymbolicLearning →](../SymbolicLearning/README.md)
