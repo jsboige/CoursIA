@@ -1,20 +1,26 @@
 name: Lean Social Choice CI
 
+# EPIC #4365 Phase-4 (PR #6058, c.357) : SocialChoice a ete absorbe dans
+# `game_theory_lean/SocialChoice/` (nouveau home canonique). Ce workflow etait
+# auparavant scoping `social_choice_lean/` ; il est repointe sur `game_theory_lean`
+# pour y_preserver la certification no-sorry (Arrow/Sen/Framework/Basic) et le
+# Lake build de SocialChoice. L'ancien lake `social_choice_lean` est archive
+# (lib neutralisee, plus de default_target).
 on:
   push:
     branches: [ main ]
     paths:
-      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/**.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
   pull_request:
     branches: [ main ]
     paths:
-      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/**.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
   workflow_dispatch:
 
 jobs:
@@ -23,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: MyIA.AI.Notebooks/GameTheory/social_choice_lean
+        working-directory: MyIA.AI.Notebooks/GameTheory/game_theory_lean
 
     steps:
     - uses: actions/checkout@v4
@@ -37,9 +43,9 @@ jobs:
     - name: Cache Mathlib oleans
       uses: actions/cache@v4
       with:
-        path: MyIA.AI.Notebooks/GameTheory/social_choice_lean/.lake
-        key: lake-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/social_choice_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lean-toolchain') }}
-        restore-keys: lake-${{ runner.os }}-
+        path: MyIA.AI.Notebooks/GameTheory/game_theory_lean/.lake
+        key: lake-sc-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain') }}
+        restore-keys: lake-sc-${{ runner.os }}-
 
     - name: Check for sorry in certified modules
       run: |
@@ -71,7 +77,7 @@ jobs:
     needs: fail-on-sorry
     defaults:
       run:
-        working-directory: MyIA.AI.Notebooks/GameTheory/social_choice_lean
+        working-directory: MyIA.AI.Notebooks/GameTheory/game_theory_lean
 
     steps:
     - uses: actions/checkout@v4
@@ -85,9 +91,9 @@ jobs:
     - name: Cache Mathlib oleans
       uses: actions/cache@v4
       with:
-        path: MyIA.AI.Notebooks/GameTheory/social_choice_lean/.lake
-        key: lake-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/social_choice_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/social_choice_lean/lean-toolchain') }}
-        restore-keys: lake-${{ runner.os }}-
+        path: MyIA.AI.Notebooks/GameTheory/game_theory_lean/.lake
+        key: lake-sc-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain') }}
+        restore-keys: lake-sc-${{ runner.os }}-
 
     - name: Lake build
       run: |
