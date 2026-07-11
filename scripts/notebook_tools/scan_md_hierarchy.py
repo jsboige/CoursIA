@@ -83,17 +83,44 @@ TABLE_SEP_FRAGMENT_RE = re.compile(r'\|[\s-]*-{2,}')
 CLEAN_SEP_LINE_RE = re.compile(r'^\s*>?\s*\|[\s:|-]*-{2,}[\s:|-]*\|?\s*$')
 
 
+def _strip_fenced_code(cell_text):
+    """Blank out fenced-code-block CONTENTS so code is invisible to the detector.
+
+    A file tree (`sensitivity_lean/\n|-- lakefile`) or an ASCII payoff diagram
+    inside a ``` / ~~~ fence is CODE, not a markdown table — its `|--` must NOT
+    trigger the table-separator fragment. Fences are tracked line-by-line via
+    FENCE_RE; fence-marker lines are kept, code lines between them are blanked.
+
+    A truly COLLAPSED cell (newlines stripped, the fence opener ``` glued to a
+    heading like `### Archi \`\`\` ...`) has no real fence structure: the glued
+    line does not START with ``` (FENCE_RE is anchored), so nothing is blanked
+    and the glued table fragment is still detected -> correct (true positive
+    preserved). See Lean-12 cell 16 FP (#3966).
+    """
+    out = []
+    in_fence = False
+    for line in cell_text.split('\n'):
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+            out.append(line)  # keep the fence-marker line itself
+            continue
+        out.append('' if in_fence else line)
+    return '\n'.join(out)
+
+
 def _has_collapsed_markdown(cell_text):
     """True if a markdown cell's table structure is collapsed (#3966).
 
     The cell contains a GFM table-separator fragment but none of its lines is a
     clean separator row -> the separator (and the rows around it) are glued onto
-    one line by a newline-strip event. ``cell_text`` is the raw joined source
-    (newlines preserved, NOT splitlines-normalized).
+    one line by a newline-strip event. Fenced code is blanked first so file
+    trees / ASCII art are not mistaken for table fragments. ``cell_text`` is the
+    raw joined source (newlines preserved, NOT splitlines-normalized).
     """
-    if not TABLE_SEP_FRAGMENT_RE.search(cell_text):
+    stripped = _strip_fenced_code(cell_text)
+    if not TABLE_SEP_FRAGMENT_RE.search(stripped):
         return False
-    return not any(CLEAN_SEP_LINE_RE.match(line) for line in cell_text.split('\n'))
+    return not any(CLEAN_SEP_LINE_RE.match(line) for line in stripped.split('\n'))
 
 def scan_notebook(path):
     try:

@@ -164,6 +164,44 @@ def test_clean_fence_with_table_inside_not_flagged():
     assert not _has_collapsed_markdown(clean)
 
 
+def test_clean_file_tree_in_fence_not_flagged():
+    """A fenced ASCII file tree (`|-- file`) is CODE, not a collapsed table.
+
+    Regression guard: without fence-aware stripping, the `|--` of a file tree
+    triggered the table-separator fragment and false-positived. Caught on
+    Lean-12 cell 16 (Lean port file listing). Tilde fences too.
+    """
+    clean = (
+        "### Architecture du port\n\n"
+        "```\n"
+        "sensitivity_lean/\n"
+        "|-- lakefile.lean\n"
+        "|-- MainTheorem.lean\n"
+        "|-- Hypercube.lean\n"
+        "```\n\n"
+        "Le port s'inspire de Mathlib.\n"
+    )
+    assert not _has_collapsed_markdown(clean)
+
+
+def test_clean_tilde_fence_file_tree_not_flagged():
+    """Tilde fences (~~~) are also respected."""
+    clean = (
+        "Arbre :\n~~~\n|-- a\n|-- b\n~~~\n"
+    )
+    assert not _has_collapsed_markdown(clean)
+
+
+def test_collapsed_fence_glued_still_flagged():
+    # A truly collapsed cell (fence opener glued to a heading, no newlines) is
+    # still flagged: the glued line does not start with a fence marker so the
+    # fence-stripping leaves it intact, and the glued table fragment is detected.
+    collapsed = (
+        "### Architecture ``` sensitivity_lean/ |-- lakefile | Fichier | Lignes ||---|---|"
+    )
+    assert _has_collapsed_markdown(collapsed)
+
+
 def test_clean_cell_without_any_table_not_flagged():
     """A normal prose+heading cell with no table is never flagged."""
     clean = "## Introduction\n\nDu paragraphe normal ici.\n"
