@@ -16,6 +16,18 @@
 - `Kelly.lean` capstone `kelly_growth_eq_zero_iff` (commit `d2e07e107`, +31/-0, g(f*)=0 ↔ f*=0) — **EXEC_PROVED** via pre-existing `kelly_unique` (Kelly.lean L136) + `growth_zero` (Growth.lean L46)
 - `Kelly_en.lean` capstone mirror (commit `d2e07e107`, +30/-0) — **EXEC_PROVED** byte-parity
 
+## Check-links sweep-ledger hygiene (commit 2, ★ C354-L1)
+
+Commit 2 corrige 2 liens cassés pré-existants dans les ledgers c.399 (#5957) et c.406 (#5971) :
+- `docs/ledgers/reviews/2026-07-11-h4-sweep-5957.md:66` — `../reference/sota-not-workaround.md` → `../../../.claude/rules/sota-not-workaround.md`
+- `docs/ledgers/reviews/2026-07-11-h4-sweep-5971.md:97` — `../reference/pr-review-discipline.md` → `../../../.claude/rules/pr-review-discipline.md`
+
+Cause : les règles ont migré de `docs/reference/` vers `.claude/rules/` (mandat user 2026-06-01), mais les ledgers c.399/c.406 ont été mergés avec l'ancien path. La baseline `scripts/tests/baseline_docs_links.json` (#2735, 2026-07-09) prédate ces merges, donc `check-docs-links.py --check` flaggait ces 2 liens comme "new regression" sur chaque PR touchant `docs/ledgers/`.
+
+Reproduit le fix `baac791c7` (jsboige commit déjà authored mais jamais merged sur main). Vérifié localement : `python scripts/check_docs_links.py --check` → `OK: No new broken links. (0 pre-existing, 3712 total)` exit 0.
+
+Scope-strict : 2 fichiers, `+1/-1` chacun. Pas de réécriture de contenu (le texte `≫ floor placeholder` est préservé verbatim). Conformité R3 atomique-PR : sujet unique = §H.4 sweep ledger hygiene.
+
 ## Vérifications
 
 - 14 theorem signatures FR == 14 EN byte-parity (vérifié via strip-docstring filter)
