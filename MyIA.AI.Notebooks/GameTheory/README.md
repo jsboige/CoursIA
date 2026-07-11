@@ -220,70 +220,6 @@ flowchart TD
 
 **Durée totale** : ~26h45 (avec side tracks b/c et sous-série SocialChoice complète)
 
-## Prerequisites
-
-- Connaissances de base en logique et mathématiques
-- Familiarité avec Python (numpy, matplotlib)
-- Pour notebooks Lean (b) : Installation Lean 4 + kernel WSL (voir série Lean)
-- Pour notebooks 13-17 : APIs optionnelles (OpenAI pour AlphaZero)
-
-## Installation
-
-### Installation rapide (Python standard - notebooks 1-12, 14-16)
-
-```bash
-pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
-# Note: open_spiel échouera sur Windows (nécessite WSL) - c'est normal pour la majorité des notebooks
-```
-
-### Notebooks nécessitant WSL (Windows uniquement)
-
-GT-13 (CFR/OpenSpiel) et GT-17 (Multi-Agent RL) nécessitent le kernel `Python (GameTheory WSL + OpenSpiel)` :
-
-```bash
-# 1. Dans WSL Ubuntu
-cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
-bash setup_wsl_openspiel.sh
-```
-
-```powershell
-# 2. Côté Windows (PowerShell)
-cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
-.\setup_wsl_kernel.ps1
-```
-
-### Notebooks Lean 4 (2b, 4b, 8b, 15b)
-
-Ces notebooks nécessitent le kernel `Lean 4 (WSL)` :
-
-```bash
-# 1. Dans WSL Ubuntu
-cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
-bash setup_wsl_lean4.sh    # installe elan + Lean 4 + REPL + lean4_jupyter
-```
-
-```powershell
-# 2. Côté Windows (PowerShell)
-cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
-.\setup_lean4_kernel.ps1   # enregistre le kernel lean4-wsl
-```
-
-### Vérification
-
-```bash
-jupyter kernelspec list
-# Doit montrer : python3, gametheory-wsl (optionnel), lean4-wsl (optionnel)
-```
-
-Pour les détails et le dépannage, voir [install_wsl_kernel.md](install_wsl_kernel.md).
-
-### Configuration API (optionnel)
-
-```bash
-cp .env.example .env
-# Éditer .env et ajouter les clés API si nécessaire
-```
-
 ## Concepts clés
 
 | Concept | Description |
@@ -416,6 +352,87 @@ flowchart LR
 Le pipeline complet relie les **notebooks** (qui motivent — Lemke-Howson, Axelrod, Folk Theorem, Gale-Shapley via `game_theory_lean`) aux **lakes** (qui prouvent — Arrow résolu 0 sorry, Bondareva-Shapley résolu 0 sorry #3954, von Neumann/Sion, Vickrey, Gale-Shapley existence et optimalité côté proposant, grim-trigger). Sans la couche Lean, ces résultats seraient des théorèmes réputés « standard » mais jamais démontrés ; avec elle, la justification est **formellement garantie** — pas seulement admise. La spécificité GameTheory : la simulation (Lemke-Howson numérique, OpenSpiel CFR, Axelrod tournois) précède la preuve, mais les deux faces du même raisonnement sont également outillées.
 
 Pour aller plus loin : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean — un théorème-phare par série), [hub QuantConnect ↔ `kelly_lean`](../QuantConnect/README.md) (PR #5047), [hub central P0 ↔ Lean inter-familles](../README.md) (PR #5049), [hub SymbolicAI Lean](../SymbolicAI/Lean/README.md).
+
+## Prerequisites
+
+- Connaissances de base en logique et mathématiques
+- Familiarité avec Python (numpy, matplotlib)
+- Pour notebooks Lean (b) : Installation Lean 4 + kernel WSL (voir série Lean)
+- Pour notebooks 13-17 : APIs optionnelles (OpenAI pour AlphaZero)
+
+## Installation
+
+### Installation rapide (Python standard - notebooks 1-12, 14-16)
+
+```bash
+pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
+# Note: open_spiel échouera sur Windows (nécessite WSL) - c'est normal pour la majorité des notebooks
+```
+
+### Notebooks nécessitant WSL (Windows uniquement)
+
+GT-13 (CFR/OpenSpiel) et GT-17 (Multi-Agent RL) nécessitent le kernel `Python (GameTheory WSL + OpenSpiel)` :
+
+```bash
+# 1. Dans WSL Ubuntu
+cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
+bash setup_wsl_openspiel.sh
+```
+
+```powershell
+# 2. Côté Windows (PowerShell)
+cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
+.\setup_wsl_kernel.ps1
+```
+
+### Notebooks Lean 4 (2b, 4b, 8b, 15b)
+
+Ces notebooks nécessitent le kernel `Lean 4 (WSL)` :
+
+```bash
+# 1. Dans WSL Ubuntu
+cd /mnt/d/CoursIA/MyIA.AI.Notebooks/GameTheory/scripts
+bash setup_wsl_lean4.sh    # installe elan + Lean 4 + REPL + lean4_jupyter
+```
+
+```powershell
+# 2. Côté Windows (PowerShell)
+cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
+.\setup_lean4_kernel.ps1   # enregistre le kernel lean4-wsl
+```
+
+### Vérification
+
+```bash
+jupyter kernelspec list
+# Doit montrer : python3, gametheory-wsl (optionnel), lean4-wsl (optionnel)
+```
+
+Pour les détails et le dépannage, voir [install_wsl_kernel.md](install_wsl_kernel.md).
+
+### Configuration API (optionnel)
+
+```bash
+cp .env.example .env
+# Éditer .env et ajouter les clés API si nécessaire
+```
+
+## Quick Start
+
+```bash
+# 1. Installer les dépendances Python (notebooks 1-12, 14-16)
+pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
+
+# 2. Premier notebook
+jupyter notebook GameTheory-1-Setup.ipynb
+
+# 3. Puis GameTheory-2 (formes normales, matrices de gains)
+```
+
+Pour les notebooks Lean (2b, 4b, 8b, 15b) : installer le kernel `Lean 4 (WSL)` via `scripts/setup_wsl_lean4.sh`.
+Pour GT-13/17 (OpenSpiel) : installer le kernel `GameTheory WSL` via `scripts/setup_wsl_openspiel.sh`.
+
+---
 
 ## FAQ / Troubleshooting
 
@@ -581,23 +598,6 @@ Tous les notebooks incluent :
 - Plan avec liens ancres
 - Tableaux recapitulatifs
 - Exercices avec solutions complètes
-
-## Quick Start
-
-```bash
-# 1. Installer les dépendances Python (notebooks 1-12, 14-16)
-pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
-
-# 2. Premier notebook
-jupyter notebook GameTheory-1-Setup.ipynb
-
-# 3. Puis GameTheory-2 (formes normales, matrices de gains)
-```
-
-Pour les notebooks Lean (2b, 4b, 8b, 15b) : installer le kernel `Lean 4 (WSL)` via `scripts/setup_wsl_lean4.sh`.
-Pour GT-13/17 (OpenSpiel) : installer le kernel `GameTheory WSL` via `scripts/setup_wsl_openspiel.sh`.
-
----
 
 ## Ressources externes
 
