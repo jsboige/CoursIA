@@ -682,3 +682,195 @@ class TestThresholdIntegration:
         )
         result = count_exercises_in_notebook(nb)
         assert result.count < 3
+
+
+# ---------------------------------------------------------------------------
+# Bug 1 of #6051 -- grouped markdown headers under-counted by the legacy
+# boolean ``_markdown_mentions_exercise`` helper. The replacement helper
+# ``_markdown_instance_header_count`` now counts per-instance headers: a
+# cell that groups an ``## N. Exercices`` umbrella with K explicit
+# ``### Exercice i`` sub-headers counts as K (not 1, not K+1), so a
+# three-exercise notebook is reported as three exercises. The flat-layout
+# cases (single header per cell) keep the legacy "1 cell = 1 exercise"
+# count so the regression suite on ``## 8. Exercice`` and
+# ``### Exercice -`` stays green.
+# ---------------------------------------------------------------------------
+
+
+class TestGroupedMarkdownHeadersBug1:
+    """Regression suite for #6051 Bug 1 -- grouped markdown headers."""
+
+    def test_grouped_umbrella_with_three_subheaders_counts_three(self, tmp_path):
+        """Real Bug 1 repro from ``04-Computational-Aggregation-SAT-Z3-Csharp``
+        cell 30 (markdown umbrella + 3 sub-headers) + cell 31 (code stub
+        block carrying ``// Exercice 1/2/3`` triple stub).
+
+        Pre-fix: counted 1. Post-fix: counts 3 (the 3 sub-headers).
+        """
+        nb = _write_nb(
+            tmp_path / "g30.ipynb",
+            [
+                _md("# Section SAT/SMT (transition)\n"),
+                _md(
+                    "## 8. Exercices\n"
+                    "\n"
+                    "### Exercice 1 : Purs litteraux\n"
+                    "Un literal est pur...\n"
+                    "\n"
+                    "### Exercice 2 : Robustesse de Sen au choix des paires\n"
+                    "Le theoreme de Sen...\n"
+                    "\n"
+                    "### Exercice 3 : Sen par SMT (Z3, rangs entiers)\n"
+                    "Demontrer par SMT...\n"
+                ),
+                _code(
+                    "// === Exercices (stubs) ===\n"
+                    "\n"
+                    "// Exercice 1 : elimination des litteraux purs\n"
+                    "public static double PureLiteralSpeedupPlaceholder()\n"
+                    "{\n"
+                    "    // TODO etudiant : ajouter la regle...\n"
+                    "    return 0.0;\n"
+                    "}\n"
+                    "\n"
+                    "// Exercice 2 : Robustesse de Sen au choix des paires\n"
+                    "public static int SenPairRobustnessPlaceholder()\n"
+                    "{\n"
+                    "    // TODO etudiant : tester la sensibilite...\n"
+                    "    return 0;\n"
+                    "}\n"
+                    "\n"
+                    "// Exercice 3 : Sen par SMT (Z3, rangs entiers)\n"
+                    "public static int SenSmtRanksPlaceholder()\n"
+                    "{\n"
+                    "    // TODO etudiant : encoder...\n"
+                    "    return 0;\n"
+                    "}\n"
+                ),
+                _md("## Conclusion\n"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "Bug 1: umbrella + 3 sub-headers must count 3, not 1 (legacy) "
+            f"and not 4 (over-counting the umbrella). Got {result.count}."
+        )
+        # All hits should be on the umbrella cell (one per sub-header).
+        assert all(h.cell_index == 1 for h in result.exercises), (
+            "All 3 hits must come from the grouped markdown cell"
+        )
+        assert all(h.detected_by == "markdown_header" for h in result.exercises)
+
+    def test_umbrella_alone_no_subheaders_counts_one(self, tmp_path):
+        """When a markdown cell carries ONLY an ``## N. Exercices`` umbrella
+        (no explicit sub-headers), it counts as ONE exercise. The sub-header
+        rule is a refinement -- when no sub-headers exist we fall back to
+        the legacy "one header = one exercise" count.
+        """
+        nb = _write_nb(
+            tmp_path / "umbrella_only.ipynb",
+            [
+                _md("## 8. Exercices\n"),
+                _code("// Exercice unique : a faire\n// TODO etudiant\nreturn 0;\n"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            f"Umbrella alone counts 1, not {result.count}"
+        )
+
+    def test_flat_numbered_headers_count_each_one(self, tmp_path):
+        """Flat layout (the legacy test_numbered_section_header_is_counted
+        pattern) must keep counting each numbered section header as 1.
+        Sub-header rule does NOT activate when there are no ``###`` or
+        deeper headers in the cell -- the fallback returns total_count
+        which equals the number of section-level headers carrying the
+        exercise word.
+        """
+        nb = _write_nb(
+            tmp_path / "flat.ipynb",
+            [
+                _md("## 8. Exercice : le piege numerote\n"),
+                _code("# TODO etudiant\npass\n"),
+                _md("## 9. Exercice\n"),
+                _code("return None\n"),
+                _md("## 10. Exercice\n"),
+                _code("# TODO\nx = None\n"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "Flat numbered headers must each count 1 (regression guard for "
+            "the legacy test_numbered_section_header_is_counted)."
+        )
+
+    def test_dash_separator_no_number_still_counts(self, tmp_path):
+        """Sub-header with no number (``### Exercice - Exploration``) must
+        still count. The legacy test_dash_separator_header_is_counted.
+        """
+        nb = _write_nb(
+            tmp_path / "dash.ipynb",
+            [
+                _md("### Exercice - Exploration\n"),
+                _code("# TODO\npass\n"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            f"Dash separator header must count 1, not {result.count}"
+        )
+
+    def test_subheaders_absorb_multiple_stubs_in_one_code_cell(self, tmp_path):
+        """When a grouped markdown cell has 3 sub-headers and is followed by
+        ONE code cell carrying all 3 ``# Exercice 1/2/3`` stubs, the forward
+        pairing window must absorb up to N=3 stubs (not just 1). The code
+        cell stub block is then considered "already paired" and is NOT
+        re-counted by the second pass. Result: 3 hits (the 3 sub-headers).
+        """
+        nb = _write_nb(
+            tmp_path / "triple_stub.ipynb",
+            [
+                _md(
+                    "## Exercices\n"
+                    "### Exercice 1 : A\n"
+                    "### Exercice 2 : B\n"
+                    "### Exercice 3 : C\n"
+                ),
+                _code(
+                    "# Exercice 1\n"
+                    "pass\n"
+                    "# Exercice 2\n"
+                    "pass\n"
+                    "# Exercice 3\n"
+                    "pass\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            f"3 sub-headers + 3 stubs in one code cell must count 3, not {result.count}"
+        )
+
+    def test_subheaders_with_only_one_stub_still_counts_three(self, tmp_path):
+        """When a grouped markdown cell has 3 sub-headers but is followed by
+        only 1 code cell with 1 stub, the forward pairing window absorbs
+        just 1 stub; the remaining 2 sub-headers stay markdown-only. No
+        second pass code-cell counting applies (cell 2 is paired). Result:
+        3 hits (3 markdown, 1 of them paired).
+        """
+        nb = _write_nb(
+            tmp_path / "subheader_partial_stub.ipynb",
+            [
+                _md(
+                    "## Exercices\n"
+                    "### Exercice 1 : A\n"
+                    "### Exercice 2 : B\n"
+                    "### Exercice 3 : C\n"
+                ),
+                _code("# Exercice 1\npass\n"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            f"3 sub-headers + 1 stub must count 3, not {result.count}"
+        )

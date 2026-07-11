@@ -260,6 +260,72 @@ def _markdown_mentions_exercise(source: str) -> bool:
     return False
 
 
+def _markdown_instance_header_count(source: str) -> int:
+    """Count per-instance exercise headers in a markdown cell source.
+
+    Distinguishes the two cell shapes that Bug 1 of #6051 miscounted:
+
+    1. Grouped layout -- one markdown cell carries a section umbrella
+       (``## 8. Exercices``) PLUS N explicit sub-headers
+       (``### Exercice 1`` ... ``### Exercice N``). The N sub-headers
+       describe N distinct exercises; the umbrella is a section title that
+       ORGANIZES them and must NOT add an extra instance. We count the
+       sub-headers (H3+ depth), ignore shallower umbrellas when sub-headers
+       exist, and fall back to the umbrella if no sub-headers do.
+
+    2. Flat layout -- the cell carries only one or more ``##`` /
+       ``###`` headers (numbered or not). Each contributes one instance
+       so the count stays one-header-one-exercise regardless of whether the
+       header carries an ``Exercice N`` number (the legacy helper required a
+       number and under-counted ``## 8. Exercice`` / ``### Exercice -``).
+
+    Rule: a header counts when it references the exercise word
+    (``exercice`` / ``exercices`` / ``exercise`` / ``exercises``) so we
+    never spuriously match ``## Example 1`` or ``## 8. Exerceur``.
+    """
+    sub_level_count = 0
+    total_count = 0
+    for m in MARKDOWN_HEADER_RE.finditer(source):
+        # MARKDOWN_HEADER_RE yields one capture group (the header text) so we
+        # rebuild the hash-run depth by parsing the full match: scan from the
+        # start past any optional indentation to the run of ``#`` characters.
+        full_match = m.group(0)
+        header_text = m.group(1)
+        if not (EXERCISE_WORD_RE.search(header_text) or EXERCISE_WORD_EN_RE.search(header_text)):
+            continue
+        total_count += 1
+        # Find the hash-run at the start of the matched line (after optional
+        # leading whitespace + any preceding newline from the MULTILINE flag).
+        # Per CommonMark, a header marker is one to six ``#`` characters
+        # followed by a space or end-of-line.
+        hash_run_end = 0
+        while hash_run_end < len(full_match) and full_match[hash_run_end] in (
+            " ",
+            "\t",
+            "\r",
+            "\n",
+        ):
+            hash_run_end += 1
+        hash_run_start = hash_run_end
+        while hash_run_end < len(full_match) and full_match[hash_run_end] == "#":
+            hash_run_end += 1
+        depth = hash_run_end - hash_run_start
+        # Sub-header depth = hashes ``###`` or deeper (3+). The umbrella
+        # ``##`` (level 2) is excluded from the sub-header tally so it does
+        # NOT over-count when explicit sub-instances are present below it.
+        if depth >= 3:
+            sub_level_count += 1
+    if sub_level_count > 0:
+        # Grouped layout: the umbrella is organizer-only, sub-headers are
+        # the per-instance tally. Return sub_count so a cell ``## X.
+        # Exercices`` + ``### Exercice 1`` ... ``### Exercice N`` counts as N.
+        return sub_level_count
+    # Flat layout: one or more section-level headers describe one exercise
+    # each (the legacy detector counted any one as 1; we keep that for
+    # cells without sub-headers).
+    return total_count
+
+
 def _exercise_number(source: str) -> str | None:
     """Exercise number token a cell references, e.g. ``'3'`` or ``'3b'``.
 
@@ -298,20 +364,30 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
     cells = nb.get("cells", [])
 
     # First pass: detect markdown-header exercises and their paired code stub.
+    # A single markdown cell may GROUP multiple exercise declarations under one
+    # umbrella header (e.g. `## 8. Exercices` plus N sub-headers
+    # `### Exercice 1`, `### Exercice 2`, ... `### Exercice N`). Each header
+    # line carrying the exercise word contributes one ExerciseHit so the count
+    # tracks the per-instance granularity required by #2161 -- a notebook with
+    # three sub-headers under one section is THREE exercises, not one. See
+    # `_markdown_instance_header_count` for the rationale (N+1 umbrella +
+    # sub-instances).
     header_cell_indices: set[int] = set()
     for i, cell in enumerate(cells):
         if cell.get("cell_type") != "markdown":
             continue
         source = "".join(cell.get("source", []))
-        if _markdown_mentions_exercise(source):
-            result.exercises.append(
-                ExerciseHit(
-                    cell_index=i,
-                    cell_type="markdown",
-                    source=source,
-                    detected_by="markdown_header",
+        n_instances = _markdown_instance_header_count(source)
+        if n_instances > 0:
+            for _ in range(n_instances):
+                result.exercises.append(
+                    ExerciseHit(
+                        cell_index=i,
+                        cell_type="markdown",
+                        source=source,
+                        detected_by="markdown_header",
+                    )
                 )
-            )
             header_cell_indices.add(i)
 
     # Track which code cells are the paired stub of an exercise header so we
@@ -325,11 +401,22 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
     # match fails and both are counted as distinct exercises (no under-count).
     paired_code_indices: set[int] = set()
     for idx in sorted(header_cell_indices):
-        # Forward (common): the stub just below the header, within 3 cells.
+        # Forward (common): the stub(s) just below the header, within 3 cells.
+        # When a markdown cell groups N instances (umbrella + sub-headers), we
+        # absorb up to N stubs in the forward window so each header produces
+        # one paired stub. Excess headers past the available stubs remain
+        # paired-less (counted as markdown-only); excess stubs past the
+        # headers fall through to the second pass as orphan code exercises.
+        n_instances = _markdown_instance_header_count(
+            "".join(cells[idx].get("source", []))
+        )
+        paired_count = 0
         for j in range(idx + 1, min(idx + 4, len(cells))):
+            if paired_count >= n_instances:
+                break
             if cells[j].get("cell_type") == "code":
                 paired_code_indices.add(j)
-                break
+                paired_count += 1
         # Backward (stub-then-header layout): the nearest preceding code cell,
         # absorbed only when it references the SAME exercise number as the
         # header. Numberless headers/stubs are left unpaired (conservative).
