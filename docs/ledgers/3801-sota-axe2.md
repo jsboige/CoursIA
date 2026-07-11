@@ -1906,3 +1906,70 @@ Le ML-Training-Pipeline pose une question de recherche **genuinely non-trivial**
 - **Mandat Substance > Sweep honoré** : audit SOTA axe-2 = registre substance (≠ doc-hygiène cappé 1/lane/jour), grain deep ai-01 DECIDED exécuté.
 
 Part of #3801
+
+## Entry #026 — GenAI/Audio (modèles SOTA Kokoro/Whisper/XTTS/MusicGen/Demucs + audio WAV réels committés, EPIC #1385/#1028, owner po-2024 strict, c.50)
+
+Famille `MyIA.AI.Notebooks/GenAI/Audio/` = **30 notebooks** organisés en 4 sous-répertoires pédagogiques (`01-Foundation`, `02-Advanced`, `03-Orchestration`, `04-Applications`), couvrant la chaîne audio SOTA moderne (TTS / STT / voice cloning / music generation / source separation / audiobook agentique). **DERNIÈRE famille GenAI manquante** du registre axe-2 (entries #020-#025 couvrent QC-Py / ML-Training / GenAI-Texte / GenAI-Image / GenAI-PostTraining / GenAI-Video) — entry #026 **clôt la couverture GenAI** de axe-2. Modalité **distincte** de Video #025 (audio generation/transcription, pas vidéo). Audit read-only firsthand (Prong A+B), 0 commit code, 0 `gh`. Worktree `docs/c50-genai-audio-sota-ledger-3801` off `origin/main` `8a8f783fe`. **Slot #026** : entries #019 (Lean PR #6050), #022 (PR #6152), #023 (PR #6167), #024 (PR #6179), #025 (PR #6191) réservées par PRs non-mergées → #026 = prochain slot libre, évite renumbering post-merge (leçon c.44).
+
+### Métrique (vérifiée firsthand par le worker, script python3 inline sur les 30 .ipynb)
+
+| Métrique | Valeur | Méthode de vérification |
+|----------|--------|--------------------------|
+| Notebooks totaux | **30** (4 sous-répertoires) | `glob('GenAI/Audio/**/*.ipynb', recursive=True)` |
+| Cellules code | **431** | `cell_type == 'code'` |
+| Cellules code `execution_count != null` | **431/431 = 100%** | Script python3 — **taux exec maximal**, tous notebooks exécutés |
+| Erreurs `output_type: error` | **0** | Script python3 — 0 occurrence sur les 30 .ipynb |
+| Kernelspec `python3` | **30/30** | Lecture directe metadata `kernelspec.name` |
+| Violations C.1 (`raise NotImplementedError` / `assert False` / `1/0`) | **0** | Scanner canonique `audit_c1_c3.py --check c1` = **30/30 pass, All clear** |
+| Secrets inline (`sk-…`/`ghp_…`/`AIza…`) | **0** | Regex sur blob code — 0 hit |
+| `getenv("K", "<literal>")` literal-default | **5** (bénins) | Tous = **URLs localhost** (`http://localhost:8191/8196/8197`) + 1 source texte (`"gutenberg"`), PAS des credentials. Auth via `.env` gitignored (dotenv importé 27/30). |
+| Caractères CJK | **50 (légitimes)** | 02-8-Expressive-TTS c35 : **japonais** `こんにちは！多言語音声合成のデモンストレーションです。` = démo TTS multilingue FR/EN/JA/ES (contenu pédagogique attendu, PAS parasite). |
+| Exercices `### Exercice N` (convention #2161) | **≥3/notebook (30/30)** | Regex `#{1,6}\s*Exercice` |
+| `BATCH_MODE` present | **22/30** | Grep blob code — portable CPU-safe mode |
+
+### Vrais outils SOTA invoqués (Prong A — SOTA-OK, output audio RÉEL committé)
+
+La série démontre la **chaîne audio SOTA moderne** sur 15 moteurs distincts, tous réellement importés/invoqués (présence vérifiée firsthand dans le code source) :
+
+| Moteur SOTA | Notebooks | Preuve d'invocation réelle (firsthand) |
+|-------------|-----------|----------------------------------------|
+| **Kokoro-82M** (hexgrad) | 16/30 | `hexgrad/Kokoro-82M`, backend ONNX=True, GPU RTX 3090 24GB |
+| **soundfile** | 15/30 | écriture WAV réelle |
+| **Whisper** (OpenAI STT) | 14/30 | transcription speech-to-text |
+| **XTTS** (Coqui voice cloning) | 10/30 | clonage vocal multi-locuteur |
+| **Demucs** (source separation) | 8/30 | séparation drums/vocals/bass/other |
+| **ffmpeg** / **pydub** | 8/6 | traitement audio bas niveau |
+| **torchaudio** | 5/30 | tensors audio + transforms |
+| **transformers** (HuggingFace) | 3/30 | MusicGen / MIDI / Song generation |
+| **Fish-Speech** / **pyannote** / **FastAPI** | 1-1-1 | TTS expressif / diarization / gateway multi-modèles |
+
+**★ Preuve d'invocation RÉELLE — SOTA-OK (plus fort que Video #025 / PostTraining #024 qui étaient RECOVERABLE-MACHINE)** : vérifié firsthand sur `01-5-Kokoro-TTS-Local` — les cellules produisent des `display_data` contenant de **vrais audio players HTML5** `<audio controls><source src="data:audio/wav;base64,UklGRi...">` (header base64 `UklGRi` = `RIFF` = WAV valide). Le modèle **Kokoro-82M a réellement synthétisé l'audio** sur GPU RTX 3090 (output stream firsthand : `GPU : NVIDIA GeForce RTX 3090 (24.0 GB VRAM)`, `Backend ONNX : True`), et les **waveforms sont committées comme base64 jouable** dans les outputs. **VRAIE invocation SOTA avec output réel committé** = verdict direct **SOTA-OK** (pas workaround, pas flag dégradé). `BATCH_MODE="true"` = borne de portabilité (mode batch), mais les audio outputs committés sont les **vraies sorties générées**, pas des substituts.
+
+### Problème non-trivial (Prong B) — DISCRIMINATING
+
+La série ne démontre pas l'audio sur un cas dégénéré :
+
+- **03-1 Multi-Model-Audio-Comparison** pose le **benchmark multi-modèles STT+TTS** (Whisper API vs faster-whisper local ; OpenAI TTS vs Chatterbox vs Kokoro) — l'étudiant doit mesurer **timing / qualité / coût** et arbitrer le trade-off latence vs précision. Problème central du déploiement audio en production.
+- **04-7 TTS-Voice-Benchmark** (lien direct **EPIC #1028 Audiobook Agentique P0**) : comparaison systématique des modèles TTS sur l'infrastructure po-2023 (latence, qualité perçue, coût API) pour évaluer la pertinence dans le pipeline audiobook agentique.
+- **02-2 XTTS-Voice-Cloning** pose le **clonage vocal** (few-shot speaker adaptation), paradigme distinct du TTS single-speaker.
+- **02-4 Demucs-Source-Separation** pose la **séparation de sources** (drums/vocals/bass/other), problème inverse du mixage.
+- **02-8 Expressive-TTS** pose la **synthèse multilingue expressive** (FR/EN/JA/ES, d'où le japonais légitime).
+
+### Anti-régression / Stop & Repair
+
+- **0 sortie de cellule hand-éditée** : tous les outputs sont des comptes-rendus d'exécution réelle (GPU probe, audio players base64, messages de mode). Un output affiche un path machine `D:\Dev\CoursIA\...` (stream print du output_dir, PAS un secret) — laissé intact (Stop & Repair : métadonnée runtime légitime, pas un credential).
+- **0 secret** inline (5 getenv-default = URLs localhost, vérifié G.1 bénins).
+- **0 stub C.1** : scanner canonique 30/30 pass.
+- **CJK légitime** : japonais = démo multilingue pédagogique (PAS garbage type CSP-9 cell26 `几百変数`).
+
+### Owner-lane volet
+
+**po-2024 strict** — clôture de l'arc GenAI axe-2 (Texte #022 + Image #023 + PostTraining #024 + Video #025 + **Audio #026**). Entry #026 = registre axe-2 complet pour la modalité GenAI. Continuité pattern mémoire (BATCH_MODE + vrai service/modèle invoqué) — mais Audio est **plus fort** que Video/PostTraining (SOTA-OK direct, audio réel committé, vs RECOVERABLE-MACHINE flag-gated). La stack audio (Kokoro/Whisper/XTTS/Demucs sur GPU RTX 3090 po-2023) tourne réellement, po-2024 = audit. **Après #026, registre GenAI axe-2 COMPLET** → pivot forcé genre (Lean/.NET/QC/ML) cycle suivant (anti-tunneling R6, pas de 4e audit registre).
+
+### Conclusions audit
+
+- **Substance GenAI/Audio = riche, honnête et SOTA-OK**, 30 notebooks couvrant la chaîne audio moderne (TTS Kokoro/XTTS/Fish-Speech + STT Whisper + music MusicGen + separation Demucs + audiobook agentique #1028), 431/431 EXEC_PROVED (100%), 0 C.1, 0 secret, CJK légitime (japonais multilingue), ≥3 exos/nb, **audio WAV réels committés** (base64 jouable, GPU RTX 3090).
+- **Pas de fix nécessaire** : audit = SOTA-OK 30/30. Aucun PR de substance requis sur les notebooks.
+- **Cumulatif** : entry #026 ajoute au registre axe-2 la **famille GenAI/Audio** (TTS Kokoro-82M/XTTS/Fish-Speech, STT Whisper, music MusicGen/MIDI/Song, source-separation Demucs, voice-cloning, audiobook agentique EPIC #1028). **Couverture GenAI axe-2 désormais COMPLÈTE** : Texte #022 + Image #023 + PostTraining #024 + Video #025 + Audio #026. Le registre compte désormais entries #001-#018 + #020 + #021 + #026 (#019 Lean, #022 GenAI/Texte, #023 GenAI/Image, #024 GenAI/PostTraining, #025 GenAI/Video réservés par PRs ouvertes).
+
+Part of #3801, #1385, #1028
