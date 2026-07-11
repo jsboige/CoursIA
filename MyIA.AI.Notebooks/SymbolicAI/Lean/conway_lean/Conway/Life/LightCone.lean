@@ -297,5 +297,55 @@ theorem evolve_reach_chebyshev (t : Nat) (g : Grid) (q : Int × Int)
       have hrq_cheb : chebDist r q ≤ 1 := chebDist_le_one_of_moore r q hrq
       exact (chebDist_triangle p q r).trans (add_le_add hpr hrq_cheb)
 
+/-! ## N2 step 3 capstone: tight Chebyshev reach ⊆ padCenter2 margin
+
+Composing the tight reach theorem (`evolve_reach_chebyshev`, one Moore shell
+per generation) with the margin-arithmetic lemma
+(`padCenter2_margin_ge_jumpReach`, `2^k ≤ 3·2^(k-1)`, proven in
+`HashlifeCorrectness` L1102) yields the full sorry-free bridge named by ai-01's
+N2 greenlight: for a level-`k ≥ 1` MacroCell, a `2^k`-generation jump (the
+Hashlife `jumpSize k = 2^k`) reaches only cells within the per-side `padCenter2`
+margin `3·2^(k-1)` of some initially-alive cell. The **tight** Chebyshev-`2^k`
+reach — not the loose Manhattan-`2^(k+1)` cone — is what makes the `2^k` margin
+sufficient with 50% headroom (the diagonal of the reach is `2^k`, the margin is
+`3·2^(k-1) = 1.5·2^k`).
+
+Evaluation of the three MacroCell-layer ingredients ai-01 flagged (these govern
+the eventual wire into `p5_large_n_jump`, which remains P4-gated and out of
+scope here):
+- `padCenter2 c = padToLevelPlus1 (padToLevelPlus1 c)` (`Hashlife.lean` L260):
+  lifts a level-`k` cell into a level-`(k+2)` frame of side `2^(k+2) = 4·2^k`,
+  giving per-side margin `(4·2^k − 2^k)/2 = 3·2^(k-1)`.
+- `level_padCenter2` (`HashlifeCorrectness` L1638): `(padCenter2 c).level =
+  c.level + 2` — the level companion certifying the frame lift.
+- `hashlifeResult_central_correct` (`HashlifeCorrectness` L2753): the P4
+  decompose-compose theorem; its `succ` arm carries one of the two residual
+  sorries (L2734), so the MacroCell offset-wire is blocked on the P4 inductive
+  step (`p4_succ_membership`).
+
+This capstone is the **Grid-level / set-distance half** of the bridge — proved
+from already-sorry-free ingredients, so it is itself sorry-free and additive
+(anti-regression §D: the two residual sorries of `HashlifeCorrectness` are
+untouched). EPIC #3846, N2 step 3. -/
+
+/-- **Reach ⊆ padCenter2 margin** (N2 step 3, sorry-free capstone).
+    After `2^k` generations of evolution, every alive cell `q` has each
+    coordinate within the `padCenter2` per-side margin `3·2^(k-1)` of some
+    initially-alive cell `p`. This composes the tight Chebyshev reach
+    (`evolve_reach_chebyshev`, giving `chebDist p q ≤ 2^k`), the per-coordinate
+    bound (`coord_bound_of_chebDist_le`, giving `|q.i − p.i| ≤ 2^k`), and the
+    margin arithmetic (`padCenter2_margin_ge_jumpReach`, `2^k ≤ 3·2^(k-1)`). -/
+theorem evolve_reach_within_padCenter2_margin (k : Nat) (hk : 1 ≤ k)
+    (g : Grid) (q : Int × Int)
+    (h_alive : isAlive (evolve ((2 : Nat)^k) g) q = true) :
+    ∃ p : Int × Int,
+      isAlive g p = true ∧
+      Int.natAbs (q.1 - p.1) ≤ 3 * (2 : Nat)^(k - 1) ∧
+      Int.natAbs (q.2 - p.2) ≤ 3 * (2 : Nat)^(k - 1) := by
+  obtain ⟨p, hp, hcheb⟩ := evolve_reach_chebyshev ((2 : Nat)^k) g q h_alive
+  have ⟨hb1, hb2⟩ := coord_bound_of_chebDist_le p q ((2 : Nat)^k) hcheb
+  have hmargin := padCenter2_margin_ge_jumpReach k hk
+  exact ⟨p, hp, hb1.trans hmargin, hb2.trans hmargin⟩
+
 end Life
 end Conway
