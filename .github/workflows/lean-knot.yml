@@ -12,31 +12,29 @@ name: Lean Knot CI
 #
 # Uses the shared lean-build.yml reusable workflow.
 #
-# Sorry profile (verified 2026-06-23, prose-header mode, baseline=28):
-# knot_lean's real sorries are INLINE (`exact sorry`, `:= sorry`,
-# `sorry -- comment`), never bare `sorry` on its own line. The standalone-tactic
-# filter (`^\s*sorry\s*$`) counts 0 here and would catch no regression, so we
-# use prose-header (excludes only "sorries"/"sorry's"), which captures every
-# real sorry and fails on any addition. Breakdown of the 28:
-#   - Basic.lean:                1 (prose: TODO comment on well-formedness)
-#   - Reidemeister.lean:         2 (reidemeister_theorem ×2 — PL topology, OOS)
-#   - Invariant.lean:            7 (tricolorable_invariant, trefoil_not_unknot,
-#                                  unknottingNumber + prose; +2 from the PARTIAL
-#                                  `tricolorable_backward` transfer — Epic #2874
-#                                  PR3: colour-preservation proven, `num` PROVEN
-#                                  by wf parity (numEdges ≥ 2 from length ≥ 2);
-#                                  2 residual tactic sorries fox/col, user-authorised;
-#                                  +1 GF(3) follow-up (#3003, 2026-06-23): the Fox
-#                                  linearity bridge `triColorFoxCondition_iff_sum_mod_three`
-#                                  is PROVEN cycle-6 (constructor enumeration + decide,
-#                                  no Fintype needed — args are explicit); only the
-#                                  universal lemma `tricolorability_of_two_crossings`
-#                                  (rank-nullity) remains open as a BG-prover target)
-#   - Conway.lean:              11 (Conway knot 11n34, Kinoshita-Terasaka,
-#                                  mutation — scaffolding)
-#   - Lidman.lean:               5 (11n102 unknotting number = 2 — Heegaard-Floer)
-#   - MathlibPrerequisites.lean: 2 (prose: index of missing Mathlib)
-# Raising this baseline requires a documented justification in the PR body.
+# Sorry profile (switched 2026-07-11 to `real` mode, baseline=17; was prose-header/28):
+# knot_lean's docstrings legitimately reference "sorry" (Phase-1 scaffolding prose:
+# "sorry permanent", "sorry commentés", "chaque sorry", the MathlibPrerequisites
+# roadmap index, the TODO on well-formedness). Under `prose-header` mode these
+# prose mentions counted toward the baseline, so any bilingual/docstring PR that
+# added a legitimate prose "sorry" tripped the counter (e.g. #6171 had to raise
+# the baseline 28->30 for +2 prose mentions, 0 new tactic sorry). Per lean-build.yml's
+# guidance ("Use `real` when docstring prose legitimately says 'sorry' so comment
+# edits do not flip the raw count"), switch to `real` mode: strip Lean comments
+# (-- line + nested /- -/ block) then count word-bounded `\bsorry\b`. This mirrors
+# the prover harness `count_real_sorries` (FX-6 #1453) — counts exactly
+# compiled-tactic sorries, immune to docstring edits.
+# Real-mode breakdown (firsthand counted 2026-07-11 with the exact CI awk):
+#   - Conway.lean:              8 (Conway knot 11n34, Kinoshita-Terasaka, mutation)
+#   - Invariant.lean:           5 (tricolorable_invariant residual fox/col tactics;
+#                                  the Fox linearity bridge + num are PROVEN — see
+#                                  Invariant.lean docstring for the resolved/open split)
+#   - Lidman.lean:              2 (11n102 unknotting number = 2 — Heegaard-Floer)
+#   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
+#   - Basic.lean:               0 (the "1" under prose-header was a TODO prose comment)
+#   - MathlibPrerequisites.lean:0 (the "2" were the prose roadmap index)
+# Total real tactic sorry = 17. Raising this baseline requires a documented
+# justification in the PR body (a NEW real tactic sorry, not prose).
 
 on:
   push:
@@ -61,5 +59,5 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
       display-name: knot_lean
-      sorry-baseline: "28"
-      sorry-filter-mode: prose-header
+      sorry-baseline: "17"
+      sorry-filter-mode: real
