@@ -17,7 +17,7 @@ from typing import Optional, Dict, List
 from .state import ProofState, TacticAttempt, SorryContext
 from .trace import TraceLogger
 from .knowledge import ProofKnowledgeBase
-from .lean_utils import count_real_sorries
+from .lean_utils import count_real_sorries, resolve_lake_module
 
 # Regex to detect standalone `axiom` declarations in Lean 4 source.
 # Matches lines like `axiom foo`, `axiom bar : Prop`, `axiom baz (n : Nat) : ...`
@@ -1023,7 +1023,7 @@ class TacticTools:
         """
         try:
             from .verifier import get_verifier
-            project_dir = str(Path(self._filepath).parent.parent)
+            project_dir, _module = resolve_lake_module(self._filepath)
             verifier = get_verifier(project_dir)
             subdir = Path(self._filepath).parent.name
             relative_path = f"{subdir}/{Path(self._filepath).name}"
@@ -1693,7 +1693,7 @@ class TacticTools:
             from .verifier import get_verifier, _load_lean_verifier_class
             _LeanVerifier = _load_lean_verifier_class()
 
-            project_dir = str(Path(self._filepath).parent.parent)
+            project_dir, _module = resolve_lake_module(self._filepath)
             subdir = Path(self._filepath).parent.name
             filename = Path(self._filepath).name
             relative_path = f"{subdir}/{filename}"
@@ -1775,7 +1775,7 @@ class TacticTools:
         if not self._filepath:
             return json.dumps({"error": "No file configured"})
 
-        project_dir = str(Path(self._filepath).parent.parent)
+        project_dir, _module = resolve_lake_module(self._filepath)
         start = time.time()
 
         verifier = get_verifier(project_dir)
@@ -2528,7 +2528,7 @@ class DiagnosisTools:
             return json.dumps({"error": "No file configured"})
         try:
             from .verifier import get_verifier
-            project_dir = str(Path(self._filepath).parent.parent)
+            project_dir, _module = resolve_lake_module(self._filepath)
             verifier = get_verifier(project_dir)
             subdir = Path(self._filepath).parent.name
             relative_path = f"{subdir}/{Path(self._filepath).name}"
@@ -2608,7 +2608,7 @@ class DiagnosisTools:
             return json.dumps({"error": "No file configured"})
         try:
             from .verifier import get_verifier
-            project_dir = str(Path(self._filepath).parent.parent)
+            project_dir, _module = resolve_lake_module(self._filepath)
             verifier = get_verifier(project_dir)
             subdir = Path(self._filepath).parent.name
             relative_path = f"{subdir}/{Path(self._filepath).name}"

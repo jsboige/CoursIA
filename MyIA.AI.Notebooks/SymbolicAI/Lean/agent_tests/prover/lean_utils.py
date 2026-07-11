@@ -243,7 +243,15 @@ def is_true_placeholder_goal(filepath: str, sorry_line: int) -> Tuple[bool, str]
         return False, ""
 
     from .verifier import get_verifier
-    project_dir = str(Path(filepath).resolve().parent.parent)
+    # FX-5 depth-3 hardening (#1453 follow-up to PR #5982): `parent.parent` only
+    # works for files at the top package (e.g. `Conway/Nim.lean`); for deeper
+    # files like `Conway/Life/HashlifeCorrectness.lean` the resulting dir has no
+    # lakefile and the verifier would build the wrong module — silently
+    # degrading TRUE_PLACEHOLDER_GOAL detection to "no refusal". resolve_lake_module
+    # walks up to the real Lake root so the FX-5 probe actually compiles against
+    # the target file. See #5982 commit log for the founding LSP fix that exposed
+    # this identical pattern in 8 still-broken call sites.
+    project_dir, _module = resolve_lake_module(filepath)
     verifier = get_verifier(project_dir)
     subdir = Path(filepath).parent.name
     relative_path = f"{subdir}/_GoalExtract.lean"
@@ -417,8 +425,12 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
         print(f"  [GoalExtract] Deeply nested sorry (indent={indent}), using heuristic")
         return _heuristic_goal_extract(lines, sorry_line)
 
-    project_dir = Path(filepath).parent.parent
-    verifier = get_verifier(str(project_dir))
+    # depth-3 hardening (#1453 follow-up to PR #5982): same `parent.parent`
+    # bug as `is_true_placeholder_goal` above — for files nested below the top
+    # package (e.g. `Conway/Life/HashlifeCorrectness.lean`) the resulting dir
+    # has no lakefile and the verifier probe compiles against the wrong module.
+    project_dir, _module = resolve_lake_module(filepath)
+    verifier = get_verifier(project_dir)
     subdir = Path(filepath).parent.name
     relative_path = f"{subdir}/_GoalExtract.lean"
     tmp_path = Path(filepath).parent / "_GoalExtract.lean"
@@ -959,8 +971,13 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
     tmp_path = Path(filepath).parent / "_SorryVerify.lean"
     tmp_path.write_text(new_content, encoding="utf-8")
 
-    # Verify using verify_project_file (no command-line length limit)
-    verifier = get_verifier(str(Path(filepath).parent.parent))
+    # Verify using verify_project_file (no command-line length limit).
+    # depth-3 hardening (#1453 follow-up to PR #5982): for files nested below
+    # the top package (e.g. `Conway/Life/HashlifeCorrectness.lean`) the
+    # legacy `parent.parent` dir has no lakefile — resolve_lake_module walks
+    # up to the real Lake root so the probe compiles against the right module.
+    project_dir, _module = resolve_lake_module(filepath)
+    verifier = get_verifier(project_dir)
     subdir = Path(filepath).parent.name
     relative_path = f"{subdir}/_SorryVerify.lean"
     result = verifier.verify_project_file(relative_path, force=True)
