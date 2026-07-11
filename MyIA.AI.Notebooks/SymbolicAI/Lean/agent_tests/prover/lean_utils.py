@@ -60,6 +60,24 @@ def resolve_lake_module(filepath) -> Tuple[str, str]:
     return str(p.parent.parent), f"{p.parent.name}.{stem}"
 
 
+def probe_relative_path(filepath, project_dir, tmp_name: str) -> str:
+    """Path of a sibling probe file (e.g. ``_GoalExtract.lean``) relative to the
+    RESOLVED Lake root — depth-agnostic.
+
+    The legacy ``<subdir>/<tmp_name>`` form missed the package prefix for nested
+    files (``Conway/Life/...``): lake then built a non-existent path and the
+    probe silently no-op'd. Fixing ``project_dir`` via ``resolve_lake_module`` is
+    NOT enough — ``verify_project_file`` only re-roots ``relative_path`` when the
+    given root lacks a lakefile, which ``resolve_lake_module`` now prevents, so
+    the path must be correct at derivation. Falls back to the legacy form when the
+    probe sits outside the resolved root (non-Lake / oddly-laid-out trees)."""
+    tmp_path = Path(filepath).parent / tmp_name
+    try:
+        return tmp_path.resolve().relative_to(Path(project_dir).resolve()).as_posix()
+    except ValueError:
+        return f"{Path(filepath).parent.name}/{tmp_name}"
+
+
 def strip_lean_comments(content: str) -> str:
     """Strip Lean line comments (``--``) and nested block comments (``/- -/``).
 
@@ -250,11 +268,13 @@ def is_true_placeholder_goal(filepath: str, sorry_line: int) -> Tuple[bool, str]
     # degrading TRUE_PLACEHOLDER_GOAL detection to "no refusal". resolve_lake_module
     # walks up to the real Lake root so the FX-5 probe actually compiles against
     # the target file. See #5982 commit log for the founding LSP fix that exposed
-    # this identical pattern in 8 still-broken call sites.
+    # this identical pattern in 8 still-broken call sites. Fixing project_dir alone
+    # is insufficient: the paired relative_path must also be re-rooted (see
+    # probe_relative_path), else the probe compiles a non-existent path and
+    # _probe_closes_goal false-positives every deep sorry as TRUE_PLACEHOLDER.
     project_dir, _module = resolve_lake_module(filepath)
     verifier = get_verifier(project_dir)
-    subdir = Path(filepath).parent.name
-    relative_path = f"{subdir}/_GoalExtract.lean"
+    relative_path = probe_relative_path(filepath, project_dir, "_GoalExtract.lean")
     tmp_path = Path(filepath).parent / "_GoalExtract.lean"
 
     indent_str = " " * indent
@@ -429,10 +449,11 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
     # bug as `is_true_placeholder_goal` above — for files nested below the top
     # package (e.g. `Conway/Life/HashlifeCorrectness.lean`) the resulting dir
     # has no lakefile and the verifier probe compiles against the wrong module.
+    # relative_path must also be re-rooted (verify_project_file skips its own
+    # re-rooting once project_dir holds a lakefile) — see probe_relative_path.
     project_dir, _module = resolve_lake_module(filepath)
     verifier = get_verifier(project_dir)
-    subdir = Path(filepath).parent.name
-    relative_path = f"{subdir}/_GoalExtract.lean"
+    relative_path = probe_relative_path(filepath, project_dir, "_GoalExtract.lean")
     tmp_path = Path(filepath).parent / "_GoalExtract.lean"
 
     # Try multiple probes to extract goal state
@@ -978,8 +999,7 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
     # up to the real Lake root so the probe compiles against the right module.
     project_dir, _module = resolve_lake_module(filepath)
     verifier = get_verifier(project_dir)
-    subdir = Path(filepath).parent.name
-    relative_path = f"{subdir}/_SorryVerify.lean"
+    relative_path = probe_relative_path(filepath, project_dir, "_SorryVerify.lean")
     result = verifier.verify_project_file(relative_path, force=True)
 
     # Clean up temp file
