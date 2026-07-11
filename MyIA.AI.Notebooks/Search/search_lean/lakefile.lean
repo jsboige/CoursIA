@@ -33,3 +33,12 @@ require mathlib from git
 @[default_target]
 lean_lib «Astar» where
   globs := #[.submodules `Astar]
+
+-- Sibling pair #4980 : agrégateur racine monolingue EN `Astar_en.lean`,
+-- strictement additif (mêmes imports que `Astar.lean`, ordre byte-identique).
+-- Le `globs` ici est volontairement minimal (`Astar_en` sans `.*`) car
+-- `Astar_en.lean` ne référence que les sous-modules `Astar.*` du FR canonique
+-- (namespace `Astar_en` n'a pas de sous-modules propres — c'est un miroir pur).
+@[default_target]
+lean_lib «Astar_en» where
+  globs := #[`Astar_en]
