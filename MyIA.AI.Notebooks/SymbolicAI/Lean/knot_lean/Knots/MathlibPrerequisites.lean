@@ -10,6 +10,26 @@
   Epic #2874, Phase 1.
 
   Convention: organized by difficulty tier.
+
+---
+
+`Knots.MathlibPrerequisites` — index de l'infrastructure Mathlib manquante.
+
+Ce fichier documente les prérequis Mathlib nécessaires pour résoudre
+chaque `sorry` du projet `knot_lean`. Il sert de feuille de route pour
+ce qui devrait être construit (soit dans Mathlib, soit comme
+dépendances externes) pour formaliser les résultats de théorie des
+nœuds.
+
+EPIC #2874, Phase 1.
+
+Convention : organisé par palier de difficulté.
+
+i18n : extension bilingue FR/EN inline du sous-module (cf c.373
+`Knots.lean` racine pour le pattern d'agrégateur bilingue). La
+section anglaise ci-dessus est préservée verbatim ; la section
+française est ajoutée en miroir pour la convention #4980 ratifiée
+2026-07-04.
 -/
 
 namespace Knots.MathlibPrerequisites

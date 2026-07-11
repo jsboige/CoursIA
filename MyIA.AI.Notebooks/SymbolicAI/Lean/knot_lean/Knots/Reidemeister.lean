@@ -13,6 +13,36 @@
   - Planar graph theory (for planar isotopy)
   - Finite sequences of moves (combinatorial rewrite systems)
   - The Reidemeister theorem itself is a deep topological result
+
+---
+
+`Knots.Reidemeister` — mouvements de Reidemeister et équivalence de nœuds.
+
+Les trois mouvements de Reidemeister (1927) engendrent toutes les
+équivalences entre diagrammes de nœuds. Deux diagrammes représentent
+le même nœud si et seulement si l'un peut être transformé en l'autre
+par une suite finie de mouvements R1, R2, R3 et d'isotopies planes.
+
+EPIC #2874, Phase 1.
+
+Prérequis Mathlib nécessaires :
+- théorie des graphes plans (pour l'isotopie plane)
+- suites finies de mouvements (systèmes de réécriture combinatoires)
+- le théorème de Reidemeister lui-même est un résultat topologique
+  profond
+
+Note : ce sous-module héberge les modèles successifs des mouvements
+de Reidemeister (Phase 5, modèles PR1, PR1.5, PR1.5c option C) ainsi
+que les raffinements sous-spécifiques (`Reidemeister1'`,
+`Reidemeister1Connected`, `Reidemeister3Determined`). Voir le bloc
+diagnostic sur `tricolorable_invariant` dans `Invariant.lean` pour la
+genèse des modèles successifs et les contre-exemples certifiés.
+
+i18n : extension bilingue FR/EN inline du sous-module (cf c.373
+`Knots.lean` racine pour le pattern d'agrégateur bilingue). La
+section anglaise ci-dessus est préservée verbatim ; la section
+française est ajoutée en miroir pour la convention #4980 ratifiée
+2026-07-04.
 -/
 
 import Knots.Basic

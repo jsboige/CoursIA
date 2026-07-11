@@ -13,6 +13,28 @@
   - Combinatorial representations of planar diagrams (PD-codes)
   - Gauss codes / Dowker-Thistlethwaite notation
   - Basic graph theory for crossing graphs
+
+---
+
+`Knots.Basic` — fondations combinatoires de la théorie des nœuds.
+
+Échafaudage de la théorie des nœuds en Lean 4, inspiré par :
+- shua/leanknot (https://github.com/shua/leanknot, branche Lean 4)
+- Prathamesh (2015), *Formalising Knot Theory in Isabelle/HOL*
+
+Convention : espace de noms `Knots`, `sorry` commentés avec références.
+EPIC #2874, Phase 1.
+
+Prérequis Mathlib nécessaires :
+- représentations combinatoires des diagrammes plans (PD-codes)
+- codes de Gauss / notation de Dowker-Thistlethwaite
+- théorie élémentaire des graphes pour les graphes de croisements
+
+i18n : extension bilingue FR/EN inline du sous-module (cf c.373
+`Knots.lean` racine pour le pattern d'agrégateur bilingue). La
+section anglaise ci-dessus est préservée verbatim ; la section
+française est ajoutée en miroir pour la convention #4980 ratifiée
+2026-07-04 (FR-first, EN-miroir, séparateur `---`).
 -/
 
 namespace Knots

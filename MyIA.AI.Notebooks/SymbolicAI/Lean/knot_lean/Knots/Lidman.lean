@@ -22,6 +22,40 @@
   - Surgery on knots (Dehn surgery, integral/half-integral)
   - Plumbing diagrams for 4-manifolds
   - Némethi's algorithm for computing HF of plumbed manifolds
+
+---
+
+`Knots.Lidman` — le nombre de dénouement de 11n102 vaut 2.
+
+Tye Lidman (2026) a prouvé que le nombre de dénouement u(11n102) = 2.
+Il était connu auparavant que u(11n102) ∈ {1, 2}.
+
+La preuve tient sur une page mais est extraordinairement profonde,
+mettant en jeu :
+1. l'astuce de Montesinos : revêtement double ramifié ↔ chirurgie
+   demi-entière
+2. les espaces fibrés de Seifert et leurs descriptions par plumbing
+3. l'homologie de Heegaard Floer (d-invariants, HFred)
+4. la formule de Ni-Wu pour les chirurgies cosmétiques
+5. la formule du cône de Gainullin
+
+Référence : Lidman (2026), arXiv:2606.12431.
+
+EPIC #2874, Phase 1 (échafaudage uniquement — `sorry` permanent).
+
+Prérequis Mathlib nécessaires (TRÈS LOINTAIN) :
+- topologie des 3-variétés (revêtements ramifiés, espaces fibrés
+  de Seifert)
+- homologie de Heegaard Floer (d-invariants, HFred)
+- chirurgie sur les nœuds (chirurgie de Dehn, entière/demi-entière)
+- diagrammes de plumbing pour les 4-variétés
+- algorithme de Némethi pour calculer HF des variétés plumbées
+
+i18n : extension bilingue FR/EN inline du sous-module (cf c.373
+`Knots.lean` racine pour le pattern d'agrégateur bilingue). La
+section anglaise ci-dessus est préservée verbatim ; la section
+française est ajoutée en miroir pour la convention #4980 ratifiée
+2026-07-04.
 -/
 
 import Knots.Basic

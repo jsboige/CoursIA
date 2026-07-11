@@ -22,6 +22,43 @@
   - Rasmussen s-invariant (requires Khovanov homology)
   - Trace companion construction (requires Kirby calculus)
   - Freedman's topological surgery (requires enormous topological machinery)
+
+---
+
+`Knots.Conway` — nœud de Conway, Kinoshita-Terasaka, et preuve de Piccirillo.
+
+Le nœud de Conway (11n34) doit son nom à John Conway, qui l'a découvert
+par sa notation pour les nœuds. Il possède 11 croisements et un
+polynôme d'Alexander trivial.
+
+Résultats clés :
+1. Conway (11n34) et Kinoshita-Terasaka (11n42) partagent le même
+   polynôme d'Alexander (trivial) — les invariants de mutation
+   coïncident.
+2. Le nœud de Kinoshita-Terasaka EST slice.
+3. Le nœud de Conway N'EST PAS smoothly slice (Piccirillo 2018/2020).
+4. Combiné au théorème de Freedman (Conway est topologiquement
+   slice), ceci donne la première dichotomie explicite
+   lisse/topologique.
+
+EPIC #2874, Phase 1 (échafaudage uniquement — `sorry` permanent pour
+l'instant).
+
+Prérequis Mathlib nécessaires (TRÈS LOINTAIN) :
+- polynôme d'Alexander (nécessite la représentation de Burau, pas
+  dans Mathlib)
+- définition de nœud slice (nécessite la théorie des 4-variétés
+  lisses)
+- invariant s de Rasmussen (nécessite l'homologie de Khovanov)
+- construction du compagnon de trace (nécessite le calcul de Kirby)
+- chirurgie topologique de Freedman (nécessite une machinerie
+  topologique énorme)
+
+i18n : extension bilingue FR/EN inline du sous-module (cf c.373
+`Knots.lean` racine pour le pattern d'agrégateur bilingue). La
+section anglaise ci-dessus est préservée verbatim ; la section
+française est ajoutée en miroir pour la convention #4980 ratifiée
+2026-07-04.
 -/
 
 import Knots.Basic
