@@ -49,6 +49,33 @@ SKIP_DIRS = {
 # Baseline file location
 BASELINE_PATH = REPO_ROOT / "scripts" / "tests" / "baseline_docs_links.json"
 
+
+def _load_submodule_paths() -> set[str]:
+    """Read git submodule paths from .gitmodules (repo-relative, posix form).
+
+    Submodule internals are third-party checkouts (Argumentum, MetaGeneticSharp):
+    their broken links are not ours to fix, so we skip them like SKIP_DIRS.
+    Returns an empty set if .gitmodules is absent or unparsable.
+    """
+    gitmodules = REPO_ROOT / ".gitmodules"
+    if not gitmodules.is_file():
+        return set()
+    paths: set[str] = set()
+    try:
+        for line in gitmodules.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("path"):
+                _, _, value = line.partition("=")
+                value = value.strip().strip("/")
+                if value:
+                    paths.add(value)
+    except OSError:
+        return set()
+    return paths
+
+
+SUBMODULE_PATHS = _load_submodule_paths()
+
 # Pattern: [link text](relative/path) — captures relative paths only (no http/https/#anchors)
 LINK_PATTERN = re.compile(
     r"\[([^\]]*)\]\((?!https?://)(?!mailto:)(?!#)([^)\s#]+)\)"
@@ -75,12 +102,15 @@ class ScanResult:
 
 
 def _should_skip(path: Path) -> bool:
-    """Check if a path should be skipped (in SKIP_DIRS or problematic)."""
+    """Check if a path should be skipped (in SKIP_DIRS, a submodule, or problematic)."""
     try:
-        parts = path.relative_to(REPO_ROOT).parts
+        rel = path.relative_to(REPO_ROOT)
     except ValueError:
         return True
-    return any(skip in parts for skip in SKIP_DIRS)
+    if any(skip in rel.parts for skip in SKIP_DIRS):
+        return True
+    rel_posix = rel.as_posix()
+    return any(rel_posix == sm or rel_posix.startswith(sm + "/") for sm in SUBMODULE_PATHS)
 
 
 def _is_valid_target(target: str) -> bool:
@@ -140,6 +170,11 @@ def scan_file(filepath: Path) -> list[LinkRef]:
         if in_code_block:
             continue
 
+        # Strip inline code spans (`...`): their contents render as literal text,
+        # so a [text](target) inside backticks is not a clickable link. This avoids
+        # false positives on format templates in review ledgers, e.g. `[Foo](...)`.
+        line = re.sub(r"`[^`]*`", "", line)
+
         for match in LINK_PATTERN.finditer(line):
             text = match.group(1)
             target = match.group(2)
@@ -174,9 +209,15 @@ def check_link(target: str, source_path: Path, root: Path = REPO_ROOT) -> bool:
 
     # Must be within root (safety: no escaping outside the repo)
     try:
-        resolved.relative_to(root)
+        rel_posix = resolved.relative_to(root).as_posix()
     except ValueError:
         return False
+
+    # Links into a git submodule are valid regardless of checkout state: CI uses
+    # submodules: false, so the mount dir may be absent. Submodule content is
+    # third-party — its presence is not this repo's concern to verify.
+    if any(rel_posix == sm or rel_posix.startswith(sm + "/") for sm in SUBMODULE_PATHS):
+        return True
 
     return resolved.exists()
 
