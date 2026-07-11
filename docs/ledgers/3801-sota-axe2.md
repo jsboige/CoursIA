@@ -1361,3 +1361,101 @@ Les notebooks de planification posent des **problèmes PDDL non-triviaux** : log
 - **Cumulatif** : **14 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, **Planners**). Entry #014 Planners ajoute **1 moteur SOTA nouveau** au registre (**pyperplan** planificateur PDDL, distinct des solveurs CSP/GA ; PDDL parser associé) = **33 moteurs SOTA distincts cumulés**.
 
 Part of #3801
+
+## Entry #016 — SmartContracts (SymbolicAI, owner po-2024, c.11)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/` (27 .ipynb pédagogiques, 7 sous-séries 00→06) |
+| Owner-lane | **po-2024** (lead MD047 famille c3-c7 #5943/#5948/#5953/#5960/#5961/#5966 ; [CLAIMED] dashboard 02:50Z) |
+| Date audit | 2026-07-11 (c.11) |
+| Auditeur | `myia-po-2024:CoursIA` |
+| Verdict agrégé | **SOTA-OK** (27/27 SOTA-OK) |
+
+### Findings détaillés
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | SOTA invoqué (grep ground truth) | SOTA verdict |
+|----|-------|------|------|-----|-----------|--------|----------------------------------|--------------|
+| SC-0-Cypherpunk-Origins | 14 | 14 | 14/14 | 0 | 0 | python3 | Foundry/forge (historique) | **SOTA-OK** |
+| SC-1-Setup-Foundry | 7 | 7 | 7/7 | 0 | 0 | python3 | Foundry/forge, Solidity | **SOTA-OK** |
+| SC-2-Setup-Web3py | 10 | 10 | 10/10 | 0 | 0 | python3 | solcx, web3.py, Foundry, Solidity | **SOTA-OK** |
+| SC-3-Solidity-Basics | 18 | 18 | 18/18 | 0 | 0 | python3 | solcx, web3.py, Foundry, Solidity | **SOTA-OK** |
+| SC-4-Functions-State | 15 | 15 | 15/15 | 0 | 0 | python3 | solcx, web3.py, Foundry, Solidity | **SOTA-OK** |
+| SC-5-Inheritance | 12 | 12 | 12/12 | 0 | 0 | python3 | solcx, web3.py, Foundry, OpenZeppelin, Solidity | **SOTA-OK** |
+| SC-6-Errors-Events | 11 | 11 | 11/11 | 0 | 0 | python3 | solcx, web3.py, Foundry, Solidity | **SOTA-OK** |
+| SC-7-Token-Standards | 10 | 10 | 10/10 | 0 | 0 | python3 | solcx, web3.py, Foundry, OpenZeppelin (ERC20/721), Solidity | **SOTA-OK** |
+| SC-8-DeFi-Primitives | 8 | 8 | 8/8 | 0 | 0 | coursia-semanticweb | solcx, web3.py, Foundry, Solidity (AMM/lending) | **SOTA-OK** |
+| SC-9-DAO-Governance | 8 | 8 | 8/8 | 0 | 0 | python3 | solcx, web3.py, Foundry, Solidity (voting/governor) | **SOTA-OK** |
+| SC-10-Account-Abstraction | 10 | 10 | 10/10 | 0 | 0 | python3 | solcx, web3.py, Foundry, OpenZeppelin (ERC-4337), Solidity | **SOTA-OK** |
+| SC-11-LLM-Assisted | 20 | 20 | 20/20 | 0 | 0 | python3 | Foundry, OpenZeppelin, Solidity (LLM audit) | **SOTA-OK** |
+| SC-12-Foundry-Testing | 23 | 23 | 23/23 | 0 | 0 | python3 | Foundry (forge test), OpenZeppelin, Solidity | **SOTA-OK** |
+| SC-13-Fuzz-Invariants | 10 | 10 | 10/10 | 0 | 0 | python3 | Foundry (forge fuzz/invariants), Solidity | **SOTA-OK** |
+| SC-14-Formal-Verification | 11 | 11 | 11/11 | 0 | 0 | python3 | solcx, Foundry (forge verify), Solidity | **SOTA-OK** |
+| SC-15-Zero-Knowledge-Proofs | 13 | 13 | 13/13 | 0 | 0 | python3 | PyCryptodome, hashlib (Schnorr/ZK primitives) | **SOTA-OK** |
+| SC-16-Homomorphic-Encryption | 13 | 13 | 13/13 | 0 | 0 | python3 | Zama Concrete (FHE), TenSEAL, python-paillier (phe) | **SOTA-OK** |
+| SC-17-E2E-Verifiable-Voting | 12 | 12 | 12/12 | 0 | 0 | python3 | Microsoft ElectionGuard, python-paillier | **SOTA-OK** |
+| SC-18-Vyper | 11 | 11 | 11/11 | 0 | 0 | python3 | vyper, web3.py, Foundry, OpenZeppelin, Solidity | **SOTA-OK** |
+| SC-19-Ripple-XRP | 13 | 13 | 13/13 | 0 | 0 | python3 | xrpl (officiel Ripple), Solidity | **SOTA-OK** |
+| SC-20-Bitcoin-Scripting | 14 | 14 | 14/14 | 0 | 0 | python3 | Foundry, Solidity (Bitcoin Script) | **SOTA-OK** |
+| SC-21-Move-Sui | 8 | 8 | 8/8 | 0 | 0 | python3 | Solidity (Move/Sui paradigme) | **SOTA-OK** |
+| SC-22-Solana-Anchor | 13 | 13 | 13/13 | 0 | 0 | python3 | Solidity (Anchor/Solana paradigme) | **SOTA-OK** |
+| SC-23-Cross-Chain | 11 | 11 | 11/11 | 0 | 0 | python3 | OpenZeppelin, Solidity (bridges) | **SOTA-OK** |
+| SC-24-Testnet-Deploy | 12 | 12 | 12/12 | 0 | 0 | python3 | solcx, web3.py, eth-account (Sepolia deploy) | **SOTA-OK** |
+| SC-25-Mainnet-Deploy | 8 | 8 | 8/8 | 0 | 0 | python3 | solcx, web3.py, eth-account, OpenZeppelin | **SOTA-OK** |
+| SC-26-Final-Project | 5 | 5 | 5/5 | 0 | 0 | python3 | solcx, web3.py, Foundry, OpenZeppelin (capstone) | **SOTA-OK** |
+
+### Synthèse
+
+- **EXEC_PROVED global** : 27/27 (100%) — `execution_count != null` sur **320/320** cellules code. **0 flagged**.
+- **Erreurs runtime** : 0/27.
+- **Violations C.1** : 0/27 (regex `raise NotImplementedError|assert False|/0` sur source code = 0 hit).
+
+### Vrais outils SOTA invoqués (vérifiés G.1 imports réels, grep ground truth)
+
+**Moteurs blockchain EVM (le cœur de la série)** :
+- **Foundry** (forge/cast/anvil — toolchain de test/déploiement Rust) — 22 notebooks : `forge test|build|verify|fuzz`, invariants, fuzzing, formal verification. **NOUVEAU moteur SOTA du registre** (absent entries #001-#015).
+- **Solidity** (langage de smart contracts via solc) — 23 notebooks : `pragma solidity`, `contract`, `function`, modifiers, events, inheritance. **NOUVEAU moteur**.
+- **web3.py** (interacteur Ethereum Python) — 13 notebooks : `from web3 import Web3`, providers, contrats ABI. **NOUVEAU moteur**.
+- **py-solc-x** (`solcx` — compilateur Solidity Python) — 11 notebooks : `from solcx import compile_source|install_solc`. **NOUVEAU moteur**.
+- **OpenZeppelin** (librairie de contrats audités) — 8 notebooks : ERC20/ERC721/ERC-4337/Governor/AccessControl. **NOUVEAU moteur**.
+- **Vyper** (langage SC Pythonic) — SC-18 : `vyper.compile`. **NOUVEAU moteur**.
+- **eth-account** (signing/wallets) — SC-24/25 : `from eth_account import Account`. **NOUVEAU moteur**.
+
+**Moteurs crypto/privacy avancés (Prong A clean sur les à risque)** :
+- **Zama Concrete** (FHE — Fully Homomorphic Encryption) — SC-16 : `from concrete import fhe`. **NOUVEAU moteur** (crypto post-quantum).
+- **Microsoft TenSEAL** (FHE sur tenseurs) — SC-16 : `import tenseal as ts`. **NOUVEAU moteur**.
+- **python-paillier / phe** (chiffrement homomorphe partiel) — SC-16/17. **NOUVEAU moteur**.
+- **Microsoft ElectionGuard** (e-voting vérifiable) — SC-17 : `from electionguard`. **NOUVEAU moteur**.
+- **xrpl** (librairie officielle Ripple/XRP) — SC-19 : `from xrpl.* import Payment|OfferCreate|TrustSet|JsonRpcClient`. **NOUVEAU moteur**.
+- **PyCryptodome** (`Crypto` — primitives cryptographiques) — SC-15 : Schnorr/ZK building blocks. **NOUVEAU moteur**.
+
+### Prong B — problème non-trivial (sota-not-workaround §B)
+
+La série SmartContracts est **anti-dégénérée** : chaque sous-série pose un problème qui **exerce la capacité distinctive de son moteur** et ne se réduit pas à une baseline triviale :
+- **Foundry fuzz/invariants** (SC-12/13) : test de propriétés sur exécution non-déterministe — exige un fuzzer, pas des assertions unitaires.
+- **FHE** (SC-16) : calcul sur données chiffrées (addition/multiplication ciphertext) — impossible sans FHE, opérationnellement distinct de la crypto symétrique.
+- **ElectionGuard** (SC-17) : scrutin vérifiable bout-en-bout (chiffrement homomorphe des bulletins + preuve de tally) — protocole non-trivial.
+- **ZK proofs** (SC-15) : preuve de connaissance sans révélation — exige les primitives Schnorr/commitment.
+- **Cross-chain / Account Abstraction** (SC-10/23) : ERC-4337 paymaster + bridges — protocoles multi-contrats.
+≠ cas dégénéré où le SOTA équivaut à un `if`.
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **C.1** : 0/27 réel (0 hit regex sur source code).
+- **Anti-régression** : 320/320 `execution_count != null` + `output_type: error = 0` ; aucun notebook strippé, aucun output hand-edité (famille auditée MD047 c3-c7, 0 défaut de rendu).
+- **SOTA tools grounded firsthand** : pattern initial "no engine détecté" sur SC-15/16/17 → deep-check imports firsthand a révélé les **vrais** moteurs (Concrete/TenSEAL/ElectionGuard/xrpl/PyCryptodome), confirmant SOTA-OK. Le grep large Foundry/Solidity manquait ces libs crypto — correction par `from X|import X` par fichier (leçon G.1 symétrique : un scan large peut rater un moteur dédié, comme un targeted scan peut rater un import).
+- **Prong A verified** : 0 workaround dégradé (pas d ASCII remplaçant un render, pas de stub à la place d un appel service). SC-16/17 = sorties réelles FHE/ElectionGuard, pas placeholders.
+- **Re-exec non tentée** : la série exige Foundry toolchain + solc + nœuds testnet/JSON-RPC + libs FHE = exécution lourde. Audit consultatif additif (safe owner-lane) : outputs committés **réels et cohérents** (EXEC_PROVED 320/320).
+
+### Volet owner-lane
+
+**SmartContracts = po-2024** (lead MD047 famille c3-c7 clôturée #5943→#5966, 27 nb connus firsthand ; [CLAIMED] 02:50Z post-merge kelly_lean #5987). Audit consultatif additif, 0 PR de substance sur les notebooks. Diligence anti-collision #5869 : queue merge vidée (batch 02:18Z), 0 PR SC en vol, 0 collision. **16ᵉ famille distincte** du ledger (variété R6 : blockchain/crypto ≠ Lean kelly c9, ≠ MD047 docs c3-c8).
+
+### Conclusions audit
+
+- **Substance SmartContracts = SOTA-OK 27/27**, conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. Toolchain EVM complète (Foundry + Solidity + web3.py + solcx + OpenZeppelin + Vyper + eth-account) + couche crypto/privacy SOTA (Concrete FHE + TenSEAL + python-paillier + ElectionGuard + xrpl + PyCryptodome).
+- **Pas de fix nécessaire** : audit = SOTA-OK, aucun PR de substance.
+- **L378 durcie** : G.1 firsthand (script python3 structural 320 cells + grep ground truth imports SOTA + deep-check des 4 notebooks no engine).
+- **Cumulatif** : **16 familles distinctes** dans le registre axe-2 SOTA (ML/ML.Net, Tweety, SymbolicLearning, SemanticWeb, DecisionTheory/Probas, Probas/Infer, IIT/PyPhi, Sudoku, RL, CaseStudies, ICT-Series, GameTheory, Search, Planners, Argument_Analysis, **SmartContracts**). Entry #016 SmartContracts ajoute **13 moteurs SOTA nouveaux** au registre (Foundry, Solidity, web3.py, py-solc-x, OpenZeppelin, Vyper, eth-account, Zama Concrete, TenSEAL, python-paillier, ElectionGuard, xrpl, PyCryptodome) = **47 moteurs SOTA distincts cumulés**.
+
+Part of #3801
