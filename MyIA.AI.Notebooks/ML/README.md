@@ -35,10 +35,6 @@ Avoir ces trois angles permet de comprendre que le ML n'est pas lié à un langa
 4. **Intégrer** des agents LLM dans un workflow data science (analyse automatisée, parsing, recommandation)
 5. **Déployer** un modèle en production (export ONNX, interop Python/.NET, BigQuery ML)
 
-## Figures — extraites des sorties réelles des notebooks
-
-Six figures illustrent les trois fils de la série : les fondations Python (Pandas, visualisation), le pipeline ML.NET (régression, séries temporelles, clustering) et l'angle émergent des agents data-science (Google ADK). Elles sont **réintégrées in-situ** dans les sections qui en commentent le concept — chacune en regard du notebook qu'elle illustre. La provenance exacte (cellule source, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
-
 ## Parcours d'apprentissage
 
 ### Track A : ML.NET (.NET/C#, 10 notebooks C# — 9 du parcours ML-1 à ML-9 + 1 TP capstone — et leurs 9 jumeaux Python scikit-learn, ~7h)
@@ -48,6 +44,18 @@ Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introdui
 ### Track B : Data Science with Agents (Python, 27 notebooks, ~21h)
 
 Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) installent la manipulation de données. Le **socle ML canonique** ([02-ML-Cours](DataScienceWithAgents/02-ML-Cours/), 8 notebooks scikit-learn) pose ensuite les concepts fondamentaux — workflow et surapprentissage, descente de gradient, régressions, ensembles, biais-variance, non supervisé, théorie PAC — chacun rendant *visible* un concept-phare et ancrant un article fondateur. Viennent enfin les **labs agentic**, en deux sous-tracks : le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique et le NLP de base ; le sous-track **Google ADK** (Labs 8-17) monte en complexité avec le deep learning (PyTorch), le dashboarding et les pipelines multi-agents (agents LLM pour automatiser le workflow data science). Ce track présuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
+
+## Public cible
+
+| Section | Audience | Prérequis |
+|---------|----------|-----------|
+| **ML.NET** | Développeurs C#/.NET, environnements enterprise | C# base, .NET SDK 9.0+ |
+| **Python Data Science (Days 1-3)** | Analystes, data scientists, débutants-intermédiaires | Python base, Jupyter |
+| **AI Agents (Days 4-7)** | Praticiens IA souhaitant intégrer LLMs | Days 1-3 ou expérience équivalente |
+
+## Figures — extraites des sorties réelles des notebooks
+
+Six figures illustrent les trois fils de la série : les fondations Python (Pandas, visualisation), le pipeline ML.NET (régression, séries temporelles, clustering) et l'angle émergent des agents data-science (Google ADK). Elles sont **réintégrées in-situ** dans les sections qui en commentent le concept — chacune en regard du notebook qu'elle illustre. La provenance exacte (cellule source, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Positionnement pédagogique
 
@@ -288,14 +296,6 @@ flowchart LR
 
 Lecture : chaque nœud **SIM** représente un notebook ML dont le résultat empirique (marge, ERM, ensemble, PAC) est *prouvé* par au moins un nœud **LEAN** via une flèche pointillée. Le **vert pâle** sur les nœuds Lean rappelle que la *preuve* est l'engagement de véracité du notebook — pas une décoration. Voir l'EPIC [#4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean) et le hub central [P0](../README.md#lean) pour la cartographie complète (PR #5049). Cross-réf hubs voisins déjà livrés : [QuantConnect (PR #5047)](../QuantConnect/README.md), [GameTheory (PR #5050)](../GameTheory/README.md), [Probas (PR #5053)](../Probas/README.md), [SymbolicAI Lean (#5043 MERGED)](../SymbolicAI/Lean/README.md).
 
-## Public cible
-
-| Section | Audience | Prérequis |
-|---------|----------|-----------|
-| **ML.NET** | Développeurs C#/.NET, environnements enterprise | C# base, .NET SDK 9.0+ |
-| **Python Data Science (Days 1-3)** | Analystes, data scientists, débutants-intermédiaires | Python base, Jupyter |
-| **AI Agents (Days 4-7)** | Praticiens IA souhaitant intégrer LLMs | Days 1-3 ou expérience équivalente |
-
 ## Progression recommandée
 
 ### Parcours Data Scientist classique (~12h)
@@ -318,15 +318,6 @@ Lecture : chaque nœud **SIM** représente un notebook ML dont le résultat empi
 1. [ML-5](ML.Net/ML-5-TimeSeries.ipynb) : séries temporelles
 1. [ML-6](ML.Net/ML-6-ONNX.ipynb) : interop Python → .NET
 1. [TP-prevision-ventes](ML.Net/TP-prevision-ventes.ipynb) : projet intégré
-
-## Quel parcours choisir
-
-| Profil | Parcours recommandé | Durée |
-| ------ | ------------------- | ----- |
-| Développeur C#/.NET en entreprise | Track A : ML.NET (ML-1 à ML-4 + TP) | ~6h |
-| Data scientist débutant | Track B (Days 1-3) : Python + scikit-learn | ~8h |
-| Praticien IA souhaitant automatiser | Track B complet : Python + Agents (Days 1-7) | ~17h |
-| Curieux voulant comparer les approches | ML.NET (ML-1 à ML-4) + Python (Labs 1-5) | ~10h |
 
 ## FAQ / Troubleshooting
 
@@ -356,6 +347,15 @@ Les deux sous-séries sont indépendantes et peuvent être suivies dans n'import
 | `langchain` import error | `pip install langchain langchain-openai langchain-experimental` (versions compatibles) |
 | erreur `No module named 'google.adk'` | Installer le track AgenticDataScience : `pip install -r requirements.txt` dans le bon répertoire |
 | Plots ne s'affichent pas | Vérifier `ipywidgets` installé + extension Jupyter activée |
+
+## Quel parcours choisir
+
+| Profil | Parcours recommandé | Durée |
+| ------ | ------------------- | ----- |
+| Développeur C#/.NET en entreprise | Track A : ML.NET (ML-1 à ML-4 + TP) | ~6h |
+| Data scientist débutant | Track B (Days 1-3) : Python + scikit-learn | ~8h |
+| Praticien IA souhaitant automatiser | Track B complet : Python + Agents (Days 1-7) | ~17h |
+| Curieux voulant comparer les approches | ML.NET (ML-1 à ML-4) + Python (Labs 1-5) | ~10h |
 
 ## Concepts clés
 
