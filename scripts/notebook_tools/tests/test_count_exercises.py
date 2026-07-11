@@ -471,6 +471,65 @@ class TestCodeCellOnlyExercise:
         result = count_exercises_in_notebook(nb)
         assert result.count == 0
 
+    def test_a_completer_line_comment_skeleton_stub_is_counted(self, tmp_path):
+        """``# a completer`` LINE-COMMENT stub marker (Bug 5 of #6051). A
+        scaffolded cell whose comment says "(a completer)" / "a completer"
+        but carries a multi-line skeleton (no ``# TODO``/``pass``/``return
+        None``) escaped STUB_PATTERNS and the ``<= 1 effective code-line``
+        rule, so it was under-counted. Regression for
+        ``Search-11-Metaheuristics`` cell 43 (``# A COMPLETER`` + truncated
+        ``problem_profit = Problem(`` skeleton).
+        """
+        nb = _write_nb(
+            tmp_path / "acompleter.ipynb",
+            [
+                _md("# Titre"),
+                _code(
+                    "# Exercice 1 : Probleme d'optimisation\n"
+                    "def profit_function(solution):\n"
+                    "    x, y = solution\n"
+                    "    return 50*x + 80*y\n"
+                    "\n"
+                    "# A COMPLETER\n"
+                    "bounds = [(0, 20), (0, 20)]\n"
+                    "problem = Problem(bounds=bounds,\n"
+                    "                 minmax=\"min\",\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 1, (
+            "Cell with '# a completer' line comment + skeleton must count"
+        )
+        assert result.exercises[0].detected_by == "code_cell_comment"
+
+    def test_a_completer_in_solution_prose_not_counted(self, tmp_path):
+        """Bug 5 guard (anti over-count): the comment-anchored ``a completer``
+        pattern must NOT count a complete solution whose prose comment merely
+        references completion in passing. A real solution with multiple code
+        lines and no actual stub scaffold is an example, not an exercise.
+        """
+        nb = _write_nb(
+            tmp_path / "acompleter_sol.ipynb",
+            [
+                _md("# Titre"),
+                _code(
+                    "# Exercice 1 : la cellule suivante est a completer\n"
+                    "# par l'etudiant -- ici la solution de reference.\n"
+                    "def solve(x):\n"
+                    "    return x * 2\n"
+                    "print(solve(21))\n"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        # The narrow pattern requires "a completer" as the LEADING comment
+        # content, so mid-sentence prose ("la cellule suivante est a
+        # completer") does NOT match -- this complete solution is not counted.
+        assert result.count == 0, (
+            "Mid-sentence 'a completer' prose in a solution must NOT count"
+        )
+
 
 # ---------------------------------------------------------------------------
 # Lean (``--`` line comment) detection -- mirrors the C# ``//`` tests above.
