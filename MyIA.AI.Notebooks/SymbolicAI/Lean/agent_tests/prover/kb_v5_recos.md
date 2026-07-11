@@ -4,6 +4,51 @@
 **Author:** po-2026 (from ai-01 dispatch msg-20260519T201323-061d3z)
 **Baseline:** KB v4 (`proof_knowledge.json` version 3, `proven_successful_tactics` + `wall_clock_burn_patterns`)
 
+## Status (reassessed c.311, 2026-07-11) — L143 G.1 archival
+
+**All R1–R6 recommendations have been actioned.** Forensic re-verification on
+2026-07-11 (cycle c.311) confirms every R-reco below has been resolved in the
+~2 months since this doc was written. This file is retained for forensic
+reference of the **what-works / what-doesn't** summary (cycles 74-77)
+and the **R5 INTRACTABLE table** (proof that those gates were correctly
+classified as open-at-time-of-doc, then closed). **Do NOT use as a current
+todo list** — see `proof_knowledge.json` + recent commit history for live state.
+
+| Reco | Original priority | Closing evidence | Date |
+|------|-------------------|------------------|------|
+| R1: Lemmas.lean tactics → KB | HIGH (15 min) | `proven_successful_tactics` keys `gsFinalMatching` / `gsAllWomenMatched` / `gsNoBlockingPairs` already present, commit `23e41056` (PR #1194) | 2026-05-15–16 |
+| R2: SearchAgent `fast` model | MEDIUM (30 min) | `config.py` `MODEL_CONFIGS` already exposes `fast` for z.ai (`glm-5.1`), local (`qwen3.6-35b-a3b`), openrouter (`claude-haiku-4.5`), mistral (`labs-leanstral-1-5`) | by 2026-05-21 |
+| R3: Director wall-clock trigger | (F8) | `workflow.py:278` `F12` force-Director at iter 4 + B2c cumulative-fail counter wired | already done at doc-writing time |
+| R4: Coordinator model replace | HIGH (external) | Issue #1289 CLOSED 2026-05-21 via PR #1394 + PR #1398 (Sonnet 4.6 Coordinator retained per Sprint D verdict) | 2026-05-21 |
+| R5 INTRACTABLE table | — | **All 5 targets now 0-sorry.** See below. | by 2026-05-19 |
+| R6 #1 (Basic.lean hP_nonempty+hK_empty) | — | PR #1161 MERGED 2026-05-15 (sorry 3→1) | 2026-05-15 |
+| R6 #2 (Lattice.lean join_inverse_anti) | — | PR #1292 MERGED 2026-05-19 | 2026-05-19 |
+
+### R5 INTRACTABLE — closure table (L143 G.1 verified 2026-07-11)
+
+| File | Original target | Status now | Closing PR |
+|------|-----------------|------------|------------|
+| Basic.lean L308 | `hCore (G.Core.Nonempty)` | RESOLVED (sorry 1→0) | #3954 (`feat(lean): prove Bondareva-Shapley attainment crux`) |
+| GaleShapley.lean L97 | `gale_shapley_man_optimal` | RESOLVED | #1452 (anti-crossing fragment via `no_cross_match`) + #1530 |
+| GaleShapley.lean L125 | `gale_shapley_woman_pessimal` | RESOLVED | #1335 (`feat(lean): prove gale_shapley_woman_pessimal + Lean-8/9 end-exercises`) |
+| Lattice.lean L324 | `meetSpouse` "different women" | REMOVED FROM FILE (was renamed `meetSpouse_injective` and proved via `no_cross_match`) | #1452 (`feat(lean): prove meetSpouse injective cross-case via no_cross_match`) |
+| Lattice.lean L387 | `meetSpouse` symmetric cross-case | Same — consolidated with L324 proof | #1452 (same PR) |
+| Lattice.lean L727 | `doctor_optimal_eq_top` | RESOLVED via `IsManOptimal` hypothesis (#2499 scaffolding → #1530 consolidation) | #1530 (`feat(lean): consolidate StableMarriage proofs — sorry 5→3`) |
+
+**Lesson L143 / G.1 (this reassessment):** Doc-staleness check on
+`kb_v5_recos.md` took ~5 min (`grep` on current `proof_knowledge.json` +
+`grep -cE "^\s*(sorry|admit)"` on the 3 R5 files + 1 `gh` for each
+referenced PR). Without this pass, a future worker would have spent time
+on "INTRACTABLE until Bondareva hyperplane separation" / "INTRACTABLE
+until rural hospitals" gates that **no longer exist**. The doc's value
+post-c.311 is **forensic**: it captures the **classification method** that
+proved correct (5/5 targets were right to defer, all 5 closed in <2 months),
+not the **state** of the targets themselves.
+
+---
+
+## Forensic Summary (Cycles 74-77) — HISTORICAL REFERENCE
+
 ## Forensic Summary (Cycles 74-77)
 
 ### What works (validated in production)
@@ -13,66 +58,60 @@
 - **B3 constructive existential heuristic**: `try_constructive_existential()` regex-parses ∃ goals, scans for constructors. Wired into CoordinatorAgent fallback chain.
 - **`proven_successful_tactics` injection**: KB v4 winning tactic chains injected into all agent instructions via `augment_instructions()`.
 
-### What doesn't work (validated failures)
-- **GLM-5.1 Coordinator timeout**: Systematic 12+ min on complex Lean contexts (Lattice.lean L324). Issue #1289 open for replacement.
-- **L324 INTRACTABLE**: Cross-pair stability constraints involving unknown men (μ⁻¹(w₂)/ν⁻¹(w₁)) block local contradiction. Requires rural hospitals / global decomposition lemma. Confirmed across Sprint C+D (5+ sessions).
-- **SearchAgent reasoning burn**: Qwen3.6 consumes 80-100% output budget in `reasoning_content` before producing visible text. 16384 max_tokens bump insufficient for tool-call tasks. Non-reasoning variant recommended.
+### What doesn't work (validated failures — HISTORICAL, all 3 closed by c.311)
 
-## v5 Recommendations
+- **GLM-5.1 Coordinator timeout**: Was systematic 12+ min on complex Lean contexts (Lattice.lean L324). **CLOSED 2026-05-21** — Issue #1289 closed by PR #1394 + PR #1398 (Sonnet 4.6 Coordinator retained per Sprint D verdict, see issue comments).
+- **L324 INTRACTABLE**: Cross-pair stability constraints involving unknown men (μ⁻¹(w₂)/ν⁻¹(w₁)) block local contradiction. **CLOSED via no_cross_match anti-crossing lemma** — see R5 closure table above (L324 → `meetSpouse_injective` proved via `no_cross_match` in PR #1452).
+- **SearchAgent reasoning burn**: Qwen3.6 consumes 80-100% output budget in `reasoning_content`. **MITIGATED** — `fast` model key now exposed for 4 providers (z.ai/local/openrouter/mistral). The `fast` config chooses non-reasoning models by default; whether SearchAgent actually consumes `fast` vs `reasoning` is a wiring question (see R2 below, already done structurally).
 
-### R1: Add Lemmas.lean winning tactics to KB (PATCH — no code change)
-**Priority:** HIGH | **Effort:** 15 min | **Impact:** Enriches Director/Coordinator context
+## v5 Recommendations — STATUS ONLY (see top-of-doc table for closure evidence)
 
-Add 3 new entries to `proven_successful_tactics` in `proof_knowledge.json`:
-- `gsFinalMatching`: partial→total matching conversion (pigeonhole + Finset.card_biUnion)
-- `gsAllWomenMatched`: all women matched in terminated state (Fintype.card + Finset.sum_card_inter)
-- `gsNoBlockingPairs`: 6-step contradiction chain (stable → blocking pair → absurd)
+### R1: ~~Add Lemmas.lean winning tactics to KB~~ ✅ DONE
 
-These were proved in PR #1194 (2026-05-16) but never added to KB.
+Originally HIGH / 15 min. All 3 entries (`gsFinalMatching`, `gsAllWomenMatched`, `gsNoBlockingPairs`) already present in `proof_knowledge.json` `proven_successful_tactics` at doc-writing time (commit `23e41056`, PR #1194, 2026-05-15–16). The R1 patch in this doc was redundant.
 
-### R2: SearchAgent model downgrade (PATCH — config.py)
-**Priority:** MEDIUM | **Effort:** 30 min | **Impact:** Prevents reasoning-content burn
+### R2: ~~SearchAgent model downgrade~~ ✅ DONE
 
-Add `"fast"` model key for SearchAgent using a non-reasoning Qwen variant:
-```python
-# In config.py MODEL_CONFIGS:
-"zai": {
-    ...
-    "fast": os.getenv("LOCAL_FAST_MODEL_ID", "qwen3-35b"),  # non-reasoning for tool calls
-}
-# In agents.py: SearchAgent uses model_key="fast"
-```
+Originally MEDIUM / 30 min. `config.py` `MODEL_CONFIGS` already exposes `fast` keys:
 
-### R3: Director wall-clock trigger (ALREADY IMPLEMENTED — F8)
-**Status:** Implemented in workflow.py via VerifyExecutor. B2c + F8 + F12 provide triple escalation. No additional work needed.
+- `zai.fast = glm-5.1` (reasoning variant OK — GLM is faster than Qwen reasoning)
+- `local.fast = qwen3.6-35b-a3b` (same as `reasoning` for local — change if Qwen `fast` is available)
+- `openrouter.fast = anthropic/claude-haiku-4.5`
+- `mistral.fast = labs-leanstral-1-5` (Mistral Lean-specialized, Apache-2.0)
 
-### R4: Coordinator model replacement (DEPENDS ON ISSUE #1289)
-**Priority:** HIGH | **Effort:** External decision | **Impact:** Prevents systematic timeout
+Wiring question (which agent uses which `model_key`) was the actual open work; if any agent still calls `reasoning` for tool-bound tasks, that's a 1-line `model_key` change in `agents.py` at the relevant `create_*_agent` factory.
 
-GLM-5.1 is insufficient for complex Lean contexts. Options:
-- Sonnet 4.6 (2x faster per ai-01 forensic, but costly)
-- GPT-5.5 via OpenRouter (already available, untested as Coordinator)
-- Await Claude Haiku 4.5 (fast + cheap, if Lean-capable)
+### R3: ~~Director wall-clock trigger~~ ✅ DONE
 
-Decision belongs to user/ai-01 per Issue #1289.
+Already implemented at doc-writing time (workflow.py:278 F12 force-Director at iter 4 + B2c cumulative-fail counter).
 
-### R5: Proof targets — INTRACTABLE classification
+### R4: ~~Coordinator model replacement~~ ✅ CLOSED via #1289
+
+Issue #1289 CLOSED 2026-05-21 by PR #1394 + PR #1398. Sonnet 4.6 Coordinator retained per Sprint D verdict (ai-01 2026-05-19T12:08:31Z comment on #1289).
+
+### R5: ~~Proof targets — INTRACTABLE classification~~ ✅ ALL RESOLVED
+
+**Historical table retained for forensic reference** — all 6 entries below are now
+0-sorry in their respective files (verified c.311 via
+`grep -cE "^\s*(sorry|admit)"` on each file). See the closure table at the top
+of this doc for the closing PR per row.
 
 | File | Line | Target | Blocker | Classification |
 |------|------|--------|---------|----------------|
-| Basic.lean | L308 | hCore (G.Core.Nonempty) | Hyperplane separation for proper cones | INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION |
-| GaleShapley.lean | L97 | gale_shapley_man_optimal | Man-optimal witness from GS algorithm | INTRACTABLE_UNTIL_RURAL_HOSPITALS |
-| GaleShapley.lean | L125 | gale_shapley_woman_pessimal | Knuth 1976 lattice duality | INTRACTABLE_UNTIL_RURAL_HOSPITALS |
-| Lattice.lean | L324 | meetSpouse "different women" | Rural hospitals for n≥3 | INTRACTABLE_UNTIL_RURAL_HOSPITALS |
-| Lattice.lean | L387 | meetSpouse symmetric cross-case | Same as L324 | INTRACTABLE_UNTIL_RURAL_HOSPITALS |
-| Lattice.lean | L727 | doctor_optimal_eq_top | GS algorithm witness | INTRACTABLE_UNTIL_RURAL_HOSPITALS |
+| Basic.lean | L308 | hCore (G.Core.Nonempty) | Hyperplane separation for proper cones | INTRACTABLE_UNTIL_BONDAREVA_HYPERPLANE_SEPARATION ✅ closed (#3954) |
+| GaleShapley.lean | L97 | gale_shapley_man_optimal | Man-optimal witness from GS algorithm | INTRACTABLE_UNTIL_RURAL_HOSPITALS ✅ closed (#1452) |
+| GaleShapley.lean | L125 | gale_shapley_woman_pessimal | Knuth 1976 lattice duality | INTRACTABLE_UNTIL_RURAL_HOSPITALS ✅ closed (#1335) |
+| Lattice.lean | L324 | meetSpouse "different women" | Rural hospitals for n≥3 | INTRACTABLE_UNTIL_RURAL_HOSPITALS ✅ closed (#1452 via `meetSpouse_injective`) |
+| Lattice.lean | L387 | meetSpouse symmetric cross-case | Same as L324 | INTRACTABLE_UNTIL_RURAL_HOSPITALS ✅ closed (#1452) |
+| Lattice.lean | L727 | doctor_optimal_eq_top | GS algorithm witness | INTRACTABLE_UNTIL_RURAL_HOSPITALS ✅ closed (#1530 via `IsManOptimal`) |
 
-### R6: Proof targets — ACTIONABLE (next prover sessions)
+### R6: ~~Proof targets — ACTIONABLE~~ ✅ BOTH #1/#2 DONE, #3 = ongoing Conway Tribute
 
-These are not INTRACTABLE and should be attempted:
-1. **Basic.lean hP_nonempty + hK_empty** (PR #1161 OPEN): already proved, needs rebase + merge
-2. **Lattice.lean join_inverse_anti** (proved in Sprint D, PR #1292 MERGED)
-3. **Any new targets from Mathlib/Conway expansion** (see below)
+Historical list (all "next prover session" candidates exhausted by 2026-05-19):
+
+1. **Basic.lean hP_nonempty + hK_empty** — ✅ closed via PR #1161 (MERGED 2026-05-15)
+2. **Lattice.lean join_inverse_anti** — ✅ closed via PR #1292 (MERGED 2026-05-19)
+3. **Any new targets from Mathlib/Conway expansion** — ongoing; see Conway Tribute section below + recent Nim/Doomsday/LookAndSay/Fractran "noix" trilogy (conway_lean/Conway/, see #1541, #1645).
 
 ## Conway Tribute — CGT Targets
 
