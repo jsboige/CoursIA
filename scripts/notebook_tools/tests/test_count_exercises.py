@@ -721,3 +721,133 @@ class TestThresholdIntegration:
         )
         result = count_exercises_in_notebook(nb)
         assert result.count < 3
+
+
+# ---------------------------------------------------------------------------
+# #6051 -- grouped markdown headers + plural section headers
+# ---------------------------------------------------------------------------
+
+class TestGroupedAndPluralHeaders:
+    """Regression tests for the two interacting counting bugs in #6051.
+
+    Bug 1 -- a single markdown cell that groups several exercise statements
+    under sub-headers (`### Exercice 1`, `### Exercice 2`, `### Exercice 3`)
+    was under-counted as 1 (one hit per CELL). It must count one per INSTANCE
+    header line.
+
+    Bug 2 -- a PLURAL section header (`## 9. Exercices`) was (a) counted as an
+    exercise instance AND (b) forward-pairing the next code cell, so the section
+    stood in for the real exercise and masked the count. A plural section must
+    count as nothing and steal no code cell.
+    """
+
+    def test_grouped_markdown_cell_counts_per_instance(self, tmp_path):
+        """Bug 1 repro: one markdown cell with three exercise sub-headers over
+        one code cell holding three stubs must count 3, not 1.
+
+        Mirrors ``GameTheory/SocialChoice/04-...-SAT-Z3-Csharp.ipynb``.
+        """
+        nb = _write_nb(
+            tmp_path / "grouped.ipynb",
+            [
+                _md(
+                    "## 8. Exercices\n\n"
+                    "### Exercice 1 : premier\n\n**Indice 1** : ...\n\n"
+                    "### Exercice 2 : second\n\n**Indice 1** : ...\n\n"
+                    "### Exercice 3 : troisieme\n\n**Indice 1** : ..."
+                ),
+                _code(
+                    "// Exercice 1 : a\n// TODO etudiant\n"
+                    "// Exercice 2 : b\n// TODO etudiant\n"
+                    "// Exercice 3 : c\n// TODO etudiant\n"
+                    "display(\"a completer\");"
+                ),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "a grouped markdown cell with 3 instance headers must count 3"
+        )
+
+    def test_plural_section_header_does_not_count_as_instance(self, tmp_path):
+        """Bug 2 (counting side): a plural section header `## 9. Exercices`
+        alone (no instance in the cell) must NOT be counted as an exercise.
+        """
+        nb = _write_nb(
+            tmp_path / "plural.ipynb",
+            [
+                _md("## 9. Exercices\n\nLes exercices suivants..."),
+                _code("// Exercice 1 : a\n// TODO etudiant\npass"),
+                _code("// Exercice 2 : b\n// TODO etudiant\npass"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        # 2 real code stubs; the plural section is NOT a 3rd instance.
+        assert result.count == 2, (
+            "a plural section header must not inflate the exercise count"
+        )
+
+    def test_plural_section_does_not_steal_forward_pairing(self, tmp_path):
+        """Bug 2 (pairing side): a plural section header must NOT forward-pair
+        the code cell below it. The real Exercice 1 stub must be counted in its
+        own right. Mirrors ``GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb``
+        where the section `## 9. Exercices` stole cell 21 (Exercice 1).
+        """
+        nb = _write_nb(
+            tmp_path / "steal.ipynb",
+            [
+                _md("## 9. Exercices"),
+                _code("// Exercice 1 : Colonel Blotto\n// TODO etudiant\npass"),
+                _code("// Exercice 2 : autre\n// TODO etudiant\npass"),
+                _code("// Exercice 3 : dernier\n// TODO etudiant\npass"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "plural section must not steal Exercice 1's code cell (no under-count)"
+        )
+        # All three are detected via their own code-cell comment, none absorbed.
+        detected_cells = {h.cell_index for h in result.exercises}
+        assert detected_cells == {1, 2, 3}, (
+            "the three code stubs must each be counted on their own"
+        )
+
+    def test_plural_section_then_grouped_instances(self, tmp_path):
+        """Combined case: a plural section header followed (same cell or next)
+        by real instance headers. The plural line is ignored; each singular
+        instance line counts.
+        """
+        nb = _write_nb(
+            tmp_path / "mix.ipynb",
+            [
+                _md(
+                    "## 9. Exercices\n\n"
+                    "### Exercice 1 : un\n\n### Exercice 2 : deux\n\n"
+                    "### Exercice 3 : trois"
+                ),
+                _code("# Exercice 1\n# TODO\npass"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "3 instance lines under a plural section count 3 (section ignored)"
+        )
+
+    def test_singular_section_header_still_counts(self, tmp_path):
+        """Guard against over-fixing: a SINGULAR numbered section header
+        `## 8. Exercice : ...` is an INSTANCE (not a plural section) and must
+        still count. This is the trap case preserved by test_numbered_section
+        _header_is_counted -- reaffirmed here in the plural-aware regime.
+        """
+        nb = _write_nb(
+            tmp_path / "singular.ipynb",
+            [
+                _md("## 8. Exercice : le piege"),
+                _code("# TODO etudiant\npass"),
+                _md("## 9. Exercice : autre"),
+                _code("return None"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 2
+
