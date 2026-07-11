@@ -1906,3 +1906,69 @@ Le ML-Training-Pipeline pose une question de recherche **genuinely non-trivial**
 - **Mandat Substance > Sweep honoré** : audit SOTA axe-2 = registre substance (≠ doc-hygiène cappé 1/lane/jour), grain deep ai-01 DECIDED exécuté.
 
 Part of #3801
+
+## Entry #025 — GenAI/Video (modèles SOTA HunyuanVideo/Wan/LTX/SVD/AnimateDiff + ComfyUI, EPIC #1385, owner po-2024 strict, c.49)
+
+Famille `MyIA.AI.Notebooks/GenAI/Video/` = **17 notebooks** organisés en 4 sous-répertoires pédagogiques (`01-Foundation`, `02-Advanced`, `03-Orchestration`, `04-Applications`), couvrant la chaîne de génération vidéo SOTA moderne (opérations de base → modèles avancés → orchestration multi-modèles → pipelines production). Famille **JAMAIS auditée** dans le registre axe-2 (entries #020-#024 = QC-Py/ML-Training/GenAI-Texte/GenAI-Image/GenAI-PostTraining). Modalité **distincte** de PostTraining #024 (ici vidéo generation, pas RL/training). Audit read-only firsthand (Prong A+B), 0 commit code, 0 `gh`. Worktree `docs/c49-genai-video-sota-ledger-3801` off `origin/main` `8a8f783fe`. **Slot #025** : entries #019 (Lean PR #6050), #022 (PR #6152), #023 (PR #6167), #024 (PR #6179) réservées par PRs non-mergées → #025 = prochain slot libre, évite renumbering post-merge (leçon c.44).
+
+### Métrique (vérifiée firsthand par le worker, script python3 inline sur les 17 .ipynb)
+
+| Métrique | Valeur | Méthode de vérification |
+|----------|--------|--------------------------|
+| Notebooks totaux | **17** (4 sous-répertoires) | `glob('GenAI/Video/**/*.ipynb', recursive=True)` |
+| Cellules totales | **484** | Script python3 sommation `len(cells)` |
+| Cellules code | **233** | `cell_type == 'code'` |
+| Cellules code `execution_count != null` | **233/233 = 100%** | Script python3 — **taux exec maximal**, tous notebooks exécutés |
+| Erreurs `output_type: error` | **0** | Script python3 — 0 occurrence sur les 17 .ipynb |
+| Kernelspec `python3` | **17/17** | Lecture directe metadata `kernelspec.name` |
+| Violations C.1 (`raise NotImplementedError` / `assert False` / `1/0`) | **0** | Scanner canonique `audit_c1_c3.py --check c1` = **17/17 pass, All clear** |
+| Secrets inline (`sk-…`/`ghp_…`/`AIza…`) | **0** | Regex sur blob code — 0 hit |
+| `getenv("K", "<literal>")` literal-default | **3** (bénins) | Tous = **URLs de service publiques** (`https://comfyui-video.myia.io`, `https://qwen-image-edit.myia.io`), PAS des credentials. Auth via `.env` séparé gitignored (401 en batch = service joignable, auth-gated). |
+| Caractères CJK parasites | **0** | 4 ranges Unicode — 0 hit |
+| Exercices `### Exercice N` (convention #2161) | **≥3/notebook (17/17)** | Regex `#{1,6}\s*Exercice` |
+
+### Vrais outils SOTA invoqués (Prong A — SOTA-OK avec disclosure RECOVERABLE-MACHINE)
+
+La série démontre la **chaîne de génération vidéo SOTA moderne** sur 13 moteurs distincts, tous réellement importés/invoqués (présence vérifiée firsthand dans le code source par comptage sur blob) :
+
+| Moteur SOTA | Notebooks | Preuve d'invocation réelle (firsthand) |
+|-------------|-----------|----------------------------------------|
+| **diffusers** (HuggingFace) | 12/17 | Pipelines vidéo réels dans code source |
+| **SVD** (Stable Video Diffusion) | 9/17 | image-to-video diffusion |
+| **LTX-Video** (Lightricks) | 8/17 | génération lightweight temps-réel |
+| **AnimateDiff** | 7/17 | animation motion-module |
+| **HunyuanVideo** (Tencent) | 7/17 | flagship text-to-video, prompt engineering cinématique |
+| **ESRGAN** | 6/17 | upscaling/enhancement |
+| **ComfyUI** (API client) | 6/17 | `[OK] Helper comfyui_client imported`, `MODE : API ComfyUI`, workflow orchestration |
+| **Sora** (API cloud) | 3/17 | cloud video generation |
+| **GPT-5** (video understanding) | 3/17 | analyse vidéo multimodale |
+| **Wan2** (Alibaba) | 2/17 | text-to-video |
+| **Qwen-VL** | 2/17 | video analysis multimodal |
+
+**Disclosure honnête — RECOVERABLE-MACHINE (Prong A)** : les notebooks tournent en `BATCH_MODE="true"` (portable CPU-safe), la génération vidéo réelle est gated derrière `run_generation = locals().get('run_generation', False)` (défaut False). **MAIS le chemin SOTA est RÉEL et invoqué, pas un workaround** : vérifié firsthand sur `02-1-HunyuanVideo-Generation` — le notebook importe le **vrai client ComfyUI** (`[OK] Helper comfyui_client imported`), passe en `MODE : API ComfyUI`, et tente un **vrai appel API** au service auto-hébergé `https://comfyui-video.myia.io/system_stats` → réponse `HTTP 401 Unauthorized` (service joignable et vivant sur la stack GenAI, auth-gated en batch). Les fonctions de génération réelles (`generate_hunyuan_video`, `estimate_vram`, `analyze_negative_prompt`, `build_cinematic_prompt`, `sharpness_score`) sont définies avec vraie logique diffusers/ComfyUI. Les vidéos rendues effectives nécessitent le service ComfyUI-Video authentifié (turf GPU po-2023 / stack GenAI, cf `docs/genai/genai-services.md`) — borne pédagogique honnête, verdict **RECOVERABLE-MACHINE** (même structure que PostTraining #024 : flag CPU-safe + chemin GPU réel prouvé). Conforme `sota-not-workaround.md` : disclosure écrite dans le body, pas de sortie dégradée committée en masquant une impossibilité.
+
+### Problème non-trivial (Prong B) — DISCRIMINATING
+
+La série ne démontre pas la génération vidéo sur un cas dégénéré :
+
+- **03-1 Multi-Model-Video-Comparison** pose le **benchmark multi-modèles** HunyuanVideo vs LTX-Video vs Wan vs SVD (4 modèles SOTA distincts) — l'étudiant doit charger/décharger séquentiellement (gestion VRAM ~18 GB), générer avec le même prompt sur chaque modèle, et **mesurer les trade-offs** (temps de génération, VRAM, cohérence temporelle, qualité). C'est l'archétype du problème discriminant où les capacités distinctives de chaque moteur (latence LTX vs qualité HunyuanVideo vs image-to-video SVD) sont visibles — pas un cas où tous équivalent à une baseline.
+- **02-1 HunyuanVideo** pose le **prompt engineering cinématique** (prompts structurés sujet+action+caméra, negative prompts, scoring de netteté `sharpness_score`) — problème central de la dirigabilité des modèles vidéo.
+- **03-3 ComfyUI-Video-Workflows** pose l'**orchestration de graphes multi-nodes** (workflow API JSON, chaînage ESRGAN→encodage→upscale) — paradigme distinct de l'appel direct.
+
+### Anti-régression / Stop & Repair
+
+- **0 sortie de cellule hand-éditée** : tous les outputs sont des comptes-rendus d'exécution réelle (status ComfyUI, messages de mode, imports confirmés). Note : un output affiche un chemin machine `D:\Dev\CoursIA\...\.env` (stream print de localisation .env, PAS un secret) — laissé intact (Stop & Repair : on n'hand-édite jamais une sortie committée ; l'output est légitime, le path est de la métadonnée de runtime, pas un credential).
+- **0 secret** inline (3 getenv-default = URLs publiques de service, vérifié G.1).
+- **0 stub C.1** : les cellules d'exercice (`generate_optimized_video`, etc.) utilisent `pass` + `print("Exercice…")` + `# TODO`/`# Indice` (convention C.1, `pass`/`print`/`return None`). Scanner canonique 17/17 pass.
+
+### Owner-lane volet
+
+**po-2024 strict** — pivot R6 hors-registre-rendering (c.48 = collapsed-markdown Sudoku/Search). Entry #025 complète la **couverture GenAI du registre axe-2** : GenAI-Texte (#022) + GenAI-Image (#023) + GenAI-PostTraining (#024, mon turf #1454) + **GenAI-Video (#025)**. Reste GenAI-Audio (30 notebooks, follow-up). La stack vidéo (ComfyUI-Video service + diffusers pipelines) tourne sur la stack GenAI (po-2023 turf GPU), po-2024 = audit + PostTraining training turf. Continuité c.42 (GRPO/PostTraining) → registre axe-2 GenAI complet sauf Audio.
+
+### Conclusions audit
+
+- **Substance GenAI/Video = riche, honnête et SOTA-OK**, 17 notebooks couvrant la chaîne vidéo moderne (opérations → HunyuanVideo/Wan/LTX/SVD/AnimateDiff → orchestration ComfyUI → pipelines Sora/production), 233/233 EXEC_PROVED (100%), 0 C.1, 0 secret, 0 CJK, ≥3 exos/nb, disclosure RECOVERABLE-MACHINE écrite (flag BATCH_MODE + chemin ComfyUI-Video réel prouvé 401).
+- **Pas de fix nécessaire** : audit = SOTA-OK 17/17. Aucun PR de substance requis sur les notebooks.
+- **Cumulatif** : entry #025 ajoute au registre axe-2 la **famille GenAI/Video** (modèles vidéo SOTA HunyuanVideo/Wan2/LTX-Video/SVD/AnimateDiff/ESRGAN + ComfyUI video workflows + Sora cloud API + GPT-5/Qwen-VL video understanding). Le registre compte désormais entries #001-#018 + #020 + #021 + #025 (#019 Lean, #022 GenAI/Texte, #023 GenAI/Image, #024 GenAI/PostTraining réservés par PRs ouvertes).
+
+Part of #3801
