@@ -228,4 +228,37 @@ theorem growthGrad_zero_pos_iff (β : Bet) :
   rw [growthGrad_zero, kellyFrac_pos_iff]
   constructor <;> intro h <;> linarith [mul_comm β.p β.b]
 
+/-- **Kelly fraction negative iff bet is unfavorable**: `f* < 0` exactly when the
+    "edge" `b·p − q` is strictly negative (the bet is disadvantageous, `b·p < q`).
+    The maximizer then flips to the short side. Formalizes the second case of the
+    §8 prose ("an unfavorable bet yields `f* < 0`"). -/
+theorem kellyFrac_neg_iff (β : Bet) :
+    kellyFrac β < 0 ↔ β.b * β.p - q β < 0 := by
+  unfold kellyFrac
+  rw [div_lt_iff₀ β.hb_pos, zero_mul]
+
+/-- **Negative edge iff negative Kelly**: the initial slope `g'(0) = b·p − q` is
+    strictly negative exactly when `f* < 0`. The short direction is signed by the
+    log-growth slope at the origin. -/
+theorem growthGrad_zero_neg_iff (β : Bet) :
+    growthGrad β 0 < 0 ↔ kellyFrac β < 0 := by
+  rw [growthGrad_zero, kellyFrac_neg_iff]
+  constructor <;> intro h <;> linarith [mul_comm β.p β.b]
+
+/-- **Kelly fraction zero iff actuarially fair bet**: `f* = 0` exactly when the
+    "edge" `b·p − q` is zero (a fair bet, `b·p = q`). Staking nothing is then
+    optimal. Formalizes the neutral case of the §8 prose. -/
+theorem kellyFrac_eq_zero_iff (β : Bet) :
+    kellyFrac β = 0 ↔ β.b * β.p - q β = 0 := by
+  unfold kellyFrac
+  rw [div_eq_iff₀ β.hb_pos.ne', zero_mul]
+
+/-- **Zero edge iff zero Kelly**: the initial slope `g'(0)` vanishes exactly when
+    `f* = 0`. The neutral regime where staking nothing is optimal — the boundary
+    between the long and short regimes. -/
+theorem growthGrad_zero_eq_zero_iff (β : Bet) :
+    growthGrad β 0 = 0 ↔ kellyFrac β = 0 := by
+  rw [growthGrad_zero, kellyFrac_eq_zero_iff]
+  constructor <;> intro h <;> linarith [mul_comm β.p β.b]
+
 end KellyLean_en

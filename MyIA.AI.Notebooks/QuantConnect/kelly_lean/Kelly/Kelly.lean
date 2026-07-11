@@ -229,4 +229,37 @@ theorem growthGrad_zero_pos_iff (β : Bet) :
   rw [growthGrad_zero, kellyFrac_pos_iff]
   constructor <;> intro h <;> linarith [mul_comm β.p β.b]
 
+/-- **Fraction de Kelly négative ssi pari défavorable** : `f* < 0` exactement quand
+    l'« edge » `b·p − q` est strictement négatif (le pari est désavantageux, `b·p < q`).
+    Le maximiseur bascule alors côté short. Formalise le second cas de la prose §8
+    (« un pari défavorable donne `f* < 0` »). -/
+theorem kellyFrac_neg_iff (β : Bet) :
+    kellyFrac β < 0 ↔ β.b * β.p - q β < 0 := by
+  unfold kellyFrac
+  rw [div_lt_iff₀ β.hb_pos, zero_mul]
+
+/-- **Edge négatif ssi Kelly négative** : la pente initiale `g'(0) = b·p − q` est
+    strictement négative exactement quand `f* < 0`. La direction short est signée par
+    la pente du log-croissance en l'origine. -/
+theorem growthGrad_zero_neg_iff (β : Bet) :
+    growthGrad β 0 < 0 ↔ kellyFrac β < 0 := by
+  rw [growthGrad_zero, kellyFrac_neg_iff]
+  constructor <;> intro h <;> linarith [mul_comm β.p β.b]
+
+/-- **Fraction de Kelly nulle ssi pari équitable** : `f* = 0` exactement quand
+    l'« edge » `b·p − q` est nul (pari actuariellement équitable, `b·p = q`).
+    Ne rien miser est alors optimal. Formalise le cas neutre de la prose §8. -/
+theorem kellyFrac_eq_zero_iff (β : Bet) :
+    kellyFrac β = 0 ↔ β.b * β.p - q β = 0 := by
+  unfold kellyFrac
+  rw [div_eq_iff₀ β.hb_pos.ne', zero_mul]
+
+/-- **Edge nul siff Kelly nulle** : la pente initiale `g'(0)` est nulle exactement
+    quand `f* = 0`. Le cas neutre où ne rien miser est optimal — frontière entre les
+    régimes long et short. -/
+theorem growthGrad_zero_eq_zero_iff (β : Bet) :
+    growthGrad β 0 = 0 ↔ kellyFrac β = 0 := by
+  rw [growthGrad_zero, kellyFrac_eq_zero_iff]
+  constructor <;> intro h <;> linarith [mul_comm β.p β.b]
+
 end KellyLean
