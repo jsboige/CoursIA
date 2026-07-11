@@ -215,6 +215,84 @@ Probas/
     └── Causal-Bridges/          # Do-Calculus-Bridge : pont unifié des 4 séries causales (Pearl, dowhy)
 ```
 
+## Prerequisites
+
+### Niveau mathématique attendu
+
+Cette série suppose une **maîtrise de base en probabilités et statistiques** :
+
+| Concept | Utilité dans la série | Notes de révision |
+|---------|---------------------|------------------|
+| Variables aléatoires (discrètes/continues) | Partout, notebook 1+ | Loi de proba, espérance, variance |
+| Distributions usuelles (Bernoulli, Gaussian, Beta, Gamma) | Notebook 1 (Beta-Bernoulli), 2 (Gaussian) | Paramètres, formes, conjugaison |
+| Probabilités conditionnelles | Notebook 3+ (Variable.If, CPT) | P(A|B), théorème de Bayes |
+| Indépendance conditionnelle | Notebook 3 (Monty Hall), 4 (D-separation) | Collider, explaining away |
+| Espérance mathématique | Partout (calcul de EU) | E[X] = sum x*P(x) ou intégrale |
+| Distributions conjuguées | Notebook 1 (Beta-Bernoulli), 9 (Dirichlet-Discrète) | Prior + likelihood = posterior (famille même) |
+| Intégrales (niveau 1) | Notebook 2, 15 (CARA/CRRA) | Calcul d'espérance avec fonctions non-linéaires |
+
+**Inutile de maîtriser** : dérivation multivariée, algèbre linéaire avancée (sauf pour les modèles hiérarchiques en notebook 4). Les concepts sont introduits progressivement et réexpliqués dans le contexte.
+
+### Prerequisites techniques
+
+#### Pour Infer.NET (C#)
+
+```bash
+# .NET SDK 9.0+
+dotnet --version
+
+# VS Code + extension Polyglot Notebooks
+# Packages (auto-references dans notebooks):
+# - Microsoft.ML.Probabilistic
+# - CompilerChoice = Roslyn
+```
+
+#### Pour Python
+
+```bash
+# Environnement Python 3.8+
+pip install pyro-ppl torch matplotlib numpy
+```
+
+## Installation
+
+### Notebooks PyMC (Python)
+
+```bash
+pip install pymc numpy scipy matplotlib arviz
+```
+
+### Notebooks Infer.NET (C# .NET Interactive)
+
+```bash
+# 1. Installer .NET SDK 9.0+ depuis https://dotnet.microsoft.com/download
+# 2. Installer le kernel dotnet-interactive
+dotnet tool install -g Microsoft.dotnet-interactive
+dotnet interactive jupyter install
+
+# 3. Ou utiliser le script PowerShell (installe tout automatiquement) :
+cd MyIA.AI.Notebooks/Probas/Infer/scripts
+.\setup_environment.ps1
+```
+
+### Notebooks Python (Infer-101, Pyro_RSA)
+
+```bash
+pip install pyro-ppl torch matplotlib numpy
+```
+
+### Vérification
+
+```bash
+jupyter kernelspec list  # doit afficher .net-csharp et python3
+```
+
+### Tester tous les notebooks
+
+```bash
+python MyIA.AI.Notebooks/Probas/Infer/scripts/test_notebooks.py --validate-only
+```
+
 ## Ce que chaque notebook apporte
 
 Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — au-delà du titre, c'est le **concept clé** qu'il enseigne.
@@ -388,45 +466,6 @@ Ce que le pont ajoute par rapport aux quatre notebooks pris isolément : la thé
 | [Infer-101](Infer-101.ipynb) | .NET (C#) + Python | Introduction Infer.NET, Two Coins, Cyclist | 1h |
 | [Pyro_RSA_Hyperbole](Pyro_RSA_Hyperbole.ipynb) | Python 3 | Rational Speech Acts, hyperboles | 30 min |
 
-## Prerequisites
-
-### Niveau mathématique attendu
-
-Cette série suppose une **maîtrise de base en probabilités et statistiques** :
-
-| Concept | Utilité dans la série | Notes de révision |
-|---------|---------------------|------------------|
-| Variables aléatoires (discrètes/continues) | Partout, notebook 1+ | Loi de proba, espérance, variance |
-| Distributions usuelles (Bernoulli, Gaussian, Beta, Gamma) | Notebook 1 (Beta-Bernoulli), 2 (Gaussian) | Paramètres, formes, conjugaison |
-| Probabilités conditionnelles | Notebook 3+ (Variable.If, CPT) | P(A|B), théorème de Bayes |
-| Indépendance conditionnelle | Notebook 3 (Monty Hall), 4 (D-separation) | Collider, explaining away |
-| Espérance mathématique | Partout (calcul de EU) | E[X] = sum x*P(x) ou intégrale |
-| Distributions conjuguées | Notebook 1 (Beta-Bernoulli), 9 (Dirichlet-Discrète) | Prior + likelihood = posterior (famille même) |
-| Intégrales (niveau 1) | Notebook 2, 15 (CARA/CRRA) | Calcul d'espérance avec fonctions non-linéaires |
-
-**Inutile de maîtriser** : dérivation multivariée, algèbre linéaire avancée (sauf pour les modèles hiérarchiques en notebook 4). Les concepts sont introduits progressivement et réexpliqués dans le contexte.
-
-### Prerequisites techniques
-
-#### Pour Infer.NET (C#)
-
-```bash
-# .NET SDK 9.0+
-dotnet --version
-
-# VS Code + extension Polyglot Notebooks
-# Packages (auto-references dans notebooks):
-# - Microsoft.ML.Probabilistic
-# - CompilerChoice = Roslyn
-```
-
-#### Pour Python
-
-```bash
-# Environnement Python 3.8+
-pip install pyro-ppl torch matplotlib numpy
-```
-
 ## Concepts clés
 
 | Concept | Description |
@@ -464,45 +503,6 @@ Derrière chaque modèle de la série se cache un système réel déjà en produ
 - **Les systèmes de recommandation bayésiens** (notebook 15) sont la version « avec barre d'incertitude » du collaborative filtering de Netflix ou Amazon — utile pour décider quand explorer un nouvel item plutôt que d'exploiter une préférence connue.
 - **Le crowdsourcing** (notebook 13) modélise la fiabilité de chaque annotateur (Mechanical Turk, labellisation de datasets) pour reconstruire la vérité terrain malgré des votes bruités.
 - **La théorie de la décision et les MDPs** (arc [`DecisionTheory/`](DecisionTheory/)) relient la série au contrôle séquentiel : gestion de stocks, maintenance prédictive, et passerelle directe vers le [reinforcement learning](../RL/).
-
-## Installation
-
-### Notebooks PyMC (Python)
-
-```bash
-pip install pymc numpy scipy matplotlib arviz
-```
-
-### Notebooks Infer.NET (C# .NET Interactive)
-
-```bash
-# 1. Installer .NET SDK 9.0+ depuis https://dotnet.microsoft.com/download
-# 2. Installer le kernel dotnet-interactive
-dotnet tool install -g Microsoft.dotnet-interactive
-dotnet interactive jupyter install
-
-# 3. Ou utiliser le script PowerShell (installe tout automatiquement) :
-cd MyIA.AI.Notebooks/Probas/Infer/scripts
-.\setup_environment.ps1
-```
-
-### Notebooks Python (Infer-101, Pyro_RSA)
-
-```bash
-pip install pyro-ppl torch matplotlib numpy
-```
-
-### Vérification
-
-```bash
-jupyter kernelspec list  # doit afficher .net-csharp et python3
-```
-
-### Tester tous les notebooks
-
-```bash
-python MyIA.AI.Notebooks/Probas/Infer/scripts/test_notebooks.py --validate-only
-```
 
 ## FAQ / Troubleshooting
 
