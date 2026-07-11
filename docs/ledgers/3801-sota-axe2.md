@@ -875,7 +875,8 @@ Pivot L335 anti-monoculture post-c.400 : **7ᵉ famille distincte du ledger** (e
 | 18 | **Probas/Infer-extension (9 nb)** | po-2025 strict | 2026-07-11 | **SOTA-OK 9/9** | #6046 MERGED |
 | 19 | Lean 4 (24 lakefiles, 282 files, 21 sorry) | po-2026/po-2024 | 2026-07-11 | SOTA-OK Lean axe | **#6050 OPEN (en vol)** |
 | 20 | **QuantConnect/Python (53 nb)** | po-2024 strict | 2026-07-11 | **SOTA-OK 53/53 (bimodal)** | #6144 MERGED |
-| 21 | **GenAI/Texte (20 nb, 100% exec)** | po-2024 strict | 2026-07-11 | **SOTA-OK 20/20** | **THIS (c.41)** |
+| 21 | **QuantConnect/ML-Training-Pipeline (14 nb)** | po-2024 strict | 2026-07-11 | **SOTA-OK 14/14** | #6150 MERGED |
+| 22 | **GenAI/Texte (20 nb, 100% exec)** | po-2024 strict | 2026-07-11 | **SOTA-OK 20/20** | **THIS (c.41→c.44 renumber)** |
 
 **Moteurs SOTA cumulés dans le registre (18 entries cumulatives locals, + 2 PRs MERGED hors cumul local = #5994 SmartContracts + #6034 ML/DSWA)** : Microsoft.ML.Probabilistic, Microsoft.Infer.NET, PyPhi, Google.OR-Tools, Z3, Microsoft.Automata, Lean 4, PyTorch, OpenAI SDK, Microsoft.SemanticKernel, NetworkX, python-constraint, AIMA, Choco, Dancing Links, PyGAD, GeneticSharp, simanneal, Mealpy, NumPyro/JAX, regex, matplotlib, Plotly.NET, pyperplan, PDDL parser, ArviZ, DoWhy = **27+ moteurs SOTA distincts** sur 15 familles du registre axe-2 SOTA (SmartContracts + ML/DSWA non cumulés localement mais PRs MERGED hors ledger).
 
