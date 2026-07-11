@@ -37,4 +37,9 @@ require CombinatorialGames from git
 lean_lib «CGTTour» where
   -- Tour of vihdzp/combinatorial-games results
   -- Convention i18n #4980: globs for sibling CGTTour_en.lean auto-discovery
-  globs := #[`CGTTour.*]
+  -- NOTE technique (cf RepeatedGames lakefile precedent, PR #5360, c.218) :
+  -- `Foo.*` est un glob de sous-modules (matche `Foo` + `Foo.X`).
+  -- `CGTTour_en.lean` est un module top-level sibling (PAS un sous-module
+  -- de `CGTTour`) -> il faut le nommer explicitement pour que `lake build`
+  -- le compile et que la protection drift-CI s'applique (exigence (b)).
+  globs := #[`CGTTour.*, `CGTTour_en]
