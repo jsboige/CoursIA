@@ -79,6 +79,39 @@ flowchart LR
 
 En parallèle du parcours Python, la [Partie 4 — MetaGeneticSharp](Part4-Metaheuristics/README.md) propose un **side-track .NET 9** de 19 notebooks (MGS-1 à MGS-19) qui **reconstruit et compose** les métaheuristiques au-dessus de GeneticSharp plutôt que d'importer une boîte noire. Il prolonge Search-5 (GeneticAlgorithms) et Search-11 (Métaheuristiques) et se lit en quatre temps : **MGS-1 à 7** bâtissent le moteur et la grammaire de composition (jusqu'au TSP) ; **MGS-8 à 14** visualisent les paysages de fitness et mesurent la robustesse aux biais des bancs CEC (décalage, rotation, synergie d'îles) ; **MGS-15 à 18** referment la série sur l'analyse quantitative de paysage et la méta-stratégie (No-Free-Lunch, contrôle de paramètres) ; **MGS-19** démonte le recuit simulé pour éprouver l'opérateur de Metropolis seul. Optionnel pour qui vise le cœur Python, central pour qui veut *construire* ses métaheuristiques en .NET.
 
+## Prérequis
+
+### Python
+
+```bash
+# Creer un environnement
+python -m venv venv
+# Ou: conda create -n search python=3.10
+
+# Installer les dependances
+pip install -r requirements.txt
+```
+
+### C# (.NET Interactive) - pour side tracks uniquement
+
+```bash
+# .NET 9.0 requis
+dotnet --version
+
+# Les packages NuGet sont installes dans les notebooks :
+# - GeneticSharp
+# - SkiaSharp (visualisation)
+```
+
+### MiniZinc (optionnel, pour App-8)
+
+```bash
+# Installer MiniZinc IDE depuis https://www.minizinc.org/
+# Puis: pip install minizinc
+```
+
+---
+
 ## Ce que chaque notebook apporte
 
 Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun.
@@ -386,39 +419,6 @@ La parité `.NET ⇄ Python` de la Partie 2 CSP a été portée par un **maratho
 Les 9 binômes sont **tous mergés sur `main`** (vérifié disque au 2026-07-07 : `Part2-CSP/CSP-1-Csharp` à `CSP-9-Csharp` présents et gît-trackés). Le verdict SOTA-OK est documenté dans les PRs du marathon (règle [EPIC #3801](https://github.com/jsboige/CoursIA/issues/3801) — vrai outil, pas workaround dégradé) ; les 2 PRs les plus anciennes (CSP-3, CSP-7) ont été livrées avant la formalisation de la règle et n'ont pas de verdict écrit. Équilibre solvers final : **6 Choco via IKVM** (CSP-1/2/3/4/5/7), **2 OR-Tools CP-SAT natif .NET** (CSP-6/8), **1 from-scratch** (CSP-9, algorithme distribué Yokoo 1992).
 
 Au-delà de la Partie 2, le même marathon a livré les jumeaux C# de la **Partie 1** (Search-1 à 11, 15), de la **Partie 3** (Search-12/13/14) et des **20 applications** (dont App-20-SudokuBenchmark, créé directement en binôme) — la parité est complète sur tout le périmètre curriculaire de la série.
-
----
-
-## Prérequis
-
-### Python
-
-```bash
-# Creer un environnement
-python -m venv venv
-# Ou: conda create -n search python=3.10
-
-# Installer les dependances
-pip install -r requirements.txt
-```
-
-### C# (.NET Interactive) - pour side tracks uniquement
-
-```bash
-# .NET 9.0 requis
-dotnet --version
-
-# Les packages NuGet sont installes dans les notebooks :
-# - GeneticSharp
-# - SkiaSharp (visualisation)
-```
-
-### MiniZinc (optionnel, pour App-8)
-
-```bash
-# Installer MiniZinc IDE depuis https://www.minizinc.org/
-# Puis: pip install minizinc
-```
 
 ---
 
