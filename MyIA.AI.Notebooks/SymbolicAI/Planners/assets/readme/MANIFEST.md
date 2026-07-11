@@ -23,7 +23,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 ## planners7-ortools.png
 
 - **Source** : notebook `03-Advanced/Planners-7-OR-Tools.ipynb` (cellule 19, output 1)
-- **Alt-text (FR)** : OR-Tools : planification par modèle CP-SAT et résolution de problèmes PDDL via un solveur industriel à grande échelle.
+- **Alt-text (FR)** : OR-Tools CP-SAT : diagramme de Gantt d'un ordonnancement job-shop (makespan minimisé) produit par le solveur.
 - **Poids** : 18.4 KB (natif)
 
 ## planners8-temporal.png
@@ -31,9 +31,3 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 - **Source** : notebook `03-Advanced/Planners-8-Temporal.ipynb` (cellule 8, output 0)
 - **Alt-text (FR)** : Planification temporelle : chronologie d'actions avec durées et contraintes de scheduling sur un réseau temporel.
 - **Poids** : 32.4 KB (downscale max-dim 1200)
-
-## planners12-loop.png
-
-- **Source** : notebook `04-NeuroSymbolic/Planners-12-LOOP.ipynb` (cellule 29, output 2)
-- **Alt-text (FR)** : Neuro-symbolique (LOOP) : intégration d'un apprentissage dans la boucle de planification symbolique pour adapter l'heuristique.
-- **Poids** : 60.1 KB (downscale max-dim 1200)

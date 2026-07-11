@@ -43,7 +43,7 @@ flowchart TD
 
 ## Aperçu — la planification automatique en images
 
-Chacune des quatre phases de la série rend visible un concept distinct, dans une figure extraite des sorties réelles des notebooks (EPIC #5654) : l'explosion combinatoire de l'espace d'états (Fondations), les heuristiques qui guident la recherche (Classique), la planification temporelle et contraintiste (Avancées), puis l'intégration neuro-symbolique (Neuro-Symbolique). Plutôt qu'une galerie séparée du propos, ces figures accompagnent ci-dessous le récit **phase par phase**, au plus près du concept qu'elles illustrent. La provenance exacte de chaque figure (cellule, output, poids, alt-text) est documentée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+Chaque phase de la série rend visible un concept distinct, dans une figure extraite des sorties réelles des notebooks (EPIC #5654) : l'explosion combinatoire de l'espace d'états (Fondations), les heuristiques qui guident la recherche (Classique), la planification temporelle et contraintiste (Avancées). Plutôt qu'une galerie séparée du propos, ces figures accompagnent ci-dessous le récit **phase par phase**, au plus près du concept qu'elles illustrent. La provenance exacte de chaque figure (cellule, output, poids, alt-text) est documentée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Parcours d'apprentissage
 
@@ -65,15 +65,13 @@ Les notebooks 4 à 6 constituent le cœur technique de la série. Le notebook 4 
 
 La planification classique épuise ses limites dès que les problèmes deviennent trop grands pour l'exploration d'états. Les notebooks 7 à 9 proposent des alternatives. Le notebook 7 (OR-Tools) introduit la programmation par contraintes avec CP-SAT de Google OR-Tools : modélisation de contraintes (all-different, cumulative, table), scheduling, et optimisation multi-objectif. Le notebook 8 (Temporal) étend au domaine temporel avec PDDL 2.1 : durées d'actions, parallélisme, contraintes temporelles simples et denses, ordonnancement de tâches. Le notebook 9 (HTN) présente la planification hiérarchique (Task Networks) : tâches primitives vs abstraites, méthodes de décomposition, langage HDDL, solveur inspiré de SHOP2, et comparaison avec STRIPS. À l'issue, vous disposez de trois paradigmes complémentaires pour les problèmes qui dépassent la planification classique.
 
-<p align="center"><a href="03-Advanced/Planners-7-OR-Tools.ipynb"><img src="assets/readme/planners7-ortools.png" width="540" alt="OR-Tools : planification par modèle CP-SAT et résolution de problèmes PDDL via un solveur industriel à grande échelle."></a></p>
+<p align="center"><a href="03-Advanced/Planners-7-OR-Tools.ipynb"><img src="assets/readme/planners7-ortools.png" width="540" alt="OR-Tools CP-SAT : diagramme de Gantt d'un ordonnancement job-shop (makespan minimisé) produit par le solveur."></a></p>
 
 <p align="center"><a href="03-Advanced/Planners-8-Temporal.ipynb"><img src="assets/readme/planners8-temporal.png" width="560" alt="Planification temporelle : chronologie d'actions avec durées et contraintes de scheduling sur un réseau temporel."></a></p>
 
 ### Phase 4 : Neuro-Symbolique (Notebooks 10-12, ~3h)
 
 La dernière partie explore la frontière entre IA symbolique et apprentissage profond. Le notebook 10 (LLM-Planning) montre comment les Large Language Models peuvent générer des plans à partir de descriptions en langage naturel, le prompting pour la planification, et le plan repair. Le notebook 11 (Unified-Planning) détaille l'interface unifiée `unified-planning` : connexion à plusieurs solveurs en quelques lignes, comparaison croisée des performances, et portabilité du modèle PDDL entre moteurs. Le notebook 12 (LOOP) introduit le paradigme **Learning to Plan** : architecture LOOP (state encoder, policy network, value network), encodage PDDL en tenseurs (one-hot, GNN), entraînement par imitation et renforcement, résultats sur benchmarks IPC (85.8% coverage), et comparaison avec KRCL. Ce notebook conclut la série avec les tendances futures : foundation models, meta-learning, inverse reinforcement learning.
-
-<p align="center"><a href="04-NeuroSymbolic/Planners-12-LOOP.ipynb"><img src="assets/readme/planners12-loop.png" width="560" alt="Neuro-symbolique (LOOP) : intégration d'un apprentissage dans la boucle de planification symbolique pour adapter l'heuristique."></a></p>
 
 ### Parcours alternatifs
 
