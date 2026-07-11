@@ -128,8 +128,23 @@ def _find_solution_path(node):
 def draw_csp_graph(variables: list, domains: dict, constraints: list,
                    assignment: dict = None,
                    title: str = "Graphe de contraintes",
-                   figsize: tuple = (10, 8)):
-    """Dessine le graphe de contraintes d'un CSP."""
+                   figsize: tuple = (10, 8),
+                   pos: dict = None):
+    """Dessine le graphe de contraintes d'un CSP.
+
+    Args:
+        variables: liste des noms de variables (noeuds).
+        domains: dict variable -> liste de valeurs (affiche sous chaque noeud).
+        constraints: liste de paires (var1, var2) representant les aretes.
+        assignment: dict optionnel variable -> valeur (met les noeuds assignes en vert).
+        title: titre du graphe.
+        figsize: taille de la figure matplotlib.
+        pos: dictionnaire optionnel {variable: (x, y)} de positions fixes.
+             Si None (defaut), utilise nx.spring_layout (force-directed, non
+             geographique). Passer un dict explicite pour une carte geographique
+             (cf. CSP-1-Fundamentals Australie : positions AIMA-compatible
+             pour que NT/WA/SA/Q/NSW/V/T apparaissent a l'endroit).
+    """
     try:
         import networkx as nx
     except ImportError:
@@ -144,7 +159,16 @@ def draw_csp_graph(variables: list, domains: dict, constraints: list,
             G.add_edge(c[0], c[1])
 
     fig, ax = plt.subplots(1, 1, figsize=figsize)
-    pos = nx.spring_layout(G, seed=42)
+    if pos is None:
+        pos = nx.spring_layout(G, seed=42)
+    else:
+        # Verifier que toutes les variables sont couvertes ; retomber sur
+        # spring_layout pour les variables manquantes (defensif).
+        missing = [v for v in variables if v not in pos]
+        if missing:
+            fallback = nx.spring_layout(G, seed=42)
+            for v in missing:
+                pos[v] = fallback[v]
 
     # Couleurs selon l'etat d'assignation
     colors = []
