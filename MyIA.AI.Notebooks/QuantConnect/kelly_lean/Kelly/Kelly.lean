@@ -229,4 +229,68 @@ theorem growthGrad_zero_pos_iff (β : Bet) :
   rw [growthGrad_zero, kellyFrac_pos_iff]
   constructor <;> intro h <;> linarith [mul_comm β.p β.b]
 
+/-- **Fraction de Kelly négative ssi pari défavorable** : `f* < 0` exactement quand
+    l'« edge » `b·p − q` est strictement négatif (le pari est désavantageux, `b·p < q`).
+    Le maximiseur bascule alors côté short. Formalise le second cas de la prose §8
+    (« un pari défavorable donne `f* < 0` »). -/
+theorem kellyFrac_neg_iff (β : Bet) :
+    kellyFrac β < 0 ↔ β.b * β.p - q β < 0 := by
+  unfold kellyFrac
+  rw [div_lt_iff₀ β.hb_pos, zero_mul]
+
+/-- **Edge négatif ssi Kelly négative** : la pente initiale `g'(0) = b·p − q` est
+    strictement négative exactement quand `f* < 0`. La direction short est signée par
+    la pente du log-croissance en l'origine. -/
+theorem growthGrad_zero_neg_iff (β : Bet) :
+    growthGrad β 0 < 0 ↔ kellyFrac β < 0 := by
+  rw [growthGrad_zero, kellyFrac_neg_iff]
+  constructor <;> intro h <;> linarith [mul_comm β.p β.b]
+
+/-- **Fraction de Kelly nulle ssi pari équitable** : `f* = 0` exactement quand
+    l'« edge » `b·p − q` est nul (pari actuariellement équitable, `b·p = q`).
+    Ne rien miser est alors optimal. Formalise le cas neutre de la prose §8. -/
+theorem kellyFrac_eq_zero_iff (β : Bet) :
+    kellyFrac β = 0 ↔ β.b * β.p - q β = 0 := by
+  unfold kellyFrac
+  rw [div_eq_zero_iff, or_iff_left β.hb_pos.ne']
+
+/-- **Edge nul siff Kelly nulle** : la pente initiale `g'(0)` est nulle exactement
+    quand `f* = 0`. Le cas neutre où ne rien miser est optimal — frontière entre les
+    régimes long et short. -/
+theorem growthGrad_zero_eq_zero_iff (β : Bet) :
+    growthGrad β 0 = 0 ↔ kellyFrac β = 0 := by
+  rw [growthGrad_zero, kellyFrac_eq_zero_iff]
+  constructor <;> intro h <;> linarith [mul_comm β.p β.b]
+
+/-! ## 9. Capstone : la croissance optimale est nulle ssi le pari est équitable
+
+Les régimes du §8 décrivent le **signe de la fraction optimale** `f*`. Cette section
+en donne la **valeur de croissance** : comme `f*` maximise `g` et que `g(0) = 0`
+(ne rien miser laisse le capital inchangé), l'optimum satisfait toujours
+`g(f*) ≥ 0`. Il est **nul exactement au point neutre** `f* = 0` (pari actuariellement
+équitable, `b·p = q`) ; dès qu'un edge existe (`f* ≠ 0`), l'optimum est **strictement
+positif** — un pari à Kelly optimal ne détruit jamais le capital, et n'enrichit que
+s'il y a avantage. Ce capstone boucle la formalisation du critère opérationnel :
+`sign(f*) = sign(edge)` (§8) et `g(f*) = 0 ↔ f* = 0` (ici) — les deux faces d'un
+même résultat.
+-/
+
+/-- **Croissance optimale nulle ssi pari équitable** : `g(f*) = 0` exactement quand
+    `f* = 0`. Suit de `kelly_optimal` (qui donne `g(0) = 0 ≤ g(f*)` via `f = 0`
+    admissible) et `kelly_unique` (qui donne `g(f*) > g(0) = 0` dès que `f* ≠ 0`).
+    Capstone du critère opérationnel : la fraction nulle ne croît ni ne décroît, et
+    tout edge non nul produit une croissance optimale strictement positive. -/
+theorem kelly_growth_eq_zero_iff (β : Bet) :
+    growth β (kellyFrac β) = 0 ↔ kellyFrac β = 0 := by
+  refine ⟨fun h => ?_, fun h => ?_⟩
+  · -- g(f*) = 0 mais f* ≠ 0 : kelly_unique donne g(0) < g(f*) = 0, contradiction
+    by_contra hne
+    have hfeas0 : Feasible β 0 := ⟨by rw [div_lt_iff₀ β.hb_pos]; linarith, by linarith⟩
+    have hne' : (0 : ℝ) ≠ kellyFrac β := fun he => hne (Eq.symm he)
+    have hu := kelly_unique β 0 hfeas0 hne'
+    rw [growth_zero] at hu
+    linarith
+  · -- f* = 0 : alors g(f*) = g(0) = 0
+    rw [h]; exact growth_zero β
+
 end KellyLean

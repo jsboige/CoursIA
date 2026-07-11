@@ -228,4 +228,67 @@ theorem growthGrad_zero_pos_iff (β : Bet) :
   rw [growthGrad_zero, kellyFrac_pos_iff]
   constructor <;> intro h <;> linarith [mul_comm β.p β.b]
 
+/-- **Kelly fraction negative iff bet is unfavorable**: `f* < 0` exactly when the
+    "edge" `b·p − q` is strictly negative (the bet is disadvantageous, `b·p < q`).
+    The maximizer then flips to the short side. Formalizes the second case of the
+    §8 prose ("an unfavorable bet yields `f* < 0`"). -/
+theorem kellyFrac_neg_iff (β : Bet) :
+    kellyFrac β < 0 ↔ β.b * β.p - q β < 0 := by
+  unfold kellyFrac
+  rw [div_lt_iff₀ β.hb_pos, zero_mul]
+
+/-- **Negative edge iff negative Kelly**: the initial slope `g'(0) = b·p − q` is
+    strictly negative exactly when `f* < 0`. The short direction is signed by the
+    log-growth slope at the origin. -/
+theorem growthGrad_zero_neg_iff (β : Bet) :
+    growthGrad β 0 < 0 ↔ kellyFrac β < 0 := by
+  rw [growthGrad_zero, kellyFrac_neg_iff]
+  constructor <;> intro h <;> linarith [mul_comm β.p β.b]
+
+/-- **Kelly fraction zero iff actuarially fair bet**: `f* = 0` exactly when the
+    "edge" `b·p − q` is zero (a fair bet, `b·p = q`). Staking nothing is then
+    optimal. Formalizes the neutral case of the §8 prose. -/
+theorem kellyFrac_eq_zero_iff (β : Bet) :
+    kellyFrac β = 0 ↔ β.b * β.p - q β = 0 := by
+  unfold kellyFrac
+  rw [div_eq_zero_iff, or_iff_left β.hb_pos.ne']
+
+/-- **Zero edge iff zero Kelly**: the initial slope `g'(0)` vanishes exactly when
+    `f* = 0`. The neutral regime where staking nothing is optimal — the boundary
+    between the long and short regimes. -/
+theorem growthGrad_zero_eq_zero_iff (β : Bet) :
+    growthGrad β 0 = 0 ↔ kellyFrac β = 0 := by
+  rw [growthGrad_zero, kellyFrac_eq_zero_iff]
+  constructor <;> intro h <;> linarith [mul_comm β.p β.b]
+
+/-! ## 9. Capstone: optimal growth is zero iff the bet is fair
+
+The §8 regimes describe the **sign of the optimal fraction** `f*`. This section gives
+its **growth value**: since `f*` maximizes `g` and `g(0) = 0` (staking nothing leaves
+capital unchanged), the optimum always satisfies `g(f*) ≥ 0`. It is **zero exactly at
+the neutral point** `f* = 0` (actuarially fair bet, `b·p = q`); whenever an edge
+exists (`f* ≠ 0`), the optimum is **strictly positive** — a Kelly-optimal bet never
+destroys capital, and enriches only when there is an advantage. This capstone closes
+the formalization of the operational criterion: `sign(f*) = sign(edge)` (§8) and
+`g(f*) = 0 ↔ f* = 0` (here) — two faces of the same result.
+-/
+
+/-- **Optimal growth zero iff fair bet**: `g(f*) = 0` exactly when `f* = 0`. Follows
+    from `kelly_optimal` (giving `g(0) = 0 ≤ g(f*)` via admissible `f = 0`) and
+    `kelly_unique` (giving `g(f*) > g(0) = 0` whenever `f* ≠ 0`). Capstone of the
+    operational criterion: the null fraction neither grows nor shrinks, and any
+    non-zero edge yields strictly positive optimal growth. -/
+theorem kelly_growth_eq_zero_iff (β : Bet) :
+    growth β (kellyFrac β) = 0 ↔ kellyFrac β = 0 := by
+  refine ⟨fun h => ?_, fun h => ?_⟩
+  · -- g(f*) = 0 but f* ≠ 0: kelly_unique gives g(0) < g(f*) = 0, contradiction
+    by_contra hne
+    have hfeas0 : Feasible β 0 := ⟨by rw [div_lt_iff₀ β.hb_pos]; linarith, by linarith⟩
+    have hne' : (0 : ℝ) ≠ kellyFrac β := fun he => hne (Eq.symm he)
+    have hu := kelly_unique β 0 hfeas0 hne'
+    rw [growth_zero] at hu
+    linarith
+  · -- f* = 0: then g(f*) = g(0) = 0
+    rw [h]; exact growth_zero β
+
 end KellyLean_en
