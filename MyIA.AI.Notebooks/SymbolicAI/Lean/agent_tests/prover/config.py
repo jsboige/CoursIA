@@ -1801,15 +1801,15 @@ DEMOS = {
     62: {
         "name": "HASHLIFE_P4_SUCC_MEMBERSHIP",
         "file": str(CONWAY_HASHLIFE_FILE) if CONWAY_HASHLIFE_FILE else "",
-        "line": 2673,
+        "line": 2734,
         "sorry_type": "sorry_replacement",
         "theorem_name": "p4_succ_membership",
         "theorem": "p4_succ_membership",
         "imports": CONWAY_HASHLIFE_IMPORTS,
         "description": (
             "BG-prover target (hashlife nibble plan #3846, N3): residual sorry in\n"
-            "noncomputable def p4_succ_membership (declared L2636, residual sorry\n"
-            "L2673 of HashlifeCorrectness.lean). The whnf wall is already traversed\n"
+            "noncomputable def p4_succ_membership (declared L2697, residual sorry\n"
+            "L2734 of HashlifeCorrectness.lean). The whnf wall is already traversed\n"
             "around L2648-2665 (node16_level_ne_two L2660 -> rw [if_neg hne2] L2663\n"
             "-> rw [mem_toGrid_node]); what remains is the offset-matching assembly:\n"
             "prove each `out_*.toGrid (off_*, off_*)` membership via\n"
