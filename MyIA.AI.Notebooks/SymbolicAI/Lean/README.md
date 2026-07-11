@@ -15,18 +15,41 @@ Cette série introduit **Lean 4**, un assistant de preuves et langage de program
 
 Six visualisations extraites des notebooks illustrent l'arc de la série : de l'assistance aux preuves par LLM et la vérification formelle de réseaux de neurones jusqu'aux automates de Conway (Game of Life) et à la théorie des nœuds (définition, nœud de Conway, invariants). Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
-<table>
-<tr>
-<td align="center"><b>Assistance LLM</b><br><a href="Lean-7b-Examples.ipynb"><img src="assets/readme/lean-llm-examples.png" width="290" alt="Assistance LLM : interprétation visualisée d'une solution de preuve."></a></td>
-<td align="center"><b>TorchLean (IBP)</b><br><a href="Lean-11-TorchLean-Python.ipynb"><img src="assets/readme/lean-torchlean.png" width="290" alt="TorchLean : propagation IBP pour la vérification formelle de réseaux de neurones."></a></td>
-<td align="center"><b>Conway Game of Life</b><br><a href="Lean-16b-Conway-Game-of-Life-Lean.ipynb"><img src="assets/readme/lean-conway-gol.png" width="290" alt="Conway Game of Life : le self-replicator Gemini (Andrew Wade, 2010)."></a></td>
-</tr>
-<tr>
-<td align="center"><b>Nœud mathématique</b><br><a href="Lean-17-Knots-a-Conway-and-Proofs.ipynb"><img src="assets/readme/lean-knot-conway.png" width="290" alt="Théorie des nœuds : qu'est-ce qu'un nœud mathématique ?"></a></td>
-<td align="center"><b>Nœud de Conway (11n34)</b><br><a href="Lean-17-Knots-a-Conway-and-Proofs.ipynb"><img src="assets/readme/lean-knot-piccirillo.png" width="290" alt="Le nœud de Conway (11n34) — schéma."></a></td>
-<td align="center"><b>Alexander &amp; sliceness</b><br><a href="Lean-17-Knots-b-Invariants-Companion.ipynb"><img src="assets/readme/lean-knot-invariants.png" width="290" alt="Polynôme d'Alexander et sliceness — le critère de Conway."></a></td>
-</tr>
-</table>
+### Assistance aux preuves et vérification formelle
+
+L'état de l'art de la série : un LLM interprète et visualise une solution de preuve ([Lean-7b](Lean-7b-Examples.ipynb)), puis TorchLean propage intervalles (IBP) et bornes (CROWN) pour certifier formellement la robustesse d'un réseau de neurones ([Lean-11a](Lean-11-TorchLean-Python.ipynb)).
+
+<p align="center">
+  <a href="Lean-7b-Examples.ipynb"><img src="assets/readme/lean-llm-examples.png" width="420" alt="Assistance LLM : interprétation visualisée d'une solution de preuve."></a>
+</p>
+
+<p align="center">
+  <a href="Lean-11-TorchLean-Python.ipynb"><img src="assets/readme/lean-torchlean.png" width="420" alt="TorchLean : propagation IBP pour la vérification formelle de réseaux de neurones."></a>
+</p>
+
+### Conway — Game of Life
+
+L'hommage à John Conway passe par le Game of Life comme modèle de calcul ([Lean-16b](Lean-16b-Conway-Game-of-Life-Lean.ipynb)), où Lean sert de certificat pour les structures et leurs périodes.
+
+<p align="center">
+  <a href="Lean-16b-Conway-Game-of-Life-Lean.ipynb"><img src="assets/readme/lean-conway-gol.png" width="420" alt="Conway Game of Life : le self-replicator Gemini (Andrew Wade, 2010)."></a>
+</p>
+
+### Théorie des nœuds
+
+La série dédiée (companion `knot_lean`, Epic #2874) développe trois vues complémentaires : la définition d'un nœud mathématique ([Lean-17a](Lean-17-Knots-a-Conway-and-Proofs.ipynb)), le nœud de Conway (11n34) dont Lisa Piccirillo prouva la non-sliceness, puis le polynôme d'Alexander qui caractérise cette sliceness ([Lean-17b](Lean-17-Knots-b-Invariants-Companion.ipynb)).
+
+<p align="center">
+  <a href="Lean-17-Knots-a-Conway-and-Proofs.ipynb"><img src="assets/readme/lean-knot-conway.png" width="420" alt="Théorie des nœuds : qu'est-ce qu'un nœud mathématique ?"></a>
+</p>
+
+<p align="center">
+  <a href="Lean-17-Knots-a-Conway-and-Proofs.ipynb"><img src="assets/readme/lean-knot-piccirillo.png" width="420" alt="Le nœud de Conway (11n34) — schéma."></a>
+</p>
+
+<p align="center">
+  <a href="Lean-17-Knots-b-Invariants-Companion.ipynb"><img src="assets/readme/lean-knot-invariants.png" width="420" alt="Polynôme d'Alexander et sliceness — le critère de Conway."></a>
+</p>
 
 ## Navigation
 
