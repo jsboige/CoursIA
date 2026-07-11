@@ -1259,7 +1259,8 @@ Part of #3801
 ### Vrais outils SOTA invoqués (vérifiés G.1 imports réels)
 
 - **pyperplan** (planificateur PDDL canonique, AIPlan / Helmert) — 8 notebooks (00-Environment setup, 01-Foundation, 02-Classical, 04-NeuroSymbolic). Vrai moteur de planning classique avec heuriques (`ff`, `add`, `h_add_val`) et recherche A\*/greedy/BFS sur espaces d'états PDDL.
-- **PDDL parser** (domain/problem PDDL) — 12 notebooks : domaines avec `:action`/`:precondition`/`:effect` (logistics véhicule, warehouse, Hanoï).
+- **PDDL parser** (domain/problem PDDL) — 8 notebooks : domaines avec `:action`/`:precondition`/`:effect` inline ou `.pddl`/`import pddl` (Planners-2-PDDL-Basics, Planners-4-Fast-Downward, Planners-6-Domains, Planners-8-Temporal, Planners-9-HTN, Planners-10-LLM-Planning, Planners-11-Unified-Planning + 00-Environment setup), hors archive Fast-Downward-Legacy. *(Amend : 1ʳᵉ passe annonçait 12 nb — deep scan re-vérifié G.1 = 8 réels.)*
+- **Google OR-Tools CP-SAT** — 3 notebooks : Planners-0-Setup, **Planners-7-OR-Tools** (`from ortools.sat.python import cp_model` cell 5 exec_count=1 + usage CpModel/CpSolver/NewIntVar), Planners-8-Temporal. Moteur déjà compté au registre (#005/#010), **pas nouveau**.
 - **networkx** (graphes state-space) — 3 notebooks.
 - **Lean 4** (Planners-5b-Lean-Relaxation) — relaxation de planification, 0 sorry, 13/13 exec.
 
@@ -1272,7 +1273,8 @@ Les notebooks de planification posent des **problèmes PDDL non-triviaux** : log
 - **C.1** : 0/23 réel (0 hit regex, 0 faux positif).
 - **Anti-régression** : 307/307 `execution_count != null` + `output_type: error = 0` ; aucun notebook strippé, aucun output hand-edité.
 - **SOTA tools grounded firsthand** : imports parsés (`pyperplan`, PDDL `:action`/`:precondition`/`:effect`, `networkx`, heuristiques `ff`/`add`/`h_add_val`, recherche `astar`/`bfs`/`greedy`).
-- **Faux positifs scan large corrigés** : première passe regex large avait flaggé `tarski`/`AIMA`/`Google.OR-Tools`/`pySAT` = matches de mots anglais (ex « search » dans prose), pas d'imports réels. Re-scan ciblé (statements `import`/`from`) = **pyperplan + PDDL parser + networkx + Lean** = moteurs réels confirmés.
+- **Faux positifs scan large corrigés** : première passe regex large avait flaggé `tarski`/`AIMA`/`pySAT` = matches de mots anglais (ex « search » dans prose), pas d'imports réels. Re-scan ciblé (statements `import`/`from`) = **pyperplan + PDDL parser + networkx + Lean + OR-Tools** = moteurs réels confirmés.
+- **Amend G.1 (cross-review po-2023, [issuecomment-4940756775](https://github.com/jsboige/CoursIA/pull/5954#issuecomment-4940756775))** : la 1ʳᵉ version de cet entry qualifiait `Google.OR-Tools` de *false-positive* — **incorrect**. Re-vérification firsthand : `Planners-7-OR-Tools.ipynb` cell 5 (exec_count=1) importe réellement `from ortools.sat.python import cp_model` + usage CP-SAT (CpModel/CpSolver/NewIntVar), idem Planners-0-Setup et Planners-8-Temporal = 3 nb réels. Le count PDDL « 12 nb » était aussi sur-estimé (deep scan = 8). **Leçon G.1 symétrique** : un targeted re-scan `import`/`from` n'est pas infaillible — il avait manqué l'import OR-Tools dans un notebook entier dédié ; les « corrections de false-positive » d'un audit se re-vérifient au même titre que les claims positifs.
 
 ### Volet owner-lane strict
 
