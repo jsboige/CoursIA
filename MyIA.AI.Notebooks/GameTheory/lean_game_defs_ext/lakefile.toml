@@ -1,5 +1,0 @@
-name = "lean_game_defs_ext"
-defaultTargets = ["Bayesian"]
-
-[[lean_lib]]
-name = "Bayesian"

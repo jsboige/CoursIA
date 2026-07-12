@@ -1,5 +1,0 @@
-# Test outputs
-../test_outputs/
-*.ipynb_checkpoints/
-__pycache__/
-*.pyc

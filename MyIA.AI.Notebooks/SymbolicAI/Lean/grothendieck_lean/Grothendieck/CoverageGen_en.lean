@@ -39,7 +39,7 @@ For the canonical French version, see `CoverageGen.lean`.
 
 import Mathlib.CategoryTheory.Sites.Coverage
 
-namespace Grothendieck
+namespace Grothendieck_en
 
 open CategoryTheory
 /-!
@@ -164,4 +164,4 @@ theorem sieve_generate_covering {C : Type*} [Category C]
     Sieve.generate R ∈ Coverage.toGrothendieck K X :=
   Coverage.Saturate.of _ _ hR
 
-end Grothendieck
+end Grothendieck_en

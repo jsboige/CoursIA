@@ -1,1 +1,0 @@
-# GenAI Stack CLI commands
