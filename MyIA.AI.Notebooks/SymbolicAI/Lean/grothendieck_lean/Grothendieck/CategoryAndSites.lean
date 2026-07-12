@@ -57,7 +57,7 @@ couvrants. Cette généralisation a révolutionné la géométrie algébrique
 en permettant de définir les **faisceaux** sur des schémas, des
 champs, des topos — bien au-delà des espaces topologiques classiques.
 
-Epic #1646, Phase 2 (#2159). Tous les `sorry` éliminés à la création.
+Epic #1646, Phase 2 (#2159). Tous les `sorry`s éliminés à la création.
 
 ### Hommage calibration harness + Phase 2+ rollout grothendieck_lein (#4980)
 
@@ -101,7 +101,7 @@ Ce module formalise :
   `trivial`/`discrete`/`dense`
 
 Le pont Mathlib utilisé = `Mathlib.CategoryTheory.Sites.Grothendieck`
-(1 import byte-identique LF). Tous les `sorry` ont été éliminés
+(1 import byte-identique LF). Tous les `sorry`s ont été éliminés
 (Epic #1453). **Densité 1.317 thm/KB** (5/3795) — analogue structurel
 direct c.388 SieveOps (1.864 thm/KB, 9 theorem) + c.390 SieveGenerate
 (1.424 thm/KB, 7 theorem) + c.393 SieveLattice (1.339 thm/KB, 4 theorem)
@@ -169,7 +169,7 @@ c.366-c.393).
   Conway/Life/* 13 fichiers OU Lemmas 3 restants OU hors-Lean #5985/#6051
   OU GPU #5105 po-2024.
 
-Tous les `sorry` ont été éliminés (Epic #1453, #1646).
+Tous les `sorry`s ont été éliminés (Epic #1453, #1646).
 -/
 import Mathlib.CategoryTheory.Sites.Grothendieck
 
