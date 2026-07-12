@@ -14,6 +14,41 @@ Conway proved remarkable properties:
 This file formalizes the sequence generation and verifies the first terms.
 -/
 
+/-
+  `Conway.LookAndSay` — La suite look-and-say de Conway
+  ======================================================
+  La suite look-and-say démarre avec « 1 ». Chaque terme suivant décrit le
+  terme précédent en lisant à voix haute les groupes de chiffres consécutifs :
+    1 → 11 → 21 → 1211 → 111221 → 312211 → 13112221 → ...
+
+  Conway a démontré des propriétés remarquables :
+  - Le rapport |a(n+1)| / |a(n)| converge vers la constante de Conway
+    λ ≈ 1.303577...
+  - λ est l'unique racine réelle positive d'un polynôme de degré 71
+  - La suite se décompose en exactement 92 « éléments atomiques » (nommés
+    d'après les éléments chimiques)
+
+  Ce fichier formalise la génération de la suite et vérifie les premiers
+  termes.
+
+  ### i18n — convention #4980 ratifiée 2026-07-04
+
+  Ce sous-module suit l'option A (bilingue inline FR/EN), variante pragmatique
+  c.378 (deux blocs `/` top-level distincts, sans `---` interne, analogue
+  c.376/c.377) : le bloc EN existant est préservé verbatim ci-dessus, le bloc
+  FR miroir est ajouté juste après sans séparateur `---`. Convention sibling
+  pair (`<Foo>_en.lean` à part) réservée aux modules de substance (cf c.374
+  `Astar_en.lean`) ; pour les modules de formalisation comme `LookAndSay`,
+  l'inline FR+EN est le bon compromis (peu de code, deux langues côte à côte).
+
+  Cross-références : c.366 `Conway.lean` racine bilingue (MERGED), c.373
+  `Knots.lean` racine bilingue, c.374 `Astar.lean` sibling pair, c.375
+  `Knots` sub-modules bilingues, c.376 `Knots/Invariant` bilingue (saturation
+  locale du lac `knot_lean` à 6/6), c.377 `Conway/MathlibMap` bilingue
+  (premier sous-module rollout `conway_lean`, PIVOT L335 strict), **c.378
+  `Conway/LookAndSay` bilingue (suite rollout `conway_lean` Phase 1+)**.
+-/
+
 import Mathlib.Data.List.Basic
 
 namespace Conway
