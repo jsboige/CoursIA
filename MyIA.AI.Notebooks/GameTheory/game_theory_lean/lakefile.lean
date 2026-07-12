@@ -36,9 +36,25 @@ require mathlib from git
 --
 -- Convention i18n EPIC #4980 (cf decision_theory_lean precedent) :
 -- `globs` (et non `roots`) avec suffixe `.*` pour auto-decouvrir siblings `_en`.
+--
+-- c.324 (po-2026, #6140) : `StableMarriage.GSState` crashes Windows-native
+-- `lean.exe` cold builds with `0xC0000409` = STATUS_STACK_BUFFER_OVERRUN.
+-- Symptom: `✖ [8503/8529] Building StableMarriage.GSState (46s) — Lean exited
+-- with code 3221226505`. The EN sibling `StableMarriage.GSState_en` builds
+-- fine on the same machine, CI/Linux builds pass, and the file is
+-- byte-identical between FR/EN on non-docstring content — proving this is a
+-- Windows thread-stack flake, NOT a proof regression.
+-- Default thread stack on Windows is 1 MiB; bumping to 8 MiB (`--tstack=8192`)
+-- absorbs the deep elaboration of the three inline `IsTrans (Fin n)` instances
+-- on `gsMenPrefLE` in `gsChooseMax` / `gsChooseMax_mem` / `gsChooseMax_maximal`
+-- (file `StableMarriage/GSState.lean`). No file in `StableMarriage/` is
+-- modified: this is a build-config fix, anti-régression compliant (no touch
+-- to proof). Scope = per-lib override so `CooperativeGames` / `SocialChoice`
+-- cold builds remain unaffected. See #6140.
 @[default_target]
 lean_lib StableMarriage where
   globs := #[`StableMarriage.*]
+  moreLeanArgs := #["--tstack=8192"]
 
 @[default_target]
 lean_lib CooperativeGames where
