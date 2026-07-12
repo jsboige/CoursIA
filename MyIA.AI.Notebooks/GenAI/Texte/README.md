@@ -71,17 +71,28 @@ Le notebook 12 introduit en Python pur les quatre moteurs d'inférence au moment
 | 19 | `19_OWUI_Orchestration.ipynb` | Orchestration sans code via Open WebUI v0.9.0 (Automations RRULE / Task Management / Calendar) ; trois niveaux d'abstraction (produit OWUI vs LangGraph vs CrewAI) ; migration async 0.8→0.9 ; skeleton API OpenAI-compatible avec graceful skip (`OWUI_API_KEY`) | 60 min |
 | 20 | `20_OWUI_Native_API.ipynb` | Compagnon du 19 : introspection de la **vraie surface API native** OWUI v0.9.6 (routes REST auth-free : santé/version/config ; couche authentifiée Bearer) via `urllib` standard ; graceful skip honnête si `OWUI_API_KEY` absente (Stop & Repair, pas de sortie fabriquée) | 60 min |
 
-**Figures clés de l'arc test-time scaling.** Trois sorties matplotlib des notebooks [16](16_Scaling_Test_Time_Compute.ipynb) et [17](17_Native_Reasoning_vs_Scaling.ipynb) matérialisent les compromis quantifiés par Snell 2024 — le cœur pédagogique du Tier 5 :
+**Figures clés de l'arc test-time scaling.** Trois sorties matplotlib des notebooks [16](16_Scaling_Test_Time_Compute.ipynb) et [17](17_Native_Reasoning_vs_Scaling.ipynb) matérialisent les compromis quantifiés par Snell 2024 — le cœur pédagogique du Tier 5.
 
-<table>
-<tr>
-<td align="center"><img src="assets/readme/texte-scaling-passk.png" alt="Trois courbes de taux de succès pass@k vs budget d'échantillons k, une par bucket de difficulté (facile/moyen/difficile)" width="400"/><br/><sub><b>pass@k vs budget k</b> ([16](16_Scaling_Test_Time_Compute.ipynb)) — 3 courbes (taux de succès Y, budget d'échantillons k X), une par bucket de difficulté : le <i>facile</i> sature vite, le <i>difficile</i> monte avec k (résultat central de Snell)</sub></td>
-<td align="center"><img src="assets/readme/texte-bon-vs-reflex.png" alt="Diagramme en barres groupées : taux de succès de Best-of-N parallèle vs Réflexion séquentielle, par bucket de difficulté" width="400"/><br/><sub><b>BoN vs Réflexion par difficulté</b> ([16](16_Scaling_Test_Time_Compute.ipynb)) — diagramme en barres groupées (taux de succès Y) : chaque régime a sa stratégie gagnante = la frontière compute-optimale</sub></td>
-</tr>
-<tr>
-<td align="center" colspan="2"><img src="assets/readme/texte-reason-vs-scale.png" alt="Courbes (BoN hand-rolled) et croix (r1 raisonnement natif) du taux de succès vs tokens dépensés, par bucket de difficulté" width="500"/><br/><sub><b>Raisonnement natif vs scaling hand-rolled</b> ([17](17_Native_Reasoning_vs_Scaling.ipynb)) — courbes (BoN) et croix (r1) du taux de succès vs <b>tokens dépensés</b> (comparaison cost-normalisée) : la croix au-dessus de la courbe au même coût = le raisonnement natif gagne</sub></td>
-</tr>
-</table>
+**pass@k : la frontière s'ouvre avec le budget.** L'estimateur pass@k mesure le taux de succès quand on autorise *k* échantillons indépendants. Snell 2024 montre que cette frontière dépend fortement de la difficulté : les problèmes *faciles* saturent presque immédiatement, tandis que les *difficiles* continuent de monter avec *k* — d'où l'intérêt d'investir le compute là où le single-shot échoue.
+
+<p align="center">
+  <img src="assets/readme/texte-scaling-passk.png" alt="Trois courbes de taux de succès pass@k vs budget d'échantillons k, une par bucket de difficulté (facile/moyen/difficile)" width="420"/><br>
+  <em><b>pass@k vs budget k</b> ([16](16_Scaling_Test_Time_Compute.ipynb)) — 3 courbes (taux de succès Y, budget d'échantillons k X), une par bucket de difficulté : le <i>facile</i> sature vite, le <i>difficile</i> monte avec k (résultat central de Snell).</em>
+</p>
+
+**BoN vs Réflexion : chaque régime a sa stratégie gagnante.** Comparer Best-of-N parallèle (plusieurs essais indépendants) à la Réflexion séquentielle (un essai qui se corrige) révèle qu'aucune architecture ne domine universellement : selon le bucket de difficulté, l'une bat l'autre — c'est la *frontière compute-optimale*, choisir la bonne méthode pour le bon régime.
+
+<p align="center">
+  <img src="assets/readme/texte-bon-vs-reflex.png" alt="Diagramme en barres groupées : taux de succès de Best-of-N parallèle vs Réflexion séquentielle, par bucket de difficulté" width="420"/><br>
+  <em><b>BoN vs Réflexion par difficulté</b> ([16](16_Scaling_Test_Time_Compute.ipynb)) — diagramme en barres groupées (taux de succès Y) : chaque régime a sa stratégie gagnante = la frontière compute-optimale.</em>
+</p>
+
+**Raisonnement natif vs scaling hand-rolled.** La comparaison cost-normalisée — en *tokens dépensés* plutôt qu'en échantillons — oppose le BoN « fait maison » (courbes) au raisonnement natif de deepseek-r1 (croix) : à coût token égal, la croix r1 se place au-dessus de la courbe BoN, le raisonnement natif exploite donc mieux chaque token que le simple parallélisme.
+
+<p align="center">
+  <img src="assets/readme/texte-reason-vs-scale.png" alt="Courbes (BoN hand-rolled) et croix (r1 raisonnement natif) du taux de succès vs tokens dépensés, par bucket de difficulté" width="500"/><br>
+  <em><b>Raisonnement natif vs scaling hand-rolled</b> ([17](17_Native_Reasoning_vs_Scaling.ipynb)) — courbes (BoN) et croix (r1) du taux de succès vs <b>tokens dépensés</b> (comparaison cost-normalisée) : la croix au-dessus de la courbe au même coût = le raisonnement natif gagne.</em>
+</p>
 
 Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
