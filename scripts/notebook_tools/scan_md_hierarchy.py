@@ -92,7 +92,7 @@ def _strip_fenced_code(cell_text):
     FENCE_RE; fence-marker lines are kept, code lines between them are blanked.
 
     A truly COLLAPSED cell (newlines stripped, the fence opener ``` glued to a
-    heading like `### Archi \`\`\` ...`) has no real fence structure: the glued
+    heading like `### Archi ``` ...`) has no real fence structure: the glued
     line does not START with ``` (FENCE_RE is anchored), so nothing is blanked
     and the glued table fragment is still detected -> correct (true positive
     preserved). See Lean-12 cell 16 FP (#3966).
