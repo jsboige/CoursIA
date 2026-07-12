@@ -18,26 +18,26 @@
 | `1630-DualMomentum-aligned` | 33286487 | c.332 | 318 | 0.350 | 8.413 % | 14.900 % | 76.088 % ($59 745) | OK |
 | `1630-RiskParity-aligned` | 33286158 | c.332 | 309 | 0.361 | 8.303 % | 18.400 % | 74.841 % ($60 837) | OK |
 | `baseline-clone-TrendFollowing-repo-1630` | 33078355 | c.336 | 453 | 0.360 | 7.290 % | 15.000 % | 102.225 % ($83 495) | OK |
+| `1630-baseline-AdaptiveConformalRisk` | 33278416 | c.338 | 1079 | 0.449 | 11.522 % | 22.500 % | 139.392 % ($126 394) | OK |
 
-> Les métriques sont consignées après exécution du backtest c.336 (résultat brut vérifié `totalOrders > 0`).
+> Les métriques sont consignées après exécution du backtest (résultat brut vérifié `totalOrders > 0`, garde anti-exception silencieuse c.331).
 
-## Lecture comparative (3 stratégies)
+## Lecture comparative (4 stratégies)
 
-Les trois stratégies validées (DualMomentum, RiskParity, TrendFollowing) affichent un profil **modéré et cohérent** :
+Les quatre stratégies validées affichent deux profils distincts :
 
-- **Sharpe ~0.35–0.36** — rentabilité ajustée du risque modeste mais positive, sur la plage attendue pour une allocation tactique ETF multi-actifs (référence : Sharpe SPY long-terme ~0.4–0.5). Étonnamment, les trois stratégies convergent vers la même valeur de Sharpe malgré des logiques de signaux très différentes.
-- **CAGR** : DualMomentum et RiskParity ~8.3–8.4 %, TrendFollowing 7.3 % (légèrement inférieur).
-- **Drawdown 14.9–15.0 % (DualMomentum, TrendFollowing) vs 18.4 % (RiskParity)** — RiskParity paie sa diversification constante par un drawdown plus profond ; les stratégies momentum/trend contrôlent mieux le risque extrême via leurs stops.
-- **Net Profit : TrendFollowing (102.2 %, $83 495) > DualMomentum (76.1 %) > RiskParity (74.8 %)** — TrendFollowing, sur la période la plus longue (2516 jours tradeables vs 1761), surpasse en absolu tout en restant dans la même bande de Sharpe.
-- **Aucune exception silencieuse** : 309–453 ordres confirment un rebalancement actif (vs le piège 0-trade de c.331, désormais détecté par le garde).
+- **Trois stratégies tactiques (DualMomentum, RiskParity, TrendFollowing) : Sharpe ~0.35–0.36** — rentabilité ajustée du risque modeste, dans la plage attendue pour une allocation tactique ETF multi-actifs (référence : Sharpe SPY long-terme ~0.4–0.5). Étonnamment, ces trois stratégies convergent vers la même valeur de Sharpe malgré des logiques de signaux différentes.
+- **AdaptiveConformalRisk se détache : Sharpe 0.449, CAGR 11.5 %, Net +139 %** — le premier membre de la cohorte dont le Sharpe **dépasse nettement la bande de référence ~0.36**. Le Probabilistic Sharpe Ratio (2.509 %) est aussi nettement supérieur aux autres (<1 %). Ce surcroît de rentabilité s'accompagne d'un drawdown plus profond (22.5 % vs 14.9–18.4 %) — un profil risque/rendement plus agressif, caractéristique d'une stratégie à risque adaptatif (conformal risk control).
+- **Drawdown** : AdaptiveConformalRisk (22.5 %) > RiskParity (18.4 %) > DualMomentum/TrendFollowing (14.9–15.0 %). Le risque adaptatif maximise le rendement au prix d'un drawdown plus large.
+- **Net Profit : AdaptiveConformalRisk (139 %, $126 394) > TrendFollowing (102 %) > DualMomentum (76 %) > RiskParity (75 %)**.
+- **Aucune exception silencieuse** : 309–1079 ordres confirment un rebalancement actif (vs le piège 0-trade de c.331, désormais détecté par le garde).
 
-**Verdict honnête (G.2)** : NO BEATS manifesto sur les trois stratégies — performances dans la plage du benchmark (Sharpe ~0.36, pas d'alpha manifeste au-delà du buy-and-hold SPY ajusté du risque). La cohorte sert de **baseline de référence** pour comparer les stratégies suivantes (AdaptiveConformalRisk, PCAStatArbitrage) et détecter un éventuel alpha.
+**Verdict honnête (G.2)** : NO BEATS manifesto reste l'interprétation prudente pour les 3 stratégies tactiques (Sharpe ~0.36 = plage benchmark). **AdaptiveConformalRisk est un candidat alpha prometteur** (Sharpe 0.449 + PSR 2.5 % vs ~0.36 + <1 % pour le reste) mais ce verdict nécessite, avant d'être affirmé, une validation multi-seed / walk-forward (cf [pr-review-discipline.md](../.claude/rules/pr-review-discipline.md) §C) pour exclure que l'écart ne soit un artefact du régime de la période. La cohorte sert de **baseline de référence** pour les stratégies restantes (PCAStatArbitrage, robustness-c2-regime).
 
 ## Stratégies en file (cycles suivants)
 
 Backtests restants à lancer sur la cohorte, pour étendre la comparative :
 
-- `1630-baseline-AdaptiveConformalRisk` (33278416)
 - `1630-baseline-PCAStatArbitrage` (33281920)
 - `1630-robustness-c2-regime` (33280244)
 
