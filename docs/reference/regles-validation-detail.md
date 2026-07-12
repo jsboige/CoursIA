@@ -49,11 +49,22 @@ sys.exit(1 if bad else 0)" "$nb"
 ```
 
 Si fail → agent doit :
+
 - (a) executer localement (env complet H.2), OU
 - (b) executer via dispatch RooSync sur machine compatible, OU
 - (c) deplacer le notebook dans `_pending_execution/` avec issue ouverte detaillant le blocage
 
 Pas de 4ème option, pas de "je commit quand meme c'est juste structurel".
+
+### Hook pre-commit notebook (.pre-commit-config.yaml)
+
+Le repo inclut un hook pre-commit **local** dans `.pre-commit-config.yaml` qui s'exécute sur les `*.ipynb` staged :
+
+- **`strip-probeaddresses-banner`** — strip automatique du banner `probeAddresses` (data["text/html"] output du kernel `.NET Interactive` `dotnet-interactive`). Sans ce hook, le banner re-injecte à chaque kernel re-exec les IPs machine (LAN IPv4, WSL/Docker bridge, link-local IPv6, IPv6 publique GUA — ex: `2a01:e0a:...` Orange-FR `/32`). Strip output-only (pas de modification des sources, `execution_count` préservé). Régression de #2727/#2733 (scrub one-shot non-durable, 183 notebooks source re-affectés au moment du fix, 202 total incluant `_output` papermill) — fix structurel : voir #6309.
+
+Activation : `pip install pre-commit && pre-commit install`. Exécution manuelle : `pre-commit run --all-files`. Strip CI/standalone : `python scripts/notebook_tools/strip_probe_banner.py --scan-all --check` (exit 1 si banners résiduels), `--apply-all` (fix repo-wide). Tests unitaires : `pytest scripts/notebook_tools/tests/test_strip_probe_banner.py` (18/18 PASS — couvre list-form, string-form, mixed list+string, idempotence, byte-stability, regression `]`-in-string via bracket scanner).
+
+Détail du stripper : `scripts/notebook_tools/strip_probe_banner.py`. Le scanner de bornes de blocs `"text/html": [ ... ]` est **JSON-string-aware** (track profondeur de brackets en sautant les caractères dans les chaînes JSON) — une regex naive `[^\]]*` échoue sur les .NET notebooks réels dont l'inline JS `probeAddresses(["http://...","..."])` contient un `]` qui pré-ment clore la liste. Le scanner reconstruit `body_start, body_end` corrects même en présence de crochets imbriqués, et la suppression drop l'élément bannerisé + sa virgule suivante (ou précédente si dernier élément) sans casser le shape `[...]`.
 
 ---
 
