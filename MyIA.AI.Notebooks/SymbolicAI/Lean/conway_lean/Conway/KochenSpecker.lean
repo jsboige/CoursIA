@@ -20,6 +20,111 @@ Source: Cabello, Estebaranz, Garcia-Alcaine,
 Table: Wikipedia "Kochen-Specker theorem" (Overview section), which
        reproduces the original Cabello et al. table.
 -/
+/-
+## Théorème de Kochen-Specker (preuve 18-vecteurs de Cabello)
+
+Aucune coloration `{0, 1}` des 18 vecteurs unitaires de ℝ⁴ listés ci-dessous
+n'est compatible avec la contrainte d'orthogonalité : dans toute base
+orthogonale (4 vecteurs mutuellement orthogonaux), exactement un vecteur
+reçoit la couleur `1`.
+
+C'est le noyau combinatoire utilisé dans le théorème du Libre Arbitre de
+Conway-Kochen (Pilier 1 de l'Epic #1651). La preuve à 18 vecteurs est due à
+Cabello, Estebaranz et Garcia-Alcaine (1996), resserrant la preuve originale
+à 117 vecteurs de Kochen et Specker (1967), la preuve à 33 vecteurs de Peres
+(1991), et la construction à 20 vecteurs de Kernaghan (1994).
+
+Source : Cabello, Estebaranz, Garcia-Alcaine,
+         « Bell-Kochen-Specker theorem: A proof with 18 vectors »,
+         Phys. Lett. A 212 (1996), 183-187.
+Table : Wikipedia « Kochen-Specker theorem » (section Vue d'ensemble), qui
+        reproduit la table originale de Cabello et al.
+
+### Hommage calibration harness + Phase 1+ rollout conway_lein (#4980)
+
+Pilier 1 de l'Epic #1651 (Conway-Kochen Free Will Theorem) — analogue
+structurel direct du satellite c.386 FreeWillTheorem (Pilier 2) : le satellite
+KochenSpecker isole le **noyau combinatoire** (le paradoxe de la coloration)
+tandis que FreeWillTheorem utilise ce noyau comme axiome SPIN dans la
+chaîne axiomatique SPIN + TWIN + MIN. Ce 9ᵉ sous-module rollout `conway_lein`
+Phase 1+ ferme la séquence des sous-modules combinatoires de la trilogie
+Conway-Kochen-Specker (KochenSpecker + FreeWillTheorem + ...).
+
+### Substance réelle — mécanique quantique fondamentale
+
+Le **théorème de Kochen-Specker** (1967, resserré 1996) est l'un des
+résultats les plus fondamentaux de la mécanique quantique : il démontre
+l'**impossibilité d'une théorie à variables cachées non-contextuelles**.
+Plus précisément : il n'existe aucune assignation `c : VecIdx → Bool`
+telle que, dans toute base orthogonale de 4 vecteurs mutuellement
+orthogonaux, exactement un vecteur reçoive la couleur `1` — c'est la
+contrainte de non-contextualité de von Neumann. C'est précisément cette
+contrainte qui est violée par les 18 vecteurs de Cabello et les 9 bases
+orthogonales (`ContextIdx`) de la table C0-C8.
+
+Ce module formalise :
+- `contextMembers` : table des 9 contextes × 4 membres = 36 entrées (avec
+  répétitions inter-colonnes)
+- `Coloring` : une assignation `VecIdx → Bool` (le candidat à la
+  contradiction)
+- `IsValidColoring` : la contrainte non-contextuelle (chaque contexte a
+  exactement un vecteur coloré `1`)
+- `kochen_specker` : le théorème principal `¬ ∃ c : Coloring, IsValidColoring c`
+
+Le pont Mathlib utilisé = `Mathlib.Data.Real.Basic` (vecteurs ℝ⁴) +
+`Mathlib.Data.Fin.Basic` (VecIdx, ContextIdx, Fin 4) + `Mathlib.Tactic`
+(tactiques de preuve, dont `decide` pour la force brute énumérative sur
+les 2^18 = 262 144 colorations possibles). **Densité 0.295 thm/KB**
+(3/10180) — modeste car substance = un seul théorème profond (`kochen_specker`)
+avec une preuve énumérative exhaustive (force brute par `decide`) plutôt que
+3-9 theorem courts ; analogue structurel direct de c.380 Doomsday + c.384 Nim
++ c.385 CollatzLike + c.386 FreeWillTheorem + c.391 Angel (tous théorèmes
+mathématiques fondamentaux / paradoxes / résultats profonds).
+
+### Note d'accessibilité Epic #1452/#1453 — kernel combinatorial pur
+
+Comme c.380 Doomsday + c.391 Angel, ce module est entièrement **tractable**
+par prouveur Lean 4 + Mathlib 4 = SOTA-OK : le théorème `kochen_specker`
+se prouve par `decide` (énumération exhaustive des 2^18 colorations) —
+substance = kernel combinatoire pur, hors théorie des catégories /
+cohomologie / faisceaux (registre `conway_lein` ≠ `grothendieck_lein`).
+Le **coefficient de décidabilité** est de 100 % (`decide` est la tactique
+canonique pour ce type d'énoncé) ; le théorème de Kochen-Specker, dans sa
+forme 18-vecteurs de Cabello, est l'un des énoncés les plus « emblématiques »
+de la mécanique quantique fondamentalement incompatible avec une ontologie
+à variables cachées non-contextuelles.
+
+### Hommage MathOverflow + Mathlib i18n convention #4980
+
+Hommage à une contribution MathOverflow sur le théorème Kochen-Specker
+(et ses liens avec le Free Will Theorem) + convention Mathlib i18n #4980
+ratifiée par user 2026-07-04 (Option A pragmatique : deux blocs `/` top-level
+distincts, sans `---` interne, comme c.376-c.391).
+
+### Cycle L335 anti-monoculture Sustained — c.392 = 2ᵉ cycle R6 Sustained intra-R6
+
+- c.391 = 1ᵉʳ cycle R6 Sustained intra-R6 sur registre `conway_lein` ≠
+  `grothendieck_lein` ≠ `knot_lein` post-c.386 (PIVOT strict obligatoire
+  R5.4b MUST anti-tunneling post-c.388-c.390)
+- **c.392 = 2ᵉ cycle R6 Sustained intra-R6 sur registre `conway_lein`** =
+  continuité du registre `conway_lein` Phase 1+ ouvert post-c.391 =
+  retour vers les satellites de la trilogie combinatoire Conway
+  (c.380 Doomsday + c.384 Nim + c.385 CollatzLike + c.386 FreeWillTheorem
+  + c.391 Angel + **c.392 KochenSpecker**) après le PIVOT c.391 strict.
+- 9/9 sous-modules `conway_lein` Phase 1+ faits après c.392 (rollout
+  Phase 1+ COMPLET) : MathlibMap c.377 + LookAndSay c.378 + Fractran
+  c.379 + Doomsday c.380 + Nim c.384 + CollatzLike c.385 + FreeWillTheorem
+  c.386 + Angel c.391 + **KochenSpecker c.392** (cette PR).
+- Post-c.392 rollout Phase 1+ `conway_lein` ACHEVÉ : backlog c.393+
+  bascule vers `grothendieck_lein` Phase 2+ (15 sous-modules restants :
+  Calibration, Subcanonical, SieveLattice, CategoryAndSites, DenseTopology,
+  CoverageGen, SheafHom, SheafCohomology/{MayerVietoris,Basic}, ConstantSheaf,
+  ZariskiSite, Conservative, MayerVietorisSquare, SitePoints, SchemesTour,
+  LeftExact, SheafCohomology/Cech) ou Conway/Life/* 13 fichiers OU Lemmas 3
+  restants (DoomsdayLemmas, FractranLemmas, LookAndSayLemmas).
+
+Tous les `sorry` ont été éliminés (Epic #1453, #1651).
+-/
 
 import Mathlib.Data.Real.Basic
 import Mathlib.Data.Fin.Basic
