@@ -13,6 +13,42 @@ Example — prime generation (Conway's 14-fraction program):
   for each prime p: 2^2, 2^3, 2^5, 2^7, 2^11, ...
 -/
 
+/-
+  `Conway.Fractran` — FRACTRAN, une machine universelle
+  ======================================================
+  FRACTRAN est sans doute le modèle de calcul universel connu le plus
+  simple. Un programme FRACTRAN est une liste de fractions positives.
+  Étant donné un entier N en entrée, la machine trouve la première
+  fraction f telle que N*f soit un entier, remplace N par N*f, puis
+  recommence. Conway a démontré que FRACTRAN est Turing-complet.
+
+  Exemple — génération des nombres premiers (programme de Conway à
+  14 fractions) :
+    À partir de 2, les puissances de 2 dans la sortie sont exactement
+    2^p pour chaque nombre premier p : 2^2, 2^3, 2^5, 2^7, 2^11, ...
+
+  ### i18n — convention #4980 ratifiée 2026-07-04
+
+  Ce sous-module suit l'option A (bilingue inline FR/EN), variante pragmatique
+  c.379 (deux blocs `/` top-level distincts, sans `---` interne, analogue
+  c.376/c.377/c.378) : le bloc EN existant est préservé verbatim ci-dessus,
+  le bloc FR miroir est ajouté juste après sans séparateur `---`. Convention
+  sibling pair (`<Foo>_en.lean` à part) réservée aux modules de substance
+  (cf c.374 `Astar_en.lean`) ; pour les modules de formalisation comme
+  `Fractran`, l'inline FR+EN est le bon compromis (peu de code, deux langues
+  côte à côte).
+
+  Cross-références : c.366 `Conway.lean` racine bilingue (MERGED),
+  c.367 Grothendieck hommage (MERGED), c.373 `Knots.lean` racine bilingue,
+  c.374 `Astar.lean` sibling pair, c.375 `Knots` sub-modules bilingues,
+  c.376 `Knots/Invariant` bilingue 6/6 (saturation locale du lac `knot_lean`),
+  c.377 `Conway/MathlibMap` bilingue (premier sous-module rollout
+  `conway_lean`, PIVOT L335 strict), c.378 `Conway/LookAndSay` bilingue
+  (suite rollout `conway_lean` Phase 1+), **c.379 `Conway/Fractran`
+  bilingue (suite rollout `conway_lean` Phase 1+, machine universelle
+  Turing-complète)**.
+-/
+
 namespace Conway
 
 /-- A FRACTRAN instruction: fraction num/den stored as two Nats.
