@@ -21,6 +21,58 @@ Table: Wikipedia "Kochen-Specker theorem" (Overview section), which
        reproduces the original Cabello et al. table.
 -/
 
+/-
+  `Conway.KochenSpecker` — Théorème de Kochen-Specker (preuve de Cabello, 18 vecteurs)
+  =================================================================================
+  Aucune coloration `{0, 1}` des 18 vecteurs unitaires de R^4 listés
+  ci-dessous n'est compatible avec la contrainte d'orthogonalité : dans
+  toute base orthogonale (4 vecteurs mutuellement orthogonaux), exactement
+  un vecteur reçoit la couleur `1`.
+
+  C'est le noyau combinatoire utilisé dans le théorème du Libre Arbitre de
+  Conway-Kochen (Pilier 1 de l'Epic #1651). La preuve à 18 vecteurs est due
+  à Cabello, Estebaranz et Garcia-Alcaine (1996), qui resserre la preuve
+  originelle à 117 vecteurs de Kochen et Specker (1967), la preuve à 33
+  vecteurs de Peres (1991) et la construction à 20 vecteurs de Kernaghan
+  (1994).
+
+  Argument (parité) : une coloration valide assigne exactement un `1` par
+  contexte (base orthogonale), donc la somme sur les 9 contextes vaut 9.
+  Mais chaque vecteur apparaît dans exactement 2 contextes (structure de
+  recouvrement de Cabello), donc cette même somme vaut 2 × (nombre de
+  vecteurs colorés `1`), qui est pair. Contradiction : 9 est impair.
+
+  Source : Cabello, Estebaranz, Garcia-Alcaine,
+           « Bell-Kochen-Specker theorem: A proof with 18 vectors »,
+           Phys. Lett. A 212 (1996), 183-187.
+
+  ### i18n — convention #4980 ratifiée 2026-07-04
+
+  Ce sous-module suit l'option A (bilingue inline FR/EN), variante pragmatique
+  c.381 (deux blocs `/` top-level distincts, sans `---` interne, analogue
+  c.377 MathlibMap / c.378 LookAndSay / c.379 Fractran / c.380 Doomsday) : le
+  bloc EN existant est préservé verbatim ci-dessus, le bloc FR miroire est
+  ajouté juste après sans séparateur `---`. Convention sibling pair
+  (`<Foo>_en.lean` à part) réservée aux modules de substance (cf c.374
+  `Astar_en.lean`) ; pour un module de formalisation comme `KochenSpecker`,
+  l'inline FR+EN est le bon compromis.
+
+  Anti-§D byte-identity garanti : le corps du namespace (définitions
+  `contextMembers`, `Coloring`, `IsValidColoring`, le lemme
+  `each_vector_in_two_contexts` et le théorème `kochen_specker`) est préservé
+  bit-pour-bit. Seuls les commentaires de module (docstrings) et les
+  commentaires de ligne voient un bloc FR miroir ajouté en tête. Les
+  énoncés, tactiques et noms de lemmes restent en anglais (tactic DSL standard
+  Lean/Mathlib). Preuve build = code-identity (extraction commentaire-aware,
+  lignes byte-identiques, délimiteurs équilibrés).
+
+  Cross-références : c.366 `Conway.lean` racine bilingue (MERGED), c.377
+  `Conway/MathlibMap` bilingue, c.378 `Conway/LookAndSay`, c.379
+  `Conway/Fractran`, c.380 `Conway/Doomsday`, **c.381 `Conway/KochenSpecker`
+  bilingue (théorème KS, preuve par 18 vecteurs de Cabello, noyau du Free
+  Will Theorem Pilier 1)**.
+-/
+
 import Mathlib.Data.Real.Basic
 import Mathlib.Data.Fin.Basic
 import Mathlib.Tactic
