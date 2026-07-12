@@ -1,60 +1,48 @@
 /-
-Grothendieck tribute — Part 15: Points of a site (fiber functors)
+Hommage à Grothendieck — Partie 15 : Points d'un site (foncteurs fibres)
 Alexandre Grothendieck (1928-2014).
 
-Phase 9 extension (#2159, Epic #1646).
+Extension Phase 9 (#2159, EPIC #1646).
 
-Part 14 (LeftExact.lean) showed that sheafification preserves finite limits,
-making categories of sheaves finitary extensive, adhesive, and balanced.
+La Partie 14 (LeftExact.lean) a montré que la faisceautisation préserve les
+limites finies, rendant les catégories de faisceaux finitairement extensives,
+adhésives et équilibrées.
 
-This module introduces **Grothendieck points** (SGA 4 IV 6.3): a point of
-a site (C, J) is a "fiber functor" Φ.fiber : C ⥤ Type that is cofiltered
-and respects covering sieves. From it, we derive:
+Ce module introduit les **points de Grothendieck** (SGA 4 IV 6.3) : un point
+d'un site (C, J) est un « foncteur fibre » Φ.fiber : C ⥤ Type qui est
+cofiltre et respecte les cribles couvrants. On en dérive :
 
-  - Φ.presheafFiber : the colimit fiber functor on presheaves
-  - Φ.sheafFiber : the fiber functor restricted to sheaves
-  - The category structure on points (morphisms = natural transformations
-    in the opposite direction, SGA 4 IV 3.2)
+  - Φ.presheafFiber : le foncteur fibre colimite sur les préfaisceaux
+  - Φ.sheafFiber : le foncteur fibre restreint aux faisceaux
+  - La structure de catégorie sur les points (morphismes = transformations
+    naturelles en sens inverse, SGA 4 IV 3.2)
 
-A point Φ lets us "probe" sheaves stalkwise — the stalk (fiber) of a
-sheaf F at Φ is Φ.sheafFiber.obj F. This is the categorical generalization
-of the stalk of a sheaf on a topological space at a point.
+Un point Φ permet de « sonder » les faisceaux fibre par fibre — la fibre
+d'un faisceau F en Φ est Φ.sheafFiber.obj F. C'est la généralisation
+catégorielle de la fibre d'un faisceau sur un espace topologique en un point.
 
-We index Mathlib's `CategoryTheory.Sites.Point.Basic` and
-`CategoryTheory.Sites.Point.Category` into the `Grothendieck` namespace.
+Nous indexons les modules Mathlib `CategoryTheory.Sites.Point.Basic` et
+`CategoryTheory.Sites.Point.Category` dans le namespace `Grothendieck`.
 
-Epic #1646, Phase 9 (#2159). All `sorry`s eliminated at creation.
+EPIC #1646, Phase 9 (#2159). Toutes les `sorry` éliminées à la création.
 -/
-
-import Mathlib.CategoryTheory.Sites.Grothendieck
-import Mathlib.CategoryTheory.Sites.SheafOfTypes
-import Mathlib.CategoryTheory.Sites.Point.Basic
-import Mathlib.CategoryTheory.Sites.Point.Category
-
-universe v u w
-
-namespace Grothendieck
-
-open CategoryTheory
-open CategoryTheory.Limits
-
 /-!
-## What is a point of a site?
+## Qu'est-ce qu'un point d'un site ?
 
-In topology, a "point" x of a space X lets you evaluate functions at x,
-giving a map Γ(U) → stalk_x for each open U. Grothendieck generalized
-this to arbitrary sites: a point Φ of (C, J) gives a "fiber functor"
-that evaluates sheaves at abstract "points", without requiring an
-underlying topological space.
+En topologie, un « point » x d'un espace X permet d'évaluer les fonctions
+en x, donnant une application Γ(U) → stalk_x pour chaque ouvert U.
+Grothendieck a généralisé ceci aux sites arbitraires : un point Φ de
+(C, J) donne un « foncteur fibre » qui évalue les faisceaux en des
+« points » abstraits, sans requérir un espace topologique sous-jacent.
 
-Formally, `GrothendieckTopology.Point J` is a structure consisting of:
-  - `fiber : C ⥤ Type w` — a functor to types (the "stalk functor")
-  - `isCofiltered` — the category of elements of `fiber` is cofiltered
-    (this ensures exactness: fiber functors commute with finite limits)
-  - `jointly_surjective` — every covering sieve hits every element of
-    the fiber (this connects the topology to the fiber functor)
+Formellement, `GrothendieckTopology.Point J` est une structure consistant en :
+  - `fiber : C ⥤ Type w` — un foncteur vers les types (le « foncteur tige »)
+  - `isCofiltered` — la catégorie des éléments de `fiber` est cofiltre
+    (ceci assure l'exactitude : les foncteurs fibres commutent aux limites finies)
+  - `jointly_surjective` — tout crible couvrant rencontre tout élément de
+    la fibre (ceci relie la topologie au foncteur fibre)
 
-Reference: SGA 4 IV 6.3.
+Référence : SGA 4 IV 6.3.
 -/
 
 -- A point of a site (C, J) is a fiber functor Φ : C ⥤ Type satisfying
@@ -64,13 +52,15 @@ Reference: SGA 4 IV 6.3.
 #check @GrothendieckTopology.Point
 
 /-!
-## The presheaf fiber functor
+## Le foncteur fibre d'un préfaisceau
 
-Given a point Φ, the presheaf fiber functor evaluates a presheaf P at
-Φ by taking the colimit of P over the category of elements of Φ.fiber.
+Étant donné un point Φ, le foncteur fibre d'un préfaisceau évalue un
+préfaisceau P en Φ en prenant la colimite de P sur la catégorie des
+éléments de Φ.fiber.
 
-Intuitively: Φ.presheafFiber.obj P is the "stalk of P at Φ", defined as
-a filtered colimit over all pairs (X, x) where X : C and x : Φ.fiber.obj X.
+Intuitivement : Φ.presheafFiber.obj P est la « tige de P en Φ », définie
+comme une colimite filtrée sur toutes les paires (X, x) où X : C et
+x : Φ.fiber.obj X.
 -/
 
 -- The presheaf fiber functor: evaluates presheaves at a point.
@@ -83,15 +73,15 @@ a filtered colimit over all pairs (X, x) where X : C and x : Φ.fiber.obj X.
 #check @GrothendieckTopology.Point.toPresheafFiber
 
 /-!
-## The sheaf fiber functor
+## Le foncteur fibre d'un faisceau
 
-Restricting the presheaf fiber functor to the subcategory of sheaves
-gives Φ.sheafFiber : Sheaf J A ⥤ A. This is the key functor for
-studying sheaves "stalkwise".
+La restriction du foncteur fibre des préfaisceaux à la sous-catégorie des
+faisceaux donne Φ.sheafFiber : Sheaf J A ⥤ A. C'est le foncteur clé
+pour étudier les faisceaux « fibre par fibre ».
 
-Because the fiber functor commutes with colimits and finite limits
-(under suitable assumptions on A), it preserves exact sequences,
-making it a key tool in sheaf cohomology.
+Comme le foncteur fibre commute avec les colimites et les limites finies
+(sous des hypothèses convenables sur A), il préserve les suites exactes,
+ce qui en fait un outil clé en cohomologie des faisceaux.
 -/
 
 -- The sheaf fiber functor: evaluates sheaves at a point.
@@ -99,14 +89,15 @@ making it a key tool in sheaf cohomology.
 #check @GrothendieckTopology.Point.sheafFiber
 
 /-!
-## Morphisms between points
+## Morphismes entre points
 
-Points of a site form a category (SGA 4 IV 3.2). A morphism
-Φ₁ ⟶ Φ₂ is a natural transformation Φ₂.fiber ⟶ Φ₁.fiber
-(note the reversal of direction!).
+Les points d'un site forment une catégorie (SGA 4 IV 3.2). Un morphisme
+Φ₁ ⟶ Φ₂ est une transformation naturelle
+Φ₂.fiber ⟶ Φ₁.fiber (noter l'inversion du sens !).
 
-This reversal is natural: a "map of spaces" f : X → Y induces
-a map on stalks in the opposite direction (pullback along f).
+Cette inversion est naturelle : une « application d'espaces » f : X → Y
+induit une application sur les tiges dans le sens opposé (tirage en
+arrière le long de f).
 -/
 
 -- A morphism between points consists of a natural transformation
@@ -114,13 +105,13 @@ a map on stalks in the opposite direction (pullback along f).
 #check @GrothendieckTopology.Point.Hom
 
 /-!
-## The trivial and discrete topologies
+## Les topologies triviale et discrète
 
-For the trivial topology (⊥), every presheaf is a sheaf, so fiber
-functors coincide with evaluation functors at objects.
+Pour la topologie triviale (⊥), tout préfaisceau est un faisceau, donc
+les foncteurs fibres coïncident avec les foncteurs d'évaluation aux objets.
 
-For the discrete topology (⊤), only the terminal presheaf is a sheaf,
-making the theory of points less interesting.
+Pour la topologie discrète (⊤), seul le préfaisceau terminal est un
+faisceau, rendant la théorie des points moins intéressante.
 -/
 
 -- The trivial Grothendieck topology (coarsest): every presheaf is a sheaf.
@@ -130,30 +121,31 @@ making the theory of points less interesting.
 #check @GrothendieckTopology.discrete
 
 /-!
-## The coverage condition
+## La condition de couverture
 
-The `jointly_surjective` condition ensures that covering sieves hit
-every element of the fiber. This connects the topology to the stalkwise
-perspective: if R is a covering sieve of X, then for every x in the
-fiber of X, there exists a morphism f : Y ⟶ X in R and y in the fiber
-of Y such that Φ.fiber.map f y = x.
+La condition `jointly_surjective` assure que les cribles couvrants
+rencontrent tout élément de la fibre. Ceci relie la topologie à la
+perspective fibre par fibre : si R est un crible couvrant de X, alors
+pour tout x dans la fibre de X, il existe un morphisme f : Y ⟶ X dans R
+et y dans la fibre de Y tel que Φ.fiber.map f y = x.
 -/
 
 -- The coverage condition: every covering sieve hits every element of the fiber.
 #check @GrothendieckTopology.Point.jointly_surjective
 
 /-!
-## Bridge theorems: the fiber of a representable presheaf
+## Bridge theorems : la fibre d'un préfaisceau représentable
 
-For a representable presheaf `yoneda.obj X`, the fiber at a point Φ
-recovers the value of the fiber functor at X:
+Pour un préfaisceau représentable `yoneda.obj X`, la fibre en un point Φ
+récupère la valeur du foncteur fibre en X :
   Φ.presheafFiber.obj (yoneda.obj X) ≅ Φ.fiber.obj X
 
-This bridges the Yoneda perspective (presheaves as "generalized objects")
-with the stalkwise perspective (points as "probes").
+Ceci fait le pont entre la perspective Yoneda (les préfaisceaux comme
+« objets généralisés ») et la perspective fibre par fibre (les points comme
+« sondes »).
 
-Note: this requires `LocallySmall.{w} C` to match universe levels
-between `shrinkYoneda` and `Φ.fiber`.
+Note : ceci requiert `LocallySmall.{w} C` pour faire correspondre les
+niveaux d'univers entre `shrinkYoneda` et `Φ.fiber`.
 -/
 
 /-- The fiber of the (shrunk) Yoneda embedding at a point recovers the
@@ -168,15 +160,15 @@ noncomputable def fiber_yoneda_iso {C : Type u} [Category.{v} C]
   Φ.shrinkYonedaCompPresheafFiberIso
 
 /-!
-## The presheaf fiber as a colimit
+## La fibre d'un préfaisceau comme colimite
 
-The fiber Φ.presheafFiber.obj P is defined as a colimit over the
-category of elements of Φ.fiber. Mathlib provides:
-  - `presheafFiberCocone P` : the canonical cocone
-  - `isColimitPresheafFiberCocone P` : it is a colimit
+La fibre Φ.presheafFiber.obj P est définie comme une colimite sur la
+catégorie des éléments de Φ.fiber. Mathlib fournit :
+  - `presheafFiberCocone P` : le cocône canonique
+  - `isColimitPresheafFiberCocone P` : c'est une colimite
 
-These allow constructing maps *from* the fiber using the universal
-property of colimits.
+Ceci permet de construire des applications *depuis* la fibre en utilisant
+la propriété universelle des colimites.
 -/
 
 /-- The colimit cocone that defines the presheaf fiber.
@@ -198,11 +190,12 @@ noncomputable def is_colimit_presheaf_fiber {C : Type u} [Category.{v} C]
   Φ.isColimitPresheafFiberCocone P
 
 /-!
-## Extensionality for fiber maps
+## Extensionalité pour les morphismes depuis la fibre
 
-Two maps from the fiber of a presheaf agree if they agree on all
-"germs" (X, x) : for every X : C and x : Φ.fiber.obj X, the maps
-agree after precomposing with the canonical inclusion.
+Deux applications depuis la fibre d'un préfaisceau coïncident si elles
+coïncident sur tous les « germes » (X, x) : pour tout X : C et x :
+Φ.fiber.obj X, les applications coïncident après précomposition avec
+l'inclusion canonique.
 -/
 
 /-- Extensionality for maps from the presheaf fiber: two maps f, g from
@@ -218,3 +211,4 @@ theorem presheaf_fiber_hom_ext {C : Type u} [Category.{v} C]
   Φ.presheafFiber_hom_ext h
 
 end Grothendieck
+
