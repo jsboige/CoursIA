@@ -47,16 +47,16 @@ Ce niveau met en oeuvre les workflows complets : génération automatique de con
   <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 15) : variante de composition — même workflow, composition alternative.</em>
 </p>
 
-**[04-3](04-3-Sora-API-Cloud-Video.ipynb) — Génération cloud via l'API Sora.** Côté cloud cette fois : deux appels à l'API Sora, chacun renvoyant un panorama de frames d'une vidéo générée à partir d'un prompt. Aucun GPU local requis :
+**[04-3](04-3-Sora-API-Cloud-Video.ipynb) — Workflow cloud Sora (en simulation).** Côté cloud cette fois : le notebook illustre le workflow de génération vidéo via l'API Sora d'OpenAI. L'accès Sora réel étant restreint (clé et quota côté utilisateur), il en produit une **simulation disciplinée** — deux séquences de frames synthétiques, chacune auto-étiquetée « Sora API - Simulation » dans l'image, représentant le rendu attendu (déplacement d'un objet sur un décor prompt-dépendant). Aucun GPU ni accès API réel requis :
 
 <p align="center">
-  <a href="04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/vid4-sora.png" alt="Génération Sora via API cloud" width="460"/></a><br>
-  <em>Sortie du notebook <a href="04-3-Sora-API-Cloud-Video.ipynb">04-3</a> (cellule 9) : panorama de frames d'une génération Sora via API cloud.</em>
+  <a href="04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/vid4-sora.png" alt="Simulation du workflow Sora (API cloud) — frames auto-étiquetées Simulation" width="460"/></a><br>
+  <em>Sortie du notebook <a href="04-3-Sora-API-Cloud-Video.ipynb">04-3</a> (cellule 9) : panorama de frames <strong>simulées</strong> illustrant le workflow Sora (API cloud) — la sortie porte le filigrane « Sora API - Simulation ».</em>
 </p>
 
 <p align="center">
-  <a href="04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/vid4-sora2.png" alt="Génération Sora — aperçu alternatif" width="460"/></a><br>
-  <em>Sortie du notebook <a href="04-3-Sora-API-Cloud-Video.ipynb">04-3</a> (cellule 11) : second appel Sora, aperçu alternatif.</em>
+  <a href="04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/vid4-sora2.png" alt="Simulation Sora — aperçu alternatif" width="460"/></a><br>
+  <em>Sortie du notebook <a href="04-3-Sora-API-Cloud-Video.ipynb">04-3</a> (cellule 11) : seconde séquence <strong>simulée</strong>, aperçu alternatif.</em>
 </p>
 
 **[04-4](04-4-Production-Video-Pipeline.ipynb) — Pipeline de production.** Le notebook assemble la chaîne bout-en-bout : le panorama ci-dessous montre les frames issues du pipeline orchestré complet, aboutissement de la série :
