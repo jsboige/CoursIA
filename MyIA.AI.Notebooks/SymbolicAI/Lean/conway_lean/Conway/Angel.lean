@@ -20,6 +20,37 @@ king. Homage to a MathOverflow contribution on Conway's pursuit-evasion results
 All `sorry`s have been eliminated (Epic #1453, #1651).
 -/
 
+/-
+  `Conway.Angel` — Le probleme de l'Ange (jeu de poursuite)
+  =========================================================
+  Hommage a Conway — Theorie combinatoire de l'Ange,
+  mouvement chebyshev, pouvoir k, eviter le Diable
+
+  John Horton Conway (1937-2020).
+
+  Le probleme de l'Ange (Conway, 1996) : sur la grille
+  entiere infinie ℝ², un Ange de pouvoir `k` peut, a son
+  tour, sauter sur n'importe quelle case a distance de Chebyshev
+  (coup de roi) `k` ; le Diable mange une case par tour.
+  L'Ange de pouvoir k donne-t-il la chasse indefiniment ?
+  Conway a pose les resultats initiaux et le probleme a
+  ouvert tout un champ ; il fut finalement resolu en 2006
+  (Bowditch : pouvoir 4 ; Kloster et Mathe : pouvoir 2 ;
+  Gacs) -- l'Ange de pouvoir ≥ 2 gagne.
+
+  NOTE D'ACCESSIBILITE (Epic #1452/#1453) : le THEOREME complet de
+  victoire est un enonce de jeu infini / non-terminaison sans
+  precedent Lean -- niveau recherche, PAS une cible prouveur
+  tractable (classe intractable comme les sorries Gale-Shapley).
+  Ce qui EST accessible, et fidele a l'hommage, c'est le SETUP :
+  la combinatoire du mouvement de l'Ange (une boule de
+  Chebyshev), ou l'Ange de pouvoir 1 est exactement un roi
+  des echecs. Hommage a une contribution MathOverflow sur
+  les resultats de poursuite de Conway (post 357433).
+
+  Tous les `sorry` ont ete elimines (Epic #1453, #1651).
+-/
+
 import Mathlib.Data.Int.Interval
 import Mathlib.Data.Finset.Prod
 
