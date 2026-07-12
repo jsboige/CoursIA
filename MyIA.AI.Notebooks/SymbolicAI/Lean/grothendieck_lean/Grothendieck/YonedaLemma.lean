@@ -29,6 +29,85 @@ learners encountering the Yoneda lemma for the first time:
 Epic #1646, #2159 (Phase 2+). Zero unresolved goals at creation.
 -/
 
+/-
+  `Grothendieck.YonedaLemma` — Le lemme de Yoneda
+  ===============================================
+  Hommage à Grothendieck — Partie 24 : Le lemme de Yoneda
+  Alexandre Grothendieck (1928-2014).
+
+  Extension Phase 2+ (#2159, Epic #1646).
+
+  Le lemme de Yoneda est LE théorème fondamental de la théorie des catégories.
+  C'est l'épine dorsale de la reformulation grothendieckienne de la géométrie
+  algébrique : par Yoneda, les objets d'une catégorie sont déterminés par les
+  préfaisceaux qu'ils représentent.
+
+  Mathlib 4 formalise déjà toute l'infrastructure Yoneda dans
+  `Mathlib.CategoryTheory.Yoneda` :
+    - `yoneda : C ⥤ (Cᵒᵖ ⥤ Type v₁)` — le plongement de Yoneda
+    - `yonedaEquiv : (yoneda.obj X ⟶ F) ≃ F.obj (op X)` — l'équivalence au
+      niveau des types
+    - `yonedaEquiv_naturality` — la naturalité en `X`
+    - `yonedaLemma : yonedaPairing C ≅ yonedaEvaluation C` — l'isomorphisme
+      naturel
+    - `fullyFaithful yoneda` — le plongement de Yoneda est pleinement fidèle
+      (corollaire)
+
+  Ce module ré-expose ces faits comme un parcours pédagogique organisé, pour
+  des apprenants découvrant le lemme de Yoneda pour la première fois :
+
+    1. Énoncé du plongement de Yoneda.
+    2. Le lemme de Yoneda comme équivalence au niveau des types.
+    3. Naturalité : la bijection est naturelle en `X` et en `F`.
+    4. Plénitude et fidélité : le plongement de Yoneda est pleinement fidèle.
+    5. Le dual covariant (`coyoneda`).
+    6. La fonctorialité retrouve `Hom(y, x) → Nat(yoneda.y, yoneda.x)`.
+
+  Epic #1646, #2159 (Phase 2+). Aucun but non-résolu à la création.
+
+  ### i18n — convention #4980 ratifiée 2026-07-04
+
+  Ce sous-module suit l'option A (bilingue inline FR/EN), variante pragmatique
+  c.381 (deux blocs `/` top-level distincts, sans `---` interne, analogue
+  c.376/c.377/c.378/c.379/c.380) : le bloc EN existant est préservé verbatim
+  ci-dessus, le bloc FR miroir est ajouté juste après sans séparateur `---`.
+  Convention sibling pair (`<Foo>_en.lean` à part) réservée aux modules de
+  substance (cf c.374 `Astar_en.lean`) ; pour les modules de formalisation
+  comme `YonedaLemma`, l'inline FR+EN est le bon compromis (peu de code, deux
+  langues côte à côte). Les énoncés de théorèmes/lemmes, les tactiques Lean et
+  les références Mathlib restent en anglais (compat Mathlib 4, tactic DSL) ;
+  seules les **docstrings `/-- ... -/`** et les **commentaires `-- ...`**
+  bilingues sont ajoutées. Anti-§D byte-identity garanti : le namespace body
+  est préservé bit-pour-bit.
+
+  ### PIVOT L335 strict c.381 — registre `grothendieck_lean` ≠ conway_lean
+
+  c.377-c.380 = 4 cycles R6 Sustained intra-R6 sur registre `conway_lean`
+  (MathlibMap c.377, LookAndSay c.378, Fractran c.379, Doomsday c.380). c.381
+  pivote vers le lac `grothendieck_lean` (registre distinct, substance réelle
+  = lemme de Yoneda), parallèle au rollout Phase 1+ de `conway_lean`. Initie
+  le rollout `grothendieck_lean` Phase 2+ post-c.367 (`Grothendieck.lean`
+  racine bilingue inline MERGED #6115). Backlog c.382+ : `Grothendieck/
+  {Sheafification,SitePoints,Conservative,MayerVietorisSquare,
+  SheafBasics,SieveLattice,CategoryAndSites,YonedaLemma_lemmas,
+  SheafCohomology/*,Calibration,SchemesTour,Subcanonical,ZariskiSite,
+  DenseTopology,SieveGenerate,LeftExact,SheafHom,SieveOps,
+  CoverageGen,MathlibMap}.lean` (22 sous-modules backlog Phase 2+).
+
+  Cross-références : c.366 `#6111` `Conway.lean` racine bilingue (MERGED) +
+  c.367 `#6115` `Grothendieck.lean` racine bilingue (MERGED, option A) +
+  c.373 `#6156` `Knots.lean` racine bilingue (OPEN) + c.374 `#6163` `Astar`
+  sibling pair (OPEN) + c.375 `#6171` `Knots` sub-modules 5/6 (OPEN) +
+  c.376 `#6173` `Knots/Invariant` 6/6 (OPEN) + c.377 `#6178` `MathlibMap`
+  bilingue (premier sous-module rollout conway_lean, PIVOT L335 strict) +
+  c.378 `#6182` `LookAndSay` bilingue (suite rollout conway_lean) +
+  c.379 `#6190` `Fractran` bilingue (machine universelle Turing-complète) +
+  c.380 `#6194` `Doomsday` bilingue (algorithme Doomsday + 4 `#eval!` cas
+  réels) + **c.381 `YonedaLemma` bilingue (cette PR, lemme fondamental de
+  théorie des catégories)** ← **PIVOT L335 strict** vers `grothendieck_lean`
+  Phase 2+ (registre ≠ conway_lean).
+-/
+
 import Mathlib.CategoryTheory.Yoneda
 
 namespace Grothendieck
