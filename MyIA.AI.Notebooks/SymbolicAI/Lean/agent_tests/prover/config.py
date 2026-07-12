@@ -147,7 +147,7 @@ SMOKE_TEST_FILE = SOCIAL_CHOICE_DIR / "SocialChoice" / "_SmokeTest.lean" if SOCI
 VOTING_IMPORTS = """import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.List.Sort
-import SocialChoice.Definitions
+import SocialChoice.Basic
 """
 
 # ── Stable Marriage ──
