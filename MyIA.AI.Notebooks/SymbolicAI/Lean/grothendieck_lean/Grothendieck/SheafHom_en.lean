@@ -53,6 +53,9 @@ namespace Grothendieck.SheafHom_en
 
 open CategoryTheory Category Opposite Limits
 
+variable {C : Type u} [Category.{v} C] {J : GrothendieckTopology C}
+  {A : Type u'} [Category.{v'} A]
+
 /-!
 ## Presheaf-level internal hom
 
