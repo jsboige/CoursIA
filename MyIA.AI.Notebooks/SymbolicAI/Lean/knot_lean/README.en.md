@@ -5,7 +5,7 @@ strategic commented sorries (paper references + Mathlib prerequisites).
 
 Epic #2874 (Phase 5 in progress). Toolchain `v4.31.0-rc1`.
 
-## Sorry-state (verified 2026-07-06, 16 real — 14 + 2 from the PARTIAL backward transfer #3124, `num` proven)
+## Sorry-state (verified 2026-07-06, re-confirmed 2026-07-12, 16 real — 14 + 2 from the PARTIAL backward transfer #3124, `num` proven)
 
 Two counts, depending on the filter:
 
@@ -294,8 +294,8 @@ Reference: Fox (1962), *A quick trip through knot theory*; Adams,
 | File | Contents | real sorries |
 |------|----------|-------------|
 | `Knots/Basic.lean` | Definitions (Knot, Link, PD-code, named knots), `KnotDiagram.wf` | 0 |
-| `Knots/Reidemeister.lean` | R1/R2/R3 moves (Phase 5 model), `ReidemeisterEquiv`, symmetries | 2 |
-| `Knots/Invariant.lean` | 3-colorability (Fox), crossing number, unknotting number, PR1 counter-example, R1 forward transfer (#3000) + backward PARTIAL (#3124) | 6 |
+| `Knots/Reidemeister.lean` | R1/R2/R3 moves (Phase 5 model), `ReidemeisterEquiv`, symmetries | 1 |
+| `Knots/Invariant.lean` | 3-colorability (Fox), crossing number, unknotting number, PR1 counter-example, R1 forward transfer (#3000) + backward PARTIAL (#3124) | 5 |
 | `Knots/Conway.lean` | Conway knot (11n34), Piccirillo, smooth/topological dichotomy | 8 |
 | `Knots/Lidman.lean` | 11n102, unknotting number = 2 | 2 |
 | `Knots/MathlibPrerequisites.lean` | Index of missing Mathlib prerequisites by tier | 0 |
@@ -366,7 +366,7 @@ The marquee `tricolorable_invariant` remains **gated** on two
 §9.1 residual sub-goals of the backward: the symmetry of colors on the
 modified crossing `Y` (`fox`) and the all-distinct lift outside the
 source diagram range (`col`). Their completion would compose forward +
-backward into a connected R1 bi-implication (**17 real sorries** in
+backward into a connected R1 bi-implication (**16 real sorries** in
 total). The "distant" results — Conway non-slice (Piccirillo), Lidman's
 unknotting number, Reidemeister theorem ↔ ambient isotopy — remain
 **permanent scaffolding**: they exceed the current scope of Mathlib
