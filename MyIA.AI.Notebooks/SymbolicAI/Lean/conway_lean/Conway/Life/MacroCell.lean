@@ -727,6 +727,27 @@ def gridToMacroCellWithOffset (g : Grid) : (Int × Int) × MacroCell :=
   let (off, lvl) := gridFrame g
   (off, MacroCell.buildFromGrid g off.1 off.2 lvl)
 
+/-- n-aware variant of `gridToMacroCellWithOffset`: builds the `MacroCell` from
+    the n-aware frame `gridFrameN n g` (padding `max 2 n`), rather than the
+    fixed-padding `gridFrame`. This is the offset/MacroCell builder the N3
+    threading of `evolveHashlifeFast` (issue #3846) substitutes in place of
+    `gridToMacroCellWithOffset` to thread the n-aware frame through the recursion
+    loop. -/
+def gridToMacroCellWithOffsetN (n : Nat) (g : Grid) : (Int × Int) × MacroCell :=
+  let (off, lvl) := gridFrameN n g
+  (off, MacroCell.buildFromGrid g off.1 off.2 lvl)
+
+/-- `gridToMacroCellWithOffsetN n g` reduces to `gridToMacroCellWithOffset g`
+    when `n ≤ 2`: since `gridFrameN n g = gridFrame g` for small `n`
+    (`gridFrameN_le_two_eq_gridFrame`), both builders feed the same offset and
+    level to `buildFromGrid`. This bridges the fixed-frame builder used by the
+    current `evolveHashlifeFast` to its n-aware variant, so the N3 threading
+    substitution is behaviorally transparent for small `n` (issue #3846). -/
+theorem gridToMacroCellWithOffsetN_le_two_eq (n : Nat) (g : Grid) (hn : n ≤ 2) :
+    gridToMacroCellWithOffsetN n g = gridToMacroCellWithOffset g := by
+  unfold gridToMacroCellWithOffsetN gridToMacroCellWithOffset
+  rw [gridFrameN_le_two_eq_gridFrame n g hn]
+
 /-- Convert a `Grid` to a `MacroCell`, discarding the offset (defaulting to
     `(0, 0)` for the round trip). For round-trip purposes, prefer
     `gridToMacroCellWithOffset`. -/
