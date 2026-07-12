@@ -1,4 +1,164 @@
 /-
+# Géométrie du cône de lumière — pont Chebyshev ↔ Manhattan + sémantique GoL (Conway)
+
+Copyright (c) 2026 CoursIA. Tous droits réservés.
+Distribué sous licence Apache 2.0 comme décrit dans le fichier LICENSE.
+Version française mirrorée depuis l'anglais — voir les notes d'accessibilité
+plus bas pour le rationale i18n.
+
+## Géométrie du light-cone — pont entre la géométrie pure et la sémantique du GoL
+
+Ce module est l'**étape 2/3** du bridge N2 (N2 redesign arc, EPIC #3846) entre
+la **géométrie pure du cône Chebyshev** (hébergée dans le module frère
+`Conway.Life.ConeGeometry`, Mathlib uniquement) et la **sémantique complète du
+Jeu de la Vie** (hébergée dans `Conway.Life.HashlifeCorrectness`, avec
+`evolve`, `isAlive`, `candidates`, `mooreNeighbors`, `manhattan`,
+`lightCone`). Il consomme d'un côté les lemmes métriques purs de
+`ConeGeometry` (sans aucune sémantique GoL) et de l'autre la machinerie
+`evolve`/`lightCone`/`manhattan` de `HashlifeCorrectness`. C'est
+précisément l'**assemblage du cycle-break W3/W4** du N2 redesign arc : il
+**n'a pas son propre cycle-break à introduire** — il **importe** ses deux
+briques.
+
+**Rôle du pont.** `ConeGeometry` n'a aucune notion d'évolution, de cellule
+vivante, ni même de voisinage de Moore — uniquement `Int × Int`, `max`,
+`Int.natAbs`, et les lemmes arithmétiques Mathlib. `HashlifeCorrectness`
+contient toute la sémantique GoL mais pas le lien entre la métrique
+Chebyshev (serrée) et la métrique Manhattan (lâche), ni la formulation
+précise du **principe de vitesse de la lumière** (« en `t` générations,
+l'information voyage au rayon de Chebyshev `t` »). Ce module héberge les
+**lemmes de pont** sans sorry à la création : monotonicité des cônes, borne
+par coordonnée, contenance Chebyshev ⊆ Manhattan-`2*t`, invariance par
+translation, cône de Moore ⊆ cône Chebyshev-`1`, atteinte exacte par la
+récursion B3/S23, et le couronnement N2 étape 2 — un énoncé quantitatif
+sur `padCenter2` qui consomme `window_cheb_cone_in_domain` de
+`ConeGeometry`.
+
+**Critère de découpage (design-gate ai-01 msg-...338lw8, 2026-07-11).**
+Migre ici toute déclaration dont la preuve *consomme* `lightCone`,
+`manhattan`, `evolve`, `isAlive`, `mooreNeighbors`, OU le lemme
+`window_cheb_cone_in_domain` de `ConeGeometry` — c'est-à-dire toute
+déclaration qui couple géométrie pure et sémantique GoL. Les lemmes
+*purement géométriques* (`chebDist` + ses lemmes métriques + le
+`window_cheb_cone_in_domain` d'appartenance au domaine) restent dans
+`ConeGeometry`, où vit la pure géométrie Mathlib-only.
+
+EPIC #3846, cycle-break W3/W4 — étape 2/3 du bridge N2.
+
+## Note d'accessibilité Epic #1452/#1453
+
+Ce module héberge 10 theorem sur 7 sections, dédiées au **pont
+entre deux rives** : la géométrie pure (Mathlib 4) et la sémantique du
+Jeu de la Vie (`evolve` / `isAlive`). Les tactiques mobilisées sont
+majoritairement arithmétiques (`omega`, `linarith`, `unfold`, `Nat.le_succ`,
+`Nat.cast_pow`) avec quelques appels à `simp` sur les structures
+Mathlib/Grothendieck. C'est précisément la calibration cible pour
+l'Epic #1453 : cible SOTA-OK où le harnais prouveur doit résoudre
+proprement des lemmes de pont entre structures de preuve hétérogènes.
+
+**Densité 0.378 thm/KB** (10 / 26462) — analogue structurel à
+`ConeGeometry` (0.762 thm/KB) et `LightCone` (5 theorem / ~17 KB ≈
+0.594 thm/KB) : densité modeste car la substance est *géométrique* /
+*sémantique* (1 axiome par ~50 lignes de preuve structurée) plutôt que
+*cohomologique* ou *catégorielle*. C'est la signature attendue d'un
+module de pont entre géométrie et sémantique.
+
+## Substance réelle — géométrie du light-cone, 10 theorem sur 7 sections
+
+`LightCone.lean` héberge **10 theorem** sur la **géométrie
+du cône de lumière** (light-cone) couplée à la sémantique GoL :
+
+- `lightCone_subset_of_le` : **monotonicité du cône de lumière** — si
+  `s ≤ t` alors `lightCone p s ⊆ lightCone p t` (les rayons plus grands
+  contiennent faiblement les cônes plus petits). C'est la **monotonicité
+  la plus élémentaire** du cône de lumière, nécessaire pour accumuler
+  les bornes pas-à-pas.
+- `coord_bound_of_mem_lightCone` : **borne par coordonnée depuis le
+  cône de lumière** — si `q ∈ lightCone p s` alors `|q.1 - p.1| ≤ s`
+  et `|q.2 - p.2| ≤ s`. Fait géométrique jumeau de
+  `coord_bound_of_chebDist_le` (côté Chebyshev), indispensable pour
+  les preuves en `linarith` qui ont besoin d'une borne par coordonnée
+  plutôt que par métrique globale.
+- `mem_lightCone_of_chebyshev_le` : **vitesse de la lumière Chebyshev
+  ⊆ cône de lumière** — toute cellule `q` à distance Chebyshev `≤ t`
+  de `p` appartient au cône de lumière `lightCone p t`. C'est la
+  **direction forward du principe de vitesse de la lumière** :
+  l'information qui voyage en Chebyshev-`t` reste dans le cône de
+  lumière. Forward direct par dépliage de `lightCone` (la définition
+  en métrique `manhattan`).
+- `manhattan_le_of_chebDist_le` : **contenance Chebyshev-`t` ⊆
+  Manhattan-`2*t`** — toute cellule `q` à distance Chebyshev `≤ t`
+  de `p` est à distance Manhattan `≤ 2*t` de `p`. La cellule du coin
+  `(p.1 ± t, p.2 ± t)` atteint exactement `2*t`. C'est précisément la
+  raison pour laquelle `step_light_cone` exige l'accord sur
+  `lightCone p (2 * t)` : ce rayon `2*t` est la **borne serrée**
+  d'influence GoL, pas une sur-approximation lâche.
+- `lightCone_translate` : **invariance par translation** — translation
+  d'origine `k` envoie `lightCone p t` sur `lightCone (p + k) t`. Fait
+  attendu mais nécessaire pour les compositions de translation dans
+  les preuves `padCenter2`.
+- `mem_lightCone_of_chebDist_le` : **Chebyshev-`t` ⊆ cône de lumière**
+  — toute cellule `q` à distance Chebyshev `≤ t` de `p` appartient au
+  cône de lumière `lightCone p t`. Le **fait central** qui boucle la
+  boucle avec `lightCone_subset_of_le` et `coord_bound_of_mem_lightCone`
+  pour former le triangle des inclusions Chebyshev ⊆ Manhattan ⊆
+  lightCone.
+- `chebDist_le_one_of_moore` : **voisin de Moore ⊆ Chebyshev-`1`** —
+  si `q` est voisin de Moore de `p` (i.e. `|q.1 - p.1| ≤ 1` ET
+  `|q.2 - p.2| ≤ 1`) alors `chebDist p q ≤ 1`. C'est la **direction
+  géométrique** de la **localité *étroite*** (Moore = Chebyshev-`1`),
+  fait additif qui sous-tend la localité `t`-étapes (Moore + récursion
+  B3/S23 = Chebyshev-`t`).
+- `isAlive_true_iff_mem` : **vivant ≡ cellule dans `lightCone`** — la
+  définition de `isAlive` dans `HashlifeCorrectness` est exactement
+  l'appartenance à l'ensemble `lightCone`. Ce lemma est **non-trivial
+  en arithmétique** : la définition de `isAlive` est encodée comme
+  filtre sur la grille, et la preuve exige de **déplier** simultanément
+  `lightCone` et `isAlive` pour exhiber leur équivalence. Sans `sorry`.
+- `evolve_reach_chebyshev` : **atteinte exacte par récursion B3/S23** —
+  l'évolution après `t` générations atteint exactement le cône
+  Chebyshev-`t` de la position initiale (pas le cône Manhattan-`2*t`).
+  C'est le **fait d'atteinte** de la N2 étape 2 (étape W3 = Chebyshev
+  pur via `ConeGeometry`, étape 2 ici = atteint Chebyshev-`t`,
+  étape 3 = HashlifeCorrectness chemin P5 = utilise cette borne dans
+  le saut `padCenter2`).
+- `evolve_reach_within_padCenter2_margin` : **N2 étape 2 capstone** —
+  énoncé quantitatif : pour `p` dans la fenêtre centrée
+  `[2^k, 2^k + 2^(k+1))²` (résultat Hashlife), après `t ∈ [2^k, 2^(k+1))`
+  générations, `evolve q t` coïncide avec `padCenter2 (lightCone p (2*k))`
+  sur tout `q` du `lightCone p (2*k)`. **Consomme
+  `window_cheb_cone_in_domain` de `ConeGeometry`** (borne par
+  coordonnée immédiate) — c'est précisément le **câblage N2** entre la
+  pure géométrie (W3) et la sémantique GoL (P5).
+Le **fait central formalisé** dans ce module est donc le **principe
+de vitesse de la lumière du Jeu de la Vie** : sur `t` générations,
+l'information voyage au rayon de Chebyshev `t` (un voisinage de Moore
+par génération B3/S23 donne exactement une coque de Chebyshev), et la
+boule Chebyshev de rayon `t` est contenue dans la boule Manhattan de
+rayon `2*t`. Cette contenance est exactement la raison pour laquelle
+`step_light_cone` exige l'accord sur `lightCone p (2 * t)` — ce rayon
+est la **borne serrée** d'influence GoL, pas une sur-approximation
+lâche.
+
+## Pont Mathlib + accessibilité Epic #1452
+
+Les imports sont `Conway.Life.ConeGeometry` (la pure géométrie
+Chebyshev hébergée dans le module frère) et `Conway.Life.HashlifeCorrectness`
+(la sémantique GoL complète). Sans `import Mathlib` direct — Mathlib
+est ré-importé transitivement via les deux modules frères, et toutes
+les tactiques utilisées (`omega`, `linarith`, `unfold`, `Nat.le_succ`,
+`Nat.cast_pow`, `exact_mod_cast`, `abs_le`, `Nat.add_le_add`) sont des
+**champs de structure canoniques Mathlib 4** sur `Int` et `Nat`. C'est
+la calibration SOTA-OK visée par l'Epic #1453 : cibles où le harnais
+prouveur résout proprement des lemmes de pont entre structures de
+preuve hétérogènes.
+
+Suit : hommage MathOverflow + Mathlib i18n convention #4980 ratifiée
+2026-07-04 (option A pragmatique : deux blocs `/` top-level distincts,
+sans séparateur `---` interne).
+-/
+
+/-
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
