@@ -38,7 +38,7 @@ Substance réelle :
 - `Grothendieck.MathlibMap` : table de correspondance entre les concepts
   formalisés ici et les modules Mathlib 4 sous-jacents.
 - `Grothendieck.Calibration` : calibration track (Epic #1453) - quelques
-  lemmes volontairement `sorry` pour gradient de difficulté du prouveur
+  lemmes volontairement laissés en `sorry`s pour le gradient de difficulté du prouveur
   multi-agent.
 - `Grothendieck.SieveLattice` : treillis des cribles sur un objet — clôtures,
   unions, intersections, relation d'inclusion.
@@ -78,7 +78,7 @@ Substance réelle :
   fidèle d'une catégorie C dans la catégorie de foncteurs [C^op, Ens],
   c_{x} ↦ Hom_C(-, x) (Grothendieck 1960, CatAlg).
 
-Tous les `sorry` ne sont pas comblés — la plupart sont des échafaudages
+Tous les `sorry`s ne sont pas comblés — la plupart sont des échafaudages
 intentionnels pour le prouveur multi-agent (cf. Epic #1453).
 
 ---
@@ -122,7 +122,7 @@ Substance (English):
 - `Grothendieck.MathlibMap`: correspondence table between the formalized
   concepts and the underlying Mathlib 4 modules.
 - `Grothendieck.Calibration`: calibration track (Epic #1453) - intentional
-  sorry as a difficulty gradient for the multi-agent prover.
+  these `sorry`s form a difficulty gradient for the multi-agent prover.
 - `Grothendieck.SieveLattice`: lattice of sieves on an object — closures,
   unions, intersections, inclusion order.
 - `Grothendieck.SieveOps`: sieve operations — inverse image, direct image,
