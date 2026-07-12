@@ -1,0 +1,872 @@
+"""Generate SC-0-Cypherpunk-Origins.ipynb - Temporary script, delete after use."""
+import json
+import os
+
+def md(source_text, cell_id):
+    lines = source_text.split('\n')
+    source = []
+    for i, line in enumerate(lines):
+        if i < len(lines) - 1:
+            source.append(line + '\n')
+        else:
+            if line:
+                source.append(line)
+    return {"cell_type": "markdown", "id": cell_id, "metadata": {}, "source": source}
+
+def code(source_text, cell_id):
+    lines = source_text.split('\n')
+    source = []
+    for i, line in enumerate(lines):
+        if i < len(lines) - 1:
+            source.append(line + '\n')
+        else:
+            if line:
+                source.append(line)
+    return {"cell_type": "code", "id": cell_id, "metadata": {}, "source": source,
+            "outputs": [], "execution_count": None}
+
+cells = []
+
+# === HEADER ===
+cells.append(md(
+"# SC-0-Cypherpunk-Origins - Les origines Cypherpunk de la blockchain\n"
+"\n"
+"**Navigation** : [Index](../README.md) | [Setup Foundry >>](SC-1-Setup-Foundry.ipynb)\n"
+"\n"
+"---\n"
+"\n"
+"## Objectifs d'apprentissage\n"
+"\n"
+"1. Comprendre le **mouvement Cypherpunk** et son heritage technologique\n"
+"2. Manipuler les **primitives cryptographiques** fondatrices (hash, signatures, PoW)\n"
+"3. Construire une **mini-blockchain** a la main avec Python\n"
+"4. Implementer un **arbre de Merkle** et comprendre son role\n"
+"5. Decouvrir les **tables de hachage distribuees** (DHT/Kademlia)\n"
+"\n"
+"### Prerequis\n"
+"\n"
+"- Python 3.10+ avec `hashlib` (stdlib)\n"
+"- `pycryptodome` pour les signatures numeriques\n"
+"- Aucune connaissance blockchain prealable\n"
+"\n"
+"### Duree estimee : 60 minutes", "header"))
+
+# === SECTION 1: MANIFESTE ===
+cells.append(md(
+"---\n"
+"\n"
+"## 1. Le Manifeste Cypherpunk\n"
+"\n"
+"> *\"Privacy is necessary for an open society in the electronic age.\"*\n"
+"> -- Eric Hughes, A Cypherpunk's Manifesto, 1993\n"
+"\n"
+"Le mouvement Cypherpunk, ne dans les annees 1980-90, reunit des cryptographes, mathematiciens\n"
+"et activistes convaincus que la **cryptographie** est l'outil fondamental de la liberte individuelle\n"
+"a l'ere numerique.\n"
+"\n"
+"### Textes fondateurs\n"
+"\n"
+"| Annee | Auteur | Texte | Idee cle |\n"
+"|-------|--------|-------|----------|\n"
+"| 1985 | David Chaum | *Security without Identification* | Monnaie electronique anonyme |\n"
+"| 1988 | Timothy May | *The Crypto Anarchist Manifesto* | Crypto = outil d'emancipation |\n"
+"| 1993 | Eric Hughes | *A Cypherpunk's Manifesto* | \"Cypherpunks write code\" |\n"
+"| 1997 | Adam Back | Hashcash | Proof-of-Work anti-spam |\n"
+"| 1998 | Wei Dai | b-money | Monnaie decentralisee theorique |\n"
+"| 2008 | Satoshi Nakamoto | Bitcoin whitepaper | Synthese de toutes ces idees |\n"
+"\n"
+"Les smart contracts modernes (Ethereum, 2015) sont l'**aboutissement direct** de 30 ans\n"
+"d'innovations Cypherpunk. Ce notebook retrace ces briques fondatrices avec du **vrai code executable**.",
+"cypherpunk-manifesto"))
+
+cells.append(code(
+'# Filiation technologique : des Cypherpunks aux Smart Contracts\n'
+'filiation = {\n'
+'    "1991 - PGP (Zimmermann)":        "Chiffrement asymetrique grand public",\n'
+'    "1997 - Hashcash (Back)":          "Proof-of-Work -> minage Bitcoin",\n'
+'    "1998 - b-money (Dai)":            "Monnaie decentralisee theorique",\n'
+'    "1999 - Napster":                  "P2P massif (centralise) -> BitTorrent",\n'
+'    "2001 - BitTorrent (Cohen)":       "DHT Kademlia -> reseau Ethereum",\n'
+'    "2004 - RPoW (Finney)":            "Proof-of-Work reutilisable",\n'
+'    "2008 - Bitcoin (Nakamoto)":       "Hash chain + PoW + P2P + signatures",\n'
+'    "2013 - Ethereum (Buterin)":       "Bitcoin + Turing-completude = Smart Contracts",\n'
+'}\n'
+'\n'
+'print("FILIATION CYPHERPUNK -> SMART CONTRACTS")\n'
+'print("=" * 60)\n'
+'for event, contribution in filiation.items():\n'
+'    print(f"  {event}")\n'
+'    print(f"    -> {contribution}")\n'
+'    print()', "filiation-code"))
+
+cells.append(md(
+"### Observation\n"
+"\n"
+"Chaque innovation de cette filiation repose sur un **petit nombre de primitives cryptographiques** :\n"
+"le hachage, les signatures numeriques, la preuve de travail, et les reseaux pair-a-pair.\n"
+"Bitcoin n'a rien invente : il a **combine** ces briques existantes de maniere geniale.\n"
+"\n"
+"Les sections suivantes explorent chacune de ces primitives avec du code executable.",
+"filiation-interpretation"))
+
+# === SECTION 2: HASH ===
+cells.append(md(
+"---\n"
+"\n"
+"## 2. Hash et integrite\n"
+"\n"
+"Le **hachage cryptographique** est la brique la plus fondamentale. Une fonction de hachage\n"
+"transforme une donnee de taille arbitraire en une empreinte de taille fixe, avec trois proprietes :\n"
+"\n"
+"1. **Determinisme** : meme entree -> meme sortie, toujours\n"
+"2. **Effet avalanche** : 1 bit change -> sortie completement differente\n"
+"3. **Resistance aux collisions** : quasi-impossible de trouver deux entrees avec le meme hash\n"
+"\n"
+"SHA-256 (Secure Hash Algorithm, 256 bits) est utilise par Bitcoin et de nombreuses blockchains.",
+"hash-intro"))
+
+cells.append(code(
+'import hashlib\n'
+'\n'
+'# SHA-256 : la brique fondamentale de Bitcoin\n'
+'data = b"Cypherpunks write code"\n'
+'hash_value = hashlib.sha256(data).hexdigest()\n'
+'print(f"Message  : {data.decode()}")\n'
+'print(f"SHA-256  : {hash_value}")\n'
+'print(f"Longueur : {len(hash_value)} caracteres hex = {len(hash_value)*4} bits")\n'
+'print()\n'
+'\n'
+'# Effet avalanche : un seul caractere change\n'
+'data2 = b"Cypherpunks write Code"  # \'c\' -> \'C\'\n'
+'hash2 = hashlib.sha256(data2).hexdigest()\n'
+'print(f"Message  : {data2.decode()}")\n'
+'print(f"SHA-256  : {hash2}")\n'
+'print()\n'
+'\n'
+'# Compter les bits differents (distance de Hamming)\n'
+'diff_bits = bin(int(hash_value, 16) ^ int(hash2, 16)).count(\'1\')\n'
+'print(f"Bits differents : {diff_bits} / 256 ({diff_bits/256*100:.1f}%)")\n'
+'print("-> Un seul caractere change, ~50% des bits changent (effet avalanche)")',
+"hash-code"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"L'**effet avalanche** est crucial pour la securite : il est impossible de deviner le hash\n"
+"a partir de petites modifications de l'entree. En pratique, ~128 bits sur 256 changent\n"
+"(~50%), ce qui confirme que SHA-256 se comporte comme une fonction aleatoire.\n"
+"\n"
+"Cette propriete est exploitee dans :\n"
+"- **Bitcoin** : le hash du bloc doit commencer par N zeros (Proof-of-Work)\n"
+"- **Ethereum** : Keccak-256 pour les adresses et les signatures\n"
+"- **Git** : SHA-1 pour identifier les commits (SHA-256 en migration)",
+"hash-interpretation"))
+
+# === SECTION 3: HASH CHAIN ===
+cells.append(md(
+"---\n"
+"\n"
+"## 3. Chaine de hash (proto-blockchain)\n"
+"\n"
+"L'idee centrale de Bitcoin est de **chainer les blocs par leur hash** :\n"
+"chaque bloc contient le hash du bloc precedent. Modifier un ancien bloc\n"
+"invalide tous les blocs suivants.\n"
+"\n"
+"Ce concept existait deja dans les travaux de Stuart Haber et Scott Stornetta (1991)\n"
+"sur l'horodatage de documents numeriques.", "chain-intro"))
+
+cells.append(code(
+'import hashlib\n'
+'import json\n'
+'from datetime import datetime\n'
+'\n'
+'def create_block(index, data, previous_hash):\n'
+'    """Creer un bloc avec lien vers le precedent via hash."""\n'
+'    block = {\n'
+'        "index": index,\n'
+'        "timestamp": datetime.now().isoformat(),\n'
+'        "data": data,\n'
+'        "previous_hash": previous_hash,\n'
+'    }\n'
+'    block_string = json.dumps(block, sort_keys=True).encode()\n'
+'    block["hash"] = hashlib.sha256(block_string).hexdigest()\n'
+'    return block\n'
+'\n'
+'# Construire une mini-blockchain\n'
+'genesis = create_block(0, "Bloc Genesis", "0" * 64)\n'
+'block1 = create_block(1, "Alice envoie 10 BTC a Bob", genesis["hash"])\n'
+'block2 = create_block(2, "Bob envoie 5 BTC a Charlie", block1["hash"])\n'
+'block3 = create_block(3, "Charlie envoie 2 BTC a Dave", block2["hash"])\n'
+'\n'
+'chain = [genesis, block1, block2, block3]\n'
+'\n'
+'print("MINI-BLOCKCHAIN (4 blocs)")\n'
+'print("=" * 70)\n'
+'for block in chain:\n'
+'    print(f"Bloc {block[\'index\']} : {block[\'data\']}")\n'
+'    print(f"  Hash     : {block[\'hash\'][:32]}...")\n'
+'    print(f"  Prev     : {block[\'previous_hash\'][:32]}...")\n'
+'    print()', "chain-code"))
+
+cells.append(code(
+'# Detection de falsification\n'
+'print("DETECTION DE FALSIFICATION")\n'
+'print("=" * 70)\n'
+'\n'
+'original_data = chain[1]["data"]\n'
+'original_hash = chain[1]["hash"]\n'
+'\n'
+'# Modifier le bloc 1 (falsification)\n'
+'chain[1]["data"] = "Alice envoie 1000 BTC a Bob"  # Fraude !\n'
+'block_string = json.dumps(\n'
+'    {k: v for k, v in chain[1].items() if k != "hash"}, sort_keys=True\n'
+').encode()\n'
+'new_hash = hashlib.sha256(block_string).hexdigest()\n'
+'\n'
+'print(f"Bloc 1 original : \'{original_data}\'")\n'
+'print(f"Bloc 1 modifie  : \'{chain[1][\'data\']}\'")\n'
+'print()\n'
+'print(f"Hash original   : {original_hash[:40]}...")\n'
+'print(f"Hash recalcule  : {new_hash[:40]}...")\n'
+'print()\n'
+'\n'
+'# Verification de la chaine\n'
+'print("VERIFICATION DE LA CHAINE :")\n'
+'chain[1]["hash"] = new_hash\n'
+'for i in range(1, len(chain)):\n'
+'    expected_prev = chain[i-1]["hash"]\n'
+'    actual_prev = chain[i]["previous_hash"]\n'
+'    valid = expected_prev == actual_prev\n'
+'    status = "OK" if valid else "INVALIDE"\n'
+'    print(f"  Bloc {i} -> previous_hash {status}")\n'
+'    if not valid:\n'
+'        print(f"    Attendu : {expected_prev[:32]}...")\n'
+'        print(f"    Trouve  : {actual_prev[:32]}...")\n'
+'\n'
+'# Restaurer\n'
+'chain[1]["data"] = original_data\n'
+'chain[1]["hash"] = original_hash\n'
+'print()\n'
+'print("-> Le bloc 2 pointe vers l\'ancien hash du bloc 1 : la fraude est detectee !")\n'
+'print("-> Pour falsifier, il faudrait recalculer TOUS les blocs suivants.")',
+"tamper-detection"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"La chaine de hash cree une **structure de donnees immuable** : modifier un bloc ancien\n"
+"casse tous les liens subsequents. C'est le fondement de l'integrite blockchain.\n"
+"\n"
+"Mais cela ne suffit pas : un attaquant pourrait recalculer toute la chaine.\n"
+"C'est la que la **Proof-of-Work** intervient (section 5) : rendre le recalcul\n"
+"prohibitivement couteux en temps et en energie.", "chain-interpretation"))
+
+# === SECTION 4: MERKLE ===
+cells.append(md(
+"---\n"
+"\n"
+"## 4. Arbre de Merkle\n"
+"\n"
+"Un **arbre de Merkle** (Ralph Merkle, 1979) permet de verifier l'integrite de N elements\n"
+"avec seulement O(log N) hash. Il est utilise dans :\n"
+"\n"
+"- **Bitcoin** : verifier qu'une transaction est dans un bloc (SPV)\n"
+"- **BitTorrent** : verifier l'integrite des pieces telechargees\n"
+"- **Git** : la structure interne des commits\n"
+"- **Ethereum** : Patricia Merkle Trie pour l'etat des comptes\n"
+"\n"
+"### Principe\n"
+"\n"
+"```\n"
+"        Root Hash\n"
+"       /         \\\\\n"
+"    H(AB)       H(CD)\n"
+"    /   \\\\       /   \\\\\n"
+"  H(A)  H(B)  H(C)  H(D)\n"
+"   |     |     |     |\n"
+"  Tx A  Tx B  Tx C  Tx D\n"
+"```\n"
+"\n"
+"Pour prouver que Tx B est dans l'arbre, il suffit de fournir : H(A) + H(CD) + Root.",
+"merkle-intro"))
+
+cells.append(code(
+'import hashlib\n'
+'\n'
+'def sha256(data):\n'
+'    """Hash SHA-256 d\'une chaine."""\n'
+'    if isinstance(data, str):\n'
+'        data = data.encode()\n'
+'    return hashlib.sha256(data).hexdigest()\n'
+'\n'
+'def merkle_tree(transactions):\n'
+'    """Construire un arbre de Merkle complet et retourner tous les niveaux."""\n'
+'    if not transactions:\n'
+'        return []\n'
+'    current_level = [sha256(tx) for tx in transactions]\n'
+'    tree = [current_level[:]]\n'
+'\n'
+'    while len(current_level) > 1:\n'
+'        next_level = []\n'
+'        for i in range(0, len(current_level), 2):\n'
+'            left = current_level[i]\n'
+'            right = current_level[i + 1] if i + 1 < len(current_level) else left\n'
+'            parent = sha256(left + right)\n'
+'            next_level.append(parent)\n'
+'        current_level = next_level\n'
+'        tree.append(current_level[:])\n'
+'    return tree\n'
+'\n'
+'# Transactions exemple (comme dans un bloc Bitcoin)\n'
+'transactions = [\n'
+'    "Alice -> Bob: 1 BTC",\n'
+'    "Bob -> Charlie: 0.5 BTC",\n'
+'    "Dave -> Eve: 2 BTC",\n'
+'    "Eve -> Frank: 0.3 BTC",\n'
+']\n'
+'\n'
+'tree = merkle_tree(transactions)\n'
+'\n'
+'print("ARBRE DE MERKLE")\n'
+'print("=" * 70)\n'
+'for level_idx, level in enumerate(tree):\n'
+'    if level_idx == 0:\n'
+'        label = "Feuilles"\n'
+'    elif level_idx == len(tree) - 1:\n'
+'        label = "Racine"\n'
+'    else:\n'
+'        label = f"Niveau {level_idx}"\n'
+'\n'
+'    print(f"\\n{label} ({len(level)} noeud(s)) :")\n'
+'    for j, h in enumerate(level):\n'
+'        if level_idx == 0:\n'
+'            print(f"  [{j}] {h[:16]}... <- \'{transactions[j]}\'")\n'
+'        else:\n'
+'            print(f"  [{j}] {h[:16]}...")\n'
+'\n'
+'print(f"\\nMerkle Root : {tree[-1][0]}")\n'
+'print(f"-> 4 transactions resumees en 1 seul hash de 256 bits")',
+"merkle-code"))
+
+cells.append(code(
+'def merkle_proof(transactions, tx_index):\n'
+'    """Generer la preuve Merkle pour une transaction donnee."""\n'
+'    tree = merkle_tree(transactions)\n'
+'    proof = []\n'
+'    idx = tx_index\n'
+'    for level in tree[:-1]:\n'
+'        if idx % 2 == 0:\n'
+'            sibling_idx = idx + 1 if idx + 1 < len(level) else idx\n'
+'            proof.append(("right", level[sibling_idx]))\n'
+'        else:\n'
+'            proof.append(("left", level[idx - 1]))\n'
+'        idx //= 2\n'
+'    return proof\n'
+'\n'
+'def verify_proof(tx, proof, expected_root):\n'
+'    """Verifier une preuve Merkle."""\n'
+'    current = sha256(tx)\n'
+'    for side, sibling in proof:\n'
+'        if side == "right":\n'
+'            current = sha256(current + sibling)\n'
+'        else:\n'
+'            current = sha256(sibling + current)\n'
+'    return current == expected_root\n'
+'\n'
+'# Generer et verifier la preuve pour la transaction 1\n'
+'tx_index = 1\n'
+'proof = merkle_proof(transactions, tx_index)\n'
+'root = tree[-1][0]\n'
+'\n'
+'print(f"PREUVE MERKLE pour transaction [{tx_index}]: \'{transactions[tx_index]}\'")\n'
+'print("=" * 70)\n'
+'print(f"Merkle Root attendue : {root[:32]}...")\n'
+'print(f"\\nPreuve ({len(proof)} elements, au lieu de {len(transactions)} transactions) :")\n'
+'for side, h in proof:\n'
+'    print(f"  {side:5s} : {h[:32]}...")\n'
+'\n'
+'valid = verify_proof(transactions[tx_index], proof, root)\n'
+'print(f"\\nVerification : {\'VALIDE\' if valid else \'INVALIDE\'}")\n'
+'print(f"\\n-> SPV (Bitcoin) : un noeud leger verifie une transaction")\n'
+'print(f"   avec seulement {len(proof)} hash au lieu de {len(transactions)} transactions")',
+"merkle-proof"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"L'arbre de Merkle permet la **verification legere** (SPV) : un telephone mobile\n"
+"peut verifier qu'une transaction est incluse dans un bloc Bitcoin sans telecharger\n"
+"les ~500 000 blocs complets (~500 Go).\n"
+"\n"
+"| Transactions dans le bloc | Hash necessaires pour la preuve |\n"
+"|--------------------------|-------------------------------|\n"
+"| 1 000 | 10 |\n"
+"| 1 000 000 | 20 |\n"
+"| 1 000 000 000 | 30 |\n"
+"\n"
+"La complexite logarithmique rend le systeme scalable a l'echelle mondiale.",
+"merkle-interpretation"))
+
+# === SECTION 5: POW ===
+cells.append(md(
+"---\n"
+"\n"
+"## 5. Proof-of-Work (Hashcash)\n"
+"\n"
+"**Adam Back** a invente Hashcash en 1997 comme systeme anti-spam pour les emails :\n"
+"pour envoyer un email, il faut trouver un nonce tel que le hash du message commence\n"
+"par N zeros. Cela coute quelques secondes de calcul a l'expediteur, mais rend\n"
+"l'envoi massif de spam economiquement impossible.\n"
+"\n"
+"Satoshi Nakamoto a directement repris ce mecanisme pour le **minage Bitcoin** :\n"
+"- Le mineur cherche un nonce tel que `SHA256(bloc + nonce)` commence par N zeros\n"
+"- La **difficulte** N s'ajuste toutes les ~2 semaines pour maintenir ~10 min/bloc\n"
+"- La difficulte croit **exponentiellement** : chaque zero supplementaire double le travail moyen",
+"pow-intro"))
+
+cells.append(code(
+'import hashlib\n'
+'import time\n'
+'\n'
+'def proof_of_work(data, difficulty):\n'
+'    """Trouver un nonce tel que hash(data+nonce) commence par N zeros."""\n'
+'    target = "0" * difficulty\n'
+'    nonce = 0\n'
+'    start = time.time()\n'
+'    while True:\n'
+'        attempt = f"{data}{nonce}".encode()\n'
+'        hash_val = hashlib.sha256(attempt).hexdigest()\n'
+'        if hash_val[:difficulty] == target:\n'
+'            elapsed = time.time() - start\n'
+'            return nonce, hash_val, elapsed\n'
+'        nonce += 1\n'
+'\n'
+'data = "Bloc #42 - Alice envoie 1 BTC a Bob - prev_hash=abc123"\n'
+'\n'
+'print("PROOF-OF-WORK (Hashcash / Bitcoin Mining)")\n'
+'print("=" * 70)\n'
+'print(f"Donnees : \'{data[:50]}...\'")\n'
+'print()\n'
+'\n'
+'for difficulty in range(1, 6):\n'
+'    nonce, hash_val, elapsed = proof_of_work(data, difficulty)\n'
+'    print(f"Difficulte {difficulty} (cible: {\'0\'*difficulty}{\'x\'*(8-difficulty)}) :")\n'
+'    print(f"  Nonce    : {nonce:>10,}")\n'
+'    print(f"  Hash     : {hash_val[:32]}...")\n'
+'    print(f"  Temps    : {elapsed:.4f}s")\n'
+'    print(f"  Essais   : ~{nonce:,} (theorique: ~{16**difficulty:,})")\n'
+'    print()', "pow-code"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"| Difficulte | Essais moyens | Temps approximatif |\n"
+"|-----------|--------------|-------------------|\n"
+"| 1 | ~16 | instantane |\n"
+"| 2 | ~256 | instantane |\n"
+"| 3 | ~4 096 | quelques ms |\n"
+"| 4 | ~65 536 | ~0.05s |\n"
+"| 5 | ~1 048 576 | ~0.5s |\n"
+"| 6 | ~16 millions | ~10s |\n"
+"\n"
+"La croissance est **exponentielle** (x16 par niveau). Bitcoin ajuste la difficulte pour que\n"
+"le reseau mondial (~500 EH/s en 2025) mette ~10 minutes par bloc.\n"
+"\n"
+"C'est ce mecanisme qui rend la falsification de la chaine de hash (section 3)\n"
+"**economiquement impossible** : recalculer les blocs modifies prendrait plus d'energie\n"
+"que l'ensemble du reseau honnete.", "pow-interpretation"))
+
+# === SECTION 6: SIGNATURES ===
+cells.append(md(
+"---\n"
+"\n"
+"## 6. Signatures numeriques\n"
+"\n"
+"Les signatures numeriques sont l'equivalent electronique de la signature manuscrite,\n"
+"mais avec des garanties mathematiques :\n"
+"\n"
+"1. **Authentification** : seul le detenteur de la cle privee peut signer\n"
+"2. **Integrite** : toute modification du message invalide la signature\n"
+"3. **Non-repudiation** : le signataire ne peut nier avoir signe\n"
+"\n"
+"Bitcoin et Ethereum utilisent des signatures sur **courbes elliptiques** (ECDSA/secp256k1).\n"
+"C'est le mecanisme qui lie une adresse (cle publique) a une transaction.",
+"sig-intro"))
+
+cells.append(code(
+'from Crypto.PublicKey import ECC\n'
+'from Crypto.Signature import DSS\n'
+'from Crypto.Hash import SHA256\n'
+'\n'
+'print("SIGNATURES NUMERIQUES (Courbes Elliptiques)")\n'
+'print("=" * 70)\n'
+'\n'
+'# Generation de cles (equivalent d\'un wallet crypto)\n'
+'key = ECC.generate(curve=\'P-256\')\n'
+'public_key = key.public_key()\n'
+'\n'
+'print(f"Cle privee (secret) : {hex(key.d)[:32]}...")\n'
+'print(f"Cle publique X      : {hex(public_key.pointQ.x)[:32]}...")\n'
+'print(f"Cle publique Y      : {hex(public_key.pointQ.y)[:32]}...")\n'
+'print()\n'
+'\n'
+'# Signer une transaction\n'
+'transaction = b"Envoyer 1 ETH de 0xAlice a 0xBob"\n'
+'h = SHA256.new(transaction)\n'
+'signer = DSS.new(key, \'fips-186-3\')\n'
+'signature = signer.sign(h)\n'
+'\n'
+'print(f"Transaction : {transaction.decode()}")\n'
+'print(f"Signature   : {signature.hex()[:64]}...")\n'
+'print(f"Taille      : {len(signature)} octets")\n'
+'print()\n'
+'\n'
+'# Verification (n\'importe qui peut verifier avec la cle publique)\n'
+'verifier = DSS.new(public_key, \'fips-186-3\')\n'
+'try:\n'
+'    verifier.verify(SHA256.new(transaction), signature)\n'
+'    print("Verification : VALIDE (la transaction est authentique)")\n'
+'except ValueError:\n'
+'    print("Verification : INVALIDE")\n'
+'\n'
+'# Tentative de falsification\n'
+'print()\n'
+'fake_transaction = b"Envoyer 100 ETH de 0xAlice a 0xBob"\n'
+'try:\n'
+'    verifier.verify(SHA256.new(fake_transaction), signature)\n'
+'    print("Falsification : ACCEPTEE (PROBLEME !)")\n'
+'except ValueError:\n'
+'    print("Falsification : REJETEE (la signature ne correspond pas)")\n'
+'    print("-> Impossible de modifier la transaction sans la cle privee")',
+"sig-code"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"Le systeme de signatures ECDSA garantit que :\n"
+"- Seul Alice (detentrice de la cle privee) peut autoriser un transfert depuis son adresse\n"
+"- Modifier le montant ou le destinataire invalide la signature\n"
+"- N'importe quel noeud du reseau peut verifier la signature avec la cle publique\n"
+"\n"
+"**Adresse blockchain = hash de la cle publique**\n"
+"\n"
+"```\n"
+"Cle privee (256 bits, secret)\n"
+"    | multiplication sur courbe elliptique\n"
+"Cle publique (512 bits, public)\n"
+"    | SHA-256 + RIPEMD-160\n"
+"Adresse (160 bits = 20 octets = \"0x...\")\n"
+"```\n"
+"\n"
+"C'est pourquoi perdre sa cle privee = perdre ses fonds, et pourquoi il ne faut **jamais** la partager.",
+"sig-interpretation"))
+
+# === SECTION 7: DHT ===
+cells.append(md(
+"---\n"
+"\n"
+"## 7. DHT et reseaux pair-a-pair\n"
+"\n"
+"Le dernier ingredient est le **reseau decentralise**. Sans serveur central,\n"
+"comment les noeuds Bitcoin/Ethereum se trouvent-ils et echangent-ils des donnees ?\n"
+"\n"
+"La reponse vient de **BitTorrent** et du protocole **Kademlia** (2002) :\n"
+"une **table de hachage distribuee** (DHT) ou chaque noeud stocke une partie des donnees,\n"
+"et la distance entre noeuds est mesuree par l'operation **XOR** sur leurs identifiants.\n"
+"\n"
+"Ethereum utilise directement une variante de Kademlia pour la decouverte de pairs.",
+"dht-intro"))
+
+cells.append(code(
+'import hashlib\n'
+'\n'
+'# Chaque noeud du reseau a un identifiant = hash de son adresse\n'
+'nodes = {\n'
+'    "noeud-paris:30303":   int(hashlib.sha256(b"noeud-paris:30303").hexdigest(), 16),\n'
+'    "noeud-london:30303":  int(hashlib.sha256(b"noeud-london:30303").hexdigest(), 16),\n'
+'    "noeud-tokyo:30303":   int(hashlib.sha256(b"noeud-tokyo:30303").hexdigest(), 16),\n'
+'    "noeud-nyc:30303":     int(hashlib.sha256(b"noeud-nyc:30303").hexdigest(), 16),\n'
+'}\n'
+'\n'
+'print("TABLE DE HACHAGE DISTRIBUEE (DHT / Kademlia)")\n'
+'print("=" * 70)\n'
+'\n'
+'print("\\nIdentifiants des noeuds (SHA-256 tronque a 16 hex) :")\n'
+'for name, node_id in nodes.items():\n'
+'    print(f"  {name:25s} -> {node_id & 0xFFFFFFFFFFFFFFFF:016x}")\n'
+'\n'
+'# Distance XOR entre noeuds\n'
+'print("\\nDistances XOR (plus petit = plus proche) :")\n'
+'names = list(nodes.keys())\n'
+'ids = list(nodes.values())\n'
+'\n'
+'for i in range(len(names)):\n'
+'    for j in range(i + 1, len(names)):\n'
+'        distance = ids[i] ^ ids[j]\n'
+'        dist_bits = distance.bit_length()\n'
+'        print(f"  {names[i]:15s} <-> {names[j]:15s} : {dist_bits} bits")\n'
+'\n'
+'print()\n'
+'print("-> Kademlia : chaque noeud connait ~log(N) autres noeuds")\n'
+'print("-> Trouver une donnee prend ~log(N) sauts (routage iteratif)")\n'
+'print("-> Pas de serveur central, resilient aux pannes et a la censure")',
+"dht-code"))
+
+cells.append(code(
+'import hashlib\n'
+'\n'
+'def bencode(data):\n'
+'    """Encoder des donnees au format bencode (BitTorrent)."""\n'
+'    if isinstance(data, int):\n'
+'        return f"i{data}e".encode()\n'
+'    elif isinstance(data, bytes):\n'
+'        return f"{len(data)}:".encode() + data\n'
+'    elif isinstance(data, str):\n'
+'        data_bytes = data.encode()\n'
+'        return f"{len(data_bytes)}:".encode() + data_bytes\n'
+'    elif isinstance(data, list):\n'
+'        return b"l" + b"".join(bencode(x) for x in data) + b"e"\n'
+'    elif isinstance(data, dict):\n'
+'        items = sorted(data.items())\n'
+'        return b"d" + b"".join(\n'
+'            bencode(k.encode() if isinstance(k, str) else k) + bencode(v)\n'
+'            for k, v in items\n'
+'        ) + b"e"\n'
+'    raise TypeError(f"Type non supporte: {type(data)}")\n'
+'\n'
+'# Simuler un fichier .torrent\n'
+'torrent_info = {\n'
+'    "name": "bitcoin-whitepaper.pdf",\n'
+'    "length": 184292,\n'
+'    "piece length": 262144,\n'
+'    "pieces": b"\\x00" * 20,\n'
+'}\n'
+'\n'
+'encoded = bencode(torrent_info)\n'
+'info_hash = hashlib.sha1(encoded).hexdigest()\n'
+'\n'
+'print("BENCODAGE BITTORRENT")\n'
+'print("=" * 70)\n'
+'print(f"Fichier     : {torrent_info[\'name\']}")\n'
+'print(f"Taille      : {torrent_info[\'length\']:,} octets")\n'
+'print(f"Bencode     : {encoded[:60]}...")\n'
+'print(f"Info hash   : {info_hash}")\n'
+'print()\n'
+'print(f"-> L\'info_hash est l\'identifiant unique du torrent dans la DHT")\n'
+'print(f"-> C\'est le \'magnet link\' : magnet:?xt=urn:btih:{info_hash[:20]}...")',
+"bencode-code"))
+
+cells.append(md(
+"### Interpretation\n"
+"\n"
+"Les reseaux P2P apportent la **decentralisation** necessaire aux blockchains :\n"
+"\n"
+"| Propriete | Serveur central | P2P (DHT) |\n"
+"|-----------|----------------|----------|\n"
+"| Point de defaillance unique | Oui | Non |\n"
+"| Censurable | Oui (saisie du serveur) | Tres difficile |\n"
+"| Scalabilite | Limitee | O(log N) par noeud |\n"
+"| Exemples | Napster (1999, ferme) | BitTorrent (2001, toujours actif) |\n"
+"\n"
+"Ethereum herite directement de Kademlia : le port par defaut (30303) et le protocole\n"
+"de decouverte sont bases sur la DHT.", "dht-interpretation"))
+
+# === SECTION 8: TIMELINE ===
+cells.append(md(
+"---\n"
+"\n"
+"## 8. Synthese : de Chaum a Ethereum\n"
+"\n"
+"Voici la frise complete montrant comment chaque brique Cypherpunk\n"
+"a ete integree dans les blockchains modernes.", "timeline-intro"))
+
+cells.append(code(
+'# Frise chronologique : briques fondatrices et leur heritage\n'
+'timeline = [\n'
+'    (1976, "Diffie-Hellman",     "Echange de cles",           ["Signature"], "CRYPTO"),\n'
+'    (1977, "RSA",                "Chiffrement asymetrique",   ["Signature"], "CRYPTO"),\n'
+'    (1979, "Merkle",             "Arbre de Merkle",           ["Bitcoin SPV", "Git", "BitTorrent"], "STRUCTURE"),\n'
+'    (1985, "Chaum",              "eCash (monnaie anonyme)",   ["Zcash", "Monero"], "MONNAIE"),\n'
+'    (1991, "PGP",                "Crypto grand public",       ["GPG", "Signal"], "CRYPTO"),\n'
+'    (1991, "Haber-Stornetta",    "Horodatage par hash chain", ["Bitcoin blockchain"], "STRUCTURE"),\n'
+'    (1997, "Hashcash",           "Proof-of-Work",             ["Bitcoin mining"], "CONSENSUS"),\n'
+'    (1998, "b-money",            "Monnaie decentralisee",     ["Bitcoin"], "MONNAIE"),\n'
+'    (2001, "BitTorrent",         "DHT Kademlia, P2P massif",  ["Ethereum P2P"], "RESEAU"),\n'
+'    (2002, "Kademlia",           "DHT avec distance XOR",     ["Ethereum devp2p"], "RESEAU"),\n'
+'    (2008, "Bitcoin",            "Synthese de tout",          ["Ethereum", "1000+ altcoins"], "BLOCKCHAIN"),\n'
+'    (2013, "Ethereum",           "Smart Contracts (Turing)",  ["DeFi", "NFT", "DAO"], "BLOCKCHAIN"),\n'
+'    (2015, "Ethereum mainnet",   "Lancement production",      ["ERC-20", "ERC-721", "DeFi 2020"], "BLOCKCHAIN"),\n'
+']\n'
+'\n'
+'print("FRISE CHRONOLOGIQUE : CYPHERPUNKS -> SMART CONTRACTS")\n'
+'print("=" * 70)\n'
+'\n'
+'for year, name, description, heritage, cat in timeline:\n'
+'    marker = {"CRYPTO": "[C]", "STRUCTURE": "[S]", "MONNAIE": "[M]",\n'
+'              "CONSENSUS": "[W]", "RESEAU": "[R]", "BLOCKCHAIN": "[B]"}[cat]\n'
+'    print(f"  {year} {marker} {name:20s} | {description}")\n'
+'    if heritage:\n'
+'        print(f"       {\'\':20s}   -> {\', \'.join(heritage)}")\n'
+'    print()\n'
+'\n'
+'print("Legende : [C]=Crypto [S]=Structure [M]=Monnaie [W]=Consensus [R]=Reseau [B]=Blockchain")',
+"timeline-code"))
+
+# === SECTION 9: EXERCICE ===
+cells.append(md(
+"---\n"
+"\n"
+"## 9. Exercice : Construire une mini-blockchain complete\n"
+"\n"
+"En combinant toutes les briques de ce notebook, implementez une mini-blockchain fonctionnelle.",
+"exercise-intro"))
+
+cells.append(code(
+'# Exercice : Mini-blockchain complete\n'
+'# Combiner : hash chain + Merkle tree + PoW + signatures\n'
+'\n'
+'import hashlib\n'
+'import json\n'
+'import time\n'
+'from Crypto.PublicKey import ECC\n'
+'from Crypto.Signature import DSS\n'
+'from Crypto.Hash import SHA256\n'
+'\n'
+'\n'
+'class MiniBlockchain:\n'
+'    """Mini-blockchain combinant toutes les primitives Cypherpunk."""\n'
+'\n'
+'    def __init__(self, difficulty=3):\n'
+'        self.chain = []\n'
+'        self.difficulty = difficulty\n'
+'        self.pending_transactions = []\n'
+'\n'
+'    def create_genesis_block(self):\n'
+'        """Creer le bloc genesis.\n'
+'        TODO: Creer un bloc avec index=0, transactions=[], previous_hash="0"*64\n'
+'        et le miner (trouver un nonce valide).\n'
+'        """\n'
+'        raise NotImplementedError("Implementez le bloc genesis")\n'
+'\n'
+'    def add_transaction(self, sender_key, recipient_address, amount):\n'
+'        """Ajouter une transaction signee.\n'
+'        TODO:\n'
+'        1. Creer le message de la transaction (str)\n'
+'        2. Signer avec la cle privee de l\'expediteur (DSS + SHA256)\n'
+'        3. Ajouter a self.pending_transactions avec la signature\n'
+'        """\n'
+'        raise NotImplementedError("Implementez l\'ajout de transaction signee")\n'
+'\n'
+'    def mine_block(self):\n'
+'        """Miner un nouveau bloc avec les transactions en attente.\n'
+'        TODO:\n'
+'        1. Calculer le Merkle root des transactions pending\n'
+'        2. Creer le bloc (index, timestamp, transactions, merkle_root, previous_hash)\n'
+'        3. Trouver le nonce par Proof-of-Work (hash commence par N zeros)\n'
+'        4. Ajouter le bloc a la chaine\n'
+'        5. Vider pending_transactions\n'
+'        """\n'
+'        raise NotImplementedError("Implementez le minage")\n'
+'\n'
+'    def verify_chain(self):\n'
+'        """Verifier l\'integrite de toute la chaine.\n'
+'        TODO:\n'
+'        1. Pour chaque bloc (sauf genesis) :\n'
+'           - Verifier que previous_hash correspond au hash du bloc precedent\n'
+'           - Verifier que le hash du bloc respecte la difficulte PoW\n'
+'           - Verifier le Merkle root des transactions\n'
+'           - Verifier chaque signature de transaction\n'
+'        2. Retourner True si tout est valide, False sinon\n'
+'        """\n'
+'        raise NotImplementedError("Implementez la verification")\n'
+'\n'
+'\n'
+'# Test (decommentez apres implementation)\n'
+'# bc = MiniBlockchain(difficulty=3)\n'
+'# bc.create_genesis_block()\n'
+'#\n'
+'# # Creer des wallets\n'
+'# alice = ECC.generate(curve=\'P-256\')\n'
+'# bob = ECC.generate(curve=\'P-256\')\n'
+'#\n'
+'# # Ajouter des transactions\n'
+'# bc.add_transaction(alice, "0xBob", 10)\n'
+'# bc.add_transaction(bob, "0xAlice", 3)\n'
+'#\n'
+'# # Miner\n'
+'# bc.mine_block()\n'
+'#\n'
+'# # Verifier\n'
+'# print(f"Chaine valide : {bc.verify_chain()}")\n'
+'# print(f"Nombre de blocs : {len(bc.chain)}")',
+"exercise-code"))
+
+# === SECTION 10: RESUME ===
+cells.append(md(
+"---\n"
+"\n"
+"## 10. Resume\n"
+"\n"
+"| Primitive | Inventeur | Annee | Role dans la blockchain |\n"
+"|-----------|-----------|-------|------------------------|\n"
+"| **Hash (SHA-256)** | NSA | 2001 | Integrite, adresses, PoW |\n"
+"| **Chaine de hash** | Haber-Stornetta | 1991 | Immuabilite des blocs |\n"
+"| **Arbre de Merkle** | Ralph Merkle | 1979 | Verification legere (SPV) |\n"
+"| **Proof-of-Work** | Adam Back | 1997 | Consensus, anti-falsification |\n"
+"| **Signatures ECDSA** | Johnson et al. | 2001 | Authentification des transactions |\n"
+"| **DHT Kademlia** | Maymounkov-Mazieres | 2002 | Reseau decentralise P2P |\n"
+"\n"
+"### Points cles\n"
+"\n"
+"- Les smart contracts sont l'**heritage direct** du mouvement Cypherpunk des annees 1990\n"
+"- Chaque brique (hash, signatures, PoW, P2P) existait **avant** Bitcoin\n"
+"- L'innovation de Satoshi Nakamoto est la **combinaison** de ces primitives\n"
+"- Comprendre ces fondations permet de mieux apprehender la securite et les limites des blockchains\n"
+"\n"
+"---\n"
+"\n"
+"**Notebook suivant** : [SC-1-Setup-Foundry](SC-1-Setup-Foundry.ipynb) - Installation de l'environnement de developpement",
+"summary"))
+
+# === BUILD NOTEBOOK ===
+notebook = {
+    "cells": cells,
+    "metadata": {
+        "kernelspec": {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3"
+        },
+        "language_info": {
+            "codemirror_mode": {"name": "ipython", "version": 3},
+            "file_extension": ".py",
+            "mimetype": "text/x-python",
+            "name": "python",
+            "nbconvert_exporter": "python",
+            "pygments_lexer": "ipython3",
+            "version": "3.10.0"
+        }
+    },
+    "nbformat": 4,
+    "nbformat_minor": 5
+}
+
+output_path = os.path.join(
+    "d:", os.sep, "CoursIA", "MyIA.AI.Notebooks", "SymbolicAI",
+    "SmartContracts", "00-Foundations", "SC-0-Cypherpunk-Origins.ipynb"
+)
+with open(output_path, 'w', encoding='utf-8', newline='\n') as f:
+    json.dump(notebook, f, ensure_ascii=False, indent=1)
+    f.write('\n')
+
+print(f"Notebook cree : {output_path}")
+print(f"Cellules : {len(cells)} ({sum(1 for c in cells if c['cell_type']=='markdown')} md + {sum(1 for c in cells if c['cell_type']=='code')} code)")
+
+# Verify format
+for i, cell in enumerate(cells):
+    src = cell['source']
+    if isinstance(src, str):
+        print(f"  ISSUE cell {i}: bare string")
+    elif isinstance(src, list) and len(src) == 1 and '\n' in src[0]:
+        print(f"  ISSUE cell {i}: single-string with newlines")
+print("Format OK" if all(isinstance(c['source'], list) for c in cells) else "FORMAT ISSUES")

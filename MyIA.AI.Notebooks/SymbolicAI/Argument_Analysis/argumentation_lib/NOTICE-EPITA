@@ -1,0 +1,738 @@
+NOTICE - EPITA-IS verbatim copies in `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/`
+========================================================================================================
+
+This directory contains verbatim copies of source files from the
+**2025-Epita-Intelligence-Symbolique** project (EPITA-IS), a pedagogical
+multi-agent argumentation analysis platform developed at EPITA.
+
+Source repository : https://github.com/jsboigeEpita/2025-Epita-Intelligence-Symbolique
+Source LICENSE    : MIT License (Copyright (c) 2025 jsboigeEpita)
+                    See https://opensource.org/licenses/MIT
+
+CoursIA copy
+------------
+
+| File in CoursIA `argumentation_lib/` | Upstream path in EPITA-IS | Upstream commit |
+|---------------------------------------|----------------------------|-----------------|
+| `_shared_state.py` (1121 lines)       | `argumentation_analysis/core/shared_state.py` | a8025f60 (2026-07-02) |
+| `_state_manager_plugin.py`            | `argumentation_analysis/core/state_manager_plugin.py` | see git log |
+| `_taxonomy_sophism_detector.py` (442 lines) | `argumentation_analysis/agents/core/informal/taxonomy_sophism_detector.py` | a8025f60 (2026-07-02) |
+| `_informal_definitions.py` (891 lines) | `argumentation_analysis/agents/core/informal/informal_definitions.py` | a8025f60 (2026-07-02) |
+| `_tweety_bridge.py` (488 lines) | `argumentation_analysis/agents/core/logic/tweety_bridge.py` | a8025f60 (2026-07-02) |
+| `_pl_handler.py` (689 lines)        | `argumentation_analysis/agents/core/logic/pl_handler.py` | a8025f60 (2026-07-02) |
+| `_fol_handler.py` (1163 lines)      | `argumentation_analysis/agents/core/logic/fol_handler.py` | a8025f60 (2026-07-02) |
+| `_modal_handler.py` (327 lines)    | `argumentation_analysis/agents/core/logic/modal_handler.py` | a8025f60 (2026-07-02) |
+| `_adf_handler.py` (161 lines)      | `argumentation_analysis/agents/core/logic/adf_handler.py` | a8025f60 (2026-07-02) |
+| `_af_handler.py` (234 lines)       | `argumentation_analysis/agents/core/logic/af_handler.py` | a8025f60 (2026-07-02) |
+| `_ranking_handler.py` (120 lines)  | `argumentation_analysis/agents/core/logic/ranking_handler.py` | a8025f60 (2026-07-02) |
+| `_belief_revision_handler.py` (158 lines) | `argumentation_analysis/agents/core/logic/belief_revision_handler.py` | a8025f60 (2026-07-02) |
+| `_probabilistic_handler.py` (152 lines) | `argumentation_analysis/agents/core/logic/probabilistic_handler.py` | a8025f60 (2026-07-02) |
+| `_dialogue_handler.py` (153 lines) | `argumentation_analysis/agents/core/logic/dialogue_handler.py` | a8025f60 (2026-07-02) |
+| `_tweety_initializer.py` (365 lines) | `argumentation_analysis/agents/core/logic/tweety_initializer.py` | a8025f60 (2026-07-02) |
+
+Rationale for verbatim import
+-----------------------------
+
+Per EPIC #4960 (Volet B etape 3: "Lander l'ESSENCE de l'analyse multidimensionnelle
+EPITA-IS"), the EPITA-IS source contains the canonical
+`UnifiedAnalysisState` / `RhetoricalAnalysisState` data model (~14 dimensions:
+extraction/sources, logiques PL/FOL/modale, Dung, sophismes, qualite, contre-arguments,
+debat Walton-Krabbe, gouvernance, JTMS, etc.) plus the `ArgumentProfile` aggregated
+view. The EPIC mandates the "ESSENCE landing" pattern: extract canonical classes
+without the 306 MB of orchestration bruit, mocks, vendor JDK, etc.
+
+The two files imported verbatim here are:
+
+1. `RhetoricalAnalysisState` (lifecycle) and `ArgumentProfile` (per-argument aggregated
+   dataclass) from `_shared_state.py` -- both are **pure-Python stdlib data structures**
+   (dataclasses + Dict/List/Any typing + json + logging). No semantic-kernel, no
+   pandas, no LLM dependencies. Stable, side-effect-free, easy to verify byte-for-byte.
+
+2. `_state_manager_plugin.py` -- the Semantic Kernel plugin wrapper that exposes
+   the state to LLM agents via `@kernel_function` decorators. Included for
+   downstream parity with EPITA-IS semantics; consumers in CoursIA notebooks can
+   opt-in via `import argumentation_lib._state_manager_plugin as smp` (or be
+   refactored in a later tranche if the SK plugin contract becomes a liability).
+
+The remaining EPITA-IS source (`UnifiedAnalysisState` runtime, `TweetyBridge` JPype
+shim, the 12 logic handlers, the orchestration workflows, the 7 governance
+methods, the JTMS, the speech-to-text pipeline, the 14 `services/` adapters, etc.)
+is NOT vendored here -- the EPIC explicitly excludes the orchestration, mocks,
+UI/API/webapp, vendor JDK/Node, and 12 etudiant dossiers from the "essence" import.
+Future tranches (Volet B etapes 4-5) may add selected ports as separate, atomic
+PRs with their own NOTICE entries.
+
+Verbatim integrity
+------------------
+
+Each verbatim file begins with a MIT attribution header (this NOTICE per-file, with
+the exact upstream commit cited) followed by the byte-for-byte upstream content.
+**Any divergence from the cited upstream commit is a regression and must be
+documented in this NOTICE before commit.** CoursIA-original code that extends
+or wraps the verbatim content lives in separate files (NOT prefixed with `_`).
+
+Anti-regression discipline
+--------------------------
+
+Per CoursIA `.claude/rules/anti-regression.md`, replacing or stubbing
+the verbatim code (e.g. turning `ArgumentProfile` fields into `pass` / `return None`)
+without explicit user sign-off is forbidden. The data classes here are referenced
+by the Argument_Analysis notebook series (e.g. the `Restitution 3 actes` notebook
+uses `ArgumentProfile` as the in-memory shape for per-argument aggregation) and
+stripping their implementation would break the pedagogical contract.
+
+Volet B etape 3 sub-tranche C184 (TaxonomySophismDetector)
+-----------------------------------------------------------
+
+PR #5205 (C184) added `_taxonomy_sophism_detector.py` as a verbatim copy of the EPITA-IS
+`TaxonomySophismDetector` class. This class provides:
+
+- `get_main_branches()` -- list of depth=0/1 taxonomy branches (root + 7 first-level families)
+- `explore_branch(taxonomy_key, max_depth=3)` -- recursive subtree exploration
+- `detect_sophisms_from_taxonomy(text, max_sophisms=10)` -- lexical detection heuristic
+- `search_sophisms_by_pattern(pattern, max_results=10)` -- multi-field text search
+- `get_sophism_details_by_key(taxonomy_key)` -- delegate to plugin for full details
+- `_get_parent_context(taxonomy_key)` -- sibling retrieval (private but kept verbatim)
+- Module-level helpers: `create_unified_detector()`, `get_global_detector()` (singleton)
+
+**DEPENDENCY (NOT vendored in this tranche)** : the class imports
+`InformalAnalysisPlugin` from
+`argumentation_analysis.agents.core.informal.informal_definitions` (891 lines,
+Semantic-Kernel coupled). This plugin is **explicitly excluded** from the
+"essence landing" pattern of EPIC #4960 Volet B etape 3 and will be ported as
+part of **Volet B etape 4** (TweetyBridge shim JPype + 12 logic handlers).
+
+**Practical consequence** : the class symbol itself is import-safe
+(`from argumentation_lib._taxonomy_sophism_detector import TaxonomySophismDetector`
+succeeds because the import is lazy via the wrapper module-level `InformalAnalysisPlugin`
+reference). However, **instantiation** (`TaxonomySophismDetector(...)`) will fail
+with `ImportError: cannot import name 'InformalAnalysisPlugin' from partially
+initialized module 'argumentation_analysis.agents.core.informal'` until the
+upstream plugin shim is vendored. The lazy accessor `get_taxonomy_sophism_detector()`
+in `__init__.py` returns the class symbol without triggering instantiation.
+
+**Anti-regression** : the verbatim block is byte-for-byte identical to the
+upstream source at commit `a8025f60`. No CoursIA modification has been applied
+(no stub, no `pass`, no `return None`, no header rewrite inside the class).
+Only an MIT attribution header was prepended (10 LOC of comments).
+
+Volet B etape 4 sub-tranche C185 (informal_definitions)
+-------------------------------------------------------
+
+PR #5216 (C185) added `_informal_definitions.py` as a verbatim copy of the EPITA-IS
+`informal_definitions.py` module. This module exposes:
+
+- `IdentifiedFallacy` -- Pydantic model for a single identified sophism.
+- `FallacyAnalysisResult` -- Pydantic model for analysis output.
+- `InformalAnalysisPlugin` -- `KernelFunction` wrapper that orchestrates
+  the identification + justification pipeline against the real taxonomy CSV.
+- `setup_informal_kernel(kernel)` -- registers the plugin + semantic functions
+  on a Semantic Kernel `Kernel` instance.
+- `INFORMAL_AGENT_INSTRUCTIONS` -- system-prompt template for the LLM agent.
+
+Dependency disclosure (G.9 honest caveat): this module imports `semantic_kernel`,
+`pandas`, `pydantic`, `requests` upstream, plus three EPITA-internal helpers
+(`load_csv_file`, `get_taxonomy_path`, `DATA_DIR`) that are NOT vendored in
+`argumentation_lib/`. It is therefore **NOT standalone-importable today**:
+even the module-level `import` raises `ModuleNotFoundError:
+No module named 'argumentation_analysis'` because the top-level imports
+cannot resolve. The lazy accessor
+`argumentation_lib.get_informal_definitions_symbols()` is preserved for
+API symmetry with C184 (`get_taxonomy_sophism_detector`) but does **not**
+bypass the top-level imports (unlike the C184 accessor, which only required
+a class-level symbol). The verbatim copy is preserved here as a reference
+for the future TweetyBridge shim JPype (Volet B etape 4, slice C186+) that
+will re-export these symbols through a JPype-compatible wrapper.
+
+**Why deliver the verbatim copy anyway** (G.9 honesty over abandonment):
+the verbatim block is the authoritative source for the eventual shim, and
+preserving it byte-for-byte in `argumentation_lib/` documents the exact
+contract the shim must satisfy. The cost is a 913-line file that is
+currently dead-weight (cannot be imported); the benefit is no drift
+between this reference and the eventual shim.
+
+Volet B etape 4 sub-tranche C186a (tweety_bridge)
+--------------------------------------------------
+
+PR #5231 (C186a) added `_tweety_bridge.py` (488L body, 531L with MIT
+header) as a verbatim copy of the EPITA-IS `tweety_bridge.py` module at
+commit `a8025f60`. This is the **JPype bridge singleton** that ties the 12
+logic handlers (PL/FOL/Modal/ADF/AF/Ranking/BeliefRevision/Probabilistic/
+Dialogue + the unimported Bipolar/ABA/ASPIC) into a single
+`TweetyBridge.initialize_jvm()` -> `TweetyBridge.<Logic>().is_consistent()`
+runtime.
+
+Symbols exposed (5 public via lazy accessor tuple):
+
+- `get_tweety_bridge_symbol()` -> tuple
+  `(TweetyBridge, TweetyBridgeSK, initialize_jvm, shutdown_jvm, is_jvm_started)`
+  (lazy import, returns the verbatim tuple)
+
+Verbatim integrity:
+- `_tweety_bridge.py` body SHA1=`6999e355db2bd25156d1358959c0c09660d9cd12`
+  (488L, no prelude, starts with `# FORCE_RELOAD` marker).
+- LF line endings (no CRLF), UTF-8 (no BOM), FORCE_RELOAD marker preserved.
+
+Dependency disclosure (G.9 honest caveat): the bridge file imports
+multiple upstream modules at module-load time that are NOT vendored in
+`argumentation_lib/` today:
+
+- `argumentation_analysis.core.jvm_setup.shutdown_jvm` (line ~442 of
+  upstream, imported at top-level)
+- `from .pl_handler import PLHandler as PropositionalLogicHandler`
+- `from .fol_handler import FOLHandler as FirstOrderLogicHandler`
+- `from .modal_handler import ModalHandler`
+- `from .af_handler import AFHandler as ArgumentationFrameworkHandler`
+- `from .ranking_handler import RankingHandler`
+- `from .bipolar_handler import BipolarHandler`
+- `from .aba_handler import ABAHandler`
+- `from .adf_handler import ADFHandler`
+- `from .aspic_handler import ASPICHandler`
+- `from .belief_revision_handler import BeliefRevisionHandler`
+- `from .probabilistic_handler import ProbabilisticHandler`
+- `from .dialogue_handler import DialogueHandler`
+- `from .tweety_initializer import TweetyInitializer`
+
+Total: **13 sibling modules absent from the vendored context** -> the
+top-level import `from argumentation_lib._tweety_bridge import TweetyBridge`
+raises `ModuleNotFoundError: No module named
+'argumentation_analysis.agents.core.logic.pl_handler'` (or equivalent
+for whichever handler is hit first by the import chain).
+
+The lazy accessor `argumentation_lib.get_tweety_bridge_symbol()` preserves
+the API symmetry with C184/C185/C186b accessors but, like them, does
+**not** bypass the top-level imports. Runtime usability awaits Volet B
+etape 4 sub-tranches C186c (modal/adf, PR #5242) +
+C186d (af/ranking, this PR) + C186e (belief_rev/prob/
+dialogue) + C186f (tweety_initializer) + C186g (runtime bridge shim
+wrapping `argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`).
+
+For a **fully-functional JPype bridge today**, use
+`argumentation_lib.initialize_jvm()` (the CoursIA-native bridge via
+`Tweety.tweety_init` -- see `_jvm_compat.py`) and write the reasoning
+glue manually. The verbatim Python is preserved here as the authoritative
+reference contract for the future CoursIA integration.
+
+**Sub-tranche plan (after this PR)** -- see NOTICE-EPITA section C186b
+below for the full C186b-g chain. C186a is the singleton shell; C186b-g
+populate its dependencies.
+
+Volet B etape 4 sub-tranche C186b (pl_handler + fol_handler)
+--------------------------------------------------------------
+
+PR #5234 (C186b) added `_pl_handler.py` (689L) and `_fol_handler.py` (1163L)
+as verbatim copies of the EPITA-IS `pl_handler.py` and `fol_handler.py`
+modules at commit `a8025f60`. These are the **PL (Propositional Logic)**
+and **FOL (First-Order Logic) core handlers** for the JPype-based Tweety
+bridge runtime.
+
+Symbols exposed (2 public via lazy accessors):
+
+- `get_pl_handler_symbol()` -> `PLHandler` class (lazy import)
+- `get_fol_handler_symbol()` -> `FOLHandler` class (lazy import)
+
+Verbatim integrity:
+- `_pl_handler.py` body SHA1=`7341823ac37aaa83e8b77c54ccd2d4dfd133ee76` (689L).
+- `_fol_handler.py` body SHA1=`f8a70e45b70ece23dd13e680c9d5e9fd54e983f4` (1163L).
+- LF line endings (no CRLF), UTF-8 (no BOM), first line of body = `import jpype`
+  (no shebang prelude, full upstream SHA1 == body SHA1).
+
+Dependency disclosure (G.9 honest caveat): both files import multiple
+upstream modules that are NOT vendored in `argumentation_lib/` today:
+
+- `argumentation_analysis.core.utils.logging_utils.setup_logging`
+- `from .tweety_initializer import TweetyInitializer` (sub-tranche C186f)
+- `argumentation_analysis.core.jvm_setup.{initialize_jvm_robustly,
+  shutdown_jvm, is_jvm_started}` (line ~16 of pl_handler.py)
+- `argumentation_analysis.core.prover9_runner.run_prover9` (fol_handler
+  only -- third-party prover9 binding via shell subprocess)
+
+Therefore, both `PLHandler` and `FOLHandler` symbols are **NOT standalone-
+importable today**: `from argumentation_lib._pl_handler import PLHandler`
+raises `ModuleNotFoundError: No module named
+'argumentation_analysis.core.utils.logging_utils'` (or equivalent).
+
+The lazy accessors `argumentation_lib.get_pl_handler_symbol()` and
+`argumentation_lib.get_fol_handler_symbol()` preserve the API symmetry
+with C184/C185 accessors but, like C185, do **not** bypass the top-level
+imports. Runtime usability awaits Volet B etape 4 sub-tranches C186f
+(TweetyInitializer) and C186g (runtime bridge shim wrapping
+`argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`).
+
+**Note re: C186a** : `_pl_handler.py` and `_fol_handler.py` are
+**referenced at module-load time** by `tweety_bridge.py` (the C186a
+sub-tranche, awaiting merge via PR #5231). Once C186a lands in `main`,
+the bridge singleton will be able to load all three layers together
+(C186a bridge + C186b PL/FOL core + C186c-f other handlers + C186g
+runtime shim). Until then, PLHandler and FOLHandler can only be imported
+through the lazy accessors (which surface the G.9 caveat honestly).
+
+**Why deliver the verbatim copy anyway** (G.9 honesty over abandonment):
+the verbatim blocks are the authoritative source for the eventual CoursIA
+JPype runtime integration. The cost is two dead-weight files today
+(1852L total, ~0 usable at runtime); the benefit is no drift between
+this reference and the future shim that routes the 12 handlers through
+CoursIA's native JPype runtime.
+
+**Sub-tranche plan (after this PR)** :
+
+- **C186c** (delivered via #5242) : `modal_handler.py` + `adf_handler.py` = 488L.
+- **C186d** (this PR) : `af_handler.py` + `ranking_handler.py` = 354L.
+- **C186e** (future) : `belief_revision_handler.py` +
+  `probabilistic_handler.py` + `dialogue_handler.py` = 463L.
+- **C186f** (future) : `tweety_initializer.py` 365L -- initializer isole.
+- **C186g** (future) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L
+  wrapping `argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`.
+
+**Excluded by ai-01 mandate** (gap NL->structured) : `bipolar_handler.py`,
+`aba_handler.py`, `aspic_handler.py`. **Out of scope** : `setaf_handler.py`,
+`weighted_handler.py`, `social_handler.py` (not imported by upstream
+`tweety_bridge.py:29-41`).
+
+Volet B etape 4 sub-tranche C186c (modal_handler + adf_handler)
+---------------------------------------------------------------
+
+PR #5242 (C186c) added `_modal_handler.py` (327L) and `_adf_handler.py`
+(161L) as verbatim copies of the EPITA-IS `modal_handler.py` and
+`adf_handler.py` modules at commit `a8025f60`. These are the **Modal
+Logic** and **Abstract Dialectical Framework** core handlers for the
+JPype-based Tweety bridge runtime.
+
+Symbols exposed (2 public via lazy accessors):
+
+- `get_modal_handler_symbol()` -> `ModalHandler` class (lazy import)
+- `get_adf_handler_symbol()` -> `ADFHandler` class (lazy import)
+
+Verbatim integrity:
+- `_modal_handler.py` body SHA1=`ea424fff87cccd77c322d5a97ff0c516190f0f54`
+  (327L, no prelude, starts with `import jpype`).
+- `_adf_handler.py` body SHA1=`3ac651e01cdfde50641710c5ef3ebddb8154761d`
+  (161L, no prelude, starts with `"""Handler for Abstract Dialectical`).
+- LF line endings (no CRLF), UTF-8 (no BOM), full upstream SHA1 == body SHA1
+  (no shebang prelude).
+
+Dependency disclosure (G.9 honest caveat):
+
+**`_modal_handler.py`** imports at module-load:
+- `from .modal_kb_identifier_normalizer import ModalIdentifierNormalizer`
+  (sibling not vendored, MlParser underscore-normalization #1326)
+- `from .tweety_initializer import TweetyInitializer` (sub-tranche C186f)
+- `from argumentation_analysis.core.config import settings, ModalSolverChoice`
+  (upstream internal settings module, not vendored)
+- `jpype.JClass`, `jpype.JException` (JPype runtime singleton,
+  sub-tranche C186g bridge shim)
+
+Therefore, the `ModalHandler` symbol is **NOT standalone-importable
+today**: `from argumentation_lib._modal_handler import ModalHandler`
+raises `ModuleNotFoundError: No module named
+'argumentation_lib.modal_kb_identifier_normalizer'` — that is the G.9
+fingerprint that proves the verbatim block is honest, not fabricated.
+(Sibling `modal_kb_identifier_normalizer` is NOT part of the C186 chain
+and is not vendored; future CoursIA shim will re-route or stub this.)
+
+**`_adf_handler.py`** has **NO upstream `argumentation_analysis.*`
+imports** — only stdlib (`jpype`, `logging`, `typing`). The class symbol
+is therefore **import-safe today**; ONLY JPype-Tweety singletons are
+referenced. Instantiation WILL fail at runtime until the JPype bridge
+singleton from C186a (`argumentation_lib.initialize_jvm`) is initialized
+and the target classes are exposed by the JVM.
+
+The lazy accessors `argumentation_lib.get_modal_handler_symbol()` and
+`argumentation_lib.get_adf_handler_symbol()` preserve the API symmetry
+with C184/C185/C186a/C186b accessors but, like them, do **not** bypass the
+top-level imports. Runtime usability awaits Volet B etape 4 sub-tranches
+C186f (TweetyInitializer) and C186g (runtime bridge shim).
+
+**Note re: modal_handler upstream drift** : 1 upstream commit (f5ce8bd9
+"fix(modal): hoist SPASS routing to shared ModalHandler layer #1339")
+post-a8025f60 affects `_modal_handler.py` — it adds a new private
+method `_resolve_active_solver_choice()` and updates 2 callers to route
+through the resolved solver choice. Pinned to **a8025f60** for chain
+consistency; the verbatim copy is the reference contract and the
+CoursIA shim will eventually re-route via the resolved solver choice
+(post-#1339). The adf_handler.py file has **0 upstream commits** between
+a8025f60 and HEAD (verified via `git log a8025f60..HEAD -- adf_handler.py`).
+
+**Sub-tranche plan (after this PR)** :
+
+- **C186d** (delivered via #5251) : `af_handler.py` + `ranking_handler.py` = 354L.
+- **C186e** (this PR) : `belief_revision_handler.py` +
+  `probabilistic_handler.py` + `dialogue_handler.py` = 463L.
+- **C186f** (awaiting) : `tweety_initializer.py` 365L -- initializer isole,
+  gates C186c/C186d runtime (AFHandler + ModalHandler).
+- **C186g** (this PR) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L
+  wrapping `argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`.
+
+**Excluded by ai-01 mandate** (gap NL->structured) : `bipolar_handler.py`,
+`aba_handler.py`, `aspic_handler.py`. **Out of scope** : `setaf_handler.py`,
+`weighted_handler.py`, `social_handler.py` (not imported by upstream
+`tweety_bridge.py:29-41`).
+
+Volet B etape 4 sub-tranche C186d (af_handler + ranking_handler)
+----------------------------------------------------------------
+
+PR #5251 (C186d) added `_af_handler.py` (234L) and `_ranking_handler.py`
+(120L) as verbatim copies of the EPITA-IS `af_handler.py` and
+`ranking_handler.py` modules at commit `a8025f60`. These are the
+**Abstract Argumentation Framework (Dung)** and **Ranking Semantics**
+core handlers for the JPype-based Tweety bridge runtime -- together with
+the 10 SEMANTICS_REASONERS (preferred/grounded/stable/complete/admissible/
+conflict_free/semi_stable/stage/ideal/naive) and 12 ranking reasoners
+(categorizer/burden/discussion/counting/tuples/strategy/propagation/saf/
+counter_transitivity/probabilistic_ranking/iterated_graded_defense/
+serialisable) they cover the full Dung classical + ranking reasoning
+stack.
+
+Symbols exposed (2 public via lazy accessors):
+
+- `get_af_handler_symbol()` -> `AFHandler` class (lazy import)
+- `get_ranking_handler_symbol()` -> `RankingHandler` class (lazy import)
+
+Verbatim integrity:
+
+- `_af_handler.py` body SHA1=`c8c468eff25256c625ddc2d4dace4f995ba3a79e`
+  (234L, no prelude, starts with `import jpype`).
+- `_ranking_handler.py` body SHA1=`da43f9777805bbaac40a7d7335b92cf7019bbd5b`
+  (120L, no prelude, starts with `"""Handler for Ranking Semantics`).
+- LF line endings (no CRLF), UTF-8 (no BOM), full upstream SHA1 == body SHA1
+  (no shebang prelude).
+
+Dependency disclosure (G.9 honest caveat):
+
+**`_af_handler.py`** imports at module-load:
+
+- `from .tweety_initializer import TweetyInitializer` (sibling, sub-tranche
+  C186f awaiting)
+- `jpype.JClass`, `jpype.JException` (JPype runtime singleton,
+  sub-tranche C186g bridge shim)
+- NO upstream `argumentation_analysis.*` imports -- only stdlib (`jpype`,
+  `logging`, `typing`).
+
+Therefore, the `AFHandler` symbol is **NOT standalone-importable today**:
+`from argumentation_lib._af_handler import AFHandler` raises
+`ModuleNotFoundError: No module named 'argumentation_lib.tweety_initializer'`
+-- that is the G.9 fingerprint that proves the verbatim block is honest,
+not fabricated. (Sibling `tweety_initializer` is sub-tranche C186f awaiting
+merge; future CoursIA shim will re-route via the JPype bridge singleton.)
+
+**`_ranking_handler.py`** has **NO upstream `argumentation_analysis.*`
+imports AND NO sibling upstream imports** -- only stdlib (`jpype`,
+`logging`, `typing`). The class symbol is therefore **import-safe today**;
+ONLY JPype-Tweety singletons are referenced (`jpype.JClass`,
+`jpype.JException`, plus 5 `org.tweetyproject.arg.*` FQNs at construction
+time).
+
+The lazy accessors `argumentation_lib.get_af_handler_symbol()` and
+`argumentation_lib.get_ranking_handler_symbol()` preserve the API symmetry
+with C184/C185/C186a/C186b/C186c accessors. The `_af_handler.py` accessor
+does **not** bypass the top-level `tweety_initializer` import (same caveat
+as C186c modal_handler); the `_ranking_handler.py` accessor is fully
+import-safe today. Runtime usability for both awaits Volet B etape 4
+sub-tranches C186f (TweetyInitializer) and C186g (runtime bridge shim).
+
+**Sub-tranche plan (after this PR)** :
+
+- **C186e** (PR #5253 MERGED) : `belief_revision_handler.py` +
+  `probabilistic_handler.py` + `dialogue_handler.py` = 463L.
+- **C186f** (awaiting) : `tweety_initializer.py` 365L.
+- **C186g** (this PR) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L.
+
+**Excluded by ai-01 mandate** (gap NL->structured) : `bipolar_handler.py`,
+`aba_handler.py`, `aspic_handler.py`. **Out of scope** : `setaf_handler.py`,
+`weighted_handler.py`, `social_handler.py` (not imported by upstream
+`tweety_bridge.py:29-41`).
+
+Volet B etape 4 sub-tranche C186e (belief_revision + probabilistic + dialogue)
+--------------------------------------------------------------------------------
+
+PR #5253 (C186e) added `_belief_revision_handler.py` (158L),
+`_probabilistic_handler.py` (152L), and `_dialogue_handler.py` (153L) as
+verbatim copies of the EPITA-IS belief revision, probabilistic argumentation,
+and Walton-Krabbe dialogue protocol handlers at commit `a8025f60`. Together
+they cover the **higher-order argumentation runtime stack**: AGM belief
+revision operators (Dalal/Levi/kernel contraction), probabilistic acceptance
+computation (subgraph enumeration over Dung grounded extensions), and
+two-agent dialogue protocol execution (round-by-round grounded-extension
+reconciliation).
+
+Symbols exposed (3 public via lazy accessors):
+
+- `get_belief_revision_handler_symbol()` -> `BeliefRevisionHandler` class
+- `get_probabilistic_handler_symbol()` -> `ProbabilisticHandler` class
+- `get_dialogue_handler_symbol()` -> `DialogueHandler` class
+
+Verbatim integrity:
+
+- `_belief_revision_handler.py` body SHA1=`2b02bd64800e9b8c47489cba94ba03cd42b8948d`
+  (158L, no prelude, starts with `"""Handler for Belief Revision`).
+- `_probabilistic_handler.py` body SHA1=`069b33d5911dde5f48afbcd594e60a8ccf11abff`
+  (152L, no prelude, starts with `"""Handler for Probabilistic Argumentation`).
+- `_dialogue_handler.py` body SHA1=`4a54ff9dda76a310d5eecc5499ef9b23cd2fd731`
+  (153L, no prelude, starts with `"""Handler for Dialogue Protocols`).
+- LF line endings (no CRLF), UTF-8 (no BOM), full upstream SHA1 == body SHA1
+  (no shebang prelude). Em-dash characters (U+2014) and other non-ASCII
+  bytes preserved byte-equal (verified by automated header+body build
+  script, not hand-transcribed -- cf `build_c186e.py` archive).
+
+Dependency disclosure (G.9 honest caveat):
+
+**All 3 C186e files** have **NO upstream `argumentation_analysis.*` imports
+AND NO sibling upstream imports** -- only stdlib (`jpype`, `logging`,
+`typing`). The class symbols are therefore **import-safe today**; ONLY
+JPype-Tweety singletons are referenced (`jpype.JClass`, plus several
+`org.tweetyproject.logics.pl.syntax.*`, `org.tweetyproject.beliefdynamics.*`,
+`org.tweetyproject.arg.dung.syntax.*`, `org.tweetyproject.math.probability.*`,
+and `org.tweetyproject.arg.dung.reasoner.SimpleGroundedReasoner` FQNs).
+
+G.9 surface test verified for all 3:
+
+```python
+from argumentation_lib._belief_revision_handler import BeliefRevisionHandler  # OK
+from argumentation_lib._probabilistic_handler import ProbabilisticHandler        # OK
+from argumentation_lib._dialogue_handler import DialogueHandler                  # OK
+```
+
+Failing any of these would mean the verbatim block was modified.
+
+Instantiation WILL fail at runtime until the JPype bridge singleton from
+C184 (`argumentation_lib.initialize_jvm`) is initialized and the target
+classes are exposed by the JVM. Until the JPype-Tweety bridge is properly
+initialized (sub-tranche C186g runtime bridge shim), the lazy accessors
+return the class symbols without triggering instantiation.
+
+The lazy accessors preserve the API symmetry with C184/C185/C186a/C186b/
+C186c/C186d accessors. Runtime usability for all 3 awaits Volet B etape 4
+sub-tranches C186f (TweetyInitializer) and C186g (runtime bridge shim).
+
+**Sub-tranche plan (after this PR)** :
+
+- **C186f** (this PR) : `tweety_initializer.py` 365L -- initializer isole,
+  gates C186c/C186d runtime (AFHandler + ModalHandler).
+- **C186g** (this PR) : runtime bridge shim `_jvm_shutdown_shim.py` ~10L
+  wrapping `argumentation_lib.shutdown_jvm` from C184's `_jvm_compat.py`.
+
+**Excluded by ai-01 mandate** (gap NL->structured) : `bipolar_handler.py`,
+`aba_handler.py`, `aspic_handler.py`. **Out of scope** : `setaf_handler.py`,
+`weighted_handler.py`, `social_handler.py` (not imported by upstream
+`tweety_bridge.py:29-41`).
+
+Volet B etape 4 sub-tranche C186f (tweety_initializer)
+-------------------------------------------------------
+
+PR #5255 (C186f) added `_tweety_initializer.py` (365L) as a verbatim copy
+of the EPITA-IS `tweety_initializer.py` module at commit `a8025f60`. This
+is the **central JPype-Tweety bridge initializer** that gates the runtime
+initialization of all 12 logic handlers imported by upstream
+`tweety_bridge.py:29-41` -- including the `TweetyInitializer` class, the
+FOL/PL/modal Java class pre-loading, and the singleton `_classes_loaded` /
+`_initialized_components` / `_jvm_started` state flags.
+
+Symbols exposed (1 public via lazy accessor):
+
+- `get_tweety_initializer_symbol()` -> `TweetyInitializer` class (lazy import)
+
+Verbatim integrity:
+
+- `_tweety_initializer.py` body SHA1=`ed4e60adc584ca34f96170c28f6d6f21cf449382`
+  (365L, no prelude, starts with `"""Gestionnaire d'initialisation pour
+  les composants Tweety`).
+- LF line endings (no CRLF), UTF-8 (no BOM), full upstream SHA1 == body
+  SHA1 (no shebang prelude). UTF-8 French accents (`Gestionnaire
+  d'initialisation`) preserved byte-equal (verified by automated
+  header+body build script, not hand-transcribed -- cf `build_c186f.py`
+  archive, cycle 9 lesson on `Read` tool UTF-8 corruption).
+
+Dependency disclosure (G.9 honest caveat -- triple-disclosed):
+
+This file ships **3 EPITA-IS-internal sibling imports at module-load** that
+are NOT vendored in `argumentation_lib/`:
+
+  L11: `from argumentation_analysis.core.utils.logging_utils import setup_logging`
+  L14-17:
+    `from argumentation_analysis.core.jvm_setup import (`
+    `    initialize_jvm as initialize_jvm_robustly,`
+    `)`
+  L17: `from argumentation_analysis.core.jvm_setup import shutdown_jvm, is_jvm_started`
+
+Therefore this module is **NOT standalone-importable today**: even the
+module-level `import argumentation_lib._tweety_initializer` raises
+`ModuleNotFoundError: No module named 'argumentation_analysis'` because
+the top-level imports cannot resolve.
+
+G.9 surface test verified:
+
+```python
+from argumentation_lib._tweety_initializer import TweetyInitializer  # FAIL
+# -> ModuleNotFoundError: No module named 'argumentation_analysis'
+```
+
+Failing the surface test is the G.9 fingerprint that proves the verbatim
+block is honest, not fabricated. The lazy accessor
+`argumentation_lib.get_tweety_initializer_symbol()` preserves the class
+symbol path API symmetry with C184/C185/C186a-e accessors but does **not**
+bypass the top-level imports.
+
+**Why deliver the verbatim copy anyway** (G.9 honesty over abandonment):
+the body is the authoritative source for the eventual bridge shim in
+C186g (which will re-export `setup_logging` + `initialize_jvm_robustly` /
+`shutdown_jvm` / `is_jvm_started` from a CoursIA-vendored
+`_jvm_setup_compat.py` plus the existing `_jvm_compat.py` from C184).
+Preserving it byte-for-byte in `argumentation_lib/` documents the exact
+contract the shim must satisfy. The cost is a 401-line file (36L MIT
+header + 365L body) that is currently dead-weight (cannot be imported);
+the benefit is no drift between this reference and the eventual shim.
+
+**Sub-tranche plan (after this PR)** :
+
+- **C186g** (this PR) : runtime bridge shim `_jvm_shutdown_shim.py`
+  ~10L wrapping `argumentation_lib.shutdown_jvm` from C184's
+  `_jvm_compat.py` + re-export of `setup_logging` from a future
+  `_logging_utils_compat.py` (gated by user-machine JVM setup).
+
+**Excluded by ai-01 mandate** (gap NL->structured) : `bipolar_handler.py`,
+`aba_handler.py`, `aspic_handler.py`. **Out of scope** : `setaf_handler.py`,
+`weighted_handler.py`, `social_handler.py` (not imported by upstream
+`tweety_bridge.py:29-41`).
+Volet B etape 4 sub-tranche C186g (_jvm_setup_compat runtime shim)
+----------------------------------------------------------
+
+PR #5258 (C186g) added `_jvm_setup_compat.py` (186L) as a **CoursIA-
+owned G6 glue shim**, NOT a verbatim upstream port.  Per ai-01 verdict
+`msg-20260703T155506-3gv1da` Q3: "Shim minimal de cycle-de-vie JVM
+(garde atexit/context-manager) accepte. Garde-le glue-fin : purete
+verbatim preservee pour le core, le shim est de la colle, pas du port."
+
+## Purpose
+
+The verbatim upstream `_tweety_initializer.py` (C186f) imports at
+module-load time 3 EPITA-IS-internal siblings that are NOT vendored in
+`argumentation_lib/`:
+
+```python
+from argumentation_analysis.core.utils.logging_utils import setup_logging
+from argumentation_analysis.core.jvm_setup import (
+    initialize_jvm as initialize_jvm_robustly,
+)
+from argumentation_analysis.core.jvm_setup import shutdown_jvm, is_jvm_started
+```
+
+The `argumentation_analysis` package is EPITA-IS-internal and is
+**never vendored** in `argumentation_lib/` (vendor time would explode,
+and CoursIA's `init_tweety()` infrastructure is already superior to
+EPITA's `jvm_setup.py` -- see `_jvm_compat.py` C184 header for the
+rationale).
+
+Instead of vendoring the upstream module, this shim registers
+`argumentation_analysis.core.{jvm_setup,utils.logging_utils}` as
+virtual `sys.modules` proxies that re-export:
+
+- `initialize_jvm_robustly / initialize_jvm / shutdown_jvm / is_jvm_started`
+  -> `_jvm_compat.py` (C184)
+- `setup_logging(name)` -> stdlib-only single-handler INFO+Stderr shim
+
+The verbatim imports then resolve transparently -- the upstream
+contract is satisfied without duplicating the upstream sources.
+
+## Implementation shape (186L, ASCII-only)
+
+| Component | Lines | Notes |
+| --- | --- | --- |
+| Module docstring + module-load-time `install_epita_namespace_shim()` call | ~50 | Idempotent, best-effort (preserves G.9 fingerprint on failure) |
+| `_build_setup_logging()` factory | ~30 | Stdlib-only single-callable; idempotent (no-op if logger already has handlers) |
+| `install_epita_namespace_shim()` (proxy registration) | ~70 | Builds `types.ModuleType` proxies under `sys.modules["argumentation_analysis.*"]`; idempotent via `_PROXY_INSTALLED` flag |
+| `__all__` + comments | ~30 | API surface declaration |
+
+Composed by `build_c186g.py` (cycle 10 lesson: ASCII-only source, no
+UTF-8 corruption surface to worry about for shim code).
+
+## G.9 honest caveat (NOT verbatim -- fabrication-prime)
+
+`_jvm_setup_compat.py` is a **CoursIA-owned G6 glue shim**, not a
+verbatim upstream copy.  License is implicit CoursIA-internal
+(per CLAUDE.md §A "Code avant documentation").  No SHA1 byte-equal
+attestation vs upstream because there is no upstream 1:1 source --
+this is intentional glue, not a port.
+
+G.9 surface test (verified post-PR):
+
+```python
+import argumentation_lib
+# Side-effect: shim installs the EPITA namespace proxies at __init__ load.
+
+from argumentation_lib._tweety_initializer import TweetyInitializer
+# Was: ModuleNotFoundError: No module named 'argumentation_analysis'
+# Now: <class 'argumentation_lib._tweety_initializer.TweetyInitializer'>
+```
+
+## Scope / non-scope
+
+**In scope** (this PR closes):
+
+- Unblock `_tweety_initializer.py` (C186f) standalone import
+- Unblock `_tweety_bridge.py` (C186a) line 485 lazy import of
+  `from argumentation_analysis.core.jvm_setup import shutdown_jvm`
+- Provide `setup_logging(name)` for the C186 chain (stdlib-only)
+- Install proxies automatically as a side-effect of `import argumentation_lib`
+  (top-of-`__init__.py` `from argumentation_lib import _jvm_setup_compat`)
+
+**Out of scope** (deferred to a future sub-tranche -- NOT closing
+EPIC #4960 chain here, but flagging):
+
+- `_af_handler.py` upstream does `from .tweety_initializer import
+  TweetyInitializer` (no underscore prefix), which the CoursIA file
+  `_tweety_initializer.py` does NOT satisfy.  This is a **CoursIA
+  naming-vs-upstream-naming** mismatch, separate from the EPITA
+  namespace injection.  A future tranche would either rename the
+  upstream import (anti-regression D risk) or add a `_tweety_initializer`
+  shim alias file.  Tracked but not delivered in C186g.
+- PL/FOL/modal handlers also import broader upstream
+  `argumentation_analysis` siblings (e.g.
+  `argumentation_analysis.core.config.settings`,
+  `argumentation_analysis.core.prover9_runner.run_prover9`,
+  `argumentation_analysis.core.mace4_runner.MACE4_EXECUTABLE`,
+  `argumentation_analysis.agents.core.logic.pl_formula_sanitizer`,
+  `argumentation_analysis.agents.core.logic.fol_logic_agent`).  These
+  are C186h+ work.  The C186g shim does not unblock the wider
+  handler chain -- only the C186f initializer + C186a bridge line 485.
+
+## Build approach
+
+`build_c186g.py` (cycle 10 lesson applied: ASCII-only source string
++ `wb`-equivalent write + SHA1 round-trip verification + ASCII-only
+sanity check) -> `_jvm_setup_compat.py` 186L.
+
+Idempotent rebuild (same SHA1).  Deterministic output (no timestamps,
+no random state).
+
+## Sub-tranche plan (chain completion -- See #4960)
+
+After this PR, the **C186 chain is structurally complete** at the
+EPITA-namespace-injection level.  Further handler-import unblocking
+is documented above as out-of-scope sub-tranches (NOT closing EPIC
+#4960 here -- the wider C186h+ work for PL/FOL/modal/AF handler
+imports is a separate Epic sub-tranche).
+
+## Anti-regression D
+
+0 `pass`, 0 `return None`, 0 `sorry`, 0 `raise NotImplementedError`
+introduced in the shim.  Every public symbol either re-exports
+`_jvm_compat` (C184) or stdlib-only `logging`.  No derivation logic.
+What this NOTICE does NOT cover
+-------------------------------
+
+- `Argumentum/` submodule (Argumentum upstream, LGPL-3.0): see submodule `LICENSE`
+  and its own NOTICE chain (`data/NOTICE`, `data/NOTICE-VIRTUES`).
+- `TweetyProject/` and `Tweety/dotnet-build/` (Tweety Jars, LGPL-2.1): see their
+  respective NOTICE entries.
+- `ext_tools/`, `libs/`, `node_modules/`, `htmlcov*` directories: vendored
+  third-party material, each with its own LICENSE.
+- Notebook execution outputs: cleared on commit per C.2/C.3 notebook conventions.
+
+Updating this NOTICE
+--------------------
+
+When a verbatim file is updated to a newer upstream commit, edit the
+"Upstream commit" column above, verify byte-for-byte identity (sha1sum), and
+update the per-file header to cite the new commit. The header update is part
+of the same atomic PR as the content update -- never commit the content
+update without the NOTICE update (and vice versa).

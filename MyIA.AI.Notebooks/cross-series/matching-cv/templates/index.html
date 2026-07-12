@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Application de Matching CV</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>Application de Matching de CV</h1>
+    
+    <form action="/" method="post" enctype="multipart/form-data">
+        <p>Vous pouvez lancer le matching avec les données pré-chargées ou uploader vos propres fichiers CSV.</p>
+        <div class="form-group">
+            <label for="consultants_file">Fichier des consultants (optionnel):</label>
+            <input type="file" id="consultants_file" name="consultants_file" accept=".csv">
+        </div>
+        <div class="form-group">
+            <label for="jobs_file">Fichier des fiches de poste (optionnel):</label>
+            <input type="file" id="jobs_file" name="jobs_file" accept=".csv">
+        </div>
+        <div class="form-group">
+            <label>Choisissez l'algorithme de matching :</label>
+            <div>
+                <input type="radio" id="simple_matching" name="matching_algorithm" value="simple" checked>
+                <label for="simple_matching">Matching Simple (Mots-clés)</label>
+            </div>
+            <div>
+                <input type="radio" id="best_score_semantic_matching" name="matching_algorithm" value="best_score_semantic">
+                <label for="best_score_semantic_matching">Matching Sémantique (Meilleur score)</label>
+            </div>
+            <div>
+                <input type="radio" id="stable_semantic_matching" name="matching_algorithm" value="stable_semantic">
+                <label for="stable_semantic_matching">Matching Sémantique (Stable)</label>
+                <div class="sub-options" id="stable_semantic_options" style="margin-left: 20px; display: none;">
+                    <input type="radio" id="proposing_consultants" name="proposing_party" value="consultants" checked>
+                    <label for="proposing_consultants">Optimisé pour les Consultants</label>
+                    <br>
+                    <input type="radio" id="proposing_jobs" name="proposing_party" value="jobs">
+                    <label for="proposing_jobs">Optimisé pour les Postes</label>
+                </div>
+            </div>
+        </div>
+        <br>
+        <button type="submit">Lancer le Matching</button>
+    </form>
+
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    {% if no_results %}
+        <div class="alert alert-info">Aucun matching trouvé.</div>
+    {% endif %}
+
+    {% if results %}
+        <h2>Résultats du Matching</h2>
+        <div class="table-container">
+            {{ results|safe }}
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const stableMatchingRadio = document.getElementById('stable_semantic_matching');
+        const stableOptionsDiv = document.getElementById('stable_semantic_options');
+        const otherRadios = document.querySelectorAll('input[name="matching_algorithm"]:not(#stable_semantic_matching)');
+
+        function toggleStableOptions() {
+            if (stableMatchingRadio.checked) {
+                stableOptionsDiv.style.display = 'block';
+            } else {
+                stableOptionsDiv.style.display = 'none';
+            }
+        }
+
+        stableMatchingRadio.addEventListener('change', toggleStableOptions);
+        otherRadios.forEach(radio => {
+            radio.addEventListener('change', toggleStableOptions);
+        });
+
+        // Initial check
+        toggleStableOptions();
+    });
+</script>
+
+</body>
+</html>

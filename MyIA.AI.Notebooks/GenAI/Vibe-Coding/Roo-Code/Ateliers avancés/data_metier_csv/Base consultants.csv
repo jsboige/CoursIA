@@ -1,0 +1,56 @@
+Nom,Poste,Expériences clés,Compétences,Disponibilité,Localisation,Séniorité,Langues
+Jean Dupont,Développeur fullstack,"Migration vers Azure, pipelines ETL Python","Java, Angular, Node.js",2025-07-01,Lyon,Confirmé,"Français, Anglais"
+Marie Martin,Product Owner,"Refonte web, Réponse aux appels d'offres, Création site web","Figma, Axure, Jira, Redmine, Trello, Notion, Drupal, Wordpress, HTML, CSS, Suite Adobe",2025-06-30,Paris,Senior,"Français, Anglais, Espagnol"
+Pierre Bernard,Développeur mobile,Développement mobile iOS,"Swift-UI, Objective-C, Combine, TCA, RxSwift, Promise",2025-07-01,Paris,Senior,Français
+Sophie Petit,Développeur back end,"Data, Sécurité et CRM","Go, Scala, PHP",ASAP,Paris,Senior,Français
+Thomas Richard,Développeur fullstack,Refonte web,"Typescript, Node, React",ASAP,Paris,Senior,Français
+Claire Moreau,Développeur,Migration,"Java, Angular, Archi micro-services, Spring, Spring Boot",Indéterminé,Paris,Senior,"Français, Anglais"
+Antoine Durand,Product Owner,"Fonctionnel design, ios-android, web","Jira, Confluence, Figjam, Miro, GA4",2025-12-31,Paris,Senior,"Français, Anglais"
+Julie Leroy,Chef de projet,e-commerce,"Confluence, Jira, Trello, Slack, RedMine",,Normandie,Senior,Français
+Nicolas Lambert,Product Owner,"Migration, montée de version, e-commerce",,2025-12-31,Paris,Senior,Français
+Camille Girard,Project Manager,"avant/après vente, support produit cybersécurité",,Indéterminé,Paris,Senior,"Français, Anglais"
+Lucas Roux,Data Scientist,NLP et machine translation,"NLP, PySpark, Python, AWS",ASAP,Paris,Senior,Français
+Emma Fournier,Consultant Data,"Migration DataSet, Digitalisation","Snowflake, Power BI, AWS, DTB, Click View",Indéterminé,Paris,Confirmé,"Français, Anglais"
+Hugo Lefebvre,Data Engineer,"Création d'outil IA, NLP","GCP, AWS, Huawei",Indéterminé,Paris,Senior,"Français, Anglais"
+Léa Mercier,Lead Data Engineer,"Architecture Data, Réduction des coûts","Azure, Spark, Databricks",Indéterminé,Antibes,Senior,"Français, Anglais"
+Maxime Vincent,Développeur fullstack,"Migration, développement d'API, microservice","Go, PHP",ASAP,Chatenay-Malabry,Senior,"Français, Anglais"
+Manon Bonnet,Développeur fullstack,"CRM, Reporting, Authentification, signature électronique","Java, JEE, SQL, Javascript, SpringBoot, Jenkins",Indéterminé,Saint-Ouen,Senior,"Français, Anglais"
+Alexandre Dubois,Product Owner,Mise en place nouvelles fonctionnalités,"Jira, AB test, SEA, agile scrum, html, CSS, javascript, C++",2026-03-31,Aubervilliers,Senior,"Français, Anglais"
+Chloé Fontaine,QA Testeur,"Test manuel et fonctionnel, de performance","Jira, Squash, Confluence",Indéterminé,Chaville,Junior,"Français, Anglais"
+Romain Chevalier,Product Owner,Gestion d'applications mobiles et Web,"G Suite, Microsoft Office, JIRA, Confluence, Azure DevOps",Indéterminé,Suresnes,Senior,"Français, Anglais"
+Pauline Morel,Ingénieur test et validation,"Test manuel et fonctionnel, de performance","G Suite, Microsoft Office, JIRA, Confluence, Azure DevOps",Indéterminé,Neuilly-sur-Marne,Confirmé,Français
+Julien Boyer,Ingénieur test et validation,"Test manuel et fonctionnel, de performance","Pack-office, photoshop, HTML/CSS, Wordpress, javascript",Indéterminé,Montreuil,Confirmé,"Français, Anglais"
+Marine Rousseau,Product Owner,Déploiement d'outil CRM,"Agile, SQL, Google Sheet, Excel, Scrum, Kanban",Indéterminé,Louvain-la-Neuve,Senior,"Français, Anglais"
+Kevin Blanc,QA Testeur,"Test fonctionnel, AWS test, API Test, Test backend","EDM, Autosys, Jira, MSSQL, Eclipse IDE, Selenium, Maven, TestNG, Junit, Cucumber, Core Java",Indéterminé,Versailles,Senior,Anglais
+Amélie Garnier,Software Engineer,"Développement back end, lead","JAVA 8, Groovy, C/C++, JSP, HTML5, AngularJS, Python",Indéterminé,Paris,Senior,"Anglais, Français"
+Florian Simon,Consultant test et validation,"Test manuel et fonctionnel, de performance","Squash ALM, Jira",Indéterminé,Enghien-les-Bains,Junior,"Français, Anglais"
+Laura Henry,Ingénieur support,Installation poste de travail,"SCCM, Intune, Microsoft, Windows, Autopilot, Glpi",2025-06-30,Gennevilliers,Confirmé,"Français, Anglais"
+Baptiste Muller,Intégrateur,"Test manuel et fonctionnel, de performance","Jira, Squash, Confluence",Indéterminé,Viry-Chatillon,Junior,"Anglais, Français"
+Sarah Legrand,Ingénieur validation,"Test manuel et fonctionnel, de performance","Jira, Squash, Confluence",Indéterminé,Paris,Junior,"Français, Anglais"
+Damien Faure,ML Engineer,Entrainement de modèle,"Python, Pytorch, tensorflow, Airflow, MLFlow, docker, Pandas, AWS, Terraform, Linux, Bash",Indéterminé,Villejuif,Senior,Français
+Océane André,SRE,RUN,"kubernetes, Ansible, Docker, Monitoring",Indéterminé,Paris,Junior,"Français, Anglais"
+Guillaume Perrin,Project Manager,CRM,,Indéterminé,Paris,Confirmé,"Français, Anglais"
+Charlotte Lemaire,Product Owner,"Création de site web, migration site web",,Indéterminé,Paris,Confirmé,"Français, Anglais"
+Alexis Robin,SRE,RUN,"Azure, AWS, Terraform, Ansible, Docker, Kubernetes, Bash, Linux, Grafana, Prometheus, Zabbix, Kibana",Indéterminé,Chevilly-Larue,Confirmé,"Français, Anglais"
+Lucie Michel,Data Lead,Mise en place plateforme Data,"AirFlow, Spark, Kubernetes, Helm, Kerberos, Oauth2",Indéterminé,Montrouge,Senior,"Français, Anglais"
+Victor Clément,Ingénieur Support,"N2, N3","PowerShell, FileZilla, Putty, MobaXterm, Citrix, Django, Shell, Firewalld",Indéterminé,Ermont,Senior,"Français, Anglais"
+Inès David,Développeur embarqué,Développement web,"C++, Python 3, Javascript",Indéterminé,Argenteuil,Confirmé,"Français, Anglais"
+Mathieu Bertrand,Ingénieur système et réseaux,"Systèmes, Virtualisation, Réseaux, Sécurité","IAM, S3, Route 53, EC2, Databases, VPC, SQS, SNS, API Gateway, Lambda",Indéterminé,Pantin,Confirmé,"Français, Anglais"
+Emilie Morin,Ingénieur support,"N2, N3","Kubernetes, Docker, Ansible, Terraform, Jenkins",Indéterminé,Créteil,Confirmé,"Français, Anglais"
+Nathan Joly,QA,"Test manuel et fonctionnel, test automatisé","SQUASH, Gitlab, Postman, Kibana",Indéterminé,Noisy-le-Sec,Senior,"Français, Anglais"
+Eva Masson,Data Analyst,"Création de tableau de bord, visualisation, web analytics","Looker studio, Tableau, Power BI, SQL, Python",Indéterminé,Paris,Senior,"Français, Anglais"
+Arthur Lopez,DevOps,RUN,"python, shell, Azure, GCP, AWS, terraform, ansible, postgresql, sql",Indéterminé,Antony,Senior,Français
+Margot Sanchez,DevOps,Cloud,"Terraform, CI/CD, prometheus",Indéterminé,Les Mureaux,Senior,Français
+Gabriel Picard,Tech Lead DevOps,BUILD,"microsoft, C#, .netcore, framework JS, Docker",Indéterminé,Val-de-Marne,Senior,"Français, Anglais"
+Elisa Garcia,Consultant BigData et DevOps,RUN,"Ansible, terraform, python, Shell, Virtualisation Docker, VMWare, Openstack",Indéterminé,Deuil-la-Barre,Senior,"Français, Anglais"
+Louis Martinez,Azure Cloud Architect et DevOps Tech Lead,"Migration, RUN","Architecture, Infrastructure, MS Azure, CI/CD, Ansible, Terraform",Indéterminé,Nanterre,Senior,"Français, Anglais"
+Zoé Thomas,Test et Validation,"STB, Réseau, test manuel et fonctionnel","Cisco Webex, Citrix, Linux, Wireshark, Postman, FileZilla, VMWare",ASAP,Paris,Junior,"Français, Anglais"
+Raphaël Robert,Ingénieur IVVQ DevOps IA BigData,"paramétrage, automatisation, Test de résilience et sécurité","firewall, cisco, linux, Windows, Docker, kubernetes, ansible, Python",Indéterminé,Vélizy-Villacoublay,Senior,"Français, Anglais"
+Clara Fernandez,Ingénieur Test et Validation,"Test fonctionnel, manuel","wireshark, postman",Indéterminé,Lyon,Junior,"Français, Anglais"
+Théo Guérin,Auditeur SSI,Audit sécurité,,Indéterminé,Clamart,Senior,"Français, Anglais"
+Alice Dumont,DevOps Engineer,RUN,"Unix, AWS, GCP, MongoDB, MySQL, Ruby on Rails, Nginx, Terraform, Docker, Gitlab, Jenkins, Ansible, Datadog",Indéterminé,Antony,Confirmé,"Français, Anglais"
+Quentin Lecomte,Ingénieur Test et Validation,"test fonctionnel, de non régression","Jira, Wireshark, Linux, APIs, VoIP, SIP, IPTV, MobaXterm",Indéterminé,Cachan,Junior,"Français, Anglais"
+Anaïs Barbier,Ingénieur Test et Validation,"test fonctionnel, test manuel","Unix, ADB, Wireshark, Python, Matlab, simulink",Indéterminé,Montrouge,Junior,"Français, Anglais"
+Benjamin Caron,Chef de projet Data,pilotage de projet web,"Trello, Business Object, Tableau, ODI, Jira, PostgreSQL",Indéterminé,Lille,Senior,"Français, Anglais"
+Justine Laurent,Chef de projet Integration Data,pilotage technique de projet,"TCP/IP, Active Directory, DNS, HTTPS, SSH, Firewall, Routage, VPN, API Gateway",Indéterminé,Bondy,Senior,"Français, Anglais"
+William Renaud,Tech Lead Azure DataOps Engineer,Machine Learning Data Ops,"Azure, AWS, GPU, OpenAI, Docker, Kubernetes",Indéterminé,Issy-les-Moulineaux,Confirmé,"Français, Anglais"

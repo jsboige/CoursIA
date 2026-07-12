@@ -1,0 +1,47 @@
+name: Lean Conway CI
+
+# CI for conway_lean (SymbolicAI/Lean/conway_lean).
+# Conway's Game of Life formalization (Hashlife, Kochen-Specker, Free Will).
+# Rule lean-merge-discipline: lake build SUCCESS local OBLIGATOIRE avant merge.
+#
+# Consolidated per ai-01 DRY decision (option 2: matrix). Supersedes the inline
+# version in PR #2747 (same standalone-tactic mode, same baseline 8, now via the
+# shared lean-build.yml reusable workflow).
+#
+# Sorry profile (re-verified 2026-06-16, standalone-tactic mode, baseline=7):
+# conway has 7 real tactic sorries, ALL in HashlifeCorrectness.lean. The
+# standalone-tactic filter now also counts the Lean case-bullet form `· sorry`
+# (fixed in lean-build.yml, See #2747); the prior regex silently dropped it, so
+# CI reported 6 while the real count was 7 (1 unit of hidden slack). Prose
+# mentions ("Each sorry is a target", "Left as sorry", "remain sorry-gated")
+# are excluded by the sole-token check. Breakdown of the 7:
+#   - HashlifeCorrectness.lean: 7 (6 standalone P4/P5 + 1 case-bullet P5)
+#   - HashlifeMemo.lean:        0 (discharged since #2794, Phase 3c)
+#   - Pillars.lean:             0 (discharged since #2790, scaffolding witnesses)
+# Raising this baseline requires a documented justification in the PR body.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      display-name: conway_lean
+      sorry-baseline: "7"
+      sorry-filter-mode: standalone-tactic

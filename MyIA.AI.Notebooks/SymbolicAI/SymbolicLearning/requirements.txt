@@ -1,0 +1,40 @@
+# SymbolicLearning - Python Dependencies
+# Install: pip install -r requirements.txt
+#
+# SL-1, SL-2: standard library only (no external deps)
+# SL-3: numpy + scikit-learn (RBL vs sklearn comparison)
+# SL-4: standard library (FOIL/resolution inverse from scratch) + Popper (cf. moteurs reels ci-dessous)
+# SL-5: numpy (LGG/theta-subsomption/clause bottom from scratch) + Aleph (cf. moteurs reels ci-dessous)
+# SL-6: Aleph + Metagol + Popper + dILP -- 4 moteurs ILP REELS (cf. moteurs reels ci-dessous)
+# SL-7: torch + LTNtorch (integration neuro-symbolique, vraie librairie LTN)
+# SL-8: rdflib + clingo (Knowledge Graphs, AMIE rule mining, ASP)
+# SL-9, SL-11: openai + python-dotenv (integration LLM reelle via .env)
+# SL-10: standard library (L* d'Angluin)
+
+# Scientific computing (SL-3, SL-5)
+numpy>=1.24
+scikit-learn>=1.2              # Information mutual comparison (SL-3)
+
+# Knowledge Graphs (SL-8)
+rdflib>=7.0                    # RDF graph manipulation, AMIE rule mining
+
+# Neuro-symbolique (SL-7)
+torch>=2.0                     # CPU suffit pour les demos
+LTNtorch>=1.0                  # ATTENTION : pas "pip install ltn" (homonyme TensorFlow)
+
+# Integration LLM (SL-9, SL-11)
+openai>=1.0                    # client pour tout endpoint OpenAI-compatible
+python-dotenv>=1.0             # chargement du .env (cf. .env.example)
+
+# ---------------------------------------------------------------------------
+# Moteurs ILP REELS (SL-4, SL-5, SL-6) -- PAS des paquets pip-into-main :
+#   - Aleph    : pack SWI-Prolog -> `swipl` + `janus_swi` (pip) ; pack auto-installe
+#                par le notebook via pack_install(aleph). Pont Python<->Prolog.
+#   - Metagol  : interpreteur Prolog vendore dans vendor/metagol/metagol.pl (BSD-3),
+#                charge par `swipl` -- rien a pip-installer.
+#   - Popper   : `pip install popper-ilp` MAIS Linux uniquement (depend de SIGALRM)
+#                -> kernel python3-wsl. Requiert aussi clingo (ASP).
+#   - dILP     : Lernd (github.com/crunchiness/lernd, GPL-3.0) dans un env conda
+#                DEDIE (python 3.8/3.9 + tensorflow==2.7.2), appele en sous-processus.
+#                NE PAS vendorer (GPL) ; `conda create -n lernd-dilp ...` separe.
+#                Le notebook localise l'env via la variable LERND_PYTHON.

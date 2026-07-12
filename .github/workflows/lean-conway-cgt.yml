@@ -1,0 +1,31 @@
+name: Lean CI (conway_cgt_lean)
+
+# CI for conway_cgt_lean (GameTheory/conway_cgt_lean).
+# Combinatorial game theory port. 0 sorry (raw=0, verified). Toolchain v4.31.0-rc1.
+# Consolidated per ai-01 DRY decision (option 2: matrix). See lean-build.yml.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lean-toolchain'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/GameTheory/conway_cgt_lean
+      display-name: conway_cgt_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: standalone-tactic

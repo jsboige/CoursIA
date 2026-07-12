@@ -1,0 +1,120 @@
+# FishAudio S2-Pro TTS Service - BnB 4-bit NF4 quantized
+# API server with CUDA support on GPU1 (RTX 3090 24GB)
+#
+# GPU: RTX 3090 (24GB) - ~5GB VRAM with BnB 4-bit quantization
+# Port: 8197
+# API: POST /v1/tts, GET /v1/health
+# Docs: http://localhost:8197/docs
+#
+# Notes:
+#   - Model S2-Pro BnB 4-bit (~3GB model.pth) must be in checkpoints/s2-pro-bnb4/
+#   - tokenizer.json must be present (generated from Qwen2.5 base + FishAudio special tokens)
+#   - config.json required (fish_qwen3_omni format)
+#   - Reference voices stored in ./references/ (sample.wav + sample.lab)
+#   - S2 Pro supports 15000+ emotion tags: (whisper), (shout), (laugh)...
+#   - Use parenthesis syntax for emotions: (angry), (sad), (excited)
+#   - BnB 4-bit reduces VRAM from ~18GB to ~5GB (NF4 quantization)
+#   - Image: fishaudio/fish-speech:server-cuda-bnb4 (patched upstream + bnb4 support)
+
+services:
+  tts-fishaudio:
+    image: fishaudio/fish-speech:server-cuda-bnb4
+    container_name: tts-fishaudio
+    hostname: tts-fishaudio
+
+    ports:
+      - "127.0.0.1:${FISHAUDIO_PORT:-8197}:8080"
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${FISHAUDIO_GPU_ID:-1}']
+              capabilities: [gpu]
+
+    volumes:
+      - type: bind
+        source: ${CHECKPOINTS_PATH:-./checkpoints}
+        target: /app/checkpoints
+      - type: bind
+        source: ${REFERENCES_PATH:-./references}
+        target: /app/references
+      - type: volume
+        source: fishaudio-cache
+        target: /root/.cache
+
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=${FISHAUDIO_GPU_ID:-1}
+      - LLAMA_CHECKPOINT_PATH=${LLAMA_CHECKPOINT_PATH:-checkpoints/s2-pro}
+      - DECODER_CHECKPOINT_PATH=${DECODER_CHECKPOINT_PATH:-checkpoints/s2-pro/codec.pth}
+      - DECODER_CONFIG_NAME=${DECODER_CONFIG_NAME:-modded_dac_vq}
+      - API_SERVER_NAME=0.0.0.0
+      - API_SERVER_PORT=8080
+      - PYTHONUNBUFFERED=1
+      - TZ=${TZ:-Europe/Paris}
+      - HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_TOKEN:-}
+      - HF_TOKEN=${HUGGINGFACE_TOKEN:-}
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/v1/health || exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 600s
+
+    restart: unless-stopped
+
+    networks:
+      - fishaudio-network
+
+    labels:
+      - "com.myia.service=tts-fishaudio"
+      - "com.myia.gpu=rtx-3090"
+      - "com.myia.model=fishaudio-s2-pro-bnb4"
+
+  # Sidecar: Idle Monitor - Stop container after inactivity
+  idle-monitor:
+    build:
+      context: ../shared
+      dockerfile: Dockerfile.idle-monitor
+    container_name: tts-fishaudio-idle-monitor
+    hostname: tts-fishaudio-idle-monitor
+
+    environment:
+      - HEALTH_URL=http://tts-fishaudio:8080/v1/health
+      - CONTAINER_NAME=tts-fishaudio
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
+      - CHECK_INTERVAL=${CHECK_INTERVAL:-60}
+      - STARTUP_GRACE=${STARTUP_GRACE:-600}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - TZ=${TZ:-Europe/Paris}
+
+    working_dir: /app
+
+    command: ["python", "service_idle_monitor.py"]
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    depends_on:
+      tts-fishaudio:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+    networks:
+      - fishaudio-network
+
+    labels:
+      - "com.myia.service=tts-fishaudio-idle-monitor"
+      - "com.myia.type=sidecar"
+
+volumes:
+  fishaudio-cache:
+    name: tts-fishaudio-cache
+
+networks:
+  fishaudio-network:
+    driver: bridge
+    name: fishaudio-network

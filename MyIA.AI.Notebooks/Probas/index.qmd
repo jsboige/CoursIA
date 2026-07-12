@@ -1,0 +1,219 @@
+---
+title: "Probas — Programmation probabiliste"
+subtitle: "Série pédagogique niveau 2 — Inférence exacte (Infer.NET) vs MCMC (PyMC), théorie de la décision, preuves Lean 4"
+description: "Série Probas du dépôt CoursIA — modèles graphiques, réseaux bayésiens, IRT, TrueSkill, HMM, LDA, Gaussian Processes, MDPs, bandits, indice de Gittins, formalisation Lean 4 de l'utilité espérée et du Gittins index."
+listing:
+  - id: infer-setup
+    contents: "Infer/Infer-1-Setup.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: infer-notebooks
+    contents: "Infer/Infer-[2-9]*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: infer-advanced
+    contents: "Infer/Infer-1[0-4]*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: infer-frontiers
+    contents: "Infer/Infer-1[5-9]*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: pymc-setup
+    contents: "PyMC/PyMC-1-Setup.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: pymc-notebooks
+    contents: "PyMC/PyMC-[2-9]*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: pymc-advanced
+    contents: "PyMC/PyMC-1[0-4]*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: dt-infer
+    contents: "DecisionTheory/DecInfer/Infer-*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: dt-pymc
+    contents: "DecisionTheory/PyMC/PyMC-*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: dt-causal-bridges
+    contents: "DecisionTheory/Causal-Bridges/*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: standalone-root
+    contents:
+      - "Infer-101.ipynb"
+      - "Pyro_RSA_Hyperbole.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+---
+
+::: {.series-banner}
+# Probas — Programmation probabiliste et théorie de la décision
+
+**L'incertitude n'est pas l'absence d'information, c'est une distribution.** Cette série forme sur deux axes complémentaires : **inférer** des distributions (Infer.NET message passing vs PyMC NUTS, sur les mêmes modèles : Gaussian Mixtures, IRT, TrueSkill, LDA, HMM, Kalman) et **décider** face à l'incertitude (utility espérée, MDPs, bandits, indice de Gittins — avec **preuves formelles Lean 4** pour les identités théoriques). À la fin, vous maîtrisez la boîte à outils probabiliste complète et vous savez **prouver formellement** les résultats clefs.
+:::
+
+## Vue d'ensemble
+
+La série Probas comporte **4 sous-séries principales + 1 racine standalone**, totalisant ~58 notebooks. Deux moteurs d'inférence sont volontairement juxtaposés (Infer.NET C# exact par message passing, PyMC Python MCMC par NUTS) sur les mêmes modèles pour faire valoir leurs compromis. Les deux arcs — bayésien (corpus principal 1-19/1-14) et décision (10 + 7 notebooks) — sont **physiquement séparés** (depuis #4725) tout en préservant le continuum pédagogique.
+
+| Sous-série | Notebooks | Stack | Focus |
+|------------|-----------|-------|-------|
+| **[Infer](Infer/README.md) (C#/.NET Interactive)** | 19 (+ Setup + _output.ipynb) | Infer.NET, EP/VMP | Corpus bayésien : fondations, modèles classiques (IRT, TrueSkill, LDA, HMM), frontières (causalité, GP, hiérarchiques, Kalman, change-point, survie) |
+| **[PyMC](PyMC/README.md) (Python)** | 14 (+ Setup) | PyMC, NUTS | Mêmes modèles qu'Infer, en MCMC : NUTS, diagnostics (R-hat, ESS), posterior predictive checks |
+| **[DecisionTheory/Infer](DecisionTheory/DecInfer/README.md) (C#/.NET)** | 10 (Lean : 2, 9) | Infer.NET + Lean 4 | Utility espérée, EVPI, MDPs, bandits, **preuves formelles Lean** de vNM et Gittins (lake `decision_theory_lean/`) |
+| **[DecisionTheory/PyMC](DecisionTheory/PyMC/README.md) (Python)** | 7 | PyMC | Mêmes modèles de décision, en sampling |
+| **[DecisionTheory/Causal-Bridges](DecisionTheory/Causal-Bridges/)** | 1 | Python/Z3 | Do-Calculus, jumeaux causaux inter-domaines |
+| **Racine (standalone)** | 2 | Python | Infer-101 (intro complète Infer.NET), Pyro_RSA_Hyperbole (Pyro RSA) |
+
+**Kernels** : `dotnet-csharp` · `python3` · `lean4` (side tracks Lean via WSL, cf [`decision_theory_lean/install_wsl_kernel.md`](decision_theory_lean/README.md)) · **GPU** : non (Infer.NET/PyMC CPU-only) · **Prérequis** : algèbre linéaire, probabilités de base (variables aléatoires, Bayes), Python intermédiaire.
+
+## Corpus bayésien — Infer.NET (C#/.NET Interactive)
+
+19 notebooks en `.NET Interactive` : du Setup aux frontières (causalité, GP, hiérarchiques, Kalman). Le moteur Infer.NET utilise **EP/VMP** (expectation propagation / variational message passing), donnant des résultats **déterministes** et rapides sur les modèles compatibles.
+
+::: {#infer-setup}
+:::
+
+::: {#infer-notebooks}
+:::
+
+## Corpus bayésien — Infer.NET — Notebooks avancés (10-14)
+
+Crowdsourcing (vraie vraisemblance distribuée), séquences (HMM), recommanders (matrix factorization + side-info), debugging (inspection de la convergence EP), causal inference (do-calculus). Ces notebooks prolongent le corpus 2-9 vers des **modèles à grande échelle** ou des **structures non-standard**.
+
+::: {#infer-advanced}
+:::
+
+## Corpus bayésien — Infer.NET — Frontières (15-19)
+
+Gaussian Process creux, modèles hiérarchiques, filtre de Kalman, change-point detection, analyse de survie. Ces notebooks montrent qu'Infer.NET **n'est pas cantonné aux modèles factor graphs simples** et explore les **domaines où l'inférence exacte/EP est compétitive**.
+
+::: {#infer-frontiers}
+:::
+
+## Corpus bayésien — PyMC (Python)
+
+14 notebooks en Python `pymc` : mêmes modèles 1-14 qu'Infer, en **MCMC NUTS**. Avantage : s'applique à presque tout modèle ; coût : stochasticité, temps de convergence variable, diagnostic R-hat/ESS nécessaire.
+
+::: {#pymc-setup}
+:::
+
+::: {#pymc-notebooks}
+:::
+
+::: {#pymc-advanced}
+:::
+
+## Théorie de la décision — Infer.NET + Lean 4
+
+Arc **autonome** de **théorie de la décision bayésienne** : axiomes Von Neumann-Morgenstern, utilité espérée, EVPI, réseaux de décision, MDPs (itération valeur/politique), Thompson Sampling. Deux notebooks sont des **companions Lean 4** (kernel WSL + lake `decision_theory_lean`) qui prouvent formellement :
+
+- **Infer-2-Lean-ExpectedUtility** : direction sound du théorème vNM (utilité linéaire sur des loteries).
+- **Infer-9-Lean-Gittins** : indice de Gittins, SFABP (Single-Family Action-Bandit Processes).
+
+::: {#dt-infer}
+:::
+
+## Théorie de la décision — PyMC (Python)
+
+Mêmes modèles de décision, en sampling PyMC : utilité, valeurs d'information, EVPI, réseaux.
+
+::: {#dt-pymc}
+:::
+
+## Causal-Bridges — Do-Calculus inter-domaines
+
+Notebook passerelle entre Probas, Search (CSP/SMT) et SymbolicAI : encode le Do-Calculus (Pearl) via Z3 pour raisonner sur des interventions (`do(X=x)`) en présence de variables non observées.
+
+::: {#dt-causal-bridges}
+:::
+
+## Racine — Notebooks standalone
+
+Deux notebooks applicatifs à la racine de la série, indépendants des deux arcs :
+
+- **Infer-101** : tutoriel Infer.NET "from scratch" (hors-numérotation 1-19).
+- **Pyro_RSA_Hyperbole** : Rational Speech Acts bayésien en Pyro (sémantique pragmatique).
+
+::: {#standalone-root}
+:::
+
+## Démarrage rapide
+
+**Pour Infer.NET (C#/.NET Interactive)**
+
+```bash
+dotnet tool install --global Microsoft.dotnet-interactive
+# Puis dans Jupyter : choisir le kernel ".NET (C#)"
+```
+
+Chaque notebook Infer commence par les déclarations `#r "nuget: ..."` et `using Microsoft.ML.Probabilistic;` — l'environnement se configure à l'exécution.
+
+**Pour PyMC (Python)**
+
+```bash
+python -m venv .venv
+source .venv/bin/activate     # ou .venv\Scripts\activate sous Windows
+pip install pymc arviz numpy pandas matplotlib
+jupyter notebook MyIA.AI.Notebooks/Probas/PyMC/
+```
+
+**Pour les companions Lean 4** (`Infer-2-Lean-ExpectedUtility.ipynb`, `Infer-9-Lean-Gittins.ipynb`) : WSL + elan toolchain + kernel Lean4 Jupyter. Cf [`decision_theory_lean/install_wsl_kernel.md`](decision_theory_lean/README.md). Les preuves sont **déjà validées localement** (lake `decision_theory_lean` build SUCCESS) ; les notebooks servent de vitrine pédagogique.
+
+## Ressources complémentaires
+
+- **Catalogue** : `COURSE_CATALOG.generated.md` — inventaire exhaustif de la série avec statuts READY/DEMO, kernels, GPU.
+- **README de série** : [Probas/README.md](README.md) — vue d'ensemble, progression pédagogique complète, comparaison Infer/PyMC, ramifications vers DecisionTheory.
+- **Lake Lean** : [`decision_theory_lean/`](decision_theory_lean/) — preuves formelles des identités d'escompte (Gittins), vNM sound direction.
+- **Séries connexes** :
+  - [GameTheory](../GameTheory/index.qmd) — théorie des jeux bayésienne (jeux bayésiens, jeux de réputation), certaines preuves Lean voisinent celles de `decision_theory_lean/`.
+  - [Search](../Search/index.qmd) — algorithmes de recherche, CSP, MCTS (certains algorithmes probabilistes en bandit).
+  - [ML](../ML/index.qmd) — machine learning, où les modèles probabilistes (Gaussian Processes, LDA) rejoignent les modèles discriminatifs.
+
+## Note sur le rendu Quarto (.NET + Lean + Python)
+
+Cette page Quarto rend les **notebooks Python natifs** (PyMC + Causal-Bridges + Infer-101 + Pyro_RSA) ainsi que leurs **`*_output.ipynb`** committés (règle C.2). Les **notebooks .NET C#** (Infer/* principaux + DecisionTheory/DecInfer/*) et les **companions Lean 4** (`*-Lean-*`) ne sont **pas exécutés par Quarto** : leur rendu s'appuie sur les `*_output.ipynb` committés via le mode `freeze: auto` de `_quarto.yml`. Pour une exécution locale : kernel `dotnet-csharp` pour Infer.NET ; kernel Lean4 (WSL + elan) pour les companions. Ce point est la **matière de la tranche 4 #4211 (GH Actions deploy)** — un workflow dédié pourra automatiser exécution et publication, mais le **MVP actuel** se contente de freeze auto sans ré-exécution.
+
+## Pour aller plus loin
+
+Une fois la série Probas maîtrisée, les parcours conseillés sont :
+
+1. **Vers l'inférence causale** : [DecisionTheory/Causal-Bridges](DecisionTheory/Causal-Bridges/) — Do-Calculus, raisonnement causal.
+2. **Vers la théorie des jeux** : [GameTheory](../GameTheory/index.qmd) — équilibres bayésiens, jeux de réputation.
+3. **Vers le machine learning discriminant** : [ML](../ML/index.qmd) — régression/probabilités conditionnelles, où les modèles probabilistes rejoignent le deep learning.
+4. **Vers la formalisation** : [decision_theory_lean/](decision_theory_lean/) — preuves formelles en Lean 4 des identités d'escompte et de Gittins.
+5. **Vers la simulation multi-agent** : [IIT](../IIT/index.qmd) — PyPhi, integrated information, où la théorie de la décision probabiliste alimente la théorie de l'information intégrée.
+
+<!-- CATALOG-STATUS
+series: Probas
+listing_blocks: 11
+infer_setup: 1
+infer_root: 8 (2-9)
+infer_advanced: 5 (10-14)
+infer_frontiers: 5 (15-19)
+pymc_setup: 1
+pymc_root: 8 (2-9)
+pymc_advanced: 5 (10-14)
+dt_infer: 10 (Lean: 2, 9)
+dt_pymc: 7
+dt_causal_bridges: 1
+standalone_root: 2 (Infer-101 + Pyro_RSA)
+listing_pattern: 4-sous-series + setup + standalone (sub-range-split pour corpus long)
+render_local: success
+-->

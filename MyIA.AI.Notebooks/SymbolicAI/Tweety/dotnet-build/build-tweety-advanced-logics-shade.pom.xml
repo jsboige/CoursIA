@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Standalone shade aggregator for Description Logic (DL): bundles logics-dl +
+     transitive deps (logics-commons, fol, pl, math, commons, sat4j, commons-math)
+     from local m2 into one coherent fat-jar. Clones the proven pl (#4792) / dung (#4831)
+     recipe. Advanced-Logic-Csharp (Tw-3) PR atomique Phase 4+ #4667 (DL seul ; QBF/CL
+     = ports suivants). IKVM 8.15 needs a single shade artifact to resolve cross-module
+     types. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>local</groupId>
+  <artifactId>tweety-advanced-logics-shade</artifactId>
+  <version>1.30</version>
+  <packaging>jar</packaging>
+  <name>Tweety advanced-logics (DL) shaded fat-jar (IKVM target)</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.tweetyproject.logics</groupId>
+      <artifactId>dl</artifactId>
+      <version>1.30</version>
+      <exclusions>
+        <!-- junit (incl. junit-jupiter 5.x = Java 9+ bytecode) is test-only and
+             would pollute the fat-jar with IKVM0101-rejecting classes. -->
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.junit.jupiter</groupId>
+          <artifactId>junit-jupiter</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.junit</groupId>
+          <artifactId>junit-bom</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>tweety-advanced-logics-full-1.30</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.3</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <shadedArtifactAttached>false</shadedArtifactAttached>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <exclude>module-info.class</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,10 @@
+{
+    "algorithm-language": "Python",
+    "parameters": {},
+    "description": "Framework Composite - SectorMomentum + RegimeSwitching (T60/RS40)",
+    "id": 1,
+    "name": "Framework_Composite_MomentumRegime",
+    "cloud-id": 31243821,
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f",
+    "local-id": 955714399
+}

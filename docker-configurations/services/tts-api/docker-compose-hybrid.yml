@@ -1,0 +1,81 @@
+# TTS API - Text-to-Speech with Kokoro (Hybrid Configuration)
+# OpenAI-compatible TTS API
+#
+# Uses ghcr.io/myia-org/kokoro-tts:latest image (pre-built)
+# With full main branch configuration (lazy loading, networks, healthchecks)
+#
+# GPU: RTX 3090 (24GB) - GPU 1 (po-2023)
+# Port: 8191
+# URL: tts-api.myia.io
+
+services:
+  tts-api:
+    # Use pre-built image from ghcr.io instead of local build
+    image: ghcr.io/myia-org/kokoro-tts:latest
+    container_name: tts-api
+    hostname: tts-api
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_DEVICE_ID:-1}']
+              capabilities: [gpu]
+
+    ports:
+      - "${TTS_API_PORT:-8191}:8191"
+
+    volumes:
+      - type: bind
+        source: ${MODELS_PATH:-./models}
+        target: /app/models
+      - type: bind
+        source: ${OUTPUT_PATH:-./outputs}
+        target: /app/outputs
+      - type: bind
+        source: ../shared
+        target: /app/shared
+        read_only: true
+      - type: volume
+        source: tts-cache
+        target: /root/.cache
+
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-1}
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-1}
+      - PYTHONUNBUFFERED=1
+      - TTS_DEVICE=cuda
+      - DEFAULT_TTS_MODEL=kokoro
+      - DEFAULT_TTS_VOICE=af_sky
+      - MODEL_SIZE=v0_19
+      - SAMPLE_RATE=24000
+      - PRELOAD_MODEL=${PRELOAD_MODEL:-true}
+      - IDLE_TIMEOUT=${IDLE_TIMEOUT:-1200}
+      - TZ=${TZ:-Europe/Paris}
+      - API_KEY=${KOKORO_API_KEY}
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8191/health | grep -q healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    restart: unless-stopped
+
+    networks:
+      - tts-network
+
+    labels:
+      - "com.myia.service=tts-api"
+      - "com.myia.gpu=rtx-3090"
+
+networks:
+  tts-network:
+    driver: bridge
+    name: tts-network
+
+volumes:
+  tts-cache:
+    name: tts-cache

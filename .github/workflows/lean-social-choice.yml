@@ -1,0 +1,122 @@
+name: Lean Social Choice CI
+
+# EPIC #4365 Phase-4 (PR #6058, c.357) : SocialChoice a ete absorbe dans
+# `game_theory_lean/SocialChoice/` (nouveau home canonique). Ce workflow etait
+# auparavant scoping `social_choice_lean/` ; il est repointe sur `game_theory_lean`
+# pour y_preserver la certification no-sorry (Arrow/Sen/Framework/Basic) et le
+# Lake build de SocialChoice. L'ancien lake `social_choice_lean` est archive
+# (lib neutralisee, plus de default_target).
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
+  workflow_dispatch:
+
+jobs:
+  fail-on-sorry:
+    name: "Proof integrity (no sorry)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/GameTheory/game_theory_lean
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install elan
+      run: |
+        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        ./elan-init -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+    - name: Cache Mathlib oleans
+      uses: actions/cache@v4
+      with:
+        path: MyIA.AI.Notebooks/GameTheory/game_theory_lean/.lake
+        key: lake-sc-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain') }}
+        restore-keys: lake-sc-${{ runner.os }}-
+
+    - name: Check for sorry in certified modules
+      run: |
+        echo "Checking sorry count in certified modules (Arrow, Sen, Framework, Basic)..."
+        SORRY_COUNT=0
+        for f in SocialChoice/Arrow.lean SocialChoice/Sen.lean SocialChoice/Framework.lean SocialChoice/Basic.lean; do
+          if [ -f "$f" ]; then
+            COUNT=$(grep -c "sorry" "$f" || true)
+            if [ "$COUNT" -gt 0 ]; then
+              echo "FAIL: $f has $COUNT sorry"
+              grep -n "sorry" "$f"
+              SORRY_COUNT=$((SORRY_COUNT + COUNT))
+            else
+              echo "OK: $f (0 sorry)"
+            fi
+          fi
+        done
+        if [ "$SORRY_COUNT" -gt 0 ]; then
+          echo ""
+          echo "FAILED: $SORRY_COUNT sorry found in certified modules"
+          echo "These modules are formally verified and must not contain sorry."
+          exit 1
+        fi
+        echo "All certified modules are sorry-free."
+
+  build:
+    name: "Lake build"
+    runs-on: ubuntu-latest
+    needs: fail-on-sorry
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/GameTheory/game_theory_lean
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install elan
+      run: |
+        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        ./elan-init -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+    - name: Cache Mathlib oleans
+      uses: actions/cache@v4
+      with:
+        path: MyIA.AI.Notebooks/GameTheory/game_theory_lean/.lake
+        key: lake-sc-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain') }}
+        restore-keys: lake-sc-${{ runner.os }}-
+
+    - name: Lake build
+      run: |
+        set -o pipefail   # propagate lake's exit code through pipes (see lean-build.yml fix, 2026-06-14)
+        lake exe cache get || true
+        # Capture full lake output to a log file. A bare `| tail -N` HID the real
+        # error (build-graph resolution failure OR mid-build compile error).
+        # Run build, then ALWAYS dump the error context so CI shows the cause.
+        # GitHub Actions doesn't reliably flush a grouped block, so dump the log
+        # unconditionally with separate steps. Incident: #5553 globs pointed at a
+        # non-existent `SmokeTest` module (actual file `_SmokeTest.lean`), which
+        # failed build-graph resolution with no file:line error (2026-07-06).
+        set +e
+        lake -R build > lake-build.log 2>&1
+        BUILD_EXIT=$?
+        set -e
+        echo "===== Lake build exit code: $BUILD_EXIT ====="
+        if [ "$BUILD_EXIT" -ne 0 ]; then
+          echo "===== Lines matching compile errors (file:line:col: error:) ====="
+          grep -E ":[0-9]+:[0-9]+: error:" lake-build.log || echo "(no file:line:col: errors — likely build-graph/module-resolution failure)"
+          echo "===== Lines mentioning FAIL/error/nonexistent ====="
+          grep -iE "error|fail|unknown|cannot|nonexistent|no such" lake-build.log | grep -viE "warning|linter" | head -40 || echo "(none)"
+          echo "===== Last 50 lines of build log ====="
+          tail -50 lake-build.log
+          exit "$BUILD_EXIT"
+        fi

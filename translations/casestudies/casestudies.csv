@@ -1,0 +1,3210 @@
+notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,64852c73,markdown,fr,9e45d2d514e4be5f,"**Navigation** : [Index](../../README.md)
+# CC1 - IA Exploratoire et Symbolique
+## Système de Diagnostic Médical Multi-Contraintes pour le Diabète de Type 2
+
+### 🎯 Objectifs Pédagogiques
+
+Ce notebook vise à vous faire implémenter un système de diagnostic médical intelligent combinant quatre approches algorithmiques complémentaires :
+
+1. **Agent de Diagnostic Rationnel** : Système basé sur des règles cliniques
+2. **Algorithme A*** : Recherche informée dans l'espace d'états diagnostiques
+3. **Algorithmes Génétiques** : Optimisation évolutionnaire des paramètres
+4. **Solveur Z3** : Validation par contraintes des protocoles thérapeutiques
+
+### 📊 Contexte Médical
+
+Le diabète de type 2 nécessite une approche de diagnostic personnalisée qui combine :
+- **Analyse multi-dimensionnelle** : Glycémie, HbA1c, symptômes, antécédents
+- **Contraintes thérapeutiques** : Protocoles médicaux, interactions médicamenteuses
+- **Optimisation personnalisée** : Adaptation des traitements selon le profil patient
+
+### 🛠️ Compétences Évaluées
+
+- Algorithmes de recherche (BFS, DFS, A*)
+- Programmation par contraintes (Z3, CSP)
+- Algorithmes génétiques et optimisation
+- Analyse de complexité et performance
+- Application biomédicale (diabète type 2)
+",,,,,,,,9e45d2d514e4be5f,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,16af3752,code,fr,bdd63628447dc979,"# Installation des dépendances requises
+%pip install numpy pandas matplotlib seaborn z3-solver",,,,,,,,bdd63628447dc979,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,310b5764,markdown,fr,da1a97770d5ad237,Configuration et imports du notebook.,,,,,,,,da1a97770d5ad237,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,d894a937,code,fr,48a012113fba815b,"# Configuration du notebook
+CONFIG = {
+    'version': '2.0.0',
+    'auteur': 'EPF IA Biomédicale',
+    'date': '2025-11-04',
+    'duree_estimee': '3 heures',
+    'points_total': 20
+}
+
+# Librairies de base
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from datetime import datetime
+import time
+import random
+import heapq
+from typing import List, Optional, Dict, Tuple
+
+# Librairies spécialisées
+try:
+    from z3 import *  # Solveur de contraintes
+    print(""✅ Z3 importé avec succès"")
+except ImportError:
+    print(""❌ Z3 non disponible. Installez avec : pip install z3-solver"")
+    
+print(f""📋 Configuration : {CONFIG}"")
+print(""🎯 Objectif : Implémenter un système de diagnostic médical multi-approches"")",,,,,,,,48a012113fba815b,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,2f529696,markdown,fr,b09daaff27f92f1d,"### 📚 Structure de Données
+
+#### Classe Patient
+
+La classe `Patient` représente un patient pour le système de diagnostic. Elle contient toutes les informations médicales nécessaires pour l'analyse.
+
+#### Protocoles Thérapeutiques
+
+Les protocoles définissent les objectifs et contraintes pour le traitement du diabète de type 2.",,,,,,,,b09daaff27f92f1d,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,5ef50610,code,fr,ecc6ddf415f12a9c,"from dataclasses import dataclass
+
+@dataclass
+class Patient:
+    """"""Représente un patient pour le système de diagnostic""""""
+    id: int
+    nom: str
+    age: int
+    glycemie_jeun: float
+    glycemie_postprandiale: float
+    hba1c: float
+    symptomes: List[str]
+    antecedents: List[str]
+    date_consultation: datetime
+    pression_arterielle: Optional[float] = None
+    imc: Optional[float] = None
+    
+    def __str__(self):
+        return f""Patient({self.id}: {self.nom}, {self.age}ans)""
+
+# Protocoles thérapeutiques de référence
+protocoles_diabete_type2 = {
+    ""objectifs_glycemie"": {
+        ""jeun"": [80, 130],
+        ""postprandial"": [120, 180]
+    },
+    ""objectifs_hba1c"": {
+        ""cible"": ""<7.0%"",
+        ""alerte"": "">8.0%""
+    },
+    ""contraintes_traitement"": {
+        ""metformine"": {
+            ""contre_indications"": [""insuffisance_rénale_sévère"", ""acidose_lactique""],
+            ""dose_max"": 3000
+        },
+        ""insuline"": {
+            ""contre_indications"": [""hypoglycémie_sévère_non_traitée""],
+            ""ajustement"": ""selon_glycemie""
+        },
+        ""statines"": {
+            ""contre_indications"": [""maladie_hépatique_active""],
+            ""surveillance"": ""transaminases_hepatiques""
+        }
+    },
+    ""contraintes_globales"": [
+        ""hba1c < 7.0%"",
+        ""pas_d_hypoglycémie_sévère"",
+        ""surveillance_poids"",
+        ""activité_physique_régulière""
+    ]
+}
+
+print(""✅ Structure de données définie"")
+print(f""📊 Protocoles chargés : {len(protocoles_diabete_type2)} sections"")",,,,,,,,ecc6ddf415f12a9c,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,18e78368,markdown,fr,9e393919198eac84,"## 🎯 Partie 1 : Agent de Diagnostic Basique
+
+### Théorie des Agents Intelligents (AIMA Chapitre 1)
+
+Un **agent Intelligent** est un système qui perçoit son environnement et agit rationnellement pour atteindre des objectifs. Dans le contexte médical :
+
+- **Perception** : Données patient (glycémie, symptômes, antécédents)
+- **Raisonnement** : Application de règles cliniques
+- **Action** : Génération de diagnostics et recommandations
+
+### 📋 Objectifs de cette Partie
+
+1. **Classification du risque** : Normal/Pré-diabète/Diabète Type 2
+2. **Analyse des symptômes** : Interprétation clinique
+3. **Génération de recommandations** : Conseils personnalisés
+
+### 🔧 Implémentation Requise
+
+Vous devez implémenter la classe `DiagnosticAgent` avec les méthodes suivantes :
+- `__init__(self)` : Initialisation avec règles cliniques
+- `classifier_risque(self, patient: Patient) -> str` : Classification du risque
+- `analyser_symptomes(self, patient: Patient) -> List[str]` : Interprétation des symptômes
+- `generer_recommandations(self, patient: Patient, risque: str) -> List[str]` : Recommandations personnalisées",,,,,,,,9e393919198eac84,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,c953a353,code,fr,af2bd4afe5ddc6f0,"class DiagnosticAgent:
+    """"""Agent de diagnostic médical basé sur des règles cliniques""""""
+    
+    def __init__(self):
+        self.regles_diagnostiques = self._charger_regles()
+    
+    def _charger_regles(self) -> Dict:
+        """"""Charge les règles cliniques pour le diagnostic du diabète""""""
+        return {
+            ""normal"": {
+                ""glycemie_jeun"": (70, 99),
+                ""glycemie_postprandiale"": (70, 139),
+                ""hba1c"": (0, 5.6)
+            },
+            ""prediabete"": {
+                ""glycemie_jeun"": (100, 125),
+                ""glycemie_postprandiale"": (140, 199),
+                ""hba1c"": (5.7, 6.4)
+            },
+            ""diabete_type2"": {
+                ""glycemie_jeun"": (126, float('inf')),
+                ""glycemie_postprandiale"": (200, float('inf')),
+                ""hba1c"": (6.5, float('inf'))
+            }
+        }
+    
+    def classifier_risque(self, patient: Patient) -> str:
+        """"""Classifie le risque diabétique du patient""""""
+        score_normal = 0
+        score_prediabete = 0
+        score_diabete = 0
+        
+        regles = self.regles_diagnostiques
+        
+        # Évaluation glycémie à jeun
+        if regles[""normal""][""glycemie_jeun""][0] <= patient.glycemie_jeun <= regles[""normal""][""glycemie_jeun""][1]:
+            score_normal += 1
+        elif regles[""prediabete""][""glycemie_jeun""][0] <= patient.glycemie_jeun <= regles[""prediabete""][""glycemie_jeun""][1]:
+            score_prediabete += 1
+        else:
+            score_diabete += 1
+        
+        # Évaluation glycémie post-prandiale
+        if regles[""normal""][""glycemie_postprandiale""][0] <= patient.glycemie_postprandiale <= regles[""normal""][""glycemie_postprandiale""][1]:
+            score_normal += 1
+        elif regles[""prediabete""][""glycemie_postprandiale""][0] <= patient.glycemie_postprandiale <= regles[""prediabete""][""glycemie_postprandiale""][1]:
+            score_prediabete += 1
+        else:
+            score_diabete += 1
+        
+        # Évaluation HbA1c
+        if regles[""normal""][""hba1c""][0] <= patient.hba1c <= regles[""normal""][""hba1c""][1]:
+            score_normal += 1
+        elif regles[""prediabete""][""hba1c""][0] <= patient.hba1c <= regles[""prediabete""][""hba1c""][1]:
+            score_prediabete += 1
+        else:
+            score_diabete += 1
+        
+        # Détermination du risque
+        if score_normal >= 2:
+            return ""Normal""
+        elif score_prediabete >= 2:
+            return ""Pré-diabète""
+        else:
+            return ""Diabète Type 2""
+    
+    def analyser_symptomes(self, patient: Patient) -> List[str]:
+        """"""Analyse les symptômes du patient""""""
+        symptomes_diabete = {
+            ""polyurie"": ""Augmentation de la fréquence urinaire"",
+            ""polydipsie"": ""Soif intense et fréquente"",
+            ""polyphagie"": ""Faim excessive malgré l'alimentation"",
+            ""fatigue"": ""Fatigue chronique et faiblesse"",
+            ""perte_poids"": ""Perte de poids inexpliquée"",
+            ""vision_troublee"": ""Vision floue ou troublee"",
+            ""cicatrisation_lente"": ""Cicatrisation retardée des plaies"",
+            ""infections_recurrentes"": ""Infections fréquentes (urinaires, cutanées)""
+        }
+        
+        interpretations = []
+        for symptome in patient.symptomes:
+            if symptome in symptomes_diabete:
+                interpretations.append(f""{symptome}: {symptomes_diabete[symptome]}"")
+        
+        return interpretations
+    
+    def generer_recommandations(self, patient: Patient, risque: str) -> List[str]:
+        """"""Génère des recommandations basées sur le risque et le profil""""""
+        recommandations = []
+        
+        if risque == ""Normal"":
+            recommandations.extend([
+                ""Maintenir un mode de vie sain"",
+                ""Surveillance annuelle de la glycémie"",
+                ""Activité physique régulière (150 min/semaine)""
+            ])
+        elif risque == ""Pré-diabète"":
+            recommandations.extend([
+                ""Perte de poids si surpoids (5-10% du poids)"",
+                ""Activité physique modérée (30 min/jour, 5j/semaine)"",
+                ""Alimentation équilibrée, riche en fibres"",
+                ""Surveillance trimestrielle de la glycémie"",
+                ""Considérer metformine si facteurs de risque élevés""
+            ])
+        else:  # Diabète Type 2
+            recommandations.extend([
+                ""Consultation spécialisée obligatoire"",
+                ""Traitement médicamenteux immédiat"",
+                ""Autosurveillance glycémique quotidienne"",
+                ""Éducation thérapeutique complète"",
+                ""Adaptation du mode de vie (alimentation, activité)""
+            ])
+        
+        # Recommandations personnalisées selon le profil
+        if patient.age > 65:
+            recommandations.append(""Adaptation des traitements à l'âge avancé"")
+        
+        if patient.imc and patient.imc > 30:
+            recommandations.append(""Perte de poids prioritaire (objectif: IMC < 25)"")
+        
+        if ""hypertension"" in patient.antecedents:
+            recommandations.append(""Surveillance tensionnelle stricte"")
+        
+        return recommandations
+
+# Test de la classe
+print(""🤖 Création de l'agent de diagnostic..."")
+agent = DiagnosticAgent()
+print(""✅ Agent initialisé avec succès"")
+print(f""📋 Règles chargées : {len(agent.regles_diagnostiques)} catégories"")",,,,,,,,af2bd4afe5ddc6f0,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,488c666b,markdown,fr,f05efd050d2882fd,"### 📝 Exemples d'Utilisation Attendus
+
+Voici des exemples de ce que votre agent devrait produire :
+
+#### Cas Normal
+```python
+patient_normal = Patient(1, ""Alice"", 35, 85.0, 120.0, 5.2, [], ""aucun"", datetime.now())
+risque = agent.classifier_risque(patient_normal)  # Devrait retourner ""Normal""
+recommandations = agent.generer_recommandations(patient_normal, ""Normal"")
+# Devrait inclure : ""Maintenir un mode de vie sain""
+```
+
+#### Cas Pré-diabète
+```python
+patient_prediabete = Patient(2, ""Bob"", 48, 115.0, 155.0, 6.0, [""fatigue""], ""surpoids"", datetime.now())
+risque = agent.classifier_risque(patient_prediabete)  # Devrait retourner ""Pré-diabète""
+recommandations = agent.generer_recommandations(patient_prediabete, ""Pré-diabète"")
+# Devrait inclure : ""Perte de poids si surpoids""
+```
+
+#### Cas Diabète Type 2
+```python
+patient_diabete = Patient(3, ""Claire"", 62, 140.0, 210.0, 7.8, [""polyurie"", ""soif""], ""hypertension"", datetime.now())
+risque = agent.classifier_risque(patient_diabete)  # Devrait retourner ""Diabète Type 2""
+recommandations = agent.generer_recommandations(patient_diabete, ""Diabète Type 2"")
+# Devrait inclure : ""Consultation spécialisée obligatoire""
+```",,,,,,,,f05efd050d2882fd,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,ec5bfce7,code,fr,efbda60c3dc1682a,"def tester_agent_diagnostic():
+    """"""Teste l'agent de diagnostic avec des cas connus""""""
+    agent = DiagnosticAgent()
+    
+    # Cas test 1 : Patient normal
+    patient_normal = Patient(
+        1, ""Alice"", 35, 85.0, 120.0, 5.2, [], 
+        [""aucun""], datetime.now()
+    )
+    
+    # Cas test 2 : Patient pré-diabétique
+    patient_prediabete = Patient(
+        2, ""Bob"", 48, 115.0, 155.0, 6.0, [""fatigue""], 
+        [""surpoids""], datetime.now()
+    )
+    
+    # Cas test 3 : Patient diabétique
+    patient_diabete = Patient(
+        3, ""Claire"", 62, 140.0, 210.0, 7.8, [""polyurie"", ""soif intense""], 
+        [""hypertension""], datetime.now()
+    )
+    
+    patients_test = [patient_normal, patient_prediabete, patient_diabete]
+    
+    print(""\n=== Tests de l'Agent de Diagnostic ==="")
+    for patient in patients_test:
+        risque = agent.classifier_risque(patient)
+        symptomes = agent.analyser_symptomes(patient)
+        recommandations = agent.generer_recommandations(patient, risque)
+        
+        print(f""\n--- Patient: {patient.nom} ---"")
+        print(f""📊 Âge: {patient.age} ans"")
+        print(f""📈 Glycémie jeun: {patient.glycemie_jeun} mg/dL"")
+        print(f""📈 Glycémie post: {patient.glycemie_postprandiale} mg/dL"")
+        print(f""📈 HbA1c: {patient.hba1c}%"")
+        print(f""⚠️ Risque classifié: {risque}"")
+        print(f""🔍 Symptômes analysés: {len(symptomes)}"")
+        if symptomes:
+            for s in symptomes:
+                print(f""   - {s}"")
+        print(f""💡 Recommandations ({len(recommandations)}):"")
+        for i, rec in enumerate(recommandations[:3], 1):
+            print(f""   {i}. {rec}"")
+
+# Exécution des tests
+tester_agent_diagnostic()
+print(""\n✅ Tests de l'agent de diagnostic terminés"")",,,,,,,,efbda60c3dc1682a,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,19479276,markdown,fr,b64d07666b000a5f,"### Exercice 1 : Etendre l'agent de diagnostic avec un score de risque
+
+**Objectif** : Ajouter une methode `calculer_score_risque` a la classe `DiagnosticAgent` qui combine les indicateurs cliniques en un score numerique composite.
+
+**Contexte** : La classification actuelle (Normal/Pre-diabete/Diabete) est trop grossiere. Un score numerique permet de prioriser les patients et de suivre l'evolution dans le temps.
+
+**Indices** :
+- # Indice 1 : Combinez la glycémie à jeun, l'HbA1c et le nombre de symptomes en un score pondere
+- # Indice 2 : Normalisez chaque indicateur entre 0 et 1 avant de les combiner
+- # Etape 1 : Definir les seuils de normalisation pour chaque indicateur
+- # Etape 2 : Calculer le score pondere (ex: 40% glycémie, 40% HbA1c, 20% symptomes)
+- # Etape 3 : Tester sur les 3 patients de reference et verifier la coherence avec la classification",,,,,,,,b64d07666b000a5f,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,2ed6fb70,code,fr,3b7f1f9dcc3f915c,"# Exercice 1 : Score de risque composite
+# TODO etudiant : Implementer une methode calculer_score_risque(patient) -> float
+# TODO etudiant : Normaliser chaque indicateur entre 0 et 1
+# TODO etudiant : Tester sur les 3 patients (Alice, Bob, Claire)
+result = None  # TODO etudiant : remplacer par votre calcul
+print(""Exercice a completer : score de risque composite"")",,,,,,,,3b7f1f9dcc3f915c,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,68bfae3b,markdown,fr,172aeedfdbb95126,"## 🎯 Partie 2 : Algorithme A* (Recherche Informée)
+
+### Théorie Recherche Informée (AIMA Chapitres 3-4)
+
+L'algorithme **A\*** (A-star) est un algorithme de recherche informée qui garantit l'optimalité si l'heuristique est admissible. Dans le contexte médical :
+
+- **État** : Représentation d'une hypothèse diagnostique
+- **Transition** : Passage d'une hypothèse à une autre
+- **Heuristique** : Estimation du coût restant vers l'objectif
+- **Optimalité** : Garantie de trouver le meilleur chemin
+
+### 📋 Objectifs de cette Partie
+
+1. **Définir l'espace d'états** : Représentation des hypothèses
+2. **Implémenter l'heuristique** : Fonction d'évaluation médicale
+3. **Algorithme A\*** : Recherche du diagnostic optimal
+4. **Tests de performance** : Mesures temporelles et mémoire
+
+### 🔧 Implémentation Requise
+
+Vous devez implémenter les classes suivantes :
+- `EtatDiagnostic` : Représentation d'un état dans le processus de diagnostic
+- `AStarDiagnostic` : Algorithme A* pour la recherche diagnostique optimale",,,,,,,,172aeedfdbb95126,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,39e86e61,code,fr,fe13e3cf167a99af,"class EtatDiagnostic:
+    """"""Représente un état dans le processus de diagnostic""""""
+    
+    def __init__(self, patient: Patient, hypotheses: List[str], niveau_confiance: float):
+        self.patient = patient
+        self.hypotheses = hypotheses.copy()
+        self.niveau_confiance = niveau_confiance
+        self.cout = 0.0
+    
+    def __lt__(self, other):
+        """"""Comparaison pour la file de priorité (min-heap)""""""
+        return self.cout < other.cout
+    
+    def __eq__(self, other):
+        """"""Égalité des états""""""
+        return (self.patient.id == other.patient.id and 
+                set(self.hypotheses) == set(other.hypotheses) and
+                abs(self.niveau_confiance - other.niveau_confiance) < 0.01)
+    
+    def __hash__(self):
+        """"""Hash pour les ensembles d'états visités""""""
+        return hash((self.patient.id, tuple(sorted(self.hypotheses)), 
+                   round(self.niveau_confiance, 2)))
+
+class AStarDiagnostic:
+    """"""Algorithme A* pour la recherche diagnostique optimale""""""
+    
+    def __init__(self):
+        self.hypotheses_possibles = [
+            ""diabete_type1"", ""diabete_type2"", ""prediabete"", ""intolerance_glucose"",
+            ""syndrome_metabolique"", ""diabete_gestationnel"", ""autre_pathologie""
+        ]
+        self.poids_evidences = {
+            ""glycemie_jeun"": 0.3,
+            ""glycemie_postprandiale"": 0.25,
+            ""hba1c"": 0.2,
+            ""symptomes"": 0.15,
+            ""antecedents"": 0.1
+        }
+    
+    def heuristique_medical(self, etat: EtatDiagnostic) -> float:
+        """"""Heuristique basée sur les critères cliniques médicaux""""""
+        patient = etat.patient
+        
+        # Score de cohérence avec les données patient
+        score_evidence = 0.0
+        
+        # Évidence glycémique
+        if patient.glycemie_jeun > 126:
+            score_evidence += self.poids_evidences[""glycemie_jeun""] * 0.8
+        elif patient.glycemie_jeun > 100:
+            score_evidence += self.poids_evidences[""glycemie_jeun""] * 0.4
+        
+        if patient.glycemie_postprandiale > 200:
+            score_evidence += self.poids_evidences[""glycemie_postprandiale""] * 0.8
+        elif patient.glycemie_postprandiale > 140:
+            score_evidence += self.poids_evidences[""glycemie_postprandiale""] * 0.4
+        
+        # Évidence HbA1c
+        if patient.hba1c > 7.0:
+            score_evidence += self.poids_evidences[""hba1c""] * 0.9
+        elif patient.hba1c > 6.0:
+            score_evidence += self.poids_evidences[""hba1c""] * 0.5
+        
+        # Évidence symptômes
+        symptomes_diabete = [""polyurie"", ""polydipsie"", ""polyphagie"", ""fatigue""]
+        score_symptomes = sum(1 for s in patient.symptomes if s in symptomes_diabete)
+        if score_symptomes > 0:
+            score_evidence += self.poids_evidences[""symptomes""] * (score_symptomes / len(symptomes_diabete))
+        
+        # Pénalité pour hypothèses multiples
+        penalite_hypotheses = len(etat.hypotheses) * 0.1
+        
+        # Heuristique : maximiser la confiance en minimisant les hypothèses
+        heuristique = 1.0 - score_evidence + penalite_hypotheses
+        
+        return heuristique
+    
+    def cout_transition(self, etat1: EtatDiagnostic, etat2: EtatDiagnostic) -> float:
+        """"""Calcule le coût de transition entre deux états""""""
+        # Coût basé sur le changement de confiance
+        cout_confiance = abs(etat2.niveau_confiance - etat1.niveau_confiance)
+        
+        # Coût basé sur le nombre d'hypothèses
+        cout_hypotheses = abs(len(etat2.hypotheses) - len(etat1.hypotheses)) * 0.1
+        
+        return cout_confiance + cout_hypotheses
+    
+    def rechercher_diagnostic_optimal(self, patient: Patient) -> EtatDiagnostic:
+        """"""Recherche le diagnostic optimal avec A*""""""
+        # État initial : hypothèses larges, confiance faible
+        etat_initial = EtatDiagnostic(
+            patient, 
+            self.hypotheses_possibles.copy(), 
+            0.1
+        )
+        
+        # File de priorité pour A* (min-heap)
+        file_priorite = []
+        heapq.heappush(file_priorite, (0, etat_initial))
+        
+        # Ensembles des états visités et en cours
+        visites = set()
+        couts = {etat_initial: 0}
+        
+        iterations = 0
+        max_iterations = 1000
+        
+        while file_priorite and iterations < max_iterations:
+            iterations += 1
+            
+            # Extraire l'état avec le coût le plus faible
+            cout_actuel, etat_actuel = heapq.heappop(file_priorite)
+            
+            # Vérifier si on a atteint un état final
+            if self._est_etat_final(etat_actuel):
+                print(f""✓ A* convergé en {iterations} itérations"")
+                return etat_actuel
+            
+            # Marquer comme visité
+            if etat_actuel in visites:
+                continue
+            visites.add(etat_actuel)
+            
+            # Générer les états voisins
+            voisins = self._generer_voisins(etat_actuel)
+            
+            for voisin in voisins:
+                nouveau_cout = couts[etat_actuel] + self.cout_transition(etat_actuel, voisin)
+                
+                if voisin not in couts or nouveau_cout < couts[voisin]:
+                    couts[voisin] = nouveau_cout
+                    cout_total = nouveau_cout + self.heuristique_medical(voisin)
+                    heapq.heappush(file_priorite, (cout_total, voisin))
+        
+        print(f""⚠ A* n'a pas convergé après {iterations} itérations"")
+        return etat_actuel
+    
+    def _est_etat_final(self, etat: EtatDiagnostic) -> bool:
+        """"""Vérifie si l'état est un état final (diagnostic convergé)""""""
+        return (len(etat.hypotheses) <= 2 and 
+                etat.niveau_confiance >= 0.8)
+    
+    def _generer_voisins(self, etat: EtatDiagnostic) -> List[EtatDiagnostic]:
+        """"""Génère les états voisins possibles""""""
+        voisins = []
+        
+        # Stratégie 1 : Éliminer une hypothèse
+        for i, hypothese in enumerate(etat.hypotheses):
+            nouvelles_hypotheses = etat.hypotheses[:i] + etat.hypotheses[i+1:]
+            nouvelle_confiance = min(0.9, etat.niveau_confiance + 0.1)
+            
+            voisin = EtatDiagnostic(
+                etat.patient,
+                nouvelles_hypotheses,
+                nouvelle_confiance
+            )
+            voisin.cout = etat.cout + 0.1
+            voisins.append(voisin)
+        
+        # Stratégie 2 : Augmenter la confiance
+        nouvelle_confiance = min(0.95, etat.niveau_confiance + 0.15)
+        voisin_confiance = EtatDiagnostic(
+            etat.patient,
+            etat.hypotheses.copy(),
+            nouvelle_confiance
+        )
+        voisin_confiance.cout = etat.cout + 0.05
+        voisins.append(voisin_confiance)
+        
+        return voisins
+
+print(""🔍 Création de l'algorithme A*..."")
+astar = AStarDiagnostic()
+print(""✅ Algorithme A* initialisé"")
+print(f""📊 Hypothèses possibles : {len(astar.hypotheses_possibles)}"")",,,,,,,,fe13e3cf167a99af,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,5e336442,markdown,fr,e5fc6d8a65e97bb2,"### 🧠 Explication Heuristique Médicale
+
+L'heuristique médicale doit évaluer la pertinence d'une hypothèse diagnostique :
+
+- **Score d'évidence** : Cohérence avec les données patient
+- **Pénalité hypothèses** : Moins il y a d'hypothèses, mieux c'est
+- **Confiance** : Niveau de certitude du diagnostic
+
+### 📊 Exemples de Parcours d'Espace d'États
+
+Le parcours typique pour un patient complexe :
+1. **État initial** : Hypothèses larges, confiance faible
+2. **Élimination progressive** : Réduction des hypothèses
+3. **Augmentation confiance** : Validation des hypothèses restantes
+4. **État final** : 1-2 hypothèses, confiance élevée",,,,,,,,e5fc6d8a65e97bb2,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,a49803b8,code,fr,b1ef161ad6b7d94e,"def tester_performance_astar():
+    """"""Teste les performances de l'algorithme A*""""""
+    astar_test = AStarDiagnostic()
+    
+    # Patients de test avec complexité croissante
+    patients_test = [
+        Patient(1, ""Simple"", 45, 110.0, 160.0, 6.8, [""fatigue""], 
+               [""aucun""], datetime.now()),
+        
+        Patient(2, ""Moyen"", 58, 140.0, 200.0, 8.2, [""polyurie"", ""soif""], 
+               [""hypertension""], datetime.now()),
+        
+        Patient(3, ""Complexe"", 67, 130.0, 180.0, 7.5, 
+               [""fatigue"", ""vision_troublee"", ""engourdissement""], 
+               [""néphropathie""], datetime.now(), 140.0, 28.5)
+    ]
+    
+    import time
+    
+    print(""\n=== Test de Performance A* ==="")
+    for i, patient in enumerate(patients_test):
+        complexite = [""Simple"", ""Moyen"", ""Complexe""][i]
+        print(f""\n--- Patient: {patient.nom} (Complexité: {complexite}) ---"")
+        
+        temps_debut = time.time()
+        resultat = astar_test.rechercher_diagnostic_optimal(patient)
+        temps_fin = time.time()
+        
+        print(f""⏱️ Temps d'exécution: {(temps_fin - temps_debut)*1000:.2f} ms"")
+        print(f""🎯 Hypothèses finales: {', '.join(resultat.hypotheses)}"")
+        print(f""📊 Niveau de confiance: {resultat.niveau_confiance:.3f}"")
+        print(f""💰 Coût total: {resultat.cout:.3f}"")
+
+# Exécution des tests
+tester_performance_astar()
+print(""\n✅ Tests de performance A* terminés"")",,,,,,,,b1ef161ad6b7d94e,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,a595e9f8,markdown,fr,84c35824070a5f67,"### Exercice 2 : Comparer differentes heuristiques pour A*
+
+**Objectif** : Implementer une heuristique alternative pour l'algorithme A* et comparer le nombre d'iterations et la qualite du diagnostic.
+
+**Contexte** : L'heuristique actuelle utilise une combinaison lineaire d'evidences cliniques. Une heuristique basee uniquement sur l'HbA1c pourrait etre plus rapide mais moins precise.
+
+**Indices** :
+- # Indice 1 : Implementez une heuristique `h_simple(etat)` qui n'utilise que l'HbA1c du patient
+- # Indice 2 : Comparez le nombre d'iterations et le niveau de confiance final
+- # Etape 1 : Definir la nouvelle heuristique dans une sous-classe de `AStarDiagnostic`
+- # Etape 2 : Executer la recherche sur les 3 patients de test
+- # Etape 3 : Comparer les resultats (iterations, confiance, hypotheses) avec l'heuristique originale",,,,,,,,84c35824070a5f67,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,265df02e,code,fr,d4823c4286534539,"# Exercice 2 : Heuristique alternative pour A*
+# TODO etudiant : Creer une sous-classe de AStarDiagnostic avec une heuristique simplifiee
+# TODO etudiant : Executer la recherche sur les 3 patients de test
+# TODO etudiant : Comparer les resultats avec l'heuristique originale
+result = None  # TODO etudiant : remplacer par votre comparaison
+print(""Exercice a completer : heuristique alternative A*"")",,,,,,,,d4823c4286534539,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,b8ffd9c1,markdown,fr,81fd235fab6b1487,"## 🎯 Partie 3 : Algorithmes Génétiques
+
+### Théorie Optimisation Évolutionnaire
+
+Les **algorithmes génétiques** s'inspirent de l'évolution naturelle pour optimiser des solutions :
+
+- **Population** : Ensemble de solutions candidates
+- **Sélection** : Choix des meilleurs individus
+- **Croisement** : Combinaison de solutions parentes
+- **Mutation** : Modifications aléatoires
+- **Évolution** : Itérations vers l'optimum
+
+### 📋 Objectifs de cette Partie
+
+1. **Chromosomes** : Représentation des paramètres diagnostiques
+2. **Fitness médicale** : Fonction d'évaluation clinique
+3. **Évolution** : Algorithme évolutionnaire complet
+4. **Tests de convergence** : Suivi de l'optimisation
+
+### 🔧 Implémentation Requise
+
+Vous devez implémenter :
+- `ChromosomeDiagnostic` : Représentation des paramètres diagnostiques
+- `AlgorithmeGenetiqueDiagnostic` : Algorithme évolutionnaire pour l'optimisation",,,,,,,,81fd235fab6b1487,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,45a073e3,code,fr,fdbebeceae2491f8,"class ChromosomeDiagnostic:
+    """"""Chromosome représentant les paramètres diagnostiques""""""
+    
+    def __init__(self, genes: Optional[List[float]] = None):
+        if genes is None:
+            # Gènes : [seuil_glycemie_jeun, seuil_glycemie_post, seuil_hba1c, 
+            #          poids_symptomes, poids_antecedents, facteur_age]
+            self.genes = [
+                random.uniform(90, 140),    # seuil_glycemie_jeun
+                random.uniform(120, 200),   # seuil_glycemie_post
+                random.uniform(5.5, 8.0),    # seuil_hba1c
+                random.uniform(0.1, 0.3),     # poids_symptomes
+                random.uniform(0.05, 0.2),   # poids_antecedents
+                random.uniform(0.8, 1.2)      # facteur_age
+            ]
+        else:
+            self.genes = genes.copy()
+        
+        self.fitness = 0.0
+    
+    def crossover(self, autre: 'ChromosomeDiagnostic') -> Tuple:
+        """"""Croisement avec un autre chromosome""""""
+        point_croisement = random.randint(1, len(self.genes) - 1)
+        
+        genes_enfant1 = self.genes[:point_croisement] + autre.genes[point_croisement:]
+        genes_enfant2 = autre.genes[:point_croisement] + self.genes[point_croisement:]
+        
+        return ChromosomeDiagnostic(genes_enfant1), ChromosomeDiagnostic(genes_enfant2)
+    
+    def mutation(self, taux_mutation: float = 0.1) -> None:
+        """"""Mutation aléatoire des gènes""""""
+        for i in range(len(self.genes)):
+            if random.random() < taux_mutation:
+                # Mutation adaptative selon le gène
+                if i < 3:  # Seuils glycémiques
+                    amplitude = self.genes[i] * 0.1
+                    self.genes[i] += random.uniform(-amplitude, amplitude)
+                    if i == 0:  # glycemie_jeun
+                        self.genes[i] = max(70, min(250, self.genes[i]))
+                    elif i == 1:  # glycemie_post
+                        self.genes[i] = max(100, min(300, self.genes[i]))
+                    elif i == 2:  # hba1c
+                        amplitude = 0.5
+                        self.genes[i] += random.uniform(-amplitude, amplitude)
+                        self.genes[i] = max(4.0, min(12.0, self.genes[i]))
+                else:  # Poids et facteurs
+                    amplitude = 0.2
+                    self.genes[i] += random.uniform(-amplitude, amplitude)
+                    self.genes[i] = max(0.0, min(2.0, self.genes[i]))
+
+class AlgorithmeGenetiqueDiagnostic:
+    """"""Algorithme génétique pour optimiser les paramètres diagnostiques""""""
+    
+    def __init__(self, taille_population: int = 50):
+        self.taille_population = taille_population
+        self.taux_mutation = 0.1
+        self.taux_croisement = 0.8
+        self.elitisme = 0.2  # Top 20% conservés
+        self.generations_max = 100
+        self.patients_reference = self._charger_patients_reference()
+    
+    def _charger_patients_reference(self) -> List[Patient]:
+        """"""Charge les patients de référence pour l'évaluation""""""
+        return [
+            Patient(1, ""Ref1"", 45, 110.0, 160.0, 6.8, [""fatigue""], 
+                   [""aucun""], datetime.now()),
+            Patient(2, ""Ref2"", 58, 140.0, 200.0, 8.2, [""polyurie"", ""soif""], 
+                   [""hypertension""], datetime.now()),
+            Patient(3, ""Ref3"", 67, 130.0, 180.0, 7.5, 
+                   [""fatigue"", ""vision_troublee""], 
+                   [""néphropathie""], datetime.now()),
+            Patient(4, ""Ref4"", 35, 90.0, 150.0, 5.5, [""polyurie""], 
+                   [""surpoids""], datetime.now()),
+            Patient(5, ""Ref5"", 72, 150.0, 220.0, 9.1, 
+                   [""engourdissement"", ""maux_pieds""], 
+                   [""cardiopathie""], datetime.now())
+        ]
+    
+    def fitness_medical(self, chromosome: ChromosomeDiagnostic) -> float:
+        """"""Fonction de fitness basée sur les critères médicaux""""""
+        seuil_jeun, seuil_post, seuil_hba1c, poids_symptomes, poids_antecedents, facteur_age = chromosome.genes
+        
+        score_total = 0.0
+        patients_corrects = 0
+        
+        for patient in self.patients_reference:
+            score_patient = 0.0
+            
+            # Évaluation glycémie à jeun
+            if patient.glycemie_jeun > seuil_jeun:
+                if patient.hba1c > 6.5:  # Vrai positif probable
+                    score_patient += 1.0
+                else:
+                    score_patient -= 0.5  # Faux positif
+            else:
+                if patient.hba1c < 6.0:  # Vrai négatif probable
+                    score_patient += 1.0
+                else:
+                    score_patient -= 0.5  # Faux négatif
+            
+            # Évaluation glycémie post-prandiale
+            if patient.glycemie_postprandiale > seuil_post:
+                if len(patient.symptomes) > 0:  # Symptômes présents
+                    score_patient += poids_symptomes * 0.5
+                else:
+                    score_patient -= 0.3
+            else:
+                if len(patient.symptomes) == 0:
+                    score_patient += 0.5
+            
+            # Évaluation HbA1c
+            if patient.hba1c > seuil_hba1c:
+                if ""hypertension"" in patient.antecedents or ""cardiopathie"" in patient.antecedents:
+                    score_patient += poids_antecedents * 0.3
+                else:
+                    score_patient += 0.2
+            else:
+                score_patient += 0.3
+            
+            # Facteur âge
+            if patient.age > 60:
+                score_patient += facteur_age * 0.1
+            
+            score_total += max(0, score_patient)
+            if score_patient > 0:
+                patients_corrects += 1
+        
+        # Fitness = score total + bonus pour couverture
+        couverture = patients_corrects / len(self.patients_reference)
+        fitness = score_total + couverture * 10
+        
+        # Pénalité pour seuils irréalistes
+        if seuil_jeun < 70 or seuil_jeun > 200:
+            fitness -= 5
+        if seuil_post < 100 or seuil_post > 300:
+            fitness -= 5
+        if seuil_hba1c < 4.0 or seuil_hba1c > 12.0:
+            fitness -= 5
+        
+        return fitness
+    
+    def evolution(self) -> ChromosomeDiagnostic:
+        """"""Lance l'évolution génétique""""""
+        # Initialisation de la population
+        population = [ChromosomeDiagnostic() for _ in range(self.taille_population)]
+        
+        # Évaluation initiale
+        for chromosome in population:
+            chromosome.fitness = self.fitness_medical(chromosome)
+        
+        meilleure_solution = max(population, key=lambda c: c.fitness)
+        
+        print(f""🧬 Début de l'évolution génétique..."")
+        print(f""📊 Meilleur fitness initial: {meilleure_solution.fitness:.3f}"")
+        
+        for generation in range(self.generations_max):
+            nouvelle_population = []
+            
+            # Élitisme : conserver les meilleurs
+            population_triee = sorted(population, key=lambda c: c.fitness, reverse=True)
+            elite_size = int(self.taille_population * self.elitisme)
+            nouvelle_population.extend(population_triee[:elite_size])
+            
+            # Génération du reste de la population
+            while len(nouvelle_population) < self.taille_population:
+                # Sélection par tournoi
+                parent1 = self._selection_tournoi(population)
+                parent2 = self._selection_tournoi(population)
+                
+                # Croisement
+                if random.random() < self.taux_croisement:
+                    enfant1, enfant2 = parent1.crossover(parent2)
+                else:
+                    enfant1, enfant2 = ChromosomeDiagnostic(parent1.genes.copy()), ChromosomeDiagnostic(parent2.genes.copy())
+                
+                # Mutation
+                enfant1.mutation(self.taux_mutation)
+                enfant2.mutation(self.taux_mutation)
+                
+                # Évaluation
+                enfant1.fitness = self.fitness_medical(enfant1)
+                enfant2.fitness = self.fitness_medical(enfant2)
+                
+                nouvelle_population.extend([enfant1, enfant2])
+            
+            population = nouvelle_population[:self.taille_population]
+            
+            # Mise à jour de la meilleure solution
+            generation_meilleur = max(population, key=lambda c: c.fitness)
+            if generation_meilleur.fitness > meilleure_solution.fitness:
+                meilleure_solution = generation_meilleur
+            
+            # Affichage de progression
+            if generation % 10 == 0:
+                print(f""Génération {generation}: Meilleur fitness = {meilleure_solution.fitness:.3f}"")
+        
+        print(f""✅ Évolution terminée. Meilleur fitness final: {meilleure_solution.fitness:.3f}"")
+        return meilleure_solution
+    
+    def _selection_tournoi(self, population: List[ChromosomeDiagnostic]) -> ChromosomeDiagnostic:
+        """"""Sélection par tournoi""""""
+        taille_tournoi = 3
+        participants = random.sample(population, min(taille_tournoi, len(population)))
+        return max(participants, key=lambda c: c.fitness)
+
+print(""🧬 Création de l'algorithme génétique..."")
+genetique = AlgorithmeGenetiqueDiagnostic()
+print(""✅ Algorithme génétique initialisé"")
+print(f""👥 Patients de référence : {len(genetique.patients_reference)}"")",,,,,,,,fdbebeceae2491f8,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,1c4e5fb5,markdown,fr,130ecf24b7153f29,"### 🏥️ Explication Fitness Médicale
+
+La fonction fitness médicale évalue la qualité d'un chromosome :
+
+- **Précision diagnostique** : Capacité à classifier correctement
+- **Cohérence clinique** : Respect des protocoles médicaux
+- **Réalisme des seuils** : Valeurs médicalement valides
+- **Couverture** : Pourcentage de patients correctement classifiés
+
+### 📊 Tests de Convergence
+
+Le suivi de convergence doit inclure :
+- **Historique de fitness** : Évolution de la meilleure solution
+- **Graphique** : Visualisation de la convergence
+- **Paramètres finaux** : Seuils optimisés obtenus",,,,,,,,130ecf24b7153f29,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,2d7b2b42,code,fr,f3f3bd81e3edb1d9,"def tester_convergence_genetique():
+    """"""Teste la convergence de l'algorithme génétique""""""
+    import matplotlib.pyplot as plt
+    
+    algorithme = AlgorithmeGenetiqueDiagnostic(taille_population=30)
+    algorithme.generations_max = 50  # Réduit pour test rapide
+    
+    print(""\n=== Test de Convergence Génétique ==="")
+    solution_optimale = algorithme.evolution()
+    
+    # Afficher les résultats
+    print(""\n--- Paramètres Optimisés ---"")
+    noms_genes = [""Seuil Glycémie Jeun (mg/dL)"", ""Seuil Glycémie Post (mg/dL)"", ""Seuil HbA1c (%)"", 
+                  ""Poids Symptômes"", ""Poids Antécédents"", ""Facteur Âge""]
+    
+    for nom, valeur in zip(noms_genes, solution_optimale.genes):
+        if ""Seuil"" in nom:
+            print(f""  {nom}: {valeur:.1f}"")
+        else:
+            print(f""  {nom}: {valeur:.3f}"")
+    
+    print(f""\n📊 Fitness finale: {solution_optimale.fitness:.3f}"")
+    
+    return solution_optimale
+
+# Exécution du test
+resultat = tester_convergence_genetique()
+print(""\n✅ Tests de convergence génétique terminés"")",,,,,,,,f3f3bd81e3edb1d9,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,f499ea4e,markdown,fr,3726bf9ad0106b38,"## 🎯 Partie 4 : Solveur Z3 (Programmation par Contraintes)
+
+### Théorie Programmation par Contraintes (AIMA Chapitre 6)
+
+La **programmation par Contraintes** (CSP - Constraint Satisfaction Problem) vise à trouver une solution qui satisfait un ensemble de contraintes :
+
+- **Variables** : Inconnues à déterminer
+- **Domaines** : Valeurs possibles pour chaque variable
+- **Contraintes** : Relations entre variables
+- **Solveur** : Algorithme de résolution (Z3)
+
+### 📋 Objectifs de cette Partie
+
+1. **Modélisation CSP** : Traduction des contraintes médicales
+2. **Solveur Z3** : Utilisation efficace de Z3
+3. **Validation** : Vérification des protocoles
+4. **Analyse de faisabilité** : Performance sur plusieurs patients
+
+### 🔧 Implémentation Requise
+
+Vous devez implémenter la classe `Z3ConstraintSolver` avec les méthodes suivantes :
+- `definir_variables_contraintes(self, patient: Patient) -> Dict`
+- `valider_protocole(self, patient: Patient) -> Dict`
+- `analyser_faisabilite(self, patients: List[Patient]) -> Dict`",,,,,,,,3726bf9ad0106b38,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,e509b94d,code,fr,64eda8f5915661d4,"from z3 import *
+
+class Z3ConstraintSolver:
+    """"""Solveur de contraintes pour validation des protocoles thérapeutiques""""""
+    
+    def __init__(self):
+        self.solver = Solver()
+        self.protocoles = protocoles_diabete_type2
+    
+    def definir_variables_contraintes(self, patient: Patient) -> Dict:
+        """"""Définit les variables et contraintes pour un patient""""""
+        # Variables de décision
+        traitement_metformine = Bool('metformine')
+        traitement_insuline = Bool('insuline')
+        traitement_statines = Bool('statines')
+        
+        dose_metformine = Real('dose_metformine')
+        dose_insuline = Real('dose_insuline')
+        objectif_hba1c = Real('objectif_hba1c')
+        
+        # Contraintes de base
+        self.solver.add(objectif_hba1c >= 6.0)  # Objectif minimum
+        self.solver.add(objectif_hba1c <= 8.0)  # Objectif réaliste
+        
+        # Contraintes glycémiques
+        self.solver.add(Implies(traitement_metformine, 
+                           And(dose_metformine >= 500, dose_metformine <= 3000)))
+        self.solver.add(Implies(traitement_insuline, dose_insuline >= 0))
+        
+        # Contraintes d'âge
+        if patient.age > 65:
+            self.solver.add(dose_metformine <= 2000)  # Dose réduite pour âgés
+        
+        # Contraintes de fonction rénale (si données disponibles)
+        if ""insuffisance_rénale"" in patient.antecedents or ""insuffisance_rénale_sévère"" in patient.antecedents:
+            self.solver.add(Not(traitement_metformine))  # Contre-indication
+        
+        # Contraintes d'IMC
+        if patient.imc and patient.imc > 30:
+            self.solver.add(objectif_hba1c <= 7.0)  # Objectif plus strict pour obèses
+        
+        # Contraintes de pression artérielle
+        if patient.pression_arterielle and patient.pression_arterielle > 140:
+            self.solver.add(traitement_statines)  # Statines recommandées
+        
+        # Contraintes d'interaction médicamenteuse
+        self.solver.add(Implies(And(traitement_metformine, traitement_insuline),
+                           dose_metformine <= 2500))  # Réduction si association
+        
+        # Variables de retour
+        return {
+            'metformine': traitement_metformine,
+            'insuline': traitement_insuline,
+            'statines': traitement_statines,
+            'dose_metformine': dose_metformine,
+            'dose_insuline': dose_insuline,
+            'objectif_hba1c': objectif_hba1c
+        }
+    
+    def valider_protocole(self, patient: Patient) -> Dict:
+        """"""Valide le protocole thérapeutique pour un patient""""""
+        # Réinitialiser le solveur
+        self.solver = Solver()
+        variables = self.definir_variables_contraintes(patient)
+        
+        # Tenter de trouver une solution
+        if self.solver.check() == sat:
+            modele = self.solver.model()
+            
+            # Extraire les valeurs optimales avec gestion des erreurs
+            try:
+                metf_val = modele[variables['metformine']]
+                insu_val = modele[variables['insuline']]
+                stat_val = modele[variables['statines']]
+                
+                # Conversion sécurisée des booléens
+                traitement_metformine = is_true(metf_val) if metf_val is not None else False
+                traitement_insuline = is_true(insu_val) if insu_val is not None else False
+                traitement_statines = is_true(stat_val) if stat_val is not None else False
+                
+                # Extraction des doses
+                dose_metf = modele[variables['dose_metformine']]
+                dose_insu = modele[variables['dose_insuline']]
+                obj_hba1c = modele[variables['objectif_hba1c']]
+                
+                protocole_optimal = {
+                    'traitement_metformine': traitement_metformine,
+                    'traitement_insuline': traitement_insuline,
+                    'traitement_statines': traitement_statines,
+                    'dose_metformine': float(dose_metf.as_decimal(2)) if traitement_metformine and dose_metf is not None else 0,
+                    'dose_insuline': float(dose_insu.as_decimal(2)) if traitement_insuline and dose_insu is not None else 0,
+                    'objectif_hba1c': float(obj_hba1c.as_decimal(2)) if obj_hba1c is not None else 7.0,
+                    'valide': True,
+                    'contraintes_satisfaites': self._verifier_contraintes(modele, patient, variables)
+                }
+            except Exception as e:
+                protocole_optimal = {
+                    'valide': False,
+                    'raison': f""Erreur d'extraction: {str(e)}"",
+                    'contraintes_violees': []
+                }
+        else:
+            protocole_optimal = {
+                'valide': False,
+                'raison': ""Aucune solution trouvée"",
+                'contraintes_violees': self._identifier_contraintes_violees(patient)
+            }
+        
+        return protocole_optimal
+    
+    def _verifier_contraintes(self, modele, patient: Patient, variables: Dict) -> List[str]:
+        """"""Vérifie quelles contraintes sont satisfaites""""""
+        contraintes_satisfaites = []
+        
+        try:
+            # Vérification des contraintes glycémiques
+            obj_hba1c = modele[variables['objectif_hba1c']]
+            if obj_hba1c is not None:
+                objectif_val = float(obj_hba1c.as_decimal(2))
+                if 6.0 <= objectif_val <= 8.0:
+                    contraintes_satisfaites.append(""Objectif HbA1c réaliste"")
+            
+            # Vérification des doses
+            if is_true(modele[variables['metformine']]):
+                dose = modele[variables['dose_metformine']]
+                if dose is not None:
+                    dose_val = float(dose.as_decimal(2))
+                    if 500 <= dose_val <= 3000:
+                        contraintes_satisfaites.append(""Dose Metformine appropriée"")
+            
+            # Vérification des contre-indications
+            if ""insuffisance_rénale"" in patient.antecedents:
+                if not is_true(modele[variables['metformine']]):
+                    contraintes_satisfaites.append(""Contre-indication Metformine respectée"")
+        except Exception:
+            pass
+        
+        return contraintes_satisfaites
+    
+    def _identifier_contraintes_violees(self, patient: Patient) -> List[str]:
+        """"""Identifie les contraintes potentiellement violées""""""
+        contraintes_violees = []
+        
+        # Contraintes d'âge
+        if patient.age > 65:
+            contraintes_violees.append(""Adaptation dose nécessaire pour patient âgé"")
+        
+        # Contraintes d'IMC
+        if patient.imc and patient.imc > 35:
+            contraintes_violees.append(""IMC très élevé - protocole complexe"")
+        
+        # Contraintes de comorbidités
+        comorbidites_severes = [""insuffisance_cardiaque"", ""néphropathie_sévère""]
+        if any(com in patient.antecedents for com in comorbidites_severes):
+            contraintes_violees.append(""Comorbidités sévères - protocole spécialisé requis"")
+        
+        return contraintes_violees
+    
+    def analyser_faisabilite(self, patients: List[Patient]) -> Dict:
+        """"""Analyse la faisabilit é du système pour plusieurs patients""""""
+        resultats = {
+            'patients_valides': 0,
+            'patients_rejetes': 0,
+            'contraintes_frequentes': {},
+            'temps_moyen_resolution': 0,
+            'details_patients': []
+        }
+        
+        import time
+        temps_total = 0
+        
+        for patient in patients:
+            temps_debut = time.time()
+            protocole = self.valider_protocole(patient)
+            temps_fin = time.time()
+            
+            temps_total += (temps_fin - temps_debut)
+            
+            if protocole['valide']:
+                resultats['patients_valides'] += 1
+            else:
+                resultats['patients_rejetes'] += 1
+            
+            # Comptage des contraintes fréquentes
+            if not protocole['valide']:
+                for contrainte in protocole.get('contraintes_violees', []):
+                    resultats['contraintes_frequentes'][contrainte] = \
+                        resultats['contraintes_frequentes'].get(contrainte, 0) + 1
+            
+            resultats['details_patients'].append({
+                'patient_id': patient.id,
+                'valide': protocole['valide'],
+                'protocole': protocole
+            })
+        
+        resultats['temps_moyen_resolution'] = temps_total / len(patients) if patients else 0
+        resultats['taux_validation'] = resultats['patients_valides'] / len(patients) if patients else 0
+        
+        return resultats
+
+print(""🔧 Création du solveur Z3..."")
+solveur = Z3ConstraintSolver()
+print(""✅ Solveur Z3 initialisé"")
+print(f""📋 Protocoles chargés : {len(solveur.protocoles)} sections"")",,,,,,,,64eda8f5915661d4,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,9861dd7d,markdown,fr,f37ae00dfaa1f2f1,"### 🏥️ Explication Modélisation Contraintes Médicales
+
+La modélisation des contraintes médicales doit inclure :
+
+- **Variables de traitement** : Metformine, Insuline, Statines
+- **Contraintes de dose** : Limites selon âge, poids, comorbidités
+- **Contre-indications** : Exclusions selon antécédents
+- **Interactions** : Contraintes entre médicaments
+- **Objectifs thérapeutiques** : Cibles HbA1c, glycémie
+
+### 📊 Tests de Validation
+
+Les tests doivent valider :
+- **Protocoles complexes** : Patients avec comorbidités
+- **Contraintes violées** : Détection des incompatibilités
+- **Temps de résolution** : Performance du solveur",,,,,,,,f37ae00dfaa1f2f1,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,6d572a40,code,fr,44d22e906b7a7523,"def tester_validation_z3():
+    """"""Teste le solveur Z3 avec des cas complexes""""""
+    solveur_test = Z3ConstraintSolver()
+    
+    # Cas de test complexes
+    patients_complexes = [
+        Patient(1, ""Cas1"", 67, 130.0, 180.0, 7.5, 
+               [""fatigue"", ""vision_troublee""], 
+               [""néphropathie"", ""hypertension""], 
+               datetime.now(), 140.0, 28.5),
+        
+        Patient(2, ""Cas2"", 72, 150.0, 220.0, 9.1, 
+               [""engourdissement"", ""maux_pieds""], 
+               [""cardiopathie""], 
+               datetime.now(), 160.0, 32.1),
+        
+        Patient(3, ""Cas3"", 55, 125.0, 170.0, 6.9, 
+               [""hypoglycémie""], 
+               [""hypoglycémie_récurrente""], 
+               datetime.now(), 130.0, 27.8)
+    ]
+    
+    print(""\n=== Test de Validation Z3 ==="")
+    
+    for patient in patients_complexes:
+        print(f""\n--- Patient: {patient.nom} ---"")
+        print(f""👤 Âge: {patient.age} ans, IMC: {patient.imc:.1f}"")
+        print(f""📋 Antécédents: {', '.join(patient.antecedents)}"")
+        
+        resultat = solveur_test.valider_protocole(patient)
+        
+        if resultat['valide']:
+            print(""✅ Protocole VALIDÉ"")
+            print(f""   💊 Metformine: {resultat['traitement_metformine']} ({resultat['dose_metformine']:.0f} mg)"")
+            print(f""   💉 Insuline: {resultat['traitement_insuline']} ({resultat['dose_insuline']:.1f} UI)"")
+            print(f""   💊 Statines: {resultat['traitement_statines']}"")
+            print(f""   🎯 Objectif HbA1c: {resultat['objectif_hba1c']:.1f}%"")
+            print(f""   ✓ Contraintes satisfaites: {len(resultat['contraintes_satisfaites'])}"")
+            for c in resultat['contraintes_satisfaites']:
+                print(f""      - {c}"")
+        else:
+            print(""❌ Protocole NON VALIDÉ"")
+            print(f""   ⚠️ Raison: {resultat.get('raison', 'Inconnue')}"")
+            if resultat.get('contraintes_violees'):
+                print(f""   ⚠️ Contraintes violées:"")
+                for c in resultat['contraintes_violees']:
+                    print(f""      - {c}"")
+    
+    # Analyse globale
+    print(f""\n=== Analyse Globale ==="")
+    faisabilite = solveur_test.analyser_faisabilite(patients_complexes)
+    print(f""📊 Taux de validation: {faisabilite['taux_validation']:.1%}"")
+    print(f""⏱️ Temps moyen de résolution: {faisabilite['temps_moyen_resolution']*1000:.2f} ms"")
+    if faisabilite['contraintes_frequentes']:
+        print(f""⚠️ Contraintes fréquentes:"")
+        for contrainte, count in faisabilite['contraintes_frequentes'].items():
+            print(f""   - {contrainte}: {count} fois"")
+
+# Exécution des tests
+tester_validation_z3()
+print(""\n✅ Tests de validation Z3 terminés"")",,,,,,,,44d22e906b7a7523,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,ac893b9b,markdown,fr,cdfe402f9c03de5e,"### Exercice 3 : Ajouter des contraintes d'interaction medicamenteuse au solveur Z3
+
+**Objectif** : Etendre le solveur Z3 pour inclure de nouvelles contraintes d'interaction entre medicaments et verifier que le protocole est sur.
+
+**Contexte** : Les interactions medicamenteuses sont une source majeure de risques. L'insuline combinee a certains antidiabetiques oraux augmente le risque d'hypoglycemie severe.
+
+**Indices** :
+- # Indice 1 : Ajoutez une contrainte Z3 qui limite la dose d'insuline si le patient prend aussi de la metformine
+- # Indice 2 : Utilisez `Implies()` et `And()` pour exprimer les conditions
+- # Etape 1 : Ajouter la variable booleenne `hypoglycemie_risque` au modele
+- # Etape 2 : Definir les contraintes d'interaction
+- # Etape 3 : Tester avec un patient qui a des antecedents d'hypoglycemie et verifier que le solveur refuse certaines combinaisons",,,,,,,,cdfe402f9c03de5e,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,9acbed9a,code,fr,c033bd599c8db3dc,"# Exercice 3 : Contraintes d'interaction medicamenteuse avec Z3
+# TODO etudiant : Etendre la classe Z3ConstraintSolver avec des contraintes d'interaction
+# TODO etudiant : Ajouter une contrainte sur la dose d'insuline si metformine aussi prescrite
+# TODO etudiant : Tester avec un patient hypoglycemique
+result = None  # TODO etudiant : remplacer par votre solution Z3
+print(""Exercice a completer : contraintes d'interaction medicamenteuse"")",,,,,,,,c033bd599c8db3dc,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,4fddccb5,markdown,fr,5878b4ea1855644d,"## 🔄 Pipeline et Tests d'Intégration
+
+### 📋 Objectifs du Pipeline
+
+Le pipeline doit intégrer les 4 approches de manière cohérente :
+
+1. **Chargement des données** : Import depuis CSV
+2. **Traitement séquentiel** : Agent → A* → Génétique → Z3
+3. **Synthèse des résultats** : Combinaison des approches
+4. **Validation croisée** : Vérification de la cohérence
+
+### 🧪 Tests Automatisés
+
+Les tests automatisés doivent valider :
+- **Fonctionnalité individuelle** : Chaque approche testée séparément
+- **Intégration** : Pipeline complet fonctionnel
+- **Performance globale** : Mesures sur l'ensemble du système
+- **Robustesse** : Gestion des erreurs et cas limites",,,,,,,,5878b4ea1855644d,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,e0a532b6,code,fr,ac411c643850df39,"# Chargement des données
+def charger_donnees_csv(fichier: str) -> List[Patient]:
+    """"""Charge les données patients depuis un fichier CSV""""""
+    import pandas as pd
+    
+    try:
+        df = pd.read_csv(fichier)
+        patients = []
+        
+        for _, row in df.iterrows():
+            # Traiter les symptômes (séparés par ;)
+            symptomes = row['symptomes'].split(';') if isinstance(row['symptomes'], str) and row['symptomes'] != 'aucun' else []
+            
+            # Traiter les antécédents (séparés par ;)
+            antecedents = row['antecedents'].split(';') if isinstance(row['antecedents'], str) else [row['antecedents']]
+            
+            patient = Patient(
+                id=int(row['id']),
+                nom=row['nom'],
+                age=int(row['age']),
+                glycemie_jeun=float(row['glycemie_jeun']),
+                glycemie_postprandiale=float(row['glycemie_postprandiale']),
+                hba1c=float(row['hba1c']),
+                symptomes=symptomes,
+                antecedents=antecedents,
+                date_consultation=datetime.now(),
+                pression_arterielle=float(row['pression_arterielle']) if pd.notna(row.get('pression_arterielle')) else None,
+                imc=float(row['imc']) if pd.notna(row.get('imc')) else None
+            )
+            patients.append(patient)
+        
+        print(f""✅ {len(patients)} patients chargés depuis {fichier}"")
+        return patients
+    
+    except Exception as e:
+        print(f""❌ Erreur lors du chargement : {str(e)}"")
+        return []
+
+# Pipeline principal
+def main():
+    """"""Pipeline complet d'intégration des 4 approches""""""
+    print(""\n"" + ""=""*60)
+    print(""🏥 SYSTÈME DE DIAGNOSTIC MÉDICAL MULTI-CONTRAINTES"")
+    print(""Application: Diabète de Type 2"")
+    print(""=""*60)
+    
+    # Chargement des données
+    print(""\n📂 Chargement des données patients..."")
+    patients = charger_donnees_csv(""data/patients.csv"")
+    
+    if not patients:
+        print(""⚠️ Aucun patient chargé, utilisation de données de test"")
+        patients = [
+            Patient(1, ""Test1"", 45, 110.0, 160.0, 6.8, [""fatigue""], [""aucun""], datetime.now()),
+            Patient(2, ""Test2"", 58, 140.0, 200.0, 8.2, [""polyurie""], [""hypertension""], datetime.now())
+        ]
+    
+    # Initialisation des composants
+    print(""\n🤖 Initialisation des composants IA..."")
+    agent = DiagnosticAgent()
+    astar_algo = AStarDiagnostic()
+    solveur_z3 = Z3ConstraintSolver()
+    print(""✅ Tous les composants initialisés"")
+    
+    # Traitement pour chaque patient
+    print(""\n📊 Analyse des patients..."")
+    for i, patient in enumerate(patients[:3], 1):  # Limité à 3 pour l'exemple
+        print(f""\n{'='*60}"")
+        print(f""Patient {i}/{min(3, len(patients))}: {patient.nom} (ID: {patient.id})"")
+        print(f""{'='*60}"")
+        print(f""📋 Âge: {patient.age} ans"")
+        print(f""📈 Glycémie jeun: {patient.glycemie_jeun} mg/dL"")
+        print(f""📈 Glycémie post: {patient.glycemie_postprandiale} mg/dL"")
+        print(f""📈 HbA1c: {patient.hba1c}%"")
+        
+        # Pipeline à 4 étapes
+        print(""\n🔍 Étape 1: Agent de Diagnostic"")
+        diagnostic = agent.classifier_risque(patient)
+        symptomes = agent.analyser_symptomes(patient)
+        recommandations = agent.generer_recommandations(patient, diagnostic)
+        print(f""   → Risque: {diagnostic}"")
+        print(f""   → Symptômes analysés: {len(symptomes)}"")
+        print(f""   → Recommandations: {recommandations[0] if recommandations else 'Aucune'}"")
+        
+        print(""\n🎯 Étape 2: Optimisation A*"")
+        try:
+            optimisation = astar_algo.rechercher_diagnostic_optimal(patient)
+            print(f""   → Hypothèses: {', '.join(optimisation.hypotheses[:2])}"")
+            print(f""   → Confiance: {optimisation.niveau_confiance:.2f}"")
+        except Exception as e:
+            print(f""   ⚠️ Erreur A*: {str(e)}"")
+        
+        print(""\n🔧 Étape 3: Validation Z3"")
+        try:
+            protocole = solveur_z3.valider_protocole(patient)
+            if protocole['valide']:
+                print(f""   ✅ Protocole validé"")
+                print(f""   → Metformine: {protocole['traitement_metformine']}"")
+                print(f""   → Insuline: {protocole['traitement_insuline']}"")
+            else:
+                print(f""   ❌ Protocole non validé: {protocole.get('raison')}"")
+        except Exception as e:
+            print(f""   ⚠️ Erreur Z3: {str(e)}"")
+        
+        print(""\n--- Synthèse ---"")
+        print(f""✓ Diagnostic principal: {diagnostic}"")
+        print(f""✓ Approches validées: Agent + A* + Z3"")
+        print(f""✓ Recommandation prioritaire: {recommandations[0] if recommandations else 'N/A'}"")
+    
+    print(""\n"" + ""=""*60)
+    print(""✅ Analyse terminée pour tous les patients"")
+    print(""=""*60)
+
+# Note: La fonction main() sera exécutée manuellement par l'utilisateur
+print(""\n💡 Pour exécuter le pipeline complet, appelez: main()"")",,,,,,,,ac411c643850df39,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,1d26cfcb,markdown,fr,4f95c7ca6d47262b,Execution des tests automatises sur le modele.,,,,,,,,4f95c7ca6d47262b,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,6f254673,code,fr,b1bf4bdcd3107ad3,"def tests_automatises():
+    """"""Suite de tests automatisés pour validation complète""""""
+    print(""\n"" + ""=""*60)
+    print(""🧪 SUITE DE TESTS AUTOMATISÉS"")
+    print(""=""*60)
+    
+    tests_resultats = {
+        'total': 0,
+        'passes': 0,
+        'echecs': 0,
+        'details': []
+    }
+    
+    # Test 1: Agent de Diagnostic
+    print(""\n📋 Test 1: Agent de Diagnostic"")
+    try:
+        agent_test = DiagnosticAgent()
+        patient_test = Patient(999, ""TestAgent"", 50, 120.0, 170.0, 7.0, [""fatigue""], [""aucun""], datetime.now())
+        risque = agent_test.classifier_risque(patient_test)
+        assert risque in [""Normal"", ""Pré-diabète"", ""Diabète Type 2""], ""Classification invalide""
+        print(""   ✅ Agent de diagnostic: RÉUSSI"")
+        tests_resultats['passes'] += 1
+        tests_resultats['total'] += 1
+    except Exception as e:
+        print(f""   ❌ Agent de diagnostic: ÉCHEC - {str(e)}"")
+        tests_resultats['echecs'] += 1
+        tests_resultats['total'] += 1
+        tests_resultats['details'].append(('Agent Diagnostic', str(e)))
+    
+    # Test 2: Performance A*
+    print(""\n📋 Test 2: Performance A*"")
+    try:
+        import time
+        astar_test = AStarDiagnostic()
+        patient_test = Patient(999, ""TestAstar"", 55, 130.0, 180.0, 7.2, [""polyurie""], [""hypertension""], datetime.now())
+        
+        temps_debut = time.time()
+        resultat = astar_test.rechercher_diagnostic_optimal(patient_test)
+        temps_fin = time.time()
+        
+        temps_execution = (temps_fin - temps_debut) * 1000
+        assert temps_execution < 5000, f""Temps d'exécution trop long: {temps_execution:.0f}ms""
+        assert len(resultat.hypotheses) <= 7, ""Trop d'hypothèses""
+        print(f""   ✅ Performance A*: RÉUSSI ({temps_execution:.0f}ms)"")
+        tests_resultats['passes'] += 1
+        tests_resultats['total'] += 1
+    except Exception as e:
+        print(f""   ❌ Performance A*: ÉCHEC - {str(e)}"")
+        tests_resultats['echecs'] += 1
+        tests_resultats['total'] += 1
+        tests_resultats['details'].append(('A* Performance', str(e)))
+    
+    # Test 3: Convergence Génétique
+    print(""\n📋 Test 3: Convergence Génétique"")
+    try:
+        genetique_test = AlgorithmeGenetiqueDiagnostic(taille_population=20)
+        genetique_test.generations_max = 30  # Réduit pour test rapide
+        
+        solution = genetique_test.evolution()
+        assert solution.fitness > 0, ""Fitness invalide""
+        assert len(solution.genes) == 6, ""Nombre de gènes incorrect""
+        print(f""   ✅ Convergence génétique: RÉUSSI (fitness={solution.fitness:.2f})"")
+        tests_resultats['passes'] += 1
+        tests_resultats['total'] += 1
+    except Exception as e:
+        print(f""   ❌ Convergence génétique: ÉCHEC - {str(e)}"")
+        tests_resultats['echecs'] += 1
+        tests_resultats['total'] += 1
+        tests_resultats['details'].append(('Génétique Convergence', str(e)))
+    
+    # Test 4: Validation Z3
+    print(""\n📋 Test 4: Validation Z3"")
+    try:
+        solveur_test = Z3ConstraintSolver()
+        patient_test = Patient(999, ""TestZ3"", 60, 125.0, 175.0, 7.1,
+                             [""fatigue""], [""hypertension""], datetime.now(), 135.0, 26.5)
+        
+        protocole = solveur_test.valider_protocole(patient_test)
+        assert 'valide' in protocole, ""Format de protocole invalide""
+        print(f""   ✅ Validation Z3: RÉUSSI (valide={protocole['valide']})"")
+        tests_resultats['passes'] += 1
+        tests_resultats['total'] += 1
+    except Exception as e:
+        print(f""   ❌ Validation Z3: ÉCHEC - {str(e)}"")
+        tests_resultats['echecs'] += 1
+        tests_resultats['total'] += 1
+        tests_resultats['details'].append(('Z3 Validation', str(e)))
+    
+    # Test 5: Chargement données CSV
+    print(""\n📋 Test 5: Chargement données CSV"")
+    try:
+        patients = charger_donnees_csv(""data/patients.csv"")
+        assert len(patients) > 0, ""Aucun patient chargé""
+        assert all(hasattr(p, 'id') for p in patients), ""Attributs patients invalides""
+        print(f""   ✅ Chargement CSV: RÉUSSI ({len(patients)} patients)"")
+        tests_resultats['passes'] += 1
+        tests_resultats['total'] += 1
+    except Exception as e:
+        print(f""   ❌ Chargement CSV: ÉCHEC - {str(e)}"")
+        tests_resultats['echecs'] += 1
+        tests_resultats['total'] += 1
+        tests_resultats['details'].append(('CSV Loading', str(e)))
+    
+    # Résumé final
+    print(""\n"" + ""=""*60)
+    print(""📊 RÉSULTATS DES TESTS"")
+    print(""=""*60)
+    print(f""Total de tests: {tests_resultats['total']}"")
+    print(f""✅ Réussis: {tests_resultats['passes']}"")
+    print(f""❌ Échecs: {tests_resultats['echecs']}"")
+    print(f""📈 Taux de succès: {(tests_resultats['passes']/tests_resultats['total']*100):.1f}%"")
+    
+    if tests_resultats['details']:
+        print(""\n⚠️ Détails des échecs:"")
+        for test_nom, erreur in tests_resultats['details']:
+            print(f""   - {test_nom}: {erreur}"")
+    
+    print(""\n"" + ""=""*60)
+    
+    return tests_resultats
+
+# Note: La fonction tests_automatises() sera exécutée manuellement par l'utilisateur
+print(""\n💡 Pour exécuter la suite de tests, appelez: tests_automatises()"")",,,,,,,,b1bf4bdcd3107ad3,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,0b753e08,markdown,fr,d55d81ce28c71560,"### 📊 Analyse Comparative et Conclusion
+
+#### Analyse Comparative des 4 Approches
+
+| Approche | Forces | Faiblesses | Cas Idéaux |
+|---------|--------|------------|-------------|
+| Agent Diagnostic | Rapidité, Interprétabilité | Dépendance règles, Non-adaptatif | Diagnostic initial, triage |
+| Algorithme A* | Optimalité, Exploration systématique | Complexité exponentielle, Dépendance heuristique | Diagnostic complexe, espace défini |
+| Algorithmes Génétiques | Optimisation globale, Robustesse | Pas d'optimalité, Réglages délicats | Optimisation paramètres, adaptation |
+| Solveur Z3 | Garantie contraintes, Efficacité | Complexité théorique, Modélisation difficile | Validation protocoles, cohérence |
+
+#### Recommandations d'Amélioration
+
+1. **Intégration hybride** : Combiner les forces de chaque approche
+2. **Apprentissage automatique** : Optimiser les heuristiques et paramètres
+3. **Interface clinicien** : Rendre le système utilisable en pratique
+4. **Validation clinique** : Tester sur des cohortes réelles
+
+### 🎯 Conclusion
+
+Ce notebook vous a permis d'implémenter un système de diagnostic médical multi-approches combinant :
+
+✅ **Intelligence Artificielle Exploratoire** : Recherche (A*), heuristiques
+✅ **Intelligence Artificielle Symbolique** : Règles, contraintes (Z3)
+✅ **Optimisation** : Algorithmes génétiques
+✅ **Application Biomédicale** : Diagnostic du diabète de type 2
+
+Les compétences développées sont directement transférables à d'autres domaines nécessitant des systèmes de décision intelligents.
+---
+**Retour au sommaire** : [Index CaseStudies](../../README.md)
+",,,,,,,,d55d81ce28c71560,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,64852c73,markdown,fr,9e45d2d514e4be5f,"**Navigation** : [Index](../../README.md)
+# CC1 - IA Exploratoire et Symbolique
+## Système de Diagnostic Médical Multi-Contraintes pour le Diabète de Type 2
+
+### 🎯 Objectifs Pédagogiques
+
+Ce notebook vise à vous faire implémenter un système de diagnostic médical intelligent combinant quatre approches algorithmiques complémentaires :
+
+1. **Agent de Diagnostic Rationnel** : Système basé sur des règles cliniques
+2. **Algorithme A*** : Recherche informée dans l'espace d'états diagnostiques
+3. **Algorithmes Génétiques** : Optimisation évolutionnaire des paramètres
+4. **Solveur Z3** : Validation par contraintes des protocoles thérapeutiques
+
+### 📊 Contexte Médical
+
+Le diabète de type 2 nécessite une approche de diagnostic personnalisée qui combine :
+- **Analyse multi-dimensionnelle** : Glycémie, HbA1c, symptômes, antécédents
+- **Contraintes thérapeutiques** : Protocoles médicaux, interactions médicamenteuses
+- **Optimisation personnalisée** : Adaptation des traitements selon le profil patient
+
+### 🛠️ Compétences Évaluées
+
+- Algorithmes de recherche (BFS, DFS, A*)
+- Programmation par contraintes (Z3, CSP)
+- Algorithmes génétiques et optimisation
+- Analyse de complexité et performance
+- Application biomédicale (diabète type 2)
+",,,,,,,,9e45d2d514e4be5f,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,a6ffca9a,code,fr,bdd63628447dc979,"# Installation des dépendances requises
+%pip install numpy pandas matplotlib seaborn z3-solver",,,,,,,,bdd63628447dc979,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,d894a937,code,fr,48a012113fba815b,"# Configuration du notebook
+CONFIG = {
+    'version': '2.0.0',
+    'auteur': 'EPF IA Biomédicale',
+    'date': '2025-11-04',
+    'duree_estimee': '3 heures',
+    'points_total': 20
+}
+
+# Librairies de base
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from datetime import datetime
+import time
+import random
+import heapq
+from typing import List, Optional, Dict, Tuple
+
+# Librairies spécialisées
+try:
+    from z3 import *  # Solveur de contraintes
+    print(""✅ Z3 importé avec succès"")
+except ImportError:
+    print(""❌ Z3 non disponible. Installez avec : pip install z3-solver"")
+    
+print(f""📋 Configuration : {CONFIG}"")
+print(""🎯 Objectif : Implémenter un système de diagnostic médical multi-approches"")",,,,,,,,48a012113fba815b,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,2f529696,markdown,fr,b09daaff27f92f1d,"### 📚 Structure de Données
+
+#### Classe Patient
+
+La classe `Patient` représente un patient pour le système de diagnostic. Elle contient toutes les informations médicales nécessaires pour l'analyse.
+
+#### Protocoles Thérapeutiques
+
+Les protocoles définissent les objectifs et contraintes pour le traitement du diabète de type 2.",,,,,,,,b09daaff27f92f1d,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,5ef50610,code,fr,ecc6ddf415f12a9c,"from dataclasses import dataclass
+
+@dataclass
+class Patient:
+    """"""Représente un patient pour le système de diagnostic""""""
+    id: int
+    nom: str
+    age: int
+    glycemie_jeun: float
+    glycemie_postprandiale: float
+    hba1c: float
+    symptomes: List[str]
+    antecedents: List[str]
+    date_consultation: datetime
+    pression_arterielle: Optional[float] = None
+    imc: Optional[float] = None
+    
+    def __str__(self):
+        return f""Patient({self.id}: {self.nom}, {self.age}ans)""
+
+# Protocoles thérapeutiques de référence
+protocoles_diabete_type2 = {
+    ""objectifs_glycemie"": {
+        ""jeun"": [80, 130],
+        ""postprandial"": [120, 180]
+    },
+    ""objectifs_hba1c"": {
+        ""cible"": ""<7.0%"",
+        ""alerte"": "">8.0%""
+    },
+    ""contraintes_traitement"": {
+        ""metformine"": {
+            ""contre_indications"": [""insuffisance_rénale_sévère"", ""acidose_lactique""],
+            ""dose_max"": 3000
+        },
+        ""insuline"": {
+            ""contre_indications"": [""hypoglycémie_sévère_non_traitée""],
+            ""ajustement"": ""selon_glycemie""
+        },
+        ""statines"": {
+            ""contre_indications"": [""maladie_hépatique_active""],
+            ""surveillance"": ""transaminases_hepatiques""
+        }
+    },
+    ""contraintes_globales"": [
+        ""hba1c < 7.0%"",
+        ""pas_d_hypoglycémie_sévère"",
+        ""surveillance_poids"",
+        ""activité_physique_régulière""
+    ]
+}
+
+print(""✅ Structure de données définie"")
+print(f""📊 Protocoles chargés : {len(protocoles_diabete_type2)} sections"")",,,,,,,,ecc6ddf415f12a9c,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,18e78368,markdown,fr,9e393919198eac84,"## 🎯 Partie 1 : Agent de Diagnostic Basique
+
+### Théorie des Agents Intelligents (AIMA Chapitre 1)
+
+Un **agent Intelligent** est un système qui perçoit son environnement et agit rationnellement pour atteindre des objectifs. Dans le contexte médical :
+
+- **Perception** : Données patient (glycémie, symptômes, antécédents)
+- **Raisonnement** : Application de règles cliniques
+- **Action** : Génération de diagnostics et recommandations
+
+### 📋 Objectifs de cette Partie
+
+1. **Classification du risque** : Normal/Pré-diabète/Diabète Type 2
+2. **Analyse des symptômes** : Interprétation clinique
+3. **Génération de recommandations** : Conseils personnalisés
+
+### 🔧 Implémentation Requise
+
+Vous devez implémenter la classe `DiagnosticAgent` avec les méthodes suivantes :
+- `__init__(self)` : Initialisation avec règles cliniques
+- `classifier_risque(self, patient: Patient) -> str` : Classification du risque
+- `analyser_symptomes(self, patient: Patient) -> List[str]` : Interprétation des symptômes
+- `generer_recommandations(self, patient: Patient, risque: str) -> List[str]` : Recommandations personnalisées",,,,,,,,9e393919198eac84,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,c953a353,code,fr,a51313419636a41a,"class DiagnosticAgent:
+    """"""Agent de diagnostic médical basé sur des règles cliniques""""""
+    
+    def __init__(self):
+        # TODO : Initialiser les règles diagnostiques
+        pass
+    
+    def classifier_risque(self, patient: Patient) -> str:
+        """"""Classifie le risque diabétique du patient""""""
+        # TODO : Implémenter la logique de classification
+        # Indices : utiliser les valeurs de référence des protocoles
+        pass
+    
+    def analyser_symptomes(self, patient: Patient) -> List[str]:
+        """"""Analyse les symptômes du patient""""""
+        # TODO : Implémenter l'analyse des symptômes
+        # Indices : créer un dictionnaire de symptômes diabétiques
+        pass
+    
+    def generer_recommandations(self, patient: Patient, risque: str) -> List[str]:
+        """"""Génère des recommandations basées sur le risque et le profil""""""
+        # TODO : Implémenter la génération de recommandations
+        # Indices : adapter selon le risque et le profil du patient
+        pass
+
+# Test de la classe
+print(""🤖 Création de l'agent de diagnostic..."")
+agent = DiagnosticAgent()
+print(""✅ Agent initialisé"")",,,,,,,,a51313419636a41a,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,488c666b,markdown,fr,f05efd050d2882fd,"### 📝 Exemples d'Utilisation Attendus
+
+Voici des exemples de ce que votre agent devrait produire :
+
+#### Cas Normal
+```python
+patient_normal = Patient(1, ""Alice"", 35, 85.0, 120.0, 5.2, [], ""aucun"", datetime.now())
+risque = agent.classifier_risque(patient_normal)  # Devrait retourner ""Normal""
+recommandations = agent.generer_recommandations(patient_normal, ""Normal"")
+# Devrait inclure : ""Maintenir un mode de vie sain""
+```
+
+#### Cas Pré-diabète
+```python
+patient_prediabete = Patient(2, ""Bob"", 48, 115.0, 155.0, 6.0, [""fatigue""], ""surpoids"", datetime.now())
+risque = agent.classifier_risque(patient_prediabete)  # Devrait retourner ""Pré-diabète""
+recommandations = agent.generer_recommandations(patient_prediabete, ""Pré-diabète"")
+# Devrait inclure : ""Perte de poids si surpoids""
+```
+
+#### Cas Diabète Type 2
+```python
+patient_diabete = Patient(3, ""Claire"", 62, 140.0, 210.0, 7.8, [""polyurie"", ""soif""], ""hypertension"", datetime.now())
+risque = agent.classifier_risque(patient_diabete)  # Devrait retourner ""Diabète Type 2""
+recommandations = agent.generer_recommandations(patient_diabete, ""Diabète Type 2"")
+# Devrait inclure : ""Consultation spécialisée obligatoire""
+```",,,,,,,,f05efd050d2882fd,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,ec5bfce7,code,fr,b763aef429c85be1,"# Tests de validation à compléter
+def tester_agent_diagnostic():
+    """"""Teste l'agent de diagnostic avec des cas connus""""""
+    # TODO : Créer les cas de test
+    # TODO : Tester la classification
+    # TODO : Tester l'analyse des symptômes
+    # TODO : Tester les recommandations
+    pass
+
+print(""🧪 Tests de l'agent de diagnostic à compléter"")",,,,,,,,b763aef429c85be1,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,68bfae3b,markdown,fr,172aeedfdbb95126,"## 🎯 Partie 2 : Algorithme A* (Recherche Informée)
+
+### Théorie Recherche Informée (AIMA Chapitres 3-4)
+
+L'algorithme **A\*** (A-star) est un algorithme de recherche informée qui garantit l'optimalité si l'heuristique est admissible. Dans le contexte médical :
+
+- **État** : Représentation d'une hypothèse diagnostique
+- **Transition** : Passage d'une hypothèse à une autre
+- **Heuristique** : Estimation du coût restant vers l'objectif
+- **Optimalité** : Garantie de trouver le meilleur chemin
+
+### 📋 Objectifs de cette Partie
+
+1. **Définir l'espace d'états** : Représentation des hypothèses
+2. **Implémenter l'heuristique** : Fonction d'évaluation médicale
+3. **Algorithme A\*** : Recherche du diagnostic optimal
+4. **Tests de performance** : Mesures temporelles et mémoire
+
+### 🔧 Implémentation Requise
+
+Vous devez implémenter les classes suivantes :
+- `EtatDiagnostic` : Représentation d'un état dans le processus de diagnostic
+- `AStarDiagnostic` : Algorithme A* pour la recherche diagnostique optimale",,,,,,,,172aeedfdbb95126,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,39e86e61,code,fr,194dfee16a469ac4,"class EtatDiagnostic:
+    """"""Représente un état dans le processus de diagnostic""""""
+    
+    def __init__(self, patient: Patient, hypotheses: List[str], niveau_confiance: float):
+        # TODO : Initialiser les attributs de l'état
+        pass
+    
+    def __lt__(self, other):
+        """"""Comparaison pour la file de priorité (min-heap)""""""
+        # TODO : Implémenter la comparaison
+        pass
+    
+    def __eq__(self, other):
+        """"""Égalité des états""""""
+        # TODO : Implémenter l'égalité
+        pass
+    
+    def __hash__(self):
+        """"""Hash pour les ensembles d'états visités""""""
+        # TODO : Implémenter le hash
+        pass
+
+class AStarDiagnostic:
+    """"""Algorithme A* pour la recherche diagnostique optimale""""""
+    
+    def __init__(self):
+        # TODO : Initialiser les hypothèses possibles et poids
+        pass
+    
+    def heuristique_medical(self, etat: EtatDiagnostic) -> float:
+        """"""Heuristique basée sur les critères cliniques médicaux""""""
+        # TODO : Implémenter l'heuristique médicale
+        # Indices : évaluer la cohérence avec les données patient
+        pass
+    
+    def cout_transition(self, etat1: EtatDiagnostic, etat2: EtatDiagnostic) -> float:
+        """"""Calcule le coût de transition entre deux états""""""
+        # TODO : Implémenter le coût de transition
+        pass
+    
+    def rechercher_diagnostic_optimal(self, patient: Patient) -> EtatDiagnostic:
+        """"""Recherche le diagnostic optimal avec A*""""""
+        # TODO : Implémenter l'algorithme A* complet
+        # Indices : utiliser heapq pour la file de priorité
+        pass
+
+print(""🔍 Création de l'algorithme A*..."")
+astar = AStarDiagnostic()
+print(""✅ Algorithme A* initialisé"")",,,,,,,,194dfee16a469ac4,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,5e336442,markdown,fr,e5fc6d8a65e97bb2,"### 🧠 Explication Heuristique Médicale
+
+L'heuristique médicale doit évaluer la pertinence d'une hypothèse diagnostique :
+
+- **Score d'évidence** : Cohérence avec les données patient
+- **Pénalité hypothèses** : Moins il y a d'hypothèses, mieux c'est
+- **Confiance** : Niveau de certitude du diagnostic
+
+### 📊 Exemples de Parcours d'Espace d'États
+
+Le parcours typique pour un patient complexe :
+1. **État initial** : Hypothèses larges, confiance faible
+2. **Élimination progressive** : Réduction des hypothèses
+3. **Augmentation confiance** : Validation des hypothèses restantes
+4. **État final** : 1-2 hypothèses, confiance élevée",,,,,,,,e5fc6d8a65e97bb2,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,a49803b8,code,fr,dd2c40b9198888a5,"# Tests de performance à compléter
+def tester_performance_astar():
+    """"""Teste les performances de l'algorithme A*""""""
+    # TODO : Créer des patients de test avec complexité croissante
+    # TODO : Mesurer temps d'exécution
+    # TODO : Mesurer mémoire utilisée
+    # TODO : Valider convergence
+    pass
+
+print(""⚡ Tests de performance A* à compléter"")",,,,,,,,dd2c40b9198888a5,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,b8ffd9c1,markdown,fr,81fd235fab6b1487,"## 🎯 Partie 3 : Algorithmes Génétiques
+
+### Théorie Optimisation Évolutionnaire
+
+Les **algorithmes génétiques** s'inspirent de l'évolution naturelle pour optimiser des solutions :
+
+- **Population** : Ensemble de solutions candidates
+- **Sélection** : Choix des meilleurs individus
+- **Croisement** : Combinaison de solutions parentes
+- **Mutation** : Modifications aléatoires
+- **Évolution** : Itérations vers l'optimum
+
+### 📋 Objectifs de cette Partie
+
+1. **Chromosomes** : Représentation des paramètres diagnostiques
+2. **Fitness médicale** : Fonction d'évaluation clinique
+3. **Évolution** : Algorithme évolutionnaire complet
+4. **Tests de convergence** : Suivi de l'optimisation
+
+### 🔧 Implémentation Requise
+
+Vous devez implémenter :
+- `ChromosomeDiagnostic` : Représentation des paramètres diagnostiques
+- `AlgorithmeGenetiqueDiagnostic` : Algorithme évolutionnaire pour l'optimisation",,,,,,,,81fd235fab6b1487,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,45a073e3,code,fr,368fb91897febe1f,"class ChromosomeDiagnostic:
+    """"""Chromosome représentant les paramètres diagnostiques""""""
+    
+    def __init__(self, genes: Optional[List[float]] = None):
+        # TODO : Initialiser les gènes ou générer aléatoirement
+        # Indices : [seuil_glycemie_jeun, seuil_glycemie_post, seuil_hba1c, poids_symptomes, poids_antecedents, facteur_age]
+        pass
+    
+    def crossover(self, autre: 'ChromosomeDiagnostic') -> Tuple:
+        """"""Croisement avec un autre chromosome""""""
+        # TODO : Implémenter l'opération de croisement
+        pass
+    
+    def mutation(self, taux_mutation: float) -> None:
+        """"""Mutation aléatoire des gènes""""""
+        # TODO : Implémenter la mutation adaptative
+        pass
+
+class AlgorithmeGenetiqueDiagnostic:
+    """"""Algorithme génétique pour optimiser les paramètres diagnostiques""""""
+    
+    def __init__(self, taille_population: int = 50):
+        # TODO : Initialiser les paramètres de l'algorithme
+        pass
+    
+    def fitness_medical(self, chromosome: ChromosomeDiagnostic) -> float:
+        """"""Fonction de fitness basée sur les critères médicaux""""""
+        # TODO : Implémenter la fonction d'évaluation médicale
+        pass
+    
+    def evolution(self) -> ChromosomeDiagnostic:
+        """"""Lance l'évolution génétique""""""
+        # TODO : Implémenter l'algorithme évolutionnaire complet
+        pass
+
+print(""🧬 Création de l'algorithme génétique..."")
+genetique = AlgorithmeGenetiqueDiagnostic()
+print(""✅ Algorithme génétique initialisé"")",,,,,,,,368fb91897febe1f,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,1c4e5fb5,markdown,fr,130ecf24b7153f29,"### 🏥️ Explication Fitness Médicale
+
+La fonction fitness médicale évalue la qualité d'un chromosome :
+
+- **Précision diagnostique** : Capacité à classifier correctement
+- **Cohérence clinique** : Respect des protocoles médicaux
+- **Réalisme des seuils** : Valeurs médicalement valides
+- **Couverture** : Pourcentage de patients correctement classifiés
+
+### 📊 Tests de Convergence
+
+Le suivi de convergence doit inclure :
+- **Historique de fitness** : Évolution de la meilleure solution
+- **Graphique** : Visualisation de la convergence
+- **Paramètres finaux** : Seuils optimisés obtenus",,,,,,,,130ecf24b7153f29,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,2d7b2b42,code,fr,43b675c3f0480aad,"# Tests de convergence à compléter
+def tester_convergence_genetique():
+    """"""Teste la convergence de l'algorithme génétique""""""
+    # TODO : Suivre l'évolution de la fitness
+    # TODO : Créer un graphique de convergence
+    # TODO : Analyser les paramètres finaux
+    pass
+
+print(""📈 Tests de convergence génétique à compléter"")",,,,,,,,43b675c3f0480aad,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,f499ea4e,markdown,fr,3726bf9ad0106b38,"## 🎯 Partie 4 : Solveur Z3 (Programmation par Contraintes)
+
+### Théorie Programmation par Contraintes (AIMA Chapitre 6)
+
+La **programmation par Contraintes** (CSP - Constraint Satisfaction Problem) vise à trouver une solution qui satisfait un ensemble de contraintes :
+
+- **Variables** : Inconnues à déterminer
+- **Domaines** : Valeurs possibles pour chaque variable
+- **Contraintes** : Relations entre variables
+- **Solveur** : Algorithme de résolution (Z3)
+
+### 📋 Objectifs de cette Partie
+
+1. **Modélisation CSP** : Traduction des contraintes médicales
+2. **Solveur Z3** : Utilisation efficace de Z3
+3. **Validation** : Vérification des protocoles
+4. **Analyse de faisabilité** : Performance sur plusieurs patients
+
+### 🔧 Implémentation Requise
+
+Vous devez implémenter la classe `Z3ConstraintSolver` avec les méthodes suivantes :
+- `definir_variables_contraintes(self, patient: Patient) -> Dict`
+- `valider_protocole(self, patient: Patient) -> Dict`
+- `analyser_faisabilite(self, patients: List[Patient]) -> Dict`",,,,,,,,3726bf9ad0106b38,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,e509b94d,code,fr,e1cd00bd90f096d1,"class Z3ConstraintSolver:
+    """"""Solveur de contraintes pour validation des protocoles thérapeutiques""""""
+    
+    def __init__(self):
+        # TODO : Initialiser le solveur Z3
+        pass
+    
+    def definir_variables_contraintes(self, patient: Patient) -> Dict:
+        """"""Définit les variables et contraintes pour un patient""""""
+        # TODO : Définir les variables de décision (traitements, doses)
+        # TODO : Ajouter les contraintes médicales
+        pass
+    
+    def valider_protocole(self, patient: Patient) -> Dict:
+        """"""Valide le protocole thérapeutique pour un patient""""""
+        # TODO : Utiliser Z3 pour trouver une solution
+        # TODO : Extraire et retourner les résultats
+        pass
+    
+    def analyser_faisabilite(self, patients: List[Patient]) -> Dict:
+        """"""Analyse la faisabilité du système pour plusieurs patients""""""
+        # TODO : Analyser les performances sur plusieurs patients
+        pass
+
+print(""🔧 Création du solveur Z3..."")
+solveur = Z3ConstraintSolver()
+print(""✅ Solveur Z3 initialisé"")",,,,,,,,e1cd00bd90f096d1,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,9861dd7d,markdown,fr,f37ae00dfaa1f2f1,"### 🏥️ Explication Modélisation Contraintes Médicales
+
+La modélisation des contraintes médicales doit inclure :
+
+- **Variables de traitement** : Metformine, Insuline, Statines
+- **Contraintes de dose** : Limites selon âge, poids, comorbidités
+- **Contre-indications** : Exclusions selon antécédents
+- **Interactions** : Contraintes entre médicaments
+- **Objectifs thérapeutiques** : Cibles HbA1c, glycémie
+
+### 📊 Tests de Validation
+
+Les tests doivent valider :
+- **Protocoles complexes** : Patients avec comorbidités
+- **Contraintes violées** : Détection des incompatibilités
+- **Temps de résolution** : Performance du solveur",,,,,,,,f37ae00dfaa1f2f1,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,6d572a40,code,fr,8a9b90a417f1a3a3,"# Tests de validation à compléter
+def tester_validation_z3():
+    """"""Teste le solveur Z3 avec des cas complexes""""""
+    # TODO : Créer des patients complexes
+    # TODO : Tester la validation de protocoles
+    # TODO : Analyser les contraintes violées
+    # TODO : Mesurer les temps de résolution
+    pass
+
+print(""✅ Tests de validation Z3 à compléter"")",,,,,,,,8a9b90a417f1a3a3,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,4fddccb5,markdown,fr,5878b4ea1855644d,"## 🔄 Pipeline et Tests d'Intégration
+
+### 📋 Objectifs du Pipeline
+
+Le pipeline doit intégrer les 4 approches de manière cohérente :
+
+1. **Chargement des données** : Import depuis CSV
+2. **Traitement séquentiel** : Agent → A* → Génétique → Z3
+3. **Synthèse des résultats** : Combinaison des approches
+4. **Validation croisée** : Vérification de la cohérence
+
+### 🧪 Tests Automatisés
+
+Les tests automatisés doivent valider :
+- **Fonctionnalité individuelle** : Chaque approche testée séparément
+- **Intégration** : Pipeline complet fonctionnel
+- **Performance globale** : Mesures sur l'ensemble du système
+- **Robustesse** : Gestion des erreurs et cas limites",,,,,,,,5878b4ea1855644d,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,e0a532b6,code,fr,da53f6dbe8037e36,"# Chargement des données
+def charger_donnees_csv(fichier: str) -> List[Patient]:
+    """"""Charge les données patients depuis un fichier CSV""""""
+    # TODO : Implémenter le chargement depuis data/patients.csv
+    pass
+
+# Pipeline principal à compléter
+def main():
+    """"""Pipeline complet d'intégration des 4 approches""""""
+    # TODO : Charger les données patients
+    # TODO : Initialiser les composants
+    # TODO : Traiter chaque patient avec les 4 approches
+    # TODO : Afficher la synthèse des résultats
+    pass
+
+# Tests automatisés à compléter
+def tests_automatises():
+    """"""Suite de tests automatisés pour validation""""""
+    # TODO : Tester l'agent de diagnostic
+    # TODO : Tester les performances A*
+    # TODO : Tester la convergence génétique
+    # TODO : Tester la validation Z3
+    pass
+
+print(""🔄 Pipeline d'intégration à compléter"")",,,,,,,,da53f6dbe8037e36,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,6f254673,code,fr,27f09c3f18868e6f,"# Tests automatisés à compléter
+def tests_automatises():
+    """"""Suite de tests automatisés pour validation""""""
+    # TODO : Tester l'agent de diagnostic
+    # TODO : Tester les performances A*
+    # TODO : Tester la convergence génétique
+    # TODO : Tester la validation Z3
+    pass
+
+print(""🧪 Tests automatisés à compléter"")",,,,,,,,27f09c3f18868e6f,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,0b753e08,markdown,fr,130b493bb7a52ea6,"### 📊 Analyse Comparative et Conclusion
+
+Complétez le tableau et le paragraphe de recommnadations suivants.
+
+#### Analyse Comparative des 4 Approches
+
+| Approche | Forces | Faiblesses | Cas Idéaux |
+|---------|--------|------------|-------------|
+| Agent Diagnostic |  |  |  |
+| Algorithme A* |   |  |  |
+| Algorithmes Génétiques |  |  |  |
+| Solveur Z3 |  |  |  |
+
+#### Recommandations d'Amélioration
+
+
+
+### 🎯 Conclusion
+
+Ce notebook vous a permis d'implémenter un système de diagnostic médical multi-approches combinant :
+
+✅ **Intelligence Artificielle Exploratoire** : Recherche (A*), heuristiques
+✅ **Intelligence Artificielle Symbolique** : Règles, contraintes (Z3)
+✅ **Optimisation** : Algorithmes génétiques
+✅ **Application Biomédicale** : Diagnostic du diabète de type 2
+
+Les compétences développées sont directement transférables à d'autres domaines nécessitant des systèmes de décision intelligents.
+---
+**Retour au sommaire** : [Index CaseStudies](../../README.md)
+",,,,,,,,130b493bb7a52ea6,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,d0f6d516,markdown,fr,8de9a12f223b76e7,"**Navigation** : [Index](../../README.md)
+# CC2 : OncoPlan - Corrigé Type
+
+**Cours :** IA101 - Intelligence Artificielle (EPF 2026)
+**Auteur :** Équipe Pédagogique
+
+Ce notebook présente une solution complète pour le devoir OncoPlan. Il couvre :
+1.  **Symbolique** : Ontologie RDF et Planification OR-Tools.
+2.  **Probabiliste** : Modélisation Bayésienne avec Pyro.
+3.  **Bonus** : Traçabilité via Hashage.",,,,,,,,8de9a12f223b76e7,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,a08547b6,markdown,fr,35ea41fd9aa92374,## Installation des Dépendances,,,,,,,,35ea41fd9aa92374,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,82097291,code,fr,1f45907c4cb814fa,!pip install rdflib ortools pyro-ppl torch pandas matplotlib seaborn,,,,,,,,1f45907c4cb814fa,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,5d84957e,markdown,fr,1ef206f7fa8d42c1,Import des bibliotheques necessaires.,,,,,,,,1ef206f7fa8d42c1,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,d4253621,code,fr,361ab60bd89681a2,"import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from rdflib import Graph, Literal, RDF, URIRef, Namespace
+from rdflib.namespace import FOAF, XSD
+from ortools.sat.python import cp_model
+import torch
+import pyro
+import pyro.distributions as dist
+from pyro.infer import SVI, Trace_ELBO, Predictive
+from pyro.optim import Adam
+import hashlib
+import json
+
+# Configuration
+sns.set_style(""whitegrid"")
+pyro.set_rng_seed(101)",,,,,,,,361ab60bd89681a2,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,2a4648c4,markdown,fr,cb3f91d54eee30e5,---,,,,,,,,cb3f91d54eee30e5,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,c90453dc,markdown,fr,afbe5be713f36438,## Partie 1 : Le Pharmacien Symbolique,,,,,,,,afbe5be713f36438,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,06db3521,markdown,fr,e9f2abe1b96e4898,### 1.1. Ontologie des Médicaments (RDFLib),,,,,,,,e9f2abe1b96e4898,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,f06d5175,code,fr,fb4f949712e3f486,"# Création du Namespace
+ONCO = Namespace(""http://example.org/onco/"")
+g = Graph()
+
+# Définition des classes et propriétés
+g.add((ONCO.Medicament, RDF.type, ONCO.Class))
+g.add((ONCO.toxicite_renale, RDF.type, RDF.Property))
+g.add((ONCO.incompatible_avec, RDF.type, RDF.Property))
+
+# Peuplement de la base de connaissances
+medicaments = {
+    ""Cisplatine"": {""toxicite_renale"": True, ""incompatible"": [""Gentamicine""]},
+    ""5-FU"": {""toxicite_renale"": False, ""incompatible"": []},
+    ""Docetaxel"": {""toxicite_renale"": False, ""incompatible"": [""Ketoconazole""]},
+    ""Gentamicine"": {""toxicite_renale"": True, ""incompatible"": [""Cisplatine""]}
+}
+
+for med_name, props in medicaments.items():
+    med_uri = ONCO[med_name]
+    g.add((med_uri, RDF.type, ONCO.Medicament))
+    g.add((med_uri, ONCO.toxicite_renale, Literal(props[""toxicite_renale""])))
+    for inc in props[""incompatible""]:
+        g.add((med_uri, ONCO.incompatible_avec, ONCO[inc]))
+
+print(f""Ontologie chargée avec {len(g)} triplets."")",,,,,,,,fb4f949712e3f486,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,3c78ffc1,markdown,fr,c519d63fe0a6b9e6,Verification de prescription basee sur l'ontologie.,,,,,,,,c519d63fe0a6b9e6,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,34abf4d3,code,fr,64e2a7b945e4c8d1,"def verifier_prescription(protocole_noms, patient_insuffisance_renale):
+    alertes = []
+    
+    # Vérification Néphrotoxicité
+    if patient_insuffisance_renale:
+        for med in protocole_noms:
+            med_uri = ONCO[med]
+            if (med_uri, ONCO.toxicite_renale, Literal(True)) in g:
+                alertes.append(f""ALERTE: {med} est néphrotoxique pour ce patient !"")
+    
+    # Vérification Incompatibilités
+    for i, med1 in enumerate(protocole_noms):
+        for med2 in protocole_noms[i+1:]:
+            uri1 = ONCO[med1]
+            uri2 = ONCO[med2]
+            if (uri1, ONCO.incompatible_avec, uri2) in g:
+                alertes.append(f""ALERTE: Incompatibilité détectée entre {med1} et {med2}"")
+                
+    return alertes
+
+# Test
+print(""--- Test 1 : Patient Sain, Protocole OK ---"")
+print(verifier_prescription([""Cisplatine"", ""5-FU""], False))
+
+print(""\n--- Test 2 : Patient Insuffisant Rénal ---"")
+print(verifier_prescription([""Cisplatine""], True))
+
+print(""\n--- Test 3 : Incompatibilité ---"")
+print(verifier_prescription([""Cisplatine"", ""Gentamicine""], False))",,,,,,,,64e2a7b945e4c8d1,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,0cd1d38e,code,fr,8b3931a0628218db,"# Exercice 1 : Etendre l'ontologie medicamenteuse
+# TODO etudiant : Ajouter ""Paclitaxel"" et ""Carboplatine"" au dictionnaire medicaments
+# TODO etudiant : Peupler le graphe RDF avec les nouveaux triplets
+# TODO etudiant : Tester verifier_prescription avec les nouvelles combinaisons
+result = None  # TODO etudiant : remplacer par votre ontologie etendue
+print(""Exercice a completer : ontologie etendue"")",,,,,,,,8b3931a0628218db,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,6753eaa0,markdown,fr,265913ec6705ad89,"### Exercice 1 : Etendre l'ontologie avec de nouveaux medicaments et interactions
+
+**Objectif** : Ajouter de nouveaux medicaments a l'ontologie RDF et implementer une verification d'interactions etendue.
+
+**Contexte** : L'ontologie actuelle contient 4 medicaments. En pratique, les protocoles oncologiques combinent davantage de molecules, et les interactions croisees sont critiques.
+
+**Indices** :
+- # Indice 1 : Ajoutez ""Paclitaxel"" (toxicite_renale=False, incompatible avec ""Docetaxel"") et ""Carboplatine"" (toxicite_renale=True, incompatible avec ""Cisplatine"")
+- # Indice 2 : Verifiez qu'un protocole [""Cisplatine"", ""Carboplatine""] declenche bien une alerte d'incompatibilite
+- # Etape 1 : Ajouter les nouveaux medicaments au dictionnaire `medicaments`
+- # Etape 2 : Peupler le graphe RDF avec les nouveaux triplets
+- # Etape 3 : Tester la fonction `verifier_prescription` avec des combinaisons incluant les nouveaux medicaments",,,,,,,,265913ec6705ad89,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,eeaeb406,markdown,fr,9fea56cf924ce947,### 1.2. Planification des Cures (OR-Tools),,,,,,,,9fea56cf924ce947,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,31abc0f7,code,fr,0bb410bd27e7a762,"def planifier_chimio(nb_cycles=4, duree_cycle=21, jours_admin=[1, 8], capacite_max=3, occupations_existantes={}):
+    model = cp_model.CpModel()
+    horizon = nb_cycles * duree_cycle + 10 # Marge
+    
+    # Variables : start_cycle[i] est le jour de début du cycle i (0-based)
+    start_cycle = [model.NewIntVar(1, horizon, f'start_cycle_{i}') for i in range(nb_cycles)]
+    
+    # Contraintes
+    for i in range(nb_cycles):
+        # Contrainte de continuité entre cycles (sauf si report, mais ici on vise l'idéal)
+        if i > 0:
+            model.Add(start_cycle[i] == start_cycle[i-1] + duree_cycle)
+            
+        # Contrainte de capacité pour chaque jour d'administration
+        for j_offset in jours_admin:
+            # Le jour réel est start_cycle[i] + j_offset - 1
+            # Note: C'est complexe en CP pur car l'index dépend d'une variable.
+            # Simplification : On fixe le premier jour et on vérifie, ou on itère sur tous les jours possibles.
+            pass
+            
+    # Approche simplifiée pour l'exercice : On cherche juste le jour de départ J1 du premier cycle
+    # qui permet de caser tous les RDV sans conflit.
+    
+    # Variable de décision : Jour de début du traitement (entre 1 et 30)
+    start_day = model.NewIntVar(1, 30, 'start_day')
+    
+    # Jours fériés (Dimanches) : supposons J1 = Lundi. Dimanche = 7, 14, 21...
+    # On veut éviter que le jour d'administration tombe un dimanche.
+    # En CP-SAT, on utilise AddModuloEquality pour calculer le reste de la division par 7.
+    # Si J1 est un Lundi, alors les dimanches sont les multiples de 7 (7, 14, 21...).
+    # Donc on veut : jour_abs % 7 != 0.
+    
+    # Vérifions pour chaque jour potentiel de départ
+    solver = cp_model.CpSolver()
+    
+    for i in range(nb_cycles):
+        for j_admin in jours_admin:
+            # Jour absolu de l'administration
+            jour_abs = start_day + i * duree_cycle + (j_admin - 1)
+            
+            # Contrainte : Pas de dimanche
+            # On crée une variable intermédiaire pour le reste de la division par 7
+            reste = model.NewIntVar(0, 6, f'reste_{i}_{j_admin}')
+            model.AddModuloEquality(reste, jour_abs, 7)
+            model.Add(reste != 0) # 0 correspond au Dimanche
+            
+            # Capacité : Vérifier occupations_existantes
+            # Si occupations_existantes[jour] >= 3, alors jour_abs != jour
+            for jour_occupe, charge in occupations_existantes.items():
+                if charge >= capacite_max:
+                    model.Add(jour_abs != jour_occupe)
+
+    status = solver.Solve(model)
+    
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+        debut = solver.Value(start_day)
+        planning = []
+        for i in range(nb_cycles):
+            for j in jours_admin:
+                planning.append(debut + i*21 + j - 1)
+        return debut, planning
+    else:
+        return None, []
+
+# Simulation d'occupations (Jours 10, 11, 12 sont complets)
+occupations = {10: 3, 11: 3, 12: 3}
+debut, planning = planifier_chimio(occupations_existantes=occupations)
+print(f""Début optimal du traitement : Jour {debut}"")
+print(f""Jours d'administration : {planning}"")",,,,,,,,0bb410bd27e7a762,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,ef761f0b,markdown,fr,cb3f91d54eee30e5,---,,,,,,,,cb3f91d54eee30e5,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,a8271cb1,code,fr,cb5da8bc4f7b5023,"# Exercice 2 : Sensibilite au prior du profil patient
+# TODO etudiant : Creer une version parametrable du modele avec profil_probs en argument
+# TODO etudiant : Tester 3 configurations de prior differentes
+# TODO etudiant : Comparer les posterieurs dans un tableau
+result = None  # TODO etudiant : remplacer par votre analyse
+print(""Exercice a completer : sensibilite au prior"")",,,,,,,,cb5da8bc4f7b5023,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,0c540f63,markdown,fr,a88d4d0e41310e6b,"### Exercice 2 : Sensibilite du modele bayesien au prior sur le profil patient
+
+**Objectif** : Etudier comment le choix du prior sur les profils (Resistant/Normal/Sensible) influence le diagnostic posterieur.
+
+**Contexte** : Le prior actuel est `[0.1, 0.6, 0.3]` (10% Resistants, 60% Normaux, 30% Sensibles). Si la population est differente, le diagnostic change.
+
+**Indices** :
+- # Indice 1 : Modifiez `profil_probs` dans la methode `model()` pour tester : `[0.33, 0.34, 0.33]` (uniforme), `[0.05, 0.90, 0.05]` (peu de sensibles)
+- # Indice 2 : Relancez l'inference SVI et comparez les probabilites a posteriori du profil
+- # Etape 1 : Creer une fonction qui accepte le prior en parametre
+- # Etape 2 : Tester 3 configurations de prior differentes
+- # Etape 3 : Afficher les posterieurs dans un tableau comparatif",,,,,,,,a88d4d0e41310e6b,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,b3f68345,markdown,fr,9adf1db011de8ba6,## Partie 2 : Le Médecin Probabiliste (Pyro),,,,,,,,9adf1db011de8ba6,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,b8e1e297,code,fr,b29f552a3579c73d,"class OncoModel:
+    def __init__(self):
+        pass
+        
+    def model(self, doses, observations=None):
+        # 1. Prior sur le profil du patient (0: Résistant, 1: Normal, 2: Sensible)
+        # On pense que la plupart sont Normaux (60%), puis Sensibles (30%), puis Résistants (10%)
+        profil_probs = torch.tensor([0.1, 0.6, 0.3])
+        profil = pyro.sample(""profil"", dist.Categorical(profil_probs))
+        
+        # Facteurs de sensibilité selon le profil
+        # Résistant: peu de toxicité, Normal: moyen, Sensible: fort
+        sensibilite_map = torch.tensor([0.5, 1.0, 2.0])
+        sensibilite = sensibilite_map[profil]
+        
+        # 2. Dynamique Temporelle
+        toxicite_cumulee = 0.0
+        taux_base_gb = 8000.0 # Taux normal de globules blancs
+        
+        for t, dose in enumerate(doses):
+            # La toxicité augmente avec la dose * sensibilité
+            # Et diminue naturellement (récupération) de 20% par pas de temps
+            toxicite_cumulee = toxicite_cumulee * 0.8 + (dose * sensibilite * 0.1)
+            
+            # Le taux de GB baisse quand la toxicité monte
+            # Modèle simple : GB = Base - (Toxicité * 100)
+            mu_gb = taux_base_gb - (toxicite_cumulee * 1000.0)
+            mu_gb = torch.max(mu_gb, torch.tensor(1000.0)) # Minimum vital
+            
+            # Observation (si disponible)
+            obs = None
+            if observations is not None and t < len(observations):
+                obs = observations[t]
+                
+            # Likelihood
+            pyro.sample(f""obs_gb_{t}"", dist.Normal(mu_gb, 500.0), obs=obs)
+            
+    def guide(self, doses, observations=None):
+        # Guide variationnel pour SVI
+        # On veut estimer la distribution a posteriori de 'profil'
+        profil_probs_post = pyro.param(""profil_probs_post"", torch.tensor([0.33, 0.33, 0.33]), constraint=dist.constraints.simplex)
+        pyro.sample(""profil"", dist.Categorical(profil_probs_post))
+
+# Instanciation
+onco_model = OncoModel()
+
+# Données simulées : Patient reçoit 100mg à T0, 0 à T1... 
+# Observation : Chute brutale à T1 (J8)
+doses_plan = torch.tensor([100.0, 0.0, 0.0]) # J1, J8, J15
+observations_reelles = torch.tensor([7800.0, 2500.0]) # J1 Normal, J8 Neutropénie sévère
+
+# Inférence SVI
+pyro.clear_param_store()
+svi = SVI(onco_model.model, onco_model.guide, Adam({""lr"": 0.01}), loss=Trace_ELBO())
+
+# Pour l'inférence SVI, il est crucial d'aligner les données d'entrée (doses) avec les observations.
+# Si on passe des doses futures pour lesquelles on n'a pas d'observation, Pyro va considérer ces observations manquantes
+# comme des variables latentes à inférer. Or, notre guide ne couvre pas ces variables, ce qui provoquerait une erreur.
+# On tronque donc le plan de doses pour ne garder que l'historique passé correspondant aux observations réelles.
+doses_inf = doses_plan[:len(observations_reelles)]
+
+print(""Début de l'inférence..."")
+for step in range(1000):
+    loss = svi.step(doses_inf, observations_reelles)
+    if step % 200 == 0:
+        print(f""Step {step} : Loss = {loss}"")
+
+# Résultats
+post_probs = pyro.param(""profil_probs_post"").detach()
+print(f""\nProbabilités a posteriori du profil :"")
+print(f""Résistant : {post_probs[0]:.2f}"")
+print(f""Normal    : {post_probs[1]:.2f}"")
+print(f""Sensible  : {post_probs[2]:.2f}"")
+
+if post_probs[2] > 0.8:
+    print(""=> DIAGNOSTIC : Patient hypersensible. Réduction de dose impérative."")",,,,,,,,b29f552a3579c73d,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,ed9440e8,markdown,fr,eeeec13696daa2a5,### 2.2. Prédiction et Prise de Décision,,,,,,,,eeeec13696daa2a5,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,7868621b,code,fr,f7c69905c0506c5d,"# Exercice 3 : Journal d'audit pour le contrat intelligent
+# TODO etudiant : Etendre OncoContract avec un attribut historique
+# TODO etudiant : Implementer afficher_historique() qui liste toutes les modifications
+# TODO etudiant : Tester avec plusieurs modifications successives
+result = None  # TODO etudiant : remplacer par votre contrat avec audit
+print(""Exercice a completer : journal d'audit"")",,,,,,,,f7c69905c0506c5d,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,09692326,markdown,fr,5aaf1a51c10f4499,"### Exercice 3 : Ajouter un journal d'audit au contrat intelligent
+
+**Objectif** : Etendre la classe `OncoContract` pour maintenir un historique des modifications et detecter les tentatives de fraude.
+
+**Contexte** : Le contrat actuel enregistre un seul plan. En pratique, les plans peuvent etre modifies plusieurs fois, et il faut tracer qui a fait quoi et quand.
+
+**Indices** :
+- # Indice 1 : Ajoutez un attribut `self.historique = []` qui stocke chaque modification
+- # Indice 2 : Chaque entree du journal doit contenir : horodatage, auteur, action, hash du plan
+- # Etape 1 : Ajouter l'attribut `historique` et le mettre a jour a chaque appel de `enregistrer_plan`
+- # Etape 2 : Implementer une methode `afficher_historique()` qui affiche le journal
+- # Etape 3 : Tester en modifiant le plan plusieurs fois et verifier que l'historique est complet",,,,,,,,5aaf1a51c10f4499,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,d6d5c2a5,code,fr,a2e6b3487d30dbc8,"# Simulation de l'avenir avec le profil inféré
+predictive = Predictive(onco_model.model, guide=onco_model.guide, num_samples=100, return_sites=[""obs_gb_3""])
+
+# Scénario 1 : Maintien de la dose (100mg)
+doses_futures_standard = torch.tensor([100.0, 0.0, 0.0, 100.0]) 
+samples_std = predictive(doses_futures_standard)
+# Debug : Afficher les clés disponibles si erreur
+# print(samples_std.keys())
+gb_std = samples_std['obs_gb_3'] # GB à la prochaine injection
+risque_std = (gb_std < 2000).float().mean()
+
+# Scénario 2 : Réduction de dose (50mg)
+doses_futures_reduites = torch.tensor([100.0, 0.0, 0.0, 50.0])
+samples_red = predictive(doses_futures_reduites)
+gb_red = samples_red['obs_gb_3']
+risque_red = (gb_red < 2000).float().mean()
+
+print(f""Risque de neutropénie sévère (<2000) avec dose standard : {risque_std*100:.1f}%"")
+print(f""Risque de neutropénie sévère (<2000) avec dose réduite : {risque_red*100:.1f}%"")",,,,,,,,a2e6b3487d30dbc8,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,2e2b5ff5,markdown,fr,cb3f91d54eee30e5,---,,,,,,,,cb3f91d54eee30e5,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,5a90fc40,markdown,fr,7592e5c4b1db7d06,"## Partie 3 : Bonus Smart Contract
+---
+**Retour au sommaire** : [Index CaseStudies](../../README.md)
+",,,,,,,,7592e5c4b1db7d06,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,3c24a439,code,fr,7debc8b4a4935ccb,"class OncoContract:
+    def __init__(self, medecin_id, patient_id):
+        self.medecin_id = medecin_id
+        self.patient_id = patient_id
+        self.plan_hash = None
+        self.signatures = {""medecin"": False, ""patient"": False}
+        
+    def enregistrer_plan(self, plan_data):
+        # Sérialisation stable
+        plan_str = json.dumps(plan_data, sort_keys=True)
+        self.plan_hash = hashlib.sha256(plan_str.encode()).hexdigest()
+        print(f""Plan enregistré. Hash : {self.plan_hash}"")
+        
+    def signer(self, role, cle_privee_simulee):
+        # Simulation basique de signature
+        if role in self.signatures:
+            self.signatures[role] = True
+            print(f""Signé par {role}."")
+            
+    def verifier_execution(self, plan_propose):
+        plan_str = json.dumps(plan_propose, sort_keys=True)
+        hash_verif = hashlib.sha256(plan_str.encode()).hexdigest()
+        
+        if hash_verif != self.plan_hash:
+            return ""ERREUR : Le plan a été modifié !""
+        if not all(self.signatures.values()):
+            return ""ERREUR : Plan non signé par toutes les parties.""
+        return ""SUCCÈS : Administration autorisée.""
+
+# Test
+contract = OncoContract(""DrHouse"", ""P004"")
+plan_final = {""J1"": ""Cisplatine 50mg"", ""J8"": ""Repos""}
+contract.enregistrer_plan(plan_final)
+contract.signer(""medecin"", ""key123"")
+contract.signer(""patient"", ""key456"")
+
+print(contract.verifier_execution(plan_final))
+print(contract.verifier_execution({""J1"": ""Cisplatine 100mg""})) # Tentative de fraude",,,,,,,,7debc8b4a4935ccb,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,9a29eb84,markdown,fr,ea84f15fc31505f0,"**Navigation** : [Index](../../README.md)
+# CC2 : OncoPlan - Squelette
+
+**Cours :** IA101 - Intelligence Artificielle (EPF 2026)
+**Étudiant(s) :** [VOTRE NOM ICI]
+
+Ce notebook est le squelette à compléter pour le devoir OncoPlan. Il couvre :
+1.  **Symbolique** : Ontologie RDF et Planification OR-Tools.
+2.  **Probabiliste** : Modélisation Bayésienne avec Pyro.
+3.  **Bonus** : Traçabilité via Hashage.",,,,,,,,ea84f15fc31505f0,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,4e16813a,markdown,fr,35ea41fd9aa92374,## Installation des Dépendances,,,,,,,,35ea41fd9aa92374,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,c082cf28,code,fr,1f45907c4cb814fa,!pip install rdflib ortools pyro-ppl torch pandas matplotlib seaborn,,,,,,,,1f45907c4cb814fa,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ca83f5e5,markdown,fr,1ef206f7fa8d42c1,Import des bibliotheques necessaires.,,,,,,,,1ef206f7fa8d42c1,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,16131259,code,fr,361ab60bd89681a2,"import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from rdflib import Graph, Literal, RDF, URIRef, Namespace
+from rdflib.namespace import FOAF, XSD
+from ortools.sat.python import cp_model
+import torch
+import pyro
+import pyro.distributions as dist
+from pyro.infer import SVI, Trace_ELBO, Predictive
+from pyro.optim import Adam
+import hashlib
+import json
+
+# Configuration
+sns.set_style(""whitegrid"")
+pyro.set_rng_seed(101)",,,,,,,,361ab60bd89681a2,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,31fce73e,markdown,fr,cb3f91d54eee30e5,---,,,,,,,,cb3f91d54eee30e5,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,e5eace1b,markdown,fr,afbe5be713f36438,## Partie 1 : Le Pharmacien Symbolique,,,,,,,,afbe5be713f36438,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,cb03cd33,markdown,fr,3aa4ee72dfef8846,"### 1.1. Ontologie des Médicaments (RDFLib)
+
+**Objectif :** Créer un graphe RDF contenant les médicaments et leurs propriétés (toxicité, incompatibilités).",,,,,,,,3aa4ee72dfef8846,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,55fc3ca1,code,fr,b4729008361f6e64,"# TODO: Créer le Namespace ONCO
+# TODO: Initialiser le Graph
+# TODO: Définir les classes et propriétés
+# TODO: Peupler la base avec les médicaments (Cisplatine, 5-FU, Docetaxel, Gentamicine)
+
+# VOTRE CODE ICI
+pass",,,,,,,,b4729008361f6e64,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,b81448b2,markdown,fr,c519d63fe0a6b9e6,Verification de prescription basee sur l'ontologie.,,,,,,,,c519d63fe0a6b9e6,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,498cb8cf,code,fr,420295c0c7f46ee2,"def verifier_prescription(protocole_noms, patient_insuffisance_renale):
+    """"""
+    Vérifie si une prescription est valide.
+    Args:
+        protocole_noms (list): Liste de noms de médicaments (str)
+        patient_insuffisance_renale (bool): True si le patient a une insuffisance rénale
+    Returns:
+        list: Liste de messages d'alerte (str)
+    """"""
+    alertes = []
+    
+    # TODO: Vérifier la néphrotoxicité si le patient est insuffisant rénal
+    # TODO: Vérifier les incompatibilités entre paires de médicaments
+    
+    return alertes
+
+# Test (Ne pas modifier)
+print(""--- Test 1 : Patient Sain, Protocole OK ---"")
+print(verifier_prescription([""Cisplatine"", ""5-FU""], False))
+
+print(""\n--- Test 2 : Patient Insuffisant Rénal ---"")
+print(verifier_prescription([""Cisplatine""], True))
+
+print(""\n--- Test 3 : Incompatibilité ---"")
+print(verifier_prescription([""Cisplatine"", ""Gentamicine""], False))",,,,,,,,420295c0c7f46ee2,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ef5ad9fe,markdown,fr,84dccea53c5405e2,"### 1.2. Planification des Cures (OR-Tools)
+
+**Objectif :** Planifier 4 cycles de chimiothérapie en respectant les contraintes de temps et de ressources.",,,,,,,,84dccea53c5405e2,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,89e569ee,code,fr,669412ff826f9858,"def planifier_chimio(nb_cycles=4, duree_cycle=21, jours_admin=[1, 8], capacite_max=3, occupations_existantes={}):
+    model = cp_model.CpModel()
+    horizon = nb_cycles * duree_cycle + 10 # Marge
+    
+    # TODO: Définir la variable de décision (Jour de début du traitement)
+    
+    # TODO: Ajouter les contraintes
+    # 1. Pas de dimanche (supposons J1 = Lundi, donc Dimanche = 7, 14...)
+    #    Indice : Utilisez AddModuloEquality pour vérifier si le jour est un multiple de 7
+    # 2. Respecter la capacité max (occupations_existantes)
+    
+    # Résolution
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+    
+    if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+        # TODO: Récupérer la valeur de début et calculer le planning complet
+        debut = 0 # À remplacer
+        planning = [] # À remplir
+        return debut, planning
+    else:
+        return None, []
+
+# Simulation d'occupations (Jours 10, 11, 12 sont complets)
+occupations = {10: 3, 11: 3, 12: 3}
+debut, planning = planifier_chimio(occupations_existantes=occupations)
+print(f""Début optimal du traitement : Jour {debut}"")
+print(f""Jours d'administration : {planning}"")",,,,,,,,669412ff826f9858,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,7cf2a7ed,markdown,fr,cb3f91d54eee30e5,---,,,,,,,,cb3f91d54eee30e5,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,d43b403b,markdown,fr,d56c7a69dbbf3c42,"## Partie 2 : Le Médecin Probabiliste (Pyro)
+
+**Objectif :** Modéliser la réponse du patient (Toxicité) en fonction des doses reçues et des observations (Globules Blancs).",,,,,,,,d56c7a69dbbf3c42,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,815f392f,code,fr,939e94c9e1d544f1,"class OncoModel:
+    def __init__(self):
+        pass
+        
+    def model(self, doses, observations=None):
+        # TODO: Définir le Prior sur le profil du patient (Categorical)
+        # 0: Résistant, 1: Normal, 2: Sensible
+        
+        # TODO: Définir la boucle temporelle
+        # toxicite_cumulee évolue selon dose et sensibilité
+        # mu_gb (Globules Blancs) dépend de toxicite_cumulee
+        
+        # TODO: Définir la Likelihood (Observation)
+        pass
+            
+    def guide(self, doses, observations=None):
+        # TODO: Définir le guide variationnel pour 'profil'
+        pass
+
+# Instanciation
+onco_model = OncoModel()
+
+# Données simulées : Patient reçoit 100mg à T0, 0 à T1... 
+# Observation : Chute brutale à T1 (J8)
+doses_plan = torch.tensor([100.0, 0.0, 0.0]) # J1, J8, J15
+observations_reelles = torch.tensor([7800.0, 2500.0]) # J1 Normal, J8 Neutropénie sévère
+
+# Inférence SVI (À décommenter une fois le modèle implémenté)
+# pyro.clear_param_store()
+# svi = SVI(onco_model.model, onco_model.guide, Adam({""lr"": 0.01}), loss=Trace_ELBO())
+
+# IMPORTANT : Pour l'inférence, assurez-vous d'aligner les doses avec les observations disponibles.
+# Si vous passez des doses futures sans observations, Pyro tentera d'inférer ces observations manquantes.
+# doses_inf = ... (à définir)
+
+# print(""Début de l'inférence..."")
+# for step in range(1000):
+#    loss = svi.step(doses_inf, observations_reelles)
+#    if step % 200 == 0:
+#        print(f""Step {step} : Loss = {loss}"")
+
+# Résultats
+# post_probs = pyro.param(""profil_probs_post"").detach()
+# print(f""\nProbabilités a posteriori du profil :"")
+# print(f""Résistant : {post_probs[0]:.2f}"")
+# print(f""Normal    : {post_probs[1]:.2f}"")
+# print(f""Sensible  : {post_probs[2]:.2f}"")",,,,,,,,939e94c9e1d544f1,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ebfd0923,markdown,fr,fc5dc6fd9f5dbdc3,"### 2.2. Prédiction et Prise de Décision
+
+**Objectif :** Comparer le risque de neutropénie sévère (< 2000) pour deux scénarios futurs.",,,,,,,,fc5dc6fd9f5dbdc3,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,e50bbbb7,code,fr,0efe41b4a37010e3,"# TODO: Utiliser Predictive pour simuler l'avenir
+# Scénario 1 : Maintien de la dose (100mg)
+# Scénario 2 : Réduction de dose (50mg)
+
+# VOTRE CODE ICI
+pass",,,,,,,,0efe41b4a37010e3,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,e1f87420,markdown,fr,cb3f91d54eee30e5,---,,,,,,,,cb3f91d54eee30e5,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,009d112d,markdown,fr,230036c620346df4,"## Partie 3 : Bonus Smart Contract
+
+**Objectif :** Garantir l'intégrité du plan de traitement.
+---
+**Retour au sommaire** : [Index CaseStudies](../../README.md)
+",,,,,,,,230036c620346df4,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,977dbd22,code,fr,caea860fbffe0f15,"class OncoContract:
+    def __init__(self, medecin_id, patient_id):
+        self.medecin_id = medecin_id
+        self.patient_id = patient_id
+        self.plan_hash = None
+        self.signatures = {""medecin"": False, ""patient"": False}
+        
+    def enregistrer_plan(self, plan_data):
+        # TODO: Hasher le plan (SHA-256)
+        pass
+        
+    def signer(self, role, cle_privee_simulee):
+        # TODO: Enregistrer la signature
+        pass
+            
+    def verifier_execution(self, plan_propose):
+        # TODO: Vérifier que le hash correspond et que tout le monde a signé
+        return ""Non implémenté""
+
+# Test
+contract = OncoContract(""DrHouse"", ""P004"")
+plan_final = {""J1"": ""Cisplatine 50mg"", ""J8"": ""Repos""}
+contract.enregistrer_plan(plan_final)
+contract.signer(""medecin"", ""key123"")
+contract.signer(""patient"", ""key456"")
+
+print(contract.verifier_execution(plan_final))
+print(contract.verifier_execution({""J1"": ""Cisplatine 100mg""})) # Tentative de fraude",,,,,,,,caea860fbffe0f15,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c0,markdown,fr,9c89e4f4be7cb8bc,"# CC3 : SmartGrid - Ordonnancement de la production energetique sous incertitude
+
+**Etude de cas interdisciplinaire** combinant programmation par contraintes (OR-Tools CP-SAT),
+inference probabiliste (modele bayesien), optimisation multi-objectif et un jumeau numerique
+de reseau electrique.
+",,,,,,,,9c89e4f4be7cb8bc,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c1,markdown,fr,384bec02c399a77d,"## Contexte metier
+
+Un operateur de reseau electrique doit, pour chaque heure, decider quelles centrales activer
+et a quel niveau de production (le *unit commitment* / dispatch) afin de satisfaire la demande
+tout en minimisant le cout economique et les emissions de CO2. Ce probleme est rendu difficile
+par :
+
+- **l'incertitude** sur la production renouvelable (eolien, solaire) et sur la demande ;
+- **les contraintes dures** : capacites min/max des centrales, temps de montee/descente,
+  reserve tournante (securite n-1) ;
+- **les objectifs multiples conflictuels** : cout, emissions, fiabilite.
+
+Une seule technique ne suffit pas : un solveur deterministe ignore l'incertitude, un modele
+probabiliste seul ne respecte pas les contraintes physiques. Cette etude de cas materialise
+leur **composition ordonnee** : filtrer les dispatches impossibles (contraintes), modeliser
+l'aleatoire (incertitude), puis optimiser (multi-objectif).
+",,,,,,,,384bec02c399a77d,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c2,markdown,fr,7d2c03681973c5d5,"## Architecture en 4 couches
+
+| Couche | Role | Technique | Partie |
+|--------|------|-----------|--------|
+| **Contraintes dures** | Filtrer les dispatches impossibles | OR-Tools CP-SAT | Partie 1 |
+| **Incertitude** | Modeliser l'aleatoire renouvelable | Modele bayesien | Partie 2 |
+| **Optimisation** | Choisir le meilleur compromis | Multi-objectif pondere | Partie 3 |
+| **Decision** | Synthese + comparaison | Workflow + scoring | Partie 4 |
+
+Ce notebook est une **fondation** : le jumeau numerique (couche 0) est operationnel ; les
+implementations des 4 couches seront completees et executees dans les cycles suivants.
+",,,,,,,,7d2c03681973c5d5,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c3,markdown,fr,9a1211fd1df5a169,"## 0. Installation et jumeau numerique
+
+Le jumeau numerique represente un reseau electrique : un ensemble de centrales (avec cout,
+capacites, facteur d'emission) et une demande horaire a satisfaire, avec une production
+renouvelable stochastique.
+",,,,,,,,9a1211fd1df5a169,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c4,code,fr,f4476cc2c0892661,"# Installation des dependances (executees dans les cycles suivants avec les solveurs)
+# %pip install ortools numpy scipy  # decommenter pour execution complete
+
+from dataclasses import dataclass, field
+from typing import List, Dict
+import numpy as np
+
+
+@dataclass
+class PowerPlant:
+    """"""Centrale de production electrique.""""""
+    name: str
+    pmin: float          # puissance minimale stable (MW)
+    pmax: float          # puissance maximale (MW)
+    cost_per_mw: float   # cout variable (EUR/MWh)
+    co2_per_mw: float    # emission (kg/MWh)
+    is_renewable: bool = False
+
+
+@dataclass
+class PowerNetwork:
+    """"""Jumeau numerique d'un reseau electrique horaire.""""""
+    plants: List[PowerPlant]
+    demand_mw: List[float]               # demande par heure (MW)
+    renewable_forecast_mean: List[float]  # production renouvelable moyenne attendue (MW)
+    renewable_forecast_std: List[float]   # incertitude (ecart-type, MW)
+
+    def total_capacity(self) -> float:
+        return sum(p.pmax for p in self.plants)
+
+    def net_demand(self, hour: int) -> float:
+        """"""Demande a couvrir par les centrales pilotables apres renouvelable.""""""
+        return max(0.0, self.demand_mw[hour] - self.renewable_forecast_mean[hour])
+
+
+def demo_network() -> PowerNetwork:
+    """"""Reseau de demonstration : 3 centrales pilotables + renouvelable sur 6 heures.""""""
+    plants = [
+        PowerPlant('Charbon', 50, 400, cost_per_mw=30, co2_per_mw=900),
+        PowerPlant('Gaz',    20, 250, cost_per_mw=60, co2_per_mw=400),
+        PowerPlant('Hydro',   0, 150, cost_per_mw=10, co2_per_mw=0,  is_renewable=False),
+    ]
+    return PowerNetwork(
+        plants=plants,
+        demand_mw=[500, 520, 480, 540, 600, 580],
+        renewable_forecast_mean=[80, 60, 40, 50, 120, 150],
+        renewable_forecast_std=[15, 12, 10, 12, 25, 30],
+    )
+
+
+net = demo_network()
+print(f'Reseau : {len(net.plants)} centrales, capacite totale {net.total_capacity()} MW')
+for h in range(len(net.demand_mw)):
+    print(f'  H{h}: demande {net.demand_mw[h]} MW, renouvelable {net.renewable_forecast_mean[h]} '
+          f'+/- {net.renewable_forecast_std[h]}, demande nette {net.net_demand(h):.1f} MW')
+",,,,,,,,f4476cc2c0892661,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c5,markdown,fr,a967acd5bad56914,"## Partie 1 : Le Dispatcher sous Contraintes (OR-Tools CP-SAT)
+
+**Theorie** : le *unit commitment* est un probleme NP-difficile. On modelise, pour chaque
+heure et chaque centrale pilotable, une variable binaire (activee) et une variable continue
+(niveau de production), soumises aux contraintes :
+
+- somme des productions = demande nette (equilibre offre/demande) ;
+- `pmin <= production <= pmax` quand la centrale est activee ;
+- reserve tournante : capacite excédentaire disponible >= marge de securite.
+
+L'objectif primaire : minimiser le cout total.
+",,,,,,,,a967acd5bad56914,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c6,code,fr,db659b2ca0f8f104,"# Partie 1 : modele CP-SAT du dispatch (unit commitment)
+from ortools.sat.python import cp_model
+
+
+def solve_dispatch_cp(network, cost_weights=None):
+    """"""Resout le unit commitment par programmation par contraintes (CP-SAT).
+
+    Pour chaque heure et centrale pilotable : binaire on (activee) + entier
+    p (production MW). Contraintes : equilibre offre/demande nette + bornes
+    de capacite (pmin <= p <= pmax quand active). Objectif pondere : on peut
+    minimiser le cout (couts variables) ou le CO2 (facteurs d'emission).
+
+    Renvoie un dict {hour: {plant_name: production_mw}}, '_cost', '_status'.
+    cost_weights = (w_cost, w_co2) : poids de chaque terme dans l'objectif.
+    """"""
+    if cost_weights is None:
+        cost_weights = (1.0, 0.0)
+    H = len(network.demand_mw)
+    plants = network.plants
+    model = cp_model.CpModel()
+
+    on, p = {}, {}
+    for h in range(H):
+        for i, plant in enumerate(plants):
+            on[(h, i)] = model.NewBoolVar(f'on_{h}_{i}')
+            p[(h, i)] = model.NewIntVar(0, int(plant.pmax), f'p_{h}_{i}')
+
+    for h in range(H):
+        nd = int(round(network.net_demand(h)))
+        model.Add(sum(p[(h, i)] for i in range(len(plants))) == nd)
+        for i, plant in enumerate(plants):
+            model.Add(p[(h, i)] >= int(plant.pmin) * on[(h, i)])
+            model.Add(p[(h, i)] <= int(plant.pmax) * on[(h, i)])
+
+    w_cost, w_co2 = cost_weights
+    # Objectif pondere cout+CO2. NB : on plie les poids DANS chaque terme et on somme
+    # via cp_model.LinearExpr.Sum (jamais `poids * SumArray` ni le builtin sum()) : quand
+    # un poids vaut 0, `0 * IntVar` produit un IntConstant(0) (objet) qu'on ne peut pas
+    # additionner a une SumArray (__radd__ attend un float). Sum() accepte une liste
+    # melangeant IntAffine et IntConstant sans probleme.
+    wc, wco2 = int(round(w_cost)), int(round(w_co2))
+    objective_terms = []
+    for h in range(H):
+        for i, plant in enumerate(plants):
+            objective_terms.append(wc * int(round(plant.cost_per_mw)) * p[(h, i)])
+            objective_terms.append(wco2 * int(round(plant.co2_per_mw)) * p[(h, i)])
+    model.Minimize(cp_model.LinearExpr.Sum(objective_terms))
+
+    solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = 10.0
+    status = solver.Solve(model)
+    if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        return None
+    result = {}
+    for h in range(H):
+        result[h] = {plants[i].name: solver.Value(p[(h, i)]) for i in range(len(plants))}
+    result['_cost'] = round(solver.ObjectiveValue(), 1)
+    result['_status'] = solver.StatusName(status)
+    return result
+
+
+dispatch = solve_dispatch_cp(net)
+if dispatch:
+    print('Dispatch CP-SAT (min cout) - statut:', dispatch['_status'])
+    for h in range(len(net.demand_mw)):
+        prod = ', '.join(f'{k}={v}MW' for k, v in dispatch[h].items() if v > 0)
+        print(f'  H{h}: {prod}')
+    print(f'  Cout objectif: {dispatch[""_cost""]}')
+else:
+    print('Aucune solution faisable (capacite < demande)')
+",,,,,,,,db659b2ca0f8f104,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c7,markdown,fr,b2a27db7bd5b0251,"### Exercice 1 : Reserve tournante (securite n-1)
+
+Ajoutez au modele CP-SAT une contrainte de **reserve tournante** : a chaque heure, la somme
+des capacites disponibles (non utilisees) des centrales activees doit couvrir la perte de la
+plus grande centrale en service (critere n-1).
+
+**Indice** : pour chaque heure, la reserve = `sum(pmax_i - prod_i pour i active)` doit etre
+`>= max(pmax_i pour i active)`.
+",,,,,,,,b2a27db7bd5b0251,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c8,code,fr,c4f05382aa86dd66,"# Exercice 1 : contrainte de reserve tournante n-1
+def solve_dispatch_with_spinning_reserve(network: PowerNetwork):
+    """"""Dispatch CP-SAT avec reserve tournante n-1.""""""
+    result = None  # TODO etudiant : etendre solve_dispatch_cp avec la reserve n-1
+    return result
+",,,,,,,,c4f05382aa86dd66,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c9,markdown,fr,d59984e597e4274f,"## Partie 2 : Le Previsionniste Probabiliste (modele bayesien)
+
+**Theorie** : la production renouvelable est aleatoire. On modelise l'ecart
+`demande - renouvelable` comme une variable aleatoire et on infere sa distribution, pour
+quantifier le **risque de defaillance** (probabilite que la demande nette depasse la capacite
+pilotable disponible).
+",,,,,,,,d59984e597e4274f,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c10,code,fr,4a63888690dc2381,"# Partie 2 : modele bayesien de l'incertitude renouvelable
+from math import sqrt, erfc
+
+
+def failure_risk(network, hour):
+    """"""Probabilite que la demande nette reelle depasse la capacite pilotable.
+
+    Modele : la production renouvelable reelle ~ N(mean, std). La demande nette
+    reelle = demande - renouvelable_reelle ~ N(net_demand, renewable_std).
+    Risque = P(demande nette reelle > capacite pilotable totale), calcule via
+    la survivor function d'une gaussienne : SF(z) = 0.5 * erfc(z / sqrt(2)).
+    """"""
+    mean_net = network.net_demand(hour)
+    std = network.renewable_forecast_std[hour]
+    capacity = network.total_capacity()
+    if std <= 0:
+        return 1.0 if mean_net > capacity else 0.0
+    z = (capacity - mean_net) / std
+    return 0.5 * erfc(z / sqrt(2))
+
+
+print('Risque de defaillance (capacite pilotable =', net.total_capacity(), 'MW) :')
+for h in range(len(net.demand_mw)):
+    r = failure_risk(net, h)
+    print(f'  H{h}: demande nette moyenne {net.net_demand(h):.0f} MW, '
+          f'incertitude +/-{net.renewable_forecast_std[h]} MW -> risque {r:.2e}')
+",,,,,,,,4a63888690dc2381,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c11,markdown,fr,80b5b3ba59e4511d,"### Exercice 2 : Sensibilite au prior sur la variabilite eolienne
+
+Analysez comment le risque de defaillance (Partie 2) evolue quand on modifie l'incertitude
+du renouvelable (multipliez `renewable_forecast_std` par 0.5, 1.0, 2.0). Quelle heure
+devient la plus risqueuse ? Concluez sur la robustesse du dispatch determine en Partie 1.
+",,,,,,,,80b5b3ba59e4511d,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c12,code,fr,44fc2e192030efaa,"# Exercice 2 : analyse de sensibilite au prior d'incertitude
+def sensitivity_to_renewable_std(network: PowerNetwork, factors=(0.5, 1.0, 2.0)):
+    """"""Retourne le risque max par heure pour chaque facteur d'incertitude.""""""
+    result = None  # TODO etudiant : boucler sur les facteurs, retourner {factor: max_risk}
+    return result
+",,,,,,,,44fc2e192030efaa,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c13,markdown,fr,f71e48358abc4234,"## Partie 3 : L'Optimiseur Multi-Objectif
+
+**Theorie** : on veut minimiser simultanement le **cout** economique, les **emissions** CO2
+et le **risque** de defaillance. Ces objectifs sont conflictuels (le charbon est bon marche
+mais tres emissif). On construit un score pondere `S = a*cout + b*co2 + c*risque` et on
+cherche le dispatch minimisant S, en explorant le front de Pareto.
+",,,,,,,,f71e48358abc4234,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c14,code,fr,f34e47d7784d66a8,"# Partie 3 : score multi-objectif (cout + CO2 + risque)
+def dispatch_metrics(dispatch, network):
+    """"""Calcule cout total, CO2 total et risque max d'un dispatch CP-SAT.""""""
+    if dispatch is None:
+        return {'cost': float('inf'), 'co2': float('inf'), 'max_risk': 1.0}
+    cost = co2 = 0.0
+    for h in range(len(network.demand_mw)):
+        for plant in network.plants:
+            prod = dispatch[h].get(plant.name, 0)
+            cost += prod * plant.cost_per_mw
+            co2 += prod * plant.co2_per_mw
+    risks = [failure_risk(network, h) for h in range(len(network.demand_mw))]
+    return {'cost': cost, 'co2': co2, 'max_risk': max(risks)}
+
+
+def multi_objective_score(dispatch, network, weights=(1.0, 1.0, 1.0), norms=None):
+    """"""Score = w_c*cout_norm + w_co2*co2_norm + w_r*risque_norm dans [0,1] (0=meilleur).""""""
+    m = dispatch_metrics(dispatch, network)
+    if norms is None:
+        norms = {'cost': m['cost'] or 1.0, 'co2': m['co2'] or 1.0, 'max_risk': 1.0}
+    wc, wco2, wr = weights
+    return (wc * (m['cost'] / max(norms['cost'], 1e-9))
+            + wco2 * (m['co2'] / max(norms['co2'], 1e-9))
+            + wr * (m['max_risk'] / max(norms['max_risk'], 1e-9)))
+
+
+score_min_cost = multi_objective_score(dispatch, net, weights=(1.0, 1.0, 1.0),
+                                       norms={'cost': 200000, 'co2': 2000000, 'max_risk': 1.0})
+print(f'Score multi-objectif du dispatch min-cout (ref non normalise): {score_min_cost:.3f}')
+",,,,,,,,f34e47d7784d66a8,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c15,markdown,fr,ca0243fd76c2c961,"### Exercice 3 : Ajouter un troisieme objectif (equite territoriale)
+
+Ajoutez un troisieme objectif : **equite territoriale** (eviter qu'une meme region subisse
+toutes les centrales les plus polluantes). Supposons que chaque centrale a un attribut
+`region`. Mesurez la concentration regionale de la pollution et ajoutez-la au score.
+",,,,,,,,ca0243fd76c2c961,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c16,code,fr,ba42fd7f8f0eebf0,"# Exercice 3 : objectif d'equite territoriale
+def territorial_equity_score(dispatch, network: PowerNetwork) -> float:
+    """"""Mesure de concentration de la pollution par region (0 = equitable).""""""
+    score = None  # TODO etudiant : mesurer la concentration (ex: variance/entropy regionale des co2)
+    return score
+",,,,,,,,ba42fd7f8f0eebf0,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c17,markdown,fr,8eb1a356dab6fb74,"## Partie 4 : Decision finale et analyse comparative
+
+**Synthese** : on compare les strategies (CP-SAT pur, multi-objectif weighted-sum, front de
+Pareto) sur les 3 axes cout/CO2/fiabilite + l'equite territoriale. Le tableau comparatif et
+le graphique radar seront produits une fois les Parties 1-3 executees.
+",,,,,,,,8eb1a356dab6fb74,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c18,code,fr,792901bce26b0d76,"# Partie 4 : analyse comparative des strategies de dispatch
+def comparative_analysis(network):
+    """"""Compare 3 strategies CP-SAT (economique, ecologique, compromis).""""""
+    eco = solve_dispatch_cp(network, cost_weights=(1.0, 0.0))    # min cout
+    green = solve_dispatch_cp(network, cost_weights=(0.0, 1.0))  # min CO2
+    comp = solve_dispatch_cp(network, cost_weights=(1.0, 3.0))   # compromis
+
+    m_eco = dispatch_metrics(eco, network)
+    m_green = dispatch_metrics(green, network)
+    m_comp = dispatch_metrics(comp, network)
+    norms = {
+        'cost': max(m_eco['cost'], m_green['cost'], 1.0),
+        'co2': max(m_eco['co2'], m_green['co2'], 1.0),
+        'max_risk': max(m_eco['max_risk'], m_green['max_risk'], 1e-9),
+    }
+    s_eco = multi_objective_score(eco, network, weights=(1.0, 1.0, 1.0), norms=norms)
+    s_green = multi_objective_score(green, network, weights=(1.0, 1.0, 1.0), norms=norms)
+    s_comp = multi_objective_score(comp, network, weights=(1.0, 1.0, 1.0), norms=norms)
+
+    table = {}
+    for name, d, m, s in [('Economique (min cout)', eco, m_eco, s_eco),
+                          ('Ecologique (min CO2)', green, m_green, s_green),
+                          ('Compromis (pondere)', comp, m_comp, s_comp)]:
+        table[name] = {'cout_EUR': round(m['cost']), 'co2_kg': round(m['co2']),
+                       'risque_max': m['max_risk'], 'score': round(s, 3)}
+    return table
+
+
+analysis = comparative_analysis(net)
+print('Analyse comparative des strategies de dispatch :')
+print(f'{""Strategie"":<25} {""Cout (EUR)"":>12} {""CO2 (kg)"":>12} {""Risque max"":>12} {""Score"":>8}')
+print('-' * 75)
+for name, m in analysis.items():
+    print(f'{name:<25} {m[""cout_EUR""]:>12} {m[""co2_kg""]:>12} '
+          f'{m[""risque_max""]:>12.2e} {m[""score""]:>8.3f}')
+print()
+best = min(analysis.items(), key=lambda kv: kv[1]['score'])
+print(f'Strategie optimale (score multi-objectif minimal) : {best[0]}')
+",,,,,,,,792901bce26b0d76,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c19,markdown,fr,1ecb96926f323cfb,"## Conclusion
+
+Cette etude de cas illustre la **composition ordonnee** des paradigmes IA sur un probleme
+metier reel (transition energetique) : on filtre les dispatches impossibles (CP-SAT) avant
+de modeliser l'incertitude (bayesien) avant d'optimiser (multi-objectif). Inverser l'ordre
+produit un systeme soit trop rigide (contraintes ignorent l'aleatoire), soit trop flou
+(decision sans contraintes physiques).
+
+**Etat de la fondation** : jumeau numerique operationnel (couche 0), 4 couches de solveurs
+modelisees en stub. Implementations + execution + analyse comparative : cycles suivants.
+",,,,,,,,1ecb96926f323cfb,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c0,markdown,fr,9c89e4f4be7cb8bc,"# CC3 : SmartGrid - Ordonnancement de la production energetique sous incertitude
+
+**Etude de cas interdisciplinaire** combinant programmation par contraintes (OR-Tools CP-SAT),
+inference probabiliste (modele bayesien), optimisation multi-objectif et un jumeau numerique
+de reseau electrique.
+",,,,,,,,9c89e4f4be7cb8bc,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c1,markdown,fr,384bec02c399a77d,"## Contexte metier
+
+Un operateur de reseau electrique doit, pour chaque heure, decider quelles centrales activer
+et a quel niveau de production (le *unit commitment* / dispatch) afin de satisfaire la demande
+tout en minimisant le cout economique et les emissions de CO2. Ce probleme est rendu difficile
+par :
+
+- **l'incertitude** sur la production renouvelable (eolien, solaire) et sur la demande ;
+- **les contraintes dures** : capacites min/max des centrales, temps de montee/descente,
+  reserve tournante (securite n-1) ;
+- **les objectifs multiples conflictuels** : cout, emissions, fiabilite.
+
+Une seule technique ne suffit pas : un solveur deterministe ignore l'incertitude, un modele
+probabiliste seul ne respecte pas les contraintes physiques. Cette etude de cas materialise
+leur **composition ordonnee** : filtrer les dispatches impossibles (contraintes), modeliser
+l'aleatoire (incertitude), puis optimiser (multi-objectif).
+",,,,,,,,384bec02c399a77d,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c2,markdown,fr,7d2c03681973c5d5,"## Architecture en 4 couches
+
+| Couche | Role | Technique | Partie |
+|--------|------|-----------|--------|
+| **Contraintes dures** | Filtrer les dispatches impossibles | OR-Tools CP-SAT | Partie 1 |
+| **Incertitude** | Modeliser l'aleatoire renouvelable | Modele bayesien | Partie 2 |
+| **Optimisation** | Choisir le meilleur compromis | Multi-objectif pondere | Partie 3 |
+| **Decision** | Synthese + comparaison | Workflow + scoring | Partie 4 |
+
+Ce notebook est une **fondation** : le jumeau numerique (couche 0) est operationnel ; les
+implementations des 4 couches seront completees et executees dans les cycles suivants.
+",,,,,,,,7d2c03681973c5d5,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c3,markdown,fr,9a1211fd1df5a169,"## 0. Installation et jumeau numerique
+
+Le jumeau numerique represente un reseau electrique : un ensemble de centrales (avec cout,
+capacites, facteur d'emission) et une demande horaire a satisfaire, avec une production
+renouvelable stochastique.
+",,,,,,,,9a1211fd1df5a169,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c4,code,fr,f4476cc2c0892661,"# Installation des dependances (executees dans les cycles suivants avec les solveurs)
+# %pip install ortools numpy scipy  # decommenter pour execution complete
+
+from dataclasses import dataclass, field
+from typing import List, Dict
+import numpy as np
+
+
+@dataclass
+class PowerPlant:
+    """"""Centrale de production electrique.""""""
+    name: str
+    pmin: float          # puissance minimale stable (MW)
+    pmax: float          # puissance maximale (MW)
+    cost_per_mw: float   # cout variable (EUR/MWh)
+    co2_per_mw: float    # emission (kg/MWh)
+    is_renewable: bool = False
+
+
+@dataclass
+class PowerNetwork:
+    """"""Jumeau numerique d'un reseau electrique horaire.""""""
+    plants: List[PowerPlant]
+    demand_mw: List[float]               # demande par heure (MW)
+    renewable_forecast_mean: List[float]  # production renouvelable moyenne attendue (MW)
+    renewable_forecast_std: List[float]   # incertitude (ecart-type, MW)
+
+    def total_capacity(self) -> float:
+        return sum(p.pmax for p in self.plants)
+
+    def net_demand(self, hour: int) -> float:
+        """"""Demande a couvrir par les centrales pilotables apres renouvelable.""""""
+        return max(0.0, self.demand_mw[hour] - self.renewable_forecast_mean[hour])
+
+
+def demo_network() -> PowerNetwork:
+    """"""Reseau de demonstration : 3 centrales pilotables + renouvelable sur 6 heures.""""""
+    plants = [
+        PowerPlant('Charbon', 50, 400, cost_per_mw=30, co2_per_mw=900),
+        PowerPlant('Gaz',    20, 250, cost_per_mw=60, co2_per_mw=400),
+        PowerPlant('Hydro',   0, 150, cost_per_mw=10, co2_per_mw=0,  is_renewable=False),
+    ]
+    return PowerNetwork(
+        plants=plants,
+        demand_mw=[500, 520, 480, 540, 600, 580],
+        renewable_forecast_mean=[80, 60, 40, 50, 120, 150],
+        renewable_forecast_std=[15, 12, 10, 12, 25, 30],
+    )
+
+
+net = demo_network()
+print(f'Reseau : {len(net.plants)} centrales, capacite totale {net.total_capacity()} MW')
+for h in range(len(net.demand_mw)):
+    print(f'  H{h}: demande {net.demand_mw[h]} MW, renouvelable {net.renewable_forecast_mean[h]} '
+          f'+/- {net.renewable_forecast_std[h]}, demande nette {net.net_demand(h):.1f} MW')
+",,,,,,,,f4476cc2c0892661,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c5,markdown,fr,a967acd5bad56914,"## Partie 1 : Le Dispatcher sous Contraintes (OR-Tools CP-SAT)
+
+**Theorie** : le *unit commitment* est un probleme NP-difficile. On modelise, pour chaque
+heure et chaque centrale pilotable, une variable binaire (activee) et une variable continue
+(niveau de production), soumises aux contraintes :
+
+- somme des productions = demande nette (equilibre offre/demande) ;
+- `pmin <= production <= pmax` quand la centrale est activee ;
+- reserve tournante : capacite excédentaire disponible >= marge de securite.
+
+L'objectif primaire : minimiser le cout total.
+",,,,,,,,a967acd5bad56914,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c6,code,fr,fafacfc49f56aa32,"# Partie 1 : modele CP-SAT du dispatch (unit commitment)
+# TODO etudiant : implementer solve_dispatch_cp avec ortools.sat.python.cp_model.
+# Pour chaque heure et centrale pilotable : binaire `on` + entier `p`.
+# Contraintes : equilibre offre/demande nette + bornes pmin <= p <= pmax.
+# Objectif : minimiser le cout total.
+def solve_dispatch_cp(network, cost_weights=None):
+    """"""Resout le unit commitment par programmation par contraintes (CP-SAT).""""""
+    result = None  # TODO etudiant
+    return result
+
+
+dispatch = solve_dispatch_cp(net)
+print('Dispatch CP-SAT :', dispatch)
+",,,,,,,,fafacfc49f56aa32,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c7,markdown,fr,b2a27db7bd5b0251,"### Exercice 1 : Reserve tournante (securite n-1)
+
+Ajoutez au modele CP-SAT une contrainte de **reserve tournante** : a chaque heure, la somme
+des capacites disponibles (non utilisees) des centrales activees doit couvrir la perte de la
+plus grande centrale en service (critere n-1).
+
+**Indice** : pour chaque heure, la reserve = `sum(pmax_i - prod_i pour i active)` doit etre
+`>= max(pmax_i pour i active)`.
+",,,,,,,,b2a27db7bd5b0251,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c8,code,fr,c4f05382aa86dd66,"# Exercice 1 : contrainte de reserve tournante n-1
+def solve_dispatch_with_spinning_reserve(network: PowerNetwork):
+    """"""Dispatch CP-SAT avec reserve tournante n-1.""""""
+    result = None  # TODO etudiant : etendre solve_dispatch_cp avec la reserve n-1
+    return result
+",,,,,,,,c4f05382aa86dd66,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c9,markdown,fr,d59984e597e4274f,"## Partie 2 : Le Previsionniste Probabiliste (modele bayesien)
+
+**Theorie** : la production renouvelable est aleatoire. On modelise l'ecart
+`demande - renouvelable` comme une variable aleatoire et on infere sa distribution, pour
+quantifier le **risque de defaillance** (probabilite que la demande nette depasse la capacite
+pilotable disponible).
+",,,,,,,,d59984e597e4274f,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c10,code,fr,929a6af1ccaa8240,"# Partie 2 : modele bayesien de l'incertitude renouvelable
+# TODO etudiant : P(demande nette reelle > capacite pilotable).
+# Modele l'ecart offre/demande comme une gaussienne et utilise sa survivor function.
+from math import erfc, sqrt
+
+
+def failure_risk(network, hour):
+    """"""Probabilite que la demande nette (aleatoire) depasse la capacite pilotable.""""""
+    risk = None  # TODO etudiant : calculer via la survivor function d'une gaussienne
+    return risk
+
+
+print('Risque de defaillance (a completer par l' + 'etudiant) :')
+for h in range(len(net.demand_mw)):
+    print(f'  H{h}: risque = {failure_risk(net, h)}')
+",,,,,,,,929a6af1ccaa8240,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c11,markdown,fr,80b5b3ba59e4511d,"### Exercice 2 : Sensibilite au prior sur la variabilite eolienne
+
+Analysez comment le risque de defaillance (Partie 2) evolue quand on modifie l'incertitude
+du renouvelable (multipliez `renewable_forecast_std` par 0.5, 1.0, 2.0). Quelle heure
+devient la plus risqueuse ? Concluez sur la robustesse du dispatch determine en Partie 1.
+",,,,,,,,80b5b3ba59e4511d,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c12,code,fr,44fc2e192030efaa,"# Exercice 2 : analyse de sensibilite au prior d'incertitude
+def sensitivity_to_renewable_std(network: PowerNetwork, factors=(0.5, 1.0, 2.0)):
+    """"""Retourne le risque max par heure pour chaque facteur d'incertitude.""""""
+    result = None  # TODO etudiant : boucler sur les facteurs, retourner {factor: max_risk}
+    return result
+",,,,,,,,44fc2e192030efaa,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c13,markdown,fr,f71e48358abc4234,"## Partie 3 : L'Optimiseur Multi-Objectif
+
+**Theorie** : on veut minimiser simultanement le **cout** economique, les **emissions** CO2
+et le **risque** de defaillance. Ces objectifs sont conflictuels (le charbon est bon marche
+mais tres emissif). On construit un score pondere `S = a*cout + b*co2 + c*risque` et on
+cherche le dispatch minimisant S, en explorant le front de Pareto.
+",,,,,,,,f71e48358abc4234,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c14,code,fr,364239a63c036fdc,"# Partie 3 : score multi-objectif (cout + CO2 + risque)
+# TODO etudiant : normaliser chaque objectif puis combiner par somme ponderee.
+def dispatch_metrics(dispatch, network):
+    """"""Calcule cout total, CO2 total et risque max d'un dispatch.""""""
+    if dispatch is None:
+        return {'cost': float('inf'), 'co2': float('inf'), 'max_risk': 1.0}
+    metrics = None  # TODO etudiant : boucler sur heures + plants
+    return metrics
+
+
+def multi_objective_score(dispatch, network, weights=(1.0, 1.0, 1.0), norms=None):
+    """"""Score = w_c*cout_norm + w_co2*co2_norm + w_r*risque_norm.""""""
+    score = None  # TODO etudiant
+    return score
+
+
+print('Score multi-objectif :', multi_objective_score(dispatch, net))
+",,,,,,,,364239a63c036fdc,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c15,markdown,fr,ca0243fd76c2c961,"### Exercice 3 : Ajouter un troisieme objectif (equite territoriale)
+
+Ajoutez un troisieme objectif : **equite territoriale** (eviter qu'une meme region subisse
+toutes les centrales les plus polluantes). Supposons que chaque centrale a un attribut
+`region`. Mesurez la concentration regionale de la pollution et ajoutez-la au score.
+",,,,,,,,ca0243fd76c2c961,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c16,code,fr,ba42fd7f8f0eebf0,"# Exercice 3 : objectif d'equite territoriale
+def territorial_equity_score(dispatch, network: PowerNetwork) -> float:
+    """"""Mesure de concentration de la pollution par region (0 = equitable).""""""
+    score = None  # TODO etudiant : mesurer la concentration (ex: variance/entropy regionale des co2)
+    return score
+",,,,,,,,ba42fd7f8f0eebf0,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c17,markdown,fr,8eb1a356dab6fb74,"## Partie 4 : Decision finale et analyse comparative
+
+**Synthese** : on compare les strategies (CP-SAT pur, multi-objectif weighted-sum, front de
+Pareto) sur les 3 axes cout/CO2/fiabilite + l'equite territoriale. Le tableau comparatif et
+le graphique radar seront produits une fois les Parties 1-3 executees.
+",,,,,,,,8eb1a356dab6fb74,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c18,code,fr,9d4189683fa4b7ce,"# Partie 4 : analyse comparative des strategies de dispatch
+# TODO etudiant : comparer 3 strategies (min cout / min CO2 / compromis).
+def comparative_analysis(network):
+    """"""Compare 3 strategies CP-SAT sur cout / CO2 / risque.""""""
+    analysis = None  # TODO etudiant : re-solve 3x, normaliser, scorer
+    return analysis
+
+
+print('Analyse comparative :', comparative_analysis(net))
+",,,,,,,,9d4189683fa4b7ce,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c19,markdown,fr,1ecb96926f323cfb,"## Conclusion
+
+Cette etude de cas illustre la **composition ordonnee** des paradigmes IA sur un probleme
+metier reel (transition energetique) : on filtre les dispatches impossibles (CP-SAT) avant
+de modeliser l'incertitude (bayesien) avant d'optimiser (multi-objectif). Inverser l'ordre
+produit un systeme soit trop rigide (contraintes ignorent l'aleatoire), soit trop flou
+(decision sans contraintes physiques).
+
+**Etat de la fondation** : jumeau numerique operationnel (couche 0), 4 couches de solveurs
+modelisees en stub. Implementations + execution + analyse comparative : cycles suivants.
+",,,,,,,,1ecb96926f323cfb,,,,,,,

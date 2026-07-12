@@ -1,0 +1,11 @@
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.secret
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+results/local/
+logs/local/

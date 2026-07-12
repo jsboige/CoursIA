@@ -1,0 +1,24 @@
+# Tweety - Dependencies
+# Install: pip install -r requirements.txt
+#
+# IMPORTANT: Tweety requires a Java Runtime (JRE 11+) and JPype bridge.
+# The notebooks use 35+ JAR modules from the TweetyProject.
+# See Tweety-1-Setup notebook for full environment setup.
+
+# Java bridge
+jpype1>=1.4                   # Java-Python bridge for Tweety JARs
+
+# Download & Setup
+requests>=2.31                # JAR/download automation (Tweety-1 Setup)
+tqdm>=4.65                    # Progress bars for downloads (Tweety-1 Setup)
+
+# Visualization
+matplotlib>=3.7
+networkx>=3.1                 # Graph visualization for argumentation
+
+# SAT/SMT solvers (Tweety-4, 5, 6, 7a)
+python-sat>=0.1               # PySAT for SAT-based reasoning
+z3-solver>=4.13               # Z3 SMT solver (Tweety-4 MUS, Tweety-7a ADF)
+
+# ASP solver (Tweety-6)
+# clingo>=5.6                 # ASP solver — Windows binary included in ext_tools/

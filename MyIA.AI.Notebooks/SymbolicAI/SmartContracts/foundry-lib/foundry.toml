@@ -1,0 +1,14 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+
+# Remappings for external dependencies
+remappings = [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "@account-abstraction/=lib/account-abstraction/",
+    "forge-std/=lib/forge-std/src/",
+]
+
+# Use solc 0.8.28 to match py-solc-x
+solc_version = "0.8.28"

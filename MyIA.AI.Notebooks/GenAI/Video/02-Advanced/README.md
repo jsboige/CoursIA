@@ -1,0 +1,98 @@
+# 02-Advanced - Génération Vidéo Avancée
+
+[← Video Foundation](../01-Foundation/) | [↑ Video](../README.md) | [→ Video Orchestration](../03-Orchestration/)
+
+Ce module explore les modèles de génération vidéo de pointe : HunyuanVideo, LTX Video, Wan Video, et SVD.
+
+**Dans le cadre du fil rouge pipeline vidéo pédagogique** : ce niveau fournit les modèles génératifs. [02-1](02-1-HunyuanVideo-Generation.ipynb) produit des vidéos haute qualité (cinématographique). [02-3](02-3-Wan-Video-Generation.ipynb) offre une génération rapide avec support multilingue. [02-4](02-4-SVD-Image-to-Video.ipynb) anime une image existante -- utile pour transformer un diagramme ou une illustration en séquence animée.
+
+## Vue d'overview
+
+| Statistique | Valeur |
+|-------------|--------|
+| Notebooks | 5 |
+| Kernel | Python 3 |
+| Durée estimée | ~6-8h |
+| GPU requis | 8-24GB |
+
+## Notebooks
+
+| # | Notebook | Contenu | Service | VRAM |
+|---|----------|---------|---------|------ |
+| 1 | [02-1-HunyuanVideo-Generation](02-1-HunyuanVideo-Generation.ipynb) | Génération Hunyuan | Local GPU | ~18GB |
+| 2 | [02-2-LTX-Video-Lightweight](02-2-LTX-Video-Lightweight.ipynb) | Génération légère LTX | Local GPU | ~8GB |
+| 3 | [02-3-Wan-Video-Generation](02-3-Wan-Video-Generation.ipynb) | Génération Wan | Local GPU | ~10GB |
+| 4 | [02-4-SVD-Image-to-Video](02-4-SVD-Image-to-Video.ipynb) | SVD (Image → Vidéo) | ComfyUI | ~10GB |
+| 5 | [02-5-LTX2-Audiovisual](02-5-LTX2-Audiovisual.ipynb) | LTX-2 audio+vidéo conjoint (22B) | Local GPU | ~14-24GB (fp8-cast natif, GGUF Q4 en prod) |
+
+## Prérequis
+
+### Docker Services
+```bash
+cd docker-configurations/services/comfyui-qwen
+docker-compose up -d
+```
+Accès : http://localhost:8188
+
+### GPU Requirements
+- **Minimum** : 8 GB VRAM (LTX Video)
+- **Recommandé** : 10-12 GB VRAM (SVD, Wan Video)
+- **Optimal** : 18+ GB VRAM (HunyuanVideo)
+
+### Dépendances
+```bash
+pip install -r requirements.txt
+pip install -r requirements-video.txt
+pip install -r requirements-comfyui.txt
+```
+
+## Progression recommandée
+
+1. **02-1-HunyuanVideo-Generation** - Qualité maximale
+2. **02-2-LTX-Video-Lightweight** - Performance/équilibre
+3. **02-3-Wan-Video-Generation** - Alternative rapide
+4. **02-4-SVD-Image-to-Video** - Animation d'images
+5. **02-5-LTX2-Audiovisual** - Vidéo + audio synchronisé (génération conjointe)
+
+## Technologies clés
+
+### HunyuanVideo (Tencent)
+- **Spécialité** : Vidéo haute qualité, réaliste
+- **Durée** : Jusqu'à plusieurs secondes
+- **VRAM** : ~18GB
+
+### LTX Video (Lightweight)
+- **Spécialité** : Rapidité, efficacité
+- **Durée** : Courtes vidéos
+- **VRAM** : ~8GB
+
+### Wan Video
+- **Spécialité** : Animation, mouvement fluide
+- **Durée** : Courts clips
+- **VRAM** : ~10GB
+
+### SVD (Stable Video Diffusion)
+- **Spécialité** : Image → Vidéo
+- **Durée** : Courtes animations
+- **VRAM** : ~10GB
+
+### LTX-2 (Lightricks, audiovisuel conjoint)
+- **Spécialité** : Génération **vidéo + audio synchronisés** en une passe (premier DiT audio-video fondationnel)
+- **Paramètres** : 22B (quantization obligatoire : `fp8-cast` natif borderline sur 24 GB, GGUF Q4 en production ~14 GB)
+- **VRAM** : ~16-24GB
+- **Licence** : LTX-2 Community (non-OSI, seuil commercial)
+
+## Comparatif
+
+| Modèle | Qualité | Vitesse | VRAM | Cas d'usage |
+|--------|---------|---------|------|-------------|
+| HunyuanVideo | Exceptionnelle | Lent | ~18GB | Production premium |
+| LTX Video | Bonne | Rapide | ~8GB | Prototypage rapide |
+| Wan Video | Bonne | Moyen | ~10GB | Animation fluide |
+| SVD | Variable | Moyen | ~10GB | Animation d'images |
+
+## Ressources
+
+- [Documentation Video principale](../README.md)
+- [Guide ComfyUI](../../00-GenAI-Environment/README.md)
+- [Architecture ComfyUI](../../../../docs/genai/genai-services.md)

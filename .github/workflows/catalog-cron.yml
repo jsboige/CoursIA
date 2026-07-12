@@ -1,0 +1,115 @@
+name: Catalog Auto-Regen (main, scheduled)
+
+# Purpose
+# -------
+# Keep COURSE_CATALOG.generated.{json,md} + README CATALOG-STATUS markers
+# CANONICAL ON MAIN without any human or agent regenerating them by hand.
+#
+# Why a scheduled job is needed:
+#   The catalog embeds git-derived fields (last_validation, issue_pr_associee...)
+#   and a maturity heuristic that drift purely as commits land on main -- even
+#   when no notebook changes. Nothing refreshes main's catalog on a cadence, so
+#   it goes stale over time. A feature branch that later regenerates against a
+#   stale main produces a large spurious diff (the "stale-catalog poison",
+#   incidents #2376 / #2383 / #2385) that has to be hand-resolved at merge time.
+#   Refreshing main on a schedule removes that drift at the source.
+#
+# Companion automation (do NOT duplicate):
+#   - catalog-drift.yml         : per-PR sync (auto-regen+commit on same-repo PR
+#                                 branches; informational annotation on forks).
+#   - stale-base-warning.yml    : labels PRs whose base is >14d behind main.
+#
+# Governance rule (.claude/rules/catalog-pr-hygiene.md):
+#   Agents MUST NOT regenerate or commit COURSE_CATALOG.generated.* nor the
+#   CATALOG-STATUS markers on a feature branch. The catalog is owned by this
+#   automation. New entries appear at the next run (eventual consistency, <24h).
+#
+# The generator (scripts/notebook_tools/generate_catalog.py) preserves curated
+# git fields from origin/main for entries untouched on the current ref
+# (_load_main_catalog + _merge_curated_fields, the #2433 fix), so running it on
+# main is idempotent: only the time-drifted fields are refreshed.
+
+on:
+  schedule:
+    # 03:37 UTC daily -- off-peak, off-:00 minute to avoid the top-of-hour rush.
+    - cron: '37 3 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: catalog-cron-main
+  cancel-in-progress: false
+
+jobs:
+  regen:
+    name: Regenerate catalog on main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0          # full history so git-derived fields are exact
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Regenerate catalog (.json + .md) + README markers
+        run: |
+          set -euo pipefail
+          # No --json-only here: refresh BOTH root artifacts (.json AND .md).
+          # --git-tracked-only keeps CI output deterministic (ignores untracked).
+          python scripts/notebook_tools/generate_catalog.py --git-tracked-only
+          python scripts/notebook_tools/expand_catalog_markers.py
+
+      - name: Commit + push to main if the catalog drifted
+        run: |
+          set -euo pipefail
+          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md
+          # Stage only README files actually modified by marker expansion.
+          mapfile -t changed_readmes < <(git ls-files -m -- '*README.md')
+          if [ "${#changed_readmes[@]}" -gt 0 ]; then
+            git add -- "${changed_readmes[@]}"
+          fi
+
+          if git diff --cached --quiet; then
+            echo "::notice title=Catalog::main catalog already canonical -- no change."
+            exit 0
+          fi
+
+          echo "Drift detected. Files to commit:"
+          git diff --cached --name-only
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit \
+            -m "chore(catalog): scheduled auto-regenerate on main [skip ci]" \
+            -m "Refresh COURSE_CATALOG.generated.{json,md} + CATALOG-STATUS markers." \
+            -m "Catalog is owned by automation; agents must not regenerate it on feature branches (see .claude/rules/catalog-pr-hygiene.md, #2433)."
+
+          # Sync with remote main before pushing. Without this, when other PRs
+          # land between checkout and push, `git push` is rejected with
+          # "[rejected] HEAD -> main (fetch first)" (incident: 2026-07-02 cron
+          # run 28566453812, catalog stayed stale for 24h+ -> CaseStudies
+          # marker held at pedagogical_count: 4 while disk had 6, See #4910).
+          # `--rebase` rewrites our local catalog commit on top of remote main
+          # (the catalog regen is idempotent and pull-and-retry safe since
+          # #2433); `--autostash` preserves any in-progress local changes if
+          # the rebase touches the same files.
+          git fetch origin main
+          git pull --rebase --autostash origin main
+
+          # Direct push of a generated artifact to main. Requires branch
+          # protection to allow github-actions[bot] (GITHUB_TOKEN) to push to
+          # main, or main to have no PR-required protection for this actor.
+          # A hard failure here is intentional and visible in the Actions tab.
+          if ! git push origin HEAD:main; then
+            echo "::error title=Catalog push rejected::Could not push the regenerated catalog to main. Allow github-actions[bot] to push generated artifacts to main in branch-protection settings, then re-run this workflow."
+            exit 1
+          fi
+          echo "::notice title=Catalog::main catalog refreshed and pushed."

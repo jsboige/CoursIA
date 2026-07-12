@@ -1,0 +1,20 @@
+name: Docs Link Check
+
+on:
+  pull_request:
+    paths:
+      - 'CLAUDE.md'
+      - 'PARCOURS.md'
+      - '.claude/rules/**'
+      - 'docs/**'
+      - '**/README.md'
+      - 'scripts/check_docs_links.py'
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check docs/ links
+        run: python scripts/check_docs_links.py --check --quiet

@@ -1,0 +1,4 @@
+# Training checkpoints and models (too large for git)
+*.pt
+*.pth
+training_report.json

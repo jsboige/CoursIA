@@ -1,0 +1,1847 @@
+"""Configuration, providers, and demo theorems."""
+
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+from agent_framework_openai import OpenAIChatCompletionClient
+
+_parent = Path(__file__).resolve().parent.parent
+_lean_dir = _parent.parent
+load_dotenv(_lean_dir / ".env")
+load_dotenv(_parent / ".env")
+
+LEAN_PROJECT_DIR = os.getenv("LEAN_PROJECT_DIR")
+
+
+def _workspace_root() -> Path | None:
+    """Return the ``MyIA.AI.Notebooks/`` root that hosts THIS ``config.py``.
+
+    The harness ships inside the CoursIA-2 layout (../prover/config.py under
+    MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/) but is also run from a
+    parallel ``C:\\dev\\CoursIA`` checkout that has identical git content
+    but different inodes. Hardcoding ``C:\\dev\\CoursIA\\...`` would silently
+    edit the WRONG tree whenever the user invokes the harness from CoursIA-2.
+
+    Instead of pinning a drive letter, walk the ancestor chain looking for
+    the first ``MyIA.AI.Notebooks/`` that exists. When one is found, the
+    harness's path constants resolve RELATIVE to the actual workspace, so a
+    BG-iter edit lands in the tree whose git history the operator is on.
+
+    Returns ``None`` if no ``MyIA.AI.Notebooks/`` ancestor exists — the
+    caller falls back to the legacy drive-letter candidates.
+    """
+    p = Path(__file__).resolve().parent
+    for ancestor in p.parents:
+        if ancestor.name == "MyIA.AI.Notebooks" and ancestor.exists():
+            return ancestor
+    return None
+
+
+_WORKSPACE_ROOT = _workspace_root()
+
+
+def _workspace_relative(rel: str) -> Path | None:
+    """Resolve ``rel`` (forward-slash, relative to MyIA.AI.Notebooks/) if a
+    workspace root was found, else ``None`` (caller treats as a miss)."""
+    if _WORKSPACE_ROOT is None:
+        return None
+    return _WORKSPACE_ROOT.joinpath(*rel.split("/"))
+
+PROVIDERS = {
+    "zai": {
+        "base_url": os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/coding/paas/v4"),
+        "api_key": os.getenv("ZAI_API_KEY", ""),
+        "models": {
+            "reasoning": os.getenv("ZAI_CHAT_MODEL_ID", "glm-5.1"),
+            "fast": os.getenv("ZAI_FAST_MODEL_ID", "glm-5.1"),
+        }
+    },
+    "local": {
+        "base_url": os.getenv("LOCAL_LLM_BASE_URL", ""),
+        "api_key": os.getenv("LOCAL_LLM_API_KEY", ""),
+        "models": {
+            "reasoning": os.getenv("LOCAL_LLM_MODEL_ID", "qwen3.6-35b-a3b"),
+            "fast": os.getenv("LOCAL_LLM_MODEL_ID", "qwen3.6-35b-a3b"),
+        }
+    },
+    "openrouter": {
+        # OpenRouter is the "powerful provider" lane: the DirectorAgent runs
+        # here on a frontier model to steer the local z.ai/Qwen agents when
+        # they stall. The reasoning default MUST stay a frontier model
+        # (Opus 4.7 / GPT-5.5 / DeepSeek v4 Pro class) — a weak default like
+        # gpt-4o-mini defeats the entire point of the Director escalation.
+        "base_url": os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+        "api_key": os.getenv("OPENROUTER_API_KEY", ""),
+        "models": {
+            "reasoning": os.getenv("OPENROUTER_CHAT_MODEL_ID",
+                                   os.getenv("OPENAI_CHAT_MODEL_ID",
+                                             "anthropic/claude-opus-4.7")),
+            "fast": os.getenv("OPENROUTER_FAST_MODEL_ID",
+                              "anthropic/claude-haiku-4.5"),
+        }
+    },
+    # Leanstral 1.5 (Mistral, Lean-specialized MoE 119B/6B-active, Apache-2.0,
+    # free API) — A/B candidate vs glm-5.1 on our research-level sorries
+    # (issue #5475, EPIC #3801 axe-2 SOTA). Added 2026-07-06.
+    # OpenAI-compat confirmed (ai-01 curl /v1/models -> HTTP 200). Model-id is
+    # the alias `labs-leanstral-1-5` (NOT `leanstral-1-5` which 404s — piège #4
+    # llm-endpoints.md). For a reproducible A/B, pin the snapshot
+    # `labs-leanstral-1-5-1` by overriding MISTRAL_CHAT_MODEL_ID in .env.
+    # Leanstral is a thinking model (reasoning:true) so the reasoning_content
+    # handling already in place for zai/glm applies — re-verify at smoke-test.
+    "mistral": {
+        "base_url": os.getenv("MISTRAL_BASE_URL", "https://api.mistral.ai/v1"),
+        "api_key": os.getenv("MISTRAL_API_KEY", ""),
+        "models": {
+            "reasoning": os.getenv("MISTRAL_CHAT_MODEL_ID", "labs-leanstral-1-5"),
+            "fast": os.getenv("MISTRAL_FAST_MODEL_ID", "labs-leanstral-1-5"),
+        }
+    },
+}
+
+SHAPLEY_IMPORTS = """import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Real.Basic
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Tactic
+import CooperativeGames.Basic
+"""
+
+_COOPERATIVE_GAMES_CANDIDATES = [
+    # Workspace-relative entry, preferred when the harness is run from
+    # CoursIA-2 (a separate physical checkout of this repo). Ancestor
+    # walk in `_workspace_root()` keeps both layouts working without
+    # touching this list whenever the repo moves.
+    _workspace_relative("GameTheory/cooperative_games_lean"),
+    # Legacy drive-letter fallbacks. Order preserved: C:\dev\CoursIA is
+    # the historical default and a sibling tree to whatever the harness
+    # is invoked from on the same drive.
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
+    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
+    Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
+]
+COOPERATIVE_GAMES_DIR = next(
+    (p for p in _COOPERATIVE_GAMES_CANDIDATES if p.exists()),
+    Path(LEAN_PROJECT_DIR) if LEAN_PROJECT_DIR else _COOPERATIVE_GAMES_CANDIDATES[0],
+)
+SHAPLEY_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Shapley.lean" if COOPERATIVE_GAMES_DIR.exists() else None
+BASIC_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Basic.lean" if COOPERATIVE_GAMES_DIR.exists() else None
+
+# Canonical home is game_theory_lean since the #6058 absorption merged
+# (SocialChoice/Arrow+Sen+Voting moved into game_theory_lean on
+# 2026-07-11). The legacy social_choice_lean dir survives as md-only
+# (FORMAL_STATUS/README/NOTICE) — its SocialChoice/*.lean are gone, so
+# deriving VOTING_FILE from it yields a non-existent path (#6248).
+_SOCIAL_CHOICE_CANDIDATES = [
+    _workspace_relative("GameTheory/game_theory_lean"),
+    _workspace_relative("GameTheory/social_choice_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
+    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
+    Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
+]
+SOCIAL_CHOICE_DIR = next(
+    (p for p in _SOCIAL_CHOICE_CANDIDATES if p.exists()),
+    _SOCIAL_CHOICE_CANDIDATES[0],
+)
+VOTING_FILE = SOCIAL_CHOICE_DIR / "SocialChoice" / "Voting.lean" if SOCIAL_CHOICE_DIR.exists() else None
+SMOKE_TEST_FILE = SOCIAL_CHOICE_DIR / "SocialChoice" / "_SmokeTest.lean" if SOCIAL_CHOICE_DIR.exists() else None
+VOTING_IMPORTS = """import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.List.Sort
+import SocialChoice.Basic
+"""
+
+# ── Stable Marriage ──
+# Canonical home is game_theory_lean since the #5904-#5913 absorption merged
+# (StableMarriage/{Definitions,GSState,GaleShapley,Lemmas,Lattice} moved into
+# game_theory_lean on 2026-07-10). The legacy stable_marriage_lean dir is
+# md-only now — deriving GSSTATE/GALESHAPLEY/LEMMAS/LATTICE_FILE from it yields
+# non-existent paths (#6248).
+_STABLE_MARRIAGE_CANDIDATES = [
+    _workspace_relative("GameTheory/game_theory_lean"),
+    _workspace_relative("GameTheory/stable_marriage_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
+]
+STABLE_MARRIAGE_DIR = next(
+    (p for p in _STABLE_MARRIAGE_CANDIDATES if p.exists()),
+    _STABLE_MARRIAGE_CANDIDATES[0],
+)
+GSSTATE_FILE = STABLE_MARRIAGE_DIR / "StableMarriage" / "GSState.lean" if STABLE_MARRIAGE_DIR.exists() else None
+GALESHAPLEY_FILE = STABLE_MARRIAGE_DIR / "StableMarriage" / "GaleShapley.lean" if STABLE_MARRIAGE_DIR.exists() else None
+GALESHAPLEY_IMPORTS = """import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Finset.Basic
+import StableMarriage.Definitions
+"""
+
+LEMMAS_FILE = STABLE_MARRIAGE_DIR / "StableMarriage" / "Lemmas.lean" if STABLE_MARRIAGE_DIR.exists() else None
+LEMMAS_IMPORTS = """import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Finset.Basic
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Fintype.Card
+import Mathlib.Data.Fintype.Prod
+import Mathlib.Tactic.Common
+import StableMarriage.Definitions
+import StableMarriage.GSState
+"""
+
+LATTICE_FILE = STABLE_MARRIAGE_DIR / "StableMarriage" / "Lattice.lean" if STABLE_MARRIAGE_DIR.exists() else None
+LATTICE_IMPORTS = """import Mathlib.Order.Lattice
+import Mathlib.Data.Fintype.Card
+import Mathlib.Tactic.Common
+import StableMarriage.Definitions
+"""
+
+# ── Calibration (Epic #1452) ──
+# Relocated from GameTheory to SymbolicAI/Lean (issue #1764)
+_CALIBRATION_CANDIDATES = [
+    _workspace_relative("SymbolicAI/Lean/calibration_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\calibration_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\calibration_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\calibration_lean"),
+]
+CALIBRATION_DIR = next(
+    (p for p in _CALIBRATION_CANDIDATES if p.exists()),
+    _CALIBRATION_CANDIDATES[0],
+)
+NASH_CALIBRATION_FILE = CALIBRATION_DIR / "Calibration" / "Nash.lean" if CALIBRATION_DIR.exists() else None
+NASH_CALIBRATION_IMPORTS = """import Mathlib.Data.Fintype.Basic
+import Mathlib.Tactic
+"""
+
+# ── Conway calibration (Epic #1453) ──
+# Conway hommage series relocated 2026-05-28: was MyIA.AI.Notebooks/GameTheory/conway_lean.
+_CONWAY_CANDIDATES = [
+    _workspace_relative("SymbolicAI/Lean/conway_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
+]
+CONWAY_DIR = next(
+    (p for p in _CONWAY_CANDIDATES if p.exists()),
+    _CONWAY_CANDIDATES[0],
+)
+CONWAY_NIM_FILE = CONWAY_DIR / "Conway" / "Nim.lean" if CONWAY_DIR.exists() else None
+CONWAY_NIM_IMPORTS = """import Mathlib.Data.Nat.Bitwise
+import Mathlib.Data.List.Basic
+"""
+CONWAY_ANGEL_FILE = CONWAY_DIR / "Conway" / "Angel.lean" if CONWAY_DIR.exists() else None
+CONWAY_ANGEL_IMPORTS = """import Mathlib.Data.Int.Interval
+import Mathlib.Data.Finset.Prod
+"""
+CONWAY_DOOMSDAY_FILE = CONWAY_DIR / "Conway" / "DoomsdayLemmas.lean" if CONWAY_DIR.exists() else None
+CONWAY_DOOMSDAY_IMPORTS = """import Conway.Doomsday
+"""
+CONWAY_LOOKANDSAY_FILE = CONWAY_DIR / "Conway" / "LookAndSayLemmas.lean" if CONWAY_DIR.exists() else None
+CONWAY_LOOKANDSAY_IMPORTS = """import Conway.LookAndSay
+"""
+CONWAY_KS_FILE = CONWAY_DIR / "Conway" / "KochenSpecker.lean" if CONWAY_DIR.exists() else None
+CONWAY_KS_IMPORTS = """import Mathlib.Data.Real.Basic
+import Mathlib.Data.Fin.Basic
+import Mathlib.Tactic
+"""
+CONWAY_HASHLIFE_FILE = (
+    CONWAY_DIR / "Conway" / "Life" / "HashlifeCorrectness.lean"
+    if CONWAY_DIR.exists() else None
+)
+CONWAY_HASHLIFE_IMPORTS = """import Conway.Life
+import Conway.Life.GridCanonical
+import Conway.Life.MacroCell
+import Conway.Life.Hashlife
+"""
+
+# ── HONEST sorrys registry (DO NOT TOUCH) ──
+# Some sorrys document genuine theoretical impossibility — they are NOT bugs to
+# fix. Attacking them wastes compute and produces fake "PROVED" reports. Each
+# entry is keyed by the absolute filepath (as string) and lists `sorry_line`
+# numbers that the prover MUST refuse to target.
+#
+# Pattern: an honest sorry has FIXME/cannot/unprovable/counter-example comments
+# immediately above it. The detector in `lean_utils.is_honest_sorry()` confirms
+# this dynamically; this registry is the static fallback.
+HONEST_SORRIES = {
+    # Voting.lean L262 sorry removed 2026-05-13: median_voter_theorem_strict proved
+    # with strictly_single_peaked_profile. Issue #973 CLOSED.
+    str(BASIC_FILE) if BASIC_FILE else "": {
+        # bondareva_shapley_backward at Basic.lean. Decomposed into 5 sub-goals
+        # 2026-05-15 (po-2026 C34-NIGHT-2). ProperCone.hyperplane_separation NOW
+        # available in Mathlib v4.30.0-rc2 via Analysis.Convex.Cone.Dual.
+        # Skeleton with 5 sorry targets committed; awaiting prover run.
+        # NOTE: line numbers shift as sub-goals are proved. Search for the theorem.
+        225: (
+            "bondareva_shapley_backward — decomposed into 5 PROVER TARGET sub-goals. "
+            "Mathlib v4.30 has ProperCone.hyperplane_separation (Farkas). Skeleton "
+            "wired with Convex/Cone.Dual + PiL2 imports. Targets: hP_conv, hP_closed, "
+            "hP_nonempty, hK_empty, hCore. Awaiting multi-agent prover run with "
+            "--director-provider openrouter."
+        ),
+    },
+}
+
+
+def create_client(provider: str = "zai", model_key: str = "reasoning",
+                  request_timeout_s: float = 240.0,
+                  max_retries: int = 4) -> OpenAIChatCompletionClient:
+    """Create a ChatCompletionClient for the given provider.
+
+    request_timeout_s caps a single chat completion call. Reasoning models
+    can legitimately take 30-90s to think; cap at 4min to detect hangs while
+    leaving room for genuinely deep reasoning. BG iter 2 had a TacticAgent
+    chat hang for 16+ min with no completion — that's a hang, not slow
+    reasoning, and we should fail-fast so the workflow can recover instead
+    of burning the wall-clock cap.
+
+    max_retries=4 (was 1, bumped 2026-05-12): z.ai service has intermittent
+    5xx + connection-reset failures during long sessions (>20min). With
+    max_retries=1 a single transient blip terminated the BG run; OpenAI
+    SDK uses exponential backoff internally so 4 retries adds at most
+    ~30s wall-clock for legitimately recoverable failures.
+    """
+    from openai import AsyncOpenAI
+    cfg = PROVIDERS[provider]
+    async_client = AsyncOpenAI(
+        api_key=cfg["api_key"],
+        base_url=cfg["base_url"],
+        timeout=request_timeout_s,
+        max_retries=max_retries,
+    )
+    return OpenAIChatCompletionClient(
+        model=cfg["models"][model_key],
+        async_client=async_client,
+    )
+
+
+# ── Demo Theorems ──
+
+DEMOS = {
+    1: {
+        "name": "DEMO_1_REFLEXIVITY",
+        "theorem": "theorem demo_rfl (n : Nat) : n = n",
+        "proof": "rfl",
+        "imports": None,
+        "description": "Trivial - rfl suffit",
+        "difficulty": "trivial",
+    },
+    2: {
+        "name": "DEMO_2_ZERO_ADD",
+        "theorem": "theorem demo_zero_add (n : Nat) : 0 + n = n",
+        "proof": "omega",
+        "imports": None,
+        "description": "Simple - omega or Nat.zero_add",
+        "difficulty": "simple",
+    },
+    3: {
+        "name": "DEMO_3_DISTRIBUTIVITY",
+        "theorem": "theorem demo_dist (a b c : Nat) : a * c + b * c = (a + b) * c",
+        "proof": "omega",
+        "imports": None,
+        "description": "Intermediate - distributivity reversed",
+        "difficulty": "intermediate",
+    },
+    4: {
+        "name": "DEMO_4_SHAPLEY_SIMPLE",
+        "theorem": "theorem test_coef_shift (n s : Nat) (h : s + 2 <= n) : (s + 1) * 1 = s + 1",
+        "proof": "omega",
+        "imports": SHAPLEY_IMPORTS,
+        "description": "Shapley-style Nat arithmetic with Mathlib",
+        "difficulty": "intermediate",
+    },
+    5: {
+        "name": "DEMO_5_FINSET_SUM_REAL",
+        "theorem": "theorem demo_finset_sum_erase {a : Type*} [DecidableEq a] [Fintype a] (s : Finset a) (x : a) (f : a -> Real) (ha : x in s) : Sum x in s.erase x, f x = Sum x in s, f x - f x",
+        "proof": "have h := Finset.sum_erase_add s f ha; linarith",
+        "imports": SHAPLEY_IMPORTS,
+        "description": "Finset sum with erase + Real subtraction (Shapley-style)",
+        "difficulty": "advanced",
+    },
+    6: {
+        "name": "SHAPLEY_UNIQUENESS",
+        "file": str(SHAPLEY_FILE),
+        "line": 566,
+        "sorry_type": "full_proof",
+        "theorem_name": "shapley_uniqueness",
+        "theorem": "shapley_uniqueness",
+        "imports": SHAPLEY_IMPORTS,
+        "description": (
+            "Replace sorry at line 566 of Shapley.lean (theorem starts L556). Prove shapley_uniqueness:\n"
+            "any solution satisfying all 4 axioms equals Shapley value.\n"
+            "Uses Mobius decomposition of games into unanimity games.\n"
+            "Depends on: shapley_unanimity, shapley_efficient, shapley_symmetric, shapley_null_player.\n"
+            "All helper theorems are now proved (0 sorry in their proofs).\n"
+            "Pre-sorry code:\n"
+            "```\n"
+            "  unfold shapleyValue TUGame.marginalContribution shapleyCoef\n"
+            "  simp only [TUGame.unanimityGame]\n"
+            "```\n"
+            "Goal should involve Finset.sum with if-then-else filters."
+        ),
+        "difficulty": "hard",
+        "context_before": (
+            "  · -- Case i ∈ T: direct computation\n"
+            "    -- marginal contribution = 1 iff T\\{i} ⊆ S (and i ∉ S, given by filter)\n"
+            "    -- = ∑_{S : i∉S, T\\{i} ⊆ S} c(|S|, n) = 1/|T|\n"
+            "    unfold shapleyValue TUGame.marginalContribution shapleyCoef\n"
+            "    simp only [TUGame.unanimityGame]\n"
+        ),
+        "context_after": "  · -- Case i ∉ T: i is a null player",
+    },
+    # DEMO 7 (SHAPLEY_EFFICIENT_COEFF, was line=292) removed: theorem shapley_efficient
+    # is now fully proved on main (Shapley.lean L243-L329). Single remaining sorry in
+    # this file is L566 (shapley_uniqueness), already covered by DEMOS 6 + 8.
+    8: {
+        "name": "SHAPLEY_UNIQUENESS_ALT",
+        "file": str(SHAPLEY_FILE),
+        "line": 566,
+        "sorry_type": "full_proof",
+        "theorem_name": "shapley_uniqueness (alternative entry)",
+        "theorem": "shapley_uniqueness",
+        "imports": SHAPLEY_IMPORTS,
+        "description": (
+            "Same target as Demo 6 (line 566). Alias for batch/testing.\n"
+            "Prove shapley_uniqueness: any solution satisfying all 4 axioms equals Shapley value.\n"
+            "Uses Mobius decomposition of games into unanimity games.\n"
+            "All helper theorems proved."
+        ),
+        "difficulty": "very_hard",
+    },
+    9: {
+        "name": "VOTING_MEDIAN_COUNTING_LT",
+        "file": str(VOTING_FILE),
+        "line": 355,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "median_voter_theorem_strict (case peaks_j < median)",
+        "theorem": "median_voter_theorem_strict",
+        "imports": VOTING_IMPORTS,
+        "goal": (
+            "(Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card "
+            "< (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card"
+        ),
+        "description": (
+            "REPLACES the sorry at L325 (case `peaks_j < median_peak peaks`)\n"
+            "in `median_voter_theorem_strict`.\n"
+            "\n"
+            "DO NOT touch L261 (that's the WEAK version sorry — registered as\n"
+            "honest/unprovable in HONEST_SORRIES). The prover will refuse it.\n"
+            "\n"
+            "GOAL at sorry (EXACT):\n"
+            "  (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card\n"
+            "  < (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card\n"
+            "\n"
+            "HYPOTHESES IN SCOPE:\n"
+            "  ι : Type, [Fintype ι], σ : Type, [LinearOrder σ], [Inhabited σ]\n"
+            "  prof : ι → PrefOrder σ, peaks : ι → σ\n"
+            "  hsp : single_peaked_profile prof peaks\n"
+            "  hodd : Odd (Fintype.card ι)\n"
+            "  hcard_pos : 0 < Fintype.card ι\n"
+            "  j : ι, hlt : peaks j < median_peak peaks\n"
+            "  hgt_peaks, hfor_card, hag_card  (already established above — NOT needed for sorry)\n"
+            "\n"
+            "PROOF STRATEGY (combinatorial counting via sorted list):\n"
+            "  Let n = Fintype.card ι (odd, n = 2k+1).\n"
+            "  Let l = sorted_peaks_list peaks = (univ.toList.map peaks).mergeSort (· ≤ ·).\n"
+            "  Then l.length = n and median_peak = l.getD (n/2) default.\n"
+            "  Since l is sorted (Pairwise (· ≤ ·)):\n"
+            "    - At most n/2 entries are STRICTLY less than l[n/2] (positions 0..n/2-1)\n"
+            "    - At least n/2 + 1 = (n+1)/2 entries satisfy l[n/2] ≤ entry (positions n/2..n-1)\n"
+            "  Transfer counts via List.Perm.countP_eq from sorted list to univ via mergeSort_perm.\n"
+            "\n"
+            "KEY LEMMAS (verified Lean 4.29.1 + Mathlib current):\n"
+            "  List.mergeSort_perm : (l.mergeSort r) ~ l\n"
+            "  List.pairwise_mergeSort : (l.mergeSort r).Pairwise r  -- if r is total/transitive\n"
+            "  List.Perm.countP_eq (p : α → Bool) : l₁ ~ l₂ → l₁.countP p = l₂.countP p\n"
+            "  List.countP_append, List.countP_eq_zero, List.countP_eq_length\n"
+            "  List.take_append_drop, List.length_take, List.length_drop\n"
+            "  List.Pairwise.rel_get_of_le (Mathlib/Data/List/Pairwise.lean L142) :\n"
+            "    l.Pairwise r → ∀ i j (h : i ≤ j) (hj : j < l.length), r l[i] l[j]\n"
+            "  Finset.toList_filter, Finset.length_toList\n"
+            "\n"
+            "CRITICAL ERROR PATTERNS TO AVOID:\n"
+            "  1. `List.Sorted` does NOT exist as a top-level abbrev in 4.29.1.\n"
+            "     Use `Pairwise (· ≤ ·)` directly. Sorted aliases were deprecated 2025-10-11.\n"
+            "  2. `omega` CANNOT prove counting bounds over Finset.card of an opaque filter.\n"
+            "     You MUST reduce to concrete arithmetic AFTER establishing list-level\n"
+            "     count bounds.\n"
+            "  3. When using `List.Perm.countP_eq`, the predicate must be `α → Bool`.\n"
+            "     Use `decide` or explicit `decidable` to coerce a `Prop` predicate.\n"
+            "  4. To transfer between `Finset.filter ... |>.card` and `List.countP`:\n"
+            "     `Finset.toList_filter` then `Finset.length_toList`.\n"
+            "\n"
+            "RECOMMENDED SUB-LEMMAS (extract via `have` to keep main proof small):\n"
+            "  have hperm : sorted_peaks_list peaks ~ Finset.univ.toList.map peaks := \n"
+            "    List.mergeSort_perm _ _\n"
+            "  have hsort : (sorted_peaks_list peaks).Pairwise (· ≤ ·) := by\n"
+            "    apply List.pairwise_mergeSort  -- may need transitivity hypothesis\n"
+            "  -- Then split sorted list at index n/2 = (sorted_peaks_list peaks).length / 2\n"
+            "  -- and use Pairwise to bound countP on each half\n"
+            "\n"
+            "CRITICAL RULES:\n"
+            "  - ZERO sorry remaining. Any sorry on this lemma = FAILURE.\n"
+            "  - DO NOT use aesop on counting bounds.\n"
+            "  - DO NOT use omega/nlinarith on opaque Finset.card terms.\n"
+            "  - DO NOT touch lines 252-261 (HONEST sorry, weak version, unprovable).\n"
+            "  - Build must SUCCEED (use compile() to verify).\n"
+            "  - sorry count must DECREASE by at least 1 (originally 3 sorrys in Voting.lean).\n"
+            "\n"
+            "RELATED: DEMO 14 (VOTING_MEDIAN_COUNTING_GT) targets L348 with the\n"
+            "symmetric statement. Once L325 is solved, the same proof technique\n"
+            "applies (just swap < and ≤). Consider extracting a shared helper\n"
+            "lemma `countP_lt_kth_le_of_sorted` in a new file.\n"
+        ),
+        "proof_scaffolding": (
+            "  -- STEP 1 (VERIFIED COMPILES — keep as-is): A.card + B.card = n via complementarity\n"
+            "  have hcomp : (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ).card +\n"
+            "      (Finset.filter (fun i => median_peak peaks ≤ peaks i) Finset.univ).card =\n"
+            "      Fintype.card ι := by\n"
+            "    have hflip : (Finset.filter (fun i => peaks i < median_peak peaks) Finset.univ) =\n"
+            "        (Finset.filter (fun i => ¬ median_peak peaks ≤ peaks i) Finset.univ) := by\n"
+            "      apply Finset.filter_congr\n"
+            "      intro i _\n"
+            "      exact (not_le).symm\n"
+            "    rw [hflip, add_comm,\n"
+            "        Finset.card_filter_add_card_filter_not\n"
+            "          (s := Finset.univ) (p := fun i => median_peak peaks ≤ peaks i),\n"
+            "        Finset.card_univ]\n"
+            "  -- STEP 2 (TODO — your job): A.card ≤ Fintype.card ι / 2\n"
+            "  --   Strategy: unfold median_peak to L.getD k default where L = sorted peaks list\n"
+            "  --   and k = L.length / 2. Sortedness (L.Pairwise (· ≤ ·)) implies values\n"
+            "  --   strictly less than L[k] occur only at positions < k, so countP < L[k] ≤ k.\n"
+            "  --   Transfer card → countP via Finset.toList + List.countP_map + Perm.countP_eq.\n"
+            "  --   Key lemmas: List.mergeSort_perm, List.pairwise_mergeSort,\n"
+            "  --               List.Pairwise.rel_get_of_le, List.countP_le_length,\n"
+            "  --               Finset.length_toList.\n"
+            "  -- STEP 3 (closes goal once Step 2 done): combine hcomp + Step 2 + hodd via omega\n"
+            "  --   2*A.card ≤ 2k = n-1 < n = A.card + B.card  →  A.card < B.card.\n"
+            "  sorry\n"
+        ),
+        "difficulty": "very_hard",
+    },
+    14: {
+        "name": "VOTING_MEDIAN_COUNTING_GT",
+        "file": str(VOTING_FILE),
+        "line": 385,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "median_voter_theorem_strict (case peaks_j > median)",
+        "theorem": "median_voter_theorem_strict",
+        "imports": VOTING_IMPORTS,
+        "goal": (
+            "(Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card "
+            "< (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card"
+        ),
+        "description": (
+            "REPLACES the sorry at L348 (case `peaks_j > median_peak peaks`).\n"
+            "Symmetric to DEMO 9 (L325). Same proof technique, swap `<` and `≤`.\n"
+            "\n"
+            "GOAL at sorry (EXACT):\n"
+            "  (Finset.filter (fun i => median_peak peaks < peaks i) Finset.univ).card\n"
+            "  < (Finset.filter (fun i => peaks i ≤ median_peak peaks) Finset.univ).card\n"
+            "\n"
+            "STRATEGY: identical to DEMO 9 but reversed inequality.\n"
+            "Use `not_lt.mpr` / `lt_of_le_of_ne` / mirror sorting arguments.\n"
+            "If a `countP_lt_kth_le_of_sorted` helper was extracted for L325,\n"
+            "apply it here with the reversed predicate.\n"
+            "\n"
+            "Same DO-NOT-USE / HONEST_SORRIES restrictions as DEMO 9.\n"
+        ),
+        "proof_scaffolding": "",
+        "difficulty": "very_hard",
+    },
+    10: {
+        "name": "VOTING_BANKS_SET_NONEMPTY",
+        "file": str(VOTING_FILE),
+        "line": 455,
+        "sorry_type": "full_proof",
+        "theorem_name": "banks_set_nonempty_of_tournament",
+        "theorem": "banks_set_nonempty_of_tournament",
+        "imports": VOTING_IMPORTS,
+        "description": (
+            "Prove banks_set_nonempty_of_tournament: when a tournament exists on S,\n"
+            "the Banks set is nonempty.\n"
+            "Goal: (banks_set prof S).Nonempty\n"
+            "The Banks set collects endpoints of maximal chains in the tournament.\n"
+            "Key: any maximal chain ending at the tournament winner gives a Banks winner.\n"
+            "Available: is_tournament, banks_set, maximal_chain."
+        ),
+        "difficulty": "hard",
+    },
+    13: {
+        "name": "VOTING_BANKS_SET_CONDORCET",
+        "file": str(VOTING_FILE),
+        "line": 446,
+        "sorry_type": "full_proof",
+        "theorem_name": "banks_set_condorcet",
+        "theorem": "banks_set_condorcet",
+        "imports": VOTING_IMPORTS,
+        "goal": "∃ C, banks_chain prof S C ∧ x ∈ C ∧ ∀ y ∈ C, y ≠ x → margin_pos prof x y",
+        "description": (
+            "Prove banks_set_condorcet: if x is a Condorcet winner in S,\n"
+            "then x belongs to the Banks set.\n"
+            "The sorry is at L446 (single line). Replace it with a proof.\n"
+            "\n"
+            "STRATEGY: Pick a maximal pre-chain using Finset.exists_mem_eq_sup.\n"
+            "1. Define isPC (pre-chain): subset of S with x, total+transitive, x beats all.\n"
+            "2. Prove {x} isPC (vacuously true for total/trans on singleton).\n"
+            "3. Use Finset.exists_mem_eq_sup on (S.powerset.filter isPC) with Finset.card\n"
+            "   to get a maximum-cardinality pre-chain C.\n"
+            "4. Prove C is a banks_chain (5 fields).\n"
+            "5. Maximality: if y ∈ S\\C could be added, then insert y gives larger pre-chain.\n"
+            "\n"
+            "hw : condorcet_winner prof S x = ⟨x ∈ S, ∀ y ∈ S, y ≠ x → margin_pos prof x y⟩\n"
+            "banks_chain prof S C = ⟨C ⊆ S, C.Nonempty, total_on C, trans_on C, maximal C⟩\n"
+            "Finset.exists_mem_eq_sup : s.Nonempty → ∃ i ∈ s, s.sup f = f i\n"
+            "Use `import Mathlib.Data.Finset.Powerset` for Finset.mem_powerset.\n"
+            "\n"
+            "IMPORTANT: Use file_replace_sorry(446, code) to replace ONLY the sorry line.\n"
+            "The sorry is a SINGLE LINE at L446. Replace it with the full proof.\n"
+            "DO NOT use file_replace_lines for the proof — it can corrupt surrounding code.\n"
+            "Import Mathlib.Data.Finset.Powerset is already added."
+        ),
+        "proof_scaffolding": (
+            "  -- Import Mathlib.Data.Finset.Powerset already added\n"
+            "  haveI : DecidableEq σ := Classical.decEq _\n"
+            "  let isPC (C : Finset σ) : Prop :=\n"
+            "    C ⊆ S ∧ x ∈ C ∧\n"
+            "    (∀ a ∈ C, ∀ b ∈ C, a ≠ b → margin_pos prof a b ∨ margin_pos prof b a) ∧\n"
+            "    (∀ a ∈ C, ∀ b ∈ C, ∀ c ∈ C,\n"
+            "      margin_pos prof a b → margin_pos prof b c → margin_pos prof a c) ∧\n"
+            "    ∀ y ∈ C, y ≠ x → margin_pos prof x y\n"
+            "  have hPCx : isPC {x} := by\n"
+            "    unfold isPC; refine ⟨Finset.singleton_subset_iff.mpr hw.1,\n"
+            "      Finset.mem_singleton.mpr rfl, ?_, ?_, ?_⟩\n"
+            "    · intro a ha b hb hab\n"
+            "      rw [Finset.mem_singleton] at ha hb; subst a b; exact absurd rfl hab\n"
+            "    · intro a ha b hb c hc hab hbc\n"
+            "      rw [Finset.mem_singleton] at ha hb hc; subst a b c; exact hab\n"
+            "    · intro y hy hne\n"
+            "      rw [Finset.mem_singleton] at hy; subst y; exact (hne rfl).elim\n"
+            "  have hNE : (S.powerset.filter isPC).Nonempty :=\n"
+            "    ⟨{x}, Finset.mem_filter.mpr ⟨Finset.mem_powerset.mpr\n"
+            "      (Finset.singleton_subset_iff.mpr hw.1), hPCx⟩⟩\n"
+            "  obtain ⟨C, hCmem, hCcard⟩ := Finset.exists_mem_eq_sup\n"
+            "    (S.powerset.filter isPC) hNE Finset.card\n"
+            "  simp only [Finset.mem_filter, Finset.mem_powerset] at hCmem\n"
+            "  obtain ⟨hCsub, hCpc⟩ := hCmem\n"
+            "  unfold isPC at hCpc\n"
+            "  obtain ⟨_, hCx, hCtot, hCtrans, hCdom⟩ := hCpc\n"
+            "  use C\n"
+            "  refine ⟨⟨hCsub, ⟨x, hCx⟩, hCtot, hCtrans, ?_⟩, hCx, ?_⟩\n"
+            "  · -- maximality: prove no element from S\\C can be added\n"
+            "    intro y hyS hyC\n"
+            "    push_neg\n"
+            "    intro hTot hTrans\n"
+            "    have hInsertPC : isPC (insert y C) := by\n"
+            "      unfold isPC\n"
+            "      refine ⟨Finset.insert_subset_iff.mpr ⟨hyS, hCsub⟩,\n"
+            "        Finset.mem_insert_of_mem hCx, ?_, ?_, ?_⟩\n"
+            "      · -- total on insert y C\n"
+            "        intro a ha b hb hab\n"
+            "        rw [Finset.mem_insert] at ha hb\n"
+            "        rcases ha with rfl | haC\n"
+            "        · rcases hb with rfl | hbC\n"
+            "          · exact absurd rfl hab\n"
+            "          · exact hTot.1 b hbC hab\n"
+            "        · rcases hb with rfl | hbC\n"
+            "          · exact Or.inr (hTot.2 a haC hab)\n"
+            "          · exact hCtot a haC b hbC hab\n"
+            "      · -- transitive on insert y C\n"
+            "        intro a ha b hb c hc hab hbc\n"
+            "        rw [Finset.mem_insert] at ha hb hc\n"
+            "        rcases ha with rfl | haC; rcases hb with rfl | hbC; rcases hc with rfl | hcC\n"
+            "        · exact hab\n"
+            "        · exact hTrans b hbC c hcC hab hbc\n"
+            "        · exact (hTot.1 c hcC hab).elim\n"
+            "        · exact hTrans a haC c hcC (hTot.2 a haC hab) hbc\n"
+            "        · exact (hTot.2 b hbC hab).elim\n"
+            "        · exact hCtrans a haC b hbC c hcC hab hbc\n"
+            "        · exact hTrans a haC c hcC hab (hTot.1 c hcC hbc)\n"
+            "        · exact hCtrans a haC b hbC c hcC hab hbc\n"
+            "      · -- x dominates all in insert y C\n"
+            "        intro b hb hbx\n"
+            "        rw [Finset.mem_insert] at hb\n"
+            "        rcases hb with rfl | hbC\n"
+            "        · exact hw.2 y hyS hbx\n"
+            "        · exact hCdom b hbC hbx\n"
+            "    have hInsertMem : insert y C ∈ S.powerset.filter isPC :=\n"
+            "      Finset.mem_filter.mpr ⟨Finset.mem_powerset.mpr\n"
+            "        (Finset.insert_subset_iff.mpr ⟨hyS, hCsub⟩), hInsertPC⟩\n"
+            "    have hle : (insert y C).card ≤ C.card := by\n"
+            "      have hsup := Finset.le_sup (s := S.powerset.filter isPC)\n"
+            "        (f := Finset.card) hInsertMem\n"
+            "      simpa [hCcard] using hsup\n"
+            "    have hlt : C.card < (insert y C).card :=\n"
+            "      Finset.card_lt_card (Finset.ssubset_insert hyC)\n"
+            "    exact (not_lt_of_ge hle hlt)\n"
+            "  · exact fun y hy hne => hCdom y hy hne"
+        ),
+        "difficulty": "hard",
+    },
+    11: {
+        "name": "VOTING_STV_NOT_MONOTONE",
+        "file": str(VOTING_FILE),
+        "line": 525,
+        "sorry_type": "full_proof",
+        "theorem_name": "stv_monotonicity_violation",
+        "theorem": "stv_monotonicity_violation",
+        "imports": VOTING_IMPORTS,
+        "description": (
+            "Prove STV fails monotonicity (Doron 1979): improving a candidate's\n"
+            "position can paradoxically cause their elimination.\n"
+            "Goal: ¬ @monotonicity ι σ _ _ (stv_scc n_seats)\n\n"
+            "STRATEGY: negative result — construct explicit counterexample.\n"
+            "Since ι and σ are variables, use `intro h_mono` then derive contradiction\n"
+            "by constructing a specific Fin profile.\n\n"
+            "CLASSIC COUNTEREXAMPLE (3 candidates, 1 seat):\n"
+            "Candidates: {A, B, C}. Voters: 9 total.\n"
+            "Profile P1: 4×[A>B>C], 3×[B>C>A], 2×[C>A>B]\n"
+            "  - First prefs: A=4, B=3, C=2. Quota = 9/2+1 = 5\n"
+            "  - Nobody reaches quota. Eliminate C (2 votes).\n"
+            "  - C's votes transfer to A: A=6, B=3. A reaches quota. A wins.\n\n"
+            "Profile P2 (A improved from C>A>B to A>C>B in last 2 ballots):\n"
+            "  4×[A>B>C], 3×[B>C>A], 2×[A>C>B]\n"
+            "  - First prefs: A=6, B=3, C=0. Quota = 5.\n"
+            "  - A reaches quota immediately! A wins... BUT\n"
+            "  Wait — this shows A still wins. Need different profile.\n\n"
+            "ACTUAL DORON EXAMPLE needs careful surplus transfer:\n"
+            "Use classical/decide tactics with Fin types.\n"
+            "Approach: `intro h; exfalso; exact h <profile> <witness_pair>`\n"
+            "The key insight: raising A gives A MORE first-preference votes,\n"
+            "but the SURPLUS TRANSFER from A changes which candidate gets eliminated next.\n\n"
+            "Available definitions: stv_scc, stv_step, droop_quota, first_preferences,\n"
+            "stv_round_result, monotonicity (from Definitions.lean).\n"
+            "NOTE: may need to unfold monotonicity to see exact goal structure."
+        ),
+        "difficulty": "very_hard",
+    },
+    12: {
+        "name": "VOTING_STV_NOT_CLONE_INDEP",
+        "file": str(VOTING_FILE),
+        "line": 532,
+        "sorry_type": "full_proof",
+        "theorem_name": "stv_not_clone_independent",
+        "theorem": "stv_not_clone_independent",
+        "imports": VOTING_IMPORTS,
+        "description": (
+            "Prove STV does not satisfy clone independence:\n"
+            "adding a clone of a candidate can change the outcome.\n"
+            "Goal: ¬ @clone_independence ι σ _ _ _ (stv_scc n_seats)\n\n"
+            "STRATEGY: negative result — construct explicit counterexample.\n"
+            "clone_independence requires that adding a clone (candidate with identical\n"
+            "preferences to existing one) doesn't change the relative ranking of\n"
+            "non-cloned candidates in the outcome.\n\n"
+            "COUNTEREXAMPLE IDEA (4 candidates, 1 seat):\n"
+            "Original: {A, B, C}. Adding clone A' creates {A, A', B, C}.\n"
+            "Without clone: B wins. With clone: A/A' votes split, changing elimination order.\n\n"
+            "Approach: `intro h; exfalso; exact h <profile> <clone> <witness>`\n"
+            "Need to compute stv_scc with and without the clone candidate.\n\n"
+            "Available definitions: stv_scc, stv_step, droop_quota, first_preferences,\n"
+            "clone_independence (from Definitions.lean).\n"
+            "NOTE: may need to unfold clone_independence to see exact goal structure."
+        ),
+        "difficulty": "very_hard",
+    },
+    0: {
+        "name": "SMOKE_TEST_ZERO_ADD",
+        "file": str(SMOKE_TEST_FILE) if SMOKE_TEST_FILE else "",
+        "line": 6,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "zero_add_smoke",
+        "theorem": "zero_add_smoke",
+        "imports": "import Mathlib.Data.Nat.Basic\n",
+        "goal": "0 + n = n",
+        "description": (
+            "Smoke test trivial: prove 0 + n = n for Nat.\n"
+            "Single one-line proof. Use one of:\n"
+            "  exact Nat.zero_add n\n"
+            "  omega\n"
+            "  simp\n"
+            "Replace the sorry at L6 of _SmokeTest.lean."
+        ),
+        "difficulty": "trivial",
+    },
+    15: {
+        "name": "GALESHAPLEY_STABLE",
+        "file": str(GALESHAPLEY_FILE),
+        "line": 64,  # was L73, shifted after gsFinalMatching insertion
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "gale_shapley_stable",
+        "theorem": "gale_shapley_stable",
+        "imports": GALESHAPLEY_IMPORTS,
+        "description": (
+            "PROVED (PR #1194, 2026-05-16). Do NOT target.\n"
+            "Originally: gale_shapley_stable proved via gsFinalMatching\n"
+            "+ gsAllWomenMatched + gsNoBlockingPairs (6-step contradiction).\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "very_hard",
+        "proved": True,
+        "proved_pr": 1194,
+    },
+    16: {
+        "name": "GALESHAPLEY_MAN_OPTIMAL",
+        "file": str(GALESHAPLEY_FILE),
+        "line": 97,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "gale_shapley_man_optimal",
+        "theorem": "gale_shapley_man_optimal",
+        "imports": GALESHAPLEY_IMPORTS,
+        "description": (
+            "Replace sorry at L97 of GaleShapley.lean (theorem at L90).\n"
+            "Prove gale_shapley_man_optimal: there exists a man-optimal\n"
+            "stable matching (every man gets best achievable partner).\n"
+            "Strategy: use gsGaleShapley as witness, prove man-optimality\n"
+            "by showing any man m's GS spouse has lowest pref rank among\n"
+            "all stable matchings. Uses menProposedDownward invariant:\n"
+            "if m could do better in another stable matching, he would\n"
+            "have proposed to that woman and she would have accepted.\n"
+            "Reference: mmaaz-git/stable-marriage-lean GaleShapley.lean\n"
+            "Our type system: total bijections (no `acceptable`).\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "very_hard",
+    },
+    17: {
+        "name": "GALESHAPLEY_WOMAN_PESSIMAL",
+        "file": str(GALESHAPLEY_FILE),
+        "line": 125,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "gale_shapley_woman_pessimal",
+        "theorem": "gale_shapley_woman_pessimal",
+        "imports": GALESHAPLEY_IMPORTS,
+        "description": (
+            "Replace sorry at L125 of GaleShapley.lean (theorem at L112).\n"
+            "Prove gale_shapley_woman_pessimal: if mu is man-optimal\n"
+            "and mu' is stable, then each woman gets worst achievable\n"
+            "partner under mu (Knuth 1976 lattice duality).\n"
+            "Strategy: by contradiction. If woman w does BETTER under mu',\n"
+            "then mu'.inverse w is more preferred than mu.inverse w.\n"
+            "This means man mu'.inverse w got a WORSE partner under mu\n"
+            "than under mu', contradicting man-optimality of mu.\n"
+            "Key insight: inverse swaps man/woman perspectives.\n"
+            "Reference: mmaaz-git/stable-marriage-lean GaleShapley.lean\n"
+            "Our type system: Matching has bijective spouse + inverse.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "very_hard",
+    },
+    18: {
+        "name": "GS_CONSISTENT_SWAP_MATCH",
+        "file": str(LEMMAS_FILE),
+        "line": 180,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "GSConsistent.swapMatch",
+        "theorem": "GSConsistent.swapMatch",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L180 of Lemmas.lean.\n"
+            "Prove GSConsistent.swapMatch: swapping a woman's match preserves\n"
+            "consistency. Woman w was matched to mOld; now matched to m.\n"
+            "Man m was free (menMatch m = none), man mOld now becomes free.\n"
+            "Key: GSMatching.swapMatch updates menMatch m/mOld and womenMatch w.\n"
+            "Case analysis on m'/w' vs m/mOld/w, use consistency hypothesis.\n"
+            "Reference: mmaaz-git stable-marriage-lean Lemmas.lean consistent_swapMatch.\n"
+            "Our system: no `acceptable` filter (total bijections).\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    19: {
+        "name": "GS_CONSISTENT_STEP_WITH",
+        "file": str(LEMMAS_FILE),
+        "line": 188,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "GSConsistent.stepWith",
+        "theorem": "GSConsistent.stepWith",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L188 of Lemmas.lean.\n"
+            "Prove GSConsistent.stepWith: gsStepWith preserves consistency.\n"
+            "Two cases: womanMatch w = none (use matchFree) or\n"
+            "womanMatch w = some mOld (use swapMatch).\n"
+            "Unfold gsStepWith, split on womenMatch w.\n"
+            "For matchFree case: need menMatch m = none and womenMatch w = none.\n"
+            "For swapMatch case: need menMatch m = none, womenMatch w = some mOld,\n"
+            "  and menMatch mOld = some w (from consistency).\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    20: {
+        "name": "GS_STEP_EQ_OF_TERMINATED",
+        "file": str(LEMMAS_FILE),
+        "line": 236,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "gsStep_eq_of_terminated",
+        "theorem": "gsStep_eq_of_terminated",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L236 of Lemmas.lean.\n"
+            "Prove gsStep_eq_of_terminated: if no free man exists, gsStep = id.\n"
+            "Unfold gsStep: the if hfree branch is not taken.\n"
+            "Use If.neg (or split + simp) to show the else branch is taken.\n"
+            "gsTerminated means ¬∃ m, gsIsFree, which is exactly the negation.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    21: {
+        "name": "MEN_PROPOSED_DOWNWARD_STEP",
+        "file": str(LEMMAS_FILE),
+        "line": 365,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menProposedDownward.step",
+        "theorem": "menProposedDownward.step",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L365 of Lemmas.lean.\n"
+            "Prove menProposedDownward.step: gsStep preserves the invariant\n"
+            "that men propose in decreasing preference order.\n"
+            "Key: gsChooseMax picks the highest-ranked unproposed woman.\n"
+            "If man m proposed to w, any w' ranked higher was already proposed.\n"
+            "The new proposal adds exactly one pair; others are unchanged.\n"
+            "Reference: mmaaz-git Lemmas.lean menProposedDownwardState.step.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    22: {
+        "name": "MEN_PROPOSED_DOWNWARD_RUNSTEPS",
+        "file": str(LEMMAS_FILE),
+        "line": 370,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menProposedDownward.runSteps",
+        "theorem": "menProposedDownward.runSteps",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L370 of Lemmas.lean.\n"
+            "Prove menProposedDownward.runSteps by induction on k.\n"
+            "Base case: gsInitial has no proposals (trivially true).\n"
+            "Step case: use menProposedDownward.step + induction hypothesis.\n"
+            "If not terminated, gsStep preserves invariant.\n"
+            "If terminated, gsStep is identity.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    23: {
+        "name": "MEN_MATCHED_PROPOSED_STEPWITH",
+        "file": str(LEMMAS_FILE),
+        "line": 395,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menMatchedProposed.stepWith",
+        "theorem": "menMatchedProposed.stepWith",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L395 of Lemmas.lean.\n"
+            "Prove menMatchedProposed.stepWith: gsStepWith preserves the\n"
+            "invariant that matched men have proposed to their partners.\n"
+            "Cases: matchFree (m matched to w, m proposed to w),\n"
+            "swapMatch (m matched to w, m proposed to w, mOld was proposed).\n"
+            "The stepWith always marks m→w as proposed.\n"
+            "Reference: mmaaz-git Lemmas.lean menMatchedProposedState.stepWith.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    24: {
+        "name": "MEN_MATCHED_PROPOSED_STEP",
+        "file": str(LEMMAS_FILE),
+        "line": 389,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menMatchedProposed.step",
+        "theorem": "menMatchedProposed.step",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L389 of Lemmas.lean.\n"
+            "Prove menMatchedProposed.step: gsStep preserves menMatchedProposed.\n"
+            "Unfold gsStep, use stepWith lemma.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    25: {
+        "name": "MEN_MATCHED_PROPOSED_RUNSTEPS",
+        "file": str(LEMMAS_FILE),
+        "line": 394,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "menMatchedProposed.runSteps",
+        "theorem": "menMatchedProposed.runSteps",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L394 of Lemmas.lean.\n"
+            "Prove menMatchedProposed.runSteps by induction on k.\n"
+            "Base: gsInitial trivially satisfies (no matches).\n"
+            "Step: use step lemma + by_cases for terminated.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    26: {
+        "name": "WOMEN_BEST_STATE_STEP",
+        "file": str(LEMMAS_FILE),
+        "line": 435,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "womenBestState.step",
+        "theorem": "womenBestState.step",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L435 of Lemmas.lean.\n"
+            "Prove womenBestState.step: gsStep preserves womenBestState.\n"
+            "Each woman's current match is her best proposal so far.\n"
+            "If m proposes to w and w prefers m: w's match becomes m (improved).\n"
+            "If w doesn't prefer m: w's match unchanged (still best).\n"
+            "Key: after proposing, the new proposal is in the proposed set,\n"
+            "so womenBest must be ≤ the new proposal's pref rank.\n"
+            "Reference: mmaaz-git Lemmas.lean womenBestState.step.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    27: {
+        "name": "WOMEN_BEST_STATE_RUNSTEPS",
+        "file": str(LEMMAS_FILE),
+        "line": 413,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "womenBestState.runSteps",
+        "theorem": "womenBestState.runSteps",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L413 of Lemmas.lean.\n"
+            "Prove womenBestState.runSteps by induction on k.\n"
+            "Base: gsInitial trivially satisfies (no matches).\n"
+            "Step: use step lemma + by_cases for terminated.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "easy",
+    },
+    28: {
+        "name": "WOMEN_UNPROPOSED",
+        "file": str(LEMMAS_FILE),
+        "line": 563,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "womenUnproposed",
+        "theorem": "womenUnproposed",
+        "imports": LEMMAS_IMPORTS,
+        "description": (
+            "Replace sorry at L563 of Lemmas.lean.\n"
+            "Prove womenUnproposed: if a woman is unmatched (womenMatch w = none)\n"
+            "and womenBestState holds, then no man has proposed to her.\n"
+            "Intuition: if some m proposed to w, then womenMatch w would be some m\n"
+            "(since proposing always results in a match for the proposed-to woman).\n"
+            "Contrapositive: unmatched → unproposed.\n"
+            "Key definitions:\n"
+            "  womenBestState prof σ: ∀ w m, σ.matching.womenMatch w = some m →\n"
+            "    ∀ m', σ.proposed m' w → prof.womenPref w m ≤ prof.womenPref w m'\n"
+            "  gsStepWith: matchFree or swapMatch always sets womenMatch w = some _\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+    },
+    30: {
+        "name": "LATTICE_JOIN_BIJECTIVE",
+        "file": str(LATTICE_FILE),
+        "line": 113,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "Matching.join bijective",
+        "theorem": "Matching.join",
+        "imports": LATTICE_IMPORTS,
+        "description": (
+            "Replace sorry at L113 of Lattice.lean.\n"
+            "Prove bijectivity of Matching.join: each man gets his preferred partner.\n"
+            "The join spouse = if menPref m (μ m) ≤ menPref m (ν m) then μ m else ν m.\n"
+            "Key insight: anti-complementarity. On the woman side, the join acts as meet.\n"
+            "join.inverse w equals either μ⁻¹(w) or ν⁻¹(w) (proved as join_inverse_anti).\n"
+            "Each man maps to exactly one woman (no two men map to same woman).\n"
+            "Strategy: prove Injective, then use Finite.injective_iff_bijective for Fin n.\n"
+            "Available lemmas: inverse_eq_of_spouse_eq, spouse_inverse, join_inverse_anti.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "hard",
+    },
+    31: {
+        "name": "LATTICE_MEET_BIJECTIVE",
+        "file": str(LATTICE_FILE),
+        "line": 126,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "Matching.meet bijective",
+        "theorem": "Matching.meet",
+        "imports": LATTICE_IMPORTS,
+        "description": (
+            "Replace sorry at L126 of Lattice.lean.\n"
+            "Prove bijectivity of Matching.meet: each man gets his less-preferred partner.\n"
+            "The meet spouse = if menPref m (μ m) ≤ menPref m (ν m) then ν m else μ m.\n"
+            "Same anti-complementarity argument as join but dual.\n"
+            "meet.inverse w equals either μ⁻¹(w) or ν⁻¹(w) (proved as meet_inverse_anti).\n"
+            "Strategy: prove Injective then use Finite.injective_iff_bijective for Fin n.\n"
+            "Available lemmas: inverse_eq_of_spouse_eq, spouse_inverse, meet_inverse_anti.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "hard",
+    },
+    32: {
+        "name": "LATTICE_MEET_ANTI_COMPL",
+        "file": str(LATTICE_FILE),
+        "line": 206,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "meet_inverse_anti_pref",
+        "theorem": "meet_inverse_anti_pref",
+        "imports": LATTICE_IMPORTS,
+        "description": (
+            "Replace sorry at L206 of Lattice.lean.\n"
+            "meet_inverse_anti_pref: If (μ⊓ν).inverse w = μ⁻¹(w) and μ,ν stable,\n"
+            "then w prefers μ⁻¹(w) to ν⁻¹(w) (strict: womenPref w μ⁻¹(w) < womenPref w ν⁻¹(w)).\n"
+            "This is the anti-complementarity lemma: meet on man side = join on woman side.\n"
+            "The meet gives each man his less-preferred partner, so each woman gets her\n"
+            "more-preferred man between μ and ν.\n"
+            "Key proof: Let m_j = meet.inverse w = μ⁻¹(w). Then meet.spouse m_j = w.\n"
+            "The meet picked ν.spouse m_j (since menPref m_j (ν.spouse m_j) ≤ menPref m_j (μ.spouse m_j)).\n"
+            "But μ.spouse m_j = w, so meet.spouse m_j = ν.spouse m_j.\n"
+            "Since meet.inverse w = μ⁻¹(w), spouse(μ⁻¹(w)) = w = ν.spouse(μ⁻¹(w)).\n"
+            "Now ν.spouse(μ⁻¹(w)) = w means μ⁻¹(w) = ν⁻¹(w) OR μ⁻¹(w) ≠ ν⁻¹(w).\n"
+            "If equal: womenPref are equal, contradiction with strict < goal.\n"
+            "If different: use stability to derive ordering.\n"
+            "Actually: (μ⊓ν).inverse w = μ⁻¹(w) means the meet assigned w to μ⁻¹(w).\n"
+            "The meet picks ν.spouse m when menPref m (μ m) ≤ menPref m (ν m), else μ.spouse m.\n"
+            "If it picked ν.spouse m: ν.spouse(μ⁻¹(w)) = w, so μ⁻¹(w) = ν⁻¹(w). Contradicts ≠.\n"
+            "If it picked μ.spouse m: μ.spouse(μ⁻¹(w)) = w. That's a tautology. Need different approach.\n"
+            "Alternative: by contrapositive. If womenPref w ν⁻¹(w) ≤ womenPref w μ⁻¹(w),\n"
+            "show meet.inverse w ≠ μ⁻¹(w). Use the decomposition property of stable matchings.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "very_hard",
+    },
+    33: {
+        "name": "LATTICE_MEET_ANTI_COMPL_PRIME",
+        "file": str(LATTICE_FILE),
+        "line": 217,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "meet_inverse_anti_pref'",
+        "theorem": "meet_inverse_anti_pref'",
+        "imports": LATTICE_IMPORTS,
+        "description": (
+            "Replace sorry at L217 of Lattice.lean.\n"
+            "meet_inverse_anti_pref': Symmetric to DEMO 32. If (μ⊓ν).inverse w = ν⁻¹(w),\n"
+            "then w prefers ν⁻¹(w) to μ⁻¹(w).\n"
+            "Same proof structure as DEMO 32, with μ and ν swapped.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "very_hard",
+    },
+    34: {
+        "name": "LATTICE_DOCTOR_OPTIMAL_TOP",
+        "file": str(LATTICE_FILE),
+        "line": 836,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "doctor_optimal_eq_top",
+        "theorem": "doctor_optimal_eq_top",
+        "imports": LATTICE_IMPORTS,
+        "description": (
+            "Replace sorry at L321 of Lattice.lean.\n"
+            "Prove doctor_optimal_eq_top: the GS man-proposing output is the bottom\n"
+            "element of the lattice (ManLE). Every man gets his best achievable partner.\n"
+            "Goal: ∀ m, menPref m (μ_gs.spouse m) ≤ menPref m (μ'.spouse m)\n"
+            "i.e., μ_gs rank ≤ μ' rank for every man (lower = more preferred).\n"
+            "Strategy: by contradiction. If some man m has μ' preferred over μ_gs,\n"
+            "then m prefers μ'(m) over μ_gs(m). But μ_gs is man-optimal (Gale-Shapley\n"
+            "property), so this is impossible.\n"
+            "Key: use gale_shapley_man_optimal from GaleShapley.lean if available,\n"
+            "or the GS invariant that each man proposes in order of preference.\n"
+            "NOTE: direction is ManLE prof μ_gs μ' (GS ≤ any other), NOT the reverse.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "very_hard",
+    },
+    29: {
+        "name": "GS_CHOOSEMAX_MAXIMAL",
+        "file": str(GSSTATE_FILE),
+        "line": 144,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "gsChooseMax_maximal",
+        "theorem": "gsChooseMax_maximal",
+        "imports": (
+            "import Mathlib.Data.Fintype.Basic\n"
+            "import Mathlib.Data.Fintype.Card\n"
+            "import Mathlib.Order.Preorder.Finite\n"
+            "import StableMarriage.Definitions\n"
+        ),
+        "description": (
+            "Replace sorry at L144 of GSState.lean.\n"
+            "Prove gsChooseMax_maximal: no unproposed candidate is preferred over\n"
+            "the chosen maximal one.\n"
+            "gsMenPrefLE prof m w (gsChooseMax prof σ m h) := by sorry\n"
+            "The goal expands to:\n"
+            "  w = gsChooseMax prof σ m h ∨\n"
+            "  prof.menPref m (gsChooseMax prof σ m h) < prof.menPref m w\n"
+            "\n"
+            "KEY INSIGHT: gsChooseMax is defined via Classical.choose on\n"
+            "Finset.exists_maximal. The second component of Classical.choose_spec\n"
+            "(Finset.exists_maximal h) gives the maximality property directly:\n"
+            "  ∀ y ∈ gsCandidates prof σ m, gsMenPrefLE prof m y (gsChooseMax ...)\n"
+            "So the proof should unfold gsChooseMax, letI the LE instance,\n"
+            "haveI the IsTrans instance, then obtain the maximality from\n"
+            "Classical.choose_spec and apply it to w with hw.\n"
+            "\n"
+            "APPROACH (trichotomy on w vs gsChooseMax):\n"
+            "1. Unfold gsChooseMax to expose Classical.choose\n"
+            "2. letI the LE/IsTrans instances (same as in gsChooseMax_mem)\n"
+            "3. Obtain both components of Classical.choose_spec:\n"
+            "   - hmem: gsChooseMax ∈ gsCandidates (already proven in gsChooseMax_mem)\n"
+            "   - hmax: ∀ y ∈ gsCandidates, y ≤ gsChooseMax (the maximality)\n"
+            "4. Specialize hmax to w with hw to get gsMenPrefLE prof m w (gsChooseMax...)\n"
+            "5. This IS the goal — exact it.\n"
+            "\n"
+            "The IsTrans instance is needed by Finset.exists_maximal but the\n"
+            "actual maximality statement ∀ y ∈ s, y ≤ x is IsAntisymm-free.\n"
+            "gsMenPrefLE prof m y x expands to y = x ∨ prof.menPref m x < prof.menPref m y,\n"
+            "which is exactly what the goal needs.\n"
+            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+        ),
+        "difficulty": "medium",
+        "proof_scaffolding": (
+            "  -- KEY: Finset.exists_maximal gives CONDITIONAL maximality:\n"
+            "  --   hmax : ∀ y ∈ s, choose ≤ y → y ≤ choose\n"
+            "  -- NOT unconditional: ∀ y ∈ s, y ≤ choose\n"
+            "  -- Strategy: show choose ≤ w first, then apply hmax\n"
+            "  --\n"
+            "  -- Step 1: unfold gsChooseMax to expose Classical.choose\n"
+            "  unfold gsChooseMax\n"
+            "  -- Step 2: obtain BOTH components of the spec\n"
+            "  --   hmem : Classical.choose ... ∈ gsCandidates ...\n"
+            "  --   hmax : ∀ ⦃y⦄, y ∈ gsCandidates ... → choose ≤ y → y ≤ choose\n"
+            "  obtain ⟨-, hmax⟩ := Classical.choose_spec (Finset.exists_maximal h)\n"
+            "  -- Step 3: we need w ≤ choose. By hmax, it suffices to show choose ≤ w.\n"
+            "  -- choose ≤ w means: choose = w ∨ menPref w < menPref choose\n"
+            "  -- Use trichotomy of Nat on menPref values:\n"
+            "  --   lt: menPref choose < menPref w → goal (second disjunct of gsMenPrefLE)\n"
+            "  --   eq: menPref choose = menPref w → choose = w needed (strict prefs?)\n"
+            "  --   gt: menPref choose > menPref w → choose ≤ w holds → hmax gives w ≤ choose\n"
+            "  sorry  -- TODO: complete trichotomy argument"
+        ),
+    },
+    # ── Calibration targets (Epic #1452) ──
+    # Goldilocks: solvable in 3-10 prover iterations, self-contained,
+    # exercises specific harness paths (P1/P2/P3).
+    35: {
+        "name": "CALIBRATION_NASH_STRICT_DOMINANCE",
+        "file": str(NASH_CALIBRATION_FILE) if NASH_CALIBRATION_FILE else "",
+        "line": 65,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "strictly_domin_defect_pd",
+        "theorem": "strictly_domin_defect_pd",
+        "imports": NASH_CALIBRATION_IMPORTS,
+        "description": (
+            "Calibration Target C (P3 harness path).\n"
+            "Prove strictly_domin_defect_pd: defection strictly dominates\n"
+            "cooperation in Prisoner's Dilemma for player 1.\n"
+            "P3: agent may search Mathlib for game-theory lemmas that don't\n"
+            "exist; must fall back to unfold + Fin 2 case split + omega.\n"
+            "Self-contained: Game2x2, strictlyDominates1, prisonersDilemma\n"
+            "defined in same file. LEAN_PROJECT must be calibration_lean.\n"
+            "Expected: 3-5 prover iterations."
+        ),
+        "difficulty": "easy",
+    },
+    36: {
+        "name": "CALIBRATION_NASH_PD_DEFECT_NE",
+        "file": str(NASH_CALIBRATION_FILE) if NASH_CALIBRATION_FILE else "",
+        "line": 72,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "pd_defect_is_pure_ne",
+        "theorem": "pd_defect_is_pure_ne",
+        "imports": NASH_CALIBRATION_IMPORTS,
+        "description": (
+            "Calibration Target D (P2 harness path).\n"
+            "Prove pd_defect_is_pure_ne: (Defect, Defect) is a pure Nash\n"
+            "equilibrium of Prisoner's Dilemma.\n"
+            "P2: multi-step proof requiring Fin 2 case splits on both players'\n"
+            "deviations + Int comparisons. Uses constructor for conjunction.\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be calibration_lean.\n"
+            "Expected: 4-7 prover iterations."
+        ),
+        "difficulty": "medium",
+    },
+    37: {
+        "name": "CALIBRATION_NASH_COOPERATE_NOT_NE",
+        "file": str(NASH_CALIBRATION_FILE) if NASH_CALIBRATION_FILE else "",
+        "line": 80,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "pd_cooperate_not_ne",
+        "theorem": "pd_cooperate_not_ne",
+        "imports": NASH_CALIBRATION_IMPORTS,
+        "description": (
+            "Calibration Target E (P1+P2 harness path).\n"
+            "Prove pd_cooperate_not_ne: (Cooperate, Cooperate) is NOT a pure\n"
+            "Nash equilibrium. Harder: requires negation + constructing\n"
+            "witness (defection beats cooperation).\n"
+            "Pattern: intro ⟨h1, _⟩, have := h1 Trahir, then simp/omega.\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be calibration_lean.\n"
+            "Expected: 5-10 prover iterations."
+        ),
+        "difficulty": "medium",
+    },
+    38: {
+        "name": "CALIBRATION_NASH_P4_SORRY_INCREASE",
+        "file": str(NASH_CALIBRATION_FILE) if NASH_CALIBRATION_FILE else "",
+        "line": 97,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "pd_defect_is_ne_decomposable",
+        "theorem": "pd_defect_is_ne_decomposable",
+        "imports": NASH_CALIBRATION_IMPORTS,
+        "description": (
+            "Calibration Target F (P4 sorry-increase harness path).\n"
+            "Prove pd_defect_is_ne_decomposable: same as Target D but designed\n"
+            "for decomposition. The prover should split into 2 sub-sorries\n"
+            "(constructor · sorry · sorry), increasing sorry 1→2.\n"
+            "Harness MUST NOT revert if build passes (P4 gate on level_1_build).\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be calibration_lean.\n"
+            "Expected: 3-5 prover iterations, sorry may increase."
+        ),
+        "difficulty": "easy",
+    },
+    # ── Conway calibration targets (Epic #1453) ──
+    # Nim.lean — tractable gradient: decide / unfold+simp / xor_self
+    39: {
+        "name": "CALIBRATION_CONWAY_NIM_WINNING_345",
+        "file": str(CONWAY_NIM_FILE) if CONWAY_NIM_FILE else "",
+        "line": 42,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "isWinningNim_345",
+        "theorem": "isWinningNim_345",
+        "imports": CONWAY_NIM_IMPORTS,
+        "description": (
+            "Calibration: position [3,4,5] is a first-player win.\n"
+            "Easy: closed evaluation via decide / native_decide.\n"
+            "Self-contained: nimSum, isWinningNim defined in same file.\n"
+            "LEAN_PROJECT must be conway_lean.\n"
+            "Expected: 1-3 prover iterations."
+        ),
+        "difficulty": "easy",
+    },
+    40: {
+        "name": "CALIBRATION_CONWAY_NIM_SUM_SINGLE",
+        "file": str(CONWAY_NIM_FILE) if CONWAY_NIM_FILE else "",
+        "line": 46,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "nimSum_single",
+        "theorem": "nimSum_single",
+        "imports": CONWAY_NIM_IMPORTS,
+        "description": (
+            "Calibration: single heap nim-sum equals its size.\n"
+            "Easy: unfold nimSum + foldl + Nat.zero_xor / simp.\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be conway_lean.\n"
+            "Expected: 2-4 prover iterations."
+        ),
+        "difficulty": "easy",
+    },
+    41: {
+        "name": "CALIBRATION_CONWAY_NIM_SUM_SELF",
+        "file": str(CONWAY_NIM_FILE) if CONWAY_NIM_FILE else "",
+        "line": 50,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "nimSum_self",
+        "theorem": "nimSum_self",
+        "imports": CONWAY_NIM_IMPORTS,
+        "description": (
+            "Calibration: two equal heaps cancel (losing P-position).\n"
+            "Medium: unfold nimSum + foldl + Nat.xor_self.\n"
+            "Self-contained definitions in same file.\n"
+            "LEAN_PROJECT must be conway_lean.\n"
+            "Expected: 3-5 prover iterations."
+        ),
+        "difficulty": "medium",
+    },
+    # ── Conway calibration: Angel problem (power-1 king moves, Chebyshev) ──
+    42: {
+        "name": "CALIBRATION_CONWAY_ANGEL_KING_MOVES",
+        "file": str(CONWAY_ANGEL_FILE) if CONWAY_ANGEL_FILE else "",
+        "line": 47,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "kingMoves_card",
+        "theorem": "kingMoves_card",
+        "imports": CONWAY_ANGEL_IMPORTS,
+        "description": (
+            "Calibration: power-1 Angel (chess king) has 8 moves from origin.\n"
+            "Easy: closed evaluation -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    43: {
+        "name": "CALIBRATION_CONWAY_ANGEL_POWER2",
+        "file": str(CONWAY_ANGEL_FILE) if CONWAY_ANGEL_FILE else "",
+        "line": 51,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "angelMoves2_card",
+        "theorem": "angelMoves2_card",
+        "imports": CONWAY_ANGEL_IMPORTS,
+        "description": (
+            "Calibration: power-2 Angel has 24 moves from origin.\n"
+            "Easy: closed evaluation -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    44: {
+        "name": "CALIBRATION_CONWAY_ANGEL_CARD_FORMULA",
+        "file": str(CONWAY_ANGEL_FILE) if CONWAY_ANGEL_FILE else "",
+        "line": 58,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "angelMoves_card",
+        "theorem": "angelMoves_card",
+        "imports": CONWAY_ANGEL_IMPORTS,
+        "description": (
+            "Calibration: Angel of power k from any square has (2k+1)^2 - 1 moves.\n"
+            "Medium: parametric, requires Finset.card_product + card_erase_of_mem + Int.card_Icc.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "medium",
+    },
+    # ── Conway calibration: Doomsday algorithm lemmas ──
+    45: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_LEAP_2000",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 25,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "isLeapYear_2000",
+        "theorem": "isLeapYear_2000",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Calibration: 2000 is a leap year (div by 400).\n"
+            "Easy: closed boolean eval -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    46: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_LEAP_1900",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 29,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "isLeapYear_1900",
+        "theorem": "isLeapYear_1900",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Calibration: 1900 is NOT a leap year (div by 100, not 400).\n"
+            "Easy: closed boolean eval -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    47: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_LEAP_2024",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 33,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "isLeapYear_2024",
+        "theorem": "isLeapYear_2024",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Calibration: 2024 is a leap year.\n"
+            "Easy: closed boolean eval -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    48: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_CONWAY_DEATH",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 38,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "dayOfWeek_conway_death",
+        "theorem": "dayOfWeek_conway_death",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Homage + Calibration: Conway died Saturday April 11, 2020.\n"
+            "Closed eval over Doomsday algorithm -> native_decide.\n"
+            "Medium: naive rfl may stall on %-arithmetic.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    49: {
+        "name": "CALIBRATION_CONWAY_DOOMSDAY_ADD_SEVEN",
+        "file": str(CONWAY_DOOMSDAY_FILE) if CONWAY_DOOMSDAY_FILE else "",
+        "line": 43,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "dayOfWeek_add_seven",
+        "theorem": "dayOfWeek_add_seven",
+        "imports": CONWAY_DOOMSDAY_IMPORTS,
+        "description": (
+            "Calibration: adding a full week is identity.\n"
+            "Medium: free variable d, naive decide fails.\n"
+            "Requires: cases d <;> rfl.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "medium",
+    },
+    # ── Conway calibration: Look-and-Say lemmas ──
+    50: {
+        "name": "CALIBRATION_CONWAY_LAS_DIGITS_EXAMPLE",
+        "file": str(CONWAY_LOOKANDSAY_FILE) if CONWAY_LOOKANDSAY_FILE else "",
+        "line": 25,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "digitsToNat_example",
+        "theorem": "digitsToNat_example",
+        "imports": CONWAY_LOOKANDSAY_IMPORTS,
+        "description": (
+            "Calibration: [1,2,1,1] decodes to 1211.\n"
+            "Easy: closed eval -> native_decide.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "easy",
+    },
+    51: {
+        "name": "CALIBRATION_CONWAY_LAS_LOOKANDSAY_4",
+        "file": str(CONWAY_LOOKANDSAY_FILE) if CONWAY_LOOKANDSAY_FILE else "",
+        "line": 29,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "lookAndSay_4",
+        "theorem": "lookAndSay_4",
+        "imports": CONWAY_LOOKANDSAY_IMPORTS,
+        "description": (
+            "Calibration: 5th look-and-say term is 111221.\n"
+            "Medium: WF recursion, naive rfl/decide may not reduce.\n"
+            "Exercises phantom-id blocklist path (P3).\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "medium",
+    },
+    52: {
+        "name": "CALIBRATION_CONWAY_LAS_ROUND_TRIP",
+        "file": str(CONWAY_LOOKANDSAY_FILE) if CONWAY_LOOKANDSAY_FILE else "",
+        "line": 34,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "digitsToNat_natToDigits",
+        "theorem": "digitsToNat_natToDigits",
+        "imports": CONWAY_LOOKANDSAY_IMPORTS,
+        "description": (
+            "Calibration (HARD): decoding decimal digits of n recovers n.\n"
+            "Requires structural induction matching natToDigits recursion on n/10,\n"
+            "plus a digitsToNat_append helper lemma.\n"
+            "Director must NOT expect one-shot tactic.\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "hard",
+    },
+    53: {
+        "name": "KS_EACH_VECTOR_IN_TWO_CONTEXTS",
+        "file": str(CONWAY_KS_FILE) if CONWAY_KS_FILE else "",
+        "line": 156,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "each_vector_in_two_contexts",
+        "theorem": "each_vector_in_two_contexts",
+        "imports": CONWAY_KS_IMPORTS,
+        "description": (
+            "Pilier 1.B (Epic #1651). Prove that each of the 18 Cabello vectors\n"
+            "appears in exactly 2 of the 9 contexts. The goal is:\n"
+            "  (Sum k : ContextIdx, Sum i : Fin 4,\n"
+            "    if contextMembers k i = v then (1 : Nat) else 0) = 2\n"
+            "\n"
+            "Strategy candidates:\n"
+            "  1. `decide` (finite check, may need `native_decide` for speed).\n"
+            "  2. Explicit case-split on `v : VecIdx` (= Fin 18) via `fin_cases v` then\n"
+            "     `simp [contextMembers]` then `decide` on each branch.\n"
+            "  3. `Finset.sum_eq_count` reformulation if the iff-cond is a Decidable.\n"
+            "\n"
+            "`contextMembers` is the Cabello 9x4 table (lines ~60-130 of file).\n"
+            "Pure combinatorial: no Real, no Mathlib heavy."
+        ),
+        "difficulty": "medium",
+    },
+    54: {
+        "name": "KS_KOCHEN_SPECKER_PARITY",
+        "file": str(CONWAY_KS_FILE) if CONWAY_KS_FILE else "",
+        "line": 175,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "kochen_specker",
+        "theorem": "kochen_specker",
+        "imports": CONWAY_KS_IMPORTS,
+        "description": (
+            "Pilier 1.C (Epic #1651). The 18-vector Cabello KS theorem.\n"
+            "Goal: `not exists c : Coloring, IsValidColoring c`.\n"
+            "\n"
+            "Parity argument (per docstring in file):\n"
+            "  1. By `IsValidColoring c`, summing over the 9 contexts gives 9 ones.\n"
+            "  2. Swap the double sum (Finset.sum_comm): each vector v contributes\n"
+            "     `(number of contexts containing v) * c(v)`.\n"
+            "  3. By `each_vector_in_two_contexts` (line 156 lemma, DEMO 53),\n"
+            "     that multiplier is always 2.\n"
+            "  4. Hence total ones = 2 * (count of true-colored vectors), even.\n"
+            "  5. Contradiction with 9 being odd.\n"
+            "\n"
+            "DEPENDS ON DEMO 53 being proved first (the lemma at line 156).\n"
+            "Key Mathlib lemmas: `Finset.sum_comm`, `Nat.not_even_iff_odd`,\n"
+            "`Nat.even_iff`, `Finset.sum_eq_card_nsmul_one` or `mul_comm`."
+        ),
+        "difficulty": "hard",
+    },
+    55: {
+        "name": "BONDAREVA_CORE_WITNESS",
+        "file": str(BASIC_FILE) if BASIC_FILE else "",
+        "line": 312,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "bondareva_shapley_backward (hb_witness existence)",
+        "theorem": "bondareva_shapley_backward",
+        "imports": (
+            "import Mathlib.Data.Finset.Basic\n"
+            "import Mathlib.Data.Real.Basic\n"
+            "import Mathlib.Algebra.BigOperators.Group.Finset.Basic\n"
+            "import Mathlib.Tactic\n"
+            "import Mathlib.Analysis.Convex.Cone.Dual\n"
+            "import Mathlib.Analysis.InnerProductSpace.PiL2\n"
+            "import CooperativeGames.Basic\n"
+        ),
+        "description": (
+            "REPLACES the single remaining sorry at L312 of Basic.lean (the LP-dual\n"
+            "heart of Bondareva-Shapley `backward`: Balanced -> Core.Nonempty).\n"
+            "Tracked as issue #2959. The surrounding proof scaffolding is COMPLETE\n"
+            "(P convex/closed/nonempty all proven L233-268); only the witness step\n"
+            "is open.\n"
+            "\n"
+            "GOAL at sorry (EXACT):\n"
+            "  exists x in P, (sum i : N, x i) <= G.v Finset.univ\n"
+            "\n"
+            "HYPOTHESES IN SCOPE:\n"
+            "  N : Type, [Fintype N], [DecidableEq N]\n"
+            "  G : TUGame N\n"
+            "  hb : G.Balanced                          (the KEY hypothesis)\n"
+            "  P : Set (N -> R) := { x | forall S : Finset N, (sum i in S, x i) >= G.v S }\n"
+            "  hP_conv : Convex R P                     (proven above)\n"
+            "  hP_closed : IsClosed P                   (proven above)\n"
+            "  hP_nonempty : P.Nonempty                 (proven above)\n"
+            "  hP_lb : forall x in P, (sum i : N, x i) >= G.v Finset.univ\n"
+            "\n"
+            "PROOF STRATEGY (LP duality) -- UPDATED 2026-06-21 with the po-2026\n"
+            "cycle 8-11 diagnosis (SUPERSEDES the 2026-06-20 'avoid the cone route'\n"
+            "steer, which was based on a coarser read of the prior trace):\n"
+            "  The cone / Farkas route IS the CORRECT architecture -- do NOT change it.\n"
+            "  `hyperplane_separation_point` (Convex/Cone/Dual.lean) is exactly the\n"
+            "  Farkas lemma we need; the bidual route was ruled out (po-2026 cycle 8/9:\n"
+            "  `dual_dual_flip` is equivalent to separation, i.e. circular).\n"
+            "  The SINGLE real blocker is a MISSING-MATHLIB lemma: closedness of a\n"
+            "  finitely-generated convex cone. (`Submodule.closed_of_finiteDimensional`\n"
+            "  is field-only; it does NOT apply to R>=0-cones.) po-2026 is building it\n"
+            "  by a conic Caratheodory blueprint -- mirror that, do not re-thrash\n"
+            "  separation lemmas:\n"
+            "  brick-1 PROVEN (cycle 10): `conicHull_linearIndependent_isClosed`\n"
+            "     -- a cone generated by linearly-independent vectors is closed.\n"
+            "  brick-2 CORE ISOLATED, OPEN (cycle 11): `mem_cone_iff_exists_li_subset`\n"
+            "     -- every cone member is a nonneg combo of a LINEARLY-INDEPENDENT\n"
+            "     subset of the generators. Conic mirror of Mathlib's convex\n"
+            "     `minCardFinsetOfMemConvexHull` / `affinelyIndependent_minCard...`:\n"
+            "     take a minimal-cardinality generating subset, then endpoint-slide on\n"
+            "     any linear dependence to reduce it. PURE finite-dim linear algebra,\n"
+            "     NO topology. THIS is the tractable surface to close (~40-50L).\n"
+            "  brick-3: `Set.Finite.isClosed_biUnion` -- finite union of closeds.\n"
+            "  ASSEMBLE (~15L): brick-1 + brick-2 + brick-3 -> `finGenCone_isClosed`\n"
+            "     -> `augCone_mem_iff` bridge -> Farkas `hyperplane_separation_point`\n"
+            "     -> the `hb_witness` existence at this sorry.\n"
+            "  Scratch lives in `FarkasScratch.lean` (untracked, po-2026); the bricks\n"
+            "  are reusable infrastructure once landed.\n"
+            "\n"
+            "If a full proof is out of reach this iteration, make MEASURABLE\n"
+            "progress: split off a named sub-lemma (e.g. the balanced-weights\n"
+            "inequality) and prove it, leaving a SMALLER sorry. Do NOT close with a\n"
+            "vacuous `trivial` -- the goal is a real existence statement, not `True`."
+        ),
+        "difficulty": "very_hard",
+        "context_before": (
+            "    have hP_lb : forall x in P, (sum i : N, x i) >= G.v Finset.univ := by\n"
+            "      intro x hx\n"
+            "      exact hx Finset.univ\n"
+        ),
+        "context_after": (
+            "    obtain (x, hxP, hxle) := hb_witness\n"
+            "    refine (x, ?_, hxP)\n"
+        ),
+    },
+    56: {
+        "name": "BANZHAF_RAW_LE_UNIV",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1038,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_raw_le_univ",
+        "theorem": "banzhaf_raw_le_univ",
+        "imports": SHAPLEY_IMPORTS,
+        "description": (
+            "REPLACES the single sorry at L1038 of Shapley.lean.\n"
+            "First genuinely-provable, NON-smoke target for the BG prover\n"
+            "(greenlit by ai-01 2026-06-23T18:12Z, #1453). Validates the\n"
+            "write-back fix #4075 on a REAL CoursIA Lean target, not a smoke.\n"
+            "\n"
+            "GOAL at sorry (EXACT):\n"
+            "  BanzhafRaw G i <= (Finset.univ : Finset (Finset N)).card\n"
+            "\n"
+            "HYPOTHESES IN SCOPE:\n"
+            "  N : Type, [Fintype N], [DecidableEq N]\n"
+            "  G : TUGame N, i : N\n"
+            "  BanzhafRaw G i := (Finset.univ.filter fun S => Critical G i S).card\n"
+            "\n"
+            "PROOF STRATEGY (~1-2 tactics):\n"
+            "  `BanzhafRaw` unfolds to `(Finset.univ.filter p).card`; a filtered\n"
+            "  finset is no larger than the original, so the bound is exactly\n"
+            "  `Finset.card_filter_le`. Suggested tactic:\n"
+            "    exact Finset.card_filter_le (fun S => Critical G i S) Finset.univ\n"
+            "  The carrier `Finset.univ : Finset (Finset N)` is fixed by the\n"
+            "  explicit annotation in the statement. Genuinely tractable,\n"
+            "  NOT a placeholder -- exercises the real proof loop."
+        ),
+        "difficulty": "easy",
+        "context_before": (
+            "/-- `BanzhafRaw G i` is bounded by the total number of coalitions. -/\n"
+            "theorem banzhaf_raw_le_univ (G : TUGame N) (i : N) :\n"
+            "    BanzhafRaw G i <= (Finset.univ : Finset (Finset N)).card := by\n"
+        ),
+        "context_after": "",
+    },
+    57: {
+        "name": "CRITICAL_IMPLIES_MEM",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1028,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "critical_implies_mem",
+        "theorem": "critical_implies_mem",
+        "imports": SHAPLEY_IMPORTS,
+        "description": (
+            "REPLACES the single sorry at L1028 of Shapley.lean. Warm-up BG-prover\n"
+            "target (#1453, cycle 64): the SECOND real target after `banzhaf_raw_le_univ`\n"
+            "(cycle 63 SUCCESS). Exercises the harness on a fresh easy theorem to confirm\n"
+            "the bullet-sorry stub format (`:= by` then `sorry` on its own line) reliably\n"
+            "lets GoalExtract read the goal.\n"
+            "\n"
+            "`Critical G i S` UNFOLDS to the 3-way conjunction\n"
+            "  i in S  AND  G.v S = 1  AND  G.v (S.erase i) = 0\n"
+            "so the goal is to extract the FIRST conjunct `i in S`.\n"
+            "\n"
+            "GOAL at sorry (EXACT): `i ∈ S`\n"
+            "\n"
+            "HYPOTHESES IN SCOPE:\n"
+            "  N : Type, [Fintype N], [DecidableEq N]\n"
+            "  G : TUGame N, i : N, S : Finset N\n"
+            "  (the theorem takes `Critical G i S → i ∈ S`, so after `intro h` the\n"
+            "   hypothesis `h : Critical G i S` is in scope and unfolds to the conjunction)\n"
+            "\n"
+            "PROOF STRATEGY: unfold/extract the first conjunct of the conjunction `h`.\n"
+            "Trivial conjunct extraction -- this is a warm-up, not a hard target."
+        ),
+        "difficulty": "easy",
+    },
+    58: {
+        "name": "BANZHAF_INDEX_NONNEG",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1309,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_index_nonneg",
+        "theorem": "banzhaf_index_nonneg",
+        "imports": SHAPLEY_IMPORTS,
+        "goal": "0 ≤ BanzhafIndex G i",
+        "description": (
+            "BG-prover target (cycle 65): the normalized Banzhaf index is\n"
+            "non-negative. Stacks on the BanzhafIndex definition (PR #4071).\n"
+            "Slightly harder than the warm-ups: needs `div_nonneg` plus a\n"
+            "positivity argument on the denominator `2 ^ (card N - 1)`.\n"
+            "Replace the placeholder at L1309 of Shapley.lean."
+        ),
+        "difficulty": "easy",
+    },
+    60: {
+        "name": "BANZHAF_INDEX_EQ_ZERO_IFF",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1319,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_index_eq_zero_iff",
+        "theorem": "banzhaf_index_eq_zero_iff",
+        "imports": SHAPLEY_IMPORTS,
+        "goal": "BanzhafIndex G i = 0 ↔ BanzhafRaw G i = 0",
+        "description": (
+            "BG-prover target (cycle 66, item 4): the normalized Banzhaf index is\n"
+            "zero exactly when the raw Banzhaf index is zero. Since BanzhafIndex =\n"
+            "BanzhafRaw / 2^(card N - 1) and the denominator 2^(card N - 1) is\n"
+            "strictly positive, division is faithful. An iff proof: forward needs\n"
+            "div_mul_cancel0 (multiply both sides by the nonzero denominator),\n"
+            "backward is Nat-cast + zero_div. Strengthens banzhaf_index_dummy_zero.\n"
+            "Replace the placeholder at L1319 of Shapley.lean."
+        ),
+        "difficulty": "medium",
+    },
+    61: {
+        "name": "BANZHAF_INDEX_POS_IFF",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1328,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_index_pos_iff",
+        "theorem": "banzhaf_index_pos_iff",
+        "imports": SHAPLEY_IMPORTS,
+        "goal": "0 < BanzhafIndex G i ↔ 0 < BanzhafRaw G i",
+        "description": (
+            "BG-prover target (cycle 67, item 5): the positivity dual of\n"
+            "banzhaf_index_eq_zero_iff. Since BanzhafIndex = BanzhafRaw /\n"
+            "2^(card N - 1) and the denominator is strictly positive, the\n"
+            "normalized index is positive exactly when the raw count is.\n"
+            "Replace the placeholder at L1328 of Shapley.lean."
+        ),
+        "difficulty": "medium",
+    },
+    59: {
+        "name": "BANZHAF_INDEX_LE_TWO",
+        "file": str(SHAPLEY_FILE) if SHAPLEY_FILE else "",
+        "line": 1318,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "banzhaf_index_le_two",
+        "theorem": "banzhaf_index_le_two",
+        "imports": SHAPLEY_IMPORTS,
+        "goal": "BanzhafIndex G i ≤ 2",
+        "description": (
+            "BG-prover target (cycle 66, item 3, greenlit by ai-01): the normalized\n"
+            "Banzhaf index is at most 2. CHAINS banzhaf_raw_le_univ (BanzhafRaw is\n"
+            "bounded by the total number of coalitions 2^card N) and divides by the\n"
+            "normalizer 2^(card N - 1). Non-trivial: needs div_le_iff0, the powerset\n"
+            "cardinality Finset.card_univ + Fintype.card_finset, and the 2^n = 2*2^(n-1)\n"
+            "arithmetic where the player i forces 0 < card N (no Nat-subtraction underflow).\n"
+            "Replace the placeholder at L1318 of Shapley.lean."
+        ),
+        "difficulty": "medium",
+    },
+    62: {
+        "name": "HASHLIFE_P4_SUCC_MEMBERSHIP",
+        "file": str(CONWAY_HASHLIFE_FILE) if CONWAY_HASHLIFE_FILE else "",
+        "line": 2734,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "p4_succ_membership",
+        "theorem": "p4_succ_membership",
+        "imports": CONWAY_HASHLIFE_IMPORTS,
+        "description": (
+            "BG-prover target (hashlife nibble plan #3846, N3): residual sorry in\n"
+            "noncomputable def p4_succ_membership (declared L2697, residual sorry\n"
+            "L2734 of HashlifeCorrectness.lean). The whnf wall is already traversed\n"
+            "around L2648-2665 (node16_level_ne_two L2660 -> rw [if_neg hne2] L2663\n"
+            "-> rw [mem_toGrid_node]); what remains is the offset-matching assembly:\n"
+            "prove each `out_*.toGrid (off_*, off_*)` membership via\n"
+            "centralCorrect_mem (gate G2, merged #4812) plus the induction\n"
+            "hypothesis `centralCorrect q_* (k-1)` extracted from `_h3`, bridged\n"
+            "through evolve_half_step + evolve_add (gate G1, merged #4787).\n"
+            "Watch the offset arithmetic: sub-results live at scale\n"
+            "2^out_*.level while the goal is at 2^k, and the IH is at level k-1\n"
+            "versus the goal's level k. Available merged gates:\n"
+            "quad_partition_bounds (#4787), toGrid_shift_between (#4797),\n"
+            "centralCorrect_mem_shift (#4812), evolve_cone_agree (#4892).\n"
+            "LEAN_PROJECT must be conway_lean."
+        ),
+        "difficulty": "hard",
+    },
+}
+# (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
+# whose key appears in this set.
+PROVED_DEMOS = {
+    15,  # gale_shapley_stable (PR #1194)
+    # 18-28: all Lemmas.lean entries (GSConsistent, menProposed, womenBest, etc.)
+    18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+}

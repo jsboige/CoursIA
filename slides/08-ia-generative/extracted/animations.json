@@ -1,0 +1,4805 @@
+{
+  "filename": "Intelligence Artificielle - 8 - IA Générative.pptx",
+  "slide_count": 20,
+  "animated_slide_count": 0,
+  "slides": [
+    {
+      "number": 1,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Intelligence Artificielle – VIII",
+              "is_image": false
+            },
+            {
+              "shape_id": 13315,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Slide Number Placeholder 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "1",
+              "is_image": false
+            },
+            {
+              "shape_id": 13317,
+              "shape_name": "Title 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Intelligence Artificielle Générative",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "ZoneTexte 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Panorama, enjeux et pratiques de l’IA générative",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "ZoneTexte 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Découvrir les bases et les grands principes de l’IA générative",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "ZoneTexte 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Comprendre les différents usages applicatifs (texte, image, audio…)",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "ZoneTexte 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Identifier les limites et les enjeux éthiques",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 22530,
+              "shape_name": "Rectangle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Plan du cours",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Slide Number Placeholder 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "2",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Introduction",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 0,
+              "text": "Résolution de problèmes",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Bases de connaissances et logique",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Incertitude et modèles probabilistes",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Apprentissage",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Traitement du langage naturel",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Elargissements",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 0,
+              "text": "IA Générative",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Introduction à l’IA Générative",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Qu’est-ce que l’IA générative :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Création de textes, images, audio, vidéo à partir de modèles probabilistes en réponse à des prompts (+ d’autres modalités)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Exploitation d’algorithmes avancés d’apprentissage profond entrainés par des  jeux de données massifs.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Exemples:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "ChatGPT (texte)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Stable Diffusion / Flux (images)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Hunyuan (vidéo)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Whisper (audio/speech-to-text)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Audiocraft (musique)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Github Copilot (code)",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "3",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA générative: Une révolution",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Adoption rapide, impact massif",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "2017 : « Attention is All you need »",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Scaling Laws: GPT 1 (117m), GPT 2 (1,5B), GPT 3 (175B), GPT 4 (1000G)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "ChatGPT : 1 million d’utilisateurs en 5 jours, 100M en 2 mois.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 2,
+              "text": "Impact sur le marketing, la rédaction et l’assistance client.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Défis :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Coût d’entraînement, biais des modèles, complexité des prompts, intervention/interprétation humaine nécessaire.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Approche multidisciplinaire",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Apprentissage automatique, traitement du langage naturel, vision par ordinateur.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Utilisation conjointe des embeddings et des mécanismes d’attention.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Systèmes ISPO",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Input, Storage, Process, Output",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Caractéristiques:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Vitesse, précision, régularité,",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 2,
+              "text": "polyvalence, fiabilité, mémoire, programmable",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "4",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Les données : Fondement des modèles",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Importance des données en IA générative",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Qualité et représentativité des données.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "\"Garbage in, Garbage out\"",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Biais possibles : genre, culture, contexte géographique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 2,
+              "text": "Risque d’hallucination, nécessite pré-traitement, audit",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Pipeline",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Acquisition → Nettoyage → Préparation → Annotation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Données synthétiques : Alternative pour",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 2,
+              "text": "Créer des données nouvelles en masse (saturation des données humaines de qualité)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 2,
+              "text": "protéger la confidentialité.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 2,
+              "text": "2025: Model Collapse",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 0,
+              "text": "Scalabilité et coût énergétique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Nécessité d’infrastructures puissantes (datacenters).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Optimisations possibles : modèles distillés, datacenters verts.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 0,
+              "text": "Méthodes d’entraînement",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Apprentissage de base",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 2,
+              "text": "Très coûteux, modèles fondationnels",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 1,
+              "text": "Fine-Tuning",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 18,
+              "level": 2,
+              "text": "Ajustement spécifique, Loras, RL",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 19,
+              "level": 1,
+              "text": "Apprentissage en contexte",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 20,
+              "level": 2,
+              "text": "Peu couteux, prompt engineering",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 21,
+              "level": 0,
+              "text": "Activité: Sources de données",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 22,
+              "level": 1,
+              "text": "Classe, Maison, Transport, Loisirs => Mots ?",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "5",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Fonctionnement des LLMs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Tokens",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Représentation numérique des mots",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Vocabulaire de 50k/128k",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Embeddings",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Représentation vectorielle des mots/phrases",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Permet de calculer leur proximité sémantique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "King - Man + Woman = Queen.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Activité: Mind-Meld",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 2,
+              "text": "Par deux, mots aléatoires simultanés",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 2,
+              "text": "Puis Mots à « mi-distance »",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Réseaux de neurones",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Constitués de couches interconnectées",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Les poids de ces connexions sont ajustés",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Rétropropagation  Autodifférentiation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 0,
+              "text": "Concept d’attention",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Importance relative des mots",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 2,
+              "text": "Dans un contexte donné",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 1,
+              "text": "« I saw the man with the telescope »",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 18,
+              "level": 1,
+              "text": "Activité: Mots polysémiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 19,
+              "level": 2,
+              "text": "Définition",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 20,
+              "level": 2,
+              "text": "Flèches d’attention",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 21,
+              "level": 0,
+              "text": "Transformers",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 22,
+              "level": 1,
+              "text": "Architecture clé des LLMs modernes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 23,
+              "level": 1,
+              "text": "Avancées architecturales:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 24,
+              "level": 2,
+              "text": "MOE, Sparse Attention, Rope Scaling etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 25,
+              "level": 2,
+              "text": "Multimodalité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 26,
+              "level": 1,
+              "text": "Alternatives récentes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 27,
+              "level": 2,
+              "text": "Mamba (State Space Models), Jamba (scalabilité linéaire)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 28,
+              "level": 2,
+              "text": "Diffusion",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "6",
+              "is_image": false
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Image 7",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 10,
+              "shape_name": "Image 9",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 12,
+              "shape_name": "Image 11",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 14,
+              "shape_name": "Image 13",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Modèles probabilistes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Génération de texte / Transformers",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Les Mots sont choisis en séquence",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "en fonction de leur probabilité d’occurrence",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 2,
+              "text": "dans un contexte donné (= mots qui précèdent).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Paramètres de génération :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Température :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 3,
+              "text": "Contrôle la variabilité des résultats.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 3,
+              "text": "Distribution sur le vocabulaire",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 2,
+              "text": "Top-n sampling :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 3,
+              "text": "Limite le choix aux mots les plus probables",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 3,
+              "text": "Top-p: Jusqu’à un seuil de distribution cumulatif",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 3,
+              "text": "Top-k:  k mots les plus probables.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Génération d’image / Modèle de diffusion",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Ajout d’un bruit gaussien probabiliste",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 2,
+              "text": "Apprentissage du débruitage",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Génération depuis un espace latent",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 2,
+              "text": "Conditionnement par attention (texte, image etc.)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 1,
+              "text": "Paramètres",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 18,
+              "level": 2,
+              "text": "N-steps: Nombre d’étapes de débruitage",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 19,
+              "level": 2,
+              "text": "Cfg-scale (Classifier-Free Guidance)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 20,
+              "level": 3,
+              "text": "Conformité au conditionnement",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 21,
+              "level": 2,
+              "text": "Accents, Prompts négatifs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 22,
+              "level": 3,
+              "text": "Diriger par le texte",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 23,
+              "level": 2,
+              "text": "Denoising strength (img2img)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 24,
+              "level": 3,
+              "text": "Quantité de changement",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 25,
+              "level": 0,
+              "text": "Paramètres communs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 26,
+              "level": 1,
+              "text": "Seed:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 27,
+              "level": 2,
+              "text": "Reproductibilité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 28,
+              "level": 1,
+              "text": "Activité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 29,
+              "level": 2,
+              "text": "Expérimentation de paramètres (seed fixe)",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "7",
+              "is_image": false
+            },
+            {
+              "shape_id": 9,
+              "shape_name": "Image 8",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 11,
+              "shape_name": "Image 10",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 13,
+              "shape_name": "Image 12",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 17,
+              "shape_name": "Image 16",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 19,
+              "shape_name": "Image 18",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Applications: Usage individuels",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Design et graphisme",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Création de prototypes visuels, dessins, photos",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Outils : MidJourney, Stable Diffusion, ChatGPT, \u000bGemini nano banana.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Littérature et rédaction créative",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Écriture de scénarios, récits interactifs, co-écriture, poésie.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Outils: ChatGPT, Claude, Llama etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Entreprenariat et innovation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Idéation, validation d’idées, élaboration de stratégies",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Prototypage, faisabilité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Compagnons IA",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Soutien psychologique, coaching, romance",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 2,
+              "text": "Ex: Replika",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "8",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 9,
+              "shape_name": "Image 8",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 11,
+              "shape_name": "Image 10",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Applications: Entreprise",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Positionnement Métier",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Ex: Microsoft Copilot",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Communication d’entreprise",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Synthèse de contenu",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 2,
+              "text": "Résumer des textes complexes et extraire les thèmes majeurs.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Stratégies de communication",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Structuration d’arguments persuasifs et réduction des biais",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Marketing et interaction client",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Création de campagnes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 2,
+              "text": "Contenu pour réseaux sociaux, blogs, vidéos publicitaires.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 2,
+              "text": "Génération de slogans et de storyboards publicitaires",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Chatbots conversationnels, FAQ dynamique.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Recrutement et formation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Génération de descriptions de poste inclusives et attractives.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 1,
+              "text": "Résumé automatique des candidatures",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 2,
+              "text": "Identifier les points forts et faibles.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 1,
+              "text": "Conception de scénarios et questions d’entretien personnalisés.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 1,
+              "text": "Personnalisation des parcours de formation.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 18,
+              "level": 0,
+              "text": "Analytics et prise de décision",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 19,
+              "level": 1,
+              "text": "Automatisation des pipelines de données : extraction, validation, et nettoyage.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 20,
+              "level": 1,
+              "text": "Modélisation avancée : résolution de problèmes complexes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 21,
+              "level": 1,
+              "text": "Visualisation rapide : génération de graphiques interactifs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 22,
+              "level": 1,
+              "text": "Synthèse rapide : résumer des tableaux de bord complexes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 23,
+              "level": 0,
+              "text": "Activité: Campagne Marketing fictive: Nouveau Soda",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 24,
+              "level": 1,
+              "text": "Un slogan, 1 visuel, 3 posts réseaux sociaux, 1 scnéario de pub",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "9",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 12,
+              "shape_name": "Image 11",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 14,
+              "shape_name": "Image 13",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Applications sectorielles",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Santé",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Génération de rapports médicaux, assistance au diagnostic.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Chatbots médicaux pour le suivi",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Génération de supports pédagogiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Éducation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Création de supports pédagogiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Synthèse et vulgarisation des contenus complexes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Mise en place d’assistants pédagogiques interactifs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Création de quiz dynamiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Finance et gestion des risques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Extraction d’informations à partir de rapports financiers",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Prévisions avancées :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 2,
+              "text": "utilisation de données pour suivre les stocks ou indices",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Automatisation des chaînes d'information",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 2,
+              "text": "génération d’indicateurs, d’alphas",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Détection d’anomalies dans des transactions complexes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 0,
+              "text": "Recherche et sciences",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 1,
+              "text": "Synthèse automatique d’articles académiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 18,
+              "level": 1,
+              "text": "Exploration documentaire et rédaction scientifique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 19,
+              "level": 1,
+              "text": "Automatisation de la validation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 20,
+              "level": 2,
+              "text": "optimisation de modèles mathématiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 21,
+              "level": 0,
+              "text": "Activité:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 22,
+              "level": 1,
+              "text": "Prévision Trading Crypto par graphiques avec indicateurs",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "10",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 9,
+              "shape_name": "Image 8",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 13,
+              "shape_name": "Image 12",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 15,
+              "shape_name": "Image 14",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Techniques : Génération de texte",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Prompt Engineering",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Instructions explicites et exemples (« few-shot learning »)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Variantes lexicales et stylistiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 2,
+              "text": "Qui, Quoi, Pour qui, Quel objectif, Quelle cible, quel format, quel style etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Prompts Systèmes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Structuration pour des tâches complexes, (COT)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Évaluation comparative, Exploration (ToT)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Retrieval Augmented Generation (RAG)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Combinaison de modèles génératifs et bases documentaires",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Calibration des données, chunks, embedding, requêtes et contexte",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 2,
+              "text": "pour éviter le bruit et améliorer la pertinence des réponses.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 0,
+              "text": "Function Calling et outils intégrés",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Appels de fonctions via des API",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Génération structurée, décoration, paramètres",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 0,
+              "text": "Orchestration et pipelines",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Outils pour la structuration des workflows",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 1,
+              "text": "Fonctions sémantiques, natives",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 1,
+              "text": "Composition de prompts, de modèles",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 18,
+              "level": 1,
+              "text": "Ex: Semantic-kernel, Langchain",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 19,
+              "level": 0,
+              "text": "Agentique avancée",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 20,
+              "level": 1,
+              "text": "Coordination entre agents pour des tâches complexes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 21,
+              "level": 1,
+              "text": "Conversations collaboratives, prompts systèmes et fonctions spécifiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 22,
+              "level": 1,
+              "text": "Ex: AutoGen, Semantic-Kernel",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 23,
+              "level": 0,
+              "text": "Vibe Coding",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 24,
+              "level": 1,
+              "text": "Copilot, Cline, Roo (extensions vscode)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 25,
+              "level": 1,
+              "text": "CLIs (Claude code, Gemini, Qwen, Mistral etc.)",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "11",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 12,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Techniques: Multimodalité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Graphiques:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Modèles de diffusion pour générer des visuels",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Dall-e, Stable diffusion, Flux",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 2,
+              "text": "Txt2Img, Img2Img, Inpainting, Outpainting, Finetuning (Loras), Upscaling, ControlNet",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Vision",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 2,
+              "text": "GPT-4o, O1, QwenVL, InternVL",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Nombreux Benchmarks",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Génération Vidéo",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 2,
+              "text": "SD: Deforum, AnimateDiff",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 2,
+              "text": "Ad-hoc: Hunyuan, Wan, Google Veo 3, Sora, Runway, Kling AI",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "3D",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 2,
+              "text": "Représentation:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 3,
+              "text": "Meshes, Radiance Fields (Nerfs), VoxNet (Convolution) Point clouds etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Génération:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 3,
+              "text": "DreamFusion, Trellis (ex: Trellis + Comfy)",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Audio",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Speech-To-Text",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Whisper, Moonshine",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Text-To-Speech",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 2,
+              "text": "Elevenlabs, Kokoro",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Musique",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Audiocraft, AudioLDM, UniAudio",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Code,",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "UX Variées, Contexte ?",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "VsCode: Copilot, Cline, Continue",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Maths :",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Modèles de Reflexion",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 2,
+              "text": "Propriétaires: OpenAI, Google",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du contenu 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Open-Source: Deepseek",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "12",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Ecosystème GenAI",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Modèles et APIs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "APIs propriétaires",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "OpenAI, Anthropic, Google, Mistral, etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 2,
+              "text": "Aggrégateur: OpenRouter",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Modèles Locaux",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Llama, Mistral, Gemini, Ms Phi, Qwen, DeepSeek etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Diffuseurs: Hugging Face, Github",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 2,
+              "text": "Nombreux Benchmarks",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Hébergement",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Cloud",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 2,
+              "text": "LLM Hosting",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 3,
+              "text": "Hugging Face, Groq",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 2,
+              "text": "Location de GPUs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 3,
+              "text": "Runpod, VastAI",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 2,
+              "text": "Grand clouds généralistes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 3,
+              "text": "AWS, Azure, Google etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 1,
+              "text": "Local",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 2,
+              "text": "Oobabooga, Ollama, Vllm",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 18,
+              "level": 2,
+              "text": "Quants (gguf, exl2/3, AWQ etc.)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 19,
+              "level": 1,
+              "text": "Containerisation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 20,
+              "level": 2,
+              "text": "Docker/Kubernetes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 21,
+              "level": 1,
+              "text": "Hybride",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 22,
+              "level": 2,
+              "text": "Ex: Tailscale (réseau)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 23,
+              "level": 0,
+              "text": "Image",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 24,
+              "level": 1,
+              "text": "Modèles: Stable-Diffusion, Flux, Qwen Image Edit, Z-image Turbo, CivitAI",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 25,
+              "level": 1,
+              "text": "Apps: Forge, ComfyUI",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 26,
+              "level": 0,
+              "text": "Conversationnel",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 27,
+              "level": 1,
+              "text": "Généralistes:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 28,
+              "level": 2,
+              "text": "Open-webui, SillyTarvern",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 29,
+              "level": 1,
+              "text": "Workflows Pro / LLMOps:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 30,
+              "level": 2,
+              "text": "Dify, Langflow",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "13",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 9,
+              "shape_name": "Image 8",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 11,
+              "shape_name": "Image 10",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 13,
+              "shape_name": "Image 12",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 17,
+              "shape_name": "Image 16",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 19,
+              "shape_name": "Image 18",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 21,
+              "shape_name": "Image 20",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 25,
+              "shape_name": "Image 24",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 27,
+              "shape_name": "Image 26",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 29,
+              "shape_name": "Image 28",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 33,
+              "shape_name": "Image 32",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 39,
+              "shape_name": "Image 38",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 41,
+              "shape_name": "Image 40",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Enjeux Ethiques et sociétaux",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Biais et discrimination",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Présence de stéréotypes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "dans les données d’entraînement.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Technique de débiaisage des modèles",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Illusions",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Hallucinations",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Réponses incorrectes mais plausibles",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Illusion de correction",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 2,
+              "text": "Confiance exagérée des utilisateurs dans les résultats",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Impact Environnemental",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Coûts énergétiques (GPUs)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Apprentissage",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Activité: Dataset biaisé",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Conception d’un dataset synthétique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 1,
+              "text": "Ajout d’un biais",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Détection du biais",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "14",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Régulation et droit",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Propriété intellectuelle",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Droits sur les contenus générés.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Modèles open-source vs propriétaires.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Protection des données",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Risques : Confidentialité et conformité au RGPD.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Bonnes pratiques :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Anonymisation des données.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 2,
+              "text": "Formation des équipes sur la règlementation.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Normes émergentes et recommandations",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Initiatives internationales :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 2,
+              "text": "Régulation européenne (AI Act – en vigueur depuis 01/08/2024).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 2,
+              "text": "Position des États-Unis sur l’IA.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 3,
+              "text": "11/02/25: Trump signe un Executive Order bloquant les régulations IA des états",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Exemples pratiques :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 2,
+              "text": "Agentic AI Foundation (9/12/25): OpenAI, Anthropic et Block établissent MCP (Model Context Protocol) comme standard mondial pour les agents IA.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 2,
+              "text": "Licences open-source responsables.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 0,
+              "text": "Droits des IAs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 1,
+              "text": "Bientôt: IA surhumaine, émergence de la conscience artificielle",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 18,
+              "level": 1,
+              "text": "Droits des agents, autonomie ? Pouvoir économique (Cryptos) ?",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "15",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Risques et limites",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Fiabilité des modèles",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Hallucinations et fabrications",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Impact sur la confiance utilisateur.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 2,
+              "text": "Nécessité de tests rigoureux avant le déploiement en entreprise.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 2,
+              "text": "Solutions :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 3,
+              "text": "Développement d’algorithmes robustes.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 3,
+              "text": "Mécanismes de vérification croisée entre plusieurs modèles.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 3,
+              "text": "Tests et validations",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 4,
+              "text": "« Auditeurs IA » identifient des biais dans des scénarios fictifs.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Activité: Auditeur:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 2,
+              "text": "Recommandation Voyage, classe",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 2,
+              "text": "Sources de données in/out, Test",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Sécurité des modèles",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Risques de mauvaise utilisation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 3,
+              "text": "Armes bactériologiques, nucléaires, pédopornographie etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 2,
+              "text": "Risques de perte de contrôle",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 3,
+              "text": "Cf. Anthropic: niveaux de sécurité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 3,
+              "text": "Constitutional AI",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 18,
+              "level": 0,
+              "text": "Points critiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 19,
+              "level": 1,
+              "text": "Perte d’emplois liée à l’automatisation.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 20,
+              "level": 1,
+              "text": "Homogénéisation des contenus créatifs.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 21,
+              "level": 1,
+              "text": "Risque d’adopter des modèles insuffisamment audités pour des tâches critiques.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 22,
+              "level": 1,
+              "text": "Gestion des biais et des hallucinations.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 23,
+              "level": 1,
+              "text": "Sensibilisation aux enjeux de confidentialité.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 24,
+              "level": 1,
+              "text": "Détection et gestion des contenus générés frauduleusement",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 25,
+              "level": 2,
+              "text": "Deepfakes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 26,
+              "level": 0,
+              "text": "Activité: Constitutional AI",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 27,
+              "level": 1,
+              "text": "Définition d’une Constitution",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 28,
+              "level": 1,
+              "text": "Création d’un prompt système",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 29,
+              "level": 1,
+              "text": "Test sur modèle ablitéré",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "16",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Responsabilité sociale",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Rôle des entreprises vs utilisateurs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Entreprises :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Transparence des modèles.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 2,
+              "text": "Codes éthiques.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Utilisateurs :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Formation sur les limites des modèles IA.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Adoption responsable dans les secteurs critiques.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 2,
+              "text": "Sensibilisation sur les forces et faiblesses des systèmes d’IA générative.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Impact Environnemental",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Rapport IEA 2025",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 2,
+              "text": "Consommation des datacenter x2 en 3 ans (= Japon)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 0,
+              "text": "IA pour le bien commun",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "IA pour des solutions écologiques ou sociales.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Outils pour la santé publique ou l’éducation dans des zones sous-développées.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 2,
+              "text": "Surveiller la déforestation ou améliorer la gestion des ressources en eau.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Activité: Propositions novatrices",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 2,
+              "text": "Avec et sans guidance",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "17",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 18,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Défis pratiques de l’adoption",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Compatibilité technologique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Adaptation aux systèmes existants (CRM, ERP).",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Gestion des bases vectorielles dans des flux de travail établis.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Confidentialité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Maîtrise des flux de données",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Scalabilité et coûts",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "PMEs avec des budgets limités.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Infrastructure technique nécessaire pour gérer de grands modèles.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Réalité du ROI",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Gartner 2025: Adoption massive (75% des entreprises) mais « AI Fatigue » et ROI tangibles peu nombreux au-delà (rédaction, code)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Optimisations possibles :",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 2,
+              "text": "Solutions open-source pour réduire les coûts.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 3,
+              "text": "Utilisation de modèles plus légers comme les distillations pour les déploiements locaux.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 3,
+              "text": "Modèles spécialisés SOTA sur des tâches",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 2,
+              "text": "Confidentialité maîtrisée",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "18",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 19,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 5,
+              "shape_name": "Slide Number Placeholder 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "19",
+              "is_image": false
+            },
+            {
+              "shape_id": 21508,
+              "shape_name": "Title 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Questions?",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 5,
+              "shape_name": "Slide Number Placeholder 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "20",
+              "is_image": false
+            },
+            {
+              "shape_id": 21508,
+              "shape_name": "Title 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Merci",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Jean-Sylvain Boige",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 0,
+              "text": "jsboige@myia.org",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

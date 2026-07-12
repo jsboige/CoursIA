@@ -1,0 +1,28 @@
+# GenAI CoursIA - Dependances Video AI
+# Installation: pip install -r requirements-video.txt
+# Prerequis: requirements.txt (dependances de base)
+
+# --- Traitement video ---
+moviepy>=1.0.3               # Edition video haut niveau (trim, concat, effets)
+ffmpeg-python>=0.2.0         # Wrapper Python pour FFmpeg
+decord>=0.6.0                # Lecture rapide de frames video
+opencv-python>=4.8.0         # Vision par ordinateur, extraction frames
+imageio[ffmpeg]>=2.31.0      # I/O video avec backend FFmpeg
+imageio-ffmpeg>=0.4.9        # Plugin FFmpeg pour imageio
+
+# --- Generation video (modeles diffusion) ---
+diffusers>=0.30.0            # HuggingFace Diffusers (AnimateDiff, SVD, HunyuanVideo, LTX)
+accelerate>=0.30.0           # Acceleration inference multi-GPU
+safetensors>=0.4.0           # Format poids securise
+transformers>=4.40.0         # Modeles Transformer (Qwen-VL, encodeurs texte)
+
+# --- Amelioration video ---
+# realesrgan>=0.3.0          # Real-ESRGAN upscaling - installer separement (deps lourdes)
+basicsr>=1.4.2               # Framework super-resolution (base pour Real-ESRGAN)
+
+# --- Comprehension video ---
+qwen-vl-utils>=0.0.8        # Utilitaires Qwen2.5-VL (video understanding)
+
+# --- Quantization (pour modeles lourds sur 24GB VRAM) ---
+bitsandbytes>=0.43.0         # Quantization INT4/INT8 pour transformers
+# optimum>=1.19.0            # HuggingFace Optimum (acceleration inference)

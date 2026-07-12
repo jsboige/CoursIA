@@ -1,0 +1,11 @@
+id,nom,age,glycemie_jeun,glycemie_postprandiale,hba1c,symptomes,antecedents,pression_arterielle,imc
+1,Alice,45,110.0,160.0,6.8,"fatigue;soif intense",aucun,120.0,22.5
+2,Bob,58,140.0,200.0,8.2,"vision troublee;fatigue",hypertension,140.0,28.5
+3,Claire,35,90.0,150.0,5.5,"polyurie;soif",surpoids,125.0,24.8
+4,David,67,130.0,180.0,7.5,"fatigue;troubles visuels",néphropathie,140.0,28.5
+5,Emma,72,150.0,220.0,9.1,"maux pieds;engourdissement",cardiopathie,160.0,32.1
+6,Frank,55,125.0,170.0,6.9,"hypoglycémie",hypoglycémie_récurrente,130.0,27.8
+7,Sophie,42,95.0,135.0,5.8,"aucun",aucun,115.0,21.2
+8,Marc,61,135.0,195.0,7.8,"polyurie;polydipsie",hypertension,145.0,26.9
+9,Lea,38,88.0,125.0,5.2,"fatigue légère",aucun,118.0,23.1
+10,Pierre,69,145.0,210.0,8.5,"engourdissement;maux pieds",cardiopathie,155.0,31.2

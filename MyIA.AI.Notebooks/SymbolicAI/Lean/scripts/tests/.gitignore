@@ -1,0 +1,4 @@
+# LeanDojo test cache and temp files
+__pycache__/
+*.pyc
+.env

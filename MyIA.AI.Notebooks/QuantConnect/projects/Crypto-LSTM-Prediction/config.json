@@ -1,0 +1,10 @@
+{
+    "algorithm-language": "Python",
+    "parameters": {
+        "cash": 100000
+    },
+    "description": "Crypto LSTM Prediction - DLinear (SOTA AAAI 2023) + LSTM comparison for BTCUSDT forecasting",
+    "name": "Crypto-LSTM-Prediction",
+    "cloud-id": null,
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
+}

@@ -1,0 +1,157 @@
+# Hommage à Grothendieck — Visite de Mathlib
+
+Alexandre Grothendieck (1928-2014).
+
+## Objectif
+
+Ce workspace est un **hommage pédagogique** montrant comment le langage
+mathématique de Grothendieck vit déjà dans Mathlib 4. Ce n'est **pas** une
+tentative de formaliser EGA/SGA.
+
+Le but est d'offrir aux apprenants un point d'entrée curaté vers :
+- Catégories, cribles (sieves) et topologies de Grothendieck
+- Faisceaux (sheaves), prefaisceaux séparés, topologies sous-canoniques
+- Génération de recouvrements (coverage) et caractérisation des faisceaux
+- La topologie canonique et les sites sous-canoniques
+- Schémas (espaces annelés en anneaux locaux localement Spec R)
+- Le site de Zariski
+- Ce que Mathlib possède et ce qu'il n'a pas (encore)
+
+## Structure
+
+La formalisation couvre **24 modules (Parties 1-24, ~3350 lignes, 0 sorry)**,
+importés dans l'ordre par le parapluie `Grothendieck.lean`. Chaque module se
+numérote lui-même via son en-tête (`Grothendieck tribute — Part N`).
+
+*La trajectoire pédagogique des 24 modules — des sites et cribles jusqu'à la cohomologie, avec schémas/Zariski et carte Mathlib en ancrage :*
+
+```mermaid
+flowchart LR
+    T1["<b>Sites & cribles</b><br/><i>Parties 1·6·8·11·12·16</i><br/>topologies de Grothendieck<br/>pullback_id · pullback_monotone"]
+    T2["<b>Faisceaux & séparation</b><br/><i>7·9·10·17</i><br/>préfaisceau séparé<br/>transfert le long de J₁ ≤ J₂"]
+    T3["<b>Faisceautisation</b><br/><i>13·14</i><br/>foncteur faisceau associé<br/>exactitude à gauche (LeftExact)"]
+    T4["<b>Points & conservateurs</b><br/><i>15·19</i><br/>foncteurs fibres<br/>familles conservatrices"]
+    T5["<b>Cohomologie</b><br/><i>20·21·22·23</i><br/>Ext · Mayer-Vietoris · Čech"]
+    T1 --> T2 --> T3 --> T4 --> T5
+    S["<b>Schémas & site de Zariski</b><br/><i>Parties 2·3</i><br/>foncteur Spec<br/>zariski_topology_eq"] -.->|"ancre géométrique"| T1
+    MM["<b>Carte Mathlib</b><br/><i>Partie 4</i><br/>index #check"] -.->|"ancre bibliothèque"| T3
+```
+
+| Partie | Fichier | Contenu | Lignes |
+|--------|---------|---------|--------|
+| 1 | `Grothendieck/CategoryAndSites.lean` | Cribles, topologies de Grothendieck (triviale/discrète/dense), trois axiomes | 106 |
+| 2 | `Grothendieck/SchemesTour.lean` | Type des schémas, foncteur Spec, Γ, `homeoOfIso`, pleinement fidèle | 79 |
+| 3 | `Grothendieck/ZariskiSite.lean` | Prétopologie de Zariski, théorème-pont `zariskiTopology_eq`, sous-canonique | 84 |
+| 4 | `Grothendieck/MathlibMap.lean` | Index `#check` des définitions Mathlib liées à Grothendieck | 90 |
+| 5 | `Grothendieck/Calibration.lean` | 4 cibles de micro-preuve pour le harnais du prouveur (Epic #1453) | 80 |
+| 6 | `Grothendieck/SieveLattice.lean` | Identités de pullback de cribles : `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone` | 88 |
+| 7 | `Grothendieck/SheafBasics.lean` | Bases faisceau/préfaisceau séparé, transfert de faisceau le long de J₁ ≤ J₂ | 128 |
+| 8 | `Grothendieck/SieveOps.lean` | Ordre sur les topologies, clôture de recouvrement, composition de cribles | 124 |
+| 9 | `Grothendieck/CoverageGen.lean` | Coverage-vers-topologie, caractérisation des faisceaux, sup de coverages | 148 |
+| 10 | `Grothendieck/CanonicalProps.lean` | Topologie canonique, sous-canoïcité, faisceaux représentables | 133 |
+| 11 | `Grothendieck/SieveGenerate.lean` | Identités de génération de cribles | 128 |
+| 12 | `Grothendieck/DenseTopology.lean` | La topologie dense | 131 |
+| 13 | `Grothendieck/Sheafification.lean` | Faisceautisation (le foncteur faisceau associé) | 175 |
+| 14 | `Grothendieck/LeftExact.lean` | Exactitude à gauche de la faisceautisation | 133 |
+| 15 | `Grothendieck/SitePoints.lean` | Points d'un site (foncteurs fibres) | 220 |
+| 16 | `Grothendieck/Subcanonical.lean` | Topologies de Grothendieck sous-canoniques | 88 |
+| 17 | `Grothendieck/SheafHom.lean` | Hom interne des faisceaux | 140 |
+| 18 | `Grothendieck/ConstantSheaf.lean` | Le foncteur faisceau constant (ponte vers `CategoryTheory.Sites.ConstantSheaf` de Mathlib) | 185 |
+| 19 | `Grothendieck/Conservative.lean` | Familles conservatrices de points | 226 |
+| 20 | `Grothendieck/SheafCohomology/Basic.lean` | Cohomologie des faisceaux (basée sur Ext) | 214 |
+| 21 | `Grothendieck/MayerVietorisSquare.lean` | Carrés de Mayer-Vietoris | 195 |
+| 22 | `Grothendieck/SheafCohomology/MayerVietoris.lean` | Suite exacte longue de Mayer-Vietoris | 164 |
+| 23 | `Grothendieck/SheafCohomology/Cech.lean` | Cohomologie de Čech | 123 |
+| 24 | `Grothendieck/YonedaLemma.lean` | Le lemme de Yoneda (plongement, équivalence, naturalité, pleinement fidèle, coyoneda) | 168 |
+
+L'extension (Parties 6-24) a été développée sous l'Issue #2159 / Epic #1646 et
+est **complète** : tous les 24 modules mergés, 0 `sorry`, 0 axiome ajouté.
+
+## Build
+
+```bash
+# Depuis ce répertoire (WSL requis)
+lake build Grothendieck
+# Compile les 24 modules (~3350 lignes)
+```
+
+## Compte de sorry
+
+**0 sorry, 0 axiome** — tous les 24 modules sont complets à la création
+(Parties 1-24 mergées).
+
+## Toolchain
+
+Alignée avec les autres projets SymbolicAI/Lean : `leanprover/lean4:v4.31.0-rc1`
+
+## References
+
+The language toured here — Grothendieck topologies, sites, sheaves, and schemes — originates in Grothendieck's algebraic geometry. These are the canonical entry points. This workspace is a pedagogical tour indexed against Mathlib, **not** a formalization of EGA/SGA.
+
+- **Mac Lane, S.; Moerdijk, I.** *Sheaves in Geometry and Logic: A First Introduction to Topos Theory*. Springer Universitext, 1992. — Standard reference for Grothendieck topologies, sieves, sites, and sheaves (Parts 1, 6-8, 10, 13-14).
+- **Artin, M.; Grothendieck, A.; Verdier, J. L.**, eds. *Theorie des topos et cohomologie etale des schemas* (SGA 4). Springer Lecture Notes in Mathematics 269, 270, 305, 1972-1973. — Origin of sites, Grothendieck topologies, and points of a topos (Parts 1, 15, 19).
+- **Grothendieck, A.; Dieudonne, J.** *Elements de geometrie algebrique* (EGA). Publications Mathematiques de l'IHES, 1960-1967. — Origin of schemes and the Zariski site (Parts 2-3).
+- **Vakil, R.** *The Rising Sea: Foundations of Algebraic Geometry*. — Widely used pedagogical notes in the Grothendieckian spirit.
+- **The Stacks Project.** [stacks.math.columbia.edu](https://stacks.math.columbia.edu) — Reference for schemes, sheafification, and sheaf cohomology (Parts 13, 20-23).
+- **The Mathlib Community.** *Mathlib4, Category Theory and Sites*. [mathlib4 docs](https://leanprover-community.github.io/mathlib4_docs/) — The library this tour indexes (Part 4); see de Moura & Ullrich, "The Lean 4 Theorem Prover" (2021).
+- **nLab.** [ncatlab.org](https://ncatlab.org) — Entries on Grothendieck topology, sieve, site, sheaf, and sheafification.
+
+## Voir aussi
+
+- Epic #1646 (hommage à Grothendieck)
+- Issue #2159 (profondeur de formalisation Grothendieck)
+- PR #2675 (Phases 4-6 : SieveOps + CoverageGen + CanonicalProps)
+- Epic #1453 (calibration du harnais prouveur)
+- Workspace hommage Conway (`../conway_lean/`)
+- Série de notebooks Lean (`../README.md`)
+
+## Conclusion
+
+Cet hommage est une **visite pédagogique complète** (24 modules, ~3350 lignes,
+0 `sorry`, 0 axiome ajouté) montrant comment le langage de Grothendieck — sites,
+faisceaux, faisceautisation, points, cohomologie, Yoneda — vit déjà dans Mathlib 4. Ce
+n'est délibérément **pas** une formalisation d'EGA/SGA ; c'est un index curaté
+qui laisse les apprenants voir la bibliothèque à travers des yeux grothendieckiens.
+
+### La trajectoire
+
+Les modules tracent un chemin cohérent : **sites et cribles** (Parties 1, 6, 8,
+11, 12, 16) → **faisceaux, séparation et transfert** (7, 9, 10, 17) →
+**faisceautisation et son exactitude à gauche** (13, 14) → **points et familles
+conservatrices** (15, 19) → **cohomologie des faisceaux, Mayer-Vietoris et Čech**
+(20-23), avec **schémas et site de Zariski** (2, 3), une **carte Mathlib** (4)
+et le **lemme de Yoneda** (24) ancrant la visite à la bibliothèque qu'elle indexe.
+
+*La construction verticale « faisceau » — chaque couche bâtie sur la précédente, de la donnée du site jusqu'à la cohomologie :*
+
+```mermaid
+flowchart TD
+    SITE["<b>Site</b><br/><i>catégorie + topologie de Grothendieck</i><br/>(Partie 1)"]
+    PSH["<b>Préfaisceau</b><br/><i>objets Cᵒᵖ → Type*</i>"]
+    SEP["<b>Préfaisceau séparé</b><br/>unicité du recollement"]
+    SH["<b>Faisceau</b><br/>existence + unicité du recollement"]
+    SHIF["<b>Faisceautisation</b><br/><i>foncteur faisceau associé</i><br/>Partie 13 — exactitude à gauche (Partie 14)"]
+    COH["<b>Cohomologie des faisceaux</b><br/>Parties 20-23<br/>Ext · Mayer-Vietoris · Čech"]
+    SITE --> PSH --> SEP --> SH
+    SHIF -.->|"produit un faisceau<br/>depuis un préfaisceau"| SH
+    SH --> COH
+    TR["<b>Transfert de faisceau</b><br/>le long de J₁ ≤ J₂<br/>(Partie 7)"] -.-> SH
+```
+
+### Le périmètre, honnêtement
+
+Selon la section `## Compte de sorry` ci-dessus, la visite est à **0 `sorry`,
+0 axiome ajouté** — chaque résultat est pleinement prouvé. L'index `#check` de la
+Partie 4 est explicite sur ce que Mathlib possède et ce qu'il n'a pas (encore) ;
+la visite documente cette frontière au lieu de la maquiller. Le module compagnon
+`Calibration.lean` (Partie 5) alimente le harnais du prouveur (Epic #1453),
+reliant cette formalisation à l'effort de preuve plus large.
+
+### Où aller ensuite
+
+- **Profondeur** : l'Issue #2159 / l'Epic #1646 suivent la formalisation
+  ultérieure — cette visite est le socle, pas le plafond.
+- **Compagnons** : `conway_lean/` (mathématiques de Conway), la série de
+  notebooks Lean.
+- **Références** : Mac Lane–Moerdijk et SGA 4 pour le cœur topos-théorique ;
+  Vakil et le Stacks Project pour les schémas et la cohomologie.

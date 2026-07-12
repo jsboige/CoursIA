@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance des ventes T1 2024</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        .slide-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .slide {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            padding: 40px;
+            page-break-after: always;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+            font-size: 2.2em;
+        }
+        h2 {
+            color: #3498db;
+            font-size: 1.6em;
+        }
+        ul {
+            line-height: 1.6;
+        }
+        .highlight {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .positive {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .negative {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .neutral {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        .chart {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .chart p {
+            color: #7f8c8d;
+        }
+        .notes {
+            background-color: #f9f9f9;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-top: 30px;
+            font-style: italic;
+            color: #7f8c8d;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+        .matrix {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .matrix th, .matrix td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        .matrix th {
+            background-color: #f2f2f2;
+        }
+        .high-growth {
+            background-color: #d5f5e3;
+        }
+        .medium-growth {
+            background-color: #eafaf1;
+        }
+        .low-growth {
+            background-color: #fef9e7;
+        }
+        .negative-growth {
+            background-color: #fadbd8;
+        }
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(255,255,255,0.8);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .controls button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            margin: 0 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background-color: #2980b9;
+        }
+        @media print {
+            .slide {
+                box-shadow: none;
+                page-break-after: always;
+            }
+            .controls {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <!-- Slide 1 -->
+        <div class="slide" id="slide1">
+            <h1>Performance des ventes T1 2024</h1>
+            <h2>Analyse et perspectives</h2>
+            <p>Présentation au comité de direction - Mai 2024</p>
+            <div class="chart">
+                <p>Graphique: Tendance générale des ventes (Jan-Fév 2024)</p>
+                <svg width="600" height="200">
+                    <line x1="50" y1="150" x2="550" y2="150" stroke="#333" stroke-width="2"/>
+                    <line x1="50" y1="150" x2="50" y2="20" stroke="#333" stroke-width="2"/>
+                    
+                    <!-- Janvier -->
+                    <rect x="150" y="78" width="80" height="72" fill="#3498db" />
+                    <text x="190" y="170" text-anchor="middle" fill="#333">Jan</text>
+                    <text x="190" y="70" text-anchor="middle" fill="white">71 500€</text>
+                    
+                    <!-- Février -->
+                    <rect x="350" y="60" width="80" height="90" fill="#3498db" />
+                    <text x="390" y="170" text-anchor="middle" fill="#333">Fév</text>
+                    <text x="390" y="52" text-anchor="middle" fill="white">74 800€</text>
+                    
+                    <!-- Ligne de tendance -->
+                    <line x1="190" y1="78" x2="390" y2="60" stroke="#e74c3c" stroke-width="3" stroke-dasharray="5,5"/>
+                </svg>
+            </div>
+            <div class="notes">
+                <p><strong>Notes pour le présentateur:</strong> Accueillir les participants et mentionner l'objectif de la présentation: analyser les performances de ventes du début d'année et identifier les opportunités.</p>
+            </div>
+        </div>
+
+        <!-- Slide 2 -->
+        <div class="slide" id="slide2">
+            <h1>Vue d'ensemble des performances</h1>
+            <h2>Croissance globale des ventes: <span class="positive">+4,6%</span> en février</h2>
+            <ul>
+                <li>Ventes totales janvier: <strong>71 500€</strong></li>
+                <li>Ventes totales février: <strong>74 800€</strong></li>
+                <li>Croissance globale: <span class="positive">+4,6%</span></li>
+                <li>Nombre total de clients: <strong>378</strong> (jan) → <strong>396</strong> (fév), <span class="positive">+4,8%</span></li>
+            </ul>
+            <div class="chart">
+                <p>Graphique: Comparaison des ventes totales (Jan-Fév 2024)</p>
+                <svg width="600" height="200">
+                    <line x1="50" y1="150" x2="550" y2="150" stroke="#333" stroke-width="2"/>
+                    <line x1="50" y1="150" x2="50" y2="20" stroke="#333" stroke-width="2"/>
+                    
+                    <!-- Janvier -->
+                    <rect x="100" y="78" width="60" height="72" fill="#3498db" />
+                    <text x="130" y="170" text-anchor="middle" fill="#333">Jan</text>
+                    <text x="130" y="70" text-anchor="middle" fill="white">71 500€</text>
+                    
+                    <!-- Février -->
+                    <rect x="200" y="60" width="60" height="90" fill="#3498db" />
+                    <text x="230" y="170" text-anchor="middle" fill="#333">Fév</text>
+                    <text x="230" y="52" text-anchor="middle" fill="white">74 800€</text>
+                    
+                    <!-- Clients -->
+                    <rect x="350" y="90" width="60" height="60" fill="#e74c3c" />
+                    <text x="380" y="170" text-anchor="middle" fill="#333">Clients Jan</text>
+                    <text x="380" y="110" text-anchor="middle" fill="white">378</text>
+                    
+                    <rect x="450" y="75" width="60" height="75" fill="#e74c3c" />
+                    <text x="480" y="170" text-anchor="middle" fill="#333">Clients Fév</text>
+                    <text x="480" y="95" text-anchor="middle" fill="white">396</text>
+                </svg>
+            </div>
+            <div class="notes">
+                <p><strong>Notes pour le présentateur:</strong> Souligner la tendance positive générale et mentionner que la croissance du nombre de clients suit celle des ventes.</p>
+            </div>
+        </div>
+
+        <!-- Slide 3 -->
+        <div class="slide" id="slide3">
+            <h1>Analyse par catégorie de produits</h1>
+            <h2>Le Mobilier: moteur principal de notre croissance</h2>
+            <ul>
+                <li>Mobilier: <span class="positive">+7,6%</span> de croissance (30 400€ → 32 700€)</li>
+                <li>Électronique: <span class="neutral">+2,4%</span> de croissance (41 100€ → 42 100€)</li>
+                <li>Mobilier: acquisition clients <span class="positive">+8,9%</span> (123 → 134)</li>
+                <li>Électronique: acquisition clients <span class="neutral">+2,7%</span> (255 → 262)</li>
+            </ul>
+            <div class="chart">
+                <p>Graphique: Évolution des ventes par catégorie</p>
+                <svg width="600" height="200">
+                    <line x1="50" y1="150" x2="550" y2="150" stroke="#333" stroke-width="2"/>
+                    <line x1="50" y1="150" x2="50" y2="20" stroke="#333" stroke-width="2"/>
+                    
+                    <!-- Axes labels -->
+                    <text x="300" y="190" text-anchor="middle" fill="#333">Période</text>
+                    <text x="20" y="85" text-anchor="middle" fill="#333" transform="rotate(-90, 20, 85)">Ventes (€)</text>
+                    
+                    <!-- Janvier -->
+                    <rect x="150" y="60" width="40" height="90" fill="#3498db" />
+                    <text x="170" y="170" text-anchor="middle" fill="#333">Élec Jan</text>
+                    <text x="170" y="80" text-anchor="middle" fill="white">41 100€</text>
+                    
+                    <rect x="200" y="90" width="40" height="60" fill="#e74c3c" />
+                    <text x="220" y="170" text-anchor="middle" fill="#333">Mob Jan</text>
+                    <text x="220" y="110" text-anchor="middle" fill="white">30 400€</text>
+                    
+                    <!-- Février -->
+                    <rect x="350" y="55" width="40" height="95" fill="#3498db" />
+                    <text x="370" y="170" text-anchor="middle" fill="#333">Élec Fév</text>
+                    <text x="370" y="75" text-anchor="middle" fill="white">42 100€</text>
+                    
+                    <rect x="400" y="75" width="40" height="75" fill="#e74c3c" />
+                    <text x="420" y="170" text-anchor="middle" fill="#333">Mob Fév</text>
+                    <text x="420" y="95" text-anchor="middle" fill="white">32 700€</text>
+                    
+                    <!-- Légende -->
+                    <rect x="480" y="50" width="15" height="15" fill="#3498db" />
+                    <text x="500" y="63" fill="#333">Électronique</text>
+                    <rect x="480" y="75" width="15" height="15" fill="#e74c3c" />
+                    <text x="500" y="88" fill="#333">Mobilier</text>
+                </svg>
+            </div>
+            <div class="notes">
+                <p><strong>Notes pour le présentateur:</strong> Souligner la forte performance du Mobilier et noter que l'acquisition de nouveaux clients est corrélée à la croissance des ventes. Mentionner la légère baisse des prix moyens dans le Mobilier (-1,2%).</p>
+            </div>
+        </div>
+
+        <!-- Slide 4 -->
+        <div class="slide" id="slide4">
+            <h1>Performances régionales</h1>
+            <h2>Est et Ouest en tête</h2>
+            <ul>
+                <li>Est: <span class="positive">+7,7%</span> (meilleure performance)</li>
+                <li>Ouest: <span class="positive">+7,4%</span></li>
+                <li>Sud: <span class="positive">+5,9%</span></li>
+                <li>Nord: <span class="negative">-0,9%</span> (seule région en baisse)</li>
+            </ul>
+            <div class="chart">
+                <p>Carte de France avec performances régionales</p>
+                <svg width="400" height="200" viewBox="0 0 400 400">
+                    <!-- Carte simplifiée de France avec régions -->
+                    <path d="M150,100 L250,100 L250,200 L150,200 Z" fill="#27ae60" stroke="#333" stroke-width="2" />
+                    <text x="200" y="150" text-anchor="middle" fill="white">EST</text>
+                    <text x="200" y="170" text-anchor="middle" fill="white">+7,7%</text>
+                    
+                    <path d="M50,100 L150,100 L150,200 L50,200 Z" fill="#e74c3c" stroke="#333" stroke-width="2" />
+                    <text x="100" y="150" text-anchor="middle" fill="white">NORD</text>
+                    <text x="100" y="170" text-anchor="middle" fill="white">-0,9%</text>
+                    
+                    <path d="M50,200 L150,200 L150,300 L50,300 Z" fill="#27ae60" stroke="#333" stroke-width="2" />
+                    <text x="100" y="250" text-anchor="middle" fill="white">OUEST</text>
+                    <text x="100" y="270" text-anchor="middle" fill="white">+7,4%</text>
+                    
+                    <path d="M150,200 L250,200 L250,300 L150,300 Z" fill="#f39c12" stroke="#333" stroke-width="2" />
+                    <text x="200" y="250" text-anchor="middle" fill="white">SUD</text>
+                    <text x="200" y="270" text-anchor="middle" fill="white">+5,9%</text>
+                </svg>
+            </div>
+            <div class="chart">
+                <p>Graphique: Croissance par région</p>
+                <svg width="600" height="150">
+                    <!-- Est -->
+                    <rect x="50" y="20" width="500" height="20" fill="#eee" />
+                    <rect x="50" y="20" width="385" height="20" fill="#27ae60" />
+                    <text x="30" y="35" text-anchor="end" fill="#333">Est</text>
+                    <text x="445" y="35" fill="white">+7,7%</text>
+                    
+                    <!-- Ouest -->
+                    <rect x="50" y="50" width="500" height="20" fill="#eee" />
+                    <rect x="50" y="50" width="370" height="20" fill="#27ae60" />
+                    <text x="30" y="65" text-anchor="end" fill="#333">Ouest</text>
+                    <text x="430" y="65" fill="white">+7,4%</text>
+                    
+                    <!-- Sud -->
+                    <rect x="50" y="80" width="500" height="20" fill="#eee" />
+                    <rect x="50" y="80" width="295" height="20" fill="#f39c12" />
+                    <text x="30" y="95" text-anchor="end" fill="#333">Sud</text>
+                    <text x="355" y="95" fill="white">+5,9%</text>
+                    
+                    <!-- Nord -->
+                    <rect x="50" y="110" width="500" height="20" fill="#eee" />
+                    <rect x="50" y="110" width="45" height="20" fill="#e74c3c" />
+                    <text x="30" y="125" text-anchor="end" fill="#333">Nord</text>
+                    <text x="105" y="125" fill="white">-0,9%</text>
+                </svg>
+            </div>
+            <div class="notes">
+                <p><strong>Notes pour le présentateur:</strong> Mettre en évidence les performances exceptionnelles des régions Est et Ouest. Souligner la nécessité d'investiguer la légère baisse dans la région Nord.</p>
+            </div>
+        </div>
+
+        <!-- Slide 5 -->
+        <div class="slide" id="slide5">
+            <h1>Analyse croisée produits-régions</h1>
+            <h2>Opportunités stratégiques identifiées</h2>
+            <table class="matrix">
+                <tr>
+                    <th>Région / Produit</th>
+                    <th>Électronique</th>
+                    <th>Mobilier</th>
+                </tr>
+                <tr>
+                    <th>Nord</th>
+                    <td class="negative-growth">-5,6%</td>
+                    <td class="medium-growth">+5,7%</td>
+                </tr>
+                <tr>
+                    <th>Sud</th>
+                    <td class="low-growth">+4,1%</td>
+                    <td class="high-growth">+8,3%</td>
+                </tr>
+                <tr>
+                    <th>Est</th>
+                    <td class="medium-growth">+6,6%</td>
+                    <td class="high-growth">+9,3%</td>
+                </tr>
+                <tr>
+                    <th>Ouest</th>
+                    <td class="medium-growth">+7,1%</td>
+                    <td class="high-growth">+7,7%</td>
+                </tr>
+            </table>
+            <ul>
+                <li>Mobilier-Est: <span class="positive">+9,3%</span> (combinaison la plus performante)</li>
+                <li>Électronique-Nord: <span class="negative">-5,6%</span> (seule combinaison en baisse significative)</li>
+                <li>Mobilier: croissance dans toutes les régions</li>
+                <li>Électronique: croissance dans 3 régions sur 4</li>
+            </ul>
+            <div class="notes">
+                <p><strong>Notes pour le présentateur:</strong> Souligner l'excellente performance du Mobilier dans toutes les régions. Suggérer une analyse approfondie de la baisse de l'Électronique dans la région Nord.</p>
+            </div>
+        </div>
+
+        <!-- Slide 6 -->
+        <div class="slide" id="slide6">
+            <h1>Conclusions et actions recommandées</h1>
+            <ol>
+                <li><strong>Renforcer l'offre Mobilier</strong>, particulièrement dans les régions Est et Sud
+                    <ul>
+                        <li>Augmenter les stocks des produits les plus vendus</li>
+                        <li>Envisager des promotions ciblées pour accélérer la croissance</li>
+                    </ul>
+                </li>
+                <li><strong>Investiguer la baisse des ventes Électronique dans la région Nord</strong>
+                    <ul>
+                        <li>Analyser la concurrence locale</li>
+                        <li>Vérifier les problèmes potentiels d'approvisionnement ou de service</li>
+                    </ul>
+                </li>
+                <li><strong>Maintenir la stratégie d'acquisition clients</strong> qui porte ses fruits
+                    <ul>
+                        <li>Continuer les actions marketing qui ont permis +4,8% de nouveaux clients</li>
+                        <li>Développer des offres croisées Électronique-Mobilier</li>
+                    </ul>
+                </li>
+                <li><strong>Surveiller l'impact de la baisse des prix moyens</strong> sur les marges
+                    <ul>
+                        <li>Mobilier: -1,2% sur le prix moyen</li>
+                        <li>Électronique: -0,3% sur le prix moyen</li>
+                    </ul>
+                </li>
+            </ol>
+            <div class="notes">
+                <p><strong>Notes pour le présentateur:</strong> Présenter chaque recommandation avec une brève justification. Proposer des prochaines étapes concrètes. Ouvrir la discussion sur les priorités stratégiques.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Performance des ventes T1 2024 - Analyse et perspectives | Mai 2024</p>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="prevSlide()">Précédent</button>
+        <button onclick="nextSlide()">Suivant</button>
+        <button onclick="toggleFullscreen()">Plein écran</button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 6;
+        
+        function showSlide(slideNumber) {
+            // Masquer toutes les slides
+            for (let i = 1; i <= totalSlides; i++) {
+                document.getElementById('slide' + i).style.display = 'none';
+            }
+            
+            // Afficher la slide demandée
+            document.getElementById('slide' + slideNumber).style.display = 'block';
+            
+            // Mettre à jour la slide courante
+            currentSlide = slideNumber;
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                showSlide(currentSlide + 1);
+            }
+        }
+        
+        function prevSlide() {
+            if (currentSlide > 1) {
+                showSlide(currentSlide - 1);
+            }
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+        
+        // Navigation avec les touches du clavier
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            } else if (e.key === 'f') {
+                toggleFullscreen();
+            }
+        });
+        
+        // Initialiser la première slide
+        showSlide(1);
+    </script>
+</body>
+</html>

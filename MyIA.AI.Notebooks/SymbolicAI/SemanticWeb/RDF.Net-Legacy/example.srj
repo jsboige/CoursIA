@@ -1,0 +1,611 @@
+{
+  "head": {
+    "vars": [
+      "type"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/virtrdf#QuadMap"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/virtrdf#QuadStorage"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/virtrdf#QuadMapValue"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapColumn"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/virtrdf#QuadMapColumn"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapATable"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/virtrdf#QuadMapATable"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/virtrdf#QuadMapFText"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/virtrdf#array-of-string"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/virtrdf#RdfDebugger"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMap"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2002/07/owl#InverseFunctionalProperty"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2002/07/owl#FunctionalProperty"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2002/07/owl#Thing"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2002/07/owl#Class"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2002/07/owl#Ontology"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2000/01/rdf-schema#Class"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2002/07/owl#OntologyProperty"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2002/07/owl#AnnotationProperty"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2002/07/owl#ObjectProperty"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2002/07/owl#DatatypeProperty"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://xmlns.com/foaf/0.1/Organization"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://xmlns.com/foaf/0.1/Person"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/ns/sparql-service-description#Service"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://purl.org/goodrelations/v1#BusinessEntity"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2001/vcard-rdf/3.0#work"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2001/vcard-rdf/3.0#voice"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2001/vcard-rdf/3.0#internet"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://purl.org/goodrelations/v1#LocationOfSalesOrServiceProvisioning"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://purl.org/goodrelations/v1#Offering"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://purl.org/goodrelations/v1#ActualProductOrServicesInstance"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://purl.org/goodrelations/v1#ProductOrServiceSomeInstancePlaceholder"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://purl.org/goodrelations/v1#PriceSpecification"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://purl.org/goodrelations/v1#TypeAndQuantityNode"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://purl.org/goodrelations/v1#ProductOrServicesSomeInstancesPlaceholder"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ebusiness-unibw.org/ontologies/eclass/5.1.4/#C_AKJ315005-tax"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://purl.org/goodrelations/v1#Manufacturer"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ebusiness-unibw.org/ontologies/eclass/5.1.4/#C_AAB316003-tax"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ebusiness-unibw.org/ontologies/eclass/5.1.4/#C_AKE112003-tax"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://dbpedia.org/ontology/Company"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.w3.org/2002/07/owl#inverseFunctionalProperty"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://dbpedia.org/ontology/Activity"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://dbpedia.org/ontology/Name"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://dbpedia.org/ontology/Person"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://dbpedia.org/ontology/Actor"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://dbpedia.org/ontology/Place"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://dbpedia.org/ontology/Publisher"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://dbpedia.org/ontology/Genre"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://dbpedia.org/ontology/Language"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://dbpedia.org/ontology/Department"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://dbpedia.org/ontology/Location"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://dbpedia.org/ontology/Software"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://dbpedia.org/ontology/School"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://xmlns.com/foaf/0.1/Document"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://purl.org/ontology/bibo/Book"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/ontology/acl#Scope"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.openlinksw.com/schemas/VSPX#"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://umbel.org/umbel/rc/Ginkgo"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://umbel.org/umbel/rc/SpaceStation"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://umbel.org/umbel/rc/Spacecraft"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://umbel.org/umbel/rc/Pope"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q2066131"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://purl.org/vocommons/voaf#Vocabulary"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q10978"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ontologydesignpatterns.org/ont/d0.owl#Activity"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#Agent"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#ChemicalObject"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#Concept"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#Event"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#InformationObject"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#NaturalPerson"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#SocialPerson"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#TimeInterval"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1028181"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1048525"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q10517054"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1067263"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q10833314"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q10843402"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q10871364"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1092563"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q10962"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11032"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1107"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1107656"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11173"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11204"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11303"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11315"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11410"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11424"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11436"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11446"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11631"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11707"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11774891"
+        }
+      },
+      {
+        "type": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q12136"
+        }
+      }
+    ]
+  }
+}

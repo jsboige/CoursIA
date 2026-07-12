@@ -1,0 +1,10 @@
+{
+    "algorithm-language": "Python",
+    "parameters": {
+        "cash": 100000
+    },
+    "description": "Black-Litterman Portfolio with Multi-Window Momentum Views - BL posterior returns with He-Litterman Omega calibration, multi-window momentum views with sigmoid confidence, sector concentration constraints, Ledoit-Wolf shrinkage covariance",
+    "name": "BlackLitterman-Momentum",
+    "cloud-id": 29816300,
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
+}

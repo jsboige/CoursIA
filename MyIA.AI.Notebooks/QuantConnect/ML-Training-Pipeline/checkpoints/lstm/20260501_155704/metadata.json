@@ -1,0 +1,48 @@
+{
+  "timestamp": "20260501_155704",
+  "model_type": "lstm",
+  "hyperparams": {
+    "model_type": "lstm",
+    "hidden_size": 128,
+    "num_layers": 2,
+    "dropout": 0.2,
+    "seq_len": 20,
+    "epochs": 2,
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "lookback": 20,
+    "test_ratio": 0.2,
+    "symbol": "SPY",
+    "device": "cuda"
+  },
+  "metrics": {
+    "mse": 0.000306,
+    "mae": 0.014988,
+    "direction_accuracy": 0.5595,
+    "direction_accuracy_significant": 0.5694,
+    "best_val_loss": 0.000296,
+    "train_samples": 336,
+    "test_samples": 84,
+    "epochs_trained": 2
+  },
+  "history": {
+    "train_loss": [
+      0.001142,
+      0.000411
+    ],
+    "val_loss": [
+      0.000356,
+      0.000296
+    ]
+  },
+  "data_hash": "synthetic-dryrun",
+  "architecture": {
+    "input_size": 15,
+    "hidden_size": 128,
+    "num_layers": 2
+  },
+  "files": [
+    "model.pt",
+    "metadata.json"
+  ]
+}

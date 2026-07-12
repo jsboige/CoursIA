@@ -1,0 +1,36 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex: <http://example.org/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix schema: <http://schema.org/> .
+
+# SHACL Shape for Person validation (SW-9)
+ex:PersonShape a sh:NodeShape ;
+    sh:targetClass foaf:Person ;
+    sh:property [
+        sh:path foaf:name ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:minLength 2 ;
+        sh:message "Une personne doit avoir exactement un nom (string, min 2 caracteres)"@fr ;
+    ] ;
+    sh:property [
+        sh:path foaf:mbox ;
+        sh:maxCount 1 ;
+        sh:pattern "^mailto:.+@.+\\..+$" ;
+        sh:message "L'email doit etre au format mailto:user@domain.tld"@fr ;
+    ] ;
+    sh:property [
+        sh:path foaf:age ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:minInclusive 0 ;
+        sh:maxInclusive 150 ;
+        sh:message "L'age doit etre un entier entre 0 et 150"@fr ;
+    ] ;
+    sh:property [
+        sh:path foaf:knows ;
+        sh:class foaf:Person ;
+        sh:message "La propriete knows doit pointer vers une autre Person"@fr ;
+    ] .

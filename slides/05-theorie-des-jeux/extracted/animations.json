@@ -1,0 +1,4381 @@
+{
+  "filename": "Intelligence Artificielle - 5 - Théorie des jeux.pptx",
+  "slide_count": 29,
+  "animated_slide_count": 15,
+  "slides": [
+    {
+      "number": 1,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Intelligence Artificielle - V",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Analyse stratégique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Jeux Bayésiens",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Théorie des mécanismes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Jeux différentiels",
+              "is_image": false
+            },
+            {
+              "shape_id": 13315,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Slide Number Placeholder 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "1",
+              "is_image": false
+            },
+            {
+              "shape_id": 13317,
+              "shape_name": "Title 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Théorie des jeux",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 22530,
+              "shape_name": "Rectangle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Plan du cours",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Slide Number Placeholder 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "2",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Introduction",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 0,
+              "text": "Résolution de problèmes",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Bases de connaissances et logique",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Incertitude et modèles probabilistes",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Théorie des jeux",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Apprentissage",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Traitement du langage naturel",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Présentation projets",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "has_animations": true,
+      "animation_count": 3,
+      "click_count": 3,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Théorie des jeux",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Environnement multi-agent",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Un seul Décideur",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Planification / Synchronisation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 2,
+              "text": "Multi-Effecteurs / Multi-corps (découplage)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 3,
+              "text": "Centralisé (state = pool) vs décentralisé",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Décideurs multiples  théorie des jeux",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "But commun / buts propres",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 3,
+              "text": "d’adversité et/ou collaboratif",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 2,
+              "text": "Information parfaite / imparfaite",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 2,
+              "text": "A un tour: Joueurs, actions, récompenses",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 3,
+              "text": "Ex: Morra (2 doigts)",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "3",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Image 5",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 11,
+              "level": 0,
+              "text": "Etudes des interdépendances stratégiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Objectif double",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Design d’agent: Quelle est la meilleure stratégie?",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 14,
+              "level": 2,
+              "text": "Design de mécanisme: Quelles sont les bonnes règles?",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Justifications",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 16,
+              "level": 2,
+              "text": "Les maths deviennent compliquées",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 17,
+              "level": 3,
+              "text": "Fournit des outils de comptabilité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 18,
+              "level": 2,
+              "text": "Identifier les situations analogues",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 19,
+              "level": 3,
+              "text": "Compréhension des schémas habituels",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 20,
+              "level": 0,
+              "text": "Optimisation de stratégies",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 21,
+              "level": 1,
+              "text": "Pure / mixte (randomisée)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 22,
+              "level": 1,
+              "text": "Solution = profil rationnel = assignation de stratégies",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 23,
+              "level": 0,
+              "text": "Von Neumann  Maximin",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 24,
+              "level": 1,
+              "text": "Jeux à somme nulle",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 25,
+              "level": 1,
+              "text": "Changement de règles  séquence UE,O ≤ U ≤ UO,E",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 26,
+              "level": 2,
+              "text": "Ex: Morra: p = 7/12, U(E)= -1/12",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "has_animations": true,
+      "animation_count": 4,
+      "click_count": 4,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Analyse stratégique",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "4",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Image 7",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 11,
+              "shape_name": "Image 10",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 12,
+              "shape_name": "Image 11",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Jeux simultanés",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Matrice de gains",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Dilemme du prisonnier",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 3,
+              "level": 2,
+              "text": "Parler ou se taire",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 4,
+              "level": 1,
+              "text": "Stratégie pure strictement dominante (stable)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Mais Pareto dominée (global mais instable)",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 6,
+              "level": 0,
+              "text": "IESDS",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Elimination itérative des stratégies strictement dominées",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Réduction progressive de la matrice",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Equilibre de Nash:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 10,
+              "level": 1,
+              "text": "optimum local dans l’espace des politiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 11,
+              "level": 2,
+              "text": "Ex: chasse au cerf",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Aucun agent n’a de motivation à changer de stratégie",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 13,
+              "level": 2,
+              "text": "=Une loi que personne n’enfreint sans la police (Feu rouge)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 14,
+              "level": 1,
+              "text": "Garanti d’exister / importance de la Coordination",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 4,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 15,
+              "level": 0,
+              "text": "Meilleure réponse",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 16,
+              "level": 1,
+              "text": "Etant donnée les autres choix.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 17,
+              "level": 1,
+              "text": "Equilibre de Nash = meilleure réponse pour tous",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "has_animations": true,
+      "animation_count": 3,
+      "click_count": 3,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Stratégies mixtes",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "5",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Image 5",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Image 7",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "has_animations": true,
+      "animation_count": 4,
+      "click_count": 4,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Equilibres de stratégie mixte",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "6",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Image 5",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Image 7",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 9,
+              "shape_name": "Image 8",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 11,
+              "shape_name": "Image 10",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "has_animations": true,
+      "animation_count": 3,
+      "click_count": 3,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Jeux séquentiels",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "7",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Image 5",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Image 7",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 10,
+              "shape_name": "Image 9",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Jeux à tours successifs:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Conflits, négociations etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Jeu de la guerre des prix (in/out)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 3,
+              "level": 2,
+              "text": "Accept, out = équilibres",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 4,
+              "level": 2,
+              "text": "Matrice = cf. dominance faible",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Mais différence = menace crédible?",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Equilibre parfait de sous-jeu (SPE)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 7,
+              "level": 2,
+              "text": "Sous-jeu Firm 2  accept",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 8,
+              "level": 2,
+              "text": "« out » plus en équilibre  q des menaces crédibles",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 9,
+              "level": 0,
+              "text": "Induction arrière",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Ex: Jeu de l’escalade à la guerre",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 11,
+              "level": 1,
+              "text": "On démarre par la fin",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 12,
+              "level": 2,
+              "text": "Les sous-jeux finaux éclairent les premiers",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 13,
+              "level": 2,
+              "text": " « Accept » stratégie optimale",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 14,
+              "level": 0,
+              "text": "Equilibres parfait de sous-jeu",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Importance de repérer tous les chemins / nœuds de décision",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 16,
+              "level": 2,
+              "text": "<Accept, War>; <Escalade>",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 17,
+              "level": 1,
+              "text": "Equilibres de sous-jeu parfaits multiples (rare)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 18,
+              "level": 2,
+              "text": "Sous-jeu du bas   cf simultané : mixte  EU(1) = -1/3  mixte infini",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "has_animations": true,
+      "animation_count": 7,
+      "click_count": 7,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Jeux à étapes",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "8",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Image 5",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Image 7",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 9,
+              "shape_name": "Image 8",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 10,
+              "shape_name": "Image 9",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 11,
+              "shape_name": "Image 10",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Plusieurs manches",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Sous-jeux simultanés, Gains indépendants, connaissance du passé",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 2,
+              "level": 1,
+              "text": "Difficile à dessiner (exponentiel)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Théorèmes:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 4,
+              "level": 2,
+              "text": "Dernière étape  Equilibre de Nash (passé pas modifiable)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Autres: jouer équilibres de Nash = 1 équilibre de sous-jeu",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Mais Autres équilibres de sous-jeu possibles (coopération)",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Stratégies de punition",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Ex: Prisonnier puis Argent gratuit",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 9,
+              "level": 2,
+              "text": " équilibre faible (0,0) = menace de punition",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 10,
+              "level": 2,
+              "text": " meilleur équilibre",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Menaces « crédibles » importantes",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Se lier les mains",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Ex: brûler le pont derrière soi",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 14,
+              "level": 2,
+              "text": " Pas de possibilités de retraite",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 15,
+              "level": 1,
+              "text": " Rend la menace crédible",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 4,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 16,
+              "level": 0,
+              "text": "Problèmes d’engagement",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 17,
+              "level": 1,
+              "text": "Ex: fouille: superficielle, complète, chien",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 18,
+              "level": 2,
+              "text": "Pb = pas d’engagement crédible",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 19,
+              "level": 2,
+              "text": "Induction arrière K9",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 4,
+              "para_idx": 20,
+              "level": 1,
+              "text": " l’ordre est important",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 5,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 21,
+              "level": 0,
+              "text": "Problèmes de l’induction arrière",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 22,
+              "level": 1,
+              "text": "Ex: le millepattes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 23,
+              "level": 2,
+              "text": "Equilibre pessimiste, pas constaté dans la pratique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 24,
+              "level": 1,
+              "text": "Hypothèses  Maths  conclusions",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 5,
+              "para_idx": 25,
+              "level": 2,
+              "text": "Pb ici: hypothèses: rationalité limitée",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 6,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 26,
+              "level": 0,
+              "text": "Induction avant",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 27,
+              "level": 1,
+              "text": "Induction arrière = futur rationnel",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 28,
+              "level": 1,
+              "text": "Induction avant = passé rationnel",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 29,
+              "level": 1,
+              "text": "Ex: « pub hunt »  supprime un équilibre",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 6,
+              "para_idx": 30,
+              "level": 2,
+              "text": "Mais parfois solutions controversées",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 7,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 7,
+              "para_idx": 31,
+              "level": 0,
+              "text": "Version sociétale: dilemmes répétés",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 7,
+              "para_idx": 32,
+              "level": 1,
+              "text": "Punition perpétuelle, œil pour œil etc.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 7,
+              "para_idx": 33,
+              "level": 1,
+              "text": "Evolution de la confiance",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "has_animations": true,
+      "animation_count": 6,
+      "click_count": 6,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Formes stratégiques avancées",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "9",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Image 5",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Image 7",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 9,
+              "shape_name": "Image 8",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 10,
+              "shape_name": "Image 9",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 12,
+              "shape_name": "Image 11",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 13,
+              "shape_name": "Image 12",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "has_animations": true,
+      "animation_count": 3,
+      "click_count": 3,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Espaces de stratégies infinis",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "10",
+              "is_image": false
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Image 7",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 9,
+              "shape_name": "Image 8",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 10,
+              "shape_name": "Image 9",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Jeux sans équilibre",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Jusqu’ici, nombre fini de stratégies pures",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Matrices + théorèmes de Nash",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Certains jeux ont une infinité de stratégies pures",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 4,
+              "level": 2,
+              "text": " pas de matrice et pas forcément d’équilibre de Nash",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 5,
+              "level": 2,
+              "text": "Ex: Joueur 1: x>0, Joueur 2: y>0, gain xy pour les deux",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Duels",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 7,
+              "level": 1,
+              "text": "100 m, 2 balles, se rapprochent, peuvent tirer quand ils souhaitent",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 8,
+              "level": 2,
+              "text": "Précisions différentes mais 0% à 100m, 100% à 0m",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 9,
+              "level": 1,
+              "text": " Equilibre = même distance",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 10,
+              "level": 2,
+              "text": "(preuve par contradiction)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Ex: date de sortie de produits concurrents",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Loi de Hotelling et l’électeur médian",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 13,
+              "level": 1,
+              "text": "2 vendeurs de glace sur la plage, choix de l’emplacement",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 14,
+              "level": 2,
+              "text": "Equilibre = les deux au milieu.",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Principe important en politique: théorèmes de l’électeur médian",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 16,
+              "level": 2,
+              "text": "Vainqueur de Condorcet (cf Choix social)",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "has_animations": true,
+      "animation_count": 3,
+      "click_count": 3,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Jeux Bayésiens",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "11",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Image 7",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 9,
+              "shape_name": "Image 8",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 12,
+      "has_animations": true,
+      "animation_count": 6,
+      "click_count": 6,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Equilibres Bayésiens parfaits (PBE)",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "12",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Image 5",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Image 7",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 5,
+              "shape_name": "Slide Number Placeholder 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "13",
+              "is_image": false
+            },
+            {
+              "shape_id": 21508,
+              "shape_name": "Title 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Questions?",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Jeux coopératifs",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "14",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "has_animations": true,
+      "animation_count": 3,
+      "click_count": 3,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Conception de mécanismes",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "15",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "has_animations": true,
+      "animation_count": 3,
+      "click_count": 3,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 7,
+              "shape_name": "Titre 6",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Allocation de ressources par les enchères",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du pied de page 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Espace réservé du numéro de diapositive 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "16",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Image 2",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Allocation par les votes",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "17",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 18,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Critère de Condorcet",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Condition du vainqueur de Condorcet",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "La meilleure aux autres options prises paire à paire",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 2,
+              "text": "Exemple: Uninominal à 2 tours: Bayrou vainqueur de Condorcet mais pas au 2è tour",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Théorème: Indifférence aux petits candidats: Vainqueur de Condorcet stable aux changements",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 2,
+              "text": "Mais paradoxe de Condorcet: pas de garantie d’existence",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Théorèmes de l’électeur médian",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "1er théorème: Gauche – droite  existence du vainqueur  électeur médian",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 2,
+              "text": "2è théorème: Gauche – droite + valeur intrinsèque",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Si pas de vainqueur de Condorcet",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Méthodes de Condorcet",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 2,
+              "text": " résolution si pas de vainqueur",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 2,
+              "text": "Une ou deux méthodes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Exemple à une méthode: Méthode Minimax",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 2,
+              "text": "Celui qui fait le mieux au pire",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 2,
+              "text": "Mais très stratégique (ex: anarchistes)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": " Méthode de Schulze:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 2,
+              "text": "Elimination itérative des derniers du peloton de tête",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 2,
+              "text": "robuste à la manipulation (électeurs raisonnables)",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "18",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Image 5",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Image 7",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 19,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Procédures de votes connues",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Référendum:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "2 options  méthode de la majorité robuste à la manipulation et c’est la seule",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Vote pluraliste uninominal (n candidats)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": " critiqué (vote utile + pas de préférences)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Vote à second-tour instantané: Préférences",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Si pas de majorité, élimination du dernier et second tour  pas de critère de Condorcet",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Méthode de Condorcet: vote à règle de vrai majorité:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Préférences complètes, puis comparaisons paires à paires",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": " bons résultats mais ne marche pas tout le temps (paradoxe de Condorcet)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": " Méthodes de Condorcet  Shulze",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Méthodes utilitaristes:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Compte de Borda  préférences, score = ordre",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 2,
+              "text": "Manipulable",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Vote par assentiment  élimination, majorité d’approbation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 2,
+              "text": "Théorème de robustesse au mensonge: suffrage sincère stratégique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Scrutin au jugement majoritaire:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 2,
+              "text": "Médiane des scores",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 2,
+              "text": "Seule procédure vérifiant",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 18,
+              "level": 3,
+              "text": "majorité d’une même note validée",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 19,
+              "level": 3,
+              "text": "et monotonie au changement individuel",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 20,
+              "level": 0,
+              "text": "Scrutins stochastiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 21,
+              "level": 1,
+              "text": "Scrutin Stochocratique:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 22,
+              "level": 2,
+              "text": "Option préférée puis tirage au sort",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 23,
+              "level": 2,
+              "text": "Théorème d’Hylland de « la dictature aléatoire »:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 24,
+              "level": 3,
+              "text": "Seul méthode avec critère d’unanimité non stratégique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 25,
+              "level": 1,
+              "text": "Méthode de Condorcet randomisée:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 26,
+              "level": 2,
+              "text": "Loterie pondérée dans le peloton de tête:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 27,
+              "level": 2,
+              "text": "Pondération selon équilibre de Nash",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 28,
+              "level": 3,
+              "text": "Ex: Shifumi",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 29,
+              "level": 2,
+              "text": "Critère de Condorcet et Non stratégique (seul)",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 30,
+              "level": 0,
+              "text": "Comparaison détaillée",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 31,
+              "level": 0,
+              "text": "Articles et démonstrations",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "19",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Image 5",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 9,
+              "shape_name": "Image 8",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 11,
+              "shape_name": "Image 10",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 13,
+              "shape_name": "Image 12",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 15,
+              "shape_name": "Image 14",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "has_animations": true,
+      "animation_count": 3,
+      "click_count": 3,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Allocation par la négociation",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "20",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 21,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Théorie de la négociation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Démarche",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Hypothèses",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 1,
+              "text": " Modèles de jeux",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": " Equilibres et pouvoirs de négociation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Sources du pouvoir de négociation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Pouvoir de proposition",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Patience",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Options alternatives",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 1,
+              "text": "Connaissance de l’autre utilité",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Monopole",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 1,
+              "text": "Réputation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Engagement crédible",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 1,
+              "text": "Signalement coûteux",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "21",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 22,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 5,
+              "shape_name": "Slide Number Placeholder 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "22",
+              "is_image": false
+            },
+            {
+              "shape_id": 21508,
+              "shape_name": "Title 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Questions?",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 23,
+      "has_animations": true,
+      "animation_count": 4,
+      "click_count": 4,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Jeux différentiels",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "23",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 24,
+      "has_animations": true,
+      "animation_count": 3,
+      "click_count": 3,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Equilibres différentiels",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "24",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Image 5",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 8,
+              "shape_name": "Image 7",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 9,
+              "shape_name": "Image 8",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        },
+        {
+          "click": 1,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Contexte",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Equilibres de Nash pour jeux à somme nulle",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 2,
+              "level": 2,
+              "text": "J1(u1,u2) + J2(u1,u2) = 0",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 3,
+              "level": 2,
+              "text": "Equilibres de point de selle",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 4,
+              "level": 3,
+              "text": "P1 maximise, P2 minimise",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 5,
+              "level": 3,
+              "text": " Equilibre ssi point de selle existe",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 6,
+              "level": 1,
+              "text": "Equilibres de Stackelberg",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 7,
+              "level": 2,
+              "text": "Le « leader » annonce",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 8,
+              "level": 3,
+              "text": "En tenant compte du fait que les autres maximisent leur réponse",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Jeux Coopératifs/compétitifs",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 10,
+              "level": 2,
+              "text": "Possibilité de dialogue maximisation commune",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 1,
+              "para_idx": 11,
+              "level": 3,
+              "text": "Division en partie coopérative et partie compétitive: valeur co-co",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 2,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Equilibres en boucle ouverte",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Equilibre de Nash",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 14,
+              "level": 2,
+              "text": "u* est un équilibre ssi",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 15,
+              "level": 2,
+              "text": "J1, J2  2 optimisations conditions d’existence et de calcul",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 16,
+              "level": 1,
+              "text": "+ Equilibre de Stackelberg: conditions d’existence et de calcul",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 17,
+              "level": 2,
+              "text": "Ex: croissance économique                                         avec u1 taxe sur le capital et u2 consommation",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 2,
+              "para_idx": 18,
+              "level": 3,
+              "text": "Equilibre de S avec gouvernement leader.",
+              "is_image": false
+            }
+          ]
+        },
+        {
+          "click": 3,
+          "items": [
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 19,
+              "level": 0,
+              "text": "Equilibres Markovien",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 20,
+              "level": 1,
+              "text": "Equilibre de Nash",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 21,
+              "level": 2,
+              "text": "σ* est un équilibre ssi",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 22,
+              "level": 2,
+              "text": "Résolution d’équations différentielles partielles",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 23,
+              "level": 3,
+              "text": "Cas général  Solutions non hyperboliques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 24,
+              "level": 3,
+              "text": "Jeux à somme nul ou dimension 1  système hyperbolique",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 25,
+              "level": 1,
+              "text": "Jeux linéaires quadratiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 3,
+              "para_idx": 26,
+              "level": 2,
+              "text": "Dynamique linéaire, récompense quadratique  solution",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 25,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 2,
+              "shape_name": "Titre 1",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Méthodes calculatoires",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Méthodes directes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Formulation du programme mathématique et résolution",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Méthodes indirectes",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Utilisation d’équations différentielles partielles",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Méthode d’échantillonnage incrémental",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Ex: poursuite évasion:",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 2,
+              "text": "Temps terminal T, récompense L(Ue,Up) –T",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "RRT exploration d’arbre",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 2,
+              "text": "convergence avec nombre d’échantillons suffisant",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 3,
+              "text": " similaire au filtrage particulaire",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Pour aller plus loin",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Espace réservé du contenu 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Détails mathématiques",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du pied de page 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "CS 405",
+              "is_image": false
+            },
+            {
+              "shape_id": 5,
+              "shape_name": "Espace réservé du numéro de diapositive 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "25",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Image 5",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Image 6",
+              "type": "image",
+              "click": 0,
+              "text": "",
+              "is_image": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 26,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 5,
+              "shape_name": "Slide Number Placeholder 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "26",
+              "is_image": false
+            },
+            {
+              "shape_id": 21508,
+              "shape_name": "Title 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Questions?",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 27,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 22530,
+              "shape_name": "Rectangle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Plan du cours",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Slide Number Placeholder 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "27",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Introduction",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 0,
+              "text": "Résolution de problèmes",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Bases de connaissances et logique",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 0,
+              "text": "Incertitude et modèles probabilistes",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Théorie des jeux",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 0,
+              "text": "Apprentissage",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Traitement du langage naturel",
+              "is_image": false
+            },
+            {
+              "shape_id": 22533,
+              "shape_name": "Rectangle 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 0,
+              "text": "Présentation projets",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 28,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 14338,
+              "shape_name": "Rectangle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Projets de groupe",
+              "is_image": false
+            },
+            {
+              "shape_id": 3,
+              "shape_name": "Slide Number Placeholder 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "28",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Moteur de recherche augmenté par le raisonnement et le langage naturel",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 1,
+              "text": "Grammaire et sémantique des contenus et des requêtes. Lucene.Net, OpenNLP, SharpRDF, FOL",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 2,
+              "level": 0,
+              "text": "Conception de bots de services sur réseaux sociaux",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 3,
+              "level": 1,
+              "text": "Chat Bots, AIML, Reddit et agents de service, NLP, RDF, APIs",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 4,
+              "level": 0,
+              "text": "Conception d'un modèle d'inférence pour l’analyse de sentiment",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 5,
+              "level": 1,
+              "text": "Conception d’un modèle probabiliste, Infer.Net, démarche expérimentale, Reddit",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 6,
+              "level": 0,
+              "text": "Création d'une plateforme sémantique LDP à partir d'un index structuré.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 7,
+              "level": 1,
+              "text": "Structuration et ouverture des données = Linked Data. Lucene.Net, SharpRDF",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 8,
+              "level": 0,
+              "text": "Résolution de Captchas par deep learning",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 9,
+              "level": 1,
+              "text": "Apprentissage via un Adapteur DNN, Réseaux de dernières génération. TensorFlow, CNTK, Encog",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 10,
+              "level": 0,
+              "text": "Entrainement de stratégies de trading algorithmiques sur crypto monnaies.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 11,
+              "level": 1,
+              "text": "Expérience DNN Bitcoin, Encog et machine learning",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 12,
+              "level": 0,
+              "text": "Amélioration par l'apprentissage d'un agent joueur de Go simple",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 13,
+              "level": 1,
+              "text": "Le Go et l’IA, Récentes avancées. Go Traxx",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 14,
+              "level": 0,
+              "text": "Evolution de vaisseaux spatiaux par algorithmes génétiques dans le jeu de la vie.",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 15,
+              "level": 1,
+              "text": "Approches évolutionnistes, automates cellulaires, Bac a sable. Golly, Encog",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 16,
+              "level": 0,
+              "text": "Pilotage d'un cluster de cache distribué pour le portage d’applications  dans le Cloud",
+              "is_image": false
+            },
+            {
+              "shape_id": 4,
+              "shape_name": "Espace réservé du contenu 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 17,
+              "level": 1,
+              "text": "Caches distribués, scaling, stratégies et clustering. Redis",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 29,
+      "has_animations": false,
+      "animation_count": 0,
+      "click_count": 0,
+      "click_groups": [
+        {
+          "click": 0,
+          "items": [
+            {
+              "shape_id": 5,
+              "shape_name": "Slide Number Placeholder 4",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "29",
+              "is_image": false
+            },
+            {
+              "shape_id": 21508,
+              "shape_name": "Title 5",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Merci",
+              "is_image": false
+            },
+            {
+              "shape_id": 6,
+              "shape_name": "Footer Placeholder 3",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "IA 101",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 0,
+              "level": 0,
+              "text": "Jean-Sylvain Boige",
+              "is_image": false
+            },
+            {
+              "shape_id": 7,
+              "shape_name": "Subtitle 2",
+              "type": "paragraph",
+              "click": 0,
+              "para_idx": 1,
+              "level": 0,
+              "text": "jsboige@myia.org",
+              "is_image": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

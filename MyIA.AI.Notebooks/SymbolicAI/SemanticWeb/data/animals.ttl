@@ -1,0 +1,72 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex: <http://example.org/animals#> .
+
+# Classes hierarchy
+ex:Animal a rdfs:Class ;
+    rdfs:label "Animal"@fr ;
+    rdfs:comment "Classe racine de tous les animaux"@fr .
+
+ex:Mammal a rdfs:Class ;
+    rdfs:subClassOf ex:Animal ;
+    rdfs:label "Mammifere"@fr .
+
+ex:Bird a rdfs:Class ;
+    rdfs:subClassOf ex:Animal ;
+    rdfs:label "Oiseau"@fr .
+
+ex:Dog a rdfs:Class ;
+    rdfs:subClassOf ex:Mammal ;
+    rdfs:label "Chien"@fr .
+
+ex:Cat a rdfs:Class ;
+    rdfs:subClassOf ex:Mammal ;
+    rdfs:label "Chat"@fr .
+
+ex:Parrot a rdfs:Class ;
+    rdfs:subClassOf ex:Bird ;
+    rdfs:label "Perroquet"@fr .
+
+# Properties
+ex:name a rdf:Property ;
+    rdfs:domain ex:Animal ;
+    rdfs:range xsd:string ;
+    rdfs:label "nom"@fr .
+
+ex:age a rdf:Property ;
+    rdfs:domain ex:Animal ;
+    rdfs:range xsd:integer ;
+    rdfs:label "age"@fr .
+
+ex:sound a rdf:Property ;
+    rdfs:domain ex:Animal ;
+    rdfs:range xsd:string ;
+    rdfs:label "cri"@fr .
+
+ex:canFly a rdf:Property ;
+    rdfs:domain ex:Animal ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "peut voler"@fr .
+
+# Instances
+ex:rex a ex:Dog ;
+    ex:name "Rex" ;
+    ex:age 5 ;
+    ex:sound "Woof" .
+
+ex:minou a ex:Cat ;
+    ex:name "Minou" ;
+    ex:age 3 ;
+    ex:sound "Miaou" .
+
+ex:coco a ex:Parrot ;
+    ex:name "Coco" ;
+    ex:age 12 ;
+    ex:sound "Coco veut un gateau" ;
+    ex:canFly true .
+
+ex:buddy a ex:Dog ;
+    ex:name "Buddy" ;
+    ex:age 7 ;
+    ex:sound "Woof woof" .

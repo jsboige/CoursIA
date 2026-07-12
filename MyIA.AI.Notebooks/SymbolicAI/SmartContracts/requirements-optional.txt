@@ -1,0 +1,21 @@
+# SmartContracts Series - Optional Dependencies
+#
+# These packages have platform or compatibility constraints.
+# Install individually after reviewing the notes.
+#
+# Install: pip install -r requirements-optional.txt
+
+# === Zama FHE Compiler (SC-16 section on Concrete) ===
+# Linux only - no Windows wheels available
+# concrete-python>=2.0
+
+# === ElectionGuard E2E Voting SDK (SC-17 SOTA section) ===
+# CONFLICT: requires pydantic<2, but web3>=7 requires pydantic>=2.4
+# Install in a separate venv if needed:
+#   python -m venv venv-electionguard
+#   venv-electionguard/Scripts/pip install electionguard phe pycryptodome
+# electionguard>=1.4
+
+# === LLM APIs (SC-11, optional - has mock fallback) ===
+openai>=1.0                # OpenAI API client
+anthropic>=0.30            # Anthropic Claude API client

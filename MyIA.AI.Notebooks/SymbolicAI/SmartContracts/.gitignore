@@ -1,0 +1,23 @@
+# Secrets
+.env
+*.key
+
+# Foundry artifacts
+out/
+cache/
+broadcast/
+
+# Python
+__pycache__/
+*.pyc
+foundry-lib/lib/
+foundry-lib/cache/
+foundry-lib/out/
+foundry-lib/src/
+
+# mon-premier-projet: forge-std installed via `forge install foundry-rs/forge-std`
+# (build-time dependency, regenerable like node_modules — not committed)
+mon-premier-projet/lib/
+mon-premier-projet/cache/
+mon-premier-projet/out/
+mon-premier-projet/broadcast/

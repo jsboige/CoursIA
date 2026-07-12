@@ -1,0 +1,32 @@
+# GenAI CoursIA - Dependances Audio, Speech & Musique
+# Installation: pip install -r requirements-audio.txt
+# Prerequis: requirements.txt (dependances de base)
+
+# --- Traitement audio ---
+librosa>=0.10.0              # Analyse audio (waveforms, spectrogrammes, MFCC)
+soundfile>=0.12.0            # Lecture/ecriture audio (WAV, FLAC, OGG)
+pydub>=0.25.1                # Manipulation audio (trim, concat, conversion)
+torchaudio>=2.0.0            # Traitement audio PyTorch
+scipy>=1.11.0                # Traitement du signal
+
+# --- Speech-to-Text ---
+faster-whisper>=1.0.0        # Whisper optimise (CTranslate2), inference locale rapide
+# openai-whisper>=20231117   # Alternative: Whisper officiel OpenAI (plus lourd)
+
+# --- Text-to-Speech ---
+# TTS>=0.22.0                # Coqui TTS (XTTS v2, voice cloning) - installer separement
+# kokoro>=0.9.0              # Kokoro TTS 82M lightweight - installer separement
+# chatterbox>=0.1.0          # Chatterbox Turbo (ResembleAI) - installer separement
+
+# --- Musique ---
+audiocraft>=1.3.0            # Meta AudioCraft (MusicGen, AudioGen, EnCodec)
+
+# --- Separation de sources ---
+demucs>=4.0.1                # Meta Demucs v4 (SOTA source separation)
+
+# --- Utilitaires ---
+websockets>=12.0             # OpenAI Realtime API (WebSocket)
+resemblyzer>=0.1.3           # Speaker verification / embeddings
+
+# --- Diarisation (optionnel, gros modele) ---
+# pyannote.audio>=3.3.0      # Speaker diarization - necessite token HuggingFace

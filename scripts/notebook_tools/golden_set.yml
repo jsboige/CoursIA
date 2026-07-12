@@ -1,0 +1,125 @@
+# Golden-Set de notebooks certifies reproducibles (H.7 P3, axe A #4208)
+# -----------------------------------------------------------------------------
+# Part of #4209. Liste FIGEE de ~1 notebook canonique par serie, certifie
+# reproductible end-to-end via Papermill sur un runner CI sobre (Ubuntu,
+# Python 3.12, CPU uniquement, SANS GPU / sans cloud / sans service externe).
+#
+# Pourquoi un golden-set borne (pas les 566 notebooks) :
+#  - Les notebooks Lean / .NET ont leurs PROPRES workflows de build
+#    (.github/workflows/lean-*.yml) -> non concernes par Papermill Python.
+#  - Les notebooks GenAI necessitent GPU + API keys (RECOVERABLE-MACHINE).
+#  - Les QuantBooks exigent QC Cloud (execution externe, pas CI locale).
+#  - PyMC = MCMC lent / instabilite stochastique -> sortie non deterministe.
+# Le golden-set est le sous-ensemble SOBRE : kernel python3, datasets bundlés
+# ou synthetiques (sklearn make_*, networkx generateurs), 0 appel reseau.
+#
+# Critere d'admission d'un notebook au golden-set :
+#   (1) kernel python3 pur
+#   (2) dependances couvertes par golden_set.lock.txt (pinned)
+#   (3) execution < timeout_per_notebook_s sur CPU, 0 erreur, 0 secret leak
+#   (4) sortie deterministe (pas de MCMC / pas de random non-seede)
+#
+# Consommateurs :
+#   - scripts/notebook_tools/notebook_tools.py golden-set  (dev local, preuve)
+#   - .github/workflows/notebook-execution-required.yml     (job CI, PR 2 #4209)
+#
+# Installer l'environnement pinne :
+#   python -m pip install -r scripts/notebook_tools/golden_set.lock.txt
+
+meta:
+  name: golden-set
+  description: "Sous-ensemble certifie reproductible des notebooks CoursIA (H.7 P3)."
+  axe: "A #4208 (fiabilisation executable) -- sous-issue #4209"
+  lockfile: scripts/notebook_tools/golden_set.lock.txt
+  python_pin: "3.12"
+  timeout_per_notebook_s: 600
+
+notebooks:
+  # --- ML : socle sklearn canonique (series 02-ML-Cours, Epic #4174) ---
+  # Datasets synthetiques (make_classification / make_regression / make_moons),
+  # real bundled (load_breast_cancer / load_digits) -> 0 reseau, deterministic
+  # (random_state=42). CPU, rapide (<60s chacun). Tous executes a la creation.
+  - path: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb
+    series: ML
+    title: "2.1 - Workflow ML (train/test split, surapprentissage rendu visible)"
+    kernel: python3
+    rationale: "Workflow canonique sklearn ; make_classification synthetique ; concept-phare = sweep max_depth (generalisation gap visible)."
+  - path: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb
+    series: ML
+    title: "2.2 - Descente de gradient (from-scratch vs sklearn)"
+    kernel: python3
+    rationale: "GD sur regression lineaire ; make_regression synthetique ; preuve honnete GD vs sklearn."
+  - path: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb
+    series: ML
+    title: "2.3 - Regression lineaire & logistique (OLS vs MLE)"
+    kernel: python3
+    rationale: "OLS vs MLE rendu visible ; make_regression + make_classification synthetiques."
+  - path: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb
+    series: ML
+    title: "2.4 - Arbres, forets, ensembles (variance reduction visible)"
+    kernel: python3
+    rationale: "load_breast_cancer bundled sklearn ; frontieres 2D DecisionTree/RF/GBM."
+
+  # --- Search : fondations exploration informee/non-informee (series Search) ---
+  # State-space search sur graphes networkx generes + stdlib. 0 solver externe
+  # (pas ortools/z3/constraint), 0 JVM. CPU, deterministic.
+  - path: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb
+    series: Search
+    title: "Search-1 - Espaces d'etats (BFS/DFS/A*)"
+    kernel: python3
+    rationale: "Fondations search ; graphes networkx generes ; BFS/DFS/A* en pur Python+numpy ; 0 solver, 0 JVM, 0 reseau."
+
+  # --- SymbolicLearning : apprentissage symbolique (serie SymbolicLearning) ---
+  # current-best hypothesis (AIMA Ch.19). Importe le module local aima_knowledge
+  # (vendorise dans reference/, suivi git) via sys.path.insert(0,"reference") ->
+  # exige cwd = repertoire parent du notebook. NotebookExecutor execute DEJA par
+  # defaut avec cwd = notebook.parent (papermill --cwd), donc l'import relatif
+  # resolve SANS champ cwd dedie (verifie empiriquement, PR3 #4209). Kernel
+  # python3, dependances STDLIB uniquement (random/sys/time/typing, 0 lib
+  # scientifique), random.seed(42) -> sortie deterministe.
+  - path: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb
+    series: SymbolicLearning
+    title: "SL-1 - Apprentissage logique (current-best hypothesis, ref. aima-python)"
+    kernel: python3
+    rationale: "Current-best learning (AIMA Ch.19) ; module local aima_knowledge vendorise dans reference/ (suivi git) ; stdlib uniquement, random.seed(42) deterministe ; prouve que le packaging local resolve via cwd=notebook.parent par defaut."
+
+  # --- RL : apprentissage par renforcement, fondations tabulaires (serie RL) ---
+  # Bandits multi-bras (epsilon-greedy / UCB / Thompson) : le coin SOBRE de la
+  # serie RL, AVANT l'arrivee de gymnasium (rl_5) et torch/stable-baselines3
+  # (rl_1, rl_6+). Dependances = numpy + matplotlib UNIQUEMENT (toutes deux
+  # pinnees dans golden_set.lock.txt), 0 env de simulation, 0 GPU, 0 reseau.
+  # Aleatoire entierement seede via np.random.default_rng(seed=42) -> sortie
+  # deterministe. Certifie end-to-end par Papermill (39 cellules, 20 code, 0
+  # erreur, 5 figures, ~12 s sur CPU, kernel coursia-ml-training = snapshot du
+  # lock). Premiere serie RL au golden-set (objectif ~1/serie de #4209).
+  - path: MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb
+    series: RL
+    title: "RL-4 - Bandits multi-bras (epsilon-greedy / UCB / Thompson, exploration vs exploitation)"
+    kernel: python3
+    rationale: "Coin sobre de la serie RL (numpy + matplotlib seuls, avant gymnasium/torch) ; default_rng(seed=42) deterministe ; dilemme exploration-exploitation rendu visible (regret cumule par strategie) ; certifie Papermill ~12 s CPU, 0 erreur."
+
+  # --- GameTheory : theorie des jeux, existence de Nash (serie GameTheory) ---
+  # Theoreme d'existence d'un equilibre de Nash (point fixe de Brouwer sur le
+  # simplexe). Illustrations numeriques from-scratch en numpy pur : convergence
+  # du point fixe (1D -> x=1.0, 2D sur le simplexe -> (0.5,0.5)), application a
+  # Matching Pennies (best-response dynamics via sigmoide -> equilibre mixte),
+  # contre-exemples a Brouwer, lecture guidee du depot Lean math-xmum/Brouwer.
+  # Dependances = numpy + matplotlib UNIQUEMENT (toutes deux pinnees dans
+  # golden_set.lock.txt), 0 solver externe (pas nashpy/open_spiel/pyspiel), 0
+  # JVM, 0 reseau, 0 random (purement deterministe : calculs algebriques +
+  # iteration de point fixe, verifie : ni np.random ni random. dans le source).
+  # Kernel python3. Certifie end-to-end par Papermill (40 cellules, 15 code, 0
+  # erreur, ~12 s sur CPU, kernel coursia-ml-training = snapshot du lock).
+  # Premiere serie GameTheory au golden-set (objectif ~1/serie de #4209).
+  - path: MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Python.ipynb
+    series: GameTheory
+    title: "GT-4c - Existence de Nash (point fixe de Brouwer, best-response numpy)"
+    kernel: python3
+    rationale: "Theoreme d'existence d'un equilibre de Nash (Brouwer sur le simplexe) ; implementation from-scratch numpy pur (best-response sigmoide, Matching Pennies) ; 0 solver externe, 0 random -> purement deterministe ; certifie Papermill ~12 s CPU, 0 erreur."
+
+# -----------------------------------------------------------------------------
+# Candidats DEFERRES (v3+) : a certifier quand le lockfile etendra sa couverture.
+#   - Probas/PyMC-* : MCMC non deterministe (sortie stochastique) -> politesse
+#     CI = tolerance numerique, hors scope du golden-set sobre.
+#   - IIT/PyPhi : depend pyphi (lourd, Python 3.9) -> env dedie.
+# -----------------------------------------------------------------------------

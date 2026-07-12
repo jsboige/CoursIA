@@ -1,0 +1,130 @@
+name: Regression Guard
+
+# Purpose
+# -------
+# ADVISORY (report-only, user 2026-06-20): surface as a WARNING when a changed
+# notebook goes healthy -> degraded on the OUTPUT-HEALTH axis (axis-2). The check
+# never blocks the merge -- it posts its verdict to the PR step-summary so the
+# reviewer decides. (Promote to a hard gate later only after the FP rate is
+# validated; the high-value instrument is the SNAPSHOT census, run on demand.)
+# This catches the soft environment-degradation regressions that
+# the existing scanners miss (a token-starved reasoning cell, a "Graphviz non
+# disponible" fallback, a "Skipped" tool output, an OPTIMAL->FEASIBLE solver
+# downgrade) -- the class the #3164 wave surfaced.
+#
+# Doctrine (cf #3660 / .claude/rules + audit-output-health-axis):
+#   A recoverable degradation must be REPAIRED (Regle F) + re-run, never
+#   consecrated by rewriting prose around it. A genuinely-external or
+#   demonstrated degradation is acknowledged in
+#   scripts/notebook_tools/regression_allowlist.json (with evidence), or via
+#   the 'regression-accepted' PR label for a one-off demonstrated case.
+#
+#   Owner-environment mandate (user 2026-06-20):
+#     - An INSTALLABLE tool missing in OUR notebooks (JVM/Tweety, SWI-Prolog,
+#       MiniZinc, clingo, Graphviz/dot, conda/pip pkg) is NOT a "genuine skip" --
+#       it is an env regression to REPAIR (install + re-exec). Never allowlist it.
+#       Fallbacks are for third parties, never an owner excuse to commit degraded.
+#     - The allowlist is not permission to commit degraded outputs. Re-execute on
+#       the FULL faithful target env, or do NOT touch the notebook. An agent that
+#       cannot reproduce the target env must SIGNAL + HAND OFF -- never re-run and
+#       overwrite the expected outputs with degraded ones.
+#
+# This guard ONLY judges output-health (axis-2). It does NOT judge prose-vs-output
+# fidelity (axis-1) -- that stays a human/bot review job.
+#
+# Exceptions:
+#   - github-actions[bot] author (catalog/automation commits)
+#   - 'regression-accepted' PR label (logged override)
+#   - catalog files / excluded dirs (skipped by the tool)
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: "No notebook health regression"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run regression guard
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+
+          # Bypass: automation author.
+          if [ "$PR_AUTHOR" = "github-actions[bot]" ]; then
+            echo "::notice title=Regression guard::Author is github-actions[bot] - bypassed."
+            exit 0
+          fi
+
+          # Bypass: explicit accepted-regression label (demonstrated case).
+          case ",$LABELS," in
+            *,regression-accepted,*)
+              echo "::notice title=Regression guard::'regression-accepted' label present - override logged, guard bypassed."
+              exit 0
+              ;;
+          esac
+
+          # Manual dispatch has no PR context -> nothing to diff.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=Regression guard::Manual dispatch - nothing to diff."
+            exit 0
+          fi
+
+          BASE="origin/${{ github.base_ref }}"
+
+          # 3-dot diff: notebooks changed on the PR branch, not on base.
+          mapfile -t CHANGED < <(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+
+          if [ "${#CHANGED[@]}" -eq 0 ]; then
+            echo "::notice title=Regression guard::No notebook changes - clean."
+            exit 0
+          fi
+
+          echo "Changed notebooks:"
+          printf '  %s\n' "${CHANGED[@]}"
+          echo ""
+
+          set +e
+          python scripts/notebook_tools/regression_scan.py \
+            --guard --base "$BASE" --head HEAD --paths "${CHANGED[@]}" \
+            | tee guard_output.txt
+          RC=${PIPESTATUS[0]}
+          set -e
+
+          {
+            echo "## Regression Guard"
+            echo ""
+            echo '```'
+            cat guard_output.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # ADVISORY mode (user 2026-06-20): report-only, never fail the check.
+          # SNAPSHOT census is the high-value instrument; the per-PR guard is a
+          # non-blocking ratchet that surfaces a healthy->degraded regression as a
+          # warning so the reviewer can decide. Promote to a hard gate later only
+          # after the FP rate (TOOL_MISSING/FALLBACK string matching) is validated.
+          if [ "$RC" -ne 0 ]; then
+            echo "::warning title=Regression guard (advisory)::A changed notebook went healthy->degraded (axis-2). Repair the cause (Regle F) + re-run, allowlist a genuine degradation with evidence, or apply the 'regression-accepted' label. This check is advisory and does NOT block the merge."
+          else
+            echo "::notice title=Regression guard (advisory)::No output-health regression detected on changed notebooks."
+          fi
+          exit 0

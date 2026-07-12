@@ -1,0 +1,11 @@
+{
+    "algorithm-language": "Python",
+    "parameters": {
+        "cash": 100000
+    },
+    "description": "EMA Cross Alpha Model - Multi-stock EMA crossover with Alpha framework",
+    "id": 1,
+    "name": "EMA-Cross-Alpha",
+    "cloud-id": 28885488,
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
+}

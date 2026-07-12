@@ -1,0 +1,14 @@
+{
+  "argv": [
+    "wsl.exe",
+    "-d",
+    "Ubuntu",
+    "--",
+    "/home/jesse/.lean4-venv/bin/python3",
+    "/home/jesse/.lean4-kernel-wrapper.py",
+    "-f",
+    "{connection_file}"
+  ],
+  "display_name": "Lean 4 (WSL)",
+  "language": "lean4"
+}

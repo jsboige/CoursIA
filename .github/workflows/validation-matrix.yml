@@ -1,0 +1,68 @@
+name: Validation Matrix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.ipynb'
+      - 'scripts/validation/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.ipynb'
+      - 'scripts/validation/**'
+  workflow_dispatch:
+    inputs:
+      family:
+        description: 'Family to validate (empty = all)'
+        required: false
+        default: ''
+      quick:
+        description: 'Quick mode (structure only)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyyaml nbformat
+
+    - name: Install notebook_tools
+      run: |
+        pip install -r scripts/notebook_tools/requirements.txt 2>/dev/null || true
+        pip install papermill 2>/dev/null || true
+
+    - name: Run validation matrix
+      run: |
+        ARGS=""
+        if [ -n "${{ github.event.inputs.family }}" ]; then
+          ARGS="--family ${{ github.event.inputs.family }}"
+        else
+          ARGS="--all"
+        fi
+        if [ "${{ github.event.inputs.quick }}" = "true" ]; then
+          ARGS="$ARGS --quick"
+        fi
+        python scripts/validation/dispatch.py $ARGS --json --save
+      continue-on-error: true
+
+    - name: Upload validation results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: validation-results
+        path: results/validation_run_*.json
+        retention-days: 30

@@ -1,0 +1,7 @@
+c Simple satisfiable CNF for testing
+c Clauses: (x1 OR x2), (-x1 OR x2), (x1 OR -x2)
+c Should be SAT with x1=T, x2=T
+p cnf 2 3
+1 2 0
+-1 2 0
+1 -2 0

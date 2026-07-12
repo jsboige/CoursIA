@@ -1,0 +1,16 @@
+# Environment secrets
+.env
+
+# Playwright auth state (contains JWT tokens)
+.auth/*.json
+
+# Playwright results
+test-results/
+playwright-report/
+blob-report/
+
+# Node modules
+node_modules/
+
+# TypeScript build
+dist/

@@ -1,0 +1,47 @@
+# Fichiers de configuration sensibles
+.env
+*.env
+.env.*
+
+# Fichiers temporaires générés par les démos
+**/workspace/*
+!**/workspace/README.md
+!**/workspace/.gitkeep
+
+# Fichiers spécifiques à l'environnement local
+.DS_Store
+desktop.ini
+Thumbs.db
+.directory
+
+# Fichiers temporaires
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+# Fichiers de logs
+*.log
+logs/
+
+# Fichiers de cache
+.cache/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Fichiers de dépendances et build
+node_modules/
+venv/
+env/
+build/
+dist/
+*.zip
+
+# Fichiers IDE
+.idea/
+.vscode/
+*.sublime-*
+.project
+.settings/

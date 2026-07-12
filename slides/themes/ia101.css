@@ -1,0 +1,361 @@
+/* @theme ia101 */
+/* Theme Marp pour le cours IA 101 / CS 405 */
+
+@import 'default';
+
+:root {
+  --color-accent: #8B1A1A;
+  --color-accent-light: #C0392B;
+  --color-bg: #F5F5F5;
+  --color-bg-dark: #E8E8E8;
+  --color-text: #2C3E50;
+  --color-text-light: #7F8C8D;
+  --color-header: #34495E;
+}
+
+section {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Segoe UI', 'Calibri', Arial, sans-serif;
+  font-size: 28px;
+  padding: 40px 60px;
+}
+
+/* Titres */
+h1 {
+  color: var(--color-accent);
+  font-size: 1.6em;
+  border-bottom: 2px solid var(--color-accent);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+h2 {
+  color: var(--color-header);
+  font-size: 1.3em;
+  margin-bottom: 12px;
+}
+
+h3 {
+  color: var(--color-accent-light);
+  font-size: 1.1em;
+}
+
+/* Listes a puces */
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+ul > li {
+  padding-left: 24px;
+  position: relative;
+  margin-bottom: 6px;
+}
+
+ul > li::before {
+  content: '\25CF';
+  color: var(--color-accent);
+  position: absolute;
+  left: 0;
+  font-size: 0.7em;
+  top: 4px;
+}
+
+ul ul > li::before {
+  content: '\25CB';
+  color: var(--color-accent-light);
+}
+
+/* Texte en gras */
+strong {
+  color: var(--color-accent);
+}
+
+/* Header et footer */
+header {
+  color: var(--color-accent);
+  font-weight: bold;
+  font-size: 0.7em;
+}
+
+footer {
+  color: var(--color-text-light);
+  font-size: 0.6em;
+}
+
+/* Slide de titre */
+section.title {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-bg-dark) 100%);
+}
+
+section.title h1 {
+  font-size: 2.2em;
+  border-bottom: none;
+  margin-bottom: 24px;
+}
+
+section.title p {
+  color: var(--color-text-light);
+  font-size: 0.9em;
+}
+
+/* Slide de section (sommaire) */
+section.section {
+  background: linear-gradient(135deg, var(--color-header) 0%, #2C3E50 100%);
+  color: white;
+}
+
+section.section h1 {
+  color: white;
+  border-bottom-color: rgba(255,255,255,0.3);
+}
+
+section.section strong {
+  color: #F39C12;
+}
+
+/* Slide Questions? (respiration) */
+section.questions {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-color: var(--color-bg);
+}
+
+section.questions h1 {
+  font-size: 2.5em;
+  border-bottom: none;
+  color: var(--color-accent);
+}
+
+/* Slide cross-references */
+section.crossref {
+  font-size: 0.85em;
+}
+
+section.crossref h2 {
+  font-size: 1.2em;
+  color: var(--color-accent);
+}
+
+/* Code blocks */
+pre {
+  background-color: #2D2D2D;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 0.7em;
+}
+
+code {
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+}
+
+/* Images inline */
+img {
+  border-radius: 4px;
+}
+
+/* Tableaux */
+table {
+  font-size: 0.85em;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th {
+  background-color: var(--color-accent);
+  color: white;
+  padding: 8px 12px;
+}
+
+td {
+  padding: 6px 12px;
+  border-bottom: 1px solid #DDD;
+}
+
+tr:nth-child(even) {
+  background-color: rgba(0,0,0,0.03);
+}
+
+/* Layout: two-column split (use with <div class="columns"> wrapper) */
+section.columns-layout {
+  padding: 40px 40px;
+}
+
+.columns {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.columns .col-left {
+  flex: 1.2;
+  min-width: 0;
+}
+
+.columns .col-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Layout: images in a horizontal row */
+.image-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.image-row img {
+  max-height: 280px;
+  object-fit: contain;
+}
+
+/* Layout: images stacked vertically */
+.image-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.image-stack img {
+  max-width: 100%;
+  object-fit: contain;
+}
+
+/* Slide with coral/salmon background for section transitions */
+section.section-visual {
+  background: linear-gradient(135deg, #D4766A 0%, #C0392B 100%);
+  color: white;
+  text-align: center;
+}
+
+section.section-visual h1 {
+  color: white;
+  border-bottom: none;
+  font-size: 1.4em;
+  margin-bottom: 8px;
+}
+
+/* Pagination */
+section::after {
+  color: var(--color-text-light);
+  font-size: 0.6em;
+}
+
+/* --- Layout avance : grilles d'images --- */
+
+/* Image grid pour 4+ images */
+.img-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.img-grid img {
+  max-height: 200px;
+  width: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+/* Grid 2x2 */
+.img-grid-2x2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.img-grid-2x2 img {
+  max-height: 240px;
+  width: 100%;
+  object-fit: contain;
+}
+
+/* Grid 3 colonnes */
+.img-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.img-grid-3 img {
+  max-height: 180px;
+  object-fit: contain;
+}
+
+/* --- Layout avance : colonnes egales --- */
+
+.columns-equal {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.columns-equal > div {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- Traitement images basse resolution --- */
+
+.img-framed {
+  border: 1px solid #DDD;
+  border-radius: 4px;
+  padding: 4px;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* --- Slide dense (beaucoup de contenu + images) --- */
+
+section.dense {
+  font-size: 24px;
+  padding: 30px 40px;
+}
+
+section.dense h1 {
+  font-size: 1.3em;
+  margin-bottom: 8px;
+}
+
+section.dense ul {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+section.dense li {
+  margin-bottom: 3px;
+}
+
+/* --- Image avec legende --- */
+
+.img-captioned {
+  text-align: center;
+  margin: 8px 0;
+}
+
+.img-captioned img {
+  border-radius: 4px;
+}
+
+.img-captioned .caption {
+  font-size: 0.65em;
+  color: var(--color-text-light);
+  margin-top: 4px;
+}

@@ -1,0 +1,10 @@
+# Build artefacts — not committed (rebuilt via Maven shade + dotnet build)
+bin/
+obj/
+target/
+*.user
+*.suo
+# JAR shade aggregator output (rebuilt by `mvn package`)
+tweety-preferences-full-1.30.jar
+# DLL IKVM output (rebuilt by `dotnet build`)
+*.dll

@@ -1,0 +1,36 @@
+{
+  "prompt": {
+    "3": {
+      "class_type": "CheckpointLoaderSimple",
+      "inputs": {
+        "ckpt_name": "Qwen-Image-Edit-2509-FP8/diffusion_pytorch_model.safetensors"
+      }
+    },
+    "6": {
+      "class_type": "QwenT2IWrapper",
+      "inputs": {
+        "model": [
+          "3",
+          0
+        ],
+        "prompt": "a beautiful landscape",
+        "width": 512,
+        "height": 512,
+        "steps": 25,
+        "cfg_scale": 7.5,
+        "negative_prompt": "ugly, blurry, low quality",
+        "seed": 42
+      }
+    },
+    "9": {
+      "class_type": "SaveImage",
+      "inputs": {
+        "images": [
+          "6",
+          0
+        ],
+        "filename_prefix": "benchmark_qwen"
+      }
+    }
+  }
+}

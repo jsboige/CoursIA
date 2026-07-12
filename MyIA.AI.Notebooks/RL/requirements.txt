@@ -1,0 +1,17 @@
+# Reinforcement Learning - Dependencies
+# Install: pip install -r requirements.txt
+
+# Core RL
+stable-baselines3[extra]>=2.0  # RL algorithms (PPO, DQN, A2C, etc.) — notebooks 1-3
+gymnasium>=0.29                # OpenAI Gym successor — all notebooks
+torch>=2.0                     # Reseaux de neurones from scratch — notebook 5 (DQN, REINFORCE)
+pettingzoo[classic]>=1.24.0    # Multi-agent environments — notebook 6 (IQL, PettingZoo)
+
+# Environments
+highway-env>=1.8               # Highway driving environment (Notebook 3)
+
+# Data / Visualization
+pandas>=2.0                    # Tableaux de resultats Q-Learning — notebook 4
+moviepy>=1.0                   # Video recording of agent behavior
+matplotlib>=3.7
+numpy>=1.24

@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  comfyui-qwen:
+    image: nvidia/cuda:12.4.0-devel-ubuntu22.04
+    container_name: comfyui-qwen-stable
+    hostname: comfyui-qwen
+    
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_DEVICE_ID:-0}']
+              capabilities: [gpu]
+    
+    ports:
+      - "${COMFYUI_PORT:-8188}:8188"
+    
+    volumes:
+      - type: bind
+        source: ${COMFYUI_WORKSPACE_PATH}
+        target: /workspace/ComfyUI
+      - type: volume
+        source: comfyui-models
+        target: /workspace/ComfyUI/models
+      - type: volume
+        source: comfyui-data
+        target: /workspace/ComfyUI/input
+    
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-0}
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - TZ=${TZ:-Europe/Paris}
+      - COMFYUI_PORT=8188
+      - COMFYUI_LISTEN=0.0.0.0
+      - COMFYUI_LOGIN_ENABLED=true
+      # Tokens pour téléchargement des modèles
+      - CIVITAI_TOKEN=${CIVITAI_TOKEN}
+      - HF_TOKEN=${HF_TOKEN}
+      - QWEN_API_TOKEN=${QWEN_API_TOKEN}
+      # Configuration authentification ComfyUI-Login
+      - COMFYUI_USERNAME=${COMFYUI_USERNAME:-admin}
+      - COMFYUI_PASSWORD=${COMFYUI_PASSWORD}
+      - COMFYUI_BEARER_TOKEN=${COMFYUI_BEARER_TOKEN}
+      - GUEST_MODE_ENABLED=${GUEST_MODE_ENABLED:-false}
+      - SECRET_KEY=${SECRET_KEY}
+      # Configuration comportement
+      - CORS_ENABLED=${CORS_ENABLED:-true}
+      - VERBOSE_LOGGING=${VERBOSE_LOGGING:-false}
+      - API_TIMEOUT=${API_TIMEOUT:-30}
+      - MAX_LOGIN_ATTEMPTS=${MAX_LOGIN_ATTEMPTS:-3}
+      - SESSION_EXPIRE_HOURS=${SESSION_EXPIRE_HOURS:-24}
+    
+    working_dir: /workspace/ComfyUI
+    
+    command: >
+      bash -c "
+        apt-get update -qq &&
+        apt-get install -y -qq --no-install-recommends python3 python3-pip python3-venv git curl wget ca-certificates &&
+        apt-get clean &&
+        rm -rf /var/lib/apt/lists/* &&
+        cd /workspace &&
+        # Cloner ComfyUI si le répertoire n'existe pas ou est vide
+        if [ ! -d ComfyUI ] || [ ! -f ComfyUI/main.py ]; then
+          echo 'Clonage de ComfyUI depuis GitHub...' &&
+          rm -rf ComfyUI 2>/dev/null || true &&
+          sleep 2 &&
+          git clone https://github.com/comfyanonymous/ComfyUI.git --depth 1
+        fi &&
+        cd /workspace/ComfyUI &&
+        if [ ! -d venv ]; then
+          echo 'Création du venv et installation des dépendances...' &&
+          python3 -m venv venv &&
+          venv/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 &&
+          venv/bin/pip install -r requirements.txt
+        fi &&
+        # Créer le répertoire custom_nodes si nécessaire
+        mkdir -p custom_nodes &&
+        # Installer ComfyUI-Login si nécessaire
+        if [ ! -d custom_nodes/ComfyUI-Login ]; then
+          echo 'Installation de ComfyUI-Login...' &&
+          cd custom_nodes &&
+          git clone https://github.com/ComfyUI-Login/ComfyUI-Login.git &&
+          cd ComfyUI-Login &&
+          pip install -r requirements.txt &&
+          cd ../..
+        fi &&
+        # S'assurer que le token est correctement écrit
+        echo 'Configuration du token ComfyUI-Login...' &&
+        echo '${COMFYUI_BEARER_TOKEN}' > custom_nodes/ComfyUI-Login/PASSWORD &&
+        chmod 600 custom_nodes/ComfyUI-Login/PASSWORD &&
+        cd .. &&
+        exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention
+      "
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8188/", "--max-time", "10"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 180s
+    
+    restart: unless-stopped
+    
+    networks:
+      - comfyui-network
+    
+    labels:
+      - "com.myia.service=comfyui-qwen"
+      - "com.myia.gpu=rtx-3090"
+      - "com.myia.model=qwen-image-edit"
+      - "com.myia.phase=validation"
+
+networks:
+  comfyui-network:
+    driver: bridge
+    name: comfyui-network
+
+volumes:
+  comfyui-models:
+    driver: local
+  comfyui-data:
+    driver: local
