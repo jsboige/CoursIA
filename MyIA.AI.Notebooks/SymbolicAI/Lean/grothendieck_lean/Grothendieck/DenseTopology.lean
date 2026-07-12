@@ -1,4 +1,5 @@
--/
+/-
+
 # Hommage Grothendieck — Partie 12 : La topologie dense
 
 Copyright (c) 2026 CoursIA. All rights reserved.
