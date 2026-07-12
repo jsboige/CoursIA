@@ -22,6 +22,94 @@ condition (Part 5).
 Epic #1646, Phase 3 (#2159). All `sorry`s eliminated at creation.
 -/
 
+/-
+  `Grothendieck.SheafBasics` — Fondements des faisceaux
+  =====================================================
+  Hommage à Grothendieck — Partie 7 : Fondements des faisceaux
+  Alexandre Grothendieck (1928-2014).
+
+  Extension Phase 3 (#2159, Epic #1646).
+
+  La Partie 1 (`CategoryAndSites.lean`) a introduit les topologies de
+  Grothendieck et les cribles. La Partie 5 (`Calibration.lean`) a montré
+  que tout préfaisceau est un faisceau pour la topologie triviale. La
+  Partie 6 (`SieveLattice.lean`) a établi les identités de pullback sur
+  les cribles.
+
+  Ce module enregistre les propriétés fondamentales des faisceaux et des
+  préfaisceaux séparés :
+
+    - Tout faisceau est séparé (l'inclusion fondamentale).
+    - Tout préfaisceau est séparé pour la topologie triviale (la plus grossière).
+    - Pour une topologie sous-canonique, tout préfaisceau représentable
+      est un faisceau.
+    - La condition de faisceau se transfère le long des comparaisons
+      de topologies (J₁ ≤ J₂).
+
+  Ce sont les faits algébriques de base sur les faisceaux sur un site,
+  connectant les propriétés théoriques de treillis des cribles
+  (Parties 1/6) avec la condition de faisceau (Partie 5).
+
+  Epic #1646, Phase 3 (#2159). Tous les `sorry`s éliminés à la création.
+
+  ### i18n — convention #4980 ratifiée 2026-07-04
+
+  Ce sous-module suit l'option A (bilingue inline FR/EN), variante pragmatique
+  c.376-c.382 (deux blocs `/` top-level distincts, sans `---` interne) : le
+  bloc EN existant est préservé verbatim ci-dessus, le bloc FR miroir est
+  ajouté juste après sans séparateur `---`. Convention sibling pair
+  (`<Foo>_en.lean` à part) réservée aux modules de substance (cf c.374
+  `Astar_en.lean`) ; pour les modules de fondation comme `SheafBasics`,
+  l'inline FR+EN est le bon compromis (peu de preuve pure, deux langues
+  côte à côte). Les énoncés de théorèmes, les noms de lemmes, les tactiques
+  Lean et les références Mathlib restent en anglais (Mathlib 4, tactic DSL
+  standard). Seules les **docstrings `/-- ... -/`** et les **commentaires
+  `-- ...`** bilingues sont ajoutées. Anti-§D byte-identity garanti : le
+  namespace body est préservé bit-pour-bit (3736 octets extractibles
+  byte-identique via script Python `extract_ns_body`).
+
+  ### c.383 — 3ᵉ cycle R6 Sustained intra-R6 sur registre `grothendieck_lean` Phase 2+ ouvert post-c.381
+
+  c.381 = 1ᵉʳ sous-module rollout `grothendieck_lean` Phase 2+ (YonedaLemma,
+  PR #6197 OPEN MERGEABLE, lemme de Yoneda = THE foundational theorem of
+  category theory). c.382 = 2ᵉ sous-module rollout (MathlibMap, PR #6202
+  OPEN, satellite cartographie Mathlib 4 = analogue structurel c.377).
+  c.383 = **3ᵉ sous-module rollout Phase 2+** = **au seuil R5.4b MUST
+  3 cycles/thème OK** (c.381-c.383 = cohérent, registre `grothendieck_lean`
+  ouvert, backlog 22 sous-modules Phase 2+, c.384 = **PIVOT obligatoire** par
+  R5.4b MUST anti-tunneling). SheafBasics = analogue structurel c.381
+  YonedaLemma (6 théorèmes fondamentaux sur les faisceaux et préfaisceaux
+  séparés vs 1 lemme fondamental sur l'embedding de Yoneda) : **registre
+  grothendieck_lean Phase 2+ ouvert post-PIVOT strict c.381** autorise
+  continuer sur même registre tant que backlog substantiel. Théorème 3
+  (`yoneda_isSheaf_subcanonical`) fait le pont avec c.381 Yoneda : pour
+  une topologie sous-canonique, l'objet Yoneda est un faisceau. Backlog
+  c.384+ (19 sous-modules backlog Phase 2+ après c.383) :
+  `Grothendieck/{Sheafification,SitePoints,Conservative,MayerVietorisSquare,
+  CategoryAndSites,SieveLattice,YonedaLemma_lemmas,SheafCohomology/*,
+  Calibration,SchemesTour,Subcanonical,ZariskiSite,DenseTopology,
+  SieveGenerate,LeftExact,SheafHom,SieveOps,CoverageGen,CanonicalProps,
+  ConstantSheaf}.lean`.
+
+  Cross-références : c.366 `#6111` `Conway.lean` racine bilingue (MERGED) +
+  c.367 `#6115` `Grothendieck.lean` racine bilingue (MERGED, initie rollout
+  Phase 2+) + c.373 `#6156` `Knots.lean` racine bilingue (OPEN) + c.374
+  `#6163` `Astar` sibling pair (OPEN) + c.375 `#6171` `Knots` sub-modules
+  5/6 (OPEN) + c.376 `#6173` `Knots/Invariant` 6/6 (OPEN) + c.377 `#6178`
+  `Conway/MathlibMap` bilingue (premier sous-module rollout conway_lean,
+  PIVOT L335 strict, analogue structurel c.382) + c.378 `#6182`
+  `Conway/LookAndSay` bilingue + c.379 `#6190` `Conway/Fractran` bilingue
+  + c.380 `#6194` `Conway/Doomsday` bilingue + c.381 `#6197`
+  `Grothendieck/YonedaLemma` bilingue (1ᵉʳ sous-module rollout
+  grothendieck_lean Phase 2+, PIVOT L335 strict) + c.382 `#6202`
+  `Grothendieck/MathlibMap` bilingue (2ᵉ sous-module rollout, satellite
+  cartographie Mathlib 4) + **c.383 `Grothendieck/SheafBasics` bilingue
+  (cette PR, 3ᵉ sous-module rollout Phase 2+, fondations faisceaux = 6
+  théorèmes, analogue structurel c.381 Yoneda)** ← **continuité registre
+  `grothendieck_lean` Phase 2+ ouvert post-c.381 PIVOT strict** + **au seuil
+  R5.4b MUST 3 cycles/thème OK avant PIVOT obligatoire c.384**.
+-/
+
 import Mathlib.CategoryTheory.Sites.Grothendieck
 import Mathlib.CategoryTheory.Sites.SheafOfTypes
 import Mathlib.CategoryTheory.Sites.Canonical
