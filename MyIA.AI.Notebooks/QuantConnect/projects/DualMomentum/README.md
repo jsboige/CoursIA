@@ -15,16 +15,33 @@
 
 Le notebook [`research.ipynb`](research.ipynb) documente l'analyse du dual momentum : exploration, comparaison des drawdowns entre configurations, robustesse au lookback (H2) et comparaison du Sharpe. La stratégie est remplacée par DualMomentumNoTLT (échec de TLT en 2022) — contre-exemple pédagogique. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
-<table>
-<tr>
-<td align="center"><img src="assets/readme/dm-exploration.png" alt="Analyse exploratoire" width="420"/><br/><sub>Exploration — analyse exploratoire (§2)</sub></td>
-<td align="center"><img src="assets/readme/dm-drawdown.png" alt="Comparaison drawdowns" width="420"/><br/><sub>Drawdown — comparaison entre configurations</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/dm-h2-lookback.png" alt="H2 robustesse lookback" width="420"/><br/><sub>H2 — robustesse par lookback period</sub></td>
-<td align="center"><img src="assets/readme/dm-sharpe.png" alt="Comparaison Sharpe" width="420"/><br/><sub>Sharpe — comparaison entre configurations</sub></td>
-</tr>
-</table>
+**Exploration — cartographier les régimes avant de calibrer.** L'analyse exploratoire examine la dynamique des actifs de l'univers (rendements, volatilité, corrélations) pour distinguer les régimes où le signal de momentum est fiable de ceux où il se retourne — le diagnostic préalable à tout calibrage.
+
+<p align="center">
+  <img src="assets/readme/dm-exploration.png" alt="Analyse exploratoire" width="420"/><br>
+  <em>Exploration — analyse exploratoire des données (§2).</em>
+</p>
+
+**Drawdowns — où la stratégie saigne.** La comparaison des drawdowns entre configurations isole les épisodes de perte maximale (crash COVID de 2020, cycle de hausse des taux de 2022) et montre lesquels pèsent sur le Max DD de 33,6 % — l'origine structurelle qui motive le remplacement par DualMomentumNoTLT.
+
+<p align="center">
+  <img src="assets/readme/dm-drawdown.png" alt="Comparaison drawdowns" width="420"/><br>
+  <em>Drawdown — comparaison entre configurations.</em>
+</p>
+
+**H2 — robustesse au *lookback*, ou la stabilité du signal.** La deuxième hypothèse teste si la performance tient quand on改变 la fenêtre de momentum (*lookback period*). Une courbe plate signe un signal robuste ; une courbe qui s'effondre révèle un sur-ajustement à une fenêtre unique.
+
+<p align="center">
+  <img src="assets/readme/dm-h2-lookback.png" alt="H2 robustesse lookback" width="420"/><br>
+  <em>H2 — robustesse par <i>lookback period</i>.</em>
+</p>
+
+**Sharpe — rendement ajusté au risque, configuration par configuration.** La comparaison du ratio de Sharpe clôt le diagnostic : elle quantifie le gain (ou la perte) de rendement ajusté au risque au fil des variantes et confirme le verdict — DualMomentum (0,350) dominé par DualMomentumNoTLT (0,469).
+
+<p align="center">
+  <img src="assets/readme/dm-sharpe.png" alt="Comparaison Sharpe" width="420"/><br>
+  <em>Sharpe — comparaison entre configurations.</em>
+</p>
 
 ## Pourquoi cette stratégie a été remplacée
 
