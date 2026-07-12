@@ -93,12 +93,12 @@ Epic #1646, Phase 4 (#2159). All `sorry`s eliminated at creation.
 
   c.381 = PIVOT L335 strict initialisation rollout `grothendieck_lean`
   Phase 2+ (1ᵉʳ sous-module YonedaLemma, PR #6197 OPEN MERGEABLE,
-  +79/-0, namespace 4995 octets byte-identique, lemme de Yoneda =
+  +79 insertions, 0 suppression, namespace 4995 octets byte-identique, lemme de Yoneda =
   THE foundational theorem of category theory). c.382 = 2ᵉ cycle
   (MathlibMap, PR #6202 OPEN, satellite cartographie Mathlib 4,
-  +71/-0, namespace 2567 octets byte-identique). c.383 = 3ᵉ cycle
+  +71 insertions, 0 suppression, namespace 2567 octets byte-identique). c.383 = 3ᵉ cycle
   = **au seuil R5.4b MUST 3 cycles/thème OK avant PIVOT obligatoire**
-  (SheafBasics, PR #6208 OPEN MERGEABLE, +88/-0, namespace 3736
+  (SheafBasics, PR #6208 OPEN MERGEABLE, +88 insertions, 0 suppression, namespace 3736
   octets byte-identique, 6 theorem fondations faisceaux).
   c.384-c.386 = 3 cycles R6 Sustained intra-R6 sur registre
   `conway_lein` Phase 1+ (c.384 Nim + c.385 CollatzLike + c.386
@@ -107,7 +107,7 @@ Epic #1646, Phase 4 (#2159). All `sorry`s eliminated at creation.
   **c.387 = PIVOT L335 strict obligatoire R5.4b MUST post-c.384-c.386**
   = retour vers `grothendieck_lean` Phase 2+ registre ouvert
   post-c.383 = 4ᵉ sous-module rollout = **Sheafification** (PR #6225
-  OPEN MERGEABLE, +142/-0, namespace 4906 octets byte-identique, 5
+  OPEN MERGEABLE, +142 insertions, 0 suppression, namespace 4906 octets byte-identique, 5
   theorem sheafification functor, SGA 4 IV topos theory).
 
   **c.388 = continuité registre `grothendieck_lean` Phase 2+ ouvert
