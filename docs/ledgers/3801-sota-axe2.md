@@ -2629,3 +2629,82 @@ La série PyMC **exerce des capacités MCMC distinctives** sans équivalent clos
 - **Cumulatif** : entry #028 = **PyMC standalone** (14 nb) rejoint DecPyMC (#005, 7 nb) + Probas/Infer (#006, 20 nb) + Infer-extension (#018, 9 nb) → **famille Probas bayésienne COMPLÈTE** dans le registre (50 notebooks : 20 Infer + 14 PyMC + 7 DecPyMC + 9 extension). PyMC/ArviZ déjà comptés (#005/#018) ; cette entry consolide la couverture PyMC standalone.
 
 Part of #3801, #4956
+
+---
+
+## Entry #029 — GenAI/SemanticKernel (01-10b) (owner-floue po-2025 consultatif, c.412)
+
+**Famille** : GenAI/SemanticKernel — orchestration agentique Microsoft (SDK Semantic Kernel Python, équivalent LangChain). Audit cross-lane **consultatif read-only** (EPIC #3801 = pool global, owner-floue safe comme SymbolicAI #002-#004). Lane GenAI native = po-2024, mais po-2024 a pivoté Lean/Z3/SmartContracts c.387+ (5 cycles) ; **0 PR po-2024 actif sur SK/RAG/OWUI** (collision check `gh pr list --search SemanticKernel` = 0 OPEN). Gap firsthand : le ledger couvrait GenAI Texte (#022)/Image (#023)/PostTraining (#024)/Video (#025)/Audio (#026), MAIS **SemanticKernel (12 notebooks pédagogiques 01-10b) + RAG/Open-WebUI/FineTuning = non audités**. Cette entry comble le gap SK.
+
+### Métriques structurales (recensement worker firsthand, script `/tmp/sk_census.py`)
+
+| Métrique | Valeur |
+|----------|--------|
+| Notebooks (série principale 01-10b) | **12** |
+| Code cells | 137 |
+| EXEC_PROVED (`execution_count != null`) | **137/137 (100%)** |
+| Cellules en erreur (`output_type: error`) | **0** |
+| Violations C.1 (`raise NotImplementedError`/`assert False`/`1/0` en source) | **0** (1 faux-positif `1/0` dans blob base64 image, exclu) |
+| Kernels | python3 (uniforme) |
+| Vrai outil SOTA | semantic-ker**nel 1.42.0** + OpenAI API (GPT-4/DALL-E 3/Whisper/TTS/GPT-4V) + pythonnet 3.0.5 (CLR interop) + MCP SDK |
+
+### Synthèse substance par notebook (12/12)
+
+| NB | Thème SK | Outil SOTA exécuté | Verdict |
+|----|----------|-------------------|---------|
+| 01 | Kernel/Services/Plugins/Chat | `semantic_kernel` 1.42.0 + ChatCompletion OpenAI | SOTA-OK |
+| 02 | Function Calling moderne + Memory/Groundedness | `FunctionChoiceBehavior.Auto()` + plugins | SOTA-OK |
+| 03 | Agents (ChatCompletionAgent, AgentGroupChat, OpenAIAssistant) | SK Agents SDK | SOTA-OK |
+| 04 | Filters + OpenTelemetry/Observability | `@kernel.filter` + logging | SOTA-OK |
+| 05 | VectorStores/RAG (InMemoryStore + Qdrant) | SK `vectorstoremodel` + `qdrant-client` | SOTA-OK + **DISCLOSURE** (voir bas) |
+| 06 | Process Framework (workflows étatiques) | SK `ProcessBuilder` | SOTA-OK |
+| 07 | MultiModal (DALL-E, Whisper, GPT-4V, TTS) | OpenAI images/audio/vision | SOTA-OK |
+| 08 | MCP (Model Context Protocol) | `mcp` SDK + filesystem plugin | SOTA-OK |
+| 09 | CLR interop Python↔.NET | pythonnet 3.0.5 + DLL loading | SOTA-OK |
+| 10 | NotebookMaker (3-agent Admin/Coder/Reviewer) | AgentGroupChat + KernelFunction | SOTA-OK |
+| 10a | NotebookMaker batch (sans UI) | idem, paramétré | SOTA-OK |
+| 10b | NotebookMaker batch paramétrisé Papermill | idem, papermill-ready | SOTA-OK |
+
+### Prong A — vrai outil SOTA, pas workaround dégradé (11/12 SOTA-OK + 1 disclosure)
+
+**Global EXEC_PROVED 137/137, 0 erreur, 0 graceful-skip déguisé** : les sorties sont de **vraies générations LLM** (prose GPT-4, métadonnées DALL-E, transcriptions Whisper, tableaux de modèles). Les 2+5 matchs `skip_like` dans 04/07 sont des **faux-positifs** : « API Key OK », « Service DALL-E configuré », « API Key configurée: Oui » = **confirmations de config réelles**, pas des skips (vérifié firsthand). SK 1.42.0 (version live imprimée dans nb01 output) + OpenAI + pythonnet 3.0.5 + MCP SDK = vrais outils installés et invoqués.
+
+**DISCLOSURE nb05 (VectorStores)** — 2 points honnêtes :
+1. **Qdrant service DOWN** (`[WinError 10061] connexion refusée` sur `qdrant.myia.io`) → le notebook **dégrade honnêtement vers `InMemoryStore`** (connecteur SK réel, pas une réimplémentation jouet) avec output explicite « Les exemples utilisent InMemoryStore ». C'est une **dégradation légitime et transparente**, pas un workaround maquillé. Verdict : **RECOVERABLE-MACHINE** (Qdrant remonté → re-exec pour la branche Qdrant), InMemoryStore path = SOTA-OK.
+2. 🚩 **Violation secrets-hygiene (HARD)** : nb05 cell21 `QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "4f89edd5-90f7-4ee0-ac25-9185e9835c44")` = **littéral clé API en fallback inline** — pattern **interdit** ([secrets-hygiene.md](.claude/rules/secrets-hygiene.md) règle 2, incident fondateur 2026-05-14 `b34e3a05`). La clé (UUID Qdrant) est committée en clair dans la source. **Fix requis** (séparé, sécurité cluster-wide) : retirer le défaut littéral → `os.getenv("QDRANT_API_KEY")`. Scan All-SK : **1 seule occurrence** (nb05 cell21 uniquement, 0 autre). Fix first-hand livré cycle 412 (PR séparée).
+
+### Prong B — problème non-trivial (12/12 DISCRIMINATING)
+
+La série **exerce des capacités d'orchestration agentique distinctives** sans équivalent trivial : Function Calling moderne (`FunctionChoiceBehavior.Auto`, nb02), multi-agents collaboratifs (`AgentGroupChat` + stratégies de sélection/terminaison, nb03/10), filtres d'interception avant/après (nb04), RAG vectoriel avec schéma typé `@vectorstoremodel` (nb05), workflows étatiques Process Framework (nb06), multimodal cross-model (nb07), interop MCP/outils externes (nb08), interop Python↔.NET via pythonnet (nb09). **Fil rouge = NotebookMaker (nb10/10a/10b)** : système **3-agent** (Admin planifie, Coder génère, Reviewer valide) qui génère automatiquement des notebooks pédagogiques — problème **discriminant canonique** où l'orchestration SK est indispensable (un single-shot LLM ne peut pas tenir le rôle multi-étapes). **Aucun notebook dégénéré** : chaque module couvre un sous-système SK distinct.
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 (pas d'erreur volontaire) | **CONFORME** | 0 `raise NotImplementedError`/`assert False`/`1/0` en source (1 base64 FP exclu) |
+| C.2 (outputs commités) | **CONFORME** | 137/137 EXEC_PROVED, 0 erreur |
+| SOTA Prong A | **11/12 SOTA-OK + nb05 RECOVERABLE-MACHINE** (Qdrant down) | vrais outils SK 1.42.0/OpenAI/pythonnet/MCP |
+| SOTA Prong B | **DISCRIMINATING 12/12** | chaque sous-système SK exercé, NotebookMaker 3-agent fil rouge |
+| Stop & Repair (secrets §6) | **NON-CONFORME nb05** → FIX | littéral `QDRANT_API_KEY` fallback = violation règle 2 ; fix séparé cycle 412 |
+| secrets-hygiene règle 2 | **1 violation** (nb05 cell21) | `os.getenv("KEY", "<littéral>")` interdit |
+
+### Owner-lane volet
+
+**po-2025 owner-floue consultatif** — GenAI/SemanticKernel = lane po-2024 native, mais audit EPIC #3801 = read-only consultatif additif (0 code modifié hors le fix sécurité), safe cross-lane (cf SymbolicAI #002-#004 owner-floue). **po-2024 a pivoté Lean/Z3/SC c.387+ (5 cycles), 0 PR actif sur SK** → pas de collision active. Le fix secrets (sécurité cluster-wide HARD) transcende la lane. **R6 anti-monoculture** : registre audit EPIC #3801 (substance) famille GenAI/orchestration agentique distincte des 3 cycles précédents (c.409 ICT collapsed → c.410 figures → c.411 PyMC bayésien → c.412 SK agentique).
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **Recensement worker firsthand** (script `/tmp/sk_census.py`) : 12 notebooks, 137 code cells, 137/137 EXEC_PROVED, 0 err, 0 C.1 (1 base64 FP exclu via 2e scan source-only `sk_scan.py`).
+- **Vrais outils vérifiés** : SK version `1.42.0` imprimée nb01 output ; pythonnet `3.0.5` nb09 output ; MCP SDK « installé » nb08 output + filesystem plugin.
+- **Skip-like = faux-positifs** vérifiés cellule par cellule (04 cell2 « API Key OK », 07 cell1 « API Key configurée: Oui » + cell6/12/16/20 « Service X configuré » = confirmations réelles, pas skips).
+- **Secrets scan All-SK firsthand** (`sk_scan.py`, regex `os.getenv("KEY","<littéral>")`) : **1 occurrence** — nb05 cell21 QDRANT_API_KEY. 0 autre sur les 12 notebooks.
+
+### Conclusions audit
+
+- **GenAI/SemanticKernel = substance agentique solide**, 12 notebooks à **100% EXEC_PROVED** (137/137), SK 1.42.0 + OpenAI + pythonnet + MCP = vrais outils SOTA invoqués, Prong-B DISCRIMINATING 12/12 (orchestration multi-agent, fil rouge NotebookMaker 3-agent).
+- **1 fix sécurité requis** : nb05 cell21 littéral `QDRANT_API_KEY` → livré PR séparé cycle 412 (cluster-wide HARD, transcende lane).
+- **1 RECOVERABLE-MACHINE** : Qdrant `qdrant.myia.io` down → dégradation honnête InMemoryStore (légitime, transparente, pas un workaround maquillé).
+- **Collision-avoidance** : entry **#029** stacked sur PR #6247 (entry #028), lui-même stacked sur #6216 (consolidation #019+#023-#027) — suit #028 proprement ; rebase en cascade au merge de la stack.
+- **Cumulatif** : entry #029 = **SemanticKernel standalone** (12 nb) → 1re famille **GenAI agentique** dans le registre axe-2 (rejoint Texte #022/Image #023/PostTraining #024/Video #025/Audio #026 = couverture GenAI élargie). Reste non-audité : GenAI/RAG, Open-WebUI, FineTuning (grains futurs).
+
+Part of #3801, #1385
