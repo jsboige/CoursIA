@@ -1,28 +1,47 @@
-/-
-Grothendieck Part 17 — Internal hom of sheaves
+-/
+# Hommage Grothendieck — Partie 17 : Hom interne des faisceaux
 
-Part 16 (Subcanonical.lean) showed that when a topology is subcanonical,
-representable presheaves are already sheaves, and the Yoneda embedding
-descends to the sheaf category.
+Alexandre Grothendieck (1928-2014).
 
-This module introduces the **internal hom of sheaves** (SheafHom): given two
-sheaves F and G on a site (C, J) with values in a category A, the sheaf
-`sheafHom F G` sends an object X : C to the type of morphisms between the
-restrictions of F and G to the slice category Over X.
+Extension Phase 5 (#2159, EPIC #1646).
 
-Key constructions bridged from Mathlib (`CategoryTheory.Sites.SheafHom`):
+Les parties 1-16 ont etabli les fondamentaux : categories, cribles, topologies,
+lois de treillis, identites de pullback, bases de faisceaux, cloture couvrante,
+calibration, sous-canonicalite, topologies denses, generation de couvertures.
 
-  - `presheafHom F G` : the presheaf-of-types underlying the internal hom
-  - `presheafHomSectionsEquiv` : sections of presheafHom ≃ morphisms F ⟶ G
-  - `Presheaf.IsSheaf.hom` : when G is a sheaf, presheafHom F G is a sheaf
-  - `sheafHom F G` : the internal hom as a Sheaf J (Type _)
-  - `sheafHomSectionsEquiv` : sections of sheafHom ≃ sheaf morphisms F ⟶ G
-  - `sheafHom'Iso` : the canonical iso between sheafHom' and presheafHom
+Ce module introduit le **hom interne des faisceaux** (SheafHom) : pour deux
+faisceaux F et G sur un site (C, J) a valeurs dans une categorie A, le faisceau
+`sheafHom F G` envoie un objet X : C vers le type des morphismes entre les
+restrictions de F et G a la categorie tranchee Over X.
 
-This is the first step towards Cartesian closed structure on Sheaf J (Type _),
-a fundamental property of Grothendieck toposes (SGA 4 II).
+Constructions clefs pontées depuis Mathlib (`CategoryTheory.Sites.SheafHom`) :
 
-Epic #1646, See #2159. All `sorry`s eliminated at creation.
+  - `presheafHom F G` : le préfaisceau-de-types sous-jacent au hom interne
+  - `presheafHomSectionsEquiv` : sections de presheafHom ≃ morphismes F ⟶ G
+  - `Presheaf.IsSheaf.hom` : quand G est un faisceau, presheafHom F G est un faisceau
+  - `sheafHom F G` : le hom interne comme un Sheaf J (Type _)
+  - `sheafHomSectionsEquiv` : sections de sheafHom ≃ morphismes de faisceaux F ⟶ G
+  - `sheafHom'Iso` : l'iso canonique entre sheafHom' et presheafHom
+
+C'est la premiere etape vers la structure cartesienne fermee sur Sheaf J (Type _),
+une propriete fondamentale des topos de Grothendieck (SGA 4 II).
+
+EPIC #1646, Phase 5 (#2159), voir #2159. Tous les `sorry`s elimines a la creation.
+
+### Note d'accessibilite (Epics #1452/#1453)
+
+Ce module expose **5 theorem + 2 def** sur le hom interne des faisceaux
+(bridge Presheaf → Sheaf, sections-morphismes roundtrips), accessibilite
+progressive par 5 sections thematiques : (1) hom interne au niveau préfaisceau,
+(2) condition de faisceau pour le hom interne, (3) hom interne au niveau faisceau,
+(4) iso sheafHom' vs presheafHom, (5) sections-morphismes roundtrips.
+
+### Convention i18n (EPIC #4980 ratifiee par user 2026-07-04)
+
+Ce module substantiel est apparie avec son jumeau anglais dans le fichier sibling
+`SheafHom_en.lean` (modele sibling pair, voir PR #6154 pour le pilote sur
+`Utility.lean` et #6275/#6277/#6280/#6284 pour la continuite du rollout).
+Namespace suffix `_en` applique au fichier EN (anti-collision, conforme code-style.md #4980).
 -/
 
 import Mathlib.CategoryTheory.Sites.SheafHom
@@ -33,14 +52,13 @@ namespace Grothendieck.SheafHom
 
 open CategoryTheory Category Opposite Limits
 
-variable {C : Type u} [Category.{v} C] {J : GrothendieckTopology C}
-  {A : Type u'} [Category.{v'} A]
+/-!
+## Hom interne au niveau préfaisceau
 
-/-! ## 1. Presheaf-level internal hom
-
-Given presheaves F and G, `presheafHom F G` is a presheaf of types whose
-sections over X are natural transformations between the restrictions of
-F and G to Over X. Its global sections are exactly morphisms F ⟶ G.
+Étant donnés des préfaisceaux F et G, `presheafHom F G` est un préfaisceau de
+types dont les sections sur X sont les transformations naturelles entre les
+restrictions de F et G à Over X. Ses sections globales sont exactement les
+morphismes F ⟶ G.
 -/
 
 -- The presheaf internal hom: sections over X are morphisms between
@@ -51,26 +69,30 @@ F and G to Over X. Its global sections are exactly morphisms F ⟶ G.
 -- (presheafHom F G).sections ≃ (F ⟶ G)
 #check @presheafHomSectionsEquiv
 
-/-! ## 2. Sheaf condition for the internal hom
+/-!
+## Condition de faisceau pour le hom interne
 
-When G is a sheaf, the presheaf internal hom `presheafHom F G` is itself
-a sheaf. This is the key technical fact enabling the sheaf-level internal hom.
+Quand G est un faisceau, le préfaisceau hom interne `presheafHom F G` est lui-même
+un faisceau. C'est le fait technique clé qui permet le hom interne au niveau faisceau.
 -/
 
 -- When G is a sheaf, the presheaf internal hom presheafHom F G is a sheaf.
 #check @Presheaf.IsSheaf.hom
 
-/-- Bridge theorem: when G is a sheaf, presheafHom F G satisfies the sheaf
-condition (via the isSheaf_of_type equivalence). -/
+/-- Théorème pont : quand G est un faisceau, presheafHom F G satisfait la
+    condition de faisceau (via l'équivalence isSheaf_of_type). -/
+
 theorem presheafHom_isSheaf_of_isSheaf (F G : Cᵒᵖ ⥤ A)
     (hG : Presheaf.IsSheaf J G) :
     Presheaf.IsSheaf J (presheafHom F G) :=
   Presheaf.IsSheaf.hom F G hG
 
-/-! ## 3. Sheaf-level internal hom
+/-!
+## Hom interne au niveau faisceau
 
-The sheaf internal hom `sheafHom F G` is the sheafification-ready version
-living in Sheaf J (Type _). Its sections identify to sheaf morphisms F ⟶ G.
+Le hom interne faisceau `sheafHom F G` est la version prête pour la faisceautisation
+vivant dans Sheaf J (Type _). Ses sections s'identifient aux morphismes de faisceaux
+F ⟶ G.
 -/
 
 -- The sheaf internal hom: sheafHom F G sends X to the morphisms between
@@ -86,51 +108,59 @@ living in Sheaf J (Type _). Its sections identify to sheaf morphisms F ⟶ G.
 -- The canonical isomorphism between sheafHom' and presheafHom.
 #check @sheafHom'Iso
 
-/-! ## 4. Bridge theorems: internal hom as a Sheaf
+/-!
+## Le hom interne préserve la condition de faisceau
 
-The internal hom construction preserves the sheaf condition, making the
-category of sheaves enriched over itself. This is the first step toward
-the Cartesian closed structure of Sheaf J (Type _).
+La construction du hom interne préserve la condition de faisceau, rendant la
+catégorie des faisceaux enrichie sur elle-même. C'est la première étape vers
+la structure cartésienne fermée de Sheaf J (Type _).
 -/
 
-/-- Construction bridge: from a sheaf morphism F ⟶ G, obtain a section
-of the sheaf internal hom. This is the inverse direction of
-sheafHomSectionsEquiv. -/
+/-- Pont de construction : à partir d'un morphisme de faisceaux F ⟶ G,
+    obtenir une section du hom interne faisceau. C'est la direction inverse de
+    sheafHomSectionsEquiv. -/
+
 noncomputable def sheafHomSectionOfHom (F G : Sheaf J A) (φ : F ⟶ G) :
     (sheafHom F G).1.sections :=
   (sheafHomSectionsEquiv F G).symm φ
 
-/-- Construction bridge: from a section of the sheaf internal hom, obtain
-a sheaf morphism F ⟶ G. This is the forward direction of
-sheafHomSectionsEquiv. -/
+/-- Pont de construction : à partir d'une section du hom interne faisceau,
+    obtenir un morphisme de faisceaux F ⟶ G. C'est la direction avant de
+    sheafHomSectionsEquiv. -/
+
 noncomputable def sheafHomOfSection (F G : Sheaf J A)
     (s : (sheafHom F G).1.sections) : F ⟶ G :=
   (sheafHomSectionsEquiv F G) s
 
-/-- The sheaf internal hom sheafHom F G is indeed a sheaf (by construction). -/
+/-- Le hom interne faisceau sheafHom F G est bien un faisceau (par construction). -/
+
 theorem sheafHom_isSheaf (F G : Sheaf J A) :
     Presheaf.IsSheaf J (sheafHom F G).1 :=
   (sheafHom F G).2
 
-/-- The underlying presheaf of sheafHom is isomorphic to presheafHom. -/
+/-- Le préfaisceau sous-jacent de sheafHom est isomorphe à presheafHom. -/
+
 theorem sheafHom'_iso_presheafHom (F G : Sheaf J A) :
     Nonempty (sheafHom' F G ≅ presheafHom F.1 G.1) :=
   ⟨sheafHom'Iso F G⟩
 
-/-! ## 5. Section-morphism roundtrips
+/-!
+## Roundtrips sections-morphismes
 
-The equivalence between sections and morphisms gives us roundtrip lemmas
-that witness the bijection (sheafHom F G).sections ≃ (F ⟶ G).
+L'équivalence entre sections et morphismes nous donne des lemmes de roundtrip
+qui témoignent la bijection (sheafHom F G).sections ≃ (F ⟶ G).
 -/
 
-/-- Roundtrip: section → morphism → section is the identity. -/
+/-- Roundtrip : section → morphisme → section est l'identité. -/
+
 theorem sheafHomSectionsEquiv_roundtrip (F G : Sheaf J A)
     (s : (sheafHom F G).1.sections) :
     sheafHomSectionOfHom F G (sheafHomOfSection F G s) = s := by
   dsimp [sheafHomSectionOfHom, sheafHomOfSection]
   exact (sheafHomSectionsEquiv F G).left_inv s
 
-/-- Roundtrip: morphism → section → morphism is the identity. -/
+/-- Roundtrip : morphisme → section → morphisme est l'identité. -/
+
 theorem sheafHomSectionsEquiv_roundtrip_symm (F G : Sheaf J A)
     (φ : F ⟶ G) :
     sheafHomOfSection F G (sheafHomSectionOfHom F G φ) = φ := by
