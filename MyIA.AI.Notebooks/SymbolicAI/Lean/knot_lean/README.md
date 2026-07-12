@@ -5,7 +5,7 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
 Epic #2874 (Phase 5 en cours). Toolchain `v4.31.0-rc1`.
 
-## État des sorries (vérifié 2026-07-06, 16 réels — 14 + 2 du transfer backward PARTIEL #3124, `num` prouvé)
+## État des sorries (vérifié 2026-07-06, re-confirmé 2026-07-12, 16 réels — 14 + 2 du transfer backward PARTIEL #3124, `num` prouvé)
 
 Deux comptes, selon le filtre :
 
@@ -255,8 +255,8 @@ Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Bo
 | Fichier | Contenu | sorry réels |
 |---------|---------|-------------|
 | `Knots/Basic.lean` | Définitions (Knot, Link, PD-code, nœuds nommés), `KnotDiagram.wf` | 0 |
-| `Knots/Reidemeister.lean` | Mouvements R1/R2/R3 (modèle Phase 5), `ReidemeisterEquiv`, symétries | 2 |
-| `Knots/Invariant.lean` | 3-colorabilité (Fox), crossing number, unknotting number, contre-exemple PR1, transfer R1 forward (#3000) + backward PARTIEL (#3124) | 6 |
+| `Knots/Reidemeister.lean` | Mouvements R1/R2/R3 (modèle Phase 5), `ReidemeisterEquiv`, symétries | 1 |
+| `Knots/Invariant.lean` | 3-colorabilité (Fox), crossing number, unknotting number, contre-exemple PR1, transfer R1 forward (#3000) + backward PARTIEL (#3124) | 5 |
 | `Knots/Conway.lean` | Nœud de Conway (11n34), Piccirillo, dichotomie lisse/topologique | 8 |
 | `Knots/Lidman.lean` | 11n102, unknotting number = 2 | 2 |
 | `Knots/MathlibPrerequisites.lean` | Index des prérequis Mathlib manquants par tier | 0 |
@@ -326,7 +326,7 @@ Le marquee `tricolorable_invariant` reste **gated** sur deux sous-buts résiduel
 §9.1 du backward : la symétrie des couleurs sur le crossing modifié `Y` (`fox`) et
 le lift « all-distinct » hors range du diagramme source (`col`). Leur clôture
 permettrait de composer forward + backward en une bi-implication R1 connectée
-(**17 sorry réels** au total). Les résultats « lointains » — Conway non-slice
+(**16 sorry réels** au total). Les résultats « lointains » — Conway non-slice
 (Piccirillo), unknotting number de Lidman, théorème Reidemeister ↔ isotopie
 ambiante — restent du **scaffolding permanent** : ils excèdent la portée actuelle
 de Mathlib (topologie PL des 3-variétés, Heegaard-Floer).
