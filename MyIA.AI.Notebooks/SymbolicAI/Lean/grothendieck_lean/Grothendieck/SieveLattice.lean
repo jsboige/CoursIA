@@ -43,7 +43,7 @@ Ces identités complètent le tableau commencé par la calibration P2
 (`pullback_top` dans `Calibration.lean`) et ouvrent la voie aux
 travaux de Phase 3 sur la génération de cribles et la faisceautisation.
 
-Epic #1646, Phase 2 (#2159). Tous les `sorry` éliminés à la création.
+Epic #1646, Phase 2 (#2159). Tous les `sorry`s éliminés à la création.
 
 ### Hommage calibration harness + Phase 2+ rollout grothendieck_lein (#4980)
 
@@ -80,7 +80,7 @@ Ce module formalise :
 - `pullback_monotone` : pullback monotone dans le crible
 
 Le pont Mathlib utilisé = `Mathlib.CategoryTheory.Sites.Grothendieck`
-(1 import byte-identique LF). Tous les `sorry` ont été éliminés
+(1 import byte-identique LF). Tous les `sorry`s ont été éliminés
 (Epic #1453). **Densité 1.339 thm/KB** (4/2984) — analogue structurel
 direct c.388 SieveOps (1.864 thm/KB) + c.390 SieveGenerate (1.424
 thm/KB) ; densité modeste vs c.388 car substance = axiomes functoriels
@@ -134,7 +134,7 @@ distincts, sans `---` interne, comme c.366-c.392).
   LeftExact, SheafCohomology/Cech) OU Conway/Life/* 13 fichiers OU
   Lemmas 3 restants OU hors-Lean #5985/#6051 OU GPU #5105 po-2024.
 
-Tous les `sorry` ont été éliminés (Epic #1453, #1646).
+Tous les `sorry`s ont été éliminés (Epic #1453, #1646).
 -/
 import Mathlib.CategoryTheory.Sites.Grothendieck
 
