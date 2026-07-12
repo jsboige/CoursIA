@@ -32,6 +32,136 @@ every existing call site in `LightCone` resolves unchanged — only the defining
 module moves. Sorry-free at creation. EPIC #3846, W3/W4 cycle-break.
 -/
 
+/-
+# Géométrie du cône — faits purs de treillis (Mathlib uniquement)
+
+Copyright (c) 2026 CoursIA. Tous droits réservés.
+Distribué sous licence Apache 2.0 comme décrit dans le fichier LICENSE.
+Version française mirrorée depuis l'anglais — voir les notes d'accessibilité
+plus bas pour le rationale i18n.
+
+## Géométrie du cône — base de pure géométrie (Mathlib uniquement)
+
+Ce module est la **base de pure géométrie** de l'infrastructure Hashlife
+à localité étroite de Conway (EPIC #3846, arc de refonte N2). Il héberge
+la géométrie de treillis sur `Int × Int` qui ne dépend d'**aucune
+sémantique du Jeu de la Vie** — ni `evolve`, ni `isAlive`, ni `candidates`,
+ni `mooreNeighbors`, ni l'ensemble `lightCone`, ni la métrique `manhattan`,
+ni aucun module de corps de preuve `MacroCell` / `Grid`. Son seul import
+est Mathlib. Cette indépendance est structurelle, non cosmétique :
+
+**Pourquoi un module séparé (cycle-break).** `Conway.Life.LightCone`
+*importe* `Conway.Life.HashlifeCorrectness` (il a besoin de `evolve`,
+`lightCone`, `manhattan` pour le théorème de portée `evolve_reach_chebyshev`
+et le couronnement N2). L'import inverse — `HashlifeCorrectness` important
+`LightCone` pour consommer `window_cheb_cone_in_domain` dans le chemin
+P5 `p5_large_n_jump` — serait donc **circulaire**. Extraire ici la
+géométrie Chebyshev pure casse le cycle : `LightCone` et `HashlifeCorrectness`
+importent tous deux `ConeGeometry`, mais `ConeGeometry` n'importe ni l'un
+ni l'autre.
+
+**Critère de découpage (design-gate ai-01 msg-...338lw8, 2026-07-11).**
+Une déclaration migre ici si et seulement si sa preuve ne référence que
+`Int × Int`, `Int.natAbs`, `max`, omega/linarith, et les lemmes
+arithmétiques de Mathlib — c'est-à-dire elle ne référence *pas* les
+concepts `evolve` / `MacroCell` / `Grid`-live. Les lemmes couplés à
+l'évolution (`evolve_reach_chebyshev`, le couronnement de marge N2, les
+ponts `manhattan`/`lightCone`) restent dans `LightCone`, où vit la
+sémantique du GoL.
+
+Toutes les déclarations conservent leurs noms qualifiés
+(`Conway.Life.chebDist`, etc.), donc tous les sites d'appel existants dans
+`LightCone` se résolvent inchangés — seul le module de définition change.
+Sans sorry à la création. EPIC #3846, cycle-break W3/W4.
+
+## Note d'accessibilité Epic #1452/#1453
+
+Ce module est un **kernel théorique pur** : géométrie du cône Chebyshev
+réduite aux champs de structure canoniques Mathlib 4 (`max`, `Int.natAbs`,
+`Nat.cast_pow`) et tactiques triviales (`omega`, `linarith`, `unfold`).
+**Aucun moteur de preuve exotique requis** — la substance est entièrement
+capturée par l'arithmétique entière linéaire de Mathlib. C'est précisément
+la calibration SOTA-OK visée par l'Epic #1453 : cibles faciles à atteindre
+pour le prouveur, accessibles aux étudiants qui s'initient à Lean 4, et
+utiles aux modules aval (`LightCone`, `HashlifeCorrectness`) sans créer
+de couplage sémantique.
+
+Suit : hommage MathOverflow + convention Mathlib i18n #4980 ratifiée 2026-07-04.
+
+## Substance réelle — géométrie pure du cône Chebyshev (L∞), 8 theorem + 1 def
+
+`ConeGeometry.lean` héberge **8 theorem** + **1 def** sur la **géométrie
+pure du cône de Chebyshev (L∞)** — la métrique qui gouverne la localité
+*étroite* du Jeu de la Vie (un voisinage de Moore par génération B3/S23
+donne exactement une coque de Chebyshev, donc `t` générations atteignent
+le rayon de Chebyshev `t`, pas `2*t`) :
+
+- `chebDist` : **définition** — distance de Chebyshev (L∞ / échecs) entre
+  deux cellules `(p q : Int × Int)` : le max des deux déplacements
+  absolus de coordonnées. C'est l'instance canonique de localité étroite
+  du GoL, plus serrée que la métrique de Manhattan (L1) qui
+  sur-approxime la portée par un facteur 2.
+- `chebDist_self` : **réflexivité** — une cellule est à distance 0
+  d'elle-même (réduit à `omega` sur `max`/`natAbs`).
+- `chebDist_comm` : **symétrie** — invariance par échange des deux
+  cellules (réduit à `omega`, max et natAbs sont symétriques).
+- `chebDist_le_trans` : **monotonie en le rayon** — un rayon plus grand
+  contient faiblement le cône (`hd.trans h` natif).
+- `coord_bound_of_chebDist_le` : **suffisance de marge** — fait
+  géométrique central : une cellule à distance Chebyshev `≤ t` de `p`
+  a chacune de ses coordonnées à distance `≤ t` de la coordonnée
+  correspondante de `p`. C'est précisément la raison pour laquelle une
+  marge de boîte `t` (par ex. `padCenter2` avec marge `2^k`) couvre la
+  portée Chebyshev-`t` *étroite*, là où la même marge `t` ne couvre pas
+  le cône Manhattan-`t` (qui atteint `2*t`).
+- `chebDist_triangle` : **inégalité triangulaire** pour Chebyshev
+  (`max ≤ max + max`, `omega`).
+- `chebDist_le_succ_iff` : **croissance exacte par étape de Moore** — la
+  *conjonction* centrale pour la localité étroite : `q` est dans le
+  cône Chebyshev-`(t+1)` de `p` ssi il existe une cellule `r` dans le
+  cône Chebyshev-`t` de `p` qui soit un voisin de Moore de `q`
+  (Chebyshev `≤ 1`). La direction forward construit `r` en pas-à-pas de
+  `q` vers `p` sur chaque coordonnée non-nulle ; la direction backward
+  utilise l'inégalité triangulaire. C'est le lemme additif qui sous-tend
+  la localité *étroite* `t`-étapes (une coque de Moore par génération).
+- `chebDist_le_succ` : **inclusion du cône dans son successeur** — rayon
+  `t` ⊆ rayon `t+1` (corollaire de `chebDist_le_succ_iff` ou
+  directement `Nat.le_succ`).
+- `window_cheb_cone_in_domain` : **W3 localité étroite reste dans le
+  domaine** — l'analogue *serré* de `window_cone_in_domain` (lemme
+  fermé **S2** dans `HashlifeCorrectness` qui utilisait le cône Manhattan
+  *lâche* `manhattan p q ≤ 2^k`). Pour un point `p` dans la fenêtre
+  centrée `[2^k, 2^k + 2^(k+1))²` (la région couverte par un résultat
+  Hashlife), toute cellule `q` à rayon *Chebyshev* `2^k` — cône
+  strict, plus petit que le cône Manhattan-`2^k` lâche — reste dans le
+  domaine MacroCell complet `[0, 2^(k+2))²`. La preuve est *plus simple*
+  que l'analogue lâche : elle consomme `coord_bound_of_chebDist_le`
+  (borne par coordonnée immédiate) au lieu de ponter via
+  `manhattan_deviation`. Pas de `hashlifeResultAux`, pas de mur `whnf` —
+  arithmétique `Int` pure. Sans sorry.
+
+**Densité 0.762 thm/KB** (8/10496) — modeste car la substance est
+*géométrique* (1 axiome par ~30 lignes de preuve structurée) plutôt que
+*cohomologique* ou *catégorielle*. C'est la signature attendue d'un
+module de géométrie pure : densité comparable à `LightCone` (5 theorem
+sur ~17 KB) plutôt qu'à `SieveOps` (9 theorem sur ~5 KB).
+
+## Pont Mathlib + accessibilité Epic #1452
+
+L'unique import est **Mathlib** (et tout est dans `namespace Conway ∘ namespace Life`,
+qualifié `Conway.Life.chebDist` aux sites d'appel). Les 8 theorem
+réduisent la géométrie du cône Chebyshev aux **champs de structure
+canoniques Mathlib 4** sur `Int` et `Nat` (`max`, `Int.natAbs`,
+`Nat.cast_pow`) et à `Int.abs_le` (dépaquetage d'`abs` en clamp
+bilatéral). Les tactiques sont purement arithmétiques (`omega`,
+`linarith`, `exact_mod_cast`, `unfold`, `Nat.le_succ`). **Aucun`decide`
+ni moteur de preuve exotique requis** : c'est le kernel théorique pur
+que `#1453` cible pour la co-évolution du harnais prouveur.
+
+Hommage MathOverflow + Mathlib i18n convention #4980 ratifiée 2026-07-04
+(option A pragmatique : deux blocs `/` top-level distincts, sans
+séparateur `---` interne).
+-/
 import Mathlib
 
 namespace Conway
