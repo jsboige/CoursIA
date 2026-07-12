@@ -2666,6 +2666,106 @@ def test_legacy_fallback_still_works_when_no_workspace_root(monkeypatch):
 # See #1453 follow-up to PR #6067.
 # ---------------------------------------------------------------------------
 
+
+# ---------------------------------------------------------------------------
+# _search_via_lsp concurrency (c.343, #1453) — the SearchAgent runs exact?
+# and apply? in parallel to halve wall-clock. Each search_lean call is a
+# `lake env lean --stdin` subprocess dominated by Mathlib import elaboration
+# (~98 s); the old sequential loop was ~196 s and routinely overran the
+# 120 s per-call timeout on heavy modules, returning zero suggestions. The
+# tests pin: both tactics fire, order is preserved (exact? then apply?), and
+# one tactic failing does not poison the other.
+# ---------------------------------------------------------------------------
+
+def _build_search_tools(monkeypatch, tactic_results, calls):
+    """Build a SearchTools whose verifier.search_lean records calls and
+    returns per-tactic results. ``tactic_results`` maps tactic -> suggestions
+    list (or Exception instance to raise)."""
+    import prover.verifier as vmod
+    import prover.lean_utils as lu
+    from prover.state import ProofState
+    from prover.tools import SearchTools
+
+    class _FakeVerifier:
+        def search_lean(self, module_name, goal, tactic):
+            calls.append((tactic, module_name, goal))
+            res = tactic_results.get(tactic, [])
+            if isinstance(res, Exception):
+                raise res
+            return {"success": len(res) > 0, "suggestions": res,
+                    "tactic_used": tactic, "goal": goal[:200], "raw_output": ""}
+
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: _FakeVerifier())
+    monkeypatch.setattr(lu, "resolve_lake_module",
+                        lambda fp: ("/fake/lake_root", "Fake.Module"))
+    return SearchTools(ProofState(theorem_statement="t"), filepath="/fake/Fake/Module.lean")
+
+
+def test_search_via_lsp_runs_both_tactics_and_preserves_order(monkeypatch):
+    """exact? and apply? both execute; suggestions return exact?-first."""
+    calls = []
+    tools = _build_search_tools(monkeypatch, {
+        "exact?": [{"tactic": "exact le_one"}, {"tactic": "exact le_two"}],
+        "apply?": [{"tactic": "apply le_three"}],
+    }, calls)
+
+    results = tools._search_via_lsp("0 ≤ n")
+
+    tactics_called = [c[0] for c in calls]
+    assert set(tactics_called) == {"exact?", "apply?"}, (
+        f"both tactics must fire, got {tactics_called}"
+    )
+    # Fixed order: exact? suggestions before apply? suggestions, regardless
+    # of which subprocess finished first.
+    sources = [r["source"] for r in results]
+    assert sources == ["lsp_exact?", "lsp_exact?", "lsp_apply?"], (
+        f"order must be exact?-first then apply?, got {sources}"
+    )
+    assert [r["statement"] for r in results] == [
+        "exact le_one", "exact le_two", "apply le_three"], (
+        "suggestion statements must map through unchanged"
+    )
+
+
+def test_search_via_lsp_resilient_to_one_tactic_failing(monkeypatch):
+    """If apply? raises, exact? suggestions still return (no poisoning)."""
+    calls = []
+    tools = _build_search_tools(monkeypatch, {
+        "exact?": [{"tactic": "exact survived"}],
+        "apply?": RuntimeError("apply? subprocess crashed"),
+    }, calls)
+
+    results = tools._search_via_lsp("goal")
+
+    assert [r["statement"] for r in results] == ["exact survived"], (
+        "exact? result must survive an apply? failure"
+    )
+    assert {c[0] for c in calls} == {"exact?", "apply?"}, (
+        "both tactics must have been attempted"
+    )
+
+
+def test_search_via_lsp_empty_when_verifier_unavailable(monkeypatch):
+    """A dead verifier channel returns [] (logged), never propagates."""
+    import prover.verifier as vmod
+    import prover.lean_utils as lu
+    from prover.state import ProofState
+    from prover.tools import SearchTools
+
+    def _boom(*a, **k):
+        raise FileNotFoundError("lean not on PATH")
+
+    monkeypatch.setattr(vmod, "get_verifier", _boom)
+    monkeypatch.setattr(lu, "resolve_lake_module",
+                        lambda fp: ("/fake/lake_root", "Fake.Module"))
+    tools = SearchTools(ProofState(theorem_statement="t"),
+                        filepath="/fake/Fake/Module.lean")
+
+    assert tools._search_via_lsp("goal") == [], (
+        "verifier failure must degrade to empty, not raise"
+    )
+
+
 def test_latch_uses_resolve_lake_module_for_depth3_files(tmp_path):
     """Latch code path must call resolve_lake_module() on the file path so
     `project_dir` lands on the directory holding the lakefile and the relative
