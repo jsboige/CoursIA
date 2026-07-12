@@ -480,8 +480,21 @@ class SearchTools:
         return json.dumps(found, indent=2, ensure_ascii=False)
 
     def _search_via_lsp(self, goal: str) -> list:
-        """Search Mathlib using Lean LSP via exact?/apply? tactics."""
+        """Search Mathlib using Lean LSP via exact?/apply? tactics.
+
+        Runs both tactics CONCURRENTLY. Each ``verifier.search_lean`` call
+        spawns a ``lake env lean --stdin`` subprocess whose cost is dominated
+        by Mathlib import elaboration (~98 s on a heavy module). Sequentially
+        that is ~196 s wall-clock — both calls routinely overrun the per-call
+        120 s timeout on complex P4/P5 goals, so the SearchAgent falls back to
+        the LLM with zero Mathlib hints (root cause of the empty-LSP traces on
+        the P4 mono-verrou). Concurrent execution collapses wall-clock to
+        ~max(single call), so at least one tactic tends to land before the
+        timeout. Suggestions stay attributed per tactic and returned in fixed
+        order (exact? first, apply? second) — no parsing or contract change.
+        """
         try:
+            from concurrent.futures import ThreadPoolExecutor
             from .verifier import get_verifier
             from .lean_utils import resolve_lake_module
             # Resolve the real Lake root + dotted module by walking up to the
@@ -493,18 +506,41 @@ class SearchTools:
             lake_root, module_name = resolve_lake_module(self._filepath)
             verifier = get_verifier(lake_root)
 
-            results = []
-            for tactic in ["exact?", "apply?"]:
-                search_result = verifier.search_lean(module_name, goal, tactic)
-                for suggestion in search_result.get("suggestions", []):
-                    results.append({
-                        "name": suggestion["tactic"][:50],
-                        "statement": suggestion["tactic"],
-                        "namespace": "Mathlib",
-                        "relevance": 0.9,
-                        "source": f"lsp_{tactic}",
-                    })
-            return results
+            tactics = ["exact?", "apply?"]
+            # Preserve display order (exact? first) regardless of completion
+            # order: a dict keyed by tactic, flattened in fixed sequence at the
+            # end.
+            by_tactic: dict = {t: [] for t in tactics}
+            with ThreadPoolExecutor(max_workers=len(tactics)) as pool:
+                future_to_tactic = {
+                    pool.submit(verifier.search_lean, module_name, goal, t): t
+                    for t in tactics
+                }
+                for fut, t in future_to_tactic.items():
+                    try:
+                        search_result = fut.result()
+                    except Exception as te:
+                        # A single tactic failing must not poison the other:
+                        # surface it and keep going so a working exact? is not
+                        # lost because apply? raised.
+                        if self._trace:
+                            self._trace.log(
+                                agent="SearchAgent", role="tool",
+                                content=f"_search_via_lsp {t} failed: "
+                                        f"{type(te).__name__}: {te}",
+                                duration_s=0.0, tool_name="search_via_lsp",
+                                tool_result="error",
+                            )
+                        continue
+                    for suggestion in search_result.get("suggestions", []):
+                        by_tactic[t].append({
+                            "name": suggestion["tactic"][:50],
+                            "statement": suggestion["tactic"],
+                            "namespace": "Mathlib",
+                            "relevance": 0.9,
+                            "source": f"lsp_{t}",
+                        })
+            return by_tactic["exact?"] + by_tactic["apply?"]
         except Exception as e:
             # Do not swallow silently: a dead LSP channel used to look identical
             # to "no lemmas found". Surface it in the trace for diagnosis.
