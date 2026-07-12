@@ -2538,8 +2538,94 @@ Capacités distinctives du moteur QC exercées (QuantBook data pull, QC Framewor
 
 Part of #3801, #1621
 
+---
 
-Part of #3801
+## Entry #028 — Probas/PyMC (1-15) (owner po-2025 strict, c.411)
 
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/Probas/PyMC/` (14 .ipynb : PyMC-1..15 hors PyMC-5 absent — série bayésienne Python native, parité #4956 d'Infer-1..15) |
+| Kernels | 1 : `python3` (14) — mono-kernel Python (vs Infer-1..15 `.net-csharp` jumeaux entry #006) |
+| Owner-lane | **po-2025 strict** (lane Python bayésienne native ; DecPyMC c.333 CLOSURE 7/7 + Probas/Infer #006 c.400 + Infer-extension #018 c.423) |
+| Date audit | 2026-07-12 (c.411) |
+| Auditeur | `myia-po-2025:CoursIA` |
+| Verdict agrégé | **SOTA-OK** (14/14 SOTA-OK, 14/14 DISCRIMINATING) |
 
-Part of #3801
+### Synthèse (14 notebooks, 452 cellules, 187 cellules code)
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
+|-----|-------|------|------|-----|-----------|--------|-------------|---------|
+| PyMC-1-Setup | 26 | 11 | 11/11 | 0 | 0 (3 ex.) | python3 | Beta-Bernoulli + **hierarchical 6-coin non-centered** (Sec.6) ; NUTS, `az.plot_posterior` | **SOTA-OK** |
+| PyMC-2-Gaussian-Mixtures | 23 | 10 | 10/10 | 0 | 0 (3 ex.) | python3 | `pm.NormalMixture`+`pm.Dirichlet`+`CompoundStep` NUTS+BinaryGibbsMetropolis ; label-switching | **SOTA-OK** |
+| PyMC-3-Factor-Graphs | 18 | 8 | 8/8 | 0 | 0 (3 ex.) | python3 | Murder Mystery (explaining-away) + Monty Hall ; `pm.Categorical`+`CategoricalGibbsMetropolis` | **SOTA-OK** |
+| PyMC-4-Bayesian-Networks | 26 | 11 | 11/11 | 0 | 0 (4 ex.) | python3 | Wet Grass DAG, d-separation, **do-calculus** (P(Cloudy\|do(Rain=1))=0.500 vs obs 0.800, Pearl 2000) | **SOTA-OK** |
+| PyMC-6-Debugging | 43 | 13 | 13/13 | 0 | 0 (3 ex.) | python3 | **Neal funnel + non-centered reparam + NUTS vs ADVI** ; 573 divergences live ; R-hat/ESS (Vehtari 2021) | **SOTA-OK** |
+| PyMC-7-Skills-IRT | 33 | 14 | 14/14 | 0 | 0 (4 ex.) | python3 | IRT 1PL/2PL probit + DINA (AND-gate) ; `pm.math.invprobit`, `sklearn.roc_curve/auc` | **SOTA-OK** |
+| PyMC-8-TrueSkill | 30 | 13 | 13/13 | 0 | 0 (3 ex.) | python3 | Latent-skill Gaussian ranking, `pm.Potential`, online/team/FFA ; EP V(t)/W(t) dérivé Sec.7bis | **SOTA-OK** |
+| PyMC-9-Classification | 22 | 10 | 10/10 | 0 | 0 (3 ex.) | python3 | Probit classifier (Bayes Point Machine) + A/B testing + CTR ; Beta-Binomial (BDA3) | **SOTA-OK** |
+| PyMC-10-Model-Selection | 35 | 16 | 16/16 | 0 | 0 (3 ex.) | python3 | **WAIC/LOO** (`az.compare`/`az.loo`, `pm.compute_log_likelihood`), ARD, Pareto k | **SOTA-OK** |
+| PyMC-11-Topic-Models | 33 | 15 | 15/15 | 0 | 0 (3 ex.) | python3 | **LDA** (`pm.Dirichlet`/`pm.Multinomial`), symmetry-breaking ; sklearn LDA réf | **SOTA-OK** |
+| PyMC-12-Modeles-Hierarchiques | 23 | 9 | 9/9 | 0 | 0 (3 ex.) | python3 | **Hierarchical partial pooling + shrinkage**, non-centered (`mu+sigma*z`), funnel, MSE no-pool 2.825→hier 0.983 (65%) | **SOTA-OK** |
+| PyMC-13-Crowdsourcing | 43 | 16 | 16/16 | 0 | 0 (3 ex.) | python3 | Dawid-Skene, Honest/Biased Worker, Community hier ; EM vs NUTS disclosed | **SOTA-OK** |
+| PyMC-14-Sequences | 39 | 17 | 17/17 | 0 | 0 (5 ex.) | python3 | **HMM** (Forward-Backward hand-rolled + `pm.NormalMixture` marginalized states), regime/anomaly | **SOTA-OK** |
+| PyMC-15-Recommenders | 58 | 24 | 24/24 | 0 | 0 (3 ex.) | python3 | **PMF** (matrix factorization), cold-start, click-model ; 163 divergences shown → bias-fix | **SOTA-OK** |
+| **TOTAL** | **452** | **187** | **187/187** | **0** | **0** | python3 | PyMC 5.28.5 + ArviZ 0.23.4 | **SOTA-OK 14/14** |
+
+- **EXEC_PROVED global** : 187/187 (100%) — `execution_count != null` sur 187/187 cellules code.
+- **Erreurs runtime** : 0/14.
+- **Violations C.1** : 0/14 (regex `raise NotImplementedError|assert False|1/0` = 0 hit ; stubs `result = None # TODO etudiant` conformes).
+
+### Vrais outils SOTA invoqués (vérifiés G.1 imports réels)
+
+- **PyMC 5.28.5** (`import pymc as pm`) — 14/14 notebooks. Vraie inférence MCMC **NUTS** (`pm.sample`) sur modèles bayésiens non-conjugués. API massive : `pm.Normal/Beta/Binomial/Categorical/Dirichlet/NormalMixture/Bernoulli`, `pm.math.sigmoid/invprobit`, `pm.Potential`, `pm.Deterministic`, `pm.sample_posterior_predictive`, `pm.compute_log_likelihood`, `CompoundStep` (NUTS+Gibbs), `pm.fit` (ADVI).
+- **ArviZ 0.23.4** (`import arviz as az`) — 14/14 notebooks. Diagnostics SOTA : `az.summary`, `az.plot_trace/plot_posterior/plot_energy/plot_compare`, `az.compare(ic="waic"/"loo")`, `az.loo`, `pareto_k`. Vehtari 2021 (R-hat<1.01, ESS>400).
+- **PyTensor** (`import pytensor as pt`) — `pt.switch`, `pt.sigmoid`, `pt.dot` (backend tensoriel PyMC 5.x).
+- **scipy.stats** (7 nb) — `pearsonr` (collider corr PyMC-4), distributions de référence.
+- **scikit-learn** (3 nb) — `roc_curve/auc` (IRT PyMC-7), `LatentDirichletAllocation` réf (PyMC-11).
+- **matplotlib** (13 nb) — visualisation posteriors/diagnostics.
+
+### Disclosures honnêtes vérifiées (le cœur pédagogique de la série)
+
+Cette série est **exceptionnellement honnête sur les diagnostics sampler** — discipline Stop-&-Repair :
+
+- **PyMC-6 (Debugging)** = notebook diagnostic canonique : montre **573 divergences live** dans l'exemple buggy (funnel centré), puis la fix non-centrée + compare NUTS vs ADVI (« ADVI sous-estime l'incertitude »). Funnel (Neal 2003, Betancourt & Girolami 2015). **Le plus fort notebook "honest diagnostics" du registre axe-2 avec ICT-24.**
+- **PyMC-12 (Hierarchiques)** = notebook non-centré canonique : section dédiée « Divergences et funnel de Neal — pourquoi le non-centrage », comparaison centré-vs-non-centré, **shrinkage quantifié MSE no-pool 2.825 → hier 0.983 (amélioration 65%)**, target_accept=0.95. (Confirme firsthand la fix #3801 dégénérescence, mémoire `pymc-degenerate-3801-noncentered-fix`.)
+- **PyMC-10 (Model-Selection)** = notebook LOO/WAIC canonique : appelle **explicitement `pm.compute_log_likelihood(trace)`** avant `az.compare`/`az.loo` — satisfait directement l'exigence log-likelihood LOO (mémoire `pymc-loo-log-likelihood-required`). Pareto k « k<0.7 = fiable ». Watanabe 2010, Vehtari-Gelman-Gabry 2017.
+- **PyMC-2 (GMM)** : **« There were 271 divergences after tuning »** montré live + label-switching expliqué (Redner & Walker 1984, Stephens 2000) ; `NormalMixture` encore 13 divergences.
+- **PyMC-15 (Recommenders/PMF)** : montre honnêtement l'échec du 1er modèle (**163 divergences**, Rhat>1.01, predictions ~0 = sous-identifié) → corrigé avec termes de biais user/item. RMSE reportée. Salakhutdinov & Mnih 2008.
+- **PyMC-13/PyMC-14** : préférent **honnêtement EM/Forward-Backward** là où l'algorithme exact existe (« NUTS ne peut pas échantillonner les variables latentes discrètes »), tout en démontrant NUTS réel sur le sous-modèle inférable. Dawid & Skene 1979, Cappe-Moulines-Ryden 2005.
+- **PyMC-8 (TrueSkill)** : dérive EP closed-form V(t)/W(t) (Sec.7bis) + déclare honnêtement que la dynamique τ² du vrai TrueSkill est **NON implémentée** ici.
+
+### Prong B — problème non-trivial (14/14 DISCRIMINATING)
+
+La série PyMC **exerce des capacités MCMC distinctives** sans équivalent closed-form : posteriors multi-modaux (PyMC-2 GMM, PyMC-10 mixture, PyMC-11 LDA), partial pooling hiérarchique avec shrinkage (PyMC-1 Sec.6, PyMC-12), inférence de skill latent/IRT (PyMC-7, PyMC-8, PyMC-13), comparaison de modèles via WAIC/LOO (PyMC-10), HMM emission recovery (PyMC-14), facteurs latents PMF (PyMC-15). **PyMC-1** ouvre sur Beta-Bernoulli (conjugué, closed-form) MAIS se corrige en Section 6 (« le posterior marginal n'a plus de forme fermée — l'échantillonnage MCMC devient nécessaire, pas décoratif ») avec un modèle hiérarchique non-centré — framing pédagogique explicite. **Aucun notebook dégénéré** (les 2 candidats scrutés — PyMC-1 conjugué, PyMC-15 PMF sous-identifié — passent : PyMC-1 ajoute le hiérarchique ; PyMC-15 documente honnêtement l'échec + corrige).
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 (pas d'erreur volontaire) | **CONFORME** | 0 `raise NotImplementedError`/`assert False`/`1/0` sur 187 cellules code |
+| C.2 (notebooks AVEC outputs) | **CONFORME** | 187/187 exec_count!=null + outputs cohérents |
+| Anti-regression | **CONFORME** | Audit read-only, 0 code notebook modifié |
+| SOTA Prong A (5 verdicts) | **CONFORME** | SOTA-OK 14/14 (vrai PyMC NUTS + ArviZ) |
+| SOTA Prong B (non-trivial) | **CONFORME** | 14/14 DISCRIMINATING |
+| Stop & Repair (secrets §6) | **CONFORME** | 0 hand-edit sortie ; sampler warnings surfacés (573/271/163 divergences), jamais supprimés |
+
+### Owner-lane volet
+
+**po-2025 strict** — Probas/PyMC = lane bayésienne Python native de po-2025 (parité #4956 d'Infer.NET entry #006). Audit consultatif additif (0 PR de substance, 0 code modifié), safe owner-lane. **Continuité c.411** : pivot SUBSTANCE après 2 cycles rendering (c.409 ICT-24 collapsed → c.410 figures #5780), R6 anti-monoculture honoré (registre audit EPIC #3801 ≠ doc/figure). Gap firsthand : le ledger couvrait DecPyMC (#005), Probas/Infer #006 (20 nb), Infer-extension #018 (Infer-16..19 + PyMC-16..19 twins), MAIS **PyMC-1..15 standalone (14 nb, parité d'Infer-1..15) = non audité** — cette entry comble le gap.
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **Audit 2×** : recensement structural worker (script python3 : 187 cells exec, 0 err, 0 C.1, imports SOTA comptés) + sous-agent sonnet (lecture substance 14 nb, verdict Prong-B evidence-cited). Worker re-vérifié firsthand sur 2 notebooks-clés : PyMC-12 (non-centered pattern `*\s*z` présent + MD « funnel de Neal » disclosure) + PyMC-10 (`log_likelihood`/`idata_kwargs` présent + 8 `az.compare`/`loo`/`waic`).
+- **0 faux positif C.1**, **0 workaround dégradé**, **7 disclosures honnêtes** vérifiées (PyMC-6/12/10/2/15/13/14/8).
+
+### Conclusions audit
+
+- **Substance Probas/PyMC = exceptionnellement propre**, 14 notebooks à **100% EXEC_PROVED** (187/187), conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. **Discipline des diagnostics sampler = la plus forte du registre axe-2** (divergences live 573/271/163, R-hat/ESS, funnel, LOO Pareto-k — jamais supprimés, toujours expliqués).
+- **Pas de fix nécessaire** : audit = SOTA-OK 14/14, 0 PR de substance.
+- **Pivot L335 anti-monoculture légitimé** : registre audit EPIC #3801 (substance) après 2 cycles rendering ; famille bayésienne Python distincte (parité #4956 d'Infer #006).
+- **Collision-avoidance** : entry **#028** (post consolidation PR #6216 qui introduit #019 + #023-#027). **Stacked sur PR #6216** (`docs/axe2-ledger-collapse-019-027`) — entry #028 suit #027 proprement ; rebase sur main au merge de #6216.
+- **Cumulatif** : entry #028 = **PyMC standalone** (14 nb) rejoint DecPyMC (#005, 7 nb) + Probas/Infer (#006, 20 nb) + Infer-extension (#018, 9 nb) → **famille Probas bayésienne COMPLÈTE** dans le registre (50 notebooks : 20 Infer + 14 PyMC + 7 DecPyMC + 9 extension). PyMC/ArviZ déjà comptés (#005/#018) ; cette entry consolide la couverture PyMC standalone.
+
+Part of #3801, #4956
