@@ -19,26 +19,29 @@
 | `1630-RiskParity-aligned` | 33286158 | c.332 | 309 | 0.361 | 8.303 % | 18.400 % | 74.841 % ($60 837) | OK |
 | `baseline-clone-TrendFollowing-repo-1630` | 33078355 | c.336 | 453 | 0.360 | 7.290 % | 15.000 % | 102.225 % ($83 495) | OK |
 | `1630-baseline-AdaptiveConformalRisk` | 33278416 | c.338 | 1079 | 0.449 | 11.522 % | 22.500 % | 139.392 % ($126 394) | OK |
+| `1630-baseline-PCAStatArbitrage` | 33281920 | c.339 | 2312 | 0.204 | 6.716 % | 31.800 % | 57.664 % ($715 857 †) | OK |
 
 > Les métriques sont consignées après exécution du backtest (résultat brut vérifié `totalOrders > 0`, garde anti-exception silencieuse c.331).
+>
+> **† Capital initial différent** : PCAStatArbitrage tourne avec un capital initial ~$1.24 M contre ~$78–91 k pour les autres stratégies (défaut QC). Le `netProfitAbsolute` ($715 857) n'est donc **pas comparable** inter-stratégies — seul le pourcentage `totalNetProfit` (57.664 %) l'est.
 
-## Lecture comparative (4 stratégies)
+## Lecture comparative (5 stratégies)
 
-Les quatre stratégies validées affichent deux profils distincts :
+Les cinq stratégies validées affichent trois profils distincts :
 
 - **Trois stratégies tactiques (DualMomentum, RiskParity, TrendFollowing) : Sharpe ~0.35–0.36** — rentabilité ajustée du risque modeste, dans la plage attendue pour une allocation tactique ETF multi-actifs (référence : Sharpe SPY long-terme ~0.4–0.5). Étonnamment, ces trois stratégies convergent vers la même valeur de Sharpe malgré des logiques de signaux différentes.
-- **AdaptiveConformalRisk se détache : Sharpe 0.449, CAGR 11.5 %, Net +139 %** — le premier membre de la cohorte dont le Sharpe **dépasse nettement la bande de référence ~0.36**. Le Probabilistic Sharpe Ratio (2.509 %) est aussi nettement supérieur aux autres (<1 %). Ce surcroît de rentabilité s'accompagne d'un drawdown plus profond (22.5 % vs 14.9–18.4 %) — un profil risque/rendement plus agressif, caractéristique d'une stratégie à risque adaptatif (conformal risk control).
-- **Drawdown** : AdaptiveConformalRisk (22.5 %) > RiskParity (18.4 %) > DualMomentum/TrendFollowing (14.9–15.0 %). Le risque adaptatif maximise le rendement au prix d'un drawdown plus large.
-- **Net Profit : AdaptiveConformalRisk (139 %, $126 394) > TrendFollowing (102 %) > DualMomentum (76 %) > RiskParity (75 %)**.
-- **Aucune exception silencieuse** : 309–1079 ordres confirment un rebalancement actif (vs le piège 0-trade de c.331, désormais détecté par le garde).
+- **AdaptiveConformalRisk se détache : Sharpe 0.449, CAGR 11.5 %, Net +139 %** — le seul membre de la cohorte dont le Sharpe **dépasse nettement la bande de référence ~0.36**. Le Probabilistic Sharpe Ratio (2.509 %) est aussi nettement supérieur aux autres (<1 %). Ce surcroît de rentabilité s'accompagne d'un drawdown plus profond (22.5 % vs 14.9–18.4 %) — un profil risque/rendement plus agressif, caractéristique d'une stratégie à risque adaptatif (conformal risk control).
+- **PCAStatArbitrage sous-performe nettement : Sharpe 0.204, CAGR 6.7 %, drawdown 31.8 %** — le **plus faible rendement ajusté du risque de la cohorte** et le **drawdown le plus profond**, malgré le nombre d'ordres le plus élevé (2312, ~2× ACR, ~7× les tactiques). Leçon pédagogique honnête : la sophistication conceptuelle (PCA statistical arbitrage, signaux mean-reversion à haute fréquence) **ne se traduit pas en alpha** sur cette période — la complexité du modèle n'est pas un gage de performance. Le PSR (0.497 %) est dans la moyenne basse.
+- **Drawdown** : PCAStatArbitrage (31.8 %) > AdaptiveConformalRisk (22.5 %) > RiskParity (18.4 %) > DualMomentum/TrendFollowing (14.9–15.0 %). Les deux stratégies « à risque adaptatif / quantitatif » (PCA, ACR) maximisent l'un le rendement (ACR), l'autre le drawdown (PCA) — sans WalkForward on ne peut départager skill de chance.
+- **Net Profit (pourcentage, comparable)** : AdaptiveConformalRisk (139 %) > TrendFollowing (102 %) > DualMomentum (76 %) > RiskParity (75 %) > **PCAStatArbitrage (58 %)**. Le `netProfitAbsolute` n'est **pas** comparable inter-stratégies (cf † capital initial).
+- **Aucune exception silencieuse** : 309–2312 ordres confirment un rebalancement actif (vs le piège 0-trade de c.331, désormais détecté par le garde).
 
-**Verdict honnête (G.2)** : NO BEATS manifesto reste l'interprétation prudente pour les 3 stratégies tactiques (Sharpe ~0.36 = plage benchmark). **AdaptiveConformalRisk est un candidat alpha prometteur** (Sharpe 0.449 + PSR 2.5 % vs ~0.36 + <1 % pour le reste) mais ce verdict nécessite, avant d'être affirmé, une validation multi-seed / walk-forward (cf [pr-review-discipline.md](../.claude/rules/pr-review-discipline.md) §C) pour exclure que l'écart ne soit un artefact du régime de la période. La cohorte sert de **baseline de référence** pour les stratégies restantes (PCAStatArbitrage, robustness-c2-regime).
+**Verdict honnête (G.2)** : NO BEATS manifesto reste l'interprétation prudente pour les 3 stratégies tactiques (Sharpe ~0.36 = plage benchmark) et **s'impose d'autant plus pour PCAStatArbitrage** (Sharpe 0.204 = **sous le benchmark**, drawdown maximal). **AdaptiveConformalRisk reste le seul candidat alpha prometteur** (Sharpe 0.449 + PSR 2.5 % vs ~0.36 + <1 % pour le reste) mais ce verdict nécessite, avant d'être affirmé, une validation multi-seed / walk-forward (cf [pr-review-discipline.md](../.claude/rules/pr-review-discipline.md) §C) pour exclure que l'écart ne soit un artefact du régime de la période. La cohorte sert de **baseline de référence** pour la dernière stratégie restante (robustness-c2-regime).
 
 ## Stratégies en file (cycles suivants)
 
 Backtests restants à lancer sur la cohorte, pour étendre la comparative :
 
-- `1630-baseline-PCAStatArbitrage` (33281920)
 - `1630-robustness-c2-regime` (33280244)
 
 ## Voir aussi
