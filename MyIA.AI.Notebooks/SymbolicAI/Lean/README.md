@@ -438,11 +438,11 @@ Les notebooks GameTheory side tracks (16b-16f) formalisent en Lean 4 des résult
 
 | résultat | Fichier Lean | Notebook GameTheory | Statut |
 |----------|-------------|---------------------|--------|
-| théorème d'Arrow (impossibilité) | `social_choice_lean/SocialChoice/Arrow.lean` | 16d | 0 sorry (Geanakoplos 2005) |
-| théorème de Sen (libéralisme) | `social_choice_lean/SocialChoice/Sen.lean` | 16e | 0 sorry (bidirectionnel) |
-| Valeur de Shapley | `cooperative_games_lean/CooperativeGames/Shapley.lean` | 16b | 1 sorry (en cours) |
-| Modèles de vote (Banks, STV) | `social_choice_lean/SocialChoice/Voting.lean` | 16f | 4 sorry (open problems) |
-| Gale-Shapley (stable marriage) | `game_theory_lean/StableMarriage/GaleShapley.lean` | (pas de notebook dédié) | 2 sorry / 5 théorèmes. `gale_shapley_stable` CLOSED via mmaaz upstream (PR #1181). `man_optimal` + `woman_pessimal` OPEN (Knuth 1976 lattice, Wu-Roth 2018 — ~5-8j Mathlib). |
+| théorème d'Arrow (impossibilité) | `game_theory_lean/SocialChoice/Arrow.lean` | 16d | 0 sorry (Geanakoplos 2005) |
+| théorème de Sen (libéralisme) | `game_theory_lean/SocialChoice/Sen.lean` | 16e | 0 sorry (bidirectionnel) |
+| Valeur de Shapley | `cooperative_games_lean/CooperativeGames/Shapley.lean` | 16b | 0 sorry (caractérisation + unicité ; Banzhaf #4011/#4037/#4130) |
+| Modèles de vote (Banks, STV) | `game_theory_lean/SocialChoice/Voting.lean` | 16f | 0 sorry |
+| Gale-Shapley (stable marriage) | `game_theory_lean/StableMarriage/GaleShapley.lean` | (pas de notebook dédié) | 0 sorry. `gale_shapley_stable`, `gale_shapley_man_optimal` (via `exists_isManOptimal`, `Lattice.lean`) et `gale_shapley_woman_pessimal` prouvés. |
 
 Le notebook Lean-5 (tactiques) et Lean-6 (Mathlib) sont des prérequis directs pour les side tracks Lean de GameTheory.
 
@@ -528,7 +528,7 @@ Lean 4 signale `type mismatch` quand le type attendu et le type fourni ne coïnc
 **Non** dans les cellules d'exercice (stub pour l'étudiant). **Oui** dans le code de production (preuves formelles). La convention CoursIA :
 
 - Cellules d'exercice : `sorry` = placeholder étudiant, normal et attendu.
-- Preuves certifiées (ex: `conway_lean/`, `grothendieck_lean/`, `social_choice_lean/`) : `sorry` = axiome implicite = trou dans la chaîne de certification. Le compteur `grep -c sorry` est suivi par les agents du dépôt.
+- Preuves certifiées (ex: `conway_lean/`, `grothendieck_lean/`, `game_theory_lean/`) : `sorry` = axiome implicite = trou dans la chaîne de certification. Le compteur `grep -c sorry` est suivi par les agents du dépôt.
 
 Voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md) pour l'état détaillé des preuves par module.
 
