@@ -21,6 +21,16 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 
 **À qui s'adresse cette série** : enseignants en pensée critique, équipes éditoriales construisant des outils de fact-checking, étudiants en philosophie computationnelle ou en linguistique formelle, et ingénieurs explorant les architectures hybrides LLM + solveur. La maîtrise préalable supposée est modérée : Python intermediate, intuition logique propositionnelle, familiarité minimale avec les LLMs et l'OpenAI API. Les notebooks (~4-5h total) s'enchaînent dans l'ordre 0 → 1 → 2 → 3, avec l'`Executor` comme point d'entrée pour une exécution batch reproductible (Papermill / MCP).
 
+## Domaines d'application
+
+L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la distinction "argument valide / sophisme" doit être rendue automatique ou semi-automatique :
+
+- **Modération de discussions en ligne** : détection des sophismes récurrents (homme de paille, faux dilemmes, glissement, ad hominem) dans des fils de commentaires longs, avec un rapport agrégé par utilisateur ou par fil. Le pattern LLM-extracteur + vérificateur formel est calibré précisément pour cet usage.
+- **Fact-checking et journalisme assisté** : décomposition d'un éditorial ou d'un discours politique en chaîne de prémisses et conclusions, marquage des transitions logiquement faibles, identification des affirmations factuelles à vérifier externellement. La phase "formalisation" crée un livrable inspectable, contrairement aux jugements opaques d'un LLM seul.
+- **Éducation à la pensée critique** : production d'exercices d'analyse à partir de textes réels (discours, essais, posts), avec correction automatisée partielle. L'enseignant valide la décomposition, l'élève apprend à justifier chaque étape.
+- **Audit de contenus IA** : vérification de la cohérence interne des réponses LLM longues sur sujets sensibles (médical, juridique, financier). Un LLM peut produire un raisonnement plausible mais incohérent ; le solveur formel détecte les contradictions internes.
+- **Recherche en argumentation structurée** : terrain expérimental pour les frameworks Dung, ASPIC+, ABA, accessibles via les ponts Tweety. La série sert de support à des explorations académiques (mémoires, thèses) sur les sémantiques d'acceptabilité, la révision de croyances AGM, ou les préférences entre arguments.
+
 ## Objectifs d'apprentissage
 
 À l'issue de cette série, vous serez capable de :
@@ -31,6 +41,17 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 4. **Orchestrer un pipeline multi-agents** combinant extraction informelle, formalisation logique et validation formelle
 5. **Comparer les approches** LLM-only vs hybride (LLM + solveur formel) et comprendre les limites de chaque couche
 
+## Quel parcours choisir ?
+
+| Profil | Parcours recommandé | Notebooks |
+|--------|-------------------|-----------|
+| **Découvreur de l'analyse argumentative** | Pipeline complet en ordre | 0 → 1 → 2 → 3 (~3h) |
+| **Enseignant en pensée critique** | Extraction + détection sophismes | 0 → 1 → UI_configuration (~1h30) |
+| **Ingénieur ML/LLM** | Architecture multi-agents | 0 → 3 → Executor (~1h30) |
+| **Chercheur en logique formelle** | Formalisation + vérification SAT | 0 → 2 (~1h) |
+
+---
+
 ## Vue d'ensemble
 
 | Statistique | Valeur |
@@ -38,27 +59,6 @@ Le contexte de recherche actuel rend cette compétence particulièrement pertine
 | Kernel | Python 3 |
 | Durée estimée | ~4-5h |
 | API requise | OpenAI |
-
-## Prérequis
-
-### Python
-
-```bash
-pip install semantic-kernel openai python-dotenv jpype1
-```
-
-### Java
-
-JDK 17+ requis (auto-télécharge via `install_jdk_portable.py`).
-
-### Configuration
-
-```bash
-# Dans .env
-OPENAI_API_KEY=sk-...
-GLOBAL_LLM_SERVICE=openai
-BATCH_MODE=false
-```
 
 ## Notebooks
 
@@ -106,30 +106,6 @@ BATCH_MODE=false
 | **Ontology_Virtues** | Charger le pôle **positif** de la taxonomie Argumentum (`argumentum_virtues.owl`, thésaurus SKOS) via un pont regex→rdflib (rdflib et owlready2 échouent sur l'OWL/XML fonctionnel) : construire 2 639 triplets SKOS sur 224 concepts, inventorier les prédicats SKOS (prefLabel / definition / broader / topConceptOf), contraster le paradigme ABox des sophismes (NamedIndividual + ObjectPropertyAssertion) avec le thésaurus d'annotations des vertus, extraire les libellés bilingues FR/EN et relier chaque vertu à ses schemes de Walton via `aif:goodTenorOf` | 35 min |
 | **UI_configuration** | Créer une interface interactive (ipywidgets) pour piloter le pipeline en mode exploratoire | 30 min |
 | **Executor** | Exécuter le pipeline complet en mode batch (Papermill/MCP) avec configuration .env | 20 min |
-
-## FAQ / Troubleshooting
-
-| Problème | Solution |
-|----------|----------|
-| **`ModuleNotFoundError: semantic_kernel`** | `pip install semantic-kernel`. Vérifier le kernel Jupyter actif (`jupyter kernelspec list`). |
-| **`OPENAI_API_KEY not set`** | Copier `.env.example` en `.env` et renseigner la clé. Vérifier que le notebook 0 charge bien le `.env`. |
-| **`JVM not found`** au démarrage | JDK 17+ requis. Exécuter `python install_jdk_portable.py` dans le répertoire. |
-| **`FileNotFoundException` sur un JAR Tweety** | Les JARs doivent être dans `libs/`. Re-exécuter le notebook 0 qui les télécharge. |
-| **`BATCH_MODE` ignoré** | Vérifier que `.env` contient `BATCH_MODE="true"` (avec guillemets) et que le fichier est au même niveau que les notebooks. |
-| **Erreur `dotnet` ou `.NET`** | Cette série est 100% Python. Seul Semantic Kernel (package Python) est utilisé, pas le SDK .NET. |
-| **Sortie `PARTIAL_VALIDATED`** | Le pipeline n'a pas convergé. Vérifier les logs de l'agent PL (formalisation incomplète). Relancer avec un texte plus court. |
-| **`OutOfMemoryError` JVM** | Augmenter le heap dans la cellule de démarrage : ajouter `-Xmx2g` aux arguments JPype. |
-
-## Quel parcours choisir ?
-
-| Profil | Parcours recommandé | Notebooks |
-|--------|-------------------|-----------|
-| **Découvreur de l'analyse argumentative** | Pipeline complet en ordre | 0 → 1 → 2 → 3 (~3h) |
-| **Enseignant en pensée critique** | Extraction + détection sophismes | 0 → 1 → UI_configuration (~1h30) |
-| **Ingénieur ML/LLM** | Architecture multi-agents | 0 → 3 → Executor (~1h30) |
-| **Chercheur en logique formelle** | Formalisation + vérification SAT | 0 → 2 (~1h) |
-
----
 
 ## Architecture
 
@@ -182,15 +158,53 @@ Pour rendre ce déroulement concret, voici ce que produit le pipeline sur le **t
 
 Le verdict attendu sur l'`Executor` (mode batch) est `COMPLETE_VALIDATED` : 1 argument identifié, 4 sophismes étiquetés, 1 belief set formel, ~10 requêtes au solveur, et les quatre value-gates au vert. La même exécution en mode baseline (LLM seul, 0-shot) sert de contre-point : sans la couche formelle, la cohérence interne n'est garantie par rien, et c'est précisément cet écart que la série cherche à mesurer.
 
-## Domaines d'application
+## Concepts clés
 
-L'analyse argumentative outillée s'inscrit dans plusieurs cas concrets où la distinction "argument valide / sophisme" doit être rendue automatique ou semi-automatique :
+Le pipeline mobilise un vocabulaire issu de trois traditions — la rhétorique classique, la logique formelle et l'argumentation computationnelle. Le tableau ci-dessous reprend les notions effectivement manipulées dans les notebooks, avec un pointeur vers celui qui les met en œuvre.
 
-- **Modération de discussions en ligne** : détection des sophismes récurrents (homme de paille, faux dilemmes, glissement, ad hominem) dans des fils de commentaires longs, avec un rapport agrégé par utilisateur ou par fil. Le pattern LLM-extracteur + vérificateur formel est calibré précisément pour cet usage.
-- **Fact-checking et journalisme assisté** : décomposition d'un éditorial ou d'un discours politique en chaîne de prémisses et conclusions, marquage des transitions logiquement faibles, identification des affirmations factuelles à vérifier externellement. La phase "formalisation" crée un livrable inspectable, contrairement aux jugements opaques d'un LLM seul.
-- **Éducation à la pensée critique** : production d'exercices d'analyse à partir de textes réels (discours, essais, posts), avec correction automatisée partielle. L'enseignant valide la décomposition, l'élève apprend à justifier chaque étape.
-- **Audit de contenus IA** : vérification de la cohérence interne des réponses LLM longues sur sujets sensibles (médical, juridique, financier). Un LLM peut produire un raisonnement plausible mais incohérent ; le solveur formel détecte les contradictions internes.
-- **Recherche en argumentation structurée** : terrain expérimental pour les frameworks Dung, ASPIC+, ABA, accessibles via les ponts Tweety. La série sert de support à des explorations académiques (mémoires, thèses) sur les sémantiques d'acceptabilité, la révision de croyances AGM, ou les préférences entre arguments.
+| Concept | Description | Notebook |
+|---------|-------------|----------|
+| **Argument** | Suite de *prémisses* soutenant une *conclusion* ; c'est le tissu que le pipeline extrait d'un texte naturel. | 1-informal |
+| **Prémisse / Conclusion** | Brique atomique de l'argument : la prémisse est l'énoncé admis, la conclusion celle que l'on dérive. Leur identification est la sortie de l'agent informel. | 1-informal |
+| **Sophisme** | Raisonnement fallacieux mais plausible. La série s'appuie sur une taxonomie de 1406 nœuds en 7 familles (Obstruction, Erreur de raisonnement, …) organisée en arbre jusqu'à 10 niveaux. | 1-informal |
+| **Formalisation** | Traduction d'un argument naturel en formule logique inspectable. C'est le point de bascule où le texte cesse d'être du langage naturel pour devenir un objet qu'un solveur peut interroger. | 2-formal |
+| **Logique propositionnelle (PL)** | Logique des connecteurs (∧, ∨, →, ¬) sans quantificateurs ; vérifiée via un modus ponens dans Tweety. | 2-formal §3 |
+| **Logique du premier ordre (FOL)** | PL étendue des quantificateurs (∀, ∃) et prédicats. Exige une *signature* déclarée (constantes, prédicats) avant toute requête. | 2-formal §4 |
+| **Logique modale** | Logique du *possible* (◇) et du *nécessaire* (□), utile pour les arguments portant sur la contingence ou l'obligation. | 2-formal §5 |
+| **Argumentation de Dung** | Cadre abstrait où les arguments s'attaquent mutuellement ; la sémantique *grounded* calcule l'ensemble des arguments défendables. Les sémantiques *preferred* et *stable* étendent ce verdict sous différentes attitudes (crédule, auto-suffisante). | Dung_AF_Semantics, 2-formal §6 |
+| **Sémantique de classement** | Approche *graduée* : au lieu d'un verdict tout-ou-rien, chaque argument reçoit une *force* numérique (h-Categoriser, fardeau) qui induit un ordre — départageant des arguments de même statut Dung. | Ranking_Semantics |
+| **Belief set** | Ensemble de formules formalisant l'état de croyance déduit du texte ; c'est ce que le solveur manipule et interroge. | 2-formal |
+| **SAT** | Problème de satisfaisabilité : existe-t-il une valuation rendant un ensemble de formules cohérent ? Cœur de la validation Tweety. | 2-formal |
+| **Fail-loud** | Principe de conception : le pipeline échoue bruyamment plutôt que de *simuler* un verdict (jamais de sortie fictive si la JVM ou le solveur manque). | 2-formal |
+| **Value-gates (VG-1..VG-4)** | Quatre gardes déterministes qui notent si la synthèse finale est *groundée* (elle cite ses artefacts via `[artifact:champ:id]`) ou *boilerplate* (template vide). | 4-capstone |
+| **Pipeline hybride LLM + solveur** | Architecture où le LLM gère l'extraction informelle (floue, contextuelle) et le solveur formel garantit la cohérence ; aucune des deux couches ne suffit seule. | 3-orchestration |
+| **Ontologie OWL2 (Argumentum)** | Représentation formelle de la taxonomie Argumentum (10 976 `NamedIndividual`, 4 183 `ObjectPropertyAssertion`). En raison de 37 axiom `ExactCardinality` structurellement invalides dans l'export upstream, le parseur regex tolérant est obligatoire — `rdflib` échoue, `owlready2` charge en silence mais n'expose pas les concepts via API. | Ontology_AIF |
+| **SKOS (Simple Knowledge Organization System)** | Famille de propriétés W3C (`skos:broader`, `skos:narrower`, `skos:inScheme`, `skos:Concept`) qui dominent l'ontologie Argumentum (1 304/1 305 `ClassAssertion`). La navigation dans la taxonomie s'appuie sur ces relations plutôt que sur AIF. | Ontology_AIF |
+| **Schemes d'argumentation (Walton)** | Patterns d'inférence (Position to Know, Sign, Rule, Cause to Effect) servant de taxonomie pour présomption : la reconnaissance d'un scheme active les *critiques* associées. Argumentum expose `Sign` (11 labels) et `Rule` (2 labels) ; `Position to Know` et `Cause to Effect` sont absents du label parsing. | Ontology_AIF, 1-informal |
+| **CrossLinks `crossLink_*` (Argumentum CSV)** | Huit relations transverses (PredatesOn, Denounces, Leverages, Allows, Opposes, Inverts, Mirrors, IsRelatedTo) qui créeraient un **graphe** au-dessus de l'arbre taxonomique. Sur 1 408 sophismes, seulement 22 relations sont renseignées (1,5% de couverture), avec une forte dominance de `PredatesOn` (9/22, 41%). Ces colonnes sont **uniquement dans le CSV upstream** — absentes de l'OWL `argumentum_fallacies.owl`. **Finding méthodologique** : la taxonomie Argumentum est **structurellement plate** en transverses ; l'effort de curation upstream est porté sur la **profondeur taxonomique** (9 niveaux, 8 langues), pas sur les **liens inter-noeuds**. | Ontology_CrossLinks |
+| **Mappings AIF/Walton (Argumentum CSV)** | Trois colonnes `AIF_skosDirectRef` / `AIF_skosExceptionRef` / `AIF_skosMappingType` (colonnes 70-72 du CSV) relient chaque sophisme aux schemes Walton via les types SKOS `broadMatch` (57, majorité), `closeMatch` (10) et `narrowMatch` (3). 70 mappings couvrent 5,0% des sophismes (1 408) ; 60 schemes Walton uniques sont référencés, top : `OppositeConsequences_Conflict` (5 occurrences). **Comme `crossLink_*`, ces mappings sont absents de l'OWL** — présents uniquement dans le CSV canonique, ce qui en fait la **source de vérité** pour l'alignement sophisme→scheme. | Ontology_CrossLinks, 1-informal |
+| **Gap OWL ↔ CSV (Argumentum upstream)** | L'OWL `argumentum_fallacies.owl` expose 10 976 `NamedIndividual` ; le CSV canonique n'en compte que 1 408 sophismes × 8 langues = 11 264 descriptions. Facteur d'écart : ×7,8 (1 NamedIndividual ≈ 7,8 labels multilingues). L'OWL capture **plus de granularité** (sous-variantes, classifications internes) ; le CSV capture **la version canonique 8-langues** avec relations transverses. Les deux sources sont **complémentaires, pas redondantes** : OWL = squelette structurel (perd les crossLinks) ; CSV = graphe opérationnel (perd la granularité OWL). | Ontology_CrossLinks, Ontology_AIF |
+
+## Prérequis
+
+### Python
+
+```bash
+pip install semantic-kernel openai python-dotenv jpype1
+```
+
+### Java
+
+JDK 17+ requis (auto-télécharge via `install_jdk_portable.py`).
+
+### Configuration
+
+```bash
+# Dans .env
+OPENAI_API_KEY=sk-...
+GLOBAL_LLM_SERVICE=openai
+BATCH_MODE=false
+```
 
 ## Mode batch
 
@@ -230,6 +244,19 @@ jupyter notebook Argument_Analysis_Agentic-0-init.ipynb
 
 ---
 
+## FAQ / Troubleshooting
+
+| Problème | Solution |
+|----------|----------|
+| **`ModuleNotFoundError: semantic_kernel`** | `pip install semantic-kernel`. Vérifier le kernel Jupyter actif (`jupyter kernelspec list`). |
+| **`OPENAI_API_KEY not set`** | Copier `.env.example` en `.env` et renseigner la clé. Vérifier que le notebook 0 charge bien le `.env`. |
+| **`JVM not found`** au démarrage | JDK 17+ requis. Exécuter `python install_jdk_portable.py` dans le répertoire. |
+| **`FileNotFoundException` sur un JAR Tweety** | Les JARs doivent être dans `libs/`. Re-exécuter le notebook 0 qui les télécharge. |
+| **`BATCH_MODE` ignoré** | Vérifier que `.env` contient `BATCH_MODE="true"` (avec guillemets) et que le fichier est au même niveau que les notebooks. |
+| **Erreur `dotnet` ou `.NET`** | Cette série est 100% Python. Seul Semantic Kernel (package Python) est utilisé, pas le SDK .NET. |
+| **Sortie `PARTIAL_VALIDATED`** | Le pipeline n'a pas convergé. Vérifier les logs de l'agent PL (formalisation incomplète). Relancer avec un texte plus court. |
+| **`OutOfMemoryError` JVM** | Augmenter le heap dans la cellule de démarrage : ajouter `-Xmx2g` aux arguments JPype. |
+
 ## Structure des fichiers
 
 ```text
@@ -263,33 +290,6 @@ Le pipeline génère un rapport JSON dans `output/analysis_report.json` :
   }
 }
 ```
-
-## Concepts clés
-
-Le pipeline mobilise un vocabulaire issu de trois traditions — la rhétorique classique, la logique formelle et l'argumentation computationnelle. Le tableau ci-dessous reprend les notions effectivement manipulées dans les notebooks, avec un pointeur vers celui qui les met en œuvre.
-
-| Concept | Description | Notebook |
-|---------|-------------|----------|
-| **Argument** | Suite de *prémisses* soutenant une *conclusion* ; c'est le tissu que le pipeline extrait d'un texte naturel. | 1-informal |
-| **Prémisse / Conclusion** | Brique atomique de l'argument : la prémisse est l'énoncé admis, la conclusion celle que l'on dérive. Leur identification est la sortie de l'agent informel. | 1-informal |
-| **Sophisme** | Raisonnement fallacieux mais plausible. La série s'appuie sur une taxonomie de 1406 nœuds en 7 familles (Obstruction, Erreur de raisonnement, …) organisée en arbre jusqu'à 10 niveaux. | 1-informal |
-| **Formalisation** | Traduction d'un argument naturel en formule logique inspectable. C'est le point de bascule où le texte cesse d'être du langage naturel pour devenir un objet qu'un solveur peut interroger. | 2-formal |
-| **Logique propositionnelle (PL)** | Logique des connecteurs (∧, ∨, →, ¬) sans quantificateurs ; vérifiée via un modus ponens dans Tweety. | 2-formal §3 |
-| **Logique du premier ordre (FOL)** | PL étendue des quantificateurs (∀, ∃) et prédicats. Exige une *signature* déclarée (constantes, prédicats) avant toute requête. | 2-formal §4 |
-| **Logique modale** | Logique du *possible* (◇) et du *nécessaire* (□), utile pour les arguments portant sur la contingence ou l'obligation. | 2-formal §5 |
-| **Argumentation de Dung** | Cadre abstrait où les arguments s'attaquent mutuellement ; la sémantique *grounded* calcule l'ensemble des arguments défendables. Les sémantiques *preferred* et *stable* étendent ce verdict sous différentes attitudes (crédule, auto-suffisante). | Dung_AF_Semantics, 2-formal §6 |
-| **Sémantique de classement** | Approche *graduée* : au lieu d'un verdict tout-ou-rien, chaque argument reçoit une *force* numérique (h-Categoriser, fardeau) qui induit un ordre — départageant des arguments de même statut Dung. | Ranking_Semantics |
-| **Belief set** | Ensemble de formules formalisant l'état de croyance déduit du texte ; c'est ce que le solveur manipule et interroge. | 2-formal |
-| **SAT** | Problème de satisfaisabilité : existe-t-il une valuation rendant un ensemble de formules cohérent ? Cœur de la validation Tweety. | 2-formal |
-| **Fail-loud** | Principe de conception : le pipeline échoue bruyamment plutôt que de *simuler* un verdict (jamais de sortie fictive si la JVM ou le solveur manque). | 2-formal |
-| **Value-gates (VG-1..VG-4)** | Quatre gardes déterministes qui notent si la synthèse finale est *groundée* (elle cite ses artefacts via `[artifact:champ:id]`) ou *boilerplate* (template vide). | 4-capstone |
-| **Pipeline hybride LLM + solveur** | Architecture où le LLM gère l'extraction informelle (floue, contextuelle) et le solveur formel garantit la cohérence ; aucune des deux couches ne suffit seule. | 3-orchestration |
-| **Ontologie OWL2 (Argumentum)** | Représentation formelle de la taxonomie Argumentum (10 976 `NamedIndividual`, 4 183 `ObjectPropertyAssertion`). En raison de 37 axiom `ExactCardinality` structurellement invalides dans l'export upstream, le parseur regex tolérant est obligatoire — `rdflib` échoue, `owlready2` charge en silence mais n'expose pas les concepts via API. | Ontology_AIF |
-| **SKOS (Simple Knowledge Organization System)** | Famille de propriétés W3C (`skos:broader`, `skos:narrower`, `skos:inScheme`, `skos:Concept`) qui dominent l'ontologie Argumentum (1 304/1 305 `ClassAssertion`). La navigation dans la taxonomie s'appuie sur ces relations plutôt que sur AIF. | Ontology_AIF |
-| **Schemes d'argumentation (Walton)** | Patterns d'inférence (Position to Know, Sign, Rule, Cause to Effect) servant de taxonomie pour présomption : la reconnaissance d'un scheme active les *critiques* associées. Argumentum expose `Sign` (11 labels) et `Rule` (2 labels) ; `Position to Know` et `Cause to Effect` sont absents du label parsing. | Ontology_AIF, 1-informal |
-| **CrossLinks `crossLink_*` (Argumentum CSV)** | Huit relations transverses (PredatesOn, Denounces, Leverages, Allows, Opposes, Inverts, Mirrors, IsRelatedTo) qui créeraient un **graphe** au-dessus de l'arbre taxonomique. Sur 1 408 sophismes, seulement 22 relations sont renseignées (1,5% de couverture), avec une forte dominance de `PredatesOn` (9/22, 41%). Ces colonnes sont **uniquement dans le CSV upstream** — absentes de l'OWL `argumentum_fallacies.owl`. **Finding méthodologique** : la taxonomie Argumentum est **structurellement plate** en transverses ; l'effort de curation upstream est porté sur la **profondeur taxonomique** (9 niveaux, 8 langues), pas sur les **liens inter-noeuds**. | Ontology_CrossLinks |
-| **Mappings AIF/Walton (Argumentum CSV)** | Trois colonnes `AIF_skosDirectRef` / `AIF_skosExceptionRef` / `AIF_skosMappingType` (colonnes 70-72 du CSV) relient chaque sophisme aux schemes Walton via les types SKOS `broadMatch` (57, majorité), `closeMatch` (10) et `narrowMatch` (3). 70 mappings couvrent 5,0% des sophismes (1 408) ; 60 schemes Walton uniques sont référencés, top : `OppositeConsequences_Conflict` (5 occurrences). **Comme `crossLink_*`, ces mappings sont absents de l'OWL** — présents uniquement dans le CSV canonique, ce qui en fait la **source de vérité** pour l'alignement sophisme→scheme. | Ontology_CrossLinks, 1-informal |
-| **Gap OWL ↔ CSV (Argumentum upstream)** | L'OWL `argumentum_fallacies.owl` expose 10 976 `NamedIndividual` ; le CSV canonique n'en compte que 1 408 sophismes × 8 langues = 11 264 descriptions. Facteur d'écart : ×7,8 (1 NamedIndividual ≈ 7,8 labels multilingues). L'OWL capture **plus de granularité** (sous-variantes, classifications internes) ; le CSV capture **la version canonique 8-langues** avec relations transverses. Les deux sources sont **complémentaires, pas redondantes** : OWL = squelette structurel (perd les crossLinks) ; CSV = graphe opérationnel (perd la granularité OWL). | Ontology_CrossLinks, Ontology_AIF |
 
 ## Statistiques catalogue à jour
 
