@@ -121,6 +121,23 @@ Pour les approches combinées apprentissage profond + symbolique :
 | Approche neuro-symbolique avancée | **Planners-12-LOOP** (85.8% IPC coverage) |
 | Comparer tous les solveurs | **Planners-11-Unified-Planning** |
 
+## Objectifs d'apprentissage
+
+A l'issue de cette série, vous saurez :
+
+1. **Modéliser** des problèmes de planification en PDDL (Planning Domain Definition Language)
+2. **Utiliser** les planificateurs modernes (Fast Downward, OR-Tools, unified-planning)
+3. **Comprendre** les heuristiques de recherche ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut)
+4. **Étendre** la planification au temporel, hiérarchique et neuro-symbolique
+
+## Niveaux de difficulté
+
+| Niveau | Description | Notebooks |
+|--------|-------------|-----------|
+| Foundation | Introduction, concepts de base | 0, 1, 2, 3 |
+| Intermediate | Algorithmes, outils pratiques | 4, 5, 6, 7, 8, 9 |
+| Advanced | Extensions, recherche | 10, 11, 12 |
+
 ## Structure
 
 ```
@@ -167,23 +184,6 @@ SymbolicAI/Planners/
 └── archive/
     └── Fast-Downward-Legacy.ipynb       # Version archivée (1 notebook hors compteur pédagogique)
 ```
-
-## Objectifs d'apprentissage
-
-A l'issue de cette série, vous saurez :
-
-1. **Modéliser** des problèmes de planification en PDDL (Planning Domain Definition Language)
-2. **Utiliser** les planificateurs modernes (Fast Downward, OR-Tools, unified-planning)
-3. **Comprendre** les heuristiques de recherche ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut)
-4. **Étendre** la planification au temporel, hiérarchique et neuro-symbolique
-
-## Niveaux de difficulté
-
-| Niveau | Description | Notebooks |
-|--------|-------------|-----------|
-| Foundation | Introduction, concepts de base | 0, 1, 2, 3 |
-| Intermediate | Algorithmes, outils pratiques | 4, 5, 6, 7, 8, 9 |
-| Advanced | Extensions, recherche | 10, 11, 12 |
 
 ## Contenu détaillé des notebooks
 
@@ -331,6 +331,21 @@ curl -s http://localhost:8200/health
 | **OpenAI/Anthropic API** | LLMs pour génération de plans | 10 |
 | **PyTorch** | Réseaux de neurones pour heuristiques (LOOP) | 12 |
 
+## Concepts clés
+
+| Concept | Définition |
+|---------|------------|
+| **STRIPS** | Modèle de planification avec préconditions/add/delete (1971) |
+| **PDDL** | Planning Domain Definition Language - standard IPC depuis 1998 |
+| **Heuristique** | Fonction estimant le coût pour atteindre le but |
+| **A*** | Algorithme de recherche optimale avec heuristique admissible |
+| **Landmark** | Fait qui doit être vrai à un moment du plan |
+| **HTN** | Hierarchical Task Network - décomposition de tâches |
+| **LM-cut** | Heuristique admissible basée sur les landmarks |
+| **CP-SAT** | Constraint Programming-Satisfiability (OR-Tools) |
+| **Learning to Plan** | Apprentissage d'heuristiques par réseaux de neurones |
+| **LOOP** | Framework neuro-symbolique, 85.8% coverage IPC |
+
 ## Domaines PDDL classiques
 
 Les notebooks utilisent les domaines standards de l'IPC (International Planning Competition) :
@@ -451,21 +466,6 @@ SHOP2 (Simple Hierarchical Ordered Planner 2) utilise la décomposition ordonné
 2. Si primitive : vérifier préconditions, appliquer, passer à la suivante
 3. Si abstraite : choisir une méthode applicable, remplacer par sous-tâches
 4. Backtracking : essayer la méthode suivante si échec
-
-## Concepts clés
-
-| Concept | Définition |
-|---------|------------|
-| **STRIPS** | Modèle de planification avec préconditions/add/delete (1971) |
-| **PDDL** | Planning Domain Definition Language - standard IPC depuis 1998 |
-| **Heuristique** | Fonction estimant le coût pour atteindre le but |
-| **A*** | Algorithme de recherche optimale avec heuristique admissible |
-| **Landmark** | Fait qui doit être vrai à un moment du plan |
-| **HTN** | Hierarchical Task Network - décomposition de tâches |
-| **LM-cut** | Heuristique admissible basée sur les landmarks |
-| **CP-SAT** | Constraint Programming-Satisfiability (OR-Tools) |
-| **Learning to Plan** | Apprentissage d'heuristiques par réseaux de neurones |
-| **LOOP** | Framework neuro-symbolique, 85.8% coverage IPC |
 
 ## Caractéristiques de la série
 
