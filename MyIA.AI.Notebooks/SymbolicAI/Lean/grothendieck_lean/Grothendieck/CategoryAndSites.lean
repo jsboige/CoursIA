@@ -1,22 +1,4 @@
 /-
-Grothendieck tribute — Part 1: Categories, Sieves, and Grothendieck Topologies
-Alexandre Grothendieck (1928-2014).
-
-Grothendieck revolutionized algebraic geometry by replacing topological spaces
-with categories equipped with a "topology" defined by covering sieves. This file
-tours the Mathlib 4 formalization of these concepts.
-
-The key insight: a Grothendieck topology on a category C assigns to each object X
-a collection of "covering sieves" satisfying three axioms:
-  1. The maximal sieve always covers (stability under identity)
-  2. Covering sieves are stable under pullback (locality)
-  3. If S covers X and R pulls back to a covering sieve along every arrow in S,
-     then R covers X (transitivity)
-
-Epic #1646. All `sorry`s eliminated at creation.
--/
-
-/-
 ## Catégories, cribles et topologies de Grothendieck (Partie 1 — hommage Grothendieck)
 
 Hommage Grothendieck — Partie 1 : catégories sous-jacentes, cribles et
@@ -178,59 +160,59 @@ namespace Grothendieck
 open CategoryTheory
 
 /-!
-## Sieves
+## Cribles
 
-A sieve on X is a collection of morphisms with codomain X that is downward-closed:
-if f ∈ S and g compose with f, then g ≫ f ∈ S. In Mathlib, a `Sieve X` is a
-subfunctor of the Yoneda embedding at X.
+Un crible sur X est une collection de morphismes de codomaine X qui est close par
+le bas : si f ∈ S et g se compose avec f, alors g ≫ f ∈ S. Dans Mathlib, un `Sieve X` est un
+sous-foncteur de l'embedding de Yoneda en X.
 -/
 
-/-- Sieves form a complete lattice: we can take intersections, unions, etc.
-    Note: `Sieve X` (not `Sieve C X`) — the category is inferred. -/
+/-- Les cribles forment un treillis complet : intersections, unions, etc.
+    Note : `Sieve X` (pas `Sieve C X`) — la catégorie est inférée. -/
 example {C : Type*} [Category C] (X : C) : CompleteLattice (Sieve X) :=
   inferInstance
 
 /-!
-## Grothendieck topologies
+## Topologies de Grothendieck
 
-A `GrothendieckTopology` on C is a function assigning to each X a set of covering
-sieves, satisfying the three axioms: top_mem, pullback_stable, transitive.
+Une `GrothendieckTopology` sur C est une fonction assignant à chaque X un ensemble de cribles couvrants, satisfaisant les trois axiomes : top_mem,
+pullback_stable, transitive.
 -/
 
-/-- The trivial topology: only the maximal sieve covers.
-    This is the coarsest (bottom) topology. -/
+/-- La topologie triviale : seul le crible maximal est couvrant.
+    C'est la topologie la plus grossière (bottom). -/
 example {C : Type*} [Category C] : GrothendieckTopology C :=
   GrothendieckTopology.trivial C
 
-/-- The discrete topology: every sieve covers.
-    This is the finest (top) topology. -/
+/-- La topologie discrète : tout crible est couvrant.
+    C'est la topologie la plus fine (top). -/
 example {C : Type*} [Category C] : GrothendieckTopology C :=
   GrothendieckTopology.discrete C
 
-/-- The dense topology: a sieve S covers X iff for every f : Y → X,
-    there exists some arrow in S that factors through f. -/
+/-- La topologie dense : un crible S couvre X ssi pour tout f : Y → X,
+    il existe une flèche dans S qui se factorise à travers f. -/
 example {C : Type*} [Category C] : GrothendieckTopology C :=
   GrothendieckTopology.dense
 
 /-!
-## The three axioms
+## Les trois axiomes
 
-Every `J : GrothendieckTopology C` satisfies the three axioms explicitly.
+Toute `J : GrothendieckTopology C` satisfait les trois axiomes explicitement.
 -/
 
-/-- Axiom 1: the maximal sieve is always covering. -/
+/-- Axiome 1 : le crible maximal est toujours couvrant. -/
 theorem top_covers {C : Type*} [Category C] (J : GrothendieckTopology C) (X : C) :
     (⊤ : Sieve X) ∈ J.sieves X :=
   J.top_mem X
 
-/-- Axiom 2: covering sieves are stable under pullback. -/
+/-- Axiome 2 : les cribles couvrants sont stables par pullback. -/
 theorem pullback_cover {C : Type*} [Category C] (J : GrothendieckTopology C)
     {X Y : C} {S : Sieve X} (f : Y ⟶ X) (hS : S ∈ J.sieves X) :
     S.pullback f ∈ J.sieves Y :=
   J.pullback_stable f hS
 
-/-- Axiom 3: the transitivity (local character) axiom.
-    If S covers X and every arrow in S pulls back to a cover of R, then R covers X. -/
+/-- Axiome 3 : axiome de transitivité (caractère local).
+    Si S couvre X et que toute flèche dans S admet un pullback couvrant de R, alors R couvre X. -/
 theorem transitivity {C : Type*} [Category C] (J : GrothendieckTopology C)
     {X : C} {S R : Sieve X} (hS : S ∈ J.sieves X)
     (hR : ∀ ⦃Y : C⦄ ⦃f : Y ⟶ X⦄, S.arrows f → R.pullback f ∈ J.sieves Y) :
@@ -238,22 +220,22 @@ theorem transitivity {C : Type*} [Category C] (J : GrothendieckTopology C)
   J.transitive hS R hR
 
 /-!
-## Grothendieck topologies form a lattice
+## Les topologies de Grothendieck forment un treillis
 
-The set of Grothendieck topologies on a category is a complete lattice,
-ordered by inclusion of covering sieves.
+L'ensemble des topologies de Grothendieck sur une catégorie est un treillis complet,
+ordonné par inclusion des cribles couvrants.
 -/
 
-/-- Grothendieck topologies on C form a complete lattice. -/
+/-- Les topologies de Grothendieck sur C forment un treillis complet. -/
 example {C : Type*} [Category C] : CompleteLattice (GrothendieckTopology C) :=
   inferInstance
 
-/-- The trivial topology is the bottom element. -/
+/-- La topologie triviale est l'élément bottom. -/
 theorem trivial_eq_bot {C : Type*} [Category C] :
     GrothendieckTopology.trivial C = ⊥ :=
   GrothendieckTopology.trivial_eq_bot
 
-/-- The discrete topology is the top element. -/
+/-- La topologie discrète est l'élément top. -/
 theorem discrete_eq_top {C : Type*} [Category C] :
     GrothendieckTopology.discrete C = ⊤ :=
   GrothendieckTopology.discrete_eq_top
