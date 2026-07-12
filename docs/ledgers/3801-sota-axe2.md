@@ -2538,8 +2538,173 @@ Capacités distinctives du moteur QC exercées (QuantBook data pull, QC Framewor
 
 Part of #3801, #1621
 
+---
 
-Part of #3801
+## Entry #028 — Probas/PyMC (1-15) (owner po-2025 strict, c.411)
 
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/Probas/PyMC/` (14 .ipynb : PyMC-1..15 hors PyMC-5 absent — série bayésienne Python native, parité #4956 d'Infer-1..15) |
+| Kernels | 1 : `python3` (14) — mono-kernel Python (vs Infer-1..15 `.net-csharp` jumeaux entry #006) |
+| Owner-lane | **po-2025 strict** (lane Python bayésienne native ; DecPyMC c.333 CLOSURE 7/7 + Probas/Infer #006 c.400 + Infer-extension #018 c.423) |
+| Date audit | 2026-07-12 (c.411) |
+| Auditeur | `myia-po-2025:CoursIA` |
+| Verdict agrégé | **SOTA-OK** (14/14 SOTA-OK, 14/14 DISCRIMINATING) |
 
-Part of #3801
+### Synthèse (14 notebooks, 452 cellules, 187 cellules code)
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
+|-----|-------|------|------|-----|-----------|--------|-------------|---------|
+| PyMC-1-Setup | 26 | 11 | 11/11 | 0 | 0 (3 ex.) | python3 | Beta-Bernoulli + **hierarchical 6-coin non-centered** (Sec.6) ; NUTS, `az.plot_posterior` | **SOTA-OK** |
+| PyMC-2-Gaussian-Mixtures | 23 | 10 | 10/10 | 0 | 0 (3 ex.) | python3 | `pm.NormalMixture`+`pm.Dirichlet`+`CompoundStep` NUTS+BinaryGibbsMetropolis ; label-switching | **SOTA-OK** |
+| PyMC-3-Factor-Graphs | 18 | 8 | 8/8 | 0 | 0 (3 ex.) | python3 | Murder Mystery (explaining-away) + Monty Hall ; `pm.Categorical`+`CategoricalGibbsMetropolis` | **SOTA-OK** |
+| PyMC-4-Bayesian-Networks | 26 | 11 | 11/11 | 0 | 0 (4 ex.) | python3 | Wet Grass DAG, d-separation, **do-calculus** (P(Cloudy\|do(Rain=1))=0.500 vs obs 0.800, Pearl 2000) | **SOTA-OK** |
+| PyMC-6-Debugging | 43 | 13 | 13/13 | 0 | 0 (3 ex.) | python3 | **Neal funnel + non-centered reparam + NUTS vs ADVI** ; 573 divergences live ; R-hat/ESS (Vehtari 2021) | **SOTA-OK** |
+| PyMC-7-Skills-IRT | 33 | 14 | 14/14 | 0 | 0 (4 ex.) | python3 | IRT 1PL/2PL probit + DINA (AND-gate) ; `pm.math.invprobit`, `sklearn.roc_curve/auc` | **SOTA-OK** |
+| PyMC-8-TrueSkill | 30 | 13 | 13/13 | 0 | 0 (3 ex.) | python3 | Latent-skill Gaussian ranking, `pm.Potential`, online/team/FFA ; EP V(t)/W(t) dérivé Sec.7bis | **SOTA-OK** |
+| PyMC-9-Classification | 22 | 10 | 10/10 | 0 | 0 (3 ex.) | python3 | Probit classifier (Bayes Point Machine) + A/B testing + CTR ; Beta-Binomial (BDA3) | **SOTA-OK** |
+| PyMC-10-Model-Selection | 35 | 16 | 16/16 | 0 | 0 (3 ex.) | python3 | **WAIC/LOO** (`az.compare`/`az.loo`, `pm.compute_log_likelihood`), ARD, Pareto k | **SOTA-OK** |
+| PyMC-11-Topic-Models | 33 | 15 | 15/15 | 0 | 0 (3 ex.) | python3 | **LDA** (`pm.Dirichlet`/`pm.Multinomial`), symmetry-breaking ; sklearn LDA réf | **SOTA-OK** |
+| PyMC-12-Modeles-Hierarchiques | 23 | 9 | 9/9 | 0 | 0 (3 ex.) | python3 | **Hierarchical partial pooling + shrinkage**, non-centered (`mu+sigma*z`), funnel, MSE no-pool 2.825→hier 0.983 (65%) | **SOTA-OK** |
+| PyMC-13-Crowdsourcing | 43 | 16 | 16/16 | 0 | 0 (3 ex.) | python3 | Dawid-Skene, Honest/Biased Worker, Community hier ; EM vs NUTS disclosed | **SOTA-OK** |
+| PyMC-14-Sequences | 39 | 17 | 17/17 | 0 | 0 (5 ex.) | python3 | **HMM** (Forward-Backward hand-rolled + `pm.NormalMixture` marginalized states), regime/anomaly | **SOTA-OK** |
+| PyMC-15-Recommenders | 58 | 24 | 24/24 | 0 | 0 (3 ex.) | python3 | **PMF** (matrix factorization), cold-start, click-model ; 163 divergences shown → bias-fix | **SOTA-OK** |
+| **TOTAL** | **452** | **187** | **187/187** | **0** | **0** | python3 | PyMC 5.28.5 + ArviZ 0.23.4 | **SOTA-OK 14/14** |
+
+- **EXEC_PROVED global** : 187/187 (100%) — `execution_count != null` sur 187/187 cellules code.
+- **Erreurs runtime** : 0/14.
+- **Violations C.1** : 0/14 (regex `raise NotImplementedError|assert False|1/0` = 0 hit ; stubs `result = None # TODO etudiant` conformes).
+
+### Vrais outils SOTA invoqués (vérifiés G.1 imports réels)
+
+- **PyMC 5.28.5** (`import pymc as pm`) — 14/14 notebooks. Vraie inférence MCMC **NUTS** (`pm.sample`) sur modèles bayésiens non-conjugués. API massive : `pm.Normal/Beta/Binomial/Categorical/Dirichlet/NormalMixture/Bernoulli`, `pm.math.sigmoid/invprobit`, `pm.Potential`, `pm.Deterministic`, `pm.sample_posterior_predictive`, `pm.compute_log_likelihood`, `CompoundStep` (NUTS+Gibbs), `pm.fit` (ADVI).
+- **ArviZ 0.23.4** (`import arviz as az`) — 14/14 notebooks. Diagnostics SOTA : `az.summary`, `az.plot_trace/plot_posterior/plot_energy/plot_compare`, `az.compare(ic="waic"/"loo")`, `az.loo`, `pareto_k`. Vehtari 2021 (R-hat<1.01, ESS>400).
+- **PyTensor** (`import pytensor as pt`) — `pt.switch`, `pt.sigmoid`, `pt.dot` (backend tensoriel PyMC 5.x).
+- **scipy.stats** (7 nb) — `pearsonr` (collider corr PyMC-4), distributions de référence.
+- **scikit-learn** (3 nb) — `roc_curve/auc` (IRT PyMC-7), `LatentDirichletAllocation` réf (PyMC-11).
+- **matplotlib** (13 nb) — visualisation posteriors/diagnostics.
+
+### Disclosures honnêtes vérifiées (le cœur pédagogique de la série)
+
+Cette série est **exceptionnellement honnête sur les diagnostics sampler** — discipline Stop-&-Repair :
+
+- **PyMC-6 (Debugging)** = notebook diagnostic canonique : montre **573 divergences live** dans l'exemple buggy (funnel centré), puis la fix non-centrée + compare NUTS vs ADVI (« ADVI sous-estime l'incertitude »). Funnel (Neal 2003, Betancourt & Girolami 2015). **Le plus fort notebook "honest diagnostics" du registre axe-2 avec ICT-24.**
+- **PyMC-12 (Hierarchiques)** = notebook non-centré canonique : section dédiée « Divergences et funnel de Neal — pourquoi le non-centrage », comparaison centré-vs-non-centré, **shrinkage quantifié MSE no-pool 2.825 → hier 0.983 (amélioration 65%)**, target_accept=0.95. (Confirme firsthand la fix #3801 dégénérescence, mémoire `pymc-degenerate-3801-noncentered-fix`.)
+- **PyMC-10 (Model-Selection)** = notebook LOO/WAIC canonique : appelle **explicitement `pm.compute_log_likelihood(trace)`** avant `az.compare`/`az.loo` — satisfait directement l'exigence log-likelihood LOO (mémoire `pymc-loo-log-likelihood-required`). Pareto k « k<0.7 = fiable ». Watanabe 2010, Vehtari-Gelman-Gabry 2017.
+- **PyMC-2 (GMM)** : **« There were 271 divergences after tuning »** montré live + label-switching expliqué (Redner & Walker 1984, Stephens 2000) ; `NormalMixture` encore 13 divergences.
+- **PyMC-15 (Recommenders/PMF)** : montre honnêtement l'échec du 1er modèle (**163 divergences**, Rhat>1.01, predictions ~0 = sous-identifié) → corrigé avec termes de biais user/item. RMSE reportée. Salakhutdinov & Mnih 2008.
+- **PyMC-13/PyMC-14** : préférent **honnêtement EM/Forward-Backward** là où l'algorithme exact existe (« NUTS ne peut pas échantillonner les variables latentes discrètes »), tout en démontrant NUTS réel sur le sous-modèle inférable. Dawid & Skene 1979, Cappe-Moulines-Ryden 2005.
+- **PyMC-8 (TrueSkill)** : dérive EP closed-form V(t)/W(t) (Sec.7bis) + déclare honnêtement que la dynamique τ² du vrai TrueSkill est **NON implémentée** ici.
+
+### Prong B — problème non-trivial (14/14 DISCRIMINATING)
+
+La série PyMC **exerce des capacités MCMC distinctives** sans équivalent closed-form : posteriors multi-modaux (PyMC-2 GMM, PyMC-10 mixture, PyMC-11 LDA), partial pooling hiérarchique avec shrinkage (PyMC-1 Sec.6, PyMC-12), inférence de skill latent/IRT (PyMC-7, PyMC-8, PyMC-13), comparaison de modèles via WAIC/LOO (PyMC-10), HMM emission recovery (PyMC-14), facteurs latents PMF (PyMC-15). **PyMC-1** ouvre sur Beta-Bernoulli (conjugué, closed-form) MAIS se corrige en Section 6 (« le posterior marginal n'a plus de forme fermée — l'échantillonnage MCMC devient nécessaire, pas décoratif ») avec un modèle hiérarchique non-centré — framing pédagogique explicite. **Aucun notebook dégénéré** (les 2 candidats scrutés — PyMC-1 conjugué, PyMC-15 PMF sous-identifié — passent : PyMC-1 ajoute le hiérarchique ; PyMC-15 documente honnêtement l'échec + corrige).
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 (pas d'erreur volontaire) | **CONFORME** | 0 `raise NotImplementedError`/`assert False`/`1/0` sur 187 cellules code |
+| C.2 (notebooks AVEC outputs) | **CONFORME** | 187/187 exec_count!=null + outputs cohérents |
+| Anti-regression | **CONFORME** | Audit read-only, 0 code notebook modifié |
+| SOTA Prong A (5 verdicts) | **CONFORME** | SOTA-OK 14/14 (vrai PyMC NUTS + ArviZ) |
+| SOTA Prong B (non-trivial) | **CONFORME** | 14/14 DISCRIMINATING |
+| Stop & Repair (secrets §6) | **CONFORME** | 0 hand-edit sortie ; sampler warnings surfacés (573/271/163 divergences), jamais supprimés |
+
+### Owner-lane volet
+
+**po-2025 strict** — Probas/PyMC = lane bayésienne Python native de po-2025 (parité #4956 d'Infer.NET entry #006). Audit consultatif additif (0 PR de substance, 0 code modifié), safe owner-lane. **Continuité c.411** : pivot SUBSTANCE après 2 cycles rendering (c.409 ICT-24 collapsed → c.410 figures #5780), R6 anti-monoculture honoré (registre audit EPIC #3801 ≠ doc/figure). Gap firsthand : le ledger couvrait DecPyMC (#005), Probas/Infer #006 (20 nb), Infer-extension #018 (Infer-16..19 + PyMC-16..19 twins), MAIS **PyMC-1..15 standalone (14 nb, parité d'Infer-1..15) = non audité** — cette entry comble le gap.
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **Audit 2×** : recensement structural worker (script python3 : 187 cells exec, 0 err, 0 C.1, imports SOTA comptés) + sous-agent sonnet (lecture substance 14 nb, verdict Prong-B evidence-cited). Worker re-vérifié firsthand sur 2 notebooks-clés : PyMC-12 (non-centered pattern `*\s*z` présent + MD « funnel de Neal » disclosure) + PyMC-10 (`log_likelihood`/`idata_kwargs` présent + 8 `az.compare`/`loo`/`waic`).
+- **0 faux positif C.1**, **0 workaround dégradé**, **7 disclosures honnêtes** vérifiées (PyMC-6/12/10/2/15/13/14/8).
+
+### Conclusions audit
+
+- **Substance Probas/PyMC = exceptionnellement propre**, 14 notebooks à **100% EXEC_PROVED** (187/187), conforme SOTA-not-workaround (5 verdicts) + C.1/C.2 + Stop & Repair. **Discipline des diagnostics sampler = la plus forte du registre axe-2** (divergences live 573/271/163, R-hat/ESS, funnel, LOO Pareto-k — jamais supprimés, toujours expliqués).
+- **Pas de fix nécessaire** : audit = SOTA-OK 14/14, 0 PR de substance.
+- **Pivot L335 anti-monoculture légitimé** : registre audit EPIC #3801 (substance) après 2 cycles rendering ; famille bayésienne Python distincte (parité #4956 d'Infer #006).
+- **Collision-avoidance** : entry **#028** (post consolidation PR #6216 qui introduit #019 + #023-#027). **Stacked sur PR #6216** (`docs/axe2-ledger-collapse-019-027`) — entry #028 suit #027 proprement ; rebase sur main au merge de #6216.
+- **Cumulatif** : entry #028 = **PyMC standalone** (14 nb) rejoint DecPyMC (#005, 7 nb) + Probas/Infer (#006, 20 nb) + Infer-extension (#018, 9 nb) → **famille Probas bayésienne COMPLÈTE** dans le registre (50 notebooks : 20 Infer + 14 PyMC + 7 DecPyMC + 9 extension). PyMC/ArviZ déjà comptés (#005/#018) ; cette entry consolide la couverture PyMC standalone.
+
+Part of #3801, #4956
+
+---
+
+## Entry #029 — GenAI/SemanticKernel (01-10b) (owner-floue po-2025 consultatif, c.412)
+
+**Famille** : GenAI/SemanticKernel — orchestration agentique Microsoft (SDK Semantic Kernel Python, équivalent LangChain). Audit cross-lane **consultatif read-only** (EPIC #3801 = pool global, owner-floue safe comme SymbolicAI #002-#004). Lane GenAI native = po-2024, mais po-2024 a pivoté Lean/Z3/SmartContracts c.387+ (5 cycles) ; **0 PR po-2024 actif sur SK/RAG/OWUI** (collision check `gh pr list --search SemanticKernel` = 0 OPEN). Gap firsthand : le ledger couvrait GenAI Texte (#022)/Image (#023)/PostTraining (#024)/Video (#025)/Audio (#026), MAIS **SemanticKernel (12 notebooks pédagogiques 01-10b) + RAG/Open-WebUI/FineTuning = non audités**. Cette entry comble le gap SK.
+
+### Métriques structurales (recensement worker firsthand, script `/tmp/sk_census.py`)
+
+| Métrique | Valeur |
+|----------|--------|
+| Notebooks (série principale 01-10b) | **12** |
+| Code cells | 137 |
+| EXEC_PROVED (`execution_count != null`) | **137/137 (100%)** |
+| Cellules en erreur (`output_type: error`) | **0** |
+| Violations C.1 (`raise NotImplementedError`/`assert False`/`1/0` en source) | **0** (1 faux-positif `1/0` dans blob base64 image, exclu) |
+| Kernels | python3 (uniforme) |
+| Vrai outil SOTA | semantic-ker**nel 1.42.0** + OpenAI API (GPT-4/DALL-E 3/Whisper/TTS/GPT-4V) + pythonnet 3.0.5 (CLR interop) + MCP SDK |
+
+### Synthèse substance par notebook (12/12)
+
+| NB | Thème SK | Outil SOTA exécuté | Verdict |
+|----|----------|-------------------|---------|
+| 01 | Kernel/Services/Plugins/Chat | `semantic_kernel` 1.42.0 + ChatCompletion OpenAI | SOTA-OK |
+| 02 | Function Calling moderne + Memory/Groundedness | `FunctionChoiceBehavior.Auto()` + plugins | SOTA-OK |
+| 03 | Agents (ChatCompletionAgent, AgentGroupChat, OpenAIAssistant) | SK Agents SDK | SOTA-OK |
+| 04 | Filters + OpenTelemetry/Observability | `@kernel.filter` + logging | SOTA-OK |
+| 05 | VectorStores/RAG (InMemoryStore + Qdrant) | SK `vectorstoremodel` + `qdrant-client` | SOTA-OK + **DISCLOSURE** (voir bas) |
+| 06 | Process Framework (workflows étatiques) | SK `ProcessBuilder` | SOTA-OK |
+| 07 | MultiModal (DALL-E, Whisper, GPT-4V, TTS) | OpenAI images/audio/vision | SOTA-OK |
+| 08 | MCP (Model Context Protocol) | `mcp` SDK + filesystem plugin | SOTA-OK |
+| 09 | CLR interop Python↔.NET | pythonnet 3.0.5 + DLL loading | SOTA-OK |
+| 10 | NotebookMaker (3-agent Admin/Coder/Reviewer) | AgentGroupChat + KernelFunction | SOTA-OK |
+| 10a | NotebookMaker batch (sans UI) | idem, paramétré | SOTA-OK |
+| 10b | NotebookMaker batch paramétrisé Papermill | idem, papermill-ready | SOTA-OK |
+
+### Prong A — vrai outil SOTA, pas workaround dégradé (11/12 SOTA-OK + 1 disclosure)
+
+**Global EXEC_PROVED 137/137, 0 erreur, 0 graceful-skip déguisé** : les sorties sont de **vraies générations LLM** (prose GPT-4, métadonnées DALL-E, transcriptions Whisper, tableaux de modèles). Les 2+5 matchs `skip_like` dans 04/07 sont des **faux-positifs** : « API Key OK », « Service DALL-E configuré », « API Key configurée: Oui » = **confirmations de config réelles**, pas des skips (vérifié firsthand). SK 1.42.0 (version live imprimée dans nb01 output) + OpenAI + pythonnet 3.0.5 + MCP SDK = vrais outils installés et invoqués.
+
+**DISCLOSURE nb05 (VectorStores)** — 2 points honnêtes :
+1. **Qdrant service DOWN** (`[WinError 10061] connexion refusée` sur `qdrant.myia.io`) → le notebook **dégrade honnêtement vers `InMemoryStore`** (connecteur SK réel, pas une réimplémentation jouet) avec output explicite « Les exemples utilisent InMemoryStore ». C'est une **dégradation légitime et transparente**, pas un workaround maquillé. Verdict : **RECOVERABLE-MACHINE** (Qdrant remonté → re-exec pour la branche Qdrant), InMemoryStore path = SOTA-OK.
+2. 🚩 **Violation secrets-hygiene (HARD)** : nb05 cell21 `QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "4f89edd5-90f7-4ee0-ac25-9185e9835c44")` = **littéral clé API en fallback inline** — pattern **interdit** ([secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) règle 2, incident fondateur 2026-05-14 `b34e3a05`). La clé (UUID Qdrant) est committée en clair dans la source. **Fix requis** (séparé, sécurité cluster-wide) : retirer le défaut littéral → `os.getenv("QDRANT_API_KEY")`. Scan All-SK : **1 seule occurrence** (nb05 cell21 uniquement, 0 autre). Fix first-hand livré cycle 412 (PR séparée).
+
+### Prong B — problème non-trivial (12/12 DISCRIMINATING)
+
+La série **exerce des capacités d'orchestration agentique distinctives** sans équivalent trivial : Function Calling moderne (`FunctionChoiceBehavior.Auto`, nb02), multi-agents collaboratifs (`AgentGroupChat` + stratégies de sélection/terminaison, nb03/10), filtres d'interception avant/après (nb04), RAG vectoriel avec schéma typé `@vectorstoremodel` (nb05), workflows étatiques Process Framework (nb06), multimodal cross-model (nb07), interop MCP/outils externes (nb08), interop Python↔.NET via pythonnet (nb09). **Fil rouge = NotebookMaker (nb10/10a/10b)** : système **3-agent** (Admin planifie, Coder génère, Reviewer valide) qui génère automatiquement des notebooks pédagogiques — problème **discriminant canonique** où l'orchestration SK est indispensable (un single-shot LLM ne peut pas tenir le rôle multi-étapes). **Aucun notebook dégénéré** : chaque module couvre un sous-système SK distinct.
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 (pas d'erreur volontaire) | **CONFORME** | 0 `raise NotImplementedError`/`assert False`/`1/0` en source (1 base64 FP exclu) |
+| C.2 (outputs commités) | **CONFORME** | 137/137 EXEC_PROVED, 0 erreur |
+| SOTA Prong A | **11/12 SOTA-OK + nb05 RECOVERABLE-MACHINE** (Qdrant down) | vrais outils SK 1.42.0/OpenAI/pythonnet/MCP |
+| SOTA Prong B | **DISCRIMINATING 12/12** | chaque sous-système SK exercé, NotebookMaker 3-agent fil rouge |
+| Stop & Repair (secrets §6) | **NON-CONFORME nb05** → FIX | littéral `QDRANT_API_KEY` fallback = violation règle 2 ; fix séparé cycle 412 |
+| secrets-hygiene règle 2 | **1 violation** (nb05 cell21) | `os.getenv("KEY", "<littéral>")` interdit |
+
+### Owner-lane volet
+
+**po-2025 owner-floue consultatif** — GenAI/SemanticKernel = lane po-2024 native, mais audit EPIC #3801 = read-only consultatif additif (0 code modifié hors le fix sécurité), safe cross-lane (cf SymbolicAI #002-#004 owner-floue). **po-2024 a pivoté Lean/Z3/SC c.387+ (5 cycles), 0 PR actif sur SK** → pas de collision active. Le fix secrets (sécurité cluster-wide HARD) transcende la lane. **R6 anti-monoculture** : registre audit EPIC #3801 (substance) famille GenAI/orchestration agentique distincte des 3 cycles précédents (c.409 ICT collapsed → c.410 figures → c.411 PyMC bayésien → c.412 SK agentique).
+
+### Notes de vérification G.1 (L378 durcie)
+
+- **Recensement worker firsthand** (script `/tmp/sk_census.py`) : 12 notebooks, 137 code cells, 137/137 EXEC_PROVED, 0 err, 0 C.1 (1 base64 FP exclu via 2e scan source-only `sk_scan.py`).
+- **Vrais outils vérifiés** : SK version `1.42.0` imprimée nb01 output ; pythonnet `3.0.5` nb09 output ; MCP SDK « installé » nb08 output + filesystem plugin.
+- **Skip-like = faux-positifs** vérifiés cellule par cellule (04 cell2 « API Key OK », 07 cell1 « API Key configurée: Oui » + cell6/12/16/20 « Service X configuré » = confirmations réelles, pas skips).
+- **Secrets scan All-SK firsthand** (`sk_scan.py`, regex `os.getenv("KEY","<littéral>")`) : **1 occurrence** — nb05 cell21 QDRANT_API_KEY. 0 autre sur les 12 notebooks.
+
+### Conclusions audit
+
+- **GenAI/SemanticKernel = substance agentique solide**, 12 notebooks à **100% EXEC_PROVED** (137/137), SK 1.42.0 + OpenAI + pythonnet + MCP = vrais outils SOTA invoqués, Prong-B DISCRIMINATING 12/12 (orchestration multi-agent, fil rouge NotebookMaker 3-agent).
+- **1 fix sécurité requis** : nb05 cell21 littéral `QDRANT_API_KEY` → livré PR séparé cycle 412 (cluster-wide HARD, transcende lane).
+- **1 RECOVERABLE-MACHINE** : Qdrant `qdrant.myia.io` down → dégradation honnête InMemoryStore (légitime, transparente, pas un workaround maquillé).
+- **Collision-avoidance** : entry **#029** stacked sur PR #6247 (entry #028), lui-même stacked sur #6216 (consolidation #019+#023-#027) — suit #028 proprement ; rebase en cascade au merge de la stack.
+- **Cumulatif** : entry #029 = **SemanticKernel standalone** (12 nb) → 1re famille **GenAI agentique** dans le registre axe-2 (rejoint Texte #022/Image #023/PostTraining #024/Video #025/Audio #026 = couverture GenAI élargie). Reste non-audité : GenAI/RAG, Open-WebUI, FineTuning (grains futurs).
+
+Part of #3801, #1385
