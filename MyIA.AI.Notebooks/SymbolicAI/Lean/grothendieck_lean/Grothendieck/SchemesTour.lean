@@ -12,6 +12,35 @@ Mathlib 4 formalizes schemes as `AlgebraicGeometry.Scheme`, extending
 Epic #1646. All `sorry`s eliminated at creation.
 -/
 
+/-
+  `Grothendieck.SchemesTour` — Schémas (Partie 2)
+  =================================================
+
+  Hommage à Alexandre Grothendieck (1928-2014).
+
+  L'idée la plus transformante de Grothendieck : remplacer les variétés
+  par des *schémas* — des espaces annelés en anneaux locaux qui sont
+  localement affines (isomorphes à Spec R pour un anneau commutatif R).
+  Ce cadre unifie l'arithmétique et la géométrie.
+
+  Mathlib 4 formalise les schémas comme `AlgebraicGeometry.Scheme`, qui
+  étend `LocallyRingedSpace` par la condition d'affinité locale.
+
+  Ce module parcourt :
+    - Le type `Scheme` et sa structure de catégorie, avec ses foncteurs
+      d'oubli vers les espaces topologiques et les espaces annelés en
+      anneaux locaux.
+    - La construction Spec, qui associe à chaque anneau commutatif un
+      schéma affine ; Spec est l'adjoint à gauche du foncteur de sections
+      globales Γ.
+    - Les propriétés de base : un isomorphisme de schémas induit un
+      homéomorphisme des espaces sous-jacents.
+    - L'adjonction Spec Γ, cœur de la géométrie algébrique : pour les
+      schémas affines, Spec et Γ sont des équivalences inverses.
+
+  Epic #1646. Tous les `sorry`s éliminés à la création.
+-/
+
 import Mathlib.AlgebraicGeometry.Scheme
 
 namespace Grothendieck
