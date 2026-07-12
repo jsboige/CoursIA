@@ -67,26 +67,6 @@ La série propose délibérément deux stacks en parité (.NET ⇄ Python, marat
 
 ---
 
-## Quick Start
-
-```bash
-# Python (notebooks SW-2b a SW-7b, SW-8 a SW-13)
-pip install rdflib pySHACL owlready2 kglab SPARQLWrapper
-
-# .NET (notebooks SW-1 a SW-7, jumeaux C# SW-8/9/10/11/13)
-dotnet restore
-
-# Premier notebook recommandé (Python) :
-jupyter notebook SW-2b-Python-RDFBasics.ipynb
-
-# Ou en .NET :
-jupyter notebook SW-1-CSharp-Setup.ipynb
-```
-
-Aucune API key requise pour les notebooks fondamentaux (SW-1 à SW-11). SW-12 (GraphRAG) nécessite une clé LLM.
-
----
-
 ## Progression recommandée
 
 ### Parcours principal
@@ -105,47 +85,6 @@ Les sidetracks marqués `b-Python` sont des notebooks complémentaires qui prés
 | SW-7b-Python-OWL | SW-7-CSharp-OWL | Ontologies OWL avec OWLReady2 |
 
 ---
-
-## Prérequis
-
-### Pour les notebooks .NET (SW-1 à SW-7)
-
-- .NET SDK 9.0+
-- .NET Interactive (Jupyter kernel)
-- VS Code avec Polyglot Notebooks (recommandé)
-
-### Pour les notebooks Python (SW-8 à SW-13 et sidetracks)
-
-- Python 3.10+
-- pip install -r requirements.txt
-
-### Pour le notebook 12 (GraphRAG)
-
-- Clé API OpenAI ou Anthropic (voir `.env.example`)
-
-## Installation
-
-### 1. Environnement .NET
-
-```bash
-dotnet tool install -g Microsoft.dotnet-interactive
-dotnet interactive jupyter install
-```
-
-### 2. Environnement Python
-
-```bash
-python -m venv venv
-venv\Scripts\activate  # Windows
-pip install -r requirements.txt
-```
-
-### 3. Configuration API (optionnel, pour SW-12)
-
-```bash
-cp .env.example .env
-# Éditer .env avec vos clés API
-```
 
 ## Structure détaillée des notebooks
 
@@ -438,6 +377,67 @@ Pour les praticiens qui veulent aller vite :
 Pour les personnes créant des ontologies et des vocabulaires :
 
 1. **SW-6** (RDFS) → **SW-7** (OWL) → **SW-7b** (OWL Python) → **SW-8** (SHACL : contraintes sur les données) → **SW-13** (comparaison raisonneurs).
+
+## Quick Start
+
+```bash
+# Python (notebooks SW-2b a SW-7b, SW-8 a SW-13)
+pip install rdflib pySHACL owlready2 kglab SPARQLWrapper
+
+# .NET (notebooks SW-1 a SW-7, jumeaux C# SW-8/9/10/11/13)
+dotnet restore
+
+# Premier notebook recommandé (Python) :
+jupyter notebook SW-2b-Python-RDFBasics.ipynb
+
+# Ou en .NET :
+jupyter notebook SW-1-CSharp-Setup.ipynb
+```
+
+Aucune API key requise pour les notebooks fondamentaux (SW-1 à SW-11). SW-12 (GraphRAG) nécessite une clé LLM.
+
+---
+
+## Prérequis
+
+### Pour les notebooks .NET (SW-1 à SW-7)
+
+- .NET SDK 9.0+
+- .NET Interactive (Jupyter kernel)
+- VS Code avec Polyglot Notebooks (recommandé)
+
+### Pour les notebooks Python (SW-8 à SW-13 et sidetracks)
+
+- Python 3.10+
+- pip install -r requirements.txt
+
+### Pour le notebook 12 (GraphRAG)
+
+- Clé API OpenAI ou Anthropic (voir `.env.example`)
+
+## Installation
+
+### 1. Environnement .NET
+
+```bash
+dotnet tool install -g Microsoft.dotnet-interactive
+dotnet interactive jupyter install
+```
+
+### 2. Environnement Python
+
+```bash
+python -m venv venv
+venv\Scripts\activate  # Windows
+pip install -r requirements.txt
+```
+
+### 3. Configuration API (optionnel, pour SW-12)
+
+```bash
+cp .env.example .env
+# Éditer .env avec vos clés API
+```
 
 ## FAQ / Troubleshooting
 
