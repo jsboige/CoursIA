@@ -26,6 +26,19 @@ Nous indexons les modules Mathlib `CategoryTheory.Sites.Point.Basic` et
 
 EPIC #1646, Phase 9 (#2159). Toutes les `sorry` éliminées à la création.
 -/
+
+import Mathlib.CategoryTheory.Sites.Grothendieck
+import Mathlib.CategoryTheory.Sites.SheafOfTypes
+import Mathlib.CategoryTheory.Sites.Point.Basic
+import Mathlib.CategoryTheory.Sites.Point.Category
+
+universe v u w
+
+namespace Grothendieck
+
+open CategoryTheory
+open CategoryTheory.Limits
+
 /-!
 ## Qu'est-ce qu'un point d'un site ?
 
@@ -211,4 +224,3 @@ theorem presheaf_fiber_hom_ext {C : Type u} [Category.{v} C]
   Φ.presheafFiber_hom_ext h
 
 end Grothendieck
-

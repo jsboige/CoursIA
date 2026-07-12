@@ -21,10 +21,23 @@ sheaf F at Φ is Φ.sheafFiber.obj F. This is the categorical generalization
 of the stalk of a sheaf on a topological space at a point.
 
 We index Mathlib's `CategoryTheory.Sites.Point.Basic` and
-`CategoryTheory.Sites.Point.Category` into the `Grothendieck` namespace.
+`CategoryTheory.Sites.Point.Category` into the `Grothendieck_en` namespace.
 
 Epic #1646, Phase 9 (#2159). All `sorry`s eliminated at creation.
 -/
+
+import Mathlib.CategoryTheory.Sites.Grothendieck
+import Mathlib.CategoryTheory.Sites.SheafOfTypes
+import Mathlib.CategoryTheory.Sites.Point.Basic
+import Mathlib.CategoryTheory.Sites.Point.Category
+
+universe v u w
+
+namespace Grothendieck_en
+
+open CategoryTheory
+open CategoryTheory.Limits
+
 /-!
 ## What is a point of a site?
 
@@ -206,4 +219,3 @@ theorem presheaf_fiber_hom_ext {C : Type u} [Category.{v} C]
   Φ.presheafFiber_hom_ext h
 
 end Grothendieck_en
-
