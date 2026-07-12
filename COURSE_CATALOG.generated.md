@@ -1,26 +1,26 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-07-11 05:59
-Total notebooks: 808
+Generated: 2026-07-12 06:19
+Total notebooks: 814
 
 ## Status Summary
 
-- **READY**: 658
-- **DEMO**: 148
+- **READY**: 663
+- **DEMO**: 149
 - **RESEARCH**: 0
 - **BROKEN**: 2
 
 ## Maturity Summary
 
-- **PRODUCTION**: 605
-- **BETA**: 150
+- **PRODUCTION**: 607
+- **BETA**: 153
 - **TEMPLATE**: 4
-- **ALPHA**: 45
+- **ALPHA**: 46
 - **DRAFT**: 4
 
 ## By Series
 
-### GenAI (141 notebooks) — BROKEN:2, DEMO:80, READY:59 | ALPHA:5, BETA:30, DRAFT:2, PRODUCTION:101, TEMPLATE:3
+### GenAI (141 notebooks) — BROKEN:2, DEMO:81, READY:58 | ALPHA:5, BETA:30, DRAFT:2, PRODUCTION:101, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -135,7 +135,7 @@ Total notebooks: 808
 | 109 | 20. OWUI Native API v0.9.6 — introspection REST et | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 110 | 2. Prompt Engineering : Techniques Avancées | Python 3 | DEMO | BETA | 45min | po-2025 |
 | 111 | 3. Structured Outputs : Sorties JSON Garanties | Python 3 | READY | PRODUCTION | 30min | po-2025 |
-| 112 | Function Calling : Connecter les LLMs au Monde Rée | Python 3 | READY | PRODUCTION | 45min | po-2025 |
+| 112 | Function Calling : Connecter les LLMs au Monde Rée | Python 3 | DEMO | PRODUCTION | 45min | po-2025 |
 | 113 | 5. RAG Modern - Retrieval Augmented Generation | Python 3 | READY | PRODUCTION | 45min | po-2025 |
 | 114 | PDF et Web Search : Sources Documentaires avec Ope | Python 3 | READY | PRODUCTION | 30min | po-2025 |
 | 115 | Code Interpreter : Exécution de Code avec OpenAI | Python 3 | READY | PRODUCTION | 30min | po-2025 |
@@ -334,7 +334,7 @@ Total notebooks: 808
 | 45 | ML-9 : Detection d'anomalies avec Randomized PCA | .NET (C#) | READY | PRODUCTION | 45min | po-2023 |
 | 46 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | PRODUCTION | 30min | po-2023 |
 
-### SymbolicAI (207 notebooks) — DEMO:6, READY:201 | ALPHA:1, BETA:35, PRODUCTION:171
+### SymbolicAI (213 notebooks) — DEMO:6, READY:207 | ALPHA:1, BETA:39, PRODUCTION:173
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -423,128 +423,134 @@ Total notebooks: 808
 | 83 | Z3-Python 05 — Quantificateurs et preuves formelle | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 84 | Z3-Python 06 -- Optimisation avancee (twin C#) | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
 | 85 | Z3-Python 06 — Optimisation avancee | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 86 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 87 | Sudoku : Théorème Explicite vs Modèle Implicite pa | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 88 | Sudoku 4x4 : comparaison des modes `Array` et `Con | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 89 | Théorie des Tableaux Z3 — Select, Store et Switchi | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 90 | Tableaux Imbriqués et Grilles 2D : API Déclarative | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 91 | Notebook 06 — Meal-Planner declaratif : du modele  | .NET (C#) | READY | BETA | 1h | po-2024 |
-| 92 | 07 — Données réelles & externe : Ciqual × RecipeML | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 93 | 08 — Capstone hiérarchique : du squelette `int[][] | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 94 | 09 — Convergence à l'échelle : l'encodage décide d | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 95 | 10 — Générer un témoin depuis `A & ~B` (fork Autom | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 96 | Notebook 11 — Ordonnancement d'atelier (Job Shop S | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 97 | Notebook 12 - Coloration de graphe : le graphe de  | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 98 | Notebook 13 — Cryptarithmes : l'arithmétique posit | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
-| 99 | Notebook 14 — De SAT à OPT : optimisation et contr | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
-| 100 | 15 — Théorie des bit-vectors Z3 : vérifier le débo | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 101 | 16 — Arithmétique réelle Z3 : raisonner sur les ir | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 102 | 17 — UNSAT cores Z3 : expliquer l'insatisfiabilité | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 103 | Notebook 18 - L'enigme d'Einstein : la logique des | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
-| 104 | Introduction au web sémantique avec RDF.Net | .NET (C#) | READY | PRODUCTION | 2h+ | po-2024 |
-| 105 | SW-1-Setup | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
-| 106 | SW-10-CSharp-RDFStar — Jumeau C# : annoter des tri | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 107 | SW-10-Python-RDFStar | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 108 | SW-11-CSharp-KnowledgeGraphs | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 109 | SW-11-Python-KnowledgeGraphs | Python 3 | READY | PRODUCTION | 1h | po-2024 |
-| 110 | SW-12-Python-GraphRAG | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 111 | SW-13-Reasoners | Python 3 | READY | PRODUCTION | 1h | po-2024 |
-| 112 | SW-13 (C#) : Raisonneurs RDF/OWL — Inferer des con | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 113 | SW-2-RDFBasics | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 114 | SW-2b-Python-RDFBasics | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 115 | SW-3-GraphOperations | .NET (C#) | READY | PRODUCTION | 1h | po-2024 |
-| 116 | SW-3b-Python-GraphOperations | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
-| 117 | SW-4-SPARQL | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 118 | SW-4b-Python-SPARQL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 119 | SW-5-LinkedData | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 120 | SW-5b-Python-LinkedData | .venv (3.12.3) | READY | PRODUCTION | 45min | po-2024 |
-| 121 | SW-6-RDFS | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 122 | SW-6b-Python-RDFS | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2024 |
-| 123 | SW-7-OWL | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 124 | SW-7b-Python-OWL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 125 | SW-8-CSharp-SHACL | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 126 | SW-8-Python-SHACL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 127 | SW-9-CSharp-JSONLD — JSON-LD avec dotNetRDF (twin  | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 128 | SW-9-Python-JSONLD | Python 3 | READY | PRODUCTION | 1h | po-2024 |
-| 129 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 130 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python 3 | READY | PRODUCTION | 15min | po-2024 |
-| 131 | SC-2-Setup-Web3py - Python et la Blockchain | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 132 | SC-3-Solidity-Basics - Fondements de Solidity | .venv | READY | PRODUCTION | 45min | po-2024 |
-| 133 | SC-4-Functions-State - Fonctions et Etat | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 134 | SC-5-Inheritance - Heritage et Interfaces | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 135 | SC-6-Errors-Events - Erreurs et Evenements | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 136 | SC-10-Account-Abstraction - ERC-4337 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 137 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
-| 138 | SC-7-Token-Standards - Standards de Tokens | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 139 | SC-8-DeFi-Primitives - Primitives DeFi | Python (CoursIA SemanticWeb) | READY | PRODUCTION | 30min | po-2024 |
-| 140 | SC-9-DAO-Governance - Gouvernance DAO | cours-ia | READY | PRODUCTION | 30min | po-2024 |
-| 141 | SC-12-Foundry-Testing - Tests avec Foundry | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 142 | SC-13-Fuzz-Invariants - Fuzz Testing | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 143 | SC-14-Formal-Verification - Verification Formelle | Python 3 | DEMO | PRODUCTION | 30min | po-2024 |
-| 144 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgatio | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 145 | SC-16-Homomorphic-Encryption - Chiffrement Homomor | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 146 | SC-17-E2E-Verifiable-Voting - Vote Electronique Ve | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 147 | SC-18-Vyper - Smart Contracts en Python-like | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 148 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 149 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | .venv | READY | PRODUCTION | 30min | po-2024 |
-| 150 | SC-21-Move-Sui - Move sur Sui | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 151 | SC-22-Solana-Anchor - Solana avec Anchor | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 152 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 153 | SC-24 : Deploiement sur Testnets | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 154 | SC-25 : Deploiement Mainnet (L2) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 155 | SC-26 : Projet Final - DApp Complete | Python 3 | READY | PRODUCTION | 15min | po-2024 |
-| 156 | SL-1 - Apprentissage Logique : CBH Search et Versi | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
-| 157 | SL-1 - Apprentissage Logique : CBH Search et Versi | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 158 | SL-10 --- Apprentissage Actif d'Automates (L* d'An | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 159 | SL-10 --- Apprentissage Actif d'Automates (L* d'An | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 160 | SL-11 --- Capstone : un pipeline neuro-symbolique  | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 161 | SL-12 : Differentiable Logic Gate Networks | Python (difflogic-sl12) | READY | PRODUCTION | 45min | po-2024 |
-| 162 | SL-2 - Apprentissage et Connaissance : EBL & RBL ( | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 163 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 164 | SL-3 — Apprentissage basé sur la pertinence (twin  | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 165 | SL-3 --- Apprentissage Base sur la Pertinence (RBL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 166 | SL-4 — Programmation Logique Inductive (ILP) — Twi | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 167 | SL-4 --- Programmation Logique Inductive (ILP) | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
-| 168 | SL-5 - Resolution Inverse & ILP (C#) | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 169 | SL-5 --- Resolution Inverse et Progol (ILP bottom- | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 170 | SL-6 (C#) : Moteurs ILP modernes — apprendre des p | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 171 | SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Po | Python 3 (WSL) | READY | PRODUCTION | 30min | po-2024 |
-| 172 | SL-7 : Integration Neuro-Symbolique | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 173 | SL-8 (C#) : ILP Moderne et Knowledge Graphs | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 174 | SL-8 - ILP Moderne et Knowledge Graphs | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 175 | SL-9 - LLMs et Apprentissage Symbolique : Generati | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 176 | Configuration et Installation TweetyProject | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 177 | Tweety-10 — Markov Logic Networks (MLN) en .NET (C | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
-| 178 | Tweety-10 — Markov Logic Networks (MLN) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 179 | Tweety-11 — Inférence causale & do-calculus (twin  | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 180 | Tweety-11 — Raisonnement Causal : du do-calculus a | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 181 | Tweety C# / IKVM - Logiques de Base (Port .NET du  | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 182 | Logiques de Base - Propositionnelle et Premier Ord | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 183 | Tweety C# / IKVM - Semantique propositionnelle : m | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 184 | Tweety-2c — Logique du premier ordre en C#/.NET (p | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 185 | Tweety-3 — Description Logics en C#/.NET (port nat | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 186 | Logiques Avancees - DL, Modale, QBF, Conditional | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 187 | Tweety-3 — Conditional Logics en C#/.NET (port nat | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
-| 188 | Tweety-3 — Argumentation abstraite de Dung en C#/. | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 189 | Tweety-3 Modal Logic en C#/.NET (port natif IKVM) | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 190 | Tweety-3 - Quantified Boolean Formulas en C#/.NET  | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
-| 191 | Tweety-4 — Argumentation structurée ASPIC+ en C#/. | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 192 | Tweety C# / IKVM - Revision de Croyances (Port .NE | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 193 | Révision de Croyances et Incohérence | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 194 | Tweety-5 : Argumentation Abstraite de Dung (C# / . | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 195 | Argumentation Abstraite (Dung) | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 196 | Tweety-5b — Théorie de l'argumentation de Dung (co | Lean 4 (WSL) | READY | BETA | 15min | po-2024 |
-| 197 | Tweety-6 — Argumentation structuree (twin C# / .NE | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 198 | Argumentation Structuree | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 199 | Tweety-7a : Frameworks d'Argumentation Etendus (C# | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
-| 200 | Frameworks d'Argumentation Étendus | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 201 | Tweety-7b - Ranking Probabilistic Conditional Logi | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 202 | Sémantiques de Classement et Argumentation Probabi | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 203 | Dialogues Multi-Agents Argumentatifs (twin C#) | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
-| 204 | Dialogues Multi-Agents Argumentatifs | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 205 | Preferences et Theorie du Vote en C# / .NET (port  | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 206 | Préférences et Théorie du Vote | Python 3 | READY | PRODUCTION | 30min | po-2024 |
-| 207 | Tweety .NET - Probe Phase 1 axe 2 : initialisation | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 86 | Z3-Python 07 — Du style declaratif LINQ au solveur | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 87 | Z3-Python-08 : Ordonnancement de taches (Job-Shop  | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 88 | Z3-Python-09 : L'enigme d'Einstein (Zebra puzzle) | Python 3 | READY | BETA | 15min | po-2024 |
+| 89 | 10. Cryptarithmes (SEND + MORE = MONEY) | Python 3 | READY | BETA | 15min | po-2024 |
+| 90 | 11. Coloration de graphe : le graphe de Petersen | Python 3 | READY | BETA | 30min | po-2024 |
+| 91 | 12. Arithmetique reelle : raisonner sur les irrati | Python 3 | READY | BETA | 30min | po-2024 |
+| 92 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 93 | Sudoku : Théorème Explicite vs Modèle Implicite pa | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 94 | Sudoku 4x4 : comparaison des modes `Array` et `Con | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 95 | Théorie des Tableaux Z3 — Select, Store et Switchi | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 96 | Tableaux Imbriqués et Grilles 2D : API Déclarative | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 97 | Notebook 06 — Meal-Planner declaratif : du modele  | .NET (C#) | READY | BETA | 1h | po-2024 |
+| 98 | 07 — Données réelles & externe : Ciqual × RecipeML | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 99 | 08 — Capstone hiérarchique : du squelette `int[][] | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 100 | 09 — Convergence à l'échelle : l'encodage décide d | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 101 | 10 — Générer un témoin depuis `A & ~B` (fork Autom | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 102 | Notebook 11 — Ordonnancement d'atelier (Job Shop S | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 103 | Notebook 12 - Coloration de graphe : le graphe de  | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 104 | Notebook 13 — Cryptarithmes : l'arithmétique posit | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
+| 105 | Notebook 14 — De SAT à OPT : optimisation et contr | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
+| 106 | 15 — Théorie des bit-vectors Z3 : vérifier le débo | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 107 | 16 — Arithmétique réelle Z3 : raisonner sur les ir | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 108 | 17 — UNSAT cores Z3 : expliquer l'insatisfiabilité | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 109 | Notebook 18 - L'enigme d'Einstein : la logique des | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
+| 110 | Introduction au web sémantique avec RDF.Net | .NET (C#) | READY | PRODUCTION | 2h+ | po-2024 |
+| 111 | SW-1-Setup | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
+| 112 | SW-10-CSharp-RDFStar — Jumeau C# : annoter des tri | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 113 | SW-10-Python-RDFStar | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 114 | SW-11-CSharp-KnowledgeGraphs | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 115 | SW-11-Python-KnowledgeGraphs | Python 3 | READY | PRODUCTION | 1h | po-2024 |
+| 116 | SW-12-Python-GraphRAG | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 117 | SW-13-Reasoners | Python 3 | READY | PRODUCTION | 1h | po-2024 |
+| 118 | SW-13 (C#) : Raisonneurs RDF/OWL — Inferer des con | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 119 | SW-2-RDFBasics | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 120 | SW-2b-Python-RDFBasics | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 121 | SW-3-GraphOperations | .NET (C#) | READY | PRODUCTION | 1h | po-2024 |
+| 122 | SW-3b-Python-GraphOperations | Python 3 (ipykernel) | READY | PRODUCTION | 45min | po-2024 |
+| 123 | SW-4-SPARQL | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 124 | SW-4b-Python-SPARQL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 125 | SW-5-LinkedData | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 126 | SW-5b-Python-LinkedData | .venv (3.12.3) | READY | PRODUCTION | 45min | po-2024 |
+| 127 | SW-6-RDFS | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 128 | SW-6b-Python-RDFS | Python 3 (ipykernel) | READY | PRODUCTION | 30min | po-2024 |
+| 129 | SW-7-OWL | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 130 | SW-7b-Python-OWL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 131 | SW-8-CSharp-SHACL | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 132 | SW-8-Python-SHACL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 133 | SW-9-CSharp-JSONLD — JSON-LD avec dotNetRDF (twin  | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 134 | SW-9-Python-JSONLD | Python 3 | READY | PRODUCTION | 1h | po-2024 |
+| 135 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 136 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 137 | SC-2-Setup-Web3py - Python et la Blockchain | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 138 | SC-3-Solidity-Basics - Fondements de Solidity | .venv | READY | PRODUCTION | 45min | po-2024 |
+| 139 | SC-4-Functions-State - Fonctions et Etat | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 140 | SC-5-Inheritance - Heritage et Interfaces | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 141 | SC-6-Errors-Events - Erreurs et Evenements | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 142 | SC-10-Account-Abstraction - ERC-4337 | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 143 | SC-11-LLM-Assisted - Developpement Smart Contracts | Python 3 | DEMO | PRODUCTION | 45min | po-2024 |
+| 144 | SC-7-Token-Standards - Standards de Tokens | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 145 | SC-8-DeFi-Primitives - Primitives DeFi | Python (CoursIA SemanticWeb) | READY | PRODUCTION | 30min | po-2024 |
+| 146 | SC-9-DAO-Governance - Gouvernance DAO | cours-ia | READY | PRODUCTION | 30min | po-2024 |
+| 147 | SC-12-Foundry-Testing - Tests avec Foundry | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 148 | SC-13-Fuzz-Invariants - Fuzz Testing | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 149 | SC-14-Formal-Verification - Verification Formelle | Python 3 | DEMO | PRODUCTION | 30min | po-2024 |
+| 150 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgatio | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 151 | SC-16-Homomorphic-Encryption - Chiffrement Homomor | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 152 | SC-17-E2E-Verifiable-Voting - Vote Electronique Ve | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 153 | SC-18-Vyper - Smart Contracts en Python-like | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 154 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 155 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | .venv | READY | PRODUCTION | 30min | po-2024 |
+| 156 | SC-21-Move-Sui - Move sur Sui | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 157 | SC-22-Solana-Anchor - Solana avec Anchor | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 158 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 159 | SC-24 : Deploiement sur Testnets | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 160 | SC-25 : Deploiement Mainnet (L2) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 161 | SC-26 : Projet Final - DApp Complete | Python 3 | READY | PRODUCTION | 15min | po-2024 |
+| 162 | SL-1 - Apprentissage Logique : CBH Search et Versi | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
+| 163 | SL-1 - Apprentissage Logique : CBH Search et Versi | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 164 | SL-10 --- Apprentissage Actif d'Automates (L* d'An | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 165 | SL-10 --- Apprentissage Actif d'Automates (L* d'An | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 166 | SL-11 --- Capstone : un pipeline neuro-symbolique  | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 167 | SL-12 : Differentiable Logic Gate Networks | Python (difflogic-sl12) | READY | PRODUCTION | 45min | po-2024 |
+| 168 | SL-2 - Apprentissage et Connaissance : EBL & RBL ( | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 169 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 170 | SL-3 — Apprentissage basé sur la pertinence (twin  | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 171 | SL-3 --- Apprentissage Base sur la Pertinence (RBL | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 172 | SL-4 — Programmation Logique Inductive (ILP) — Twi | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 173 | SL-4 --- Programmation Logique Inductive (ILP) | Python 3 (WSL) | READY | PRODUCTION | 45min | po-2024 |
+| 174 | SL-5 - Resolution Inverse & ILP (C#) | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 175 | SL-5 --- Resolution Inverse et Progol (ILP bottom- | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 176 | SL-6 (C#) : Moteurs ILP modernes — apprendre des p | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 177 | SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Po | Python 3 (WSL) | READY | PRODUCTION | 30min | po-2024 |
+| 178 | SL-7 : Integration Neuro-Symbolique | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 179 | SL-8 (C#) : ILP Moderne et Knowledge Graphs | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 180 | SL-8 - ILP Moderne et Knowledge Graphs | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 181 | SL-9 - LLMs et Apprentissage Symbolique : Generati | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 182 | Configuration et Installation TweetyProject | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 183 | Tweety-10 — Markov Logic Networks (MLN) en .NET (C | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
+| 184 | Tweety-10 — Markov Logic Networks (MLN) | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 185 | Tweety-11 — Inférence causale & do-calculus (twin  | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 186 | Tweety-11 — Raisonnement Causal : du do-calculus a | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 187 | Tweety C# / IKVM - Logiques de Base (Port .NET du  | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 188 | Logiques de Base - Propositionnelle et Premier Ord | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 189 | Tweety C# / IKVM - Semantique propositionnelle : m | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 190 | Tweety-2c — Logique du premier ordre en C#/.NET (p | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 191 | Tweety-3 — Description Logics en C#/.NET (port nat | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 192 | Logiques Avancees - DL, Modale, QBF, Conditional | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 193 | Tweety-3 — Conditional Logics en C#/.NET (port nat | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
+| 194 | Tweety-3 — Argumentation abstraite de Dung en C#/. | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 195 | Tweety-3 Modal Logic en C#/.NET (port natif IKVM) | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 196 | Tweety-3 - Quantified Boolean Formulas en C#/.NET  | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
+| 197 | Tweety-4 — Argumentation structurée ASPIC+ en C#/. | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 198 | Tweety C# / IKVM - Revision de Croyances (Port .NE | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 199 | Révision de Croyances et Incohérence | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 200 | Tweety-5 : Argumentation Abstraite de Dung (C# / . | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 201 | Argumentation Abstraite (Dung) | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 202 | Tweety-5b — Théorie de l'argumentation de Dung (co | Lean 4 (WSL) | READY | BETA | 15min | po-2024 |
+| 203 | Tweety-6 — Argumentation structuree (twin C# / .NE | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 204 | Argumentation Structuree | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 205 | Tweety-7a : Frameworks d'Argumentation Etendus (C# | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
+| 206 | Frameworks d'Argumentation Étendus | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 207 | Tweety-7b - Ranking Probabilistic Conditional Logi | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 208 | Sémantiques de Classement et Argumentation Probabi | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 209 | Dialogues Multi-Agents Argumentatifs (twin C#) | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
+| 210 | Dialogues Multi-Agents Argumentatifs | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 211 | Preferences et Theorie du Vote en C# / .NET (port  | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 212 | Préférences et Théorie du Vote | Python 3 | READY | PRODUCTION | 30min | po-2024 |
+| 213 | Tweety .NET - Probe Phase 1 axe 2 : initialisation | .NET (C#) | READY | BETA | 30min | po-2024 |
 
 ### QuantConnect (105 notebooks) — DEMO:57, READY:48 | ALPHA:36, BETA:7, DRAFT:2, PRODUCTION:59, TEMPLATE:1
 
@@ -656,7 +662,7 @@ Total notebooks: 808
 | 104 | Research QuantBook: VIX-TermStructure (Short Volat | Python 3 | DEMO | ALPHA | 45min | po-2026 |
 | 105 | Top-4 Sharpe > 0.5 Strategies: OOS Deep-Dive (Issu | Python 3 | READY | PRODUCTION | 15min | po-2026 |
 
-### GameTheory (50 notebooks) — READY:50 | BETA:14, PRODUCTION:36
+### GameTheory (50 notebooks) — READY:50 | ALPHA:1, BETA:13, PRODUCTION:36
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -692,7 +698,7 @@ Total notebooks: 808
 | 30 | GameTheory 4b - Theoreme d'Existence de Nash (Lean | Lean 4 (WSL) | READY | PRODUCTION | 45min | po-2024 |
 | 31 | GameTheory 4c - Théorème d'Existence de Nash (C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 32 | GameTheory 4c - Theoreme d'Existence de Nash (Pyth | Python 3 | READY | PRODUCTION | 45min | po-2024 |
-| 33 | GameTheory-5-ZeroSum-Minimax (Twin C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 33 | GameTheory-5-ZeroSum-Minimax (Twin C#) | .NET (C#) | READY | ALPHA | 45min | po-2024 |
 | 34 | GameTheory-5-ZeroSum-Minimax | Python (GameTheory WSL + OpenS | READY | PRODUCTION | 30min | po-2024 |
 | 35 | GameTheory-5b — Théorème minimax de von Neumann (c | Lean 4 (WSL) | READY | BETA | 15min | po-2024 |
 | 36 | GameTheory-6 : Évolution et Confiance — Twin C# (t | .NET (C#) | READY | PRODUCTION | 45min | po-2024 |
@@ -700,7 +706,7 @@ Total notebooks: 808
 | 38 | GameTheory-6c (C#) : Jeux Repetes et Theoreme Folk | .NET (C#) | READY | PRODUCTION | 30min | po-2024 |
 | 39 | GameTheory-6c : Jeux Répétés et Théorème Folk (Fol | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 40 | GameTheory-7-ExtensiveForm (Twin C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 41 | GameTheory-7-ExtensiveForm | Python 3 | READY | PRODUCTION | 45min | po-2024 |
+| 41 | GameTheory-7-ExtensiveForm | Python 3 | READY | PRODUCTION | 30min | po-2024 |
 | 42 | GameTheory-9-BackwardInduction (C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 43 | GameTheory-9-BackwardInduction | Python 3 | READY | PRODUCTION | 45min | po-2024 |
 | 44 | SocialChoice 01 : Théorème d'impossibilité d'Arrow | .NET (C#) | READY | BETA | 45min | po-2024 |
@@ -879,4 +885,4 @@ Total notebooks: 808
 - **GPU**: 91 notebooks
 - **Cloud**: 105 notebooks
 - **WSL**: 42 notebooks
-- **Local**: 498 notebooks
+- **Local**: 504 notebooks
