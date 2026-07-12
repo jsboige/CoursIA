@@ -12,7 +12,7 @@ Cette troisième sous-série (SC-12 a SC-14) introduit le **testing rigoureux** 
 |---|----------|-------|---------|
 | 12 | [SC-12-Foundry-Testing](SC-12-Foundry-Testing.ipynb) | 45 min | Installation Foundry, structure de projet, tests Solidity (DSTest), cheatcodes, assertions |
 | 13 | [SC-13-Fuzz-Invariants](SC-13-Fuzz-Invariants.ipynb) | 40 min | Fuzz testing, paramètres aléatoires, invariants de contrats, `vm.assume` |
-| 14 | [SC-14-Formal-Verification](SC-14-Formal-Verification.ipynb) | 50 min | Verification formelle, Certora Prover, CVL, spécifications, regles |
+| 14 | [SC-14-Formal-Verification](SC-14-Formal-Verification.ipynb) | 50 min | Verification formelle, Certora Prover, CVL, spécifications, règles |
 
 **Total** : 3 notebooks, ~2h15.
 
@@ -34,7 +34,7 @@ flowchart LR
 
 ### Étape 1 : Suite Foundry (SC-12, 45 min)
 
-Installation et configuration de **Foundry** (forge, cast, anvil), création d'un projet avec la structure standard, ecriture de tests en Solidity avec DSTest, utilisation des **cheatcodes** (`vm.prank`, `vm.warp`, `vm.expectRevert`) pour simuler des scénarios, et application des assertions avec logging.
+Installation et configuration de **Foundry** (forge, cast, anvil), création d'un projet avec la structure standard, écriture de tests en Solidity avec DSTest, utilisation des **cheatcodes** (`vm.prank`, `vm.warp`, `vm.expectRevert`) pour simuler des scénarios, et application des assertions avec logging.
 
 ### Étape 2 : Fuzz et invariants (SC-13, 40 min)
 
@@ -42,7 +42,7 @@ Le **fuzz testing** : passer des paramètres aléatoires aux fonctions de test, 
 
 ### Étape 3 : Verification formelle (SC-14, 50 min)
 
-La **vérification formelle** comme niveau au-dessus du testing : **Certora Prover** et le langage de spécification **CVL** (Certora Verification Language), ecriture de **spécifications** et de **regles**, vérification d'invariants mathematiques. Pont naturel avec la série Lean (preuve formelle de propriétés).
+La **vérification formelle** comme niveau au-dessus du testing : **Certora Prover** et le langage de spécification **CVL** (Certora Verification Language), écriture de **spécifications** et de **règles**, vérification d'invariants mathématiques. Pont naturel avec la série Lean (preuve formelle de propriétés).
 
 ---
 
@@ -54,12 +54,12 @@ La **vérification formelle** comme niveau au-dessus du testing : **Certora Prov
 |----------|---------------------|-------------|
 | SC-12 Foundry-Testing | SC-3 a SC-6 complètes ([01-Solidity-Foundation](../01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb)) ; terminal/bash | Foundry (`forge`, `cast`, `anvil`) |
 | SC-13 Fuzz-Invariants | SC-12 complète ; tests unitaires Solidity | Foundry |
-| SC-14 Formal-Verification | SC-12 + SC-13 complètes ; notions de logique formelle | Foundry ; Certora Prover ou Halmos (recommande) |
+| SC-14 Formal-Verification | SC-12 + SC-13 complètes ; notions de logique formelle | Foundry ; Certora Prover ou Halmos (recommandé) |
 
 ### Configuration requise
 
-- **Foundry installe** : `curl -L https://foundry.paradigm.xyz | bash && foundryup`. Les notebooks SC-12/13 invoquent `forge test` / `forge build`.
-- **Certora Prover** (SC-14) : compte Certora + acces cloud ; alternative open-source **Halmos** (symbolic exécution).
+- **Foundry installé** : `curl -L https://foundry.paradigm.xyz | bash && foundryup`. Les notebooks SC-12/13 invoquent `forge test` / `forge build`.
+- **Certora Prover** (SC-14) : compte Certora + accès cloud ; alternative open-source **Halmos** (symbolic exécution).
 - **Python 3.10+** pour les cellules d'orchestration.
 - Aucun faucet, aucun ETH réel nécessaire : les tests tournent en local via `anvil` ou en simulation.
 
@@ -78,17 +78,17 @@ La **vérification formelle** comme niveau au-dessus du testing : **Certora Prov
 
 ## Points de vigilance (exécution Foundry)
 
-- **Foundry doit être installe localement** pour reproduire les tests pour de vrai (`forge`, `cast`, `anvil` sur le PATH). Les notebooks orchestrent les commandes `forge` depuis des cellules Python.
-- **Signature pédagogique** : le code Solidity est présente comme chaînes de caractères avec les sorties de tests ([PASS]/[FAIL]) documentées. **SC-12 et SC-13 exécutent désormais `forge` pour de vrai** : SC-12 re-exécute la suite Foundry avec `forge` sur le PATH (#3765) et SC-13 lance un `forge test --fuzz-runs` qui découvre un contre-exemple d'overflow (la moyenne naive `(a+b)/2` panique, la version safe resiste, #3921). Les sorties committes sont donc des runs forge authentiques, pas de simples illustrations ; si Foundry n'est pas installe, le notebook affiche honnêtement un message d'install sans sortie fabriquee.
-- **SC-14 Certora** : la vérification formelle requiere un acces Certora (commercial) ou Halmos (open-source). Les regles CVL ne sont pas toutes vérifiables sans ces outils.
-- **Audit #3164** : cette sous-série a ete auditee (fidélité) — les résultats de tests sont honnêtement documentés comme illustration, pas comme exécution masquee. 1 finding de labeling (SC-12) resolu via #3369.
+- **Foundry doit être installé localement** pour reproduire les tests pour de vrai (`forge`, `cast`, `anvil` sur le PATH). Les notebooks orchestrent les commandes `forge` depuis des cellules Python.
+- **Signature pédagogique** : le code Solidity est présente comme chaînes de caractères avec les sorties de tests ([PASS]/[FAIL]) documentées. **SC-12 et SC-13 exécutent désormais `forge` pour de vrai** : SC-12 re-exécute la suite Foundry avec `forge` sur le PATH (#3765) et SC-13 lance un `forge test --fuzz-runs` qui découvre un contre-exemple d'overflow (la moyenne naïve `(a+b)/2` panique, la version safe résiste, #3921). Les sorties committes sont donc des runs forge authentiques, pas de simples illustrations ; si Foundry n'est pas installé, le notebook affiche honnêtement un message d'install sans sortie fabriquée.
+- **SC-14 Certora** : la vérification formelle requiert un accès Certora (commercial) ou Halmos (open-source). Les règles CVL ne sont pas toutes vérifiables sans ces outils.
+- **Audit #3164** : cette sous-série a été auditée (fidélité) — les résultats de tests sont honnêtement documentés comme illustration, pas comme exécution masquée. 1 finding de labeling (SC-12) résolu via #3369.
 
 ---
 
 ## Ressources
 
 - **Foundry Book** (Foundry contributors) -- `forge test`, `forge build`, fuzzing, cheatcodes. book.getfoundry.sh.
-- **Certora Documentation** (Certora Inc.) -- Certora Prover, langage CVL, ecriture de spécifications. docs.certora.com.
+- **Certora Documentation** (Certora Inc.) -- Certora Prover, langage CVL, écriture de spécifications. docs.certora.com.
 - **Halmos** (a16z, 2023) -- symbolic exécution open-source pour tests Foundry.
 - Wilkinson, M. (2022) -- "Foundry: A Blazing Fast, Portable, and Modular Toolkit for Ethereum Application Development".
 - Voir aussi les références transversales dans le [README parent de la série](../README.md).
