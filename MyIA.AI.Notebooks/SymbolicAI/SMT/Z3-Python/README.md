@@ -4,7 +4,7 @@
 
 ## Série en quelques mots
 
-L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série complète de **12 notebooks** (z3-solver + matplotlib), de la satisfaction de contraintes à l'optimisation avancée, à l'ordonnancement combinatoire, aux énigmes logiques (CSP), à l'arithmétique symbolique (cryptarithmes), à la coloration de graphe (NP-complet), à l'arithmétique réelle exacte (irrationnels algébriques) et au pont déclaratif avec la série sœur Z3.Linq (C#).
+L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série complète de **13 notebooks** (z3-solver + matplotlib), de la satisfaction de contraintes à l'optimisation avancée, à l'ordonnancement combinatoire, aux énigmes logiques (CSP), à l'arithmétique symbolique (cryptarithmes), à la coloration de graphe (NP-complet), à l'arithmétique réelle exacte (irrationnels algébriques), à l'explication de l'insatisfiabilité (UNSAT cores) et au pont déclaratif avec la série sœur Z3.Linq (C#).
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
 
@@ -58,6 +58,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 | 10 | [Cryptarithmes (SEND + MORE = MONEY)](Z3-Python-10-Cryptarithmetic.ipynb) | `Int`, `Distinct`, équation positionnelle, propagation vs brute force, retenues déduites | ~25 min | PRODUCTION |
 | 11 | [Coloration de graphe (Petersen)](Z3-Python-11-Graph-Coloring.ipynb) | `Int` par sommet, contraintes d'arêtes `!=`, recherche linéaire du nombre chromatique, `unsat` = preuve d'optimalité | ~30 min | PRODUCTION |
 | 12 | [Arithmétique réelle](Z3-Python-12-Real-Arithmetic.ipynb) | Théorie `Real`, solution rationnelle exacte, irrationnel algébrique (racine de 2 comme `root-obj`), preuve d'absence sur R (`unsat`) | ~25 min | PRODUCTION |
+| 13 | [UNSAT cores](Z3-Python-13-UnsatCores.ipynb) | `assert_and_track`, `unsat_core()`, noyau minimal d'insatisfiabilité, diagnostic des contraintes conflictuelles | ~25 min | PRODUCTION |
 
 ### Fil pédagogique
 
@@ -73,6 +74,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3/](../Z3/README.md), basée sur le
 10. **Notebook 10** généralise à l'**arithmétique symbolique sur entiers** avec les cryptarithmes (`SEND + MORE = MONEY`) : chaque lettre est un `Int` dans `{0..9}`, `Distinct` impose l'unicité, et l'équation positionnelle (`1000·S + 100·E + …`) est résolue par propagation — Z3 trouve l'unique solution (`9567 + 1085 = 10652`) en millisecondes tandis que la brute force énumère `P(10,8) = 1 814 400` candidats (~9 s), illustrant le gain du paradigme déclaratif
 11. **Notebook 11** aborde la **coloration de graphe** (NP-complet) sur le graphe de Petersen : une variable `Int` par sommet, des contraintes d'arêtes `C_a != C_b`, et une **recherche linéaire sur k** qui trouve le nombre chromatique `chi = 3` **et le prouve minimal** (`k = 2` → `unsat`). Là où le glouton first-fit hésite (3 ou 4 couleurs selon l'ordre) sans jamais certifier l'optimum, le verdict `unsat` de Z3 est une **preuve formelle** d'impossibilité — la double capacité (trouver ET prouver) est le cœur de l'apport SMT en optimisation combinatoire
 12. **Notebook 12** passe aux **réels** via la théorie `Real` : trois capacités inaccessibles au calcul numérique flottant — solution rationnelle **exacte** (`x + y = 1`, `x − y = 3` → `x = 2`, `y = −1`, sans aucun arrondi), **irrationnel algébrique** exact (√2 renvoyé comme racine d'un polynôme, affichée `1.4142135623?` — la racine algébrique, pas le flottant tronqué `1.4142…`), et **preuve d'absence sur R** (`x² + 1 = 0` → `unsat`, établi sur le corps des réels tout entier, impossible par échantillonnage numérique). Le saut qualitatif : raisonner sur l'algèbre exacte plutôt que calculer des approximations
+13. **Notebook 13** complète la triade `sat`/`unsat`/`unknown` par la **quatrième posture — expliquer** : `unsat` dit *qu'il n'y a pas* de solution, `unsat_core()` dit *pourquoi* (lesquelles contraintes conflictuent). Via `assert_and_track(formule, étiquette)`, Z3 renvoie le sous-ensemble **minimal** de contraintes responsables du conflit — sur une spécification à 5 contraintes, il isole les 2 coupables (`h = 12` vs `h ≠ 12`) en écartant les bornes compatibles et la redondance. L'ingénieur ne debug plus à l'aveugle un système insatisfiable : le solveur pointe chirurgicalement la contrainte à relâcher
 
 ## Concepts clés
 
