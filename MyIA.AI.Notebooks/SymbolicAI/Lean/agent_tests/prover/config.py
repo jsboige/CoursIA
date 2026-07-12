@@ -131,12 +131,17 @@ SHAPLEY_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Shapley.lean" if CO
 BASIC_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Basic.lean" if COOPERATIVE_GAMES_DIR.exists() else None
 
 _SOCIAL_CHOICE_CANDIDATES = [
-    _workspace_relative("GameTheory/social_choice_lean"),
-    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
-    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
-    Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
-    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
-    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
+    # EPIC #4365: SocialChoice was absorbed byte-identique into game_theory_lean
+    # (canonical home per social_choice_lean/lakefile.lean archive comment, PR #6058).
+    # The old social_choice_lean dir is now an archive shell: its `lean_lib` is
+    # NEUTRALISED and it no longer carries a SocialChoice/ source subdir, so
+    # resolving here left VOTING_FILE pointing at a non-existent path.
+    _workspace_relative("GameTheory/game_theory_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\game_theory_lean"),
+    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\game_theory_lean"),
+    Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\game_theory_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\game_theory_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\game_theory_lean"),
 ]
 SOCIAL_CHOICE_DIR = next(
     (p for p in _SOCIAL_CHOICE_CANDIDATES if p.exists()),
@@ -151,11 +156,15 @@ import SocialChoice.Definitions
 """
 
 # ── Stable Marriage ──
+# EPIC #4365: StableMarriage was absorbed byte-identique into game_theory_lean
+# (canonical home; stable_marriage_lean dir removed entirely, PRs #5904-#5913).
+# The old stable_marriage_lean dir no longer exists, so resolving here left
+# GALESHAPLEY_FILE/GSSTATE_FILE/LEMMAS_FILE/LATTICE_FILE = None.
 _STABLE_MARRIAGE_CANDIDATES = [
-    _workspace_relative("GameTheory/stable_marriage_lean"),
-    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
-    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
-    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
+    _workspace_relative("GameTheory/game_theory_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\game_theory_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\game_theory_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\game_theory_lean"),
 ]
 STABLE_MARRIAGE_DIR = next(
     (p for p in _STABLE_MARRIAGE_CANDIDATES if p.exists()),
@@ -763,7 +772,7 @@ DEMOS = {
             "PROVED (PR #1194, 2026-05-16). Do NOT target.\n"
             "Originally: gale_shapley_stable proved via gsFinalMatching\n"
             "+ gsAllWomenMatched + gsNoBlockingPairs (6-step contradiction).\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "very_hard",
         "proved": True,
@@ -788,7 +797,7 @@ DEMOS = {
             "have proposed to that woman and she would have accepted.\n"
             "Reference: mmaaz-git/stable-marriage-lean GaleShapley.lean\n"
             "Our type system: total bijections (no `acceptable`).\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "very_hard",
     },
@@ -812,7 +821,7 @@ DEMOS = {
             "Key insight: inverse swaps man/woman perspectives.\n"
             "Reference: mmaaz-git/stable-marriage-lean GaleShapley.lean\n"
             "Our type system: Matching has bijective spouse + inverse.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "very_hard",
     },
@@ -833,7 +842,7 @@ DEMOS = {
             "Case analysis on m'/w' vs m/mOld/w, use consistency hypothesis.\n"
             "Reference: mmaaz-git stable-marriage-lean Lemmas.lean consistent_swapMatch.\n"
             "Our system: no `acceptable` filter (total bijections).\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "medium",
     },
@@ -854,7 +863,7 @@ DEMOS = {
             "For matchFree case: need menMatch m = none and womenMatch w = none.\n"
             "For swapMatch case: need menMatch m = none, womenMatch w = some mOld,\n"
             "  and menMatch mOld = some w (from consistency).\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "medium",
     },
@@ -872,7 +881,7 @@ DEMOS = {
             "Unfold gsStep: the if hfree branch is not taken.\n"
             "Use If.neg (or split + simp) to show the else branch is taken.\n"
             "gsTerminated means ¬∃ m, gsIsFree, which is exactly the negation.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "easy",
     },
@@ -892,7 +901,7 @@ DEMOS = {
             "If man m proposed to w, any w' ranked higher was already proposed.\n"
             "The new proposal adds exactly one pair; others are unchanged.\n"
             "Reference: mmaaz-git Lemmas.lean menProposedDownwardState.step.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "medium",
     },
@@ -911,7 +920,7 @@ DEMOS = {
             "Step case: use menProposedDownward.step + induction hypothesis.\n"
             "If not terminated, gsStep preserves invariant.\n"
             "If terminated, gsStep is identity.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "easy",
     },
@@ -931,7 +940,7 @@ DEMOS = {
             "swapMatch (m matched to w, m proposed to w, mOld was proposed).\n"
             "The stepWith always marks m→w as proposed.\n"
             "Reference: mmaaz-git Lemmas.lean menMatchedProposedState.stepWith.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "medium",
     },
@@ -947,7 +956,7 @@ DEMOS = {
             "Replace sorry at L389 of Lemmas.lean.\n"
             "Prove menMatchedProposed.step: gsStep preserves menMatchedProposed.\n"
             "Unfold gsStep, use stepWith lemma.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "easy",
     },
@@ -964,7 +973,7 @@ DEMOS = {
             "Prove menMatchedProposed.runSteps by induction on k.\n"
             "Base: gsInitial trivially satisfies (no matches).\n"
             "Step: use step lemma + by_cases for terminated.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "easy",
     },
@@ -985,7 +994,7 @@ DEMOS = {
             "Key: after proposing, the new proposal is in the proposed set,\n"
             "so womenBest must be ≤ the new proposal's pref rank.\n"
             "Reference: mmaaz-git Lemmas.lean womenBestState.step.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "medium",
     },
@@ -1002,7 +1011,7 @@ DEMOS = {
             "Prove womenBestState.runSteps by induction on k.\n"
             "Base: gsInitial trivially satisfies (no matches).\n"
             "Step: use step lemma + by_cases for terminated.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "easy",
     },
@@ -1025,7 +1034,7 @@ DEMOS = {
             "  womenBestState prof σ: ∀ w m, σ.matching.womenMatch w = some m →\n"
             "    ∀ m', σ.proposed m' w → prof.womenPref w m ≤ prof.womenPref w m'\n"
             "  gsStepWith: matchFree or swapMatch always sets womenMatch w = some _\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "medium",
     },
@@ -1046,7 +1055,7 @@ DEMOS = {
             "Each man maps to exactly one woman (no two men map to same woman).\n"
             "Strategy: prove Injective, then use Finite.injective_iff_bijective for Fin n.\n"
             "Available lemmas: inverse_eq_of_spouse_eq, spouse_inverse, join_inverse_anti.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "hard",
     },
@@ -1066,7 +1075,7 @@ DEMOS = {
             "meet.inverse w equals either μ⁻¹(w) or ν⁻¹(w) (proved as meet_inverse_anti).\n"
             "Strategy: prove Injective then use Finite.injective_iff_bijective for Fin n.\n"
             "Available lemmas: inverse_eq_of_spouse_eq, spouse_inverse, meet_inverse_anti.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "hard",
     },
@@ -1098,7 +1107,7 @@ DEMOS = {
             "If it picked μ.spouse m: μ.spouse(μ⁻¹(w)) = w. That's a tautology. Need different approach.\n"
             "Alternative: by contrapositive. If womenPref w ν⁻¹(w) ≤ womenPref w μ⁻¹(w),\n"
             "show meet.inverse w ≠ μ⁻¹(w). Use the decomposition property of stable matchings.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "very_hard",
     },
@@ -1115,7 +1124,7 @@ DEMOS = {
             "meet_inverse_anti_pref': Symmetric to DEMO 32. If (μ⊓ν).inverse w = ν⁻¹(w),\n"
             "then w prefers ν⁻¹(w) to μ⁻¹(w).\n"
             "Same proof structure as DEMO 32, with μ and ν swapped.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "very_hard",
     },
@@ -1139,7 +1148,7 @@ DEMOS = {
             "Key: use gale_shapley_man_optimal from GaleShapley.lean if available,\n"
             "or the GS invariant that each man proposes in order of preference.\n"
             "NOTE: direction is ManLE prof μ_gs μ' (GS ≤ any other), NOT the reverse.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "very_hard",
     },
@@ -1186,7 +1195,7 @@ DEMOS = {
             "actual maximality statement ∀ y ∈ s, y ≤ x is IsAntisymm-free.\n"
             "gsMenPrefLE prof m y x expands to y = x ∨ prof.menPref m x < prof.menPref m y,\n"
             "which is exactly what the goal needs.\n"
-            "LEAN_PROJECT must be overridden to stable_marriage_lean."
+            "LEAN_PROJECT must be overridden to game_theory_lean."
         ),
         "difficulty": "medium",
         "proof_scaffolding": (
