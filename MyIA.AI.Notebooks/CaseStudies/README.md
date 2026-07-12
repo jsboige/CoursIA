@@ -90,14 +90,6 @@ CaseStudies/
 └── requirements.txt       # Dépendances communes (9 packages)
 ```
 
-## Installation
-
-```bash
-pip install -r requirements.txt
-```
-
-Dépendances principales : numpy, pandas, matplotlib, seaborn, z3-solver, pyro-ppl, ortools
-
 ## Projets
 
 ### Diagnostic Médical
@@ -126,6 +118,14 @@ Ordonnancement de la production électrique (unit commitment) sous incertitude r
 - **Concepts** : Unit commitment NP-difficile, modèle bayésien de l'incertitude, optimisation multi-objectif, architecture en couches (filtrer > modéliser > optimiser)
 
 [Sujet](SmartGrid-Energy/subject.md) | 2 notebooks (student + solution) | ~3-4h
+
+## Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+Dépendances principales : numpy, pandas, matplotlib, seaborn, z3-solver, pyro-ppl, ortools
 
 ## Acquis d'apprentissage
 
