@@ -17,24 +17,7 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 ## Aperçu — les cas d'usage production vidéo en images
 
-Ce niveau met en oeuvre les workflows complets : génération automatique de contenu éducatif, workflows créatifs, génération cloud via l'API Sora, et pipeline de production bout-en-bout. La galerie ci-dessous présente des aperçus de frames extraits des notebooks.
-
-<table>
-<tr>
-<td align="center"><img src="assets/readme/vid4-educational.png" alt="Génération vidéo éducative — aperçu des frames" width="400"/><br/><sub>Vidéo éducative (04-1)</sub></td>
-<td align="center"><img src="assets/readme/vid4-creative.png" alt="Workflow créatif vidéo — séquence générée" width="400"/><br/><sub>Workflow créatif (04-2)</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/vid4-creative2.png" alt="Workflow créatif — variante de composition" width="400"/><br/><sub>Créatif variante (04-2)</sub></td>
-<td align="center"><img src="assets/readme/vid4-sora.png" alt="Génération Sora via API cloud" width="400"/><br/><sub>Sora API cloud (04-3)</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="assets/readme/vid4-sora2.png" alt="Génération Sora — aperçu alternatif" width="400"/><br/><sub>Sora variante (04-3)</sub></td>
-<td align="center"><img src="assets/readme/vid4-pipeline.png" alt="Pipeline vidéo production — orchestration" width="400"/><br/><sub>Pipeline production (04-4)</sub></td>
-</tr>
-</table>
-
-Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+Ce niveau met en oeuvre les workflows complets : génération automatique de contenu éducatif, workflows créatifs, génération cloud via l'API Sora, et pipeline de production bout-en-bout. Plutôt qu'une galerie séparée du propos, chaque sortie réelle est placée ci-dessous au plus près du notebook qui la produit. Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Notebooks
 
@@ -44,6 +27,44 @@ Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/read
 | 2 | [04-2-Creative-Video-Workflows](04-2-Creative-Video-Workflows.ipynb) | Workflows créatifs | ComfyUI | ~14GB |
 | 3 | [04-3-Sora-API-Cloud-Video](04-3-Sora-API-Cloud-Video.ipynb) | Sora API cloud | OpenAI API | 0 |
 | 4 | [04-4-Production-Video-Pipeline](04-4-Production-Video-Pipeline.ipynb) | Pipeline production | Mixed | ~18GB |
+
+**[04-1](04-1-Educational-Video-Generation.ipynb) — Contenu éducatif.** Le notebook génère automatiquement une vidéo pédagogique à partir d'un script textuel : le panorama de frames ci-dessous atteste que la chaîne (script → prompts → frames → vidéo) produit un rendu visuellement cohérent :
+
+<p align="center">
+  <a href="04-1-Educational-Video-Generation.ipynb"><img src="assets/readme/vid4-educational.png" alt="Génération vidéo éducative — aperçu des frames" width="500"/></a><br>
+  <em>Sortie du notebook <a href="04-1-Educational-Video-Generation.ipynb">04-1</a> : panorama des frames d'une vidéo éducative générée à partir d'un script.</em>
+</p>
+
+**[04-2](04-2-Creative-Video-Workflows.ipynb) — Workflows créatifs (ComfyUI).** Deux compositions illustrant la souplesse du workflow créatif : une séquence narrative complète, puis une variante explorant une composition différente à partir des mêmes briques ComfyUI :
+
+<p align="center">
+  <a href="04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/vid4-creative.png" alt="Workflow créatif vidéo — séquence générée" width="460"/></a><br>
+  <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 9) : séquence vidéo narrative générée via ComfyUI.</em>
+</p>
+
+<p align="center">
+  <a href="04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/vid4-creative2.png" alt="Workflow créatif — variante de composition" width="460"/></a><br>
+  <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 15) : variante de composition — même workflow, composition alternative.</em>
+</p>
+
+**[04-3](04-3-Sora-API-Cloud-Video.ipynb) — Workflow cloud Sora (en simulation).** Côté cloud cette fois : le notebook illustre le workflow de génération vidéo via l'API Sora d'OpenAI. L'accès Sora réel étant restreint (clé et quota côté utilisateur), il en produit une **simulation disciplinée** — deux séquences de frames synthétiques, chacune auto-étiquetée « Sora API - Simulation » dans l'image, représentant le rendu attendu (déplacement d'un objet sur un décor prompt-dépendant). Aucun GPU ni accès API réel requis :
+
+<p align="center">
+  <a href="04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/vid4-sora.png" alt="Simulation du workflow Sora (API cloud) — frames auto-étiquetées Simulation" width="460"/></a><br>
+  <em>Sortie du notebook <a href="04-3-Sora-API-Cloud-Video.ipynb">04-3</a> (cellule 9) : panorama de frames <strong>simulées</strong> illustrant le workflow Sora (API cloud) — la sortie porte le filigrane « Sora API - Simulation ».</em>
+</p>
+
+<p align="center">
+  <a href="04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/vid4-sora2.png" alt="Simulation Sora — aperçu alternatif" width="460"/></a><br>
+  <em>Sortie du notebook <a href="04-3-Sora-API-Cloud-Video.ipynb">04-3</a> (cellule 11) : seconde séquence <strong>simulée</strong>, aperçu alternatif.</em>
+</p>
+
+**[04-4](04-4-Production-Video-Pipeline.ipynb) — Pipeline de production.** Le notebook assemble la chaîne bout-en-bout : le panorama ci-dessous montre les frames issues du pipeline orchestré complet, aboutissement de la série :
+
+<p align="center">
+  <a href="04-4-Production-Video-Pipeline.ipynb"><img src="assets/readme/vid4-pipeline.png" alt="Pipeline vidéo production — orchestration" width="520"/></a><br>
+  <em>Sortie du notebook <a href="04-4-Production-Video-Pipeline.ipynb">04-4</a> : frames issues du pipeline de production orchestré bout-en-bout.</em>
+</p>
 
 ## Prérequis
 
