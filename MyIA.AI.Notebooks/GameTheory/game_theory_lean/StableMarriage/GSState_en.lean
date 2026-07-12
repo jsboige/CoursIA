@@ -77,17 +77,28 @@ def gsTerminated (σ : GSState prof) : Prop :=
 def gsMenPrefLE (m : Fin n) (w1 w2 : Fin n) : Prop :=
   w1 = w2 ∨ prof.menPref m w2 < prof.menPref m w1
 
+/-- Extracted transitivity proof for `gsMenPrefLE prof m` as a reusable instance
+    (see #6140). Before extraction, the same `cases hab with ... | inr cases
+    hbc with ...` proof was inlined 3 times (`gsChooseMax` / `gsChooseMax_mem`
+    / `gsChooseMax_maximal`), forcing Lean to re-elaborate the same syntactic
+    tree 3 times — Windows stack exhaustion during cold `lake -R build`
+    (`0xC0000409` STATUS_STACK_BUFFER_OVERRUN in `lean.exe` on ai-01 §1
+    pre-merge). The EN sibling owns its own byte-identical copy of this lemma
+    (same extraction as FR canonical); the 3 `haveI := gsMenPref_trans prof m`
+    sites reference it unqualified, mirroring the FR canonical self-reference. -/
+lemma gsMenPref_trans (m : Fin n) : IsTrans (Fin n) (gsMenPrefLE prof m) :=
+  ⟨fun a b c hab hbc => by
+    cases hab with
+    | inl hab => subst hab; exact hbc
+    | inr hab =>
+      cases hbc with
+      | inl hbc => subst hbc; exact Or.inr hab
+      | inr hbc => exact Or.inr (lt_trans hbc hab)⟩
+
 noncomputable def gsChooseMax (σ : GSState prof) (m : Fin n)
     (h : (gsCandidates prof σ m).Nonempty) : Fin n :=
   letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩
-  haveI : IsTrans (Fin n) (· ≤ ·) :=
-    ⟨fun a b c hab hbc => by
-      cases hab with
-      | inl hab => subst hab; exact hbc
-      | inr hab =>
-        cases hbc with
-        | inl hbc => subst hbc; exact Or.inr hab
-        | inr hbc => exact Or.inr (lt_trans hbc hab)⟩
+  haveI := gsMenPref_trans prof m
   Classical.choose ((gsCandidates prof σ m).exists_maximal h)
 
 noncomputable def gsStepWith (σ : GSState prof) (m w : Fin n) : GSState prof :=
@@ -136,33 +147,19 @@ lemma gsChooseMax_mem (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
     gsChooseMax prof σ m h ∈ gsCandidates prof σ m := by
   unfold gsChooseMax
   letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩
-  haveI : IsTrans (Fin n) (· ≤ ·) :=
-    ⟨fun a b c hab hbc => by
-      cases hab with
-      | inl hab => subst hab; exact hbc
-      | inr hab =>
-        cases hbc with
-        | inl hbc => subst hbc; exact Or.inr hab
-        | inr hbc => exact Or.inr (lt_trans hbc hab)⟩
+  haveI := gsMenPref_trans prof m
   obtain ⟨hmem, -⟩ := Classical.choose_spec (Finset.exists_maximal h)
   exact hmem
 
 /-- Aucune candidate non-proposée n'est préférée à la candidate maximale choisie.
-    Directement depuis la maximalité : ∀ y ∈ candidates, y ≤ choose. -/
+    Directly from maximality: ∀ y ∈ candidates, y ≤ choose. -/
 lemma gsChooseMax_maximal (prof : PrefProfile n) (σ : GSState prof) (m : Fin n)
     (h : (gsCandidates prof σ m).Nonempty) (w : Fin n)
     (hw : w ∈ gsCandidates prof σ m) :
     gsMenPrefLE prof m w (gsChooseMax prof σ m h) := by
   unfold gsChooseMax
   letI : LE (Fin n) := ⟨gsMenPrefLE prof m⟩
-  haveI : IsTrans (Fin n) (· ≤ ·) :=
-    ⟨fun a b c hab hbc => by
-      cases hab with
-      | inl hab => subst hab; exact hbc
-      | inr hab =>
-        cases hbc with
-        | inl hbc => subst hbc; exact Or.inr hab
-        | inr hbc => exact Or.inr (lt_trans hbc hab)⟩
+  haveI := gsMenPref_trans prof m
   set c := Classical.choose (Finset.exists_maximal h) with hc
   obtain ⟨-, hmax⟩ := Classical.choose_spec (Finset.exists_maximal h)
   have htri := Nat.lt_trichotomy (prof.menPref m w) (prof.menPref m c)
