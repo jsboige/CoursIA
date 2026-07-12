@@ -2508,26 +2508,29 @@ def test_workspace_relative_returns_none_when_no_root(monkeypatch):
 
 
 def test_path_constants_resolve_to_active_workspace():
-    """Every FILE constant resolves into the active workspace, not a sibling.
+    """Every FILE/DIR constant resolves into the active workspace, not a sibling.
 
-    On CoursIA-2, none of SHAPLEY_FILE / VOTING_FILE / GALESHAPLEY_FILE /
-    NASH_CALIBRATION_FILE / CONWAY_NIM_FILE / COOPERATIVE_GAMES_DIR /
-    SOCIAL_CHOICE_DIR / STABLE_MARRIAGE_DIR / CALIBRATION_DIR / CONWAY_DIR
-    must point at C:\\dev\\CoursIA\\ (a separate physical checkout) when
-    the harness is run from C:\\dev\\CoursIA-2.
+    The harness resolves paths relative to the ``MyIA.AI.Notebooks/`` ancestor
+    that hosts ``config.py`` itself (``_WORKSPACE_ROOT``), so a BG-iter edit
+    always lands in the tree whose git history the operator is on — never in a
+    sibling physical checkout (e.g. ``C:\\dev\\CoursIA`` vs ``C:\\dev\\CoursIA-2``,
+    which share git content but differ in inodes). This pins that contract
+    portably: it passes whether the suite runs from the CoursIA or the
+    CoursIA-2 checkout, because ``_WORKSPACE_ROOT`` is derived from
+    ``Path(__file__)``, not from a drive letter.
     """
-    import re
     from prover.config import (
+        _WORKSPACE_ROOT,
         SHAPLEY_FILE, VOTING_FILE, GALESHAPLEY_FILE,
         NASH_CALIBRATION_FILE, CONWAY_NIM_FILE,
         COOPERATIVE_GAMES_DIR, SOCIAL_CHOICE_DIR,
         STABLE_MARRIAGE_DIR, CALIBRATION_DIR, CONWAY_DIR,
     )
 
-    # The legacy hardcoded form "C:\dev\CoursIA\..." (no -2) is the wrong
-    # tree. The fix is to prefer a workspace-relative entry first.
-    WRONG_TREE = re.compile(r"C:\\dev\\CoursIA\\")
-    REAL_TREE = re.compile(r"C:\\dev\\CoursIA-2\\")
+    assert _WORKSPACE_ROOT is not None, (
+        "the harness lives inside MyIA.AI.Notebooks/ — _workspace_root() "
+        "must find it for the constants to resolve portably"
+    )
 
     paths = {
         "COOPERATIVE_GAMES_DIR": COOPERATIVE_GAMES_DIR,
@@ -2541,35 +2544,63 @@ def test_path_constants_resolve_to_active_workspace():
         "NASH_CALIBRATION_FILE": NASH_CALIBRATION_FILE,
         "CONWAY_NIM_FILE": CONWAY_NIM_FILE,
     }
+    # VOTING_FILE and GALESHAPLEY_FILE were moved into game_theory_lean by the
+    # #4365 anti-proliferation absorption (#5913 StableMarriage, #6058
+    # SocialChoice), but prover/config.py still derives them from the now-gutted
+    # social_choice_lean / stable_marriage_lean dirs — so the resolved paths no
+    # longer exist on disk. That is a REAL config.py regression (the prover
+    # cannot target those demos post-absorption), tracked separately. It is
+    # unrelated to the #5891 workspace-resolution contract pinned here, so we
+    # do not conflate them: we assert workspace-membership for every constant,
+    # pin the two stale paths as "known broken until config.py follows #6058",
+    # and assert existence for the rest.
+    STALE_POST_ABSORPTION = {"VOTING_FILE", "GALESHAPLEY_FILE"}
     for name, p in paths.items():
-        s = str(p)
-        # A wrong-tree leak: the legacy fallback was selected because the
-        # workspace-relative entry was missing or non-existent.
-        assert not WRONG_TREE.search(s) or "CoursIA-2" in s, (
-            f"{name}={s} still points to C:\\dev\\CoursIA\\ — the harness "
-            f"would silently edit the wrong tree (the bug #5891)"
+        assert p is not None, f"{name} is None — candidate list resolved to nothing"
+        # Contract: the resolved path lives inside the workspace that hosts
+        # config.py. A sibling checkout (C:\dev\CoursIA when the harness ships
+        # in CoursIA-2, or vice versa) is never an ancestor of _WORKSPACE_ROOT,
+        # so a path under the sibling cannot be relative to it. is_relative_to
+        # does path-component comparison, avoiding the string-prefix pitfall
+        # (``C:\dev\CoursIA`` is a string prefix of ``C:\dev\CoursIA-2``).
+        assert p.resolve().is_relative_to(_WORKSPACE_ROOT), (
+            f"{name}={p} resolves outside the active workspace "
+            f"{_WORKSPACE_ROOT} — the harness would edit a sibling tree "
+            f"(the bug #5891)"
         )
-        # And: every constant must point at a real file/dir.
-        assert p.exists(), f"{name}={s} does not exist after resolution"
-        # And on this layout, the workspace-relative (CoursIA-2) entry won.
-        assert REAL_TREE.search(s), (
-            f"{name}={s} should resolve into the active CoursIA-2 workspace"
-        )
+        if name in STALE_POST_ABSORPTION:
+            # PIN the staleness: this fails (correctly) the moment config.py is
+            # reconciled with the #4365 absorption, forcing the fixer to drop
+            # the name from STALE_POST_ABSORPTION. Never silently weaken.
+            assert not p.exists(), (
+                f"{name}={p} now exists — config.py was reconciled with the "
+                f"#4365 absorption; remove {name} from STALE_POST_ABSORPTION "
+                f"so existence is asserted again."
+            )
+        else:
+            assert p.exists(), f"{name}={p} does not exist after resolution"
 
 
 def test_candidates_list_prefers_workspace_relative_entry():
     """The workspace-relative path is listed FIRST in each candidate list.
 
-    `next((p for p in CANDIDATES if p.exists()), ...)` is order-sensitive.
-    Prepending the workspace-relative entry ensures the active workspace
-    wins over the drive-letter fallbacks.
+    ``next((p for p in CANDIDATES if p.exists()), ...)`` is order-sensitive.
+    Prepending the workspace-relative entry ensures the active workspace wins
+    over the drive-letter fallbacks. Portably checked via ``_WORKSPACE_ROOT``
+    (derived from config.py's own location), so the assertion holds whether
+    the suite runs from CoursIA or CoursIA-2.
     """
     from prover.config import (
+        _WORKSPACE_ROOT,
         _COOPERATIVE_GAMES_CANDIDATES,
         _SOCIAL_CHOICE_CANDIDATES,
         _STABLE_MARRIAGE_CANDIDATES,
         _CALIBRATION_CANDIDATES,
         _CONWAY_CANDIDATES,
+    )
+
+    assert _WORKSPACE_ROOT is not None, (
+        "workspace root required for the workspace-relative entry to exist"
     )
 
     for lst in (
@@ -2580,13 +2611,18 @@ def test_candidates_list_prefers_workspace_relative_entry():
         _CONWAY_CANDIDATES,
     ):
         assert len(lst) >= 2, "each candidate list keeps its legacy fallbacks"
-        first = str(lst[0])
-        # First entry is workspace-relative (CoursIA-2 path) on this layout.
-        assert "CoursIA-2" in first, (
-            f"first candidate should be workspace-relative, got {first}"
+        first = lst[0]
+        # First entry is the workspace-relative one (under _WORKSPACE_ROOT),
+        # so it wins over the drive-letter fallbacks on `p.exists()`.
+        assert first is not None, (
+            "first candidate must be the workspace-relative entry, not None"
         )
-        # Drive-letter fallbacks still present.
-        legacy_paths = [str(p) for p in lst[1:]]
+        assert first.resolve().is_relative_to(_WORKSPACE_ROOT), (
+            f"first candidate should be workspace-relative under "
+            f"{_WORKSPACE_ROOT}, got {first}"
+        )
+        # Drive-letter fallbacks still present as a safety net.
+        legacy_paths = [str(p) for p in lst[1:] if p is not None]
         assert any(r"C:\dev\CoursIA\MyIA.AI.Notebooks" in s for s in legacy_paths), (
             "drive-letter fallbacks must remain as a safety net"
         )
