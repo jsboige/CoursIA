@@ -251,6 +251,59 @@ Tweety raisonne sur le do-calculus en **logique propositionnelle** : `do(X)` y e
 
 Vue d'ensemble des quatre paradigmes : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
+## Concepts clés
+
+| Concept | Description |
+|---------|-------------|
+| **Logique Propositionnelle** | Operateurs booléens, DNF, satisfaisabilité (SAT) |
+| **Logique du Premier Ordre** | Quantificateurs (∀, ∃), prédicats, fonctions |
+| **Logique de Description** | Ontologies, TBox/ABox, sous-typage, OWL |
+| **Logique Modale** | Nécessité (□) et possibilité (◇), mondes possibles |
+| **Argumentation de Dung** | Frameworks abstraits, attaques, sémantiques (grounded, stable) |
+| **Argumentation structurée** | Arguments construits à partir de prémisses et règles |
+| **Révision AGM** | Mise à jour rationnelle de croyances face à l'information contradictoire |
+| **MUS/MCS** | Sous-ensembles insatisfaisables/maximaux — identifier les conflits |
+| **Answer Set Programming** | Programmation par modèles (ASP) via Clingo |
+| **Agrégation de préférences** | Borda, Condorcet, Copeland — combiner des opinions |
+
+## Domaines d'application
+
+| Domaine | Notebooks | Exemple concret |
+|---------|-----------|----------------|
+| **Juridique** | 5, 6, 8 | Argumentation légale, débats en cour, preuve par argument |
+| **Aide à la décision** | 4, 9 | Diagnostic médical, planification de ressources, vote |
+| **Multi-agents** | 8 | Négociation automatique, protocoles de dialogue |
+| **Ontologies** | 3 | Représentations de connaissances, OWL, Web sémantique |
+| **Vérification formelle** | 2, 3, 4 | SAT/SMT solving, proof checking, model checking |
+| **LLM control** | 5, 6, 7b | Détection d'incohérences, structuration de débats, argumentation probabiliste |
+
+### Exemples concrets
+
+Derrière chaque cadre de la série se cache une application réelle ou un problème de recherche actif :
+
+- **L'argumentation de Dung** (notebook 5) est le fondement mathématique de nombreux systèmes d'aide à la décision juridique : des arguments se confrontent, les sémantiques déterminent quels arguments sont "acceptables", et le résultat guide la conclusion. C'est aussi la base des frameworks d'explicabilité des LLMs — détecter les incohérences entre réponses d'un modèle.
+- **ASPIC+ et DeLP** (notebook 6) modélisent des débats où les arguments ont une structure interne : prémisses, règles defeasibles, et priorités. Applications en aide à la décision médicale, en gestion de conflits de règles, et en vérification de contrats.
+- **La révision de croyances AGM** (notebook 4) formalise comment un système rationnel met à jour ses connaissances quand une information contradictoire arrive. Applications en intégration de données, diagnostic de bases de connaissance, et fusion de sources d'information.
+- **Les frameworks étendus** (notebook 7a) généralisent Dung pour capturer des situations réelles où des arguments ont plusieurs preconditions (ADF), où des attaques ont des poids variés (WAF), ou des groupes d'arguments attaquent collectivement (SetAF).
+- **La théorie du vote** (notebook 9) est au cœur des systèmes de recommandation collective, de l'agrégation de préférences en intelligence artificielle, et des mécanismes d'incitation (mechanism design).
+
+#### Un framework de Dung, visualisé
+
+L'argumentation abstraite de Dung (notebook 5) se réduit à un **graphe orienté** : des nœuds (les arguments) et des flèches (les attaques). La question n'est pas « l'argument est-il vrai ? » mais **« survive-t-il aux attaques ? »** — c'est ce que calculent les sémantiques. Exemple minimal :
+
+```mermaid
+flowchart LR
+    C(["<b>C</b>"]) -->|"attaque"| B["<b>B</b>"]
+    B -->|"attaque"| A["<b>A</b>"]
+    classDef acc fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724;
+    classDef rej fill:#f8d7da,stroke:#dc3545,stroke-width:2px,color:#721c24;
+    class C acc;
+    class A acc;
+    class B rej;
+```
+
+**Extension grounded** : `C` n'est attaqué par personne → **accepté** ; `B` est attaqué par l'accepté `C` → **rejeté** ; `A` n'est attaqué que par le rejeté `B` → **accepté**. D'où `{A, C}`. La règle se tient en une phrase : *un argument est acceptable si tous ses attaquants sont eux-mêmes défaits*. Les sémantiques preferred/stable, les cycles (CF2) et le raisonnement causal du notebook 5 raffinent ce même calcul.
+
 ## Quick Start
 
 ```bash
@@ -499,59 +552,6 @@ python scripts/download_tweety_tools.py --help
 | `agents.dialogues.oppmodels` | Jeux grounded (ArguingAgent) | 8 |
 | `agents.dialogues.lotteries` | Loteries argumentatives | 8 |
 | `preferences` | Ordres de préférence, agrégation | 9 |
-
-## Concepts clés
-
-| Concept | Description |
-|---------|-------------|
-| **Logique Propositionnelle** | Operateurs booléens, DNF, satisfaisabilité (SAT) |
-| **Logique du Premier Ordre** | Quantificateurs (∀, ∃), prédicats, fonctions |
-| **Logique de Description** | Ontologies, TBox/ABox, sous-typage, OWL |
-| **Logique Modale** | Nécessité (□) et possibilité (◇), mondes possibles |
-| **Argumentation de Dung** | Frameworks abstraits, attaques, sémantiques (grounded, stable) |
-| **Argumentation structurée** | Arguments construits à partir de prémisses et règles |
-| **Révision AGM** | Mise à jour rationnelle de croyances face à l'information contradictoire |
-| **MUS/MCS** | Sous-ensembles insatisfaisables/maximaux — identifier les conflits |
-| **Answer Set Programming** | Programmation par modèles (ASP) via Clingo |
-| **Agrégation de préférences** | Borda, Condorcet, Copeland — combiner des opinions |
-
-## Domaines d'application
-
-| Domaine | Notebooks | Exemple concret |
-|---------|-----------|----------------|
-| **Juridique** | 5, 6, 8 | Argumentation légale, débats en cour, preuve par argument |
-| **Aide à la décision** | 4, 9 | Diagnostic médical, planification de ressources, vote |
-| **Multi-agents** | 8 | Négociation automatique, protocoles de dialogue |
-| **Ontologies** | 3 | Représentations de connaissances, OWL, Web sémantique |
-| **Vérification formelle** | 2, 3, 4 | SAT/SMT solving, proof checking, model checking |
-| **LLM control** | 5, 6, 7b | Détection d'incohérences, structuration de débats, argumentation probabiliste |
-
-### Exemples concrets
-
-Derrière chaque cadre de la série se cache une application réelle ou un problème de recherche actif :
-
-- **L'argumentation de Dung** (notebook 5) est le fondement mathématique de nombreux systèmes d'aide à la décision juridique : des arguments se confrontent, les sémantiques déterminent quels arguments sont "acceptables", et le résultat guide la conclusion. C'est aussi la base des frameworks d'explicabilité des LLMs — détecter les incohérences entre réponses d'un modèle.
-- **ASPIC+ et DeLP** (notebook 6) modélisent des débats où les arguments ont une structure interne : prémisses, règles defeasibles, et priorités. Applications en aide à la décision médicale, en gestion de conflits de règles, et en vérification de contrats.
-- **La révision de croyances AGM** (notebook 4) formalise comment un système rationnel met à jour ses connaissances quand une information contradictoire arrive. Applications en intégration de données, diagnostic de bases de connaissance, et fusion de sources d'information.
-- **Les frameworks étendus** (notebook 7a) généralisent Dung pour capturer des situations réelles où des arguments ont plusieurs preconditions (ADF), où des attaques ont des poids variés (WAF), ou des groupes d'arguments attaquent collectivement (SetAF).
-- **La théorie du vote** (notebook 9) est au cœur des systèmes de recommandation collective, de l'agrégation de préférences en intelligence artificielle, et des mécanismes d'incitation (mechanism design).
-
-#### Un framework de Dung, visualisé
-
-L'argumentation abstraite de Dung (notebook 5) se réduit à un **graphe orienté** : des nœuds (les arguments) et des flèches (les attaques). La question n'est pas « l'argument est-il vrai ? » mais **« survive-t-il aux attaques ? »** — c'est ce que calculent les sémantiques. Exemple minimal :
-
-```mermaid
-flowchart LR
-    C(["<b>C</b>"]) -->|"attaque"| B["<b>B</b>"]
-    B -->|"attaque"| A["<b>A</b>"]
-    classDef acc fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724;
-    classDef rej fill:#f8d7da,stroke:#dc3545,stroke-width:2px,color:#721c24;
-    class C acc;
-    class A acc;
-    class B rej;
-```
-
-**Extension grounded** : `C` n'est attaqué par personne → **accepté** ; `B` est attaqué par l'accepté `C` → **rejeté** ; `A` n'est attaqué que par le rejeté `B` → **accepté**. D'où `{A, C}`. La règle se tient en une phrase : *un argument est acceptable si tous ses attaquants sont eux-mêmes défaits*. Les sémantiques preferred/stable, les cycles (CF2) et le raisonnement causal du notebook 5 raffinent ce même calcul.
 
 ## Validation des Notebooks
 
