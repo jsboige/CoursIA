@@ -13,6 +13,55 @@ year within the century using: doomsday = anchor + year//12 + year%12 + (year%12
 Conway passed away on Saturday, April 11, 2020.
 #eval dayOfWeek 2020 4 11 -- Saturday
 -/
+
+/-
+  `Conway.Doomsday` — L'algorithme du Doomsday de Conway
+  =======================================================
+  Une méthode élégante pour calculer le jour de la semaine pour toute
+  date grégorienne. L'idée clé : pour une année donnée, certaines dates
+  « doomsday » tombent toutes sur le même jour de la semaine :
+    4/4, 6/6, 8/8, 10/10, 12/12, 5/9, 9/5, 7/11, 11/7, et le dernier
+    jour de février.
+
+  L'algorithme calcule d'abord le « jour d'ancre » pour le siècle, puis
+  ajuste pour l'année dans le siècle avec :
+    doomsday = ancre + année//12 + année%12 + (année%12)//4
+
+  Conway est mort un samedi 11 avril 2020.
+  #eval dayOfWeek 2020 4 11 -- Saturday
+
+  ### i18n — convention #4980 ratifiée 2026-07-04
+
+  Ce sous-module suit l'option A (bilingue inline FR/EN), variante pragmatique
+  c.380 (deux blocs `/` top-level distincts, sans `---` interne, analogue
+  c.376/c.377/c.378/c.379) : le bloc EN existant est préservé verbatim
+  ci-dessus, le bloc FR miroir est ajouté juste après sans séparateur `---`.
+  Convention sibling pair (`<Foo>_en.lean` à part) réservée aux modules de
+  substance (cf c.374 `Astar_en.lean`) ; pour les modules de formalisation
+  comme `Doomsday`, l'inline FR+EN est le bon compromis (peu de code, deux
+  langues côte à côte).
+
+  Subtilité i18n : ce module combine un namespace racine `Conway` ET un
+  namespace imbriqué `Conway.DayOfWeek` (inductive days-of-week + helpers
+  `toFin`/`ofFin`/`add`/`sub`). Les définitions canadiennes-anglaises
+  (Conway 1973, British) restent en anglais dans les `def`/`theorem` :
+  `DayOfWeek`, `centuryAnchor`, `doomsdayDate` — l'anglais est le tactic
+  DSL standard de Lean/Mathlib. Seules les **docstrings `/-- ... -/`** et
+  les **commentaires `-- ...`** bilingues sont ajoutées. Anti-§D byte-
+  identity garanti : le namespace body est préservé bit-pour-bit.
+
+  Cross-références : c.366 `Conway.lean` racine bilingue (MERGED),
+  c.367 Grothendieck hommage (MERGED), c.373 `Knots.lean` racine bilingue,
+  c.374 `Astar.lean` sibling pair, c.375 `Knots` sub-modules bilingues,
+  c.376 `Knots/Invariant` bilingue 6/6 (saturation locale du lac `knot_lean`),
+  c.377 `Conway/MathlibMap` bilingue (premier sous-module rollout
+  `conway_lean`, PIVOT L335 strict), c.378 `Conway/LookAndSay` bilingue,
+  c.379 `Conway/Fractran` bilingue (machine universelle Turing-complète),
+  **c.380 `Conway/Doomsday` bilingue (algorithme Doomsday + 4 `#eval!` cas
+  réels : 2020/4/11 Conway mort, 2001/9/11, 1969/7/20 Moon landing,
+  1944/6/6 D-Day)**.
+-/
+
 import Mathlib.Data.Int.ModEq
 
 namespace Conway
