@@ -1,4 +1,4 @@
--/
+/-
 # Grothendieck tribute — Part 17: Internal hom of sheaves
 
 Alexandre Grothendieck (1928-2014).

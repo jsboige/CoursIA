@@ -1,4 +1,4 @@
--/
+/-
 # Hommage Grothendieck — Partie 17 : Hom interne des faisceaux
 
 Alexandre Grothendieck (1928-2014).
