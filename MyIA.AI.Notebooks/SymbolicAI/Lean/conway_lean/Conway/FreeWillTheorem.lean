@@ -92,7 +92,7 @@ Sources:
 
   c.385 = 6ᵉ sous-module rollout `conway_lean` Phase 1+
   (`Conway/CollatzLike`, Collatz 3n+1 + Conway 1972 indécidabilité,
-  PR #6217 OPEN MERGEABLE, +107/-0, baseline LF-only CR=0 strict
+  PR #6217 OPEN MERGEABLE, +107 insertions 0 suppression, baseline LF-only CR=0 strict
   préservée nativement, 8 theorem + 11 defs/structures byte-identique,
   Math-Vérif COMMENTED 15ᵉ). PIVOT L335 strict post-c.381-c.383 = 3
   cycles R6 Sustained intra-R6 sur registre `grothendieck_lein`,
