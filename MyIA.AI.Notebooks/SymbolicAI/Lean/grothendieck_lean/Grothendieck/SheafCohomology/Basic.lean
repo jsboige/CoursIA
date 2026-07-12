@@ -61,6 +61,9 @@ universe w' w v u
 namespace Grothendieck.SheafCohomology
 
 open CategoryTheory Category Opposite Limits
+
+variable {C : Type u} [Category.{v} C] {J : GrothendieckTopology C}
+
 /-!
 ## 1. Groupes de cohomologie des faisceaux
 
