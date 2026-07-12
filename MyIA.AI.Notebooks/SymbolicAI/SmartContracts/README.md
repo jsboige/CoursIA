@@ -121,7 +121,7 @@ Fondations (SC-0-2) + Solidity basique (SC-3-6) + Testing avancé (SC-12-14) + V
 | Comprendre DeFi | SC-7-8-9 | 2h30 |
 | Gouvernance DAO | SC-9-10-17 | 2h |
 
-## Parcours recommande
+## Parcours recommandé
 
 ```
   Partie 0 (Fondations)
