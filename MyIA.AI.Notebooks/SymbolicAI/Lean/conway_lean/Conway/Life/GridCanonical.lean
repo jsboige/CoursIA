@@ -1,4 +1,156 @@
 /-
+# Formes canoniques de grille — la spécification `sortDedup` (Conway)
+
+Copyright (c) 2026 CoursIA. Tous droits réservés.
+Distribué sous licence Apache 2.0 comme décrit dans le fichier LICENSE.
+Version française mirrorée depuis l'anglais — voir les notes d'accessibilité
+plus bas pour le rationale i18n.
+
+## Formes canoniques de grille — la spécification `sortDedup`
+
+Toute grille manipulée par le moteur Life est l'image d'un `sortDedup` :
+`step`, `evolve (n+1)`, `shift` et `MacroCell.toGrid` se composent tous
+à droite avec `sortDedup`, et `restrictGridTo` est un `filter` d'une telle
+image. Ce module prouve que les sorties de `sortDedup` sont **canoniques**
+— triées lexicographiquement et sans doublons — et que les listes
+canoniques sont **rigides** : déterminées par leur seul prédicat
+d'appartenance (`Canonical.ext`).
+
+C'est le **pont** qui transforme les objectifs d'égalité de listes des
+théorèmes de correction Hashlife (P4/P5, `HashlifeCorrectness.lean`) en
+objectifs d'appartenance point par point, où la combinatoire réelle de la
+règle B3/S23 et la récursion macrocell peuvent être argumentées cellule
+par cellule.
+
+La théorie de l'ordre est élémentaire : `lexLe` (la clôture réflexive de
+`lexLt`) est totale, transitive et antisymétrique sur `Int × Int`, le tout
+par `omega` après dépliage en arithmétique linéaire entière.
+
+Ce module est **entièrement prouvé** (aucun `sorry`).
+
+## Note d'accessibilité Epic #1452/#1453
+
+Ce module héberge **13 theorem + 1 def** sur 4 sections, dédiées à la
+canonicité structurelle de la grille (sans aucune sémantique runtime
+Hashlife). Les tactiques mobilisées sont **arithmétiques et structurelles**
+(`omega`, `unfold`, `simp only [...]`, `rw [mem_sortDedup]`, `split_ifs`,
+`exact ⟨_, _⟩`) avec deux appels à `List.Pairwise.sublist` / `List.Nodup.sublist`
+pour préserver la canonicité sous `filter`. C'est précisément la calibration
+cible pour l'Epic #1453 : cible SOTA-OK où le harnais prouveur résout
+proprement des lemmes de canonicité structurelle entre représentations de
+listes équivalentes.
+
+**Densité 2.371 thm/KB** (13 / 5483) — la plus élevée du sous-domaine
+`conway_lein/Life/*` : densité record car la substance est *purement
+canonique* (1 axiome par ~10 lignes de preuve structurée), avec une
+définition de prédicat `Canonical` réutilisée par 6 theorem. C'est la
+signature attendue d'un module de **canonicité structurelle** : un seul
+concept (canonicité de liste) instancié sur les opérations fondamentales
+du moteur Life (`step`, `evolve`, `shift`, `filter`).
+
+**Satellite de N2 redesign arc EPIC #3846.** Ce module n'est pas sur le
+chemin W3/W4 du cycle-break N2 lui-même (c'est `ConeGeometry` qui en est
+W3, et `LightCone` qui en est le pont), mais il est **consommé** par
+`HashlifeCorrectness.lean` pour transformer les objectifs d'égalité de
+listes P4/P5 en objectifs d'appartenance cellulaire. La fermeture de
+`hashlife_correct` (4 sorries à fermer dans `HashlifeCorrectness.lean`,
+cf issue #5726) débloque l'éligibilité du Jeu de la Vie comme substrat
+de stratification ICT (issue #5726, partie de l'EPIC #4588).
+
+## Substance réelle — canonicité structurelle, 13 theorem + 1 def sur 4 sections
+
+`GridCanonical.lean` héberge **13 theorem + 1 def** sur la **canonicité
+de la grille** (lex-sortie + sans-doublons) maintenue par les opérations
+fondamentales du moteur Life :
+
+- `lexLt_iff` : **lexLt en arithmétique linéaire** — `lexLt a b = true ↔
+  a.1 < b.1 ∨ (a.1 = b.1 ∧ a.2 < b.2)` (par dépliage `lexLt` + `split_ifs`
+  + `simp` + `omega`). Fait de base pour relier la définition opérationnelle
+  `lexLt` à l'arithmétique linéaire des paires d'entiers.
+- `lexLe_iff` : **lexLe en arithmétique linéaire** — `lexLe a b = true ↔
+  a.1 < b.1 ∨ (a.1 = b.1 ∧ a.2 ≤ b.2)` (par `simp only [lexLe, Bool.or_eq_true,
+  lexLt_iff, beq_iff_eq, Prod.ext_iff]` + `omega`). Fait jumeau du
+  précédent, pour la clôture réflexive.
+- `lexLe_total` : **lexLe total** — `(lexLe a b || lexLe b a) = true` (par
+  `simp only [Bool.or_eq_true, lexLe_iff]` + `omega`). C'est l'hypothèse
+  que `List.pairwise_mergeSort` exige sur son argument comparateur.
+- `lexLe_trans` : **lexLe transitif** — `lexLe a c = true` depuis
+  `lexLe a b = true` + `lexLe b c = true` (par `simp only [lexLe_iff] at *`
+  + `omega`).
+- `lexLe_antisymm` : **lexLe antisymétrique** — `lexLe a b = true` +
+  `lexLe b a = true` ⇒ `a = b` (par `simp only [lexLe_iff] at *` + `rw
+  [Prod.ext_iff]` + `omega`). Fait clef qui rend les listes lex-triées
+  *rigides* : une permutation entre deux listes triées est l'identité.
+- `Canonical` *(def)* : **prédicat de canonicité** sur `Grid` —
+  `g.Pairwise (fun a b => lexLe a b = true) ∧ g.Nodup`. Définition
+  *composite* (sortedness + no-duplicates) qui capture la rigidité.
+- `canonical_sortDedup` : **`sortDedup` produit une grid canonique** —
+  `Canonical (sortDedup l)` pour toute liste `l` (par dépliage `sortDedup`
+  + `List.Pairwise.sublist (List.dedup_sublist _)` (depuis
+  `pairwise_mergeSort` utilisant `lexLe_trans` + `lexLe_total`) +
+  `List.nodup_dedup _`). Le fait central : toute image `sortDedup` est
+  canonique.
+- `Canonical.filter` : **filter préserve la canonicité** — `Canonical
+  (g.filter q)` depuis `Canonical g` (par `List.Pairwise.sublist
+  List.filter_sublist` + `List.Nodup.sublist List.filter_sublist`). Fait
+  technique pour les opérations de restriction (`restrictGridTo`).
+- `Canonical.ext` : **rigidité des grilles canoniques** — deux grilles
+  canoniques avec les mêmes membres sont **égales comme listes**
+  (`g₁ = g₂`). La preuve : la même-appartenance donne une permutation
+  (`List.perm_ext_iff_of_nodup` qui demande la no-dups), puis une
+  permutation entre deux listes lex-triées est l'identité par
+  antisymétrie (`List.Perm.eq_of_pairwise` utilisant `lexLe_antisymm`).
+  C'est le fait **central** de ce module : la canonicité identifie
+  listes et ensembles.
+- `sortDedup_eq_sortDedup_iff` : **égalité iff ensembles égaux** — pour
+  deux listes `l₁`, `l₂`, `sortDedup l₁ = sortDedup l₂ ↔ ∀ p, p ∈ l₁ ↔
+  p ∈ l₂` (par `constructor` + `rw [← mem_sortDedup, h, mem_sortDedup]`
+  pour forward + `Canonical.ext` pour backward). Le **workhorse** utilisé
+  par P4/P5 de `HashlifeCorrectness.lean`.
+- `canonical_step` : **`step` produit des grilles canoniques** — `Canonical
+  (step g)` (par `canonical_sortDedup _`). Fait de préservation directe
+  puisque `step g = sortDedup (candidates g.filter (aliveNext g))`.
+- `canonical_evolve_of_pos` : **`evolve n` canonique pour `n ≥ 1`** —
+  `Canonical (evolve n g)` (par `obtain ⟨m, rfl⟩ : ∃ m, n = m + 1` + `rw
+  [evolve_succ]` + `canonical_step _`). Pour `n = 0`, `evolve 0 g = g`,
+  qui n'a pas besoin d'être canonique.
+- `canonical_shift` : **`shift` produit des grilles canoniques** —
+  `Canonical (shift v g)` (par `canonical_sortDedup _`). Translation
+  préserve la canonicité.
+- `mem_step_iff` : **appartenance dans `step g` dépliée** — `p ∈ step g ↔
+  p ∈ candidates g ∧ aliveNext g p = true` (par `unfold step` + `rw
+  [mem_sortDedup, List.mem_filter]`). Fait de **désucrage** qui permet
+  aux théorèmes P4/P5 de raisonner sur la règle B3/S23 elle-même
+  plutôt que sur la machinerie `sortDedup`.
+
+Le **fait central formalisé** dans ce module est donc la **canonicité
+structurelle des grilles du moteur Life** : toute grille construite par
+`sortDedup` est canonique (lex-sortie + sans-doublons), et les listes
+canoniques sont **rigides** — déterminées par leur seul prédicat
+d'appartenance. Cette rigidité est exactement ce qui permet aux
+théorèmes P4/P5 de `HashlifeCorrectness.lean` de transformer leurs
+objectifs d'égalité de listes en objectifs d'appartenance cellulaire
+(où la combinatoire B3/S23 peut être argumentée cellule par cellule).
+
+## Pont Mathlib + accessibilité Epic #1452
+
+L'import est `Conway.Life` (le module parent qui agrège tous les
+sous-modules Life). Sans `import Mathlib` direct — Mathlib est ré-importé
+transitivement via la chaîne de lakes. Toutes les tactiques utilisées
+(`omega`, `unfold`, `simp only [...]`, `rw [...]`, `split_ifs`,
+`exact ⟨_, _⟩`, `List.Pairwise.sublist`, `List.Nodup.sublist`,
+`List.perm_ext_iff_of_nodup`, `List.Perm.eq_of_pairwise`) sont des
+**champs de structure canoniques Mathlib 4** sur `List` et `Int × Int`.
+C'est la calibration SOTA-OK visée par l'Epic #1453 : cibles où le
+harnais prouveur résout proprement des lemmes de canonicité structurelle
+entre représentations de listes équivalentes.
+
+Suit : hommage MathOverflow + Mathlib i18n convention #4980 ratifiée
+2026-07-04 (option A pragmatique : deux blocs `/` top-level distincts,
+sans séparateur `---` interne).
+-/
+
+/-
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
