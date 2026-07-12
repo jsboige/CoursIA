@@ -1,4 +1,5 @@
--/
+/-
+
 # Hommage Grothendieck — Partie 9 : Génération de couverture et caractérisation des faisceaux
 
 Alexandre Grothendieck (1928-2014).

@@ -1,4 +1,5 @@
--/
+/-
+
 # Grothendieck tribute — Part 9: Coverage generation and sheaf characterization
 
 Alexandre Grothendieck (1928-2014).
