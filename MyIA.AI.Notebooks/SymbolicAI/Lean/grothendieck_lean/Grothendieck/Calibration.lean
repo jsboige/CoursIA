@@ -1,17 +1,30 @@
 /-
-Grothendieck tribute — Part 5: Calibration targets for the prover harness
-Alexandre Grothendieck (1928-2014).
+# Hommage Grothendieck — Partie 5 : Cibles d'étalonnage pour le harnais prouveur
 
-Micro-proof targets for the harness calibration ladder (Epic #1453).
-These are deliberately simple facts about Grothendieck topologies that
-exercise different proof strategies:
+Copyright (c) 2026 CoursIA. Tous droits réservés.
+Distribué sous licence Apache 2.0 comme décrit dans le fichier LICENSE.
 
-  - P1 (closed-eval): trivial ≤ discrete (lattice order)
-  - P2 (case-decomposition): Sieve.pullback of ⊤ is ⊤
-  - P3 (rewriting): zariskiTopology_eq bridge theorem
-  - P4 (integration): every presheaf is a sheaf for the trivial topology
+## Cibles d'étalonnage pour le harnais prouveur
 
-Epic #1646, #1453. All `sorry`s eliminated at creation.
+Ce module héberge **4 theorem** de calibration P1-P4 destinés à la
+**co-évolution du harnais prouveur** (Epic #1453) — l'instrument de
+preuve multi-agent du cluster. Chaque cible est volontairement simple
+mais **didactique** : elle exerce une tactique différente du kernel
+Lean 4 afin d'élargir progressivement le registre couvert par le
+prouveur autonome.
+
+### Note d'accessibilité Epic #1452/#1453
+
+Ce module est **volontairement minimaliste** : 4 theorem de calibration
+chacun < 5 lignes de preuve. La substance n'est pas dans la difficulté
+mathématique mais dans la **diversité tactique** (4 tactiques différentes
+par cible). C'est précisément la calibration cible pour l'Epic #1453 :
+exercices gradués pour le harnais prouveur autonome.
+
+Convention i18n (EPIC #4980 ratifiée user 2026-07-04, voir
+`code-style.md` §Lean i18n) : ce module substantiel est **FR canonique**,
+avec son miroir anglais dans le fichier sibling `Calibration_en.lean`
+(modèle sibling pair, voir PR #6154 pour le pilote sur `Utility.lean`).
 -/
 
 import Mathlib.CategoryTheory.Sites.Grothendieck
@@ -22,13 +35,13 @@ namespace Grothendieck
 open CategoryTheory AlgebraicGeometry
 
 /-!
-## P1: Lattice order — trivial ≤ discrete (closed evaluation)
+## P1 : Ordre lattice — trivial ≤ discrete (évaluation fermée)
 
-The trivial topology (only ⊤ covers) is coarser than the discrete topology
-(every sieve covers). This is a lattice-level fact: ⊥ ≤ ⊤.
+La topologie triviale (seul ⊤ couvre) est plus grossière que la topologie
+discrète (tout crible couvre). Fait de niveau lattice : ⊥ ≤ ⊤.
 -/
 
-/-- CALIBRATION (decide/rfl): the trivial topology is below the discrete topology
+/-- ÉTALONNAGE (decide/rfl) : la topologie triviale est sous la topologie discrète
     in the lattice of Grothendieck topologies. -/
 theorem trivial_le_discrete {C : Type*} [Category C] :
     (GrothendieckTopology.trivial C : GrothendieckTopology C) ≤
@@ -37,25 +50,26 @@ theorem trivial_le_discrete {C : Type*} [Category C] :
   exact bot_le
 
 /-!
-## P2: Sieve.pullback of ⊤ is ⊤ (direct proof)
+## P2 : Sieve.pullback de ⊤ vaut ⊤ (preuve directe)
 
-Pulling back the maximal sieve along any morphism gives the maximal sieve.
+Tirer en arrière le crible maximal le long d'un morphisme quelconque donne
+le crible maximal.
 -/
 
-/-- CALIBRATION (simp): pullback of the top sieve is the top sieve. -/
+/-- ÉTALONNAGE (simp) : pullback du crible sup est le crible sup. -/
 theorem pullback_top {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X) :
     (Sieve.pullback f (⊤ : Sieve X)) = (⊤ : Sieve Y) := by
   ext Z g
   simp [Sieve.pullback]
 
 /-!
-## P3: The Zariski topology equals the pretopology-generated topology
+## P3 : La topologie de Zariski égale la topologie générée par la prétopologie
 
-This is `Scheme.zariskiTopology_eq`, restated here as a calibration
-target that the prover must find and apply.
+C'est `Scheme.zariskiTopology_eq`, réénoncé ici comme cible
+d'étalonnage que le prouveur doit trouver et appliquer.
 -/
 
-/-- CALIBRATION (exact): the Zariski topology equals the pretopology-generated one.
+/-- ÉTALONNAGE (exact) : la topologie de Zariski égale celle issue de la prétopologie.
     The prover must discover `exact Scheme.zariskiTopology_eq`. -/
 theorem zariski_eq_pretopology :
     (Scheme.zariskiTopology : GrothendieckTopology Scheme) =
@@ -63,14 +77,15 @@ theorem zariski_eq_pretopology :
   Scheme.zariskiTopology_eq
 
 /-!
-## P4: Every presheaf is a sheaf for the trivial topology
+## P4 : Tout préfaisceau est un faisceau pour la topologie triviale
 
-For the coarsest Grothendieck topology (only ⊤ covers), every presheaf
-automatically satisfies the sheaf condition. This is because there is
-only one covering sieve per object, and the sheaf condition on ⊤ is trivial.
+Pour la topologie de Grothendieck la plus grossière (seul ⊤ couvre),
+tout préfaisceau satisfait automatiquement la condition de faisceau.
+En effet, il n'y a qu'un seul crible couvrant par objet, et la condition
+de faisceau sur ⊤ est triviale.
 -/
 
-/-- CALIBRATION (exact): every Type-valued presheaf is a sheaf for the
+/-- ÉTALONNAGE (exact) : tout préfaisceau à valeurs dans `Type` est un faisceau pour la
     trivial (coarsest) Grothendieck topology (= ⊥).
     Uses `Presieve.isSheaf_bot` which works with `⊥`. -/
 theorem isSheaf_trivial {C : Type*} [Category C] (P : Cᵒᵖ ⥤ Type*) :
