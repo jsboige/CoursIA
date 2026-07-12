@@ -130,7 +130,13 @@ COOPERATIVE_GAMES_DIR = next(
 SHAPLEY_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Shapley.lean" if COOPERATIVE_GAMES_DIR.exists() else None
 BASIC_FILE = COOPERATIVE_GAMES_DIR / "CooperativeGames" / "Basic.lean" if COOPERATIVE_GAMES_DIR.exists() else None
 
+# Canonical home is game_theory_lean since the #6058 absorption merged
+# (SocialChoice/Arrow+Sen+Voting moved into game_theory_lean on
+# 2026-07-11). The legacy social_choice_lean dir survives as md-only
+# (FORMAL_STATUS/README/NOTICE) — its SocialChoice/*.lean are gone, so
+# deriving VOTING_FILE from it yields a non-existent path (#6248).
 _SOCIAL_CHOICE_CANDIDATES = [
+    _workspace_relative("GameTheory/game_theory_lean"),
     _workspace_relative("GameTheory/social_choice_lean"),
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
     Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\social_choice_lean"),
@@ -151,7 +157,13 @@ import SocialChoice.Definitions
 """
 
 # ── Stable Marriage ──
+# Canonical home is game_theory_lean since the #5904-#5913 absorption merged
+# (StableMarriage/{Definitions,GSState,GaleShapley,Lemmas,Lattice} moved into
+# game_theory_lean on 2026-07-10). The legacy stable_marriage_lean dir is
+# md-only now — deriving GSSTATE/GALESHAPLEY/LEMMAS/LATTICE_FILE from it yields
+# non-existent paths (#6248).
 _STABLE_MARRIAGE_CANDIDATES = [
+    _workspace_relative("GameTheory/game_theory_lean"),
     _workspace_relative("GameTheory/stable_marriage_lean"),
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
     Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\stable_marriage_lean"),
