@@ -9,3 +9,19 @@ repos:
       - id: gitleaks
         name: Secret scanner (gitleaks)
         args: ['detect', '--no-git', '--redact']
+  - repo: local
+    hooks:
+      # Security (#6309): the dotnet-interactive kernel injects a probeAddresses
+      # HTTP-bootstrap script (carrying the host's full network interface list,
+      # including public IPv6 2a01:...) as a display_data output on the first
+      # code cell of every .NET notebook. No kernel flag suppresses it (verified
+      # firsthand, see issue #6309), so the durable fix is to strip the banner
+      # output at commit time. This hook auto-strips it from any staged .ipynb;
+      # if it modifies a file, pre-commit aborts the commit and the author
+      # re-stages (standard autofix UX).
+      - id: strip-dotnet-banner
+        name: .NET Interactive probeAddresses banner strip (security #6309)
+        entry: python scripts/notebook_tools/strip_dotnet_banner.py --apply
+        language: system
+        files: \.ipynb$
+        pass_filenames: true
