@@ -34,7 +34,11 @@ PIPELINE = SCRIPTS.parent
 RESULTS = PIPELINE / "results" / "m8_sota_overnight"
 RESULTS.mkdir(parents=True, exist_ok=True)
 OVERALL = RESULTS / "_overall.log"
-PYTHON = r"C:\Users\MYIA\miniconda3\envs\coursia-ml-training\python.exe"
+# Use the interpreter that launched this driver (must be the coursia-ml-training
+# conda env, since the spawned train_*.py scripts import torch / CUDA). Hardcoding
+# an absolute C:\Users\<user>\... path leaked the worker username and broke on
+# any machine where miniconda is not at that exact path (forks, CI, other cluster nodes).
+PYTHON = sys.executable
 DATA_DIR = (PIPELINE.parent / "datasets" / "yfinance" / "crypto_panier").as_posix()
 
 # Per-script capability profile:
