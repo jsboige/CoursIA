@@ -6,7 +6,7 @@
 series: RL
 pedagogical_count: 17
 breakdown: root=17
-maturity: PRODUCTION=16, BETA=1
+maturity: PRODUCTION=15, BETA=2
 -->
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (17 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :
