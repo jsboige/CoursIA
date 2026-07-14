@@ -1654,7 +1654,7 @@ MyIA.AI.Notebooks/RL/rl_13_curiosity_exploration.ipynb,f6ae40e5,code,fr,e6ff347f
 
 # taux = success_vs_length()
 # print(taux)",,,,,,,,e6ff347f723f09e5,,,,,,,
-MyIA.AI.Notebooks/RL/rl_13_curiosity_exploration.ipynb,dc780b93,markdown,fr,5a7da03586419a51,"## 5. Synthèse
+MyIA.AI.Notebooks/RL/rl_13_curiosity_exploration.ipynb,dc780b93,markdown,fr,9d2216cfb154435a,"## Synthèse
 
 - L'**exploration aléatoire** (epsilon-greedy) échoue dès que la récompense est rare ou cachée
   derrière une longue séquence d'actions : elle reste piégée dans les optima locaux faciles.
@@ -1676,7 +1676,7 @@ MyIA.AI.Notebooks/RL/rl_13_curiosity_exploration.ipynb,dc780b93,markdown,fr,5a7d
 
 - Burda, Edwards, Storkey, Klimov (2018). *Exploration by Random Network Distillation*. ICLR 2019.
 - Pathak, Agrawal, Efros, Darrell (2017). *Curiosity-driven Exploration by Self-supervised Prediction*. ICML.
-- Osband et al. (2019). *Deep Exploration via Randomized Value Functions*. JMLR.",,,,,,,,5a7da03586419a51,,,,,,,
+- Osband et al. (2019). *Deep Exploration via Randomized Value Functions*. JMLR.",,,,,,,,9d2216cfb154435a,,,,,,,
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,0dfd478b,markdown,fr,0d96b087b4e25dc3,"**Navigation** : [Index](README.md) | [RL-2 Wrappers >>](rl_2_wrappers_sauvegarde_callbacks.ipynb)
 # Tutoriel Stable Baselines3 - Premiers pas
 
@@ -1717,9 +1717,9 @@ pip install stable-baselines3[extra]
 
 *Astuce* : Pour ceux qui découvrent Gym, explorez rapidement `env.action_space` et `env.observation_space` pour comprendre les dimensions et les types d’actions.
 ",,,,,,,,0d96b087b4e25dc3,,,,,,,
-MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,3ffcce8f,code,fr,719079b20bd17681,"# Sous Windows, on ne fait pas d'apt-get.
+MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,3ffcce8f,code,fr,bac837de281e346c,"# Sous Windows, on ne fait pas d'apt-get.
 # %apt-get update && apt-get install ffmpeg freeglut3-dev xvfb  # Pour la visualisation sous Linux
-%pip install ""stable-baselines3[extra]>=2.0.0a4"" moviepy",,,,,,,,719079b20bd17681,,,,,,,
+",,,,,,,,bac837de281e346c,,,,,,,
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,64a42923,markdown,fr,c4db0289fb7e753a,Verification de l'installation de Stable Baselines3.,,,,,,,,c4db0289fb7e753a,,,,,,,
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,a2c73b9f,code,fr,56634eb8fa68857d,"import stable_baselines3
 
@@ -1767,9 +1767,10 @@ PPO combine des idées d’[A2C](https://stable-baselines.readthedocs.io/en/mast
 
 PPO est un algorithme on-policy : les trajectoires utilisées pour mettre à jour les réseaux doivent être collectées avec la politique la plus récente.
 Il est généralement moins échantillonnement-efficace que des algorithmes off-policy comme [DQN](https://stable-baselines.readthedocs.io/en/master/modules/dqn.html), [SAC](https://stable-baselines.readthedocs.io/en/master/modules/sac.html) ou [TD3](https://stable-baselines.readthedocs.io/en/master/modules/td3.html), mais il est souvent plus rapide en temps d’horloge réel.",,,,,,,,7e8180781c1eb5ed,,,,,,,
-MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,ae321a8b,code,fr,8cf90c42064b997f,"env = gym.make(""CartPole-v1"", render_mode=""rgb_array"")
-model = PPO(MlpPolicy, env, verbose=0)
-print(f""Environnement CartPole-v1 cree, modele PPO initialise avec MlpPolicy."")",,,,,,,,8cf90c42064b997f,,,,,,,
+MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,ae321a8b,code,fr,33a61cba956ea0dd,"env = gym.make(""CartPole-v1"", render_mode=""rgb_array"")
+model = PPO(MlpPolicy, env, verbose=0, device='cpu')
+print(f""Environnement CartPole-v1 cree, modele PPO initialise avec MlpPolicy."")
+",,,,,,,,33a61cba956ea0dd,,,,,,,
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,9e198490,markdown,fr,ac01ee624507d61b,Nous créons une fonction utilitaire pour évaluer l’agent :,,,,,,,,ac01ee624507d61b,,,,,,,
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,dddabb38,code,fr,a1aca407b885979c,"def evaluate(model, num_episodes=100, deterministic=True):
     """"""
@@ -1802,12 +1803,14 @@ MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,6425278c,markdown,fr,356507350ea3
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,00025f2a,code,fr,e5ed7cedb907c324,"from stable_baselines3.common.evaluation import evaluate_policy
 print(""evaluate_policy importe."")",,,,,,,,e5ed7cedb907c324,,,,,,,
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,5e32500a,markdown,fr,c28fd807fa59150a,Évaluons l’agent non entraîné ; il devrait agir de façon essentiellement aléatoire.,,,,,,,,c28fd807fa59150a,,,,,,,
-MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,5f778623,code,fr,6fa8d0f2b7a05656,"# Nous utilisons un environnement distinct pour l’évaluation
-eval_env = gym.make(""CartPole-v1"", render_mode=""rgb_array"")
+MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,5f778623,code,fr,04a5dfcbd97997b6,"from stable_baselines3.common.monitor import Monitor
+# Nous utilisons un environnement distinct pour l’évaluation
+eval_env = Monitor(gym.make(""CartPole-v1"", render_mode=""rgb_array""))
 
 # Agent aléatoire, avant entraînement
 mean_reward, std_reward = evaluate_policy(model, eval_env, n_eval_episodes=100)
-print(f""mean_reward:{mean_reward:.2f} +/- {std_reward:.2f}"")",,,,,,,,6fa8d0f2b7a05656,,,,,,,
+print(f""mean_reward:{mean_reward:.2f} +/- {std_reward:.2f}"")
+",,,,,,,,04a5dfcbd97997b6,,,,,,,
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,f2b0d076,markdown,fr,170b023dd0663cb2,"## Entraîner l’agent et l’évaluer
 
 **Hyperparamètres clés**  
@@ -1893,13 +1896,35 @@ def record_video(env_id, model, video_length=500, prefix="""", video_folder=""vi
 print(""Fonctions record_video et show_videos pretes."")",,,,,,,,ee126627a57bb48f,,,,,,,
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,640999f5,markdown,fr,2d4882cb7b5eb806,"### Visualiser l’agent entraîné
 ",,,,,,,,2d4882cb7b5eb806,,,,,,,
-MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,1e544539,code,fr,5680c6cdcd92aec7,"record_video(""CartPole-v1"", model, video_length=500, prefix=""ppo-cartpole"")",,,,,,,,5680c6cdcd92aec7,,,,,,,
+MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,1e544539,code,fr,002aa048a6e23538,"import warnings
+import os
+import sys
+import proglog
+
+warnings.filterwarnings(""ignore"", message=""pkg_resources is deprecated"")
+
+# SB3 (print) et moviepy (proglog) affichent le chemin absolu de la vidéo
+# enregistrée — fuite du répertoire de travail. On rend moviepy muet et on
+# redirige stdout le temps de l'enregistrement. Le fichier .mp4 reste écrit et
+# est affiché par show_videos() dans la cellule suivante.
+_proglog_dbl = proglog.default_bar_logger
+proglog.default_bar_logger = lambda logger=None: proglog.MuteProgressBarLogger()
+_saved_stdout = sys.stdout
+sys.stdout = open(os.devnull, ""w"")
+try:
+    record_video(""CartPole-v1"", model, video_length=500, prefix=""ppo-cartpole"")
+finally:
+    sys.stdout.close()
+    sys.stdout = _saved_stdout
+    proglog.default_bar_logger = _proglog_dbl
+",,,,,,,,002aa048a6e23538,,,,,,,
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,50b8f8ca,markdown,fr,f405d48354c44dc3,Affichage de la video enregistree.,,,,,,,,f405d48354c44dc3,,,,,,,
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,bbb3e432,code,fr,1cfaaf8194edb123,"show_videos(""videos"", prefix=""ppo"")",,,,,,,,1cfaaf8194edb123,,,,,,,
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,dd6146d0,markdown,fr,37a27ff308c41762,"## Bonus : entraîner un modèle RL en une seule ligne
 
 La classe de politique utilisée sera déduite automatiquement et l’environnement sera créé automatiquement également. Cela fonctionne parce que les deux sont [enregistrés](https://stable-baselines.readthedocs.io/en/master/guide/quickstart.html).",,,,,,,,37a27ff308c41762,,,,,,,
-MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,2373fecf,code,fr,06cb598e0e74f850,"model = PPO('MlpPolicy', ""CartPole-v1"", verbose=1).learn(1000)",,,,,,,,06cb598e0e74f850,,,,,,,
+MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,2373fecf,code,fr,6664cd04d14549cd,"model = PPO('MlpPolicy', ""CartPole-v1"", verbose=1, device='cpu').learn(1000)
+",,,,,,,,6664cd04d14549cd,,,,,,,
 MyIA.AI.Notebooks/RL/rl_1_intro_cartpole.ipynb,1af41f34,markdown,fr,fb2244187161e4e7,"## Exercices
 
 Les exercices suivants vous permettent de mettre en pratique les concepts abordes dans ce notebook : comparaison d'algorithmes, sensibilite aux hyperparametres et analyse des courbes d'apprentissage.",,,,,,,,fb2244187161e4e7,,,,,,,
@@ -1983,7 +2008,11 @@ ou bien :
 si vous utilisez un notebook. 
 
 Ensuite, on importe les principales classes dont on aura besoin.",,,,,,,,8b810625ca739297,,,,,,,
-MyIA.AI.Notebooks/RL/rl_2_wrappers_sauvegarde_callbacks.ipynb,ddff0be5,code,fr,7027505202cafeb2,"%pip install ""stable-baselines3[extra]>=2.0.0a4""  
+MyIA.AI.Notebooks/RL/rl_2_wrappers_sauvegarde_callbacks.ipynb,ddff0be5,code,fr,0155985bff53cd35,"# Dependances pre-provisionnees (stable-baselines3[extra] gymnasium moviepy) : voir RL/requirements.txt ; imports ci-dessous.
+# Filtrer les UserWarning de stable_baselines3 (GPU advisory + Monitor wrapper) qui fuitaient le chemin site-packages du worker.
+import warnings
+warnings.filterwarnings(""ignore"", message=r""You are trying to run.*on the GPU.*"")
+warnings.filterwarnings(""ignore"", message=r""Evaluation environment is not wrapped.*"")
 
 import os
 import numpy as np
@@ -1992,7 +2021,7 @@ from stable_baselines3 import PPO, A2C, SAC, TD3
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
-",,,,,,,,7027505202cafeb2,,,,,,,
+",,,,,,,,0155985bff53cd35,,,,,,,
 MyIA.AI.Notebooks/RL/rl_2_wrappers_sauvegarde_callbacks.ipynb,1ce9d351,markdown,fr,10c1ee7a956c6abc,"## 1) Wrappers Gym
 Les **Gym wrappers** permettent d’ajouter des transformations aux environnements (limiter la durée d’un épisode, normaliser les actions, etc.). Ci-dessous un exemple très condensé :
 
@@ -2345,8 +2374,8 @@ Dans un notebook Python, on peut faire :
 ```python
 %pip install ""stable-baselines3[extra]>=2.0.0a4"" highway-env moviepy
 ```",,,,,,,,208b3df4d2508a6d,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,88f90212,code,fr,81e7c86fabbed1a9,"# Installation par commande magique Notebook (Windows-friendly, pas de apt-get)
-%pip install ""stable-baselines3[extra]>=2.0.0a4"" highway-env moviepy --quiet",,,,,,,,81e7c86fabbed1a9,,,,,,,
+MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,88f90212,code,fr,fcd7c1716b5a86ca,"# Installation par commande magique Notebook (Windows-friendly, pas de apt-get)
+",,,,,,,,fcd7c1716b5a86ca,,,,,,,
 MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,dd59bd5c,markdown,fr,df7066eaf77cfddc,"## Imports Essentiels
 
 Nous importons :
@@ -3425,7 +3454,7 @@ MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,0226c2d4,markdown,fr,77b63cf
 - **Greedy** : se fixe rapidement mais peut se tromper si l'initialisation est defavorable
 - **e-greedy** : converge vers le meilleur bras tout en continuant a explorer legerement
 - **UCB** : exploration automatique au debut, puis convergence rapide vers le meilleur bras",,,,,,,,77b63cf140af69a8,,,,,,,
-MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,2fb2d08c,markdown,fr,9829e4eec3b1784f,"## 7. Conclusion
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,2fb2d08c,markdown,fr,6259579515f25885,"## Conclusion
 
 | Concept | Ce que nous avons vu |
 |---------|---------------------|
@@ -3451,7 +3480,7 @@ MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,2fb2d08c,markdown,fr,9829e4e
 - Thompson, W.R. (1933). On the Likelihood that One Unknown Probability Exceeds Another in the View of the Evidence of the Two Samples. Biometrika 25(3-4):285-294.
 - Sutton, R.S. & Barto, A.G. (2018). Reinforcement Learning: An Introduction (2nd ed.). MIT Press.
 
-",,,,,,,,9829e4eec3b1784f,,,,,,,
+",,,,,,,,6259579515f25885,,,,,,,
 MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb,a0f1e001,markdown,fr,26850d5eb05b85e9,"# RL-5 : MDP, Programmation Dynamique et Q-Learning Tabulaire
 
 **Serie** : Reinforcement Learning | **Notebook** : 5/13 | **Duree estimee** : 45-50 min
@@ -3958,7 +3987,7 @@ results = None  # TODO etudiant : tableau 2D numpy (len(alphas) x len(gammas))
 # plt.show()
 
 print(""Exercice 4 a completer : grid search des hyperparametres du Q-Learning"")",,,,,,,,b8b072dac045a0c9,,,,,,,
-MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb,k5c7f037,markdown,fr,17bb4d8c55d2a74e,"## 9. Conclusion
+MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb,k5c7f037,markdown,fr,fc04f7e1e78b3a3e,"## Conclusion
 
 | Concept | Ce que nous avons vu |
 |---------|---------------------|
@@ -3983,7 +4012,7 @@ MyIA.AI.Notebooks/RL/rl_5_mdp_dp_qlearning.ipynb,k5c7f037,markdown,fr,17bb4d8c55
 - Watkins, C.J.C.H. (1989). Learning from Delayed Rewards. These de doctorat, Universite de Cambridge.
 - Sutton, R.S. & Barto, A.G. (2018). Reinforcement Learning: An Introduction (2nd ed.). MIT Press.
 
-",,,,,,,,17bb4d8c55d2a74e,,,,,,,
+",,,,,,,,fc04f7e1e78b3a3e,,,,,,,
 MyIA.AI.Notebooks/RL/rl_6_dqn_policy_gradient.ipynb,a0r1e001,markdown,fr,3327e0264fad6cfd,"# RL-6 : Deep Q-Network (DQN) et Policy Gradient
 
 **Serie** : Reinforcement Learning | **Notebook** : 6/13 | **Duree estimee** : 50-55 min
@@ -4447,7 +4476,7 @@ MyIA.AI.Notebooks/RL/rl_6_dqn_policy_gradient.ipynb,a6r7e027,code,fr,b326128a3c9
 # Indice : creez une classe ValueNetwork(nn.Module) similaire a QNetwork mais output = 1
 advantage = None  # TODO etudiant : calculer l'avantage A_t
 print(""Exercice a completer : REINFORCE avec baseline"")",,,,,,,,b326128a3c93ce1b,,,,,,,
-MyIA.AI.Notebooks/RL/rl_6_dqn_policy_gradient.ipynb,b7s8e028,markdown,fr,5587248b7609349e,"## 7. Conclusion
+MyIA.AI.Notebooks/RL/rl_6_dqn_policy_gradient.ipynb,b7s8e028,markdown,fr,2920c5cf6d7d6271,"## Conclusion
 
 | Concept | DQN (Value-based) | REINFORCE (Policy-based) |
 |---------|-------------------|--------------------------|
@@ -4479,7 +4508,7 @@ MyIA.AI.Notebooks/RL/rl_6_dqn_policy_gradient.ipynb,b7s8e028,markdown,fr,5587248
 - Sutton, R.S., McAllester, D.A., Singh, S.P. & Mansour, Y. (2000). Policy Gradient Methods for Reinforcement Learning with Function Approximation. NeurIPS 2000.
 - Sutton, R.S. & Barto, A.G. (2018). Reinforcement Learning: An Introduction (2nd ed.). MIT Press.
 
-",,,,,,,,5587248b7609349e,,,,,,,
+",,,,,,,,2920c5cf6d7d6271,,,,,,,
 MyIA.AI.Notebooks/RL/rl_6b_actor_critic.ipynb,08a00678,markdown,fr,80c742b945b25dd5,"# RL-6b - Actor-Critic : unir valeur et politique
 
 **Serie** : Reinforcement Learning | **Notebook** : 6b/13 | **Duree estimee** : 45-50 min
@@ -5007,7 +5036,7 @@ $$\mathcal{L}^{CLIP} = \hat{\mathbb{E}}_t\left[\min\left(r_t(\theta)\hat{A}_t, \
 ou $r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}$ est le ratio de probabilites entre la nouvelle et l'ancienne politique.
 
 Les notebooks [RL-1](rl_1_intro_cartpole.ipynb) et [RL-2](rl_2_wrappers_sauvegarde_callbacks.ipynb) de cette serie utilisent PPO via stable-baselines3. Avec les concepts de ce notebook, vous comprenez maintenant ce qui se cache derriere cette boite noire.",,,,,,,,5e7e0e94d269bc4e,,,,,,,
-MyIA.AI.Notebooks/RL/rl_6b_actor_critic.ipynb,1ac6b512,markdown,fr,753885f694dd9b51,"## 12. Conclusion
+MyIA.AI.Notebooks/RL/rl_6b_actor_critic.ipynb,1ac6b512,markdown,fr,e0460499f1dfd0ad,"## Conclusion
 
 ### Recapitulatif des concepts
 
@@ -5045,7 +5074,7 @@ MyIA.AI.Notebooks/RL/rl_6b_actor_critic.ipynb,1ac6b512,markdown,fr,753885f694dd9
 - Sutton, R.S., McAllester, D.A., Singh, S.P. & Mansour, Y. (2000). Policy Gradient Methods for Reinforcement Learning with Function Approximation. NeurIPS 2000.
 - Sutton, R.S. & Barto, A.G. (2018). Reinforcement Learning: An Introduction (2nd ed.). MIT Press.
 
-",,,,,,,,753885f694dd9b51,,,,,,,
+",,,,,,,,e0460499f1dfd0ad,,,,,,,
 MyIA.AI.Notebooks/RL/rl_6c_ppo_from_scratch.ipynb,325cb5c9,markdown,fr,2d93325bc3446418,"# PPO (Proximal Policy Optimization) depuis zero
 
 **Serie** : Reinforcement Learning | **Notebook** : 6c/13 | **Duree estimee** : 45-50 min
@@ -6407,7 +6436,7 @@ MyIA.AI.Notebooks/RL/rl_6e_grpo_from_scratch.ipynb,76195727,code,fr,8cbb2a2f29c7
 # TODO etudiant : ajouter un Critic, advantage TD (PPO), comparer delta/params/temps vs GRPO.
 print(""Exercice 3 a completer : GRPO vs PPO (avec critic) sur le meme portefeuille synthetique."")
 ",,,,,,,,8cbb2a2f29c74075,,,,,,,
-MyIA.AI.Notebooks/RL/rl_6e_grpo_from_scratch.ipynb,3f93f64f,markdown,fr,112fb337151a22d9,"## 9. Ponts avec la serie
+MyIA.AI.Notebooks/RL/rl_6e_grpo_from_scratch.ipynb,3f93f64f,markdown,fr,7eb0bc5df965deb2,"## Ponts avec la serie
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
@@ -6429,7 +6458,7 @@ pour le meme objectif : ne pas s'effondrer.
 
 Voir aussi le [notebook de recherche QC](../QuantConnect/research/research_rl_grpo.ipynb) pour la version
 multi-actif sur donnees de marche reelles (panier anti-biais 24 actifs, config lourde).
-",,,,,,,,112fb337151a22d9,,,,,,,
+",,,,,,,,7eb0bc5df965deb2,,,,,,,
 MyIA.AI.Notebooks/RL/rl_7_multi_agent_rl.ipynb,m0a1e001,markdown,fr,9f70834b06664df2,"# RL-7 : Introduction a l'Apprentissage Multi-Agent
 
 **Serie** : Reinforcement Learning | **Notebook** : 7/13 | **Duree estimee** : 45-50 min
@@ -6883,7 +6912,7 @@ Les equilibres de Nash (utilises en RL multi-agent) sont formalises dans la seri
 ### Trading multi-agent
 
 Les marches financiers sont un environnement multi-agent par excellence : chaque trader est un agent qui apprend, et la dynamique du marche emerge des interactions de tous les participants. La serie [QuantConnect](../QuantConnect/README.md) implemente des strategies de trading dans un simulateur de marche ; le projet [Reinforcement-Learning-Trading](../QuantConnect/projects/Reinforcement-Learning-Trading/research.ipynb) en est un point d'entree RL sur donnees financieres reelles.",,,,,,,,ec3a53c41a3a85e6,,,,,,,
-MyIA.AI.Notebooks/RL/rl_7_multi_agent_rl.ipynb,o8c9e029,markdown,fr,9c0b0a05dfd74393,"## 9. Conclusion
+MyIA.AI.Notebooks/RL/rl_7_multi_agent_rl.ipynb,o8c9e029,markdown,fr,c5cab320ce99bd42,"## Conclusion
 
 | Concept | Description |
 |---------|-------------|
@@ -6912,7 +6941,7 @@ MyIA.AI.Notebooks/RL/rl_7_multi_agent_rl.ipynb,o8c9e029,markdown,fr,9c0b0a05dfd7
 - [PettingZoo documentation](https://pettingzoo.farama.org/)
 - Busoniu et al. (2008) - *A Comprehensive Survey of Multi-Agent Reinforcement Learning*
 - Papoudakis et al. (2021) - *Benchmarking Multi-Agent Deep Reinforcement Learning Algorithms*
-- Algorithms avances : QMIX, MAPPO, MADDPG",,,,,,,,9c0b0a05dfd74393,,,,,,,
+- Algorithms avances : QMIX, MAPPO, MADDPG",,,,,,,,c5cab320ce99bd42,,,,,,,
 MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,08828207,markdown,fr,115d293d0c7cf733,"# RL-8 : Model-Based RL — Dyna-Q et planification
 
 **Serie** : Reinforcement Learning | **Notebook** : 8/13 | **Duree estimee** : 45-50 min
@@ -7634,7 +7663,7 @@ final_rewards = None  # TODO etudiant : liste des recompenses cumulees finales,
 # point separe pour kappa=0) et commenter le kappa optimal.
 
 print(""Exercice 3 a completer"")",,,,,,,,1ddc2efed9d2d881,,,,,,,
-MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,7234522c,markdown,fr,cff05c14757dc845,"## 9. Conclusion et passerelles
+MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,7234522c,markdown,fr,8e45a6a7107406bc,"## Conclusion et passerelles
 
 ### Ce qu'il faut retenir
 
@@ -7670,7 +7699,7 @@ MyIA.AI.Notebooks/RL/rl_8_model_based_dyna_q.ipynb,7234522c,markdown,fr,cff05c14
 - Sutton & Barto, *Reinforcement Learning: An Introduction* (2e ed.), chapitre 8
 - Sutton (1990), *Integrated Architectures for Learning, Planning, and Reacting* (Dyna)
 - Moore & Atkeson (1993), *Prioritized Sweeping*
-- Silver et al. (2018), *AlphaZero* ; Schrittwieser et al. (2020), *MuZero*",,,,,,,,cff05c14757dc845,,,,,,,
+- Silver et al. (2018), *AlphaZero* ; Schrittwieser et al. (2020), *MuZero*",,,,,,,,8e45a6a7107406bc,,,,,,,
 MyIA.AI.Notebooks/RL/rl_9_offline_rl.ipynb,b73f69f6,markdown,fr,883ff555e8dbb0d7,"# RL-9 : RL offline — Behavior Cloning et erreur d'extrapolation
 
 **Serie** : Reinforcement Learning | **Notebook** : 9/13 | **Duree estimee** : 50-55 min
@@ -8102,3 +8131,269 @@ Ce notebook a parcouru le RL offline de bout en bout sur un probleme assez petit
 - Ross, Gordon, Bagnell (2011), *A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning* (DAgger), AISTATS
 - Rafailov et al. (2023), *Direct Preference Optimization: Your Language Model is Secretly a Reward Model*, NeurIPS
 - Sutton & Barto (2018), *Reinforcement Learning: An Introduction*, chap. 8 (labyrinthe fig. 8.2)",,,,,,,,58ef835a9d879d61,,,,,,,
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,f06ef340,markdown,fr,03d5a98c39e9616d,"### Lecture des resultats : que regarder ?
+
+L'evaluation ci-dessus a lance chaque strategie sur **50 graines aleatoires** independantes (pour lisser la variance inherente a un tirage Bernoulli). Les variables `mean_rewards` et `mean_regret` contiennent desormais les trajectoires moyennes. Les trois sorties suivantes se lisent ensemble :
+
+- **Figure 1 (gauche)** trace la recompense cumulee moyenne : une bonne strategie se rapproche de la droite ""Optimal"". **Figure 1 (droite)** trace le regret cumule, grandeur la plus discriminante car elle soustrait l'effet du hasard. Une pente **lineaire** signale une strategie qui n'apprend pas (Random) ; une pente **sous-lineaire** qui s'aplatit signale une strategie qui converge.
+- **Figure 2** mesure un signal plus fin : la frequence a laquelle chaque agent tire le *meilleur* bras. C'est le diagnostic de convergence — une strategie peut afficher un regret correct tout en selectionnant le meilleur bras trop tard.
+- Le **tableau recapitulatif** quantifie le regret final et le rattache a son **type asymptotique** (lineaire, sous-lineaire borne, $O(\log T)$).
+
+> **Astuce de lecture** : comparez d'abord les *pentes* du regret (Figure 1 droite) avant les valeurs finales du tableau — le type de croissance en dit plus sur la strategie qu'un seul nombre isole.
+",,,,,,,,03d5a98c39e9616d,,,,,,,
+MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb,33756095,markdown,fr,0f7891ec40a4c230,"### Un paradoxe apparent : Greedy bat UCB ?
+
+Le benchmark ci-dessus laisse une impression etrange : **Greedy gagne** (regret final le plus bas), tandis qu'UCB — repute asymptotiquement optimal — finit en mauvaise position. Faut-il en conclure que la theorie d'UCB est vide ? **Non** : ce resultat s'explique par le `n_warmup=10` genereux de notre Greedy, qui beneficie de 100 tirages d'initialisation gratuits pour identifier le meilleur bras avant meme de commencer a exploiter.
+
+La cellule suivante mene le test decisif : on relance la comparaison sur **plusieurs horizons** $T$ (de 1 000 a 30 000 pas) en reduisant cet avantage (warmup=1). C'est la que la *robustesse* d'UCB — exploration principée sans phase d'initialisation — doit apparaitre, et ou le Greedy trop confiant peut s'effondrer en se bloquant sur un bras sous-optimal.
+",,,,,,,,0f7891ec40a4c230,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-c3094261,markdown,fr,13e7407a1c520671,"# SAC (Soft Actor-Critic) depuis zero
+
+**Serie** : Reinforcement Learning | **Notebook** : 6d/13 | **Duree estimee** : 45-50 min
+
+**Navigation** : [[Notebook precedent] PPO](rl_6c_ppo_from_scratch.ipynb) | [Index](README.md) | [[Notebook suivant] Multi-Agent RL](rl_7_multi_agent_rl.ipynb)
+
+## Objectifs d'apprentissage
+
+A la fin de ce notebook, vous serez capable de :
+
+1. **Expliquer** le cadre du RL a entropie maximale et le role de la temperature alpha
+2. **Implementer** l'algorithme SAC avec twin Q-networks et reparameterisation
+3. **Comparer** SAC avec DQN, A2C et PPO en termes d'efficacite et de robustesse
+
+## Prerequis
+
+- **Notebook [Actor-Critic (A2C)](rl_6b_actor_critic.ipynb)** : architecture actor-critic, calcul de l'avantage
+- **Notebook [PPO](rl_6c_ppo_from_scratch.ipynb)** : politique stochastique, clipping
+- PyTorch (tenseurs, autograd, `torch.nn`, `torch.distributions`)
+- Concepts RL de base (policy, reward, discount, on-policy vs off-policy)
+
+**Duree estimee** : 45-50 minutes",,,,,,,,13e7407a1c520671,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-cf7f32af,markdown,fr,641a30f4d2da7574,"## Pourquoi SAC ?
+
+Dans les notebooks precedents, nous avons couvert quatre algorithmes :
+
+| Algorithme | Paradigme | Actions | Limite principale |
+|------------|-----------|---------|-------------------|
+| **DQN** | Off-policy, value-based | Discretes uniquement | Ne gere pas les actions continues |
+| **REINFORCE** | On-policy, policy-based | Discretes et continues | Variance elevee, lent |
+| **A2C** | On-policy, actor-critic | Discretes et continues | Sample-inefficace (1 passage par donnee) |
+| **PPO** | On-policy, actor-critic | Discretes et continues | Clipping limite l'exploration |
+
+**SAC** (Soft Actor-Critic, Haarnoja et al. 2018) combine le meilleur de ces mondes :
+
+1. **Off-policy** : reutilise les experiences via un replay buffer (comme DQN)
+2. **Actions continues** : politique gaussienne avec squashing (contrairement a DQN)
+3. **Entropie maximale** : l'agent maximise a la fois la recompense ET l'entropie de sa politique, ce qui encourage une exploration naturelle et robuste
+4. **Twin Q-networks** : deux critiques prennent le minimum de leurs estimations, reduisant la surestimation de Q
+
+SAC est l'algorithme de reference pour les environnements a actions continues. Il est sample-efficient, robuste aux hyperparametres, et converge souvent plus vite que PPO sur ces taches.",,,,,,,,641a30f4d2da7574,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-837311ca,markdown,fr,0c6558c3dabcb298,## 1. Setup et imports,,,,,,,,0c6558c3dabcb298,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-c24e32bd,markdown,fr,766c847a940d064e,"Nous travaillons sur **Pendulum-v1**, un environnement de controle classique avec un espace d'actions **continu** dans $[-2, 2]$. L'observation est un vecteur de dimension 3 (cos et sin de l'angle, vitesse angulaire). C'est un benchmark standard pour les algorithmes a actions continues.",,,,,,,,766c847a940d064e,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-052cf312,markdown,fr,b9103889c67a6267,"## 2. Le cadre du RL a entropie maximale
+
+L'innovation cle de SAC est de **maximiser simultanement** la recompense et l'entropie de la politique. L'objectif devient :
+
+$$J(\pi) = \sum_{t=0}^{T} \mathbb{E}_{(s_t, a_t) \sim \rho_\pi}\left[r(s_t, a_t) + \alpha \, H\big(\pi(\cdot|s_t)\big)\right]$$
+
+ou $H(\pi) = -\int \pi(a|s) \log \pi(a|s) \, da$ est l'entropie de la politique et $\alpha > 0$ est le **coefficient de temperature**.
+
+**Pourquoi maximiser l'entropie ?**
+- **Exploration** : une politique a haute entropie explore plus diversement les actions possibles
+- **Robustesse** : l'agent ne s'engage pas prematurement sur une strategie sub-optimale
+- **Multi-modalite** : si plusieurs strategies sont aussi bonnes, l'agent les preserve toutes
+
+Le parametre $\alpha$ controle le compromis exploitation/exploration. SAC propose un reglage **automatique** de $\alpha$ (auto-tuning) en traitant $\alpha$ comme un parametre apprenable.",,,,,,,,b9103889c67a6267,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-c1df0067,markdown,fr,807b30ce4d7b74e3,### 2.1 Visualisation : entropie de differentes distributions,,,,,,,,807b30ce4d7b74e3,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-8acac39f,markdown,fr,065209aca2203301,"### Interpretation : entropie et exploration
+
+**Sortie obtenue** : trois gaussiennes avec des ecarts-types croissants.
+
+| Distribution | sigma | Entropie | Comportement agent |
+|-------------|-------|----------|--------------------|
+| Deterministe | 0.1 | ~0.6 (faible) | Exploite une seule action |
+| Stochastique | 1.0 | ~1.42 | Equilibre exploration/exploitation |
+| Haute entropie | 2.0 | ~2.11 | Explore largement l'espace |
+
+**Point cle** : SAC maximise l'entropie, donc il pousse naturellement la politique vers la distribution de droite tout en maximisant la recompense. Cela produit un agent plus robuste.",,,,,,,,065209aca2203301,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-fbed0978,markdown,fr,7f5bd12be3dff337,"## 3. Composants de SAC
+
+SAC comporte quatre composants principaux :
+
+| Composant | Role | Analogie |
+|-----------|------|----------|
+| **GaussianPolicy** (Actor) | Politique $\pi_\phi(a|s)$ gaussienne avec squashing tanh | Comme l'actor de A2C, mais pour actions continues |
+| **TwinQNetwork** (Critic) | Deux Q-networks $Q_{\theta_1}, Q_{\theta_2}$ ; on prend le minimum | Comme DQN, mais deux reseaux reduisent la surestimation |
+| **Target networks** | Copies lentes des Q-networks pour stabiliser l'apprentissage | Identique au target network de DQN |
+| **Temperature alpha** | Parametre apprenable qui controle le poids de l'entropie | Remplace le epsilon de epsilon-greedy |",,,,,,,,7f5bd12be3dff337,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-8221d887,markdown,fr,215e9cb2452a4648,"### 3.1 Replay Buffer
+
+SAC est off-policy : il stocke les transitions $(s, a, r, s', done)$ dans un buffer et echantillonne des mini-lots pour l'apprentissage. Cela permet de reutiliser chaque experience plusieurs fois.",,,,,,,,215e9cb2452a4648,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-fb3b5f1c,markdown,fr,728e668858434514,"### 3.2 Politique gaussienne (Actor)
+
+L'actor de SAC produit une **distribution gaussienne** $\mathcal{N}(\mu(s), \sigma^2(s))$ sur les actions. Pour garantir que les actions restent dans $[-1, 1]$, on applique un **squashing tanh** avec la correction de log-probabilite correspondante.
+
+$$a = \tanh(\mu + \sigma \cdot \epsilon), \quad \epsilon \sim \mathcal{N}(0, 1)$$
+
+Le **log_prob** est corrige pour tenir compte du changement de variable :
+
+$$\log \pi(a|s) = \log \mu_{\mathcal{N}}(u) - \sum_{i=1}^{D} \log(1 - \tanh^2(u_i))$$",,,,,,,,728e668858434514,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-f7ab7d2a,markdown,fr,ed0e71814b7d2bfc,"Le **reparameterization trick** (`rsample`) est essentiel : il permet aux gradients de circuler a travers l'echantillonnage stochastique, ce qui rend possible l'optimisation de la politique par descente de gradient.",,,,,,,,ed0e71814b7d2bfc,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-559b4f34,markdown,fr,61a78e5a09676172,"### 3.3 Twin Q-Networks (Critic)
+
+SAC utilise **deux Q-networks** et prend le minimum de leurs estimations pour reduire la surestimation de la valeur Q. C'est le meme principe que TD3 (Twin Delayed DDPG). Chaque Q-network est un MLP simple.",,,,,,,,61a78e5a09676172,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-b735d478,markdown,fr,8c19288bb4f057be,"L'entree du Q-network est la concatenation $[s, a]$ de l'etat et de l'action. Les deux reseaux Q1 et Q2 ont la meme architecture mais des poids independants. Lors de l'apprentissage, on utilise $\min(Q_1, Q_2)$ comme cible pour la mise a jour du critic.",,,,,,,,8c19288bb4f057be,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-0926a70f,markdown,fr,5df06cff3ddf9831,"## 4. Algorithme SAC
+
+L'algorithme SAC effectue trois mises a jour a chaque pas de temps :
+
+### 4.1 Mise a jour du Critic
+
+La cible Q est calculee avec les **target networks** et l'entropie :
+
+$$y = r + \gamma \left[\min(Q_{\bar{\theta}_1}(s', \tilde{a}'), Q_{\bar{\theta}_2}(s', \tilde{a}')) - \alpha \log \pi(\tilde{a}'|s')\right]$$
+
+ou $\tilde{a}' \sim \pi(\cdot|s')$ est echantillonne depuis la politique courante. On minimise ensuite $\frac{1}{2}(Q_\theta(s,a) - y)^2$ pour les deux Q-networks.
+
+### 4.2 Mise a jour de l'Actor
+
+L'actor maximise $Q - \alpha \log \pi$ :
+
+$$L_\phi = \mathbb{E}_{s \sim \mathcal{D}}\left[\alpha \log \pi_\phi(\tilde{a}|s) - \min(Q_{\theta_1}(s, \tilde{a}), Q_{\theta_2}(s, \tilde{a}))\right]$$
+
+### 4.3 Mise a jour de la temperature (auto-tuning)
+
+On apprend $\alpha$ pour atteindre une entropie cible $\bar{H}$ :
+
+$$L_\alpha = \mathbb{E}_{a \sim \pi}\left[-\alpha (\log \pi(a|s) + \bar{H})\right]$$
+
+avec $\bar{H} = -\dim(\mathcal{A})$ comme heuristique standard (entropie cible = dimension de l'espace d'actions avec un signe negatif).",,,,,,,,5df06cff3ddf9831,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-56ecf37f,markdown,fr,61fdcc91595c92d0,"### Points cles de l'implementation
+
+| Mecanisme | Detail |
+|-----------|--------|
+| **Soft update** | $\theta_{target} \leftarrow \tau \theta + (1-\tau) \theta_{target}$ avec $\tau = 0.005$ (moyenne exponentielle lente) |
+| **Clipped double Q** | $\min(Q_1, Q_2)$ reduit la surestimation sans introduire de biais negatif |
+| **Reparameterization** | `rsample()` permet les gradients a travers l'echantillonnage |
+| **Auto-alpha** | `log_alpha` est un parametre apprenable, `alpha = exp(log_alpha)` reste positif |
+| **Tanh squashing** | Les actions sont projetees dans $[-1, 1]$ puis mises a l'echelle de l'environnement |",,,,,,,,61fdcc91595c92d0,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-b0485c05,markdown,fr,46861176693732a5,## 5. Entrainement sur Pendulum-v1,,,,,,,,46861176693732a5,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-ea0826c6,markdown,fr,a19ec8f9e5e44777,"La boucle d'entrainement suit le schema classique off-policy :
+1. Collecter une transition $(s, a, r, s', done)$ dans l'environnement
+2. La stocker dans le replay buffer
+3. Echantillonner un mini-lot et mettre a jour les reseaux
+4. Repeter
+
+Nous entrainons pendant 200 episodes (rappel : scafold court, CPU-only).",,,,,,,,a19ec8f9e5e44777,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-14b0fce8,markdown,fr,dba50053cf4179ab,### Interpretation : courbe d'apprentissage SAC,,,,,,,,dba50053cf4179ab,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-114ab189,markdown,fr,a704692d9e7baf57,"**Sortie obtenue** : la courbe montre une progression typique de SAC sur Pendulum-v1.
+
+| Metrique | Valeur attendue | Signification |
+|----------|----------------|---------------|
+| Reward initial | ~-1600 a -800 | Politique aleatoire, pendule tombe |
+| Reward final (50 ep) | ~-200 a -100 | Pendule equilibre la plupart du temps |
+| Alpha final | ~0.1-0.3 | Temperature auto-adjustee |
+| Convergence | Episode 100-150 | SAC apprend vite grace au replay buffer |
+
+**Points cles** :
+1. SAC est **off-policy** : il reutilise les experiences passees, donc il apprend plus vite qu'A2C ou PPO
+2. La temperature alpha decroit naturellement au fil de l'entrainement (moins besoin d'explorer)
+3. Pendulum-v1 est un probleme de controle continu : impossible avec DQN pur",,,,,,,,a704692d9e7baf57,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-96df13bb,markdown,fr,68d66cf13722b208,## 6. Exercices,,,,,,,,68d66cf13722b208,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-e0f85535,markdown,fr,7f6b6f5c31c2c473,"### Exercice 1 : Planification de la temperature
+
+Dans cette version de SAC, la temperature alpha est apprise automatiquement. Implementez une **planification manuelle** de alpha qui decroit lineairement au fil de l'entrainement.
+
+**Objectif** : observer comment le profil d'exploration affecte la convergence.
+
+**Indices** :
+- # Indice : Alpha initialement eleve (ex: 0.5) encourage l'exploration ; alpha final bas (ex: 0.05) favorise l'exploitation
+- # Indice : Vous pouvez modifier la boucle d'entrainement pour calculer alpha en fonction du numero d'episode
+- # Indice : Comparez avec la courbe SAC auto-tune obtenue ci-dessus
+
+**Etapes** :
+- # Etape 1 : Modifiez SACAgent pour accepter un alpha fixe (desactivez auto-tuning)
+- # Etape 2 : Dans train_sac, calculez alpha = alpha_start + (alpha_end - alpha_start) * episode / num_episodes
+- # Etape 3 : Lancez l'entrainement et comparez la courbe avec auto-tuning",,,,,,,,7f6b6f5c31c2c473,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-a37b83ed,markdown,fr,9e30797c6a7cc86d,"### Exercice 2 : Ablation des twin Q-networks
+
+SAC utilise deux Q-networks et prend le minimum pour reduire la surestimation. Comparez SAC avec **un seul Q-network** (sans le min) et la version twin.
+
+**Objectif** : mesurer l'impact du clipped double Q-learning sur la stabilite.
+
+**Indices** :
+- # Indice : Dans SACAgent.update(), remplacez `torch.min(q1_target, q2_target)` par `q1_target` uniquement
+- # Indice : Vous pouvez aussi ne mettre a jour que Q1 et laisser Q2 inutilise
+- # Indice : Observez si la courbe de reward est plus instable ou plus basse
+
+**Etapes** :
+- # Etape 1 : Creez un agent SAC avec un seul Q-network (ou ignorez Q2)
+- # Etape 2 : Entrainez sur Pendulum-v1 avec les memes hyperparametres
+- # Etape 3 : Superposez les deux courbes de reward (twin vs single)",,,,,,,,9e30797c6a7cc86d,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-49873c3f,markdown,fr,2f256bad6862f50b,"### Exercice 3 : Adapter SAC a un autre environnement
+
+Adaptez l'agent SAC pour fonctionner sur **LunarLanderContinuous-v2** (atterrissage d'un module lunaire avec actions continues). Cet environnement a un espace d'observation different (dim=8) et un espace d'action different (dim=2, dans $[-1, 1]$).
+
+**Objectif** : verifier que l'implementation SAC est generique et fonctionne sur differents environnements.
+
+**Indices** :
+- # Indice : LunarLanderContinuous-v2 : state_dim=8, action_dim=2, max_action=1.0
+- # Indice : L'environnement peut nécessiter l'installation du package `gymnasium[box2d]`
+- # Indice : Si LunarLanderContinuous-v2 n'est pas disponible, utilisez Pendulum-v1 avec un hidden_dim different (32 puis 128) et comparez
+
+**Etapes** :
+- # Etape 1 : Creez l'environnement LunarLanderContinuous-v2 (ou Pendulum avec hidden_dim modifie)
+- # Etape 2 : Initialisez un SACAgent avec les bonnes dimensions
+- # Etape 3 : Entrainez et observez si la convergence est similaire",,,,,,,,2f256bad6862f50b,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-2bb70d23,markdown,fr,3afc5a694c486f76,"## 7. Comparaison SAC vs DQN / A2C / PPO
+
+Apres avoir implemente SAC, voici une synthese des algorithmes couverts dans cette serie :
+
+| Aspect | DQN | REINFORCE | A2C | PPO | SAC |
+|--------|-----|-----------|-----|-----|-----|
+| **Paradigme** | Value-based | Policy-based | Actor-Critic | Actor-Critic | Actor-Critic |
+| **Policy** | Epsilon-greedy | Stochastique | Stochastique | Stochastique | Gaussienne + tanh |
+| **On/Off-policy** | Off-policy | On-policy | On-policy | On-policy | Off-policy |
+| **Actions** | Discretes | Disc. + Cont. | Disc. + Cont. | Disc. + Cont. | Continues |
+| **Sample efficiency** | Elevee | Faible | Moyenne | Moyenne | Elevee |
+| **Entropie** | N/A | Bonus optionnel | Bonus fixe | Bonus fixe | Maximisee (alpha auto) |
+| **Replay buffer** | Oui | Non | Non | Non | Oui |
+| **Target network** | Oui (hard copy) | Non | Non | Non | Oui (soft update) |
+| **Robustesse** | Moyenne | Faible | Moyenne | Bonne | Tres bonne |
+
+**Quand utiliser SAC ?**
+- Actions continues (robotique, controle moteur, trading)
+- Sample efficiency importante (peu d'interactions avec l'environnement)
+- Robustesse aux hyperparametres (SAC est tolerante aux mauvais choix de lr)",,,,,,,,3afc5a694c486f76,,,,,,,
+MyIA.AI.Notebooks/RL/rl_6d_sac_from_scratch.ipynb,cell-9de85a75,markdown,fr,bc003fe7a7bc2f22,"## Conclusion
+
+Dans ce notebook, nous avons :
+
+| Concept | Ce que nous avons fait |
+|---------|----------------------|
+| **RL a entropie maximale** | Formula mathematique et visualisation de l'entropie |
+| **Politique gaussienne** | Implementation avec squashing tanh et correction log_prob |
+| **Twin Q-networks** | Double critique pour reduire la surestimation |
+| **Temperature automatique** | Alpha appris comme parametre reseau |
+| **Algorithme SAC complet** | Off-policy avec replay buffer et soft update |
+
+### Points cles a retenir
+
+1. **L'entropie maximale** est une regularisation naturelle qui rend SAC robuste et exploratoire
+2. **Off-policy + replay buffer** = sample efficient. Chaque experience est reutilisee plusieurs fois
+3. **Le min(Q1, Q2)** reduit le biais de surestimation sans le eliminer completement
+4. **La temperature auto** adapte le niveau d'exploration au fil de l'apprentissage
+
+### Pour aller plus loin
+
+- **TD3** : Twin Delayed DDPG, autre algorithme off-policy pour actions continues
+- **SAC + HER** : SAC combine avec Hindsight Experience Replay pour les taches a objectifs
+- **SAC discret** : Adaptation de SAC pour les espaces d'actions discrets
+- **Multi-agent** : Le notebook [RL-7 Multi-Agent](rl_7_multi_agent_rl.ipynb) aborde le RL multi-agent
+
+### References
+
+- Haarnoja et al. (2018) - *Soft Actor-Critic: Off-Policy Maximum Entropy Deep RL with a Stochastic Actor*
+- Haarnoja et al. (2018) - *Soft Actor-Critic Algorithms and Applications*
+- Sutton & Barto, *Reinforcement Learning: An Introduction*, Chapter 13
+- [Spinning Up - SAC](https://spinningup.openai.com/en/latest/algorithms/sac.html)",,,,,,,,bc003fe7a7bc2f22,,,,,,,
