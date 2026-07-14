@@ -48,4 +48,4 @@ require mathlib from git
 
 @[default_target]
 lean_lib «Sudoku» where
-  globs := #[.submodules `Sudoku]
+  globs := #[.submodules `Sudoku, `Sudoku_en]
