@@ -47,10 +47,10 @@ Cette série est **5ᵉ dans le rollout** à présenter exclusivement des **figu
 
 ## Voir aussi
 
-- [c.486 Probas/DecisionTheory/PyMC MANIFEST](../DecisionTheory/PyMC/assets/readme/MANIFEST.md) — pattern frère (audit fondateur G.1 + corrections réelles dt2/dt3 + enrichissement dt5)
-- [c.488b ML racine MANIFEST](../../ML/assets/readme/MANIFEST.md) — pattern frère (dette cumulative mineure 4/6 ACCURATE + 2/6 enrichissements)
-- [c.490 GameTheory racine MANIFEST](../../GameTheory/assets/readme/MANIFEST.md) — pattern frère (6/6 ACCURATE + 6 corrections enrichissement croisant README in-situ)
-- [c.490b GenAI/Audio racine MANIFEST](../../GenAI/Audio/assets/readme/MANIFEST.md) — pattern frère (5ᵉ profil = dette cumulative majeure, swap correctif NON TENTÉ)
-- [c.479 GenAI/Texte racine MANIFEST](../../GenAI/Texte/assets/readme/MANIFEST.md) — pattern frère (3/3 ACCURATE, format standard déjà en place)
-- [c.489 RL racine MANIFEST](../../RL/assets/readme/MANIFEST.md) — pattern frère (6/6 ACCURATE, attribution cellule corrigée)
+- [c.486 Probas/DecisionTheory/PyMC MANIFEST](../../DecisionTheory/PyMC/assets/readme/MANIFEST.md) — pattern frère (audit fondateur G.1 + corrections réelles dt2/dt3 + enrichissement dt5)
+- [c.488b ML racine MANIFEST](../../../ML/assets/readme/MANIFEST.md) — pattern frère (dette cumulative mineure 4/6 ACCURATE + 2/6 enrichissements)
+- [c.490 GameTheory racine MANIFEST](../../../GameTheory/assets/readme/MANIFEST.md) — pattern frère (6/6 ACCURATE + 6 corrections enrichissement croisant README in-situ)
+- [c.490b GenAI/Audio racine MANIFEST](../../../GenAI/Audio/assets/readme/MANIFEST.md) — pattern frère (5ᵉ profil = dette cumulative majeure, swap correctif NON TENTÉ)
+- [c.479 GenAI/Texte racine MANIFEST](../../../GenAI/Texte/assets/readme/MANIFEST.md) — pattern frère (3/3 ACCURATE, format standard déjà en place)
+- [c.489 RL racine MANIFEST](../../../RL/assets/readme/MANIFEST.md) — pattern frère (6/6 ACCURATE, attribution cellule corrigée)
 - issue [#5780](../../../issues/5780) ; EPIC [#5654](../../../issues/5654)
