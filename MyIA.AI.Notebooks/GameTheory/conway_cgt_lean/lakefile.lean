@@ -27,11 +27,19 @@ package «conway_cgt» where
     ⟨`autoImplicit, false⟩
   ]
 
-require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git"
-
+-- require order: CombinatorialGames first, mathlib LAST.
+-- Reason (cf issue #6419): Lake resolves transitive pins in declaration
+-- order; the LAST `require` wins for shared deps (Batteries / Aesop /
+-- Plausible). With mathlib first, CombinatorialGames transitively pinned
+-- older versions that mismatched what mathlib resolves -> `mathlib:
+-- failed to fetch cache` + build failures on Batteries.Data.Nat.Basic,
+-- Plausible.Testable, Aesop.Builder.Forward. Reordering so mathlib is
+-- last lets Mathlib's versions win and resolves the mismatch.
 require CombinatorialGames from git
   "https://github.com/vihdzp/combinatorial-games.git"
+
+require mathlib from git
+  "https://github.com/leanprover-community/mathlib4.git"
 
 @[default_target]
 lean_lib «CGTTour» where
