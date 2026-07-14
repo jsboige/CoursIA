@@ -45,8 +45,8 @@ Avant de produire des visuels pédagogiques, il faut maîtriser les outils de g�
 La première étape est un simple appel d'API : on décrit l'image en langage naturel et le modèle cloud renvoie un visuel. C'est le point d'entrée le plus accessible — pas de GPU, pas de configuration, juste une clé.
 
 <p align="center">
-  <a href="01-Foundation/01-1-OpenAI-DALL-E-3.ipynb"><img src="assets/readme/dalle3-cover.webp" width="320" alt="Couverture : portrait illustré généré par DALL-E 3 depuis un prompt textuel."></a><br>
-  <em>Sortie du notebook <a href="01-Foundation/01-1-OpenAI-DALL-E-3.ipynb">01-1</a> : portrait illustré produit par gpt-image-1 depuis un prompt textuel. Une seule requête API, zéro infrastructure locale.</em>
+  <a href="01-Foundation/01-1-OpenAI-DALL-E-3.ipynb"><img src="assets/readme/dalle3-cover.webp" width="320" alt="Paysage urbain futuriste cyberpunk au coucher de soleil (voitures volantes, gratte-ciels néon, enseignes holographiques, foule de silhouettes) généré par gpt-image-1."></a><br>
+  <em>Sortie du notebook <a href="01-Foundation/01-1-OpenAI-DALL-E-3.ipynb">01-1</a> : paysage urbain futuriste produit par gpt-image-1 depuis un prompt textuel. Une seule requête API, zéro infrastructure locale.</em>
 </p>
 
 | Notebook | Contenu | Service |
@@ -62,15 +62,15 @@ La première étape est un simple appel d'API : on décrit l'image en langage na
 Une fois le cloud maîtrisé, la génération **locale** via ComfyUI ouvre le contrôle fin : choix du sampler, de la seed, du checkpoint. SD XL Turbo ([01-4](01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb)) distille la diffusion pour une génération rapide sur GPU auto-hébergé :
 
 <p align="center">
-  <a href="01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb"><img src="assets/readme/forge-sdxl-turbo.webp" width="320" alt="Image SD XL Turbo : génération locale rapide via ComfyUI sur GPU auto-hébergé."></a><br>
-  <em>Sortie du notebook <a href="01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb">01-4</a> : image produite localement par SD XL Turbo, sans appel d'API.</em>
+  <a href="01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb"><img src="assets/readme/forge-sdxl-turbo.webp" width="320" alt="Chalet en bois dans une forêt de conifères sous la neige, généré localement par SD XL Turbo via Forge/ComfyUI."></a><br>
+  <em>Sortie du notebook <a href="01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb">01-4</a> : chalet hivernal produit localement par SD XL Turbo, sans appel d'API.</em>
 </p>
 
-L'autre apport du niveau foundation est l'**édition** : plutôt que de régénérer une image entière, Qwen Image Edit ([01-5](01-Foundation/01-5-Qwen-Image-Edit.ipynb)) ne recalcule que la zone masquée — moins coûteux et plus contrôlable. Le panneau ci-dessous montre l'avant/après d'un inpainting :
+L'autre apport du niveau foundation est l'**édition** : plutôt que de régénérer une image entière, Qwen Image Edit ([01-5](01-Foundation/01-5-Qwen-Image-Edit.ipynb)) ne recalcule que la zone masquée — moins coûteux et plus contrôlable. Le panneau ci-dessous illustre une **limitation assumée** : la cellule 18 output 3 du notebook a produit deux blocs bleus plats identiques (le pipeline n'a pas reçu d'image source pour ce test d'inpainting) :
 
 <p align="center">
-  <a href="01-Foundation/01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/qwen-edit-panel.png" width="420" alt="Édition Qwen Image Edit : panneau avant/après d'inpainting sur une zone masquée."></a><br>
-  <em>Sortie du notebook <a href="01-Foundation/01-5-Qwen-Image-Edit.ipynb">01-5</a> : panneau avant/après d'un inpainting Qwen sur une zone masquée.</em>
+  <a href="01-Foundation/01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/qwen-edit-panel.png" width="420" alt="Panneau avant/après Qwen Image Edit — limitation illustrée : deux blocs bleus plats identiques (sortie de cellule sans contenu généré, le pipeline n'a pas reçu d'image source)."></a><br>
+  <em>Sortie du notebook <a href="01-Foundation/01-5-Qwen-Image-Edit.ipynb">01-5</a> : panneau Originale/Editée — limitation assumée, blocs bleus plats identiques (cellule sans image source).</em>
 </p>
 
 ### 02-Advanced - Modèles avancés
@@ -80,8 +80,8 @@ Un visuel éducatif de qualité demande des outils plus précis : édition d'ima
 Le porte-drapeau de ce niveau pour la **qualité** est FLUX.1 ([02-2](02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb)) : un rendu photo-réaliste fidèle au prompt détaillé, là où gpt-image-1 tend à lisser les textures complexes.
 
 <p align="center">
-  <a href="02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb"><img src="assets/readme/flux1-advanced.webp" width="360" alt="Génération FLUX.1 : rendu photo-réaliste haute qualité avec contrôle de prompt avancé."></a><br>
-  <em>Sortie du notebook <a href="02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb">02-2</a> : rendu FLUX.1 — fidélité de texture et suivi de prompt avancé.</em>
+  <a href="02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb"><img src="assets/readme/flux1-advanced.webp" width="360" alt="Jardin japonais zen au coucher de soleil (cerisier en fleurs, maison traditionnelle, gravier ratissé, rochers moussus) généré par FLUX.1-schnell en 4 steps via ComfyUI."></a><br>
+  <em>Sortie du notebook <a href="02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb">02-2</a> : jardin zen rendu par FLUX.1-schnell — fidélité de texture et suivi de prompt avancé.</em>
 </p>
 
 | Notebook | Contenu | Service |
@@ -97,17 +97,17 @@ Le porte-drapeau de ce niveau pour la **qualité** est FLUX.1 ([02-2](02-Advance
 À l'opposé de FLUX.1 côté **légèreté**, Z-Image/Lumina2 ([02-4](02-Advanced/02-4-Z-Image-Lumina2.ipynb)) vise une génération rapide pour le prototypage — un compromis qualité/débit utile pour itérer sur un prompt avant de lancer un rendu lourd :
 
 <p align="center">
-  <a href="02-Advanced/02-4-Z-Image-Lumina2.ipynb"><img src="assets/readme/lumina2-zimage.webp" width="320" alt="Z-Image / Lumina2 : génération diffuse alternative, comparée aux modèles précédents."></a><br>
-  <em>Sortie du notebook <a href="02-Advanced/02-4-Z-Image-Lumina2.ipynb">02-4</a> : génération Z-Image/Lumina2, alternative diffuse rapide comparée aux modèles précédents.</em>
+  <a href="02-Advanced/02-4-Z-Image-Lumina2.ipynb"><img src="assets/readme/lumina2-zimage.webp" width="320" alt="Multi-Variations sd35 — limitation illustrée : trois blocs plats colorés (photorealistic/watercolor/anime) sans contenu généré (sortie de cellule sans rendu effectif)."></a><br>
+  <em>Sortie du notebook <a href="02-Advanced/02-4-Z-Image-Lumina2.ipynb">02-4</a> : limitation assumée — la figure devrait illustrer une génération Z-Image, mais le fichier rendu sur disque est une variation plot sd35 sans contenu (mismatch d'attribution, investigation recommandée).</em>
 </p>
 
 ### 03-Orchestration - Multi-modèles
 
-En production, un seul modèle ne suffit pas toujours. Ce niveau compare les modèles entre eux pour choisir le bon selon le contexte, orchestre des pipelines de traitement (génération puis édition puis upscaling), et optimise les performances pour le déploiement. L'orchestration se matérialise par un **workflow ComfyUI** : un graphe de nœuds (Sampler, VAE, upscaler) que l'on enchaîne et exporte en JSON pour le rendre reproductible :
+En production, un seul modèle ne suffit pas toujours. Ce niveau compare les modèles entre eux pour choisir le bon selon le contexte, orchestre des pipelines de traitement (génération puis édition puis upscaling), et optimise les performances pour le déploiement. L'orchestration se matérialise par un **workflow ComfyUI** : un graphe de nœuds (Sampler, VAE, upscaler) que l'on enchaîne et exporte en JSON pour le rendre reproductible. **Note d'audit c.481** : la figure illustrative de cette section (`workflow-orchestration.png`) est en réalité une **génération Z-Image** (samouraï robot cyberpunk, attribuée à `02-4-Z-Image-Lumina2.ipynb` cellule 11 output 3) et non un graphe de workflow ComfyUI — l'attribution historique est à corriger (mismatch d'attribution, voir `assets/readme/MANIFEST.md`) :
 
 <p align="center">
-  <a href="03-Orchestration/03-2-Workflow-Orchestration.ipynb"><img src="assets/readme/workflow-orchestration.png" width="420" alt="Workflow ComfyUI orchestré : chaîne de nœuds (Sampler, VAE, upscaler) pour un pipeline de production."></a><br>
-  <em>Sortie du notebook <a href="03-Orchestration/03-2-Workflow-Orchestration.ipynb">03-2</a> : graphe de nœuds d'un workflow ComfyUI orchestré (Sampler, VAE, upscaler).</em>
+  <a href="02-Advanced/02-4-Z-Image-Lumina2.ipynb"><img src="assets/readme/workflow-orchestration.png" width="420" alt="Samouraï robot dans une ville cyberpunk japonaise sous la pluie (néons roses, kanji lumineux, reflets sur sol mouillé) — image générée par Z-Image Lumina2 (Lumina Diffusers)."></a><br>
+  <em>Sortie effective du notebook <a href="02-Advanced/02-4-Z-Image-Lumina2.ipynb">02-4</a> : samouraï robot cyberpunk généré par Z-Image Lumina2 (Lumina Diffusers). Le nom de fichier `workflow-orchestration.png` reflète une attribution historique incorrecte (le notebook 03-2 sur l'orchestration de workflows ComfyUI illustrerait plutôt un graphe de nœuds Sampler/VAE/upscaler exporté en PNG/JSON — non disponible ici, voir MANIFEST pour investigation).</em>
 </p>
 
 | Notebook | Contenu |
