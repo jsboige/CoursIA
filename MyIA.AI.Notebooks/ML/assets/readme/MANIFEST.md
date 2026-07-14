@@ -2,7 +2,7 @@
 
 Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks).
 
-**Audit G.1 fondateur** : relecture visuelle via outil `Read` par `myia-po-2025` le **2026-07-14** (cycle c.488 du rollout [issue #5780](../../../issues/5780)). Bilan : 4/6 ACCURATE mature + 2/6 corrections réelles (2 enrichissements ciblés). Migration format : table simple (vague-1) → liste détaillé standard (cf [c.469 SemanticWeb](../SemanticWeb/assets/readme/MANIFEST.md), [c.481 GenAI/Image racine](../Image/assets/readme/MANIFEST.md), [c.484 GenAI/Image/03-Orchestration](../Image/03-Orchestration/assets/readme/MANIFEST.md), [c.485 GenAI/Video/04-Applications](../Video/04-Applications/assets/readme/MANIFEST.md), [c.487 GenAI/Video racine](../Video/assets/readme/MANIFEST.md)).
+**Audit G.1 fondateur** : relecture visuelle via outil `Read` par `myia-po-2025` le **2026-07-14** (cycle c.488 du rollout [issue #5780](../../../issues/5780)). Bilan : 4/6 ACCURATE mature + 2/6 corrections réelles (2 enrichissements ciblés). Migration format : table simple (vague-1) → liste détaillé standard (cf [c.469 SemanticWeb](../../../SymbolicAI/SemanticWeb/assets/readme/MANIFEST.md), [c.481 GenAI/Image racine](../../../GenAI/Image/assets/readme/MANIFEST.md), [c.484 GenAI/Image/03-Orchestration](../../../GenAI/Image/03-Orchestration/assets/readme/MANIFEST.md), [c.485 GenAI/Video/04-Applications](../../../GenAI/Video/04-Applications/assets/readme/MANIFEST.md), [c.487 GenAI/Video racine](../../../GenAI/Video/assets/readme/MANIFEST.md)).
 
 ---
 
@@ -103,4 +103,4 @@ Toutes les attributions source du MANIFEST sont confirmées par investigation `n
 - L143 secrets-hygiene : 0 secret inline dans le diff.
 - C.3 strict : aucune ré-exécution Papermill, aucune cellule notebook touchée.
 
-**Voir aussi** : [c.487 GenAI/Video racine](../Video/assets/readme/MANIFEST.md) — pattern frère (audit fondateur G.1 sur MANIFEST vague-1 non migré) ; [c.485 GenAI/Video/04-Applications](../Video/04-Applications/assets/readme/MANIFEST.md) — pattern frère (audit fondateur tardif post-transition #6157) ; [c.481 GenAI/Image racine](../Image/assets/readme/MANIFEST.md) — pattern frère (dette cumulative racine pré-doctrine) ; issue [#5780](../../../issues/5780) ; EPIC [#5654](../../../issues/5654).
+**Voir aussi** : [c.487 GenAI/Video racine](../../../GenAI/Video/assets/readme/MANIFEST.md) — pattern frère (audit fondateur G.1 sur MANIFEST vague-1 non migré) ; [c.485 GenAI/Video/04-Applications](../../../GenAI/Video/04-Applications/assets/readme/MANIFEST.md) — pattern frère (audit fondateur tardif post-transition #6157) ; [c.481 GenAI/Image racine](../../../GenAI/Image/assets/readme/MANIFEST.md) — pattern frère (dette cumulative racine pré-doctrine) ; issue [#5780](../../../issues/5780) ; EPIC [#5654](../../../issues/5654).
