@@ -22,6 +22,12 @@ Usage :
     python scripts/translation/extract_cells_to_csv.py <notebook.ipynb | dir/> [-o CSV]
     python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/
 
+    # Mode --update : met à jour un CSV EXISTANT pour les notebooks donnés, sans
+    # écraser les autres entrées ni perdre les colonnes remplies par T3 (moteur
+    # Argumentum : text_en, hash_en, ...). Les colonnes cibles non-pivot sont
+    # préservées verbatim si la ligne (notebook, cell_id) existe déjà.
+    python scripts/translation/extract_cells_to_csv.py notebook.ipynb --update existing.csv
+
 Le CSV est écrit par défaut sur stdout (rediriger vers translations/<famille>/<série>.csv).
 """
 
@@ -30,6 +36,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import io
 import json
 import sys
 from pathlib import Path
@@ -105,21 +112,202 @@ def extract_notebook(nb_path: Path, repo_root: Path, src_lang: str) -> list[dict
     return rows
 
 
-def iter_notebooks(target: Path) -> list[Path]:
-    """Résout un fichier .ipynb ou un répertoire en liste de notebooks.
+def iter_notebooks(targets: list[Path]) -> list[Path]:
+    """Résout une liste de chemins (notebooks .ipynb et/ou répertoires) en
+    liste triée et dédupliquée de notebooks.
 
     Exclut les artefacts `_output.ipynb` (sorties Papermill) et les variantes
     `_agent.ipynb` (auto-générées, hors périmètre traduction). On utilise
     `endswith` (et non un substring `in`) pour ne pas exclure par erreur un
     notebook légitime comme `foo_output.ipynb`.
     """
-    if target.is_file():
-        return [target]
-    return sorted(
-        p
-        for p in target.rglob("*.ipynb")
-        if not p.name.endswith("_output.ipynb") and not p.name.endswith("_agent.ipynb")
+    seen: set[Path] = set()
+    out: list[Path] = []
+    for target in targets:
+        if target.is_file():
+            if target not in seen:
+                seen.add(target)
+                out.append(target)
+        elif target.is_dir():
+            for p in sorted(target.rglob("*.ipynb")):
+                if p in seen:
+                    continue
+                if p.name.endswith("_output.ipynb") or p.name.endswith("_agent.ipynb"):
+                    continue
+                seen.add(p)
+                out.append(p)
+        else:
+            print(f"WARNING : {target} introuvable, ignoré.", file=sys.stderr)
+    return out
+
+
+def load_existing_csv(csv_path: Path) -> list[dict]:
+    """Charge un CSV existant en liste de dicts (préserve l'ordre des lignes).
+
+    Le CSV doit employer le schéma ratifié (#4957 §1). Si une ligne n'a pas
+    toutes les colonnes (CSV créé par une version antérieure du script), les
+    clés manquantes sont remplies avec la chaîne vide pour rester compatible
+    avec DictWriter.
+    """
+    with csv_path.open(encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        rows = []
+        for row in reader:
+            for col in COLUMNS:
+                row.setdefault(col, "")
+            rows.append(row)
+    return rows
+
+
+def update_existing_csv(
+    existing_rows: list[dict],
+    fresh_rows: list[dict],
+    target_notebooks: set[str],
+) -> tuple[list[dict], dict]:
+    """Met à jour les lignes existantes pour les notebooks cibles, sans toucher
+    aux autres entrées du CSV.
+
+    Stratégie :
+    - Indexation par (notebook, cell_id) -> ligne existante.
+    - Pour chaque ligne fraîche du/des notebooks cibles, on update les champs
+      pivot (`src_hash`, `text_fr`, `hash_fr`, `cell_type` au cas où il aurait
+      changé). Les autres colonnes (text_en, hash_en, ...) sont **préservées**
+      si la ligne existait déjà — c'est crucial : T3 (moteur Argumentum) aura
+      pu déposer des traductions qu'on ne veut PAS écraser.
+    - Si une cellule fraîche n'a pas de ligne correspondante, on **append** en
+      fin (cas légitime : nouvelle cellule ajoutée au notebook depuis la
+      dernière extraction).
+    - Les lignes existantes pour des notebooks HORS cible sont conservées
+      verbatim (octet pour octet sur les champs texte).
+    - Les lignes existantes pour les notebooks cibles qui n'ont PAS de
+      cellule fraîche correspondante sont **conservées** aussi (cellule
+      supprimée -> ORPHAN_ROW ; le check_translation_sync.py le signalera,
+      on ne détruit pas la ligne sans décision humaine).
+
+    Le rapport `stats` est calculé en **pré-update** (vrai diff contre l'état
+    initial du CSV) pour donner une lecture actionable : "12 lignes ont
+    effectivement changé de src_hash" plutôt que "0 ligne modifiée" après le
+    passage qui les a justement toutes mises à jour.
+
+    Returns (rows_updated, stats) où stats détaille :
+      updated     : nb de lignes existantes dont au moins un champ pivot a
+                    effectivement changé (calculé en pré-update)
+      unchanged   : nb de lignes cibles déjà in-sync (cas idem-pas-de-diff)
+      appended    : nb de nouvelles lignes ajoutées en fin
+      kept_other  : nb de lignes d'autres notebooks conservées verbatim
+      kept_orphan : nb de lignes cibles dont la cellule n'a pas été
+                    retrouvée dans le notebook
+    """
+    # Index existant par (notebook, cell_id) -> position dans la liste
+    index: dict[tuple[str, str], int] = {}
+    for i, row in enumerate(existing_rows):
+        key = (row.get("notebook", ""), row.get("cell_id", ""))
+        if key not in index:
+            # En cas de doublon (ne devrait pas arriver avec un CSV propre),
+            # on garde la première occurrence.
+            index[key] = i
+
+    PIVOT_COLS = ("src_lang", "src_hash", "text_fr", "hash_fr", "cell_type")
+
+    # 1) Calculer le diff en PRÉ-update (avant de muter existing_rows).
+    pre_updated = 0
+    pre_unchanged = 0
+    for fresh in fresh_rows:
+        key = (fresh["notebook"], fresh["cell_id"])
+        if key in index:
+            existing = existing_rows[index[key]]
+            if any(existing.get(c) != fresh[c] for c in PIVOT_COLS):
+                pre_updated += 1
+            else:
+                pre_unchanged += 1
+
+    # 2) Appliquer les updates (mute existing_rows in place).
+    fresh_keys: set[tuple[str, str]] = set()
+    appended = 0
+    for fresh in fresh_rows:
+        key = (fresh["notebook"], fresh["cell_id"])
+        fresh_keys.add(key)
+        if key in index:
+            existing = existing_rows[index[key]]
+            for pivot_col in PIVOT_COLS:
+                if existing.get(pivot_col) != fresh[pivot_col]:
+                    existing[pivot_col] = fresh[pivot_col]
+        else:
+            existing_rows.append(fresh)
+            appended += 1
+
+    # 3) Compteurs finaux (post-update).
+    kept_orphan = sum(
+        1
+        for r in existing_rows
+        if r.get("notebook") in target_notebooks
+        and (r.get("notebook", ""), r.get("cell_id", "")) not in fresh_keys
     )
+    kept_other = sum(
+        1 for r in existing_rows if r.get("notebook") not in target_notebooks
+    )
+
+    stats = {
+        "updated": pre_updated,
+        "unchanged": pre_unchanged,
+        "appended": appended,
+        "kept_other": kept_other,
+        "kept_orphan": kept_orphan,
+    }
+    return existing_rows, stats
+
+
+def write_csv(rows: list[dict], output: Path | None) -> str:
+    """Écrit les lignes au format CSV. Retourne le sink pour le rapport stderr.
+
+    Politique d'encodage/newlines (cf L268 — LF-only strict dépôt) :
+    - `newline=""` est l'invariant CSV (laissée à csv.writer) MAIS on interdit
+      ensuite tout `\r` dans le flux final. `csv.writer` écrit `\r\n` sur
+      toute plateforme (cf doc Python) → on convertit en `\n` APRÈS écriture
+      pour garantir LF-only sans casser l'échappement CSV (les `\r\n` à
+      l'intérieur des champs sont déjà échappés en `""` quotes, ils ne sont
+      pas affectés).
+    - stdout passe par `sys.stdout.reconfigure` (Python 3.7+) plutôt qu'un
+      binaire intermédiaire, ce qui préserve le rendu côté utilisateur.
+    """
+    sink_path: object = None
+    if output is None:
+        # Mode stdout : on essaie de forcer LF si possible.
+        try:
+            sys.stdout.reconfigure(newline="\n")  # type: ignore[attr-defined]
+        except (AttributeError, ValueError):
+            pass
+        out: object = sys.stdout
+        sink = "stdout"
+    else:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        # Binaire pour pouvoir normaliser LF après écriture (cf politique ci-dessus).
+        out = output.open("wb")
+        sink_path = output
+        sink = str(output)
+
+    try:
+        # Encodage en utf-8 sans BOM côté fichier (BOM casserait les parseurs CSV).
+        text_buf = io.StringIO()
+        writer = csv.DictWriter(text_buf, fieldnames=COLUMNS, quoting=csv.QUOTE_MINIMAL)
+        writer.writeheader()
+        writer.writerows(rows)
+        text = text_buf.getvalue()
+        # Convertit les fins de ligne en LF uniquement (politique dépôt L268).
+        text_lf = text.replace("\r\n", "\n").replace("\r", "\n")
+        if sink_path is not None:
+            out.write(text_lf.encode("utf-8"))
+        else:
+            out.write(text_lf)
+    finally:
+        if sink_path is not None:
+            out.close()  # type: ignore[attr-defined]
+        else:
+            try:
+                sys.stdout.reconfigure(newline=None)  # type: ignore[attr-defined]
+            except (AttributeError, ValueError):
+                pass
+    return sink
 
 
 def main() -> int:
@@ -129,7 +317,9 @@ def main() -> int:
     parser.add_argument(
         "input",
         type=Path,
-        help="Notebook .ipynb ou répertoire de série (extraction récursive).",
+        nargs="+",
+        help="Un ou plusieurs chemins : notebook .ipynb ou répertoire de série "
+        "(extraction récursive).",
     )
     parser.add_argument(
         "-o", "--output", type=Path, default=None, help="Fichier CSV de sortie (défaut : stdout)."
@@ -146,16 +336,31 @@ def main() -> int:
         default=None,
         help="Racine du dépôt pour calculer les chemins relatifs (défaut : cwd).",
     )
+    parser.add_argument(
+        "--update",
+        type=Path,
+        default=None,
+        metavar="CSV",
+        help="Met à jour un CSV existant au lieu d'écraser : préserve les lignes "
+        "d'autres notebooks et les colonnes cibles (text_en/hash_en/...) remplies "
+        "par T3. Les champs pivot (src_hash, text_fr, hash_fr, src_lang, cell_type) "
+        "sont rafraîchis pour les notebooks donnés en input.",
+    )
     args = parser.parse_args()
 
-    if not args.input.exists():
-        print(f"ERROR : {args.input} introuvable.", file=sys.stderr)
+    # `input` est une liste (nargs="+"). On accepte des chemins individuels ou
+    # des répertoires (récursif). Les chemins inexistants sont signalés via
+    # iter_notebooks() mais ne font pas échouer le run si au moins un notebook
+    # est trouvé.
+    existing_inputs = [p for p in args.input if p.exists()]
+    if not existing_inputs:
+        print(f"ERROR : aucun chemin d'input valide (reçus : {args.input}).", file=sys.stderr)
         return 2
 
     repo_root = (args.repo_root or Path.cwd()).resolve()
-    notebooks = iter_notebooks(args.input)
+    notebooks = iter_notebooks(existing_inputs)
     if not notebooks:
-        print(f"ERROR : aucun notebook trouvé sous {args.input}.", file=sys.stderr)
+        print(f"ERROR : aucun notebook trouvé dans {existing_inputs}.", file=sys.stderr)
         return 2
 
     rows: list[dict] = []
@@ -166,20 +371,36 @@ def main() -> int:
         print(f"WARNING : 0 cellules extraites de {len(notebooks)} notebook(s).", file=sys.stderr)
         return 1
 
-    out = sys.stdout
-    if args.output:
-        # Crée le répertoire parent si nécessaire (sinon open() lève FileNotFoundError).
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        out = args.output.open("w", encoding="utf-8", newline="")
-    try:
-        writer = csv.DictWriter(out, fieldnames=COLUMNS, quoting=csv.QUOTE_MINIMAL)
-        writer.writeheader()
-        writer.writerows(rows)
-    finally:
-        if args.output:
-            out.close()
+    if args.update is not None:
+        # Mode --update : on charge le CSV existant et on merge en préservant
+        # les autres entrées / colonnes cibles.
+        if not args.update.exists():
+            print(f"ERROR : --update CSV introuvable : {args.update}", file=sys.stderr)
+            return 2
+        existing = load_existing_csv(args.update)
+        target_notebooks = {row["notebook"] for row in rows}
+        updated_rows, stats = update_existing_csv(existing, rows, target_notebooks)
+        sink = write_csv(updated_rows, args.update)
+        print(
+            f"OK (--update) : {stats['updated']} ligne(s) rafraîchie(s), "
+            f"{stats['unchanged']} déjà in-sync, "
+            f"{stats['appended']} ajoutée(s), "
+            f"{stats['kept_orphan']} orpheline(s) "
+            f"potentielle(s), {stats['kept_other']} ligne(s) d'autres notebooks "
+            f"préservées -> {sink}",
+            file=sys.stderr,
+        )
+        if stats["kept_orphan"] > 0:
+            print(
+                f"WARNING : {stats['kept_orphan']} ligne(s) du CSV cible n'ont "
+                f"pas de cellule correspondante dans le notebook (cellules "
+                f"supprimées ?). Le check_translation_sync.py les signalera en "
+                f"ORPHAN_ROW.",
+                file=sys.stderr,
+            )
+        return 0
 
-    sink = str(args.output) if args.output else "stdout"
+    sink = write_csv(rows, args.output)
     print(
         f"OK : {len(rows)} cellules extraites de {len(notebooks)} notebook(s) -> {sink}",
         file=sys.stderr,
