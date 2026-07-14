@@ -3711,7 +3711,7 @@ Apres avoir analyse la Bataille des Sexes avec incertitude (un jeu ""jouet""), n
 - Quelles sont les strategies optimales dans ces contextes ?
 
 La section suivante explore le duopole de Cournot ou chaque firme ne connait que son propre cout marginal.",,,,,,,,ca6456ccab4eeedd,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb,4fb3ab39,code,fr,2d471ed1e996d019,"def solve_cournot_bayesian(a=100, c_L=10, c_H=30, prob_L=0.5):
+MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb,4fb3ab39,code,fr,8a3a615122c69d18,"def solve_cournot_bayesian(a=100, c_L=10, c_H=30, prob_L=0.5):
     """"""
     Resout le duopole de Cournot avec couts incertains.
     
@@ -3740,14 +3740,14 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb,4fb3ab39,code,fr,
     # a - 2*q_L - (prob_L*q_L + (1-prob_L)*q_H) - c_L = 0
     # a - 2*q_H - (prob_L*q_L + (1-prob_L)*q_H) - c_H = 0
     
-    def equations(x):
-        q_L, q_H = x
-        E_q = prob_L * q_L + (1 - prob_L) * q_H
-        eq1 = a - 2*q_L - E_q - c_L
-        eq2 = a - 2*q_H - E_q - c_H
-        return [eq1, eq2]
-    
-    solution = fsolve(equations, [30, 20])
+    # Systeme lineaire issu des FOC : les conditions du premier ordre
+    # sont lineaires en q_L, q_H. En developpant E_q = prob_L*q_L + (1-prob_L)*q_H
+    # on obtient A @ [q_L, q_H] = b, resolu directement (solveur lineaire)
+    # plutot que par fsolve iteratif (qui avertit de convergence sur systeme lineaire).
+    A = np.array([[2 + prob_L,     1 - prob_L],
+                  [prob_L,         2 + (1 - prob_L)]])
+    b = np.array([a - c_L, a - c_H])
+    solution = np.linalg.solve(A, b)
     q_L, q_H = solution
     
     print(""\n"" + ""=""*50)
@@ -3773,7 +3773,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb,4fb3ab39,code,fr,
     
     return q_L, q_H
 
-q_L, q_H = solve_cournot_bayesian()",,,,,,,,2d471ed1e996d019,,,,,,,
+q_L, q_H = solve_cournot_bayesian()",,,,,,,,8a3a615122c69d18,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb,05ca574e,markdown,fr,ce088906a9e2b5bf,"### Interpretation : Solution bayesienne du duopole Cournot
 
 **Resultats de l'equilibre** :
@@ -5238,28 +5238,28 @@ Ces résultats se vérifient par la compilation du lake ci-dessus (`lake build B
 
 L'extension à l'import direct d'un lake depuis le kernel `lean4-wsl` (prelude `NotebookCtx`, lancement via lake-env) est étudiée en side-track sur l'issue #4251 (Part of #4038).
 ",,,,,,,,966389be5aa2d019,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,3579383c,markdown,fr,2baff7d6ebc52d2e,"# GameTheory-12 — Jeux de Reputacion (twin C# du notebook Python)
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,3579383c,markdown,fr,371e035493980f7d,"# GameTheory-12 — Jeux de Réputation (twin C# du notebook Python)
 
 Ce notebook est le **jumeau C# / .NET 9** de `GameTheory-12-ReputationGames.ipynb` (Python + numpy + matplotlib).
-Il implemente from-scratch (BCL .NET 9, **0 NuGet**) les memes algorithmes de **theorie des jeux de reputacion** :
+Il implémente from-scratch (BCL .NET 9, **0 NuGet**) les mêmes algorithmes de **théorie des jeux de réputation** :
 
-- **Paradoxe de la chaine de magasins** (Selten 1978) — induction arriere en information complete.
-- **Cheap talk Crawford-Sobel (1982)** — equilibres de partition, effet du biais sur l'information transmise.
-- **Kreps-Wilson (1982)** — chaine de magasins avec un petit probabilite $\epsilon$ d'un incumbent irrationnel (""tough"") ;
-  mise a jour bayesienne des croyances -> la reputacion devient credible.
+- **Paradoxe de la chaîne de magasins** (Selten 1978) — induction arrière en information complète.
+- **Cheap talk Crawford-Sobel (1982)** — équilibres de partition, effet du biais sur l'information transmise.
+- **Kreps-Wilson (1982)** — chaîne de magasins avec une petite probabilité $\epsilon$ d'un incumbent irrationnel (""tough"") ;
+  mise à jour bayésienne des croyances -> la réputation devient crédible.
 - **KMRW (Kreps-Milgrom-Roberts-Wilson 1982)** — dilemme du prisonnier fini : une petite incertitude sur le type
-  (Tit-for-Tat vs rationnel) permet la cooperation.
-- **Equilibre bayesien parfait (PBE)** — strategies + systeme de croyances.
+  (Tit-for-Tat vs rationnel) permet la coopération.
+- **Équilibre bayésien parfait (PBE)** — stratégies + système de croyances.
 
-**Filiation d'algorithmes** : ce notebook est distinct de `GameTheory-4-NashEquilibrium` (equilibre en information complete),
-`GameTheory-13-ImperfectInfo-CFR` (regret counterfactuel dans le jeu replique) et `GameTheory-16-MechanismDesign`
-(conception de mecanismes). Ici le coeur est la **mise a jour bayesienne des croyances** et la **dynamique de reputacion**.
+**Filiation d'algorithmes** : ce notebook est distinct de `GameTheory-4-NashEquilibrium` (équilibre en information complète),
+`GameTheory-13-ImperfectInfo-CFR` (regret counterfactuel dans le jeu répliqué) et `GameTheory-16-MechanismDesign`
+(conception de mecanismes). Ici le coeur est la **mise à jour bayésienne des croyances** et la **dynamique de réputation**.
 
-> **Note de parite (Prong B, EPIC #3801)** : le notebook Python s'appuie sur numpy (PRNG Mersenne Twister) pour le
-> tirage Monte-Carlo. Le twin C# utilise `System.Random` (seed fixe pour reproductibilite) ; les sorties analytiques
-> (Crawford-Sobel, Kreps-Wilson, KMRW) sont exactement identiques, les sorties Monte-Carlo sont qualitativement equivalentes
+> **Note de parité (Prong B, EPIC #3801)** : le notebook Python s'appuie sur numpy (PRNG Mersenne Twister) pour le
+> tirage Monte-Carlo. Le twin C# utilise `System.Random` (seed fixe pour reproductibilité) ; les sorties analytiques
+> (Crawford-Sobel, Kreps-Wilson, KMRW) sont exactement identiques, les sorties Monte-Carlo sont qualitativement équivalentes
 > (variabilité PRNG attendue). matplotlib -> tables console / ASCII (convention GT-4c).
-",,,,,,,,2baff7d6ebc52d2e,,,,,,,
+",,,,,,,,371e035493980f7d,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,1bcf068c,code,fr,b3eb8f72ba2cf21e,"#nullable enable
 using System;
 using System.Collections.Generic;
@@ -5311,17 +5311,17 @@ sb.Append(""  Mais l'induction arriere rend cette menace non-credible."");
 
 sb.ToString().Display();
 ",,,,,,,,b3eb8f72ba2cf21e,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,7341ebc3,markdown,fr,2960ea24f75f35ca,"## Information incomplete : pourquoi la reputacion change tout
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,7341ebc3,markdown,fr,14a4c362b3cd5fbd,"## Information incomplète : pourquoi la réputation change tout
 
-En information complete, l'induction arriere ""defait"" le paradoxe (menace non-credible). L'intuition de
-**Kreps-Wilson** : s'il existe une *toute petite* probabilite $\epsilon$ que l'incumbent soit irrationnel
-(un type ""tough"" qui combat toujours), alors un incumbent rationnel a interet a **imiter** le type tough
-les premiers marches pour batir une reputacion de combattant, et ainsi dissuader les entrants suivants.
-La menace devient credible *grace a l'incertitude sur le type*.
+En information complète, l'induction arrière ""defait"" le paradoxe (menace non-crédible). L'intuition de
+**Kreps-Wilson** : s'il existe une *toute petite* probabilité $\epsilon$ que l'incumbent soit irrationnel
+(un type ""tough"" qui combat toujours), alors un incumbent rationnel a intérêt a **imiter** le type tough
+les premiers marches pour bâtir une réputation de combattant, et ainsi dissuader les entrants suivants.
+La menace devient crédible *grace a l'incertitude sur le type*.
 
-Cela mobilise deux outils : le **cheap talk** (communication non couteuse, Crawford-Sobel) et la **mise a jour
-bayesienne des croyances** (Kreps-Wilson, KMRW).
-",,,,,,,,2960ea24f75f35ca,,,,,,,
+Cela mobilise deux outils : le **cheap talk** (communication non couteuse, Crawford-Sobel) et la **mise à jour
+bayésienne des croyances** (Kreps-Wilson, KMRW).
+",,,,,,,,14a4c362b3cd5fbd,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,5f8a42cd,code,fr,06cefab6eced9766,"#nullable enable
 using System;
 using System.Globalization;
@@ -5397,18 +5397,18 @@ sweep.Append(""Lecture: b=0.20 et 0.30 -> equilibre babbling (1 partition, 0% d'
            + ""quand b depasse le seuil de validite b <= 1/(2*n*(n-1)) (limitation connue de l'approximation)."");
 sweep.ToString().Display();
 ",,,,,,,,06cefab6eced9766,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,240c9337,markdown,fr,49a059971ded15df,"## Modele de Kreps-Wilson : reputacion du ""tough incumbent""
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,240c9337,markdown,fr,37a66b0a8cae5584,"## Modèle de Kreps-Wilson : réputation du ""tough incumbent""
 
-**Parametres** :
-- $n$ marches (entrants sequentiels).
-- $\epsilon$ = probabilite a priori que l'incumbent soit de type **Fou** (combat toujours, prefere Fight).
+**Paramètres** :
+- $n$ marches (entrants séquentiels).
+- $\epsilon$ = probabilité à priori que l'incumbent soit de type **Fou** (combat toujours, prefere Fight).
 - type **Normal** : Fight=-1, Accommodate=1, pas d'entree=2.
-- L'entrant observe l'historique des combats et met a jour sa croyance $P(\text{Fou} \mid h)$ par la regle de Bayes.
+- L'entrant observe l'historique des combats et met à jour sa croyance $P(\text{Fou} \mid h)$ par la règle de Bayes.
 
 **Seuil de dissuasion** : un entrant rationnel entre si son gain espere est positif.
 $E[\text{gain}] = P(\text{Fou}) \cdot (-1) + (1 - P(\text{Fou})) \cdot 1 = 0 \Rightarrow P(\text{Fou}) = 0.5$.
 Des que la croyance depasse 0.5, l'entrant reste dehors.
-",,,,,,,,49a059971ded15df,,,,,,,
+",,,,,,,,37a66b0a8cae5584,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,2c623410,code,fr,3ab5478e2e7fd4d6,"#nullable enable
 using System;
 using System.Globalization;
@@ -5469,17 +5469,17 @@ else
 }
 sb.ToString().Display();
 ",,,,,,,,3ab5478e2e7fd4d6,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,1d3ba617,markdown,fr,86f10aca5da17534,"## Simulation numerique Monte-Carlo
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,1d3ba617,markdown,fr,b7c0d9b6f4a820c7,"## Simulation numérique Monte-Carlo
 
-Strategie simplifiee pour la simulation :
-- **Fou** : Fight systematiquement.
-- **Normal** : combat tant qu'il reste des marches et que la reputacion est sous le seuil (batir la reputacion), accommode sinon.
+Stratégie simplifiée pour la simulation :
+- **Fou** : Fight systématiquement.
+- **Normal** : combat tant qu'il reste des marches et que la réputation est sous le seuil (bâtir la réputation), accommode sinon.
 - **Entrant** : entre si $P(\text{Fou}) < 0.5$, sinon reste hors.
-- **Mise a jour bayesienne** apres un combat observe : $P(\text{Fou} \mid F) = \frac{P(F)}{P(F) + (1-P(F)) \cdot p^{\text{fight}}_{\text{normal}}}$.
+- **Mise à jour bayésienne** après un combat observe : $P(\text{Fou} \mid F) = \frac{P(F)}{P(F) + (1-P(F)) \cdot p^{\text{fight}}_{\text{normal}}}$.
 
-Le PRNG est `System.Random` seede (reproductible). Les valeurs numeriques dependent du PRNG ;
-l'**ecart qualitatif** (le Normal investit des combats precoces pour gagner ensuite) est la lecon.
-",,,,,,,,86f10aca5da17534,,,,,,,
+Le PRNG est `System.Random` seede (reproductible). Les valeurs numériques dependent du PRNG ;
+l'**écart qualitatif** (le Normal investit des combats précoces pour gagner ensuite) est la leçon.
+",,,,,,,,b7c0d9b6f4a820c7,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,08669db2,code,fr,9f3dc030487068bf,"#nullable enable
 using System;
 using System.Collections.Generic;
@@ -5568,12 +5568,12 @@ sb.AppendLine(""  Reference (info complete): Monopole = 10, Entrants = 10"");
 sb.Append(""  -> Le type Normal investit (-1) sur les combats precoces pour batir la reputacion."");
 sb.ToString().Display();
 ",,,,,,,,9f3dc030487068bf,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,a43ee878,markdown,fr,e342cb15b95303a2,"## Impact du parametre $\epsilon$ sur les gains
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,a43ee878,markdown,fr,4425425fd1f48842,"## Impact du paramètre $\epsilon$ sur les gains
 
-Variation de la probabilite du type Fou : a mesure qu'$\epsilon$ croit, l'entrant est plus dissuade,
-le monopole Normal beneficie d'une reputacion plus forte. Visualisation en table console (equivalent ASCII
+Variation de la probabilité du type Fou : à mesure qu'$\epsilon$ croît, l'entrant est plus dissuade,
+le monopole Normal bénéficie d'une réputation plus forte. Visualisation en table console (équivalent ASCII
 du plot matplotlib du notebook Python).
-",,,,,,,,e342cb15b95303a2,,,,,,,
+",,,,,,,,4425425fd1f48842,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,359419b3,code,fr,5b4f3db4f3ef5109,"#nullable enable
 using System;
 using System.Globalization;
@@ -5633,14 +5633,14 @@ sb.ToString().Display();
 
 static double MeanD(System.Collections.Generic.List<double> xs) { double s = 0; foreach (var x in xs) s += x; return s / xs.Count; }
 ",,,,,,,,5b4f3db4f3ef5109,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,b5c64926,markdown,fr,a2ce0db0e03ccfe8,"## KMRW : cooperation dans le dilemme du prisonnier fini
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,b5c64926,markdown,fr,cf5e5e81a47a8993,"## KMRW : coopération dans le dilemme du prisonnier fini
 
-Selten (1978) a montre par induction arriere que le dilemme du prisonnier repete un nombre *fini* de fois
-se solde par la defection systematique. **KMRW (1982)** renversent ce resultat : s'il existe une petite
-probabilite $\epsilon$ que l'adversaire joue **Tit-for-Tat** (TFT), alors la cooperation devient rationnelle
-pendant la majeure partie du jeu, meme fini. ""A small amount of incomplete information can have a large effect
+Selten (1978) a montre par induction arrière que le dilemme du prisonnier répété un nombre *fini* de fois
+se solde par la défection systématique. **KMRW (1982)** renversent ce résultat : s'il existe une petite
+probabilité $\epsilon$ que l'adversaire joue **Tit-for-Tat** (TFT), alors la coopération devient rationnelle
+pendant la majeure partie du jeu, même fini. ""A small amount of incomplète information can have a large effect
 on the equilibrium of a game.""
-",,,,,,,,a2ce0db0e03ccfe8,,,,,,,
+",,,,,,,,cf5e5e81a47a8993,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,4c556065,code,fr,5aaea3f65cbcfc4d,"#nullable enable
 using System;
 using System.Collections.Generic;
@@ -5745,16 +5745,16 @@ sb2.AppendLine();
 sb2.Append(""  -> Cooperation elevee en debut de jeu, effondrement sur la fin (effet horizon fini)."");
 sb2.ToString().Display();
 ",,,,,,,,5aaea3f65cbcfc4d,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,9292a753,markdown,fr,187ee8209bede142,"## Equilibre bayesien parfait (PBE)
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,9292a753,markdown,fr,638dec1c7218a9dc,"## Équilibre bayésien parfait (PBE)
 
 Un PBE precise, pour chaque ensemble d'information :
-1. **Un profil de strategies** $\sigma_i(t_i, h)$ dependant du type et de l'historique.
-2. **Un systeme de croyances** $\mu(t \mid h)$ derive par la regle de Bayes quand c'est possible.
+1. **Un profil de stratégies** $\sigma_i(t_i, h)$ dépendant du type et de l'historique.
+2. **Un système de croyances** $\mu(t \mid h)$ dérivé par la règle de Bayes quand c'est possible.
 
-Il doit satisfaire **consistance** (Bayes sur le chemin d'equilibre) et **rationalite** (chaque strategie est
-optimale etant donne les croyances). Les equilibres de signaling se classent en **separateur** (types differents
--> signaux differents, le type est revele) et **pooling** (tous les types envoient le meme signal).
-",,,,,,,,187ee8209bede142,,,,,,,
+Il doit satisfaire **consistance** (Bayes sur le chemin d'équilibre) et **rationalité** (chaque stratégie est
+optimale étant donne les croyances). Les équilibres de signaling se classent en **séparateur** (types différents
+-> signaux différents, le type est révèle) et **pooling** (tous les types envoient le même signal).
+",,,,,,,,638dec1c7218a9dc,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,da39d211,code,fr,c0be7623fc91f144,"#nullable enable
 using System.Text;
 
@@ -5797,11 +5797,11 @@ sb.AppendLine(""  - Pooling: tous les types -> meme signal"");
 sb.Append(""    croyance posterieure = prior (aucune information revelee)"");
 sb.ToString().Display();
 ",,,,,,,,c0be7623fc91f144,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,6fcd4d2c,markdown,fr,01b60147d13e6181,"## Exercices
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,6fcd4d2c,markdown,fr,1e57f9d4c987df7b,"## Exercices
 
-Les trois exercices suivants sont a completer (stubs sans erreur, le notebook s'execute de bout en bout).
-Conventions : `pass`/`return null`/`print(""Exercice a completer"")` — jamais de `throw` intentionnel.
-",,,,,,,,01b60147d13e6181,,,,,,,
+Les trois exercices suivants sont à compléter (stubs sans erreur, le notebook s'execute de bout en bout).
+Conventions : `pass`/`return null`/`print(""Exercice à compléter"")` — jamais de `throw` intentionnel.
+",,,,,,,,1e57f9d4c987df7b,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,268361da,code,fr,ac3c69c573360f57,"#nullable enable
 using System.Text;
 
@@ -5868,20 +5868,20 @@ Dictionary<string, double> SimulateTftVsMyopic(Dictionary<(char,char),(double,do
 
 Console.WriteLine(""Exercice a completer"");
 ",,,,,,,,f8d97b72d3948742,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,51b845ba,markdown,fr,afb9d069225ae9bd,"## Conclusion
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Csharp.ipynb,51b845ba,markdown,fr,765ec410e096d01d,"## Conclusion
 
-Les jeux de reputacion montrent qu'une **toute petite incertitude sur le type** d'un joueur change
-radicalement l'equilibre :
+Les jeux de réputation montrent qu'une **toute petite incertitude sur le type** d'un joueur change
+radicalement l'équilibre :
 
-- **Chain Store Paradox** : menace non-credible en information complete → credible des qu'on introduit $\epsilon$.
-- **KMRW** : la cooperation emerge dans le dilemme du prisonnier fini malgre l'induction arriere.
-- **Crawford-Sobel** : meme communication gratuite, l'information transmise decroit avec le biais.
+- **Chain Store Paradox** : menace non-crédible en information complète → crédible dès qu'on introduit $\epsilon$.
+- **KMRW** : la coopération émerge dans le dilemme du prisonnier fini malgré l'induction arrière.
+- **Crawford-Sobel** : même communication gratuite, l'information transmise décroît avec le biais.
 
-L'outil central est la **mise a jour bayesienne des croyances** : chaque action observee est un signal qui
-faconne la reputacion, et cette reputacion contraint les decisions futures de tous les joueurs. C'est le
-pont entre information incomplete et equilibre (PBE). Ce twin C# reproduit from-scratch, sans aucune
+L'outil central est la **mise à jour bayésienne des croyances** : chaque action observée est un signal qui
+façonne la réputation, et cette réputation contraint les décisions futures de tous les joueurs. C'est le
+pont entre information incomplète et équilibre (PBE). Ce twin C# reproduit from-scratch, sans aucune
 librairie externe, les algorithmes du notebook Python.
-",,,,,,,,afb9d069225ae9bd,,,,,,,
+",,,,,,,,765ec410e096d01d,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb,6c71c1d5,markdown,fr,c8b854df3c3b02df,"# GameTheory-12-ReputationGames
 
 **Navigation** : [<< 11-BayesianGames](GameTheory-11-BayesianGames.ipynb) | [Index](README.md) | [13-ImperfectInfo-CFR >>](GameTheory-13-ImperfectInfo-CFR.ipynb)
@@ -6736,30 +6736,30 @@ Les concepts de reputation et de signaling presentes ici eclairent de nombreuses
 - Crawford, V.P. & Sobel, J. (1982). Strategic Information Transmission. Econometrica 50(6):1431-1451.
 
 ",,,,,,,,1b0fde3dff113fca,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,1f5b40d6-3021-452a-8097-651b53dcdfd4,markdown,fr,50d4b16e7fb1258d,"# GameTheory-13 : Jeux a Information Imparfaite et CFR (C#)
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,1f5b40d6-3021-452a-8097-651b53dcdfd4,markdown,fr,96b06082ae826da0,"# GameTheory-13 : Jeux a Information Imparfaite et CFR (C#)
 
 **Navigation** : [<< 12-Reputation](GameTheory-12-ReputationGames.ipynb) | [Index](../README.md) | [14-DifferentialGames >>](GameTheory-14-DifferentialGames.ipynb)
 
 **Twin C# (.NET Interactive)** de [GameTheory-13-ImperfectInfo-CFR.ipynb](GameTheory-13-ImperfectInfo-CFR.ipynb) — marathon **#4956** (parite .NET <-> Python).
 
-La theorie des jeux a **information complete** (echecs, poker vu par Dieu) se resout par minimax ou induction a rebours. Mais le **poker** est a **information imparfaite** : chaque joueur connait sa carte cachee, pas celle de l'adversaire. L'algorithme de reference pour ces jeux est **CFR** (Counterfactual Regret Minimization, Zinkevich et al. 2007) — c'est lui qui a permis de **resoudre** le Heads-Up Limit Texas Hold'em (Bowling et al. 2015). La strategie moyenne produite par CFR **converge vers un equilibre de Nash**.
+La théorie des jeux a **information complète** (échecs, poker vu par Dieu) se résout par minimax ou induction a rebours. Mais le **poker** est a **information imparfaite** : chaque joueur connait sa carte cachée, pas celle de l'adversaire. L'algorithme de référence pour ces jeux est **CFR** (Counterfactual Regret Minimization, Zinkevich et al. 2007) — c'est lui qui a permis de **résoudre** le Heads-Up Limit Texas Hold'em (Bowling et al. 2015). La stratégie moyenne produite par CFR **converge vers un équilibre de Nash**.
 
-## Plan pedagogique
+## Plan pédagogique
 
-1. **Kuhn Poker** — le plus petit jeu de poker realiste (3 cartes, 2 actions)
+1. **Kuhn Poker** — le plus petit jeu de poker réaliste (3 cartes, 2 actions)
 2. **Regret et Regret Matching** — minimiser le regret cumule (demo Pierre-Feuille-Ciseaux)
-3. **CFR Vanilla** — recursion contrefactuelle sur l'arbre de jeu
+3. **CFR Vanilla** — récursion contrefactuelle sur l'arbre de jeu
 4. **CFR+** — variante avec regrets ecretes (Tammelin 2014)
-5. **Convergence** — la strategie moyenne converge vers Nash
+5. **Convergence** — la stratégie moyenne converge vers Nash
 6. **Exercices**
 
-> **Parite #4956** : la version Python deroule un solveur CFR from-scratch (§3-4) ET le compare a **OpenSpiel** (librarie Google DeepMind, boite noire). Ce twin C# (BCL .NET 9, **0 NuGet**) traduit le solveur from-scratch (le coeur pedagogique — recursion contrefactuelle, regret matching, accumulation de strategie moyenne) ; la comparaison OpenSpiel (Python-only, pas d'equivalent C# du meme niveau) devient une note documentee honnete (**RECOVERABLE-MACHINE**) : le from-scratch CFR solver EST la substance.
-",,,,,,,,50d4b16e7fb1258d,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,349283e3-d762-496c-a21a-be5057aac30b,markdown,fr,b480f2291334535f,"## 1. Kuhn Poker : notre jeu de reference
+> **Parite #4956** : la version Python déroule un solveur CFR from-scratch (§3-4) ET le compare a **OpenSpiel** (librarie Google DeepMind, boite noire). Ce twin C# (BCL .NET 9, **0 NuGet**) traduit le solveur from-scratch (le coeur pédagogique — récursion contrefactuelle, regret matching, accumulation de stratégie moyenne) ; la comparaison OpenSpiel (Python-only, pas d'equivalent C# du meme niveau) devient une note documentee honnete (**RECOVERABLE-MACHINE**) : le from-scratch CFR solver EST la substance.
+",,,,,,,,96b06082ae826da0,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,349283e3-d762-496c-a21a-be5057aac30b,markdown,fr,a7b43ee100ed409f,"## 1. Kuhn Poker : notre jeu de référence
 
-Le **Kuhn Poker** (Kuhn 1950) est le plus petit poker a information imparfaite encore non-trivial. Trois cartes (Jack=0, Queen=1, King=2), deux joueurs, ante de 1. Chaque joueur recoit une carte, le joueur 1 ouvre (passe ou mise), etc. Les historiques terminaux sont `pp` (check-check : abattage), `pbp` (check-bet-fold), `pbb` (check-bet-call : abattage), `bp` (bet-fold), `bb` (bet-call : abattage).
+Le **Kuhn Poker** (Kuhn 1950) est le plus petit poker a information imparfaite encore non-trivial. Trois cartes (Jack=0, Queen=1, King=2), deux joueurs, ante de 1. Chaque joueur reçoit une carte, le joueur 1 ouvre (passe ou mise), etc. Les historiques terminaux sont `pp` (check-check : abattage), `pbp` (check-bet-fold), `pbb` (check-bet-call : abattage), `bp` (bet-fold), `bb` (bet-call : abattage).
 
-Un **information set** (infoset) = carte du joueur + historique visible. Deux situations dans le meme infoset sont **indistinguables** pour le joueur (c'est la cle de l'information imparfaite).",,,,,,,,b480f2291334535f,,,,,,,
+Un **information set** (infoset) = carte du joueur + historique visible. Deux situations dans le meme infoset sont **indistinguables** pour le joueur (c'est la cle de l'information imparfaite).",,,,,,,,a7b43ee100ed409f,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,84114e29-0fb7-474a-8444-321eb0545125,code,fr,5de38fc002467bc4,"using System.Linq;
 using System.Text;
 using System.Collections.Generic;
@@ -6808,13 +6808,13 @@ $""Payoff 'bp' (bet-fold)   : {Kuhn.GetPayoff(""bp"", new[]{ 0, 2 })}   (attendu
 $""Payoff 'pp' avec Q vs J  : {Kuhn.GetPayoff(""pp"", new[]{ 1, 0 })}   (attendu +1)"".Display();
 $""Infoset J2 avec Q apres 'p' : {Kuhn.GetInfoSet(""p"", 1)}   (attendu 'Qp')"".Display();
 ",,,,,,,,5de38fc002467bc4,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,2b04defc-bd1c-47dd-a94f-7311a14a55e6,markdown,fr,b884d304e18adf1e,"## 2. Regret et Regret Matching
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,2b04defc-bd1c-47dd-a94f-7311a14a55e6,markdown,fr,760da764bf9e80b9,"## 2. Regret et Regret Matching
 
-Le **regret** d'avoir joue l'action $a$ au lieu de la strategie $\sigma$ est la difference d'utilite : $R(a) = u(a) - \sum_b \sigma(b) u(b)$. On accumule ces regrets au fil des iterations, et la **strategie courante** est proportionnelle aux **regrets positifs cumules** :
+Le **regret** d'avoir joue l'action $a$ au lieu de la stratégie $\sigma$ est la difference d'utilité : $R(a) = u(a) - \sum_b \sigma(b) u(b)$. On accumule ces regrets au fil des itérations, et la **stratégie courante** est proportionnelle aux **regrets positifs cumules** :
 
 $$\sigma(a) = \frac{\max(0, R_{sum}(a))}{\sum_b \max(0, R_{sum}(b))}$$
 
-(quand tous les regrets sont <= 0, strategie uniforme.) Theoreme : le regret matching sur un jeu a somme nulle **converge vers l'equilibre de Nash**.",,,,,,,,b884d304e18adf1e,,,,,,,
+(quand tous les regrets sont <= 0, stratégie uniforme.) Théorème : le regret matching sur un jeu a somme nulle **converge vers l'équilibre de Nash**.",,,,,,,,760da764bf9e80b9,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,e69af678-3666-4aef-a87e-512adff6b14c,code,fr,17c70f01dc1bc188,"#nullable enable
 // Regret Matching pour un agent (N actions).
 public class RegretMatcher
@@ -6881,9 +6881,9 @@ $""Regret Matching vs adversaire 'toujours Pierre' (1000 iter) :"".Display();
 $""  Pierre={avg[0]:F3}  Feuille={avg[1]:F3}  Ciseaux={avg[2]:F3}"".Display();
 $""  -> Converge vers Feuille (meilleure reponse pure a 'toujours Pierre'). Attendu (0.000, 1.000, 0.000)."".Display();
 ",,,,,,,,17c70f01dc1bc188,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,0d88de92-3842-4c8e-be1b-1441dd4a2829,markdown,fr,50f0b70870d9cd05,"## 3. CFR Vanilla : la recursion contrefactuelle
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,0d88de92-3842-4c8e-be1b-1441dd4a2829,markdown,fr,9c4feec1391fc257,"## 3. CFR Vanilla : la récursion contrefactuelle
 
-CFR applique le regret matching **a chaque information set** de l'arbre de jeu, en parcourant recursivement toutes les attributions de cartes. L'idee cle est la **reach probability contrefactuelle** : on met a jour le regret d'un infoset seulement avec la probabilite d'atteindre ce noeud **sans tenir compte du joueur courant** (puisqu'on veut evaluer ce qui se passerait si CE joueur jouait differemment, toute chose egale par ailleurs).
+CFR applique le regret matching **a chaque information set** de l'arbre de jeu, en parcourant récursivement toutes les attributions de cartes. L'idee cle est la **reach probability contrefactuelle** : on met a jour le regret d'un infoset seulement avec la probabilité d'atteindre ce noeud **sans tenir compte du joueur courant** (puisqu'on veut évaluer ce qui se passerait si CE joueur jouait differemment, toute chose égale par ailleurs).
 
 ```
 cfr(history, cards, reach_probs):
@@ -6900,7 +6900,7 @@ cfr(history, cards, reach_probs):
   retourner node_util
 ```
 
-Theoreme (Zinkevich 2007) : la **strategie moyenne** issue de `strategy_sum` converge vers un epsilon-equilibre de Nash quand le nombre d'iterations croit.",,,,,,,,50f0b70870d9cd05,,,,,,,
+Théorème (Zinkevich 2007) : la **stratégie moyenne** issue de `strategy_sum` converge vers un epsilon-équilibre de Nash quand le nombre d'itérations croit.",,,,,,,,9c4feec1391fc257,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,64fda1b1-d8fd-4b65-8ba4-d84cc5874aac,code,fr,5f874ab1dbcccc67,"#nullable enable
 // Solveur CFR vanilla pour Kuhn Poker. Stocke regret_sum et strategy_sum par infoset.
 public class CFRSolver
@@ -7003,9 +7003,9 @@ public class CFRSolver
 
 ""Solveur CFR vanilla (Kuhn Poker) pret."".Display();
 ",,,,,,,,5f874ab1dbcccc67,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,2adc7e21-8944-4b82-b27e-526bbae602ca,markdown,fr,3e875445b81afc3e,"## 3.1 Entrainement et valeur du jeu
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,2adc7e21-8944-4b82-b27e-526bbae602ca,markdown,fr,5c997e44b9e00d61,"## 3.1 Entrainement et valeur du jeu
 
-On entraine CFR sur un grand nombre d'iterations. La **valeur du jeu** (utilite moyenne par coup pour J1) converge vers la valeur de Nash : Kuhn (1950) a demontre que cette valeur vaut $-1/18 \approx -0{,}0556$ pour le joueur 1 (leger desavantage du premier joueur).",,,,,,,,3e875445b81afc3e,,,,,,,
+On entraine CFR sur un grand nombre d'itérations. La **valeur du jeu** (utilité moyenne par coup pour J1) converge vers la valeur de Nash : Kuhn (1950) a demontre que cette valeur vaut $-1/18 \approx -0{,}0556$ pour le joueur 1 (leger desavantage du premier joueur).",,,,,,,,5c997e44b9e00d61,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,a965de6c-3d4a-44a6-a000-c0d6a5499272,code,fr,b151ac2519aa5966,"var solver = new CFRSolver();
 int N = 20000;
 double gameValue = solver.Train(N);
@@ -7013,9 +7013,9 @@ $""Entrainement CFR vanilla sur Kuhn Poker ({N} iterations)."".Display();
 $""Valeur du jeu pour J1 = {gameValue:F4}    (valeur de Nash theorique = {-1.0/18.0:F4})"".Display();
 $""Iterations executees : {solver.Iterations}"".Display();
 ",,,,,,,,b151ac2519aa5966,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,1c02f480-556d-4939-9443-0fee8a2128b4,markdown,fr,6a358570af3c71ce,"## 3.2 Strategies apprises (strategie moyenne)
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,1c02f480-556d-4939-9443-0fee8a2128b4,markdown,fr,1b0e818688a84722,"## 3.2 Stratégies apprises (stratégie moyenne)
 
-La strategie moyenne converge vers un equilibre de Nash. Pour Kuhn Poker, on s'attend notamment a : le joueur avec le **King** mise presque toujours ; avec **Jack** face a une mise, il se couche (King bat Jack a l'abattage) ; les melanges (bluffs avec Jack, value bets avec King) emergent dans les infosets intermediaires.",,,,,,,,6a358570af3c71ce,,,,,,,
+La stratégie moyenne converge vers un équilibre de Nash. Pour Kuhn Poker, on s'attend notamment a : le joueur avec le **King** mise presque toujours ; avec **Jack** face a une mise, il se couche (King bat Jack a l'abattage) ; les melanges (bluffs avec Jack, value bets avec King) emergent dans les infosets intermediaires.",,,,,,,,1b0e818688a84722,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,6ccbd53e-f138-45db-9e6f-7d373716a00b,code,fr,f2fa6885d9b2aea2,"// Afficher la strategie moyenne de chaque infoset (triee par carte puis historique).
 var sb = new StringBuilder();
 sb.AppendLine(""Strategies Nash apprises par CFR (format : [Pass, Bet]) :"");
@@ -7048,13 +7048,13 @@ double[] jpbStrat = solver.GetAverageStrategy(""Jpb"");
 $""Verification : King mise (bet) avec proba ~ {kStrat[1]:F3} (Nash : King value-bet, proba >= 1/3 ; Kuhn 1950 donne une famille d'equilibres)."".Display();
 $""Verification : Jack face a mise se couche (pass) avec proba ~ {jpbStrat[0]:F3} (Nash : Jack fold face a bet, attendu ~ 1.0)."".Display();
 ",,,,,,,,f2fa6885d9b2aea2,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,8eab0987-04c0-411d-ad77-7561372021c9,markdown,fr,1842e6511b75a377,"## 4. Variante CFR+ (Tammelin 2014)
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,8eab0987-04c0-411d-ad77-7561372021c9,markdown,fr,728a47b412bbc49e,"## 4. Variante CFR+ (Tammelin 2014)
 
 **CFR+** accelere la convergence avec deux modifications :
 1. **Regrets ecretes** : on maintient `regret_sum[a] = max(0, regret_sum[a] + cf_reach * regret)` (les regrets negatifs sont immediatement remis a zero).
-2. **Accumulation ponderee** : la strategie est accumulee avec un poids croissant `w = t+1` (iterations recentes privilegiees).
+2. **Accumulation ponderee** : la stratégie est accumulee avec un poids croissant `w = t+1` (itérations recentes privilegiees).
 
-CFR+ a ete l'algorithme cle de la resolution du Heads-Up Limit Texas Hold'em (Bowling 2015).",,,,,,,,1842e6511b75a377,,,,,,,
+CFR+ a ete l'algorithme cle de la resolution du Heads-Up Limit Texas Hold'em (Bowling 2015).",,,,,,,,728a47b412bbc49e,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,5902b33a-c2ef-4c7b-bc98-af953b382af6,code,fr,fca2d39faf91d826,"#nullable enable
 // CFR+ : variant avec regrets ecretes (Tammelin 2014).
 public class CFRPlusSolver : CFRSolver
@@ -7114,9 +7114,9 @@ $""Entrainement CFR+ sur Kuhn Poker ({N} iterations)."".Display();
 $""Valeur du jeu (CFR+) pour J1 = {gvPlus:F4}    (Nash = {-1.0/18.0:F4})"".Display();
 $""Convergence CFR vs CFR+ : |valeur - (-1/18)|  vanilla={Math.Abs(gameValue - (-1.0/18.0)):F4}  CFR+={Math.Abs(gvPlus - (-1.0/18.0)):F4}  (CFR+ converge generalement plus vite)"".Display();
 ",,,,,,,,fca2d39faf91d826,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,26450afe-3b6a-49ae-bef2-eb0b184fa269,markdown,fr,27eee1b0230a283b,"## 5. Visualisation de la convergence
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,26450afe-3b6a-49ae-bef2-eb0b184fa269,markdown,fr,62bc1d92a7c1fdb6,"## 5. Visualisation de la convergence
 
-On re-entraine CFR pour quelques paliers d'iterations et on trace la valeur du jeu : elle doit converger vers $-1/18$. Courbe ASCII (axe horizontal = iterations en echelle log, axe vertical = valeur pour J1).",,,,,,,,27eee1b0230a283b,,,,,,,
+On re-entraine CFR pour quelques paliers d'itérations et on trace la valeur du jeu : elle doit converger vers $-1/18$. Courbe ASCII (axe horizontal = itérations en echelle log, axe vertical = valeur pour J1).",,,,,,,,62bc1d92a7c1fdb6,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,a756c098-f73d-4e0e-a17c-168f99dfe606,code,fr,400b4d453c663791,"// Courbe ASCII : valeur du jeu vs iterations (CFR vanilla).
 int[] checkpoints = { 10, 30, 100, 300, 1000, 3000, 10000, 30000 };
 var pts = new List<(int iter, double val)>();
@@ -7170,15 +7170,15 @@ sb2.AppendLine($""         iter: {checkpoints[0]} ... {checkpoints[^1]} (log-sca
 Show(sb2.ToString());
 $""Convergence constatee : la valeur du jeu se rapproche de la ligne de Nash ({nash:F4}) a mesure que les iterations augmentent."".Display();
 ",,,,,,,,400b4d453c663791,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,6db5b6e7-8428-4d18-b14e-80d358137892,markdown,fr,86fabefdaee2a1cb,"## 6. Exercices
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,6db5b6e7-8428-4d18-b14e-80d358137892,markdown,fr,c25eb7b9cbcedb97,"## 6. Exercices
 
-> **Convention C.1** : les stubs s'executent sans erreur (jamais `throw`). Remplir le corps, re-executer, verifier.
+> **Convention C.1** : les stubs s'executent sans erreur (jamais `throw`). Remplir le corps, re-exécuter, verifier.
 
 ### Exercice 1 — Leduc Poker (generalisation a 2 tours)
 
-Implementer un solveur CFR pour **Leduc Poker** (6 cartes : 3 rangs x 2 couleurs, 2 tours de mise). C'est le deuxieme benchmark canonique du poker a information imparfaite apres Kuhn.
+Implementer un solveur CFR pour **Leduc Poker** (6 cartes : 3 rangs x 2 couleurs, 2 tours de mise). C'est le deuxième benchmark canonique du poker a information imparfaite apres Kuhn.
 
-**Indice** : etendre le modele de jeu (historique plus long, plus d'actions legales), garder la recursion CFR identique.",,,,,,,,86fabefdaee2a1cb,,,,,,,
+**Indice** : etendre le modèle de jeu (historique plus long, plus d'actions legales), garder la récursion CFR identique.",,,,,,,,c25eb7b9cbcedb97,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,ada659fa-039c-4423-9651-096c9ae54fe6,code,fr,d8148a963e11c2c3,"#nullable enable
 // Exercice 1 : Leduc Poker (2 tours, 6 cartes). Generalisation de CFR.
 // TODO etudiant : modeliser Leduc + lancer CFR.
@@ -7191,11 +7191,11 @@ static double SolveLeduc()
 
 ""Exercice a completer"".Display();
 ",,,,,,,,d8148a963e11c2c3,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,907d93af-90c2-4ea9-948e-efc09abcb3cf,markdown,fr,f8001b4cf526ae96,"### Exercice 2 — Exploitabilite (best-response)
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,907d93af-90c2-4ea9-948e-efc09abcb3cf,markdown,fr,f0e507cb7d3a04bf,"### Exercice 2 — Exploitabilite (best-response)
 
-Coder le calcul de l'**exploitabilite** d'une strategie : $\mathrm{expl}(\sigma) = \frac{1}{2}(\mathrm{BR}_1(\sigma_2) + \mathrm{BR}_2(\sigma_1)) - v(\mathrm{Nash})$, ou $\mathrm{BR}$ est la meilleure reponse. Une strategie proche de Nash a une exploitabilite proche de 0.
+Coder le calcul de l'**exploitabilite** d'une stratégie : $\mathrm{expl}(\sigma) = \frac{1}{2}(\mathrm{BR}_1(\sigma_2) + \mathrm{BR}_2(\sigma_1)) - v(\mathrm{Nash})$, ou $\mathrm{BR}$ est la meilleure reponse. Une stratégie proche de Nash a une exploitabilite proche de 0.
 
-**Indice** : calculer la meilleure reponse d'un joueur face a la strategie fixee de l'autre, par programmation dynamique sur l'arbre de jeu.",,,,,,,,f8001b4cf526ae96,,,,,,,
+**Indice** : calculer la meilleure reponse d'un joueur face a la stratégie fixee de l'autre, par programmation dynamique sur l'arbre de jeu.",,,,,,,,f0e507cb7d3a04bf,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,34b90d09-aa2d-4fe4-b023-5763c0b7615e,code,fr,6b4f591b00d720a3,"#nullable enable
 // Exercice 2 : exploitabilite d'une strategie CFR.
 // TODO etudiant : best-response de chaque joueur, puis moyenne.
@@ -7207,11 +7207,11 @@ static double Exploitability(CFRSolver solver)
 
 ""Exercice a completer"".Display();
 ",,,,,,,,6b4f591b00d720a3,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,a5c8e0f0-2737-404a-9d28-70d46d1afa96,markdown,fr,03b0c9a9480b53d6,"### Exercice 3 — External Sampling MCCFR
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,a5c8e0f0-2737-404a-9d28-70d46d1afa96,markdown,fr,0eeb2324e190b181,"### Exercice 3 — External Sampling MCCFR
 
 Les variantes **Monte Carlo CFR** echantillonnent les actions plutot que de tout parcourir. Implementer **External Sampling** : on echantillonne les actions de l'adversaire et du hasard, on explore exhaustivement celles du joueur courant.
 
-**Indice** : dans la recursion, tirer une seule action pour l'adversaire (au lieu de sommer), garder l'exploration complete pour le joueur courant.",,,,,,,,03b0c9a9480b53d6,,,,,,,
+**Indice** : dans la récursion, tirer une seule action pour l'adversaire (au lieu de sommer), garder l'exploration complète pour le joueur courant.",,,,,,,,0eeb2324e190b181,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,e74039ec-8c9f-4d7c-9d45-24773d159fb6,code,fr,8cc5dd7464fcce33,"#nullable enable
 // Exercice 3 : External Sampling MCCFR.
 // TODO etudiant : recursion avec echantillonnage des actions adverses.
@@ -7223,27 +7223,27 @@ static double ExternalSamplingCfr()
 
 ""Exercice a completer"".Display();
 ",,,,,,,,8cc5dd7464fcce33,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,02d1dbb2-2069-402a-aebb-ca929bd2310b,markdown,fr,af3f48329a432a2e,"## Conclusion
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb,02d1dbb2-2069-402a-aebb-ca929bd2310b,markdown,fr,db5ff77f542ca3c0,"## Conclusion
 
 ### Ce que vous avez appris
 
-- **Information imparfaite** — contrairement aux jeux d'echecs, le joueur ne connait pas tout l'etat ; les **information sets** regroupent les situations indistinguables.
-- **Regret Matching** — strategie proportionnelle aux regrets positifs cumules ; converge vers Nash en jeu a somme nulle (demo Pierre-Feuille-Ciseaux).
-- **CFR (Zinkevich 2007)** — regret matching applique a chaque infoset via une recursion **contrefactuelle** (reach probability de l'adversaire). La strategie moyenne converge vers un epsilon-Nash.
-- **CFR+ (Tammelin 2014)** — variant a regrets ecretes qui a permis de **resoudre** le Heads-Up Limit Texas Hold'em (Bowling 2015).
+- **Information imparfaite** — contrairement aux jeux d'échecs, le joueur ne connait pas tout l'etat ; les **information sets** regroupent les situations indistinguables.
+- **Regret Matching** — stratégie proportionnelle aux regrets positifs cumules ; converge vers Nash en jeu a somme nulle (demo Pierre-Feuille-Ciseaux).
+- **CFR (Zinkevich 2007)** — regret matching applique a chaque infoset via une récursion **contrefactuelle** (reach probability de l'adversaire). La stratégie moyenne converge vers un epsilon-Nash.
+- **CFR+ (Tammelin 2014)** — variant a regrets ecretes qui a permis de **résoudre** le Heads-Up Limit Texas Hold'em (Bowling 2015).
 - **Valeur du jeu** — Kuhn Poker : $-1/18$ pour J1 (leger desavantage du premier joueur), retrouve par CFR.
 
 ### Pont avec la version Python
 
-La version Python ([GameTheory-13-ImperfectInfo-CFR.ipynb](GameTheory-13-ImperfectInfo-CFR.ipynb)) deroule le meme solveur CFR from-scratch (§3-4) et le compare a **OpenSpiel** (Google DeepMind). Ce twin C# traduit le coeur from-scratch (BCL .NET 9, 0 NuGet) — les internes (recursion contrefactuelle, reach probabilities, accumulation de strategie moyenne) sont visibles. La comparaison OpenSpiel (Python-only) est documentee honnetement comme **RECOVERABLE-MACHINE**.
+La version Python ([GameTheory-13-ImperfectInfo-CFR.ipynb](GameTheory-13-ImperfectInfo-CFR.ipynb)) déroule le meme solveur CFR from-scratch (§3-4) et le compare a **OpenSpiel** (Google DeepMind). Ce twin C# traduit le coeur from-scratch (BCL .NET 9, 0 NuGet) — les internes (récursion contrefactuelle, reach probabilities, accumulation de stratégie moyenne) sont visibles. La comparaison OpenSpiel (Python-only) est documentee honnetement comme **RECOVERABLE-MACHINE**.
 
 ### Parite #4956
 
-Twin de parite legitime (Prong B) : les deux langages deroulent le solveur CFR from-scratch. La where Python s'appuie sur OpenSpiel pour la comparaison SOTA, le C# rend visible la mecanique de la recursion contrefactuelle. Le notebook [GameTheory-9-BackwardInduction](GameTheory-9-BackwardInduction.ipynb) couvre l'induction a rebours en information complete (point de contraste).
+Twin de parite legitime (Prong B) : les deux langages deroulent le solveur CFR from-scratch. La where Python s'appuie sur OpenSpiel pour la comparaison SOTA, le C# rend visible la mecanique de la récursion contrefactuelle. Le notebook [GameTheory-9-BackwardInduction](GameTheory-9-BackwardInduction.ipynb) couvre l'induction a rebours en information complète (point de contraste).
 
 ---
 *Marathon #4956 (parite .NET <-> Python).*
-",,,,,,,,af3f48329a432a2e,,,,,,,
+",,,,,,,,db5ff77f542ca3c0,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb,d3bec2bf,markdown,fr,8a503e6b9d26867b,"# GameTheory-13 : Jeux a Information Imparfaite et CFR
 
 **Navigation** : [<< 12-ReputationGames](GameTheory-12-ReputationGames.ipynb) | [Index](README.md) | [14-DifferentialGames >>](GameTheory-14-DifferentialGames.ipynb)
@@ -8938,7 +8938,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb,df0970
 
 > **Prong B** : ce twin C# transforme un exercice vide du Python en exemple pleinement resolu, illustrant le moteur differentiel la ou le Python se contentait d'une esquisse.
 ",,,,,,,,87ac2fea90aebf71,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb,240db1b9,markdown,fr,95f5528ca899fe4a,"## 7. Synthese et transition vers les jeux cooperatifs
+MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb,240db1b9,markdown,fr,99f6c4996559eb7d,"## Synthese et transition vers les jeux cooperatifs
 
 ### Ce que nous avons appris
 
@@ -8980,7 +8980,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb,240db1
 ---
 
 **Notebook suivant** : [GameTheory-15-CooperativeGames](GameTheory-15-CooperativeGames.ipynb) - Jeux cooperatifs, valeur de Shapley et formation de coalitions
-",,,,,,,,95f5528ca899fe4a,,,,,,,
+",,,,,,,,99f6c4996559eb7d,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb,5d940e76,markdown,fr,083d54bfe7065526,"## 8. Exercices
 
 ### Exercice 1 : Stackelberg asymetrique ($c_L \neq c_F$)
@@ -10281,7 +10281,7 @@ Ce notebook réimplémente from-scratch en C# pur (BCL .NET 9, **0 NuGet**) la *
 
 **Voir aussi** : [GameTheory-15 (Python)](GameTheory-15-CooperativeGames.ipynb) · marathon [#4956](https://github.com/jsboige/CoursIA/issues/4956) · registre SOTA [#3801](https://github.com/jsboige/CoursIA/issues/3801).
 ",,,,,,,,6fa5c644f30c5464,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,3b9be608,markdown,fr,755cff8a60b10c35,"## Objectifs d'apprentissage
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,3b9be608,markdown,fr,a0bad61418b9a34f,"## Objectifs d'apprentissage
 
 1. Modéliser un **jeu coopératif à utilité transférable** (TU game) via sa fonction caractéristique.
 2. Énumérer **coalitions** (powerset) et **permutations**.
@@ -10291,8 +10291,9 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,3b9be60
 6. Reconnaître les **jeux convexes** (marginales croissantes ⟹ core non vide, Shapley ∈ core).
 
 ### Prérequis
+
 - Théorie des jeux en forme normale (cf. [GameTheory-2](GameTheory-2-NormalForm-Csharp.ipynb), [GameTheory-4](GameTheory-4-NashEquilibrium-Csharp.ipynb)).
-",,,,,,,,755cff8a60b10c35,,,,,,,
+",,,,,,,,a0bad61418b9a34f,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,e97b4899,code,fr,e9cc5caa5c34b226,"// Setup : types de base pour un jeu cooperatif (TU game).
 #nullable enable
 using System;
@@ -10320,18 +10321,21 @@ public sealed class CooperativeGame
 
 Show(""Types charges : CooperativeGame (v: 2^N -> R via bitmask), helper Show()."");
 ",,,,,,,,e9cc5caa5c34b226,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,94c4acec,markdown,fr,28fa17bb9900fd00,"## 1. Fonction caractéristique et coalitions
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,94c4acec,markdown,fr,f8c68fc76fc25749,"## 1. Fonction caractéristique et coalitions
 
 ### Définition
+
 Un **jeu coopératif à utilité transférable** (von Neumann-Morgenstern 1944) est un couple `(N, v)` où `N = {1,…,n}` est l'ensemble des joueurs et `v : 2^N → ℝ` est la **fonction caractéristique** : `v(S)` est la valeur que la coalition `S` peut garantir seule (son « worth »). Conventions : `v(∅) = 0`, `v(S) ≥ 0` souvent.
 
 ### Énumération des coalitions
+
 L'ensemble des coalitions = le **powerset** de `N` (`2^n` coalitions). On l'énumère via les **bitmasks** de `0` à `2^n − 1`.
 
 ### Propriétés
+
 - **Superadditivité** : `v(S ∪ T) ≥ v(S) + v(T)` si `S ∩ T = ∅` (fusioner paie).
 - **Convexité** : `v(S ∪ {i}) − v(S)` **croît** avec `S` (rend les grandes coalitions stables).
-",,,,,,,,28fa17bb9900fd00,,,,,,,
+",,,,,,,,f8c68fc76fc25749,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,4b8e539a,code,fr,5f69c8cba3ea5e39,"// Enumere toutes les coalitions (powerset) via bitmask.
 public static List<List<int>> AllCoalitions(int n, bool includeEmpty = true)
 {
@@ -10416,25 +10420,28 @@ sb.AppendLine($""Convexe       : {IsConvex(glove)}"");
 sb.AppendLine($""v(N) = v(grand coalition) = {glove.VGrand}"");
 Show(sb.ToString());
 ",,,,,,,,d83bd890ab602316,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,a67d5a39,markdown,fr,0c5484e408188a3c,"### Interprétation des résultats
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,a67d5a39,markdown,fr,77f4123c0ee386bb,"### Interprétation des résultats
+
 - **Superadditif** : oui (fusioner des coalitions disjointes ne diminue jamais la valeur — une coalition plus grosse accède à plus de gants).
 - **Non convexe** : la marginale du joueur 1 **décroît** (passer de {2} à {2,3} comme partenaires ne crée qu'une paire au maximum). Le jeu n'est pas convexe, donc on n'a **pas** la garantie que le core soit non vide (on le vérifiera plus bas).
-",,,,,,,,0c5484e408188a3c,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,2507cf8f,markdown,fr,0c390990ddfa1037,"## 2. La valeur de Shapley
+",,,,,,,,77f4123c0ee386bb,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,2507cf8f,markdown,fr,ff10d7b84f1bd95d,"## 2. La valeur de Shapley
 
 ### Définition (Shapley 1953)
+
 La **valeur de Shapley** `φ_i` du joueur `i` est la **moyenne de ses contributions marginales** sur **toutes les permutations** des joueurs (modélisant tous les ordres d'arrivée équiprobables) :
 
 $$\varphi_i = \frac{1}{n!} \sum_{\pi \in S_n} \big[ v(\{\text{joueurs avant } i \text{ dans } \pi\} \cup \{i\}) - v(\text{joueurs avant } i) \big]$$
 
 ### Propriétés (axiomes caractérisant Shapley)
+
 - **Efficacité** : `Σ_i φ_i = v(N)` (tout est redistribué).
 - **Symétrie** : deux joueurs interchangeables ont même φ.
 - **Joueur nul** : si `i` ne contribue jamais (`v(S∪{i})=v(S)` ∀S), alors `φ_i = 0`.
 - **Additivité** : `φ` est linéaire en `v`.
 
 Shapley est l'**unique** valeur satisfaisant ces 4 axiomes.
-",,,,,,,,0c390990ddfa1037,,,,,,,
+",,,,,,,,ff10d7b84f1bd95d,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,46b42651,code,fr,fe97a4407a4a0e94,"// Enumere toutes les permutations (Heap iteratif) des indices 0..n-1.
 public static IEnumerable<List<int>> Permutations(int n)
 {
@@ -10495,9 +10502,10 @@ La valeur de Shapley donne `φ_{L1} = 2/3`, `φ_{R2} = φ_{R3} = 1/6`. Vérifica
 
 Le joueur qui détient la ressource **rare** (complémentaire) capture l'essentiel de la valeur — c'est l'intuition économique de Shapley (prix d'un facteur rare).
 ",,,,,,,,71cbff305aaa3cd0,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,38da1421,markdown,fr,3a91f5a2b1b2a1c7,"## 3. Indice de pouvoir de Banzhaf
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,38da1421,markdown,fr,3ec3d5e601decee3,"## 3. Indice de pouvoir de Banzhaf
 
 ### Définition (Banzhaf 1965)
+
 Dans un jeu de **vote pondéré** (chaque joueur a un poids, une coalition gagne si son poids total ≥ quota `q`), l'**indice de Banzhaf** mesure le **pouvoir de swing** d'un joueur : combien de coalitions deviennent gagnantes par son ajout.
 
 Un joueur `i` est **décisif** dans la coalition `S` (avec `i ∉ S`) si `S` perd mais `S ∪ {i}` gagne. L'indice de Banzhaf **non normalisé** :
@@ -10507,7 +10515,7 @@ $$\beta_i = |\{ S \subseteq N \setminus \{i\} : S \text{ perd}, S \cup \{i\} \te
 L'indice **normalisé** `β_i^* = β_i / Σ_j β_j` donne la part de pouvoir.
 
 > Contrairement à Shapley (qui pondère par la taille de coalition), Banzhaf traite toutes les coalitions équiprobablement. Utile en **analyse de pouvoir de vote** (Conseil de l'UE, assemblées d'actionnaires).
-",,,,,,,,3a91f5a2b1b2a1c7,,,,,,,
+",,,,,,,,3ec3d5e601decee3,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,b509f4a8,code,fr,6c7346c64fd89c45,"// Jeu de vote pondere : v(S) = 1 si sum(poids) >= q, sinon 0.
 #nullable enable
 public static CooperativeGame WeightedVotingGame(int[] weights, double q, string[]? names = null)
@@ -10556,17 +10564,19 @@ sb.AppendLine(""Lecon : bien que C1 n'ait que 1% du capital, il a autant de pouv
 sb.AppendLine(""que B49 (chacun decisive dans 1 coalition pivot, {B49,C1}=50). Le poids != le pouvoir."");
 Show(sb.ToString());
 ",,,,,,,,6c7346c64fd89c45,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,73969cbc,markdown,fr,2eeed1f25ec813a8,"### Interprétation : poids ≠ pouvoir
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,73969cbc,markdown,fr,e956e99c2b4e6e36,"### Interprétation : poids ≠ pouvoir
+
 Dans le vote `[50, 49, 1]` (quota 50), l'indice de Banzhaf vaut **β = (3, 1, 1)** :
 - **A50** est décisif dans **3** coalitions (`{}`→`{A50}`, `{B49}`→`{A50,B49}`, `{C1}`→`{A50,C1}`) → β = 3.
 - **B49** est décisif dans **1** coalition (`{C1}`→`{B49,C1}` = 50 ≥ 50) → β = 1.
 - **C1** est décisif dans **1** coalition (`{B49}`→`{B49,C1}` = 50 ≥ 50) → β = 1.
 
 Ainsi **B49 et C1 ont le même pouvoir de swing** (1 chacun) malgré l'écart de capital (49 vs 1). C'est le cœur de l'analyse de Banzhaf : le **poids nominal est trompeur**, seul compte le nombre de coalitions pivot. Normalisé : `(0.6, 0.2, 0.2)` — C1 (1% du capital) détient **20%** du pouvoir.
-",,,,,,,,2eeed1f25ec813a8,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,17cde487,markdown,fr,ba77df51b7f36c87,"## 4. Le core
+",,,,,,,,e956e99c2b4e6e36,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,17cde487,markdown,fr,58d908493f237eb2,"## 4. Le core
 
 ### Définition
+
 Le **core** (Gillies 1959) est l'ensemble des **imputations** `x = (x_1,…,x_n)` que **aucune coalition ne peut bloquer** :
 - **Efficacité** : `Σ_i x_i = v(N)` (tout est distribué).
 - **Rationalité coalitionnelle** : `Σ_{i∈S} x_i ≥ v(S)` pour **toute** coalition `S`.
@@ -10574,11 +10584,13 @@ Le **core** (Gillies 1959) est l'ensemble des **imputations** `x = (x_1,…,x_n)
 Une coalition `S` pour laquelle `Σ_{i∈S} x_i < v(S)` peut **bloquer** `x` (elle obtient moins seule qu'en se séparable). Le core = répartitions **stables** (non bloquables).
 
 ### Non-vacuité
+
 Le core peut être **vide** (aucune répartition stable). Le **théorème de Bondareva-Shapley** : le core est non vide ssi le jeu est **équilibré**. Une condition suffisante : le jeu est **convexe** (alors Shapley ∈ core).
 
 ### Test pratique
+
 Pour un petit jeu, on teste la non-vacuité en cherchant une imputation `x` efficace satisfaisant toutes les inégalités `Σ_{i∈S} x_i ≥ v(S)`. C'est un **programme linéaire** (feasibility). On l'illustre ici par vérification directe de candidats (Shapley, imputation extrêmale).
-",,,,,,,,ba77df51b7f36c87,,,,,,,
+",,,,,,,,58d908493f237eb2,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,59e91314,code,fr,53ca08765a866235,"// Teste si une imputation x est dans le core (efficace + rationnelle pour toute coalition).
 public static (bool inCore, List<string> blocking) IsInCore(CooperativeGame g, double[] x)
 {
@@ -10620,12 +10632,14 @@ sb.AppendLine(""(x=(1,0,0) est stable : R2 et R3 seuls valent 0, donc ne peuvent
 sb.AppendLine(""C'est l'extreme : le detenteur du facteur rare peut tout extraire."");
 Show(sb.ToString());
 ",,,,,,,,53ca08765a866235,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,6381cb5a,markdown,fr,3f2b426cda68c50d,"### Interprétation : core du glove game
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,6381cb5a,markdown,fr,4813a7b80f674ff9,"### Interprétation : core du glove game
+
 Le core du glove game est **non vide** et contient les imputations où `x_{L1} ≥ 1` contraint — en fait `x = (1, 0, 0)` est stable : L1 prend tout, et R2/R3 seuls valent 0 donc ne peuvent bloquer. Le Shapley `(2/3, 1/6, 1/6)` **n'est pas** dans le core (la coalition {L1, R2} vaut 1 mais ne reçoit que 2/3 + 1/6 = 5/6 < 1 → bloque). C'est un exemple où **Shapley ∉ core** car le jeu n'est **pas convexe**.
-",,,,,,,,3f2b426cda68c50d,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,68c2403f,markdown,fr,685786b693a6722c,"## 5. Jeux convexes : Shapley ∈ core
+",,,,,,,,4813a7b80f674ff9,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,68c2403f,markdown,fr,9d979b989deebcaa,"## 5. Jeux convexes : Shapley ∈ core
 
 ### Théorème (Shapley 1971)
+
 Si le jeu est **convexe** (marginales croissantes : `v(S ∪ {i}) − v(S)` croît avec `S ⊆ T`), alors :
 1. Le **core est non vide**.
 2. La **valeur de Shapley est dans le core** (Shapley est une répartition stable).
@@ -10633,8 +10647,9 @@ Si le jeu est **convexe** (marginales croissantes : `v(S ∪ {i}) − v(S)` cro�
 C'est le cas « idéal » où équité (Shapley) et stabilité (core) coïncident.
 
 ### Exemple : le jeu d'aéroport
+
 Coût de construction d'une piste dont chaque joueur `i` a besoin d'une longueur `ℓ_i`. Le coût d'une coalition `S` = `max_{i∈S} ℓ_i` (la plus grande longueur requise). Ce jeu de coût est **concave** (dual du convexe) : les économies d'échelle sont décroissantes. La répartition Shapley des coûts est dans le core.
-",,,,,,,,685786b693a6722c,,,,,,,
+",,,,,,,,9d979b989deebcaa,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,286d741d,code,fr,ce95edd9a788ff32,"// Airport game (jeu de cout) : c(S) = max longueur requise par S. Concave => Shapley des couts dans le core.
 // On modelise comme un jeu (v = -cout, convexe) ou directement sur les couts.
 // Longueurs requises : 3 avions (petit=1000, moyen=3000, gros=6000).
@@ -10673,10 +10688,11 @@ sb.AppendLine(""C'est la tarification Shapley : chacun paye son increment margin
 sb.AppendLine(""Le jeu de cout etant concave, cette repartition est dans le core (stable)."");
 Show(sb.ToString());
 ",,,,,,,,ce95edd9a788ff32,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,22398c1f,markdown,fr,2af623fbf35e9459,"### Interprétation : tarification Shapley de l'aéroport
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,22398c1f,markdown,fr,04b27710dac3b756,"### Interprétation : tarification Shapley de l'aéroport
+
 La valeur de Shapley répartit le coût **par tranches d'usage marginal** : le petit avion (1000m) partage la première tranche avec tous, le gros (6000m) paie seul la dernière. C'est la base de la **tarification équitable des coûts communs** (aéroports, réseaux, projets jointifs). Le caractère concave du jeu de coût garantit la stabilité (personne ne paie plus que sa longueur seule → pas de blocage).
-",,,,,,,,2af623fbf35e9459,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,4e1d071b,markdown,fr,4cf1e9a6a2c37427,"## 6. Synthèse
+",,,,,,,,04b27710dac3b756,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,4e1d071b,markdown,fr,133440c1f8e938f7,"## Synthèse
 
 | Concept | Formule / Test | Rôle |
 |---------|----------------|------|
@@ -10687,7 +10703,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,4e1d071
 | **Banzhaf** `β_i` | nombre de coalitions swing | pouvoir de vote |
 | **Core** | `Σx_i=v(N)` et `Σ_{i∈S}x_i≥v(S)` ∀S | répartitions non bloquables |
 | **Convexe ⟹ Shapley ∈ core** | théorème de Shapley 1971 | équité + stabilité conjointes |
-",,,,,,,,4cf1e9a6a2c37427,,,,,,,
+",,,,,,,,133440c1f8e938f7,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,37a4538f,code,fr,73d43cf0624aa592,"var sb = new System.Text.StringBuilder();
 sb.AppendLine(""Synthese : glove game (non convexe) vs airport game (concave)"");
 sb.AppendLine(new string('-', 58));
@@ -10703,58 +10719,65 @@ sb.AppendLine(""- jeux non convexes : Shapley peut etre bloquee par une coalitio
 sb.AppendLine(""  le core peut etre vide ou contenir des imputations extremes."");
 Show(sb.ToString());
 ",,,,,,,,73d43cf0624aa592,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,b141449d,markdown,fr,43aea2b5a4e2211a,"### Interprétation du tableau comparatif
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,b141449d,markdown,fr,b1c81091511e54b0,"### Interprétation du tableau comparatif
+
 La convexité (ou concavité d'un jeu de coût) est la condition clé : elle **garantit** que la répartition équitable (Shapley) est aussi **stable** (dans le core). Hors convexité, équité et stabilité divergent — c'est le cœur de la difficulté des jeux coopératifs non convexes (négociation, externalités).
-",,,,,,,,43aea2b5a4e2211a,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,8f818f2b,markdown,fr,6db195c22d187e22,"## 7. Exercices
+",,,,,,,,b1c81091511e54b0,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,8f818f2b,markdown,fr,e10936a43e2cf52a,"## 7. Exercices
 
 > Stubs à compléter (jamais `throw` : le notebook s'exécute end-to-end, règle C.1).
 
 ### Exercice 1 — Jeu de vote pondéré (Conseil de l'UE)
+
 Construire un jeu de vote pondéré représentant le Conseil de l'UE (poids des grands pays) et calculer les indices de Banzhaf. Qui a le plus de pouvoir relatif ?
-",,,,,,,,6db195c22d187e22,,,,,,,
+",,,,,,,,e10936a43e2cf52a,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,4c5ba678,code,fr,b1834191ee081f88,"// Exercice 1 — Conseil UE (a completer).
 #nullable enable
 // TODO etudiant : definir les poids des pays (FR, DE, IT, ES = 29 chacun, etc.) et le quota (62%).
 // Etape 1 : WeightedVotingGame + Banzhaf. Etape 2 : comparer beta_i normalise au poids.
 Console.WriteLine(""Exercice 1 (Conseil UE) a completer."");
 ",,,,,,,,b1834191ee081f88,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,96c218aa,markdown,fr,1c279e5e2dfc0a65,"### Exercice 2 — Bankruptcy game
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,96c218aa,markdown,fr,849796a6635a160f,"### Exercice 2 — Bankruptcy game
+
 Trois créanciers réclament 100, 200, 300 ; l'actif disponible est 350. Modéliser comme jeu coopératif (`v(S) = max(0, actif − somme des réclamations hors S)`) et calculer Shapley. Comparer à la règle proportionnelle.
-",,,,,,,,1c279e5e2dfc0a65,,,,,,,
+",,,,,,,,849796a6635a160f,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,ee4e4c53,code,fr,a08cfc5935e74adb,"// Exercice 2 — Bankruptcy game (a completer).
 #nullable enable
 // TODO etudiant : v(S) = max(0, E - sum_{i notin S} claim_i). Shapley vs proportionnel.
 Console.WriteLine(""Exercice 2 (Bankruptcy) a completer."");
 ",,,,,,,,a08cfc5935e74adb,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,be4f9a34,markdown,fr,cbb3cb23b2468855,"### Exercice 3 — Core vide
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,be4f9a34,markdown,fr,6d5ee191c4d97515,"### Exercice 3 — Core vide
+
 Construire un jeu à 3 joueurs dont le core est **vide** (ex: jeu non équilibré) et le vérifier (aucune imputation stable).
-",,,,,,,,cbb3cb23b2468855,,,,,,,
+",,,,,,,,6d5ee191c4d97515,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,fb937938,code,fr,2b407d4c2c4b3632,"// Exercice 3 — Core vide (a completer).
 #nullable enable
 // TODO etudiant : definir v tq aucune imputation x (sum=v(N), x(S)>=v(S) forall S) n'existe.
 // Indice : jeu a majority avec 3 joueurs, v(S)=1 si |S|>=2, v(N)=1 => core vide.
 Console.WriteLine(""Exercice 3 (Core vide) a completer."");
 ",,,,,,,,2b407d4c2c4b3632,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,ae7f3a9e,markdown,fr,4afb188db176f579,"### Exercice 4 — Nucleolus
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,ae7f3a9e,markdown,fr,0406f70932cde552,"### Exercice 4 — Nucleolus
+
 Le **nucleolus** est la répartition qui minimise lexicographiquement le vecteur des excès (mécontentement max des coalitions). L'implémenter (avancé) et comparer à Shapley sur le glove game.
-",,,,,,,,4afb188db176f579,,,,,,,
+",,,,,,,,0406f70932cde552,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,cf1d05fc,code,fr,067b13c6f72e1292,"// Exercice 4 — Nucleolus (a completer).
 #nullable enable
 // TODO etudiant : trier les excès e_S(x) = v(S) - x(S), minimiser le max lexicographiquement.
 Console.WriteLine(""Exercice 4 (Nucleolus) a completer."");
 ",,,,,,,,067b13c6f72e1292,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,04231388,markdown,fr,b21fabb54a37324f,"### Exercice 5 — Convexité et core
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,04231388,markdown,fr,6d61fe9a5fa40936,"### Exercice 5 — Convexité et core
+
 Montrer (par énumération) que pour un jeu convexe à 3 joueurs, la valeur de Shapley satisfait toutes les inégalités du core.
-",,,,,,,,b21fabb54a37324f,,,,,,,
+",,,,,,,,6d61fe9a5fa40936,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,f61b9f6b,code,fr,f72b976d0f09ad1a,"// Exercice 5 — Convexite => Shapley in core (a completer).
 #nullable enable
 // TODO etudiant : construire un jeu convexe (v convex), calculer Shapley, verifier IsInCore.
 Console.WriteLine(""Exercice 5 (Convexite) a completer."");
 ",,,,,,,,f72b976d0f09ad1a,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,47d93349,markdown,fr,4ffc52caa8ea61a9,"## 8. Résumé
+MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,47d93349,markdown,fr,4b57378eef14acd5,"## 8. Résumé
 
 ### Points clés
+
 - **Jeu coopératif** `(N, v)` : `v(S)` = valeur d'une coalition.
 - **Shapley** : répartition équitable (contribution marginale moyenne, 4 axiomes).
 - **Banzhaf** : pouvoir de swing (poids ≠ pouvoir).
@@ -10762,15 +10785,17 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb,47d9334
 - **Convexité** ⟹ core non vide **et** Shapley ∈ core (équité + stabilité).
 
 ### Leçon centrale
+
 La théorie coopérative sépare **équité** (Shapley) et **stabilité** (core). Elles coïncident pour les jeux convexes ; sinon, il faut choisir — ou chercher d'autres solutions (nucleolus, valeur de Nash).
 
 ### Prochaine étape
+
 - [GameTheory-16 (Choix social / Mechanism Design)](GameTheory-16-MechanismDesign-Csharp.ipynb) : agrégation des préférences et conception d'enchères.
 
 ---
 
 **Twin C# .NET Interactive** du notebook Python `GameTheory-15-CooperativeGames.ipynb`. Implémentation from-scratch (BCL .NET 9, 0 NuGet) — marathon [#4956](https://github.com/jsboige/CoursIA/issues/4956), registre SOTA [#3801](https://github.com/jsboige/CoursIA/issues/3801).
-",,,,,,,,4ffc52caa8ea61a9,,,,,,,
+",,,,,,,,4b57378eef14acd5,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames.ipynb,f67145d5,markdown,fr,24b6d84118294e83,"# GameTheory-15-CooperativeGames
 
 **Navigation** : [<< 14-DifferentialGames](GameTheory-14-DifferentialGames.ipynb) | [Index](README.md) | [16-MechanismDesign >>](GameTheory-16-MechanismDesign.ipynb)
@@ -11579,7 +11604,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames.ipynb,02a2ec83,markd
 ---
 
 **Navigation** : [← Précédent (DifferentialGames)](GameTheory-14-DifferentialGames.ipynb) | [Index](GameTheory-1-Setup.ipynb) | [Suivant → (MechanismDesign)](GameTheory-16-MechanismDesign.ipynb)",,,,,,,,a93e269c3a9d82f4,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,61a25b33,markdown,fr,ec02340c7a494c4a,"# GameTheory 15b - Jeux Cooperatifs en Lean : Formalisation de Shapley
+MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,61a25b33,markdown,fr,89f5ee3614cd0e48,"# GameTheory 15b - Jeux Cooperatifs en Lean : Formalisation de Shapley
 
 **Navigation** : [<< 15-CooperativeGames (track principal)](GameTheory-15-CooperativeGames.ipynb)) | [Index](README.md)
 
@@ -11624,11 +11649,11 @@ Ce notebook presente la **structure logique** du code Lean. Sans la configuratio
 | `cooperative_games_lean/CooperativeGames/Basic.lean` | TUGame, Core, convexite, Bondareva-Shapley | 0 |
 | `cooperative_games_lean/CooperativeGames/ConeKernel.lean` | Farkas / separation de cone (direction backward) | 0 |
 | `cooperative_games_lean/CooperativeGames/Shapley.lean` | Axiomes, valeur, unicite | 0 |
-| `stable_marriage_lean/StableMarriage/Definitions.lean` | Preferences, matching, stabilite | 0 |
-| `stable_marriage_lean/StableMarriage/GSState.lean` | Etat intermediaire Gale-Shapley | 0 |
-| `stable_marriage_lean/StableMarriage/Lemmas.lean` | Invariants et lemmes | 0 |
-| `stable_marriage_lean/StableMarriage/GaleShapley.lean` | Theoremes GS (stable, optimal) | 0 |
-| `stable_marriage_lean/StableMarriage/Lattice.lean` | Treillis de Knuth (join/meet) | 0 |
+| `game_theory_lean/StableMarriage/Definitions.lean` | Preferences, matching, stabilite | 0 |
+| `game_theory_lean/StableMarriage/GSState.lean` | Etat intermediaire Gale-Shapley | 0 |
+| `game_theory_lean/StableMarriage/Lemmas.lean` | Invariants et lemmes | 0 |
+| `game_theory_lean/StableMarriage/GaleShapley.lean` | Theoremes GS (stable, optimal) | 0 |
+| `game_theory_lean/StableMarriage/Lattice.lean` | Treillis de Knuth (join/meet) | 0 |
 
 ---
 
@@ -11656,7 +11681,7 @@ Ce notebook formalise les **jeux cooperatifs** et la **valeur de Shapley** en Le
 | **20 (Lean)** | Social choice : Arrow, Sen, electeur median |
 | **21 (Lean)** | Formalisation : axiomes, theoreme d'unicite de Shapley |
 
-### Duree estimee : 90 minutes",,,,,,,,ec02340c7a494c4a,,,,,,,
+### Duree estimee : 90 minutes",,,,,,,,89f5ee3614cd0e48,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,d43090a6,markdown,fr,be03420f6f77df33,"---
 
 ## 1. Jeux Cooperatifs (TU Games)
@@ -12117,7 +12142,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,6ef2a0a1
 -- #eval vote3Value [.P2, .P3]
 
 #check Nat  -- placeholder pour verifier que la cellule compile",,,,,,,,a2b88291ab5aaf6f,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,1efe13b1,markdown,fr,0f574387d3cd9ab2,"---
+MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,1efe13b1,markdown,fr,45b57d219eaad6b8,"---
 
 ## 6. Mariages Stables et l'Algorithme de Gale-Shapley
 
@@ -12138,7 +12163,7 @@ L'algorithme de **Gale-Shapley** (1962) resout ce probleme en au plus $n^2$ etap
 
 > **Lien avec les jeux cooperatifs** : Le theoreme de Gale-Shapley garantit l'existence d'un appariement stable - un concept analogue au Core pour les jeux de mariage. La connexion profonde est que les mariages stables forment un **treillis distributif** (Knuth 1976), tout comme le Core dans certains jeux cooperatifs.
 
-> **Port Lean 4 complet** : Le projet `stable_marriage_lean/` contient la formalisation complete avec Mathlib : `Definitions.lean` (117 lignes), `GSState.lean` (168 lignes), `Lemmas.lean` (651 lignes, 0 sorry), `GaleShapley.lean` (157 lignes, 1 sorry), `Lattice.lean` (treillis de Knuth, 3 sorry).",,,,,,,,0f574387d3cd9ab2,,,,,,,
+> **Port Lean 4 complet** : Le projet `game_theory_lean/` contient la formalisation complete avec Mathlib : `Definitions.lean` (117 lignes), `GSState.lean` (168 lignes), `Lemmas.lean` (651 lignes, 0 sorry), `GaleShapley.lean` (157 lignes, 1 sorry), `Lattice.lean` (treillis de Knuth, 3 sorry).",,,,,,,,45b57d219eaad6b8,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,f06812e5,code,fr,764a1ea695a9297f,"-- Section 6 : Mariages Stables - Definitions
 -- Probleme : n hommes et n femmes, preferences strictes, trouver un appariement stable
 
@@ -12174,15 +12199,15 @@ def IsManOptimalSM (prof : PrefProfileSM) (mu : MatchingSM) : Prop :=
 #check IsBlockingPairSM
 #check IsStableSM
 #check IsManOptimalSM",,,,,,,,764a1ea695a9297f,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,c1131f3b,markdown,fr,477c40c80e4d0fce,"### Definitions Lean simplifiees
+MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,c1131f3b,markdown,fr,9049f3b7de51db00,"### Definitions Lean simplifiees
 
-Les definitions ci-dessus adaptent le formalisme du port Mathlib en Lean pur. Le port complet (`stable_marriage_lean/`) utilise des types plus precis :
+Les definitions ci-dessus adaptent le formalisme du port Mathlib en Lean pur. Le port complet (`game_theory_lean/`) utilise des types plus precis :
 
 - `Fin n` au lieu de `Nat` (bornage statique des indices)
 - `Bijective` pour garantir que les preferences sont des permutations
 - `GSMatching` avec des preuves de coherence mutuelle (`GSConsistent`)
 
-La notion de **paire bloquante** est directement analogue a celle de **coalition bloquante** dans le Core d'un jeu cooperatif : dans les deux cas, un sous-ensemble d'agents peut ameliorer sa situation en derogant a l'accord courant.",,,,,,,,477c40c80e4d0fce,,,,,,,
+La notion de **paire bloquante** est directement analogue a celle de **coalition bloquante** dans le Core d'un jeu cooperatif : dans les deux cas, un sous-ensemble d'agents peut ameliorer sa situation en derogant a l'accord courant.",,,,,,,,9049f3b7de51db00,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,0233c33e,code,fr,76f96da0b3615ca8,"-- Etat intermediaire de l'algorithme de Gale-Shapley (simplifie)
 -- Version complete dans stable_marriage_lean/StableMarriage/GSState.lean
 
@@ -12208,14 +12233,14 @@ def gsProposalBound (n : Nat) : Nat := n * n
 #check gsInitial
 #eval gsProposalBound 3  -- 9 propositions maximum pour n=3
 #eval gsProposalBound 5  -- 25 propositions maximum pour n=5",,,,,,,,76f96da0b3615ca8,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,91849c74,markdown,fr,f7b79183a3cc96e5,"> **Etat du port Lean 4** (`stable_marriage_lean/`) :
+MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,91849c74,markdown,fr,9b23670c93c1b493,"> **Etat du port Lean 4** (`game_theory_lean/`) :
 > - `Definitions.lean` : PrefProfile, Matching, IsStable, IsManOptimal (117 lignes)
 > - `GSState.lean` : GSMatching, GSState, gsStep, gsRunSteps, gsGaleShapley (168 lignes)
 > - `Lemmas.lean` : 14 invariants prouves (GSConsistent, proposedCount, womenBestState, menProposedDownward...) - **0 sorry** (891 lignes)
 > - `GaleShapley.lean` : theoremes GS - `gale_shapley_stable` **PROUVE** (PR #1194), `gale_shapley_woman_pessimal` **PROUVE** (PR #1320), `gale_shapley_man_optimal` **PROUVE** (via `exists_isManOptimal`, seeded par `gale_shapley_stable`)
 > - `Lattice.lean` : Treillis des mariages stables (Knuth 1976) - **0 sorry** (882 lignes)
 >
-> Total stable_marriage_lean : **0 sorry**. Les theoremes `gale_shapley_man_optimal` et le treillis de Knuth (`Lattice.lean`) sont desormais prouves ; les 14 lemmes d'invariants restent tous prouves.",,,,,,,,f7b79183a3cc96e5,,,,,,,
+> Total game_theory_lean (module StableMarriage) : **0 sorry**. Les theoremes `gale_shapley_man_optimal` et le treillis de Knuth (`Lattice.lean`) sont desormais prouves ; les 14 lemmes d'invariants restent tous prouves.",,,,,,,,9b23670c93c1b493,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,09930d6c,markdown,fr,fa4581857c56f0fe,"---
 
 ## 6b. Algorithme de Gale-Shapley en Python
@@ -12225,7 +12250,7 @@ Les definitions Lean ci-dessus montrent la *structure* du probleme. Implementons
 L'algorithme de **deferred acceptance** (acceptation differree) est remarquable par sa simplicite et ses garanties theoriques fortes.
 
 > **Note** : Les cellules ci-dessous sont en Python (executables dans le notebook compagnon [15c-CooperativeGames-Python](GameTheory-15c-CooperativeGames-Python.ipynb) ou dans un kernel Python). Leur contenu est aussi valide en Python 3 standard.",,,,,,,,fa4581857c56f0fe,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,c5fb94ea,markdown,fr,2620ac26eec4278e,"### Algorithme de Gale-Shapley en Python
+MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,c5fb94ea,markdown,fr,6858fce846632f02,"### Algorithme de Gale-Shapley en Python
 
 La cellule de code Python ci-dessous etait initialement integree au notebook Lean. Comme ce
 notebook utilise le kernel **Lean 4 (WSL)**, le code Python ne peut pas s'executer ici.
@@ -12290,8 +12315,8 @@ Exemple 3 (3x3, femme-proposante) :
 
 > **Dualite** : le resultat femme-proposante est optimal pour les femmes et
 > pessimal pour les hommes (inverse du resultat homme-proposant). Cette propriete
-> est prouvee dans `stable_marriage_lean/StableMarriage/GaleShapley.lean`
-> (theoreme `gale_shapley_woman_pessimal`).",,,,,,,,2620ac26eec4278e,,,,,,,
+> est prouvee dans `game_theory_lean/StableMarriage/GaleShapley.lean`
+> (theoreme `gale_shapley_woman_pessimal`).",,,,,,,,6858fce846632f02,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,8a0038a1,markdown,fr,ecd9398d2c03b5df,"---
 
 ## 7. Exemple guides
@@ -12343,9 +12368,9 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,9bca78ce
 4. **Terminaison** : L'algorithme fait au plus $n^2$ propositions. Pour $n=3$, au plus 9 propositions suffisent. Le theoreme `gale_shapley_terminates` capture cette propriete.
 
 > **Connexion Lean** : Les trois exemples ci-dessus correspondent aux theoremes du port : `gale_shapley_stable` (preuve complete), `gale_shapley_man_optimal` (sorry restant), `gale_shapley_woman_pessimal` (prouve dans PR #1320). La formalisation prouve que ces proprietes sont valables pour **tout** $n$, pas seulement les exemples numeriques.",,,,,,,,ef9f576c9529833e,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,676a41f8,markdown,fr,ab3e6de88b42f8be,"### Le port Lean 4 : tour detaille
+MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,676a41f8,markdown,fr,8dde73f97f8f85dd,"### Le port Lean 4 : tour detaille
 
-Le projet `stable_marriage_lean/` contient ~2200 lignes de code Lean 4 avec Mathlib, organisées en 5 fichiers :
+Le projet `game_theory_lean/` contient ~2200 lignes de code Lean 4 avec Mathlib, organisées en 5 fichiers :
 
 | Fichier | Lignes | Role | Sorry |
 |---------|--------|------|-------|
@@ -12370,7 +12395,7 @@ Le projet `stable_marriage_lean/` contient ~2200 lignes de code Lean 4 avec Math
 
 **GaleShapley.lean** : le theorem central `gale_shapley_stable` est prouve constructivement, en utilisant `gsFinalMatching` pour convertir le matching partiel en bijection totale, puis `gsNoBlockingPairs` pour la stabilite.
 
-> **Build** : `lake build StableMarriage` — 687 jobs, 0 erreurs. Toolchain `v4.30.0-rc2`.",,,,,,,,ab3e6de88b42f8be,,,,,,,
+> **Build** : `lake build StableMarriage` — 687 jobs, 0 erreurs. Toolchain `v4.30.0-rc2`.",,,,,,,,8dde73f97f8f85dd,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb,f8cd5edb,markdown,fr,92fb23b5168bec01,"### Applications reelles
 
 L'algorithme de Gale-Shapley est l'un des rares resultats de theorie des jeux a avoir un impact direct et mesurable dans le monde reel :
@@ -17315,7 +17340,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b24,c
 // TODO etudiant
 int[] Ns = { 2, 4, 6, 8, 10 };
 ""Exercice 3 à compléter — complexité C(2N,N)-1 pour N in {2,4,6,8,10}."".Display();",,,,,,,,a13a0ae19d6070d3,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b25,markdown,fr,51b1d9667a276f9e,"## 8. Conclusion (tranche 2)
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b25,markdown,fr,ed18a7a30ba55100,"## Conclusion (tranche 2)
 
 Cette tranche 2 a résolu le **gap de la tranche 1** : la **support enumeration** permet de calculer **tous les équilibres de Nash** (purs et mixtes) d'un jeu quelconque.
 
@@ -17347,7 +17372,7 @@ Cette tranche 2 a résolu le **gap de la tranche 1** : la **support enumeration*
 
 ---
 
-*Tranche 2 du twin .NET⇄Python (#4956 marathon). Support enumeration = résolution exacte des équilibres mixtes, pont théorie-jeux ↔ algèbre linéaire.*",,,,,,,,51b1d9667a276f9e,,,,,,,
+*Tranche 2 du twin .NET⇄Python (#4956 marathon). Support enumeration = résolution exacte des équilibres mixtes, pont théorie-jeux ↔ algèbre linéaire.*",,,,,,,,ed18a7a30ba55100,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb,gt2c01,markdown,fr,43687411fe36a5b8,"# GameTheory-2 : Jeux sous forme normale (C# / .NET) — Tranche 1 : Nash from-scratch
 
 **Navigation** : [<< GameTheory-1 Setup](GameTheory-1-Setup.ipynb) | [GameTheory-2 Python](GameTheory-2-NormalForm.ipynb) | [Index](../README.md)
@@ -17741,7 +17766,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb,gt2c24,code,fr
 // Question : (Stag,Stag) est-il equilibre ? Et (Hare,Hare) ? Quel est le risque ?
 // TODO etudiant
 ""Exercice 3 a completer — Stag Hunt : equilibres purs et risque de coordination."".Display();",,,,,,,,462c38c2e6efd37f,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb,gt2c25,markdown,fr,575e1a508374d0ef,"## 8. Conclusion (tranche 1)
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb,gt2c25,markdown,fr,07bead319fd99b34,"## Conclusion (tranche 1)
 
 Cette tranche a pose les **concepts fondamentaux de la theorie des jeux strategique from-scratch** en C#/.NET : forme normale, meilleure reponse, equilibre de Nash pur, IESDS, equilibre mixte 2x2.
 
@@ -17776,7 +17801,7 @@ Cette tranche a pose les **concepts fondamentaux de la theorie des jeux strategi
 
 ---
 
-*Tranche 1 du twin .NET⇄Python (#4956 marathon). Theorie des jeux strategique = 1er concept. from-scratch = la valeur pedagogique de ce twin, complementaire au solveur nashpy.*",,,,,,,,575e1a508374d0ef,,,,,,,
+*Tranche 1 du twin .NET⇄Python (#4956 marathon). Theorie des jeux strategique = 1er concept. from-scratch = la valeur pedagogique de ce twin, complementaire au solveur nashpy.*",,,,,,,,07bead319fd99b34,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb,baeb94a7,markdown,fr,e49fec96e3e76b95,"# GameTheory-2-NormalForm
 
 **Navigation** : [<< 1-Setup](GameTheory-1-Setup.ipynb) | [Index](README.md) | [3-Topology2x2 >>](GameTheory-3-Topology2x2.ipynb)
@@ -20405,16 +20430,25 @@ Les swaps `ROW_3-4` et `COL_3-4` transforment le Dilemme du Prisonnier en Stag H
 - **Stag Hunt** : Je prefere chasser le cerf ensemble (4) plutot que voler le lievre de mon voisin (3)
 
 C'est un changement fondamental dans la structure des incitations !",,,,,,,,e4b878d352b69d37,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,fa327791,markdown,fr,35d506eef76f512e,"### Exercice 1 : Voisins de swap d'un jeu personnalise
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,fa327791,markdown,fr,4523645289aff91f,"### 10.1. Exercice 1 : Voisins de swap d'un jeu personnalise
 
-Creez un jeu 2x2 ordinal de votre choix et explorez ses 6 voisins dans le graphe des swaps. Pour chaque voisin, identifiez sa famille et ses equilibres de Nash.
+Creez un jeu 2x2 ordinal de votre choix et explorez ses **6 voisins** dans le graphe des swaps. Pour chaque voisin, identifiez sa **famille** (DOMINANT / COORDINATION / ANTI_COORDINATION / MIXED_ONLY / SINGLE_NASH) et ses **equilibres de Nash**. Comparez avec votre jeu de depart : quels swaps transforment la structure strategique ?
 
-**Indices** :
-- `# Indice 1` : Utilisez `OrdinalGame(row_payoffs=(...), col_payoffs=(...), name=""MonJeu"")` pour creer un jeu (chaque tuple doit etre une permutation de 1,2,3,4)
-- `# Indice 2` : Les 6 voisins s'obtiennent avec `apply_row_swap()` et `apply_col_swap()` pour les 3 paires de rangs (1,2), (2,3), (3,4)
-- `# Etape 1` : Choisissez un jeu qui n'est pas dans `CLASSIC_GAMES` (une permutation originale)
-- `# Etape 2` : Pour chaque voisin, utilisez `classify_game_family()` et `find_pure_nash()` pour le decrire
-- `# Etape 3` : Trouvez quel(s) voisin(s) appartiennent a une famille differente de votre jeu de depart",,,,,,,,35d506eef76f512e,,,,,,,
+**Contexte pedagogique** : Les 6 voisins representent toutes les **transformations elementaires** (swap adjacent 1-2, 2-3, 3-4 pour chaque joueur). Explorer le voisinage d'un jeu personnel revele sa ""place"" dans l'espace topologique des 576 jeux 2x2.
+
+**Indice 1 (construction de l'espace de recherche)** : 
+- Pour creer un jeu original : `OrdinalGame(row_payoffs=(2, 4, 1, 3), col_payoffs=(1, 3, 4, 2), name=""MonJeu"")` — chaque tuple doit etre une permutation de (1, 2, 3, 4)
+- Pour verifier sa validite : la classe `OrdinalGame` leve une `AssertionError` si les tuples ne sont pas des permutations valides
+
+**Indice 2 (generation exhaustive des voisins)** :
+- Les **6 voisins** s'obtiennent en appliquant chaque swap a chaque joueur : 
+  - `apply_row_swap(game, 1, 2)`, `apply_row_swap(game, 2, 3)`, `apply_row_swap(game, 3, 4)` (3 voisins pour Ligne)
+  - `apply_col_swap(game, 1, 2)`, `apply_col_swap(game, 2, 3)`, `apply_col_swap(game, 3, 4)` (3 voisins pour Colonne)
+
+**Indice 3 (analyse structurelle et comparaison)** :
+- Pour chaque voisin, utilisez `classify_game_family(voisin)` et `find_pure_nash(voisin)` pour le decrire
+- Pour la comparaison : `voisin.row_payoffs != game.row_payoffs` detecte si le swap affecte Ligne ou Colonne
+- Pattern de sortie : liste de dicts `[{""swap"": ""ROW_3-4"", ""family"": ""COORDINATION"", ""nash"": [(0,0), (1,1)]}, ...]`",,,,,,,,4523645289aff91f,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,2ebe90c2,code,fr,5964641d8b664ef1,"def explore_swap_neighbors(game: OrdinalGame) -> list:
     # TODO etudiant : implementer l'exploration des voisins de swap
     # Etape 1 : iterer sur les 3 paires de swaps [(1,2), (2,3), (3,4)]
@@ -20959,16 +20993,26 @@ Le graphique révèle la répartition structurelle des jeux 2x2 :
 - **DOMINANT** est une sous-catégorie de SINGLE_NASH où la stratégie est ""évidente"" par dominance
 
 Cette distribution n'est pas aléatoire : elle reflète la structure combinatoire des préférences ordinales sur 4 cellules.",,,,,,,,1017effc2b428a8b,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,305ac347,markdown,fr,e2e854ba8b94dd8b,"### Exercice 2 : Cartographie des voisins d'un jeu classique
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,305ac347,markdown,fr,0ffed6288fa02340,"### 10.2. Exercice 2 : Cartographie des voisins d'un jeu classique
 
-Choisissez un jeu classique (par exemple Deadlock ou Harmony) et construisez un ""portrait"" complet de ses 6 voisins dans le graphe des swaps : famille, equilibres de Nash, issues Pareto-optimales. Comparez l'efficacite sociale de chaque voisin avec le jeu original.
+Choisissez un jeu classique (par exemple **Deadlock** ou **Harmony**) et construisez un **portrait complet** de ses 6 voisins dans le graphe des swaps : famille, equilibres de Nash, issues Pareto-optimales. Comparez l'**efficacite sociale** de chaque voisin avec le jeu original — identifiez le(s) voisin(s) Pareto-superieurs.
 
-**Indices** :
-- `# Indice 1` : Utilisez les fonctions `apply_row_swap(game, r1, r2)` et `apply_col_swap(game, r1, r2)` pour les paires (1,2), (2,3), (3,4)
-- `# Indice 2` : Pour chaque voisin, utilisez `classify_game_family()`, `find_pure_nash()`, et `find_pareto_optimal()` (definie en section 8)
-- `# Etape 1` : Choisissez un jeu classique et calculez ses 6 voisins
-- `# Etape 2` : Pour chaque voisin, determinez s'il a un Nash Pareto-domine (comme le PD)
-- `# Etape 3` : Identifiez quel(s) swap(s) transforment un DOMINANT en COORDINATION ou ANTI_COORDINATION",,,,,,,,e2e854ba8b94dd8b,,,,,,,
+**Contexte pedagogique** : Cette analyse revele la **frontiere de viabilite** d'un jeu classique. Par exemple, Deadlock a un Nash unique Pareto-domine : certains de ses voisins peuvent eliminer ce defaut structurel (en devenant Coordination ou Anti-Coordination). C'est la base de la **theorie du design institutionnel** : modifier le contexte pour transformer le Nash en equilibre desirable.
+
+**Indice 1 (generation systematique des 6 voisins)** :
+- Utilisez les fonctions `apply_row_swap(game, r1, r2)` et `apply_col_swap(game, r1, r2)` pour les 3 paires `(1,2)`, `(2,3)`, `(3,4)` — soit 6 appels au total
+- Pour un portrait structure : stockez le resultat dans une liste de tuples `(swap_label, voisin)` ou `swap_label = f""ROW_{r1}-{r2}""` par exemple
+- Pattern : `voisins = [(f""ROW_{r1}-{r2}"", apply_row_swap(game, r1, r2)) for r1, r2 in [(1,2), (2,3), (3,4)]] + [(f""COL_{r1}-{r2}"", apply_col_swap(game, r1, r2)) for r1, r2 in [(1,2), (2,3), (3,4)]]`
+
+**Indice 2 (analyse multi-criteres par voisin)** :
+- Pour chaque voisin, calculez 3 mesures : `classify_game_family()`, `find_pure_nash()`, `find_pareto_optimal()`
+- La **comparaison Pareto** : pour chaque voisin, verifiez si son Nash est dans ses issues Pareto-optimales — si non, le voisin est dans un ""dilemme"" similaire au PD
+- Outil utile : pour Deadlock `find_pareto_optimal` donne `[(0, 0), (0, 1), (1, 0)]` — le Nash `(1, 1)` est Pareto-domine
+
+**Indice 3 (synthese comparative)** :
+- Identifiez quel(s) swap(s) transforme un DOMINANT (Deadlock, Harmony) en COORDINATION ou ANTI_COORDINATION : c'est l'**operation de redesign**
+- Comparez le **gain social** : pour chaque voisin, calculez `sum(gains_nash)` et trouvez le maximum parmi les 6 voisins
+- Pour Deadlock, le Nash `(1,1)=(3,3)` a un gain social de **6** ; cherchez les voisins ou ce gain augmente",,,,,,,,0ffed6288fa02340,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,b21a4eb2,code,fr,73be338157812eb7,"def portrait_voisins(game: OrdinalGame) -> list:
     # TODO etudiant : implementer le portrait complet des 6 voisins
     # Etape 1 : calculer les 6 voisins avec apply_row_swap et apply_col_swap pour (1,2), (2,3), (3,4)
@@ -21100,25 +21144,55 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,d930a921,markdown,fr
 1. Les jeux 2x2 forment un espace **structure** avec des connexions topologiques
 2. Un **petit changement** de preferences peut transformer radicalement la nature d'un jeu
 3. La **classification** aide a comprendre quand la cooperation emerge ou echoue",,,,,,,,260dbec267060c7c,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,96276066,markdown,fr,74b53a504226da99,"## 10. Exercices
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,96276066,markdown,fr,ef4ae6302b8fe570,"## 10. Exercices
 
-### Exercice 1
-Trouvez la sequence de swaps minimale pour transformer Chicken en Matching Pennies.
+Cette section rassemble **3 exercices progressifs** sur l'exploration topologique des jeux 2x2. Chaque exercice s'appuie sur les fonctions de manipulation de swaps (`apply_row_swap`, `apply_col_swap`) et les classifieurs structurels (`classify_game_family`, `find_pure_nash`, `find_pareto_optimal`) definis dans les sections precedentes.
 
-### Exercice 2
-Identifiez tous les jeux a exactement 3 equilibres de Nash purs.
+**Contexte d'ensemble** : les exos 10.1 et 10.2 explorent le **voisinage local** d'un jeu (ses 6 voisins immediats). L'exo 10.3 passe a l'echelle **globale** : classifier automatiquement tous les 576 jeux 2x2 par leur structure de Nash, puis cartographier la **distribution** des familles dans l'espace topologique.
 
-### Exercice 3
-Creez une visualisation montrant le ""chemin"" entre le Dilemme du Prisonnier et Harmony sur le graphe des jeux.",,,,,,,,74b53a504226da99,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,d9a7fc63,markdown,fr,b60a56ffd2fec003,"### Pistes de solution
+Note de convention : les cellules de stub utilisent `return []  # TODO etudiant` (pas de `raise NotImplementedError`, regle C.1). Le notebook s'execute de bout en bout meme sans completer les exercices.
 
-**Exercice 1** : Utilisez la fonction `find_swap_path()` avec `CLASSIC_GAMES[""Chicken""]` et `CLASSIC_GAMES[""Matching Pennies""]` pour découvrir la séquence optimale.
+### 10.3. Exercice 3 : Classification automatique des jeux 2x2 par structure
 
-**Exercice 2** : Réfléchissez à la structure des meilleures réponses dans un jeu 2x2. Combien de Nash purs peut-on avoir au maximum ?
+A partir des 576 jeux generes par `generate_all_ordinal_games()`, utilisez `classify_by_nash_structure()` pour produire un **recensement complet** : combien de jeux ont 0, 1, 2, 3 ou 4 equilibres de Nash purs ? Visualisez la distribution sous forme de **bar chart horizontal** et identifiez visuellement les **3 anomalies structurelles** (les categories rares ou absentes).
 
-> **Réflexion** : Pensez à la symétrie des meilleures réponses. Si trois cellules sont des équilibres, pourquoi la quatrième ne le serait-elle pas aussi ?
+**Contexte pedagogique** : Cette analyse globale revele la **structure combinatoire** des preferences ordinales sur 4 cellules. Le resultat attendu (0 Nash: ~12.5%, 1 Nash: ~75%, 2 Nash: ~12.5%, 3+ Nash: 0%) reflete une **asymetrie profonde** : les jeux 2x2 ne sont **pas uniformement distribues** dans l'espace topologique — la majorite convergent vers un seul comportement d'equilibre, seuls les cas degeneres en ont 0 ou 2+.
 
-**Exercice 3** : Utilisez `find_swap_path()` et `show_transformation_chain()` pour visualiser la transformation PD → Harmony.",,,,,,,,b60a56ffd2fec003,,,,,,,
+**Indice 1 (utilisation de la fonction de classification globale)** :
+- `classify_by_nash_structure(games_set)` retourne un dict `{'0_nash': [...], '1_nash': [...], '2_nash': [...], '3_nash': [...], '4_nash': [...]}`
+- Pour compter : `{k: len(v) for k, v in categories.items()}` — vous obtenez un dict simple `{categorie: nombre}`
+- Pour les pourcentages : divisez chaque compte par `len(games_set)` (= 576 par construction) et multipliez par 100
+
+**Indice 2 (visualisation matplotlib)** :
+- Pour un bar chart horizontal : `plt.barh(categories, counts)` ou vertical : `plt.bar(categories, counts)`
+- Ajoutez les labels : `plt.xlabel('Nombre de jeux')`, `plt.ylabel('Nombre de Nash purs')`, `plt.title('Distribution des equilibres dans les 576 jeux 2x2')`
+- Pour annoter les barres avec les pourcentages : boucle `for i, (cat, count) in enumerate(...)` puis `plt.text(count + 5, i, f'{100*count/576:.1f}%', va='center')`
+
+**Indice 3 (interpretation structurelle)** :
+- Identifiez pourquoi **3_nash = 0** : si 3 cellules d'une matrice 2x2 sont des equilibres de Nash, la symetrie des meilleures réponses force la 4ᵉ a l'etre aussi (donc 4_nash) — argument formel verifiable par enumeration
+- Identifiez pourquoi **4_nash = 0** aussi : pour qu'une cellule soit un Nash, les deux strategies du joueur oppose doivent etre sous-optimales — sur 4 cellules, c'est structurellement impossible en 2x2
+- Question bonus : pourquoi la majorite des jeux (~75%) convergent-ils vers **1_nash** ? (indice : la structure des preferences ordinales rend les ""ex-aequo"" sur les meilleures réponses rares)",,,,,,,,ef4ae6302b8fe570,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,d9a7fc63,code,fr,9fb00676c204caa4,"def classify_and_visualize_nash_distribution(games_set: Set[OrdinalGame]) -> Dict[str, int]:
+    """"""
+    Classifier tous les jeux par structure de Nash et visualiser la distribution.
+    
+    Args:
+        games_set: Ensemble de jeux 2x2 (576 par construction depuis generate_all_ordinal_games)
+    
+    Returns:
+        Dict {categorie: nombre} avec categories parmi '0_nash', '1_nash', '2_nash', '3_nash', '4_nash'
+    """"""
+    # TODO etudiant : implementer la classification + visualisation
+    # Etape 1 : appeler classify_by_nash_structure(games_set) pour obtenir les categories
+    # Etape 2 : construire le dict {cat: len(games_list) for cat, games_list in categories.items()}
+    # Etape 3 : creer un bar chart avec plt.barh() et annoter les pourcentages
+    # Etape 4 : retourner le dict {cat: count}
+    # Indice : 576 = 24 permutations Row x 24 permutations Col ; resultat attendu 0:72, 1:432, 2:72, 3:0, 4:0
+    return {}  # TODO etudiant : remplacer
+
+# distribution = classify_and_visualize_nash_distribution(all_games)
+# print(distribution)
+print(""Exercice a completer : classification et visualisation des 576 jeux 2x2"")",,,,,,,,9fb00676c204caa4,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb,683ba13f,code,fr,22bafdb26f3b8780,"# Espace pour les exercices
 print(""Exercice a completer : exploration topologique"")
 ",,,,,,,,22bafdb26f3b8780,,,,,,,
@@ -25107,26 +25181,40 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,d96af0cc,
 **Ce que la lib cache et que ce twin rend explicite** : le pivotage de tableau du simplexe, le decalage de matrice pour garantir $v > 0$, la lecture des **variables duales** (shadow prices) dans le tableau final pour obtenir $\sigma$, et la convention `tau_j = v' y_j` pour retrouver les probabilites.
 
 > **Lien avec la formalisation Lean** : les structures de jeux a somme nulle et le theoreme minimax sont formalises dans `minimax_lean` (Von Neumann via Sion). Le present notebook en est le versant **computationnel** : il calcule la valeur que Lean demontre exister.",,,,,,,,2001ad1a0810826f,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,ec1eea97,markdown,fr,ba473e0efc05e970,"## 9. Exercices
+MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,ec1eea97,markdown,fr,4b0e68553bd7ddd4,"## 9. Exercices
 
-> **Convention** : les exercices sont des **stubs** a completer. Ils utilisent `pass`/`return null` (jamais d'erreur volontaire) — le notebook s'execute de bout en bout meme non complete.",,,,,,,,ba473e0efc05e970,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,e3e9ab03,code,fr,e6390c64d6be8e0a,"// Exercice 1 : Colonel Blotto avec 5 soldats et 3 champs de bataille (B impair, non degenere)
+> **Convention C.1** : les exercices sont des **stubs** a completer (jamais d'erreur volontaire, regle notebook-conventions). Ils utilisent `new double[,] { ... }` initialise a une matrice 1x1 vide + commentaire `// TODO etudiant` — le notebook compile et s'execute de bout en bout meme non complete. Chaque exercice est precede d'un contexte pedagogique, suivi d'un ou plusieurs **indices** (`# Indice` / `# Etape N`) pour guider la resolution sans la donner.
+
+Les 3 exercices ci-dessous reprennent les concepts clefs du notebook (Colonel Blotto, jeu 3x3 sans point-selle, jeu 3x3 avec point-selle) et font le lien avec la formalisation Lean dans `minimax_lean` (Von Neumann via Sion).
+
+### 9.1. Colonel Blotto a 5 soldats, 3 champs
+
+Extension directe de la section 7 : on passe de $S=4$ soldats a $S=5$ soldats, ce qui multiplie le nombre de repartitions (de $C(6,2)=15$ a $C(7,2)=21$ strategies). C'est un cas **non degenere** ($B=3$ impair) qui generalise le pattern observe sans le trivialiser.",,,,,,,,4b0e68553bd7ddd4,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,e3e9ab03,code,fr,757d0b7193139ae9,"// Exercice 1 : Colonel Blotto avec 5 soldats et 3 champs de bataille (B impair, non degenere)
 // Construire la matrice (C(7,2)=21 strategies), resoudre via SolveMatrixGame, afficher v et sigma.
-// Indice : BlottoStrategies(5, 3) ; par symetrie v=0, mais aucune strategie pure ne garantit >= 0.
-// TODO etudiant
-var ex1 = (double[,]?)null;  // = matrice Blotto(5,3)
-display(""Exercice 1 a completer : construisez la matrice Blotto(5,3) puis appelez SolveMatrixGame."");",,,,,,,,e6390c64d6be8e0a,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,748cd741,code,fr,286a53f1064d7697,"// Exercice 2 : Verification du theoreme minimax sur un jeu 3x3 personnalise
-// Etape 1 : choisir une matrice 3x3 sans point-selle.
-// Etape 2 : calculer sigma, tau, v avec SolveMatrixGame.
-// Etape 3 : verifier sigma.A.tau == v et dualite (primal = dual).
-var ex2 = (double[,]?)null;  // votre matrice 3x3
-display(""Exercice 2 a completer : votre matrice 3x3 -> SolveMatrixGame -> verification."");",,,,,,,,286a53f1064d7697,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,b663ecf7,code,fr,ac63836f67049869,"// Exercice 3 : Construire un jeu 3x3 AVEC un point-selle en strategies pures
-// Indice : un point-selle = une entree qui est max de sa colonne ET min de sa ligne.
-// Verifier avec AnalyzePure que maximin == minimax (pas besoin de strategies mixtes).
-var ex3 = (double[,]?)null;  // matrice 3x3 avec point-selle
-display(""Exercice 3 a completer : matrice 3x3 avec point-selle -> AnalyzePure."");",,,,,,,,ac63836f67049869,,,,,,,
+// Indice 1 : reutilisez BlottoStrategies(5, 3) + BlottoPayoff pour remplir la matrice.
+// Indice 2 : par symetrie A = -A^T, donc v=0 ; mais la strategie mixte n'est PAS uniforme.
+// Indice 3 : combien de strategies pures (sur 21) recoivent une probabilite > 0 dans sigma ?
+// TODO etudiant : remplacer la matrice 1x1 ci-dessous par votre matrice Blotto(5, 3).
+double[,] ex1Matrix = new double[,] { { 0 } };
+display(""Exercice 1 a completer : matrice Blotto(5,3) puis appelez SolveMatrixGame(ex1Matrix)."");",,,,,,,,757d0b7193139ae9,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,748cd741,code,fr,8e53d70330d90ee5,"// Exercice 2 : Verification du theoreme minimax sur un jeu 3x3 personnalise
+// Etape 1 : remplacer la matrice 1x1 ci-dessous par votre matrice 3x3 (sans point-selle).
+// Etape 2 : appeler SolveMatrixGame(ex2Matrix) pour obtenir sigma, tau, v.
+// Etape 3 : verifier que sigma*Matrice*tau == v (a 1e-9 pres) ET que le resultat est non trivial.
+// Indice 1 : dimensions obligatoires : double[,] ex2Matrix = new double[3,3] { ... };
+// Indice 2 : utiliser SolveAndShow(new ZeroSumGame(ex2Matrix, ...)) pour afficher le detail.
+// Indice 3 : la verification de dualite est dans la cellule 6 (VerifyDuality) si besoin.
+// TODO etudiant : remplacer la matrice 1x1 ci-dessous par votre matrice 3x3.
+double[,] ex2Matrix = new double[,] { { 0 } };
+display(""Exercice 2 a completer : votre matrice 3x3 -> SolveMatrixGame -> verification."");",,,,,,,,8e53d70330d90ee5,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,b663ecf7,code,fr,b44746df4f73d8a0,"// Exercice 3 : Construire un jeu 3x3 AVEC un point-selle en strategies pures
+// Indice 1 : un point-selle A[i,j] = max de la colonne j ET min de la ligne i.
+// Indice 2 : dimensions obligatoires : double[,] ex3Matrix = new double[3,3] { ... };
+// Indice 3 : passer votre matrice a AnalyzePure pour verifier que maximin == minimax.
+// TODO etudiant : remplacer la matrice 1x1 ci-dessous par votre matrice 3x3 avec point-selle.
+double[,] ex3Matrix = new double[,] { { 0 } };
+display(""Exercice 3 a completer : matrice 3x3 avec point-selle -> AnalyzePure."");",,,,,,,,b44746df4f73d8a0,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,76eee0af,markdown,fr,72d7275491cbbcc2,"---
 
 ## Conclusion
@@ -29140,46 +29228,185 @@ print(f""\nMatrice des gains (Joueur 1):"")
 print(normal_form['A'])
 print(f""\nMatrice des gains (Joueur 2):"")
 print(normal_form['B'])",,,,,,,,000cae9f97a1713f,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,14bd3e84,markdown,fr,78ad111ade1531da,"## 8. Exercices
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,14bd3e84,markdown,fr,bba02d82d6b7d546,"## 8. Exercices
 
-### Exercice 1 : Ultimatum
+Les exercices suivants mettent en pratique les concepts cles des jeux sous forme extensive etudies dans les sections precedentes : **arbres de jeu**, **strategies comportementales**, **equilibres de Nash**, **ensembles d'information**, et **equilibres parfaits en sous-jeux (SPE)**. Chaque exercice mobilise le moteur de representation arborescente et les algorithmes d'induction arriere definis dans ce notebook (sections 1-7).
+
+L'objectif pedagogique est de transformer la comprehension conceptuelle en capacite operationnelle : construire un arbre, calculer un SPE, verifier la stabilite d'un profil de strategies.
+
+### 8.1. Exercice 1 : Solveur du jeu de l'Ultimatum
 
 Dans le jeu de l'ultimatum :
 1. J1 propose un partage x (sur 10 euros)
-2. J2 accepte (gains: 10-x, x) ou refuse (gains: 0, 0)
+2. J2 accepte (gains : 10-x, x) ou refuse (gains : 0, 0)
 
-Implementez ce jeu avec x dans {2, 4, 5, 6, 8}.
+Implementer un solveur backward-induction pour le jeu de l'ultimatum avec x dans {2, 4, 5, 6, 8}.
 
-### Exercice 2 : Stackelberg simplifie
+**Indices gradues** :
 
-Duopole sequentiel :
-1. Leader choisit quantite q1 dans {Low, High}
-2. Follower observe q1 et choisit q2 dans {Low, High}
+- **Indice 1** : Pour chaque offre x, J2 rationnel accepte si et seulement si son gain `x >= 0` (refuser rapporte toujours 0). Le seuil d'acceptation minimal de J2 est donc 0 euro.
+- **Indice 2** : Par anticipation backward-induction, J1 sait que J2 acceptera toute offre positive. J1 maximise donc son propre gain `10 - x` en choisissant le plus petit x acceptable, c'est-a-dire x = 0.
+- **Indice 3** : En consequence, le SPE predit une offre de 0 euro (ou l'offre minimale proche de 0). Le resultat `solve_ultimatum([2,4,5,6,8])` doit retourner `{'spe_offer': 2, 'j1_payoff': 8, 'j2_payoff': 2, 'j2_accepts': [2,4,5,6,8]}` (J2 rationnel accepte tout, J1 choisit le minimum de la liste).
 
-Construisez l'arbre et identifiez l'equilibre.
+### 8.2. Exercice 2 : Construction d'un arbre de jeu a 3 firmes
 
-### Exercice 3 : Information
+**Contexte** : Trois firmes (A, B, C) choisissent sequentiellement d'entrer ou non sur un marche. La firme A decide en premier (Entree ou Reste_dehors), puis B observe le choix de A et decide a son tour, puis C observe les choix de A et de B et decide enfin.
 
-Modifiez le jeu de Stackelberg pour que le follower ne voie PAS q1. Comment change le jeu ?",,,,,,,,78ad111ade1531da,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,17510cae,code,fr,08522cb60683cedb,"# Espace pour vos solutions
+**Questions** :
 
-# Exercice 1: Jeu de l'ultimatum
-def create_ultimatum_game(offers=[2, 4, 5, 6, 8]):
-    """"""Cree le jeu de l'ultimatum avec les offres specifiees.""""""
-    game = ExtensiveFormGame(""Ultimatum"", num_players=2)
-    
-    # A completer...
-    pass
+1. Construire l'arbre de jeu complet avec gains specifies pour chaque firme
+2. Identifier les ensembles d'information (combien B en a-t-il ? combien C en a-t-il ?)
+3. Trouver l'equilibre de Nash en strategies comportementales par induction arriere
 
-# Exercice 2: Stackelberg
-def create_stackelberg_game():
-    """"""Cree le jeu de Stackelberg simplifie.""""""
-    game = ExtensiveFormGame(""Stackelberg"", num_players=2)
-    
-    # A completer...
-    pass
-print(""Exercice a completer : solutions de jeux extensifs"")
-",,,,,,,,08522cb60683cedb,,,,,,,
+**Indices gradues** :
+
+- **Indice 1** : Structure arborescente : A (1 racine) -> B (2 branches) -> C (4 feuilles par branche de B) = 1 + 2 + 8 = 11 noeuds au total, dont 8 terminaux. Chaque firme occupe un niveau.
+- **Indice 2** : Ensembles d'information : A observe l'historique vide (1 infoset), B observe le choix de A (2 infosets distincts I_B_in / I_B_out), C observe les choix de A et B (4 infosets distincts I_C_AinBin / I_C_AinBout / I_C_AoutBin / I_C_AoutBout). En information PARFAITE, chaque infoset contient exactement 1 noeud.
+- **Indice 3** : Pour l'induction arriere, demarrer par C (niveau le plus bas) : pour chaque infoset de C, calculer son best response (Entree ou Reste_dehors) en fonction des gains specifies. Propager ensuite les choix optimaux de C vers le niveau de B, puis B choisit en anticipant la reaction de C. Enfin A choisit en anticipant la reaction de B qui anticipe C.
+
+### 8.3. Exercice 3 : Verification de SPE (Subgame Perfect Equilibrium)
+
+**Contexte** : Etant donne un jeu extensif a information parfaite et un profil de strategies pures pour chaque firme, verifier que ce profil constitue bien un equilibre PARFAIT en sous-jeux (SPE), pas seulement un equilibre de Nash du jeu global.
+
+**Questions** :
+
+1. Enumerer tous les sous-jeux du jeu extensif (chaque noeud de decision et ses descendants definit un sous-jeu)
+2. Pour chaque sous-jeu, verifier que le profil de strategies restreint a ce sous-jeu constitue un equilibre de Nash
+3. Conclure sur le statut SPE : le profil est-il un SPE, ou identifie-t-on des violations ?
+
+**Indices gradues** :
+
+- **Indice 1** : Un sous-jeu est identifie par sa racine (un noeud de decision) ; il inclut tous les descendants de cette racine. Le jeu entier est lui-meme un sous-jeu (racine = noeud racine du jeu). Pour le jeu a 3 firmes de l'exercice 8.2, il y a donc 1 + 2 + 4 = 7 sous-jeux (le jeu global + 2 sous-jeux de B + 4 sous-jeux de C).
+- **Indice 2** : Pour verifier le SPE dans un sous-jeu, restreindre les strategies au sous-jeu et calculer les gains de chaque firme sous ces strategies restreintes. Verifier ensuite qu'aucune firme n'a de deviation unilaterale profitable DANS CE SOUS-JEU (pas seulement dans le jeu global).
+- **Indice 3** : La difference avec un Nash equilibrium global : un NE peut etre un SPE-violating profile si une firme menace de jouer une action non-credible dans un sous-jeu plus profond. Le SPE elimine ces menaces non-credibles en exigeant la Nash property a chaque sous-jeu.
+
+**Note C.1** : Conformement aux conventions du notebook (regle C.1), les cellules code ci-dessous contiennent des **stubs** (`pass`, `return ...`, `# TODO etudiant`) sans `raise NotImplementedError` ni `assert False`. Le notebook doit s'executer de bout en bout meme si les solutions ne sont pas completees.
+",,,,,,,,bba02d82d6b7d546,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,17510cae,code,fr,572e52ae27c8cec1,"# === Exercices : Jeux extensifs et SPE ===
+# Stubs pour les 3 exos definis en section 8 (8.1, 8.2, 8.3).
+# Conformement a la regle C.1 du depot (pas d'erreur volontaire en cellule notebook),
+# ces stubs utilisent uniquement pass / return / commentaires TODO etudiant ;
+# le notebook s'execute de bout en bout meme si les solutions ne sont pas completees.
+
+
+def solve_ultimatum(offers=None, total: int = 10) -> Dict[str, Any]:
+    """"""Solveur backward-induction pour le jeu de l'ultimatum.
+
+    J1 propose un partage x dans `offers`, J2 accepte ou refuse :
+      - J2 accepte -> gains (total - x, x)
+      - J2 refuse  -> gains (0, 0)
+
+    Le SPE backward-induction determine l'offre optimale de J1 en anticipant
+    la reaction rationnelle de J2.
+
+    Args:
+        offers: liste des offres discretes possibles pour J1 (defaut [2,4,5,6,8]).
+        total: montant total a partager (defaut 10 euros).
+
+    Returns:
+        Dict avec :
+          - 'spe_offer' (int) : offre choisie par J1 dans le SPE
+          - 'j1_payoff' (int) : gain de J1 dans le SPE
+          - 'j2_payoff' (int) : gain de J2 dans le SPE
+          - 'j2_accepts' (List[int]) : liste des offres acceptees par J2
+    """"""
+    if offers is None:
+        offers = [2, 4, 5, 6, 8]
+
+    # TODO etudiant : implementer le solveur backward-induction
+    # Etape 1 : calculer l'ensemble des offres acceptees par J2 (J2 rationnel
+    #           accepte ssi x >= 0, soit toutes les offres positives de la liste)
+    # Etape 2 : J1 anticipe que J2 accepte toutes les offres -> il choisit
+    #           l'offre qui MAXIMISE son propre gain (total - x), donc le plus
+    #           petit x parmi les offres acceptees
+    # Etape 3 : retourner le dict avec spe_offer, j1_payoff=total-spe_offer,
+    #           j2_payoff=spe_offer, et j2_accepts
+    # Indice : avec offers=[2,4,5,6,8] et total=10, le SPE est spe_offer=2,
+    #          j1_payoff=8, j2_payoff=2, j2_accepts=[2,4,5,6,8]
+
+    return {
+        'spe_offer': 0,
+        'j1_payoff': 0,
+        'j2_payoff': 0,
+        'j2_accepts': [],
+    }  # TODO etudiant : remplacer par le vrai calcul SPE
+
+
+def build_three_player_entry_game() -> ExtensiveFormGame:
+    """"""Construit l'arbre de jeu a 3 firmes sequentielles (A -> B -> C).
+
+    Structure :
+      - Firme A (joueur 1, racine) decide Entree ou Reste_dehors
+      - Firme B (joueur 2) observe A et decide Entree ou Reste_dehors
+      - Firme C (joueur 3) observe A et B et decide Entree ou Reste_dehors
+
+    Returns:
+        ExtensiveFormGame avec 3 firmes, 11 noeuds (1 racine + 2 B + 8 terminaux)
+        et 7 ensembles d'information (1 pour A + 2 pour B + 4 pour C).
+    """"""
+    # TODO etudiant : implementer l'arbre complet
+    # Etape 1 : creer le jeu avec num_players=3
+    # Etape 2 : creer les 8 noeuds terminaux (C: 2x2x2 = 8 feuilles)
+    # Etape 3 : creer les 2 noeuds intermediaires de B (un par choix de A)
+    #           avec infoset distinct I_B_in / I_B_out
+    # Etape 4 : creer le noeud racine de A avec infoset I_A
+    # Etape 5 : relier les enfants (A.Entree -> B_in -> C_in/B_in/B_out)
+    # Etape 6 : set_root + add_node pour chaque noeud
+    # Indice : gains possibles (A, B, C) :
+    #   - (0, 0, 0) si toutes restent dehors
+    #   - gains varies selon le nombre d'entrants (marche partage / concurrence)
+
+    game = ExtensiveFormGame(""3-Player Entry Game"", num_players=3)
+    # TODO etudiant : completer l'arbre ci-dessus
+    return game
+
+
+def verify_spe(game: ExtensiveFormGame,
+               strategies: Dict[int, PureStrategy]) -> Dict[str, Any]:
+    """"""Verifie qu'un profil de strategies pures est un SPE.
+
+    Le SPE exige que le profil soit un equilibre de Nash dans CHAQUE sous-jeu
+    du jeu extensif, pas seulement dans le jeu global. Cette difference est
+    ce qui elimine les menaces non-credibles.
+
+    Args:
+        game: jeu extensif a information parfaite.
+        strategies: dict {joueur -> PureStrategy} specifiant une action par infoset.
+
+    Returns:
+        Dict avec :
+          - 'is_spe' (bool) : True si tous les sous-jeux verifient la Nash property
+          - 'subgames_checked' (int) : nombre de sous-jeux examines
+          - 'violations' (List[str]) : liste des sous-jeux ou la Nash property fail
+    """"""
+    # TODO etudiant : implementer la verification SPE
+    # Etape 1 : enumerer tous les sous-jeux = tous les noeuds de decision
+    #           (racine + chaque noeud interne = sous-jeu identifie par sa racine)
+    # Etape 2 : pour chaque sous-jeu, calculer les gains de chaque firme
+    #           sous les strategies RESTREINTES au sous-jeu
+    #           (on utilise les strategies globales mais on tronque au sous-arbre)
+    # Etape 3 : pour chaque firme, tester si elle a une deviation unilaterale
+    #           profitable DANS CE SOUS-JEU (comparer son gain actuel au gain
+    #           maximal parmi les deviations possibles)
+    # Etape 4 : si une firme peut ameliorer son gain par deviation dans
+    #           au moins un sous-jeu, ajouter ""subgame=<root_id>: player=<p>
+    #           can deviate to gain <delta>"" a violations
+    # Indice : pour le jeu a 3 firmes, on attend 7 sous-jeux (1+2+4)
+
+    return {
+        'is_spe': False,
+        'subgames_checked': 0,
+        'violations': ['TODO etudiant : implementer la verification SPE'],
+    }
+
+
+# Test rapide (avec stubs non implementes, on verifie juste la signature)
+print(""3 exos a completer : solve_ultimatum, build_three_player_entry_game, verify_spe"")
+print(""\nResultats stubs (non implementes) :"")
+print(f""  solve_ultimatum([2,4,5,6,8]) -> {solve_ultimatum([2,4,5,6,8])}"")
+print(f""  build_three_player_entry_game() -> {build_three_player_entry_game().name}"")
+print(f""  verify_spe(entry_game, ...) -> {verify_spe(entry_game, {1: entrant_enter, 2: incumbent_acc})['is_spe']}"")
+",,,,,,,,572e52ae27c8cec1,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb,da8ad4f4,markdown,fr,3a1eb929b7dc52d8,"---
 
 ## Exercice : Construction d'un arbre de jeu
@@ -31781,7 +32008,7 @@ L'analyse de Chomp 3x3 revele plusieurs points importants :
 3. **Complexite computationnelle** : Bien que nous puissions calculer les positions pour de petites tablettes, le probleme est NP-difficile en general. Le theoreme de Gale garantit l'existence d'une strategie gagnante sans la construire explicitement.
 
 > **Note technique** : La fonction `chomp_is_losing` utilise la memoisation (`@lru_cache`) car le nombre de positions croit exponentiellement avec la taille de la tablette.",,,,,,,,aa6bfa3d42552feb,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Python.ipynb,b9d45809,code,fr,fa347cca23896b2c,"def visualize_chomp(position: Tuple[int, ...], title: str = ""Chomp""):
+MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Python.ipynb,b9d45809,code,fr,09f685e03beffcf9,"def visualize_chomp(position: Tuple[int, ...], title: str = ""Chomp""):
     """"""Visualise une position de Chomp.""""""
     if not position:
         position = (0,)
@@ -31794,7 +32021,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Python.ipynb,b9d45
     for col in range(n_cols):
         for row in range(position[col]):
             color = 'red' if (col == 0 and row == 0) else 'chocolate'
-            rect = plt.Rectangle((col, row), 0.9, 0.9, color=color, edgecolor='brown')
+            rect = plt.Rectangle((col, row), 0.9, 0.9, facecolor=color, edgecolor='brown')
             ax.add_patch(rect)
     
     ax.set_xlim(-0.1, n_cols + 0.1)
@@ -31813,7 +32040,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Python.ipynb,b9d45
 # Visualiser quelques positions
 visualize_chomp((3, 3, 3), ""Position initiale 3x3"")
 visualize_chomp((2, 2, 1), ""Apres un coup"")
-visualize_chomp((1,), ""Position finale (perdante)"")",,,,,,,,fa347cca23896b2c,,,,,,,
+visualize_chomp((1,), ""Position finale (perdante)"")",,,,,,,,09f685e03beffcf9,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Python.ipynb,945cdfb0,markdown,fr,128bb9f38be7ce12,"---
 
 ## Exercices
@@ -33753,7 +33980,7 @@ Console.WriteLine();
 Console.WriteLine("">>> VERDICT : aucune regle ne satisfait Pareto + IIA + Non-dictature."");
 Console.WriteLine("">>> C'est exactement le theoreme d'impossibilite d'Arrow (1951)."");
 ",,,,,,,,65f53649a541486a,,,,,,,
-MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb,ee5ae343,markdown,fr,d48ee5f83f2fbcc0,"## 4. Synthèse
+MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb,ee5ae343,markdown,fr,5dc50661ad3292a6,"## Synthèse
 
 **Le théorème d'Arrow est confirmé empiriquement** par énumération exhaustive (méthode déterministe, 0 RNG) :
 - **Borda** et **Pluralité** satisfont Pareto et Non-dictature mais **violent IIA** ;
@@ -33777,7 +34004,7 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.
 | Lemme extremal / électeur pivot | Extremal lemma / pivotal voter |
 
 Voir le twin compagnon **`03-Voting-Methods-Csharp.ipynb`** (méthodes de vote : Pluralité, Borda, Copeland, Condorcet, IRV) pour le calcul opérationnel des gagnants.
-",,,,,,,,d48ee5f83f2fbcc0,,,,,,,
+",,,,,,,,5dc50661ad3292a6,,,,,,,
 MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb,748e13a6,markdown,fr,ea03ec187f0b6664,"## Exercices
 
 > Convention (règle C.1) : les stubs s'exécutent sans erreur (`pass`/`return`/`print`). Le notebook doit tourner de bout en bout même exercices non complétés.
@@ -39702,3 +39929,139 @@ MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ip
 
 **Navigation** : [<< 03-Voting-Methods.ipynb](03-Voting-Methods.ipynb) | [Index](../README.md)
 ",,,,,,,,a93ca84c2f78b586,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb,cell-2aa0ebcd,markdown,fr,4d96d17e4bf70198,"### Exercice 4 : Jeu d'entree avec signal de prix
+
+Une firme en place (Incumbent) peut signaler sa force en fixant un prix bas avant qu'un entrant potentiel
+(Entrant) ne decide d'entrer sur le marche.
+
+- **Etape 1** : Modeliser le jeu sous forme extensive (signal -> entrée -> combat/accommodation)
+- **Etape 2** : Identifier les equilibres de Forward Induction
+- **Etape 3** : Comparer avec le resultat en information complete
+
+*Indice* : Un prix bas peut etre un signal credible de force (le faible ne peut pas imiter).",,,,,,,,4d96d17e4bf70198,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb,cell-d5ed0e02,code,fr,c186e5809ce6c058,"# Exercice 4 : Jeu d'entree avec signal de prix
+# TODO etudiant : modeliser le jeu d'entree avec signal
+# Etape 1 : definir l'arbre (Incumbent: prix haut/bas, Entrant: entre/pas, Incumbent: combat/accommode)
+# Etape 2 : forward induction - quel signal est credible ?
+# Etape 3 : conclusion
+def solve_entry_signaling() -> dict:
+    return {""equilibrium_signal"": None, ""entrant_enters"": None}  # TODO etudiant
+
+print(""Exercice a completer"")",,,,,,,,c186e5809ce6c058,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb,cell-53398827,markdown,fr,8aa9581aa23ba535,"### Exercice 3 : Repeated Prisoner's Dilemma avec Reputation
+
+Simulez un Dilemme du Prisonnier repete sur 10 tours entre un joueur avec strategie de reputation
+(Tit-for-Tat) et un joueur opportuniste (best response myope).
+
+- **Etape 1** : Implementer Tit-for-Tat et Best-Response-Myope
+- **Etape 2** : Simuler 10 tours et calculer les gains cumules
+- **Etape 3** : Analyser si la reputation (TFT) est un avantage ou un cout
+
+*Indice* : En finitude connue, backward induction predit toujours defect. La reputation change-t-elle cela ?",,,,,,,,8aa9581aa23ba535,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames.ipynb,cell-7f3d611b,code,fr,87bcb358e1377577,"# Exercice 3 : Repeated Prisoner's Dilemma avec Reputation
+# TODO etudiant : implementer TFT vs BR-Myope sur 10 tours
+# Etape 1 : definir les deux strategies
+# Etape 2 : simulation
+# Etape 3 : comparaison des gains cumules
+def simulate_tft_vs_myopic(payoff_matrix: dict, n_rounds: int = 10) -> dict:
+    return {""tft_payoff"": 0, ""myopic_payoff"": 0, ""history"": []}  # TODO etudiant
+
+print(""Exercice a completer"")",,,,,,,,87bcb358e1377577,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb,cell-7b58d7e5,markdown,fr,4fb8d2987a6a7643,"### Exercice 5 : Kuhn Poker - Implementation CFR
+
+Implementez le jeu de Kuhn Poker (3 cartes, 2 joueurs, mise 1 jeton) et resolvez-le par CFR.
+
+- **Etape 1** : Definir les infosets (JQ, JK, QJ, QK, KJ, KQ)
+- **Etape 2** : Implementer le regret matching pour chaque infoset
+- **Etape 3** : Verifier que la strategie converge vers la solution analytique connue
+
+*Indice* : La solution analytique de Kuhn Poker (1930) est connu. Joueur 1 avec K mise toujours.
+Joueur 1 avec Q check toujours. Joueur 1 avec J mise avec probabilite alpha.",,,,,,,,4fb8d2987a6a7643,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb,cell-bce43bec,code,fr,1a6ace566f735ff3,"# Exercice 5 : Kuhn Poker CFR
+# TODO etudiant : implementer Kuhn Poker (3 cartes, 2 joueurs)
+# Etape 1 : definir les infosets et actions
+# Etape 2 : regret matching
+# Etape 3 : verifier convergence
+def kuhn_poker_cfr(n_iterations: int = 1000) -> dict:
+    return {""strategy"": {}, ""converged"": False}  # TODO etudiant
+
+print(""Exercice a completer"")",,,,,,,,1a6ace566f735ff3,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb,cell-d25fbf6f,markdown,fr,334b7cd0e429523f,"### Exercice 5 : Jeu de poursuite (Pursuit-Evasion)
+
+Modelisez un jeu de poursuite simple en 2D. Un poursuivant (P) a vitesse v_p et un evasif (E) a vitesse v_e < v_p.
+L'objectif de P est de capturer E (distance < epsilon) ; E veut maximiser le temps de capture.
+
+- **Etape 1** : Definir les equations differentielles du mouvement
+- **Etape 2** : Implementer une trajectoire de poursuite (P vise E a chaque instant)
+- **Etape 3** : Calculer le temps de capture et verifier qu'il est fini quand v_p > v_e
+
+*Indice* : La strategie optimale de P est de se diriger directement vers E (ligne droite).",,,,,,,,334b7cd0e429523f,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb,cell-1bdf5de7,code,fr,790893df859ee737,"# Exercice 5 : Jeu de poursuite (Pursuit-Evasion)
+# TODO etudiant : modeliser la poursuite en 2D
+# Etape 1 : equations du mouvement
+# Etape 2 : simulation Euler
+# Etape 3 : temps de capture
+def simulate_pursuit(v_p: float, v_e: float, pos_p: list, pos_e: list, dt: float = 0.01) -> dict:
+    return {""capture_time"": None, ""trajectory"": []}  # TODO etudiant
+
+print(""Exercice a completer"")",,,,,,,,790893df859ee737,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b26,markdown,fr,9b7fdcb0fbf1a6c8,"**Interprétation -- symétrie et uniformité.** L'algorithme retrouve l'équilibre uniforme $(\tfrac{1}{3}, \tfrac{1}{3}, \tfrac{1}{3})$ sans qu'on le lui indique. C'est une conséquence directe de la **symétrie** de la matrice de paiement : aucune action n'est distinguable a priori, donc aucune ne peut recevoir plus de poids qu'une autre a l'équilibre. La valeur du jeu est nulle (jeu à somme nulle équitable). Le point pédagogique : la support enumeration redécouvre ce résultat par le **calcul** (résolution du système d'indifférence), et non par un argument de symétrie injecté à la main.",,,,,,,,9b7fdcb0fbf1a6c8,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b27,markdown,fr,13b848b518c4d7e9,"**Interprétation -- rupture de symétrie, Paper devient modal.** Doubler le gain de Rock contre Scissors brise la symétrie : Rock devient une menace renforcée (il bat Scissors de +2 au lieu de +1). Anticipant cela, les deux joueurs déplacent leur probabilité vers **Paper** -- l'action qui bat Rock -- qui atteint 50 %, tandis que Rock et Scissors tombent à 25 % chacun. La valeur du jeu reste nulle (le biais est symétrique entre les deux joueurs). Cet équilibre non-uniforme est exactement le genre de résultat **non evident à l'intuition** que la support enumeration révèle : aucun argument heuristique simple ne dirait ""Paper 50 %"" sans résoudre le système.",,,,,,,,13b848b518c4d7e9,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b28,markdown,fr,fc0e9856e8acbee3,"**Interprétation -- équilibre pur, support de taille 1.** Le Dilemme du Prisonnier n'a pas d'équilibre mixte intéressant : son unique équilibre de Nash est la stratégie pure $(\text{Defect}, \text{Defect})$. C'est un **support de taille 1**. L'intérêt ici est de montrer que la support enumeration ne se limite pas aux mélanges -- elle énumère les supports de **toutes tailles**, et retrouve donc aussi les équilibres purs. La méthode est **générale** : pas besoin de traiter séparément le cas pur et le cas mixte.",,,,,,,,fc0e9856e8acbee3,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb,gt2b29,markdown,fr,2974d1da82229dcf,"**Interprétation -- équilibre mixte 2x2 sans équilibre pur.** Pile ou Face (Matching Pennies) n'a **aucun équilibre pur** (jeu à somme nulle sans point-selle en stratégies pures). L'unique équilibre est le mélange uniforme $(0{,}5\,;\,0{,}5)$ : chaque joueur rend l'autre indifférent entre ses deux actions. La support enumeration retrouve ce résultat sur le support de taille 2, **confirmant la formule close de la tranche 1**.
+
+Ce notebook démontre ainsi les **quatre régimes** possibles d'un équilibre de Nash mélange/pur : uniforme par symétrie (RPS), non-uniforme par asymétrie (RPS biaisé), pur par stratégie dominante (Prisonnier), et mixte sans équilibre pur (Pile ou Face).",,,,,,,,2974d1da82229dcf,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,cell-c8d54e45,code,fr,30dc4d86f26d738d,"// EXERCICE 2 (supplementaire) : dynamique de meilleure reponse ALTERNEE.
+// Au lieu de moyenner BR1 et BR2 simultanement (NashDynamicsStep), alternez-les :
+// J1 joue sa BR courante, puis J2 repond a la BR de J1, puis J1 repond a J2, etc.
+// Question : la convergence vers (0.5, 0.5) differe-t-elle de la dynamique simutanee ?
+// Pourquoi la simultaneite (moyenne des BR) est-elle plus proche de la preuve de Nash
+// (qui invoque Brouwer sur f = moyenne des BR) que l'alternance ?
+// Indice : PerturbedBR(sigma, U, epsilon=0.1) calcule la BR d'UN joueur (cellule 6).
+//          L'alternance = J1 fixe sigma1, J2 repond via PerturbedBR(sigma, U2),
+//          puis on recombine (sigma1, sigma2_repondu) -- une etape = 2 sous-etapes.
+//          Comparer le nombre d'iterations pour atteindre |sigma - (0.5,0.5)| < 0.01.
+
+// TODO etudiant : iterer une dynamique alternee (J1 puis J2) depuis (0.9, 0.1)
+//                 et comparer la vitesse de convergence a NashDynamicsStep.
+double[] NashDynamicsStepAlternate(double[] sigma, double[,] u1, double[,] u2, double epsilon = 0.2) {
+    // Etape 1 : J1 joue sa BR courante (PerturbedBR sur u1).
+    // Etape 2 : J2 repond a la BR de J1 (PerturbedBR sur u2, avec le sigma mis a jour).
+    // Etape 3 : recombinez (sigma1_new, sigma2_new) et projetez sur le simplexe.
+    return (double[])sigma.Clone();  // TODO etudiant : remplacer par la dynamique alternee
+}
+
+Console.WriteLine(""Exercice 2 a completer : dynamique alternee vs simultanee."");
+",,,,,,,,30dc4d86f26d738d,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb,cell-5bd6f76c,code,fr,7bb21bf111c7359f,"// EXERCICE 3 (supplementaire) : verificateur d'hypotheses de Brouwer.
+// Brouwer exige pour f : Delta -> Delta : (a) continue, (b) Delta convexe compact,
+// (c) f(Delta) subset Delta. Implementez un verificateur qui teste ces 3 proprietes
+// sur une fonction donnee, puis testez sur PerturbedBR (qui les satisfait) et sur
+// une fonction discontinue (qui les viole).
+// Indice : Delta = simplexe 2D {(p, 1-p) : p in [0,1]}.
+//   (a) continuite : discretisez [0,1] en N pas, verifiez |f(p1)-f(p2)| petit quand
+//       |p1-p2| petit (test Lipschitz numerique).
+//   (b) Delta convexe compact : toujours vrai pour le simplexe (fait Mathlib/theorique).
+//   (c) f(Delta) subset Delta : verifiez ProjectSimplex(f(p)) ~ f(p) sur la grille.
+//   Discontinu test : f(p) = p < 0.5 ? (1,0) : (0,1) -- saut, viole (a).
+
+// TODO etudiant : implementez VerifierBrouwer(f, N) renvoyant (continue, stable_simplexe).
+(bool continuous, bool stableSimplex) VerifierBrouwer(Func<double[], double[]> f, int N = 50) {
+    // Etape 1 : discretisez p in [0,1] en N pas, sigma = (p, 1-p).
+    // Etape 2 : continuite -> max |f(p1)-f(p2)| / |p1-p2| borne (test Lipschitz).
+    // Etape 3 : stableSimplexe -> ProjectSimplex(f(sigma)) ~ f(sigma) pour tout p.
+    return (false, false);  // TODO etudiant
+}
+
+Console.WriteLine(""Exercice 3 a completer : verificateur d'hypothese de Brouwer."");
+",,,,,,,,7bb21bf111c7359f,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,6132fb66,markdown,fr,3e993d59b473f078,"### 9.2. Verification du theoreme minimax sur un jeu 3x3 personnalise
+
+C'est l'envers de l'exercice 1 : on **invente** une matrice 3x3 sans point-selle, on **resout** avec notre simplexe, et on **verifie** numeriquement la dualite ($\sigma^\top A \tau = v$). C'est la verification experimentale que le theoreme minimax n'est pas qu'un enonce abstrait — il se **calcule** effectivement sur une matrice.
+
+Pour un bon test : choisir une matrice ou la valeur du jeu $v \ne 0$ et $\ne \pm 1$ (par exemple $\begin{pmatrix}2 & -1 & 0 \\ -1 & 3 & -2 \\ 0 & -2 & 4\end{pmatrix}$), pour eviter que le simplexe ne converge trivialement.",,,,,,,,3e993d59b473f078,,,,,,,
+MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb,df292abe,markdown,fr,b7d81f51aac63540,"### 9.3. Construction d'un jeu 3x3 avec point-selle en strategies pures
+
+C'est l'exercice inverse : trouver une matrice 3x3 ou il **existe** un equilibre en strategies pures. La cle est de placer une entree qui soit **simultanement** le maximum de sa colonne et le minimum de sa ligne — c'est la definition d'un point-selle (cf section 2 du notebook).
+
+Point pedagogique : si vous prenez la matrice `saddle` du notebook (cellule 5, `{{3,4,8},{6,5,7},{1,3,2}}`), le point-selle est `A[1,1]=5`. C'est l'**exemple de reference**, et vous pouvez vous en inspirer pour construire la votre. La cellule `AnalyzePure` detecte automatiquement le point-selle et confirme `maximin == minimax`.",,,,,,,,b7d81f51aac63540,,,,,,,
