@@ -39,6 +39,7 @@ from strip_machine_paths import (
     _output_has_leak,
     _redact_line,
     _first_matching_label,
+    _normalize_bs,
 )
 
 
@@ -586,6 +587,162 @@ def test_redact_line_multiple_markers_iterative_scrub():
     assert ".cache\\huggingface\\hub" in redacted, redacted
     # The stable placeholder appears twice (one per leaked marker).
     assert redacted.count("<USER_PATH>") == 2, redacted
+
+
+# --- C538-L1: double-backslash JSON-escaped path leak (orchestration
+# sub-conversation-log embedding, L495). Po-2024 HIGH DM msg-20260714T172458
+# + msg-20260714T173608 found ``10-SemanticKernel-NotebookMaker.ipynb``
+# cell[27] out[0] line[596] (pip WARNING for wordcloud_cli.exe install) had
+# 7 doubled backslashes because the surrounding JSON serialization doubled
+# every backslash of the embedded sub-notebook's pip output. The v1 hook's
+# token guard ``"AppData\\Roaming\\Python" in text`` missed the doubled
+# form entirely (the actual on-disk Python str contained ``\\\\``, not
+# ``\\``); the username leaked public. Fix: collapse ``\\\\`` → ``\\`` at
+# the start of ``_has_leak``, ``_redact_line``, and ``_first_matching_label``
+# so the existing token guard and the L499 iterative-scrub loop consume
+# the doubled form correctly. The redacted output is then re-encoded via
+# ``json.dumps`` in the substitution site (``strip_in_place``), which
+# produces the canonical single-bs JSON form (``<USER_PATH>\\...``) so the
+# on-disk width is strictly shorter than the doubled input.
+
+# The exact WARNING sentence from ``10-NM cell[27] out[0] line[596]`` (as a
+# Python str after JSON-decoding the cell text). Each backslash segment
+# (``\\\\`` in source) encodes as a literal 2-char sequence (``\\``) in the
+# Python str — i.e., the on-disk form of the leak.
+_DOUBLE_BS_PIP_WARNING = (
+    "wordcloud_cli.exe is installed in "
+    "'C:\\\\Users\\\\jsboi\\\\AppData\\\\Roaming\\\\Python\\\\Python313\\\\Scripts'"
+    " which is not on PATH."
+)
+# Single-bs (normalized) form — what ``_normalize_bs`` should produce and
+# what a normal pip warning carries.
+_SINGLE_BS_PIP_WARNING = (
+    "wordcloud_cli.exe is installed in "
+    "'C:\\Users\\jsboi\\AppData\\Roaming\\Python\\Python313\\Scripts'"
+    " which is not on PATH."
+)
+
+
+def test_normalize_bs_collapses_double_backslashes():
+    """C538-L1: ``_normalize_bs`` collapses ``\\\\`` (Python str: 2 chars)
+    to ``\\`` (1 char) so the v1 token guard and the L499 iterative-scrub
+    loop's separator consume behave correctly on JSON-escaped paths.
+
+    Idempotent (already single-bs lines are unchanged) and defensive
+    (non-string input returned as-is).
+    """
+    assert _normalize_bs(_DOUBLE_BS_PIP_WARNING) == _SINGLE_BS_PIP_WARNING
+    # Idempotent on already-normalized input.
+    assert _normalize_bs(_SINGLE_BS_PIP_WARNING) == _SINGLE_BS_PIP_WARNING
+    # Defensive on non-string input.
+    assert _normalize_bs(None) is None  # type: ignore[arg-type]
+    # Empty string is a no-op.
+    assert _normalize_bs("") == ""
+    # Non-leak plain prose is untouched.
+    assert _normalize_bs("no backslashes here at all") == \
+        "no backslashes here at all"
+
+
+def test_has_leak_matches_double_bs_orchestration_log():
+    """C538-L1: ``_has_leak`` MUST detect the doubled-backslash variant.
+
+    The v1 hook's token guard ``"AppData\\Roaming\\Python" in text`` missed
+    the doubled form entirely because the on-disk Python str contains
+    ``\\\\`` (the literal double-backslash pair) NOT the single-bs token.
+    Po-2024 reported this gap on 2026-07-14 via DM msg-20260714T172458:
+    ``10-SemanticKernel-NotebookMaker.ipynb`` cell[27] out[0] line[596]
+    (pip WARNING for wordcloud_cli.exe install) had 7 doubled backslashes
+    and the username ``jsboi`` stayed public.
+    """
+    # Pre-fix expectation: ``_has_leak(double_bs) == False`` (the bug).
+    # Post-fix expectation: ``_has_leak(double_bs) == True`` (caught).
+    assert _has_leak(_DOUBLE_BS_PIP_WARNING) is True, \
+        "C538-L1: _has_leak must detect double-bs orchestration log"
+    # Single-bs control still detects (no regression).
+    assert _has_leak(_SINGLE_BS_PIP_WARNING) is True
+    # Category label disambiguation also reports "pip" on the doubled form.
+    assert _first_matching_label(_DOUBLE_BS_PIP_WARNING) == "pip"
+    assert _first_matching_label(_SINGLE_BS_PIP_WARNING) == "pip"
+
+
+def test_redact_line_double_backslash_orchestration_log():
+    """C538-L1: ``_redact_line`` MUST strip the username from the
+    doubled-backslash variant while preserving the trailing runtime
+    pedagogy (``\\AppData\\Roaming\\Python\\Python313\\Scripts``).
+
+    Critical: the username ``jsboi`` must be ENTIRELY removed from the
+    output. The pre-fix behavior left the username intact (the L499 loop's
+    ``while out[after_marker] not in ('\\', '/')`` misread the doubled
+    ``\\\\`` as a single separator and consumed it, leaving
+    ``\\jsboi\\AppData`` as a partial-leak garbage). Post-fix the
+    normalized ``\\`` is the separator and the loop consumes the username
+    properly.
+    """
+    redacted = _redact_line(_DOUBLE_BS_PIP_WARNING)
+    # Username MUST be entirely removed.
+    assert "jsboi" not in redacted, \
+        "C538-L1: _redact_line must fully remove username on double-bs input, got: %r" % redacted
+    assert "Users\\jsboi" not in redacted, \
+        "C538-L1: _redact_line must fully remove 'Users\\jsboi' on double-bs input, got: %r" % redacted
+    # Stable placeholder appears once (single leak marker per line).
+    assert redacted.count("<USER_PATH>") == 1, \
+        "C538-L1: expected exactly one <USER_PATH> placeholder, got: %r" % redacted
+    # Runtime pedagogy preserved (AppData\\Roaming\\Python + Python313\\Scripts).
+    runtime_token = "AppData\\Roaming\\Python"
+    assert runtime_token in redacted, \
+        "C538-L1: expected runtime token %r preserved, got: %r" % (runtime_token, redacted)
+    scripts_token = "Python313\\Scripts"
+    assert scripts_token in redacted, \
+        "C538-L1: expected trailing relative path %r preserved, got: %r" % (scripts_token, redacted)
+    # REDACT consistency: double-bs input and single-bs input must produce
+    # the SAME redacted output (the in-memory normalize step collapses the
+    # width difference).
+    assert redacted == _redact_line(_SINGLE_BS_PIP_WARNING), \
+        "C538-L1: double-bs and single-bs inputs must redact identically"
+    # No doubled backslashes remain in the redacted output (the substitution
+    # site re-encodes via json.dumps, which produces canonical single-bs).
+    assert "\\\\" not in redacted, \
+        "C538-L1: redacted output should not contain doubled backslashes, got: %r" % redacted
+
+
+def test_strip_in_place_double_backslash_orchestration_log(tmp_path):
+    """C538-L1: end-to-end ``strip_in_place`` on a notebook carrying the
+    exact 10-NM cell[27] line[596] doubled-bs pip WARNING. Mirrors the
+    po-2024 repo-wide scan finding — same shape, same content, must redact
+    in place on disk.
+
+    Verifies the JSON round-trip too: the on-disk ``"\\\\Users\\\\jsboi..."``
+    raw bytes JSON-decode to a Python str with ``\\`` segments, the hook
+    redacts that to ``<USER_PATH>\\...``, and the on-disk form is then
+    ``"\\\\<USER_PATH>\\\\..."`` (canonical single-bs JSON escape width,
+    strictly shorter than the doubled input).
+    """
+    # Build a notebook that embeds the exact WARNING sentence via a stream
+    # output. List-form (the observed shape for ``text/plain`` outputs).
+    out = _stream_output(_DOUBLE_BS_PIP_WARNING, form="list")
+    cells = [_code(["import warnings"], outputs=[out], execution_count=27)]
+    p = _write_nb(tmp_path / "double_bs_orchestration.ipynb", cells)
+    # Pre-condition: scan sees exactly 1 leak line.
+    assert count_leak_lines(p) == 1
+    # Apply.
+    found, fixed = strip_in_place(p)
+    assert (found, fixed) == (1, 1)
+    # Post-condition: scan sees 0 leak lines (idempotency).
+    assert count_leak_lines(p) == 0
+    # And the on-disk content is clean.
+    nb = json.loads(p.read_text(encoding="utf-8"))
+    text_after = nb["cells"][0]["outputs"][0]["text"]
+    assert isinstance(text_after, list)
+    cleaned = text_after[0]
+    # Username entirely removed.
+    assert "jsboi" not in cleaned, \
+        "C538-L1: on-disk strip left 'jsboi' in cell output, got: %r" % cleaned
+    # Runtime pedagogy preserved.
+    assert "AppData\\Roaming\\Python" in cleaned, cleaned
+    assert "<USER_PATH>" in cleaned, cleaned
+    # The on-disk form has NO doubled backslashes (canonical single-bs JSON).
+    assert "\\\\" not in cleaned, \
+        "C538-L1: on-disk strip left doubled backslashes, got: %r" % cleaned
 
 
 def test_redact_line_empty_and_non_string():

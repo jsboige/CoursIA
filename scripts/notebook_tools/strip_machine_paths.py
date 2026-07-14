@@ -75,6 +75,22 @@ relative-path leaf (e.g. ``Audio cree: C:\\Users\\<u>\\AppData\\Local\\Temp\\
 test_audio.mp3``) the full path is redacted (path-only print, no library
 context to preserve).
 
+**Double-backslash variant (C538-L1).** Some orchestration-harness
+notebooks (NotebookMaker / multi-agent ``run_conversation()``, L495) embed
+a sub-notebook conversation log as a JSON string within the outer
+``outputs``. The sub-notebook's pip output carries single-bs paths
+(``C:\\Users\\<u>\\...``); the surrounding JSON serialization doubles
+every backslash so the on-disk cell text reads ``C:\\\\Users\\\\<u>\\\\...``.
+Detection tokens are single-bs (``AppData\\Roaming\\Python``, ``Users\\``),
+so the doubled form bypasses both ``_has_leak``'s token guard AND
+``_redact_line``'s username-segment consume loop (the loop's
+``while out[after_marker] not in ("\\", "/")`` skips over the doubled
+``\\`` as if it were one separator, leaving the username itself intact).
+Fix: collapse ``\\\\`` to ``\\`` once at the start of both functions before
+pattern matching (see ``_normalize_bs``). The redacted output is then
+re-serialized cleanly (``<USER_PATH>\\...`` → ``"\\\\<USER_PATH>\\\\..."``
+in raw bytes — strictly shorter than the input, so no JSON width issue).
+
 The strip is **output-only** — no source code is touched, ``execution_count``
 is preserved, the surrounding ``outputs: [...]`` shape is unchanged. Same
 surgical philosophy as ``strip_probe_banner.py`` /
@@ -151,6 +167,23 @@ ACTIVE_CATEGORIES = None
 # correctly left untouched (no username = no leak).
 USERNAME_MARKERS = ("Users\\", "Users/", "/home/")
 
+
+def _normalize_bs(text):
+    """Collapse doubled backslashes (``\\\\``) to single (``\\``).
+
+    C538-L1 — JSON re-serialization of sub-conversation-log strings (multi-
+    agent ``run_conversation()``, NotebookMaker orchestration, L495) doubles
+    every backslash of the embedded sub-notebook's pip output. Detection
+    tokens and the redaction loop's separator consume are single-bs; without
+    normalization, the doubled form bypasses both. Only used in-memory;
+    callers are responsible for the byte-fidelity choice (the redacted
+    output is written back via ``json.dumps`` re-encoding, which collapses
+    the doubled escapes to a clean single-bs representation).
+    """
+    if not isinstance(text, str):
+        return text
+    return text.replace("\\\\", "\\")
+
 # The stable placeholder used to replace the leaked username-bearing path
 # prefix. Carries no PII (no username marker), so is correctly re-detected
 # as **not** a leak on the next scan — making ``--apply-all`` idempotent.
@@ -184,12 +217,17 @@ def _has_leak(text):
     ipykernel/conda/hf/other per ``MACHINE_PATH_TOKENS``) AND a username
     absolute-path marker (``Users\\``, ``Users/``, ``/home/``). The tilde HOME
     placeholder carries neither marker and is left untouched.
+
+    Normalizes ``\\\\`` to ``\\`` before matching (C538-L1) so double-bs
+    JSON-escaped paths (orchestration sub-conversation logs) are still
+    detected.
     """
     if not isinstance(text, str):
         return False
-    if not any(token in text for _, token in _active_tokens()):
+    norm = _normalize_bs(text)
+    if not any(token in norm for _, token in _active_tokens()):
         return False
-    return any(marker in text for marker in USERNAME_MARKERS)
+    return any(marker in norm for marker in USERNAME_MARKERS)
 
 
 def _redact_line(text):
@@ -220,11 +258,25 @@ def _redact_line(text):
       (L499). Embedded URLs (e.g. ``https://example.com/C:/Users/foo/bar``)
       do not contain a SECOND ``C:\\Users\\<u>\\`` segment, so the loop
       is a no-op on real URLs.
+    - Double-backslash paths (C538-L1): a sub-conversation-log JSON
+      serialization doubles every backslash, producing
+      ``C:\\\\Users\\\\<u>\\\\...``. Normalized once at function entry
+      (``_normalize_bs``) to ``C:\\Users\\<u>\\...``, the standard loop
+      then consumes the username correctly and the redacted output
+      re-serializes to the canonical ``<USER_PATH>\\...`` form.
     - The tilde HOME placeholder (``~\\.nuget\\packages\\...``) carries no
       username marker so is rejected by ``_has_leak`` upstream; not touched.
     """
     if not isinstance(text, str):
         return text  # defensive: caller invariant is ``_has_leak`` first.
+
+    # Normalize doubled backslashes once (C538-L1). Operates on the
+    # in-memory string; the byte-fidelity guarantee of the strip is
+    # preserved because the redacted output is always re-encoded via
+    # ``json.dumps`` at the substitution site (``strip_in_place``), which
+    # produces the canonical single-bs JSON form regardless of the input
+    # width.
+    text = _normalize_bs(text)
 
     # Iterate leftmost-then-redact until no username marker remains (L499).
     # A single line can legitimately carry multiple ``Users\<u>`` PII
@@ -338,11 +390,17 @@ def _first_matching_label(text):
     tokens are more specific (e.g. ``ipykernel`` precedes ``other`` because
     an ipykernel-temp-path is also a Temp-path but the runtime distinction
     matters for downstream strategy logic).
+
+    Normalizes ``\\\\`` to ``\\`` first (C538-L1) so double-bs
+    JSON-escaped paths still report their proper category (avoids a
+    spurious "" (no-match) fallback when a double-bs line leaked past
+    the v1 token guard).
     """
     if not isinstance(text, str):
         return ""
+    norm = _normalize_bs(text)
     for label, token in MACHINE_PATH_TOKENS:
-        if token in text:
+        if token in norm:
             return label
     return ""
 
