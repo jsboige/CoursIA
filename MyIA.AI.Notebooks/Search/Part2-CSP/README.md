@@ -163,7 +163,7 @@ CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
 | [Applications](../Applications/README.md) | 22 notebooks d'application | Mise en pratique des CSP |
 | [Search (parent)](../README.md) | Vue d'ensemble | Contexte et parcours global |
 | [Sudoku](../../Sudoku/) | Résolution par contraintes | Application directe des CSP |
-| [SymbolicAI/SMT/Z3](../../SymbolicAI/SMT/Z3/README.md) | Solveur SMT | CSP-6 (LCG) et automates symboliques |
+| [SymbolicAI/SMT/Z3-Linq2Z3](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md) | Solveur SMT | CSP-6 (LCG) et automates symboliques |
 | [Probas/Infer](../../Probas/Infer/) | Infer.NET | Modèles graphiques et contraintes |
 
 ## Références
@@ -197,7 +197,7 @@ Le véritable enseignement est une **sensibilité à la modélisation** : le mê
 ### Prochaines étapes
 
 - **Les applications** : les [22 notebooks d'application](../Applications/README.md) (N-Queens, Nurse Scheduling, VRP, TSP, Picross, Minesweeper CSP) mettent en pratique CP-SAT sur des problèmes concrets avec benchmark baseline-comparison.
-- **Vers le raisonnement symbolique** : la modélisation déclarative de cette partie est le premier contact avec un mode de raisonnement qu'approfondissent [Z3/SMT](../../SymbolicAI/SMT/Z3/README.md) (SMT solving), les [Planners](../../SymbolicAI/Planners/) (PDDL, HTN) et [Tweety](../../SymbolicAI/Tweety/) (logique formelle) côté SymbolicAI. CSP-6 (LCG) fait explicitement le pont vers SAT.
+- **Vers le raisonnement symbolique** : la modélisation déclarative de cette partie est le premier contact avec un mode de raisonnement qu'approfondissent [Z3/SMT](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md) (SMT solving), les [Planners](../../SymbolicAI/Planners/) (PDDL, HTN) et [Tweety](../../SymbolicAI/Tweety/) (logique formelle) côté SymbolicAI. CSP-6 (LCG) fait explicitement le pont vers SAT.
 - **Retour aux fondamentaux** : après avoir vu la puissance de la propagation, reprendre [Search-2 (backtracking)](../Part1-Foundations/Search-2-Uninformed.ipynb) — le DFS y apparaît comme un cas particulier de CSP sans propagation, et l'on mesure le saut qu'apportent AC-3/MAC.
 - **La série dans son ensemble** : le [sommaire Search](../README.md) cartographie les quatre parties et les applications — celle-ci est le socle déclaratif qui prolonge la Partie 1 (recherche) et prépare la Partie 4 (métaheuristiques) et les Applications.
 
