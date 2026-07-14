@@ -1,7 +1,7 @@
 # SemanticFleet.Radix
 
 Standalone .NET module extracted from
-[semantic-fleet](https://github.com/SemanticFlow/SemanticFlow) v0.34.3 to
+[semantic-fleet](https://github.com/MyIntelligenceAgency/semantic-fleet) v0.34.3 to
 implement **Axis 4 (radix-tree signature matching)** of
 [Epic #1210](https://github.com/jsboige/CoursIA/issues/1210).
 
