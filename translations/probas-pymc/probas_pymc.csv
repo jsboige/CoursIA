@@ -3715,13 +3715,13 @@ for u in range(n_fu):
     if unseen_scores:
         best = unseen_scores[0]
         print(f""  {film_users[u]} : {films[best[0]]} (score: {best[1]:.2f})"")",,,,,,,,70b939927b2b05a8,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,01d64a28,markdown,fr,e0aaca43cf5dcdf3,"## 7. Bilan : Systemes de recommandation bayesiens
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,01d64a28,markdown,fr,6ebac052f7af3e38,"## Bilan : Systemes de recommandation bayesiens
 
 | Modele | Usage | Points cles |
 |--------|-------|-------------|
 | **Factorisation** | Decomposition U x V des preferences | Traits latents, NUTS, uncertainite sur les predictions |
 | **Cold-Start** | Nouveaux users/items | Features + regression, prediction basee sur caracteristiques |
-| **Click Model** | Fusion multi-sources | Score latent unique, reconciliation jugements + clics |",,,,,,,,e0aaca43cf5dcdf3,,,,,,,
+| **Click Model** | Fusion multi-sources | Score latent unique, reconciliation jugements + clics |",,,,,,,,6ebac052f7af3e38,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,5890eeb5,markdown,fr,b6f86c6841d81d79,"## 8. Resume
 
 | Concept | Description |
@@ -4008,7 +4008,7 @@ for tp, p in zip(test_points, p_test):
     print(f""  x={tp} : P(classe 1) = {p:.2f} -> classe {int(p > 0.5)}"")
 print(""\nLecture : centre -> classe 0, anneau -> classe 1, mi-rayon -> incertain."")
 ",,,,,,,,91b19fcb48a8b668,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,72efa4e4,markdown,fr,45f7300dc8ec94b1,"## 5. Effet de la longueur de corrélation
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,72efa4e4,markdown,fr,ab3a51bc897afdce,"## 5. Effet de la longueur de corrélation
 
 La longueur de corrélation $\ell$ controle la **souplesse** de la frontière :
 
@@ -4016,7 +4016,7 @@ La longueur de corrélation $\ell$ controle la **souplesse** de la frontière :
 - $\ell$ **grand** ($\gg 1$) : fonctions tres lisses, frontière quasi-linéaire — risque de **sous-apprentissage** (panneau `ls=5.0` de la section 1).
 - $\ell$ **apris** : le prior `LogNormal` + NUTS laisse les données choisir le $\ell$ optimal (moyenne posterieure affichee après l'inference ci-dessus).
 
-C'est l'un des avantages du GP **bayesien** sur un noyau a hyperparamètre fixe : l'incertitude sur $\ell$ est propagee dans les predictions, et le modèle peut desactiver de lui-même les echelles de bruit inutiles (Automatic Relevance Determination, cf. [PyMC-10](PyMC-10-Model-Selection.ipynb)). L'exercice 3 ci-dessous invite a verifier empiriquement l'effet d'un priorconcentré sur $\ell$.",,,,,,,,45f7300dc8ec94b1,,,,,,,
+C'est l'un des avantages du GP **bayesien** sur un noyau a hyperparamètre fixe : l'incertitude sur $\ell$ est propagee dans les predictions, et le modèle peut desactiver de lui-même les echelles de bruit inutiles (Automatic Relevance Determination, cf. [PyMC-10](PyMC-10-Model-Selection.ipynb)). L'exercice 3 ci-dessous invite a verifier empiriquement l'effet d'un prior concentré sur $\ell$.",,,,,,,,ab3a51bc897afdce,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,8cc890a3,markdown,fr,ae2586a3a9ea6c6c,"## 6. Synthese
 
 | Aspect | Infer.NET (Infer-16) | PyMC (ce notebook) |
@@ -4041,39 +4041,36 @@ Le paradigme est le même en Infer.NET et PyMC ; seule l'API et la méthode d'in
 
 > Les exercices sont stubbes (convention C.1) : le notebook s'execute de bout en bout même non complétée. Conservez les `# TODO` et `# Indice`.
 ",,,,,,,,ae2586a3a9ea6c6c,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,e01d2267,code,fr,aec902a09909e950,"# Exercice 1 : noyau Matern au lieu de RBF.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,e01d2267,code,fr,b681e431c8e9fe9c,"# Exercice 1 : noyau Matern au lieu de RBF.
 # Remplacez le noyau ExpQuad (RBF) par un noyau Matern (pm.gp.cov.Matern52) et comparez
-# la frontiere de decision. Le Matern est moins lisse — la frontiere devrait l'etre aussi.
-# Indice : pm.gp.cov.Matern52(input_dim=2, ls=ls). Gardez le meme prior LogNormal sur ls.
-# Etape 1 : reconstruisez le modele avec le nouveau noyau.
-# Etape 2 : echantillonnez (meme draw/tune que la section 3).
-# Etape 3 : tracez la frontiere (section 4) et comparez.
+# la frontière de décision. Le Matern est moins lisse — la frontière devrait l'être aussi.
+# Indice : pm.gp.cov.Matern52(input_dim=2, ls=ls). Gardez le même prior LogNormal sur ls.
+# Étape 1 : reconstruisez le modèle avec le nouveau noyau.
+# Étape 2 : échantillonnez (même draw/tune que la section 3).
+# Étape 3 : tracez la frontière (section 4) et comparez.
 
-matern_result = None  # TODO etudiant : idata + predictions du modele Matern
-print(""Exercice 1 a completer : comparer Matern52 vs ExpQuad."")
-",,,,,,,,aec902a09909e950,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,88c4b5af,code,fr,abff90028c6d4224,"# Exercice 2 : dataset plus difficile (deux anneaux entrelaces).
-# Construisez un dataset ou deux demi-anneaux sont entrelaces (style ""two moons"").
+matern_result = None  # TODO étudiant : idata + prédictions du modèle Matern
+print(""Exercice 1 à compléter : comparer Matern52 vs ExpQuad."")",,,,,,,,b681e431c8e9fe9c,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,88c4b5af,code,fr,b9451b662a54427d,"# Exercice 2 : dataset plus difficile (deux anneaux entrelacés).
+# Construisez un dataset où deux demi-anneaux sont entrelacés (style ""two moons"").
 # Indice : pour la classe 0, angles dans [0, pi] ; pour la classe 1, angles dans [pi, 2*pi],
-#          avec un decalage radial. Le GP doit toujours separer (frontiere non lineaire).
-# Etape 1 : generez X_moons, y_moons (16 points chacun).
-# Etape 2 : re-entrainez le GP (section 3) sur ce dataset.
-# Etape 3 : affichez l'accuracy. Doit rester elevee si le noyau RBF convient.
+#          avec un décalage radial. Le GP doit toujours séparer (frontière non linéaire).
+# Étape 1 : générez X_moons, y_moons (16 points chacun).
+# Étape 2 : ré-entraînez le GP (section 3) sur ce dataset.
+# Étape 3 : affichez l'accuracy. Doit rester élevée si le noyau RBF convient.
 
-moons_result = None  # TODO etudiant : dataset + modele sur two-moons
-print(""Exercice 2 a completer : GP sur deux anneaux entrelaces (two moons)."")
-",,,,,,,,abff90028c6d4224,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,e1cc9158,code,fr,a3094164dc77f4a6,"# Exercice 3 : effet du prior sur ls.
-# Si on met un prior tresconcentré sur une grande longueur (ls ~ LogNormal(2.0, 0.1)),
-# le GP devient presque lineaire (sous-apprentissage). Verifiez-le.
-# Indice : changez mu de 0.0 a 2.0 dans pm.LogNormal(""ls"", mu=2.0, sigma=0.1).
-# Etape 1 : re-entrainez avec ce priorconcentré grand.
-# Etape 2 : comparez la frontiere (qui doit devenir quasi-lineaire) et l'accuracy.
-# Question : que se passe-t-il avec un priorconcentré petit (mu=-1.5) ?
+moons_result = None  # TODO étudiant : dataset + modèle sur two-moons
+print(""Exercice 2 à compléter : GP sur deux anneaux entrelacés (two moons)."")",,,,,,,,b9451b662a54427d,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,e1cc9158,code,fr,d21e444fb7dad881,"# Exercice 3 : effet du prior sur ls.
+# Si on met un prior très concentré sur une grande longueur (ls ~ LogNormal(2.0, 0.1)),
+# le GP devient presque linéaire (sous-apprentissage). Vérifiez-le.
+# Indice : changez mu de 0.0 à 2.0 dans pm.LogNormal(""ls"", mu=2.0, sigma=0.1).
+# Étape 1 : ré-entraînez avec ce prior concentré grand.
+# Étape 2 : comparez la frontière (qui doit devenir quasi-linéaire) et l'accuracy.
+# Question : que se passe-t-il avec un prior concentré petit (mu=-1.5) ?
 
-prior_ls_result = None  # TODO etudiant : modele avec priorconcentré grand sur ls
-print(""Exercice 3 a completer : effet du prior sur la longueur de correlation."")
-",,,,,,,,a3094164dc77f4a6,,,,,,,
+prior_ls_result = None  # TODO étudiant : modèle avec prior concentré grand sur ls
+print(""Exercice 3 à compléter : effet du prior sur la longueur de corrélation."")",,,,,,,,d21e444fb7dad881,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,e7e17984,markdown,fr,a178a44b2364f2f9,"---
 
 ## Pour aller plus loin
@@ -4389,7 +4386,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,374d16a8,code,fr,d1ddb
 # Indice : state_mean = float(trace_joint.posterior['state'].mean(axis=(0,1))) ; comparer sa MSE.
 print(""Exercice 3 a completer : comparer MSE lisse (joint) vs MSE filtree (sequentiel)."")
 ",,,,,,,,d1ddbd71e084b516,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,9d255904,markdown,fr,9987d47f37e0d5f8,"## 7. Ponts avec la serie
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,9d255904,markdown,fr,efaa7397cf9ab648,"## Ponts avec la serie
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
@@ -4402,7 +4399,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,9d255904,markdown,fr,9
 Prediction Problems*, ASME Journal of Basic Engineering 82(1). L'article fondateur du
 filtre de Kalman -- l'algorithme d'estimation le plus repandu en pratique.
 
-## 8. Conclusion
+## Conclusion
 
 Le **filtre de Kalman** est le pont entre le HMM discret de [PyMC-14](PyMC-14-Sequences.ipynb)
 et le monde continu. Sa puissance tient en trois proprietes : pour les systemes
@@ -4418,7 +4415,7 @@ nul besoin de MCMC -- la forme fermee suffit. C'est en **sortant** de ce regime
 (non-linearites, distributions non gaussiennes, parametres **a estimer**) que le modele
 graphique joint et NUTS deviennent necessaires -- et c'est precisement l'angle mort de la
 recursion fermee que PyMC couvre nativement.
-",,,,,,,,9987d47f37e0d5f8,,,,,,,
+",,,,,,,,efaa7397cf9ab648,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,53395130,markdown,fr,e9aee5b56c89100c,"# 18. Detection de Rupture (Change-Point) : inferer le moment d'un changement de regime (jumeau PyMC)
 
 > **Serie Parite .NET <=> Python (#4956).** Ce notebook est le **jumeau Python** de `Infer-18-Change-Point.ipynb` (Infer.NET / C#, inférence EP). La specification probabiliste est **identique** ; seul le moteur d'inférence change : EP analytique cote .NET, échantillonnage **CompoundStep** (NUTS + Metropolis) cote Python, car la localisation `cp` est une variable **discrète**.
@@ -4624,7 +4621,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,572aaed8,markdown,fr,3c
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,2d59af55,code,fr,9d277c8598011193,"# Exercice 3 : robustesse au signal et a N (a completer)
 # TODO etudiant : boucler sur delta dans {1, 2, 4}, mesurer H(cp) a chaque fois.
 print(""Exercice 3 a completer : robustesse du posterieur au signal et a la taille."")",,,,,,,,9d277c8598011193,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,d8873019,markdown,fr,d8c293faa4ddf2fb,"## 6. Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,d8873019,markdown,fr,87182551996432eb,"## Conclusion
 
 Le **point de rupture** complète la famille des séquences temporelles :
 
@@ -4636,7 +4633,7 @@ Le **point de rupture** complète la famille des séquences temporelles :
 
 Le trait distinctif : l'inconnue est un **indice structurel** couplé à toute la série via `pm.math.switch`. Cote PyMC, la discreteness de `cp` impose un **CompoundStep** (NUTS + Metropolis), la où EP (cote Infer.NET) propageait les messages analytiquement. Le piège épistémologique (surajustement d'une coupure spurieuse) est universel : seul le **Bayes factor** tranche.
 
-> **Jumeau de** [`Infer-18-Change-Point.ipynb`](../Infer/Infer-18-Change-Point.ipynb) *(Infer.NET / C#, inférence EP)* -- Epic [#4956](https://github.com/jsboige/CoursIA/issues/4956).",,,,,,,,d8c293faa4ddf2fb,,,,,,,
+> **Jumeau de** [`Infer-18-Change-Point.ipynb`](../Infer/Infer-18-Change-Point.ipynb) *(Infer.NET / C#, inférence EP)* -- Epic [#4956](https://github.com/jsboige/CoursIA/issues/4956).",,,,,,,,87182551996432eb,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,14f058d8,markdown,fr,7a43239a14fffa59,"# 19. Analyse de survie / fiabilite bayesienne : inferer le temps jusqu'a un evenement (jumeau PyMC)
 
 > **Serie Parite .NET <=> Python (#4956).** Ce notebook est le **jumeau Python** de
@@ -4873,7 +4870,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,b7c72f31,code,fr,a
 # TODO etudiant : boucler sur N, calculer le poids LOO du Weibull, trouver le seuil N.
 print(""Exercice 3 a completer : a partir de quel N le Weibull est-il decisiivement prefere ?"")
 ",,,,,,,,a443996a815f303c,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,27390f5d,markdown,fr,9509a0e007459009,"## 7. Ponts avec la serie
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,27390f5d,markdown,fr,a3fcf4987ac95c81,"## Ponts avec la serie
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
@@ -4881,7 +4878,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,27390f5d,markdown,
 | <-> PyMC-18 | [PyMC-18 -- Change-Point](PyMC-18-Change-Point.ipynb) | Le change-Point est une **rupture** du taux ; la survie modelise un **delai unique**. Combiner les deux = survie a rupture (taux qui change a un instant latent). |
 | <-> PyMC-14 | [PyMC-14 -- Sequences (HMM)](PyMC-14-Sequences.ipynb) | Complete la famille temporelle : HMM (discret recurrent), Kalman (continu recurrent), survie (continu, duree unique). |
 
-## 8. Conclusion
+## Conclusion
 
 L'analyse de survie complete la famille des modeles temporels : la quantite centrale est la
 **fonction de survie** $S(t) = P(T > t)$, dans la queue, pas au centre.
@@ -4896,7 +4893,7 @@ La lecon : sur un modele **conjugue** simple (exponentiel), l'EP d'Infer.NET est
 rapidite et exactitude fermee. Des qu'on veut inferer une **forme non-conjuguee** (Weibull `k`)
 ou **comparer des modeles**, le MCMC generique de PyMC devient l'outil naturel -- c'est la
 complementarite des deux moteurs sur la meme famille de problemes.
-",,,,,,,,9509a0e007459009,,,,,,,
+",,,,,,,,a3fcf4987ac95c81,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,fde6ae1d,markdown,fr,06453f41ccc5e023,"# PyMC-2 : Distributions Gaussiennes et Melanges
 
 **Navigation** : [Index](../README.md) | [<< PyMC-1](PyMC-1-Setup.ipynb) | [PyMC-3 >>](PyMC-3-Factor-Graphs.ipynb)
@@ -6371,7 +6368,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,1e976e5b,code,fr,030
 # Etape 2 : coder des CPT produisant un renversement
 # Etape 3 : montrer P(Y|X) agrege != P(Y|do(X)) et expliquer le mecanisme
 print(""Exercice 4 a completer : concevoir un paradoxe de Simpson (renversement agrege vs conditionnel)."")",,,,,,,,030fffe9429f6a57,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,c0961fd6,markdown,fr,1597a133fc9cb8fc,"## 11. Synthese
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-5-Causal-Inference.ipynb,c0961fd6,markdown,fr,9458466642910b89,"## Synthese
 
 | Niveau | Question | Operateur | Methode PyMC |
 |--------|----------|-----------|--------------|
@@ -6406,7 +6403,7 @@ Ce notebook traite le `do()` en **probabiliste MCMC + enumeration exacte** (`pm.
 
 ---
 
-[← PyMC-7-Sequential](../DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) | [Retour a la serie](README.md)",,,,,,,,1597a133fc9cb8fc,,,,,,,
+[← PyMC-7-Sequential](../DecisionTheory/PyMC/DecPyMC-7-Sequential.ipynb) | [Retour a la serie](README.md)",,,,,,,,9458466642910b89,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a09b80c5,markdown,fr,b41a3ed49f8cde2e,"# PyMC-6-Debugging : Troubleshooting et Bonnes Pratiques
 
 **Serie** : Programmation Probabiliste avec PyMC (6/20)  
@@ -8542,3 +8539,21 @@ La classification bayesienne estime P(classe|features) en combinant prior et vra
 ---
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,bf9f5b5f6aaa865f,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,p16frmwidp0,markdown,fr,935d928dadf2f94d,"## 7. Exercices
+
+Les trois exercices suivants vous font manipuler les leviers du GP bayésien vus ci-dessus : le choix du **noyau** (exercice 1), la **dureté du dataset** (exercice 2) et l'**effet du prior sur la longueur de corrélation** $\ell$ (exercice 3, en écho de la section 5). Chaque stub est self-contained : reconstruisez le modèle de la section 3 avec la variation demandée.",,,,,,,,935d928dadf2f94d,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,p16frmwidp1,markdown,fr,4d17fb63ae2e6598,"### Exercice 1 — Noyau Matern vs RBF
+
+**Objectif** : remplacer le noyau `ExpQuad` (RBF) par un `Matern52` et comparer la frontière de décision. Le Matern est moins lisse : la frontière doit l'être aussi.
+
+**Indices** : `pm.gp.cov.Matern52(input_dim=2, ls=ls)` ; gardez le même prior `LogNormal` sur `ls`. Étapes : (1) reconstruisez le modèle avec le nouveau noyau ; (2) échantillonnez (même `draw`/`tune` qu'en section 3) ; (3) tracez la frontière (section 4) et comparez.",,,,,,,,4d17fb63ae2e6598,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,p16frmwidp2,markdown,fr,997c85ad4e3b64a4,"### Exercice 2 — Deux anneaux entrelacés (two moons)
+
+**Objectif** : construire un dataset où deux demi-anneaux sont entrelacés (style *two moons*) et vérifier que le GP séparateur reste non linéaire.
+
+**Indices** : pour la classe 0, angles dans $[0, \pi]$ ; pour la classe 1, angles dans $[\pi, 2\pi]$, avec un décalage radial. Étapes : (1) générez `X_moons`, `y_moons` (16 points chacun) ; (2) ré-entraînez le GP (section 3) sur ce dataset ; (3) affichez l'accuracy — elle doit rester élevée si le noyau RBF convient.",,,,,,,,997c85ad4e3b64a4,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,p16frmwidp3,markdown,fr,3f84a6cc775ec81f,"### Exercice 3 — Effet du prior sur la longueur de corrélation
+
+**Objectif** : mesurer comment un prior *très concentré* sur une grande longueur $\ell$ force le GP vers un modèle quasi linéaire (sous-apprentissage). C'est la vérification empirique promise en section 5.
+
+**Indices** : passez de `pm.LogNormal(""ls"", mu=0.0, ...)` à `mu=2.0, sigma=0.1`. Étapes : (1) ré-entraînez avec ce prior concentré grand ; (2) comparez la frontière (qui doit devenir quasi-linéaire) et l'accuracy. **Question** : que se passe-t-il avec un prior concentré *petit* (`mu=-1.5`) ?",,,,,,,,3f84a6cc775ec81f,,,,,,,
