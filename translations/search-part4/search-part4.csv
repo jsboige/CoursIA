@@ -49,13 +49,13 @@ Dans un article influent de 2015, Kenneth Sorensen (*Metaheuristics -- The Metap
 | **Metaheuristique** | Logique composable qui intercepte chaque etape | Oui |
 
 Le principe cle : **la metaheuristique intercepte chaque etape de l'evolution** (selection, crossover, mutation, reinsertion) et peut modifier, remplacer ou composer le comportement de l'operateur correspondant. Le moteur lui-meme reste generique et stable.",,,,,,,,208f0f0765e5ddc6,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,wiring-cell,code,fr,38ef9c2542303ad6,"// Wiring: load MetaGeneticSharp + GeneticSharp DLLs from submodule build
-// Build prerequisite: dotnet build from c:/dev/MetaGeneticSharp
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,wiring-cell,code,fr,c59ab1409abce414,"// Wiring: load MetaGeneticSharp + GeneticSharp DLLs from submodule build
+// Build prerequisite: dotnet build from the in-repo submodule MyIA.AI.Notebooks/Search/MetaGeneticSharp
 // Requires: git submodule update --init GeneticSharp (nested submodule)
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
 
 using MetaGeneticSharp;
 using GeneticSharp;
@@ -64,7 +64,7 @@ Console.WriteLine(""MetaGeneticSharp + GeneticSharp charges avec succes."");
 Console.WriteLine($""  MetaGeneticAlgorithm : {typeof(MetaGeneticAlgorithm).Name}"");
 Console.WriteLine($""  DefaultMetaHeuristic : {typeof(DefaultMetaHeuristic).Name}"");
 Console.WriteLine($""  NoOpMetaHeuristic    : {typeof(NoOpMetaHeuristic).Name}"");
-Console.WriteLine($""  MetaPopulation       : {typeof(MetaPopulation).Name}"");",,,,,,,,38ef9c2542303ad6,,,,,,,
+Console.WriteLine($""  MetaPopulation       : {typeof(MetaPopulation).Name}"");",,,,,,,,c59ab1409abce414,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-1-Introduction.ipynb,section-2-architecture,markdown,fr,dc61b43b97b773ba,"## 2. Architecture du moteur autonome
 
 ### `MetaGeneticAlgorithm` -- un GA sans patch amont
@@ -3547,13 +3547,13 @@ En biologie, une **cellule eucaryote** contient un noyau et des organites, chacu
 | Caryotype (ensemble des chromosomes) | Liste des sous-chromosomes |
 | Tissu specialise | `SubPopulation` avec sa strategie |
 | Organisme complet | Individu reconstruit via `GetNewIndividuals()` |",,,,,,,,1594b726bc5940de,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-3-Eukaryote.ipynb,wiring-cell,code,fr,a8de0265eabb481a,"// Wiring: load MetaGeneticSharp + GeneticSharp DLLs from submodule build
-// Build prerequisite: dotnet build c:/dev/MetaGeneticSharp/MetaGeneticSharp.sln
-// Requires: git -C c:/dev/MetaGeneticSharp submodule update --init GeneticSharp
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-3-Eukaryote.ipynb,wiring-cell,code,fr,697221227d699b5d,"// Wiring: load MetaGeneticSharp + GeneticSharp DLLs from submodule build
+// Build prerequisite: dotnet build ../MetaGeneticSharp/MetaGeneticSharp.sln
+// Requires: git -C ../MetaGeneticSharp submodule update --init GeneticSharp
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
 
 using MetaGeneticSharp;
 using GeneticSharp;
@@ -3564,7 +3564,7 @@ Console.WriteLine($""  SubPopulation              : {typeof(SubPopulation).Name}
 Console.WriteLine($""  SubPopulationContext       : {typeof(SubPopulationContext).Name}"");
 Console.WriteLine($""  EukaryoteMetaHeuristic     : {typeof(EukaryoteMetaHeuristic).Name}"");
 Console.WriteLine($""  EvolutionStage.Crossover   : {EvolutionStage.Crossover}"");
-Console.WriteLine($""  EvolutionStage.Mutation    : {EvolutionStage.Mutation}"");",,,,,,,,a8de0265eabb481a,,,,,,,
+Console.WriteLine($""  EvolutionStage.Mutation    : {EvolutionStage.Mutation}"");",,,,,,,,697221227d699b5d,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-3-Eukaryote.ipynb,a530ae80,markdown,fr,1ad6a19a3d8fbd1a,"### Chargement des DLL et configuration du notebook
 
 La cellule suivante charge les DLL MetaGeneticSharp et GeneticSharp depuis le build du sous-module. Assurez-vous que le build est a jour avant d'executer ce notebook.
@@ -4176,20 +4176,20 @@ Dans un algorithme genetique classique (population panmictique, un seul pool), l
 | Risque de convergence prematuree | Eleve | Reduit |
 | Temps de convergence | Rapide si chanceux, bloque si premature | Plus regulier, plus robuste |
 | Parallelisme | Non | Naturel (iles independantes) |",,,,,,,,91d98f851cf25aaf,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb,wiring-cell,code,fr,98de8bc966276b43,"// Wiring: load MetaGeneticSharp + GeneticSharp DLLs from the fork build (net9.0 self-contained).
-// Build prerequisite: dotnet build c:/dev/MetaGeneticSharp/MetaGeneticSharp.sln
-// Requires: git -C c:/dev/MetaGeneticSharp submodule update --init GeneticSharp
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb,wiring-cell,code,fr,9602eed02f6389ac,"// Wiring: load MetaGeneticSharp + GeneticSharp DLLs from the fork build (net9.0 self-contained).
+// Build prerequisite: dotnet build ../MetaGeneticSharp/MetaGeneticSharp.sln
+// Requires: git -C ../MetaGeneticSharp submodule update --init GeneticSharp
 //
 // We #r from the Extensions output dir because it is self-contained: CopyLocalLockFileAssemblies
 // ships System.Drawing.Common.dll AND SkiaSharp.dll next to the MGS DLLs, which the graphic
 // landscape rendering in section 5 needs at runtime. The Domain-only dir of older wiring did not.
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/System.Drawing.Common.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/SkiaSharp.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/System.Drawing.Common.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/SkiaSharp.dll""
 
 using MetaGeneticSharp;
 using GeneticSharp;
@@ -4202,7 +4202,7 @@ using System.Runtime.InteropServices;
 string rid = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? ""win-arm64""
            : RuntimeInformation.ProcessArchitecture == Architecture.X86   ? ""win-x86""
            : ""win-x64"";
-NativeLibrary.Load($""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/runtimes/{rid}/native/libSkiaSharp.dll"");
+NativeLibrary.Load($""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/runtimes/{rid}/native/libSkiaSharp.dll"");
 
 Console.WriteLine(""MetaGeneticSharp + GeneticSharp + Extensions charges avec succes (net9.0)."");
 Console.WriteLine($""  IslandPopulation         : {typeof(IslandPopulation).Name}"");
@@ -4210,7 +4210,7 @@ Console.WriteLine($""  IslandMetaHeuristic      : {typeof(IslandMetaHeuristic).N
 Console.WriteLine($""  MigrationMode.RandomRing : {MigrationMode.RandomRing}"");
 Console.WriteLine($""  SubPopulation            : {typeof(SubPopulation).Name}"");
 Console.WriteLine($""  MetaPopulation           : {typeof(MetaPopulation).Name}"");
-Console.WriteLine($""  SkiaLandscapeRenderer    : {typeof(SkiaLandscapeRenderer).Name} (native rid={rid})"");",,,,,,,,98de8bc966276b43,,,,,,,
+Console.WriteLine($""  SkiaLandscapeRenderer    : {typeof(SkiaLandscapeRenderer).Name} (native rid={rid})"");",,,,,,,,9602eed02f6389ac,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb,wiring-note,markdown,fr,1ad6a19a3d8fbd1a,"### Chargement des DLL et configuration du notebook
 
 La cellule suivante charge les DLL MetaGeneticSharp et GeneticSharp depuis le build du sous-module. Assurez-vous que le build est a jour avant d'executer ce notebook.
@@ -5161,15 +5161,15 @@ L'argument de MetaGeneticSharp (cf. MGS-6 Benchmarks) est que reconstruire ces a
 
 > **Rappel C.2** : kernel `.net-csharp`. Les DLLs MetaGeneticSharp + GeneticSharp sont chargées depuis le build du fork, compilé en **net9.0** pour correspondre au kernel (`.NET 8` via dotnet-interactive). Voir la cellule de câblage ci-dessous.
 ",,,,,,,,feebd9f1fded5045,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-5-CompoundMetaheuristics.ipynb,c01,code,fr,b92a3824f88cf998,"// Câblage : chargement des DLLs MetaGeneticSharp + GeneticSharp (build net9.0 du fork).
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-5-CompoundMetaheuristics.ipynb,c01,code,fr,581a2aa1a3aa8f24,"// Câblage : chargement des DLLs MetaGeneticSharp + GeneticSharp (build net9.0 du fork).
 // Prérequis de build (depuis la racine du fork) :
 //   dotnet build src/MetaGeneticSharp.Domain/MetaGeneticSharp.Domain.csproj -c Debug
 // (net9.0 pour matcher le target net9.0 du csproj ; les DLLs core + dépendances System.Drawing
 //  sont co-localisées dans Domain/bin/Debug/net9.0/.)
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
 
 using MetaGeneticSharp;
 using GeneticSharp;
@@ -5182,7 +5182,7 @@ Console.WriteLine(""  MetaHeuristicsService : "" + typeof(MetaHeuristicsService)
 Console.WriteLine(""  WhaleOptimisationAlgorithm : "" + typeof(WhaleOptimisationAlgorithm).Name);
 Console.WriteLine(""  EquilibriumOptimizer : "" + typeof(EquilibriumOptimizer).Name);
 Console.WriteLine(""  ForensicBasedInvestigation : "" + typeof(ForensicBasedInvestigation).Name);
-",,,,,,,,b92a3824f88cf998,,,,,,,
+",,,,,,,,581a2aa1a3aa8f24,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-5-CompoundMetaheuristics.ipynb,c02,markdown,fr,64774d523305cadf,"## Le catalogue : `KnownCompoundMetaheuristics`
 
 Le point d'entrée de la factory est une simple énumération : `KnownCompoundMetaheuristics`. Chaque valeur nomme une métaheuristique composée que `MetaHeuristicsService` sait construire. C'est l'équivalent du registre de `mealpy` — une liste close d'algorithmes prêts à l'emploi.
@@ -5618,14 +5618,14 @@ Si le design primitives-based est valable, WOA-from-primitives doit être **comp
 
 > **Rappel C.2** : ce notebook s'exécute sur le kernel `.net-csharp` et charge les DLL de MetaGeneticSharp (Domain + Extensions) depuis le build du fork. Prérequis : `dotnet build` dans `c:/dev/MetaGeneticSharp`.
 ",,,,,,,,955822acd83a0cca,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-6-Benchmarks.ipynb,cell-001,code,fr,c79a45eb37b49907,"// Wiring: load MetaGeneticSharp + GeneticSharp DLLs from the fork build.
-// Build prerequisite: dotnet build c:/dev/MetaGeneticSharp/MetaGeneticSharp.sln
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-6-Benchmarks.ipynb,cell-001,code,fr,52056bcf149fb132,"// Wiring: load MetaGeneticSharp + GeneticSharp DLLs from the fork build.
+// Build prerequisite: dotnet build ../MetaGeneticSharp/MetaGeneticSharp.sln
 // NOTE: KnownFunctions lives in the Extensions project, so we load its DLL too.
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
-#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
+#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
 
 using MetaGeneticSharp;
 using GeneticSharp;
@@ -5635,7 +5635,7 @@ Console.WriteLine($""  WhaleOptimisationAlgorithm : {typeof(WhaleOptimisationAlg
 Console.WriteLine($""  IslandMetaHeuristic        : {typeof(IslandMetaHeuristic).Name}"");
 Console.WriteLine($""  SphereFitness              : {typeof(SphereFitness).Name}"");
 Console.WriteLine($""  KnownFunctionsBounds       : {typeof(KnownFunctionsBounds).Name}"");
-",,,,,,,,c79a45eb37b49907,,,,,,,
+",,,,,,,,52056bcf149fb132,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-6-Benchmarks.ipynb,cell-002,markdown,fr,cc38ee91df021c43,"## Chromosome géométrique : la représentation commune
 
 Les métaheuristiques composées géométriques (WOA, EO) opèrent sur des gènes **continus** via un `GeometricConverter<TGene>` : elles lisent/écrivent les gènes comme des `double`. Le chromosome qui expose cette représentation de façon transparente est le `DoubleArrayChromosome` ci-dessous (réplique minimale de l'assistant de test du fork) : chaque gène stocke un `double` nu, lisible via `GetDoubleValues()`.
@@ -7225,3 +7225,223 @@ synthetiques et biais de centre).
 *Donnees : cartes d'altitude `KnownHeightMap` (jsboige), ressources PNG embarquees du fork
 `MetaGeneticSharp.Extensions` (~2560 px), lues via `ImageHeightMapFunction` verbatim @ `d05826fd`.*
 ",,,,,,,,25f1a53746b4f3ca,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-47fd9648,markdown,fr,3a02151f4f5409ea,"# MGS-19 — Recuit simulé décomposé : l'opérateur de Metropolis isolé
+
+[↑ Partie 4](README.md) | [← MGS-18 — Banc CEC](MGS-18-CecBanc.ipynb)
+
+MGS-10 confrontait le **recuit simulé** (Simulated Annealing) aux autres métaheuristiques comme une boîte noire parmi huit. Mais SA, dans ce fork, n'est pas un monolithe : c'est un **composé** — `SimulatedAnnealing` — qui assemble deux ingrédients distincts :
+
+1. une **perturbation gaussienne** (le croisement géométrique qui produit un voisin de l'individu courant),
+2. une **réinsertion de Metropolis** (`MetropolisReinsertion`) qui accepte ou rejette ce voisin selon le critère $P = \exp(\Delta / T_k)$.
+
+Le deuxième ingrédient — l'opérateur de Metropolis — vit dans [`MetropolisReinsertion.cs`](https://github.com/jsboige/MetaGeneticSharp/blob/main/src/MetaGeneticSharp.Domain/Reinsertions/MetropolisReinsertion.cs). Il est installé par défaut ** uniquement** par le compound SA (via `SimulatedAnnealing.GetDefaultReinsertion()`), et n'est jamais utilisé seul. Ce notebook le **débranche** de SA et le rebranche seul sur un **GA standard** (croisement de recombinaison, pas perturbation) : que devient l'acceptation de Metropolis quand on la greffe à l'étage « survie » d'un algorithme génétique ordinaire ?
+
+La thèse est celle qui parcourt toute la Partie 4 — **composants > métaphores** (Sørensen 2015) — poussée ici jusqu'au **démontage du recuit simulé lui-même** : SA n'est pas indivisible, son opérateur de survie est réutilisable dans une autre machine. La question falsifiable : l'acceptation `exp(Δ/T)` à la réinsertion aide-t-elle un GA à échapper aux optima locaux sur un paysage multimodal ? Spoiler honnête — **non** : le verdict, rapporté ci-dessous chiffres à l'appui, est négatif, et c'est précisément ce résultat négatif qui ferme la leçon.",,,,,,,,3a02151f4f5409ea,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-a166fcdb,markdown,fr,e6d53d1a566c81ea,"## Le critère de Metropolis et son double habitat
+
+Le critère de Metropolis (Metropolis et al., 1953 ; Kirkpatrick, Gelatt & Vecchi, 1983) accepte un voisin de fitness $\Delta = f_{\text{enfant}} - f_{\text{parent}} < 0$ (plus mauvais) avec probabilité $\exp(\Delta / T_k)$ ; un voisin meilleur ($\Delta \geq 0$) est toujours accepté. La température suit un schedule géométrique $T_k = T_0 \, \alpha^k$ : chaud au départ (les montées passent), gelé à la fin (seules les améliorations passent — limite gloutonne).
+
+Dans SA, ce critère est **couplé** à une perturbation : l'enfant est un voisin gaussien du parent. On l'isole ici en gardant un **croisement de recombinaison standard** (`UniformCrossover`) : l'enfant est un recombinant de deux parents, pas un clone perturbé. Le critère de Metropolis s'applique alors à la **survie** : à chaque paire parent/enfant, on accepte l'enfant (même moins bon) avec la probabilité d'annealing. C'est un hybride « GA + survie annealée », distinct du recuit complet.
+
+> **Pourquoi le contrôle `FitnessBasedPairwiseReinsertion`.** `MetropolisReinsertion` apparie parent[i] ↔ enfant[i] (pairwise). Pour isoler *l'effet du critère d'acceptation*, le bon contrôle est donc un **pairwise greedy** — `FitnessBasedPairwiseReinsertion` (réutilisé par le compound FBI) — qui garde simplement le meilleur de chaque paire. Même appariement, même croisement/mutation/sélection : **seule la règle d'acceptation change**. La réinsertion `FitnessBasedElitistReinsertion` (défaut du GA) opère elle un **μ+λ global** (top-N sur parents ∪ enfants) : schéma de sélection différent, on la tient pour référence de contexte, pas pour contrôle de l'opérateur.",,,,,,,,e6d53d1a566c81ea,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-b0567f0b,code,fr,c9a8ef08197f67ab,"// Cablage : DLLs MetaGeneticSharp + GeneticSharp + Extensions.
+#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
+#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Domain.dll""
+#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Infrastructure.dll""
+#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/MetaGeneticSharp.Domain.dll""
+#r ""c:/dev/MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
+
+using MetaGeneticSharp;
+using GeneticSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+Console.WriteLine(""DLLs chargees. Operateurs de reinsertion du fork :"");
+Console.WriteLine(""  FitnessBasedElitistReinsertion  (defaut GA, global mu+lambda) : "" + typeof(FitnessBasedElitistReinsertion).Name);
+Console.WriteLine(""  FitnessBasedPairwiseReinsertion (pairwise greedy, compound FBI): "" + typeof(FitnessBasedPairwiseReinsertion).Name);
+Console.WriteLine(""  MetropolisReinsertion           (pairwise + annealing, compound SA) : "" + typeof(MetropolisReinsertion).Name);
+Console.WriteLine(""  SimulatedAnnealing               (compound complet)            : "" + typeof(SimulatedAnnealing).Name);
+Console.WriteLine(""  MetaGeneticAlgorithm .Reinsertion settable       : "" + typeof(MetaGeneticAlgorithm).Name);",,,,,,,,c9a8ef08197f67ab,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-efd8ffc4,code,fr,89ef3a756eba7ac0,"// DoubleArrayChromosome (replique fork, MGS-10/15/16/17/18) : genes double transparents.
+public class DoubleArrayChromosome : ChromosomeBase
+{
+    private readonly double _min; private readonly double _max;
+    public DoubleArrayChromosome(double[] values, double min, double max) : base(values.Length)
+    { _min=min; _max=max; for (int i=0;i<values.Length;i++) ReplaceGene(i, new Gene(values[i])); }
+    public override IChromosome CreateNew()
+    { var rand=RandomizationProvider.Current; int n=Length; var v=new double[n];
+      for (int i=0;i<n;i++) v[i]=rand.GetDouble(_min,_max); return new DoubleArrayChromosome(v,_min,_max); }
+    public override Gene GenerateGene(int geneIndex) => new Gene(RandomizationProvider.Current.GetDouble(_min,_max));
+    public double[] GetDoubleValues() => GetGenes().Select(g => (double)g.Value).ToArray();
+}
+
+const int PopSize = 50;
+const int NFE = 5000;          // budget commun a toutes les configs (pas de triche par le budget)
+const int dim = 5;             // dimension ou les operateurs differentient (cf MGS-11/14)
+int[] seeds = { 7, 42, 99 };   // multi-seed (meme convention que MGS-18)
+
+// GA plain dont on n'echange QUE l'operateur de reinsertion. Tout le reste -- croisement
+// (UniformCrossover), mutation (UniformMutation), selection (EliteSelection), metaheuristic
+// (DefaultMetaHeuristic = pass-through GA classique) -- est identique d'une config a l'autre.
+// L'effet mesure est donc PUREMENT celui de la regle de survie.
+Optimizer MakeGAWithReinsertion(IReinsertion reins)
+{ return (Optimizer)((req) => { int gens=Math.Max(1,req.Evaluations/PopSize);
+    var (min,max)=req.Bounds; double mid=0.5*(min+max);
+    var adam=new DoubleArrayChromosome(Enumerable.Repeat(mid,req.Dimension).ToArray(),min,max);
+    var pop=new MetaPopulation(PopSize,PopSize,adam);
+    var ga=new MetaGeneticAlgorithm(pop,req.Fitness,new EliteSelection(),new UniformCrossover(0.5f),new UniformMutation(true),new DefaultMetaHeuristic());
+    ga.Reinsertion = reins;                                  // <-- injection de l'operateur isole
+    ga.Termination=new GenerationNumberTermination(gens); ga.Start();
+    return ga.BestChromosome.Fitness ?? double.NegativeInfinity; }); }
+
+// Objectif moyen sur les graines (objectif = -fitness, proche 0 = meilleur ; le RNG est reseede
+// avant chaque course, donc les chiffres committes sont reproduisibles).
+double RunAvg(Optimizer opt, IFitness fit)
+{ var bounds = KnownFunctionsBounds.For(fit.GetType());
+  double s=0; foreach(var sd in seeds){ FastRandomRandomization.ResetSeed(sd);
+    s += -opt(new OptimizerRequest(fit, bounds, dim, NFE)); }
+  return s/seeds.Length; }
+
+// Les 5 configurations : Pairwise et Metropolis sont pairwise (memes paires) -- la comparaison
+// isole le critere d'acceptation. Elitist (mu+lambda global) = reference de contexte.
+IReinsertion Pairwise       = new FitnessBasedPairwiseReinsertion();   // controle greedy pairwise
+IReinsertion MetropolisCold = new MetropolisReinsertion(0.2, 0.90);    // T0 faible, gele vite ~ greedy
+IReinsertion MetropolisMed  = new MetropolisReinsertion(1.0, 0.95);    // T0 moyen, refroidissement moyen
+IReinsertion MetropolisHot  = new MetropolisReinsertion(5.0, 0.99);    // T0 eleve, refroidissement lent
+IReinsertion Elitist        = new FitnessBasedElitistReinsertion();    // reference : defaut GA global
+
+FastRandomRandomization.ResetSeed(42);
+double smoke = -MakeGAWithReinsertion(Pairwise)(new OptimizerRequest(new SphereFitness(), KnownFunctionsBounds.For(typeof(SphereFitness)), dim, NFE));
+Console.WriteLine($""Setup OK. PopSize={PopSize}, NFE={NFE} (gens={NFE/PopSize}), dim={dim}, seeds={string.Join("", "",seeds)}."");
+Console.WriteLine($""Smoke GA+Pairwise/Sphere objectif={smoke:F3} (proche 0 = OK)."");",,,,,,,,89ef3a756eba7ac0,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-3ac2858f,markdown,fr,3911aa025da207b8,"## Méthode
+
+Cinq configurations, un budget commun (NFE = 5000, dimension 5, moyenne 3 graines) :
+
+| Reinsertion | Appariement | Règle d'acceptation | Rôle |
+|---|---|---|---|
+| `FitnessBasedPairwiseReinsertion` | pairwise | greedy (meilleur de la paire) | **contrôle** |
+| `MetropolisReinsertion(0,2 ; 0,90)` | pairwise | `exp(Δ/T)`, T faible | froid ≈ greedy |
+| `MetropolisReinsertion(1,0 ; 0,95)` | pairwise | `exp(Δ/T)`, T moyen | annealing modéré |
+| `MetropolisReinsertion(5,0 ; 0,99)` | pairwise | `exp(Δ/T)`, T élevé, lent | annealing marqué |
+| `FitnessBasedElitistReinsertion` | μ+λ global | top-N | référence contexte |
+
+Les trois `Metropolis` partagent le **même appariement** que le contrôle `Pairwise` ; la différence est uniquement la règle d'acceptation (greedy → annealing). C'est cette comparaison qui isole l'opérateur. Le banc est seedé (`FastRandomRandomization.ResetSeed` avant chaque course) : les chiffres sont reproduisibles.",,,,,,,,3911aa025da207b8,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-ca8cb9f4,markdown,fr,73bd766812754670,"## Partie A — le témoin neutre : Sphere (unimodale)
+
+Sur Sphere (unimodale, lisse), tout déplacement qui n'améliore pas la fitness est une **montée** inutile : il n'y a pas d'optimum local à franchir. La prédiction de la théorie : l'acceptation de Metropolis n'a rien à accepter d'utile — accepter une montée ne fait que bruiter la convergence. Les `Metropolis` froid/moyen doivent donc **égaliser** le contrôle greedy, et le réglage chaud (beaucoup d'annealing) le dégrader (beaucoup de bruit). C'est notre témoin neutre : un problème où l'opérateur, par construction, **ne peut pas** aider.",,,,,,,,73bd766812754670,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-5ec92d70,code,fr,34f6ba07a6ee20f1,"void RunBanc(IFitness fit, string fname)
+{
+    Console.WriteLine($""\n===== {fname} (dim={dim}, NFE={NFE}, moy 3 seeds) -- objectif (proche 0 = meilleur) ====="");
+    Console.WriteLine($""{""Reinsertion"",-32}|{""objectif"",10}"");
+    Console.WriteLine(new string('-',46));
+    Console.WriteLine($""{""Pairwise greedy (controle)"",-32}|{RunAvg(MakeGAWithReinsertion(Pairwise), fit),10:F3}"");
+    Console.WriteLine($""{""Metropolis T0=0.2 a=0.90 (froid)"",-32}|{RunAvg(MakeGAWithReinsertion(MetropolisCold), fit),10:F3}"");
+    Console.WriteLine($""{""Metropolis T0=1.0 a=0.95 (moyen)"",-32}|{RunAvg(MakeGAWithReinsertion(MetropolisMed), fit),10:F3}"");
+    Console.WriteLine($""{""Metropolis T0=5.0 a=0.99 (chaud)"",-32}|{RunAvg(MakeGAWithReinsertion(MetropolisHot), fit),10:F3}"");
+    Console.WriteLine($""{""Elitist global (reference)"",-32}|{RunAvg(MakeGAWithReinsertion(Elitist), fit),10:F3}"");
+}
+RunBanc(new SphereFitness(), ""Sphere"");",,,,,,,,34f6ba07a6ee20f1,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-595cea55,markdown,fr,fd2db9d064002279,"**Lecture (G.9).** Sur Sphere, le contrôle greedy et les `Metropolis` froid/moyen résolvent la fonction (objectif ≈ 0,01) : il n'y a pas de montée utile à accepter — c'est le **témoin neutre attendu**. Le réglage **chaud** dégrade pourtant nettement (≈ 0,10, soit ~8× le contrôle) : à force d'accepter des montées inutiles, il injecte du bruit dans une convergence facile. Leçon provisoire : sur un paysage unimodal, l'annealing ne sert à rien et trop d'annealing nuit. Le paysage multimodal dira si cela s'inverse.",,,,,,,,fd2db9d064002279,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-2b76d735,markdown,fr,3f346abebaec1d9e,"## Partie B — le paysage discriminant : Rastrigin (fortement multimodale)
+
+Rastrigin ($\sum [x_i^2 - 10\cos(2\pi x_i)] + 10n$) est une forêt régulière d'optima locaux séparés par des montées de fitness. Hypothèse naturelle à éprouver : un GA greedy pairwise se fige dans le premier bassin rencontré, tandis qu'un GA à survie annealée accepte, tant que T est chaud, des enfants moins bons — donc maintient la diversité et pourrait franchir les cols entre bassins. La question n'est pas de savoir si Rastrigin est résolu (à NFE = 5000 en dimension 5, aucun des opérateurs ne l'annule) mais **quel critère d'acceptation atteint le meilleur bassin**. Le tableau ci-dessous tranche — et il tranche **contre** l'hypothèse.",,,,,,,,3f346abebaec1d9e,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-35497f89,code,fr,8b02050b68466535,"RunBanc(new RastriginFitness(), ""Rastrigin"");",,,,,,,,8b02050b68466535,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-59a7ba9a,markdown,fr,19df70d40f1e373f,"**Lecture honnête (résultat négatif).** Le verdict **réfute** l'hypothèse d'évasion : sur Rastrigin, aucun réglage Metropolis n'améliore le contrôle greedy pairwise (1,19) — le froid (1,62) et le chaud (1,77) le dégradent nettement, le moyen (1,23) est dans le bruit. Accepter des enfants moins bons à la réinsertion n'aide pas le GA à franchir les cols ; cela l'écarte des bons bassins, et le réglage le plus chaud (le plus d'annealing) est le **pire**.
+
+**Pourquoi l'évasion échoue.** L'explication la plus naturelle tient à la sémantique du « voisin ». Dans SA, l'enfant est un **voisin** du parent (perturbation gaussienne isotrope) : accepter un voisin moins bon a le sens d'une exploration du voisinage. Ici l'enfant est un **recombinant** de deux parents (mosaïque par gène via `UniformCrossover`) : il n'est le voisin ni de l'un ni de l'autre. Accepter un recombinant moins bon n'est donc pas une exploration de voisinage — c'est du bruit injecté à la survie. Le bénéfice du recuit réside dans le **couplage** perturbation+acceptation, pas dans l'acceptation seule. (L'élitiste global μ+λ, référence 0,39, gagne encore : la sélection globale top-N est plus exploitative que tout schéma pairwise — mais ce n'est pas l'objet ; l'objet est la comparaison Metropolis-vs-Pairwise à appariement constant, et elle est négative.)",,,,,,,,19df70d40f1e373f,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-669b0c7c,markdown,fr,9dcacb6e1854d124,"## Partie C — second multimodal : Ackley (puits central + rides fines)
+
+Ackley est l'autre paysage multimodal canonique : un grand puits central entouré de rides cosinus à période fine. On y reporte le même banc pour vérifier si le verdict négatif de Rastrigin se confirme ou si Ackley, à la géométrie différente (large puits plutôt que forêt régulière), répond autrement.",,,,,,,,9dcacb6e1854d124,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-8eed3bd0,code,fr,8ab42ac5fe3929e7,"RunBanc(new AckleyFitness(), ""Ackley"");",,,,,,,,8ab42ac5fe3929e7,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-3a23996f,markdown,fr,c4cba55f4caa0bfe,"**Lecture.** Même verdict qu'en Rastrigin : le Metropolis froid (2,46) est dans le bruit du contrôle greedy (2,74) — pas d'amélioration fiable ; le moyen (2,92) et surtout le chaud (4,32) dégradent. La géométrie différente d'Ackley ne renverse pas la conclusion : l'acceptation annealée détachée du couplage SA n'aide pas.",,,,,,,,c4cba55f4caa0bfe,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-717dde0a,markdown,fr,16433d1848f3bdab,"## Partie D — la signature de température et la limite frozen
+
+L'effet de `MetropolisReinsertion` est piloté par le schedule $T_k = T_0 \alpha^k$. On le trace sur 100 générations (= NFE/PopSize) : on voit le spectre `chaud persistant → gélification rapide`. La **limite frozen** ($T \to 0$) est l'autre vérification de cohérence : quand T gèle, le critère `exp(Δ/T)` devient 0 pour toute montée — la **règle** d'acceptation dégénère en greedy. On la vérifie sur le témoin lisse Sphere : là, même si l'opérateur consomme un tirage RNG par évaluation (et diverge donc de la trajectoire du contrôle), la convergence lisse ramène les deux au même lieu. (Sur un paysage rude comme Rastrigin, la divergence de trajectoire domine et l'égalité numérique n'a plus de sens — d'où le choix du témoin lisse.)",,,,,,,,16433d1848f3bdab,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-88454e6e,code,fr,44656d9b9093915a,"// Trace du cooling schedule T_k = T0 * alpha^k sur 100 generations.
+Console.WriteLine(""Cooling schedule T_k = T0 * alpha^k (k = generation, sur 100 gens) :\n"");
+Console.WriteLine($""{""k"",4}|{""T0=0.2 a=0.90"",14}|{""T0=1.0 a=0.95"",14}|{""T0=5.0 a=0.99"",14}"");
+Console.WriteLine(new string('-',50));
+var sched = new[] { (0.2,0.90), (1.0,0.95), (5.0,0.99) };
+for (int k=0; k<=100; k+=10)
+{ var row = sched.Select(s => Math.Pow(s.Item2,k) * s.Item1);
+  Console.WriteLine($""{k,4}|{row.ElementAt(0),14:E3}|{row.ElementAt(1),14:E3}|{row.ElementAt(2),14:E3}""); }
+
+// Limite frozen : T0 quasi-nul => exp(delta/T)->0 pour toute montee => la REGLE d'acceptation
+// devient greedy. Verifie sur Sphere (temoin lisse) -- la ou la divergence de trajectoire RNG
+// (l'operateur consomme un tirage par evaluation, meme en rejetant) ne masque pas l'effet de la regle.
+IReinsertion MetropolisFrozen = new MetropolisReinsertion(1e-9, 0.50);
+double frozenSphere = RunAvg(MakeGAWithReinsertion(MetropolisFrozen), new SphereFitness());
+double pairSphere   = RunAvg(MakeGAWithReinsertion(Pairwise), new SphereFitness());
+Console.WriteLine(""\nLimite frozen (T0=1e-9) sur Sphere (temoin lisse) : la REGLE devient greedy :"");
+Console.WriteLine($""  Metropolis frozen = {frozenSphere:F4}"");
+Console.WriteLine($""  Pairwise greedy   = {pairSphere:F4}"");
+Console.WriteLine($""  Ecart |frozen - pairwise| = {Math.Abs(frozenSphere-pairSphere):F4} (proche = regle greedy confirmee ; residu = divergence trajectoire RNG)."");",,,,,,,,44656d9b9093915a,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-01e138dd,markdown,fr,24002a1f4a94fd8e,"## Synthèse — un opérateur démonté, un bénéfice qui ne voyage pas
+
+Trois leçons se dégagent, toutes honnêtes (G.9) :
+
+1. **Le recuit simulé est démontable.** `SimulatedAnnealing` n'est pas un bloc : c'est un assemblage (perturbation gaussienne + `MetropolisReinsertion`). On peut débrancher l'opérateur de Metropolis et le rebrancher seul sur un GA de recombinaison — il fonctionne, il s'exécute sur le vrai moteur du fork, et son effet est mesurable. C'est la thèse « composants > métaphores » (Sørensen 2015) appliquée au recuit lui-même : la métaphore thermodynamique n'est pas indivisible.
+
+2. **L'opérateur discrimine sur le multimodal — mais l'effet est négatif.** Sur Sphere (unimodal), l'annealing ne sert à rien (témoin neutre) et le réglage chaud dégrade (≈ 0,10 contre ≈ 0,01). Sur Rastrigin et Ackley (multimodal), le Metropolis pairwise **n'améliore jamais** le contrôle greedy pairwise — le réglage le plus chaud est le pire des deux paysages. Le critère `exp(Δ/T)` change bien le comportement (Prong-B satisfait : l'opérateur n'équivaut pas à une baseline sur le multimodal, la sortie le montre), mais pas dans le sens espéré : accepter des recombinants moins bons n'évade pas les optima locaux, c'est du bruit.
+
+3. **Le bénéfice du recuit est dans le couplage, pas dans l'acceptation seule.** SA marche parce que la perturbation propose un **voisin** du courant et l'acceptation anneale entre voisins ; les deux sont conjointement accordés. Détacher l'acceptation et la brancher sur un croisement de recombinaison (l'enfant = mosaïque de deux parents, pas un voisin) brise cette sémantique. C'est la leçon « composants > métaphores » dans sa forme la plus exigeante : on PEUT démonter SA, l'opérateur isolé FONCTIONNE sur le vrai moteur — mais il ne porte pas, à lui seul, le bénéfice du tout. Le tout est plus que la somme des pièces, et c'est précisément en démontant qu'on le prouve (écho de la synergie conditionnelle de MGS-11/14 : la composition n'est magique ni assemblée ni désassemblée).
+
+Le prolongement naturel n'en reste pas moins la **composition** : ayant isolé `MetropolisReinsertion`, on peut le recombiner ailleurs qu'en survie brute de GA — par exemple l'injecter comme étage d'exploration dans une île d'un archipel (MGS-4/11), où la diversité qu'il entretient pourrait payer autrement. L'opérateur, démonté, reste une brique disponible ; ce notebook dit seulement *où* il ne suffit pas.",,,,,,,,24002a1f4a94fd8e,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-f6fa769c,markdown,fr,cc57c60649e7a8c2,"## Exercices
+
+1. **Schedule lent vs rapide.** Ajoutez deux réglages extrêmes : `T0=10, α=0.999` (très lent, quasi-constant) et `T0=1, α=0.5` (gélification en ~5 générations). Reportez-les sur Rastrigin : un schedule trop lent maintient-il trop de diversité (pas de convergence) ? Confirme-t-il la monotonie « plus d'annealing = plus de dégradation » observée ?
+2. **Recombiner la perturbation.** L'hypothèse mécanistique avancée (l'enfant recombinant n'est pas un « voisin ») est testable : remplacez le `UniformCrossover` par la **perturbation gaussienne de SA** (`SimulatedAnnealing.DefaultPerturbationOperator` comme croisement géométrique) tout en gardant `MetropolisReinsertion`. Si l'hypothèse est juste, l'opérateur de Metropolis redevient utile (on a reconstitué le couplage). Mesurez sur Ackley.
+3. **Composition insulaire.** Injectez `MetropolisReinsertion` dans une seule île d'un archipel hétérogène (une île « annealée » + des îles DE/BBPSO, cf MGS-11/14). La diversité entretenue par l'annealing paie-t-elle cette fois au niveau de l'archipel ? Concevez le banc (même migration, ratio variable) et rapportez le verdict.
+
+## Pour aller plus loin
+
+- **Le compound complet** : [`SimulatedAnnealing.cs`](https://github.com/jsboige/MetaGeneticSharp/blob/main/src/MetaGeneticSharp.Domain/Metaheuristics/Compound/SimulatedAnnealing.cs) sur le fork montre comment perturbation + `MetropolisReinsertion` se couplent dans le recuit original.
+- **MGS-10** (biais central) confrontait SA à sept autres optimiseurs comme boîtes noires ; ce notebook ouvre la boîte et montre que l'opérateur de survie, isolé, ne porte pas le bénéfice.
+- **MGS-17** (parameter control) donne le cadre du No-Free-Lunch au niveau du paramètre ; la leçon 2 ci-dessus est son exact analogue au niveau de l'opérateur.
+- **MGS-18** (banc CEC) est le protocole standard pour éprouver ces opérateurs sur les paysages shift+rotate combinés.
+
+## Référence
+
+| Métaheuristique | Référence |
+|---|---|
+| Critère d'acceptation de Metropolis (recuit simulé) | Metropolis, N., Rosenbluth, A. W., Rosenbluth, M. N., Teller, A. H., & Teller, E. (1953) — « Equation of State Calculations by Fast Computing Machines », *Journal of Chemical Physics* 21(6). |
+| Recuit simulé en optimisation | Kirkpatrick, S., Gelatt, C. D., & Vecchi, M. P. (1983) — « Optimization by Simulated Annealing », *Science* 220(4598). |
+| Métaheuristiques = composants (pas métaphores) | Sørensen, K. (2015) — « Metaheuristics—the metaphor exposed », *Intl. Trans. in Operational Research* 22(1). doi:10.1111/itor.12001 |",,,,,,,,cc57c60649e7a8c2,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb,cell-148b672c,markdown,fr,fc817e0d904e9b02,"### Exercice 1 — Sensibilite a la tolerance tau
+
+Le taux de reussite depend du **rayon d'acceptation** `tau`. Re-tabulez les 4 methodes
+x 4 zooms pour `tau` dans `{ 0.03, 0.06, 0.12 }` et observez comment la **hierarchie des
+methodes** bouge selon qu'on est strict ou tolerant.
+
+**Objectif.** Mesurer la sensibilite d'une metaheuristique au rayon de reussite.
+
+**Indices.**
+- Parametrez `Hit`/`Rate` pour accepter `tau` en argument, puis re-affichez la table de la section 4.
+- Un `tau` petit = critere strict (peu de methodes reussissent) ; un `tau` grand = tolerant.
+- Une methode robuste garde une hierarchie stable quand `tau` varie.",,,,,,,,fc817e0d904e9b02,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb,cell-315f2b63,markdown,fr,b9184b8419acf5e1,"### Exercice 2 — Ajouter une baseline « hill-climber »
+
+Ajoutez une **5e ligne** au tableau : un *hill-climber* (montee de gradient stochastique).
+Depart aleatoire, petits pas `(u, v) ± epsilon`, on garde le pas s'il monte. Meme budget
+`NFE = Pop * Gens` que les metaheuristiques. Ou se classe-t-il face a GA/PSO/WOA/EO ?
+
+**Objectif.** Comparer une recherche locale gloutonne aux metaheuristiques populationnelles.
+
+**Indices.**
+- 1 seul point courant, `NFE = Pop * Gens` evaluations, pas `epsilon ~ 0.05`, clamp `[0,1]`.
+- Un hill-climber est vite piege dans un optimum local sur un relief multimodal comme l'Everest.
+- C'est precisement ce qui justifie les metaheuristiques populationnelles (diversite).",,,,,,,,b9184b8419acf5e1,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb,cell-ff527908,markdown,fr,85a079c1721dd09e,"### Exercice 3 — Taux de reussite vs budget NFE
+
+Faites varier le **budget** `NFE` (par ex. `Pop * Gens` dans `{ 200, 450, 900, 1800 }`)
+pour la WOA sur `everestRegion` et tracez (en ASCII ou en colonne) le taux de reussite
+correspondant. Le scaling est-il lineaire, sous-lineaire, ou a seuil ?
+
+**Objectif.** Etudier la convergence d'une metaheuristique en fonction du budget.
+
+**Indices.**
+- Ajustez `Gens = nfe / Pop` (gardez `Pop` fixe), relancez `Rate(everestRegion, ...)`.
+- Un seuil (`NFE` minimal pour atteindre le sommet) est plus informatif qu'une pente lineaire.
+- Comparez la forme de la courbe WOA a celle d'un hill-climber (exercice 2).",,,,,,,,85a079c1721dd09e,,,,,,,
