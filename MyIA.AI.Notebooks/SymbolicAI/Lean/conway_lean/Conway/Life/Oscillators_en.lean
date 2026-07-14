@@ -1,43 +1,43 @@
 /-
-Copyright (c) 2026 CoursIA. Tous droits reserves.
-Distribue sous licence Apache 2.0 comme decrit dans le fichier LICENSE.
+Copyright (c) 2026 CoursIA. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
 
-## Jeu de la Vie de Conway — Oscillateurs et structures stables (still lifes)
+## Conway's Game of Life — Oscillators and Still Lifes
 
-Structures stables additionnelles (loaf, boat, tub, pond, ship) et
-oscillateurs (pulsar periode 3, pentadecathlon periode 15) etendant
-le module fondateur `Conway.Life`.
+Additional still-life patterns (loaf, boat, tub, pond, ship) and
+oscillators (pulsar period 3, pentadecathlon period 15) extending the
+foundations module `Conway.Life`.
 
-Les structures stables sont verifiees via `isStillLife g = true`.
-Les oscillateurs sont verifies via `isOscillator g n = true`.
+Still-lifes are verified via `isStillLife g = true`.
+Oscillators are verified via `isOscillator g n = true`.
 
-Toutes les coordonnees sont listees dans l'ordre lexicographique
-trie (ligne d'abord, puis colonne) pour que `step` produise une
-liste dans le meme ordre et que `native_decide` puisse verifier
-l'egalite par comparaison structurelle.
+All coordinates are listed in sorted lexicographic order (by row, then
+column) so that the `step` function returns a list in the same order
+and `native_decide` can verify equality by structural comparison.
 
-Le pulsar (48 cellules, periode 3) et le pentadecathlon (12 cellules,
-periode 15) sont **a la limite** de `native_decide` : ils necessitent
-plusieurs calculs de `step` sur des listes de cellules non triviales.
-Leurs theoremes sont conserves non-commentes apres verification locale
-de `lake build`. Les definitions elles-memes sont exportees inconditionnellement.
+The pulsar (48 cells, period 3) and pentadecathlon (12 cells, period 15)
+are **borderline** for `native_decide`: they require many step
+computations on non-trivial cell lists. Their theorems are kept
+commented out pending an explicit local `lake build` verification. The
+definitions themselves are unconditionally exported.
 
-Ce module est entierement prouve (aucun gap dans les theoremes non-commentes).
+This module is fully proven (no gaps in the uncommented theorems).
 -/
 
 /-
-  Convention i18n (EPIC #4980, decision user 2026-07-04) : ce fichier est **FR canonique**,
-  avec son miroir anglais dans le fichier sibling `Oscillators_en.lean` (modele sibling
-  pair ratifie 2026-07-04, cf `code-style.md` §Lean i18n). Les enonces de theoremes,
-  les tactiques Lean, les noms de lemmes et les references Mathlib restent en anglais
-  (compat Mathlib 4) ; seules les docstrings de theoreme et ce bloc d'en-tete different
-  entre les deux fichiers.
+  English mirror of `Oscillators.lean` (FR canonical). Convention EPIC #4980
+  (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n): distinct FR + EN sibling
+  files — no inline bilingual block in a single file (Option B rejected). The module
+  docstring and the public theorem docstrings below differ from the FR version; the body
+  signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
 import Conway.Life
 
-namespace Conway
-namespace Life
+namespace Conway_en
+open Conway
+namespace Life_en
+open Life
 
 /-! ## Still lifes
 
@@ -207,5 +207,5 @@ def pentadecathlon : Grid :=
 theorem pentadecathlon_period_15 : isOscillator pentadecathlon 15 = true := by
   native_decide
 
-end Life
-end Conway
+end Life_en
+end Conway_en
