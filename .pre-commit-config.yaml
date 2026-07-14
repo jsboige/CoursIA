@@ -9,3 +9,24 @@ repos:
       - id: gitleaks
         name: Secret scanner (gitleaks)
         args: ['detect', '--no-git', '--redact']
+
+  # Local hooks: notebook hygiene + structural integrity. These run on the
+  # worker's machine without external dependencies. See
+  # docs/reference/regles-validation-detail.md for H.3 (execution_count != null)
+  # and the #6309 / #2727 / #2733 probeAddresses banner regression post-mortem.
+  - repo: local
+    hooks:
+      - id: strip-probeaddresses-banner
+        name: Strip .NET probeAddresses banner from staged notebooks
+        description: |
+          Removes the dotnet-interactive probeAddresses HTTP-bootstrap banner
+          (data["text/html"] outputs containing probeAddresses / probingAddresses /
+          loadDotnetInteractiveApi). The banner leaks the worker's network
+          interfaces (LAN IPv4, WSL/Docker bridge, link-local IPv6, public IPv6
+          GUA) at every kernel re-execution. Output-only strip — no source
+          change, execution_count preserved, see #2727/#2733/#6309.
+        entry: python scripts/notebook_tools/strip_probe_banner.py --apply
+        language: system
+        pass_filenames: true
+        files: '\.ipynb$'
+        stages: [pre-commit]
