@@ -1,41 +1,38 @@
 /-
-Conway hommage — Le probleme de l'Ange (jeu de poursuite)
+Conway calibration / hommage — The Angel problem (pursuit-evasion game theory)
 John Horton Conway (1937-2020).
 
-Le probleme de l'Ange (Conway, 1996) : sur la grille entiere infinie
-ℤ², un Ange de pouvoir `k` peut, a son tour, sauter sur n'importe
-quelle case a distance de Chebyshev (coup de roi) `k` ; le Diable mange
-une case par tour. L'Ange de pouvoir k donne-t-il la chasse
-indefiniment ? Conway a pose les resultats initiaux et le probleme a
-ouvert tout un champ ; il fut finalement resolu en 2006 (Bowditch :
-pouvoir 4 ; Kloster et Mathe : pouvoir 2 ; Gacs) -- l'Ange de pouvoir
-≥ 2 gagne.
+The Angel problem (Conway, 1996): on the infinite integer lattice ℤ², an Angel
+of power `k` may, on its turn, jump to any square within Chebyshev (king-move)
+distance `k`; the Devil eats one square per turn. Does the Angel of some power
+`k` evade capture forever? Conway laid out the initial results and the problem
+sparked the field; it was finally settled in 2006 (Bowditch: power 4; Kloster
+and Máthé: power 2; Gács) — the Angel of power ≥ 2 wins.
 
-NOTE D'ACCESSIBILITE (Epic #1452/#1453) : le THEOREME complet de
-victoire est un enonce de jeu infini / non-terminaison sans precedent
-Lean -- niveau recherche, PAS une cible prouveur tractable (classe
-intractable comme les sorries Gale-Shapley). Ce qui EST accessible,
-et fidele a l'hommage, c'est le SETUP : la combinatoire du mouvement
-de l'Ange (une boule de Chebyshev), ou l'Ange de pouvoir 1 est
-exactement un roi des echecs. Hommage a une contribution MathOverflow
-sur les resultats de poursuite de Conway (post 357433).
+ACCESSIBILITY NOTE (Epic #1452/#1453): the FULL win theorem is an infinite-game /
+non-termination statement with no Lean precedent — research-grade, NOT a tractable
+prover target (same intractable class as the Gale-Shapley sorries). What IS
+accessible, and faithful to the homage, is the SETUP: the combinatorics of the
+Angel's move-set (a Chebyshev ball), where the power-1 Angel is exactly a chess
+king. Homage to a MathOverflow contribution on Conway's pursuit-evasion results
+(post 357433).
 
-Tous les `sorry` ont ete elimines (Epic #1453, #1651).
+All `sorry`s have been eliminated (Epic #1453, #1651).
 -/
 
 /-
-  Convention i18n (EPIC #4980, decision user 2026-07-04) : ce fichier est **FR canonique**,
-  avec son miroir anglais dans le fichier sibling `Angel_en.lean` (modele sibling pair
-  ratifie 2026-07-04, cf `code-style.md` §Lean i18n). Les enonces de theoremes, les
-  tactiques Lean, les noms de lemmes et les references Mathlib restent en anglais (compat
-  Mathlib 4) ; seules les docstrings de theoreme et ce bloc d'en-tete different entre
-  les deux fichiers.
+  English mirror of `Angel.lean` (FR canonical). Convention EPIC #4980
+  (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n): distinct FR + EN sibling
+  files — no inline bilingual block in a single file (Option B rejected). The module
+  docstring and the public theorem docstrings below differ from the FR version; the body
+  signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
 import Mathlib.Data.Int.Interval
 import Mathlib.Data.Finset.Prod
 
-namespace Conway
+namespace Conway_en
+open Conway
 
 /-- Chebyshev (king-move) distance on the integer lattice. -/
 def chebyshev (a b : ℤ × ℤ) : ℤ :=
@@ -74,4 +71,4 @@ theorem angelMoves_card (k : ℕ) (p : ℤ × ℤ) :
   rw [hx, hy]
   rw [pow_two]
 
-end Conway
+end Conway_en
