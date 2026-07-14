@@ -302,7 +302,7 @@ C'est l'anti-hallucination par excellence : un LLM ancré sur des faits RDF vér
 
 ![Graphe orienté des entités extraites par LLM, noeuds colorés par type et arêtes étiquetées](assets/readme/sw12_graphrag_c18_o0.png)
 
-*SW-12 (cellule 18) : **graphe orienté des entités extraites par LLM** (filmographie Nolan) — noeuds colorés par type d'entité (Person / Movie / Organization / Award / Genre / Concept), arêtes orientées étiquetées par la relation extraite.*
+*SW-12 (cellule 18) : **graphe orienté des entités extraites par LLM** (filmographie Nolan) — noeuds colorés par type d'entité **extrait** (Person / Movie / Organization / Award ; `Genre` et `Concept` existent dans le vocabulaire `TYPE_MAP` mais aucune entité de ce type n'est extraite du texte de démonstration), arêtes orientées étiquetées par la relation extraite.*
 
 ![Communautés détectées par modularité gloutonne (networkx) sur le graphe non-dirigé](assets/readme/sw12_graphrag_c30_o1.png)
 

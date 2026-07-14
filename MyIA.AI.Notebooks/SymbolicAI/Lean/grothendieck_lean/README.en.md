@@ -2,6 +2,14 @@
 
 Alexandre Grothendieck (1928-2014).
 
+## Status
+
+- **Toolchain**: `leanprover/lean4:v4.31.0-rc1`
+- **Sorry**: **0 sorry, 0 axiom** — all 24 modules are complete at creation (Parts 1-24 merged)
+- **Build**: `lake build Grothendieck` — compiles the 24 modules (~3350 lines)
+- **Dependencies**: Mathlib 4 (via `lakefile.lean`)
+- **i18n coverage (EPIC #4980)**: extended coverage — **24 FR-canonical `.lean` modules** + **12 `_en.lean` sibling mirrors** on `main` (`Calibration_en`, `CategoryAndSites_en`, `CoverageGen_en`, `DenseTopology_en`, `LeftExact_en`, `SchemesTour_en`, `SheafHom_en`, `SitePoints_en`, `Subcanonical_en`, `ZariskiSite_en`, `SheafCohomology/Basic_en`, `SheafCohomology/Cech_en` — `_en` namespaces anti-collision, non-docstring content byte-identical CI-detectable). Option A post-#4980 on 12 modules; the 12 other modules stay FR-only at this stage of the rollout. **`README.en.md`** present (EN mirror of this file). Out-of-scope: `.lake/packages/`, vendored libs.
+
 ## Purpose
 
 This workspace is a **pedagogical homage** showing how Grothendieck's mathematical
@@ -22,32 +30,32 @@ The formalization spans **24 modules (Parts 1-24, ~3350 lines, 0 sorry)**, impor
 in order by the umbrella `Grothendieck.lean`. Each module self-numbers via its header
 (`Grothendieck tribute — Part N`).
 
-| Part | File | Content | Lines |
-|------|------|---------|-------|
-| 1 | `Grothendieck/CategoryAndSites.lean` | Sieves, Grothendieck topologies (trivial/discrete/dense), three axioms | 106 |
-| 2 | `Grothendieck/SchemesTour.lean` | Scheme type, Spec functor, Γ, `homeoOfIso`, fully-faithful | 79 |
-| 3 | `Grothendieck/ZariskiSite.lean` | Zariski pretopology, `zariskiTopology_eq` bridge theorem, subcanonical | 84 |
-| 4 | `Grothendieck/MathlibMap.lean` | `#check` index of Grothendieck-related Mathlib definitions | 90 |
-| 5 | `Grothendieck/Calibration.lean` | 4 micro-proof targets for the prover harness (Epic #1453) | 80 |
-| 6 | `Grothendieck/SieveLattice.lean` | Sieve pullback identities: `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone` | 88 |
-| 7 | `Grothendieck/SheafBasics.lean` | Sheaf/separated presheaf basics, sheaf transfer along J₁ ≤ J₂ | 128 |
-| 8 | `Grothendieck/SieveOps.lean` | Topology ordering, covering closure, sieve composition | 124 |
-| 9 | `Grothendieck/CoverageGen.lean` | Coverage-to-topology, sheaf characterization, sup of coverages | 148 |
-| 10 | `Grothendieck/CanonicalProps.lean` | Canonical topology, subcanonicity, representable sheaves | 133 |
-| 11 | `Grothendieck/SieveGenerate.lean` | Sieve generation identities | 128 |
-| 12 | `Grothendieck/DenseTopology.lean` | The dense topology | 131 |
-| 13 | `Grothendieck/Sheafification.lean` | Sheafification (the associated sheaf functor) | 175 |
-| 14 | `Grothendieck/LeftExact.lean` | Left exactness of sheafification | 133 |
-| 15 | `Grothendieck/SitePoints.lean` | Points of a site (fiber functors) | 220 |
-| 16 | `Grothendieck/Subcanonical.lean` | Subcanonical Grothendieck topologies | 88 |
-| 17 | `Grothendieck/SheafHom.lean` | Internal hom of sheaves | 140 |
-| 18 | `Grothendieck/ConstantSheaf.lean` | The constant sheaf functor (bridges Mathlib `CategoryTheory.Sites.ConstantSheaf`) | 185 |
-| 19 | `Grothendieck/Conservative.lean` | Conservative families of points | 226 |
-| 20 | `Grothendieck/SheafCohomology/Basic.lean` | Sheaf cohomology (Ext-based) | 214 |
-| 21 | `Grothendieck/MayerVietorisSquare.lean` | Mayer-Vietoris squares | 195 |
-| 22 | `Grothendieck/SheafCohomology/MayerVietoris.lean` | Mayer-Vietoris long exact sequence | 164 |
-| 23 | `Grothendieck/SheafCohomology/Cech.lean` | Čech cohomology | 123 |
-| 24 | `Grothendieck/YonedaLemma.lean` | The Yoneda lemma (embedding, equivalence, naturality, fully-faithful, coyoneda) | 168 |
+| Part | File | `_en` | Content | Lines |
+|------|------|-------|---------|-------|
+| 1 | `Grothendieck/CategoryAndSites.lean` | `CategoryAndSites_en.lean` | Sieves, Grothendieck topologies (trivial/discrete/dense), three axioms | 106 |
+| 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Scheme type, Spec functor, Γ, `homeoOfIso`, fully-faithful | 79 |
+| 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Zariski pretopology, `zariskiTopology_eq` bridge theorem, subcanonical | 84 |
+| 4 | `Grothendieck/MathlibMap.lean` | — | `#check` index of Grothendieck-related Mathlib definitions | 90 |
+| 5 | `Grothendieck/Calibration.lean` | `Calibration_en.lean` | 4 micro-proof targets for the prover harness (Epic #1453) | 80 |
+| 6 | `Grothendieck/SieveLattice.lean` | — | Sieve pullback identities: `pullback_id`, `pullback_pullback`, `pullback_bot`, `pullback_monotone` | 88 |
+| 7 | `Grothendieck/SheafBasics.lean` | — | Sheaf/separated presheaf basics, sheaf transfer along J₁ ≤ J₂ | 128 |
+| 8 | `Grothendieck/SieveOps.lean` | — | Topology ordering, covering closure, sieve composition | 124 |
+| 9 | `Grothendieck/CoverageGen.lean` | `CoverageGen_en.lean` | Coverage-to-topology, sheaf characterization, sup of coverages | 148 |
+| 10 | `Grothendieck/CanonicalProps.lean` | — | Canonical topology, subcanonicity, representable sheaves | 133 |
+| 11 | `Grothendieck/SieveGenerate.lean` | — | Sieve generation identities | 128 |
+| 12 | `Grothendieck/DenseTopology.lean` | `DenseTopology_en.lean` | The dense topology | 131 |
+| 13 | `Grothendieck/Sheafification.lean` | — | Sheafification (the associated sheaf functor) | 175 |
+| 14 | `Grothendieck/LeftExact.lean` | `LeftExact_en.lean` | Left exactness of sheafification | 133 |
+| 15 | `Grothendieck/SitePoints.lean` | `SitePoints_en.lean` | Points of a site (fiber functors) | 220 |
+| 16 | `Grothendieck/Subcanonical.lean` | `Subcanonical_en.lean` | Subcanonical Grothendieck topologies | 88 |
+| 17 | `Grothendieck/SheafHom.lean` | `SheafHom_en.lean` | Internal hom of sheaves | 140 |
+| 18 | `Grothendieck/ConstantSheaf.lean` | — | The constant sheaf functor (bridges Mathlib `CategoryTheory.Sites.ConstantSheaf`) | 185 |
+| 19 | `Grothendieck/Conservative.lean` | — | Conservative families of points | 226 |
+| 20 | `Grothendieck/SheafCohomology/Basic.lean` | `SheafCohomology/Basic_en.lean` | Sheaf cohomology (Ext-based) | 214 |
+| 21 | `Grothendieck/MayerVietorisSquare.lean` | — | Mayer-Vietoris squares | 195 |
+| 22 | `Grothendieck/SheafCohomology/MayerVietoris.lean` | — | Mayer-Vietoris long exact sequence | 164 |
+| 23 | `Grothendieck/SheafCohomology/Cech.lean` | `SheafCohomology/Cech_en.lean` | Čech cohomology | 123 |
+| 24 | `Grothendieck/YonedaLemma.lean` | — | The Yoneda lemma (embedding, equivalence, naturality, fully-faithful, coyoneda) | 168 |
 
 The extension (Parts 6-24) was developed under Issue #2159 / Epic #1646 and is
 **complete**: all 24 modules merged, 0 `sorry`, 0 axiom added.
@@ -88,6 +96,8 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 - Epic #1453 (prover harness calibration)
 - Conway tribute workspace (`../conway_lean/`)
 - Lean notebook series (`../README.md`)
+- **EPIC #4980** — Lean i18n convention (Option A sibling pair post-2026-07-04; 12 `_en.lean` siblings on `main` in this lake)
+- **[`README.md`](./README.md)** — FR canonical sibling of this file
 
 ## Conclusion
 

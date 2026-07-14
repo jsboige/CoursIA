@@ -74,7 +74,15 @@ jobs:
         BASELINE="${{ inputs.sorry-baseline }}"
         echo "=== Sorry inventory for ${{ inputs.display-name }} (mode: $MODE, baseline: $BASELINE) ==="
         SORRY_TOTAL=0
-        for f in $(find . -name '*.lean' -not -path './.lake/*'); do
+        # Exclude i18n English siblings `*_en.lean` from the sorry scan: they are
+        # byte-identical mirrors of their FR counterpart (only docstrings/comments
+        # differ, and `real` mode strips comments before counting), so their sorries
+        # are DUPLICATES of the FR file's, not new debt. Counting both double-inflates
+        # the total above baseline (e.g. knot_lean: Reidemeister.lean(2) +
+        # Reidemeister_en.lean(2) => 19 > baseline 17, a false FAIL — C513-L1, #6429).
+        # FR<->EN divergence is caught separately by the i18n drift CI, so nothing is
+        # hidden. This exclusion only ever LOWERS a count, never breaks a green lake.
+        for f in $(find . -name '*.lean' ! -name '*_en.lean' -not -path './.lake/*'); do
           if [ -f "$f" ]; then
             case "$MODE" in
               raw)

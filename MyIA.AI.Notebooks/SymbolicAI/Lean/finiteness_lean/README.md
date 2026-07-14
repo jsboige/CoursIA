@@ -13,6 +13,7 @@ Mini-projet Lean 4 issu de l'Epic #2978 (livrable C), livré par la PR #3018.
 - **Sorry** : **0 sorry, 0 axiom** — tout est prouvé ou illustré par `#eval`
 - **Build** : `lake build Finiteness` — **autonome, sans Mathlib** (Lean core seul)
 - **Dépendances** : aucune
+- **Couverture i18n (EPIC #4980)** : couverture mixte — **agrégateur bilingue inline** `Finiteness.lean` (Option B historique pré-#4980, sections FR + EN dans `/-! ... -/`) + **sibling pair substance** `Finiteness/Basic.lean` ↔ `Finiteness/Basic_en.lean` (Option A post-#4980, namespace `Finiteness_en` anti-collision, contenu non-docstring byte-identique détectable par CI) + **compagnon Markdown EN** `Finiteness.en.md` (miroir non compilé des docstrings, pré-#4980) + **`README.en.md`** (miroir EN du présent fichier). Hors-scope : `.lake/packages/`, libs vendored.
 
 ## Ce que formalise
 
@@ -79,10 +80,10 @@ flowchart TD
 
 ## Modules
 
-| Fichier | Lignes | Contenu |
-|---------|-------|---------|
-| `Finiteness/Basic.lean` | 125 | `Regex α` inductive minimale (empty/eps/char/concat/union/star), `nullable`, `deriv` (dérivée de Brzozowski), `derivWord`, `accepts` (matching non-backtracking), exemples `#eval` illustrant la finitude, 2 lemmes `example` (`D_a(char a) = ε`, `D_b(char a) = ∅`), note d'homonymie Conway |
-| `Finiteness.lean` | 1 | Import parapluie |
+| Fichier | `_en` | Lignes | Contenu |
+|---------|-------|-------:|---------|
+| `Finiteness/Basic.lean` | `Basic_en.lean` | 125 | `Regex α` inductive minimale (empty/eps/char/concat/union/star), `nullable`, `deriv` (dérivée de Brzozowski), `derivWord`, `accepts` (matching non-backtracking), exemples `#eval` illustrant la finitude, 2 lemmes `example` (`D_a(char a) = ε`, `D_b(char a) = ∅`), note d'homonymie Conway |
+| `Finiteness.lean` | `Finiteness.en.md` (compagnon MD) | 138 | Agrégateur bilingue inline : import parapluie + sections FR + EN dans `/-! ... -/` + note convention i18n EPIC #4980 (Option B historique pré-#4980, conservé pour la racine) |
 
 ## Citer, pas vendorer (HARD)
 
@@ -124,6 +125,8 @@ lake build Finiteness
 - **Epic #2978** — Le Sudoku comme regex symbolique (Conway → BREX/Rex → RE#), livrable C
 - **Epic #2162** — Conway (pont homonymie + base théorique RE#)
 - **`conway_lean/`** — Jeu de la Vie en Lean (l'autre Conway)
+- **EPIC #4980** — convention i18n Lean (Option A sibling pair post-2026-07-04 + Option B agrégateur bilingue pré-#4980)
+- **[`README.en.md`](./README.en.md)** — miroir EN du présent fichier
 - Dépôt amont cité : [`ezhuchko/finiteness-derivatives`](https://github.com/ezhuchko/finiteness-derivatives) (Zhuchko et al., ITP 2025)
 
 ## Conclusion
