@@ -1,36 +1,36 @@
 /-
-Grothendieck Part 19 -- Conservative families of points
+Grothendieck Partie 19 — Les familles conservatives de points
 
-Part 18 (ConstantSheaf.lean) introduced the constant sheaf functor and its
-adjunction with global sections.
+La Partie 18 (ConstantSheaf.lean) a introduit le foncteur faisceau constant et son
+adjonction avec les sections globales.
 
-This module introduces **conservative families of points** (SGA 4 IV 6.5):
-a family P of points of a site (C, J) is conservative if the corresponding
-fiber functors Sheaf J (Type w) ⥤ Type w jointly reflect isomorphisms.
-This is the abstract formulation of the principle that "enough points detect
-everything" -- the categorical generalization of "enough stalks detect
-isomorphisms/monos/epis".
+Ce module introduit les **familles conservatives de points** (SGA 4 IV 6.5) :
+une famille P de points d'un site (C, J) est conservative si les foncteurs
+fibres correspondants Sheaf J (Type w) ⥤ Type w réfléchissent conjointement les
+isomorphismes. C'est la formulation abstraite du principe selon lequel « suffisamment
+de points détectent tout » — la généralisation catégorique de « suffisamment de
+stalks détectent les isomorphismes/monos/epis ».
 
-Key constructions bridged from Mathlib (`CategoryTheory.Sites.Point.Conservative`):
+Constructions clés pontées depuis Mathlib (`CategoryTheory.Sites.Point.Conservative`) :
 
-  - `ObjectProperty.IsConservativeFamilyOfPoints` : the core structure
-  - `jointlyReflectIsomorphisms` : fiber functors jointly reflect isos (general A)
-  - `jointlyReflectMonomorphisms` : fiber functors jointly reflect monos
-  - `jointlyReflectEpimorphisms` : fiber functors jointly reflect epis
-  - `jointlyFaithful` : fiber functors are jointly faithful
-  - `mk'` : constructor via covering sieve condition (SGA 4 IV 6.5 (a))
-  - `jointly_reflect_ofArrows_mem` : detection of covering sieves via points
-  - `GrothendieckTopology.HasEnoughPoints` : site has enough points
+  - `ObjectProperty.IsConservativeFamilyOfPoints` : la structure centrale
+  - `jointlyReflectIsomorphisms` : les foncteurs fibres réfléchissent les isos (A général)
+  - `jointlyReflectMonomorphisms` : les foncteurs fibres réfléchissent les monos
+  - `jointlyReflectEpimorphisms` : les foncteurs fibres réfléchissent les epis
+  - `jointlyFaithful` : les foncteurs fibres sont conjointement fidèles
+  - `mk'` : constructeur via condition de tamis couvrant (SGA 4 IV 6.5 (a))
+  - `jointly_reflect_ofArrows_mem` : détection des tamis couvrants via points
+  - `GrothendieckTopology.HasEnoughPoints` : le site a suffisamment de points
 
-Plus skyscraper sheaves from `CategoryTheory.Sites.Point.Skyscraper`:
-  - `skyscraperPresheaf` / `skyscraperSheaf` : skyscraper constructions
-  - `skyscraperSheafAdjunction` : fiber ⊣ skyscraper adjunction
-  - `presheafToSheafCompSheafFiberIso` : fiber as localization
+Plus les faisceaux gratte-ciel depuis `CategoryTheory.Sites.Point.Skyscraper` :
+  - `skyscraperPresheaf` / `skyscraperSheaf` : constructions gratte-ciel
+  - `skyscraperSheafAdjunction` : fibre ⊣ adjonction gratte-ciel
+  - `presheafToSheafCompSheafFiberIso` : fibre comme localisation
 
-This is a key ingredient for understanding when a topos has "enough points"
-and for the theory of stalkwise detection of morphism properties.
+C'est un ingrédient clé pour comprendre quand un topos a « suffisamment de points »
+et pour la théorie de la détection stalk-à-stalk des propriétés de morphismes.
 
-Epic #1646, See #2159. All `sorry`s eliminated at creation.
+Epic #1646, See #2159. Tous les `sorry` éliminés à la création.
 -/
 
 import Mathlib.CategoryTheory.Sites.Point.Conservative
@@ -44,147 +44,147 @@ open CategoryTheory Category Opposite Limits
 variable {C : Type u} [Category.{v} C] {J : GrothendieckTopology C}
 variable (P : ObjectProperty (GrothendieckTopology.Point.{w} J))
 
-/-! ## 1. Conservative families of points
+/-! ## 1. Familles conservatives de points
 
-A family P of points is "conservative" if the fiber functors
-`Sheaf J (Type w) ⥤ Type w` corresponding to the points in P
-jointly reflect isomorphisms. This is `ObjectProperty.IsConservativeFamilyOfPoints`
-from Mathlib, tagged as Stacks 00YK (1).
+Une famille P de points est « conservative » si les foncteurs fibres
+`Sheaf J (Type w) ⥤ Type w` correspondant aux points de P
+réfléchissent conjointement les isomorphismes. C'est `ObjectProperty.IsConservativeFamilyOfPoints`
+depuis Mathlib, étiqueté Stacks 00YK (1).
 
-Intuitively: a morphism f : F ⟶ G between sheaves is an iso iff
-it induces an iso on every stalk (fiber) at every point in P.
+Intuitivement : un morphisme f : F ⟶ G entre faisceaux est un iso ssi
+il induit un iso sur chaque stalk (fibre) en chaque point de P.
 -/
 
--- A conservative family of points: fiber functors jointly reflect isomorphisms.
+-- Une famille conservative de points : les foncteurs fibres réfléchissent conjointement les isomorphismes.
 #check @ObjectProperty.IsConservativeFamilyOfPoints
 
-/-! ## 2. Consequences for general coefficient categories
+/-! ## 2. Conséquences pour les catégories de coefficients générales
 
-When the coefficient category A has suitable properties (concrete, AB5, etc.),
-conservativity implies that the fiber functors Sheaf J A ⥤ A jointly
-reflect isomorphisms, monomorphisms, and epimorphisms, and are jointly faithful.
+Quand la catégorie de coefficients A a des propriétés adaptées (concrite, AB5, etc.),
+la conservativité implique que les foncteurs fibres Sheaf J A ⥤ A réfléchissent
+conjointement les isomorphismes, monomorphismes et épimorphismes, et sont conjointement fidèles.
 -/
 
--- Fiber functors jointly reflect isomorphisms (general A).
+-- Les foncteurs fibres réfléchissent conjointement les isomorphismes (A général).
 #check @ObjectProperty.IsConservativeFamilyOfPoints.jointlyReflectIsomorphisms
 
--- Fiber functors jointly reflect monomorphisms (AB5 coefficient category).
+-- Les foncteurs fibres réfléchissent conjointement les monomorphismes (catégorie de coefficients AB5).
 #check @ObjectProperty.IsConservativeFamilyOfPoints.jointlyReflectMonomorphisms
 
--- Fiber functors jointly reflect epimorphisms (with sheafify + products).
+-- Les foncteurs fibres réfléchissent conjointement les épimorphismes (avec sheafify + produits).
 #check @ObjectProperty.IsConservativeFamilyOfPoints.jointlyReflectEpimorphisms
 
--- Fiber functors are jointly faithful.
+-- Les foncteurs fibres sont conjointement fidèles.
 #check @ObjectProperty.IsConservativeFamilyOfPoints.jointlyFaithful
 
-/-! ## 3. Detection via covering sieves (SGA 4 IV 6.5 (a))
+/-! ## 3. Détection via tamis couvrants (SGA 4 IV 6.5 (a))
 
-The constructor `mk'` shows that P is a conservative family if:
-for any sieve S on X, if for every point Phi in P the maps in S
-are jointly surjective on fibers, then S is J-covering.
+Le constructeur `mk'` montre que P est une famille conservative si :
+pour tout tamis S sur X, si pour chaque point Phi de P les flèches de S
+sont conjointement surjectives sur les fibres, alors S est J-couvrant.
 
-This is the practical criterion: to check conservativity, verify
-the covering sieve condition pointwise.
+C'est le critère pratique : pour vérifier la conservativité, vérifier
+la condition de tamis couvrant point par point.
 -/
 
--- Constructor: conservative family via covering sieve condition.
+-- Constructeur : famille conservative via condition de tamis couvrant.
 #check @ObjectProperty.IsConservativeFamilyOfPoints.mk'
 
-/-! ## 4. Detection of covering sieves via points
+/-! ## 4. Détection des tamis couvrants via les points
 
-When P is conservative, a family of arrows {f_i : U_i ⟶ X} covers X
-(ie. generates a J-covering sieve) iff for every point Phi in P
-and every x in the fiber of X, some f_i hits x.
+Quand P est conservative, une famille de flèches {f_i : U_i ⟶ X} couvre X
+(cad. engendre un tamis J-couvrant) ssi pour chaque point Phi de P
+et chaque x dans la fibre de X, une f_i atteint x.
 -/
 
--- Covering sieves detected via fiberwise joint surjectivity.
+-- Tamis couvrants détectés via surjectivité conjointe fibre par fibre.
 #check @ObjectProperty.IsConservativeFamilyOfPoints.jointly_reflect_ofArrows_mem
 
--- Variant for small families of points.
+-- Variante pour les petites familles de points.
 #check @ObjectProperty.IsConservativeFamilyOfPoints.jointly_reflect_ofArrows_mem_of_small
 
-/-! ## 5. Local surjectivity detection
+/-! ## 5. Détection de la surjectivité locale
 
-A morphism of presheaves is locally surjective iff it is surjective
-on fibers at every point in a conservative family.
+Un morphisme de préfaisceaux est localement surjectif ssi il est surjectif
+sur les fibres en chaque point d'une famille conservative.
 -/
 
--- Local surjectivity detected fiberwise via conservative family.
+-- Surjectivité locale détectée fibre par fibre via famille conservative.
 #check @ObjectProperty.IsConservativeFamilyOfPoints.jointly_reflect_isLocallySurjective
 
-/-! ## 6. W iff iso on all fibers
+/-! ## 6. W ssi iso sur toutes les fibres
 
-For a morphism f : F ⟶ G of presheaves, f belongs to J.W (the class
-of morphisms inverted by sheafification) iff f induces an iso on
-fibers at every point in the conservative family.
+Pour un morphisme f : F ⟶ G de préfaisceaux, f appartient à J.W (la classe
+des morphismes inversés par la faisceautisation) ssi f induit un iso sur
+les fibres en chaque point de la famille conservative.
 -/
 
--- J.W membership detected fiberwise.
+-- Appartenance à J.W détectée fibre par fibre.
 #check @ObjectProperty.IsConservativeFamilyOfPoints.W_iff
 
 /-! ## 7. HasEnoughPoints
 
-A site (C, J) "has enough points" if there exists a small conservative
-family of points. This is the condition ensuring that stalkwise reasoning
-is complete: everything detectable stalkwise is true.
+Un site (C, J) « a suffisamment de points » s'il existe une petite famille
+conservative de points. C'est la condition garantissant que le raisonnement
+stalk par stalk est complet : tout ce qui est détectable stalk par stalk est vrai.
 -/
 
--- A site has enough points if there exists a small conservative family.
+-- Un site a suffisamment de points s'il existe une petite famille conservative.
 #check @GrothendieckTopology.HasEnoughPoints
 
-/-! ## 8. Skyscraper sheaves and the fiber-skyscraper adjunction
+/-! ## 8. Faisceaux gratte-ciel et l'adjonction fibre-gratte-ciel
 
-Given a point Phi and an object M : A, the skyscraper sheaf at M
-(with respect to Phi) is the sheaf that sends X : C to the product
-of copies of M indexed by Phi.fiber.obj X. The skyscraper sheaf
-functor is right adjoint to the sheaf fiber functor:
+Étant donné un point Phi et un objet M : A, le faisceau gratte-ciel en M
+(relativement à Phi) est le faisceau qui envoie X : C sur le produit
+de copies de M indexé par Phi.fiber.obj X. Le foncteur faisceau gratte-ciel
+est adjoint à droite du foncteur fibre faisceau :
 
   Phi.sheafFiber ⊣ Phi.skyscraperSheafFunctor
 -/
 
--- The skyscraper presheaf functor.
+-- Le foncteur préfaisceau gratte-ciel.
 #check @GrothendieckTopology.Point.skyscraperPresheafFunctor
 
--- The skyscraper presheaf with value M.
+-- Le préfaisceau gratte-ciel de valeur M.
 #check @GrothendieckTopology.Point.skyscraperPresheaf
 
--- The skyscraper presheaf is a sheaf.
+-- Le préfaisceau gratte-ciel est un faisceau.
 #check @GrothendieckTopology.Point.isSheaf_skyscraperPresheaf
 
--- The skyscraper sheaf functor: A ⥤ Sheaf J A.
+-- Le foncteur faisceau gratte-ciel : A ⥤ Sheaf J A.
 #check @GrothendieckTopology.Point.skyscraperSheafFunctor
 
--- The skyscraper sheaf with value M.
+-- Le faisceau gratte-ciel de valeur M.
 #check @GrothendieckTopology.Point.skyscraperSheaf
 
--- The adjunction: fiber functor ⊣ skyscraper sheaf functor (presheaf level).
+-- L'adjonction : foncteur fibre ⊣ foncteur faisceau gratte-ciel (niveau préfaisceau).
 #check @GrothendieckTopology.Point.skyscraperPresheafAdjunction
 
--- The adjunction: fiber functor ⊣ skyscraper sheaf functor (sheaf level).
+-- L'adjonction : foncteur fibre ⊣ foncteur faisceau gratte-ciel (niveau faisceau).
 #check @GrothendieckTopology.Point.skyscraperSheafAdjunction
 
-/-! ## 9. Fiber functor as localization
+/-! ## 9. Foncteur fibre comme localisation
 
-The fiber functor on sheaves is obtained from the fiber functor on presheaves
-by localization with respect to J.W. The isomorphism
-`presheafToSheafCompSheafFiberIso` witnesses this.
+Le foncteur fibre sur les faisceaux s'obtient à partir du foncteur fibre sur les préfaisceaux
+par localisation relativement à J.W. L'isomorphisme
+`presheafToSheafCompSheafFiberIso` en témoigne.
 -/
 
--- The fiber functor on sheaves as a localization of the presheaf fiber.
+-- Le foncteur fibre sur les faisceaux comme localisation du fibre préfaisceau.
 #check @GrothendieckTopology.Point.presheafToSheafCompSheafFiberIso
 
--- J.W is inverted by the presheaf fiber functor.
+-- J.W est inversé par le foncteur fibre préfaisceau.
 #check @GrothendieckTopology.Point.W_isInvertedBy_presheafFiber
 
-/-! ## 10. Bridge theorems
+/-! ## 10. Théorèmes ponts
 
-Bridge theorems connecting conservative families to concrete verification.
+Théorèmes ponts connectant les familles conservatives à la vérification concrète.
 -/
 
-/-- Bridge theorem: when P is a conservative family of points, the fiber
-    functors at points in P jointly reflect isomorphisms for sheaves with
-    values in a general category A (given suitable assumptions on A).
-    This is the primary consequence of conservativity. -/
+/-- Théorème pont : quand P est une famille conservative de points, les foncteurs
+    fibres aux points de P réfléchissent conjointement les isomorphismes pour les faisceaux
+    à valeurs dans une catégorie générale A (étant données des hypothèses adaptées sur A).
+    C'est la conséquence principale de la conservativité. -/
 theorem jointly_reflect_iso_bridge {A : Type u'} [Category.{v'} A]
     [LocallySmall.{w} C] [HasColimitsOfSize.{w, w} A]
     {FC : A → A → Type*} {CC : A → Type w}
@@ -198,9 +198,9 @@ theorem jointly_reflect_iso_bridge {A : Type u'} [Category.{v'} A]
       (fun (Φ : P.FullSubcategory) ↦ Φ.obj.sheafFiber (A := A)) :=
   hP.jointlyReflectIsomorphisms A
 
-/-- Bridge theorem: a conservative family of points makes the fiber functors
-    jointly faithful. This means: if two morphisms agree on all stalks
-    (fibers at all points in P), they are equal. -/
+/-- Théorème pont : une famille conservative de points rend les foncteurs fibres
+    conjointement fidèles. Cela signifie : si deux morphismes coïncident sur tous les stalks
+    (fibres en tous les points de P), ils sont égaux. -/
 theorem jointly_faithful_bridge {A : Type u'} [Category.{v'} A]
     [LocallySmall.{w} C] [HasColimitsOfSize.{w, w} A]
     {FC : A → A → Type*} {CC : A → Type w}
@@ -215,8 +215,8 @@ theorem jointly_faithful_bridge {A : Type u'} [Category.{v'} A]
       (fun (Φ : P.FullSubcategory) ↦ Φ.obj.sheafFiber (A := A)) :=
   hP.jointlyFaithful A
 
-/-- Bridge construction: the skyscraper sheaf adjunction for a point Phi.
-    Phi.sheafFiber is left adjoint to Phi.skyscraperSheafFunctor. -/
+/-- Construction pont : l'adjonction faisceau gratte-ciel pour un point Phi.
+    Phi.sheafFiber est adjoint à gauche de Phi.skyscraperSheafFunctor. -/
 noncomputable def skyscraper_adjunction_bridge {A : Type u'} [Category.{v'} A]
     [HasProducts.{w} A] [HasColimitsOfSize.{w, w} A]
     (Φ : GrothendieckTopology.Point.{w} J) :
