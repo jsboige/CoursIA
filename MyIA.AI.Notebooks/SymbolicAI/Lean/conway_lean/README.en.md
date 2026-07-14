@@ -5,50 +5,52 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 ## Status
 
 - **Toolchain**: v4.31.0-rc1
-- **Sorry count**: 2 (all in `HashlifeCorrectness.lean` — P4 double-nine wave-glue residual `window_cone_in_domain` [1] + P5 large-n jump `p5_large_n_jump` [1], Epic #2162). Several P4 sub-lemmas and additive ingredients are proven sorry-free (see § "Game of Life" below). `p5_inductive_step` (P5.3 glue) was closed by c.310 PR #5998 via vacuous-arm split (design gate #3846): on non-empty grids, the `¬ hsmall` branch is jointly unsatisfiable with `BoxAssezGrand`, hence vacuous by construction. The P4.4 `p4_half_steps_compose` placeholder was deleted: its pure-evolve composition is already closed (`evolve_add` + `evolve_half_step`), its wave-glue content carried by the `window_cone_in_domain` residual. **Audit N1 (PR #5853, ai-01 2026-07-09)**: the initial frame sub-claim (`BoxAssezGrand` ∩ `n ≥ jumpSize`) is **VACUOUS on non-empty grids** (`p5_large_n_hyps_unsat`: padding 2 of `gridFrame` ∧ `lvl ≥ 3` ⇒ `n ≤ 2 ∧ js ≥ 8`). **Design gate ai-01 (#3846, 2026-07-10)**: redesign `gridFrame` for `n`-dependent padding, port the `(off, mc)` state through the `evolveHashlifeFastAux` loop without intermediate re-framing, restate the "margin ≥ remaining n, preserved by jump" invariant. The proof debt (#3846) remains the BG-prover target and the coordinated architectural redesign scope.
+- **Sorry count**: 2 (all in `HashlifeCorrectness.lean` — P4 double-nine wave-glue residual `p4_succ_membership` (private helper `window_cone_in_domain` is the proven local bridge) [1] + P5 large-n jump `p5_large_n_jump` [1], Epic #2162). Several P4 sub-lemmas and additive ingredients are proven sorry-free (see § "Game of Life" below). `p5_inductive_step` (P5.3 glue) was closed by c.310 PR #5998 via vacuous-arm split (design gate #3846): on non-empty grids, the `¬ hsmall` branch is jointly unsatisfiable with `BoxAssezGrand`, hence vacuous by construction. The P4.4 `p4_half_steps_compose` placeholder was deleted: its pure-evolve composition is already closed (`evolve_add` + `evolve_half_step`), its wave-glue content carried by the `p4_succ_membership` residual. **Audit N1 (PR #5853, ai-01 2026-07-09)**: the initial frame sub-claim (`BoxAssezGrand` ∩ `n ≥ jumpSize`) is **VACUOUS on non-empty grids** (`p5_large_n_hyps_unsat`: padding 2 of `gridFrame` ∧ `lvl ≥ 3` ⇒ `n ≤ 2 ∧ js ≥ 8`). **Design gate ai-01 (#3846, 2026-07-10)**: redesign `gridFrame` for `n`-dependent padding, port the `(off, mc)` state through the `evolveHashlifeFastAux` loop without intermediate re-framing, restate the "margin ≥ remaining n, preserved by jump" invariant. The proof debt (#3846) remains the BG-prover target and the coordinated architectural redesign scope.
 - **Build**: `lake build Conway` -- SUCCESS (3352 jobs)
 - **Dependencies**: Mathlib4
+- **i18n coverage (EPIC #4980)**: 11 conway_lean modules shipped as FR-canonical + `_en` sibling on `main` — Phase 1: `Angel`, `DoomsdayLemmas`, `FractranLemmas`, `LookAndSayLemmas`, `MathlibMap` (5/9); Phase 2: `Life` (root), `Spaceships`, `Oscillators`, `HashlifeMarginDemo`, `HashlifeMemo`, `Pillars` (6/13). Rollout c.290-#6439 in progress on the remaining modules (`RLE`, `LightCone`, `GridCanonical` PRs c.421-c.423 awaiting merge).
 
 ## Modules
 
 ### Phase 1 — Classic algorithms (Epic #1151, COMPLETE)
 
-| File | sorry | Description |
-|------|-------|-------------|
-| `Conway/Doomsday.lean` | 0 | Doomsday algorithm (day-of-week calculation) |
-| `Conway/DoomsdayLemmas.lean` | 0 | Lemmas for the Doomsday algorithm |
-| `Conway/Fractran.lean` | 0 | FRACTRAN programming language |
-| `Conway/LookAndSay.lean` | 0 | Look-and-Say sequence |
-| `Conway/LookAndSayLemmas.lean` | 0 | Lemmas for the Look-and-Say sequence |
-| `Conway/Nim.lean` | 0 | Nim game theory |
-| `Conway/Angel.lean` | 0 | Angel problem |
-| `Conway/CollatzLike.lean` | 0 | Collatz-like functions and undecidability (`native_decide`) |
-| `Conway/MathlibMap.lean` | 0 | Mathlib pinned-snapshot satellite — what Mathlib provides for Conway's work |
+| File | `_en` | sorry | Description |
+|------|-------|-------|-------------|
+| `Conway/Doomsday.lean` | — | 0 | Doomsday algorithm (day-of-week calculation) |
+| `Conway/DoomsdayLemmas.lean` | `DoomsdayLemmas_en.lean` | 0 | Lemmas for the Doomsday algorithm |
+| `Conway/Fractran.lean` | — | 0 | FRACTRAN programming language |
+| `Conway/FractranLemmas.lean` | `FractranLemmas_en.lean` | 0 | Lemmas for FRACTRAN (step/run: halt empty, 0-run, `num/1` applicability, concrete trace `{3/2}` 2→3) |
+| `Conway/LookAndSay.lean` | — | 0 | Look-and-Say sequence |
+| `Conway/LookAndSayLemmas.lean` | `LookAndSayLemmas_en.lean` | 0 | Lemmas for the Look-and-Say sequence |
+| `Conway/Nim.lean` | — | 0 | Nim game theory |
+| `Conway/Angel.lean` | `Angel_en.lean` | 0 | Angel problem |
+| `Conway/CollatzLike.lean` | — | 0 | Collatz-like functions and undecidability (`native_decide`) |
+| `Conway/MathlibMap.lean` | `MathlibMap_en.lean` | 0 | Mathlib pinned-snapshot satellite — what Mathlib provides for Conway's work |
 
 ### Phase 2 — Game of Life (Epic #1647, IN PROGRESS)
 
-| File | sorry | Description |
-|------|-------|-------------|
-| `Conway/Life.lean` | 0 | B3/S23 rules, grid operations, step/evolve, `native_decide` proofs |
-| `Conway/Life/Spaceships.lean` | 0 | LWSS/MWSS/HWSS (period 4, displacement (0,2)), 3 `native_decide` proofs |
-| `Conway/Life/Oscillators.lean` | 0 | 5 still-lifes + pulsar (p3) + pentadecathlon (p15), 7 `native_decide` |
-| `Conway/Life/RLE.lean` | 0 | RLE pattern parser + glider/LWSS/pulsar/Gosper gun, 8 `native_decide` proofs |
-| `Conway/Life/MacroCell.lean` | 0 | Quadtree datatype + `toGrid`/`buildFromGrid` round-trip + `wf` predicate |
-| `Conway/Life/Hashlife.lean` | 0 | `step4x4` + `hashlifeResult` recursive + `padCenter2` + `hashlifeJump` + `evolveHashlifeFast` |
-| `Conway/Life/LightCone.lean` | 0 | Light-cone geometry satellite — sorry-free lemmas on `manhattan`/`lightCone` bridging `HashlifeCorrectness` |
-| `Conway/Life/GridCanonical.lean` | 0 | `sortDedup` canonical forms, lex-sorted uniqueness, grid equality via canonical form |
-| `Conway/Life/Computation.lean` | 0 | Hashlife cross-validation (6 + 6 fast), eater1 still-life (1), glider composition (5) |
-| `Conway/Life/HashlifeMemo.lean` | 0 | Memoized Hashlife for community pillar witnesses (OTCA 35K, UnitCell 4096, Gemini 33M) |
-| `Conway/Life/HashlifeMarginDemo.lean` | 0 | Runnable P5 redesign demo (#3846) — n-aware framing margin around `MacroCell`/`HashlifeCorrectness` |
-| `Conway/Life/Pillars.lean` | 0 | Community-witness theorem scaffolding (4 pillars) |
-| `Conway/Life/HashlifeCorrectness.lean` | 2 | Bounded correctness `hashlife_correct`; P4/P5 prover targets (Epic #1453, #2162) |
+| File | `_en` | sorry | Description |
+|------|-------|-------|-------------|
+| `Conway/Life.lean` | `Life_en.lean` (root) | 0 | B3/S23 rules, grid operations, step/evolve, `native_decide` proofs |
+| `Conway/Life/Spaceships.lean` | `Spaceships_en.lean` | 0 | LWSS/MWSS/HWSS (period 4, displacement (0,2)), 3 `native_decide` proofs |
+| `Conway/Life/Oscillators.lean` | `Oscillators_en.lean` | 0 | 5 still-lifes + pulsar (p3) + pentadecathlon (p15), 7 `native_decide` |
+| `Conway/Life/RLE.lean` | — | 0 | RLE pattern parser + glider/LWSS/pulsar/Gosper gun, 8 `native_decide` proofs |
+| `Conway/Life/MacroCell.lean` | — | 0 | Quadtree datatype + `toGrid`/`buildFromGrid` round-trip + `wf` predicate |
+| `Conway/Life/Hashlife.lean` | — | 0 | `step4x4` + `hashlifeResult` recursive + `padCenter2` + `hashlifeJump` + `evolveHashlifeFast` |
+| `Conway/Life/LightCone.lean` | — | 0 | Light-cone geometry satellite — sorry-free lemmas on `manhattan`/`lightCone` bridging `HashlifeCorrectness` |
+| `Conway/Life/GridCanonical.lean` | — | 0 | `sortDedup` canonical forms, lex-sorted uniqueness, grid equality via canonical form |
+| `Conway/Life/Computation.lean` | — | 0 | Hashlife cross-validation (6 + 6 fast), eater1 still-life (1), glider composition (5) |
+| `Conway/Life/HashlifeMemo.lean` | `HashlifeMemo_en.lean` | 0 | Memoized Hashlife for community pillar witnesses (OTCA 35K, UnitCell 4096, Gemini 33M) |
+| `Conway/Life/HashlifeMarginDemo.lean` | `HashlifeMarginDemo_en.lean` | 0 | Runnable P5 redesign demo (#3846) — n-aware framing margin around `MacroCell`/`HashlifeCorrectness` |
+| `Conway/Life/Pillars.lean` | `Pillars_en.lean` (c.417) | 0 | Community-witness theorem scaffolding (4 pillars) |
+| `Conway/Life/HashlifeCorrectness.lean` | — | 2 | Bounded correctness `hashlife_correct`; P4/P5 prover targets (Epic #1453, #2162) |
 
 ### Phase 3 — Free Will Theorem (Epic #1651, COMPLETE)
 
-| File | sorry | Description |
-|------|-------|-------------|
-| `Conway/KochenSpecker.lean` | 0 | KS 18-vec Cabello proof (parity argument) |
-| `Conway/FreeWillTheorem.lean` | 0 | Conway-Kochen FWT (SPIN + TWIN + MIN) |
+| File | `_en` | sorry | Description |
+|------|-------|-------|-------------|
+| `Conway/KochenSpecker.lean` | — | 0 | KS 18-vec Cabello proof (parity argument) |
+| `Conway/FreeWillTheorem.lean` | — | 0 | Conway-Kochen FWT (SPIN + TWIN + MIN) |
 
 ## Key Results
 

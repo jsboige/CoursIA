@@ -29,7 +29,13 @@ L'objectif fil rouge de cette série est de construire un podcast entièrement g
 
 Plutôt qu'une galerie séparée du propos, chaque niveau ci-dessous est illustré par une sortie réelle de notebook (EPIC #5654), placée au plus près du concept qu'elle démontre : la forme d'onde d'un signal brut, la reconnaissance vocale par Whisper, la séparation de sources par Demucs, ou l'espace de features d'un benchmark TTS. La provenance exacte de chaque figure (notebook source, cellule, poids) et l'audit G.1 firsthand figurent dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
-> **Note d'audit (2026-07-10, doctrine #5780).** Deux images du MANIFEST ont été déclassées à la suite d'un audit G.1 firsthand : `audio2-spectrogram.png` (benchmark latence/taille kokoro vs openai/tts-1, pas un spectrogramme) et `audio5-multimodel.png` (caractéristiques librosa d'un seul échantillon, pas une comparaison multi-modèles). Elles restent dans le MANIFEST à titre de traçabilité mais ne sont plus promues. La figure « STT/TTS » reste partielle : seul le volet STT est validé (détail auprès de la figure en 01-Foundation).
+> **Note d'audit c.481 (2026-07-14, doctrine #5780).** L'audit 2026-07-10 cataloguait `audio2-spectrogram.png` et `audio5-multimodel.png` comme DÉCLASSÉs. Une re-vérification G.1 firsthand c.481 a montré que les **PNG eux-mêmes étaient inversés** entre les slots `audio3-stt-tts.png` et `audio5-multimodel.png` (le contenu de l'un matchait le titre de l'autre et vice-versa). **Swap correctif c.481** : `git mv audio3-stt-tts.png audio5-multimodel.png` + `git mv audio5-multimodel.png audio3-stt-tts.png`. État après swap :
+>
+> - `audio2-spectrogram.png` : **VRAI** (3 heatmaps MFCC authentiques, c.481 corrige l'erreur 2026-07-10 qui l'avait à tort catalogué DÉCLASSÉ — le contenu décrit alors provenait en fait du PNG désormais sous `audio5-multimodel.png`).
+> - `audio3-stt-tts.png` : **DÉCLASSÉ** (4 courbes librosa « Caractéristiques audio extraites », le titre STT/TTS reste trompeur ; le notebook 03-1-Multi-Model-Audio-Comparison produit ce contenu après analyse spectrale STT préalable).
+> - `audio5-multimodel.png` : **VRAI TTS-only** (2 barplots kokoro vs openai/tts-1, scope TTS-côté-serveur uniquement, pas STT/TTS multi-voies comme le titre le suggère).
+>
+> Toutes les figures sont conservées dans le MANIFEST à titre de traçabilité ; la `audio3-stt-tts.png` DÉCLASSÉE n'est plus promue dans la section Aperçu.
 
 ## Structure
 

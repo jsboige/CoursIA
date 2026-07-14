@@ -46,17 +46,18 @@ import Conway.Life
 
 
 /-
-  Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier est **FR canonique**,
-  avec son miroir anglais dans le fichier sibling `MacroCell_en.lean` (modèle sibling
-  pair ratifié 2026-07-04, cf `code-style.md` paragraphe Lean i18n). Les énoncés de
-  théorèmes, les tactiques Lean, les noms de lemmes et les références Mathlib restent en
-  anglais (compatibilité Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tête
-  diffèrent entre les deux fichiers.
+  English mirror of `MacroCell.lean` (FR canonical). Convention EPIC #4980
+  (decision ratified 2026-07-04, cf `code-style.md` paragraphe Lean i18n): distinct FR + EN sibling
+  files - no inline bilingual block in a single file (Option B rejected). The module
+  docstring above mirrors the FR copyright + FR-orbit description; the body signatures,
+  proofs and tactics remain byte-identical between the two files.
 -/
 
-namespace Conway
+namespace Conway_en
 
-namespace Life
+open Conway_en
+
+namespace Life_en
 
 /-! ## The quadtree data structure -/
 
@@ -72,7 +73,7 @@ inductive MacroCell where
   -- proofs in `Conway.Life.HashlifeMemo` rely on.
   deriving DecidableEq, Repr, Inhabited
 
-namespace MacroCell
+namespace MacroCell_en
 
 /-- The level of a `MacroCell`: 0 for `leaf`, `1 + nw.level` for `node`.
     By construction, a well-formed `MacroCell` has all four subtrees at the
@@ -135,7 +136,7 @@ def toCellsAux (r0 c0 : Int) : MacroCell -> List (Int × Int)
 def toGrid (offset : Int × Int) (c : MacroCell) : Grid :=
   sortDedup (c.toCellsAux offset.1 offset.2)
 
-end MacroCell
+end MacroCell_en
 
 /-! ## Conversion: Grid -> MacroCell
 
@@ -153,7 +154,7 @@ The construction is straightforward but a little tedious:
    appropriate quadrant.
 -/
 
-namespace MacroCell
+namespace MacroCell_en
 
 /-- Smallest `n` such that `2 ^ n >= k`. -/
 def ceilLog2 (k : Nat) : Nat :=
@@ -346,7 +347,7 @@ theorem mem_toCellsAux_shift {c : MacroCell} {r0 c0 : Int} {p : Int × Int} :
     refine ⟨(p.1 - r0, p.2 - c0), hq, ?_⟩
     ext <;> omega
 
-end MacroCell
+end MacroCell_en
 
 /-! ## High-level Grid -> MacroCell
 
@@ -801,5 +802,5 @@ small canonical patterns of `Conway.Life`. -/
   let (off, mc) := gridToMacroCellWithOffset toad
   (off, mc.level, mc.toGrid off == toad)
 
-end Life
-end Conway
+end Life_en
+end Conway_en

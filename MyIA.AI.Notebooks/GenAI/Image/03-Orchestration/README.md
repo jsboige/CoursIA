@@ -62,7 +62,7 @@ Le notebook [03-2-Workflow-Orchestration](03-2-Workflow-Orchestration.ipynb) ill
 
 <table>
 <tr>
-<td align="center"><img src="assets/readme/img3-workflow1.webp" alt="Trois étapes d'un pipeline séquentiel : image Qwen générée, puis stylée, puis upscalée à 2048×2048" width="600"/></td>
+<td align="center"><img src="assets/readme/img3-workflow1.webp" alt="Pipeline séquentiel ComfyUI en 3 étapes (Generated / Styled / Upscaled) sur la même scène coucher de soleil sur montagnes enneigées — composition préservée aux 3 étapes, seule la définition/lumière varie" width="600"/></td>
 </tr>
 </table>
 
@@ -70,7 +70,7 @@ Le notebook [03-2-Workflow-Orchestration](03-2-Workflow-Orchestration.ipynb) ill
 
 <table>
 <tr>
-<td align="center"><img src="assets/readme/img3-workflow2.webp" alt="Grille de comparaison : Qwen, FLUX et SD35 produisent le même prompt en parallèle (~55 s chacun)" width="600"/></td>
+<td align="center"><img src="assets/readme/img3-workflow2.webp" alt="Comparaison parallèle Qwen / FLUX / SD35 sur le même prompt (ville futuriste cyberpunk nocturne avec voitures volantes et néons rose/violet/cyan) — 3 modèles tournent en ~55 s avec variations mineures" width="600"/></td>
 </tr>
 </table>
 
@@ -78,7 +78,7 @@ Le notebook [03-2-Workflow-Orchestration](03-2-Workflow-Orchestration.ipynb) ill
 
 <table>
 <tr>
-<td align="center"><img src="assets/readme/img3-workflow3.png" alt="Histogramme du score qualité par tentative d'un pipeline conditionnel, seuil rouge pointillé à 0.75" width="400"/></td>
+<td align="center"><img src="assets/readme/img3-workflow3.png" alt="Diagramme en barres matplotlib du score qualité (3 tentatives) d'un pipeline conditionnel — 3 barres orange identiques à ~0.53, ligne pointillée rouge à 0.75 (seuil) que le pipeline cherche à franchir en relançant" width="400"/></td>
 </tr>
 </table>
 
@@ -86,7 +86,7 @@ Le notebook [03-2-Workflow-Orchestration](03-2-Workflow-Orchestration.ipynb) ill
 
 <table>
 <tr>
-<td align="center"><img src="assets/readme/img3-workflow4.webp" alt="Trois variations stylistiques sur un même prompt : photoréaliste, aquarelle, anime" width="600"/></td>
+<td align="center"><img src="assets/readme/img3-workflow4.webp" alt="Variations stylistiques SD35 sur un même prompt (chalet en rondins de bois dans montagnes enneigées) — 3 styles : photoréaliste (rendu photographique chaud), aquarelle (couleurs pastel, contours fondus), anime (couleurs saturées, contours marqués, ambiance manga)" width="600"/></td>
 </tr>
 </table>
 

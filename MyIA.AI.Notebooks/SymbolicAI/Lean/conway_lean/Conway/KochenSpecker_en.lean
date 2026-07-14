@@ -132,17 +132,18 @@ import Mathlib.Tactic
 
 
 /-
-  Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier est **FR canonique**,
-  avec son miroir anglais dans le fichier sibling `KochenSpecker_en.lean` (modèle sibling
-  pair ratifié 2026-07-04, cf `code-style.md` paragraphe Lean i18n). Les énoncés de
-  théorèmes, les tactiques Lean, les noms de lemmes et les références Mathlib restent en
-  anglais (compatibilité Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tête
-  diffèrent entre les deux fichiers.
+  English mirror of `KochenSpecker.lean` (FR canonical). Convention EPIC #4980
+  (decision ratified 2026-07-04, cf `code-style.md` paragraphe Lean i18n): distinct FR + EN sibling
+  files - no inline bilingual block in a single file (Option B rejected). The module
+  docstring above mirrors the FR copyright + FR-orbit description; the body signatures,
+  proofs and tactics remain byte-identical between the two files.
 -/
 
-namespace Conway
+namespace Conway_en
 
-namespace KochenSpecker
+open Conway_en
+
+namespace KochenSpecker_en
 
 /-!
 ## The 18 Cabello vectors and 9 orthogonal bases (R^4)
@@ -353,7 +354,7 @@ theorem kochen_specker : ¬ ∃ c : Coloring, IsValidColoring c := by
   rw [hS9] at h2div
   omega
 
-end KochenSpecker
+end KochenSpecker_en
 
 
 /-!
@@ -371,4 +372,4 @@ This connection will be formalized in Pilier 2 (FreeWillTheorem.lean),
 together with the TWIN and MIN axioms.
 -/
 
-end Conway
+end Conway_en
