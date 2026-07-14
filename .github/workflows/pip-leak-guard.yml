@@ -1,0 +1,59 @@
+name: pip-leak-guard
+
+# Durable anti-regression guard for the `!pip install` machine-path leak vector
+# (secrets-hygiene.md §6, Stop & Repair). Fails a PR only when it INTRODUCES a
+# new HIGH-severity `!pip install` occurrence vs its base ref — inherited leaks
+# (drained one-PR-per-notebook per regle C.3, See #6314) are tolerated so the
+# gate never freezes the cluster. Mirror of the #6312 probeAddresses pattern,
+# adapted: #6312 is `--apply` (auto-fix, never fails); the pip detector is
+# audit-only, so the transposable durable form is a CI HIGH-delta gate.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/audit_pip_install_cells.py'
+      - 'scripts/notebook_tools/pip_leak_delta.py'
+      - '.github/workflows/pip-leak-guard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pip-leak-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pip-leak-delta:
+    name: "!pip install HIGH delta guard (#6314)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # base ref must be reachable for the BASE scan
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: HEAD scan (PR head)
+        run: |
+          python scripts/notebook_tools/audit_pip_install_cells.py --scan-all
+          python scripts/notebook_tools/audit_pip_install_cells.py --scan-all --json > /tmp/head.json
+
+      # Swap MyIA.AI.Notebooks/ to the PR base ref, scan, then restore. head.json
+      # is already captured above, so the swap cannot contaminate the delta.
+      - name: BASE scan (PR base ref)
+        if: github.event_name == 'pull_request'
+        run: |
+          git checkout ${{ github.event.pull_request.base.sha }} -- MyIA.AI.Notebooks
+          python scripts/notebook_tools/audit_pip_install_cells.py --scan-all --json > /tmp/base.json
+          git checkout HEAD -- MyIA.AI.Notebooks
+
+      - name: "Fail if HIGH delta > 0 (new !pip install leaks introduced)"
+        if: github.event_name == 'pull_request'
+        run: python scripts/notebook_tools/pip_leak_delta.py /tmp/base.json /tmp/head.json
