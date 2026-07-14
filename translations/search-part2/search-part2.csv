@@ -67,11 +67,11 @@ Console.WriteLine($""Date de build     : {dllInfo.LastWriteTime:yyyy-MM-dd}"");
 if (!dllInfo.Exists) {
     throw new FileNotFoundException(""DLL Choco introuvable"", dllPath);
 }",,,,,,,,c376ebc5b59b85d7,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,2488ea57,code,fr,3c39c53f6460c39c,"// Configuration IKVM 8.15.0 pour Choco-solver -- recette #4711 (IkvmCopyMerge recursif)
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,2488ea57,code,fr,fba59420218a8303,"// Configuration IKVM 8.15.0 pour Choco-solver -- recette #4711 (IkvmCopyMerge recursif)
 // Leve ""Could not locate ikvm home path"" : IKVM 8.15 lit AppContext[""IKVM.Home""], pas la variable
-// d environnement. On assemble le home complet (fusion image arch-independante any/any + native
+// d'environnement. On assemble le home complet (fusion image arch-indépendante any/any + native
 // win-x64) via copie RECURSIVE (la copie plate rate les sous-dossiers lib/ et tzdb.dat), AVANT
-// tout premier appel Java (l init JVM se declenche au premier type java.*, cellule suivante).
+// tout premier appel Java (l'init JVM se declenche au premier type java.*, cellule suivante).
 // See #4667, See #3801, See #4956.
 #r ""nuget: IKVM, 8.15.0""
 #r ""nuget: IKVM.Image, 8.15.0""
@@ -107,7 +107,7 @@ if (Directory.Exists(ikvmBaseAny) && Directory.Exists(ikvmArchDir))
 AppContext.SetData(""IKVM.Home"", ikvmHome);
 
 bool tzdbOk = File.Exists(Path.Combine(ikvmHome, ""lib"", ""tzdb.dat""));
-Console.WriteLine(""IKVM 8.15.0 pret (home="" + Path.GetFileName(ikvmHome) + "", tzdb="" + tzdbOk + "") - Choco-solver charge"");",,,,,,,,3c39c53f6460c39c,,,,,,,
+Console.WriteLine(""IKVM 8.15.0 pret (home="" + Path.GetFileName(ikvmHome) + "", tzdb="" + tzdbOk + "") - Choco-solver charge"");",,,,,,,,fba59420218a8303,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,d88eae78,code,fr,555acd35e02a8738,"// Chargement de la DLL Choco-solver 4.10.17 et import des namespaces principaux
 #r ""org.chocosolver.solver.dll""
 
@@ -189,11 +189,11 @@ public class CSP {
 }
 
 Console.WriteLine(""Classe CSP C# definie."");",,,,,,,,b6622dfd59d63f52,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,c59de729,markdown,fr,279db4cf113c4ff0,"---
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,c59de729,markdown,fr,f5d984d4d847f95b,"---
 
-## 3. Exemple : coloration de carte de l Australie (~8 min)
+## 3. Exemple : coloration de carte de l'Australie (~8 min)
 
-Le probleme classique de coloration de carte consiste a colorier les regions de sorte que deux regions adjacentes n aient jamais la meme couleur. C est l exemple canonique du livre AIMA (Russell & Norvig), applique a la carte de l Australie avec ses 7 etats/territoires.
+Le probleme classique de coloration de carte consiste a colorier les regions de sorte que deux regions adjacentes n aient jamais la meme couleur. C est l exemple canonique du livre AIMA (Russell & Norvig), applique a la carte de l'Australie avec ses 7 etats/territoires.
 
 ### Modelisation CSP
 
@@ -203,8 +203,8 @@ Le probleme classique de coloration de carte consiste a colorier les regions de 
 | **Domaines** | {Rouge, Vert, Bleu} pour chaque variable |
 | **Contraintes** | Regions adjacentes $\neq$ meme couleur |
 
-Sans contraintes, $3^7 = 2187$ combinaisons sont envisageables. Les contraintes eliminent la majorite.",,,,,,,,279db4cf113c4ff0,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,eb8596f9,code,fr,d7c796604587e031,"// Coloration de l Australie : variables, domaines, voisins, contrainte binaire
+Sans contraintes, $3^7 = 2187$ combinaisons sont envisageables. Les contraintes eliminent la majorite.",,,,,,,,f5d984d4d847f95b,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,eb8596f9,code,fr,7a18f49ff1049804,"// Coloration de l'Australie : variables, domaines, voisins, contrainte binaire
 var australiaVars = new List<string> { ""WA"", ""NT"", ""SA"", ""Q"", ""NSW"", ""V"", ""T"" };
 
 var australiaDomains = new Dictionary<string, List<object>>();
@@ -235,30 +235,42 @@ Console.WriteLine();
 Console.WriteLine(""Adjacences :"");
 foreach (var v in australiaVars) {
     Console.WriteLine($""  {v,3} -> [{string.Join("", "", australiaNeighbors[v])}]"");
-}",,,,,,,,d7c796604587e031,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,1484605f,code,fr,a8dbe1a36b66e34a,"// Visualisation ASCII du graphe de contraintes
+}",,,,,,,,7a18f49ff1049804,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,1484605f,code,fr,8d51914ed103efe2,"// Visualisation ASCII du graphe de contraintes
 // (les notebooks C# du projet n utilisent pas matplotlib -- le CSP-7-Soft-Csharp
 //  montre que les viz se font en matrice couleur ou en texte structure)
+// Orientation AIMA-compatible : NT au nord, SA au centre (hub degre 5),
+// WA a l ouest, Q au nord-est, NSW a l est, V au sud-est (sous NSW),
+// T isolee au sud (ile de Tasmanie). Cette orientation reflete la geographic
+// reelle et la position relative des Etats (cf. notebook Python jumeau).
 Console.WriteLine(""Graphe de contraintes - Australie (vue texte)"");
 Console.WriteLine(""============================================="");
 Console.WriteLine();
-Console.WriteLine(@""        SA (deg 5 - noeud le plus contraint)"");
-Console.WriteLine(@""       /  |  "");
-Console.WriteLine(@""      /   |   "");
-Console.WriteLine(@""    WA---NT----Q---NSW"");
-Console.WriteLine(@""      \       |    /"");
-Console.WriteLine(@""       \      |   /"");
-Console.WriteLine(@""        \-----V--/"");
-Console.WriteLine(@""              |"");
-Console.WriteLine(@""              T  (degre 0 - isole)"");
+Console.WriteLine(@""                       NT  (deg 3 - Territoire du Nord)"");
+Console.WriteLine(@""                      /|\"");
+Console.WriteLine(@""                     / | \"");
+Console.WriteLine(@""                    /  |  \"");
+Console.WriteLine(@""                   /   |   \"");
+Console.WriteLine(@""                 WA    |    Q  (deg 3 - Queensland)"");
+Console.WriteLine(@""                   \   |   /"");
+Console.WriteLine(@""                    \  |  /"");
+Console.WriteLine(@""                     \ | /"");
+Console.WriteLine(@""                      SA  (deg 5 - noeud le plus contraint, hub)"");
+Console.WriteLine(@""                     /|\"");
+Console.WriteLine(@""                    / | \"");
+Console.WriteLine(@""                   /  |  \"");
+Console.WriteLine(@""                  /   |   \"");
+Console.WriteLine(@""                NSW   |    V  (deg 2 - Victoria, au sud de NSW)"");
+Console.WriteLine(@""                 |"");
+Console.WriteLine(@""                 T  (deg 0 - Tasmanie, ile isolee au sud)"");
 Console.WriteLine();
-Console.WriteLine(""Aretes : 9 paires de contraintes binaires (regions adjacentes != meme couleur)"");",,,,,,,,a8dbe1a36b66e34a,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,72e0ef68,markdown,fr,ca69f8b9ff006bd5,"**Interpretation** : le graphe de contraintes de l Australie a 7 noeuds et 9 aretes. SA (Australie-Méridionale) est le noeud le plus contraint (5 voisins) -- c est lui qui elimine le plus de combinaisons. T (Tasmanie) est isolee : n importe quelle couleur lui convient.
+Console.WriteLine(""Aretes : 9 paires de contraintes binaires (regions adjacentes != meme couleur)"");",,,,,,,,8d51914ed103efe2,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,72e0ef68,markdown,fr,0d81f3748e79e70f,"**Interpretation** : le graphe de contraintes de l'Australie a 7 noeuds et 9 aretes. SA (Australie-Méridionale) est le noeud le plus contraint (5 voisins) -- c est lui qui elimine le plus de combinaisons. T (Tasmanie) est isolee : n importe quelle couleur lui convient.
 
 **Points cles** :
 1. SA est adjacent a presque tous les etats continentaux : c est la variable la plus contrainte
 2. T (Tasmanie) n a aucune contrainte : n importe quelle couleur convient
-3. Le graphe n est pas complet : seules les paires adjacentes sont contraintes",,,,,,,,ca69f8b9ff006bd5,,,,,,,
+3. Le graphe n est pas complet : seules les paires adjacentes sont contraintes",,,,,,,,0d81f3748e79e70f,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,b1406284,markdown,fr,0695ec58897e474b,"---
 
 ## 4. Backtracking Search (~10 min)
@@ -280,8 +292,8 @@ Le **backtracking** est l algorithme de base pour resoudre un CSP :
 |--------|--------------|------------------|
 | Assignation | Complete d abord, verification ensuite | Verification **a chaque etape** |
 | Elagage | Aucun | Elimination des branches inconsistantes |",,,,,,,,0695ec58897e474b,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,a1718468,code,fr,f5578c03bc9e2604,"// Brute force : enumerer toutes les combinaisons et filtrer
-// Sert de reference pour mesurer l apport du backtracking
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,a1718468,code,fr,b9dc15ae07cb9987,"// Brute force : enumerer toutes les combinaisons et filtrer
+// Sert de référence pour mesurer l'apport du backtracking
 using System.Diagnostics;
 
 var colors = new List<object> { ""Rouge"", ""Vert"", ""Bleu"" };
@@ -314,10 +326,10 @@ Console.WriteLine(""============================================="");
 Console.WriteLine($""Combinaisons testees  : {nTotal}"");
 Console.WriteLine($""Solutions trouvees    : {nValid}"");
 Console.WriteLine($""Ratio solutions       : {(double)nValid / nTotal:P2}"");
-Console.WriteLine($""Temps brute force     : {swBF.Elapsed.TotalMilliseconds:F1} ms"");",,,,,,,,f5578c03bc9e2604,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,48e72ae3,code,fr,522f26a5515d3e34,"// Backtracking simple pour CSP binaire (C#)
-// Choisit les variables dans l ordre de csp.Variables.
-// Explore les valeurs dans l ordre du domaine.
+Console.WriteLine($""Temps brute force     : {swBF.Elapsed.TotalMilliseconds:F1} ms"");",,,,,,,,b9dc15ae07cb9987,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,48e72ae3,code,fr,d8dbad93c3fc8d4b,"// Backtracking simple pour CSP binaire (C#)
+// Choisit les variables dans l'ordre de csp.Variables.
+// Explore les valeurs dans l'ordre du domaine.
 Dictionary<string, object> Backtrack(CSP csp, Dictionary<string, object> assignment) {
     if (csp.IsComplete(assignment)) return new Dictionary<string, object>(assignment);
     var unassigned = csp.Variables.FindAll(v => !assignment.ContainsKey(v));
@@ -334,7 +346,7 @@ Dictionary<string, object> Backtrack(CSP csp, Dictionary<string, object> assignm
     return null;
 }
 
-// Compteur manuel d assignations (la classe CSP expose NAssigns via propriete)
+// Compteur manuel d'assignations (la classe CSP expose NAssigns via propriété)
 int CountAssigns(CSP csp, Dictionary<string, object> assignment, ref int count) {
     if (csp.IsComplete(assignment)) return count;
     var unassigned = csp.Variables.FindAll(v => !assignment.ContainsKey(v));
@@ -366,7 +378,7 @@ Console.WriteLine(""============================================="");
 Console.WriteLine($""Solution         : {string.Join("", "", solBT.Select(kv => kv.Key + ""="" + kv.Value))}"");
 Console.WriteLine($""Assignations     : ~{assignsCount}"");
 Console.WriteLine($""Temps            : {swBT.Elapsed.TotalMilliseconds:F2} ms"");
-Console.WriteLine($""Validation       : {(australiaCSP.IsSolution(solBT) ? ""VALIDE"" : ""INVALIDE"")}"");",,,,,,,,522f26a5515d3e34,,,,,,,
+Console.WriteLine($""Validation       : {(australiaCSP.IsSolution(solBT) ? ""VALIDE"" : ""INVALIDE"")}"");",,,,,,,,d8dbad93c3fc8d4b,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,f73333ce,markdown,fr,eeecffcc95fa4641,"**Interpretation** : le backtracking C# trouve une solution en explorant beaucoup moins de combinaisons que la brute force.
 
 | Methode | Essais | Amelioration |
@@ -393,8 +405,8 @@ Le backtracking simple fonctionne, mais deux choix strategiques peuvent consider
 **Intuition (""fail-first"")** : si une variable n a que 2 valeurs possibles et une autre en a 10, mieux vaut traiter d abord celle a 2 valeurs. Si elle echoue, on le decouvre plus vite, et on elague un sous-arbre plus tot.
 
 $\text{MRV}(X_i) = |\{v \in D_i : v \text{ est consistant avec l assignation courante}\}|$",,,,,,,,1058aadc7d96025d,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,ec03ac6e,code,fr,259ffb3e8362aa55,"// Heuristique MRV : choisir la variable avec le moins de valeurs viables.
-// En cas d egalite, departage par degree (nombre de voisins non assignes, ordre decroissant).
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,ec03ac6e,code,fr,cb7758997eb3ee59,"// Heuristique MRV : choisir la variable avec le moins de valeurs viables.
+// En cas d'égalité, départage par degree (nombre de voisins non assignes, ordre decroissant).
 string SelectMRV(CSP csp, Dictionary<string, object> assignment) {
     var unassigned = csp.Variables.FindAll(v => !assignment.ContainsKey(v));
     return unassigned
@@ -403,7 +415,7 @@ string SelectMRV(CSP csp, Dictionary<string, object> assignment) {
         .First();
 }
 
-Console.WriteLine(""Heuristique MRV definie."");",,,,,,,,259ffb3e8362aa55,,,,,,,
+Console.WriteLine(""Heuristique MRV definie."");",,,,,,,,cb7758997eb3ee59,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,4e434bcb,code,fr,f59700003291ca05,"// Demonstration du choix MRV apres quelques assignations
 var demoCSP = new CSP(australiaVars, australiaDomains, australiaNeighbors, differentColors);
 var partial = new Dictionary<string, object> { { ""WA"", ""Rouge"" }, { ""NT"", ""Vert"" } };
@@ -428,8 +440,8 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,c5p1tr4n,mark
 - Sur ce petit graphe de coloration, l'effet de MRV reste modeste ; il devient decisif sur des CSP denses ou une variable presqu'entièrement determinee (`viables == 1`) dechoue immediatement si on la traite en dernier.
 
 MRV repond a la **premiere** question (quel ordre de variables ?). Reste la **seconde** : parmi les valeurs viables d'une variable, **quel ordre essayer** ? C'est le role complementaire de **LCV (Least Constraining Value)** -- presente dans la cellule suivante.",,,,,,,,26d6fb880cc7b38c,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,51b6440b,code,fr,b1d1c8b33f7b077e,"// Heuristique LCV : trier les valeurs par nombre de conflits croissant
-// (la moins contraignante d abord -- ""succeed-first"")
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,51b6440b,code,fr,f287a51d3cf77ce4,"// Heuristique LCV : trier les valeurs par nombre de conflits croissant
+// (la moins contraignante d'abord -- ""succeed-first"")
 List<object> OrderLCV(CSP csp, string var, Dictionary<string, object> assignment) {
     return csp.Domains[var]
         .OrderBy(val => {
@@ -446,7 +458,7 @@ List<object> OrderLCV(CSP csp, string var, Dictionary<string, object> assignment
         .ToList();
 }
 
-Console.WriteLine(""Heuristique LCV definie."");",,,,,,,,b1d1c8b33f7b077e,,,,,,,
+Console.WriteLine(""Heuristique LCV definie."");",,,,,,,,f287a51d3cf77ce4,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,858509d3,code,fr,bfbda0b08c184b6e,"// Backtracking ameliore : MRV + LCV combines
 // Note : en C#, les parametres ref doivent etre places apres les parametres optionnels
 // (et apres tous les parametres requis). On utilise une fonction wrapping qui retourne
@@ -496,7 +508,7 @@ int CountAssignsRun(CSP csp, bool useMRV, bool useLCV) {
 }
 
 Console.WriteLine(""Backtracking ameliore defini (variantes controlees par useMRV/useLCV booleens)."");",,,,,,,,bfbda0b08c184b6e,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,e02b0c4f,code,fr,11e814c034cc6f72,"// Comparaison des variantes sur la coloration de l Australie
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,e02b0c4f,code,fr,9e028c6d546c86f2,"// Comparaison des variantes sur la coloration de l'Australie
 var variants = new (string name, bool mrv, bool lcv)[] {
     (""Backtracking simple"", false, false),
     (""+ MRV"",              true,  false),
@@ -520,8 +532,8 @@ foreach (var v in variants) {
     sw.Stop();
     results.Add((v.name, n, sw.Elapsed.TotalMilliseconds));
     Console.WriteLine($""{v.name,-22} {n,12} {sw.Elapsed.TotalMilliseconds,12:F2}"");
-}",,,,,,,,11e814c034cc6f72,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,f691a71f,markdown,fr,70330db74ee0810f,"**Interpretation** : sur ce petit graphe, les heuristiques n amelioresent pas le compte d assignations.
+}",,,,,,,,9e028c6d546c86f2,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,f691a71f,markdown,fr,f5d5debefec5a46f,"**Interpretation** : sur ce petit graphe, les heuristiques n amelioresent pas le compte d assignations.
 
 | Variante | Assignations | Commentaire |
 |----------|-------------|-------------|
@@ -534,7 +546,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,f691a71f,mark
 2. L effet des heuristiques est **instance-dependant** : nul ou negatif sur une instance facile, il devient dramatique sur des instances plus dures (cf. les 8-Reines ci-dessous : 876 -> 572 avec MRV)
 3. Conclusion honnete : aucune heuristique n est monotonement benefique, il faut mesurer et non presupposer une amelioration
 
-> **Regle pratique** : mesurer empiriquement. MRV rapporte gros sur les instances dures (N-Reines), mais son surcout n est pas amorti sur les instances faciles comme la coloration de l Australie.",,,,,,,,70330db74ee0810f,,,,,,,
+> **Regle pratique** : mesurer empiriquement. MRV rapporte gros sur les instances dures (N-Reines), mais son surcout n est pas amorti sur les instances faciles comme la coloration de l'Australie.",,,,,,,,f5d5debefec5a46f,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,b40856f3,markdown,fr,ae8d4a50c5860708,"---
 
 ## 6. Solveur SOTA : Choco-solver 4.10.17 (~10 min)
@@ -550,7 +562,7 @@ Jusqu ici nous avons tout implemente a la main en C#. En pratique, on utilise un
 ### Installation
 
 Pas d installation requise ici : la DLL Choco 4.10.17 est pre-compilee dans le dossier Part2-CSP, et IKVM 8.15.0 est charge a la volee via NuGet au debut du notebook.",,,,,,,,ae8d4a50c5860708,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,28460e99,code,fr,ef6ab202645dc832,"// Coloration de l Australie avec Choco-solver 4.10.17
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,28460e99,code,fr,212bdf33953f89c9,"// Coloration de l'Australie avec Choco-solver 4.10.17
 // Comparaison directe avec notre implementation manuelle
 var chocModel = new Model(""Coloration Australie - Choco 4.10.17"");
 
@@ -586,8 +598,8 @@ if (chocOk) {
     Console.WriteLine($""Temps    : {swChoco.Elapsed.TotalMilliseconds:F2} ms"");
 } else {
     Console.WriteLine(""Pas de solution."");
-}",,,,,,,,ef6ab202645dc832,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,d2d3ac0d,markdown,fr,34d9c77b600cd90a,"**Interpretation** : Choco-solver resout la coloration de l Australie en moins de 10 ms avec 6 lignes de modelisation declaratives.
+}",,,,,,,,212bdf33953f89c9,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,d2d3ac0d,markdown,fr,94189d2bc62969e2,"**Interpretation** : Choco-solver resout la coloration de l'Australie en moins de 10 ms avec 6 lignes de modelisation declaratives.
 
 | Aspect | Implementation manuelle C# | Choco-solver 4.10.17 |
 |--------|---------------------------|----------------------|
@@ -599,7 +611,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,d2d3ac0d,mark
 **Points cles** :
 1. L API Choco est **declarative** : on declare variables + contraintes, le solveur fait le reste
 2. `model.arithm(v1, ""!="", v2).post()` est l equivalent exact de notre `Consistent(var, val, assignment)`
-3. `solver.solve()` integre backtracking + heuristiques + propagation (retourne `bool` ; la solution est accessible via `var.getValue()`)",,,,,,,,34d9c77b600cd90a,,,,,,,
+3. `solver.solve()` integre backtracking + heuristiques + propagation (retourne `bool` ; la solution est accessible via `var.getValue()`)",,,,,,,,94189d2bc62969e2,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,e32623d6,code,fr,6c100425e85dc1f7,"// Enumeration de TOUTES les solutions avec Choco (record & enumerate)
 // Equivalent du getSolutions() de python-constraint
 var chocModel2 = new Model(""Coloration Australie - enumeration"");
@@ -649,14 +661,14 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,c7271b01,mark
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,7c5476d1,markdown,fr,6ebe83b14ef1f1bf,"### 6.1 Demonstration SOTA : N-Reines avec Choco
 
 Pour montrer l apport de Choco sur une instance **dure**, resolvez les **8-Reines** (placer 8 reines sur un echiquier sans qu aucune ne s attaque). Notre implementation manuelle a necessite ~876 assignations pour les 8-Reines. Choco devrait faire mieux grace a ses heuristiques internes et la propagation de contraintes.",,,,,,,,6ebe83b14ef1f1bf,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,4a683ace,code,fr,e1835f541271d52b,"// 8-Reines avec Choco-solver
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,4a683ace,code,fr,5b37ad7021641edb,"// 8-Reines avec Choco-solver
 // Variables : une par colonne (0..7), domaine 0..7 (ligne)
 // Contraintes : pas meme ligne, pas meme diagonale
 int n = 8;
 var queenModel = new Model($""N-Reines (n={n})"");
 var queens = new IntVar[n];
 for (int c = 0; c < n; c++) {
-    // Cast explicite (string) pour eviter l ambiguite entre intVar(int,int) et intVar(int,int,bool)
+    // Cast explicite (string) pour éviter l'ambiguïté entre intVar(int,int) et intVar(int,int,bool)
     queens[c] = queenModel.intVar(c.ToString(), 0, n - 1);
 }
 
@@ -664,13 +676,13 @@ for (int c = 0; c < n; c++) {
 queenModel.allDifferent(queens).post();
 
 // Diagonales : pour chaque paire (i,j), creer une IntVar auxiliaire pour la diff/somme,
-// puis la comparer a la constante. Choco 4.10.17 surcharge `arithm(IntVar,String,IntVar,String,IntVar)`
-// pas forcement portee par l IKVM Java->.NET ; on utilise des contraintes separees qui sont
+// puis la comparer à la constante. Choco 4.10.17 surcharge `arithm(IntVar,String,IntVar,String,IntVar)`
+// pas forcement portee par l'IKVM Java->.NET ; on utilise des contraintes separees qui sont
 // bien supportees : arithm(var, ""op"", var) + arithm(IntVarResult, ""op"", int).
 for (int i = 0; i < n; i++) {
     for (int j = i + 1; j < n; j++) {
         // Diagonale descendante : q_i - q_j != i - j
-        // Cast explicite (string) sur le nom pour eviter l ambiguite intVar(int,int,bool)
+        // Cast explicite (string) sur le nom pour éviter l'ambiguïté intVar(int,int,bool)
         var diff = queenModel.intVar($""d_{i}_{j}"", -(n - 1), n - 1);
         queenModel.scalar(new IntVar[] { queens[i], queens[j] }, new int[] { 1, -1 }, ""="", diff).post();
         int diagDown = i - j;
@@ -704,7 +716,7 @@ if (queenOk) {
     }
 } else {
     Console.WriteLine(""Pas de solution trouvee."");
-}",,,,,,,,e1835f541271d52b,,,,,,,
+}",,,,,,,,5b37ad7021641edb,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,4bdd51fe,markdown,fr,5ffda0f435a9dc51,"**Interpretation** : Choco-solver resout les 8-Reines en moins de 50 ms.
 
 | Mesure | Implementation manuelle | Choco-solver |
@@ -720,9 +732,9 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,4bdd51fe,mark
 3. Sur des instances plus grandes (16-Reines, 32-Reines), Choco resout ou detecte l infaisabilite alors qu une implementation manuelle brute-force explose
 
 > **Regle pratique** : pour des problemes reels (N > 20 variables), utiliser Choco. Pour apprendre les mecanismes, l implementation manuelle reste pedagogique.",,,,,,,,5ffda0f435a9dc51,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,1ad348f6,markdown,fr,4c46d5d3f7ac7d88,"---
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,1ad348f6,markdown,fr,24a9b3b04055b9a0,"---
 
-## 7. Recapitulatif et exercices
+## Recapitulatif et exercices
 
 ### Tableau recapitulatif
 
@@ -743,7 +755,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,1ad348f6,mark
 | **Contrainte** ($C_k$) | Restriction sur sous-ensemble | `arithm(!=).post()` (Choco) / `ConstraintFunc` (manuel) |
 | **Solution** | Assignation complete et consistante | `solver.solve()` (Choco) / `IsSolution()` (manuel) |
 | **MRV** | Variable au domaine le plus restreint | `SelectMRV()` (manuel) / integre Choco |
-| **LCV** | Valeur la moins contraignante | `OrderLCV()` (manuel) / integre Choco |",,,,,,,,4c46d5d3f7ac7d88,,,,,,,
+| **LCV** | Valeur la moins contraignante | `OrderLCV()` (manuel) / integre Choco |",,,,,,,,24a9b3b04055b9a0,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,c7e38188,markdown,fr,c0b6ce9d71935963,"### Exercice 1 : 4-Reines avec backtracking manuel C#
 
 **Enonce** : modelisez et resolvez le probleme des 4-Reines avec votre propre implementation C# (classe `CSP` + `BacktrackImproved` avec MRV + LCV). Affichez la solution comme une matrice 4x4 avec un caractere `Q` pour les reines et un `.` pour les cases vides.
@@ -751,15 +763,15 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,c7e38188,mark
 **Indice** : la modelisation est la meme que pour les 8-Reines Choco de la section 6.1, mais vous devez utiliser votre propre classe `CSP`. La contrainte est : deux reines ne peuvent pas etre sur la meme ligne, colonne ou diagonale. Les variables sont les colonnes, le domaine est l ensemble des lignes {0, 1, 2, 3}.
 
 **Sortie attendue** : 2 solutions symetriques (l une est le miroir de l autre).",,,,,,,,c0b6ce9d71935963,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,9643c3e5,code,fr,a4b309190d75f92e,"// Exercice 1 : 4-Reines avec backtracking manuel C#
-// A COMPLETER par l etudiant
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,9643c3e5,code,fr,50b92f337ece8d12,"// Exercice 1 : 4-Reines avec backtracking manuel C#
+// A COMPLETER par l'étudiant
 // Indice : utilisez la classe CSP et BacktrackImproved definies plus haut.
 // Modelisation : 4 variables (colonnes), domaine {0,1,2,3} (lignes),
 // contrainte = reine sur (c1, r1) et (c2, r2) ne s attaquent pas.
 // Conditions : r1 != r2 (meme ligne) ET |c1-c2| != |r1-r2| (meme diagonale).
 
 Console.WriteLine(""Exercice a completer : 4-Reines avec backtracking manuel C#"");
-Console.WriteLine(""Solution attendue : 2 solutions symetriques."");",,,,,,,,a4b309190d75f92e,,,,,,,
+Console.WriteLine(""Solution attendue : 2 solutions symetriques."");",,,,,,,,50b92f337ece8d12,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,d6f9e788,markdown,fr,936b0d5ae85fb1fb,"### Exercice 2 : Comparer MRV sur les 4-Reines (manuel vs Choco)
 
 **Enonce** : resolvez les 4-Reines **sans** MRV (`useMRV=false`) et **avec** MRV (`useMRV=true`) en utilisant votre implementation `BacktrackImproved`. Comparez le nombre d assignations. Ensuite, resolvez les memes 4-Reines avec Choco-solver et comparez les temps.
@@ -767,14 +779,14 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,d6f9e788,mark
 **Indice** : creez un CSP avec 4 variables (colonnes), domaine {0,1,2,3} (lignes), et une contrainte reine-non-attaque. Utilisez `BacktrackImproved(csp, assignment, useMRV, useLCV)` pour la recherche et `CountAssignsRun(csp, useMRV, useLCV)` pour mesurer le nombre d'assignations. Pour Choco, utilisez `IntVar` + `allDifferent` + `arithm` comme en section 6.1.
 
 **Sortie attendue** : un tableau comparatif avec 3 lignes (manuel sans MRV, manuel avec MRV, Choco) et 2 colonnes (assignations, temps).",,,,,,,,936b0d5ae85fb1fb,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,6060993d,code,fr,fb1467eb26ae97e9,"// Exercice 2 : comparer MRV sur les 4-Reines
-// A COMPLETER par l etudiant
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,6060993d,code,fr,6c2b2fb647c29ea4,"// Exercice 2 : comparer MRV sur les 4-Reines
+// A COMPLETER par l'étudiant
 // Indice : mesurez assignations et temps pour 3 variantes :
 //   1) Manuel sans MRV : BacktrackImproved(csp, ..., useMRV=false, useLCV=false)
 //   2) Manuel avec MRV : BacktrackImproved(csp, ..., useMRV=true,  useLCV=false)
 //   3) Choco : Model + IntVar + allDifferent + arithm
 
-Console.WriteLine(""Exercice de benchmark - decommentez pour tester"");",,,,,,,,fb1467eb26ae97e9,,,,,,,
+Console.WriteLine(""Exercice de benchmark - decommentez pour tester"");",,,,,,,,6c2b2fb647c29ea4,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,753a31f5,markdown,fr,87a509de1611f950,"### Exercice 3 : SEND + MORE = MONEY avec Choco-solver
 
 **Enonce** : le puzzle cryptarithmetique **SEND + MORE = MONEY** consiste a trouver l affectation de chiffres (0-9) aux lettres telle que l addition soit correcte. Chaque lettre represente un chiffre distinct, et S et M ne peuvent pas etre 0 (pas de zero initial).
@@ -795,8 +807,8 @@ Modelisez et resolvez ce probleme avec **Choco-solver**.
 - Contrainte arithmetique : $1000 \times S + 100 \times E + 10 \times N + D + 1000 \times M + 100 \times O + 10 \times R + E = 10000 \times M + 1000 \times O + 100 \times N + 10 \times E + Y$
 
 **Sortie attendue** : la solution classique est `9567 + 1085 = 10652` (S=9, E=5, N=6, D=7, M=1, O=0, R=8, Y=2).",,,,,,,,87a509de1611f950,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,4d01fd8f,code,fr,ffa4ec4be492006f,"// Exercice 3 : SEND + MORE = MONEY avec Choco-solver
-// A COMPLETER par l etudiant
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,4d01fd8f,code,fr,fed428e7431563a2,"// Exercice 3 : SEND + MORE = MONEY avec Choco-solver
+// A COMPLETER par l'étudiant
 // Indice :
 //   - 8 IntVar (s,e,n,d,m,o,r,y), domaine 0..9
 //   - model.allDifferent(new IntVar[] {s,e,n,d,m,o,r,y}).post()
@@ -804,7 +816,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,4d01fd8f,code
 //   - Contrainte arithmetique : 1000*s + 100*e + 10*n + d + 1000*m + 100*o + 10*r + e
 //                               = 10000*m + 1000*o + 100*n + 10*e + y
 
-Console.WriteLine(""Exercice SEND + MORE = MONEY - decommentez pour tester"");",,,,,,,,ffa4ec4be492006f,,,,,,,
+Console.WriteLine(""Exercice SEND + MORE = MONEY - decommentez pour tester"");",,,,,,,,fed428e7431563a2,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb,6bd4bdcf,markdown,fr,f82493e4738a6fd8,"### Et ensuite ?
 
 Ce notebook a couvert les **fondamentaux** des CSP en C# et introduit **Choco-solver 4.10.17** comme solveur SOTA via IKVM 8.15.0. Le notebook suivant, [CSP-2-Consistance](CSP-2-Consistency.ipynb), introduit les techniques de **propagation de contraintes** avancees :
@@ -1075,16 +1087,30 @@ for v, n in australia_neighbors.items():
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,aa57c0af,markdown,fr,50f1348542766305,"### Visualisation du graphe de contraintes
 
 Le graphe de contraintes montre les relations d'adjacence entre les etats. Chaque arete represente une contrainte binaire ""les couleurs doivent etre differentes"".",,,,,,,,50f1348542766305,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,8067dd64,code,fr,b0f838d027f00007,"# Visualisation avec le helper de la serie Search
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,8067dd64,code,fr,863ec5f515492730,"# Visualisation avec le helper de la serie Search
+# Positions geographiques (AIMA-compatible) : nord en haut, sud en bas,
+# ouest a gauche, est a droite. Sans `pos=`, nx.spring_layout produit un
+# layout force-directed qui ne reflete pas la geographic reelle et apparait
+# a l'envers par rapport a la carte de l'Australie.
+australia_pos = {
+    'WA':  (-1.5,  0.5),  # ouest, mi-latitude
+    'NT':  ( 0.0,  1.5),  # nord (territoire du nord)
+    'SA':  ( 0.0,  0.0),  # centre (hub de contraintes, degre 5)
+    'Q':   ( 1.0,  1.5),  # nord-est (Queensland)
+    'NSW': ( 1.0, -0.5),  # est, mi-sud (New South Wales)
+    'V':   ( 0.5, -1.3),  # sud-est, plus bas (Victoria)
+    'T':   ( 1.0, -2.3),  # ile isolee au sud (Tasmanie, degre 0)
+}
 constraints_list = australia_csp.get_constraints_list()
 draw_csp_graph(
     australia_vars,
     australia_domains,
     constraints_list,
     title=""Graphe de contraintes - Australie"",
-    figsize=(10, 7)
+    figsize=(10, 7),
+    pos=australia_pos
 )
-plt.show()",,,,,,,,b0f838d027f00007,,,,,,,
+plt.show()",,,,,,,,863ec5f515492730,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,26ebe55c,markdown,fr,1e3d343296e3c087,"### Interpretation : graphe de contraintes
 
 **Sortie obtenue** : le graphe montre les 7 etats australiens relies par 9 contraintes binaires.
@@ -1809,9 +1835,8 @@ La bibliotheque [`python-constraint`](https://github.com/python-constraint/pytho
 ```bash
 pip install python-constraint
 ```",,,,,,,,5d1e64db4637b16e,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,07ee6339,code,fr,bd13fb7f887a324a,"# Installation si necessaire
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,07ee6339,code,fr,574fc1a132f69325,"# Installation si necessaire
 import sys
-!{sys.executable} -m pip install python-constraint
 try:
     from constraint import Problem, AllDifferentConstraint
     print(""python-constraint importe avec succes."")
@@ -1819,7 +1844,7 @@ except ImportError:
     import subprocess
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'python-constraint'])
     from constraint import Problem, AllDifferentConstraint
-    print(""python-constraint installe et importe."")",,,,,,,,bd13fb7f887a324a,,,,,,,
+    print(""python-constraint installe et importe."")",,,,,,,,574fc1a132f69325,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,0f7cde2f,markdown,fr,72a6b163ae936461,"### Coloration de l'Australie avec python-constraint
 
 Reecrivons le probleme de coloration de l'Australie avec la bibliotheque. Comparons la concision du code avec notre implementation manuelle.",,,,,,,,72a6b163ae936461,,,,,,,
@@ -1892,8 +1917,7 @@ for s in solutions[:3]:
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,072d8c38,markdown,fr,13ab15a54a839db7,"### 4-Reines avec python-constraint
 
 Modelisons le probleme des 4-Reines avec la bibliotheque pour montrer sa simplicite.",,,,,,,,13ab15a54a839db7,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,e5fae123,code,fr,faef608d62dfea6c,"!{sys.executable} -m pip install matplotlib
-import matplotlib.pyplot as plt
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,e5fae123,code,fr,40a815e32a624d58,"import matplotlib.pyplot as plt
 # 4-Reines avec python-constraint
 n = 4
 queens_problem = Problem()
@@ -1950,7 +1974,7 @@ for idx, sol in enumerate(queens_solutions):
 plt.suptitle(f""Les {len(queens_solutions)} solutions du probleme des {n}-Reines"",
              fontsize=14, fontweight='bold')
 plt.tight_layout()
-plt.show()",,,,,,,,faef608d62dfea6c,,,,,,,
+plt.show()",,,,,,,,40a815e32a624d58,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,feb7518b,markdown,fr,60b8e1f09ba2b19a,"### Interpretation : 4-Reines avec la bibliotheque
 
 **Sortie obtenue** : le probleme des 4-Reines a exactement 2 solutions (symetriques l'une de l'autre).
@@ -1971,9 +1995,9 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,nav-restored,markdow
 
 **Navigation** : [<< Search-5 GeneticAlgorithms](../Part1-Foundations/Search-5-GeneticAlgorithms.ipynb) | [Index](../README.md) | [CSP-2-Consistance >>](CSP-2-Consistency.ipynb)
 ",,,,,,,,59f8787b636efe87,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2cd7141e,markdown,fr,e9bf09676f374bca,"---
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2cd7141e,markdown,fr,a09486be2d421231,"---
 
-## 7. Recapitulatif et exercices
+## Recapitulatif et exercices
 
 ### Tableau recapitulatif
 
@@ -2001,7 +2025,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2cd7141e,markdown,fr
 | **Backtracking** | DFS avec verification de consistance a chaque etape | Base de toute resolution CSP |
 | **MRV** | Choisir la variable au domaine le plus restreint | Fail-first : detecte les impasses tot |
 | **LCV** | Essayer la valeur la moins contraignante | Succeed-first : maximise les chances |
-| **python-constraint** | API declarative avec solveur integre | Productivite en production |",,,,,,,,e9bf09676f374bca,,,,,,,
+| **python-constraint** | API declarative avec solveur integre | Productivite en production |",,,,,,,,a09486be2d421231,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,3586d6ec,markdown,fr,7e161e6db8a21276,"### Exercice 1 : 4-Reines avec backtracking manuel
 
 **Enonce** : modelisez et resolvez le probleme des 4-Reines avec notre backtracking `backtracking_improved` (MRV + LCV). Affichez la solution avec `draw_queens`.
@@ -3009,7 +3033,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-Csharp.ipynb,7733d74e,code,
 
 // Votre code ici
 Console.WriteLine(""Exercice a completer"");",,,,,,,,71f91b4dbf6ec5db,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-Csharp.ipynb,ca3c3c9c,markdown,fr,74a93357712eb2fb,"## 8. Recapitulatif
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-Csharp.ipynb,ca3c3c9c,markdown,fr,60f67477d98d64e6,"## Recapitulatif
 
 ### Niveaux de consistance
 
@@ -3051,7 +3075,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-Csharp.ipynb,ca3c3c9c,markd
 - [CSP-3-Advanced.ipynb](CSP-3-Advanced.ipynb) -- techniques avancees (variable ordering, AC-4)
 - [CSP-4-Scheduling-Csharp.ipynb](CSP-4-Scheduling-Csharp.ipynb) -- IKVM 8.15.0 + Choco + OR-Tools pour scheduling
 - [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956) -- parite .NET ⇄ Python des series de notebooks
-- [CSP-2-Consistency.ipynb](CSP-2-Consistency.ipynb) -- version Python de ce notebook",,,,,,,,74a93357712eb2fb,,,,,,,
+- [CSP-2-Consistency.ipynb](CSP-2-Consistency.ipynb) -- version Python de ce notebook",,,,,,,,60f67477d98d64e6,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb,cell-0,markdown,fr,c69edd4eab9d05c1,"# CSP-2 : Propagation de Contraintes et Consistance
 
 **Navigation** : [<< CSP-1-Fondamentaux](CSP-1-Fundamentals.ipynb) | [Index](../README.md) | [CSP-3-Avance >>](CSP-3-Advanced.ipynb)
@@ -4450,9 +4474,9 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb,54f6641af59c,code,fr,
 result = None  # TODO etudiant : remplacer par votre implementation
 print(""Exercice a completer : Heuristiques de variable ordering"")
 ",,,,,,,,2e3a45fcca2dcd53,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb,cell-52,markdown,fr,064c5a56e6e5d704,"---
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb,cell-52,markdown,fr,0939f5e1a4482790,"---
 
-## 8. Recapitulatif
+## Recapitulatif
 
 ### Niveaux de consistance
 
@@ -4499,7 +4523,7 @@ Le prochain notebook [CSP-3-Avance](CSP-3-Advanced.ipynb) abordera :
 
 - Russell, S. & Norvig, P. *Artificial Intelligence: A Modern Approach*, Chapitre 6.2-6.3
 - Mackworth, A. K. *Consistency in Networks of Relations* (1977) -- article original sur AC-3
-- Dechter, R. *Constraint Processing*, Cambridge University Press, 2003",,,,,,,,064c5a56e6e5d704,,,,,,,
+- Dechter, R. *Constraint Processing*, Cambridge University Press, 2003",,,,,,,,0939f5e1a4482790,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb,dcab180d,markdown,fr,2e5c311ada164c2b,"## Resume et perspectives
 
 Ce notebook a couvert les techniques fondamentales de propagation de contraintes pour les CSP : la **consistance de noeud** (contraintes unaires), la **consistance d'arc** avec l'algorithme AC-3, le **Forward Checking** (propagation 1 niveau) et le **MAC** (propagation complete en cascade). Les benchmarks sur les N-Reines ont montre que MAC reduit le nombre d'assignations d'un facteur 40x par rapport au backtracking pur, confirmant que l'overhead de propagation est largement compense par la reduction de l'espace explore.
@@ -4968,9 +4992,9 @@ var model9 = new Model(""Mini-VRP — subCircuit"");
 Console.WriteLine(""Exercice 3 - Mini-VRP subCircuit : en attente de votre implementation"");
 Console.WriteLine(""subCircuit(succ, length, visited) autorise les villes non visitées en auto-cycle"");
 Console.WriteLine($""Matrice de distances disponible : {n9}x{n9}"");",,,,,,,,0e99425279ec331c,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-Csharp.ipynb,b23796f6,markdown,fr,24af613f52c59c2d,"---
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-Csharp.ipynb,b23796f6,markdown,fr,e9c4b37b84ff9bd1,"---
 
-## 5. Conclusion et parité .NET ⇄ Python
+## Conclusion et parité .NET ⇄ Python
 
 Ce notebook démontre la **parité algorithmique** entre **Choco-solver 4.10.17** (via IKVM 8.15.0) et **OR-Tools CP-SAT** (version Python du même notebook) :
 
@@ -4998,7 +5022,7 @@ Ce notebook démontre la **parité algorithmique** entre **Choco-solver 4.10.17*
 - [Issue #4711](https://github.com/jsboige/CoursIA/pull/4711) — diagnostic IKVM 8.15.0 + Choco 4.10.17
 
 Part of #4956 (marathon parité .NET ⇄ Python série CSP).
-See #4711 (jurisprudence IKVM 8.15.0 + Choco).",,,,,,,,24af613f52c59c2d,,,,,,,
+See #4711 (jurisprudence IKVM 8.15.0 + Choco).",,,,,,,,e9c4b37b84ff9bd1,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb,nav-header,markdown,fr,42f3988d58cb91d6,"# CSP-3 : CSP Avance - Contraintes globales, OR-Tools et LNS
 
 **Navigation** : [<< CSP-2-Consistance](CSP-2-Consistency.ipynb) | [Index](../README.md) | [Applications >>](../Applications/README.md)
@@ -6182,9 +6206,9 @@ solver.parameters.num_search_workers = 8
 ```
 
 Le solveur alloue automatiquement certains workers a LNS et d'autres a la recherche complete.",,,,,,,,80bf6631126e605e,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb,section-6-combined,markdown,fr,ac54a918c46354e0,"---
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb,section-6-combined,markdown,fr,0944b47acc80668c,"---
 
-## 6. Synthese : planification de cours (~6 min)
+## Synthese : planification de cours (~6 min)
 
 Combinons tout ce que nous avons appris dans un probleme realiste : la **planification de cours**.
 
@@ -6200,7 +6224,7 @@ Combinons tout ce que nous avons appris dans un probleme realiste : la **planifi
   - Info doit etre en salle C (seule salle avec ordinateurs)
 - **Preferences** (objectif) :
   - Maths le matin (bonus +2)
-  - Pas de cours le mardi apres-midi si possible (bonus +1 par creneau libre)",,,,,,,,ac54a918c46354e0,,,,,,,
+  - Pas de cours le mardi apres-midi si possible (bonus +1 par creneau libre)",,,,,,,,0944b47acc80668c,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb,combined-model,code,fr,535e7900d4d4799d,"# Modele complet de planification de cours
 
 if HAS_ORTOOLS:
@@ -12642,9 +12666,9 @@ Console.WriteLine($""Exercice 3 - {nCours8} cours sur {nJours8} jours"");
 Console.WriteLine($""Préférences : {string.Join("", "", prefLabels)} (coûts {string.Join("", "", prefCosts)})"");
 Console.WriteLine(""En attente de votre implementation"");
 Console.WriteLine(""Contraintes : allDifferent(days) + max 2 type C + minimise sum(coût_jour_i)"");",,,,,,,,22ab0f873e8397a9,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-Csharp.ipynb,64337001,markdown,fr,0f542aaacfb591ee,"---
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft-Csharp.ipynb,64337001,markdown,fr,ee6c9b9444ae1199,"---
 
-## 5. Conclusion et parité .NET ⇄ Python
+## Conclusion et parité .NET ⇄ Python
 
 Ce notebook démontre les **primitives natives Choco 4.10.17** pour les CSP souples, en parité conceptuelle avec le [CSP-7-Soft.ipynb](CSP-7-Soft.ipynb) Python (OR-Tools CP-SAT) :
 
@@ -12672,7 +12696,7 @@ Ce notebook démontre les **primitives natives Choco 4.10.17** pour les CSP soup
 - [Issue #4956](https://github.com/jsboige/CoursIA/issues/4956) — marathon parité .NET ⇄ Python
 
 Part of #4956 (marathon parité .NET ⇄ Python série CSP).
-See #4711 (jurisprudence IKVM 8.15.0 + Choco).",,,,,,,,0f542aaacfb591ee,,,,,,,
+See #4711 (jurisprudence IKVM 8.15.0 + Choco).",,,,,,,,ee6c9b9444ae1199,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb,nav-header,markdown,fr,8dab6462658758b3,"# CSP-7 : Contraintes Souples - Soft CSP
 
 **Navigation** : [<< CSP-6-Hybridization](CSP-6-Hybridization.ipynb) | [Index](../README.md) | [CSP-8-Temporal >>](CSP-8-Temporal.ipynb)
@@ -15983,7 +16007,29 @@ public record Nogood(
 Console.WriteLine(""Records Message et Nogood definis."");
 Console.WriteLine($""Test : {new Message(1, 2, ""ok?"", (0, 1))}"");  // BoxedValueTuple
 ",,,,,,,,740f213f01e635b6,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,cc993327,markdown,fr,eccf2d8bb9b939db,"## 2. Asynchronous Backtracking (ABT)### PrincipeABT (Yokoo, Durfee, Ishida, Kuwabara, 1992) est l'algorithme de référence pour DisCSP :1. **Ordre total** : Les agents sont ordonnés $a_1 < a_2 < ... < a_n$2. **Propagation avant** : Les agents de haute priorité envoient leurs valeurs3. **Nogoods** : Les agents de basse priorité génèrent des explications d'échec4. **Asynchronie** : Chaque agent traite les messages indépendamment### Types de messages ABT| Message | Direction | Contenu ||---------|-----------|---------|| `ok?` | Haute → Basse priorité | Assignation courante || `nogood` | Basse → Haute priorité | Ensemble incohérent (variables, valeurs) || `addlink` | Basse → Haute priorité | Demande d'envoi d'assignation || `stop` | Quelconque | Notification d'arrêt (pas de solution) |### Vue d'agent (`agent_view`)Chaque agent $a_i$ maintient une **vue** des assignations des agents de **haute priorité** dont il a reçu un `ok?`. Sa cohérence est vérifiée par rapport à cette vue + ses nogoods appris.",,,,,,,,eccf2d8bb9b939db,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,cc993327,markdown,fr,55694a7d7d0a04a5,"## 2. Asynchronous Backtracking (ABT)
+
+### Principe
+
+ABT (Yokoo, Durfee, Ishida, Kuwabara, 1992) est l'algorithme de référence pour DisCSP :
+
+1. **Ordre total** : Les agents sont ordonnés $a_1 < a_2 < ... < a_n$
+2. **Propagation avant** : Les agents de haute priorité envoient leurs valeurs
+3. **Nogoods** : Les agents de basse priorité génèrent des explications d'échec
+4. **Asynchronie** : Chaque agent traite les messages indépendamment
+
+### Types de messages ABT
+
+| Message | Direction | Contenu |
+|---------|-----------|---------|
+| `ok?` | Haute → Basse priorité | Assignation courante |
+| `nogood` | Basse → Haute priorité | Ensemble incohérent (variables, valeurs) |
+| `addlink` | Basse → Haute priorité | Demande d'envoi d'assignation |
+| `stop` | Quelconque | Notification d'arrêt (pas de solution) |
+
+### Vue d'agent (`agent_view`)
+
+Chaque agent $a_i$ maintient une **vue** des assignations des agents de **haute priorité** dont il a reçu un `ok?`. Sa cohérence est vérifiée par rapport à cette vue + ses nogoods appris.",,,,,,,,55694a7d7d0a04a5,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,1cecb869,code,fr,e29aacffd791c180,"
 // === Classe ABTAgent (Yokoo et al. 1992) ===
 
@@ -16348,7 +16394,26 @@ public class ABTSystem
 
 Console.WriteLine(""Classe ABTSystem definie."");
 ",,,,,,,,e79350a6be4a09d4,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,c53c4f6e,markdown,fr,897aa8ed9208f544,"### Analyse de l'implémentation ABT**Architecture de l'agent ABT** :| Méthode | Responsabilité | Clé pour ABT ||---------|----------------|--------------|| `CheckConsistency()` | Vérifie la cohérence avec agent_view et nogoods | Coeur de la cohérence locale || `ChooseValue()` | Sélectionne la première valeur du domaine compatible avec agent_view | Heuristique de choix simple || `ProcessOkMessage()` | Traite un assignement reçu d'un agent de haute priorité | Bootstrap + propagation avant || `ProcessNogoodMessage()` | Apprend un nogood, eventuellement demande un addlink | Apprentissage par nogood |**Architecture du système** :| Méthode | Responsabilité ||---------|----------------|| `Run()` | Boucle de simulation : dépile la file, dispatche au bon agent, vérifie la quiescence || `VerifyGlobalConstraints()` | Vérifie CHAQUE arête du graphe (et pas seulement la vue locale de chaque agent) || `OnAwcReorder()` | Recalcule l'ordre après promotion AWC puis émet une nouvelle vague de `ok?` |**Compromis** : `CheckSolution()` teste la cohérence **locale** (par vue), `VerifyGlobalConstraints()` teste la cohérence **globale** (par arête). Les deux ensemble évitent les faux positifs (succès locaux incompatibles via des agents non reliés par priorité).",,,,,,,,897aa8ed9208f544,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,c53c4f6e,markdown,fr,af1759bd2d0aa66c,"### Analyse de l'implémentation ABT
+
+**Architecture de l'agent ABT** :
+
+| Méthode | Responsabilité | Clé pour ABT |
+|---------|----------------|--------------|
+| `CheckConsistency()` | Vérifie la cohérence avec agent_view et nogoods | Coeur de la cohérence locale |
+| `ChooseValue()` | Sélectionne la première valeur du domaine compatible avec agent_view | Heuristique de choix simple |
+| `ProcessOkMessage()` | Traite un assignement reçu d'un agent de haute priorité | Bootstrap + propagation avant |
+| `ProcessNogoodMessage()` | Apprend un nogood, eventuellement demande un addlink | Apprentissage par nogood |
+
+**Architecture du système** :
+
+| Méthode | Responsabilité |
+|---------|----------------|
+| `Run()` | Boucle de simulation : dépile la file, dispatche au bon agent, vérifie la quiescence |
+| `VerifyGlobalConstraints()` | Vérifie CHAQUE arête du graphe (et pas seulement la vue locale de chaque agent) |
+| `OnAwcReorder()` | Recalcule l'ordre après promotion AWC puis émet une nouvelle vague de `ok?` |
+
+**Compromis** : `CheckSolution()` teste la cohérence **locale** (par vue), `VerifyGlobalConstraints()` teste la cohérence **globale** (par arête). Les deux ensemble évitent les faux positifs (succès locaux incompatibles via des agents non reliés par priorité).",,,,,,,,af1759bd2d0aa66c,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,db70f189,markdown,fr,f0bad6c549506936,### Exemple : Coloration de graphe distribuéeConsidérons un problème de coloration de graphe où chaque noeud est un agent indépendant.,,,,,,,,f0bad6c549506936,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,9798f8ab,code,fr,a906798e6c2c5dce,"
 // Exemple : Coloration de graphe 4-noeuds, 3 couleurs (cycle 0-1-2-3-0)
@@ -16500,7 +16565,32 @@ public class AWCAgent : ABTAgent
 
 Console.WriteLine(""Classe AWCAgent definie (herite de ABTAgent, ajoute AwcRank + promotion)."");
 ",,,,,,,,53d47693cb1b514a,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,b35ae939,markdown,fr,88626b1d109a763f,"### Analyse de l'extension AWC**Ajouts par rapport à ABT** :| Méthode/Attribut | Rôle | Impact ||------------------|------|--------|| `AwcRank` | Rang dynamique de l'agent (float) | Diminue quand l'agent est promu || `NogoodsReceived` | Compteur de nogoods reçus depuis la dernière promotion | Détecte les blocages répétés || `PrioritySortKey()` | Surcharge : trie par `(awc_rank, id)` au lieu de `(id, id)` | Pris en compte par `ABTSystem.SetupPriorityOrder` || `IncreasePriority()` | Décrémente `awc_rank` puis appelle `System.OnAwcReorder()` | Réordonnancement effectif |**Cycle de promotion AWC** :```agent reçoit nogood → NogoodsReceived++                              ↓       NogoodsReceived > 3 ?  --non--> continue normalement                              ↓ oui                  AwcRank -= 1.0  (monte dans la hierarchie)                              ↓                  OnAwcReorder()  (recalcule higher/lower)                              ↓                  ré-émet ok? vers lower-priority```**Limitation pédagogique** : Cette implémentation simule l'idée du réordonnancement AWC sans être le protocole complet Yokoo 1995 (qui maintient une heap de nogoods et balance aussi le `awc_rank` avec des bornes). Elle capture l'essentiel : la dynamique de promotion modifie réellement la trajectoire de résolution.",,,,,,,,88626b1d109a763f,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,b35ae939,markdown,fr,a195346131fe7746,"### Analyse de l'extension AWC
+
+**Ajouts par rapport à ABT** :
+
+| Méthode/Attribut | Rôle | Impact |
+|------------------|------|--------|
+| `AwcRank` | Rang dynamique de l'agent (float) | Diminue quand l'agent est promu |
+| `NogoodsReceived` | Compteur de nogoods reçus depuis la dernière promotion | Détecte les blocages répétés |
+| `PrioritySortKey()` | Surcharge : trie par `(awc_rank, id)` au lieu de `(id, id)` | Pris en compte par `ABTSystem.SetupPriorityOrder` |
+| `IncreasePriority()` | Décrémente `awc_rank` puis appelle `System.OnAwcReorder()` | Réordonnancement effectif |
+
+**Cycle de promotion AWC** :
+
+```
+agent reçoit nogood → NogoodsReceived++
+                             ↓
+      NogoodsReceived > 3 ?  --non--> continue normalement
+                             ↓ oui
+                 AwcRank -= 1.0  (monte dans la hierarchie)
+                             ↓
+                 OnAwcReorder()  (recalcule higher/lower)
+                             ↓
+                 ré-émet ok? vers lower-priority
+```
+
+**Limitation pédagogique** : Cette implémentation simule l'idée du réordonnancement AWC sans être le protocole complet Yokoo 1995 (qui maintient une heap de nogoods et balance aussi le `awc_rank` avec des bornes). Elle capture l'essentiel : la dynamique de promotion modifie réellement la trajectoire de résolution.",,,,,,,,a195346131fe7746,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,a572d52f,markdown,fr,ec2e4e4a422e8658,"## 4. Privacy-Preserving CSP### MotivationDans de nombreux scénarios, les agents ne veulent pas révéler leurs contraintes ou préférences :- **Enchères** : Ne pas révéler son prix de réserve- **Négociations** : Garder secrètes ses zones de flexibilité- **Médical** : Confidentialité des données patients- **Business** : Protection des données commerciales### Techniques de protection1. **Chiffrement partiel** : Révéler seulement si nécessaire2. **Secure Multi-Party Computation (SMPC)** : Calculer sans révéler3. **Pseudonymisation** : Masquer les identités réelles4. **Agrégation distribuée** : Combiner des informations locales sans les exposer",,,,,,,,ec2e4e4a422e8658,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,1e4a444d,code,fr,af4502ad164b8cd2,"
 // === Classes privacy-preserving ===
@@ -16568,7 +16658,28 @@ public class PrivacyPreservingAgent : ABTAgent
 
 Console.WriteLine(""Classes PrivateConstraint et PrivacyPreservingAgent definies."");
 ",,,,,,,,af4502ad164b8cd2,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,c72f1676,markdown,fr,bc8c344af87826e6,"### Analyse de l'implémentation privacy-preserving**Classes pour la protection de la vie privée** :| Classe | Responsabilité | Technique de protection ||--------|----------------|-------------------------|| `PrivateConstraint` | Encapsule une contrainte sensible | Chiffrement des paramètres || `PrivacyPreservingAgent` | Agent avec contraintes privées | Évaluation sélective |**Mécanisme de protection** :```csharppublic bool Evaluate(object value, byte[]? key = null){    if (key == null) return true;  // Mode privé : toujours accepter    return RealEvaluate(value);     // Mode deverrouille : évaluation réelle}```**Quand un agent externe demande l'évaluation d'une contrainte sans la clé**, la méthode renvoie `true` (accepte toujours) — **aucune information révélée**. Quand la clé est fournie (par exemple à un médiateur de confiance), l'évaluation réelle est appliquée.**Trade-off** : Sans la clé, l'agent distant **ne peut pas distinguer** une contrainte satisfaite d'une contrainte violée, ce qui préserve la vie privée mais empêche la résolution exacte. Pour une résolution réelle, on combine ce mécanisme avec un protocole de secure MPC (hors scope de ce notebook).",,,,,,,,bc8c344af87826e6,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,c72f1676,markdown,fr,a3c650b074603a1d,"### Analyse de l'implémentation privacy-preserving
+
+**Classes pour la protection de la vie privée** :
+
+| Classe | Responsabilité | Technique de protection |
+|--------|----------------|-------------------------|
+| `PrivateConstraint` | Encapsule une contrainte sensible | Chiffrement des paramètres |
+| `PrivacyPreservingAgent` | Agent avec contraintes privées | Évaluation sélective |
+
+**Mécanisme de protection** :
+
+```csharp
+public bool Evaluate(object value, byte[]? key = null)
+{
+    if (key == null) return true;  // Mode privé : toujours accepter
+    return RealEvaluate(value);     // Mode deverrouille : évaluation réelle
+}
+```
+
+**Quand un agent externe demande l'évaluation d'une contrainte sans la clé**, la méthode renvoie `true` (accepte toujours) — **aucune information révélée**. Quand la clé est fournie (par exemple à un médiateur de confiance), l'évaluation réelle est appliquée.
+
+**Trade-off** : Sans la clé, l'agent distant **ne peut pas distinguer** une contrainte satisfaite d'une contrainte violée, ce qui préserve la vie privée mais empêche la résolution exacte. Pour une résolution réelle, on combine ce mécanisme avec un protocole de secure MPC (hors scope de ce notebook).",,,,,,,,a3c650b074603a1d,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,ca7a21c7,markdown,fr,ab8be96a53879819,"## 5. Application : Ordonnancement Multi-Hôpital### ProblèmePlusieurs hôpitaux doivent coordonner leurs plannings sans révéler leurs contraintes internes :- **Hôpital A** : Besoins en urgences, préférences secrètes- **Hôpital B** : Spécialités chirurgicales, contraintes confidentielles- **Hôpital C** : Consultations externes, emploi du temps privé### Contraintes inter-hôpitaux- Échanges de personnel (médecins volants)- Transferts de patients- Partage d'équipements spécialisés",,,,,,,,ab8be96a53879819,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,c3afe23c,code,fr,e6f502fddf6fa7e3,"
 // Simulation d'ordonnancement multi-hopital
@@ -16718,7 +16829,21 @@ void PrintBenchSummary(string name, List<Dictionary<string, object>> rows)
 PrintBenchSummary(""ABT"", benchmarkResults[""ABT""]);
 PrintBenchSummary(""AWC"", benchmarkResults[""AWC""]);
 ",,,,,,,,5a384a4cec981020,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,c2a79964,markdown,fr,fb68f1976a0852e2,"### Interprétation des résultats du benchmark**Lecture** : le benchmark génère `n_runs` instances aléatoires de coloration de graphe avec `n_agents` agents, un domaine de taille `domain_size`, et une densité de contraintes `constraint_density`. Pour chaque instance, ABT et AWC sont exécutés jusqu'à quiescence.**Ordres de grandeur attendus** (n_agents=5, domain_size=3, density=0.5) :| Métrique | ABT | AWC | Lecture ||----------|-----|-----|--------|| Messages | 10-50 | similaire ou un peu moins | trafic d'`ok?` + `nogood` + `addlink` || Nogoods | 0-10 | 0-10 | dépend du nombre de conflits || Taux de succès | 80-100% | 80-100% | la plupart des instances 5/3 sont solvables |**Sur des instances plus denses** (density ≥ 0.8) ou avec un ratio agents/domaine défavorable, AWC prend l'avantage grâce à la promotion dynamique qui sort l'algorithme des blocages.**Limitation** : la promotion AWC pédagogique (seuil `NogoodsReceived > 3`) est plus simple que le protocole Yokoo 1995. Sur des instances jouets, la différence ABT/AWC reste marginale ; sur des benchmarks几百変数, l'écart devient significatif.",,,,,,,,fb68f1976a0852e2,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,c2a79964,markdown,fr,2bba095ce850da34,"### Interprétation des résultats du benchmark
+
+**Lecture** : le benchmark génère `n_runs` instances aléatoires de coloration de graphe avec `n_agents` agents, un domaine de taille `domain_size`, et une densité de contraintes `constraint_density`. Pour chaque instance, ABT et AWC sont exécutés jusqu'à quiescence.
+
+**Ordres de grandeur attendus** (n_agents=5, domain_size=3, density=0.5) :
+
+| Métrique | ABT | AWC | Lecture |
+|----------|-----|-----|--------|
+| Messages | 10-50 | similaire ou un peu moins | trafic d'`ok?` + `nogood` + `addlink` |
+| Nogoods | 0-10 | 0-10 | dépend du nombre de conflits |
+| Taux de succès | 80-100% | 80-100% | la plupart des instances 5/3 sont solvables |
+
+**Sur des instances plus denses** (density ≥ 0.8) ou avec un ratio agents/domaine défavorable, AWC prend l'avantage grâce à la promotion dynamique qui sort l'algorithme des blocages.
+
+**Limitation** : la promotion AWC pédagogique (seuil `NogoodsReceived > 3`) est plus simple que le protocole Yokoo 1995. Sur des instances jouets, la différence ABT/AWC reste marginale ; sur des benchmarks plus volumineux, l'écart devient significatif.",,,,,,,,2bba095ce850da34,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,b68ce75a,markdown,fr,8fb67e017aefe6d3,"## 7. Exemples guidésLes exercices suivants réutilisent les classes `ABTAgent`, `ABTSystem`, `AWCAgent` et `PrivacyPreservingAgent` définies plus haut et les appliquent à des scénarios classiques : N-reines distribué, comparaison ABT/AWC, négociation sous préférences secrètes et mesure de la fuite d'information.### Exemple guide 1 : N-reines distribuéChaque agent contrôle **une colonne** de l'échiquier ; son domaine est `[0, n-1]` (la ligne de sa reine). La contrainte binaire : deux colonnes ne doivent partager ni ligne ni diagonale.",,,,,,,,8fb67e017aefe6d3,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,03e05d28,code,fr,8cad23e704381a2e,"
 // Exemple resolu : N-reines distribuees avec ABT (n=6)
@@ -17076,7 +17201,33 @@ Console.WriteLine(""- Explorer Distributed Breakout pour l'optimisation"");
 Console.WriteLine(""- Combiner avec des techniques de ML pour l'apprentissage de contraintes"");
 Console.WriteLine(""- Appliquer aux smart grids et reseaux peer-to-peer"");
 ",,,,,,,,7900af214736b07c,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,3bff6eac,markdown,fr,c6cd3aece46ce29d,"## Synthèse et bonnes pratiques### Quand utiliser DisCSP ?| Scénario | DisCSP approprié ? | Algorithme recommandé ||----------|-------------------|----------------------|| Quelques agents, communication bon marché | ✅ Oui | ABT simple || Beaucoup d'agents, fréquents blocages | ✅ Oui | AWC (reordonnancement) || Contraintes confidentielles (santé, business) | ✅ Oui | Privacy-Preserving || Problème solvable par un solveur centralisé | ❌ Non | OR-Tools / Choco || Contraintes très denses (Densité ≥ 0.9) | ⚠️ Difficile | AWC + heuristics ou DPOP |### Comparaison avec les solveurs centralisés (CSP-1 à CSP-8)| Aspect | Solveur centralisé | DisCSP ||--------|-------------------|--------|| Scalabilité | Bornée par mémoire centrale | Distribuée linéairement || Confidentialité | Toutes contraintes visibles | Locale + sélective || Convergence | Garantie (algorithme complet) | Garantie (ABT/AWC complets) || Mise en œuvre | Simple (un seul programme) | Complexe (gestion messages) |### Bonnes pratiques d'implémentation1. **Tester sur petits graphes d'abord** (4-6 agents) avant de monter en taille2. **Vérifier les arêtes** : `VerifyGlobalConstraints()` est essentiel (cohérence locale ne suffit pas)3. **Statistiques** : suivez `messages_sent`, `nogoods_generated` pour comprendre le comportement4. **AWC progressive** : commencez par ABT, passez à AWC seulement si vous voyez des blocages",,,,,,,,c6cd3aece46ce29d,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,3bff6eac,markdown,fr,9a2f519ecbbf5bd8,"## Synthèse et bonnes pratiques
+
+### Quand utiliser DisCSP ?
+
+| Scénario | DisCSP approprié ? | Algorithme recommandé |
+|----------|-------------------|----------------------|
+| Quelques agents, communication bon marché | ✅ Oui | ABT simple |
+| Beaucoup d'agents, fréquents blocages | ✅ Oui | AWC (reordonnancement) |
+| Contraintes confidentielles (santé, business) | ✅ Oui | Privacy-Preserving |
+| Problème solvable par un solveur centralisé | ❌ Non | OR-Tools / Choco |
+| Contraintes très denses (Densité ≥ 0.9) | ⚠️ Difficile | AWC + heuristics ou DPOP |
+
+### Comparaison avec les solveurs centralisés (CSP-1 à CSP-8)
+
+| Aspect | Solveur centralisé | DisCSP |
+|--------|-------------------|--------|
+| Scalabilité | Bornée par mémoire centrale | Distribuée linéairement |
+| Confidentialité | Toutes contraintes visibles | Locale + sélective |
+| Convergence | Garantie (algorithme complet) | Garantie (ABT/AWC complets) |
+| Mise en œuvre | Simple (un seul programme) | Complexe (gestion messages) |
+
+### Bonnes pratiques d'implémentation
+
+1. **Tester sur petits graphes d'abord** (4-6 agents) avant de monter en taille
+2. **Vérifier les arêtes** : `VerifyGlobalConstraints()` est essentiel (cohérence locale ne suffit pas)
+3. **Statistiques** : suivez `messages_sent`, `nogoods_generated` pour comprendre le comportement
+4. **AWC progressive** : commencez par ABT, passez à AWC seulement si vous voyez des blocages",,,,,,,,9a2f519ecbbf5bd8,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb,eaad00db,markdown,fr,f6d5a5d33fe2e862,"## ConclusionCe notebook a présenté les **contraintes distribuées (DisCSP)**, où plusieurs agents coopèrent sans qu'aucun n'ait une vue d'ensemble.Les takeaways essentiels :1. **ABT** est l'algorithme de référence depuis 1992 : ordre statique + propagation de nogoods. Convergence garantie sur les instances solubles.2. **AWC** ajoute le réordonnancement dynamique : un agent bloqué peut monter en priorité. Convergence garantie + meilleure performance sur les instances denses.3. **Privacy-preserving** : on peut encapsuler les contraintes sensibles (`PrivateConstraint`) et n'évaluer que localement (`PrivacyPreservingAgent.evaluate` sans clé).4. **Vérification globale** : la cohérence locale (par vue) ne suffit pas. `VerifyGlobalConstraints()` est indispensable pour rejeter les faux positifs.### Pour aller plus loin- **Lecture** : Yokoo & Hirayama (2000) ""Algorithms for Distributed Constraint Satisfaction"" (survey)- **Implémentation** : la bibliothèque `chocosolver` (Pozo) inclut des abstractions DisCSP- **Application réelle** : smart grids, coordination de robots, allocation de spectre, enchères combinatoires",,,,,,,,f6d5a5d33fe2e862,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,ea8598c0,markdown,fr,8f16ec866647fc24,"# CSP-9-Distributed : CSP Distribués (DisCSP)
 
@@ -18667,7 +18818,7 @@ print(""Prochaines etapes:"")
 print(""- Explorer Distributed Breakout pour l'optimisation"")
 print(""- Combiner avec des techniques de ML pour l'apprentissage de contraintes"")
 print(""- Appliquer aux smart grids et reseaux peer-to-peer"")",,,,,,,,4d74cfdf88456df5,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,dd2989fc,markdown,fr,a6dc7739b683cd60,"## 7. Synthese et bonnes pratiques
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,dd2989fc,markdown,fr,32c4383e33415bbb,"## Synthese et bonnes pratiques
 
 ### Quand utiliser DisCSP ?
 
@@ -18685,7 +18836,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,dd2989fc,markdown,fr,
 2. **AWC** ameliore les performances sur les instances difficiles
 3. **Privacy-preserving** est crucial pour les applications reelles
 4. **Communication asynchrone** = robustesse mais complexite accrue
-5. **Nogoods** = apprentissage distribue, mais attention a l'explosion",,,,,,,,a6dc7739b683cd60,,,,,,,
+5. **Nogoods** = apprentissage distribue, mais attention a l'explosion",,,,,,,,32c4383e33415bbb,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,cb1d0b0c,markdown,fr,a25cee0b27e390e1,"## Conclusion
 
 Ce notebook a presente les **contraintes distribuees (DisCSP)**, ou plusieurs agents cooperent sans qu'aucun ne connaisse le probleme global.
