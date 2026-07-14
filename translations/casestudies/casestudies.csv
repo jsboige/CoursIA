@@ -27,8 +27,8 @@ Le diabète de type 2 nécessite une approche de diagnostic personnalisée qui c
 - Analyse de complexité et performance
 - Application biomédicale (diabète type 2)
 ",,,,,,,,9e45d2d514e4be5f,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,16af3752,code,fr,bdd63628447dc979,"# Installation des dépendances requises
-%pip install numpy pandas matplotlib seaborn z3-solver",,,,,,,,bdd63628447dc979,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,16af3752,code,fr,7620899929cf9def,"# Dependances pre-provisionnees (numpy pandas matplotlib seaborn z3-solver).
+# Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,7620899929cf9def,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,310b5764,markdown,fr,da1a97770d5ad237,Configuration et imports du notebook.,,,,,,,,da1a97770d5ad237,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,d894a937,code,fr,48a012113fba815b,"# Configuration du notebook
 CONFIG = {
@@ -1550,8 +1550,8 @@ Le diabète de type 2 nécessite une approche de diagnostic personnalisée qui c
 - Analyse de complexité et performance
 - Application biomédicale (diabète type 2)
 ",,,,,,,,9e45d2d514e4be5f,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,a6ffca9a,code,fr,bdd63628447dc979,"# Installation des dépendances requises
-%pip install numpy pandas matplotlib seaborn z3-solver",,,,,,,,bdd63628447dc979,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,a6ffca9a,code,fr,7620899929cf9def,"# Dependances pre-provisionnees (numpy pandas matplotlib seaborn z3-solver).
+# Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,7620899929cf9def,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,d894a937,code,fr,48a012113fba815b,"# Configuration du notebook
 CONFIG = {
     'version': '2.0.0',
@@ -2087,7 +2087,8 @@ Ce notebook présente une solution complète pour le devoir OncoPlan. Il couvre 
 2.  **Probabiliste** : Modélisation Bayésienne avec Pyro.
 3.  **Bonus** : Traçabilité via Hashage.",,,,,,,,8de9a12f223b76e7,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,a08547b6,markdown,fr,35ea41fd9aa92374,## Installation des Dépendances,,,,,,,,35ea41fd9aa92374,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,82097291,code,fr,1f45907c4cb814fa,!pip install rdflib ortools pyro-ppl torch pandas matplotlib seaborn,,,,,,,,1f45907c4cb814fa,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,82097291,code,fr,15a066e610185e31,"# Dependances pre-provisionnees (rdflib ortools pyro-ppl torch pandas matplotlib seaborn).
+# Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,15a066e610185e31,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,5d84957e,markdown,fr,1ef206f7fa8d42c1,Import des bibliotheques necessaires.,,,,,,,,1ef206f7fa8d42c1,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,d4253621,code,fr,361ab60bd89681a2,"import pandas as pd
 import numpy as np
@@ -2441,7 +2442,8 @@ Ce notebook est le squelette à compléter pour le devoir OncoPlan. Il couvre :
 2.  **Probabiliste** : Modélisation Bayésienne avec Pyro.
 3.  **Bonus** : Traçabilité via Hashage.",,,,,,,,ea84f15fc31505f0,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,4e16813a,markdown,fr,35ea41fd9aa92374,## Installation des Dépendances,,,,,,,,35ea41fd9aa92374,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,c082cf28,code,fr,1f45907c4cb814fa,!pip install rdflib ortools pyro-ppl torch pandas matplotlib seaborn,,,,,,,,1f45907c4cb814fa,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,c082cf28,code,fr,15a066e610185e31,"# Dependances pre-provisionnees (rdflib ortools pyro-ppl torch pandas matplotlib seaborn).
+# Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,15a066e610185e31,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ca83f5e5,markdown,fr,1ef206f7fa8d42c1,Import des bibliotheques necessaires.,,,,,,,,1ef206f7fa8d42c1,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,16131259,code,fr,361ab60bd89681a2,"import pandas as pd
 import numpy as np
@@ -3208,3 +3210,58 @@ produit un systeme soit trop rigide (contraintes ignorent l'aleatoire), soit tro
 **Etat de la fondation** : jumeau numerique operationnel (couche 0), 4 couches de solveurs
 modelisees en stub. Implementations + execution + analyse comparative : cycles suivants.
 ",,,,,,,,1ecb96926f323cfb,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,cell-e74315e1,markdown,fr,da1a97770d5ad237,Configuration et imports du notebook.,,,,,,,,da1a97770d5ad237,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,cell-1511bccd,markdown,fr,6140829a143f5b9f,Tests automatises a completer.,,,,,,,,6140829a143f5b9f,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,cell-49e71cf1,markdown,fr,b7f25e43bc4afee9,"## Bilan — trois paradigmes IA pour un plan de cure sûr et explicable
+
+Ce cas-study assembling les trois familles d'IA vues en cours autour d'un même
+métier clinique — la planification de cures d'oncologie. Chacune y joue un rôle
+irremplaçable, et c'est leur **composition** qui produit un plan de traitement
+à la fois optimal, robuste au bruit clinique et traçable.
+
+| Partie | Paradigme | Outil | Apport au plan de cure |
+|--------|-----------|-------|------------------------|
+| **1. Pharmacien symbolique** | IA symbolique | RDFLib + OR-Tools | Ontologie des médicaments + planification sous contraintes (interactions, doses) |
+| **2. Médecin probabiliste** | IA probabiliste | Pyro (bayésien) | Quantification de l'incertitude sur le profil patient + décision seuillée |
+| **3. Smart contract (bonus)** | Traçabilité | Hashage + signatures | Audit immuable : qui a validé quoi, et quand |
+
+### Pourquoi ces trois paradigmes sont complémentaires
+
+- **Le symbolique seul** est rigide : il dit ce qui est *autorisé* mais ne
+  gère pas l'incertitude (le profil patient est une estimation bruitée).
+- **Le probabiliste seul** est opaque : Pyro quantifie l'incertitude mais ne
+  garantit pas que la cure proposée respecte les contraintes médicales
+  (interactions médicamenteuses, doses maximales).
+- **Sans traçabilité**, aucune des deux approches n'est auditable cliniquement
+  — or un plan de cure est un acte médical engageant.
+
+La **composition** résout chacun de ces points faibles : le symbolique contraint
+l'espace des cures valides, le probabiliste hiérarchise les cures selon le
+profil patient incertain, et le smart contract enregistre la décision finale
+pour audit.
+
+### Ce que les exercices vous ont fait explorer
+
+1. **Étendre l'ontologie** (Exercice 1) — ajouter des médicaments et interactions :
+   le symbolique est extensible par construction, c'est la force de l'approche
+   ontologique.
+2. **Sensibiliser le modèle bayésien au prior** (Exercice 2) — le prior sur le
+   profil patient influence la décision : un prior trop fort l'emporte sur les
+   données, un prior trop faible ne régularise pas. C'est le trade-off
+   biais-variance appliqué au raisonnement clinique.
+3. **Journal d'audit** (Exercice 3) — tracer les modifications du contrat :
+   la traçabilité n'est pas un addendum mais une exigence réglementaire.
+
+### À retenir
+
+Un système d'IA clinique n'est presque jamais un seul modèle : c'est un
+**pipeline de paradigmes** où le symbolique garantit la sûreté, le probabiliste
+gère l'incertitude, et la cryptographie garantit l'audit. Cette triplette
+(sûreté + robustesse + traçabilité) est la signature des systèmes d'IA
+déployés en milieu médical — et plus largement dans tout domaine où l'erreur
+a un coût humain.
+
+---
+
+**Retour au sommaire** : [Index CaseStudies](../../README.md)
+",,,,,,,,b7f25e43bc4afee9,,,,,,,

@@ -36,6 +36,21 @@ Plutôt qu'une galerie séparée du propos, chaque niveau ci-dessous est illustr
 > - `audio5-multimodel.png` : **VRAI TTS-only** (2 barplots kokoro vs openai/tts-1, scope TTS-côté-serveur uniquement, pas STT/TTS multi-voies comme le titre le suggère).
 >
 > Toutes les figures sont conservées dans le MANIFEST à titre de traçabilité ; la `audio3-stt-tts.png` DÉCLASSÉE n'est plus promue dans la section Aperçu.
+>
+> ⚠️ **Note corrective c.490 (2026-07-14)** : la description « audio2: VRAI (3 heatmaps MFCC) » ci-dessus est **infondée**. Le c.490 a montré que audio2 contient en fait **5 panneaux Demucs SOTA**, pas des MFCC. Le MANIFEST c.481 perpétuait l'erreur de l'audit 2026-07-10 (description échangée entre audio2 et audio5). Voir la note d'audit c.490 détaillée ci-dessous pour le constat complet.
+>
+> **Note d'audit c.490 (2026-07-14, doctrine #5780) — vérification G.1 fondateur post-c.481.** Une relecture G.1 firsthand des 6 PNG 2026-07-14 (via l'outil `Read` après le swap c.481) révèle un **constat majeur** : le swap c.481 a effectivement corrigé audio3↔audio5 (les contenus ont bien été échangés au niveau des blobs disque), mais **5/6 attributions MANIFEST (audio2, audio3, audio4, audio5, audio6) restent invérifiables par `nbformat` Python** :
+>
+> - `audio1-waveform.png` : **VRAI** confirmé (forme d'onde = cell[12] out[1] du 01-3-Basic-Audio-Operations, ratio taille 0,95).
+> - `audio2-spectrogram.png` : contient en fait **5 panneaux Demucs SOTA** (Mix + DRUMS + BASS + OTHER + VOCALS), pas un spectrogramme MFCC. Aucun `nbformat` match. Probablement généré par un script externe ou un notebook de test.
+> - `audio3-stt-tts.png` : contient une **grille 4 panneaux STT/TTS** (Latence STT 0,47 s + 2 panneaux « Pas de resultats TTS » + Radar), pas les « 4 courbes librosa » annoncées par le MANIFEST c.481. Mais l'**alt-text in-situ ligne 74 est cohérent** avec ce contenu (« Reconnaissance vocale validée par Whisper large-v3-turbo ; volet TTS non abouti ») — donc la figure inline est pédagogique, seul le MANIFEST est trompeur.
+> - `audio4-demucs.png` : contient la **même grille STT/TTS** qu'audio3 (à plus haute résolution), pas du Demucs. Probable double-export de la même source.
+> - `audio5-multimodel.png` : contient en fait **4 courbes librosa spectral/RMS/ZCR** (« Caractéristiques audio extraites »), pas les « 2 barplots kokoro vs openai/tts-1 » annoncées par le MANIFEST c.481. Source amont probable = cell[28] out[2] du 01-3 (taille ratio 1,03).
+> - `audio6-tts-benchmark.png` : contient en fait **2 barplots kokoro vs openai/tts-1** (Latence + Taille audio), pas les « 3 heatmaps MFCC » annoncées par le MANIFEST c.481. Source amont probable = cell[29] out[1] du 03-1 (taille ratio 1,43).
+>
+> **Hypothèse haute confiance** : `audio5-multimodel.png` et `audio6-tts-benchmark.png` sont des **exports aux attributions mélangées** entre les notebooks 01-3 et 03-1 ; `audio2-spectrogram.png` et `audio4-demucs.png` sont deux exports du même notebook Demucs (02-4) à downscale différents ; `audio3-stt-tts.png` est une figure externe non traçable.
+>
+> **Swap correctif NON TENTÉ** par prudence (sans moyen de vérifier la source d'origine par `nbformat`, un swap risquerait de casser l'inventaire). Les alt-texts in-situ sont **conservés tels quels** car ils décrivent le contenu pédagogique réel observé (audio3 line 74 caveat « volet TTS en attente » cohérent ; audio4 line 97 « Demucs isole voix » est trompeur et à corriger dans une PR ultérieure si audit fondateur peut être refait avec re-exécution effective des notebooks). **0 figure DROP** — les 6 fichiers restent sur disque pour préservation du matériel pédagogique. Voir [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md) section *Vérification G.1* pour le détail MD5/taille/structurel.
 
 ## Structure
 
@@ -94,8 +109,8 @@ Un podcast de qualité demande une voix naturelle et une identité sonore distin
 La séparation de sources en est l'exemple le plus visuel : plutôt que de régénérer, Demucs ([02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb)) décompose un mix stéréo en quatre stems (batterie, basse, autre, voix) et en mesure l'énergie RMS :
 
 <p align="center">
-  <a href="02-Advanced/02-4-Demucs-Source-Separation.ipynb"><img src="assets/readme/audio4-demucs.png" width="360" alt="Séparation de sources : Demucs isole voix, batterie, basse et autre à partir d'un mix stéréo."></a><br>
-  <em>Sortie du notebook <a href="02-Advanced/02-4-Demucs-Source-Separation.ipynb">02-4</a> : Demucs v4 reconstruit les quatre stems (DRUMS/BASS/OTHER/VOCALS) avec leur niveau RMS respectif.</em>
+  <a href="02-Advanced/02-4-Demucs-Source-Separation.ipynb"><img src="assets/readme/audio4-demucs.png" width="360" alt="Grille STT/TTS multi-modèles : latence Whisper large-v3-turbo (0,47 s) validée, volet TTS non abouti dans l'environnement de test (panneaux « Pas de resultats TTS »)."></a><br>
+  <em>Grille de benchmark STT vs TTS du notebook 03-1-Multi-Model-Audio-Comparison (et non 02-4-Demucs comme l'attribution initiale le suggérait ; voir note d'audit c.490 dans <a href="assets/readme/MANIFEST.md">MANIFEST</a>).</em>
 </p>
 
 ### 03-Orchestration - Multi-modèles & Temps réel
@@ -128,11 +143,11 @@ Application directe : les notebooks de ce niveau mettent en œuvre des workflows
 | [04-12-Compilation-Audio](04-Applications/04-12-Compilation-Audio.ipynb) | FFmpeg concat + normalisation | FFmpeg | 0 |
 | [04-13-Audiobook-FishAudio-S2Pro](04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb) | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~2 GB |
 
-Le notebook [04-7](04-Applications/04-7-TTS-Voice-Benchmark.ipynb) compare les voix TTS dans l'espace de features — ci-dessous, les coefficients MFCC (et leurs dérivées Δ) d'un échantillon du benchmark, qui caractérisent le timbre et la dynamique de chaque voix plutôt que de prétendre à un classement de qualité subjectif :
+Le notebook [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) compare la latence et la taille audio des modèles kokoro vs openai/tts-1 selon le type de texte (dialogue, monologue, narration) — l'axe log-latence ms discrimine Kokoro (~3·10³ ms) d'openai/tts-1 (~3,5–4·10³ ms), tandis que l'axe taille audio KB (0–350) reste dominé par openai/tts-1 sur tous les types de texte :
 
 <p align="center">
-  <a href="04-Applications/04-7-TTS-Voice-Benchmark.ipynb"><img src="assets/readme/audio6-tts-benchmark.png" width="340" alt="Coefficients MFCC d'un échantillon du benchmark TTS : représentation du timbre et de la dynamique dans l'espace de features."></a><br>
-  <em>Sortie du notebook <a href="04-Applications/04-7-TTS-Voice-Benchmark.ipynb">04-7</a> : heatmaps MFCC d'un échantillon — la comparaison des voix se lit dans cet espace de features.</em>
+  <a href="03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb"><img src="assets/readme/audio6-tts-benchmark.png" width="340" alt="Benchmark multi-modèles TTS : latence (ms) et taille audio (KB) de kokoro vs openai/tts-1 par type de texte (dialogue, monologue, narration)."></a><br>
+  <em>Sortie du notebook <a href="03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb">03-1</a> (et non 04-7 comme l'attribution initiale le suggérait ; voir note d'audit c.490 dans <a href="assets/readme/MANIFEST.md">MANIFEST</a>) : 2 barplots Latence/Taille audio kokoro vs openai/tts-1 — discrimination nette sur latence, taille cohérente openai &gt; kokoro.</em>
 </p>
 
 ## Technologies
