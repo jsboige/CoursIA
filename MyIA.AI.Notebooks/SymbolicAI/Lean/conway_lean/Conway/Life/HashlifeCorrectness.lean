@@ -227,6 +227,19 @@ def BoxAssezGrandN (g : Grid) (n : Nat) : Prop := box_assez_grandN g n = true
 instance (g : Grid) (n : Nat) : Decidable (BoxAssezGrandN g n) :=
   inferInstanceAs (Decidable (box_assez_grandN g n = true))
 
+/-- **Box coincidence for `n ≤ 2` (N3 threading infrastructure, issue #3846).**
+    On the small-`n` regime, the n-aware frame `gridFrameN n g` coincides with
+    the fixed frame `gridFrame g` (`gridFrameN_le_two_eq_gridFrame`), so the two
+    margin predicates — which differ only in which frame feeds the
+    `cellMargin` bound — are equal. This bridges the n-aware hypothesis
+    `BoxAssezGrandN` to the fixed-frame `BoxAssezGrand` consumed by the already
+    proven `hashlife_correct`, letting the N-version spec's small-`n` arm be
+    discharged without re-proving `hashlife_correct` on the n-aware frame. -/
+theorem box_assez_grandN_le_two_eq (n : Nat) (g : Grid) (hn : n ≤ 2) :
+    box_assez_grandN g n = box_assez_grand g n := by
+  unfold box_assez_grandN box_assez_grand
+  rw [gridFrameN_le_two_eq_gridFrame n g hn]
+
 /-- Anti-vacuity witness (dual of the `boxAssezGrand_nonempty_le_two` unsat
     cap): the n-aware predicate `box_assez_grandN` is *satisfiable* for
     `n = 3 > 2` on the single-cell grid. With `gridFrameN 3 [(0,0)]` the
@@ -3302,6 +3315,23 @@ theorem boxAssezGrandN_glider_8 : BoxAssezGrandN glider 8 := by native_decide
 theorem hashlife_correctN (n : Nat) (g : Grid) (h : BoxAssezGrandN g n) :
     evolveHashlifeFast n g = evolve n g := by
   sorry
+
+/-- **N3 small-`n` bridge (issue #3846, ai-01 greenlight msg-zx9es2).** On the
+    small-`n` regime (`n ≤ 2`), the n-aware spec `BoxAssezGrandN g n` coincides
+    with the fixed-frame `BoxAssezGrand g n` (`box_assez_grandN_le_two_eq`), so
+    the already-proven `hashlife_correct` discharges the N-version conclusion
+    without re-proving it on the n-aware frame. This localizes the remaining
+    `hashlife_correctN` sorry to the **large-`n` arm** (`n ≥ jumpSize`, the
+    genuine P5.2 jump, P4-gated) — honest structural progress, not a vacuity
+    closure: the witnessed `n ≤ 2` patterns are now genuinely proven under the
+    n-aware hypothesis, while the large-`n` regime stays an open named sorry
+    pending the P4 unlock. -/
+theorem hashlife_correctN_le_two (n : Nat) (g : Grid) (hn : n ≤ 2)
+    (h : BoxAssezGrandN g n) : evolveHashlifeFast n g = evolve n g := by
+  apply hashlife_correct n g
+  show box_assez_grand g n = true
+  rw [← box_assez_grandN_le_two_eq n g hn]
+  exact h
 
 /-- **P5.2 genuine large-`n` jump (N2, P4-gated).** When `n ≥ jumpSize k` on the
     n-aware frame, `evolveHashlifeFast` makes one Hashlife jump of `2^(k-2)`
