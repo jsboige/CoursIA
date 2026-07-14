@@ -1,4 +1,4 @@
-# MANIFEST des figures README
+# Manifeste des figures — Probas/PyMC
 
 Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks).
 **Audit G.1 c.483 (2026-07-14, doctrine #5780)** : migration vague-1 → standard avec section *Contenu réel vérifié* + *Ce qui n'est PAS dans la figure* par figure. **Bilan : 3 ACCURATE sans correction + 3 corrections réelles** (pymc2, pymc5, pymc15). 50% bug-rate, cohérent avec familles à dominante matplotlib (L478-L1 — rigueur variable selon auteur).
