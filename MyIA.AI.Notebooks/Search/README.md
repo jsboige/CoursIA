@@ -451,7 +451,7 @@ Search/
 ├── search_helpers.py                      # Utilitaires partages
 ├── resources/                             # Images et données
 │
-├── Part1-Foundations/                     # Search Fondamental (29 notebooks : 13 Python + 16 C# — 12 jumeaux directs Search-1..11/15 + déclinaison Métaheuristiques en 4 volets)
+├── Part1-Foundations/                     # Search Fondamental (29 notebooks : 12 Python + 17 C# — 12 jumeaux directs Search-1..11/15 + Search-16 QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets)
 │   ├── Search-1-StateSpace.ipynb
 │   ├── Search-2-Uninformed.ipynb
 │   ├── Search-3-Informed.ipynb
