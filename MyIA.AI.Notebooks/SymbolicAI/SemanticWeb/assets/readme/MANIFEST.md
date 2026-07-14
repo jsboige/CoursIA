@@ -17,7 +17,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 ## sw12_graphrag_c18_o0.png
 
 - **Source** : notebook `SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb` (cellule 18, output 0)
-- **Alt-text (FR)** : Graphe orienté des entités extraites par LLM (filmographie Nolan) — noeuds colorés par type d'entité (Person / Movie / Organization / Award / Genre / Concept), arêtes orientées étiquetées par la relation extraite.
+- **Alt-text (FR)** : Graphe orienté des entités extraites par LLM (filmographie Nolan) — noeuds colorés par type d'entité **extrait** du texte (Person / Movie / Organization / Award — 4 types sur les 6 du vocabulaire `TYPE_MAP` ; `Genre` et `Concept` sont définis dans le mapping mais aucune entité de ce type n'est extraite du texte de démonstration, voir cellule 900 du notebook), arêtes orientées étiquetées par la relation extraite (`directed_by`, `starred_in`, `nominated_for`, `produced_by`, `won`, `with`).
 - **Poids** : 137.0 KB (PIL optimise)
 
 ## sw12_graphrag_c30_o1.png
