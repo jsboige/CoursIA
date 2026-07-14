@@ -1,4 +1,4 @@
-# Galerie README — Pipeline d'entraînement ML
+# Manifeste des figures — QuantConnect/ML-Training-Pipeline
 
 Provenance de chaque figure (convention `extract_readme_figures.py` L132 : index ALL-CELLS, markdown + code).
 Toutes les figures sont extraites des **outputs déjà committés** des notebooks de recherche (C.3 — aucune re-exécution).

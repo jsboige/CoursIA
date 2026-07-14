@@ -1,4 +1,4 @@
-# Galerie README — Video 01-Foundation (bases vidéo & compréhension)
+# Manifeste des figures — GenAI/Video/01-Foundation (bases vidéo & compréhension)
 
 Provenance de chaque figure (convention `extract_readme_figures.py` L132 : index ALL-CELLS).
 Toutes les figures sont extraites des **outputs déjà committés** des notebooks (C.3 — aucune re-exécution).
