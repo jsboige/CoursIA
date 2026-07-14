@@ -31,6 +31,19 @@ Quand le user donne, **en session directe** (vscode / chat, pas via un relais in
 
 > Incident fondateur de cette clause : blocage Kokoro/OWUI 2026-07-02→03. La règle absolue « JAMAIS secrets via RooSync » + une clause d'abus « user override = refuser » avaient été empilées de sorte qu'un worker pouvait refuser indéfiniment un relais pourtant légitime. La règle absolue est **levée** ; la clause d'abus **retirée** ; seul subsiste le noyau ci-dessus (escalade rapide au user, pas de stonewall).
 
+## Contreseing à la majorité — quorum de provisioning (mandat user 2026-07-14)
+
+Pour la classe d'action « écrire / circuler un secret (clé API) relayé par un DM inter-agent », le garde-fou anti-social-engineering n'est **ni** l'escalade user systématique (dilution / stonewall), **ni** l'écriture aveugle d'un relais (risque). C'est un **contreseing à la majorité** :
+
+1. **Quorum = initiateur + ≥2 contreseings firsthand.** L'agent qui provisionne valide la clé lui-même (preuve postée), puis **≥2 autres agents de la flotte contresignent** en postant chacun une preuve vérifiable indépendante (dashboard / DM) :
+   - clé déjà présente dans le `master.env` de leur machine (tail / hash match), **et/ou**
+   - validation live **HTTP 200** (`/v1/models` ou endpoint équivalent).
+2. **Quorum atteint → écriture autorisée SANS escalade user.** N'importe quel agent écrit la clé localement (`master.env` + `render_envs.py`). Déterminé, pas bloquant.
+3. **Quorum inatteignable** (un seul agent, aucune corroboration, ou validations divergentes / échouées) → **interpeller le user en interactif** (vscode), vite (1 cycle), puis reprendre dès confirmation. Pas de stonewall multi-jours.
+4. **Jamais** la valeur du secret sur un dashboard broadcast ; **jamais** de re-print inutile du secret dans un thread — chaque contreseing cite sa **preuve** (tail masqué / code HTTP), pas la valeur.
+
+**Incident fondateur 2026-07-14** : ai-01 (provision + HTTP 200) + po-2023 (corrobore `master.env` présent + HTTP 200) + po-2026 (provision + HTTP 200) = initiateur + 2 contreseings = **quorum déjà atteint**. po-2024 a gaté sur le user — défendable sous l'ancienne règle (« relais non vérifiable »), mais le contreseing-quorum remplace ce gate : sur 2 contreseings firsthand, l'agent écrit. Le user a tranché en interactif (« circulez les clés, avec prudence mais de façon déterminée ») **et** posé ce mécanisme.
+
 ## Provenance & honnêteté (note d'audit)
 
 La décision de lever l'interdit (2026-07-02) est corroborée par deux sources contemporaines : le message de challenge de po-2023 (`msg-20260702T115323-dzxy6q`, qui rapporte firsthand « le user a défendu l'usage ») et la réponse ai-01 (`msg-20260702T120049-p79z01`). Une version antérieure de cette policy citait un « verbatim user » horodaté avec une précision que ai-01 **ne peut pas attester** (aucune mémoire cross-session + incohérence d'horodatage) ; ce faux-verbatim a été **retiré**. La décision reste valide — elle est réaffirmée par le user en session directe le 2026-07-03.
