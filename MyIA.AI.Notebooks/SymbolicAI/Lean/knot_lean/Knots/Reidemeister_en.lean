@@ -1,33 +1,32 @@
 /-
-Knots.Reidemeister — Mouvements de Reidemeister et equivalence des noeuds
-=======================================================================
+  Knots.Reidemeister — Reidemeister moves and knot equivalence
+  ============================================================
 
-Les trois mouvements de Reidemeister (1927) generent toutes les equivalences
-entre diagrammes de noeuds. Deux diagrammes representent le meme noeud si et
-seulement si l'on peut transformer l'un en l'autre par une suite finie de
-mouvements R1, R2, R3 et d'isotopies planaires.
+  The three Reidemeister moves (1927) generate all equivalences between
+  knot diagrams. Two diagrams represent the same knot iff one can be
+  transformed into the other by a finite sequence of R1, R2, R3 moves
+  and planar isotopies.
 
-Epic #2874, Phase 1.
+  Epic #2874, Phase 1.
 
-Prerequis Mathlib necessaires :
-- Theorie des graphes planaires (pour l'isotopie planaire)
-- Suites finies de mouvements (systemes de reecriture combinatoires)
-- Le theoreme de Reidemeister lui-meme est un resultat topologique profond
+  Mathlib prerequisites needed:
+  - Planar graph theory (for planar isotopy)
+  - Finite sequences of moves (combinatorial rewrite systems)
+  - The Reidemeister theorem itself is a deep topological result
 -/
 
-import Knots.Basic
+import Knots.Basic_en
 import Mathlib.Logic.Embedding.Basic
 
 /-
-  Convention i18n (EPIC #4980, decision user 2026-07-04) : ce fichier est **FR canonique**,
-  avec son miroir anglais dans le fichier sibling `Reidemeister_en.lean` (modele sibling pair
-  ratifie 2026-07-04, cf `code-style.md` §Lean i18n). Les enonces de theoremes,
-  les tactiques Lean, les noms de lemmes et les references Mathlib restent en anglais
-  (compat Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tete different
-  entre les deux fichiers.
+  English mirror of `Reidemeister.lean` (FR canonical). Convention EPIC #4980
+  (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n): distinct FR + EN sibling
+  files — no inline bilingual block in a single file (Option B rejected). The module
+  docstring and the theorem docstrings below differ from the FR version; the body
+  signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
-namespace Knots
+namespace Knots_en
 
 /-! ## 1. The three Reidemeister moves
 
@@ -564,4 +563,4 @@ theorem reidemeister_theorem :
   --   4. General position / transversality (not in Mathlib)
   -- See Kyle Miller's talk (UCSC 2024): long-term project to build these
 
-end Knots
+end Knots_en
