@@ -2491,10 +2491,10 @@ def test_workspace_relative_joins_to_workspace_root():
     """Forward-slash relative strings resolve under the workspace root."""
     from prover.config import _workspace_relative, _WORKSPACE_ROOT
 
-    p = _workspace_relative("GameTheory/cooperative_games_lean")
-    assert p == _WORKSPACE_ROOT / "GameTheory" / "cooperative_games_lean"
+    p = _workspace_relative("GameTheory/game_theory_lean")
+    assert p == _WORKSPACE_ROOT / "GameTheory" / "game_theory_lean"
     assert p.exists(), (
-        "the workspace-relative entry for cooperative_games_lean must "
+        "the workspace-relative entry for game_theory_lean must "
         "resolve to a real directory on a normal CoursIA-2 layout"
     )
 
