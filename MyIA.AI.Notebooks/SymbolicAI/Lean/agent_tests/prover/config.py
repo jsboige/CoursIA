@@ -109,19 +109,20 @@ import CooperativeGames.Basic
 """
 
 _COOPERATIVE_GAMES_CANDIDATES = [
-    # Workspace-relative entry, preferred when the harness is run from
-    # CoursIA-2 (a separate physical checkout of this repo). Ancestor
-    # walk in `_workspace_root()` keeps both layouts working without
-    # touching this list whenever the repo moves.
-    _workspace_relative("GameTheory/cooperative_games_lean"),
-    # Legacy drive-letter fallbacks. Order preserved: C:\dev\CoursIA is
-    # the historical default and a sibling tree to whatever the harness
-    # is invoked from on the same drive.
-    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
-    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
-    Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
-    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
-    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\cooperative_games_lean"),
+    # Canonical home is game_theory_lean since the CooperativeGames
+    # absorption (#4365 / #4362) merged the module into the multi-module
+    # game_theory_lean lake. The legacy cooperative_games_lean lake was
+    # removed in the same change; its entries below are retained as
+    # historical non-resolving fallbacks (next() picks the first existing
+    # path, so game_theory_lean wins). Mirrors the _SOCIAL_CHOICE_CANDIDATES
+    # prepend pattern (#6058 / #6248).
+    _workspace_relative("GameTheory/game_theory_lean"),
+    # Drive-letter fallbacks (C:\dev\CoursIA historical default first).
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\game_theory_lean"),
+    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\game_theory_lean"),
+    Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\GameTheory\game_theory_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\GameTheory\game_theory_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\GameTheory\game_theory_lean"),
 ]
 COOPERATIVE_GAMES_DIR = next(
     (p for p in _COOPERATIVE_GAMES_CANDIDATES if p.exists()),

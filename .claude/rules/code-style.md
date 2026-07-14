@@ -29,7 +29,7 @@
 
 ## Lean (i18n)
 
-EPIC **#4980** — convention ratifiée par user 2026-07-04 (Option A, deux commentaires user datés 2026-07-04T11:58Z et 14:52Z sur l'issue, addendum mécanisme FR/EN inclus), voir l'inventaire de référence [`docs/lean/i18n-inventory-cycle-38.md`](../../docs/lean/i18n-inventory-cycle-38.md) + pilote livré PR #5883 (2026-07-10, [`CooperativeGames.lean`](../../MyIA.AI.Notebooks/GameTheory/cooperative_games_lean/CooperativeGames.lean) root aggregator bilingue inline FR+EN).
+EPIC **#4980** — convention ratifiée par user 2026-07-04 (Option A, deux commentaires user datés 2026-07-04T11:58Z et 14:52Z sur l'issue, addendum mécanisme FR/EN inclus), voir l'inventaire de référence [`docs/lean/i18n-inventory-cycle-38.md`](../../docs/lean/i18n-inventory-cycle-38.md) + pilote livré [PR #5883](https://github.com/jsboige/CoursIA/pull/5883) (2026-07-10, module CooperativeGames désormais absorbé dans [`game_theory_lean/CooperativeGames/`](../../MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/Shapley.lean), docstrings FR + siblings EN Pattern A sibling-pair).
 
 - **Docstrings en français** par défaut dans les `*.lean` own (i.e. hors `.lake/packages/`, `_peters/`, `agent_tests/prover/session_state/reference_docs/`, et libs vendored).
 - **Traduction anglaise optionnelle** pour les lakes destinés à une audience externe (publication, papier, dépôt public). Modèle **sibling pair** `Foo.lean` / `Foo_en.lean` :

@@ -44,10 +44,9 @@ import Mathlib.SetTheory.Game.Nim
 
 ## Relation aux autres projets Lean de GameTheory
 
-- [game_theory_lean/](../game_theory_lean/) — Projet Lake multi-module (StableMarriage = formalisation Gale-Shapley, EPIC #4365).
+- [game_theory_lean/](../game_theory_lean/) — Projet Lake multi-module (StableMarriage = formalisation Gale-Shapley, EPIC #4365 ; CooperativeGames absorbé depuis `cooperative_games_lean/` rm #6587).
 - [social_choice_lean/](../social_choice_lean/) — Projet Lake indépendant (Arrow / Sen / électeur médian, port de asouther4/lean-social-choice).
 - [social_choice_lean_peters/](../social_choice_lean_peters/) — Projet Lake indépendant pinné sur le commit `d679d950` de Peters (Gibbard-Satterthwaite, Duggan-Schwartz).
-- [cooperative_games_lean/](../cooperative_games_lean/) — Projet Lake indépendant (valeur de Shapley, cœur, nucléolus).
 
 Ces projets ne dépendent **pas** de `lean_game_defs/` à la compilation — ils vendorent leurs propres définitions adaptées à leurs obligations de preuve. `lean_game_defs/` est la couche **introductive** utilisée par les notebooks d'enseignement.
 
@@ -132,8 +131,7 @@ plutôt que de la redéfinir ici.
 
 - **Projets compilables** (chacun vendore ses propres définitions adaptées aux preuves) :
   [`social_choice_lean/`](../social_choice_lean/) (Arrow / Sen / électeur médian),
-  [`cooperative_games_lean/`](../cooperative_games_lean/) (valeur de Shapley, Cœur),
-  [`game_theory_lean/`](../game_theory_lean/) (module StableMarriage, Gale-Shapley, EPIC #4365).
+  [`game_theory_lean/`](../game_theory_lean/) (StableMarriage + CooperativeGames absorbé : valeur de Shapley, Cœur, EPIC #4365).
 - **Visite CGT** : [`conway_cgt_lean/`](../conway_cgt_lean/) — surréels, nimbers via
   `vihdzp/combinatorial-games`.
 - **Configuration du kernel** : [scripts/README.md](../scripts/README.md) et
