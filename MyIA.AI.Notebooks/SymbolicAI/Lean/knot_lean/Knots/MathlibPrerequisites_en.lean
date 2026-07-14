@@ -1,27 +1,26 @@
 /-
-Knots.MathlibPrerequisites — Index des prérequis Mathlib manquants
-===================================================================
+  Knots.MathlibPrerequisites — Index of missing Mathlib infrastructure
+  =====================================================================
 
-Ce fichier documente les prérequis Mathlib nécessaires pour résoudre chaque
-sorry dans le projet knot_lean. Il sert de feuille de route pour ce qui
-devrait être construit (soit dans Mathlib, soit comme dépendances externes)
-pour formaliser les résultats de la théorie des noeuds.
+  This file documents the Mathlib prerequisites needed to resolve each sorry
+  in the knot_lean project. It serves as a roadmap for what would need to
+  be built (either in Mathlib or as external dependencies) to formalize
+  knot theory results.
 
-Epic #2874, Phase 1.
+  Epic #2874, Phase 1.
 
-Convention : organisé par tier de difficulté.
+  Convention: organized by difficulty tier.
 -/
 
 /-
-  Convention i18n (EPIC #4980, decision user 2026-07-04) : ce fichier est **FR canonique**,
-  avec son miroir anglais dans le fichier sibling `MathlibPrerequisites_en.lean` (modèle
-  sibling pair ratifié 2026-07-04, cf `code-style.md` §Lean i18n). Les énoncés de
-  théorèmes, les tactiques Lean, les noms de lemmes et les références Mathlib restent
-  en anglais (compat Mathlib 4) ; seules les docstrings de module et ce bloc
-  d'en-tête diffèrent entre les deux fichiers.
+  English mirror of `MathlibPrerequisites.lean` (FR canonical). Convention EPIC #4980
+  (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n): distinct FR + EN sibling
+  files — no inline bilingual block in a single file (Option B rejected). The module
+  docstring and the theorem docstrings below differ from the FR version; the body
+  signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
-namespace Knots.MathlibPrerequisites
+namespace Knots_en.MathlibPrerequisites_en
 
 /-! ## Tier 1: Accessible (Phase 2 targets, no deep prerequisites)
 
@@ -135,4 +134,4 @@ Timeline: decades
 -/
 theorem freedman_prerequisites : True := trivial
 
-end Knots.MathlibPrerequisites
+end Knots_en.MathlibPrerequisites_en
