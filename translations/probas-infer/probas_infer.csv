@@ -927,9 +927,9 @@ Ce notebook d'introduction a pose les fondements de la programmation probabilist
 | **Debugging** | ShowFactorGraph, ShowSchedule, WriteSourceFiles |
 
 > **Point clé** : Infer.NET retourne toujours des distributions complètes (Gaussian, Beta, Bernoulli), jamais de simples valeurs ponctuelles, ce qui permet de propager l'incertitude a travers tout le modèle.",,,,,,,,52e92eba73638625,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,72aac374,markdown,fr,bafcd82d7ef59df0,"# Infer-10-Model-Selection : Selection et Comparaison de Modeles
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,72aac374,markdown,fr,631af599d6ebb72c,"# Infer-10-Model-Sélection : Sélection et Comparaison de Modèles
 
-**Serie** : Programmation Probabiliste avec Infer.NET (10/20)  
+**Série** : Programmation Probabiliste avec Infer.NET (10/20)  
 **Duree estimee** : 45 minutes  
 **Prerequis** : Infer-9-Classification
 
@@ -938,8 +938,8 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,72aac374,markdown,
 ## Objectifs
 
 - Comprendre le probleme du surapprentissage
-- Calculer l'evidence du modele (marginal likelihood)
-- Utiliser le facteur de Bayes pour comparer des modeles
+- Calculer l'evidence du modèle (marginal likelihood)
+- Utiliser le facteur de Bayes pour comparer des modèles
 - Implementer l'Automatic Relevance Determination (ARD)
 
 ---
@@ -950,10 +950,10 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,72aac374,markdown,
 |-----------|--------|
 | [Infer-11-Topic-Models](Infer-11-Topic-Models.ipynb) | [Infer-14-Sequences](Infer-14-Sequences.ipynb) |
 
----",,,,,,,,bafcd82d7ef59df0,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,6528c2c1,markdown,fr,1b173084c9bebcba,"## 1. Configuration
+---",,,,,,,,631af599d6ebb72c,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,6528c2c1,markdown,fr,5f5114b0d9f9712f,"## 1. Configuration
 
-Nous preparons l'environnement pour explorer la selection de modeles bayesienne. Cette approche permet de comparer objectivement differents modeles en calculant leur evidence marginale, implementant ainsi le rasoir d'Occam de maniere mathematique.",,,,,,,,1b173084c9bebcba,,,,,,,
+Nous preparons l'environnement pour explorer la selection de modèles bayesienne. Cette approche permet de comparer objectivement differents modèles en calculant leur evidence marginale, implementant ainsi le rasoir d'Occam de maniere mathematique.",,,,,,,,5f5114b0d9f9712f,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,e6538772,code,fr,fd31f5683405067d,"#r ""nuget: Microsoft.ML.Probabilistic""
 #r ""nuget: Microsoft.ML.Probabilistic.Compiler""
 
@@ -971,30 +971,30 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,8ik5ebs1sx3,code,f
 #load ""FactorGraphHelper.cs""
 
 Console.WriteLine($""FactorGraphHelper charge. Graphviz disponible : {FactorGraphHelper.IsGraphvizAvailable()}"");",,,,,,,,789ca3a68dffa3ae,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,qdg7zri60d8,markdown,fr,4b3a8542a3b234d6,"### Visualisation des graphes de facteurs
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,qdg7zri60d8,markdown,fr,8b544aa4398cd681,"### Visualisation des graphes de facteurs
 
-Ce notebook utilise `FactorGraphHelper.cs` pour visualiser les graphes de facteurs generes par Infer.NET. Ces graphes montrent la structure probabiliste des modeles : les noeuds representent les variables aleatoires et les observations, les facteurs (carres) representent les distributions conditionnelles.
+Ce notebook utilise `FactorGraphHelper.cs` pour visualiser les graphes de facteurs generes par Infer.NET. Ces graphes montrent la structure probabiliste des modèles : les noeuds representent les variables aleatoires et les observations, les facteurs (carres) representent les distributions conditionnelles.
 
-Pour activer la visualisation, on configure `ShowFactorGraph = true` sur le moteur d'inference.",,,,,,,,4b3a8542a3b234d6,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,dh7jodvycpp,markdown,fr,15cd61d636fd556e,"**Note technique : Calcul de l'evidence dans Infer.NET**
+Pour activer la visualisation, on configure `ShowFactorGraph = true` sur le moteur d'inference.",,,,,,,,8b544aa4398cd681,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,dh7jodvycpp,markdown,fr,90b50e9f75c3dac3,"**Note technique : Calcul de l'evidence dans Infer.NET**
 
-Infer.NET calcule l'evidence du modele via une astuce elegante :
+Infer.NET calcule l'evidence du modèle via une astuce elegante :
 
 1. On introduit une variable indicatrice `evidence = Bernoulli(0.5)`
-2. Le modele est conditionne par `Variable.If(evidence)`
+2. Le modèle est conditionne par `Variable.If(evidence)`
 3. Apres inference, `evidence.LogOdds` donne le log de l'evidence
 
-> **Pourquoi ca fonctionne ?** Par le theoreme de Bayes :
+> **Pourquoi ca fonctionne ?** Par le théorème de Bayes :
 > $$P(\text{evidence}=\text{true}|D) \propto P(D|\text{evidence}=\text{true}) \times P(\text{evidence}=\text{true})$$
 > 
 > Comme $P(\text{evidence}=\text{true}) = 0.5$, le log-odds posterieur est directement le log de l'evidence (a une constante pres).
 
-Cette methode est specifique a Infer.NET et permet d'obtenir l'evidence sans calcul integral explicite.",,,,,,,,15cd61d636fd556e,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,f1fdd2fb,markdown,fr,fa2b81ce13604abe,"## 2. Le Probleme du Surapprentissage
+Cette méthode est specifique a Infer.NET et permet d'obtenir l'evidence sans calcul integral explicite.",,,,,,,,90b50e9f75c3dac3,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,f1fdd2fb,markdown,fr,ae8c59772a72e4a1,"## 2. Le Probleme du Surapprentissage
 
 ### Observation
 
-Un modele complexe peut parfaitement ajuster les donnees d'entrainement mais mal generaliser.
+Un modèle complexe peut parfaitement ajuster les données d'entrainement mais mal generaliser.
 
 ### Exemple
 
@@ -1002,25 +1002,25 @@ Ajuster un polynome de degre n-1 a n points : ajustement parfait mais prediction
 
 ### Solution bayesienne
 
-- Les priors penalisent les modeles complexes
-- L'evidence du modele equilibre ajustement et complexite
-- C'est le **rasoir d'Occam bayesien**",,,,,,,,fa2b81ce13604abe,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,24cacf89,markdown,fr,7dd9e7ca5ffc2f4f,"## 3. Evidence du Modele (Marginal Likelihood)
+- Les priors penalisent les modèles complexes
+- L'evidence du modèle equilibre ajustement et complexite
+- C'est le **rasoir d'Occam bayesien**",,,,,,,,ae8c59772a72e4a1,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,24cacf89,markdown,fr,1623faf2e9020e68,"## 3. Evidence du Modèle (Marginal Likelihood)
 
-### Definition
+### Définition
 
 $$P(D|M) = \int P(D|\theta, M) P(\theta|M) d\theta$$
 
-L'evidence est la probabilite des donnees sous le modele, marginalisee sur les parametres.
+L'evidence est la probabilité des données sous le modèle, marginalisee sur les parametres.
 
 ### Interpretation
 
-- Un modele simple fait des predictions moins precises mais moins dispersees
-- Un modele complexe fait des predictions plus precises mais plus dispersees
-- L'evidence favorise le bon equilibre",,,,,,,,7dd9e7ca5ffc2f4f,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,15263494,code,fr,035a3af2619d0961,"// Calcul de l'evidence avec Infer.NET
+- Un modèle simple fait des predictions moins precises mais moins dispersees
+- Un modèle complexe fait des predictions plus precises mais plus dispersees
+- L'evidence favorise le bon equilibre",,,,,,,,1623faf2e9020e68,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,15263494,code,fr,b55b655603ebd528,"// Calcul de l'evidence avec Infer.NET
 
-// Donnees
+// Données
 double[] observations = { 13, 15, 17, 14, 16, 15, 18 };
 int n = observations.Length;
 
@@ -1046,37 +1046,37 @@ moteur1.ShowFactorGraph = true;  // Activation de la visualisation
 double logEvidence1 = moteur1.Infer<Bernoulli>(evidence1).LogOdds;
 
 Console.WriteLine(""=== Evidence du Modele ==="");
-Console.WriteLine($""\nModele 1 (1 gaussienne) : log evidence = {logEvidence1:F2}"");",,,,,,,,035a3af2619d0961,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,kxqr4eukslk,markdown,fr,a59c8e411f000225,"### Lecture du resultat
+Console.WriteLine($""\nModele 1 (1 gaussienne) : log evidence = {logEvidence1:F2}"");",,,,,,,,b55b655603ebd528,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,kxqr4eukslk,markdown,fr,e71a4e3222a7e3ed,"### Lecture du résultat
 
-**Log evidence = -16.98** pour le modele a une gaussienne.
+**Log evidence = -16.98** pour le modèle a une gaussienne.
 
-Cette valeur negative est normale : c'est un logarithme de probabilite, donc toujours negatif (ou nul). Plus la valeur est proche de 0, meilleure est l'evidence.
+Cette valeur negative est normale : c'est un logarithme de probabilité, donc toujours negatif (ou nul). Plus la valeur est proche de 0, meilleure est l'evidence.
 
-En termes absolus, $e^{-16.98} \approx 4.2 \times 10^{-8}$ semble tres petit, mais c'est la **comparaison relative** entre modeles qui importe, pas la valeur absolue.",,,,,,,,a59c8e411f000225,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,ohu36bdkh4,code,fr,8f5f1cf1d90948d9,"// Visualisation du graphe de facteurs - Modele 1 gaussienne
-display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));",,,,,,,,8f5f1cf1d90948d9,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,rwzoc5x79i,markdown,fr,f76f35c8ff9dd08d,"### Lecture du graphe de facteurs - Modele 1 gaussienne
+En termes absolus, $e^{-16.98} \approx 4.2 \times 10^{-8}$ semble tres petit, mais c'est la **comparaison relative** entre modèles qui importe, pas la valeur absolue.",,,,,,,,e71a4e3222a7e3ed,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,ohu36bdkh4,code,fr,0f8dc2b7c424e9d0,"// Visualisation du graphe de facteurs - Modèle 1 gaussienne
+display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));",,,,,,,,0f8dc2b7c424e9d0,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,rwzoc5x79i,markdown,fr,5e944e287e630960,"### Lecture du graphe de facteurs - Modèle 1 gaussienne
 
-Le graphe montre la structure du modele a une gaussienne :
+Le graphe montre la structure du modèle a une gaussienne :
 
 - **Noeuds ovales** : variables aleatoires (`moyenne`, `precision`, `evidence1`)
 - **Noeuds carres** : facteurs (distributions conditionnelles)
 - **Noeuds gris** : observations (`obs_0` a `obs_6`)
 
-La variable `evidence1` (Bernoulli) englobe tout le modele via `Variable.If()`. Les 7 observations partagent la meme `moyenne` et `precision`, ce qui represente l'hypothese i.i.d. (independantes et identiquement distribuees).",,,,,,,,f76f35c8ff9dd08d,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,tg7grrjd7g,markdown,fr,28662760f46902c6,"### Implementation : Modele 2 - Melange de deux gaussiennes
+La variable `evidence1` (Bernoulli) englobe tout le modèle via `Variable.If()`. Les 7 observations partagent la meme `moyenne` et `precision`, ce qui represente l'hypothese i.i.d. (independantes et identiquement distribuees).",,,,,,,,5e944e287e630960,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,tg7grrjd7g,markdown,fr,33ac075a737b678d,"### Implementation : Modèle 2 - Melange de deux gaussiennes
 
-Le **modele de melange** (mixture model) suppose que chaque observation provient de l'une ou l'autre de deux gaussiennes, avec une probabilite $\pi$ pour la premiere et $1-\pi$ pour la seconde.
+Le **modèle de melange** (mixture model) suppose que chaque observation provient de l'une ou l'autre de deux gaussiennes, avec une probabilité $\pi$ pour la première et $1-\pi$ pour la seconde.
 
-**Parametres du modele** :
+**Parametres du modèle** :
 - $\mu_1, \mu_2$ : moyennes des deux composantes
 - $\tau$ : precision commune (simplification)
-- $\pi$ : proportion du melange (poids de la premiere composante)
+- $\pi$ : proportion du melange (poids de la première composante)
 
 **Code** : Pour chaque observation, on tire d'abord `composante ~ Bernoulli(pi)`, puis on observe depuis la gaussienne correspondante.
 
-> **Note algorithmique** : Nous utilisons `VariationalMessagePassing` car les melanges de gaussiennes sont plus stables avec VMP qu'avec EP pour le calcul d'evidence.",,,,,,,,28662760f46902c6,,,,,,,
+> **Note algorithmique** : Nous utilisons `VariationalMessagePassing` car les melanges de gaussiennes sont plus stables avec VMP qu'avec EP pour le calcul d'evidence.",,,,,,,,33ac075a737b678d,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,15ad48f2,code,fr,f2e25557cefeab9b,"// MODELE 2 : Melange de deux gaussiennes
 Variable<bool> evidence2 = Variable.Bernoulli(0.5).Named(""evidence2"");
 
@@ -1110,22 +1110,22 @@ moteur2.ShowFactorGraph = true;  // Activation de la visualisation
 double logEvidence2 = moteur2.Infer<Bernoulli>(evidence2).LogOdds;
 
 Console.WriteLine($""Modele 2 (melange 2 gaussiennes) : log evidence = {logEvidence2:F2}"");",,,,,,,,f2e25557cefeab9b,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,fc059ea9,markdown,fr,6f2033f91ed9fb14,Visualisation du graphe de facteurs du modele de melange de gaussiennes.,,,,,,,,6f2033f91ed9fb14,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,93l0422na3f,code,fr,a9d7e4f32a90e14a,"// Visualisation du graphe de facteurs - Modele melange
-display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));",,,,,,,,a9d7e4f32a90e14a,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,uhecr4ah36,markdown,fr,695df57aeed193b1,"### Lecture du graphe de facteurs - Modele melange
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,fc059ea9,markdown,fr,6b3407b5b0b918c7,Visualisation du graphe de facteurs du modèle de melange de gaussiennes.,,,,,,,,6b3407b5b0b918c7,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,93l0422na3f,code,fr,d76f6a1dfa3a1f91,"// Visualisation du graphe de facteurs - Modèle melange
+display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));",,,,,,,,d76f6a1dfa3a1f91,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,uhecr4ah36,markdown,fr,ff8ce0e702c4147f,"### Lecture du graphe de facteurs - Modèle melange
 
-Le graphe du modele de melange est plus complexe :
+Le graphe du modèle de melange est plus complexe :
 
 - **moyenne_a, moyenne_b** : les deux centres des composantes gaussiennes
 - **poids_mixte** : parametre Beta controlant la proportion du melange
 - **comp_i** : variable latente discrete (quelle composante genere l'observation i ?)
 - **obs2_i** : observations, chacune connectee aux deux moyennes via sa variable de composante
 
-La structure en ""gateway"" (Variable.If/IfNot) cree des branchements conditionnels visibles dans le graphe. Chaque observation peut provenir de l'une ou l'autre gaussienne selon `comp_i`.",,,,,,,,695df57aeed193b1,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,35652b62,markdown,fr,56eb374a2ddda72d,"## 4. Facteur de Bayes
+La structure en ""gateway"" (Variable.If/IfNot) cree des branchements conditionnels visibles dans le graphe. Chaque observation peut provenir de l'une ou l'autre gaussienne selon `comp_i`.",,,,,,,,ff8ce0e702c4147f,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,35652b62,markdown,fr,cc82045e9273dd9f,"## 4. Facteur de Bayes
 
-### Definition
+### Définition
 
 $$BF_{12} = \frac{P(D|M_1)}{P(D|M_2)} = \exp(\log E_1 - \log E_2)$$
 
@@ -1137,7 +1137,7 @@ $$BF_{12} = \frac{P(D|M_1)}{P(D|M_2)} = \exp(\log E_1 - \log E_2)$$
 | 1-2 | 3-10 | Substantielle |
 | 2-3 | 10-30 | Forte |
 | 3-5 | 30-150 | Tres forte |
-| >5 | >150 | Decisive |",,,,,,,,56eb374a2ddda72d,,,,,,,
+| >5 | >150 | Decisive |",,,,,,,,cc82045e9273dd9f,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,0918883d,code,fr,3e06a4cfdca38eee,"// Facteur de Bayes
 double logBF = logEvidence1 - logEvidence2;
 double BF = Math.Exp(logBF);
@@ -1170,19 +1170,19 @@ Les données {13, 15, 17, 14, 16, 15, 18} sont **unimodales** avec moyenne ~15.3
 C'est le **rasoir d'Occam bayésien** en action : à ajustement égal, le modèle simple est préféré car il fait des prédictions plus ""concentrées"".
 
 > **Formule intuitive** : Evidence ≈ (vraisemblance) × (volume du prior utilisé) / (volume total du prior)",,,,,,,,4c8bdd06ca560d37,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,c8ddb475,markdown,fr,9566104ff2d883a1,"## 5. Selection du Nombre de Composantes
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,c8ddb475,markdown,fr,17332674d950a308,"## 5. Sélection du Nombre de Composantes
 
 ### Application
 
-Determiner le nombre optimal de composantes dans un modele de melange.",,,,,,,,9566104ff2d883a1,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,uv9cebrgw1,markdown,fr,828beb08900b612d,"### Donnees bimodales : quand le modele complexe gagne
+Determiner le nombre optimal de composantes dans un modèle de melange.",,,,,,,,17332674d950a308,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,uv9cebrgw1,markdown,fr,71cb0a0a6b2ca21f,"### Données bimodales : quand le modèle complexe gagne
 
-Les donnees precedentes etaient unimodales (autour de 15). Testons maintenant avec des donnees **clairement bimodales** : deux groupes bien separes autour de 6 et 15.
+Les données precedentes etaient unimodales (autour de 15). Testons maintenant avec des données **clairement bimodales** : deux groupes bien separes autour de 6 et 15.
 
-**Question** : Le modele a 2 composantes va-t-il maintenant etre prefere ?
+**Question** : Le modèle a 2 composantes va-t-il maintenant etre prefere ?
 
-L'algorithme compare systematiquement 1 vs 2 composantes en calculant l'evidence de chaque modele.",,,,,,,,828beb08900b612d,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,eda97cef,code,fr,b20d45418341fddf,"// Donnees bimodales
+L'algorithme compare systematiquement 1 vs 2 composantes en calculant l'evidence de chaque modèle.",,,,,,,,71cb0a0a6b2ca21f,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,eda97cef,code,fr,e870113a827dbab1,"// Données bimodales
 double[] dataBimodal = { 5, 6, 7, 5.5, 6.5, 15, 16, 17, 14, 15.5, 16.5, 6, 15 };
 int nBi = dataBimodal.Length;
 
@@ -1238,53 +1238,53 @@ Console.WriteLine($""1 composante : log evidence = {logEvidences[0]:F2}"");
 
 Console.WriteLine($""2 composantes : log evidence = {logEvidences[1]:F2}"");
 
-// Meilleur modele
+// Meilleur modèle
 int meilleur = logEvidences[0] > logEvidences[1] ? 1 : 2;
-Console.WriteLine($""\n=> Le modele a {meilleur} composante(s) est prefere"");",,,,,,,,b20d45418341fddf,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,8z4v08m86qg,markdown,fr,88382073e94659f5,"### Analyse des resultats : donnees bimodales
+Console.WriteLine($""\n=> Le modele a {meilleur} composante(s) est prefere"");",,,,,,,,e870113a827dbab1,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,8z4v08m86qg,markdown,fr,0953905e1324710f,"### Analyse des résultats : données bimodales
 
-**Donnees** : deux groupes distincts autour de 6 et 15
+**Données** : deux groupes distincts autour de 6 et 15
 
-| Modele | Log evidence | Interpretation |
+| Modèle | Log evidence | Interpretation |
 |--------|--------------|----------------|
 | 1 composante | -45.89 | Mal adapte (moyenne ~10.5 ne represente aucun groupe) |
 | 2 composantes | -31.35 | Bien adapte (capture les deux modes) |
 
 **Difference** : log(BF) = -31.35 - (-45.89) = 14.54
 
-Un facteur de Bayes $e^{14.54} \approx 2 \times 10^6$ en faveur du modele a 2 composantes constitue une evidence **decisive**.
+Un facteur de Bayes $e^{14.54} \approx 2 \times 10^6$ en faveur du modèle a 2 composantes constitue une evidence **decisive**.
 
-> **Lecon cle** : Le facteur de Bayes detecte automatiquement la structure des donnees. Il prefere le modele simple quand les donnees sont simples (section 3-4) et le modele complexe quand les donnees l'exigent (ici).",,,,,,,,88382073e94659f5,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,4abedeba,markdown,fr,00618b0fef580401,"## 6. Automatic Relevance Determination (ARD)
+> **Lecon cle** : Le facteur de Bayes detecte automatiquement la structure des données. Il prefere le modèle simple quand les données sont simples (section 3-4) et le modèle complexe quand les données l'exigent (ici).",,,,,,,,0953905e1324710f,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,4abedeba,markdown,fr,8e231eefc1c89b1e,"## 6. Automatic Relevance Determination (ARD)
 
 ### Principe
 
 ARD utilise des priors hierarchiques pour determiner automatiquement quelles features sont pertinentes.
 
-### Modele
+### Modèle
 
 $$\alpha_f \sim \text{Gamma}(a, b)$$
 $$w_f \sim \mathcal{N}(0, \alpha_f^{-1})$$
 
-Si $\alpha_f$ devient grand, le poids $w_f$ est contraint pres de 0 -> feature non pertinente.",,,,,,,,00618b0fef580401,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,byqokwwe3av,markdown,fr,0bf1acf944bc6144,"### Transition : de la comparaison de modeles a la selection de features
+Si $\alpha_f$ devient grand, le poids $w_f$ est contraint pres de 0 -> feature non pertinente.",,,,,,,,8e231eefc1c89b1e,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,byqokwwe3av,markdown,fr,353e068f11fa906d,"### Transition : de la comparaison de modèles a la selection de features
 
-Jusqu'ici, nous avons compare des **modeles entiers** (1 vs 2 gaussiennes, lineaire vs quadratique). Mais en pratique, on veut souvent repondre a une question plus fine :
+Jusqu'ici, nous avons compare des **modèles entiers** (1 vs 2 gaussiennes, lineaire vs quadratique). Mais en pratique, on veut souvent repondre a une question plus fine :
 
-**Quelles features sont vraiment utiles dans mon modele ?**
+**Quelles features sont vraiment utiles dans mon modèle ?**
 
-C'est le probleme de la **selection de variables**. L'approche bayesienne offre une solution elegante : l'**Automatic Relevance Determination** (ARD).",,,,,,,,0bf1acf944bc6144,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,99fn0bnvoyc,markdown,fr,7e74d13ae0541021,"### Generation des donnees synthetiques
+C'est le probleme de la **selection de variables**. L'approche bayesienne offre une solution elegante : l'**Automatic Relevance Determination** (ARD).",,,,,,,,353e068f11fa906d,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,99fn0bnvoyc,markdown,fr,bd56d4a0bcd789e9,"### Generation des données synthetiques
 
 Nous creons un probleme de regression ou :
 - **Feature 1** : coefficient reel = 2.0 (pertinente)
 - **Feature 2** : coefficient reel = 0.0 (non pertinente)
 - **Feature 3** : coefficient reel = 3.0 (pertinente)
 
-Le modele ARD devra ""decouvrir"" automatiquement que la feature 2 n'apporte aucune information predictive.",,,,,,,,7e74d13ae0541021,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,e4467883,code,fr,21810de26e262047,"// ARD pour regression
+Le modèle ARD devra ""decouvrir"" automatiquement que la feature 2 n'apporte aucune information predictive.",,,,,,,,bd56d4a0bcd789e9,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,e4467883,code,fr,35cd897d3b450900,"// ARD pour regression
 
-// Donnees : y = 2*x1 + 0*x2 + 3*x3 + bruit
+// Données : y = 2*x1 + 0*x2 + 3*x3 + bruit
 // x2 est une feature non pertinente
 int nSamples = 20;
 int nFeatures = 3;
@@ -1305,10 +1305,10 @@ for (int i = 0; i < nSamples; i++)
 }
 
 Console.WriteLine(""=== ARD : Automatic Relevance Determination ==="");
-Console.WriteLine($""\nVrais poids : w1={vraisPoids[0]}, w2={vraisPoids[1]} (non pertinent), w3={vraisPoids[2]}"");",,,,,,,,21810de26e262047,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,h9z45ebt0u,markdown,fr,68c37719ed54bfdc,"### Construction du modele ARD hierarchique
+Console.WriteLine($""\nVrais poids : w1={vraisPoids[0]}, w2={vraisPoids[1]} (non pertinent), w3={vraisPoids[2]}"");",,,,,,,,35cd897d3b450900,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,h9z45ebt0u,markdown,fr,2e83f6f2f1c7a7e1,"### Construction du modèle ARD hierarchique
 
-Le modele ARD introduit un **hyperparametre de precision** $\alpha_f$ pour chaque feature $f$ :
+Le modèle ARD introduit un **hyperparametre de precision** $\alpha_f$ pour chaque feature $f$ :
 
 $$w_f \sim \mathcal{N}(0, \alpha_f^{-1})$$
 
@@ -1316,8 +1316,8 @@ $$w_f \sim \mathcal{N}(0, \alpha_f^{-1})$$
 - Si $\alpha_f$ est petit (ex: 0.3), la variance $1/\alpha_f$ est grande, donc $w_f$ peut prendre des valeurs significatives
 - Si $\alpha_f$ devient grand (ex: 10), la variance est petite, $w_f$ est ""pousse"" vers 0
 
-Les $\alpha_f$ sont eux-memes des variables aleatoires avec prior `Gamma(1, 1)`. L'inference determine simultanement les poids et leur pertinence.",,,,,,,,68c37719ed54bfdc,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,f5337822,code,fr,693861555564cb63,"// Modele ARD
+Les $\alpha_f$ sont eux-memes des variables aleatoires avec prior `Gamma(1, 1)`. L'inference determine simultanement les poids et leur pertinence.",,,,,,,,2e83f6f2f1c7a7e1,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,f5337822,code,fr,4174c7fa07bd9bac,"// Modèle ARD
 Range sampleRange = new Range(nSamples).Named(""sample"");
 Range featureRange = new Range(nFeatures).Named(""feature"");
 
@@ -1335,7 +1335,7 @@ using (Variable.ForEach(featureRange))
 // Bruit de l'observation
 Variable<double> noisePrecision = Variable.GammaFromShapeAndScale(2, 1).Named(""noise"");
 
-// Donnees
+// Données
 VariableArray2D<double> xVar = Variable.Array<double>(sampleRange, featureRange).Named(""x"");
 VariableArray<double> yVar = Variable.Array<double>(sampleRange).Named(""y"");
 
@@ -1369,11 +1369,11 @@ for (int f = 0; f < nFeatures; f++)
     Console.WriteLine($""  Feature {f+1} : poids = {wMean:F2} +/- {wStd:F2}, alpha = {alphaMean:F2} (pertinence {relevance})"");
 }
 
-Console.WriteLine(""\n=> Les features avec alpha eleve sont considerees non pertinentes"");",,,,,,,,693861555564cb63,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,b5f97e90,markdown,fr,e82394862ec21982,Visualisation du graphe de facteurs du modele ARD.,,,,,,,,e82394862ec21982,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,gwxh8zq2zlr,code,fr,7b5d92408327a47d,"// Visualisation du graphe de facteurs - Modele ARD
-display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));",,,,,,,,7b5d92408327a47d,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,r9agb9kd81,markdown,fr,f7be0ce1cbdad23c,"### Lecture du graphe de facteurs - Modele ARD hierarchique
+Console.WriteLine(""\n=> Les features avec alpha eleve sont considerees non pertinentes"");",,,,,,,,4174c7fa07bd9bac,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,b5f97e90,markdown,fr,8354d03f2ea36ba3,Visualisation du graphe de facteurs du modèle ARD.,,,,,,,,8354d03f2ea36ba3,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,gwxh8zq2zlr,code,fr,7ea2d826702148ac,"// Visualisation du graphe de facteurs - Modèle ARD
+display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));",,,,,,,,7ea2d826702148ac,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,r9agb9kd81,markdown,fr,3e95026ef43d72b8,"### Lecture du graphe de facteurs - Modèle ARD hierarchique
 
 Le graphe ARD illustre la structure hierarchique a deux niveaux :
 
@@ -1385,12 +1385,12 @@ Le graphe ARD illustre la structure hierarchique a deux niveaux :
 - **poids[feature]** : poids de regression, chacun avec une precision `alpha[f]` differente
 - Les poids sont couples : `poids[f] ~ N(0, 1/alpha[f])`
 
-**Niveau donnees** :
+**Niveau données** :
 - **x[sample, feature]** : matrice des features (observee)
 - **y[sample]** : cible (observee)
 - **noise** : precision du bruit (infere)
 
-La structure ""plate notation"" avec `ForEach` cree des repetitions sur les ranges `sample` et `feature`, representees par des boites dans le graphe.",,,,,,,,f7be0ce1cbdad23c,,,,,,,
+La structure ""plate notation"" avec `ForEach` cree des repetitions sur les ranges `sample` et `feature`, representees par des boites dans le graphe.",,,,,,,,3e95026ef43d72b8,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,xdkmdixf5b,markdown,fr,07ea08d83aa1cd0e,"### Analyse des résultats ARD
 
 **Comparaison vrais poids vs estimations** :
@@ -1410,36 +1410,36 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,xdkmdixf5b,markdow
 Avec seulement 20 échantillons, le modèle reste incertain. α = 1.49 indique une pertinence ""moyenne"" plutôt que clairement nulle. Plus de données augmenteraient α pour cette feature.
 
 > **Application pratique** : ARD est utilisé en machine learning pour la **sélection automatique de features** sans validation croisée explicite.",,,,,,,,07ea08d83aa1cd0e,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,ca7ba69f,markdown,fr,c5bfafe64b15c4ac,"## Exercice : ARD avec 5 features -- quelles features sont pertinentes ?
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,ca7ba69f,markdown,fr,fe9bd6763be1dfcc,"## Exercice : ARD avec 5 features -- quelles features sont pertinentes ?
 
 L'exemple precedent montrait l'ARD avec 3 features (dont 1 non pertinente). Dans cet exercice, vous allez appliquer l'ARD a un probleme plus realiste avec **5 features**, dont seulement **2 sont reellement informatives**.
 
 ### Enonce
 
-On genere des donnees synthetiques selon :
+On genere des données synthetiques selon :
 
 $$y = 1.5 \cdot x_1 + 0 \cdot x_2 + 0 \cdot x_3 + 2.5 \cdot x_4 + 0 \cdot x_5 + \epsilon$$
 
 Seules les features 1 et 4 contribuent a la prediction. Les features 2, 3 et 5 sont du bruit.
 
 **Travail demande** :
-1. Generez les donnees avec `nSamples = 30` et `nFeatures = 5` (seed 42)
-2. Construisez le modele ARD hierarchique (reutilisez la structure de la section 6)
+1. Generez les données avec `nSamples = 30` et `nFeatures = 5` (seed 42)
+2. Construisez le modèle ARD hierarchique (reutilisez la structure de la section 6)
 3. Lancez l'inference et affichez les poids posterieurs et les valeurs alpha pour chaque feature
 4. Identifiez quelles features sont selectionnees (alpha faible = pertinente)
 5. Comparez les poids estimes avec les vrais poids : {1.5, 0.0, 0.0, 2.5, 0.0}
 
-> **Indice** : Avec plus de features (5 vs 3) et plus de donnees (30 vs 20), les alpha des features non pertinentes devraient etre plus eleves qu'avec 3 features, car le modele a plus d'information pour distinguer le signal du bruit. Utilisez le meme prior `Gamma(1, 1)` sur les alpha et `ExpectationPropagation` pour l'inference.",,,,,,,,c5bfafe64b15c4ac,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,708fb9d2,code,fr,0988906e00db01ee,"// Exercice : ARD avec 5 features
+> **Indice** : Avec plus de features (5 vs 3) et plus de données (30 vs 20), les alpha des features non pertinentes devraient etre plus eleves qu'avec 3 features, car le modèle a plus d'information pour distinguer le signal du bruit. Utilisez le meme prior `Gamma(1, 1)` sur les alpha et `ExpectationPropagation` pour l'inference.",,,,,,,,fe9bd6763be1dfcc,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,708fb9d2,code,fr,61abab5d7b036547,"// Exercice : ARD avec 5 features
 
-// TODO: Etape 1 - Generer les donnees synthetiques
+// TODO: Étape 1 - Generer les données synthetiques
 int nSamplesARD = 30;
 int nFeaturesARD = 5;
 double[] vraisPoidsARD = { 1.5, 0.0, 0.0, 2.5, 0.0 };
 double[,] XARD = new double[nSamplesARD, nFeaturesARD];  // TODO: remplir avec Random(42)
 double[] yARD = new double[nSamplesARD];                  // TODO: calculer y = sum(w_f * x_f) + bruit
 
-// TODO: Etape 2 - Construire le modele ARD hierarchique
+// TODO: Étape 2 - Construire le modèle ARD hierarchique
 // Range sampleRangeARD = new Range(nSamplesARD);
 // Range featureRangeARD = new Range(nFeaturesARD);
 // VariableArray<double> alphaARD = ...  (Gamma prior par feature)
@@ -1447,38 +1447,38 @@ double[] yARD = new double[nSamplesARD];                  // TODO: calculer y = 
 // Variable<double> noiseARD = ...      (Gamma prior sur bruit)
 // Relation: y = sum(poids[f] * x[f])
 
-// TODO: Etape 3 - Inference avec ExpectationPropagation
+// TODO: Étape 3 - Inference avec ExpectationPropagation
 
-// TODO: Etape 4 - Afficher les resultats
-// Console.WriteLine(""=== Resultats ARD (5 features) ==="");
+// TODO: Étape 4 - Afficher les résultats
+// Console.WriteLine(""=== Résultats ARD (5 features) ==="");
 // Pour chaque feature : afficher poids moyen, ecart-type, alpha, pertinence
 
-// TODO: Etape 5 - Comparer avec les vrais poids et conclure
+// TODO: Étape 5 - Comparer avec les vrais poids et conclure
 // Quelles features ont ete correctement identifiees comme pertinentes/non pertinentes ?
 
-Console.WriteLine(""Exercice a completer"");",,,,,,,,0988906e00db01ee,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,09b71176,markdown,fr,da4b7ea2f5e4a438,"## 7. Validation Croisee Bayesienne
+Console.WriteLine(""Exercice a completer"");",,,,,,,,61abab5d7b036547,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,09b71176,markdown,fr,1894f2343732f97b,"## 7. Validation Croisee Bayesienne
 
 ### Principe
 
-Au lieu de diviser les donnees, utiliser la predictive posterieure pour evaluer le modele.
+Au lieu de diviser les données, utiliser la predictive posterieure pour evaluer le modèle.
 
 ### Leave-One-Out (LOO)
 
-$$\text{LOO-CV} = \sum_{i=1}^n \log P(y_i | y_{-i}, M)$$",,,,,,,,da4b7ea2f5e4a438,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,vra9u39ies8,markdown,fr,4dc1d268ab9753aa,"### Algorithme Leave-One-Out bayesien
+$$\text{LOO-CV} = \sum_{i=1}^n \log P(y_i | y_{-i}, M)$$",,,,,,,,1894f2343732f97b,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,vra9u39ies8,markdown,fr,f913ffcd02723007,"### Algorithme Leave-One-Out bayesien
 
 Pour chaque point $i$ :
-1. **Entrainer** le modele sur tous les points sauf $i$
+1. **Entrainer** le modèle sur tous les points sauf $i$
 2. **Calculer** la distribution predictive posterieure
-3. **Evaluer** la log-probabilite du point $i$ sous cette predictive
+3. **Evaluer** la log-probabilité du point $i$ sous cette predictive
 
 La **variance predictive** combine deux sources d'incertitude :
 - L'incertitude sur la moyenne ($\text{Var}(\mu)$)
 - Le bruit inherent des observations ($1/\tau$)
 
-$$\sigma^2_{\text{pred}} = \text{Var}(\mu) + \frac{1}{\mathbb{E}[\tau]}$$",,,,,,,,4dc1d268ab9753aa,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,e03f2af1,code,fr,039cd97142967450,"// Validation LOO simplifiee
+$$\sigma^2_{\text{pred}} = \text{Var}(\mu) + \frac{1}{\mathbb{E}[\tau]}$$",,,,,,,,f913ffcd02723007,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,e03f2af1,code,fr,913454e1ffc4e4ab,"// Validation LOO simplifiee
 
 double[] dataLOO = { 10, 12, 11, 13, 12, 11, 14, 10, 12, 11 };
 int nLOO = dataLOO.Length;
@@ -1487,7 +1487,7 @@ double totalLogPred = 0;
 
 for (int i = 0; i < nLOO; i++)
 {
-    // Entrainer sur toutes les donnees sauf i
+    // Entrainer sur toutes les données sauf i
     Variable<double> mu = Variable.GaussianFromMeanAndPrecision(10, 0.01);
     Variable<double> prec = Variable.GammaFromShapeAndScale(2, 0.5);
     
@@ -1506,7 +1506,7 @@ for (int i = 0; i < nLOO; i++)
     Gaussian muPost = eng.Infer<Gaussian>(mu);
     Gamma precPost = eng.Infer<Gamma>(prec);
     
-    // Probabilite predictive pour le point i
+    // Probabilité predictive pour le point i
     double predMean = muPost.GetMean();
     double predVar = muPost.GetVariance() + 1.0 / precPost.GetMean();
     
@@ -1516,14 +1516,14 @@ for (int i = 0; i < nLOO; i++)
 
 Console.WriteLine(""=== Validation Leave-One-Out ==="");
 Console.WriteLine($""\nLog predictive totale : {totalLogPred:F2}"");
-Console.WriteLine($""Log predictive moyenne : {totalLogPred / nLOO:F2}"");",,,,,,,,039cd97142967450,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,r1j8wn479sc,markdown,fr,90485006bb11cc1e,"### Interpretation de la validation LOO
+Console.WriteLine($""Log predictive moyenne : {totalLogPred / nLOO:F2}"");",,,,,,,,913454e1ffc4e4ab,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,r1j8wn479sc,markdown,fr,a00ca9590b65a89e,"### Interpretation de la validation LOO
 
 **Log predictive moyenne = -1.81**
 
-Cette metrique mesure la capacite du modele a predire des observations non vues. Comparons avec des references :
+Cette metrique mesure la capacite du modèle a predire des observations non vues. Comparons avec des références :
 
-| Log predictive moyenne | Qualite du modele |
+| Log predictive moyenne | Qualite du modèle |
 |------------------------|-------------------|
 | > -1.0 | Excellente |
 | -1.0 a -2.0 | Bonne |
@@ -1532,67 +1532,67 @@ Cette metrique mesure la capacite du modele a predire des observations non vues.
 
 Notre valeur de -1.81 indique une **bonne** capacite predictive.
 
-> **Avantage du LOO bayesien** : Contrairement au LOO classique, cette methode :
+> **Avantage du LOO bayesien** : Contrairement au LOO classique, cette méthode :
 > - Utilise l'incertitude complete (pas juste une estimation ponctuelle)
 > - Tient compte de l'incertitude sur les parametres via la variance predictive
-> - Ne necessite pas de reentrainer completement le modele (en theorie, via des approximations)",,,,,,,,90485006bb11cc1e,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,292e1625,markdown,fr,8c334dec596bce32,"## Exercice : Selection de modele par validation croisee LOO
+> - Ne necessite pas de reentrainer completement le modèle (en theorie, via des approximations)",,,,,,,,a00ca9590b65a89e,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,292e1625,markdown,fr,12301354939f6198,"## Exercice : Sélection de modèle par validation croisee LOO
 
-Dans cette section, vous avez vu la validation Leave-One-Out pour un modele gaussien simple. L'objectif de cet exercice est d'**etendre cette approche pour comparer deux modeles** sur les memes donnees, et de verifier si le resultat LOO est coherent avec le facteur de Bayes.
+Dans cette section, vous avez vu la validation Leave-One-Out pour un modèle gaussien simple. L'objectif de cet exercice est d'**etendre cette approche pour comparer deux modèles** sur les memes données, et de verifier si le résultat LOO est coherent avec le facteur de Bayes.
 
 ### Enonce
 
-On considere les donnees bimodales de la section 5 :
+On considere les données bimodales de la section 5 :
 
 ```csharp
 double[] dataEx = { 5, 6, 7, 5.5, 6.5, 15, 16, 17, 14, 15.5, 16.5, 6, 15 };
 ```
 
-**Modele A** : Une seule gaussienne $y \sim \mathcal{N}(\mu, \tau^{-1})$ avec priors :
+**Modèle A** : Une seule gaussienne $y \sim \mathcal{N}(\mu, \tau^{-1})$ avec priors :
 - $\mu \sim \mathcal{N}(10, 100)$ (moyenne vague)
 - $\tau \sim \text{Gamma}(2, 0.5)$
 
-**Modele B** : Melange de deux gaussiennes (meme structure que la section 5).
+**Modèle B** : Melange de deux gaussiennes (meme structure que la section 5).
 
 **Travail demandé** :
-1. Implementez la validation LOO pour le **Modele A** (une gaussienne)
-2. Implementez la validation LOO pour le **Modele B** (melange de deux gaussiennes) - utilisez `VariationalMessagePassing`
-3. Comparez les scores LOO totaux : quel modele est prefere ?
-4. Comparez avec le resultat du facteur de Bayes de la section 5 : les deux methodes donnent-elles le meme gagnant ?
+1. Implementez la validation LOO pour le **Modèle A** (une gaussienne)
+2. Implementez la validation LOO pour le **Modèle B** (melange de deux gaussiennes) - utilisez `VariationalMessagePassing`
+3. Comparez les scores LOO totaux : quel modèle est prefere ?
+4. Comparez avec le résultat du facteur de Bayes de la section 5 : les deux méthodes donnent-elles le meme gagnant ?
 
-> **Indice** : Pour le Modele B dans la boucle LOO, vous devez recreer le modele de melange complet a chaque iteration (en retirant le point i). La distribution predictive posterieure d'un melange n'est pas gaussienne -- utilisez `GetMean()` et `GetVariance()` sur le resultat `Gaussian` inferé pour chaque point laisse de cote.",,,,,,,,8c334dec596bce32,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,fcfdca03,code,fr,8e62cbd065a2e576,"// Exercice : Selection de modele par validation croisee LOO
+> **Indice** : Pour le Modèle B dans la boucle LOO, vous devez recreer le modèle de melange complet a chaque iteration (en retirant le point i). La distribution predictive posterieure d'un melange n'est pas gaussienne -- utilisez `GetMean()` et `GetVariance()` sur le résultat `Gaussian` inferé pour chaque point laisse de cote.",,,,,,,,12301354939f6198,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,fcfdca03,code,fr,24fdb7ba21c7ea0f,"// Exercice : Sélection de modèle par validation croisee LOO
 
 double[] dataEx = { 5, 6, 7, 5.5, 6.5, 15, 16, 17, 14, 15.5, 16.5, 6, 15 };
 int nEx = dataEx.Length;
 
-// TODO: Etape 1 - Implementer LOO pour le Modele A (1 gaussienne)
+// TODO: Étape 1 - Implementer LOO pour le Modèle A (1 gaussienne)
 // Pour chaque point i, entrainer sur dataEx sans le point i, calculer log P(dataEx[i])
 double totalLogPredA = 0;
 
-// TODO: Boucle LOO Modele A
+// TODO: Boucle LOO Modèle A
 
 Console.WriteLine($""Modele A - LOO total : {totalLogPredA:F2}"");
 
-// TODO: Etape 2 - Implementer LOO pour le Modele B (melange 2 gaussiennes)
+// TODO: Étape 2 - Implementer LOO pour le Modèle B (melange 2 gaussiennes)
 // Utilisez VariationalMessagePassing pour la stabilite
 double totalLogPredB = 0;
 
-// TODO: Boucle LOO Modele B
+// TODO: Boucle LOO Modèle B
 // Indice : pour chaque iteration, recreer le melange complet sans le point i
-// puis inferer la posteriorie et evaluer la log-probabilite du point laisse de cote
+// puis inferer la posteriorie et evaluer la log-probabilité du point laisse de cote
 
 Console.WriteLine($""Modele B - LOO total : {totalLogPredB:F2}"");
 
-// TODO: Etape 3 - Comparer les resultats
+// TODO: Étape 3 - Comparer les résultats
 Console.WriteLine(""\n=== Comparaison LOO ==="");
-// Quel modele est prefere par LOO ?
+// Quel modèle est prefere par LOO ?
 // Est-ce coherent avec le facteur de Bayes de la section 5 (2 composantes preferees) ?
 
-Console.WriteLine(""Exercice a completer"");",,,,,,,,8e62cbd065a2e576,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,3c3ea47c,markdown,fr,9d06ce53fa30f6a5,"## Exercice : Comparer les criteres BIC et evidence approximee
+Console.WriteLine(""Exercice a completer"");",,,,,,,,24fdb7ba21c7ea0f,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,3c3ea47c,markdown,fr,9fc5a5a717440ffd,"## Exercice : Comparer les criteres BIC et evidence approximee
 
-Dans les sections precedentes, nous avons utilise l'evidence exacte (marginal likelihood) calculee par Infer.NET pour comparer des modeles. En pratique, l'evidence exacte est souvent incalculable et on utilise des **approximations** comme le BIC (Bayesian Information Criterion).
+Dans les sections precedentes, nous avons utilise l'evidence exacte (marginal likelihood) calculee par Infer.NET pour comparer des modèles. En pratique, l'evidence exacte est souvent incalculable et on utilise des **approximations** comme le BIC (Bayesian Information Criterion).
 
 ### Enonce
 
@@ -1600,26 +1600,26 @@ Le BIC est defini par :
 
 $$\text{BIC} = -2 \ln(\hat{L}) + k \ln(n)$$
 
-ou $\hat{L}$ est la vraisemblance maximale, $k$ le nombre de parametres et $n$ le nombre d'observations. Un BIC plus faible indique un meilleur modele.
+ou $\hat{L}$ est la vraisemblance maximale, $k$ le nombre de parametres et $n$ le nombre d'observations. Un BIC plus faible indique un meilleur modèle.
 
-On reprend les donnees bimodales de la section 5 :
+On reprend les données bimodales de la section 5 :
 ```csharp
 double[] dataBIC = { 5, 6, 7, 5.5, 6.5, 15, 16, 17, 14, 15.5, 16.5, 6, 15 };
 ```
 
 **Travail demande** :
-1. Pour le modele a 1 gaussienne, calculez le BIC en estimant mu et tau par maximum de vraisemblance (moyenne empirique et variance inverse)
-2. Pour le modele a 2 gaussiennes, utilisez les posteriors Infer.NET de la section 5 comme approximation du MLE, puis calculez le BIC (k = 5 parametres : mu1, mu2, tau, poids, + 1 bruit)
-3. Comparez les classements BIC vs facteur de Bayes : les deux methodes selectionnent-elles le meme modele ?
-4. Affichez un tableau comparatif : `| Critere | Modele 1 | Modele 2 | Gagnant |`
+1. Pour le modèle a 1 gaussienne, calculez le BIC en estimant mu et tau par maximum de vraisemblance (moyenne empirique et variance inverse)
+2. Pour le modèle a 2 gaussiennes, utilisez les posteriors Infer.NET de la section 5 comme approximation du MLE, puis calculez le BIC (k = 5 parametres : mu1, mu2, tau, poids, + 1 bruit)
+3. Comparez les classements BIC vs facteur de Bayes : les deux méthodes selectionnent-elles le meme modèle ?
+4. Affichez un tableau comparatif : `| Critere | Modèle 1 | Modèle 2 | Gagnant |`
 
-> **Indice** : Pour le BIC du modele a 1 gaussienne, $k=2$ (mu + tau). La log-vraisemblance se calcule en sommant `Gaussian.FromMeanAndPrecision(mu_hat, tau_hat).GetLogProb(dataBIC[i])` pour chaque point. Pour le modele a 2 gaussiennes, $k=5$ (mu1, mu2, tau, poids + variance commune). Le BIC penalise davantage les modeles complexes que le facteur de Bayes -- observez si la penalite change le gagnant.",,,,,,,,9d06ce53fa30f6a5,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,c38f2060,code,fr,6a9a7857f679c66f,"// Exercice : Comparer les criteres BIC et evidence approximee
+> **Indice** : Pour le BIC du modèle a 1 gaussienne, $k=2$ (mu + tau). La log-vraisemblance se calcule en sommant `Gaussian.FromMeanAndPrecision(mu_hat, tau_hat).GetLogProb(dataBIC[i])` pour chaque point. Pour le modèle a 2 gaussiennes, $k=5$ (mu1, mu2, tau, poids + variance commune). Le BIC penalise davantage les modèles complexes que le facteur de Bayes -- observez si la penalite change le gagnant.",,,,,,,,9fc5a5a717440ffd,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,c38f2060,code,fr,e01e058bf6ab0a48,"// Exercice : Comparer les criteres BIC et evidence approximee
 
 double[] dataBIC = { 5, 6, 7, 5.5, 6.5, 15, 16, 17, 14, 15.5, 16.5, 6, 15 };
 int nBIC = dataBIC.Length;
 
-// TODO: Etape 1 - Calculer le BIC pour le modele a 1 gaussienne (k=2)
+// TODO: Étape 1 - Calculer le BIC pour le modèle a 1 gaussienne (k=2)
 // Estimer mu_hat = moyenne empirique, tau_hat = 1 / variance empirique
 // Puis BIC = -2 * sum(log P(x_i | mu_hat, tau_hat)) + k * ln(n)
 double bicModele1 = 0;
@@ -1632,7 +1632,7 @@ double bicModele1 = 0;
 
 Console.WriteLine($""Modele 1 (1 gaussienne) - BIC : {bicModele1:F2}"");
 
-// TODO: Etape 2 - Calculer le BIC pour le modele a 2 gaussiennes (k=5)
+// TODO: Étape 2 - Calculer le BIC pour le modèle a 2 gaussiennes (k=5)
 // Utilisez les posteriors de la section 5 ou estimez par MLE
 double bicModele2 = 0;
 
@@ -1642,43 +1642,43 @@ double bicModele2 = 0;
 
 Console.WriteLine($""Modele 2 (2 gaussiennes) - BIC : {bicModele2:F2}"");
 
-// TODO: Etape 3 - Comparer BIC vs facteur de Bayes
+// TODO: Étape 3 - Comparer BIC vs facteur de Bayes
 Console.WriteLine(""\n=== Comparaison BIC vs Facteur de Bayes ==="");
-// Indice : Le facteur de Bayes de la section 5 favorisait le modele a 2 composantes (log BF ~ 14.5)
-// Indice : Le BIC favorise-t-il le meme modele ? Si oui, les deux methodes sont coherentes.
+// Indice : Le facteur de Bayes de la section 5 favorisait le modèle a 2 composantes (log BF ~ 14.5)
+// Indice : Le BIC favorise-t-il le meme modèle ? Si oui, les deux méthodes sont coherentes.
 // Indice : Si non, expliquez pourquoi (taille d'echantillon, approximation BIC, etc.)
 
-// TODO: Etape 4 - Afficher le tableau comparatif
-// | Critere              | Modele 1 | Modele 2 | Gagnant    |
+// TODO: Étape 4 - Afficher le tableau comparatif
+// | Critere              | Modèle 1 | Modèle 2 | Gagnant    |
 // |----------------------|----------|----------|------------|
 // | BIC (plus petit=mieux)| ...     | ...      | ...        |
-// | log Evidence          | -45.89  | -31.35   | Modele 2   |
+// | log Evidence          | -45.89  | -31.35   | Modèle 2   |
 
-Console.WriteLine(""Exercice a completer"");",,,,,,,,6a9a7857f679c66f,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,d90f5f02,markdown,fr,68aa1d949e6c419c,"## 8. Exemple guide : Comparer Polynomes
+Console.WriteLine(""Exercice a completer"");",,,,,,,,e01e058bf6ab0a48,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,d90f5f02,markdown,fr,61bbbbdde0a53029,"## 8. Exemple guide : Comparer Polynomes
 
 ### Enonce
 
-Comparez trois modeles de regression :
+Comparez trois modèles de regression :
 - Lineaire : y = a*x + b
 - Quadratique : y = a*x^2 + b*x + c
 - Cubique : y = a*x^3 + b*x^2 + c*x + d
 
-Sur des donnees lineaires avec bruit.",,,,,,,,68aa1d949e6c419c,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,h3k6kjvamho,markdown,fr,c5a7cf24cf557673,"### Mise en pratique : comparaison lineaire vs quadratique
+Sur des données lineaires avec bruit.",,,,,,,,61bbbbdde0a53029,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,h3k6kjvamho,markdown,fr,14fd3227bbd1c7ee,"### Mise en pratique : comparaison lineaire vs quadratique
 
-Les donnees sont generees selon $y = 2x + 1 + \epsilon$ (relation lineaire).
+Les données sont generees selon $y = 2x + 1 + \epsilon$ (relation lineaire).
 
-**Modeles a comparer** :
+**Modèles a comparer** :
 - **Lineaire** : $y = ax + b$ (2 parametres)
 - **Quadratique** : $y = ax^2 + bx + c$ (3 parametres)
 
-Le modele quadratique peut representer la relation lineaire (avec $a \approx 0$), mais paie un ""cout de complexite"" pour ce parametre inutile.
+Le modèle quadratique peut representer la relation lineaire (avec $a \approx 0$), mais paie un ""cout de complexite"" pour ce parametre inutile.
 
-> **Hint** : Pour ajouter un modele cubique, il suffirait d'ajouter un terme $d \times x^3$. Le meme raisonnement s'applique : plus de parametres = plus de penalite si ils ne sont pas necessaires.",,,,,,,,c5a7cf24cf557673,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,2e5bf6cf,code,fr,2082cb52bba0e2fe,"// Exemple guide : Comparaison de modeles polynomiaux
+> **Hint** : Pour ajouter un modèle cubique, il suffirait d'ajouter un terme $d \times x^3$. Le meme raisonnement s'applique : plus de parametres = plus de penalite si ils ne sont pas necessaires.",,,,,,,,14fd3227bbd1c7ee,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,2e5bf6cf,code,fr,0aba4e4e302caab4,"// Exemple guide : Comparaison de modèles polynomiaux
 
-// Donnees lineaires : y = 2*x + 1 + bruit
+// Données lineaires : y = 2*x + 1 + bruit
 double[] xPoly = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 double[] yPoly = { 1.2, 3.1, 4.8, 7.2, 8.9, 11.1, 13.0, 14.8, 17.2, 19.1 };
 int nPoly = xPoly.Length;
@@ -1686,7 +1686,7 @@ int nPoly = xPoly.Length;
 Console.WriteLine(""=== Comparaison de Modeles Polynomiaux ==="");
 Console.WriteLine(""Vraie relation : y = 2*x + 1\n"");
 
-// Modele lineaire
+// Modèle lineaire
 Variable<bool> evLin = Variable.Bernoulli(0.5).Named(""evidence_lin"");
 using (Variable.If(evLin))
 {
@@ -1707,7 +1707,7 @@ engLin.ShowFactorGraph = true;  // Activation de la visualisation
 double logEvLin = engLin.Infer<Bernoulli>(evLin).LogOdds;
 Console.WriteLine($""Modele lineaire : log evidence = {logEvLin:F2}"");
 
-// Modele quadratique
+// Modèle quadratique
 Variable<bool> evQuad = Variable.Bernoulli(0.5).Named(""evidence_quad"");
 using (Variable.If(evQuad))
 {
@@ -1729,15 +1729,15 @@ engQuad.ShowFactorGraph = true;  // Activation de la visualisation
 double logEvQuad = engQuad.Infer<Bernoulli>(evQuad).LogOdds;
 Console.WriteLine($""Modele quadratique : log evidence = {logEvQuad:F2}"");
 
-// Meilleur modele
+// Meilleur modèle
 string meilleurMod = logEvLin > logEvQuad ? ""Lineaire"" : ""Quadratique"";
-Console.WriteLine($""\n=> Le modele {meilleurMod} est prefere (rasoir d'Occam)"");",,,,,,,,2082cb52bba0e2fe,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,a10ac5c7,markdown,fr,d4795f61cb702630,Visualisation du graphe de facteurs du modele polynomial.,,,,,,,,d4795f61cb702630,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,07c3mhq0k60l,code,fr,ebbacc089b0f0c7e,"// Visualisation du graphe de facteurs - Modele quadratique (dernier compile)
-display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));",,,,,,,,ebbacc089b0f0c7e,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,kmporu069ea,markdown,fr,642c4d37f705d637,"### Lecture du graphe de facteurs - Modele quadratique
+Console.WriteLine($""\n=> Le modele {meilleurMod} est prefere (rasoir d'Occam)"");",,,,,,,,0aba4e4e302caab4,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,a10ac5c7,markdown,fr,ab828d63f26d8745,Visualisation du graphe de facteurs du modèle polynomial.,,,,,,,,ab828d63f26d8745,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,07c3mhq0k60l,code,fr,37023799d5111a41,"// Visualisation du graphe de facteurs - Modèle quadratique (dernier compile)
+display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()));",,,,,,,,37023799d5111a41,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,kmporu069ea,markdown,fr,c48e5ab260b1228e,"### Lecture du graphe de facteurs - Modèle quadratique
 
-Le graphe montre la structure du modele quadratique $y = ax^2 + bx + c$ :
+Le graphe montre la structure du modèle quadratique $y = ax^2 + bx + c$ :
 
 - **a_quad, b_quad, c_quad** : les trois coefficients du polynome (priors Gaussiens)
 - **noise_quad** : precision du bruit d'observation (prior Gamma)
@@ -1745,47 +1745,47 @@ Le graphe montre la structure du modele quadratique $y = ax^2 + bx + c$ :
 - **pred_quad_i** : predictions intermediaires (combinaison des coefficients)
 - **obs_quad_i** : observations (valeurs fixees)
 
-Comparativement au modele lineaire, ce graphe contient un parametre supplementaire (`c_quad`), ce qui augmente la complexite du modele et la ""surface"" du prior - d'ou la penalisation par le rasoir d'Occam bayesien.",,,,,,,,642c4d37f705d637,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,h3advals0x,markdown,fr,17f04e1bd4c7d3ed,"### Analyse de l'exercice polynomes
+Comparativement au modèle lineaire, ce graphe contient un parametre supplementaire (`c_quad`), ce qui augmente la complexite du modèle et la ""surface"" du prior - d'ou la penalisation par le rasoir d'Occam bayesien.",,,,,,,,c48e5ab260b1228e,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,h3advals0x,markdown,fr,372aa389afdeac4e,"### Analyse de l'exercice polynomes
 
-**Resultats** :
+**Résultats** :
 
-| Modele | Parametres | Log evidence |
+| Modèle | Parametres | Log evidence |
 |--------|------------|--------------|
 | Lineaire | a, b (2) | -14.03 |
 | Quadratique | a, b, c (3) | -20.28 |
 
 **Facteur de Bayes** : $\exp(-14.03 - (-20.28)) = \exp(6.25) \approx 518$
 
-Le modele lineaire est **decisement** prefere (BF > 150).
+Le modèle lineaire est **decisement** prefere (BF > 150).
 
-**Pourquoi le modele quadratique perd-il ?**
+**Pourquoi le modèle quadratique perd-il ?**
 
-1. **Donnees generees lineairement** : y = 2x + 1 + bruit
+1. **Données generees lineairement** : y = 2x + 1 + bruit
 2. **Coefficient quadratique inutile** : le parametre $a$ (coefficient de $x^2$) n'apporte rien
 3. **Penalite de complexite** : le prior sur $a$ ""dilue"" la vraisemblance
 
-> **Exercice supplementaire** : Que se passerait-il si les donnees etaient generees par y = 0.1*x^2 + 2*x + 1 ? Le terme quadratique est present mais faible. Le modele lineaire pourrait encore gagner si le signal quadratique est noye dans le bruit - c'est la balance ajustement vs complexite en action.",,,,,,,,17f04e1bd4c7d3ed,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,ff1f079d,markdown,fr,d4988b0c4020d38b,"## 9. Resume
+> **Exercice supplementaire** : Que se passerait-il si les données etaient generees par y = 0.1*x^2 + 2*x + 1 ? Le terme quadratique est present mais faible. Le modèle lineaire pourrait encore gagner si le signal quadratique est noye dans le bruit - c'est la balance ajustement vs complexite en action.",,,,,,,,372aa389afdeac4e,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,ff1f079d,markdown,fr,94cd93cf2c450dca,"## 9. Resume
 
 | Concept | Description |
 |---------|-------------|
 | **Evidence** | P(D\|M) - vraisemblance marginale |
-| **Facteur de Bayes** | Ratio d'evidences pour comparer modeles |
-| **Rasoir d'Occam** | Preference automatique pour modeles simples |
-| **ARD** | Selection automatique de features |
-| **LOO-CV** | Validation sans diviser les donnees |
+| **Facteur de Bayes** | Ratio d'evidences pour comparer modèles |
+| **Rasoir d'Occam** | Preference automatique pour modèles simples |
+| **ARD** | Sélection automatique de features |
+| **LOO-CV** | Validation sans diviser les données |
 
 ---
 
-## Prochaine etape
+## Prochaine étape
 
 Dans [Infer-11-Topic-Models](Infer-11-Topic-Models.ipynb), nous explorerons :
 
 - Latent Dirichlet Allocation (LDA)
 - Modelisation de topics dans les documents
-- Inference sur structures hierarchiques complexes",,,,,,,,d4988b0c4020d38b,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,emyx91kfzua,markdown,fr,1c5272a3452ae0ed,"---
+- Inference sur structures hierarchiques complexes",,,,,,,,94cd93cf2c450dca,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,emyx91kfzua,markdown,fr,dcfba03e7635739c,"---
 
 ## Annexe : Distributions et concepts
 
@@ -1794,7 +1794,7 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,emyx91kfzua,markdo
 | Distribution | Role | Parametres typiques |
 |--------------|------|---------------------|
 | `Bernoulli(0.5)` | Variable indicatrice pour calcul d'evidence | p=0.5 (prior non informatif) |
-| `GaussianFromMeanAndPrecision` | Modele d'observation | mean~15, precision~1 |
+| `GaussianFromMeanAndPrecision` | Modèle d'observation | mean~15, precision~1 |
 | `GammaFromShapeAndScale` | Prior sur precision | shape=2, scale=0.5 |
 | `Beta(1,1)` | Prior sur proportion de melange | Prior uniforme sur [0,1] |
 
@@ -1802,29 +1802,29 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,emyx91kfzua,markdo
 
 | Concept | Section | Application |
 |---------|---------|-------------|
-| Evidence marginale $P(D\|M)$ | 3, 5 | Comparer modeles sans validation croisee |
-| Facteur de Bayes | 4 | Quantifier la preference pour un modele |
+| Evidence marginale $P(D\|M)$ | 3, 5 | Comparer modèles sans validation croisee |
+| Facteur de Bayes | 4 | Quantifier la preference pour un modèle |
 | Rasoir d'Occam bayesien | 3-5 | Penalisation automatique de la complexite |
 | Priors hierarchiques | 6 | ARD pour selection de features |
 | Distribution predictive | 7 | LOO-CV bayesien |
 
 ### Applications pratiques
 
-- **Selection du nombre de composantes** : Clustering avec nombre de clusters inconnu
-- **Selection de features** : Regression avec beaucoup de covariables
+- **Sélection du nombre de composantes** : Clustering avec nombre de clusters inconnu
+- **Sélection de features** : Regression avec beaucoup de covariables
 - **Choix d'architecture** : Reseaux bayesiens avec structure variable
-- **Comparaison de familles** : Lineaire vs non-lineaire, parametrique vs non-parametrique",,,,,,,,1c5272a3452ae0ed,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,lzrf27g1xck,markdown,fr,ac8eabdf656f925a,"### Points cles a retenir
+- **Comparaison de familles** : Lineaire vs non-lineaire, parametrique vs non-parametrique",,,,,,,,dcfba03e7635739c,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,lzrf27g1xck,markdown,fr,9cf59325b4e9307c,"### Points cles a retenir
 
 **1. Le rasoir d'Occam est automatique**
 
-La selection de modeles bayesienne penalise naturellement la complexite. Pas besoin de criteres ad hoc comme l'AIC ou le BIC - l'evidence marginale fait le travail.
+La selection de modèles bayesienne penalise naturellement la complexite. Pas besoin de criteres ad hoc comme l'AIC ou le BIC - l'evidence marginale fait le travail.
 
 **2. L'echelle compte**
 
-| Methode | Quand l'utiliser |
+| Méthode | Quand l'utiliser |
 |---------|------------------|
-| Facteur de Bayes | Comparer 2-3 modeles distincts |
+| Facteur de Bayes | Comparer 2-3 modèles distincts |
 | ARD | Selectionner parmi de nombreuses features |
 | LOO-CV | Evaluer la capacite predictive |
 
@@ -1832,28 +1832,28 @@ La selection de modeles bayesienne penalise naturellement la complexite. Pas bes
 
 Les priors vagues ($\sigma^2 = 10$ sur les poids) penalisent moins que des priors informatifs. Un mauvais choix de prior peut fausser la comparaison.
 
-> **Conseil pratique** : Pour une comparaison equitable, utilisez des priors de meme ""force"" (meme variance) sur les parametres comparables entre modeles.",,,,,,,,ac8eabdf656f925a,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,5251a551,markdown,fr,3e12ec41323abed8,"## 10. Exercice : Trouver le Meilleur Modele pour des Donnees Quadratiques
+> **Conseil pratique** : Pour une comparaison equitable, utilisez des priors de meme ""force"" (meme variance) sur les parametres comparables entre modèles.",,,,,,,,9cf59325b4e9307c,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,5251a551,markdown,fr,954b66105221213c,"## 10. Exercice : Trouver le Meilleur Modèle pour des Données Quadratiques
 
 ### Enonce
 
-Vous disposez de donnees generees par `y = 2*x^2 - 3*x + 1 + bruit` :
+Vous disposez de données generees par `y = 2*x^2 - 3*x + 1 + bruit` :
 
 ```
 x = {-2, -1, 0, 1, 2, 3}
 y = {14.8, 5.9, 1.1, -0.2, 3.8, 10.1}
 ```
 
-Comparez 3 modeles de regression polynomiale :
+Comparez 3 modèles de regression polynomiale :
 1. **Lineaire** : `y = a*x + b` (2 parametres)
 2. **Quadratique** : `y = a*x^2 + b*x + c` (3 parametres)
 3. **Cubique** : `y = a*x^3 + b*x^2 + c*x + d` (4 parametres)
 
-Quel modele a le meilleur log evidence ? Le cubique surpasse-t-il le quadratique ?",,,,,,,,3e12ec41323abed8,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,5fd34a0e,code,fr,636d080dc8564097,"// Exercice : Selection de modele polynomial sur donnees quadratiques
+Quel modèle a le meilleur log evidence ? Le cubique surpasse-t-il le quadratique ?",,,,,,,,954b66105221213c,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,5fd34a0e,code,fr,300e2a7671fa5d77,"// Exercice : Sélection de modèle polynomial sur données quadratiques
 Console.WriteLine(""Exercice a completer : selection de modele polynomial"");
 
-// Donnees quadratiques : y = 2*x^2 - 3*x + 1 + bruit
+// Données quadratiques : y = 2*x^2 - 3*x + 1 + bruit
 double[] xData = { -2, -1, 0, 1, 2, 3 };
 double[] yData = { 14.8, 5.9, 1.1, -0.2, 3.8, 10.1 };
 
@@ -1866,20 +1866,20 @@ double[] yData = { 14.8, 5.9, 1.1, -0.2, 3.8, 10.1 };
 // TODO: Creer une fonction CalculLogEvidence(Vector[] features, double[] y)
 // (Reutilisez la structure de la section 8 de l'exemple guide)
 
-// TODO: Calculer le log evidence pour chaque modele
+// TODO: Calculer le log evidence pour chaque modèle
 
 // TODO: Afficher et comparer
-// Quel modele gagne ? Expliquez pourquoi le cubique ne bat pas forcement le quadratique.",,,,,,,,636d080dc8564097,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,e35b2088,markdown,fr,90d5dfa64302f024,"## Conclusion
+// Quel modèle gagne ? Expliquez pourquoi le cubique ne bat pas forcement le quadratique.",,,,,,,,300e2a7671fa5d77,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-10-Model-Selection.ipynb,e35b2088,markdown,fr,09109f1fe98c5db8,"## Conclusion
 
-Ce notebook a presente la selection de modeles bayesienne : evidence, facteur de Bayes, ARD et validation croisee LOO.
+Ce notebook a presente la selection de modèles bayesienne : evidence, facteur de Bayes, ARD et validation croisee LOO.
 
-| Methode | Principe | Quand l'utiliser |
+| Méthode | Principe | Quand l'utiliser |
 |---------|----------|------------------|
-| Evidence (marginal likelihood) | P(D\|M) integre sur les parametres | Comparer 2-3 modeles |
+| Evidence (marginal likelihood) | P(D\|M) integre sur les parametres | Comparer 2-3 modèles |
 | Facteur de Bayes | Ratio des evidences, echelle de Jeffreys | Quantifier la preference |
-| ARD | Priors hierarchiques Gamma -> precision par feature | Selection automatique de features |
-| LOO-CV | Log-probabilite predictive leave-one-out | Evaluer la capacite predictive |
+| ARD | Priors hierarchiques Gamma -> precision par feature | Sélection automatique de features |
+| LOO-CV | Log-probabilité predictive leave-one-out | Evaluer la capacite predictive |
 
 | Distribution | Role |
 |--------------|------|
@@ -1888,7 +1888,7 @@ Ce notebook a presente la selection de modeles bayesienne : evidence, facteur de
 | Gamma | Priors sur les precisions (bruit, ARD) |
 | Beta | Prior sur les proportions de melange |
 
-> **Rasoir d'Occam bayesien** : L'evidence penalise automatiquement la complexite. Un modele plus simple avec un bon ajustement bat toujours un modele complexe dont les parametres supplementaires n'apportent rien. Cela rend la comparaison objective, sans criteres ad hoc.",,,,,,,,90d5dfa64302f024,,,,,,,
+> **Rasoir d'Occam bayesien** : L'evidence penalise automatiquement la complexite. Un modèle plus simple avec un bon ajustement bat toujours un modèle complexe dont les parametres supplementaires n'apportent rien. Cela rend la comparaison objective, sans criteres ad hoc.",,,,,,,,09109f1fe98c5db8,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb,1452f2aa,markdown,fr,652400ad72f22ce9,"# Infer-11-Topic-Models : Latent Dirichlet Allocation (LDA)
 
 **Serie** : Programmation Probabiliste avec Infer.NET (9/20)  
@@ -7630,7 +7630,7 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb,1ab3b005,code,fr,d2c
 // Comparez la MSE lisse (jointe) a la MSE filtree (sequentielle ci-dessus).
 Console.WriteLine(""Exercice 3 a completer"");
 ",,,,,,,,d2ca252040e69f11,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb,39ab8735,markdown,fr,4a0607229c769f46,"## 6. Ponts avec la série
+MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb,39ab8735,markdown,fr,e7a59130f9ce1ba9,"## Ponts avec la série
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
@@ -7640,7 +7640,7 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-17-Kalman-Filter.ipynb,39ab8735,markdown,fr
 
 **Référence fondatrice** : Kalman, R. E. (1960) — *A New Approach to Linear Filtering and Prediction Problems*, ASME Journal of Basic Engineering 82(1). L'article fondateur du filtre de Kalman — l'algorithme d'estimation le plus répandu en pratique.
 
-## 7. Conclusion
+## Conclusion
 
 Le **filtre de Kalman** est le pont entre le HMM discret d'[Infer-14](Infer-14-Sequences.ipynb)
 et le monde continu. Sa puissance tient en trois propriétés : pour les systèmes
@@ -7653,7 +7653,7 @@ d'inférence approchées lourdes — la conjugaison offre une solution fermée. 
 **sortant** de ce régime (non-linéarités, distributions non gaussiennes) que les processus
 gaussiens ([Infer-16](Infer-16-Sparse-Gaussian-Process.ipynb)) et les méthodes
 variationnelles deviennent nécessaires. Le Kalman n'est pas un cas particulier encombrant :
-c'est le **point de référence** par rapport auquel tous les filtres approchés se mesurent.",,,,,,,,4a0607229c769f46,,,,,,,
+c'est le **point de référence** par rapport auquel tous les filtres approchés se mesurent.",,,,,,,,e7a59130f9ce1ba9,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb,8cd92d9d,markdown,fr,94025d3ddc848416,"# Infer-18 — Détection de Rupture (Change-Point) : inférer le moment d'un changement de régime
 
 > **Corpus bayésien Infer.NET.** Ce notebook (18ᵉ du corpus) complète la famille des
@@ -7967,7 +7967,7 @@ fort ou une longue série le resserre. Quantifiez la transition.",,,,,,,,3c5b9a1
 MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb,8fdbb0ca,code,fr,2393154e51b45c31,"// Exercice 3 : robustesse au signal et a N (a completer)
 // TODO etudiant : boucler sur delta dans {1, 2, 4}, mesurer H(cp) a chaque fois.
 Console.WriteLine(""Exercice 3 a completer : robustesse du posterieur au signal et a la taille."");",,,,,,,,2393154e51b45c31,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb,40705fce,markdown,fr,1c871c2023cd3155,"## 6. Conclusion
+MyIA.AI.Notebooks/Probas/Infer/Infer-18-Change-Point.ipynb,40705fce,markdown,fr,d1a9c80cd20fe0b0,"## Conclusion
 
 Le **point de rupture** complète la famille des séquences temporelles du corpus :
 
@@ -7987,7 +7987,7 @@ où la concentration du postérieur joue le rôle d'un Bayes factor.
 
 **Pour aller plus loin.** Plusieurs ruptures (exercice 1) ; ruptures de variance (exercice 2) ;
 nombre de ruptures inconnu (processus de Dirichlet — non natif en Infer.NET, voir le versant PyMC) ;
-ou la détection en ligne (filtering) plutôt qu'off-line.",,,,,,,,1c871c2023cd3155,,,,,,,
+ou la détection en ligne (filtering) plutôt qu'off-line.",,,,,,,,d1a9c80cd20fe0b0,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb,62712df6,markdown,fr,adc2fa1fe3f1c2a6,"# Infer-19 — Analyse de survie / fiabilite bayesienne : inferer le temps jusqu'a un evenement
 
 > **Corpus bayesien Infer.NET.** Ce notebook (19e du corpus) ouvre la famille des
@@ -8314,7 +8314,7 @@ est-il prefere de facon decisive (`log BF > 5`) ?",,,,,,,,5d286e7637a4df2d,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb,8f861db9,code,fr,51ef2a89a050be0f,"// Exercice 3 : facteur de Bayes exponentiel vs Weibull (a completer)
 // TODO etudiant : vraisemblance marginale par k, rapport BF, seuil en N.
 Console.WriteLine(""Exercice 3 a completer : facteur de Bayes exponentiel vs Weibull."");",,,,,,,,51ef2a89a050be0f,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb,2c52015b,markdown,fr,07ee4d5edd3ecfd9,"## 8. Conclusion
+MyIA.AI.Notebooks/Probas/Infer/Infer-19-Survival-Analysis.ipynb,2c52015b,markdown,fr,d6ec7efcc6f37b8a,"## Conclusion
 
 L'analyse de survie complete la famille des modeles temporels du corpus Infer :
 
@@ -8352,7 +8352,7 @@ classiques au-dela de ce notebook.
   l'exponentielle), `Variable.Weibull`.
 - Relation a la serie : [Infer-12](Infer-12-Modeles-Hierarchiques.ipynb) (modeles hierarchiques),
   [Infer-18](Infer-18-Change-Point.ipynb) (rupture — ou le taux change brusquement).
-",,,,,,,,07ee4d5edd3ecfd9,,,,,,,
+",,,,,,,,d6ec7efcc6f37b8a,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb,0b71b238,markdown,fr,603b5853efe461c8,"# Infer-2-Gaussian-Mixtures : Distributions Gaussiennes et Melanges
 
 **Série** : Programmation Probabiliste avec Infer.NET (2/20)  
@@ -16400,3 +16400,105 @@ Ce notebook a couvert la classification bayesienne : regression logistique probi
 | Binomial | Comptage de succes (observations cliniques) |
 
 > **Avantage cle** : Contrairement a la classification deterministe, l'approche bayesienne propage l'incertitude des parametres aux predictions. Les probabilites obtenues sont calibrees, permettant des decisions seuillees adaptees au cout d'erreur (ex : filtre anti-spam agressif vs conservateur).",,,,,,,,f4ccd6772a47093d,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb,cell-076f7eaf,markdown,fr,42cd6a302d913bdd,"## Conclusion — ce que nous avons appris
+
+Ce notebook a prolongé la **Bayes Point Machine** d'Infer-9 (frontière linéaire) en un **Processus Gaussien** capable de tracer une frontière **non-linéaire** — illustrée ici par la classification du *donut*, qu'aucun hyperplan ne peut séparer.
+
+### Trois idées à retenir
+
+1. **Le GP modélise une fonction, pas un vecteur de poids.** Là où la BPM apprend un hyperplan $\mathbf{w} \cdot \mathbf{x} = 0$, le GP infère une fonction $f(\mathbf{x})$ dont seul le signe sert à la classification. C'est ce passage « du paramétrique au non-paramétrique » qui débloque les frontières courbes.
+
+2. **L'incertitude est un produit dérivé du GP, pas un accessoire.** La prédiction au centre du donut ($E[f] < 0$) est confiante (`false`) ; à mi-rayon, l'incertitude est maximale — exactement là où l'information d'entraînement est la plus pauvre. Un classifieur déterministe ne saurait pas dire « je ne sais pas » ; le GP le quantifie.
+
+3. **L'approximation sparse rend le GP abordable.** Un GP full coûte $O(n^3)$ (inversion d'une matrice $n \times n$). Le **sparse** ramène ce coût à $O(nm^2)$ en remplaçant le jeu complet d'inputs par un petit **basis set** de $m$ points induiseurs. Sur le donun — structure globale — $m = 4$ points suffisent : la perte de précision est négligeable face au gain de coût. Le sparse n'est pas une approximation brutale : c'est un **continu** contrôlé par $m$, qui redonne le GP full quand $m = n$.
+
+### Et ensuite ?
+
+Le GP ouvre la voie aux **modèles hiérarchiques** (Infer-12) où plusieurs groupes partagent un prior commun, et aux **mélangees de Gaussiennes** (Infer-2) pour la densité. Pour les très grands jeux de données, l'approximation sparse est indispensable — c'est elle qui rend le GP utilisable en pratique.",,,,,,,,42cd6a302d913bdd,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb,cell-be8168fa,markdown,fr,f64440acb16b71c8,"### Exercice : Motif du crime avec `Variable.Case`
+
+Le modele Murder Mystery actuel utilise `Variable.If/IfNot` pour le meurtrier binaire (Auburn vs Grey). Generalisons : supposons que l'on veuille modeliser le **motif du crime** comme une variable discrete a trois valeurs (jalousie, argent, motif personnel), et que chaque motif induise un suspect different.
+
+**Objectif** : Construire un modele ou le motif (variable discrete a 3 valeurs) conditionne la probabilite qu'Auburn soit le meurtrier, en utilisant le pattern `Variable.Case` adapte aux variables entieres a plus de 2 valeurs.
+
+**Etapes** :
+1. Definir `Variable<int> motif = Variable.Discrete(p_jalousie, p_argent, p_personnel)` avec une distribution prior sur les 3 motifs
+2. Pour chaque valeur de `motif`, definir une branche via `Variable.Case(motif, ...)` qui assigne une probabilite de culpabilite d'Auburn differente
+3. Inferer la distribution posterieure du motif et de la culpabilite
+4. Comparer les trois branches : quel motif rend Auburn le plus probablement coupable ?
+
+**Indices** :
+- `Variable.Case` prend un `Variable<int>` et un tableau de `Variable<T>` ; chaque index correspond a une branche
+- Referencez la section 9 ci-dessus pour la syntaxe complete de `Variable.Case` vs `Variable.Switch`
+- Commencez par definir les trois probabilites de culpabilite conditionnelles (ex. jalousie -> 0.8, argent -> 0.4, personnel -> 0.6)
+- Question supplementaire : que se passe-t-il si vous ajoutez l'evidence ""arme = revolver"" comme dans la section 5 ? Le posterieur du motif change-t-il ?",,,,,,,,f64440acb16b71c8,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb,cell-75fd5727,code,fr,0d0392dc0518375e,"// Exercice : Motif du crime avec Variable.Case
+// TODO: Definir le prior sur le motif (3 valeurs: 0=jalousie, 1=argent, 2=personnel)
+// Indice: Variable<int> motif = Variable.Discrete(new double[] { 0.3, 0.4, 0.3 });
+
+// TODO: Definir les probabilites de culpabilite d'Auburn pour chaque motif
+// Indice: double[] pAuburnSiMotif = { 0.8, 0.4, 0.6 };
+
+// TODO: Construire le modele avec Variable.Case(motif, ...)
+// Indice: Variable<bool> auburnCoupable = Variable.Case(motif,
+//   Variable.Bernoulli(pAuburnSiMotif[0]),
+//   Variable.Bernoulli(pAuburnSiMotif[1]),
+//   Variable.Bernoulli(pAuburnSiMotif[2]));
+
+// TODO: Inferer le posterieur du motif et de la culpabilite
+// Indice: var infer = new InferenceEngine();
+// Console.WriteLine($""Motif posterieur: {infer.Infer(motif)}"");
+// Console.WriteLine($""P(Auburn coupable) = {infer.Infer(auburnCoupable)}"");
+
+// Question supplementaire : ajouter l'evidence arme = revolver et observer le changement
+Console.WriteLine(""Exercice a completer : Motif du crime avec Variable.Case"");",,,,,,,,0d0392dc0518375e,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,cell-fa9cc32d,markdown,fr,a8da491a617b257f,"### Exercice 1 - SCM confondu : education -> revenu
+
+**Concept** (cf. section 3, barometre) : un même parent latent `U` (niveau d'études des parents) cause a la fois `X` (education de l'enfant) et `Y` (revenu). L'**observation** `P(Revenu | Education=haute)` et l'**intervention** `P(Revenu | do(Education=haute))` different : seule la seconde isole l'effet causal de l'education, en coupant l'influence de `U` sur `X`.
+
+**Objectif** : coder le SCM (CPT via `Variable.If` comme en section 3), calculer les deux quantites, puis **mutiler l'arc `U -> X`** (`Bernoulli(1.0)` force) pour le `do()`.
+
+Les étapes (`// Étape N`) et l'indice sont dans le code ci-dessous.",,,,,,,,a8da491a617b257f,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,cell-7111f216,markdown,fr,4ce34ca44283ccdd,"### Exercice 2 - Backdoor adjustment : identifier l'ensemble Z
+
+**Concept** (cf. section 5) : quand un confondeur `Z` est **observe** et bloque tous les chemins backdoor vers `X`, l'effet causal s'obtient **sans mutiler le graphe**, par la **formule d'ajustement backdoor** (Pearl, 1995) :
+
+$$P(Y \mid do(X)) = \sum_z P(Y \mid X, z)\, P(z)$$
+
+**Objectif** : choisir un reseau a 3-4 noeuds avec un confondeur observe, **identifier l'ensemble d'ajustement `Z`**, appliquer la formule, et comparer au `do()` direct (les deux doivent coïncider si `Z` est valide).",,,,,,,,4ce34ca44283ccdd,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,cell-f6b3f7b1,markdown,fr,cb091a9542d6f527,"### Exercice 3 - Front-door : smoke -> tar -> cancer (Pearl)
+
+**Concept** (cf. section 6) : quand le confondeur `U` (predisposition genetique) est **non observe** mais qu'un **mediateur** `M` (goudron dans les poumons) est observe et capture tout l'effet de `X` (fumer) sur `Y` (cancer), Pearl (1995) montre l'identifiabilite par la **formule front-door** :
+
+$$P(Y \mid do(X)) = \sum_m P(M=m \mid X) \sum_{x'} P(Y \mid M=m, x')\, P(x')$$
+
+**Objectif** : adapter la section 6 avec de nouvelles CPT (fumer passif, exposition professionnelle) en **preservant la structure** `X -> M -> Y` + `U -> X`, `U -> Y` (U reste non observe).",,,,,,,,cb091a9542d6f527,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-5-Causal-Inference.ipynb,cell-401fa4fc,markdown,fr,fa34a181af429dc8,"### Exercice 4 - Paradoxe de Simpson personnalise
+
+**Concept** (cf. section 7) : un **renversement de Simpson** survient quand une conclusion s'inverse entre l'analyse agregee et l'analyse conditionnelle - typiquement parce qu'un confondeur `Z` favorise `X` tout en defavorisant `Y` (les patients graves, moins soignes, faussent la moyenne).
+
+**Objectif** : concevoir des CPT produisant un renversement (ex. traitement + age, ou genre + admission Berkeley 1973), puis montrer que `P(Y|X)` agrege **differere** de `P(Y|do(X))` et expliquer le mecanisme. C'est le cas ou la **conclusion naive** (agregee) est causalement **fausse** - le coeur de pourquoi l'ajustement causal importe.",,,,,,,,fa34a181af429dc8,,,,,,,
+MyIA.AI.Notebooks/Probas/Infer/Infer-6-Debugging.ipynb,cell-ac3c02c4,markdown,fr,889a451732fc9241,"## Synthese : la demarche du debuggeur probabiliste
+
+Les quatre exercices de fin illustrent une meme realite : en programmation probabiliste, l'erreur se manifeste rarement par un crash, mais par un posterieur **degenere** (variance quasi-nulle ou infinie) ou **non informatif**. Le reflexe du debuggeur classique -- ou est le bug dans le code -- doit ceder la place a une demarche en trois temps, dont chaque exercice isole un symptome.
+
+| Exercice | Piege decouvert | Ou le diagnostic le repere |
+|----------|-----------------|----------------------------|
+| Ex 3 (modele hierarchique) | `Gamma` de shape negatif + moyenne de population figee | shape < 0 leve une exception ; une precision de 10000 fige la moyenne |
+| Ex 4 (regression bayesienne) | Prior trop etroit sur la pente + bruit `Gamma(0.1, 0.1)` | `DiagnosticGaussian` revele une variance nulle ; le bruit a une densite infinie en 0 |
+
+### Les deux familles de fautifs
+
+Dans toute la serie, les pannes se ramenent a deux familles :
+
+1. **Les priors** -- trop etroits (`GaussianFromMeanAndPrecision(0, 10000)` fige la variable), hors-support de l'observation (`ObservedValue = 100` sous un prior centre sur 0), ou invalides (`Gamma` de shape < 1, precision negative). La regle empirique reste : un `Gamma` doit avoir `shape >= 1`, et la precision d'un prior vague vaut `0.01`, pas `10000`.
+2. **Le choix d'algorithme** -- EP pour le continu (rapide mais peut diverger), VMP pour le discret (stable mais sous-estime l'incertitude, comme on l'a mesure : variance posterieure plus etroite), Gibbs pour la validation exacte sur petits modeles. Un melange gaussien brise sous VMP peut converger sous EP.
+
+### Le factor graph, juge de paix
+
+Quand un posterieur defie l'intuition, le factor graph tranche : il revele les composantes deconnectees, les observations mal indexees (Ex 3, indice 3), et les dependances manquantes. `engine.ShowFactorGraph = true` associe au `FactorGraphHelper` n'est pas une fioriture -- c'est l'equivalent du `print` du debuggeur classique.
+
+### Ce quil faut emporter
+
+Le debugging probabiliste est avant tout un **changement de regard** : un mauvais resultat n'est pas un bug a corriger dans le code, mais un signal que le modele ou l'algorithme ne correspond pas aux hypotheses implicites des donnees. La demarche systematique -- **Support, Algorithme, Posterieurs**, validee par les fonctions `DiagnosticGaussian` / `DiagnosticGamma` / `DiagnosticBeta` -- est transferable a tous les notebooks suivants de la serie (modeles hierarchiques, series temporelles, modeles de recommandation). Gardez-la sous la main : les pannes se ressemblent, seules les distributions changent.
+",,,,,,,,889a451732fc9241,,,,,,,
