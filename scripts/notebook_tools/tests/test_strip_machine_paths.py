@@ -27,6 +27,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from strip_machine_paths import (
     NUGET_CACHE_TOKEN,
+    MACHINE_PATH_TOKENS,
+    REDACT_TOKENS,
     USERNAME_MARKERS,
     STREAM_KEY,
     DATA_KEYS,
@@ -34,6 +36,8 @@ from strip_machine_paths import (
     find_leak_outputs,
     strip_in_place,
     _has_leak,
+    _is_redactable,
+    _redact_path,
     _output_has_leak,
 )
 
@@ -137,6 +141,76 @@ def test_has_leak_unix_home_path():
     line = ("Loading extensions from `/home/worker/.nuget/packages/skiasharp/"
             "2.88.9/interactive-extensions/dotnet/SkiaSharp.DotNet.Interactive.dll`")
     assert _has_leak(line) is True
+
+
+# ---------------------------------------------------------------------------
+# Python-side category-A families (EPIC #6529 follow-up): path-based detection
+# broadened to AppData / HF-cache / conda / site-packages / ipykernel contexts.
+# ---------------------------------------------------------------------------
+
+def test_has_leak_appdata_site_packages():
+    """pip --user install warning carrying the user-site path."""
+    line = (r"C:\Users\jsboi\AppData\Roaming\Python\Python313\site-packages"
+            r"\triton\windows_utils.py:433: UserWarning: Failed to find CUDA.")
+    assert _has_leak(line) is True
+
+
+def test_has_leak_huggingface_cache():
+    """HuggingFace hub cache path embedded in an error message."""
+    line = (r"Error parsing line in C:\Users\jsboi\.cache\huggingface\hub"
+            r"\models--LTX-Video\tokenizer\spiece.model")
+    assert _has_leak(line) is True
+
+
+def test_has_leak_conda_env():
+    """conda env site-packages path in a warning."""
+    line = (r"C:\Users\jsboi\.conda\envs\bonsai\Lib\site-packages\peft\utils"
+            r"\other.py:1419: UserWarning: fetch failed")
+    assert _has_leak(line) is True
+
+
+def test_has_leak_ipykernel_temp():
+    """ipykernel temp-dir path in a deprecation warning."""
+    line = (r"C:\Users\jsboi\AppData\Local\Temp\ipykernel_30104\1424116259.py"
+            r":8: DeprecationWarning: generate_image is deprecated.")
+    assert _has_leak(line) is True
+
+
+def test_has_leak_torch_hub_cache():
+    """torch hub download cache path (forward-slash variant)."""
+    line = r"Downloading to C:\Users\jsboi/.cache/torch/hub/checkpoints/x.th"
+    assert _has_leak(line) is True
+
+
+def test_has_leak_requires_context_token_fp_guard():
+    """Username present but NO machine-path context token -> NOT a leak (FP
+    guard preserves prose discussing the username without a cache/env/site)."""
+    line = r"The leak class Users\jsboi is category-A (#6529)."
+    assert _has_leak(line) is False
+
+
+def test_is_redactable_python_yes_nuget_no():
+    """Python families are redactable (warning text is pedagogical); .nuget is
+    NOT (self-contained kernel noise -> dropped, cf #6567)."""
+    assert _is_redactable(r"C:\Users\jsboi\AppData\Roaming\Python\site-packages") is True
+    assert _is_redactable(r"C:\Users\jsboi\.conda\envs\bonsai\lib") is True
+    assert _is_redactable(r"Loading extensions from C:\Users\jsboi\.nuget\packages") is False
+
+
+def test_redact_path_preserves_warning_removes_username():
+    """Redaction replaces the username segment with ~ but keeps the rest of the
+    path and the trailing warning text (the pedagogical content)."""
+    win = _redact_path(r"C:\Users\jsboi\AppData\Roaming\Python\Python313"
+                       r"\site-packages\triton\windows_utils.py:433: "
+                       r"UserWarning: Failed to find CUDA.")
+    assert "jsboi" not in win
+    assert win.startswith("~")
+    assert "Failed to find CUDA." in win
+    assert "site-packages" in win
+    unix = _redact_path(r"/home/worker/.conda/envs/bonsai/lib/site-packages/peft/x.py:1: W: foo")
+    assert "worker" not in unix
+    assert unix.startswith("~")
+    assert "W: foo" in unix
 
 
 def test_output_has_leak_list_and_string():
@@ -382,11 +456,76 @@ def test_no_leak_no_change(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Python redaction (EPIC #6529): AppData/HF-cache/conda/site-packages/ipykernel
+# leaks are REDACTED (path -> ~) not dropped, preserving the warning text.
+# ---------------------------------------------------------------------------
+
+def test_strip_redacts_python_stream_warning(tmp_path):
+    """A pip --user warning in a stream is REDACTED (path -> ~), not dropped:
+    the warning text is pedagogical and must survive the strip."""
+    line = (r"C:\Users\jsboi\AppData\Roaming\Python\Python313\site-packages"
+            r"\triton\windows_utils.py:433: UserWarning: Failed to find CUDA.")
+    out = _stream_output(line, form="list")
+    cells = [_code(["import torch"], outputs=[out], execution_count=3)]
+    p = _write_nb(tmp_path / "warn.ipynb", cells)
+    outputs_with_leak, fixed = strip_in_place(p)
+    assert (outputs_with_leak, fixed) == (1, 1)
+    nb = json.loads(p.read_text(encoding="utf-8"))
+    cell = nb["cells"][0]
+    assert cell["execution_count"] == 3              # preserved
+    assert len(cell["outputs"]) == 1                 # output NOT dropped
+    text = cell["outputs"][0]["text"]
+    redacted = text[0] if isinstance(text, list) else text
+    assert "jsboi" not in redacted                   # username gone
+    assert "Failed to find CUDA." in redacted        # warning text kept
+    assert redacted.startswith("~")                  # path prefix redacted
+    assert count_leak_lines(p) == 0
+
+
+def test_strip_redacts_multiline_stream_only_leak_lines(tmp_path):
+    """A multi-line stream with one clean line + one leak line: only the leak
+    line is redacted, the clean line is untouched, the line count is stable."""
+    clean = "Starting training...\n"
+    leak = (r"C:\Users\jsboi\.conda\envs\bonsai\Lib\site-packages\peft\x.py:1: "
+            r"UserWarning: config not found.")
+    out = {"output_type": "stream", "name": "stderr", "text": [clean, leak]}
+    cells = [_code(["train()"], outputs=[out])]
+    p = _write_nb(tmp_path / "multi.ipynb", cells)
+    _, fixed = strip_in_place(p)
+    assert fixed == 1
+    nb = json.loads(p.read_text(encoding="utf-8"))
+    text = nb["cells"][0]["outputs"][0]["text"]
+    assert text[0] == clean                          # clean line untouched
+    assert "jsboi" not in text[1]
+    assert "config not found." in text[1]            # warning kept
+    assert count_leak_lines(p) == 0
+
+
+def test_strip_idempotent_after_redaction(tmp_path):
+    """Re-running on a redacted notebook is a no-op (redacted path has no
+    username marker -> no longer a leak)."""
+    line = r"C:\Users\jsboi\.cache\huggingface\hub\models--X\tokenizer\t.model"
+    out = _stream_output(line, form="list")
+    cells = [_code(["load()"], outputs=[out])]
+    p = _write_nb(tmp_path / "idem.ipynb", cells)
+    strip_in_place(p)
+    before = p.read_text(encoding="utf-8")
+    outputs_with_leak, fixed = strip_in_place(p)     # second pass
+    assert (outputs_with_leak, fixed) == (0, 0)
+    assert p.read_text(encoding="utf-8") == before
+
+
+# ---------------------------------------------------------------------------
 # Constants sanity
 # ---------------------------------------------------------------------------
 
 def test_constants_sensible():
     assert NUGET_CACHE_TOKEN == ".nuget"
+    assert ".nuget" in MACHINE_PATH_TOKENS
+    for tok in ("AppData", ".cache", ".conda", "site-packages", "ipykernel"):
+        assert tok in MACHINE_PATH_TOKENS
+        assert tok in REDACT_TOKENS
+    assert ".nuget" not in REDACT_TOKENS             # .nuget -> drop, not redact
     assert "Users\\" in USERNAME_MARKERS
     assert "Users/" in USERNAME_MARKERS
     assert "/home/" in USERNAME_MARKERS

@@ -47,10 +47,15 @@ surgical philosophy as ``strip_probe_banner.py`` / ``scrub_papermill_paths.py``:
 a text-level edit on the on-disk JSON so the rest of the file is byte-identical
 (no JSON re-serialization, no float coercion, no metadata churn).
 
-Scope (this hook): the .NET NuGet-cache kernel messages only. The other
-username-path patterns catalogued in ``#6529`` (HuggingFace-cache download
-warnings, pip ``AppData`` tracebacks, conda env paths) are Python-side and
-multi-line; they are tracked for follow-up hooks. See ``gh issue view 6529``.
+Scope (this hook): all category-A kernel-injected / env-dependent
+machine-path leaks catalogued in ``#6529``:
+  - .NET ``.nuget`` cache messages (``Loading extensions from``, ``Failed to
+    load kernel extension``) — self-contained kernel noise → **dropped**.
+  - Python families (``AppData`` pip ``--user`` site, ``.cache`` HuggingFace /
+    torch hub, ``.conda`` env, ``site-packages``, ``ipykernel`` temp) — the
+    path is embedded in a warning/error line whose text is pedagogical →
+    **redacted** (``C:\\Users\\<u>`` → ``~``, preserving the warning).
+See ``gh issue view 6529``.
 
 Usage:
     python strip_machine_paths.py --scan <path>      # dry-run, list only
@@ -68,14 +73,35 @@ import re
 import sys
 
 
-# Detection is **path-based**: a line is a leak iff it references the local
-# NuGet package cache (``.nuget``) AND embeds a real machine username. Two
-# dotnet-interactive kernel messages carry this payload — the ``display_data``
-# ``Loading extensions from <path>`` and the ``stream`` ``Failed to load kernel
-# extension ... from assembly <path>`` — and keying on the username path
-# (rather than the message prefix) catches both, cf. the ``#6537`` review which
-# found the v1 signature-based detector (a) missed the stream variant and
-# (b) false-positive stripped legitimate tilde lines.
+# Detection is **path-based**: a line is a leak iff it embeds a real machine
+# username (``Users\<u>`` / ``Users/<u>`` / ``/home/<u>``) AND references a
+# known category-A kernel-injection / env-dependent path context. Keying on
+# the username payload (not a message prefix) catches every variant of a
+# family — cf. the ``#6537`` review which found the v1 signature-based
+# detector (a) missed the ``stream`` ``Failed to load kernel extension``
+# variant and (b) false-positive stripped legitimate tilde lines. The context
+# token is the FP guard: legitimate prose mentioning ``Users\jsboi`` without a
+# cache/env/site token is left untouched.
+#
+# Families covered (EPIC #6529):
+# - ``.nuget``      : dotnet-interactive NuGet cache (``Loading extensions
+#                     from``, ``Failed to load kernel extension ... assembly``).
+# - ``AppData``     : Windows %APPDATA%/%LOCALAPPDATA% — pip ``--user`` site,
+#                     ipykernel temp-dir warning paths.
+# - ``.cache``      : HuggingFace hub + torch hub download caches.
+# - ``.conda``      : conda env ``lib/site-packages`` paths.
+# - ``site-packages``: Python user-site / env site-packages (pip, conda).
+# - ``ipykernel``   : ipykernel temp-dir paths in Python warnings.
+MACHINE_PATH_TOKENS = (
+    ".nuget",
+    "AppData",
+    ".cache",
+    ".conda",
+    "site-packages",
+    "ipykernel",
+)
+
+# Backward-compat alias (legacy single-token name kept for existing callers).
 NUGET_CACHE_TOKEN = ".nuget"
 
 # Username-bearing absolute-path markers — the actual PII payload. The
@@ -93,17 +119,48 @@ DATA_KEYS = ("text/plain", "text/html")
 STREAM_KEY = "text"
 ALL_KEYS = DATA_KEYS + (STREAM_KEY,)
 
+# Python-side category-A families whose path is EMBEDDED in a warning/error
+# line (pip ``--user`` site, HuggingFace/torch cache, conda env, ipykernel
+# temp). For these the warning text is pedagogical, so the path is REDACTED
+# (``C:\Users\<u>`` -> ``~``) rather than the whole line dropped. The .NET
+# NuGet-ext family is excluded — its message is self-contained kernel noise
+# (no pedagogical content), so it is dropped (cf ``#6567``).
+REDACT_TOKENS = ("AppData", ".cache", ".conda", "site-packages", "ipykernel")
+
+# Redact the username segment of an absolute machine path to the HOME
+# placeholder ``~``. Windows ``C:\Users\<u>`` and Unix ``/home/<u>``; the rest
+# of the path (cache/env/site subtree + any trailing warning text) is kept.
+# Operates on DECODED text (single-backslash in-memory form).
+_REDACT_WIN = re.compile(r"[A-Za-z]:\\Users\\[^\\\/]+")
+_REDACT_UNIX = re.compile(r"/home/[^\\\/]+")
+
+
+def _redact_path(text):
+    """Return ``text`` with username-bearing absolute path prefixes replaced
+    by ``~`` (HOME placeholder). Preserves the rest of the path and any
+    trailing warning/error text (the pedagogical content)."""
+    text = _REDACT_WIN.sub("~", text)
+    text = _REDACT_UNIX.sub("~", text)
+    return text
+
+
+def _is_redactable(text):
+    """A leak line whose path is embedded in warning/error text (Python
+    category-A families) — eligible for redaction rather than drop."""
+    return isinstance(text, str) and any(tok in text for tok in REDACT_TOKENS)
+
 
 def _has_leak(text):
-    """Return True if ``text`` (a str, or one element of a list) carries the
-    NuGet-cache username leak. Path-based: requires BOTH the NuGet-cache
-    context token AND a username absolute-path marker (the tilde HOME
-    placeholder carries neither marker and is left untouched)."""
+    """Return True if ``text`` (a str, or one element of a list) carries a
+    category-A machine-path username leak. Path-based: requires BOTH a
+    username absolute-path marker AND a machine-path context token (the tilde
+    HOME placeholder carries no username marker and is left untouched; prose
+    mentioning a username without a cache/env/site token is left untouched)."""
     if not isinstance(text, str):
         return False
-    if NUGET_CACHE_TOKEN not in text:
+    if not any(marker in text for marker in USERNAME_MARKERS):
         return False
-    return any(marker in text for marker in USERNAME_MARKERS)
+    return any(tok in text for tok in MACHINE_PATH_TOKENS)
 
 
 def _field_value(out, key):
@@ -259,6 +316,77 @@ def strip_in_place(nb_path):
     str_pat = re.compile(r'"((?:text/plain|text/html|text))"\s*:\s*"((?:[^"\\]|\\.)*)"')
     elem_pat = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
+    # --- Redaction pass (Python category-A families: AppData/HF-cache/conda/
+    # site-packages/ipykernel) — the path is embedded in a warning/error line
+    # whose text is pedagogical, so redact ``C:\Users\<u>`` -> ``~`` (preserving
+    # the warning) instead of dropping the whole line. Runs BEFORE the drop
+    # passes: once redacted the element no longer carries a username marker, so
+    # ``_has_leak`` returns False and the drop passes skip it. The .NET NuGet-ext
+    # family (``.nuget`` context only) is NOT redactable -> still dropped. ---
+    # String-form: "<key>": "<...leak...>" -> "<key>": "<...redacted...>"
+    redact_str_targets = []
+    for ci, oi, key in hits:
+        try:
+            cell = nb["cells"][ci]
+        except (IndexError, KeyError):
+            continue
+        outs = cell.get("outputs", [])
+        if oi >= len(outs):
+            continue
+        v = _field_value(outs[oi], key)
+        if isinstance(v, str) and _has_leak(v) and _is_redactable(v):
+            redact_str_targets.append((key, v))
+    for key, leak_str in reversed(redact_str_targets):
+        for m in list(str_pat.finditer(new_text)):
+            if m.group(1) != key:
+                continue
+            try:
+                decoded = json.loads('"' + m.group(2) + '"')
+            except json.JSONDecodeError:
+                continue
+            if decoded == leak_str:
+                redacted = _redact_path(decoded)
+                replacement = '"%s": %s' % (key, json.dumps(redacted))
+                new_text = new_text[:m.start()] + replacement + new_text[m.end():]
+                fixed += 1
+                break
+    # List-form: redact leak-bearing elements in place (keep the element,
+    # swap its content). Process blocks in reverse offset order.
+    for key in ALL_KEYS:
+        blocks = _find_data_list_bounds(new_text, key)
+        redact_blocks = []
+        for body_start, body_end in blocks:
+            body = new_text[body_start:body_end]
+            for em in elem_pat.finditer(body):
+                try:
+                    decoded = json.loads('"' + em.group(1) + '"')
+                except json.JSONDecodeError:
+                    continue
+                if _has_leak(decoded) and _is_redactable(decoded):
+                    redact_blocks.append((body_start, body_end))
+                    break
+        for body_start, body_end in reversed(redact_blocks):
+            body = new_text[body_start:body_end]
+            elems = list(elem_pat.finditer(body))
+            new_body = body
+            offset_shift = 0
+            for em in elems:
+                try:
+                    decoded = json.loads('"' + em.group(1) + '"')
+                except json.JSONDecodeError:
+                    continue
+                if not (_has_leak(decoded) and _is_redactable(decoded)):
+                    continue
+                redacted = _redact_path(decoded)
+                new_elem = json.dumps(redacted)
+                s = em.start() + offset_shift
+                e = em.end() + offset_shift
+                new_body = new_body[:s] + new_elem + new_body[e:]
+                offset_shift += len(new_elem) - (em.end() - em.start())
+                fixed += 1
+            if new_body != body:
+                new_text = new_text[:body_start] + new_body + new_text[body_end:]
+
     # --- String-form: replace the whole "<key>": "<...>" with "<key>": "" ---
     # Collect (key, leak_string) targets from the parsed notebook.
     str_targets = []
@@ -363,9 +491,10 @@ def iter_notebooks(nb_root):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Strip the .NET NuGet-cache machine-username leak "
-                    "('Loading extensions from' display_data + 'Failed to load "
-                    "kernel extension' stream) from notebooks"
+        description="Strip category-A kernel-injected machine-username path "
+                    "leaks from notebooks: .NET NuGet-ext messages (dropped) "
+                    "and Python AppData/HF-cache/conda/site-packages/ipykernel "
+                    "warning paths (redacted to ~)"
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--scan", metavar="PATH",
@@ -420,7 +549,7 @@ def main():
             print("[DEFECT] %s  (%d leak line(s))" % (rel, found))
 
     mode = "apply" if do_apply else "scan"
-    print("\n%s summary: %d notebook(s) carrying %d NuGet-ext leak line(s)"
+    print("\n%s summary: %d notebook(s) carrying %d machine-path leak line(s)"
           % (mode, total_files, total_found))
     if do_apply:
         print("  fixed: %d   skipped: %d file(s)" % (total_fixed, len(skipped)))
