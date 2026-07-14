@@ -1,45 +1,51 @@
 /-
-Conway calibration track — Doomsday lemmas (P2: closed-eval vs. case-decomposition)
+Voie calibration Conway — lemmes Doomsday (P2 : évaluation fermée vs décomposition par cas)
 John Horton Conway (1937-2020).
 
-These lemmas sit on top of `Conway.Doomsday` (the day-of-week algorithm). They form
-a HARNESS CALIBRATION ladder for the prover co-evolution Epic (#1453):
+Ces lemmes se construisent par-dessus `Conway.Doomsday` (l'algorithme du jour de la semaine).
+Ils forment une échelle de CALIBRATION DU HARNÈS pour l'Epic de co-évolution du prouveur (#1453) :
 
   - `isLeapYear_2000` / `isLeapYear_1900` / `isLeapYear_2024`
-        : closed boolean evaluations            -> decide / native_decide   (easy)
+        : évaluations booléennes fermées            -> decide / native_decide   (facile)
   - `dayOfWeek_conway_death`
-        : the homage — Conway died Sat 2020-04-11; closed eval over the algorithm
-        : naive `rfl` may stall on `%`-arithmetic -> decide / native_decide  (easy-med)
+        : l'hommage — Conway est décédé le sam. 2020-04-11 ; évaluation fermée de l'algorithme
+        : un `rfl` naïf peut caler sur l'arithmétique `%` -> decide / native_decide  (facile-moyen)
   - `dayOfWeek_add_seven`
-        : NOT closed (free `d`); a naive `decide` fails because `d` is a variable.
-          The Director must DECOMPOSE: `cases d <;> rfl`.                    (medium)
+        : NON fermé (`d` libre) ; un `decide` naïf échoue car `d` est une variable.
+          Le Directeur doit DÉCOMPOSER : `cases d <;> rfl`.                    (moyen)
 
-All `sorry`s have been eliminated (Epic #1453, #1651).
+Tous les `sorry` ont été éliminés (Epic #1453, #1651).
+
+Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier est **FR canonique**,
+avec son miroir anglais dans le fichier sibling `DoomsdayLemmas_en.lean` (modèle sibling pair
+ratifié 2026-07-04, cf `code-style.md` §Lean i18n). Les énoncés de théorèmes, les tactiques
+Lean, les noms de lemmes et les références Mathlib restent en anglais (compat Mathlib 4) ;
+seules les docstrings de théorème et ce bloc d'en-tête diffèrent entre les deux fichiers.
 -/
 
 import Conway.Doomsday
 
 namespace Conway
 
-/-- CALIBRATION (decide): 2000 is a leap year (divisible by 400). -/
+/-- CALIBRATION (decide) : 2000 est bissextile (divisible par 400). -/
 theorem isLeapYear_2000 : isLeapYear 2000 = true := by
   native_decide
 
-/-- CALIBRATION (decide): 1900 is NOT a leap year (divisible by 100, not 400). -/
+/-- CALIBRATION (decide) : 1900 n'est PAS bissextile (divisible par 100, pas par 400). -/
 theorem isLeapYear_1900 : isLeapYear 1900 = false := by
   native_decide
 
-/-- CALIBRATION (decide): 2024 is a leap year. -/
+/-- CALIBRATION (decide) : 2024 est bissextile. -/
 theorem isLeapYear_2024 : isLeapYear 2024 = true := by
   native_decide
 
-/-- HOMAGE + CALIBRATION: John Conway passed away on Saturday, April 11, 2020.
-    Closed evaluation of the Doomsday algorithm. -/
+/-- HOMMAGE + CALIBRATION : John Conway est décédé le samedi 11 avril 2020.
+    Évaluation fermée de l'algorithme Doomsday. -/
 theorem dayOfWeek_conway_death : dayOfWeek 2020 4 11 = DayOfWeek.saturday := by
   native_decide
 
-/-- CALIBRATION (case-decomposition): adding a full week is the identity.
-    A naive `decide` fails (`d` is free); requires `cases d`. -/
+/-- CALIBRATION (décomposition par cas) : ajouter une semaine complète est l'identité.
+    Un `decide` naïf échoue (`d` est libre) ; nécessite `cases d`. -/
 theorem dayOfWeek_add_seven (d : DayOfWeek) : DayOfWeek.add d 7 = d := by
   cases d <;> rfl
 
