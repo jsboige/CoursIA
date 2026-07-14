@@ -115,10 +115,10 @@ c.492 = profil **famille matplotlib mature multi-domaines** : 0% correction rée
 
 ## Voir aussi
 
-- [c.490b GenAI/Audio racine MANIFEST](../../GenAI/Audio/assets/readme/MANIFEST.md) — pattern frère (5ᵉ profil = dette cumulative majeure, swap correctif NON TENTÉ)
-- [c.490 GameTheory racine MANIFEST](../../GameTheory/assets/readme/MANIFEST.md) — pattern frère (6/6 ACCURATE + 6 corrections enrichissement croisant README in-situ)
-- [c.491 Probas racine MANIFEST](../Probas/assets/readme/MANIFEST.md) — pattern frère (1/1 ACCURATE + 0 correction, audit fondateur G.1 sur racine mono-figure)
-- [c.488b ML racine MANIFEST](../../ML/assets/readme/MANIFEST.md) — pattern frère (dette cumulative mineure 4/6 ACCURATE + 2/6 enrichissements)
-- [c.489 RL racine MANIFEST](../../RL/assets/readme/MANIFEST.md) — pattern frère (6/6 ACCURATE, attribution cellule corrigée)
-- [c.479 GenAI/Texte racine MANIFEST](../../GenAI/Texte/assets/readme/MANIFEST.md) — pattern frère (3/3 ACCURATE, format standard déjà en place)
+- [c.490b GenAI/Audio racine MANIFEST](../../../GenAI/Audio/assets/readme/MANIFEST.md) — pattern frère (5ᵉ profil = dette cumulative majeure, swap correctif NON TENTÉ)
+- [c.490 GameTheory racine MANIFEST](../../../GameTheory/assets/readme/MANIFEST.md) — pattern frère (6/6 ACCURATE + 6 corrections enrichissement croisant README in-situ)
+- [c.491 Probas racine MANIFEST](../../../Probas/assets/readme/MANIFEST.md) — pattern frère (1/1 ACCURATE + 0 correction, audit fondateur G.1 sur racine mono-figure)
+- [c.488b ML racine MANIFEST](../../../ML/assets/readme/MANIFEST.md) — pattern frère (dette cumulative mineure 4/6 ACCURATE + 2/6 enrichissements)
+- [c.489 RL racine MANIFEST](../../../RL/assets/readme/MANIFEST.md) — pattern frère (6/6 ACCURATE, attribution cellule corrigée)
+- [c.479 GenAI/Texte racine MANIFEST](../../../GenAI/Texte/assets/readme/MANIFEST.md) — pattern frère (3/3 ACCURATE, format standard déjà en place)
 - issue [#5780](../../../issues/5780) ; EPIC [#5654](../../../issues/5654)
