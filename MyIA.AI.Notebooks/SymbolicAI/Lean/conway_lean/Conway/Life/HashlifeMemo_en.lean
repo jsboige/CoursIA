@@ -1,65 +1,64 @@
 /-
-Copyright (c) 2026 CoursIA. Tous droits reserves.
-Distribue sous licence Apache 2.0 comme decrit dans le fichier LICENSE.
+Copyright (c) 2026 CoursIA. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
 
-## HashlifeMemo — Hashlife memoise, prouve correct (Phase 3c)
+## HashlifeMemo — Memoized Hashlife, proven correct (Phase 3c)
 
-Ce module implemente la couche de memoisation qui rend `hashlifeResult`
-faisable sur les temoins communautaires piliers (OTCA 35K gen, UnitCell
-4096 gen, Gemini 33M gen, CPU 1M gen). Sans memoisation, l'algorithme
-recursif de Hashlife dans `Conway.Life.Hashlife` est `9^k` au pire cas
-(chacun des 13 appels subnode engendre d'autres appels jusqu'au cas de
-base niveau 2). Avec memoisation (l'astuce canonique de Gosper : cacher
-les resultats des sous-arbres identiques), le nombre de sous-arbres
-distincts explores sur des patterns realistes tombe a quelques millions,
-dans le budget de `native_decide`.
+This module implements the memoization layer that makes `hashlifeResult`
+tractable on community pillar witnesses (OTCA 35K gen, UnitCell 4096 gen,
+Gemini 33M gen, CPU 1M gen). Without memoization, the recursive Hashlife
+algorithm in `Conway.Life.Hashlife` is `9^k` in the worst case (each of
+13 subnode calls spawns further calls until the level-2 base case). With
+memoization (the canonical Gosper trick: cache results for identical
+subtrees), distinct subtrees explored on realistic patterns drop to a few
+million, within `native_decide` budget.
 
-### Conception
+### Design
 
-- **Cache** : `Std.HashMap (Nat x MacroCell) MacroCell`, cle =
-  `(fuel, cell)`. Le fuel fait partie de la cle car `hashlifeResultAux`
-  est reellement dependant du fuel (ses branches de repli dependent de
-  l'epuisement du fuel), donc cacher par cellule seule serait incorrect
-  sur des cellules mal formees.
-- **`Hashable MacroCell`** : un hash structurel 64-bit du contenu
-  (`MacroCell.contentHash`). `BEq` provient du `DecidableEq` derive
-  (done loyal), ce dont les preuves de correction du cache ont besoin.
-- **Correction fusionnee** : au lieu de definir la fonction memoisee puis
-  la prouver correcte par une induction separee, chaque fonction renvoie
-  un sous-type conditionnant la valeur, le cache final, une preuve que
-  la valeur egale la reference non memoisee, et une preuve que le cache
-  reste correct (`CacheOK`). Chaque appel recursif porte sa propre preuve,
-  donc aucune induction globale sur l'arbre de recursion a 13 appels
-  n'est requise. Les preuves sont de type `Prop` et completement effacees
-  a l'execution.
+- **Cache**: `Std.HashMap (Nat × MacroCell) MacroCell`, keyed by
+  `(fuel, cell)`. The fuel is part of the key because
+  `hashlifeResultAux` is genuinely fuel-dependent (its fallback arms
+  depend on whether fuel is exhausted), so caching by cell alone would
+  be unsound on malformed cells.
+- **`Hashable MacroCell`**: a structural 64-bit content hash
+  (`MacroCell.contentHash`). `BEq` comes from the derived `DecidableEq`
+  (hence lawful), which is what the cache-correctness proofs need.
+- **Fused correctness**: instead of defining the memoized function and
+  then proving it correct by a separate induction, each function returns
+  a subtype packaging the value, the final cache, a proof that the value
+  equals the unmemoized reference, and a proof that the cache stays
+  correct (`CacheOK`). Every recursive call carries its own proof, so no
+  global induction over the 13-call recursion tree is ever needed. The
+  proofs are `Prop`-valued and fully erased at runtime.
 
-### Notes d'implementation
+### Implementation notes
 
-- La branche bien formee `node`-de-`node`s deploie ses 16 petits-enfants
-  (`a1..a4, b1..b4, c1..c4, d1..d4`) **sans** alias de motif (`c@(...)`) :
-  les fvars alias sont syntaxiquement opaques a `rw`/`simp`, ce qui
-  casserait le lemme d'unfold `hashlifeResultAux_succ_node` ci-dessous.
-- Les branches mal formees dont le calcul de `level` est bloque (par ex.
-  `1 + (1 + w1.level)` avec `w1` neutre) renvoient l'expression `ite`
-  verbatim de la branche de repli de `hashlifeResultAux` pour que `rfl`
-  ferme l'obligation de preuve par unfold definitionnel.
+- The well-formed `node`-of-`node`s arm spells out its 16 grandchildren
+  (`a1..a4, b1..b4, c1..c4, d1..d4`) **without** a pattern alias
+  (`c@(...)`): alias fvars are syntactically opaque to `rw`/`simp`, which
+  would break the unfold lemma `hashlifeResultAux_succ_node` below.
+- The malformed arms whose `level` computation is stuck (e.g.
+  `1 + (1 + w1.level)` with `w1` neutral) return the *verbatim* `ite`
+  expression from `hashlifeResultAux`'s fallback arm so that `rfl`
+  closes the proof obligation by definitional unfolding.
 -/
 
 /-
-  Convention i18n (EPIC #4980, decision user 2026-07-04) : ce fichier est **FR canonique**,
-  avec son miroir anglais dans le fichier sibling `HashlifeMemo_en.lean` (modele sibling
-  pair ratifie 2026-07-04, cf `code-style.md` §Lean i18n). Les enonces de theoremes,
-  les tactiques Lean, les noms de lemmes et les references Mathlib restent en anglais
-  (compat Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tete different
-  entre les deux fichiers.
+  English mirror of `HashlifeMemo.lean` (FR canonical). Convention EPIC #4980
+  (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n): distinct FR + EN sibling
+  files — no inline bilingual block in a single file (Option B rejected). The module
+  docstring and the public theorem docstrings below differ from the FR version; the body
+  signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
 import Conway.Life.MacroCell
 import Conway.Life.Hashlife
 import Std.Data.HashMap
 
-namespace Conway
-namespace Life
+namespace Conway_en
+open Conway
+namespace Life_en
+open Life
 
 open MacroCell
 
@@ -355,5 +354,5 @@ kernel-checked theorems above). -/
 #eval evolveHashlifeFastMemo 4 blinker_h == evolve 4 blinker_h        -- true
 #eval evolveHashlifeFastMemo 3 toad == evolve 3 toad                  -- true
 
-end Life
-end Conway
+end Life_en
+end Conway_en
