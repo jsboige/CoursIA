@@ -13,10 +13,10 @@
 # ExpressionUtils.dll from the NuGet cache alongside it.
 #
 # Result: a fresh checkout with --recurse-submodules + .NET SDK runs every
-# SMT/Z3 notebook self-contained.
+# SMT/Z3-Linq2Z3 notebook self-contained.
 #
 # Decision: ai-01 [DECISION COORD] 2026-06-13, option (b) refined.
-# See: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3/04_Nested_Arrays_2D.ipynb (cell 1)
+# See: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb (cell 1)
 
 set -euo pipefail
 

@@ -14,10 +14,10 @@
 #   ExpressionUtils.dll from the NuGet cache alongside it.
 #
 # Result: a fresh checkout with --recurse-submodules + .NET SDK can run every
-# SMT/Z3 notebook self-contained (no publish account, offline-friendly).
+# SMT/Z3-Linq2Z3 notebook self-contained (no publish account, offline-friendly).
 #
 # Decision: ai-01 [DECISION COORD] 2026-06-13, option (b) refined.
-# See: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3/04_Nested_Arrays_2D.ipynb (cell 1)
+# See: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb (cell 1)
 
 param(
     # Path to the Z3.Linq submodule (auto-detected relative to this script).

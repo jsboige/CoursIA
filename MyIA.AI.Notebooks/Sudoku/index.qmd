@@ -75,12 +75,12 @@ jupyter kernelspec list             # vérifier la présence de .net-csharp
 
 - **README de série** : [Sudoku/README.md](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Sudoku/README.md) — table des matières détaillée et arc narratif.
 - **Catalogue** : `COURSE_CATALOG.generated.md` — inventaire exhaustif avec statuts, kernels, prérequis.
-- **Séries connexes** : [Search](../Search/index.qmd) (CSP et métaheuristiques, fondements algorithmiques), [GameTheory](../GameTheory/index.qmd) (jeux combinatoires), [SMT/Z3 (README)](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3/README.md) (Z3, le solveur du Sudoku-12).
+- **Séries connexes** : [Search](../Search/index.qmd) (CSP et métaheuristiques, fondements algorithmiques), [GameTheory](../GameTheory/index.qmd) (jeux combinatoires), [SMT/Z3 (README)](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/README.md) (Z3, le solveur du Sudoku-12).
 
 ## Pour aller plus loin
 
 Une fois les 19 approches comparées, les prolongements naturels sont :
 
 1. **Vers la preuve formelle** : Sudoku-19 (Lean 4) ouvre la série SymbolicAI/Lean — la propagation devient un théorème.
-2. **Vers les solveurs SMT** : [SMT/Z3 (README)](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3/README.md) — Z3, le moteur du Sudoku-12, appliqué à l'ordonnancement, la cryptarithmétique, les bit-vectors.
+2. **Vers les solveurs SMT** : [SMT/Z3 (README)](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/README.md) — Z3, le moteur du Sudoku-12, appliqué à l'ordonnancement, la cryptarithmétique, les bit-vectors.
 3. **Vers la théorie des jeux** : [GameTheory](../GameTheory/index.qmd) — d'autres espaces combinatoires, d'autres critères d'optimalité.

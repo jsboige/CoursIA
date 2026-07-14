@@ -14,10 +14,10 @@
 #   (System.CodeDom) from the NuGet cache is all that the notebook #r path-loads need.
 #
 # Result: a fresh checkout with --recurse-submodules + .NET SDK can run notebook
-#   06_Witness_Generation_Automata self-contained (no publish account, offline-friendly).
+#   10_Witness_Generation_Automata self-contained (no publish account, offline-friendly).
 #
 # Mirrors scripts/environment/z3-build-deploy.ps1 (Z3.Linq fork). See #2979 step 6.
-# See: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3/06_Witness_Generation_Automata.ipynb (cell 1)
+# See: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb (cell 1)
 
 param(
     # Path to the Automata submodule (auto-detected relative to this script).
