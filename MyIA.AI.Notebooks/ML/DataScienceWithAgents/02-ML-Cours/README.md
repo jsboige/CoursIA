@@ -39,11 +39,11 @@ La série ne se contente pas d'ajuster des modèles : chaque chapitre **rend vis
 
 **[2.3 — Une sigmoïde plutôt qu'une droite.](2.3-Regression-lineaire-logistique.ipynb)** À partir des mêmes étiquettes binaires, on ajuste d'abord une droite (moindres carrés, OLS), puis une sigmoïde (maximum de vraisemblance, MLE). La droite sort du cadre dès qu'elle doit prédire une probabilité ; la sigmoïde écrase le score linéaire dans [0, 1] et donne à chaque point sa probabilité d'appartenir à la classe — c'est tout l'écart entre régression linéaire et logistique.
 
-<p align="center"><a href="2.3-Regression-lineaire-logistique.ipynb"><img src="assets/readme/ml23-sigmoid.png" width="540" alt="Régression logistique : la sigmoïde transforme le score linéaire en probabilité (OLS vs MLE)."></a></p>
+<p align="center"><a href="2.3-Regression-lineaire-logistique.ipynb"><img src="assets/readme/ml23-sigmoid.png" width="540" alt="Fonction sigmoïde : le score linéaire est écrasé en probabilité dans [0, 1] par la fonction de lien logistique (MLE)."></a></p>
 
 **[2.4 — La frontière, de l'escalier au lissage.](2.4-Arbres-Forets-Ensembles.ipynb)** Sur le jeu de cancer du sein, on trace la frontière de décision d'un arbre unique, puis celle d'une forêt aléatoire. L'arbre seul découpe l'espace en escaliers rigides, sensible au bruit ; l'ensemble moyenne ces coupes et lisse la frontière. C'est la réduction de variance rendue géométrique — la raison pour laquelle les forêts battent l'arbre isolé.
 
-<p align="center"><a href="2.4-Arbres-Forets-Ensembles.ipynb"><img src="assets/readme/ml24-frontiere.png" width="560" alt="Forêt aléatoire : la frontière de décision, escalier d'un arbre seul vs lissage par l'ensemble."></a></p>
+<p align="center"><a href="2.4-Arbres-Forets-Ensembles.ipynb"><img src="assets/readme/ml24-frontiere.png" width="560" alt="Forêt aléatoire : la frontière de décision, escalier d'un arbre seul vs lissage par l'ensemble (réduction de variance géométrique, jeu de cancer du sein mean radius × mean texture)."></a></p>
 
 **[2.5 — Le coût d'un seuil.](2.5-Biais-Variance-CV-ROC.ipynb)** La courbe ROC balaye tous les seuils de décision possibles et échange les faux positifs contre les faux négatifs ; l'aire sous la courbe (AUC) résume ce compromis en un nombre. Mais le bon seuil n'est pas celui qui maximise l'AUC : il dépend du coût métier d'un faux négatif (rater un cancer) face à un faux positif. La figure impose cette lecture économique de la décision.
 
