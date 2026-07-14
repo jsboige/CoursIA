@@ -1,39 +1,69 @@
-# MANIFEST des figures README
+# Manifeste des figures — RL
 
-Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks).
+Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks). Format standard « Contenu réel vérifié » + « Ce qui n'est PAS dans la figure » par figure (post-c.486 vague-2).
+
+**Note d'audit c.489 (2026-07-14)** : migration vague-1 → format standard. Audit vision **G.1 firsthand** par lecture directe des 6 PNG via `Read` tool. Méthode 4-pass formalisée c.481b-L1 : (1) lecture G.1 PNG + (2) croisement alt-text + (3) croisement MANIFEST + (4) `sha256sum` (ici : 6 SHA distincts — pas de permutation). Investigation `nbformat` Python : les attributions `cell[idx, out_idx]` sont confirmées par extraction `display_data` `image/png` pour 5 figures ; **rl13 est CORRIGÉE** (le MANIFEST v1 citait `cell[12, out=1]` mais cell[12] ne porte qu'un seul output → l'attribution correcte est `cell[12, out=0]`). Bilan : **6 ACCURATE sans correction d'alt-text** + **1 correction réelle d'attribution cellule** (rl13 `out=1` → `out=0`). 0 refonte, 0 enrichissement. Bug-rate = 0% alt-text / 17% attribution = cohérent avec familles matplotlib authentiques mono-auteur pédagogue rigoureux (cf c.478 SocialChoice 0/6, c.480 ML.Net 0/6, c.488 ML/DataScienceWithAgents 17% alt-text only).
 
 ## rl4-bandits.png
 
-- **Source** : notebook `rl_4_multi_armed_bandits.ipynb` (cellule 30, output 0)
-- **Alt-text (FR)** : Bandits multi-bras : fréquence de sélection du meilleur bras (moyenne mobile 50) comparée entre stratégies (Greedy, epsilon-greedy 0.1/0.01, UCB c=2, aléatoire) sur 2000 pas.
-- **Poids** : 76.1 KB (PIL optimisé)
+- **Source** : notebook `rl_4_multi_armed_bandits.ipynb` (cellule 30, output 0, `display_data` `image/png`)
+- **SHA** : `b2288a90b9bcf4cedbc9200e9095a29d7bc34c4f9db1a38ed4aca747ce8492f0` (taille 76 100 octets)
+- **Alt-text (FR)** : Bandits multi-bras : fréquence de sélection du meilleur bras (moyenne mobile 50) sur 2000 pas, comparant Greedy, epsilon-greedy (0.1 et 0.01), UCB (c=2) et une politique aléatoire, avec la baseline 1/10 en pointillés.
+- **Poids** : 76.1 KB (natif, PIL optimisé)
+- **Contenu réel vérifié (2026-07-14, c.489)** : **Single panel** matplotlib. Titre « Convergence vers le meilleur bras ». Axe x « Pas de temps » 0→2000 ; axe y « Fréquence de sélection du meilleur bras (moyenne mobile 50) » 0.0→1.0. Cinq courbes de stratégies (légende coin haut-gauche) : **Random grise** (plate à ~0.1, baseline), **Greedy rouge** (monte très vite, sature à 0.8 vers pas 250), **e-greedy (0.1) bleu** (monte progressivement, atteint ~0.7 vers pas 2000), **e-greedy (0.01) vert** (croissance lente, atteint ~0.5 vers pas 2000), **UCB (c=2) violet** (croissance lente mais concurrente, ~0.5 vers pas 2000). **Random baseline (1/10)** en pointillé gris à 0.1. Grille légère visible.
+- **Verdict** : **VRAI** — l'alt-text capture l'enseignement (compromis exploration/exploitation à 1 pas, convergence UCB vs e-greedy vs Greedy). Précision transférable : Greedy = la stratégie la plus rapide au début mais piégée par l'erreur initiale sur l'estimation du meilleur bras ; UCB converge plus lentement que e-greedy(0.1) ici car le bandit stochastique n'avantage pas systématiquement UCB sur cet horizon court (2000 pas).
+- **Ce qui n'est PAS dans la figure** : pas de regret cumulé (la métrique canonique des bandits — la figure montre la « fréquence de sélection » et non le regret) ; pas de stratégie Thompson Sampling (citée dans le notebook mais non ajoutée à ce comparatif) ; pas d'incertitude / écart-type sur les courbes (single seed visible, ou moyenne sans barres) ; pas de barre de la baseline ε-optimal (la baseline 1/10 = pire cas).
 
 ## rl5-mdp-qlearning.png
 
-- **Source** : notebook `rl_5_mdp_dp_qlearning.ipynb` (cellule 22, output 0)
-- **Alt-text (FR)** : Q-Learning tabulaire sur FrozenLake : récompense moyenne lissée (fenêtre 500) croissant de 0 à ~0.9 sur ~4500 épisodes.
-- **Poids** : 29.8 KB (PIL optimisé)
+- **Source** : notebook `rl_5_mdp_dp_qlearning.ipynb` (cellule 22, output 0, `display_data` `image/png`)
+- **SHA** : `8fe305f8035d03d93bd50d08efb0cb1d5f0d131b3c05110f67ce1dac54571dc5` (taille 29 800 octets)
+- **Alt-text (FR)** : Q-Learning tabulaire sur FrozenLake : récompense moyenne lissée (fenêtre 500 épisodes) croissant de 0 à environ 0.9 sur ~4500 épisodes.
+- **Poids** : 29.8 KB (natif, PIL optimisé)
+- **Contenu réel vérifié (2026-07-14, c.489)** : **Single panel** matplotlib sans barre d'erreur. Titre « Convergence du Q-Learning sur FrozenLake ». Axe x « Episode » 0→~4500 ; axe y « Recompense moyenne (fenetre=500) » 0.0→0.9. **Une seule courbe bleue** : croissance quasi-mono-tone de ~0.03 (ep 0) à ~0.88 (ep 4500), passage ~0.5 vers ep 1500, ralentissement marqué après ep 2500 (saturation asymptotique sous 0.9).
+- **Verdict** : **VRAI** — alt-text capture l'enseignement (Q-Learning tabulaire converge sur FrozenLake avec fenêtre=500) et le chiffre « 0.9 » est littéral (la courbe sature vers 0.88, pas exactement 0.9 mais à la précision du lissage).
+- **Ce qui n'est PAS dans la figure** : pas de comparaison à une politique aléatoire (qui oscillerait vers ~0.02 sur FrozenLake 4×4 non-glissant) ; pas de comparaison Value Iteration / Policy Iteration (mentionnées dans le notebook pour des MDP Gröger, absentes de la figure) ; pas d'incertitude / écart-type (single seed) ; pas d'axe secondaire log pour observer la convergence au début ; pas d'annotation de l'épisode où γ=0.95 vs γ=0.99 (la sensibilité au facteur d'actualisation est invisible).
 
 ## rl10-reward-shaping.png
 
-- **Source** : notebook `rl_10_reward_shaping.ipynb` (cellule 8, output 0)
-- **Alt-text (FR)** : Reward shaping : vitesse d'apprentissage comparée (baseline sparse, potential-based, heuristique, curriculum), return en moyenne mobile 50 avec seuil de convergence à -30.
-- **Poids** : 49.4 KB (PIL optimisé)
-
-## rl12-distributional.png
-
-- **Source** : notebook `rl_12_distributional_rl.ipynb` (cellule 16, output 0)
-- **Alt-text (FR)** : C51 sur CartPole-v1 : courbe d'apprentissage (retour par épisode + moyenne glissante 20 culminant vers ~160) contre baseline aléatoire, ~300 épisodes.
-- **Poids** : 71.8 KB (PIL optimisé)
-
-## rl13-curiosity.png
-
-- **Source** : notebook `rl_13_curiosity_exploration.ipynb` (cellule 12, output 0)
-- **Alt-text (FR)** : Exploration par curiosité (RND) : récompense extrinsèque lissée (epsilon-greedy bloqué ~0.1 vs RND ~0.96) et histogramme des visites d'états sur la chaîne-piège.
-- **Poids** : 52.3 KB (PIL optimisé)
+- **Source** : notebook `rl_10_reward_shaping.ipynb` (cellule 8, output 0, `display_data` `image/png`)
+- **SHA** : `5c496a41662d2ca819091d57932c3d465835a22f38356d7669ff8233b95f8d19` (taille 49 400 octets)
+- **Alt-text (FR)** : Reward shaping : vitesse d'apprentissage comparée sur quatre variantes — baseline (récompense sparse), potential-based shaping (Ng 1999), shaping heuristique et curriculum learning. Return en moyenne mobile 50 par épisode, seuil de convergence à -30 en pointillés.
+- **Poids** : 49.4 KB (natif, PIL optimisé)
+- **Contenu réel vérifié (2026-07-14, c.489)** : **Single panel** matplotlib sans barre d'erreur. Titre « Vitesse d'apprentissage : Reward Shaping vs Curriculum ». Axe x « Episodes » 0→2000 ; axe y « Return (MA-50) » -110→0. Quatre courbes : **Baseline rouge** (démarre à -110 vers ep 50, franchit seuil -30 vers ep 200, sature ~-17 vers ep 1500), **Potential-based vert** (très rapide, démarre ~-15, sature ~-17), **Heuristic orange** (encore plus rapide, démarre ~-15, sature ~-17), **Curriculum bleu** (très rapide, démarre ~-15, sature ~-17). **Seuil de convergence** horizontal dashed gris à -30. Légende bas-droite.
+- **Verdict** : **VRAI** — alt-text capture l'enseignement (3 stratégies convergent très vite vers -17 ; baseline sparse met ~190 épisodes à franchir le seuil). Précision transférable : les 3 stratégies assistées (Potential, Heuristic, Curriculum) ne sont **pas strictement identiques** — Curriculum a un léger bruit et Potential se stabilise immédiatement à -17 tandis que Heuristic/Curriculum présentent une oscillation finale vers ep 1200-1800 (probablement liée au redémarrage des phases curriculum). Tous rejoignent un plateau commun ~-17, ce qui valide visuellement que le shaping ne biaise pas la politique optimale mais accélère la convergence (cf invariant Ng 1999).
+- **Ce qui n'est PAS dans la figure** : pas d'incertitude / écart-type (single seed ou moyenne sans barres) ; pas d'annotation de γ ni des hyperparamètres Q-Learning (le notebook utilise Q-Learning tabulaire mais les valeurs spécifiques ne sont pas visibles) ; pas d'axe secondaire pour visualiser la distance Manhattan calculée par le potential Φ ; pas de comparaison aux bornes théoriques (-1/pas × nb_pas_optimal comme pire cas).
 
 ## rl11-pomdp.png
 
-- **Source** : notebook `rl_11_pomdp.ipynb` (cellule 15, output 1)
-- **Alt-text (FR)** : POMDP Tiger Problem : récompense moyenne de six méthodes sur 5 seeds (Random -46.0, Open immédiat -6.2, Listen x1/x2, Q-MDP, Belief Q), diagramme en barres avec écart-types.
-- **Poids** : 26.6 KB (PIL optimisé)
+- **Source** : notebook `rl_11_pomdp.ipynb` (cellule 15, output 1, `display_data` `image/png`)
+- **SHA** : `7308c9ab835a2595f1f7ab2075bfdeb070792ef8faf81aa19b01b0bca64fc361` (taille 26 600 octets)
+- **Alt-text (FR)** : POMDP Tiger Problem : diagramme en barres comparant la récompense moyenne de six méthodes sur 5 seeds, avec barres d'erreur — Random (-46.0), Open immédiat (-6.2), Listen x1 (-7.8), Listen x2 (-8.3), Q-MDP (-11.8), Belief Q (-8.0).
+- **Poids** : 26.6 KB (natif, PIL optimisé)
+- **Contenu réel vérifié (2026-07-14, c.489)** : **Single panel** matplotlib en diagramme en barres verticales (axes retournés). Titre « Tiger Problem : Comparaison des methodes (5 seeds) ». Axe y « Return moyen » 0→-46 (inversé vers le bas). Six barres colorées avec valeurs exactes annotées sous chaque barre : **Random rouge -46.0** (très mauvaise, hit tigre), **Open immediat orange -6.2**, **Listen x1 vert -7.8**, **Listen x2 vert clair -8.3**, **Q-MDP bleu -11.8**, **Belief Q violet -8.0**. **Barres d'erreur** (noires) sur chaque barre (sauf Random où elles sont invisibles à l'échelle de la figure).
+- **Verdict** : **VRAI** — alt-text capture l'enseignement (Random catastrophique, quatre politiques informées entre -6 et -12) **ET les valeurs exactes** (chiffres annotés sous chaque barre). Précision transférable : **Q-MDP n'est PAS la meilleure** (-11.8 vs -6.2 d'Open immédiat et -7.8/-8.3/-8.0 des Listen/Belief Q). L'enseignement pédagogique est que la « politique informée ab initio » (Q-MDP) est sous-optimale vs « écouter + décider » (Open immédiat écoute 0 fois donc -6.2 ; Listen x1/x2 = -7.8/-8.3 = écoutent puis ouvrent = perdent un peu à écouter) — la « baseline naïve » Open immédiat gagne par surprise. C'est l'inverse de l'attente intuitive et c'est précisément le piège pédagogique du Tiger Problem (Cassandra 1994) que le notebook cherche à exposer.
+- **Ce qui n'est PAS dans la figure** : pas d'annotation textuelle du « pourquoi Q-MDP est sous-optimal » (l'enseignement pédagogique reste dans le texte du notebook) ; pas de visualisation de la distribution des beliefs P(tiger-left) (mentionnée dans le notebook via filtre bayésien) ; pas de comparaison aux bornes théoriques (VOI = value of information) ; les barres d'erreur sont visibles mais leurs magnitudes (σ inter-seeds) ne sont pas annotées.
+
+## rl12-distributional.png
+
+- **Source** : notebook `rl_12_distributional_rl.ipynb` (cellule 16, output 0, `display_data` `image/png`)
+- **SHA** : `d347b982b76dd3c2c47648708692cd02fcef042fc280a424d049eb6f91fd986b` (taille 71 800 octets)
+- **Alt-text (FR)** : C51 sur CartPole-v1 : courbe d'apprentissage — retour par épisode (bleu clair), moyenne glissante sur 20 épisodes (rouge, culminant vers ~160), baseline aléatoire (~20) en pointillés, sur environ 300 épisodes.
+- **Poids** : 71.8 KB (natif, PIL optimisé)
+- **Contenu réel vérifié (2026-07-14, c.489)** : **Single panel** matplotlib. Titre « C51 sur CartPole-v1 : courbe d'apprentissage ». Axe x « episode » 0→~300 ; axe y « retour (pas equilibres) » 0→~320. Trois séries : **retour par episode bleu clair** (oscille violemment 0→320, typique d'un agent en cours d'apprentissage), **moyenne glissante (20) rouge** (monte de ~25 (ep 50) à ~60 (ep 200) puis à ~155 (ep 280), redescend légèrement à ~120 vers ep 300), **baseline aleatoire (~20)** en pointillé noir. Légende haut-gauche.
+- **Verdict** : **VRAI** — alt-text capture l'enseignement (C51 surpasse baseline aléatoire mais ne plafonne pas à 500). Précision transférable : le pic ~155-160 est observable vers ep 280, en deçà du plafond 500 de CartPole-v1 (« C51 n'a pas convergé »). C'est cohérent avec ~18 000 pas d'entraînement (300 épisodes × ~60 pas = 18 000) et l'absence de γ/learning rate tuning poussé. L'écart-type apparent des retours bleus clairs = 50-100, signal de la stochasticité épisodique du début d'apprentissage.
+- **Ce qui n'est PAS dans la figure** : pas de visualisation de la **distribution apprise** $Z(s,a)$ (qui est l'apport pédagogique central de C51 — la figure montre la moyenne d'apprentissage mais pas les atomes/dispersion categorical) ; pas de comparaison à un DQN scalaire baseline (la figure ne permet pas de discriminer C51 vs DQN sur ce seul run) ; pas d'incertitude / écart-type sur la moyenne glissante (single seed) ; pas d'annotation du nombre exact de pas d'entraînement (l'ordre de grandeur ~18 000 est dans le notebook, pas dans la figure).
+
+## rl13-curiosity.png
+
+- **Source** : notebook `rl_13_curiosity_exploration.ipynb` (**cellule 12, output 0** *(corrigé c.489 — MANIFEST v1 citait `out=1` mais cell[12] ne porte qu'un seul output)*, `display_data` `image/png`)
+- **SHA** : `e424ad14e4c3971beddf8676a88102539f37f17bbbf5b355c12d411e6ca35073` (taille 52 300 octets)
+- **Alt-text (FR)** : RND (Random Network Distillation) sur chaîne MDP-piège : à gauche, récompense extrinsèque lissée par épisode — epsilon-greedy bloqué sur le piège (~0.10), RND atteint la grande récompense (~0.96) vers l'épisode 200 ; à droite, histogramme des visites d'états — epsilon-greedy concentré sur l'état 0 (~63%), RND réparti sur toute la chaîne (états 0 à 16).
+- **Poids** : 52.3 KB (natif, PIL optimisé)
+- **Contenu réel vérifié (2026-07-14, c.489)** : **2 panneaux côte à côte** sur la chaîne-piège N=16 états. **Gauche « Récompense extrinsèque par épisode (lissée) »** : axe x « épisode » 0→~500, axe y « récompense » 0.0→1.0. Deux courbes : **epsilon-greedy rouge** (plate à ~0.10 sur tout l'horizon, ne débloque jamais), **RND (curiosité) vert** (monte progressivement à partir de ep ~80, atteint 1.0 vers ep 200, oscille entre 0.9 et 1.0 ensuite). **Lignes horizontales pointillées** : **piège (petite récompense)** grise à 0.10, **grande récompense** noire à 1.0. **Droite « Distribution des visites d'états »** : axe x « état (0 = départ, N-1 = grande récompense) » 0→16, axe y « fréquence de visite » 0.0→~0.65. Histogramme groupé : **epsilon-greedy rouge** (concentré à l'état 0 à ~63%, décroît rapidement vers 0 ensuite), **RND vert** (réparti sur tous les états 0-16, fréquence ~5-10% par état).
+- **Verdict** : **VRAI** — alt-text capture l'enseignement (epsilon-greedy piégé, RND débloque la chaîne) **ET les chiffres** (~0.10 vs ~0.96, ~63% sur état 0). Précision transférable : la courbe RND oscille entre 0.9 et 1.0 après ep 200 — non strictement monotone — c'est cohérent avec la stochasticité de l'environnement chaîne (l'agent peut retomber brièvement dans le piège après une exploration, d'où l'oscillation visible).
+- **Ce qui n'est PAS dans la figure** : pas de visualisation de l'erreur de prédiction du RND (qui est le signal de bonus interne — la figure montre l'effet mais pas le mécanisme) ; pas de comparaison à ICM (Intrinsic Curiosity Module, mentionnée dans le notebook mais absente du panneau) ; pas d'axe secondaire pour la fréquence de visite logarithmique (qui clarifierait l'écart entre epsilon-greedy et RND pour les états lointains) ; pas d'incertitude / écart-type (single seed).
+
+---
+
+*Audit G.1 conducted 2026-07-14 (c.489) — méthode 4-pass formalisée c.481b-L1. Bilan : 6/6 figures ACCURATE (0 alt-text corrigé) + 1 attribution cellule corrigée (rl13 `out=1` → `out=0`). 0 PNG regénéré, 0 notebook re-exécuté, 0 catalogue régénéré (cf catalog-pr-hygiene R1).*
