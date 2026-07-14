@@ -1,28 +1,36 @@
 /-
-Grothendieck Part 18 — The constant sheaf
+Hommage Grothendieck — Partie 18 : Le faisceau constant
 
-Part 17 (SheafHom.lean) introduced the internal hom of sheaves, the first step
-toward Cartesian closed structure on Sheaf J (Type _).
+La partie 17 (SheafHom.lean) a introduit l'hom interne des faisceaux,
+première étape vers la structure cartésienne fermée sur Sheaf J (Type _).
 
-This module introduces the **constant sheaf functor** `constantSheaf J D`,
-defined as the sheafification of the constant presheaf. It is left adjoint
-to evaluation at a terminal object (constantSheafAdj), establishing a
-fundamental adjunction in Grothendieck topos theory.
+Ce module introduit le **foncteur faisceau constant** `constantSheaf J D`,
+défini comme la faisceautisation du préfaisceau constant. Il est adjoint à
+gauche de l'évaluation en un objet terminal (constantSheafAdj), établissant
+une adjonction fondamentale en théorie des topos de Grothendieck.
 
-Key constructions bridged from Mathlib (`CategoryTheory.Sites.ConstantSheaf`):
+Constructions clés pontées depuis Mathlib (`CategoryTheory.Sites.ConstantSheaf`) :
 
-  - `constantPresheafAdj` : constant presheaf ⊣ evaluation at terminal object
-  - `constantSheaf J D` : the constant sheaf functor D ⥤ Sheaf J D
-  - `constantSheafAdj` : constantSheaf ⊣ sheafSections at terminal object
-  - `Sheaf.IsConstant` : predicate for sheaves in the essential image
-  - `Sheaf.isConstant_iff_isIso_counit_app` : constancy ↔ counit is iso
-  - `Sheaf.isConstant_iff_of_equivalence` : constancy invariant under equivalence
-  - `Sheaf.isConstant_iff_forget` : constancy through forgetful functors
+  - `constantPresheafAdj` : préfaisceau constant ⊣ évaluation en objet terminal
+  - `constantSheaf J D` : le foncteur faisceau constant D ⥤ Sheaf J D
+  - `constantSheafAdj` : constantSheaf ⊣ sheafSections en objet terminal
+  - `Sheaf.IsConstant` : prédicat pour les faisceaux dans l'image essentielle
+  - `Sheaf.isConstant_iff_isIso_counit_app` : constance ↔ la counité est un iso
+  - `Sheaf.isConstant_iff_of_equivalence` : constance invariante par équivalence
+  - `Sheaf.isConstant_iff_forget` : constance à travers les foncteurs d'oubli
 
-This is a key ingredient for understanding the "locally constant" nature of
-sheaves and for connecting sheaf theory to cohomology (SGA 4 II, IV).
+C'est un ingrédient clé pour comprendre la nature « localement constante »
+des faisceaux et pour relier la théorie des faisceaux à la cohomologie
+(SGA 4 II, IV).
 
-Epic #1646, See #2159. All `sorry`s eliminated at creation.
+Epic #1646, See #2159. Tous les `sorry` éliminés à la création.
+
+Convention i18n (EPIC #4980 ratifiée user 2026-07-04, voir
+`code-style.md` §Lean i18n) : ce module substantiel est **FR canonique**,
+avec son miroir anglais dans le fichier sibling `ConstantSheaf_en.lean`
+(modèle sibling pair, Option A). Le corps — signatures, preuves, tactiques,
+noms de théorèmes — est byte-identique entre les deux fichiers ; seules les
+docstrings/commentaires et le suffixe de namespace diffèrent.
 -/
 
 import Mathlib.CategoryTheory.Sites.ConstantSheaf
@@ -36,94 +44,99 @@ open CategoryTheory Category Opposite Limits Functor Sheaf Adjunction
 variable {C : Type u} [Category.{v} C] (J : GrothendieckTopology C)
 variable {D : Type u'} [Category.{v'} D]
 
-/-! ## 1. The constant presheaf adjunction
+/-! ## 1. L'adjonction du préfaisceau constant
 
-The constant presheaf functor `Functor.const Cᵒᵖ` sends an object X : D to the
-constant presheaf at X. When C has a terminal object T, this functor is left
-adjoint to evaluation at T (i.e., taking global sections).
+Le foncteur préfaisceau constant `Functor.const Cᵒᵖ` envoie un objet X : D
+sur le préfaisceau constant en X. Lorsque C admet un objet terminal T, ce
+foncteur est adjoint à gauche de l'évaluation en T (c.-à-d. prendre les
+sections globales).
 
-This adjunction lifts to sheaves via sheafification.
+Cette adjonction se relève aux faisceaux via la faisceautisation.
 -/
 
--- The constant presheaf functor is left adjoint to evaluation at a terminal object.
+-- Le foncteur préfaisceau constant est adjoint à gauche de l'évaluation en un objet terminal.
 -- constantPresheafAdj : Functor.const Cᵒᵖ ⊣ (evaluation Cᵒᵖ D).obj (op T)
 #check @constantPresheafAdj
 
-/-! ## 2. The constant sheaf functor
+/-! ## 2. Le foncteur faisceau constant
 
-The constant sheaf functor `constantSheaf J D` is defined as the composition
-of the constant presheaf functor with sheafification:
+Le foncteur faisceau constant `constantSheaf J D` est défini comme la
+composition du foncteur préfaisceau constant avec la faisceautisation :
 
   constantSheaf J D = Functor.const Cᵒᵖ ⋙ presheafToSheaf J D
 
-It sends an object X : D to the sheafification of the constant presheaf at X.
-This requires `HasWeakSheafify J D` (existence of sheafification).
+Il envoie un objet X : D sur la faisceautisation du préfaisceau constant
+en X. Ceci requiert `HasWeakSheafify J D` (existence de la faisceautisation).
 -/
 
--- The constant sheaf functor: sheafification of the constant presheaf.
+-- Le foncteur faisceau constant : faisceautisation du préfaisceau constant.
 #check @constantSheaf
 
-/-- Bridge construction: the constant sheaf at an object X : D, defined as the
-    sheafification of the constant presheaf at X. -/
+/-- Construction pont : le faisceau constant en un objet X : D, défini comme
+    la faisceautisation du préfaisceau constant en X. -/
 noncomputable def constantSheafObj (X : D) [HasWeakSheafify J D] :
     Sheaf J D :=
   (constantSheaf J D).obj X
 
-/-! ## 3. The constant sheaf adjunction
+/-! ## 3. L'adjonction du faisceau constant
 
-When C has a terminal object T, the constant sheaf functor is left adjoint
-to the "global sections" functor `sheafSections J D`.obj (op T):
+Lorsque C admet un objet terminal T, le foncteur faisceau constant est
+adjoint à gauche du foncteur « sections globales »
+`sheafSections J D`.obj (op T) :
 
   constantSheaf J D ⊣ (sheafSections J D).obj (op T)
 
-This means: morphisms from the constant sheaf at X to a sheaf F correspond
-naturally to morphisms X ⟶ F.obj.obj (op T) in D.
+Cela signifie : les morphismes du faisceau constant en X vers un faisceau F
+correspondent naturellement à des morphismes X ⟶ F.obj.obj (op T) dans D.
 -/
 
--- The constant sheaf adjunction: constantSheaf ⊣ evaluation at terminal object.
+-- L'adjonction du faisceau constant : constantSheaf ⊣ évaluation en objet terminal.
 #check @constantSheafAdj
 
-/-- Bridge theorem: given a terminal object T, the constant sheaf functor is
-    left adjoint to evaluation of sheaf sections at T. This is the fundamental
-    adjunction underlying constant sheaf theory. -/
+/-- Théorème pont : étant donné un objet terminal T, le foncteur faisceau
+    constant est adjoint à gauche de l'évaluation des sections de faisceau
+    en T. C'est l'adjonction fondamentale sous-jacente à la théorie du
+    faisceau constant. -/
 noncomputable def constantSheafAdjBridge {T : C} (hT : IsTerminal T)
     [HasWeakSheafify J D] :
     constantSheaf J D ⊣ (sheafSections J D).obj (op T) :=
   constantSheafAdj J D hT
 
-/-! ## 4. The IsConstant predicate
+/-! ## 4. Le prédicat IsConstant
 
-A sheaf F is "constant" if it lies in the essential image of the constant
-sheaf functor: there exists X : D such that F ≅ constantSheaf J D.obj X.
+Un faisceau F est « constant » s'il appartient à l'image essentielle du
+foncteur faisceau constant : il existe X : D tel que
+F ≅ constantSheaf J D.obj X.
 
-This is a property, not structure — constancy is a proposition.
+C'est une propriété, pas une structure — la constance est une proposition.
 -/
 
--- A sheaf is constant if it is in the essential image of constantSheaf.
+-- Un faisceau est constant s'il est dans l'image essentielle de constantSheaf.
 #check @Sheaf.IsConstant
 
--- If F is constant, it lies in the essential image of constantSheaf.
+-- Si F est constant, il appartient à l'image essentielle de constantSheaf.
 #check @Sheaf.mem_essImage_of_isConstant
 
--- Isomorphisms preserve constancy.
+-- Les isomorphismes préservent la constance.
 #check @Sheaf.isConstant_congr
 
--- An iso with a constant sheaf witnesses constancy.
+-- Un iso avec un faisceau constant témoigne de la constance.
 #check @Sheaf.isConstant_of_iso
 
-/-! ## 5. Characterization via the counit
+/-! ## 5. Caractérisation via la counité
 
-When the constant sheaf functor is fully faithful, a sheaf F is constant
-if and only if the counit of the constant sheaf adjunction applied to F
-is an isomorphism. This gives a practical criterion for constancy.
+Lorsque le foncteur faisceau constant est pleinement fidèle, un faisceau F
+est constant si et seulement si la counité de l'adjonction du faisceau
+constant appliquée à F est un isomorphisme. Ceci donne un critère pratique
+de constance.
 -/
 
--- When constantSheaf is fully faithful, constancy ↔ counit is iso.
+-- Lorsque constantSheaf est pleinement fidèle, constance ↔ counité est un iso.
 #check @Sheaf.isConstant_iff_isIso_counit_app
 
-/-- Bridge theorem: when the constant sheaf functor is fully faithful and
-    C has a terminal object T, a sheaf is constant iff the counit of the
-    adjunction applied to it is an isomorphism. -/
+/-- Théorème pont : lorsque le foncteur faisceau constant est pleinement
+    fidèle et que C admet un objet terminal T, un faisceau est constant ssi
+    la counité de l'adjonction qui lui est appliquée est un isomorphisme. -/
 theorem isConstant_iff_counit_iso [HasWeakSheafify J D]
     [(constantSheaf J D).Faithful] [(constantSheaf J D).Full]
     (F : Sheaf J D) {T : C} (hT : IsTerminal T) :
@@ -131,52 +144,53 @@ theorem isConstant_iff_counit_iso [HasWeakSheafify J D]
       IsIso ((constantSheafAdj J D hT).counit.app F) :=
   CategoryTheory.Sheaf.isConstant_iff_isIso_counit_app J F hT
 
-/-! ## 6. Invariance under equivalence
+/-! ## 6. Invariance par équivalence
 
-The property of being constant is invariant under equivalences of sheaf
-categories induced by dense subsites. If G : C ⥤ C' is a dense subsite
-morphism, then a sheaf on (C', K) is constant iff its pullback to (C, J)
-is constant.
+La propriété d'être constant est invariante par les équivalences de
+catégories de faisceaux induites par des sous-sites denses. Si
+G : C ⥤ C' est un morphisme de sous-site dense, alors un faisceau sur
+(C', K) est constant ssi son image réciproque sur (C, J) est constante.
 -/
 
--- Constancy is invariant under equivalence of sheaf categories.
+-- La constance est invariante par équivalence de catégories de faisceaux.
 #check @Sheaf.isConstant_iff_of_equivalence
 
-/-! ## 7. Constancy through forgetful functors
+/-! ## 7. Constance à travers les foncteurs d'oubli
 
-Given a "forgetful" functor U : D ⥤ B, the property of being constant
-is detected by postcomposing with U (when U preserves sheafification and
-sheafCompose reflects isomorphisms).
+Étant donné un foncteur « d'oubli » U : D ⥤ B, la propriété d'être constant
+est détectée par post-composition avec U (lorsque U préserve la
+faisceautisation et que sheafCompose reflète les isomorphismes).
 -/
 
--- Constancy detected through forgetful functors.
+-- Constance détectée à travers les foncteurs d'oubli.
 #check @Sheaf.isConstant_iff_forget
 
-/-! ## 8. Commutation with sheafCompose
+/-! ## 8. Commutation avec sheafCompose
 
-The constant sheaf functor commutes with `sheafCompose J U` up to
-isomorphism, provided that U preserves sheafification.
+Le foncteur faisceau constant commute avec `sheafCompose J U` à
+isomorphisme près, pourvu que U préserve la faisceautisation.
 -/
 
--- constantSheaf commutes with sheafCompose up to iso.
+-- constantSheaf commute avec sheafCompose à iso près.
 #check @constantCommuteCompose
 
-/-! ## 9. Bridge theorems: essential image and roundtrips
+/-! ## 9. Théorèmes pont : image essentielle et allers-retours
 
-The essential image characterization gives roundtrip properties connecting
-the IsConstant predicate to explicit witnesses.
+La caractérisation par image essentielle donne des propriétés d'aller-retour
+connectant le prédicat IsConstant à des témoins explicites.
 -/
 
-/-- Construction bridge: from an isomorphism with a constant sheaf, obtain
-    a witness that the sheaf is constant. Uses `Sheaf.isConstant_of_iso`. -/
+/-- Construction pont : à partir d'un isomorphisme avec un faisceau constant,
+    obtenir un témoignage que le faisceau est constant. Utilise
+    `Sheaf.isConstant_of_iso`. -/
 theorem isConstant_of_iso_bridge [HasWeakSheafify J D]
     {F : Sheaf J D} {X : D}
     (i : F ≅ (constantSheaf J D).obj X) :
     Sheaf.IsConstant J F := by
   exact CategoryTheory.Sheaf.isConstant_of_iso J i
 
-/-- Construction bridge: constancy is preserved by isomorphism.
-    Uses `Sheaf.isConstant_congr`. -/
+/-- Construction pont : la constance est préservée par isomorphisme.
+    Utilise `Sheaf.isConstant_congr`. -/
 theorem isConstant_congr_bridge [HasWeakSheafify J D]
     {F G : Sheaf J D} (i : F ≅ G) [Sheaf.IsConstant J F] :
     Sheaf.IsConstant J G := by
