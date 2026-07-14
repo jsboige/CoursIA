@@ -32,6 +32,43 @@ condition (Part 21) to the cohomological consequence (this part).
 Epic #1646, See #2159. All `sorry`s eliminated at creation.
 -/
 
+/-
+  Bloc miroir FR (convention i18n EPIC #4980, Option A inline)
+  =============================================================
+
+  Hommage a Grothendieck -- Partie 22 : suite exacte longue de Mayer-Vietoris
+  en cohomologie des faisceaux.
+
+  La Partie 21 (MayerVietorisSquare.lean) a introduit les carres de
+  Mayer-Vietoris : l'entree geometrique (un carre pushout de faisceaux) et
+  le complexe court exact de faisceaux abeliens libres associe.
+
+  Ce module fait le pont avec la **suite exacte longue de Mayer-Vietoris**
+  en cohomologie des faisceaux depuis Mathlib
+  (CategoryTheory.Sites.SheafCohomology.MayerVietoris).
+
+  Etant donne un carre de Mayer-Vietoris S pour un site (C, J) et un
+  faisceau abelien F, il existe une suite exacte longue :
+
+    ... -> H^n(X_4, F) -> H^n(X_2, F) (+) H^n(X_3, F) -> H^n(X_1, F) -> H^(n+1)(X_4, F) -> ...
+
+  ou X_1 = intersection, X_2/X_3 = ouverts du recouvrement, X_4 = espace
+  recouvert.
+
+  Constructions cles recuperees de Mathlib :
+
+    - toBiprod : somme des restrictions H^n(X_4) -> H^n(X_2) (+) H^n(X_3)
+    - fromBiprod : difference des restrictions H^n(X_2) (+) H^n(X_3) -> H^n(X_1)
+    - toBiprod_fromBiprod : la composition est nulle
+    - delta : homomorphisme de connexion H^{n_0}(X_1) -> H^{n_1}(X_4) (n_1 = n_0 + 1)
+    - sequence : la suite exacte longue complete (ComposableArrows AddCommGrp 5)
+    - sequence_exact : la suite est exacte
+    - delta_toBiprod : delta >> toBiprod = 0
+    - fromBiprod_delta : fromBiprod >> delta = 0
+
+  EPIC #1646. Tous les sorry elimines a la creation.
+-/
+
 import Mathlib.CategoryTheory.Sites.SheafCohomology.MayerVietoris
 
 universe w v u
