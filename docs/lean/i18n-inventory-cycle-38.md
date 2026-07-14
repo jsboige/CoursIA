@@ -4,6 +4,8 @@
 
 **Scope cycle 38** : (a) inventaire FR/EN par lake (tableau evidence-cited) + (b) proposition de convention. **Hors scope cycle 38** : PR pilote de traduction (cycle 39+).
 
+> **Note (mise à jour 2026-07-14) — données d'inventaire SUPERSEDED.** Le tableau par lake ci-dessous (état 2026-07-04) est **périmé** : les 4 lakes marqués « backlog EN-dominant » (`cooperative_games_lean`, `social_choice_lean`, `stable_marriage_lean`, `decision_theory_lean`) sont **tous migrés FR-first + EN sibling** ou **absorbés** par la consolidation #4365 (vérifié firsthand : `cooperative_games_lean` 9 fichiers avec `_en`, `decision_theory_lean` 25 fichiers avec `_en`, `social_choice_lean`/`stable_marriage_lean` résiduels absorbés dans `game_theory_lean`). La **convention Option A est ratifiée** (codifiée dans `.claude/rules/code-style.md` §Lean i18n) et le **pilote est livré** (PR #5883 `CooperativeGames.lean` FR-first + EN sibling). Pour l'**état de couverture courant**, voir l'inventaire live [`I18N_INVENTORY.md`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/I18N_INVENTORY.md) (rafraîchi 2026-07-14). **Ce fichier reste la référence pour la proposition de convention** (Options A/B/C, méthodologie, justification).
+
 ## Méthode d'inventaire
 
 - **Population** : 208 fichiers `*.lean` dans `MyIA.AI.Notebooks/*/*lean*/` (hors `.lake/packages/` qui sont des dépendances tierces Mathlib/aesop/etc., non modifiables par nous).
@@ -33,7 +35,7 @@
 
 1. **Pattern dominant = par lake, pas mélangé** : aucun lake ne montre un ratio FR/EN proche de 50/50 dans ses docstrings — c'est un **choix d'auteur/cycle**, pas un drift accidentel. Bonne nouvelle : la convention peut s'appuyer sur l'existant sans imposer une migration disruptive.
 
-2. **Minorité湖水 EN majoritaire** : 3 lakes EN (cooperative, social_choice, stable_marriage) + decision_theory_lean (mixte 35 EN). 6 lakes déjà FR ou FR-dominants.
+2. **Minorité EN majoritaire (snapshot 2026-07-04, depuis superseded)** : 3 lakes EN (cooperative, social_choice, stable_marriage) + decision_theory_lean (mixte 35 EN). 6 lakes déjà FR ou FR-dominants.
 
 3. **EN majoritaire au global** (262 vs 165) mais **FR-first est la trajectoire récente** : les lakes créés cycle 16+ (astar, learning_theory, sudoku, kelly) sont tous FR-first. La convention proposée doit **acter cette trajectoire** plutôt qu'imposer un revert.
 
@@ -47,7 +49,7 @@
 - Si EN présent, **deux blocs** `/-- ... -/` consécutifs : français d'abord, anglais ensuite, séparés par `-- EN --` sur une ligne de commentaire seule.
 - **Justification** : aligne avec CLAUDE.md `.claude/rules/readme-french-first.md` Règle HARD 1 (FR d'abord, EN préservé en `.en.md` companion) ; acte la trajectoire récente 6/11 lakes ; minimise le coût de maintenance (pas de double-docstring obligatoire).
 
-**Migration des 4 lakes EN-dominants** :提议 ai-01 dispatcher la traduction vers po-2026 (Lean builders, lake build disponible, partition native). **Hors scope ce cycle**.
+**Migration des 4 lakes EN-dominants** : proposition — ai-01 dispatcher la traduction vers po-2026 (Lean builders, lake build disponible, partition native). **Hors scope ce cycle** (depuis : tous migrés/absorbés, cf. note de mise à jour ci-dessus).
 
 ### Option B — Docstring bilingue obligatoire (rejetée)
 
@@ -64,11 +66,12 @@
 
 **Rejetée pour** : ne résout pas la demande user 2026-07-02 explicite. La dispersion actuelle crée une friction cognitive pour les lecteurs (lake X en FR, lake Y en EN, lake Z mixte).
 
-## Suite cycle 39+
+## Suite cycle 39+ (état actualisé 2026-07-14)
 
-- **PR pilote traduction** : candidater `Sudoku/sudoku_lean` (5 fichiers, 24 docstrings, ratio FR≈21/EN≈2 = déjà quasi-complet FR, EN manquant). Justification : lake stable, 0 sorry, scope borné, lecture pedagogique (« 9x9 constraint solver correctness proof »). **Build délégué ai-01** (po-2026 env lake build requis, partition native).
-- **Backlog 4 lakes EN-dominants** : `cooperative_games_lean`, `social_choice_lean`, `stable_marriage_lean`, `decision_theory_lean`. À dispatcher vers po-2026 sur plusieurs cycles.
-- **Convention ratifiée** : si Option A acceptée par user/ai-01, mettre à jour `.claude/rules/code-style.md` section Lean (nouvelle sous-section i18n) avec règle FR-first + EN optionnel.
+- **PR pilote traduction — LIVRÉ** : `CooperativeGames.lean` FR-first + EN sibling (PR #5883, 2026-07-10), root aggregator bilingue. Le candidat initial `Sudoku/sudoku_lean` a été devancé par le pilote CooperativeGames.
+- **Backlog 4 lakes EN-dominants — DRAINED** : `cooperative_games_lean` et `decision_theory_lean` migrés FR-first + EN sibling (vérifié firsthand : fichiers `_en` présents) ; `social_choice_lean` et `stable_marriage_lean` **absorbés** dans `game_theory_lean` par la consolidation #4365 (ne sont plus des lakes standalone). **Aucun backlog EN-dominant restant sur les own-lakes.**
+- **Convention ratifiée — FAIT** : Option A codifiée dans `.claude/rules/code-style.md` §Lean i18n (FR-first canonique + EN sibling `Foo_en.lean`, namespace `_en`, drift-CI byte-identity). État de couverture courant : [`I18N_INVENTORY.md`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/I18N_INVENTORY.md).
+- **Hot-zones restantes** (multi-cycle) : Conway (`Hashlife` 543L, `MacroCell` 794L), Grothendieck (fichiers EN-mono volumineux), knot (actif c.420-c.425) — cf. inventaire live.
 
 ## Conformité et leçons appliquées
 
