@@ -368,9 +368,9 @@ Documentation complète : [SymbolicLearning/README.md](SymbolicLearning/README.m
 | Notebook | Kernel | Contenu | Exercices |
 |----------|--------|---------|-----------|
 | [OR-tools-Stiegler](OR-tools-Stiegler.ipynb) | .NET C# | Problème de Stigler, programmation linéaire avec OR-Tools | 2 |
-| [01_Linq2Z3_Intro](SMT/Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
+| [01_Linq2Z3_Intro](SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
 
-Le notebook Z3 inaugure la série [SMT/Z3/](SMT/Z3/README.md) (SMT declaratif via Z3.Linq), regroupée avec la série Python [SMT/Z3-Python/](SMT/Z3-Python/README.md) sous le chapeau [SMT/](SMT/README.md) (Satisfiability Modulo Theories).
+Le notebook Z3 inaugure la série [SMT/Z3-Linq2Z3/](SMT/Z3-Linq2Z3/README.md) (SMT declaratif via Z3.Linq), regroupée avec la série API directe [SMT/Z3-API/](SMT/Z3-API/README.md) sous le chapeau [SMT/](SMT/README.md) (Satisfiability Modulo Theories).
 
 ---
 
@@ -596,8 +596,8 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 | SmartContracts | 27 | 27 (100%) | 0 | Excellent |
 | Argument Analysis (Argumentum + Agentic demo) | 21 | 17 (81%) | 4 (Argument_Analysis_Agentic-0-init + 3 Agentic demo) | N/A (projet) |
 | SymbolicLearning (AIMA ch. 19 + SL-12 differentiable logic gates) | 22 | 20 pédagogiques (12 Python + 8 C# jumeaux) | 2 (`_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`, archives) | Excellent |
-| SMT/Z3 (C# Linq2Z3) | 18 | 18 (100%) | 0 | Excellent |
-| SMT/Z3-Python | 12 | 12 (100%, 6 Python + 6 C# jumeaux) | 0 | Excellent |
+| SMT/Z3-Linq2Z3 (C# Linq2Z3) | 18 | 18 (100%) | 0 | Excellent |
+| SMT/Z3-API (API Z3 directe) | 24 | 24 (100%, dont 6 C# jumeaux) | 0 | Excellent |
 
 **Total** : 207/209 notebooks pédagogiques (99%) — soit 209 fichiers `.ipynb` (hors `_output` gitignored), après déduction 1 Probe Tweety (`_probes/Tweety-IKVM-Init-Probe`), 2 archives SymbolicLearning (`_archives/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`), et 1 archive Planners (`archive/Fast-Downward-Legacy`). Les notebooks sans exercices sont uniquement les notebooks de setup (Tweety-1-Setup, SW-1-CSharp-Setup, Planners-0-Setup, Lean-1-Setup, Argument_Analysis_Agentic-0-init), les notebooks legacy/démo (Lean-7b-Examples, RDF.Net-Legacy), les archives précurseurs EML, et le probe IKVM (`Tweety-IKVM-Init-Probe` non pédagogique). Les chiffres ci-dessus sont la **réconciliation disque ↔ catalogue** en date du **10 juillet 2026** (post-#5894 SocialChoice figures sweep, post-EPIC #4956 parité marathon en cours, post-EPIC #4960 Argumentum EPITA-IS landing, post-PR #5345/#5390 Probas & SocialChoice README rolls).
 
