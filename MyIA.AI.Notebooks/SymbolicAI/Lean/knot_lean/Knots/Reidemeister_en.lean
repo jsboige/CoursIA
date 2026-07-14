@@ -15,6 +15,9 @@
   - The Reidemeister theorem itself is a deep topological result
 -/
 
+import Knots.Basic_en
+import Mathlib.Logic.Embedding.Basic
+
 /-
   English mirror of `Reidemeister.lean` (FR canonical). Convention EPIC #4980
   (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n): distinct FR + EN sibling
