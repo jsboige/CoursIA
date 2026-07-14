@@ -1,15 +1,16 @@
 /-
-Grothendieck tribute — Part 2: Schemes
+Hommage à Grothendieck — Partie 2 : Schémas
 Alexandre Grothendieck (1928-2014).
 
-Grothendieck's most transformative idea: replace varieties by *schemes* — locally
-ringed spaces that are locally affine (isomorphic to Spec R for a commutative ring R).
-This gives a single framework for arithmetic and geometry.
+L'idée la plus transformatrice de Grothendieck : remplacer les variétés par
+des *schémas* — des espaces localement annelés qui sont localement affines
+(isomorphes à Spec R pour un anneau commutatif R). Cela fournit un cadre
+unifié pour l'arithmétique et la géométrie.
 
-Mathlib 4 formalizes schemes as `AlgebraicGeometry.Scheme`, extending
-`LocallyRingedSpace` with the local-affineness condition.
+Mathlib 4 formalise les schémas comme `AlgebraicGeometry.Scheme`, étendant
+`LocallyRingedSpace` avec la condition d'affinité locale.
 
-Epic #1646. All `sorry`s eliminated at creation.
+Epic #1646. Toutes les `sorry` éliminées à la création.
 -/
 
 /-
@@ -48,11 +49,11 @@ namespace Grothendieck
 open AlgebraicGeometry CategoryTheory
 
 /-!
-## The type of schemes
+## Le type des schémas
 
-`Scheme` is the type of schemes. It carries a category structure.
-Every scheme has an underlying locally ringed space, topological space, and
-presheaf of commutative rings.
+`Scheme` est le type des schémas. Il porte une structure de catégorie.
+Chaque schéma a un espace localement annelé sous-jacent, un espace
+topologique, et un préfaisceau d'anneaux commutatifs.
 -/
 
 -- The type of schemes
@@ -62,25 +63,25 @@ presheaf of commutative rings.
 #check @Scheme.forgetToTop
 
 /-!
-## Spec: from rings to spaces
+## Spec : des anneaux aux espaces
 
-The Spec construction turns a commutative ring into an affine scheme.
-It is the left adjoint to the global sections functor Γ.
+La construction Spec transforme un anneau commutatif en un schéma affine.
+C'est l'adjoint à gauche du foncteur sections globales Γ.
 -/
 
-/-- Spec is a functor from CommRingCatᵒᵖ to Scheme.
-    Marked `noncomputable` because `Scheme.Spec` is noncomputable. -/
+/-- Spec est un foncteur de CommRingCatᵒᵖ vers Scheme.
+    Marqué `noncomputable` car `Scheme.Spec` est noncomputable. -/
 noncomputable example : CommRingCatᵒᵖ ⥤ Scheme := Scheme.Spec
 
 /-!
-## Basic properties
+## Propriétés de base
 
-Schemes have an order structure from specialization, and morphisms
-between schemes respect the sheaf structure.
+Les schémas ont une structure d'ordre issue de la spécialisation, et les
+morphismes entre schémas respectent la structure de faisceau.
 -/
 
-/-- An isomorphism of schemes induces a homeomorphism of underlying spaces.
-    Note: `Scheme.homeoOfIso` returns `X ≃ₜ Y` (carriers). -/
+/-- Un isomorphisme de schémas induit un homéomorphisme des espaces sous-jacents.
+    Note : `Scheme.homeoOfIso` retourne `X ≃ₜ Y` (supports). -/
 noncomputable example {X Y : Scheme} (i : X ≅ Y) : X ≃ₜ Y :=
   Scheme.homeoOfIso i
 
@@ -91,17 +92,17 @@ noncomputable example {X Y : Scheme} (i : X ≅ Y) : X ≃ₜ Y :=
 #check Scheme.forgetToLocallyRingedSpace.FullyFaithful
 
 /-!
-## The big picture: from rings to spaces and back
+## La vue d'ensemble : des anneaux aux espaces et retour
 
-The Spec-Γ adjunction is the heart of algebraic geometry:
-  - Spec : CommRingCatᵒᵖ → Scheme  (ring to space)
-  - Γ     : Schemeᵒᵖ → CommRingCat  (space to ring, global sections)
+L'adjonction Spec-Γ est le cœur de la géométrie algébrique :
+  - Spec : CommRingCatᵒᵖ → Scheme  (anneau vers espace)
+  - Γ     : Schemeᵒᵖ → CommRingCat  (espace vers anneau, sections globales)
 
-For affine schemes, these are inverse equivalences.
+Pour les schémas affines, ce sont des équivalences inverses.
 -/
 
-/-- Every scheme has global sections (the ring Γ(X)).
-    Note: `Scheme.Γ` has domain `Schemeᵒᵖ`. -/
+/-- Chaque schéma a des sections globales (l'anneau Γ(X)).
+    Note : `Scheme.Γ` a pour domaine `Schemeᵒᵖ`. -/
 example (X : Scheme) : CommRingCat :=
   Scheme.Γ.obj (Opposite.op X)
 
