@@ -43,3 +43,14 @@ require CombinatorialGames from git
 @[default_target]
 lean_lib «CGTTour» where
   -- Tour of vihdzp/combinatorial-games results
+  -- Convention i18n #4980: globs build FR root + EN sibling (drift-CI gate).
+  -- NOTE technique (po-2026 fix du glob cassé, cf decision_theory_lean lakefile) :
+  -- `CGTTour.lean` est un module FEUILLE (pas de sous-dossier `CGTTour/`).
+  -- Le glob `CGTTour.*` (= Glob.submodules) cherche `CGTTour` comme un
+  -- répertoire pour énumérer ses enfants -> erreur lake
+  -- `no such file ... CGTTour` (CI #6116 RED ; reproduit in vitro sur projet
+  -- lake minimal). Sur un root feuille il faut des noms bare explicites pour
+  -- chaque module top-level : `CGTTour` (FR canonique) + `CGTTour_en` (sibling).
+  -- Vérifié in vitro : `globs := #[`Foo, `Foo_en]` compile les deux .olean.
+  -- Pattern bare-names éprouvé : cooperative_games_lean/lakefile.lean.
+  globs := #[`CGTTour, `CGTTour_en]
