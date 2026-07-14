@@ -1,44 +1,43 @@
 /-
-Copyright (c) 2026 CoursIA. Tous droits reserves.
-Distribue sous licence Apache 2.0 comme decrit dans le fichier LICENSE.
+Copyright (c) 2026 CoursIA. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
 
-## Jeu de la Vie de Conway — Vaisseaux spatiaux (spaceships)
+## Conway's Game of Life — Spaceships
 
-Vaisseaux Leger, Moyen et Lourd (LWSS, MWSS, HWSS).
-Vaisseaux de periode 4, chacun translatant de 2 cellules horizontalement par periode.
+Lightweight, Middleweight, and Heavyweight Spaceships (LWSS, MWSS, HWSS).
+Period-4 spaceships, each translating 2 cells horizontally per period.
 
-Decouverts au debut de l'histoire du Jeu de la Vie (Conway,
-Guy, Berlekamp ; Cambridge 1970), ils sont parmi les vaisseaux
-spatiaux les plus communs dans la nature. Avec le planeur (glider),
-ils forment la famille des vaisseaux de periode 4 et deplacement 2
-de la regle B3/S23.
+These were discovered early in the history of the Game of Life (Conway,
+Guy, Berlekamp; Cambridge 1970) and are among the most common
+naturally-occurring spaceships. Together with the glider they form the
+family of period-4 displacement-2 spaceships of the B3/S23 rule.
 
-Convention de coordonnees (heritee de `Conway.Life`) :
-- Chaque cellule est une paire `(row, col) : Int × Int`.
-- Les motifs sont stockes en `List (Int × Int)` dans l'ordre
-  lexicographique trie (row d'abord, puis col) pour que `step`
-  produise une liste dans le meme ordre, permettant a
-  `native_decide` de verifier l'egalite par comparaison structurelle.
-- Un deplacement `(dr, dc)` translate chaque cellule de `dr` lignes
-  et `dc` colonnes. Les vaisseaux ci-dessous vont vers l'est :
-  `dr = 0`, `dc = 2`.
+Coordinate convention (inherited from `Conway.Life`):
+- Each cell is a pair `(row, col) : Int × Int`.
+- Patterns are stored as `List (Int × Int)` in sorted lexicographic order
+  (row first, then column) so that `step` produces a list in the same
+  order, enabling `native_decide` to verify equality by structural
+  comparison.
+- A displacement `(dr, dc)` shifts every cell by `dr` rows and `dc`
+  columns. The spaceships below are east-bound: `dr = 0`, `dc = 2`.
 
-Ce module est entierement prouve (aucun gap).
+This module is fully proven (no gaps).
 -/
 
 /-
-  Convention i18n (EPIC #4980, decision user 2026-07-04) : ce fichier est **FR canonique**,
-  avec son miroir anglais dans le fichier sibling `Spaceships_en.lean` (modele sibling
-  pair ratifie 2026-07-04, cf `code-style.md` §Lean i18n). Les enonces de theoremes,
-  les tactiques Lean, les noms de lemmes et les references Mathlib restent en anglais
-  (compat Mathlib 4) ; seules les docstrings de theoreme et ce bloc d'en-tete different
-  entre les deux fichiers.
+  English mirror of `Spaceships.lean` (FR canonical). Convention EPIC #4980
+  (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n): distinct FR + EN sibling
+  files — no inline bilingual block in a single file (Option B rejected). The module
+  docstring and the public theorem docstrings below differ from the FR version; the body
+  signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
 import Conway.Life
 
-namespace Conway
-namespace Life
+namespace Conway_en
+open Conway
+namespace Life_en
+open Life
 
 /-! ## Lightweight Spaceship (LWSS)
 
@@ -135,5 +134,5 @@ def hwss : Grid :=
 /-- The HWSS is a spaceship of period 4 and displacement `(0, 2)`. -/
 theorem hwss_spaceship : isSpaceship hwss 4 (0, 2) = true := by native_decide
 
-end Life
-end Conway
+end Life_en
+end Conway_en
