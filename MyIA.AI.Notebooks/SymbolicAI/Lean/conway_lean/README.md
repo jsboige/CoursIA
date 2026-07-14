@@ -22,48 +22,49 @@ flowchart LR
 - **Compte de sorry** : 2 (tous dans `HashlifeCorrectness.lean` — wave-glue P4 `p4_succ_membership` [1] + grand-n P5 `p5_large_n_jump` [1], Epic #2162). Plusieurs sous-lemmes P4 et ingrédients additifs sont prouvés sorry-free (voir § « Jeu de la Vie » ci-dessous). `p5_inductive_step` (colle P5.3) a été close par c.310 PR #5998 via vacuous-arm split (design gate #3846) : sur grilles non vides, la branche `¬ hsmall` est conjointement insatisfaisable avec `BoxAssezGrand`, donc vide par construction. Le placeholder `p4_half_steps_compose` (P4.4) a été supprimé : sa composition pure-evolve est déjà close (`evolve_add` + `evolve_half_step`), son contenu wave-glue porté par le résiduel `p4_succ_membership`. **Audit N1 (PR #5853, ai-01 2026-07-09)** : le frame sub-claim initial (`BoxAssezGrand` ∩ `n ≥ jumpSize`) est **vacuous sur grilles non vides** (`p5_large_n_hyps_unsat` : padding 2 de `gridFrame` ∧ `lvl ≥ 3` ⇒ `n ≤ 2 ∧ js ≥ 8`). **Design gate ai-01 (#3846, 2026-07-10)** : redesigner `gridFrame` pour padding dépendant de `n`, porter l'état `(off, mc)` à travers la boucle de `evolveHashlifeFastAux` sans re-framing intermédiaire, restater l'invariant « marge ≥ n restant, préservé par jump ». La dette de preuve (#3846) reste la cible du BG-prover et du redesign architectural coordonné.
 - **Build** : `lake build Conway` — SUCCESS
 - **Dépendances** : Mathlib4
+- **Couverture i18n (EPIC #4980)** : 11 modules conway_lean livrés en FR-canonique + sibling `_en` sur `main` — Phase 1 : `Angel`, `DoomsdayLemmas`, `FractranLemmas`, `LookAndSayLemmas`, `MathlibMap` (5/9) ; Phase 2 : `Life` (root), `Spaceships`, `Oscillators`, `HashlifeMarginDemo`, `HashlifeMemo`, `Pillars` (6/13). Rollout c.290-#6439 en cours sur les modules restants (`RLE`, `LightCone`, `GridCanonical` PRs c.421-c.423 en attente de merge).
 
 ## Modules
 
 ### Phase 1 — Algorithmes classiques (Epic #1151, COMPLETE)
 
-| Fichier | sorry | Description |
-|---------|-------|-------------|
-| `Conway/Doomsday.lean` | 0 | Algorithme Doomsday (calcul du jour de la semaine) |
-| `Conway/DoomsdayLemmas.lean` | 0 | Lemmes pour l'algorithme Doomsday |
-| `Conway/Fractran.lean` | 0 | Langage de programmation FRACTRAN |
-| `Conway/FractranLemmas.lean` | 0 | Lemmes pour FRACTRAN (step/run : halt vide, 0-run, applicabilité `num/1`, trace concrète `{3/2}` 2→3) |
-| `Conway/LookAndSay.lean` | 0 | Suite Look-and-Say |
-| `Conway/LookAndSayLemmas.lean` | 0 | Lemmes pour la suite Look-and-Say |
-| `Conway/Nim.lean` | 0 | Théorie des jeux de Nim |
-| `Conway/Angel.lean` | 0 | Problème de l'ange (Angel problem) |
-| `Conway/CollatzLike.lean` | 0 | Fonctions de type Collatz et indécidabilité (`native_decide`) |
-| `Conway/MathlibMap.lean` | 0 | Satellite de cartographie Mathlib pinned (`54f98fd6`) — ce que Mathlib fournit pour l'œuvre de Conway |
+| Fichier | `_en` | sorry | Description |
+|---------|-------|-------|-------------|
+| `Conway/Doomsday.lean` | — | 0 | Algorithme Doomsday (calcul du jour de la semaine) |
+| `Conway/DoomsdayLemmas.lean` | `DoomsdayLemmas_en.lean` | 0 | Lemmes pour l'algorithme Doomsday |
+| `Conway/Fractran.lean` | — | 0 | Langage de programmation FRACTRAN |
+| `Conway/FractranLemmas.lean` | `FractranLemmas_en.lean` | 0 | Lemmes pour FRACTRAN (step/run : halt vide, 0-run, applicabilité `num/1`, trace concrète `{3/2}` 2→3) |
+| `Conway/LookAndSay.lean` | — | 0 | Suite Look-and-Say |
+| `Conway/LookAndSayLemmas.lean` | `LookAndSayLemmas_en.lean` | 0 | Lemmes pour la suite Look-and-Say |
+| `Conway/Nim.lean` | — | 0 | Théorie des jeux de Nim |
+| `Conway/Angel.lean` | `Angel_en.lean` | 0 | Problème de l'ange (Angel problem) |
+| `Conway/CollatzLike.lean` | — | 0 | Fonctions de type Collatz et indécidabilité (`native_decide`) |
+| `Conway/MathlibMap.lean` | `MathlibMap_en.lean` | 0 | Satellite de cartographie Mathlib pinned (`54f98fd6`) — ce que Mathlib fournit pour l'œuvre de Conway |
 
 ### Phase 2 — Jeu de la Vie (Epic #1647, EN COURS)
 
-| Fichier | sorry | Description |
-|---------|-------|-------------|
-| `Conway/Life.lean` | 0 | Règles B3/S23, opérations sur grille, step/evolve, preuves `native_decide` |
-| `Conway/Life/Spaceships.lean` | 0 | LWSS/MWSS/HWSS (période 4, déplacement (0,2)), 3 preuves `native_decide` |
-| `Conway/Life/Oscillators.lean` | 0 | 5 still-lifes + pulsar (p3) + pentadecathlon (p15), 7 `native_decide` |
-| `Conway/Life/RLE.lean` | 0 | Parseur de motifs RLE + glider/LWSS/pulsar/Gosper gun, 8 preuves `native_decide` |
-| `Conway/Life/MacroCell.lean` | 0 | Type quadtree MacroCell + round-trip `toGrid`/`buildFromGrid` + prédicat `wf` |
-| `Conway/Life/Hashlife.lean` | 0 | `step4x4` + `hashlifeResult` récursif + `padCenter2` + `hashlifeJump` + `evolveHashlifeFast` |
-| `Conway/Life/LightCone.lean` | 0 | Satellite géométrique light-cone — lemmes sorry-free sur `manhattan`/`lightCone` pontant `HashlifeCorrectness` |
-| `Conway/Life/GridCanonical.lean` | 0 | Formes canoniques `sortDedup`, unicité lexicographique, égalité de grille via forme canonique |
-| `Conway/Life/Computation.lean` | 0 | Cross-validation Hashlife (6 + 6 fast), still-life eater1 (1), composition de planeurs (5) |
-| `Conway/Life/HashlifeMemo.lean` | 0 | Hashlife mémoïsé pour témoins des piliers communautaires (OTCA 35K, UnitCell 4096, Gemini 33M) |
-| `Conway/Life/HashlifeMarginDemo.lean` | 0 | Démo exécutable P5 redesign (#3846) — n-aware framing margin autour de `MacroCell`/`HashlifeCorrectness` |
-| `Conway/Life/Pillars.lean` | 0 | Scaffolding du théorème community-witness (4 piliers) |
-| `Conway/Life/HashlifeCorrectness.lean` | 2 | Correction bornée `hashlife_correct` ; cibles P4/P5 du prouveur (Epic #1453, #2162) |
+| Fichier | `_en` | sorry | Description |
+|---------|-------|-------|-------------|
+| `Conway/Life.lean` | `Life_en.lean` (root) | 0 | Règles B3/S23, opérations sur grille, step/evolve, preuves `native_decide` |
+| `Conway/Life/Spaceships.lean` | `Spaceships_en.lean` | 0 | LWSS/MWSS/HWSS (période 4, déplacement (0,2)), 3 preuves `native_decide` |
+| `Conway/Life/Oscillators.lean` | `Oscillators_en.lean` | 0 | 5 still-lifes + pulsar (p3) + pentadecathlon (p15), 7 `native_decide` |
+| `Conway/Life/RLE.lean` | — | 0 | Parseur de motifs RLE + glider/LWSS/pulsar/Gosper gun, 8 preuves `native_decide` |
+| `Conway/Life/MacroCell.lean` | — | 0 | Type quadtree MacroCell + round-trip `toGrid`/`buildFromGrid` + prédicat `wf` |
+| `Conway/Life/Hashlife.lean` | — | 0 | `step4x4` + `hashlifeResult` récursif + `padCenter2` + `hashlifeJump` + `evolveHashlifeFast` |
+| `Conway/Life/LightCone.lean` | — | 0 | Satellite géométrique light-cone — lemmes sorry-free sur `manhattan`/`lightCone` pontant `HashlifeCorrectness` |
+| `Conway/Life/GridCanonical.lean` | — | 0 | Formes canoniques `sortDedup`, unicité lexicographique, égalité de grille via forme canonique |
+| `Conway/Life/Computation.lean` | — | 0 | Cross-validation Hashlife (6 + 6 fast), still-life eater1 (1), composition de planeurs (5) |
+| `Conway/Life/HashlifeMemo.lean` | `HashlifeMemo_en.lean` | 0 | Hashlife mémoïsé pour témoins des piliers communautaires (OTCA 35K, UnitCell 4096, Gemini 33M) |
+| `Conway/Life/HashlifeMarginDemo.lean` | `HashlifeMarginDemo_en.lean` | 0 | Démo exécutable P5 redesign (#3846) — n-aware framing margin autour de `MacroCell`/`HashlifeCorrectness` |
+| `Conway/Life/Pillars.lean` | `Pillars_en.lean` (c.417) | 0 | Scaffolding du théorème community-witness (4 piliers) |
+| `Conway/Life/HashlifeCorrectness.lean` | — | 2 | Correction bornée `hashlife_correct` ; cibles P4/P5 du prouveur (Epic #1453, #2162) |
 
 ### Phase 3 — Free Will Theorem (Epic #1651, COMPLETE)
 
-| Fichier | sorry | Description |
-|---------|-------|-------------|
-| `Conway/KochenSpecker.lean` | 0 | Preuve Cabello à 18 vecteurs du KS (argument de parité) |
-| `Conway/FreeWillTheorem.lean` | 0 | Conway-Kochen FWT (SPIN + TWIN + MIN) |
+| Fichier | `_en` | sorry | Description |
+|---------|-------|-------|-------------|
+| `Conway/KochenSpecker.lean` | — | 0 | Preuve Cabello à 18 vecteurs du KS (argument de parité) |
+| `Conway/FreeWillTheorem.lean` | — | 0 | Conway-Kochen FWT (SPIN + TWIN + MIN) |
 
 ## Résultats clés
 
