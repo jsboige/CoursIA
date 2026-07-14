@@ -1,63 +1,100 @@
 #!/usr/bin/env python3
-"""Strip the .NET Interactive NuGet-cache machine-username leak from notebooks.
+"""Strip machine-username path leaks from notebook outputs.
 
-When ``dotnet-interactive`` (the .NET kernel) processes a ``#r "nuget:..."``
-cell that ships an **interactive extension**, it emits **two** distinct
-kernel messages that both carry the worker's **local NuGet package cache**
-path, which embeds the machine username (``C:\\Users\\<user>\\``):
+This hook covers the **category-A (kernel-injected / env-dependent)** leak
+family of rule-6 (``secrets-hygiene.md``): the username comes from the
+worker's ``%USERPROFILE%`` / ``$HOME``, not from source code. This hook is
+the sanctioned durable approach for category-A kernel-injected leaks (cf.
+``strip_probe_banner.py`` post-mortem); contrast with category-C
+(source-leak), which must be fixed at the source.
 
-1. a ``display_data`` output whose ``data["text/plain"]`` is::
+Five runtime-category tokens cover the observed kernel-injected leaks, each
+with the runtime that injects them:
 
-       Loading extensions from `C:\\Users\\<user>\\.nuget\\packages\\skiasharp\\2.88.9\\interactive-extensions\\dotnet\\SkiaSharp.DotNet.Interactive.dll`
+==== ============================================ ===========================
+cat  cache / context token                        runtime
+==== ============================================ ===========================
+nuget   ``.nuget``                                 dotnet-interactive (``Loading
+            extensions from`` display_data + ``Failed to load kernel
+            extension`` stream stderr)
 
-2. a ``stream`` (stderr) output whose ``text`` is::
+pip     ``AppData\\Roaming\\Python``               CPython peft / torch / diffusers
+            import-warnings (FutureWarning, UserWarning, DeprecationWarning);
 
-       Failed to load kernel extension "KernelExtension" from assembly C:\\Users\\<user>\\.nuget\\packages\\xplot.plotly.interactive\\4.1.0\\lib\\net7.0\\XPlot.Plotly.Interactive.dll
+            also catches HuggingFace-cache warnings embedded in pip
+            warnings (``huggingface_hub`` mentions in the trailing warning
+            text), since both share the pip AppData path
 
-Both embed ``C:\\Users\\<user>\\`` — a PII-lite leak on a public repo (the
-username is the maintainer's GitHub handle / prof identity, correlable but not
-a rotatable secret, cf. ``#6443`` / ``#6529``). The messages are **dead noise
-in a static notebook**: they only matter inside a live kernel session (they
-confirm / warn about an extension load), and they are **re-injected at every
-kernel re-execution** — so, exactly like the ``probeAddresses`` banner (cf.
-``strip_probe_banner.py``, ``#6309``), re-exec does NOT fix it. The durable
-fix is to make the leak **un-committable** via this pre-commit hook.
+ipykernel    ``AppData\\Local\\Temp\\ipykernel``   ipykernel stderr (per-cell
+            temp file ``ipykernel_<pid>\\<hash>.py`` deprecation/source
+            warnings)
 
-This is the **category-A (kernel-injected / env-dependent)** leak family of
-rule-6 (``secrets-hygiene.md``): the username comes from the worker's
-``%USERPROFILE%``, not from source code. Contrast with category-C
-(source-leak), which must be fixed at the source. This hook is the sanctioned
-durable approach for category-A kernel-injected leaks (cf. ``strip_probe_banner.py``
-post-mortem).
+conda   ``.conda\\envs``                           conda env (e.g.
+            ``.conda\\envs\\mcp-jupyter-py310\\lib\\...\\torch`` deprecated
+            ``nn.utils.weight_norm`` warning)
 
-**Detection is path-based, not signature-based.** A line is a leak iff it
-carries a NuGet-cache path (``.nuget``) that embeds a **real username**
-(``C:\\Users\\<u>``, ``Users/<u>``, ``/home/<u>``). The dotnet-interactive
-**tilde** variant — ``~\\.nuget\\packages\\...`` (the ``%USERPROFILE%`` HOME
-*placeholder*, no username) — is therefore **correctly left untouched**: it
-carries no PII. Keying on the username path (not the message prefix) catches
-both kernel messages uniformly and is robust to future message rewording
-(cf. ``#6537`` review: the v1 hook keyed on ``Loading extensions from`` and
-both missed the ``stream`` ``Failed to load`` variant AND false-positive
-stripped legitimate tilde ``Loading extensions from`` lines).
+hf      ``.cache\\huggingface`` / ``.cache/huggingface``  HF transformers/datasets
+            download warnings (``local_dir_use_symlinks is deprecated``,
+            symlink-cache system warning, etc.)
+
+other   ``AppData\\Local\\Temp`` (without ipykernel)     python-side ephemeral
+            file prints (``Audio cree: ...\\Temp\\test_audio.mp3``,
+            ``download -> C:\\Users\\<u>\\AppData\\Local\\Temp\\*.png``)
+
+==== ============================================ ===========================
+
+**Detection is path-based, not signature-based** (key on username path, not
+the message prefix). A line is a leak iff it carries a runtime cache-context
+token AND embeds a real username (``C:\\Users\\<u>``, ``Users/<u>``,
+``/home/<u>``). The dotnet-interactive **tilde** variant
+(``~\\.nuget\\packages\\...``, the ``%USERPROFILE%`` HOME *placeholder* with
+no username) is correctly left untouched: it carries no PII. Keying on the
+username path (not the message prefix) catches both ``stream`` and
+``display_data`` kernel messages uniformly and is robust to future message
+rewording (cf. ``#6537`` review which found v1 keyed on ``Loading extensions
+from`` both missed the ``stream`` ``Failed to load`` variant AND false-
+positive stripped legitimate tilde ``Loading extensions`` lines).
+
+**Strategy: REDACT the username prefix, KEEP the trailing relative path.**
+Most Python category-A lines are ``UserWarning`` / ``DeprecationWarning``
+streams where the *prefix* ``C:\\Users\\<u>\\AppData\\Roaming\\...`` is the
+leak, but the *trailing* ``triton\\windows_utils.py:433: UserWarning:
+Failed to find CUDA.`` is pedagogically useful (which library, which line,
+which warning). The hook redacts only the username prefix to a stable
+placeholder (``<USER_PATH>``), preserving the rest byte-identically so the
+warning content remains readable for pedagogy. Example::
+
+    C:\\Users\\jsboi\\AppData\\Roaming\\Python\\Python313\\site-packages\\triton\\windows_utils.py:433: UserWarning: Failed to find CUDA.
+
+becomes::
+
+    <USER_PATH>\\triton\\windows_utils.py:433: UserWarning: Failed to find CUDA.
+
+For lines carrying only the username path without a meaningful trailing
+relative-path leaf (e.g. ``Audio cree: C:\\Users\\<u>\\AppData\\Local\\Temp\\
+test_audio.mp3``) the full path is redacted (path-only print, no library
+context to preserve).
 
 The strip is **output-only** — no source code is touched, ``execution_count``
 is preserved, the surrounding ``outputs: [...]`` shape is unchanged. Same
-surgical philosophy as ``strip_probe_banner.py`` / ``scrub_papermill_paths.py``:
-a text-level edit on the on-disk JSON so the rest of the file is byte-identical
-(no JSON re-serialization, no float coercion, no metadata churn).
+surgical philosophy as ``strip_probe_banner.py`` /
+``scrub_papermill_paths.py``: a text-level edit on the on-disk JSON so the
+rest of the file is byte-identical (no JSON re-serialization, no float
+coercion, no metadata churn).
 
-Scope (this hook): the .NET NuGet-cache kernel messages only. The other
-username-path patterns catalogued in ``#6529`` (HuggingFace-cache download
-warnings, pip ``AppData`` tracebacks, conda env paths) are Python-side and
-multi-line; they are tracked for follow-up hooks. See ``gh issue view 6529``.
+Closed-loop supervision: re-running ``--apply-all`` after a re-injected leak
+batch is idempotent — the redacted placeholder is recognized as not-a-leak
+on the next scan (it carries no username marker), so applying twice is a
+no-op. Verified by re-running ``--scan-all --check`` after each ``--apply``.
 
 Usage:
-    python strip_machine_paths.py --scan <path>      # dry-run, list only
-    python strip_machine_paths.py --scan-all         # dry-run repo-wide
-    python strip_machine_paths.py --scan-all --check # exit 1 if defects found
-    python strip_machine_paths.py --apply <path>     # fix in place
-    python strip_machine_paths.py --apply-all        # fix repo-wide
+    python strip_machine_paths.py --scan <path>          # dry-run, list only
+    python strip_machine_paths.py --scan-all             # dry-run repo-wide
+    python strip_machine_paths.py --scan-all --check     # exit 1 if defects
+    python strip_machine_paths.py --apply <path>         # fix in place
+    python strip_machine_paths.py --apply-all            # fix repo-wide
+    python strip_machine_paths.py --scan-all --category pip       # triage
+    python strip_machine_paths.py --apply  <path> --category pip   # fix scoped
 """
 
 import argparse
@@ -68,15 +105,45 @@ import re
 import sys
 
 
-# Detection is **path-based**: a line is a leak iff it references the local
-# NuGet package cache (``.nuget``) AND embeds a real machine username. Two
-# dotnet-interactive kernel messages carry this payload — the ``display_data``
-# ``Loading extensions from <path>`` and the ``stream`` ``Failed to load kernel
-# extension ... from assembly <path>`` — and keying on the username path
-# (rather than the message prefix) catches both, cf. the ``#6537`` review which
-# found the v1 signature-based detector (a) missed the stream variant and
-# (b) false-positive stripped legitimate tilde lines.
-NUGET_CACHE_TOKEN = ".nuget"
+# Multi-runtime, path-based detector. Each ``(label, token)`` covers one
+# runtime-family cache context. Keying on the **path** (not the message
+# prefix) catches both ``stream`` and ``display_data`` outputs uniformly
+# and is robust to future message rewording (cf. ``#6537`` review).
+#
+# Token order matters for --category CLI arg parsing; ``all`` is implicit
+# when ACTIVE_CATEGORIES is None (default; category filter unused).
+MACHINE_PATH_TOKENS = (
+    ("nuget", ".nuget"),
+    ("pip", "AppData\\Roaming\\Python"),
+    ("ipykernel", "AppData\\Local\\Temp\\ipykernel"),
+    ("conda", ".conda\\envs"),
+    ("hf", ".cache\\huggingface"),  # forward-slash variant is detected by the
+                                    # same token pair because cache tokens are
+                                    # substring-matched, not slash-strict
+    ("other", "AppData\\Local\\Temp"),  # generic %TEMP% prints (catches
+                                        # both ipykernel-pid and bare temp
+                                        # files; ipykernel category above is
+                                        # strictly more specific and matches
+                                        # first when both apply, so this is
+                                        # the fallthrough for non-pid temp
+                                        # prints like test_audio.mp3)
+)
+
+# Backwards-compat alias for the v1 single-NuGet hook (#6563, merged). Kept
+# so the canonical tests + pre-commit config (which reference
+# ``NUGET_CACHE_TOKEN``) don't break. New code should reference
+# ``MACHINE_PATH_TOKENS[0]`` or the ``"nuget"`` label.
+NUGET_CACHE_TOKEN = MACHINE_PATH_TOKENS[0][1]  # == ".nuget"
+
+# CLI category filter. ``None`` means "all categories". Set via
+# ``--category {nuget|pip|ipykernel|conda|hf|other|all}``. Module global so
+# tests can also flip it; **tests must mutate via``import strip_machine_paths
+# as _smp; _smp.ACTIVE_CATEGORIES = {...}``**, NOT ``from strip_machine_paths
+# import ACTIVE_CATEGORIES`` (the latter rebinds the test module's local
+# namespace, leaving the module global untouched — lesson learned the hard
+# way; ``ACTIVE_CATEGORIES = None`` then misses any per-category isolation
+# test that mutates to ``{"pip"}``).
+ACTIVE_CATEGORIES = None
 
 # Username-bearing absolute-path markers — the actual PII payload. The
 # dotnet-interactive **tilde** variant (``~\.nuget\packages\...``) is the
@@ -84,26 +151,105 @@ NUGET_CACHE_TOKEN = ".nuget"
 # correctly left untouched (no username = no leak).
 USERNAME_MARKERS = ("Users\\", "Users/", "/home/")
 
+# The stable placeholder used to replace the leaked username-bearing path
+# prefix. Carries no PII (no username marker), so is correctly re-detected
+# as **not** a leak on the next scan — making ``--apply-all`` idempotent.
+REDACTED_PATH = "<USER_PATH>"
+
 # Output fields that can carry the leak:
 # - ``data["text/plain"]`` / ``data["text/html"]`` for ``display_data`` /
-#   ``execute_result`` outputs (the ``Loading extensions from`` message).
-# - top-level ``text`` for ``stream`` outputs (the ``Failed to load kernel
-#   extension ... from assembly`` message lives in stderr ``text``).
+#   ``execute_result`` outputs.
+# - top-level ``text`` for ``stream`` outputs (most Python ``UserWarning``
+#   / ``DeprecationWarning`` lines live in stderr ``text``).
 DATA_KEYS = ("text/plain", "text/html")
 STREAM_KEY = "text"
 ALL_KEYS = DATA_KEYS + (STREAM_KEY,)
 
 
+def _active_tokens():
+    """Return the list of ``(label, token)`` pairs to consider for detection.
+
+    ``None`` (default) means "all categories". Otherwise filter to those
+    whose label is in ``ACTIVE_CATEGORIES``.
+    """
+    if ACTIVE_CATEGORIES is None:
+        return list(MACHINE_PATH_TOKENS)
+    return [t for t in MACHINE_PATH_TOKENS if t[0] in ACTIVE_CATEGORIES]
+
+
 def _has_leak(text):
-    """Return True if ``text`` (a str, or one element of a list) carries the
-    NuGet-cache username leak. Path-based: requires BOTH the NuGet-cache
-    context token AND a username absolute-path marker (the tilde HOME
-    placeholder carries neither marker and is left untouched)."""
+    """Return True if ``text`` (a str) carries a category-A username leak.
+
+    Path-based: requires BOTH a runtime cache-context token (nuget/pip/
+    ipykernel/conda/hf/other per ``MACHINE_PATH_TOKENS``) AND a username
+    absolute-path marker (``Users\\``, ``Users/``, ``/home/``). The tilde HOME
+    placeholder carries neither marker and is left untouched.
+    """
     if not isinstance(text, str):
         return False
-    if NUGET_CACHE_TOKEN not in text:
+    if not any(token in text for _, token in _active_tokens()):
         return False
     return any(marker in text for marker in USERNAME_MARKERS)
+
+
+def _redact_line(text):
+    """Return ``text`` with the leaked username path prefix replaced by
+    ``<USER_PATH>``, preserving any trailing relative path (which carries
+    pedagogy: library/source-file/symbol name).
+
+    Strategy:
+    1. Locate the username marker substring (``C:\\Users\\<u>\\`` or
+       ``/Users/<u>/`` or ``/home/<u>/``).
+    2. Find the **next** ``\\`` or ``/`` AFTER the username marker that ends
+       a *runtime-distinct* leaf (one of the well-known cache tokens
+       ``.nuget\\``, ``AppData\\Roaming\\Python\\``,
+       ``AppData\\Local\\Temp\\ipykernel_``, ``.conda\\envs\\``,
+       ``.cache\\huggingface\\``, ``AppData\\Local\\Temp\\``), then keep
+       everything from that point onward.
+    3. Replace the username prefix (everything BEFORE that point) with
+       ``<USER_PATH>``.
+
+    Edge cases:
+    - Pure token lines without trailing relative path (e.g. ``Audio cree:
+      C:\\Users\\<u>\\AppData\\Local\\Temp\\test_audio.mp3``): the leaf
+      marker is ``AppData\\Local\\Temp\\`` and ``test_audio.mp3`` is the
+      trailing relative filename (kept verbatim).
+    - Multiple username markers in one line (rare, e.g. a Python warning
+      plus an embedded URL): redact the longest matching prefix only
+      (leftmost), to avoid corrupting embedded URLs.
+    - The tilde HOME placeholder (``~\\.nuget\\packages\\...``) carries no
+      username marker so is rejected by ``_has_leak`` upstream; not touched.
+    """
+    if not isinstance(text, str):
+        return text  # defensive: caller invariant is ``_has_leak`` first.
+    # Find the leftmost username marker.
+    leftmost_idx = -1
+    leftmost_marker_len = 0
+    for marker in USERNAME_MARKERS:
+        idx = text.find(marker)
+        if idx != -1 and (leftmost_idx == -1 or idx < leftmost_idx):
+            leftmost_idx = idx
+            leftmost_marker_len = len(marker)
+    if leftmost_idx == -1:
+        return text  # caller should have checked; defensive no-op
+
+    # The username marker points into ``Users\<u>\...`` or
+    # ``/Users/<u>/...`` or ``/home/<u>/...``. We need to advance past the
+    # *entire username segment* (including its trailing separator) so the
+    # username itself is dropped from the output. The username is the
+    # directory segment IMMEDIATELY after ``Users\`` (or ``/home/``) — it
+    # runs until the NEXT ``\\`` or ``/`` character.
+    after_marker = leftmost_idx + leftmost_marker_len  # points at ``<u>``
+    # Skip past the username segment up to and including its trailing
+    # separator (``\`` on Windows or ``/`` on Unix). If the username runs
+    # all the way to EOL with no separator (degenerate), bail defensively.
+    while after_marker < len(text) and text[after_marker] not in ("\\", "/"):
+        after_marker += 1
+    if after_marker < len(text) and text[after_marker] in ("\\", "/"):
+        after_marker += 1  # consume the trailing separator
+    # ``after_marker`` now points at the FIRST character of the runtime
+    # segment (e.g. for the pip AppData path, at the ``A`` of ``AppData``).
+    return REDACTED_PATH + "\\" + text[after_marker:]
 
 
 def _field_value(out, key):
@@ -155,6 +301,23 @@ def count_leak_lines(nb_path):
                 elif _has_leak(v):
                     n += 1
     return n
+
+
+def _first_matching_label(text):
+    """Return the label (string part of the first ``(label, token)`` tuple
+    in ``MACHINE_PATH_TOKENS``) whose token is a substring of ``text``.
+
+    The ordering of ``MACHINE_PATH_TOKENS`` is the **priority order**: earlier
+    tokens are more specific (e.g. ``ipykernel`` precedes ``other`` because
+    an ipykernel-temp-path is also a Temp-path but the runtime distinction
+    matters for downstream strategy logic).
+    """
+    if not isinstance(text, str):
+        return ""
+    for label, token in MACHINE_PATH_TOKENS:
+        if token in text:
+            return label
+    return ""
 
 
 def find_leak_outputs(nb_path):
@@ -227,17 +390,47 @@ def _find_data_list_bounds(raw, key):
     return blocks
 
 
+def _redact_drop_strategy(decoded, label):
+    """Return ``(new_decoded_str, strategy)`` for a leak-bearing decoded
+    element belonging to category ``label``.
+
+    - For ``"nuget"`` (the canonical merged #6563/#6567 path): ``DROP``
+      (return ``None`` to signal full removal).
+    - For all other categories: ``REDACT`` (return the redacted string;
+      the caller will substitute the JSON-encoded element with the redacted
+      encoding).
+
+    The NuGet DROP behaviour is FROZEN — backwards-compat with the
+    already-merged #6567 batch, which replaced leak-bearing elements with
+    empty strings (drop_in_place semantics). Changing NuGet to REDACT would
+    re-introduce non-empty strings into the 8 already-shipped notebooks,
+    dirtying their diff and forcing a no-op follow-up cleanup.
+    """
+    if label == "nuget":
+        return (None, "drop")
+    return (_redact_line(decoded), "redact")
+
+
 def strip_in_place(nb_path):
-    """Remove leak-bearing ``data[*]`` outputs by editing the on-disk JSON.
+    """Edit leak-bearing ``data[*]`` outputs in-place on disk.
+
+    **Two strategies by category** (set by ``_redact_drop_strategy``):
+
+    - ``DROP`` (canonical NuGet, merged in #6563/#6567): the leak-bearing
+      element is removed from the list (``""`` if it was the only element)
+      or, for a bare string value, replaced by ``""``. Backwards-compatible
+      with the 8-notebook merged batch — re-running on a #6567-touched
+      notebook is a no-op.
+
+    - ``REDACT`` (Python categories: pip, ipykernel, conda, hf, other):
+      the leak-bearing element's JSON encoding is substituted byte-identically
+      with the redacted form (see ``_redact_line``). Only the *username
+      prefix* changes (``C:\\Users\\<u>\\...`` → ``<USER_PATH>\\...``);
+      the trailing relative path (which carries pedagogy: library/symbol/
+      warning content) is preserved verbatim.
 
     Surgical text-level edit preserving every other byte (no JSON
-    re-serialization, no metadata churn). Handles both on-disk shapes:
-
-    1. **list[str]** (the observed shape for ``text/plain``): each
-       leak-bearing element is dropped in place, the list shape ``[...]`` is
-       preserved (if it becomes a single-element drop, the element content is
-       replaced by ``""`` to keep a valid list value).
-    2. **str** (inline string): the whole string is replaced by ``""``.
+    re-serialization, no metadata churn).
 
     Returns ``(outputs_with_leak, lines_fixed)``.
     """
@@ -259,8 +452,7 @@ def strip_in_place(nb_path):
     str_pat = re.compile(r'"((?:text/plain|text/html|text))"\s*:\s*"((?:[^"\\]|\\.)*)"')
     elem_pat = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
-    # --- String-form: replace the whole "<key>": "<...>" with "<key>": "" ---
-    # Collect (key, leak_string) targets from the parsed notebook.
+    # --- String-form (single inline string output value, not list) ---
     str_targets = []
     for ci, oi, key in hits:
         try:
@@ -283,16 +475,35 @@ def strip_in_place(nb_path):
                 decoded = json.loads('"' + raw_value + '"')
             except json.JSONDecodeError:
                 continue
-            if decoded == leak_str:
-                replacement = '"%s": ""' % key
-                new_text = new_text[:m.start()] + replacement + new_text[m.end():]
-                fixed += 1
-                break
+            if decoded != leak_str:
+                continue
+            # Determine strategy by inspecting which category token matched
+            # the leaked ``decoded`` (the str_targets only had ``_has_leak``
+            # which is True iff ANY category token matched; we re-disambiguate
+            # by finding the FIRST matched token).
+            label = _first_matching_label(decoded)
+            replacement, _strat = _redact_drop_strategy(decoded, label)
+            if replacement is None:
+                # DROP — replace the whole "key": "leaked" with "key": ""
+                repl = '"%s": ""' % key
+            else:
+                # REDACT — substitute the JSON-encoded element. Note:
+                # ``json.dumps`` with no separators and ``ensure_ascii=False``
+                # gives us the canonical ``"\\\\Users\\\\..."`` form (NB
+                # notebooks use ASCII-default encoding for non-ASCII so
+                # ensure_ascii=True matches the stored encoding for ASCII
+                # content; use False to match UTF-8 raw bytes for the
+                # rare non-ASCII path).
+                repl = '"%s": %s' % (key, json.dumps(replacement,
+                                                     ensure_ascii=False))
+            new_text = new_text[:m.start()] + repl + new_text[m.end():]
+            fixed += 1
+            break
 
-    # --- List-form: drop leak-bearing elements (+ trailing/preceding comma) ---
+    # --- List-form (the observed shape for ``text/plain`` text outputs) ---
     for key in ALL_KEYS:
         blocks = _find_data_list_bounds(new_text, key)
-        # Filter to blocks that contain at least one leak-bearing element.
+        # Filter to blocks containing at least one leak-bearing element.
         leak_blocks = []
         for body_start, body_end in blocks:
             body = new_text[body_start:body_end]
@@ -310,7 +521,10 @@ def strip_in_place(nb_path):
             elems = list(elem_pat.finditer(body))
             if not elems:
                 continue
-            drop_spans = []  # (start, end, mode)
+            # Classify each leak-bearing element by category to choose
+            # strategy per element.
+            edit_spans = []  # (start, end, replacement_text) for REPLACE; or
+                             # (start, end, None) for DROP
             replaced_here = 0
             for em in elems:
                 try:
@@ -320,29 +534,65 @@ def strip_in_place(nb_path):
                 if not _has_leak(decoded):
                     continue
                 replaced_here += 1
-                after = em.end()
-                tail_match = re.match(r'\s*,', body[after:])
-                if tail_match:
-                    drop_spans.append((em.start(), after + tail_match.end(), "trail"))
-                else:
-                    before = em.start()
-                    pre_match = re.search(r',\s*$', body[:before])
-                    if pre_match:
-                        drop_spans.append((pre_match.start(), em.end(), "head"))
+                label = _first_matching_label(decoded)
+                replacement, _strat = _redact_drop_strategy(decoded, label)
+                # Determine the boundary to remove/replace (trailing comma
+                # for non-final elements, leading comma for final, or
+                # entire list for single-element).
+                if replacement is None:
+                    # DROP — same boundary rules as before:
+                    after = em.end()
+                    tail_match = re.match(r'\s*,', body[after:])
+                    if tail_match:
+                        edit_spans.append(
+                            (em.start(), after + tail_match.end(), None))
                     else:
-                        drop_spans.append((em.start(), em.end(), "only"))
+                        before = em.start()
+                        pre_match = re.search(r',\s*$', body[:before])
+                        if pre_match:
+                            edit_spans.append(
+                                (pre_match.start(), em.end(), None))
+                        else:
+                            edit_spans.append(
+                                (em.start(), em.end(), None))
+                else:
+                    # REDACT — keep the element position + comma, just swap
+                    # the JSON-encoded string. Byte-identical when the
+                    # redacted output re-encodes to the same character
+                    # width as the input (which it does, since REDACT
+                    # shortens ``C:\\Users\\jsboi\\...`` to ``<USER_PATH>\\...``
+                    # — strictly shorter, so we DROP the trailing comma plus
+                    # any extra whitespace, then re-insert the comma and
+                    # the redacted element).
+                    edit_spans.append(
+                        (em.start(), em.end(),
+                         json.dumps(replacement, ensure_ascii=False)))
+
             if not replaced_here:
                 continue
-            if len(drop_spans) == 1 and drop_spans[0][2] == "only":
-                new_body = '""'
-            else:
-                parts = []
-                prev_end = 0
-                for ds, de, _mode in drop_spans:
-                    parts.append(body[prev_end:ds])
-                    prev_end = de
-                parts.append(body[prev_end:])
-                new_body = "".join(parts)
+
+            # Apply edits in REVERSE body-offset order so earlier offsets
+            # remain valid. REDACT swaps the element content with no
+            # boundary manipulation (the element stays inline; the comma
+            # stays inline). DROP removes the element and the trailing /
+            # preceding comma.
+            new_body = body
+            for start, end, replacement_text in reversed(edit_spans):
+                if replacement_text is None:
+                    # DROP
+                    new_body = new_body[:start] + new_body[end:]
+                else:
+                    # REDACT — replace element content in place
+                    old_elem = new_body[start:end]
+                    # Preserve the surrounding whitespace pattern: assume
+                    # the element is wrapped in ``"..."`` quotes only;
+                    # trailing comma is kept OUTSIDE the regex match (the
+                    # regex consumed up to the closing quote). Swap the
+                    # content between the quotes.
+                    assert old_elem.startswith('"') and old_elem.endswith(
+                        '"'), "unexpected element shape: %r" % old_elem
+                    new_elem = '"' + replacement_text.strip('"') + '"'
+                    new_body = new_body[:start] + new_elem + new_body[end:]
             if new_body != body:
                 new_text = new_text[:body_start] + new_body + new_text[body_end:]
                 fixed += replaced_here
@@ -362,10 +612,13 @@ def iter_notebooks(nb_root):
 
 
 def main():
+    global ACTIVE_CATEGORIES
     parser = argparse.ArgumentParser(
-        description="Strip the .NET NuGet-cache machine-username leak "
-                    "('Loading extensions from' display_data + 'Failed to load "
-                    "kernel extension' stream) from notebooks"
+        description="Strip machine-username path leaks from notebook outputs. "
+                    "Covers 5 runtime-category leaks: nuget (dotnet-interactive), "
+                    "pip (CPython AppData\\Roaming\\Python), ipykernel (per-cell "
+                    "temp file warnings), conda (env path warnings), hf "
+                    "(HuggingFace cache warnings). Path-based detection."
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--scan", metavar="PATH",
@@ -378,7 +631,17 @@ def main():
                        help="fix repo-wide in place")
     parser.add_argument("--check", action="store_true",
                         help="with --scan-all: exit 1 if any leak found")
+    parser.add_argument("--category", dest="category",
+                        choices=[label for label, _ in MACHINE_PATH_TOKENS] + ["all"],
+                        default="all",
+                        help="limit scan/apply to one runtime category "
+                             "(default: all). Useful for triage.")
     args = parser.parse_args()
+
+    if args.category == "all":
+        ACTIVE_CATEGORIES = None
+    else:
+        ACTIVE_CATEGORIES = {args.category}
 
     repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     nb_root = os.path.join(repo_root, "MyIA.AI.Notebooks")
@@ -420,8 +683,10 @@ def main():
             print("[DEFECT] %s  (%d leak line(s))" % (rel, found))
 
     mode = "apply" if do_apply else "scan"
-    print("\n%s summary: %d notebook(s) carrying %d NuGet-ext leak line(s)"
-          % (mode, total_files, total_found))
+    cat_label = "all categories" if ACTIVE_CATEGORIES is None else (
+        ", ".join(sorted(ACTIVE_CATEGORIES)))
+    print("\n%s summary (%s): %d notebook(s) carrying %d leak line(s)"
+          % (mode, cat_label, total_files, total_found))
     if do_apply:
         print("  fixed: %d   skipped: %d file(s)" % (total_fixed, len(skipped)))
         for rel in skipped:
