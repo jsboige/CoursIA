@@ -1,4 +1,4 @@
-# MANIFEST des figures README
+# Manifeste des figures — GenAI/Audio
 
 Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks).
 **Audit G.1 c.481 (2026-07-14, doctrine #5780)** : swap audio3↔audio5 corrige le mismatch de contenu (les PNG assignés à ces deux slots ne correspondaient pas à leurs alt-texts respectifs). Le PNG « comparaison multi-modèles » (2 barplots kokoro/openai-tts-1) est désormais sous `audio5-multimodel.png` ; le PNG « caractéristiques audio extraites » (4 courbes librosa) est désormais sous `audio3-stt-tts.png`.
