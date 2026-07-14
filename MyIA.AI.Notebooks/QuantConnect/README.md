@@ -244,7 +244,7 @@ python -m ipykernel install --user --name=quantconnect --display-name "Python (Q
 
 ## Résumé de la Progression
 
-**Total cours linéaire** : **29 notebooks Python** (QC-Py-01 à QC-Py-28 + le 23b, ~33 heures de contenu) + **24 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, **15** Cloud strategies QC-Py-Cloud-01..09, training QC-Py-30..32, dataset workflow), plus 2 notebooks de recherche utilitaires (`research_*.ipynb`).
+**Total cours linéaire** : **29 notebooks Python** (QC-Py-01 à QC-Py-28 + le 23b, ~33 heures de contenu) + **24 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, **15** Cloud strategies QC-Py-Cloud-01..09, training QC-Py-30..32, dataset workflow), plus **17 notebooks de recherche** standalone (`research_*.ipynb`, détaillés dans [research/README.md](research/README.md)).
 
 **Répartition cours linéaire (Phases 1-8)** :
 - **18 notebooks non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
