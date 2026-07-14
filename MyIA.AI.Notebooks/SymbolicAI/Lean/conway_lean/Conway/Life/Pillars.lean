@@ -2,62 +2,66 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-## Pillars — Community-witness theorems (Phase 3c scaffolding)
+## Pillars — Témoins communautaires (scaffolding Phase 3c)
 
-This module is **scaffolding** for the four "pillars" of the Conway
-Life community that we want to certify via `native_decide` once
-memoized Hashlife (`Conway.Life.HashlifeMemo`) is in place.
+Ce module est un **scaffolding** pour les quatre « piliers » de la
+communauté Conway Life que nous voulons certifier via `native_decide`
+une fois le Hashlife mémoïsé (`Conway.Life.HashlifeMemo`) en place.
 
-### The four pillars
+### Les quatre piliers
 
-| Pillar              | Author       | Year | Pattern               | Generations | Level |
-|---------------------|--------------|------|-----------------------|-------------|-------|
-| OTCA metapixel      | Brice Due    | 2006 | OTCA-on/off transition| 35 328      | ~9    |
+| Pilier              | Auteur       | Année | Pattern               | Générations | Niveau |
+|---------------------|--------------|-------|-----------------------|-------------|--------|
+| OTCA metapixel      | Brice Due    | 2006  | Transition OTCA on/off| 35 328      | ~9     |
 | Unit cell           | Nicolay Beluchenko | 2011 | unitcell.rle  | 4 096       | ~7    |
-| Gemini              | Andrew Wade  | 2010 | gemini.rle           | 33 699 586  | ~14   |
+| Gemini              | Andrew Wade  | 2010  | gemini.rle           | 33 699 586  | ~14   |
 | CPU (digital)       | Nicolay Beluchenko / Andy Stearns | 2016 | digital_cpu.rle | 1 048 576 | ~12   |
 
-Each witness asserts that `evolveHashlifeFastMemo N pattern` produces
-the expected target configuration after `N` generations. The
-generation count is chosen at a notable milestone of the pattern's
-public demo (e.g. the OTCA "one on/off cycle" is 35 328 generations,
-the published Gemini self-replication completes in 33 699 586).
+Chaque témoin affirme que `evolveHashlifeFastMemo N motif` produit
+la configuration cible attendue après `N` générations. Le nombre de
+générations est choisi à un jalon notable de la démo publique du
+motif (par exemple le cycle OTCA « on/off » dure 35 328 générations,
+la Gemini publie une auto-réplication complète en 33 699 586).
 
-### Status
+### Statut
 
-- **Phase 3b** : `hashlifeResultAux` proven structurally recursive,
-  light-cone bound `mem_lightCone_of_manhattan_le` closed (PR #2173).
-  Remaining sorries in `Conway.Life.HashlifeCorrectness` are
-  level-2/step containment lemmas, independent of this file.
-- **Phase 3c memoization** : DONE. `Conway.Life.HashlifeMemo` now
-  provides a real fuel-keyed memoized Hashlife
-  (`evolveHashlifeFastMemo`) proven equal to the Phase 3b reference
-  (`evolveHashlifeFastMemo_eq_evolveHashlifeFast`, no sorry).
-- **Phase 3c patterns** (this file) : the four pillar patterns are
-  still *placeholder empty grids* (RLE files too large for Lean
-  string literals — they await a file-IO or pre-processing loading
-  step). The witness theorems below are therefore **vacuously true**
-  (empty grid is a fixed point, `evolveHashlifeFastMemo_empty`); they
-  pin down the intended statements and will gain real content when
-  the RLE-decoded grids replace the placeholders.
-- **Future** : with real patterns loaded, each witness becomes a
-  single `by native_decide` (gated by an appropriate budget raise),
-  now made tractable by the memoization layer.
+- **Phase 3b** : `hashlifeResultAux` prouvée structurellement
+  récursive, lemme de cône lumineux `mem_lightCone_of_manhattan_le`
+  clos (PR #2173). Les `sorry` restants dans
+  `Conway.Life.HashlifeCorrectness` sont des lemmes de confinement
+  level-2/étape, indépendants de ce fichier.
+- **Phase 3c mémoïsation** : TERMINÉE. `Conway.Life.HashlifeMemo`
+  fournit désormais un vrai Hashlife mémoïsé fuel-keyed
+  (`evolveHashlifeFastMemo`) prouvé égal à la référence Phase 3b
+  (`evolveHashlifeFastMemo_eq_evolveHashlifeFast`, sans `sorry`).
+- **Phase 3c motifs** (ce fichier) : les quatre motifs piliers
+  restent des *grilles vides placeholder* (les fichiers RLE sont
+  trop gros pour des littéraux chaîne Lean — ils attendent une étape
+  de chargement par E/S fichier ou pré-traitement). Les théorèmes
+  témoins ci-dessous sont donc **vacuous** (la grille vide est un
+  point fixe, `evolveHashlifeFastMemo_empty`) ; ils épinglent les
+  énoncés prévus et gagneront du contenu réel quand les grilles
+  décodées du RLE remplaceront les placeholders.
+- **Futur** : avec les vrais motifs chargés, chaque témoin devient
+  un simple `by native_decide` (gated par une hausse de budget
+  appropriée), désormais rendu tractable par la couche de mémoïsation.
 
-### Why a separate file ?
+### Pourquoi un fichier séparé ?
 
-These theorems exercise `native_decide` on large patterns; compile
-times explode (`9^k` recursion on each subcell). Keeping them in a
-distinct module lets the rest of `Conway.Life` build quickly while
-`Pillars.lean` can be opted into via `lake build Conway.Life.Pillars`
-when needed.
+Ces théorèmes exercent `native_decide` sur de grands motifs ; les
+temps de compilation explosent (récursion `9^k` sur chaque
+sous-cellule). Les garder dans un module distinct laisse le reste de
+`Conway.Life` se construire rapidement tandis que `Pillars.lean`
+peut être opt-in via `lake build Conway.Life.Pillars` quand
+nécessaire.
 
-### Why scaffold the witnesses now ?
+### Pourquoi scaffolder les témoins maintenant ?
 
-User mandate 2026-06-01 : prepare a complete-presentation scaffold so
-that the §11 roadmap of `Lean-16b-Conway-Game-of-Life-Lean.ipynb` is concrete and
-visible. Memoization was validated at the start of Phase 3 ; the
-witnesses are the natural endpoint.
+Mandat user 2026-06-01 : préparer un scaffold de présentation
+complète pour que la roadmap §11 du notebook
+`Lean-16b-Conway-Game-of-Life-Lean.ipynb` soit concrète et visible.
+La mémoïsation a été validée au début de la Phase 3 ; les témoins
+sont le point d'arrivée naturel.
 -/
 
 import Conway.Life
@@ -70,161 +74,169 @@ namespace Conway
 namespace Life
 namespace Pillars
 
-/-! ## Pattern archive
+/-! ## Archive de motifs
 
-RLE files for the four pillars live in `patterns/` alongside this
-Lean project. They were downloaded from the copy.sh mirror of the
-LifeWiki community archive:
+Les fichiers RLE des quatre piliers vivent dans `patterns/` à côté
+de ce projet Lean. Ils ont été téléchargés depuis le miroir copy.sh
+de l'archive communautaire LifeWiki :
 
   `https://copy.sh/life/examples/<name>.rle`
 
-| File                | Grid size    | Size (KB) | Pillar theorem            |
-|---------------------|-------------|-----------|---------------------------|
-| `otcametapixel.rle` | 2058 × 2058 | 165       | `otca_metapixel_witness`  |
-| `p5760unitlifecell.rle` | 499 × 499 | 15     | `unitcell_witness`        |
-| `turingmachine.rle` | variable    | 104       | (narrative: Act II)       |
-| `gemini.rle`        | huge        | 5 300     | `gemini_witness`          |
+| Fichier                | Taille grille | Taille (Ko) | Théorème pilier        |
+|------------------------|---------------|-------------|------------------------|
+| `otcametapixel.rle`    | 2058 × 2058  | 165         | `otca_metapixel_witness` |
+| `p5760unitlifecell.rle`| 499 × 499    | 15          | `unitcell_witness`     |
+| `turingmachine.rle`    | variable     | 104         | (récit : Acte II)      |
+| `gemini.rle`           | énorme       | 5 300       | `gemini_witness`       |
 
-`gemini.rle` (5.3 MB) is gitignored due to size; the notebook's
-`fetch_rle()` re-downloads it on demand with disk caching.
+`gemini.rle` (5,3 Mo) est gitignoré pour cause de taille ; la
+fonction `fetch_rle()` du notebook le retélécharge à la demande
+avec cache disque.
 
-The RLE files are **too large** for Lean string literals (OTCA alone is
-165 KB of RLE text; the Lean kernel would need to parse it at compile
-time). They await a future file-IO loading mechanism or external
-pre-processing step that generates Lean `Grid` definitions from the
-RLE source.
+Les fichiers RLE sont **trop gros** pour des littéraux chaîne Lean
+(OTCA seul fait 165 Ko de texte RLE ; le noyau Lean devrait le
+parser au moment de la compilation). Ils attendent un futur
+mécanisme de chargement par E/S fichier ou une étape de
+pré-traitement externe qui génère des définitions Lean `Grid`
+depuis la source RLE.
 
-## Pattern placeholders
+## Placeholders de motifs
 
-Each pillar needs (a) its initial RLE-decoded `Grid`, (b) the target
-generation count, (c) the expected post-evolution `Grid` (also from
-the published source). For the scaffold we declare opaque names with
-trivial bodies ; the real patterns will be loaded via
-`Conway.Life.RLE.parseRLE` in Phase 3c.
+Chaque pilier a besoin (a) de sa `Grid` initiale décodée du RLE, (b)
+du compte de générations cible, (c) de la `Grid` post-évolution
+attendue (elle aussi depuis la source publiée). Pour le scaffold
+nous déclarons des noms opaques avec un corps trivial ; les vrais
+motifs seront chargés via `Conway.Life.RLE.parseRLE` en Phase 3c.
 
-These are **defs**, not `axiom`s — they have a concrete trivial body
-(`Grid.empty`) so no axiom is introduced. They will be replaced by
-parsed RLE in the actual pillar PR. -/
+Ce sont des **def**, pas des `axiom` — ils ont un corps trivial
+concret (`Grid.empty`) donc aucun axiome n'est introduit. Ils
+seront remplacés par le RLE parsé dans la PR pilier réelle. -/
 
-/-- OTCA metapixel initial state. Loaded from RLE in Phase 3c. -/
+/-- État initial de l'OTCA metapixel. Chargé depuis RLE en Phase 3c. -/
 def otcaInitial : Grid := ([] : Grid)
 
-/-- OTCA metapixel state after one on/off cycle (35 328 generations).
-    Loaded from RLE in Phase 3c. -/
+/-- État de l'OTCA metapixel après un cycle on/off (35 328 générations).
+    Chargé depuis RLE en Phase 3c. -/
 def otcaTarget : Grid := ([] : Grid)
 
-/-- Generation count for the OTCA metapixel on/off cycle. -/
+/-- Nombre de générations pour le cycle on/off de l'OTCA metapixel. -/
 def otcaGens : Nat := 35328
 
-/-- UnitCell initial state. Loaded from RLE in Phase 3c. -/
+/-- État initial de l'UnitCell. Chargé depuis RLE en Phase 3c. -/
 def unitcellInitial : Grid := ([] : Grid)
 
-/-- UnitCell state after one full period. Loaded from RLE in Phase 3c. -/
+/-- État de l'UnitCell après une période complète. Chargé depuis RLE en Phase 3c. -/
 def unitcellTarget : Grid := ([] : Grid)
 
-/-- Generation count for the UnitCell period (4 096). -/
+/-- Nombre de générations pour la période de l'UnitCell (4 096). -/
 def unitcellGens : Nat := 4096
 
-/-- Gemini self-replicator initial state. Loaded from RLE in Phase 3c. -/
+/-- État initial de l'auto-réplicateur Gemini. Chargé depuis RLE en Phase 3c. -/
 def geminiInitial : Grid := ([] : Grid)
 
-/-- Gemini state after one full self-replication cycle (33 699 586 gens). -/
+/-- État de la Gemini après un cycle complet d'auto-réplication (33 699 586 générations). -/
 def geminiTarget : Grid := ([] : Grid)
 
-/-- Generation count for one Gemini self-replication cycle. -/
+/-- Nombre de générations pour un cycle d'auto-réplication de la Gemini. -/
 def geminiGens : Nat := 33699586
 
-/-- Digital CPU initial state. Loaded from RLE in Phase 3c. -/
+/-- État initial du CPU digital. Chargé depuis RLE en Phase 3c. -/
 def cpuInitial : Grid := ([] : Grid)
 
-/-- Digital CPU state after a representative cycle (1 048 576 gens). -/
+/-- État du CPU digital après un cycle représentatif (1 048 576 générations). -/
 def cpuTarget : Grid := ([] : Grid)
 
-/-- Generation count for one Digital CPU cycle. -/
+/-- Nombre de générations pour un cycle du CPU digital. -/
 def cpuGens : Nat := 1048576
 
-/-! ## RLE-proven witness example
+/-! ## Exemple témoin prouvé par RLE
 
-The Pulsar (period-3 oscillator) is parsed from RLE in our RLE.lean
-module and verified as an oscillator. It serves as a concrete
-demonstration that the RLE → Grid → evolve pipeline works end-to-end.
-The four pillar patterns (OTCA, UnitCell, Gemini, CPU) are too large
-for Lean string literals (OTCA alone is 70 KB of RLE) and await a
-future file-based loading mechanism. -/
+Le Pulsar (oscillateur de période 3) est parsé depuis son RLE dans
+notre module RLE.lean et vérifié comme oscillateur. Il sert de
+démonstration concrète que le pipeline RLE → Grid → evolve marche
+de bout en bout. Les quatre motifs piliers (OTCA, UnitCell, Gemini,
+CPU) sont trop gros pour des littéraux chaîne Lean (OTCA seul fait
+70 Ko de RLE) et attendent un futur mécanisme de chargement basé
+fichier. -/
 
-/-- The Pulsar parsed from its RLE representation.
-    Proven equal to the hand-written constant in RLE.lean. -/
+/-- Le Pulsar parsé depuis sa représentation RLE.
+    Prouvé égal à la constante écrite à la main dans RLE.lean. -/
 def pulsarGrid : Grid := RLE.pulsar_parsed
 
-/-- The Pulsar is a period-3 oscillator: after 3 generations it
-    returns to its initial state. Proven via `native_decide`. -/
+/-- Le Pulsar est un oscillateur de période 3 : après 3 générations
+    il revient à son état initial. Prouvé via `native_decide`. -/
 theorem pulsar_period3 :
     evolveHashlifeFast 3 pulsarGrid = pulsarGrid := by
   native_decide
 
-/-! ## Witness theorems
+/-! ## Théorèmes témoins
 
-Each theorem asserts that `evolveHashlifeFastMemo N pattern = target`
-for the corresponding pillar. The proof is intended to be a single
-`by native_decide` once memoization lands. -/
+Chaque théorème affirme que `evolveHashlifeFastMemo N motif = cible`
+pour le pilier correspondant. La preuve est conçue comme un simple
+`by native_decide` une fois la mémoïsation en place. -/
 
-/-- **OTCA metapixel witness** — Brice Due 2006.
+/-- **Témoin OTCA metapixel** — Brice Due 2006.
 
-    The OTCA metapixel is a 2048×2048 period-35328 unit cell that can
-    emulate any Life-like cellular automaton. When zoomed out, ON and
-    OFF cells are clearly visible. It was the first programmable
-    metacell, demonstrating that Life can simulate *itself*.
+    L'OTCA metapixel est une métacellule 2048×2048 de période 35 328
+    qui peut émuler tout automate cellulaire life-like. Vu de loin,
+    les cellules ON et OFF sont clairement visibles. C'est la
+    première métacellule programmable, démontrant que Life peut
+    simuler *lui-même*.
 
-    Public demo: one full ON→OFF→ON cycle completes in 35 328 gens.
-    RLE source: conwaylife.com/wiki/OTCA_metapixel (70 KB).
+    Démo publique : un cycle ON→OFF→ON complet se termine en
+    35 328 générations. Source RLE : conwaylife.com/wiki/OTCA_metapixel
+    (70 Ko).
 
-    Phase 3c : `by native_decide` with memoized Hashlife.
-    Currently vacuous (placeholder empty grids, see Status above). -/
+    Phase 3c : `by native_decide` avec Hashlife mémoïsé.
+    Actuellement vacuous (grilles placeholder vides, voir Statut ci-dessus). -/
 theorem otca_metapixel_witness :
     evolveHashlifeFastMemo otcaGens otcaInitial = otcaTarget :=
   evolveHashlifeFastMemo_empty otcaGens
 
-/-- **UnitCell witness** — Nicolay Beluchenko 2011.
+/-- **Témoin UnitCell** — Nicolay Beluchenko 2011.
 
-    A smaller OTCA-style metacell with period 4 096, roughly 9× the
-    speed of OTCA. At level-7 quadtree this is the most tractable
-    pillar — likely the first to land green once memoization is in
-    place. The pattern uses a different internal architecture (p5760
-    core) making it complementary to OTCA.
+    Une métacellule OTCA-style plus petite, de période 4 096,
+    environ 9× la vitesse de l'OTCA. Au quadtree de niveau 7 c'est
+    le pilier le plus tractable — probablement le premier à passer
+    vert une fois la mémoïsation en place. Le motif utilise une
+    architecture interne différente (cœur p5760) le rendant
+    complémentaire de l'OTCA.
 
-    Phase 3c : `by native_decide` with memoized Hashlife.
-    Currently vacuous (placeholder empty grids, see Status above). -/
+    Phase 3c : `by native_decide` avec Hashlife mémoïsé.
+    Actuellement vacuous (grilles placeholder vides, voir Statut ci-dessus). -/
 theorem unitcell_witness :
     evolveHashlifeFastMemo unitcellGens unitcellInitial = unitcellTarget :=
   evolveHashlifeFastMemo_empty unitcellGens
 
-/-- **Gemini witness** — Andrew Wade 2010.
+/-- **Témoin Gemini** — Andrew Wade 2010.
 
-    The first self-replicating universal constructor in Life. Gemini
-    creates a complete copy of itself in 33 699 586 generations across
-    a level-14 quadtree. This is the **flagship witness** — it
-    demonstrates that Life is capable of open-ended self-replication,
-    the strongest form of universality. Named for the Gemini
-    constellation (twins).
+    Le premier constructeur universel auto-répliquant dans Life.
+    Gemini crée une copie complète d'elle-même en 33 699 586
+    générations à travers un quadtree de niveau 14. C'est le
+    **témoin amiral** — il démontre que Life est capable
+    d'auto-réplication ouverte, la forme la plus forte
+    d'universalité. Nommée d'après la constellation des Gémeaux
+    (jumeaux).
 
-    This is the hardest target: level-14 quadtree + 33M generations.
-    Phase 3c : `by native_decide` with memoized Hashlife.
-    Currently vacuous (placeholder empty grids, see Status above). -/
+    C'est la cible la plus dure : quadtree niveau 14 + 33M
+    générations. Phase 3c : `by native_decide` avec Hashlife
+    mémoïsé. Actuellement vacuous (grilles placeholder vides,
+    voir Statut ci-dessus). -/
 theorem gemini_witness :
     evolveHashlifeFastMemo geminiGens geminiInitial = geminiTarget :=
   evolveHashlifeFastMemo_empty geminiGens
 
-/-- **Digital CPU witness** — Beluchenko / Andy Stearns 2016.
+/-- **Témoin CPU digital** — Beluchenko / Andy Stearns 2016.
 
-    A programmable digital CPU constructed from OTCA metapixels. It
-    executes one instruction cycle in 1 048 576 generations (level-12
-    quadtree). Demonstrates that Life can implement arbitrary
-    computation — not just simulate a cell, but run a program.
-    Detailed in Adam P. Goucher's 2016 analysis on the conwaylife.com
-    forum.
+    Un CPU digital programmable construit depuis des OTCA
+    metapixels. Il exécute un cycle d'instruction en 1 048 576
+    générations (quadtree niveau 12). Démontre que Life peut
+    implémenter un calcul arbitraire — pas juste simuler une
+    cellule, mais exécuter un programme. Détaillé dans l'analyse
+    2016 d'Adam P. Goucher sur le forum conwaylife.com.
 
-    Phase 3c : `by native_decide` with memoized Hashlife.
-    Currently vacuous (placeholder empty grids, see Status above). -/
+    Phase 3c : `by native_decide` avec Hashlife mémoïsé.
+    Actuellement vacuous (grilles placeholder vides, voir Statut ci-dessus). -/
 theorem cpu_witness :
     evolveHashlifeFastMemo cpuGens cpuInitial = cpuTarget :=
   evolveHashlifeFastMemo_empty cpuGens
