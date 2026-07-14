@@ -36,6 +36,8 @@
 import Knots.Basic
 import Knots.Invariant
 
+open Knots
+
 namespace Knots_en
 
 /-! ## 1. Conway mutation
