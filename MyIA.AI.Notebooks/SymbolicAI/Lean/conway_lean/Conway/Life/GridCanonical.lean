@@ -151,28 +151,14 @@ sans séparateur `---` interne).
 -/
 
 /-
-Copyright (c) 2026 CoursIA. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
+## Convention i18n (EPIC #4980, Option A)
 
-## Canonical grid forms — the `sortDedup` specification
-
-Every grid manipulated by the Life engine is a `sortDedup` image:
-`step`, `evolve (n+1)`, `shift` and `MacroCell.toGrid` all post-compose
-with `sortDedup`, and `restrictGridTo` is a `filter` of such an image.
-This module proves that `sortDedup` outputs are **canonical** — lex-sorted
-and duplicate-free — and that canonical lists are **rigid**: determined by
-their membership predicate alone (`Canonical.ext`).
-
-This is the bridge that turns the list-equality goals of the Hashlife
-correctness theorems (P4/P5, `HashlifeCorrectness.lean`) into pointwise
-membership goals, where the actual combinatorics of the B3/S23 rule and
-the macrocell recursion can be argued cell by cell.
-
-The order theory is elementary: `lexLe` (reflexive closure of `lexLt`)
-is total, transitive and antisymmetric on `Int × Int`, all by `omega`
-after unfolding to linear integer arithmetic.
-
-This module is fully proven (no `sorry`).
+Convention ratifiée par user 2026-07-04 (cf `code-style.md` §Lean i18n) :
+fichier **FR canonique** + sibling **EN** dans `GridCanonical_en.lean`.
+Seules les **docstrings `/-- ... -/`** et les **commentaires `-- ...`**
+diffèrent entre les deux fichiers. **Préservation byte-identity** sur
+le reste (signatures, preuves, tactiques) — vérifiable par diff.
+Pas de bloc bilingue inline dans un même fichier (Option B rejeté).
 -/
 
 import Conway.Life
