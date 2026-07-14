@@ -1,4 +1,4 @@
-# Galerie README — Audio 01-Foundation (bases speech & audio)
+# Manifeste des figures — GenAI/Audio/01-Foundation (bases speech & audio)
 
 Provenance de chaque figure (convention `extract_readme_figures.py` L132 : index ALL-CELLS).
 Toutes les figures sont extraites des **outputs déjà committés** des notebooks (C.3 — aucune re-exécution).
