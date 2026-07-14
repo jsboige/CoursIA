@@ -27,11 +27,18 @@ package «conway_cgt» where
     ⟨`autoImplicit, false⟩
   ]
 
-require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git"
-
+-- CGTTour.lean imports ONLY `CombinatorialGames.*` modules (no direct
+-- `import Mathlib.*`), so mathlib is not required directly here: it arrives
+-- transitively through CombinatorialGames with that project's own coherent pin
+-- set (mathlib acbd8f0, batteries 0bbac0a, aesop 7897ea6, plausible 744117a).
+-- Declaring `require mathlib` directly and unpinned made Lake resolve two
+-- DISAGREEING pin sets for batteries/aesop/plausible — the root cause of the
+-- build failure. It was never a `require` ordering problem (why the reorder-only
+-- attempt #6432 failed). CombinatorialGames is pinned to a reproducible master
+-- SHA; its lean-toolchain (v4.31.0-rc2) is matched by our lean-toolchain so the
+-- mathlib olean cache (`lake exe cache get`) hits. See #6116.
 require CombinatorialGames from git
-  "https://github.com/vihdzp/combinatorial-games.git"
+  "https://github.com/vihdzp/combinatorial-games.git" @ "3c6dcdbc1ce9e4a16f9b6aa16ee485a744568404"
 
 @[default_target]
 lean_lib «CGTTour» where
