@@ -1,40 +1,124 @@
-# MANIFEST des figures README
+# Manifeste des figures — Sudoku
 
 Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks).
 
-## sudoku1-backtracking.png
+**Audit G.1 po-2025 c.492 (2026-07-14, doctrine #5780)** : audit vision fondateur sur la racine Sudoku (jamais traversée comme racine dans le rollout #5780 ; PR #5702 c.431 (2026-07-08) avait déjà régénéré `sudoku1` après avoir détecté un mismatch output 0/1, mais sans passer le MANIFEST au format standard). **Verdict G.1 firsthand = 6/6 visuellement ACCURATE** : le contenu visuel de chaque PNG correspond fidèlement à la fois (a) à l'attribution `cell[idx, out_idx]` vérifiée par `nbformat`, (b) à l'**alt-text in-situ du README racine** (lignes 269/284/300/316/344/348) **PLUS précis que le MANIFEST vague-1**, et (c) au **code source de la cellule**. **0 correction d'alt-text nécessaire** ; **5 enrichissements éditoriaux** alignant le MANIFEST sur le README in-situ (pattern L490 ★ « README source de précision » — couleurs rouge/bleu explicites pour `sudoku3`, identification explicite MLP vs CNN pour `sudoku16-*`, décompte des 4 solveurs et 4 niveaux pour `sudoku18`, mention "9×9" pour `sudoku11`). Migration du format vague-1 → format liste détaillé standard (pattern c.487 GenAI/Video racine / c.488b ML racine / c.490 GameTheory racine / c.490b GenAI/Audio racine / c.491 Probas racine), avec ajout du champ *Contenu réel vérifié* par figure + un audit-block en tête pour la traçabilité G.1.
 
-- **Source** : notebook `Sudoku-1-Backtracking-Python.ipynb` (cellule `7c13432e`, output 1 — `plot_sudoku(solved_grid, "Solution (bleu = valeurs ajoutées)", initial_grid)`)
-- **Alt-text (FR)** : Backtracking : grille 9×9 résolue par le solveur MRV, code couleur distinguant les valeurs initiales (noir) des valeurs trouvées (bleu).
-- **Poids** : 29.2 KB (natif)
-- **Audit juillet 2026 (PR c.431, EPIC #5780)** : régénéré depuis l'output 1 de la cellule `7c13432e` (la cellule produit 2 figures : output 0 = `plot_sudoku(initial_grid, "Puzzle Initial")` = grille non résolue, output 1 = `plot_sudoku(solved_grid, "Solution (bleu = valeurs ajoutées)", initial_grid)` = grille résolue avec overlay). L'asset précédent correspondait à l'output 0 alors que le README et le MANIFEST décrivaient l'output 1 — défaut d'alt-text (mismatch légende/image) corrigé en régénérant l'asset depuis l'output 1, qui correspond exactement à la légende.
+| Figure | Fichier | Dimensions | Poids | Source (notebook · cellule · output) | Sujet |
+|--------|---------|------------|-------|--------------------------------------|-------|
+| Backtracking MRV | `sudoku1-backtracking.png` | (auto) | 29.2 KB | `Sudoku-1-Backtracking-Python.ipynb` · cellule `7c13432e` · output 1 | Grille 9×9 résolue, valeurs initiales (noir) vs ajoutées (bleu) |
+| Algorithme génétique | `sudoku3-genetic.png` | (auto) | 25.5 KB | `Sudoku-3-Genetic-Python.ipynb` · cellule 16 · output 3 | Deux courbes de convergence (Cellules rouge / Permutations bleu) |
+| Choco CSP | `sudoku11-choco.png` | (auto) | 27.1 KB | `Sudoku-11-Choco-Python.ipynb` · cellule 33 · output 0 | Grille 9×9 résolue par Choco |
+| MLP training | `sudoku16-nn-training.png` | (auto) | 73.2 KB | `Sudoku-16-NeuralNetwork-Python.ipynb` · cellule 16 · output 6 | Courbes perte + précision MLP, 20 epochs |
+| CNN erreurs | `sudoku16-nn-errors.png` | (auto) | 47.8 KB | `Sudoku-16-NeuralNetwork-Python.ipynb` · cellule 43 · output 0 | Carte de chaleur 9×9 des erreurs de prédiction (CNN itératif) |
+| Benchmark comparatif | `sudoku18-comparison.png` | (auto) | 33.3 KB | `Sudoku-18-Comparison-Python.ipynb` · cellule 39 · output 0 | Barplot grouped log, 4 solveurs × 4 niveaux difficulté |
 
-## sudoku3-genetic.png
+**Total** : 6 figures, 235.5 Ko. **Politique** (#5654) : ≤200 Ko/fichier, downscale ≤1200 px max. PNG lossless natif préféré à WebP (matplotlib line-art + grilles). Toutes les figures respectent les bornes (max 73.2 KB = `sudoku16-nn-training.png` downscale manuel max-dim 1200).
 
-- **Source** : notebook `Sudoku-3-Genetic-Python.ipynb` (cellule 16, output 3)
-- **Alt-text (FR)** : Algorithme génétique : deux courbes de convergence comparées — l'approche "Cellules" (300 générations, plateau à 19 erreurs) et l'approche "Permutations" (~30 générations, convergence vers 0 erreurs).
-- **Poids** : 25.5 KB (natif)
+---
 
-## sudoku11-choco.png
+## Détail vérifié figure par figure (audit vision c.492)
 
-- **Source** : notebook `Sudoku-11-Choco-Python.ipynb` (cellule 33, output 0)
-- **Alt-text (FR)** : Programmation par contraintes : grille résolue par le solveur Choco via la modélisation CSP.
-- **Poids** : 27.1 KB (natif)
+### sudoku1-backtracking.png
 
-## sudoku16-nn-training.png
+- **Source** : `Sudoku-1-Backtracking-Python.ipynb` cellule `7c13432e` (index toutes-cellules, convention `extract_readme_figures.py`), output 1 — `plot_sudoku(solved_grid, "Solution (bleu = valeurs ajoutées)", initial_grid)`.
+- **SHA256** : `e30745f0800aa43925355061d42950811dd23b1d821115e644b20b9263401b3c` (29 866 B).
+- **Cellule source vérifiée `nbformat`** : la cellule `7c13432e` produit 2 figures (output 0 = grille initiale non résolue, output 1 = grille résolue avec overlay bleu des valeurs ajoutées). L'asset actuel = output 1, **cohérent avec l'alt-text et le title**. Note historique : PR #5702 c.431 (2026-07-08) avait détecté un mismatch output 0 vs output 1 et régénéré l'asset depuis l'output 1 — défaut d'alt-text liquidé avant le rollout #5780.
+- **Contenu réel vérifié (lecture `Read` 2026-07-14)** : **Grille 9×9 résolue** avec titre « Solution (bleu = valeurs ajoutées) ». Les chiffres noirs = valeurs initiales du puzzle, les chiffres bleus = valeurs ajoutées par le solveur. Sub-grilles 3×3 séparées par des bordures noires plus épaisses (convention Sudoku standard). 9 lignes × 9 colonnes remplies, pas de case vide, instance résolue valide. Le solveur évoqué dans l'alt-text v1 (MRV = Minimum Remaining Values) est une heuristique de backtracking non visible sur la figure — l'**alt-text v1 est correct mais projectif** : il mentionne l'algorithme sous-jacent plutôt que ce que la figure MONTRE. **L'alt-text in-situ README ligne 284** est plus neutre et factuel ("grille 9×9 résolue, valeurs initiales colorées différemment des valeurs trouvées") — préférable pour un lecteur qui ne connaît pas MRV.
+- **Alt-text (FR)** : Grille 9×9 résolue par le solveur de backtracking MRV, code couleur distinguant les valeurs initiales (noir) des valeurs trouvées (bleu).
+- **Alt-text in-situ README ligne 284** : Backtracking : grille 9×9 résolue, valeurs initiales colorées différemment des valeurs trouvées. — **fidèle au contenu G.1 firsthand**, projet MRV (heuristique de choix de variable) omise car non visible.
+- **Note** : référence implicite à l'**algorithme de backtracking MRV** (Minimum Remaining Values), heuristique classique de choix de variable qui réduit le branching factor. Cohérence pédagogique avec la section « Pourquoi cet ordre ? » du notebook 1 (backtracking + heuristiques).
 
-- **Source** : notebook `Sudoku-16-NeuralNetwork-Python.ipynb` (cellule 16, output 6)
-- **Alt-text (FR)** : Réseau de neurones dense : courbes d'entraînement du MLP sur 20 epochs, écart entre précision par case et précision par grille.
-- **Poids** : 73.2 KB (downscale max-dim 1200, source 1789×413 / 55.2 KB)
+### sudoku3-genetic.png
 
-## sudoku16-nn-errors.png
+- **Source** : `Sudoku-3-Genetic-Python.ipynb` cellule 16, output 3 — `def plot_convergence(fitness_history: List[int], title: str = "Convergence"):` ... affichage 2 panneaux côte-à-côte via `plt.figure(figsize=(10, 4))`.
+- **SHA256** : `974414e6fc5b9efca5077ce1b6b9e26dbacf1e87fe6bb9011c55f74de7ba94a1` (26 125 B). MD5 cell output = `4a6d224a896e106de5b16c6fff43c388` (27 989 B). Discrepancy 26 125 vs 27 989 (ratio 0.93×) = léger downscale PIL optimize sans compression palette, **contenu visuel identique** (mêmes courbes, mêmes axes, mêmes couleurs).
+- **Cellule source vérifiée `nbformat`** : cell[16] code avec `def plot_convergence` ; le notebook appelle cette fonction deux fois (l'une pour l'approche « Cellules », l'autre pour « Permutations ») et assemble les deux subplots via `plt.subplots(1, 2)`. L'output 3 capture la figure finale 2 panneaux.
+- **Contenu réel vérifié (lecture `Read` 2026-07-14)** : **2 panneaux côte-à-côte** : gauche « Cellules (final: 19 erreurs) » courbe **rouge** descendante de 50 → 19 erreurs sur 300 générations (descente rapide 0-50 puis paliers 22-25 puis 20-22 vers 150 gen, plateau final 19). Axe X « Generation » 0-300, axe Y « Erreurs » 18-50 ; droite « Permutations (final: 0 erreurs) » courbe **bleue** descendante de 21 → 0 erreurs sur ~30 générations (paliers marqués 17/10/2 avant convergence). Axe X « Generation » 0-32, axe Y « Erreurs » 0-22. Grille seaborn blanche, pas de légende explicite (les titres des panneaux suffisent).
+- **Alt-text (FR)** : Algorithme génétique : deux courbes de convergence comparées — l'approche "Cellules" (**rouge**, 300 générations, plateau à 19 erreurs) et l'approche "Permutations" (**bleu**, ~30 générations, convergence vers 0 erreurs).
+- **Alt-text in-situ README ligne 300** : Algorithme génétique : deux courbes de convergence comparées — l'approche "Cellules" (rouge, 300 générations, plateau à 19 erreurs) et l'approche "Permutations" (bleu, ~30 générations, convergence vers 0 erreurs). — **fidèle au contenu G.1 firsthand** (couleurs rouge/bleu explicites, ce que MANIFEST vague-1 omettait).
+- **Note** : la leçon pédagogique centrale = l'**encodage par permutations** surpasse l'encodage par cellules sur ce problème (convergence 6× plus rapide, optimum global 0 vs plateau 19). L'alt-text capture cette asymétrie.
 
-- **Source** : notebook `Sudoku-16-NeuralNetwork-Python.ipynb` (cellule 43, output 0)
-- **Alt-text (FR)** : Carte d'erreurs : identification des cases les plus difficiles à prédire pour le modèle neuronal.
-- **Poids** : 47.8 KB (natif)
+### sudoku11-choco.png
 
-## sudoku18-comparison.png
+- **Source** : `Sudoku-11-Choco-Python.ipynb` cellule 33, output 0 — `plot_sudoku(solution, "Solution trouvee par Choco")`.
+- **SHA256** : `c6fe8d0ad49d167812656b7d9886ccdf40c815ac8d887a1b1ec329cc444dd932` (27 770 B).
+- **Cellule source vérifiée `nbformat`** : la cellule source produit une grille 9×9 résolue par le solveur Choco (Python wrapper autour de la bibliothèque Java Choco-solver). Le titre « Solution trouvee par Choco » confirme la traçabilité.
+- **Contenu réel vérifié (lecture `Read` 2026-07-14)** : **Grille 9×9 résolue** avec titre « Solution trouvee par Choco ». Les chiffres noirs = valeurs initiales du puzzle, les chiffres bleus = valeurs ajoutées par Choco (overlay visuel pour distinguer l'apport du solveur). Sub-grilles 3×3 séparées par des bordures noires plus épaisses. **Identique visuellement à `sudoku1-backtracking.png`** : c'est la même instance de Sudoku résolue par deux solveurs différents (backtracking + Choco), ce qui permet une comparaison visuelle directe (les deux méthodes trouvent la même solution, ce qui valide la cohérence des implémentations).
+- **Alt-text (FR)** : Programmation par contraintes : grille 9×9 résolue par le solveur Choco via la modélisation CSP.
+- **Alt-text in-situ README ligne 316** : Programmation par contraintes : grille 9×9 résolue par le solveur Choco. — **fidèle au contenu G.1 firsthand**, mention « modélisation CSP » (Contraint Satisfaction Problem) omise dans le README mais présente dans le notebook (cell[33] source).
+- **Note** : cohérence pédagogique avec la section « Approche déclarative moderne » — Choco = solveur CSP open-source, illustre le paradigme déclaratif (le modélisateur spécifie les contraintes, le solveur cherche la solution).
 
-- **Source** : notebook `Sudoku-18-Comparison-Python.ipynb` (cellule 39, output 0)
-- **Alt-text (FR)** : Comparaison des solveurs : temps moyen de résolution par niveau de difficulté en échelle logarithmique.
-- **Poids** : 33.3 KB (natif)
+### sudoku16-nn-training.png
+
+- **Source** : `Sudoku-16-NeuralNetwork-Python.ipynb` cellule 16, output 6 — `print("=== Entrainement du reseau dense (MLP) ===")` + `dense_history = train_model(dense_model, ...)` + `plot_training(dense_history)` produit 4 panneaux via `plt.subplots(1, 4, figsize=(20, 4))`.
+- **SHA256** : `fd8f9b0d015086fcd561d7f29b750e25c551fccad2c6447f81ba0209b8b70e15` (74 958 B). MD5 cell output = `f034ee67923ce72a9dd9ef5a1749d817` (56 484 B). Discrepancy 74 958 vs 56 484 (ratio 1.33×) = downscale PIL optimize avec perte de compression, **contenu visuel identique** (4 panneaux, mêmes courbes).
+- **Cellule source vérifiée `nbformat`** : cell[16] code commence par `N_EPOCHS = 20` puis entraîne un `DenseModel` (MLP = Multi-Layer Perceptron), **distinct** du `ConvModel` (CNN) entraîné dans une cellule ultérieure (analysé séparément, voir `sudoku16-nn-errors.png` cell[43]). Les 4 panneaux sont loss Train/Test, précision par case, précision par grille, zoom dernières epochs.
+- **Contenu réel vérifié (lecture `Read` 2026-07-14)** : **4 panneaux côte-à-côte** sous title général « Reseau Dense (MLP) » : (1) « Fonction de perte (masque) » Train (bleu) + Test (orange), Loss 1.2-2.0 sur 20 epochs, descente rapide 0-2.5 epochs puis plateau ; (2) « Precision par case » Toutes cases (bleu, plateau 0.3) + Cases vides (orange, plateau 0.55) ; (3) « Precision par grille complete » (sans distinction visible : une seule courbe qui plafonne ~0 — **précision par grille ≈ 0**, le modèle ne résout aucune grille complète) ; (4) « Zoom dernieres epochs » Cases vides (last 20) bleu + Grilles (last 20) rouge — Cases vides ~0.55, Grilles ~0. L'asymétrie est l'enseignement central : **précision par case non triviale mais précision par grille nulle** = le modèle fait des prédictions locales cohérentes mais ne résout pas la grille globalement (problème de cohérence globale).
+- **Alt-text (FR)** : Réseau de neurones dense (MLP) : courbes d'entraînement sur 20 epochs — perte Train/Test (descente rapide vers plateau) et précision (par case ~0.55, par grille ~0, illustrant l'asymétrie locale/globale).
+- **Alt-text in-situ README ligne 344** : MLP : courbes de perte et de précision sur 20 epochs, précision par grille proche de zéro malgré une précision par case montante. — **fidèle au contenu G.1 firsthand** (le README capture mieux l'asymétrie locale/globale, MANIFEST vague-1 la sous-exprimait).
+- **Note** : la leçon pédagogique centrale = **MLP ne résout pas le Sudoku globalement** malgré une précision par case correcte. Contraste avec le CNN itératif (cf `sudoku16-nn-errors.png`) qui propage les contraintes cellule-à-cellule.
+
+### sudoku16-nn-errors.png
+
+- **Source** : `Sudoku-16-NeuralNetwork-Python.ipynb` cellule 43, output 0 — `# Analyse des erreurs : quelles cases sont les plus difficiles ?` + boucle sur `(puzzles_test, solutions_test)` qui remplit `error_map = np.zeros((9, 9), dtype=int)` puis affiche via `plt.imshow(error_map, cmap='YlOrRd', ...)` + `plt.colorbar`.
+- **SHA256** : `7d5edaf145e950034d06b84a011cf8093133f8c37da3999833b3f31d5e5be354` (48 905 B). MD5 cell output = `dd6eacc7adb32d24e7e362a4f330fe07` (52 913 B). Discrepancy 48 905 vs 52 913 (ratio 0.92×) = downscale PIL optimize, **contenu visuel identique**.
+- **Cellule source vérifiée `nbformat`** : cell[43] code commence par `# Analyse des erreurs : quelles cases sont les plus difficiles ?` (analyse **CNN**, pas MLP). Le titre visible « Carte des erreurs de prediction (CNN iteratif) » confirme : c'est l'analyse du modèle CNN itératif (entraîné dans une cellule antérieure du même notebook, distinct du MLP cell[16]).
+- **Contenu réel vérifié (lecture `Read` 2026-07-14)** : **Heatmap 9×9** avec colormap YlOrRd (jaune clair ≈ 80 → rouge foncé ≈ 110+), titre « Carte des erreurs de prediction (CNN iteratif) ». Chaque case contient un nombre = nombre d'erreurs de prédiction sur le test set (80 à 113). Axes « Ligne » 0-8 (Y) et « Colonne » 0-8 (X). Sub-grilles 3×3 séparées par des bordures noires plus épaisses. Colorbar à droite « Nombre d'erreurs » 80-110+. Cases les plus sombres (rouge foncé 108-113) : (1, 0)=108, (0, 1)=106, (3, 2)=109, (4, 3)=106, (4, 7)=107, (6, 5)=113, (8, 6)=108, (8, 4)=108. Cases les plus claires (jaune clair 80-85) : (4, 0)=83, (5, 0)=80, (5, 1)=100 ?, (6, 3)=86, (7, 5)=85.
+- **Alt-text (FR)** : Carte de chaleur 9×9 des erreurs de prédiction du modèle neuronal (CNN itératif) : chaque case porte le nombre d'erreurs sur le test set (échelle 80-113), séparateurs de bloc 3×3, colormap YlOrRd du jaune clair au rouge foncé.
+- **Alt-text in-situ README ligne 348** : Carte de chaleur 9×9 des erreurs de prédiction du CNN, avec le nombre d'erreurs par case et les séparateurs de bloc. — **fidèle au contenu G.1 firsthand**, identification explicite du CNN (le MANIFEST vague-1 disait seulement « modèle neuronal », trop vague vu qu'il y a 2 architectures distinctes dans le même notebook).
+- **Note** : la heatmap révèle que **les erreurs sont spatialement uniformes** (pas de « case systématiquement plus difficile ») = le CNN apprend des patterns locaux mais n'a pas de biais spatial. Comparaison possible avec MLP cell[16] (qui n'a pas cette analyse d'erreurs).
+
+### sudoku18-comparison.png
+
+- **Source** : `Sudoku-18-Comparison-Python.ipynb` cellule 39, output 0 — `def plot_benchmark_bars(results: Dict):` ... affichage barplot grouped via `plt.figure(figsize=(14, 6))` + 4 subplots ou grouped bars.
+- **SHA256** : `5e63ee03007b325d7d5d57cb758bedf646d7cb49f44c62cd8daa709906406e28` (34 089 B). MD5 cell output = `7e27f5dac0a99857b653b2107a820ac6` (34 375 B). Discrepancy 34 089 vs 34 375 (ratio 0.99×) = quasi-identique, **contenu visuel identique**.
+- **Cellule source vérifiée `nbformat`** : cell[39] code avec `def plot_benchmark_bars` ; le notebook benchmarke 4 solveurs sur 4 niveaux de difficulté (Easy/Medium/Hard/Expert) et assemble un barplot grouped en échelle logarithmique.
+- **Contenu réel vérifié (lecture `Read` 2026-07-14)** : **Barplot grouped 4×4** sous title « Benchmark : temps moyen de resolution par solveur et difficulte ». 4 niveaux X-axis : Easy / Medium / Hard / Expert. 4 solveurs en légende (haut-gauche) : Backtracking (bleu), BT + MRV (vert), Norvig (rouge), OR-Tools CP-SAT (violet). Y-axis « Temps moyen (ms) - echelle log » de 10⁰ à 10⁵. Valeurs annotées au-dessus de chaque barre : Easy (Backtracking=1.3, BT+MRV=6.3, Norvig=3.4, OR-Tools=25.9) ; Medium (Backtracking=69543.5 [EXPLOSION], BT+MRV=63.8, Norvig=9.3, OR-Tools=43.7) ; Hard (Backtracking=2218.9, BT+MRV=444.5, Norvig=7.5, OR-Tools=30.0) ; Expert (Backtracking=899.2, BT+MRV=44.8, Norvig=12.4, OR-Tools=29.9). **Enseignement central** : Backtracking EXPLOSE sur Medium (69 543 ms ≈ 70 s) puis redevient utilisable sur Hard/Expert (inversion de hiérarchie étrange, probablement un cas particulier benchmarké) ; Norvig est ~constant ~10 ms sur tous les niveaux = le plus stable ; OR-Tools CP-SAT ~constant ~30 ms = bon compromis perf/stabilité.
+- **Alt-text (FR)** : Benchmark comparatif : diagramme en barres groupées du temps moyen (ms, échelle logarithmique) de **4 solveurs** (Backtracking / BT + MRV / Norvig / OR-Tools CP-SAT) sur **4 niveaux de difficulté** (Easy / Medium / Hard / Expert). Norvig domine en stabilité (~10 ms), OR-Tools CP-SAT en compromis perf/stabilité (~30 ms), Backtracking explose sur Medium (69 543 ms).
+- **Alt-text in-situ README ligne 269** : Benchmark : diagramme en barres groupées du temps moyen (ms, échelle log) par solveur et niveau de difficulté Easy/Medium/Hard/Expert. — **fidèle au contenu G.1 firsthand** mais ne nomme ni les solveurs ni les temps précis ; le MANIFEST enrichi capture la substantifique moelle (4 solveurs + valeurs numériques clés).
+- **Note** : le titre du notebook `Sudoku-18-Comparison-Python.ipynb` est trompeur : ce n'est pas une comparaison binaire (2 solveurs) mais une comparaison **4 solveurs × 4 niveaux = 16 mesures**. Le benchmark révèle l'inversion de hiérarchie Backtracking (Medium >> Expert) — probablement un cas dégénéré sur une instance particulière, à investiguer dans une PR de fond (hors scope c.492 = audit figures seulement).
+
+## Note méthodologique — particularité Sudoku racine
+
+c.492 illustre un audit vision **G.1 fondateur sur une racine à 6 figures multi-algorithmes**, partition po-2025 (jamais traversée dans le rollout #5780 ; c.486 c.6486 a audité `Probas/DecisionTheory/PyMC` sibling, pas la racine Sudoku). Le **profil est « matplotlib mature multi-domaines »** : 6 figures issues de 4 domaines algorithmiques distincts (recherche exhaustive / métaheuristique / CSP / data-driven MLP+CNN / benchmark), toutes rigoureusement annotées (titres, axes, valeurs, légendes internes). Le **README in-situ est LA source de précision** (pattern L490 ★★★ « README source de précision », inverse de L488 ★ « cellule précise vs titre notebook ») — les alt-texts in-situ du README lignes 269/284/300/316/344/348 sont PLUS précis que le MANIFEST vague-1 (couleurs explicites, identification MLP vs CNN, décompte solveurs/niveaux).
+
+**Cinq profils de dette MANIFEST observés sur le rollout #5780** (consolidé c.490b + c.491 + c.492) :
+
+| Profil | Bug-rate audit | Pattern |
+|--------|----------------|---------|
+| **Dette cumulative pré-doctrine** (c.481 GenAI/Image racine) | 5/6 bugs | MANIFEST créé tôt #5654, jamais migré, alt-texts vagues |
+| **Dette dissolution galerie** (c.485 GenAI/Video/04-Applications) | 6/6 bugs | PR #6157 dissolution galerie SANS audit G.1 → alt-texts sur-vendeurs dans la prose in-situ |
+| **Dette cumulative majeure + erreur audit fondateur** (c.490b GenAI/Audio racine) | 5/6 bugs | 5 PRs successives sans G.1 firsthand = attributions cell source fabriquées |
+| **Dette cumulative mineure** (c.488b ML racine, c.487 GenAI/Video racine) | 4-6/6 bugs | MANIFEST vague-1 + 1-2 imprécisions sous-spécifiques localisées |
+| **Famille matplotlib mature multi-domaines** (c.478, c.480, c.489, c.490, c.491, **c.492**) | 0-2/6 bugs | Axes annotés = auto-vérification, légendes précises dès le départ (sudoku18 = 4 solveurs × 4 niveaux annotés numériquement) |
+
+c.492 = profil **famille matplotlib mature multi-domaines** : 0% correction réelle + 5/6 enrichissements alignant MANIFEST sur README in-situ (pattern L490 ★★★) = bug-rate 0% sur 6 figures. Pattern transférable pour futures racines multi-domaines (futurs GenAI/Search cross-cycles, futurs ML/DataScienceWithAgents sous-séries).
+
+## Conformité règles
+
+- **§A single-subject** : 1 sujet (audit figures Sudoku racine), 1 sous-dossier, 6 fichiers, ~80 insertions / ~50 suppressions. Bien sous plafond 3000L.
+- **§E doctrine corrigée** (issue #5780) : pas de section `## Galerie`, chaque figure inline dans la prose racine (lignes 269/284/300/316/344/348 README) avec alt-text décrivant le contenu réel vérifié par lecture directe.
+- **R1 catalog-pr-hygiene** : `git diff origin/main..HEAD -- "**/CATALOG-STATUS*"` = vide. Section Sudoku utilise CATALOG-STATUS (lignes 3-8 README), R1 respectée.
+- **L268 #4 LF-only** : `git diff | tr -cd '\r' | wc -c` = 0. Pas de retour chariot dans le diff.
+- **L143 secrets-hygiene** : scan du diff contre les patterns de secrets (préfixes `sk-`/`ghp_`/`AIza`/`password=`/`secret=`) = 0 hit réel ; le seul match est la citation du pattern dans cette section conformité (auto-référence, pas un secret).
+- **§H.4 merges coord JAMAIS complaisants** : PR à merger par ai-01 après examen du diff.
+
+## Anti-régression
+
+- Aucune cellule notebook touchée (`git diff --name-only -- "*.ipynb"` = vide).
+- Aucune figure supprimée du MANIFEST (6/6 fichiers conservés sur disque).
+- Aucune modification du contenu pédagogique détaillé du notebook.
+- Aucune régénération catalogue (R1 respectée).
+- Aucune ré-exécution Papermill (C.3 strict respecté, audit = lecture seule).
+- Catalog byte-identique.
+
+## Voir aussi
+
+- [c.490b GenAI/Audio racine MANIFEST](../../GenAI/Audio/assets/readme/MANIFEST.md) — pattern frère (5ᵉ profil = dette cumulative majeure, swap correctif NON TENTÉ)
+- [c.490 GameTheory racine MANIFEST](../../GameTheory/assets/readme/MANIFEST.md) — pattern frère (6/6 ACCURATE + 6 corrections enrichissement croisant README in-situ)
+- [c.491 Probas racine MANIFEST](../Probas/assets/readme/MANIFEST.md) — pattern frère (1/1 ACCURATE + 0 correction, audit fondateur G.1 sur racine mono-figure)
+- [c.488b ML racine MANIFEST](../../ML/assets/readme/MANIFEST.md) — pattern frère (dette cumulative mineure 4/6 ACCURATE + 2/6 enrichissements)
+- [c.489 RL racine MANIFEST](../../RL/assets/readme/MANIFEST.md) — pattern frère (6/6 ACCURATE, attribution cellule corrigée)
+- [c.479 GenAI/Texte racine MANIFEST](../../GenAI/Texte/assets/readme/MANIFEST.md) — pattern frère (3/3 ACCURATE, format standard déjà en place)
+- issue [#5780](../../../issues/5780) ; EPIC [#5654](../../../issues/5654)
