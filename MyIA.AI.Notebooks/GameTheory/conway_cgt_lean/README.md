@@ -18,6 +18,12 @@ Référence : Conway, J.H. — *On Numbers and Games* (2001).
 - **Dépendances** :
   - **Mathlib4** (dernière)
   - **[CombinatorialGames](https://github.com/vihdzp/combinatorial-games)** (Apache-2.0) — Violeta Hernandez Palacios
+- **Couverture i18n (EPIC #4980)** : la visite `CGTTour.lean` est un fichier de présentation
+  (un seul module `CGTTour`) qui **n'a pas de sibling `_en.lean`** — c'est un tour en anglais par
+  conception, aucun namespace à dédoubler (`namespace CGTTour` est top-level unique). La
+  documentation est bilingue : `README.md` (FR canonique) + `README.en.md` (mirror). Pour les
+  projets multi-modules ayant besoin d'un sibling `_en`, voir la convention Option A ratifiée
+  2026-07-04 (cf `code-style.md` §Lean i18n).
 
 ## Pourquoi ce dépôt existe — retrait de la TJC de Mathlib
 
@@ -118,6 +124,9 @@ originale construite au-dessus des résultats importés.
 - **`knot_lean/`** — référence cette visite dans son tableau de dépendances (fondement en théorie des jeux de Conway)
 - **`conway_lean/`** — Conway's Game of Life / Free Will Theorem (l'*autre* série Conway)
 - **Epic #2651** — audit README/structure (série Lean)
+- **EPIC #4980** — i18n Lean harmonisation (Option A sibling pair post-2026-07-04) ; cette
+  visite n'a pas de sibling `_en.lean` (cf Statut ci-dessus) — uniquement `README.md` (FR) +
+  `README.en.md` (mirror EN) pour la documentation.
 
 ## Conclusion
 
