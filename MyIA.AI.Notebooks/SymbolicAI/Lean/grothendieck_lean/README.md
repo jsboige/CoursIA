@@ -8,7 +8,7 @@ Alexandre Grothendieck (1928-2014).
 - **Sorry** : **0 sorry, 0 axiome** — les 24 modules sont complets à la création (Parties 1-24 mergées)
 - **Build** : `lake build Grothendieck` — compile les 24 modules (~3350 lignes)
 - **Dépendances** : Mathlib 4 (via `lakefile.lean`)
-- **Couverture i18n (EPIC #4980)** : couverture étendue — **24 modules `.lean` FR canonique** + **12 siblings `_en.lean`** miroirs EN sur `main` (`Calibration_en`, `CategoryAndSites_en`, `CoverageGen_en`, `DenseTopology_en`, `LeftExact_en`, `SchemesTour_en`, `SheafHom_en`, `SitePoints_en`, `Subcanonical_en`, `ZariskiSite_en`, `SheafCohomology/Basic_en`, `SheafCohomology/Cech_en` — namespaces `_en` anti-collision, contenu non-docstring byte-identique détectable par CI). Option A post-#4980 sur 12 modules ; les 12 autres modules restent FR-only à ce stade du rollout. **`README.en.md`** présent (miroir EN du présent fichier). Hors-scope : `.lake/packages/`, libs vendored.
+- **Couverture i18n (EPIC #4980)** : couverture étendue — **24 modules `.lean`** + **15 siblings `_en.lean`** sur `main`. Conformément à la convention ratifiée (Option A : `Foo.lean` FR canonique + `Foo_en.lean` miroir EN), 12 modules sont déjà bilingues au pattern A : `Calibration`, `CategoryAndSites`, `CoverageGen`, `DenseTopology`, `LeftExact`, `SchemesTour`, `SheafHom`, `SitePoints`, `Subcanonical`, `ZariskiSite`, `SheafCohomology/Basic`, `SheafCohomology/Cech`. 3 modules additionnels ont un sibling `_en` (`ConstantSheaf`, `Conservative`, `MayerVietorisSquare`) — leur direction FR/EN est en cours d'harmonisation avec ai-01 (cf conflit de convention signalé) ; namespaces `_en` anti-collision, contenu non-docstring byte-identique détectable par CI. Les 9 modules restants sont FR-only à ce stade du rollout. **`README.en.md`** présent (miroir EN du présent fichier). Hors-scope : `.lake/packages/`, libs vendored.
 
 ## Objectif
 
@@ -64,10 +64,10 @@ flowchart LR
 | 15 | `Grothendieck/SitePoints.lean` | `SitePoints_en.lean` | Points d'un site (foncteurs fibres) | 220 |
 | 16 | `Grothendieck/Subcanonical.lean` | `Subcanonical_en.lean` | Topologies de Grothendieck sous-canoniques | 88 |
 | 17 | `Grothendieck/SheafHom.lean` | `SheafHom_en.lean` | Hom interne des faisceaux | 140 |
-| 18 | `Grothendieck/ConstantSheaf.lean` | — | Le foncteur faisceau constant (ponte vers `CategoryTheory.Sites.ConstantSheaf` de Mathlib) | 185 |
-| 19 | `Grothendieck/Conservative.lean` | — | Familles conservatrices de points | 226 |
+| 18 | `Grothendieck/ConstantSheaf.lean` | `ConstantSheaf_en.lean` | Le foncteur faisceau constant (ponte vers `CategoryTheory.Sites.ConstantSheaf` de Mathlib) | 185 |
+| 19 | `Grothendieck/Conservative.lean` | `Conservative_en.lean` | Familles conservatrices de points | 226 |
 | 20 | `Grothendieck/SheafCohomology/Basic.lean` | `SheafCohomology/Basic_en.lean` | Cohomologie des faisceaux (basée sur Ext) | 214 |
-| 21 | `Grothendieck/MayerVietorisSquare.lean` | — | Carrés de Mayer-Vietoris | 195 |
+| 21 | `Grothendieck/MayerVietorisSquare.lean` | `MayerVietorisSquare_en.lean` | Carrés de Mayer-Vietoris | 195 |
 | 22 | `Grothendieck/SheafCohomology/MayerVietoris.lean` | — | Suite exacte longue de Mayer-Vietoris | 164 |
 | 23 | `Grothendieck/SheafCohomology/Cech.lean` | `SheafCohomology/Cech_en.lean` | Cohomologie de Čech | 123 |
 | 24 | `Grothendieck/YonedaLemma.lean` | — | Le lemme de Yoneda (plongement, équivalence, naturalité, pleinement fidèle, coyoneda) | 168 |
@@ -111,7 +111,7 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 - PR #2675 (Phases 4-6 : SieveOps + CoverageGen + CanonicalProps)
 - Epic #1453 (calibration du harnais prouveur)
 - Workspace hommage Conway (`../conway_lean/`)
-- **EPIC #4980** — convention i18n Lean (Option A sibling pair post-2026-07-04 ; 12 siblings `_en.lean` sur `main` dans cette lake)
+- **EPIC #4980** — convention i18n Lean (Option A sibling pair post-2026-07-04 ; 15 siblings `_en.lean` sur `main` dans cette lake)
 - **[`README.en.md`](./README.en.md)** — miroir EN du présent fichier
 - Série de notebooks Lean (`../README.md`)
 

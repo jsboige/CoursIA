@@ -8,7 +8,7 @@ Alexandre Grothendieck (1928-2014).
 - **Sorry**: **0 sorry, 0 axiom** — all 24 modules are complete at creation (Parts 1-24 merged)
 - **Build**: `lake build Grothendieck` — compiles the 24 modules (~3350 lines)
 - **Dependencies**: Mathlib 4 (via `lakefile.lean`)
-- **i18n coverage (EPIC #4980)**: extended coverage — **24 FR-canonical `.lean` modules** + **12 `_en.lean` sibling mirrors** on `main` (`Calibration_en`, `CategoryAndSites_en`, `CoverageGen_en`, `DenseTopology_en`, `LeftExact_en`, `SchemesTour_en`, `SheafHom_en`, `SitePoints_en`, `Subcanonical_en`, `ZariskiSite_en`, `SheafCohomology/Basic_en`, `SheafCohomology/Cech_en` — `_en` namespaces anti-collision, non-docstring content byte-identical CI-detectable). Option A post-#4980 on 12 modules; the 12 other modules stay FR-only at this stage of the rollout. **`README.en.md`** present (EN mirror of this file). Out-of-scope: `.lake/packages/`, vendored libs.
+- **i18n coverage (EPIC #4980)**: extended coverage — **24 `.lean` modules** + **15 `_en.lean` siblings** on `main`. Per the ratified convention (Option A: `Foo.lean` FR-canonical + `Foo_en.lean` EN mirror), 12 modules are already bilingual in Pattern A: `Calibration`, `CategoryAndSites`, `CoverageGen`, `DenseTopology`, `LeftExact`, `SchemesTour`, `SheafHom`, `SitePoints`, `Subcanonical`, `ZariskiSite`, `SheafCohomology/Basic`, `SheafCohomology/Cech`. 3 additional modules have an `_en` sibling (`ConstantSheaf`, `Conservative`, `MayerVietorisSquare`) — their FR/EN direction is being harmonized with ai-01 (convention conflict flagged); `_en` namespaces anti-collision, non-docstring content byte-identical CI-detectable. The remaining 9 modules stay FR-only at this stage of the rollout. **`README.md`** present (FR-canonical sibling of this file). Out-of-scope: `.lake/packages/`, vendored libs.
 
 ## Purpose
 
@@ -49,10 +49,10 @@ in order by the umbrella `Grothendieck.lean`. Each module self-numbers via its h
 | 15 | `Grothendieck/SitePoints.lean` | `SitePoints_en.lean` | Points of a site (fiber functors) | 220 |
 | 16 | `Grothendieck/Subcanonical.lean` | `Subcanonical_en.lean` | Subcanonical Grothendieck topologies | 88 |
 | 17 | `Grothendieck/SheafHom.lean` | `SheafHom_en.lean` | Internal hom of sheaves | 140 |
-| 18 | `Grothendieck/ConstantSheaf.lean` | — | The constant sheaf functor (bridges Mathlib `CategoryTheory.Sites.ConstantSheaf`) | 185 |
-| 19 | `Grothendieck/Conservative.lean` | — | Conservative families of points | 226 |
+| 18 | `Grothendieck/ConstantSheaf.lean` | `ConstantSheaf_en.lean` | The constant sheaf functor (bridges Mathlib `CategoryTheory.Sites.ConstantSheaf`) | 185 |
+| 19 | `Grothendieck/Conservative.lean` | `Conservative_en.lean` | Conservative families of points | 226 |
 | 20 | `Grothendieck/SheafCohomology/Basic.lean` | `SheafCohomology/Basic_en.lean` | Sheaf cohomology (Ext-based) | 214 |
-| 21 | `Grothendieck/MayerVietorisSquare.lean` | — | Mayer-Vietoris squares | 195 |
+| 21 | `Grothendieck/MayerVietorisSquare.lean` | `MayerVietorisSquare_en.lean` | Mayer-Vietoris squares | 195 |
 | 22 | `Grothendieck/SheafCohomology/MayerVietoris.lean` | — | Mayer-Vietoris long exact sequence | 164 |
 | 23 | `Grothendieck/SheafCohomology/Cech.lean` | `SheafCohomology/Cech_en.lean` | Čech cohomology | 123 |
 | 24 | `Grothendieck/YonedaLemma.lean` | — | The Yoneda lemma (embedding, equivalence, naturality, fully-faithful, coyoneda) | 168 |
@@ -96,7 +96,7 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 - Epic #1453 (prover harness calibration)
 - Conway tribute workspace (`../conway_lean/`)
 - Lean notebook series (`../README.md`)
-- **EPIC #4980** — Lean i18n convention (Option A sibling pair post-2026-07-04; 12 `_en.lean` siblings on `main` in this lake)
+- **EPIC #4980** — Lean i18n convention (Option A sibling pair post-2026-07-04; 15 `_en.lean` siblings on `main` in this lake)
 - **[`README.md`](./README.md)** — FR canonical sibling of this file
 
 ## Conclusion
