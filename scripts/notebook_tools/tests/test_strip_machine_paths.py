@@ -97,6 +97,29 @@ def test_has_leak_unix_home_path():
     assert _has_leak(line) is True
 
 
+def test_has_leak_failed_to_load_variant():
+    """The 'Failed to load kernel extension' failure-variant carries the same
+    C:\\Users\\<user>\\.nuget\\packages\\...dll payload as the success-variant
+    and must be flagged too (regression guard for the variant gap surfaced in
+    PR #6537 review / c.529)."""
+    line = ('Failed to load kernel extension "KernelExtension" from assembly '
+            'C:\\Users\\jsboi\\.nuget\\packages\\xplot.plotly.interactive\\'
+            '4.1.0\\lib\\net7.0\\XPlot.Plotly.Interactive.dll')
+    assert _has_leak(line) is True
+
+
+def test_has_leak_failed_to_load_variant_tilde_also_flagged():
+    """The failure-variant with a tilde HOME path (no username) still carries a
+    .nuget cache token, so it is flagged for consistency: the existing hook
+    already strips success-variant ``Loading extensions from ~/.nuget/...``
+    lines whenever ``.nuget`` is present (USER_PATH_TOKENS), and the failure
+    variant is the same dead kernel-injected message class."""
+    line = ('Failed to load kernel extension "KernelExtension" from assembly '
+            '~\\.nuget\\packages\\xplot.plotly.interactive\\3.0.2\\lib\\net5.0\\'
+            'XPlot.Plotly.Interactive.dll')
+    assert _has_leak(line) is True
+
+
 def test_output_has_leak_list_and_string():
     assert _output_has_leak(["Loading extensions from `C:\\Users\\x\\.nuget\\p\\a`"]) is True
     assert _output_has_leak("Loading extensions from `C:\\Users\\x\\.nuget\\p\\a`") is True

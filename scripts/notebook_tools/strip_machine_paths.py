@@ -52,12 +52,20 @@ import re
 import sys
 
 
-# Distinctive substring of the dotnet-interactive extension-load message. The
-# full line is ``Loading extensions from `<local-path>```; this signature is
-# specific to the ``#r "nuget:..."`` interactive-extension load (verified on
-# .NET notebooks produced by dotnet-interactive 1.0.x — 8/8 occurrences across
-# 53 username-leaking notebooks carry a user-profile path, 0 false positives).
-EXT_LOAD_SIGNATURE = "Loading extensions from"
+# Distinctive substrings of the dotnet-interactive extension-load messages.
+# ``dotnet-interactive`` emits TWO kernel-injected messages carrying the same
+# ``C:\Users\<user>\.nuget\packages\...dll`` local NuGet-cache path:
+#   (1) success: ``Loading extensions from `<local-path>```
+#   (2) failure: ``Failed to load kernel extension "..." from assembly <path>``
+# Both are injected at ``#r "nuget:..."`` (not printed by notebook source) and
+# re-inject on every re-exec, so both signatures are matched. Each is specific
+# to the ``#r "nuget:..."`` interactive-extension load (verified on .NET notebooks
+# produced by dotnet-interactive 1.0.x — 8/8 occurrences across 53 username-leaking
+# notebooks carry a user-profile path, 0 false positives).
+EXT_LOAD_SIGNATURES = ("Loading extensions from", "Failed to load kernel extension")
+
+# Backward-compat alias (legacy single-signature name kept for existing callers).
+EXT_LOAD_SIGNATURE = EXT_LOAD_SIGNATURES[0]
 
 # A line is flagged as a leak only if it carries BOTH the signature AND a
 # user-profile / NuGet-cache path token. The path token requirement is the
@@ -73,10 +81,10 @@ DATA_KEYS = ("text/plain", "text/html")
 
 def _has_leak(text):
     """Return True if ``text`` (a str, or one element of a list) carries the
-    extension-load leak."""
+    extension-load leak (success or failure variant)."""
     if not isinstance(text, str):
         return False
-    if EXT_LOAD_SIGNATURE not in text:
+    if not any(sig in text for sig in EXT_LOAD_SIGNATURES):
         return False
     return any(tok in text for tok in USER_PATH_TOKENS)
 
