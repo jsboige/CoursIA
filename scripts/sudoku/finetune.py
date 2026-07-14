@@ -77,7 +77,7 @@ def load_diverse_200k():
 
 def load_kaggle_1m(max_puzzles=None):
     """Load Kaggle 1M dataset (easy/medium, ~34 givens)."""
-    path = 'C:/Users/jsboi/.cache/kagglehub/datasets/bryanpark/sudoku/versions/3/sudoku.csv'
+    path = os.path.expanduser('~/.cache/kagglehub/datasets/bryanpark/sudoku/versions/3/sudoku.csv')
     if not os.path.exists(path):
         print(f"  Kaggle 1M not found at {path}")
         return None, None

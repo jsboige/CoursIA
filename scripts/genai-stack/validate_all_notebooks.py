@@ -11,6 +11,7 @@ Categories: Environment, Texte, Audio, Video, Image, all
 import os
 import sys
 import subprocess
+import tempfile
 import time
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -63,7 +64,7 @@ def execute_notebook(notebook_path: Path, timeout: int = 300) -> Tuple[bool, str
     env["BATCH_MODE"] = "true"
 
     # Output temporaire
-    output_path = Path("C:\\Users\\jsboi\\AppData\\Local\\Temp\\temp_output.ipynb")
+    output_path = Path(tempfile.gettempdir()) / "temp_output.ipynb"
 
     cmd = [
         sys.executable, "-m", "papermill",
