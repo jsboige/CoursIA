@@ -1,28 +1,57 @@
 /-
-Grothendieck Part 20 -- Sheaf cohomology (Ext-based)
+# Hommage Grothendieck — Partie 20 : Cohomologie des faisceaux (Ext)
 
-Part 19 (Conservative.lean) introduced conservative families of points
-and skyscraper sheaves, the stalkwise detection framework.
+Alexandre Grothendieck (1928-2014).
 
-This module introduces **sheaf cohomology** for abelian sheaves on a site
-(C, J), following Mathlib's Ext-based definition (SGA 4 II, Grothendieck 1957).
+Extension Phase 5 (#2159, EPIC #1646).
 
-Key constructions bridged from Mathlib (`CategoryTheory.Sites.SheafCohomology.Basic`):
+Les parties 1-19 ont etabli les fondamentaux : categories, cribles, topologies,
+lois de treillis, identites de pullback, bases de faisceaux, cloture couvrante,
+calibration, sous-canonicalite, topologies denses, generation de couvertures,
+coherence conservative, points de site, schemas, schemas de Zariski, faisceaux
+constants, exactitude a gauche, cohomologie de Cech, carres de Mayer-Vietoris,
+hom interne des faisceaux.
 
-  - `Sheaf.H F n` : the nth cohomology group of an abelian sheaf F,
-    defined as Ext^n(constantSheaf ℤ, F)
-  - `Sheaf.cohomologyPresheaf F n` : the presheaf U ↦ Ext^n(free(yoneda U), F)
-  - `Sheaf.H' F n X` : degree-n cohomology at an object X
-  - `Sheaf.H.equiv₀` : H⁰(F) ≃+ F(T) when T is terminal (global sections)
-  - `Sheaf.H.map` : the induced map on cohomology by a sheaf morphism
-  - `Sheaf.functorH J n` : the cohomology functor Sheaf J AddCommGrp ⥤ AddCommGrp
-  - Functoriality lemmas: map_id, map_comp, map_add
-  - Vanishing: injective sheaf → Subsingleton H^{n+1}, zero sheaf → Subsingleton
+Ce module introduit la **cohomologie des faisceaux** pour des faisceaux abeliens
+sur un site (C, J), selon la definition Ext de Mathlib (SGA 4 II, Grothendieck 1957).
+La cohomologie H^n(F) est definie comme le groupe Ext depuis le faisceau constant
+a valeurs ULift Z vers F, conformement a la definition de Joel Riou (2024) qui
+realise la cohomologie classique de SGA 4 II dans Mathlib.
 
-This is the foundation for the cohomological machinery of Grothendieck
-topoi: derived functors, spectral sequences, and their applications.
+Constructions clefs pontées depuis Mathlib (`CategoryTheory.Sites.SheafCohomology.Basic`) :
 
-Epic #1646, See #2159. All `sorry`s eliminated at creation.
+  - `Sheaf.H F n` : le n-ieme groupe de cohomologie d'un faisceau abelien F
+  - `Sheaf.cohomologyPresheaf F n` : le prefaisceau U ↦ Ext^n(free(yoneda U), F)
+  - `Sheaf.H' F n X` : cohomologie de degre n en un objet X
+  - `Sheaf.H.equiv₀` : H^0(F) ≃+ F(T) quand T est terminal (sections globales)
+  - `Sheaf.H.map` : l'application induite sur la cohomologie par un morphisme de faisceaux
+  - `Sheaf.functorH J n` : le foncteur cohomologie Sheaf J AddCommGrp ⥤ AddCommGrp
+  - Lemmes de fonctorialite : map_id, map_comp, map_add
+  - Annulation : faisceau injectif -> Subsingleton H^{n+1}, faisceau nul -> Subsingleton
+
+C'est le fondement de la machinerie cohomologique des topos de Grothendieck :
+foncteurs derives, suites spectrales, et leurs applications (theorie de Hodge,
+theorie des nombres, geometrie algebrique).
+
+EPIC #1646, Phase 5 (#2159), voir #2159. Tous les `sorry`s elimines a la creation.
+
+### Note d'accessibilite (Epics #1452/#1453)
+
+Ce module expose **2 noncomputable def + 3 theorem** sur la cohomologie des
+faisceaux (H^0 = sections globales, fonctorialite, annulation), accessibilite
+progressive par 8 sections thematiques : (1) groupes de cohomologie,
+(2) prefaisceau de cohomologie, (3) cohomologie de degre n en un objet,
+(4) cohomologie de degre zero et sections globales, (5) application induite sur
+la cohomologie, (6) foncteur cohomologie, (7) resultats d'annulation,
+(8) theoremes ponts.
+
+### Convention i18n (EPIC #4980 ratifiee par user 2026-07-04)
+
+Ce module substantiel est apparie avec son jumeau anglais dans le fichier sibling
+`Basic_en.lean` (modele sibling pair, voir PR #6154 pour le pilote sur
+`Utility.lean` et #6275/#6277/#6280/#6284/#6291 pour la continuite du rollout
+Phase 2+). Namespace suffix `_en` applique au fichier EN (anti-collision,
+conforme code-style.md #4980).
 -/
 
 import Mathlib.CategoryTheory.Sites.SheafCohomology.Basic
@@ -35,30 +64,31 @@ open CategoryTheory Category Opposite Limits
 
 variable {C : Type u} [Category.{v} C] {J : GrothendieckTopology C}
 
-/-! ## 1. Sheaf cohomology groups
+/-!
+## 1. Groupes de cohomologie des faisceaux
 
-The cohomology group `Sheaf.H F n` of an abelian sheaf F in degree n is
-defined as the Ext-group from the constant sheaf with values ULift ℤ to F:
+Le groupe de cohomologie `Sheaf.H F n` d'un faisceau abelien F en degre n est
+defini comme le groupe Ext depuis le faisceau constant a valeurs ULift Z vers F :
 
-  H^n(F) = Ext^n(constantSheaf J AddCommGrp (ULift ℤ), F)
+  H^n(F) = Ext^n(constantSheaf J AddCommGrp (ULift Z), F)
 
-This follows Mathlib's definition (Joel Riou, 2024) and corresponds to
-the classical sheaf cohomology in SGA 4 II.
+Cela suit la definition de Mathlib (Joel Riou, 2024) et correspond a la
+cohomologie classique des faisceaux dans SGA 4 II.
 
-Requires `HasSheafify J AddCommGrp` and `HasExt (Sheaf J AddCommGrp)`.
+Necessite `HasSheafify J AddCommGrp` et `HasExt (Sheaf J AddCommGrp)`.
 -/
 
 -- The nth cohomology group of an abelian sheaf F (Ext-based).
 #check @CategoryTheory.Sheaf.H
 
-/-! ## 2. The cohomology presheaf
+/-!
+## 2. Le prefaisceau de cohomologie
 
-Given an abelian sheaf F, `cohomologyPresheaf F n` is the presheaf
-which sends U : Cᵒᵖ to the Ext-group from the free abelian sheaf
-generated by yoneda.obj U to F. This is a presheaf of abelian groups.
+Etant donne un faisceau abelien F, `cohomologyPresheaf F n` est le prefaisceau
+qui envoie U : C^op vers le groupe Ext depuis le faisceau abelien libre engendre
+par yoneda.obj U vers F. C'est un prefaisceau de groupes abeliens.
 
-When evaluated at a terminal object T, this recovers H^n(F) (up to
-the equivalence `H.equiv₀`).
+Evalue en un objet terminal T, ceci recupere H^n(F) (a equivalence `H.equiv_0` pres).
 -/
 
 -- The cohomology presheaf functor (bifunctor variant).
@@ -67,29 +97,31 @@ the equivalence `H.equiv₀`).
 -- The cohomology presheaf: U ↦ Ext^n(free(yoneda U), F).
 #check @CategoryTheory.Sheaf.cohomologyPresheaf
 
-/-! ## 3. Degree-n cohomology at an object
+/-!
+## 3. Cohomologie de degre n en un objet
 
-`Sheaf.H' F n X` is the degree-n sheaf cohomology of X with values in F,
-defined as `(F.cohomologyPresheaf n).obj (op X)`.
+`Sheaf.H' F n X` est la cohomologie de degre n du faisceau F sur X, definie
+comme `(F.cohomologyPresheaf n).obj (op X)`.
 
-This is the "local" version of cohomology -- it varies functorially in X.
+C'est la version « locale » de la cohomologie -- elle varie fonctoriellement en X.
 -/
 
 -- Degree-n cohomology of X with values in F.
 #check @CategoryTheory.Sheaf.H'
 
-/-! ## 4. Degree-zero cohomology and global sections
+/-!
+## 4. Cohomologie de degre zero et sections globales
 
-When C has a terminal object T, the degree-zero cohomology H^0(F) is
-additively equivalent to the group of global sections F(T):
+Quand C a un objet terminal T, la cohomologie de degre zero H^0(F) est
+additivement equivalente au groupe des sections globales F(T) :
 
   H^0(F) =+ F(T)
 
-via `H.equiv_0`. This is the sheaf-theoretic version of the familiar
-identification H^0(X, F) = Gamma(X, F) in classical sheaf cohomology.
+via `H.equiv_0`. C'est la version faisceautique de l'identification classique
+H^0(X, F) = Gamma(X, F) en cohomologie des faisceaux classique.
 
-The equivalence is natural: a morphism f : F --> G induces a commutative
-square relating H.map f 0 and f.app (op T).
+L'equivalence est naturelle : un morphisme f : F --> G induit un carre commutatif
+reliant H.map f 0 et f.app (op T).
 -/
 
 -- The additive equivalence H^0(F) =+ F(T) for terminal T.
@@ -101,16 +133,17 @@ square relating H.map f 0 and f.app (op T).
 -- The symmetry of naturality for equiv_0.
 #check @CategoryTheory.Sheaf.H.equiv₀_symm_naturality
 
-/-! ## 5. The induced map on cohomology
+/-!
+## 5. L'application induite sur la cohomologie
 
-Given a morphism f : F --> G of abelian sheaves, `H.map f n` is the
-induced additive map H^n(F) ->+ H^n(G). This makes H^n a functor
-from Sheaf J AddCommGrp to AddCommGrp.
+Etant donne un morphisme f : F --> G de faisceaux abeliens, `H.map f n` est
+l'application additive induite H^n(F) ->+ H^n(G). Cela fait de H^n un foncteur
+de Sheaf J AddCommGrp vers AddCommGrp.
 
-Key properties:
-  - H.map (1 F) n = id  (functoriality: identity)
-  - H.map (f >> g) n = H.map g n . H.map f n  (functoriality: composition)
-  - H.map (f + g) n x = H.map f n x + H.map g n x  (additivity)
+Proprietes cles :
+  - H.map (1 F) n = id  (fonctorialite : identite)
+  - H.map (f >> g) n = H.map g n . H.map f n  (fonctorialite : composition)
+  - H.map (f + g) n x = H.map f n x + H.map g n x  (additivite)
 -/
 
 -- The induced map on cohomology by a sheaf morphism.
@@ -128,13 +161,14 @@ Key properties:
 -- Explicit unfolding: H.map f n x = x.comp (Ext.mk_0 f) (add_zero n).
 #check @CategoryTheory.Sheaf.H.map_apply
 
-/-! ## 6. The cohomology functor
+/-!
+## 6. Le foncteur cohomologie
 
-`functorH J n` packages the cohomology groups into a functor:
+`functorH J n` empaquette les groupes de cohomologie en un foncteur :
 
-  functorH J n : Sheaf J AddCommGrp >> AddCommGrp
+  functorH J n : Sheaf J AddCommGrp ⥤ AddCommGrp
 
-It sends F to H^n(F) and f to H.map f n. This functor is additive
+Il envoie F vers H^n(F) et f vers H.map f n. Ce foncteur est additif
 (instance `(functorH J n).Additive`).
 -/
 
@@ -144,40 +178,43 @@ It sends F to H^n(F) and f to H.map f n. This functor is additive
 -- Simps lemma: (functorH J n).map f = ofHom (H.map f n).
 #check @CategoryTheory.Sheaf.functorH_map
 
-/-! ## 7. Vanishing results
+/-!
+## 7. Resultats d'annulation
 
-Two key vanishing results:
+Deux resultats d'annulation cles :
 
-1. **Injective sheaf**: if F is injective, then H^{n+1}(F) is a subsingleton
-   (at most one element) for all n. This reflects the classical fact that
-   injective objects have no higher cohomology.
-   (Instance in Mathlib: anonymous `instance [Injective F] : Subsingleton (H F (n + 1))`)
+1. **Faisceau injectif** : si F est injectif, alors H^{n+1}(F) est un subsingleton
+   (au plus un element) pour tout n. Cela reflete le fait classique que les
+   objets injectifs n'ont pas de cohomologie superieure.
+   (Instance dans Mathlib : instance anonyme `[Injective F] : Subsingleton (H F (n + 1))`)
 
-2. **Zero sheaf**: if F is the zero object, then H^n(F) is a subsingleton
-   for all n. The cohomology of the zero sheaf vanishes in all degrees.
+2. **Faisceau nul** : si F est l'objet zero, alors H^n(F) est un subsingleton
+   pour tout n. La cohomologie du faisceau nul s'annule en tous les degres.
 -/
 
 -- Zero sheaf -> Subsingleton H^n(F).
 #check @CategoryTheory.Sheaf.subsingleton_H_of_isZero
 
-/-! ## 8. Bridge theorems
+/-!
+## 8. Theoremes ponts
 
-Bridge theorems connecting Mathlib's Ext-based cohomology to concrete
-verification.
+Theoremes ponts connectant la cohomologie Ext de Mathlib a la verification concrete.
 -/
 
-/-- Bridge theorem: degree-zero cohomology H^0(F) is additively equivalent
-    to the global sections F(T) when T is terminal. This is the fundamental
-    identification H^0 = Gamma in sheaf cohomology. -/
+/-- Theoreme pont : la cohomologie de degre zero H^0(F) est additivement
+    equivalente aux sections globales F(T) quand T est terminal. C'est
+    l'identification fondamentale H^0 = Gamma en cohomologie des faisceaux. -/
+
 noncomputable def H0_equiv_global_sections
     (F : Sheaf J AddCommGrpCat.{w}) {T : C} (hT : IsTerminal T)
     [HasSheafify J AddCommGrpCat.{w}] [HasExt.{w'} (Sheaf J AddCommGrpCat.{w})] :
     CategoryTheory.Sheaf.H F 0 ≃+ F.obj.obj (op T) :=
   CategoryTheory.Sheaf.H.equiv₀ F hT
 
-/-- Bridge theorem: the cohomology functor is additive. For any f : F --> G
-    and g : F --> G, the induced map on cohomology satisfies
+/-- Theoreme pont : le foncteur cohomologie est additif. Pour tous f : F --> G
+    et g : F --> G, l'application induite sur la cohomologie verifie
     H.map (f + g) n x = H.map f n x + H.map g n x. -/
+
 theorem H_map_add {F G : Sheaf J AddCommGrpCat.{w}} (f g : F ⟶ G)
     [HasSheafify J AddCommGrpCat.{w}] [HasExt.{w'} (Sheaf J AddCommGrpCat.{w})]
     {n : ℕ} (x : CategoryTheory.Sheaf.H F n) :
@@ -185,8 +222,9 @@ theorem H_map_add {F G : Sheaf J AddCommGrpCat.{w}} (f g : F ⟶ G)
       CategoryTheory.Sheaf.H.map f n x + CategoryTheory.Sheaf.H.map g n x :=
   CategoryTheory.Sheaf.H.map_add_apply f g x
 
-/-- Bridge theorem: the cohomology functor respects composition.
+/-- Theoreme pont : le foncteur cohomologie respecte la composition.
     H.map (f >> g) n = H.map g n . H.map f n. -/
+
 theorem H_map_comp {F G G' : Sheaf J AddCommGrpCat.{w}} (f : F ⟶ G) (g : G ⟶ G')
     [HasSheafify J AddCommGrpCat.{w}] [HasExt.{w'} (Sheaf J AddCommGrpCat.{w})]
     {n : ℕ} (x : CategoryTheory.Sheaf.H F n) :
@@ -194,17 +232,19 @@ theorem H_map_comp {F G G' : Sheaf J AddCommGrpCat.{w}} (f : F ⟶ G) (g : G ⟶
       CategoryTheory.Sheaf.H.map g n (CategoryTheory.Sheaf.H.map f n x) :=
   CategoryTheory.Sheaf.H.map_comp_apply f g x
 
-/-- Bridge theorem: the cohomology functor respects identities.
+/-- Theoreme pont : le foncteur cohomologie respecte les identites.
     H.map (1 F) n x = x. -/
+
 theorem H_map_id (F : Sheaf J AddCommGrpCat.{w})
     [HasSheafify J AddCommGrpCat.{w}] [HasExt.{w'} (Sheaf J AddCommGrpCat.{w})]
     {n : ℕ} (x : CategoryTheory.Sheaf.H F n) :
     CategoryTheory.Sheaf.H.map (𝟙 F) n x = x :=
   CategoryTheory.Sheaf.H.map_id_apply x
 
-/-- Bridge construction: the cohomology presheaf at an object X.
-    This is `(F.cohomologyPresheaf n).obj (op X)`, the degree-n
-    cohomology of X with values in F. -/
+/-- Construction pont : la cohomologie prefaisceautique en un objet X.
+    C'est `(F.cohomologyPresheaf n).obj (op X)`, la cohomologie de degre n
+    de X a valeurs dans F. -/
+
 noncomputable def cohomologyAt
     (F : Sheaf J AddCommGrpCat.{v}) (n : ℕ) (X : C)
     [HasSheafify J AddCommGrpCat.{v}] [HasExt.{w'} (Sheaf J AddCommGrpCat.{v})] :
