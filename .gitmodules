@@ -19,3 +19,7 @@
 [submodule "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"]
 	path = MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum
 	url = https://github.com/ArgumentumGames/Argumentum
+[submodule "MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet"]
+	path = MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet
+	url = https://github.com/MyIntelligenceAgency/semantic-fleet.git
+	branch = stable-from-v0343
