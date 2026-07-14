@@ -44,7 +44,18 @@ structure and conversions. The Hashlife algorithm lives in
 
 import Conway.Life
 
+
+/-
+  Convention i18n (EPIC #4980, décision user 2026-07-04) : ce fichier est **FR canonique**,
+  avec son miroir anglais dans le fichier sibling `MacroCell_en.lean` (modèle sibling
+  pair ratifié 2026-07-04, cf `code-style.md` paragraphe Lean i18n). Les énoncés de
+  théorèmes, les tactiques Lean, les noms de lemmes et les références Mathlib restent en
+  anglais (compatibilité Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tête
+  diffèrent entre les deux fichiers.
+-/
+
 namespace Conway
+
 namespace Life
 
 /-! ## The quadtree data structure -/

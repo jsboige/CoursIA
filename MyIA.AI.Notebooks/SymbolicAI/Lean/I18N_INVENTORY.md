@@ -1,7 +1,7 @@
 # Inventaire i18n des projets Lean 4 — couverture FR/EN
 
 Inventaire transverse de la **couverture i18n** (FR canonique + EN sibling) des
-fichiers `.lean` de nos lakes, à la date 2026-07-11. Source de vérité : conventions
+fichiers `.lean` de nos lakes, à la date 2026-07-14. Source de vérité : conventions
 ratifiées par ai-01 (2026-07-04, issue
 [#4980](https://github.com/jsboige/CoursIA/issues/4980) comment-4881909354).
 
@@ -31,20 +31,30 @@ détaillée par type de lake, (3) PR pilote sur un lake cible.
 |------|-------------:|-----------:|--------------------:|---------------------:|--------|
 | `learning_theory_lean` | 19 | 18 | 18/19 = **95 %** | ~554 | EXCELLENT |
 | `sudoku_lean` | 5 | 4 | 4/5 = **80 %** | ~62 | BON |
-| `repeated_games_lean` | 6 | 4 | 4/6 = **67 %** | ~65 | PARTIEL (c.356 = 4 tranches sur 6) |
+| `repeated_games_lean` | 1 | 1 | — | ~0 (legacy) | **ABSORBÉ** dans `game_theory_lean` (#6146, cf. #4365) — legacy quasi-vide |
 | `minimax_lean` | 5 | 4 | 4/5 = **80 %** | ~41 | BON |
-| `cooperative_games_lean` | 5 | 3 | 3/5 = **60 %** | ~819 | PARTIEL |
-| `game_theory_lean` | 12 | 8 | 8/12 = **67 %** | ~1702 | PARTIEL (multi-lib) |
-| `social_choice_lean` | 10 | 7 | 7/10 = **70 %** | ~790 | PARTIEL |
-| `sensitivity_lean` | 6 | 4 | 4/6 = **67 %** | ~8 + ~6 inline | PARTIEL |
-| `calibration_lean` | 5 | 3 | 3/5 = **60 %** | ~95 + ~15 inline | PARTIEL |
-| `finiteness_lean` | 3 | 1 | 1/3 = **33 %** | ~17 | PARTIEL |
-| `conway_cgt_lean` | 2 | 0 | 0/2 = **0 %** | ~0 (4 markers header only) | **À FAIRE** |
-| `knot_lean` | 8 | 0 | 0/8 = **0 %** | ~584 | **À FAIRE** |
-| `grothendieck_lean` | 26 | 0 | 0/26 = **0 %** | ~222 | **À FAIRE** |
-| `conway_lean` | 27 | 0 | 0/27 = **0 %** | ~1894 | **À FAIRE** (gros) |
+| `cooperative_games_lean` | 5 | 4 | 4/5 = **80 %** | ~819 | BON (cf. absorption partielle #6274) |
+| `game_theory_lean` | 26 | 19 | 19/26 = **73 %** | ~1702+ | BON (multi-lib ; a absorbé RepeatedGames #6146 + CooperativeGames + SocialChoice) |
+| `social_choice_lean` | 1 | 0 | — | ~0 (legacy) | **ABSORBÉ** dans `game_theory_lean` (#6040, cf. #4365) — legacy quasi-vide |
+| `sensitivity_lean` | 6 | 4 | 4/6 = **67 %** | ~8 + ~6 inline | BON (root bilingue inline) |
+| `calibration_lean` | 5 | 3 | 3/5 = **60 %** | ~95 + ~15 inline | BON (root bilingue inline) |
+| `finiteness_lean` | 3 | 1 | 1/3 = **33 %** | ~17 | BON (root bilingue inline #6065) |
+| `conway_cgt_lean` | 2 | 0 | 0/2 = **0 %** | ~0 (4 markers header only) | **À FAIRE** (⚠ build blocked #6419 mismatch mathlib/CombinatorialGames) |
+| `knot_lean` | 8 | 0 | 0/8 = **0 %** | ~584 | **À FAIRE** (po-2025 in-flight #6429/#6440) |
+| `grothendieck_lean` | 26 | 12 | 12/26 = **46 %** | ~222 | PARTIEL (⚠ ≠ 0 % : 12 siblings EN ajoutés #6304/#6284/#6280) |
+| `conway_lean` | 28 | 11 | 11/28 = **39 %** | ~1894 | PARTIEL (⚠ ≠ 0 % : 11 siblings EN ajoutés #6412/#6413 ; po-2026 #6442 in-flight) |
 | `mathlib_examples` | 3 | 0 | 0/3 = **0 %** | ~0 | **À FAIRE** (peut-être trivial) |
 | `social_choice_lean_peters` | 2 | 0 | 0/2 = **0 %** | ~0 | **HORS SCOPE** (vendored, `_peters`) |
+
+> **Refresh 2026-07-14 (po-2023, See #4980)** : recompte firsthand via le script de
+> reproduction ci-dessous sur `origin/main` @ `455492afa`. Changements majeurs vs
+> epoch 2026-07-11 : (a) `conway_lean` et `grothendieck_lean` n'étaient **plus à 0 %**
+> — 11 et 12 siblings EN ajoutés entre-temps ; (b) le regroupement #4365 a **absorbé**
+> `repeated_games_lean` (6/4 → 1/1 legacy) et `social_choice_lean` (10/7 → 1/0 legacy)
+> dans `game_theory_lean` (12/8 → 26/19) ; (c) `conway_cgt_lean` désormais bloqué par
+> le mismatch mathlib (#6419, PR #6432 en attente). Les comptes `fr_files` incluent
+> `lakefile.lean` (aglistique) — un `fr=en=0` sur un legacy signifie « dir quasi-vide
+> post-absorption », pas « lake actif sans i18n ».
 
 ---
 
@@ -166,15 +176,16 @@ définitions non-définies (`AreMutants`, `alexanderPolynomial`,
 transfert classique ouvertes. **Niveau recherche** — bilinguisation = gain
 pédagogique mais sans urgence (lake non-PEDA).
 
-### 13. `grothendieck_lean` — À FAIRE (0 %)
+### 13. `grothendieck_lean` — PARTIEL (46 %, refresh 2026-07-14)
 
 **Chemin** : `MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/`
 
-26 fichiers FR canoniques, **0 fichier EN sibling**. ~222 lignes FR + le
-reste est code pur sans docstring. Lake = **recherche** (EPIC #2159
-Grothendieck). Gros volume (26 fichiers) mais le contenu est essentiellement
-du code de formalisation sans pédagogie textuelle — bilinguisation = faible
-gain marginal.
+26 fichiers FR canoniques, **12 fichiers EN sibling** (≠ 0 % : bilinguisation
+en cours via #6304 SheafCohomology/Basic, #6284 CoverageGen, #6280 DenseTopology
+et successeurs). ~222 lignes FR + le reste est code pur sans docstring. Lake =
+**recherche** (EPIC #2159 Grothendieck). ⚠ WIP-handoff `wt-groth-4980` (4
+fichiers Lean non-committés occupent la ref `main`) — vérifier l'état du WIP
+avant d'ajouter de nouveaux siblings pour éviter collision.
 
 ### 14. `conway_lean` — À FAIRE (0 %) (gros volume)
 
@@ -239,26 +250,31 @@ for lake in MyIA.AI.Notebooks/SymbolicAI/Lean/*/ MyIA.AI.Notebooks/GameTheory/*/
 done
 ```
 
-Sortie 2026-07-11 (epoch de cet inventaire) :
+Sortie 2026-07-14 (refresh po-2023, `origin/main` @ `455492afa`) :
 
 ```
 calibration_lean: fr_files=5 en_files=3
-conway_lean: fr_files=27 en_files=0
-finiteness_lean: fr_files=3 en_files=1
-grothendieck_lean: fr_files=26 en_files=0
-knot_lean: fr_files=8 en_files=0
-mathlib_examples: fr_files=3 en_files=0
-sensitivity_lean: fr_files=6 en_files=4
 conway_cgt_lean: fr_files=2 en_files=0
-cooperative_games_lean: fr_files=5 en_files=3
-game_theory_lean: fr_files=12 en_files=8
-minimax_lean: fr_files=5 en_files=4
-repeated_games_lean: fr_files=6 en_files=4
-social_choice_lean: fr_files=10 en_files=7
-social_choice_lean_peters: fr_files=2 en_files=0
+conway_lean: fr_files=28 en_files=11
+cooperative_games_lean: fr_files=5 en_files=4
+finiteness_lean: fr_files=3 en_files=1
+game_theory_lean: fr_files=26 en_files=19
+grothendieck_lean: fr_files=26 en_files=12
+knot_lean: fr_files=8 en_files=0
 learning_theory_lean: fr_files=19 en_files=18
+mathlib_examples: fr_files=3 en_files=0
+minimax_lean: fr_files=5 en_files=4
+repeated_games_lean: fr_files=1 en_files=1
+sensitivity_lean: fr_files=6 en_files=4
+social_choice_lean: fr_files=1 en_files=0
+social_choice_lean_peters: fr_files=2 en_files=0
 sudoku_lean: fr_files=5 en_files=4
 ```
+
+> Delta vs epoch 2026-07-11 : `conway_lean` 27/0 → 28/11 ; `grothendieck_lean`
+> 26/0 → 26/12 ; `game_theory_lean` 12/8 → 26/19 ; `repeated_games_lean` 6/4 → 1/1
+> (absorption #6146) ; `social_choice_lean` 10/7 → 1/0 (absorption #6040) ;
+> `cooperative_games_lean` 5/3 → 5/4.
 
 ---
 

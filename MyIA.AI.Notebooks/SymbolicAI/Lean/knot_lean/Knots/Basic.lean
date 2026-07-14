@@ -1,18 +1,29 @@
 /-
-  Knots.Basic — Combinatorial foundations of knot theory
-  =====================================================
+Knots.Basic — Fondations combinatoires de la theorie des noeuds
+=============================================================
 
-  Scaffolding for knot theory in Lean 4, inspired by:
-  - shua/leanknot (https://github.com/shua/leanknot, Lean 4 branch)
-  - Prathamesh (2015), Formalising Knot Theory in Isabelle/HOL
+Scaffolding pour la theorie des noeuds en Lean 4, inspire par :
+- shua/leanknot (https://github.com/shua/leanknot, branche Lean 4)
+- Prathamesh (2015), Formalising Knot Theory in Isabelle/HOL
 
-  Convention: namespace `Knots`, sorry commentés avec références.
-  Epic #2874, Phase 1.
+Convention : namespace `Knots`, theoremes commentes avec references.
+Epic #2874, Phase 1.
 
-  Mathlib prerequisites needed:
-  - Combinatorial representations of planar diagrams (PD-codes)
-  - Gauss codes / Dowker-Thistlethwaite notation
-  - Basic graph theory for crossing graphs
+Prerequis Mathlib necessaires :
+- Representations combinatoires des diagrammes planaires (PD-codes)
+- Codes de Gauss / notation Dowker-Thistlethwaite
+- Theorie des graphes de base pour les graphes de croisements
+-/
+
+import Mathlib.Tactic
+
+/-
+  Convention i18n (EPIC #4980, decision user 2026-07-04) : ce fichier est **FR canonique**,
+  avec son miroir anglais dans le fichier sibling `Basic_en.lean` (modele sibling pair
+  ratifie 2026-07-04, cf `code-style.md` §Lean i18n). Les enonces de theoremes,
+  les tactiques Lean, les noms de lemmes et les references Mathlib restent en anglais
+  (compat Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tete different
+  entre les deux fichiers.
 -/
 
 namespace Knots

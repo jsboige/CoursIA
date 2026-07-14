@@ -1,15 +1,24 @@
 /-
-  Knots.MathlibPrerequisites — Index of missing Mathlib infrastructure
-  =====================================================================
+Knots.MathlibPrerequisites — Index des prérequis Mathlib manquants
+===================================================================
 
-  This file documents the Mathlib prerequisites needed to resolve each sorry
-  in the knot_lean project. It serves as a roadmap for what would need to
-  be built (either in Mathlib or as external dependencies) to formalize
-  knot theory results.
+Ce fichier documente les prérequis Mathlib nécessaires pour résoudre chaque
+sorry dans le projet knot_lean. Il sert de feuille de route pour ce qui
+devrait être construit (soit dans Mathlib, soit comme dépendances externes)
+pour formaliser les résultats de la théorie des noeuds.
 
-  Epic #2874, Phase 1.
+Epic #2874, Phase 1.
 
-  Convention: organized by difficulty tier.
+Convention : organisé par tier de difficulté.
+-/
+
+/-
+  Convention i18n (EPIC #4980, decision user 2026-07-04) : ce fichier est **FR canonique**,
+  avec son miroir anglais dans le fichier sibling `MathlibPrerequisites_en.lean` (modèle
+  sibling pair ratifié 2026-07-04, cf `code-style.md` §Lean i18n). Les énoncés de
+  théorèmes, les tactiques Lean, les noms de lemmes et les références Mathlib restent
+  en anglais (compat Mathlib 4) ; seules les docstrings de module et ce bloc
+  d'en-tête diffèrent entre les deux fichiers.
 -/
 
 namespace Knots.MathlibPrerequisites

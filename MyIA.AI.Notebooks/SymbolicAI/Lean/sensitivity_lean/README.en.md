@@ -15,6 +15,7 @@ Complete mini-project: **0 sorry, 0 axiom** beyond Lean core axioms.
 - **Sorry**: **0** — every proof is closed
 - **Build**: `lake build Sensitivity` — SUCCESS
 - **Dependencies**: Mathlib4
+- **i18n coverage (EPIC #4980)**: lake fully bilingual FR/EN — 4 `.lean` modules shipped as FR canonical + 4 `*_en.lean` mirror siblings on `main` (`Sensitivity/Hypercube_en.lean`, `Sensitivity/VectorSpace_en.lean`, `Sensitivity/Operator_en.lean`, `Sensitivity/MainTheorem_en.lean`). Convention EPIC #4980 Option A: docstrings `/-- ... -/` and `-- ...` comments differ between FR and EN, signatures and proofs remain byte-identical.
 
 ## What it formalizes
 
@@ -40,13 +41,13 @@ interlacing theorem forces a high-degree vertex in any large induced subgraph.
 
 ## Modules
 
-| File | Lines | sorry | Content |
-|------|------:|------:|---------|
-| `Sensitivity.lean` | 1 | 0 | Root import umbrella |
-| `Sensitivity/Hypercube.lean` | 124 | 0 | Boolean hypercube `Q n`, vertices, adjacency |
-| `Sensitivity/VectorSpace.lean` | 132 | 0 | Real vector space of Boolean functions, `ℝ^{2^n}` basis |
-| `Sensitivity/Operator.lean` | 100 | 0 | Sensitivity and block-sensitivity operators |
-| `Sensitivity/MainTheorem.lean` | 131 | 0 | `exists_eigenvalue` (L51), `huang_degree_theorem` (L84) |
+| File | `_en` | Lines | sorry | Content |
+|------|-------|------:|------:|---------|
+| `Sensitivity.lean` | — | 1 | 0 | Root import umbrella |
+| `Sensitivity/Hypercube.lean` | `Hypercube_en.lean` | 124 | 0 | Boolean hypercube `Q n`, vertices, adjacency |
+| `Sensitivity/VectorSpace.lean` | `VectorSpace_en.lean` | 132 | 0 | Real vector space of Boolean functions, `ℝ^{2^n}` basis |
+| `Sensitivity/Operator.lean` | `Operator_en.lean` | 100 | 0 | Sensitivity and block-sensitivity operators |
+| `Sensitivity/MainTheorem.lean` | `MainTheorem_en.lean` | 131 | 0 | `exists_eigenvalue` (L51), `huang_degree_theorem` (L84) |
 
 ## Key results
 

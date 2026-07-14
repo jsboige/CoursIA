@@ -162,7 +162,7 @@ flowchart TD
     class DT decision;
 ```
 
-Le socle d'inference (1-12) se suit en séquence ; le notebook **13 (Debugging)** est transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. Les notebooks **14-19 (Frontières)** prolongent le corpus bayésien (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie). La **théorie de la décision** — utilité espérée, EVPI, MDPs, Thompson Sampling, plus les companions Lean (indice de Gittins) — forme désormais un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/). Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
+Le socle d'inference (1-12) se suit en séquence ; le notebook **Debugging (6)** y joue un rôle transversal — il compare aussi les trois algorithmes (EP/VMP/Gibbs) et sert de référence dès qu'une inférence dysfonctionne. Les notebooks **14-19 (Frontières)** prolongent le corpus bayésien (causalité, processus gaussiens, modèles hiérarchiques, filtre de Kalman, détection de rupture, analyse de survie). La **théorie de la décision** — utilité espérée, EVPI, MDPs, Thompson Sampling, plus les companions Lean (indice de Gittins) — forme désormais un **arc autonome** dans [`../DecisionTheory/DecInfer/`](../DecisionTheory/DecInfer/README.md), adossé au lake [`decision_theory_lean`](../decision_theory_lean/). Le détail notebook-par-notebook figure dans les sections détaillées ci-dessous.
 
 ---
 
@@ -905,9 +905,9 @@ Pour un guide complet, voir [Infer-6-Debugging](Infer-6-Debugging.ipynb).
 | Problème | Solution |
 | --- | --- |
 | `The type 'Variable' does not contain a definition for...` | Vérifier que le namespace `MicrosoftResearch.Infer` est importé. Le notebook 1 (Setup) couvre la configuration |
-| `Inference exception: Improper distribution` | Le modèle contient une boucle causale ou une observation contradictoire. Le notebook 13 (Debugging) détaille les stratégies de diagnostic |
+| `Inference exception: Improper distribution` | Le modèle contient une boucle causale ou une observation contradictoire. Le notebook 6 (Debugging) détaille les stratégies de diagnostic |
 | `Algorithm compilation failed` | Infer.NET compile un algorithme d'inférence par reflection. Vérifier que le modèle est dans une famille supportée (conjugué). Modèles non-conjugués nécessitent EP ou VMP |
-| Performance lente sur les grands modèles | Utiliser `InferenceEngine.Compiler.ShowGeneratedSource = true` pour inspecter le code généré. Le notebook 13 compare les algorithmes EP/VMP/Gibbs |
+| Performance lente sur les grands modèles | Utiliser `InferenceEngine.Compiler.ShowGeneratedSource = true` pour inspecter le code généré. Le notebook 6 compare les algorithmes EP/VMP/Gibbs |
 | `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
 
 ### Erreur de compilation

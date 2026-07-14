@@ -1,21 +1,32 @@
 /-
-Copyright (c) 2026 CoursIA. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
+Copyright (c) 2026 CoursIA. Tous droits reserves.
+Distribue sous licence Apache 2.0 comme decrit dans le fichier LICENSE.
 
-## Conway's Game of Life — Life-as-Computation
+## Jeu de la Vie de Conway — Life-as-Computation (le calcul par la Vie)
 
-Cross-validation of the Hashlife quadtree algorithm against the reference
-B3/S23 step, plus computational primitives (eaters, multi-period glider
-composition). This module is part of Epic #1647 (Life-as-Computation).
+Validation croisee de l'algorithme Hashlife par quadtree face au `step` de
+reference B3/S23, plus les primitifs de calcul (eaters, composition de
+gliders multi-periodes). Ce module fait partie de l'Epic #1647
+(Life-as-Computation).
 
-Design choices:
-- All predicates return `Bool` for `native_decide` compatibility.
-- The `eater1` (fishhook) is the simplest signal-absorbing primitive,
-  the first building block of Spartan logic gates.
-- Consistency theorems `evolveHashlife n g = evolve n g` verify the
-  quadtree algorithm against the list-based reference for small inputs.
+Choix de conception :
+- Tous les predicats renvoient `Bool` pour la compatibilite avec `native_decide`.
+- Le `eater1` (fishhook / hamecon) est le primitif d'absorption de signal le
+  plus simple, la premiere brique des portes logiques spartiates.
+- Les theoremes de coherence `evolveHashlife n g = evolve n g` verifient
+  l'algorithme par quadtree face a la reference basee sur les listes pour
+  les petites entrees.
 
-This module is fully proven (no gaps).
+Ce module est entierement prouve (aucun gap).
+-/
+
+/-
+  Convention i18n (EPIC #4980, decision user 2026-07-04) : ce fichier est **FR canonique**,
+  avec son miroir anglais dans le fichier sibling `Computation_en.lean` (modele sibling
+  pair ratifie 2026-07-04, cf `code-style.md` §Lean i18n). Les enonces de theoremes,
+  les tactiques Lean, les noms de lemmes et les references Mathlib restent en anglais
+  (compat Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tete different
+  entre les deux fichiers.
 -/
 
 import Conway.Life
@@ -25,50 +36,52 @@ import Conway.Life.Hashlife
 namespace Conway
 namespace Life
 
-/-! ## Section 1: Hashlife/Reference consistency
+/-! ## Section 1 : coherence Hashlife / reference
 
-The Hashlife algorithm (`Conway.Life.Hashlife`) computes evolution via
-quadtree decomposition. The reference algorithm (`step`) operates on
-`List (Int × Int)` directly. The consistency theorems below verify that
-both algorithms agree on canonical small patterns.
+L'algorithme Hashlife (`Conway.Life.Hashlife`) calcule l'evolution par
+decomposition en quadtree. L'algorithme de reference (`step`) opere
+directement sur `List (Int × Int)`. Les theoremes de coherence ci-dessous
+verifient que les deux algorithmes sont d'accord sur les petits patterns
+canoniques.
 
-For level-2 inputs, `evolveHashlife` routes through `step4x4` (the
-quadtree base case). For larger inputs, it falls back to `step`. In both
-cases, the result should match `evolve n g`.
+Pour les entrees de niveau 2, `evolveHashlife` passe par `step4x4` (le cas
+de base du quadtree). Pour les entrees plus grandes, il retombe sur `step`.
+Dans les deux cas, le resultat doit coincider avec `evolve n g`.
 -/
 
-/-- Hashlife and reference agree on `block` after 1 generation. -/
+/-- Hashlife et reference sont d'accord sur `block` apres 1 generation. -/
 theorem hashlife_block_1 : evolveHashlife 1 block = evolve 1 block := by native_decide
 
-/-- Hashlife and reference agree on `block` after 4 generations. -/
+/-- Hashlife et reference sont d'accord sur `block` apres 4 generations. -/
 theorem hashlife_block_4 : evolveHashlife 4 block = evolve 4 block := by native_decide
 
-/-- Hashlife and reference agree on `blinker_h` after 2 generations. -/
+/-- Hashlife et reference sont d'accord sur `blinker_h` apres 2 generations. -/
 theorem hashlife_blinker_2 : evolveHashlife 2 blinker_h = evolve 2 blinker_h := by native_decide
 
-/-- Hashlife and reference agree on `glider` after 4 generations. -/
+/-- Hashlife et reference sont d'accord sur `glider` apres 4 generations. -/
 theorem hashlife_glider_4 : evolveHashlife 4 glider = evolve 4 glider := by native_decide
 
-/-- Hashlife and reference agree on `beacon` after 2 generations. -/
+/-- Hashlife et reference sont d'accord sur `beacon` apres 2 generations. -/
 theorem hashlife_beacon_2 : evolveHashlife 2 beacon = evolve 2 beacon := by native_decide
 
-/-- Hashlife and reference agree on `toad` after 2 generations. -/
+/-- Hashlife et reference sont d'accord sur `toad` apres 2 generations. -/
 theorem hashlife_toad_2 : evolveHashlife 2 toad = evolve 2 toad := by native_decide
 
-/-! ## Section 2: Eater 1 (Fishhook) — the simplest computational sink
+/-! ## Section 2 : Eater 1 (Fishhook) — le puits de calcul le plus simple
 
-The **eater 1** (also called "fishhook") is a 7-cell still life discovered
-by members of Conway's group at Cambridge in 1971. It is the canonical
-signal-absorbing primitive in Life-as-Computation constructions: its
-boundary "swallows" incoming gliders within ~4 generations, returning to
-its original form.
+L'**eater 1** (aussi appele « fishhook » / hamecon) est une vie stable de
+7 cellules decouverte par les membres du groupe de Conway a Cambridge en
+1971. C'est le primitif canonique d'absorption de signal dans les
+constructions Life-as-Computation : sa frontiere « avale » les gliders
+entrants en ~4 generations, revenant a sa forme originale.
 
-In Spartan logic (Rendell 2000, Goucher 2014), eaters serve as:
-- Signal sinks at gate outputs
-- Boundary stabilisers in metapixel construction
-- Absorbers at wire terminations
+Dans la logique spartiate (Rendell 2000, Goucher 2014), les eaters servent
+de :
+- Puits de signal aux sorties de portes
+- Stabilisateurs de frontiere dans la construction des metapixels
+- Absorbeurs aux terminaisons de fils
 
-Coordinate layout (top-left = (0,0)):
+Disposition des coordonnees (haut-gauche = (0,0)) :
 ```
 XX..
 X.X.
@@ -77,7 +90,7 @@ X.X.
 ```
 -/
 
-/-- The **eater 1** (fishhook), a 7-cell still life. -/
+/-- L'**eater 1** (fishhook), une vie stable de 7 cellules. -/
 def eater1 : Grid :=
   [(0, 0), (0, 1),
    (1, 0), (1, 2),
@@ -88,60 +101,62 @@ def eater1 : Grid :=
 #eval s!"step(eater1) = {step eater1}"
 #eval s!"isStillLife eater1 = {isStillLife eater1}"
 
-/-- The eater 1 is a still life. -/
+/-- L'eater 1 est une vie stable. -/
 theorem eater1_still_life : isStillLife eater1 = true := by native_decide
 
-/-! ## Section 3: Glider composition via multi-period evolution
+/-! ## Section 3 : composition de gliders par evolution multi-periode
 
-The glider has period 4 and displacement `(1, -1)` per period. After
-`4 * k` generations, it should equal `shift (k, -k) glider`. This
-multi-period composition is the basis of signal propagation along
-glider wires.
+Le glider a une periode 4 et un deplacement de `(1, -1)` par periode. Apres
+`4 * k` generations, il doit etre egal a `shift (k, -k) glider`. Cette
+composition multi-periode est la base de la propagation des signaux le long
+des fils de gliders.
 
-We verify for k = 1 (already in Life.lean), k = 2, and k = 3.
-The k = 2 case (8 generations) also verifies via `evolveHashlife`.
+On verifie pour k = 1 (deja dans Life.lean), k = 2 et k = 3.
+Le cas k = 2 (8 generations) se verifie aussi via `evolveHashlife`.
 -/
 
-/-- After 8 generations (2 periods), the glider has shifted by (2, -2). -/
+/-- Apres 8 generations (2 periodes), le glider s'est deplace de (2, -2). -/
 theorem glider_2periods : evolve 8 glider = shift (2, -2) glider := by native_decide
 
-/-- After 12 generations (3 periods), the glider has shifted by (3, -3). -/
+/-- Apres 12 generations (3 periodes), le glider s'est deplace de (3, -3). -/
 theorem glider_3periods : evolve 12 glider = shift (3, -3) glider := by native_decide
 
-/-- Hashlife and reference agree on glider after 8 generations (2 periods). -/
+/-- Hashlife et reference sont d'accord sur le glider apres 8 generations (2 periodes). -/
 theorem hashlife_glider_8 : evolveHashlife 8 glider = evolve 8 glider := by native_decide
 
-/-! ## Section 4: MacroCell round-trip verification
+/-! ## Section 4 : verification de l'aller-retour MacroCell
 
-Structural sanity check: the `Grid → MacroCell → Grid` round-trip
-preserves live cells for canonical patterns. This verifies the quadtree
-encoding/decoding at the MacroCell layer (independent of step/evolve).
+Verification structurelle : l'aller-retour `Grid → MacroCell → Grid`
+preserve les cellules vivantes pour les patterns canoniques. Cela verifie
+l'encodage/decodage du quadtree a la couche MacroCell (independamment de
+step/evolve).
 -/
 
-/-- Block survives the MacroCell round-trip. -/
+/-- Le block survive a l'aller-retour MacroCell. -/
 theorem block_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset block
      mc.toGrid off == block) = true := by native_decide
 
-/-- Glider survives the MacroCell round-trip. -/
+/-- Le glider survive a l'aller-retour MacroCell. -/
 theorem glider_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset glider
      mc.toGrid off == glider) = true := by native_decide
 
-/-- Eater 1 survives the MacroCell round-trip. -/
+/-- L'eater 1 survive a l'aller-retour MacroCell. -/
 theorem eater1_macrocell_roundtrip :
     (let (off, mc) := gridToMacroCellWithOffset eater1
      mc.toGrid off == eater1) = true := by native_decide
 
-/-! ## Section 5: Diagnostic #eval witnesses
+/-! ## Section 5 : temoins diagnostiques #eval
 
-Larger computational witnesses verified by `#eval` (kernel evaluation)
-rather than `native_decide` (kernel reduction). These demonstrate that
-the Hashlife pipeline works on larger inputs and multi-step evolutions.
+Temoins de calcul plus grands verifies par `#eval` (evaluation par le noyau)
+plutot que par `native_decide` (reduction par le noyau). Ils demontrent que
+le pipeline Hashlife fonctionne sur des entrees plus grandes et des
+evolutions multi-etapes.
 -/
 
--- Glider meets eater: after 8 steps, the combined configuration evolves
--- (no claim about exact absorption — that depends on precise geometry).
+-- Le glider rencontre l'eater : apres 8 etapes, la configuration combinee evolue
+-- (aucune affirmation sur l'absorption exacte — cela depend de la geometrie precise).
 def glider_meets_eater : Grid :=
   sortDedup (glider ++ (eater1.map (fun p => (p.1, p.2 + 6))))
 
@@ -149,46 +164,46 @@ def glider_meets_eater : Grid :=
 #eval s!"After 4 steps: {(evolve 4 glider_meets_eater).length} cells"
 #eval s!"After 8 steps: {(evolve 8 glider_meets_eater).length} cells"
 
--- Cross-check: Hashlife vs reference on multi-step glider
+-- Controle croise : Hashlife vs reference sur le glider multi-etapes
 #eval evolveHashlife 0 glider == glider
 #eval evolveHashlife 1 glider == evolve 1 glider
 #eval evolveHashlife 4 glider == evolve 4 glider
 #eval evolveHashlife 8 glider == evolve 8 glider
 
--- Hashlife on the eater (still life = no change at every step)
+-- Hashlife sur l'eater (vie stable = aucun changement a chaque etape)
 #eval evolveHashlife 10 eater1 == eater1
 
-/-! ## Section 6: Exponential-speedup Hashlife validation
+/-! ## Section 6 : validation de l'acceleration exponentielle Hashlife
 
-`evolveHashlifeFast` uses the recursive Hashlife algorithm to jump
-forward by `2^level` generations in a single MacroCell step. These
-theorems verify correctness of the fast path against the reference
-`evolve` for canonical patterns. -/
+`evolveHashlifeFast` utilise l'algorithme recursif Hashlife pour avancer
+de `2^level` generations en une seule etape MacroCell. Ces theoremes
+verifient la correction du chemin rapide face a la reference `evolve` pour
+les patterns canoniques. -/
 
-/-- `evolveHashlifeFast` agrees with reference on block after 4 gens. -/
+/-- `evolveHashlifeFast` coincide avec la reference sur `block` apres 4 generations. -/
 theorem hashlife_fast_block_4 : evolveHashlifeFast 4 block = evolve 4 block := by native_decide
 
-/-- `evolveHashlifeFast` agrees with reference on glider after 4 gens. -/
+/-- `evolveHashlifeFast` coincide avec la reference sur le glider apres 4 generations. -/
 theorem hashlife_fast_glider_4 : evolveHashlifeFast 4 glider = evolve 4 glider := by native_decide
 
-/-- `evolveHashlifeFast` agrees with reference on glider after 8 gens
-    (2 full periods, displacement (2, -2)). -/
+/-- `evolveHashlifeFast` coincide avec la reference sur le glider apres 8 generations
+    (2 periodes completes, deplacement (2, -2)). -/
 theorem hashlife_fast_glider_8 : evolveHashlifeFast 8 glider = shift (2, -2) glider := by native_decide
 
-/-- `evolveHashlifeFast` agrees with reference on blinker after 2 gens. -/
+/-- `evolveHashlifeFast` coincide avec la reference sur `blinker` apres 2 generations. -/
 theorem hashlife_fast_blinker_2 : evolveHashlifeFast 2 blinker_h = evolve 2 blinker_h := by native_decide
 
-/-- `evolveHashlifeFast` agrees with reference on beacon after 2 gens. -/
+/-- `evolveHashlifeFast` coincide avec la reference sur `beacon` apres 2 generations. -/
 theorem hashlife_fast_beacon_2 : evolveHashlifeFast 2 beacon = evolve 2 beacon := by native_decide
 
-/-- `evolveHashlifeFast` agrees with reference on toad after 2 gens. -/
+/-- `evolveHashlifeFast` coincide avec la reference sur `toad` apres 2 generations. -/
 theorem hashlife_fast_toad_2 : evolveHashlifeFast 2 toad = evolve 2 toad := by native_decide
 
--- #eval witnesses for larger jumps (validates the recursive path)
+-- temoins #eval pour les sauts plus grands (valide le chemin recursif)
 #eval evolveHashlifeFast 16 block == evolve 16 block
 #eval evolveHashlifeFast 12 glider == shift (3, -3) glider
-#eval evolveHashlifeFast 4 blinker_h == blinker_h  -- period 2, 4 = 2 periods
-#eval evolveHashlifeFast 10 eater1 == eater1  -- still life
+#eval evolveHashlifeFast 4 blinker_h == blinker_h  -- periode 2, 4 = 2 periodes
+#eval evolveHashlifeFast 10 eater1 == eater1  -- vie stable
 
 end Life
 end Conway

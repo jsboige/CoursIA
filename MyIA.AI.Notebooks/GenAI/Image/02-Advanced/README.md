@@ -60,13 +60,13 @@ pip install -r requirements-comfyui.txt
 - **VRAM** : ~29GB (VAE 16 canaux)
 
 <p align="center">
-  <a href="02-1-Qwen-Image-Edit-2509.ipynb"><img src="assets/readme/img2-qwen-edit.png" alt="Édition Qwen Image Edit — panorama avant/après" width="460"/></a><br>
-  <em>Sortie du notebook <a href="02-1-Qwen-Image-Edit-2509.ipynb">02-1</a> (cellule 17) : panorama avant/après d'une édition Qwen Image Edit.</em>
+  <a href="02-1-Qwen-Image-Edit-2509.ipynb"><img src="assets/readme/img2-qwen-edit.png" alt="Triptyque d'édition Qwen Image Edit — image originale d'intérieur de café (gauche), masque blanc flou (centre), zone d'édition marquée en rouge (droite)" width="460"/></a><br>
+  <em>Sortie du notebook <a href="02-1-Qwen-Image-Edit-2509.ipynb">02-1</a> (cellule 17) : triptyque d'édition Qwen Image Edit — image originale d'intérieur de café / masque blanc / zone d'édition marquée en rouge (workflow image-to-image avec masque d'inpainting).</em>
 </p>
 
 <p align="center">
-  <a href="02-1-Qwen-Image-Edit-2509.ipynb"><img src="assets/readme/img2-qwen-edit2.webp" alt="Édition Qwen — variante de prompt" width="320"/></a><br>
-  <em>Sortie du notebook <a href="02-1-Qwen-Image-Edit-2509.ipynb">02-1</a> (cellule 24) : variante d'édition avec un prompt différent.</em>
+  <a href="02-1-Qwen-Image-Edit-2509.ipynb"><img src="assets/readme/img2-qwen-edit2.webp" alt="Batch generation Qwen Image Edit — mosaïque 4 variations thématiques (cityscape futuriste au coucher de soleil / temple japonais en automne / récif corallien sous-marin / bibliothèque cosy avec chat)" width="320"/></a><br>
+  <em>Sortie du notebook <a href="02-1-Qwen-Image-Edit-2509.ipynb">02-1</a> (cellule 24) : batch generation Qwen Image Edit — mosaïque 4 variations thématiques (cityscape / temple / récif / bibliothèque) sur 4 domaines visuels distincts.</em>
 </p>
 
 ### FLUX 1
@@ -75,9 +75,9 @@ pip install -r requirements-comfyui.txt
 - **VRAM** : Variable
 
 <p align="center">
-  <a href="02-2-FLUX-1-Advanced-Generation.ipynb"><img src="assets/readme/img2-flux-gen.webp" alt="Génération FLUX-1 — image photoréaliste" width="340"/></a>
-  <a href="02-2-FLUX-1-Advanced-Generation.ipynb"><img src="assets/readme/img2-flux-gen2.png" alt="Génération FLUX-1 — composition alternative" width="300"/></a><br>
-  <em>Sorties du notebook <a href="02-2-FLUX-1-Advanced-Generation.ipynb">02-2</a> : génération FLUX-1 photoréaliste (gauche, cellule 9) et composition alternative (droite, cellule 15).</em>
+  <a href="02-2-FLUX-1-Advanced-Generation.ipynb"><img src="assets/readme/img2-flux-gen.webp" alt="Jardin zen japonais au coucher de soleil (cerisier en fleurs sakura, sable ratissé en motifs concentriques, mousses vert-vif, pierres plates) — génération FLUX.1-schnell en 4 steps" width="340"/></a>
+  <a href="02-2-FLUX-1-Advanced-Generation.ipynb"><img src="assets/readme/img2-flux-gen2.png" alt="Comparatif de ratios d'aspect FLUX-1 — même coucher de soleil sur palmiers rendu en 4 ratios (1:1 carré, 16:9 paysage, 9:16 portrait, 4:3 standard)" width="300"/></a><br>
+  <em>Sorties du notebook <a href="02-2-FLUX-1-Advanced-Generation.ipynb">02-2</a> : jardin zen japonais au coucher de soleil (gauche, FLUX.1-schnell 4 steps, cellule 9) et comparatif de ratios d'aspect 4 cellules sur coucher de soleil tropical (droite, cellule 15).</em>
 </p>
 
 ### Stable Diffusion 3.5
@@ -91,8 +91,8 @@ pip install -r requirements-comfyui.txt
 - **VRAM** : ~10GB
 
 <p align="center">
-  <a href="02-4-Z-Image-Lumina2.ipynb"><img src="assets/readme/img2-zimage-lumina.webp" alt="Génération Z-Image/Lumina2 — prototypage rapide" width="320"/></a><br>
-  <em>Sortie du notebook <a href="02-4-Z-Image-Lumina2.ipynb">02-4</a> (cellule 11) : génération Z-Image/Lumina2 — prototypage rapide pour itérer sur un prompt.</em>
+  <a href="02-4-Z-Image-Lumina2.ipynb"><img src="assets/readme/img2-zimage-lumina.webp" alt="Samouraï robotique en armure traditionnelle japonaise (kabuto à cornes) debout dans une ruelle cyberpunk nocturne ruisselante de pluie, enseignes néon rose/magenta — rendu cinématographique Z-Image" width="320"/></a><br>
+  <em>Sortie du notebook <a href="02-4-Z-Image-Lumina2.ipynb">02-4</a> (cellule 11) : samouraï robotique en armure traditionnelle dans ruelle cyberpunk aux néons rose/magenta (rendu cinématographique Z-Image, prototypage rapide pour itérer sur un prompt).</em>
 </p>
 
 ### Bonsai-Image 4B (Ternary 1.58-bit)

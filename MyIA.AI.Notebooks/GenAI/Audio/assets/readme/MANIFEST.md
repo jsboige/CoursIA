@@ -1,6 +1,7 @@
 # MANIFEST des figures README
 
 Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks).
+**Audit G.1 c.481 (2026-07-14, doctrine #5780)** : swap audio3↔audio5 corrige le mismatch de contenu (les PNG assignés à ces deux slots ne correspondaient pas à leurs alt-texts respectifs). Le PNG « comparaison multi-modèles » (2 barplots kokoro/openai-tts-1) est désormais sous `audio5-multimodel.png` ; le PNG « caractéristiques audio extraites » (4 courbes librosa) est désormais sous `audio3-stt-tts.png`.
 
 ## audio1-waveform.png
 
@@ -14,14 +15,14 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 - **Source** : notebook `01-Foundation/01-3-Basic-Audio-Operations.ipynb` (cellule 20, output 3)
 - **Alt-text (FR)** : Spectrogramme et MFCC : décomposition temps-fréquence du signal pour la reconnaissance vocale.
 - **Poids** : 75.8 KB (natif)
-- **G.1 firsthand (2026-07-10)** : DÉCLASSÉ (#5780) — l'image montre 2 barplots "Latence/Taille audio par modèle et type de texte" (kokoro vs openai/tts-1, type dialogue/monologue/narration), pas un spectrogramme. Contenu ≠ intitulé. Voir README "Aperçu" pour la figure de remplacement.
+- **G.1 firsthand (2026-07-14, c.481)** : **VRAI** (correction c.481) — 3 heatmaps MFCC authentiques (MFCC + Delta vitesse + Delta-Delta accélération), échelle −400 à +200, axe temps 0–10 s. Le DÉCLASSÉ catalogué en 2026-07-10 était une erreur d'audit : le contenu décrit alors (« 2 barplots Latence/Taille kokoro vs openai/tts-1 ») correspond en fait au PNG actuel de `audio5-multimodel.png` (après swap c.481).
 
 ## audio3-stt-tts.png
 
 - **Source** : notebook `01-Foundation/01-3-Basic-Audio-Operations.ipynb` (cellule 28, output 2)
 - **Alt-text (FR)** : Reconnaissance (STT) et synthèse (TTS) : transcription et génération vocale appliquées au même flux.
-- **Poids** : 163.8 KB (natif)
-- **G.1 firsthand (2026-07-10)** : PARTIEL — grille 2×2 matplotlib avec barplot STT (large-v3-turbo, latence 0.47 s) côté supérieur gauche ; les 3 autres sous-figures portent la mention "Pas de resultats TTS" (TTS échoué en environnement de test). Seul STT est validé. Voir README "Aperçu" pour la mention honnête.
+- **Poids** : 92.1 KB (natif) — *avant c.481 : 163.8 KB ; après swap audio3↔audio5, le PNG 92.1 KB « Caractéristiques audio extraites » est désormais sous ce nom.*
+- **G.1 firsthand (2026-07-14, c.481)** : **DÉCLASSÉ** (contenu ≠ intitulé, le titre « STT/TTS » est trompeur) — 4 courbes librosa d'analyse spectrale d'un seul échantillon audio : Spectral Centroid (Hz 0–8000), Spectral Bandwidth (Hz 1000–3500), RMS Energy (Amplitude 0–0.15), Zero-Crossing Rate (Rate 0–0.6), axe temps 0–12 s. L'audit 2026-07-10 avait correctement catalogué le contenu, mais sous le mauvais slot (`audio5-multimodel` à l'époque).
 
 ## audio4-demucs.png
 
@@ -34,8 +35,8 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 - **Source** : notebook `03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb` (cellule 29, output 1)
 - **Alt-text (FR)** : Comparaison de modèles audio : plusieurs voies STT/TTS évaluées côte à côte dans un pipeline.
-- **Poids** : 92.1 KB (downscale max-dim 1200, source 1379×855)
-- **G.1 firsthand (2026-07-10)** : DÉCLASSÉ (#5780) — l'image montre 4 courbes librosa sur un seul échantillon audio (Spectral Centroid, Bandwidth, RMS Energy, Zero-Crossing Rate), pas une comparaison multi-modèles. Contenu ≠ intitulé. Voir README "Aperçu" pour la figure de remplacement.
+- **Poids** : 163.8 KB (natif) — *avant c.481 : 92.1 KB ; après swap audio3↔audio5, le PNG 163.8 KB « barplots Latence + Taille » est désormais sous ce nom.*
+- **G.1 firsthand (2026-07-14, c.481)** : **VRAI TTS-only** (correction c.481) — 2 barplots matplotlib authentiques, axe log-latence ms 3·10³–4·10³, axe taille KB 0–350, légende Type (dialogue/monologue/narration), modèles kokoro vs openai/tts-1. Le scope est TTS-côté-serveur uniquement (pas de volet STT dans la même figure, contrairement au titre « STT/TTS multi-voies »).
 
 ## audio6-tts-benchmark.png
 
