@@ -1,50 +1,52 @@
 /-
-Copyright (c) 2026 CoursIA. Tous droits reserves.
-Distribue sous licence Apache 2.0 comme decrit dans le fichier LICENSE.
+Copyright (c) 2026 CoursIA. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
 
-## Jeu de la Vie de Conway — Fondations Phase 1
+## Conway's Game of Life — Phase 1 foundations
 
-John Horton Conway (1937-2020) a invente le Jeu de la Vie en 1970 en
-collaboration avec les etudiants gradues de Cambridge Michael Guy et autres.
-Un automate cellulaire sur le plan entier avec la celebre regle B3/S23.
-Malgre son extreme simplicite, la regle supporte le calcul universel
-(Conway 1982 ; Rendell 2000) et l'auto-replication (Wade 2010 — Gemini).
+John Horton Conway (1937-2020) invented the Game of Life in 1970 in
+collaboration with the Cambridge graduate students Michael Guy and others.
+A cellular automaton on the integer plane with the celebrated B3/S23 rule.
+Despite extreme simplicity, the rule supports universal computation
+(Conway 1982; Rendell 2000) and self-replication (Wade 2010 — Gemini).
 
-Ce fichier est le module **FONDATIONS** de l'hommage Phase 2 (Epic #1647) :
-- Etat du jeu encode comme `List (Int x Int)` de cellules vivantes (tri, unique)
-- Fonction `step` implementant la regle B3/S23 via operations sur listes
-- Iterateur `evolve`
-- Predicats `IsStillLife`, `IsOscillator`, `IsSpaceship`
-- Temoins pour les patterns canoniques petits
+This file is the FOUNDATIONS module of the Phase 2 tribute (Epic #1647):
+- Game state encoded as a `List (Int × Int)` of live cells (sorted, unique)
+- Step function implementing the B3/S23 rule via list operations
+- Iterated `evolve`
+- Predicates `IsStillLife`, `IsOscillator`, `IsSpaceship`
+- Witnesses for the canonical small patterns
   (block, beehive, blinker, toad, beacon, glider)
-- Micro-preuves verifiables par `native_decide` sur egalite de liste
+- Microproofs verifiable by `native_decide` on list equality
 
-La representation par liste evite le goulot d'etranglement `Quot.lift` /
-`Eq.rec` qui survient quand le noyau Lean essaie de decider l'egalite de
-`Finset` construite via `image`/`biUnion`/`filter` sur `Int x Int`. L'egalite
-de liste se reduit a une comparaison structurelle cons-par-cons, que le
-noyau et le generateur de code natif traitent efficacement.
+The list representation avoids the `Quot.lift` / `Eq.rec` bottleneck
+that arises when Lean's kernel tries to decide `Finset` equality
+constructed via `image`/`biUnion`/`filter` on `Int × Int`. List
+equality reduces to cons-by-cons structural comparison, which the
+kernel and native code generator handle efficiently.
 
-L'optimisation hashlife (Gosper 1984), le parser RLE et les trois piliers
-communautaires (Gemini, OTCA Metapixel, ordinateur 8 bits de Carlini) sont
-differes aux Phases 2 a 9 de l'Epic #1647.
+The hashlife optimisation (Gosper 1984), the RLE parser, and the three
+community pillars (Gemini, OTCA Metapixel, Carlini 8-bit computer) are
+deferred to Phases 2 to 9 of Epic #1647.
 
-Ce module est entierement prouve (aucun gap).
+This module is fully proven (no gaps).
 -/
 
 import Mathlib.Tactic
 
+
 /-
-  Convention i18n (EPIC #4980, decision user 2026-07-04) : ce fichier est **FR canonique**,
-  avec son miroir anglais dans le fichier sibling `Life_en.lean` (modele sibling pair
-  ratifie 2026-07-04, cf `code-style.md` §Lean i18n). Les enonces de theoremes,
-  les tactiques Lean, les noms de lemmes et les references Mathlib restent en anglais
-  (compat Mathlib 4) ; seules les docstrings de module et ce bloc d'en-tete different
-  entre les deux fichiers.
+  English mirror of `Life.lean` (FR canonical). Convention EPIC #4980
+  (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n): distinct FR + EN sibling
+  files — no inline bilingual block in a single file (Option B rejected). The module
+  docstring and the public theorem docstrings below differ from the FR version; the body
+  signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
-namespace Conway
-namespace Life
+namespace Conway_en
+open Conway
+namespace Life_en
+open Life
 
 /-! ## Basic types
 
@@ -229,5 +231,5 @@ theorem beacon_period_two : isOscillator beacon 2 = true := by native_decide
 /-- The Glider is a spaceship of period 4, displacement `(1, -1)`. -/
 theorem glider_spaceship : isSpaceship glider 4 (1, -1) = true := by native_decide
 
-end Life
-end Conway
+end Life_en
+end Conway_en
