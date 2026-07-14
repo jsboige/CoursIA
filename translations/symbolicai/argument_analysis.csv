@@ -5225,46 +5225,48 @@ sortie executee honnete - c'est precisement ce que la sentinelle est faite pour 
 
 - Issue #2137 - distillation de l'essence consolidee (doctrine anti-theatre / fail-loud).
 ",,,,,,,,02e0c4714bc24fca,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-0,markdown,fr,7c2d32b12d614b16,"# Ontologie AIF.owl -- l'architecture Argumentum des sophismes (OWL2 + SKOS)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-0,markdown,fr,3b000cfe0be66713,"# Ontologie AIF.owl -- l'architecture Argumentum des sophismes (OWL2 + annotation-space)
 
 > **EPIC #4960 -- Volet A, etape 1** (socle ontologique Argument_Analysis). Issue source : [#5721](https://github.com/jsboige/CoursIA/issues/5721).
-> **Prerequis** : `Argument_Analysis_ArgumentProfile.ipynb` (presentation de la serie), notions de RDF/XML et OWL2.
-> **Duree estimee** : 35 minutes (lecture + execution).
-> **Objectifs d'apprentissage** :
-> 1. Charger une ontologie **OWL2/XML** mal formee (37 axiom wrappers sans `onProperty`) via un parseur regex tolérant.
-> 2. Distinguer dans Argumentum : **NamedIndividual** (les sophismes), **ObjectProperty** (les relations), **AnnotationAssertion** (les labels multilingues).
-> 3. Identifier les **schemes d'argumentation de Walton** (Position to Know, Sign, Rule, Cause to Effect) dans les labels de la taxonomie.
-> 4. Cartographier les **ObjectProperty** declares (4 338) et les **ObjectPropertyAssertion** (4 183 triplets concrets).
-> 5. Construire le sous-graphe autour du sophisme **Equivoque** (`semanticAmbiguity`).
 
-## Table des matieres
+> **⚠️ Re-fondation 2026-07-10 (Argumentum PR #763)** — le generateur OWL des Fallacies a change d'idiome. Les concepts ne sont plus des `NamedIndividual` mais des **`owl:Class`**, et **toutes** les relations (hierarchie SKOS, crossLink, AIF attack) sont serialisees en **`AnnotationAssertion`** (`SKOSHelper` d'OWLSharp etant casse sur cette version). Ce notebook a ete re-fonde en consequence : le parseur regex tolerant reste la bonne approche (rdflib et owlready2 echouent toujours), mais **les structures extraites changent**.
 
-1. Contexte : Argumentum et l'ontologie OWL2
-2. Charger l'ontologie : regex tolérant (rdflib echoue)
-3. Structure : NamedIndividual + ObjectProperty + AnnotationAssertion
-4. Schemes de Walton : recherche dans les labels
-5. Relations ObjectProperty : inventaire
-6. Grappe Equivoque : sous-graphe du sophisme
-7. Exercices (3 exercices formels, regle #2161)
-8. Ponts avec la serie
-9. Conclusion et note d'honnetete",,,,,,,,7c2d32b12d614b16,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-1,markdown,fr,101fd3117a8619d6,"## 1. Contexte : Argumentum et l'ontologie OWL2
+Ce notebook explore `ontologies/argumentum_fallacies.owl` (OWL2/XML, ~6,0 MB) et en extrait la structure sans passer par un parseur RDF strict.
 
-L'ontologie **Argumentum** (https://www.argumentum.games) encode une taxonomie des sophismes (fallacies) et des vertus argumentatives a destination du jeu serieux *Argumentum*. Elle est livree sous deux formes :
+**Objectifs d'apprentissage** :
 
-- **OWL2/XML** (`ontologies/argumentum_fallacies.owl`, 4,7 MB) : representation formelle en **Web Ontology Language** version 2.
-- **CSV taxonomiques** (dans le submodule Argumentum, hors-repo) : representation plate avec 8 colonnes `crossLink_*` encodant des relations inter-noeuds.
+1. Charger l'OWL2/XML via un **parseur regex tolerant** et comprendre *pourquoi* rdflib/owlready2 echouent sur ce dialecte.
+2. Compter la structure du **nouvel idiome annotation-space** : **1509 concepts `owl:Class`** (+ 4 classes AIF RA/I/CA-node + Conflict), **10 `ObjectProperty`**, **18 284 `AnnotationAssertion`** (7 773 resource + 10 511 literal).
+3. Extraire les **labels multilingues** (`skos:prefLabel`, 2 816 = 1 408 FR + 1 408 EN) et reperer les **schemes de Walton** (100 classes de forme `*_Inference_*` materialisees depuis les mappings AIF_skos).
+4. Inventorier les **relations** (AnnotationAssertion-resource) : hierarchie (`broader`/`narrower`/`inScheme`), **crossLink** (`mirrors`/`isRelatedTo`/`leverages`/… = 1 977) et **AIF attack** (`aifAttackedNode` = 93 → RA/I/CA-node).
+5. Construire le **sous-graphe de l'Equivoque** (`semanticAmbiguity`) et montrer qu'il est desormais **type par AIF** (`aifAttackedNode → RA-node`).
+6. Trois exercices formels (regle #2161).
 
-L'OWL2/XML utilise le pattern classique du **Web semantique** :
-- **`<NamedIndividual>`** = un sophisme specifique (ex. `semanticAmbiguity`, `appealToIgnorance`).
-- **`<ObjectProperty>`** / **`<DataProperty>`** = proprietes reliant les individus entre eux.
-- **`<AnnotationAssertion>`** = metadonnees (labels multilingues, commentaires, exemples).
-- **`<ClassAssertion>`** = typage : declare qu'un individu est instance d'une classe.
-- **`<ObjectPropertyAssertion>`** = triplet concret : relie deux individus par une propriete.
+**Sommaire** :
 
-**Note d'avertissement** : l'OWL exporte par Argumentum upstream contient **37 axiom wrappers structurellement invalides** (`<DataExactCardinality>` et `<ObjectExactCardinality>` sans `onProperty`/`onClass`/`onDataRange`). Les parseurs stricts comme `rdflib` RDF/XML et `owlready2.named_graph` echouent. Nous utilisons un parseur regex maison qui extrait uniquement les constructions valides (NamedIndividual, ObjectProperty, AnnotationAssertion, etc.).",,,,,,,,101fd3117a8619d6,,,,,,,
+1. Contexte : Argumentum, OWL2 et l'idiome annotation-space (#763)
+2. Charger l'ontologie : regex tolerant (rdflib echoue)
+3. Structure : Class + ObjectProperty + AnnotationAssertion
+4. Schemes de Walton (100 classes materialisees + labels)
+5. Relations : inventaire des AnnotationAssertion-resource (crossLink + AIF)
+6. Grappe Equivoque : sous-graphe type AIF
+7. Exercices
+8. Ponts avec la serie",,,,,,,,3b000cfe0be66713,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-1,markdown,fr,5078fa4ea1b809ab,"## 1. Contexte : Argumentum, OWL2 et l'idiome annotation-space (#763)
+
+L'ontologie **Argumentum** (https://www.argumentum.games) encode une taxonomie des sophismes (fallacies) et des vertus argumentatives a destination du jeu serieux *Argumentum*. Le fichier `argumentum_fallacies.owl` est genere par le pipeline .NET (`OwlGeneratorConfig.cs`) a partir du CSV canonique.
+
+**Idiome du generateur (apres PR #763, mergee 2026-07-10)** :
+
+- Chaque sophisme est une **`owl:Class`** (`<Declaration><Class IRI=""…#semanticAmbiguity""/></Declaration>`) — et non plus un `NamedIndividual` comme dans l'ancien generateur. Le modele AIF (`RA-node`/`I-node`/`CA-node`/`Conflict`) apporte 4 classes supplementaires (namespace `arg.dundee.ac.uk/aif`).
+- **Toutes** les relations passent par **`AnnotationAssertion`** : `SKOSHelper` d'OWLSharp est casse sur cette version, donc le generateur emet la hierarchie SKOS (`broader`/`narrower`/`inScheme`), les 8 verbes **crossLink** et les 2 colonnes **AIF attack** comme des annotations (resource pour un lien concept→concept, literal pour une valeur textuelle).
+- Les IRI sont serialises en **forme complete** (`IRI=""…""`), plus en `abbreviatedIRI=""skos:prefLabel""` — d'ou la reecriture des regex de ce notebook.
+
+**Pourquoi un parseur regex ?** rdflib echoue au parse (dialecte OWL2/XML + annotations resource non standard) et owlready2 charge le fichier mais **n'expose 0 classe** via son API Python. Le parseur regex tolerant reste le chemin fiable pour extraire la structure — c'est l'objet pedagogique de ce notebook.
+
+> Le notebook frere `Argument_Analysis_Ontology_CrossLinks.ipynb` (PR-B) lit le **CSV canonique** ; les deux substances (OWL et CSV) ont ete **reconciliees par #763** (crossLink + AIF desormais emis dans l'OWL).",,,,,,,,5078fa4ea1b809ab,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-2,markdown,fr,2c9a7e015e1def62,## 2. Charger l'ontologie : regex tolerant (rdflib echoue),,,,,,,,2c9a7e015e1def62,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-3,code,fr,ecc6036b36f3fb4f,"# --- Imports + parseur regex maison de l'OWL2/XML ---
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-3,code,fr,e62b7f000f47ebb4,"# --- Imports + parseur regex maison de l'OWL2/XML ---
 from pathlib import Path
 import re
 
@@ -5273,271 +5275,212 @@ print(f""Chargement de : {OWL_PATH}"")
 print(f""Existe : {OWL_PATH.exists()} (taille = {OWL_PATH.stat().st_size:,} octets)"")
 
 owl_text = OWL_PATH.read_text(encoding=""utf-8"")
-print(f""Longueur du texte : {len(owl_text):,} caracteres"")
+print(f""Longueur du texte : {len(owl_text):,} caracteres, {owl_text.count(chr(10)) + 1:,} lignes"")
 
-# Verifier la presence des 37 axiom casses (DataExactCardinality / ObjectExactCardinality)
-n_data_exact = len(re.findall(r""<DataExactCardinality"", owl_text))
+# Axiomes de cardinalite : desormais bien formes (avec onProperty) -- ils ne sont
+# plus le point de rupture (l'ancien OWL avait 37 axiom sans onProperty ligne ~4090).
 n_obj_exact = len(re.findall(r""<ObjectExactCardinality"", owl_text))
-print(f""\nAxiom casses detectes (manque onProperty/onClass) :"")
-print(f""  DataExactCardinality  : {n_data_exact}"")
-print(f""  ObjectExactCardinality: {n_obj_exact}"")
-print(f""  Total                 : {n_data_exact + n_obj_exact} (tous mal formes selon rdflib)"")
+n_data_exact = len(re.findall(r""<DataExactCardinality"", owl_text))
+print(f""\nCardinalite : ObjectExactCardinality={n_obj_exact}, DataExactCardinality={n_data_exact} (bien formes)."")
 
-# Ces 37 axiom sont ignores par notre parseur regex (qui n'en a pas besoin).
-print(""\nParseur regex tolérant : on extrait les constructions valides uniquement."")",,,,,,,,ecc6036b36f3fb4f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-4,markdown,fr,855ceb3ab05b9eeb,"**Lecture** : le fichier OWL pese 4,7 MB et contient 80 477 lignes. Les 37 axiom `Data/ObjectExactCardinality` sans `onProperty` font planter rdflib (ligne 4090 du fichier). Notre parseur regex ignore ces axiom et extrait directement les NamedIndividual, ObjectProperty et AnnotationAssertion qui sont les **constructions valides**.
+# Test rdflib : echoue toujours sur ce dialecte, mais pour une autre cause qu'avant #763.
+try:
+    import rdflib
+    try:
+        g = rdflib.Graph(); g.parse(str(OWL_PATH))
+        print(f""rdflib : OK inattendu ({len(g):,} triples)"")
+    except Exception as e:
+        print(f""rdflib : installe mais ECHEC au parse -> {type(e).__name__}: {str(e)[:80]}"")
+except ImportError:
+    print(""rdflib : non installe dans ce kernel (test skippe) -- historiquement il echoue sur ce dialecte."")
 
-Note : owlready2 peut charger le fichier (1,7 s) mais ne materialise aucun concept/individual via son API Python (`onto.classes()` retourne 0) ; il expose en revanche 63 349 triplets via son triplestore interne (SQLite). Pour les labels et les NamedIndividual, notre parseur regex extrait 2 608 labels -- un ordre de grandeur de plus que owlready2 n'expose dans ses structures Python.",,,,,,,,855ceb3ab05b9eeb,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-5,markdown,fr,72337336a00bd14c,"## 3. Structure : NamedIndividual + ObjectProperty + AnnotationAssertion
+print(""owlready2 : charge le fichier mais expose 0 classe via l'API Python (idiome annotation-space)."")
+print(""\n=> On conserve le parseur regex tolerant : chemin fiable pour extraire la structure."")",,,,,,,,e62b7f000f47ebb4,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-4,markdown,fr,8c52fe48b142ddc0,"**Lecture** : le fichier OWL pese ~6,0 MB (~96 800 lignes). Les axiomes `ObjectExactCardinality` (36) sont desormais **bien formes** (avec `onProperty`) — ce ne sont plus les « 37 axiom casses ligne 4090 » de l'ancien snapshot. Malgre cela, **rdflib echoue toujours** (autre cause : le dialecte OWL2/XML avec annotations-resource) et **owlready2 charge mais n'expose rien** via son API Python. Le parseur regex tolerant reste donc l'approche retenue : il extrait Class, ObjectProperty et AnnotationAssertion directement du XML, sans dependre d'un moteur RDF.",,,,,,,,8c52fe48b142ddc0,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-5,markdown,fr,dd57bc840d313ea0,"## 3. Structure : Class + ObjectProperty + AnnotationAssertion
 
-L'ontologie Argumentum est composee de trois couches emboitees :
+Depuis #763, l'ontologie Argumentum suit un idiome **annotation-space** :
 
-| Couche | Pattern OWL2 | Compte attendu | Role |
-|--------|--------------|----------------|------|
-| **Individus** | `<NamedIndividual>` | ~10 976 | Sophismes et concepts atomiques (le coeur de la taxonomie) |
-| **Proprietes** | `<ObjectProperty>` / `<DataProperty>` | ~4 338 | Relations entre individus ou vers des litteraux |
-| **Annotations** | `<AnnotationAssertion>` | ~9 846 | Labels multilingues, definitions, exemples |
-| **Typages** | `<ClassAssertion>` | ~1 305 | Lien : individu est instance d'une classe |
-| **Assertions** | `<ObjectPropertyAssertion>` | ~4 183 | Triplets concrets reliant 2 individus |
+| Couche | Pattern OWL2 | Compte | Role |
+|--------|--------------|--------|------|
+| Concepts | `Declaration/Class` | **1 509** (+ 4 AIF) | Un `owl:Class` par sophisme + RA/I/CA-node + Conflict |
+| Predicats | `Declaration/ObjectProperty` | **10** | 8 verbes crossLink + `hasConflictedElement` + `aifAttackedNode` |
+| Relations | `AnnotationAssertion` (resource) | **7 773** | hierarchie SKOS + crossLink + AIF attack (concept→concept) |
+| Annotations | `AnnotationAssertion` (literal) | **10 511** | labels, definitions, exemples, `aifAttackType`… |
 
-Le namespace AIF (`http://www.arg.dundee.ac.uk/aif#`) est **declare** dans l'ontologie (en tant que namespace et possiblement pour 1-3 proprietes) mais n'est **PAS utilise** pour typer les sophismes via `ClassAssertion`. Les sophismes Argumentum sont des `owl:NamedIndividual` directement, sans intermediaire AIF I-node/RA-node/CA-node.
+**Rupture avec l'ancien generateur** : `NamedIndividual`, `ClassAssertion` et `ObjectPropertyAssertion` ont **disparu** (0 occurrence). Là où l'ancien OWL materialisait chaque label multilingue comme un individu distinct (~10 976 `NamedIndividual`), le nouveau modele **1 `owl:Class` par sophisme** portant ses labels en annotations — d'ou la chute apparente du nombre de concepts (10 976 → 1 509), qui est en réalité une **normalisation** (plus de doublons par langue).
 
-Verifions ces comptes par parsing regex.",,,,,,,,72337336a00bd14c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-6,code,fr,edbfc6e14bb5a657,"# --- Comptage des NamedIndividual, ObjectProperty, ClassAssertion, etc. ---
-
-# Pattern pour NamedIndividual (incluant les declarations et les classes)
-named_individual_pattern = re.compile(
-    r'<NamedIndividual\s+(?:IRI|abbreviatedIRI)=""([^""]+)""\s*/>'
-)
-n_named_individuals = len(named_individual_pattern.findall(owl_text))
-print(f""Nombre de NamedIndividual : {n_named_individuals:,}"")
-
-# Pattern pour ObjectProperty + DataProperty declarations
-prop_pattern = re.compile(
-    r'<(Object|Data)Property\s+(?:IRI|abbreviatedIRI)=""([^""]+)""\s*/>'
-)
-prop_matches = prop_pattern.findall(owl_text)
-n_obj_prop = sum(1 for pt, _ in prop_matches if pt == ""Object"")
-n_data_prop = sum(1 for pt, _ in prop_matches if pt == ""Data"")
-print(f""Nombre de ObjectProperty : {n_obj_prop:,}"")
-print(f""Nombre de DataProperty   : {n_data_prop:,}"")
-
-# Pattern pour ClassAssertion
-class_assertion_pattern = re.compile(
-    r'<ClassAssertion[^>]*>\s*<Class\s+(?:IRI|abbreviatedIRI)=""([^""]+)""\s*/>\s*<NamedIndividual\s+(?:IRI|abbreviatedIRI)=""([^""]+)""\s*/>\s*</ClassAssertion>',
-    re.DOTALL
-)
-class_assertions = class_assertion_pattern.findall(owl_text)
-print(f""Nombre de ClassAssertion : {len(class_assertions):,}"")
-
-# Pattern pour ObjectPropertyAssertion
-opa_pattern = re.compile(
-    r'<ObjectPropertyAssertion[^>]*>\s*<ObjectProperty\s+(?:IRI|abbreviatedIRI)=""([^""]+)""\s*/>\s*<NamedIndividual\s+(?:IRI|abbreviatedIRI)=""([^""]+)""\s*/>\s*<NamedIndividual\s+(?:IRI|abbreviatedIRI)=""([^""]+)""\s*/>\s*</ObjectPropertyAssertion>',
-    re.DOTALL
-)
-opa_matches = opa_pattern.findall(owl_text)
-print(f""Nombre de ObjectPropertyAssertion : {len(opa_matches):,}"")
-
-# Pattern pour AnnotationAssertion
-annotation_pattern = re.compile(
-    r'<AnnotationAssertion\s*[^>]*>'
-)
-annotation_matches = annotation_pattern.findall(owl_text)
-print(f""Nombre de AnnotationAssertion : {len(annotation_matches):,}"")
-
-# Distribution des classes les plus utilisees dans ClassAssertion
+**Nouveaute #763** : l'AIF n'est plus seulement *declaree*, elle **type** les sophismes — 93 concepts portent `aifAttackedNode → RA/I/CA-node` (§5-6).",,,,,,,,dd57bc840d313ea0,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-6,code,fr,b6736124a2db51f4,"# --- Comptage de la structure : Class + ObjectProperty + AnnotationAssertion ---
 from collections import Counter
-class_counter = Counter(cls for cls, ind in class_assertions)
-print(f""\nTop 5 classes dans ClassAssertion :"")
-for cls, n in class_counter.most_common(5):
-    cls_local = cls.rstrip('#').split('#')[-1].split('/')[-1]
-    print(f""  {n:>5,}  {cls_local}"")
 
-# Garder les compteurs pour les sections suivantes.
-N_NAMED_INDIVIDUALS = n_named_individuals
-N_OBJ_PROP = n_obj_prop
-N_DATA_PROP = n_data_prop
-N_CLASS_ASSERTION = len(class_assertions)
-N_OPA = len(opa_matches)
-N_ANNOTATION = len(annotation_matches)",,,,,,,,edbfc6e14bb5a657,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-7,markdown,fr,4b0cd4afc5c982e2,"**Lecture** : les NamedIndividual (10 976) et ObjectProperty (4 338) forment le coeur de l'ontologie. Les 1 305 ClassAssertion et 4 183 ObjectPropertyAssertion sont les triplets concrets qui rendent la taxonomie navigable. A noter : `owl:NamedIndividual` et `owl:Thing` dominent les ClassAssertion, ce qui reflete une organisation plate (les sophismes sont des individus directement, sans hierarchie de classes intermediaires).",,,,,,,,4b0cd4afc5c982e2,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-8,markdown,fr,7d795d0adabc1909,"## 4. Schemes de Walton : recherche dans les labels
+# Concepts = Declaration/Class (le generateur #763 modelise 1 owl:Class par sophisme).
+class_decl_pattern = re.compile(r'<Declaration>\s*<Class IRI=""([^""]+)""\s*/>\s*</Declaration>')
+class_decls = class_decl_pattern.findall(owl_text)
+aif_classes = [c for c in class_decls if 'arg.dundee.ac.uk/aif' in c]
+arg_classes = [c for c in class_decls if 'argumentum_fallacies' in c]
+print(f""Declarations owl:Class : {len(class_decls):,}"")
+print(f""  - concepts Argumentum : {len(arg_classes):,}"")
+print(f""  - classes AIF : {len(aif_classes)}  {[c.split('#')[-1] for c in aif_classes]}"")
 
-Les **schemes d'argumentation** (Walton, Reed & Macagno 2008) sont des patterns d'inference reconnus en logique informelle. Quatre schemes sont cense etre representes dans la taxonomie Argumentum :
+# Predicats = Declaration/ObjectProperty (verbes crossLink + AIF).
+op_pattern = re.compile(r'<Declaration>\s*<ObjectProperty IRI=""([^""]+)""\s*/>\s*</Declaration>')
+obj_props = op_pattern.findall(owl_text)
+print(f""\nObjectProperty declarees : {len(obj_props)}"")
+print(f""  {[o.split('#')[-1] for o in obj_props]}"")
 
-| Scheme | Forme canonique | Exemple |
-|--------|-----------------|---------|
-| **Position to Know** | *X affirme p ; X est en position de savoir p ; donc p* | Temoin oculaire qui rapporte un accident |
-| **Sign** | *X est signe de Y ; donc Y* | Une fumee (signe) implique un feu |
-| **Rule** | *Si regle R alors cas C ; ici C ; donc R* | Application d'une loi a un cas concret |
-| **Cause to Effect** | *A cause B typiquement ; ici A ; donc B* | Pluie --> sol mouille |
+# Ancien idiome (individus) -- desormais ABSENT.
+n_named = len(re.findall(r'<NamedIndividual\s', owl_text))
+n_class_assertion = len(re.findall(r'<ClassAssertion', owl_text))
+n_opa = len(re.findall(r'<ObjectPropertyAssertion', owl_text))
+print(f""\nAncien idiome (individus), desormais absent :"")
+print(f""  NamedIndividual         : {n_named}"")
+print(f""  ClassAssertion          : {n_class_assertion}"")
+print(f""  ObjectPropertyAssertion : {n_opa}"")
 
-Verifions leur presence dans les labels fr/en de l'ontologie (parse par regex depuis les `AnnotationAssertion`).",,,,,,,,7d795d0adabc1909,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-9,code,fr,a25419b65e4c390d,"# --- Extraction des labels multilingues + recherche des schemes Walton ---
+# Relations = AnnotationAssertion (resource = concept->concept, literal = valeur textuelle).
+aa_resource = re.compile(
+    r'<AnnotationAssertion>\s*<AnnotationProperty IRI=""([^""]+)""\s*/>\s*<IRI>([^<]+)</IRI>\s*<IRI>([^<]+)</IRI>\s*</AnnotationAssertion>')
+aa_literal = re.compile(
+    r'<AnnotationAssertion>\s*<AnnotationProperty IRI=""([^""]+)""\s*/>\s*<IRI>([^<]+)</IRI>\s*<Literal(?:\s+[^>]*)?>([^<]*)</Literal>\s*</AnnotationAssertion>')
+AA_RES = aa_resource.findall(owl_text)   # (predicate_iri, subject_iri, object_iri)
+AA_LIT = aa_literal.findall(owl_text)    # (predicate_iri, subject_iri, literal_value)
+print(f""\nAnnotationAssertion : {len(AA_RES) + len(AA_LIT):,}  (resource={len(AA_RES):,}, literal={len(AA_LIT):,})"")
 
-# Pattern pour AnnotationAssertion avec label (skos:prefLabel / rdfs:label / skos:altLabel)
-label_pattern = re.compile(
-    r'<AnnotationAssertion[^>]*>\s*<AnnotationProperty\s+abbreviatedIRI=""(rdfs:label|skos:prefLabel|skos:altLabel)""\s*/>\s*<IRI>([^<]+)</IRI>\s*<Literal(?:\s+[^>]*)?>([^<]+)</Literal>\s*</AnnotationAssertion>',
-    re.DOTALL
-)
-label_matches = label_pattern.findall(owl_text)
-print(f""Total labels extraits : {len(label_matches):,}"")
+# Compteurs conserves pour les sections suivantes.
+N_CLASSES = len(class_decls)
+N_ARG_CLASSES = len(arg_classes)
+N_OBJ_PROP = len(obj_props)",,,,,,,,b6736124a2db51f4,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-7,markdown,fr,ebe5e00fda16c251,"**Lecture** : le coeur de l'ontologie est desormais fait de **1 509 `owl:Class`** (concepts Argumentum) + 4 classes AIF, relies par **7 773 `AnnotationAssertion`-resource** et decrits par **10 511 `AnnotationAssertion`-literal**. Les `NamedIndividual`/`ClassAssertion`/`ObjectPropertyAssertion` de l'ancien generateur sont a **0** : #763 a bascule d'un modele *individus + triplets ObjectProperty* vers un modele *classes + annotation-space*. Les 10 `ObjectProperty` declarees (8 verbes crossLink + `hasConflictedElement` + `aifAttackedNode`) sont *declarees* comme proprietes mais *emises* comme annotations (contrainte de l'adapter OWLSharp).",,,,,,,,ebe5e00fda16c251,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-8,markdown,fr,ead08f3602dcf5e4,"## 4. Schemes de Walton : classes materialisees + labels
 
-# Detecter la langue via l'attribut xml:lang si present
-lang_pattern = re.compile(
-    r'<AnnotationAssertion[^>]*>\s*<AnnotationProperty\s+abbreviatedIRI=""(rdfs:label|skos:prefLabel|skos:altLabel)""\s*/>\s*<IRI>([^<]+)</IRI>\s*<Literal\s+[^>]*xml:lang=""([^""]+)""[^>]*>([^<]+)</Literal>\s*</AnnotationAssertion>',
-    re.DOTALL
-)
-lang_matches = lang_pattern.findall(owl_text)
-lang_index = {}
-for prop, iri, lang, label in lang_matches:
-    lang_index[(iri, label)] = lang
-print(f""Labels avec xml:lang explicite : {len(lang_index):,}"")
+Les **schemes d'argumentation** (Walton, Reed & Macagno 2008) sont des patterns d'inference reconnus en logique informelle. Le generateur #763 **materialise** les mappings `AIF_skos*` du CSV en **100 classes de forme `*_Inference_*` / `*_Conflict`** (ex. `PopularOpinion_Inference_Conflict`, `Example_Inference_Conflicted`, `CauseToEffect_Inference`). On les repere directement dans les declarations de Class, en complement de la detection classique par substring dans les `skos:prefLabel` (2 816 labels = 1 408 FR + 1 408 EN).",,,,,,,,ead08f3602dcf5e4,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-9,code,fr,b261473c50c4f2df,"# --- Labels multilingues (skos:prefLabel) + schemes de Walton ---
+from collections import Counter
 
-# Construction d'un dict {localname: {prefLabel_fr, prefLabel_en, ...}}
+# prefLabel : AnnotationProperty IRI complet (plus d'abbreviatedIRI depuis #763).
+pref_pattern = re.compile(
+    r'<AnnotationAssertion>\s*<AnnotationProperty IRI=""http://www\.w3\.org/2004/02/skos/core#prefLabel""\s*/>\s*<IRI>([^<]+)</IRI>\s*<Literal(?:\s+xml:lang=""([^""]+)"")?[^>]*>([^<]*)</Literal>\s*</AnnotationAssertion>')
+pref_matches = pref_pattern.findall(owl_text)
+print(f""skos:prefLabel extraits : {len(pref_matches):,}"")
+print(f""Langues : {dict(Counter(l.upper() for _, l, _ in pref_matches if l))}"")
+
+# dict {localname: {iri, prefLabel:[...]}}
 taxonomy = {}
-for prop, iri, label in label_matches:
+for iri, lang, label in pref_matches:
     local = iri.rstrip('#').split('#')[-1].split('/')[-1]
-    if not local or not label:
+    if not local:
         continue
-    entry = taxonomy.setdefault(local, {'iri': iri, 'prefLabel': [], 'altLabel': [], 'rdfs:label': []})
-    bucket = {'skos:prefLabel': 'prefLabel', 'rdfs:label': 'rdfs:label', 'skos:altLabel': 'altLabel'}.get(prop)
-    if bucket:
-        entry[bucket].append(label)
+    entry = taxonomy.setdefault(local, {'iri': iri, 'prefLabel': []})
+    if label:
+        entry['prefLabel'].append(label)
+print(f""Concepts distincts (par localname) : {len(taxonomy):,}"")
 
-print(f""\nNombre de concepts distincts (par localname) : {len(taxonomy):,}"")
+# Schemes Walton materialises en classes (#763) -- signal robuste, sans faux positifs de substring.
+walton_shaped = sorted(c.split('#')[-1] for c in arg_classes if '_Inference' in c or '_Conflict' in c)
+print(f""\nClasses de forme Walton-scheme (materialisation AIF_skos) : {len(walton_shaped)}"")
+for c in walton_shaped[:8]:
+    print(f""  - {c}"")
 
-# Recherche Walton
-WALTON_SCHEMES = [""Position to Know"", ""Sign"", ""Rule"", ""Cause to Effect""]
+# Detection complementaire par substring dans les prefLabel.
+WALTON_SCHEMES = [""Position to Know"", ""Sign"", ""Cause to Effect"", ""Analogy"", ""Expert Opinion"", ""Popular Opinion""]
 walton_found = {k: [] for k in WALTON_SCHEMES}
 for local, entry in taxonomy.items():
-    for label in entry.get('prefLabel', []) + entry.get('rdfs:label', []):
+    for label in entry.get('prefLabel', []):
         for k in WALTON_SCHEMES:
             if k.lower() in label.lower():
-                walton_found[k].append((local, label))
-                break
-
-print(""\nSchemes Walton detectes dans les labels :"")
+                walton_found[k].append((local, label)); break
+print(""\nSchemes Walton detectes dans les prefLabel :"")
 for k in WALTON_SCHEMES:
     hits = walton_found[k]
-    if hits:
-        print(f""  v {k:18s} : {len(hits)} occurrence(s)"")
-        for local, lbl in hits[:3]:
-            print(f""      - {local:30s} -> {lbl}"")
-    else:
-        print(f""  x {k:18s} : absent"")",,,,,,,,a25419b65e4c390d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-10,markdown,fr,029a7af1e1e02cc4,"**Lecture** : 2 608 labels pour 13 schemes Walton-like. La detection par substring est limitee (faux positifs sur 'Sign' comme 'signal', 'Rule' comme 'ruling', etc.). Une detection plus robuste utiliserait des listes blanches strictes ou un fuzzy match. Mais la preuve de substance est faite : les schemes Walton sont dans la taxonomie sous des formes variees (Sign, Argument from Sign, etc.).",,,,,,,,029a7af1e1e02cc4,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-11,markdown,fr,ee511628731a853f,"## 5. Relations ObjectProperty : inventaire
+    print(f""  {'v' if hits else 'x'} {k:18s} : {len(hits)} occurrence(s)"")",,,,,,,,b261473c50c4f2df,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-10,markdown,fr,ab360b9bd02e3f92,"**Lecture** : **2 816 `skos:prefLabel`** (1 408 FR + 1 408 EN, soit 1 label par sophisme et par langue — la normalisation attendue du nouvel idiome). La detection des schemes de Walton s'appuie desormais sur les **100 classes materialisees** (`*_Inference_*`), signal bien plus robuste que la recherche par substring dans les labels (qui produisait des faux positifs sur « Sign », « Rule »…). La detection par substring est conservee a titre de comparaison pedagogique.",,,,,,,,ab360b9bd02e3f92,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-11,markdown,fr,ecdc9d849b35b2dd,"## 5. Relations : inventaire des AnnotationAssertion-resource
 
-Les **ObjectProperty** sont les proprietes structurelles reliant les sophismes entre eux. L'ontologie en declare 4 338, mais **aucune** n'est prefixee `crossLink_*` -- la convention `crossLink_PredatesOn`, `crossLink_Denounces`, etc. est specifique aux **CSV Argumentum upstream**, pas a l'OWL2/XML.
+Depuis #763, les relations concept→concept sont portees par des **`AnnotationAssertion`-resource** (et non plus des `ObjectPropertyAssertion`). L'inventaire par predicat revele **trois familles** :
 
-Les 15 `SubObjectPropertyOf` declarent des hierarchies entre proprietes (subPropertyOf = hierarchie), equivalentes a `rdfs:subPropertyOf` en RDF.
+- **hierarchie SKOS** : `broader` (1 407), `narrower` (1 407), `inScheme` (1 408), `type` (1 409) ;
+- **crossLink** (transverse, #141/#763) : `mirrors` (720), `isRelatedTo` (642), `leverages` (402), `inverts` (82), `allows` (66), `opposes` (50), `predatesOn` (13), `denounces` (2) = **1 977** au total ;
+- **AIF attack** : `aifAttackedNode` (93) → RA/I/CA-node ;
+- **mapping Walton** : `broadMatch` (57), `closeMatch` (10), `narrowMatch` (3) = 70.
 
-Examinons les 10 proprietes les plus frequemment utilisees dans les ObjectPropertyAssertion concrets, et les hierarchies SubObjectPropertyOf.",,,,,,,,ee511628731a853f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-12,code,fr,5aa71d38ecc08fc6,"# --- Top 10 ObjectProperty par frequence d'usage + SubObjectPropertyOf ---
-
+**Inversion de la note historique** : l'ancien OWL **n'incluait PAS** les 8 verbes crossLink (ils etaient CSV-only). #763 les a **cables et emis** — ce notebook les inventorie donc desormais dans l'OWL.",,,,,,,,ecdc9d849b35b2dd,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-12,code,fr,06bf0b04e4ce46ec,"# --- Inventaire des relations (AnnotationAssertion-resource) par predicat ---
 from collections import Counter
 
-# Compter l'usage de chaque ObjectProperty dans les ObjectPropertyAssertion
-prop_usage = Counter()
-for prop_iri, _, _ in opa_matches:
-    prop_local = prop_iri.rstrip('#').split('#')[-1].split('/')[-1]
-    prop_usage[prop_local] += 1
+rel_usage = Counter()
+for pred_iri, _subj, _obj in AA_RES:
+    rel_usage[pred_iri.rstrip('#').split('#')[-1].split('/')[-1]] += 1
 
-print(""Top 10 ObjectProperty par frequence d'usage :"")
-print(f""  {'Propriete':35s} | Usages"")
-print(""  "" + ""-"" * 55)
-for prop, n in prop_usage.most_common(10):
-    print(f""  {prop:35s} | {n:>5d}"")
+print(""Relations (AnnotationAssertion-resource) par predicat :"")
+print(f""  {'Predicat':22s} | Count"")
+print(""  "" + ""-"" * 34)
+for pred, n in rel_usage.most_common(20):
+    print(f""  {pred:22s} | {n:>5d}"")
+print(f""\n  Total predicats distincts : {len(rel_usage)}"")
 
-print(f""\n  Total proprietes utilisees : {len(prop_usage)}"")
+# Les 8 verbes crossLink SONT desormais dans l'OWL (#763) -- inversion de la note historique.
+CROSSLINK_VERBS = ['predatesOn', 'denounces', 'leverages', 'allows', 'opposes', 'inverts', 'mirrors', 'isRelatedTo']
+n_crosslink = sum(rel_usage[v] for v in CROSSLINK_VERBS)
+print(f""\n=> crossLink dans l'OWL : {n_crosslink:,} AnnotationAssertion"")
+print(f""   (mirrors={rel_usage['mirrors']}, isRelatedTo={rel_usage['isRelatedTo']}, ""
+      f""leverages={rel_usage['leverages']}, inverts={rel_usage['inverts']}, ...)"")
+print(f""   AIF attack : aifAttackedNode={rel_usage['aifAttackedNode']} (resource -> RA/I/CA-node)"")
+print(f""   mapping Walton : broadMatch={rel_usage['broadMatch']}, closeMatch={rel_usage['closeMatch']}, ""
+      f""narrowMatch={rel_usage['narrowMatch']}"")
+print(""\n   NOTE : contrairement a l'ancien OWL (crossLink ABSENT), #763 a cable ces 8 verbes."")",,,,,,,,06bf0b04e4ce46ec,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-13,markdown,fr,83cf561f242225f9,"**Lecture** : l'inventaire par predicat montre la structure reelle de la taxonomie. La colonne vertebrale hierarchique (`broader`/`narrower`/`inScheme`/`type`, ~1 408 chacune = une par sophisme) est desormais **doublee d'une couche transverse crossLink** (1 977 relations, dominee par `mirrors` et `isRelatedTo`) et d'une **couche AIF attack** (93 `aifAttackedNode`). C'est le changement de fond apporte par #763 : la taxonomie n'est plus un simple arbre, mais un **graphe** hierarchie + transverse + AIF.",,,,,,,,83cf561f242225f9,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-14,markdown,fr,3c9b9820d26b6daf,"## 6. Grappe Equivoque : sous-graphe type AIF
 
-# SubObjectPropertyOf (hierarchies)
-subopa_pattern = re.compile(
-    r'<SubObjectPropertyOf[^>]*>\s*<ObjectProperty\s+(?:IRI|abbreviatedIRI)=""([^""]+)""\s*/>\s*<ObjectProperty\s+(?:IRI|abbreviatedIRI)=""([^""]+)""\s*/>\s*</SubObjectPropertyOf>',
-    re.DOTALL
-)
-subopa_matches = subopa_pattern.findall(owl_text)
-print(f""\nHierarchies SubObjectPropertyOf : {len(subopa_matches)}"")
-for sub, sup in subopa_matches[:10]:
-    sub_local = sub.rstrip('#').split('#')[-1].split('/')[-1]
-    sup_local = sup.rstrip('#').split('#')[-1].split('/')[-1]
-    print(f""  {sub_local:35s} subPropertyOf {sup_local}"")
+L'**Equivoque** (Equivocation) est un sophisme d'ambiguite : un meme terme employe dans des sens differents au cours d'un meme raisonnement. Dans l'ontologie, le concept `semanticAmbiguity` porte **11 relations** (AnnotationAssertion-resource) :
 
-# Note importante sur crossLink_*
-print(""\nNOTE : l'OWL/XML Argumentum n'inclut PAS les 8 relations crossLink_*"")
-print(""(PredatesOn, Denounces, Leverages, Allows, Opposes, Inverts, Mirrors,"")
-print("" IsRelatedTo). Ces relations sont specifiques aux CSV taxonomiques"")
-print(""(dans le submodule Argumentum upstream, hors-repo). Le notebook s'en"")
-print(""tiendra donc a l'inventaire des ObjectProperty *OWL natifs*."")",,,,,,,,5aa71d38ecc08fc6,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-13,markdown,fr,b8dbfb45cdd4b325,**Lecture** : les 10 proprietes les plus utilisees montrent quelles relations structurent reellement la taxonomie Argumentum. Les hierarchies SubObjectPropertyOf (15) etendent certaines proprietes avec des sous-proprietes plus specialisees. Les `crossLink_*` ne sont pas dans l'OWL -- ils sont dans les CSV.,,,,,,,,b8dbfb45cdd4b325,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-14,markdown,fr,c3432f2532010977,"## 6. Grappe Equivoque : sous-graphe du sophisme
+- hierarchie : `broader → ambiguity`, `narrower → {vagueness, polysemicLexicalShift, polysemyBySemanticChange}`, `inScheme → fallacyScheme`, `type → Concept` ;
+- **AIF attack** : `aifAttackedNode → RA-node` — le sophisme est formellement modelise comme une **attaque de l'inference** (RA-node = Rule-Application node au sens AIF, ce qui correspond a un *undercut* ASPIC+).
 
-L'**Equivoque** (Equivocation en anglais) est un sophisme d'Ambiguite : un meme terme employe dans des sens differents au cours d'un meme raisonnement. Exemple canonique :
+C'est la demonstration concrete de #763 : **l'AIF est desormais utilisee pour typer les sophismes**, la ou l'ancien OWL se contentait de *declarer* les nodes AIF sans les relier.",,,,,,,,3c9b9820d26b6daf,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-15,code,fr,38d1b0ef93d8b22d,"# --- Sous-graphe autour de semanticAmbiguity via AnnotationAssertion-resource ---
 
-> « La fin d'une chose est sa perfection. La mort est la fin de la vie. Donc la mort est la perfection de la vie. »
-
-Dans la taxonomie Argumentum, on identifie au moins 2 noeuds directement lies a l'equivoque :
-- `semanticAmbiguity` (display = ""Equivoque"") : le concept general.
-- `takingAdvantageOfTheNaysayer` (display = ""Équivoque antithétique"") : une variante contextuelle.
-
-Cette section construit le sous-graphe OPA (Object Property Assertion) autour de `semanticAmbiguity` -- c'est-a-dire les 4 183 triplets dont ce noeud est sujet ou objet -- et l'affiche sous forme textuelle.
-
-Note : on n'utilise pas AIF I-node/RA-node/CA-node car l'ontologie ne type pas ses sophismes via AIF. Le sous-graphe est sur les OPA concrets.",,,,,,,,c3432f2532010977,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-15,code,fr,3baa490465f16d48,"# --- Construction du sous-graphe autour d'Equivoque + visualisation textuelle ---
-
-# Recherche de tous les NamedIndividual dont le label contient ""quivoque"" ou ""equivoc""
+# Noeuds lies a l'Equivoque (label contenant equivoc/quivoque).
 equiv_nodes = []
 for local, entry in taxonomy.items():
-    for label in entry.get('prefLabel', []) + entry.get('rdfs:label', []):
+    for label in entry.get('prefLabel', []):
         if 'quivoque' in label.lower() or 'equivoc' in label.lower():
-            equiv_nodes.append((local, label, entry.get('iri')))
-            break
-
+            equiv_nodes.append((local, label, entry.get('iri'))); break
 print(f""Noeuds lies a l'Equivoque : {len(equiv_nodes)}"")
 for local, label, iri in equiv_nodes:
-    print(f""  - {local:35s} -> {label} (IRI: {iri})"")
+    print(f""  - {local:30s} -> {label}"")
 
-# Construction du sous-graphe OPA autour de semanticAmbiguity (le noeud principal)
+# Sous-graphe AnnotationAssertion-resource autour de semanticAmbiguity.
 TARGET = ""semanticAmbiguity""
-print(f""\nSous-graphe ObjectPropertyAssertion autour de '{TARGET}' :"")
-
+print(f""\nSous-graphe (AnnotationAssertion-resource) autour de '{TARGET}' :"")
 G_equiv = {}
-n_relations = 0
-for prop_iri, subj_iri, obj_iri in opa_matches:
-    subj_local = subj_iri.rstrip('#').split('#')[-1].split('/')[-1]
-    obj_local = obj_iri.rstrip('#').split('#')[-1].split('/')[-1]
-    prop_local = prop_iri.rstrip('#').split('#')[-1].split('/')[-1]
-    if subj_local == TARGET or obj_local == TARGET:
-        # Look up labels
-        subj_lbl = taxonomy.get(subj_local, {}).get('display') or subj_local
-        obj_lbl = taxonomy.get(obj_local, {}).get('display') or obj_local
-        key = (subj_lbl, prop_local, obj_lbl)
-        G_equiv[key] = (prop_iri, subj_iri, obj_iri)
-        n_relations += 1
+for pred_iri, subj_iri, obj_iri in AA_RES:
+    subj = subj_iri.rstrip('#').split('#')[-1].split('/')[-1]
+    obj = obj_iri.rstrip('#').split('#')[-1].split('/')[-1]
+    pred = pred_iri.rstrip('#').split('#')[-1].split('/')[-1]
+    if subj == TARGET or obj == TARGET:
+        G_equiv[(subj, pred, obj)] = (pred_iri, subj_iri, obj_iri)
 
-print(f""  Relations OPA impliquees : {n_relations}"")
-print(f""  Noeuds impliques (sujet ou objet) : {len(set([k[0] for k in G_equiv] + [k[2] for k in G_equiv]))}"")
-
-print(f""\nTriplets :"")
-for (subj_lbl, prop_lbl, obj_lbl), _ in list(G_equiv.items())[:20]:
-    print(f""  {subj_lbl[:35]:35s} --[{prop_lbl:25s}]--> {obj_lbl[:35]}"")",,,,,,,,3baa490465f16d48,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-16,markdown,fr,274191a2b71a4ffe,**Lecture** : le sous-graphe autour de `semanticAmbiguity` montre comment ce sophisme se connecte aux autres via les ObjectProperty. Le nombre de relations OPA impliquees depend du degre du noeud dans la taxonomie -- c'est un proxy de centralite. La visualisation textuelle reste lisible pour un sous-graphe de cette taille.,,,,,,,,274191a2b71a4ffe,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-17,markdown,fr,23236f4bf1e33e9d,"## 7. Exercices
+print(f""  Relations impliquees : {len(G_equiv)}"")
+nodes = set([k[0] for k in G_equiv] + [k[2] for k in G_equiv])
+print(f""  Noeuds impliques : {len(nodes)}"")
+print(""\nTriplets :"")
+for (subj, pred, obj), _ in G_equiv.items():
+    tag = ""  <-- AIF attack"" if pred == 'aifAttackedNode' else """"
+    print(f""  {subj[:32]:32s} --[{pred:16s}]--> {obj[:24]:24s}{tag}"")",,,,,,,,38d1b0ef93d8b22d,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-16,markdown,fr,4f817f454c98cd86,"**Lecture** : le sous-graphe de `semanticAmbiguity` combine sa **hierarchie** (parent `ambiguity`, enfants `vagueness` / `polysemicLexicalShift` / `polysemyBySemanticChange`) et son **typage AIF** (`aifAttackedNode → RA-node`). Le degre du noeud (11) melange donc des aretes taxonomiques et une arete AIF — c'est exactement la reconciliation que #763 apporte : une même entite porte simultanement sa place dans l'arbre SKOS et son role dans le modele d'attaque AIF.",,,,,,,,4f817f454c98cd86,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-17,markdown,fr,199d90c26343400a,"## 7. Exercices
 
 Trois exercices formels (regle #2161 : >= 3 exos par notebook pedagogique). Chaque exercice est un *stub* `print(""Exercice a completer"")` que l'etudiant complete.
 
-### Exercice 1 -- Compter la distribution des sophismes par famille
+### Exercice 1 -- Distribution des concepts par prefixe de scheme
 
-A partir du `taxonomy` extrait (section 4) et des `ClassAssertion` (section 3), determiner la distribution des NamedIndividual par classe mere. La majorite des sophismes Argumentum sont classes dans une famille (Obstruction, Pertinence, Ambiguite, Empirisme, etc.).
-
-*Indice* : compter les `ClassAssertion` par classe et regarder les `prefLabel` de ces classes dans `taxonomy`. Les classes sont stockees dans `class_assertions` ; les labels dans `taxonomy`.",,,,,,,,23236f4bf1e33e9d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-18,code,fr,7bfb986aa64c8fbe,"# Exercice 1 a completer
-# TODO etudiant : a partir de `class_assertions` (list de (cls_iri, ind_iri))
-# et de `taxonomy` (dict localname -> labels), calculer la distribution
-# des NamedIndividual par classe. Renvoyer un dict {classe_display: count}.
-# Classes cibles : owl:Thing, owl:NamedIndividual, classes specifiques Argumentum.
-print(""Exercice a completer"")",,,,,,,,7bfb986aa64c8fbe,,,,,,,
+A partir de `arg_classes` (liste d'IRI de `owl:Class` Argumentum) et de `taxonomy` (dict localname -> labels), calculer combien de concepts sont des **classes materialisees de scheme** (`*_Inference_*` / `*_Conflict`) versus des sophismes simples. Renvoyer un `dict` {categorie: compte} et l'afficher trie.",,,,,,,,199d90c26343400a,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-18,code,fr,df70235428023cf7,"# Exercice 1 a completer
+# TODO etudiant : a partir de `arg_classes` (IRI de owl:Class) et de `taxonomy`
+# (dict localname -> labels), separer les classes materialisees de scheme
+# (`_Inference` / `_Conflict`) des sophismes simples. Renvoyer un dict {cat: n}.
+print(""Exercice a completer"")",,,,,,,,df70235428023cf7,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-19,markdown,fr,b82f59950813e283,"### Exercice 2 -- Visualisation matplotlib du sous-graphe Equivoque
 
 Reprendre `G_equiv` de la section 6 et le visualiser avec `matplotlib` + `networkx.spring_layout` (seed=42). Colorer les noeuds par degre (entrant + sortant), afficher les labels des proprietes sur les aretes.
@@ -5548,90 +5491,80 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ip
 # spring_layout (seed=42), couleur des noeuds par degre, edge_labels affiches.
 # Si matplotlib n'est pas disponible, fallback ASCII (cf. §6).
 print(""Exercice a completer"")",,,,,,,,7926791344180581,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-21,markdown,fr,371e576be29e6e29,"### Exercice 3 -- Detection des sophismes ""Ambiguite"" et hierarchie
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-21,markdown,fr,dde271ad51e1e996,"### Exercice 3 -- Detection des sophismes ""Ambiguite"" et hierarchie
 
-Implementer une fonction `trouver_ambiguite(taxonomy)` qui retourne tous les NamedIndividual dont le label fr/en mentionne ""ambig"", ""equivoc"", ""quivoque"", ""vague"", ""obscur"". Construire un mini-graphe des variantes (par exemple ""Équivoque antithétique"" lie a ""Equivoque"" via un label partage).
-
-*Indice* : la detection par substring est fragile (faux positifs comme ""ambiguité du contexte""). Filtrer par liste blanche de termes techniques. Tester aussi sur les `altLabel`.",,,,,,,,371e576be29e6e29,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-22,code,fr,c02e635c2b96ee38,"# Exercice 3 a completer
+Implementer une fonction `trouver_ambiguite(taxonomy)` qui retourne tous les concepts dont le `prefLabel` fr/en mentionne ""ambig"", ""equivoc"", ""quivoqu"". Renvoyer un `dict {local: [labels_matches]}`. Faux positifs a eviter : ""ambiguite du contexte"" hors sophisme. Bonus : croiser avec `AA_RES` pour afficher, pour chaque match, son parent `broader`.",,,,,,,,dde271ad51e1e996,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-22,code,fr,c2585a668119ac2f,"# Exercice 3 a completer
 # TODO etudiant : implementer trouver_ambiguite(taxonomy) qui retourne
-# un dict {local: [labels_matches]}. Tester aussi sur altLabel et rdfs:label.
-# Faux positifs a eviter : ""ambiguite du contexte"", ""terme vague"" non technique.
-print(""Exercice a completer"")",,,,,,,,c02e635c2b96ee38,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-23,markdown,fr,ff5930c9764a66d6,"## 8. Ponts avec la serie
+# un dict {local: [labels_matches]} sur les prefLabel fr/en. Bonus : croiser
+# avec AA_RES (predicat 'broader') pour afficher le parent de chaque match.
+print(""Exercice a completer"")",,,,,,,,c2585a668119ac2f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-23,markdown,fr,19aa83d9856b7a8b,"## 8. Ponts avec la serie
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
-| <-> ArgumentProfile | Argument_Analysis_ArgumentProfile.ipynb | Vue d'ensemble de la serie, introduction aux schemes |
-| <-> Argumentum upstream | https://github.com/Argumentum-Games/argumentum (submodule, hors repo) | Ontologie source (4,7 MB, OWL2/XML) + CSV taxonomiques avec 8 colonnes crossLink_* |
-| Argument_Analysis_Agentic-1-informal | (a venir) | Application : detection de sophismes par label matching |
+| <-> ArgumentProfile | `Argument_Analysis_ArgumentProfile.ipynb` | Vue d'ensemble de la serie, introduction aux schemes |
+| <-> CrossLinks (PR-B) | `Argument_Analysis_Ontology_CrossLinks.ipynb` | Substance CSV canonique — **reconciliee avec cet OWL par #763** |
+| -> SemanticKernel | `SemanticKernel/*` | Exploitation des schemes pour l'analyse d'arguments |
 
-## 9. Conclusion et note d'honnetete
+### Honnetete methodologique
 
-**Lecon centrale** : une ontologie OWL2/XML comme Argumentum est un **graphe navigable** mais pas via les patterns RDF/XML classiques. Les 37 axiom `Data/ObjectExactCardinality` mal formes (lignes 4086-4295 du fichier source) empechent rdflib de parser le fichier. owlready2 charge l'ontologie mais n'expose rien via son API Python. Notre parseur regex extrait 2 608 labels, 1 305 ClassAssertion et 4 183 ObjectPropertyAssertion -- assez pour naviguer.
+1. **Parseur regex, pas un moteur RDF** : rdflib echoue au parse et owlready2 expose 0 classe via l'API Python. Le parseur regex est robuste pour *extraire* la structure mais ne fait **pas** de raisonnement (pas d'inference de subsomption, pas de fermeture transitive). Pour un raisonnement OWL complet, il faudrait corriger l'idiome de serialisation en amont (generateur Argumentum).
 
-**Limites disclosees** :
-- L'OWL n'utilise PAS AIF pour typer les sophismes (les 3 classes I-node/RA-node/CA-node sont absentes des `ClassAssertion` concrets). Le namespace AIF est declare mais inoperant.
-- Les 8 relations `crossLink_*` (PredatesOn, Denounces, etc.) sont specifiques aux CSV Argumentum upstream, pas a l'OWL/XML. Le notebook s'en tient aux ObjectProperty natifs.
-- L'ontologie soeur `argumentum_virtues.owl` est **absente du repo** (cf. issue #499 / §H.4 disclose) -- seule `argumentum_fallacies.owl` est analysee.
+2. **L'OWL utilise desormais l'AIF** (inversion de la version precedente de ce notebook) : 93 concepts portent `aifAttackedNode → RA/I/CA-node` (undercut→RA, undermine→I, rebut→CA, ratifie #707§4). La note historique « l'OWL n'utilise PAS l'AIF » est **obsolete**.
 
-**Verdict SOTA** : l'outil reel (parseur OWL2/XML) est **partiellement** accessible (owlready2 charge en 1,7 s mais expose 0 concept ; rdflib echoue completement). Notre parseur regex est une **RECOVERABLE-LOCAL** (SOTA-OK au sens de la regle #3801 -- axe-2 substance accessible sans workaround degrade) : on accede a la substance de l'ontologie par un contournement documente, sans maquiller une sortie de cellule.
+3. **Les crossLink sont dans l'OWL** (inversion) : 1 977 `AnnotationAssertion` (mirrors/isRelatedTo/leverages/…). La note historique « crossLink_* CSV-only, hors-repo » est **obsolete** — #763 a cable le chemin CSV→OWL.
 
-**Metadonnees** : notebook regenere a partir de `argumentum_fallacies.owl` (4,7 MB), sans modifier l'ontologie source. rdflib 7.6.0 et networkx 3.6.1 utilises ; owlready2 reference mais non materialise via API.",,,,,,,,ff5930c9764a66d6,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,fea709ae,markdown,fr,fbc114fd8c5fd6be,"# Argument_Analysis_Ontology_CrossLinks.ipynb — PR-B #4960
+4. **Ontologie soeur presente** : `argumentum_virtues.owl` est desormais dans `ontologies/` (aux cotes de `argumentum_fallacies.owl`). La note historique « argumentum_virtues.owl absente » est **obsolete**.
 
-**Notebook pédagogique** : exploration du **CSV canonique Argumentum** (1553 lignes), complémentaire à `Argument_Analysis_Ontology_AIF.ipynb` (PR-A, OWL2/XML). PR-A disclose : *« les 8 relations `crossLink_*` et les 4 colonnes `AIF_skos*` sont uniquement dans les CSV Argumentum upstream, pas dans l'OWL. »* PR-B exploite cette substance.
+5. **Idiome annotation-space** : toutes les relations sont des `AnnotationAssertion` (et non des `ObjectPropertyAssertion`), consequence du bug `SKOSHelper` d'OWLSharp. C'est un choix de serialisation du generateur, pas une limite de modelisation — les 10 `ObjectProperty` sont bien declarees.",,,,,,,,19aa83d9856b7a8b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,fea709ae,markdown,fr,0b271a5bba5ec46e,"# Argument_Analysis_Ontology_CrossLinks.ipynb — PR-B #4960
 
-**Filiation** : 
+**Notebook pédagogique** : exploration du **CSV canonique Argumentum** (1553 lignes physiques → **1408 sophismes**), complémentaire à `Argument_Analysis_Ontology_AIF.ipynb` (PR-A, OWL2/XML).
+
+> **⚠️ Mise à jour 2026-07-10 (Argumentum PR #763)** — l'intégration ontologique des Fallacies a été complétée en amont. Les 8 relations `crossLink_*` et les colonnes AIF attack (`AIF_attackType`/`AIF_attackedNode`), jusque-là **présentes uniquement dans le CSV**, sont désormais **émises dans l'OWL** (comme `AnnotationAssertion`). La couverture crossLink est passée de **1,5 % (22 relations) à 59,9 % (1081 cellules / 844 sophismes)** après curation transverse (#141) + câblage du générateur (#763). Ce notebook reflète l'état **après** #763.
+
+**Filiation** :
 - EPIC parent : **#4960** Argument_Analysis v3 (submodule Argumentum)
-- PR-A : **#5721** (Argument_Analysis_Ontology_AIF.ipynb, livré c.371)
+- PR-A : **#5721** (`Argument_Analysis_Ontology_AIF.ipynb`)
 - PR-B : **ce notebook** (CSV canonique + crossLink_* + AIF mappings)
 
 **Objectifs d'apprentissage** :
 
-1. Charger le CSV canonique `Argumentum Fallacies - Taxonomy.csv` (1553 lignes, 102 colonnes) avec gestion du BOM UTF-8.
-2. Cartographier la **taxonomie par famille** (8 familles : influence, tricherie, insuffisance, obstruction, erreurMathématique, erreurDeRaisonnement, abusDeLangage, argumentFallacieux) et par niveau (1-9).
-3. Mesurer la **couverture multilingue** (8 langues : fr, en, ru, pt, ar, es, zh, fa).
-4. Analyser les **AIF mappings** (`AIF_skosDirectRef` + `AIF_skosExceptionRef` + `AIF_skosMappingType`) : 70 mappings vers 60 schemes Walton uniques.
-5. Caractériser la **sparsité des crossLink** (22 relations / 1408 sophismes = 1,5%) — finding majeur d'argumumentum upstream.
-6. **Faire le pont** entre substance OWL (PR-A, 10 976 NamedIndividual) et substance CSV (PR-B, 1408 sophismes canoniques).
+1. Charger le CSV canonique `Argumentum Fallacies - Taxonomy.csv` (**1408 sophismes, 104 colonnes**) avec gestion du BOM UTF-8.
+2. Cartographier la **taxonomie par famille** (8 familles) et par niveau (1-9).
+3. Mesurer la **couverture multilingue** (8 langues : fr, en, ru, pt, ar, es, zh, fa) — 100 %.
+4. Analyser les **AIF mappings** (`AIF_skosDirectRef` + `AIF_skosExceptionRef` + `AIF_skosMappingType`) : 70 mappages vers 60 schemes Walton, **plus** les 2 colonnes AIF attack (93 sophismes typés RA/I/CA-node).
+5. Caractériser la **couverture des crossLink** : **1081 cellules / 844 sophismes = 59,9 %** (après #141/#763).
+6. **Faire le pont** entre substance OWL (PR-A) et substance CSV (PR-B), et montrer que #763 a réconcilié les deux.
 
 **Sommaire** :
 
-1. Contexte (PR-A → PR-B)
+1. Contexte (PR-A → PR-B, mise à jour #763)
 2. Loader CSV (pandas + utf-8-sig)
-3. Vue d'ensemble (1408 lignes, 102 colonnes)
+3. Vue d'ensemble (1408 sophismes, 104 colonnes)
 4. Taxonomie : 8 familles × 9 niveaux
 5. Couverture multilingue (8 langues)
 6. AIF mappings : 70 mappages vers 60 schemes Walton
-7. CrossLink sparsity : 22 relations / 1 408 sophismes (1,5% des sophismes ont ≥1 crossLink)
-8. Pont OWL ↔ CSV : pourquoi 10 976 vs 1408 ?
+7. CrossLink coverage : 1081 cellules / 844 sophismes (59,9 %)
+8. Pont OWL ↔ CSV : #763 a câblé crossLink + AIF dans l'OWL
 9. Pont avec Walton : 60 schemes uniques
 10. Honnêteté méthodologique
 11. Exercices (3 stubs #2161)
 12. Conclusion + Ponts
 
-**Verdict SOTA** : SOTA-OK (pandas + matplotlib natifs, pas de workaround dégradé).",,,,,,,,fbc114fd8c5fd6be,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,1d25090a,markdown,fr,c6dea72c383d4089,"## 1. Contexte — De PR-A à PR-B
+**Verdict SOTA** : SOTA-OK (pandas + matplotlib natifs, pas de workaround dégradé).",,,,,,,,0b271a5bba5ec46e,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,1d25090a,markdown,fr,24c7cb16a1bc6788,"## 1. Contexte — De PR-A à PR-B (mis à jour après #763)
 
-`Argument_Analysis_Ontology_AIF.ipynb` (PR-A) a chargé `ontologies/argumentum_fallacies.owl` (4,7 MB OWL2/XML) via parseur regex (rdflib échoue sur 37 axiom `Data/ObjectExactCardinality` mal formés ; owlready2 charge en 1,7 s mais expose 0 concept via son API Python). Substance exposée par PR-A :
+`Argument_Analysis_Ontology_AIF.ipynb` (PR-A) charge `ontologies/argumentum_fallacies.owl` (OWL2/XML) via un parseur regex tolérant (rdflib échoue sur le dialecte OWL/XML ; owlready2 charge mais n'expose rien via son API Python).
 
-- 10 976 `NamedIndividual`
-- 4 331 `ObjectProperty` + 7 `DataProperty`
-- 1 305 `ClassAssertion` (1 304 `skos:Concept`)
-- 4 183 `ObjectPropertyAssertion`
-- 9 846 `AnnotationAssertion`, 2 608 labels multilingues
+**Évolution majeure (Argumentum PR #763, mergée 2026-07-10)** : au moment de la première version de PR-A, l'OWL n'émettait **qu'une** des trois couches ontologiques du CSV (les mappings `AIF_skos*`). Les 8 relations `crossLink_*` et les colonnes `AIF_attackType`/`AIF_attackedNode` étaient **dans le CSV mais absentes de l'OWL** — le chemin de données CSV→OWL n'existait pas encore. #763 a :
 
-**Mais PR-A disclose en §9** : *« les 8 relations `crossLink_*` (PredatesOn, Denounces, Leverages, Allows, Opposes, Inverts, Mirrors, IsRelatedTo) sont **uniquement dans les CSV Argumentum upstream**, pas dans l'OWL. Les 4 colonnes AIF (`AIF_skosDirectRef`, `AIF_skosExceptionRef`, `AIF_skosOther`, `AIF_skosMappingType`) sont **dans le CSV exclusivement**. »*
+- ajouté le mapping des 10 colonnes dans l'entité `Fallacy` + le générateur OWL (2ᵉ passe d'émission) ;
+- curé la couche transverse (scan #141, transverse + confiance ≥ 0,6, 22 seeds manuels préservés) : **1,5 % → 59,9 %** de couverture crossLink ;
+- régénéré l'OWL, qui porte désormais **1977 `AnnotationAssertion` crossLink** + **93 typages AIF attack** (undercut/undermine/rebut → RA/I/CA-node).
 
-**PR-B** comble ce gap : il lit `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv` (le CSV canonique, maintenu à la main par l'équipe Argumentum, 1553 lignes) et expose :
-
-- Taxonomie canonique (8 familles + sous-familles)
-- Couverture 8 langues
-- 70 AIF mappings vers 60 schemes Walton
-- 22 relations crossLink (avec **analyse de sparsité**)
-
-Les deux PRs sont **complémentaires**, pas redondantes : PR-A = substance OWL, PR-B = substance CSV. Le pont se fait en §8.",,,,,,,,c6dea72c383d4089,,,,,,,
+**PR-B** lit `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv` (le CSV canonique, source curée à la main, **1408 sophismes × 104 colonnes**) et expose la taxonomie, la couverture 8 langues, les AIF mappings et la couche crossLink — **désormais réconciliée avec l'OWL** (§8).",,,,,,,,24c7cb16a1bc6788,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,24cbc6fd,markdown,fr,926ee5e5076d1c3f,"## 2. Loader CSV — pandas + utf-8-sig
 
 Le CSV upstream `Argumentum Fallacies - Taxonomy.csv` est encodé en **UTF-8 avec BOM** (3 octets `\xEF\xBB\xBF` en tête), signature Microsoft Excel. Pandas exige `encoding='utf-8-sig'` pour ignorer ce BOM.
@@ -5664,20 +5597,21 @@ print()
 print('--- First 3 rows (PK, Famille, nom_vulgarisé) ---')
 print(df[['PK', 'Famille_camelCase', 'nom_vulgarisé', 'text_fr']].head(3).to_string())
 ",,,,,,,,b7c8da3783df990e,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,338e1cdd,markdown,fr,f5a762ae9c9cd985,"## 3. Vue d'ensemble — 1408 sophismes canoniques, 102 colonnes
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,338e1cdd,markdown,fr,f5bb10b6ed9a95b4,"## 3. Vue d'ensemble — 1408 sophismes canoniques, 104 colonnes
 
-Sur 1553 lignes au total, **1408 sont des sophismes canoniques** (les autres sont des entrées techniques : racine, padding, états spéciaux). Chaque sophisme a :
+Sur 1553 lignes physiques (certaines cellules contiennent des retours-ligne encadrés par des guillemets), **1408 sont des sophismes canoniques**. Chaque sophisme a :
 
-- **PK** (clé primaire numérique 0-1552) + **path** (chemin hiérarchique type `6.3.1.1.1.2.1.3`)
-- **decimal_path** (idem en notation pointée)
+- **PK** (clé primaire numérique) + **path** (chemin hiérarchique type `6.3.1.1.1.2.1.3`)
 - **Famille** (8 valeurs canoniques) + **Sous-Famille** + **Soussousfamille**
-- **nom_vulgarisé** (nom court) + **Latin** (nom savant) + **text_fr** (description FR)
+- **nom_vulgarisé** + **Latin** + **text_fr** (description FR)
 - 8 langues (fr, en, ru, pt, ar, es, zh, fa) avec `text_<lang>` + `desc_<lang>` + `example_<lang>`
-- **niveau** (1-9, difficulté pédagogique)
-- **état** (validation : validé, à valider, etc.)
+- **niveau** (1-9)
 - 8 colonnes `crossLink_*` (PredatesOn, Denounces, Leverages, Allows, Opposes, Inverts, Mirrors, IsRelatedTo)
-- 4 colonnes AIF (`AIF_skosDirectRef`, `AIF_skosExceptionRef`, `AIF_skosOther`, `AIF_skosMappingType`)
-- Métadonnées visuelles (shape, image, svg_color, svg_illustration, print_and_play)",,,,,,,,f5a762ae9c9cd985,,,,,,,
+- 4 colonnes AIF SKOS (`AIF_skosDirectRef`, `AIF_skosExceptionRef`, `AIF_skosOther`, `AIF_skosMappingType`)
+- **2 colonnes AIF attack** (`AIF_attackType`, `AIF_attackedNode`) — ajoutées pour l'articulation façon AIF (#498/#707), 93 sophismes typés
+- Métadonnées visuelles (shape, image, svg_color, svg_illustration, print_and_play)
+
+Les **104 colonnes** = 102 historiques + les 2 colonnes AIF attack (ajoutées par #753).",,,,,,,,f5bb10b6ed9a95b4,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,d9579d62,code,fr,4de7288cf57625c9,"import matplotlib.pyplot as plt
 
 fig, axes = plt.subplots(1, 2, figsize=(15, 5))
@@ -5800,36 +5734,40 @@ print('Top 15 schemes Walton (par occurrences):')
 for k, v in walton.most_common(15):
     print(f'  {v:>3} {k}')
 ",,,,,,,,3aa580818836f08e,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,e84f2931,markdown,fr,0e8b18b9b092c005,"## 7. CrossLink sparsity — 22 relations / 1 408 sophismes (1,5% des sophismes ont ≥1 crossLink) (finding majeur)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,e84f2931,markdown,fr,4d5c870445d34f64,"## 7. CrossLink coverage — 1081 cellules / 844 sophismes (59,9 %)
 
-Les 8 colonnes `crossLink_*` sont **quasi-vides** :
+Après curation transverse (#141) + câblage du générateur (#763), les 8 colonnes `crossLink_*` couvrent **59,9 %** des sophismes :
 
-| Relation | Non-empty | % |
-|----------|-----------|---|
-| `crossLink_PredatesOn` | 9 | 0,6% |
-| `crossLink_Denounces` | 1 | 0,07% |
-| `crossLink_Leverages` | 4 | 0,3% |
-| `crossLink_Allows` | 1 | 0,07% |
-| `crossLink_Opposes` | 2 | 0,1% |
-| `crossLink_Inverts` | 1 | 0,07% |
-| `crossLink_Mirrors` | 2 | 0,1% |
-| `crossLink_IsRelatedTo` | 2 | 0,1% |
-| **TOTAL** | **22** | **1,5%** (22/1 408) |
+| Relation | Cellules non-vides | % des 1408 |
+|----------|--------------------|-----------|
+| `crossLink_PredatesOn` | 13 | 0,9 % |
+| `crossLink_Denounces` | 2 | 0,1 % |
+| `crossLink_Leverages` | 350 | 24,9 % |
+| `crossLink_Allows` | 62 | 4,4 % |
+| `crossLink_Opposes` | 23 | 1,6 % |
+| `crossLink_Inverts` | 41 | 2,9 % |
+| `crossLink_Mirrors` | 304 | 21,6 % |
+| `crossLink_IsRelatedTo` | 286 | 20,3 % |
+| **TOTAL cellules** | **1081** | densité 9,6 % (1081 / 11 264) |
+| **Couverture par sophisme** | **844 / 1408** | **59,9 %** |
 
-**Interprétation** : la taxonomie Argumentum est **structurellement plate** (arbre hiérarchique via `path` + `decimal_path`) ; les relations transverses `crossLink_*` (qui créeraient un **graphe**, pas un arbre) sont quasi-absentes.**Nuance** : la densité **par cellule** = 22/11 264 = 0,2%, mais la **couverture par sophisme** = 22/1 408 = 1,5% (c.-à-d. ~14 sophismes ont au moins 1 crossLink). Les deux mesures disent la même chose : sparsity globale ; ce notebook retient la **couverture par sophisme** car plus parlante pour un cours.C'est un **finding méthodologique** : l'effort de curation d'Argumentum upstream est porté sur la taxonomie (8 langues, 8 familles, 9 niveaux), pas sur les liens transverses.",,,,,,,,0e8b18b9b092c005,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,1c85c591,code,fr,c06a1b90a1cc843d,"import numpy as np
+**Interprétation** : la version historique de ce notebook mesurait **22 relations (1,5 %)** — la taxonomie était alors un arbre quasi-pur. La curation #141 (candidats 0-fabrication, transverse, confiance ≥ 0,6, 22 seeds manuels préservés) a ajouté **1059 cellules**, portant la couverture à 59,9 %. Les relations dominantes sont `Leverages` (350), `Mirrors` (304) et `IsRelatedTo` (286) : la taxonomie est devenue un **graphe transverse** substantiel, plus seulement un arbre hiérarchique. `#763` a ensuite rendu cette couche **émettable dans l'OWL** (1977 `AnnotationAssertion`, avec émission bidirectionnelle pour mirrors/opposes/inverts/isRelatedTo).",,,,,,,,4d5c870445d34f64,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,1c85c591,code,fr,a7907ffbaa7a93b0,"import numpy as np
 
 crosslink_cols = [c for c in df.columns if c.startswith('crossLink_')]
 cl_matrix = np.zeros((8, len(df)), dtype=int)
 for i, col in enumerate(crosslink_cols):
     cl_matrix[i] = df[col].notna() & (df[col].astype(str).str.strip() != '')
 
+cov_nodes = int((cl_matrix.sum(axis=0) > 0).sum())
+cov_pct = 100 * cov_nodes / len(df)
+
 fig, ax = plt.subplots(figsize=(15, 4))
 im = ax.imshow(cl_matrix, aspect='auto', cmap='YlOrRd', interpolation='nearest')
 ax.set_yticks(range(8))
 ax.set_yticklabels([c.replace('crossLink_', '') for c in crosslink_cols], fontsize=10)
 ax.set_xlabel('Sophisme index (1408 au total)')
-ax.set_title('CrossLink matrix (8 relations × 1 408 sophismes) — densité 1,5% (couverture par sophisme)')
+ax.set_title(f'CrossLink matrix (8 relations × {len(df)} sophismes) — couverture {cov_pct:.1f}% par sophisme (après #141/#763)')
 plt.colorbar(im, ax=ax, label='Présence (1) / absence (0)')
 plt.tight_layout()
 plt.savefig(str(SAVE_DIR / 'crosslinks_matrix.png'), dpi=100, bbox_inches='tight')
@@ -5845,46 +5783,45 @@ for i, col in enumerate(crosslink_cols):
 total = cl_matrix.sum()
 total_cells = 8 * len(df)
 print()
-print(f'TOTAL density: {total} / {total_cells} = {100*total/total_cells:.2f}%')
-",,,,,,,,c06a1b90a1cc843d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,ac9eec91,markdown,fr,8fb733d469e91fc3,"## 8. Pont OWL ↔ CSV — pourquoi 10 976 vs 1408 ?
+print(f'TOTAL cellules: {total} / {total_cells} = {100*total/total_cells:.2f}% de densité')
+print(f'Couverture par sophisme: {cov_nodes} / {len(df)} = {cov_pct:.1f}%')",,,,,,,,a7907ffbaa7a93b0,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,ac9eec91,markdown,fr,6fcbbcc214c69a65,"## 8. Pont OWL ↔ CSV — #763 a câblé crossLink + AIF dans l'OWL
 
-**PR-A (OWL)** expose 10 976 `NamedIndividual` ; **PR-B (CSV)** expose 1 408 sophismes canoniques. Le **gap × 7,8** s'explique par la nature des deux représentations :
+Historiquement, PR-A (OWL) et PR-B (CSV) exposaient des substances **disjointes** : l'OWL ne portait ni les crossLink, ni les colonnes AIF attack. **#763 a réconcilié les deux** en régénérant l'OWL depuis le CSV avec les 3 couches câblées :
 
-| Aspect | OWL (PR-A) | CSV (PR-B) | Ratio |
-|--------|------------|------------|-------|
-| Substance unique | `NamedIndividual` (chaque `rdfs:label` = une entité nommée) | Lignes de sophismes canoniques | × 7,8 |
-| Granularité | Atome (label) | Agrégat (8 langues + 9 colonnes par sophisme) | - |
-| Multilingue | 2 608 labels (sparse, 1-2 langues par label) | 11 264 descriptions (dense, 8 langues par sophisme) | × 4,3 |
-| AIF mappings | 0 (absent de l'OWL) | 70 (CSV uniquement) | × ∞ |
-| CrossLink | 0 (absent de l'OWL) | 22 (CSV uniquement) | × ∞ |
+| Aspect | OWL avant #763 | OWL après #763 | CSV (PR-B) |
+|--------|----------------|----------------|------------|
+| Concepts | `NamedIndividual` (ancien générateur) | **1509 `owl:Class`** (+ 4 classes AIF) | 1408 sophismes |
+| Relations hiérarchiques | `ObjectPropertyAssertion` | **`AnnotationAssertion`** (narrower/broader/inScheme) | `path` / `decimal_path` |
+| CrossLink | **0 (absent)** | **1977 `AnnotationAssertion`** | 1081 cellules |
+| AIF attack (RA/I/CA-node) | **0 (absent)** | **93 `aifAttackType` + 93 `aifAttackedNode`** | 93 typés |
+| AIF SKOS (Walton) | 70 (`skos:*Match`) | **70** (`broadMatch` 57 / `closeMatch` 10 / `narrowMatch` 3) | 70 |
 
-**Le CSV est la source canonique curée à la main** ; l'OWL est une **projection RDF** (potentiellement générée par script depuis le CSV, mais la pipeline n'est pas bidirectionnelle). Le gap × 7,8 = 10 976 / 1 408 correspond probablement à des **multiples `AnnotationAssertion` par sophisme** (label FR, EN, etc. pour le même `NamedIndividual`, plus des `skos:altLabel`).",,,,,,,,8fb733d469e91fc3,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,a87dac2e,code,fr,a7dc68b9c10df02a,"import matplotlib.pyplot as plt
+**Note structurelle** : #763 a aussi changé l'idiome du générateur — les concepts sont désormais des `owl:Class` (et non des `owl:NamedIndividual`), et **toutes** les relations passent par `AnnotationAssertion` (l'`ObjectPropertyAssertion` a disparu, `SKOSHelper` d'OWLSharp étant cassé sur cette version). Le notebook AIF (PR-A) a été re-fondé en conséquence (traversée annotation-space). Le gap historique « OWL 10 976 vs CSV 1408 » venait de l'ancien générateur qui matérialisait chaque label multilingue comme un `NamedIndividual` distinct ; le nouveau générateur modélise **1 `owl:Class` par sophisme** avec ses labels en annotations.",,,,,,,,6fcbbcc214c69a65,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,a87dac2e,code,fr,c01250e99abb2217,"import matplotlib.pyplot as plt
 
-fig, ax = plt.subplots(figsize=(10, 5))
-labels = ['OWL NamedIndividual\n(PR-A)', 'CSV sophismes\n(PR-B)', 'AIF mappings\n(PR-B)', 'CrossLink\n(PR-B)']
-values = [10976, 1408, 70, 22]
-colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+fig, ax = plt.subplots(figsize=(11, 5))
+labels = ['CSV sophismes', 'CrossLink cells\n(CSV)', 'CrossLink AA\n(OWL, #763)', 'AIF attack\n(CSV & OWL)', 'AIF SKOS\n(CSV & OWL)']
+values = [1408, 1081, 1977, 93, 70]
+colors = ['#ff7f0e', '#d62728', '#2ca02c', '#9467bd', '#1f77b4']
 bars = ax.bar(labels, values, color=colors, edgecolor='black')
 ax.set_ylabel('Count')
 ax.set_yscale('log')
-ax.set_title('PR-A (OWL) vs PR-B (CSV) — comparaison substance')
+ax.set_title('Substance CSV ↔ OWL après #763 (crossLink + AIF désormais émis dans l\'OWL)')
 for bar, v in zip(bars, values):
-    height = bar.get_height()
-    ax.text(bar.get_x() + bar.get_width()/2., height * 1.1,
+    ax.text(bar.get_x() + bar.get_width()/2., bar.get_height() * 1.1,
             f'{v:,}', ha='center', va='bottom', fontsize=11, fontweight='bold')
 plt.tight_layout()
 plt.savefig(str(SAVE_DIR / 'crosslinks_owl_vs_csv.png'), dpi=100, bbox_inches='tight')
 plt.show()
 
-print('--- OWL vs CSV comparison ---')
-print(f'  OWL NamedIndividual: 10 976 (PR-A, 1 304 skos:Concept)')
-print(f'  CSV sophismes:        1 408 (PR-B, 8 langues × 1 408 = 11 264 descriptions)')
-print(f'  Gap factor:          × 7,8 (1 NamedIndividual ≈ 7,8 labels multilingues)')
-print(f'  AIF mappings:         70 (CSV uniquement, absent OWL)')
-print(f'  CrossLink:            22 (CSV uniquement, absent OWL)')
-",,,,,,,,a7dc68b9c10df02a,,,,,,,
+print('--- Substance CSV ↔ OWL (après #763) ---')
+print(f'  CSV sophismes canoniques            : 1 408')
+print(f'  CrossLink cellules (CSV)            : 1 081  (844 sophismes = 59,9 %)')
+print(f'  CrossLink AnnotationAssertion (OWL) : 1 977  (bidirectionnel pour mirrors/opposes/inverts/isRelatedTo)')
+print(f'  AIF attack (CSV & OWL)              :    93  (undercut 61 / undermine 29 / rebut 3 → RA/I/CA-node)')
+print(f'  AIF SKOS Walton (CSV & OWL)         :    70  (broadMatch 57 / closeMatch 10 / narrowMatch 3)')
+print(f'  → #763 a réconcilié CSV et OWL : les 3 couches ontologiques sont désormais émises.')",,,,,,,,c01250e99abb2217,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,67449124,markdown,fr,68811f0d7e7c4461,"## 9. Pont avec Walton — 60 schemes uniques
 
 Les **60 schemes Walton** référencés par Argumentum couvrent un spectre large de l'argumentation :
@@ -5939,17 +5876,17 @@ for s in walton_all:
 for k, v in fam_walton.most_common():
     print(f'  {k}: {v}')
 ",,,,,,,,4eda5aa26d9dc8ba,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,c25f3da1,markdown,fr,f06941ed99612c5f,"## 10. Honnêteté méthodologique
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,c25f3da1,markdown,fr,ebe046a0b556f1b9,"## 10. Honnêteté méthodologique
 
-Trois **limitations structurelles** d'Argumentum upstream, disclosed honnêtement :
+Observations, disclosed honnêtement :
 
-1. **AIF mapping partiel (5%)** : sur 1 408 sophismes, seulement 70 ont un mapping AIF (`AIF_skosDirectRef` + `AIF_skosExceptionRef` + `AIF_skosMappingType`). **95% des sophismes n'ont pas de pont explicite vers Walton**. C'est probablement parce que la taxonomie Argumentum est **plus fine** que les schemes Walton (1552 sophismes vs ~60 schemes) — un scheme Walton peut couvrir des dizaines de sophismes apparentés.
+1. **AIF SKOS mapping partiel (5 %)** : sur 1408 sophismes, 70 ont un mapping SKOS vers Walton (`AIF_skosDirectRef` + `AIF_skosExceptionRef` + `AIF_skosMappingType`). 95 % n'ont pas de pont SKOS explicite — la taxonomie Argumentum (1408 nœuds) est bien plus fine que les ~60 schemes Walton. **Complément #498** : 93 sophismes portent en plus une articulation **AIF attack** (`AIF_attackType`/`AIF_attackedNode`), reliant le sophisme à un nœud RA/I/CA au sens ASPIC+.
 
-2. **CrossLink sparsity (1,5%)** : 22 relations transverses (parmi 11 264 cellules = 8 cols × 1 408) sur 1 408 sophismes. Le graphe Argumentum est essentiellement un **arbre** (via `decimal_path`), pas un graphe. Les crossLinks ne sont ajoutés qu'au cas par cas, pour des sophismes particulièrement liés (ex: `Pensée binaire` ↔ `Pensée binaire` miroir, `Facteur horoscope` prédatesOn `6.3.1.2.3.1.3.3`).
+2. **CrossLink coverage 59,9 %** (et non plus 1,5 %) : après curation #141 + câblage #763, 1081 cellules / 844 sophismes portent au moins une relation transverse. La version historique de ce notebook mesurait 22 relations (1,5 %) ; le graphe transverse est désormais substantiel (`Leverages`/`Mirrors`/`IsRelatedTo` dominants). Les 22 seeds manuels d'origine sont préservés (curation additive, 0 fabrication : toute cible ∈ taxonomie).
 
-3. **Couverture multilingue asymétrique** : 100% pour les 8 langues sur `text_<lang>`, mais les `desc_<lang>` et `example_<lang>` peuvent être lacunaires (à vérifier). Argumentum est une œuvre **multilingue par design** mais la qualité de la traduction varie.
+3. **Couverture multilingue** : 100 % sur les 8 langues pour `text_<lang>` (vérifié cellule par cellule). Les `desc_<lang>`/`example_<lang>` peuvent être plus lacunaires.
 
-4. **`argumentum_virtues.owl` absent** : l'ontologie soeur des vertus (qualités argumentatives) est mentionnée dans la documentation Argumentum mais **absente du repo** (cf issue #499 disclose pas bloquer). PR-B ne l'analyse pas.",,,,,,,,f06941ed99612c5f,,,,,,,
+4. **Ontologies sœurs présentes** : `argumentum_fallacies.owl` **et** `argumentum_virtues.owl` sont désormais dans le repo (`ontologies/`). La note historique « `argumentum_virtues.owl` absent du repo » est **obsolète**.",,,,,,,,ebe046a0b556f1b9,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,f98a3f3f,code,fr,f76b93fd968d9bcc,"import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots(figsize=(10, 5))
@@ -8287,3 +8224,390 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_UI_configuratio
 Le notebook `Argument_Analysis_UI_configuration.ipynb` est maintenant prêt. Il contient toute la logique nécessaire pour l'interface utilisateur, la gestion des sources, le cache et le chiffrement.
 
 Le notebook exécuteur principal peut maintenant utiliser la fonction `configure_analysis_task()` définie ici pour obtenir le texte préparé avant de lancer l'analyse par les agents.",,,,,,,,bb3c9ceb42e1ae99,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,e33a32b5,markdown,fr,d94dc73a9d673ec0,"# Ontologie des vertus argumentatives -- le pole miroir des sophismes (SKOS + AIF)
+
+Le projet [Argumentum](https://www.argumentum.games/) modelise l'argumentation sur **deux poles** :
+
+- le pole **negatif** -- les *sophismes* (fallacies), explore dans le notebook compagnon
+  [`Argument_Analysis_Ontology_AIF`](Argument_Analysis_Ontology_AIF.ipynb) : une ontologie OWL2
+  a base de `NamedIndividual` reliees par un graphe dense d'`ObjectPropertyAssertion` ;
+- le pole **positif** -- les *vertus* argumentatives (virtues), objet de ce notebook.
+
+L'ontologie des vertus (`argumentum_virtues.owl`) se decrit elle-meme comme
+*""the mirror of the fallacies axis (223 nodes, 7 families)""*. Mais son **paradigme de
+modelisation est different** : la ou les sophismes sont des individus (ABox), les vertus
+forment un **thesaurus SKOS** (`skos:Concept`, `skos:broader`/`skos:narrower`,
+`skos:prefLabel`, `skos:definition`) -- une organisation de connaissances hierarchique et
+multilingue. Un meme projet, deux choix de modelisation opposes : c'est la lecon centrale
+de ce notebook.
+
+Le lien entre les deux poles est la propriete AIF `aif:goodTenorOf` (le *bon tenor* d'un
+schema d'argument de Walton), miroir exact du `badTenorOf` cote sophismes.
+
+**Objectifs pedagogiques**
+1. Charger une ontologie OWL/XML que `rdflib` ne parse pas nativement, via un pont vers un graphe RDF.
+2. Interroger un thesaurus SKOS avec **SPARQL** (hierarchie, langues, schemes).
+3. Comprendre le contraste **ABox (individus) vs thesaurus SKOS (concepts)** entre deux ontologies soeurs.
+",,,,,,,,d94dc73a9d673ec0,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,822970f5,markdown,fr,1f27b2e209456055,"## 1. SKOS, AIF et le format OWL/XML
+
+**SKOS** ([Simple Knowledge Organization System](https://www.w3.org/TR/skos-reference/), W3C 2009)
+est le vocabulaire standard pour publier des thesaurus, taxonomies et systemes de classification
+sur le web semantique. Ses primitives :
+
+| Primitive SKOS | Role |
+|----------------|------|
+| `skos:Concept` | une unite de sens (ici : une vertu argumentative) |
+| `skos:prefLabel` | le libelle prefere, **par langue** (`@fr`, `@en`) |
+| `skos:definition` | la definition, par langue |
+| `skos:broader` / `skos:narrower` | la hierarchie (plus general / plus specifique) |
+| `skos:inScheme` / `skos:topConceptOf` | l'appartenance au schema de concepts |
+
+**AIF** (*Argument Interchange Format*, Universite de Dundee) fournit `aif:goodTenorOf` :
+elle relie chaque vertu au **schema d'argument de Walton** qu'elle instancie correctement.
+
+**Le format** : `argumentum_virtues.owl` est serialise en **OWL/XML fonctionnel** (racine
+`<Ontology>`, elements `<Declaration>`, `<AnnotationAssertion>`), **pas** en RDF/XML. C'est
+la raison pour laquelle `rdflib` -- dont le parseur natif est RDF/XML -- ne le lit pas
+directement, comme nous allons le constater.
+",,,,,,,,1f27b2e209456055,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,16840649,markdown,fr,7656b64707ca5895,"## 2. Charger l'ontologie : essai des outils SOTA, puis pont OWL/XML -> RDF
+
+Par honnetete methodologique, on **essaie d'abord les vrais outils** (`rdflib`, `owlready2`)
+avant de recourir a un pont. On documente ce qui echoue et pourquoi.
+",,,,,,,,7656b64707ca5895,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,b5dd1e9b,code,fr,3a2a44523aa78143,"# --- Chargement : essai SOTA direct, puis pont OWL/XML -> graphe SKOS rdflib ---
+from pathlib import Path
+import re, logging, io
+import rdflib
+from rdflib import Graph, URIRef, Literal
+from rdflib.namespace import RDFS, SKOS, RDF
+
+# Les 14 schemes Walton portent des espaces (IRI non conformes cote source) :
+# on abaisse le niveau de log rdflib pour ne pas noyer la sortie d'avertissements benins.
+logging.getLogger(""rdflib"").setLevel(logging.ERROR)
+
+OWL_PATH = Path(""ontologies/argumentum_virtues.owl"").resolve()
+print(f""Fichier : {OWL_PATH.name}"")
+print(f""Existe  : {OWL_PATH.exists()} (taille = {OWL_PATH.stat().st_size:,} octets)"")
+owl_text = OWL_PATH.read_text(encoding=""utf-8"")
+print(f""Longueur du texte OWL/XML : {len(owl_text):,} caracteres\n"")
+
+# 1) rdflib direct (parseur RDF/XML)
+try:
+    Graph().parse(str(OWL_PATH))
+    print(""[rdflib]    parse direct : OK"")
+except Exception as e:
+    print(f""[rdflib]    parse direct impossible ({type(e).__name__}) : le fichier est en OWL/XML"")
+    print(""            fonctionnel (<Ontology>), pas en RDF/XML -> rdflib ne lit pas cette serialisation."")
+
+# 2) owlready2 (parseur OWL/XML) via fileobj
+try:
+    from owlready2 import get_ontology
+    onto = get_ontology(""http://argumentum.local/virtues.owl"")
+    with open(OWL_PATH, ""rb"") as fh:
+        onto.load(fileobj=fh)
+    n_cls = len(list(onto.classes()))
+    print(f""[owlready2] charge le fichier mais recompose {n_cls} classe(s) : son parseur OWL/XML"")
+    print(""            ne reconstruit pas les AnnotationAssertion SKOS de ce fichier."")
+except Exception as e:
+    print(f""[owlready2] indisponible/echec : {type(e).__name__}"")
+
+print(""\n-> Aucun parseur direct ne restitue le contenu SKOS. On construit un pont :"")
+print(""   extraction des <AnnotationAssertion> OWL/XML -> triplets dans un graphe rdflib,"")
+print(""   puis interrogation en SPARQL (le vrai outil SOTA opere sur le graphe RDF resultant)."")
+",,,,,,,,3a2a44523aa78143,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,171b256b,code,fr,0bf9590f45b20ff7,"# --- Pont OWL/XML -> graphe SKOS rdflib ---
+AIF = rdflib.Namespace(""http://www.arg.dundee.ac.uk/aif#"")
+VIRT = rdflib.Namespace(""https://www.argumentum.games/argumentum_virtues.owl#"")
+g = Graph()
+g.bind(""skos"", SKOS); g.bind(""rdfs"", RDFS); g.bind(""aif"", AIF); g.bind(""virt"", VIRT)
+
+# Predicats dont l'objet est une IRI (et non un litteral)
+IRI_OBJ = {str(SKOS.broader), str(SKOS.narrower), str(SKOS.inScheme),
+           str(SKOS.topConceptOf), str(SKOS.hasTopConcept), str(RDF.type), str(RDFS.seeAlso)}
+
+block = re.compile(r""<AnnotationAssertion\b.*?</AnnotationAssertion>"", re.DOTALL)
+ap    = re.compile(r'<AnnotationProperty (?:abbreviatedIRI|IRI)=""([^""]+)""')
+iri   = re.compile(r'<(?:IRI|AbbreviatedIRI)>([^<]+)</(?:IRI|AbbreviatedIRI)>')
+lit   = re.compile(r'<Literal(?:\s+xml:lang=""([^""]+)"")?[^>]*>(.*?)</Literal>', re.DOTALL)
+
+for b in block.findall(owl_text):
+    pm = ap.search(b)
+    if not pm or not pm.group(1).startswith(""http""):
+        continue
+    praw = pm.group(1); pred = URIRef(praw)
+    iris = iri.findall(b); lm = lit.search(b)
+    if not iris:
+        continue
+    subj = URIRef(iris[0])
+    if praw.endswith(""goodTenorOf""):
+        # le ""bon tenor"" pointe vers un schema de Walton (nom a espaces) : on garde le libelle
+        obj = iris[1].split(""#"")[-1].split(""/"")[-1] if len(iris) >= 2 else (lm.group(2) if lm else None)
+        if obj:
+            g.add((subj, pred, Literal(re.sub(r""\s+"", "" "", obj).strip())))
+    elif praw in IRI_OBJ and len(iris) >= 2:
+        g.add((subj, pred, URIRef(iris[1])))
+    elif lm:
+        lang = lm.group(1)
+        val = re.sub(r""\s+"", "" "", lm.group(2)).strip()
+        g.add((subj, pred, Literal(val, lang=lang.lower() if lang else None)))
+
+print(f""Graphe SKOS construit : {len(g):,} triplets"")
+print(f""Concepts distincts (sujets) : {len(set(g.subjects())):,}"")
+",,,,,,,,0bf9590f45b20ff7,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,658ca1d2,markdown,fr,d3c23ae74cff06e4,"**Lecture** : ni `rdflib` (parseur RDF/XML) ni `owlready2` (parseur OWL/XML) ne restituent
+le contenu de ce fichier -- le premier parce que la serialisation n'est pas du RDF/XML, le second
+parce que son parseur ne reconstruit pas les `AnnotationAssertion` de cette structure. Le pont
+extrait donc les assertions OWL/XML et les charge comme **vrais triplets RDF** dans un graphe
+`rdflib` : a partir de la, toutes les operations (comptage, hierarchie, langues) se font en
+**SPARQL sur le graphe**, c'est-a-dire avec l'outil SOTA. Verdict de portee : **SOTA-OK** -- le
+pont est une passerelle d'ingestion documentee, pas un contournement du moteur de requetes.
+",,,,,,,,d3c23ae74cff06e4,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,ad1c1e05,markdown,fr,d7d11c0adc7ac741,"## 3. Structure du thesaurus : inventaire des predicats SKOS
+
+Comptons chaque type de triplet pour cartographier l'ontologie et la comparer au pole sophismes.
+",,,,,,,,d7d11c0adc7ac741,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,7b8ad971,code,fr,07b2d8daedde8f61,"# --- Inventaire des predicats SKOS + AIF ---
+from collections import Counter
+
+pred_counts = Counter(g.namespace_manager.normalizeUri(p) for _, p, _ in g)
+print(""Predicats du graphe (frequence) :"")
+for p, n in pred_counts.most_common():
+    print(f""  {n:>5,}  {p}"")
+
+n_concepts = len(set(g.subjects(SKOS.prefLabel, None)))
+n_def      = len(list(g.triples((None, SKOS.definition, None))))
+n_broader  = len(list(g.triples((None, SKOS.broader, None))))
+n_narrower = len(list(g.triples((None, SKOS.narrower, None))))
+n_scheme   = len(list(g.triples((None, SKOS.inScheme, None))))
+n_gtenor   = len(list(g.triples((None, AIF.goodTenorOf, None))))
+
+print(f""\nConcepts (avec prefLabel) : {n_concepts:,}"")
+print(f""Definitions               : {n_def:,}"")
+print(f""Relations broader         : {n_broader:,}"")
+print(f""Relations narrower        : {n_narrower:,}"")
+print(f""Appartenances au scheme   : {n_scheme:,}"")
+print(f""Liens AIF goodTenorOf     : {n_gtenor:,}"")
+
+# Contraste avec le pole sophismes (Ontology_AIF)
+print(""\n--- Contraste des paradigmes ---"")
+print(""Sophismes (Ontology_AIF) : ABox -- NamedIndividual + ObjectPropertyAssertion (graphe dense)."")
+print(""Vertus    (ce notebook)  : thesaurus SKOS -- Concept + broader/narrower (hierarchie)."")
+",,,,,,,,07b2d8daedde8f61,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,76ec68e5,markdown,fr,4874fbcfce8b24d6,"**Lecture** : le thesaurus compte **223 concepts** (chacun avec un `prefLabel`), **446
+definitions** (223 x 2 langues), **222 relations `broader`** et autant de `narrower` -- la
+double declaration est la convention SKOS (chaque lien hierarchique est pose dans les deux
+sens). Contrairement au pole sophismes, il n'y a **aucun** `NamedIndividual` ni
+`ObjectPropertyAssertion` : la connaissance est portee par la **hierarchie de concepts** et les
+**annotations multilingues**, pas par un graphe de relations entre individus. Deux ontologies
+soeurs, deux paradigmes : ABox relationnel pour les sophismes, thesaurus SKOS pour les vertus.
+",,,,,,,,4874fbcfce8b24d6,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,4833edd2,markdown,fr,92fad54c8dd8a738,"## 4. La hierarchie SKOS : du concept racine aux familles
+
+Le thesaurus a un **concept racine** (`skos:topConceptOf`). Les concepts les plus ramifies
+(beaucoup de `narrower`) sont les tetes de **familles** de vertus. Requetons cela en SPARQL.
+",,,,,,,,92fad54c8dd8a738,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,c01f48b7,code,fr,0e30f094e3020421,"# --- Concept racine + familles les plus ramifiees (SPARQL) ---
+SKOS_P = ""PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n""
+
+# Concept racine
+q_top = SKOS_P + """"""
+SELECT ?c ?l WHERE {
+  ?c skos:topConceptOf ?scheme .
+  OPTIONAL { ?c skos:prefLabel ?l . FILTER(lang(?l) = ""fr"") }
+}""""""
+print(""Concept racine (topConcept) :"")
+for r in g.query(q_top):
+    print(f""  {str(r.c).split('#')[-1]}  =  {r.l}"")
+
+# Familles : concepts avec le plus de narrower
+q_fam = SKOS_P + """"""
+SELECT ?c ?l (COUNT(?n) AS ?k) WHERE {
+  ?c skos:narrower ?n .
+  OPTIONAL { ?c skos:prefLabel ?l . FILTER(lang(?l) = ""fr"") }
+} GROUP BY ?c ?l ORDER BY DESC(?k) LIMIT 10""""""
+print(""\nConcepts les plus ramifies (tetes de familles) :"")
+for r in g.query(q_fam):
+    print(f""  {int(r.k):>2} narrower  |  {str(r.c).split('#')[-1]:<28}  {r.l or ''}"")
+
+# Profondeur de la hierarchie : chaine broader depuis un concept feuille
+def ancestors(concept):
+    chain, cur, seen = [], concept, set()
+    while cur and cur not in seen:
+        seen.add(cur)
+        ups = list(g.objects(cur, SKOS.broader))
+        if not ups:
+            break
+        cur = ups[0]; chain.append(cur)
+    return chain
+
+leaves = [c for c in g.subjects(SKOS.prefLabel, None)
+          if not list(g.objects(c, SKOS.narrower)) and list(g.objects(c, SKOS.broader))]
+if leaves:
+    sample = sorted(leaves, key=lambda c: str(c))[0]
+    lbl = next((str(l) for l in g.objects(sample, SKOS.prefLabel) if l.language == ""fr""), sample)
+    print(f""\nChaine broader depuis une feuille ({str(sample).split('#')[-1]}) :"")
+    path = [str(sample).split('#')[-1]] + [str(a).split('#')[-1] for a in ancestors(sample)]
+    print(""  "" + ""  ->  "".join(path))
+",,,,,,,,0e30f094e3020421,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,e786ec67,markdown,fr,e48608c214db9caa,"**Lecture** : le concept racine est **`validArgument` (""Argument valable"")** -- toute
+vertu est une facette de l'argument valable. Les tetes de familles (`simpleInference`,
+`thirdfigureSyllogism`, `acceptableInformalLogic`, `tangibleEvidence`, `credibleSources`...)
+recouvrent les **7 familles** annoncees : logique formelle, logique informelle, qualite des
+sources, des preuves, etc. La chaine `broader` remonte de chaque feuille jusqu'a la racine :
+c'est la profondeur du thesaurus, exploitable pour situer une vertu dans sa lignee.
+",,,,,,,,e48608c214db9caa,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,7102e28d,markdown,fr,832a6538af9d9189,"## 5. Un thesaurus bilingue : `prefLabel` et `definition` par langue
+
+SKOS attache les libelles **par langue** (`@fr`, `@en`). Verifions la couverture et affichons
+quelques concepts dans les deux langues.
+",,,,,,,,832a6538af9d9189,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,bd6dafc0,code,fr,84ff7d157ad1d80c,"# --- Couverture multilingue + echantillon bilingue ---
+def count_by_lang(pred):
+    q = SKOS_P + f""""""
+    SELECT ?lg (COUNT(DISTINCT ?c) AS ?n) WHERE {{
+      ?c <{pred}> ?v . BIND(lang(?v) AS ?lg)
+    }} GROUP BY ?lg ORDER BY DESC(?n)""""""
+    return [(str(r.lg), int(r.n)) for r in g.query(q)]
+
+print(""Couverture prefLabel par langue :"", count_by_lang(str(SKOS.prefLabel)))
+print(""Couverture definition par langue :"", count_by_lang(str(SKOS.definition)))
+
+# Echantillon : 6 concepts avec prefLabel FR + EN cote a cote
+q_bi = SKOS_P + """"""
+SELECT ?c ?fr ?en WHERE {
+  ?c skos:prefLabel ?fr . FILTER(lang(?fr) = ""fr"")
+  ?c skos:prefLabel ?en . FILTER(lang(?en) = ""en"")
+} ORDER BY ?c LIMIT 6""""""
+print(""\nEchantillon bilingue (concept : FR / EN) :"")
+for r in g.query(q_bi):
+    print(f""  {str(r.c).split('#')[-1]:<24}  {str(r.fr):<26}  |  {r.en}"")
+
+# Une definition FR complete
+q_def = SKOS_P + """"""
+SELECT ?c ?d WHERE {
+  ?c skos:definition ?d . FILTER(lang(?d) = ""fr"")
+} ORDER BY ?c LIMIT 1""""""
+for r in g.query(q_def):
+    print(f""\nDefinition FR de '{str(r.c).split('#')[-1]}' :\n  {r.d}"")
+",,,,,,,,84ff7d157ad1d80c,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,0c5aa193,markdown,fr,58c91f626c83ef49,"**Lecture** : la couverture est **symetrique -- 223 concepts en FR et 223 en EN** pour les
+`prefLabel` comme pour les `definition`. C'est un thesaurus reellement bilingue, ou chaque vertu
+est nommee et definie dans les deux langues. Cette structure `@fr`/`@en` est exactement ce que
+SKOS est concu pour porter, et ce qui rend le thesaurus directement exploitable dans une
+interface multilingue.
+",,,,,,,,58c91f626c83ef49,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,35e59e7b,markdown,fr,ff4b4fbff76f667b,"## 6. Le pont AIF `goodTenorOf` : vertus <-> schemas de Walton
+
+Chaque vertu est le **""bon tenor""** d'un schema d'argument de Walton (`aif:goodTenorOf`) --
+la maniere correcte d'instancier ce schema. Ce sont **les memes 14 schemes** que ceux relies aux
+sophismes cote `Ontology_AIF` : `goodTenorOf` et `badTenorOf` sont les deux faces d'un meme
+schema. Visualisons leur distribution.
+",,,,,,,,ff4b4fbff76f667b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,ada48f7b,code,fr,dca2b2ea5efd4b21,"# --- Distribution des schemes de Walton portes par les vertus + graphique ---
+%matplotlib inline
+import matplotlib.pyplot as plt
+
+q_scheme = SKOS_P + """"""
+PREFIX aif: <http://www.arg.dundee.ac.uk/aif#>
+SELECT ?scheme (COUNT(?c) AS ?n) WHERE {
+  ?c aif:goodTenorOf ?scheme .
+} GROUP BY ?scheme ORDER BY DESC(?n)""""""
+rows = [(str(r.scheme), int(r.n)) for r in g.query(q_scheme)]
+print(f""Schemes de Walton distincts portes par les vertus : {len(rows)}"")
+for s, n in rows:
+    print(f""  {n:>3}  {s}"")
+
+labels = [s for s, _ in rows][::-1]
+values = [n for _, n in rows][::-1]
+fig, ax = plt.subplots(figsize=(9, 5.5))
+ax.barh(labels, values, color=""#3a7d44"")
+ax.set_xlabel(""Nombre de vertus (goodTenorOf)"")
+ax.set_title(""Vertus argumentatives par schema de Walton (aif:goodTenorOf)"")
+for i, v in enumerate(values):
+    ax.text(v + 0.3, i, str(v), va=""center"", fontsize=9)
+plt.tight_layout()
+plt.show()
+",,,,,,,,dca2b2ea5efd4b21,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,6e503d32,markdown,fr,593baf04a837017f,"**Lecture** : les **14 schemes** de Walton relies aux vertus sont exactement ceux qui
+apparaissent cote sophismes. Les plus productifs -- *Argument from Rule* (50 vertus), *from
+Commitment* (40), *from Bias* (27), *from Sign* (26) -- sont les schemes ou l'argumentation
+correcte se decline en de nombreuses bonnes pratiques. La propriete `goodTenorOf` est donc le
+**pivot** qui permettra, dans les exercices, de relier une vertu a son sophisme miroir via le
+schema partage.
+",,,,,,,,593baf04a837017f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,8798c7a3,markdown,fr,17a8175b2e2a3a60,"## 7. Exercices
+
+Trois exercices pour manipuler le thesaurus vous-meme. Les cellules sont des squelettes a
+completer -- le graphe `g` est deja charge en memoire.
+",,,,,,,,17a8175b2e2a3a60,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,363f473d,markdown,fr,cc8b49f59b3ab09c,"### Exercice 1 -- Concepts sans definition dans une langue
+
+Ecrire une requete SPARQL qui liste les concepts possedant un `skos:prefLabel` **anglais** mais
+**aucune** `skos:definition` anglaise (candidats a la traduction). Indice : `FILTER NOT EXISTS`.
+",,,,,,,,cc8b49f59b3ab09c,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,1c28e1e8,code,fr,ffba7a354ff75a9e,"# Exercice 1 a completer
+# Objectif : concepts avec prefLabel @en mais SANS definition @en.
+# Indice : SPARQL FILTER NOT EXISTS { ?c skos:definition ?d . FILTER(lang(?d)=""en"") }
+
+# q_ex1 = SKOS_P + """"""
+# SELECT ?c WHERE {
+#   ?c skos:prefLabel ?l . FILTER(lang(?l) = ""en"")
+#   # ... a completer ...
+# }""""""
+# resultats = list(g.query(q_ex1))
+# print(f""{len(resultats)} concept(s) sans definition EN"")
+
+resultats = None  # TODO etudiant
+print(""Exercice 1 a completer"")
+",,,,,,,,ffba7a354ff75a9e,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,0a979be7,markdown,fr,0b356cd8822037bc,"### Exercice 2 -- Visualiser une famille avec networkx
+
+Choisir une tete de famille (p. ex. `credibleSources`) et dessiner son sous-arbre `narrower`
+avec `networkx` + `matplotlib`. Indice : parcourir recursivement `g.objects(node, SKOS.narrower)`
+et construire un `networkx.DiGraph`.
+",,,,,,,,0b356cd8822037bc,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,c33e84aa,code,fr,ea40e1aa2b6c36be,"# Exercice 2 a completer
+# Objectif : sous-arbre narrower d'une famille, dessine avec networkx.
+# Indice :
+#   import networkx as nx
+#   G = nx.DiGraph()
+#   def descendre(node):
+#       for enfant in g.objects(node, SKOS.narrower): ...
+#   nx.draw(G, with_labels=True)
+
+racine_famille = None  # TODO etudiant : une URIRef de tete de famille
+print(""Exercice 2 a completer"")
+",,,,,,,,ea40e1aa2b6c36be,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,0d3f18a2,markdown,fr,082359e02be6a54b,"### Exercice 3 -- Le pont vertus <-> sophismes
+
+Pour un schema de Walton donne (p. ex. `""Argument from Sign""`), lister toutes les vertus qui en
+sont le `goodTenorOf`. Bonus : ouvrir `Argument_Analysis_Ontology_AIF.ipynb` et comparer avec les
+**sophismes** relies au **meme** schema -- vous materialisez ainsi l'axe good/bad tenor.
+",,,,,,,,082359e02be6a54b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,6312ff34,code,fr,8efe9b4bc2044ce3,"# Exercice 3 a completer
+# Objectif : pour un scheme de Walton, lister les vertus goodTenorOf ; comparer au pole sophismes.
+# Indice : construire une requete SPARQL avec le prefixe
+#   PREFIX aif: <http://www.arg.dundee.ac.uk/aif#>
+#   et un motif  ?c aif:goodTenorOf ""Argument from Sign""  (l'objet est un litteral).
+
+scheme_cible = ""Argument from Sign""  # a explorer
+vertus_du_scheme = None  # TODO etudiant
+print(""Exercice 3 a completer"")
+",,,,,,,,8efe9b4bc2044ce3,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtues.ipynb,4907f827,markdown,fr,aab800cd0d81d310,"## 8. Ponts avec la serie Argument_Analysis
+
+- [`Argument_Analysis_Ontology_AIF`](Argument_Analysis_Ontology_AIF.ipynb) -- le **pole sophismes**
+  (OWL2 ABox, schemes de Walton via `badTenorOf`). A lire en parallele : meme projet, paradigme oppose.
+- [`Argument_Analysis_Ontology_CrossLinks`](Argument_Analysis_Ontology_CrossLinks.ipynb) -- les liens
+  inter-noeuds systematises (CSV canonique multilingue).
+- [`Argument_Analysis_Restitution_3_Actes`](Argument_Analysis_Restitution_3_Actes.ipynb) -- la
+  restitution pedagogique en trois actes.
+
+**A retenir** : une meme famille de connaissances (l'argumentation) peut se modeliser en
+**ABox relationnel** (individus + relations, cote sophismes) ou en **thesaurus SKOS**
+(concepts + hierarchie + multilingue, cote vertus). SKOS n'est pas ""moins expressif"" -- il est
+**adapte a une taxonomie navigable et traduisible**, la ou l'ABox convient a un graphe dense de
+relations. Le choix depend de l'usage vise, pas d'une hierarchie de valeur entre formalismes.
+",,,,,,,,aab800cd0d81d310,,,,,,,
