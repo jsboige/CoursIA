@@ -8,8 +8,8 @@ the sanctioned durable approach for category-A kernel-injected leaks (cf.
 ``strip_probe_banner.py`` post-mortem); contrast with category-C
 (source-leak), which must be fixed at the source.
 
-Five runtime-category tokens cover the observed kernel-injected leaks, each
-with the runtime that injects them:
+Eight runtime-category tokens cover the observed kernel-injected leaks,
+each with the runtime that injects them:
 
 ==== ============================================ ===========================
 cat  cache / context token                        runtime
@@ -36,6 +36,22 @@ conda   ``.conda\\envs``                           conda env (e.g.
 hf      ``.cache\\huggingface`` / ``.cache/huggingface``  HF transformers/datasets
             download warnings (``local_dir_use_symlinks is deprecated``,
             symlink-cache system warning, etc.)
+
+python  ``AppData\\Local\\Programs``               user-local Python interpreter
+            install (``python.exe`` shebang / ``sys.executable`` printouts
+            via ``sysconfig`` ``get_paths`` / ``pip --version`` output
+            warnings). REDACT: keep ``\\Python\\Python313\\python.exe``.
+
+miniconda    ``miniconda3\\envs``                  miniconda-managed env warning
+            stderr (``miniconda3/envs/<env>/lib/python3.X/...`` torch /
+            triton warnings). Distinct from ``.conda\\envs`` (the
+            ``conda`` token above) — different install layout (Conda vs
+            miniconda). REDACT: keep ``\\envs\\<env>\\Lib\\site-packages``.
+
+windowsapps  ``Microsoft\\WindowsApps``           WindowsApps Python launcher
+            (``py.exe`` resolution from Microsoft Store install:
+            ``PythonSoftwareFoundation.Python.3.13_<id>\\python.exe``).
+            REDACT: keep the launcher filename.
 
 other   ``AppData\\Local\\Temp`` (without ipykernel)     python-side ephemeral
             file prints (``Audio cree: ...\\Temp\\test_audio.mp3``,
@@ -136,6 +152,28 @@ MACHINE_PATH_TOKENS = (
     ("hf", ".cache\\huggingface"),  # forward-slash variant is detected by the
                                     # same token pair because cache tokens are
                                     # substring-matched, not slash-strict
+    ("python", "AppData\\Local\\Programs"),  # user-local Python interpreter
+                                              # install (``python.exe`` shebang
+                                              # / sys.executable printouts);
+                                              # missed by ``pip``/``ipykernel``
+                                              # because no ``\Roaming\Python``
+                                              # or ``\Temp\ipykernel`` segment.
+                                              # REDACT strategy: keep the
+                                              # ``\Python\Python313\python.exe``
+                                              # trailing leaf (pedagogy).
+    ("miniconda", "miniconda3\\envs"),  # conda env warning stderr (NOT
+                                        # ``.conda\envs`` which is the
+                                        # ``conda`` token above — distinct
+                                        # install layout). REDACT: keep
+                                        # ``\envs\<env>\Lib\site-packages``
+                                        # trailing path.
+    ("windowsapps", "Microsoft\\WindowsApps"),  # WindowsApps Python launcher
+                                                # (``PythonSoftwareFoundation.
+                                                # Python.3.13_*.exe`` —
+                                                # `py.exe` resolution from the
+                                                # Microsoft Store install).
+                                                # REDACT: keep the launcher
+                                                # filename.
     ("other", "AppData\\Local\\Temp"),  # generic %TEMP% prints (catches
                                         # both ipykernel-pid and bare temp
                                         # files; ipykernel category above is
@@ -700,10 +738,13 @@ def main():
     global ACTIVE_CATEGORIES
     parser = argparse.ArgumentParser(
         description="Strip machine-username path leaks from notebook outputs. "
-                    "Covers 5 runtime-category leaks: nuget (dotnet-interactive), "
+                    "Covers 8 runtime-category leaks: nuget (dotnet-interactive), "
                     "pip (CPython AppData\\Roaming\\Python), ipykernel (per-cell "
-                    "temp file warnings), conda (env path warnings), hf "
-                    "(HuggingFace cache warnings). Path-based detection."
+                    "temp file warnings), conda (.conda\\envs), hf (HuggingFace "
+                    "cache warnings), python (user-local interpreter under "
+                    "AppData\\Local\\Programs), miniconda (conda envs under "
+                    "miniconda3\\envs), windowsapps (Microsoft Store Python "
+                    "launcher). Path-based detection."
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--scan", metavar="PATH",
