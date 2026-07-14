@@ -456,20 +456,49 @@ _HF_LINE = (
 )
 _OTHER_LINE = "C:\\Users\\jsboi\\AppData\\Local\\Temp\\test_audio.mp3"
 
+# c.441 c.7e — audit-extension follow-up: 3 new tokens (python / miniconda /
+# windowsapps) catch 3 source-nb leaks the 6-token taxonomy missed. Each
+# fixture mirrors a real source-nb leak line observed in:
+# - Planners-0-Setup (AppData\\Local\\Programs user-local Python install)
+# - ICT-21-SAETrajectoires (miniconda3\\envs\\coursia-sae torch warning)
+# - Tweety-7b-Ranking-Probabilistic (Microsoft\\WindowsApps Python launcher)
+_PYTHON_LINE = (
+    "C:\\Users\\jsboi\\AppData\\Local\\Programs\\Python\\Python313\\python.exe"
+)
+_MINICONDA_LINE = (
+    "C:\\Users\\MYIA\\miniconda3\\envs\\coursia-sae\\Lib\\site-packages\\"
+    "torch\\nn\\modules\\module.py"
+)
+_WINDOWSAPPS_LINE = (
+    "C:\\Users\\jsboi\\AppData\\Local\\Microsoft\\WindowsApps\\"
+    "PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe"
+)
+
 
 def test_machine_path_tokens_canonical():
-    """The category taxonomy MUST be exactly the 6 listed in C534-L1.
+    """The category taxonomy MUST be exactly the 9 listed in C534-L1 + the
+    audit-extension follow-up (c.441 c.7e — python / miniconda / windowsapps
+    tokens added to catch 3 source-nb leaks missed by the 6-token taxonomy).
 
     Order matters for ``_first_matching_label`` (first hit wins): nuget →
-    pip → ipykernel → conda → hf → other. The hf token (``.cache\\huggingface``)
-    overlaps the ``other`` token (``AppData\\Local\\Temp``) **not at all**;
-    what can happen is a single line matching pip THEN hf (because
-    ``huggingface_hub`` lives under ``AppData\\Roaming\\Python\\site-packages``),
-    and we want the more specific pip label to win (it is more diagnostic
-    for the source machine — same env-name, same Python interpreter).
+    pip → ipykernel → conda → hf → python → miniconda → windowsapps → other.
+    The hf token (``.cache\\huggingface``) overlaps the ``other`` token
+    (``AppData\\Local\\Temp``) **not at all**; what can happen is a single
+    line matching pip THEN hf (because ``huggingface_hub`` lives under
+    ``AppData\\Roaming\\Python\\site-packages``), and we want the more
+    specific pip label to win (it is more diagnostic for the source
+    machine — same env-name, same Python interpreter).
+
+    python / miniconda / windowsapps are interleaved between hf and other
+    because they're more specific than ``other`` (``AppData\\Local\\Temp``)
+    and distinct from conda / pip (different runtime layout, no token
+    overlap with the more-specific tokens above them).
     """
     labels = [label for label, _ in MACHINE_PATH_TOKENS]
-    assert labels == ["nuget", "pip", "ipykernel", "conda", "hf", "other"]
+    assert labels == [
+        "nuget", "pip", "ipykernel", "conda", "hf",
+        "python", "miniconda", "windowsapps", "other",
+    ]
     # Backwards-compat surface preserved.
     assert MACHINE_PATH_TOKENS[0] == ("nuget", NUGET_CACHE_TOKEN)
 
@@ -540,6 +569,57 @@ def test_redact_line_per_category():
         # The stable placeholder MUST appear at least once (the username
         # was successfully redacted to the placeholder form).
         assert "<USER_PATH>" in redacted, (line, redacted)
+
+
+def test_redact_line_per_category_audit_extension_3_tokens():
+    """L498 (round-trip output-content test) for the 3 audit-extension tokens
+    added in c.441 c.7e. Each new token (python / miniconda / windowsapps)
+    must REDACT the username prefix to <USER_PATH>\\, drop the username
+    segment, and preserve the runtime-distinct trailing leaf (the pedagogy
+    part).
+
+    L498 doctrine: REDACT privacy tooling must have a round-trip OUTPUT
+    test (not just a detection boolean). The v1 detection-only test would
+    have silently passed even if ``_redact_line`` re-emitted the original
+    line verbatim — a falsified coverage.
+    """
+    cases = [
+        # (leak_line, runtime_segment_to_preserve)
+        (_PYTHON_LINE, "Python\\Python313\\python.exe"),
+        (_MINICONDA_LINE, "envs\\coursia-sae\\Lib\\site-packages\\torch"),
+        (_WINDOWSAPPS_LINE,
+         "PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe"),
+    ]
+    for line, runtime_segment in cases:
+        redacted = _redact_line(line)
+        # No username / ``Users\\`` payload survives.
+        assert "jsboi" not in redacted, (line, redacted)
+        assert "MYIA" not in redacted, (line, redacted)
+        assert "Users\\" not in redacted, (line, redacted)
+        # Placeholder MUST appear (REDACT happened, not DROP).
+        assert "<USER_PATH>" in redacted, (line, redacted)
+        # Runtime segment MUST survive (pedagogy — which Python install,
+        # which env, which launcher).
+        assert runtime_segment in redacted, (line, redacted, runtime_segment)
+
+
+def test_has_leak_per_token_audit_extension_3_tokens():
+    """Detection picks up the 3 new tokens AND these are not double-counted
+    by any of the pre-existing 6 categories (no token overlap).
+    """
+    # python token — ``AppData\\Local\\Programs`` (NOT ``Roaming\\Python``
+    # which would be the pip token, NOT ``Local\\Temp`` which is other).
+    assert _has_leak(_PYTHON_LINE) is True
+    # miniconda token — ``miniconda3\\envs`` (NOT ``.conda\\envs`` which is
+    # the conda token; C534-L1 / c.441 c.5 distinction preserved).
+    assert _has_leak(_MINICONDA_LINE) is True
+    # windowsapps token — ``Microsoft\\WindowsApps``.
+    assert _has_leak(_WINDOWSAPPS_LINE) is True
+    # Label resolution per first-matching-token: each new token produces
+    # its own label (NOT pip / conda / other — proving non-overlap).
+    assert _first_matching_label(_PYTHON_LINE) == "python"
+    assert _first_matching_label(_MINICONDA_LINE) == "miniconda"
+    assert _first_matching_label(_WINDOWSAPPS_LINE) == "windowsapps"
 
 
 def test_redact_line_unix_home_path():
