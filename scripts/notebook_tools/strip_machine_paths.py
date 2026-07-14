@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
-"""Strip the .NET Interactive ``Loading extensions from <NuGet cache>`` artifact
-from notebooks.
+"""Strip the .NET Interactive NuGet-cache machine-username leak from notebooks.
 
 When ``dotnet-interactive`` (the .NET kernel) processes a ``#r "nuget:..."``
-cell that ships an **interactive extension**, it injects a ``display_data``
-output whose ``data["text/plain"]`` is a single line such as::
+cell that ships an **interactive extension**, it emits **two** distinct
+kernel messages that both carry the worker's **local NuGet package cache**
+path, which embeds the machine username (``C:\\Users\\<user>\\``):
 
-    Loading extensions from `C:\\Users\\<user>\\.nuget\\packages\\skiasharp\\2.88.9\\interactive-extensions\\dotnet\\SkiaSharp.DotNet.Interactive.dll`
+1. a ``display_data`` output whose ``data["text/plain"]`` is::
 
-The backtick-delimited path is the worker's **local NuGet package cache**, which
-embeds the machine username (``C:\\Users\\<user>\\``) — a PII-lite leak on a
-public repo (the username is the maintainer's GitHub handle / prof identity,
-correlable but not a rotatable secret, cf. ``#6443`` / ``#6529``). The message is
-**dead noise in a static notebook**: it only matters inside a live kernel
-session (it confirms an extension loaded), and it is **re-injected at every
+       Loading extensions from `C:\\Users\\<user>\\.nuget\\packages\\skiasharp\\2.88.9\\interactive-extensions\\dotnet\\SkiaSharp.DotNet.Interactive.dll`
+
+2. a ``stream`` (stderr) output whose ``text`` is::
+
+       Failed to load kernel extension "KernelExtension" from assembly C:\\Users\\<user>\\.nuget\\packages\\xplot.plotly.interactive\\4.1.0\\lib\\net7.0\\XPlot.Plotly.Interactive.dll
+
+Both embed ``C:\\Users\\<user>\\`` — a PII-lite leak on a public repo (the
+username is the maintainer's GitHub handle / prof identity, correlable but not
+a rotatable secret, cf. ``#6443`` / ``#6529``). The messages are **dead noise
+in a static notebook**: they only matter inside a live kernel session (they
+confirm / warn about an extension load), and they are **re-injected at every
 kernel re-execution** — so, exactly like the ``probeAddresses`` banner (cf.
-``strip_probe_banner.py``, ``#6309``), re-exec does NOT fix it. The durable fix
-is to make the leak **un-committable** via this pre-commit hook.
+``strip_probe_banner.py``, ``#6309``), re-exec does NOT fix it. The durable
+fix is to make the leak **un-committable** via this pre-commit hook.
 
 This is the **category-A (kernel-injected / env-dependent)** leak family of
 rule-6 (``secrets-hygiene.md``): the username comes from the worker's
@@ -25,16 +30,27 @@ rule-6 (``secrets-hygiene.md``): the username comes from the worker's
 durable approach for category-A kernel-injected leaks (cf. ``strip_probe_banner.py``
 post-mortem).
 
+**Detection is path-based, not signature-based.** A line is a leak iff it
+carries a NuGet-cache path (``.nuget``) that embeds a **real username**
+(``C:\\Users\\<u>``, ``Users/<u>``, ``/home/<u>``). The dotnet-interactive
+**tilde** variant — ``~\\.nuget\\packages\\...`` (the ``%USERPROFILE%`` HOME
+*placeholder*, no username) — is therefore **correctly left untouched**: it
+carries no PII. Keying on the username path (not the message prefix) catches
+both kernel messages uniformly and is robust to future message rewording
+(cf. ``#6537`` review: the v1 hook keyed on ``Loading extensions from`` and
+both missed the ``stream`` ``Failed to load`` variant AND false-positive
+stripped legitimate tilde ``Loading extensions from`` lines).
+
 The strip is **output-only** — no source code is touched, ``execution_count``
 is preserved, the surrounding ``outputs: [...]`` shape is unchanged. Same
 surgical philosophy as ``strip_probe_banner.py`` / ``scrub_papermill_paths.py``:
 a text-level edit on the on-disk JSON so the rest of the file is byte-identical
 (no JSON re-serialization, no float coercion, no metadata churn).
 
-Scope (this hook): the ``Loading extensions from`` NuGet-cache message only.
-The other username-path patterns catalogued in ``#6529`` (HuggingFace-cache
-download warnings, pip ``AppData`` tracebacks, conda env paths) are Python-side
-and multi-line; they are tracked for follow-up hooks. See ``gh issue view 6529``.
+Scope (this hook): the .NET NuGet-cache kernel messages only. The other
+username-path patterns catalogued in ``#6529`` (HuggingFace-cache download
+warnings, pip ``AppData`` tracebacks, conda env paths) are Python-side and
+multi-line; they are tracked for follow-up hooks. See ``gh issue view 6529``.
 
 Usage:
     python strip_machine_paths.py --scan <path>      # dry-run, list only
@@ -52,37 +68,64 @@ import re
 import sys
 
 
-# Distinctive substring of the dotnet-interactive extension-load message. The
-# full line is ``Loading extensions from `<local-path>```; this signature is
-# specific to the ``#r "nuget:..."`` interactive-extension load (verified on
-# .NET notebooks produced by dotnet-interactive 1.0.x — 8/8 occurrences across
-# 53 username-leaking notebooks carry a user-profile path, 0 false positives).
-EXT_LOAD_SIGNATURE = "Loading extensions from"
+# Detection is **path-based**: a line is a leak iff it references the local
+# NuGet package cache (``.nuget``) AND embeds a real machine username. Two
+# dotnet-interactive kernel messages carry this payload — the ``display_data``
+# ``Loading extensions from <path>`` and the ``stream`` ``Failed to load kernel
+# extension ... from assembly <path>`` — and keying on the username path
+# (rather than the message prefix) catches both, cf. the ``#6537`` review which
+# found the v1 signature-based detector (a) missed the stream variant and
+# (b) false-positive stripped legitimate tilde lines.
+NUGET_CACHE_TOKEN = ".nuget"
 
-# A line is flagged as a leak only if it carries BOTH the signature AND a
-# user-profile / NuGet-cache path token. The path token requirement is the
-# FP guard: a hypothetical "Loading extensions from <relative-path>" without
-# a user-profile segment would not be a username leak and is left untouched.
-USER_PATH_TOKENS = (".nuget", "Users\\", "Users/", "/home/", "AppData\\")
+# Username-bearing absolute-path markers — the actual PII payload. The
+# dotnet-interactive **tilde** variant (``~\.nuget\packages\...``) is the
+# ``%USERPROFILE%`` HOME *placeholder* and carries NONE of these, so it is
+# correctly left untouched (no username = no leak).
+USERNAME_MARKERS = ("Users\\", "Users/", "/home/")
 
-# The kernel injects the message in ``data["text/plain"]`` (observed shape).
-# ``text/html`` is scanned too for robustness (future kernel versions may emit
-# it there), matching ``strip_probe_banner.py``'s defensive dual-scan.
+# Output fields that can carry the leak:
+# - ``data["text/plain"]`` / ``data["text/html"]`` for ``display_data`` /
+#   ``execute_result`` outputs (the ``Loading extensions from`` message).
+# - top-level ``text`` for ``stream`` outputs (the ``Failed to load kernel
+#   extension ... from assembly`` message lives in stderr ``text``).
 DATA_KEYS = ("text/plain", "text/html")
+STREAM_KEY = "text"
+ALL_KEYS = DATA_KEYS + (STREAM_KEY,)
 
 
 def _has_leak(text):
     """Return True if ``text`` (a str, or one element of a list) carries the
-    extension-load leak."""
+    NuGet-cache username leak. Path-based: requires BOTH the NuGet-cache
+    context token AND a username absolute-path marker (the tilde HOME
+    placeholder carries neither marker and is left untouched)."""
     if not isinstance(text, str):
         return False
-    if EXT_LOAD_SIGNATURE not in text:
+    if NUGET_CACHE_TOKEN not in text:
         return False
-    return any(tok in text for tok in USER_PATH_TOKENS)
+    return any(marker in text for marker in USERNAME_MARKERS)
+
+
+def _field_value(out, key):
+    """Return the list/str value of output field ``key``, or None.
+
+    ``data["text/plain"|"text/html"]`` for display_data/execute_result;
+    top-level ``text`` for stream outputs. (A bare ``"text"`` key is
+    stream-specific in nbformat outputs — display_data nests text under
+    ``data``, so there is no collision with ``text/plain``.)
+    """
+    if key in DATA_KEYS:
+        data = out.get("data", {})
+        if not isinstance(data, dict):
+            return None
+        return data.get(key)
+    if key == STREAM_KEY:
+        return out.get(STREAM_KEY)
+    return None
 
 
 def _output_has_leak(blob):
-    """Return True if any element of a ``data[*]`` value (list or str) leaks."""
+    """Return True if any element of a field value (list or str) leaks."""
     if isinstance(blob, list):
         return any(_has_leak(el) for el in blob)
     return _has_leak(blob)
@@ -93,6 +136,7 @@ def count_leak_lines(nb_path):
 
     Semantic is **distinct leak-bearing elements** (one per line for list-form,
     one per string output for string-form), aligned with what the strip removes.
+    Scans both ``display_data`` data keys and ``stream`` ``text``.
     """
     try:
         with open(nb_path, encoding="utf-8") as f:
@@ -104,11 +148,8 @@ def count_leak_lines(nb_path):
         if cell.get("cell_type") != "code":
             continue
         for out in cell.get("outputs", []):
-            data = out.get("data", {})
-            if not isinstance(data, dict):
-                continue
-            for key in DATA_KEYS:
-                v = data.get(key)
+            for key in ALL_KEYS:
+                v = _field_value(out, key)
                 if isinstance(v, list):
                     n += sum(1 for el in v if _has_leak(el))
                 elif _has_leak(v):
@@ -117,7 +158,11 @@ def count_leak_lines(nb_path):
 
 
 def find_leak_outputs(nb_path):
-    """Return list of ``(cell_index, output_index, data_key)`` for leak outputs."""
+    """Return list of ``(cell_index, output_index, field_key)`` for leak outputs.
+
+    ``field_key`` is one of ``text/plain`` / ``text/html`` (display_data /
+    execute_result) or ``text`` (stream).
+    """
     try:
         with open(nb_path, encoding="utf-8") as f:
             nb = json.load(f)
@@ -128,11 +173,8 @@ def find_leak_outputs(nb_path):
         if cell.get("cell_type") != "code":
             continue
         for oi, out in enumerate(cell.get("outputs", [])):
-            data = out.get("data", {})
-            if not isinstance(data, dict):
-                continue
-            for key in DATA_KEYS:
-                if _output_has_leak(data.get(key)):
+            for key in ALL_KEYS:
+                if _output_has_leak(_field_value(out, key)):
                     hits.append((ci, oi, key))
     return hits
 
@@ -214,7 +256,7 @@ def strip_in_place(nb_path):
 
     new_text = text
     fixed = 0
-    str_pat = re.compile(r'"((?:text/plain|text/html))"\s*:\s*"((?:[^"\\]|\\.)*)"')
+    str_pat = re.compile(r'"((?:text/plain|text/html|text))"\s*:\s*"((?:[^"\\]|\\.)*)"')
     elem_pat = re.compile(r'"((?:[^"\\]|\\.)*)"')
 
     # --- String-form: replace the whole "<key>": "<...>" with "<key>": "" ---
@@ -228,7 +270,7 @@ def strip_in_place(nb_path):
         outs = cell.get("outputs", [])
         if oi >= len(outs):
             continue
-        v = outs[oi].get("data", {}).get(key)
+        v = _field_value(outs[oi], key)
         if isinstance(v, str) and _has_leak(v):
             str_targets.append((key, v))
 
@@ -248,7 +290,7 @@ def strip_in_place(nb_path):
                 break
 
     # --- List-form: drop leak-bearing elements (+ trailing/preceding comma) ---
-    for key in DATA_KEYS:
+    for key in ALL_KEYS:
         blocks = _find_data_list_bounds(new_text, key)
         # Filter to blocks that contain at least one leak-bearing element.
         leak_blocks = []
@@ -321,8 +363,9 @@ def iter_notebooks(nb_root):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Strip the .NET 'Loading extensions from <NuGet cache>' "
-                    "machine-username leak from notebooks"
+        description="Strip the .NET NuGet-cache machine-username leak "
+                    "('Loading extensions from' display_data + 'Failed to load "
+                    "kernel extension' stream) from notebooks"
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--scan", metavar="PATH",
