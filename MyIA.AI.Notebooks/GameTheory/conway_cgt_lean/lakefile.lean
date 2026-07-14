@@ -27,11 +27,17 @@ package «conway_cgt» where
     ⟨`autoImplicit, false⟩
   ]
 
-require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git"
-
+-- Fix #6419: Lake diagnostic recommends putting `require mathlib` LAST so
+-- Mathlib's transitive pins (Batteries / Aesop / Plausible) take precedence
+-- over CombinatorialGames' pins. CombinatorialGames transitively pinned
+-- mismatched revisions, causing `mathlib: failed to fetch cache` and build
+-- failures on `Batteries.Data.Nat.Basic`, `Plausible.Testable`,
+-- `Aesop.Builder.Forward`. Reproduced 2x (07-03 + 07-14), see #6419.
 require CombinatorialGames from git
   "https://github.com/vihdzp/combinatorial-games.git"
+
+require mathlib from git
+  "https://github.com/leanprover-community/mathlib4.git"
 
 @[default_target]
 lean_lib «CGTTour» where
