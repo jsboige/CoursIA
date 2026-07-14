@@ -12,13 +12,13 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 ## search2-bfs-dfs.png
 
 - **Source** : notebook `Search-2-Uninformed.ipynb` (cellule 28, output 0)
-- **Alt-text (FR)** : BFS vs DFS : deux arbres 8-puzzle (3×3 tuiles + case vide), ordre d'expansion comparé — BFS en largeur (nœuds 1→8 coloriés niveau par niveau), DFS en profondeur (chemin 1→2→3 colorié en profondeur).
-- **Contenu réel vérifié** (audit visuel MiniMax M3, c.470) : deux sous-arbres côte-à-côte, nœuds numérotés, BFS colorie nœuds bleus niveau par niveau, DFS colorie chemin vert en profondeur. Le notebook Search-2 utilise un arbre d'exemple (pas explicitement "8-puzzle binaire"), mais le rendu visuel est bien un arbre 8-nœuds.
+- **Alt-text (FR)** : BFS vs DFS : deux arbres binaires (profondeur 4, 1 + 2 + 4 + 8 = 15 nœuds) côte-à-côte — BFS explore par niveaux (nœuds 1→8 coloriés en bleu du plus profond vers le but niveau par niveau), DFS explore en profondeur (chemin 1→2→3 colorié en vert).
+- **Contenu réel vérifié** (audit visuel MiniMax M3, c.434) : deux sous-arbres côte-à-côte, nœuds numérotés N{d}_{i} (build_binary_tree_graph profondeur 4), BFS colorie nœuds bleus niveau par niveau, DFS colorie chemin vert en profondeur. Ce n'est PAS un 8-puzzle (3×3 tuiles) mais un **arbre binaire** construit via `build_binary_tree_graph(depth=4)` — précision importante pour ne pas induire le lecteur en erreur sur la nature du problème exploré.
 - **Poids** : 57.3 KB (downscale max-dim 1200)
 
 ## search3-astar.png
 
-- **Source** : notebook `Search-3-Informed.ipynb` (cellule 48, output 0)
+- **Source** : notebook `Search-3-Informed.ipynb` (cellule 50, output 0)
 - **Alt-text (FR)** : Progression A* (heuristique Manhattan) sur 8-puzzle : 6 étapes annotées (g = coût réel depuis l'état initial, h = heuristique jusqu'au but, f = g+h).
 - **Contenu réel vérifié** (audit visuel MiniMax M3, c.470) : grille 3×3 × 6 étapes, chaque tuile numérotée 1-8 + case vide, en-têtes `g=… h=… f=…` corrects étape par étape. Le chemin A* suit le plus court Manhattan (étape finale = but).
 - **Poids** : 25.7 KB (natif)
