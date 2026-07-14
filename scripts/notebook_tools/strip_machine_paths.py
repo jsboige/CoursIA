@@ -214,42 +214,69 @@ def _redact_line(text):
       C:\\Users\\<u>\\AppData\\Local\\Temp\\test_audio.mp3``): the leaf
       marker is ``AppData\\Local\\Temp\\`` and ``test_audio.mp3`` is the
       trailing relative filename (kept verbatim).
-    - Multiple username markers in one line (rare, e.g. a Python warning
-      plus an embedded URL): redact the longest matching prefix only
-      (leftmost), to avoid corrupting embedded URLs.
+    - Multiple username markers in one line (rare, e.g. a HuggingFace
+      ``UserWarning`` whose message embeds both the pip AppData path AND
+      the HF cache path): **loop iteratively, scrub ALL occurrences**
+      (L499). Embedded URLs (e.g. ``https://example.com/C:/Users/foo/bar``)
+      do not contain a SECOND ``C:\\Users\\<u>\\`` segment, so the loop
+      is a no-op on real URLs.
     - The tilde HOME placeholder (``~\\.nuget\\packages\\...``) carries no
       username marker so is rejected by ``_has_leak`` upstream; not touched.
     """
     if not isinstance(text, str):
         return text  # defensive: caller invariant is ``_has_leak`` first.
-    # Find the leftmost username marker.
-    leftmost_idx = -1
-    leftmost_marker_len = 0
-    for marker in USERNAME_MARKERS:
-        idx = text.find(marker)
-        if idx != -1 and (leftmost_idx == -1 or idx < leftmost_idx):
-            leftmost_idx = idx
-            leftmost_marker_len = len(marker)
-    if leftmost_idx == -1:
-        return text  # caller should have checked; defensive no-op
 
-    # The username marker points into ``Users\<u>\...`` or
-    # ``/Users/<u>/...`` or ``/home/<u>/...``. We need to advance past the
-    # *entire username segment* (including its trailing separator) so the
-    # username itself is dropped from the output. The username is the
-    # directory segment IMMEDIATELY after ``Users\`` (or ``/home/``) — it
-    # runs until the NEXT ``\\`` or ``/`` character.
-    after_marker = leftmost_idx + leftmost_marker_len  # points at ``<u>``
-    # Skip past the username segment up to and including its trailing
-    # separator (``\`` on Windows or ``/`` on Unix). If the username runs
-    # all the way to EOL with no separator (degenerate), bail defensively.
-    while after_marker < len(text) and text[after_marker] not in ("\\", "/"):
-        after_marker += 1
-    if after_marker < len(text) and text[after_marker] in ("\\", "/"):
-        after_marker += 1  # consume the trailing separator
-    # ``after_marker`` now points at the FIRST character of the runtime
-    # segment (e.g. for the pip AppData path, at the ``A`` of ``AppData``).
-    return REDACTED_PATH + "\\" + text[after_marker:]
+    # Iterate leftmost-then-redact until no username marker remains (L499).
+    # A single line can legitimately carry multiple ``Users\<u>`` PII
+    # occurrences — e.g. a HuggingFace ``UserWarning`` whose text begins
+    # with the pip AppData path (Python origin) and then names the HF
+    # cache path (the data origin), both real ``Users\<u>`` leaks. We
+    # must scrub BOTH, not just the leftmost. Embedded-URL safety is
+    # preserved by the same loop: URLs of the form
+    # ``https://example.com/C:/Users/foo/bar`` do not contain a SECOND
+    # ``Users\<u>`` segment, so the second pass is a no-op on real URLs.
+    out = text
+    while True:
+        # Find the leftmost username marker.
+        leftmost_idx = -1
+        leftmost_marker_len = 0
+        for marker in USERNAME_MARKERS:
+            idx = out.find(marker)
+            if idx != -1 and (leftmost_idx == -1 or idx < leftmost_idx):
+                leftmost_idx = idx
+                leftmost_marker_len = len(marker)
+        if leftmost_idx == -1:
+            break  # no more leaks — done
+
+        # Advance past the *entire username segment* (including its trailing
+        # separator) so the username itself is dropped from the output. The
+        # username is the directory segment IMMEDIATELY after the marker
+        # (``Users\`` / ``Users/`` / ``/home/``) — it runs until the NEXT
+        # ``\\`` or ``/`` character.
+        after_marker = leftmost_idx + leftmost_marker_len  # points at ``<u>``
+        while after_marker < len(out) and out[after_marker] not in ("\\", "/"):
+            after_marker += 1
+        if after_marker < len(out) and out[after_marker] in ("\\", "/"):
+            after_marker += 1  # consume the trailing separator
+
+        # If the marker is preceded by a Windows drive letter ``X:\`` (or
+        # Unix ``/home/`` marker followed by extra path; here we just handle
+        # the drive-letter + leading-separator), consume the prefix so the
+        # output drops it too (cleaner anonymization: ``X:\Users\<u>\...``
+        # → ``<USER_PATH>\...``, matching the v1 first-occurrence convention).
+        # Pattern is ``[A-Z]:\`` or ``[A-Z]:/`` immediately before the marker.
+        drive_start = leftmost_idx
+        if leftmost_idx >= 3 and out[leftmost_idx - 1] == "\\" \
+                and out[leftmost_idx - 2] == ":" \
+                and out[leftmost_idx - 3].isalpha():
+            drive_start = leftmost_idx - 3  # consume ``X:\``
+
+        # Replace ``<prefix>Users\<u>\...`` with ``<prefix><USER_PATH>\...``.
+        # Preserve any bytes BEFORE ``drive_start`` (the second occurrence
+        # may be mid-line; bytes before it carry the first runtime prefix
+        # that we want to keep in the output).
+        out = out[:drive_start] + REDACTED_PATH + "\\" + out[after_marker:]
+    return out
 
 
 def _field_value(out, key):

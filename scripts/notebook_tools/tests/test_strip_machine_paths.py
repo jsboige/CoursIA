@@ -517,8 +517,13 @@ def test_redact_line_strips_username_prefix():
 
 
 def test_redact_line_per_category():
-    """REDACT applies uniformly — every category's username prefix is dropped
-    and the runtime-distinct segment is preserved."""
+    r"""REDACT applies uniformly — every category's username prefix is dropped
+    and the runtime-distinct segment is preserved. The placeholder may
+    appear mid-line (when the leak is mid-line, e.g. ``Loading extensions
+    from `C:\Users\<u>\.nuget\...```), so we assert *contains* not
+    *startswith*. The contract is: ``jsboi`` MUST be gone, the runtime
+    segment MUST survive.
+    """
     cases = [
         (_PIP_LINE, "AppData\\Roaming\\Python"),
         (_IPYKERNEL_LINE, "AppData\\Local\\Temp\\ipykernel_30104"),
@@ -529,9 +534,11 @@ def test_redact_line_per_category():
     ]
     for line, runtime_segment in cases:
         redacted = _redact_line(line)
-        assert redacted.startswith("<USER_PATH>\\"), (line, redacted)
         assert "jsboi" not in redacted, (line, redacted)
         assert runtime_segment in redacted, (line, redacted, runtime_segment)
+        # The stable placeholder MUST appear at least once (the username
+        # was successfully redacted to the placeholder form).
+        assert "<USER_PATH>" in redacted, (line, redacted)
 
 
 def test_redact_line_unix_home_path():
@@ -552,6 +559,33 @@ def test_redact_line_no_username_marker_noop():
     username marker, the line is returned verbatim (caller invariant)."""
     line = "AppData\\Roaming\\Python is just a path string here, no prefix."
     assert _redact_line(line) == line
+
+
+def test_redact_line_multiple_markers_iterative_scrub():
+    """L499: a single line carrying two ``C:\\Users\\<u>\\`` segments (e.g. a
+    HuggingFace ``UserWarning`` whose message names BOTH the pip AppData
+    path AND the HF cache path) must have BOTH redacted — not just the
+    leftmost. Empirical case: ``GenAI/PostTraining/PT_02_sft_baseline.ipynb``
+    cell[8] out[1] text[0] = warning with two PII paths in one stream line.
+    """
+    # Two-segment line: pip AppData prefix + hf cache path in warning message.
+    line = (
+        "C:\\Users\\jsboi\\AppData\\Roaming\\Python\\Python313\\site-packages\\"
+        "huggingface_hub\\file_download.py:138: UserWarning: "
+        "`huggingface_hub` cache-system uses symlinks by default to "
+        "efficiently store duplicated files but your machine does not "
+        "support them in C:\\Users\\jsboi\\.cache\\huggingface\\hub. "
+        "Caching files will still work but in a degraded version."
+    )
+    redacted = _redact_line(line)
+    # Username MUST be entirely removed (both occurrences).
+    assert "jsboi" not in redacted, redacted
+    assert "Users\\jsboi" not in redacted, redacted
+    # BOTH runtime segments preserved pedagogically.
+    assert "AppData\\Roaming\\Python" in redacted, redacted
+    assert ".cache\\huggingface\\hub" in redacted, redacted
+    # The stable placeholder appears twice (one per leaked marker).
+    assert redacted.count("<USER_PATH>") == 2, redacted
 
 
 def test_redact_line_empty_and_non_string():
