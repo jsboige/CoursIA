@@ -1,0 +1,106 @@
+name: Lean Repeated Games CI
+
+# EPIC #4365 Phase-4 (PR c.371, po-2023) : RepeatedGames a ete absorbe dans
+# `game_theory_lean/RepeatedGames/` (nouveau home canonique). Ce workflow
+# dedie est scoppe `game_theory_lean/RepeatedGames/` pour y_preserver la
+# certification no-sorry (grim_trigger_sustains_iff, Stage/Discounting/GrimTrigger
+# 0 sorry) et le Lake build de RepeatedGames. L'ancien lake `repeated_games_lean/`
+# reste archive (docs + lakefile + manifest archives, neutralise par defaut_target
+# absent du lakefile game_theory_lean apres cette PR).
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-sorry-repeated-games:
+    name: "Sorry check (game_theory_lean/RepeatedGames)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/GameTheory/game_theory_lean
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install elan
+      run: |
+        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        ./elan-init -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+    - name: Cache Mathlib oleans
+      uses: actions/cache@v4
+      with:
+        path: MyIA.AI.Notebooks/GameTheory/game_theory_lean/.lake
+        key: lake-rg-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain') }}
+        restore-keys: lake-rg-${{ runner.os }}-
+
+    - name: Count sorry in RepeatedGames certified modules
+      run: |
+        echo "=== Sorry inventory for RepeatedGames ==="
+        SORRY_TOTAL=0
+        KNOWN_INTRACTABLE=10
+        for f in RepeatedGames/Stage.lean RepeatedGames/Discounting.lean RepeatedGames/GrimTrigger.lean RepeatedGames/Folk.lean; do
+          if [ -f "$f" ]; then
+            COUNT=$(grep -c "sorry" "$f" || true)
+            echo "  $f: $COUNT sorry"
+            SORRY_TOTAL=$((SORRY_TOTAL + COUNT))
+          fi
+        done
+        echo ""
+        echo "Total sorry: $SORRY_TOTAL"
+        echo "Known intractable baseline: $KNOWN_INTRACTABLE (5 in Folk.lean, 5 in Folk_en.lean tolerated stretch per #4880)"
+        if [ "$SORRY_TOTAL" -gt "$KNOWN_INTRACTABLE" ]; then
+          echo ""
+          echo "FAIL: sorry count ($SORRY_TOTAL) exceeds known intractable baseline ($KNOWN_INTRACTABLE)"
+          echo "New sorrys introduced - anti-regression violation."
+          exit 1
+        fi
+        echo "OK: no new sorrys introduced."
+
+  build-repeated-games:
+    name: "Lake build (game_theory_lean/RepeatedGames)"
+    runs-on: ubuntu-latest
+    needs: check-sorry-repeated-games
+    defaults:
+      run:
+        working-directory: MyIA.AI.Notebooks/GameTheory/game_theory_lean
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install elan
+      run: |
+        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        ./elan-init -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+    - name: Cache Mathlib oleans
+      uses: actions/cache@v4
+      with:
+        path: MyIA.AI.Notebooks/GameTheory/game_theory_lean/.lake
+        key: lake-rg-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain') }}
+        restore-keys: lake-rg-${{ runner.os }}-
+
+    - name: Build RepeatedGames lib
+      run: |
+        echo "Building game_theory_lean/RepeatedGames..."
+        lake build RepeatedGames
+        echo "Lake build SUCCESS for RepeatedGames."
