@@ -31,17 +31,24 @@ repos:
         files: '\.ipynb$'
         stages: [pre-commit]
 
-      - id: strip-dotnet-nuget-ext
-        name: Strip .NET 'Loading extensions from <NuGet cache>' machine-username leak
+      - id: strip-machine-username-paths
+        name: Strip machine-username path leaks from notebook outputs
         description: |
-          Removes the dotnet-interactive extension-load message
-          (data["text/plain"] outputs of the form "Loading extensions from
-          `C:\Users\<user>\.nuget\packages\...`") that leaks the worker's
-          machine username via the local NuGet package-cache path. The message
-          is re-injected at every kernel re-execution (category-A kernel-injected
-          leak of rule-6 secrets-hygiene), so the durable fix is this output-only
-          pre-commit strip — no source change, execution_count preserved.
-          See #6529 (4th strip-hook) and #6443.
+          Removes path-based username leaks from cell outputs across multiple
+          runtimes (category-A kernel-injected / env-dependent leaks of rule-6
+          secrets-hygiene, durable fix = output-only pre-commit strip — no
+          source change, execution_count preserved). Path-based detection
+          (NOT signature-based) keys on `C:\Users\<u>` + a runtime-specific
+          cache-context token:
+
+            - nuget      : `\.nuget\packages\...`           (dotnet-interactive ext-load, #6537)
+            - pip        : `AppData\Roaming\Python\...`     (peft / torch import warnings)
+            - ipykernel  : `AppData\Local\Temp\ipykernel_`  (deprecation warnings)
+            - conda      : `\.conda\envs\...`               (deprecated nn.utils warnings)
+            - hfcache    : `\.cache\huggingface\...`        (HF download warnings)
+
+          Tilde HOME placeholder (`~\.nuget\packages\...`) carries no username
+          and is left untouched. See #6529 (4th strip-hook) and #6443.
         entry: python scripts/notebook_tools/strip_machine_paths.py --apply
         language: system
         pass_filenames: true

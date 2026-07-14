@@ -1,27 +1,17 @@
 #!/usr/bin/env python3
-"""Strip the .NET Interactive NuGet-cache machine-username leak from notebooks.
+"""Strip machine-username path leaks from notebook cell outputs.
 
-When ``dotnet-interactive`` (the .NET kernel) processes a ``#r "nuget:..."``
-cell that ships an **interactive extension**, it emits **two** distinct
-kernel messages that both carry the worker's **local NuGet package cache**
-path, which embeds the machine username (``C:\\Users\\<user>\\``):
-
-1. a ``display_data`` output whose ``data["text/plain"]`` is::
-
-       Loading extensions from `C:\\Users\\<user>\\.nuget\\packages\\skiasharp\\2.88.9\\interactive-extensions\\dotnet\\SkiaSharp.DotNet.Interactive.dll`
-
-2. a ``stream`` (stderr) output whose ``text`` is::
-
-       Failed to load kernel extension "KernelExtension" from assembly C:\\Users\\<user>\\.nuget\\packages\\xplot.plotly.interactive\\4.1.0\\lib\\net7.0\\XPlot.Plotly.Interactive.dll
-
-Both embed ``C:\\Users\\<user>\\`` — a PII-lite leak on a public repo (the
-username is the maintainer's GitHub handle / prof identity, correlable but not
-a rotatable secret, cf. ``#6443`` / ``#6529``). The messages are **dead noise
-in a static notebook**: they only matter inside a live kernel session (they
-confirm / warn about an extension load), and they are **re-injected at every
-kernel re-execution** — so, exactly like the ``probeAddresses`` banner (cf.
-``strip_probe_banner.py``, ``#6309``), re-exec does NOT fix it. The durable
-fix is to make the leak **un-committable** via this pre-commit hook.
+Several runtimes — the .NET Interactive kernel, CPython's import machinery,
+ipykernel, HuggingFace libraries — emit warnings / messages in cell outputs
+that embed the worker's **local cache path**, which carries the machine
+username (``C:\\Users\\<user>\\``). On a public repo the username is the
+maintainer's GitHub handle / prof identity, correlable but not a rotatable
+secret (cf. ``#6443`` / ``#6529``). The messages are **dead noise in a static
+notebook**: they only matter inside a live kernel session (they confirm /
+warn about a load), and they are **re-injected at every kernel re-execution**
+— so, exactly like the ``probeAddresses`` banner (cf. ``strip_probe_banner.py``,
+``#6309``), re-exec does NOT fix them. The durable fix is to make the leaks
+**un-committable** via this pre-commit hook.
 
 This is the **category-A (kernel-injected / env-dependent)** leak family of
 rule-6 (``secrets-hygiene.md``): the username comes from the worker's
@@ -30,16 +20,29 @@ rule-6 (``secrets-hygiene.md``): the username comes from the worker's
 durable approach for category-A kernel-injected leaks (cf. ``strip_probe_banner.py``
 post-mortem).
 
-**Detection is path-based, not signature-based.** A line is a leak iff it
-carries a NuGet-cache path (``.nuget``) that embeds a **real username**
-(``C:\\Users\\<u>``, ``Users/<u>``, ``/home/<u>``). The dotnet-interactive
-**tilde** variant — ``~\\.nuget\\packages\\...`` (the ``%USERPROFILE%`` HOME
-*placeholder*, no username) — is therefore **correctly left untouched**: it
-carries no PII. Keying on the username path (not the message prefix) catches
-both kernel messages uniformly and is robust to future message rewording
-(cf. ``#6537`` review: the v1 hook keyed on ``Loading extensions from`` and
-both missed the ``stream`` ``Failed to load`` variant AND false-positive
-stripped legitimate tilde ``Loading extensions from`` lines).
+## Leak categories covered
+
+| Label       | Token (cache-context marker)                            | Source                                              |
+|-------------|---------------------------------------------------------|-----------------------------------------------------|
+| ``nuget``   | ``.nuget``                                              | ``dotnet-interactive`` ext-load messages (#6537)    |
+| ``pip``     | ``AppData\\Roaming\\Python`` / ``AppData\\Local\\pip``  | CPython pip-import warnings (peft/torch/...)        |
+| ``ipykernel`` | ``AppData\\Local\\Temp\\ipykernel``                   | ipykernel temp-file deprecation warnings            |
+| ``conda``   | ``.conda\\envs``                                        | conda-env import warnings (deprecated nn.utils...)  |
+| ``hfcache`` | ``.cache\\huggingface``                                 | HF transformers / datasets download warnings        |
+
+Each token is path-relative (no leading ``C:\\Users\\<u>\\``) and is keyed
+alongside the username markers (``Users\\``, ``Users/``, ``/home/``): a line
+is a leak iff it embeds BOTH a cache-context token AND a real machine
+username. The **tilde** variant (``~\.nuget\packages\...``, the
+``%USERPROFILE%`` HOME *placeholder*) carries no username and is correctly
+left untouched (no PII).
+
+**Detection is path-based, not signature-based.** Keying on the username path
+(rather than the message prefix) catches both kernel messages uniformly per
+category and is robust to future message rewording (cf. ``#6537`` review: the
+v1 hook keyed on ``Loading extensions from`` and both missed the ``stream``
+``Failed to load`` variant AND false-positive stripped legitimate tilde
+``Loading extensions from`` lines).
 
 The strip is **output-only** — no source code is touched, ``execution_count``
 is preserved, the surrounding ``outputs: [...]`` shape is unchanged. Same
@@ -47,17 +50,14 @@ surgical philosophy as ``strip_probe_banner.py`` / ``scrub_papermill_paths.py``:
 a text-level edit on the on-disk JSON so the rest of the file is byte-identical
 (no JSON re-serialization, no float coercion, no metadata churn).
 
-Scope (this hook): the .NET NuGet-cache kernel messages only. The other
-username-path patterns catalogued in ``#6529`` (HuggingFace-cache download
-warnings, pip ``AppData`` tracebacks, conda env paths) are Python-side and
-multi-line; they are tracked for follow-up hooks. See ``gh issue view 6529``.
-
 Usage:
     python strip_machine_paths.py --scan <path>      # dry-run, list only
     python strip_machine_paths.py --scan-all         # dry-run repo-wide
     python strip_machine_paths.py --scan-all --check # exit 1 if defects found
     python strip_machine_paths.py --apply <path>     # fix in place
     python strip_machine_paths.py --apply-all        # fix repo-wide
+    python strip_machine_paths.py --scan-all --category nuget   # filter
+    python strip_machine_paths.py --scan-all --category pip      # filter
 """
 
 import argparse
@@ -68,20 +68,27 @@ import re
 import sys
 
 
-# Detection is **path-based**: a line is a leak iff it references the local
-# NuGet package cache (``.nuget``) AND embeds a real machine username. Two
-# dotnet-interactive kernel messages carry this payload — the ``display_data``
-# ``Loading extensions from <path>`` and the ``stream`` ``Failed to load kernel
-# extension ... from assembly <path>`` — and keying on the username path
-# (rather than the message prefix) catches both, cf. the ``#6537`` review which
-# found the v1 signature-based detector (a) missed the stream variant and
-# (b) false-positive stripped legitimate tilde lines.
-NUGET_CACHE_TOKEN = ".nuget"
+# Detection is **path-based, multi-category**. A line is a leak iff it
+# references ANY of the runtime-specific cache-context tokens below AND
+# embeds a real machine username. Each ``(label, token)`` pair maps to one
+# category — see the docstring for which kernel/runtime emits what.
+#
+# Tokens are path-relative (no leading ``C:\\Users\\<u>\\``); the username-
+# marker check rules out the dotnet-interactive **tilde** variant
+# (``~\.nuget\packages\...``), the ``%USERPROFILE%`` HOME *placeholder*, which
+# carries NO username and is correctly left untouched.
+CACHE_TOKENS = (
+    ("nuget",     ".nuget"),
+    ("pip",       "AppData\\Roaming\\Python"),
+    ("ipykernel", "AppData\\Local\\Temp\\ipykernel"),
+    ("conda",     ".conda\\envs"),
+    ("hfcache",   ".cache\\huggingface"),
+)
 
 # Username-bearing absolute-path markers — the actual PII payload. The
-# dotnet-interactive **tilde** variant (``~\.nuget\packages\...``) is the
-# ``%USERPROFILE%`` HOME *placeholder* and carries NONE of these, so it is
-# correctly left untouched (no username = no leak).
+# dotnet-interactive **tilde** variant is the ``%USERPROFILE%`` HOME
+# *placeholder* and carries NONE of these, so it is correctly left
+# untouched (no username = no leak).
 USERNAME_MARKERS = ("Users\\", "Users/", "/home/")
 
 # Output fields that can carry the leak:
@@ -93,17 +100,30 @@ DATA_KEYS = ("text/plain", "text/html")
 STREAM_KEY = "text"
 ALL_KEYS = DATA_KEYS + (STREAM_KEY,)
 
+# Module-level mutable, set by ``main()`` from CLI. ``None`` == ALL categories.
+ACTIVE_CATEGORIES = None
+
+
+def _iter_tokens():
+    """Yield ``(label, token)`` for each active category (respects CLI filter)."""
+    if ACTIVE_CATEGORIES is None:
+        return list(CACHE_TOKENS)
+    return [t for t in CACHE_TOKENS if t[0] in ACTIVE_CATEGORIES]
+
 
 def _has_leak(text):
-    """Return True if ``text`` (a str, or one element of a list) carries the
-    NuGet-cache username leak. Path-based: requires BOTH the NuGet-cache
-    context token AND a username absolute-path marker (the tilde HOME
-    placeholder carries neither marker and is left untouched)."""
+    """Return True if ``text`` carries a runtime-cache + username leak.
+
+    Path-based: requires BOTH a cache-context token (``.nuget``,
+    ``AppData\\Roaming\\Python``, ...) AND a username absolute-path marker
+    (``Users\\``, ``Users/``, ``/home/``). The tilde HOME placeholder
+    (no username) carries neither marker and is left untouched.
+    """
     if not isinstance(text, str):
         return False
-    if NUGET_CACHE_TOKEN not in text:
+    if not any(marker in text for marker in USERNAME_MARKERS):
         return False
-    return any(marker in text for marker in USERNAME_MARKERS)
+    return any(token in text for _label, token in _iter_tokens())
 
 
 def _field_value(out, key):
@@ -363,9 +383,8 @@ def iter_notebooks(nb_root):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Strip the .NET NuGet-cache machine-username leak "
-                    "('Loading extensions from' display_data + 'Failed to load "
-                    "kernel extension' stream) from notebooks"
+        description="Strip machine-username path leaks from notebook cell "
+                    "outputs (NuGet/pip/ipykernel/conda/HF cache categories)."
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--scan", metavar="PATH",
@@ -378,7 +397,19 @@ def main():
                        help="fix repo-wide in place")
     parser.add_argument("--check", action="store_true",
                         help="with --scan-all: exit 1 if any leak found")
+    parser.add_argument("--category", metavar="CAT",
+                        choices=[t[0] for t in CACHE_TOKENS] + ["all"],
+                        default="all",
+                        help="restrict to one category: " +
+                             ", ".join(t[0] for t in CACHE_TOKENS) +
+                             " (default: all)")
     args = parser.parse_args()
+
+    global ACTIVE_CATEGORIES
+    if args.category == "all":
+        ACTIVE_CATEGORIES = None
+    else:
+        ACTIVE_CATEGORIES = {args.category}
 
     repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     nb_root = os.path.join(repo_root, "MyIA.AI.Notebooks")
@@ -420,8 +451,9 @@ def main():
             print("[DEFECT] %s  (%d leak line(s))" % (rel, found))
 
     mode = "apply" if do_apply else "scan"
-    print("\n%s summary: %d notebook(s) carrying %d NuGet-ext leak line(s)"
-          % (mode, total_files, total_found))
+    cat_label = "all" if ACTIVE_CATEGORIES is None else args.category
+    print("\n%s summary (%s categories): %d notebook(s) carrying %d leak line(s)"
+          % (mode, cat_label, total_files, total_found))
     if do_apply:
         print("  fixed: %d   skipped: %d file(s)" % (total_fixed, len(skipped)))
         for rel in skipped:
