@@ -35,6 +35,8 @@ import Knots.Invariant
   signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
+open Knots
+
 namespace Knots_en
 
 /-! ## 1. The knot 11n102
