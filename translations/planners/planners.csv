@@ -1261,7 +1261,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csha
 // TODO etudiant : etat initial sans lampe_fonctionne, but lampe_allumee, observez null.
 Console.WriteLine(""Exercice 3 a completer : probleme non-realisable + detection statique."");
 ",,,,,,,,89733c9e4e314ae0,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,55c58a24,markdown,fr,37cb076c2b01d130,"## 11. Conclusion — Tranche 1 fondations
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb,55c58a24,markdown,fr,976019b31ba33038,"## Conclusion — Tranche 1 fondations
 
 **Ce que nous avons appris** :
 
@@ -1280,7 +1280,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csha
 ---
 
 *Implementation from-scratch, BCL .NET seule, 0 NuGet. Twin du notebook Python unified-planning [Planners-1-Introduction](Planners-1-Introduction.ipynb). Marathon #4956 (premier jumeau C# de la serie Planners).*
-",,,,,,,,37cb076c2b01d130,,,,,,,
+",,,,,,,,976019b31ba33038,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb,cell-0,markdown,fr,5b97e652b3efe6b0,"# Planners-1-Introduction a la Planification Automatique
 
 **Navigation** : [Index](../../README.md) | [<< Setup](../00-Environment/Planners-0-Setup.ipynb) | [PDDL Syntax >>](Planners-2-PDDL-Basics.ipynb)
@@ -2708,9 +2708,9 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Cshar
 
 Un **planificateur STRIPS complet from-scratch** — le même moteur résout Logistics (7 actions) et Gripper (5 actions). Vous avez déroulé à la main ce que `unified-planning.solve()` fait en un appel côté Python : la modélisation typée, le grounding et la recherche dans l'espace d'états.
 ",,,,,,,,6ed6f5c230f74e6f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb,d8a9b18c,markdown,fr,ae59434a79c7f1bf,"---
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb,d8a9b18c,markdown,fr,9973efc16466419f,"---
 
-## 10. Conclusion
+## Conclusion
 
 Ce notebook a couvert les fondamentaux de PDDL en s'appuyant sur un **modèle STRIPS implémenté en C#**. Vous avez vu comment un problème de planification se décompose en domaine (types, prédicats, actions) et problème (objets, état initial, but), et comment un planificateur générique (grounding + BFS) résout n'importe quelle instance.
 
@@ -2725,7 +2725,7 @@ La recherche BFS trouve le plan optimal en nombre d'actions, mais **l'espace d'�
 
 - **[Planners-3-State-Space-Csharp](Planners-3-State-Space-Csharp.ipynb)** : la structure des espaces d'états et pourquoi BFS explose.
 - **[Planners-5-Heuristics-Csharp](Planners-5-Heuristics-Csharp.ipynb)** : les heuristiques qui rendent la recherche tractable.
-",,,,,,,,ae59434a79c7f1bf,,,,,,,
+",,,,,,,,9973efc16466419f,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb,d7b5503d,markdown,fr,7f536e0d271b074d,"---
 
 ## Ressources
@@ -4194,7 +4194,7 @@ foreach (int c in new[] { 2, 3, 4, 5, 10, 20 })
     Console.WriteLine($""  cout_marais={c,2} -> (etudiant : A* fait combien de pas ?)"");
 }
 ",,,,,,,,fcccc893793c63ee,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,c6f67abc,markdown,fr,d5efff4caf8f1839,"## 10. Conclusion — du search nu a A*
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb,c6f67abc,markdown,fr,b0539e769a212dd7,"## Conclusion — du search nu a A*
 
 Ce twin C# parcourt la meme progression que le twin Python :
 - **BFS** : optimal en PAS (cout uniforme), explore beaucoup.
@@ -4204,7 +4204,7 @@ Ce twin C# parcourt la meme progression que le twin Python :
 
 **Le point cle (#3801 Prong B)** : sur terrain uniforme, BFS = A* (cas degenere). Sur **terrain pondere**, seul A* minimise le cout reel (16 pas / cout 16 en contournant le marais, vs BFS 10 pas / cout 55 en traversant). C'est la ou la capacite d'A* est visible dans la sortie — pas un exemple trivial.
 
-> Retour au [twin Python](Planners-3-State-Space.ipynb) — qui demontre la meme chose visuellement (heatmap + chemins superposes).",,,,,,,,d5efff4caf8f1839,,,,,,,
+> Retour au [twin Python](Planners-3-State-Space.ipynb) — qui demontre la meme chose visuellement (heatmap + chemins superposes).",,,,,,,,b0539e769a212dd7,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb,cell-0,markdown,fr,87878bf19431ef47,"# Planners-3-State-Space - Recherche dans l'Espace d'Etats
 
 **Navigation** : [Index](../../README.md) | [<< PDDL Basics](Planners-2-PDDL-Basics.ipynb) | [Fast Downward >>](../02-Classical/Planners-4-Fast-Downward.ipynb)
@@ -5866,7 +5866,7 @@ public static (int nodesHMax, int nodesHFF, int costHMax, int costHFF) CompareAS
 
 ""Exercice 3 (h^max vs h^FF en A*) a completer."".Display();
 ",,,,,,,,766b814d29527a87,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward-Csharp.ipynb,856e1d0f,markdown,fr,8ff35b9fc64fea59,"## 10. Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward-Csharp.ipynb,856e1d0f,markdown,fr,5cac926de8ac2915,"## Conclusion
 
 ### Ce que vous avez appris
 
@@ -5903,7 +5903,7 @@ Le notebook Python [Planners-4-Fast-Downward](Planners-4-Fast-Downward.ipynb) **
 
 ---
 *Marathon #4956 (parite .NET <-> Python). Twin C# du notebook Python [Planners-4-Fast-Downward.ipynb](Planners-4-Fast-Downward.ipynb). Regitre SOTA : EPIC #3801.*
-",,,,,,,,8ff35b9fc64fea59,,,,,,,
+",,,,,,,,5cac926de8ac2915,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb,cell-0,markdown,fr,0957bad1e0d7db54,"# Planners-4-Fast-Downward - Planificateur Classique
 
 **Navigation** : [Index](../../README.md) | [<< State-Space](../01-Foundation/Planners-3-State-Space.ipynb) | [Heuristics >>](Planners-5-Heuristics.ipynb)
@@ -7995,8 +7995,47 @@ print()
 print(""=> Conclusion : h^max reste admissible (max <= h*). h^add surestime"")
 print(""   car la relaxation additive ne distingue pas les actions partagees."")
 ",,,,,,,,b5ea64ec23928892,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb,hadd-inadmissible-demo-interp,markdown,fr,2eece2555d45d36c,"### Interpretation : la non-admissibilite de h^add est observee concretement| Heuristique | Valeur | Admissible (universelle) | Observation ||-------------|--------|--------------------------|-------------|| h^max       | 2      | Oui                     | Compte le sous-but le plus cher (cout 2 = setup + make) || h^add       | 4      | **Non**                 | Double-compte `setup` : 2 (pour g1) + 2 (pour g2) || h^FF        | 2      | **Non**                 | Extrait le plan relaxe partage, retombe sur h^max || h*          | 3      | -                       | Plan optimal : setup, make_g1, make_g2 |**Pourquoi h^add = 4 > h* = 3** :- `setup` (cout 1) est la **precondition commune** des deux sous-buts `g1` et `g2`- Le calcul additif propage le cout de `p` (= 1, atteint via `setup`) **independamment** dans chaque branche du graphe de relaxation- `cost(g1)` = `cost(p)` + cout de `make_g1` = 1 + 1 = 2- `cost(g2)` = `cost(p)` + cout de `make_g2` = 1 + 1 = 2- `h^add = cost(g1) + cost(g2) = 2 + 2 = 4`- Mais un plan **optimal** n'execute `setup` **qu'une fois** : `setup`, `make_g1`, `make_g2` = cout total 3- Donc h^add surestime de 1 (= cout de `setup`)**h^max reste admissible** : `max(2, 2) = 2 <= h* = 3`. C'est la superiorite classique de h^max pour la recherche optimale : il sous-estime systematiquement, garantissant l'optimalite avec A*.**h^FF = h^max = 2 sur cette instance** : le plan relaxe partage `setup` (il atteint `p` qui sert les deux sous-buts), donc FF le compte une seule fois. C'est une illustration que **FF peut etre meilleur que h^add sur des problemes avec actions partagees** — c'est d'ailleurs une des motivations historiques de FF (Hoffmann & Nebel 2001).**Implication pratique** : pour la planification optimale, preferer h^max ou LM-cut (admissibles) ; pour la recherche satisfiable rapide, h^FF est souvent preferable a h^add (meilleure guidance, pas de surestimation catastrophique sur actions partagees).",,,,,,,,2eece2555d45d36c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb,interpretation-hmax-hadd,markdown,fr,c059e1d177be8e54,"### Interpretation de la comparaison| Heuristique | Valeur | Admissible (sur cette instance) | Admissible (universelle) ||-------------|--------|---------------------------------|--------------------------|| h^max       | 1      | Oui (1 <= 3)                   | Oui                      || h^add       | 3      | Oui (3 <= 3)                   | **Non**                  || h*          | 3      | -                               | -                        |**Observations** :1. **h^max est admissible en general** : propriete universelle (`max <= h*` pour tout etat).2. **h^add coincide avec h* ici** car les 3 sous-buts sont **independants** (pas de precondition partagee). Mais cela ne la rend pas admissible en general : sur des problemes avec actions partagees, h^add surestime. Voir la cellule 3.5 pour une demonstration concrete (h^add = 4 > h* = 3).3. **h^add est plus informative** que h^max sur cette instance (3 vs 1) grace a la sommation, mais cette informativite a un prix : la non-admissibilite.> **Note** : h^add peut etre admissible dans certains cas (sous-buts independants) mais ne l'est pas en general. Le caractere admissible est une propriete **universelle** (h <= h* pour TOUT etat), pas une propriete per-instance.",,,,,,,,c059e1d177be8e54,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb,hadd-inadmissible-demo-interp,markdown,fr,0a7e9d2e162b1f92,"### Interpretation : la non-admissibilite de h^add est observee concretement
+
+| Heuristique | Valeur | Admissible (universelle) | Observation |
+|-------------|--------|--------------------------|-------------|
+| h^max       | 2      | Oui                     | Compte le sous-but le plus cher (cout 2 = setup + make) |
+| h^add       | 4      | **Non**                 | Double-compte `setup` : 2 (pour g1) + 2 (pour g2) |
+| h^FF        | 2      | **Non**                 | Extrait le plan relaxe partage, retombe sur h^max |
+| h*          | 3      | -                       | Plan optimal : setup, make_g1, make_g2 |
+
+**Pourquoi h^add = 4 > h* = 3** :
+
+- `setup` (cout 1) est la **precondition commune** des deux sous-buts `g1` et `g2`
+- Le calcul additif propage le cout de `p` (= 1, atteint via `setup`) **independamment** dans chaque branche du graphe de relaxation
+- `cost(g1)` = `cost(p)` + cout de `make_g1` = 1 + 1 = 2
+- `cost(g2)` = `cost(p)` + cout de `make_g2` = 1 + 1 = 2
+- `h^add = cost(g1) + cost(g2) = 2 + 2 = 4`
+- Mais un plan **optimal** n'execute `setup` **qu'une fois** : `setup`, `make_g1`, `make_g2` = cout total 3
+- Donc h^add surestime de 1 (= cout de `setup`)
+
+**h^max reste admissible** : `max(2, 2) = 2 <= h* = 3`. C'est la superiorite classique de h^max pour la recherche optimale : il sous-estime systematiquement, garantissant l'optimalite avec A*.
+
+**h^FF = h^max = 2 sur cette instance** : le plan relaxe partage `setup` (il atteint `p` qui sert les deux sous-buts), donc FF le compte une seule fois. C'est une illustration que **FF peut etre meilleur que h^add sur des problemes avec actions partagees** — c'est d'ailleurs une des motivations historiques de FF (Hoffmann & Nebel 2001).
+
+**Implication pratique** : pour la planification optimale, preferer h^max ou LM-cut (admissibles) ; pour la recherche satisfiable rapide, h^FF est souvent preferable a h^add (meilleure guidance, pas de surestimation catastrophique sur actions partagees).",,,,,,,,0a7e9d2e162b1f92,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb,interpretation-hmax-hadd,markdown,fr,a9a2a44bba576980,"### Interpretation de la comparaison
+
+| Heuristique | Valeur | Admissible (sur cette instance) | Admissible (universelle) |
+|-------------|--------|---------------------------------|--------------------------|
+| h^max       | 1      | Oui (1 <= 3)                   | Oui                      |
+| h^add       | 3      | Oui (3 <= 3)                   | **Non**                  |
+| h*          | 3      | -                               | -                        |
+
+**Observations** :
+
+1. **h^max est admissible en general** : propriete universelle (`max <= h*` pour tout etat).
+
+2. **h^add coincide avec h* ici** car les 3 sous-buts sont **independants** (pas de precondition partagee). Mais cela ne la rend pas admissible en general : sur des problemes avec actions partagees, h^add surestime. Voir la cellule 3.5 pour une demonstration concrete (h^add = 4 > h* = 3).
+
+3. **h^add est plus informative** que h^max sur cette instance (3 vs 1) grace a la sommation, mais cette informativite a un prix : la non-admissibilite.
+
+> **Note** : h^add peut etre admissible dans certains cas (sous-buts independants) mais ne l'est pas en general. Le caractere admissible est une propriete **universelle** (h <= h* pour TOUT etat), pas une propriete per-instance.",,,,,,,,a9a2a44bba576980,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb,ff-section,markdown,fr,8aa40af143f536a2,"---
 
 ## 4. Heuristique FF (Fast Forward)
@@ -8289,7 +8328,28 @@ for bar, val in zip(bars, results.values()):
 
 plt.tight_layout()
 plt.show()",,,,,,,,bfac7594c584ff97,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb,interpretation-benchmark,markdown,fr,8c6794c1818c12e4,"### 6.2 Interpretation des resultats| Heuristique | Valeur | Admissible (universelle) | Commentaire ||-------------|--------|--------------------------|-------------|| h^max       | 2      | **Oui**                 | Maximum des sous-buts, sous-estime systematiquement || h^add       | 4      | **Non**                 | Somme des sous-buts, = h* ici (coincidence) mais surestime sur actions partagees (cf cellule 3.5 : h^add = 4 > h* = 3) || h^FF        | 4      | **Non**                 | Extrait un plan relaxe, pas d'optimalite garantie en general || h_landmark  | 4      | **Non**                 | Compte les landmarks non atteints, = h* ici, non admissible en general || h*          | 4      | -                       | Cout optimal reel |**Observations** :1. **h^max est admissible** (propriete universelle) mais souvent trop pessimiste : la valeur 2 sous-estime le cout optimal 4.2. **h^add, h^FF, h_landmark ne sont PAS admissibles en general**, meme s'ils coincident avec h* sur cette instance particuliere. La colonne 'Admissible' reflete une propriete theorique (h <= h* pour tout etat), pas une coincidence per-instance.3. **Demonstration concrete de non-admissibilite** : voir la cellule 3.5 (probleme a precondition partagee) ou h^add = 4 > h* = 3.**Compromis qualite/vitesse** :- Pour **optimalite** : h^max, LM-cut (admissibles)- Pour **vitesse** : h^FF (tres informative, pas d'optimalite garantie)",,,,,,,,8c6794c1818c12e4,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb,interpretation-benchmark,markdown,fr,ede6d64e42471905,"### 6.2 Interpretation des resultats
+
+| Heuristique | Valeur | Admissible (universelle) | Commentaire |
+|-------------|--------|--------------------------|-------------|
+| h^max       | 2      | **Oui**                 | Maximum des sous-buts, sous-estime systematiquement |
+| h^add       | 4      | **Non**                 | Somme des sous-buts, = h* ici (coincidence) mais surestime sur actions partagees (cf cellule 3.5 : h^add = 4 > h* = 3) |
+| h^FF        | 4      | **Non**                 | Extrait un plan relaxe, pas d'optimalite garantie en general |
+| h_landmark  | 4      | **Non**                 | Compte les landmarks non atteints, = h* ici, non admissible en general |
+| h*          | 4      | -                       | Cout optimal reel |
+
+**Observations** :
+
+1. **h^max est admissible** (propriete universelle) mais souvent trop pessimiste : la valeur 2 sous-estime le cout optimal 4.
+
+2. **h^add, h^FF, h_landmark ne sont PAS admissibles en general**, meme s'ils coincident avec h* sur cette instance particuliere. La colonne 'Admissible' reflete une propriete theorique (h <= h* pour tout etat), pas une coincidence per-instance.
+
+3. **Demonstration concrete de non-admissibilite** : voir la cellule 3.5 (probleme a precondition partagee) ou h^add = 4 > h* = 3.
+
+**Compromis qualite/vitesse** :
+
+- Pour **optimalite** : h^max, LM-cut (admissibles)
+- Pour **vitesse** : h^FF (tres informative, pas d'optimalite garantie)",,,,,,,,ede6d64e42471905,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb,86e01ed2,markdown,fr,4a738484c3ced8b6,"---
 
 ### Exemple guide 1 : Probleme de Logistics — Comparaison complete des heuristiques
