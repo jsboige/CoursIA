@@ -21,14 +21,21 @@ require mathlib from git
 -- Test firsthand sur decision_theory_lean (Utility.Basic_en/Axioms_en) :
 --   bare `Utility`  → 8497 jobs, _en NON built
 --   `Utility.*`     → 8499 jobs, _en built (Basic_en 16s + Axioms_en 15s)
+--
+-- NOTE technique #2 (po-2026 fix #6585, orphan root `_en`) :
+-- `<Lib>.*` couvre les `_en` NESTED (`Utility/Basic_en.lean` → `Utility.Basic_en`)
+-- MAIS PAS les `_en` ROOT aggregators (`Utility_en.lean` → `Utility_en`, sibling
+-- racine hors `Utility/`). Ces fichiers doc-only n'étaient pas type-checkés par
+-- la CI (faux-green). Fix : bare-name `<Lib>_en` explicite dans les globs, pattern
+-- éprouvé conway_cgt_lean (`globs := #[`CGTTour, `CGTTour_en]`). See #6585, #4980.
 @[default_target]
 lean_lib Gittins where
-  globs := #[`Gittins.*]
+  globs := #[`Gittins.*, `Gittins_en]
 
 @[default_target]
 lean_lib Utility where
-  globs := #[`Utility.*]
+  globs := #[`Utility.*, `Utility_en]
 
 @[default_target]
 lean_lib Coherence where
-  globs := #[`Coherence.*]
+  globs := #[`Coherence.*, `Coherence_en]
