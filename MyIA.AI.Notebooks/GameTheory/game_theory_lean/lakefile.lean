@@ -68,7 +68,7 @@ require mathlib from git
 -- cold builds remain unaffected. See #6140.
 @[default_target]
 lean_lib StableMarriage where
-  globs := #[`StableMarriage.*]
+  globs := #[`StableMarriage.*, `StableMarriage_en]
   moreLeanArgs := #["--tstack=8192"]
 
 @[default_target]
@@ -84,4 +84,4 @@ lean_lib RepeatedGames where
   -- Repeated Games Library for Lean 4
   -- Includes: stage game (Prisoner's Dilemma), discounting, grim trigger
   -- Theorem phare: grim_trigger_sustains_iff (one-shot deviation principle)
-  globs := #[`RepeatedGames.*]
+  globs := #[`RepeatedGames.*, `RepeatedGames_en]
