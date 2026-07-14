@@ -865,3 +865,13 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/data/temp_*.owl
 _site/
 **/.quarto/
 _freeze/
+
+# Meal-planner corpus (Z3-Linq2Z3 series) — regenerable data, downloaded on demand
+# by SMT/Z3-Linq2Z3/download_meal_data.py (Ciqual ANSES 2025 + RecipeML archive.org
+# ~11k recettes + fork recipes). ~93 MB / 5500+ XML files. The notebooks + script
+# already document data/meals/ as gitignored ("il est regenere"), but the rule was
+# missing, so the corpus surfaced as 5500+ untracked files in the IDE. The `**`
+# covers both the canonical target (Z3-Linq2Z3/data/meals/) and the stale wrong-CWD
+# location (Z3/data/meals/, from the old Z3/ series name before the Z3-API/Z3-Linq2Z3
+# split). Delete the stale Z3/data/ copy locally; it is orphaned (no notebook reads it there).
+MyIA.AI.Notebooks/SymbolicAI/SMT/**/data/meals/
