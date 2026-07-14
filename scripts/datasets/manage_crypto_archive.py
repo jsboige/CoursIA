@@ -154,6 +154,12 @@ def update_archive(symbol: str, output_dir: Path) -> Path | None:
         return None
 
     df_combined = pd.concat([df_old, df_new], ignore_index=True)
+    # Normalize the "date" column to a single type: pd.read_csv yields string dates from
+    # the existing archive while _download_binance_historical yields datetime.date objects,
+    # so a naive concat produces a mixed-type column that raises
+    # "TypeError: '<' not supported between instances of 'datetime.date' and 'str'" in
+    # sort_values. pd.to_datetime accepts both forms; .dt.date canonicalizes to date objects.
+    df_combined["date"] = pd.to_datetime(df_combined["date"]).dt.date
     df_combined = df_combined.drop_duplicates(subset=["date"]).sort_values("date")
 
     df_combined.to_csv(existing, index=False)
