@@ -85,11 +85,3 @@ lean_lib RepeatedGames where
   -- Includes: stage game (Prisoner's Dilemma), discounting, grim trigger
   -- Theorem phare: grim_trigger_sustains_iff (one-shot deviation principle)
   globs := #[`RepeatedGames.*]
-
-@[default_target]
-lean_lib RepeatedGames where
-  -- Repeated Games Library for Lean 4
-  -- Includes: stage game (Prisoner's Dilemma), discounting, grim trigger
-  -- Theorem phare: grim_trigger_sustains_iff (one-shot deviation principle)
-  globs := #[`RepeatedGames.*]
->>>>>>> ad1ef27c7 (feat(lean,#4365): absorb RepeatedGames (Stage+Discounting+GrimTrigger+Folk FR+EN) into game_theory_lean — anti-proliferation GT 6->2 (c.371))
