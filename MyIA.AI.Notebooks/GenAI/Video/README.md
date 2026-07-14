@@ -50,11 +50,11 @@ winget install FFmpeg
 
 On ne peut pas créer ce qu'on ne comprend pas. Ce niveau pose les bases techniques (codecs, ffmpeg, moviepy) et introduit la compréhension vidéo par IA : décomposer une séquence en scènes, répondre à des questions sur le contenu, analyser le mouvement. Vous découvrirez aussi le surcadrage d'images (ESRGAN) et l'interpolation de frames (RIFE) pour améliorer la qualité visuelle. À la fin de ce niveau, vous savez analyser une vidéo existante et en extraire des informations structurelles.
 
-<p align="center"><a href="01-Foundation/01-1-Video-Operations-Basics.ipynb"><img src="assets/readme/video1-frames.png" width="540" alt="Extraction de frames : découpe d'une vidéo en images clés avec decord pour l'analyse."></a></p>
+<p align="center"><a href="01-Foundation/01-1-Video-Operations-Basics.ipynb"><img src="assets/readme/video1-frames.png" width="540" alt="Extraction uniforme de 8 frames via decord : mosaique pédagogique 2×4 d'une balle blanche bondissante (Frame 0→119 sur fonds colorés alternés vert/orange/rouge/violet/bleu/cyan/vert clair, 640×480 @ 24fps)."></a></p>
 
-<p align="center"><a href="01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb"><img src="assets/readme/video4-esrgan.png" width="540" alt="Upscaling ESRGAN : comparaison basse résolution avant/après agrandissement par réseau."></a></p>
+<p align="center"><a href="01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb"><img src="assets/readme/video4-esrgan.png" width="540" alt="Comparaison HR vs LR sur 4 frames — balle rouge + 4 billes vertes sur fond noir quadrillé, HR (320×240, nette) vs LR (320×240, soft/blur), même résolution, aucune démo d'upscaling visuel dans cette figure."></a></p>
 
-<p align="center"><a href="01-Foundation/01-5-AnimateDiff-Introduction.ipynb"><img src="assets/readme/video5-animatediff.png" width="560" alt="Génération text-to-video AnimateDiff : animation produite depuis un prompt textuel."></a></p>
+<p align="center"><a href="01-Foundation/01-5-AnimateDiff-Introduction.ipynb"><img src="assets/readme/video5-animatediff.png" width="560" alt="Génération AnimateDiff text-to-video depuis prompt « a serene lake at sunset with mountains in the background » — grille 2×4 frames d'un paysage lacustre au coucher de soleil (montagnes + lac reflétant, lumière dorée)."></a></p>
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -68,7 +68,7 @@ On ne peut pas créer ce qu'on ne comprend pas. Ce niveau pose les bases techniq
 
 Ce niveau explore les modèles génératifs vidéo : HunyuanVideo pour la qualité cinématographique (malgré ses 24 GB de VRAM), LTX-Video pour la génération rapide sur des configurations modestes, Wan pour les prompts multilingues, et Stable Video Diffusion pour animer une image existante. Chaque modèle a ses forces et ses limites — le but est de les connaître pour choisir le bon outil au bon moment. Le notebook 02-5 introduit en outre LTX-2 (Lightricks 22B), le seul modèle de la série qui génère vidéo **et audio synchronisés** en une seule passe de diffusion (quantization obligatoire : `fp8-cast` via ltx-pipelines — borderline sur 24 GB — ou GGUF Q4 via ComfyUI en production, ~14-24 GB VRAM).
 
-<p align="center"><a href="02-Advanced/02-4-SVD-Image-to-Video.ipynb"><img src="assets/readme/video-svd.png" width="540" alt="Stable Video Diffusion : animation d'une image statique en séquence vidéo."></a></p>
+<p align="center"><a href="02-Advanced/02-4-SVD-Image-to-Video.ipynb"><img src="assets/readme/video-svd.png" width="540" alt="« Images de test pour SVD » — 3 vignettes côte-à-côte servant d'inputs pour Stable Video Diffusion (Paysage avec montagnes / Silhouette portrait / Coucher de soleil sur l'eau), pas une sortie SVD."></a></p>
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -92,9 +92,9 @@ Un seul modèle ne suffit pas pour une production vidéo complète. Ce niveau co
 
 Les trois derniers notebooks et le notebook de synchronisation audio-vidéo concluent le parcours en abordant des cas d'usage réels : génération automatique de contenus éducatifs, workflows créatifs (transfert de style, clips musicaux), et l'API Sora 2 d'OpenAI pour la génération cloud. Le pipeline final intègre tout ce qui a été appris dans un système bout-en-bout.
 
-<p align="center"><a href="04-Applications/04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/video-creative-style.png" width="540" alt="Transfert de style vidéo : application du style d'une image de référence à chaque frame."></a></p>
+<p align="center"><a href="04-Applications/04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/video-creative-style.png" width="540" alt="Comparaison côte-à-côte de 4 styles artistiques (Original / Peinture à l'huile / Aquarelle / Dessin) appliqués à 3 frames (t=0/48/96), mosaique 4×3 d'une scène avec carré cyan + cercle jaune sur fond dégradé."></a></p>
 
-<p align="center"><a href="04-Applications/04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/video-sora-cost.png" width="560" alt="Sora (cloud) vs local : comparaison de coût selon le volume de génération vidéo."></a></p>
+<p align="center"><a href="04-Applications/04-3-Sora-API-Cloud-Video.ipynb"><img src="assets/readme/video-sora-cost.png" width="560" alt="« Analyse comparative : Sora API vs Generation Video Locale » — 2 panneaux (coût mensuel Cloud vs Local avec seuil rentabilité ~375 vid/mois, comparatif qualitatif sur 5 critères : Qualité, Cohérence temporelle, Durée max, Latence, Facilité setup)."></a></p>
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
