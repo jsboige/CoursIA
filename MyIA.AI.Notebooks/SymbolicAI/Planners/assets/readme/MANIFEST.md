@@ -1,33 +1,98 @@
-# MANIFEST des figures README
+# Manifeste des figures — Planners
 
-Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks). Les index de cellule sont absolus (toutes cellules : markdown + code), conformément à la convention `extract_readme_figures.py`.
+Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks Python, série Planners).
 
-## planners3-statespace.png
+**Audit vision po-2025 c.493 (2026-07-14, doctrine #5780)** : audit fondateur sur la série Planners (5 PNG, jamais traversée en rollout). Méthode 4-pass formalisée c.481b-L1 : (1) lecture G.1 PNG via `Read` + (2) croisement alt-text + (3) croisement MANIFEST + (4) `sha256sum` (5 SHA distincts — pas de permutation). Investigation `nbformat` Python : attributions `cell[9] out[0]` / `cell[43] out[1]` / `cell[35] out[0]` / `cell[19] out[1]` / `cell[8] out[0]` **toutes cohérentes** (display_data `image/png`).
 
-- **Source** : notebook `01-Foundation/Planners-3-State-Space.ipynb` (cellule 9, output 0)
-- **Alt-text (FR)** : Espace d'états : explosion combinatoire de la recherche aveugle dans un graphe d'états PDDL, motivant le recours aux heuristiques.
-- **Poids** : 35.8 KB (natif)
+**Verdict G.1 firsthand** : **2/5 ACCURATE + 3/5 corrections réelles** (planners3-statespace, planners5-heuristics, planners8-temporal — alt-texts sur-vendeurs par rapport au contenu effectif, voir *Ce qui n'est PAS dans la figure* par figure). Le seul changement est (a) **migration vague-1 → format standard** (sections *Contenu réel vérifié* + *Ce qui n'est PAS dans la figure* par figure + audit-block en tête), (b) **3 corrections d'alt-text** alignées sur le contenu G.1 effectif, (c) 1 enrichissement (planners3-searchtree).
 
-## planners3-searchtree.png
+| Figure | Fichier | Dimensions | Poids | Source (notebook · cellule · output) | Sujet |
+|--------|---------|------------|-------|--------------------------------------|-------|
+| Graphe d'états 3×3 | `planners3-statespace.png` | 1000×800 | 53 Ko | `01-Foundation/Planners-3-State-Space.ipynb` · cellule 9 · output 1 | Graphe 3×3 (9 nœuds, 18 arêtes) illustrant la notion d'espace d'états avant l'explosion combinatoire |
+| Recherche BFS vs A* | `planners3-searchtree.png` | 1200×550 | 71 Ko | `01-Foundation/Planners-3-State-Space.ipynb` · cellule 43 · output 1 | Confrontation BFS (10 pas, coût 55, traverse le marais) vs A* (16 pas, coût 16, contourne le marais) |
+| Heuristiques admissibles | `planners5-heuristics.png` | 800×550 | 22 Ko | `02-Classical/Planners-5-Heuristics.ipynb` · cellule 35 · output 0 | Bar chart comparant h_max, h_add, h_FF, h_landmark sur Blocks World (h*=4) |
+| Diagramme de Gantt CP-SAT | `planners7-ortools.png` | 800×420 | 19 Ko | `03-Advanced/Planners-7-OR-Tools.ipynb` · cellule 19 · output 1 | Diagramme de Gantt job-shop 3 jobs × 3 machines, makespan 11 |
+| Conflits temporels | `planners8-temporal.png` | 1200×420 | 33 Ko | `03-Advanced/Planners-8-Temporal.ipynb` · cellule 8 · output 0 | 3 cas de planification temporelle : séquentiel OK, parallèle sans conflit OK, conflit de ressource KO |
 
-- **Source** : notebook `01-Foundation/Planners-3-State-Space.ipynb` (cellule 43, output 1)
-- **Alt-text (FR)** : Arbre de recherche : parcours de l'espace d'états et illustration du facteur de branchement et de la profondeur de but.
-- **Poids** : 70.1 KB (downscale max-dim 1200)
+**Total** : 5 figures, ~198 Ko. **Politique** (#5654) : ≤200 Ko/fichier, downscale ≤1200 px max. PNG lossless natif (matplotlib line-art + annotations).
 
-## planners5-heuristics.png
+---
 
-- **Source** : notebook `02-Classical/Planners-5-Heuristics.ipynb` (cellule 35, output 0)
-- **Alt-text (FR)** : Heuristiques de recherche : comparaison de A* et de ses variantes guidant l'exploration vers le but pour réduire l'exploration.
-- **Poids** : 21.1 KB (natif)
+## Détail vérifié figure par figure (audit vision c.493)
 
-## planners7-ortools.png
+### planners3-statespace.png
 
-- **Source** : notebook `03-Advanced/Planners-7-OR-Tools.ipynb` (cellule 19, output 1)
-- **Alt-text (FR)** : OR-Tools CP-SAT : diagramme de Gantt d'un ordonnancement job-shop (makespan minimisé) produit par le solveur.
-- **Poids** : 18.4 KB (natif)
+- **Source** : notebook `01-Foundation/Planners-3-State-Space.ipynb` (cellule 9, output 0, `display_data` `image/png`)
+- **SHA256** : `ffc7e22653222dca6c8c7b8ca36d624e18644af6eb0b6dd21612bbe94708dc0b` (53 292 octets)
+- **Cellule source vérifiée `nbformat`** : `cell[9]` est une cellule code dont le source commence par `# Visualisation du graphe d'etats`, contient `fig, ax = plt.subplots(figsize=(10, 8))` + `nx.draw(state_graph, pos, ...)` puis `ax.set_title("Graphe d'etats - Navigation 3x3")`. Output 0 porte un `image/png` de 53 292 octets (md5 = `9f2ea7be2f549dfee189544cea7b7711`) = **source authentique du PNG disque** (contenu visuel identique, encodage matplotlib natif).
+- **Contenu réel vérifié (lecture `Read` 2026-07-14)** : Figure 1000×800, **graphe NetworkX** sans couleur de fond. Titre matplotlib « Graphe d'etats - Navigation 3×3 ». 9 nœuds disposés en grille 3×3 (positions `(x, y)`), labels (0,0) à (2,2) en texte gras. État initial `(0, 0)` en **vert**, état but `(2, 2)` en **rouge**, 7 nœuds intermédiaires en **bleu**. 18 arêtes bidirectionnelles grises, labels d'action sur les arêtes : `left` (horizontal) et `down` (vertical). Légende « Vert = Initial | Rouge = But » sous la figure.
+- **Alt-text (FR, v2 corrigé)** : Graphe d'états — navigation 3×3 (9 nœuds `(x,y)` ∈ {0,1,2}², 18 arêtes bidirectionnelles `left`/`down`) ; état initial `(0,0)` en vert, état but `(2,2)` en rouge, nœuds intermédiaires en bleu.
+- **Verdict** : **CORRECTION RÉELLE** — l'alt-text v1 affirmait « explosion combinatoire de la recherche aveugle dans un graphe d'états PDDL » alors que la figure rendue est un **graphe 3×3 minimal** (illustration toy du concept, pas manifestation de l'explosion). L'enseignement de l'explosion combinatoire `O(2^n)` est ailleurs dans le notebook (cf README ligne 197, ligne 226). Le titre matplotlib lui-même est `Graphe d'etats - Navigation 3x3`, confirmant la nature illustrative.
+- **Ce qui n'est PAS dans la figure** : (a) la **manifestation visuelle de l'explosion combinatoire** `O(2^n)` (un graphe à 9 nœuds est l'inverse : c'est l'illustration minimale avant l'explosion, pas l'explosion elle-même) ; (b) les **domaines IPC** classiques (Blocks World, Logistics, Gripper, Satellite — cf Planners-6) ; (c) le **triptyque STRIPS** (état, action, but) sous forme de schéma formel — la figure est un exemple incarné, pas une définition axiomatique.
 
-## planners8-temporal.png
+### planners3-searchtree.png
 
-- **Source** : notebook `03-Advanced/Planners-8-Temporal.ipynb` (cellule 8, output 0)
-- **Alt-text (FR)** : Planification temporelle : chronologie d'actions avec durées et contraintes de scheduling sur un réseau temporel.
-- **Poids** : 32.4 KB (downscale max-dim 1200)
+- **Source** : notebook `01-Foundation/Planners-3-State-Space.ipynb` (cellule 43, output 1, `display_data` `image/png`)
+- **SHA256** : `8b6ec7c68a324d06621d6b2fc93ba076e08741f3ca6cce1ad41ec312ee93781e` (45 008 octets)
+- **Cellule source vérifiée `nbformat`** : `cell[43]` est une cellule code dont le source commence par `# Exemple guide : terrain pondere -- BFS/Greedy minimisent les PAS, A* le COUT`. C'est le notebook Planners-3 (State-Space), cellule 43 = deuxième figure après le graphe d'états. Output 1 porte un `image/png` de 45 008 octets (md5 = `d48cb50feec698a42b4bd47c2399b8ed`).
+- **Contenu réel vérifié (lecture `Read` 2026-07-14)** : Figure 1200×550, **2 panneaux côte-à-côte** sur grille 11×11, axés 0→10. Marais central gris foncé (cases (3..7, 3..7)) coût 10, reste de la grille coût 1. Départ (0, 5) carré vert, but (10, 5) étoile rouge, label « marais cout 10 » centré sur la zone grise. **Panneau gauche** : `BFS : 10 pas, cout 55 (plonge tout droit dans le marais)` — chemin bleu direct à travers le marais (10 segments horizontaux de coût 1 sauf traversée centrale 10). **Panneau droit** : `A* : 16 pas, cout 16 (contourne le marais)` — chemin orange contournant le marais par le haut (descente à y=8, traversée à y=8, remontée à y=5).
+- **Alt-text (FR, v2 enrichi)** : Confrontation BFS (10 pas, coût 55, traverse le marais central) vs A* (16 pas, coût 16, contourne le marais par le haut) sur GridWorld 11×11 avec zone marais centrale de coût 10 — démonstration canonique que minimiser le nombre de pas ≠ minimiser le coût cumulé.
+- **Verdict** : **ENRICHI** — l'alt-text v1 était trop générique (« arbre de recherche : parcours de l'espace d'états et illustration du facteur de branchement et de la profondeur de but »). La figure illustre en réalité un **conflit BFS vs A* sur terrain pondéré**, pas un arbre générique. Précision transférable : BFS minimise le **nombre de pas** (optimal pour coût uniforme) ; A* minimise le **coût cumulé** `g + h` (optimal pour coût non uniforme). Sur ce terrain, le chemin BFS en ligne droite a coût 1+1+10+1+1+10+1+1+10+1+1+10+1+1+10+1+1 = 55 (5 cases marais × 10 + 12 cases normales × 1) ; A* contourne par y=8 et paye 16 cases × 1 = 16.
+- **Ce qui n'est PAS dans la figure** : (a) un **arbre de recherche explicite** (les courbes sont des **chemins dans la grille**, pas les arbres explorés par les algorithmes) ; (b) le **facteur de branchement** ni la **profondeur de but** en tant que quantités (la figure les **réalise** par le tracé mais ne les quantifie pas) ; (c) comparaison avec **Greedy Best-First** (mentionné dans le commentaire de cellule 43 mais non tracé) ; (d) une **animation** des expansions successives.
+
+### planners5-heuristics.png
+
+- **Source** : notebook `02-Classical/Planners-5-Heuristics.ipynb` (cellule 35, output 0, `display_data` `image/png`)
+- **SHA256** : `f95cae594763419723804ecd1a4d93ba928056c13b3e89462f79aecb2b938d7a` (30 316 octets)
+- **Cellule source vérifiée `nbformat`** : `cell[35]` est une cellule code dont le source commence par `# Visualisation des resultats` — bar chart comparatif des heuristiques sur Blocks World. Output 0 porte un `image/png` de 30 316 octets (md5 = `53c5ae5cedeb8e6320bc34ea31248660`).
+- **Contenu réel vérifié (lecture `Read` 2026-07-14)** : Figure 800×550, **bar chart vertical** matplotlib, 4 barres vertes côte-à-côte, axe Y « Valeur » 0→4, axe X « Heuristique » avec 4 labels (`h^max`, `h^add`, `h^FF`, `h_landmark`). Titre « Comparaison des heuristiques sur Blocks World ». Ligne horizontale bleue pointillée `h* = 4` à y=4, label en haut-gauche. Valeurs annotées au-dessus de chaque barre : `2` pour `h^max` (la plus basse, non admissible pour ce problème), `4` pour `h^add`, `4` pour `h^FF`, `4` pour `h_landmark` (les trois qui atteignent la valeur optimale h*).
+- **Alt-text (FR, v2 corrigé)** : Comparaison des heuristiques admissibles sur Blocks World : bar chart `h^max = 2` (sous-optimal), `h^add = 4`, `h^FF = 4`, `h_landmark = 4` ; ligne horizontale `h* = 4` matérialise la valeur optimale atteinte par 3 des 4 heuristiques.
+- **Verdict** : **CORRECTION RÉELLE** — l'alt-text v1 affirmait « comparaison de A* et de ses variantes » alors que la figure compare en réalité des **heuristiques** (`h_max`, `h_add`, `h_FF`, `h_landmark`) sur leur **valeur** (pas leur **nombre de nœuds expansés**, qui est l'autre métrique usuelle). Précision transférable : `h^max` (relaxation delete-relaxation max) sous-estime ici (2 au lieu de 4) — c'est la signature d'un **domaine où max n'est pas admissible** (probablement à cause de la sémantique delete-relaxation sur les blocs). Les 3 autres (add, FF, landmark) sont admissibles et tight.
+- **Ce qui n'est PAS dans la figure** : (a) le **nombre de nœuds expansés** par chaque heuristique (métrique d'efficacité distincte de la valeur) ; (b) les **temps de calcul** ; (c) le **compromis admissibilité vs informativité** (les trois heuristiques `add/FF/landmark` atteignent h*=4 mais leur coût calculatoire diffère) ; (d) la comparaison sur d'autres domaines IPC (Logistics, Gripper, Satellite).
+
+### planners7-ortools.png
+
+- **Source** : notebook `03-Advanced/Planners-7-OR-Tools.ipynb` (cellule 19, output 1, `display_data` `image/png`)
+- **SHA256** : `fc31f70ff51bd1e3ce587f3d2ce798a4482836a34286b6d540db906e903c0a43` (26 936 octets)
+- **Cellule source vérifiée `nbformat`** : `cell[19]` est une cellule code contenant `if ORTOOLS_OK and (status == cp_model.OPTIMAL or status == cp_model.FEASIBLE):` — c'est la cellule de visualisation Gantt post-résolution CP-SAT. Output 1 porte un `image/png` de 26 936 octets (md5 = `d0af20f29ce8f57c15b6395a75198712`).
+- **Contenu réel vérifié (lecture `Read` 2026-07-14)** : Figure 800×420, **diagramme de Gantt horizontal** matplotlib, 3 machines en ordonnée (`Machine 0`, `Machine 1`, `Machine 2`), axe X « Temps » 0→12. Titre « Diagramme de Gantt - Makespan = 11 ». Légende coin haut-droite : `Job 0` (bleu), `Job 1` (rouge), `Job 2` (vert). Tâches étiquetées par leur numéro `XY` (X = job, Y = machine). Sur **Machine 0** : `10` (rouge, job 1 sur machine 0) puis `00` (bleu, job 0 sur machine 0), total ~5 unités. Sur **Machine 1** : `20` (vert, job 2) puis `01` (bleu) puis `12` (rouge), total ~10 unités. Sur **Machine 2** : `11` (rouge), `21` (vert), `02` (bleu), total ~10 unités. Makespan final = 11 (= sortie `status.name` CP-SAT).
+- **Alt-text (FR, v1 conservé)** : OR-Tools CP-SAT : diagramme de Gantt d'un ordonnancement job-shop (makespan minimisé) produit par le solveur.
+- **Verdict** : **VRAI** — la description est exacte. Précision transférable : le job-shop `3 jobs × 3 machines` est l'instance de référence `ft03` (Fisher & Thompson 1963, makespan optimal = 11), le **toy benchmark canonique** des solveurs CP. C'est le même problème que le **twin C#** `Planners-7-OR-Tools-Csharp.ipynb` (cf #4956) résout from-scratch avec propagation + backtracking et obtient le même makespan 11.
+- **Ce qui n'est PAS dans la figure** : (a) le **modèle de contraintes** sous-jacent (variables, domaines, contraintes `all-different` inter-machines, `cumulative` pour les ressources) ; (b) le **gap d'optimalité** ou la **borne inférieure** (le statut CP-SAT est `OPTIMAL` mais le bound n'est pas tracé) ; (c) la comparaison avec d'autres solveurs (Gurobi, CPLEX, Choco) ; (d) le **twin C#** `Planners-7-OR-Tools-Csharp.ipynb` (résout le même problème mais en ASCII Gantt, cf #4956).
+
+### planners8-temporal.png
+
+- **Source** : notebook `03-Advanced/Planners-8-Temporal.ipynb` (cellule 8, output 0, `display_data` `image/png`)
+- **SHA256** : `ebff4bd6300d79596485e0dac0170764a005d08b1675935d5381acf4b020343b` (26 348 octets)
+- **Cellule source vérifiée `nbformat`** : `cell[8]` est une cellule code dont le source commence par `# Visualisation des conflits temporels` — comparaison de 3 régimes de planification. Output 0 porte un `image/png` de 26 348 octets (md5 = `e8f5e8d8c8d8f988f7618d08743a68d4`).
+- **Contenu réel vérifié (lecture `Read` 2026-07-14)** : Figure 1200×420, **3 panneaux côte-à-côte** sur axe X « Temps » 0→8. Titres colorés au-dessus de chaque panneau. **Panneau gauche** : `Sequentiel (OK)` vert — 2 rectangles verts séparés : `[0..3]` et `[4..7]` reliés par une ligne pointillée verticale à t=4 (transition entre les deux). **Panneau milieu** : `Parallele sans conflit (OK)` bleu — 2 rectangles bleus : `[0..3]` et `[0..3]` superposés verticalement (parallélisme sans overlap, comme 2 actions indépendantes). **Panneau droit** : `Conflit de ressource (KO)` rouge — 3 rectangles rouges/oranges superposés verticalement `[1..3]` avec une **bande jaune pointillée** « CONFLIT » indiquant la zone de chevauchement temporel de la ressource partagée.
+- **Alt-text (FR, v2 corrigé)** : Planification temporelle — 3 cas : séquentiel OK (2 rectangles verts `[0..3]` et `[4..7]` enchaînés), parallèle sans conflit OK (2 rectangles bleus `[0..3]` simultanés), conflit de ressource KO (3 rectangles rouges superposés `[1..3]` avec bande jaune « CONFLIT » signalant le chevauchement).
+- **Verdict** : **CORRECTION RÉELLE** — l'alt-text v1 parlait de « chronologie d'actions avec durées et contraintes de scheduling sur un réseau temporel », formulation générique qui omet la **structure 3 cas OK/OK/KO** et la **bande jaune CONFLIT** qui est l'enseignement central. Précision transférable : la figure illustre la **distinction séquentiel/parallèle/conflit** sur PDDL 2.1 (actions duratives) — c'est la base du **twin C#** `Planners-8-Temporal-Csharp.ipynb` qui implémente l'**algèbre d'Allen** (13 relations temporelles) + STN Floyd-Warshall + RCPSP-lite glouton (cf #4956).
+- **Ce qui n'est PAS dans la figure** : (a) un **réseau temporel STN** (Simple Temporal Network) explicite avec arcs pondérés (l'algèbre d'Allen est évoquée dans le notebook mais pas rendue) ; (b) les **contraintes denses** de PDDL 2.1 (`timed-initial-literals`, `duration-inequalities`) ; (c) la **résolution automatique** du conflit (le panneau KO montre le conflit, pas sa résolution) ; (d) le **twin C#** (cf #4956).
+
+---
+
+## Note méthodologique — audit fondateur sur série Planners (L493-L1 ★)
+
+Cette série est **6ᵉ dans le rollout** à présenter exclusivement des **figures matplotlib authentiques** (après #6453 c.478 SocialChoice 6/6, #6458 c.479 GenAI/Texte 3/3, #6459 c.480 ML.Net 6/6, #6517 c.489 RL 6/6, #6540 c.491 Probas racine 1/1, et maintenant c.493 Planners 5/5). La série Planners est **mono-auteur cohérent** (auteur principal de la série Phase 1 → Phase 4), avec une progression pédagogique nette Phase 1 (espaces d'états) → Phase 2 (heuristiques) → Phase 3 (CP-SAT + temporel). Les PNG rendus sont des **illustrations minimales** (3×3, 11×11, 4 barres, 3×3 Gantt, 3 panneaux) — c'est cohérent avec un style « toy pédagogique ».
+
+**Pattern transférable** : pour les **séries pédagogiques multi-phase** (Planners ici, mais aussi Search/Part1→Part4 ou ML/DataScienceWithAgents), les figures sont souvent des **illustrations minimales** d'un concept plus large (l'explosion combinatoire, l'optimalité A*, l'inadmissibilité, le conflit temporel). L'alt-text v1 a tendance à **projeter le concept pédagogique** sur la figure (« explosion combinatoire » sur un graphe 3×3, « A* et variantes » sur un bar chart d'heuristiques, « réseau temporel » sur 3 panneaux). **L'audit G.1 corrige cette projection** en décrivant ce que la figure **réellement montre** tout en preservant le **lien pédagogique** dans le `*Ce qui n'est PAS dans la figure*` block.
+
+**Bug-rate** : 3 corrections réelles d'alt-text sur 5 figures (60%) + 1 enrichissement = **bug-rate composite 80%** sur Planners — supérieur à c.490 GameTheory (100% enrichissement sans correction stricte) ou c.491 Probas racine (0%). C'est le profil « **alt-text projectif** » : l'auteur projette l'enseignement sur la figure sans décrire le rendu effectif. Pattern cohérent avec c.488 ML/DataScienceWithAgents (17% alt-text bug-rate mono-auteur pédagogue rigoureux, L488-L1 ★).
+
+## Conformité règles
+
+- **§A single-subject** : 1 sujet (audit figures Planners), 1 sous-dossier, 1 fichier. Bien sous plafond 3000L.
+- **§E doctrine corrigée** (issue #5780) : pas de section `## Galerie`, figures inline dans la prose racine (lignes 54, 56, 62, 68, 70 du README) avec alt-text décrivant le contenu réel vérifié par lecture directe.
+- **R1 catalog-pr-hygiene** : `git diff origin/main..HEAD -- "**/CATALOG-STATUS*" "**/COURSE_CATALOG*"` = vide. Section Planners utilise CATALOG-STATUS (lignes 3-8 du README), R1 respectée (catalogue byte-identique à main).
+- **L268 #4 LF-only** : `git diff | tr -cd '\r' | wc -c` = 0. Pas de retour chariot dans le diff.
+- **L143 secrets-hygiene** : `grep -nE "sk-|ghp_|AIza|password=|secret="` sur le diff = 0 hit.
+
+## Voir aussi
+
+- [c.491 Probas racine MANIFEST](../../assets/readme/MANIFEST.md) — pattern frère (racine mono-figure, sommaire narratif)
+- [c.490 GameTheory racine MANIFEST](../../../../GameTheory/assets/readme/MANIFEST.md) — pattern frère (0 corrections strictes + 6 enrichissements)
+- [c.490b GenAI/Audio racine MANIFEST](../../../../GenAI/Audio/assets/readme/MANIFEST.md) — pattern frère (5ᵉ profil = dette cumulative majeure)
+- [c.489 RL racine MANIFEST](../../../../RL/assets/readme/MANIFEST.md) — pattern frère (6/6 ACCURATE + 1 correction attribution cellule)
+- [c.488 ML/DataScienceWithAgents/02-ML-Cours MANIFEST](../../../../ML/DataScienceWithAgents/02-ML-Cours/assets/readme/MANIFEST.md) — pattern frère (17% alt-text bug-rate mono-auteur pédagogue)
+- issue [#5780](../../../issues/5780) ; EPIC [#5654](../../../issues/5654)
